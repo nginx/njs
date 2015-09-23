@@ -1176,7 +1176,7 @@ ngx_http_js_create_loc_conf(ngx_conf_t *cf)
 {
     ngx_http_js_loc_conf_t  *conf;
 
-    conf = ngx_palloc(cf->pool, sizeof(ngx_http_js_loc_conf_t));
+    conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_js_loc_conf_t));
     if (conf == NULL) {
         return NULL;
     }
