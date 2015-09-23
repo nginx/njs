@@ -1,0 +1,12 @@
+
+# Copyright (C) Igor Sysoev
+# Copyright (C) NGINX, Inc.
+
+
+if [ "x$1" = x-n ]; then
+   shift
+   echo "$*\c"
+
+else
+   echo "$*"
+fi

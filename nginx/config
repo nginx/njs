@@ -1,0 +1,10 @@
+ngx_addon_name="ngx_http_js_module"
+
+USE_PCRE=YES
+
+HTTP_MODULES="$HTTP_MODULES ngx_http_js_module"
+NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_http_js_module.c"
+
+LINK_DEPS="$LINK_DEPS $ngx_addon_dir/../build/libnjs.a"
+CORE_LIBS="$CORE_LIBS $ngx_addon_dir/../build/libnjs.a -lm"
+CORE_INCS="$CORE_INCS $ngx_addon_dir/../nxt $ngx_addon_dir/../njs"

@@ -1,0 +1,43 @@
+
+# Copyright (C) Igor Sysoev
+# Copyright (C) NGINX, Inc.
+
+
+# Linux glibc 2.1.91, FreeBSD 7.0, Solaris 11,
+# MacOSX 10.6 (Snow Leopard), NetBSD 5.0.
+
+nxt_feature="posix_memalign()"
+nxt_feature_name=NXT_HAVE_POSIX_MEMALIGN
+nxt_feature_run=yes
+nxt_feature_incs=
+nxt_feature_libs=
+nxt_feature_test="#include <stdlib.h>
+
+                 int main() {
+                     void  *p;
+
+                     if (posix_memalign(&p, 4096, 4096) != 0)
+                         return 1;
+                     return 0;
+                 }"
+. ${NXT_AUTO}feature
+
+
+if [ $nxt_found = no ]; then
+
+    # Solaris, HP-UX.
+
+    nxt_feature="memalign()"
+    nxt_feature_name=NXT_HAVE_MEMALIGN
+    nxt_feature_run=yes
+    nxt_feature_incs=
+    nxt_feature_libs=
+    nxt_feature_test="#include <stdlib.h>
+
+                     int main() {
+                         if (memalign(4096, 4096) == NULL)
+                             return 1;
+                         return 0;
+                     }"
+    . ${NXT_AUTO}feature
+fi

@@ -1,0 +1,708 @@
+
+/*
+ * Copyright (C) Igor Sysoev
+ * Copyright (C) NGINX, Inc.
+ */
+
+#include <nxt_types.h>
+#include <nxt_clang.h>
+#include <nxt_stub.h>
+#include <nxt_djb_hash.h>
+#include <nxt_array.h>
+#include <nxt_lvlhsh.h>
+#include <nxt_mem_cache_pool.h>
+#include <njscript.h>
+#include <njs_vm.h>
+#include <njs_regexp.h>
+#include <njs_variable.h>
+#include <njs_parser.h>
+#include <string.h>
+
+
+typedef struct njs_lexer_multi_s  njs_lexer_multi_t;
+
+struct njs_lexer_multi_s {
+    uint8_t                  symbol;
+    uint8_t                  token;
+    uint8_t                  count;
+    const njs_lexer_multi_t  *next;
+};
+
+
+static njs_token_t njs_lexer_next_token(njs_lexer_t *lexer);
+static njs_token_t njs_lexer_word(njs_lexer_t *lexer, u_char c);
+static njs_token_t njs_lexer_string(njs_lexer_t *lexer,
+    u_char quote);
+static njs_token_t njs_lexer_number(njs_lexer_t *lexer);
+static njs_token_t njs_lexer_multi(njs_lexer_t *lexer,
+    njs_token_t token, nxt_uint_t n, const njs_lexer_multi_t *multi);
+static njs_token_t njs_lexer_division(njs_lexer_t *lexer,
+    njs_token_t token);
+
+
+static const uint8_t  njs_tokens[256]  nxt_aligned(64) = {
+
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+    /* \t */    NJS_TOKEN_ILLEGAL,           NJS_TOKEN_SPACE,
+    /* \n */    NJS_TOKEN_LINE_END,          NJS_TOKEN_ILLEGAL,
+    /* \r */    NJS_TOKEN_ILLEGAL,           NJS_TOKEN_LINE_END,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+
+    /* 0x10 */  NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+
+    /*   ! */   NJS_TOKEN_SPACE,             NJS_TOKEN_LOGICAL_NOT,
+    /* " # */   NJS_TOKEN_DOUBLE_QUOTE,      NJS_TOKEN_ILLEGAL,
+    /* $ % */   NJS_TOKEN_LETTER,            NJS_TOKEN_REMAINDER,
+    /* & ' */   NJS_TOKEN_BITWISE_AND,       NJS_TOKEN_SINGLE_QUOTE,
+    /* ( ) */   NJS_TOKEN_OPEN_PARENTHESIS,  NJS_TOKEN_CLOSE_PARENTHESIS,
+    /* * + */   NJS_TOKEN_MULTIPLICATION,    NJS_TOKEN_ADDITION,
+    /* , - */   NJS_TOKEN_COMMA,             NJS_TOKEN_SUBSTRACTION,
+    /* . / */   NJS_TOKEN_DOT,               NJS_TOKEN_DIVISION,
+
+    /* 0 1 */   NJS_TOKEN_DIGIT,             NJS_TOKEN_DIGIT,
+    /* 2 3 */   NJS_TOKEN_DIGIT,             NJS_TOKEN_DIGIT,
+    /* 4 5 */   NJS_TOKEN_DIGIT,             NJS_TOKEN_DIGIT,
+    /* 6 7 */   NJS_TOKEN_DIGIT,             NJS_TOKEN_DIGIT,
+    /* 8 9 */   NJS_TOKEN_DIGIT,             NJS_TOKEN_DIGIT,
+    /* : ; */   NJS_TOKEN_COLON,             NJS_TOKEN_SEMICOLON,
+    /* < = */   NJS_TOKEN_LESS,              NJS_TOKEN_ASSIGNMENT,
+    /* > ? */   NJS_TOKEN_GREATER,           NJS_TOKEN_CONDITIONAL,
+
+    /* @ A */   NJS_TOKEN_ILLEGAL,           NJS_TOKEN_LETTER,
+    /* B C */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* D E */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* F G */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* H I */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* J K */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* L M */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* N O */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+
+    /* P Q */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* R S */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* T U */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* V W */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* X Y */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* Z [ */   NJS_TOKEN_LETTER,            NJS_TOKEN_OPEN_BRACKET,
+    /* \ ] */   NJS_TOKEN_ILLEGAL,           NJS_TOKEN_CLOSE_BRACKET,
+    /* ^ _ */   NJS_TOKEN_BITWISE_XOR,       NJS_TOKEN_LETTER,
+
+    /* ` a */   NJS_TOKEN_ILLEGAL,           NJS_TOKEN_LETTER,
+    /* b c */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* d e */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* f g */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* h i */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* j k */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* l m */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* n o */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+
+    /* p q */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* r s */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* t u */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* v w */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* x y */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
+    /* z { */   NJS_TOKEN_LETTER,            NJS_TOKEN_OPEN_BRACE,
+    /* | } */   NJS_TOKEN_BITWISE_OR,        NJS_TOKEN_CLOSE_BRACE,
+    /* ~   */   NJS_TOKEN_BITWISE_NOT,       NJS_TOKEN_ILLEGAL,
+
+    /* 0x80 */  NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+
+    /* 0x90 */  NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+
+    /* 0xA0 */  NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+
+    /* 0xB0 */  NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+
+    /* TODO: the first byte of valid UTF-8: 0xC2 - 0xF4. */
+
+    /* 0xC0 */  NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+
+    /* 0xD0 */  NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+
+    /* 0xE0 */  NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+
+    /* 0xF0 */  NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+                NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
+};
+
+
+static const njs_lexer_multi_t  njs_addition_token[] = {
+    { '+', NJS_TOKEN_INCREMENT, 0, NULL },
+    { '=', NJS_TOKEN_ADDITION_ASSIGNMENT, 0, NULL },
+};
+
+
+static const njs_lexer_multi_t  njs_substraction_token[] = {
+    { '-', NJS_TOKEN_DECREMENT, 0, NULL },
+    { '=', NJS_TOKEN_SUBSTRACTION_ASSIGNMENT, 0, NULL },
+};
+
+
+static const njs_lexer_multi_t  njs_multiplication_token[] = {
+    { '=', NJS_TOKEN_MULTIPLICATION_ASSIGNMENT, 0, NULL },
+};
+
+
+static const njs_lexer_multi_t  njs_remainder_token[] = {
+    { '=', NJS_TOKEN_REMAINDER_ASSIGNMENT, 0, NULL },
+};
+
+
+static const njs_lexer_multi_t  njs_bitwise_and_token[] = {
+    { '&', NJS_TOKEN_LOGICAL_AND, 0, NULL },
+    { '=', NJS_TOKEN_BITWISE_AND_ASSIGNMENT, 0, NULL },
+};
+
+
+static const njs_lexer_multi_t  njs_bitwise_xor_token[] = {
+    { '=', NJS_TOKEN_BITWISE_XOR_ASSIGNMENT, 0, NULL },
+};
+
+
+static const njs_lexer_multi_t  njs_bitwise_or_token[] = {
+    { '|', NJS_TOKEN_LOGICAL_OR, 0, NULL },
+    { '=', NJS_TOKEN_BITWISE_OR_ASSIGNMENT, 0, NULL },
+};
+
+
+static const njs_lexer_multi_t  njs_strict_not_equal_token[] = {
+    { '=', NJS_TOKEN_STRICT_NOT_EQUAL, 0, NULL },
+};
+
+
+static const njs_lexer_multi_t  njs_logical_not_token[] = {
+    { '=', NJS_TOKEN_NOT_EQUAL, 1, njs_strict_not_equal_token },
+};
+
+
+static const njs_lexer_multi_t  njs_less_shift_token[] = {
+    { '=', NJS_TOKEN_LEFT_SHIFT_ASSIGNMENT, 0, NULL },
+};
+
+
+static const njs_lexer_multi_t  njs_less_token[] = {
+    { '=', NJS_TOKEN_LESS_OR_EQUAL, 0, NULL },
+    { '<', NJS_TOKEN_LEFT_SHIFT, 1, njs_less_shift_token },
+};
+
+
+static const njs_lexer_multi_t  njs_less_equal_token[] = {
+    { '=', NJS_TOKEN_STRICT_EQUAL, 0, NULL },
+};
+
+
+static const njs_lexer_multi_t  njs_unsigned_right_shift_token[] = {
+    { '=', NJS_TOKEN_UNSIGNED_RIGHT_SHIFT_ASSIGNMENT, 0, NULL },
+};
+
+
+static const njs_lexer_multi_t  njs_right_shift_token[] = {
+    { '=', NJS_TOKEN_RIGHT_SHIFT_ASSIGNMENT, 0, NULL },
+    { '>', NJS_TOKEN_UNSIGNED_RIGHT_SHIFT, 1,
+           njs_unsigned_right_shift_token },
+};
+
+
+static const njs_lexer_multi_t  njs_greater_token[] = {
+    { '=', NJS_TOKEN_GREATER_OR_EQUAL, 0, NULL },
+    { '>', NJS_TOKEN_RIGHT_SHIFT, 2, njs_right_shift_token },
+};
+
+
+static const njs_lexer_multi_t  njs_assignment_token[] = {
+    { '=', NJS_TOKEN_EQUAL, 1, njs_less_equal_token },
+};
+
+
+njs_token_t
+njs_lexer_token(njs_lexer_t *lexer)
+{
+    njs_token_t  token;
+
+    lexer->prev_token = lexer->token;
+
+    token = njs_lexer_next_token(lexer);
+
+    lexer->token = token;
+
+    return token;
+}
+
+
+static njs_token_t
+njs_lexer_next_token(njs_lexer_t *lexer)
+{
+    u_char                   c;
+    nxt_uint_t                n;
+    njs_token_t              token;
+    const njs_lexer_multi_t  *multi;
+
+    while (lexer->start < lexer->end) {
+        c = *lexer->start++;
+
+        token = njs_tokens[c];
+
+        switch (token) {
+
+        case NJS_TOKEN_SPACE:
+            continue;
+
+        case NJS_TOKEN_LETTER:
+            return njs_lexer_word(lexer, c);
+
+        case NJS_TOKEN_DOUBLE_QUOTE:
+        case NJS_TOKEN_SINGLE_QUOTE:
+            return njs_lexer_string(lexer, c);
+
+        case NJS_TOKEN_DIGIT:
+            return njs_lexer_number(lexer);
+
+        case NJS_TOKEN_ASSIGNMENT:
+            n = nxt_nitems(njs_assignment_token),
+            multi = njs_assignment_token;
+
+            goto multi;
+
+        case NJS_TOKEN_ADDITION:
+            n = nxt_nitems(njs_addition_token),
+            multi = njs_addition_token;
+
+            goto multi;
+
+        case NJS_TOKEN_SUBSTRACTION:
+            n = nxt_nitems(njs_substraction_token),
+            multi = njs_substraction_token;
+
+            goto multi;
+
+        case NJS_TOKEN_MULTIPLICATION:
+            n = nxt_nitems(njs_multiplication_token),
+            multi = njs_multiplication_token;
+
+            goto multi;
+
+        case NJS_TOKEN_DIVISION:
+            token = njs_lexer_division(lexer, token);
+
+            if (token != NJS_TOKEN_AGAIN) {
+                return token;
+            }
+
+            continue;
+
+        case NJS_TOKEN_REMAINDER:
+            n = nxt_nitems(njs_remainder_token),
+            multi = njs_remainder_token;
+
+            goto multi;
+
+        case NJS_TOKEN_BITWISE_AND:
+            n = nxt_nitems(njs_bitwise_and_token),
+            multi = njs_bitwise_and_token;
+
+            goto multi;
+
+        case NJS_TOKEN_BITWISE_XOR:
+            n = nxt_nitems(njs_bitwise_xor_token),
+            multi = njs_bitwise_xor_token;
+
+            goto multi;
+
+        case NJS_TOKEN_BITWISE_OR:
+            n = nxt_nitems(njs_bitwise_or_token),
+            multi = njs_bitwise_or_token;
+
+            goto multi;
+
+        case NJS_TOKEN_LOGICAL_NOT:
+            n = nxt_nitems(njs_logical_not_token),
+            multi = njs_logical_not_token;
+
+            goto multi;
+
+        case NJS_TOKEN_LESS:
+            n = nxt_nitems(njs_less_token),
+            multi = njs_less_token;
+
+            goto multi;
+
+        case NJS_TOKEN_GREATER:
+            n = nxt_nitems(njs_greater_token),
+            multi = njs_greater_token;
+
+            goto multi;
+
+        case NJS_TOKEN_LINE_END:
+        case NJS_TOKEN_BITWISE_NOT:
+        case NJS_TOKEN_OPEN_PARENTHESIS:
+        case NJS_TOKEN_CLOSE_PARENTHESIS:
+        case NJS_TOKEN_OPEN_BRACKET:
+        case NJS_TOKEN_CLOSE_BRACKET:
+        case NJS_TOKEN_OPEN_BRACE:
+        case NJS_TOKEN_CLOSE_BRACE:
+        case NJS_TOKEN_DOT:
+        case NJS_TOKEN_COMMA:
+        case NJS_TOKEN_COLON:
+        case NJS_TOKEN_SEMICOLON:
+        case NJS_TOKEN_CONDITIONAL:
+            return token;
+
+        default:  /* NJS_TOKEN_ILLEGAL */
+            lexer->start--;
+            return token;
+        }
+
+    multi:
+
+        return njs_lexer_multi(lexer, token, n, multi);
+    }
+
+    return NJS_TOKEN_END;
+}
+
+
+static njs_token_t
+njs_lexer_word(njs_lexer_t *lexer, u_char c)
+{
+    u_char  *p;
+
+    /* TODO: UTF-8 */
+
+    static const uint8_t  letter_digit[32]  nxt_aligned(32) = {
+        0x00, 0x00, 0x00, 0x00, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                                /* '&%$ #"!  /.-, |*)(  7654 3210 ?>=< ;:98 */
+        0x10, 0x00, 0xff, 0x03, /* 0001 0000 0000 0000  1111 1111 0000 0011 */
+
+                                /* GFED CBA@ ONML KJIH  WVUT SRQP _^]\ [ZYX */
+        0xfe, 0xff, 0xff, 0x87, /* 1111 1110 1111 1111  1111 1111 1000 0111 */
+
+                                /* gfed cba` onml kjih  wvut srqp  ~}| {zyx */
+        0xfe, 0xff, 0xff, 0x07, /* 1111 1110 1111 1111  1111 1111 0000 0111 */
+
+        0x00, 0x00, 0x00, 0x00, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00, 0x00, 0x00, 0x00, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00, 0x00, 0x00, 0x00, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00, 0x00, 0x00, 0x00, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+    };
+
+    lexer->key_hash = nxt_djb_hash_add(NXT_DJB_HASH_INIT, c);
+    lexer->text.data = lexer->start - 1;
+
+    for (p = lexer->start; p < lexer->end; p++) {
+        c = *p;
+
+        if ((letter_digit[c / 8] & (1 << (c & 7))) == 0) {
+            break;
+        }
+
+        lexer->key_hash = nxt_djb_hash_add(lexer->key_hash, c);
+    }
+
+    lexer->start = p;
+    lexer->text.len = p - lexer->text.data;
+
+    return njs_lexer_keyword(lexer);
+}
+
+
+static njs_token_t
+njs_lexer_string(njs_lexer_t *lexer, u_char quote)
+{
+    u_char  *p, ch;
+
+    lexer->text.data = lexer->start;
+    p = lexer->start;
+
+    while (p < lexer->end) {
+
+        /* TODO: end of line, backslash. */
+
+        ch = *p++;
+
+        if (ch == '\\') {
+            if (p == lexer->end) {
+                return NJS_TOKEN_ILLEGAL;
+            }
+
+            /* STUB: reallocate. */
+
+            p++;
+            continue;
+        }
+
+        if (ch == quote) {
+            lexer->start = p;
+            lexer->text.len = (p - 1) - lexer->text.data;
+
+            return NJS_TOKEN_STRING;
+        }
+    }
+
+    return NJS_TOKEN_ILLEGAL;
+}
+
+
+static njs_token_t
+njs_lexer_number(njs_lexer_t *lexer)
+{
+    u_char  c, *p;
+    double  num, frac, scale;
+
+    /* TODO: "1e2" */
+
+    p = lexer->start;
+    c = p[-1];
+
+    /* Values below '0' become >= 208. */
+    c = c - '0';
+
+    num = c;
+
+    if (c != 0) {
+
+        while (p < lexer->end) {
+            c = *p;
+
+            /* Values below '0' become >= 208. */
+            c = c - '0';
+
+            if (nxt_slow_path(c > 9)) {
+                break;
+            }
+
+            num = num * 10 + c;
+            p++;
+        }
+    }
+
+    if (*p == '.') {
+
+        frac = 0;
+        scale = 1;
+
+        for (p++; p < lexer->end; p++) {
+            c = *p;
+
+            /* Values below '0' become >= 208. */
+            c = c - '0';
+
+            if (nxt_slow_path(c > 9)) {
+                break;
+            }
+
+            frac = frac * 10 + c;
+            scale *= 10;
+        }
+
+        num += frac / scale;
+    }
+
+    lexer->number = num;
+    lexer->start = p;
+
+    return NJS_TOKEN_NUMBER;
+}
+
+
+static njs_token_t
+njs_lexer_multi(njs_lexer_t *lexer, njs_token_t token, nxt_uint_t n,
+    const njs_lexer_multi_t *multi)
+{
+    u_char  c;
+
+    if (lexer->start < lexer->end) {
+        c = lexer->start[0];
+
+        do {
+            if (c == multi->symbol) {
+                lexer->start++;
+
+                if (multi->count == 0) {
+                    return multi->token;
+                }
+
+                return njs_lexer_multi(lexer, multi->token,
+                                            multi->count, multi->next);
+            }
+
+            multi++;
+            n--;
+
+        } while (n != 0);
+    }
+
+    return token;
+}
+
+
+static njs_token_t
+njs_lexer_division(njs_lexer_t *lexer, njs_token_t token)
+{
+    u_char  c, *p;
+
+    if (lexer->start < lexer->end) {
+        c = lexer->start[0];
+
+        if (c == '/') {
+            token = NJS_TOKEN_END;
+            lexer->start++;
+
+            for (p = lexer->start; p < lexer->end; p++) {
+
+                if (*p == '\r' || *p == '\n') {
+                    lexer->start = p + 1;
+                    return NJS_TOKEN_LINE_END;
+                }
+            }
+
+        } else if (c == '*') {
+            lexer->start++;
+
+            for (p = lexer->start; p < lexer->end; p++) {
+
+                if (*p == '*') {
+                    p++;
+
+                    if (p < lexer->end && *p == '/') {
+                        lexer->start = p + 1;
+                        return NJS_TOKEN_AGAIN;
+                    }
+                }
+            }
+
+            return NJS_TOKEN_ILLEGAL;
+
+        } else if (c == '=') {
+            lexer->start++;
+            token = NJS_TOKEN_DIVISION_ASSIGNMENT;
+        }
+    }
+
+    return token;
+}
+
+
+njs_token_t
+njs_lexer_regexp(njs_lexer_t *lexer, njs_regexp_flags_t *flags)
+{
+    u_char              *p;
+    njs_regexp_flags_t  _flags, flag;
+
+    for (p = lexer->start; p < lexer->end; p++) {
+
+        if (*p == '\\') {
+            p++;
+            continue;
+        }
+
+        if (*p == '/') {
+
+            lexer->text.data = lexer->start;
+            lexer->text.len = p - lexer->text.data;
+            p++;
+
+            _flags = 0;
+
+            while (p < lexer->end) {
+                switch (*p) {
+
+                case 'i':
+                   flag = NJS_REGEXP_IGNORE_CASE;
+                   break;
+
+                case 'g':
+                   flag = NJS_REGEXP_GLOBAL;
+                   break;
+
+                case 'm':
+                   flag = NJS_REGEXP_MULTILINE;
+                   break;
+
+                default:
+                   goto done;
+                }
+
+                if (nxt_slow_path((_flags & flag) != 0)) {
+                    return NJS_TOKEN_ILLEGAL;
+                }
+
+                _flags |= flag;
+                p++;
+            }
+
+        done:
+
+            *flags = _flags;
+            lexer->start = p;
+
+            return NJS_TOKEN_REGEXP_LITERAL;
+        }
+    }
+
+    return NJS_TOKEN_ILLEGAL;
+}

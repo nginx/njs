@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# Copyright (C) Igor Sysoev
+# Copyright (C) NGINX, Inc.
+
+
+# Disable localized program messages.
+LANG=C
+export LANG
+
+# Stop on error exit status.
+set -e
+# Stop on uninitialized variable.
+set -u
+
+CC=${CC:-}
+NXT_BUILDDIR=${NXT_BUILDDIR:-build}
+
+test -d $NXT_BUILDDIR || mkdir $NXT_BUILDDIR
+
+cd nxt && NXT_BUILDDIR=../${NXT_BUILDDIR} CC=${CC} ./auto/configure
