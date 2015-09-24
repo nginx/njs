@@ -73,7 +73,7 @@ Create nginx.conf:
                     res.headers.foo = 1234;
                     res.status = 302;
                     res.contentType = 'text/plain; charset=utf-8';
-                    res.contentLength = 11;
+                    res.contentLength = 15;
                     res.sendHeader();
                     res.send('nginx');
                     res.send('java');
