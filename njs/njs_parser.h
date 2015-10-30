@@ -238,16 +238,16 @@ struct njs_parser_s {
     njs_parser_node_t               *node;
 
     /* Vector of njs_variable_t. */
-    nxt_vector_t                     *arguments;
+    nxt_array_t                     *arguments;
 
     nxt_lvlhsh_t                     variables_hash;
     nxt_lvlhsh_t                     values_hash;
     nxt_lvlhsh_t                     functions_hash;
 
-    nxt_vector_t                     *index_cache;
+    nxt_array_t                     *index_cache;
     njs_index_t                     index[NJS_SCOPES - NJS_INDEX_CACHE];
 
-    nxt_vector_t                     *scope_values;
+    nxt_array_t                     *scope_values;
 
     uint8_t                         scope;        /* 4 bits */
     uint8_t                         branch;       /* 1 bit */

@@ -228,15 +228,15 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     parser->scope_offset = NJS_INDEX_GLOBAL_OFFSET;
     parser->index[NJS_SCOPE_GLOBAL - NJS_INDEX_CACHE] = NJS_INDEX_GLOBAL_OFFSET;
 
-    parser->scope_values = nxt_vector_create(4, sizeof(njs_value_t),
+    parser->scope_values = nxt_array_create(4, sizeof(njs_value_t),
                                             &njs_array_mem_proto,
                                             vm->mem_cache_pool);
     if (nxt_slow_path(parser->scope_values == NULL)) {
         return NJS_ERROR;
     }
 
-    /* Empty vector to minimize tests in njs_parser_variable(). */
-    parser->arguments = nxt_vector_create(0, sizeof(njs_variable_t),
+    /* Empty array to minimize tests in njs_parser_variable(). */
+    parser->arguments = nxt_array_create(0, sizeof(njs_variable_t),
                                          &njs_array_mem_proto,
                                          vm->mem_cache_pool);
     if (nxt_slow_path(parser->arguments == NULL)) {

@@ -136,7 +136,7 @@ njs_variable_alloc(njs_vm_t *vm, njs_parser_t *parser, nxt_str_t *name)
             memcpy(var->name_start, name->data, name->len);
             var->name_len = name->len;
 
-            value = nxt_vector_add(parser->scope_values, &njs_array_mem_proto,
+            value = nxt_array_add(parser->scope_values, &njs_array_mem_proto,
                                   vm->mem_cache_pool);
             if (nxt_fast_path(value != NULL)) {
                  *value = njs_value_void;

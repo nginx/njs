@@ -290,8 +290,8 @@ njs_parser_function_statement(njs_vm_t *vm, njs_parser_t *parser)
 
     } else {
         /* Anonymous function. */
-        value = nxt_vector_add(parser->scope_values, &njs_array_mem_proto,
-                               vm->mem_cache_pool);
+        value = nxt_array_add(parser->scope_values, &njs_array_mem_proto,
+                              vm->mem_cache_pool);
         if (nxt_slow_path(value == NULL)) {
             return NJS_TOKEN_ERROR;
         }
@@ -325,7 +325,7 @@ njs_parser_function_statement(njs_vm_t *vm, njs_parser_t *parser)
     /* njs_return() size. */
     fn_parser->code_size = sizeof(njs_vmcode_stop_t);
 
-    fn_parser->arguments = nxt_vector_create(4, sizeof(njs_variable_t),
+    fn_parser->arguments = nxt_array_create(4, sizeof(njs_variable_t),
                                             &njs_array_mem_proto,
                                             vm->mem_cache_pool);
     if (nxt_slow_path(fn_parser->arguments == NULL)) {
@@ -351,7 +351,7 @@ njs_parser_function_statement(njs_vm_t *vm, njs_parser_t *parser)
 
         nxt_thread_log_debug("arg: %V", name);
 
-        arg = nxt_vector_add(fn_parser->arguments, &njs_array_mem_proto,
+        arg = nxt_array_add(fn_parser->arguments, &njs_array_mem_proto,
                             vm->mem_cache_pool);
         if (nxt_slow_path(arg == NULL)) {
             return NJS_TOKEN_ERROR;
@@ -394,7 +394,7 @@ njs_parser_function_statement(njs_vm_t *vm, njs_parser_t *parser)
         return NJS_TOKEN_ERROR;
     }
 
-    fn_parser->scope_values = nxt_vector_create(4, sizeof(njs_value_t),
+    fn_parser->scope_values = nxt_array_create(4, sizeof(njs_value_t),
                                                &njs_array_mem_proto,
                                                vm->mem_cache_pool);
     if (nxt_slow_path(fn_parser->scope_values == NULL)) {
@@ -481,7 +481,7 @@ njs_parser_function_expression(njs_vm_t *vm, njs_parser_t *parser)
     /* njs_return() size. */
     fn_parser->code_size = sizeof(njs_vmcode_stop_t);
 
-    fn_parser->arguments = nxt_vector_create(4, sizeof(njs_variable_t),
+    fn_parser->arguments = nxt_array_create(4, sizeof(njs_variable_t),
                                             &njs_array_mem_proto,
                                             vm->mem_cache_pool);
     if (nxt_slow_path(fn_parser->arguments == NULL)) {
@@ -507,7 +507,7 @@ njs_parser_function_expression(njs_vm_t *vm, njs_parser_t *parser)
 
         nxt_thread_log_debug("arg: %V", name);
 
-        arg = nxt_vector_add(fn_parser->arguments, &njs_array_mem_proto,
+        arg = nxt_array_add(fn_parser->arguments, &njs_array_mem_proto,
                             vm->mem_cache_pool);
         if (nxt_slow_path(arg == NULL)) {
             return NJS_TOKEN_ERROR;
@@ -549,7 +549,7 @@ njs_parser_function_expression(njs_vm_t *vm, njs_parser_t *parser)
         return NJS_TOKEN_ERROR;
     }
 
-    fn_parser->scope_values = nxt_vector_create(4, sizeof(njs_value_t),
+    fn_parser->scope_values = nxt_array_create(4, sizeof(njs_value_t),
                                                &njs_array_mem_proto,
                                                vm->mem_cache_pool);
     if (nxt_slow_path(fn_parser->scope_values == NULL)) {

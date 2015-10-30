@@ -1935,14 +1935,14 @@ njs_generator_dest_index(njs_vm_t *vm, njs_parser_t *parser,
 static njs_index_t
 njs_generator_temp_index_get(njs_parser_t *parser)
 {
-    nxt_uint_t    n;
-    njs_index_t   index, *last;
-    nxt_vector_t  *cache;
+    nxt_uint_t   n;
+    njs_index_t  index, *last;
+    nxt_array_t  *cache;
 
     cache = parser->index_cache;
 
     if (cache != NULL && cache->items != 0) {
-        last = nxt_vector_remove_last(cache);
+        last = nxt_array_remove_last(cache);
 
         nxt_thread_log_debug("CACHE %p", *last);
 
@@ -1994,15 +1994,15 @@ static nxt_int_t
 njs_generator_index_release(njs_vm_t *vm, njs_parser_t *parser,
     njs_index_t index)
 {
-    njs_index_t   *last;
-    nxt_vector_t  *cache;
+    njs_index_t  *last;
+    nxt_array_t  *cache;
 
     nxt_thread_log_debug("RELEASE %p", index);
 
     cache = parser->index_cache;
 
     if (cache == NULL) {
-        cache = nxt_vector_create(4, sizeof(njs_value_t *), &njs_array_mem_proto,
+        cache = nxt_array_create(4, sizeof(njs_value_t *), &njs_array_mem_proto,
                                  vm->mem_cache_pool);
         if (nxt_slow_path(cache == NULL)) {
             return NXT_ERROR;
@@ -2011,7 +2011,7 @@ njs_generator_index_release(njs_vm_t *vm, njs_parser_t *parser,
         parser->index_cache = cache;
     }
 
-    last = nxt_vector_add(cache, &njs_array_mem_proto, vm->mem_cache_pool);
+    last = nxt_array_add(cache, &njs_array_mem_proto, vm->mem_cache_pool);
     if (nxt_fast_path(last != NULL)) {
         *last = index;
         return NXT_OK;
