@@ -1369,9 +1369,10 @@ njs_vmcode_unary_negation(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 njs_ret_t
 njs_vmcode_addition(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 {
-    double       num;
-    njs_ret_t    ret;
-    njs_param_t  param;
+    double             num;
+    u_char             *start;
+    size_t             size, length;
+    njs_string_prop_t  string1, string2;
 
     if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
 
@@ -1382,18 +1383,35 @@ njs_vmcode_addition(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
     }
 
     if (nxt_fast_path(njs_is_string(val1) && njs_is_string(val2))) {
-        param.object = val1;
-        param.args = val2;
-        param.retval = 0;
-        param.nargs = 1;
 
-        ret = njs_string_prototype_concat(vm, &param);
+        (void) njs_string_prop(&string1, val1);
+        (void) njs_string_prop(&string2, val2);
 
-        if (nxt_fast_path(ret >= 0)) {
-            return sizeof(njs_vmcode_3addr_t);
+        if ((string1.length != 0 || string1.size == 0)
+            && (string2.length != 0 || string2.size == 0))
+        {
+            length = string1.length + string2.length;
+
+        } else {
+            length = 0;
         }
 
-        return ret;
+        size = string1.size + string2.size;
+
+        start = njs_string_alloc(vm, &vm->retval, size, length);
+
+        if (nxt_slow_path(start == NULL)) {
+            return NXT_ERROR;
+        }
+
+        (void) memcpy(start, string1.start, string1.size);
+        (void) memcpy(start + string1.size, string2.start, string2.size);
+
+        if (length >= NJS_STRING_MAP_OFFSET && size != length) {
+            njs_string_offset_map_init(start, size);
+        }
+
+        return sizeof(njs_vmcode_3addr_t);
     }
 
     return NJS_TRAP_STRINGS;

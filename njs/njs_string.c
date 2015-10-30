@@ -543,7 +543,8 @@ njs_string_prototype_concat(njs_vm_t *vm, njs_param_t *param)
 
     size = string.size;
     length = string.length;
-    mask = (length != 0) ? -1 : 0;
+
+    mask = (string.length == 0 && string.size != 0) ? 0 : -1;
 
     args = param->args;
 
