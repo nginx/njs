@@ -69,7 +69,13 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser)
     njs_parser_node_t  *node, *left;
 
     token = njs_parser_token(parser);
-    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+
+    if (nxt_slow_path(token <= NJS_TOKEN_END)) {
+
+        if (vm->exception == NULL) {
+            vm->exception = &njs_exception_syntax_error;
+        }
+
         return NULL;
     }
 

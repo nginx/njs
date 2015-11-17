@@ -80,13 +80,11 @@ static nxt_jscript_test_t  js_test[] =
     { nxt_string("+1\n"),
       nxt_string("1") },
 
-#if 0
     { nxt_string(""),
       nxt_string("SyntaxError") },
 
     { nxt_string("\n"),
       nxt_string("SyntaxError") },
-#endif
 
     { nxt_string("\n +1"),
       nxt_string("1") },
