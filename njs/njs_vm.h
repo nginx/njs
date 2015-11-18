@@ -74,14 +74,16 @@ typedef njs_ret_t (*njs_getter_t) (njs_vm_t *vm, njs_value_t *obj);
 typedef njs_ret_t (*njs_native_t) (njs_vm_t *vm, njs_param_t *param);
 
 
-typedef struct njs_string_s          njs_string_t;
-typedef struct njs_object_s          njs_object_t;
-typedef struct njs_array_s           njs_array_t;
-typedef struct njs_object_value_s    njs_object_value_t;
-typedef struct njs_function_s        njs_function_t;
-typedef struct njs_regexp_s          njs_regexp_t;
-typedef struct njs_regexp_pattern_s  njs_regexp_pattern_t;
-typedef struct njs_extern_s          njs_extern_t;
+typedef struct njs_string_s           njs_string_t;
+typedef struct njs_object_s           njs_object_t;
+typedef struct njs_array_s            njs_array_t;
+typedef struct njs_object_value_s     njs_object_value_t;
+typedef struct njs_function_s         njs_function_t;
+typedef struct njs_function_script_s  njs_function_script_t;
+typedef struct njs_regexp_s           njs_regexp_t;
+typedef struct njs_regexp_pattern_s   njs_regexp_pattern_t;
+typedef struct njs_extern_s           njs_extern_t;
+typedef struct njs_native_frame_s     njs_native_frame_t;
 
 
 union njs_value_s {
@@ -219,15 +221,6 @@ njs_method(_method, _size)                                                    \
                 .string_size = _size,                                         \
                 .u = { .method = _method }                                    \
     } }
-
-
-#include <njs_number.h>
-#include <njs_string.h>
-#include <njs_object.h>
-#include <njs_object_hash.h>
-#include <njs_array.h>
-#include <njs_function.h>
-#include <njs_extern.h>
 
 
 typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,

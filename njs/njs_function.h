@@ -8,7 +8,7 @@
 #define _NJS_FUNCTION_H_INCLUDED_
 
 
-typedef struct {
+struct njs_function_script_s {
     uint32_t                       nargs;
     uint32_t                       local_size;
     /*
@@ -24,7 +24,7 @@ typedef struct {
         u_char                     *code;
         njs_parser_t               *parser;
     } u;
-} njs_function_script_t;
+};
 
 
 struct njs_function_s {
@@ -81,8 +81,6 @@ struct njs_exception_s {
     u_char                         *catch;
 };
 
-
-typedef struct njs_native_frame_s  njs_native_frame_t;
 
 struct njs_native_frame_s {
     u_char                         *last;

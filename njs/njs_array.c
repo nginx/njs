@@ -13,6 +13,12 @@
 #include <nxt_mem_cache_pool.h>
 #include <njscript.h>
 #include <njs_vm.h>
+#include <njs_number.h>
+#include <njs_string.h>
+#include <njs_object.h>
+#include <njs_object_hash.h>
+#include <njs_array.h>
+#include <njs_function.h>
 #include <string.h>
 
 
