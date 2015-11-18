@@ -1744,14 +1744,38 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abc'.length"),
       nxt_string("3") },
 
+    { nxt_string("'abc'.toUTF8().length"),
+      nxt_string("3") },
+
+    { nxt_string("'абв'.length"),
+      nxt_string("3") },
+
+    { nxt_string("'абв'.toUTF8().length"),
+      nxt_string("6") },
+
+    { nxt_string("'αβγ'.length"),
+      nxt_string("3") },
+
+    { nxt_string("'αβγ'.toUTF8().length"),
+      nxt_string("6") },
+
     { nxt_string("'絵文字'.length"),
       nxt_string("3") },
+
+    { nxt_string("'絵文字'.toUTF8().length"),
+      nxt_string("9") },
 
     { nxt_string("'えもじ'.length"),
       nxt_string("3") },
 
+    { nxt_string("'えもじ'.toUTF8().length"),
+      nxt_string("9") },
+
     { nxt_string("'囲碁織'.length"),
       nxt_string("3") },
+
+    { nxt_string("'囲碁織'.toUTF8().length"),
+      nxt_string("9") },
 
     { nxt_string("a = 'abc'; a.length"),
       nxt_string("3") },
@@ -1768,20 +1792,57 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = 'abc' + 1 + 'абв'; a +' '+ a.length"),
       nxt_string("abc1абв 7") },
 
-    /* TODO: '\u00C2\u00B6'.bytes */
-
-    { nxt_string("a = '\xC3\x82\xC2\xB6'.bytes; u = a.utf8;"
-                 "a.length +' '+ a +' '+ u.length +' '+ u"),
-      nxt_string("2 \xC2\xB6 1 \xC2\xB6") },
-
     { nxt_string("a = 1; a.length"),
       nxt_string("undefined") },
 
     { nxt_string("a = 'abc'; a.concat('абв', 123)"),
       nxt_string("abcабв123") },
 
-    { nxt_string("a = $r.uri; s = a.utf8; s.length +' '+ s"),
+    { nxt_string("'\\u00CE\\u00B1'.toBytes() == 'α'"),
+      nxt_string("true") },
+
+    { nxt_string("'\\u00CE\\u00B1'.toBytes() === 'α'"),
+      nxt_string("false") },
+
+    { nxt_string("b = '\\u00C2\\u00B6'.toBytes(); u = b.fromUTF8();"
+                 "b.length +' '+ b +' '+ u.length +' '+ u"),
+      nxt_string("2 ¶ 1 ¶") },
+
+    { nxt_string("'α'.toBytes()"),
+      nxt_string("null") },
+
+    { nxt_string("'α'.toUTF8()[0]"),
+      nxt_string("\xCE") },
+
+    { nxt_string("a = 'a'.toBytes() + 'α'; a + a.length"),
+      nxt_string("aα3") },
+
+    { nxt_string("a = 'µ§±®'.toBytes(); a"),
+      nxt_string("\xB5\xA7\xB1\xAE") },
+
+    { nxt_string("a = 'µ§±®'.toBytes(2); a"),
+      nxt_string("\xB1\xAE") },
+
+    { nxt_string("a = 'µ§±®'.toBytes(1,3); a"),
+      nxt_string("\xA7\xB1") },
+
+    { nxt_string("a = '\\xB5\\xA7\\xB1\\xAE'.toBytes(); a.fromBytes()"),
+      nxt_string("µ§±®") },
+
+    { nxt_string("a = '\\xB5\\xA7\\xB1\\xAE'.toBytes(); a.fromBytes(2)"),
+      nxt_string("±®") },
+
+    { nxt_string("a = '\\xB5\\xA7\\xB1\\xAE'.toBytes(); a.fromBytes(1, 3)"),
+      nxt_string("§±") },
+
+    { nxt_string("a = $r.uri; s = a.fromUTF8(); s.length +' '+ s"),
       nxt_string("3 АБВ") },
+
+    { nxt_string("a = $r.uri; s = a.fromUTF8(2); s.length +' '+ s"),
+      nxt_string("2 БВ") },
+
+    { nxt_string("a = $r.uri; s = a.fromUTF8(2, 4); s.length +' '+ s"),
+      nxt_string("1 Б") },
 
     { nxt_string("a = $r.uri; a +' '+ a.length +' '+ a"),
       nxt_string("АБВ 6 АБВ") },
@@ -2225,12 +2286,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("/абв/i.test('АБВ')"),
       nxt_string("true") },
 
-    /* TODO: '\u00C2\u00B6".bytes */
-
-    { nxt_string("/\xC2\xB6/.test('\xC3\x82\xC2\xB6'.bytes)"),
+    { nxt_string("/\\xC2\\xB6/.test('\\u00C2\\u00B6'.toBytes())"),
       nxt_string("true") },
 
-    { nxt_string("/\\x80/.test('\x80'.bytes)"),
+    { nxt_string("/\\x80/.test('\\u0080'.toBytes())"),
       nxt_string("true") },
 
     { nxt_string("var a = /^$/.exec(''); a.length +' '+ a"),
@@ -2239,7 +2298,8 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var r = /бв/ig; var a = r.exec('АБВ'); r.lastIndex +' '+ a"),
       nxt_string("3 БВ") },
 
-    { nxt_string("var r = /\\x80/g; r.exec('\x81\x80'.bytes); r.lastIndex"),
+    { nxt_string("var r = /\\x80/g; r.exec('\\u0081\\u0080'.toBytes());"
+                 "r.lastIndex"),
       nxt_string("1") },
 
     /*
@@ -3050,9 +3110,9 @@ main(int argc, char **argv)
         "function fibo(n) {"
         "    if (n > 1)"
         "        return fibo(n - 1) + fibo(n - 2)"
-        "    return '\xC3\x8E\xC2\xB1'.bytes"
+        "    return '\\x80'.toBytes()"
         "}"
-        "fibo(32).utf8.length");
+        "fibo(32).length");
 
     nxt_str_t  fibo_utf8 = nxt_string(
         "function fibo(n) {"

@@ -73,6 +73,13 @@ typedef struct {
 } njs_string_prop_t;
 
 
+typedef struct {
+    size_t    start;
+    size_t    length;
+    size_t    string_length;
+} njs_slice_prop_t;
+
+
 u_char *njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size,
     uint32_t length)
     NXT_MALLOC_LIKE;
@@ -87,8 +94,7 @@ void njs_string_offset_map_init(const u_char *start, size_t size);
 nxt_bool_t njs_string_eq(const njs_value_t *val1, const njs_value_t *val2);
 nxt_int_t njs_string_cmp(const njs_value_t *val1, const njs_value_t *val2);
 njs_ret_t njs_string_slice(njs_vm_t *vm, njs_value_t *dst,
-    const njs_string_prop_t *string, size_t string_length, size_t index,
-    size_t length);
+    const njs_string_prop_t *string, njs_slice_prop_t *slice);
 const u_char *njs_string_offset(const u_char *start, const u_char *end,
     size_t index);
 nxt_noinline uint32_t njs_string_index(njs_string_prop_t *string,

@@ -445,15 +445,15 @@ njs_ret_t
 njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *property)
 {
-    size_t                length;
     double                num;
     int32_t               index;
     uintptr_t             data;
     njs_ret_t             ret;
     njs_value_t           *val;
     njs_extern_t          *ext;
-    njs_object_prop_t     *prop;
+    njs_slice_prop_t      slice;
     njs_string_prop_t     string;
+    njs_object_prop_t     *prop;
     const njs_value_t     *retval;
     njs_property_query_t  pq;
 
@@ -547,11 +547,12 @@ njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
             index = (int32_t) num;
 
             if (index >= 0 && index == num) {
-                length = njs_string_prop(&string, object);
+                slice.start = index;
+                slice.length = 1;
+                slice.string_length = njs_string_prop(&string, object);
 
                 /* A single codepoint string fits in vm->retval cannot fail. */
-                (void) njs_string_slice(vm, &vm->retval, &string, length,
-                                        index, 1);
+                (void) njs_string_slice(vm, &vm->retval, &string, &slice);
 
                 if (nxt_fast_path(vm->retval.data.truth != 0)) {
                     /* Non-empty string. */
@@ -1889,6 +1890,9 @@ njs_vmcode_strict_not_equal(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 static nxt_noinline nxt_bool_t
 njs_values_strict_equal(njs_value_t *val1, njs_value_t *val2)
 {
+    size_t        size;
+    const u_char  *start1, *start2;
+
     if (val1->type != val2->type) {
         return 0;
     }
@@ -1899,7 +1903,36 @@ njs_values_strict_equal(njs_value_t *val1, njs_value_t *val2)
     }
 
     if (njs_is_string(val1)) {
-        return njs_string_eq(val1, val2);
+        size = val1->short_string.size;
+
+        if (size != val2->short_string.size) {
+            return 0;
+        }
+
+        if (size != NJS_STRING_LONG) {
+            if (val1->short_string.length != val2->short_string.length) {
+                return 0;
+            }
+
+            start1 = val1->short_string.start;
+            start2 = val2->short_string.start;
+
+        } else {
+            size = val1->data.string_size;
+
+            if (size != val2->data.string_size) {
+                return 0;
+            }
+
+            if (val1->data.u.string->length != val2->data.u.string->length) {
+                return 0;
+            }
+
+            start1 = val1->data.u.string->start;
+            start2 = val2->data.u.string->start;
+        }
+
+        return (memcmp(start1, start2, size) == 0);
     }
 
     return (val1->data.u.object == val2->data.u.object);
