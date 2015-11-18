@@ -80,7 +80,8 @@ static nxt_int_t njs_generator_index_release(njs_vm_t *vm, njs_parser_t *parser,
 static nxt_int_t
 njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
 {
-    nxt_int_t  ret;
+    nxt_int_t          ret;
+    njs_parser_node_t  *left;
 
     if (node == NULL) {
         return NXT_OK;
@@ -148,6 +149,19 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
     case NJS_TOKEN_REMAINDER_ASSIGNMENT:
         return njs_generate_operation_assignment(vm, parser, node);
 
+    case NJS_TOKEN_IN:
+        /*
+         * An "in" operation is parsed as standard binary expression by
+         * njs_parser_binary_expression().  However, its operands should
+         * be swapped to be uniform with other property operations (get/set
+         * and delete) to use the array and object property traps.
+         */
+        left = node->left;
+        node->left = node->right;
+        node->right = left;
+
+        /* Fall through. */
+
     case NJS_TOKEN_LOGICAL_OR:
     case NJS_TOKEN_LOGICAL_AND:
     case NJS_TOKEN_BITWISE_OR:
@@ -157,7 +171,6 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
     case NJS_TOKEN_NOT_EQUAL:
     case NJS_TOKEN_STRICT_EQUAL:
     case NJS_TOKEN_STRICT_NOT_EQUAL:
-    case NJS_TOKEN_IN:
     case NJS_TOKEN_INSTANCEOF:
     case NJS_TOKEN_LESS:
     case NJS_TOKEN_LESS_OR_EQUAL:
@@ -2018,84 +2031,4 @@ njs_generator_index_release(njs_vm_t *vm, njs_parser_t *parser,
     }
 
     return NXT_ERROR;
-}
-
-
-u_char *
-njs_number_trap_create(njs_vm_t *vm)
-{
-    u_char                  *p, *code;
-    size_t                  size;
-    njs_vmcode_restart_t    *restart;
-    njs_vmcode_to_number_t  *to_number;
-
-    size = 2 * sizeof(njs_vmcode_to_number_t) + sizeof(njs_vmcode_restart_t);
-
-    code = nxt_mem_cache_alloc(vm->mem_cache_pool, size);
-
-    if (nxt_fast_path(code != NULL)) {
-        p = code;
-
-        to_number = (njs_vmcode_to_number_t *) p;
-        p += sizeof(njs_vmcode_to_number_t);
-        to_number->code.operation = njs_vmcode_to_number;
-        to_number->code.operands = NJS_VMCODE_1OPERAND;
-        to_number->code.retval = NJS_VMCODE_NO_RETVAL;
-        to_number->narg = 1;
-
-        to_number = (njs_vmcode_to_number_t *) p;
-        p += sizeof(njs_vmcode_to_number_t);
-        to_number->code.operation = njs_vmcode_to_number;
-        to_number->code.operands = NJS_VMCODE_1OPERAND;
-        to_number->code.retval = NJS_VMCODE_NO_RETVAL;
-        to_number->narg = 0;
-
-        restart = (njs_vmcode_restart_t *) p;
-        p += sizeof(njs_vmcode_restart_t);
-        restart->code.operation = njs_vmcode_restart;
-        restart->code.operands = NJS_VMCODE_NO_OPERAND;
-        restart->code.retval = NJS_VMCODE_NO_RETVAL;
-    }
-
-    return code;
-}
-
-
-u_char *
-njs_string_trap_create(njs_vm_t *vm)
-{
-    u_char                  *p, *code;
-    size_t                  size;
-    njs_vmcode_restart_t    *restart;
-    njs_vmcode_to_string_t  *to_string;
-
-    size = 2 * sizeof(njs_vmcode_to_string_t) + sizeof(njs_vmcode_restart_t);
-
-    code = nxt_mem_cache_alloc(vm->mem_cache_pool, size);
-
-    if (nxt_fast_path(code != NULL)) {
-        p = code;
-
-        to_string = (njs_vmcode_to_string_t *) p;
-        p += sizeof(njs_vmcode_to_string_t);
-        to_string->code.operation = njs_vmcode_to_string;
-        to_string->code.operands = NJS_VMCODE_1OPERAND;
-        to_string->code.retval = NJS_VMCODE_NO_RETVAL;
-        to_string->narg = 0;
-
-        to_string = (njs_vmcode_to_string_t *) p;
-        p += sizeof(njs_vmcode_to_string_t);
-        to_string->code.operation = njs_vmcode_to_string;
-        to_string->code.operands = NJS_VMCODE_1OPERAND;
-        to_string->code.retval = NJS_VMCODE_NO_RETVAL;
-        to_string->narg = 1;
-
-        restart = (njs_vmcode_restart_t *) p;
-        p += sizeof(njs_vmcode_restart_t);
-        restart->code.operation = njs_vmcode_restart;
-        restart->code.operands = NJS_VMCODE_NO_OPERAND;
-        restart->code.retval = NJS_VMCODE_NO_RETVAL;
-    }
-
-    return code;
 }

@@ -8,12 +8,14 @@
 #define _NJS_VM_H_INCLUDED_
 
 
-#define NJS_TRAP_STRINGS        -10
-#define NJS_TRAP_NUMBERS        -11
-#define NJS_TRAP_LVALUE_NUMBER  -12
-#define NJS_TRAP_NUMBER         -13
+#define NJS_TRAP_NUMBER    -10
+#define NJS_TRAP_NUMBERS   -11
+#define NJS_TRAP_INCDEC    -12
+#define NJS_TRAP_STRINGS   -13
+#define NJS_TRAP_PROPERTY  -14
+#define NJS_TRAP_LAST      NJS_TRAP_PROPERTY
 
-#define NJS_PASS                -20
+#define NJS_PASS           -20
 
 
 /* The order of the enum is used in njs_vmcode_typeof() */
@@ -556,24 +558,6 @@ typedef struct {
 } njs_vmcode_finally_t;
 
 
-typedef struct {
-    njs_vmcode_t               code;
-    uintptr_t                  narg;
-} njs_vmcode_to_string_t;
-
-
-typedef struct {
-    njs_vmcode_t               code;
-    uintptr_t                  narg;
-} njs_vmcode_to_number_t;
-
-
-typedef struct {
-    njs_vmcode_t               code;
-    uintptr_t                  unused;
-} njs_vmcode_restart_t;
-
-
 typedef enum {
     NJS_SCOPE_ABSOLUTE = 0,
     NJS_SCOPE_LOCAL,
@@ -663,6 +647,12 @@ njs_index_size(index)                                                         \
     njs_offset(index)
 
 
+typedef struct {
+    const njs_vmcode_1addr_t  *code;
+    nxt_bool_t                reference_value;
+} njs_vm_trap_t;
+
+
 struct njs_vm_s {
     /* njs_vm_t must be aligned to njs_value_t due to scratch value. */
     njs_value_t              retval;
@@ -691,9 +681,6 @@ struct njs_vm_s {
     njs_object_t             *prototypes;
     njs_function_t           *functions;
 
-    u_char                   *number_trap;
-    u_char                   *string_trap;
-
     nxt_mem_cache_pool_t     *mem_cache_pool;
 
     njs_value_t              *global_scope;
@@ -710,9 +697,6 @@ struct njs_vm_shared_s {
 
     njs_object_t             *prototypes;
     njs_function_t           *functions;
-
-    u_char                   *number_trap;
-    u_char                   *string_trap;
 };
 
 
@@ -747,14 +731,14 @@ njs_ret_t njs_vmcode_property_each(njs_vm_t *vm, njs_value_t *object,
 njs_ret_t njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *constructor);
 
-njs_ret_t njs_vmcode_increment(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *lvalue);
-njs_ret_t njs_vmcode_decrement(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *lvalue);
-njs_ret_t njs_vmcode_post_increment(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *lvalue);
-njs_ret_t njs_vmcode_post_decrement(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *lvalue);
+njs_ret_t njs_vmcode_increment(njs_vm_t *vm, njs_value_t *reference,
+    njs_value_t *value);
+njs_ret_t njs_vmcode_decrement(njs_vm_t *vm, njs_value_t *reference,
+    njs_value_t *value);
+njs_ret_t njs_vmcode_post_increment(njs_vm_t *vm, njs_value_t *reference,
+    njs_value_t *value);
+njs_ret_t njs_vmcode_post_decrement(njs_vm_t *vm, njs_value_t *reference,
+    njs_value_t *value);
 njs_ret_t njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *invld);
 njs_ret_t njs_vmcode_void(njs_vm_t *vm, njs_value_t *invld1,
@@ -842,12 +826,10 @@ njs_ret_t njs_vmcode_catch(njs_vm_t *vm, njs_value_t *invld,
 njs_ret_t njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *retval);
 
-njs_ret_t njs_vmcode_to_number(njs_vm_t *vm, njs_value_t *invld,
+njs_ret_t njs_vmcode_number_primitive(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *narg);
-njs_ret_t njs_vmcode_to_string(njs_vm_t *vm, njs_value_t *invld,
+njs_ret_t njs_vmcode_string_primitive(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *narg);
-njs_ret_t njs_value_to_primitive(njs_vm_t *vm, njs_value_t *value,
-    nxt_uint_t hint);
 njs_ret_t njs_vmcode_restart(njs_vm_t *vm, njs_value_t *invld1,
     njs_value_t *invld2);
 
@@ -855,11 +837,6 @@ nxt_noinline void njs_number_set(njs_value_t *value, double num);
 
 nxt_int_t njs_shared_objects_create(njs_vm_t *vm);
 nxt_int_t njs_shared_objects_clone(njs_vm_t *vm);
-
-
-/* STUB */
-u_char *njs_number_trap_create(njs_vm_t *vm);
-u_char *njs_string_trap_create(njs_vm_t *vm);
 
 
 void *njs_lvlhsh_alloc(void *data, size_t size, nxt_uint_t nalloc);

@@ -15,6 +15,56 @@
 #include <string.h>
 
 
+static const njs_vmcode_1addr_t  njs_trap_strings[] = {
+    { .code = { .operation = njs_vmcode_string_primitive,
+                .operands =  NJS_VMCODE_1OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL },
+      .index = 0 },
+    { .code = { .operation = njs_vmcode_string_primitive,
+                .operands =  NJS_VMCODE_1OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL },
+      .index = 1 },
+    { .code = { .operation = njs_vmcode_restart,
+                .operands =  NJS_VMCODE_NO_OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL } },
+};
+
+
+static const njs_vmcode_1addr_t  njs_trap_numbers[] = {
+    { .code = { .operation = njs_vmcode_number_primitive,
+                .operands =  NJS_VMCODE_1OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL },
+      .index = 0 },
+    { .code = { .operation = njs_vmcode_number_primitive,
+                .operands =  NJS_VMCODE_1OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL },
+      .index = 1 },
+    { .code = { .operation = njs_vmcode_restart,
+                .operands =  NJS_VMCODE_NO_OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL } },
+};
+
+
+static const njs_vmcode_1addr_t  njs_trap_number[] = {
+    { .code = { .operation = njs_vmcode_number_primitive,
+                .operands =  NJS_VMCODE_1OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL },
+      .index = 0 },
+    { .code = { .operation = njs_vmcode_restart,
+                .operands =  NJS_VMCODE_NO_OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL } },
+};
+
+
+static const njs_vm_trap_t  njs_vm_traps[] = {
+    /* NJS_TRAP_PROPERTY */  { &njs_trap_strings[1], 0 },
+    /* NJS_TRAP_STRINGS */   { &njs_trap_strings[0], 0 },
+    /* NJS_TRAP_INCDEC */    { &njs_trap_numbers[1], 1 },
+    /* NJS_TRAP_NUMBERS */   { &njs_trap_numbers[0], 0 },
+    /* NJS_TRAP_NUMBER */    { &njs_trap_number[0],  0 },
+};
+
+
 njs_function_t *
 njs_function_alloc(njs_vm_t *vm)
 {
@@ -74,7 +124,7 @@ njs_vmcode_native_frame(njs_vm_t *vm, njs_value_t *method, uintptr_t nargs,
 
     frame->ctor = ctor;
     frame->reentrant = 0;
-    frame->lvalue = 0;
+    frame->trap_reference = 0;
 
     frame->u.exception.next = NULL;
     frame->u.exception.catch = NULL;
@@ -93,11 +143,11 @@ njs_vmcode_native_frame(njs_vm_t *vm, njs_value_t *method, uintptr_t nargs,
 
 
 njs_ret_t
-njs_vmcode_trap(njs_vm_t *vm, u_char *trap, njs_value_t *value1,
-    njs_value_t *value2, nxt_bool_t lvalue)
+njs_vmcode_trap(njs_vm_t *vm, nxt_uint_t trap, njs_value_t *value1,
+    njs_value_t *value2)
 {
     size_t              size, spare_size;
-    njs_value_t         *data;
+    njs_value_t         *values;
     njs_native_frame_t  *frame;
 
     size = NJS_NATIVE_FRAME_SIZE + 3 * sizeof(njs_value_t);
@@ -123,22 +173,23 @@ njs_vmcode_trap(njs_vm_t *vm, u_char *trap, njs_value_t *value1,
 
     frame->ctor = 0;
     frame->reentrant = 0;
-    frame->lvalue = lvalue;
 
-    data = njs_native_data(frame);
-    njs_set_invalid(&data[0]);
-    data[1] = *value1;
+    values = njs_native_data(frame);
+    njs_set_invalid(&values[0]);
+    values[2] = *value2;
 
-    if (lvalue) {
-        data[2].data.u.value = value2;
+    frame->trap_reference = njs_vm_traps[trap].reference_value;
+
+    if (njs_vm_traps[trap].reference_value) {
+        values[1].data.u.value = value1;
 
     } else {
-        data[2] = *value2;
+        values[1] = *value1;
     }
 
     frame->u.exception.catch = NULL;
     frame->u.restart = vm->current;
-    vm->current = trap;
+    vm->current = (u_char *) njs_vm_traps[trap].code;
 
     frame->last = (u_char *) frame + size;
     frame->previous = vm->frame;
@@ -216,7 +267,7 @@ njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *name, njs_param_t *param,
 
     frame->native.ctor = ctor;
     frame->native.reentrant = 0;
-    frame->native.lvalue = 0;
+    frame->native.trap_reference = 0;
 
     frame->native.u.exception.next = NULL;
     frame->native.u.exception.catch = NULL;

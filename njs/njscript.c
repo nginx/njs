@@ -173,9 +173,6 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         keywords_hash = vm->shared->keywords_hash;
         parser->values_hash = vm->shared->values_hash;
 
-        vm->number_trap = vm->shared->number_trap;
-        vm->string_trap = vm->shared->string_trap;
-
         /* STUB */
         if (vm->shared->prototypes == NULL) {
             ret = njs_shared_objects_create(vm);
@@ -197,24 +194,6 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 
         if (vm->shared != NULL) {
             vm->shared->keywords_hash = keywords_hash;
-        }
-    }
-
-    if (vm->number_trap == NULL) {
-
-        vm->number_trap = njs_number_trap_create(vm);
-        if (nxt_slow_path(vm->number_trap == NULL)) {
-            return NJS_ERROR;
-        }
-
-        vm->string_trap = njs_string_trap_create(vm);
-        if (nxt_slow_path(vm->string_trap == NULL)) {
-            return NJS_ERROR;
-        }
-
-        if (vm->shared != NULL) {
-            vm->shared->number_trap = vm->number_trap;
-            vm->shared->string_trap = vm->string_trap;
         }
     }
 
@@ -304,9 +283,6 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
 
         nvm->variables_hash = vm->variables_hash;
         nvm->values_hash = vm->values_hash;
-
-        nvm->number_trap = vm->number_trap;
-        nvm->string_trap = vm->string_trap;
 
         nvm->retval = njs_value_void;
         nvm->current = vm->current;

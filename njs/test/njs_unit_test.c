@@ -250,6 +250,16 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("!2"),
       nxt_string("false") },
 
+    /**/
+
+    { nxt_string("var a = { valueOf: function() { return 1 } };   ~a"),
+      nxt_string("-2") },
+
+    { nxt_string("var a = { valueOf: function() { return '1' } }; ~a"),
+      nxt_string("-2") },
+
+    /**/
+
     { nxt_string("1 || 2"),
       nxt_string("1") },
 
@@ -815,6 +825,20 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = 1 ? b = 2 + 4 : b = 3"),
       nxt_string("6") },
 
+    /**/
+
+    { nxt_string("var a = { valueOf: function() { return 1 } };   +a"),
+      nxt_string("1") },
+
+    { nxt_string("var a = { valueOf: function() { return '1' } }; +a"),
+      nxt_string("1") },
+
+    { nxt_string("var a = { valueOf: function() { return 1 } };   -a"),
+      nxt_string("-1") },
+
+    { nxt_string("var a = { valueOf: function() { return '1' } }; -a"),
+      nxt_string("-1") },
+
     /* Increment. */
 
     { nxt_string("var a = 1;   ++a"),
@@ -829,17 +853,21 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = {};  ++a"),
       nxt_string("NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return 1 } };   ++a"),
-      nxt_string("2") },
+    { nxt_string("var a = { valueOf: function() { return 1 } };"
+                 "++a +' '+ a +' '+ typeof a"),
+      nxt_string("2 2 number") },
 
-    { nxt_string("var a = { valueOf: function() { return '1' } }; ++a"),
-      nxt_string("2") },
+    { nxt_string("var a = { valueOf: function() { return '1' } };"
+                 "++a +' '+ a +' '+ typeof a"),
+      nxt_string("2 2 number") },
 
-    { nxt_string("var a = { valueOf: function() { return [1] } }; ++a"),
-      nxt_string("NaN") },
+    { nxt_string("var a = { valueOf: function() { return [1] } };"
+                 "++a +' '+ a +' '+ typeof a"),
+      nxt_string("NaN NaN number") },
 
-    { nxt_string("var a = { valueOf: function() { return {} } };  ++a"),
-      nxt_string("NaN") },
+    { nxt_string("var a = { valueOf: function() { return {} } };"
+                 "++a +' '+ a +' '+ typeof a"),
+      nxt_string("NaN NaN number") },
 
     /**/
 
@@ -1506,6 +1534,16 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = 1; 1 in a"),
       nxt_string("TypeError") },
 
+    { nxt_string("var n = { toString: function() { return 'a' } };"
+                 "var o = { a: 5 }; o[n]"),
+      nxt_string("5") },
+
+    { nxt_string("var n = { valueOf: function() { return 'a' } };"
+                 "var o = { a: 5, '[object Object]': 7 }; o[n]"),
+      nxt_string("7") },
+
+    /* Arrays */
+
     { nxt_string("a = [ 1, 2, 3 ]; a[0] + a[1] + a[2]"),
       nxt_string("6") },
 
@@ -1604,6 +1642,44 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = []; a.concat([]) +''"),
       nxt_string("") },
 
+    /**/
+
+    { nxt_string("var n = { toString: function() { return 1 } };   [1,2][n]"),
+      nxt_string("2") },
+
+    { nxt_string("var n = { toString: function() { return '1' } }; [1,2][n]"),
+      nxt_string("2") },
+
+    { nxt_string("var n = { toString: function() { return 1 },"
+                          " valueOf:  function() { return 0 } };   [1,2][n]"),
+      nxt_string("2") },
+
+    { nxt_string("var n = { toString: function() { return 1.5 } };"
+                 "var a = [1,2]; a[1.5] = 5; a[n]"),
+      nxt_string("5") },
+
+    { nxt_string("var n = { toString: function() { return 1.5 } };"
+                 "var a = [1,2]; a[n] = 5; a[1.5]"),
+      nxt_string("5") },
+
+    { nxt_string("var n = { toString: function() { return '1.5' } };"
+                 "var a = [1,2]; a[1.5] = 5; a[n]"),
+      nxt_string("5") },
+
+    { nxt_string("var n = { toString: function() { return '1.5' } };"
+                 "var a = [1,2]; a[n] = 5; a[1.5]"),
+      nxt_string("5") },
+
+    { nxt_string("var n = { toString: function() { return 1.5 } };"
+                 "var a = [1,2]; a[1.5] = 5; n in a"),
+      nxt_string("true") },
+
+    { nxt_string("var n = { toString: function() { return '1.5' } };"
+                 "var a = [1,2]; a[1.5] = 5; '' + (n in a) + (delete a[n])"),
+      nxt_string("truetrue") },
+
+    /**/
+
     { nxt_string("a = [1,2,3]; a.concat(4, [5, 6, 7], 8) +''"),
       nxt_string("1,2,3,4,5,6,7,8") },
 
@@ -1688,6 +1764,8 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = [3,2,1];"
                  "a.every(function(v, i, a) { return v > 0 })"),
       nxt_string("true") },
+
+    /* Strings. */
 
     { nxt_string("var a = '0123456789' + '012345'"
                  "var b = 'abcdefghij' + 'klmnop'"
@@ -1959,6 +2037,20 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("a = 'abcdef'; b = 1 + 2; a[b]"),
       nxt_string("d") },
+
+    /**/
+
+    { nxt_string("var n = { toString: function() { return 1 } };   '12'[n]"),
+      nxt_string("2") },
+
+    { nxt_string("var n = { toString: function() { return '1' } }; '12'[n]"),
+      nxt_string("2") },
+
+    { nxt_string("var n = { toString: function() { return 1 },"
+                          " valueOf:  function() { return 0 } };   '12'[n]"),
+      nxt_string("2") },
+
+    /**/
 
     { nxt_string("'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'.charCodeAt(5)"),
       nxt_string("1077") },
