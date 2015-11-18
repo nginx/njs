@@ -39,11 +39,6 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("1.7976931348623157e+308") },
 #endif
 
-#if 0
-    { nxt_string("var a = 'a\\'b'"),
-      nxt_string("a'b") },
-#endif
-
     { nxt_string("+1"),
       nxt_string("1") },
 
@@ -1698,6 +1693,50 @@ static njs_unit_test_t  njs_test[] =
                  "var b = 'abcdefghij' + 'klmnop'"
                  "    a = b"),
       nxt_string("abcdefghijklmnop") },
+
+    /* Escape strings. */
+
+    { nxt_string("'\\a \\' \\\" \\\\ \\0 \\b \\f \\n \\r \\t \\v'"),
+      nxt_string("a ' \" \\ \0 \b \f \n \r \t \v") },
+
+    { nxt_string("'a\\\nb'"),
+      nxt_string("ab") },
+
+    { nxt_string("'a\\\rb'"),
+      nxt_string("ab") },
+
+    { nxt_string("'a\\\r\nb'"),
+      nxt_string("ab") },
+
+    { nxt_string("'\\'"),
+      nxt_string("SyntaxError") },
+
+    { nxt_string("'\\u03B1'"),
+      nxt_string("α") },
+
+    { nxt_string("'\\u'"),
+      nxt_string("SyntaxError") },
+
+    { nxt_string("'\\u03B'"),
+      nxt_string("SyntaxError") },
+
+    { nxt_string("'\\u{61}\\u{3B1}\\u{20AC}'"),
+      nxt_string("aα€") },
+
+    { nxt_string("'\\u'"),
+      nxt_string("SyntaxError") },
+
+    { nxt_string("'\\u{'"),
+      nxt_string("SyntaxError") },
+
+    { nxt_string("'\\u{}'"),
+      nxt_string("SyntaxError") },
+
+    { nxt_string("'\\u{1234567}'"),
+      nxt_string("SyntaxError") },
+
+    { nxt_string("'\\x61'"),
+      nxt_string("a") },
 
     { nxt_string("''.length"),
       nxt_string("0") },

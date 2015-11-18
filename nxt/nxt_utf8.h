@@ -57,4 +57,8 @@ nxt_utf8_next(const u_char *p, const u_char *end)
 }
 
 
+#define nxt_utf8_size(u)                                                      \
+    ((u < 0x80) ? 1 : ((u < 0x0800) ? 2 : ((u < 0x10000) ? 3 : 4)))
+
+
 #endif /* _NXT_UTF8_H_INCLUDED_ */

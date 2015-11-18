@@ -472,33 +472,37 @@ njs_lexer_word(njs_lexer_t *lexer, u_char c)
 static njs_token_t
 njs_lexer_string(njs_lexer_t *lexer, u_char quote)
 {
-    u_char  *p, ch;
+    u_char      *p, c;
+    nxt_bool_t  escape;
 
+    escape = 0;
     lexer->text.data = lexer->start;
     p = lexer->start;
 
     while (p < lexer->end) {
 
-        /* TODO: end of line, backslash. */
+        c = *p++;
 
-        ch = *p++;
-
-        if (ch == '\\') {
+        if (c == '\\') {
             if (p == lexer->end) {
                 return NJS_TOKEN_ILLEGAL;
             }
 
-            /* STUB: reallocate. */
-
             p++;
+            escape = 1;
+
             continue;
         }
 
-        if (ch == quote) {
+        if (c == quote) {
             lexer->start = p;
             lexer->text.len = (p - 1) - lexer->text.data;
 
-            return NJS_TOKEN_STRING;
+            if (escape == 0) {
+                return NJS_TOKEN_STRING;
+            }
+
+            return NJS_TOKEN_ESCAPE_STRING;
         }
     }
 

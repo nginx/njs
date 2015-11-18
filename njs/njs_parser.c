@@ -60,6 +60,8 @@ static njs_token_t njs_parser_object(njs_vm_t *vm,
     njs_parser_t *parser, njs_parser_node_t *obj);
 static njs_token_t njs_parser_array(njs_vm_t *vm,
     njs_parser_t *parser, njs_parser_node_t *obj);
+static njs_token_t njs_parser_escape_string_create(njs_vm_t *vm,
+    njs_value_t *value);
 
 
 njs_parser_node_t *
@@ -1373,6 +1375,18 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser,
 
         break;
 
+    case NJS_TOKEN_ESCAPE_STRING:
+        node->token = NJS_TOKEN_STRING;
+
+        nxt_thread_log_debug("JS: '%V'", &parser->lexer->text);
+
+        ret = njs_parser_escape_string_create(vm, &node->u.value);
+        if (nxt_slow_path(ret != NJS_TOKEN_STRING)) {
+            return ret;
+        }
+
+        break;
+
     case NJS_TOKEN_NUMBER:
         nxt_thread_log_debug("JS: %f", parser->lexer->number);
 
@@ -1671,6 +1685,168 @@ njs_parser_string_create(njs_vm_t *vm, njs_value_t *value)
     }
 
     return NXT_ERROR;
+}
+
+
+static njs_token_t
+njs_parser_escape_string_create(njs_vm_t *vm, njs_value_t *value)
+{
+    u_char   c, *p, *start, *dst, *src, *end, *hex_end;
+    size_t   size, length, hex_length, skip;
+    int64_t  u;
+
+    start = NULL;
+    dst = NULL;
+
+    for ( ;; ) {
+        /*
+         * The loop runs twice: at the first step string size and
+         * UTF-8 length are evaluated.  Then the string is allocated
+         * and at the second step string content is copied.
+         */
+        size = 0;
+        length = 0;
+
+        src = vm->parser->lexer->text.data;
+        end = src + vm->parser->lexer->text.len;
+
+        while (src < end) {
+            c = *src++;
+
+            if (c == '\\') {
+                /*
+                 * Testing "src == end" is not required here
+                 * since this has been already tested by lexer.
+                 */
+                c = *src++;
+
+                switch (c) {
+
+                case 'u':
+                    skip = 0;
+                    hex_length = 4;
+
+                    /*
+                     * A character after "u" can be safely tested here
+                     * because there is always a closing quote at the
+                     * end of string: ...\u".
+                     */
+                    if (*src == '{') {
+                        hex_length = 0;
+                        src++;
+
+                        for (p = src; p < end && *p != '}'; p++) {
+                            hex_length++;
+                        }
+
+                        if (hex_length == 0 || hex_length > 6) {
+                            return NJS_TOKEN_ILLEGAL;
+                        }
+
+                        skip = 1;
+                    }
+
+                    goto hex;
+
+                case 'x':
+                    skip = 0;
+                    hex_length = 2;
+                    goto hex;
+
+                case '0':
+                    c = '\0';
+                    break;
+
+                case 'b':
+                    c = '\b';
+                    break;
+
+                case 'f':
+                    c = '\f';
+                    break;
+
+                case 'n':
+                    c = '\n';
+                    break;
+
+                case 'r':
+                    c = '\r';
+                    break;
+
+                case 't':
+                    c = '\t';
+                    break;
+
+                case 'v':
+                    c = '\v';
+                    break;
+
+                case '\r':
+                    /*
+                     * A character after "\r" can be safely tested here
+                     * because there is always a closing quote at the
+                     * end of string: ...\\r".
+                     */
+                    if (*src == '\n') {
+                        src++;
+                    }
+
+                    continue;
+
+                case '\n':
+                    continue;
+
+                default:
+                    break;
+                }
+            }
+
+            size++;
+            length++;
+
+            if (dst != NULL) {
+                *dst++ = c;
+            }
+
+            continue;
+
+        hex:
+
+            hex_end = src + hex_length;
+
+            if (hex_end > end) {
+                return NJS_TOKEN_ILLEGAL;
+            }
+
+            u = njs_hex_number_parse(src, hex_end);
+            if (nxt_slow_path(u < 0)) {
+                return NJS_TOKEN_ILLEGAL;
+            }
+
+            src = hex_end + skip;
+            size += nxt_utf8_size(u);
+            length++;
+
+            if (dst != NULL) {
+                dst = nxt_utf8_encode(dst, (uint32_t) u);
+            }
+        }
+
+        if (start != NULL) {
+            if (length > NJS_STRING_MAP_OFFSET && length != size) {
+                njs_string_offset_map_init(start, size);
+            }
+
+            return NJS_TOKEN_STRING;
+        }
+
+        start = njs_string_alloc(vm, value, size, length);
+        if (nxt_slow_path(start == NULL)) {
+            return NJS_TOKEN_ERROR;
+        }
+
+        dst = start;
+    }
 }
 
 
