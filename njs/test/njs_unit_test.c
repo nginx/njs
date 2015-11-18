@@ -1929,10 +1929,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("6 αβγ") },
 
     { nxt_string("$r.uri.length +' '+ $r.uri"),
-      nxt_string("6 αβγ") },
+      nxt_string("6 АБВ") },
 
     { nxt_string("$r.uri = $r.uri.substr(2); $r.uri.length +' '+ $r.uri"),
-      nxt_string("4 βγ") },
+      nxt_string("4 БВ") },
 
     { nxt_string("a = $r.host; a +' '+ a.length +' '+ a"),
       nxt_string("АБВГДЕЁЖЗИЙ 22 АБВГДЕЁЖЗИЙ") },
@@ -3039,7 +3039,7 @@ njs_unit_test(void)
     nxt_int_t             ret;
     nxt_str_t             s;
     nxt_uint_t            i;
-    nxt_bool_t            ok;
+    nxt_bool_t            success;
     nxt_lvlhsh_t          externals;
     njs_vm_shared_t       *shared;
     njs_unit_test_req     r;
@@ -3083,6 +3083,9 @@ njs_unit_test(void)
                 return NXT_ERROR;
             }
 
+            r.uri.len = 6;
+            r.uri.data = (u_char *) "АБВ";
+
             if (njs_vm_run(nvm) == NXT_OK) {
                 if (njs_vm_retval(nvm, &s) != NXT_OK) {
                     return NXT_ERROR;
@@ -3094,18 +3097,25 @@ njs_unit_test(void)
 
         } else {
             njs_vm_exception(vm, &s);
+            nvm = NULL;
         }
 
-        ok = nxt_strstr_eq(&njs_test[i].ret, &s);
+        success = nxt_strstr_eq(&njs_test[i].ret, &s);
 
-        if (!ok) {
-            printf("njs(\"%.*s\") failed: \"%.*s\" vs \"%.*s\"\n",
-                   (int) njs_test[i].script.len, njs_test[i].script.data,
-                   (int) njs_test[i].ret.len, njs_test[i].ret.data,
-                   (int) s.len, s.data);
+        if (success) {
+            if (nvm != NULL) {
+                njs_vm_destroy(nvm);
+            }
 
-            return NXT_ERROR;
+            continue;
         }
+
+        printf("njs(\"%.*s\") failed: \"%.*s\" vs \"%.*s\"\n",
+               (int) njs_test[i].script.len, njs_test[i].script.data,
+               (int) njs_test[i].ret.len, njs_test[i].ret.data,
+               (int) s.len, s.data);
+
+        return NXT_ERROR;
     }
 
     nxt_mem_cache_pool_destroy(mcp);
@@ -3127,7 +3137,7 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
     nxt_int_t             ret;
     nxt_str_t             s;
     nxt_uint_t            i;
-    nxt_bool_t            ok;
+    nxt_bool_t            success;
     nxt_lvlhsh_t          externals;
     struct rusage         usage;
     njs_vm_shared_t       *shared;
@@ -3180,9 +3190,9 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
             njs_vm_exception(nvm, &s);
         }
 
-        ok = nxt_strstr_eq(result, &s);
+        success = nxt_strstr_eq(result, &s);
 
-        if (!ok) {
+        if (!success) {
             return NXT_ERROR;
         }
 
