@@ -1226,14 +1226,12 @@ njs_token_t
 njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token)
 {
-    double                num;
-    nxt_int_t             ret;
-    nxt_uint_t            level;
-    njs_extern_t          *ext;
-    njs_variable_t        *var;
-    njs_parser_node_t     *node;
-    njs_regexp_flags_t    flags;
-    njs_regexp_pattern_t  *pattern;
+    double             num;
+    nxt_int_t          ret;
+    nxt_uint_t         level;
+    njs_extern_t       *ext;
+    njs_variable_t     *var;
+    njs_parser_node_t  *node;
 
     if (token == NJS_TOKEN_OPEN_PARENTHESIS) {
 
@@ -1346,21 +1344,14 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser,
         return token;
 
     case NJS_TOKEN_DIVISION:
-        token = njs_lexer_regexp(parser->lexer, &flags);
-        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-            return token;
+        ret = njs_regexp_literal(vm, parser, &node->u.value);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return NJS_TOKEN_ILLEGAL;
         }
-
-        node->token = token;
 
         nxt_thread_log_debug("REGEX: '%V'", &parser->lexer->text);
 
-        pattern = njs_regexp_pattern_create(vm, &parser->lexer->text, flags);
-        if (nxt_slow_path(pattern == NULL)) {
-            return NJS_TOKEN_ERROR;
-        }
-
-        node->u.value.data.u.data = pattern;
+        node->token = NJS_TOKEN_REGEXP_LITERAL;
         parser->code_size += sizeof(njs_vmcode_regexp_t);
 
         break;

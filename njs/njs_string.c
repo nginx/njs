@@ -1191,6 +1191,7 @@ njs_string_prototype_search(njs_vm_t *vm, njs_param_t *param)
     int                   ret;
     nxt_int_t             index;
     nxt_uint_t            n;
+    njs_value_t           *args;
     njs_string_prop_t     string;
     njs_regexp_pattern_t  *pattern;
     int                   captures[3];
@@ -1200,14 +1201,45 @@ njs_string_prototype_search(njs_vm_t *vm, njs_param_t *param)
     index = 0;
 
     if (param->nargs != 0) {
-        /*
-         * TODO: convert args[0] to RegExp:
-         *       RegExp    > RegExp
-         *       String    > RegExp
-         *       undefined > //
-         *       otherwise > String > RegExp
-         */
-        pattern = param->args[0].data.u.regexp->pattern;
+
+        args = param->args;
+
+        switch (args[0].type) {
+
+        case NJS_REGEXP:
+            pattern = args[0].data.u.regexp->pattern;
+            break;
+
+        case NJS_STRING:
+            (void) njs_string_prop(&string, &args[0]);
+
+            pattern = njs_regexp_pattern_create(vm, string.start,
+                                                string.length, 0);
+            if (nxt_slow_path(pattern == NULL)) {
+                return NXT_ERROR;
+            }
+
+            break;
+
+        case NJS_VOID:
+            /* STUB: precompiled "/(?:)/" pattern. */
+            string.start = (u_char *) "(?:)";
+            string.length = sizeof("(?:)") - 1;
+
+            pattern = njs_regexp_pattern_create(vm, string.start,
+                                                string.length, 0);
+            if (nxt_slow_path(pattern == NULL)) {
+                return NXT_ERROR;
+            }
+
+            break;
+
+        default:
+            /* STUB: convert args[0] to String, then to RegExp. */
+            vm->exception = &njs_exception_type_error;
+
+            return NXT_ERROR;
+        }
 
         index = -1;
 
@@ -1290,8 +1322,10 @@ njs_string_prototype_match(njs_vm_t *vm, njs_param_t *param)
 
         if (n != 0) {
             utf8 = 2;
+
         } else if (string.length != 0) {
             utf8 = 1;
+
         } else {
             utf8 = 1;
         }

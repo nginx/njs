@@ -142,6 +142,8 @@ njs_vm_create(nxt_mem_cache_pool_t *mcp, njs_vm_shared_t **shared,
 void
 njs_vm_destroy(njs_vm_t *vm)
 {
+    njs_regexp_pattern_free(vm->pattern);
+
     nxt_mem_cache_pool_destroy(vm->mem_cache_pool);
 }
 

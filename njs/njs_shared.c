@@ -70,7 +70,7 @@ njs_shared_objects_create(njs_vm_t *vm)
         njs_number_function,
         njs_string_ctor_function,
         njs_stub_function,
-        njs_stub_function,
+        njs_regexp_function,
         njs_stub_function,
     };
 

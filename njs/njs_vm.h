@@ -316,6 +316,11 @@ njs_is_function(value)                                                        \
 
 
 #define                                                                       \
+njs_is_regexp(value)                                                          \
+    ((value)->type == NJS_REGEXP)
+
+
+#define                                                                       \
 njs_is_native(value)                                                          \
     ((value)->type == NJS_NATIVE)
 
@@ -688,6 +693,7 @@ struct njs_vm_s {
 
     njs_vm_shared_t          *shared;
     njs_parser_t             *parser;
+    njs_regexp_pattern_t     *pattern;
 };
 
 

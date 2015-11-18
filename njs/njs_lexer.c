@@ -13,7 +13,6 @@
 #include <nxt_mem_cache_pool.h>
 #include <njscript.h>
 #include <njs_vm.h>
-#include <njs_regexp.h>
 #include <njs_variable.h>
 #include <njs_parser.h>
 #include <string.h>
@@ -647,65 +646,4 @@ njs_lexer_division(njs_lexer_t *lexer, njs_token_t token)
     }
 
     return token;
-}
-
-
-njs_token_t
-njs_lexer_regexp(njs_lexer_t *lexer, njs_regexp_flags_t *flags)
-{
-    u_char              *p;
-    njs_regexp_flags_t  _flags, flag;
-
-    for (p = lexer->start; p < lexer->end; p++) {
-
-        if (*p == '\\') {
-            p++;
-            continue;
-        }
-
-        if (*p == '/') {
-
-            lexer->text.data = lexer->start;
-            lexer->text.len = p - lexer->text.data;
-            p++;
-
-            _flags = 0;
-
-            while (p < lexer->end) {
-                switch (*p) {
-
-                case 'i':
-                   flag = NJS_REGEXP_IGNORE_CASE;
-                   break;
-
-                case 'g':
-                   flag = NJS_REGEXP_GLOBAL;
-                   break;
-
-                case 'm':
-                   flag = NJS_REGEXP_MULTILINE;
-                   break;
-
-                default:
-                   goto done;
-                }
-
-                if (nxt_slow_path((_flags & flag) != 0)) {
-                    return NJS_TOKEN_ILLEGAL;
-                }
-
-                _flags |= flag;
-                p++;
-            }
-
-        done:
-
-            *flags = _flags;
-            lexer->start = p;
-
-            return NJS_TOKEN_REGEXP_LITERAL;
-        }
-    }
-
-    return NJS_TOKEN_ILLEGAL;
 }

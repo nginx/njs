@@ -2114,7 +2114,16 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abcdefgh'.search()"),
       nxt_string("0") },
 
+    { nxt_string("'abcdefgh'.search('')"),
+      nxt_string("0") },
+
+    { nxt_string("'abcdefgh'.search(undefined)"),
+      nxt_string("0") },
+
     { nxt_string("'abcdefgh'.search(/def/)"),
+      nxt_string("3") },
+
+    { nxt_string("'abcdefgh'.search('def')"),
       nxt_string("3") },
 
     { nxt_string("''.match(/^$/) +''"),
@@ -2357,6 +2366,8 @@ static njs_unit_test_t  njs_test[] =
                  "b = a(); b(2)"),
       nxt_string("3") },
 
+    /* RegExp. */
+
     { nxt_string("/^$/.test('')"),
       nxt_string("true") },
 
@@ -2387,12 +2398,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = /^$/.exec(''); a.length +' '+ a"),
       nxt_string("1 ") },
 
-    { nxt_string("var r = /бв/ig; var a = r.exec('АБВ'); r.lastIndex +' '+ a"),
-      nxt_string("3 БВ") },
+    { nxt_string("var r = /бв/ig;"
+                 "var a = r.exec('АБВ');"
+                 "r.lastIndex +' '+ a +' '+ "
+                 "r.source +' '+ r.source.length +' '+ r"),
+      nxt_string("3 БВ бв 2 /бв/gi") },
 
     { nxt_string("var r = /\\x80/g; r.exec('\\u0081\\u0080'.toBytes());"
-                 "r.lastIndex"),
-      nxt_string("1") },
+                 "r.lastIndex +' '+ r.source +' '+ r.source.length +' '+ r"),
+      nxt_string("1 \\x80 4 /\\x80/g") },
 
     /*
      * It seems that "/стоп/ig" fails on early PCRE versions.
@@ -2401,8 +2415,8 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var r = /Стоп/ig;"
                  "var a = r.exec('АБВДЕЁЖЗИКЛМНОПРСТУФХЦЧШЩЬЫЪЭЮЯСТОП');"
-                 "r.lastIndex +' '+ a"),
-      nxt_string("35 СТОП") },
+                 "r.lastIndex +' '+ a +' '+ r.source +' '+ r"),
+      nxt_string("35 СТОП Стоп /Стоп/gi") },
 
     { nxt_string("var r = /quick\\s(brown).+?(jumps)/ig;"
                  "var a = r.exec('The Quick Brown Fox Jumps Over The Lazy Dog')"
@@ -2416,6 +2430,24 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var r = /LS/i.exec(false); r[0]"),
       nxt_string("ls") },
+
+    { nxt_string("var r = /./; r"),
+      nxt_string("/./") },
+
+    { nxt_string("var r = new RegExp(); r"),
+      nxt_string("/(?:)/") },
+
+    { nxt_string("var r = new RegExp('.'); r"),
+      nxt_string("/./") },
+
+    { nxt_string("var r = new RegExp('.', 'ig'); r"),
+      nxt_string("/./gi") },
+
+    { nxt_string("var r = new RegExp('abc'); r.test('00abc11')"),
+      nxt_string("true") },
+
+    { nxt_string("var r = new RegExp('abc', 'i'); r.test('00ABC11')"),
+      nxt_string("true") },
 
     /* Non-standard ECMA-262 features. */
 

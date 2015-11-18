@@ -12,7 +12,6 @@
 #include <nxt_mem_cache_pool.h>
 #include <njscript.h>
 #include <njs_vm.h>
-#include <njs_regexp.h>
 #include <string.h>
 
 

@@ -273,7 +273,6 @@ struct njs_parser_s {
 
 
 njs_token_t njs_lexer_token(njs_lexer_t *lexer);
-njs_token_t njs_lexer_regexp(njs_lexer_t *lexer, njs_regexp_flags_t *flags);
 nxt_int_t njs_lexer_keywords_init(nxt_mem_cache_pool_t *mcp,
     nxt_lvlhsh_t *hash);
 njs_token_t njs_lexer_keyword(njs_lexer_t *lexer);
