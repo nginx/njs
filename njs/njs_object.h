@@ -34,7 +34,7 @@ typedef enum {
     NJS_NATIVE_GETTER,
     NJS_NATIVE_SETTER,
     NJS_WHITEOUT,
-} njs_ojbect_property_type_t;
+} njs_object_property_type_t;
 
 
 typedef struct {
@@ -42,7 +42,7 @@ typedef struct {
     njs_value_t                 value;
     njs_value_t                 name;
 
-    njs_ojbect_property_type_t  type:8;        /* 3 bits */
+    njs_object_property_type_t  type:8;        /* 3 bits */
     uint8_t                     enumerable;    /* 1 bit  */
     uint8_t                     writable;      /* 1 bit  */
     uint8_t                     configurable;  /* 1 bit  */

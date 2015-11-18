@@ -20,7 +20,7 @@
 
 
 typedef struct {
-    nxt_str_t         name;
+    nxt_str_t        name;
     njs_token_t      token;
     double           number;
 } njs_keyword_t;
@@ -148,8 +148,8 @@ static const nxt_lvlhsh_proto_t  njs_keyword_hash_proto
 nxt_int_t
 njs_lexer_keywords_init(nxt_mem_cache_pool_t *mcp, nxt_lvlhsh_t *hash)
 {
-    nxt_uint_t                n;
-    nxt_lvlhsh_query_t    lhq;
+    nxt_uint_t           n;
+    nxt_lvlhsh_query_t   lhq;
     const njs_keyword_t  *keyword;
 
     keyword = njs_keywords;
@@ -180,7 +180,7 @@ njs_lexer_keywords_init(nxt_mem_cache_pool_t *mcp, nxt_lvlhsh_t *hash)
 njs_token_t
 njs_lexer_keyword(njs_lexer_t *lexer)
 {
-    njs_keyword_t      *keyword;
+    njs_keyword_t       *keyword;
     nxt_lvlhsh_query_t  lhq;
 
     lhq.key_hash = lexer->key_hash;

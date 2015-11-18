@@ -199,14 +199,17 @@ njs_number_function(njs_vm_t *vm, njs_param_t *param)
 
 static const njs_object_prop_t  njs_number_function_properties[] =
 {
+    /* Number.name == "Number". */
     { njs_string("Number"),
       njs_string("name"),
       NJS_PROPERTY, 0, 0, 0, },
 
+    /* Number.length == 1. */
     { njs_value(NJS_NUMBER, 1, 1.0),
       njs_string("length"),
       NJS_PROPERTY, 0, 0, 0, },
 
+    /* Number.prototype. */
     { njs_getter(njs_object_prototype_create_prototype),
       njs_string("prototype"),
       NJS_NATIVE_GETTER, 0, 0, 0, },

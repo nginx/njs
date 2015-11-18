@@ -164,8 +164,8 @@ void
 njs_disassembler(u_char *start, u_char *end, nxt_str_t *text)
 {
     u_char                  *p;
-    nxt_uint_t               n;
-    nxt_str_t                *name;
+    nxt_uint_t              n;
+    nxt_str_t               *name;
     njs_vmcode_1addr_t      *code1;
     njs_vmcode_2addr_t      *code2;
     njs_vmcode_3addr_t      *code3;
@@ -173,7 +173,7 @@ njs_disassembler(u_char *start, u_char *end, nxt_str_t *text)
     njs_code_name_t         *code_name;
     njs_vmcode_operation_t  operation;
 
-    static nxt_str_t         unknown = nxt_string("UNKOWN");
+    static nxt_str_t        unknown = nxt_string("UNKOWN");
 
     (void) name;
     (void) code1;

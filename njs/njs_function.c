@@ -288,14 +288,17 @@ njs_function_call(njs_vm_t *vm, njs_function_t *func, njs_index_t retval)
 
 static const njs_object_prop_t  njs_function_function_properties[] =
 {
+    /* Function.name == "Function". */
     { njs_string("Function"),
       njs_string("name"),
       NJS_PROPERTY, 0, 0, 0, },
 
-    { njs_value(NJS_NUMBER, 0, 0.0),
+    /* Function.length == 1. */
+    { njs_value(NJS_NUMBER, 0, 1.0),
       njs_string("length"),
       NJS_PROPERTY, 0, 0, 0, },
 
+    /* Function.prototype. */
     { njs_getter(njs_object_prototype_create_prototype),
       njs_string("prototype"),
       NJS_NATIVE_GETTER, 0, 0, 0, },

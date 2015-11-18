@@ -25,9 +25,6 @@ typedef struct {
 
 static njs_unit_test_t  njs_test[] =
 {
-    { nxt_string("0 == '000'"),
-      nxt_string("true") },
-
     { nxt_string("999999999999999999999"),
       nxt_string("1e+21") },
 
@@ -421,7 +418,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("({}) == false"),
       nxt_string("false") },
 
-    { nxt_string("var a = { valueOf: function() { return 5 } }; a == 5"),
+    { nxt_string("var a = { valueOf: function() { return 5 } };   a == 5"),
       nxt_string("true") },
 
     { nxt_string("var a = { valueOf: function() { return '5' } }; a == 5"),
@@ -641,13 +638,13 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("null < ({})"),
       nxt_string("false") },
 
-    { nxt_string("var a = { valueOf: function() { return 1 } }; null < a"),
+    { nxt_string("var a = { valueOf: function() { return 1 } }      null < a"),
       nxt_string("true") },
 
-    { nxt_string("var a = { valueOf: function() { return 'null' } }; null < a"),
+    { nxt_string("var a = { valueOf: function() { return 'null' } } null < a"),
       nxt_string("false") },
 
-    { nxt_string("var a = { valueOf: function() { return '1' } }; null < a"),
+    { nxt_string("var a = { valueOf: function() { return '1' } }    null < a"),
       nxt_string("true") },
 
     /**/
@@ -846,7 +843,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = { valueOf: function() { return [1] } }; ++a"),
       nxt_string("NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return {} } }; ++a"),
+    { nxt_string("var a = { valueOf: function() { return {} } };  ++a"),
       nxt_string("NaN") },
 
     /**/
@@ -872,7 +869,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = { valueOf: function() { return [1] } } a = ++a"),
       nxt_string("NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return {} } } a = ++a"),
+    { nxt_string("var a = { valueOf: function() { return {} } }  a = ++a"),
       nxt_string("NaN") },
 
     /**/
@@ -919,13 +916,13 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = {};  a++"),
       nxt_string("NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return 1 } }    a++"),
+    { nxt_string("var a = { valueOf: function() { return 1 } }   a++"),
       nxt_string("1") },
 
-    { nxt_string("var a = { valueOf: function() { return '1' } }  a++"),
+    { nxt_string("var a = { valueOf: function() { return '1' } } a++"),
       nxt_string("1") },
 
-    { nxt_string("var a = { valueOf: function() { return [1] } }  a++"),
+    { nxt_string("var a = { valueOf: function() { return [1] } } a++"),
       nxt_string("NaN") },
 
     { nxt_string("var a = { valueOf: function() { return {} } }  a++"),
@@ -954,7 +951,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = { valueOf: function() { return [1] } } a = a++"),
       nxt_string("NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return {} } } a = a++"),
+    { nxt_string("var a = { valueOf: function() { return {} } }  a = a++"),
       nxt_string("NaN") },
 
     /**/
@@ -1083,13 +1080,13 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = {};  a--"),
       nxt_string("NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return 1 } }    a--"),
+    { nxt_string("var a = { valueOf: function() { return 1 } }   a--"),
       nxt_string("1") },
 
-    { nxt_string("var a = { valueOf: function() { return '1' } }  a--"),
+    { nxt_string("var a = { valueOf: function() { return '1' } } a--"),
       nxt_string("1") },
 
-    { nxt_string("var a = { valueOf: function() { return [1] } }  a--"),
+    { nxt_string("var a = { valueOf: function() { return [1] } } a--"),
       nxt_string("NaN") },
 
     { nxt_string("var a = { valueOf: function() { return {} } }  a--"),
@@ -1118,7 +1115,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = { valueOf: function() { return [1] } } a = a--"),
       nxt_string("NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return {} } } a = a--"),
+    { nxt_string("var a = { valueOf: function() { return {} } }  a = a--"),
       nxt_string("NaN") },
 
     /**/
@@ -2489,7 +2486,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("Function") },
 
     { nxt_string("Function.length"),
-      nxt_string("0") },
+      nxt_string("1") },
 
     { nxt_string("Function.prototype.constructor === Function"),
       nxt_string("true") },

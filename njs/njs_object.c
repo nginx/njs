@@ -262,8 +262,8 @@ njs_object_function(njs_vm_t *vm, njs_param_t *param)
 static njs_ret_t
 njs_object_create(njs_vm_t *vm, njs_param_t *param)
 {
-    njs_value_t          *args;
-    njs_object_t         *obj;
+    njs_value_t   *args;
+    njs_object_t  *obj;
 
     /* STUB: move to shared create to avoid threads locks. */
     static nxt_lvlhsh_t  njs_null_proto_shared_hash;
@@ -332,7 +332,7 @@ njs_ret_t
 njs_object_prototype_create_prototype(njs_vm_t *vm, njs_value_t *value)
 {
     int32_t            index;
-    nxt_int_t           ret;
+    nxt_int_t          ret;
     njs_object_t       *prototype;
     njs_function_t     *function;
     njs_object_prop_t  *prop;
@@ -383,14 +383,22 @@ njs_object_prototype_create_prototype(njs_vm_t *vm, njs_value_t *value)
 
 static const njs_object_prop_t  njs_object_function_properties[] =
 {
+    /* Object.name == "name". */
     { njs_string("Object"),
       njs_string("name"),
       NJS_PROPERTY, 0, 0, 0, },
 
+    /* Object.length == 1. */
+    { njs_value(NJS_NUMBER, 1, 1.0),
+      njs_string("length"),
+      NJS_PROPERTY, 0, 0, 0, },
+
+    /* Object.prototype. */
     { njs_getter(njs_object_prototype_create_prototype),
       njs_string("prototype"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 
+    /* Object.create(). */
     { njs_native_function(njs_object_create, 0),
       njs_string("create"),
       NJS_METHOD, 0, 0, 0, },

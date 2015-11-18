@@ -124,7 +124,7 @@ njs_shared_objects_create(njs_vm_t *vm)
  * Object(),
  * Object.__proto__             -> Function_Prototype,
  * Object_Prototype.__proto__   -> null,
- *   the null value is handled by njs_object_prototype_get_prototype(),
+ *   the null value is handled by njs_object_prototype_get_proto(),
  *
  * Array(),
  * Array.__proto__              -> Function_Prototype,

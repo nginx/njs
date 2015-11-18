@@ -11,20 +11,20 @@
 
 
 struct njs_regexp_pattern_s {
-    pcre                  *code[2];
-    pcre_extra            *extra[2];
-    u_char                *source;
+    pcre        *code[2];
+    pcre_extra  *extra[2];
+    u_char      *source;
 
 #if (NXT_64BIT)
-    uint32_t              ncaptures;
-    uint8_t               global;       /* 1 bit */
-    uint8_t               ignore_case;  /* 1 bit */
-    uint8_t               multiline;    /* 1 bit */
+    uint32_t    ncaptures;
+    uint8_t     global;       /* 1 bit */
+    uint8_t     ignore_case;  /* 1 bit */
+    uint8_t     multiline;    /* 1 bit */
 #else
-    uint16_t              ncaptures;
-    uint8_t               global;       /* 1 bit */
-    uint8_t               ignore_case:1;
-    uint8_t               multiline:1;
+    uint16_t    ncaptures;
+    uint8_t     global;       /* 1 bit */
+    uint8_t     ignore_case:1;
+    uint8_t     multiline:1;
 #endif
 };
 

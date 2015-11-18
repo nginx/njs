@@ -57,11 +57,11 @@ static const nxt_lvlhsh_proto_t  njs_variables_hash_proto
 njs_variable_t *
 njs_parser_variable(njs_vm_t *vm, njs_parser_t *parser, nxt_uint_t *level)
 {
-    nxt_int_t            ret;
-    nxt_uint_t           n;
-    njs_parser_t         *scope;
-    njs_variable_t       *var;
-    nxt_lvlhsh_query_t   lhq;
+    nxt_int_t           ret;
+    nxt_uint_t          n;
+    njs_parser_t        *scope;
+    njs_variable_t      *var;
+    nxt_lvlhsh_query_t  lhq;
 
     level = 0;
 

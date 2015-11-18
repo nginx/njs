@@ -31,8 +31,7 @@ struct njs_lexer_multi_s {
 
 static njs_token_t njs_lexer_next_token(njs_lexer_t *lexer);
 static njs_token_t njs_lexer_word(njs_lexer_t *lexer, u_char c);
-static njs_token_t njs_lexer_string(njs_lexer_t *lexer,
-    u_char quote);
+static njs_token_t njs_lexer_string(njs_lexer_t *lexer, u_char quote);
 static njs_token_t njs_lexer_number(njs_lexer_t *lexer);
 static njs_token_t njs_lexer_multi(njs_lexer_t *lexer,
     njs_token_t token, nxt_uint_t n, const njs_lexer_multi_t *multi);
@@ -297,7 +296,7 @@ static njs_token_t
 njs_lexer_next_token(njs_lexer_t *lexer)
 {
     u_char                   c;
-    nxt_uint_t                n;
+    nxt_uint_t               n;
     njs_token_t              token;
     const njs_lexer_multi_t  *multi;
 
@@ -586,8 +585,8 @@ njs_lexer_multi(njs_lexer_t *lexer, njs_token_t token, nxt_uint_t n,
                     return multi->token;
                 }
 
-                return njs_lexer_multi(lexer, multi->token,
-                                            multi->count, multi->next);
+                return njs_lexer_multi(lexer, multi->token, multi->count,
+                                       multi->next);
             }
 
             multi++;

@@ -152,7 +152,7 @@ njs_vmcode_interpreter(njs_vm_t *vm)
             vmcode = (njs_vmcode_generic_t *) vm->current;
 
             /*
-             * The first operand index is passed as the value2 to
+             * The first operand is passed as is in value2 to
              *   njs_vmcode_jump(),
              *   njs_vmcode_if_true_jump(),
              *   njs_vmcode_if_false_jump(),
@@ -578,8 +578,8 @@ njs_ret_t
 njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *property)
 {
-    nxt_str_t               s;
     uintptr_t              data;
+    nxt_str_t              s;
     njs_ret_t              ret;
     njs_value_t            *p, *value;
     njs_extern_t           *ext;
@@ -1089,8 +1089,8 @@ njs_vmcode_property_each_start(njs_vm_t *vm, njs_value_t *object,
 njs_ret_t
 njs_vmcode_property_each(njs_vm_t *vm, njs_value_t *object, njs_value_t *each)
 {
-    nxt_uint_t               n;
     njs_ret_t               ret;
+    nxt_uint_t              n;
     njs_array_t             *array;
     njs_extern_t            *ext;
     njs_object_prop_t       *prop;
@@ -1157,10 +1157,10 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *constructor)
 {
     nxt_int_t           ret;
-    njs_value_t        *value;
-    njs_object_t       *prototype, *proto;
-    njs_object_prop_t  *prop;
-    const njs_value_t  *retval;
+    njs_value_t         *value;
+    njs_object_t        *prototype, *proto;
+    njs_object_prop_t   *prop;
+    const njs_value_t   *retval;
     nxt_lvlhsh_query_t  lhq;
 
     /* TODO: test constructor is function or native: TypeError. */
@@ -2444,9 +2444,9 @@ njs_vmcode_to_string(njs_vm_t *vm, njs_value_t *invld, njs_value_t *narg)
 
 
 /*
- * A hint value is 0 for numbers and 1 for strings.  The value chooses method
- * calls order specified by ECMAScript 5.1: "valueOf", "toString" for numbers
- * and "toString", "valueOf" for strings.
+ * A hint value is 0 for numbers and 1 for strings.  The value chooses
+ * method calls order specified by ECMAScript 5.1: "valueOf", "toString"
+ * for numbers and "toString", "valueOf" for strings.
  */
 
 nxt_noinline njs_ret_t

@@ -254,7 +254,7 @@ njs_parser_statement_semicolon(njs_vm_t *vm, njs_parser_t *parser,
 static nxt_int_t
 njs_parser_test_token(njs_vm_t *vm, njs_parser_t *parser, void *data)
 {
-    njs_token_t       token;
+    njs_token_t  token;
 
     token = (njs_token_t) data;
 

@@ -240,9 +240,9 @@ struct njs_parser_s {
     /* Vector of njs_variable_t. */
     nxt_array_t                     *arguments;
 
-    nxt_lvlhsh_t                     variables_hash;
-    nxt_lvlhsh_t                     values_hash;
-    nxt_lvlhsh_t                     functions_hash;
+    nxt_lvlhsh_t                    variables_hash;
+    nxt_lvlhsh_t                    values_hash;
+    nxt_lvlhsh_t                    functions_hash;
 
     nxt_array_t                     *index_cache;
     njs_index_t                     index[NJS_SCOPES - NJS_INDEX_CACHE];

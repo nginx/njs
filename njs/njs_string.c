@@ -24,8 +24,8 @@
 #include <string.h>
 
 
-static nxt_noinline njs_ret_t njs_string_index_of(njs_vm_t *vm, njs_value_t *src,
-    njs_value_t *search_string, size_t index);
+static nxt_noinline ssize_t njs_string_index_of(njs_vm_t *vm,
+    njs_value_t *src, njs_value_t *search_string, size_t index);
 
 
 njs_ret_t
@@ -147,10 +147,9 @@ njs_string_copy(njs_value_t *dst, njs_value_t *src)
 nxt_noinline njs_ret_t
 njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string, njs_value_t *value)
 {
-    u_char     *start;
-    size_t     new_size;
-    ssize_t    size;
-    njs_ret_t  length;
+    u_char   *start;
+    size_t   new_size;
+    ssize_t  size, length;
 
     size = value->short_string.size;
 
@@ -276,14 +275,17 @@ njs_string_ctor_function(njs_vm_t *vm, njs_param_t *param)
 
 static const njs_object_prop_t  njs_string_function_properties[] =
 {
+    /* String.name == "String". */
     { njs_string("String"),
       njs_string("name"),
       NJS_PROPERTY, 0, 0, 0, },
 
+    /* String.length == 1. */
     { njs_value(NJS_NUMBER, 1, 1.0),
       njs_string("length"),
       NJS_PROPERTY, 0, 0, 0, },
 
+    /* String.prototype. */
     { njs_getter(njs_object_prototype_create_prototype),
       njs_string("prototype"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
@@ -391,8 +393,7 @@ njs_string_prototype_utf8(njs_vm_t *vm, njs_value_t *value)
     }
 
     if ((size_t) length == string.size) {
-        return njs_string_create(vm, &vm->retval, string.start,
-                                 length, length);
+        return njs_string_create(vm, &vm->retval, string.start, length, length);
     }
 
     /* length != string.size */
@@ -477,8 +478,8 @@ njs_string_eq(const njs_value_t *v1, const njs_value_t *v2)
 nxt_int_t
 njs_string_cmp(const njs_value_t *v1, const njs_value_t *v2)
 {
-    nxt_int_t     ret;
     size_t        size, size1, size2;
+    nxt_int_t     ret;
     const u_char  *start1, *start2;
 
     size1 = v1->short_string.size;
@@ -519,8 +520,8 @@ njs_string_prototype_concat(njs_vm_t *vm, njs_param_t *param)
     u_char             *p, *start;
     size_t             size, length, mask;
     uintptr_t          nargs;
-    nxt_uint_t          i;
     njs_ret_t          ret;
+    nxt_uint_t         i;
     njs_value_t        *object, *args, *values;
     njs_string_prop_t  string;
 
@@ -820,9 +821,8 @@ static njs_ret_t
 njs_string_prototype_char_code_at(njs_vm_t *vm, njs_param_t *param)
 {
     double             num;
-    ssize_t            index;
+    ssize_t            index, length;
     uint32_t           code;
-    njs_ret_t          length;
     const u_char       *start, *end;
     njs_string_prop_t  string;
 
@@ -863,9 +863,8 @@ done:
 static njs_ret_t
 njs_string_prototype_index_of(njs_vm_t *vm, njs_param_t *param)
 {
-    ssize_t      start;
+    ssize_t      start, index;
     uintptr_t    nargs;
-    njs_ret_t    index;
     njs_value_t  *args;
 
     index = -1;
@@ -895,8 +894,8 @@ njs_string_prototype_index_of(njs_vm_t *vm, njs_param_t *param)
 static njs_ret_t
 njs_string_prototype_last_index_of(njs_vm_t *vm, njs_param_t *param)
 {
+    ssize_t      ret, index, last;
     uintptr_t    nargs;
-    njs_ret_t    ret, index, last;
     njs_value_t  *args;
 
     index = -1;
@@ -933,11 +932,11 @@ njs_string_prototype_last_index_of(njs_vm_t *vm, njs_param_t *param)
 }
 
 
-static nxt_noinline njs_ret_t
+static nxt_noinline ssize_t
 njs_string_index_of(njs_vm_t *vm, njs_value_t *src, njs_value_t *search_string,
     size_t index)
 {
-    njs_ret_t          length;
+    size_t             length;
     const u_char       *p, *end;
     njs_string_prop_t  string, search;
 
@@ -945,12 +944,12 @@ njs_string_index_of(njs_vm_t *vm, njs_value_t *src, njs_value_t *search_string,
 
     length = njs_string_prop(&string, src);
 
-    if (index < (size_t) length) {
+    if (index < length) {
 
         p = string.start;
         end = p + string.size;
 
-        if (string.size == (size_t) length) {
+        if (string.size == length) {
             /* Byte or ASCII string. */
             p += index;
 
@@ -1048,9 +1047,9 @@ njs_string_index(njs_string_prop_t *string, uint32_t offset)
 static njs_ret_t
 njs_string_prototype_search(njs_vm_t *vm, njs_param_t *param)
 {
-    nxt_int_t              index;
-    nxt_uint_t             n;
-    njs_ret_t             ret;
+    int                   ret;
+    nxt_int_t             index;
+    nxt_uint_t            n;
     njs_string_prop_t     string;
     njs_regexp_pattern_t  *pattern;
     int                   captures[3];
@@ -1101,8 +1100,8 @@ njs_string_prototype_match(njs_vm_t *vm, njs_param_t *param)
 {
     u_char                *start;
     int32_t               size, length;
-    nxt_uint_t             n, utf8;
     njs_ret_t             ret;
+    nxt_uint_t            n, utf8;
     njs_value_t           *args;
     njs_array_t           *array;
     njs_regexp_t          *regexp;
@@ -1349,7 +1348,7 @@ njs_string_to_number(njs_value_t *value)
 {
     double        num;
     size_t        size;
-    nxt_bool_t     minus;
+    nxt_bool_t    minus;
     const u_char  *p, *end;
 
     size = value->short_string.size;

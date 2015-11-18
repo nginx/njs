@@ -109,7 +109,7 @@ njs_ret_t
 njs_array_realloc(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
     uint32_t size)
 {
-    nxt_uint_t    n;
+    nxt_uint_t   n;
     njs_value_t  *value;
 
     if (size != array->size) {
@@ -215,14 +215,17 @@ njs_array_function(njs_vm_t *vm, njs_param_t *param)
 
 static const njs_object_prop_t  njs_array_function_properties[] =
 {
+    /* Array.name == "Array". */
     { njs_string("Array"),
       njs_string("name"),
       NJS_PROPERTY, 0, 0, 0, },
 
+    /* Array.length == 1. */
     { njs_value(NJS_NUMBER, 1, 1.0),
       njs_string("length"),
       NJS_PROPERTY, 0, 0, 0, },
 
+    /* Array.prototype. */
     { njs_getter(njs_object_prototype_create_prototype),
       njs_string("prototype"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
@@ -605,7 +608,7 @@ njs_array_prototype_concat(njs_vm_t *vm, njs_param_t *param)
 {
     size_t       length;
     uintptr_t    nargs;
-    nxt_uint_t    i;
+    nxt_uint_t   i;
     njs_value_t  *object, *args, *value;
     njs_array_t  *array;
 
@@ -737,8 +740,8 @@ njs_array_prototype_for_each(njs_vm_t *vm, njs_param_t *param)
 static njs_ret_t
 njs_array_prototype_some(njs_vm_t *vm, njs_param_t *param)
 {
-    nxt_int_t          n;
     uintptr_t         nargs;
+    nxt_int_t         n;
     njs_param_t       p;
     njs_array_t       *array;
     njs_value_t       *object, *args, *func, arguments[3];
@@ -803,8 +806,8 @@ njs_array_prototype_some(njs_vm_t *vm, njs_param_t *param)
 static njs_ret_t
 njs_array_prototype_every(njs_vm_t *vm, njs_param_t *param)
 {
-    nxt_int_t          n;
     uintptr_t         nargs;
+    nxt_int_t         n;
     njs_param_t       p;
     njs_array_t       *array;
     njs_value_t       *object, *args, *func, arguments[3];

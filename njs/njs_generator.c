@@ -294,7 +294,7 @@ njs_generate_if_statement(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node)
 {
     u_char                  *start;
-    nxt_int_t                ret;
+    nxt_int_t               ret;
     njs_ret_t               *label;
     njs_vmcode_jump_t       *jump;
     njs_vmcode_cond_jump_t  *cond_jump;
@@ -1560,8 +1560,8 @@ static nxt_int_t
 njs_generate_function_call(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node)
 {
-    nxt_int_t               ret;
     uintptr_t               nargs;
+    nxt_int_t               ret;
     njs_index_t             retval, index, name;
     njs_parser_node_t       *arg;
     njs_vmcode_call_t       *call;
@@ -1648,8 +1648,8 @@ static nxt_int_t
 njs_generate_method_call(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node)
 {
-    nxt_int_t            ret;
     uintptr_t            nargs;
+    nxt_int_t            ret;
     njs_index_t          retval, index;
     njs_parser_node_t    *arg, *prop;
     njs_vmcode_call_t    *call;

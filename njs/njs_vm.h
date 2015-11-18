@@ -92,7 +92,7 @@ union njs_value_s {
      * and the data.u.string field points to a long string.
      *
      * The number of the string types is limited to 2 types to minimize
-     * overhead of processing string fields.  It also is possible to add
+     * overhead of processing string fields.  It is also possible to add
      * strings with size from 14 to 254 which size and length are stored in
      * the string_size and string_length byte wide fields.  This will lessen
      * the maximum size of short string to 13.
@@ -585,6 +585,7 @@ typedef enum {
     NJS_SCOPE_PARENT_ARGUMENTS,
     NJS_SCOPE_PARENT_CLOSURE,
 } njs_scope_t;
+
 
 #define NJS_SCOPES             (NJS_SCOPE_PARENT_CLOSURE + 1)
 

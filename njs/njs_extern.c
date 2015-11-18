@@ -54,7 +54,7 @@ njs_add_external(nxt_lvlhsh_t *hash, nxt_mem_cache_pool_t *mcp, uintptr_t object
     njs_external_t *external, nxt_uint_t n)
 {
     nxt_int_t           ret;
-    njs_extern_t       *ext;
+    njs_extern_t        *ext;
     nxt_lvlhsh_query_t  lhq;
 
     do {

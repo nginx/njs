@@ -149,10 +149,10 @@ njs_vm_destroy(njs_vm_t *vm)
 nxt_int_t
 njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 {
-    nxt_int_t           ret;
-    nxt_lvlhsh_t        keywords_hash;
+    nxt_int_t          ret;
     njs_lexer_t        *lexer;
     njs_parser_t       *parser;
+    nxt_lvlhsh_t       keywords_hash;
     njs_parser_node_t  *node;
 
     parser = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_parser_t));

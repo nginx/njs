@@ -21,21 +21,20 @@
 
 
 typedef struct {
-    njs_token_t                        token;
-    njs_vmcode_operation_t             operation;
+    njs_token_t                    token;
+    njs_vmcode_operation_t         operation;
 } njs_parser_operation_t;
 
 
-typedef struct njs_parser_expression_s
-    njs_parser_expression_t;
+typedef struct njs_parser_expression_s  njs_parser_expression_t;
 
 struct njs_parser_expression_s {
-    njs_token_t                        (*next)(njs_vm_t *,
-                                           njs_parser_t *,
-                                           const njs_parser_expression_t *,
-                                           njs_token_t);
+    njs_token_t                    (*next)(njs_vm_t *,
+                                       njs_parser_t *,
+                                       const njs_parser_expression_t *,
+                                       njs_token_t);
     const njs_parser_expression_t  *expression;
-    nxt_uint_t                          count;
+    nxt_uint_t                     count;
 
 #if (NXT_SUNC)
     /*
