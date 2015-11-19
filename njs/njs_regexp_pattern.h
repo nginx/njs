@@ -13,6 +13,7 @@
 struct njs_regexp_pattern_s {
     pcre                  *code[2];
     pcre_extra            *extra[2];
+    njs_regexp_pattern_t  *next;
     /*
      * A pattern source is used by RegExp.toString() method and
      * RegExp.source property.  So it is is stored in form "/pattern/flags"
@@ -22,7 +23,6 @@ struct njs_regexp_pattern_s {
      * in flags field.
      */
     u_char                *source;
-    njs_regexp_pattern_t  *next;
 
 #if (NXT_64BIT)
     uint32_t              ncaptures;

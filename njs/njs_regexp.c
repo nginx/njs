@@ -203,18 +203,21 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
         return NULL;
     }
 
+    pattern->flags = size;
+    pattern->code[0] = NULL;
+    pattern->code[1] = NULL;
+    pattern->extra[0] = NULL;
+    pattern->extra[1] = NULL;
+    pattern->next = NULL;
+
     p = (u_char *) pattern + sizeof(njs_regexp_pattern_t);
     pattern->source = p;
-    pattern->next = NULL;
-    pattern->flags = size;
 
     *p++ = '/';
     p = memcpy(p, start, length);
     p += length;
     end = p;
     *p++ = '\0';
-
-    pattern->ncaptures = 0;
 
     pattern->global = ((flags & NJS_REGEXP_GLOBAL) != 0);
     if (pattern->global) {
@@ -256,7 +259,7 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
 
     if (nxt_fast_path(ret >= 0)) {
 
-        if (nxt_slow_path((unsigned) ret != pattern->ncaptures)) {
+        if (nxt_slow_path((u_int) ret != pattern->ncaptures)) {
             nxt_thread_log_error(NXT_LOG_ERR, "numbers of captures in byte "
                            "and UTF-8 versions of RegExp \"%s\" vary: %d vs %d",
                            &pattern->source[1], pattern->ncaptures, ret);
@@ -735,11 +738,22 @@ njs_regexp_prototype_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash)
 void
 njs_regexp_pattern_free(njs_regexp_pattern_t *pattern)
 {
+    /*
+     * pcre_free() is enough to free PCRE extra study data.
+     * pcre_free_study() is required for JIT optimization, pcreapi(3):
+     *
+     *   When you are finished with a pattern,  you can free  the memory used
+     *   for the study data by calling  pcre_free_study().  This function was
+     *   added to the API for release 8.20.  For earlier versions, the memory
+     *   could be freed with pcre_free(), just like the pattern itself.  This
+     *   will still work in cases where JIT optimization is not used,  but it
+     *   is advisable to change to the new function when convenient.
+     */
     while (pattern != NULL) {
-        pcre_free_study(pattern->extra[0]);
+        pcre_free(pattern->extra[0]);
         pcre_free(pattern->code[0]);
 
-        pcre_free_study(pattern->extra[1]);
+        pcre_free(pattern->extra[1]);
         pcre_free(pattern->code[1]);
 
         pattern = pattern->next;
