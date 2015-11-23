@@ -873,6 +873,14 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
         vm->exception = &njs_exception_type_error;
         return NXT_ERROR;
 
+    case NJS_NUMBER:
+        if (pq->query != NJS_PROPERTY_QUERY_GET) {
+            return NJS_PRIMITIVE_VALUE;
+        }
+
+        obj = &vm->prototypes[NJS_PROTOTYPE_NUMBER];
+        break;
+
     case NJS_STRING:
         if (pq->query == NJS_PROPERTY_QUERY_DELETE) {
             return NXT_DECLINED;

@@ -319,6 +319,10 @@ njs_number_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
 
 static const njs_object_prop_t  njs_number_prototype_properties[] =
 {
+    { njs_getter(njs_primitive_prototype_get_proto),
+      njs_string("__proto__"),
+      NJS_NATIVE_GETTER, 0, 0, 0, },
+
     { njs_native_function(njs_number_prototype_value_of, 0),
       njs_string("valueOf"),
       NJS_METHOD, 0, 0, 0, },

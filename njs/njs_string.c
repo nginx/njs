@@ -311,17 +311,6 @@ njs_string_function_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash)
 
 
 static njs_ret_t
-njs_string_prototype_get_prototype(njs_vm_t *vm, njs_value_t *value)
-{
-    vm->retval.type = NJS_OBJECT;
-    vm->retval.data.truth = 1;
-    vm->retval.data.u.object = &vm->prototypes[NJS_PROTOTYPE_STRING];
-
-    return NXT_OK;
-}
-
-
-static njs_ret_t
 njs_string_prototype_length(njs_vm_t *vm, njs_value_t *value)
 {
     size_t     size;
@@ -1587,7 +1576,7 @@ njs_string_to_number(njs_value_t *value)
 
 static const njs_object_prop_t  njs_string_prototype_properties[] =
 {
-    { njs_getter(njs_string_prototype_get_prototype),
+    { njs_getter(njs_primitive_prototype_get_proto),
       njs_string("__proto__"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 

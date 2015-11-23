@@ -326,6 +326,33 @@ njs_object_null_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash)
 
 
 /*
+ * The __proto__ property of booleans, numbers and strings primitives
+ * and Boolean.prototype, Number.prototype, and String.prototype objects.
+ */
+
+njs_ret_t
+njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value)
+{
+    vm->retval.type = NJS_OBJECT;
+    vm->retval.data.truth = 1;
+
+    /* 
+     * The __proto__ getters reside in object prototypes of primitive
+     * types.  "AND 0x7" maps type of value to prototype offset:
+     *     NJS_BOOLEAN > NJS_PROTOTYPE_BOOLEAN,
+     *     NJS_NUMBER  > NJS_PROTOTYPE_NUMBER,
+     *     NJS_STRING  > NJS_PROTOTYPE_STRING,
+     *     NJS_OBJECT  > NJS_PROTOTYPE_OBJECT.
+     * So "".__proto__ points to String.prototype while
+     * String.prototype.__proto__ points to Object.prototype.
+     */
+    vm->retval.data.u.object = &vm->prototypes[value->type & 7];
+
+    return NXT_OK;
+}
+
+
+/*
  * The "prototype" property of Object(), Array() and other functions is
  * created on demand in the functions' private hash by the "prototype"
  * getter.  The properties are set to appropriate prototype.

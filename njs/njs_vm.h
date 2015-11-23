@@ -57,6 +57,11 @@ typedef enum {
 
     /*
      * The object types have the third bit set.  It is used in njs_is_object().
+     * NJS_OBJECT_BOOLEAN, NJS_OBJECT_NUMBER, and NJS_OBJECT_STRING must be
+     * equal to NJS_BOOLEAN, NJS_NUMBER, and NJS_STRING respectively with
+     * the third bit set.  It is used in njs_primitive_prototype_get_proto().
+     * The order of object types is used in vm->prototypes and vm->functions
+     * arrays.
      */
     NJS_OBJECT          = 0x08,
     NJS_ARRAY           = 0x09,
