@@ -2967,6 +2967,26 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = Object.create(null); '__proto__' in o"),
       nxt_string("false") },
 
+    /* eval(). */
+
+    { nxt_string("eval.name"),
+      nxt_string("eval") },
+
+    { nxt_string("eval.length"),
+      nxt_string("1") },
+
+    { nxt_string("eval.prototype"),
+      nxt_string("undefined") },
+
+    { nxt_string("eval.__proto__ === Function.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("eval.constructor === Function"),
+      nxt_string("true") },
+
+    { nxt_string("eval()"),
+      nxt_string("") },
+
     /*  es5id: 8.2_A1_T1 */
     /*  es5id: 8.2_A1_T2 */
 

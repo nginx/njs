@@ -25,20 +25,6 @@
 typedef nxt_int_t (*njs_shared_hash_t) (njs_vm_t *vm, nxt_lvlhsh_t *hash);
 
 
-/* STUB */
-static nxt_int_t
-njs_stub_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash)
-{
-    return NXT_OK;
-}
-static njs_ret_t
-njs_stub_function(njs_vm_t *vm, njs_param_t *param)
-{
-    return NXT_ERROR;
-}
-/**/
-
-
 nxt_int_t
 njs_shared_objects_create(njs_vm_t *vm)
 {
@@ -66,18 +52,20 @@ njs_shared_objects_create(njs_vm_t *vm)
         njs_string_function_hash,
         njs_function_function_hash,
         njs_regexp_function_hash,
-        njs_stub_hash,
+
+        njs_eval_function_hash,
     };
 
-    static const njs_native_t  native_functions[] = {
+    static const njs_native_t       native_functions[] = {
         njs_object_function,
         njs_array_function,
         njs_boolean_function,
         njs_number_function,
         njs_string_ctor_function,
-        njs_stub_function,
+        njs_function_function,
         njs_regexp_function,
-        njs_stub_function,
+
+        njs_eval_function,
     };
 
     size = NJS_PROTOTYPE_MAX * sizeof(njs_object_t);
@@ -136,13 +124,28 @@ njs_shared_objects_create(njs_vm_t *vm)
  * Array.__proto__              -> Function_Prototype,
  * Array_Prototype.__proto__    -> Object_Prototype,
  *
+ * Boolean(),
+ * Boolean.__proto__            -> Function_Prototype,
+ * Boolean_Prototype.__proto__  -> Object_Prototype,
+ *
+ * Number(),
+ * Number.__proto__             -> Function_Prototype,
+ * Number_Prototype.__proto__   -> Object_Prototype,
+ *
+ * String(),
+ * String.__proto__             -> Function_Prototype,
+ * String_Prototype.__proto__   -> Object_Prototype,
+ *
  * Function(),
  * Function.__proto__           -> Function_Prototype,
  * Function_Prototype.__proto__ -> Object_Prototype,
  *
- * [...]
+ * RegExp(),
+ * RegExp.__proto__             -> Function_Prototype,
+ * RegExp_Prototype.__proto__   -> Object_Prototype,
  *
- * eval().
+ * eval(),
+ * eval.__proto__               -> Function_Prototype.
  */
 
 nxt_int_t

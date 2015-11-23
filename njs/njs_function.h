@@ -115,6 +115,7 @@ typedef struct {
 
 
 njs_function_t *njs_function_alloc(njs_vm_t *vm);
+njs_ret_t njs_function_function(njs_vm_t *vm, njs_param_t *param);
 njs_ret_t njs_function_apply(njs_vm_t *vm, njs_value_t *name,
     njs_param_t *param);
 njs_value_t *njs_vmcode_native_frame(njs_vm_t *vm, njs_value_t *method,
@@ -127,6 +128,9 @@ njs_ret_t njs_function_call(njs_vm_t *vm, njs_function_t *func,
     njs_index_t retval);
 nxt_int_t njs_function_function_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash);
 nxt_int_t njs_function_prototype_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash);
+
+njs_ret_t njs_eval_function(njs_vm_t *vm, njs_param_t *param);
+nxt_int_t njs_eval_function_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash);
 
 
 #endif /* _NJS_FUNCTION_H_INCLUDED_ */
