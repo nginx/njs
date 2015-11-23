@@ -845,7 +845,7 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
  *   NXT_OK               property has been found in object,
  *   NXT_DECLINED         property was not found in object,
  *   NJS_PRIMITIVE_VALUE  property operation was applied to a numeric
- *                        or undefined value,
+ *                        or boolean value,
  *   NJS_STRING_VALUE     property operation was applied to a string,
  *   NJS_ARRAY_VALUE      object is array,
  *   NJS_EXTERNAL_VALUE   object is external entity,
@@ -868,17 +868,13 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
 
     switch (object->type) {
 
-    case NJS_NULL:
-    case NJS_VOID:
-        vm->exception = &njs_exception_type_error;
-        return NXT_ERROR;
-
+    case NJS_BOOLEAN:
     case NJS_NUMBER:
         if (pq->query != NJS_PROPERTY_QUERY_GET) {
             return NJS_PRIMITIVE_VALUE;
         }
 
-        obj = &vm->prototypes[NJS_PROTOTYPE_NUMBER];
+        obj = &vm->prototypes[object->type];
         break;
 
     case NJS_STRING:
@@ -928,8 +924,9 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
         obj = NULL;
         break;
 
-    default:
-        return NJS_PRIMITIVE_VALUE;
+    default:  /* NJS_VOID, NJS_NULL. */
+        vm->exception = &njs_exception_type_error;
+        return NXT_ERROR;
     }
 
     if (nxt_fast_path(njs_is_primitive(property))) {

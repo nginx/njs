@@ -1420,6 +1420,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = 1; b = { x:2 }; a = b.x += (a = 1)"),
       nxt_string("3") },
 
+    { nxt_string("a = undefined; a.b++; a.b"),
+      nxt_string("TypeError") },
+
+    { nxt_string("a = null; a.b++; a.b"),
+      nxt_string("TypeError") },
+
+    { nxt_string("a = true; a.b++; a.b"),
+      nxt_string("undefined") },
+
     { nxt_string("a = 1; a.b++; a.b"),
       nxt_string("undefined") },
 
@@ -1532,6 +1541,9 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("false") },
 
     { nxt_string("a = 1; 1 in a"),
+      nxt_string("TypeError") },
+
+    { nxt_string("a = true; 1 in a"),
       nxt_string("TypeError") },
 
     { nxt_string("var n = { toString: function() { return 'a' } };"
@@ -2565,6 +2577,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = { valueOf: function() { return 'OK' } } o.valueOf()"),
       nxt_string("OK") },
 
+    { nxt_string("false.__proto__ === true.__proto__"),
+      nxt_string("true") },
+
     { nxt_string("0..__proto__ === 1..__proto__"),
       nxt_string("true") },
 
@@ -2697,7 +2712,56 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("[].constructor === Array"),
       nxt_string("true") },
 
-    /* TODO: Boolean */
+    { nxt_string("Boolean()"),
+      nxt_string("false") },
+
+    { nxt_string("Boolean(0)"),
+      nxt_string("false") },
+
+    { nxt_string("Boolean('')"),
+      nxt_string("false") },
+
+    { nxt_string("Boolean(1)"),
+      nxt_string("true") },
+
+    { nxt_string("Boolean('a')"),
+      nxt_string("true") },
+
+    { nxt_string("Boolean({})"),
+      nxt_string("true") },
+
+    { nxt_string("Boolean([])"),
+      nxt_string("true") },
+
+    { nxt_string("typeof Boolean(1)"),
+      nxt_string("boolean") },
+
+    { nxt_string("typeof new Boolean(1)"),
+      nxt_string("object") },
+
+    { nxt_string("Boolean.name"),
+      nxt_string("Boolean") },
+
+    { nxt_string("Boolean.length"),
+      nxt_string("1") },
+
+    { nxt_string("Boolean.__proto__ === Function.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("Boolean.prototype.constructor === Boolean"),
+      nxt_string("true") },
+
+    { nxt_string("Boolean.prototype.__proto__ === Object.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("Boolean.constructor === Function"),
+      nxt_string("true") },
+
+    { nxt_string("true.__proto__ === Boolean.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("false.__proto__ === Boolean.prototype"),
+      nxt_string("true") },
 
     { nxt_string("Number()"),
       nxt_string("0") },

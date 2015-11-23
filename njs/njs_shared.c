@@ -12,6 +12,7 @@
 #include <nxt_mem_cache_pool.h>
 #include <njscript.h>
 #include <njs_vm.h>
+#include <njs_boolean.h>
 #include <njs_number.h>
 #include <njs_string.h>
 #include <njs_object.h>
@@ -50,7 +51,7 @@ njs_shared_objects_create(njs_vm_t *vm)
     static const njs_shared_hash_t  prototype_hash[] = {
         njs_object_prototype_hash,
         njs_array_prototype_hash,
-        njs_stub_hash,
+        njs_boolean_prototype_hash,
         njs_number_prototype_hash,
         njs_string_prototype_hash,
         njs_function_prototype_hash,
@@ -60,7 +61,7 @@ njs_shared_objects_create(njs_vm_t *vm)
     static const njs_shared_hash_t  function_hash[] = {
         njs_object_function_hash,
         njs_array_function_hash,
-        njs_stub_hash,
+        njs_boolean_function_hash,
         njs_number_function_hash,
         njs_string_function_hash,
         njs_function_function_hash,
@@ -71,7 +72,7 @@ njs_shared_objects_create(njs_vm_t *vm)
     static const njs_native_t  native_functions[] = {
         njs_object_function,
         njs_array_function,
-        njs_stub_function,
+        njs_boolean_function,
         njs_number_function,
         njs_string_ctor_function,
         njs_stub_function,

@@ -11,6 +11,7 @@ NXT_BUILDDIR =	build
 $(NXT_BUILDDIR)/libnjs.a: \
 	$(NXT_BUILDDIR)/njscript.o \
 	$(NXT_BUILDDIR)/njs_vm.o \
+	$(NXT_BUILDDIR)/njs_boolean.o \
 	$(NXT_BUILDDIR)/njs_number.o \
 	$(NXT_BUILDDIR)/njs_string.o \
 	$(NXT_BUILDDIR)/njs_object.o \
@@ -38,6 +39,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 	ar -r -c $(NXT_BUILDDIR)/libnjs.a \
 		$(NXT_BUILDDIR)/njscript.o \
 		$(NXT_BUILDDIR)/njs_vm.o \
+		$(NXT_BUILDDIR)/njs_boolean.o \
 		$(NXT_BUILDDIR)/njs_number.o \
 		$(NXT_BUILDDIR)/njs_string.o \
 		$(NXT_BUILDDIR)/njs_object.o \
@@ -114,6 +116,19 @@ $(NXT_BUILDDIR)/njs_vm.o: \
 	$(NXT_CC) -c -o $(NXT_BUILDDIR)/njs_vm.o $(NXT_CFLAGS) \
 		-I$(NXT_LIB) -Injs \
 		njs/njs_vm.c
+
+$(NXT_BUILDDIR)/njs_boolean.o: \
+	$(NXT_BUILDDIR)/libnxt.a \
+	njs/njscript.h \
+	njs/njs_vm.h \
+	njs/njs_boolean.h \
+	njs/njs_object.h \
+	njs/njs_function.h \
+	njs/njs_boolean.c \
+
+	$(NXT_CC) -c -o $(NXT_BUILDDIR)/njs_boolean.o $(NXT_CFLAGS) \
+		-I$(NXT_LIB) -Injs \
+		njs/njs_boolean.c
 
 $(NXT_BUILDDIR)/njs_number.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
@@ -233,6 +248,7 @@ $(NXT_BUILDDIR)/njs_shared.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
 	njs/njscript.h \
 	njs/njs_vm.h \
+	njs/njs_boolean.h \
 	njs/njs_number.h \
 	njs/njs_string.h \
 	njs/njs_object.h \
