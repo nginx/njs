@@ -2073,6 +2073,26 @@ static njs_unit_test_t  njs_test[] =
 
     /**/
 
+    { nxt_string("'abc'.toString()"),
+      nxt_string("abc") },
+
+    { nxt_string("''.toString.call('abc')"),
+      nxt_string("abc") },
+
+    { nxt_string("String.prototype.toString.call('abc')"),
+      nxt_string("abc") },
+
+    { nxt_string("String.prototype.toString.call(new String('abc'))"),
+      nxt_string("abc") },
+
+    { nxt_string("String.prototype.toString.call(1)"),
+      nxt_string("TypeError") },
+
+    { nxt_string("'abc'.valueOf()"),
+      nxt_string("abc") },
+
+    /**/
+
     { nxt_string("var n = { toString: function() { return 1 } };   '12'[n]"),
       nxt_string("2") },
 

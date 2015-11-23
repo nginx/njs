@@ -99,7 +99,6 @@ const u_char *njs_string_offset(const u_char *start, const u_char *end,
     size_t index);
 nxt_noinline uint32_t njs_string_index(njs_string_prop_t *string,
     uint32_t offset);
-njs_ret_t njs_string_prototype_concat(njs_vm_t *vm, njs_param_t *param);
 njs_ret_t njs_value_to_string(njs_vm_t *vm, njs_value_t *dst,
     const njs_value_t *src);
 njs_ret_t njs_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst,

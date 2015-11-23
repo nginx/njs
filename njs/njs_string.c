@@ -439,7 +439,31 @@ njs_string_cmp(const njs_value_t *v1, const njs_value_t *v2)
 }
 
 
-njs_ret_t
+static njs_ret_t
+njs_string_prototype_value_of(njs_vm_t *vm, njs_param_t *param)
+{
+    njs_value_t         *value;
+    njs_object_value_t  *object;
+
+    value = param->object;
+
+    if (value->type == NJS_STRING) {
+        vm->retval = *value;
+
+    } else if (value->type == NJS_OBJECT_STRING) {
+        object = value->data.u.object_value;
+        vm->retval = object->value;
+
+    } else {
+        vm->exception = &njs_exception_type_error;
+        return NXT_ERROR;
+    }
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
 njs_string_prototype_concat(njs_vm_t *vm, njs_param_t *param)
 {
     u_char             *p, *start;
@@ -1583,6 +1607,14 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
     { njs_getter(njs_string_prototype_length),
       njs_string("length"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
+
+    { njs_native_function(njs_string_prototype_value_of, 0),
+      njs_string("valueOf"),
+      NJS_METHOD, 0, 0, 0, },
+
+    { njs_native_function(njs_string_prototype_value_of, 0),
+      njs_string("toString"),
+      NJS_METHOD, 0, 0, 0, },
 
     { njs_native_function(njs_string_prototype_concat, 0),
       njs_string("concat"),
