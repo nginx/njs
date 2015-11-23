@@ -1644,6 +1644,29 @@ static njs_unit_test_t  njs_test[] =
 
     /**/
 
+    { nxt_string("[,,]"),
+      nxt_string(",") },
+
+    { nxt_string("[,,,]"),
+      nxt_string(",,") },
+
+    { nxt_string("[1,2,]"),
+      nxt_string("1,2") },
+
+    { nxt_string("[1,2,,3]"),
+      nxt_string("1,2,,3") },
+
+    { nxt_string("[,,].length"),
+      nxt_string("2") },
+
+    { nxt_string("[,,,].length"),
+      nxt_string("3") },
+
+    { nxt_string("[1,2,,3].length"),
+      nxt_string("4") },
+
+    /**/
+
     { nxt_string("var n = { toString: function() { return 1 } };   [1,2][n]"),
       nxt_string("2") },
 
@@ -1718,11 +1741,9 @@ static njs_unit_test_t  njs_test[] =
                  "a.forEach(function(v, i, a) { this.sum += v }, s); s.sum"),
       nxt_string("0") },
 
-#if 0
     { nxt_string("var a = [,,,]; var s = { sum: 0 };"
                  "a.forEach(function(v, i, a) { this.sum += v }, s); s.sum"),
       nxt_string("0") },
-#endif
 
     { nxt_string("var a = [1,2,3]; var s = { sum: 0 };"
                  "a.forEach(function(v, i, a) { this.sum += v }, s); s.sum"),

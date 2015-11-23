@@ -1579,6 +1579,11 @@ njs_parser_array(njs_vm_t *vm, njs_parser_t *parser,
             break;
         }
 
+        if (token == NJS_TOKEN_COMMA) {
+            index++;
+            continue;
+        }
+
         node = njs_parser_node_alloc(vm);
         if (nxt_slow_path(node == NULL)) {
             return NJS_TOKEN_ERROR;
