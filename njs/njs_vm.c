@@ -1212,45 +1212,52 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     const njs_value_t   *retval;
     nxt_lvlhsh_query_t  lhq;
 
-    /* TODO: test constructor is function or native: TypeError. */
-    /* TODO: test object is object: false. */
+    if (!njs_is_function(constructor) && !njs_is_native(constructor)) {
+        vm->exception = &njs_exception_type_error;
+        return NXT_ERROR;
+    }
 
     retval = &njs_value_false;
 
-    lhq.key_hash = NJS_PROTOTYPE_HASH;
-    lhq.key.len = sizeof("prototype") - 1;
-    lhq.key.data = (u_char *) "prototype";
+    if (njs_is_object(object)) {
 
-    prop = njs_object_property(vm, constructor->data.u.object, &lhq);
+        lhq.key_hash = NJS_PROTOTYPE_HASH;
+        lhq.key.len = sizeof("prototype") - 1;
+        lhq.key.data = (u_char *) "prototype";
 
-    if (prop != NULL) {
-        value = &prop->value;
+        prop = njs_object_property(vm, constructor->data.u.object, &lhq);
 
-        if (prop->type == NJS_NATIVE_GETTER) {
-            /* STUB: getter should be called by some njs_object_property() */
-            ret = prop->value.data.u.getter(vm, constructor);
+        if (prop != NULL) {
+            value = &prop->value;
 
-            if (nxt_slow_path(ret != NXT_OK)) {
-                return ret;
+            if (prop->type == NJS_NATIVE_GETTER) {
+                /*
+                 * STUB: getter should be called by some njs_object_property()
+                 */
+                ret = prop->value.data.u.getter(vm, constructor);
+
+                if (nxt_slow_path(ret != NXT_OK)) {
+                    return ret;
+                }
+
+                value = &vm->retval;
             }
 
-            value = &vm->retval;
+            /* TODO: test prop->value is object. */
+
+            prototype = value->data.u.object;
+            proto = object->data.u.object;
+
+            do {
+                proto = proto->__proto__;
+
+                if (proto == prototype) {
+                    retval = &njs_value_true;
+                    break;
+                }
+
+            } while (proto != NULL);
         }
-
-        /* TODO: test prop->value is object. */
-
-        prototype = value->data.u.object;
-        proto = object->data.u.object;
-
-        do {
-            proto = proto->__proto__;
-
-            if (proto == prototype) {
-                retval = &njs_value_true;
-                break;
-            }
-
-        } while (proto != NULL);
     }
 
     vm->retval = *retval;

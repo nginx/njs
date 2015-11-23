@@ -2601,13 +2601,31 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("/./.__proto__.test.call(/a{2}/, 'aaa')"),
       nxt_string("true") },
 
+    { nxt_string("true instanceof Boolean"),
+      nxt_string("false") },
+
+    { nxt_string("1 instanceof Number"),
+      nxt_string("false") },
+
+    { nxt_string("'' instanceof String"),
+      nxt_string("false") },
+
     { nxt_string("({}) instanceof Object"),
       nxt_string("true") },
+
+    { nxt_string("[] instanceof []"),
+      nxt_string("TypeError") },
 
     { nxt_string("[] instanceof Array"),
       nxt_string("true") },
 
     { nxt_string("[] instanceof Object"),
+      nxt_string("true") },
+
+    { nxt_string("/./ instanceof RegExp"),
+      nxt_string("true") },
+
+    { nxt_string("/./ instanceof Object"),
       nxt_string("true") },
 
     { nxt_string("var o = Object(); o"),
