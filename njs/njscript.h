@@ -93,6 +93,8 @@ NXT_EXPORT void njs_vm_return(njs_vm_t *vm, njs_value_t *retval);
 NXT_EXPORT nxt_int_t njs_vm_retval(njs_vm_t *vm, nxt_str_t *retval);
 NXT_EXPORT nxt_int_t njs_vm_exception(njs_vm_t *vm, nxt_str_t *retval);
 
+NXT_EXPORT void njs_disassembler(njs_vm_t *vm);
+
 NXT_EXPORT njs_ret_t njs_string_create(njs_vm_t *vm, njs_value_t *value,
     u_char *start, size_t size, size_t length);
 NXT_EXPORT njs_ret_t njs_void_set(njs_value_t *value);

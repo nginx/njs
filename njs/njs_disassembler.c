@@ -16,6 +16,10 @@
 #include <njs_regexp.h>
 #include <njs_variable.h>
 #include <njs_parser.h>
+#include <stdio.h>
+
+
+static void njs_disassemble(u_char *start, u_char *end);
 
 
 typedef struct {
@@ -29,8 +33,6 @@ static njs_code_name_t  code_names[] = {
 
     { njs_vmcode_object_create, sizeof(njs_vmcode_object_t),
           nxt_string("OBJECT CREATE   ") },
-    { njs_vmcode_array_create, sizeof(njs_vmcode_array_t),
-          nxt_string("ARRAY CREATE    ") },
     { njs_vmcode_function_create, sizeof(njs_vmcode_function_create_t),
           nxt_string("FUNCTION CREATE ") },
     { njs_vmcode_regexp_create, sizeof(njs_vmcode_regexp_t),
@@ -44,21 +46,17 @@ static njs_code_name_t  code_names[] = {
           nxt_string("PROPERTY IN     ") },
     { njs_vmcode_property_delete, sizeof(njs_vmcode_3addr_t),
           nxt_string("PROPERTY DELETE ") },
-    { njs_vmcode_property_each_start, sizeof(njs_vmcode_prop_start_t),
-          nxt_string("PROPERTY START  ") },
-    { njs_vmcode_property_each, sizeof(njs_vmcode_prop_each_t),
-          nxt_string("PROPERTY EACH   ") },
     { njs_vmcode_instance_of, sizeof(njs_vmcode_instance_of_t),
           nxt_string("INSTANCE OF     ") },
 
     { njs_vmcode_function, sizeof(njs_vmcode_function_t),
           nxt_string("FUNCTION        ") },
-    { njs_vmcode_method, sizeof(njs_vmcode_method_t),
-          nxt_string("METHOD          ") },
     { njs_vmcode_call, sizeof(njs_vmcode_call_t),
           nxt_string("CALL            ") },
     { njs_vmcode_return, sizeof(njs_vmcode_stop_t),
           nxt_string("RETURN          ") },
+    { njs_vmcode_stop, sizeof(njs_vmcode_stop_t),
+          nxt_string("STOP            ") },
 
     { njs_vmcode_increment, sizeof(njs_vmcode_3addr_t),
           nxt_string("INC             ") },
@@ -138,23 +136,8 @@ static njs_code_name_t  code_names[] = {
     { njs_vmcode_validate, sizeof(njs_vmcode_validate_t),
           nxt_string("VALIDATE        ") },
 
-    { njs_vmcode_if_true_jump, sizeof(njs_vmcode_cond_jump_t),
-          nxt_string("JUMP IF TRUE    ") },
-    { njs_vmcode_if_false_jump, sizeof(njs_vmcode_cond_jump_t),
-          nxt_string("JUMP IF FALSE   ") },
-    { njs_vmcode_jump, sizeof(njs_vmcode_jump_t),
-          nxt_string("JUMP            ") },
-    { njs_vmcode_stop, sizeof(njs_vmcode_stop_t),
-          nxt_string("STOP            ") },
-
-    { njs_vmcode_try_start, sizeof(njs_vmcode_try_start_t),
-          nxt_string("TRY START       ") },
-    { njs_vmcode_try_end, sizeof(njs_vmcode_try_end_t),
-          nxt_string("TRY END         ") },
     { njs_vmcode_throw, sizeof(njs_vmcode_throw_t),
           nxt_string("THROW           ") },
-    { njs_vmcode_catch, sizeof(njs_vmcode_catch_t),
-          nxt_string("CATCH           ") },
     { njs_vmcode_finally, sizeof(njs_vmcode_finally_t),
           nxt_string("FINALLY         ") },
 
@@ -162,30 +145,150 @@ static njs_code_name_t  code_names[] = {
 
 
 void
-njs_disassembler(u_char *start, u_char *end, nxt_str_t *text)
+njs_disassembler(njs_vm_t *vm)
 {
-    u_char                  *p;
-    nxt_uint_t              n;
-    nxt_str_t               *name;
-    njs_vmcode_1addr_t      *code1;
-    njs_vmcode_2addr_t      *code2;
-    njs_vmcode_3addr_t      *code3;
-    njs_vmcode_method_t     *method;
-    njs_code_name_t         *code_name;
-    njs_vmcode_operation_t  operation;
+    nxt_uint_t     n;
+    njs_vm_code_t  *code;
 
-    static nxt_str_t        unknown = nxt_string("UNKOWN");
+    code = vm->code->start;
+    n = vm->code->items;
 
-    (void) name;
-    (void) code1;
-    (void) code2;
-    (void) code3;
-    (void) method;
+    while(n != 0) {
+        njs_disassemble(code->start, code->end);
+        code++;
+        n--;
+    }
+}
+
+
+static void
+njs_disassemble(u_char *start, u_char *end)
+{
+    u_char                   *p;
+    nxt_str_t                *name;
+    nxt_uint_t               n;
+    const char               *sign;
+    njs_code_name_t          *code_name;
+    njs_vmcode_jump_t        *jump;
+    njs_vmcode_1addr_t       *code1;
+    njs_vmcode_2addr_t       *code2;
+    njs_vmcode_3addr_t       *code3;
+    njs_vmcode_array_t       *array;
+    njs_vmcode_catch_t       *catch;
+    njs_vmcode_method_t      *method;
+    njs_vmcode_try_end_t     *try_end;
+    njs_vmcode_try_start_t   *try_start;
+    njs_vmcode_operation_t   operation;
+    njs_vmcode_cond_jump_t   *cond_jump;
+    njs_vmcode_prop_each_t   *each;
+    njs_vmcode_prop_start_t  *prop_start;
 
     p = start;
 
     while (p < end) {
         operation = *(njs_vmcode_operation_t *) p;
+
+        if (operation == njs_vmcode_array_create) {
+            array = (njs_vmcode_array_t *) p;
+            p += sizeof(njs_vmcode_array_t);
+
+            printf("ARRAY CREATE      %04lX %ld\n",
+                   array->retval, array->length);
+
+            continue;
+        }
+
+        if (operation == njs_vmcode_if_true_jump) {
+            cond_jump = (njs_vmcode_cond_jump_t *) p;
+            p += sizeof(njs_vmcode_cond_jump_t);
+            sign = (cond_jump->offset >= 0) ? "+" : "";
+
+            printf("JUMP IF TRUE      %04lX %s%ld\n",
+                   cond_jump->cond, sign, cond_jump->offset);
+
+            continue;
+        }
+
+        if (operation == njs_vmcode_if_false_jump) {
+            cond_jump = (njs_vmcode_cond_jump_t *) p;
+            p += sizeof(njs_vmcode_cond_jump_t);
+            sign = (cond_jump->offset >= 0) ? "+" : "";
+
+            printf("JUMP IF FALSE     %04lX %s%ld\n",
+                   cond_jump->cond, sign, cond_jump->offset);
+
+            continue;
+        }
+
+        if (operation == njs_vmcode_jump) {
+            jump = (njs_vmcode_jump_t *) p;
+            p += sizeof(njs_vmcode_jump_t);
+            sign = (jump->offset >= 0) ? "+" : "";
+
+            printf("JUMP              %s%ld\n", sign, jump->offset);
+
+            continue;
+        }
+
+        if (operation == njs_vmcode_method) {
+            method = (njs_vmcode_method_t *) p;
+            p += sizeof(njs_vmcode_method_t);
+
+            printf("METHOD            %04lX %04lX %04lX %d\n", method->function,
+                   method->object, method->method, method->code.nargs);
+
+            continue;
+        }
+
+        if (operation == njs_vmcode_property_each_start) {
+            prop_start = (njs_vmcode_prop_start_t *) p;
+            p += sizeof(njs_vmcode_prop_start_t);
+
+            printf("PROPERTY START    %04lX %04lX +%ld\n",
+                   prop_start->each, prop_start->object, prop_start->offset);
+
+            continue;
+        }
+
+        if (operation == njs_vmcode_property_each) {
+            each = (njs_vmcode_prop_each_t *) p;
+            p += sizeof(njs_vmcode_prop_each_t);
+
+            printf("PROPERTY EACH     %04lX %04lX %04lX %ld\n",
+                   each->retval, each->object, each->each, each->offset);
+
+            continue;
+        }
+
+        if (operation == njs_vmcode_try_start) {
+            try_start = (njs_vmcode_try_start_t *) p;
+            p += sizeof(njs_vmcode_try_start_t);
+
+            printf("TRY START         %04lX +%ld\n",
+                   try_start->value, try_start->offset);
+
+            continue;
+        }
+
+        if (operation == njs_vmcode_catch) {
+            catch = (njs_vmcode_catch_t *) p;
+            p += sizeof(njs_vmcode_catch_t);
+
+            printf("CATCH             %04lX +%ld\n",
+                   catch->exception, catch->offset);
+
+            continue;
+        }
+
+        if (operation == njs_vmcode_try_end) {
+            try_end = (njs_vmcode_try_end_t *) p;
+            p += sizeof(njs_vmcode_try_end_t);
+
+            printf("TRY END           +%ld\n", try_end->offset);
+
+            continue;
+        }
+
         code_name = code_names;
         n = nxt_nitems(code_names);
 
@@ -193,26 +296,26 @@ njs_disassembler(u_char *start, u_char *end, nxt_str_t *text)
              if (operation == code_name->operation) {
                  name = &code_name->name;
 
-                 if (code_name->size == sizeof(njs_vmcode_method_t)) {
-                     method = (njs_vmcode_method_t *) p;
-                     nxt_log_error(NXT_LOG_INFO, log, "%V  %p %p %p %p",
-                                   name, method->function, method->object,
-                                   method->method, method->code.nargs);
-
-                 } else if (code_name->size == sizeof(njs_vmcode_3addr_t)) {
+                 if (code_name->size == sizeof(njs_vmcode_3addr_t)) {
                      code3 = (njs_vmcode_3addr_t *) p;
-                     nxt_log_error(NXT_LOG_INFO, log, "%V  %p %p %p",
-                                   name, code3->dst, code3->src1, code3->src2);
+
+                     printf("%*s  %04lX %04lX %04lX\n",
+                            (int) name->len, name->data,
+                            code3->dst, code3->src1, code3->src2);
 
                  } else if (code_name->size == sizeof(njs_vmcode_2addr_t)) {
                      code2 = (njs_vmcode_2addr_t *) p;
-                     nxt_log_error(NXT_LOG_INFO, log, "%V  %p %p",
-                                   name, code2->dst, code2->src);
+
+                     printf("%*s  %04lX %04lX\n",
+                            (int) name->len, name->data,
+                            code2->dst, code2->src);
 
                  } else if (code_name->size == sizeof(njs_vmcode_1addr_t)) {
                      code1 = (njs_vmcode_1addr_t *) p;
-                     nxt_log_error(NXT_LOG_INFO, log, "%V  %p",
-                                   name, code1->index);
+
+                     printf("%*s  %04lX\n",
+                            (int) name->len, name->data,
+                            code1->index);
                  }
 
                  p += code_name->size;
@@ -226,9 +329,8 @@ njs_disassembler(u_char *start, u_char *end, nxt_str_t *text)
         } while (n != 0);
 
         p += sizeof(njs_vmcode_operation_t);
-        name = &unknown;
 
-        nxt_log_error(NXT_LOG_INFO, log, "%V  %p", name, operation);
+        printf("UNKNOWN           %04lX\n", (uintptr_t) operation);
 
     next:
 

@@ -1481,6 +1481,7 @@ njs_generate_scope(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node,
     nxt_uint_t         n;
     njs_index_t        index;
     njs_value_t        *value;
+    njs_vm_code_t      *code;
     njs_vmcode_stop_t  *stop;
 
     p = nxt_mem_cache_alloc(vm->mem_cache_pool, parser->code_size);
@@ -1542,9 +1543,21 @@ njs_generate_scope(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node,
         *value++ = njs_value_void;
     }
 
-    nxt_thread_log_debug("SCOPE CODE:");
+    if (vm->code == NULL) {
+        vm->code = nxt_array_create(4, sizeof(njs_vm_code_t),
+                                    &njs_array_mem_proto, vm->mem_cache_pool);
+        if (nxt_slow_path(vm->code == NULL)) {
+            return NXT_ERROR;
+        }
+    }
 
-    njs_disassembler(parser->code_start, parser->code_last, NULL);
+    code = nxt_array_add(vm->code, &njs_array_mem_proto, vm->mem_cache_pool);
+    if (nxt_slow_path(code == NULL)) {
+        return NXT_ERROR;
+    }
+
+    code->start = parser->code_start;
+    code->end = parser->code_last;
 
     return NXT_OK;
 }

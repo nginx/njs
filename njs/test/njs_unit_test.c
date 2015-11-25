@@ -3231,7 +3231,7 @@ static const nxt_mem_proto_t  njs_mem_cache_pool_proto = {
 
 
 static nxt_int_t
-njs_unit_test(void)
+njs_unit_test(nxt_bool_t disassemble)
 {
     void                  *ext_object;
     u_char                *start;
@@ -3278,6 +3278,10 @@ njs_unit_test(void)
         ret = njs_vm_compile(vm, &start, start + njs_test[i].script.len);
 
         if (ret == NXT_OK) {
+            if (disassemble) {
+                njs_disassembler(vm);
+            }
+
             nvm = njs_vm_clone(vm, NULL, &ext_object);
             if (nvm == NULL) {
                 return NXT_ERROR;
@@ -3421,10 +3425,12 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
 int nxt_cdecl
 main(int argc, char **argv)
 {
-    nxt_str_t  script = nxt_string("1");
-    nxt_str_t  result = nxt_string("1");
+    nxt_bool_t  disassemble;
 
-    nxt_str_t  fibo_number = nxt_string(
+    static nxt_str_t  script = nxt_string("1");
+    static nxt_str_t  result = nxt_string("1");
+
+    static nxt_str_t  fibo_number = nxt_string(
         "function fibo(n) {"
         "    if (n > 1)"
         "        return fibo(n - 1) + fibo(n - 2)"
@@ -3432,7 +3438,7 @@ main(int argc, char **argv)
         "}"
         "fibo(32)");
 
-    nxt_str_t  fibo_ascii = nxt_string(
+    static nxt_str_t  fibo_ascii = nxt_string(
         "function fibo(n) {"
         "    if (n > 1)"
         "        return fibo(n - 1) + fibo(n - 2)"
@@ -3440,7 +3446,7 @@ main(int argc, char **argv)
         "}"
         "fibo(32).length");
 
-    nxt_str_t  fibo_bytes = nxt_string(
+    static nxt_str_t  fibo_bytes = nxt_string(
         "function fibo(n) {"
         "    if (n > 1)"
         "        return fibo(n - 1) + fibo(n - 2)"
@@ -3448,7 +3454,7 @@ main(int argc, char **argv)
         "}"
         "fibo(32).length");
 
-    nxt_str_t  fibo_utf8 = nxt_string(
+    static nxt_str_t  fibo_utf8 = nxt_string(
         "function fibo(n) {"
         "    if (n > 1)"
         "        return fibo(n - 1) + fibo(n - 2)"
@@ -3456,8 +3462,10 @@ main(int argc, char **argv)
         "}"
         "fibo(32).length");
 
-    nxt_str_t  fibo_result = nxt_string("3524578");
+    static nxt_str_t  fibo_result = nxt_string("3524578");
 
+
+    disassemble = 0;
 
     if (argc > 1) {
         switch (argv[1][0]) {
@@ -3482,10 +3490,14 @@ main(int argc, char **argv)
             return njs_unit_test_benchmark(&fibo_utf8, &fibo_result,
                                            "fibobench utf8 strings", 1);
 
+        case 'd':
+            disassemble = 1;
+            break;
+
         default:
             break;
         }
     }
 
-    return njs_unit_test();
+    return njs_unit_test(disassemble);
 }

@@ -69,7 +69,7 @@ all:	test lib_test
 test:	\
 	$(NXT_BUILDDIR)/njs_unit_test \
 
-	$(NXT_BUILDDIR)/njs_unit_test
+	$(NXT_BUILDDIR)/njs_unit_test d
 
 clean:
 	rm -rf $(NXT_BUILDDIR)

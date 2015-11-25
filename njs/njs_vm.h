@@ -692,7 +692,15 @@ struct njs_vm_s {
     njs_vm_shared_t          *shared;
     njs_parser_t             *parser;
     njs_regexp_pattern_t     *pattern;
+
+    nxt_array_t              *code;  /* of njs_vm_code_t */
 };
+
+
+typedef struct {
+    u_char                   *start;
+    u_char                   *end;
+} njs_vm_code_t;
 
 
 struct njs_vm_shared_s {
@@ -705,8 +713,6 @@ struct njs_vm_shared_s {
 
 
 nxt_int_t njs_vmcode_interpreter(njs_vm_t *vm);
-
-void njs_disassembler(u_char *start, u_char *end, nxt_str_t *text);
 
 void njs_value_retain(njs_value_t *value);
 void njs_value_release(njs_vm_t *vm, njs_value_t *value);
