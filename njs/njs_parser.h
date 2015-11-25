@@ -229,8 +229,7 @@ struct njs_parser_node_s {
 };
 
 
-#define                                                                       \
-njs_parser_node_alloc(vm)                                                     \
+#define njs_parser_node_alloc(vm)                                             \
     nxt_mem_cache_zalloc((vm)->mem_cache_pool, sizeof(njs_parser_node_t))
 
 
@@ -266,7 +265,7 @@ struct njs_parser_s {
     uint32_t                        method_arguments_size;
 
     u_char                          *code_start;
-    u_char                          *code_last;
+    u_char                          *code_end;
 
     njs_parser_t                    *parent;
 };
@@ -301,10 +300,9 @@ nxt_int_t njs_generate_scope(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node, njs_vmcode_operation_t last);
 
 
-#define                                                                       \
-njs_generate_code(parser, type, code)                                         \
+#define njs_generate_code(parser, type, code)                                 \
     do {                                                                      \
-        code = (type *) parser->code_last; parser->code_last += sizeof(type); \
+        code = (type *) parser->code_end; parser->code_end += sizeof(type);   \
     } while (0)
 
 

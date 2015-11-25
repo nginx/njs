@@ -103,7 +103,7 @@ njs_vmcode_native_frame(njs_vm_t *vm, njs_value_t *method, uintptr_t nargs,
     njs_value_t         *this;
     njs_native_frame_t  *frame;
 
-    size= NJS_NATIVE_FRAME_SIZE
+    size = NJS_NATIVE_FRAME_SIZE
            + method->data.string_size
            + nargs * sizeof(njs_value_t);
 

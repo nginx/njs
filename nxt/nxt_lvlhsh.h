@@ -116,13 +116,11 @@ struct nxt_lvlhsh_query_s {
 };
 
 
-#define                                                                       \
-nxt_lvlhsh_is_empty(lh)                                                       \
+#define nxt_lvlhsh_is_empty(lh)                                               \
     ((lh)->slot == NULL)
 
 
-#define                                                                       \
-nxt_lvlhsh_init(lh)                                                           \
+#define nxt_lvlhsh_init(lh)                                                   \
     (lh)->slot = NULL
 
 /*

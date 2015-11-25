@@ -37,7 +37,6 @@ njs_variables_hash_test(nxt_lvlhsh_query_t *lhq, void *data)
         return NXT_OK;
     }
 
-
     return NXT_DECLINED;
 }
 

@@ -32,7 +32,7 @@ typedef struct {
 
 static nxt_noinline njs_value_t *njs_array_copy(njs_value_t *dst,
     njs_value_t *src);
-static nxt_int_t njs_array_next(njs_value_t *value, nxt_uint_t n,
+static nxt_noinline nxt_int_t njs_array_next(njs_value_t *value, nxt_uint_t n,
     nxt_uint_t length);
 
 
@@ -876,7 +876,7 @@ njs_array_prototype_every(njs_vm_t *vm, njs_param_t *param)
 }
 
 
-static nxt_int_t
+static nxt_noinline nxt_int_t
 njs_array_next(njs_value_t *value, nxt_uint_t n, nxt_uint_t length)
 {
     while (n < length) {

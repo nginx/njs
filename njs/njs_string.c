@@ -1724,6 +1724,11 @@ static const nxt_lvlhsh_proto_t  njs_values_hash_proto
 };
 
 
+/*
+ * Constant values such as njs_value_zero are copied to vm->values_hash during
+ * code generation when them are used as operands to guarantee aligned value.
+ */
+
 njs_index_t
 njs_value_index(njs_vm_t *vm, njs_parser_t *parser, const njs_value_t *src)
 {

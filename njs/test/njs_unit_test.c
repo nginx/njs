@@ -434,6 +434,38 @@ static njs_unit_test_t  njs_test[] =
 
     /* Comparisions. */
 
+    { nxt_string("1 < 2"),
+      nxt_string("true") },
+
+    { nxt_string("1 < 1"),
+      nxt_string("false") },
+
+    { nxt_string("1 <= 1"),
+      nxt_string("true") },
+
+    { nxt_string("1 <= 2"),
+      nxt_string("true") },
+
+    { nxt_string("2 > 1"),
+      nxt_string("true") },
+
+    { nxt_string("1 > 2"),
+      nxt_string("false") },
+
+    { nxt_string("1 > 1"),
+      nxt_string("false") },
+
+    { nxt_string("1 >= 1"),
+      nxt_string("true") },
+
+    { nxt_string("2 >= 1"),
+      nxt_string("true") },
+
+    { nxt_string("1 >= 2"),
+      nxt_string("false") },
+
+    /**/
+
     { nxt_string("null === null"),
       nxt_string("true") },
 
@@ -1556,6 +1588,31 @@ static njs_unit_test_t  njs_test[] =
 
     /* Arrays */
 
+    /* Empty array to primitive. */
+
+    { nxt_string("3 + []"),
+      nxt_string("3") },
+
+    { nxt_string("3 * []"),
+      nxt_string("0") },
+
+    /* Single element array to primitive. */
+
+    { nxt_string("3 + [5]"),
+      nxt_string("35") },
+
+    { nxt_string("3 * [5]"),
+      nxt_string("15") },
+
+    /* Array to primitive. */
+
+    { nxt_string("3 + [5,7]"),
+      nxt_string("35,7") },
+
+    { nxt_string("3 * [5,7]"),
+      nxt_string("NaN") },
+
+
     { nxt_string("a = [ 1, 2, 3 ]; a[0] + a[1] + a[2]"),
       nxt_string("6") },
 
@@ -2442,10 +2499,16 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("/абв/i.test('АБВ')"),
       nxt_string("true") },
 
-    { nxt_string("/\\xC2\\xB6/.test('\\u00C2\\u00B6'.toBytes())"),
+    { nxt_string("/\\x80/.test('\\u0080')"),
       nxt_string("true") },
 
     { nxt_string("/\\x80/.test('\\u0080'.toBytes())"),
+      nxt_string("true") },
+
+    { nxt_string("/α/.test('\\u03B1')"),
+      nxt_string("true") },
+
+    { nxt_string("/α/.test('\\u00CE\\u00B1'.toBytes())"),
       nxt_string("true") },
 
     { nxt_string("var a = /^$/.exec(''); a.length +' '+ a"),
@@ -2987,20 +3050,36 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("eval()"),
       nxt_string("") },
 
-    /*  es5id: 8.2_A1_T1 */
-    /*  es5id: 8.2_A1_T2 */
+    /* Trick: number to boolean. */
+
+    { nxt_string("var a = 0; !!a"),
+      nxt_string("false") },
+
+    { nxt_string("var a = 5; !!a"),
+      nxt_string("true") },
+
+    /* Trick: flooring. */
+
+    { nxt_string("var n = -10.12345; ~~n"),
+      nxt_string("-10") },
+
+    { nxt_string("var n = 10.12345; ~~n"),
+      nxt_string("10") },
+
+    /* es5id: 8.2_A1_T1 */
+    /* es5id: 8.2_A1_T2 */
 
     { nxt_string("var x = null;"),
       nxt_string("") },
 
 #if 0
-    /*  es5id: 8.2_A2 */
+    /* es5id: 8.2_A2 */
 
     { nxt_string("var null;"),
       nxt_string("SyntaxError") },
 #endif
 
-    /*  es5id: 8.2_A3 */
+    /* es5id: 8.2_A3 */
 
     { nxt_string("typeof(null) === \"object\""),
       nxt_string("true") },

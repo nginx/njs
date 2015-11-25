@@ -25,10 +25,10 @@
 
 #define ngx_http_js_create_mem_cache_pool()                                   \
     nxt_mem_cache_pool_create(&ngx_http_js_mem_cache_pool_proto, NULL, NULL,  \
-                             NGX_HTTP_JS_MCP_CLUSTER_SIZE,                    \
-                             NGX_HTTP_JS_MCP_PAGE_ALIGNMENT,                  \
-                             NGX_HTTP_JS_MCP_PAGE_SIZE,                       \
-                             NGX_HTTP_JS_MCP_MIN_CHUNK_SIZE)
+                              NGX_HTTP_JS_MCP_CLUSTER_SIZE,                   \
+                              NGX_HTTP_JS_MCP_PAGE_ALIGNMENT,                 \
+                              NGX_HTTP_JS_MCP_PAGE_SIZE,                      \
+                              NGX_HTTP_JS_MCP_MIN_CHUNK_SIZE)
 
 
 typedef struct {
@@ -361,10 +361,10 @@ static njs_external_t  ngx_http_js_externals[] = {
 static ngx_int_t
 ngx_http_js_handler(ngx_http_request_t *r)
 {
-    nxt_str_t                 value;
+    nxt_str_t                value;
     njs_vm_t                *nvm;
     ngx_pool_cleanup_t      *cln;
-    nxt_mem_cache_pool_t     *mcp;
+    nxt_mem_cache_pool_t    *mcp;
     ngx_http_js_loc_conf_t  *jlcf;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -410,8 +410,8 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
     njs_vm_t *vm = (njs_vm_t *) data;
 
     nxt_str_t              value;
-    njs_vm_t             *nvm;
-    ngx_pool_cleanup_t   *cln;
+    njs_vm_t              *nvm;
+    ngx_pool_cleanup_t    *cln;
     nxt_mem_cache_pool_t  *mcp;
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -645,7 +645,7 @@ static njs_ret_t
 ngx_http_js_ext_get_header_out(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
-    nxt_str_t            *v;
+    nxt_str_t           *v;
     ngx_table_elt_t     *h;
     ngx_http_request_t  *r;
 
@@ -666,7 +666,7 @@ ngx_http_js_ext_set_header_out(njs_vm_t *vm, void *obj, uintptr_t data,
     nxt_str_t *value)
 {
     u_char              *p;
-    nxt_str_t            *v;
+    nxt_str_t           *v;
     ngx_table_elt_t     *h;
     ngx_http_request_t  *r;
 
@@ -816,8 +816,8 @@ ngx_http_js_ext_send_header(njs_vm_t *vm, njs_param_t *param)
 static njs_ret_t
 ngx_http_js_ext_send(njs_vm_t *vm, njs_param_t *param)
 {
-    nxt_int_t             ret;
-    nxt_str_t             s;
+    nxt_int_t            ret;
+    nxt_str_t            s;
     ngx_buf_t           *b;
     uintptr_t            nargs, next;
     ngx_uint_t           n;
@@ -946,7 +946,7 @@ static njs_ret_t
 ngx_http_js_ext_get_header_in(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
-    nxt_str_t            *v;
+    nxt_str_t           *v;
     ngx_table_elt_t     *h;
     ngx_http_request_t  *r;
 
@@ -973,7 +973,7 @@ static njs_ret_t
 ngx_http_js_ext_get_arg(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
-    nxt_str_t            *v;
+    nxt_str_t           *v;
     ngx_str_t            arg;
     ngx_http_request_t  *r;
 
@@ -1117,12 +1117,12 @@ ngx_http_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 static njs_vm_t *
 ngx_http_js_compile(ngx_conf_t *cf, ngx_str_t *script)
 {
-    u_char               *start, *end;
+    u_char                *start, *end;
     nxt_int_t              rc;
     nxt_str_t              s;
-    njs_vm_t             *vm;
+    njs_vm_t              *vm;
     nxt_lvlhsh_t           externals;
-    njs_vm_shared_t      *shared;
+    njs_vm_shared_t       *shared;
     nxt_mem_cache_pool_t  *mcp;
 
     mcp = ngx_http_js_create_mem_cache_pool();

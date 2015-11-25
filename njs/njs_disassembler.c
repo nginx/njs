@@ -95,7 +95,7 @@ static njs_code_name_t  code_names[] = {
     { njs_vmcode_right_shift, sizeof(njs_vmcode_3addr_t),
           nxt_string("RIGHT SHIFT     ") },
     { njs_vmcode_unsigned_right_shift, sizeof(njs_vmcode_3addr_t),
-          nxt_string("UNS RIGHT SHIFT ") },
+          nxt_string("USGN RIGHT SHIFT") },
 
     { njs_vmcode_logical_not, sizeof(njs_vmcode_2addr_t),
           nxt_string("LOGICAL NOT     ") },

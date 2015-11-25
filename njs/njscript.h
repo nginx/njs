@@ -23,8 +23,7 @@ typedef struct {
 
 
 /* sizeof(njs_value_t) is 16 bytes. */
-#define                                                                       \
-njs_argument(args, n)                                                         \
+#define njs_argument(args, n)                                                 \
     (njs_value_t *) ((u_char *) args + n * 16)
 
 

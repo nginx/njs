@@ -337,7 +337,7 @@ njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value)
     vm->retval.type = NJS_OBJECT;
     vm->retval.data.truth = 1;
 
-    /* 
+    /*
      * The __proto__ getters reside in object prototypes of primitive
      * types.  "AND 0x7" maps type of value to prototype offset:
      *     NJS_BOOLEAN > NJS_PROTOTYPE_BOOLEAN,

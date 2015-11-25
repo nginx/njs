@@ -73,7 +73,7 @@ typedef enum {
 } njs_value_type_t;
 
 
-typedef struct njs_parser_s          njs_parser_t;
+typedef struct njs_parser_s           njs_parser_t;
 
 typedef njs_ret_t (*njs_getter_t) (njs_vm_t *vm, njs_value_t *obj);
 typedef njs_ret_t (*njs_native_t) (njs_vm_t *vm, njs_param_t *param);
@@ -120,11 +120,8 @@ union njs_value_s {
         /* 0xff if u.data.string is external string. */
         uint8_t                   external0;
         uint8_t                   _spare;
-        /*
-         * A long string size.  It is better to store here a size instead of
-         * an UTF-8 length because the size is known at creation time but the
-         * length may be set later and it should be updated in one shared place.
-         */
+
+        /* A long string size. */
         uint32_t                  string_size;
 
         union {
@@ -159,8 +156,7 @@ union njs_value_s {
 };
 
 
-#define                                                                       \
-njs_value(_type, _truth, _number) {                                           \
+#define njs_value(_type, _truth, _number) {                                   \
     .data = {                                                                 \
         .type = _type,                                                        \
         .truth = _truth,                                                      \
@@ -169,8 +165,7 @@ njs_value(_type, _truth, _number) {                                           \
 }
 
 
-#define                                                                       \
-njs_string(s) {                                                               \
+#define njs_string(s) {                                                       \
     .short_string = {                                                         \
         .type = NJS_STRING,                                                   \
         .size = sizeof(s) - 1,                                                \
@@ -182,8 +177,7 @@ njs_string(s) {                                                               \
 
 /* NJS_STRING_LONG is set for both big and little endian platforms. */
 
-#define                                                                       \
-njs_long_string(s) {                                                          \
+#define njs_long_string(s) {                                                  \
     .data = {                                                                 \
         .type = NJS_STRING,                                                   \
         .truth = (NJS_STRING_LONG << 4) | NJS_STRING_LONG,                    \
@@ -196,8 +190,7 @@ njs_long_string(s) {                                                          \
 }
 
 
-#define                                                                       \
-njs_native_function(_function, _local_size) {                                 \
+#define njs_native_function(_function, _local_size) {                         \
     .data = {                                                                 \
         .type = NJS_FUNCTION,                                                 \
         .truth = 1,                                                           \
@@ -211,16 +204,14 @@ njs_native_function(_function, _local_size) {                                 \
 }
 
 
-#define                                                                       \
-njs_getter(_getter)                                                           \
+#define njs_getter(_getter)                                                   \
     { .data = { .type = NJS_NATIVE,                                           \
                 .truth = 1,                                                   \
                 .u = { .getter = _getter }                                    \
     } }
 
 
-#define                                                                       \
-njs_method(_method, _size)                                                    \
+#define njs_method(_method, _size)                                            \
     { .data = { .type = NJS_NATIVE,                                           \
                 .truth = 1,                                                   \
                 .string_size = _size,                                         \
@@ -232,55 +223,45 @@ typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
     njs_value_t *value2);
 
 
-#define                                                                       \
-njs_is_null(value)                                                            \
+#define njs_is_null(value)                                                    \
     ((value)->type == NJS_NULL)
 
 
-#define                                                                       \
-njs_is_void(value)                                                            \
+#define njs_is_void(value)                                                    \
     ((value)->type == NJS_VOID)
 
 
-#define                                                                       \
-njs_is_null_or_void(value)                                                    \
+#define njs_is_null_or_void(value)                                            \
     ((value)->type <= NJS_VOID)
 
 
-#define                                                                       \
-njs_is_boolean(value)                                                         \
+#define njs_is_boolean(value)                                                 \
     ((value)->type == NJS_BOOLEAN)
 
 
-#define                                                                       \
-njs_is_null_or_void_or_boolean(value)                                         \
+#define njs_is_null_or_void_or_boolean(value)                                 \
     ((value)->type <= NJS_BOOLEAN)
 
 
-#define                                                                       \
-njs_is_true(value)                                                            \
+#define njs_is_true(value)                                                    \
     ((value)->data.truth != 0)
 
 
-#define                                                                       \
-njs_is_number(value)                                                          \
+#define njs_is_number(value)                                                  \
     ((value)->type == NJS_NUMBER)
 
 
 /* Testing for NaN first generates a better code at least on i386/amd64. */
 
-#define                                                                       \
-njs_is_number_true(num)                                                       \
+#define njs_is_number_true(num)                                               \
     (!njs_is_nan(num) && num != 0)
 
 
-#define                                                                       \
-njs_is_numeric(value)                                                         \
+#define njs_is_numeric(value)                                                 \
     ((value)->type <= NJS_NUMBER)
 
 
-#define                                                                       \
-njs_is_string(value)                                                          \
+#define njs_is_string(value)                                                  \
     ((value)->type == NJS_STRING)
 
 
@@ -289,57 +270,46 @@ njs_is_string(value)                                                          \
  * so when string size and length are zero the string's value is false and
  * otherwise is true.
  */
-#define                                                                       \
-njs_string_truth(value, size)
+#define njs_string_truth(value, size)
 
 
-#define                                                                       \
-njs_is_primitive(value)                                                       \
+#define njs_is_primitive(value)                                               \
     ((value)->type <= NJS_STRING)
 
 
-#define                                                                       \
-njs_is_object(value)                                                          \
+#define njs_is_object(value)                                                  \
     (((value)->type & NJS_OBJECT) != 0)
 
 
-#define                                                                       \
-njs_is_array(value)                                                           \
+#define njs_is_array(value)                                                   \
     ((value)->type == NJS_ARRAY)
 
 
-#define                                                                       \
-njs_is_function(value)                                                        \
+#define njs_is_function(value)                                                \
     ((value)->type == NJS_FUNCTION)
 
 
-#define                                                                       \
-njs_is_regexp(value)                                                          \
+#define njs_is_regexp(value)                                                  \
     ((value)->type == NJS_REGEXP)
 
 
-#define                                                                       \
-njs_is_native(value)                                                          \
+#define njs_is_native(value)                                                  \
     ((value)->type == NJS_NATIVE)
 
 
-#define                                                                       \
-njs_is_external(value)                                                        \
+#define njs_is_external(value)                                                \
     ((value)->type == NJS_EXTERNAL)
 
 
-#define                                                                       \
-njs_is_valid(value)                                                           \
+#define njs_is_valid(value)                                                   \
     ((value)->type != NJS_INVALID)
 
 
-#define                                                                       \
-njs_set_invalid(value)                                                        \
+#define njs_set_invalid(value)                                                \
     (value)->type = NJS_INVALID
 
 
-#define                                                                       \
-njs_retain(value)                                                             \
+#define njs_retain(value)                                                     \
     do {                                                                      \
         if ((value)->data.truth == NJS_STRING_LONG) {                         \
             njs_value_retain(value);                                          \
@@ -347,8 +317,7 @@ njs_retain(value)                                                             \
     } while (0)
 
 
-#define                                                                       \
-njs_release(vm, value)                                                        \
+#define njs_release(vm, value)                                                \
     do {                                                                      \
         if ((value)->data.truth == NJS_STRING_LONG) {                         \
             njs_value_release((vm), (value));                                 \
@@ -612,12 +581,10 @@ enum njs_functions_e {
 };
 
 
-#define                                                                       \
-njs_scope_index(value)                                                        \
+#define njs_scope_index(value)                                                \
     ((njs_index_t) (value << NJS_SCOPE_SHIFT))
 
-#define                                                                       \
-njs_global_scope_index(value)                                                 \
+#define njs_global_scope_index(value)                                         \
     ((njs_index_t) ((value << NJS_SCOPE_SHIFT) | NJS_SCOPE_GLOBAL))
 
 
@@ -633,20 +600,17 @@ njs_global_scope_index(value)                                                 \
 #define NJS_INDEX_GLOBAL_OFFSET  njs_scope_index(NJS_FUNCTION_MAX)
 
 
-#define                                                                       \
-njs_offset(index)                                                             \
+#define njs_offset(index)                                                     \
     ((uintptr_t) (index) & ~NJS_SCOPE_MASK)
 
 
-#define                                                                       \
-njs_vmcode_operand(vm, index)                                                 \
+#define njs_vmcode_operand(vm, index)                                         \
     ((njs_value_t *)                                                          \
      ((u_char *) vm->scopes[(uintptr_t) (index) & NJS_SCOPE_MASK]             \
       + njs_offset(index)))
 
 
-#define                                                                       \
-njs_index_size(index)                                                         \
+#define njs_index_size(index)                                                 \
     njs_offset(index)
 
 

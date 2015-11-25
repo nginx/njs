@@ -61,12 +61,10 @@ struct njs_function_s {
 
 #define NJS_FRAME_SPARE_SIZE       512
 
-#define                                                                       \
-njs_method_data_size(size)                                                    \
+#define njs_method_data_size(size)                                            \
     nxt_align_size(size, sizeof(njs_value_t))
 
-#define                                                                       \
-njs_native_data(frame)                                                        \
+#define njs_native_data(frame)                                                \
     (void *) ((u_char *) frame + NJS_NATIVE_FRAME_SIZE)
 
 

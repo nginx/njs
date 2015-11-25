@@ -320,7 +320,7 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
 
         nvm->scopes[NJS_SCOPE_GLOBAL] = (njs_value_t *) values;
         memcpy(values + NJS_INDEX_GLOBAL_OFFSET, vm->global_scope,
-                   vm->scope_size);
+               vm->scope_size);
 
         ret = njs_shared_objects_clone(nvm);
         if (nxt_slow_path(ret != NXT_OK)) {
