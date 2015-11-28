@@ -20,7 +20,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 	$(NXT_BUILDDIR)/njs_regexp.o \
 	$(NXT_BUILDDIR)/njs_extern.o \
 	$(NXT_BUILDDIR)/njs_variable.o \
-	$(NXT_BUILDDIR)/njs_shared.o \
+	$(NXT_BUILDDIR)/njs_builtin.o \
 	$(NXT_BUILDDIR)/njs_lexer.o \
 	$(NXT_BUILDDIR)/njs_lexer_keyword.o \
 	$(NXT_BUILDDIR)/njs_nonrecursive_parser.o \
@@ -48,7 +48,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 		$(NXT_BUILDDIR)/njs_regexp.o \
 		$(NXT_BUILDDIR)/njs_extern.o \
 		$(NXT_BUILDDIR)/njs_variable.o \
-		$(NXT_BUILDDIR)/njs_shared.o \
+		$(NXT_BUILDDIR)/njs_builtin.o \
 		$(NXT_BUILDDIR)/njs_lexer.o \
 		$(NXT_BUILDDIR)/njs_lexer_keyword.o \
 		$(NXT_BUILDDIR)/njs_nonrecursive_parser.o \
@@ -244,7 +244,7 @@ $(NXT_BUILDDIR)/njs_variable.o: \
 		-I$(NXT_LIB) -Injs \
 		njs/njs_variable.c
 
-$(NXT_BUILDDIR)/njs_shared.o: \
+$(NXT_BUILDDIR)/njs_builtin.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
 	njs/njscript.h \
 	njs/njs_vm.h \
@@ -254,12 +254,13 @@ $(NXT_BUILDDIR)/njs_shared.o: \
 	njs/njs_object.h \
 	njs/njs_array.h \
 	njs/njs_function.h \
+	njs/njs_regexp.h \
 	njs/njs_parser.h \
-	njs/njs_shared.c \
+	njs/njs_builtin.c \
 
-	$(NXT_CC) -c -o $(NXT_BUILDDIR)/njs_shared.o $(NXT_CFLAGS) \
+	$(NXT_CC) -c -o $(NXT_BUILDDIR)/njs_builtin.o $(NXT_CFLAGS) \
 		-I$(NXT_LIB) -Injs \
-		njs/njs_shared.c
+		njs/njs_builtin.c
 
 $(NXT_BUILDDIR)/njs_lexer.o: \
 	$(NXT_BUILDDIR)/libnxt.a \

@@ -38,7 +38,7 @@ static njs_ret_t njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp,
 
 
 njs_ret_t
-njs_regexp_function(njs_vm_t *vm, njs_param_t *param)
+njs_regexp_constructor(njs_vm_t *vm, njs_param_t *param)
 {
     size_t                length;
     njs_regexp_t          *regexp;
@@ -341,8 +341,7 @@ njs_regexp_alloc(njs_vm_t *vm, njs_regexp_pattern_t *pattern)
 {
     njs_regexp_t  *regexp;
 
-    regexp = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
-                                 sizeof(njs_regexp_t));
+    regexp = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_regexp_t));
 
     if (nxt_fast_path(regexp != NULL)) {
         nxt_lvlhsh_init(&regexp->object.hash);
@@ -664,7 +663,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, u_char *string,
 }
 
 
-static const njs_object_prop_t  njs_regexp_function_properties[] =
+static const njs_object_prop_t  njs_regexp_constructor_properties[] =
 {
     /* RegExp.name == "RegExp". */
     { njs_string("RegExp"),
@@ -677,18 +676,16 @@ static const njs_object_prop_t  njs_regexp_function_properties[] =
       NJS_PROPERTY, 0, 0, 0, },
 
     /* RegExp.prototype. */
-    { njs_getter(njs_object_prototype_create_prototype),
+    { njs_getter(njs_object_prototype_create),
       njs_string("prototype"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 };
 
 
-nxt_int_t
-njs_regexp_function_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash)
-{
-    return njs_object_hash_create(vm, hash, njs_regexp_function_properties,
-                                  nxt_nitems(njs_regexp_function_properties));
-}
+const njs_object_init_t  njs_regexp_constructor_init = {
+     njs_regexp_constructor_properties,
+     nxt_nitems(njs_regexp_constructor_properties),
+};
 
 
 static const njs_object_prop_t  njs_regexp_prototype_properties[] =
@@ -727,12 +724,10 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
 };
 
 
-nxt_int_t
-njs_regexp_prototype_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash)
-{
-    return njs_object_hash_create(vm, hash, njs_regexp_prototype_properties,
-                                  nxt_nitems(njs_regexp_prototype_properties));
-}
+const njs_object_init_t  njs_regexp_prototype_init = {
+     njs_regexp_prototype_properties,
+     nxt_nitems(njs_regexp_prototype_properties),
+};
 
 
 void

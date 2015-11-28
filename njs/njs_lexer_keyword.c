@@ -76,13 +76,13 @@ static const njs_keyword_t  njs_keywords[] = {
 
     /* Builtin functions. */
 
-    { nxt_string("Object"),        NJS_TOKEN_OBJECT_FUNCTION, 0 },
-    { nxt_string("Array"),         NJS_TOKEN_ARRAY_FUNCTION, 0 },
-    { nxt_string("Boolean"),       NJS_TOKEN_BOOLEAN_FUNCTION, 0 },
-    { nxt_string("Number"),        NJS_TOKEN_NUMBER_FUNCTION, 0 },
-    { nxt_string("String"),        NJS_TOKEN_STRING_FUNCTION, 0 },
-    { nxt_string("Function"),      NJS_TOKEN_FUNCTION_FUNCTION, 0 },
-    { nxt_string("RegExp"),        NJS_TOKEN_REGEXP_FUNCTION, 0 },
+    { nxt_string("Object"),        NJS_TOKEN_OBJECT_CONSTRUCTOR, 0 },
+    { nxt_string("Array"),         NJS_TOKEN_ARRAY_CONSTRUCTOR, 0 },
+    { nxt_string("Boolean"),       NJS_TOKEN_BOOLEAN_CONSTRUCTOR, 0 },
+    { nxt_string("Number"),        NJS_TOKEN_NUMBER_CONSTRUCTOR, 0 },
+    { nxt_string("String"),        NJS_TOKEN_STRING_CONSTRUCTOR, 0 },
+    { nxt_string("Function"),      NJS_TOKEN_FUNCTION_CONSTRUCTOR, 0 },
+    { nxt_string("RegExp"),        NJS_TOKEN_REGEXP_CONSTRUCTOR, 0 },
     { nxt_string("eval"),          NJS_TOKEN_EVAL, 0 },
 
     /* Reserved words. */

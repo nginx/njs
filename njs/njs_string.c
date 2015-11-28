@@ -251,7 +251,7 @@ njs_string_prop(njs_string_prop_t *string, njs_value_t *value)
 
 
 njs_ret_t
-njs_string_ctor_function(njs_vm_t *vm, njs_param_t *param)
+njs_string_constructor(njs_vm_t *vm, njs_param_t *param)
 {
     njs_object_t       *object;
     const njs_value_t  *value;
@@ -265,7 +265,6 @@ njs_string_ctor_function(njs_vm_t *vm, njs_param_t *param)
     }
 
     if (vm->frame->ctor) {
-        /* value->type is the same as prototype offset. */
         object = njs_object_value_alloc(vm, value, value->type);
         if (nxt_slow_path(object == NULL)) {
             return NXT_ERROR;
@@ -283,7 +282,7 @@ njs_string_ctor_function(njs_vm_t *vm, njs_param_t *param)
 }
 
 
-static const njs_object_prop_t  njs_string_function_properties[] =
+static const njs_object_prop_t  njs_string_constructor_properties[] =
 {
     /* String.name == "String". */
     { njs_string("String"),
@@ -296,18 +295,16 @@ static const njs_object_prop_t  njs_string_function_properties[] =
       NJS_PROPERTY, 0, 0, 0, },
 
     /* String.prototype. */
-    { njs_getter(njs_object_prototype_create_prototype),
+    { njs_getter(njs_object_prototype_create),
       njs_string("prototype"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 };
 
 
-nxt_int_t
-njs_string_function_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash)
-{
-    return njs_object_hash_create(vm, hash, njs_string_function_properties,
-                                  nxt_nitems(njs_string_function_properties));
-}
+const njs_object_init_t  njs_string_constructor_init = {
+     njs_string_constructor_properties,
+     nxt_nitems(njs_string_constructor_properties),
+};
 
 
 static njs_ret_t
@@ -1680,12 +1677,10 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
 };
 
 
-nxt_int_t
-njs_string_prototype_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash)
-{
-    return njs_object_hash_create(vm, hash, njs_string_prototype_properties,
-                                  nxt_nitems(njs_string_prototype_properties));
-}
+const njs_object_init_t  njs_string_prototype_init = {
+     njs_string_prototype_properties,
+     nxt_nitems(njs_string_prototype_properties),
+};
 
 
 static nxt_int_t
@@ -1725,7 +1720,7 @@ static const nxt_lvlhsh_proto_t  njs_values_hash_proto
 
 
 /*
- * Constant values such as njs_value_zero are copied to vm->values_hash during
+ * Constant values such as njs_value_true are copied to values_hash during
  * code generation when them are used as operands to guarantee aligned value.
  */
 
@@ -1737,6 +1732,7 @@ njs_value_index(njs_vm_t *vm, njs_parser_t *parser, const njs_value_t *src)
     nxt_int_t           ret;
     njs_value_t         *value;
     njs_string_t        *string;
+    nxt_lvlhsh_t        *values_hash;
     nxt_lvlhsh_query_t  lhq;
 
     if (src->type != NJS_STRING || src->short_string.size != NJS_STRING_LONG) {
@@ -1753,10 +1749,12 @@ njs_value_index(njs_vm_t *vm, njs_parser_t *parser, const njs_value_t *src)
     lhq.key.data = start;
     lhq.proto = &njs_values_hash_proto;
 
-    if (nxt_lvlhsh_find(&vm->values_hash, &lhq) == NXT_OK) {
+    if (nxt_lvlhsh_find(&vm->shared->values_hash, &lhq) == NXT_OK) {
         value = lhq.value;
 
-    } else if (nxt_lvlhsh_find(&parser->values_hash, &lhq) == NXT_OK) {
+    } else if (parser->runtime
+               && nxt_lvlhsh_find(&vm->values_hash, &lhq) == NXT_OK)
+    {
         value = lhq.value;
 
     } else {
@@ -1798,7 +1796,10 @@ njs_value_index(njs_vm_t *vm, njs_parser_t *parser, const njs_value_t *src)
         lhq.value = value;
         lhq.pool = vm->mem_cache_pool;
 
-        ret = nxt_lvlhsh_insert(&parser->values_hash, &lhq);
+        values_hash = parser->runtime ? &vm->values_hash:
+                                        &vm->shared->values_hash;
+
+        ret = nxt_lvlhsh_insert(values_hash, &lhq);
 
         if (nxt_slow_path(ret != NXT_OK)) {
             return NJS_INDEX_NONE;

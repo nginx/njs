@@ -8,9 +8,10 @@
 #define _NJS_BOOLEAN_H_INCLUDED_
 
 
-njs_ret_t njs_boolean_function(njs_vm_t *vm, njs_param_t *param);
-nxt_int_t njs_boolean_function_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash);
-nxt_int_t njs_boolean_prototype_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash);
+njs_ret_t njs_boolean_constructor(njs_vm_t *vm, njs_param_t *param);
+
+extern const njs_object_init_t  njs_boolean_constructor_init;
+extern const njs_object_init_t  njs_boolean_prototype_init;
 
 
 #endif /* _NJS_BOOLEAN_H_INCLUDED_ */

@@ -75,8 +75,7 @@ njs_function_alloc(njs_vm_t *vm)
     njs_function_t         *func;
     njs_function_script_t  *script;
 
-    func = nxt_mem_cache_zalign(vm->mem_cache_pool, sizeof(njs_value_t),
-                                sizeof(njs_function_t));
+    func = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_function_t));
 
     if (nxt_fast_path(func != NULL)) {
         func->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION];
@@ -204,7 +203,7 @@ njs_vmcode_trap(njs_vm_t *vm, nxt_uint_t trap, njs_value_t *value1,
 
 
 njs_ret_t
-njs_function_function(njs_vm_t *vm, njs_param_t *param)
+njs_function_constructor(njs_vm_t *vm, njs_param_t *param)
 {
     return NXT_ERROR;
 }
@@ -348,7 +347,7 @@ njs_function_call(njs_vm_t *vm, njs_function_t *func, njs_index_t retval)
 }
 
 
-static const njs_object_prop_t  njs_function_function_properties[] =
+static const njs_object_prop_t  njs_function_constructor_properties[] =
 {
     /* Function.name == "Function". */
     { njs_string("Function"),
@@ -361,18 +360,16 @@ static const njs_object_prop_t  njs_function_function_properties[] =
       NJS_PROPERTY, 0, 0, 0, },
 
     /* Function.prototype. */
-    { njs_getter(njs_object_prototype_create_prototype),
+    { njs_getter(njs_object_prototype_create),
       njs_string("prototype"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 };
 
 
-nxt_int_t
-njs_function_function_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash)
-{
-    return njs_object_hash_create(vm, hash, njs_function_function_properties,
-                                  nxt_nitems(njs_function_function_properties));
-}
+const njs_object_init_t  njs_function_constructor_init = {
+     njs_function_constructor_properties,
+     nxt_nitems(njs_function_constructor_properties),
+};
 
 
 static njs_ret_t
@@ -575,12 +572,10 @@ static const njs_object_prop_t  njs_function_prototype_properties[] =
 };
 
 
-nxt_int_t
-njs_function_prototype_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash)
-{
-    return njs_object_hash_create(vm, hash, njs_function_prototype_properties,
-                           nxt_nitems(njs_function_prototype_properties));
-}
+const njs_object_init_t  njs_function_prototype_init = {
+     njs_function_prototype_properties,
+     nxt_nitems(njs_function_prototype_properties),
+};
 
 
 njs_ret_t
@@ -604,9 +599,7 @@ static const njs_object_prop_t  njs_eval_function_properties[] =
 };
 
 
-nxt_int_t
-njs_eval_function_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash)
-{
-    return njs_object_hash_create(vm, hash, njs_eval_function_properties,
-                                  nxt_nitems(njs_eval_function_properties));
-}
+const njs_object_init_t  njs_eval_function_init = {
+     njs_eval_function_properties,
+     nxt_nitems(njs_eval_function_properties),
+};

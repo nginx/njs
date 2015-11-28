@@ -95,8 +95,8 @@ const njs_value_t  njs_value_nan =          njs_value(NJS_NUMBER, 0, NJS_NAN);
 
 const njs_value_t  njs_string_empty =       njs_string("");
 const njs_value_t  njs_string_comma =       njs_string(",");
-const njs_value_t  njs_string_void =        njs_string("undefined");
 const njs_value_t  njs_string_null =        njs_string("null");
+const njs_value_t  njs_string_void =        njs_string("undefined");
 const njs_value_t  njs_string_boolean =     njs_string("boolean");
 const njs_value_t  njs_string_false =       njs_string("false");
 const njs_value_t  njs_string_true =        njs_string("true");
@@ -110,25 +110,6 @@ const njs_value_t  njs_string_string =      njs_string("string");
 const njs_value_t  njs_string_object =      njs_string("object");
 const njs_value_t  njs_string_function =    njs_string("function");
 const njs_value_t  njs_string_native =      njs_string("[native code]");
-const njs_value_t  njs_string_prototype =   njs_string("prototype");
-const njs_value_t  njs_string_constructor = njs_string("constructor");
-
-const njs_value_t  njs_string_object_null = njs_string("[object Null]");
-const njs_value_t  njs_string_object_undefined =
-                                         njs_long_string("[object Undefined]");
-const njs_value_t  njs_string_object_boolean =
-                                         njs_long_string("[object Boolean]");
-const njs_value_t  njs_string_object_number =
-                                         njs_long_string("[object Number]");
-const njs_value_t  njs_string_object_string =
-                                         njs_long_string("[object String]");
-const njs_value_t  njs_string_object_object =
-                                         njs_long_string("[object Object]");
-const njs_value_t  njs_string_object_array = njs_string("[object Array]");
-const njs_value_t  njs_string_object_function =
-                                         njs_long_string("[object Function]");
-const njs_value_t  njs_string_object_regexp =
-                                         njs_long_string("[object RegExp]");
 
 const njs_value_t  njs_exception_syntax_error =    njs_string("SyntaxError");
 const njs_value_t  njs_exception_reference_error = njs_string("ReferenceError");
@@ -874,7 +855,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
             return NJS_PRIMITIVE_VALUE;
         }
 
-        obj = &vm->prototypes[object->type];
+        obj = &vm->prototypes[njs_primitive_prototype_index(object->type)];
         break;
 
     case NJS_STRING:

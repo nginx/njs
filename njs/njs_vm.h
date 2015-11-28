@@ -58,10 +58,9 @@ typedef enum {
     /*
      * The object types have the third bit set.  It is used in njs_is_object().
      * NJS_OBJECT_BOOLEAN, NJS_OBJECT_NUMBER, and NJS_OBJECT_STRING must be
-     * equal to NJS_BOOLEAN, NJS_NUMBER, and NJS_STRING respectively with
-     * the third bit set.  It is used in njs_primitive_prototype_get_proto()
-     * and in njs_property_query().  The order of object types is used in
-     * vm->prototypes and vm->functions arrays.
+     * in the same order as NJS_BOOLEAN, NJS_NUMBER, and NJS_STRING.  It is
+     * used in njs_primitive_prototype_index().  The order of object types
+     * is used in vm->prototypes and vm->functions arrays.
      */
     NJS_OBJECT          = 0x08,
     NJS_ARRAY           = 0x09,
@@ -80,15 +79,48 @@ typedef njs_ret_t (*njs_native_t) (njs_vm_t *vm, njs_param_t *param);
 
 
 typedef struct njs_string_s           njs_string_t;
-typedef struct njs_object_s           njs_object_t;
-typedef struct njs_array_s            njs_array_t;
+typedef struct njs_object_init_s      njs_object_init_t;
 typedef struct njs_object_value_s     njs_object_value_t;
-typedef struct njs_function_s         njs_function_t;
+typedef struct njs_array_s            njs_array_t;
 typedef struct njs_function_script_s  njs_function_script_t;
 typedef struct njs_regexp_s           njs_regexp_t;
 typedef struct njs_regexp_pattern_s   njs_regexp_pattern_t;
 typedef struct njs_extern_s           njs_extern_t;
 typedef struct njs_native_frame_s     njs_native_frame_t;
+
+
+typedef struct njs_object_s           njs_object_t;
+
+struct njs_object_s {
+    /* A private hash of njs_object_prop_t. */
+    nxt_lvlhsh_t                      hash;
+
+    /* A shared hash of njs_object_prop_t. */
+    nxt_lvlhsh_t                      shared_hash;
+
+    /* An object __proto__. */
+    njs_object_t                      *__proto__;
+};
+
+
+typedef struct {
+    njs_object_t                      object;
+
+#if (NXT_64BIT)
+    uint32_t                          native;
+    uint32_t                          args_offset;
+#else
+    uint8_t                           native;
+    uint16_t                          args_offset;
+#endif
+
+    union {
+        njs_function_script_t         *script;
+        njs_native_t                  native;
+    } code;
+
+    njs_value_t                       *args;
+} njs_function_t;
 
 
 union njs_value_s {
@@ -556,28 +588,32 @@ typedef enum {
 
 
 enum njs_prototypes_e {
-    NJS_PROTOTYPE_OBJECT = 0,
+    NJS_PROTOTYPE_OBJECT =   0,
     NJS_PROTOTYPE_ARRAY,
     NJS_PROTOTYPE_BOOLEAN,
     NJS_PROTOTYPE_NUMBER,
     NJS_PROTOTYPE_STRING,
     NJS_PROTOTYPE_FUNCTION,
     NJS_PROTOTYPE_REGEXP,
-#define NJS_PROTOTYPE_MAX  (NJS_PROTOTYPE_REGEXP + 1)
+#define NJS_PROTOTYPE_MAX    (NJS_PROTOTYPE_REGEXP + 1)
 };
 
 
+#define njs_primitive_prototype_index(type)                                   \
+    (NJS_PROTOTYPE_BOOLEAN + ((type) - NJS_BOOLEAN))
+
+
 enum njs_functions_e {
-    NJS_FUNCTION_OBJECT = NJS_PROTOTYPE_OBJECT,
-    NJS_FUNCTION_ARRAY = NJS_PROTOTYPE_ARRAY,
-    NJS_FUNCTION_BOOLEAN = NJS_PROTOTYPE_BOOLEAN,
-    NJS_FUNCTION_NUMBER = NJS_PROTOTYPE_NUMBER,
-    NJS_FUNCTION_STRING = NJS_PROTOTYPE_STRING,
-    NJS_FUNCTION_FUNCTION = NJS_PROTOTYPE_FUNCTION,
-    NJS_FUNCTION_REGEXP = NJS_PROTOTYPE_REGEXP,
+    NJS_FUNCTION_OBJECT =    NJS_PROTOTYPE_OBJECT,
+    NJS_FUNCTION_ARRAY =     NJS_PROTOTYPE_ARRAY,
+    NJS_FUNCTION_BOOLEAN =   NJS_PROTOTYPE_BOOLEAN,
+    NJS_FUNCTION_NUMBER =    NJS_PROTOTYPE_NUMBER,
+    NJS_FUNCTION_STRING =    NJS_PROTOTYPE_STRING,
+    NJS_FUNCTION_FUNCTION =  NJS_PROTOTYPE_FUNCTION,
+    NJS_FUNCTION_REGEXP =    NJS_PROTOTYPE_REGEXP,
 
     NJS_FUNCTION_EVAL,
-#define NJS_FUNCTION_MAX  (NJS_FUNCTION_EVAL + 1)
+#define NJS_FUNCTION_MAX     (NJS_FUNCTION_EVAL + 1)
 };
 
 
@@ -642,11 +678,10 @@ struct njs_vm_s {
 
     nxt_lvlhsh_t             externals_hash;
     nxt_lvlhsh_t             variables_hash;
-    nxt_lvlhsh_t             functions_hash;
     nxt_lvlhsh_t             values_hash;
 
-    njs_object_t             *prototypes;
-    njs_function_t           *functions;
+    njs_object_t             prototypes[NJS_PROTOTYPE_MAX];
+    njs_function_t           functions[NJS_FUNCTION_MAX];
 
     nxt_mem_cache_pool_t     *mem_cache_pool;
 
@@ -670,9 +705,10 @@ typedef struct {
 struct njs_vm_shared_s {
     nxt_lvlhsh_t             keywords_hash;
     nxt_lvlhsh_t             values_hash;
+    nxt_lvlhsh_t             null_proto_hash;
 
-    njs_object_t             *prototypes;
-    njs_function_t           *functions;
+    njs_object_t             prototypes[NJS_PROTOTYPE_MAX];
+    njs_function_t           functions[NJS_FUNCTION_MAX];
 };
 
 
@@ -809,8 +845,8 @@ njs_ret_t njs_vmcode_restart(njs_vm_t *vm, njs_value_t *invld1,
 
 nxt_noinline void njs_number_set(njs_value_t *value, double num);
 
-nxt_int_t njs_shared_objects_create(njs_vm_t *vm);
-nxt_int_t njs_shared_objects_clone(njs_vm_t *vm);
+nxt_int_t njs_builtin_objects_create(njs_vm_t *vm);
+nxt_int_t njs_builtin_objects_clone(njs_vm_t *vm);
 
 
 void *njs_lvlhsh_alloc(void *data, size_t size, nxt_uint_t nalloc);
@@ -834,18 +870,6 @@ extern const njs_value_t  njs_string_native;
 extern const njs_value_t  njs_string_minus_infinity;
 extern const njs_value_t  njs_string_plus_infinity;
 extern const njs_value_t  njs_string_nan;
-extern const njs_value_t  njs_string_prototype;
-extern const njs_value_t  njs_string_constructor;
-
-extern const njs_value_t  njs_string_object_null;
-extern const njs_value_t  njs_string_object_undefined;
-extern const njs_value_t  njs_string_object_boolean;
-extern const njs_value_t  njs_string_object_number;
-extern const njs_value_t  njs_string_object_string;
-extern const njs_value_t  njs_string_object_object;
-extern const njs_value_t  njs_string_object_array;
-extern const njs_value_t  njs_string_object_function;
-extern const njs_value_t  njs_string_object_regexp;
 
 extern const njs_value_t  njs_exception_syntax_error;
 extern const njs_value_t  njs_exception_reference_error;

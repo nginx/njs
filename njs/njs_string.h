@@ -88,8 +88,7 @@ njs_ret_t njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string,
     njs_value_t *value);
 nxt_noinline size_t njs_string_prop(njs_string_prop_t *string,
     njs_value_t *value);
-njs_ret_t njs_string_ctor_function(njs_vm_t *vm, njs_param_t *param);
-nxt_int_t njs_string_function_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash);
+njs_ret_t njs_string_constructor(njs_vm_t *vm, njs_param_t *param);
 void njs_string_offset_map_init(const u_char *start, size_t size);
 nxt_bool_t njs_string_eq(const njs_value_t *val1, const njs_value_t *val2);
 nxt_int_t njs_string_cmp(const njs_value_t *val1, const njs_value_t *val2);
@@ -104,10 +103,12 @@ njs_ret_t njs_value_to_string(njs_vm_t *vm, njs_value_t *dst,
 njs_ret_t njs_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst,
     const njs_value_t *src);
 double njs_string_to_number(njs_value_t *value);
-nxt_int_t njs_string_prototype_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash);
 
 njs_index_t njs_value_index(njs_vm_t *vm, njs_parser_t *parser,
     const njs_value_t *src);
+
+extern const njs_object_init_t  njs_string_constructor_init;
+extern const njs_object_init_t  njs_string_prototype_init;
 
 
 #endif /* _NJS_STRING_H_INCLUDED_ */

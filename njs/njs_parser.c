@@ -329,7 +329,6 @@ njs_parser_function_statement(njs_vm_t *vm, njs_parser_t *parser)
     value->data.u.function->code.script->u.parser = fn_parser;
 
     fn_parser->lexer = parser->lexer;
-    fn_parser->values_hash = vm->shared->values_hash;
 
     /* njs_vmcode_return() size. */
     fn_parser->code_size = sizeof(njs_vmcode_stop_t);
@@ -485,7 +484,6 @@ njs_parser_function_expression(njs_vm_t *vm, njs_parser_t *parser)
     func->u.parser = fn_parser;
 
     fn_parser->lexer = parser->lexer;
-    fn_parser->values_hash = vm->shared->values_hash;
 
     /* njs_vmcode_return() size. */
     fn_parser->code_size = sizeof(njs_vmcode_stop_t);
@@ -1410,31 +1408,31 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
         node->index = NJS_INDEX_THIS;
         break;
 
-    case NJS_TOKEN_OBJECT_FUNCTION:
+    case NJS_TOKEN_OBJECT_CONSTRUCTOR:
         node->index = NJS_INDEX_OBJECT;
         break;
 
-    case NJS_TOKEN_ARRAY_FUNCTION:
+    case NJS_TOKEN_ARRAY_CONSTRUCTOR:
         node->index = NJS_INDEX_ARRAY;
         break;
 
-    case NJS_TOKEN_BOOLEAN_FUNCTION:
+    case NJS_TOKEN_BOOLEAN_CONSTRUCTOR:
         node->index = NJS_INDEX_BOOLEAN;
         break;
 
-    case NJS_TOKEN_NUMBER_FUNCTION:
+    case NJS_TOKEN_NUMBER_CONSTRUCTOR:
         node->index = NJS_INDEX_NUMBER;
         break;
 
-    case NJS_TOKEN_STRING_FUNCTION:
+    case NJS_TOKEN_STRING_CONSTRUCTOR:
         node->index = NJS_INDEX_STRING;
         break;
 
-    case NJS_TOKEN_FUNCTION_FUNCTION:
+    case NJS_TOKEN_FUNCTION_CONSTRUCTOR:
         node->index = NJS_INDEX_FUNCTION;
         break;
 
-    case NJS_TOKEN_REGEXP_FUNCTION:
+    case NJS_TOKEN_REGEXP_CONSTRUCTOR:
         node->index = NJS_INDEX_REGEXP;
         break;
 

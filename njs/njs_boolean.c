@@ -18,7 +18,7 @@
 
 
 njs_ret_t
-njs_boolean_function(njs_vm_t *vm, njs_param_t *param)
+njs_boolean_constructor(njs_vm_t *vm, njs_param_t *param)
 {
     njs_object_t       *object;
     const njs_value_t  *value;
@@ -32,7 +32,6 @@ njs_boolean_function(njs_vm_t *vm, njs_param_t *param)
     }
 
     if (vm->frame->ctor) {
-        /* value->type is the same as prototype offset. */
         object = njs_object_value_alloc(vm, value, value->type);
         if (nxt_slow_path(object == NULL)) {
             return NXT_ERROR;
@@ -50,7 +49,7 @@ njs_boolean_function(njs_vm_t *vm, njs_param_t *param)
 }
 
 
-static const njs_object_prop_t  njs_boolean_function_properties[] =
+static const njs_object_prop_t  njs_boolean_constructor_properties[] =
 {
     /* Boolean.name == "Boolean". */
     { njs_string("Boolean"),
@@ -63,18 +62,16 @@ static const njs_object_prop_t  njs_boolean_function_properties[] =
       NJS_PROPERTY, 0, 0, 0, },
 
     /* Boolean.prototype. */
-    { njs_getter(njs_object_prototype_create_prototype),
+    { njs_getter(njs_object_prototype_create),
       njs_string("prototype"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 };
 
 
-nxt_int_t
-njs_boolean_function_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash)
-{
-    return njs_object_hash_create(vm, hash, njs_boolean_function_properties,
-                                  nxt_nitems(njs_boolean_function_properties));
-}
+const njs_object_init_t  njs_boolean_constructor_init = {
+     njs_boolean_constructor_properties,
+     nxt_nitems(njs_boolean_constructor_properties),
+};
 
 
 static njs_ret_t
@@ -141,9 +138,7 @@ static const njs_object_prop_t  njs_boolean_prototype_properties[] =
 };
 
 
-nxt_int_t
-njs_boolean_prototype_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash)
-{
-    return njs_object_hash_create(vm, hash, njs_boolean_prototype_properties,
-                                  nxt_nitems(njs_boolean_prototype_properties));
-}
+const njs_object_init_t  njs_boolean_prototype_init = {
+     njs_boolean_prototype_properties,
+     nxt_nitems(njs_boolean_prototype_properties),
+};

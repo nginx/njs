@@ -27,26 +27,6 @@ struct njs_function_script_s {
 };
 
 
-struct njs_function_s {
-    njs_object_t                   object;
-
-#if (NXT_64BIT)
-    uint32_t                       native;
-    uint32_t                       args_offset;
-#else
-    uint8_t                        native;
-    uint16_t                       args_offset;
-#endif
-
-    union {
-        njs_function_script_t      *script;
-        njs_native_t               native;
-    } code;
-
-    njs_value_t                    *args;
-};
-
-
 /* The frame size must be aligned to njs_value_t. */
 #define NJS_NATIVE_FRAME_SIZE                                                 \
     nxt_align_size(sizeof(njs_native_frame_t), sizeof(njs_value_t))
@@ -113,7 +93,7 @@ typedef struct {
 
 
 njs_function_t *njs_function_alloc(njs_vm_t *vm);
-njs_ret_t njs_function_function(njs_vm_t *vm, njs_param_t *param);
+njs_ret_t njs_function_constructor(njs_vm_t *vm, njs_param_t *param);
 njs_ret_t njs_function_apply(njs_vm_t *vm, njs_value_t *name,
     njs_param_t *param);
 njs_value_t *njs_vmcode_native_frame(njs_vm_t *vm, njs_value_t *method,
@@ -124,11 +104,13 @@ njs_ret_t njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *name,
     njs_param_t *param, nxt_bool_t ctor);
 njs_ret_t njs_function_call(njs_vm_t *vm, njs_function_t *func,
     njs_index_t retval);
-nxt_int_t njs_function_function_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash);
-nxt_int_t njs_function_prototype_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash);
+
+extern const njs_object_init_t  njs_function_constructor_init;
+extern const njs_object_init_t  njs_function_prototype_init;
 
 njs_ret_t njs_eval_function(njs_vm_t *vm, njs_param_t *param);
-nxt_int_t njs_eval_function_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash);
+
+extern const njs_object_init_t  njs_eval_function_init;
 
 
 #endif /* _NJS_FUNCTION_H_INCLUDED_ */

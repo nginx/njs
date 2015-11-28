@@ -916,13 +916,13 @@ njs_parser_call_expression(njs_vm_t *vm, njs_parser_t *parser,
                                  + sizeof(njs_vmcode_call_t);
             break;
 
-        case NJS_TOKEN_OBJECT_FUNCTION:
-        case NJS_TOKEN_ARRAY_FUNCTION:
-        case NJS_TOKEN_BOOLEAN_FUNCTION:
-        case NJS_TOKEN_NUMBER_FUNCTION:
-        case NJS_TOKEN_STRING_FUNCTION:
-        case NJS_TOKEN_FUNCTION_FUNCTION:
-        case NJS_TOKEN_REGEXP_FUNCTION:
+        case NJS_TOKEN_OBJECT_CONSTRUCTOR:
+        case NJS_TOKEN_ARRAY_CONSTRUCTOR:
+        case NJS_TOKEN_BOOLEAN_CONSTRUCTOR:
+        case NJS_TOKEN_NUMBER_CONSTRUCTOR:
+        case NJS_TOKEN_STRING_CONSTRUCTOR:
+        case NJS_TOKEN_FUNCTION_CONSTRUCTOR:
+        case NJS_TOKEN_REGEXP_CONSTRUCTOR:
         case NJS_TOKEN_EVAL:
             func = njs_parser_node_alloc(vm);
             if (nxt_slow_path(func == NULL)) {

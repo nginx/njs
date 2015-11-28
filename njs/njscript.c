@@ -99,11 +99,12 @@ njs_vm_t *
 njs_vm_create(nxt_mem_cache_pool_t *mcp, njs_vm_shared_t **shared,
     nxt_lvlhsh_t *externals)
 {
-    njs_vm_t  *vm;
+    njs_vm_t   *vm;
+    nxt_int_t  ret;
 
     if (mcp == NULL) {
         mcp = nxt_mem_cache_pool_create(&njs_vm_mem_cache_pool_proto, NULL,
-                                       NULL, 2 * nxt_pagesize(), 128, 512, 16);
+                                        NULL, 2 * nxt_pagesize(), 128, 512, 16);
         if (nxt_slow_path(mcp == NULL)) {
             return NULL;
         }
@@ -114,17 +115,38 @@ njs_vm_create(nxt_mem_cache_pool_t *mcp, njs_vm_shared_t **shared,
     if (nxt_fast_path(vm != NULL)) {
         vm->mem_cache_pool = mcp;
 
-        if (shared != NULL) {
+        if (shared != NULL && *shared != NULL) {
+            vm->shared = *shared;
 
-            if (*shared == NULL) {
-                *shared = nxt_mem_cache_zalloc(mcp, sizeof(njs_vm_shared_t));
-                if (nxt_slow_path(*shared == NULL)) {
-                    return NULL;
-                }
+        } else {
+            vm->shared = nxt_mem_cache_zalloc(mcp, sizeof(njs_vm_shared_t));
+
+            if (nxt_slow_path(vm->shared == NULL)) {
+                return NULL;
             }
 
-            vm->shared = *shared;
+            if (shared != NULL) {
+                *shared = vm->shared;
+            }
+
+            nxt_lvlhsh_init(&vm->shared->keywords_hash);
+
+            ret = njs_lexer_keywords_init(mcp, &vm->shared->keywords_hash);
+
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return NULL;
+            }
+
+            nxt_lvlhsh_init(&vm->shared->values_hash);
+
+            ret = njs_builtin_objects_create(vm);
+
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return NULL;
+            }
         }
+
+        nxt_lvlhsh_init(&vm->values_hash);
 
         if (externals != NULL) {
             vm->externals_hash = *externals;
@@ -150,7 +172,6 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     nxt_int_t          ret;
     njs_lexer_t        *lexer;
     njs_parser_t       *parser;
-    nxt_lvlhsh_t       keywords_hash;
     njs_parser_node_t  *node;
 
     parser = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_parser_t));
@@ -166,39 +187,9 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     }
 
     parser->lexer = lexer;
-
-    if (vm->shared != NULL) {
-        keywords_hash = vm->shared->keywords_hash;
-        parser->values_hash = vm->shared->values_hash;
-
-        /* STUB */
-        if (vm->shared->prototypes == NULL) {
-            ret = njs_shared_objects_create(vm);
-            if (nxt_slow_path(ret != NXT_OK)) {
-                return NJS_ERROR;
-            }
-        }
-
-    } else {
-        nxt_lvlhsh_init(&keywords_hash);
-    }
-
-    if (nxt_lvlhsh_is_empty(&keywords_hash)) {
-
-        ret = njs_lexer_keywords_init(vm->mem_cache_pool, &keywords_hash);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return NJS_ERROR;
-        }
-
-        if (vm->shared != NULL) {
-            vm->shared->keywords_hash = keywords_hash;
-        }
-    }
-
-    parser->lexer->keywords_hash = keywords_hash;
-
-    parser->lexer->start = *start;
-    parser->lexer->end = end;
+    lexer->start = *start;
+    lexer->end = end;
+    lexer->keywords_hash = vm->shared->keywords_hash;
 
     parser->code_size = sizeof(njs_vmcode_stop_t);
     parser->scope = NJS_SCOPE_GLOBAL;
@@ -236,13 +227,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 
     vm->global_scope = parser->local_scope;
     vm->scope_size = parser->scope_size;
-
     vm->variables_hash = parser->variables_hash;
-    vm->values_hash = parser->values_hash;
-
-    if (vm->shared != NULL) {
-        vm->shared->values_hash = parser->values_hash;
-    }
 
     vm->parser = NULL;
 
@@ -322,7 +307,7 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
         memcpy(values + NJS_INDEX_GLOBAL_OFFSET, vm->global_scope,
                vm->scope_size);
 
-        ret = njs_shared_objects_clone(nvm);
+        ret = njs_builtin_objects_clone(nvm);
         if (nxt_slow_path(ret != NXT_OK)) {
             goto fail;
         }

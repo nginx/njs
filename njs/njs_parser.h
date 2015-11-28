@@ -160,13 +160,13 @@ typedef enum {
 
     NJS_TOKEN_THIS,
 
-    NJS_TOKEN_OBJECT_FUNCTION,
-    NJS_TOKEN_ARRAY_FUNCTION,
-    NJS_TOKEN_FUNCTION_FUNCTION,
-    NJS_TOKEN_REGEXP_FUNCTION,
-    NJS_TOKEN_BOOLEAN_FUNCTION,
-    NJS_TOKEN_NUMBER_FUNCTION,
-    NJS_TOKEN_STRING_FUNCTION,
+    NJS_TOKEN_OBJECT_CONSTRUCTOR,
+    NJS_TOKEN_ARRAY_CONSTRUCTOR,
+    NJS_TOKEN_FUNCTION_CONSTRUCTOR,
+    NJS_TOKEN_REGEXP_CONSTRUCTOR,
+    NJS_TOKEN_BOOLEAN_CONSTRUCTOR,
+    NJS_TOKEN_NUMBER_CONSTRUCTOR,
+    NJS_TOKEN_STRING_CONSTRUCTOR,
     NJS_TOKEN_EVAL,
 
     NJS_TOKEN_RESERVED,
@@ -241,8 +241,6 @@ struct njs_parser_s {
     nxt_array_t                     *arguments;
 
     nxt_lvlhsh_t                    variables_hash;
-    nxt_lvlhsh_t                    values_hash;
-    nxt_lvlhsh_t                    functions_hash;
 
     nxt_array_t                     *index_cache;
     njs_index_t                     index[NJS_SCOPES - NJS_INDEX_CACHE];
@@ -251,6 +249,9 @@ struct njs_parser_s {
 
     uint8_t                         scope;        /* 4 bits */
     uint8_t                         branch;       /* 1 bit */
+
+    /* Parsing Function() or eval(). */
+    uint8_t                         runtime;      /* 1 bit */
 
     size_t                          code_size;
 

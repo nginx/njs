@@ -21,44 +21,44 @@
 
 
 static nxt_int_t njs_object_hash_test(nxt_lvlhsh_query_t *lhq, void *data);
-static nxt_int_t njs_object_null_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash);
 
 
 nxt_noinline njs_object_t *
 njs_object_alloc(njs_vm_t *vm)
 {
-    njs_object_t  *obj;
+    njs_object_t  *object;
 
-    obj = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
-                              sizeof(njs_object_t));
+    object = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_object_t));
 
-    if (nxt_fast_path(obj != NULL)) {
-        nxt_lvlhsh_init(&obj->hash);
-        nxt_lvlhsh_init(&obj->shared_hash);
-        obj->__proto__ = &vm->prototypes[NJS_PROTOTYPE_OBJECT];
+    if (nxt_fast_path(object != NULL)) {
+        nxt_lvlhsh_init(&object->hash);
+        nxt_lvlhsh_init(&object->shared_hash);
+        object->__proto__ = &vm->prototypes[NJS_PROTOTYPE_OBJECT];
     }
 
-    return obj;
+    return object;
 }
 
 
 nxt_noinline njs_object_t *
-njs_object_value_alloc(njs_vm_t *vm, const njs_value_t *value,
-    nxt_uint_t prototype)
+njs_object_value_alloc(njs_vm_t *vm, const njs_value_t *value, nxt_uint_t type)
 {
-    njs_object_value_t  *obj;
+    nxt_uint_t          index;
+    njs_object_value_t  *ov;
 
-    obj = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
-                              sizeof(njs_object_value_t));
+    ov = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_object_value_t));
 
-    if (nxt_fast_path(obj != NULL)) {
-        nxt_lvlhsh_init(&obj->object.hash);
-        nxt_lvlhsh_init(&obj->object.shared_hash);
-        obj->object.__proto__ = &vm->prototypes[prototype];
-        obj->value = *value;
+    if (nxt_fast_path(ov != NULL)) {
+        nxt_lvlhsh_init(&ov->object.hash);
+        nxt_lvlhsh_init(&ov->object.shared_hash);
+
+        index = njs_primitive_prototype_index(type);
+        ov->object.__proto__ = &vm->prototypes[index];
+
+        ov->value = *value;
     }
 
-    return &obj->object;
+    return &ov->object;
 }
 
 
@@ -185,28 +185,28 @@ njs_object_method(njs_vm_t *vm, njs_param_t *param, nxt_lvlhsh_query_t *lhq)
 
 
 nxt_noinline njs_object_prop_t *
-njs_object_property(njs_vm_t *vm, njs_object_t *obj, nxt_lvlhsh_query_t *lhq)
+njs_object_property(njs_vm_t *vm, njs_object_t *object, nxt_lvlhsh_query_t *lhq)
 {
     nxt_int_t  ret;
 
     lhq->proto = &njs_object_hash_proto;
 
     do {
-        ret = nxt_lvlhsh_find(&obj->hash, lhq);
+        ret = nxt_lvlhsh_find(&object->hash, lhq);
 
         if (nxt_fast_path(ret == NXT_OK)) {
             return lhq->value;
         }
 
-        ret = nxt_lvlhsh_find(&obj->shared_hash, lhq);
+        ret = nxt_lvlhsh_find(&object->shared_hash, lhq);
 
         if (nxt_fast_path(ret == NXT_OK)) {
             return lhq->value;
         }
 
-        obj = obj->__proto__;
+        object = object->__proto__;
 
-    } while (obj != NULL);
+    } while (object != NULL);
 
     vm->exception = &njs_exception_type_error;
 
@@ -215,7 +215,7 @@ njs_object_property(njs_vm_t *vm, njs_object_t *obj, nxt_lvlhsh_query_t *lhq)
 
 
 njs_ret_t
-njs_object_function(njs_vm_t *vm, njs_param_t *param)
+njs_object_constructor(njs_vm_t *vm, njs_param_t *param)
 {
     nxt_uint_t    type;
     njs_value_t   *value;
@@ -267,36 +267,28 @@ static njs_ret_t
 njs_object_create(njs_vm_t *vm, njs_param_t *param)
 {
     njs_value_t   *args;
-    njs_object_t  *obj;
-
-    /* STUB: move to shared create to avoid threads locks. */
-    static nxt_lvlhsh_t  njs_null_proto_shared_hash;
+    njs_object_t  *object;
 
     if (param->nargs != 0) {
         args = param->args;
 
         if (njs_is_object(&args[0]) || njs_is_null(&args[0])) {
 
-            obj = njs_object_alloc(vm);
-            if (nxt_slow_path(obj == NULL)) {
+            object = njs_object_alloc(vm);
+            if (nxt_slow_path(object == NULL)) {
                 return NXT_ERROR;
             }
 
-            if (njs_is_null(&args[0])) {
-                if (nxt_lvlhsh_is_empty(&njs_null_proto_shared_hash)) {
-                    /* STUB */
-                    njs_object_null_hash(vm, &njs_null_proto_shared_hash);
-                }
-
-                obj->shared_hash = njs_null_proto_shared_hash;
-                obj->__proto__ = NULL;
+            if (!njs_is_null(&args[0])) {
+                /* GC */
+                object->__proto__ = args[0].data.u.object;
 
             } else {
-                /* GC */
-                obj->__proto__ = args[0].data.u.object;
+                object->shared_hash = vm->shared->null_proto_hash;
+                object->__proto__ = NULL;
             }
 
-            vm->retval.data.u.object = obj;
+            vm->retval.data.u.object = object;
             vm->retval.type = NJS_OBJECT;
             vm->retval.data.truth = 1;
 
@@ -310,22 +302,6 @@ njs_object_create(njs_vm_t *vm, njs_param_t *param)
 }
 
 
-static const njs_object_prop_t  njs_object_null_properties[] =
-{
-    { njs_value(NJS_NULL, 0, 0.0),
-      njs_string("__proto__"),
-      NJS_WHITEOUT, 0, 0, 0, },
-};
-
-
-static nxt_int_t
-njs_object_null_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash)
-{
-    return njs_object_hash_create(vm, hash, njs_object_null_properties,
-                                  nxt_nitems(njs_object_null_properties));
-}
-
-
 /*
  * The __proto__ property of booleans, numbers and strings primitives
  * and Boolean.prototype, Number.prototype, and String.prototype objects.
@@ -334,20 +310,19 @@ njs_object_null_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash)
 njs_ret_t
 njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value)
 {
-    vm->retval.type = NJS_OBJECT;
-    vm->retval.data.truth = 1;
+    nxt_uint_t  index;
 
     /*
-     * The __proto__ getters reside in object prototypes of primitive
-     * types.  "AND 0x7" maps type of value to prototype offset:
-     *     NJS_BOOLEAN > NJS_PROTOTYPE_BOOLEAN,
-     *     NJS_NUMBER  > NJS_PROTOTYPE_NUMBER,
-     *     NJS_STRING  > NJS_PROTOTYPE_STRING,
-     *     NJS_OBJECT  > NJS_PROTOTYPE_OBJECT.
-     * So "".__proto__ points to String.prototype while
-     * String.prototype.__proto__ points to Object.prototype.
+     * The __proto__ getters reside in object prototypes of primitive types
+     * and have to return different results for primitive type and for object
+     * prototype.
      */
-    vm->retval.data.u.object = &vm->prototypes[value->type & 7];
+    index = njs_is_object(value) ? NJS_PROTOTYPE_OBJECT:
+                                   njs_primitive_prototype_index(value->type);
+
+    vm->retval.data.u.object = &vm->prototypes[index];
+    vm->retval.type = NJS_OBJECT;
+    vm->retval.data.truth = 1;
 
     return NXT_OK;
 }
@@ -360,14 +335,15 @@ njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value)
  */
 
 njs_ret_t
-njs_object_prototype_create_prototype(njs_vm_t *vm, njs_value_t *value)
+njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value)
 {
-    int32_t            index;
-    nxt_int_t          ret;
-    njs_object_t       *prototype;
-    njs_function_t     *function;
-    njs_object_prop_t  *prop;
-    nxt_lvlhsh_query_t  lhq;
+    int32_t                    index;
+    nxt_int_t                  ret;
+    njs_function_t             *function;
+    njs_object_prop_t          *prop;
+    nxt_lvlhsh_query_t         lhq;
+
+    static const njs_value_t   prototype = njs_string("prototype");
 
     function = value->data.u.function;
     index = function - vm->functions;
@@ -377,14 +353,12 @@ njs_object_prototype_create_prototype(njs_vm_t *vm, njs_value_t *value)
         return NXT_OK;
     }
 
-    prop = njs_object_prop_alloc(vm, &njs_string_prototype);
+    prop = njs_object_prop_alloc(vm, &prototype);
     if (nxt_slow_path(prop == NULL)) {
         return NXT_ERROR;
     }
 
-    prototype = &vm->prototypes[index];
-
-    prop->value.data.u.object = prototype;
+    prop->value.data.u.object = &vm->prototypes[index];
     prop->value.type = NJS_OBJECT;
     prop->value.data.truth = 1;
 
@@ -412,7 +386,7 @@ njs_object_prototype_create_prototype(njs_vm_t *vm, njs_value_t *value)
 }
 
 
-static const njs_object_prop_t  njs_object_function_properties[] =
+static const njs_object_prop_t  njs_object_constructor_properties[] =
 {
     /* Object.name == "name". */
     { njs_string("Object"),
@@ -425,7 +399,7 @@ static const njs_object_prop_t  njs_object_function_properties[] =
       NJS_PROPERTY, 0, 0, 0, },
 
     /* Object.prototype. */
-    { njs_getter(njs_object_prototype_create_prototype),
+    { njs_getter(njs_object_prototype_create),
       njs_string("prototype"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 
@@ -436,12 +410,10 @@ static const njs_object_prop_t  njs_object_function_properties[] =
 };
 
 
-nxt_int_t
-njs_object_function_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash)
-{
-    return njs_object_hash_create(vm, hash, njs_object_function_properties,
-                                  nxt_nitems(njs_object_function_properties));
-}
+const njs_object_init_t  njs_object_constructor_init = {
+     njs_object_constructor_properties,
+     nxt_nitems(njs_object_constructor_properties),
+};
 
 
 static njs_ret_t
@@ -473,12 +445,14 @@ njs_object_prototype_get_proto(njs_vm_t *vm, njs_value_t *value)
 static njs_ret_t
 njs_object_prototype_create_constructor(njs_vm_t *vm, njs_value_t *value)
 {
-    int32_t             index;
-    nxt_int_t           ret;
-    njs_value_t         *constructor;
-    njs_object_t        *prototype;
-    njs_object_prop_t   *prop;
-    nxt_lvlhsh_query_t  lhq;
+    int32_t                   index;
+    nxt_int_t                 ret;
+    njs_value_t               *constructor;
+    njs_object_t              *prototype;
+    njs_object_prop_t         *prop;
+    nxt_lvlhsh_query_t        lhq;
+
+    static const njs_value_t  constructor_string = njs_string("constructor");
 
     if (njs_is_object(value)) {
         prototype = value->data.u.object;
@@ -499,13 +473,13 @@ njs_object_prototype_create_constructor(njs_vm_t *vm, njs_value_t *value)
         return NXT_ERROR;
 
     } else {
-        index = NJS_PROTOTYPE_BOOLEAN + (value->type - NJS_BOOLEAN);
+        index = njs_primitive_prototype_index(value->type);
         prototype = &vm->prototypes[index];
     }
 
 found:
 
-    prop = njs_object_prop_alloc(vm, &njs_string_constructor);
+    prop = njs_object_prop_alloc(vm, &constructor_string);
     if (nxt_slow_path(prop == NULL)) {
         return NXT_ERROR;
     }
@@ -544,6 +518,25 @@ njs_object_prototype_value_of(njs_vm_t *vm, njs_param_t *param)
 }
 
 
+static const njs_value_t  njs_object_null_string = njs_string("[object Null]");
+static const njs_value_t  njs_object_undefined_string =
+                                     njs_long_string("[object Undefined]");
+static const njs_value_t  njs_object_boolean_string =
+                                     njs_long_string("[object Boolean]");
+static const njs_value_t  njs_object_number_string =
+                                     njs_long_string("[object Number]");
+static const njs_value_t  njs_object_string_string =
+                                     njs_long_string("[object String]");
+static const njs_value_t  njs_object_object_string =
+                                     njs_long_string("[object Object]");
+static const njs_value_t  njs_object_array_string =
+                                     njs_string("[object Array]");
+static const njs_value_t  njs_object_function_string =
+                                     njs_long_string("[object Function]");
+static const njs_value_t  njs_object_regexp_string =
+                                     njs_long_string("[object RegExp]");
+
+
 static njs_ret_t
 njs_object_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
 {
@@ -553,24 +546,24 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
 
     static const njs_value_t  *class_name[] = {
         /* Primitives. */
-        &njs_string_object_null,
-        &njs_string_object_undefined,
-        &njs_string_object_boolean,
-        &njs_string_object_number,
-        &njs_string_object_string,
+        &njs_object_null_string,
+        &njs_object_undefined_string,
+        &njs_object_boolean_string,
+        &njs_object_number_string,
+        &njs_object_string_string,
 
-        &njs_string_object_function,
-        &njs_string_object_function,
+        &njs_object_function_string,
+        &njs_object_function_string,
         &njs_string_empty,
 
         /* Objects. */
-        &njs_string_object_object,
-        &njs_string_object_array,
-        &njs_string_object_boolean,
-        &njs_string_object_number,
-        &njs_string_object_string,
-        &njs_string_object_function,
-        &njs_string_object_regexp,
+        &njs_object_object_string,
+        &njs_object_array_string,
+        &njs_object_boolean_string,
+        &njs_object_number_string,
+        &njs_object_string_string,
+        &njs_object_function_string,
+        &njs_object_regexp_string,
     };
 
     value = param->object;
@@ -624,9 +617,7 @@ static const njs_object_prop_t  njs_object_prototype_properties[] =
 };
 
 
-nxt_int_t
-njs_object_prototype_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash)
-{
-    return njs_object_hash_create(vm, hash, njs_object_prototype_properties,
-                                  nxt_nitems(njs_object_prototype_properties));
-}
+const njs_object_init_t  njs_object_prototype_init = {
+     njs_object_prototype_properties,
+     nxt_nitems(njs_object_prototype_properties),
+};

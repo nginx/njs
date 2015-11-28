@@ -86,9 +86,7 @@ njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare)
     uint32_t     size;
     njs_array_t  *array;
 
-    array = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
-                                sizeof(njs_array_t));
-
+    array = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_array_t));
     if (nxt_slow_path(array == NULL)) {
         return NULL;
     }
@@ -166,7 +164,7 @@ njs_array_realloc(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
 
 
 njs_ret_t
-njs_array_function(njs_vm_t *vm, njs_param_t *param)
+njs_array_constructor(njs_vm_t *vm, njs_param_t *param)
 {
     double       num;
     uint32_t     size;
@@ -220,7 +218,7 @@ njs_array_function(njs_vm_t *vm, njs_param_t *param)
 }
 
 
-static const njs_object_prop_t  njs_array_function_properties[] =
+static const njs_object_prop_t  njs_array_constructor_properties[] =
 {
     /* Array.name == "Array". */
     { njs_string("Array"),
@@ -233,18 +231,16 @@ static const njs_object_prop_t  njs_array_function_properties[] =
       NJS_PROPERTY, 0, 0, 0, },
 
     /* Array.prototype. */
-    { njs_getter(njs_object_prototype_create_prototype),
+    { njs_getter(njs_object_prototype_create),
       njs_string("prototype"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 };
 
 
-nxt_int_t
-njs_array_function_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash)
-{
-    return njs_object_hash_create(vm, hash, njs_array_function_properties,
-                                  nxt_nitems(njs_array_function_properties));
-}
+const njs_object_init_t  njs_array_constructor_init = {
+     njs_array_constructor_properties,
+     nxt_nitems(njs_array_constructor_properties),
+};
 
 
 static njs_ret_t
@@ -946,9 +942,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
 };
 
 
-nxt_int_t
-njs_array_prototype_hash(njs_vm_t *vm, nxt_lvlhsh_t *hash)
-{
-    return njs_object_hash_create(vm, hash, njs_array_prototype_properties,
-                                  nxt_nitems(njs_array_prototype_properties));
-}
+const njs_object_init_t  njs_array_prototype_init = {
+     njs_array_prototype_properties,
+     nxt_nitems(njs_array_prototype_properties),
+};
