@@ -2323,6 +2323,18 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("function f() {} f()"),
       nxt_string("undefined") },
 
+    { nxt_string("function f() {;} f()"),
+      nxt_string("undefined") },
+
+    { nxt_string("function f(){return} f()"),
+      nxt_string("undefined") },
+
+    { nxt_string("function f(){return;} f()"),
+      nxt_string("undefined") },
+
+    { nxt_string("function f(){return\n1} f()"),
+      nxt_string("undefined") },
+
     { nxt_string("function f(a) { return a + 1 } b = f(2)"),
       nxt_string("3") },
 

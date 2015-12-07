@@ -1570,6 +1570,7 @@ njs_generate_return_statement(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node)
 {
     nxt_int_t          ret;
+    njs_index_t        index;
     njs_vmcode_stop_t  *code;
 
     ret = njs_generator(vm, parser, node->right);
@@ -1579,8 +1580,16 @@ njs_generate_return_statement(njs_vm_t *vm, njs_parser_t *parser,
         code->code.operation = njs_vmcode_return;
         code->code.operands = NJS_VMCODE_1OPERAND;
         code->code.retval = NJS_VMCODE_NO_RETVAL;
-        code->retval = node->right->index;
-        node->index = node->right->index;
+
+        if (node->right != NULL) {
+            index = node->right->index;
+
+        } else {
+            index = njs_value_index(vm, parser, &njs_value_void);
+        }
+
+        code->retval = index;
+        node->index = index;
     }
 
     return ret;
