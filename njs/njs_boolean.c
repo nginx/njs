@@ -79,7 +79,7 @@ njs_boolean_prototype_value_of(njs_vm_t *vm, njs_param_t *param)
 {
     njs_value_t  *value;
 
-    value = param->object;
+    value = param->this;
 
     if (value->type != NJS_BOOLEAN) {
 
@@ -103,7 +103,7 @@ njs_boolean_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
 {
     njs_value_t  *value;
 
-    value = param->object;
+    value = param->this;
 
     if (value->type != NJS_BOOLEAN) {
 

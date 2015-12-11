@@ -439,7 +439,7 @@ njs_regexp_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
     size_t                length, size;
     njs_regexp_pattern_t  *pattern;
 
-    pattern = param->object->data.u.regexp->pattern;
+    pattern = param->this->data.u.regexp->pattern;
     source = pattern->source;
 
     size = strlen((char *) source);
@@ -468,7 +468,7 @@ njs_regexp_prototype_test(njs_vm_t *vm, njs_param_t *param)
             (void) njs_string_prop(&string, &val);
 
             n = (string.length != 0 && string.length != string.size);
-            pattern = param->object->data.u.regexp->pattern;
+            pattern = param->this->data.u.regexp->pattern;
 
             if (pattern->code[n] != NULL) {
                 ret = pcre_exec(pattern->code[n], pattern->extra[n],
@@ -505,7 +505,7 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_param_t *param)
     njs_regexp_pattern_t  *pattern;
 
     if (param->nargs != 0) {
-        regexp = param->object->data.u.regexp;
+        regexp = param->this->data.u.regexp;
 
         ret = njs_value_to_string(vm, &regexp->string, &param->args[0]);
 

@@ -3267,7 +3267,7 @@ njs_unit_test_method_external(njs_vm_t *vm, njs_param_t *param)
                                     &next);
 
         if (ret == NXT_OK && s.len == 3 && memcmp(s.data, "YES", 3) == 0) {
-            r = njs_value_data(param->object);
+            r = njs_value_data(param->this);
             njs_vm_return_string(vm, r->uri.data, r->uri.len);
 
             return NXT_OK;

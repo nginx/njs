@@ -2090,10 +2090,10 @@ njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *invld, njs_value_t *name)
             val.data.u.object = object;
             val.type = NJS_OBJECT;
             val.data.truth = 1;
-            param.object = &val;
+            param.this = &val;
 
         } else {
-            param.object = (njs_value_t *) &njs_value_void;
+            param.this = (njs_value_t *) &njs_value_void;
         }
 
         param.args = NULL;
@@ -2141,7 +2141,7 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *name, njs_value_t *object)
             function = prop->value.data.u.function;
 
             if (!function->native) {
-                param.object = object;
+                param.this = object;
                 param.args = NULL;
                 param.nargs = method->code.nargs;
 
@@ -2226,7 +2226,7 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
     param.nargs = call->code.nargs - 1;
     args = vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS];
     param.args = args;
-    param.object = args - 1;
+    param.this = args - 1;
 
     ret = vm->frame->u.native(vm, &param);
     /*
@@ -2606,7 +2606,7 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
                     prop = njs_object_property(vm, value->data.u.object, &lhq);
 
                     if (nxt_fast_path(prop != NULL)) {
-                        param.object = value;
+                        param.this = value;
                         param.retval = (njs_index_t) retval;
                         param.args = NULL;
                         param.nargs = 0;

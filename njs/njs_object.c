@@ -174,7 +174,7 @@ njs_object_method(njs_vm_t *vm, njs_param_t *param, nxt_lvlhsh_query_t *lhq)
 {
     njs_object_prop_t  *prop;
 
-    prop = njs_object_property(vm, param->object->data.u.object, lhq);
+    prop = njs_object_property(vm, param->this->data.u.object, lhq);
 
     if (nxt_fast_path(prop != NULL)) {
         return njs_function_apply(vm, &prop->value, param);
@@ -512,7 +512,7 @@ found:
 static njs_ret_t
 njs_object_prototype_value_of(njs_vm_t *vm, njs_param_t *param)
 {
-    vm->retval = *param->object;
+    vm->retval = *param->this;
 
     return NXT_OK;
 }
@@ -541,7 +541,7 @@ njs_ret_t
 njs_object_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
 {
     int32_t       index;
-    njs_value_t   *value;
+    njs_value_t   *this;
     njs_object_t  *prototype;
 
     static const njs_value_t  *class_name[] = {
@@ -566,11 +566,11 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
         &njs_object_regexp_string,
     };
 
-    value = param->object;
-    index = value->type;
+    this = param->this;
+    index = this->type;
 
-    if (njs_is_object(value)) {
-        prototype = value->data.u.object;
+    if (njs_is_object(this)) {
+        prototype = this->data.u.object;
 
         do {
             index = prototype - vm->prototypes;

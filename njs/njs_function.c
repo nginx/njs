@@ -179,7 +179,7 @@ njs_function_frame(njs_vm_t *vm, njs_function_t *function, njs_param_t *param,
 
     frame->local = &args[nargs];
 
-    *args++ = *param->object;
+    *args++ = *param->this;
     nargs--;
 
     arguments = param->args;
@@ -264,16 +264,14 @@ njs_function_prototype_call(njs_vm_t *vm, njs_param_t *param)
     uintptr_t                   nargs;
     njs_ret_t                   ret;
     njs_param_t                 p;
-    njs_value_t                 *value;
     njs_function_t              *function;
     njs_vmcode_function_call_t  *call;
 
-    p.object = &param->args[0];
+    p.this = &param->args[0];
     p.args = &param->args[1];
 
     nargs = param->nargs;
-    value = param->object;
-    function = value->data.u.function;
+    function = param->this->data.u.function;
 
     if (function->native) {
 
@@ -292,7 +290,7 @@ njs_function_prototype_call(njs_vm_t *vm, njs_param_t *param)
         nargs--;
 
     } else {
-        p.object = (njs_value_t *) &njs_value_void;
+        p.this = (njs_value_t *) &njs_value_void;
     }
 
     p.nargs = nargs;
@@ -319,12 +317,12 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_param_t *param)
     njs_ret_t                   ret;
     njs_param_t                 p;
     njs_array_t                 *array;
-    njs_value_t                 *value, *args;
+    njs_value_t                 *args;
     njs_function_t              *function;
     njs_vmcode_function_call_t  *code;
 
     args = param->args;
-    p.object = &args[0];
+    p.this = &args[0];
 
     nargs = param->nargs;
     p.nargs = nargs;
@@ -339,8 +337,7 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_param_t *param)
         p.nargs = array->length;
     }
 
-    value = param->object;
-    function = value->data.u.function;
+    function = param->this->data.u.function;
 
     if (function->native) {
         p.retval = param->retval;
@@ -363,7 +360,7 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_param_t *param)
             p.nargs = 0;
 
         } else {
-            p.object = (njs_value_t *) &njs_value_void;
+            p.this = (njs_value_t *) &njs_value_void;
         }
     }
 
@@ -400,7 +397,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_param_t *param)
         nxt_lvlhsh_init(&bound->object.shared_hash);
         bound->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION];
         bound->args_offset = 1;
-        bound->u.lambda = param->object->data.u.function->u.lambda;
+        bound->u.lambda = param->this->data.u.function->u.lambda;
 
         vm->retval.data.u.function = bound;
         vm->retval.type = NJS_FUNCTION;

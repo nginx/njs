@@ -15,7 +15,7 @@ typedef union  njs_value_s          njs_value_t;
 typedef struct njs_vm_shared_s      njs_vm_shared_t;
 
 typedef struct {
-    njs_value_t                     *object;
+    njs_value_t                     *this;
     njs_value_t                     *args;
     uintptr_t                       nargs;
     njs_index_t                     retval;
