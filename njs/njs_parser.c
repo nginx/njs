@@ -604,7 +604,8 @@ njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser)
         }
 
         if (token != NJS_TOKEN_NAME) {
-            return token;
+            /* TODO: message. */
+            return NJS_TOKEN_ILLEGAL;
         }
 
         nxt_thread_log_debug("JS: %V", &parser->lexer->text);
