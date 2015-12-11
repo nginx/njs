@@ -455,38 +455,33 @@ njs_array_prototype_shift(njs_vm_t *vm, njs_param_t *param)
 }
 
 
+/*
+ * ECMAScript 5.1: try first to use object method "join", then
+ * use the standard built-in method Object.prototype.toString().
+ */
+
 static njs_ret_t
 njs_array_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
 {
-    njs_object_t        *object;
+    njs_value_t         *this;
     njs_object_prop_t   *prop;
     nxt_lvlhsh_query_t  lhq;
 
-    lhq.key_hash = NJS_JOIN_HASH;
-    lhq.key.len = sizeof("join") - 1;
-    lhq.key.data = (u_char *) "join";
+    this = param->object;
 
-    object = param->object->data.u.object;
+    if (njs_is_object(this)) {
+        lhq.key_hash = NJS_JOIN_HASH;
+        lhq.key.len = sizeof("join") - 1;
+        lhq.key.data = (u_char *) "join";
 
-    prop = njs_object_property(vm, object, &lhq);
+        prop = njs_object_property(vm, this->data.u.object, &lhq);
 
-    if (nxt_fast_path(prop != NULL && njs_is_function(&prop->value))) {
-        return njs_function_apply(vm, &prop->value, param);
+        if (nxt_fast_path(prop != NULL && njs_is_function(&prop->value))) {
+            return njs_function_apply(vm, &prop->value, param);
+        }
     }
 
-    lhq.key_hash = NJS_TO_STRING_HASH;
-    lhq.key.len = sizeof("toString") - 1;
-    lhq.key.data = (u_char *) "toString";
-
-    object = &vm->prototypes[NJS_PROTOTYPE_OBJECT];
-
-    prop = njs_object_property(vm, object, &lhq);
-
-    if (nxt_fast_path(prop != NULL)) {
-        return njs_function_apply(vm, &prop->value, param);
-    }
-
-    return NXT_ERROR;
+    return njs_object_prototype_to_string(vm, param);
 }
 
 

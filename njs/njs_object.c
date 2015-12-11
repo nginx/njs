@@ -537,7 +537,7 @@ static const njs_value_t  njs_object_regexp_string =
                                      njs_long_string("[object RegExp]");
 
 
-static njs_ret_t
+njs_ret_t
 njs_object_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
 {
     int32_t       index;

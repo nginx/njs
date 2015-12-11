@@ -56,6 +56,7 @@ njs_ret_t njs_object_constructor(njs_vm_t *vm, njs_param_t *param);
 njs_object_prop_t *njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name);
 njs_ret_t njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value);
 njs_ret_t njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value);
+njs_ret_t njs_object_prototype_to_string(njs_vm_t *vm, njs_param_t *param);
 
 extern const njs_object_init_t  njs_object_constructor_init;
 extern const njs_object_init_t  njs_object_prototype_init;

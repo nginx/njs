@@ -1708,7 +1708,19 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = []; a.concat([]) +''"),
       nxt_string("") },
 
-    /**/
+    /* Array.toString(). */
+
+    { nxt_string("a = [1,2,3]; a.join = 'NO';"
+                 "Object.prototype.toString = function () { return 'A' }; a"),
+      nxt_string("[object Array]") },
+
+    { nxt_string("Array.prototype.toString.call(1)"),
+      nxt_string("[object Number]") },
+
+    { nxt_string("Array.prototype.toString.call('abc')"),
+      nxt_string("[object String]") },
+
+    /* Empty array elements. */
 
     { nxt_string("[,,]"),
       nxt_string(",") },
@@ -3464,6 +3476,7 @@ njs_unit_test(nxt_bool_t disassemble)
             r.uri.data = (u_char *) "АБВ";
 
             if (njs_vm_run(nvm) == NXT_OK) {
+
                 if (njs_vm_retval(nvm, &s) != NXT_OK) {
                     return NXT_ERROR;
                 }
@@ -3559,6 +3572,7 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
         }
 
         if (njs_vm_run(nvm) == NXT_OK) {
+
             if (njs_vm_retval(nvm, &s) != NXT_OK) {
                 return NXT_ERROR;
             }
