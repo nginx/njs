@@ -88,7 +88,8 @@ NXT_EXPORT njs_vm_t *njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp,
     void **external);
 NXT_EXPORT nxt_int_t njs_vm_run(njs_vm_t *vm);
 
-NXT_EXPORT void njs_vm_return(njs_vm_t *vm, njs_value_t *retval);
+NXT_EXPORT njs_ret_t njs_vm_return_string(njs_vm_t *vm, u_char *start,
+    size_t size);
 NXT_EXPORT nxt_int_t njs_vm_retval(njs_vm_t *vm, nxt_str_t *retval);
 NXT_EXPORT nxt_int_t njs_vm_exception(njs_vm_t *vm, nxt_str_t *retval);
 

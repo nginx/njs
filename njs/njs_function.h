@@ -8,20 +8,15 @@
 #define _NJS_FUNCTION_H_INCLUDED_
 
 
-struct njs_function_script_s {
+struct njs_function_lambda_s {
     uint32_t                       nargs;
     uint32_t                       local_size;
-    /*
-     * Native methods do not allocate frame space so calling function
-     * reserves space in its scope for method frame and arguments.
-     */
-    uint32_t                       spare_size;
 
     /* Initial values of local scope. */
     njs_value_t                    *local_scope;
 
     union {
-        u_char                     *code;
+        u_char                     *start;
         njs_parser_t               *parser;
     } u;
 };
@@ -61,21 +56,53 @@ struct njs_exception_s {
 
 
 struct njs_native_frame_s {
-    u_char                         *last;
+    u_char                         *free;
+
+    /*
+     * The return_address is required in njs_frame_t only, however, it
+     * can be stored here just after function adddress has been fetched.
+     */
+    union {
+        njs_function_t             *function;
+        u_char                     *return_address;
+        njs_native_t               native;
+        u_char                     *restart;
+    } u;
+
     njs_native_frame_t             *previous;
     njs_value_t                    *arguments;
 
-    union {
-        u_char                     *restart;
-        njs_exception_t            exception;
-    } u;
+    njs_exception_t                exception;
 
-    uint32_t                       size;
+    uint32_t                       free_size;
 
-    uint8_t                        start;           /* 1 bit */
-    uint8_t                        ctor;            /* 1 bit */
-    uint8_t                        reentrant;       /* 1 bit */
-    uint8_t                        trap_reference;  /* 1 bit */
+    /* Script or native function or method. */
+    uint8_t                        native;          /* 1 bit  */
+
+    /* Function is called as constructor with "new" keyword. */
+    uint8_t                        ctor;            /* 1 bit  */
+
+    /*
+     * The first frame in chunk.
+     * 7 bits are just to possibly initialize first and skip
+     * fields with one operation.
+     */
+    uint8_t                        first:7;          /* 1 bit  */
+
+    /* Skip the Function.call() and Function.apply() methods frames. */
+    uint8_t                        skip:1;           /* 1 bit  */
+
+    /*
+     * The function is reentrant.  It is usually used as a flag,
+     * however, in traps it used to allow just two entrances.
+     */
+    uint8_t                        reentrant:7;    /* 2 bits  */
+
+    /*
+     * The first operand in trap is reference to original value,
+     * it is used to increment or decrement this value.
+     */
+    uint8_t                        trap_reference:1;
 };
 
 
@@ -88,22 +115,19 @@ typedef struct {
     njs_value_t                    *closure;
 
     njs_index_t                    retval;
-    u_char                         *return_address;
 } njs_frame_t;
 
 
 njs_function_t *njs_function_alloc(njs_vm_t *vm);
+njs_native_frame_t *njs_function_frame_alloc(njs_vm_t *vm, size_t size);
 njs_ret_t njs_function_constructor(njs_vm_t *vm, njs_param_t *param);
 njs_ret_t njs_function_apply(njs_vm_t *vm, njs_value_t *name,
     njs_param_t *param);
-njs_value_t *njs_vmcode_native_frame(njs_vm_t *vm, njs_value_t *method,
-    uintptr_t nargs, nxt_bool_t ctor);
-njs_ret_t njs_vmcode_trap(njs_vm_t *vm, nxt_uint_t trap, njs_value_t *value1,
-    njs_value_t *value2);
-njs_ret_t njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *name,
+njs_value_t *njs_function_native_frame(njs_vm_t *vm, njs_native_t native,
+    size_t local_size, njs_vmcode_t *code);
+njs_ret_t njs_function_frame(njs_vm_t *vm, njs_function_t *function,
     njs_param_t *param, nxt_bool_t ctor);
-njs_ret_t njs_function_call(njs_vm_t *vm, njs_function_t *func,
-    njs_index_t retval);
+njs_ret_t njs_function_call(njs_vm_t *vm, njs_index_t retval);
 
 extern const njs_object_init_t  njs_function_constructor_init;
 extern const njs_object_init_t  njs_function_prototype_init;

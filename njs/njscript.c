@@ -218,7 +218,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 
     *start = parser->lexer->start;
 
-    ret = njs_generate_scope(vm, parser, node, njs_vmcode_stop);
+    ret = njs_generate_scope(vm, parser, node);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NJS_ERROR;
     }
@@ -288,20 +288,20 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
 
         frame->native.previous = NULL;
         frame->native.arguments = NULL;
-        frame->native.start = 1;
+        frame->native.first = 1;
 
-        frame->native.u.exception.next = NULL;
-        frame->native.u.exception.catch = NULL;
+        frame->native.exception.next = NULL;
+        frame->native.exception.catch = NULL;
 
         frame->prev_arguments = NULL;
         frame->local = NULL;
         frame->closure = NULL;
 
-        frame->native.size = size - (NJS_GLOBAL_FRAME_SIZE + scope_size);
+        frame->native.free_size = size - (NJS_GLOBAL_FRAME_SIZE + scope_size);
 
         values = (u_char *) frame + NJS_GLOBAL_FRAME_SIZE;
 
-        frame->native.last = values + scope_size;
+        frame->native.free = values + scope_size;
 
         nvm->scopes[NJS_SCOPE_GLOBAL] = (njs_value_t *) values;
         memcpy(values + NJS_INDEX_GLOBAL_OFFSET, vm->global_scope,
@@ -374,10 +374,10 @@ njs_vm_run(njs_vm_t *vm)
 }
 
 
-void
-njs_vm_return(njs_vm_t *vm, njs_value_t *retval)
+njs_ret_t
+njs_vm_return_string(njs_vm_t *vm, u_char *start, size_t size)
 {
-    vm->retval = *retval;
+    return njs_string_create(vm, &vm->retval, start, size, 0);
 }
 
 

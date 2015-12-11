@@ -94,7 +94,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
     for (i = NJS_FUNCTION_OBJECT; i < NJS_FUNCTION_MAX; i++) {
         functions[i].native = 1;
         functions[i].args_offset = 1;
-        functions[i].code.native = native_functions[i];
+        functions[i].u.native = native_functions[i];
 
         ret = njs_object_hash_create(vm, &functions[i].object.shared_hash,
                                      function_init[i]->properties,

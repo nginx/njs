@@ -899,11 +899,11 @@ njs_parser_call_expression(njs_vm_t *vm, njs_parser_t *parser,
         case NJS_TOKEN_NAME:
             func = node;
             func->token = NJS_TOKEN_FUNCTION_CALL;
-            parser->code_size += sizeof(njs_vmcode_function_t)
-                                 + sizeof(njs_vmcode_call_t);
+            parser->code_size += sizeof(njs_vmcode_function_frame_t)
+                                 + sizeof(njs_vmcode_function_call_t);
             break;
 
-        case NJS_TOKEN_FUNCTION_CREATE:
+        case NJS_TOKEN_FUNCTION_EXPRESSION:
             func = njs_parser_node_alloc(vm);
             if (nxt_slow_path(func == NULL)) {
                 return NJS_TOKEN_ERROR;
@@ -912,30 +912,11 @@ njs_parser_call_expression(njs_vm_t *vm, njs_parser_t *parser,
             func->token = NJS_TOKEN_FUNCTION_CALL;
             func->left = node;
             func->index = node->index;
-            parser->code_size += sizeof(njs_vmcode_function_t)
-                                 + sizeof(njs_vmcode_call_t);
+            parser->code_size += sizeof(njs_vmcode_function_frame_t)
+                                 + sizeof(njs_vmcode_function_call_t);
             break;
 
-        case NJS_TOKEN_OBJECT_CONSTRUCTOR:
-        case NJS_TOKEN_ARRAY_CONSTRUCTOR:
-        case NJS_TOKEN_BOOLEAN_CONSTRUCTOR:
-        case NJS_TOKEN_NUMBER_CONSTRUCTOR:
-        case NJS_TOKEN_STRING_CONSTRUCTOR:
-        case NJS_TOKEN_FUNCTION_CONSTRUCTOR:
-        case NJS_TOKEN_REGEXP_CONSTRUCTOR:
-        case NJS_TOKEN_EVAL:
-            func = njs_parser_node_alloc(vm);
-            if (nxt_slow_path(func == NULL)) {
-                return NJS_TOKEN_ERROR;
-            }
-
-            func->token = NJS_TOKEN_FUNCTION_CALL;
-            func->left = node;
-            parser->code_size += sizeof(njs_vmcode_method_t)
-                                 + sizeof(njs_vmcode_call_t);
-            break;
-
-        default:
+        case NJS_TOKEN_PROPERTY:
             func = njs_parser_node_alloc(vm);
             if (nxt_slow_path(func == NULL)) {
                 return NJS_TOKEN_ERROR;
@@ -943,8 +924,32 @@ njs_parser_call_expression(njs_vm_t *vm, njs_parser_t *parser,
 
             func->token = NJS_TOKEN_METHOD_CALL;
             func->left = node;
-            parser->code_size += sizeof(njs_vmcode_method_t)
-                                 + sizeof(njs_vmcode_call_t);
+            parser->code_size += sizeof(njs_vmcode_method_frame_t)
+                                 + sizeof(njs_vmcode_function_call_t);
+            break;
+
+        default:
+            /*
+             * NJS_TOKEN_OPEN_PARENTHESIS,
+             * NJS_TOKEN_OBJECT_CONSTRUCTOR,
+             * NJS_TOKEN_ARRAY_CONSTRUCTOR,
+             * NJS_TOKEN_BOOLEAN_CONSTRUCTOR,
+             * NJS_TOKEN_NUMBER_CONSTRUCTOR,
+             * NJS_TOKEN_STRING_CONSTRUCTOR,
+             * NJS_TOKEN_FUNCTION_CONSTRUCTOR,
+             * NJS_TOKEN_REGEXP_CONSTRUCTOR,
+             * NJS_TOKEN_EVAL.
+             */
+            func = njs_parser_node_alloc(vm);
+            if (nxt_slow_path(func == NULL)) {
+                return NJS_TOKEN_ERROR;
+            }
+
+            func->token = NJS_TOKEN_FUNCTION_CALL;
+            func->left = node;
+            parser->code_size += sizeof(njs_vmcode_function_frame_t)
+                                 + sizeof(njs_vmcode_function_call_t);
+            break;
         }
 
         token = njs_parser_arguments(vm, parser, func);
@@ -1064,7 +1069,6 @@ njs_parser_arguments(njs_vm_t *vm, njs_parser_t *parser,
     njs_index_t        index;
     njs_parser_node_t  *node;
 
-    parser->nesting_arguments++;
     index = NJS_SCOPE_CALLEE_ARGUMENTS;
 
     do {
@@ -1102,22 +1106,6 @@ njs_parser_arguments(njs_vm_t *vm, njs_parser_t *parser,
 
     if (nxt_slow_path(token != NJS_TOKEN_CLOSE_PARENTHESIS)) {
         return NJS_TOKEN_ILLEGAL;
-    }
-
-    index = njs_index_size(index);
-    index += NJS_NATIVE_FRAME_SIZE + sizeof(njs_value_t);
-
-    parser->nesting_arguments_size += index;
-
-    parser->nesting_arguments--;
-
-    if (parser->nesting_arguments == 0) {
-
-        if (parser->method_arguments_size < parser->nesting_arguments_size) {
-            parser->method_arguments_size = parser->nesting_arguments_size;
-        }
-
-        parser->nesting_arguments_size = 0;
     }
 
     return token;

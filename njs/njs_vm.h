@@ -82,7 +82,7 @@ typedef struct njs_string_s           njs_string_t;
 typedef struct njs_object_init_s      njs_object_init_t;
 typedef struct njs_object_value_s     njs_object_value_t;
 typedef struct njs_array_s            njs_array_t;
-typedef struct njs_function_script_s  njs_function_script_t;
+typedef struct njs_function_lambda_s  njs_function_lambda_t;
 typedef struct njs_regexp_s           njs_regexp_t;
 typedef struct njs_regexp_pattern_s   njs_regexp_pattern_t;
 typedef struct njs_extern_s           njs_extern_t;
@@ -115,9 +115,9 @@ typedef struct {
 #endif
 
     union {
-        njs_function_script_t         *script;
+        njs_function_lambda_t         *lambda;
         njs_native_t                  native;
-    } code;
+    } u;
 
     njs_value_t                       *args;
 } njs_function_t;
@@ -139,7 +139,7 @@ union njs_value_s {
      * the maximum size of short string to 13.
      */
     struct {
-        njs_value_type_t          type:8;  /* 4 bits */
+        njs_value_type_t              type:8;  /* 4 bits */
         /*
          * The truth field is set during value assignment and then can be
          * quickly tested by logical and conditional operations regardless
@@ -147,44 +147,49 @@ union njs_value_s {
          * and short_string.length so when string size and length are zero
          * the string's value is false.
          */
-        uint8_t                   truth;
+        uint8_t                       truth;
 
         /* 0xff if u.data.string is external string. */
-        uint8_t                   external0;
-        uint8_t                   _spare;
+        uint8_t                       external0;
+        uint8_t                       _spare;
 
-        /* A long string size. */
-        uint32_t                  string_size;
+        /*
+         * A long string size.
+         * Besides this field is used in native reentrant methods to
+         * store size of local state data allocated on stack frame.
+         */
+        uint32_t                      string_size;
 
         union {
-            double                number;
-            njs_string_t          *string;
-            njs_object_t          *object;
-            njs_array_t           *array;
-            njs_object_value_t    *object_value;
-            njs_function_t        *function;
-            njs_regexp_t          *regexp;
-            njs_getter_t          getter;
-            njs_native_t          method;
-            njs_extern_t          *external;
-            njs_value_t           *value;
-            void                  *data;
+            double                     number;
+            njs_string_t               *string;
+            njs_object_t               *object;
+            njs_array_t                *array;
+            njs_object_value_t         *object_value;
+            njs_function_t             *function;
+            njs_function_lambda_t      *lambda;
+            njs_regexp_t               *regexp;
+            njs_getter_t               getter;
+            njs_native_t               method;
+            njs_extern_t               *external;
+            njs_value_t                *value;
+            void                       *data;
         } u;
     } data;
 
     struct {
-        njs_value_type_t          type:8;  /* 4 bits */
+        njs_value_type_t              type:8;  /* 4 bits */
 
-#define NJS_STRING_SHORT          14
-#define NJS_STRING_LONG           15
+#define NJS_STRING_SHORT              14
+#define NJS_STRING_LONG               15
 
-        uint8_t                   size:4;
-        uint8_t                   length:4;
+        uint8_t                       size:4;
+        uint8_t                       length:4;
 
-        u_char                    start[NJS_STRING_SHORT];
+        u_char                        start[NJS_STRING_SHORT];
     } short_string;
 
-    njs_value_type_t              type:8;  /* 4 bits */
+    njs_value_type_t                  type:8;  /* 4 bits */
 };
 
 
@@ -230,7 +235,7 @@ union njs_value_s {
         .u.function = & (njs_function_t) {                                    \
             .native = 1,                                                      \
             .args_offset = 1,                                                 \
-            .code.native = _function,                                         \
+            .u.native = _function,                                            \
         }                                                                     \
     }                                                                         \
 }
@@ -240,14 +245,6 @@ union njs_value_s {
     { .data = { .type = NJS_NATIVE,                                           \
                 .truth = 1,                                                   \
                 .u = { .getter = _getter }                                    \
-    } }
-
-
-#define njs_method(_method, _size)                                            \
-    { .data = { .type = NJS_NATIVE,                                           \
-                .truth = 1,                                                   \
-                .string_size = _size,                                         \
-                .u = { .method = _method }                                    \
     } }
 
 
@@ -410,12 +407,6 @@ typedef struct {
 
 typedef struct {
     njs_vmcode_t               code;
-    njs_index_t                retval;
-} njs_vmcode_stop_t;
-
-
-typedef struct {
-    njs_vmcode_t               code;
     njs_index_t                index;
 } njs_vmcode_validate_t;
 
@@ -443,8 +434,8 @@ typedef struct {
 typedef struct {
     njs_vmcode_t               code;
     njs_index_t                retval;
-    njs_function_script_t      *function;
-} njs_vmcode_function_create_t;
+    njs_function_lambda_t      *lambda;
+} njs_vmcode_function_t;
 
 
 typedef struct {
@@ -510,24 +501,33 @@ typedef struct {
 
 typedef struct {
     njs_vmcode_t               code;
-    njs_index_t                function;
     njs_index_t                name;
-} njs_vmcode_function_t;
+} njs_vmcode_function_frame_t;
 
 
 typedef struct {
     njs_vmcode_t               code;
-    njs_index_t                function;
     njs_index_t                object;
     njs_index_t                method;
-} njs_vmcode_method_t;
+} njs_vmcode_method_frame_t;
 
 
 typedef struct {
     njs_vmcode_t               code;
     njs_index_t                retval;
-    njs_index_t                function;
-} njs_vmcode_call_t;
+} njs_vmcode_function_call_t;
+
+
+typedef struct {
+    njs_vmcode_t               code;
+    njs_index_t                retval;
+} njs_vmcode_return_t;
+
+
+typedef struct {
+    njs_vmcode_t               code;
+    njs_index_t                retval;
+} njs_vmcode_stop_t;
 
 
 typedef struct {
@@ -717,13 +717,13 @@ nxt_int_t njs_vmcode_interpreter(njs_vm_t *vm);
 void njs_value_retain(njs_value_t *value);
 void njs_value_release(njs_vm_t *vm, njs_value_t *value);
 
-njs_ret_t njs_vmcode_object_create(njs_vm_t *vm, njs_value_t *inlvd1,
+njs_ret_t njs_vmcode_object(njs_vm_t *vm, njs_value_t *inlvd1,
     njs_value_t *inlvd2);
-njs_ret_t njs_vmcode_array_create(njs_vm_t *vm, njs_value_t *inlvd1,
+njs_ret_t njs_vmcode_array(njs_vm_t *vm, njs_value_t *inlvd1,
     njs_value_t *inlvd2);
-njs_ret_t njs_vmcode_function_create(njs_vm_t *vm, njs_value_t *inlvd1,
+njs_ret_t njs_vmcode_function(njs_vm_t *vm, njs_value_t *inlvd1,
     njs_value_t *invld2);
-njs_ret_t njs_vmcode_regexp_create(njs_vm_t *vm, njs_value_t *inlvd1,
+njs_ret_t njs_vmcode_regexp(njs_vm_t *vm, njs_value_t *inlvd1,
     njs_value_t *invld2);
 
 njs_ret_t njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
@@ -815,11 +815,12 @@ njs_ret_t njs_vmcode_if_true_jump(njs_vm_t *vm, njs_value_t *cond,
 njs_ret_t njs_vmcode_if_false_jump(njs_vm_t *vm, njs_value_t *cond,
     njs_value_t *offset);
 
-njs_ret_t njs_vmcode_function(njs_vm_t *vm, njs_value_t *name,
-    njs_value_t *invld);
-njs_ret_t njs_vmcode_method(njs_vm_t *vm, njs_value_t *object,
+njs_ret_t njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *invld,
+    njs_value_t *name);
+njs_ret_t njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *method);
-njs_ret_t njs_vmcode_call(njs_vm_t *vm, njs_value_t *func, njs_value_t *retval);
+njs_ret_t njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld,
+    njs_value_t *retval);
 njs_ret_t njs_vmcode_return(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *retval);
 njs_ret_t njs_vmcode_stop(njs_vm_t *vm, njs_value_t *invld,
@@ -836,14 +837,7 @@ njs_ret_t njs_vmcode_catch(njs_vm_t *vm, njs_value_t *invld,
 njs_ret_t njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *retval);
 
-njs_ret_t njs_vmcode_number_primitive(njs_vm_t *vm, njs_value_t *invld,
-    njs_value_t *narg);
-njs_ret_t njs_vmcode_string_primitive(njs_vm_t *vm, njs_value_t *invld,
-    njs_value_t *narg);
-njs_ret_t njs_vmcode_restart(njs_vm_t *vm, njs_value_t *invld1,
-    njs_value_t *invld2);
-
-nxt_noinline void njs_number_set(njs_value_t *value, double num);
+void njs_number_set(njs_value_t *value, double num);
 
 nxt_int_t njs_builtin_objects_create(njs_vm_t *vm);
 nxt_int_t njs_builtin_objects_clone(njs_vm_t *vm);

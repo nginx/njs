@@ -1381,9 +1381,6 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("typeof /./i"),
       nxt_string("object") },
 
-    { nxt_string("typeof $r"),
-      nxt_string("undefined") },
-
     { nxt_string("typeof a"),
       nxt_string("undefined") },
 
@@ -2003,44 +2000,6 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = '\\xB5\\xA7\\xB1\\xAE'.toBytes(); a.fromBytes(1, 3)"),
       nxt_string("§±") },
 
-    { nxt_string("a = $r.uri; s = a.fromUTF8(); s.length +' '+ s"),
-      nxt_string("3 АБВ") },
-
-    { nxt_string("a = $r.uri; s = a.fromUTF8(2); s.length +' '+ s"),
-      nxt_string("2 БВ") },
-
-    { nxt_string("a = $r.uri; s = a.fromUTF8(2, 4); s.length +' '+ s"),
-      nxt_string("1 Б") },
-
-    { nxt_string("a = $r.uri; a +' '+ a.length +' '+ a"),
-      nxt_string("АБВ 6 АБВ") },
-
-    { nxt_string("$r.uri = 'αβγ'; a = $r.uri; a.length +' '+ a"),
-      nxt_string("6 αβγ") },
-
-    { nxt_string("$r.uri.length +' '+ $r.uri"),
-      nxt_string("6 АБВ") },
-
-    { nxt_string("$r.uri = $r.uri.substr(2); $r.uri.length +' '+ $r.uri"),
-      nxt_string("4 БВ") },
-
-    { nxt_string("a = $r.host; a +' '+ a.length +' '+ a"),
-      nxt_string("АБВГДЕЁЖЗИЙ 22 АБВГДЕЁЖЗИЙ") },
-
-    { nxt_string("a = $r.host; a.substr(2, 2)"),
-      nxt_string("Б") },
-
-    { nxt_string("a = $r.header['User-Agent']; a +' '+ a.length +' '+ a"),
-      nxt_string("User-Agent|АБВ 17 User-Agent|АБВ") },
-
-    { nxt_string("var a='';"
-                 "for (p in $r.header) { a += p +':'+ $r.header[p] +',' }"
-                 "a"),
-      nxt_string("01:01|АБВ,02:02|АБВ,03:03|АБВ,") },
-
-    { nxt_string("$r.nonexistent"),
-      nxt_string("undefined") },
-
     { nxt_string("a = 'abcdefgh'; a.substr(3, 15)"),
       nxt_string("defgh") },
 
@@ -2160,7 +2119,59 @@ static njs_unit_test_t  njs_test[] =
                           " valueOf:  function() { return 0 } };   '12'[n]"),
       nxt_string("2") },
 
-    /**/
+    /* Externals. */
+
+    { nxt_string("typeof $r"),
+      nxt_string("undefined") },
+
+    { nxt_string("a = $r.uri; s = a.fromUTF8(); s.length +' '+ s"),
+      nxt_string("3 АБВ") },
+
+    { nxt_string("a = $r.uri; s = a.fromUTF8(2); s.length +' '+ s"),
+      nxt_string("2 БВ") },
+
+    { nxt_string("a = $r.uri; s = a.fromUTF8(2, 4); s.length +' '+ s"),
+      nxt_string("1 Б") },
+
+    { nxt_string("a = $r.uri; a +' '+ a.length +' '+ a"),
+      nxt_string("АБВ 6 АБВ") },
+
+    { nxt_string("$r.uri = 'αβγ'; a = $r.uri; a.length +' '+ a"),
+      nxt_string("6 αβγ") },
+
+    { nxt_string("$r.uri.length +' '+ $r.uri"),
+      nxt_string("6 АБВ") },
+
+    { nxt_string("$r.uri = $r.uri.substr(2); $r.uri.length +' '+ $r.uri"),
+      nxt_string("4 БВ") },
+
+    { nxt_string("a = $r.host; a +' '+ a.length +' '+ a"),
+      nxt_string("АБВГДЕЁЖЗИЙ 22 АБВГДЕЁЖЗИЙ") },
+
+    { nxt_string("a = $r.host; a.substr(2, 2)"),
+      nxt_string("Б") },
+
+    { nxt_string("a = $r.header['User-Agent']; a +' '+ a.length +' '+ a"),
+      nxt_string("User-Agent|АБВ 17 User-Agent|АБВ") },
+
+    { nxt_string("var a='';"
+                 "for (p in $r.header) { a += p +':'+ $r.header[p] +',' }"
+                 "a"),
+      nxt_string("01:01|АБВ,02:02|АБВ,03:03|АБВ,") },
+
+    { nxt_string("$r.external('YES')"),
+      nxt_string("АБВ") },
+
+#if 0
+    { nxt_string("$r.external.call($r, 'YES')"),
+      nxt_string("АБВ") },
+
+    { nxt_string("$r.external.apply($r, ['YES'])"),
+      nxt_string("АБВ") },
+#endif
+
+    { nxt_string("$r.nonexistent"),
+      nxt_string("undefined") },
 
     { nxt_string("'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'.charCodeAt(5)"),
       nxt_string("1077") },
@@ -2248,6 +2259,14 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abc ABC aBc'.match(/abc/ig) +''"),
       nxt_string("abc,ABC,aBc") },
 
+    /* Functions. */
+
+    { nxt_string("var a = 1; a()"),
+      nxt_string("TypeError") },
+
+    { nxt_string("var o = {a:1}; o.a()"),
+      nxt_string("TypeError") },
+
     { nxt_string("var q = 1; function x(a, b, c) { q = a } x(5); q"),
       nxt_string("5") },
 
@@ -2267,6 +2286,13 @@ static njs_unit_test_t  njs_test[] =
     /* Recursive factorial. */
 
     { nxt_string("function f(a) { return (a > 1) ? a * f(a - 1) : 1 } f(10)"),
+      nxt_string("3628800") },
+
+    { nxt_string("var g = function f(a) { return (a > 1) ? a * f(a - 1) : 1 };"
+                 "g(10)"),
+      nxt_string("3628800") },
+
+    { nxt_string("(function f(a) { return (a > 1) ? a * f(a - 1) : 1 })(10)"),
       nxt_string("3628800") },
 
     /* Recursive fibonacci. */
@@ -2316,6 +2342,10 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("function f() { return 5 } f()"),
       nxt_string("5") },
+
+    { nxt_string("function g(x) { return x + 1 }"
+                 "function f(x) { return x } f(g)(2)"),
+      nxt_string("3") },
 
     { nxt_string("function f() { return 5 } f(1)"),
       nxt_string("5") },
@@ -2371,6 +2401,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = {}; function f(a) { return a + 1 } a.b = f(2); a.b"),
       nxt_string("3") },
 
+    { nxt_string("(function(x) { return x + 1 })(2)"),
+      nxt_string("3") },
+
+    { nxt_string("(function(x) { return x + 1 }(2))"),
+      nxt_string("3") },
+
     { nxt_string("a = (function() { return 1 })(); a"),
       nxt_string("1") },
 
@@ -2391,6 +2427,13 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("a = 0, function(a) { return a + 1 }(2); a"),
       nxt_string("0") },
+
+    { nxt_string("a = (0, function(a) { return a + 1 }(2)); a"),
+      nxt_string("3") },
+
+    { nxt_string("var a = +function f(a) { return a + 1 }(2)"
+                 "var b = f(5); a"),
+      nxt_string("ReferenceError") },
 
     { nxt_string("var o = { f: function(a) { return a * 2 } }; o.f(5)"),
       nxt_string("10") },
@@ -3197,6 +3240,33 @@ njs_unit_test_header_each_external(njs_vm_t *vm, njs_value_t *value, void *obj,
 
 
 static njs_ret_t
+njs_unit_test_method_external(njs_vm_t *vm, njs_param_t *param)
+{
+    nxt_int_t          ret;
+    nxt_str_t          s;
+    uintptr_t          next;
+    njs_unit_test_req  *r;
+
+    next = 0;
+
+    if (param->nargs != 0) {
+
+        ret = njs_value_string_copy(vm, &s, njs_argument(param->args, 0),
+                                    &next);
+
+        if (ret == NXT_OK && s.len == 3 && memcmp(s.data, "YES", 3) == 0) {
+            r = njs_value_data(param->object);
+            njs_vm_return_string(vm, r->uri.data, r->uri.len);
+
+            return NXT_OK;
+        }
+    }
+
+    return NXT_ERROR;
+}
+
+
+static njs_ret_t
 njs_unit_test_undefined_external(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
@@ -3242,6 +3312,18 @@ static njs_external_t  njs_unit_test_r_external[] = {
       njs_unit_test_header_each_start_external,
       njs_unit_test_header_each_external,
       NULL,
+      0 },
+
+    { nxt_string("external"),
+      NJS_EXTERN_METHOD,
+      NULL,
+      0,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      njs_unit_test_method_external,
       0 },
 
 };

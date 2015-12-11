@@ -31,12 +31,12 @@ typedef struct {
 
 static njs_code_name_t  code_names[] = {
 
-    { njs_vmcode_object_create, sizeof(njs_vmcode_object_t),
-          nxt_string("OBJECT CREATE   ") },
-    { njs_vmcode_function_create, sizeof(njs_vmcode_function_create_t),
-          nxt_string("FUNCTION CREATE ") },
-    { njs_vmcode_regexp_create, sizeof(njs_vmcode_regexp_t),
-          nxt_string("REGEXP CREATE   ") },
+    { njs_vmcode_object, sizeof(njs_vmcode_object_t),
+          nxt_string("OBJECT          ") },
+    { njs_vmcode_function, sizeof(njs_vmcode_function_t),
+          nxt_string("FUNCTION        ") },
+    { njs_vmcode_regexp, sizeof(njs_vmcode_regexp_t),
+          nxt_string("REGEXP          ") },
 
     { njs_vmcode_property_get, sizeof(njs_vmcode_prop_get_t),
           nxt_string("PROPERTY GET    ") },
@@ -49,11 +49,11 @@ static njs_code_name_t  code_names[] = {
     { njs_vmcode_instance_of, sizeof(njs_vmcode_instance_of_t),
           nxt_string("INSTANCE OF     ") },
 
-    { njs_vmcode_function, sizeof(njs_vmcode_function_t),
-          nxt_string("FUNCTION        ") },
-    { njs_vmcode_call, sizeof(njs_vmcode_call_t),
-          nxt_string("CALL            ") },
-    { njs_vmcode_return, sizeof(njs_vmcode_stop_t),
+    { njs_vmcode_function_frame, sizeof(njs_vmcode_function_frame_t),
+          nxt_string("FUNCTION FRAME  ") },
+    { njs_vmcode_function_call, sizeof(njs_vmcode_function_call_t),
+          nxt_string("FUNCTION CALL   ") },
+    { njs_vmcode_return, sizeof(njs_vmcode_return_t),
           nxt_string("RETURN          ") },
     { njs_vmcode_stop, sizeof(njs_vmcode_stop_t),
           nxt_string("STOP            ") },
@@ -164,35 +164,35 @@ njs_disassembler(njs_vm_t *vm)
 static void
 njs_disassemble(u_char *start, u_char *end)
 {
-    u_char                   *p;
-    nxt_str_t                *name;
-    nxt_uint_t               n;
-    const char               *sign;
-    njs_code_name_t          *code_name;
-    njs_vmcode_jump_t        *jump;
-    njs_vmcode_1addr_t       *code1;
-    njs_vmcode_2addr_t       *code2;
-    njs_vmcode_3addr_t       *code3;
-    njs_vmcode_array_t       *array;
-    njs_vmcode_catch_t       *catch;
-    njs_vmcode_method_t      *method;
-    njs_vmcode_try_end_t     *try_end;
-    njs_vmcode_try_start_t   *try_start;
-    njs_vmcode_operation_t   operation;
-    njs_vmcode_cond_jump_t   *cond_jump;
-    njs_vmcode_prop_each_t   *each;
-    njs_vmcode_prop_start_t  *prop_start;
+    u_char                     *p;
+    nxt_str_t                  *name;
+    nxt_uint_t                 n;
+    const char                 *sign;
+    njs_code_name_t            *code_name;
+    njs_vmcode_jump_t          *jump;
+    njs_vmcode_1addr_t         *code1;
+    njs_vmcode_2addr_t         *code2;
+    njs_vmcode_3addr_t         *code3;
+    njs_vmcode_array_t         *array;
+    njs_vmcode_catch_t         *catch;
+    njs_vmcode_try_end_t       *try_end;
+    njs_vmcode_try_start_t     *try_start;
+    njs_vmcode_operation_t     operation;
+    njs_vmcode_cond_jump_t     *cond_jump;
+    njs_vmcode_prop_each_t     *each;
+    njs_vmcode_prop_start_t    *prop_start;
+    njs_vmcode_method_frame_t  *method;
 
     p = start;
 
     while (p < end) {
         operation = *(njs_vmcode_operation_t *) p;
 
-        if (operation == njs_vmcode_array_create) {
+        if (operation == njs_vmcode_array) {
             array = (njs_vmcode_array_t *) p;
             p += sizeof(njs_vmcode_array_t);
 
-            printf("ARRAY CREATE      %04lX %ld\n",
+            printf("ARRAY             %04lX %ld\n",
                    array->retval, array->length);
 
             continue;
@@ -230,11 +230,11 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_method) {
-            method = (njs_vmcode_method_t *) p;
-            p += sizeof(njs_vmcode_method_t);
+        if (operation == njs_vmcode_method_frame) {
+            method = (njs_vmcode_method_frame_t *) p;
+            p += sizeof(njs_vmcode_method_frame_t);
 
-            printf("METHOD            %04lX %04lX %04lX %d\n", method->function,
+            printf("METHOD FRAME      %04lX %04lX %d\n",
                    method->object, method->method, method->code.nargs);
 
             continue;

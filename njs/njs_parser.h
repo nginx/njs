@@ -118,21 +118,21 @@ typedef enum {
     NJS_TOKEN_ESCAPE_STRING,
     NJS_TOKEN_NAME,
 
-    NJS_TOKEN_OBJECT_CREATE,
-    NJS_TOKEN_OBJECT_LITERAL,
+    NJS_TOKEN_OBJECT,
+    NJS_TOKEN_OBJECT_VALUE,
     NJS_TOKEN_PROPERTY,
     NJS_TOKEN_PROPERTY_DELETE,
 
-    NJS_TOKEN_ARRAY_CREATE,
+    NJS_TOKEN_ARRAY,
 
-    NJS_TOKEN_FUNCTION_CREATE,
     NJS_TOKEN_FUNCTION,
+    NJS_TOKEN_FUNCTION_EXPRESSION,
     NJS_TOKEN_FUNCTION_CALL,
     NJS_TOKEN_METHOD_CALL,
     NJS_TOKEN_ARGUMENT,
     NJS_TOKEN_RETURN,
 
-    NJS_TOKEN_REGEXP_LITERAL,
+    NJS_TOKEN_REGEXP,
 
     NJS_TOKEN_EXTERNAL,
 
@@ -261,10 +261,6 @@ struct njs_parser_s {
     size_t                          scope_size;
     size_t                          scope_offset;
 
-    uint32_t                        nesting_arguments;
-    uint32_t                        nesting_arguments_size;
-    uint32_t                        method_arguments_size;
-
     u_char                          *code_start;
     u_char                          *code_end;
 
@@ -298,7 +294,7 @@ nxt_int_t njs_parser_string_create(njs_vm_t *vm, njs_value_t *value);
 njs_index_t njs_parser_index(njs_parser_t *parser, uint32_t scope);
 nxt_bool_t njs_parser_has_side_effect(njs_parser_node_t *node);
 nxt_int_t njs_generate_scope(njs_vm_t *vm, njs_parser_t *parser,
-    njs_parser_node_t *node, njs_vmcode_operation_t last);
+    njs_parser_node_t *node);
 
 
 #define njs_generate_code(parser, type, code)                                 \
