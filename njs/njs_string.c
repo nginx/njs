@@ -295,7 +295,7 @@ static const njs_object_prop_t  njs_string_constructor_properties[] =
       NJS_PROPERTY, 0, 0, 0, },
 
     /* String.prototype. */
-    { njs_getter(njs_object_prototype_create),
+    { njs_native_getter(njs_object_prototype_create),
       njs_string("prototype"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 };
@@ -1478,7 +1478,6 @@ njs_value_to_string(njs_vm_t *vm, njs_value_t *dst, const njs_value_t *src)
          *      regex:    full regexp text like "/regexp/gim".
          */
 
-    case NJS_NATIVE:
     case NJS_EXTERNAL:
         value = &njs_string_native;
         break;
@@ -1597,11 +1596,11 @@ njs_string_to_number(njs_value_t *value)
 
 static const njs_object_prop_t  njs_string_prototype_properties[] =
 {
-    { njs_getter(njs_primitive_prototype_get_proto),
+    { njs_native_getter(njs_primitive_prototype_get_proto),
       njs_string("__proto__"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 
-    { njs_getter(njs_string_prototype_length),
+    { njs_native_getter(njs_string_prototype_length),
       njs_string("length"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 

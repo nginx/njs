@@ -904,10 +904,6 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
         obj = object->data.u.object;
         break;
 
-    case NJS_NATIVE:
-        obj = &vm->prototypes[NJS_PROTOTYPE_FUNCTION];
-        break;
-
     case NJS_EXTERNAL:
         ext = object->data.u.external;
 
@@ -1206,7 +1202,7 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     const njs_value_t   *retval;
     nxt_lvlhsh_query_t  lhq;
 
-    if (!njs_is_function(constructor) && !njs_is_native(constructor)) {
+    if (!njs_is_function(constructor)) {
         vm->exception = &njs_exception_type_error;
         return NXT_ERROR;
     }

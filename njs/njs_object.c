@@ -399,7 +399,7 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
       NJS_PROPERTY, 0, 0, 0, },
 
     /* Object.prototype. */
-    { njs_getter(njs_object_prototype_create),
+    { njs_native_getter(njs_object_prototype_create),
       njs_string("prototype"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 
@@ -552,7 +552,7 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
         &njs_object_number_string,
         &njs_object_string_string,
 
-        &njs_object_function_string,
+        &njs_string_empty,
         &njs_object_function_string,
         &njs_string_empty,
 
@@ -599,11 +599,11 @@ found:
 
 static const njs_object_prop_t  njs_object_prototype_properties[] =
 {
-    { njs_getter(njs_object_prototype_get_proto),
+    { njs_native_getter(njs_object_prototype_get_proto),
       njs_string("__proto__"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 
-    { njs_getter(njs_object_prototype_create_constructor),
+    { njs_native_getter(njs_object_prototype_create_constructor),
       njs_string("constructor"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 

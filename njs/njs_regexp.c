@@ -676,7 +676,7 @@ static const njs_object_prop_t  njs_regexp_constructor_properties[] =
       NJS_PROPERTY, 0, 0, 0, },
 
     /* RegExp.prototype. */
-    { njs_getter(njs_object_prototype_create),
+    { njs_native_getter(njs_object_prototype_create),
       njs_string("prototype"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 };
@@ -690,23 +690,23 @@ const njs_object_init_t  njs_regexp_constructor_init = {
 
 static const njs_object_prop_t  njs_regexp_prototype_properties[] =
 {
-    { njs_getter(njs_regexp_prototype_last_index),
+    { njs_native_getter(njs_regexp_prototype_last_index),
       njs_string("lastIndex"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 
-    { njs_getter(njs_regexp_prototype_global),
+    { njs_native_getter(njs_regexp_prototype_global),
       njs_string("global"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 
-    { njs_getter(njs_regexp_prototype_ignore_case),
+    { njs_native_getter(njs_regexp_prototype_ignore_case),
       njs_string("ignoreCase"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 
-    { njs_getter(njs_regexp_prototype_multiline),
+    { njs_native_getter(njs_regexp_prototype_multiline),
       njs_string("multiline"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 
-    { njs_getter(njs_regexp_prototype_source),
+    { njs_native_getter(njs_regexp_prototype_source),
       njs_string("source"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 

@@ -231,7 +231,7 @@ static const njs_object_prop_t  njs_array_constructor_properties[] =
       NJS_PROPERTY, 0, 0, 0, },
 
     /* Array.prototype. */
-    { njs_getter(njs_object_prototype_create),
+    { njs_native_getter(njs_object_prototype_create),
       njs_string("prototype"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 };
@@ -470,10 +470,7 @@ njs_array_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
 
     prop = njs_object_property(vm, object, &lhq);
 
-    if (nxt_fast_path(prop != NULL
-                      && (njs_is_function(&prop->value)
-                          || njs_is_native(&prop->value))))
-    {
+    if (nxt_fast_path(prop != NULL && njs_is_function(&prop->value))) {
         return njs_function_apply(vm, &prop->value, param);
     }
 
@@ -889,7 +886,7 @@ njs_array_next(njs_value_t *value, nxt_uint_t n, nxt_uint_t length)
 
 static const njs_object_prop_t  njs_array_prototype_properties[] =
 {
-    { njs_getter(njs_array_prototype_length),
+    { njs_native_getter(njs_array_prototype_length),
       njs_string("length"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 

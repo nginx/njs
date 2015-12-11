@@ -120,17 +120,14 @@ njs_function_constructor(njs_vm_t *vm, njs_param_t *param)
 
 
 nxt_noinline njs_ret_t
-njs_function_apply(njs_vm_t *vm, njs_value_t *name, njs_param_t *param)
+njs_function_apply(njs_vm_t *vm, njs_value_t *value, njs_param_t *param)
 {
     njs_ret_t       ret;
     njs_function_t  *function;
 
-    if (njs_is_native(name)) {
-        return name->data.u.method(vm, param);
+    if (njs_is_function(value)) {
 
-    } else if (njs_is_function(name)) {
-
-        function = name->data.u.function;
+        function = value->data.u.function;
 
         if (function->native) {
             return function->u.native(vm, param);
@@ -249,7 +246,7 @@ static const njs_object_prop_t  njs_function_constructor_properties[] =
       NJS_PROPERTY, 0, 0, 0, },
 
     /* Function.prototype. */
-    { njs_getter(njs_object_prototype_create),
+    { njs_native_getter(njs_object_prototype_create),
       njs_string("prototype"),
       NJS_NATIVE_GETTER, 0, 0, 0, },
 };
@@ -267,30 +264,16 @@ njs_function_prototype_call(njs_vm_t *vm, njs_param_t *param)
     uintptr_t                   nargs;
     njs_ret_t                   ret;
     njs_param_t                 p;
-    njs_value_t                 *func;
+    njs_value_t                 *value;
     njs_function_t              *function;
     njs_vmcode_function_call_t  *call;
 
     p.object = &param->args[0];
     p.args = &param->args[1];
 
-    func = param->object;
     nargs = param->nargs;
-
-    if (njs_is_native(func)) {
-
-        if (nargs != 0) {
-            p.nargs = nargs - 1;
-            p.retval = param->retval;
-
-            return func->data.u.method(vm, &p);
-        }
-
-        vm->exception = &njs_exception_type_error;
-        return NXT_ERROR;
-    }
-
-    function = func->data.u.function;
+    value = param->object;
+    function = value->data.u.function;
 
     if (function->native) {
 
@@ -336,7 +319,7 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_param_t *param)
     njs_ret_t                   ret;
     njs_param_t                 p;
     njs_array_t                 *array;
-    njs_value_t                 *func, *args;
+    njs_value_t                 *value, *args;
     njs_function_t              *function;
     njs_vmcode_function_call_t  *code;
 
@@ -356,25 +339,8 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_param_t *param)
         p.nargs = array->length;
     }
 
-    func = param->object;
-
-    if (njs_is_native(func)) {
-        p.retval = param->retval;
-
-        if (nargs < 2) {
-            if (nargs != 0) {
-                p.args = &args[1];
-                p.nargs = nargs - 1;
-
-            } else {
-                goto type_error;
-            }
-        }
-
-        return func->data.u.method(vm, &p);
-    }
-
-    function = func->data.u.function;
+    value = param->object;
+    function = value->data.u.function;
 
     if (function->native) {
         p.retval = param->retval;
@@ -425,7 +391,6 @@ type_error:
 static njs_ret_t
 njs_function_prototype_bind(njs_vm_t *vm, njs_param_t *param)
 {
-    njs_value_t     *func;
     njs_function_t  *bound;
 
     bound = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_function_t));
@@ -435,9 +400,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_param_t *param)
         nxt_lvlhsh_init(&bound->object.shared_hash);
         bound->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION];
         bound->args_offset = 1;
-
-        func = param->object;
-        bound->u.lambda = func->data.u.function->u.lambda;
+        bound->u.lambda = param->object->data.u.function->u.lambda;
 
         vm->retval.data.u.function = bound;
         vm->retval.type = NJS_FUNCTION;

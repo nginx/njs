@@ -42,16 +42,16 @@ typedef enum {
 
     /* The order of the above type is used in njs_is_primitive(). */
 
-    /* The type is native code. */
-    NJS_NATIVE          = 0x05,
+    /* Reserved           0x05, */
 
     /* The type is external code. */
     NJS_EXTERNAL        = 0x06,
 
     /*
-     * A special value type for uninitialized array members.
-     * It is also used to detect variable non-declared explicitly
-     * or implicitly and to throw ReferenceError exception.
+     * The invalid value type is used:
+     *   for uninitialized array members,
+     *   to detect non-declared explicitly or implicitly variables,
+     *   for native property getters.
      */
     NJS_INVALID         = 0x07,
 
@@ -170,7 +170,6 @@ union njs_value_s {
             njs_function_lambda_t      *lambda;
             njs_regexp_t               *regexp;
             njs_getter_t               getter;
-            njs_native_t               method;
             njs_extern_t               *external;
             njs_value_t                *value;
             void                       *data;
@@ -241,11 +240,13 @@ union njs_value_s {
 }
 
 
-#define njs_getter(_getter)                                                   \
-    { .data = { .type = NJS_NATIVE,                                           \
-                .truth = 1,                                                   \
-                .u = { .getter = _getter }                                    \
-    } }
+#define njs_native_getter(_getter) {                                          \
+    .data = {                                                                 \
+        .type = NJS_INVALID,                                                  \
+        .truth = 1,                                                           \
+        .u = { .getter = _getter }                                            \
+    }                                                                         \
+}
 
 
 typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
@@ -320,10 +321,6 @@ typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
 
 #define njs_is_regexp(value)                                                  \
     ((value)->type == NJS_REGEXP)
-
-
-#define njs_is_native(value)                                                  \
-    ((value)->type == NJS_NATIVE)
 
 
 #define njs_is_external(value)                                                \
