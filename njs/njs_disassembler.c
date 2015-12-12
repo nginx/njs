@@ -179,8 +179,8 @@ njs_disassemble(u_char *start, u_char *end)
     njs_vmcode_try_start_t     *try_start;
     njs_vmcode_operation_t     operation;
     njs_vmcode_cond_jump_t     *cond_jump;
-    njs_vmcode_prop_each_t     *each;
-    njs_vmcode_prop_start_t    *prop_start;
+    njs_vmcode_prop_next_t     *prop_next;
+    njs_vmcode_prop_foreach_t  *prop_foreach;
     njs_vmcode_method_frame_t  *method;
 
     p = start;
@@ -240,22 +240,24 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_property_each_start) {
-            prop_start = (njs_vmcode_prop_start_t *) p;
-            p += sizeof(njs_vmcode_prop_start_t);
+        if (operation == njs_vmcode_property_foreach) {
+            prop_foreach = (njs_vmcode_prop_foreach_t *) p;
+            p += sizeof(njs_vmcode_prop_foreach_t);
 
-            printf("PROPERTY START    %04lX %04lX +%ld\n",
-                   prop_start->each, prop_start->object, prop_start->offset);
+            printf("PROPERTY FOREACH  %04lX %04lX +%ld\n",
+                   prop_foreach->next, prop_foreach->object,
+                   prop_foreach->offset);
 
             continue;
         }
 
-        if (operation == njs_vmcode_property_each) {
-            each = (njs_vmcode_prop_each_t *) p;
-            p += sizeof(njs_vmcode_prop_each_t);
+        if (operation == njs_vmcode_property_next) {
+            prop_next = (njs_vmcode_prop_next_t *) p;
+            p += sizeof(njs_vmcode_prop_next_t);
 
-            printf("PROPERTY EACH     %04lX %04lX %04lX %ld\n",
-                   each->retval, each->object, each->each, each->offset);
+            printf("PROPERTY NEXT     %04lX %04lX %04lX %ld\n",
+                   prop_next->retval, prop_next->object,
+                   prop_next->next, prop_next->offset);
 
             continue;
         }

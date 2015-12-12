@@ -58,18 +58,18 @@ static njs_ret_t ngx_http_js_ext_get_string(njs_vm_t *vm, njs_value_t *value,
     void *obj, uintptr_t data);
 static njs_ret_t ngx_http_js_ext_set_string(njs_vm_t *vm, void *obj,
     uintptr_t data, nxt_str_t *value);
-static njs_ret_t ngx_http_js_ext_each_header_start(njs_vm_t *vm, void *obj,
-    void *each, uintptr_t data);
-static njs_ret_t ngx_http_js_ext_each_header(njs_vm_t *vm, njs_value_t *value,
-    void *obj, void *each);
+static njs_ret_t ngx_http_js_ext_foreach_header(njs_vm_t *vm, void *obj,
+    void *next, uintptr_t data);
+static njs_ret_t ngx_http_js_ext_next_header(njs_vm_t *vm, njs_value_t *value,
+    void *obj, void *next);
 static ngx_table_elt_t *ngx_http_js_get_header(ngx_list_part_t *part,
     u_char *data, size_t len);
 static njs_ret_t ngx_http_js_ext_get_header_out(njs_vm_t *vm,
     njs_value_t *value, void *obj, uintptr_t data);
 static njs_ret_t ngx_http_js_ext_set_header_out(njs_vm_t *vm, void *obj,
     uintptr_t data, nxt_str_t *value);
-static njs_ret_t ngx_http_js_ext_each_header_out_start(njs_vm_t *vm, void *obj,
-    void *each); /*FIXME*/
+static njs_ret_t ngx_http_js_ext_foreach_header_out(njs_vm_t *vm, void *obj,
+    void *next); /*FIXME*/
 static njs_ret_t ngx_http_js_ext_get_status(njs_vm_t *vm, njs_value_t *value,
     void *obj, uintptr_t data);
 static njs_ret_t ngx_http_js_ext_set_status(njs_vm_t *vm, void *obj,
@@ -87,14 +87,14 @@ static njs_ret_t ngx_http_js_ext_get_remote_address(njs_vm_t *vm,
     njs_value_t *value, void *obj, uintptr_t data);
 static njs_ret_t ngx_http_js_ext_get_header_in(njs_vm_t *vm, njs_value_t *value,
     void *obj, uintptr_t data);
-static njs_ret_t ngx_http_js_ext_each_header_in_start(njs_vm_t *vm, void *obj,
-    void *each); /*FIXME*/
+static njs_ret_t ngx_http_js_ext_foreach_header_in(njs_vm_t *vm, void *obj,
+    void *next); /*FIXME*/
 static njs_ret_t ngx_http_js_ext_get_arg(njs_vm_t *vm, njs_value_t *value,
     void *obj, uintptr_t data);
-static njs_ret_t ngx_http_js_ext_each_arg_start(njs_vm_t *vm, void *obj,
-    void *each);
-static njs_ret_t ngx_http_js_ext_each_arg(njs_vm_t *vm, njs_value_t *value,
-    void *obj, void *each);
+static njs_ret_t ngx_http_js_ext_foreach_arg(njs_vm_t *vm, void *obj,
+    void *next);
+static njs_ret_t ngx_http_js_ext_next_arg(njs_vm_t *vm, njs_value_t *value,
+    void *obj, void *next);
 
 static char *ngx_http_js_run(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 static char *ngx_http_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
@@ -175,8 +175,8 @@ static njs_external_t  ngx_http_js_ext_response[] = {
       ngx_http_js_ext_get_header_out,
       ngx_http_js_ext_set_header_out,
       NULL,
-      ngx_http_js_ext_each_header_out_start,
-      ngx_http_js_ext_each_header,
+      ngx_http_js_ext_foreach_header_out,
+      ngx_http_js_ext_next_header,
       NULL,
       0 },
 
@@ -323,8 +323,8 @@ static njs_external_t  ngx_http_js_ext_request[] = {
       ngx_http_js_ext_get_header_in,
       NULL,
       NULL,
-      ngx_http_js_ext_each_header_in_start,
-      ngx_http_js_ext_each_header,
+      ngx_http_js_ext_foreach_header_in,
+      ngx_http_js_ext_next_header,
       NULL,
       0 },
 
@@ -335,8 +335,8 @@ static njs_external_t  ngx_http_js_ext_request[] = {
       ngx_http_js_ext_get_arg,
       NULL,
       NULL,
-      ngx_http_js_ext_each_arg_start,
-      ngx_http_js_ext_each_arg,
+      ngx_http_js_ext_foreach_arg,
+      ngx_http_js_ext_next_arg,
       NULL,
       0 },
 };
@@ -549,7 +549,7 @@ ngx_http_js_ext_set_string(njs_vm_t *vm, void *obj, uintptr_t data,
 
 
 static njs_ret_t
-ngx_http_js_ext_each_header_start(njs_vm_t *vm, void *obj, void *each,
+ngx_http_js_ext_foreach_header(njs_vm_t *vm, void *obj, void *next,
     uintptr_t data)
 {
     char *p = obj;
@@ -570,7 +570,7 @@ ngx_http_js_ext_each_header_start(njs_vm_t *vm, void *obj, void *each,
     entry->part = &headers->part;
     entry->item = 0;
 
-    e = (ngx_http_js_table_entry_t **) each;
+    e = (ngx_http_js_table_entry_t **) next;
     *e = entry;
 
     return NJS_OK;
@@ -578,10 +578,10 @@ ngx_http_js_ext_each_header_start(njs_vm_t *vm, void *obj, void *each,
 
 
 static njs_ret_t
-ngx_http_js_ext_each_header(njs_vm_t *vm, njs_value_t *value, void *obj,
-    void *each)
+ngx_http_js_ext_next_header(njs_vm_t *vm, njs_value_t *value, void *obj,
+    void *next)
 {
-    ngx_http_js_table_entry_t **e = each;
+    ngx_http_js_table_entry_t **e = next;
 
     ngx_table_elt_t            *header, *h;
     ngx_http_js_table_entry_t  *entry;
@@ -709,9 +709,9 @@ ngx_http_js_ext_set_header_out(njs_vm_t *vm, void *obj, uintptr_t data,
 
 
 static njs_ret_t
-ngx_http_js_ext_each_header_out_start(njs_vm_t *vm, void *obj, void *each)
+ngx_http_js_ext_foreach_header_out(njs_vm_t *vm, void *obj, void *next)
 {
-    return ngx_http_js_ext_each_header_start(vm, obj, each,
+    return ngx_http_js_ext_foreach_header(vm, obj, next,
                              offsetof(ngx_http_request_t, headers_out.headers));
 }
 
@@ -963,9 +963,9 @@ ngx_http_js_ext_get_header_in(njs_vm_t *vm, njs_value_t *value, void *obj,
 
 
 static njs_ret_t
-ngx_http_js_ext_each_header_in_start(njs_vm_t *vm, void *obj, void *each)
+ngx_http_js_ext_foreach_header_in(njs_vm_t *vm, void *obj, void *next)
 {
-    return ngx_http_js_ext_each_header_start(vm, obj, each,
+    return ngx_http_js_ext_foreach_header(vm, obj, next,
                               offsetof(ngx_http_request_t, headers_in.headers));
 }
 
@@ -989,7 +989,7 @@ ngx_http_js_ext_get_arg(njs_vm_t *vm, njs_value_t *value, void *obj,
 
 
 static njs_ret_t
-ngx_http_js_ext_each_arg_start(njs_vm_t *vm, void *obj, void *each)
+ngx_http_js_ext_foreach_arg(njs_vm_t *vm, void *obj, void *next)
 {
     ngx_str_t           *entry, **e;
     ngx_http_request_t  *r;
@@ -1003,7 +1003,7 @@ ngx_http_js_ext_each_arg_start(njs_vm_t *vm, void *obj, void *each)
 
     *entry = r->args;
 
-    e = (ngx_str_t **) each;
+    e = (ngx_str_t **) next;
     *e = entry;
 
     return NJS_OK;
@@ -1011,10 +1011,10 @@ ngx_http_js_ext_each_arg_start(njs_vm_t *vm, void *obj, void *each)
 
 
 static njs_ret_t
-ngx_http_js_ext_each_arg(njs_vm_t *vm, njs_value_t *value, void *obj,
-    void *each)
+ngx_http_js_ext_next_arg(njs_vm_t *vm, njs_value_t *value, void *obj,
+    void *next)
 {
-    ngx_str_t **e = each;
+    ngx_str_t **e = next;
 
     size_t      len;
     u_char     *p, *start, *end;

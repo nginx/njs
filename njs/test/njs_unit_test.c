@@ -3269,11 +3269,11 @@ njs_unit_test_header_external(njs_vm_t *vm, njs_value_t *value, void *obj,
 
 
 static njs_ret_t
-njs_unit_test_header_each_start_external(njs_vm_t *vm, void *obj, void *each)
+njs_unit_test_header_foreach_external(njs_vm_t *vm, void *obj, void *next)
 {
     u_char  *s;
 
-    s = each;
+    s = next;
     s[0] = '0';
     s[1] = '0';
 
@@ -3282,12 +3282,12 @@ njs_unit_test_header_each_start_external(njs_vm_t *vm, void *obj, void *each)
 
 
 static njs_ret_t
-njs_unit_test_header_each_external(njs_vm_t *vm, njs_value_t *value, void *obj,
-    void *each)
+njs_unit_test_header_next_external(njs_vm_t *vm, njs_value_t *value, void *obj,
+    void *next)
 {
     u_char  *s;
 
-    s = each;
+    s = next;
     s[1]++;
 
     if (s[1] == '4') {
@@ -3368,8 +3368,8 @@ static njs_external_t  njs_unit_test_r_external[] = {
       njs_unit_test_header_external,
       NULL,
       NULL,
-      njs_unit_test_header_each_start_external,
-      njs_unit_test_header_each_external,
+      njs_unit_test_header_foreach_external,
+      njs_unit_test_header_next_external,
       NULL,
       0 },
 

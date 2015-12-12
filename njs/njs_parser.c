@@ -934,12 +934,13 @@ njs_parser_for_in_statement(njs_vm_t *vm, njs_parser_t *parser,
 {
     njs_parser_node_t  *node;
 
-    if (parser->node->left->token != NJS_TOKEN_NAME) {
+    node = parser->node->left;
+
+    if (node->token != NJS_TOKEN_NAME) {
         return NJS_TOKEN_ILLEGAL;
     }
 
-    parser->node->left->u.variable->state = NJS_VARIABLE_DECLARED;
-    parser->node->token = NJS_TOKEN_PROPERTY_EACH;
+    node->u.variable->state = NJS_VARIABLE_DECLARED;
 
     node = njs_parser_node_alloc(vm);
     if (nxt_slow_path(node == NULL)) {
@@ -961,8 +962,8 @@ njs_parser_for_in_statement(njs_vm_t *vm, njs_parser_t *parser,
 
     node->right = parser->node;
     parser->node = node;
-    parser->code_size += sizeof(njs_vmcode_prop_start_t)
-                         + sizeof(njs_vmcode_prop_each_t);
+    parser->code_size += sizeof(njs_vmcode_prop_foreach_t)
+                         + sizeof(njs_vmcode_prop_next_t);
     return token;
 }
 

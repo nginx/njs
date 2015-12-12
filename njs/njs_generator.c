@@ -671,12 +671,12 @@ static nxt_int_t
 njs_generate_for_in_statement(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node)
 {
-    u_char                   *loop;
-    nxt_int_t                ret;
-    njs_index_t              index;
-    njs_parser_node_t        *foreach;
-    njs_vmcode_prop_each_t   *prop_each;
-    njs_vmcode_prop_start_t  *start;
+    u_char                     *loop;
+    nxt_int_t                  ret;
+    njs_index_t                index;
+    njs_parser_node_t          *foreach;
+    njs_vmcode_prop_next_t     *prop_next;
+    njs_vmcode_prop_foreach_t  *prop_foreach;
 
     /* The object. */
 
@@ -687,14 +687,14 @@ njs_generate_for_in_statement(njs_vm_t *vm, njs_parser_t *parser,
         return ret;
     }
 
-    njs_generate_code(parser, njs_vmcode_prop_start_t, start);
-    start->code.operation = njs_vmcode_property_each_start;
-    start->code.operands = NJS_VMCODE_2OPERANDS;
-    start->code.retval = NJS_VMCODE_RETVAL;
-    start->object = foreach->right->index;
+    njs_generate_code(parser, njs_vmcode_prop_foreach_t, prop_foreach);
+    prop_foreach->code.operation = njs_vmcode_property_foreach;
+    prop_foreach->code.operands = NJS_VMCODE_2OPERANDS;
+    prop_foreach->code.retval = NJS_VMCODE_RETVAL;
+    prop_foreach->object = foreach->right->index;
 
     index = njs_generator_temp_index_get(parser);
-    start->each = index;
+    prop_foreach->next = index;
 
     /* The loop body. */
 
@@ -707,21 +707,21 @@ njs_generate_for_in_statement(njs_vm_t *vm, njs_parser_t *parser,
 
     /* The loop iterator. */
 
-    start->offset = parser->code_end - (u_char *) start;
+    prop_foreach->offset = parser->code_end - (u_char *) prop_foreach;
 
     ret = njs_generator(vm, parser, node->left->left);
     if (nxt_slow_path(ret != NXT_OK)) {
         return ret;
     }
 
-    njs_generate_code(parser, njs_vmcode_prop_each_t, prop_each);
-    prop_each->code.operation = njs_vmcode_property_each;
-    prop_each->code.operands = NJS_VMCODE_3OPERANDS;
-    prop_each->code.retval = NJS_VMCODE_RETVAL;
-    prop_each->retval = foreach->left->index;
-    prop_each->object = foreach->right->index;
-    prop_each->each = index;
-    prop_each->offset = loop - (u_char *) prop_each;
+    njs_generate_code(parser, njs_vmcode_prop_next_t, prop_next);
+    prop_next->code.operation = njs_vmcode_property_next;
+    prop_next->code.operands = NJS_VMCODE_3OPERANDS;
+    prop_next->code.retval = NJS_VMCODE_RETVAL;
+    prop_next->retval = foreach->left->index;
+    prop_next->object = foreach->right->index;
+    prop_next->next = index;
+    prop_next->offset = loop - (u_char *) prop_next;
 
     /*
      * Release object and iterator indexes: an object can be a function result

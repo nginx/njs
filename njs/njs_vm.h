@@ -87,6 +87,7 @@ typedef struct njs_regexp_s           njs_regexp_t;
 typedef struct njs_regexp_pattern_s   njs_regexp_pattern_t;
 typedef struct njs_extern_s           njs_extern_t;
 typedef struct njs_native_frame_s     njs_native_frame_t;
+typedef struct njs_property_next_s    njs_property_next_t;
 
 
 typedef struct njs_object_s           njs_object_t;
@@ -172,6 +173,7 @@ union njs_value_s {
             njs_getter_t               getter;
             njs_extern_t               *external;
             njs_value_t                *value;
+            njs_property_next_t        *next;
             void                       *data;
         } u;
     } data;
@@ -473,19 +475,19 @@ typedef struct {
 
 typedef struct {
     njs_vmcode_t               code;
-    njs_index_t                each;
+    njs_index_t                next;
     njs_index_t                object;
     njs_ret_t                  offset;
-} njs_vmcode_prop_start_t;
+} njs_vmcode_prop_foreach_t;
 
 
 typedef struct {
     njs_vmcode_t               code;
     njs_index_t                retval;
     njs_index_t                object;
-    njs_index_t                each;
+    njs_index_t                next;
     njs_ret_t                  offset;
-} njs_vmcode_prop_each_t;
+} njs_vmcode_prop_next_t;
 
 
 typedef struct {
@@ -734,10 +736,10 @@ njs_ret_t njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *property,
     njs_value_t *object);
 njs_ret_t njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *property);
-njs_ret_t njs_vmcode_property_each_start(njs_vm_t *vm, njs_value_t *object,
+njs_ret_t njs_vmcode_property_foreach(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *invld);
-njs_ret_t njs_vmcode_property_each(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *each);
+njs_ret_t njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object,
+    njs_value_t *value);
 njs_ret_t njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *constructor);
 

@@ -81,8 +81,8 @@ njs_add_external(nxt_lvlhsh_t *hash, nxt_mem_cache_pool_t *mcp, uintptr_t object
         ext->get = external->get;
         ext->set = external->set;
         ext->find = external->find;
-        ext->each_start = external->each_start;
-        ext->each = external->each;
+        ext->foreach = external->foreach;
+        ext->next = external->next;
         ext->method = external->method;
         ext->object = object;
         ext->data = external->data;
