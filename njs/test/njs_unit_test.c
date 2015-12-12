@@ -87,6 +87,21 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("undefined - undefined"),
       nxt_string("NaN") },
 
+    /* Assignment. */
+
+    { nxt_string("var a, b = (a = [2]) * (3 * 4); a +' '+ b"),
+      nxt_string("2 24") },
+
+    /* 3 address operation and side effect. */
+
+    { nxt_string("var a = 1; function f(x) { a = x; return 2 }; a+f(5)+' '+a"),
+      nxt_string("3 5") },
+
+    { nxt_string("var a = 1; function f(x) { a = x; return 2 }; a += f(5)"),
+      nxt_string("3") },
+
+    /**/
+
     { nxt_string("12 | 6"),
       nxt_string("14") },
 
@@ -857,6 +872,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = 1 ? b = 2 + 4 : b = 3"),
       nxt_string("6") },
 
+    { nxt_string("a = 1 ? [1,2] : []"),
+      nxt_string("1,2") },
+
     /**/
 
     { nxt_string("var a = { valueOf: function() { return 1 } };   +a"),
@@ -884,6 +902,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var a = {};  ++a"),
       nxt_string("NaN") },
+
+    { nxt_string("var a = [1,2,3]; var b = 1; b = ++a[b]; b + ' '+ a"),
+      nxt_string("3 1,3,3") },
 
     { nxt_string("var a = { valueOf: function() { return 1 } };"
                  "++a +' '+ a +' '+ typeof a"),
@@ -1307,7 +1328,13 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a \n if (!a) a = 3; a"),
       nxt_string("3") },
 
+    { nxt_string("a = 1; if (true) a = 2; else a = 3; a"),
+      nxt_string("2") },
+
     { nxt_string("a = 3; if (true) if (false); else a = 2; a"),
+      nxt_string("2") },
+
+    { nxt_string("a = 3; if (true) if (false); else; a = 2; a"),
       nxt_string("2") },
 
     /* var statements. */
@@ -2291,6 +2318,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var o = {a:1}; o.a()"),
       nxt_string("TypeError") },
+
+    { nxt_string("(function(){})()"),
+      nxt_string("undefined") },
 
     { nxt_string("var q = 1; function x(a, b, c) { q = a } x(5); q"),
       nxt_string("5") },

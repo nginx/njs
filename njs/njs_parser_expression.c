@@ -536,7 +536,7 @@ njs_parser_conditional_expression(njs_vm_t *vm, njs_parser_t *parser,
         }
 
         cond->right = node;
-        node->token = NJS_TOKEN_ELSE;
+        node->token = NJS_TOKEN_BRANCHING;
 
         token = njs_parser_assignment_expression(vm, parser, NULL, token);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
@@ -548,6 +548,7 @@ njs_parser_conditional_expression(njs_vm_t *vm, njs_parser_t *parser,
         }
 
         node->left = parser->node;
+        node->left->dest = cond;
 
         token = njs_parser_token(parser);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
@@ -560,6 +561,7 @@ njs_parser_conditional_expression(njs_vm_t *vm, njs_parser_t *parser,
         }
 
         node->right = parser->node;
+        node->right->dest = cond;
 
         parser->node = cond;
         parser->code_size += sizeof(njs_vmcode_cond_jump_t)

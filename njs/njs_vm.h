@@ -583,6 +583,9 @@ typedef enum {
 #define NJS_INDEX_ERROR        ((njs_index_t) -1)
 #define NJS_INDEX_THIS         ((njs_index_t) (0 | NJS_SCOPE_ARGUMENTS))
 
+#define njs_is_callee_argument_index(index)                                   \
+    (((index) & NJS_SCOPE_CALLEE_ARGUMENTS) == NJS_SCOPE_CALLEE_ARGUMENTS)
+
 
 enum njs_prototypes_e {
     NJS_PROTOTYPE_OBJECT =   0,

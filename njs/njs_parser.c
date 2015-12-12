@@ -718,7 +718,7 @@ njs_parser_if_statement(njs_vm_t *vm, njs_parser_t *parser)
             return NJS_TOKEN_ERROR;
         }
 
-        node->token = NJS_TOKEN_ELSE;
+        node->token = NJS_TOKEN_BRANCHING;
         node->left = stmt;
         node->right = parser->node;
         parser->node = node;
@@ -915,11 +915,9 @@ njs_parser_for_statement(njs_vm_t *vm, njs_parser_t *parser)
     node->left = init;
     node->right = cond;
 
-    cond->token = NJS_TOKEN_FOR_CONDITION;
     cond->left = condition;
     cond->right = body;
 
-    body->token = NJS_TOKEN_FOR_BODY;
     body->left = parser->node;
     body->right = update;
 
