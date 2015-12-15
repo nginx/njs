@@ -34,6 +34,8 @@
  * is treated as a single expiression.
  */
 
+static njs_token_t njs_parser_statement_link(njs_vm_t *vm, njs_parser_t *parser,
+    njs_token_t token);
 static njs_token_t njs_parser_statement(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token);
 static njs_token_t njs_parser_block(njs_vm_t *vm, njs_parser_t *parser);
@@ -72,63 +74,74 @@ njs_parser_node_t *
 njs_parser(njs_vm_t *vm, njs_parser_t *parser)
 {
     njs_token_t        token;
-    njs_parser_node_t  *node, *left;
+    njs_parser_node_t  *node;
 
     token = njs_parser_token(parser);
 
-    if (nxt_slow_path(token <= NJS_TOKEN_END)) {
+    while (token != NJS_TOKEN_END) {
 
-        if (vm->exception == NULL) {
-            vm->exception = &njs_exception_syntax_error;
-        }
-
-        return NULL;
-    }
-
-    left = NULL;
-
-    for ( ;; ) {
-        token = njs_parser_statement(vm, parser, token);
-
+        token = njs_parser_statement_link(vm, parser, token);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-
-            if (vm->exception == NULL) {
-                vm->exception = &njs_exception_syntax_error;
-            }
-
-            nxt_thread_log_error(NXT_LOG_ERR, "ERROR");
             return NULL;
-        }
-
-        if (parser->node != NULL && parser->node != left) {
-            /*
-             * The statement is not empty block, not just semicolon,
-             * and not a "var" declaration without initialization.
-             */
-            node = njs_parser_node_alloc(vm);
-            if (nxt_slow_path(node == NULL)) {
-                return NULL;
-            }
-
-            node->token = NJS_TOKEN_STATEMENT;
-            node->left = left;
-            node->right = parser->node;
-            parser->node = node;
-
-            left = node;
         }
 
         if (token == NJS_TOKEN_CLOSE_BRACE) {
             parser->lexer->start--;
-            break;
-        }
 
-        if (token == NJS_TOKEN_END) {
-            break;
+            return parser->node;
         }
     }
 
-    return parser->node;
+    node = parser->node;
+
+    if (node == NULL) {
+        /* Empty string, just semicolons or variables declarations. */
+
+        node = njs_parser_node_alloc(vm);
+        if (nxt_slow_path(node == NULL)) {
+            return NULL;
+        }
+    }
+
+    node->token = NJS_TOKEN_END;
+
+    return node;
+}
+
+
+static njs_token_t
+njs_parser_statement_link(njs_vm_t *vm, njs_parser_t *parser,
+    njs_token_t token)
+{
+    njs_parser_node_t  *node, *last;
+
+    last = parser->node;
+
+    token = njs_parser_statement(vm, parser, token);
+
+    if (nxt_fast_path(token > NJS_TOKEN_ILLEGAL)) {
+
+        if (parser->node != last) {
+            /*
+             * The statement is not empty block, not just semicolon,
+             * and not variables declaration without initialization.
+             */
+            node = njs_parser_node_alloc(vm);
+            if (nxt_slow_path(node == NULL)) {
+                return NJS_TOKEN_ERROR;
+            }
+
+            node->token = NJS_TOKEN_STATEMENT;
+            node->left = last;
+            node->right = parser->node;
+            parser->node = node;
+        }
+
+    } else if (vm->exception == NULL) {
+        vm->exception = &njs_exception_syntax_error;
+    }
+
+    return token;
 }
 
 
@@ -210,36 +223,19 @@ njs_parser_statement(njs_vm_t *vm, njs_parser_t *parser,
 static njs_token_t
 njs_parser_block(njs_vm_t *vm, njs_parser_t *parser)
 {
-    njs_token_t        token;
-    njs_parser_node_t  *node, *left;
+    njs_token_t  token;
 
     token = njs_parser_token(parser);
     if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
         return token;
     }
 
-    left = NULL;
+    parser->node = NULL;
 
     while (token != NJS_TOKEN_CLOSE_BRACE) {
-        token = njs_parser_statement(vm, parser, token);
+        token = njs_parser_statement_link(vm, parser, token);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
-        }
-
-        if (parser->node != NULL) {
-            /* The statement is not empty block and is not just semicolon. */
-
-            node = njs_parser_node_alloc(vm);
-            if (nxt_slow_path(node == NULL)) {
-                return NJS_TOKEN_ERROR;
-            }
-
-            node->token = NJS_TOKEN_STATEMENT;
-            node->left = left;
-            node->right = parser->node;
-            parser->node = node;
-
-            left = node;
         }
     }
 

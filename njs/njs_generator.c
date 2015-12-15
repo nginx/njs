@@ -37,6 +37,14 @@ static nxt_int_t njs_generate_for_statement(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node);
 static nxt_int_t njs_generate_for_in_statement(njs_vm_t *vm,
     njs_parser_t *parser, njs_parser_node_t *node);
+static nxt_int_t njs_generate_statement(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *node);
+static nxt_int_t njs_generate_children(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *node);
+static nxt_int_t njs_generate_stop_statement(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *node);
+static nxt_int_t njs_generate_comma_expression(njs_vm_t *vm,
+    njs_parser_t *parser, njs_parser_node_t *node);
 static nxt_int_t njs_generate_assignment(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node);
 static nxt_int_t njs_generate_operation_assignment(njs_vm_t *vm,
@@ -93,7 +101,6 @@ nxt_inline nxt_bool_t njs_generator_is_constant(njs_parser_node_t *node);
 static nxt_int_t
 njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
 {
-    nxt_int_t          ret;
     njs_parser_node_t  *left;
 
     if (node == NULL) {
@@ -121,28 +128,13 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
         return njs_generate_for_in_statement(vm, parser, node);
 
     case NJS_TOKEN_STATEMENT:
+        return njs_generate_statement(vm, parser, node);
+
+    case NJS_TOKEN_END:
+        return njs_generate_stop_statement(vm, parser, node);
+
     case NJS_TOKEN_COMMA:
-
-        if (node->left != NULL) {
-            ret = njs_generator(vm, parser, node->left);
-            if (nxt_slow_path(ret != NXT_OK)) {
-                return ret;
-            }
-
-            ret = njs_generator_node_index_release(vm, parser, node->left);
-            if (nxt_slow_path(ret != NXT_OK)) {
-                return ret;
-            }
-        }
-
-        ret = njs_generator(vm, parser, node->right);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return ret;
-        }
-
-        node->index = node->right->index;
-
-        return njs_generator_node_index_release(vm, parser, node->right);
+        return njs_generate_comma_expression(vm, parser, node);
 
     case NJS_TOKEN_ASSIGNMENT:
         return njs_generate_assignment(vm, parser, node);
@@ -733,6 +725,91 @@ njs_generate_for_in_statement(njs_vm_t *vm, njs_parser_t *parser,
     }
 
     return njs_generator_index_release(vm, parser, index);
+}
+
+
+static nxt_int_t
+njs_generate_statement(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *node)
+{
+    nxt_int_t  ret;
+
+    ret = njs_generate_children(vm, parser, node);
+
+    if (nxt_fast_path(ret == NXT_OK)) {
+        return njs_generator_node_index_release(vm, parser, node->right);
+    }
+
+    return ret;
+}
+
+
+static nxt_int_t
+njs_generate_children(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *node)
+{
+    nxt_int_t  ret;
+
+    ret = njs_generator(vm, parser, node->left);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
+    ret = njs_generator_node_index_release(vm, parser, node->left);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
+    return njs_generator(vm, parser, node->right);
+}
+
+
+static nxt_int_t
+njs_generate_stop_statement(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *node)
+{
+    nxt_int_t          ret;
+    njs_index_t        index;
+    njs_vmcode_stop_t  *stop;
+
+    ret = njs_generate_children(vm, parser, node);
+
+    if (nxt_fast_path(ret == NXT_OK)) {
+        njs_generate_code(parser, njs_vmcode_stop_t, stop);
+        stop->code.operation = njs_vmcode_stop;
+        stop->code.operands = NJS_VMCODE_1OPERAND;
+        stop->code.retval = NJS_VMCODE_NO_RETVAL;
+
+        index = NJS_INDEX_NONE;
+
+        if (node->right != NULL) {
+            index = node->right->index;
+        }
+
+        if (index == NJS_INDEX_NONE) {
+            index = njs_value_index(vm, parser, &njs_value_void);
+        }
+
+        stop->retval = index;
+    }
+
+    return ret;
+}
+
+
+static nxt_int_t
+njs_generate_comma_expression(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *node)
+{
+    nxt_int_t  ret;
+
+    ret = njs_generate_children(vm, parser, node);
+
+    if (nxt_fast_path(ret == NXT_OK)) {
+        node->index = node->right->index;
+    }
+
+    return ret;
 }
 
 
@@ -1386,14 +1463,12 @@ njs_generate_function_scope(njs_vm_t *vm, njs_function_lambda_t *lambda,
 nxt_int_t
 njs_generate_scope(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
 {
-    u_char             *p;
-    size_t             code_size, size;
-    uintptr_t          scope_size;
-    nxt_uint_t         n;
-    njs_index_t        index;
-    njs_value_t        *value;
-    njs_vm_code_t      *code;
-    njs_vmcode_stop_t  *stop;
+    u_char         *p;
+    size_t         code_size, size;
+    uintptr_t      scope_size;
+    nxt_uint_t     n;
+    njs_value_t    *value;
+    njs_vm_code_t  *code;
 
     p = nxt_mem_cache_alloc(vm->mem_cache_pool, parser->code_size);
     if (nxt_slow_path(p == NULL)) {
@@ -1403,26 +1478,8 @@ njs_generate_scope(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
     parser->code_start = p;
     parser->code_end = p;
 
-    if (node != NULL) {
-        if (nxt_slow_path(njs_generator(vm, parser, node) != NXT_OK)) {
-            return NXT_ERROR;
-        }
-    }
-
-    if (parser->scope == NJS_SCOPE_GLOBAL) {
-        njs_generate_code(parser, njs_vmcode_stop_t, stop);
-        stop->code.operation = njs_vmcode_stop;
-        stop->code.operands = NJS_VMCODE_1OPERAND;
-        stop->code.retval = NJS_VMCODE_NO_RETVAL;
-
-        if (node->index != 0) {
-            index = node->index;
-
-        } else {
-            index = njs_value_index(vm, parser, &njs_value_void);
-        }
-
-        stop->retval = index;
+    if (nxt_slow_path(njs_generator(vm, parser, node) != NXT_OK)) {
+        return NXT_ERROR;
     }
 
     code_size = parser->code_end - parser->code_start;

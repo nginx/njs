@@ -25,6 +25,40 @@ typedef struct {
 
 static njs_unit_test_t  njs_test[] =
 {
+    /* Variable declarations. */
+
+    { nxt_string("var x"),
+      nxt_string("undefined") },
+
+    { nxt_string("var x;"),
+      nxt_string("undefined") },
+
+    { nxt_string("var x;;"),
+      nxt_string("undefined") },
+
+    { nxt_string("var x = 0"),
+      nxt_string("undefined") },
+
+    { nxt_string("var x = 0;"),
+      nxt_string("undefined") },
+
+    { nxt_string("var x = 0;;"),
+      nxt_string("undefined") },
+
+    { nxt_string("var; a"),
+      nxt_string("SyntaxError") },
+
+    { nxt_string("var \n a \n = 1; a"),
+      nxt_string("1") },
+
+    { nxt_string("var \n a, \n b; b"),
+      nxt_string("undefined") },
+
+    { nxt_string("var a = 1; var b; a"),
+      nxt_string("1") },
+
+    /* Numbers. */
+
     { nxt_string("999999999999999999999"),
       nxt_string("1e+21") },
 
@@ -46,10 +80,13 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("1") },
 
     { nxt_string(""),
-      nxt_string("SyntaxError") },
+      nxt_string("undefined") },
 
     { nxt_string("\n"),
-      nxt_string("SyntaxError") },
+      nxt_string("undefined") },
+
+    { nxt_string(";"),
+      nxt_string("undefined") },
 
     { nxt_string("\n +1"),
       nxt_string("1") },
@@ -1284,7 +1321,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("SyntaxError") },
 
     { nxt_string("var a = a + 1"),
-      nxt_string("NaN") },
+      nxt_string("undefined") },
 
     { nxt_string("a = b + 1; var b = 1; a +' '+ b"),
       nxt_string("NaN 1") },
@@ -1308,10 +1345,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("ReferenceError") },
 
     { nxt_string("a += 1; var a = 2"),
-      nxt_string("2") },
+      nxt_string("undefined") },
 
     { nxt_string("var a = 1"),
-      nxt_string("1") },
+      nxt_string("undefined") },
 
     { nxt_string("var a = 1; a = (a = 2) + a"),
       nxt_string("4") },
@@ -1336,19 +1373,6 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("a = 3; if (true) if (false); else; a = 2; a"),
       nxt_string("2") },
-
-    /* var statements. */
-
-    { nxt_string("var; a"),
-      nxt_string("SyntaxError") },
-
-    { nxt_string("var \n a \n = 1; a"),
-      nxt_string("1") },
-
-    { nxt_string("var \n a, \n b; b"),
-      nxt_string("undefined") },
-
-    /**/
 
     { nxt_string("for (i = 0; i < 10; i++) { i += 1 } i"),
       nxt_string("10") },
@@ -3186,7 +3210,7 @@ static njs_unit_test_t  njs_test[] =
     /* es5id: 8.2_A1_T2 */
 
     { nxt_string("var x = null;"),
-      nxt_string("") },
+      nxt_string("undefined") },
 
     /* es5id: 8.2_A2 */
 
