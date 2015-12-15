@@ -37,6 +37,16 @@ static nxt_int_t njs_generate_for_statement(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node);
 static nxt_int_t njs_generate_for_in_statement(njs_vm_t *vm,
     njs_parser_t *parser, njs_parser_node_t *node);
+static nxt_noinline nxt_int_t njs_generate_start_block(njs_vm_t *vm,
+    njs_parser_t *parser, njs_parser_block_type_t type, const nxt_str_t *label);
+static nxt_noinline void njs_generate_patch_loop_continuation(njs_vm_t *vm,
+    njs_parser_t *parser);
+static nxt_noinline void njs_generate_patch_block_exit(njs_vm_t *vm,
+    njs_parser_t *parser);
+static nxt_int_t njs_generate_continue_statement(njs_vm_t *vm,
+    njs_parser_t *parser, njs_parser_node_t *node);
+static nxt_int_t njs_generate_break_statement(njs_vm_t *vm,
+    njs_parser_t *parser, njs_parser_node_t *node);
 static nxt_int_t njs_generate_statement(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node);
 static nxt_int_t njs_generate_children(njs_vm_t *vm, njs_parser_t *parser,
@@ -98,6 +108,9 @@ static nxt_noinline nxt_int_t njs_generator_index_release(njs_vm_t *vm,
 nxt_inline nxt_bool_t njs_generator_is_constant(njs_parser_node_t *node);
 
 
+static const nxt_str_t no_label = { 0, NULL };
+
+
 static nxt_int_t
 njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
 {
@@ -126,6 +139,12 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
 
     case NJS_TOKEN_FOR_IN:
         return njs_generate_for_in_statement(vm, parser, node);
+
+    case NJS_TOKEN_CONTINUE:
+        return njs_generate_continue_statement(vm, parser, node);
+
+    case NJS_TOKEN_BREAK:
+        return njs_generate_break_statement(vm, parser, node);
 
     case NJS_TOKEN_STATEMENT:
         return njs_generate_statement(vm, parser, node);
@@ -498,6 +517,11 @@ njs_generate_while_statement(njs_vm_t *vm, njs_parser_t *parser,
 
     /* The loop body. */
 
+    ret = njs_generate_start_block(vm, parser, NJS_PARSER_LOOP, &no_label);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
     loop = parser->code_end;
 
     ret = njs_generator(vm, parser, node->left);
@@ -506,6 +530,8 @@ njs_generate_while_statement(njs_vm_t *vm, njs_parser_t *parser,
     }
 
     /* The loop condition. */
+
+    njs_generate_patch_loop_continuation(vm, parser);
 
     jump->offset = parser->code_end - (u_char *) jump;
 
@@ -523,6 +549,8 @@ njs_generate_while_statement(njs_vm_t *vm, njs_parser_t *parser,
     cond_jump->offset = loop - (u_char *) cond_jump;
     cond_jump->cond = condition->index;
 
+    njs_generate_patch_block_exit(vm, parser);
+
     return njs_generator_node_index_release(vm, parser, condition);
 }
 
@@ -538,6 +566,11 @@ njs_generate_do_while_statement(njs_vm_t *vm, njs_parser_t *parser,
 
     /* The loop body. */
 
+    ret = njs_generate_start_block(vm, parser, NJS_PARSER_LOOP, &no_label);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
     loop = parser->code_end;
 
     ret = njs_generator(vm, parser, node->left);
@@ -546,6 +579,8 @@ njs_generate_do_while_statement(njs_vm_t *vm, njs_parser_t *parser,
     }
 
     /* The loop condition. */
+
+    njs_generate_patch_loop_continuation(vm, parser);
 
     condition = node->right;
 
@@ -561,6 +596,8 @@ njs_generate_do_while_statement(njs_vm_t *vm, njs_parser_t *parser,
     cond_jump->offset = loop - (u_char *) cond_jump;
     cond_jump->cond = condition->index;
 
+    njs_generate_patch_block_exit(vm, parser);
+
     return njs_generator_node_index_release(vm, parser, condition);
 }
 
@@ -574,6 +611,11 @@ njs_generate_for_statement(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t       *condition, *update;
     njs_vmcode_jump_t       *jump;
     njs_vmcode_cond_jump_t  *cond_jump;
+
+    ret = njs_generate_start_block(vm, parser, NJS_PARSER_LOOP, &no_label);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
 
     jump = NULL;
 
@@ -617,6 +659,8 @@ njs_generate_for_statement(njs_vm_t *vm, njs_parser_t *parser,
 
     /* The loop update. */
 
+    njs_generate_patch_loop_continuation(vm, parser);
+
     update = node->right;
 
     ret = njs_generator(vm, parser, update);
@@ -646,6 +690,8 @@ njs_generate_for_statement(njs_vm_t *vm, njs_parser_t *parser,
         cond_jump->offset = loop - (u_char *) cond_jump;
         cond_jump->cond = condition->index;
 
+        njs_generate_patch_block_exit(vm, parser);
+
         return njs_generator_node_index_release(vm, parser, condition);
     }
 
@@ -654,6 +700,8 @@ njs_generate_for_statement(njs_vm_t *vm, njs_parser_t *parser,
     jump->code.operands = NJS_VMCODE_NO_OPERAND;
     jump->code.retval = NJS_VMCODE_NO_RETVAL;
     jump->offset = loop - (u_char *) jump;
+
+    njs_generate_patch_block_exit(vm, parser);
 
     return NXT_OK;
 }
@@ -669,6 +717,11 @@ njs_generate_for_in_statement(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t          *foreach;
     njs_vmcode_prop_next_t     *prop_next;
     njs_vmcode_prop_foreach_t  *prop_foreach;
+
+    ret = njs_generate_start_block(vm, parser, NJS_PARSER_LOOP, &no_label);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
 
     /* The object. */
 
@@ -699,6 +752,8 @@ njs_generate_for_in_statement(njs_vm_t *vm, njs_parser_t *parser,
 
     /* The loop iterator. */
 
+    njs_generate_patch_loop_continuation(vm, parser);
+
     prop_foreach->offset = parser->code_end - (u_char *) prop_foreach;
 
     ret = njs_generator(vm, parser, node->left->left);
@@ -715,6 +770,8 @@ njs_generate_for_in_statement(njs_vm_t *vm, njs_parser_t *parser,
     prop_next->next = index;
     prop_next->offset = loop - (u_char *) prop_next;
 
+    njs_generate_patch_block_exit(vm, parser);
+
     /*
      * Release object and iterator indexes: an object can be a function result
      * or a property of another object and an iterator can be given with "let".
@@ -725,6 +782,138 @@ njs_generate_for_in_statement(njs_vm_t *vm, njs_parser_t *parser,
     }
 
     return njs_generator_index_release(vm, parser, index);
+}
+
+
+static nxt_noinline nxt_int_t
+njs_generate_start_block(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_block_type_t type, const nxt_str_t *label)
+{
+    njs_parser_block_t  *block;
+
+    block = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_parser_block_t));
+
+    if (nxt_fast_path(block != NULL)) {
+        block->next = parser->block;
+        parser->block = block;
+
+        block->type = type;
+        block->label = *label;
+        block->continuation = NULL;
+        block->exit = NULL;
+
+        return NXT_OK;
+    }
+
+    return NXT_ERROR;
+}
+
+
+static nxt_noinline void
+njs_generate_patch_loop_continuation(njs_vm_t *vm, njs_parser_t *parser)
+{
+    njs_parser_block_t  *block;
+    njs_parser_patch_t  *patch, *next;
+
+    block = parser->block;
+
+    for (patch = block->continuation; patch != NULL; patch = next) {
+        *patch->address += parser->code_end - patch->address;
+        next = patch->next;
+
+        nxt_mem_cache_free(vm->mem_cache_pool, patch);
+    }
+}
+
+
+static nxt_noinline void
+njs_generate_patch_block_exit(njs_vm_t *vm, njs_parser_t *parser)
+{
+    njs_parser_block_t  *block;
+    njs_parser_patch_t  *patch, *next;
+
+    block = parser->block;
+    parser->block = block->next;
+
+    for (patch = block->exit; patch != NULL; patch = next) {
+        *patch->address += parser->code_end - patch->address;
+        next = patch->next;
+
+        nxt_mem_cache_free(vm->mem_cache_pool, patch);
+    }
+
+    nxt_mem_cache_free(vm->mem_cache_pool, block);
+}
+
+
+static nxt_int_t
+njs_generate_continue_statement(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *node)
+{
+    njs_vmcode_jump_t   *jump;
+    njs_parser_patch_t  *patch;
+
+    if (parser->block == NULL) {
+        vm->exception = &njs_exception_syntax_error;
+        return NXT_ERROR;
+    }
+
+    /* TODO: LABEL */
+
+    if (parser->block->type != NJS_PARSER_LOOP) {
+        vm->exception = &njs_exception_syntax_error;
+        return NXT_ERROR;
+    }
+
+    patch = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_parser_patch_t));
+
+    if (nxt_fast_path(patch != NULL)) {
+        patch->next = parser->block->continuation;
+        parser->block->continuation = patch;
+
+        njs_generate_code(parser, njs_vmcode_jump_t, jump);
+        jump->code.operation = njs_vmcode_jump;
+        jump->code.operands = NJS_VMCODE_NO_OPERAND;
+        jump->code.retval = NJS_VMCODE_NO_RETVAL;
+        jump->offset = offsetof(njs_vmcode_jump_t, offset);
+
+        patch->address = (u_char *) &jump->offset;
+    }
+
+    return NXT_OK;
+}
+
+
+static nxt_int_t
+njs_generate_break_statement(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *node)
+{
+    njs_vmcode_jump_t   *jump;
+    njs_parser_patch_t  *patch;
+
+    if (parser->block == NULL) {
+        vm->exception = &njs_exception_syntax_error;
+        return NXT_ERROR;
+    }
+
+    /* TODO: LABEL: loop and switch may have label, block must have label. */
+
+    patch = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_parser_patch_t));
+
+    if (nxt_fast_path(patch != NULL)) {
+        patch->next = parser->block->exit;
+        parser->block->exit = patch;
+
+        njs_generate_code(parser, njs_vmcode_jump_t, jump);
+        jump->code.operation = njs_vmcode_jump;
+        jump->code.operands = NJS_VMCODE_NO_OPERAND;
+        jump->code.retval = NJS_VMCODE_NO_RETVAL;
+        jump->offset = offsetof(njs_vmcode_jump_t, offset);
+
+        patch->address = (u_char *) &jump->offset;
+    }
+
+    return NXT_OK;
 }
 
 

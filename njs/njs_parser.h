@@ -231,12 +231,38 @@ struct njs_parser_node_s {
     nxt_mem_cache_zalloc((vm)->mem_cache_pool, sizeof(njs_parser_node_t))
 
 
+typedef struct njs_parser_patch_s   njs_parser_patch_t;
+
+struct njs_parser_patch_s {
+    u_char                          *address;
+    njs_parser_patch_t              *next;
+};
+
+
+typedef enum {
+    NJS_PARSER_BLOCK = 0,
+    NJS_PARSER_LOOP,
+    NJS_PARSER_SWITCH,
+} njs_parser_block_type_t;
+
+typedef struct njs_parser_block_s   njs_parser_block_t;
+
+struct njs_parser_block_s {
+    njs_parser_block_type_t         type;    /* 2 bits */
+    nxt_str_t                       label;
+    njs_parser_patch_t              *continuation;
+    njs_parser_patch_t              *exit;
+    njs_parser_block_t              *next;
+};
+
+
 struct njs_parser_s {
     njs_lexer_t                     *lexer;
     njs_parser_node_t               *node;
 
     /* Vector of njs_variable_t. */
     nxt_array_t                     *arguments;
+    njs_parser_block_t              *block;
 
     nxt_lvlhsh_t                    variables_hash;
 

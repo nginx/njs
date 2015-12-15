@@ -34,8 +34,8 @@
  * is treated as a single expiression.
  */
 
-static njs_token_t njs_parser_statement_link(njs_vm_t *vm, njs_parser_t *parser,
-    njs_token_t token);
+static njs_token_t njs_parser_statement_chain(njs_vm_t *vm,
+    njs_parser_t *parser, njs_token_t token);
 static njs_token_t njs_parser_statement(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token);
 static njs_token_t njs_parser_block(njs_vm_t *vm, njs_parser_t *parser);
@@ -56,6 +56,10 @@ static njs_token_t njs_parser_do_while_statement(njs_vm_t *vm,
 static njs_token_t njs_parser_for_statement(njs_vm_t *vm, njs_parser_t *parser);
 static njs_token_t njs_parser_for_in_statement(njs_vm_t *vm,
     njs_parser_t *parser, njs_token_t token);
+static njs_token_t njs_parser_continue_statement(njs_vm_t *vm,
+    njs_parser_t *parser);
+static njs_token_t njs_parser_break_statement(njs_vm_t *vm,
+    njs_parser_t *parser);
 static njs_token_t njs_parser_try_statement(njs_vm_t *vm, njs_parser_t *parser);
 static njs_token_t njs_parser_try_block(njs_vm_t *vm, njs_parser_t *parser);
 static njs_token_t njs_parser_throw_statement(njs_vm_t *vm,
@@ -80,7 +84,7 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser)
 
     while (token != NJS_TOKEN_END) {
 
-        token = njs_parser_statement_link(vm, parser, token);
+        token = njs_parser_statement_chain(vm, parser, token);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return NULL;
         }
@@ -110,7 +114,7 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser)
 
 
 static njs_token_t
-njs_parser_statement_link(njs_vm_t *vm, njs_parser_t *parser,
+njs_parser_statement_chain(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token)
 {
     njs_parser_node_t  *node, *last;
@@ -171,6 +175,12 @@ njs_parser_statement(njs_vm_t *vm, njs_parser_t *parser,
 
     case NJS_TOKEN_FOR:
         return njs_parser_for_statement(vm, parser);
+
+    case NJS_TOKEN_CONTINUE:
+        return njs_parser_continue_statement(vm, parser);
+
+    case NJS_TOKEN_BREAK:
+        return njs_parser_break_statement(vm, parser);
 
     case NJS_TOKEN_TRY:
         return njs_parser_try_statement(vm, parser);
@@ -233,7 +243,7 @@ njs_parser_block(njs_vm_t *vm, njs_parser_t *parser)
     parser->node = NULL;
 
     while (token != NJS_TOKEN_CLOSE_BRACE) {
-        token = njs_parser_statement_link(vm, parser, token);
+        token = njs_parser_statement_chain(vm, parser, token);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
         }
@@ -961,6 +971,74 @@ njs_parser_for_in_statement(njs_vm_t *vm, njs_parser_t *parser,
     parser->code_size += sizeof(njs_vmcode_prop_foreach_t)
                          + sizeof(njs_vmcode_prop_next_t);
     return token;
+}
+
+
+static njs_token_t
+njs_parser_continue_statement(njs_vm_t *vm, njs_parser_t *parser)
+{
+    njs_token_t        token;
+    njs_parser_node_t  *node;
+
+    node = njs_parser_node_alloc(vm);
+    if (nxt_slow_path(node == NULL)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    node->token = NJS_TOKEN_CONTINUE;
+    parser->node = node;
+    parser->code_size += sizeof(njs_vmcode_jump_t);
+
+    token = njs_lexer_token(parser->lexer);
+
+    switch (token) {
+
+    case NJS_TOKEN_SEMICOLON:
+    case NJS_TOKEN_LINE_END:
+        return njs_parser_token(parser);
+
+    case NJS_TOKEN_CLOSE_BRACE:
+    case NJS_TOKEN_END:
+        return token;
+
+    default:
+        /* TODO: LABEL */
+        return NJS_TOKEN_ILLEGAL;
+    }
+}
+
+
+static njs_token_t
+njs_parser_break_statement(njs_vm_t *vm, njs_parser_t *parser)
+{
+    njs_token_t        token;
+    njs_parser_node_t  *node;
+
+    node = njs_parser_node_alloc(vm);
+    if (nxt_slow_path(node == NULL)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    node->token = NJS_TOKEN_BREAK;
+    parser->node = node;
+    parser->code_size += sizeof(njs_vmcode_jump_t);
+
+    token = njs_lexer_token(parser->lexer);
+
+    switch (token) {
+
+    case NJS_TOKEN_SEMICOLON:
+    case NJS_TOKEN_LINE_END:
+        return njs_parser_token(parser);
+
+    case NJS_TOKEN_CLOSE_BRACE:
+    case NJS_TOKEN_END:
+        return token;
+
+    default:
+        /* TODO: LABEL */
+        return NJS_TOKEN_ILLEGAL;
+    }
 }
 
 

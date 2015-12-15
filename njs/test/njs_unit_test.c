@@ -1374,6 +1374,130 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = 3; if (true) if (false); else; a = 2; a"),
       nxt_string("2") },
 
+    /* continue. */
+
+    { nxt_string("continue"),
+      nxt_string("SyntaxError") },
+
+    { nxt_string("do continue while (false)"),
+      nxt_string("SyntaxError") },
+
+    { nxt_string("do continue; while (false)"),
+      nxt_string("undefined") },
+
+    { nxt_string("do { continue } while (false)"),
+      nxt_string("undefined") },
+
+    { nxt_string("var i = 0; do if (i++ > 9) continue; while (i < 100); i"),
+      nxt_string("100") },
+
+    { nxt_string("while (false) continue"),
+      nxt_string("undefined") },
+
+    { nxt_string("while (false) continue;"),
+      nxt_string("undefined") },
+
+    { nxt_string("while (false) { continue }"),
+      nxt_string("undefined") },
+
+    { nxt_string("var i = 0; while (i < 100) if (i++ > 9) continue; i"),
+      nxt_string("100") },
+
+    { nxt_string("for ( ;null; ) continue"),
+      nxt_string("undefined") },
+
+    { nxt_string("for ( ;null; ) continue;"),
+      nxt_string("undefined") },
+
+    { nxt_string("for ( ;null; ) { continue }"),
+      nxt_string("undefined") },
+
+    { nxt_string("for (i = 0; i < 100; i++) if (i > 9) continue; i"),
+      nxt_string("100") },
+
+    { nxt_string("var a = []; for (i in a) continue"),
+      nxt_string("undefined") },
+
+    { nxt_string("var a = []; for (i in a) continue;"),
+      nxt_string("undefined") },
+
+    { nxt_string("var a = []; for (i in a) { continue }"),
+      nxt_string("undefined") },
+
+    { nxt_string("var a = [1,2,3,4,5]; var s = 0;"
+                 "for (i in a) { if (a[i] > 4) continue; else s += a[i] } s"),
+      nxt_string("10") },
+
+    { nxt_string("var a = [1,2,3,4,5]; var s = 0;"
+                 "for (i in a) { if (a[i] > 4) continue; s += a[i] } s"),
+      nxt_string("10") },
+
+    /* break. */
+
+    { nxt_string("break"),
+      nxt_string("SyntaxError") },
+
+    { nxt_string("do break while (true)"),
+      nxt_string("SyntaxError") },
+
+    { nxt_string("do break; while (true)"),
+      nxt_string("undefined") },
+
+    { nxt_string("do { break } while (true)"),
+      nxt_string("undefined") },
+
+    { nxt_string("var i = 0; do if (i++ > 9) break; while (i < 100); i"),
+      nxt_string("11") },
+
+    { nxt_string("while (true) break"),
+      nxt_string("undefined") },
+
+    { nxt_string("while (true) break;"),
+      nxt_string("undefined") },
+
+    { nxt_string("while (true) { break }"),
+      nxt_string("undefined") },
+
+    { nxt_string("var i = 0; while (i < 100) if (i++ > 9) break; i"),
+      nxt_string("11") },
+
+    { nxt_string("for ( ;; ) break"),
+      nxt_string("undefined") },
+
+    { nxt_string("for ( ;; ) break;"),
+      nxt_string("undefined") },
+
+    { nxt_string("for ( ;; ) { break }"),
+      nxt_string("undefined") },
+
+    { nxt_string("for (i = 0; i < 100; i++) if (i > 9) break; i"),
+      nxt_string("10") },
+
+    { nxt_string("var a = []; for (i in a) break"),
+      nxt_string("undefined") },
+
+    { nxt_string("var a = []; for (i in a) break;"),
+      nxt_string("undefined") },
+
+    { nxt_string("var a = []; for (i in a) { break }"),
+      nxt_string("undefined") },
+
+    { nxt_string("var a = [1,2,3,4,5]; var s = 0;"
+                 "for (i in a) { if (a[i] > 4) break; else s += a[i] } s"),
+      nxt_string("10") },
+
+    { nxt_string("var a = [1,2,3,4,5]; var s = 0;"
+                 "for (i in a) { if (a[i] > 4) break; s += a[i] } s"),
+      nxt_string("10") },
+
+#if 0
+    { nxt_string("var a = [1,2,3,4,5]; var s = 0;"
+                 "for (i in a) if (a[i] > 4) break; s += a[i] } s"),
+      nxt_string("segfault") },
+#endif
+
+    /**/
+
     { nxt_string("for (i = 0; i < 10; i++) { i += 1 } i"),
       nxt_string("10") },
 
