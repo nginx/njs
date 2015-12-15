@@ -1374,6 +1374,76 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = 3; if (true) if (false); else; a = 2; a"),
       nxt_string("2") },
 
+    /* switch. */
+
+    { nxt_string("switch"),
+      nxt_string("SyntaxError") },
+
+    { nxt_string("switch (1);"),
+      nxt_string("SyntaxError") },
+
+    { nxt_string("switch (1) {}"),
+      nxt_string("undefined") },
+
+    { nxt_string("switch (1) {default:}"),
+      nxt_string("undefined") },
+
+    { nxt_string("switch (1) {case 0:}"),
+      nxt_string("undefined") },
+
+    { nxt_string("switch (1) {default:;}"),
+      nxt_string("undefined") },
+
+    { nxt_string("switch (1) {case 0:;}"),
+      nxt_string("undefined") },
+
+    { nxt_string("var a = 'A'; switch (a) {"
+                 "case 0: a += '0';"
+                 "case 1: a += '1';"
+                 "}; a"),
+      nxt_string("A") },
+
+    { nxt_string("var a = 'A'; switch (0) {"
+                 "case 0: a += '0';"
+                 "case 1: a += '1';"
+                 "}; a"),
+      nxt_string("A01") },
+
+    { nxt_string("var a = 'A'; switch (0) {"
+                 "case 0: a += '0'; break;"
+                 "case 1: a += '1';"
+                 "}; a"),
+      nxt_string("A0") },
+
+    { nxt_string("var a = 'A'; switch (1) {"
+                 "case 0: a += '0';"
+                 "case 1: a += '1';"
+                 "}; a"),
+      nxt_string("A1") },
+
+    { nxt_string("var a = 'A'; switch (2) {"
+                 "case 0: a += '0';"
+                 "case 1: a += '1';"
+                 "default: a += 'D';"
+                 "}; a"),
+      nxt_string("AD") },
+
+    { nxt_string("var a = 'A'; switch (2) {"
+                 "case 0: a += '0';"
+                 "default: a += 'D';"
+                 "case 1: a += '1';"
+                 "}; a"),
+      nxt_string("AD1") },
+
+    { nxt_string("var a = 'A'; function f(x) { a += x; return 0 }"
+                 "switch (a) {"
+                 "case f(1):"
+                 "default:"
+                 "case f(2): a += 'D';"
+                 "case f(3): a += 'T';"
+                 "} a"),
+      nxt_string("A123DT") },
+
     /* continue. */
 
     { nxt_string("continue"),

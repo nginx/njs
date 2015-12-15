@@ -49,6 +49,8 @@ static njs_token_t njs_parser_return_statement(njs_vm_t *vm,
     njs_parser_t *parser);
 static njs_token_t njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser);
 static njs_token_t njs_parser_if_statement(njs_vm_t *vm, njs_parser_t *parser);
+static njs_token_t njs_parser_switch_statement(njs_vm_t *vm,
+    njs_parser_t *parser);
 static njs_token_t njs_parser_while_statement(njs_vm_t *vm,
     njs_parser_t *parser);
 static njs_token_t njs_parser_do_while_statement(njs_vm_t *vm,
@@ -166,6 +168,9 @@ njs_parser_statement(njs_vm_t *vm, njs_parser_t *parser,
 
     case NJS_TOKEN_IF:
         return njs_parser_if_statement(vm, parser);
+
+    case NJS_TOKEN_SWITCH:
+        return njs_parser_switch_statement(vm, parser);
 
     case NJS_TOKEN_WHILE:
         return njs_parser_while_statement(vm, parser);
@@ -743,6 +748,117 @@ njs_parser_if_statement(njs_vm_t *vm, njs_parser_t *parser)
     parser->code_size += sizeof(njs_vmcode_cond_jump_t);
 
     return token;
+}
+
+
+static njs_token_t
+njs_parser_switch_statement(njs_vm_t *vm, njs_parser_t *parser)
+{
+    njs_token_t        token;
+    njs_parser_node_t  *node, *swtch, *branch, *dflt, **last;
+
+    parser->branch = 1;
+
+    node = NULL;
+    branch = NULL;
+    dflt = NULL;
+
+    token = njs_parser_grouping_expression(vm, parser);
+    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+        return token;
+    }
+
+    swtch = njs_parser_node_alloc(vm);
+    if (nxt_slow_path(swtch == NULL)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    swtch->token = NJS_TOKEN_SWITCH;
+    swtch->left = parser->node;
+    last = &swtch->right;
+
+    token = njs_parser_match(parser, token, NJS_TOKEN_OPEN_BRACE);
+    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+        return token;
+    }
+
+    while (token != NJS_TOKEN_CLOSE_BRACE) {
+
+        if (token == NJS_TOKEN_CASE || token == NJS_TOKEN_DEFAULT) {
+
+            do {
+                node = njs_parser_node_alloc(vm);
+                if (nxt_slow_path(node == NULL)) {
+                    return NJS_TOKEN_ERROR;
+                }
+
+                if (token == NJS_TOKEN_CASE) {
+                    token = njs_parser_token(parser);
+                    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                        return token;
+                    }
+
+                    token = njs_parser_expression(vm, parser, token);
+                    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                        return token;
+                    }
+
+                    node->left = parser->node;
+
+                    branch = njs_parser_node_alloc(vm);
+                    if (nxt_slow_path(branch == NULL)) {
+                        return NJS_TOKEN_ERROR;
+                    }
+
+                    branch->right = node;
+
+                    parser->code_size += sizeof(njs_vmcode_equal_jump_t);
+
+               } else {
+                    if (dflt != NULL) {
+                        /* A duplicate "default" branch. */
+                        return NJS_TOKEN_ILLEGAL;
+                    }
+
+                    branch = node;
+                    branch->token = NJS_TOKEN_DEFAULT;
+                    dflt = branch;
+
+                    token = njs_parser_token(parser);
+                    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                        return token;
+                    }
+                }
+
+                *last = branch;
+                last = &branch->left;
+
+                token = njs_parser_match(parser, token, NJS_TOKEN_COLON);
+                if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                    return token;
+                }
+
+            } while (token == NJS_TOKEN_CASE || token == NJS_TOKEN_DEFAULT);
+
+            parser->node = NULL;
+
+        } else if (branch == NULL) {
+            /* The first switch statment is not "case/default" keyword. */
+            return NJS_TOKEN_ILLEGAL;
+        }
+
+        token = njs_parser_statement_chain(vm, parser, token);
+        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+            return token;
+        }
+
+        node->right = parser->node;
+    }
+
+    parser->node = swtch;
+    parser->code_size += sizeof(njs_vmcode_move_t) + sizeof(njs_vmcode_jump_t);
+
+    return njs_parser_token(parser);
 }
 
 

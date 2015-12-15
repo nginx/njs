@@ -29,6 +29,8 @@ static nxt_int_t njs_generate_if_statement(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node);
 static nxt_int_t njs_generate_cond_expression(njs_vm_t *vm,
     njs_parser_t *parser, njs_parser_node_t *node);
+static nxt_int_t njs_generate_switch_statement(njs_vm_t *vm,
+    njs_parser_t *parser, njs_parser_node_t *node);
 static nxt_int_t njs_generate_while_statement(njs_vm_t *vm,
     njs_parser_t *parser, njs_parser_node_t *node);
 static nxt_int_t njs_generate_do_while_statement(njs_vm_t *vm,
@@ -127,6 +129,9 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
 
     case NJS_TOKEN_CONDITIONAL:
         return njs_generate_cond_expression(vm, parser, node);
+
+    case NJS_TOKEN_SWITCH:
+        return njs_generate_switch_statement(vm, parser, node);
 
     case NJS_TOKEN_WHILE:
         return njs_generate_while_statement(vm, parser, node);
@@ -489,6 +494,137 @@ njs_generate_cond_expression(njs_vm_t *vm, njs_parser_t *parser,
     if (nxt_slow_path(ret != NXT_OK)) {
         return ret;
     }
+
+    return NXT_OK;
+}
+
+
+static nxt_int_t
+njs_generate_switch_statement(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *swtch)
+{
+    nxt_int_t                ret;
+    njs_index_t              index;
+    njs_parser_node_t        *node, *expr, *branch;
+    njs_vmcode_move_t        *move;
+    njs_vmcode_jump_t        *jump;
+    njs_parser_patch_t       *patch, *next, *patches, **last;
+    njs_vmcode_equal_jump_t  *equal;
+
+    /* The "switch" expression. */
+
+    expr = swtch->left;
+
+    ret = njs_generator(vm, parser, expr);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
+    index = expr->index;
+
+    if (!expr->temporary) {
+        index = njs_generator_temp_index_get(parser);
+
+        njs_generate_code(parser, njs_vmcode_move_t, move);
+        move->code.operation = njs_vmcode_move;
+        move->code.operands = NJS_VMCODE_2OPERANDS;
+        move->code.retval = NJS_VMCODE_RETVAL;
+        move->dst = index;
+        move->src = expr->index;
+    }
+
+    ret = njs_generate_start_block(vm, parser, NJS_PARSER_SWITCH, &no_label);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
+    last = &patches;
+
+    for (branch = swtch->right; branch != NULL; branch = branch->left) {
+
+        if (branch->token != NJS_TOKEN_DEFAULT) {
+
+            /* The "case" expression. */
+
+            node = branch->right;
+
+            ret = njs_generator(vm, parser, node->left);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return ret;
+            }
+
+            njs_generate_code(parser, njs_vmcode_equal_jump_t, equal);
+            equal->code.operation = njs_vmcode_if_equal_jump;
+            equal->code.operands = NJS_VMCODE_3OPERANDS;
+            equal->code.retval = NJS_VMCODE_NO_RETVAL;
+            equal->offset = offsetof(njs_vmcode_equal_jump_t, offset);
+            equal->value1 = index;
+            equal->value2 = node->left->index;
+
+            ret = njs_generator_node_index_release(vm, parser, node->left);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return ret;
+            }
+
+            patch = nxt_mem_cache_alloc(vm->mem_cache_pool,
+                                         sizeof(njs_parser_patch_t));
+            if (nxt_slow_path(patch == NULL)) {
+                return NXT_ERROR;
+            }
+
+            patch->address = (u_char *) &equal->offset;
+
+            *last = patch;
+            last = &patch->next;
+        }
+    }
+
+    /* Release either temporary index or temporary expr->index. */
+    ret = njs_generator_index_release(vm, parser, index);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
+    njs_generate_code(parser, njs_vmcode_jump_t, jump);
+    jump->code.operation = njs_vmcode_jump;
+    jump->code.operands = NJS_VMCODE_1OPERAND;
+    jump->code.retval = NJS_VMCODE_NO_RETVAL;
+    jump->offset = offsetof(njs_vmcode_jump_t, offset);
+
+    patch = patches;
+
+    for (branch = swtch->right; branch != NULL; branch = branch->left) {
+
+        if (branch->token == NJS_TOKEN_DEFAULT) {
+            jump->offset = parser->code_end - (u_char *) jump;
+            jump = NULL;
+            node = branch;
+
+        } else {
+            *patch->address += parser->code_end - patch->address;
+            next = patch->next;
+
+            nxt_mem_cache_free(vm->mem_cache_pool, patch);
+
+            patch = next;
+            node = branch->right;
+        }
+
+        /* The "case/default" statements. */
+
+        ret = njs_generator(vm, parser, node->right);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return ret;
+        }
+    }
+
+    if (jump != NULL) {
+        /* A "switch" without default case. */
+        jump->offset = parser->code_end - (u_char *) jump;
+    }
+
+    /* Patch "break" statements offsets. */
+    njs_generate_patch_block_exit(vm, parser);
 
     return NXT_OK;
 }

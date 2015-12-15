@@ -180,6 +180,7 @@ njs_disassemble(u_char *start, u_char *end)
     njs_vmcode_operation_t     operation;
     njs_vmcode_cond_jump_t     *cond_jump;
     njs_vmcode_prop_next_t     *prop_next;
+    njs_vmcode_equal_jump_t    *equal;
     njs_vmcode_prop_foreach_t  *prop_foreach;
     njs_vmcode_method_frame_t  *method;
 
@@ -226,6 +227,16 @@ njs_disassemble(u_char *start, u_char *end)
             sign = (jump->offset >= 0) ? "+" : "";
 
             printf("JUMP              %s%ld\n", sign, jump->offset);
+
+            continue;
+        }
+
+        if (operation == njs_vmcode_if_equal_jump) {
+            equal = (njs_vmcode_equal_jump_t *) p;
+            p += sizeof(njs_vmcode_equal_jump_t);
+
+            printf("JUMP IF EQUAL     %04lX %04lX +%ld\n",
+                   equal->value1, equal->value2, equal->offset);
 
             continue;
         }

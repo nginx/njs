@@ -459,6 +459,14 @@ typedef struct {
 
 typedef struct {
     njs_vmcode_t               code;
+    njs_ret_t                  offset;
+    njs_index_t                value1;
+    njs_index_t                value2;
+} njs_vmcode_equal_jump_t;
+
+
+typedef struct {
+    njs_vmcode_t               code;
     njs_index_t                value;
     njs_index_t                object;
     njs_index_t                property;
@@ -816,6 +824,8 @@ njs_ret_t njs_vmcode_if_true_jump(njs_vm_t *vm, njs_value_t *cond,
     njs_value_t *offset);
 njs_ret_t njs_vmcode_if_false_jump(njs_vm_t *vm, njs_value_t *cond,
     njs_value_t *offset);
+njs_ret_t njs_vmcode_if_equal_jump(njs_vm_t *vm, njs_value_t *val1,
+    njs_value_t *val2);
 
 njs_ret_t njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *name);

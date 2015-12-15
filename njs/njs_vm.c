@@ -2051,6 +2051,20 @@ njs_vmcode_if_false_jump(njs_vm_t *vm, njs_value_t *cond, njs_value_t *offset)
 
 
 njs_ret_t
+njs_vmcode_if_equal_jump(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
+{
+    njs_vmcode_equal_jump_t  *jump;
+
+    if (njs_values_strict_equal(val1, val2)) {
+        jump = (njs_vmcode_equal_jump_t *) vm->current;
+        return jump->offset;
+    }
+
+    return sizeof(njs_vmcode_3addr_t);
+}
+
+
+njs_ret_t
 njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *invld, njs_value_t *name)
 {
     njs_ret_t                    ret;
