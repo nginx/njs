@@ -340,7 +340,7 @@ njs_vm_run(njs_vm_t *vm)
         return ret;
     }
 
-    if (nxt_slow_path(ret != NXT_DONE)) {
+    if (nxt_slow_path(ret != NJS_STOP)) {
         nxt_thread_log_debug("VM: ERROR");
         return ret;
     }

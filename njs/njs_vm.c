@@ -188,11 +188,11 @@ njs_vmcode_interpreter(njs_vm_t *vm)
              * On success an operation returns size of the bytecode,
              * a jump offset or zero after the call or return operations.
              * Jumps can return a negative offset.  Compilers can generate
-             *    (ret < 0 && ret >= NJS_PASS)
+             *    (ret < 0 && ret >= NJS_PREEMPT)
              * as a single unsigned comparision.
              */
 
-            if (nxt_slow_path(ret < 0 && ret >= NJS_PASS)) {
+            if (nxt_slow_path(ret < 0 && ret >= NJS_PREEMPT)) {
                 break;
             }
 
@@ -217,7 +217,7 @@ njs_vmcode_interpreter(njs_vm_t *vm)
         case NJS_TRAP_INCDEC:
         case NJS_TRAP_PROPERTY:
 
-            ret = njs_vm_trap(vm, ret - NJS_TRAP_LAST, value1, value2);
+            ret = njs_vm_trap(vm, ret - NJS_TRAP_BASE, value1, value2);
 
             if (nxt_fast_path(ret == NXT_OK)) {
                 goto again;
@@ -243,7 +243,7 @@ njs_vmcode_interpreter(njs_vm_t *vm)
 
                 previous = frame->native.previous;
                 if (previous == NULL) {
-                    return ret;
+                    return NXT_ERROR;
                 }
 
                 vm->frame = previous;
@@ -260,7 +260,7 @@ njs_vmcode_interpreter(njs_vm_t *vm)
             }
         }
 
-        /* NXT_AGAIN, NXT_DONE */
+        /* NXT_AGAIN, NJS_STOP. */
 
         return ret;
     }
@@ -1183,7 +1183,7 @@ njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
                 return ret;
             }
 
-            /* ret == NXT_DONE. */
+            /* ret == NJS_DONE. */
         }
     }
 
@@ -2229,6 +2229,7 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
     njs_vmcode_function_call_t  *call;
 
     call = (njs_vmcode_function_call_t *) vm->current;
+    /* Update code pointer here to store it as return address in call frame. */
     vm->current += sizeof(njs_vmcode_function_call_t);
 
     if (!vm->frame->native) {
@@ -2245,12 +2246,13 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
     ret = vm->frame->u.native(vm, &param);
     /*
      * A native method can return:
-     *    NXT_OK on method success;
-     *    NJS_PASS by Function.apply() and Function.call();
-     *    NXT_AGAIN to postpone nJSVM processing;
-     *    NXT_ERROR.
+     *   NXT_OK on method success;
+     *   NJS_APPLIED by Function.apply() and Function.call();
+     *   NXT_AGAIN to postpone nJSVM processing;
+     *   NXT_ERROR.
      *
-     * The callee arguments must be preserved for NJS_PASS and NXT_AGAIN cases.
+     * The callee arguments must be preserved
+     * for NJS_APPLIED and NXT_AGAIN cases.
      */
     if (ret == NXT_OK) {
         skip = NULL;
@@ -2283,7 +2285,8 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
           */
         *retval = vm->retval;
 
-    } else if (ret == NJS_PASS) {
+    } else if (ret == NJS_APPLIED) {
+        /* A user-defined method has been prepared to run. */
         ret = 0;
 
     } else if (ret == NXT_AGAIN) {
@@ -2378,7 +2381,7 @@ njs_vmcode_stop(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
 
     vm->retval = *value;
 
-    return NXT_DONE;
+    return NJS_STOP;
 }
 
 
@@ -2626,10 +2629,9 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
                         param.nargs = 0;
 
                         ret = njs_function_apply(vm, &prop->value, &param);
-
                         /*
                          * njs_function_apply() can return
-                         *     NXT_OK, NJS_PASS, NXT_ERROR, NXT_AGAIN.
+                         *   NXT_OK, NJS_APPLIED, NXT_ERROR, NXT_AGAIN.
                          */
                         if (nxt_fast_path(ret == NXT_OK)) {
 
@@ -2638,10 +2640,16 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
                                 break;
                             }
 
+                            /* Try the second method. */
                             continue;
                         }
 
-                        if (ret == NJS_PASS) {
+                        if (ret == NJS_APPLIED) {
+                            /*
+                             * A user-defined method has been prepared to
+                             * run.  The method will return to the current
+                             * instruction and will restart it.
+                             */
                             ret = 0;
                         }
                     }

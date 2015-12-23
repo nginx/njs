@@ -229,7 +229,7 @@ njs_function_call(njs_vm_t *vm, njs_index_t retval)
     frame->prev_local = vm->scopes[NJS_SCOPE_LOCAL];
     vm->scopes[NJS_SCOPE_LOCAL] = frame->local;
 
-    return NJS_PASS;
+    return NJS_APPLIED;
 }
 
 

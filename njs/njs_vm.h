@@ -8,14 +8,36 @@
 #define _NJS_VM_H_INCLUDED_
 
 
-#define NJS_TRAP_NUMBER    -10
-#define NJS_TRAP_NUMBERS   -11
-#define NJS_TRAP_INCDEC    -12
-#define NJS_TRAP_STRINGS   -13
-#define NJS_TRAP_PROPERTY  -14
-#define NJS_TRAP_LAST      NJS_TRAP_PROPERTY
+/*
+ * Negative return values handled by nJSVM interpreter as special events.
+ * The values must be in range from -1 to -15, because -16 is minimal jump
+ * offset on 32-bit platforms.
+ *    -1 (NJS_ERROR/NXT_ERROR):  error or exception;
+ *    -2 (NJS_AGAIN/NXT_AGAIN):  postpone nJSVM execution;
+ *    -3:                        not used;
+ *    -4 (NJS_STOP/NXT_DONE):    njs_vmcode_stop() has stopped execution,
+ *                               execution has completed successfully;
+ *    -5 ..  -9:                 traps to convert objects to primitive values;
+ *   -10 .. -15:                 not used.
+ */
 
-#define NJS_PASS           -20
+#define NJS_STOP                 NXT_DONE
+
+/*  Traps events. */
+#define NJS_TRAP_NUMBER          (-5)
+#define NJS_TRAP_NUMBERS         (-6)
+#define NJS_TRAP_INCDEC          (-7)
+#define NJS_TRAP_STRINGS         (-8)
+#define NJS_TRAP_PROPERTY        (-9)
+#define NJS_TRAP_BASE            NJS_TRAP_PROPERTY
+
+#define NJS_PREEMPT              (-15)
+
+/*
+ * A user-defined function is prepared to run.  This code is never
+ * returned to interpreter, so the value can be shared with NJS_STOP.
+ */
+#define NJS_APPLIED              NXT_DONE
 
 
 /* The order of the enum is used in njs_vmcode_typeof() */
