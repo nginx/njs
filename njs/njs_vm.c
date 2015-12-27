@@ -2279,10 +2279,10 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
         vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = vm->frame->arguments;
 
         retval = njs_vmcode_operand(vm, retval);
-         /*
-          * GC: value external/internal++ depending
-          * on vm->retval and retval type
-          */
+        /*
+         * GC: value external/internal++ depending
+         * on vm->retval and retval type
+         */
         *retval = vm->retval;
 
     } else if (ret == NJS_APPLIED) {
@@ -2496,7 +2496,7 @@ njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
 }
 
 
-njs_ret_t
+static njs_ret_t
 njs_vmcode_number_primitive(njs_vm_t *vm, njs_value_t *invld, njs_value_t *narg)
 {
     double       num;
@@ -2527,7 +2527,7 @@ njs_vmcode_number_primitive(njs_vm_t *vm, njs_value_t *invld, njs_value_t *narg)
 }
 
 
-njs_ret_t
+static njs_ret_t
 njs_vmcode_string_primitive(njs_vm_t *vm, njs_value_t *invld, njs_value_t *narg)
 {
     njs_ret_t          ret;
@@ -2713,10 +2713,10 @@ static const njs_vmcode_1addr_t  njs_trap_number[] = {
 
 static const njs_vm_trap_t  njs_vm_traps[] = {
     /* NJS_TRAP_PROPERTY */  { &njs_trap_strings[1], 0 },
-    /* NJS_TRAP_STRINGS */   { &njs_trap_strings[0], 0 },
-    /* NJS_TRAP_INCDEC */    { &njs_trap_numbers[1], 1 },
-    /* NJS_TRAP_NUMBERS */   { &njs_trap_numbers[0], 0 },
-    /* NJS_TRAP_NUMBER */    { &njs_trap_number[0],  0 },
+    /* NJS_TRAP_STRINGS  */  { &njs_trap_strings[0], 0 },
+    /* NJS_TRAP_INCDEC   */  { &njs_trap_numbers[1], 1 },
+    /* NJS_TRAP_NUMBERS  */  { &njs_trap_numbers[0], 0 },
+    /* NJS_TRAP_NUMBER   */  { &njs_trap_number[0],  0 },
 };
 
 

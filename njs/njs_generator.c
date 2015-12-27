@@ -567,7 +567,7 @@ njs_generate_switch_statement(njs_vm_t *vm, njs_parser_t *parser,
             }
 
             patch = nxt_mem_cache_alloc(vm->mem_cache_pool,
-                                         sizeof(njs_parser_patch_t));
+                                        sizeof(njs_parser_patch_t));
             if (nxt_slow_path(patch == NULL)) {
                 return NXT_ERROR;
             }

@@ -2689,11 +2689,20 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = (function(a) { return a + 1 }(2)); a"),
       nxt_string("3") },
 
+    { nxt_string("a = +function(a) { return a + 1 }(2); a"),
+      nxt_string("3") },
+
+    { nxt_string("a = -function(a) { return a + 1 }(2); a"),
+      nxt_string("-3") },
+
     { nxt_string("a = !function(a) { return a + 1 }(2); a"),
       nxt_string("false") },
 
-    { nxt_string("a = +function(a) { return a + 1 }(2); a"),
-      nxt_string("3") },
+    { nxt_string("a = ~function(a) { return a + 1 }(2); a"),
+      nxt_string("-4") },
+
+    { nxt_string("a = void function(a) { return a + 1 }(2); a"),
+      nxt_string("undefined") },
 
     { nxt_string("a = true && function(a) { return a + 1 }(2); a"),
       nxt_string("3") },

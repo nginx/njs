@@ -30,7 +30,7 @@ struct njs_function_lambda_s {
 #define NJS_FRAME_SIZE                                                        \
     nxt_align_size(sizeof(njs_frame_t), sizeof(njs_value_t))
 
-/* The retval and return_address fields are not used in the global frame. */
+/* The retval field are not used in the global frame. */
 #define NJS_GLOBAL_FRAME_SIZE                                                 \
     nxt_align_size(offsetof(njs_frame_t, retval), sizeof(njs_value_t))
 
