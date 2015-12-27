@@ -91,6 +91,28 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("\n +1"),
       nxt_string("1") },
 
+    /* An object "valueOf/toString" methods. */
+
+    { nxt_string("var a = { valueOf: function() { return 1 } };    +a"),
+      nxt_string("1") },
+
+    { nxt_string("var a = { valueOf: function() { return '1' } };  +a"),
+      nxt_string("1") },
+
+    { nxt_string("var a = { valueOf: 2,"
+                 "          toString: function() { return '1' } }; +a"),
+      nxt_string("1") },
+
+    { nxt_string("var a = { valueOf: function() { return [] },"
+                 "          toString: function() { return '1' } }; +a"),
+      nxt_string("1") },
+
+    { nxt_string("var a = { toString: function() { return 'a' } };"
+                 "var b = { toString: function() { return a+'b' } }; '0'+b"),
+      nxt_string("0ab") },
+
+    /**/
+
     { nxt_string("1 + undefined"),
       nxt_string("NaN") },
 

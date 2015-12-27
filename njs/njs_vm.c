@@ -2563,6 +2563,15 @@ njs_vm_trap(njs_vm_t *vm, nxt_uint_t trap, njs_value_t *value1,
 
     frame->ctor = 0;
 
+    /*
+     * The values[0] is scratch value for results of "valueOf" and
+     * "toString" methods.  The values[1] and values[2] are original
+     * operand values which will be replaced with primitive values
+     * returned by "valueOf" or "toString" methods.  The scratch value
+     * is stored separately to preserve the original operand values for
+     * the second method call if the first method call will return
+     * non-primitive value.
+     */
     values = njs_native_data(frame);
     njs_set_invalid(&values[0]);
     values[2] = *value2;
@@ -2695,7 +2704,7 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
     if (!njs_is_primitive(value)) {
         retval = njs_native_data(vm->frame);
 
-        if (!njs_is_valid(retval)) {
+        if (!njs_is_primitive(retval)) {
 
             for ( ;; ) {
                 vm->exception = &njs_exception_type_error;
@@ -2710,6 +2719,12 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
                     prop = njs_object_property(vm, value->data.u.object, &lhq);
 
                     if (nxt_fast_path(prop != NULL)) {
+
+                        if (!njs_is_function(&prop->value)) {
+                            /* Try the second method. */
+                            continue;
+                        }
+
                         param.this = value;
                         param.retval = (njs_index_t) retval;
                         param.args = NULL;
