@@ -84,14 +84,14 @@ static nxt_noinline nxt_bool_t njs_values_strict_equal(njs_value_t *val1,
 static nxt_noinline njs_ret_t njs_function_frame_free(njs_vm_t *vm,
     njs_native_frame_t *frame, njs_native_frame_t *skip);
 
+static njs_ret_t njs_vm_trap(njs_vm_t *vm, nxt_uint_t trap, njs_value_t *value1,
+    njs_value_t *value2);
 static njs_ret_t njs_vmcode_number_primitive(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *narg);
 static njs_ret_t njs_vmcode_string_primitive(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *narg);
 static njs_ret_t njs_primitive_value(njs_vm_t *vm, njs_value_t *value,
     nxt_uint_t hint);
-static njs_ret_t njs_vm_trap(njs_vm_t *vm, nxt_uint_t trap, njs_value_t *value1,
-    njs_value_t *value2);
 static njs_ret_t njs_vmcode_restart(njs_vm_t *vm, njs_value_t *invld1,
     njs_value_t *invld2);
 
@@ -2496,6 +2496,93 @@ njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
 }
 
 
+static const njs_vmcode_1addr_t  njs_trap_strings[] = {
+    { .code = { .operation = njs_vmcode_string_primitive,
+                .operands =  NJS_VMCODE_1OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL },
+      .index = 0 },
+    { .code = { .operation = njs_vmcode_string_primitive,
+                .operands =  NJS_VMCODE_1OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL },
+      .index = 1 },
+    { .code = { .operation = njs_vmcode_restart,
+                .operands =  NJS_VMCODE_NO_OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL } },
+};
+
+
+static const njs_vmcode_1addr_t  njs_trap_numbers[] = {
+    { .code = { .operation = njs_vmcode_number_primitive,
+                .operands =  NJS_VMCODE_1OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL },
+      .index = 0 },
+    { .code = { .operation = njs_vmcode_number_primitive,
+                .operands =  NJS_VMCODE_1OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL },
+      .index = 1 },
+    { .code = { .operation = njs_vmcode_restart,
+                .operands =  NJS_VMCODE_NO_OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL } },
+};
+
+
+static const njs_vmcode_1addr_t  njs_trap_number[] = {
+    { .code = { .operation = njs_vmcode_number_primitive,
+                .operands =  NJS_VMCODE_1OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL },
+      .index = 0 },
+    { .code = { .operation = njs_vmcode_restart,
+                .operands =  NJS_VMCODE_NO_OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL } },
+};
+
+
+static const njs_vm_trap_t  njs_vm_traps[] = {
+    /* NJS_TRAP_PROPERTY */  { &njs_trap_strings[1], 0 },
+    /* NJS_TRAP_STRINGS  */  { &njs_trap_strings[0], 0 },
+    /* NJS_TRAP_INCDEC   */  { &njs_trap_numbers[1], 1 },
+    /* NJS_TRAP_NUMBERS  */  { &njs_trap_numbers[0], 0 },
+    /* NJS_TRAP_NUMBER   */  { &njs_trap_number[0],  0 },
+};
+
+
+static njs_ret_t
+njs_vm_trap(njs_vm_t *vm, nxt_uint_t trap, njs_value_t *value1,
+    njs_value_t *value2)
+{
+    size_t              size;
+    njs_value_t         *values;
+    njs_native_frame_t  *frame;
+
+    size = NJS_NATIVE_FRAME_SIZE + 3 * sizeof(njs_value_t);
+
+    frame = njs_function_frame_alloc(vm, size);
+    if (nxt_slow_path(frame == NULL)) {
+        return NXT_ERROR;
+    }
+
+    frame->ctor = 0;
+
+    values = njs_native_data(frame);
+    njs_set_invalid(&values[0]);
+    values[2] = *value2;
+
+    frame->trap_reference = njs_vm_traps[trap].reference_value;
+
+    if (njs_vm_traps[trap].reference_value) {
+        values[1].data.u.value = value1;
+
+    } else {
+        values[1] = *value1;
+    }
+
+    frame->u.restart = vm->current;
+    vm->current = (u_char *) njs_vm_traps[trap].code;
+
+    return NXT_OK;
+}
+
+
 static njs_ret_t
 njs_vmcode_number_primitive(njs_vm_t *vm, njs_value_t *invld, njs_value_t *narg)
 {
@@ -2667,93 +2754,6 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
     vm->frame->reentrant = 0;
 
     return 1;
-}
-
-
-static const njs_vmcode_1addr_t  njs_trap_strings[] = {
-    { .code = { .operation = njs_vmcode_string_primitive,
-                .operands =  NJS_VMCODE_1OPERAND,
-                .retval = NJS_VMCODE_NO_RETVAL },
-      .index = 0 },
-    { .code = { .operation = njs_vmcode_string_primitive,
-                .operands =  NJS_VMCODE_1OPERAND,
-                .retval = NJS_VMCODE_NO_RETVAL },
-      .index = 1 },
-    { .code = { .operation = njs_vmcode_restart,
-                .operands =  NJS_VMCODE_NO_OPERAND,
-                .retval = NJS_VMCODE_NO_RETVAL } },
-};
-
-
-static const njs_vmcode_1addr_t  njs_trap_numbers[] = {
-    { .code = { .operation = njs_vmcode_number_primitive,
-                .operands =  NJS_VMCODE_1OPERAND,
-                .retval = NJS_VMCODE_NO_RETVAL },
-      .index = 0 },
-    { .code = { .operation = njs_vmcode_number_primitive,
-                .operands =  NJS_VMCODE_1OPERAND,
-                .retval = NJS_VMCODE_NO_RETVAL },
-      .index = 1 },
-    { .code = { .operation = njs_vmcode_restart,
-                .operands =  NJS_VMCODE_NO_OPERAND,
-                .retval = NJS_VMCODE_NO_RETVAL } },
-};
-
-
-static const njs_vmcode_1addr_t  njs_trap_number[] = {
-    { .code = { .operation = njs_vmcode_number_primitive,
-                .operands =  NJS_VMCODE_1OPERAND,
-                .retval = NJS_VMCODE_NO_RETVAL },
-      .index = 0 },
-    { .code = { .operation = njs_vmcode_restart,
-                .operands =  NJS_VMCODE_NO_OPERAND,
-                .retval = NJS_VMCODE_NO_RETVAL } },
-};
-
-
-static const njs_vm_trap_t  njs_vm_traps[] = {
-    /* NJS_TRAP_PROPERTY */  { &njs_trap_strings[1], 0 },
-    /* NJS_TRAP_STRINGS  */  { &njs_trap_strings[0], 0 },
-    /* NJS_TRAP_INCDEC   */  { &njs_trap_numbers[1], 1 },
-    /* NJS_TRAP_NUMBERS  */  { &njs_trap_numbers[0], 0 },
-    /* NJS_TRAP_NUMBER   */  { &njs_trap_number[0],  0 },
-};
-
-
-static njs_ret_t
-njs_vm_trap(njs_vm_t *vm, nxt_uint_t trap, njs_value_t *value1,
-    njs_value_t *value2)
-{
-    size_t              size;
-    njs_value_t         *values;
-    njs_native_frame_t  *frame;
-
-    size = NJS_NATIVE_FRAME_SIZE + 3 * sizeof(njs_value_t);
-
-    frame = njs_function_frame_alloc(vm, size);
-    if (nxt_slow_path(frame == NULL)) {
-        return NXT_ERROR;
-    }
-
-    frame->ctor = 0;
-
-    values = njs_native_data(frame);
-    njs_set_invalid(&values[0]);
-    values[2] = *value2;
-
-    frame->trap_reference = njs_vm_traps[trap].reference_value;
-
-    if (njs_vm_traps[trap].reference_value) {
-        values[1].data.u.value = value1;
-
-    } else {
-        values[1] = *value1;
-    }
-
-    frame->u.restart = vm->current;
-    vm->current = (u_char *) njs_vm_traps[trap].code;
-
-    return NXT_OK;
 }
 
 
