@@ -99,6 +99,7 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
     frame->free_size = spare_size - size;
     frame->free = (u_char *) frame + size;
 
+    frame->ctor = 0;
     frame->reentrant = 0;
     frame->trap_reference = 0;
 

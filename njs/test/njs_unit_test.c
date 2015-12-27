@@ -2465,6 +2465,22 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("$r.nonexistent"),
       nxt_string("undefined") },
 
+    { nxt_string("var a = { toString: function() { return 1 } }; a"),
+      nxt_string("1") },
+
+    { nxt_string("var a = { valueOf: function() { return 1 } };  a"),
+      nxt_string("[object Object]") },
+
+    { nxt_string("var a = { toString: 2,"
+                 "          valueOf: function() { return 1 } };  a"),
+      nxt_string("1") },
+
+    { nxt_string("var a = { toString: function() { return [] },"
+                 "          valueOf: function() { return 1 } };  a"),
+      nxt_string("1") },
+
+    /**/
+
     { nxt_string("'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'.charCodeAt(5)"),
       nxt_string("1077") },
 

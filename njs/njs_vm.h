@@ -871,6 +871,8 @@ njs_ret_t njs_vmcode_catch(njs_vm_t *vm, njs_value_t *invld,
 njs_ret_t njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *retval);
 
+njs_ret_t njs_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst,
+    const njs_value_t *src);
 void njs_number_set(njs_value_t *value, double num);
 
 nxt_int_t njs_builtin_objects_create(njs_vm_t *vm);

@@ -94,6 +94,9 @@ static njs_ret_t njs_primitive_value(njs_vm_t *vm, njs_value_t *value,
     nxt_uint_t hint);
 static njs_ret_t njs_vmcode_restart(njs_vm_t *vm, njs_value_t *invld1,
     njs_value_t *invld2);
+static njs_ret_t njs_object_value_to_string(njs_vm_t *vm, njs_value_t *value);
+static njs_ret_t njs_vmcode_value_to_string(njs_vm_t *vm, njs_value_t *invld1,
+    njs_value_t *invld2);
 
 void njs_debug(njs_index_t index, njs_value_t *value);
 
@@ -136,7 +139,7 @@ const njs_value_t  njs_exception_memory_error =    njs_string("MemoryError");
  * values is passed as arguments although they are not always used.
  */
 
-nxt_int_t
+nxt_noinline nxt_int_t
 njs_vmcode_interpreter(njs_vm_t *vm)
 {
     u_char                *catch;
@@ -921,7 +924,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
 
     if (nxt_fast_path(njs_is_primitive(property))) {
 
-        ret = njs_value_to_string(vm, &pq->value, property);
+        ret = njs_primitive_value_to_string(vm, &pq->value, property);
 
         if (nxt_fast_path(ret == NXT_OK)) {
 
@@ -2561,8 +2564,6 @@ njs_vm_trap(njs_vm_t *vm, nxt_uint_t trap, njs_value_t *value1,
         return NXT_ERROR;
     }
 
-    frame->ctor = 0;
-
     /*
      * The values[0] is scratch value for results of "valueOf" and
      * "toString" methods.  The values[1] and values[2] are original
@@ -2626,9 +2627,8 @@ njs_vmcode_number_primitive(njs_vm_t *vm, njs_value_t *invld, njs_value_t *narg)
 static njs_ret_t
 njs_vmcode_string_primitive(njs_vm_t *vm, njs_value_t *invld, njs_value_t *narg)
 {
-    njs_ret_t          ret;
-    njs_value_t        *value;
-    const njs_value_t  *string;
+    njs_ret_t    ret;
+    njs_value_t  *value;
 
     value = njs_native_data(vm->frame);
     value = &value[(uintptr_t) narg + 1];
@@ -2636,40 +2636,11 @@ njs_vmcode_string_primitive(njs_vm_t *vm, njs_value_t *invld, njs_value_t *narg)
     ret = njs_primitive_value(vm, value, 1);
 
     if (nxt_fast_path(ret > 0)) {
+        ret = njs_primitive_value_to_string(vm, value, value);
 
-        if (!njs_is_string(value)) {
-
-            switch (value->type) {
-
-            case NJS_NULL:
-                string = &njs_string_null;
-                break;
-
-            case NJS_VOID:
-                string = &njs_string_void;
-                break;
-
-            case NJS_BOOLEAN:
-                string = njs_is_true(value) ? &njs_string_true:
-                                              &njs_string_false;
-                break;
-
-            case NJS_NUMBER:
-                ret = njs_number_to_string(vm, value, value);
-                if (nxt_fast_path(ret == NXT_OK)) {
-                    goto done;
-                }
-
-            default:
-                return NXT_ERROR;
-            }
-
-            *value = *string;
+        if (nxt_fast_path(ret == NXT_OK)) {
+            return sizeof(njs_vmcode_1addr_t);
         }
-
-    done:
-
-        ret = sizeof(njs_vmcode_1addr_t);
     }
 
     return ret;
@@ -2806,6 +2777,138 @@ njs_vmcode_restart(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 
     if (frame->first) {
         nxt_mem_cache_free(vm->mem_cache_pool, frame);
+    }
+
+    return ret;
+}
+
+
+njs_ret_t
+njs_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst, const njs_value_t *src)
+{
+    u_char       *start;
+    size_t       size;
+    njs_ret_t    ret;
+    njs_value_t  value;
+
+    if (nxt_fast_path(src != NULL)) {
+
+        value = *src;
+
+        if (nxt_slow_path(!njs_is_primitive(&value))) {
+
+            ret = njs_object_value_to_string(vm, &value);
+
+            if (nxt_slow_path(ret != NXT_OK)) {
+                goto fail;
+            }
+        }
+
+        ret = njs_primitive_value_to_string(vm, &value, &value);
+
+        if (nxt_fast_path(ret == NXT_OK)) {
+            size = value.short_string.size;
+
+            if (size != NJS_STRING_LONG) {
+                start = nxt_mem_cache_alloc(vm->mem_cache_pool, size);
+                if (nxt_slow_path(start == NULL)) {
+                    return NXT_ERROR;
+                }
+
+                memcpy(start, value.short_string.start, size);
+
+            } else {
+                size = value.data.string_size;
+                start = value.data.u.string->start;
+            }
+
+            dst->len = size;
+            dst->data = start;
+
+            return NXT_OK;
+        }
+    }
+
+fail:
+
+    dst->len = 0;
+    dst->data = NULL;
+
+    return NXT_ERROR;
+
+}
+
+
+static njs_ret_t
+njs_object_value_to_string(njs_vm_t *vm, njs_value_t *value)
+{
+    size_t              size;
+    njs_ret_t           ret;
+    njs_value_t         *retval;
+    njs_native_frame_t  *frame;
+
+    static const njs_vmcode_1addr_t  value_to_string[] = {
+        { .code = { .operation = njs_vmcode_value_to_string,
+                    .operands =  NJS_VMCODE_NO_OPERAND,
+                    .retval = NJS_VMCODE_NO_RETVAL } },
+    };
+
+    size = NJS_NATIVE_FRAME_SIZE + 2 * sizeof(njs_value_t);
+
+    frame = njs_function_frame_alloc(vm, size);
+    if (nxt_slow_path(frame == NULL)) {
+        return NXT_ERROR;
+    }
+
+    /*
+     * Execute the single njs_vmcode_value_to_string() instruction.  The
+     * retval[0] is scratch value for results of "toString" or "valueOf"
+     * methods.  The retval[1] is an original object value which will be
+     * replaced with primitive value returned by "toString" or "valueOf"
+     * methods.  The scratch value is stored separately to preserve the
+     * original object value for the second "valueOf" method call if the
+     * first "toString" method call will return non-primitive value.
+     */
+
+    frame->u.return_address = vm->current;
+    vm->current = (u_char *) value_to_string;
+
+    retval = njs_native_data(vm->frame);
+    njs_set_invalid(&retval[0]);
+    retval[1] = *value;
+
+    ret = njs_vmcode_interpreter(vm);
+
+    if (ret == NJS_STOP) {
+        ret = NXT_OK;
+        *value = retval[1];
+    }
+
+    vm->current = frame->u.return_address;
+    vm->frame = frame->previous;
+    vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = frame->previous->arguments;
+
+    if (frame->first) {
+        nxt_mem_cache_free(vm->mem_cache_pool, frame);
+    }
+
+    return ret;
+}
+
+
+static njs_ret_t
+njs_vmcode_value_to_string(njs_vm_t *vm, njs_value_t *invld1,
+    njs_value_t *invld2)
+{
+    njs_ret_t    ret;
+    njs_value_t  *value;
+
+    value = njs_native_data(vm->frame);
+
+    ret = njs_primitive_value(vm, &value[1], 1);
+
+    if (nxt_fast_path(ret > 0)) {
+        return NJS_STOP;
     }
 
     return ret;

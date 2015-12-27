@@ -1416,6 +1416,44 @@ njs_string_prototype_match(njs_vm_t *vm, njs_param_t *param)
 
 
 njs_ret_t
+njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
+    const njs_value_t *src)
+{
+    const njs_value_t   *value;
+
+    switch (src->type) {
+
+    case NJS_NULL:
+        value = &njs_string_null;
+        break;
+
+    case NJS_VOID:
+        value = &njs_string_void;
+        break;
+
+    case NJS_BOOLEAN:
+        value = njs_is_true(src) ? &njs_string_true : &njs_string_false;
+        break;
+
+    case NJS_NUMBER:
+        return njs_number_to_string(vm, dst, src);
+
+    case NJS_STRING:
+        /* GC: njs_retain(src); */
+        value = src;
+        break;
+
+    default:
+        return NXT_ERROR;
+    }
+
+    *dst = *value;
+
+    return NXT_OK;
+}
+
+
+njs_ret_t
 njs_value_to_string(njs_vm_t *vm, njs_value_t *dst, const njs_value_t *src)
 {
     njs_ret_t           ret;
@@ -1487,47 +1525,6 @@ njs_value_to_string(njs_vm_t *vm, njs_value_t *dst, const njs_value_t *src)
     }
 
     *dst = *value;
-
-    return NXT_OK;
-}
-
-
-njs_ret_t
-njs_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst, const njs_value_t *src)
-{
-    u_char       *start;
-    size_t       size;
-    njs_ret_t    ret;
-    njs_value_t  value;
-
-    if (nxt_fast_path(src != NULL)) {
-        ret = njs_value_to_string(vm, &value, src);
-
-        if (nxt_fast_path(ret == NXT_OK)) {
-            size = value.short_string.size;
-
-            if (size != NJS_STRING_LONG) {
-                start = nxt_mem_cache_alloc(vm->mem_cache_pool, size);
-                if (nxt_slow_path(start == NULL)) {
-                    return NXT_ERROR;
-                }
-
-                memcpy(start, value.short_string.start, size);
-
-            } else {
-                size = value.data.string_size;
-                start = value.data.u.string->start;
-            }
-
-            dst->len = size;
-            dst->data = start;
-        }
-
-        return ret;
-    }
-
-    dst->len = 0;
-    dst->data = NULL;
 
     return NXT_OK;
 }
