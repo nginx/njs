@@ -572,7 +572,7 @@ njs_generate_switch_statement(njs_vm_t *vm, njs_parser_t *parser,
                 return NXT_ERROR;
             }
 
-            patch->address = (u_char *) &equal->offset;
+            patch->address = &equal->offset;
 
             *last = patch;
             last = &patch->next;
@@ -601,7 +601,7 @@ njs_generate_switch_statement(njs_vm_t *vm, njs_parser_t *parser,
             node = branch;
 
         } else {
-            *patch->address += parser->code_end - patch->address;
+            *patch->address += parser->code_end - (u_char *) patch->address;
             next = patch->next;
 
             nxt_mem_cache_free(vm->mem_cache_pool, patch);
@@ -954,7 +954,7 @@ njs_generate_patch_loop_continuation(njs_vm_t *vm, njs_parser_t *parser)
     block = parser->block;
 
     for (patch = block->continuation; patch != NULL; patch = next) {
-        *patch->address += parser->code_end - patch->address;
+        *patch->address += parser->code_end - (u_char *) patch->address;
         next = patch->next;
 
         nxt_mem_cache_free(vm->mem_cache_pool, patch);
@@ -972,7 +972,7 @@ njs_generate_patch_block_exit(njs_vm_t *vm, njs_parser_t *parser)
     parser->block = block->next;
 
     for (patch = block->exit; patch != NULL; patch = next) {
-        *patch->address += parser->code_end - patch->address;
+        *patch->address += parser->code_end - (u_char *) patch->address;
         next = patch->next;
 
         nxt_mem_cache_free(vm->mem_cache_pool, patch);
@@ -1013,7 +1013,7 @@ njs_generate_continue_statement(njs_vm_t *vm, njs_parser_t *parser,
         jump->code.retval = NJS_VMCODE_NO_RETVAL;
         jump->offset = offsetof(njs_vmcode_jump_t, offset);
 
-        patch->address = (u_char *) &jump->offset;
+        patch->address = &jump->offset;
     }
 
     return NXT_OK;
@@ -1046,7 +1046,7 @@ njs_generate_break_statement(njs_vm_t *vm, njs_parser_t *parser,
         jump->code.retval = NJS_VMCODE_NO_RETVAL;
         jump->offset = offsetof(njs_vmcode_jump_t, offset);
 
-        patch->address = (u_char *) &jump->offset;
+        patch->address = &jump->offset;
     }
 
     return NXT_OK;

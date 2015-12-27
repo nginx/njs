@@ -234,7 +234,13 @@ struct njs_parser_node_s {
 typedef struct njs_parser_patch_s   njs_parser_patch_t;
 
 struct njs_parser_patch_s {
-    u_char                          *address;
+    /*
+     * The address field points to jump offset field which contains a small
+     * adjustment and the adjustment should be added as (njs_ret_t *) because
+     * pointer to u_char accesses only one byte so this does not work on big
+     * endian platforms.
+     */
+    njs_ret_t                       *address;
     njs_parser_patch_t              *next;
 };
 
