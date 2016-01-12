@@ -1582,11 +1582,9 @@ static njs_unit_test_t  njs_test[] =
                  "for (i in a) { if (a[i] > 4) break; s += a[i] } s"),
       nxt_string("10") },
 
-#if 0
     { nxt_string("var a = [1,2,3,4,5]; var s = 0;"
                  "for (i in a) if (a[i] > 4) break; s += a[i] } s"),
-      nxt_string("segfault") },
-#endif
+      nxt_string("5") },
 
     /**/
 

@@ -93,8 +93,7 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser)
 
         if (token == NJS_TOKEN_CLOSE_BRACE) {
             parser->lexer->start--;
-
-            return parser->node;
+            break;
         }
     }
 
