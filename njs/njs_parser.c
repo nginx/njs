@@ -447,7 +447,7 @@ njs_parser_function_lambda(njs_vm_t *vm, njs_function_lambda_t *lambda,
     njs_index_t        index;
     njs_parser_t       *parser;
     njs_variable_t     *arg;
-    njs_parser_node_t  *node, *body;
+    njs_parser_node_t  *node, *body, *last;
 
     parser = lambda->u.parser;
 
@@ -516,14 +516,27 @@ njs_parser_function_lambda(njs_vm_t *vm, njs_function_lambda_t *lambda,
         return token;
     }
 
-    /*
-     * There is no function body or the last function body statement is not
-     * "return" statement.  If function has body then the body->right node is
-     * always present and it is a NJS_TOKEN_STATEMENT link node.
-     */
+    last = NULL;
     body = parser->node;
 
-    if (body == NULL || body->right->token != NJS_TOKEN_RETURN) {
+    if (body != NULL) {
+        /* Take the last function body statement. */
+        last = body->right;
+
+        if (last == NULL) {
+            /*
+             * The last statement is terminated by semicolon.
+             * Take the last statement itself.
+             */
+            last = body->left;
+        }
+    }
+
+    if (last == NULL || last->token != NJS_TOKEN_RETURN) {
+        /*
+         * There is no function body or the last function body
+         * body statement is not "return" statement.
+         */
         node = njs_parser_node_alloc(vm);
         if (nxt_slow_path(node == NULL)) {
             return NJS_TOKEN_ERROR;

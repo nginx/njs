@@ -2569,6 +2569,45 @@ static njs_unit_test_t  njs_test[] =
 
     /* Functions. */
 
+    { nxt_string("function f() { } f()"),
+      nxt_string("undefined") },
+
+    { nxt_string("function f() { ; } f()"),
+      nxt_string("undefined") },
+
+    { nxt_string("function f() { ;; } f()"),
+      nxt_string("undefined") },
+
+    { nxt_string("function f() { return } f()"),
+      nxt_string("undefined") },
+
+    { nxt_string("function f() { return; } f()"),
+      nxt_string("undefined") },
+
+    { nxt_string("function f() { return;; } f()"),
+      nxt_string("undefined") },
+
+    { nxt_string("function f() { return 1 } f()"),
+      nxt_string("1") },
+
+    { nxt_string("function f() { return 1; } f()"),
+      nxt_string("1") },
+
+    { nxt_string("function f() { return 1;; } f()"),
+      nxt_string("1") },
+
+    { nxt_string("function f() { return 1\n 2 } f()"),
+      nxt_string("1") },
+
+    { nxt_string("function f(a) { if (a) return 'OK' } f(1)+f(0)"),
+      nxt_string("OKundefined") },
+
+    { nxt_string("function f(a) { if (a) return 'OK'; } f(1)+f(0)"),
+      nxt_string("OKundefined") },
+
+    { nxt_string("function f(a) { if (a) return 'OK';; } f(1)+f(0)"),
+      nxt_string("OKundefined") },
+
     { nxt_string("var a = 1; a()"),
       nxt_string("TypeError") },
 
@@ -2797,6 +2836,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var f = function(a, b) { return this + a + b }"
                  "f.apply(5, [1, 2], 3)"),
       nxt_string("8") },
+
+    { nxt_string("var a = function() { return 1 } + ''; a"),
+      nxt_string("[object Function]") },
 
     { nxt_string("''.concat.call()"),
       nxt_string("TypeError") },
