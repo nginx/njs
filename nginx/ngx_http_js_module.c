@@ -52,8 +52,6 @@ static void *ngx_http_js_calloc(void *mem, size_t size);
 static void *ngx_http_js_memalign(void *mem, size_t alignment, size_t size);
 static void ngx_http_js_free(void *mem, void *p);
 
-static njs_ret_t ngx_http_js_ext_undefined(njs_vm_t *vm, njs_value_t *value,
-    void *obj, uintptr_t data);
 static njs_ret_t ngx_http_js_ext_get_string(njs_vm_t *vm, njs_value_t *value,
     void *obj, uintptr_t data);
 static njs_ret_t ngx_http_js_ext_set_string(njs_vm_t *vm, void *obj,
@@ -260,7 +258,7 @@ static njs_external_t  ngx_http_js_ext_request[] = {
       NJS_EXTERN_OBJECT,
       ngx_http_js_ext_response,
       nxt_nitems(ngx_http_js_ext_response),
-      ngx_http_js_ext_undefined,
+      NULL,
       NULL,
       NULL,
       NULL,
@@ -348,7 +346,7 @@ static njs_external_t  ngx_http_js_externals[] = {
       NJS_EXTERN_OBJECT,
       ngx_http_js_ext_request,
       nxt_nitems(ngx_http_js_ext_request),
-      ngx_http_js_ext_undefined,
+      NULL,
       NULL,
       NULL,
       NULL,
@@ -496,16 +494,6 @@ static void
 ngx_http_js_free(void *mem, void *p)
 {
     ngx_free(p);
-}
-
-
-static njs_ret_t
-ngx_http_js_ext_undefined(njs_vm_t *vm, njs_value_t *value, void *obj,
-    uintptr_t data)
-{
-    njs_void_set(value);
-
-    return NJS_OK;
 }
 
 

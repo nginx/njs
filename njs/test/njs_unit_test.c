@@ -2452,6 +2452,21 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("$r.external('YES')"),
       nxt_string("АБВ") },
 
+    { nxt_string("for (p in $r.external);"),
+      nxt_string("undefined") },
+
+    { nxt_string("'uri' in $r"),
+      nxt_string("true") },
+
+    { nxt_string("'one' in $r"),
+      nxt_string("false") },
+
+    { nxt_string("delete $r.uri"),
+      nxt_string("false") },
+
+    { nxt_string("delete $r.one"),
+      nxt_string("false") },
+
 #if 0
     { nxt_string("$r.external.call($r, 'YES')"),
       nxt_string("АБВ") },
@@ -2462,6 +2477,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("$r.nonexistent"),
       nxt_string("undefined") },
+
+    { nxt_string("$r.error = 'OK'"),
+      nxt_string("OK") },
 
     { nxt_string("var a = { toString: function() { return 1 } }; a"),
       nxt_string("1") },
@@ -3630,16 +3648,6 @@ njs_unit_test_method_external(njs_vm_t *vm, njs_param_t *param)
 }
 
 
-static njs_ret_t
-njs_unit_test_undefined_external(njs_vm_t *vm, njs_value_t *value, void *obj,
-    uintptr_t data)
-{
-    njs_void_set(value);
-
-    return NJS_OK;
-}
-
-
 static njs_external_t  njs_unit_test_r_external[] = {
 
     { nxt_string("uri"),
@@ -3699,7 +3707,7 @@ static njs_external_t  nxt_test_external[] = {
       NJS_EXTERN_OBJECT,
       njs_unit_test_r_external,
       nxt_nitems(njs_unit_test_r_external),
-      njs_unit_test_undefined_external,
+      NULL,
       NULL,
       NULL,
       NULL,

@@ -545,12 +545,14 @@ njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
 
         vm->retval = njs_value_void;
 
-        ret = ext->get(vm, &vm->retval, vm->external[ext->object], data);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return ret;
-        }
+        if (ext->get != NULL) {
+            ret = ext->get(vm, &vm->retval, vm->external[ext->object], data);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return ret;
+            }
 
-        /* The vm->retval is already retained by ext->get(). */
+            /* The vm->retval is already retained by ext->get(). */
+        }
 
         return sizeof(njs_vmcode_prop_get_t);
 
@@ -636,16 +638,18 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
             data = (uintptr_t) &pq.lhq.key;
         }
 
-        ret = njs_value_to_ext_string(vm, &s, value);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return ret;
-        }
+        if (ext->set != NULL) {
+            ret = njs_value_to_ext_string(vm, &s, value);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return ret;
+            }
 
-        /* TODO retain value if it is string. */
+            /* TODO retain value if it is string. */
 
-        ret = ext->set(vm, vm->external[ext->object], data, &s);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return ret;
+            ret = ext->set(vm, vm->external[ext->object], data, &s);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return ret;
+            }
         }
 
         return sizeof(njs_vmcode_prop_set_t);
@@ -709,27 +713,22 @@ njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *object, njs_value_t *property)
         ret = nxt_lvlhsh_find(&ext->hash, &pq.lhq);
 
         if (ret == NXT_OK) {
-            ext = pq.lhq.value;
-
-            if ((ext->type & NJS_EXTERN_OBJECT) != 0) {
-                retval = &njs_value_true;
-                break;
-            }
-
-            data = ext->data;
+            retval = &njs_value_true;
 
         } else {
             data = (uintptr_t) &pq.lhq.key;
-        }
 
-        ret = ext->find(vm, vm->external[ext->object], data, 0);
+            if (ext->find != NULL) {
+                ret = ext->find(vm, vm->external[ext->object], data, 0);
 
-        if (nxt_slow_path(ret == NXT_ERROR)) {
-            return ret;
-        }
+                if (nxt_slow_path(ret == NXT_ERROR)) {
+                    return ret;
+                }
 
-        if (ret == NXT_OK) {
-            retval = &njs_value_true;
+                if (ret == NXT_OK) {
+                    retval = &njs_value_true;
+                }
+            }
         }
 
         break;
@@ -803,23 +802,26 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
             ext = pq.lhq.value;
 
             if ((ext->type & NJS_EXTERN_OBJECT) != 0) {
-                break;
-            }
+                data = (uintptr_t) &ext->value;
 
-            data = ext->data;
+            } else {
+                data = ext->data;
+            }
 
         } else {
             data = (uintptr_t) &pq.lhq.key;
         }
 
-        ret = ext->find(vm, vm->external[ext->object], data, 1);
+        if (ext->find != NULL) {
+            ret = ext->find(vm, vm->external[ext->object], data, 1);
 
-        if (nxt_slow_path(ret == NXT_ERROR)) {
-            return ret;
-        }
+            if (nxt_slow_path(ret == NXT_ERROR)) {
+                return ret;
+            }
 
-        if (ret == NXT_OK) {
-            retval = &njs_value_true;
+            if (ret == NXT_OK) {
+                retval = &njs_value_true;
+            }
         }
 
         break;
