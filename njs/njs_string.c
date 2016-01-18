@@ -285,19 +285,25 @@ njs_string_constructor(njs_vm_t *vm, njs_param_t *param)
 static const njs_object_prop_t  njs_string_constructor_properties[] =
 {
     /* String.name == "String". */
-    { njs_string("String"),
-      njs_string("name"),
-      NJS_PROPERTY, 0, 0, 0, },
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("String"),
+    },
 
     /* String.length == 1. */
-    { njs_value(NJS_NUMBER, 1, 1.0),
-      njs_string("length"),
-      NJS_PROPERTY, 0, 0, 0, },
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 1, 1.0),
+    },
 
     /* String.prototype. */
-    { njs_native_getter(njs_object_prototype_create),
-      njs_string("prototype"),
-      NJS_NATIVE_GETTER, 0, 0, 0, },
+    {
+        .type = NJS_NATIVE_GETTER,
+        .name = njs_string("prototype"),
+        .value = njs_native_getter(njs_object_prototype_create),
+    },
 };
 
 
@@ -1593,83 +1599,121 @@ njs_string_to_number(njs_value_t *value)
 
 static const njs_object_prop_t  njs_string_prototype_properties[] =
 {
-    { njs_native_getter(njs_primitive_prototype_get_proto),
-      njs_string("__proto__"),
-      NJS_NATIVE_GETTER, 0, 0, 0, },
+    {
+        .type = NJS_NATIVE_GETTER,
+        .name = njs_string("__proto__"),
+        .value = njs_native_getter(njs_primitive_prototype_get_proto),
+    },
 
-    { njs_native_getter(njs_string_prototype_length),
-      njs_string("length"),
-      NJS_NATIVE_GETTER, 0, 0, 0, },
+    {
+        .type = NJS_NATIVE_GETTER,
+        .name = njs_string("length"),
+        .value = njs_native_getter(njs_string_prototype_length),
+    },
 
-    { njs_native_function(njs_string_prototype_value_of, 0),
-      njs_string("valueOf"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("valueOf"),
+        .value = njs_native_function(njs_string_prototype_value_of, 0),
+    },
 
-    { njs_native_function(njs_string_prototype_value_of, 0),
-      njs_string("toString"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("toString"),
+        .value = njs_native_function(njs_string_prototype_value_of, 0),
+    },
 
-    { njs_native_function(njs_string_prototype_concat, 0),
-      njs_string("concat"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("concat"),
+        .value = njs_native_function(njs_string_prototype_concat, 0),
+    },
 
-    { njs_native_function(njs_string_prototype_from_utf8, 0),
-      njs_string("fromUTF8"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("fromUTF8"),
+        .value = njs_native_function(njs_string_prototype_from_utf8, 0),
+    },
 
-    { njs_native_function(njs_string_prototype_to_utf8, 0),
-      njs_string("toUTF8"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("toUTF8"),
+        .value = njs_native_function(njs_string_prototype_to_utf8, 0),
+    },
 
-    { njs_native_function(njs_string_prototype_from_bytes, 0),
-      njs_string("fromBytes"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("fromBytes"),
+        .value = njs_native_function(njs_string_prototype_from_bytes, 0),
+    },
 
-    { njs_native_function(njs_string_prototype_to_bytes, 0),
-      njs_string("toBytes"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("toBytes"),
+        .value = njs_native_function(njs_string_prototype_to_bytes, 0),
+    },
 
-    { njs_native_function(njs_string_prototype_slice, 0),
-      njs_string("slice"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("slice"),
+        .value = njs_native_function(njs_string_prototype_slice, 0),
+    },
 
-    { njs_native_function(njs_string_prototype_substring, 0),
-      njs_string("substring"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("substring"),
+        .value = njs_native_function(njs_string_prototype_substring, 0),
+    },
 
-    { njs_native_function(njs_string_prototype_substr, 0),
-      njs_string("substr"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("substr"),
+        .value = njs_native_function(njs_string_prototype_substr, 0),
+    },
 
-    { njs_native_function(njs_string_prototype_char_at, 0),
-      njs_string("charAt"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("charAt"),
+        .value = njs_native_function(njs_string_prototype_char_at, 0),
+    },
 
-    { njs_native_function(njs_string_prototype_char_code_at, 0),
-      njs_string("charCodeAt"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("charCodeAt"),
+        .value = njs_native_function(njs_string_prototype_char_code_at, 0),
+    },
 
     /* ECMAScript 6, codePointAt(). */
 
-    { njs_native_function(njs_string_prototype_char_code_at, 0),
-      njs_string("codePointAt"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("codePointAt"),
+        .value = njs_native_function(njs_string_prototype_char_code_at, 0),
+    },
 
-    { njs_native_function(njs_string_prototype_index_of, 0),
-      njs_string("indexOf"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("indexOf"),
+        .value = njs_native_function(njs_string_prototype_index_of, 0),
+    },
 
-    { njs_native_function(njs_string_prototype_last_index_of, 0),
-      njs_string("lastIndexOf"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("lastIndexOf"),
+        .value = njs_native_function(njs_string_prototype_last_index_of, 0),
+    },
 
-    { njs_native_function(njs_string_prototype_search, 0),
-      njs_string("search"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("search"),
+        .value = njs_native_function(njs_string_prototype_search, 0),
+    },
 
-    { njs_native_function(njs_string_prototype_match, 0),
-      njs_string("match"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("match"),
+        .value = njs_native_function(njs_string_prototype_match, 0),
+    },
 };
 
 

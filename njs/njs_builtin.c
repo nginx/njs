@@ -65,9 +65,9 @@ njs_builtin_objects_create(njs_vm_t *vm)
     };
 
     static const njs_object_prop_t  null_proto_property = {
-        njs_value(NJS_NULL, 0, 0.0),
-        njs_string("__proto__"),
-        NJS_WHITEOUT, 0, 0, 0,
+        .type = NJS_WHITEOUT,
+        .name = njs_string("__proto__"),
+        .value = njs_value(NJS_NULL, 0, 0.0),
     };
 
     ret = njs_object_hash_create(vm, &vm->shared->null_proto_hash,

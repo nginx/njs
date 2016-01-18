@@ -237,19 +237,25 @@ njs_function_call(njs_vm_t *vm, njs_index_t retval)
 static const njs_object_prop_t  njs_function_constructor_properties[] =
 {
     /* Function.name == "Function". */
-    { njs_string("Function"),
-      njs_string("name"),
-      NJS_PROPERTY, 0, 0, 0, },
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("Function"),
+    },
 
     /* Function.length == 1. */
-    { njs_value(NJS_NUMBER, 0, 1.0),
-      njs_string("length"),
-      NJS_PROPERTY, 0, 0, 0, },
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 1, 1.0),
+    },
 
     /* Function.prototype. */
-    { njs_native_getter(njs_object_prototype_create),
-      njs_string("prototype"),
-      NJS_NATIVE_GETTER, 0, 0, 0, },
+    {
+        .type = NJS_NATIVE_GETTER,
+        .name = njs_string("prototype"),
+        .value = njs_native_getter(njs_object_prototype_create),
+    },
 };
 
 
@@ -413,17 +419,23 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_param_t *param)
 
 static const njs_object_prop_t  njs_function_prototype_properties[] =
 {
-    { njs_native_function(njs_function_prototype_call, 0),
-      njs_string("call"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("call"),
+        .value = njs_native_function(njs_function_prototype_call, 0),
+    },
 
-    { njs_native_function(njs_function_prototype_apply, 0),
-      njs_string("apply"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("apply"),
+        .value = njs_native_function(njs_function_prototype_apply, 0),
+    },
 
-    { njs_native_function(njs_function_prototype_bind, 0),
-      njs_string("bind"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("bind"),
+        .value = njs_native_function(njs_function_prototype_bind, 0),
+    },
 };
 
 
@@ -443,14 +455,18 @@ njs_eval_function(njs_vm_t *vm, njs_param_t *param)
 static const njs_object_prop_t  njs_eval_function_properties[] =
 {
     /* eval.name == "eval". */
-    { njs_string("eval"),
-      njs_string("name"),
-      NJS_PROPERTY, 0, 0, 0, },
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("eval"),
+    },
 
     /* eval.length == 1. */
-    { njs_value(NJS_NUMBER, 0, 1.0),
-      njs_string("length"),
-      NJS_PROPERTY, 0, 0, 0, },
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 1, 1.0),
+    },
 };
 
 

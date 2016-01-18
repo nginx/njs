@@ -221,19 +221,25 @@ njs_array_constructor(njs_vm_t *vm, njs_param_t *param)
 static const njs_object_prop_t  njs_array_constructor_properties[] =
 {
     /* Array.name == "Array". */
-    { njs_string("Array"),
-      njs_string("name"),
-      NJS_PROPERTY, 0, 0, 0, },
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("Array"),
+    },
 
     /* Array.length == 1. */
-    { njs_value(NJS_NUMBER, 1, 1.0),
-      njs_string("length"),
-      NJS_PROPERTY, 0, 0, 0, },
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 1, 1.0),
+    },
 
     /* Array.prototype. */
-    { njs_native_getter(njs_object_prototype_create),
-      njs_string("prototype"),
-      NJS_NATIVE_GETTER, 0, 0, 0, },
+    {
+        .type = NJS_NATIVE_GETTER,
+        .name = njs_string("prototype"),
+        .value = njs_native_getter(njs_object_prototype_create),
+    },
 };
 
 
@@ -893,56 +899,80 @@ njs_array_next(njs_value_t *value, nxt_uint_t n, nxt_uint_t length)
 
 static const njs_object_prop_t  njs_array_prototype_properties[] =
 {
-    { njs_native_getter(njs_array_prototype_length),
-      njs_string("length"),
-      NJS_NATIVE_GETTER, 0, 0, 0, },
+    {
+        .type = NJS_NATIVE_GETTER,
+        .name = njs_string("length"),
+        .value = njs_native_getter(njs_array_prototype_length),
+    },
 
-    { njs_native_function(njs_array_prototype_slice, 0),
-      njs_string("slice"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("slice"),
+        .value = njs_native_function(njs_array_prototype_slice, 0),
+    },
 
-    { njs_native_function(njs_array_prototype_push, 0),
-      njs_string("push"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("push"),
+        .value = njs_native_function(njs_array_prototype_push, 0),
+    },
 
-    { njs_native_function(njs_array_prototype_pop, 0),
-      njs_string("pop"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("pop"),
+        .value = njs_native_function(njs_array_prototype_pop, 0),
+    },
 
-    { njs_native_function(njs_array_prototype_unshift, 0),
-      njs_string("unshift"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("unshift"),
+        .value = njs_native_function(njs_array_prototype_unshift, 0),
+    },
 
-    { njs_native_function(njs_array_prototype_shift, 0),
-      njs_string("shift"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("shift"),
+        .value = njs_native_function(njs_array_prototype_shift, 0),
+    },
 
-    { njs_native_function(njs_array_prototype_to_string, 0),
-      njs_string("toString"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("toString"),
+        .value = njs_native_function(njs_array_prototype_to_string, 0),
+    },
 
-    { njs_native_function(njs_array_prototype_join, 0),
-      njs_string("join"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("join"),
+        .value = njs_native_function(njs_array_prototype_join, 0),
+    },
 
-    { njs_native_function(njs_array_prototype_concat, 0),
-      njs_string("concat"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("concat"),
+        .value = njs_native_function(njs_array_prototype_concat, 0),
+    },
 
-    { njs_native_function(njs_array_prototype_for_each,
-                          njs_method_data_size(sizeof(njs_array_next_t))),
-      njs_string("forEach"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("forEach"),
+        .value = njs_native_function(njs_array_prototype_for_each,
+                            njs_method_data_size(sizeof(njs_array_next_t))),
+    },
 
-    { njs_native_function(njs_array_prototype_some,
-                          njs_method_data_size(sizeof(njs_array_next_t))),
-      njs_string("some"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("some"),
+        .value = njs_native_function(njs_array_prototype_some,
+                            njs_method_data_size(sizeof(njs_array_next_t))),
+    },
 
-    { njs_native_function(njs_array_prototype_every,
-                          njs_method_data_size(sizeof(njs_array_next_t))),
-      njs_string("every"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("every"),
+        .value = njs_native_function(njs_array_prototype_every,
+                            njs_method_data_size(sizeof(njs_array_next_t))),
+    },
 };
 
 

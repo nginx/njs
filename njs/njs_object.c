@@ -388,25 +388,33 @@ njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value)
 
 static const njs_object_prop_t  njs_object_constructor_properties[] =
 {
-    /* Object.name == "name". */
-    { njs_string("Object"),
-      njs_string("name"),
-      NJS_PROPERTY, 0, 0, 0, },
+    /* Object.name == "Object". */
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("Object"),
+    },
 
     /* Object.length == 1. */
-    { njs_value(NJS_NUMBER, 1, 1.0),
-      njs_string("length"),
-      NJS_PROPERTY, 0, 0, 0, },
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 1, 1.0),
+    },
 
     /* Object.prototype. */
-    { njs_native_getter(njs_object_prototype_create),
-      njs_string("prototype"),
-      NJS_NATIVE_GETTER, 0, 0, 0, },
+    {
+        .type = NJS_NATIVE_GETTER,
+        .name = njs_string("prototype"),
+        .value = njs_native_getter(njs_object_prototype_create),
+    },
 
     /* Object.create(). */
-    { njs_native_function(njs_object_create, 0),
-      njs_string("create"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("create"),
+        .value = njs_native_function(njs_object_create, 0),
+    },
 };
 
 
@@ -599,21 +607,29 @@ found:
 
 static const njs_object_prop_t  njs_object_prototype_properties[] =
 {
-    { njs_native_getter(njs_object_prototype_get_proto),
-      njs_string("__proto__"),
-      NJS_NATIVE_GETTER, 0, 0, 0, },
+    {
+        .type = NJS_NATIVE_GETTER,
+        .name = njs_string("__proto__"),
+        .value = njs_native_getter(njs_object_prototype_get_proto),
+    },
 
-    { njs_native_getter(njs_object_prototype_create_constructor),
-      njs_string("constructor"),
-      NJS_NATIVE_GETTER, 0, 0, 0, },
+    {
+        .type = NJS_NATIVE_GETTER,
+        .name = njs_string("constructor"),
+        .value = njs_native_getter(njs_object_prototype_create_constructor),
+    },
 
-    { njs_native_function(njs_object_prototype_value_of, 0),
-      njs_string("valueOf"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("valueOf"),
+        .value = njs_native_function(njs_object_prototype_value_of, 0),
+    },
 
-    { njs_native_function(njs_object_prototype_to_string, 0),
-      njs_string("toString"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("toString"),
+        .value = njs_native_function(njs_object_prototype_to_string, 0),
+    },
 };
 
 

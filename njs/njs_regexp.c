@@ -666,19 +666,25 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, u_char *string,
 static const njs_object_prop_t  njs_regexp_constructor_properties[] =
 {
     /* RegExp.name == "RegExp". */
-    { njs_string("RegExp"),
-      njs_string("name"),
-      NJS_PROPERTY, 0, 0, 0, },
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("RegExp"),
+    },
 
     /* RegExp.length == 2. */
-    { njs_value(NJS_NUMBER, 1, 2.0),
-      njs_string("length"),
-      NJS_PROPERTY, 0, 0, 0, },
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 1, 2.0),
+    },
 
     /* RegExp.prototype. */
-    { njs_native_getter(njs_object_prototype_create),
-      njs_string("prototype"),
-      NJS_NATIVE_GETTER, 0, 0, 0, },
+    {
+        .type = NJS_NATIVE_GETTER,
+        .name = njs_string("prototype"),
+        .value = njs_native_getter(njs_object_prototype_create),
+    },
 };
 
 
@@ -690,37 +696,53 @@ const njs_object_init_t  njs_regexp_constructor_init = {
 
 static const njs_object_prop_t  njs_regexp_prototype_properties[] =
 {
-    { njs_native_getter(njs_regexp_prototype_last_index),
-      njs_string("lastIndex"),
-      NJS_NATIVE_GETTER, 0, 0, 0, },
+    {
+        .type = NJS_NATIVE_GETTER,
+        .name = njs_string("lastIndex"),
+        .value = njs_native_getter(njs_regexp_prototype_last_index),
+    },
 
-    { njs_native_getter(njs_regexp_prototype_global),
-      njs_string("global"),
-      NJS_NATIVE_GETTER, 0, 0, 0, },
+    {
+        .type = NJS_NATIVE_GETTER,
+        .name = njs_string("global"),
+        .value = njs_native_getter(njs_regexp_prototype_global),
+    },
 
-    { njs_native_getter(njs_regexp_prototype_ignore_case),
-      njs_string("ignoreCase"),
-      NJS_NATIVE_GETTER, 0, 0, 0, },
+    {
+        .type = NJS_NATIVE_GETTER,
+        .name = njs_string("ignoreCase"),
+        .value = njs_native_getter(njs_regexp_prototype_ignore_case),
+    },
 
-    { njs_native_getter(njs_regexp_prototype_multiline),
-      njs_string("multiline"),
-      NJS_NATIVE_GETTER, 0, 0, 0, },
+    {
+        .type = NJS_NATIVE_GETTER,
+        .name = njs_string("multiline"),
+        .value = njs_native_getter(njs_regexp_prototype_multiline),
+    },
 
-    { njs_native_getter(njs_regexp_prototype_source),
-      njs_string("source"),
-      NJS_NATIVE_GETTER, 0, 0, 0, },
+    {
+        .type = NJS_NATIVE_GETTER,
+        .name = njs_string("source"),
+        .value = njs_native_getter(njs_regexp_prototype_source),
+    },
 
-    { njs_native_function(njs_regexp_prototype_to_string, 0),
-      njs_string("toString"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("toString"),
+        .value = njs_native_function(njs_regexp_prototype_to_string, 0),
+    },
 
-    { njs_native_function(njs_regexp_prototype_test, 0),
-      njs_string("test"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("test"),
+        .value = njs_native_function(njs_regexp_prototype_test, 0),
+    },
 
-    { njs_native_function(njs_regexp_prototype_exec, 0),
-      njs_string("exec"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("exec"),
+        .value = njs_native_function(njs_regexp_prototype_exec, 0),
+    },
 };
 
 

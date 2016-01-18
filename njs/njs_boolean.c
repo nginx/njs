@@ -52,19 +52,25 @@ njs_boolean_constructor(njs_vm_t *vm, njs_param_t *param)
 static const njs_object_prop_t  njs_boolean_constructor_properties[] =
 {
     /* Boolean.name == "Boolean". */
-    { njs_string("Boolean"),
-      njs_string("name"),
-      NJS_PROPERTY, 0, 0, 0, },
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("Boolean"),
+    },
 
     /* Boolean.length == 1. */
-    { njs_value(NJS_NUMBER, 1, 1.0),
-      njs_string("length"),
-      NJS_PROPERTY, 0, 0, 0, },
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 1, 1.0),
+    },
 
     /* Boolean.prototype. */
-    { njs_native_getter(njs_object_prototype_create),
-      njs_string("prototype"),
-      NJS_NATIVE_GETTER, 0, 0, 0, },
+    {
+        .type = NJS_NATIVE_GETTER,
+        .name = njs_string("prototype"),
+        .value = njs_native_getter(njs_object_prototype_create),
+    },
 };
 
 
@@ -124,17 +130,23 @@ njs_boolean_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
 
 static const njs_object_prop_t  njs_boolean_prototype_properties[] =
 {
-    { njs_native_getter(njs_primitive_prototype_get_proto),
-      njs_string("__proto__"),
-      NJS_NATIVE_GETTER, 0, 0, 0, },
+    {
+        .type = NJS_NATIVE_GETTER,
+        .name = njs_string("__proto__"),
+        .value = njs_native_getter(njs_primitive_prototype_get_proto),
+    },
 
-    { njs_native_function(njs_boolean_prototype_value_of, 0),
-      njs_string("valueOf"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("valueOf"),
+        .value = njs_native_function(njs_boolean_prototype_value_of, 0),
+    },
 
-    { njs_native_function(njs_boolean_prototype_to_string, 0),
-      njs_string("toString"),
-      NJS_METHOD, 0, 0, 0, },
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("toString"),
+        .value = njs_native_function(njs_boolean_prototype_to_string, 0),
+    },
 };
 
 
