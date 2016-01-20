@@ -130,10 +130,12 @@ typedef struct {
     njs_object_t                      object;
 
 #if (NXT_64BIT)
-    uint32_t                          native;
+    uint8_t                           native;
+    uint8_t                           local_state_size;
     uint32_t                          args_offset;
 #else
     uint8_t                           native;
+    uint8_t                           local_state_size;
     uint16_t                          args_offset;
 #endif
 
@@ -176,11 +178,7 @@ union njs_value_s {
         uint8_t                       external0;
         uint8_t                       _spare;
 
-        /*
-         * A long string size.
-         * Besides this field is used in native reentrant methods to
-         * store size of local state data allocated on stack frame.
-         */
+        /* A long string size. */
         uint32_t                      string_size;
 
         union {
@@ -254,9 +252,9 @@ union njs_value_s {
     .data = {                                                                 \
         .type = NJS_FUNCTION,                                                 \
         .truth = 1,                                                           \
-        .string_size = _local_size,                                           \
         .u.function = & (njs_function_t) {                                    \
             .native = 1,                                                      \
+            .local_state_size = _local_size,                                  \
             .args_offset = 1,                                                 \
             .u.native = _function,                                            \
         }                                                                     \

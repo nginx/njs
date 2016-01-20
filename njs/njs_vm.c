@@ -2175,7 +2175,7 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *name, njs_value_t *object)
             }
 
             this = njs_function_native_frame(vm, function->u.native,
-                                             prop->value.data.string_size,
+                                             function->local_state_size,
                                              &method->code);
             if (nxt_slow_path(this == NULL)) {
                 return NXT_ERROR;
