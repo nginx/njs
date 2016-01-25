@@ -2230,16 +2230,14 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
     njs_native_frame_t          *frame, *previous, *skip;
     njs_vmcode_function_call_t  *call;
 
-    call = (njs_vmcode_function_call_t *) vm->current;
-    /* Update code pointer here to store it as return address in call frame. */
-    vm->current += sizeof(njs_vmcode_function_call_t);
-
     if (!vm->frame->u.function->native) {
-        (void) njs_function_call(vm, (njs_index_t) retval);
+        (void) njs_function_call(vm, (njs_index_t) retval,
+                                 sizeof(njs_vmcode_function_call_t));
         return 0;
     }
 
     param.retval = (njs_index_t) retval;
+    call = (njs_vmcode_function_call_t *) vm->current;
     param.nargs = call->code.nargs - 1;
     args = vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS];
     param.args = args;
@@ -2287,12 +2285,19 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
          */
         *retval = vm->retval;
 
+        ret = sizeof(njs_vmcode_function_call_t);
+
     } else if (ret == NJS_APPLIED) {
         /* A user-defined method has been prepared to run. */
         ret = 0;
 
     } else if (ret == NXT_AGAIN) {
+        /*
+         * Revert nJSVM current address, execution will
+         * continue on the same function after resumption.
+         */
         vm->frame->reentrant = 1;
+        vm->current -= sizeof(njs_vmcode_function_call_t);
     }
 
     return ret;

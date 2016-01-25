@@ -732,8 +732,8 @@ njs_array_prototype_for_each(njs_vm_t *vm, njs_param_t *param)
     n = njs_array_next(array->start, ++n, next->length);
     next->index = n;
 
-    if (n > 0) {
-        vm->current -= sizeof(njs_vmcode_function_call_t);
+    if (n < 0) {
+        vm->current += sizeof(njs_vmcode_function_call_t);
     }
 
     nargs = param->nargs;
@@ -810,8 +810,6 @@ njs_array_prototype_some(njs_vm_t *vm, njs_param_t *param)
 
     func = (nargs != 0) ? &args[0] : (njs_value_t *) &njs_value_void;
 
-    vm->current -= sizeof(njs_vmcode_function_call_t);
-
     return njs_function_apply(vm, func, &p);
 }
 
@@ -875,8 +873,6 @@ njs_array_prototype_every(njs_vm_t *vm, njs_param_t *param)
     p.retval = (njs_index_t) &next->retval;
 
     func = (nargs != 0) ? &args[0] : (njs_value_t *) &njs_value_void;
-
-    vm->current -= sizeof(njs_vmcode_function_call_t);
 
     return njs_function_apply(vm, func, &p);
 }

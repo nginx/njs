@@ -123,7 +123,7 @@ njs_value_t *njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     njs_vmcode_t *code);
 njs_ret_t njs_function_frame(njs_vm_t *vm, njs_function_t *function,
     njs_param_t *param, nxt_bool_t ctor);
-njs_ret_t njs_function_call(njs_vm_t *vm, njs_index_t retval);
+njs_ret_t njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance);
 
 extern const njs_object_init_t  njs_function_constructor_init;
 extern const njs_object_init_t  njs_function_prototype_init;
