@@ -24,7 +24,7 @@ struct njs_extern_s {
     njs_extern_foreach_t         foreach;
     njs_extern_next_t            next;
 
-    njs_extern_method_t          method;
+    njs_function_t               *function;
 
     uintptr_t                    object;
     uintptr_t                    data;

@@ -65,7 +65,6 @@ struct njs_native_frame_s {
     union {
         njs_function_t             *function;
         u_char                     *return_address;
-        njs_native_t               native;
         u_char                     *restart;
     } u;
 
@@ -75,9 +74,6 @@ struct njs_native_frame_s {
     njs_exception_t                exception;
 
     uint32_t                       free_size;
-
-    /* Script or native function or method. */
-    uint8_t                        native;          /* 1 bit  */
 
     /* Function is called as constructor with "new" keyword. */
     uint8_t                        ctor;            /* 1 bit  */
@@ -123,8 +119,8 @@ njs_native_frame_t *njs_function_frame_alloc(njs_vm_t *vm, size_t size);
 njs_ret_t njs_function_constructor(njs_vm_t *vm, njs_param_t *param);
 njs_ret_t njs_function_apply(njs_vm_t *vm, njs_value_t *name,
     njs_param_t *param);
-njs_value_t *njs_function_native_frame(njs_vm_t *vm, njs_native_t native,
-    size_t local_size, njs_vmcode_t *code);
+njs_value_t *njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
+    njs_vmcode_t *code);
 njs_ret_t njs_function_frame(njs_vm_t *vm, njs_function_t *function,
     njs_param_t *param, nxt_bool_t ctor);
 njs_ret_t njs_function_call(njs_vm_t *vm, njs_index_t retval);

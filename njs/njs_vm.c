@@ -2088,8 +2088,7 @@ njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *invld, njs_value_t *name)
         function = value->data.u.function;
 
         if (function->native) {
-            this = njs_function_native_frame(vm, function->u.native, 0,
-                                             &func->code);
+            this = njs_function_native_frame(vm, function, &func->code);
             if (nxt_fast_path(this != NULL)) {
                 *this = njs_value_void;
 
@@ -2174,9 +2173,7 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *name, njs_value_t *object)
                 return ret;
             }
 
-            this = njs_function_native_frame(vm, function->u.native,
-                                             function->local_state_size,
-                                             &method->code);
+            this = njs_function_native_frame(vm, function, &method->code);
             if (nxt_slow_path(this == NULL)) {
                 return NXT_ERROR;
             }
@@ -2199,7 +2196,7 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *name, njs_value_t *object)
             ext = pq.lhq.value;
 
             if (ext->type == NJS_EXTERN_METHOD) {
-                this = njs_function_native_frame(vm, ext->method, 0,
+                this = njs_function_native_frame(vm, ext->function,
                                                  &method->code);
 
                 if (nxt_slow_path(this == NULL)) {
@@ -2237,7 +2234,7 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
     /* Update code pointer here to store it as return address in call frame. */
     vm->current += sizeof(njs_vmcode_function_call_t);
 
-    if (!vm->frame->native) {
+    if (!vm->frame->u.function->native) {
         (void) njs_function_call(vm, (njs_index_t) retval);
         return 0;
     }
@@ -2248,7 +2245,7 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
     param.args = args;
     param.this = args - 1;
 
-    ret = vm->frame->u.native(vm, &param);
+    ret = vm->frame->u.function->u.native(vm, &param);
     /*
      * A native method can return:
      *   NXT_OK on method success;

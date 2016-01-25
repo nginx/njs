@@ -76,6 +76,17 @@ njs_add_external(nxt_lvlhsh_t *hash, nxt_mem_cache_pool_t *mcp, uintptr_t object
         ext->value.data.truth = 1;
         ext->value.data.u.external = ext;
 
+        if (external->method != NULL) {
+            ext->function = nxt_mem_cache_zalloc(mcp, sizeof(njs_function_t));
+            if (nxt_slow_path(ext->function == NULL)) {
+                return NXT_ERROR;
+            }
+
+            ext->function->native = 1;
+            ext->function->args_offset = 1;
+            ext->function->u.native = external->method;
+        }
+
         nxt_lvlhsh_init(&ext->hash);
         ext->type = external->type;
         ext->get = external->get;
@@ -83,7 +94,6 @@ njs_add_external(nxt_lvlhsh_t *hash, nxt_mem_cache_pool_t *mcp, uintptr_t object
         ext->find = external->find;
         ext->foreach = external->foreach;
         ext->next = external->next;
-        ext->method = external->method;
         ext->object = object;
         ext->data = external->data;
 

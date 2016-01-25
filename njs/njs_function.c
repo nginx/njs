@@ -42,14 +42,14 @@ njs_function_alloc(njs_vm_t *vm)
 
 
 njs_value_t *
-njs_function_native_frame(njs_vm_t *vm, njs_native_t native, size_t local_size,
+njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     njs_vmcode_t *code)
 {
     size_t              size;
     njs_value_t         *this;
     njs_native_frame_t  *frame;
 
-    size = NJS_NATIVE_FRAME_SIZE + local_size
+    size = NJS_NATIVE_FRAME_SIZE + function->local_state_size
            + code->nargs * sizeof(njs_value_t);
 
     frame = njs_function_frame_alloc(vm, size);
@@ -57,11 +57,11 @@ njs_function_native_frame(njs_vm_t *vm, njs_native_t native, size_t local_size,
         return NULL;
     }
 
-    frame->u.native = native;
-    frame->native = 1;
+    frame->u.function = function;
     frame->ctor = code->ctor;
 
-    this = (njs_value_t *) ((u_char *) njs_native_data(frame) + local_size);
+    this = (njs_value_t *) ((u_char *) njs_native_data(frame)
+                            + function->local_state_size);
     frame->arguments = this + 1;
     vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = frame->arguments;
 
@@ -169,7 +169,6 @@ njs_function_frame(njs_vm_t *vm, njs_function_t *function, njs_param_t *param,
     }
 
     native_frame->u.function = function;
-    native_frame->native = 0;
     native_frame->ctor = ctor;
 
     args = (njs_value_t *) ((u_char *) native_frame + NJS_FRAME_SIZE);
