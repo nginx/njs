@@ -101,6 +101,7 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
 
     frame->ctor = 0;
     frame->reentrant = 0;
+    frame->trap_tries = 0;
     frame->trap_reference = 0;
 
     frame->exception.next = NULL;

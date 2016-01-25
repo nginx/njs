@@ -290,6 +290,8 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
         frame->native.arguments = NULL;
         frame->native.first = 1;
         frame->native.skip = 0;
+        frame->native.reentrant = 0;
+        frame->native.trap_tries = 0;
 
         frame->native.exception.next = NULL;
         frame->native.exception.catch = NULL;

@@ -84,7 +84,7 @@ static nxt_noinline nxt_bool_t njs_values_strict_equal(njs_value_t *val1,
 static nxt_noinline njs_ret_t njs_function_frame_free(njs_vm_t *vm,
     njs_native_frame_t *frame, njs_native_frame_t *skip);
 
-static njs_ret_t njs_vm_trap(njs_vm_t *vm, nxt_uint_t trap, njs_value_t *value1,
+static void njs_vm_trap(njs_vm_t *vm, nxt_uint_t trap, njs_value_t *value1,
     njs_value_t *value2);
 static njs_ret_t njs_vmcode_number_primitive(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *narg);
@@ -220,14 +220,9 @@ njs_vmcode_interpreter(njs_vm_t *vm)
         case NJS_TRAP_INCDEC:
         case NJS_TRAP_PROPERTY:
 
-            ret = njs_vm_trap(vm, ret - NJS_TRAP_BASE, value1, value2);
+            njs_vm_trap(vm, ret - NJS_TRAP_BASE, value1, value2);
 
-            if (nxt_fast_path(ret == NXT_OK)) {
-                goto again;
-            }
-
-            ret = NXT_ERROR;
-            break;
+            goto again;
 
         default:
             break;
@@ -2553,47 +2548,31 @@ static const njs_vm_trap_t  njs_vm_traps[] = {
 };
 
 
-static njs_ret_t
+static void
 njs_vm_trap(njs_vm_t *vm, nxt_uint_t trap, njs_value_t *value1,
     njs_value_t *value2)
 {
-    size_t              size;
-    njs_value_t         *values;
-    njs_native_frame_t  *frame;
-
-    size = NJS_NATIVE_FRAME_SIZE + 3 * sizeof(njs_value_t);
-
-    frame = njs_function_frame_alloc(vm, size);
-    if (nxt_slow_path(frame == NULL)) {
-        return NXT_ERROR;
-    }
-
     /*
-     * The values[0] is scratch value for results of "valueOf" and
-     * "toString" methods.  The values[1] and values[2] are original
-     * operand values which will be replaced with primitive values
-     * returned by "valueOf" or "toString" methods.  The scratch value
-     * is stored separately to preserve the original operand values for
-     * the second method call if the first method call will return
-     * non-primitive value.
+     * The trap_scratch value is for results of "valueOf" and "toString"
+     * methods.  The trap_values[] are original operand values which will
+     * be replaced with primitive values returned by "valueOf" or "toString"
+     * methods.  The scratch value is stored separately to preserve the
+     * original operand values for the second method call if the first
+     * method call will return non-primitive value.
      */
-    values = njs_native_data(frame);
-    njs_set_invalid(&values[0]);
-    values[2] = *value2;
-
-    frame->trap_reference = njs_vm_traps[trap].reference_value;
+    njs_set_invalid(&vm->frame->trap_scratch);
+    vm->frame->trap_values[1] = *value2;
+    vm->frame->trap_reference = njs_vm_traps[trap].reference_value;
 
     if (njs_vm_traps[trap].reference_value) {
-        values[1].data.u.value = value1;
+        vm->frame->trap_values[0].data.u.value = value1;
 
     } else {
-        values[1] = *value1;
+        vm->frame->trap_values[0] = *value1;
     }
 
-    frame->u.restart = vm->current;
+    vm->frame->trap_restart = vm->current;
     vm->current = (u_char *) njs_vm_traps[trap].code;
-
-    return NXT_OK;
 }
 
 
@@ -2604,8 +2583,7 @@ njs_vmcode_number_primitive(njs_vm_t *vm, njs_value_t *invld, njs_value_t *narg)
     njs_ret_t    ret;
     njs_value_t  *value;
 
-    value = njs_native_data(vm->frame);
-    value = &value[(uintptr_t) narg + 1];
+    value = &vm->frame->trap_values[(uintptr_t) narg];
 
     ret = njs_primitive_value(vm, value, 0);
 
@@ -2634,8 +2612,7 @@ njs_vmcode_string_primitive(njs_vm_t *vm, njs_value_t *invld, njs_value_t *narg)
     njs_ret_t    ret;
     njs_value_t  *value;
 
-    value = njs_native_data(vm->frame);
-    value = &value[(uintptr_t) narg + 1];
+    value = &vm->frame->trap_values[(uintptr_t) narg];
 
     ret = njs_primitive_value(vm, value, 1);
 
@@ -2677,7 +2654,7 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
     };
 
     if (!njs_is_primitive(value)) {
-        retval = njs_native_data(vm->frame);
+        retval = &vm->frame->trap_scratch;
 
         if (!njs_is_primitive(retval)) {
 
@@ -2685,8 +2662,8 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
                 vm->exception = &njs_exception_type_error;
                 ret = NXT_ERROR;
 
-                if (njs_is_object(value) && vm->frame->reentrant < 2) {
-                    hint ^= vm->frame->reentrant++;
+                if (njs_is_object(value) && vm->frame->trap_tries < 2) {
+                    hint ^= vm->frame->trap_tries++;
 
                     lhq.key_hash = hashes[hint];
                     lhq.key = names[hint];
@@ -2741,7 +2718,7 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
         njs_set_invalid(retval);
     }
 
-    vm->frame->reentrant = 0;
+    vm->frame->trap_tries = 0;
 
     return 1;
 }
@@ -2752,36 +2729,26 @@ njs_vmcode_restart(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 {
     u_char                *restart;
     njs_ret_t             ret;
-    njs_value_t           *retval, *values, *value1;
-    njs_native_frame_t    *frame;
+    njs_value_t           *retval, *value1;
     njs_vmcode_generic_t  *vmcode;
 
-    frame = vm->frame;
-    vm->frame = frame->previous;
-    vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = frame->previous->arguments;
-
-    restart = frame->u.restart;
+    restart = vm->frame->trap_restart;
     vm->current = restart;
     vmcode = (njs_vmcode_generic_t *) restart;
 
-    values = njs_native_data(frame);
-    value1 = &values[1];
+    value1 = &vm->frame->trap_values[0];
 
-    if (frame->trap_reference) {
+    if (vm->frame->trap_reference) {
         value1 = value1->data.u.value;
     }
 
-    ret = vmcode->code.operation(vm, value1, &values[2]);
+    ret = vmcode->code.operation(vm, value1, &vm->frame->trap_values[1]);
 
     retval = njs_vmcode_operand(vm, vmcode->operand1);
 
     //njs_release(vm, retval);
 
     *retval = vm->retval;
-
-    if (frame->first) {
-        nxt_mem_cache_free(vm->mem_cache_pool, frame);
-    }
 
     return ret;
 }
@@ -2846,10 +2813,8 @@ fail:
 static njs_ret_t
 njs_object_value_to_string(njs_vm_t *vm, njs_value_t *value)
 {
-    size_t              size;
-    njs_ret_t           ret;
-    njs_value_t         *retval;
-    njs_native_frame_t  *frame;
+    u_char     *current;
+    njs_ret_t  ret;
 
     static const njs_vmcode_1addr_t  value_to_string[] = {
         { .code = { .operation = njs_vmcode_value_to_string,
@@ -2857,44 +2822,30 @@ njs_object_value_to_string(njs_vm_t *vm, njs_value_t *value)
                     .retval = NJS_VMCODE_NO_RETVAL } },
     };
 
-    size = NJS_NATIVE_FRAME_SIZE + 2 * sizeof(njs_value_t);
-
-    frame = njs_function_frame_alloc(vm, size);
-    if (nxt_slow_path(frame == NULL)) {
-        return NXT_ERROR;
-    }
-
     /*
-     * Execute the single njs_vmcode_value_to_string() instruction.  The
-     * retval[0] is scratch value for results of "toString" or "valueOf"
-     * methods.  The retval[1] is an original object value which will be
-     * replaced with primitive value returned by "toString" or "valueOf"
+     * Execute the single njs_vmcode_value_to_string() instruction.
+     * The trap_scratch value is for results of "toString" or "valueOf"
+     * methods.  The trap_values[0] is an original object value which will
+     * be replaced with primitive value returned by "toString" or "valueOf"
      * methods.  The scratch value is stored separately to preserve the
      * original object value for the second "valueOf" method call if the
      * first "toString" method call will return non-primitive value.
      */
 
-    frame->u.return_address = vm->current;
+    current = vm->current;
     vm->current = (u_char *) value_to_string;
 
-    retval = njs_native_data(vm->frame);
-    njs_set_invalid(&retval[0]);
-    retval[1] = *value;
+    njs_set_invalid(&vm->frame->trap_scratch);
+    vm->frame->trap_values[0] = *value;
 
     ret = njs_vmcode_interpreter(vm);
 
     if (ret == NJS_STOP) {
         ret = NXT_OK;
-        *value = retval[1];
+        *value = vm->frame->trap_values[0];
     }
 
-    vm->current = frame->u.return_address;
-    vm->frame = frame->previous;
-    vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = frame->previous->arguments;
-
-    if (frame->first) {
-        nxt_mem_cache_free(vm->mem_cache_pool, frame);
-    }
+    vm->current = current;
 
     return ret;
 }
@@ -2904,12 +2855,9 @@ static njs_ret_t
 njs_vmcode_value_to_string(njs_vm_t *vm, njs_value_t *invld1,
     njs_value_t *invld2)
 {
-    njs_ret_t    ret;
-    njs_value_t  *value;
+    njs_ret_t  ret;
 
-    value = njs_native_data(vm->frame);
-
-    ret = njs_primitive_value(vm, &value[1], 1);
+    ret = njs_primitive_value(vm, &vm->frame->trap_values[0], 1);
 
     if (nxt_fast_path(ret > 0)) {
         return NJS_STOP;

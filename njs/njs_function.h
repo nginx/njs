@@ -56,6 +56,10 @@ struct njs_exception_s {
 
 
 struct njs_native_frame_s {
+    njs_value_t                    trap_scratch;
+    njs_value_t                    trap_values[2];
+    u_char                         *trap_restart;
+
     u_char                         *free;
 
     /*
@@ -65,7 +69,6 @@ struct njs_native_frame_s {
     union {
         njs_function_t             *function;
         u_char                     *return_address;
-        u_char                     *restart;
     } u;
 
     njs_native_frame_t             *previous;
@@ -76,29 +79,29 @@ struct njs_native_frame_s {
     uint32_t                       free_size;
 
     /* Function is called as constructor with "new" keyword. */
-    uint8_t                        ctor;            /* 1 bit  */
+    uint8_t                        ctor;              /* 1 bit  */
 
     /*
      * The first frame in chunk.
      * 7 bits are just to possibly initialize first and skip
      * fields with one operation.
      */
-    uint8_t                        first:7;          /* 1 bit  */
+    uint8_t                        first:7;           /* 1 bit  */
 
     /* Skip the Function.call() and Function.apply() methods frames. */
-    uint8_t                        skip:1;           /* 1 bit  */
+    uint8_t                        skip:1;            /* 1 bit  */
 
-    /*
-     * The function is reentrant.  It is usually used as a flag,
-     * however, in traps it used to allow just two entrances.
-     */
-    uint8_t                        reentrant:7;    /* 2 bits  */
+    /* The function is reentrant. */
+    uint8_t                        reentrant:1;       /* 1 bit  */
+
+    /* A number of trap tries, it can be no more than three. */
+    uint8_t                        trap_tries:2;      /* 2 bits */
 
     /*
      * The first operand in trap is reference to original value,
      * it is used to increment or decrement this value.
      */
-    uint8_t                        trap_reference:1;
+    uint8_t                        trap_reference:1;  /* 1 bit */
 };
 
 
