@@ -222,7 +222,6 @@ njs_number_constructor(njs_vm_t *vm, njs_param_t *param)
         value = &njs_value_zero;
 
     } else {
-        /* TODO: to_number. */
         value = &param->args[0];
     }
 
@@ -332,13 +331,13 @@ static const njs_object_prop_t  njs_number_prototype_properties[] =
     {
         .type = NJS_METHOD,
         .name = njs_string("valueOf"),
-        .value = njs_native_function(njs_number_prototype_value_of, 0),
+        .value = njs_native_function(njs_number_prototype_value_of, 0, 0),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("toString"),
-        .value = njs_native_function(njs_number_prototype_to_string, 0),
+        .value = njs_native_function(njs_number_prototype_to_string, 0, 0),
     },
 };
 

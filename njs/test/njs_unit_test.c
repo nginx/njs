@@ -2252,6 +2252,18 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = 'abc'; a.concat('абв', 123)"),
       nxt_string("abcабв123") },
 
+    { nxt_string("''.concat.call(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)"),
+      nxt_string("0123456789") },
+
+#if 0
+    { nxt_string("''.concat.apply(0, [1, 2, 3, 4, 5, 6, 7, 8, 9])"),
+      nxt_string("0123456789") },
+#endif
+
+    { nxt_string("var s = { toString: function() { return '123' } };"
+                 "var a = 'abc'; a.concat('абв', s)"),
+      nxt_string("abcабв123") },
+
     { nxt_string("'\\u00CE\\u00B1'.toBytes() == 'α'"),
       nxt_string("true") },
 
@@ -2345,6 +2357,35 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("'abc'.charAt(3)"),
       nxt_string("") },
+
+    { nxt_string("'abc'.charAt(undefined)"),
+      nxt_string("a") },
+
+    { nxt_string("'abc'.charAt(null)"),
+      nxt_string("a") },
+
+    { nxt_string("'abc'.charAt(false)"),
+      nxt_string("a") },
+
+    { nxt_string("'abc'.charAt(true)"),
+      nxt_string("b") },
+
+    { nxt_string("'abc'.charAt(NaN)"),
+      nxt_string("a") },
+
+    { nxt_string("'abc'.charAt(Infinity)"),
+      nxt_string("") },
+
+    { nxt_string("'abc'.charAt(-Infinity)"),
+      nxt_string("") },
+
+    { nxt_string("var o = { valueOf: function() {return 2} }"
+                 "'abc'.charAt(o)"),
+      nxt_string("c") },
+
+    { nxt_string("var o = { toString: function() {return '2'} }"
+                 "'abc'.charAt(o)"),
+      nxt_string("c") },
 
     { nxt_string("'abc'.charCodeAt(1 + 1)"),
       nxt_string("99") },
@@ -2546,6 +2587,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abcdef'.indexOf('', 3)"),
       nxt_string("3") },
 
+    { nxt_string("'12345'.indexOf()"),
+      nxt_string("-1") },
+
+    { nxt_string("'12345'.indexOf(45, '0')"),
+      nxt_string("3") },
+
+    { nxt_string("''.indexOf.call(12345, 45, '0')"),
+      nxt_string("3") },
+
     { nxt_string("'abc abc abc abc'.lastIndexOf('abc')"),
       nxt_string("12") },
 
@@ -2569,6 +2619,79 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("'abcdefgh'.search('def')"),
       nxt_string("3") },
+
+    { nxt_string("'123456'.search('45')"),
+      nxt_string("3") },
+
+    { nxt_string("'123456'.search(45)"),
+      nxt_string("3") },
+
+    { nxt_string("'123456'.search(String(45))"),
+      nxt_string("3") },
+
+    { nxt_string("'123456'.search(Number('45'))"),
+      nxt_string("3") },
+
+    { nxt_string("var r = { toString: function() { return '45' } }"
+                 "'123456'.search(r)"),
+      nxt_string("3") },
+
+    { nxt_string("var r = { toString: function() { return 45 } }"
+                 "'123456'.search(r)"),
+      nxt_string("3") },
+
+    { nxt_string("var r = { toString: function() { return /45/ } }"
+                 "'123456'.search(r)"),
+      nxt_string("TypeError") },
+
+    { nxt_string("var r = { toString: function() { return /34/ },"
+                 "          valueOf:  function() { return 45 } }"
+                 "'123456'.search(r)"),
+      nxt_string("3") },
+
+    { nxt_string("'abcdefgh'.match()"),
+      nxt_string("") },
+
+    { nxt_string("'abcdefgh'.match('')"),
+      nxt_string("") },
+
+    { nxt_string("'abcdefgh'.match(undefined)"),
+      nxt_string("") },
+
+    { nxt_string("'abcdefgh'.match(/def/)"),
+      nxt_string("def") },
+
+    { nxt_string("'abcdefgh'.match('def')"),
+      nxt_string("def") },
+
+    { nxt_string("'123456'.match('45')"),
+      nxt_string("45") },
+
+    { nxt_string("'123456'.match(45)"),
+      nxt_string("45") },
+
+    { nxt_string("'123456'.match(String(45))"),
+      nxt_string("45") },
+
+    { nxt_string("'123456'.match(Number('45'))"),
+      nxt_string("45") },
+
+    { nxt_string("var r = { toString: function() { return '45' } }"
+                 "'123456'.match(r)"),
+      nxt_string("45") },
+
+    { nxt_string("var r = { toString: function() { return 45 } }"
+                 "'123456'.match(r)"),
+      nxt_string("45") },
+
+    { nxt_string("var r = { toString: function() { return /45/ } }"
+                 "'123456'.match(r)"),
+      nxt_string("TypeError") },
+
+    { nxt_string("var r = { toString: function() { return /34/ },"
+                 "          valueOf:  function() { return 45 } }"
+                 "'123456'.match(r)"),
+      nxt_string("45") },
 
     { nxt_string("''.match(/^$/)"),
       nxt_string("") },
@@ -2897,7 +3020,13 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("[].join.call([1,2,3], ':')"),
       nxt_string("1:2:3") },
 
+    { nxt_string("[].join.call([1,2,3], 55)"),
+      nxt_string("1552553") },
+
     { nxt_string("[].join.call()"),
+      nxt_string("TypeError") },
+
+    { nxt_string("[].slice.call()"),
       nxt_string("TypeError") },
 
     { nxt_string("function F(a, b) { this.a = a + b }"
@@ -2928,6 +3057,16 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("/\\d/.test('123')"),
       nxt_string("true") },
 
+    { nxt_string("/\\d/.test(123)"),
+      nxt_string("true") },
+
+    { nxt_string("/undef/.test()"),
+      nxt_string("true") },
+
+    { nxt_string("var s = { toString: function() { return 123 } };"
+                 "/\\d/.test(s)"),
+      nxt_string("true") },
+
     { nxt_string("/\\d/.test('abc')"),
       nxt_string("false") },
 
@@ -2948,6 +3087,19 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("/α/.test('\\u00CE\\u00B1'.toBytes())"),
       nxt_string("true") },
+
+    { nxt_string("/\\d/.exec('123')"),
+      nxt_string("1") },
+
+    { nxt_string("/\\d/.exec(123)"),
+      nxt_string("1") },
+
+    { nxt_string("/undef/.exec()"),
+      nxt_string("undef") },
+
+    { nxt_string("var s = { toString: function() { return 123 } };"
+                 "/\\d/.exec(s)"),
+      nxt_string("1") },
 
     { nxt_string("var a = /^$/.exec(''); a.length +' '+ a"),
       nxt_string("1 ") },
@@ -3311,6 +3463,20 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Number()"),
       nxt_string("0") },
 
+    { nxt_string("Number(123)"),
+      nxt_string("123") },
+
+    { nxt_string("Number('123')"),
+      nxt_string("123") },
+
+    { nxt_string("var o = { valueOf: function() { return 123 } };"
+                 "Number(o)"),
+      nxt_string("123") },
+
+    { nxt_string("var o = { valueOf: function() { return 123 } };"
+                 "new Number(o)"),
+      nxt_string("123") },
+
     { nxt_string("typeof Number(1)"),
       nxt_string("number") },
 
@@ -3346,6 +3512,26 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("String()"),
       nxt_string("") },
+
+    { nxt_string("String(123)"),
+      nxt_string("123") },
+
+    { nxt_string("new String(123)"),
+      nxt_string("123") },
+
+    { nxt_string("String([1,2,3])"),
+      nxt_string("1,2,3") },
+
+    { nxt_string("new String([1,2,3])"),
+      nxt_string("1,2,3") },
+
+    { nxt_string("var o = { toString: function() { return 'OK' } }"
+                 "String(o)"),
+      nxt_string("OK") },
+
+    { nxt_string("var o = { toString: function() { return 'OK' } }"
+                 "new String(o)"),
+      nxt_string("OK") },
 
     { nxt_string("typeof String('abc')"),
       nxt_string("string") },
@@ -3410,6 +3596,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Function.constructor === Function"),
       nxt_string("true") },
 
+    { nxt_string("RegExp()"),
+      nxt_string("/(?:)/") },
+
+    { nxt_string("RegExp('')"),
+      nxt_string("/(?:)/") },
+
+    { nxt_string("RegExp(123)"),
+      nxt_string("/123/") },
+
     { nxt_string("RegExp.name"),
       nxt_string("RegExp") },
 
@@ -3428,10 +3623,8 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("RegExp.constructor === Function"),
       nxt_string("true") },
 
-#if 0
     { nxt_string("Object.prototype.toString.call()"),
       nxt_string("[object Undefined]") },
-#endif
 
     { nxt_string("Object.prototype.toString.call(undefined)"),
       nxt_string("[object Undefined]") },

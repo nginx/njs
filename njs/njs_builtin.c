@@ -22,15 +22,21 @@
 #include <string.h>
 
 
+typedef struct {
+    njs_native_t  native;
+    uint8_t       args_types[NJS_ARGS_TYPES_MAX];
+} njs_function_init_t;
+
+
 nxt_int_t
 njs_builtin_objects_create(njs_vm_t *vm)
 {
-    nxt_int_t                       ret;
-    nxt_uint_t                      i;
-    njs_object_t                    *prototypes;
-    njs_function_t                  *functions;
+    nxt_int_t                         ret;
+    nxt_uint_t                        i;
+    njs_object_t                      *prototypes;
+    njs_function_t                    *functions;
 
-    static const njs_object_init_t  *prototype_init[] = {
+    static const njs_object_init_t    *prototype_init[] = {
         &njs_object_prototype_init,
         &njs_array_prototype_init,
         &njs_boolean_prototype_init,
@@ -40,7 +46,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
         &njs_regexp_prototype_init,
     };
 
-    static const njs_object_init_t  *function_init[] = {
+    static const njs_object_init_t    *function_init[] = {
         &njs_object_constructor_init,
         &njs_array_constructor_init,
         &njs_boolean_constructor_init,
@@ -52,16 +58,16 @@ njs_builtin_objects_create(njs_vm_t *vm)
         &njs_eval_function_init,
     };
 
-    static const njs_native_t       native_functions[] = {
-        njs_object_constructor,
-        njs_array_constructor,
-        njs_boolean_constructor,
-        njs_number_constructor,
-        njs_string_constructor,
-        njs_function_constructor,
-        njs_regexp_constructor,
-
-        njs_eval_function,
+    static const njs_function_init_t  native_functions[] = {
+        { njs_object_constructor,   {} },
+        { njs_array_constructor,    {} },
+        { njs_boolean_constructor,  {} },
+        { njs_number_constructor,   { NJS_SKIP_ARG, NJS_NUMBER_ARG } },
+        { njs_string_constructor,   { NJS_SKIP_ARG, NJS_STRING_ARG } },
+        { njs_function_constructor, {} },
+        { njs_regexp_constructor,
+          { NJS_SKIP_ARG, NJS_STRING_ARG, NJS_STRING_ARG } },
+        { njs_eval_function,        {} },
     };
 
     static const njs_object_prop_t  null_proto_property = {
@@ -94,7 +100,10 @@ njs_builtin_objects_create(njs_vm_t *vm)
     for (i = NJS_FUNCTION_OBJECT; i < NJS_FUNCTION_MAX; i++) {
         functions[i].native = 1;
         functions[i].args_offset = 1;
-        functions[i].u.native = native_functions[i];
+        functions[i].u.native = native_functions[i].native;
+        functions[i].args_types[0] = native_functions[i].args_types[0];
+        functions[i].args_types[1] = native_functions[i].args_types[1];
+        functions[i].args_types[2] = native_functions[i].args_types[2];
 
         ret = njs_object_hash_create(vm, &functions[i].object.shared_hash,
                                      function_init[i]->properties,

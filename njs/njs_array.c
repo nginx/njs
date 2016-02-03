@@ -260,6 +260,11 @@ njs_array_prototype_length(njs_vm_t *vm, njs_value_t *array)
 }
 
 
+/*
+ * Array.slice(start[, end]).
+ * JavaScript 1.2, ECMAScript 3.
+ */
+
 static njs_ret_t
 njs_array_prototype_slice(njs_vm_t *vm, njs_param_t *param)
 {
@@ -267,7 +272,7 @@ njs_array_prototype_slice(njs_vm_t *vm, njs_param_t *param)
     uint32_t     n;
     uintptr_t    nargs;
     njs_array_t  *array;
-    njs_value_t  *this, *args, *value;
+    njs_value_t  *this, *value;
 
     start = 0;
     length = 0;
@@ -278,8 +283,7 @@ njs_array_prototype_slice(njs_vm_t *vm, njs_param_t *param)
         nargs = param->nargs;
 
         if (nargs != 0) {
-            args = param->args;
-            start = njs_value_to_number(&args[0]);
+            start = param->args[0].data.u.number;
 
             if (start < 0) {
                 start += length;
@@ -292,7 +296,7 @@ njs_array_prototype_slice(njs_vm_t *vm, njs_param_t *param)
             end = length;
 
             if (nargs > 1) {
-                end = njs_value_to_number(&args[1]);
+                end = param->args[1].data.u.number;
 
                 if (end < 0) {
                     end += length;
@@ -904,70 +908,72 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     {
         .type = NJS_METHOD,
         .name = njs_string("slice"),
-        .value = njs_native_function(njs_array_prototype_slice, 0),
+        .value = njs_native_function(njs_array_prototype_slice, 0,
+                     NJS_OBJECT_ARG, NJS_INTEGER_ARG, NJS_INTEGER_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("push"),
-        .value = njs_native_function(njs_array_prototype_push, 0),
+        .value = njs_native_function(njs_array_prototype_push, 0, 0),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("pop"),
-        .value = njs_native_function(njs_array_prototype_pop, 0),
+        .value = njs_native_function(njs_array_prototype_pop, 0, 0),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("unshift"),
-        .value = njs_native_function(njs_array_prototype_unshift, 0),
+        .value = njs_native_function(njs_array_prototype_unshift, 0, 0),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("shift"),
-        .value = njs_native_function(njs_array_prototype_shift, 0),
+        .value = njs_native_function(njs_array_prototype_shift, 0, 0),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("toString"),
-        .value = njs_native_function(njs_array_prototype_to_string, 0),
+        .value = njs_native_function(njs_array_prototype_to_string, 0, 0),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("join"),
-        .value = njs_native_function(njs_array_prototype_join, 0),
+        .value = njs_native_function(njs_array_prototype_join, 0,
+                     NJS_OBJECT_ARG, NJS_STRING_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("concat"),
-        .value = njs_native_function(njs_array_prototype_concat, 0),
+        .value = njs_native_function(njs_array_prototype_concat, 0, 0),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("forEach"),
         .value = njs_native_function(njs_array_prototype_for_each,
-                            njs_method_data_size(sizeof(njs_array_next_t))),
+                     njs_method_data_size(sizeof(njs_array_next_t)), 0),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("some"),
         .value = njs_native_function(njs_array_prototype_some,
-                            njs_method_data_size(sizeof(njs_array_next_t))),
+                     njs_method_data_size(sizeof(njs_array_next_t)), 0),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("every"),
         .value = njs_native_function(njs_array_prototype_every,
-                            njs_method_data_size(sizeof(njs_array_next_t))),
+                     njs_method_data_size(sizeof(njs_array_next_t)), 0),
     },
 };
 

@@ -274,6 +274,11 @@ njs_function_prototype_call(njs_vm_t *vm, njs_param_t *param)
     njs_function_t              *function;
     njs_vmcode_function_call_t  *call;
 
+    if (!njs_is_function(param->this)) {
+        vm->exception = &njs_exception_type_error;
+        return NXT_ERROR;
+    }
+
     p.this = &param->args[0];
     p.args = &param->args[1];
 
@@ -283,14 +288,22 @@ njs_function_prototype_call(njs_vm_t *vm, njs_param_t *param)
     if (function->native) {
 
         if (nargs != 0) {
-            p.nargs = nargs - 1;
-            p.retval = param->retval;
+            nargs--;
 
-            return function->u.native(vm, &p);
+        } else {
+            param->args[0] = njs_value_void;
         }
 
-        vm->exception = &njs_exception_type_error;
-        return NXT_ERROR;
+        p.nargs = nargs;
+        p.retval = param->retval;
+
+        ret = njs_normalize_args(vm, &param->args[0], function->args_types,
+                                 nargs + 1);
+        if (ret != NJS_OK) {
+            return ret;
+        }
+
+        return function->u.native(vm, &p);
     }
 
     if (nargs != 0) {
@@ -328,6 +341,10 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_param_t *param)
     njs_value_t                 *args;
     njs_function_t              *function;
     njs_vmcode_function_call_t  *code;
+
+    if (!njs_is_function(param->this)) {
+        goto type_error;
+    }
 
     args = param->args;
     p.this = &args[0];
@@ -424,19 +441,19 @@ static const njs_object_prop_t  njs_function_prototype_properties[] =
     {
         .type = NJS_METHOD,
         .name = njs_string("call"),
-        .value = njs_native_function(njs_function_prototype_call, 0),
+        .value = njs_native_function(njs_function_prototype_call, 0, 0),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("apply"),
-        .value = njs_native_function(njs_function_prototype_apply, 0),
+        .value = njs_native_function(njs_function_prototype_apply, 0, 0),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("bind"),
-        .value = njs_native_function(njs_function_prototype_bind, 0),
+        .value = njs_native_function(njs_function_prototype_bind, 0, 0),
     },
 };
 

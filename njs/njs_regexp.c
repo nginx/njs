@@ -62,7 +62,12 @@ njs_regexp_constructor(njs_vm_t *vm, njs_param_t *param)
 
     case 1:
         string.length = njs_string_prop(&string, &param->args[0]);
-        break;
+
+        if (string.length != 0) {
+            break;
+        }
+
+        /* Fall through. */
 
     case 0:
         string.start = (u_char *) "(?:)";
@@ -454,43 +459,47 @@ njs_regexp_prototype_test(njs_vm_t *vm, njs_param_t *param)
 {
     njs_ret_t             ret;
     nxt_uint_t            n;
-    njs_value_t           val;
+    njs_value_t           *value;
     const njs_value_t     *retval;
     njs_string_prop_t     string;
     njs_regexp_pattern_t  *pattern;
 
+    if (!njs_is_regexp(param->this)) {
+        vm->exception = &njs_exception_type_error;
+        return NXT_ERROR;
+    }
+
+    retval = &njs_value_false;
+
     if (param->nargs != 0) {
-        ret = njs_value_to_string(vm, &val, &param->args[0]);
+        value = &param->args[0];
 
-        if (nxt_fast_path(ret == NXT_OK)) {
-            retval = &njs_value_false;
+    } else {
+        value = (njs_value_t *) &njs_string_void;
+    }
 
-            (void) njs_string_prop(&string, &val);
+    (void) njs_string_prop(&string, value);
 
-            n = (string.length != 0 && string.length != string.size);
-            pattern = param->this->data.u.regexp->pattern;
+    n = (string.length != 0 && string.length != string.size);
 
-            if (pattern->code[n] != NULL) {
-                ret = pcre_exec(pattern->code[n], pattern->extra[n],
-                                (char *) string.start, string.size,
-                                0, 0, NULL, 0);
+    pattern = param->this->data.u.regexp->pattern;
 
-                if (ret >= 0) {
-                    retval = &njs_value_true;
+    if (pattern->code[n] != NULL) {
+        ret = pcre_exec(pattern->code[n], pattern->extra[n],
+                        (char *) string.start, string.size, 0, 0, NULL, 0);
 
-                } else if (ret != PCRE_ERROR_NOMATCH) {
-                    /* TODO: exception */
-                    return NXT_ERROR;
-                }
-            }
+        if (ret >= 0) {
+            retval = &njs_value_true;
 
-            vm->retval = *retval;
-
-            return NXT_OK;
+        } else if (ret != PCRE_ERROR_NOMATCH) {
+            vm->exception = &njs_exception_internal_error;
+            return NXT_ERROR;
         }
     }
 
-    return NXT_ERROR;
+    vm->retval = *retval;
+
+    return NXT_OK;
 }
 
 
@@ -500,64 +509,70 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_param_t *param)
     int                   *captures, ncaptures;
     njs_ret_t             ret;
     nxt_uint_t            n, utf8;
+    njs_value_t           *value;
     njs_regexp_t          *regexp;
     njs_string_prop_t     string;
     njs_regexp_pattern_t  *pattern;
 
+    if (!njs_is_regexp(param->this)) {
+        vm->exception = &njs_exception_type_error;
+        return NXT_ERROR;
+    }
+
     if (param->nargs != 0) {
-        regexp = param->this->data.u.regexp;
+        value = &param->args[0];
 
-        ret = njs_value_to_string(vm, &regexp->string, &param->args[0]);
+    } else {
+        value = (njs_value_t *) &njs_string_void;
+    }
 
-        if (nxt_fast_path(ret == NXT_OK)) {
-            (void) njs_string_prop(&string, &regexp->string);
+    regexp = param->this->data.u.regexp;
+    regexp->string = *value;
 
-            utf8 = 0;
-            n = 0;
+    (void) njs_string_prop(&string, value);
 
-            if (string.length != 0) {
-                utf8 = 1;
-                n = 1;
+    utf8 = 0;
+    n = 0;
 
-                if (string.length != string.size) {
-                    utf8 = 2;
-                }
-            }
+    if (string.length != 0) {
+        utf8 = 1;
+        n = 1;
 
-            pattern = regexp->pattern;
-
-            if (pattern->code[n] != NULL) {
-                string.start += regexp->last_index;
-                string.size -= regexp->last_index;
-
-                /* Each capture is stored in 3 vector elements. */
-                ncaptures = pattern->ncaptures * 3;
-
-                captures = alloca(ncaptures * sizeof(int));
-
-                ret = pcre_exec(pattern->code[n], pattern->extra[n],
-                                (char *) string.start, string.size,
-                                0, 0, captures, ncaptures);
-
-                if (ret >= 0) {
-                    return njs_regexp_exec_result(vm, regexp, string.start,
-                                                  captures, utf8);
-                }
-
-                if (nxt_slow_path(ret != PCRE_ERROR_NOMATCH)) {
-                    /* TODO: exception */
-                    return NXT_ERROR;
-                }
-            }
-
-            regexp->last_index = 0;
-            vm->retval = njs_value_null;
-
-            return NXT_OK;
+        if (string.length != string.size) {
+            utf8 = 2;
         }
     }
 
-    return NXT_ERROR;
+    pattern = regexp->pattern;
+
+    if (pattern->code[n] != NULL) {
+        string.start += regexp->last_index;
+        string.size -= regexp->last_index;
+
+        /* Each capture is stored in 3 vector elements. */
+        ncaptures = pattern->ncaptures * 3;
+
+        captures = alloca(ncaptures * sizeof(int));
+
+        ret = pcre_exec(pattern->code[n], pattern->extra[n],
+                        (char *) string.start, string.size,
+                        0, 0, captures, ncaptures);
+
+        if (ret >= 0) {
+            return njs_regexp_exec_result(vm, regexp, string.start,
+                                          captures, utf8);
+        }
+
+        if (nxt_slow_path(ret != PCRE_ERROR_NOMATCH)) {
+            vm->exception = &njs_exception_internal_error;
+            return NXT_ERROR;
+        }
+    }
+
+    regexp->last_index = 0;
+    vm->retval = njs_value_null;
+
+    return NXT_OK;
 }
 
 
@@ -729,19 +744,21 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
     {
         .type = NJS_METHOD,
         .name = njs_string("toString"),
-        .value = njs_native_function(njs_regexp_prototype_to_string, 0),
+        .value = njs_native_function(njs_regexp_prototype_to_string, 0, 0),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("test"),
-        .value = njs_native_function(njs_regexp_prototype_test, 0),
+        .value = njs_native_function(njs_regexp_prototype_test, 0,
+                     NJS_OBJECT_ARG, NJS_STRING_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("exec"),
-        .value = njs_native_function(njs_regexp_prototype_exec, 0),
+        .value = njs_native_function(njs_regexp_prototype_exec, 0,
+                     NJS_OBJECT_ARG, NJS_STRING_ARG),
     },
 };
 

@@ -8,6 +8,15 @@
 #define _NJS_FUNCTION_H_INCLUDED_
 
 
+#define NJS_SKIP_ARG               1
+#define NJS_NUMBER_ARG             2
+#define NJS_INTEGER_ARG            3
+#define NJS_STRING_OBJECT_ARG      4
+#define NJS_STRING_ARG             5
+#define NJS_OBJECT_ARG             6
+#define NJS_REGEXP_ARG             7
+
+
 struct njs_function_lambda_s {
     uint32_t                       nargs;
     uint32_t                       local_size;

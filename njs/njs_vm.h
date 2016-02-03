@@ -17,8 +17,8 @@
  *    -3:                        not used;
  *    -4 (NJS_STOP/NXT_DONE):    njs_vmcode_stop() has stopped execution,
  *                               execution has completed successfully;
- *    -5 ..  -9:                 traps to convert objects to primitive values;
- *   -10 .. -15:                 not used.
+ *    -5 .. -11:                 traps to convert objects to primitive values;
+ *   -12 .. -15:                 not used.
  */
 
 #define NJS_STOP                 NXT_DONE
@@ -29,7 +29,9 @@
 #define NJS_TRAP_INCDEC          (-7)
 #define NJS_TRAP_STRINGS         (-8)
 #define NJS_TRAP_PROPERTY        (-9)
-#define NJS_TRAP_BASE            NJS_TRAP_PROPERTY
+#define NJS_TRAP_NUMBER_ARG      (-10)
+#define NJS_TRAP_STRING_ARG      (-11)
+#define NJS_TRAP_BASE            NJS_TRAP_STRING_ARG
 
 #define NJS_PREEMPT              (-15)
 
@@ -126,8 +128,12 @@ struct njs_object_s {
 };
 
 
+#define NJS_ARGS_TYPES_MAX            3
+
 typedef struct {
     njs_object_t                      object;
+
+    uint8_t                           args_types[NJS_ARGS_TYPES_MAX];
 
 #if (NXT_64BIT)
     uint8_t                           native;
@@ -248,13 +254,14 @@ union njs_value_s {
 }
 
 
-#define njs_native_function(_function, _local_size) {                         \
+#define njs_native_function(_function, _local_size, ...) {                    \
     .data = {                                                                 \
         .type = NJS_FUNCTION,                                                 \
         .truth = 1,                                                           \
         .u.function = & (njs_function_t) {                                    \
             .native = 1,                                                      \
             .local_state_size = _local_size,                                  \
+            .args_types = { __VA_ARGS__ },                                    \
             .args_offset = 1,                                                 \
             .u.native = _function,                                            \
         }                                                                     \
@@ -878,6 +885,9 @@ njs_ret_t njs_vmcode_catch(njs_vm_t *vm, njs_value_t *invld,
 njs_ret_t njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *retval);
 
+njs_ret_t njs_normalize_args(njs_vm_t *vm, njs_value_t *args,
+    uint8_t *args_types, nxt_uint_t nargs);
+
 njs_ret_t njs_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst,
     const njs_value_t *src);
 void njs_number_set(njs_value_t *value, double num);
@@ -913,6 +923,7 @@ extern const njs_value_t  njs_exception_reference_error;
 extern const njs_value_t  njs_exception_type_error;
 extern const njs_value_t  njs_exception_range_error;
 extern const njs_value_t  njs_exception_memory_error;
+extern const njs_value_t  njs_exception_internal_error;
 
 extern const nxt_mem_proto_t     njs_array_mem_proto;
 extern const nxt_lvlhsh_proto_t  njs_object_hash_proto;
