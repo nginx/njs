@@ -303,24 +303,28 @@ njs_object_create(njs_vm_t *vm, njs_param_t *param)
 
 
 /*
- * The __proto__ property of booleans, numbers and strings primitives
- * and Boolean.prototype, Number.prototype, and String.prototype objects.
+ * The __proto__ property of booleans, numbers and strings primitives,
+ * of objects created by Boolean(), Number(), and String() constructors,
+ * and of Boolean.prototype, Number.prototype, and String.prototype objects.
  */
 
 njs_ret_t
 njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value)
 {
-    nxt_uint_t  index;
+    njs_object_t  *proto;
 
     /*
      * The __proto__ getters reside in object prototypes of primitive types
-     * and have to return different results for primitive type and for object
-     * prototype.
+     * and have to return different results for primitive type and for objects.
      */
-    index = njs_is_object(value) ? NJS_PROTOTYPE_OBJECT:
-                                   njs_primitive_prototype_index(value->type);
+    if (njs_is_object(value)) {
+         proto = value->data.u.object->__proto__;
 
-    vm->retval.data.u.object = &vm->prototypes[index];
+    } else {
+         proto = &vm->prototypes[njs_primitive_prototype_index(value->type)];
+    }
+
+    vm->retval.data.u.object = proto;
     vm->retval.type = NJS_OBJECT;
     vm->retval.data.truth = 1;
 

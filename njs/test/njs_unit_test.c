@@ -3302,6 +3302,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("false.__proto__ === Boolean.prototype"),
       nxt_string("true") },
 
+    { nxt_string("var b = Boolean(1); b.__proto__ === Boolean.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("var b = new Boolean(1); b.__proto__ === Boolean.prototype"),
+      nxt_string("true") },
+
     { nxt_string("Number()"),
       nxt_string("0") },
 
@@ -3330,6 +3336,12 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("0..__proto__ === Number.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("var n = Number(1); n.__proto__ === Number.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("var n = new Number(1); n.__proto__ === Number.prototype"),
       nxt_string("true") },
 
     { nxt_string("String()"),
@@ -3366,6 +3378,12 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("'test'.__proto__ === String.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("var s = String('abc'); s.__proto__ === String.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("var s = new String('abc'); s.__proto__ === String.prototype"),
       nxt_string("true") },
 
     { nxt_string("'test'.constructor === String"),

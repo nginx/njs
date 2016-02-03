@@ -899,6 +899,9 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
         /* Fall through. */
 
     case NJS_OBJECT:
+    case NJS_OBJECT_BOOLEAN:
+    case NJS_OBJECT_NUMBER:
+    case NJS_OBJECT_STRING:
     case NJS_FUNCTION:
     case NJS_REGEXP:
         obj = object->data.u.object;
