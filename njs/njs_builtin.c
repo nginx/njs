@@ -152,6 +152,10 @@ njs_builtin_objects_clone(njs_vm_t *vm)
     njs_value_t   *values;
     njs_object_t  *function_prototype;
 
+    /*
+     * Copy both prototypes and functions arrays by one memcpy()
+     * because they are stored together.
+     */
     size = NJS_PROTOTYPE_MAX * sizeof(njs_object_t)
            + NJS_FUNCTION_MAX * sizeof(njs_function_t);
 

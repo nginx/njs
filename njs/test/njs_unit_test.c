@@ -1980,10 +1980,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = []; a[5] = 5; a.join()"),
       nxt_string(",,,,,5") },
 
-    { nxt_string("a = []; a[5] = 5; a +''"),
+    { nxt_string("a = []; a[5] = 5; a"),
       nxt_string(",,,,,5") },
 
-    { nxt_string("a = []; a.concat([]) +''"),
+    { nxt_string("a = []; a.concat([])"),
       nxt_string("") },
 
     /* Array.toString(). */
@@ -2059,7 +2059,7 @@ static njs_unit_test_t  njs_test[] =
 
     /**/
 
-    { nxt_string("a = [1,2,3]; a.concat(4, [5, 6, 7], 8) +''"),
+    { nxt_string("a = [1,2,3]; a.concat(4, [5, 6, 7], 8)"),
       nxt_string("1,2,3,4,5,6,7,8") },
 
     { nxt_string("a = []; a[100] = a.length; a[100] +' '+ a.length"),
@@ -2106,8 +2106,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("6") },
 
     { nxt_string("var a = [1,2,3];"
-                 "a.forEach(function(v, i, a) { a[i+3] = a.length });"
-                 "a +''"),
+                 "a.forEach(function(v, i, a) { a[i+3] = a.length }); a"),
       nxt_string("1,2,3,3,4,5") },
 
     { nxt_string("var a = [];"
@@ -2449,10 +2448,10 @@ static njs_unit_test_t  njs_test[] =
                  "a"),
       nxt_string("01:01|АБВ,02:02|АБВ,03:03|АБВ,") },
 
-    { nxt_string("$r.external('YES')"),
+    { nxt_string("$r.some_method('YES')"),
       nxt_string("АБВ") },
 
-    { nxt_string("for (p in $r.external);"),
+    { nxt_string("for (p in $r.some_method);"),
       nxt_string("undefined") },
 
     { nxt_string("'uri' in $r"),
@@ -2468,10 +2467,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("false") },
 
 #if 0
-    { nxt_string("$r.external.call($r, 'YES')"),
+    { nxt_string("$r.some_method.call($r, 'YES')"),
       nxt_string("АБВ") },
 
-    { nxt_string("$r.external.apply($r, ['YES'])"),
+    { nxt_string("$r.some_method.apply($r, ['YES'])"),
       nxt_string("АБВ") },
 #endif
 
@@ -2571,16 +2570,16 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abcdefgh'.search('def')"),
       nxt_string("3") },
 
-    { nxt_string("''.match(/^$/) +''"),
+    { nxt_string("''.match(/^$/)"),
       nxt_string("") },
 
-    { nxt_string("''.match(/^$/g) +''"),
+    { nxt_string("''.match(/^$/g)"),
       nxt_string("") },
 
-    { nxt_string("'abcdefgh'.match(/def/) +''"),
+    { nxt_string("'abcdefgh'.match(/def/)"),
       nxt_string("def") },
 
-    { nxt_string("'abc ABC aBc'.match(/abc/ig) +''"),
+    { nxt_string("'abc ABC aBc'.match(/abc/ig)"),
       nxt_string("abc,ABC,aBc") },
 
     /* Functions. */
@@ -2804,6 +2803,12 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("0") },
 
     { nxt_string("a = (0, function(a) { return a + 1 }(2)); a"),
+      nxt_string("3") },
+
+    { nxt_string("var a = 0, function(a) { return a + 1 }(2); a"),
+      nxt_string("SyntaxError") },
+
+    { nxt_string("var a = (0, function(a) { return a + 1 }(2)); a"),
       nxt_string("3") },
 
     { nxt_string("var a = +function f(a) { return a + 1 }(2)"
@@ -3150,7 +3155,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = new Object(); o"),
       nxt_string("[object Object]") },
 
-    { nxt_string("var o = new Object(1); o +''"),
+    { nxt_string("var o = new Object(1); o"),
       nxt_string("1") },
 
     { nxt_string("var o = {}; o === Object(o)"),
@@ -3186,7 +3191,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("({}).constructor === Object"),
       nxt_string("true") },
 
-    { nxt_string("var a = Array(3); a +''"),
+    { nxt_string("var a = Array(3); a"),
       nxt_string(",,") },
 
     { nxt_string("var a = Array(); a.length"),
@@ -3195,10 +3200,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = Array(0); a.length"),
       nxt_string("0") },
 
-    { nxt_string("var a = Array(true); a +''"),
+    { nxt_string("var a = Array(true); a"),
       nxt_string("true") },
 
-    { nxt_string("var a = Array(1,'two',3); a +''"),
+    { nxt_string("var a = Array(1,'two',3); a"),
       nxt_string("1,two,3") },
 
     { nxt_string("var a = Array(-1)"),
@@ -3213,7 +3218,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = Array(Infinity)"),
       nxt_string("RangeError") },
 
-    { nxt_string("var a = new Array(3); a +''"),
+    { nxt_string("var a = new Array(3); a"),
       nxt_string(",,") },
 
     { nxt_string("Array.name"),
@@ -3234,7 +3239,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Array.constructor === Function"),
       nxt_string("true") },
 
-    { nxt_string("var a = []; a.join = 'OK'; a +''"),
+    { nxt_string("var a = []; a.join = 'OK'; a"),
       nxt_string("[object Array]") },
 
     { nxt_string("[].__proto__ === Array.prototype"),
@@ -3404,12 +3409,6 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("RegExp.constructor === Function"),
       nxt_string("true") },
-
-    { nxt_string("var a = 0, function(a) { return a + 1 }(2); a"),
-      nxt_string("SyntaxError") },
-
-    { nxt_string("var a = (0, function(a) { return a + 1 }(2)); a"),
-      nxt_string("3") },
 
 #if 0
     { nxt_string("Object.prototype.toString.call()"),
@@ -3686,7 +3685,7 @@ static njs_external_t  njs_unit_test_r_external[] = {
       NULL,
       0 },
 
-    { nxt_string("external"),
+    { nxt_string("some_method"),
       NJS_EXTERN_METHOD,
       NULL,
       0,

@@ -50,8 +50,8 @@ const nxt_lvlhsh_proto_t  njs_extern_hash_proto
 
 
 nxt_int_t
-njs_add_external(nxt_lvlhsh_t *hash, nxt_mem_cache_pool_t *mcp, uintptr_t object,
-    njs_external_t *external, nxt_uint_t n)
+njs_add_external(nxt_lvlhsh_t *hash, nxt_mem_cache_pool_t *mcp,
+    uintptr_t object, njs_external_t *external, nxt_uint_t n)
 {
     nxt_int_t           ret;
     njs_extern_t        *ext;

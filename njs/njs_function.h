@@ -64,7 +64,7 @@ struct njs_native_frame_s {
 
     /*
      * The return_address is required in njs_frame_t only, however, it
-     * can be stored here just after function adddress has been fetched.
+     * can be stored here just after function address has been fetched.
      */
     union {
         njs_function_t             *function;

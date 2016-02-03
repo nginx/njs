@@ -710,6 +710,11 @@ struct njs_vm_s {
     nxt_lvlhsh_t             variables_hash;
     nxt_lvlhsh_t             values_hash;
 
+    /*
+     * The prototypes and functions arrays must be togther because
+     * they are copied from njs_vm_shared_t by single memcpy()
+     * in njs_builtin_objects_clone().
+     */
     njs_object_t             prototypes[NJS_PROTOTYPE_MAX];
     njs_function_t           functions[NJS_FUNCTION_MAX];
 
@@ -737,6 +742,10 @@ struct njs_vm_shared_s {
     nxt_lvlhsh_t             values_hash;
     nxt_lvlhsh_t             null_proto_hash;
 
+    /*
+     * The prototypes and functions arrays must be togther because they are
+     * copied to njs_vm_t by single memcpy() in njs_builtin_objects_clone().
+     */
     njs_object_t             prototypes[NJS_PROTOTYPE_MAX];
     njs_function_t           functions[NJS_FUNCTION_MAX];
 };

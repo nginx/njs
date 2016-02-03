@@ -110,7 +110,7 @@ static nxt_noinline nxt_int_t njs_generator_index_release(njs_vm_t *vm,
 nxt_inline nxt_bool_t njs_generator_is_constant(njs_parser_node_t *node);
 
 
-static const nxt_str_t no_label = { 0, NULL };
+static const nxt_str_t  no_label = { 0, NULL };
 
 
 static nxt_int_t

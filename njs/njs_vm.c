@@ -2806,7 +2806,6 @@ fail:
     dst->data = NULL;
 
     return NXT_ERROR;
-
 }
 
 
