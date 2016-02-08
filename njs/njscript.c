@@ -279,18 +279,21 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
         size = NJS_GLOBAL_FRAME_SIZE + scope_size + NJS_FRAME_SPARE_SIZE;
         size = nxt_align_size(size, NJS_FRAME_SPARE_SIZE);
 
-        frame = nxt_mem_cache_align(nmcp, sizeof(njs_value_t), size);
+        frame = nxt_mem_cache_zalign(nmcp, sizeof(njs_value_t), size);
         if (nxt_slow_path(frame == NULL)) {
             goto fail;
         }
 
         nvm->frame = &frame->native;
 
+        frame->native.trap_restart = NULL;
+        frame->native.continuation = NULL;
         frame->native.previous = NULL;
         frame->native.arguments = NULL;
         frame->native.first = 1;
         frame->native.skip = 0;
         frame->native.reentrant = 0;
+        frame->native.trap_frame = 0;
         frame->native.trap_tries = 0;
 
         frame->native.exception.next = NULL;

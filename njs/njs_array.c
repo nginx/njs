@@ -24,12 +24,21 @@
 
 
 typedef struct {
-    njs_value_t  retval;
-    int32_t      index;
-    uint32_t     length;
+    njs_continuation_t  continuation;
+    njs_value_t         *values;
+    uint32_t            max;
+} njs_array_join_t;
+
+
+typedef struct {
+    njs_value_t         retval;
+    int32_t             index;
+    uint32_t            length;
 } njs_array_next_t;
 
 
+static njs_ret_t njs_array_prototype_join_continuation(njs_vm_t *vm,
+    njs_param_t *param);
 static nxt_noinline njs_value_t *njs_array_copy(njs_value_t *dst,
     njs_value_t *src);
 static nxt_noinline nxt_int_t njs_array_next(njs_value_t *value, nxt_uint_t n,
@@ -508,13 +517,11 @@ njs_array_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
 static njs_ret_t
 njs_array_prototype_join(njs_vm_t *vm, njs_param_t *param)
 {
-    u_char             *p;
-    size_t             size, length;
-    nxt_int_t          ret;
-    nxt_uint_t         i, n, max;
-    njs_array_t        *array;
-    njs_value_t        *this, *value, *values;
-    njs_string_prop_t  separator, string;
+    uint32_t          max;
+    nxt_uint_t        i, n;
+    njs_array_t       *array;
+    njs_value_t       *this, *value, *values;
+    njs_array_join_t  *join;
 
     this = param->this;
 
@@ -528,15 +535,6 @@ njs_array_prototype_join(njs_vm_t *vm, njs_param_t *param)
         goto empty;
     }
 
-    if (param->nargs != 0) {
-        value = &param->args[0];
-
-    } else {
-        value = (njs_value_t *) &njs_string_comma;
-    }
-
-    (void) njs_string_prop(&separator, value);
-
     max = 0;
 
     for (i = 0; i < array->length; i++) {
@@ -546,15 +544,89 @@ njs_array_prototype_join(njs_vm_t *vm, njs_param_t *param)
         }
     }
 
-    values = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
-                                 sizeof(njs_value_t) * max);
-    if (nxt_slow_path(values == NULL)) {
-        return NXT_ERROR;
+    if (max != 0) {
+        join = nxt_mem_cache_alloc(vm->mem_cache_pool,
+                                   sizeof(njs_array_join_t));
+        if (nxt_slow_path(join == NULL)) {
+            return NXT_ERROR;
+        }
+
+        values = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
+                                     sizeof(njs_value_t) * max);
+        if (nxt_slow_path(values == NULL)) {
+            return NXT_ERROR;
+        }
+
+        join->continuation.function = njs_array_prototype_join_continuation;
+        join->continuation.this = this;
+        join->continuation.args = param->args;
+        join->continuation.nargs = param->nargs;
+        join->values = values;
+        join->max = max;
+        vm->frame->continuation = &join->continuation;
+
+        n = 0;
+
+        for (i = 0; i < array->length; i++) {
+            value = &array->start[i];
+            if (njs_is_valid(value) && !njs_is_string(value)) {
+                values[n++] = *value;
+
+                if (n >= max) {
+                    break;
+                }
+            }
+        }
     }
+
+    return njs_array_prototype_join_continuation(vm, param);
+
+empty:
+
+    vm->retval = njs_string_empty;
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_array_prototype_join_continuation(njs_vm_t *vm, njs_param_t *param)
+{
+    u_char             *p;
+    size_t             size, length, mask;
+    uint32_t           max;
+    nxt_uint_t         i, n;
+    njs_array_t        *array;
+    njs_value_t        *value, *values;
+    njs_array_join_t   *join;
+    njs_string_prop_t  separator, string;
+
+    if (param->nargs != 0) {
+        value = &param->args[0];
+
+    } else {
+        value = (njs_value_t *) &njs_string_comma;
+    }
+
+    (void) njs_string_prop(&separator, value);
+
+    array = param->this->data.u.array;
 
     size = separator.size * (array->length - 1);
     length = separator.length * (array->length - 1);
     n = 0;
+
+    max = 0;
+    values = NULL;
+
+    join = (njs_array_join_t *) vm->frame->continuation;
+
+    if (join != NULL) {
+        values = join->values;
+        max = join->max;
+    }
+
+    mask = -1;
 
     for (i = 0; i < array->length; i++) {
         value = &array->start[i];
@@ -562,20 +634,27 @@ njs_array_prototype_join(njs_vm_t *vm, njs_param_t *param)
         if (njs_is_valid(value)) {
 
             if (!njs_is_string(value)) {
-                ret = njs_value_to_string(vm, &values[n], value);
-                if (nxt_slow_path(ret != NXT_OK)) {
-                    return NXT_ERROR;
-                }
-
                 value = &values[n++];
+
+                if (!njs_is_string(value)) {
+                    vm->frame->trap_scratch.data.u.value = value;
+
+                    return NJS_TRAP_STRING_ARG;
+                }
             }
 
             (void) njs_string_prop(&string, value);
 
             size += string.size;
             length += string.length;
+
+            if (string.length == 0 && string.size != 0) {
+                mask = 0;
+            }
         }
     }
+
+    length &= mask;
 
     p = njs_string_alloc(vm, &vm->retval, size, length);
     if (nxt_slow_path(p == NULL)) {
@@ -610,11 +689,7 @@ njs_array_prototype_join(njs_vm_t *vm, njs_param_t *param)
 
     nxt_mem_cache_free(vm->mem_cache_pool, values);
 
-    return NXT_OK;
-
-empty:
-
-    vm->retval = njs_string_empty;
+    vm->frame->continuation = NULL;
 
     return NXT_OK;
 }

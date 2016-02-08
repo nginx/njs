@@ -1986,6 +1986,18 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = []; a.concat([])"),
       nxt_string("") },
 
+    { nxt_string("var s = { toString: function() { return 'S' } }"
+                 "var v = { toString: 8, valueOf: function() { return 'V' } }"
+                 "var o = [9]; o.join = function() { return 'O' };"
+                 "var a = [1,2,3,[4,5,6],s,v,o]; a.join('')"),
+      nxt_string("1234,5,6SVO") },
+
+    { nxt_string("var s = { toString: function() { return 'S' } }"
+                 "var v = { toString: 8, valueOf: function() { return 'V' } }"
+                 "var o = [9]; o.join = function() { return 'O' };"
+                 "var a = [1,2,3,[4,5,6],s,v,o]; a"),
+      nxt_string("1,2,3,4,5,6,S,V,O") },
+
     /* Array.toString(). */
 
     { nxt_string("a = [1,2,3]; a.join = 'NO';"

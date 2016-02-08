@@ -52,6 +52,14 @@ struct njs_function_lambda_s {
     (void *) ((u_char *) frame + NJS_NATIVE_FRAME_SIZE)
 
 
+typedef struct {
+    njs_native_t                   function;
+    njs_value_t                    *this;
+    njs_value_t                    *args;
+    nxt_uint_t                     nargs;
+} njs_continuation_t;
+
+
 typedef struct njs_exception_s     njs_exception_t;
 
 struct njs_exception_s {
@@ -71,15 +79,8 @@ struct njs_native_frame_s {
 
     u_char                         *free;
 
-    /*
-     * The return_address is required in njs_frame_t only, however, it
-     * can be stored here just after function address has been fetched.
-     */
-    union {
-        njs_function_t             *function;
-        u_char                     *return_address;
-    } u;
-
+    njs_function_t                 *function;
+    njs_continuation_t             *continuation;
     njs_native_frame_t             *previous;
     njs_value_t                    *arguments;
 
@@ -103,6 +104,9 @@ struct njs_native_frame_s {
     /* The function is reentrant. */
     uint8_t                        reentrant:1;       /* 1 bit  */
 
+    /* A frame of trap generated from continuation. */
+    uint8_t                        trap_frame:1;      /* 1 bit */
+
     /* A number of trap tries, it can be no more than three. */
     uint8_t                        trap_tries:2;      /* 2 bits */
 
@@ -117,6 +121,7 @@ struct njs_native_frame_s {
 typedef struct {
     njs_native_frame_t             native;
 
+    u_char                         *return_address;
     njs_value_t                    *prev_arguments;
     njs_value_t                    *prev_local;
     njs_value_t                    *local;

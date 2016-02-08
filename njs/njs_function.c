@@ -57,7 +57,7 @@ njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
         return NULL;
     }
 
-    frame->u.function = function;
+    frame->function = function;
     frame->ctor = code->ctor;
 
     this = (njs_value_t *) ((u_char *) njs_native_data(frame)
@@ -99,8 +99,11 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
     frame->free_size = spare_size - size;
     frame->free = (u_char *) frame + size;
 
+    frame->continuation = NULL;
+    frame->trap_restart = NULL;
     frame->ctor = 0;
     frame->reentrant = 0;
+    frame->trap_frame = 0;
     frame->trap_tries = 0;
     frame->trap_reference = 0;
 
@@ -169,7 +172,7 @@ njs_function_frame(njs_vm_t *vm, njs_function_t *function, njs_param_t *param,
         return NXT_ERROR;
     }
 
-    native_frame->u.function = function;
+    native_frame->function = function;
     native_frame->ctor = ctor;
 
     args = (njs_value_t *) ((u_char *) native_frame + NJS_FRAME_SIZE);
@@ -217,8 +220,8 @@ njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
 
     frame->retval = retval;
 
-    function = frame->native.u.function;
-    frame->native.u.return_address = vm->current + advance;
+    function = frame->native.function;
+    frame->return_address = vm->current + advance;
     vm->current = function->u.lambda->u.start;
 
     frame->prev_arguments = vm->scopes[NJS_SCOPE_ARGUMENTS];
@@ -415,6 +418,11 @@ static njs_ret_t
 njs_function_prototype_bind(njs_vm_t *vm, njs_param_t *param)
 {
     njs_function_t  *bound;
+
+    if (!njs_is_function(param->this)) {
+        vm->exception = &njs_exception_type_error;
+        return NXT_ERROR;
+    }
 
     bound = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_function_t));
 

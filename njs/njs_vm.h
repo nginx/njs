@@ -888,6 +888,9 @@ njs_ret_t njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld,
 njs_ret_t njs_normalize_args(njs_vm_t *vm, njs_value_t *args,
     uint8_t *args_types, nxt_uint_t nargs);
 
+njs_ret_t njs_native_function_arguments(njs_vm_t *vm, njs_value_t *args,
+    uint8_t *args_types, nxt_uint_t nargs);
+
 njs_ret_t njs_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst,
     const njs_value_t *src);
 void njs_number_set(njs_value_t *value, double num);
