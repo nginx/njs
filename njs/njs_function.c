@@ -73,14 +73,14 @@ nxt_noinline njs_native_frame_t *
 njs_function_frame_alloc(njs_vm_t *vm, size_t size)
 {
     size_t              spare_size;
+    uint8_t             first;
     njs_native_frame_t  *frame;
 
     spare_size = vm->frame->free_size;
 
     if (nxt_fast_path(size <= spare_size)) {
         frame = (njs_native_frame_t *) vm->frame->free;
-        frame->first = 0;
-        frame->skip = 0;
+        first = 0;
 
     } else {
         spare_size = size + NJS_FRAME_SPARE_SIZE;
@@ -92,23 +92,14 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
             return NULL;
         }
 
-        frame->first = 1;
-        frame->skip = 0;
+        first = 1;
     }
 
+    memset(frame, 0, sizeof(njs_native_frame_t));
+
+    frame->first = first;
     frame->free_size = spare_size - size;
     frame->free = (u_char *) frame + size;
-
-    frame->continuation = NULL;
-    frame->trap_restart = NULL;
-    frame->ctor = 0;
-    frame->reentrant = 0;
-    frame->trap_frame = 0;
-    frame->trap_tries = 0;
-    frame->trap_reference = 0;
-
-    frame->exception.next = NULL;
-    frame->exception.catch = NULL;
 
     frame->previous = vm->frame;
     vm->frame = frame;
