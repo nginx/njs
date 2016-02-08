@@ -361,7 +361,7 @@ njs_generate_if_statement(njs_vm_t *vm, njs_parser_t *parser,
     previous = (u_char *) cond_jump;
     label = &cond_jump->offset;
 
-    if (node->right->token == NJS_TOKEN_BRANCHING) {
+    if (node->right != NULL && node->right->token == NJS_TOKEN_BRANCHING) {
 
         /* The "then" branch in a case of "if/then/else" statement. */
 

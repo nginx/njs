@@ -1387,13 +1387,30 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a \n if (!a) a = 3; a"),
       nxt_string("3") },
 
-    { nxt_string("a = 1; if (true) a = 2; else a = 3; a"),
+    /* if. */
+
+    { nxt_string("if (0);"),
+      nxt_string("undefined") },
+
+    { nxt_string("if (0) {}"),
+      nxt_string("undefined") },
+
+    { nxt_string("if (0);else;"),
+      nxt_string("undefined") },
+
+    { nxt_string("var a = 1; if (true); else a = 2; a"),
+      nxt_string("1") },
+
+    { nxt_string("var a = 1; if (false); else a = 2; a"),
       nxt_string("2") },
 
-    { nxt_string("a = 3; if (true) if (false); else a = 2; a"),
+    { nxt_string("var a = 1; if (true) a = 2; else a = 3; a"),
       nxt_string("2") },
 
-    { nxt_string("a = 3; if (true) if (false); else; a = 2; a"),
+    { nxt_string("var a = 3; if (true) if (false); else a = 2; a"),
+      nxt_string("2") },
+
+    { nxt_string("var a = 3; if (true) if (false); else; a = 2; a"),
       nxt_string("2") },
 
     /* switch. */
