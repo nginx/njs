@@ -337,8 +337,29 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("1 || 2"),
       nxt_string("1") },
 
+    { nxt_string("var a = 1; 1 || (a = 2); a"),
+      nxt_string("1") },
+
+    { nxt_string("1 || 2 || 3"),
+      nxt_string("1") },
+
+    { nxt_string("1 || (2 + 2) || 3"),
+      nxt_string("1") },
+
     { nxt_string("1 && 2"),
       nxt_string("2") },
+
+    { nxt_string("1 && 2 && 3"),
+      nxt_string("3") },
+
+    { nxt_string("var a = 1; 0 && (a = 2); a"),
+      nxt_string("1") },
+
+    { nxt_string("false && true || true"),
+      nxt_string("true") },
+
+    { nxt_string("false && (true || true)"),
+      nxt_string("false") },
 
     { nxt_string("a = true; a = -~!a"),
       nxt_string("1") },

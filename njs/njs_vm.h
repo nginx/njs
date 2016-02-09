@@ -494,6 +494,14 @@ typedef struct {
 
 typedef struct {
     njs_vmcode_t               code;
+    njs_index_t                retval;
+    njs_index_t                value;
+    njs_ret_t                  offset;
+} njs_vmcode_test_jump_t;
+
+
+typedef struct {
+    njs_vmcode_t               code;
     njs_index_t                value;
     njs_index_t                object;
     njs_index_t                property;
@@ -817,10 +825,10 @@ njs_ret_t njs_vmcode_remainder(njs_vm_t *vm, njs_value_t *val1,
     njs_value_t *val2);
 njs_ret_t njs_vmcode_logical_not(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *inlvd);
-njs_ret_t njs_vmcode_logical_and(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-njs_ret_t njs_vmcode_logical_or(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
+njs_ret_t njs_vmcode_test_if_true(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *invld);
+njs_ret_t njs_vmcode_test_if_false(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *invld);
 njs_ret_t njs_vmcode_bitwise_not(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *inlvd);
 njs_ret_t njs_vmcode_bitwise_and(njs_vm_t *vm, njs_value_t *val1,

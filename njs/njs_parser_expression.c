@@ -25,6 +25,7 @@
 typedef struct {
     njs_token_t                    token;
     njs_vmcode_operation_t         operation;
+    size_t                         size;
 } njs_parser_operation_t;
 
 
@@ -77,9 +78,12 @@ static const njs_parser_expression_t
     njs_parser_unary_expression,
     NULL,
     3, {
-        { NJS_TOKEN_MULTIPLICATION, njs_vmcode_multiplication },
-        { NJS_TOKEN_DIVISION, njs_vmcode_division },
-        { NJS_TOKEN_REMAINDER, njs_vmcode_remainder },
+        { NJS_TOKEN_MULTIPLICATION, njs_vmcode_multiplication,
+          sizeof(njs_vmcode_3addr_t) },
+        { NJS_TOKEN_DIVISION, njs_vmcode_division,
+          sizeof(njs_vmcode_3addr_t) },
+        { NJS_TOKEN_REMAINDER, njs_vmcode_remainder,
+          sizeof(njs_vmcode_3addr_t) },
     }
 };
 
@@ -90,8 +94,10 @@ static const njs_parser_expression_t
     njs_parser_binary_expression,
     &njs_parser_factor_expression,
     2, {
-        { NJS_TOKEN_ADDITION, njs_vmcode_addition },
-        { NJS_TOKEN_SUBSTRACTION, njs_vmcode_substraction },
+        { NJS_TOKEN_ADDITION, njs_vmcode_addition,
+          sizeof(njs_vmcode_3addr_t) },
+        { NJS_TOKEN_SUBSTRACTION, njs_vmcode_substraction,
+          sizeof(njs_vmcode_3addr_t) },
     }
 };
 
@@ -102,10 +108,12 @@ static const njs_parser_expression_t
     njs_parser_binary_expression,
     &njs_parser_addition_expression,
     3, {
-        { NJS_TOKEN_LEFT_SHIFT, njs_vmcode_left_shift },
-        { NJS_TOKEN_RIGHT_SHIFT, njs_vmcode_right_shift },
-        { NJS_TOKEN_UNSIGNED_RIGHT_SHIFT,
-          njs_vmcode_unsigned_right_shift },
+        { NJS_TOKEN_LEFT_SHIFT, njs_vmcode_left_shift,
+          sizeof(njs_vmcode_3addr_t) },
+        { NJS_TOKEN_RIGHT_SHIFT, njs_vmcode_right_shift,
+          sizeof(njs_vmcode_3addr_t) },
+        { NJS_TOKEN_UNSIGNED_RIGHT_SHIFT, njs_vmcode_unsigned_right_shift,
+          sizeof(njs_vmcode_3addr_t) },
     }
 };
 
@@ -116,12 +124,18 @@ static const njs_parser_expression_t
     njs_parser_binary_expression,
     &njs_parser_bitwise_shift_expression,
     6, {
-        { NJS_TOKEN_LESS, njs_vmcode_less },
-        { NJS_TOKEN_LESS_OR_EQUAL, njs_vmcode_less_or_equal },
-        { NJS_TOKEN_GREATER, njs_vmcode_greater },
-        { NJS_TOKEN_GREATER_OR_EQUAL, njs_vmcode_greater_or_equal },
-        { NJS_TOKEN_IN, njs_vmcode_property_in },
-        { NJS_TOKEN_INSTANCEOF, njs_vmcode_instance_of },
+        { NJS_TOKEN_LESS, njs_vmcode_less,
+          sizeof(njs_vmcode_3addr_t) },
+        { NJS_TOKEN_LESS_OR_EQUAL, njs_vmcode_less_or_equal,
+          sizeof(njs_vmcode_3addr_t) },
+        { NJS_TOKEN_GREATER, njs_vmcode_greater,
+          sizeof(njs_vmcode_3addr_t) },
+        { NJS_TOKEN_GREATER_OR_EQUAL, njs_vmcode_greater_or_equal,
+          sizeof(njs_vmcode_3addr_t) },
+        { NJS_TOKEN_IN, njs_vmcode_property_in,
+          sizeof(njs_vmcode_3addr_t) },
+        { NJS_TOKEN_INSTANCEOF, njs_vmcode_instance_of,
+          sizeof(njs_vmcode_3addr_t) },
     }
 };
 
@@ -132,10 +146,14 @@ static const njs_parser_expression_t
     njs_parser_binary_expression,
     &njs_parser_relational_expression,
     4, {
-        { NJS_TOKEN_EQUAL, njs_vmcode_equal },
-        { NJS_TOKEN_NOT_EQUAL, njs_vmcode_not_equal },
-        { NJS_TOKEN_STRICT_EQUAL, njs_vmcode_strict_equal },
-        { NJS_TOKEN_STRICT_NOT_EQUAL, njs_vmcode_strict_not_equal },
+        { NJS_TOKEN_EQUAL, njs_vmcode_equal,
+          sizeof(njs_vmcode_3addr_t) },
+        { NJS_TOKEN_NOT_EQUAL, njs_vmcode_not_equal,
+          sizeof(njs_vmcode_3addr_t) },
+        { NJS_TOKEN_STRICT_EQUAL, njs_vmcode_strict_equal,
+          sizeof(njs_vmcode_3addr_t) },
+        { NJS_TOKEN_STRICT_NOT_EQUAL, njs_vmcode_strict_not_equal,
+          sizeof(njs_vmcode_3addr_t) },
     }
 };
 
@@ -146,7 +164,8 @@ static const njs_parser_expression_t
     njs_parser_binary_expression,
     &njs_parser_equality_expression,
     1, {
-        { NJS_TOKEN_BITWISE_AND, njs_vmcode_bitwise_and },
+        { NJS_TOKEN_BITWISE_AND, njs_vmcode_bitwise_and,
+          sizeof(njs_vmcode_3addr_t) },
     }
 };
 
@@ -157,7 +176,8 @@ static const njs_parser_expression_t
     njs_parser_binary_expression,
     &njs_parser_bitwise_and_expression,
     1, {
-        { NJS_TOKEN_BITWISE_XOR, njs_vmcode_bitwise_xor },
+        { NJS_TOKEN_BITWISE_XOR, njs_vmcode_bitwise_xor,
+          sizeof(njs_vmcode_3addr_t) },
     }
 };
 
@@ -168,7 +188,8 @@ static const njs_parser_expression_t
     njs_parser_binary_expression,
     &njs_parser_bitwise_xor_expression,
     1, {
-        { NJS_TOKEN_BITWISE_OR, njs_vmcode_bitwise_or },
+        { NJS_TOKEN_BITWISE_OR, njs_vmcode_bitwise_or,
+          sizeof(njs_vmcode_3addr_t) },
     }
 };
 
@@ -179,7 +200,8 @@ static const njs_parser_expression_t
     njs_parser_binary_expression,
     &njs_parser_bitwise_or_expression,
     1, {
-        { NJS_TOKEN_LOGICAL_AND, njs_vmcode_logical_and },
+        { NJS_TOKEN_LOGICAL_AND, njs_vmcode_test_if_false,
+          sizeof(njs_vmcode_test_jump_t) + sizeof(njs_vmcode_move_t) },
     }
 };
 
@@ -190,7 +212,8 @@ static const njs_parser_expression_t
     njs_parser_binary_expression,
     &njs_parser_logical_and_expression,
     1, {
-        { NJS_TOKEN_LOGICAL_OR, njs_vmcode_logical_or },
+        { NJS_TOKEN_LOGICAL_OR, njs_vmcode_test_if_true,
+          sizeof(njs_vmcode_test_jump_t) + sizeof(njs_vmcode_move_t) },
     }
 };
 
@@ -201,7 +224,7 @@ static const njs_parser_expression_t
     njs_parser_assignment_expression,
     NULL,
     1, {
-        { NJS_TOKEN_COMMA, NULL },
+        { NJS_TOKEN_COMMA, NULL, 0 },
     }
 };
 
@@ -578,7 +601,6 @@ njs_parser_binary_expression(njs_vm_t *vm, njs_parser_t *parser,
 {
     nxt_int_t                     n;
     njs_parser_node_t             *node;
-    njs_vmcode_operation_t        operation;
     const njs_parser_operation_t  *op;
 
     token = expr->next(vm, parser, expr->expression, token);
@@ -592,7 +614,6 @@ njs_parser_binary_expression(njs_vm_t *vm, njs_parser_t *parser,
 
         do {
             if (op->token == token) {
-                operation = op->operation;
                 goto found;
             }
 
@@ -623,9 +644,11 @@ njs_parser_binary_expression(njs_vm_t *vm, njs_parser_t *parser,
         }
 
         node->token = token;
-        node->u.operation = operation;
+        node->u.operation = op->operation;
         node->left = parser->node;
-        parser->code_size += sizeof(njs_vmcode_3addr_t);
+        node->left->dest = node;
+
+        parser->code_size += op->size;
 
         token = njs_parser_token(parser);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
@@ -638,6 +661,7 @@ njs_parser_binary_expression(njs_vm_t *vm, njs_parser_t *parser,
         }
 
         node->right = parser->node;
+        node->right->dest = node;
         parser->node = node;
     }
 }
@@ -741,6 +765,7 @@ njs_parser_unary_expression(njs_vm_t *vm, njs_parser_t *parser,
     node->token = token;
     node->u.operation = operation;
     node->left = parser->node;
+    node->left->dest = node;
     parser->node = node;
     parser->code_size += sizeof(njs_vmcode_2addr_t);
 

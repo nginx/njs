@@ -1291,7 +1291,7 @@ static const njs_parser_switch_t  njs_parser_logical_and_expression_switch = {
     NJS_PARSER_TEST_LINE_END,
     1, {
         { NJS_TOKEN_LOGICAL_AND,
-          njs_parser_binary_expression, (void *) njs_vmcode_logical_and,
+          njs_parser_binary_expression, (void *) njs_vmcode_test_if_false,
           njs_parser_logical_and_expression_primed },
     }
 };
@@ -1326,7 +1326,7 @@ static const njs_parser_switch_t  njs_parser_logical_or_expression_switch = {
     NJS_PARSER_TEST_LINE_END,
     1, {
         { NJS_TOKEN_LOGICAL_OR,
-          njs_parser_binary_expression, (void *) njs_vmcode_logical_or,
+          njs_parser_binary_expression, (void *) njs_vmcode_test_if_true,
           njs_parser_logical_or_expression_primed },
     }
 };

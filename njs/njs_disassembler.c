@@ -99,10 +99,6 @@ static njs_code_name_t  code_names[] = {
 
     { njs_vmcode_logical_not, sizeof(njs_vmcode_2addr_t),
           nxt_string("LOGICAL NOT     ") },
-    { njs_vmcode_logical_and, sizeof(njs_vmcode_3addr_t),
-          nxt_string("LOGICAL AND     ") },
-    { njs_vmcode_logical_or, sizeof(njs_vmcode_3addr_t),
-          nxt_string("LOGICAL OR      ") },
 
     { njs_vmcode_bitwise_not, sizeof(njs_vmcode_2addr_t),
           nxt_string("BINARY NOT      ") },
@@ -179,6 +175,7 @@ njs_disassemble(u_char *start, u_char *end)
     njs_vmcode_try_start_t     *try_start;
     njs_vmcode_operation_t     operation;
     njs_vmcode_cond_jump_t     *cond_jump;
+    njs_vmcode_test_jump_t     *test_jump;
     njs_vmcode_prop_next_t     *prop_next;
     njs_vmcode_equal_jump_t    *equal;
     njs_vmcode_prop_foreach_t  *prop_foreach;
@@ -244,6 +241,28 @@ njs_disassemble(u_char *start, u_char *end)
             printf("JUMP IF EQUAL     %04zX %04zX +%zd\n",
                    (size_t) equal->value1, (size_t) equal->value2,
                    (size_t) equal->offset);
+
+            continue;
+        }
+
+        if (operation == njs_vmcode_test_if_true) {
+            test_jump = (njs_vmcode_test_jump_t *) p;
+            p += sizeof(njs_vmcode_test_jump_t);
+
+            printf("TEST IF TRUE      %04zX %04zX +%zd\n",
+                   (size_t) test_jump->retval, (size_t) test_jump->value,
+                   (size_t) test_jump->offset);
+
+            continue;
+        }
+
+        if (operation == njs_vmcode_test_if_false) {
+            test_jump = (njs_vmcode_test_jump_t *) p;
+            p += sizeof(njs_vmcode_test_jump_t);
+
+            printf("TEST IF FALSE     %04zX %04zX +%zd\n",
+                   (size_t) test_jump->retval, (size_t) test_jump->value,
+                   (size_t) test_jump->offset);
 
             continue;
         }

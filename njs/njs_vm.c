@@ -1637,36 +1637,32 @@ njs_vmcode_logical_not(njs_vm_t *vm, njs_value_t *value, njs_value_t *inlvd)
 
 
 njs_ret_t
-njs_vmcode_logical_and(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
+njs_vmcode_test_if_true(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 {
-    njs_value_t  *retval;
+    njs_vmcode_test_jump_t  *test_jump;
 
-    if (njs_is_true(val1)) {
-        retval = val2;
+    vm->retval = *value;
 
-    } else {
-        retval = val1;
+    if (njs_is_true(value)) {
+        test_jump = (njs_vmcode_test_jump_t *) vm->current;
+        return test_jump->offset;
     }
-
-    vm->retval = *retval;
 
     return sizeof(njs_vmcode_3addr_t);
 }
 
 
 njs_ret_t
-njs_vmcode_logical_or(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
+njs_vmcode_test_if_false(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 {
-    njs_value_t  *retval;
+    njs_vmcode_test_jump_t  *test_jump;
 
-    if (njs_is_true(val1)) {
-        retval = val1;
+    vm->retval = *value;
 
-    } else {
-        retval = val2;
+    if (!njs_is_true(value)) {
+        test_jump = (njs_vmcode_test_jump_t *) vm->current;
+        return test_jump->offset;
     }
-
-    vm->retval = *retval;
 
     return sizeof(njs_vmcode_3addr_t);
 }
