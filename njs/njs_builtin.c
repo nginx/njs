@@ -59,15 +59,16 @@ njs_builtin_objects_create(njs_vm_t *vm)
     };
 
     static const njs_function_init_t  native_functions[] = {
-        { njs_object_constructor,   {} },
-        { njs_array_constructor,    {} },
-        { njs_boolean_constructor,  {} },
+        /* SunC does not allow empty array initialization. */
+        { njs_object_constructor,   { 0 } },
+        { njs_array_constructor,    { 0 } },
+        { njs_boolean_constructor,  { 0 } },
         { njs_number_constructor,   { NJS_SKIP_ARG, NJS_NUMBER_ARG } },
         { njs_string_constructor,   { NJS_SKIP_ARG, NJS_STRING_ARG } },
-        { njs_function_constructor, {} },
+        { njs_function_constructor, { 0 } },
         { njs_regexp_constructor,
           { NJS_SKIP_ARG, NJS_STRING_ARG, NJS_STRING_ARG } },
-        { njs_eval_function,        {} },
+        { njs_eval_function,        { 0 } },
     };
 
     static const njs_object_prop_t  null_proto_property = {
