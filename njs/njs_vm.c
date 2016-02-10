@@ -2383,19 +2383,16 @@ njs_normalize_args(njs_vm_t *vm, njs_value_t *args, uint8_t *args_types,
 
             if (njs_is_numeric(args)) {
 
-                /* Convert NaN and Infinities to integer. */
+                /* Numbers are truncated to fit in 32-bit integers. */
 
                 if (njs_is_nan(args->data.u.number)) {
                     args->data.u.number = 0;
 
-                } else if (njs_is_infinity(args->data.u.number)) {
+                } else if (args->data.u.number > 2147483647.0) {
+                    args->data.u.number = 2147483647.0;
 
-                    if (args->data.u.number > 0) {
-                        args->data.u.number = 0x7fffffffffffffff;
-
-                    } else {
-                        args->data.u.number = 0x8000000000000000;
-                    }
+                } else if (args->data.u.number < -2147483648.0) {
+                    args->data.u.number = -2147483648.0;
                 }
 
                 break;

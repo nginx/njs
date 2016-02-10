@@ -2384,6 +2384,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abcdefghijklmno'.slice(NaN, 5)"),
       nxt_string("abcde") },
 
+    { nxt_string("'abcdefghijklmno'.slice(NaN, Infinity)"),
+      nxt_string("abcdefghijklmno") },
+
+    { nxt_string("'abcdefghijklmno'.slice(-Infinity, Infinity)"),
+      nxt_string("abcdefghijklmno") },
+
     { nxt_string("'abcdefghijklmno'.slice('0', '5')"),
       nxt_string("abcde") },
 
