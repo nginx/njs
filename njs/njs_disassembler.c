@@ -49,10 +49,6 @@ static njs_code_name_t  code_names[] = {
     { njs_vmcode_instance_of, sizeof(njs_vmcode_instance_of_t),
           nxt_string("INSTANCE OF     ") },
 
-    { njs_vmcode_function_frame, sizeof(njs_vmcode_function_frame_t),
-          nxt_string("FUNCTION FRAME  ") },
-    { njs_vmcode_function_call, sizeof(njs_vmcode_function_call_t),
-          nxt_string("FUNCTION CALL   ") },
     { njs_vmcode_return, sizeof(njs_vmcode_return_t),
           nxt_string("RETURN          ") },
     { njs_vmcode_stop, sizeof(njs_vmcode_stop_t),
@@ -160,26 +156,28 @@ njs_disassembler(njs_vm_t *vm)
 static void
 njs_disassemble(u_char *start, u_char *end)
 {
-    u_char                     *p;
-    nxt_str_t                  *name;
-    nxt_uint_t                 n;
-    const char                 *sign;
-    njs_code_name_t            *code_name;
-    njs_vmcode_jump_t          *jump;
-    njs_vmcode_1addr_t         *code1;
-    njs_vmcode_2addr_t         *code2;
-    njs_vmcode_3addr_t         *code3;
-    njs_vmcode_array_t         *array;
-    njs_vmcode_catch_t         *catch;
-    njs_vmcode_try_end_t       *try_end;
-    njs_vmcode_try_start_t     *try_start;
-    njs_vmcode_operation_t     operation;
-    njs_vmcode_cond_jump_t     *cond_jump;
-    njs_vmcode_test_jump_t     *test_jump;
-    njs_vmcode_prop_next_t     *prop_next;
-    njs_vmcode_equal_jump_t    *equal;
-    njs_vmcode_prop_foreach_t  *prop_foreach;
-    njs_vmcode_method_frame_t  *method;
+    u_char                       *p;
+    nxt_str_t                    *name;
+    nxt_uint_t                   n;
+    const char                   *sign;
+    njs_code_name_t              *code_name;
+    njs_vmcode_jump_t            *jump;
+    njs_vmcode_1addr_t           *code1;
+    njs_vmcode_2addr_t           *code2;
+    njs_vmcode_3addr_t           *code3;
+    njs_vmcode_array_t           *array;
+    njs_vmcode_catch_t           *catch;
+    njs_vmcode_try_end_t         *try_end;
+    njs_vmcode_try_start_t       *try_start;
+    njs_vmcode_operation_t       operation;
+    njs_vmcode_cond_jump_t       *cond_jump;
+    njs_vmcode_test_jump_t       *test_jump;
+    njs_vmcode_prop_next_t       *prop_next;
+    njs_vmcode_equal_jump_t      *equal;
+    njs_vmcode_prop_foreach_t    *prop_foreach;
+    njs_vmcode_method_frame_t    *method;
+    njs_vmcode_function_call_t   *call;
+    njs_vmcode_function_frame_t  *function;
 
     p = start;
 
@@ -267,6 +265,17 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
+        if (operation == njs_vmcode_function_frame) {
+            function = (njs_vmcode_function_frame_t *) p;
+            p += sizeof(njs_vmcode_function_frame_t);
+
+            printf("FUNCTION FRAME    %04zX %d%s\n",
+                   (size_t) function->name, function->code.nargs,
+                   function->code.ctor ? " CTOR" : "");
+
+            continue;
+        }
+
         if (operation == njs_vmcode_method_frame) {
             method = (njs_vmcode_method_frame_t *) p;
             p += sizeof(njs_vmcode_method_frame_t);
@@ -274,6 +283,16 @@ njs_disassemble(u_char *start, u_char *end)
             printf("METHOD FRAME      %04zX %04zX %d\n",
                    (size_t) method->object, (size_t) method->method,
                    method->code.nargs);
+
+            continue;
+        }
+
+        if (operation == njs_vmcode_function_call) {
+            call = (njs_vmcode_function_call_t *) p;
+            p += sizeof(njs_vmcode_function_call_t);
+
+            printf("FUNCTION CALL     %04zX %d\n",
+                   (size_t) call->retval, call->code.nargs);
 
             continue;
         }
