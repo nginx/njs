@@ -116,29 +116,21 @@ njs_function_constructor(njs_vm_t *vm, njs_param_t *param)
 
 
 nxt_noinline njs_ret_t
-njs_function_apply(njs_vm_t *vm, njs_value_t *value, njs_param_t *param)
+njs_function_apply(njs_vm_t *vm, njs_function_t *function, njs_param_t *param)
 {
-    njs_ret_t       ret;
-    njs_function_t  *function;
+    njs_ret_t  ret;
 
-    if (njs_is_function(value)) {
-
-        function = value->data.u.function;
-
-        if (function->native) {
-            return function->u.native(vm, param);
-        }
-
-        ret = njs_function_frame(vm, function, param, 0);
-
-        if (nxt_fast_path(ret == NXT_OK)) {
-            vm->retval = njs_value_void;
-
-            return njs_function_call(vm, param->retval, 0);
-        }
+    if (function->native) {
+        return function->u.native(vm, param);
     }
 
-    return NXT_ERROR;
+    ret = njs_function_frame(vm, function, param, 0);
+
+    if (nxt_fast_path(ret == NXT_OK)) {
+        return njs_function_call(vm, param->retval, 0);
+    }
+
+    return ret;
 }
 
 

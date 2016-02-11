@@ -41,6 +41,7 @@ static njs_ret_t njs_array_prototype_join_continuation(njs_vm_t *vm,
     njs_param_t *param);
 static nxt_noinline njs_value_t *njs_array_copy(njs_value_t *dst,
     njs_value_t *src);
+static nxt_int_t njs_array_iterator_args(njs_vm_t *vm, njs_param_t *param);
 static nxt_noinline nxt_int_t njs_array_next(njs_value_t *value, nxt_uint_t n,
     nxt_uint_t length);
 
@@ -506,7 +507,7 @@ njs_array_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
         prop = njs_object_property(vm, this->data.u.object, &lhq);
 
         if (nxt_fast_path(prop != NULL && njs_is_function(&prop->value))) {
-            return njs_function_apply(vm, &prop->value, param);
+            return njs_function_apply(vm, prop->value.data.u.function, param);
         }
     }
 
@@ -772,11 +773,11 @@ njs_array_copy(njs_value_t *dst, njs_value_t *src)
 static njs_ret_t
 njs_array_prototype_for_each(njs_vm_t *vm, njs_param_t *param)
 {
-    nxt_int_t         n;
+    nxt_int_t         n, ret;
     uintptr_t         nargs;
     njs_param_t       p;
     njs_array_t       *array;
-    njs_value_t       *this, *args, *func, arguments[3];
+    njs_value_t       *this, *args, arguments[3];
     njs_array_next_t  *next;
 
     this = param->this;
@@ -784,9 +785,9 @@ njs_array_prototype_for_each(njs_vm_t *vm, njs_param_t *param)
     if (!vm->frame->reentrant) {
         vm->frame->reentrant = 1;
 
-        if (!njs_is_array(this)) {
-            vm->exception = &njs_exception_type_error;
-            return NXT_ERROR;
+        ret = njs_array_iterator_args(vm, param);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return ret;
         }
 
         array = this->data.u.array;
@@ -826,9 +827,7 @@ njs_array_prototype_for_each(njs_vm_t *vm, njs_param_t *param)
     p.nargs = 3;
     p.retval = (njs_index_t) &next->retval;
 
-    func = (nargs != 0) ? &args[0] : (njs_value_t *) &njs_value_void;
-
-    return njs_function_apply(vm, func, &p);
+    return njs_function_apply(vm, args[0].data.u.function, &p);
 }
 
 
@@ -836,10 +835,10 @@ static njs_ret_t
 njs_array_prototype_some(njs_vm_t *vm, njs_param_t *param)
 {
     uintptr_t         nargs;
-    nxt_int_t         n;
+    nxt_int_t         n, ret;
     njs_param_t       p;
     njs_array_t       *array;
-    njs_value_t       *this, *args, *func, arguments[3];
+    njs_value_t       *this, *args, arguments[3];
     njs_array_next_t  *next;
 
     this = param->this;
@@ -847,9 +846,9 @@ njs_array_prototype_some(njs_vm_t *vm, njs_param_t *param)
     if (!vm->frame->reentrant) {
         vm->frame->reentrant = 1;
 
-        if (!njs_is_array(this)) {
-            vm->exception = &njs_exception_type_error;
-            return NXT_ERROR;
+        ret = njs_array_iterator_args(vm, param);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return ret;
         }
 
         array = this->data.u.array;
@@ -890,9 +889,7 @@ njs_array_prototype_some(njs_vm_t *vm, njs_param_t *param)
     p.nargs = 3;
     p.retval = (njs_index_t) &next->retval;
 
-    func = (nargs != 0) ? &args[0] : (njs_value_t *) &njs_value_void;
-
-    return njs_function_apply(vm, func, &p);
+    return njs_function_apply(vm, args[0].data.u.function, &p);
 }
 
 
@@ -900,10 +897,10 @@ static njs_ret_t
 njs_array_prototype_every(njs_vm_t *vm, njs_param_t *param)
 {
     uintptr_t         nargs;
-    nxt_int_t         n;
+    nxt_int_t         n, ret;
     njs_param_t       p;
     njs_array_t       *array;
-    njs_value_t       *this, *args, *func, arguments[3];
+    njs_value_t       *this, *args, arguments[3];
     njs_array_next_t  *next;
 
     this = param->this;
@@ -911,9 +908,9 @@ njs_array_prototype_every(njs_vm_t *vm, njs_param_t *param)
     if (!vm->frame->reentrant) {
         vm->frame->reentrant = 1;
 
-        if (!njs_is_array(this)) {
-            vm->exception = &njs_exception_type_error;
-            return NXT_ERROR;
+        ret = njs_array_iterator_args(vm, param);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return ret;
         }
 
         array = this->data.u.array;
@@ -954,9 +951,23 @@ njs_array_prototype_every(njs_vm_t *vm, njs_param_t *param)
     p.nargs = 3;
     p.retval = (njs_index_t) &next->retval;
 
-    func = (nargs != 0) ? &args[0] : (njs_value_t *) &njs_value_void;
+    return njs_function_apply(vm, args[0].data.u.function, &p);
+}
 
-    return njs_function_apply(vm, func, &p);
+
+static nxt_int_t
+njs_array_iterator_args(njs_vm_t *vm, njs_param_t *param)
+{
+    if (njs_is_array(param->this)
+        && param->nargs != 0
+        && njs_is_function(&param->args[0]))
+    {
+        return NXT_OK;
+    }
+
+    vm->exception = &njs_exception_type_error;
+
+    return NXT_ERROR;
 }
 
 

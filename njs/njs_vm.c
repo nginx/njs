@@ -2991,7 +2991,9 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
                         param.args = NULL;
                         param.nargs = 0;
 
-                        ret = njs_function_apply(vm, &prop->value, &param);
+                        ret = njs_function_apply(vm,
+                                                 prop->value.data.u.function,
+                                                 &param);
                         /*
                          * njs_function_apply() can return
                          *   NXT_OK, NJS_APPLIED, NXT_ERROR, NXT_AGAIN.
