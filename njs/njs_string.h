@@ -100,8 +100,6 @@ nxt_noinline uint32_t njs_string_index(njs_string_prop_t *string,
     uint32_t offset);
 njs_ret_t njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
     const njs_value_t *src);
-njs_ret_t njs_value_to_string(njs_vm_t *vm, njs_value_t *dst,
-    const njs_value_t *src);
 double njs_string_to_number(njs_value_t *value);
 
 njs_index_t njs_value_index(njs_vm_t *vm, njs_parser_t *parser,

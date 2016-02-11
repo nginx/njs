@@ -3218,48 +3218,6 @@ njs_vm_is_reentrant(njs_vm_t *vm)
 
 
 nxt_int_t
-njs_value_string(njs_vm_t *vm, nxt_str_t *retval, njs_value_t *value,
-    njs_value_t **tmp)
-{
-    size_t       size;
-    nxt_int_t    ret;
-    njs_value_t  *val;
-
-    val = value;
-    *tmp = NULL;
-
-    if (!njs_is_string(val)) {
-        val = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_value_t));
-        if (nxt_slow_path(val == NULL)) {
-            return NXT_ERROR;
-        }
-
-        ret = njs_value_to_string(vm, val, value);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            /* TODO: njs_free(vm, val); */
-            return ret;
-        }
-
-        *tmp = val;
-    }
-
-    size = val->short_string.size;
-
-    if (size != NJS_STRING_LONG) {
-        retval->len = size;
-        retval->data = val->short_string.start;
-
-    } else {
-        njs_retain(val);
-        retval->len = val->data.string_size;
-        retval->data = val->data.u.string->start;
-    }
-
-    return NXT_OK;
-}
-
-
-nxt_int_t
 njs_value_string_copy(njs_vm_t *vm, nxt_str_t *retval, njs_value_t *value,
     uintptr_t *next)
 {
