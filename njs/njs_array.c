@@ -601,32 +601,23 @@ njs_array_prototype_join_continuation(njs_vm_t *vm, njs_param_t *param)
     njs_array_join_t   *join;
     njs_string_prop_t  separator, string;
 
-    if (param->nargs != 0) {
-        value = &param->args[0];
-
-    } else {
-        value = (njs_value_t *) &njs_string_comma;
-    }
-
-    (void) njs_string_prop(&separator, value);
-
-    array = param->this->data.u.array;
-
-    size = separator.size * (array->length - 1);
-    length = separator.length * (array->length - 1);
-    n = 0;
-
-    max = 0;
-    values = NULL;
-
     join = (njs_array_join_t *) vm->frame->continuation;
 
     if (join != NULL) {
         values = join->values;
         max = join->max;
+
+    } else {
+        values = NULL;
+        max = 0;
     }
 
+    size = 0;
+    length = 0;
+    n = 0;
     mask = -1;
+
+    array = param->this->data.u.array;
 
     for (i = 0; i < array->length; i++) {
         value = &array->start[i];
@@ -653,6 +644,18 @@ njs_array_prototype_join_continuation(njs_vm_t *vm, njs_param_t *param)
             }
         }
     }
+
+    if (param->nargs != 0) {
+        value = &param->args[0];
+
+    } else {
+        value = (njs_value_t *) &njs_string_comma;
+    }
+
+    (void) njs_string_prop(&separator, value);
+
+    size += separator.size * (array->length - 1);
+    length += separator.length * (array->length - 1);
 
     length &= mask;
 
