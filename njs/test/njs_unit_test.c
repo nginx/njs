@@ -2305,10 +2305,8 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("''.concat.call(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)"),
       nxt_string("0123456789") },
 
-#if 0
     { nxt_string("''.concat.apply(0, [1, 2, 3, 4, 5, 6, 7, 8, 9])"),
       nxt_string("0123456789") },
-#endif
 
     { nxt_string("var s = { toString: function() { return '123' } };"
                  "var a = 'abc'; a.concat('абв', s)"),
