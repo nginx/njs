@@ -169,21 +169,6 @@ njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name)
 }
 
 
-nxt_noinline njs_ret_t
-njs_object_method(njs_vm_t *vm, njs_param_t *param, nxt_lvlhsh_query_t *lhq)
-{
-    njs_object_prop_t  *prop;
-
-    prop = njs_object_property(vm, param->this->data.u.object, lhq);
-
-    if (nxt_fast_path(prop != NULL)) {
-        return njs_function_apply(vm, &prop->value, param);
-    }
-
-    return NXT_ERROR;
-}
-
-
 nxt_noinline njs_object_prop_t *
 njs_object_property(njs_vm_t *vm, njs_object_t *object, nxt_lvlhsh_query_t *lhq)
 {

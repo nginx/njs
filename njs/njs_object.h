@@ -46,8 +46,6 @@ struct njs_object_init_s {
 njs_object_t *njs_object_alloc(njs_vm_t *vm);
 njs_object_t *njs_object_value_alloc(njs_vm_t *vm, const njs_value_t *value,
     nxt_uint_t type);
-njs_ret_t njs_object_method(njs_vm_t *vm, njs_param_t *param,
-    nxt_lvlhsh_query_t *lhq);
 njs_object_prop_t *njs_object_property(njs_vm_t *vm, njs_object_t *obj,
     nxt_lvlhsh_query_t *lhq);
 nxt_int_t njs_object_hash_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
