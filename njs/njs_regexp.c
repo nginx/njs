@@ -51,7 +51,7 @@ njs_regexp_constructor(njs_vm_t *vm, njs_param_t *param)
     switch (param->nargs) {
 
     default:
-        length = njs_string_prop(&string, &param->args[1]);
+        length = njs_string_prop(&string, &param->args[2]);
 
         flags = njs_regexp_flags(&string.start, string.start + length, 1);
         if (nxt_slow_path(flags < 0)) {
@@ -60,8 +60,8 @@ njs_regexp_constructor(njs_vm_t *vm, njs_param_t *param)
 
         /* Fall through. */
 
-    case 1:
-        string.length = njs_string_prop(&string, &param->args[0]);
+    case 2:
+        string.length = njs_string_prop(&string, &param->args[1]);
 
         if (string.length != 0) {
             break;
@@ -69,7 +69,7 @@ njs_regexp_constructor(njs_vm_t *vm, njs_param_t *param)
 
         /* Fall through. */
 
-    case 0:
+    case 1:
         string.start = (u_char *) "(?:)";
         string.length = sizeof("(?:)") - 1;
         break;
@@ -444,7 +444,7 @@ njs_regexp_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
     size_t                length, size;
     njs_regexp_pattern_t  *pattern;
 
-    pattern = param->this->data.u.regexp->pattern;
+    pattern = param->args[0].data.u.regexp->pattern;
     source = pattern->source;
 
     size = strlen((char *) source);
@@ -464,15 +464,15 @@ njs_regexp_prototype_test(njs_vm_t *vm, njs_param_t *param)
     njs_string_prop_t     string;
     njs_regexp_pattern_t  *pattern;
 
-    if (!njs_is_regexp(param->this)) {
+    if (!njs_is_regexp(&param->args[0])) {
         vm->exception = &njs_exception_type_error;
         return NXT_ERROR;
     }
 
     retval = &njs_value_false;
 
-    if (param->nargs != 0) {
-        value = &param->args[0];
+    if (param->nargs > 1) {
+        value = &param->args[1];
 
     } else {
         value = (njs_value_t *) &njs_string_void;
@@ -482,7 +482,7 @@ njs_regexp_prototype_test(njs_vm_t *vm, njs_param_t *param)
 
     n = (string.length != 0 && string.length != string.size);
 
-    pattern = param->this->data.u.regexp->pattern;
+    pattern = param->args[0].data.u.regexp->pattern;
 
     if (pattern->code[n] != NULL) {
         ret = pcre_exec(pattern->code[n], pattern->extra[n],
@@ -514,19 +514,19 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_param_t *param)
     njs_string_prop_t     string;
     njs_regexp_pattern_t  *pattern;
 
-    if (!njs_is_regexp(param->this)) {
+    if (!njs_is_regexp(&param->args[0])) {
         vm->exception = &njs_exception_type_error;
         return NXT_ERROR;
     }
 
-    if (param->nargs != 0) {
-        value = &param->args[0];
+    if (param->nargs > 1) {
+        value = &param->args[1];
 
     } else {
         value = (njs_value_t *) &njs_string_void;
     }
 
-    regexp = param->this->data.u.regexp;
+    regexp = param->args[0].data.u.regexp;
     regexp->string = *value;
 
     (void) njs_string_prop(&string, value);

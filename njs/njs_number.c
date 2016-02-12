@@ -218,11 +218,11 @@ njs_number_constructor(njs_vm_t *vm, njs_param_t *param)
     njs_object_t       *object;
     const njs_value_t  *value;
 
-    if (param->nargs == 0) {
+    if (param->nargs == 1) {
         value = &njs_value_zero;
 
     } else {
-        value = &param->args[0];
+        value = &param->args[1];
     }
 
     if (vm->frame->ctor) {
@@ -279,7 +279,7 @@ njs_number_prototype_value_of(njs_vm_t *vm, njs_param_t *param)
 {
     njs_value_t  *value;
 
-    value = param->this;
+    value = &param->args[0];
 
     if (value->type != NJS_NUMBER) {
 
@@ -303,7 +303,7 @@ njs_number_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
 {
     njs_value_t  *value;
 
-    value = param->this;
+    value = &param->args[0];
 
     if (value->type != NJS_NUMBER) {
 

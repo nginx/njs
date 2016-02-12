@@ -208,7 +208,7 @@ njs_object_constructor(njs_vm_t *vm, njs_param_t *param)
 
     type = NJS_OBJECT;
 
-    if (param->nargs == 0 || njs_is_null_or_void(&param->args[0])) {
+    if (param->nargs == 1 || njs_is_null_or_void(&param->args[1])) {
 
         object = njs_object_alloc(vm);
         if (nxt_slow_path(object == NULL)) {
@@ -216,7 +216,7 @@ njs_object_constructor(njs_vm_t *vm, njs_param_t *param)
         }
 
     } else {
-        value = &param->args[0];
+        value = &param->args[1];
 
         if (njs_is_object(value)) {
             object = value->data.u.object;
@@ -254,19 +254,19 @@ njs_object_create(njs_vm_t *vm, njs_param_t *param)
     njs_value_t   *args;
     njs_object_t  *object;
 
-    if (param->nargs != 0) {
+    if (param->nargs > 1) {
         args = param->args;
 
-        if (njs_is_object(&args[0]) || njs_is_null(&args[0])) {
+        if (njs_is_object(&args[1]) || njs_is_null(&args[1])) {
 
             object = njs_object_alloc(vm);
             if (nxt_slow_path(object == NULL)) {
                 return NXT_ERROR;
             }
 
-            if (!njs_is_null(&args[0])) {
+            if (!njs_is_null(&args[1])) {
                 /* GC */
-                object->__proto__ = args[0].data.u.object;
+                object->__proto__ = args[1].data.u.object;
 
             } else {
                 object->shared_hash = vm->shared->null_proto_hash;
@@ -509,7 +509,7 @@ found:
 static njs_ret_t
 njs_object_prototype_value_of(njs_vm_t *vm, njs_param_t *param)
 {
-    vm->retval = *param->this;
+    vm->retval = param->args[0];
 
     return NXT_OK;
 }
@@ -538,7 +538,7 @@ njs_ret_t
 njs_object_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
 {
     int32_t       index;
-    njs_value_t   *this;
+    njs_value_t   *args;
     njs_object_t  *prototype;
 
     static const njs_value_t  *class_name[] = {
@@ -563,11 +563,11 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
         &njs_object_regexp_string,
     };
 
-    this = param->this;
-    index = this->type;
+    args = param->args;
+    index = args[0].type;
 
-    if (njs_is_object(this)) {
-        prototype = this->data.u.object;
+    if (njs_is_object(&args[0])) {
+        prototype = args[0].data.u.object;
 
         do {
             index = prototype - vm->prototypes;

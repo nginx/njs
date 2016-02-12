@@ -54,7 +54,6 @@ struct njs_function_lambda_s {
 
 typedef struct {
     njs_native_t                   function;
-    njs_value_t                    *this;
     njs_value_t                    *args;
     nxt_uint_t                     nargs;
 } njs_continuation_t;
@@ -135,11 +134,11 @@ njs_function_t *njs_function_alloc(njs_vm_t *vm);
 njs_native_frame_t *njs_function_frame_alloc(njs_vm_t *vm, size_t size);
 njs_ret_t njs_function_constructor(njs_vm_t *vm, njs_param_t *param);
 njs_ret_t njs_function_apply(njs_vm_t *vm, njs_function_t *function,
-    njs_param_t *param);
+    njs_value_t *this, njs_param_t *param);
 njs_value_t *njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     njs_vmcode_t *code);
 njs_ret_t njs_function_frame(njs_vm_t *vm, njs_function_t *function,
-    njs_param_t *param, nxt_bool_t ctor);
+    njs_value_t *this, njs_value_t *args, nxt_uint_t nargs, nxt_bool_t ctor);
 njs_ret_t njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance);
 
 extern const njs_object_init_t  njs_function_constructor_init;

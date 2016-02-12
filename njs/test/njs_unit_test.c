@@ -2133,11 +2133,13 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = [1,2,3]; a.shift() +' '+ a[0] +' '+ a.length"),
       nxt_string("1 2 2") },
 
-    { nxt_string("a = [1,2]; len = a.unshift(3); len +' '+ a.shift()"),
-      nxt_string("3 3") },
+    { nxt_string("a = [1,2]; len = a.unshift(3);"
+                 "len +' '+ a +' '+ a.shift()"),
+      nxt_string("3 3,1,2 3") },
 
-    { nxt_string("a = [1,2]; len = a.unshift(3,4,5); len +' '+ a.shift()"),
-      nxt_string("5 3") },
+    { nxt_string("a = [1,2]; len = a.unshift(3,4,5);"
+                 "len +' '+ a +' '+ a.shift()"),
+      nxt_string("5 3,4,5,1,2 3") },
 
     { nxt_string("var a = []; var s = { sum: 0 };"
                  "a.forEach(function(v, i, a) { this.sum += v }, s); s.sum"),
@@ -3895,13 +3897,13 @@ njs_unit_test_method_external(njs_vm_t *vm, njs_param_t *param)
 
     next = 0;
 
-    if (param->nargs != 0) {
+    if (param->nargs > 1) {
 
-        ret = njs_value_string_copy(vm, &s, njs_argument(param->args, 0),
+        ret = njs_value_string_copy(vm, &s, njs_argument(param->args, 1),
                                     &next);
 
         if (ret == NXT_OK && s.len == 3 && memcmp(s.data, "YES", 3) == 0) {
-            r = njs_value_data(param->this);
+            r = njs_value_data(njs_argument(param->args, 0));
             njs_vm_return_string(vm, r->uri.data, r->uri.len);
 
             return NXT_OK;

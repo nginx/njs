@@ -2084,7 +2084,6 @@ njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *invld, njs_value_t *name)
 {
     njs_ret_t                    ret;
     njs_value_t                  val, *this, *value;
-    njs_param_t                  param;
     njs_object_t                 *object;
     njs_function_t               *function;
     njs_vmcode_function_frame_t  *func;
@@ -2118,16 +2117,14 @@ njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *invld, njs_value_t *name)
             val.data.u.object = object;
             val.type = NJS_OBJECT;
             val.data.truth = 1;
-            param.this = &val;
+            this = &val;
 
         } else {
-            param.this = (njs_value_t *) &njs_value_void;
+            this = (njs_value_t *) &njs_value_void;
         }
 
-        param.args = NULL;
-        param.nargs = func->code.nargs;
-
-        ret = njs_function_frame(vm, function, &param, func->code.ctor);
+        ret = njs_function_frame(vm, function, this, NULL, func->code.nargs,
+                                 func->code.ctor);
 
         if (nxt_fast_path(ret == NXT_OK)) {
             return sizeof(njs_vmcode_function_frame_t);
@@ -2147,7 +2144,6 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *name, njs_value_t *object)
 {
     njs_ret_t                  ret;
     njs_value_t                *this;
-    njs_param_t                param;
     njs_extern_t               *ext;
     njs_function_t             *function;
     njs_object_prop_t          *prop;
@@ -2169,11 +2165,8 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *name, njs_value_t *object)
             function = prop->value.data.u.function;
 
             if (!function->native) {
-                param.this = object;
-                param.args = NULL;
-                param.nargs = method->code.nargs;
-
-                ret = njs_function_frame(vm, function, &param,
+                ret = njs_function_frame(vm, function, object, NULL,
+                                         method->code.nargs,
                                          method->code.ctor);
 
                 if (nxt_fast_path(ret == NXT_OK)) {
@@ -2263,15 +2256,13 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
             return ret;
         }
 
-        param.args = args;
-        param.this = args - 1;
-        param.nargs = call->code.nargs - 1;
+        param.args = args - 1;
+        param.nargs = call->code.nargs;
         param.retval = (njs_index_t) retval;
 
         native = function->u.native;
 
     } else {
-        param.this = continuation->this;
         param.args = continuation->args;
         param.retval = (njs_index_t) retval;
         param.nargs = continuation->nargs;
@@ -2942,7 +2933,6 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
     continuation = vm->frame->continuation;
 
     if (continuation != NULL) {
-        param.this = continuation->this;
         param.args = continuation->args;
         param.nargs = continuation->nargs;
         param.retval = (njs_index_t) &vm->frame->trap_scratch;
@@ -2986,14 +2976,13 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
                             continue;
                         }
 
-                        param.this = value;
                         param.retval = (njs_index_t) retval;
-                        param.args = NULL;
+                        param.args = value;
                         param.nargs = 0;
 
                         ret = njs_function_apply(vm,
                                                  prop->value.data.u.function,
-                                                 &param);
+                                                 value, &param);
                         /*
                          * njs_function_apply() can return
                          *   NXT_OK, NJS_APPLIED, NXT_ERROR, NXT_AGAIN.

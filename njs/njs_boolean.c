@@ -23,11 +23,11 @@ njs_boolean_constructor(njs_vm_t *vm, njs_param_t *param)
     njs_object_t       *object;
     const njs_value_t  *value;
 
-    if (param->nargs == 0) {
+    if (param->nargs == 1) {
         value = &njs_value_false;
 
     } else {
-        value = njs_is_true(&param->args[0]) ? &njs_value_true:
+        value = njs_is_true(&param->args[1]) ? &njs_value_true:
                                                &njs_value_false;
     }
 
@@ -85,7 +85,7 @@ njs_boolean_prototype_value_of(njs_vm_t *vm, njs_param_t *param)
 {
     njs_value_t  *value;
 
-    value = param->this;
+    value = &param->args[0];
 
     if (value->type != NJS_BOOLEAN) {
 
@@ -109,7 +109,7 @@ njs_boolean_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
 {
     njs_value_t  *value;
 
-    value = param->this;
+    value = &param->args[0];
 
     if (value->type != NJS_BOOLEAN) {
 
