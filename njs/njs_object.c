@@ -200,7 +200,8 @@ njs_object_property(njs_vm_t *vm, njs_object_t *object, nxt_lvlhsh_query_t *lhq)
 
 
 njs_ret_t
-njs_object_constructor(njs_vm_t *vm, njs_param_t *param)
+njs_object_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
 {
     nxt_uint_t    type;
     njs_value_t   *value;
@@ -208,7 +209,7 @@ njs_object_constructor(njs_vm_t *vm, njs_param_t *param)
 
     type = NJS_OBJECT;
 
-    if (param->nargs == 1 || njs_is_null_or_void(&param->args[1])) {
+    if (nargs == 1 || njs_is_null_or_void(&args[1])) {
 
         object = njs_object_alloc(vm);
         if (nxt_slow_path(object == NULL)) {
@@ -216,7 +217,7 @@ njs_object_constructor(njs_vm_t *vm, njs_param_t *param)
         }
 
     } else {
-        value = &param->args[1];
+        value = &args[1];
 
         if (njs_is_object(value)) {
             object = value->data.u.object;
@@ -249,13 +250,12 @@ njs_object_constructor(njs_vm_t *vm, njs_param_t *param)
 /* TODO: properties with attributes. */
 
 static njs_ret_t
-njs_object_create(njs_vm_t *vm, njs_param_t *param)
+njs_object_create(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
 {
-    njs_value_t   *args;
     njs_object_t  *object;
 
-    if (param->nargs > 1) {
-        args = param->args;
+    if (nargs > 1) {
 
         if (njs_is_object(&args[1]) || njs_is_null(&args[1])) {
 
@@ -507,9 +507,10 @@ found:
 
 
 static njs_ret_t
-njs_object_prototype_value_of(njs_vm_t *vm, njs_param_t *param)
+njs_object_prototype_value_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
 {
-    vm->retval = param->args[0];
+    vm->retval = args[0];
 
     return NXT_OK;
 }
@@ -535,10 +536,10 @@ static const njs_value_t  njs_object_regexp_string =
 
 
 njs_ret_t
-njs_object_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
+njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
 {
     int32_t       index;
-    njs_value_t   *args;
     njs_object_t  *prototype;
 
     static const njs_value_t  *class_name[] = {
@@ -563,7 +564,6 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
         &njs_object_regexp_string,
     };
 
-    args = param->args;
     index = args[0].type;
 
     if (njs_is_object(&args[0])) {

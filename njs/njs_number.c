@@ -213,16 +213,17 @@ njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
 
 
 njs_ret_t
-njs_number_constructor(njs_vm_t *vm, njs_param_t *param)
+njs_number_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
 {
     njs_object_t       *object;
     const njs_value_t  *value;
 
-    if (param->nargs == 1) {
+    if (nargs == 1) {
         value = &njs_value_zero;
 
     } else {
-        value = &param->args[1];
+        value = &args[1];
     }
 
     if (vm->frame->ctor) {
@@ -275,11 +276,12 @@ const njs_object_init_t  njs_number_constructor_init = {
 
 
 static njs_ret_t
-njs_number_prototype_value_of(njs_vm_t *vm, njs_param_t *param)
+njs_number_prototype_value_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
 {
     njs_value_t  *value;
 
-    value = &param->args[0];
+    value = &args[0];
 
     if (value->type != NJS_NUMBER) {
 
@@ -299,11 +301,12 @@ njs_number_prototype_value_of(njs_vm_t *vm, njs_param_t *param)
 
 
 static njs_ret_t
-njs_number_prototype_to_string(njs_vm_t *vm, njs_param_t *param)
+njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
 {
     njs_value_t  *value;
 
-    value = &param->args[0];
+    value = &args[0];
 
     if (value->type != NJS_NUMBER) {
 

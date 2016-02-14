@@ -28,7 +28,8 @@ double njs_number_parse(const u_char **start, const u_char *end);
 int64_t njs_hex_number_parse(u_char *p, u_char *end);
 njs_ret_t njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
     const njs_value_t *number);
-njs_ret_t njs_number_constructor(njs_vm_t *vm, njs_param_t *param);
+njs_ret_t njs_number_constructor(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused);
 
 extern const njs_object_init_t  njs_number_constructor_init;
 extern const njs_object_init_t  njs_number_prototype_init;

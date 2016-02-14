@@ -76,9 +76,12 @@ static njs_ret_t ngx_http_js_ext_get_content_length(njs_vm_t *vm,
     njs_value_t *value, void *obj, uintptr_t data);
 static njs_ret_t ngx_http_js_ext_set_content_length(njs_vm_t *vm, void *obj,
     uintptr_t data, nxt_str_t *value);
-static njs_ret_t ngx_http_js_ext_send_header(njs_vm_t *vm, njs_param_t *param);
-static njs_ret_t ngx_http_js_ext_send(njs_vm_t *vm, njs_param_t *param);
-static njs_ret_t ngx_http_js_ext_finish(njs_vm_t *vm, njs_param_t *param);
+static njs_ret_t ngx_http_js_ext_send_header(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused);
+static njs_ret_t ngx_http_js_ext_send(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused);
+static njs_ret_t ngx_http_js_ext_finish(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t ngx_http_js_ext_get_http_version(njs_vm_t *vm,
     njs_value_t *value, void *obj, uintptr_t data);
 static njs_ret_t ngx_http_js_ext_get_remote_address(njs_vm_t *vm,
@@ -787,11 +790,12 @@ ngx_http_js_ext_set_content_length(njs_vm_t *vm, void *obj, uintptr_t data,
 
 
 static njs_ret_t
-ngx_http_js_ext_send_header(njs_vm_t *vm, njs_param_t *param)
+ngx_http_js_ext_send_header(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
 {
     ngx_http_request_t  *r;
 
-    r = njs_value_data(njs_argument(param->args, 0));
+    r = njs_value_data(njs_argument(args, 0));
 
     if (ngx_http_send_header(r) == NGX_ERROR) {
         return NJS_ERROR;
@@ -802,24 +806,21 @@ ngx_http_js_ext_send_header(njs_vm_t *vm, njs_param_t *param)
 
 
 static njs_ret_t
-ngx_http_js_ext_send(njs_vm_t *vm, njs_param_t *param)
+ngx_http_js_ext_send(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
 {
     nxt_int_t            ret;
     nxt_str_t            s;
     ngx_buf_t           *b;
-    uintptr_t            nargs, next;
+    uintptr_t            next;
     ngx_uint_t           n;
-    njs_value_t         *args;
     ngx_chain_t         *out, *cl, **ll;
     ngx_http_request_t  *r;
 
-    r = njs_value_data(njs_argument(param->args, 0));
+    r = njs_value_data(njs_argument(args, 0));
 
     out = NULL;
     ll = &out;
-
-    args = param->args;
-    nargs = param->nargs;
 
     for (n = 1; n < nargs; n++) {
         next = 0;
@@ -874,11 +875,12 @@ ngx_http_js_ext_send(njs_vm_t *vm, njs_param_t *param)
 
 
 static njs_ret_t
-ngx_http_js_ext_finish(njs_vm_t *vm, njs_param_t *param)
+ngx_http_js_ext_finish(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
 {
     ngx_http_request_t  *r;
 
-    r = njs_value_data(njs_argument(param->args, 0));
+    r = njs_value_data(njs_argument(args, 0));
 
     if (ngx_http_send_special(r, NGX_HTTP_LAST) == NGX_ERROR) {
         return NJS_ERROR;

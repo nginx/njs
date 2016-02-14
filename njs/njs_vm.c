@@ -2228,12 +2228,12 @@ njs_ret_t
 njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
 {
     njs_ret_t                   ret;
+    nxt_uint_t                  nargs;
     njs_value_t                 *args;
-    njs_param_t                 param;
-    njs_native_t                native;
     njs_function_t              *function;
     njs_native_frame_t          *frame, *previous, *skip;
     njs_continuation_t          *continuation;
+    njs_function_native_t       native;
     njs_vmcode_function_call_t  *call;
 
     function = vm->frame->function;
@@ -2245,32 +2245,28 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
     }
 
     call = (njs_vmcode_function_call_t *) vm->current;
-    args = vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS];
+    args = vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] - function->args_offset;
 
     continuation = vm->frame->continuation;
 
     if (continuation == NULL) {
-        ret = njs_normalize_args(vm, args - 1, function->args_types,
-                                 call->code.nargs);
+        nargs = call->code.nargs;
+
+        ret = njs_normalize_args(vm, args, function->args_types, nargs);
         if (ret != NJS_OK) {
             return ret;
         }
 
-        param.args = args - 1;
-        param.nargs = call->code.nargs;
-        param.retval = (njs_index_t) retval;
-
         native = function->u.native;
 
     } else {
-        param.args = continuation->args;
-        param.retval = (njs_index_t) retval;
-        param.nargs = continuation->nargs;
-
+        args = continuation->args;
+        nargs = continuation->nargs;
         native = continuation->function;
     }
 
-    ret = native(vm, &param);
+     ret = native(vm, args, nargs, (njs_index_t) retval);
+
     /*
      * A native method can return:
      *   NXT_OK on method success;
@@ -2914,8 +2910,8 @@ static nxt_noinline njs_ret_t
 njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
 {
     njs_ret_t           ret;
-    njs_param_t         param;
     njs_value_t         *retval;
+    njs_function_t      *function;
     njs_object_prop_t   *prop;
     nxt_lvlhsh_query_t  lhq;
     njs_continuation_t  *continuation;
@@ -2933,12 +2929,9 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
     continuation = vm->frame->continuation;
 
     if (continuation != NULL) {
-        param.args = continuation->args;
-        param.nargs = continuation->nargs;
-        param.retval = (njs_index_t) &vm->frame->trap_scratch;
-
-        ret = continuation->function(vm, &param);
-
+        ret = continuation->function(vm, continuation->args,
+                                     continuation->nargs,
+                                     (njs_index_t) &vm->frame->trap_scratch);
         if (ret != NXT_OK) {
             return ret;
         }
@@ -2976,13 +2969,10 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
                             continue;
                         }
 
-                        param.retval = (njs_index_t) retval;
-                        param.args = value;
-                        param.nargs = 0;
+                        function = prop->value.data.u.function;
 
-                        ret = njs_function_apply(vm,
-                                                 prop->value.data.u.function,
-                                                 value, &param);
+                        ret = njs_function_apply(vm, function, value, 1,
+                                                 (njs_index_t) retval);
                         /*
                          * njs_function_apply() can return
                          *   NXT_OK, NJS_APPLIED, NXT_ERROR, NXT_AGAIN.

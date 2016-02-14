@@ -14,12 +14,6 @@ typedef struct njs_vm_s             njs_vm_t;
 typedef union  njs_value_s          njs_value_t;
 typedef struct njs_vm_shared_s      njs_vm_shared_t;
 
-typedef struct {
-    njs_value_t                     *args;
-    uintptr_t                       nargs;
-    njs_index_t                     retval;
-} njs_param_t;
-
 
 /* sizeof(njs_value_t) is 16 bytes. */
 #define njs_argument(args, n)                                                 \
@@ -35,7 +29,8 @@ typedef njs_ret_t (*njs_extern_find_t)(njs_vm_t *vm, void *obj, uintptr_t data,
 typedef njs_ret_t (*njs_extern_foreach_t)(njs_vm_t *vm, void *obj, void *next);
 typedef njs_ret_t (*njs_extern_next_t)(njs_vm_t *vm, njs_value_t *value,
     void *obj, void *next);
-typedef njs_ret_t (*njs_extern_method_t)(njs_vm_t *vm, njs_param_t *param);
+typedef njs_ret_t (*njs_extern_method_t)(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused);
 
 
 typedef struct njs_external_s       njs_external_t;

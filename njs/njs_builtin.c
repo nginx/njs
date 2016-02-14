@@ -23,8 +23,8 @@
 
 
 typedef struct {
-    njs_native_t  native;
-    uint8_t       args_types[NJS_ARGS_TYPES_MAX];
+    njs_function_native_t  native;
+    uint8_t                args_types[NJS_ARGS_TYPES_MAX];
 } njs_function_init_t;
 
 

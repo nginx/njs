@@ -23,7 +23,8 @@ struct njs_array_s {
 njs_array_t *njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare);
 njs_ret_t njs_array_realloc(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
     uint32_t size);
-njs_ret_t njs_array_constructor(njs_vm_t *vm, njs_param_t *param);
+njs_ret_t njs_array_constructor(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused);
 
 extern const njs_object_init_t  njs_array_constructor_init;
 extern const njs_object_init_t  njs_array_prototype_init;
