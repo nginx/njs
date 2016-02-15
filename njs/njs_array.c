@@ -980,7 +980,8 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     {
         .type = NJS_METHOD,
         .name = njs_string("join"),
-        .value = njs_native_function(njs_array_prototype_join, 0,
+        .value = njs_native_function(njs_array_prototype_join,
+                     njs_continuation_size(njs_array_join_t),
                      NJS_OBJECT_ARG, NJS_STRING_ARG),
     },
 
@@ -994,21 +995,21 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("forEach"),
         .value = njs_native_function(njs_array_prototype_for_each,
-                     njs_method_data_size(sizeof(njs_array_next_t)), 0),
+                     njs_continuation_size(njs_array_next_t), 0),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("some"),
         .value = njs_native_function(njs_array_prototype_some,
-                     njs_method_data_size(sizeof(njs_array_next_t)), 0),
+                     njs_continuation_size(njs_array_next_t), 0),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("every"),
         .value = njs_native_function(njs_array_prototype_every,
-                     njs_method_data_size(sizeof(njs_array_next_t)), 0),
+                     njs_continuation_size(njs_array_next_t), 0),
     },
 };
 

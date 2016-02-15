@@ -138,11 +138,11 @@ typedef struct {
 
 #if (NXT_64BIT)
     uint8_t                           native;
-    uint8_t                           local_state_size;
+    uint8_t                           continuation_size;
     uint32_t                          args_offset;
 #else
     uint8_t                           native;
-    uint8_t                           local_state_size;
+    uint8_t                           continuation_size;
     uint16_t                          args_offset;
 #endif
 
@@ -151,7 +151,7 @@ typedef struct {
         njs_function_native_t         native;
     } u;
 
-    njs_value_t                       *args;
+    njs_value_t                       *bound;
 } njs_function_t;
 
 
@@ -255,13 +255,13 @@ union njs_value_s {
 }
 
 
-#define njs_native_function(_function, _local_size, ...) {                    \
+#define njs_native_function(_function, _size, ...) {                          \
     .data = {                                                                 \
         .type = NJS_FUNCTION,                                                 \
         .truth = 1,                                                           \
         .u.function = & (njs_function_t) {                                    \
             .native = 1,                                                      \
-            .local_state_size = _local_size,                                  \
+            .continuation_size = _size,                                       \
             .args_types = { __VA_ARGS__ },                                    \
             .args_offset = 1,                                                 \
             .u.native = _function,                                            \

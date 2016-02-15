@@ -45,11 +45,14 @@ struct njs_function_lambda_s {
 
 #define NJS_FRAME_SPARE_SIZE       512
 
-#define njs_method_data_size(size)                                            \
-    nxt_align_size(size, sizeof(njs_value_t))
-
 #define njs_native_data(frame)                                                \
     (void *) ((u_char *) frame + NJS_NATIVE_FRAME_SIZE)
+
+#define njs_continuation(frame)                                               \
+    (void *) ((u_char *) frame + NJS_NATIVE_FRAME_SIZE)
+
+#define njs_continuation_size(size)                                           \
+    nxt_align_size(sizeof(size), sizeof(njs_value_t))
 
 
 typedef struct {
@@ -136,8 +139,9 @@ njs_ret_t njs_function_constructor(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 njs_ret_t njs_function_apply(njs_vm_t *vm, njs_function_t *function,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t retval);
-njs_value_t *njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
-    njs_vmcode_t *code);
+njs_ret_t njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
+    const njs_value_t *this, njs_value_t *args, nxt_uint_t nargs,
+    nxt_bool_t ctor);
 njs_ret_t njs_function_frame(njs_vm_t *vm, njs_function_t *function,
     njs_value_t *this, njs_value_t *args, nxt_uint_t nargs, nxt_bool_t ctor);
 njs_ret_t njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance);

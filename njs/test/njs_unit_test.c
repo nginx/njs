@@ -2321,6 +2321,33 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("''.concat.apply(0, [1, 2, 3, 4, 5, 6, 7, 8, 9])"),
       nxt_string("0123456789") },
 
+    { nxt_string("var f = ''.concat.bind(0, 1, 2, 3, 4); f(5, 6, 7, 8, 9)"),
+      nxt_string("0123456789") },
+
+    { nxt_string("var f = String.prototype.concat.bind(0, 1); f(2)"),
+      nxt_string("012") },
+
+    { nxt_string("var f = Function.prototype.call.bind"
+                 "                            (String.prototype.concat, 0, 1);"
+                 "f(2)"),
+      nxt_string("012") },
+
+#if 0
+    { nxt_string("var f = String.prototype.concat.bind(0, 1);"
+                 "var o = { toString: f }; o"),
+      nxt_string("01") },
+#endif
+
+#if 0
+    { nxt_string("''.concat.bind(1,2,3,4).call(5,6,7,8)"),
+      nxt_string("012346789") },
+#endif
+
+#if 0
+    { nxt_string("''.concat.bind(1,2,3,4).apply(5,[6,7,8])"),
+      nxt_string("012346789") },
+#endif
+
     { nxt_string("var s = { toString: function() { return '123' } };"
                  "var a = 'abc'; a.concat('абв', s)"),
       nxt_string("abcабв123") },
@@ -3095,6 +3122,50 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("[].slice.call()"),
       nxt_string("TypeError") },
+
+    { nxt_string("var f = function(a, b) { return this + a + b }"
+                 "var b = f.bind('1'); b('2', '3')"),
+      nxt_string("123") },
+
+    { nxt_string("var f = function(a, b) { return this + a + b }"
+                 "var b = f.bind('1', '2'); b('3')"),
+      nxt_string("123") },
+
+    { nxt_string("var f = function(a, b) { return this + a + b }"
+                 "var b = f.bind('1', 2, '3'); b()"),
+      nxt_string("123") },
+
+    { nxt_string("var f = function(a, b) { return this + a + b }"
+                 "var b = f.bind('1'); b.call('0', '2', '3')"),
+      nxt_string("123") },
+
+    { nxt_string("var f = function(a, b) { return this + a + b }"
+                 "var b = f.bind('1', '2'); b.call('0', '3')"),
+      nxt_string("123") },
+
+    { nxt_string("var f = function(a, b) { return this + a + b }"
+                 "var b = f.bind('1', '2', '3'); b.call('0')"),
+      nxt_string("123") },
+
+    { nxt_string("var f = function(a, b) { return this + a + b }"
+                 "var b = f.bind('1', '2', '3'); b.call()"),
+      nxt_string("123") },
+
+    { nxt_string("var f = function(a, b) { return this + a + b }"
+                 "var b = f.bind('1'); b.apply('0', ['2', '3'])"),
+      nxt_string("123") },
+
+    { nxt_string("var f = function(a, b) { return this + a + b }"
+                 "var b = f.bind('1', '2'); b.apply('0', ['3'])"),
+      nxt_string("123") },
+
+    { nxt_string("var f = function(a, b) { return this + a + b }"
+                 "var b = f.bind('1', '2', '3'); b.apply('0')"),
+      nxt_string("123") },
+
+    { nxt_string("var f = function(a, b) { return this + a + b }"
+                 "var b = f.bind('1', '2', '3'); b.apply()"),
+      nxt_string("123") },
 
     { nxt_string("function F(a, b) { this.a = a + b }"
                  "var o = new F(1, 2)"
