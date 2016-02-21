@@ -81,8 +81,10 @@ static nxt_noinline njs_ret_t njs_values_compare(njs_value_t *val1,
     njs_value_t *val2);
 static nxt_noinline nxt_bool_t njs_values_strict_equal(njs_value_t *val1,
     njs_value_t *val2);
-static nxt_noinline njs_ret_t njs_function_frame_free(njs_vm_t *vm,
-    njs_native_frame_t *frame, njs_native_frame_t *skip);
+static njs_native_frame_t *
+    njs_function_previous_frame(njs_native_frame_t *frame);
+static njs_ret_t njs_function_frame_free(njs_vm_t *vm,
+    njs_native_frame_t *frame);
 
 static void njs_vm_trap(njs_vm_t *vm, nxt_uint_t trap, njs_value_t *value1,
     njs_value_t *value2);
@@ -2232,7 +2234,7 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
     nxt_uint_t                  nargs;
     njs_value_t                 *args;
     njs_function_t              *function;
-    njs_native_frame_t          *frame, *previous, *skip;
+    njs_native_frame_t          *frame;
     njs_continuation_t          *continuation;
     njs_function_native_t       native;
     njs_vmcode_function_call_t  *call;
@@ -2279,22 +2281,11 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
      * for NJS_APPLIED and NXT_AGAIN cases.
      */
     if (ret == NXT_OK) {
-        skip = NULL;
         frame = vm->frame;
-        previous = frame->previous;
 
-        if (previous->skip) {
+        vm->frame = njs_function_previous_frame(frame);
 
-            if (previous->first) {
-                skip = previous;
-            }
-
-            previous = previous->previous;
-        }
-
-        vm->frame = previous;
-
-        (void) njs_function_frame_free(vm, frame, skip);
+        (void) njs_function_frame_free(vm, frame);
 
         /*
          * If a retval is in a callee arguments scope it
@@ -2444,7 +2435,7 @@ njs_vmcode_return(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
     njs_value_t         *value;
     njs_frame_t         *frame;
     njs_value_t         *args;
-    njs_native_frame_t  *previous, *skip;
+    njs_native_frame_t  *previous;
 
     value = njs_vmcode_operand(vm, retval);
 
@@ -2459,18 +2450,7 @@ njs_vmcode_return(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
         }
     }
 
-    skip = NULL;
-    previous = frame->native.previous;
-
-    if (previous->skip) {
-
-        if (previous->first) {
-            skip = previous;
-        }
-
-        previous = previous->previous;
-    }
-
+    previous = njs_function_previous_frame(&frame->native);
     vm->frame = previous;
 
     vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = previous->arguments;
@@ -2493,21 +2473,42 @@ njs_vmcode_return(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
 
     njs_release(vm, &args[0]);
 
-    return njs_function_frame_free(vm, &frame->native, skip);
+    return njs_function_frame_free(vm, &frame->native);
 }
 
 
-static nxt_noinline njs_ret_t
-njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame,
-    njs_native_frame_t *skip)
+static njs_native_frame_t *
+njs_function_previous_frame(njs_native_frame_t *frame)
 {
-    if (frame->first) {
-        nxt_mem_cache_free(vm->mem_cache_pool, frame);
-    }
+    njs_native_frame_t  *previous;
 
-    if (skip != NULL) {
-        nxt_mem_cache_free(vm->mem_cache_pool, skip);
-    }
+    do {
+        previous = frame->previous;
+        frame = previous;
+
+    } while (frame->skip);
+
+    return frame;
+}
+
+
+static njs_ret_t
+njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame)
+{
+    njs_native_frame_t  *previous;
+
+    do {
+        previous = frame->previous;
+
+        /* GC: free frame->local, etc. */
+
+        if (frame->first) {
+            nxt_mem_cache_free(vm->mem_cache_pool, frame);
+        }
+
+        frame = previous;
+
+    } while (frame->skip);
 
     return 0;
 }
