@@ -1874,6 +1874,7 @@ njs_generate_scope(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
                          parser->code_size, code_size);
 
     if (nxt_slow_path(parser->code_size < code_size)) {
+        vm->exception = &njs_exception_internal_error;
         return NXT_ERROR;
     }
 

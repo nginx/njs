@@ -93,7 +93,6 @@ NXT_EXPORT njs_ret_t njs_string_create(njs_vm_t *vm, njs_value_t *value,
 NXT_EXPORT njs_ret_t njs_void_set(njs_value_t *value);
 
 NXT_EXPORT void *njs_value_data(njs_value_t *value);
-NXT_EXPORT nxt_uint_t njs_vm_is_reentrant(njs_vm_t *vm);
 NXT_EXPORT nxt_int_t njs_value_string_copy(njs_vm_t *vm, nxt_str_t *retval,
     njs_value_t *value, uintptr_t *next);
 

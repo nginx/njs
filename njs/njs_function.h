@@ -39,14 +39,11 @@ struct njs_function_lambda_s {
 #define NJS_FRAME_SIZE                                                        \
     nxt_align_size(sizeof(njs_frame_t), sizeof(njs_value_t))
 
-/* The retval field are not used in the global frame. */
+/* The retval field is not used in the global frame. */
 #define NJS_GLOBAL_FRAME_SIZE                                                 \
     nxt_align_size(offsetof(njs_frame_t, retval), sizeof(njs_value_t))
 
 #define NJS_FRAME_SPARE_SIZE       512
-
-#define njs_native_data(frame)                                                \
-    (void *) ((u_char *) frame + NJS_NATIVE_FRAME_SIZE)
 
 #define njs_continuation(frame)                                               \
     (void *) ((u_char *) frame + NJS_NATIVE_FRAME_SIZE)
@@ -54,12 +51,7 @@ struct njs_function_lambda_s {
 #define njs_continuation_size(size)                                           \
     nxt_align_size(sizeof(size), sizeof(njs_value_t))
 
-
-typedef struct {
-    njs_function_native_t          function;
-    njs_value_t                    *args;
-    nxt_uint_t                     nargs;
-} njs_continuation_t;
+#define NJS_CONTINUATION_SIZE      njs_continuation_size(njs_continuation_t)
 
 
 typedef struct njs_exception_s     njs_exception_t;
@@ -82,13 +74,14 @@ struct njs_native_frame_s {
     u_char                         *free;
 
     njs_function_t                 *function;
-    njs_continuation_t             *continuation;
     njs_native_frame_t             *previous;
     njs_value_t                    *arguments;
 
     njs_exception_t                exception;
 
     uint32_t                       free_size;
+
+    uint16_t                       nargs;
 
     /* Function is called as constructor with "new" keyword. */
     uint8_t                        ctor;              /* 1 bit  */
@@ -102,12 +95,6 @@ struct njs_native_frame_s {
 
     /* Skip the Function.call() and Function.apply() methods frames. */
     uint8_t                        skip:1;            /* 1 bit  */
-
-    /* The function is reentrant. */
-    uint8_t                        reentrant:1;       /* 1 bit  */
-
-    /* A frame of trap generated from continuation. */
-    uint8_t                        trap_frame:1;      /* 1 bit */
 
     /* A number of trap tries, it can be no more than three. */
     uint8_t                        trap_tries:2;      /* 2 bits */
@@ -141,7 +128,7 @@ njs_ret_t njs_function_apply(njs_vm_t *vm, njs_function_t *function,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t retval);
 njs_ret_t njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, njs_value_t *args, nxt_uint_t nargs,
-    nxt_bool_t ctor);
+    size_t reserve, nxt_bool_t ctor);
 njs_ret_t njs_function_frame(njs_vm_t *vm, njs_function_t *function,
     njs_value_t *this, njs_value_t *args, nxt_uint_t nargs, nxt_bool_t ctor);
 njs_ret_t njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance);

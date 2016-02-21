@@ -155,6 +155,15 @@ typedef struct {
 } njs_function_t;
 
 
+typedef struct njs_continuation_s     njs_continuation_t;
+
+struct njs_continuation_s {
+    njs_function_native_t             function;
+    u_char                            *return_address;
+    njs_index_t                       retval;
+};
+
+
 union njs_value_s {
     /*
      * The njs_value_t size is 16 bytes and must be aligned to 16 bytes
@@ -393,8 +402,8 @@ typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
 typedef struct {
     njs_vmcode_operation_t     operation;
     uint8_t                    operands;   /* 2 bits */
-    uint8_t                    retval;     /* 1 bit  */
-    uint8_t                    ctor;       /* 1 bit  */
+    uint8_t                    retval;   /* 1 bit  */
+    uint8_t                    ctor;     /* 1 bit  */
 #if (NXT_64BIT)
     uint32_t                   nargs;
 #else
@@ -939,6 +948,8 @@ extern const njs_value_t  njs_exception_internal_error;
 
 extern const nxt_mem_proto_t     njs_array_mem_proto;
 extern const nxt_lvlhsh_proto_t  njs_object_hash_proto;
+
+extern const njs_vmcode_1addr_t  njs_continuation_nexus[];
 
 
 #endif /* _NJS_VM_H_INCLUDED_ */

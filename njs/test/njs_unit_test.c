@@ -2332,21 +2332,36 @@ static njs_unit_test_t  njs_test[] =
                  "f(2)"),
       nxt_string("012") },
 
-#if 0
     { nxt_string("var f = String.prototype.concat.bind(0, 1);"
                  "var o = { toString: f }; o"),
       nxt_string("01") },
-#endif
 
-#if 0
-    { nxt_string("''.concat.bind(1,2,3,4).call(5,6,7,8)"),
+    { nxt_string("''.concat.bind(0, 1, 2, 3, 4).call(5, 6, 7, 8, 9)"),
       nxt_string("012346789") },
-#endif
 
-#if 0
-    { nxt_string("''.concat.bind(1,2,3,4).apply(5,[6,7,8])"),
+    { nxt_string("''.concat.bind(0, 1, 2, 3, 4).apply(5,[6, 7, 8, 9])"),
       nxt_string("012346789") },
-#endif
+
+    { nxt_string("var f = Array.prototype.join.bind([0, 1, 2]); f()"),
+      nxt_string("0,1,2") },
+
+    { nxt_string("var f = Array.prototype.join.bind([0, 1, 2]);"
+                 "var o = { toString: f }; o"),
+      nxt_string("0,1,2") },
+
+    { nxt_string("var f = Array.prototype.join.bind([0, 1, 2]); f('.')"),
+      nxt_string("0.1.2") },
+
+    { nxt_string("var f = Array.prototype.join.bind([0, 1, 2], '.');"
+                 "var o = { toString: f }; o"),
+      nxt_string("0.1.2") },
+
+    { nxt_string("var f = Array.prototype.toString.bind([0, 1, 2]); f()"),
+      nxt_string("0,1,2") },
+
+    { nxt_string("var f = Array.prototype.toString.bind([0, 1, 2]);"
+                 "var o = { toString: f }; o"),
+      nxt_string("0,1,2") },
 
     { nxt_string("var s = { toString: function() { return '123' } };"
                  "var a = 'abc'; a.concat('абв', s)"),
