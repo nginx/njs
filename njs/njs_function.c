@@ -51,8 +51,6 @@ njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     njs_value_t         *value, *bound;
     njs_native_frame_t  *frame;
 
-    nargs--;
-
     reserve = nxt_max(reserve, function->continuation_size);
 
     size = NJS_NATIVE_FRAME_SIZE + reserve
@@ -159,7 +157,7 @@ njs_function_apply(njs_vm_t *vm, njs_function_t *function, njs_value_t *args,
                                  sizeof(njs_value_t)),
 
         ret = njs_function_native_frame(vm, function, &args[0], &args[1],
-                                        nargs, reserve, 0);
+                                        nargs - 1, reserve, 0);
         if (ret != NJS_OK) {
             return ret;
         }
@@ -195,7 +193,7 @@ njs_function_frame(njs_vm_t *vm, njs_function_t *function, njs_value_t *this,
     njs_frame_t         *frame;
     njs_native_frame_t  *native_frame;
 
-    max_args = nxt_max(nargs, function->u.lambda->nargs) - 1;
+    max_args = nxt_max(nargs, function->u.lambda->nargs);
 
     size = NJS_FRAME_SIZE
            + (function->args_offset + max_args) * sizeof(njs_value_t)
@@ -207,7 +205,7 @@ njs_function_frame(njs_vm_t *vm, njs_function_t *function, njs_value_t *this,
     }
 
     native_frame->function = function;
-    native_frame->nargs = function->args_offset + nargs - 1;
+    native_frame->nargs = nargs;
     native_frame->ctor = ctor;
 
     value = (njs_value_t *) ((u_char *) native_frame + NJS_FRAME_SIZE);
@@ -323,14 +321,13 @@ njs_function_prototype_call(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    this = &args[1];
-    nargs--;
-
-    if (nargs == 0) {
-        this = (njs_value_t *) &njs_value_void;
+    if (nargs > 1) {
+        this = &args[1];
+        nargs -= 2;
 
     } else {
-        nargs--;
+        this = (njs_value_t *) &njs_value_void;
+        nargs = 0;
     }
 
     function = args[0].data.u.function;
@@ -338,7 +335,7 @@ njs_function_prototype_call(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (function->native) {
 
         ret = njs_function_native_frame(vm, function, this, &args[2],
-                                        nargs + 1, 0, 0);
+                                        nargs, 0, 0);
         if (nxt_slow_path(ret != NJS_OK)) {
             return ret;
         }
@@ -397,7 +394,7 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     if (function->native) {
         ret = njs_function_native_frame(vm, function, this, args,
-                                        nargs + 1, 0, 0);
+                                        nargs, 0, 0);
         if (nxt_slow_path(ret != NXT_OK)) {
             return ret;
         }

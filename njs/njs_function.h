@@ -80,8 +80,7 @@ struct njs_native_frame_s {
     njs_exception_t                exception;
 
     uint32_t                       free_size;
-
-    uint16_t                       nargs;
+    uint32_t                       nargs;
 
     /* Function is called as constructor with "new" keyword. */
     uint8_t                        ctor;              /* 1 bit  */

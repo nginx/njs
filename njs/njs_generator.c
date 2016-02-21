@@ -1979,7 +1979,7 @@ njs_generate_function_call(njs_vm_t *vm, njs_parser_t *parser,
 
     njs_generate_code(parser, njs_vmcode_function_frame_t, func);
     func->code.operation = njs_vmcode_function_frame;
-    func->code.operands = NJS_VMCODE_1OPERAND;
+    func->code.operands = NJS_VMCODE_2OPERANDS;
     func->code.retval = NJS_VMCODE_NO_RETVAL;
     func->code.ctor = node->ctor;
     func->name = name->index;
@@ -1989,7 +1989,7 @@ njs_generate_function_call(njs_vm_t *vm, njs_parser_t *parser,
         return ret;
     }
 
-    nargs = 1;
+    nargs = 0;
 
     for (arg = node->right; arg != NULL; arg = arg->right) {
         nargs++;
@@ -2009,7 +2009,7 @@ njs_generate_function_call(njs_vm_t *vm, njs_parser_t *parser,
         }
     }
 
-    func->code.nargs = nargs;
+    func->nargs = nargs;
 
     retval = njs_generator_dest_index(vm, parser, node);
     if (nxt_slow_path(retval == NJS_INDEX_ERROR)) {
@@ -2022,7 +2022,6 @@ njs_generate_function_call(njs_vm_t *vm, njs_parser_t *parser,
     call->code.operation = njs_vmcode_function_call;
     call->code.operands = NJS_VMCODE_1OPERAND;
     call->code.retval = NJS_VMCODE_NO_RETVAL;
-    call->code.nargs = nargs;
     call->retval = retval;
 
     return NXT_OK;
@@ -2059,7 +2058,7 @@ njs_generate_method_call(njs_vm_t *vm, njs_parser_t *parser,
 
     njs_generate_code(parser, njs_vmcode_method_frame_t, method);
     method->code.operation = njs_vmcode_method_frame;
-    method->code.operands = NJS_VMCODE_2OPERANDS;
+    method->code.operands = NJS_VMCODE_3OPERANDS;
     method->code.retval = NJS_VMCODE_NO_RETVAL;
     method->code.ctor = node->ctor;
     method->object = prop->left->index;
@@ -2070,7 +2069,7 @@ njs_generate_method_call(njs_vm_t *vm, njs_parser_t *parser,
         return ret;
     }
 
-    nargs = 1;
+    nargs = 0;
 
     for (arg = node->right; arg != NULL; arg = arg->right) {
         nargs++;
@@ -2090,7 +2089,7 @@ njs_generate_method_call(njs_vm_t *vm, njs_parser_t *parser,
         }
     }
 
-    method->code.nargs = nargs;
+    method->nargs = nargs;
 
     retval = njs_generator_dest_index(vm, parser, node);
     if (nxt_slow_path(retval == NJS_INDEX_ERROR)) {
@@ -2103,7 +2102,6 @@ njs_generate_method_call(njs_vm_t *vm, njs_parser_t *parser,
     call->code.operation = njs_vmcode_function_call;
     call->code.operands = NJS_VMCODE_1OPERAND;
     call->code.retval = NJS_VMCODE_NO_RETVAL;
-    call->code.nargs = nargs;
     call->retval = retval;
 
     return NXT_OK;

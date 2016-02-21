@@ -49,6 +49,8 @@ static njs_code_name_t  code_names[] = {
     { njs_vmcode_instance_of, sizeof(njs_vmcode_instance_of_t),
           nxt_string("INSTANCE OF     ") },
 
+    { njs_vmcode_function_call, sizeof(njs_vmcode_function_call_t),
+          nxt_string("FUNCTION CALL   ") },
     { njs_vmcode_return, sizeof(njs_vmcode_return_t),
           nxt_string("RETURN          ") },
     { njs_vmcode_stop, sizeof(njs_vmcode_stop_t),
@@ -176,7 +178,6 @@ njs_disassemble(u_char *start, u_char *end)
     njs_vmcode_equal_jump_t      *equal;
     njs_vmcode_prop_foreach_t    *prop_foreach;
     njs_vmcode_method_frame_t    *method;
-    njs_vmcode_function_call_t   *call;
     njs_vmcode_function_frame_t  *function;
 
     p = start;
@@ -269,8 +270,8 @@ njs_disassemble(u_char *start, u_char *end)
             function = (njs_vmcode_function_frame_t *) p;
             p += sizeof(njs_vmcode_function_frame_t);
 
-            printf("FUNCTION FRAME    %04zX %d%s\n",
-                   (size_t) function->name, function->code.nargs,
+            printf("FUNCTION FRAME    %04zX %zd%s\n",
+                   (size_t) function->name, function->nargs,
                    function->code.ctor ? " CTOR" : "");
 
             continue;
@@ -280,19 +281,9 @@ njs_disassemble(u_char *start, u_char *end)
             method = (njs_vmcode_method_frame_t *) p;
             p += sizeof(njs_vmcode_method_frame_t);
 
-            printf("METHOD FRAME      %04zX %04zX %d\n",
+            printf("METHOD FRAME      %04zX %04zX %zd%s\n",
                    (size_t) method->object, (size_t) method->method,
-                   method->code.nargs);
-
-            continue;
-        }
-
-        if (operation == njs_vmcode_function_call) {
-            call = (njs_vmcode_function_call_t *) p;
-            p += sizeof(njs_vmcode_function_call_t);
-
-            printf("FUNCTION CALL     %04zX %d\n",
-                   (size_t) call->retval, call->code.nargs);
+                   method->nargs, method->code.ctor ? " CTOR" : "");
 
             continue;
         }

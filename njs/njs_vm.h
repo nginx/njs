@@ -10,15 +10,14 @@
 
 /*
  * Negative return values handled by nJSVM interpreter as special events.
- * The values must be in range from -1 to -15, because -16 is minimal jump
+ * The values must be in range from -1 to -11, because -12 is minimal jump
  * offset on 32-bit platforms.
  *    -1 (NJS_ERROR/NXT_ERROR):  error or exception;
  *    -2 (NJS_AGAIN/NXT_AGAIN):  postpone nJSVM execution;
  *    -3:                        not used;
  *    -4 (NJS_STOP/NXT_DONE):    njs_vmcode_stop() has stopped execution,
  *                               execution has completed successfully;
- *    -5 .. -11:                 traps to convert objects to primitive values;
- *   -12 .. -15:                 not used.
+ *    -5 .. -11:                 traps to convert objects to primitive values.
  */
 
 #define NJS_STOP                 NXT_DONE
@@ -33,7 +32,7 @@
 #define NJS_TRAP_STRING_ARG      (-11)
 #define NJS_TRAP_BASE            NJS_TRAP_STRING_ARG
 
-#define NJS_PREEMPT              (-15)
+#define NJS_PREEMPT              (-11)
 
 /*
  * A user-defined function is prepared to run.  This code is never
@@ -402,13 +401,8 @@ typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
 typedef struct {
     njs_vmcode_operation_t     operation;
     uint8_t                    operands;   /* 2 bits */
-    uint8_t                    retval;   /* 1 bit  */
-    uint8_t                    ctor;     /* 1 bit  */
-#if (NXT_64BIT)
-    uint32_t                   nargs;
-#else
-    uint16_t                   nargs;
-#endif
+    uint8_t                    retval;     /* 1 bit  */
+    uint8_t                    ctor;       /* 1 bit  */
 } njs_vmcode_t;
 
 
@@ -553,12 +547,14 @@ typedef struct {
 
 typedef struct {
     njs_vmcode_t               code;
+    njs_index_t                nargs;
     njs_index_t                name;
 } njs_vmcode_function_frame_t;
 
 
 typedef struct {
     njs_vmcode_t               code;
+    njs_index_t                nargs;
     njs_index_t                object;
     njs_index_t                method;
 } njs_vmcode_method_frame_t;
@@ -881,8 +877,8 @@ njs_ret_t njs_vmcode_if_false_jump(njs_vm_t *vm, njs_value_t *cond,
 njs_ret_t njs_vmcode_if_equal_jump(njs_vm_t *vm, njs_value_t *val1,
     njs_value_t *val2);
 
-njs_ret_t njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *invld,
-    njs_value_t *name);
+njs_ret_t njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *nargs);
 njs_ret_t njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *method);
 njs_ret_t njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld,

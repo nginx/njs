@@ -499,7 +499,7 @@ njs_parser_function_lambda(njs_vm_t *vm, njs_function_lambda_t *lambda,
         }
     }
 
-    lambda->nargs = njs_index_size(index) / sizeof(njs_value_t);
+    lambda->nargs = njs_index_size(index) / sizeof(njs_value_t) - 1;
 
     token = njs_parser_token(parser);
     if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
