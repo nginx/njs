@@ -92,97 +92,6 @@ njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
 }
 
 
-nxt_noinline njs_native_frame_t *
-njs_function_frame_alloc(njs_vm_t *vm, size_t size)
-{
-    size_t              spare_size;
-    uint8_t             first;
-    njs_native_frame_t  *frame;
-
-    spare_size = vm->frame->free_size;
-
-    if (nxt_fast_path(size <= spare_size)) {
-        frame = (njs_native_frame_t *) vm->frame->free;
-        first = 0;
-
-    } else {
-        spare_size = size + NJS_FRAME_SPARE_SIZE;
-        spare_size = nxt_align_size(spare_size, NJS_FRAME_SPARE_SIZE);
-
-        frame = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
-                                    spare_size);
-        if (nxt_slow_path(frame == NULL)) {
-            return NULL;
-        }
-
-        first = 1;
-    }
-
-    memset(frame, 0, sizeof(njs_native_frame_t));
-
-    frame->first = first;
-    frame->free_size = spare_size - size;
-    frame->free = (u_char *) frame + size;
-
-    frame->previous = vm->frame;
-    vm->frame = frame;
-
-    return frame;
-}
-
-
-njs_ret_t
-njs_function_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
-    njs_index_t unused)
-{
-    return NXT_ERROR;
-}
-
-
-nxt_noinline njs_ret_t
-njs_function_apply(njs_vm_t *vm, njs_function_t *function, njs_value_t *args,
-    nxt_uint_t nargs, njs_index_t retval)
-{
-    size_t              reserve;
-    njs_ret_t           ret;
-    njs_continuation_t  *cont;
-
-    if (function->native) {
-
-        if (function->continuation_size == 0 && function->bound == NULL) {
-            return function->u.native(vm, args, nargs, retval);
-        }
-
-        reserve = nxt_align_size(sizeof(njs_continuation_t),
-                                 sizeof(njs_value_t)),
-
-        ret = njs_function_native_frame(vm, function, &args[0], &args[1],
-                                        nargs - 1, reserve, 0);
-        if (ret != NJS_OK) {
-            return ret;
-        }
-
-        cont = njs_continuation(vm->frame);
-
-        cont->function = function->u.native;
-        cont->retval = retval;
-
-        cont->return_address = vm->current;
-        vm->current = (u_char *) njs_continuation_nexus;
-
-        return NJS_APPLIED;
-    }
-
-    ret = njs_function_frame(vm, function, &args[0], &args[1], nargs - 1, 0);
-
-    if (nxt_fast_path(ret == NXT_OK)) {
-        return njs_function_call(vm, retval, 0);
-    }
-
-    return ret;
-}
-
-
 nxt_noinline njs_ret_t
 njs_function_frame(njs_vm_t *vm, njs_function_t *function, njs_value_t *this,
     njs_value_t *args, nxt_uint_t nargs, nxt_bool_t ctor)
@@ -250,6 +159,89 @@ njs_function_frame(njs_vm_t *vm, njs_function_t *function, njs_value_t *this,
 }
 
 
+nxt_noinline njs_native_frame_t *
+njs_function_frame_alloc(njs_vm_t *vm, size_t size)
+{
+    size_t              spare_size;
+    uint8_t             first;
+    njs_native_frame_t  *frame;
+
+    spare_size = vm->frame->free_size;
+
+    if (nxt_fast_path(size <= spare_size)) {
+        frame = (njs_native_frame_t *) vm->frame->free;
+        first = 0;
+
+    } else {
+        spare_size = size + NJS_FRAME_SPARE_SIZE;
+        spare_size = nxt_align_size(spare_size, NJS_FRAME_SPARE_SIZE);
+
+        frame = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
+                                    spare_size);
+        if (nxt_slow_path(frame == NULL)) {
+            return NULL;
+        }
+
+        first = 1;
+    }
+
+    memset(frame, 0, sizeof(njs_native_frame_t));
+
+    frame->first = first;
+    frame->free_size = spare_size - size;
+    frame->free = (u_char *) frame + size;
+
+    frame->previous = vm->frame;
+    vm->frame = frame;
+
+    return frame;
+}
+
+
+nxt_noinline njs_ret_t
+njs_function_apply(njs_vm_t *vm, njs_function_t *function, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t retval)
+{
+    size_t              reserve;
+    njs_ret_t           ret;
+    njs_continuation_t  *cont;
+
+    if (function->native) {
+
+        if (function->continuation_size == 0 && function->bound == NULL) {
+            return function->u.native(vm, args, nargs, retval);
+        }
+
+        reserve = nxt_align_size(sizeof(njs_continuation_t),
+                                 sizeof(njs_value_t)),
+
+        ret = njs_function_native_frame(vm, function, &args[0], &args[1],
+                                        nargs - 1, reserve, 0);
+        if (ret != NJS_OK) {
+            return ret;
+        }
+
+        cont = njs_continuation(vm->frame);
+
+        cont->function = function->u.native;
+        cont->retval = retval;
+
+        cont->return_address = vm->current;
+        vm->current = (u_char *) njs_continuation_nexus;
+
+        return NJS_APPLIED;
+    }
+
+    ret = njs_function_frame(vm, function, &args[0], &args[1], nargs - 1, 0);
+
+    if (nxt_fast_path(ret == NXT_OK)) {
+        return njs_function_call(vm, retval, 0);
+    }
+
+    return ret;
+}
+
+
 nxt_noinline njs_ret_t
 njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
 {
@@ -274,6 +266,14 @@ njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
     vm->scopes[NJS_SCOPE_LOCAL] = frame->local;
 
     return NJS_APPLIED;
+}
+
+
+njs_ret_t
+njs_function_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    return NXT_ERROR;
 }
 
 
