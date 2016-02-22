@@ -19,6 +19,10 @@
 #include <string.h>
 
 
+static njs_ret_t njs_function_activate(njs_vm_t *vm, njs_function_t *function,
+    njs_value_t *this, njs_value_t *args, nxt_uint_t nargs, njs_index_t retval);
+
+
 njs_function_t *
 njs_function_alloc(njs_vm_t *vm)
 {
@@ -312,7 +316,6 @@ static njs_ret_t
 njs_function_prototype_call(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t retval)
 {
-    njs_ret_t       ret;
     njs_value_t     *this;
     njs_function_t  *function;
 
@@ -332,30 +335,7 @@ njs_function_prototype_call(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     function = args[0].data.u.function;
 
-    if (function->native) {
-
-        ret = njs_function_native_frame(vm, function, this, &args[2],
-                                        nargs, 0, 0);
-        if (nxt_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
-
-        /* Skip the "call" method frame. */
-        vm->frame->previous->skip = 1;
-
-        return NJS_APPLIED;
-    }
-
-    ret = njs_function_frame(vm, function, this, &args[2], nargs, 0);
-
-    if (nxt_slow_path(ret != NXT_OK)) {
-        return ret;
-    }
-
-    /* Skip the "call" method frame. */
-    vm->frame->previous->skip = 1;
-
-    return njs_function_call(vm, retval, sizeof(njs_vmcode_function_call_t));
+    return njs_function_activate(vm, function, this, &args[2], nargs, retval);
 }
 
 
@@ -363,7 +343,6 @@ static njs_ret_t
 njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t retval)
 {
-    njs_ret_t       ret;
     njs_array_t     *array;
     njs_value_t     *this;
     njs_function_t  *function;
@@ -392,6 +371,22 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         nargs = 0;
     }
 
+    return njs_function_activate(vm, function, this, args, nargs, retval);
+
+type_error:
+
+    vm->exception = &njs_exception_type_error;
+
+    return NXT_ERROR;
+}
+
+
+static njs_ret_t
+njs_function_activate(njs_vm_t *vm, njs_function_t *function, njs_value_t *this,
+    njs_value_t *args, nxt_uint_t nargs, njs_index_t retval)
+{
+    njs_ret_t  ret;
+
     if (function->native) {
         ret = njs_function_native_frame(vm, function, this, args,
                                         nargs, 0, 0);
@@ -415,12 +410,6 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     vm->frame->previous->skip = 1;
 
     return njs_function_call(vm, retval, sizeof(njs_vmcode_function_call_t));
-
-type_error:
-
-    vm->exception = &njs_exception_type_error;
-
-    return NXT_ERROR;
 }
 
 
