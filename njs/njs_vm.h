@@ -134,15 +134,22 @@ typedef struct {
     njs_object_t                      object;
 
     uint8_t                           args_types[NJS_ARGS_TYPES_MAX];
+    uint8_t                           args_offset;
+
+    /*
+     * TODO Shared
+     * When function object is used as value: in assignments,
+     * as function argument, as property and as object to get properties.
+     */
 
 #if (NXT_64BIT)
     uint8_t                           native;
     uint8_t                           continuation_size;
-    uint32_t                          args_offset;
+    uint8_t                           shared;
 #else
     uint8_t                           native;
     uint8_t                           continuation_size;
-    uint16_t                          args_offset;
+    uint8_t                           shared;
 #endif
 
     union {
@@ -272,6 +279,7 @@ union njs_value_s {
             .continuation_size = _size,                                       \
             .args_types = { __VA_ARGS__ },                                    \
             .args_offset = 1,                                                 \
+            .shared = 1,                                                      \
             .u.native = _function,                                            \
         }                                                                     \
     }                                                                         \
@@ -466,6 +474,13 @@ typedef struct {
     njs_index_t                retval;
     njs_function_lambda_t      *lambda;
 } njs_vmcode_function_t;
+
+
+typedef struct {
+    njs_vmcode_t               code;
+    njs_index_t                retval;
+    njs_index_t                function;
+} njs_vmcode_function_copy_t;
 
 
 typedef struct {
@@ -783,6 +798,8 @@ njs_ret_t njs_vmcode_array(njs_vm_t *vm, njs_value_t *inlvd1,
     njs_value_t *inlvd2);
 njs_ret_t njs_vmcode_function(njs_vm_t *vm, njs_value_t *inlvd1,
     njs_value_t *invld2);
+njs_ret_t njs_vmcode_function_copy(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *invld);
 njs_ret_t njs_vmcode_regexp(njs_vm_t *vm, njs_value_t *inlvd1,
     njs_value_t *invld2);
 

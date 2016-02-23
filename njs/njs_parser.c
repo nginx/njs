@@ -318,6 +318,7 @@ njs_parser_function_declaration(njs_vm_t *vm, njs_parser_t *parser)
     value = njs_variable_value(parser, node->index);
     value->data.u.function = function;
     value->type = NJS_FUNCTION;
+    value->data.truth = 1;
 
     parser = njs_parser_function_create(vm, parser);
     if (nxt_slow_path(parser == NULL)) {
@@ -384,6 +385,7 @@ njs_parser_function_expression(njs_vm_t *vm, njs_parser_t *parser)
 
         value->data.u.function = function;
         value->type = NJS_FUNCTION;
+        value->data.truth = 1;
         lambda = function->u.lambda;
 
     } else {
@@ -1462,6 +1464,7 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
             break;
         }
 
+        parser->code_size += sizeof(njs_vmcode_function_copy_t);
         node->lvalue = NJS_LVALUE_ENABLED;
         node->u.variable = var;
         break;

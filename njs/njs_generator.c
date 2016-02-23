@@ -23,6 +23,8 @@
 
 static nxt_int_t njs_generator(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node);
+static nxt_int_t njs_generate_name(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *node);
 static nxt_int_t njs_generate_variable(njs_parser_t *parser,
     njs_parser_node_t *node);
 static nxt_int_t njs_generate_if_statement(njs_vm_t *vm, njs_parser_t *parser,
@@ -89,6 +91,8 @@ static nxt_int_t njs_generate_function_call(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node);
 static nxt_int_t njs_generate_method_call(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node);
+static nxt_noinline nxt_int_t njs_generate_call(njs_vm_t *vm,
+    njs_parser_t *parser, njs_parser_node_t *node);
 static nxt_int_t njs_generate_try_statement(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node);
 static nxt_int_t njs_generate_throw_statement(njs_vm_t *vm,
@@ -280,7 +284,7 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
         return NXT_OK;
 
     case NJS_TOKEN_NAME:
-        return njs_generate_variable(parser, node);
+        return njs_generate_name(vm, parser, node);
 
     case NJS_TOKEN_FUNCTION:
         return njs_generate_function_declaration(vm, parser, node);
@@ -306,6 +310,37 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
 
         return NXT_ERROR;
     }
+}
+
+
+static nxt_int_t
+njs_generate_name(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
+{
+    njs_index_t                 index;
+    njs_value_t                 *value;
+    njs_vmcode_function_copy_t  *copy;
+
+    index = node->u.variable->index;
+    value = njs_variable_value(parser, index);
+
+    if (value->type == NJS_FUNCTION) {
+
+        node->index = njs_generator_dest_index(vm, parser, node);
+        if (nxt_slow_path(node->index == NJS_INDEX_ERROR)) {
+            return node->index;
+        }
+
+        njs_generate_code(parser, njs_vmcode_function_copy_t, copy);
+        copy->code.operation = njs_vmcode_function_copy;
+        copy->code.operands = NJS_VMCODE_2OPERANDS;
+        copy->code.retval = NJS_VMCODE_RETVAL;
+        copy->retval = node->index;
+        copy->function = index;
+
+        return NXT_OK;
+    }
+
+    return njs_generate_variable(parser, node);
 }
 
 
@@ -1146,11 +1181,11 @@ static nxt_int_t
 njs_generate_assignment(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node)
 {
-    nxt_int_t              ret;
-    njs_value_t            *value;
-    njs_parser_node_t      *lvalue, *expr, *object, *property;
-    njs_vmcode_move_t      *move;
-    njs_vmcode_prop_set_t  *prop_set;
+    nxt_int_t                   ret;
+    njs_value_t                 *value;
+    njs_parser_node_t           *lvalue, *expr, *object, *property;
+    njs_vmcode_move_t           *move;
+    njs_vmcode_prop_set_t       *prop_set;
 
     lvalue = node->left;
     expr = node->right;
@@ -1954,12 +1989,8 @@ static nxt_int_t
 njs_generate_function_call(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node)
 {
-    uintptr_t                    nargs;
     nxt_int_t                    ret;
-    njs_index_t                  retval;
-    njs_parser_node_t            *arg, *name;
-    njs_vmcode_move_t            *move;
-    njs_vmcode_function_call_t   *call;
+    njs_parser_node_t            *name;
     njs_vmcode_function_frame_t  *func;
 
     if (node->left != NULL) {
@@ -1989,42 +2020,14 @@ njs_generate_function_call(njs_vm_t *vm, njs_parser_t *parser,
         return ret;
     }
 
-    nargs = 0;
+    ret = njs_generate_call(vm, parser, node);
 
-    for (arg = node->right; arg != NULL; arg = arg->right) {
-        nargs++;
-
-        ret = njs_generator(vm, parser, arg->left);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return ret;
-        }
-
-        if (arg->index != arg->left->index) {
-            njs_generate_code(parser, njs_vmcode_move_t, move);
-            move->code.operation = njs_vmcode_move;
-            move->code.operands = NJS_VMCODE_2OPERANDS;
-            move->code.retval = NJS_VMCODE_RETVAL;
-            move->dst = arg->index;
-            move->src = arg->left->index;
-        }
+    if (nxt_fast_path(ret >= 0)) {
+        func->nargs = ret;
+        return NXT_OK;
     }
 
-    func->nargs = nargs;
-
-    retval = njs_generator_dest_index(vm, parser, node);
-    if (nxt_slow_path(retval == NJS_INDEX_ERROR)) {
-        return retval;
-    }
-
-    node->index = retval;
-
-    njs_generate_code(parser, njs_vmcode_function_call_t, call);
-    call->code.operation = njs_vmcode_function_call;
-    call->code.operands = NJS_VMCODE_1OPERAND;
-    call->code.retval = NJS_VMCODE_NO_RETVAL;
-    call->retval = retval;
-
-    return NXT_OK;
+    return ret;
 }
 
 
@@ -2032,13 +2035,9 @@ static nxt_int_t
 njs_generate_method_call(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node)
 {
-    uintptr_t                   nargs;
-    nxt_int_t                   ret;
-    njs_index_t                 retval;
-    njs_parser_node_t           *arg, *prop;
-    njs_vmcode_move_t           *move;
-    njs_vmcode_method_frame_t   *method;
-    njs_vmcode_function_call_t  *call;
+    nxt_int_t                  ret;
+    njs_parser_node_t          *prop;
+    njs_vmcode_method_frame_t  *method;
 
     prop = node->left;
 
@@ -2069,6 +2068,27 @@ njs_generate_method_call(njs_vm_t *vm, njs_parser_t *parser,
         return ret;
     }
 
+    ret = njs_generate_call(vm, parser, node);
+
+    if (nxt_fast_path(ret >= 0)) {
+        method->nargs = ret;
+        return NXT_OK;
+    }
+
+    return ret;
+}
+
+
+static nxt_noinline nxt_int_t
+njs_generate_call(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
+{
+    nxt_int_t                   ret;
+    nxt_uint_t                  nargs;
+    njs_index_t                 retval;
+    njs_parser_node_t           *arg;
+    njs_vmcode_move_t           *move;
+    njs_vmcode_function_call_t  *call;
+
     nargs = 0;
 
     for (arg = node->right; arg != NULL; arg = arg->right) {
@@ -2089,8 +2109,6 @@ njs_generate_method_call(njs_vm_t *vm, njs_parser_t *parser,
         }
     }
 
-    method->nargs = nargs;
-
     retval = njs_generator_dest_index(vm, parser, node);
     if (nxt_slow_path(retval == NJS_INDEX_ERROR)) {
         return retval;
@@ -2104,7 +2122,7 @@ njs_generate_method_call(njs_vm_t *vm, njs_parser_t *parser,
     call->code.retval = NJS_VMCODE_NO_RETVAL;
     call->retval = retval;
 
-    return NXT_OK;
+    return nargs;
 }
 
 

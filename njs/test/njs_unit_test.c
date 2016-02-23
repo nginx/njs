@@ -3138,6 +3138,53 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("[].slice.call()"),
       nxt_string("TypeError") },
 
+    { nxt_string("function f(a) {} ; var a = f; var b = f; a === b"),
+      nxt_string("true") },
+
+    { nxt_string("function f() {} ; f.toString()"),
+      nxt_string("[object Function]") },
+
+    { nxt_string("function f() {}; f"),
+      nxt_string("[object Function]") },
+
+    { nxt_string("function f() {}; f = f + 1; f"),
+      nxt_string("[object Function]1") },
+
+#if 0
+    { nxt_string("function f() {}; f += 1; f"),
+      nxt_string("[object Function]1") },
+#endif
+
+#if 0
+    { nxt_string("function f() {}; function g() { return f }; g()"),
+      nxt_string("[object Function]") },
+#endif
+
+    { nxt_string("function f(a) { return this+a }; var a = f; a.call('0', 1)"),
+      nxt_string("01") },
+
+    { nxt_string("function f(a) { return this+a }; f.call('0', 1)"),
+      nxt_string("01") },
+
+    { nxt_string("function f(a) { return this+a };"
+                 "function g(f, a, b) { return f.call(a, b) }; g(f, '0', 1)"),
+      nxt_string("01") },
+
+    { nxt_string("function f(a) { return this+a };"
+                 "o = { g: function (f, a, b) { return f.call(a, b) } };"
+                 "o.g(f, '0', 1)"),
+      nxt_string("01") },
+
+    { nxt_string("var concat = ''.concat; concat(1,2,3)"),
+      nxt_string("TypeError") },
+
+    { nxt_string("var concat = ''.concat; concat.call(1,2,3)"),
+      nxt_string("123") },
+
+    { nxt_string("var concat = ''.concat; concat.yes = 'OK';"
+                 "concat.call(1,2,3, concat.yes)"),
+      nxt_string("123OK") },
+
     { nxt_string("var f = function(a, b) { return this + a + b }"
                  "var b = f.bind('1'); b('2', '3')"),
       nxt_string("123") },

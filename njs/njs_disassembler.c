@@ -35,6 +35,8 @@ static njs_code_name_t  code_names[] = {
           nxt_string("OBJECT          ") },
     { njs_vmcode_function, sizeof(njs_vmcode_function_t),
           nxt_string("FUNCTION        ") },
+    { njs_vmcode_function_copy, sizeof(njs_vmcode_function_copy_t),
+          nxt_string("FUNCTION COPY   ") },
     { njs_vmcode_regexp, sizeof(njs_vmcode_regexp_t),
           nxt_string("REGEXP          ") },
 

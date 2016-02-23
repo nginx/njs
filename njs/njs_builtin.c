@@ -101,6 +101,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
     for (i = NJS_FUNCTION_OBJECT; i < NJS_FUNCTION_MAX; i++) {
         functions[i].native = 1;
         functions[i].args_offset = 1;
+        functions[i].shared = 0;
         functions[i].u.native = native_functions[i].native;
         functions[i].args_types[0] = native_functions[i].args_types[0];
         functions[i].args_types[1] = native_functions[i].args_types[1];

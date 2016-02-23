@@ -72,7 +72,7 @@ static njs_ret_t njs_array_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_value_t *object, int32_t index);
 static njs_ret_t njs_object_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_value_t *value, njs_object_t *object);
-static njs_ret_t njs_function_private_copy(njs_vm_t *vm,
+static njs_ret_t njs_method_private_copy(njs_vm_t *vm,
     njs_property_query_t *pq);
 static nxt_noinline uint32_t njs_integer_value(double num);
 static nxt_noinline njs_ret_t njs_values_equal(njs_value_t *val1,
@@ -392,8 +392,7 @@ njs_vmcode_array(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 
 
 njs_ret_t
-njs_vmcode_function(njs_vm_t *vm, njs_value_t *invld1,
-    njs_value_t *invld2)
+njs_vmcode_function(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 {
     njs_function_t         *function;
     njs_vmcode_function_t  *code;
@@ -406,6 +405,7 @@ njs_vmcode_function(njs_vm_t *vm, njs_value_t *invld1,
 
         code = (njs_vmcode_function_t *) vm->current;
         function->u.lambda = code->lambda;
+
         vm->retval.data.u.function = function;
         vm->retval.type = NJS_FUNCTION;
         vm->retval.data.truth = 1;
@@ -414,6 +414,34 @@ njs_vmcode_function(njs_vm_t *vm, njs_value_t *invld1,
     }
 
     return NXT_ERROR;
+}
+
+
+njs_ret_t
+njs_vmcode_function_copy(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
+{
+    njs_function_t  *function;
+
+    if (njs_is_function(value)) {
+
+        function = njs_function_value_copy(vm, value);
+
+        if (nxt_fast_path(function != NULL)) {
+            vm->retval.data.u.function = function;
+            vm->retval.type = NJS_FUNCTION;
+            vm->retval.data.truth = 1;
+
+            return sizeof(njs_vmcode_function_copy_t);
+        }
+
+        return NXT_ERROR;
+    }
+
+    vm->retval = *value;
+
+    njs_retain(value);
+
+    return sizeof(njs_vmcode_function_copy_t);
 }
 
 
@@ -470,7 +498,7 @@ njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
 
         case NJS_METHOD:
             if (pq.shared) {
-                ret = njs_function_private_copy(vm, &pq);
+                ret = njs_method_private_copy(vm, &pq);
 
                 if (nxt_slow_path(ret != NXT_OK)) {
                     return ret;
@@ -870,12 +898,13 @@ static nxt_noinline njs_ret_t
 njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
     njs_value_t *property)
 {
-    double        num;
-    int32_t       index;
-    uint32_t      (*hash)(const void *, size_t);
-    njs_ret_t     ret;
-    njs_extern_t  *ext;
-    njs_object_t  *obj;
+    double          num;
+    int32_t         index;
+    uint32_t        (*hash)(const void *, size_t);
+    njs_ret_t       ret;
+    njs_extern_t    *ext;
+    njs_object_t    *obj;
+    njs_function_t  *function;
 
     hash = nxt_djb_hash;
 
@@ -921,9 +950,17 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
     case NJS_OBJECT_BOOLEAN:
     case NJS_OBJECT_NUMBER:
     case NJS_OBJECT_STRING:
-    case NJS_FUNCTION:
     case NJS_REGEXP:
         obj = object->data.u.object;
+        break;
+
+    case NJS_FUNCTION:
+        function = njs_function_value_copy(vm, object);
+        if (nxt_slow_path(function == NULL)) {
+            return NXT_ERROR;
+        }
+
+        obj = &function->object;
         break;
 
     case NJS_EXTERNAL:
@@ -1074,9 +1111,9 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 
 
 static njs_ret_t
-njs_function_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
+njs_method_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
 {
-    njs_function_t     *func;
+    njs_function_t     *function;
     njs_object_prop_t  *prop, *shared;
 
     prop = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_object_prop_t));
@@ -1087,14 +1124,10 @@ njs_function_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
     shared = pq->lhq.value;
     *prop = *shared;
 
-    func = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_function_t));
-    if (nxt_slow_path(func == NULL)) {
+    function = njs_function_value_copy(vm, &prop->value);
+    if (nxt_slow_path(function == NULL)) {
         return NXT_ERROR;
     }
-
-    *func = *prop->value.data.u.function;
-    func->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION];
-    prop->value.data.u.function = func;
 
     pq->lhq.replace = 0;
     pq->lhq.value = prop;

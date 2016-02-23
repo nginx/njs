@@ -31,14 +31,38 @@ njs_function_alloc(njs_vm_t *vm)
     function = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_function_t));
 
     if (nxt_fast_path(function != NULL)) {
-        function->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION];
         function->args_offset = 1;
+        function->shared = 1;
 
         function->u.lambda = nxt_mem_cache_zalloc(vm->mem_cache_pool,
                                                  sizeof(njs_function_lambda_t));
         if (nxt_slow_path(function->u.lambda == NULL)) {
             return NULL;
         }
+    }
+
+    return function;
+}
+
+
+njs_function_t *
+njs_function_value_copy(njs_vm_t *vm, njs_value_t *value)
+{
+    njs_function_t  *function;
+
+    function = value->data.u.function;
+
+    if (!function->shared) {
+        return function;
+    }
+
+    function = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_function_t));
+
+    if (nxt_fast_path(function != NULL)) {
+        *function = *value->data.u.function;
+        function->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION];
+        function->shared = 0;
+        value->data.u.function = function;
     }
 
     return function;
@@ -434,6 +458,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     *function = *args[0].data.u.function;
 
     function->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION];
+    function->shared = 0;
 
     if (nargs == 1) {
         args = (njs_value_t *) &njs_value_void;
