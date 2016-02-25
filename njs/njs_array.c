@@ -34,7 +34,7 @@ typedef struct {
     union {
         njs_continuation_t  cont;
         u_char              padding[NJS_CONTINUATION_SIZE];
-    };
+    } u;
     njs_value_t             retval;
     int32_t                 index;
     uint32_t                length;
@@ -778,7 +778,7 @@ njs_array_prototype_for_each(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     next = njs_continuation(vm->frame);
-    next->cont.function = njs_array_prototype_for_each_cont;
+    next->u.cont.function = njs_array_prototype_for_each_cont;
 
     return njs_array_prototype_for_each_cont(vm, args, nargs, unused);
 }
@@ -814,7 +814,7 @@ njs_array_prototype_some(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     next = njs_continuation(vm->frame);
-    next->cont.function = njs_array_prototype_some_cont;
+    next->u.cont.function = njs_array_prototype_some_cont;
     next->retval.data.truth = 0;
 
     return njs_array_prototype_some_cont(vm, args, nargs, unused);
@@ -859,7 +859,7 @@ njs_array_prototype_every(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     next = njs_continuation(vm->frame);
-    next->cont.function = njs_array_prototype_every_cont;
+    next->u.cont.function = njs_array_prototype_every_cont;
     next->retval.data.truth = 1;
 
     return njs_array_prototype_every_cont(vm, args, nargs, unused);
@@ -936,11 +936,14 @@ njs_array_iterator_apply(njs_vm_t *vm, njs_array_next_t *next,
     njs_array_t  *array;
     njs_value_t  arguments[4];
 
-    n = next->index;
-
-    arguments[0] = (nargs > 2) ? args[2] : njs_value_void;
+    /*
+     * The cast "*(njs_value_t *) &" is required by SunC.
+     * Simple "(njs_value_t)" does not help.
+     */
+    arguments[0] = (nargs > 2) ? args[2] : *(njs_value_t *) &njs_value_void;
     /* GC: array elt, array */
     array = args[0].data.u.array;
+    n = next->index;
     arguments[1] = array->start[n];
     njs_number_set(&arguments[2], n);
     arguments[3] = args[0];
