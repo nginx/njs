@@ -366,12 +366,11 @@ njs_array_prototype_push(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
     njs_ret_t    ret;
-    nxt_uint_t   i, n;
+    nxt_uint_t   i;
     njs_array_t  *array;
 
     if (njs_is_array(&args[0])) {
         array = args[0].data.u.array;
-        n = nargs - 1;
 
         if (nargs != 0) {
             if (nargs > array->size - array->length) {
