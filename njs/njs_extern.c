@@ -126,6 +126,47 @@ njs_add_external(nxt_lvlhsh_t *hash, nxt_mem_cache_pool_t *mcp,
 }
 
 
+nxt_int_t
+njs_external_get(njs_vm_t *vm, njs_opaque_value_t *obj, nxt_str_t *property,
+    njs_opaque_value_t *value)
+{
+    uint32_t            (*key_hash)(const void *, size_t);
+    njs_value_t         *object;
+    njs_extern_t        *ext;
+    nxt_lvlhsh_t        hash;
+    nxt_lvlhsh_query_t  lhq;
+
+    object = (njs_value_t *) obj;
+
+    key_hash = nxt_djb_hash;
+    hash = vm->externals_hash;
+
+    if (object != NULL) {
+        if (!njs_is_external(object)) {
+            return NXT_ERROR;
+        }
+
+        ext = object->data.u.external;
+        hash = ext->hash;
+
+        if (ext->type == NJS_EXTERN_CASELESS_OBJECT) {
+            key_hash = nxt_djb_hash_lowcase;
+        }
+    }
+
+    lhq.key_hash = key_hash(property->data, property->len);
+    lhq.key = *property;
+    lhq.proto = &njs_extern_hash_proto;
+
+    if (nxt_lvlhsh_find(&hash, &lhq) == NXT_OK) {
+        *value = *(njs_opaque_value_t *) lhq.value;
+        return NXT_OK;
+    }
+
+    return NXT_ERROR;
+}
+
+
 njs_extern_t *
 njs_parser_external(njs_vm_t *vm, njs_parser_t *parser)
 {

@@ -130,7 +130,7 @@ struct njs_object_s {
 
 #define NJS_ARGS_TYPES_MAX            3
 
-typedef struct {
+struct njs_function_s {
     njs_object_t                      object;
 
     uint8_t                           args_types[NJS_ARGS_TYPES_MAX];
@@ -158,7 +158,7 @@ typedef struct {
     } u;
 
     njs_value_t                       *bound;
-} njs_function_t;
+};
 
 
 typedef struct njs_continuation_s     njs_continuation_t;
@@ -684,10 +684,10 @@ enum njs_functions_e {
 
 
 #define njs_scope_index(value)                                                \
-    ((njs_index_t) (value << NJS_SCOPE_SHIFT))
+    ((njs_index_t) ((value) << NJS_SCOPE_SHIFT))
 
 #define njs_global_scope_index(value)                                         \
-    ((njs_index_t) ((value << NJS_SCOPE_SHIFT) | NJS_SCOPE_GLOBAL))
+    ((njs_index_t) (((value) << NJS_SCOPE_SHIFT) | NJS_SCOPE_GLOBAL))
 
 
 #define NJS_INDEX_OBJECT         njs_global_scope_index(NJS_FUNCTION_OBJECT)
@@ -699,7 +699,8 @@ enum njs_functions_e {
 #define NJS_INDEX_REGEXP         njs_global_scope_index(NJS_FUNCTION_REGEXP)
 #define NJS_INDEX_EVAL           njs_global_scope_index(NJS_FUNCTION_EVAL)
 
-#define NJS_INDEX_GLOBAL_OFFSET  njs_scope_index(NJS_FUNCTION_MAX)
+#define NJS_INDEX_GLOBAL_RETVAL  njs_global_scope_index(NJS_FUNCTION_MAX)
+#define NJS_INDEX_GLOBAL_OFFSET  njs_scope_index(NJS_FUNCTION_MAX + 1)
 
 
 #define njs_offset(index)                                                     \

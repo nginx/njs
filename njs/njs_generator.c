@@ -163,6 +163,9 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
     case NJS_TOKEN_END:
         return njs_generate_stop_statement(vm, parser, node);
 
+    case NJS_TOKEN_CALL:
+        return njs_generate_children(vm, parser, node);
+
     case NJS_TOKEN_COMMA:
         return njs_generate_comma_expression(vm, parser, node);
 

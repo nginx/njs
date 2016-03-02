@@ -167,10 +167,12 @@ njs_vm_destroy(njs_vm_t *vm)
 
 
 nxt_int_t
-njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
+njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end,
+    njs_function_t **function)
 {
     nxt_int_t          ret;
     njs_lexer_t        *lexer;
+    njs_value_t        *value;
     njs_parser_t       *parser;
     njs_parser_node_t  *node;
 
@@ -214,6 +216,16 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     node = njs_parser(vm, parser);
     if (nxt_slow_path(node == NULL)) {
         return NJS_ERROR;
+    }
+
+    if (function != NULL) {
+        if (node->token == NJS_TOKEN_CALL) {
+            value = njs_variable_value(parser, node->right->index);
+            *function = value->data.u.function;
+
+        } else {
+            *function = NULL;
+        }
     }
 
     *start = parser->lexer->start;
@@ -314,6 +326,47 @@ fail:
     }
 
     return NULL;
+}
+
+
+nxt_int_t
+njs_vm_call(njs_vm_t *vm, njs_function_t *function, njs_opaque_value_t *args,
+    nxt_uint_t nargs)
+{
+    u_char       *current;
+    njs_ret_t    ret;
+    njs_value_t  *this;
+
+    static const njs_vmcode_stop_t  stop[] = {
+        { .code = { .operation = njs_vmcode_stop,
+                    .operands =  NJS_VMCODE_1OPERAND,
+                    .retval = NJS_VMCODE_NO_RETVAL },
+          .retval = NJS_INDEX_GLOBAL_RETVAL },
+    };
+
+    this = (njs_value_t *) &njs_value_void;
+
+    ret = njs_function_frame(vm, function, this,
+                             (njs_value_t *) args, nargs, 0);
+
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
+    current = vm->current;
+    vm->current = (u_char *) stop;
+
+    (void) njs_function_call(vm, NJS_INDEX_GLOBAL_RETVAL, 0);
+
+    ret = njs_vmcode_interpreter(vm);
+
+    vm->current = current;
+
+    if (ret == NJS_STOP) {
+        ret = NXT_OK;
+    }
+
+    return ret;
 }
 
 

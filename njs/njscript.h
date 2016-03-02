@@ -12,7 +12,12 @@ typedef intptr_t                    njs_ret_t;
 typedef uintptr_t                   njs_index_t;
 typedef struct njs_vm_s             njs_vm_t;
 typedef union  njs_value_s          njs_value_t;
+typedef struct njs_function_s       njs_function_t;
 typedef struct njs_vm_shared_s      njs_vm_shared_t;
+
+typedef struct {
+    uint64_t                        filler[2];
+} njs_opaque_value_t;
 
 
 /* sizeof(njs_value_t) is 16 bytes. */
@@ -71,14 +76,19 @@ struct njs_external_s {
 NXT_EXPORT nxt_int_t njs_add_external(nxt_lvlhsh_t *hash,
     nxt_mem_cache_pool_t *mcp, uintptr_t object, njs_external_t *external,
     nxt_uint_t n);
+NXT_EXPORT nxt_int_t njs_external_get(njs_vm_t *vm, njs_opaque_value_t *object,
+    nxt_str_t *property, njs_opaque_value_t *value);
 
 NXT_EXPORT njs_vm_t *njs_vm_create(nxt_mem_cache_pool_t *mcp,
     njs_vm_shared_t **shared, nxt_lvlhsh_t *externals);
 NXT_EXPORT void njs_vm_destroy(njs_vm_t *vm);
 
-NXT_EXPORT nxt_int_t njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end);
+NXT_EXPORT nxt_int_t njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end,
+    njs_function_t **function);
 NXT_EXPORT njs_vm_t *njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp,
     void **external);
+NXT_EXPORT nxt_int_t njs_vm_call(njs_vm_t *vm, njs_function_t *function,
+    njs_opaque_value_t *args, nxt_uint_t nargs);
 NXT_EXPORT nxt_int_t njs_vm_run(njs_vm_t *vm);
 
 NXT_EXPORT njs_ret_t njs_vm_return_string(njs_vm_t *vm, u_char *start,
