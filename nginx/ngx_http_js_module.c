@@ -449,7 +449,8 @@ ngx_http_js_vm_run(ngx_http_request_t *r, ngx_http_js_ctx_t *js,
     cln->handler = ngx_http_js_cleanup_mem_cache_pool;
     cln->data = mcp;
 
-    nvm = njs_vm_clone(js->vm, mcp, (void **) &r);
+    /* The double cast is required by GCC 4.1. */
+    nvm = njs_vm_clone(js->vm, mcp, (void **) (void *) &r);
     if (nvm == NULL) {
         return NGX_ERROR;
     }
