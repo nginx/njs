@@ -82,6 +82,7 @@ static nxt_noinline njs_ret_t njs_values_compare(njs_value_t *val1,
     njs_value_t *val2);
 static nxt_noinline nxt_bool_t njs_values_strict_equal(njs_value_t *val1,
     njs_value_t *val2);
+static njs_object_t *njs_function_new_object(njs_vm_t *vm, njs_value_t *value);
 static njs_ret_t njs_vmcode_continuation(njs_vm_t *vm, njs_value_t *invld1,
     njs_value_t *invld2);
 static njs_native_frame_t *
@@ -117,6 +118,7 @@ const njs_value_t  njs_value_false =        njs_value(NJS_BOOLEAN, 0, 0.0);
 const njs_value_t  njs_value_true =         njs_value(NJS_BOOLEAN, 1, 1.0);
 const njs_value_t  njs_value_zero =         njs_value(NJS_NUMBER, 0, 0.0);
 const njs_value_t  njs_value_nan =          njs_value(NJS_NUMBER, 0, NJS_NAN);
+
 
 const njs_value_t  njs_string_empty =       njs_string("");
 const njs_value_t  njs_string_comma =       njs_string(",");
@@ -2151,8 +2153,7 @@ njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *value, njs_value_t *nargs)
         }
 
         if (func->code.ctor) {
-            object = njs_object_alloc(vm);
-
+            object = njs_function_new_object(vm, value);
             if (nxt_slow_path(object == NULL)) {
                 return NXT_ERROR;
             }
@@ -2179,6 +2180,46 @@ njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *value, njs_value_t *nargs)
     vm->exception = &njs_exception_type_error;
 
     return NXT_ERROR;
+}
+
+
+static njs_object_t *
+njs_function_new_object(njs_vm_t *vm, njs_value_t *value)
+{
+    nxt_int_t           ret;
+    njs_value_t         *proto;
+    njs_object_t        *object;
+    njs_function_t      *function;
+    njs_object_prop_t   *prop;
+    nxt_lvlhsh_query_t  lhq;
+
+    object = njs_object_alloc(vm);
+
+    if (nxt_fast_path(object != NULL)) {
+
+        lhq.key_hash = NJS_PROTOTYPE_HASH;
+        lhq.key.len = sizeof("prototype") - 1;
+        lhq.key.data = (u_char *) "prototype";
+        lhq.proto = &njs_object_hash_proto;
+        function = value->data.u.function;
+
+        ret = nxt_lvlhsh_find(&function->object.hash, &lhq);
+
+        if (ret == NXT_OK) {
+            prop = lhq.value;
+            proto = &prop->value;
+
+        } else {
+            proto = njs_function_property_prototype_create(vm, value);
+        }
+
+        if (nxt_fast_path(proto != NULL)) {
+            object->__proto__ = proto->data.u.object;
+            return object;
+        }
+   }
+
+   return NULL;
 }
 
 

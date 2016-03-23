@@ -3248,6 +3248,20 @@ static njs_unit_test_t  njs_test[] =
                  "o.a"),
       nxt_string("7") },
 
+    { nxt_string("function F(a, b) { return }"
+                 "F.prototype.constructor === F"),
+      nxt_string("true") },
+
+    { nxt_string("function F() { return }"
+                 "F.prototype.ok = 'OK';"
+                 "var o = new F(); o.ok"),
+      nxt_string("OK") },
+
+    { nxt_string("function F() { return }"
+                 "var o = new F();"
+                 "o.constructor === F"),
+      nxt_string("true") },
+
     { nxt_string("function a() { return function(x) { return x + 1 } }"
                  "b = a(); b(2)"),
       nxt_string("3") },

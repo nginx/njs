@@ -77,14 +77,26 @@ njs_builtin_objects_create(njs_vm_t *vm)
         &njs_math_object_init,
     };
 
-    static const njs_object_prop_t  null_proto_property = {
+    static const njs_object_prop_t    null_proto_property = {
         .type = NJS_WHITEOUT,
         .name = njs_string("__proto__"),
         .value = njs_value(NJS_NULL, 0, 0.0),
     };
 
+    static const njs_object_prop_t    function_prototype_property = {
+        .type = NJS_NATIVE_GETTER,
+        .name = njs_string("prototype"),
+        .value = njs_native_getter(njs_function_prototype_create),
+    };
+
     ret = njs_object_hash_create(vm, &vm->shared->null_proto_hash,
                                  &null_proto_property, 1);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NXT_ERROR;
+    }
+
+    ret = njs_object_hash_create(vm, &vm->shared->function_prototype_hash,
+                                 &function_prototype_property, 1);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NXT_ERROR;
     }
@@ -105,8 +117,6 @@ njs_builtin_objects_create(njs_vm_t *vm)
     prototypes = vm->shared->prototypes;
 
     for (i = NJS_PROTOTYPE_OBJECT; i < NJS_PROTOTYPE_MAX; i++) {
-        /* TODO: shared hash: prototype & constructor getters, methods */
-
         ret = njs_object_hash_create(vm, &prototypes[i].shared_hash,
                                      prototype_init[i]->properties,
                                      prototype_init[i]->items);
@@ -133,8 +143,6 @@ njs_builtin_objects_create(njs_vm_t *vm)
             return NXT_ERROR;
         }
     }
-
-    /* TODO: create function shared hash: prototype+contructor getter */
 
     return NXT_OK;
 }

@@ -353,28 +353,47 @@ njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value)
 njs_ret_t
 njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value)
 {
-    int32_t                    index;
-    nxt_int_t                  ret;
-    njs_function_t             *function;
-    njs_object_prop_t          *prop;
-    nxt_lvlhsh_query_t         lhq;
+    int32_t         index;
+    njs_value_t     *proto;
+    njs_function_t  *function;
 
-    static const njs_value_t   prototype = njs_string("prototype");
-
+    proto = NULL;
     function = value->data.u.function;
     index = function - vm->functions;
 
-    if (index < 0 && index > NJS_PROTOTYPE_MAX) {
-        vm->retval = njs_value_void;
-        return NXT_OK;
+    if (index >= 0 && index < NJS_PROTOTYPE_MAX) {
+        proto = njs_property_prototype_create(vm, &function->object.hash,
+                                              &vm->prototypes[index]);
     }
 
-    prop = njs_object_prop_alloc(vm, &prototype);
+    if (proto == NULL) {
+        proto = (njs_value_t *) &njs_value_void;
+    }
+
+    vm->retval = *proto;
+
+    return NXT_OK;
+}
+
+
+njs_value_t *
+njs_property_prototype_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
+    njs_object_t *prototype)
+{
+    nxt_int_t                  ret;
+    njs_object_prop_t          *prop;
+    nxt_lvlhsh_query_t         lhq;
+
+    static const njs_value_t   prototype_string = njs_string("prototype");
+
+    prop = njs_object_prop_alloc(vm, &prototype_string);
     if (nxt_slow_path(prop == NULL)) {
-        return NXT_ERROR;
+        return NULL;
     }
 
-    prop->value.data.u.object = &vm->prototypes[index];
+    /* GC */
+
+    prop->value.data.u.object = prototype;
     prop->value.type = NJS_OBJECT;
     prop->value.data.truth = 1;
 
@@ -390,15 +409,16 @@ njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value)
     lhq.pool = vm->mem_cache_pool;
     lhq.proto = &njs_object_hash_proto;
 
-    ret = nxt_lvlhsh_insert(&function->object.hash, &lhq);
+    ret = nxt_lvlhsh_insert(hash, &lhq);
 
     if (nxt_fast_path(ret == NXT_OK)) {
-        vm->retval = prop->value;
+        return &prop->value;
     }
 
-    /* TODO: exception NXT_ERROR. */
+    /* Memory allocation or NXT_DECLINED error. */
+    vm->exception = &njs_exception_internal_error;
 
-    return ret;
+    return NULL;
 }
 
 
@@ -469,14 +489,9 @@ njs_object_prototype_get_proto(njs_vm_t *vm, njs_value_t *value)
 static njs_ret_t
 njs_object_prototype_create_constructor(njs_vm_t *vm, njs_value_t *value)
 {
-    int32_t                   index;
-    nxt_int_t                 ret;
-    njs_value_t               *constructor;
-    njs_object_t              *prototype;
-    njs_object_prop_t         *prop;
-    nxt_lvlhsh_query_t        lhq;
-
-    static const njs_value_t  constructor_string = njs_string("constructor");
+    int32_t       index;
+    njs_value_t   *cons;
+    njs_object_t  *prototype;
 
     if (njs_is_object(value)) {
         prototype = value->data.u.object;
@@ -503,16 +518,35 @@ njs_object_prototype_create_constructor(njs_vm_t *vm, njs_value_t *value)
 
 found:
 
+    cons = njs_property_constructor_create(vm, &prototype->hash,
+                                          &vm->scopes[NJS_SCOPE_GLOBAL][index]);
+    if (nxt_fast_path(cons != NULL)) {
+        vm->retval = *cons;
+        return NXT_OK;
+    }
+
+    return NXT_ERROR;
+}
+
+
+njs_value_t *
+njs_property_constructor_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
+    njs_value_t *constructor)
+{
+    nxt_int_t                 ret;
+    njs_object_prop_t         *prop;
+    nxt_lvlhsh_query_t        lhq;
+
+    static const njs_value_t  constructor_string = njs_string("constructor");
+
     prop = njs_object_prop_alloc(vm, &constructor_string);
     if (nxt_slow_path(prop == NULL)) {
-        return NXT_ERROR;
+        return NULL;
     }
 
     /* GC */
 
-    constructor = &vm->scopes[NJS_SCOPE_GLOBAL][index];
     prop->value = *constructor;
-
     prop->enumerable = 0;
 
     lhq.value = prop;
@@ -523,13 +557,16 @@ found:
     lhq.pool = vm->mem_cache_pool;
     lhq.proto = &njs_object_hash_proto;
 
-    ret = nxt_lvlhsh_insert(&prototype->hash, &lhq);
+    ret = nxt_lvlhsh_insert(hash, &lhq);
 
     if (nxt_fast_path(ret == NXT_OK)) {
-        vm->retval = *constructor;
+        return &prop->value;
     }
 
-    return ret;
+    /* Memory allocation or NXT_DECLINED error. */
+    vm->exception = &njs_exception_internal_error;
+
+    return NULL;
 }
 
 

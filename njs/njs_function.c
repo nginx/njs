@@ -35,10 +35,10 @@ njs_function_alloc(njs_vm_t *vm)
         /*
          * nxt_mem_cache_zalloc() does also:
          *   nxt_lvlhsh_init(&function->object.hash);
-         *   nxt_lvlhsh_init(&function->object.shared_hash);
          *   function->object.__proto__ = NULL;
          */
 
+        function->object.shared_hash = vm->shared->function_prototype_hash;
         function->object.shared = 1;
         function->args_offset = 1;
 
@@ -302,6 +302,67 @@ njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
     vm->scopes[NJS_SCOPE_LOCAL] = frame->local;
 
     return NJS_APPLIED;
+}
+
+
+/*
+ * The "prototype" property of user defined functions is created on
+ * demand in private hash of the functions by the "prototype" getter.
+ * The getter creates a copy of function which is private to nJSVM,
+ * adds a "prototype" object property to the copy, and then adds a
+ * "constructor" property in the prototype object.  The "constructor"
+ * property points to the copy of function:
+ *   "F.prototype.constructor === F"
+ */
+
+njs_ret_t
+njs_function_prototype_create(njs_vm_t *vm, njs_value_t *value)
+{
+    njs_value_t  *proto;
+
+    proto = njs_function_property_prototype_create(vm, value);
+
+    if (nxt_fast_path(proto != NULL)) {
+        vm->retval = *proto;
+        return NXT_OK;
+    }
+
+    return NXT_ERROR;
+}
+
+
+njs_value_t *
+njs_function_property_prototype_create(njs_vm_t *vm, njs_value_t *value)
+{
+    njs_value_t     *proto, *cons;
+    njs_object_t    *prototype;
+    njs_function_t  *function;
+
+    prototype = njs_object_alloc(vm);
+
+    if (nxt_slow_path(prototype == NULL)) {
+        return NULL;
+    }
+
+    function = njs_function_value_copy(vm, value);
+
+    if (nxt_slow_path(function == NULL)) {
+        return NULL;
+    }
+
+    proto = njs_property_prototype_create(vm, &function->object.hash,
+                                          prototype);
+    if (nxt_slow_path(proto == NULL)) {
+        return NULL;
+    }
+
+    cons = njs_property_constructor_create(vm, &prototype->hash, value);
+
+    if (nxt_fast_path(cons != NULL)) {
+        return proto;
+    }
+
+    return NULL;
 }
 
 
