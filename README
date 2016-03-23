@@ -3,6 +3,14 @@ Configure nginx with HTTP JavaScript module using the --add-module option:
 
     ./configure --add-module=<path-to-njs>/nginx
 
+Alternatively, you can build a dynamic version of the njs module
+
+    ./configure --add-dynamic-module=<path-to-njs>/nginx
+
+and add the following line to nginx.conf and reload nginx:
+
+    load_module modules/ngx_http_js_module.so;
+
 Please report your experiences to the NGINX development mailing list
 nginx-devel@nginx.org (http://mailman.nginx.org/mailman/listinfo/nginx-devel).
 
