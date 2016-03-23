@@ -49,7 +49,7 @@ utf8_overlong(u_char *overlong, size_t len)
     u_char        *p, utf8[4];
     size_t        size;
     uint32_t      u, d;
-    nxt_uint_t     i;
+    nxt_uint_t    i;
     const u_char  *pp;
 
     pp = overlong;
@@ -88,7 +88,7 @@ utf8_unit_test(void)
     size_t        len;
     int32_t       n;
     uint32_t      u, d;
-    nxt_uint_t     i, k, l, m;
+    nxt_uint_t    i, k, l, m;
     const u_char  *pp;
 
     printf("utf8 unit test started\n");
@@ -175,9 +175,9 @@ utf8_unit_test(void)
     }
 
     n = nxt_utf8_casecmp((u_char *) "ABC АБВ ΑΒΓ",
-                        (u_char *) "abc абв αβγ",
-                            sizeof("ABC АБВ ΑΒΓ") - 1,
-                            sizeof("abc абв αβγ") - 1);
+                         (u_char *) "abc абв αβγ",
+                         sizeof("ABC АБВ ΑΒΓ") - 1,
+                         sizeof("abc абв αβγ") - 1);
 
     if (n != 0) {
         printf("nxt_utf8_casecmp() failed\n");

@@ -41,7 +41,10 @@
 #define NJS_APPLIED              NXT_DONE
 
 
-/* The order of the enum is used in njs_vmcode_typeof() */
+/*
+ * The order of the enum is used in njs_vmcode_typeof()
+ * and njs_object_prototype_to_string().
+ */
 
 typedef enum {
     NJS_NULL            = 0x00,

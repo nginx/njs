@@ -16,7 +16,7 @@
 
 typedef struct {
     NXT_RBTREE_NODE  (node);
-    uint32_t        key;
+    uint32_t         key;
 } nxt_rbtree_test_t;
 
 
@@ -30,8 +30,8 @@ static int nxt_cdecl rbtree_unit_test_sort_cmp(const void *one,
 static nxt_int_t
 rbtree_unit_test(nxt_uint_t n)
 {
-    void              *mark;
-    uint32_t          key, *keys;
+    void               *mark;
+    uint32_t           key, *keys;
     nxt_uint_t         i;
     nxt_rbtree_t       tree;
     nxt_rbtree_node_t  *node;

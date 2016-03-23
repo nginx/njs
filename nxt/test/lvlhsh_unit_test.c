@@ -193,16 +193,16 @@ static const nxt_mem_proto_t  mem_cache_pool_proto = {
 static nxt_int_t
 lvlhsh_unit_test(nxt_uint_t n)
 {
-    uintptr_t            key;
+    uintptr_t             key;
     nxt_uint_t            i;
     nxt_lvlhsh_t          lh;
     nxt_lvlhsh_each_t     lhe;
     nxt_mem_cache_pool_t  *pool;
 
-    const size_t         min_chunk_size = 32;
-    const size_t         page_size = 1024;
-    const size_t         page_alignment = 128;
-    const size_t         cluster_size = 4096;
+    const size_t          min_chunk_size = 32;
+    const size_t          page_size = 1024;
+    const size_t          page_alignment = 128;
+    const size_t          cluster_size = 4096;
 
     pool = nxt_mem_cache_pool_create(&mem_cache_pool_proto, NULL, NULL,
                                     cluster_size, page_alignment,

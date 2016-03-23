@@ -55,7 +55,7 @@
  * 3) if the length is less than NJS_STRING_MAP_OFFSET.
  *
  * The current implementation does not support Unicode surrogate pairs.
- * If offset in map points to surrogate pair, it the previous offset
+ * If offset in map points to surrogate pair then the previous offset
  * should be used and so on until start of the string.
  */
 

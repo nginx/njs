@@ -133,7 +133,6 @@ const njs_value_t  njs_string_nan =         njs_string("NaN");
 const njs_value_t  njs_string_string =      njs_string("string");
 const njs_value_t  njs_string_object =      njs_string("object");
 const njs_value_t  njs_string_function =    njs_string("function");
-const njs_value_t  njs_string_native =      njs_string("[native code]");
 
 const njs_value_t  njs_exception_syntax_error =    njs_string("SyntaxError");
 const njs_value_t  njs_exception_reference_error = njs_string("ReferenceError");

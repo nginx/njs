@@ -547,6 +547,7 @@ njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 /*
  * String.fromUTF8(start[, end]).
+ * The method converts an UTF-8 encoded byte string to an Unicode string.
  */
 
 static njs_ret_t
@@ -599,6 +600,7 @@ njs_string_prototype_from_utf8(njs_vm_t *vm, njs_value_t *args,
 
 /*
  * String.toUTF8(start[, end]).
+ * The method serializes Unicode string to an UTF-8 encoded byte string.
  */
 
 static njs_ret_t
@@ -621,6 +623,7 @@ njs_string_prototype_to_utf8(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 /*
  * String.fromBytes(start[, end]).
+ * The method converts a byte string to an Unicode string.
  */
 
 static njs_ret_t
@@ -676,6 +679,9 @@ njs_string_prototype_from_bytes(njs_vm_t *vm, njs_value_t *args,
 
 /*
  * String.toBytes(start[, end]).
+ * The method serializes an Unicode string to a byte string.
+ * The method returns null if a character larger than 255 is
+ * encountered in the Unicode string.
  */
 
 static njs_ret_t

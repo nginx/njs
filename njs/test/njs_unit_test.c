@@ -404,6 +404,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'3' -+-+-+ '1' + '1' / '3' * '6' + '2'"),
       nxt_string("42") },
 
+    { nxt_string("((+!![])+(+!![])+(+!![])+(+!![])+[])+((+!![])+(+!![])+[])"),
+      nxt_string("42") },
+
+    { nxt_string("1+[[]+[]]-[]+[[]-[]]-1"),
+      nxt_string("9") },
+
+    { nxt_string("[[]+[]]-[]+[[]-[]]"),
+      nxt_string("00") },
+
     { nxt_string("'true' == true"),
       nxt_string("false") },
 
@@ -3796,6 +3805,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Function.constructor === Function"),
       nxt_string("true") },
 
+    { nxt_string("function f() {} f.__proto__ === Function.prototype"),
+      nxt_string("true") },
+
     { nxt_string("RegExp()"),
       nxt_string("/(?:)/") },
 
@@ -3821,6 +3833,9 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("RegExp.constructor === Function"),
+      nxt_string("true") },
+
+    { nxt_string("/./.__proto__ === RegExp.prototype"),
       nxt_string("true") },
 
     { nxt_string("Object.prototype.toString.call()"),
