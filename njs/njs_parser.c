@@ -68,6 +68,8 @@ static njs_token_t njs_parser_throw_statement(njs_vm_t *vm,
     njs_parser_t *parser);
 static njs_token_t njs_parser_grouping_expression(njs_vm_t *vm,
     njs_parser_t *parser);
+static njs_token_t njs_parser_builtin_object(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *node);
 static njs_token_t njs_parser_object(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *obj);
 static njs_token_t njs_parser_array(njs_vm_t *vm, njs_parser_t *parser,
@@ -1470,7 +1472,7 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
             break;
         }
 
-        parser->code_size += sizeof(njs_vmcode_function_copy_t);
+        parser->code_size += sizeof(njs_vmcode_object_copy_t);
         node->lvalue = NJS_LVALUE_ENABLED;
         node->u.variable = var;
         break;
@@ -1588,6 +1590,9 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
         node->index = NJS_INDEX_THIS;
         break;
 
+    case NJS_TOKEN_MATH:
+        return njs_parser_builtin_object(vm, parser, node);
+
     case NJS_TOKEN_OBJECT_CONSTRUCTOR:
         node->index = NJS_INDEX_OBJECT;
         break;
@@ -1626,6 +1631,36 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
     }
 
     parser->node = node;
+
+    return njs_lexer_token(parser->lexer);
+}
+
+
+static njs_token_t
+njs_parser_builtin_object(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *node)
+{
+    nxt_uint_t      index, level;
+    njs_value_t     *value;
+    njs_variable_t  *var;
+
+    var = njs_parser_variable(vm, parser, &level);
+    if (nxt_slow_path(var == NULL)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    var->state = NJS_VARIABLE_DECLARED;
+    node->index = var->index;
+
+    value = njs_variable_value(parser, node->index);
+
+    index = node->token - NJS_TOKEN_FIRST_OBJECT;
+    value->data.u.object = &vm->shared->objects[index];
+    value->type = NJS_OBJECT;
+    value->data.truth = 1;
+
+    parser->node = node;
+    parser->code_size += sizeof(njs_vmcode_object_copy_t);
 
     return njs_lexer_token(parser->lexer);
 }

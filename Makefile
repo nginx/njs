@@ -18,6 +18,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 	$(NXT_BUILDDIR)/njs_array.o \
 	$(NXT_BUILDDIR)/njs_function.o \
 	$(NXT_BUILDDIR)/njs_regexp.o \
+	$(NXT_BUILDDIR)/njs_math.o \
 	$(NXT_BUILDDIR)/njs_extern.o \
 	$(NXT_BUILDDIR)/njs_variable.o \
 	$(NXT_BUILDDIR)/njs_builtin.o \
@@ -46,6 +47,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 		$(NXT_BUILDDIR)/njs_array.o \
 		$(NXT_BUILDDIR)/njs_function.o \
 		$(NXT_BUILDDIR)/njs_regexp.o \
+		$(NXT_BUILDDIR)/njs_math.o \
 		$(NXT_BUILDDIR)/njs_extern.o \
 		$(NXT_BUILDDIR)/njs_variable.o \
 		$(NXT_BUILDDIR)/njs_builtin.o \
@@ -219,6 +221,18 @@ $(NXT_BUILDDIR)/njs_regexp.o: \
 	$(NXT_CC) -c -o $(NXT_BUILDDIR)/njs_regexp.o $(NXT_CFLAGS) \
 		-I$(NXT_LIB) -Injs $(NXT_PCRE_CFLAGS) \
 		njs/njs_regexp.c
+
+$(NXT_BUILDDIR)/njs_math.o: \
+	$(NXT_BUILDDIR)/libnxt.a \
+	njs/njscript.h \
+	njs/njs_vm.h \
+	njs/njs_object.h \
+	njs/njs_math.h \
+	njs/njs_math.c \
+
+	$(NXT_CC) -c -o $(NXT_BUILDDIR)/njs_math.o $(NXT_CFLAGS) \
+		-I$(NXT_LIB) -Injs \
+		njs/njs_math.c
 
 $(NXT_BUILDDIR)/njs_extern.o: \
 	$(NXT_BUILDDIR)/libnxt.a \

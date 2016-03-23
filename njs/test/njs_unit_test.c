@@ -3914,6 +3914,68 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("eval()"),
       nxt_string("") },
 
+    /* Math. */
+
+    { nxt_string("Math.PI"),
+      nxt_string("3.14159") },
+
+    { nxt_string("Math.E"),
+      nxt_string("2.71828") },
+
+    { nxt_string("Math.SQRT2"),
+      nxt_string("1.41421") },
+
+    { nxt_string("Math.abs(5)"),
+      nxt_string("5") },
+
+    { nxt_string("Math.abs(-5)"),
+      nxt_string("5") },
+
+    { nxt_string("Math.abs('5.0')"),
+      nxt_string("5") },
+
+    { nxt_string("Math.abs('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.max()"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("Math.max(null)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.max(undefined)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.max('1', '2', '5')"),
+      nxt_string("5") },
+
+    { nxt_string("Math.min()"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.min(null)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.min(undefined)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.min('1', '2', '5')"),
+      nxt_string("1") },
+
+    { nxt_string("Math.pow(2, 5)"),
+      nxt_string("32") },
+
+    { nxt_string("Math.pow(2)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.pow()"),
+      nxt_string("NaN") },
+
+    /* ES5: Must be "[object Math]". */
+    { nxt_string("Math"),
+      nxt_string("[object Object]") },
+
+    /* External interface. */
+
     { nxt_string("function f(req) { return req.uri }"),
       nxt_string("АБВ") },
 

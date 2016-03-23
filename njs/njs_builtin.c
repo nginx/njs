@@ -19,6 +19,7 @@
 #include <njs_array.h>
 #include <njs_function.h>
 #include <njs_regexp.h>
+#include <njs_math.h>
 #include <string.h>
 
 
@@ -33,7 +34,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
 {
     nxt_int_t                         ret;
     nxt_uint_t                        i;
-    njs_object_t                      *prototypes;
+    njs_object_t                      *objects, *prototypes;
     njs_function_t                    *functions;
 
     static const njs_object_init_t    *prototype_init[] = {
@@ -71,6 +72,10 @@ njs_builtin_objects_create(njs_vm_t *vm)
         { njs_eval_function,        { 0 } },
     };
 
+    static const njs_object_init_t    *objects_init[] = {
+        &njs_math_object_init,
+    };
+
     static const njs_object_prop_t  null_proto_property = {
         .type = NJS_WHITEOUT,
         .name = njs_string("__proto__"),
@@ -81,6 +86,19 @@ njs_builtin_objects_create(njs_vm_t *vm)
                                  &null_proto_property, 1);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NXT_ERROR;
+    }
+
+    objects = vm->shared->objects;
+
+    for (i = NJS_OBJECT_MATH; i < NJS_OBJECT_MAX; i++) {
+        ret = njs_object_hash_create(vm, &objects[i].shared_hash,
+                                     objects_init[i]->properties,
+                                     objects_init[i]->items);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return NXT_ERROR;
+        }
+
+        objects[i].shared = 1;
     }
 
     prototypes = vm->shared->prototypes;
@@ -99,9 +117,9 @@ njs_builtin_objects_create(njs_vm_t *vm)
     functions = vm->shared->functions;
 
     for (i = NJS_FUNCTION_OBJECT; i < NJS_FUNCTION_MAX; i++) {
+        functions[i].object.shared = 0;
         functions[i].native = 1;
         functions[i].args_offset = 1;
-        functions[i].shared = 0;
         functions[i].u.native = native_functions[i].native;
         functions[i].args_types[0] = native_functions[i].args_types[0];
         functions[i].args_types[1] = native_functions[i].args_types[1];

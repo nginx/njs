@@ -417,34 +417,6 @@ njs_vmcode_function(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 
 
 njs_ret_t
-njs_vmcode_function_copy(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
-{
-    njs_function_t  *function;
-
-    if (njs_is_function(value)) {
-
-        function = njs_function_value_copy(vm, value);
-
-        if (nxt_fast_path(function != NULL)) {
-            vm->retval.data.u.function = function;
-            vm->retval.type = NJS_FUNCTION;
-            vm->retval.data.truth = 1;
-
-            return sizeof(njs_vmcode_function_copy_t);
-        }
-
-        return NXT_ERROR;
-    }
-
-    vm->retval = *value;
-
-    njs_retain(value);
-
-    return sizeof(njs_vmcode_function_copy_t);
-}
-
-
-njs_ret_t
 njs_vmcode_regexp(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 {
     njs_regexp_t         *regexp;
@@ -463,6 +435,42 @@ njs_vmcode_regexp(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
     }
 
     return NXT_ERROR;
+}
+
+
+njs_ret_t
+njs_vmcode_object_copy(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
+{
+    njs_object_t    *object;
+    njs_function_t  *function;
+
+    switch (value->type) {
+
+    case NJS_OBJECT:
+        object = njs_object_value_copy(vm, value);
+        if (nxt_slow_path(object == NULL)) {
+            return NXT_ERROR;
+        }
+
+        break;
+
+    case NJS_FUNCTION:
+        function = njs_function_value_copy(vm, value);
+        if (nxt_slow_path(function == NULL)) {
+            return NXT_ERROR;
+        }
+
+        break;
+
+    default:
+        break;
+    }
+
+    vm->retval = *value;
+
+    njs_retain(value);
+
+    return sizeof(njs_vmcode_object_copy_t);
 }
 
 

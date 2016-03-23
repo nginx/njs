@@ -73,6 +73,7 @@ static const njs_keyword_t  njs_keywords[] = {
     /* Builtin objects. */
 
     { nxt_string("this"),          NJS_TOKEN_THIS, 0 },
+    { nxt_string("Math"),          NJS_TOKEN_MATH, 0 },
 
     /* Builtin functions. */
 

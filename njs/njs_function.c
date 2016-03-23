@@ -31,8 +31,15 @@ njs_function_alloc(njs_vm_t *vm)
     function = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_function_t));
 
     if (nxt_fast_path(function != NULL)) {
+        /*
+         * nxt_mem_cache_zalloc() does also:
+         *   nxt_lvlhsh_init(&function->object.hash);
+         *   nxt_lvlhsh_init(&function->object.shared_hash);
+         *   function->object.__proto__ = NULL;
+         */
+
+        function->object.shared = 1;
         function->args_offset = 1;
-        function->shared = 1;
 
         function->u.lambda = nxt_mem_cache_zalloc(vm->mem_cache_pool,
                                                  sizeof(njs_function_lambda_t));
@@ -52,7 +59,7 @@ njs_function_value_copy(njs_vm_t *vm, njs_value_t *value)
 
     function = value->data.u.function;
 
-    if (!function->shared) {
+    if (!function->object.shared) {
         return function;
     }
 
@@ -61,7 +68,7 @@ njs_function_value_copy(njs_vm_t *vm, njs_value_t *value)
     if (nxt_fast_path(function != NULL)) {
         *function = *value->data.u.function;
         function->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION];
-        function->shared = 0;
+        function->object.shared = 0;
         value->data.u.function = function;
     }
 
@@ -458,7 +465,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     *function = *args[0].data.u.function;
 
     function->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION];
-    function->shared = 0;
+    function->object.shared = 0;
 
     if (nargs == 1) {
         args = (njs_value_t *) &njs_value_void;

@@ -128,6 +128,8 @@ struct njs_object_s {
 
     /* An object __proto__. */
     njs_object_t                      *__proto__;
+
+    uint32_t                          shared;  /* 1 bit */
 };
 
 
@@ -148,11 +150,9 @@ struct njs_function_s {
 #if (NXT_64BIT)
     uint8_t                           native;
     uint8_t                           continuation_size;
-    uint8_t                           shared;
 #else
     uint8_t                           native;
     uint8_t                           continuation_size;
-    uint8_t                           shared;
 #endif
 
     union {
@@ -278,11 +278,11 @@ union njs_value_s {
         .type = NJS_FUNCTION,                                                 \
         .truth = 1,                                                           \
         .u.function = & (njs_function_t) {                                    \
+            .object.shared = 1,                                               \
             .native = 1,                                                      \
             .continuation_size = _size,                                       \
             .args_types = { __VA_ARGS__ },                                    \
             .args_offset = 1,                                                 \
-            .shared = 1,                                                      \
             .u.native = _function,                                            \
         }                                                                     \
     }                                                                         \
@@ -482,15 +482,15 @@ typedef struct {
 typedef struct {
     njs_vmcode_t               code;
     njs_index_t                retval;
-    njs_index_t                function;
-} njs_vmcode_function_copy_t;
+    njs_regexp_pattern_t       *pattern;
+} njs_vmcode_regexp_t;
 
 
 typedef struct {
     njs_vmcode_t               code;
     njs_index_t                retval;
-    njs_regexp_pattern_t       *pattern;
-} njs_vmcode_regexp_t;
+    njs_index_t                object;
+} njs_vmcode_object_copy_t;
 
 
 typedef struct {
@@ -686,6 +686,12 @@ enum njs_functions_e {
 };
 
 
+enum njs_object_e {
+    NJS_OBJECT_MATH =        0,
+#define NJS_OBJECT_MAX       (NJS_OBJECT_MATH + 1)
+};
+
+
 #define njs_scope_index(value)                                                \
     ((njs_index_t) ((value) << NJS_SCOPE_SHIFT))
 
@@ -782,6 +788,8 @@ struct njs_vm_shared_s {
     nxt_lvlhsh_t             values_hash;
     nxt_lvlhsh_t             null_proto_hash;
 
+    njs_object_t             objects[NJS_OBJECT_MAX];
+
     /*
      * The prototypes and functions arrays must be togther because they are
      * copied to njs_vm_t by single memcpy() in njs_builtin_objects_clone().
@@ -802,10 +810,10 @@ njs_ret_t njs_vmcode_array(njs_vm_t *vm, njs_value_t *inlvd1,
     njs_value_t *inlvd2);
 njs_ret_t njs_vmcode_function(njs_vm_t *vm, njs_value_t *inlvd1,
     njs_value_t *invld2);
-njs_ret_t njs_vmcode_function_copy(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *invld);
 njs_ret_t njs_vmcode_regexp(njs_vm_t *vm, njs_value_t *inlvd1,
     njs_value_t *invld2);
+njs_ret_t njs_vmcode_object_copy(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *invld);
 
 njs_ret_t njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *property);

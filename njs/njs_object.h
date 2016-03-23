@@ -44,6 +44,7 @@ struct njs_object_init_s {
 
 
 njs_object_t *njs_object_alloc(njs_vm_t *vm);
+njs_object_t *njs_object_value_copy(njs_vm_t *vm, njs_value_t *value);
 njs_object_t *njs_object_value_alloc(njs_vm_t *vm, const njs_value_t *value,
     nxt_uint_t type);
 njs_object_prop_t *njs_object_property(njs_vm_t *vm, njs_object_t *obj,
@@ -55,6 +56,7 @@ njs_ret_t njs_object_constructor(njs_vm_t *vm, njs_value_t *args,
 njs_object_prop_t *njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name);
 njs_ret_t njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value);
 njs_ret_t njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value);
+njs_ret_t njs_object_prototype_get_proto(njs_vm_t *vm, njs_value_t *value);
 njs_ret_t njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 
