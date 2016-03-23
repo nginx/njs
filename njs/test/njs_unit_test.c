@@ -3919,12 +3919,6 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.PI"),
       nxt_string("3.14159") },
 
-    { nxt_string("Math.E"),
-      nxt_string("2.71828") },
-
-    { nxt_string("Math.SQRT2"),
-      nxt_string("1.41421") },
-
     { nxt_string("Math.abs(5)"),
       nxt_string("5") },
 
@@ -3970,7 +3964,8 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.pow()"),
       nxt_string("NaN") },
 
-    /* ES5: Must be "[object Math]". */
+    /* ES5FIX: "[object Math]". */
+
     { nxt_string("Math"),
       nxt_string("[object Object]") },
 

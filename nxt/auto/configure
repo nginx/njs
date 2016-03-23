@@ -52,4 +52,5 @@ END
 . ${NXT_AUTO}os
 . ${NXT_AUTO}clang
 . ${NXT_AUTO}memalign
+. ${NXT_AUTO}getrandom
 . ${NXT_AUTO}pcre

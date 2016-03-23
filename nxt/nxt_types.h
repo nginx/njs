@@ -90,4 +90,7 @@ typedef time_t         nxt_time_t;
 #endif
 
 
+typedef pid_t          nxt_pid_t;
+
+
 #endif /* _NXT_TYPES_H_INCLUDED_ */

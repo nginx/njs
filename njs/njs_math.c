@@ -10,6 +10,7 @@
 #include <nxt_array.h>
 #include <nxt_lvlhsh.h>
 #include <nxt_mem_cache_pool.h>
+#include <nxt_random.h>
 #include <njscript.h>
 #include <njs_vm.h>
 #include <njs_number.h>
@@ -298,6 +299,20 @@ njs_object_math_pow(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 
 static njs_ret_t
+njs_object_math_random(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double  num;
+
+    num = nxt_random(&vm->random) / 4294967296.0;
+
+    njs_number_set(&vm->retval, num);
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
 njs_object_math_round(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
@@ -516,6 +531,12 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .name = njs_string("pow"),
         .value = njs_native_function(njs_object_math_pow, 0,
                      NJS_SKIP_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG),
+    },
+
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("random"),
+        .value = njs_native_function(njs_object_math_random, 0, ),
     },
 
     {

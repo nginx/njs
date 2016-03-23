@@ -774,6 +774,8 @@ struct njs_vm_s {
     njs_regexp_pattern_t     *pattern;
 
     nxt_array_t              *code;  /* of njs_vm_code_t */
+
+    nxt_random_t             random;
 };
 
 

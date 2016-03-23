@@ -9,6 +9,7 @@
 #include <nxt_stub.h>
 #include <nxt_array.h>
 #include <nxt_lvlhsh.h>
+#include <nxt_random.h>
 #include <nxt_mem_cache_pool.h>
 #include <njscript.h>
 #include <njs_vm.h>
@@ -163,7 +164,7 @@ njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
     const njs_value_t *number)
 {
     u_char             *p;
-    double             num;
+    double             n, num;
     size_t             size;
     const char         *fmt;
     const njs_value_t  *value;
@@ -184,10 +185,18 @@ njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
         }
 
     } else {
-        if (fabs(num) < 1000000) {
+        n = fabs(num);
+
+        if (n == 0) {
             fmt = "%g";
 
-        } else if (fabs(num) < 1e20) {
+        } else if (n < 1) {
+            fmt = "%f";
+
+        } else if (n < 1000000) {
+            fmt = "%g";
+
+        } else if (n < 1e20) {
             fmt = "%1.f";
 
         } else {

@@ -1,0 +1,24 @@
+
+# Copyright (C) Igor Sysoev
+# Copyright (C) NGINX, Inc.
+
+
+# Linux 3.17 getrandom().
+
+nxt_feature="getrandom()"
+nxt_feature_name=NXT_HAVE_GETRANDOM
+nxt_feature_run=
+nxt_feature_incs=
+nxt_feature_libs=
+nxt_feature_test="#include <unistd.h>
+                  #include <sys/syscall.h>
+                  #include <linux/random.h>
+
+                  int main() {
+                      char  buf[4];
+
+                      (void) syscall(SYS_getrandom, buf, 4, 0);
+
+                      return 0;
+                  }"
+. ${NXT_AUTO}feature

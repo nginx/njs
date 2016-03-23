@@ -34,6 +34,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 	$(NXT_BUILDDIR)/nxt_array.o \
 	$(NXT_BUILDDIR)/nxt_rbtree.o \
 	$(NXT_BUILDDIR)/nxt_lvlhsh.o \
+	$(NXT_BUILDDIR)/nxt_random.o \
 	$(NXT_BUILDDIR)/nxt_malloc.o \
 	$(NXT_BUILDDIR)/nxt_mem_cache_pool.o \
 
@@ -63,6 +64,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 		$(NXT_BUILDDIR)/nxt_array.o \
 		$(NXT_BUILDDIR)/nxt_rbtree.o \
 		$(NXT_BUILDDIR)/nxt_lvlhsh.o \
+		$(NXT_BUILDDIR)/nxt_random.o \
 		$(NXT_BUILDDIR)/nxt_malloc.o \
 		$(NXT_BUILDDIR)/nxt_mem_cache_pool.o \
 
@@ -370,12 +372,14 @@ $(NXT_BUILDDIR)/njs_disassembler.o: \
 		njs/njs_disassembler.c
 
 $(NXT_BUILDDIR)/njs_unit_test: \
+	$(NXT_BUILDDIR)/libnxt.a \
 	$(NXT_BUILDDIR)/libnjs.a \
 	njs/test/njs_unit_test.c \
 
 	$(NXT_CC) -o $(NXT_BUILDDIR)/njs_unit_test $(NXT_CFLAGS) \
 		-I$(NXT_LIB) -Injs \
 		njs/test/njs_unit_test.c \
-		$(NXT_BUILDDIR)/libnjs.a -lm $(NXT_PCRE_LIB)
+		$(NXT_BUILDDIR)/libnjs.a \
+		-lm $(NXT_PCRE_LIB)
 
 include $(NXT_LIB)/Makefile

@@ -12,6 +12,7 @@
 #include <nxt_djb_hash.h>
 #include <nxt_array.h>
 #include <nxt_lvlhsh.h>
+#include <nxt_random.h>
 #include <nxt_mem_cache_pool.h>
 #include <njscript.h>
 #include <njs_vm.h>
