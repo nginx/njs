@@ -1351,30 +1351,23 @@ njs_string_prototype_match(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     (void) njs_string_prop(&string, &args[0]);
 
+    /* Byte string. */
     utf8 = 0;
     n = 0;
 
     if (string.length != 0) {
+        /* ASCII string. */
         utf8 = 1;
         n = 1;
 
         if (string.length != string.size) {
+            /* UTF-8 string. */
             utf8 = 2;
         }
     }
 
     if (pattern->code[n] != NULL) {
         array = NULL;
-
-        if (n != 0) {
-            utf8 = 2;
-
-        } else if (string.length != 0) {
-            utf8 = 1;
-
-        } else {
-            utf8 = 1;
-        }
 
         do {
             ret = pcre_exec(pattern->code[n], pattern->extra[n],
@@ -1412,11 +1405,17 @@ njs_string_prototype_match(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                 case 0:
                     length = 0;
                     break;
+
                 case 1:
                     length = size;
                     break;
+
                 default:
                     length = nxt_utf8_length(start, size);
+                    if (nxt_slow_path(length < 0)) {
+                        goto error;
+                    }
+
                     break;
                 }
 
@@ -1432,8 +1431,7 @@ njs_string_prototype_match(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                 break;
 
             } else {
-                vm->exception = &njs_exception_internal_error;
-                return NXT_ERROR;
+                goto error;
             }
 
         } while (string.size > 0);
@@ -1444,6 +1442,12 @@ njs_string_prototype_match(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     return NXT_OK;
+
+error:
+
+    vm->exception = &njs_exception_internal_error;
+
+    return NXT_ERROR;
 
 empty:
 

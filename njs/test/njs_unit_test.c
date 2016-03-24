@@ -2823,6 +2823,14 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abc ABC aBc'.match(/abc/ig)"),
       nxt_string("abc,ABC,aBc") },
 
+    { nxt_string("var a = 'α'.match(/α/g)[0] + 'α';"
+                 "a +' '+ a.length"),
+      nxt_string("αα 2") },
+
+    { nxt_string("var a = '\\u00CE\\u00B1'.toBytes().match(/α/g)[0] + 'α';"
+                 "a +' '+ a.length"),
+      nxt_string("αα 4") },
+
     /* Functions. */
 
     { nxt_string("function f() { } f()"),
