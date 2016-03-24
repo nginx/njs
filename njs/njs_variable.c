@@ -62,7 +62,7 @@ njs_parser_variable(njs_vm_t *vm, njs_parser_t *parser, nxt_uint_t *level)
     njs_variable_t      *var;
     nxt_lvlhsh_query_t  lhq;
 
-    level = 0;
+    *level = 0;
 
     lhq.key_hash = parser->lexer->key_hash;
     lhq.key = parser->lexer->text;
@@ -90,11 +90,11 @@ njs_parser_variable(njs_vm_t *vm, njs_parser_t *parser, nxt_uint_t *level)
         }
 
         scope = scope->parent;
-        level++;
+        (*level)++;
 
     } while (scope != NULL);
 
-    level = 0;
+    *level = 0;
 
     if (nxt_lvlhsh_find(&vm->variables_hash, &lhq) == NXT_OK) {
         return lhq.value;

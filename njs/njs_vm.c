@@ -161,128 +161,128 @@ njs_vmcode_interpreter(njs_vm_t *vm)
     njs_native_frame_t    *previous;
     njs_vmcode_generic_t  *vmcode;
 
+    start:
+
     for ( ;; ) {
 
-    again:
-        for ( ;; ) {
+        vmcode = (njs_vmcode_generic_t *) vm->current;
 
-            vmcode = (njs_vmcode_generic_t *) vm->current;
+        /*
+         * The first operand is passed as is in value2 to
+         *   njs_vmcode_jump(),
+         *   njs_vmcode_if_true_jump(),
+         *   njs_vmcode_if_false_jump(),
+         *   njs_vmcode_validate(),
+         *   njs_vmcode_function_frame(),
+         *   njs_vmcode_function_call(),
+         *   njs_vmcode_return(),
+         *   njs_vmcode_try_start(),
+         *   njs_vmcode_try_next(),
+         *   njs_vmcode_try_end(),
+         *   njs_vmcode_catch().
+         *   njs_vmcode_throw().
+         *   njs_vmcode_stop().
+         */
+        value2 = (njs_value_t *) vmcode->operand1;
+        value1 = NULL;
 
-            /*
-             * The first operand is passed as is in value2 to
-             *   njs_vmcode_jump(),
-             *   njs_vmcode_if_true_jump(),
-             *   njs_vmcode_if_false_jump(),
-             *   njs_vmcode_validate(),
-             *   njs_vmcode_function_frame(),
-             *   njs_vmcode_function_call(),
-             *   njs_vmcode_return(),
-             *   njs_vmcode_try_start(),
-             *   njs_vmcode_try_next(),
-             *   njs_vmcode_try_end(),
-             *   njs_vmcode_catch().
-             *   njs_vmcode_throw().
-             *   njs_vmcode_stop().
-             */
-            value2 = (njs_value_t *) vmcode->operand1;
-            value1 = NULL;
+        switch (vmcode->code.operands) {
 
-            switch (vmcode->code.operands) {
-
-            case NJS_VMCODE_3OPERANDS:
-                value2 = njs_vmcode_operand(vm, vmcode->operand3);
-
-            case NJS_VMCODE_2OPERANDS:
-                value1 = njs_vmcode_operand(vm, vmcode->operand2);
-            }
-
-            ret = vmcode->code.operation(vm, value1, value2);
-
-            /*
-             * On success an operation returns size of the bytecode,
-             * a jump offset or zero after the call or return operations.
-             * Jumps can return a negative offset.  Compilers can generate
-             *    (ret < 0 && ret >= NJS_PREEMPT)
-             * as a single unsigned comparision.
-             */
-
-            if (nxt_slow_path(ret < 0 && ret >= NJS_PREEMPT)) {
-                break;
-            }
-
-            vm->current += ret;
-
-            if (vmcode->code.retval) {
-                retval = njs_vmcode_operand(vm, vmcode->operand1);
-                //njs_release(vm, retval);
-                *retval = vm->retval;
-            }
-        }
-
-        switch (ret) {
-
-        case NJS_TRAP_NUMBER:
-            value2 = value1;
+        case NJS_VMCODE_3OPERANDS:
+            value2 = njs_vmcode_operand(vm, vmcode->operand3);
 
             /* Fall through. */
 
-        case NJS_TRAP_NUMBERS:
-        case NJS_TRAP_STRINGS:
-        case NJS_TRAP_INCDEC:
-        case NJS_TRAP_PROPERTY:
+        case NJS_VMCODE_2OPERANDS:
+            value1 = njs_vmcode_operand(vm, vmcode->operand2);
+        }
 
-            njs_vm_trap(vm, ret - NJS_TRAP_BASE, value1, value2);
+        ret = vmcode->code.operation(vm, value1, value2);
 
-            goto again;
+        /*
+         * On success an operation returns size of the bytecode,
+         * a jump offset or zero after the call or return operations.
+         * Jumps can return a negative offset.  Compilers can generate
+         *    (ret < 0 && ret >= NJS_PREEMPT)
+         * as a single unsigned comparision.
+         */
 
-        case NJS_TRAP_NUMBER_ARG:
-        case NJS_TRAP_STRING_ARG:
-
-            ret = njs_vm_trap_argument(vm, ret - NJS_TRAP_BASE);
-            if (nxt_fast_path(ret == NXT_OK)) {
-                goto again;
-            }
-
-            break;
-
-        default:
+        if (nxt_slow_path(ret < 0 && ret >= NJS_PREEMPT)) {
             break;
         }
 
-        if (ret == NXT_ERROR) {
+        vm->current += ret;
 
-            for ( ;; ) {
-                frame = (njs_frame_t *) vm->frame;
-                catch = frame->native.exception.catch;
-
-                if (catch != NULL) {
-                    vm->current = catch;
-                    goto again;
-                }
-
-                previous = frame->native.previous;
-                if (previous == NULL) {
-                    return NXT_ERROR;
-                }
-
-                vm->frame = previous;
-
-                /* GC: NJS_SCOPE_ARGUMENTS and NJS_SCOPE_LOCAL. */
-
-                vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = previous->arguments;
-                vm->scopes[NJS_SCOPE_LOCAL] = frame->prev_local;
-                vm->scopes[NJS_SCOPE_ARGUMENTS] = frame->prev_arguments;
-
-                if (frame->native.first) {
-                    nxt_mem_cache_free(vm->mem_cache_pool, frame);
-                }
-            }
+        if (vmcode->code.retval) {
+            retval = njs_vmcode_operand(vm, vmcode->operand1);
+            //njs_release(vm, retval);
+            *retval = vm->retval;
         }
-
-        /* NXT_AGAIN, NJS_STOP. */
-
-        return ret;
     }
+
+    switch (ret) {
+
+    case NJS_TRAP_NUMBER:
+        value2 = value1;
+
+        /* Fall through. */
+
+    case NJS_TRAP_NUMBERS:
+    case NJS_TRAP_STRINGS:
+    case NJS_TRAP_INCDEC:
+    case NJS_TRAP_PROPERTY:
+
+        njs_vm_trap(vm, ret - NJS_TRAP_BASE, value1, value2);
+
+        goto start;
+
+    case NJS_TRAP_NUMBER_ARG:
+    case NJS_TRAP_STRING_ARG:
+
+        ret = njs_vm_trap_argument(vm, ret - NJS_TRAP_BASE);
+        if (nxt_fast_path(ret == NXT_OK)) {
+            goto start;
+        }
+
+        break;
+
+    default:
+        break;
+    }
+
+    if (ret == NXT_ERROR) {
+
+        for ( ;; ) {
+            frame = (njs_frame_t *) vm->frame;
+            catch = frame->native.exception.catch;
+
+            if (catch != NULL) {
+                vm->current = catch;
+                goto start;
+            }
+
+            previous = frame->native.previous;
+            if (previous == NULL) {
+                return NXT_ERROR;
+            }
+
+            vm->frame = previous;
+
+            /* GC: NJS_SCOPE_ARGUMENTS and NJS_SCOPE_LOCAL. */
+
+            vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = previous->arguments;
+            vm->scopes[NJS_SCOPE_LOCAL] = frame->prev_local;
+            vm->scopes[NJS_SCOPE_ARGUMENTS] = frame->prev_arguments;
+
+            if (frame->native.first) {
+                nxt_mem_cache_free(vm->mem_cache_pool, frame);
+            }
+        }
+    }
+
+    /* NXT_AGAIN, NJS_STOP. */
+
+    return ret;
 }
 
 
@@ -516,6 +516,8 @@ njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
 
                 prop = pq.lhq.value;
             }
+
+            /* Fall through. */
 
         case NJS_PROPERTY:
             retval = &prop->value;
