@@ -36,6 +36,8 @@ static int njs_regexp_pattern_compile(pcre **code, pcre_extra **extra,
     u_char *source, int options);
 static njs_ret_t njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp,
     u_char *string, int *captures, nxt_uint_t utf8);
+static njs_ret_t njs_regexp_string_create(njs_vm_t *vm, njs_value_t *value,
+    u_char *start, uint32_t size, int32_t length);
 
 
 njs_ret_t
@@ -436,7 +438,7 @@ njs_regexp_prototype_source(njs_vm_t *vm, njs_value_t *value)
     size = strlen((char *) source) - pattern->flags;
     length = nxt_utf8_length(source, size);
 
-    return njs_string_create(vm, &vm->retval, source, size, length);
+    return njs_regexp_string_create(vm, &vm->retval, source, size, length);
 }
 
 
@@ -454,7 +456,7 @@ njs_regexp_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     size = strlen((char *) source);
     length = nxt_utf8_length(source, size);
 
-    return njs_string_create(vm, &vm->retval, source, size, length);
+    return njs_regexp_string_create(vm, &vm->retval, source, size, length);
 }
 
 
@@ -621,7 +623,8 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, u_char *string,
                 break;
             }
 
-            ret = njs_string_create(vm, &array->start[i], start, size, length);
+            ret = njs_regexp_string_create(vm, &array->start[i],
+                                           start, size, length);
             if (nxt_slow_path(ret != NXT_OK)) {
                 return NXT_ERROR;
             }
@@ -681,6 +684,19 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, u_char *string,
     vm->retval.data.truth = 1;
 
     return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_regexp_string_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
+    uint32_t size, int32_t length)
+{
+    if (nxt_fast_path(length >= 0)) {
+        return njs_string_create(vm, value, start, size, length);
+    }
+
+    vm->exception = &njs_exception_internal_error;
+    return NXT_ERROR;
 }
 
 
