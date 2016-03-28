@@ -536,7 +536,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_METHOD,
         .name = njs_string("random"),
-        .value = njs_native_function(njs_object_math_random, 0, ),
+        .value = njs_native_function(njs_object_math_random, 0, 0),
     },
 
     {
