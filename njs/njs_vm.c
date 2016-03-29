@@ -2474,8 +2474,10 @@ njs_normalize_args(njs_vm_t *vm, njs_value_t *args, uint8_t *args_types,
             break;
 
         case NJS_SKIP_ARG:
-
             break;
+
+        case 0:
+            return NJS_OK;
         }
 
         args++;
