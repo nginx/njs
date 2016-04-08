@@ -20,6 +20,7 @@
 #include <njs_array.h>
 #include <njs_function.h>
 #include <njs_regexp.h>
+#include <njs_date.h>
 #include <njs_math.h>
 #include <string.h>
 
@@ -46,6 +47,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
         &njs_string_prototype_init,
         &njs_function_prototype_init,
         &njs_regexp_prototype_init,
+        &njs_date_prototype_init,
     };
 
     static const njs_object_init_t    *function_init[] = {
@@ -56,6 +58,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
         &njs_string_constructor_init,
         &njs_function_constructor_init,
         &njs_regexp_constructor_init,
+        &njs_date_constructor_init,
 
         &njs_eval_function_init,
     };
@@ -70,6 +73,8 @@ njs_builtin_objects_create(njs_vm_t *vm)
         { njs_function_constructor, { 0 } },
         { njs_regexp_constructor,
           { NJS_SKIP_ARG, NJS_STRING_ARG, NJS_STRING_ARG } },
+        { njs_date_constructor,     { 0 } },
+
         { njs_eval_function,        { 0 } },
     };
 
@@ -177,6 +182,10 @@ njs_builtin_objects_create(njs_vm_t *vm)
  * RegExp(),
  * RegExp.__proto__             -> Function_Prototype,
  * RegExp_Prototype.__proto__   -> Object_Prototype,
+ *
+ * Date(),
+ * Date.__proto__               -> Function_Prototype,
+ * Date_Prototype.__proto__     -> Object_Prototype,
  *
  * eval(),
  * eval.__proto__               -> Function_Prototype.

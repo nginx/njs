@@ -15,6 +15,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <sys/resource.h>
+#include <time.h>
 
 
 typedef struct {
@@ -3916,6 +3917,303 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = Object.create(null); '__proto__' in o"),
       nxt_string("false") },
 
+    { nxt_string("var d = new Date(1308895200000); d.getTime()"),
+      nxt_string("1308895200000") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getTime()"),
+      nxt_string("1308895200000") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.valueOf()"),
+      nxt_string("1308895200000") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d"),
+      nxt_string("Fri Jun 24 2011 18:45:00 GMT+1245 (CHAST)") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.toString()"),
+      nxt_string("Fri Jun 24 2011 18:45:00 GMT+1245 (CHAST)") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.toDateString()"),
+      nxt_string("Fri Jun 24 2011") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.toTimeString()"),
+      nxt_string("18:45:00 GMT+1245 (CHAST)") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.toUTCString()"),
+      nxt_string("Fri Jun 24 2011 06:00:00 GMT") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45, 12, 625);"
+                 "d.toISOString()"),
+      nxt_string("2011-06-24T06:00:12.625Z") },
+
+#if 0
+    /* These tests fail on Solaris: gmtime_r() returns off by one day. */
+
+    { nxt_string("var d = new Date(-62167219200000); d.toISOString()"),
+      nxt_string("0000-01-01T00:00:00.000Z") },
+
+    { nxt_string("var d = new Date(-62135596800000); d.toISOString()"),
+      nxt_string("0001-01-01T00:00:00.000Z") },
+
+    { nxt_string("var d = new Date(-62198755200000); d.toISOString()"),
+      nxt_string("-000001-01-01T00:00:00.000Z") },
+#endif
+
+    { nxt_string("Date.UTC(2011, 5, 24, 6, 0)"),
+      nxt_string("1308895200000") },
+
+    { nxt_string("Date.parse()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Date.parse('2011-06-24T06:01:02.625Z')"),
+      nxt_string("1308895262625") },
+
+    { nxt_string("Date.parse('Fri, 24 Jun 2011 18:48:02 GMT')"),
+      nxt_string("1308941282000") },
+
+    { nxt_string("Date.parse('Fri, 24 Jun 2011 18:48:02 +1245')"),
+      nxt_string("1308895382000") },
+
+    { nxt_string("Date.parse('Fri Jun 24 2011 18:48:02 GMT+1245')"),
+      nxt_string("1308895382000") },
+
+    /* Jan 1, 1. */
+    { nxt_string("Date.parse('+000001-01-01T00:00:00.000Z')"),
+      nxt_string("-62135596800000") },
+
+    /* Mar 2, 1 BCE. */
+    { nxt_string("Date.parse('+000000-03-02T00:00:00.000Z')"),
+      nxt_string("-62161948800000") },
+
+    /* Mar 1, 1 BCE. */
+    { nxt_string("Date.parse('+000000-03-01T00:00:00.000Z')"),
+      nxt_string("-62162035200000") },
+
+    /* Feb 29, 1 BCE. */
+    { nxt_string("Date.parse('+000000-02-29T00:00:00.000Z')"),
+      nxt_string("-62162121600000") },
+
+    /* Feb 28, 1 BCE. */
+    { nxt_string("Date.parse('+000000-02-28T00:00:00.000Z')"),
+      nxt_string("-62162208000000") },
+
+    /* Jan 1, 1 BCE. */
+    { nxt_string("Date.parse('+000000-01-01T00:00:00.000Z')"),
+      nxt_string("-62167219200000") },
+
+    /* Jan 1, 2 BCE. */
+    { nxt_string("Date.parse('-000001-01-01T00:00:00.000Z')"),
+      nxt_string("-62198755200000") },
+
+    { nxt_string("var d = new Date(); d == Date.parse(d.toString())"),
+      nxt_string("true") },
+
+    { nxt_string("var s = Date(); s === Date(Date.parse(s))"),
+      nxt_string("true") },
+
+    { nxt_string("var n = Date.now(); n == new Date(n)"),
+      nxt_string("true") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getFullYear()"),
+      nxt_string("2011") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getUTCFullYear()"),
+      nxt_string("2011") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getMonth()"),
+      nxt_string("5") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getUTCMonth()"),
+      nxt_string("5") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getDate()"),
+      nxt_string("24") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getUTCDate()"),
+      nxt_string("24") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getDay()"),
+      nxt_string("5") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getUTCDay()"),
+      nxt_string("5") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getHours()"),
+      nxt_string("18") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getUTCHours()"),
+      nxt_string("6") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getMinutes()"),
+      nxt_string("45") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getUTCMinutes()"),
+      nxt_string("0") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45, 12);"
+                 "d.getSeconds()"),
+      nxt_string("12") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45, 12);"
+                 "d.getUTCSeconds()"),
+      nxt_string("12") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45, 12, 625);"
+                 "d.getMilliseconds()"),
+      nxt_string("625") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45, 12, 625);"
+                 "d.getUTCMilliseconds()"),
+      nxt_string("625") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45, 12, 625);"
+                 "d.getTimezoneOffset()"),
+      nxt_string("-765") },
+
+    { nxt_string("var d = new Date(); d.setTime(1308895200000); d.getTime()"),
+      nxt_string("1308895200000") },
+
+    { nxt_string("var d = new Date(1308895201625); d.setMilliseconds(5003);"
+                 "d.getTime()"),
+      nxt_string("1308895206003") },
+
+    { nxt_string("var d = new Date(1308895201625); d.setSeconds(2, 5003);"
+                 "d.getTime()"),
+      nxt_string("1308895207003") },
+
+    { nxt_string("var d = new Date(1308895201625); d.setSeconds(2);"
+                 "d.getTime()"),
+      nxt_string("1308895202625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setMinutes(3, 2, 5003);"
+                 "d.getTime()"),
+      nxt_string("1308892687003") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setMinutes(3, 2);"
+                 "d.getTime()"),
+      nxt_string("1308892682625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setMinutes(3);"
+                 "d.getTime()"),
+      nxt_string("1308892683625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setUTCMinutes(3, 2, 5003);"
+                 "d.getTime()"),
+      nxt_string("1308895387003") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setUTCMinutes(3, 2);"
+                 "d.getTime()"),
+      nxt_string("1308895382625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setUTCMinutes(3);"
+                 "d.getTime()"),
+      nxt_string("1308895383625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setHours(20, 3, 2, 5003);"
+                 "d.getTime()"),
+      nxt_string("1308899887003") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setHours(20, 3, 2);"
+                 "d.getTime()"),
+      nxt_string("1308899882625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setHours(20, 3);"
+                 "d.getTime()"),
+      nxt_string("1308899883625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setHours(20);"
+                 "d.getTime()"),
+      nxt_string("1308902523625") },
+
+    { nxt_string("var d = new Date(1308895323625);"
+                 "d.setUTCHours(20, 3, 2, 5003); d.getTime()"),
+      nxt_string("1308945787003") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setUTCHours(20, 3, 2);"
+                 "d.getTime()"),
+      nxt_string("1308945782625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setUTCHours(20, 3);"
+                 "d.getTime()"),
+      nxt_string("1308945783625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setUTCHours(20);"
+                 "d.getTime()"),
+      nxt_string("1308945723625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setDate(10);"
+                 "d.getTime()"),
+      nxt_string("1307685723625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setUTCDate(10);"
+                 "d.getTime()"),
+      nxt_string("1307685723625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setMonth(2, 10);"
+                 "d.getTime()"),
+      nxt_string("1299733323625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setUTCMonth(2, 10);"
+                 "d.getTime()"),
+      nxt_string("1299736923625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setMonth(2);"
+                 "d.getTime()"),
+      nxt_string("1300942923625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setUTCMonth(2);"
+                 "d.getTime()"),
+      nxt_string("1300946523625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setFullYear(2010, 2, 10);"
+                 "d.getTime()"),
+      nxt_string("1268197323625") },
+
+    { nxt_string("var d = new Date(1308895323625);"
+                 "d.setUTCFullYear(2010, 2, 10); d.getTime()"),
+      nxt_string("1268200923625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setFullYear(2010, 2);"
+                 "d.getTime()"),
+      nxt_string("1269406923625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setUTCFullYear(2010, 2);"
+                 "d.getTime()"),
+      nxt_string("1269410523625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setFullYear(2010);"
+                 "d.getTime()"),
+      nxt_string("1277359323625") },
+
+    { nxt_string("var d = new Date(1308895323625); d.setUTCFullYear(2010);"
+                 "d.getTime()"),
+      nxt_string("1277359323625") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45, 12, 625);"
+                 "d.toJSON(1)"),
+      nxt_string("2011-06-24T06:00:12.625Z") },
+
+    { nxt_string("var o = { toISOString: function() { return 'OK' } }"
+                 "Date.prototype.toJSON.call(o, 1)"),
+      nxt_string("OK") },
+
+    { nxt_string("Date.name"),
+      nxt_string("Date") },
+
+    { nxt_string("Date.length"),
+      nxt_string("7") },
+
+    { nxt_string("Date.__proto__ === Function.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("Date.prototype.constructor === Date"),
+      nxt_string("true") },
+
+    { nxt_string("Date.prototype.__proto__ === Object.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("Date.constructor === Function"),
+      nxt_string("true") },
+
     /* eval(). */
 
     { nxt_string("eval.name"),
@@ -4298,6 +4596,13 @@ njs_unit_test(nxt_bool_t disassemble)
     njs_unit_test_req     r;
     njs_opaque_value_t    value;
     nxt_mem_cache_pool_t  *mcp;
+
+    /*
+     * Chatham Islands NZ-CHAT time zone.
+     * Standard time: UTC+12:45, Daylight Saving time: UTC+13:45.
+     */
+    (void) putenv((char *) "TZ=Pacific/Chatham");
+    tzset();
 
     shared = NULL;
 

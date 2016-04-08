@@ -85,6 +85,7 @@ static const njs_keyword_t  njs_keywords[] = {
     { nxt_string("String"),        NJS_TOKEN_STRING_CONSTRUCTOR, 0 },
     { nxt_string("Function"),      NJS_TOKEN_FUNCTION_CONSTRUCTOR, 0 },
     { nxt_string("RegExp"),        NJS_TOKEN_REGEXP_CONSTRUCTOR, 0 },
+    { nxt_string("Date"),          NJS_TOKEN_DATE_CONSTRUCTOR, 0 },
     { nxt_string("eval"),          NJS_TOKEN_EVAL, 0 },
 
     /* Reserved words. */

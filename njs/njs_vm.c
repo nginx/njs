@@ -963,6 +963,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
     case NJS_OBJECT_NUMBER:
     case NJS_OBJECT_STRING:
     case NJS_REGEXP:
+    case NJS_DATE:
         obj = object->data.u.object;
         break;
 
@@ -2461,6 +2462,13 @@ njs_normalize_args(njs_vm_t *vm, njs_value_t *args, uint8_t *args_types,
             default:
                 trap = NJS_TRAP_STRING_ARG;
                 goto trap;
+            }
+
+            break;
+
+        case NJS_DATE_ARG:
+            if (!njs_is_date(args)) {
+                goto type_error;
             }
 
             break;

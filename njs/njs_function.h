@@ -15,6 +15,7 @@
 #define NJS_STRING_ARG             5
 #define NJS_OBJECT_ARG             6
 #define NJS_REGEXP_ARG             7
+#define NJS_DATE_ARG               8
 
 
 struct njs_function_lambda_s {

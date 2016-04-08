@@ -1,0 +1,39 @@
+
+# Copyright (C) Igor Sysoev
+# Copyright (C) NGINX, Inc.
+
+
+# Linux, FreeBSD, MacOSX.
+
+nxt_feature="struct tm.tm_gmtoff"
+nxt_feature_name=NXT_HAVE_TM_GMTOFF
+nxt_feature_run=
+nxt_feature_incs=
+nxt_feature_libs=
+nxt_feature_test="#include <time.h>
+
+                  int main() {
+                      time_t     t;
+                      struct tm  tm;
+
+                      t = 0;
+                      localtime_r(&t, &tm);
+                      return tm.tm_gmtoff;
+                  }"
+. ${NXT_AUTO}feature
+
+
+# Solaris
+
+nxt_feature="altzone"
+nxt_feature_name=NXT_HAVE_ALTZONE
+nxt_feature_run=
+nxt_feature_incs=
+nxt_feature_libs=
+nxt_feature_test="#include <time.h>
+
+                  int main() {
+                      altzone = 0;
+                      return 0;
+                  }"
+. ${NXT_AUTO}feature

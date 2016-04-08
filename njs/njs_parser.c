@@ -1622,6 +1622,10 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
         node->index = NJS_INDEX_REGEXP;
         break;
 
+    case NJS_TOKEN_DATE_CONSTRUCTOR:
+        node->index = NJS_INDEX_DATE;
+        break;
+
     case NJS_TOKEN_EVAL:
         node->index = NJS_INDEX_EVAL;
         break;

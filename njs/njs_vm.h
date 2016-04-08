@@ -95,6 +95,7 @@ typedef enum {
     NJS_OBJECT_STRING   = 0x0c,
     NJS_FUNCTION        = 0x0d,
     NJS_REGEXP          = 0x0e,
+    NJS_DATE            = 0x0f,
 } njs_value_type_t;
 
 
@@ -112,6 +113,7 @@ typedef struct njs_array_s            njs_array_t;
 typedef struct njs_function_lambda_s  njs_function_lambda_t;
 typedef struct njs_regexp_s           njs_regexp_t;
 typedef struct njs_regexp_pattern_s   njs_regexp_pattern_t;
+typedef struct njs_date_s             njs_date_t;
 typedef struct njs_extern_s           njs_extern_t;
 typedef struct njs_native_frame_s     njs_native_frame_t;
 typedef struct njs_property_next_s    njs_property_next_t;
@@ -133,7 +135,7 @@ struct njs_object_s {
 };
 
 
-#define NJS_ARGS_TYPES_MAX            3
+#define NJS_ARGS_TYPES_MAX            5
 
 struct njs_function_s {
     njs_object_t                      object;
@@ -215,6 +217,7 @@ union njs_value_s {
             njs_function_t             *function;
             njs_function_lambda_t      *lambda;
             njs_regexp_t               *regexp;
+            njs_date_t                 *date;
             njs_getter_t               getter;
             njs_extern_t               *external;
             njs_value_t                *value;
@@ -370,6 +373,10 @@ typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
 
 #define njs_is_regexp(value)                                                  \
     ((value)->type == NJS_REGEXP)
+
+
+#define njs_is_date(value)                                                    \
+    ((value)->type == NJS_DATE)
 
 
 #define njs_is_external(value)                                                \
@@ -664,7 +671,8 @@ enum njs_prototypes_e {
     NJS_PROTOTYPE_STRING,
     NJS_PROTOTYPE_FUNCTION,
     NJS_PROTOTYPE_REGEXP,
-#define NJS_PROTOTYPE_MAX    (NJS_PROTOTYPE_REGEXP + 1)
+    NJS_PROTOTYPE_DATE,
+#define NJS_PROTOTYPE_MAX    (NJS_PROTOTYPE_DATE + 1)
 };
 
 
@@ -680,6 +688,7 @@ enum njs_functions_e {
     NJS_FUNCTION_STRING =    NJS_PROTOTYPE_STRING,
     NJS_FUNCTION_FUNCTION =  NJS_PROTOTYPE_FUNCTION,
     NJS_FUNCTION_REGEXP =    NJS_PROTOTYPE_REGEXP,
+    NJS_FUNCTION_DATE =      NJS_PROTOTYPE_DATE,
 
     NJS_FUNCTION_EVAL,
 #define NJS_FUNCTION_MAX     (NJS_FUNCTION_EVAL + 1)
@@ -706,6 +715,7 @@ enum njs_object_e {
 #define NJS_INDEX_STRING         njs_global_scope_index(NJS_FUNCTION_STRING)
 #define NJS_INDEX_FUNCTION       njs_global_scope_index(NJS_FUNCTION_FUNCTION)
 #define NJS_INDEX_REGEXP         njs_global_scope_index(NJS_FUNCTION_REGEXP)
+#define NJS_INDEX_DATE           njs_global_scope_index(NJS_FUNCTION_DATE)
 #define NJS_INDEX_EVAL           njs_global_scope_index(NJS_FUNCTION_EVAL)
 
 #define NJS_INDEX_GLOBAL_RETVAL  njs_global_scope_index(NJS_FUNCTION_MAX)
