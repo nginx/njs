@@ -1041,7 +1041,7 @@ njs_array_property_query(njs_vm_t *vm, njs_property_query_t *pq,
         }
 
         if ((uint32_t) index >= array->size) {
-            ret = njs_array_realloc(vm, array, 0, index);
+            ret = njs_array_realloc(vm, array, 0, index + 1);
             if (nxt_slow_path(ret != NXT_OK)) {
                 return ret;
             }
