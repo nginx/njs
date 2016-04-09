@@ -143,7 +143,7 @@ njs_array_realloc(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
     uint32_t size)
 {
     nxt_uint_t   n;
-    njs_value_t  *value;
+    njs_value_t  *value, *old;
 
     if (size != array->size) {
         if (size < 16) {
@@ -160,8 +160,7 @@ njs_array_realloc(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
         return NXT_ERROR;
     }
 
-    /* GC: old = array->data */
-
+    old = array->data;
     array->data = value;
 
     while (prepend != 0) {
@@ -185,7 +184,7 @@ njs_array_realloc(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
         size--;
     }
 
-    /* GC: free old pointer. */
+    nxt_mem_cache_free(vm->mem_cache_pool, old);
 
     return NXT_OK;
 }
