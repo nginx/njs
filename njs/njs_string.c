@@ -35,6 +35,8 @@ static nxt_noinline void njs_string_slice_prop(njs_string_prop_t *string,
     njs_slice_prop_t *slice, njs_value_t *args, nxt_uint_t nargs);
 static nxt_noinline void njs_string_slice_args(njs_slice_prop_t *slice,
     njs_value_t *args, nxt_uint_t nargs);
+static njs_ret_t njs_string_prototype_from_char_code(njs_vm_t *vm,
+    njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static nxt_noinline ssize_t njs_string_index_of(njs_vm_t *vm,
     njs_value_t *src, njs_value_t *search_string, size_t index);
 
@@ -304,6 +306,20 @@ static const njs_object_prop_t  njs_string_constructor_properties[] =
         .type = NJS_NATIVE_GETTER,
         .name = njs_string("prototype"),
         .value = njs_native_getter(njs_object_prototype_create),
+    },
+
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("fromCharCode"),
+        .value = njs_native_function(njs_string_prototype_from_char_code, 0, 0),
+    },
+
+
+    /* ECMAScript 6, fromCodePoint(). */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("fromCodePoint"),
+        .value = njs_native_function(njs_string_prototype_from_char_code, 0, 0),
     },
 };
 
@@ -1041,6 +1057,59 @@ done:
     njs_number_set(&vm->retval, num);
 
     return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_string_prototype_from_char_code(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    u_char      *p;
+    double      num;
+    size_t      size;
+    int32_t     code;
+    nxt_uint_t  i;
+
+    for (i = 1; i < nargs; i++) {
+        if (!njs_is_numeric(&args[i])) {
+            vm->frame->trap_scratch.data.u.value = &args[i];
+            return NJS_TRAP_NUMBER_ARG;
+        }
+    }
+
+    size = 0;
+
+    for (i = 1; i < nargs; i++) {
+        num = args[i].data.u.number;
+        if (njs_is_nan(num)) {
+            goto range_error;
+        }
+
+        code = num;
+
+        if (code != num || code < 0 || code >= 0x110000) {
+            goto range_error;
+        }
+
+        size += nxt_utf8_size(code);
+    }
+
+    p = njs_string_alloc(vm, &vm->retval, size, nargs - 1);
+    if (nxt_slow_path(p == NULL)) {
+        return NXT_ERROR;
+    }
+
+    for (i = 1; i < nargs; i++) {
+        p = nxt_utf8_encode(p, args[i].data.u.number);
+    }
+
+    return NXT_OK;
+
+range_error:
+
+    vm->exception = &njs_exception_range_error;
+
+    return NXT_ERROR;
 }
 
 

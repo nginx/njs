@@ -2681,6 +2681,27 @@ static njs_unit_test_t  njs_test[] =
                  "    .length"),
       nxt_string("5") },
 
+    { nxt_string("String.fromCharCode('_')"),
+      nxt_string("RangeError") },
+
+    { nxt_string("String.fromCharCode(3.14)"),
+      nxt_string("RangeError") },
+
+    { nxt_string("String.fromCharCode(65, 90)"),
+      nxt_string("AZ") },
+
+    { nxt_string("String.fromCharCode(945, 946, 947)"),
+      nxt_string("αβγ") },
+
+    { nxt_string("(function() {"
+                 "    for (n = 0; n <= 1114111; n++) {"
+                 "        if (String.fromCharCode(n).charCodeAt(0) !== n)"
+                 "            return n;"
+                 "    }"
+                 "    return -1"
+                 "})()"),
+      nxt_string("-1") },
+
     { nxt_string("a = 'abcdef'; function f(a) {"
                  "return a.slice(a.indexOf('cd')) } f(a)"),
       nxt_string("cdef") },
