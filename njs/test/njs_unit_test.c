@@ -4025,7 +4025,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Date.parse('-000001-01-01T00:00:00.000Z')"),
       nxt_string("-62198755200000") },
 
-    { nxt_string("var d = new Date(); d == Date.parse(d.toString())"),
+    { nxt_string("var d = new Date(); d == Date.parse(d.toISOString())"),
       nxt_string("true") },
 
     { nxt_string("var s = Date(); s === Date(Date.parse(s))"),

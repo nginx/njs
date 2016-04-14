@@ -88,7 +88,7 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     if (vm->frame->ctor) {
 
-        if (nargs == 0) {
+        if (nargs == 1) {
             time = njs_gettime();
 
         } else if (nargs == 2 && njs_is_string(&args[1])) {
