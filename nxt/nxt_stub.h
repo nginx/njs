@@ -22,6 +22,13 @@ nxt_lower_case(u_char c)
 }
 
 
+nxt_inline u_char
+nxt_upper_case(u_char c)
+{
+    return (u_char) ((c >= 'a' && c <= 'z') ? c & 0xDF : c);
+}
+
+
 #define nxt_strstr_eq(s1, s2)                                                 \
     (((s1)->len == (s2)->len)                                                 \
       && (memcmp((s1)->data, (s2)->data, (s1)->len) == 0))

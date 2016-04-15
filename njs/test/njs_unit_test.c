@@ -2754,6 +2754,33 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'АБВ'.toLowerCase()"),
       nxt_string("абв") },
 
+    { nxt_string("'abc'.toUpperCase()"),
+      nxt_string("ABC") },
+
+    { nxt_string("'αβγ'.toUpperCase()"),
+      nxt_string("ΑΒΓ") },
+
+    { nxt_string("'абв'.toUpperCase()"),
+      nxt_string("АБВ") },
+
+    { nxt_string("var a = [];"
+                 "for (code = 0; code <= 1114111; code++) {"
+                 "    var s = String.fromCharCode(code);"
+                 "    var n = s.toUpperCase();"
+                 "    if (s != n && s != n.toLowerCase())"
+                 "        a.push(code);"
+                 "} a"),
+      nxt_string("181,305,383,453,456,459,498,837,962,976,977,981,982,1008,1009,1013,7835,8126") },
+
+    { nxt_string("var a = [];"
+                 "for (code = 0; code <= 1114111; code++) {"
+                 "    var s = String.fromCharCode(code);"
+                 "    var n = s.toLowerCase();"
+                 "    if (s != n && s != n.toUpperCase())"
+                 "        a.push(code);"
+                 "} a"),
+      nxt_string("304,453,456,459,498,1012,7838,8486,8490,8491") },
+
     { nxt_string("'abcdefgh'.search()"),
       nxt_string("0") },
 

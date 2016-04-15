@@ -23,6 +23,8 @@ NXT_EXPORT nxt_int_t nxt_utf8_casecmp(const u_char *start1,
     const u_char *start2, size_t len1, size_t len2);
 NXT_EXPORT uint32_t nxt_utf8_lower_case(const u_char **start,
     const u_char *end);
+NXT_EXPORT uint32_t nxt_utf8_upper_case(const u_char **start,
+    const u_char *end);
 NXT_EXPORT ssize_t nxt_utf8_length(const u_char *p, size_t len);
 NXT_EXPORT nxt_bool_t nxt_utf8_is_valid(const u_char *p, size_t len);
 

@@ -9,16 +9,19 @@
 #include <nxt_utf8.h>
 
 /*
- * The nxt_unicode_lower_case.h file is a file auto-generated from
- * the UnicodeData.txt file version 6.3.0 provided by Unicode, Inc.:
+ * The nxt_unicode_lower_case.h and nxt_unicode_upper_case.h files are
+ * files auto-generated from the UnicodeData.txt file version 6.3.0
+ * provided by Unicode, Inc.:
  *
  *   ./nxt_unicode_lower_case.pl UnicodeData.txt
+ *   ./nxt_unicode_upper_case.pl UnicodeData.txt
  *
  * Only common and simple case foldings are supported.  Full case foldings
  * are not supported.  Combined characters are also not supported.
  */
 
 #include <nxt_unicode_lower_case.h>
+#include <nxt_unicode_upper_case.h>
 
 
 u_char *
@@ -215,6 +218,34 @@ nxt_utf8_lower_case(const u_char **start, const u_char *end)
 
     if (u <= NXT_UNICODE_MAX_LOWER_CASE) {
         block = nxt_unicode_lower_case_blocks[u / NXT_UNICODE_BLOCK_SIZE];
+
+        if (block != NULL) {
+            return block[u % NXT_UNICODE_BLOCK_SIZE];
+        }
+    }
+
+    return u;
+}
+
+
+uint32_t
+nxt_utf8_upper_case(const u_char **start, const u_char *end)
+{
+    uint32_t        u;
+    const uint32_t  *block;
+
+    u = (uint32_t) **start;
+
+    if (nxt_fast_path(u < 0x80)) {
+        (*start)++;
+
+        return nxt_unicode_upper_case_block_000[u];
+    }
+
+    u = nxt_utf8_decode2(start, end);
+
+    if (u <= NXT_UNICODE_MAX_UPPER_CASE) {
+        block = nxt_unicode_upper_case_blocks[u / NXT_UNICODE_BLOCK_SIZE];
 
         if (block != NULL) {
             return block[u % NXT_UNICODE_BLOCK_SIZE];

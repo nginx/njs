@@ -48,6 +48,7 @@ $(NXT_BUILDDIR)/nxt_utf8.o: \
 	$(NXT_LIB)/nxt_clang.h \
 	$(NXT_LIB)/nxt_utf8.h \
 	$(NXT_LIB)/nxt_unicode_lower_case.h \
+	$(NXT_LIB)/nxt_unicode_upper_case.h \
 	$(NXT_LIB)/nxt_utf8.c \
 
 	$(NXT_CC) -c -o $(NXT_BUILDDIR)/nxt_utf8.o $(NXT_CFLAGS) \
