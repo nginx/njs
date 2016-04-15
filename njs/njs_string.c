@@ -1291,6 +1291,58 @@ njs_string_index(njs_string_prop_t *string, uint32_t offset)
 }
 
 
+/*
+ * String.toLowerCase().
+ * The method supports only simple folding.  For example, Turkish "İ"
+ * folding "\u0130" to "\u0069\u0307" is not supported.
+ */
+
+static njs_ret_t
+njs_string_prototype_to_lower_case(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    size_t             size;
+    u_char             *p, *start;
+    const u_char       *s, *end;
+    njs_string_prop_t  string;
+
+    (void) njs_string_prop(&string, &args[0]);
+
+    start = njs_string_alloc(vm, &vm->retval, string.size, string.length);
+    if (nxt_slow_path(start == NULL)) {
+        return NXT_ERROR;
+    }
+
+    p = start;
+    s = string.start;
+    size = string.size;
+
+    if (string.length == 0 || string.length == size) {
+        /* Byte or ASCII string. */
+
+        while (size != 0) {
+            *p++ = nxt_lower_case(*s++);
+            size--;
+        }
+
+    } else {
+        /* UTF-8 string. */
+        end = s + size;
+
+        while (size != 0) {
+            p = nxt_utf8_encode(p, nxt_utf8_lower_case(&s, end));
+            size--;
+        }
+
+        if (string.length >= NJS_STRING_MAP_OFFSET) {
+            njs_string_offset_map_init(start, string.size);
+        }
+    }
+
+    return NXT_OK;
+}
+
+
 static njs_ret_t
 njs_string_prototype_search(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
@@ -1750,6 +1802,13 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("lastIndexOf"),
         .value = njs_native_function(njs_string_prototype_last_index_of, 0,
                      NJS_STRING_OBJECT_ARG, NJS_STRING_ARG, NJS_INTEGER_ARG),
+    },
+
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("toLowerCase"),
+        .value = njs_native_function(njs_string_prototype_to_lower_case, 0,
+                     NJS_STRING_OBJECT_ARG, NJS_REGEXP_ARG),
     },
 
     {

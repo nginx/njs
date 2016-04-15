@@ -14,8 +14,13 @@
 #define nxt_min(val1, val2)                                                   \
     ((val1 < val2) ? (val1) : (val2))
 
-#define nxt_lowcase(c)                                                        \
-    (u_char) ((c >= 'A' && c <= 'Z') ? c | 0x20 : c)
+
+nxt_inline u_char
+nxt_lower_case(u_char c)
+{
+    return (u_char) ((c >= 'A' && c <= 'Z') ? c | 0x20 : c);
+}
+
 
 #define nxt_strstr_eq(s1, s2)                                                 \
     (((s1)->len == (s2)->len)                                                 \

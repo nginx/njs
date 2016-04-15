@@ -9,22 +9,16 @@
 #include <nxt_utf8.h>
 
 /*
- * The nxt_unicode_lowcase.h file is the auto-generated file from
- * the CaseFolding-6.3.0.txt file provided by Unicode, Inc.:
+ * The nxt_unicode_lower_case.h file is a file auto-generated from
+ * the UnicodeData.txt file version 6.3.0 provided by Unicode, Inc.:
  *
- *   ./nxt_unicode_lowcase.pl CaseFolding-6.3.0.txt
- *
- * This file should be copied to system specific nxt_unicode_SYSTEM_lowcase.h
- * file and utf8_file_name_test should be built with this file.
- * Then a correct system specific file should be generated:
- *
- *   ./build/utf8_file_name_test | ./nxt_unicode_lowcase.pl
+ *   ./nxt_unicode_lower_case.pl UnicodeData.txt
  *
  * Only common and simple case foldings are supported.  Full case foldings
- * is not supported.  Combined characters are also not supported.
+ * are not supported.  Combined characters are also not supported.
  */
 
-#include <nxt_unicode_lowcase.h>
+#include <nxt_unicode_lower_case.h>
 
 
 u_char *
@@ -184,9 +178,9 @@ nxt_utf8_casecmp(const u_char *start1, const u_char *start2, size_t len1,
 
     while (start1 < end1 && start2 < end2) {
 
-        u1 = nxt_utf8_lowcase(&start1, end1);
+        u1 = nxt_utf8_lower_case(&start1, end1);
 
-        u2 = nxt_utf8_lowcase(&start2, end2);
+        u2 = nxt_utf8_lower_case(&start2, end2);
 
         if (nxt_slow_path((u1 | u2) == 0xFFFFFFFF)) {
             return NXT_UTF8_SORT_INVALID;
@@ -204,7 +198,7 @@ nxt_utf8_casecmp(const u_char *start1, const u_char *start2, size_t len1,
 
 
 uint32_t
-nxt_utf8_lowcase(const u_char **start, const u_char *end)
+nxt_utf8_lower_case(const u_char **start, const u_char *end)
 {
     uint32_t        u;
     const uint32_t  *block;
@@ -214,13 +208,13 @@ nxt_utf8_lowcase(const u_char **start, const u_char *end)
     if (nxt_fast_path(u < 0x80)) {
         (*start)++;
 
-        return nxt_unicode_block_000[u];
+        return nxt_unicode_lower_case_block_000[u];
     }
 
     u = nxt_utf8_decode2(start, end);
 
-    if (u <= NXT_UNICODE_MAX_LOWCASE) {
-        block = nxt_unicode_blocks[u / NXT_UNICODE_BLOCK_SIZE];
+    if (u <= NXT_UNICODE_MAX_LOWER_CASE) {
+        block = nxt_unicode_lower_case_blocks[u / NXT_UNICODE_BLOCK_SIZE];
 
         if (block != NULL) {
             return block[u % NXT_UNICODE_BLOCK_SIZE];

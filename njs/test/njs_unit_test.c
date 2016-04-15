@@ -2745,6 +2745,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abc abc abc abc'.lastIndexOf('abc', 0)"),
       nxt_string("-1") },
 
+    { nxt_string("'ABC'.toLowerCase()"),
+      nxt_string("abc") },
+
+    { nxt_string("'ΑΒΓ'.toLowerCase()"),
+      nxt_string("αβγ") },
+
+    { nxt_string("'АБВ'.toLowerCase()"),
+      nxt_string("абв") },
+
     { nxt_string("'abcdefgh'.search()"),
       nxt_string("0") },
 
