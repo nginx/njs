@@ -92,6 +92,35 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("\n +1"),
       nxt_string("1") },
 
+    /* Number.toString(radix) method. */
+
+    { nxt_string("0..toString(2)"),
+      nxt_string("0") },
+
+    { nxt_string("240..toString(2)"),
+      nxt_string("11110000") },
+
+    { nxt_string("Math.pow(-2, 1023).toString(2).length"),
+      nxt_string("1025") },
+
+    { nxt_string("8.0625.toString(2)"),
+      nxt_string("1000.0001") },
+
+    { nxt_string("(1/3).toString(2)"),
+      nxt_string("0.010101010101010101010101010101010101010101010101010101") },
+
+    { nxt_string("9999..toString(3)"),
+      nxt_string("111201100") },
+
+    { nxt_string("-9999..toString(3)"),
+      nxt_string("-111201100") },
+
+    { nxt_string("81985529216486895..toString(16)"),
+      nxt_string("123456789abcdf0") },
+
+    { nxt_string("1845449130881..toString(36)"),
+      nxt_string("njscript") },
+
     /* An object "valueOf/toString" methods. */
 
     { nxt_string("var a = { valueOf: function() { return 1 } };    +a"),

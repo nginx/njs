@@ -22,6 +22,10 @@
 #include <stdio.h>
 
 
+static njs_ret_t njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
+    const njs_value_t *number, uint32_t radix);
+
+
 double
 njs_value_to_number(njs_value_t *value)
 {
@@ -313,6 +317,7 @@ static njs_ret_t
 njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
+    double       radix;
     njs_value_t  *value;
 
     value = &args[0];
@@ -328,7 +333,91 @@ njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         }
     }
 
-    return njs_number_to_string(vm, &vm->retval, value);
+    if (nargs == 1 || args[1].data.u.number == 10) {
+        return njs_number_to_string(vm, &vm->retval, value);
+    }
+
+    radix = args[1].data.u.number;
+
+    if (radix < 2 || radix > 36 || radix != (int) radix) {
+        vm->exception = &njs_exception_range_error;
+        return NXT_ERROR;
+    }
+
+    return njs_number_to_string_radix(vm, &vm->retval, value, radix);
+}
+
+
+/*
+ * The radix equal to 2 produces the longest intergral value of a number
+ * and the maximum value consists of 1024 digits and minus sign.
+ */
+
+#define NJS_STRING_RADIX_INTERGRAL_LEN  (1 + 1024)
+#define NJS_STRING_RADIX_FRACTION_LEN   (1 + 54)
+#define NJS_STRING_RADIX_LEN                                                  \
+    (NJS_STRING_RADIX_INTERGRAL_LEN + NJS_STRING_RADIX_FRACTION_LEN)
+
+
+static njs_ret_t
+njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
+    const njs_value_t *number, uint32_t radix)
+{
+    u_char   *p, *f, *start, *end;
+    double   n, next;
+    size_t   size;
+    uint8_t  reminder;
+    u_char   buf[NJS_STRING_RADIX_LEN];
+
+    static const char  *digits = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+    end = buf + NJS_STRING_RADIX_LEN;
+    p = buf + NJS_STRING_RADIX_INTERGRAL_LEN;
+
+    n = number->data.u.number;
+
+    if (n < 0) {
+        n = -n;
+    }
+
+    do {
+        next = trunc(n / radix);
+        reminder = n - next * radix;
+        *(--p) = digits[reminder];
+        n = next;
+    } while (n != 0);
+
+    n = number->data.u.number;
+
+    if (n < 0) {
+        *(--p) = '-';
+    }
+
+    f = buf + NJS_STRING_RADIX_INTERGRAL_LEN;
+
+    n = n - trunc(n);
+
+    if (n != 0) {
+        *f++ = '.';
+
+        do {
+            n = n * radix;
+            reminder = trunc(n);
+            *f++ = digits[reminder];
+            n = n - reminder;
+        } while (n != 0 && f < end);
+    }
+
+    size = f - p;
+
+    start = njs_string_alloc(vm, string, size, size);
+
+    if (nxt_fast_path(start != NULL)) {
+        memcpy(start, p, size);
+        return NXT_OK;
+    }
+
+    return NXT_ERROR;
 }
 
 
@@ -349,7 +438,8 @@ static const njs_object_prop_t  njs_number_prototype_properties[] =
     {
         .type = NJS_METHOD,
         .name = njs_string("toString"),
-        .value = njs_native_function(njs_number_prototype_to_string, 0, 0),
+        .value = njs_native_function(njs_number_prototype_to_string, 0,
+                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
     },
 };
 
