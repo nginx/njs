@@ -80,6 +80,8 @@ typedef struct {
 } njs_slice_prop_t;
 
 
+njs_ret_t njs_string_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,
+    uint32_t size, uint32_t length);
 u_char *njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size,
     uint32_t length)
     NXT_MALLOC_LIKE;

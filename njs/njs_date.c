@@ -831,7 +831,6 @@ njs_date_string(njs_vm_t *vm, const char *fmt, double time)
 {
     size_t     size;
     time_t     clock;
-    u_char     *start;
     u_char     buf[NJS_DATE_TIME_LEN];
     struct tm  tm;
 
@@ -841,14 +840,7 @@ njs_date_string(njs_vm_t *vm, const char *fmt, double time)
 
         size = strftime((char *) buf, NJS_DATE_TIME_LEN, fmt, &tm);
 
-        start = njs_string_alloc(vm, &vm->retval, size, size);
-
-        if (nxt_fast_path(start != NULL)) {
-            memcpy(start, buf, size);
-            return NXT_OK;
-        }
-
-        return NXT_ERROR;
+        return njs_string_new(vm, &vm->retval, buf, size, size);
     }
 
     vm->retval = njs_string_invalid_date;
@@ -864,7 +856,6 @@ njs_date_prototype_to_utc_string(njs_vm_t *vm, njs_value_t *args,
     double             time;
     size_t             size;
     time_t             clock;
-    u_char             *start;
     u_char             buf[NJS_DATE_TIME_LEN];
     struct tm          tm;
 
@@ -886,14 +877,7 @@ njs_date_prototype_to_utc_string(njs_vm_t *vm, njs_value_t *args,
                         tm.tm_mday, tm.tm_year + 1900,
                         tm.tm_hour, tm.tm_min, tm.tm_sec);
 
-        start = njs_string_alloc(vm, &vm->retval, size, size);
-
-        if (nxt_fast_path(start != NULL)) {
-            memcpy(start, buf, size);
-            return NXT_OK;
-        }
-
-        return NXT_ERROR;
+        return njs_string_new(vm, &vm->retval, buf, size, size);
     }
 
     vm->retval = njs_string_invalid_date;
@@ -910,7 +894,6 @@ njs_date_prototype_to_iso_string(njs_vm_t *vm, njs_value_t *args,
     double     time;
     size_t     size;
     time_t     clock;
-    u_char     *start;
     u_char     buf[NJS_ISO_DATE_TIME_LEN];
     struct tm  tm;
 
@@ -930,14 +913,7 @@ njs_date_prototype_to_iso_string(njs_vm_t *vm, njs_value_t *args,
                         tm.tm_hour, tm.tm_min, tm.tm_sec,
                         (int) ((int64_t) time % 1000));
 
-        start = njs_string_alloc(vm, &vm->retval, size, size);
-
-        if (nxt_fast_path(start != NULL)) {
-            memcpy(start, buf, size);
-            return NXT_OK;
-        }
-
-        return NXT_ERROR;
+        return njs_string_new(vm, &vm->retval, buf, size, size);
     }
 
     vm->exception = &njs_exception_range_error;

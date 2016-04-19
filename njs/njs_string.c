@@ -92,6 +92,28 @@ njs_string_create(njs_vm_t *vm, njs_value_t *value, u_char *start, size_t size,
 }
 
 
+nxt_noinline njs_ret_t
+njs_string_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,
+    uint32_t size, uint32_t length)
+{
+    u_char  *p;
+
+    p = njs_string_alloc(vm, value, size, length);
+
+    if (nxt_fast_path(p != NULL)) {
+        memcpy(p, start, size);
+
+        if (size != length && length >= NJS_STRING_MAP_OFFSET) {
+            njs_string_offset_map_init(p, size);
+        }
+
+        return NXT_OK;
+    }
+
+    return NXT_ERROR;
+}
+
+
 nxt_noinline u_char *
 njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size,
     uint32_t length)
@@ -571,7 +593,6 @@ static njs_ret_t
 njs_string_prototype_from_utf8(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    u_char             *p;
     ssize_t            length;
     njs_slice_prop_t   slice;
     njs_string_prop_t  string;
@@ -596,17 +617,8 @@ njs_string_prototype_from_utf8(njs_vm_t *vm, njs_value_t *args,
         }
 
         /* Long UTF-8 string. */
-
-        p = njs_string_alloc(vm, &vm->retval, slice.length, length);
-
-        if (nxt_fast_path(p != NULL)) {
-            memcpy(p, string.start, slice.length);
-            njs_string_offset_map_init(p, slice.length);
-
-            return NXT_OK;
-        }
-
-        return NXT_ERROR;
+        return njs_string_new(vm, &vm->retval, string.start, slice.length,
+                              length);
     }
 
     vm->retval = njs_value_null;
@@ -949,7 +961,6 @@ nxt_noinline njs_ret_t
 njs_string_slice(njs_vm_t *vm, njs_value_t *dst,
     const njs_string_prop_t *string, njs_slice_prop_t *slice)
 {
-    u_char        *s;
     size_t        size, n, length;
     ssize_t       excess;
     const u_char  *p, *start, *end;
@@ -994,19 +1005,7 @@ njs_string_slice(njs_vm_t *vm, njs_value_t *dst,
         }
 
         if (nxt_fast_path(size != 0)) {
-            s = njs_string_alloc(vm, &vm->retval, size, length);
-
-            if (nxt_slow_path(s == NULL)) {
-                return NXT_ERROR;
-            }
-
-            memcpy(s, start, size);
-
-            if (length >= NJS_STRING_MAP_OFFSET && size != length) {
-                njs_string_offset_map_init(s, size);
-            }
-
-            return NXT_OK;
+            return njs_string_new(vm, &vm->retval, start, size, length);
         }
     }
 

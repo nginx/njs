@@ -167,12 +167,11 @@ njs_ret_t
 njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
     const njs_value_t *number)
 {
-    u_char             *p;
     double             n, num;
     size_t             size;
     const char         *fmt;
     const njs_value_t  *value;
-    char               buf[128];
+    u_char             buf[128];
 
     num = number->data.u.number;
 
@@ -207,16 +206,9 @@ njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
             fmt = "%1.e";
         }
 
-        size = snprintf(buf, sizeof(buf), fmt, num);
+        size = snprintf((char *) buf, sizeof(buf), fmt, num);
 
-        p = njs_string_alloc(vm, string, size, size);
-
-        if (nxt_fast_path(p != NULL)) {
-            memcpy(p, buf, size);
-            return NXT_OK;
-        }
-
-        return NXT_ERROR;
+        return njs_string_new(vm, string, buf, size, size);
     }
 
     *string = *value;
@@ -363,7 +355,7 @@ static njs_ret_t
 njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
     const njs_value_t *number, uint32_t radix)
 {
-    u_char   *p, *f, *start, *end;
+    u_char   *p, *f, *end;
     double   n, next;
     size_t   size;
     uint8_t  reminder;
@@ -410,14 +402,7 @@ njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
 
     size = f - p;
 
-    start = njs_string_alloc(vm, string, size, size);
-
-    if (nxt_fast_path(start != NULL)) {
-        memcpy(start, p, size);
-        return NXT_OK;
-    }
-
-    return NXT_ERROR;
+    return njs_string_new(vm, string, p, size, size);
 }
 
 
