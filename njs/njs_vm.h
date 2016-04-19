@@ -86,7 +86,7 @@ typedef enum {
      * NJS_OBJECT_BOOLEAN, NJS_OBJECT_NUMBER, and NJS_OBJECT_STRING must be
      * in the same order as NJS_BOOLEAN, NJS_NUMBER, and NJS_STRING.  It is
      * used in njs_primitive_prototype_index().  The order of object types
-     * is used in vm->prototypes and vm->functions arrays.
+     * is used in vm->prototypes and vm->constructors arrays.
      */
     NJS_OBJECT          = 0x08,
     NJS_ARRAY           = 0x09,
@@ -664,7 +664,7 @@ typedef enum {
 
 
 enum njs_prototypes_e {
-    NJS_PROTOTYPE_OBJECT =   0,
+    NJS_PROTOTYPE_OBJECT =     0,
     NJS_PROTOTYPE_ARRAY,
     NJS_PROTOTYPE_BOOLEAN,
     NJS_PROTOTYPE_NUMBER,
@@ -672,7 +672,7 @@ enum njs_prototypes_e {
     NJS_PROTOTYPE_FUNCTION,
     NJS_PROTOTYPE_REGEXP,
     NJS_PROTOTYPE_DATE,
-#define NJS_PROTOTYPE_MAX    (NJS_PROTOTYPE_DATE + 1)
+#define NJS_PROTOTYPE_MAX      (NJS_PROTOTYPE_DATE + 1)
 };
 
 
@@ -680,24 +680,28 @@ enum njs_prototypes_e {
     (NJS_PROTOTYPE_BOOLEAN + ((type) - NJS_BOOLEAN))
 
 
-enum njs_functions_e {
-    NJS_FUNCTION_OBJECT =    NJS_PROTOTYPE_OBJECT,
-    NJS_FUNCTION_ARRAY =     NJS_PROTOTYPE_ARRAY,
-    NJS_FUNCTION_BOOLEAN =   NJS_PROTOTYPE_BOOLEAN,
-    NJS_FUNCTION_NUMBER =    NJS_PROTOTYPE_NUMBER,
-    NJS_FUNCTION_STRING =    NJS_PROTOTYPE_STRING,
-    NJS_FUNCTION_FUNCTION =  NJS_PROTOTYPE_FUNCTION,
-    NJS_FUNCTION_REGEXP =    NJS_PROTOTYPE_REGEXP,
-    NJS_FUNCTION_DATE =      NJS_PROTOTYPE_DATE,
-
-    NJS_FUNCTION_EVAL,
-#define NJS_FUNCTION_MAX     (NJS_FUNCTION_EVAL + 1)
+enum njs_constructor_e {
+    NJS_CONSTRUCTOR_OBJECT =   NJS_PROTOTYPE_OBJECT,
+    NJS_CONSTRUCTOR_ARRAY =    NJS_PROTOTYPE_ARRAY,
+    NJS_CONSTRUCTOR_BOOLEAN =  NJS_PROTOTYPE_BOOLEAN,
+    NJS_CONSTRUCTOR_NUMBER =   NJS_PROTOTYPE_NUMBER,
+    NJS_CONSTRUCTOR_STRING =   NJS_PROTOTYPE_STRING,
+    NJS_CONSTRUCTOR_FUNCTION = NJS_PROTOTYPE_FUNCTION,
+    NJS_CONSTRUCTOR_REGEXP =   NJS_PROTOTYPE_REGEXP,
+    NJS_CONSTRUCTOR_DATE =     NJS_PROTOTYPE_DATE,
+#define NJS_CONSTRUCTOR_MAX    (NJS_CONSTRUCTOR_DATE + 1)
 };
 
 
 enum njs_object_e {
-    NJS_OBJECT_MATH =        0,
-#define NJS_OBJECT_MAX       (NJS_OBJECT_MATH + 1)
+    NJS_OBJECT_MATH =          0,
+#define NJS_OBJECT_MAX         (NJS_OBJECT_MATH + 1)
+};
+
+
+enum njs_function_e {
+    NJS_FUNCTION_EVAL =        0,
+#define NJS_FUNCTION_MAX       (NJS_FUNCTION_EVAL + 1)
 };
 
 
@@ -708,18 +712,18 @@ enum njs_object_e {
     ((njs_index_t) (((value) << NJS_SCOPE_SHIFT) | NJS_SCOPE_GLOBAL))
 
 
-#define NJS_INDEX_OBJECT         njs_global_scope_index(NJS_FUNCTION_OBJECT)
-#define NJS_INDEX_ARRAY          njs_global_scope_index(NJS_FUNCTION_ARRAY)
-#define NJS_INDEX_BOOLEAN        njs_global_scope_index(NJS_FUNCTION_BOOLEAN)
-#define NJS_INDEX_NUMBER         njs_global_scope_index(NJS_FUNCTION_NUMBER)
-#define NJS_INDEX_STRING         njs_global_scope_index(NJS_FUNCTION_STRING)
-#define NJS_INDEX_FUNCTION       njs_global_scope_index(NJS_FUNCTION_FUNCTION)
-#define NJS_INDEX_REGEXP         njs_global_scope_index(NJS_FUNCTION_REGEXP)
-#define NJS_INDEX_DATE           njs_global_scope_index(NJS_FUNCTION_DATE)
-#define NJS_INDEX_EVAL           njs_global_scope_index(NJS_FUNCTION_EVAL)
+#define NJS_INDEX_OBJECT         njs_global_scope_index(NJS_CONSTRUCTOR_OBJECT)
+#define NJS_INDEX_ARRAY          njs_global_scope_index(NJS_CONSTRUCTOR_ARRAY)
+#define NJS_INDEX_BOOLEAN        njs_global_scope_index(NJS_CONSTRUCTOR_BOOLEAN)
+#define NJS_INDEX_NUMBER         njs_global_scope_index(NJS_CONSTRUCTOR_NUMBER)
+#define NJS_INDEX_STRING         njs_global_scope_index(NJS_CONSTRUCTOR_STRING)
+#define NJS_INDEX_FUNCTION                                                    \
+    njs_global_scope_index(NJS_CONSTRUCTOR_FUNCTION)
+#define NJS_INDEX_REGEXP         njs_global_scope_index(NJS_CONSTRUCTOR_REGEXP)
+#define NJS_INDEX_DATE           njs_global_scope_index(NJS_CONSTRUCTOR_DATE)
 
-#define NJS_INDEX_GLOBAL_RETVAL  njs_global_scope_index(NJS_FUNCTION_MAX)
-#define NJS_INDEX_GLOBAL_OFFSET  njs_scope_index(NJS_FUNCTION_MAX + 1)
+#define NJS_INDEX_GLOBAL_RETVAL  njs_global_scope_index(NJS_CONSTRUCTOR_MAX)
+#define NJS_INDEX_GLOBAL_OFFSET  njs_scope_index(NJS_CONSTRUCTOR_MAX + 1)
 
 
 #define njs_offset(index)                                                     \
@@ -767,12 +771,12 @@ struct njs_vm_s {
     nxt_lvlhsh_t             values_hash;
 
     /*
-     * The prototypes and functions arrays must be togther because
+     * The prototypes and constructors arrays must be togther because
      * they are copied from njs_vm_shared_t by single memcpy()
      * in njs_builtin_objects_clone().
      */
     njs_object_t             prototypes[NJS_PROTOTYPE_MAX];
-    njs_function_t           functions[NJS_FUNCTION_MAX];
+    njs_function_t           constructors[NJS_CONSTRUCTOR_MAX];
 
     nxt_mem_cache_pool_t     *mem_cache_pool;
 
@@ -802,13 +806,14 @@ struct njs_vm_shared_s {
     nxt_lvlhsh_t             function_prototype_hash;
 
     njs_object_t             objects[NJS_OBJECT_MAX];
+    njs_function_t           functions[NJS_FUNCTION_MAX];
 
     /*
-     * The prototypes and functions arrays must be togther because they are
+     * The prototypes and constructors arrays must be togther because they are
      * copied to njs_vm_t by single memcpy() in njs_builtin_objects_clone().
      */
     njs_object_t             prototypes[NJS_PROTOTYPE_MAX];
-    njs_function_t           functions[NJS_FUNCTION_MAX];
+    njs_function_t           constructors[NJS_CONSTRUCTOR_MAX];
 };
 
 

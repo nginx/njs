@@ -359,7 +359,7 @@ njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value)
 
     proto = NULL;
     function = value->data.u.function;
-    index = function - vm->functions;
+    index = function - vm->constructors;
 
     if (index >= 0 && index < NJS_PROTOTYPE_MAX) {
         proto = njs_property_prototype_create(vm, &function->object.hash,

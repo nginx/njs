@@ -34,10 +34,10 @@ typedef struct {
 nxt_int_t
 njs_builtin_objects_create(njs_vm_t *vm)
 {
-    nxt_int_t                         ret;
-    nxt_uint_t                        i;
-    njs_object_t                      *objects, *prototypes;
-    njs_function_t                    *functions;
+    nxt_int_t       ret;
+    nxt_uint_t      i;
+    njs_object_t    *objects, *prototypes;
+    njs_function_t  *functions, *constructors;
 
     static const njs_object_init_t    *prototype_init[] = {
         &njs_object_prototype_init,
@@ -50,7 +50,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
         &njs_date_prototype_init,
     };
 
-    static const njs_object_init_t    *function_init[] = {
+    static const njs_object_init_t    *constructor_init[] = {
         &njs_object_constructor_init,
         &njs_array_constructor_init,
         &njs_boolean_constructor_init,
@@ -59,11 +59,9 @@ njs_builtin_objects_create(njs_vm_t *vm)
         &njs_function_constructor_init,
         &njs_regexp_constructor_init,
         &njs_date_constructor_init,
-
-        &njs_eval_function_init,
     };
 
-    static const njs_function_init_t  native_functions[] = {
+    static const njs_function_init_t  native_constructors[] = {
         /* SunC does not allow empty array initialization. */
         { njs_object_constructor,   { 0 } },
         { njs_array_constructor,    { 0 } },
@@ -74,12 +72,19 @@ njs_builtin_objects_create(njs_vm_t *vm)
         { njs_regexp_constructor,
           { NJS_SKIP_ARG, NJS_STRING_ARG, NJS_STRING_ARG } },
         { njs_date_constructor,     { 0 } },
-
-        { njs_eval_function,        { 0 } },
     };
 
-    static const njs_object_init_t    *objects_init[] = {
+    static const njs_object_init_t    *object_init[] = {
         &njs_math_object_init,
+    };
+
+    static const njs_object_init_t    *function_init[] = {
+        &njs_eval_function_init,
+    };
+
+    static const njs_function_init_t  native_functions[] = {
+        /* SunC does not allow empty array initialization. */
+        { njs_eval_function,        { 0 } },
     };
 
     static const njs_object_prop_t    null_proto_property = {
@@ -110,13 +115,34 @@ njs_builtin_objects_create(njs_vm_t *vm)
 
     for (i = NJS_OBJECT_MATH; i < NJS_OBJECT_MAX; i++) {
         ret = njs_object_hash_create(vm, &objects[i].shared_hash,
-                                     objects_init[i]->properties,
-                                     objects_init[i]->items);
+                                     object_init[i]->properties,
+                                     object_init[i]->items);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NXT_ERROR;
         }
 
         objects[i].shared = 1;
+    }
+
+    functions = vm->shared->functions;
+
+    for (i = NJS_FUNCTION_EVAL; i < NJS_FUNCTION_MAX; i++) {
+        ret = njs_object_hash_create(vm, &functions[i].object.shared_hash,
+                                     function_init[i]->properties,
+                                     function_init[i]->items);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return NXT_ERROR;
+        }
+
+        functions[i].object.shared = 1;
+        functions[i].native = 1;
+        functions[i].args_offset = 1;
+        functions[i].u.native = native_functions[i].native;
+        functions[i].args_types[0] = native_functions[i].args_types[0];
+        functions[i].args_types[1] = native_functions[i].args_types[1];
+        functions[i].args_types[2] = native_functions[i].args_types[2];
+        functions[i].args_types[3] = native_functions[i].args_types[3];
+        functions[i].args_types[4] = native_functions[i].args_types[4];
     }
 
     prototypes = vm->shared->prototypes;
@@ -130,20 +156,22 @@ njs_builtin_objects_create(njs_vm_t *vm)
         }
     }
 
-    functions = vm->shared->functions;
+    constructors = vm->shared->constructors;
 
-    for (i = NJS_FUNCTION_OBJECT; i < NJS_FUNCTION_MAX; i++) {
-        functions[i].object.shared = 0;
-        functions[i].native = 1;
-        functions[i].args_offset = 1;
-        functions[i].u.native = native_functions[i].native;
-        functions[i].args_types[0] = native_functions[i].args_types[0];
-        functions[i].args_types[1] = native_functions[i].args_types[1];
-        functions[i].args_types[2] = native_functions[i].args_types[2];
+    for (i = NJS_CONSTRUCTOR_OBJECT; i < NJS_CONSTRUCTOR_MAX; i++) {
+        constructors[i].object.shared = 0;
+        constructors[i].native = 1;
+        constructors[i].args_offset = 1;
+        constructors[i].u.native = native_constructors[i].native;
+        constructors[i].args_types[0] = native_constructors[i].args_types[0];
+        constructors[i].args_types[1] = native_constructors[i].args_types[1];
+        constructors[i].args_types[2] = native_constructors[i].args_types[2];
+        constructors[i].args_types[3] = native_constructors[i].args_types[3];
+        constructors[i].args_types[4] = native_constructors[i].args_types[4];
 
-        ret = njs_object_hash_create(vm, &functions[i].object.shared_hash,
-                                     function_init[i]->properties,
-                                     function_init[i]->items);
+        ret = njs_object_hash_create(vm, &constructors[i].object.shared_hash,
+                                     constructor_init[i]->properties,
+                                     constructor_init[i]->items);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NXT_ERROR;
         }
@@ -200,11 +228,11 @@ njs_builtin_objects_clone(njs_vm_t *vm)
     njs_object_t  *function_prototype;
 
     /*
-     * Copy both prototypes and functions arrays by one memcpy()
+     * Copy both prototypes and constructors arrays by one memcpy()
      * because they are stored together.
      */
     size = NJS_PROTOTYPE_MAX * sizeof(njs_object_t)
-           + NJS_FUNCTION_MAX * sizeof(njs_function_t);
+           + NJS_CONSTRUCTOR_MAX * sizeof(njs_function_t);
 
     memcpy(vm->prototypes, vm->shared->prototypes, size);
 
@@ -212,14 +240,14 @@ njs_builtin_objects_clone(njs_vm_t *vm)
         vm->prototypes[i].__proto__ = &vm->prototypes[NJS_PROTOTYPE_OBJECT];
     }
 
-    function_prototype = &vm->prototypes[NJS_FUNCTION_FUNCTION];
+    function_prototype = &vm->prototypes[NJS_CONSTRUCTOR_FUNCTION];
     values = vm->scopes[NJS_SCOPE_GLOBAL];
 
-    for (i = NJS_FUNCTION_OBJECT; i < NJS_FUNCTION_MAX; i++) {
+    for (i = NJS_CONSTRUCTOR_OBJECT; i < NJS_CONSTRUCTOR_MAX; i++) {
         values[i].type = NJS_FUNCTION;
         values[i].data.truth = 1;
-        values[i].data.u.function = &vm->functions[i];
-        vm->functions[i].object.__proto__ = function_prototype;
+        values[i].data.u.function = &vm->constructors[i];
+        vm->constructors[i].object.__proto__ = function_prototype;
     }
 
     return NXT_OK;

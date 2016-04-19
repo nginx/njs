@@ -71,6 +71,8 @@ static njs_token_t njs_parser_grouping_expression(njs_vm_t *vm,
     njs_parser_t *parser);
 static njs_token_t njs_parser_builtin_object(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node);
+static njs_token_t njs_parser_builtin_function(njs_vm_t *vm,
+    njs_parser_t *parser, njs_parser_node_t *node);
 static njs_token_t njs_parser_object(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *obj);
 static njs_token_t njs_parser_array(njs_vm_t *vm, njs_parser_t *parser,
@@ -1627,8 +1629,7 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
         break;
 
     case NJS_TOKEN_EVAL:
-        node->index = NJS_INDEX_EVAL;
-        break;
+        return njs_parser_builtin_function(vm, parser, node);
 
     default:
         vm->exception = &njs_exception_syntax_error;
@@ -1662,6 +1663,36 @@ njs_parser_builtin_object(njs_vm_t *vm, njs_parser_t *parser,
     index = node->token - NJS_TOKEN_FIRST_OBJECT;
     value->data.u.object = &vm->shared->objects[index];
     value->type = NJS_OBJECT;
+    value->data.truth = 1;
+
+    parser->node = node;
+    parser->code_size += sizeof(njs_vmcode_object_copy_t);
+
+    return njs_lexer_token(parser->lexer);
+}
+
+
+static njs_token_t
+njs_parser_builtin_function(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *node)
+{
+    nxt_uint_t      index, level;
+    njs_value_t     *value;
+    njs_variable_t  *var;
+
+    var = njs_parser_variable(vm, parser, &level);
+    if (nxt_slow_path(var == NULL)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    var->state = NJS_VARIABLE_DECLARED;
+    node->index = var->index;
+
+    value = njs_variable_value(parser, node->index);
+
+    index = node->token - NJS_TOKEN_FIRST_FUNCTION;
+    value->data.u.function = &vm->shared->functions[index];
+    value->type = NJS_FUNCTION;
     value->data.truth = 1;
 
     parser->node = node;

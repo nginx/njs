@@ -286,7 +286,6 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
     case NJS_TOKEN_FUNCTION_CONSTRUCTOR:
     case NJS_TOKEN_REGEXP_CONSTRUCTOR:
     case NJS_TOKEN_DATE_CONSTRUCTOR:
-    case NJS_TOKEN_EVAL:
     case NJS_TOKEN_EXTERNAL:
         return NXT_OK;
 
@@ -294,6 +293,7 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
         return njs_generate_name(vm, parser, node);
 
     case NJS_TOKEN_MATH:
+    case NJS_TOKEN_EVAL:
         return njs_generate_builtin_object(vm, parser, node);
 
     case NJS_TOKEN_FUNCTION:
