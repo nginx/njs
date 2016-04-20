@@ -1938,6 +1938,12 @@ static njs_unit_test_t  njs_test[] =
                  "var o = { a: 5, '[object Object]': 7 }; o[n]"),
       nxt_string("7") },
 
+    { nxt_string("var o = {}; o.new = 'OK'; o.new"),
+      nxt_string("OK") },
+
+    { nxt_string("var o = { new: 'OK'}; o.new"),
+      nxt_string("OK") },
+
     /* Arrays */
 
     /* Empty array to primitive. */

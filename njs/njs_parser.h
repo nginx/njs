@@ -183,6 +183,7 @@ typedef enum {
 typedef struct {
     njs_token_t                     token:8;
     njs_token_t                     prev_token:8;
+    uint8_t                         property;      /* 1 bit */
     uint32_t                        key_hash;
 
     nxt_str_t                       text;
@@ -328,6 +329,7 @@ njs_token_t njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token);
 njs_token_t njs_parser_property_name(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token);
+njs_token_t njs_parser_property_token(njs_parser_t *parser);
 njs_token_t njs_parser_token(njs_parser_t *parser);
 nxt_int_t njs_parser_string_create(njs_vm_t *vm, njs_value_t *value);
 njs_index_t njs_parser_index(njs_parser_t *parser, uint32_t scope);

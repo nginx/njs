@@ -1381,6 +1381,21 @@ njs_parser_grouping_expression(njs_vm_t *vm, njs_parser_t *parser)
 
 
 njs_token_t
+njs_parser_property_token(njs_parser_t *parser)
+{
+    njs_token_t  token;
+
+    parser->lexer->property = 1;
+
+    token = njs_parser_token(parser);
+
+    parser->lexer->property = 0;
+
+    return token;
+}
+
+
+njs_token_t
 njs_parser_token(njs_parser_t *parser)
 {
     njs_token_t  token;
@@ -1711,7 +1726,7 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
     left = NULL;
 
     for ( ;; ) {
-        token = njs_parser_token(parser);
+        token = njs_parser_property_token(parser);
 
         switch (token) {
 

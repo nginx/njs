@@ -465,6 +465,10 @@ njs_lexer_word(njs_lexer_t *lexer, u_char c)
     lexer->start = p;
     lexer->text.len = p - lexer->text.data;
 
+    if (lexer->property) {
+        return NJS_TOKEN_NAME;
+    }
+
     return njs_lexer_keyword(lexer);
 }
 
