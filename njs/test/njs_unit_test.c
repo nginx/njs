@@ -4395,6 +4395,24 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math"),
       nxt_string("[object Object]") },
 
+    { nxt_string("isNaN"),
+      nxt_string("[object Function]") },
+
+    { nxt_string("isNaN()"),
+      nxt_string("true") },
+
+    { nxt_string("isNaN(123)"),
+      nxt_string("false") },
+
+    { nxt_string("isNaN('123')"),
+      nxt_string("false") },
+
+    { nxt_string("isNaN('Infinity')"),
+      nxt_string("false") },
+
+    { nxt_string("isNaN('abc')"),
+      nxt_string("true") },
+
     /* External interface. */
 
     { nxt_string("function f(req) { return req.uri }"),

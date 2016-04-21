@@ -1685,6 +1685,8 @@ njs_string_to_number(njs_value_t *value)
     nxt_bool_t    minus;
     const u_char  *p, *end;
 
+    const size_t  infinity = sizeof("Infinity") - 1;
+
     size = value->short_string.size;
 
     if (size != NJS_STRING_LONG) {
@@ -1719,11 +1721,20 @@ njs_string_to_number(njs_value_t *value)
         minus = 1;
     }
 
+    if (p == end) {
+        return NJS_NAN;
+    }
+
     if (*p >= '0' && *p <= '9') {
         num = njs_number_parse(&p, end);
 
     } else {
-        return NJS_NAN;
+        if (p + infinity > end || memcmp(p, "Infinity", infinity) != 0) {
+            return NJS_NAN;
+        }
+
+        num = NJS_INFINITY;
+        p += infinity;
     }
 
     while (p < end) {

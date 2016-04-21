@@ -30,6 +30,9 @@ njs_ret_t njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
     const njs_value_t *number);
 njs_ret_t njs_number_constructor(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
+njs_ret_t njs_number_is_nan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused);
+
 
 extern const njs_object_init_t  njs_number_constructor_init;
 extern const njs_object_init_t  njs_number_prototype_init;

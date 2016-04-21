@@ -89,6 +89,7 @@ static const njs_keyword_t  njs_keywords[] = {
 
     { nxt_string("eval"),          NJS_TOKEN_EVAL, 0 },
     { nxt_string("toString"),      NJS_TOKEN_TO_STRING, 0 },
+    { nxt_string("isNaN"),         NJS_TOKEN_IS_NAN, 0 },
 
     /* Reserved words. */
 

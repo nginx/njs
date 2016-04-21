@@ -702,7 +702,8 @@ enum njs_object_e {
 enum njs_function_e {
     NJS_FUNCTION_EVAL =        0,
     NJS_FUNCTION_TO_STRING =   1,
-#define NJS_FUNCTION_MAX       (NJS_FUNCTION_TO_STRING + 1)
+    NJS_FUNCTION_IS_NAN =      2,
+#define NJS_FUNCTION_MAX       (NJS_FUNCTION_IS_NAN + 1)
 };
 
 

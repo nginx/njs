@@ -433,3 +433,21 @@ const njs_object_init_t  njs_number_prototype_init = {
     njs_number_prototype_properties,
     nxt_nitems(njs_number_prototype_properties),
 };
+
+
+njs_ret_t
+njs_number_is_nan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    const njs_value_t  *value;
+
+    value = &njs_value_true;
+
+    if (nargs > 1 && !njs_is_nan(args[1].data.u.number)) {
+        value = &njs_value_false;
+    }
+
+    vm->retval = *value;
+
+    return NXT_OK;
+}

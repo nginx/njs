@@ -1645,6 +1645,7 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
 
     case NJS_TOKEN_EVAL:
     case NJS_TOKEN_TO_STRING:
+    case NJS_TOKEN_IS_NAN:
         return njs_parser_builtin_function(vm, parser, node);
 
     default:
