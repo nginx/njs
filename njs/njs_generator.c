@@ -294,6 +294,7 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
 
     case NJS_TOKEN_MATH:
     case NJS_TOKEN_EVAL:
+    case NJS_TOKEN_TO_STRING:
         return njs_generate_builtin_object(vm, parser, node);
 
     case NJS_TOKEN_FUNCTION:
@@ -2049,11 +2050,6 @@ njs_generate_function_call(njs_vm_t *vm, njs_parser_t *parser,
     func->code.retval = NJS_VMCODE_NO_RETVAL;
     func->code.ctor = node->ctor;
     func->name = name->index;
-
-    ret = njs_generator_node_index_release(vm, parser, name);
-    if (nxt_slow_path(ret != NXT_OK)) {
-        return ret;
-    }
 
     ret = njs_generate_call(vm, parser, node);
 

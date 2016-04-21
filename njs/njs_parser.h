@@ -175,6 +175,7 @@ typedef enum {
 #define NJS_TOKEN_FIRST_FUNCTION   NJS_TOKEN_EVAL
 
     NJS_TOKEN_EVAL,
+    NJS_TOKEN_TO_STRING,
 
     NJS_TOKEN_RESERVED,
 } njs_token_t;

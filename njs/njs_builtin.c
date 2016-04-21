@@ -80,11 +80,13 @@ njs_builtin_objects_create(njs_vm_t *vm)
 
     static const njs_object_init_t    *function_init[] = {
         &njs_eval_function_init,
+        NULL,
     };
 
     static const njs_function_init_t  native_functions[] = {
         /* SunC does not allow empty array initialization. */
-        { njs_eval_function,        { 0 } },
+        { njs_eval_function,               { 0 } },
+        { njs_object_prototype_to_string,  { 0 } },
     };
 
     static const njs_object_prop_t    null_proto_property = {
@@ -127,11 +129,13 @@ njs_builtin_objects_create(njs_vm_t *vm)
     functions = vm->shared->functions;
 
     for (i = NJS_FUNCTION_EVAL; i < NJS_FUNCTION_MAX; i++) {
-        ret = njs_object_hash_create(vm, &functions[i].object.shared_hash,
-                                     function_init[i]->properties,
-                                     function_init[i]->items);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return NXT_ERROR;
+        if (function_init[i] != NULL) {
+            ret = njs_object_hash_create(vm, &functions[i].object.shared_hash,
+                                         function_init[i]->properties,
+                                         function_init[i]->items);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return NXT_ERROR;
+            }
         }
 
         functions[i].object.shared = 1;

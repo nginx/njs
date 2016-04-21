@@ -3953,6 +3953,20 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("/./.__proto__ === RegExp.prototype"),
       nxt_string("true") },
 
+    { nxt_string("toString()"),
+      nxt_string("[object Undefined]") },
+
+    { nxt_string("toString() + Object.prototype.toString"),
+      nxt_string("[object Undefined][object Function]") },
+
+#if 0
+    { nxt_string("toString === Object.prototype.toString"),
+      nxt_string("true") },
+
+    { nxt_string("Object.prototype.toString.yes = 'OK'; toString.yes"),
+      nxt_string("OK") },
+#endif
+
     { nxt_string("Object.prototype.toString.call()"),
       nxt_string("[object Undefined]") },
 
