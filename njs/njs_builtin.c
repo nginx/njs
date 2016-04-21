@@ -82,6 +82,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
         &njs_eval_function_init,
         NULL,
         NULL,
+        NULL,
     };
 
     static const njs_function_init_t  native_functions[] = {
@@ -89,6 +90,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
         { njs_eval_function,               { 0 } },
         { njs_object_prototype_to_string,  { 0 } },
         { njs_number_is_nan,               { NJS_SKIP_ARG, NJS_NUMBER_ARG } },
+        { njs_number_is_finite,            { NJS_SKIP_ARG, NJS_NUMBER_ARG } },
     };
 
     static const njs_object_prop_t    null_proto_property = {

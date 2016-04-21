@@ -4413,6 +4413,24 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("isNaN('abc')"),
       nxt_string("true") },
 
+    { nxt_string("isFinite"),
+      nxt_string("[object Function]") },
+
+    { nxt_string("isFinite()"),
+      nxt_string("false") },
+
+    { nxt_string("isFinite(123)"),
+      nxt_string("true") },
+
+    { nxt_string("isFinite('123')"),
+      nxt_string("true") },
+
+    { nxt_string("isFinite('Infinity')"),
+      nxt_string("false") },
+
+    { nxt_string("isFinite('abc')"),
+      nxt_string("false") },
+
     /* External interface. */
 
     { nxt_string("function f(req) { return req.uri }"),

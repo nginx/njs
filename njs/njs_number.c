@@ -451,3 +451,26 @@ njs_number_is_nan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     return NXT_OK;
 }
+
+
+njs_ret_t
+njs_number_is_finite(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double             num;
+    const njs_value_t  *value;
+
+    value = &njs_value_false;
+
+    if (nargs > 1) {
+        num = args[1].data.u.number;
+
+        if (!njs_is_nan(num) && !njs_is_infinity(num)) {
+            value = &njs_value_true;
+        }
+    }
+
+    vm->retval = *value;
+
+    return NXT_OK;
+}
