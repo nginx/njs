@@ -705,7 +705,8 @@ enum njs_function_e {
     NJS_FUNCTION_IS_NAN =      2,
     NJS_FUNCTION_IS_FINITE =   3,
     NJS_FUNCTION_PARSE_INT =   4,
-#define NJS_FUNCTION_MAX       (NJS_FUNCTION_PARSE_INT + 1)
+    NJS_FUNCTION_PARSE_FLOAT = 5,
+#define NJS_FUNCTION_MAX       (NJS_FUNCTION_PARSE_FLOAT + 1)
 };
 
 

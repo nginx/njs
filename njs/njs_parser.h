@@ -179,6 +179,7 @@ typedef enum {
     NJS_TOKEN_IS_NAN,
     NJS_TOKEN_IS_FINITE,
     NJS_TOKEN_PARSE_INT,
+    NJS_TOKEN_PARSE_FLOAT,
 
     NJS_TOKEN_RESERVED,
 } njs_token_t;

@@ -4449,6 +4449,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("parseInt('njscript', 36)"),
       nxt_string("1845449130881") },
 
+    { nxt_string("parseFloat('12345abc')"),
+      nxt_string("12345") },
+
     /* External interface. */
 
     { nxt_string("function f(req) { return req.uri }"),

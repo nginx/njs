@@ -36,7 +36,7 @@ njs_value_to_number(njs_value_t *value)
     }
 
     if (njs_is_string(value)) {
-        return njs_string_to_number(value);
+        return njs_string_to_number(value, 1);
     }
 
     if (njs_is_array(value)) {
@@ -544,6 +544,24 @@ njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
 done:
+
+    njs_number_set(&vm->retval, num);
+
+    return NXT_OK;
+}
+
+
+njs_ret_t
+njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double  num;
+
+    num = NJS_NAN;
+
+    if (nargs > 1) {
+        num = njs_string_to_number(&args[1], 0);
+    }
 
     njs_number_set(&vm->retval, num);
 

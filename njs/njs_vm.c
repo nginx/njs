@@ -2915,7 +2915,7 @@ njs_vmcode_number_primitive(njs_vm_t *vm, njs_value_t *invld, njs_value_t *narg)
             num = NJS_NAN;
 
             if (njs_is_string(value)) {
-                num = njs_string_to_number(value);
+                num = njs_string_to_number(value, 1);
             }
 
             njs_number_set(value, num);
@@ -2968,7 +2968,7 @@ njs_vmcode_number_argument(njs_vm_t *vm, njs_value_t *invld1,
             num = NJS_NAN;
 
             if (njs_is_string(value)) {
-                num = njs_string_to_number(value);
+                num = njs_string_to_number(value, 1);
             }
 
             njs_number_set(value, num);

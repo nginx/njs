@@ -1648,6 +1648,7 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
     case NJS_TOKEN_IS_NAN:
     case NJS_TOKEN_IS_FINITE:
     case NJS_TOKEN_PARSE_INT:
+    case NJS_TOKEN_PARSE_FLOAT:
         return njs_parser_builtin_function(vm, parser, node);
 
     default:

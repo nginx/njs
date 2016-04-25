@@ -1678,7 +1678,7 @@ njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
 
 
 double
-njs_string_to_number(njs_value_t *value)
+njs_string_to_number(njs_value_t *value, nxt_bool_t exact)
 {
     double        num;
     size_t        size;
@@ -1737,12 +1737,14 @@ njs_string_to_number(njs_value_t *value)
         p += infinity;
     }
 
-    while (p < end) {
-        if (*p != ' ' && *p != '\t') {
-            return NJS_NAN;
-        }
+    if (exact) {
+        while (p < end) {
+            if (*p != ' ' && *p != '\t') {
+                return NJS_NAN;
+            }
 
-        p++;
+            p++;
+        }
     }
 
     return minus ? -num : num;
