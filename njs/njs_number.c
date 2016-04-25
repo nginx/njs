@@ -121,22 +121,22 @@ njs_number_parse(const u_char **start, const u_char *end)
 
 
 int64_t
-njs_hex_number_parse(u_char *p, u_char *end)
+njs_number_radix_parse(u_char *p, u_char *end, uint8_t radix, nxt_bool_t exact)
 {
-    int8_t    d;
-    uint32_t  n;
+    uint8_t   d;
+    uint64_t  n;
 
-    static const int8_t  hex[256]
+    static const int8_t  digits[256]
         nxt_aligned(32) =
     {
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
          0,  1,  2,  3,  4,  5,  6,  7,  8,  9, -1, -1, -1, -1, -1, -1,
-        -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+        25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, -1, -1, -1, -1, -1,
+        -1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+        25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, -1, -1, -1, -1, -1,
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -150,13 +150,13 @@ njs_hex_number_parse(u_char *p, u_char *end)
     n = 0;
 
     while (p < end) {
-        d = hex[*p++];
+        d = digits[*p++];
 
-        if (nxt_slow_path(d < 0)) {
-            return -1;
+        if (nxt_slow_path(d >= radix)) {
+            return (exact) ? -1 : (int64_t) n;
         }
 
-        n = (n << 4) + d;
+        n = (n * radix) + d;
     }
 
     return n;
@@ -471,6 +471,81 @@ njs_number_is_finite(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     vm->retval = *value;
+
+    return NXT_OK;
+}
+
+
+njs_ret_t
+njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double             num;
+    u_char             *p, *end;
+    int64_t            n;
+    uint8_t            radix;
+    nxt_bool_t         minus;
+    njs_string_prop_t  string;
+
+    num = NJS_NAN;
+
+    if (nargs > 1) {
+        (void) njs_string_prop(&string, &args[1]);
+
+        p = string.start;
+        end = string.start + string.size;
+
+        while (p < end) {
+            if (*p != ' ') {
+                goto found;
+            }
+        }
+
+        goto done;
+
+    found:
+
+        minus = 0;
+
+        if (p[0] == '-') {
+            p++;
+            minus = 1;
+
+        } else if (p[0] == '+') {
+            p++;
+        }
+
+        if (end - p > 1 && p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
+            p += 2;
+            radix = 16;
+
+        } else {
+            radix = 10;
+        }
+
+        if (nargs > 2) {
+            n = args[2].data.u.number;
+
+            if (n != 0) {
+
+                if (n < 2 || n > 36) {
+                    goto done;
+                }
+
+                radix = n;
+            }
+        }
+
+        n = njs_number_radix_parse(p, end, radix, 0);
+
+        if (n >= 0) {
+            num = (minus) ? -n : n;
+        }
+    }
+
+done:
+
+    njs_number_set(&vm->retval, num);
 
     return NXT_OK;
 }

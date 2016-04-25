@@ -4431,6 +4431,24 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("isFinite('abc')"),
       nxt_string("false") },
 
+    { nxt_string("parseInt('12345abc')"),
+      nxt_string("12345") },
+
+    { nxt_string("parseInt('1010', 2)"),
+      nxt_string("10") },
+
+    { nxt_string("parseInt('aBc', 16)"),
+      nxt_string("2748") },
+
+    { nxt_string("parseInt('0XaBc')"),
+      nxt_string("2748") },
+
+    { nxt_string("parseInt('-0xabc')"),
+      nxt_string("-2748") },
+
+    { nxt_string("parseInt('njscript', 36)"),
+      nxt_string("1845449130881") },
+
     /* External interface. */
 
     { nxt_string("function f(req) { return req.uri }"),

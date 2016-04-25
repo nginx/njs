@@ -297,6 +297,7 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
     case NJS_TOKEN_TO_STRING:
     case NJS_TOKEN_IS_NAN:
     case NJS_TOKEN_IS_FINITE:
+    case NJS_TOKEN_PARSE_INT:
         return njs_generate_builtin_object(vm, parser, node);
 
     case NJS_TOKEN_FUNCTION:

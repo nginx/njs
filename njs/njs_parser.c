@@ -1647,6 +1647,7 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
     case NJS_TOKEN_TO_STRING:
     case NJS_TOKEN_IS_NAN:
     case NJS_TOKEN_IS_FINITE:
+    case NJS_TOKEN_PARSE_INT:
         return njs_parser_builtin_function(vm, parser, node);
 
     default:
@@ -2071,7 +2072,7 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_value_t *value)
                 return NJS_TOKEN_ILLEGAL;
             }
 
-            u = njs_hex_number_parse(src, hex_end);
+            u = njs_number_radix_parse(src, hex_end, 16, 1);
             if (nxt_slow_path(u < 0)) {
                 return NJS_TOKEN_ILLEGAL;
             }
