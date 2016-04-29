@@ -1192,25 +1192,36 @@ njs_string_index_of(njs_vm_t *vm, njs_value_t *src, njs_value_t *search_string,
 
     if (index < length) {
 
-        p = string.start;
-        end = p + string.size;
-
         if (string.size == length) {
             /* Byte or ASCII string. */
-            p += index;
+            p = string.start + index;
+            end = (string.start + string.size) - (search.size - 1);
+
+            while (p < end) {
+                if (memcmp(p, search.start, search.size) == 0) {
+                    return index;
+                }
+
+                index++;
+                p++;
+            }
 
         } else {
             /* UTF-8 string. */
-            p = njs_string_offset(p, end, index);
-        }
+            end = string.start + string.size;
 
-        while (p < end) {
-            if (memcmp(p, search.start, search.size) == 0) {
-                return index;
+            p = njs_string_offset(string.start, end, index);
+
+            end -= search.size - 1;
+
+            while (p < end) {
+                if (memcmp(p, search.start, search.size) == 0) {
+                    return index;
+                }
+
+                index++;
+                p = nxt_utf8_next(p, end);
             }
-
-            index++;
-            p = nxt_utf8_next(p, end);
         }
 
     } else if (search.size == 0) {
