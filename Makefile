@@ -36,6 +36,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 	$(NXT_BUILDDIR)/nxt_rbtree.o \
 	$(NXT_BUILDDIR)/nxt_lvlhsh.o \
 	$(NXT_BUILDDIR)/nxt_random.o \
+	$(NXT_BUILDDIR)/nxt_pcre.o \
 	$(NXT_BUILDDIR)/nxt_malloc.o \
 	$(NXT_BUILDDIR)/nxt_mem_cache_pool.o \
 
@@ -67,6 +68,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 		$(NXT_BUILDDIR)/nxt_rbtree.o \
 		$(NXT_BUILDDIR)/nxt_lvlhsh.o \
 		$(NXT_BUILDDIR)/nxt_random.o \
+		$(NXT_BUILDDIR)/nxt_pcre.o \
 		$(NXT_BUILDDIR)/nxt_malloc.o \
 		$(NXT_BUILDDIR)/nxt_mem_cache_pool.o \
 

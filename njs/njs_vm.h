@@ -8,6 +8,9 @@
 #define _NJS_VM_H_INCLUDED_
 
 
+#include <nxt_regex.h>
+
+
 /*
  * Negative return values handled by nJSVM interpreter as special events.
  * The values must be in range from -1 to -11, because -12 is minimal jump
@@ -790,7 +793,9 @@ struct njs_vm_s {
 
     njs_vm_shared_t          *shared;
     njs_parser_t             *parser;
-    njs_regexp_pattern_t     *pattern;
+
+    nxt_regex_context_t      *regex_context;
+    nxt_regex_match_data_t   *single_match_data;
 
     nxt_array_t              *code;  /* of njs_vm_code_t */
 
@@ -820,6 +825,12 @@ struct njs_vm_shared_s {
     njs_object_t             prototypes[NJS_PROTOTYPE_MAX];
     njs_function_t           constructors[NJS_CONSTRUCTOR_MAX];
 };
+
+
+typedef enum {
+    NJS_SYNTAX_ERROR = 0,
+    NJS_INTERNAL_ERROR,
+} njs_exception_error_t;
 
 
 nxt_int_t njs_vmcode_interpreter(njs_vm_t *vm);

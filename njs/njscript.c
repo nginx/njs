@@ -116,12 +116,16 @@ njs_vm_create(nxt_mem_cache_pool_t *mcp, njs_vm_shared_t **shared,
     if (nxt_fast_path(vm != NULL)) {
         vm->mem_cache_pool = mcp;
 
+        ret = njs_regexp_init(vm);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return NULL;
+        }
+
         if (shared != NULL && *shared != NULL) {
             vm->shared = *shared;
 
         } else {
             vm->shared = nxt_mem_cache_zalloc(mcp, sizeof(njs_vm_shared_t));
-
             if (nxt_slow_path(vm->shared == NULL)) {
                 return NULL;
             }
@@ -133,7 +137,6 @@ njs_vm_create(nxt_mem_cache_pool_t *mcp, njs_vm_shared_t **shared,
             nxt_lvlhsh_init(&vm->shared->keywords_hash);
 
             ret = njs_lexer_keywords_init(mcp, &vm->shared->keywords_hash);
-
             if (nxt_slow_path(ret != NXT_OK)) {
                 return NULL;
             }
@@ -141,7 +144,6 @@ njs_vm_create(nxt_mem_cache_pool_t *mcp, njs_vm_shared_t **shared,
             nxt_lvlhsh_init(&vm->shared->values_hash);
 
             ret = njs_builtin_objects_create(vm);
-
             if (nxt_slow_path(ret != NXT_OK)) {
                 return NULL;
             }
@@ -161,8 +163,6 @@ njs_vm_create(nxt_mem_cache_pool_t *mcp, njs_vm_shared_t **shared,
 void
 njs_vm_destroy(njs_vm_t *vm)
 {
-    njs_regexp_pattern_free(vm->pattern);
-
     nxt_mem_cache_pool_destroy(vm->mem_cache_pool);
 }
 
@@ -311,6 +311,11 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
         nvm->scopes[NJS_SCOPE_GLOBAL] = (njs_value_t *) values;
         memcpy(values + NJS_INDEX_GLOBAL_OFFSET, vm->global_scope,
                vm->scope_size);
+
+        ret = njs_regexp_init(nvm);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            goto fail;
+        }
 
         ret = njs_builtin_objects_clone(nvm);
         if (nxt_slow_path(ret != NXT_OK)) {

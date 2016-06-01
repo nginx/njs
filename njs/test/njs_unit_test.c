@@ -3369,6 +3369,9 @@ static njs_unit_test_t  njs_test[] =
 
     /* RegExp. */
 
+    { nxt_string("/(/.test('')"),
+      nxt_string("SyntaxError: pcre_compile(\"(\") failed: missing )") },
+
     { nxt_string("/^$/.test('')"),
       nxt_string("true") },
 

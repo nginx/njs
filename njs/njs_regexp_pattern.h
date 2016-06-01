@@ -11,8 +11,8 @@
 
 
 struct njs_regexp_pattern_s {
-    pcre                  *code[2];
-    pcre_extra            *extra[2];
+    nxt_regex_t           regex[2];
+
     njs_regexp_pattern_t  *next;
     /*
      * A pattern source is used by RegExp.toString() method and

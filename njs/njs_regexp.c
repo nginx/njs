@@ -14,6 +14,7 @@
 #include <nxt_array.h>
 #include <nxt_lvlhsh.h>
 #include <nxt_random.h>
+#include <nxt_pcre.h>
 #include <nxt_malloc.h>
 #include <nxt_mem_cache_pool.h>
 #include <njscript.h>
@@ -30,14 +31,48 @@
 #include <string.h>
 
 
+static void *njs_regexp_malloc(size_t size, void *memory_data);
+static void njs_regexp_free(void *p, void *memory_data);
 static njs_regexp_flags_t njs_regexp_flags(u_char **start, u_char *end,
     nxt_bool_t bound);
-static int njs_regexp_pattern_compile(pcre **code, pcre_extra **extra,
+static int njs_regexp_pattern_compile(njs_vm_t *vm, nxt_regex_t *regex,
     u_char *source, int options);
 static njs_ret_t njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp,
-    u_char *string, int *captures, nxt_uint_t utf8);
+    u_char *string, nxt_regex_match_data_t *match_data, nxt_uint_t utf8);
 static njs_ret_t njs_regexp_string_create(njs_vm_t *vm, njs_value_t *value,
     u_char *start, uint32_t size, int32_t length);
+
+
+njs_ret_t
+njs_regexp_init(njs_vm_t *vm)
+{
+    vm->regex_context = nxt_regex_context_create(njs_regexp_malloc,
+                                          njs_regexp_free, vm->mem_cache_pool);
+    if (nxt_slow_path(vm->regex_context == NULL)) {
+        return NXT_ERROR;
+    }
+
+    vm->single_match_data = nxt_regex_match_data(NULL, vm->regex_context);
+    if (nxt_slow_path(vm->single_match_data == NULL)) {
+        return NXT_ERROR;
+    }
+
+    return NXT_OK;
+}
+
+
+static void *
+njs_regexp_malloc(size_t size, void *memory_data)
+{
+    return nxt_mem_cache_alloc(memory_data, size);
+}
+
+
+static void
+njs_regexp_free(void *p, void *memory_data)
+{
+    nxt_mem_cache_free(memory_data, p);
+}
 
 
 njs_ret_t
@@ -205,18 +240,14 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
     size += ((flags & NJS_REGEXP_IGNORE_CASE) != 0);
     size += ((flags & NJS_REGEXP_MULTILINE) != 0);
 
-    pattern = nxt_mem_cache_alloc(vm->mem_cache_pool,
-                                  sizeof(njs_regexp_pattern_t)
-                                  + 1 + length + size + 1);
+    pattern = nxt_mem_cache_zalloc(vm->mem_cache_pool,
+                                   sizeof(njs_regexp_pattern_t)
+                                   + 1 + length + size + 1);
     if (nxt_slow_path(pattern == NULL)) {
         return NULL;
     }
 
     pattern->flags = size;
-    pattern->code[0] = NULL;
-    pattern->code[1] = NULL;
-    pattern->extra[0] = NULL;
-    pattern->extra[1] = NULL;
     pattern->next = NULL;
 
     p = (u_char *) pattern + sizeof(njs_regexp_pattern_t);
@@ -254,18 +285,16 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
 
     *p++ = '\0';
 
-    ret = njs_regexp_pattern_compile(&pattern->code[0], &pattern->extra[0],
+    ret = njs_regexp_pattern_compile(vm, &pattern->regex[0],
                                      &pattern->source[1], options);
-
     if (nxt_slow_path(ret < 0)) {
         return NULL;
     }
 
     pattern->ncaptures = ret;
 
-    ret = njs_regexp_pattern_compile(&pattern->code[1], &pattern->extra[1],
+    ret = njs_regexp_pattern_compile(vm, &pattern->regex[1],
                                      &pattern->source[1], options | PCRE_UTF8);
-
     if (nxt_fast_path(ret >= 0)) {
 
         if (nxt_slow_path((u_int) ret != pattern->ncaptures)) {
@@ -273,75 +302,35 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
                            "and UTF-8 versions of RegExp \"%s\" vary: %d vs %d",
                            &pattern->source[1], pattern->ncaptures, ret);
 
-            njs_regexp_pattern_free(pattern);
+            nxt_mem_cache_free(vm->mem_cache_pool, pattern);
             return NULL;
         }
 
     } else if (ret != NXT_DECLINED) {
-        njs_regexp_pattern_free(pattern);
+        nxt_mem_cache_free(vm->mem_cache_pool, pattern);
         return NULL;
     }
 
     *end = '/';
-
-    pattern->next = vm->pattern;
-    vm->pattern = pattern;
 
     return pattern;
 }
 
 
 static int
-njs_regexp_pattern_compile(pcre **code, pcre_extra **extra, u_char *source,
+njs_regexp_pattern_compile(njs_vm_t *vm, nxt_regex_t *regex, u_char *source,
     int options)
 {
-    int         ret, erroff, captures;
-    u_char      *error;
-    const char  *errstr;
+    nxt_int_t  ret;
 
-    *code = pcre_compile((char *) source, options, &errstr, &erroff, NULL);
+    /* Zero length means a zero-terminated string. */
+    ret = nxt_regex_compile(regex, source, 0, options, vm->regex_context);
 
-    if (nxt_slow_path(*code == NULL)) {
-
-        if ((options & PCRE_UTF8) != 0) {
-            return NXT_DECLINED;
-        }
-
-        error = source + erroff;
-
-        if (*error != '\0') {
-            nxt_thread_log_error(NXT_LOG_ERR,
-                                 "pcre_compile(\"%s\") failed: %s at \"%s\"",
-                                 source, errstr, error);
-        } else {
-            nxt_thread_log_error(NXT_LOG_ERR,
-                                 "pcre_compile(\"%s\") failed: %s",
-                                 source, errstr);
-        }
-
-        return NXT_ERROR;
+    if (nxt_fast_path(ret == NXT_OK)) {
+        return regex->ncaptures;
     }
 
-    *extra = pcre_study(*code, 0, &errstr);
-
-    if (nxt_slow_path(errstr != NULL)) {
-        nxt_thread_log_error(NXT_LOG_ERR, "pcre_study(\"%s\") failed: %s",
-                             source, errstr);
-        return NXT_ERROR;
-    }
-
-    ret = pcre_fullinfo(*code, NULL, PCRE_INFO_CAPTURECOUNT, &captures);
-
-    if (nxt_fast_path(ret >= 0)) {
-        /* Reserve additional elements for the first "$0" capture. */
-        return captures + 1;
-    }
-
-    nxt_thread_log_error(NXT_LOG_ERR,
-                   "pcre_fullinfo(\"%s\", PCRE_INFO_CAPTURECOUNT) failed: %d",
-                   source, ret);
-
-    return NXT_ERROR;
+    return njs_string_exception(vm, NJS_SYNTAX_ERROR, vm->regex_context->error);
 }
 
 
@@ -491,16 +480,15 @@ njs_regexp_prototype_test(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     pattern = args[0].data.u.regexp->pattern;
 
-    if (pattern->code[n] != NULL) {
-        ret = pcre_exec(pattern->code[n], pattern->extra[n],
-                        (char *) string.start, string.size, 0, 0, NULL, 0);
-
+    if (nxt_regex_is_valid(&pattern->regex[n])) {
+        ret = nxt_regex_match(&pattern->regex[n], string.start, string.size,
+                              vm->single_match_data, vm->regex_context);
         if (ret >= 0) {
             retval = &njs_value_true;
 
-        } else if (ret != PCRE_ERROR_NOMATCH) {
-            vm->exception = &njs_exception_internal_error;
-            return NXT_ERROR;
+        } else if (ret != NGX_REGEX_NOMATCH) {
+            return njs_string_exception(vm, NJS_INTERNAL_ERROR,
+                                        vm->regex_context->error);
         }
     }
 
@@ -514,13 +502,13 @@ njs_ret_t
 njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    int                   *captures, ncaptures;
-    njs_ret_t             ret;
-    nxt_uint_t            n, utf8;
-    njs_value_t           *value;
-    njs_regexp_t          *regexp;
-    njs_string_prop_t     string;
-    njs_regexp_pattern_t  *pattern;
+    njs_ret_t               ret;
+    nxt_uint_t              n, utf8;
+    njs_value_t             *value;
+    njs_regexp_t            *regexp;
+    njs_string_prop_t       string;
+    njs_regexp_pattern_t    *pattern;
+    nxt_regex_match_data_t  *match_data;
 
     if (!njs_is_regexp(&args[0])) {
         vm->exception = &njs_exception_type_error;
@@ -553,27 +541,28 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     pattern = regexp->pattern;
 
-    if (pattern->code[n] != NULL) {
+    if (nxt_regex_is_valid(&pattern->regex[n])) {
         string.start += regexp->last_index;
         string.size -= regexp->last_index;
 
-        /* Each capture is stored in 3 vector elements. */
-        ncaptures = pattern->ncaptures * 3;
-
-        captures = alloca(ncaptures * sizeof(int));
-
-        ret = pcre_exec(pattern->code[n], pattern->extra[n],
-                        (char *) string.start, string.size,
-                        0, 0, captures, ncaptures);
-
-        if (ret >= 0) {
-            return njs_regexp_exec_result(vm, regexp, string.start,
-                                          captures, utf8);
+        match_data = nxt_regex_match_data(&pattern->regex[n],
+                                          vm->regex_context);
+        if (nxt_slow_path(match_data == NULL)) {
+            return NXT_ERROR;
         }
 
-        if (nxt_slow_path(ret != PCRE_ERROR_NOMATCH)) {
-            vm->exception = &njs_exception_internal_error;
-            return NXT_ERROR;
+        ret = nxt_regex_match(&pattern->regex[n], string.start, string.size,
+                              match_data, vm->regex_context);
+        if (ret >= 0) {
+            return njs_regexp_exec_result(vm, regexp, string.start, match_data,
+                                          utf8);
+        }
+
+        if (nxt_slow_path(ret != NGX_REGEX_NOMATCH)) {
+            nxt_regex_match_data_free(match_data, vm->regex_context);
+
+            return njs_string_exception(vm, NJS_INTERNAL_ERROR,
+                                        vm->regex_context->error);
         }
     }
 
@@ -586,8 +575,9 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 static njs_ret_t
 njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, u_char *string,
-    int *captures, nxt_uint_t utf8)
+    nxt_regex_match_data_t *match_data, nxt_uint_t utf8)
 {
+    int                 *captures;
     u_char              *start;
     int32_t             size, length;
     njs_ret_t           ret;
@@ -601,8 +591,10 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, u_char *string,
 
     array = njs_array_alloc(vm, regexp->pattern->ncaptures, 0);
     if (nxt_slow_path(array == NULL)) {
-        return NXT_ERROR;
+        goto fail;
     }
+
+    captures = nxt_regex_captures(match_data);
 
     for (i = 0; i < regexp->pattern->ncaptures; i++) {
         n = 2 * i;
@@ -626,7 +618,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, u_char *string,
             ret = njs_regexp_string_create(vm, &array->start[i],
                                            start, size, length);
             if (nxt_slow_path(ret != NXT_OK)) {
-                return NXT_ERROR;
+                goto fail;
             }
 
         } else {
@@ -636,7 +628,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, u_char *string,
 
     prop = njs_object_prop_alloc(vm, &njs_string_index);
     if (nxt_slow_path(prop == NULL)) {
-        return NXT_ERROR;
+        goto fail;
     }
 
     /* TODO: Non UTF-8 position */
@@ -657,13 +649,12 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, u_char *string,
 
     ret = nxt_lvlhsh_insert(&array->object.hash, &lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
-        /* Only NXT_ERROR can be returned here. */
-        return ret;
+        goto fail;
     }
 
     prop = njs_object_prop_alloc(vm, &njs_string_input);
     if (nxt_slow_path(prop == NULL)) {
-        return NXT_ERROR;
+        goto fail;
     }
 
     njs_string_copy(&prop->value, &regexp->string);
@@ -674,16 +665,25 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, u_char *string,
     lhq.value = prop;
 
     ret = nxt_lvlhsh_insert(&array->object.hash, &lhq);
-    if (nxt_slow_path(ret != NXT_OK)) {
-        /* Only NXT_ERROR can be returned here. */
-        return ret;
+
+    if (nxt_fast_path(ret == NXT_OK)) {
+        vm->retval.data.u.array = array;
+        vm->retval.type = NJS_ARRAY;
+        vm->retval.data.truth = 1;
+
+        ret = NXT_OK;
+        goto done;
     }
 
-    vm->retval.data.u.array = array;
-    vm->retval.type = NJS_ARRAY;
-    vm->retval.data.truth = 1;
+fail:
 
-    return NXT_OK;
+    ret = NXT_ERROR;
+
+done:
+
+    nxt_regex_match_data_free(match_data, vm->regex_context);
+
+    return ret;
 }
 
 
@@ -789,29 +789,3 @@ const njs_object_init_t  njs_regexp_prototype_init = {
     njs_regexp_prototype_properties,
     nxt_nitems(njs_regexp_prototype_properties),
 };
-
-
-void
-njs_regexp_pattern_free(njs_regexp_pattern_t *pattern)
-{
-    /*
-     * pcre_free() is enough to free PCRE extra study data.
-     * pcre_free_study() is required for JIT optimization, pcreapi(3):
-     *
-     *   When you are finished with a pattern,  you can free  the memory used
-     *   for the study data by calling  pcre_free_study().  This function was
-     *   added to the API for release 8.20.  For earlier versions, the memory
-     *   could be freed with pcre_free(), just like the pattern itself.  This
-     *   will still work in cases where JIT optimization is not used,  but it
-     *   is advisable to change to the new function when convenient.
-     */
-    while (pattern != NULL) {
-        pcre_free(pattern->extra[0]);
-        pcre_free(pattern->code[0]);
-
-        pcre_free(pattern->extra[1]);
-        pcre_free(pattern->code[1]);
-
-        pattern = pattern->next;
-    }
-}

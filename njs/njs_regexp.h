@@ -32,6 +32,7 @@ struct njs_regexp_s {
 };
 
 
+njs_ret_t njs_regexp_init(njs_vm_t *vm);
 njs_ret_t njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 nxt_int_t njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser,
@@ -41,7 +42,7 @@ njs_regexp_pattern_t *njs_regexp_pattern_create(njs_vm_t *vm,
 njs_regexp_t *njs_regexp_alloc(njs_vm_t *vm, njs_regexp_pattern_t *pattern);
 njs_ret_t njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
-void njs_regexp_pattern_free(njs_regexp_pattern_t *pattern);
+
 
 extern const njs_object_init_t  njs_regexp_constructor_init;
 extern const njs_object_init_t  njs_regexp_prototype_init;
