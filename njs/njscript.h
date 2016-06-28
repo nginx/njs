@@ -106,8 +106,5 @@ NXT_EXPORT void *njs_value_data(njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_string_copy(njs_vm_t *vm, nxt_str_t *retval,
     njs_value_t *value, uintptr_t *next);
 
-NXT_EXPORT njs_value_t *njs_array_add(njs_vm_t *vm, njs_value_t *array,
-    u_char *start, size_t size);
-
 
 #endif /* _NJSCRIPT_H_INCLUDED_ */

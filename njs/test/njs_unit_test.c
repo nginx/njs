@@ -2924,6 +2924,48 @@ static njs_unit_test_t  njs_test[] =
                  "a +' '+ a.length"),
       nxt_string("αα 4") },
 
+    { nxt_string("'abc'.split()"),
+      nxt_string("abc") },
+
+    { nxt_string("'abc'.split(undefined)"),
+      nxt_string("abc") },
+
+    { nxt_string("''.split('').length"),
+      nxt_string("1") },
+
+    { nxt_string("'abc'.split('')"),
+      nxt_string("a,b,c") },
+
+    { nxt_string("'a bc def'.split(' ')"),
+      nxt_string("a,bc,def") },
+
+    { nxt_string("'a bc  def'.split(' ')"),
+      nxt_string("a,bc,,def") },
+
+    { nxt_string("'a bc  def'.split(' ', 3)"),
+      nxt_string("a,bc,") },
+
+    { nxt_string("'abc'.split('abc')"),
+      nxt_string(",") },
+
+    { nxt_string("'ab'.split('123')"),
+      nxt_string("ab") },
+
+    { nxt_string("''.split(/0/).length"),
+      nxt_string("1") },
+
+    { nxt_string("'abc'.split(/(?:)/)"),
+      nxt_string("a,b,c") },
+
+    { nxt_string("'a bc def'.split(/ /)"),
+      nxt_string("a,bc,def") },
+
+    { nxt_string("'a bc  def'.split(/ /)"),
+      nxt_string("a,bc,,def") },
+
+    { nxt_string("'abc'.split(/abc/)"),
+      nxt_string(",") },
+
     /* Functions. */
 
     { nxt_string("function f() { } f()"),

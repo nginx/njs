@@ -1645,6 +1645,160 @@ empty:
 }
 
 
+/*
+ * String.split([string|regexp[, limit]])
+ */
+
+static njs_ret_t
+njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    int                   ret, *captures;
+    u_char                *p, *start, *next;
+    size_t                size, length;
+    uint32_t              limit;
+    nxt_uint_t            n;
+    njs_array_t           *array;
+    const u_char          *end;
+    njs_string_prop_t     string, split;
+    njs_regexp_pattern_t  *pattern;
+
+    array = njs_array_alloc(vm, 0, NJS_ARRAY_SPARE);
+    if (nxt_slow_path(array == NULL)) {
+        return NXT_ERROR;
+    }
+
+    if (nargs > 1) {
+
+        if (nargs > 2) {
+            limit = args[2].data.u.number;
+
+            if (limit == 0) {
+                goto done;
+            }
+
+        } else {
+            limit = (uint32_t) -1;
+        }
+
+        switch (args[1].type) {
+
+        case NJS_STRING:
+            (void) njs_string_prop(&split, &args[1]);
+
+            length = njs_string_prop(&string, &args[0]);
+
+            if (string.size < split.size) {
+                goto single;
+            }
+
+            start = string.start;
+            end = string.start + string.size;
+
+            do {
+                for (p = start; p < end; p++) {
+                    if (memcmp(p, split.start, split.size) == 0) {
+                        break;
+                    }
+                }
+
+                next = p + split.size;
+
+                /* Empty split string. */
+                if (p == next) {
+                    p++;
+                    next++;
+                }
+
+                size = p - start;
+                length = nxt_utf8_length(start, size);
+
+                ret = njs_array_string_add(vm, array, start, size, length);
+                if (nxt_slow_path(ret != NXT_OK)) {
+                    return ret;
+                }
+
+                start = next;
+                limit--;
+
+            } while (limit != 0 && p < end);
+
+            goto done;
+
+        case NJS_REGEXP:
+            pattern = args[1].data.u.regexp->pattern;
+
+            (void) njs_string_prop(&string, &args[0]);
+
+            n = (string.length != 0 && string.length != string.size);
+
+            if (!nxt_regex_is_valid(&pattern->regex[n])) {
+                goto single;
+            }
+
+            start = string.start;
+            end = string.start + string.size;
+
+            do {
+                ret = nxt_regex_match(&pattern->regex[n], start, end - start,
+                                      vm->single_match_data, vm->regex_context);
+                if (ret >= 0) {
+                    captures = nxt_regex_captures(vm->single_match_data);
+
+                    p = start + captures[0];
+                    next = start + captures[1];
+
+                } else if (ret == NGX_REGEX_NOMATCH) {
+                    p = (u_char *) end;
+                    next = (u_char *) end + 1;
+
+                } else {
+                    return njs_string_exception(vm, NJS_INTERNAL_ERROR,
+                                                vm->regex_context->error);
+                }
+
+                /* Empty split regexp. */
+                if (p == next) {
+                    p++;
+                    next++;
+                }
+
+                size = p - start;
+                length = nxt_utf8_length(start, size);
+
+                ret = njs_array_string_add(vm, array, start, size, length);
+                if (nxt_slow_path(ret != NXT_OK)) {
+                    return ret;
+                }
+
+                start = next;
+                limit--;
+
+            } while (limit != 0 && p < end);
+
+            goto done;
+
+        default: /* NJS_VOID */
+            break;
+        }
+    }
+
+single:
+
+    /* GC: retain. */
+    array->start[0] = args[0];
+    array->length = 1;
+
+done:
+
+    vm->retval.data.u.array = array;
+    vm->retval.type = NJS_ARRAY;
+    vm->retval.data.truth = 1;
+
+    return NXT_OK;
+}
+
+
 njs_ret_t
 njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
     const njs_value_t *src)
@@ -1900,6 +2054,13 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("match"),
         .value = njs_native_function(njs_string_prototype_match, 0,
                      NJS_STRING_ARG, NJS_REGEXP_ARG),
+    },
+
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("split"),
+        .value = njs_native_function(njs_string_prototype_split, 0,
+                     NJS_STRING_OBJECT_ARG, NJS_REGEXP_ARG, NJS_INTEGER_ARG),
     },
 };
 

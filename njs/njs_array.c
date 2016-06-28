@@ -63,50 +63,6 @@ static nxt_noinline njs_ret_t njs_array_iterator_apply(njs_vm_t *vm,
     njs_array_next_t *next, njs_value_t *args, nxt_uint_t nargs);
 
 
-njs_value_t *
-njs_array_add(njs_vm_t *vm, njs_value_t *value, u_char *start, size_t size)
-{
-    njs_ret_t    ret;
-    njs_array_t  *array;
-
-    if (value != NULL) {
-        array = value->data.u.array;
-
-        if (array->size == array->length) {
-            ret = njs_array_realloc(vm, array, 0, array->size + 1);
-            if (nxt_slow_path(ret != NXT_OK)) {
-                return NULL;
-            }
-        }
-
-    } else {
-        value = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
-                                    sizeof(njs_value_t));
-
-        if (nxt_slow_path(value == NULL)) {
-            return NULL;
-        }
-
-        array = njs_array_alloc(vm, 0, NJS_ARRAY_SPARE);
-        if (nxt_slow_path(array == NULL)) {
-            return NULL;
-        }
-
-        value->data.u.array = array;
-        value->type = NJS_ARRAY;
-        value->data.truth = 1;
-    }
-
-    ret = njs_string_create(vm, &array->start[array->length++], start, size, 0);
-
-    if (nxt_fast_path(ret == NXT_OK)) {
-        return value;
-    }
-
-    return NULL;
-}
-
-
 nxt_noinline njs_array_t *
 njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare)
 {
@@ -135,6 +91,24 @@ njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare)
     array->length = length;
 
     return array;
+}
+
+
+njs_ret_t
+njs_array_string_add(njs_vm_t *vm, njs_array_t *array, u_char *start,
+    size_t size, size_t length)
+{
+    njs_ret_t  ret;
+
+    if (array->size == array->length) {
+        ret = njs_array_realloc(vm, array, 0, array->size + 1);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return ret;
+        }
+    }
+
+    return njs_string_create(vm, &array->start[array->length++],
+                            start, size, length);
 }
 
 
