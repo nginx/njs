@@ -2186,6 +2186,21 @@ static njs_unit_test_t  njs_test[] =
                  "len +' '+ a +' '+ a.shift()"),
       nxt_string("5 3,4,5,1,2 3") },
 
+    { nxt_string("var a = []; a.reverse()"),
+      nxt_string("") },
+
+    { nxt_string("var a = [1]; a.reverse()"),
+      nxt_string("1") },
+
+    { nxt_string("var a = [1,2]; a.reverse()"),
+      nxt_string("2,1") },
+
+    { nxt_string("var a = [1,2,3]; a.reverse()"),
+      nxt_string("3,2,1") },
+
+    { nxt_string("var a = [1,2,3,4]; a.reverse()"),
+      nxt_string("4,3,2,1") },
+
     { nxt_string("var a = []; var s = { sum: 0 };"
                  "a.forEach(function(v, i, a) { this.sum += v }, s); s.sum"),
       nxt_string("0") },
@@ -2965,6 +2980,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("'abc'.split(/abc/)"),
       nxt_string(",") },
+
+    { nxt_string("'0123456789'.split('').reverse().join('')"),
+      nxt_string("9876543210") },
 
     /* Functions. */
 

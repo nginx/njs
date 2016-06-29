@@ -464,6 +464,39 @@ njs_array_prototype_shift(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
+static njs_ret_t
+njs_array_prototype_reverse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    nxt_uint_t   i, n, length;
+    njs_value_t  value;
+    njs_array_t  *array;
+
+    if (njs_is_array(&args[0])) {
+        array = args[0].data.u.array;
+        length = array->length;
+
+        if (length > 1) {
+            for (i = 0, n = length - 1; i < n; i++, n--) {
+                value = array->start[i];
+                array->start[i] = array->start[n];
+                array->start[n] = value;
+            }
+        }
+
+        vm->retval.data.u.array = array;
+        vm->retval.type = NJS_ARRAY;
+        vm->retval.data.truth = 1;
+
+    } else {
+        /* STUB */
+        vm->retval = args[0];
+    }
+
+    return NXT_OK;
+}
+
+
 /*
  * ECMAScript 5.1: try first to use object method "join", then
  * use the standard built-in method Object.prototype.toString().
@@ -967,6 +1000,13 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("shift"),
         .value = njs_native_function(njs_array_prototype_shift, 0, 0),
+    },
+
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("reverse"),
+        .value = njs_native_function(njs_array_prototype_reverse, 0,
+                    NJS_OBJECT_ARG),
     },
 
     {
