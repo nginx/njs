@@ -2951,6 +2951,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abc'.split('')"),
       nxt_string("a,b,c") },
 
+    { nxt_string("'abc'.split('abc')"),
+      nxt_string(",") },
+
     { nxt_string("'a bc def'.split(' ')"),
       nxt_string("a,bc,def") },
 
