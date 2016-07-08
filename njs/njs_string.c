@@ -2075,14 +2075,14 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("toLowerCase"),
         .value = njs_native_function(njs_string_prototype_to_lower_case, 0,
-                     NJS_STRING_OBJECT_ARG, NJS_REGEXP_ARG),
+                     NJS_STRING_OBJECT_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("toUpperCase"),
         .value = njs_native_function(njs_string_prototype_to_upper_case, 0,
-                     NJS_STRING_OBJECT_ARG, NJS_REGEXP_ARG),
+                     NJS_STRING_OBJECT_ARG),
     },
 
     {
