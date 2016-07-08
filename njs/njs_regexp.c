@@ -476,7 +476,7 @@ njs_regexp_prototype_test(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     (void) njs_string_prop(&string, value);
 
-    n = (string.length != 0 && string.length != string.size);
+    n = (string.length != 0);
 
     pattern = args[0].data.u.regexp->pattern;
 
@@ -527,14 +527,17 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     (void) njs_string_prop(&string, value);
 
+    /* Byte string. */
     utf8 = 0;
     n = 0;
 
     if (string.length != 0) {
+        /* ASCII string. */
         utf8 = 1;
         n = 1;
 
         if (string.length != string.size) {
+            /* UTF-8 string. */
             utf8 = 2;
         }
     }

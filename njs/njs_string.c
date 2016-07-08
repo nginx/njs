@@ -1450,7 +1450,7 @@ njs_string_prototype_search(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
         (void) njs_string_prop(&string, &args[0]);
 
-        n = (string.length != 0 && string.length != string.size);
+        n = (string.length != 0);
 
         if (nxt_regex_is_valid(&pattern->regex[n])) {
             ret = nxt_regex_match(&pattern->regex[n], string.start, string.size,
@@ -1696,11 +1696,11 @@ njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         if (string.length != 0) {
             /* ASCII string. */
             utf8 = 1;
-            n = 1;
 
             if (string.length != string.size) {
                 /* UTF-8 string. */
                 utf8 = 2;
+                n = 1;
             }
         }
 
