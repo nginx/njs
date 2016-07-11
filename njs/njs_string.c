@@ -1657,7 +1657,7 @@ njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     int                   ret, *captures;
     u_char                *p, *start, *next;
-    size_t                size, length;
+    size_t                size;
     uint32_t              limit;
     nxt_uint_t            n, utf8;
     njs_array_t           *array;
@@ -1683,7 +1683,7 @@ njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             limit = (uint32_t) -1;
         }
 
-        length = njs_string_prop(&string, &args[0]);
+        (void) njs_string_prop(&string, &args[0]);
 
         if (string.size == 0) {
             goto single;
@@ -1818,7 +1818,7 @@ static njs_ret_t
 njs_string_split_part_add(njs_vm_t *vm, njs_array_t *array, u_char *start,
     size_t size, nxt_uint_t utf8)
 {
-    uint32_t  length;
+    ssize_t  length;
 
     switch (utf8) {
     case 0:
