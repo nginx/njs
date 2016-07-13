@@ -35,13 +35,14 @@ struct njs_regexp_s {
 njs_ret_t njs_regexp_init(njs_vm_t *vm);
 njs_ret_t njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
-nxt_int_t njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser,
+njs_token_t njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser,
     njs_value_t *value);
 njs_regexp_pattern_t *njs_regexp_pattern_create(njs_vm_t *vm,
     u_char *string, size_t length, njs_regexp_flags_t flags);
 njs_regexp_t *njs_regexp_alloc(njs_vm_t *vm, njs_regexp_pattern_t *pattern);
 njs_ret_t njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
+njs_ret_t njs_regexp_match_error(njs_vm_t *vm);
 
 
 extern const njs_object_init_t  njs_regexp_constructor_init;

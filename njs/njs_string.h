@@ -107,8 +107,6 @@ double njs_string_to_number(njs_value_t *value, nxt_bool_t exact);
 
 njs_index_t njs_value_index(njs_vm_t *vm, njs_parser_t *parser,
     const njs_value_t *src);
-nxt_int_t njs_string_exception(njs_vm_t *vm, njs_exception_error_t exception,
-    u_char *msg);
 
 extern const njs_object_init_t  njs_string_constructor_init;
 extern const njs_object_init_t  njs_string_prototype_init;

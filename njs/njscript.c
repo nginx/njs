@@ -18,9 +18,9 @@
 #include <njs_string.h>
 #include <njs_object.h>
 #include <njs_function.h>
-#include <njs_regexp.h>
 #include <njs_variable.h>
 #include <njs_parser.h>
+#include <njs_regexp.h>
 #include <string.h>
 
 
@@ -192,6 +192,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end,
     parser->lexer = lexer;
     lexer->start = *start;
     lexer->end = end;
+    lexer->line = 1;
     lexer->keywords_hash = vm->shared->keywords_hash;
 
     parser->code_size = sizeof(njs_vmcode_stop_t);

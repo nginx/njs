@@ -20,6 +20,13 @@
 #include <njs_variable.h>
 #include <njs_parser.h>
 #include <string.h>
+#include <stdio.h>
+
+
+typedef enum {
+    NJS_GENERATOR_ERROR_ILLEGAL_CONTINUE = 0,
+    NJS_GENERATOR_ERROR_ILLEGAL_BREAK,
+} njs_generator_error_t;
 
 
 static nxt_int_t njs_generator(njs_vm_t *vm, njs_parser_t *parser,
@@ -117,6 +124,8 @@ static nxt_noinline nxt_int_t njs_generator_node_index_release(njs_vm_t *vm,
 static nxt_noinline nxt_int_t njs_generator_index_release(njs_vm_t *vm,
     njs_parser_t *parser, njs_index_t index);
 nxt_inline nxt_bool_t njs_generator_is_constant(njs_parser_node_t *node);
+static nxt_int_t njs_generator_error(njs_vm_t *vm, njs_parser_node_t *node,
+    njs_generator_error_t err);
 
 
 static const nxt_str_t  no_label = { 0, NULL };
@@ -1067,18 +1076,19 @@ njs_generate_continue_statement(njs_vm_t *vm, njs_parser_t *parser,
 {
     njs_vmcode_jump_t   *jump;
     njs_parser_patch_t  *patch;
+    njs_parser_block_t  *block;
 
-    if (parser->block == NULL) {
-        vm->exception = &njs_exception_syntax_error;
-        return NXT_ERROR;
+    for (block = parser->block; block != NULL; block = block->next) {
+        if (block->type == NJS_PARSER_LOOP) {
+            goto found;
+        }
     }
+
+    return njs_generator_error(vm, node, NJS_GENERATOR_ERROR_ILLEGAL_CONTINUE);
+
+found:
 
     /* TODO: LABEL */
-
-    if (parser->block->type != NJS_PARSER_LOOP) {
-        vm->exception = &njs_exception_syntax_error;
-        return NXT_ERROR;
-    }
 
     patch = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_parser_patch_t));
 
@@ -1105,11 +1115,19 @@ njs_generate_break_statement(njs_vm_t *vm, njs_parser_t *parser,
 {
     njs_vmcode_jump_t   *jump;
     njs_parser_patch_t  *patch;
+    njs_parser_block_t  *block;
 
-    if (parser->block == NULL) {
-        vm->exception = &njs_exception_syntax_error;
-        return NXT_ERROR;
+    for (block = parser->block; block != NULL; block = block->next) {
+        if (block->type == NJS_PARSER_LOOP
+            || block->type == NJS_PARSER_SWITCH)
+        {
+            goto found;
+        }
     }
+
+    return njs_generator_error(vm, node, NJS_GENERATOR_ERROR_ILLEGAL_BREAK);
+
+found:
 
     /* TODO: LABEL: loop and switch may have label, block must have label. */
 
@@ -2465,4 +2483,26 @@ njs_generator_is_constant(njs_parser_node_t *node)
 {
     return (node->token >= NJS_TOKEN_FIRST_CONST
             && node->token <= NJS_TOKEN_LAST_CONST);
+}
+
+
+static nxt_int_t
+njs_generator_error(njs_vm_t *vm, njs_parser_node_t *node,
+    njs_generator_error_t err)
+{
+    uint32_t     size;
+    const char   *msg;
+    u_char       buf[NJS_EXCEPTION_BUF_LENGTH];
+
+    static const char  *errors[] = {
+        "SyntaxError: Illegal continue statement in %u",
+        "SyntaxError: Illegal break statement in %u",
+    };
+
+    msg = errors[err];
+
+    size = snprintf((char *) buf, NJS_EXCEPTION_BUF_LENGTH,
+                    msg, node->token_line);
+
+    return njs_vm_throw_exception(vm, buf, size);
 }

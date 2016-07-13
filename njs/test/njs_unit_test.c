@@ -47,7 +47,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("undefined") },
 
     { nxt_string("var; a"),
-      nxt_string("SyntaxError") },
+      nxt_string("SyntaxError: Unexpected token \";\" in 1") },
+
+    { nxt_string("var + a"),
+      nxt_string("SyntaxError: Unexpected token \"+\" in 1") },
 
     { nxt_string("var \n a \n = 1; a"),
       nxt_string("1") },
@@ -1373,7 +1376,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("1") },
 
     { nxt_string("a = 0; a \n ++"),
-      nxt_string("SyntaxError") },
+      nxt_string("SyntaxError: Unexpected end of input in 2") },
 
     { nxt_string("a = 1 ? 2 \n : 3"),
       nxt_string("2") },
@@ -1400,7 +1403,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("NaN undefined") },
 
     { nxt_string("var a += 1"),
-      nxt_string("SyntaxError") },
+      nxt_string("SyntaxError: Unexpected token \"+=\" in 1") },
 
     { nxt_string("var a = a + 1"),
       nxt_string("undefined") },
@@ -1473,13 +1476,26 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = 3; if (true) if (false); else; a = 2; a"),
       nxt_string("2") },
 
+    /* do while. */
+
+    { nxt_string("do { break } if (false)"),
+      nxt_string("SyntaxError: Unexpected token \"if\" in 1") },
+
+    /* for in. */
+
+    { nxt_string("for (null in undefined);"),
+      nxt_string("ReferenceError: Invalid left-hand side \"null\" in for-in statement in 1") },
+
     /* switch. */
 
     { nxt_string("switch"),
-      nxt_string("SyntaxError") },
+      nxt_string("SyntaxError: Unexpected end of input in 1") },
 
     { nxt_string("switch (1);"),
-      nxt_string("SyntaxError") },
+      nxt_string("SyntaxError: Unexpected token \";\" in 1") },
+
+    { nxt_string("switch (1) { do { } while (1) }"),
+      nxt_string("SyntaxError: Unexpected token \"do\" in 1") },
 
     { nxt_string("switch (1) {}"),
       nxt_string("undefined") },
@@ -1492,6 +1508,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("switch (1) {default:;}"),
       nxt_string("undefined") },
+
+    { nxt_string("switch (1) {default:; default:}"),
+      nxt_string("SyntaxError: More than one default clause in switch statement in 1") },
 
     { nxt_string("switch (1) {case 0:;}"),
       nxt_string("undefined") },
@@ -1546,10 +1565,10 @@ static njs_unit_test_t  njs_test[] =
     /* continue. */
 
     { nxt_string("continue"),
-      nxt_string("SyntaxError") },
+      nxt_string("SyntaxError: Illegal continue statement in 1") },
 
     { nxt_string("do continue while (false)"),
-      nxt_string("SyntaxError") },
+      nxt_string("SyntaxError: Unexpected token \"while\" in 1") },
 
     { nxt_string("do continue; while (false)"),
       nxt_string("undefined") },
@@ -1604,10 +1623,10 @@ static njs_unit_test_t  njs_test[] =
     /* break. */
 
     { nxt_string("break"),
-      nxt_string("SyntaxError") },
+      nxt_string("SyntaxError: Illegal break statement in 1") },
 
     { nxt_string("do break while (true)"),
-      nxt_string("SyntaxError") },
+      nxt_string("SyntaxError: Unexpected token \"while\" in 1") },
 
     { nxt_string("do break; while (true)"),
       nxt_string("undefined") },
@@ -1750,8 +1769,17 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("void 0"),
       nxt_string("undefined") },
 
+    { nxt_string("null = 1"),
+      nxt_string("ReferenceError: Invalid left-hand side in assignment in 1") },
+
     { nxt_string("undefined = 1"),
-      nxt_string("SyntaxError") },
+      nxt_string("ReferenceError: Invalid left-hand side in assignment in 1") },
+
+    { nxt_string("null++"),
+      nxt_string("ReferenceError: Invalid left-hand side in postfix operation in 1") },
+
+    { nxt_string("++null"),
+      nxt_string("ReferenceError: Invalid left-hand side in prefix operation in 1") },
 
     { nxt_string("var a; b = a; a = 1; a +' '+ b"),
       nxt_string("1 undefined") },
@@ -1857,6 +1885,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var y = 5; x = { a:y }; x.a"),
       nxt_string("5") },
+
+    { nxt_string("x = { a: 1; b: 2 }"),
+      nxt_string("SyntaxError: Unexpected token \";\" in 1") },
 
     { nxt_string("x = { a: 1, b: x.a }"),
       nxt_string("ReferenceError") },
@@ -1970,9 +2001,11 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("3 * [5,7]"),
       nxt_string("NaN") },
 
-
     { nxt_string("a = [ 1, 2, 3 ]; a[0] + a[1] + a[2]"),
       nxt_string("6") },
+
+    { nxt_string("a = [ 1, 2; 3 ]; a[0] + a[1] + a[2]"),
+      nxt_string("SyntaxError: Unexpected token \";\" in 1") },
 
     { nxt_string("a = [ 1, 2, 3 ]; a[0] +' '+ a[1] +' '+ a[2] +' '+ a[3]"),
       nxt_string("1 2 3 undefined") },
@@ -2285,32 +2318,38 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'a\\\r\nb'"),
       nxt_string("ab") },
 
+    { nxt_string("'abcde"),
+      nxt_string("SyntaxError: Unterminated string \"'abcde\" in 1") },
+
+    { nxt_string("'\\"),
+      nxt_string("SyntaxError: Unterminated string \"'\\\" in 1") },
+
     { nxt_string("'\\'"),
-      nxt_string("SyntaxError") },
+      nxt_string("SyntaxError: Unterminated string \"'\\'\" in 1") },
 
     { nxt_string("'\\u03B1'"),
       nxt_string("α") },
 
     { nxt_string("'\\u'"),
-      nxt_string("SyntaxError") },
+      nxt_string("SyntaxError: Invalid Unicode code point \"\\u\" in 1") },
 
     { nxt_string("'\\u03B'"),
-      nxt_string("SyntaxError") },
+      nxt_string("SyntaxError: Invalid Unicode code point \"\\u03B\" in 1") },
 
     { nxt_string("'\\u{61}\\u{3B1}\\u{20AC}'"),
       nxt_string("aα€") },
 
     { nxt_string("'\\u'"),
-      nxt_string("SyntaxError") },
+      nxt_string("SyntaxError: Invalid Unicode code point \"\\u\" in 1") },
 
     { nxt_string("'\\u{'"),
-      nxt_string("SyntaxError") },
+      nxt_string("SyntaxError: Invalid Unicode code point \"\\u{\" in 1") },
 
     { nxt_string("'\\u{}'"),
-      nxt_string("SyntaxError") },
+      nxt_string("SyntaxError: Invalid Unicode code point \"\\u{}\" in 1") },
 
     { nxt_string("'\\u{1234567}'"),
-      nxt_string("SyntaxError") },
+      nxt_string("SyntaxError: Invalid Unicode code point \"\\u{1234567}\" in 1") },
 
     { nxt_string("'\\x61'"),
       nxt_string("a") },
@@ -2563,7 +2602,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("NaN") },
 
     { nxt_string("a = 'abcdef'; a.3"),
-      nxt_string("SyntaxError") },
+      nxt_string("SyntaxError: Unexpected token \"3\" in 1") },
 
     { nxt_string("'abcdef'[3]"),
       nxt_string("d") },
@@ -2989,6 +3028,9 @@ static njs_unit_test_t  njs_test[] =
 
     /* Functions. */
 
+    { nxt_string("function () { } f()"),
+      nxt_string("SyntaxError: Unexpected token \"(\" in 1") },
+
     { nxt_string("function f() { } f()"),
       nxt_string("undefined") },
 
@@ -3163,7 +3205,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("20") },
 
     { nxt_string("var f = function b(a) { a *= 2; return a } = 5"),
-      nxt_string("SyntaxError") },
+      nxt_string("ReferenceError: Invalid left-hand side in assignment in 1") },
 
     { nxt_string("function a() { return { x:2} }; var b = a(); b.x"),
       nxt_string("2") },
@@ -3211,7 +3253,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("3") },
 
     { nxt_string("var a = 0, function(a) { return a + 1 }(2); a"),
-      nxt_string("SyntaxError") },
+      nxt_string("SyntaxError: Unexpected token \"function\" in 1") },
 
     { nxt_string("var a = (0, function(a) { return a + 1 }(2)); a"),
       nxt_string("3") },
@@ -3432,8 +3474,14 @@ static njs_unit_test_t  njs_test[] =
 
     /* RegExp. */
 
+    { nxt_string("/./x"),
+      nxt_string("SyntaxError: Invalid RegExp flags \"x\" in 1") },
+
+    { nxt_string("/"),
+      nxt_string("SyntaxError: Unterminated RegExp \"/\" in 1") },
+
     { nxt_string("/(/.test('')"),
-      nxt_string("SyntaxError: pcre_compile(\"(\") failed: missing )") },
+      nxt_string("SyntaxError: pcre_compile(\"(\") failed: missing ) in 1") },
 
     { nxt_string("/^$/.test('')"),
       nxt_string("true") },
@@ -3567,6 +3615,12 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("try { throw null } catch (e) { throw e }"),
       nxt_string("") },
+
+    { nxt_string("try { throw null } catch (null) { throw e }"),
+      nxt_string("SyntaxError: Unexpected token \"null\" in 1") },
+
+    { nxt_string("try {}"),
+      nxt_string("SyntaxError: Missing catch or finally after try in 1") },
 
     { nxt_string("var a = 0; try { a = 5 }"
                  "catch (e) { a = 9 } finally { a++ } a"),
@@ -4548,7 +4602,7 @@ static njs_unit_test_t  njs_test[] =
     /* es5id: 8.2_A2 */
 
     { nxt_string("var null;"),
-      nxt_string("SyntaxError") },
+      nxt_string("SyntaxError: Unexpected token \"null\" in 1") },
 
     /* es5id: 8.2_A3 */
 

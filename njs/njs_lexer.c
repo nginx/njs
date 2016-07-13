@@ -47,7 +47,7 @@ static const uint8_t  njs_tokens[256]  nxt_aligned(64) = {
                 NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
     /* \t */    NJS_TOKEN_ILLEGAL,           NJS_TOKEN_SPACE,
     /* \n */    NJS_TOKEN_LINE_END,          NJS_TOKEN_ILLEGAL,
-    /* \r */    NJS_TOKEN_ILLEGAL,           NJS_TOKEN_LINE_END,
+    /* \r */    NJS_TOKEN_ILLEGAL,           NJS_TOKEN_SPACE,
                 NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
 
     /* 0x10 */  NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
@@ -300,6 +300,8 @@ njs_lexer_next_token(njs_lexer_t *lexer)
     njs_token_t              token;
     const njs_lexer_multi_t  *multi;
 
+    lexer->text.data = lexer->start;
+
     while (lexer->start < lexer->end) {
         c = *lexer->start++;
 
@@ -308,6 +310,7 @@ njs_lexer_next_token(njs_lexer_t *lexer)
         switch (token) {
 
         case NJS_TOKEN_SPACE:
+            lexer->text.data = lexer->start;
             continue;
 
         case NJS_TOKEN_LETTER:
@@ -396,6 +399,10 @@ njs_lexer_next_token(njs_lexer_t *lexer)
             goto multi;
 
         case NJS_TOKEN_LINE_END:
+            lexer->line++;
+
+            /* Fall through. */
+
         case NJS_TOKEN_BITWISE_NOT:
         case NJS_TOKEN_OPEN_PARENTHESIS:
         case NJS_TOKEN_CLOSE_PARENTHESIS:
@@ -408,6 +415,7 @@ njs_lexer_next_token(njs_lexer_t *lexer)
         case NJS_TOKEN_COLON:
         case NJS_TOKEN_SEMICOLON:
         case NJS_TOKEN_CONDITIONAL:
+            lexer->text.len = lexer->start - lexer->text.data;
             return token;
 
         default:  /* NJS_TOKEN_ILLEGAL */
@@ -449,6 +457,7 @@ njs_lexer_word(njs_lexer_t *lexer, u_char c)
         0x00, 0x00, 0x00, 0x00, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
     };
 
+    lexer->token_line = lexer->line;
     lexer->key_hash = nxt_djb_hash_add(NXT_DJB_HASH_INIT, c);
     lexer->text.data = lexer->start - 1;
 
@@ -489,7 +498,7 @@ njs_lexer_string(njs_lexer_t *lexer, u_char quote)
 
         if (c == '\\') {
             if (p == lexer->end) {
-                return NJS_TOKEN_ILLEGAL;
+                break;
             }
 
             p++;
@@ -510,7 +519,10 @@ njs_lexer_string(njs_lexer_t *lexer, u_char quote)
         }
     }
 
-    return NJS_TOKEN_ILLEGAL;
+    lexer->text.data--;
+    lexer->text.len = p - lexer->text.data;
+
+    return NJS_TOKEN_UNTERMINATED_STRING;
 }
 
 
@@ -590,7 +602,8 @@ njs_lexer_multi(njs_lexer_t *lexer, njs_token_t token, nxt_uint_t n,
                 lexer->start++;
 
                 if (multi->count == 0) {
-                    return multi->token;
+                    token = multi->token;
+                    break;
                 }
 
                 return njs_lexer_multi(lexer, multi->token, multi->count,
@@ -602,6 +615,8 @@ njs_lexer_multi(njs_lexer_t *lexer, njs_token_t token, nxt_uint_t n,
 
         } while (n != 0);
     }
+
+    lexer->text.len = lexer->start - lexer->text.data;
 
     return token;
 }

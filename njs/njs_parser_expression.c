@@ -9,6 +9,7 @@
 #include <nxt_clang.h>
 #include <nxt_alignment.h>
 #include <nxt_stub.h>
+#include <nxt_utf8.h>
 #include <nxt_array.h>
 #include <nxt_lvlhsh.h>
 #include <nxt_random.h>
@@ -16,11 +17,13 @@
 #include <njscript.h>
 #include <njs_vm.h>
 #include <njs_number.h>
+#include <njs_string.h>
 #include <njs_object.h>
 #include <njs_function.h>
 #include <njs_variable.h>
 #include <njs_parser.h>
 #include <string.h>
+#include <stdio.h>
 
 
 typedef struct {
@@ -71,6 +74,8 @@ static njs_token_t njs_parser_property_expression(njs_vm_t *vm,
     njs_parser_t *parser, njs_token_t token);
 static njs_token_t njs_parser_property_brackets(njs_vm_t *vm,
     njs_parser_t *parser, njs_token_t token);
+static njs_token_t njs_parser_invalid_lvalue(njs_vm_t *vm,
+    njs_parser_t *parser, const char* operation);
 
 
 static const njs_parser_expression_t
@@ -288,8 +293,7 @@ njs_parser_var_expression(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
         node = parser->node;
 
         if (node->lvalue == NJS_LVALUE_NONE) {
-            nxt_thread_log_error(NXT_LOG_ALERT, "lvalue required");
-            return NJS_TOKEN_ILLEGAL;
+            return njs_parser_invalid_lvalue(vm, parser, "assignment");
         }
 
         pending = NULL;
@@ -434,8 +438,7 @@ njs_parser_assignment_expression(njs_vm_t *vm, njs_parser_t *parser,
         node = parser->node;
 
         if (node->lvalue == NJS_LVALUE_NONE) {
-            nxt_thread_log_error(NXT_LOG_ALERT, "lvalue required");
-            return NJS_TOKEN_ILLEGAL;
+            return njs_parser_invalid_lvalue(vm, parser, "assignment");
         }
 
         pending = NULL;
@@ -807,8 +810,7 @@ njs_parser_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
     }
 
     if (parser->node->lvalue == NJS_LVALUE_NONE) {
-        nxt_thread_log_error(NXT_LOG_ALERT, "lvalue required");
-        return NJS_TOKEN_ILLEGAL;
+        return njs_parser_invalid_lvalue(vm, parser, "prefix operation");
     }
 
     node = njs_parser_node_alloc(vm);
@@ -860,8 +862,7 @@ njs_parser_post_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
     }
 
     if (parser->node->lvalue == NJS_LVALUE_NONE) {
-        nxt_thread_log_error(NXT_LOG_ALERT, "lvalue required");
-        return NJS_TOKEN_ILLEGAL;
+        return njs_parser_invalid_lvalue(vm, parser, "postfix operation");
     }
 
     node = njs_parser_node_alloc(vm);
@@ -1141,4 +1142,22 @@ njs_parser_arguments(njs_vm_t *vm, njs_parser_t *parser,
     }
 
     return token;
+}
+
+
+static njs_token_t
+njs_parser_invalid_lvalue(njs_vm_t *vm, njs_parser_t *parser,
+    const char *operation)
+{
+    uint32_t  size;
+    u_char    buf[NJS_EXCEPTION_BUF_LENGTH];
+
+    size = snprintf((char *) buf, NJS_EXCEPTION_BUF_LENGTH,
+                    "ReferenceError: Invalid left-hand side in %s in %u",
+                    operation, parser->lexer->line);
+
+    (void) njs_vm_throw_exception(vm, buf, size);
+
+    return NJS_TOKEN_ILLEGAL;
+
 }

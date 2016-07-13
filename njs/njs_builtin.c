@@ -19,6 +19,8 @@
 #include <njs_object.h>
 #include <njs_array.h>
 #include <njs_function.h>
+#include <njs_variable.h>
+#include <njs_parser.h>
 #include <njs_regexp.h>
 #include <njs_date.h>
 #include <njs_math.h>

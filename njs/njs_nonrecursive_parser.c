@@ -16,9 +16,9 @@
 #include <njs_vm.h>
 #include <njs_number.h>
 #include <njs_object.h>
-#include <njs_regexp.h>
 #include <njs_variable.h>
 #include <njs_parser.h>
+#include <njs_regexp.h>
 #include <string.h>
 
 

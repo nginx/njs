@@ -117,6 +117,7 @@ typedef enum {
 #define NJS_TOKEN_LAST_CONST      NJS_TOKEN_STRING
 
     NJS_TOKEN_ESCAPE_STRING,
+    NJS_TOKEN_UNTERMINATED_STRING,
     NJS_TOKEN_NAME,
 
     NJS_TOKEN_OBJECT,
@@ -191,6 +192,9 @@ typedef struct {
     uint8_t                         property;      /* 1 bit */
     uint32_t                        key_hash;
 
+    uint32_t                        token_line;
+    uint32_t                        line;
+
     nxt_str_t                       text;
     double                          number;
 
@@ -224,6 +228,7 @@ struct njs_parser_node_s {
     njs_lvalue_state_t              lvalue:2;   /* 2 bits */
     uint8_t                         ctor:1;     /* 1 bit  */
     uint8_t                         temporary;  /* 1 bit  */
+    uint32_t                        token_line;
 
     union {
         uint32_t                    length;
@@ -313,6 +318,15 @@ struct njs_parser_s {
 };
 
 
+typedef enum {
+    NJS_PARSER_ERROR_UNEXPECTED_TOKEN = 0,
+    NJS_PARSER_ERROR_UNTERMINATED_STRING,
+    NJS_PARSER_ERROR_UNICODE,
+    NJS_PARSER_ERROR_UNTERMINATED_REGEXP,
+    NJS_PARSER_ERROR_REGEXP_FLAGS,
+} njs_parser_error_t;
+
+
 njs_token_t njs_lexer_token(njs_lexer_t *lexer);
 nxt_int_t njs_lexer_keywords_init(nxt_mem_cache_pool_t *mcp,
     nxt_lvlhsh_t *hash);
@@ -339,6 +353,8 @@ njs_token_t njs_parser_token(njs_parser_t *parser);
 nxt_int_t njs_parser_string_create(njs_vm_t *vm, njs_value_t *value);
 njs_index_t njs_parser_index(njs_parser_t *parser, uint32_t scope);
 nxt_bool_t njs_parser_has_side_effect(njs_parser_node_t *node);
+njs_token_t njs_parser_error(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_error_t err);
 nxt_int_t njs_generate_scope(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node);
 

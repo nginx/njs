@@ -25,11 +25,12 @@
 #include <njs_object_hash.h>
 #include <njs_array.h>
 #include <njs_function.h>
-#include <njs_regexp.h>
-#include <njs_regexp_pattern.h>
 #include <njs_variable.h>
 #include <njs_parser.h>
+#include <njs_regexp.h>
+#include <njs_regexp_pattern.h>
 #include <string.h>
+#include <stdio.h>
 
 
 static nxt_noinline void njs_string_slice_prop(njs_string_prop_t *string,
@@ -1460,8 +1461,7 @@ njs_string_prototype_search(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                 index = njs_string_index(&string, captures[0]);
 
             } else if (ret != NGX_REGEX_NOMATCH) {
-                return njs_string_exception(vm, NJS_INTERNAL_ERROR,
-                                            vm->regex_context->error);
+                return njs_regexp_match_error(vm);
             }
         }
     }
@@ -1616,8 +1616,7 @@ njs_string_prototype_match(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                 break;
 
             } else {
-                return njs_string_exception(vm, NJS_INTERNAL_ERROR,
-                                            vm->regex_context->error);
+                return njs_regexp_match_error(vm);
             }
 
         } while (string.size > 0);
@@ -1769,8 +1768,7 @@ njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                     next = (u_char *) end + 1;
 
                 } else {
-                    return njs_string_exception(vm, NJS_INTERNAL_ERROR,
-                                                vm->regex_context->error);
+                    return njs_regexp_match_error(vm);
                 }
 
                 /* Empty split regexp. */
@@ -2248,49 +2246,3 @@ njs_value_index(njs_vm_t *vm, njs_parser_t *parser, const njs_value_t *src)
 
     return (njs_index_t) value;
 }
-
-
-nxt_int_t
-njs_string_exception(njs_vm_t *vm, njs_exception_error_t exception, u_char *msg)
-{
-    u_char       *p, *start;
-    uint32_t     msg_length, size, length;
-    nxt_str_t    *error;
-    njs_value_t  *value;
-
-    static nxt_str_t  errors[] = {
-        nxt_string("SyntaxError: "),
-        nxt_string("InternalError: "),
-    };
-
-    value = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_value_t));
-    if (nxt_slow_path(value == NULL)) {
-        return NXT_ERROR;
-    }
-
-    error = &errors[exception];
-
-    msg_length = (msg != NULL) ? strlen((char *) msg) : 0;
-    length = nxt_utf8_length(msg, msg_length);
-
-    size = error->len + msg_length;
-    length += error->len;
-
-    start = njs_string_alloc(vm, value, size, length);
-
-    if (nxt_fast_path(start != NULL)) {
-        memcpy(start, error->data, error->len);
-        p = start + error->len;
-
-        memcpy(p, msg, msg_length);
-
-        if (size != length && length >= NJS_STRING_MAP_OFFSET) {
-            njs_string_offset_map_init(start, size);
-        }
-    }
-
-    vm->exception = value;
-
-    return NXT_ERROR;
-}
-

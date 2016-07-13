@@ -8,6 +8,7 @@
 #include <nxt_clang.h>
 #include <nxt_alignment.h>
 #include <nxt_stub.h>
+#include <nxt_utf8.h>
 #include <nxt_djb_hash.h>
 #include <nxt_array.h>
 #include <nxt_lvlhsh.h>
@@ -21,10 +22,10 @@
 #include <njs_object_hash.h>
 #include <njs_array.h>
 #include <njs_function.h>
-#include <njs_regexp.h>
 #include <njs_extern.h>
 #include <njs_variable.h>
 #include <njs_parser.h>
+#include <njs_regexp.h>
 #include <string.h>
 
 
@@ -3313,6 +3314,27 @@ njs_value_string_copy(njs_vm_t *vm, nxt_str_t *retval, njs_value_t *value,
     }
 
     return njs_value_to_ext_string(vm, retval, value);
+}
+
+
+njs_ret_t
+njs_vm_throw_exception(njs_vm_t *vm, u_char *buf, uint32_t size)
+{
+    uint32_t     length;
+    njs_value_t  *value;
+
+    value = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_value_t));
+    if (nxt_slow_path(value == NULL)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    vm->exception = value;
+
+    length = nxt_utf8_length(buf, size);
+
+    (void) njs_string_new(vm, value, buf, size, length);
+
+    return NXT_ERROR;
 }
 
 
