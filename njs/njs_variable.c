@@ -119,6 +119,30 @@ njs_parser_variable(njs_vm_t *vm, njs_parser_t *parser, nxt_uint_t *level)
 }
 
 
+njs_function_t *
+njs_vm_function(njs_vm_t *vm, nxt_str_t *name)
+{
+    njs_value_t         *value;
+    njs_variable_t      *var;
+    nxt_lvlhsh_query_t  lhq;
+
+    lhq.key_hash = nxt_djb_hash(name->data, name->len);
+    lhq.key = *name;
+    lhq.proto = &njs_variables_hash_proto;
+
+    if (nxt_slow_path(nxt_lvlhsh_find(&vm->variables_hash, &lhq) != NXT_OK)) {
+        return NULL;
+    }
+
+    var = lhq.value;
+
+    value = (njs_value_t *) ((u_char *) vm->scopes[NJS_SCOPE_GLOBAL]
+                             + njs_offset(var->index));
+
+    return value->data.u.function;
+}
+
+
 static njs_variable_t *
 njs_variable_alloc(njs_vm_t *vm, njs_parser_t *parser, nxt_str_t *name)
 {

@@ -91,6 +91,7 @@ NXT_EXPORT nxt_int_t njs_vm_call(njs_vm_t *vm, njs_function_t *function,
     njs_opaque_value_t *args, nxt_uint_t nargs);
 NXT_EXPORT nxt_int_t njs_vm_run(njs_vm_t *vm);
 
+NXT_EXPORT njs_function_t *njs_vm_function(njs_vm_t *vm, nxt_str_t *name);
 NXT_EXPORT njs_ret_t njs_vm_return_string(njs_vm_t *vm, u_char *start,
     size_t size);
 NXT_EXPORT nxt_int_t njs_vm_retval(njs_vm_t *vm, nxt_str_t *retval);
