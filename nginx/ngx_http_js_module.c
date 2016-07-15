@@ -1152,8 +1152,8 @@ ngx_http_js_compile(ngx_conf_t *cf, ngx_http_js_ctx_t *js, ngx_str_t *script)
 
     nxt_lvlhsh_init(&externals);
 
-    if (njs_add_external(&externals, mcp, 0, ngx_http_js_externals,
-                         nxt_nitems(ngx_http_js_externals))
+    if (njs_vm_external_add(&externals, mcp, 0, ngx_http_js_externals,
+                            nxt_nitems(ngx_http_js_externals))
         != NJS_OK)
     {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "could not add js externals");
@@ -1191,7 +1191,7 @@ ngx_http_js_compile(ngx_conf_t *cf, ngx_http_js_ctx_t *js, ngx_str_t *script)
     if (function) {
         ngx_str_set(&name, "$r");
 
-        rc = njs_external_get(vm, NULL, &name, &js->args[0]);
+        rc = njs_vm_external(vm, NULL, &name, &js->args[0]);
         if (rc != NXT_OK) {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "could not get $r external");
@@ -1200,7 +1200,7 @@ ngx_http_js_compile(ngx_conf_t *cf, ngx_http_js_ctx_t *js, ngx_str_t *script)
 
         ngx_str_set(&name, "response");
 
-        rc = njs_external_get(vm, &js->args[0], &name, &js->args[1]);
+        rc = njs_vm_external(vm, &js->args[0], &name, &js->args[1]);
         if (rc != NXT_OK) {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "could not get $r.response external");

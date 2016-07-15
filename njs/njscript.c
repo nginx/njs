@@ -280,6 +280,7 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
 
         nvm->variables_hash = vm->variables_hash;
         nvm->values_hash = vm->values_hash;
+        nvm->externals_hash = vm->externals_hash;
 
         nvm->retval = njs_value_void;
         nvm->current = vm->current;

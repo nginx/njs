@@ -4811,8 +4811,8 @@ njs_unit_test_externals(nxt_lvlhsh_t *externals, nxt_mem_cache_pool_t *mcp)
 {
     nxt_lvlhsh_init(externals);
 
-    return njs_add_external(externals, mcp, 0, nxt_test_external,
-                            nxt_nitems(nxt_test_external));
+    return njs_vm_external_add(externals, mcp, 0, nxt_test_external,
+                               nxt_nitems(nxt_test_external));
 }
 
 
@@ -4937,7 +4937,7 @@ njs_unit_test(nxt_bool_t disassemble)
                 r_name.len = 2;
                 r_name.data = (u_char *) "$r";
 
-                ret = njs_external_get(vm, NULL, &r_name, &value);
+                ret = njs_vm_external(nvm, NULL, &r_name, &value);
                 if (ret != NXT_OK) {
                     return NXT_ERROR;
                 }

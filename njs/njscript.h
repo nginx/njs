@@ -73,10 +73,10 @@ struct njs_external_s {
 #define NJS_DONE                    NXT_DONE
 
 
-NXT_EXPORT nxt_int_t njs_add_external(nxt_lvlhsh_t *hash,
+NXT_EXPORT nxt_int_t njs_vm_external_add(nxt_lvlhsh_t *hash,
     nxt_mem_cache_pool_t *mcp, uintptr_t object, njs_external_t *external,
     nxt_uint_t n);
-NXT_EXPORT nxt_int_t njs_external_get(njs_vm_t *vm, njs_opaque_value_t *object,
+NXT_EXPORT nxt_int_t njs_vm_external(njs_vm_t *vm, njs_opaque_value_t *object,
     nxt_str_t *property, njs_opaque_value_t *value);
 
 NXT_EXPORT njs_vm_t *njs_vm_create(nxt_mem_cache_pool_t *mcp,

@@ -51,7 +51,7 @@ const nxt_lvlhsh_proto_t  njs_extern_hash_proto
 
 
 nxt_int_t
-njs_add_external(nxt_lvlhsh_t *hash, nxt_mem_cache_pool_t *mcp,
+njs_vm_external_add(nxt_lvlhsh_t *hash, nxt_mem_cache_pool_t *mcp,
     uintptr_t object, njs_external_t *external, nxt_uint_t n)
 {
     nxt_int_t           ret;
@@ -111,7 +111,7 @@ njs_add_external(nxt_lvlhsh_t *hash, nxt_mem_cache_pool_t *mcp,
         }
 
         if (external->properties != NULL) {
-            ret = njs_add_external(&ext->hash, mcp, object,
+            ret = njs_vm_external_add(&ext->hash, mcp, object,
                                    external->properties, external->nproperties);
             if (nxt_slow_path(ret != NXT_OK)) {
                 return ret;
@@ -128,7 +128,7 @@ njs_add_external(nxt_lvlhsh_t *hash, nxt_mem_cache_pool_t *mcp,
 
 
 nxt_int_t
-njs_external_get(njs_vm_t *vm, njs_opaque_value_t *obj, nxt_str_t *property,
+njs_vm_external(njs_vm_t *vm, njs_opaque_value_t *obj, nxt_str_t *property,
     njs_opaque_value_t *value)
 {
     uint32_t            (*key_hash)(const void *, size_t);
