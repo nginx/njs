@@ -1,5 +1,6 @@
 
-Configure nginx with HTTP JavaScript module using the --add-module option:
+Configure nginx with HTTP and Stream JavaScript modules using the --add-module
+option:
 
     ./configure --add-module=<path-to-njs>/nginx
 
@@ -14,30 +15,39 @@ and add the following line to nginx.conf and reload nginx:
 Please report your experiences to the NGINX development mailing list
 nginx-devel@nginx.org (http://mailman.nginx.org/mailman/listinfo/nginx-devel).
 
-JavaScript objects
-------------------
 
-$r
-|- uri
-|- method
-|- httpVersion
-|- remoteAddress
-|- headers{}
-|- args{}
-|- response
-  |- status
-  |- headers{}
-  |- contentType
-  |- contentLength
-  |- sendHeader()
-  |- send(data)
-  |- finish()
+HTTP JavaScript module
+----------------------
+
+Each HTTP JavaScript handler receives two arguments - request and response.
+
+    function foo(req, res) {
+        ..
+    }
+
+The following properties are available:
+
+req
+    - uri
+    - method
+    - httpVersion
+    - remoteAddress
+    - headers{}
+    - args{}
+    - variables{}
+    - log()
+
+res
+    - status
+    - headers{}
+    - contentType
+    - contentLength
+    - sendHeader()
+    - send()
+    - finish()
 
 
-Example
--------
-
-Create nginx.conf:
+Example nginx.conf:
 
     worker_processes 1;
     pid logs/nginx.pid;
@@ -47,79 +57,132 @@ Create nginx.conf:
     }
 
     http {
-        js_set $summary "
-            var a, s, h;
-
-            s = 'JS summary\n\n';
-
-            s += 'Method: ' + $r.method + '\n';
-            s += 'HTTP version: ' + $r.httpVersion + '\n';
-            s += 'Host: ' + $r.headers.host + '\n';
-            s += 'Remote Address: ' + $r.remoteAddress + '\n';
-            s += 'URI: ' + $r.uri + '\n';
-
-            s += 'Headers:\n';
-            for (h in $r.headers) {
-                s += '  header \"' + h + '\" is \"' + $r.headers[h] + '\"\n';
-            }
-
-            s += 'Args:\n';
-            for (a in $r.args) {
-                s += '  arg \"' + a + '\" is \"' + $r.args[a] + '\"\n';
-            }
-
-            s;
-            ";
+        # include JavaScript file
+        js_include js-http.js;
 
         server {
             listen 8000;
 
             location / {
-                js_run "
-                    var res;
-                    res = $r.response;
-                    res.headers.foo = 1234;
-                    res.status = 302;
-                    res.contentType = 'text/plain; charset=utf-8';
-                    res.contentLength = 15;
-                    res.sendHeader();
-                    res.send('nginx');
-                    res.send('java');
-                    res.send('script');
-                    res.finish();
-                    ";
+                # create $foo variable and set JavaScript function foo()
+                # from the included JavaScript file as its handler
+                js_set $foo foo;
+
+                add_header X-Foo $foo;
+
+                # register JavaScript function bar() as content handler
+                js_content baz;
             }
 
             location /summary {
+                js_set $summary summary;
+
                 return 200 $summary;
             }
         }
     }
 
-Run nginx & test the output:
 
-$ curl 127.0.0.1:8000
+js-http.js:
 
-nginxjavascript
+    function foo(req, res) {
+        req.log("hello from foo() handler");
+        return "foo";
+    }
 
-$ curl -H "Foo: 1099" '127.0.0.1:8000/summary?a=1&fooo=bar&zyx=xyz'
+    function summary(req, res) {
+        var a, s, h;
 
-JS summary
+        s = "JS summary\n\n";
 
-Method: GET
-HTTP version: 1.1
-Host: 127.0.0.1:8000
-Remote Address: 127.0.0.1
-URI: /summary
-Headers:
-  header "Host" is "127.0.0.1:8000"
-  header "User-Agent" is "curl/7.43.0"
-  header "Accept" is "*/*"
-  header "Foo" is "1099"
-Args:
-  arg "a" is "1"
-  arg "fooo" is "bar"
-  arg "zyx" is "xyz"
+        s += "Method: " + req.method + "\n";
+        s += "HTTP version: " + req.httpVersion + "\n";
+        s += "Host: " + req.headers.host + "\n";
+        s += "Remote Address: " + req.remoteAddress + "\n";
+        s += "URI: " + req.uri + "\n";
+
+        s += "Headers:\n";
+        for (h in req.headers) {
+            s += "  header '" + h + "' is '" + req.headers[h] + "'\n";
+        }
+
+        s += "Args:\n";
+        for (a in req.args) {
+            s += "  arg '" + a + "' is '" + req.args[a] + "'\n";
+        }
+
+        return s;
+    }
+
+    function baz(req, res) {
+        res.headers.foo = 1234;
+        res.status = 200;
+        res.contentType = "text/plain; charset=utf-8";
+        res.contentLength = 15;
+        res.sendHeader();
+        res.send("nginx");
+        res.send("java");
+        res.send("script");
+
+        res.finish();
+    }
+
+
+Stream JavaScript module
+------------------------
+
+Each Stream JavaScript handler receives one argument - stream session object.
+
+    function foo(s) {
+        ..
+    }
+
+The following properties are available in the session object:
+
+     - remoteAddress
+     - variables{}
+     - log()
+
+
+Example nginx.conf:
+
+    worker_processes 1;
+    pid logs/nginx.pid;
+
+    events {
+        worker_connections  256;
+    }
+
+    stream {
+        # include JavaScript file
+        js_include js-stream.js;
+
+        server {
+            listen 8000;
+
+            # create $foo and $bar variables and set JavaScript
+            # functions foo() and bar() from the included JavaScript
+            # file as their handlers
+            js_set $foo foo;
+            js_set $bar bar;
+
+            return $foo-$bar;
+        }
+    }
+
+
+js-stream.js:
+
+    function foo(s) {
+        s.log("hello from foo() handler!");
+        return s.remoteAddress;
+    }
+
+    function bar(s) {
+        var v = s.variables;
+        s.log("hello from bar() handler!");
+        return "foo-var" + v.remote_port + "; pid=" + v.pid;
+    }
 
 
 --
