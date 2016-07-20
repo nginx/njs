@@ -4,13 +4,14 @@ option:
 
     ./configure --add-module=<path-to-njs>/nginx
 
-Alternatively, you can build a dynamic version of the njs module
+Alternatively, you can build a dynamic version of the modules
 
     ./configure --add-dynamic-module=<path-to-njs>/nginx
 
-and add the following line to nginx.conf and reload nginx:
+and add the following lines to nginx.conf to load them
 
     load_module modules/ngx_http_js_module.so;
+    load_module modules/ngx_stream_js_module.so;
 
 Please report your experiences to the NGINX development mailing list
 nginx-devel@nginx.org (http://mailman.nginx.org/mailman/listinfo/nginx-devel).
@@ -49,6 +50,9 @@ res
 
 Example nginx.conf:
 
+    # load dynamic HTTP JavaScript module
+    load_module modules/ngx_http_js_module.so;
+
     worker_processes 1;
     pid logs/nginx.pid;
 
@@ -58,7 +62,7 @@ Example nginx.conf:
 
     http {
         # include JavaScript file
-        js_include js-http.js;
+        js_include http.js;
 
         server {
             listen 8000;
@@ -83,7 +87,7 @@ Example nginx.conf:
     }
 
 
-js-http.js:
+http.js:
 
     function foo(req, res) {
         req.log("hello from foo() handler");
@@ -146,6 +150,9 @@ The following properties are available in the session object:
 
 Example nginx.conf:
 
+    # load dynamic Stream JavaScript module
+    load_module modules/ngx_stream_js_module.so;
+
     worker_processes 1;
     pid logs/nginx.pid;
 
@@ -155,7 +162,7 @@ Example nginx.conf:
 
     stream {
         # include JavaScript file
-        js_include js-stream.js;
+        js_include stream.js;
 
         server {
             listen 8000;
@@ -171,7 +178,7 @@ Example nginx.conf:
     }
 
 
-js-stream.js:
+stream.js:
 
     function foo(s) {
         s.log("hello from foo() handler!");
