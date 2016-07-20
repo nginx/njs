@@ -58,6 +58,20 @@ typedef struct {
 } nxt_str_t;
 
 
+#define nxt_str_set(str, text)                                                \
+    do {                                                                      \
+        (str)->len = sizeof(text) - 1;                                        \
+        (str)->data = (u_char *) text;                                        \
+    } while (0)
+
+
+#define nxt_str_null(str)                                                     \
+    do {                                                                      \
+        (str)->len = 0;                                                       \
+        (str)->data = NULL;                                                   \
+    } while (0)
+
+
 #define nxt_string(str)       { sizeof(str) - 1, (u_char *) str }
 #define nxt_string_zero(str)  { sizeof(str), (u_char *) str }
 #define nxt_null_string       { 0, NULL }
