@@ -52,6 +52,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var + a"),
       nxt_string("SyntaxError: Unexpected token \"+\" in 1") },
 
+    { nxt_string("//\r\n; var + a"),
+      nxt_string("SyntaxError: Unexpected token \"+\" in 2") },
+
+    { nxt_string("/*\n*/; var + a"),
+      nxt_string("SyntaxError: Unexpected token \"+\" in 2") },
+
     { nxt_string("var \n a \n = 1; a"),
       nxt_string("1") },
 

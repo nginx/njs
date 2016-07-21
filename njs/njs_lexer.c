@@ -636,8 +636,9 @@ njs_lexer_division(njs_lexer_t *lexer, njs_token_t token)
 
             for (p = lexer->start; p < lexer->end; p++) {
 
-                if (*p == '\r' || *p == '\n') {
+                if (*p == '\n') {
                     lexer->start = p + 1;
+                    lexer->line++;
                     return NJS_TOKEN_LINE_END;
                 }
             }
@@ -646,6 +647,11 @@ njs_lexer_division(njs_lexer_t *lexer, njs_token_t token)
             lexer->start++;
 
             for (p = lexer->start; p < lexer->end; p++) {
+
+                if (*p == '\n') {
+                    lexer->line++;
+                    continue;
+                }
 
                 if (*p == '*') {
                     p++;
