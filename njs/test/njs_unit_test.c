@@ -1476,6 +1476,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = 3; if (true) if (false); else; a = 2; a"),
       nxt_string("2") },
 
+    { nxt_string("var a = [3], b; if (1==1||2==2) { b = '1'+'2'+a[0] }; b }"),
+      nxt_string("123") },
+
     /* do while. */
 
     { nxt_string("do { break } if (false)"),

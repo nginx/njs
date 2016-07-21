@@ -1666,11 +1666,6 @@ njs_generate_test_jump_expression(njs_vm_t *vm, njs_parser_t *parser,
     test_jump->code.retval = NJS_VMCODE_RETVAL;
     test_jump->value = node->left->index;
 
-    ret = njs_generator_node_index_release(vm, parser, node->left);
-    if (nxt_slow_path(ret != NXT_OK)) {
-        return ret;
-    }
-
     node->index = njs_generator_dest_index(vm, parser, node);
     if (nxt_slow_path(node->index == NJS_INDEX_ERROR)) {
         return node->index;
