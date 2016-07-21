@@ -139,7 +139,11 @@ njs_vm_function(njs_vm_t *vm, nxt_str_t *name)
     value = (njs_value_t *) ((u_char *) vm->global_scope
                            + njs_offset(var->index) - NJS_INDEX_GLOBAL_OFFSET);
 
-    return value->data.u.function;
+    if (njs_is_function(value)) {
+        return value->data.u.function;
+    }
+
+    return NULL;
 }
 
 
