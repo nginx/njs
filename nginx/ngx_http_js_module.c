@@ -1249,6 +1249,7 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     if (ngx_fd_info(fd, &fi) == NGX_FILE_ERROR) {
         ngx_log_error(NGX_LOG_EMERG, cf->log, ngx_errno,
                       ngx_fd_info_n " \"%s\" failed", file.data);
+        (void) ngx_close_file(fd);
         return NGX_CONF_ERROR;
     }
 
@@ -1256,6 +1257,7 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     start = ngx_pnalloc(cf->pool, size);
     if (start == NULL) {
+        (void) ngx_close_file(fd);
         return NGX_CONF_ERROR;
     }
 
@@ -1265,7 +1267,7 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         ngx_log_error(NGX_LOG_ALERT, cf->log, ngx_errno,
                       ngx_read_fd_n " \"%s\" failed", file.data);
 
-        ngx_close_file(fd);
+        (void) ngx_close_file(fd);
         return NGX_CONF_ERROR;
     }
 
@@ -1274,7 +1276,7 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
                       ngx_read_fd_n " has read only %z of %O from \"%s\"",
                       n, size, file.data);
 
-        ngx_close_file(fd);
+        (void) ngx_close_file(fd);
         return NGX_CONF_ERROR;
     }
 
