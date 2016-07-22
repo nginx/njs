@@ -3,10 +3,16 @@ NJS_VER =	20150922
 
 NXT_LIB =	nxt
 
-include $(NXT_LIB)/Makefile.conf
+-include	$(NXT_LIB)/Makefile.conf
 
 NXT_BUILDDIR =	build
 
+unconfigured:
+	@echo
+	@echo "	Please run ./configure before make"
+	@echo
+
+main:	$(NXT_BUILDDIR)/libnjs.a
 
 $(NXT_BUILDDIR)/libnjs.a: \
 	$(NXT_BUILDDIR)/njscript.o \
@@ -81,7 +87,7 @@ test:	\
 
 clean:
 	rm -rf $(NXT_BUILDDIR)
-	rm $(NXT_LIB)/Makefile.conf $(NXT_LIB)/nxt_auto_config.h
+	rm -f $(NXT_LIB)/Makefile.conf $(NXT_LIB)/nxt_auto_config.h
 
 tarball:
 	make clean
