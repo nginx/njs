@@ -54,6 +54,37 @@ static const nxt_lvlhsh_proto_t  njs_variables_hash_proto
 
 
 njs_variable_t *
+njs_parser_name_alloc(njs_vm_t *vm, njs_parser_t *parser)
+{
+    nxt_int_t           ret;
+    njs_variable_t      *var;
+    nxt_lvlhsh_query_t  lhq;
+
+    var = njs_variable_alloc(vm, parser, &parser->lexer->text);
+    if (nxt_slow_path(var == NULL)) {
+        return NULL;
+    }
+
+    lhq.key_hash = parser->lexer->key_hash;
+    lhq.key = parser->lexer->text;
+    lhq.replace = 0;
+    lhq.value = var;
+    lhq.proto = &njs_variables_hash_proto;
+    lhq.pool = vm->mem_cache_pool;
+
+    ret = nxt_lvlhsh_insert(&parser->variables_hash, &lhq);
+
+    if (nxt_fast_path(ret == NXT_OK)) {
+        return var;
+    }
+
+    (void) njs_parser_error(vm, parser, NJS_PARSER_ERROR_DUPLICATE_DECLARATION);
+
+    return NULL;
+}
+
+
+njs_variable_t *
 njs_parser_variable(njs_vm_t *vm, njs_parser_t *parser, nxt_uint_t *level)
 {
     nxt_int_t           ret;

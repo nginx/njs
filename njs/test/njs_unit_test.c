@@ -67,6 +67,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = 1; var b; a"),
       nxt_string("1") },
 
+    { nxt_string("function f(){} function f(){}"),
+      nxt_string("SyntaxError: Duplicate declaration \"f\" in 1") },
+
+    { nxt_string("var f = 1; function f() {}"),
+      nxt_string("SyntaxError: Duplicate declaration \"f\" in 1") },
+
+    { nxt_string("function f() {} var f = 1; f"),
+      nxt_string("1") },
+
     /* Numbers. */
 
     { nxt_string("999999999999999999999"),

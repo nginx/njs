@@ -290,7 +290,6 @@ njs_parser_match(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
 static njs_token_t
 njs_parser_function_declaration(njs_vm_t *vm, njs_parser_t *parser)
 {
-    nxt_uint_t         level;
     njs_token_t        token;
     njs_value_t        *value;
     njs_variable_t     *var;
@@ -313,7 +312,7 @@ njs_parser_function_declaration(njs_vm_t *vm, njs_parser_t *parser)
         return NJS_TOKEN_ILLEGAL;
     }
 
-    var = njs_parser_variable(vm, parser, &level);
+    var = njs_parser_name_alloc(vm, parser);
     if (nxt_slow_path(var == NULL)) {
         return NJS_TOKEN_ERROR;
     }
@@ -2241,6 +2240,7 @@ njs_parser_error(njs_vm_t *vm, njs_parser_t *parser, njs_parser_error_t err)
         "SyntaxError: Invalid Unicode code point \"%.*s\" in %u",
         "SyntaxError: Unterminated RegExp \"%.*s\" in %u",
         "SyntaxError: Invalid RegExp flags \"%.*s\" in %u",
+        "SyntaxError: Duplicate declaration \"%.*s\" in %u",
     };
 
     msg = errors[err];
