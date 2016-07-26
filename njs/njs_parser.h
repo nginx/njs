@@ -225,7 +225,6 @@ typedef struct njs_parser_node_s    njs_parser_node_t;
 struct njs_parser_node_s {
     njs_token_t                     token:8;
     njs_variable_node_state_t       state:8;    /* 2 bits */
-    njs_lvalue_state_t              lvalue:2;   /* 2 bits */
     uint8_t                         ctor:1;     /* 1 bit  */
     uint8_t                         temporary;  /* 1 bit  */
     uint32_t                        token_line;

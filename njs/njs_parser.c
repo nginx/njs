@@ -681,7 +681,6 @@ njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser)
             }
 
             name->token = NJS_TOKEN_NAME;
-            name->lvalue = NJS_LVALUE_ENABLED;
             name->u.variable = var;
 
             if (first) {
@@ -1535,7 +1534,6 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
         }
 
         parser->code_size += sizeof(njs_vmcode_object_copy_t);
-        node->lvalue = NJS_LVALUE_ENABLED;
         node->u.variable = var;
         break;
 

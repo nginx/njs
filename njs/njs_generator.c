@@ -1263,7 +1263,6 @@ njs_generate_assignment(njs_vm_t *vm, njs_parser_t *parser,
             }
 
             if (lvalue->state == NJS_VARIABLE_FIRST_ASSIGNMENT) {
-                lvalue->lvalue = NJS_LVALUE_ASSIGNED;
                 value = njs_variable_value(parser, lvalue->index);
                 *value = expr->u.value;
                 node->index = expr->index;
@@ -2336,8 +2335,6 @@ njs_generator_dest_index(njs_vm_t *vm, njs_parser_t *parser,
     dest = node->dest;
 
     if (dest != NULL && dest->index != NJS_INDEX_NONE) {
-        dest->lvalue = NJS_LVALUE_ASSIGNED;
-
         return dest->index;
     }
 
@@ -2363,7 +2360,6 @@ njs_generator_object_dest_index(njs_parser_t *parser, njs_parser_node_t *node)
 
         if (node->left == NULL) {
             /* Assign empty object directly to variable */
-            dest->lvalue = NJS_LVALUE_ASSIGNED;
             return index;
         }
     }

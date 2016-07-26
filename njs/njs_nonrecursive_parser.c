@@ -569,7 +569,6 @@ njs_parser_name_expression(njs_vm_t *vm, njs_parser_t *parser,
                 break;
             }
 
-            node->lvalue = NJS_LVALUE_ENABLED;
             node->u.variable = var;
         }
     }

@@ -292,7 +292,7 @@ njs_parser_var_expression(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
 
         node = parser->node;
 
-        if (node->lvalue == NJS_LVALUE_NONE) {
+        if (parser->node->token != NJS_TOKEN_NAME) {
             return njs_parser_invalid_lvalue(vm, parser, "assignment");
         }
 
@@ -437,7 +437,9 @@ njs_parser_assignment_expression(njs_vm_t *vm, njs_parser_t *parser,
 
         node = parser->node;
 
-        if (node->lvalue == NJS_LVALUE_NONE) {
+        if (parser->node->token != NJS_TOKEN_NAME
+            && parser->node->token != NJS_TOKEN_PROPERTY)
+        {
             return njs_parser_invalid_lvalue(vm, parser, "assignment");
         }
 
@@ -809,7 +811,9 @@ njs_parser_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
         return next;
     }
 
-    if (parser->node->lvalue == NJS_LVALUE_NONE) {
+    if (parser->node->token != NJS_TOKEN_NAME
+        && parser->node->token != NJS_TOKEN_PROPERTY)
+    {
         return njs_parser_invalid_lvalue(vm, parser, "prefix operation");
     }
 
@@ -861,7 +865,9 @@ njs_parser_post_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
         return token;
     }
 
-    if (parser->node->lvalue == NJS_LVALUE_NONE) {
+    if (parser->node->token != NJS_TOKEN_NAME
+        && parser->node->token != NJS_TOKEN_PROPERTY)
+    {
         return njs_parser_invalid_lvalue(vm, parser, "postfix operation");
     }
 
@@ -1015,7 +1021,6 @@ njs_parser_property_expression(njs_vm_t *vm, njs_parser_t *parser,
         }
 
         node->token = NJS_TOKEN_PROPERTY;
-        node->lvalue = NJS_LVALUE_ENABLED;
         node->u.operation = njs_vmcode_property_get;
         node->left = parser->node;
 

@@ -73,8 +73,17 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var f = 1; function f() {}"),
       nxt_string("SyntaxError: Duplicate declaration \"f\" in 1") },
 
-    { nxt_string("function f() {} var f = 1; f"),
-      nxt_string("1") },
+    { nxt_string("f() = 1"),
+      nxt_string("ReferenceError: Invalid left-hand side in assignment in 1") },
+
+    { nxt_string("f.a() = 1"),
+      nxt_string("ReferenceError: Invalid left-hand side in assignment in 1") },
+
+    { nxt_string("++f()"),
+      nxt_string("ReferenceError: Invalid left-hand side in prefix operation in 1") },
+
+    { nxt_string("f()++"),
+      nxt_string("ReferenceError: Invalid left-hand side in postfix operation in 1") },
 
     /* Numbers. */
 
