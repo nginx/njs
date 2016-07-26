@@ -1,5 +1,5 @@
 
-NJS_VER =	20150922
+NJS_VER =	0.1.0
 
 NXT_LIB =	nxt
 
@@ -89,7 +89,7 @@ clean:
 	rm -rf $(NXT_BUILDDIR)
 	rm -f $(NXT_LIB)/Makefile.conf $(NXT_LIB)/nxt_auto_config.h
 
-tarball:
+dist:
 	make clean
 	mkdir njs-$(NJS_VER)
 	cp -rp configure Makefile LICENSE README $(NXT_LIB) njs nginx \
