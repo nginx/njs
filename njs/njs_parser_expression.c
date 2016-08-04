@@ -24,7 +24,6 @@
 #include <njs_variable.h>
 #include <njs_parser.h>
 #include <string.h>
-#include <stdio.h>
 
 
 typedef struct {
@@ -75,8 +74,6 @@ static njs_token_t njs_parser_property_expression(njs_vm_t *vm,
     njs_parser_t *parser, njs_token_t token);
 static njs_token_t njs_parser_property_brackets(njs_vm_t *vm,
     njs_parser_t *parser, njs_token_t token);
-static njs_token_t njs_parser_invalid_lvalue(njs_vm_t *vm,
-    njs_parser_t *parser, const char* operation);
 
 
 static const njs_parser_expression_t
@@ -294,7 +291,9 @@ njs_parser_var_expression(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
         node = parser->node;
 
         if (parser->node->token != NJS_TOKEN_NAME) {
-            return njs_parser_invalid_lvalue(vm, parser, "assignment");
+            nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+                      "ReferenceError: Invalid left-hand side in assignment");
+            return NJS_TOKEN_ILLEGAL;
         }
 
         pending = NULL;
@@ -439,7 +438,9 @@ njs_parser_assignment_expression(njs_vm_t *vm, njs_parser_t *parser,
         node = parser->node;
 
         if (!njs_parser_is_lvalue(parser->node)) {
-            return njs_parser_invalid_lvalue(vm, parser, "assignment");
+            nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+                      "ReferenceError: Invalid left-hand side in assignment");
+            return NJS_TOKEN_ILLEGAL;
         }
 
         pending = NULL;
@@ -811,7 +812,9 @@ njs_parser_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
     }
 
     if (!njs_parser_is_lvalue(parser->node)) {
-        return njs_parser_invalid_lvalue(vm, parser, "prefix operation");
+        nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+                  "ReferenceError: Invalid left-hand side in prefix operation");
+        return NJS_TOKEN_ILLEGAL;
     }
 
     node = njs_parser_node_alloc(vm);
@@ -863,7 +866,9 @@ njs_parser_post_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
     }
 
     if (!njs_parser_is_lvalue(parser->node)) {
-        return njs_parser_invalid_lvalue(vm, parser, "postfix operation");
+        nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+                "ReferenceError: Invalid left-hand side in postfix operation");
+        return NJS_TOKEN_ILLEGAL;
     }
 
     node = njs_parser_node_alloc(vm);
@@ -1142,22 +1147,4 @@ njs_parser_arguments(njs_vm_t *vm, njs_parser_t *parser,
     }
 
     return token;
-}
-
-
-static njs_token_t
-njs_parser_invalid_lvalue(njs_vm_t *vm, njs_parser_t *parser,
-    const char *operation)
-{
-    uint32_t  size;
-    u_char    buf[NJS_EXCEPTION_BUF_LENGTH];
-
-    size = snprintf((char *) buf, NJS_EXCEPTION_BUF_LENGTH,
-                    "ReferenceError: Invalid left-hand side in %s in %u",
-                    operation, parser->lexer->line);
-
-    (void) njs_vm_throw_exception(vm, buf, size);
-
-    return NJS_TOKEN_ILLEGAL;
-
 }

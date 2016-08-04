@@ -169,6 +169,7 @@ $(NXT_BUILDDIR)/njs_string.o: \
 	njs/njs_object_hash.h \
 	njs/njs_array.h \
 	njs/njs_function.h \
+	njs/njs_regexp.h \
 	njs/njs_parser.h \
 	njs/njs_string.c \
 
@@ -404,6 +405,7 @@ $(NXT_BUILDDIR)/njs_unit_test: \
 		-I$(NXT_LIB) -Injs \
 		njs/test/njs_unit_test.c \
 		$(NXT_BUILDDIR)/libnjs.a \
+		$(NXT_BUILDDIR)/libnxt.a \
 		-lm $(NXT_PCRE_LIB)
 
 include $(NXT_LIB)/Makefile

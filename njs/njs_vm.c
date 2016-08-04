@@ -3316,24 +3316,21 @@ njs_value_string_copy(njs_vm_t *vm, nxt_str_t *retval, njs_value_t *value,
 }
 
 
-njs_ret_t
+void
 njs_vm_throw_exception(njs_vm_t *vm, u_char *buf, uint32_t size)
 {
     uint32_t     length;
     njs_value_t  *value;
 
     value = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_value_t));
-    if (nxt_slow_path(value == NULL)) {
-        return NJS_TOKEN_ERROR;
+
+    if (nxt_fast_path(value != NULL)) {
+        vm->exception = value;
+
+        length = nxt_utf8_length(buf, size);
+
+        (void) njs_string_new(vm, value, buf, size, length);
     }
-
-    vm->exception = value;
-
-    length = nxt_utf8_length(buf, size);
-
-    (void) njs_string_new(vm, value, buf, size, length);
-
-    return NXT_ERROR;
 }
 
 

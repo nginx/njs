@@ -21,13 +21,6 @@
 #include <njs_variable.h>
 #include <njs_parser.h>
 #include <string.h>
-#include <stdio.h>
-
-
-typedef enum {
-    NJS_GENERATOR_ERROR_ILLEGAL_CONTINUE = 0,
-    NJS_GENERATOR_ERROR_ILLEGAL_BREAK,
-} njs_generator_error_t;
 
 
 static nxt_int_t njs_generator(njs_vm_t *vm, njs_parser_t *parser,
@@ -125,8 +118,6 @@ static nxt_noinline nxt_int_t njs_generator_node_index_release(njs_vm_t *vm,
 static nxt_noinline nxt_int_t njs_generator_index_release(njs_vm_t *vm,
     njs_parser_t *parser, njs_index_t index);
 nxt_inline nxt_bool_t njs_generator_is_constant(njs_parser_node_t *node);
-static nxt_int_t njs_generator_error(njs_vm_t *vm, njs_parser_node_t *node,
-    njs_generator_error_t err);
 
 
 static const nxt_str_t  no_label = { 0, NULL };
@@ -1085,7 +1076,10 @@ njs_generate_continue_statement(njs_vm_t *vm, njs_parser_t *parser,
         }
     }
 
-    return njs_generator_error(vm, node, NJS_GENERATOR_ERROR_ILLEGAL_CONTINUE);
+    nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+              "SyntaxError: Illegal continue statement");
+
+    return NXT_ERROR;
 
 found:
 
@@ -1126,7 +1120,10 @@ njs_generate_break_statement(njs_vm_t *vm, njs_parser_t *parser,
         }
     }
 
-    return njs_generator_error(vm, node, NJS_GENERATOR_ERROR_ILLEGAL_BREAK);
+    nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+              "SyntaxError: Illegal break statement");
+
+    return NXT_ERROR;
 
 found:
 
@@ -2475,26 +2472,4 @@ njs_generator_is_constant(njs_parser_node_t *node)
 {
     return (node->token >= NJS_TOKEN_FIRST_CONST
             && node->token <= NJS_TOKEN_LAST_CONST);
-}
-
-
-static nxt_int_t
-njs_generator_error(njs_vm_t *vm, njs_parser_node_t *node,
-    njs_generator_error_t err)
-{
-    uint32_t     size;
-    const char   *msg;
-    u_char       buf[NJS_EXCEPTION_BUF_LENGTH];
-
-    static const char  *errors[] = {
-        "SyntaxError: Illegal continue statement in %u",
-        "SyntaxError: Illegal break statement in %u",
-    };
-
-    msg = errors[err];
-
-    size = snprintf((char *) buf, NJS_EXCEPTION_BUF_LENGTH,
-                    msg, node->token_line);
-
-    return njs_vm_throw_exception(vm, buf, size);
 }

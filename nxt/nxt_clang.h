@@ -8,6 +8,7 @@
 #define _NXT_CLANG_H_INCLUDED_
 
 
+#include <stdarg.h>
 #include <stddef.h>       /* offsetof(). */
 #include <unistd.h>       /* NULL. */
 

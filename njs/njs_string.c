@@ -31,7 +31,6 @@
 #include <njs_regexp.h>
 #include <njs_regexp_pattern.h>
 #include <string.h>
-#include <stdio.h>
 
 
 static nxt_noinline void njs_string_slice_prop(njs_string_prop_t *string,
@@ -1455,14 +1454,14 @@ njs_string_prototype_search(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         n = (string.length != 0);
 
         if (nxt_regex_is_valid(&pattern->regex[n])) {
-            ret = nxt_regex_match(&pattern->regex[n], string.start, string.size,
-                                  vm->single_match_data, vm->regex_context);
+            ret = njs_regexp_match(vm, &pattern->regex[n], string.start,
+                                   string.size, vm->single_match_data);
             if (ret >= 0) {
                 captures = nxt_regex_captures(vm->single_match_data);
                 index = njs_string_index(&string, captures[0]);
 
             } else if (ret != NGX_REGEX_NOMATCH) {
-                return njs_regexp_match_error(vm);
+                return NXT_ERROR;
             }
         }
     }
@@ -1555,8 +1554,8 @@ njs_string_prototype_match(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         array = NULL;
 
         do {
-            ret = nxt_regex_match(&pattern->regex[n], string.start, string.size,
-                                  vm->single_match_data, vm->regex_context);
+            ret = njs_regexp_match(vm, &pattern->regex[n], string.start,
+                                   string.size, vm->single_match_data);
             if (ret >= 0) {
                 if (array != NULL) {
                     if (array->length == array->size) {
@@ -1617,7 +1616,7 @@ njs_string_prototype_match(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                 break;
 
             } else {
-                return njs_regexp_match_error(vm);
+                return NXT_ERROR;
             }
 
         } while (string.size > 0);
@@ -1756,8 +1755,8 @@ njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             end = string.start + string.size;
 
             do {
-                ret = nxt_regex_match(&pattern->regex[n], start, end - start,
-                                      vm->single_match_data, vm->regex_context);
+                ret = njs_regexp_match(vm, &pattern->regex[n], start,
+                                       end - start, vm->single_match_data);
                 if (ret >= 0) {
                     captures = nxt_regex_captures(vm->single_match_data);
 
@@ -1769,7 +1768,7 @@ njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                     next = (u_char *) end + 1;
 
                 } else {
-                    return njs_regexp_match_error(vm);
+                    return NXT_ERROR;
                 }
 
                 /* Empty split regexp. */

@@ -54,8 +54,6 @@ static njs_token_t njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser);
 static njs_token_t njs_parser_if_statement(njs_vm_t *vm, njs_parser_t *parser);
 static njs_token_t njs_parser_switch_statement(njs_vm_t *vm,
     njs_parser_t *parser);
-static njs_token_t njs_parser_duplicate_default_branch(njs_vm_t *vm,
-    njs_parser_t *parser);
 static njs_token_t njs_parser_while_statement(njs_vm_t *vm,
     njs_parser_t *parser);
 static njs_token_t njs_parser_do_while_statement(njs_vm_t *vm,
@@ -68,8 +66,6 @@ static njs_token_t njs_parser_continue_statement(njs_vm_t *vm,
 static njs_token_t njs_parser_break_statement(njs_vm_t *vm,
     njs_parser_t *parser);
 static njs_token_t njs_parser_try_statement(njs_vm_t *vm, njs_parser_t *parser);
-static njs_token_t njs_parser_missing_catch_or_finally(njs_vm_t *vm,
-    njs_parser_t *parser);
 static njs_token_t njs_parser_try_block(njs_vm_t *vm, njs_parser_t *parser);
 static njs_token_t njs_parser_throw_statement(njs_vm_t *vm,
     njs_parser_t *parser);
@@ -844,7 +840,11 @@ njs_parser_switch_statement(njs_vm_t *vm, njs_parser_t *parser)
 
                } else {
                     if (dflt != NULL) {
-                        return njs_parser_duplicate_default_branch(vm, parser);
+                        nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+                                  "SyntaxError: More than one default clause "
+                                  "in switch statement");
+
+                        return NJS_TOKEN_ILLEGAL;
                     }
 
                     branch = node;
@@ -886,22 +886,6 @@ njs_parser_switch_statement(njs_vm_t *vm, njs_parser_t *parser)
     parser->code_size += sizeof(njs_vmcode_move_t) + sizeof(njs_vmcode_jump_t);
 
     return njs_parser_token(parser);
-}
-
-
-static njs_token_t
-njs_parser_duplicate_default_branch(njs_vm_t *vm, njs_parser_t *parser)
-{
-    uint32_t  size;
-    u_char    buf[NJS_EXCEPTION_BUF_LENGTH];
-
-    size = snprintf((char *) buf, NJS_EXCEPTION_BUF_LENGTH,
-                    "SyntaxError: More than one default clause "
-                    "in switch statement in %u", parser->lexer->line);
-
-    (void) njs_vm_throw_exception(vm, buf, size);
-
-    return NJS_TOKEN_ILLEGAL;
 }
 
 
@@ -1099,19 +1083,14 @@ static njs_token_t
 njs_parser_for_in_statement(njs_vm_t *vm, njs_parser_t *parser, nxt_str_t *name,
     njs_token_t token)
 {
-    uint32_t           size;
     njs_parser_node_t  *node;
-    u_char             buf[NJS_EXCEPTION_BUF_LENGTH];
 
     node = parser->node->left;
 
     if (node->token != NJS_TOKEN_NAME) {
-        size = snprintf((char *) buf, NJS_EXCEPTION_BUF_LENGTH,
-                        "ReferenceError: Invalid left-hand side \"%.*s\" "
-                        "in for-in statement in %u",
-                        (int) name->length, name->start, parser->lexer->line);
-
-        (void) njs_vm_throw_exception(vm, buf, size);
+        nxt_alert(&vm->trace, NXT_LEVEL_ERROR, "ReferenceError: Invalid "
+                  "left-hand side \"%.*s\" in for-in statement",
+                  (int) name->length, name->start);
 
         return NJS_TOKEN_ILLEGAL;
     }
@@ -1326,29 +1305,15 @@ njs_parser_try_statement(njs_vm_t *vm, njs_parser_t *parser)
     }
 
     if (try->right == NULL) {
-        return njs_parser_missing_catch_or_finally(vm, parser);
+        nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+                  "SyntaxError: Missing catch or finally after try");
+
+        return NJS_TOKEN_ILLEGAL;
     }
 
     parser->node = try;
 
     return token;
-
-}
-
-
-static njs_token_t
-njs_parser_missing_catch_or_finally(njs_vm_t *vm, njs_parser_t *parser)
-{
-    uint32_t  size;
-    u_char    buf[NJS_EXCEPTION_BUF_LENGTH];
-
-    size = snprintf((char *) buf, NJS_EXCEPTION_BUF_LENGTH,
-                    "SyntaxError: Missing catch or finally after try in %u",
-                    parser->lexer->line);
-
-    (void) njs_vm_throw_exception(vm, buf, size);
-
-    return NJS_TOKEN_ILLEGAL;
 }
 
 
@@ -1612,8 +1577,11 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
         break;
 
     case NJS_TOKEN_UNTERMINATED_STRING:
-        return njs_parser_error(vm, parser,
-                                NJS_PARSER_ERROR_UNTERMINATED_STRING);
+        nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+                  "SyntaxError: Unterminated string \"%.*s\"",
+                  (int) parser->lexer->text.length, parser->lexer->text.start);
+
+        return NJS_TOKEN_ILLEGAL;
 
     case NJS_TOKEN_NUMBER:
         nxt_thread_log_debug("JS: %f", parser->lexer->number);
@@ -2042,8 +2010,7 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
                         }
 
                         if (hex_length == 0 || hex_length > 6) {
-                            return njs_parser_error(vm, parser,
-                                                    NJS_PARSER_ERROR_UNICODE);
+                            goto invalid;
                         }
 
                         skip = 1;
@@ -2118,12 +2085,12 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
             hex_end = src + hex_length;
 
             if (hex_end > end) {
-                return njs_parser_error(vm, parser, NJS_PARSER_ERROR_UNICODE);
+                goto invalid;
             }
 
             u = njs_number_radix_parse(src, hex_end, 16, 1);
             if (nxt_slow_path(u < 0)) {
-                return njs_parser_error(vm, parser, NJS_PARSER_ERROR_UNICODE);
+                goto invalid;
             }
 
             src = hex_end + skip;
@@ -2150,6 +2117,14 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
 
         dst = start;
     }
+
+invalid:
+
+    nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+              "SyntaxError: Invalid Unicode code point \"%.*s\"",
+              (int) parser->lexer->text.length, parser->lexer->text.start);
+
+    return NJS_TOKEN_ILLEGAL;
 }
 
 
@@ -2208,48 +2183,53 @@ static njs_token_t
 njs_parser_unexpected_token(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token)
 {
-    uint32_t     size;
-    u_char       buf[NJS_EXCEPTION_BUF_LENGTH];
-
     if (token != NJS_TOKEN_END) {
-        return njs_parser_error(vm, parser, NJS_PARSER_ERROR_UNEXPECTED_TOKEN);
+        nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+                  "SyntaxError: Unexpected token \"%.*s\"",
+                  (int) parser->lexer->text.length, parser->lexer->text.start);
+
+    } else {
+        nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+                  "SyntaxError: Unexpected end of input");
     }
-
-    size = snprintf((char *) buf, NJS_EXCEPTION_BUF_LENGTH,
-                    "SyntaxError: Unexpected end of input in %u",
-                    parser->lexer->line);
-
-    (void) njs_vm_throw_exception(vm, buf, size);
 
     return NJS_TOKEN_ILLEGAL;
 }
 
 
-njs_token_t
-njs_parser_error(njs_vm_t *vm, njs_parser_t *parser, njs_parser_error_t err)
+u_char *
+njs_parser_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
+    u_char *start)
 {
-    uint32_t     size;
-    njs_lexer_t  *lexer;
-    const char   *msg;
-    u_char       buf[NJS_EXCEPTION_BUF_LENGTH];
+    int       n;
+    u_char    *p;
+    ssize_t   size;
+    njs_vm_t  *vm;
 
-    static const char  *errors[] = {
-        "SyntaxError: Unexpected token \"%.*s\" in %u",
-        "SyntaxError: Unterminated string \"%.*s\" in %u",
-        "SyntaxError: Invalid Unicode code point \"%.*s\" in %u",
-        "SyntaxError: Unterminated RegExp \"%.*s\" in %u",
-        "SyntaxError: Invalid RegExp flags \"%.*s\" in %u",
-        "SyntaxError: Duplicate declaration \"%.*s\" in %u",
-    };
+    p = start;
 
-    msg = errors[err];
-    lexer = parser->lexer;
+    if (td->level == NXT_LEVEL_CRIT) {
+        size = sizeof("InternalError: ") - 1;
+        memcpy(p, "InternalError: ", size);
+        p = start + size;
+    }
 
-    size = snprintf((char *) buf, NJS_EXCEPTION_BUF_LENGTH,
-                    msg, (int) lexer->text.length, lexer->text.start,
-                    lexer->line);
+    vm = trace->data;
 
-    (void) njs_vm_throw_exception(vm, buf, size);
+    trace = trace->next;
+    p = trace->handler(trace, td, p);
 
-    return NJS_TOKEN_ILLEGAL;
+    if (vm->parser != NULL) {
+        size = td->end - start;
+
+        n = snprintf((char *) p, size, " in %u", vm->parser->lexer->line);
+
+        if (n < size) {
+            p += n;
+        }
+    }
+
+    njs_vm_throw_exception(vm, start, p - start);
+
+    return p;
 }

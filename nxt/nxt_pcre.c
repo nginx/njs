@@ -7,9 +7,9 @@
 #include <nxt_types.h>
 #include <nxt_clang.h>
 #include <nxt_stub.h>
+#include <nxt_trace.h>
 #include <nxt_regex.h>
 #include <nxt_pcre.h>
-#include <stdio.h>
 #include <string.h>
 
 
@@ -53,7 +53,6 @@ nxt_regex_compile(nxt_regex_t *regex, u_char *source, size_t len,
     char        *pattern, *error;
     void        *(*saved_malloc)(size_t size);
     void        (*saved_free)(void *p);
-    size_t      size;
     const char  *errstr;
 
     ret = NXT_ERROR;
@@ -82,22 +81,14 @@ nxt_regex_compile(nxt_regex_t *regex, u_char *source, size_t len,
     if (nxt_slow_path(regex->code == NULL)) {
         error = pattern + erroff;
 
-        size = sizeof("pcre_compile(\"\") failed:  at \"\"")
-               + strlen(errstr) + strlen(error) * 2 + erroff;
-
-        ctx->error = ctx->private_malloc(size, ctx->memory_data);
-        if (nxt_slow_path(ctx->error == NULL)) {
-            goto done;
-        }
-
         if (*error != '\0') {
-            (void) snprintf((char *) ctx->error, size,
-                            "pcre_compile(\"%s\") failed: %s at \"%s\"",
-                            pattern, errstr, error);
+            nxt_alert(ctx->trace, NXT_LEVEL_ERROR,
+                      "pcre_compile(\"%s\") failed: %s at \"%s\"",
+                      pattern, errstr, error);
+
         } else {
-            (void) snprintf((char *) ctx->error, size,
-                            "pcre_compile(\"%s\") failed: %s",
-                            pattern, errstr);
+            nxt_alert(ctx->trace, NXT_LEVEL_ERROR,
+                      "pcre_compile(\"%s\") failed: %s", pattern, errstr);
         }
 
         goto done;
@@ -106,16 +97,8 @@ nxt_regex_compile(nxt_regex_t *regex, u_char *source, size_t len,
     regex->extra = pcre_study(regex->code, 0, &errstr);
 
     if (nxt_slow_path(errstr != NULL)) {
-        size = sizeof("pcre_study(\"\") failed: ")
-               + strlen(pattern) + strlen(errstr);
-
-        ctx->error = ctx->private_malloc(size, ctx->memory_data);
-        if (nxt_slow_path(ctx->error == NULL)) {
-            goto done;
-        }
-
-        (void) snprintf((char *) ctx->error, size,
-                        "pcre_study(\"%s\") failed: %s", pattern, errstr);
+        nxt_alert(ctx->trace, NXT_LEVEL_ERROR,
+                  "pcre_study(\"%s\") failed: %s", pattern, errstr);
 
         goto done;
     }
@@ -124,17 +107,9 @@ nxt_regex_compile(nxt_regex_t *regex, u_char *source, size_t len,
                         &regex->ncaptures);
 
     if (nxt_slow_path(err < 0)) {
-        size = sizeof("pcre_fullinfo(\"\", PCRE_INFO_CAPTURECOUNT) failed: ")
-               + strlen(pattern) + sizeof("-2147483647");
-
-        ctx->error = ctx->private_malloc(size, ctx->memory_data);
-        if (nxt_slow_path(ctx->error == NULL)) {
-            goto done;
-        }
-
-        (void) snprintf((char *) ctx->error, size,
-                    "pcre_fullinfo(\"%s\", PCRE_INFO_CAPTURECOUNT) failed: %d",
-                    pattern, err);
+        nxt_alert(ctx->trace, NXT_LEVEL_ERROR,
+                  "pcre_fullinfo(\"%s\", PCRE_INFO_CAPTURECOUNT) failed: %d",
+                  pattern, err);
 
         goto done;
     }
@@ -229,8 +204,7 @@ nxt_int_t
 nxt_regex_match(nxt_regex_t *regex, u_char *subject, size_t len,
     nxt_regex_match_data_t *match_data, nxt_regex_context_t *ctx)
 {
-    int     ret;
-    size_t  size;
+    int  ret;
 
     ret = pcre_exec(regex->code, regex->extra, (char *) subject, len, 0, 0,
                     match_data->captures, match_data->ncaptures);
@@ -238,14 +212,7 @@ nxt_regex_match(nxt_regex_t *regex, u_char *subject, size_t len,
     /* PCRE_ERROR_NOMATCH is -1. */
 
     if (nxt_slow_path(ret < PCRE_ERROR_NOMATCH)) {
-        size = sizeof("pcre_exec() failed: ") + sizeof("-2147483647");
-
-        ctx->error = ctx->private_malloc(size, ctx->memory_data);
-
-        if (nxt_fast_path(ctx->error != NULL)) {
-            (void) snprintf((char *) ctx->error, size, "pcre_exec() failed: %d",
-                            ret);
-        }
+        nxt_alert(ctx->trace, NXT_LEVEL_ERROR, "pcre_exec() failed: %d", ret);
     }
 
     return ret;
@@ -255,5 +222,5 @@ nxt_regex_match(nxt_regex_t *regex, u_char *subject, size_t len,
 int *
 nxt_regex_captures(nxt_regex_match_data_t *match_data)
 {
-     return (match_data)->captures;
+     return match_data->captures;
 }

@@ -20,7 +20,7 @@ typedef struct {
     nxt_pcre_malloc_t  private_malloc;
     nxt_pcre_free_t    private_free;
     void               *memory_data;
-    u_char             *error;
+    nxt_trace_t        *trace;
 } nxt_regex_context_t;
 
 

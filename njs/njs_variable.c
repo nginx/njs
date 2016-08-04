@@ -79,7 +79,9 @@ njs_parser_name_alloc(njs_vm_t *vm, njs_parser_t *parser)
         return var;
     }
 
-    (void) njs_parser_error(vm, parser, NJS_PARSER_ERROR_DUPLICATE_DECLARATION);
+    nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+              "SyntaxError: Duplicate declaration \"%.*s\"",
+              (int) parser->lexer->text.length, parser->lexer->text.start);
 
     return NULL;
 }

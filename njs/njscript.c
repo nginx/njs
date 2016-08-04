@@ -155,6 +155,11 @@ njs_vm_create(nxt_mem_cache_pool_t *mcp, njs_vm_shared_t **shared,
         if (externals != NULL) {
             vm->externals_hash = *externals;
         }
+
+        vm->trace.level = NXT_LEVEL_TRACE;
+        vm->trace.size = 2048;
+        vm->trace.handler = njs_parser_trace_handler;
+        vm->trace.data = vm;
     }
 
     return vm;
@@ -324,6 +329,11 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
         if (nxt_slow_path(ret != NXT_OK)) {
             goto fail;
         }
+
+        nvm->trace.level = NXT_LEVEL_TRACE;
+        nvm->trace.size = 2048;
+        nvm->trace.handler = njs_parser_trace_handler;
+        nvm->trace.data = nvm;
 
         return nvm;
     }

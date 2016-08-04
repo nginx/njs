@@ -8,6 +8,7 @@
 #define _NJS_VM_H_INCLUDED_
 
 
+#include <nxt_trace.h>
 #include <nxt_regex.h>
 
 
@@ -799,6 +800,7 @@ struct njs_vm_s {
 
     nxt_array_t              *code;  /* of njs_vm_code_t */
 
+    nxt_trace_t              trace;
     nxt_random_t             random;
 };
 
@@ -825,9 +827,6 @@ struct njs_vm_shared_s {
     njs_object_t             prototypes[NJS_PROTOTYPE_MAX];
     njs_function_t           constructors[NJS_CONSTRUCTOR_MAX];
 };
-
-
-#define NJS_EXCEPTION_BUF_LENGTH  2048
 
 
 nxt_int_t njs_vmcode_interpreter(njs_vm_t *vm);
@@ -969,7 +968,7 @@ njs_ret_t njs_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst,
     const njs_value_t *src);
 void njs_number_set(njs_value_t *value, double num);
 
-njs_ret_t njs_vm_throw_exception(njs_vm_t *vm, u_char *buf, uint32_t size);
+void njs_vm_throw_exception(njs_vm_t *vm, u_char *buf, uint32_t size);
 
 nxt_int_t njs_builtin_objects_create(njs_vm_t *vm);
 nxt_int_t njs_builtin_objects_clone(njs_vm_t *vm);

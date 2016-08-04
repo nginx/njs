@@ -12,6 +12,7 @@ $(NXT_BUILDDIR)/libnxt.a: \
 	$(NXT_BUILDDIR)/nxt_random.o \
 	$(NXT_BUILDDIR)/nxt_pcre.o \
 	$(NXT_BUILDDIR)/nxt_malloc.o \
+	$(NXT_BUILDDIR)/nxt_trace.o \
 	$(NXT_BUILDDIR)/nxt_mem_cache_pool.o \
 
 	ar -r -c $(NXT_BUILDDIR)/libnxt.a \
@@ -23,6 +24,7 @@ $(NXT_BUILDDIR)/libnxt.a: \
 		$(NXT_BUILDDIR)/nxt_random.o \
 		$(NXT_BUILDDIR)/nxt_pcre.o \
 		$(NXT_BUILDDIR)/nxt_malloc.o \
+		$(NXT_BUILDDIR)/nxt_trace.o \
 		$(NXT_BUILDDIR)/nxt_mem_cache_pool.o \
 
 $(NXT_BUILDDIR)/nxt_murmur_hash.o: \
@@ -111,6 +113,7 @@ $(NXT_BUILDDIR)/nxt_random.o: \
 $(NXT_BUILDDIR)/nxt_pcre.o: \
 	$(NXT_LIB)/nxt_types.h \
 	$(NXT_LIB)/nxt_clang.h \
+	$(NXT_LIB)/nxt_trace.h \
 	$(NXT_LIB)/nxt_regex.h \
 	$(NXT_LIB)/nxt_pcre.h \
 	$(NXT_LIB)/nxt_pcre.c \
@@ -129,6 +132,18 @@ $(NXT_BUILDDIR)/nxt_malloc.o: \
 	$(NXT_CC) -c -o $(NXT_BUILDDIR)/nxt_malloc.o $(NXT_CFLAGS) \
 		-I$(NXT_LIB) \
 		$(NXT_LIB)/nxt_malloc.c
+
+$(NXT_BUILDDIR)/nxt_trace.o: \
+	$(NXT_LIB)/nxt_auto_config.h \
+	$(NXT_LIB)/nxt_types.h \
+	$(NXT_LIB)/nxt_clang.h \
+	$(NXT_LIB)/nxt_malloc.h \
+	$(NXT_LIB)/nxt_trace.h \
+	$(NXT_LIB)/nxt_trace.c \
+
+	$(NXT_CC) -c -o $(NXT_BUILDDIR)/nxt_trace.o $(NXT_CFLAGS) \
+		-I$(NXT_LIB) \
+		$(NXT_LIB)/nxt_trace.c
 
 $(NXT_BUILDDIR)/nxt_mem_cache_pool.o: \
 	$(NXT_LIB)/nxt_types.h \

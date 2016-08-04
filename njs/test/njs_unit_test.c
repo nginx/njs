@@ -3511,6 +3511,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("/(/.test('')"),
       nxt_string("SyntaxError: pcre_compile(\"(\") failed: missing ) in 1") },
 
+    { nxt_string("/+/.test('')"),
+      nxt_string("SyntaxError: pcre_compile(\"+\") failed: nothing to repeat at \"+\" in 1") },
+
     { nxt_string("/^$/.test('')"),
       nxt_string("true") },
 
