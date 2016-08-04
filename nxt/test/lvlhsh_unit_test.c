@@ -6,6 +6,7 @@
 
 #include <nxt_types.h>
 #include <nxt_clang.h>
+#include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_malloc.h>
 #include <nxt_lvlhsh.h>
@@ -19,7 +20,7 @@
 static nxt_int_t
 lvlhsh_unit_test_key_test(nxt_lvlhsh_query_t *lhq, void *data)
 {
-    if (*(uintptr_t *) lhq->key.data == (uintptr_t) data) {
+    if (*(uintptr_t *) lhq->key.start == (uintptr_t) data) {
         return NXT_OK;
     }
 
@@ -58,8 +59,8 @@ lvlhsh_unit_test_add(nxt_lvlhsh_t *lh, const nxt_lvlhsh_proto_t *proto,
 
     lhq.key_hash = key;
     lhq.replace = 0;
-    lhq.key.len = sizeof(uintptr_t);
-    lhq.key.data = (u_char *) &key;
+    lhq.key.length = sizeof(uintptr_t);
+    lhq.key.start = (u_char *) &key;
     lhq.value = (void *) key;
     lhq.proto = proto;
     lhq.pool = pool;
@@ -86,8 +87,8 @@ lvlhsh_unit_test_get(nxt_lvlhsh_t *lh, const nxt_lvlhsh_proto_t *proto,
     nxt_lvlhsh_query_t  lhq;
 
     lhq.key_hash = key;
-    lhq.key.len = sizeof(uintptr_t);
-    lhq.key.data =  (u_char *) &key;
+    lhq.key.length = sizeof(uintptr_t);
+    lhq.key.start =  (u_char *) &key;
     lhq.proto = proto;
 
     if (nxt_lvlhsh_find(lh, &lhq) == NXT_OK) {
@@ -112,8 +113,8 @@ lvlhsh_unit_test_delete(nxt_lvlhsh_t *lh, const nxt_lvlhsh_proto_t *proto,
     nxt_lvlhsh_query_t  lhq;
 
     lhq.key_hash = key;
-    lhq.key.len = sizeof(uintptr_t);
-    lhq.key.data = (u_char *) &key;
+    lhq.key.length = sizeof(uintptr_t);
+    lhq.key.start = (u_char *) &key;
     lhq.proto = proto;
     lhq.pool = pool;
 
