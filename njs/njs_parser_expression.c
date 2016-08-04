@@ -437,9 +437,7 @@ njs_parser_assignment_expression(njs_vm_t *vm, njs_parser_t *parser,
 
         node = parser->node;
 
-        if (parser->node->token != NJS_TOKEN_NAME
-            && parser->node->token != NJS_TOKEN_PROPERTY)
-        {
+        if (!njs_parser_is_lvalue(parser->node)) {
             return njs_parser_invalid_lvalue(vm, parser, "assignment");
         }
 
@@ -811,9 +809,7 @@ njs_parser_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
         return next;
     }
 
-    if (parser->node->token != NJS_TOKEN_NAME
-        && parser->node->token != NJS_TOKEN_PROPERTY)
-    {
+    if (!njs_parser_is_lvalue(parser->node)) {
         return njs_parser_invalid_lvalue(vm, parser, "prefix operation");
     }
 
@@ -865,9 +861,7 @@ njs_parser_post_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
         return token;
     }
 
-    if (parser->node->token != NJS_TOKEN_NAME
-        && parser->node->token != NJS_TOKEN_PROPERTY)
-    {
+    if (!njs_parser_is_lvalue(parser->node)) {
         return njs_parser_invalid_lvalue(vm, parser, "postfix operation");
     }
 

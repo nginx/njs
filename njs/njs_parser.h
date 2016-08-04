@@ -213,11 +213,8 @@ typedef enum {
 } njs_variable_node_state_t;
 
 
-typedef enum {
-    NJS_LVALUE_NONE = 0,
-    NJS_LVALUE_ENABLED,
-    NJS_LVALUE_ASSIGNED,
-} njs_lvalue_state_t;
+#define njs_parser_is_lvalue(node)                                            \
+    ((node)->token == NJS_TOKEN_NAME || (node)->token == NJS_TOKEN_PROPERTY)
 
 
 typedef struct njs_parser_node_s    njs_parser_node_t;
