@@ -6,6 +6,7 @@
 
 #include <nxt_types.h>
 #include <nxt_clang.h>
+#include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_array.h>
 #include <nxt_lvlhsh.h>
@@ -352,21 +353,22 @@ njs_disassemble(u_char *start, u_char *end)
                      code3 = (njs_vmcode_3addr_t *) p;
 
                      printf("%*s  %04zX %04zX %04zX\n",
-                            (int) name->len, name->data, (size_t) code3->dst,
-                            (size_t) code3->src1, (size_t) code3->src2);
+                            (int) name->length, name->start,
+                            (size_t) code3->dst, (size_t) code3->src1,
+                            (size_t) code3->src2);
 
                  } else if (code_name->size == sizeof(njs_vmcode_2addr_t)) {
                      code2 = (njs_vmcode_2addr_t *) p;
 
                      printf("%*s  %04zX %04zX\n",
-                            (int) name->len, name->data,
+                            (int) name->length, name->start,
                             (size_t) code2->dst, (size_t) code2->src);
 
                  } else if (code_name->size == sizeof(njs_vmcode_1addr_t)) {
                      code1 = (njs_vmcode_1addr_t *) p;
 
                      printf("%*s  %04zX\n",
-                            (int) name->len, name->data,
+                            (int) name->length, name->start,
                             (size_t) code1->index);
                  }
 

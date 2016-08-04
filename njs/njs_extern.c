@@ -7,6 +7,7 @@
 #include <nxt_types.h>
 #include <nxt_clang.h>
 #include <nxt_alignment.h>
+#include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_utf8.h>
 #include <nxt_djb_hash.h>
@@ -65,13 +66,13 @@ njs_vm_external_add(nxt_lvlhsh_t *hash, nxt_mem_cache_pool_t *mcp,
             return NXT_ERROR;
         }
 
-        ext->name.len = external->name.len;
-        ext->name.data = nxt_mem_cache_alloc(mcp, external->name.len);
-        if (nxt_slow_path(ext->name.data == NULL)) {
+        ext->name.length = external->name.length;
+        ext->name.start = nxt_mem_cache_alloc(mcp, external->name.length);
+        if (nxt_slow_path(ext->name.start == NULL)) {
             return NXT_ERROR;
         }
 
-        memcpy(ext->name.data, external->name.data, external->name.len);
+        memcpy(ext->name.start, external->name.start, external->name.length);
 
         ext->value.type = NJS_EXTERNAL;
         ext->value.data.truth = 1;
@@ -98,7 +99,7 @@ njs_vm_external_add(nxt_lvlhsh_t *hash, nxt_mem_cache_pool_t *mcp,
         ext->object = object;
         ext->data = external->data;
 
-        lhq.key_hash = nxt_djb_hash(external->name.data, external->name.len);
+        lhq.key_hash = nxt_djb_hash(external->name.start, external->name.length);
         lhq.key = ext->name;
         lhq.replace = 0;
         lhq.value = ext;
@@ -155,7 +156,7 @@ njs_vm_external(njs_vm_t *vm, njs_opaque_value_t *obj, nxt_str_t *property,
         }
     }
 
-    lhq.key_hash = key_hash(property->data, property->len);
+    lhq.key_hash = key_hash(property->start, property->length);
     lhq.key = *property;
     lhq.proto = &njs_extern_hash_proto;
 

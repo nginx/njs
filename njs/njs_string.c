@@ -8,6 +8,7 @@
 #include <nxt_types.h>
 #include <nxt_clang.h>
 #include <nxt_alignment.h>
+#include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_utf8.h>
 #include <nxt_djb_hash.h>
@@ -2119,15 +2120,15 @@ njs_values_hash_test(nxt_lvlhsh_query_t *lhq, void *data)
 
     value = data;
 
-    if (lhq->key.len == sizeof(njs_value_t)
-        && memcmp(lhq->key.data, value, sizeof(njs_value_t)) == 0)
+    if (lhq->key.length == sizeof(njs_value_t)
+        && memcmp(lhq->key.start, value, sizeof(njs_value_t)) == 0)
     {
         return NXT_OK;
     }
 
     if (value->type == NJS_STRING
-        && value->data.string_size == lhq->key.len
-        && memcmp(value->data.u.string->start, lhq->key.data, lhq->key.len)
+        && value->data.string_size == lhq->key.length
+        && memcmp(value->data.u.string->start, lhq->key.start, lhq->key.length)
            == 0)
     {
         return NXT_OK;
@@ -2174,8 +2175,8 @@ njs_value_index(njs_vm_t *vm, njs_parser_t *parser, const njs_value_t *src)
     }
 
     lhq.key_hash = nxt_djb_hash(start, size);
-    lhq.key.len = size;
-    lhq.key.data = start;
+    lhq.key.length = size;
+    lhq.key.start = start;
     lhq.proto = &njs_values_hash_proto;
 
     if (nxt_lvlhsh_find(&vm->shared->values_hash, &lhq) == NXT_OK) {

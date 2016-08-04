@@ -99,11 +99,7 @@ typedef struct {
 
 struct nxt_lvlhsh_query_s {
     uint32_t                 key_hash;
-    nxt_str_t                 key;
-#if 0
-    uint32_t                 key_length;
-    void                     *key_start;
-#endif
+    nxt_str_t                key;
 
     uint8_t                  replace;     /* 1 bit */
     void                     *value;

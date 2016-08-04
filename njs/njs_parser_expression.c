@@ -8,6 +8,7 @@
 #include <nxt_types.h>
 #include <nxt_clang.h>
 #include <nxt_alignment.h>
+#include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_utf8.h>
 #include <nxt_array.h>

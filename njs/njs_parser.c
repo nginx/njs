@@ -6,6 +6,7 @@
 
 #include <nxt_types.h>
 #include <nxt_clang.h>
+#include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_utf8.h>
 #include <nxt_array.h>
@@ -493,13 +494,13 @@ njs_parser_function_lambda(njs_vm_t *vm, njs_function_lambda_t *lambda,
 
         name = &parser->lexer->text;
 
-        arg->name_start = nxt_mem_cache_alloc(vm->mem_cache_pool, name->len);
+        arg->name_start = nxt_mem_cache_alloc(vm->mem_cache_pool, name->length);
         if (nxt_slow_path(arg->name_start == NULL)) {
             return NJS_TOKEN_ERROR;
         }
 
-        memcpy(arg->name_start, name->data, name->len);
-        arg->name_len = name->len;
+        memcpy(arg->name_start, name->start, name->length);
+        arg->name_len = name->length;
 
         arg->state = NJS_VARIABLE_DECLARED;
         arg->index = index;
@@ -1108,7 +1109,7 @@ njs_parser_for_in_statement(njs_vm_t *vm, njs_parser_t *parser, nxt_str_t *name,
         size = snprintf((char *) buf, NJS_EXCEPTION_BUF_LENGTH,
                         "ReferenceError: Invalid left-hand side \"%.*s\" "
                         "in for-in statement in %u",
-                        (int) name->len, name->data, parser->lexer->line);
+                        (int) name->length, name->start, parser->lexer->line);
 
         (void) njs_vm_throw_exception(vm, buf, size);
 
@@ -1966,19 +1967,19 @@ njs_parser_string_create(njs_vm_t *vm, njs_value_t *value)
 
     src = &vm->parser->lexer->text;
 
-    length = nxt_utf8_length(src->data, src->len);
+    length = nxt_utf8_length(src->start, src->length);
 
     if (nxt_slow_path(length < 0)) {
         length = 0;
     }
 
-    p = njs_string_alloc(vm, value, src->len, length);
+    p = njs_string_alloc(vm, value, src->length, length);
 
     if (nxt_fast_path(p != NULL)) {
-        memcpy(p, src->data, src->len);
+        memcpy(p, src->start, src->length);
 
-        if (length > NJS_STRING_MAP_OFFSET && (size_t) length != src->len) {
-            njs_string_offset_map_init(p, src->len);
+        if (length > NJS_STRING_MAP_OFFSET && (size_t) length != src->length) {
+            njs_string_offset_map_init(p, src->length);
         }
 
         return NXT_OK;
@@ -2008,8 +2009,8 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
         size = 0;
         length = 0;
 
-        src = parser->lexer->text.data;
-        end = src + parser->lexer->text.len;
+        src = parser->lexer->text.start;
+        end = src + parser->lexer->text.length;
 
         while (src < end) {
             c = *src++;
@@ -2245,7 +2246,8 @@ njs_parser_error(njs_vm_t *vm, njs_parser_t *parser, njs_parser_error_t err)
     lexer = parser->lexer;
 
     size = snprintf((char *) buf, NJS_EXCEPTION_BUF_LENGTH,
-                    msg, (int) lexer->text.len, lexer->text.data, lexer->line);
+                    msg, (int) lexer->text.length, lexer->text.start,
+                    lexer->line);
 
     (void) njs_vm_throw_exception(vm, buf, size);
 

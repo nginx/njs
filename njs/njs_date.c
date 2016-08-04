@@ -8,6 +8,7 @@
 #include <nxt_types.h>
 #include <nxt_clang.h>
 #include <nxt_alignment.h>
+#include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_djb_hash.h>
 #include <nxt_array.h>
@@ -1754,8 +1755,7 @@ njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     if (njs_is_object(&args[0])) {
         lhq.key_hash = NJS_TO_ISO_STRING_HASH;
-        lhq.key.len = sizeof("toISOString") - 1;
-        lhq.key.data = (u_char *) "toISOString";
+        lhq.key = nxt_string_value("toISOString");
 
         prop = njs_object_property(vm, args[0].data.u.object, &lhq);
 

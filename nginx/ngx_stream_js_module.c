@@ -11,6 +11,7 @@
 
 #include <nxt_types.h>
 #include <nxt_clang.h>
+#include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_array.h>
 #include <nxt_random.h>
@@ -216,8 +217,8 @@ ngx_stream_js_variable(ngx_stream_session_t *s, ngx_stream_variable_value_t *v,
 
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
-    name.data = fname->data;
-    name.len = fname->len;
+    name.start = fname->data;
+    name.length = fname->len;
 
     func = njs_vm_function(ctx->vm, &name);
     if (func == NULL) {
@@ -231,7 +232,7 @@ ngx_stream_js_variable(ngx_stream_session_t *s, ngx_stream_variable_value_t *v,
         njs_vm_exception(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
-                      "js exception: %*s", exception.len, exception.data);
+                      "js exception: %*s", exception.length, exception.start);
 
         v->not_found = 1;
         return NGX_OK;
@@ -241,11 +242,11 @@ ngx_stream_js_variable(ngx_stream_session_t *s, ngx_stream_variable_value_t *v,
         return NGX_ERROR;
     }
 
-    v->len = value.len;
+    v->len = value.length;
     v->valid = 1;
     v->no_cacheable = 0;
     v->not_found = 0;
-    v->data = value.data;
+    v->data = value.start;
 
     return NGX_OK;
 }
@@ -382,7 +383,7 @@ ngx_stream_js_ext_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     handler = c->log->handler;
     c->log->handler = NULL;
 
-    ngx_log_error(NGX_LOG_INFO, c->log, 0, "js: %*s", msg.len, msg.data);
+    ngx_log_error(NGX_LOG_INFO, c->log, 0, "js: %*s", msg.length, msg.start);
 
     c->log->handler = handler;
 
@@ -403,8 +404,8 @@ ngx_stream_js_ext_get_variable(njs_vm_t *vm, njs_value_t *value, void *obj,
     s = (ngx_stream_session_t *) obj;
     v = (nxt_str_t *) data;
 
-    name.data = v->data;
-    name.len = v->len;
+    name.data = v->start;
+    name.len = v->length;
 
     key = ngx_hash_strlow(name.data, name.data, name.len);
 
@@ -531,7 +532,7 @@ ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "%*s, included",
-                           text.len, text.data);
+                           text.length, text.start);
         return NGX_CONF_ERROR;
     }
 
@@ -542,11 +543,11 @@ ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    nxt_str_set(&ext, "$s");
+    ext = nxt_string_value("$s");
 
     if (njs_vm_external(jscf->vm, NULL, &ext, &jscf->arg) != NJS_OK) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                       "js external \"%*s\" not found", ext.len, ext.data);
+                       "js external \"%*s\" not found", ext.length, ext.start);
         return NGX_CONF_ERROR;
     }
 

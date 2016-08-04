@@ -7,6 +7,7 @@
 #include <nxt_types.h>
 #include <nxt_clang.h>
 #include <nxt_alignment.h>
+#include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_utf8.h>
 #include <nxt_djb_hash.h>
@@ -998,17 +999,17 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
 
         if (nxt_fast_path(ret == NXT_OK)) {
 
-            pq->lhq.key.len = pq->value.short_string.size;
+            pq->lhq.key.length = pq->value.short_string.size;
 
-            if (pq->lhq.key.len != NJS_STRING_LONG) {
-                pq->lhq.key.data = pq->value.short_string.start;
+            if (pq->lhq.key.length != NJS_STRING_LONG) {
+                pq->lhq.key.start = pq->value.short_string.start;
 
             } else {
-                pq->lhq.key.len = pq->value.data.string_size;
-                pq->lhq.key.data = pq->value.data.u.string->start;
+                pq->lhq.key.length = pq->value.data.string_size;
+                pq->lhq.key.start = pq->value.data.u.string->start;
             }
 
-            pq->lhq.key_hash = hash(pq->lhq.key.data, pq->lhq.key.len);
+            pq->lhq.key_hash = hash(pq->lhq.key.start, pq->lhq.key.length);
 
             if (obj == NULL) {
                 pq->lhq.proto = &njs_extern_hash_proto;
@@ -1281,8 +1282,7 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     if (njs_is_object(object)) {
 
         lhq.key_hash = NJS_PROTOTYPE_HASH;
-        lhq.key.len = sizeof("prototype") - 1;
-        lhq.key.data = (u_char *) "prototype";
+        lhq.key = nxt_string_value("prototype");
 
         prop = njs_object_property(vm, constructor->data.u.object, &lhq);
 
@@ -2202,8 +2202,7 @@ njs_function_new_object(njs_vm_t *vm, njs_value_t *value)
     if (nxt_fast_path(object != NULL)) {
 
         lhq.key_hash = NJS_PROTOTYPE_HASH;
-        lhq.key.len = sizeof("prototype") - 1;
-        lhq.key.data = (u_char *) "prototype";
+        lhq.key = nxt_string_value("prototype");
         lhq.proto = &njs_object_hash_proto;
         function = value->data.u.function;
 
@@ -3179,8 +3178,8 @@ njs_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst, const njs_value_t *src)
                 start = value.data.u.string->start;
             }
 
-            dst->len = size;
-            dst->data = start;
+            dst->length = size;
+            dst->start = start;
 
             return NXT_OK;
         }
@@ -3188,8 +3187,8 @@ njs_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst, const njs_value_t *src)
 
 fail:
 
-    dst->len = 0;
-    dst->data = NULL;
+    dst->length = 0;
+    dst->start = NULL;
 
     return NXT_ERROR;
 }
@@ -3343,7 +3342,7 @@ njs_debug(njs_index_t index, njs_value_t *value)
 {
 #if (NXT_DEBUG)
     u_char    *p;
-    uint32_t  len;
+    uint32_t  length;
 
     switch (value->type) {
 
@@ -3365,16 +3364,16 @@ njs_debug(njs_index_t index, njs_value_t *value)
         return;
 
     case NJS_STRING:
-        len = value->short_string.size;
-        if (len != NJS_STRING_LONG) {
+        length = value->short_string.size;
+        if (length != NJS_STRING_LONG) {
             p = value->short_string.start;
 
         } else {
-            len = value->data.string_size;
+            length = value->data.string_size;
             p = value->data.u.string->start;
         }
 
-        nxt_thread_log_debug("%p [\"%*s\"]", index, len, p);
+        nxt_thread_log_debug("%p [\"%*s\"]", index, length, p);
         return;
 
     case NJS_ARRAY:

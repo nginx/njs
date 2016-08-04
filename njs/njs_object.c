@@ -6,6 +6,7 @@
 
 #include <nxt_types.h>
 #include <nxt_clang.h>
+#include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_djb_hash.h>
 #include <nxt_array.h>
@@ -101,17 +102,17 @@ njs_object_hash_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
     lhq.pool = vm->mem_cache_pool;
 
     do {
-        lhq.key.len = prop->name.short_string.size;
+        lhq.key.length = prop->name.short_string.size;
 
-        if (lhq.key.len != NJS_STRING_LONG) {
-            lhq.key.data = (u_char *) prop->name.short_string.start;
+        if (lhq.key.length != NJS_STRING_LONG) {
+            lhq.key.start = (u_char *) prop->name.short_string.start;
 
         } else {
-            lhq.key.len = prop->name.data.string_size;
-            lhq.key.data = prop->name.data.u.string->start;
+            lhq.key.length = prop->name.data.string_size;
+            lhq.key.start = prop->name.data.u.string->start;
         }
 
-        lhq.key_hash = nxt_djb_hash(lhq.key.data, lhq.key.len);
+        lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
         lhq.value = (void *) prop;
 
         ret = nxt_lvlhsh_insert(hash, &lhq);
@@ -150,21 +151,21 @@ njs_object_hash_test(nxt_lvlhsh_query_t *lhq, void *data)
     size = prop->name.short_string.size;
 
     if (size != NJS_STRING_LONG) {
-        if (lhq->key.len != size) {
+        if (lhq->key.length != size) {
             return NXT_DECLINED;
         }
 
         start = prop->name.short_string.start;
 
     } else {
-        if (lhq->key.len != prop->name.data.string_size) {
+        if (lhq->key.length != prop->name.data.string_size) {
             return NXT_DECLINED;
         }
 
         start = prop->name.data.u.string->start;
     }
 
-    if (memcmp(start, lhq->key.data, lhq->key.len) == 0) {
+    if (memcmp(start, lhq->key.start, lhq->key.length) == 0) {
         return NXT_OK;
     }
 
@@ -403,8 +404,7 @@ njs_property_prototype_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
 
     lhq.value = prop;
     lhq.key_hash = NJS_PROTOTYPE_HASH;
-    lhq.key.len = sizeof("prototype") - 1;
-    lhq.key.data = (u_char *) "prototype";
+    lhq.key = nxt_string_value("prototype");
     lhq.replace = 0;
     lhq.pool = vm->mem_cache_pool;
     lhq.proto = &njs_object_hash_proto;
@@ -551,8 +551,7 @@ njs_property_constructor_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
 
     lhq.value = prop;
     lhq.key_hash = NJS_CONSTRUCTOR_HASH;
-    lhq.key.len = sizeof("constructor") - 1;
-    lhq.key.data = (u_char *) "constructor";
+    lhq.key = nxt_string_value("constructor");
     lhq.replace = 0;
     lhq.pool = vm->mem_cache_pool;
     lhq.proto = &njs_object_hash_proto;

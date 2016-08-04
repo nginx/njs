@@ -6,6 +6,7 @@
 
 #include <nxt_types.h>
 #include <nxt_clang.h>
+#include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_lvlhsh.h>
 #include <string.h>

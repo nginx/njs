@@ -7,6 +7,7 @@
 #include <nxt_types.h>
 #include <nxt_clang.h>
 #include <nxt_alignment.h>
+#include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_utf8.h>
 #include <nxt_djb_hash.h>
@@ -32,8 +33,8 @@ njs_variables_hash_test(nxt_lvlhsh_query_t *lhq, void *data)
 
     var = data;
 
-    if (lhq->key.len == var->name_len
-        && memcmp(var->name_start, lhq->key.data, lhq->key.len) == 0)
+    if (lhq->key.length == var->name_len
+        && memcmp(var->name_start, lhq->key.start, lhq->key.length) == 0)
     {
         return NXT_OK;
     }
@@ -106,8 +107,8 @@ njs_parser_variable(njs_vm_t *vm, njs_parser_t *parser, nxt_uint_t *level)
         n = scope->arguments->items;
 
         while (n != 0) {
-            if (lhq.key.len == var->name_len
-                && memcmp(var->name_start, lhq.key.data, lhq.key.len) == 0)
+            if (lhq.key.length == var->name_len
+                && memcmp(var->name_start, lhq.key.start, lhq.key.length) == 0)
             {
                 return var;
             }
@@ -157,7 +158,7 @@ njs_vm_function(njs_vm_t *vm, nxt_str_t *name)
     njs_variable_t      *var;
     nxt_lvlhsh_query_t  lhq;
 
-    lhq.key_hash = nxt_djb_hash(name->data, name->len);
+    lhq.key_hash = nxt_djb_hash(name->start, name->length);
     lhq.key = *name;
     lhq.proto = &njs_variables_hash_proto;
 
@@ -187,12 +188,12 @@ njs_variable_alloc(njs_vm_t *vm, njs_parser_t *parser, nxt_str_t *name)
     var = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_variable_t));
 
     if (nxt_fast_path(var != NULL)) {
-        var->name_start = nxt_mem_cache_alloc(vm->mem_cache_pool, name->len);
+        var->name_start = nxt_mem_cache_alloc(vm->mem_cache_pool, name->length);
 
         if (nxt_fast_path(var->name_start != NULL)) {
 
-            memcpy(var->name_start, name->data, name->len);
-            var->name_len = name->len;
+            memcpy(var->name_start, name->start, name->length);
+            var->name_len = name->length;
 
             value = nxt_array_add(parser->scope_values, &njs_array_mem_proto,
                                   vm->mem_cache_pool);

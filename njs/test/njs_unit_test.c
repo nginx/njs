@@ -6,6 +6,7 @@
 
 #include <nxt_types.h>
 #include <nxt_clang.h>
+#include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_malloc.h>
 #include <nxt_array.h>
@@ -4653,7 +4654,7 @@ njs_unit_test_r_get_uri_external(njs_vm_t *vm, njs_value_t *value, void *obj,
 
     r = (njs_unit_test_req *) obj;
 
-    return njs_string_create(vm, value, r->uri.data, r->uri.len, 0);
+    return njs_string_create(vm, value, r->uri.start, r->uri.length, 0);
 }
 
 
@@ -4690,15 +4691,15 @@ njs_unit_test_header_external(njs_vm_t *vm, njs_value_t *value, void *obj,
     r = (njs_unit_test_req *) obj;
     h = (nxt_str_t *) data;
 
-    size = 7 + h->len;
+    size = 7 + h->length;
 
     s = nxt_mem_cache_alloc(r->mem_cache_pool, size);
     if (nxt_slow_path(s == NULL)) {
         return NXT_ERROR;
     }
 
-    p = memcpy(s, h->data, h->len);
-    p += h->len;
+    p = memcpy(s, h->start, h->length);
+    p += h->length;
     *p++ = '|';
     memcpy(p, "АБВ", 6);
 
@@ -4751,9 +4752,9 @@ njs_unit_test_method_external(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
         ret = njs_value_string_copy(vm, &s, njs_argument(args, 1), &next);
 
-        if (ret == NXT_OK && s.len == 3 && memcmp(s.data, "YES", 3) == 0) {
+        if (ret == NXT_OK && s.length == 3 && memcmp(s.start, "YES", 3) == 0) {
             r = njs_value_data(njs_argument(args, 0));
-            njs_vm_return_string(vm, r->uri.data, r->uri.len);
+            njs_vm_return_string(vm, r->uri.start, r->uri.length);
 
             return NXT_OK;
         }
@@ -4923,8 +4924,8 @@ njs_unit_test(nxt_bool_t disassemble)
     }
 
     r.mem_cache_pool = mcp;
-    r.uri.len = 6;
-    r.uri.data = (u_char *) "АБВ";
+    r.uri.length = 6;
+    r.uri.start = (u_char *) "АБВ";
 
     ext_object = &r;
 
@@ -4935,16 +4936,16 @@ njs_unit_test(nxt_bool_t disassemble)
     for (i = 0; i < nxt_nitems(njs_test); i++) {
 
         printf("\"%.*s\"\n",
-               (int) njs_test[i].script.len, njs_test[i].script.data);
+               (int) njs_test[i].script.length, njs_test[i].script.start);
 
         vm = njs_vm_create(mcp, &shared, &externals);
         if (vm == NULL) {
             return NXT_ERROR;
         }
 
-        start = njs_test[i].script.data;
+        start = njs_test[i].script.start;
 
-        ret = njs_vm_compile(vm, &start, start + njs_test[i].script.len,
+        ret = njs_vm_compile(vm, &start, start + njs_test[i].script.length,
                              &function);
 
         if (ret == NXT_OK) {
@@ -4957,12 +4958,12 @@ njs_unit_test(nxt_bool_t disassemble)
                 return NXT_ERROR;
             }
 
-            r.uri.len = 6;
-            r.uri.data = (u_char *) "АБВ";
+            r.uri.length = 6;
+            r.uri.start = (u_char *) "АБВ";
 
             if (function != NULL) {
-                r_name.len = 2;
-                r_name.data = (u_char *) "$r";
+                r_name.length = 2;
+                r_name.start = (u_char *) "$r";
 
                 ret = njs_vm_external(nvm, NULL, &r_name, &value);
                 if (ret != NXT_OK) {
@@ -5000,9 +5001,9 @@ njs_unit_test(nxt_bool_t disassemble)
         }
 
         printf("njs(\"%.*s\") failed: \"%.*s\" vs \"%.*s\"\n",
-               (int) njs_test[i].script.len, njs_test[i].script.data,
-               (int) njs_test[i].ret.len, njs_test[i].ret.data,
-               (int) s.len, s.data);
+               (int) njs_test[i].script.length, njs_test[i].script.start,
+               (int) njs_test[i].ret.length, njs_test[i].ret.start,
+               (int) s.length, s.start);
 
         return NXT_ERROR;
     }
@@ -5042,8 +5043,8 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
     }
 
     r.mem_cache_pool = mcp;
-    r.uri.len = 6;
-    r.uri.data = (u_char *) "АБВ";
+    r.uri.length = 6;
+    r.uri.start = (u_char *) "АБВ";
 
     ext_object = &r;
 
@@ -5056,9 +5057,9 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
         return NXT_ERROR;
     }
 
-    start = script->data;
+    start = script->start;
 
-    ret = njs_vm_compile(vm, &start, start + script->len, NULL);
+    ret = njs_vm_compile(vm, &start, start + script->length, NULL);
     if (ret != NXT_OK) {
         return NXT_ERROR;
     }

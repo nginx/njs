@@ -11,6 +11,7 @@
 
 #include <nxt_types.h>
 #include <nxt_clang.h>
+#include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_array.h>
 #include <nxt_random.h>
@@ -432,8 +433,8 @@ ngx_http_js_handler(ngx_http_request_t *r)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    name.data = jlcf->content.data;
-    name.len = jlcf->content.len;
+    name.start = jlcf->content.data;
+    name.length = jlcf->content.len;
 
     func = njs_vm_function(ctx->vm, &name);
     if (func == NULL) {
@@ -446,7 +447,7 @@ ngx_http_js_handler(ngx_http_request_t *r)
         njs_vm_exception(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "js exception: %*s", exception.len, exception.data);
+                      "js exception: %*s", exception.length, exception.start);
 
         return NGX_ERROR;
     }
@@ -482,8 +483,8 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    name.data = fname->data;
-    name.len = fname->len;
+    name.start = fname->data;
+    name.length = fname->len;
 
     func = njs_vm_function(ctx->vm, &name);
     if (func == NULL) {
@@ -497,7 +498,7 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
         njs_vm_exception(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "js exception: %*s", exception.len, exception.data);
+                      "js exception: %*s", exception.length, exception.start);
 
         v->not_found = 1;
         return NGX_OK;
@@ -507,11 +508,11 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
         return NGX_ERROR;
     }
 
-    v->len = value.len;
+    v->len = value.length;
     v->valid = 1;
     v->no_cacheable = 0;
     v->not_found = 0;
-    v->data = value.data;
+    v->data = value.start;
 
     return NGX_OK;
 }
@@ -640,14 +641,14 @@ ngx_http_js_ext_set_string(njs_vm_t *vm, void *obj, uintptr_t data,
     r = (ngx_http_request_t *) obj;
 
     field = (ngx_str_t *) (p + data);
-    field->len = value->len;
+    field->len = value->length;
 
-    field->data = ngx_pnalloc(r->pool, value->len);
+    field->data = ngx_pnalloc(r->pool, value->length);
     if (field->data == NULL) {
         return NJS_ERROR;
     }
 
-    ngx_memcpy(field->data, value->data, value->len);
+    ngx_memcpy(field->data, value->start, value->length);
 
     return NJS_OK;
 }
@@ -757,7 +758,8 @@ ngx_http_js_ext_get_header_out(njs_vm_t *vm, njs_value_t *value, void *obj,
     r = (ngx_http_request_t *) obj;
     v = (nxt_str_t *) data;
 
-    h = ngx_http_js_get_header(&r->headers_out.headers.part, v->data, v->len);
+    h = ngx_http_js_get_header(&r->headers_out.headers.part, v->start,
+                               v->length);
     if (h == NULL) {
         return njs_string_create(vm, value, NULL, 0, 0);
     }
@@ -778,7 +780,8 @@ ngx_http_js_ext_set_header_out(njs_vm_t *vm, void *obj, uintptr_t data,
     r = (ngx_http_request_t *) obj;
     v = (nxt_str_t *) data;
 
-    h = ngx_http_js_get_header(&r->headers_out.headers.part, v->data, v->len);
+    h = ngx_http_js_get_header(&r->headers_out.headers.part, v->start,
+                               v->length);
 
     if (h == NULL || h->hash == 0) {
         h = ngx_list_push(&r->headers_out.headers);
@@ -786,28 +789,28 @@ ngx_http_js_ext_set_header_out(njs_vm_t *vm, void *obj, uintptr_t data,
             return NJS_ERROR;
         }
 
-        p = ngx_pnalloc(r->pool, v->len);
+        p = ngx_pnalloc(r->pool, v->length);
         if (p == NULL) {
             return NJS_ERROR;
         }
 
-        ngx_memcpy(p, v->data, v->len);
+        ngx_memcpy(p, v->start, v->length);
 
         h->key.data = p;
-        h->key.len = v->len;
+        h->key.len = v->length;
         h->hash = 1;
     }
 
 
-    p = ngx_pnalloc(r->pool, value->len);
+    p = ngx_pnalloc(r->pool, value->length);
     if (p == NULL) {
         return NJS_ERROR;
     }
 
-    ngx_memcpy(p, value->data, value->len);
+    ngx_memcpy(p, value->start, value->length);
 
     h->value.data = p;
-    h->value.len = value->len;
+    h->value.len = value->length;
 
     return NJS_OK;
 }
@@ -849,7 +852,7 @@ ngx_http_js_ext_set_status(njs_vm_t *vm, void *obj, uintptr_t data,
     ngx_int_t            n;
     ngx_http_request_t  *r;
 
-    n = ngx_atoi(value->data, value->len);
+    n = ngx_atoi(value->start, value->length);
     if (n == NGX_ERROR) {
         return NJS_ERROR;
     }
@@ -890,7 +893,7 @@ ngx_http_js_ext_set_content_length(njs_vm_t *vm, void *obj, uintptr_t data,
     ngx_int_t            n;
     ngx_http_request_t  *r;
 
-    n = ngx_atoi(value->data, value->len);
+    n = ngx_atoi(value->start, value->length);
     if (n == NGX_ERROR) {
         return NJS_ERROR;
     }
@@ -953,16 +956,16 @@ ngx_http_js_ext_send(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             /* TODO: njs_value_release(vm, value) in buf completion */
 
             ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                           "http js send: \"%*s\"", s.len, s.data);
+                           "http js send: \"%*s\"", s.length, s.start);
 
             b = ngx_calloc_buf(r->pool);
             if (b == NULL) {
                 return NJS_ERROR;
             }
 
-            b->start = s.data;
+            b->start = s.start;
             b->pos = b->start;
-            b->end = s.data + s.len;
+            b->end = s.start + s.length;
             b->last = b->end;
             b->memory = 1;
 
@@ -1024,7 +1027,7 @@ ngx_http_js_ext_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     handler = c->log->handler;
     c->log->handler = NULL;
 
-    ngx_log_error(NGX_LOG_INFO, c->log, 0, "js: %*s", msg.len, msg.data);
+    ngx_log_error(NGX_LOG_INFO, c->log, 0, "js: %*s", msg.length, msg.start);
 
     c->log->handler = handler;
 
@@ -1085,7 +1088,8 @@ ngx_http_js_ext_get_header_in(njs_vm_t *vm, njs_value_t *value, void *obj,
     r = (ngx_http_request_t *) obj;
     v = (nxt_str_t *) data;
 
-    h = ngx_http_js_get_header(&r->headers_in.headers.part, v->data, v->len);
+    h = ngx_http_js_get_header(&r->headers_in.headers.part, v->start,
+                               v->length);
     if (h == NULL) {
         return njs_string_create(vm, value, NULL, 0, 0);
     }
@@ -1112,7 +1116,7 @@ ngx_http_js_ext_get_arg(njs_vm_t *vm, njs_value_t *value, void *obj,
     r = (ngx_http_request_t *) obj;
     v = (nxt_str_t *) data;
 
-    if (ngx_http_arg(r, v->data, v->len, &arg) == NGX_OK) {
+    if (ngx_http_arg(r, v->start, v->length, &arg) == NGX_OK) {
         return njs_string_create(vm, value, arg.data, arg.len, 0);
     }
 
@@ -1196,8 +1200,8 @@ ngx_http_js_ext_get_variable(njs_vm_t *vm, njs_value_t *value, void *obj,
     r = (ngx_http_request_t *) obj;
     v = (nxt_str_t *) data;
 
-    name.data = v->data;
-    name.len = v->len;
+    name.data = v->start;
+    name.len = v->length;
 
     key = ngx_hash_strlow(name.data, name.data, name.len);
 
@@ -1324,7 +1328,7 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "%*s, included",
-                           text.len, text.data);
+                           text.length, text.start);
         return NGX_CONF_ERROR;
     }
 
@@ -1335,21 +1339,22 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    nxt_str_set(&ext, "$r");
+    ext = nxt_string_value("$r");
 
     if (njs_vm_external(jlcf->vm, NULL, &ext, &jlcf->args[0]) != NJS_OK) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "js external \"%*s\" not found", ext.len, ext.data);
+                           "js external \"%*s\" not found",
+                           ext.length, ext.start);
         return NGX_CONF_ERROR;
     }
 
-    nxt_str_set(&ext, "response");
+    ext = nxt_string_value("response");
 
     rc = njs_vm_external(jlcf->vm, &jlcf->args[0], &ext, &jlcf->args[1]);
     if (rc != NXT_OK) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "js external \"$r.%*s\" not found",
-                           ext.len, ext.data);
+                           ext.length, ext.start);
         return NGX_CONF_ERROR;
     }
 

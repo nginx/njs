@@ -15,25 +15,6 @@
     ((val1 < val2) ? (val1) : (val2))
 
 
-nxt_inline u_char
-nxt_lower_case(u_char c)
-{
-    return (u_char) ((c >= 'A' && c <= 'Z') ? c | 0x20 : c);
-}
-
-
-nxt_inline u_char
-nxt_upper_case(u_char c)
-{
-    return (u_char) ((c >= 'a' && c <= 'z') ? c & 0xDF : c);
-}
-
-
-#define nxt_strstr_eq(s1, s2)                                                 \
-    (((s1)->len == (s2)->len)                                                 \
-      && (memcmp((s1)->data, (s2)->data, (s1)->len) == 0))
-
-
 #define NXT_OK             0
 #define NXT_ERROR          (-1)
 #define NXT_AGAIN          (-2)
@@ -52,36 +33,10 @@ typedef struct {
 } nxt_mem_proto_t;
 
 
-typedef struct {
-    size_t         len;
-    u_char         *data;
-} nxt_str_t;
-
-
-#define nxt_str_set(str, text)                                                \
-    do {                                                                      \
-        (str)->len = sizeof(text) - 1;                                        \
-        (str)->data = (u_char *) text;                                        \
-    } while (0)
-
-
-#define nxt_str_null(str)                                                     \
-    do {                                                                      \
-        (str)->len = 0;                                                       \
-        (str)->data = NULL;                                                   \
-    } while (0)
-
-
-#define nxt_string(str)       { sizeof(str) - 1, (u_char *) str }
-#define nxt_string_zero(str)  { sizeof(str), (u_char *) str }
-#define nxt_null_string       { 0, NULL }
-
-
 #define nxt_thread_log_alert(...)
 #define nxt_thread_log_error(...)
 #define nxt_log_error(...)
 #define nxt_thread_log_debug(...)
-#define nxt_number_parse(a, b)      1
 
 #define NXT_DOUBLE_LEN   1024
 

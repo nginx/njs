@@ -90,6 +90,7 @@ $(NXT_BUILDDIR)/nxt_rbtree.o: \
 $(NXT_BUILDDIR)/nxt_lvlhsh.o: \
 	$(NXT_LIB)/nxt_types.h \
 	$(NXT_LIB)/nxt_clang.h \
+	$(NXT_LIB)/nxt_string.h \
 	$(NXT_LIB)/nxt_lvlhsh.h \
 	$(NXT_LIB)/nxt_lvlhsh.c \
 

@@ -7,6 +7,7 @@
 #include <nxt_types.h>
 #include <nxt_clang.h>
 #include <nxt_alignment.h>
+#include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_djb_hash.h>
 #include <nxt_array.h>
@@ -517,8 +518,7 @@ njs_array_prototype_to_string(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     if (njs_is_object(&args[0])) {
         lhq.key_hash = NJS_JOIN_HASH;
-        lhq.key.len = sizeof("join") - 1;
-        lhq.key.data = (u_char *) "join";
+        lhq.key = nxt_string_value("join");
 
         prop = njs_object_property(vm, args[0].data.u.object, &lhq);
 

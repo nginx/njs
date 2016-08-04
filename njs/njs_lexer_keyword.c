@@ -6,6 +6,7 @@
 
 #include <nxt_types.h>
 #include <nxt_clang.h>
+#include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_djb_hash.h>
 #include <nxt_array.h>
@@ -170,7 +171,7 @@ njs_lexer_keywords_init(nxt_mem_cache_pool_t *mcp, nxt_lvlhsh_t *hash)
     lhq.pool = mcp;
 
     do {
-        lhq.key_hash = nxt_djb_hash(keyword->name.data, keyword->name.len);
+        lhq.key_hash = nxt_djb_hash(keyword->name.start, keyword->name.length);
         lhq.key = keyword->name;
         lhq.value = (void *) keyword;
 

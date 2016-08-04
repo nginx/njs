@@ -8,6 +8,7 @@
 #include <nxt_types.h>
 #include <nxt_clang.h>
 #include <nxt_alignment.h>
+#include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_utf8.h>
 #include <nxt_djb_hash.h>
@@ -152,24 +153,24 @@ njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
         }
 
         if (*p == '/') {
-            lexer->text.data = lexer->start;
-            lexer->text.len = p - lexer->text.data;
+            lexer->text.start = lexer->start;
+            lexer->text.length = p - lexer->text.start;
             p++;
             lexer->start = p;
 
             flags = njs_regexp_flags(&p, lexer->end, 0);
 
             if (nxt_slow_path(flags < 0)) {
-                lexer->text.data = lexer->start;
-                lexer->text.len = p - lexer->text.data;
+                lexer->text.start = lexer->start;
+                lexer->text.length = p - lexer->text.start;
                 return njs_parser_error(vm, parser,
                                         NJS_PARSER_ERROR_REGEXP_FLAGS);
             }
 
             lexer->start = p;
 
-            pattern = njs_regexp_pattern_create(vm, lexer->text.data,
-                                                lexer->text.len, flags);
+            pattern = njs_regexp_pattern_create(vm, lexer->text.start,
+                                                lexer->text.length, flags);
             if (nxt_slow_path(pattern == NULL)) {
                 return NJS_TOKEN_ILLEGAL;
             }
@@ -180,8 +181,8 @@ njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
         }
     }
 
-    lexer->text.data = lexer->start - 1;
-    lexer->text.len = p - lexer->text.data;
+    lexer->text.start = lexer->start - 1;
+    lexer->text.length = p - lexer->text.start;
 
     return njs_parser_error(vm, parser, NJS_PARSER_ERROR_UNTERMINATED_REGEXP);
 }
@@ -676,8 +677,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, u_char *string,
     }
 
     lhq.key_hash = NJS_INDEX_HASH;
-    lhq.key.len = sizeof("index") - 1;
-    lhq.key.data = (u_char *) "index";
+    lhq.key = nxt_string_value("index");
     lhq.replace = 0;
     lhq.value = prop;
     lhq.pool = vm->mem_cache_pool;
@@ -696,8 +696,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, u_char *string,
     njs_string_copy(&prop->value, &regexp->string);
 
     lhq.key_hash = NJS_INPUT_HASH;
-    lhq.key.len = sizeof("input") - 1;
-    lhq.key.data = (u_char *) "input";
+    lhq.key = nxt_string_value("input");
     lhq.value = prop;
 
     ret = nxt_lvlhsh_insert(&array->object.hash, &lhq);

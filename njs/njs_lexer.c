@@ -6,6 +6,7 @@
 
 #include <nxt_types.h>
 #include <nxt_clang.h>
+#include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_djb_hash.h>
 #include <nxt_array.h>
@@ -300,7 +301,7 @@ njs_lexer_next_token(njs_lexer_t *lexer)
     njs_token_t              token;
     const njs_lexer_multi_t  *multi;
 
-    lexer->text.data = lexer->start;
+    lexer->text.start = lexer->start;
 
     while (lexer->start < lexer->end) {
         c = *lexer->start++;
@@ -310,7 +311,7 @@ njs_lexer_next_token(njs_lexer_t *lexer)
         switch (token) {
 
         case NJS_TOKEN_SPACE:
-            lexer->text.data = lexer->start;
+            lexer->text.start = lexer->start;
             continue;
 
         case NJS_TOKEN_LETTER:
@@ -415,7 +416,7 @@ njs_lexer_next_token(njs_lexer_t *lexer)
         case NJS_TOKEN_COLON:
         case NJS_TOKEN_SEMICOLON:
         case NJS_TOKEN_CONDITIONAL:
-            lexer->text.len = lexer->start - lexer->text.data;
+            lexer->text.length = lexer->start - lexer->text.start;
             return token;
 
         default:  /* NJS_TOKEN_ILLEGAL */
@@ -459,7 +460,7 @@ njs_lexer_word(njs_lexer_t *lexer, u_char c)
 
     lexer->token_line = lexer->line;
     lexer->key_hash = nxt_djb_hash_add(NXT_DJB_HASH_INIT, c);
-    lexer->text.data = lexer->start - 1;
+    lexer->text.start = lexer->start - 1;
 
     for (p = lexer->start; p < lexer->end; p++) {
         c = *p;
@@ -472,7 +473,7 @@ njs_lexer_word(njs_lexer_t *lexer, u_char c)
     }
 
     lexer->start = p;
-    lexer->text.len = p - lexer->text.data;
+    lexer->text.length = p - lexer->text.start;
 
     if (lexer->property) {
         return NJS_TOKEN_NAME;
@@ -489,7 +490,7 @@ njs_lexer_string(njs_lexer_t *lexer, u_char quote)
     nxt_bool_t  escape;
 
     escape = 0;
-    lexer->text.data = lexer->start;
+    lexer->text.start = lexer->start;
     p = lexer->start;
 
     while (p < lexer->end) {
@@ -509,7 +510,7 @@ njs_lexer_string(njs_lexer_t *lexer, u_char quote)
 
         if (c == quote) {
             lexer->start = p;
-            lexer->text.len = (p - 1) - lexer->text.data;
+            lexer->text.length = (p - 1) - lexer->text.start;
 
             if (escape == 0) {
                 return NJS_TOKEN_STRING;
@@ -519,8 +520,8 @@ njs_lexer_string(njs_lexer_t *lexer, u_char quote)
         }
     }
 
-    lexer->text.data--;
-    lexer->text.len = p - lexer->text.data;
+    lexer->text.start--;
+    lexer->text.length = p - lexer->text.start;
 
     return NJS_TOKEN_UNTERMINATED_STRING;
 }
@@ -616,7 +617,7 @@ njs_lexer_multi(njs_lexer_t *lexer, njs_token_t token, nxt_uint_t n,
         } while (n != 0);
     }
 
-    lexer->text.len = lexer->start - lexer->text.data;
+    lexer->text.length = lexer->start - lexer->text.start;
 
     return token;
 }
