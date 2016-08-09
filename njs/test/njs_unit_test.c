@@ -2385,6 +2385,42 @@ static njs_unit_test_t  njs_test[] =
                  "a.map(function(v, i, a) { a.pop(); return v + 1 })"),
       nxt_string("2,3,4,,,") },
 
+    { nxt_string("var a = [];"
+                 "a.reduce(function(p, v, i, a) { return p + v })"),
+      nxt_string("TypeError") },
+
+    { nxt_string("var a = [];"
+                 "a.reduce(function(p, v, i, a) { return p + v }, 10)"),
+      nxt_string("10") },
+
+    { nxt_string("var a = [,,];"
+                 "a.reduce(function(p, v, i, a) { return p + v })"),
+      nxt_string("TypeError") },
+
+    { nxt_string("var a = [,,];"
+                 "a.reduce(function(p, v, i, a) { return p + v }, 10)"),
+      nxt_string("10") },
+
+    { nxt_string("var a = [1];"
+                 "a.reduce(function(p, v, i, a) { return p + v })"),
+      nxt_string("1") },
+
+    { nxt_string("var a = [1];"
+                 "a.reduce(function(p, v, i, a) { return p + v }, 10)"),
+      nxt_string("11") },
+
+    { nxt_string("var a = [1,2,3];"
+                 "a.reduce(function(p, v, i, a) { return p + v })"),
+      nxt_string("6") },
+
+    { nxt_string("var a = [1,2,3];"
+                 "a.reduce(function(p, v, i, a) { return p + v }, 10)"),
+      nxt_string("16") },
+
+    { nxt_string("[[0, 1], [2, 3], [4, 5]].reduce(function(a, b)"
+                 "                         { return a.concat(b) }, [])"),
+      nxt_string("0,1,2,3,4,5") },
+
     /* Strings. */
 
     { nxt_string("var a = '0123456789' + '012345'"
