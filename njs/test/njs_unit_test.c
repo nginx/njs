@@ -2421,6 +2421,48 @@ static njs_unit_test_t  njs_test[] =
                  "                         { return a.concat(b) }, [])"),
       nxt_string("0,1,2,3,4,5") },
 
+    { nxt_string("var a = [];"
+                 "a.reduceRight(function(p, v, i, a) { return p + v })"),
+      nxt_string("TypeError") },
+
+    { nxt_string("var a = [];"
+                 "a.reduceRight(function(p, v, i, a) { return p + v }, 10)"),
+      nxt_string("10") },
+
+    { nxt_string("var a = [,,];"
+                 "a.reduceRight(function(p, v, i, a) { return p + v })"),
+      nxt_string("TypeError") },
+
+    { nxt_string("var a = [,,];"
+                 "a.reduceRight(function(p, v, i, a) { return p + v }, 10)"),
+      nxt_string("10") },
+
+    { nxt_string("var a = [1];"
+                 "a.reduceRight(function(p, v, i, a) { return p + v })"),
+      nxt_string("1") },
+
+    { nxt_string("var a = [1];"
+                 "a.reduceRight(function(p, v, i, a) { return p + v }, 10)"),
+      nxt_string("11") },
+
+    { nxt_string("var a = [1,2,3];"
+                 "a.reduceRight(function(p, v, i, a) { return p + v })"),
+      nxt_string("6") },
+
+    { nxt_string("var a = [1,2,3];"
+                 "a.reduceRight(function(p, v, i, a) { return p + v }, 10)"),
+      nxt_string("16") },
+
+    { nxt_string("var a = [1,2,3];"
+                 "a.reduceRight(function(p, v, i, a)"
+                 "              { a.shift(); return p + v })"),
+      nxt_string("7") },
+
+    { nxt_string("var a = [1,2,3];"
+                 "a.reduceRight(function(p, v, i, a)"
+                 "              { a.shift(); return p + v }, 10)"),
+      nxt_string("19") },
+
     /* Strings. */
 
     { nxt_string("var a = '0123456789' + '012345'"
