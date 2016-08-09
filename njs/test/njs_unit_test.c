@@ -2333,6 +2333,38 @@ static njs_unit_test_t  njs_test[] =
                  "a.every(function(v, i, a) { return v > 0 })"),
       nxt_string("true") },
 
+    { nxt_string("var a = [];"
+                 "a.filter(function(v, i, a) { return v > 1 })"),
+      nxt_string("") },
+
+    { nxt_string("var a = [1,2,3,-1,5];"
+                 "a.filter(function(v, i, a) { return v > 1 })"),
+      nxt_string("2,3,5") },
+
+    { nxt_string("var a = [1,2,3,4,5,6,7,8];"
+                 "a.filter(function(v, i, a) { a.pop(); return v > 1 })"),
+      nxt_string("2,3,4") },
+
+    { nxt_string("var a = [1,2,3,4,5,6,7,8];"
+                 "a.filter(function(v, i, a) { a.shift(); return v > 1 })"),
+      nxt_string("3,5,7") },
+
+    { nxt_string("var a = [1,2,3,4,5,6,7];"
+                 "a.filter(function(v, i, a) { a.pop(); return v > 1 })"),
+      nxt_string("2,3,4") },
+
+    { nxt_string("var a = [1,2,3,4,5,6,7];"
+                 "a.filter(function(v, i, a) { a.shift(); return v > 1 })"),
+      nxt_string("3,5,7") },
+
+    { nxt_string("var a = [1,2,3,4,5,6,7];"
+                 "a.filter(function(v, i, a) { a[i] = v + 1; return true })"),
+      nxt_string("1,2,3,4,5,6,7") },
+
+    { nxt_string("var a = [1,2,3,4,5,6,7];"
+                 "a.filter(function(v, i, a) { a[i+1] = v+10; return true })"),
+      nxt_string("1,11,21,31,41,51,61") },
+
     /* Strings. */
 
     { nxt_string("var a = '0123456789' + '012345'"
