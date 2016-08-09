@@ -37,10 +37,15 @@ typedef struct {
         njs_continuation_t  cont;
         u_char              padding[NJS_CONTINUATION_SIZE];
     } u;
+    /*
+     * This retval value must be aligned so the continuation is padded
+     * to aligned size.
+     */
     njs_value_t             retval;
-    int32_t                 index;
+
+    uint32_t                next_index;
     uint32_t                length;
-} njs_array_next_t;
+} njs_array_iter_t;
 
 
 static njs_ret_t
@@ -57,11 +62,11 @@ static nxt_noinline njs_ret_t njs_array_prototype_some_cont(njs_vm_t *vm,
 static nxt_noinline njs_ret_t njs_array_prototype_every_cont(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static nxt_noinline njs_ret_t njs_array_iterator_args(njs_vm_t *vm,
-    njs_value_t * args, nxt_uint_t nargs);
-static nxt_noinline nxt_int_t njs_array_iterator_next(njs_value_t *value,
-    nxt_uint_t n, nxt_uint_t length);
+    njs_value_t *args, nxt_uint_t nargs);
+static nxt_noinline uint32_t njs_array_iterator_next(njs_array_t *array,
+    uint32_t n, uint32_t length);
 static nxt_noinline njs_ret_t njs_array_iterator_apply(njs_vm_t *vm,
-    njs_array_next_t *next, njs_value_t *args, nxt_uint_t nargs);
+    njs_array_iter_t *iter, njs_value_t *args, nxt_uint_t nargs);
 
 
 nxt_noinline njs_array_t *
@@ -778,15 +783,15 @@ njs_array_prototype_for_each(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
     nxt_int_t         ret;
-    njs_array_next_t  *next;
+    njs_array_iter_t  *iter;
 
     ret = njs_array_iterator_args(vm, args, nargs);
     if (nxt_slow_path(ret != NXT_OK)) {
         return ret;
     }
 
-    next = njs_continuation(vm->frame);
-    next->u.cont.function = njs_array_prototype_for_each_cont;
+    iter = njs_continuation(vm->frame);
+    iter->u.cont.function = njs_array_prototype_for_each_cont;
 
     return njs_array_prototype_for_each_cont(vm, args, nargs, unused);
 }
@@ -796,16 +801,16 @@ static njs_ret_t
 njs_array_prototype_for_each_cont(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    njs_array_next_t  *next;
+    njs_array_iter_t  *iter;
 
-    next = njs_continuation(vm->frame);
+    iter = njs_continuation(vm->frame);
 
-    if (next->index < 0) {
+    if (iter->next_index >= args[0].data.u.array->length) {
         vm->retval = njs_value_void;
         return NXT_OK;
     }
 
-    return njs_array_iterator_apply(vm, next, args, nargs);
+    return njs_array_iterator_apply(vm, iter, args, nargs);
 }
 
 
@@ -814,16 +819,16 @@ njs_array_prototype_some(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
     nxt_int_t         ret;
-    njs_array_next_t  *next;
+    njs_array_iter_t  *iter;
 
     ret = njs_array_iterator_args(vm, args, nargs);
     if (nxt_slow_path(ret != NXT_OK)) {
         return ret;
     }
 
-    next = njs_continuation(vm->frame);
-    next->u.cont.function = njs_array_prototype_some_cont;
-    next->retval.data.truth = 0;
+    iter = njs_continuation(vm->frame);
+    iter->u.cont.function = njs_array_prototype_some_cont;
+    iter->retval.data.truth = 0;
 
     return njs_array_prototype_some_cont(vm, args, nargs, unused);
 }
@@ -833,19 +838,19 @@ static njs_ret_t
 njs_array_prototype_some_cont(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    njs_array_next_t   *next;
+    njs_array_iter_t   *iter;
     const njs_value_t  *retval;
 
-    next = njs_continuation(vm->frame);
+    iter = njs_continuation(vm->frame);
 
-    if (njs_is_true(&next->retval)) {
+    if (njs_is_true(&iter->retval)) {
         retval = &njs_value_true;
 
-    } else if (next->index < 0) {
+    } else if (iter->next_index >= args[0].data.u.array->length) {
         retval = &njs_value_false;
 
     } else {
-        return njs_array_iterator_apply(vm, next, args, nargs);
+        return njs_array_iterator_apply(vm, iter, args, nargs);
     }
 
     vm->retval = *retval;
@@ -859,16 +864,16 @@ njs_array_prototype_every(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
     nxt_int_t         ret;
-    njs_array_next_t  *next;
+    njs_array_iter_t  *iter;
 
     ret = njs_array_iterator_args(vm, args, nargs);
     if (nxt_slow_path(ret != NXT_OK)) {
         return ret;
     }
 
-    next = njs_continuation(vm->frame);
-    next->u.cont.function = njs_array_prototype_every_cont;
-    next->retval.data.truth = 1;
+    iter = njs_continuation(vm->frame);
+    iter->u.cont.function = njs_array_prototype_every_cont;
+    iter->retval.data.truth = 1;
 
     return njs_array_prototype_every_cont(vm, args, nargs, unused);
 }
@@ -878,19 +883,19 @@ static njs_ret_t
 njs_array_prototype_every_cont(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    njs_array_next_t   *next;
+    njs_array_iter_t   *iter;
     const njs_value_t  *retval;
 
-    next = njs_continuation(vm->frame);
+    iter = njs_continuation(vm->frame);
 
-    if (!njs_is_true(&next->retval)) {
+    if (!njs_is_true(&iter->retval)) {
         retval = &njs_value_false;
 
-    } else if (next->index < 0) {
+    } else if (iter->next_index >= args[0].data.u.array->length) {
         retval = &njs_value_true;
 
     } else {
-        return njs_array_iterator_apply(vm, next, args, nargs);
+        return njs_array_iterator_apply(vm, iter, args, nargs);
     }
 
     vm->retval = *retval;
@@ -900,17 +905,17 @@ njs_array_prototype_every_cont(njs_vm_t *vm, njs_value_t *args,
 
 
 static nxt_noinline njs_ret_t
-njs_array_iterator_args(njs_vm_t *vm, njs_value_t * args, nxt_uint_t nargs)
+njs_array_iterator_args(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs)
 {
     njs_array_t       *array;
-    njs_array_next_t  *next;
+    njs_array_iter_t  *iter;
 
     if (nargs > 1 && njs_is_array(&args[0]) && njs_is_function(&args[1])) {
 
         array = args[0].data.u.array;
-        next = njs_continuation(vm->frame);
-        next->length = array->length;
-        next->index = njs_array_iterator_next(array->start, 0, array->length);
+        iter = njs_continuation(vm->frame);
+        iter->length = array->length;
+        iter->next_index = njs_array_iterator_next(array, 0, array->length);
 
         return NXT_OK;
     }
@@ -921,11 +926,13 @@ njs_array_iterator_args(njs_vm_t *vm, njs_value_t * args, nxt_uint_t nargs)
 }
 
 
-static nxt_noinline nxt_int_t
-njs_array_iterator_next(njs_value_t *value, nxt_uint_t n, nxt_uint_t length)
+static nxt_noinline uint32_t
+njs_array_iterator_next(njs_array_t *array, uint32_t n, uint32_t length)
 {
+    length = nxt_min(length, array->length);
+
     while (n < length) {
-        if (njs_is_valid(&value[n])) {
+        if (njs_is_valid(&array->start[n])) {
             return n;
         }
 
@@ -937,7 +944,7 @@ njs_array_iterator_next(njs_value_t *value, nxt_uint_t n, nxt_uint_t length)
 
 
 static nxt_noinline njs_ret_t
-njs_array_iterator_apply(njs_vm_t *vm, njs_array_next_t *next,
+njs_array_iterator_apply(njs_vm_t *vm, njs_array_iter_t *iter,
     njs_value_t *args, nxt_uint_t nargs)
 {
     nxt_int_t    n;
@@ -950,16 +957,25 @@ njs_array_iterator_apply(njs_vm_t *vm, njs_array_next_t *next,
      */
     arguments[0] = (nargs > 2) ? args[2] : *(njs_value_t *) &njs_value_void;
     /* GC: array elt, array */
+
+    /*
+     * All array iterators functions call njs_array_iterator_args()
+     * function which set a correct iter->next_index value.  A large
+     * value of iter->next_index must be checked before calling
+     * njs_array_iterator_apply().
+     */
     array = args[0].data.u.array;
-    n = next->index;
+    n = iter->next_index;
     arguments[1] = array->start[n];
+
     njs_number_set(&arguments[2], n);
+
     arguments[3] = args[0];
 
-    next->index = njs_array_iterator_next(array->start, ++n, next->length);
+    iter->next_index = njs_array_iterator_next(array, n + 1, iter->length);
 
     return njs_function_apply(vm, args[1].data.u.function, arguments, 4,
-                              (njs_index_t) &next->retval);
+                              (njs_index_t) &iter->retval);
 }
 
 
@@ -1034,21 +1050,21 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("forEach"),
         .value = njs_native_function(njs_array_prototype_for_each,
-                     njs_continuation_size(njs_array_next_t), 0),
+                     njs_continuation_size(njs_array_iter_t), 0),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("some"),
         .value = njs_native_function(njs_array_prototype_some,
-                     njs_continuation_size(njs_array_next_t), 0),
+                     njs_continuation_size(njs_array_iter_t), 0),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("every"),
         .value = njs_native_function(njs_array_prototype_every,
-                     njs_continuation_size(njs_array_next_t), 0),
+                     njs_continuation_size(njs_array_iter_t), 0),
     },
 };
 

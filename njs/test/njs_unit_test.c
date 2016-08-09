@@ -2293,6 +2293,14 @@ static njs_unit_test_t  njs_test[] =
                  "s.sum"),
       nxt_string("6") },
 
+    { nxt_string("var a = []; var c = 0;"
+                 "a.forEach(function(v, i, a) { c++ }); c"),
+      nxt_string("0") },
+
+    { nxt_string("var a = [,,,,]; var c = 0;"
+                 "a.forEach(function(v, i, a) { c++ }); c"),
+      nxt_string("0") },
+
     { nxt_string("var a = [];"
                  "a.some(function(v, i, a) { return v > 1 })"),
       nxt_string("false") },
