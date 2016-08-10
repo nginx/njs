@@ -2215,6 +2215,15 @@ static njs_unit_test_t  njs_test[] =
 
     /**/
 
+    { nxt_string("Array.isArray()"),
+      nxt_string("false") },
+
+    { nxt_string("Array.isArray(1)"),
+      nxt_string("false") },
+
+    { nxt_string("Array.isArray([])"),
+      nxt_string("true") },
+
     { nxt_string("a = [1,2,3]; a.concat(4, [5, 6, 7], 8)"),
       nxt_string("1,2,3,4,5,6,7,8") },
 

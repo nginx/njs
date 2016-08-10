@@ -257,6 +257,25 @@ njs_array_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
+static njs_ret_t
+njs_array_is_array(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    const njs_value_t  *value;
+
+    if (nargs > 1 && njs_is_array(&args[1])) {
+        value = &njs_string_true;
+
+    } else {
+        value = &njs_string_false;
+    }
+
+    vm->retval = *value;
+
+    return NXT_OK;
+}
+
+
 static const njs_object_prop_t  njs_array_constructor_properties[] =
 {
     /* Array.name == "Array". */
@@ -278,6 +297,13 @@ static const njs_object_prop_t  njs_array_constructor_properties[] =
         .type = NJS_NATIVE_GETTER,
         .name = njs_string("prototype"),
         .value = njs_native_getter(njs_object_prototype_create),
+    },
+
+    /* Array.isArray(). */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("isArray"),
+        .value = njs_native_function(njs_array_is_array, 0, 0),
     },
 };
 
