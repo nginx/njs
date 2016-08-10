@@ -2271,6 +2271,36 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = [1,2,3,4]; a.reverse()"),
       nxt_string("4,3,2,1") },
 
+    { nxt_string("var a = [1,2,3,4]; a.indexOf()"),
+      nxt_string("-1") },
+
+    { nxt_string("var a = [1,2,3,4]; a.indexOf(5)"),
+      nxt_string("-1") },
+
+    { nxt_string("var a = [1,2,3,4,3,4]; a.indexOf(3, '2')"),
+      nxt_string("2") },
+
+    { nxt_string("var a = [1,2,3,4,3,4]; a.indexOf(4, -1)"),
+      nxt_string("5") },
+
+    { nxt_string("var a = [1,2,3,4,3,4]; a.indexOf(3, -10)"),
+      nxt_string("2") },
+
+    { nxt_string("var a = [1,2,3,4]; a.lastIndexOf()"),
+      nxt_string("-1") },
+
+    { nxt_string("var a = [1,2,3,4]; a.lastIndexOf(5)"),
+      nxt_string("-1") },
+
+    { nxt_string("var a = [1,2,3,4,3,4]; a.lastIndexOf(3, '2')"),
+      nxt_string("4") },
+
+    { nxt_string("var a = [1,2,3,4,3,4]; a.lastIndexOf(4, -1)"),
+      nxt_string("5") },
+
+    { nxt_string("var a = [1,2,3,4,3,4]; a.lastIndexOf(3, -10)"),
+      nxt_string("4") },
+
     { nxt_string("var a = []; var s = { sum: 0 };"
                  "a.forEach(function(v, i, a) { this.sum += v }, s); s.sum"),
       nxt_string("0") },

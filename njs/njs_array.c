@@ -58,6 +58,8 @@ static njs_ret_t njs_array_prototype_join_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static nxt_noinline njs_value_t *njs_array_copy(njs_value_t *dst,
     njs_value_t *src);
+static njs_ret_t njs_array_index_of(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, nxt_bool_t first);
 static nxt_noinline njs_ret_t njs_array_prototype_for_each_cont(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static nxt_noinline njs_ret_t njs_array_prototype_some_cont(njs_vm_t *vm,
@@ -836,6 +838,70 @@ njs_array_copy(njs_value_t *dst, njs_value_t *src)
 
 
 static njs_ret_t
+njs_array_prototype_index_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    return njs_array_index_of(vm, args, nargs, 1);
+}
+
+
+static njs_ret_t
+njs_array_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    return njs_array_index_of(vm, args, nargs, 0);
+}
+
+
+static njs_ret_t
+njs_array_index_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    nxt_bool_t first)
+{
+    nxt_int_t    i, index, length;
+    njs_value_t  *value;
+    njs_array_t  *array;
+
+    index = -1;
+
+    if (nargs > 1) {
+        i = 0;
+        array = args[0].data.u.array;
+        length = array->length;
+
+        if (nargs > 2) {
+            i = args[2].data.u.number;
+
+            if (i < 0) {
+                i += length;
+
+                if (i < 0) {
+                    i = 0;
+                }
+            }
+        }
+
+        value = &args[1];
+
+        while (i < length) {
+            if (njs_values_strict_equal(value, &array->start[i])) {
+                index = i;
+
+                if (first) {
+                    break;
+                }
+            }
+
+            i++;
+        }
+    }
+
+    njs_number_set(&vm->retval, index);
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
 njs_array_prototype_for_each(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
@@ -1395,6 +1461,20 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("concat"),
         .value = njs_native_function(njs_array_prototype_concat, 0, 0),
+    },
+
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("indexOf"),
+        .value = njs_native_function(njs_array_prototype_index_of, 0,
+                     NJS_OBJECT_ARG, NJS_SKIP_ARG, NJS_INTEGER_ARG),
+    },
+
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("lastIndexOf"),
+        .value = njs_native_function(njs_array_prototype_last_index_of, 0,
+                     NJS_OBJECT_ARG, NJS_SKIP_ARG, NJS_INTEGER_ARG),
     },
 
     {

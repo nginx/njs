@@ -82,8 +82,6 @@ static nxt_noinline njs_ret_t njs_values_equal(njs_value_t *val1,
     njs_value_t *val2);
 static nxt_noinline njs_ret_t njs_values_compare(njs_value_t *val1,
     njs_value_t *val2);
-static nxt_noinline nxt_bool_t njs_values_strict_equal(njs_value_t *val1,
-    njs_value_t *val2);
 static njs_object_t *njs_function_new_object(njs_vm_t *vm, njs_value_t *value);
 static njs_ret_t njs_vmcode_continuation(njs_vm_t *vm, njs_value_t *invld1,
     njs_value_t *invld2);
@@ -2006,7 +2004,7 @@ njs_vmcode_strict_not_equal(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 }
 
 
-static nxt_noinline nxt_bool_t
+nxt_noinline nxt_bool_t
 njs_values_strict_equal(njs_value_t *val1, njs_value_t *val2)
 {
     size_t        size;
