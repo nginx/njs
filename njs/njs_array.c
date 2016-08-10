@@ -530,6 +530,87 @@ njs_array_prototype_shift(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 
 static njs_ret_t
+njs_array_prototype_splice(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    njs_ret_t    ret;
+    nxt_int_t    items, delta;
+    nxt_uint_t   i, n, start, delete, length;
+    njs_array_t  *array, *deleted;
+
+    array = NULL;
+    start = 0;
+    delete = 0;
+
+    if (njs_is_array(&args[0])) {
+        array = args[0].data.u.array;
+
+        if (nargs > 1) {
+            start = args[1].data.u.number;
+
+            if (nargs > 2) {
+                delete = args[2].data.u.number;
+
+            } else {
+                delete = array->length - start;
+            }
+        }
+    }
+
+    deleted = njs_array_alloc(vm, delete, 0);
+    if (nxt_slow_path(deleted == NULL)) {
+        return NXT_ERROR;
+    }
+
+    if (array != NULL && (delete != 0 || nargs > 3)) {
+        length = array->length;
+
+        /* Move deleted items to a new array to return. */
+        for (i = 0, n = start; i < delete && n < length; i++, n++) {
+            /* No retention required. */
+            deleted->start[i] = array->start[n];
+        }
+
+        items = nargs - 3;
+        items = items >= 0 ? items : 0;
+        delta = items - delete;
+
+        if (delta != 0) {
+            /*
+             * Relocate the rest of items.
+             * Index of the first item is in "n".
+             */
+            if (delta > 0) {
+                ret = njs_array_realloc(vm, array, 0, array->size + delta);
+                if (nxt_slow_path(ret != NXT_OK)) {
+                    return ret;
+                }
+            }
+
+            memmove(&array->start[start + items], &array->start[n],
+                    (array->length - n) * sizeof(njs_value_t));
+
+            array->length += delta;
+        }
+
+        /* Copy new items. */
+        n = start;
+
+        for (i = 3; i < nargs; i++) {
+            /* GC: njs_retain(&args[i]); */
+            array->start[n++] = args[i];
+        }
+    }
+
+    vm->retval.data.u.array = deleted;
+    vm->retval.type = NJS_ARRAY;
+    vm->retval.data.truth = 1;
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
 njs_array_prototype_reverse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
@@ -1433,6 +1514,13 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("shift"),
         .value = njs_native_function(njs_array_prototype_shift, 0, 0),
+    },
+
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("splice"),
+        .value = njs_native_function(njs_array_prototype_splice, 0,
+                    NJS_OBJECT_ARG, NJS_INTEGER_ARG, NJS_INTEGER_ARG),
     },
 
     {

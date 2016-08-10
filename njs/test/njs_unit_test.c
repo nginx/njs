@@ -2256,6 +2256,21 @@ static njs_unit_test_t  njs_test[] =
                  "len +' '+ a +' '+ a.shift()"),
       nxt_string("5 3,4,5,1,2 3") },
 
+    { nxt_string("var a = []; a.splice()"),
+      nxt_string("") },
+
+    { nxt_string("var a = [0,1,2,3,4,5,6,7];"
+                 "a.splice(3).join(':') + '|' + a"),
+      nxt_string("3:4:5:6:7|0,1,2") },
+
+    { nxt_string("var a = [0,1,2,3,4,5,6,7];"
+                 "a.splice(3, 2).join(':') + '|' + a"),
+      nxt_string("3:4|0,1,2,5,6,7") },
+
+    { nxt_string("var a = [0,1,2,3,4,5,6,7];"
+                 "a.splice(3, 2, 8, 9, 10, 11 ).join(':') + '|' + a"),
+      nxt_string("3:4|0,1,2,8,9,10,11,5,6,7") },
+
     { nxt_string("var a = []; a.reverse()"),
       nxt_string("") },
 
