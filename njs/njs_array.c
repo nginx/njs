@@ -51,6 +51,23 @@ typedef struct {
 } njs_array_iter_t;
 
 
+typedef struct {
+    union {
+        njs_continuation_t  cont;
+        u_char              padding[NJS_CONTINUATION_SIZE];
+    } u;
+    /*
+     * This retval value must be aligned so the continuation is padded
+     * to aligned size.
+     */
+    njs_value_t             retval;
+
+    njs_function_t          *function;
+    int32_t                 index;
+    uint32_t                current;
+} njs_array_sort_t;
+
+
 static njs_ret_t
 njs_array_prototype_to_string_continuation(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t retval);
@@ -81,6 +98,8 @@ static nxt_noinline uint32_t njs_array_iterator_next(njs_array_t *array,
 static nxt_noinline njs_ret_t njs_array_iterator_apply(njs_vm_t *vm,
     njs_array_iter_t *iter, njs_value_t *args, nxt_uint_t nargs);
 static uint32_t njs_array_reduce_right_next(njs_array_t *array, int32_t n);
+static njs_ret_t njs_array_prototype_sort_cont(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused);
 
 
 nxt_noinline njs_array_t *
@@ -1477,6 +1496,139 @@ njs_array_reduce_right_next(njs_array_t *array, int32_t n)
 }
 
 
+static njs_ret_t
+njs_array_string_sort(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    nxt_int_t   ret;
+    nxt_uint_t  i;
+
+    for (i = 1; i < nargs; i++) {
+        if (!njs_is_string(&args[i])) {
+            vm->frame->trap_scratch.data.u.value = &args[i];
+            return NJS_TRAP_STRING_ARG;
+        }
+    }
+
+    ret = njs_string_cmp(&args[1], &args[2]);
+
+    njs_number_set(&vm->retval, ret);
+
+    return NXT_OK;
+}
+
+
+static const njs_function_t  njs_array_string_sort_function = {
+    .object.shared = 1,
+    .native = 1,
+    .continuation_size = NJS_CONTINUATION_SIZE,
+    .args_types = { NJS_SKIP_ARG, NJS_STRING_ARG, NJS_STRING_ARG },
+    .args_offset = 1,
+    .u.native = njs_array_string_sort,
+};
+
+
+static njs_ret_t
+njs_array_prototype_sort(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    njs_array_sort_t  *sort;
+
+    if (njs_is_array(&args[0]) && args[0].data.u.array->length > 1) {
+
+        sort = njs_continuation(vm->frame);
+        sort->u.cont.function = njs_array_prototype_sort_cont;
+        sort->current = 0;
+        sort->retval = njs_value_zero;
+
+        if (nargs > 1 && njs_is_function(&args[1])) {
+            sort->function = args[1].data.u.function;
+
+        } else {
+            sort->function = (njs_function_t *) &njs_array_string_sort_function;
+        }
+
+        return njs_array_prototype_sort_cont(vm, args, nargs, unused);
+    }
+
+    vm->retval = args[0];
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_array_prototype_sort_cont(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    nxt_int_t         n;
+    njs_array_t       *array;
+    njs_value_t       value, *start, arguments[3];
+    njs_array_sort_t  *sort;
+
+    array = args[0].data.u.array;
+    start = array->start;
+
+    sort = njs_continuation(vm->frame);
+
+    if (njs_is_number(&sort->retval)) {
+
+        /*
+         * The sort function is impelemented with the insertion sort algorithm.
+         * Its worst and average computational complexity is O^2.  This point
+         * should be considired as return point from comparison function so
+         * "goto next" moves control to the appropriate step of the algorithm.
+         * The first iteration also goes there because sort->retval is zero.
+         */
+        if (sort->retval.data.u.number <= 0) {
+            goto next;
+        }
+
+        n = sort->index;
+
+    swap:
+
+        value = start[n];
+        start[n] = start[n - 1];
+        n--;
+        start[n] = value;
+
+        do {
+            if (n > 0) {
+
+                if (njs_is_valid(&start[n]) && njs_is_valid(&start[n - 1])) {
+                    arguments[0] = njs_value_void;
+
+                    /* GC: array elt, array */
+                    arguments[1] = start[n - 1];
+                    arguments[2] = start[n];
+
+                    sort->index = n;
+
+                    return njs_function_apply(vm, sort->function, arguments, 3,
+                                              (njs_index_t) &sort->retval);
+                }
+
+                if (!njs_is_valid(&start[n - 1]) && njs_is_valid(&start[n])) {
+                    /* Move invalid values to the end of array. */
+                    goto swap;
+                }
+            }
+
+        next:
+
+            sort->current++;
+            n = sort->current;
+
+        } while (sort->current < array->length);
+    }
+
+    vm->retval = args[0];
+
+    return NXT_OK;
+}
+
+
 static const njs_object_prop_t  njs_array_prototype_properties[] =
 {
     {
@@ -1611,6 +1763,13 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("reduceRight"),
         .value = njs_native_function(njs_array_prototype_reduce_right,
+                     njs_continuation_size(njs_array_iter_t), 0),
+    },
+
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("sort"),
+        .value = njs_native_function(njs_array_prototype_sort,
                      njs_continuation_size(njs_array_iter_t), 0),
     },
 };

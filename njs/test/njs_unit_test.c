@@ -2517,6 +2517,37 @@ static njs_unit_test_t  njs_test[] =
                  "              { a.shift(); return p + v }, 10)"),
       nxt_string("19") },
 
+    { nxt_string("var a = ['1','2','3','4','5','6']; a.sort()"),
+      nxt_string("1,2,3,4,5,6") },
+
+    { nxt_string("var o = { toString: function() { return 5 } }"
+                 "var a = [6,o,4,3,2,1]; a.sort()"),
+      nxt_string("1,2,3,4,5,6") },
+
+    { nxt_string("var a = [1,2,3,4,5,6];"
+                 "a.sort(function(x, y) { return x - y })"),
+      nxt_string("1,2,3,4,5,6") },
+
+    { nxt_string("var a = [6,5,4,3,2,1];"
+                 "a.sort(function(x, y) { return x - y })"),
+      nxt_string("1,2,3,4,5,6") },
+
+    { nxt_string("var a = [2,2,2,1,1,1];"
+                 "a.sort(function(x, y) { return x - y })"),
+      nxt_string("1,1,1,2,2,2") },
+
+    { nxt_string("var a = [,,,2,2,2,1,1,1];"
+                 "a.sort(function(x, y) { return x - y })"),
+      nxt_string("1,1,1,2,2,2,,,") },
+
+    { nxt_string("var a = [,,,,];"
+                 "a.sort(function(x, y) { return x - y })"),
+      nxt_string(",,,") },
+
+    { nxt_string("var a = [1,,];"
+                 "a.sort(function(x, y) { return x - y })"),
+      nxt_string("1,") },
+
     /* Strings. */
 
     { nxt_string("var a = '0123456789' + '012345'"
