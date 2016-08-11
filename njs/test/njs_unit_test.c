@@ -2124,6 +2124,17 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = []; a[5] = 5; a.join()"),
       nxt_string(",,,,,5") },
 
+    { nxt_string("var a = [,null,undefined,false,true,0,1]; a.join()"),
+      nxt_string(",,,false,true,0,1") },
+
+    { nxt_string("var o = { toString: function() { return null } };"
+                 "[o].join()"),
+      nxt_string("null") },
+
+    { nxt_string("var o = { toString: function() { return undefined } };"
+                 "[o].join()"),
+      nxt_string("undefined") },
+
     { nxt_string("a = []; a[5] = 5; a"),
       nxt_string(",,,,,5") },
 
