@@ -43,12 +43,23 @@ typedef struct {
      */
     njs_value_t             retval;
 
-    njs_value_t             value;
-    njs_array_t             *array;
     uint32_t                next_index;
     uint32_t                length;
-    uint32_t                index;
 } njs_array_iter_t;
+
+
+typedef struct {
+    njs_array_iter_t        iter;
+    njs_value_t             value;
+    njs_array_t             *array;
+} njs_array_filter_t;
+
+
+typedef struct {
+    njs_array_iter_t        iter;
+    njs_array_t             *array;
+    uint32_t                index;
+} njs_array_map_t;
 
 
 typedef struct {
@@ -1137,20 +1148,20 @@ static njs_ret_t
 njs_array_prototype_filter(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    nxt_int_t         ret;
-    njs_array_iter_t  *iter;
+    nxt_int_t           ret;
+    njs_array_filter_t  *filter;
 
     ret = njs_array_iterator_args(vm, args, nargs);
     if (nxt_slow_path(ret != NXT_OK)) {
         return ret;
     }
 
-    iter = njs_continuation(vm->frame);
-    iter->u.cont.function = njs_array_prototype_filter_cont;
-    iter->retval.data.truth = 0;
+    filter = njs_continuation(vm->frame);
+    filter->iter.u.cont.function = njs_array_prototype_filter_cont;
+    filter->iter.retval.data.truth = 0;
 
-    iter->array = njs_array_alloc(vm, 0, NJS_ARRAY_SPARE);
-    if (nxt_slow_path(iter->array == NULL)) {
+    filter->array = njs_array_alloc(vm, 0, NJS_ARRAY_SPARE);
+    if (nxt_slow_path(filter->array == NULL)) {
         return NXT_ERROR;
     }
 
@@ -1162,27 +1173,33 @@ static njs_ret_t
 njs_array_prototype_filter_cont(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    nxt_int_t         ret;
-    njs_array_iter_t  *iter;
+    nxt_int_t           ret;
+    njs_array_t         *array;
+    njs_array_filter_t  *filter;
 
-    iter = njs_continuation(vm->frame);
+    filter = njs_continuation(vm->frame);
 
-    if (njs_is_true(&iter->retval)) {
-        ret = njs_array_add(vm, iter->array, &iter->value);
+    if (njs_is_true(&filter->iter.retval)) {
+        ret = njs_array_add(vm, filter->array, &filter->value);
         if (nxt_slow_path(ret != NXT_OK)) {
             return ret;
         }
     }
 
-    if (iter->next_index >= args[0].data.u.array->length) {
-        vm->retval.data.u.array = iter->array;
+    array = args[0].data.u.array;
+
+    if (filter->iter.next_index >= array->length) {
+        vm->retval.data.u.array = filter->array;
         vm->retval.type = NJS_ARRAY;
         vm->retval.data.truth = 1;
 
         return NXT_OK;
     }
 
-    return njs_array_iterator_apply(vm, iter, args, nargs);
+    /* GC: filter->value */
+    filter->value = array->start[filter->iter.next_index];
+
+    return njs_array_iterator_apply(vm, &filter->iter, args, nargs);
 }
 
 
@@ -1190,29 +1207,29 @@ static njs_ret_t
 njs_array_prototype_map(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    size_t            size;
-    nxt_int_t         ret;
-    njs_value_t       *value;
-    njs_array_t       *array;
-    njs_array_iter_t  *iter;
+    size_t           size;
+    nxt_int_t        ret;
+    njs_value_t      *value;
+    njs_array_t      *array;
+    njs_array_map_t  *map;
 
     ret = njs_array_iterator_args(vm, args, nargs);
     if (nxt_slow_path(ret != NXT_OK)) {
         return ret;
     }
 
-    iter = njs_continuation(vm->frame);
-    iter->u.cont.function = njs_array_prototype_map_cont;
-    njs_set_invalid(&iter->retval);
+    map = njs_continuation(vm->frame);
+    map->iter.u.cont.function = njs_array_prototype_map_cont;
+    njs_set_invalid(&map->iter.retval);
 
     array = args[0].data.u.array;
 
-    iter->array = njs_array_alloc(vm, array->length, 0);
-    if (nxt_slow_path(iter->array == NULL)) {
+    map->array = njs_array_alloc(vm, array->length, 0);
+    if (nxt_slow_path(map->array == NULL)) {
         return NXT_ERROR;
     }
 
-    value = iter->array->start;
+    value = map->array->start;
     size = array->length;
 
     while (size != 0) {
@@ -1229,23 +1246,25 @@ static njs_ret_t
 njs_array_prototype_map_cont(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    njs_array_iter_t  *iter;
+    njs_array_map_t  *map;
 
-    iter = njs_continuation(vm->frame);
+    map = njs_continuation(vm->frame);
 
-    if (njs_is_valid(&iter->retval)) {
-        iter->array->start[iter->index] = iter->retval;
+    if (njs_is_valid(&map->iter.retval)) {
+        map->array->start[map->index] = map->iter.retval;
     }
 
-    if (iter->next_index >= args[0].data.u.array->length) {
-        vm->retval.data.u.array = iter->array;
+    if (map->iter.next_index >= args[0].data.u.array->length) {
+        vm->retval.data.u.array = map->array;
         vm->retval.type = NJS_ARRAY;
         vm->retval.data.truth = 1;
 
         return NXT_OK;
     }
 
-    return njs_array_iterator_apply(vm, iter, args, nargs);
+    map->index = map->iter.next_index;
+
+    return njs_array_iterator_apply(vm, &map->iter, args, nargs);
 }
 
 
@@ -1308,12 +1327,6 @@ njs_array_prototype_reduce_cont(njs_vm_t *vm, njs_value_t *args,
     /* GC: array elt, array */
     arguments[1] = iter->retval;
 
-    /*
-     * All array iterators functions call njs_array_iterator_args()
-     * function which set a correct iter->next_index value.  A large
-     * value of iter->next_index must be checked before calling
-     * njs_array_iterator_apply().
-     */
     array = args[0].data.u.array;
     n = iter->next_index;
 
@@ -1392,8 +1405,6 @@ njs_array_iterator_apply(njs_vm_t *vm, njs_array_iter_t *iter,
      */
     array = args[0].data.u.array;
     n = iter->next_index;
-    iter->index = n;
-    iter->value = array->start[n];
     arguments[1] = array->start[n];
 
     njs_number_set(&arguments[2], n);
@@ -1415,29 +1426,24 @@ njs_array_prototype_reduce_right(njs_vm_t *vm, njs_value_t *args,
     njs_array_t       *array;
     njs_array_iter_t  *iter;
 
-    if (nargs > 1 && njs_is_array(&args[0]) && njs_is_function(&args[1])) {
-        array = args[0].data.u.array;
-        iter = njs_continuation(vm->frame);
-        iter->next_index = njs_array_reduce_right_next(array, array->length);
-
-    } else {
-        vm->exception = &njs_exception_type_error;
-        return NXT_ERROR;
+    if (nargs < 2 || !njs_is_array(&args[0]) || !njs_is_function(&args[1])) {
+        goto type_error;
     }
 
     iter = njs_continuation(vm->frame);
     iter->u.cont.function = njs_array_prototype_reduce_right_cont;
 
+    array = args[0].data.u.array;
+    iter->next_index = njs_array_reduce_right_next(array, array->length);
+
     if (nargs > 2) {
         iter->retval = args[2];
 
     } else {
-        array = args[0].data.u.array;
         n = iter->next_index;
 
         if (n < 0) {
-            vm->exception = &njs_exception_type_error;
-            return NXT_ERROR;
+            goto type_error;
         }
 
         iter->retval = array->start[n];
@@ -1446,6 +1452,12 @@ njs_array_prototype_reduce_right(njs_vm_t *vm, njs_value_t *args,
     }
 
     return njs_array_prototype_reduce_right_cont(vm, args, nargs, unused);
+
+type_error:
+
+    vm->exception = &njs_exception_type_error;
+
+    return NXT_ERROR;
 }
 
 
@@ -1748,14 +1760,14 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("filter"),
         .value = njs_native_function(njs_array_prototype_filter,
-                     njs_continuation_size(njs_array_iter_t), 0),
+                     njs_continuation_size(njs_array_filter_t), 0),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("map"),
         .value = njs_native_function(njs_array_prototype_map,
-                     njs_continuation_size(njs_array_iter_t), 0),
+                     njs_continuation_size(njs_array_map_t), 0),
     },
 
     {
