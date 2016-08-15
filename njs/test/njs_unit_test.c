@@ -3290,6 +3290,9 @@ static njs_unit_test_t  njs_test[] =
 
     /* Functions. */
 
+    { nxt_string("return"),
+      nxt_string("SyntaxError: Illegal return statement in 1") },
+
     { nxt_string("function () { } f()"),
       nxt_string("SyntaxError: Unexpected token \"(\" in 1") },
 

@@ -584,6 +584,13 @@ njs_parser_return_statement(njs_vm_t *vm, njs_parser_t *parser)
     njs_token_t        token;
     njs_parser_node_t  *node;
 
+    if (parser->scope == NJS_SCOPE_GLOBAL) {
+        nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+                  "SyntaxError: Illegal return statement");
+
+        return NXT_ERROR;
+    }
+
     node = njs_parser_node_alloc(vm);
     if (nxt_slow_path(node == NULL)) {
         return NJS_TOKEN_ERROR;
