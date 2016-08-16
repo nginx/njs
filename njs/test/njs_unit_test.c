@@ -3229,6 +3229,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abcdefgh'.match(/def/)"),
       nxt_string("def") },
 
+    { nxt_string("'abc abc abc'.match('abc')"),
+      nxt_string("abc") },
+
+    { nxt_string("'abc abc abc'.match(/abc/)"),
+      nxt_string("abc") },
+
+    { nxt_string("'abc abc abc'.match(/abc/g)"),
+      nxt_string("abc,abc,abc") },
+
     { nxt_string("'abc ABC aBc'.match(/abc/ig)"),
       nxt_string("abc,ABC,aBc") },
 

@@ -41,6 +41,8 @@ static njs_ret_t njs_string_from_char_code(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static nxt_noinline ssize_t njs_string_index_of(njs_vm_t *vm,
     njs_value_t *src, njs_value_t *search_string, size_t index);
+static njs_ret_t njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
+    njs_regexp_pattern_t *pattern);
 static njs_ret_t njs_string_split_part_add(njs_vm_t *vm, njs_array_t *array,
     u_char *start, size_t size, nxt_uint_t utf8);
 
@@ -1429,26 +1431,27 @@ njs_string_prototype_search(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
         switch (args[1].type) {
 
-        case NJS_VOID:
-            goto done;
+        case NJS_REGEXP:
+            pattern = args[1].data.u.regexp->pattern;
+            break;
 
         case NJS_STRING:
             (void) njs_string_prop(&string, &args[1]);
 
-            if (string.size == 0) {
-                goto done;
+            if (string.size != 0) {
+                pattern = njs_regexp_pattern_create(vm, string.start,
+                                                    string.size, 0);
+                if (nxt_slow_path(pattern == NULL)) {
+                    return NXT_ERROR;
+                }
+
+                break;
             }
 
-            pattern = njs_regexp_pattern_create(vm, string.start,
-                                                string.length, 0);
-            if (nxt_slow_path(pattern == NULL)) {
-                return NXT_ERROR;
-            }
+            goto done;
 
-            break;
-
-        default:  /* NJS_REGEXP */
-            pattern = args[1].data.u.regexp->pattern;
+        default:  /* NJS_VOID */
+            goto done;
         }
 
         index = -1;
@@ -1486,55 +1489,61 @@ static njs_ret_t
 njs_string_prototype_match(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    int                   *captures;
-    u_char                *start;
-    int32_t               size, length;
     njs_ret_t             ret;
-    nxt_uint_t            n, utf8;
-    njs_value_t           tmp;
-    njs_array_t           *array;
+    njs_value_t           arguments[2];
     njs_string_prop_t     string;
     njs_regexp_pattern_t  *pattern;
 
-    if (nargs == 1) {
-        goto empty;
-    }
+    arguments[0] = vm->empty_regexp;
+    arguments[1] = args[0];
 
-    switch (args[1].type) {
+    if (nargs > 1) {
 
-    case NJS_VOID:
-        goto empty;
+        if (njs_is_regexp(&args[1])) {
+            pattern = args[1].data.u.regexp->pattern;
 
-    case NJS_STRING:
-        (void) njs_string_prop(&string, &args[1]);
+            if (pattern->global) {
+                return njs_string_match_multiple(vm, args, pattern);
+            }
 
-        if (string.size == 0) {
-            goto empty;
-        }
-
-        pattern = njs_regexp_pattern_create(vm, string.start, string.length, 0);
-        if (nxt_slow_path(pattern == NULL)) {
-            return NXT_ERROR;
-        }
-
-        break;
-
-    default:  /* NJS_REGEXP */
-        pattern = args[1].data.u.regexp->pattern;
-
-        if (!pattern->global) {
             /*
              * string.match(regexp) is the same as regexp.exec(string)
              * if the regexp has no global flag.
              */
-            tmp = args[0];
-            args[0] = args[1];
-            args[1] = tmp;
+            arguments[0] = args[1];
 
-            return njs_regexp_prototype_exec(vm, args, nargs, unused);
+        } else if (njs_is_string(&args[1])) {
+            /* string1.match(string2) is the same as /string2/.exec(string1). */
+
+            (void) njs_string_prop(&string, &args[1]);
+
+            ret = njs_regexp_create(vm, &arguments[0], string.start,
+                                    string.size, 0);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return ret;
+            }
         }
+
+        /* A void value. */
     }
 
+    return njs_regexp_prototype_exec(vm, arguments, nargs, unused);
+}
+
+
+static njs_ret_t
+njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
+    njs_regexp_pattern_t *pattern)
+{
+    int                *captures;
+    u_char             *start;
+    int32_t            size, length;
+    njs_ret_t          ret;
+    nxt_uint_t         n, utf8;
+    njs_array_t        *array;
+    njs_string_prop_t  string;
+
+    args[1].data.u.regexp->last_index = 0;
     vm->retval = njs_value_null;
 
     (void) njs_string_prop(&string, &args[0]);
@@ -1625,26 +1634,6 @@ njs_string_prototype_match(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
         } while (string.size > 0);
     }
-
-    if (njs_is_regexp(&args[1])) {
-        args[1].data.u.regexp->last_index = 0;
-    }
-
-    return NXT_OK;
-
-empty:
-
-    array = njs_array_alloc(vm, 1, 0);
-    if (nxt_slow_path(array == NULL)) {
-        return NXT_ERROR;
-    }
-
-    array->length = 1;
-    array->start[0] = njs_string_empty;
-
-    vm->retval.data.u.array = array;
-    vm->retval.type = NJS_ARRAY;
-    vm->retval.data.truth = 1;
 
     return NXT_OK;
 }

@@ -797,6 +797,7 @@ struct njs_vm_s {
 
     nxt_regex_context_t      *regex_context;
     nxt_regex_match_data_t   *single_match_data;
+    njs_value_t              empty_regexp;
 
     nxt_array_t              *code;  /* of njs_vm_code_t */
 
