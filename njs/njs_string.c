@@ -37,7 +37,7 @@ static nxt_noinline void njs_string_slice_prop(njs_string_prop_t *string,
     njs_slice_prop_t *slice, njs_value_t *args, nxt_uint_t nargs);
 static nxt_noinline void njs_string_slice_args(njs_slice_prop_t *slice,
     njs_value_t *args, nxt_uint_t nargs);
-static njs_ret_t njs_string_prototype_from_char_code(njs_vm_t *vm,
+static njs_ret_t njs_string_from_char_code(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static nxt_noinline ssize_t njs_string_index_of(njs_vm_t *vm,
     njs_value_t *src, njs_value_t *search_string, size_t index);
@@ -334,18 +334,18 @@ static const njs_object_prop_t  njs_string_constructor_properties[] =
         .value = njs_native_getter(njs_object_prototype_create),
     },
 
+    /* String.fromCharCode(). */
     {
         .type = NJS_METHOD,
         .name = njs_string("fromCharCode"),
-        .value = njs_native_function(njs_string_prototype_from_char_code, 0, 0),
+        .value = njs_native_function(njs_string_from_char_code, 0, 0),
     },
 
-
-    /* ECMAScript 6, fromCodePoint(). */
+    /* String.fromCodePoint(), ECMAScript 6. */
     {
         .type = NJS_METHOD,
         .name = njs_string("fromCodePoint"),
-        .value = njs_native_function(njs_string_prototype_from_char_code, 0, 0),
+        .value = njs_native_function(njs_string_from_char_code, 0, 0),
     },
 };
 
@@ -1064,7 +1064,7 @@ done:
 
 
 static njs_ret_t
-njs_string_prototype_from_char_code(njs_vm_t *vm, njs_value_t *args,
+njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
     u_char      *p;
@@ -1409,6 +1409,10 @@ njs_string_prototype_to_upper_case(njs_vm_t *vm, njs_value_t *args,
 }
 
 
+/*
+ * String.search([regexp])
+ */
+
 static njs_ret_t
 njs_string_prototype_search(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
@@ -1482,6 +1486,7 @@ static njs_ret_t
 njs_string_prototype_match(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
+    int                   *captures;
     u_char                *start;
     int32_t               size, length;
     njs_ret_t             ret;
@@ -1490,7 +1495,6 @@ njs_string_prototype_match(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_array_t           *array;
     njs_string_prop_t     string;
     njs_regexp_pattern_t  *pattern;
-    int                   *captures;
 
     if (nargs == 1) {
         goto empty;
@@ -2047,7 +2051,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
                      NJS_STRING_OBJECT_ARG, NJS_INTEGER_ARG),
     },
 
-    /* ECMAScript 6, codePointAt(). */
+    /* String.codePointAt(), ECMAScript 6. */
     {
         .type = NJS_METHOD,
         .name = njs_string("codePointAt"),

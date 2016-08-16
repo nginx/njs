@@ -110,15 +110,15 @@ struct nxt_mem_cache_pool_s {
 #define NXT_MEM_CACHE_EMBEDDED_BLOCK  2
 
 
-#define nxt_mem_cache_chunk_is_free(map, chunk)                                \
+#define nxt_mem_cache_chunk_is_free(map, chunk)                               \
     ((map[chunk / 8] & (0x80 >> (chunk & 7))) == 0)
 
 
-#define nxt_mem_cache_chunk_set_free(map, chunk)                               \
+#define nxt_mem_cache_chunk_set_free(map, chunk)                              \
     map[chunk / 8] &= ~(0x80 >> (chunk & 7))
 
 
-#define nxt_mem_cache_free_junk(p, size)                                       \
+#define nxt_mem_cache_free_junk(p, size)                                      \
     memset((p), 0x5A, size)
 
 

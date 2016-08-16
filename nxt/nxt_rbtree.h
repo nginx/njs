@@ -15,7 +15,7 @@ struct nxt_rbtree_node_s {
     nxt_rbtree_node_t         *right;
     nxt_rbtree_node_t         *parent;
 
-    uint8_t                  color;
+    uint8_t                   color;
 };
 
 
@@ -28,7 +28,7 @@ typedef struct {
 
 #define NXT_RBTREE_NODE(node)                                                 \
     nxt_rbtree_part_t         node;                                           \
-    uint8_t                  node##_color
+    uint8_t                   node##_color
 
 
 #define NXT_RBTREE_NODE_INIT  { NULL, NULL, NULL }, 0

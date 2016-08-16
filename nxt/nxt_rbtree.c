@@ -54,7 +54,7 @@ nxt_rbtree_init(nxt_rbtree_t *tree, nxt_rbtree_compare_t compare)
 
     /*
      * The sentinel's right child is never used so
-     * or comparison callback can be safely stored here.
+     * comparison callback can be safely stored here.
      */
     tree->sentinel.right = (void *) compare;
 

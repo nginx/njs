@@ -780,7 +780,7 @@ struct njs_vm_s {
     nxt_lvlhsh_t             values_hash;
 
     /*
-     * The prototypes and constructors arrays must be togther because
+     * The prototypes and constructors arrays must be together because
      * they are copied from njs_vm_shared_t by single memcpy()
      * in njs_builtin_objects_clone().
      */

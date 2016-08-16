@@ -69,11 +69,11 @@ typedef void (*nxt_lvlhsh_free_t)(void *ctx, void *p, size_t size);
 
 
 typedef struct {
-    uint32_t                 bucket_end;
-    uint32_t                 bucket_size;
-    uint32_t                 bucket_mask;
-    uint8_t                  shift[8];
-    uint32_t                 nalloc;
+    uint32_t                  bucket_end;
+    uint32_t                  bucket_size;
+    uint32_t                  bucket_mask;
+    uint8_t                   shift[8];
+    uint32_t                  nalloc;
 
     nxt_lvlhsh_test_t         test;
     nxt_lvlhsh_alloc_t        alloc;
@@ -87,28 +87,28 @@ typedef struct {
     nxt_lvlhsh_free_t         free;
 
     /* The maximum allowed aligned shift. */
-    uint32_t                 max_shift;
-    uint32_t                 nalloc;
+    uint32_t                  max_shift;
+    uint32_t                  nalloc;
 } nxt_lvlhsh_ctx_t;
 
 
 typedef struct {
-    void                      *slot;
+    void                       *slot;
 } nxt_lvlhsh_t;
 
 
 struct nxt_lvlhsh_query_s {
-    uint32_t                 key_hash;
-    nxt_str_t                key;
+    uint32_t                  key_hash;
+    nxt_str_t                 key;
 
-    uint8_t                  replace;     /* 1 bit */
-    void                     *value;
+    uint8_t                   replace;     /* 1 bit */
+    void                      *value;
 
     const nxt_lvlhsh_proto_t  *proto;
-    void                     *pool;
+    void                      *pool;
 
     /* Opaque data passed for the test function. */
-    void                     *data;
+    void                      *data;
 };
 
 
@@ -166,10 +166,10 @@ typedef struct {
      * bits, because entry positions are not aligned.  A current level is
      * stored as key bit path from the root.
      */
-    uint32_t                 *bucket;
-    uint32_t                 current;
-    uint32_t                 entry;
-    uint32_t                 entries;
+    uint32_t                  *bucket;
+    uint32_t                  current;
+    uint32_t                  entry;
+    uint32_t                  entries;
 } nxt_lvlhsh_each_t;
 
 
