@@ -104,6 +104,10 @@ nxt_noinline uint32_t njs_string_index(njs_string_prop_t *string,
 njs_ret_t njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
     const njs_value_t *src);
 double njs_string_to_number(njs_value_t *value, nxt_bool_t exact);
+njs_ret_t njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused);
+njs_ret_t njs_string_encode_uri_component(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused);
 
 njs_index_t njs_value_index(njs_vm_t *vm, njs_parser_t *parser,
     const njs_value_t *src);

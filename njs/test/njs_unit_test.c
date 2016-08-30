@@ -3297,6 +3297,18 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'0123456789'.split('').reverse().join('')"),
       nxt_string("9876543210") },
 
+    { nxt_string("encodeURI()"),
+      nxt_string("undefined")},
+
+    { nxt_string("encodeURI('012абв')"),
+      nxt_string("012%D0%B0%D0%B1%D0%B2")},
+
+    { nxt_string("encodeURI('~}|{`_^]\\\\[@?>=<;:/.-,+*)(\\\'&%$#\"! ')"),
+      nxt_string("~%7D%7C%7B%60_%5E%5D%5C%5B@?%3E=%3C;:/.-,+*)('&%25$#%22!%20")},
+
+    { nxt_string("encodeURIComponent('~}|{`_^]\\\\[@?>=<;:/.-,+*)(\\\'&%$#\"! ')"),
+      nxt_string("~%7D%7C%7B%60_%5E%5D%5C%5B%40%3F%3E%3D%3C%3B%3A%2F.-%2C%2B*)('%26%25%24%23%22!%20")},
+
     /* Functions. */
 
     { nxt_string("return"),

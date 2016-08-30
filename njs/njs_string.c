@@ -45,6 +45,8 @@ static njs_ret_t njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
     njs_regexp_pattern_t *pattern);
 static njs_ret_t njs_string_split_part_add(njs_vm_t *vm, njs_array_t *array,
     u_char *start, size_t size, nxt_uint_t utf8);
+static njs_ret_t njs_string_encode(njs_vm_t *vm, njs_value_t *value,
+    const uint32_t *escape);
 
 
 njs_ret_t
@@ -2103,6 +2105,137 @@ const njs_object_init_t  njs_string_prototype_init = {
     njs_string_prototype_properties,
     nxt_nitems(njs_string_prototype_properties),
 };
+
+
+/*
+ * encodeURI(string)
+ */
+
+njs_ret_t
+njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    static const uint32_t  escape[] = {
+        0xffffffff,  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+
+                     /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0x50000025,  /* 0101 0000 0000 0000  0000 0000 0010 0101 */
+
+                     /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x78000000,  /* 0111 1000 0000 0000  0000 0000 0000 0000 */
+
+                     /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0xb8000001,  /* 1011 1000 0000 0000  0000 0000 0000 0001 */
+
+        0xffffffff,  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff,  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff,  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff,  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+    };
+
+    if (nargs > 1) {
+        return njs_string_encode(vm, &args[1], escape);
+    }
+
+    vm->retval = njs_string_void;
+
+    return NXT_OK;
+}
+
+
+/*
+ * encodeURIComponent(string)
+ */
+
+njs_ret_t
+njs_string_encode_uri_component(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    static const uint32_t  escape[] = {
+        0xffffffff,  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+
+                     /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0xfc00987d,  /* 1111 1100 0000 0000  1001 1000 0111 1101 */
+
+                     /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x78000001,  /* 0111 1000 0000 0000  0000 0000 0000 0001 */
+
+                     /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0xb8000001,  /* 1011 1000 0000 0000  0000 0000 0000 0001 */
+
+        0xffffffff,  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff,  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff,  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff,  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+    };
+
+    if (nargs > 1) {
+        return njs_string_encode(vm, &args[1], escape);
+    }
+
+    vm->retval = njs_string_void;
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_string_encode(njs_vm_t *vm, njs_value_t *value, const uint32_t *escape)
+{
+    u_char               byte, *src, *dst;
+    size_t               n, size;
+    njs_string_prop_t    string;
+    static const u_char  hex[16] = "0123456789ABCDEF";
+
+    nxt_prefetch(escape);
+
+    (void) njs_string_prop(&string, value);
+
+    src = string.start;
+    n = 0;
+
+    for (size = string.size; size != 0; size--) {
+        byte = *src++;
+
+        if ((escape[byte >> 5] & ((uint32_t) 1 << (byte & 0x1f))) != 0) {
+            n += 2;
+        }
+    }
+
+    if (n == 0) {
+        /* GC: retain src. */
+        vm->retval = *value;
+        return NXT_OK;
+    }
+
+    size = string.size + n;
+
+    dst = njs_string_alloc(vm, &vm->retval, size, size);
+    if (nxt_slow_path(dst == NULL)) {
+        return NXT_ERROR;
+    }
+
+    size = string.size;
+    src = string.start;
+
+    do {
+        byte = *src++;
+
+        if ((escape[byte >> 5] & ((uint32_t) 1 << (byte & 0x1f))) != 0) {
+            *dst++ = '%';
+            *dst++ = hex[byte >> 4];
+            *dst++ = hex[byte & 0xf];
+
+        } else {
+            *dst++ = byte;
+        }
+
+        size--;
+
+    } while (size != 0);
+
+    return NXT_OK;
+}
 
 
 static nxt_int_t

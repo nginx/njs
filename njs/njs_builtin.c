@@ -82,12 +82,14 @@ njs_builtin_objects_create(njs_vm_t *vm)
     };
 
     static const njs_object_init_t    *function_init[] = {
-        &njs_eval_function_init,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
+        &njs_eval_function_init,      /* eval               */
+        NULL,                         /* toString           */
+        NULL,                         /* isNaN              */
+        NULL,                         /* isFinite           */
+        NULL,                         /* parseInt           */
+        NULL,                         /* parseFloat         */
+        NULL,                         /* encodeURI          */
+        NULL,                         /* encodeURIComponent */
     };
 
     static const njs_function_init_t  native_functions[] = {
@@ -99,6 +101,8 @@ njs_builtin_objects_create(njs_vm_t *vm)
         { njs_number_parse_int,
           { NJS_SKIP_ARG, NJS_STRING_ARG, NJS_INTEGER_ARG } },
         { njs_number_parse_float,          { NJS_SKIP_ARG, NJS_STRING_ARG } },
+        { njs_string_encode_uri,           { NJS_SKIP_ARG, NJS_STRING_ARG } },
+        { njs_string_encode_uri_component, { NJS_SKIP_ARG, NJS_STRING_ARG } },
     };
 
     static const njs_object_prop_t    null_proto_property = {
