@@ -3309,6 +3309,39 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("encodeURIComponent('~}|{`_^]\\\\[@?>=<;:/.-,+*)(\\\'&%$#\"! ')"),
       nxt_string("~%7D%7C%7B%60_%5E%5D%5C%5B%40%3F%3E%3D%3C%3B%3A%2F.-%2C%2B*)('%26%25%24%23%22!%20")},
 
+    { nxt_string("decodeURI()"),
+      nxt_string("undefined")},
+
+    { nxt_string("decodeURI('%QQ')"),
+      nxt_string("URIError")},
+
+    { nxt_string("decodeURI('%')"),
+      nxt_string("URIError")},
+
+    { nxt_string("decodeURI('%0')"),
+      nxt_string("URIError")},
+
+    { nxt_string("decodeURI('%00')"),
+      nxt_string("\0")},
+
+    { nxt_string("decodeURI('%3012%D0%B0%D0%B1%D0%B2')"),
+      nxt_string("012абв")},
+
+    { nxt_string("decodeURI('%7e%7d%7c%7b%60%5f%5e%5d%5c%5b%40%3f%3e%3d%3c%3b%3a%2f%2e%2c%2b%2a%29%28%27%26%25%24%23%22%21%20')"),
+      nxt_string("~}|{`_^]\\[%40%3f>%3d<%3b%3a%2f.%2c%2b*)('%26%%24%23\"! ")},
+
+    { nxt_string("decodeURIComponent('%7e%7d%7c%7b%60%5f%5e%5d%5c%5b%40%3f%3e%3d%3c%3b%3a%2f%2e%2c%2b%2a%29%28%27%26%25%24%23%22%21%20')"),
+      nxt_string("~}|{`_^]\\[@?>=<;:/.,+*)('&%$#\"! ")},
+
+    { nxt_string("decodeURI('%41%42%43').length"),
+      nxt_string("3")},
+
+    { nxt_string("decodeURI('%D0%B0%D0%B1%D0%B2').length"),
+      nxt_string("3")},
+
+    { nxt_string("decodeURI('%80%81%82').length"),
+      nxt_string("3")},
+
     /* Functions. */
 
     { nxt_string("return"),

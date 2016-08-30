@@ -302,6 +302,8 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
     case NJS_TOKEN_PARSE_FLOAT:
     case NJS_TOKEN_ENCODE_URI:
     case NJS_TOKEN_ENCODE_URI_COMPONENT:
+    case NJS_TOKEN_DECODE_URI:
+    case NJS_TOKEN_DECODE_URI_COMPONENT:
         return njs_generate_builtin_object(vm, parser, node);
 
     case NJS_TOKEN_FUNCTION:

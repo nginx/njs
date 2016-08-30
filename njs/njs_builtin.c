@@ -90,6 +90,8 @@ njs_builtin_objects_create(njs_vm_t *vm)
         NULL,                         /* parseFloat         */
         NULL,                         /* encodeURI          */
         NULL,                         /* encodeURIComponent */
+        NULL,                         /* decodeURI          */
+        NULL,                         /* decodeURIComponent */
     };
 
     static const njs_function_init_t  native_functions[] = {
@@ -103,6 +105,8 @@ njs_builtin_objects_create(njs_vm_t *vm)
         { njs_number_parse_float,          { NJS_SKIP_ARG, NJS_STRING_ARG } },
         { njs_string_encode_uri,           { NJS_SKIP_ARG, NJS_STRING_ARG } },
         { njs_string_encode_uri_component, { NJS_SKIP_ARG, NJS_STRING_ARG } },
+        { njs_string_decode_uri,           { NJS_SKIP_ARG, NJS_STRING_ARG } },
+        { njs_string_decode_uri_component, { NJS_SKIP_ARG, NJS_STRING_ARG } },
     };
 
     static const njs_object_prop_t    null_proto_property = {

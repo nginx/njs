@@ -47,6 +47,8 @@ static njs_ret_t njs_string_split_part_add(njs_vm_t *vm, njs_array_t *array,
     u_char *start, size_t size, nxt_uint_t utf8);
 static njs_ret_t njs_string_encode(njs_vm_t *vm, njs_value_t *value,
     const uint32_t *escape);
+static njs_ret_t njs_string_decode(njs_vm_t *vm, njs_value_t *value,
+    const uint32_t *reserve);
 
 
 njs_ret_t
@@ -2235,6 +2237,210 @@ njs_string_encode(njs_vm_t *vm, njs_value_t *value, const uint32_t *escape)
     } while (size != 0);
 
     return NXT_OK;
+}
+
+
+/*
+ * decodeURI(string)
+ */
+
+njs_ret_t
+njs_string_decode_uri(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    static const uint32_t  reserve[] = {
+        0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                     /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0xac009858,  /* 1010 1100 0000 0000  1001 1000 0101 1000 */
+
+                     /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x00000001,  /* 0000 0000 0000 0000  0000 0000 0000 0001 */
+
+                     /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+        0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+    };
+
+    if (nargs > 1) {
+        return njs_string_decode(vm, &args[1], reserve);
+    }
+
+    vm->retval = njs_string_void;
+
+    return NXT_OK;
+}
+
+
+/*
+ * decodeURIComponent(string)
+ */
+
+njs_ret_t
+njs_string_decode_uri_component(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    static const uint32_t  reserve[] = {
+        0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                     /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                     /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                     /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+        0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+    };
+
+    if (nargs > 1) {
+        return njs_string_decode(vm, &args[1], reserve);
+    }
+
+    vm->retval = njs_string_void;
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_string_decode(njs_vm_t *vm, njs_value_t *value, const uint32_t *reserve)
+{
+    int8_t               d0, d1;
+    u_char               byte, *start, *src, *dst;
+    size_t               n, size;
+    ssize_t              length;
+    nxt_bool_t           utf8;
+    njs_string_prop_t    string;
+
+    static const int8_t  hex[256]
+        nxt_aligned(32) =
+    {
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, -1, -1, -1, -1, -1, -1,
+        -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    };
+
+    nxt_prefetch(&hex['0']);
+    nxt_prefetch(reserve);
+
+    (void) njs_string_prop(&string, value);
+
+    src = string.start;
+    n = 0;
+
+    for (size = string.size; size != 0; size--) {
+        byte = *src++;
+
+        if (byte == '%') {
+            if (size < 3) {
+                goto uri_error;
+            }
+
+            d0 = hex[*src++];
+            if (d0 < 0) {
+                goto uri_error;
+            }
+
+            d1 = hex[*src++];
+            if (d1 < 0) {
+                goto uri_error;
+            }
+
+            byte = (d0 << 4) + d1;
+
+            if ((reserve[byte >> 5] & ((uint32_t) 1 << (byte & 0x1f))) == 0) {
+                n += 2;
+            }
+        }
+    }
+
+    if (n == 0) {
+        /* GC: retain src. */
+        vm->retval = *value;
+        return NXT_OK;
+    }
+
+    n = string.size - n;
+
+    start = njs_string_alloc(vm, &vm->retval, n, n);
+    if (nxt_slow_path(start == NULL)) {
+        return NXT_ERROR;
+    }
+
+    utf8 = 0;
+    dst = start;
+    size = string.size;
+    src = string.start;
+
+    do {
+        byte = *src++;
+
+        if (byte == '%') {
+            d0 = hex[*src++];
+            d1 = hex[*src++];
+            byte = (d0 << 4) + d1;
+
+            utf8 |= (byte >= 0x80);
+
+            if ((reserve[byte >> 5] & ((uint32_t) 1 << (byte & 0x1f))) != 0) {
+                size -= 2;
+                *dst++ = '%';
+                *dst++ = src[-2];
+                byte = src[-1];
+            }
+        }
+
+        *dst++ = byte;
+
+        size--;
+
+    } while (size != 0);
+
+    if (utf8) {
+        length = nxt_utf8_length(start, n);
+
+        if (length < 0) {
+            length = 0;
+        }
+
+        if (vm->retval.short_string.size != NJS_STRING_LONG) {
+            vm->retval.short_string.length = length;
+
+        } else {
+            vm->retval.data.u.string->length = length;
+        }
+    }
+
+    return NXT_OK;
+
+uri_error:
+
+    vm->exception = &njs_exception_uri_error;
+
+    return NXT_ERROR;
 }
 
 

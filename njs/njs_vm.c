@@ -141,6 +141,7 @@ const njs_value_t  njs_exception_syntax_error =    njs_string("SyntaxError");
 const njs_value_t  njs_exception_reference_error = njs_string("ReferenceError");
 const njs_value_t  njs_exception_type_error =      njs_string("TypeError");
 const njs_value_t  njs_exception_range_error =     njs_string("RangeError");
+const njs_value_t  njs_exception_uri_error =       njs_string("URIError");
 const njs_value_t  njs_exception_memory_error =    njs_string("MemoryError");
 const njs_value_t  njs_exception_internal_error =  njs_string("InternalError");
 

@@ -712,7 +712,9 @@ enum njs_function_e {
     NJS_FUNCTION_PARSE_FLOAT,
     NJS_FUNCTION_STRING_ENCODE_URI,
     NJS_FUNCTION_STRING_ENCODE_URI_COMPONENT,
-#define NJS_FUNCTION_MAX       (NJS_FUNCTION_STRING_ENCODE_URI_COMPONENT + 1)
+    NJS_FUNCTION_STRING_DECODE_URI,
+    NJS_FUNCTION_STRING_DECODE_URI_COMPONENT,
+#define NJS_FUNCTION_MAX       (NJS_FUNCTION_STRING_DECODE_URI_COMPONENT + 1)
 };
 
 
@@ -1005,6 +1007,7 @@ extern const njs_value_t  njs_exception_syntax_error;
 extern const njs_value_t  njs_exception_reference_error;
 extern const njs_value_t  njs_exception_type_error;
 extern const njs_value_t  njs_exception_range_error;
+extern const njs_value_t  njs_exception_uri_error;
 extern const njs_value_t  njs_exception_memory_error;
 extern const njs_value_t  njs_exception_internal_error;
 

@@ -183,14 +183,16 @@ typedef enum {
     NJS_TOKEN_PARSE_FLOAT,
     NJS_TOKEN_ENCODE_URI,
     NJS_TOKEN_ENCODE_URI_COMPONENT,
+    NJS_TOKEN_DECODE_URI,
+    NJS_TOKEN_DECODE_URI_COMPONENT,
 
     NJS_TOKEN_RESERVED,
 } njs_token_t;
 
 
 typedef struct {
-    njs_token_t                     token:8;
-    njs_token_t                     prev_token:8;
+    njs_token_t                     token:16;
+    njs_token_t                     prev_token:16;
     uint8_t                         property;      /* 1 bit */
     uint32_t                        key_hash;
 
@@ -222,8 +224,8 @@ typedef enum {
 typedef struct njs_parser_node_s    njs_parser_node_t;
 
 struct njs_parser_node_s {
-    njs_token_t                     token:8;
-    njs_variable_node_state_t       state:8;    /* 2 bits */
+    njs_token_t                     token:16;
+    njs_variable_node_state_t       state:2;    /* 2 bits */
     uint8_t                         ctor:1;     /* 1 bit  */
     uint8_t                         temporary;  /* 1 bit  */
     uint32_t                        token_line;

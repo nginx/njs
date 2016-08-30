@@ -95,6 +95,8 @@ static const njs_keyword_t  njs_keywords[] = {
     { nxt_string("parseFloat"),    NJS_TOKEN_PARSE_FLOAT, 0 },
     { nxt_string("encodeURI"),     NJS_TOKEN_ENCODE_URI, 0 },
     { nxt_string("encodeURIComponent"),  NJS_TOKEN_ENCODE_URI_COMPONENT, 0 },
+    { nxt_string("decodeURI"),     NJS_TOKEN_DECODE_URI, 0 },
+    { nxt_string("decodeURIComponent"),  NJS_TOKEN_DECODE_URI_COMPONENT, 0 },
 
     /* Reserved words. */
 
