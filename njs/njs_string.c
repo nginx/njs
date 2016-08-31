@@ -2372,6 +2372,7 @@ njs_string_decode(njs_vm_t *vm, njs_value_t *value, const uint32_t *reserve)
             byte = (d0 << 4) + d1;
 
             if ((reserve[byte >> 5] & ((uint32_t) 1 << (byte & 0x1f))) == 0) {
+                size -= 2;
                 n += 2;
             }
         }
