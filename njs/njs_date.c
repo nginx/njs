@@ -81,8 +81,8 @@ njs_ret_t
 njs_date_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    double      num;
-    int64_t     time, values[8];
+    double      num, time;
+    int64_t     values[8];
     nxt_uint_t  i, n;
     njs_date_t  *date;
     struct tm   tm;
@@ -110,8 +110,8 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                 num = args[i].data.u.number;
 
                 if (njs_is_nan(num)) {
-                    nargs = 0;
-                    break;
+                    time = num;
+                    goto done;
                 }
 
                 values[i] = num;
@@ -137,6 +137,8 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                 time = values[1];
             }
         }
+
+    done:
 
         date = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_date_t));
         if (nxt_slow_path(date == NULL)) {
