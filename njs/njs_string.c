@@ -2317,8 +2317,8 @@ njs_string_decode(njs_vm_t *vm, njs_value_t *value, const uint32_t *reserve)
 {
     int8_t               d0, d1;
     u_char               byte, *start, *src, *dst;
-    size_t               n, size;
-    ssize_t              length;
+    size_t               n;
+    ssize_t              size, length;
     nxt_bool_t           utf8;
     njs_string_prop_t    string;
 
@@ -2358,7 +2358,7 @@ njs_string_decode(njs_vm_t *vm, njs_value_t *value, const uint32_t *reserve)
 
             size -= 2;
 
-            if (size == 0) {
+            if (size <= 0) {
                 goto uri_error;
             }
 
