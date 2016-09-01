@@ -4515,14 +4515,53 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Date.parse()"),
       nxt_string("NaN") },
 
+    { nxt_string("Date.parse('2011')"),
+      nxt_string("1293840000000") },
+
+    { nxt_string("Date.parse('+002011')"),
+      nxt_string("1293840000000") },
+
+    { nxt_string("Date.parse('2011-06')"),
+      nxt_string("1306886400000") },
+
+    { nxt_string("Date.parse('2011-06-24')"),
+      nxt_string("1308873600000") },
+
+    { nxt_string("Date.parse('2011-06-24T06')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Date.parse('2011-06-24T06:01')"),
+      nxt_string("1308895260000") },
+
+    { nxt_string("Date.parse('2011-06-24T06:01:02')"),
+      nxt_string("1308895262000") },
+
     { nxt_string("Date.parse('2011-06-24T06:01:02.625Z')"),
       nxt_string("1308895262625") },
+
+    { nxt_string("Date.parse('24 Jun 2011')"),
+      nxt_string("1308873600000") },
+
+    { nxt_string("Date.parse('Fri, 24 Jun 2011 18:48')"),
+      nxt_string("1308941280000") },
+
+    { nxt_string("Date.parse('Fri, 24 Jun 2011 18:48:02')"),
+      nxt_string("1308941282000") },
 
     { nxt_string("Date.parse('Fri, 24 Jun 2011 18:48:02 GMT')"),
       nxt_string("1308941282000") },
 
     { nxt_string("Date.parse('Fri, 24 Jun 2011 18:48:02 +1245')"),
       nxt_string("1308895382000") },
+
+    { nxt_string("Date.parse('Jun 24 2011')"),
+      nxt_string("1308873600000") },
+
+    { nxt_string("Date.parse('Fri Jun 24 2011 18:48')"),
+      nxt_string("1308941280000") },
+
+    { nxt_string("Date.parse('Fri Jun 24 2011 18:48:02')"),
+      nxt_string("1308941282000") },
 
     { nxt_string("Date.parse('Fri Jun 24 2011 18:48:02 GMT+1245')"),
       nxt_string("1308895382000") },

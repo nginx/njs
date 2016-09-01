@@ -44,6 +44,10 @@
 
 
 static nxt_noinline double njs_date_string_parse(njs_value_t *date);
+static double njs_date_rfc2822_string_parse(struct tm *tm, const u_char *p,
+    const u_char *end);
+static double njs_date_js_string_parse(struct tm *tm, const u_char *p,
+    const u_char *end);
 static const u_char *njs_date_skip_week_day(const u_char *p, const u_char *end);
 static const u_char *njs_date_skip_spaces(const u_char *p, const u_char *end);
 static nxt_noinline nxt_int_t njs_date_month_parse(const u_char *p,
@@ -297,9 +301,9 @@ njs_date_parse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 static nxt_noinline double
 njs_date_string_parse(njs_value_t *date)
 {
-    int                ext, ms, gmtoff;
+    int                ext, ms;
     struct tm          tm;
-    nxt_bool_t         sign;
+    nxt_bool_t         sign, week;
     const u_char       *p, *next, *end;
     njs_string_prop_t  string;
 
@@ -308,7 +312,7 @@ njs_date_string_parse(njs_value_t *date)
     p = string.start;
     end = p + string.size;
 
-    if (nxt_slow_path(p + 10 >= end)) {
+    if (nxt_slow_path(p >= end)) {
         return NJS_NAN;
     }
 
@@ -324,10 +328,20 @@ njs_date_string_parse(njs_value_t *date)
         sign = 0;
     }
 
+    tm.tm_mon = 0;
+    tm.tm_mday = 1;
+    tm.tm_hour = 0;
+    tm.tm_min = 0;
+    tm.tm_sec = 0;
+
     next = njs_date_number_parse(&tm.tm_year, p, end, 4);
 
     if (next != NULL) {
         /* ISO-8601 format: "1970-09-28T06:00:00.000Z" */
+
+        if (next == end) {
+            goto year;
+        }
 
         if (*next != '-') {
             /* Extended ISO-8601 format: "+001970-09-28T06:00:00.000Z" */
@@ -347,6 +361,10 @@ njs_date_string_parse(njs_value_t *date)
                 tm.tm_year = -tm.tm_year;
             }
 
+            if (next == end) {
+                goto year;
+            }
+
             if (*next != '-') {
                 return NJS_NAN;
             }
@@ -361,7 +379,11 @@ njs_date_string_parse(njs_value_t *date)
 
         tm.tm_mon--;
 
-        if (nxt_slow_path(p >= end || *p != '-')) {
+        if (p == end) {
+            goto done;
+        }
+
+        if (nxt_slow_path(*p != '-')) {
             return NJS_NAN;
         }
 
@@ -370,13 +392,21 @@ njs_date_string_parse(njs_value_t *date)
             return NJS_NAN;
         }
 
-        if (nxt_slow_path(p >= end || *p != 'T')) {
+        if (p == end) {
+            goto done;
+        }
+
+        if (nxt_slow_path(*p != 'T')) {
             return NJS_NAN;
         }
 
         p = njs_date_time_parse(&tm, p + 1, end);
         if (nxt_slow_path(p == NULL)) {
             return NJS_NAN;
+        }
+
+        if (p == end) {
+            goto done;
         }
 
         if (nxt_slow_path(p >= end || *p != '.')) {
@@ -399,86 +429,68 @@ njs_date_string_parse(njs_value_t *date)
         return NJS_NAN;
     }
 
-    p = njs_date_skip_week_day(p, end);
-    if (nxt_slow_path(p == NULL)) {
-        return NJS_NAN;
+    week = 1;
+
+    for ( ;; ) {
+        next = njs_date_number_parse(&tm.tm_mday, p, end, 2);
+
+        if (next != NULL) {
+            /*
+             * RFC 2822 format:
+             *   "Mon, 28 Sep 1970 06:00:00 GMT",
+             *   "Mon, 28 Sep 1970 06:00:00 UTC",
+             *   "Mon, 28 Sep 1970 12:00:00 +0600".
+             */
+            return njs_date_rfc2822_string_parse(&tm, next, end);
+        }
+
+        tm.tm_mon = njs_date_month_parse(p, end);
+
+        if (tm.tm_mon >= 0) {
+            /* Date.toString() format: "Mon Sep 28 1970 12:00:00 GMT+0600". */
+
+            return njs_date_js_string_parse(&tm, p + 3, end);
+        }
+
+        if (!week) {
+            return NJS_NAN;
+        }
+
+        p = njs_date_skip_week_day(p, end);
+        if (nxt_slow_path(p == NULL)) {
+            return NJS_NAN;
+        }
+
+        p = njs_date_skip_spaces(p, end);
+        if (nxt_slow_path(p == NULL)) {
+            return NJS_NAN;
+        }
+
+        week = 0;
     }
+
+year:
+
+    tm.tm_year -= 1900;
+
+done:
+
+    return njs_timegm(&tm) * 1000;
+}
+
+
+static double
+njs_date_rfc2822_string_parse(struct tm *tm, const u_char *p, const u_char *end)
+{
+    int  gmtoff;
 
     p = njs_date_skip_spaces(p, end);
     if (nxt_slow_path(p == NULL)) {
         return NJS_NAN;
     }
 
-    next = njs_date_number_parse(&tm.tm_mday, p, end, 2);
-
-    if (next != NULL) {
-        /*
-         * RFC 2822 format:
-         *   "Mon, 28 Sep 1970 06:00:00 GMT",
-         *   "Mon, 28 Sep 1970 06:00:00 UTC",
-         *   "Mon, 28 Sep 1970 12:00:00 +0600".
-         */
-        p = njs_date_skip_spaces(next, end);
-        if (nxt_slow_path(p == NULL)) {
-            return NJS_NAN;
-        }
-
-        tm.tm_mon = njs_date_month_parse(p, end);
-        if (nxt_slow_path(tm.tm_mon < 0)) {
-            return NJS_NAN;
-        }
-
-        p = njs_date_skip_spaces(p + 3, end);
-        if (nxt_slow_path(p == NULL)) {
-            return NJS_NAN;
-        }
-
-        p = njs_date_number_parse(&tm.tm_year, p, end, 4);
-        if (nxt_slow_path(p == NULL)) {
-            return NJS_NAN;
-        }
-
-        tm.tm_year -= 1900;
-
-        p = njs_date_skip_spaces(p, end);
-        if (nxt_slow_path(p == NULL)) {
-            return NJS_NAN;
-        }
-
-        p = njs_date_time_parse(&tm, p, end);
-        if (nxt_slow_path(p == NULL)) {
-            return NJS_NAN;
-        }
-
-        p = njs_date_skip_spaces(p, end);
-        if (nxt_slow_path(p == NULL)) {
-            return NJS_NAN;
-        }
-
-        if (p + 2 < end) {
-
-            if ((p[0] == 'G' && p[1] == 'M' && p[2] == 'T')
-                || (p[0] == 'U' && p[1] == 'T' && p[2] == 'C'))
-            {
-                gmtoff = 0;
-
-            } else {
-                gmtoff = njs_date_gmtoff_parse(p, end);
-                if (nxt_slow_path(gmtoff == -1)) {
-                    return NJS_NAN;
-                }
-            }
-
-            return (njs_timegm(&tm) - gmtoff * 60) * 1000;
-        }
-
-        return NJS_NAN;
-    }
-
-    /* Date.toString() format: "Mon Sep 28 1970 12:00:00 GMT+0600". */
-
-    tm.tm_mon = njs_date_month_parse(p, end);
-    if (nxt_slow_path(tm.tm_mon < 0)) {
+    tm->tm_mon = njs_date_month_parse(p, end);
+    if (nxt_slow_path(tm->tm_mon < 0)) {
         return NJS_NAN;
     }
 
@@ -487,7 +499,80 @@ njs_date_string_parse(njs_value_t *date)
         return NJS_NAN;
     }
 
-    p = njs_date_number_parse(&tm.tm_mday, p, end, 2);
+    p = njs_date_number_parse(&tm->tm_year, p, end, 4);
+    if (nxt_slow_path(p == NULL)) {
+        return NJS_NAN;
+    }
+
+    tm->tm_year -= 1900;
+
+    if (p == end) {
+        goto done;
+    }
+
+    p = njs_date_skip_spaces(p, end);
+    if (nxt_slow_path(p == NULL)) {
+        return NJS_NAN;
+    }
+
+    if (p == end) {
+        goto done;
+    }
+
+    p = njs_date_time_parse(tm, p, end);
+    if (nxt_slow_path(p == NULL)) {
+        return NJS_NAN;
+    }
+
+    if (p == end) {
+        goto done;
+    }
+
+    p = njs_date_skip_spaces(p, end);
+    if (nxt_slow_path(p == NULL)) {
+        return NJS_NAN;
+    }
+
+    if (p == end) {
+        goto done;
+    }
+
+    if (nxt_slow_path(p + 2 >= end)) {
+        return NJS_NAN;
+    }
+
+    if ((p[0] == 'G' && p[1] == 'M' && p[2] == 'T')
+        || (p[0] == 'U' && p[1] == 'T' && p[2] == 'C'))
+    {
+        gmtoff = 0;
+
+    } else {
+        gmtoff = njs_date_gmtoff_parse(p, end);
+
+        if (nxt_slow_path(gmtoff == -1)) {
+            return NJS_NAN;
+        }
+    }
+
+    return (njs_timegm(tm) - gmtoff * 60) * 1000;
+
+done:
+
+    return njs_timegm(tm) * 1000;
+}
+
+
+static double
+njs_date_js_string_parse(struct tm *tm, const u_char *p, const u_char *end)
+{
+    int  gmtoff;
+
+    p = njs_date_skip_spaces(p, end);
+    if (nxt_slow_path(p == NULL)) {
+        return NJS_NAN;
+    }
+
+    p = njs_date_number_parse(&tm->tm_mday, p, end, 2);
     if (nxt_slow_path(p == NULL)) {
         return NJS_NAN;
     }
@@ -497,26 +582,42 @@ njs_date_string_parse(njs_value_t *date)
         return NJS_NAN;
     }
 
-    p = njs_date_number_parse(&tm.tm_year, p, end, 4);
+    p = njs_date_number_parse(&tm->tm_year, p, end, 4);
     if (nxt_slow_path(p == NULL)) {
         return NJS_NAN;
     }
 
-    tm.tm_year -= 1900;
+    tm->tm_year -= 1900;
+
+    if (p == end) {
+        goto done;
+    }
+
+    p = njs_date_skip_spaces(p, end);
+    if (nxt_slow_path(p == NULL)) {
+        return NJS_NAN;
+    }
+
+    if (p == end) {
+        goto done;
+    }
+
+    p = njs_date_time_parse(tm, p, end);
+    if (nxt_slow_path(p == NULL)) {
+        return NJS_NAN;
+    }
+
+    if (p == end) {
+        goto done;
+    }
 
     p = njs_date_skip_spaces(p, end);
     if (nxt_slow_path(p == NULL)) {
         return NJS_NAN;
     }
 
-    p = njs_date_time_parse(&tm, p, end);
-    if (nxt_slow_path(p == NULL)) {
-        return NJS_NAN;
-    }
-
-    p = njs_date_skip_spaces(p, end);
-    if (nxt_slow_path(p == NULL)) {
-        return NJS_NAN;
+    if (p == end) {
+        goto done;
     }
 
     if (p + 2 < end && p[0] == 'G' && p[1] == 'M' && p[2] == 'T') {
@@ -524,11 +625,15 @@ njs_date_string_parse(njs_value_t *date)
         gmtoff = njs_date_gmtoff_parse(&p[3], end);
 
         if (nxt_fast_path(gmtoff != -1)) {
-            return (njs_timegm(&tm) - gmtoff * 60) * 1000;
+            return (njs_timegm(tm) - gmtoff * 60) * 1000;
         }
     }
 
     return NJS_NAN;
+
+done:
+
+    return njs_timegm(tm) * 1000;
 }
 
 
@@ -559,6 +664,8 @@ njs_date_skip_spaces(const u_char *p, const u_char *end)
 
             p++;
         }
+
+        return p;
     }
 
     return NULL;
@@ -670,7 +777,11 @@ njs_date_time_parse(struct tm *tm, const u_char *p, const u_char *end)
         return p;
     }
 
-    if (nxt_slow_path(p >= end || *p != ':')) {
+    if (p == end) {
+        return p;
+    }
+
+    if (nxt_slow_path(*p != ':')) {
         return NULL;
     }
 
