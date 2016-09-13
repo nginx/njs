@@ -55,26 +55,31 @@ njs_builtin_objects_create(njs_vm_t *vm)
     };
 
     static const njs_object_prototype_t  prototype_values[] = {
-        { .object.type = NJS_OBJECT },
-        { .object.type = NJS_ARRAY },
+        /*
+         * GCC 4 complains about unitialized .shared field,
+         * if the .type field is initialized as .object.type.
+         */
+        { .object =       { .type = NJS_OBJECT } },
+        { .object =       { .type = NJS_ARRAY } },
 
         /*
          * The .object.type field must be initialzed after the .value field,
          * otherwise SunC 5.9 treats the .value as .object.value or so.
          */
         { .object_value = { .value = njs_value(NJS_BOOLEAN, 0, 0.0),
-                            .object.type = NJS_OBJECT_BOOLEAN } },
+                            .object = { .type = NJS_OBJECT_BOOLEAN } } },
 
         { .object_value = { .value = njs_value(NJS_NUMBER, 0, 0.0),
-                            .object.type = NJS_OBJECT_NUMBER } },
+                            .object = { .type = NJS_OBJECT_NUMBER } } },
 
         { .object_value = { .value = njs_string(""),
-                            .object.type = NJS_OBJECT_STRING } },
+                            .object = { .type = NJS_OBJECT_STRING } } },
 
-        { .object.type = NJS_FUNCTION },
-        { .object.type = NJS_REGEXP },
+        { .object =       { .type = NJS_FUNCTION } },
+        { .object =       { .type = NJS_REGEXP } },
 
-        { .date =         { .time = NJS_NAN, .object.type = NJS_DATE } },
+        { .date =         { .time = NJS_NAN,
+                            .object = { .type = NJS_DATE } } },
     };
 
     static const njs_object_init_t    *constructor_init[] = {
