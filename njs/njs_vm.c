@@ -403,7 +403,8 @@ njs_vmcode_function(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
     function = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_function_t));
 
     if (nxt_fast_path(function != NULL)) {
-        function->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION];
+        function->object.__proto__ =
+                                &vm->prototypes[NJS_PROTOTYPE_FUNCTION].object;
         function->args_offset = 1;
 
         code = (njs_vmcode_function_t *) vm->current;
@@ -929,7 +930,8 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
             return NJS_PRIMITIVE_VALUE;
         }
 
-        obj = &vm->prototypes[njs_primitive_prototype_index(object->type)];
+        index = njs_primitive_prototype_index(object->type);
+        obj = &vm->prototypes[index].object;
         break;
 
     case NJS_STRING:
@@ -937,7 +939,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
             return NXT_DECLINED;
         }
 
-        obj = &vm->prototypes[NJS_PROTOTYPE_STRING];
+        obj = &vm->prototypes[NJS_PROTOTYPE_STRING].object;
         break;
 
     case NJS_ARRAY:

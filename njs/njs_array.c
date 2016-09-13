@@ -133,7 +133,8 @@ njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare)
     array->start = array->data;
     nxt_lvlhsh_init(&array->object.hash);
     nxt_lvlhsh_init(&array->object.shared_hash);
-    array->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_ARRAY];
+    array->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_ARRAY].object;
+    array->object.type = NJS_ARRAY;
     array->object.shared = 0;
     array->size = size;
     array->length = length;

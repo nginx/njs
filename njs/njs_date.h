@@ -8,12 +8,6 @@
 #define _NJS_DATE_H_INCLUDED_
 
 
-struct njs_date_s {
-    njs_object_t  object;
-    double        time;
-};
-
-
 njs_ret_t njs_date_constructor(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 

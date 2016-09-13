@@ -16,22 +16,6 @@ typedef enum {
 } njs_regexp_flags_t;
 
 
-struct njs_regexp_s {
-    /* Must be aligned to njs_value_t. */
-    njs_object_t          object;
-
-    uint32_t              last_index;
-
-    njs_regexp_pattern_t  *pattern;
-
-    /*
-     * This string value can be unaligned since
-     * it never used in nJSVM operations.
-     */
-    njs_value_t           string;
-};
-
-
 njs_ret_t njs_regexp_init(njs_vm_t *vm);
 njs_ret_t njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);

@@ -111,6 +111,7 @@ typedef njs_ret_t (*njs_function_native_t) (njs_vm_t *vm, njs_value_t *args,
 
 
 typedef struct njs_string_s           njs_string_t;
+typedef struct njs_object_s           njs_object_t;
 typedef struct njs_object_init_s      njs_object_init_t;
 typedef struct njs_object_value_s     njs_object_value_t;
 typedef struct njs_array_s            njs_array_t;
@@ -121,53 +122,6 @@ typedef struct njs_date_s             njs_date_t;
 typedef struct njs_extern_s           njs_extern_t;
 typedef struct njs_native_frame_s     njs_native_frame_t;
 typedef struct njs_property_next_s    njs_property_next_t;
-
-
-typedef struct njs_object_s           njs_object_t;
-
-struct njs_object_s {
-    /* A private hash of njs_object_prop_t. */
-    nxt_lvlhsh_t                      hash;
-
-    /* A shared hash of njs_object_prop_t. */
-    nxt_lvlhsh_t                      shared_hash;
-
-    /* An object __proto__. */
-    njs_object_t                      *__proto__;
-
-    uint32_t                          shared;  /* 1 bit */
-};
-
-
-#define NJS_ARGS_TYPES_MAX            5
-
-struct njs_function_s {
-    njs_object_t                      object;
-
-    uint8_t                           args_types[NJS_ARGS_TYPES_MAX];
-    uint8_t                           args_offset;
-
-    /*
-     * TODO Shared
-     * When function object is used as value: in assignments,
-     * as function argument, as property and as object to get properties.
-     */
-
-#if (NXT_64BIT)
-    uint8_t                           native;
-    uint8_t                           continuation_size;
-#else
-    uint8_t                           native;
-    uint8_t                           continuation_size;
-#endif
-
-    union {
-        njs_function_lambda_t         *lambda;
-        njs_function_native_t         native;
-    } u;
-
-    njs_value_t                       *bound;
-};
 
 
 typedef struct njs_continuation_s     njs_continuation_t;
@@ -244,6 +198,97 @@ union njs_value_s {
 
     njs_value_type_t                  type:8;  /* 4 bits */
 };
+
+
+struct njs_object_s {
+    /* A private hash of njs_object_prop_t. */
+    nxt_lvlhsh_t                      hash;
+
+    /* A shared hash of njs_object_prop_t. */
+    nxt_lvlhsh_t                      shared_hash;
+
+    /* An object __proto__. */
+    njs_object_t                      *__proto__;
+
+    /* The type is used in constructor prototypes. */
+    njs_value_type_t                  type:8;
+    uint8_t                           shared;  /* 1 bit */
+};
+
+
+struct njs_object_value_s {
+    njs_object_t                      object;
+    /* The value can be unaligned since it never used in nJSVM operations. */
+    njs_value_t                       value;
+};
+
+
+struct njs_array_s {
+    njs_object_t                      object;
+    uint32_t                          size;
+    uint32_t                          length;
+    njs_value_t                       *start;
+    njs_value_t                       *data;
+};
+
+
+#define NJS_ARGS_TYPES_MAX            5
+
+struct njs_function_s {
+    njs_object_t                      object;
+
+    uint8_t                           args_types[NJS_ARGS_TYPES_MAX];
+    uint8_t                           args_offset;
+
+    /*
+     * TODO Shared
+     * When function object is used as value: in assignments,
+     * as function argument, as property and as object to get properties.
+     */
+
+#if (NXT_64BIT)
+    uint8_t                           native;
+    uint8_t                           continuation_size;
+#else
+    uint8_t                           native;
+    uint8_t                           continuation_size;
+#endif
+
+    union {
+        njs_function_lambda_t         *lambda;
+        njs_function_native_t         native;
+    } u;
+
+    njs_value_t                       *bound;
+};
+
+
+struct njs_regexp_s {
+    njs_object_t                      object;
+    uint32_t                          last_index;
+    njs_regexp_pattern_t              *pattern;
+    /*
+     * This string value can be unaligned since
+     * it never used in nJSVM operations.
+     */
+    njs_value_t                       string;
+};
+
+
+struct njs_date_s {
+    njs_object_t                      object;
+    double                            time;
+};
+
+
+typedef union {
+    njs_object_t                      object;
+    njs_object_value_t                object_value;
+    njs_array_t                       array;
+    njs_function_t                    function;
+    njs_regexp_t                      regexp;
+    njs_date_t                        date;
+} njs_object_prototype_t;
 
 
 #define njs_value(_type, _truth, _number) {                                   \
@@ -365,6 +410,10 @@ typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
 
 #define njs_is_object(value)                                                  \
     (((value)->type & NJS_OBJECT) != 0)
+
+
+#define njs_object_value_type(type)                                           \
+    (type + NJS_OBJECT)
 
 
 #define njs_is_array(value)                                                   \
@@ -683,6 +732,9 @@ enum njs_prototypes_e {
 #define njs_primitive_prototype_index(type)                                   \
     (NJS_PROTOTYPE_BOOLEAN + ((type) - NJS_BOOLEAN))
 
+#define njs_prototype_type(index)                                             \
+    (index + NJS_OBJECT)
+
 
 enum njs_constructor_e {
     NJS_CONSTRUCTOR_OBJECT =   NJS_PROTOTYPE_OBJECT,
@@ -788,7 +840,7 @@ struct njs_vm_s {
      * they are copied from njs_vm_shared_t by single memcpy()
      * in njs_builtin_objects_clone().
      */
-    njs_object_t             prototypes[NJS_PROTOTYPE_MAX];
+    njs_object_prototype_t   prototypes[NJS_PROTOTYPE_MAX];
     njs_function_t           constructors[NJS_CONSTRUCTOR_MAX];
 
     nxt_mem_cache_pool_t     *mem_cache_pool;
@@ -829,7 +881,7 @@ struct njs_vm_shared_s {
      * The prototypes and constructors arrays must be togther because they are
      * copied to njs_vm_t by single memcpy() in njs_builtin_objects_clone().
      */
-    njs_object_t             prototypes[NJS_PROTOTYPE_MAX];
+    njs_object_prototype_t   prototypes[NJS_PROTOTYPE_MAX];
     njs_function_t           constructors[NJS_CONSTRUCTOR_MAX];
 };
 

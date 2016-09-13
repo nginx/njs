@@ -37,10 +37,11 @@ typedef struct {
 nxt_int_t
 njs_builtin_objects_create(njs_vm_t *vm)
 {
-    nxt_int_t       ret;
-    nxt_uint_t      i;
-    njs_object_t    *objects, *prototypes;
-    njs_function_t  *functions, *constructors;
+    nxt_int_t               ret;
+    nxt_uint_t              i;
+    njs_object_t            *objects;
+    njs_function_t          *functions, *constructors;
+    njs_object_prototype_t  *prototypes;
 
     static const njs_object_init_t    *prototype_init[] = {
         &njs_object_prototype_init,
@@ -51,6 +52,29 @@ njs_builtin_objects_create(njs_vm_t *vm)
         &njs_function_prototype_init,
         &njs_regexp_prototype_init,
         &njs_date_prototype_init,
+    };
+
+    static const njs_object_prototype_t  prototype_values[] = {
+        { .object.type = NJS_OBJECT },
+        { .object.type = NJS_ARRAY },
+
+        /*
+         * The .object.type field must be initialzed after the .value field,
+         * otherwise SunC 5.9 treats the .value as .object.value or so.
+         */
+        { .object_value = { .value = njs_value(NJS_BOOLEAN, 0, 0.0),
+                            .object.type = NJS_OBJECT_BOOLEAN } },
+
+        { .object_value = { .value = njs_value(NJS_NUMBER, 0, 0.0),
+                            .object.type = NJS_OBJECT_NUMBER } },
+
+        { .object_value = { .value = njs_string(""),
+                            .object.type = NJS_OBJECT_STRING } },
+
+        { .object.type = NJS_FUNCTION },
+        { .object.type = NJS_REGEXP },
+
+        { .date =         { .time = NJS_NAN, .object.type = NJS_DATE } },
     };
 
     static const njs_object_init_t    *constructor_init[] = {
@@ -172,13 +196,18 @@ njs_builtin_objects_create(njs_vm_t *vm)
     prototypes = vm->shared->prototypes;
 
     for (i = NJS_PROTOTYPE_OBJECT; i < NJS_PROTOTYPE_MAX; i++) {
-        ret = njs_object_hash_create(vm, &prototypes[i].shared_hash,
+        prototypes[i] = prototype_values[i];
+
+        ret = njs_object_hash_create(vm, &prototypes[i].object.shared_hash,
                                      prototype_init[i]->properties,
                                      prototype_init[i]->items);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NXT_ERROR;
         }
     }
+
+    prototypes[NJS_PROTOTYPE_REGEXP].regexp.pattern =
+                                     vm->empty_regexp.data.u.regexp->pattern;
 
     constructors = vm->shared->constructors;
 
@@ -249,22 +278,24 @@ njs_builtin_objects_clone(njs_vm_t *vm)
     size_t        size;
     nxt_uint_t    i;
     njs_value_t   *values;
-    njs_object_t  *function_prototype;
+    njs_object_t  *object_prototype, *function_prototype;
 
     /*
      * Copy both prototypes and constructors arrays by one memcpy()
      * because they are stored together.
      */
-    size = NJS_PROTOTYPE_MAX * sizeof(njs_object_t)
+    size = NJS_PROTOTYPE_MAX * sizeof(njs_object_prototype_t)
            + NJS_CONSTRUCTOR_MAX * sizeof(njs_function_t);
 
     memcpy(vm->prototypes, vm->shared->prototypes, size);
 
+    object_prototype = &vm->prototypes[NJS_PROTOTYPE_OBJECT].object;
+
     for (i = NJS_PROTOTYPE_ARRAY; i < NJS_PROTOTYPE_MAX; i++) {
-        vm->prototypes[i].__proto__ = &vm->prototypes[NJS_PROTOTYPE_OBJECT];
+        vm->prototypes[i].object.__proto__ = object_prototype;
     }
 
-    function_prototype = &vm->prototypes[NJS_CONSTRUCTOR_FUNCTION];
+    function_prototype = &vm->prototypes[NJS_CONSTRUCTOR_FUNCTION].object;
     values = vm->scopes[NJS_SCOPE_GLOBAL];
 
     for (i = NJS_CONSTRUCTOR_OBJECT; i < NJS_CONSTRUCTOR_MAX; i++) {

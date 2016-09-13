@@ -8,12 +8,6 @@
 #define _NJS_OBJECT_H_INCLUDED_
 
 
-struct njs_object_value_s {
-    njs_object_t                object;
-    njs_value_t                 value;
-};
-
-
 typedef enum {
     NJS_PROPERTY = 0,
     NJS_GETTER,

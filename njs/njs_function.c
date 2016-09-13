@@ -40,6 +40,7 @@ njs_function_alloc(njs_vm_t *vm)
          */
 
         function->object.shared_hash = vm->shared->function_prototype_hash;
+        function->object.type = NJS_FUNCTION;
         function->object.shared = 1;
         function->args_offset = 1;
 
@@ -69,7 +70,8 @@ njs_function_value_copy(njs_vm_t *vm, njs_value_t *value)
 
     if (nxt_fast_path(function != NULL)) {
         *function = *value->data.u.function;
-        function->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION];
+        function->object.__proto__ =
+                                &vm->prototypes[NJS_PROTOTYPE_FUNCTION].object;
         function->object.shared = 0;
         value->data.u.function = function;
     }
@@ -527,7 +529,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     *function = *args[0].data.u.function;
 
-    function->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION];
+    function->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION].object;
     function->object.shared = 0;
 
     if (nargs == 1) {

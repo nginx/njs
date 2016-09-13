@@ -4097,6 +4097,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.prototype.__proto__ === null"),
       nxt_string("true") },
 
+    { nxt_string("Object.prototype.toString.call(Object.prototype)"),
+      nxt_string("[object Object]") },
+
+    { nxt_string("Object.prototype"),
+      nxt_string("[object Object]") },
+
     { nxt_string("Object.constructor === Function"),
       nxt_string("true") },
 
@@ -4153,6 +4159,12 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("Array.prototype.__proto__ === Object.prototype"),
       nxt_string("true") },
+
+    { nxt_string("Object.prototype.toString.call(Array.prototype)"),
+      nxt_string("[object Array]") },
+
+    { nxt_string("Array.prototype"),
+      nxt_string("") },
 
     { nxt_string("Array.constructor === Function"),
       nxt_string("true") },
@@ -4211,6 +4223,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Boolean.prototype.__proto__ === Object.prototype"),
       nxt_string("true") },
 
+    { nxt_string("Object.prototype.toString.call(Boolean.prototype)"),
+      nxt_string("[object Boolean]") },
+
+    { nxt_string("Boolean.prototype"),
+      nxt_string("false") },
+
     { nxt_string("Boolean.constructor === Function"),
       nxt_string("true") },
 
@@ -4264,6 +4282,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Number.prototype.__proto__ === Object.prototype"),
       nxt_string("true") },
 
+    { nxt_string("Object.prototype.toString.call(Number.prototype)"),
+      nxt_string("[object Number]") },
+
+    { nxt_string("Number.prototype"),
+      nxt_string("0") },
+
     { nxt_string("Number.constructor === Function"),
       nxt_string("true") },
 
@@ -4314,6 +4338,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("String.__proto__ === Function.prototype"),
       nxt_string("true") },
 
+    { nxt_string("Object.prototype.toString.call(String.prototype)"),
+      nxt_string("[object String]") },
+
+    { nxt_string("String.prototype"),
+      nxt_string("") },
+
     { nxt_string("String.prototype.length"),
       nxt_string("0") },
 
@@ -4359,6 +4389,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Function.prototype.__proto__ === Object.prototype"),
       nxt_string("true") },
 
+    { nxt_string("Object.prototype.toString.call(Function.prototype)"),
+      nxt_string("[object Function]") },
+
+    { nxt_string("Function.prototype"),
+      nxt_string("[object Function]") },
+
     { nxt_string("Function.constructor === Function"),
       nxt_string("true") },
 
@@ -4388,6 +4424,12 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("RegExp.prototype.__proto__ === Object.prototype"),
       nxt_string("true") },
+
+    { nxt_string("Object.prototype.toString.call(RegExp.prototype)"),
+      nxt_string("[object RegExp]") },
+
+    { nxt_string("RegExp.prototype"),
+      nxt_string("/(?:)/") },
 
     { nxt_string("RegExp.constructor === Function"),
       nxt_string("true") },
@@ -4800,6 +4842,12 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("Date.prototype.__proto__ === Object.prototype"),
       nxt_string("true") },
+
+    { nxt_string("Date.prototype"),
+      nxt_string("Invalid Date") },
+
+    { nxt_string("Date.prototype.valueOf()"),
+      nxt_string("NaN") },
 
     { nxt_string("Date.constructor === Function"),
       nxt_string("true") },

@@ -35,7 +35,8 @@ njs_object_alloc(njs_vm_t *vm)
     if (nxt_fast_path(object != NULL)) {
         nxt_lvlhsh_init(&object->hash);
         nxt_lvlhsh_init(&object->shared_hash);
-        object->__proto__ = &vm->prototypes[NJS_PROTOTYPE_OBJECT];
+        object->__proto__ = &vm->prototypes[NJS_PROTOTYPE_OBJECT].object;
+        object->type = NJS_OBJECT;
         object->shared = 0;
     }
 
@@ -58,7 +59,7 @@ njs_object_value_copy(njs_vm_t *vm, njs_value_t *value)
 
     if (nxt_fast_path(object != NULL)) {
         *object = *value->data.u.object;
-        object->__proto__ = &vm->prototypes[NJS_PROTOTYPE_OBJECT];
+        object->__proto__ = &vm->prototypes[NJS_PROTOTYPE_OBJECT].object;
         object->shared = 0;
         value->data.u.object = object;
     }
@@ -78,10 +79,11 @@ njs_object_value_alloc(njs_vm_t *vm, const njs_value_t *value, nxt_uint_t type)
     if (nxt_fast_path(ov != NULL)) {
         nxt_lvlhsh_init(&ov->object.hash);
         nxt_lvlhsh_init(&ov->object.shared_hash);
+        ov->object.type = njs_object_value_type(type);
         ov->object.shared = 0;
 
         index = njs_primitive_prototype_index(type);
-        ov->object.__proto__ = &vm->prototypes[index];
+        ov->object.__proto__ = &vm->prototypes[index].object;
 
         ov->value = *value;
     }
@@ -258,7 +260,7 @@ njs_object_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                 return NXT_ERROR;
             }
 
-            type = NJS_OBJECT + value->type;
+            type = njs_object_value_type(value->type);
 
         } else {
             vm->exception = &njs_exception_type_error;
@@ -324,6 +326,7 @@ njs_object_create(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 njs_ret_t
 njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value)
 {
+    nxt_uint_t    index;
     njs_object_t  *proto;
 
     /*
@@ -331,14 +334,15 @@ njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value)
      * and have to return different results for primitive type and for objects.
      */
     if (njs_is_object(value)) {
-         proto = value->data.u.object->__proto__;
+        proto = value->data.u.object->__proto__;
 
     } else {
-         proto = &vm->prototypes[njs_primitive_prototype_index(value->type)];
+        index = njs_primitive_prototype_index(value->type);
+        proto = &vm->prototypes[index].object;
     }
 
     vm->retval.data.u.object = proto;
-    vm->retval.type = NJS_OBJECT;
+    vm->retval.type = proto->type;
     vm->retval.data.truth = 1;
 
     return NXT_OK;
@@ -364,7 +368,7 @@ njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value)
 
     if (index >= 0 && index < NJS_PROTOTYPE_MAX) {
         proto = njs_property_prototype_create(vm, &function->object.hash,
-                                              &vm->prototypes[index]);
+                                              &vm->prototypes[index].object);
     }
 
     if (proto == NULL) {
@@ -395,7 +399,7 @@ njs_property_prototype_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
     /* GC */
 
     prop->value.data.u.object = prototype;
-    prop->value.type = NJS_OBJECT;
+    prop->value.type = prototype->type;
     prop->value.data.truth = 1;
 
     prop->enumerable = 0;
@@ -469,7 +473,7 @@ njs_object_prototype_get_proto(njs_vm_t *vm, njs_value_t *value)
 
     if (nxt_fast_path(proto != NULL)) {
         vm->retval.data.u.object = proto;
-        vm->retval.type = NJS_OBJECT;
+        vm->retval.type = proto->type;
         vm->retval.data.truth = 1;
 
     } else {
@@ -489,23 +493,25 @@ njs_object_prototype_get_proto(njs_vm_t *vm, njs_value_t *value)
 static njs_ret_t
 njs_object_prototype_create_constructor(njs_vm_t *vm, njs_value_t *value)
 {
-    int32_t       index;
-    njs_value_t   *cons;
-    njs_object_t  *prototype;
+    int32_t                 index;
+    njs_value_t             *cons;
+    njs_object_t            *object;
+    njs_object_prototype_t  *prototype;
 
     if (njs_is_object(value)) {
-        prototype = value->data.u.object;
+        object = value->data.u.object;
 
         do {
+            prototype = (njs_object_prototype_t *) object;
             index = prototype - vm->prototypes;
 
             if (index >= 0 && index < NJS_PROTOTYPE_MAX) {
                 goto found;
             }
 
-            prototype = prototype->__proto__;
+            object = object->__proto__;
 
-        } while (prototype != NULL);
+        } while (object != NULL);
 
         nxt_thread_log_alert("prototype not found");
 
@@ -518,7 +524,7 @@ njs_object_prototype_create_constructor(njs_vm_t *vm, njs_value_t *value)
 
 found:
 
-    cons = njs_property_constructor_create(vm, &prototype->hash,
+    cons = njs_property_constructor_create(vm, &prototype->object.hash,
                                           &vm->scopes[NJS_SCOPE_GLOBAL][index]);
     if (nxt_fast_path(cons != NULL)) {
         vm->retval = *cons;
@@ -604,8 +610,9 @@ njs_ret_t
 njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    int32_t       index;
-    njs_object_t  *prototype;
+    int32_t                 index;
+    njs_object_t            *object;
+    njs_object_prototype_t  *prototype;
 
     static const njs_value_t  *class_name[] = {
         /* Primitives. */
@@ -633,9 +640,10 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     index = args[0].type;
 
     if (njs_is_object(&args[0])) {
-        prototype = args[0].data.u.object;
+        object = args[0].data.u.object;
 
         do {
+            prototype = (njs_object_prototype_t *) object;
             index = prototype - vm->prototypes;
 
             if (index >= 0 && index < NJS_PROTOTYPE_MAX) {
@@ -643,9 +651,9 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
                 goto found;
             }
 
-            prototype = prototype->__proto__;
+            object = object->__proto__;
 
-        } while (prototype != NULL);
+        } while (object != NULL);
 
         nxt_thread_log_alert("prototype not found");
 

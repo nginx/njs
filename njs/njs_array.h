@@ -10,15 +10,6 @@
 
 #define NJS_ARRAY_SPARE  8
 
-struct njs_array_s {
-    /* Must be aligned to njs_value_t. */
-    njs_object_t         object;
-    uint32_t             size;
-    uint32_t             length;
-    njs_value_t          *start;
-    njs_value_t          *data;
-};
-
 
 njs_array_t *njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare);
 njs_ret_t njs_array_string_add(njs_vm_t *vm, njs_array_t *array, u_char *start,

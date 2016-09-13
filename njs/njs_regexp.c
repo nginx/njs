@@ -466,7 +466,8 @@ njs_regexp_alloc(njs_vm_t *vm, njs_regexp_pattern_t *pattern)
     if (nxt_fast_path(regexp != NULL)) {
         nxt_lvlhsh_init(&regexp->object.hash);
         nxt_lvlhsh_init(&regexp->object.shared_hash);
-        regexp->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_REGEXP];
+        regexp->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_REGEXP].object;
+        regexp->object.type = NJS_REGEXP;
         regexp->object.shared = 0;
         regexp->last_index = 0;
         regexp->pattern = pattern;
