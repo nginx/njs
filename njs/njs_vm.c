@@ -2588,7 +2588,6 @@ njs_vmcode_continuation(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
         skip = frame->skip;
 
         vm->frame = njs_function_previous_frame(frame);
-        (void) njs_function_frame_free(vm, frame);
 
         /*
          * If a retval is in a callee arguments scope it
@@ -2606,6 +2605,7 @@ njs_vmcode_continuation(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
         }
 
         vm->current = cont->return_address;
+        (void) njs_function_frame_free(vm, frame);
 
         return 0;
 
