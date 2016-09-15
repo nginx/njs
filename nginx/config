@@ -1,13 +1,11 @@
 ngx_addon_name="ngx_js_module"
 
-USE_PCRE=YES
-
 if test -n "$ngx_module_link"; then
     ngx_module_type=HTTP
     ngx_module_name=ngx_http_js_module
     ngx_module_incs="$ngx_addon_dir/../nxt $ngx_addon_dir/../njs"
     ngx_module_srcs="$ngx_addon_dir/ngx_http_js_module.c"
-    ngx_module_libs="$ngx_addon_dir/../build/libnjs.a -lm"
+    ngx_module_libs="PCRE $ngx_addon_dir/../build/libnjs.a -lm"
 
     . auto/module
 
@@ -15,10 +13,12 @@ if test -n "$ngx_module_link"; then
     ngx_module_name=ngx_stream_js_module
     ngx_module_incs="$ngx_addon_dir/../nxt $ngx_addon_dir/../njs"
     ngx_module_srcs="$ngx_addon_dir/ngx_stream_js_module.c"
-    ngx_module_libs="$ngx_addon_dir/../build/libnjs.a -lm"
+    ngx_module_libs="PCRE $ngx_addon_dir/../build/libnjs.a -lm"
 
     . auto/module
 else
+    USE_PCRE=YES
+
     HTTP_MODULES="$HTTP_MODULES ngx_http_js_module"
     STREAM_MODULES="$STREAM_MODULES ngx_stream_js_module"
     CORE_INCS="$CORE_INCS $ngx_addon_dir/../nxt $ngx_addon_dir/../njs"
