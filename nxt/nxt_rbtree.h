@@ -39,7 +39,7 @@ typedef struct {
 } nxt_rbtree_t;
 
 
-typedef nxt_int_t (*nxt_rbtree_compare_t)(nxt_rbtree_node_t *node1,
+typedef intptr_t (*nxt_rbtree_compare_t)(nxt_rbtree_node_t *node1,
     nxt_rbtree_node_t *node2);
 
 

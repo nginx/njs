@@ -20,7 +20,7 @@ typedef struct {
 } nxt_rbtree_test_t;
 
 
-static nxt_int_t rbtree_unit_test_comparison(nxt_rbtree_node_t *node1,
+static intptr_t rbtree_unit_test_comparison(nxt_rbtree_node_t *node1,
     nxt_rbtree_node_t *node2);
 static nxt_int_t rbtree_unit_test_compare(uint32_t key1, uint32_t key2);
 static int nxt_cdecl rbtree_unit_test_sort_cmp(const void *one,
@@ -132,9 +132,8 @@ fail:
 }
 
 
-static nxt_int_t
-rbtree_unit_test_comparison(nxt_rbtree_node_t *node1,
-    nxt_rbtree_node_t *node2)
+static intptr_t
+rbtree_unit_test_comparison(nxt_rbtree_node_t *node1, nxt_rbtree_node_t *node2)
 {
     nxt_rbtree_test_t  *item1, *item2;
 

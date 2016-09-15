@@ -176,7 +176,7 @@ nxt_rbtree_insert_fixup(nxt_rbtree_node_t *node)
 nxt_rbtree_node_t *
 nxt_rbtree_find(nxt_rbtree_t *tree, nxt_rbtree_part_t *part)
 {
-    nxt_int_t             n;
+    intptr_t              n;
     nxt_rbtree_node_t     *node, *next, *sentinel;
     nxt_rbtree_compare_t  compare;
 
@@ -210,7 +210,7 @@ nxt_rbtree_find(nxt_rbtree_t *tree, nxt_rbtree_part_t *part)
 nxt_rbtree_node_t *
 nxt_rbtree_find_less_or_equal(nxt_rbtree_t *tree, nxt_rbtree_part_t *part)
 {
-    nxt_int_t             n;
+    intptr_t              n;
     nxt_rbtree_node_t     *node, *retval, *next, *sentinel;
     nxt_rbtree_compare_t  compare;
 
@@ -247,7 +247,7 @@ nxt_rbtree_find_less_or_equal(nxt_rbtree_t *tree, nxt_rbtree_part_t *part)
 nxt_rbtree_node_t *
 nxt_rbtree_find_greater_or_equal(nxt_rbtree_t *tree, nxt_rbtree_part_t *part)
 {
-    nxt_int_t             n;
+    intptr_t              n;
     nxt_rbtree_node_t     *node, *retval, *next, *sentinel;
     nxt_rbtree_compare_t  compare;
 
@@ -284,7 +284,7 @@ nxt_rbtree_find_greater_or_equal(nxt_rbtree_t *tree, nxt_rbtree_part_t *part)
 void
 nxt_rbtree_delete(nxt_rbtree_t *tree, nxt_rbtree_part_t *part)
 {
-    nxt_uint_t         color;
+    uint8_t            color;
     nxt_rbtree_node_t  *node, *sentinel, *subst, *child;
 
     node = (nxt_rbtree_node_t *) part;
