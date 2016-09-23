@@ -202,6 +202,19 @@ nxt_feature_test="int main() {
 . ${NXT_AUTO}feature
 
 
+nxt_feature="GCC __attribute__ visibility"
+nxt_feature_name=NXT_HAVE_GCC_ATTRIBUTE_VISIBILITY
+nxt_feature_run=
+nxt_feature_path=
+nxt_feature_libs=
+nxt_feature_test="int n __attribute__ ((visibility(\"default\")));
+
+                  int main() {
+                      return 1;
+                  }"
+. ${NXT_AUTO}feature
+
+
 nxt_feature="GCC __attribute__ aligned"
 nxt_feature_name=NXT_HAVE_GCC_ATTRIBUTE_ALIGNED
 nxt_feature_run=

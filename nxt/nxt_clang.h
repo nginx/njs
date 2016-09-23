@@ -60,19 +60,25 @@
 #endif
 
 
+#if (NXT_HAVE_GCC_ATTRIBUTE_ALIGNED)
+
+#if (NXT_LINUX && __PPC64__)
+/* Old GNU ld linker may hang on Linux ppc64le platform. */
+#define nxt_aligned(x)
+#else
+#define nxt_aligned(x)     __attribute__((aligned(x)))
+#endif
+
+#else
+#define nxt_aligned(x)
+#endif
+
+
 #if (NXT_HAVE_GCC_ATTRIBUTE_MALLOC)
 #define NXT_MALLOC_LIKE    __attribute__((__malloc__))
 
 #else
 #define NXT_MALLOC_LIKE
-#endif
-
-
-#if (NXT_HAVE_GCC_ATTRIBUTE_ALIGNED)
-#define nxt_aligned(x)     __attribute__((aligned(x)))
-
-#else
-#define nxt_aligned(x)
 #endif
 
 
