@@ -82,7 +82,7 @@ utf8_overlong(u_char *overlong, size_t len)
 
 
 static nxt_int_t
-utf8_unit_test(void)
+utf8_unit_test(nxt_uint_t start)
 {
     u_char        *p, utf8[4];
     size_t        len;
@@ -142,7 +142,7 @@ utf8_unit_test(void)
 
     /* Test all overlong UTF-8. */
 
-    for (i = NXT_UTF8_START_TEST; i < 256; i++) {
+    for (i = start; i < 256; i++) {
         utf8[0] = i;
 
         if (utf8_overlong(utf8, 1) != NXT_OK) {
@@ -190,7 +190,16 @@ utf8_unit_test(void)
 
 
 int
-main(void)
+main(int argc, char **argv)
 {
-    return utf8_unit_test();
+    nxt_uint_t  start;
+
+    if (argc > 1 && argv[1][0] == 'a') {
+        start = NXT_UTF8_START_TEST;
+
+    } else {
+        start = 256;
+    }
+
+    return utf8_unit_test(start);
 }

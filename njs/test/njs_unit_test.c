@@ -5572,11 +5572,11 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
          + usage.ru_stime.tv_sec * 1000000 + usage.ru_stime.tv_usec;
 
     if (n == 1) {
-        us /= 1000;
-        printf("%s: %d.%03ds\n", msg, (int) (us / 1000), (int) (us % 1000));
+        printf("%s: %.3fs\n", msg, (double) us / 1000000);
 
     } else {
-        printf("%s: %d\n", msg, (int) ((uint64_t) n * 1000000 / us));
+        printf("%s: %.3fµs, %d times/s\n",
+               msg, (double) us / n, (int) ((uint64_t) n * 1000000 / us));
     }
 
     return NXT_OK;

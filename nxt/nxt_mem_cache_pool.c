@@ -52,12 +52,12 @@ struct nxt_mem_cache_page_s {
      * Used to link pages with free chunks in pool chunk slot list
      * or to link free pages in clusters.
      */
-    nxt_queue_link_t             link;
+    nxt_queue_link_t            link;
 };
 
 
 typedef struct {
-    NXT_RBTREE_NODE              (node);
+    NXT_RBTREE_NODE             (node);
     uint8_t                     type;
     uint32_t                    size;
 
@@ -67,7 +67,7 @@ typedef struct {
 
 
 typedef struct {
-    nxt_queue_t                  pages;
+    nxt_queue_t                 pages;
 #if (NXT_64BIT)
     uint32_t                    size;
     uint32_t                    chunks;
@@ -80,9 +80,9 @@ typedef struct {
 
 struct nxt_mem_cache_pool_s {
     /* rbtree of nxt_mem_cache_block_t. */
-    nxt_rbtree_t                 blocks;
+    nxt_rbtree_t                blocks;
 
-    nxt_queue_t                  free_pages;
+    nxt_queue_t                 free_pages;
 
     uint8_t                     chunk_size_shift;
     uint8_t                     page_size_shift;
@@ -90,11 +90,11 @@ struct nxt_mem_cache_pool_s {
     uint32_t                    page_alignment;
     uint32_t                    cluster_size;
 
-    const nxt_mem_proto_t        *proto;
+    const nxt_mem_proto_t       *proto;
     void                        *mem;
     void                        *trace;
 
-    nxt_mem_cache_slot_t         slots[];
+    nxt_mem_cache_slot_t        slots[];
 };
 
 
@@ -515,7 +515,7 @@ nxt_mem_cache_alloc_cluster(nxt_mem_cache_pool_t *pool)
     n = pool->cluster_size >> pool->page_size_shift;
 
     cluster = pool->proto->zalloc(pool->mem, sizeof(nxt_mem_cache_block_t)
-                                             + n * sizeof(nxt_mem_cache_page_t));
+                                           + n * sizeof(nxt_mem_cache_page_t));
 
     if (nxt_slow_path(cluster == NULL)) {
         return NULL;

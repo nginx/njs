@@ -40,13 +40,13 @@
  * instructions are longer.
  */
 #define NXT_INT_T_SIZE  4
-typedef int            nxt_int_t;
-typedef u_int          nxt_uint_t;
+typedef int             nxt_int_t;
+typedef u_int           nxt_uint_t;
 
 #else
 #define NXT_INT_T_SIZE  NXT_PTR_SIZE
-typedef intptr_t       nxt_int_t;
-typedef uintptr_t      nxt_uint_t;
+typedef intptr_t        nxt_int_t;
+typedef uintptr_t       nxt_uint_t;
 #endif
 
 

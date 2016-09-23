@@ -43,7 +43,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
     njs_function_t          *functions, *constructors;
     njs_object_prototype_t  *prototypes;
 
-    static const njs_object_init_t    *prototype_init[] = {
+    static const njs_object_init_t  *prototype_init[] = {
         &njs_object_prototype_init,
         &njs_array_prototype_init,
         &njs_boolean_prototype_init,
@@ -56,7 +56,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
 
     static const njs_object_prototype_t  prototype_values[] = {
         /*
-         * GCC 4 complains about unitialized .shared field,
+         * GCC 4 complains about uninitialized .shared field,
          * if the .type field is initialized as .object.type.
          */
         { .object =       { .type = NJS_OBJECT } },
@@ -95,15 +95,15 @@ njs_builtin_objects_create(njs_vm_t *vm)
 
     static const njs_function_init_t  native_constructors[] = {
         /* SunC does not allow empty array initialization. */
-        { njs_object_constructor,   { 0 } },
-        { njs_array_constructor,    { 0 } },
-        { njs_boolean_constructor,  { 0 } },
-        { njs_number_constructor,   { NJS_SKIP_ARG, NJS_NUMBER_ARG } },
-        { njs_string_constructor,   { NJS_SKIP_ARG, NJS_STRING_ARG } },
-        { njs_function_constructor, { 0 } },
+        { njs_object_constructor,     { 0 } },
+        { njs_array_constructor,      { 0 } },
+        { njs_boolean_constructor,    { 0 } },
+        { njs_number_constructor,     { NJS_SKIP_ARG, NJS_NUMBER_ARG } },
+        { njs_string_constructor,     { NJS_SKIP_ARG, NJS_STRING_ARG } },
+        { njs_function_constructor,   { 0 } },
         { njs_regexp_constructor,
           { NJS_SKIP_ARG, NJS_STRING_ARG, NJS_STRING_ARG } },
-        { njs_date_constructor,     { 0 } },
+        { njs_date_constructor,       { 0 } },
     };
 
     static const njs_object_init_t    *object_init[] = {

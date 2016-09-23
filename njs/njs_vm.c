@@ -162,7 +162,7 @@ njs_vmcode_interpreter(njs_vm_t *vm)
     njs_native_frame_t    *previous;
     njs_vmcode_generic_t  *vmcode;
 
-    start:
+start:
 
     for ( ;; ) {
 

@@ -292,7 +292,6 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
     }
 
     pattern->flags = size;
-    pattern->next = NULL;
 
     p = (u_char *) pattern + sizeof(njs_regexp_pattern_t);
     pattern->source = p;

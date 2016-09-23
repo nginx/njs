@@ -47,6 +47,14 @@ struct njs_function_lambda_s {
 
 #define NJS_FRAME_SPARE_SIZE       512
 
+
+typedef struct {
+    njs_function_native_t          function;
+    u_char                         *return_address;
+    njs_index_t                    retval;
+} njs_continuation_t;
+
+
 #define njs_continuation(frame)                                               \
     (void *) ((u_char *) frame + NJS_NATIVE_FRAME_SIZE)
 

@@ -88,7 +88,7 @@ lvlhsh_unit_test_get(nxt_lvlhsh_t *lh, const nxt_lvlhsh_proto_t *proto,
 
     lhq.key_hash = key;
     lhq.key.length = sizeof(uintptr_t);
-    lhq.key.start =  (u_char *) &key;
+    lhq.key.start = (u_char *) &key;
     lhq.proto = proto;
 
     if (nxt_lvlhsh_find(lh, &lhq) == NXT_OK) {
@@ -206,8 +206,8 @@ lvlhsh_unit_test(nxt_uint_t n)
     const size_t          cluster_size = 4096;
 
     pool = nxt_mem_cache_pool_create(&mem_cache_pool_proto, NULL, NULL,
-                                    cluster_size, page_alignment,
-                                    page_size, min_chunk_size);
+                                     cluster_size, page_alignment,
+                                     page_size, min_chunk_size);
     if (pool == NULL) {
         return NXT_ERROR;
     }

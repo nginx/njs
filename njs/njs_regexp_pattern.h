@@ -19,7 +19,6 @@ typedef enum {
 struct njs_regexp_pattern_s {
     nxt_regex_t           regex[2];
 
-    njs_regexp_pattern_t  *next;
     /*
      * A pattern source is used by RegExp.toString() method and
      * RegExp.source property.  So it is is stored in form "/pattern/flags"

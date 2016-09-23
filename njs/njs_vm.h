@@ -124,15 +124,6 @@ typedef struct njs_native_frame_s     njs_native_frame_t;
 typedef struct njs_property_next_s    njs_property_next_t;
 
 
-typedef struct njs_continuation_s     njs_continuation_t;
-
-struct njs_continuation_s {
-    njs_function_native_t             function;
-    u_char                            *return_address;
-    njs_index_t                       retval;
-};
-
-
 union njs_value_s {
     /*
      * The njs_value_t size is 16 bytes and must be aligned to 16 bytes
