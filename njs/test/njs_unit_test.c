@@ -3176,6 +3176,96 @@ static njs_unit_test_t  njs_test[] =
                  "'123456'.search(r)"),
       nxt_string("3") },
 
+    { nxt_string("'abcdefgh'.replace()"),
+      nxt_string("abcdefgh") },
+
+    { nxt_string("'abcdefgh'.replace('d')"),
+      nxt_string("abcundefinedefgh") },
+
+    { nxt_string("'abcdefgh'.replace('d', undefined)"),
+      nxt_string("abcundefinedefgh") },
+
+    { nxt_string("'abcdefgh'.replace('d', null)"),
+      nxt_string("abcnullefgh") },
+
+    { nxt_string("'abcdefgh'.replace('d', 1)"),
+      nxt_string("abc1efgh") },
+
+    { nxt_string("'abcdefghdijklm'.replace('d', 'X')"),
+      nxt_string("abcXefghdijklm") },
+
+    { nxt_string("'абвгдежгийклм'.replace('г', 'Г')"),
+      nxt_string("абвГдежгийклм") },
+
+    { nxt_string("'abcdefghdijklm'.replace('d',"
+                 "   function(m, o, s) { return '|'+s+'|'+o+'|'+m+'|' })"),
+      nxt_string("abc|abcdefghdijklm|3|d|efghdijklm") },
+
+    { nxt_string("'abcdefgh'.replace('', 'X')"),
+      nxt_string("Xabcdefgh") },
+
+    { nxt_string("'abcdefghdijklm'.replace(/d/, 'X')"),
+      nxt_string("abcXefghdijklm") },
+
+    { nxt_string("'abcdefghdijklm'.replace(/d/,"
+                 "   function(m, o, s) { return '|'+s+'|'+o+'|'+m+'|' })"),
+      nxt_string("abc|abcdefghdijklm|3|d|efghdijklm") },
+
+    { nxt_string("'abcdefghdijklm'.replace(/(d)/,"
+                 "   function(m, p, o, s)"
+                       "{ return '|'+s+'|'+o+'|'+m+'|'+p+'|' })"),
+      nxt_string("abc|abcdefghdijklm|3|d|d|efghdijklm") },
+
+    { nxt_string("'abcdefghdijklm'.replace(/x/, 'X')"),
+      nxt_string("abcdefghdijklm") },
+
+    { nxt_string("'abcdefghdijklm'.replace(/x/,"
+                 "   function(m, o, s) { return '|'+s+'|'+o+'|'+m+'|' })"),
+      nxt_string("abcdefghdijklm") },
+
+    { nxt_string("'абвгдежгийклм'.replace(/г/, 'Г')"),
+      nxt_string("абвГдежгийклм") },
+
+    { nxt_string("'abcdefghdijklm'.replace(/d/g, 'X')"),
+      nxt_string("abcXefghXijklm") },
+
+    { nxt_string("'абвгдежгийклм'.replace(/г/g, 'Г')"),
+      nxt_string("абвГдежГийклм") },
+
+    { nxt_string("'abc12345#$*%'.replace(/([^\\d]*)(\\d*)([^\\w]*)/,"
+                 "   function(match, p1, p2, p3) {"
+                 "     return [p1, p2, p3].join('-')})"),
+      nxt_string("abc-12345-#$*%") },
+
+    { nxt_string("'ABCDEFGHDIJKLM'.replace(/[A-Z]/g,"
+                 "   function(match) { return '-' + match.toLowerCase() })"),
+      nxt_string("-a-b-c-d-e-f-g-h-d-i-j-k-l-m") },
+
+    { nxt_string("'abcdbe'.replace(/(b)/g, '$')"),
+      nxt_string("a$cd$e") },
+
+    { nxt_string("'abcdbe'.replace(/(b)/g, '$2$23')"),
+      nxt_string("a$2$23cd$2$23e") },
+
+    { nxt_string("'abcdbe'.replace(/(b)/g, '$2$23X$$Y')"),
+      nxt_string("a$2$23X$Ycd$2$23X$Ye") },
+
+    { nxt_string("'abcdbe'.replace('b', '|$`X$\\'|')"),
+      nxt_string("a|aXcdbe|cdbe") },
+
+    { nxt_string("'abcdbe'.replace(/b/, '|$`X$\\'|')"),
+      nxt_string("a|aXcdbe|cdbe") },
+
+    { nxt_string("'abcdbefbgh'.replace(/b/g, '|$`X$\\'|')"),
+      nxt_string("a|aXcdbefbgh|cd|abcdXefbgh|ef|abcdbefXgh|gh") },
+
+    { nxt_string("'abc12345#$*%'.replace(/([^\\d]*)(\\d*)([^\\w]*)/,"
+                 "                       '$1-$2-$3')"),
+      nxt_string("abc-12345-#$*%") },
+
+    { nxt_string("'$1,$2'.replace(/(\\$(\\d))/g, '$$1-$1$2')"),
+      nxt_string("$1-$11,$1-$22") },
+
     { nxt_string("'abcdefgh'.match()"),
       nxt_string("") },
 

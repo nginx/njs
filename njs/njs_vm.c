@@ -2452,6 +2452,20 @@ njs_normalize_args(njs_vm_t *vm, njs_value_t *args, uint8_t *args_types,
             trap = NJS_TRAP_NUMBER_ARG;
             goto trap;
 
+        case NJS_FUNCTION_ARG:
+
+            switch (args->type) {
+            case NJS_STRING:
+            case NJS_FUNCTION:
+                break;
+
+            default:
+                trap = NJS_TRAP_STRING_ARG;
+                goto trap;
+            }
+
+            break;
+
         case NJS_REGEXP_ARG:
 
             switch (args->type) {

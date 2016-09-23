@@ -10,6 +10,12 @@
 #include <pcre.h>
 
 
+typedef enum {
+    NJS_REGEXP_BYTE = 0,
+    NJS_REGEXP_UTF8,
+} njs_regexp_utf8_t;
+
+
 struct njs_regexp_pattern_s {
     nxt_regex_t           regex[2];
 

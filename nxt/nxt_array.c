@@ -12,7 +12,7 @@
 
 
 nxt_array_t *
-nxt_array_create(nxt_uint_t items, size_t item_size,
+nxt_array_create(uint32_t items, uint32_t item_size,
     const nxt_mem_proto_t *proto, void *pool)
 {
     nxt_array_t  *array;
@@ -24,7 +24,8 @@ nxt_array_create(nxt_uint_t items, size_t item_size,
         array->items = 0;
         array->item_size = item_size;
         array->avalaible = items;
-        array->type = NXT_ARRAY_EMBEDDED;
+        array->pointer = 1;
+        array->separate = 1;
     }
 
     return array;
@@ -32,16 +33,21 @@ nxt_array_create(nxt_uint_t items, size_t item_size,
 
 
 void *
-nxt_array_init(nxt_array_t *array, nxt_uint_t items, size_t item_size,
-    const nxt_mem_proto_t *proto, void *pool)
+nxt_array_init(nxt_array_t *array, void *start, uint32_t items,
+    uint32_t item_size, const nxt_mem_proto_t *proto, void *pool)
 {
-    array->start = proto->alloc(pool, items * item_size);
+    array->start = start;
+    array->items = items;
+    array->item_size = item_size;
+    array->avalaible = items;
+    array->pointer = 0;
+    array->separate = 0;
 
-    if (nxt_fast_path(array->start != NULL)) {
+    if (array->start == NULL) {
+        array->separate = 1;
         array->items = 0;
-        array->item_size = item_size;
-        array->avalaible = items;
-        array->type = NXT_ARRAY_INITED;
+
+        array->start = proto->alloc(pool, items * item_size);
     }
 
     return array->start;
@@ -51,25 +57,17 @@ nxt_array_init(nxt_array_t *array, nxt_uint_t items, size_t item_size,
 void
 nxt_array_destroy(nxt_array_t *array, const nxt_mem_proto_t *proto, void *pool)
 {
-    switch (array->type) {
-
-    case NXT_ARRAY_INITED:
+    if (array->separate) {
         proto->free(pool, array->start);
 #if (NXT_DEBUG)
         array->start = NULL;
         array->items = 0;
         array->avalaible = 0;
 #endif
-        break;
+    }
 
-    case NXT_ARRAY_DESCRETE:
-        proto->free(pool, array->start);
-
-        /* Fall through. */
-
-    case NXT_ARRAY_EMBEDDED:
+    if (array->pointer) {
         proto->free(pool, array);
-        break;
     }
 }
 
@@ -77,13 +75,21 @@ nxt_array_destroy(nxt_array_t *array, const nxt_mem_proto_t *proto, void *pool)
 void *
 nxt_array_add(nxt_array_t *array, const nxt_mem_proto_t *proto, void *pool)
 {
+    return nxt_array_add_multiple(array, proto, pool, 1);
+}
+
+
+void *
+nxt_array_add_multiple(nxt_array_t *array, const nxt_mem_proto_t *proto,
+    void *pool, uint32_t items)
+{
     void      *item, *start, *old;
-    size_t    size;
     uint32_t  n;
 
     n = array->avalaible;
+    items += array->items;
 
-    if (n == array->items) {
+    if (items >= n) {
 
         if (n < 16) {
             /* Allocate new array twice as much as current. */
@@ -94,9 +100,11 @@ nxt_array_add(nxt_array_t *array, const nxt_mem_proto_t *proto, void *pool)
             n += n / 2;
         }
 
-        size = n * array->item_size;
+        if (n < items) {
+            n = items;
+        }
 
-        start = proto->alloc(pool, size);
+        start = proto->alloc(pool, n * array->item_size);
         if (nxt_slow_path(start == NULL)) {
             return NULL;
         }
@@ -105,19 +113,19 @@ nxt_array_add(nxt_array_t *array, const nxt_mem_proto_t *proto, void *pool)
         old = array->start;
         array->start = start;
 
-        memcpy(start, old, size);
+        memcpy(start, old, array->items * array->item_size);
 
-        if (array->type == NXT_ARRAY_EMBEDDED) {
-            array->type = NXT_ARRAY_DESCRETE;
+        if (array->separate == 0) {
+            array->separate = 1;
 
         } else {
             proto->free(pool, old);
         }
     }
 
-    item = (char *) array->start + array->item_size * array->items;
+    item = (char *) array->start + array->items * array->item_size;
 
-    array->items++;
+    array->items = items;
 
     return item;
 }

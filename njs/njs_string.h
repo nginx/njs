@@ -7,6 +7,7 @@
 #ifndef _NJS_STRING_H_INCLUDED_
 #define _NJS_STRING_H_INCLUDED_
 
+#include <nxt_utf8.h>
 
 /*
  * nJSVM supports two string variants:
@@ -78,6 +79,34 @@ typedef struct {
     size_t    length;
     size_t    string_length;
 } njs_slice_prop_t;
+
+
+typedef enum {
+    NJS_STRING_BYTE = 0,
+    NJS_STRING_ASCII,
+    NJS_STRING_UTF8,
+} njs_utf8_t;
+
+
+nxt_inline uint32_t
+njs_string_length(u_char *start, size_t size, njs_utf8_t utf8)
+{
+    ssize_t  length;
+
+    switch (utf8) {
+
+    case NJS_STRING_BYTE:
+        return 0;
+
+    case NJS_STRING_ASCII:
+        return size;
+
+    default:  /* NJS_STRING_UTF8 */
+        length = nxt_utf8_length(start, size);
+
+        return (length >= 0) ? length : 0;
+    }
+}
 
 
 njs_ret_t njs_string_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,

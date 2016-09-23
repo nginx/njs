@@ -609,7 +609,7 @@ njs_regexp_prototype_test(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         if (ret >= 0) {
             retval = &njs_value_true;
 
-        } else if (ret != NGX_REGEX_NOMATCH) {
+        } else if (ret != NXT_REGEX_NOMATCH) {
             return NXT_ERROR;
         }
     }
@@ -683,7 +683,7 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                                           utf8);
         }
 
-        if (nxt_slow_path(ret != NGX_REGEX_NOMATCH)) {
+        if (nxt_slow_path(ret != NXT_REGEX_NOMATCH)) {
             nxt_regex_match_data_free(match_data, vm->regex_context);
 
             return NXT_ERROR;

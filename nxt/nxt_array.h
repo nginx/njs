@@ -8,13 +8,6 @@
 #define _NXT_ARRAY_H_INCLUDED_
 
 
-typedef enum {
-    NXT_ARRAY_INITED = 0,
-    NXT_ARRAY_DESCRETE,
-    NXT_ARRAY_EMBEDDED,
-} nxt_array_type_t;
-
-
 typedef struct {
     void              *start;
     /*
@@ -24,18 +17,23 @@ typedef struct {
     uint16_t          items;
     uint16_t          avalaible;
     uint16_t          item_size;
-    nxt_array_type_t  type:8;
+
+    uint8_t           pointer;
+    uint8_t           separate;
 } nxt_array_t;
 
 
-NXT_EXPORT nxt_array_t *nxt_array_create(nxt_uint_t items, size_t item_size,
+NXT_EXPORT nxt_array_t *nxt_array_create(uint32_t items, uint32_t item_size,
     const nxt_mem_proto_t *proto, void *pool);
-NXT_EXPORT void *nxt_array_init(nxt_array_t *array, nxt_uint_t items,
-    size_t item_size, const nxt_mem_proto_t *proto, void *pool);
+NXT_EXPORT void *nxt_array_init(nxt_array_t *array, void *start,
+    uint32_t items, uint32_t item_size, const nxt_mem_proto_t *proto,
+    void *pool);
 NXT_EXPORT void nxt_array_destroy(nxt_array_t *array,
     const nxt_mem_proto_t *proto, void *pool);
 NXT_EXPORT void *nxt_array_add(nxt_array_t *array, const nxt_mem_proto_t *proto,
     void *pool);
+NXT_EXPORT void *nxt_array_add_multiple(nxt_array_t *array,
+    const nxt_mem_proto_t *proto, void *pool, uint32_t items);
 NXT_EXPORT void *nxt_array_zero_add(nxt_array_t *array,
     const nxt_mem_proto_t *proto, void *pool);
 NXT_EXPORT void nxt_array_remove(nxt_array_t *array, void *item);

@@ -129,6 +129,20 @@ done:
 }
 
 
+nxt_bool_t
+nxt_regex_is_valid(nxt_regex_t *regex)
+{
+    return (regex->code != NULL);
+}
+
+
+nxt_uint_t
+nxt_regex_ncaptures(nxt_regex_t *regex)
+{
+    return regex->ncaptures;
+}
+
+
 nxt_regex_match_data_t *
 nxt_regex_match_data(nxt_regex_t *regex, nxt_regex_context_t *ctx)
 {
@@ -193,13 +207,6 @@ nxt_pcre_default_free(void *p, void *memory_data)
 }
 
 
-nxt_bool_t
-nxt_regex_is_valid(nxt_regex_t *regex)
-{
-    return (regex->code != NULL);
-}
-
-
 nxt_int_t
 nxt_regex_match(nxt_regex_t *regex, u_char *subject, size_t len,
     nxt_regex_match_data_t *match_data, nxt_regex_context_t *ctx)
@@ -222,5 +229,5 @@ nxt_regex_match(nxt_regex_t *regex, u_char *subject, size_t len,
 int *
 nxt_regex_captures(nxt_regex_match_data_t *match_data)
 {
-     return match_data->captures;
+    return match_data->captures;
 }
