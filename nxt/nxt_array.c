@@ -113,7 +113,7 @@ nxt_array_add_multiple(nxt_array_t *array, const nxt_mem_proto_t *proto,
         old = array->start;
         array->start = start;
 
-        memcpy(start, old, array->items * array->item_size);
+        memcpy(start, old, (uint32_t) array->items * array->item_size);
 
         if (array->separate == 0) {
             array->separate = 1;
@@ -123,7 +123,7 @@ nxt_array_add_multiple(nxt_array_t *array, const nxt_mem_proto_t *proto,
         }
     }
 
-    item = (char *) array->start + array->items * array->item_size;
+    item = (char *) array->start + (uint32_t) array->items * array->item_size;
 
     array->items = items;
 
