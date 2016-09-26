@@ -2092,6 +2092,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = [1, 2]; delete a[0]; 0 in a"),
       nxt_string("false") },
 
+    { nxt_string("var a = [ function(a) {return a + 1} ]; a[0](5)"),
+      nxt_string("6") },
+
     { nxt_string("var s = '', a = [5,1,2];"
                  "a[null] = null;"
                  "a[undefined] = 'defined';"

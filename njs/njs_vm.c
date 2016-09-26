@@ -83,6 +83,8 @@ static nxt_noinline njs_ret_t njs_values_equal(njs_value_t *val1,
 static nxt_noinline njs_ret_t njs_values_compare(njs_value_t *val1,
     njs_value_t *val2);
 static njs_object_t *njs_function_new_object(njs_vm_t *vm, njs_value_t *value);
+static njs_ret_t njs_vmcode_method_call(njs_vm_t *vm, njs_value_t *object,
+    njs_value_t *value);
 static njs_ret_t njs_vmcode_continuation(njs_vm_t *vm, njs_value_t *invld1,
     njs_value_t *invld2);
 static njs_native_frame_t *
@@ -2231,9 +2233,8 @@ njs_ret_t
 njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
 {
     njs_ret_t                  ret;
-    njs_value_t                this;
+    njs_value_t                this, *value;
     njs_extern_t               *ext;
-    njs_function_t             *function;
     njs_object_prop_t          *prop;
     njs_property_query_t       pq;
     njs_vmcode_method_frame_t  *method;
@@ -2246,31 +2247,16 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
         prop = pq.lhq.value;
 
         if (njs_is_function(&prop->value)) {
+            return njs_vmcode_method_call(vm, object, &prop->value);
+        }
 
-            method = (njs_vmcode_method_frame_t *) vm->current;
-            function = prop->value.data.u.function;
+        break;
 
-            if (!function->native) {
-                ret = njs_function_frame(vm, function, object, NULL,
-                                         method->nargs, method->code.ctor);
+    case NJS_ARRAY_VALUE:
+        value = pq.lhq.value;
 
-                if (nxt_fast_path(ret == NXT_OK)) {
-                    return sizeof(njs_vmcode_method_frame_t);
-                }
-
-                return ret;
-            }
-
-            ret = njs_function_native_frame(vm, function, object, NULL,
-                                            method->nargs, 0,
-                                            method->code.ctor);
-
-            if (nxt_fast_path(ret == NXT_OK)) {
-                njs_retain(object);
-                return sizeof(njs_vmcode_method_frame_t);
-            }
-
-            return ret;
+        if (njs_is_function(value)) {
+            return njs_vmcode_method_call(vm, object, value);
         }
 
         break;
@@ -2298,16 +2284,44 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
                 return ret;
             }
         }
-
-        break;
-
-    default:
-        break;
     }
 
     vm->exception = &njs_exception_type_error;
 
     return NXT_ERROR;
+}
+
+
+static njs_ret_t
+njs_vmcode_method_call(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
+{
+    njs_ret_t                  ret;
+    njs_function_t             *function;
+    njs_vmcode_method_frame_t  *method;
+
+    method = (njs_vmcode_method_frame_t *) vm->current;
+    function = value->data.u.function;
+
+    if (!function->native) {
+        ret = njs_function_frame(vm, function, object, NULL, method->nargs,
+                                 method->code.ctor);
+
+        if (nxt_fast_path(ret == NXT_OK)) {
+            return sizeof(njs_vmcode_method_frame_t);
+        }
+
+        return ret;
+    }
+
+    ret = njs_function_native_frame(vm, function, object, NULL, method->nargs,
+                                    0, method->code.ctor);
+
+    if (nxt_fast_path(ret == NXT_OK)) {
+        njs_retain(object);
+        return sizeof(njs_vmcode_method_frame_t);
+    }
+
+    return ret;
 }
 
 
