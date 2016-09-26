@@ -89,7 +89,7 @@ typedef enum {
 
 
 nxt_inline uint32_t
-njs_string_length(u_char *start, size_t size, njs_utf8_t utf8)
+njs_string_length(njs_utf8_t utf8, u_char *start, size_t size)
 {
     ssize_t  length;
 
