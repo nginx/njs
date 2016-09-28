@@ -144,8 +144,16 @@ Each Stream JavaScript handler receives one argument - stream session object.
 The following properties are available in the session object:
 
      - remoteAddress
+     - eof
+     - fromUpstream
+     - buffer
      - variables{}
      - log()
+     - OK
+     - DECLINED
+     - AGAIN
+     - ERROR
+     - ABORT
 
 
 Example nginx.conf:
@@ -167,22 +175,60 @@ Example nginx.conf:
         server {
             listen 8000;
 
+            # preread data with qux()
+            js_preread qux;
+
             # create $foo and $bar variables and set JavaScript
             # functions foo() and bar() from the included JavaScript
             # file as their handlers
             js_set $foo foo;
             js_set $bar bar;
 
-            return $foo-$bar;
+            # echo-server: return preread data
+            return foo;
+        }
+
+        server {
+            listen 8001;
+
+            # check access in xyz()
+            js_access xyz;
+
+            proxy_pass 127.0.0.1:9000;
+
+            # add JavaScript filter baz() from the included
+            # JavaScript file
+            js_filter baz;
+        }
+    }
+
+    http {
+        server {
+            listen 9000;
+            location / {
+                return 200 $http_foo\n;
+            }
         }
     }
 
 
 stream.js:
 
+    var req = '';
+    var matched = 0;
+    var line = '';
+
+    function qux(s) {
+        n = s.buffer.indexOf('\n');
+        if (n == -1) {
+            return s.AGAIN;
+        }
+
+        line = s.buffer.substr(0, n);
+    }
+
     function foo(s) {
-        s.log("hello from foo() handler!");
-        return s.remoteAddress;
+        return line;
     }
 
     function bar(s) {
@@ -191,6 +237,54 @@ stream.js:
         return "foo-var" + v.remote_port + "; pid=" + v.pid;
     }
 
+    // The filter processes one buffer per call.
+    // The buffer is available in s.buffer both for
+    // reading and writing.  Called for both directions.
+
+    function baz(s) {
+        if (s.fromUpstream || matched) {
+            return;
+        }
+
+        // Disable certain addresses.
+
+        if (s.remoteAddress.match('^192.*')) {
+            return s.ERROR;
+        }
+
+        // Read HTTP request line.
+        // Collect bytes in 'req' until request
+        // line is read.  Clear current buffer to
+        // disable output.
+
+        req = req + s.buffer;
+        s.buffer = '';
+
+        n = req.search('\n');
+
+        if (n != -1) {
+            // Inject a new HTTP header.
+            var rest = req.substr(n + 1);
+            req = req.substr(0, n + 1);
+
+            addr = s.remoteAddress;
+
+            s.log('req:' + req);
+            s.log('rest:' + rest);
+
+            // Output the result and skip further
+            // processing.
+
+            s.buffer = req + 'Foo: addr_' + addr + '\r\n' + rest;
+            matched = 1;
+        }
+    }
+
+    function xyz(s) {
+        if (s.remoteAddress.match('^192.*')) {
+            return s.ABORT;
+        }
+    }
 
 --
 NGINX, Inc., http://nginx.com

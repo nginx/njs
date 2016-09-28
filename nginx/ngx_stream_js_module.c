@@ -40,15 +40,30 @@
 typedef struct {
     njs_vm_t              *vm;
     njs_opaque_value_t     arg;
+    ngx_str_t              access;
+    ngx_str_t              preread;
+    ngx_str_t              filter;
 } ngx_stream_js_srv_conf_t;
 
 
 typedef struct {
     njs_vm_t              *vm;
     njs_opaque_value_t    *arg;
+    ngx_buf_t             *buf;
+    ngx_chain_t           *free;
+    ngx_chain_t           *busy;
+    ngx_stream_session_t  *session;
+    unsigned               from_upstream:1;
+    unsigned               filter:1;
 } ngx_stream_js_ctx_t;
 
 
+static ngx_int_t ngx_stream_js_access_handler(ngx_stream_session_t *s);
+static ngx_int_t ngx_stream_js_preread_handler(ngx_stream_session_t *s);
+static ngx_int_t ngx_stream_js_phase_handler(ngx_stream_session_t *s,
+    ngx_str_t *name);
+static ngx_int_t ngx_stream_js_body_filter(ngx_stream_session_t *s,
+    ngx_chain_t *in, ngx_uint_t from_upstream);
 static ngx_int_t ngx_stream_js_variable(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, uintptr_t data);
 static void ngx_stream_js_cleanup_mem_cache_pool(void *data);
@@ -61,9 +76,19 @@ static void ngx_stream_js_free(void *mem, void *p);
 
 static njs_ret_t ngx_stream_js_ext_get_remote_address(njs_vm_t *vm,
     njs_value_t *value, void *obj, uintptr_t data);
-static njs_ret_t ngx_stream_js_ext_log(njs_vm_t *vm, njs_value_t *args,
-    nxt_uint_t nargs, njs_index_t unused);
+static njs_ret_t ngx_stream_js_ext_get_eof(njs_vm_t *vm, njs_value_t *value,
+    void *obj, uintptr_t data);
+static njs_ret_t ngx_stream_js_ext_get_from_upstream(njs_vm_t *vm,
+    njs_value_t *value, void *obj, uintptr_t data);
+static njs_ret_t ngx_stream_js_ext_get_buffer(njs_vm_t *vm, njs_value_t *value,
+    void *obj, uintptr_t data);
+static njs_ret_t ngx_stream_js_ext_set_buffer(njs_vm_t *vm, void *obj,
+    uintptr_t data, nxt_str_t *value);
+ static njs_ret_t ngx_stream_js_ext_log(njs_vm_t *vm, njs_value_t *args,
+     nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t ngx_stream_js_ext_get_variable(njs_vm_t *vm,
+    njs_value_t *value, void *obj, uintptr_t data);
+static njs_ret_t ngx_stream_js_ext_get_code(njs_vm_t *vm,
     njs_value_t *value, void *obj, uintptr_t data);
 
 static char *ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd,
@@ -73,6 +98,7 @@ static char *ngx_stream_js_set(ngx_conf_t *cf, ngx_command_t *cmd,
 static void *ngx_stream_js_create_srv_conf(ngx_conf_t *cf);
 static char *ngx_stream_js_merge_srv_conf(ngx_conf_t *cf, void *parent,
     void *child);
+static ngx_int_t ngx_stream_js_init(ngx_conf_t *cf);
 
 
 static ngx_command_t  ngx_stream_js_commands[] = {
@@ -91,13 +117,34 @@ static ngx_command_t  ngx_stream_js_commands[] = {
       0,
       NULL },
 
+    { ngx_string("js_access"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      offsetof(ngx_stream_js_srv_conf_t, access),
+      NULL },
+
+    { ngx_string("js_preread"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      offsetof(ngx_stream_js_srv_conf_t, preread),
+      NULL },
+
+    { ngx_string("js_filter"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      offsetof(ngx_stream_js_srv_conf_t, filter),
+      NULL },
+
     ngx_null_command
 };
 
 
 static ngx_stream_module_t  ngx_stream_js_module_ctx = {
     NULL,                          /* preconfiguration */
-    NULL,                          /* postconfiguration */
+    ngx_stream_js_init,            /* postconfiguration */
 
     NULL,                          /* create main configuration */
     NULL,                          /* init main configuration */
@@ -148,6 +195,42 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
       NULL,
       0 },
 
+    { nxt_string("eof"),
+      NJS_EXTERN_PROPERTY,
+      NULL,
+      0,
+      ngx_stream_js_ext_get_eof,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      0 },
+
+    { nxt_string("fromUpstream"),
+      NJS_EXTERN_PROPERTY,
+      NULL,
+      0,
+      ngx_stream_js_ext_get_from_upstream,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      0 },
+
+    { nxt_string("buffer"),
+      NJS_EXTERN_PROPERTY,
+      NULL,
+      0,
+      ngx_stream_js_ext_get_buffer,
+      ngx_stream_js_ext_set_buffer,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      0 },
+
     { nxt_string("log"),
       NJS_EXTERN_METHOD,
       NULL,
@@ -171,6 +254,66 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
       NULL,
       NULL,
       0 },
+
+    { nxt_string("OK"),
+      NJS_EXTERN_PROPERTY,
+      NULL,
+      0,
+      ngx_stream_js_ext_get_code,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      -NGX_OK },
+
+    { nxt_string("DECLINED"),
+      NJS_EXTERN_PROPERTY,
+      NULL,
+      0,
+      ngx_stream_js_ext_get_code,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      -NGX_DECLINED },
+
+    { nxt_string("AGAIN"),
+      NJS_EXTERN_PROPERTY,
+      NULL,
+      0,
+      ngx_stream_js_ext_get_code,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      -NGX_AGAIN },
+
+    { nxt_string("ERROR"),
+      NJS_EXTERN_PROPERTY,
+      NULL,
+      0,
+      ngx_stream_js_ext_get_code,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      -NGX_ERROR },
+
+    { nxt_string("ABORT"),
+      NJS_EXTERN_PROPERTY,
+      NULL,
+      0,
+      ngx_stream_js_ext_get_code,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      -NGX_ABORT },
 };
 
 
@@ -188,6 +331,224 @@ static njs_external_t  ngx_stream_js_externals[] = {
       NULL,
       0 },
 };
+
+
+static ngx_stream_filter_pt  ngx_stream_next_filter;
+
+
+static ngx_int_t
+ngx_stream_js_access_handler(ngx_stream_session_t *s)
+{
+    ngx_int_t                  rc;
+    ngx_stream_js_srv_conf_t  *jscf;
+
+    ngx_log_debug0(NGX_LOG_DEBUG_STREAM, s->connection->log, 0,
+                   "js access handler");
+
+    jscf = ngx_stream_get_module_srv_conf(s, ngx_stream_js_module);
+
+    rc = ngx_stream_js_phase_handler(s, &jscf->access);
+
+    if (rc == NGX_ABORT) {
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+                      "access forbidden by js");
+        rc = NGX_STREAM_FORBIDDEN;
+    }
+
+    return rc;
+}
+
+
+static ngx_int_t
+ngx_stream_js_preread_handler(ngx_stream_session_t *s)
+{
+    ngx_stream_js_srv_conf_t  *jscf;
+
+    ngx_log_debug0(NGX_LOG_DEBUG_STREAM, s->connection->log, 0,
+                   "js preread handler");
+
+    jscf = ngx_stream_get_module_srv_conf(s, ngx_stream_js_module);
+
+    return ngx_stream_js_phase_handler(s, &jscf->preread);
+}
+
+
+static ngx_int_t
+ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
+{
+    nxt_str_t                  fname, value, exception;
+    ngx_int_t                  rc;
+    njs_function_t            *func;
+    ngx_connection_t          *c;
+    ngx_stream_js_ctx_t       *ctx;
+
+    if (name->len == 0) {
+        return NGX_DECLINED;
+    }
+
+    c = s->connection;
+
+    rc = ngx_stream_js_init_vm(s);
+    if (rc != NGX_OK) {
+        return rc;
+    }
+
+    ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
+
+    fname.start = name->data;
+    fname.length = name->len;
+
+    func = njs_vm_function(ctx->vm, &fname);
+
+    if (func == NULL) {
+        ngx_log_error(NGX_LOG_ERR, c->log, 0, "js function \"%V\" not found",
+                      name);
+        return NGX_ERROR;
+    }
+
+    if (njs_vm_call(ctx->vm, func, ctx->arg, 1) != NJS_OK) {
+        njs_vm_exception(ctx->vm, &exception);
+
+        ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %*s",
+                      exception.length, exception.start);
+
+        return NGX_ERROR;
+    }
+
+    if (ctx->vm->retval.type == NJS_VOID) {
+        return NGX_OK;
+    }
+
+    if (njs_vm_retval(ctx->vm, &value) != NJS_OK) {
+        return NGX_ERROR;
+    }
+
+    ngx_log_debug2(NGX_LOG_DEBUG_STREAM, c->log, 0, "js return value: \"%*s\"",
+                   value.length, value.start);
+
+    rc = ngx_atoi(value.start, value.length);
+
+    if (rc == NGX_ERROR) {
+        ngx_log_error(NGX_LOG_ERR, c->log, 0,
+                      "unexpected js return code: \"%*s\"",
+                      value.length, value.start);
+        return NGX_ERROR;
+    }
+
+    return -rc;
+}
+
+
+static ngx_int_t
+ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
+    ngx_uint_t from_upstream)
+{
+    nxt_str_t                  name, value, exception;
+    ngx_int_t                  rc;
+    ngx_chain_t               *out, *cl, **ll;
+    njs_function_t            *func;
+    ngx_connection_t          *c;
+    ngx_stream_js_ctx_t       *ctx;
+    ngx_stream_js_srv_conf_t  *jscf;
+
+    jscf = ngx_stream_get_module_srv_conf(s, ngx_stream_js_module);
+    if (jscf->filter.len == 0) {
+        return ngx_stream_next_filter(s, in, from_upstream);
+    }
+
+    c = s->connection;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_STREAM, c->log, 0, "stream js filter u:%ui",
+                   from_upstream);
+
+    rc = ngx_stream_js_init_vm(s);
+
+    if (rc == NGX_ERROR) {
+        return NGX_ERROR;
+    }
+
+    if (rc == NGX_DECLINED) {
+        return ngx_stream_next_filter(s, in, from_upstream);
+    }
+
+    ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
+
+    ctx->filter = 1;
+
+    name.start = jscf->filter.data;
+    name.length = jscf->filter.len;
+
+    func = njs_vm_function(ctx->vm, &name);
+
+    if (func == NULL) {
+        ngx_log_error(NGX_LOG_ERR, c->log, 0, "js function \"%V\" not found",
+                      &jscf->filter);
+        return NGX_ERROR;
+    }
+
+    ctx->from_upstream = from_upstream;
+
+    ll = &out;
+
+    while (in) {
+        ctx->buf = in->buf;
+
+        if (njs_vm_call(ctx->vm, func, ctx->arg, 1) != NJS_OK) {
+            njs_vm_exception(ctx->vm, &exception);
+
+            ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %*s",
+                          exception.length, exception.start);
+
+            return NGX_ERROR;
+        }
+
+        if (njs_vm_retval(ctx->vm, &value) != NJS_OK) {
+            return NGX_ERROR;
+        }
+
+        ngx_log_debug2(NGX_LOG_DEBUG_STREAM, c->log, 0,
+                       "js return value: \"%*s\"",
+                       value.length, value.start);
+
+        if (value.length) {
+            rc = ngx_atoi(value.start, value.length);
+
+            if (rc != NGX_OK && rc != -NGX_ERROR) {
+                ngx_log_error(NGX_LOG_ERR, c->log, 0,
+                              "unexpected js return code: \"%*s\"",
+                              value.length, value.start);
+                return NGX_ERROR;
+            }
+
+            rc = -rc;
+
+            if (rc == NGX_ERROR) {
+                return NGX_ERROR;
+            }
+        }
+
+        cl = ngx_alloc_chain_link(c->pool);
+        if (cl == NULL) {
+            return NGX_ERROR;
+        }
+
+        cl->buf = ctx->buf;
+
+        *ll = cl;
+        ll = &cl->next;
+
+        in = in->next;
+    }
+
+    *ll = NULL;
+
+    rc = ngx_stream_next_filter(s, out, from_upstream);
+
+    ngx_chain_update_chains(c->pool, &ctx->free, &ctx->busy, &out,
+                            (ngx_buf_tag_t) &ngx_stream_js_module);
+
+    return rc;
+}
 
 
 static ngx_int_t
@@ -364,6 +725,137 @@ ngx_stream_js_ext_get_remote_address(njs_vm_t *vm, njs_value_t *value,
 
 
 static njs_ret_t
+ngx_stream_js_ext_get_eof(njs_vm_t *vm, njs_value_t *value, void *obj,
+    uintptr_t data)
+{
+    ngx_buf_t             *b;
+    ngx_connection_t      *c;
+    ngx_stream_js_ctx_t   *ctx;
+    ngx_stream_session_t  *s;
+
+    s = (ngx_stream_session_t *) obj;
+    c = s->connection;
+    ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
+
+    b = ctx->filter ? ctx->buf : c->buffer;
+
+    *value = (b && b->last_buf ? njs_value_true : njs_value_false);
+
+    return NJS_OK;
+}
+
+
+static njs_ret_t
+ngx_stream_js_ext_get_from_upstream(njs_vm_t *vm, njs_value_t *value, void *obj,
+    uintptr_t data)
+{
+    ngx_stream_js_ctx_t   *ctx;
+    ngx_stream_session_t  *s;
+
+    s = (ngx_stream_session_t *) obj;
+    ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
+
+    *value = (ctx->from_upstream ? njs_value_true : njs_value_false);
+
+    return NJS_OK;
+}
+
+
+static njs_ret_t
+ngx_stream_js_ext_get_buffer(njs_vm_t *vm, njs_value_t *value, void *obj,
+    uintptr_t data)
+{
+    size_t                 len;
+    u_char                *p;
+    ngx_buf_t             *b;
+    ngx_connection_t      *c;
+    ngx_stream_js_ctx_t   *ctx;
+    ngx_stream_session_t  *s;
+
+    s = (ngx_stream_session_t *) obj;
+    c = s->connection;
+    ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
+
+    b = ctx->filter ? ctx->buf : c->buffer;
+
+    len = b ? b->last - b->pos : 0;
+
+    p = njs_string_alloc(vm, value, len, 0);
+    if (p == NULL) {
+        return NJS_ERROR;
+    }
+
+    if (len) {
+        ngx_memcpy(p, b->pos, len);
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_ret_t
+ngx_stream_js_ext_set_buffer(njs_vm_t *vm, void *obj, uintptr_t data,
+    nxt_str_t *value)
+{
+    ngx_buf_t             *b;
+    ngx_chain_t           *cl;
+    ngx_connection_t      *c;
+    ngx_stream_js_ctx_t   *ctx;
+    ngx_stream_session_t  *s;
+
+    s = (ngx_stream_session_t *) obj;
+    c = s->connection;
+    ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
+
+    ngx_log_debug2(NGX_LOG_DEBUG_STREAM, c->log, 0,
+                   "stream js set buffer \"%*s\"", value->length, value->start);
+
+    if (!ctx->filter) {
+        ngx_log_error(NGX_LOG_WARN, c->log, 0,
+                      "cannot set buffer in this handler");
+        return NJS_OK;
+    }
+
+    cl = ngx_chain_get_free_buf(c->pool, &ctx->free);
+    if (cl == NULL) {
+        return NJS_ERROR;
+    }
+
+    b = cl->buf;
+
+    ngx_free_chain(c->pool, cl);
+
+    b->last_buf = ctx->buf->last_buf;
+    b->memory = (value->length ? 1 : 0);
+    b->sync = (value->length ? 0 : 1);
+    b->tag = (ngx_buf_tag_t) &ngx_stream_js_module;
+
+    b->start = value->start;
+    b->end = value->start + value->length;
+    b->pos = b->start;
+    b->last = b->end;
+
+    if (ctx->buf->tag != (ngx_buf_tag_t) &ngx_stream_js_module) {
+        ctx->buf->pos = ctx->buf->last;
+
+    } else {
+        cl = ngx_alloc_chain_link(c->pool);
+        if (cl == NULL) {
+            return NJS_ERROR;
+        }
+
+        cl->buf = ctx->buf;
+        cl->next = ctx->free;
+        ctx->free = cl;
+    }
+
+    ctx->buf = b;
+
+    return NJS_OK;
+}
+
+
+static njs_ret_t
 ngx_stream_js_ext_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
@@ -375,8 +867,7 @@ ngx_stream_js_ext_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     s = njs_value_data(njs_argument(args, 0));
     c = s->connection;
 
-    if (njs_value_to_ext_string(vm, &msg, njs_argument(args, 1)) == NJS_ERROR)
-    {
+    if (njs_value_to_ext_string(vm, &msg, njs_argument(args, 1)) == NJS_ERROR) {
         return NJS_ERROR;
     }
 
@@ -415,6 +906,19 @@ ngx_stream_js_ext_get_variable(njs_vm_t *vm, njs_value_t *value, void *obj,
     }
 
     return njs_string_create(vm, value, vv->data, vv->len, 0);
+}
+
+
+static njs_ret_t
+ngx_stream_js_ext_get_code(njs_vm_t *vm, njs_value_t *value, void *obj,
+    uintptr_t data)
+{
+    ngx_memzero(value, sizeof(njs_value_t));
+
+    value->data.type = NJS_NUMBER;
+    value->data.u.number = data;
+
+    return NJS_OK;
 }
 
 
@@ -606,6 +1110,9 @@ ngx_stream_js_create_srv_conf(ngx_conf_t *cf)
      *
      *     conf->vm = NULL;
      *     conf->arg = NULL;
+     *     conf->access = { 0, NULL };
+     *     conf->preread = { 0, NULL };
+     *     conf->filter = { 0, NULL };
      */
 
     return conf;
@@ -623,5 +1130,38 @@ ngx_stream_js_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
         conf->arg = prev->arg;
     }
 
+    ngx_conf_merge_str_value(conf->access, prev->access, "");
+    ngx_conf_merge_str_value(conf->preread, prev->preread, "");
+    ngx_conf_merge_str_value(conf->filter, prev->filter, "");
+
     return NGX_CONF_OK;
+}
+
+
+static ngx_int_t
+ngx_stream_js_init(ngx_conf_t *cf)
+{
+    ngx_stream_handler_pt        *h;
+    ngx_stream_core_main_conf_t  *cmcf;
+
+    ngx_stream_next_filter = ngx_stream_top_filter;
+    ngx_stream_top_filter = ngx_stream_js_body_filter;
+
+    cmcf = ngx_stream_conf_get_module_main_conf(cf, ngx_stream_core_module);
+
+    h = ngx_array_push(&cmcf->phases[NGX_STREAM_ACCESS_PHASE].handlers);
+    if (h == NULL) {
+        return NGX_ERROR;
+    }
+
+    *h = ngx_stream_js_access_handler;
+
+    h = ngx_array_push(&cmcf->phases[NGX_STREAM_PREREAD_PHASE].handlers);
+    if (h == NULL) {
+        return NGX_ERROR;
+    }
+
+    *h = ngx_stream_js_preread_handler;
+
+    return NGX_OK;
 }
