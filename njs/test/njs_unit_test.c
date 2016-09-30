@@ -3631,6 +3631,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("(function(x) { return x + 1 }(2))"),
       nxt_string("3") },
 
+    { nxt_string("a = function() { return 1 }(); a"),
+      nxt_string("1") },
+
     { nxt_string("a = (function() { return 1 })(); a"),
       nxt_string("1") },
 
@@ -3777,6 +3780,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("function f() {}; f = f + 1; f"),
       nxt_string("[object Function]1") },
 
+    { nxt_string("function a() { return 1 }"
+                 "function b() { return a }"
+                 "function c() { return b }"
+                 "c()()()"),
+      nxt_string("1") },
+
 #if 0
     { nxt_string("function f() {}; f += 1; f"),
       nxt_string("[object Function]1") },
@@ -3883,6 +3892,56 @@ static njs_unit_test_t  njs_test[] =
                  "var o = new F();"
                  "o.constructor === F"),
       nxt_string("true") },
+
+    { nxt_string("function F() { return Number }"
+                 "var o = new (F())(5);"
+                 "typeof o +' '+ o"),
+      nxt_string("object 5") },
+
+    { nxt_string("function F() { return Number }"
+                 "var o = new (F());"
+                 "typeof o +' '+ o"),
+      nxt_string("object 0") },
+
+    { nxt_string("var o = new function F() { return Number }()(5);"
+                 "typeof o +' '+ o"),
+      nxt_string("number 5") },
+
+    { nxt_string("var o = new (function F() { return Number }())(5);"
+                 "typeof o +' '+ o"),
+      nxt_string("object 5") },
+
+    { nxt_string("var o = new (new function F() { return Number }())(5);"
+                 "typeof o +' '+ o"),
+      nxt_string("object 5") },
+
+    { nxt_string("var o = new new function F() { return Number }()(5);"
+                 "typeof o +' '+ o"),
+      nxt_string("object 5") },
+
+    { nxt_string("var b; function F(x) { return {a:x} }"
+                 "function G(y) { b = y; return F }"
+                 "var o = new G(3)(5);"
+                 "b + ' ' + o.a"),
+      nxt_string("3 5") },
+
+    { nxt_string("var b; function F(x) { return {a:x} }"
+                 "function G(y) { b = y; return F }"
+                 "var o = new (new G(3))(5);"
+                 "b + ' ' + o.a"),
+      nxt_string("3 5") },
+
+    { nxt_string("var b; function F(x) { return {a:x} }"
+                 "function G(y) { b = y; return F }"
+                 "var o = new new G(3)(5);"
+                 "b + ' ' + o.a"),
+      nxt_string("3 5") },
+
+    { nxt_string("var b; function F(x) { return {a:x} }"
+                 "var g = { G: function (y) { b = y; return F } };"
+                 "var o = new new g.G(3)(5);"
+                 "b + ' ' + o.a"),
+      nxt_string("3 5") },
 
     { nxt_string("function a() { return function(x) { return x + 1 } }"
                  "b = a(); b(2)"),
@@ -4282,6 +4341,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Boolean()"),
       nxt_string("false") },
 
+    { nxt_string("new Boolean()"),
+      nxt_string("false") },
+
+    { nxt_string("new Boolean"),
+      nxt_string("false") },
+
     { nxt_string("Boolean(0)"),
       nxt_string("false") },
 
@@ -4304,6 +4369,9 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("boolean") },
 
     { nxt_string("typeof new Boolean(1)"),
+      nxt_string("object") },
+
+    { nxt_string("typeof new Boolean"),
       nxt_string("object") },
 
     { nxt_string("Boolean.name"),
@@ -4345,6 +4413,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Number()"),
       nxt_string("0") },
 
+    { nxt_string("new Number()"),
+      nxt_string("0") },
+
+    { nxt_string("new Number"),
+      nxt_string("0") },
+
     { nxt_string("Number(123)"),
       nxt_string("123") },
 
@@ -4363,6 +4437,9 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("number") },
 
     { nxt_string("typeof new Number(1)"),
+      nxt_string("object") },
+
+    { nxt_string("typeof new Number"),
       nxt_string("object") },
 
     { nxt_string("Number.name"),
@@ -4401,10 +4478,22 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("String()"),
       nxt_string("") },
 
+    { nxt_string("new String()"),
+      nxt_string("") },
+
+    { nxt_string("new String"),
+      nxt_string("") },
+
     { nxt_string("String(123)"),
       nxt_string("123") },
 
     { nxt_string("new String(123)"),
+      nxt_string("123") },
+
+    { nxt_string("new String(123).length"),
+      nxt_string("3") },
+
+    { nxt_string("new String(123).toString()"),
       nxt_string("123") },
 
     { nxt_string("String([1,2,3])"),
@@ -4425,6 +4514,9 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("string") },
 
     { nxt_string("typeof new String('abc')"),
+      nxt_string("object") },
+
+    { nxt_string("typeof new String"),
       nxt_string("object") },
 
     { nxt_string("String.name"),
@@ -4925,6 +5017,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = { toISOString: function() { return 'OK' } };"
                  "Date.prototype.toJSON.call(o, 1)"),
       nxt_string("OK") },
+
+    { nxt_string("var d = new Date; d.__proto__"),
+      nxt_string("Invalid Date") },
+
+    { nxt_string("var d = new Date(); d.__proto__"),
+      nxt_string("Invalid Date") },
+
+    { nxt_string("var d = new Date(); d.__proto__ === Date.prototype"),
+      nxt_string("true") },
 
     { nxt_string("Date.name"),
       nxt_string("Date") },
