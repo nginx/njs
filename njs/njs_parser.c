@@ -717,7 +717,24 @@ njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser)
 
     } while (token == NJS_TOKEN_COMMA);
 
-    return token;
+    /*
+     * A var statement must be terminated by semicolon,
+     * or by a close curly brace or by the end of line.
+     */
+    switch (token) {
+
+    case NJS_TOKEN_SEMICOLON:
+    case NJS_TOKEN_CLOSE_BRACE:
+    case NJS_TOKEN_END:
+        return token;
+
+    default:
+        if (parser->lexer->prev_token == NJS_TOKEN_LINE_END) {
+            return token;
+        }
+
+        return NJS_TOKEN_ILLEGAL;
+    }
 }
 
 

@@ -474,7 +474,6 @@ njs_parser_assignment_expression(njs_vm_t *vm, njs_parser_t *parser,
         }
 
         token = njs_parser_assignment_expression(vm, parser, NULL, token);
-
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
         }

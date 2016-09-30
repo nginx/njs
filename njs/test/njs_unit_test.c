@@ -837,13 +837,13 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("null < ({})"),
       nxt_string("false") },
 
-    { nxt_string("var a = { valueOf: function() { return 1 } }      null < a"),
+    { nxt_string("var a = { valueOf: function() { return 1 } };     null < a"),
       nxt_string("true") },
 
-    { nxt_string("var a = { valueOf: function() { return 'null' } } null < a"),
+    { nxt_string("var a = { valueOf: function() { return 'null' } };null < a"),
       nxt_string("false") },
 
-    { nxt_string("var a = { valueOf: function() { return '1' } }    null < a"),
+    { nxt_string("var a = { valueOf: function() { return '1' } };   null < a"),
       nxt_string("true") },
 
     /**/
@@ -887,14 +887,14 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("undefined < ({})"),
       nxt_string("false") },
 
-    { nxt_string("var a = { valueOf: function() { return 1 } } undefined < a"),
+    { nxt_string("var a = { valueOf: function() { return 1 } }; undefined < a"),
       nxt_string("false") },
 
-    { nxt_string("var a = { valueOf: function() { return 'undefined' } }"
+    { nxt_string("var a = { valueOf: function() { return 'undefined' } };"
                  "undefined < a"),
       nxt_string("false") },
 
-    { nxt_string("var a = { valueOf: function() { return '1' } }"
+    { nxt_string("var a = { valueOf: function() { return '1' } };"
                  "undefined < a"),
       nxt_string("false") },
 
@@ -1083,16 +1083,16 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = {};  a = ++a"),
       nxt_string("NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return 1 } }   a = ++a"),
+    { nxt_string("var a = { valueOf: function() { return 1 } };   a = ++a"),
       nxt_string("2") },
 
-    { nxt_string("var a = { valueOf: function() { return '1' } } a = ++a"),
+    { nxt_string("var a = { valueOf: function() { return '1' } }; a = ++a"),
       nxt_string("2") },
 
-    { nxt_string("var a = { valueOf: function() { return [1] } } a = ++a"),
+    { nxt_string("var a = { valueOf: function() { return [1] } }; a = ++a"),
       nxt_string("NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return {} } }  a = ++a"),
+    { nxt_string("var a = { valueOf: function() { return {} } };  a = ++a"),
       nxt_string("NaN") },
 
     /**/
@@ -1109,19 +1109,19 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = {};  var b = ++a; a +' '+ b"),
       nxt_string("NaN NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return 1 } }"
+    { nxt_string("var a = { valueOf: function() { return 1 } };"
                  "var b = ++a; a +' '+ b"),
       nxt_string("2 2") },
 
-    { nxt_string("var a = { valueOf: function() { return '1' } }"
+    { nxt_string("var a = { valueOf: function() { return '1' } };"
                  "var b = ++a; a +' '+ b"),
       nxt_string("2 2") },
 
-    { nxt_string("var a = { valueOf: function() { return [1] } }"
+    { nxt_string("var a = { valueOf: function() { return [1] } };"
                  "var b = ++a; a +' '+ b"),
       nxt_string("NaN NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return {} } }"
+    { nxt_string("var a = { valueOf: function() { return {} } };"
                  "var b = ++a; a +' '+ b"),
       nxt_string("NaN NaN") },
 
@@ -1139,16 +1139,16 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = {};  a++"),
       nxt_string("NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return 1 } }   a++"),
+    { nxt_string("var a = { valueOf: function() { return 1 } };   a++"),
       nxt_string("1") },
 
-    { nxt_string("var a = { valueOf: function() { return '1' } } a++"),
+    { nxt_string("var a = { valueOf: function() { return '1' } }; a++"),
       nxt_string("1") },
 
-    { nxt_string("var a = { valueOf: function() { return [1] } } a++"),
+    { nxt_string("var a = { valueOf: function() { return [1] } }; a++"),
       nxt_string("NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return {} } }  a++"),
+    { nxt_string("var a = { valueOf: function() { return {} } };  a++"),
       nxt_string("NaN") },
 
     /**/
@@ -1165,16 +1165,16 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = {};  a = a++"),
       nxt_string("NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return 1 } }   a = a++"),
+    { nxt_string("var a = { valueOf: function() { return 1 } };   a = a++"),
       nxt_string("1") },
 
-    { nxt_string("var a = { valueOf: function() { return '1' } } a = a++"),
+    { nxt_string("var a = { valueOf: function() { return '1' } }; a = a++"),
       nxt_string("1") },
 
-    { nxt_string("var a = { valueOf: function() { return [1] } } a = a++"),
+    { nxt_string("var a = { valueOf: function() { return [1] } }; a = a++"),
       nxt_string("NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return {} } }  a = a++"),
+    { nxt_string("var a = { valueOf: function() { return {} } };  a = a++"),
       nxt_string("NaN") },
 
     /**/
@@ -1191,19 +1191,19 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = {};  var b = a++; a +' '+ b"),
       nxt_string("NaN NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return 1 } }"
+    { nxt_string("var a = { valueOf: function() { return 1 } };"
                  "var b = a++; a +' '+ b"),
       nxt_string("2 1") },
 
-    { nxt_string("var a = { valueOf: function() { return '1' } }"
+    { nxt_string("var a = { valueOf: function() { return '1' } };"
                  "var b = a++; a +' '+ b"),
       nxt_string("2 1") },
 
-    { nxt_string("var a = { valueOf: function() { return [1] } }"
+    { nxt_string("var a = { valueOf: function() { return [1] } };"
                  "var b = a++; a +' '+ b"),
       nxt_string("NaN NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return {} } }"
+    { nxt_string("var a = { valueOf: function() { return {} } };"
                  "var b = a++; a +' '+ b"),
       nxt_string("NaN NaN") },
 
@@ -1247,16 +1247,16 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = {};  a = --a"),
       nxt_string("NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return 1} }   a = --a"),
+    { nxt_string("var a = { valueOf: function() { return 1} };   a = --a"),
       nxt_string("0") },
 
-    { nxt_string("var a = { valueOf: function() { return '1'} } a = --a"),
+    { nxt_string("var a = { valueOf: function() { return '1'} }; a = --a"),
       nxt_string("0") },
 
-    { nxt_string("var a = { valueOf: function() { return [1]} } a = --a"),
+    { nxt_string("var a = { valueOf: function() { return [1]} }; a = --a"),
       nxt_string("NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return {} } } a = --a"),
+    { nxt_string("var a = { valueOf: function() { return {} } }; a = --a"),
       nxt_string("NaN") },
 
     /**/
@@ -1273,19 +1273,19 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = {};  var b = --a; a +' '+ b"),
       nxt_string("NaN NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return 1 } }"
+    { nxt_string("var a = { valueOf: function() { return 1 } };"
                  "var b = --a; a +' '+ b"),
       nxt_string("0 0") },
 
-    { nxt_string("var a = { valueOf: function() { return '1' } }"
+    { nxt_string("var a = { valueOf: function() { return '1' } };"
                  "var b = --a; a +' '+ b"),
       nxt_string("0 0") },
 
-    { nxt_string("var a = { valueOf: function() { return [1] } }"
+    { nxt_string("var a = { valueOf: function() { return [1] } };"
                  "var b = --a; a +' '+ b"),
       nxt_string("NaN NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return {} } }"
+    { nxt_string("var a = { valueOf: function() { return {} } };"
                  "var b = --a; a +' '+ b"),
       nxt_string("NaN NaN") },
 
@@ -1303,16 +1303,16 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = {};  a--"),
       nxt_string("NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return 1 } }   a--"),
+    { nxt_string("var a = { valueOf: function() { return 1 } };   a--"),
       nxt_string("1") },
 
-    { nxt_string("var a = { valueOf: function() { return '1' } } a--"),
+    { nxt_string("var a = { valueOf: function() { return '1' } }; a--"),
       nxt_string("1") },
 
-    { nxt_string("var a = { valueOf: function() { return [1] } } a--"),
+    { nxt_string("var a = { valueOf: function() { return [1] } }; a--"),
       nxt_string("NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return {} } }  a--"),
+    { nxt_string("var a = { valueOf: function() { return {} } };  a--"),
       nxt_string("NaN") },
 
     /**/
@@ -1329,16 +1329,16 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = {};  a = a--"),
       nxt_string("NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return 1 } }   a = a--"),
+    { nxt_string("var a = { valueOf: function() { return 1 } };   a = a--"),
       nxt_string("1") },
 
-    { nxt_string("var a = { valueOf: function() { return '1' } } a = a--"),
+    { nxt_string("var a = { valueOf: function() { return '1' } }; a = a--"),
       nxt_string("1") },
 
-    { nxt_string("var a = { valueOf: function() { return [1] } } a = a--"),
+    { nxt_string("var a = { valueOf: function() { return [1] } }; a = a--"),
       nxt_string("NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return {} } }  a = a--"),
+    { nxt_string("var a = { valueOf: function() { return {} } };  a = a--"),
       nxt_string("NaN") },
 
     /**/
@@ -1355,19 +1355,19 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = {};  var b = a--; a +' '+ b"),
       nxt_string("NaN NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return 1 } }"
+    { nxt_string("var a = { valueOf: function() { return 1 } };"
                  "var b = a--; a +' '+ b"),
       nxt_string("0 1") },
 
-    { nxt_string("var a = { valueOf: function() { return '1' } }"
+    { nxt_string("var a = { valueOf: function() { return '1' } };"
                  "var b = a--; a +' '+ b"),
       nxt_string("0 1") },
 
-    { nxt_string("var a = { valueOf: function() { return [1] } }"
+    { nxt_string("var a = { valueOf: function() { return [1] } };"
                  "var b = a--; a +' '+ b"),
       nxt_string("NaN NaN") },
 
-    { nxt_string("var a = { valueOf: function() { return {} } }"
+    { nxt_string("var a = { valueOf: function() { return {} } };"
                  "var b = a--; a +' '+ b"),
       nxt_string("NaN NaN") },
 
@@ -1934,7 +1934,7 @@ static njs_unit_test_t  njs_test[] =
                  "x.a +' '+ x.b +' '+ y.a"),
       nxt_string("1 2 3") },
 
-    { nxt_string("var a=''; var o = {a:1, b:2}"
+    { nxt_string("var a=''; var o = {a:1, b:2};"
                  "for (p in o) { a += p +':'+ o[p] +',' } a"),
       nxt_string("a:1,b:2,") },
 
@@ -2144,14 +2144,14 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = []; a.concat([])"),
       nxt_string("") },
 
-    { nxt_string("var s = { toString: function() { return 'S' } }"
-                 "var v = { toString: 8, valueOf: function() { return 'V' } }"
+    { nxt_string("var s = { toString: function() { return 'S' } };"
+                 "var v = { toString: 8, valueOf: function() { return 'V' } };"
                  "var o = [9]; o.join = function() { return 'O' };"
                  "var a = [1,2,3,[4,5,6],s,v,o]; a.join('')"),
       nxt_string("1234,5,6SVO") },
 
-    { nxt_string("var s = { toString: function() { return 'S' } }"
-                 "var v = { toString: 8, valueOf: function() { return 'V' } }"
+    { nxt_string("var s = { toString: function() { return 'S' } };"
+                 "var v = { toString: 8, valueOf: function() { return 'V' } };"
                  "var o = [9]; o.join = function() { return 'O' };"
                  "var a = [1,2,3,[4,5,6],s,v,o]; a"),
       nxt_string("1,2,3,4,5,6,S,V,O") },
@@ -2534,7 +2534,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = ['1','2','3','4','5','6']; a.sort()"),
       nxt_string("1,2,3,4,5,6") },
 
-    { nxt_string("var o = { toString: function() { return 5 } }"
+    { nxt_string("var o = { toString: function() { return 5 } };"
                  "var a = [6,o,4,3,2,1]; a.sort()"),
       nxt_string("1,2,3,4,5,6") },
 
@@ -2564,8 +2564,8 @@ static njs_unit_test_t  njs_test[] =
 
     /* Strings. */
 
-    { nxt_string("var a = '0123456789' + '012345'"
-                 "var b = 'abcdefghij' + 'klmnop'"
+    { nxt_string("var a = '0123456789' + '012345';"
+                 "var b = 'abcdefghij' + 'klmnop';"
                  "    a = b"),
       nxt_string("abcdefghijklmnop") },
 
@@ -2852,11 +2852,11 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abc'.charAt(-Infinity)"),
       nxt_string("") },
 
-    { nxt_string("var o = { valueOf: function() {return 2} }"
+    { nxt_string("var o = { valueOf: function() {return 2} };"
                  "'abc'.charAt(o)"),
       nxt_string("c") },
 
-    { nxt_string("var o = { toString: function() {return '2'} }"
+    { nxt_string("var o = { toString: function() {return '2'} };"
                  "'abc'.charAt(o)"),
       nxt_string("c") },
 
@@ -3162,20 +3162,20 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'123456'.search(Number('45'))"),
       nxt_string("3") },
 
-    { nxt_string("var r = { toString: function() { return '45' } }"
+    { nxt_string("var r = { toString: function() { return '45' } };"
                  "'123456'.search(r)"),
       nxt_string("3") },
 
-    { nxt_string("var r = { toString: function() { return 45 } }"
+    { nxt_string("var r = { toString: function() { return 45 } };"
                  "'123456'.search(r)"),
       nxt_string("3") },
 
-    { nxt_string("var r = { toString: function() { return /45/ } }"
+    { nxt_string("var r = { toString: function() { return /45/ } };"
                  "'123456'.search(r)"),
       nxt_string("TypeError") },
 
     { nxt_string("var r = { toString: function() { return /34/ },"
-                 "          valueOf:  function() { return 45 } }"
+                 "          valueOf:  function() { return 45 } };"
                  "'123456'.search(r)"),
       nxt_string("3") },
 
@@ -3296,20 +3296,20 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'123456'.match(Number('45'))"),
       nxt_string("45") },
 
-    { nxt_string("var r = { toString: function() { return '45' } }"
+    { nxt_string("var r = { toString: function() { return '45' } };"
                  "'123456'.match(r)"),
       nxt_string("45") },
 
-    { nxt_string("var r = { toString: function() { return 45 } }"
+    { nxt_string("var r = { toString: function() { return 45 } };"
                  "'123456'.match(r)"),
       nxt_string("45") },
 
-    { nxt_string("var r = { toString: function() { return /45/ } }"
+    { nxt_string("var r = { toString: function() { return /45/ } };"
                  "'123456'.match(r)"),
       nxt_string("TypeError") },
 
     { nxt_string("var r = { toString: function() { return /34/ },"
-                 "          valueOf:  function() { return 45 } }"
+                 "          valueOf:  function() { return 45 } };"
                  "'123456'.match(r)"),
       nxt_string("45") },
 
@@ -3670,7 +3670,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = (0, function(a) { return a + 1 }(2)); a"),
       nxt_string("3") },
 
-    { nxt_string("var a = +function f(a) { return a + 1 }(2)"
+    { nxt_string("var a = +function f(a) { return a + 1 }(2);"
                  "var b = f(5); a"),
       nxt_string("ReferenceError") },
 
@@ -3680,40 +3680,40 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = {}; o.f = function(a) { return a * 2 }; o.f(5)"),
       nxt_string("10") },
 
-    { nxt_string("var o = { x: 1, f: function() { return this.x } } o.f()"),
+    { nxt_string("var o = { x: 1, f: function() { return this.x } }; o.f()"),
       nxt_string("1") },
 
-    { nxt_string("var o = { x: 1, f: function(a) { return this.x += a } }"
+    { nxt_string("var o = { x: 1, f: function(a) { return this.x += a } };"
                  "o.f(5) +' '+ o.x"),
       nxt_string("6 6") },
 
-    { nxt_string("var f = function(a) { return 3 } f.call()"),
+    { nxt_string("var f = function(a) { return 3 }; f.call()"),
       nxt_string("3") },
 
-    { nxt_string("var f = function(a) { return this } f.call(5)"),
+    { nxt_string("var f = function(a) { return this }; f.call(5)"),
       nxt_string("5") },
 
-    { nxt_string("var f = function(a, b) { return this + a } f.call(5, 1)"),
+    { nxt_string("var f = function(a, b) { return this + a }; f.call(5, 1)"),
       nxt_string("6") },
 
-    { nxt_string("var f = function(a, b) { return this + a + b }"
+    { nxt_string("var f = function(a, b) { return this + a + b };"
                  "f.call(5, 1, 2)"),
       nxt_string("8") },
 
-    { nxt_string("var f = function(a) { return 3 } f.apply()"),
+    { nxt_string("var f = function(a) { return 3 }; f.apply()"),
       nxt_string("3") },
 
-    { nxt_string("var f = function(a) { return this } f.apply(5)"),
+    { nxt_string("var f = function(a) { return this }; f.apply(5)"),
       nxt_string("5") },
 
-    { nxt_string("var f = function(a) { return this + a } f.apply(5, 1)"),
+    { nxt_string("var f = function(a) { return this + a }; f.apply(5, 1)"),
       nxt_string("TypeError") },
 
-    { nxt_string("var f = function(a, b) { return this + a + b }"
+    { nxt_string("var f = function(a, b) { return this + a + b };"
                  "f.apply(5, [1, 2])"),
       nxt_string("8") },
 
-    { nxt_string("var f = function(a, b) { return this + a + b }"
+    { nxt_string("var f = function(a, b) { return this + a + b };"
                  "f.apply(5, [1, 2], 3)"),
       nxt_string("8") },
 
@@ -3812,57 +3812,61 @@ static njs_unit_test_t  njs_test[] =
                  "concat.call(1,2,3, concat.yes)"),
       nxt_string("123OK") },
 
-    { nxt_string("var f = function(a, b) { return this + a + b }"
+    { nxt_string("var f = function(a, b) { return this + a + b };"
                  "var b = f.bind('1'); b('2', '3')"),
       nxt_string("123") },
 
-    { nxt_string("var f = function(a, b) { return this + a + b }"
+    { nxt_string("var f = function(a, b) { return this + a + b };"
                  "var b = f.bind('1', '2'); b('3')"),
       nxt_string("123") },
 
-    { nxt_string("var f = function(a, b) { return this + a + b }"
+    { nxt_string("var f = function(a, b) { return this + a + b };"
                  "var b = f.bind('1', 2, '3'); b()"),
       nxt_string("123") },
 
-    { nxt_string("var f = function(a, b) { return this + a + b }"
+    { nxt_string("var f = function(a, b) { return this + a + b };"
                  "var b = f.bind('1'); b.call('0', '2', '3')"),
       nxt_string("123") },
 
-    { nxt_string("var f = function(a, b) { return this + a + b }"
+    { nxt_string("var f = function(a, b) { return this + a + b };"
                  "var b = f.bind('1', '2'); b.call('0', '3')"),
       nxt_string("123") },
 
-    { nxt_string("var f = function(a, b) { return this + a + b }"
+    { nxt_string("var f = function(a, b) { return this + a + b };"
                  "var b = f.bind('1', '2', '3'); b.call('0')"),
       nxt_string("123") },
 
-    { nxt_string("var f = function(a, b) { return this + a + b }"
+    { nxt_string("var f = function(a, b) { return this + a + b };"
                  "var b = f.bind('1', '2', '3'); b.call()"),
       nxt_string("123") },
 
-    { nxt_string("var f = function(a, b) { return this + a + b }"
+    { nxt_string("var f = function(a, b) { return this + a + b };"
                  "var b = f.bind('1'); b.apply('0', ['2', '3'])"),
       nxt_string("123") },
 
-    { nxt_string("var f = function(a, b) { return this + a + b }"
+    { nxt_string("var f = function(a, b) { return this + a + b };"
                  "var b = f.bind('1', '2'); b.apply('0', ['3'])"),
       nxt_string("123") },
 
-    { nxt_string("var f = function(a, b) { return this + a + b }"
+    { nxt_string("var f = function(a, b) { return this + a + b };"
                  "var b = f.bind('1', '2', '3'); b.apply('0')"),
       nxt_string("123") },
 
-    { nxt_string("var f = function(a, b) { return this + a + b }"
+    { nxt_string("var f = function(a, b) { return this + a + b };"
+                 "var b = f.bind('1', '2', '3'); b.apply()"),
+      nxt_string("123") },
+
+    { nxt_string("function f(a, b) { return this + a + b }"
                  "var b = f.bind('1', '2', '3'); b.apply()"),
       nxt_string("123") },
 
     { nxt_string("function F(a, b) { this.a = a + b }"
-                 "var o = new F(1, 2)"
+                 "var o = new F(1, 2);"
                  "o.a"),
       nxt_string("3") },
 
     { nxt_string("function F(a, b) { this.a = a + b; return { a: 7 } }"
-                 "var o = new F(1, 2)"
+                 "var o = new F(1, 2);"
                  "o.a"),
       nxt_string("7") },
 
@@ -3978,9 +3982,9 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("35 СТОП Стоп /Стоп/gi") },
 
     { nxt_string("var r = /quick\\s(brown).+?(jumps)/ig;"
-                 "var a = r.exec('The Quick Brown Fox Jumps Over The Lazy Dog')"
-                 "a[0] +' '+ a[1] +' '+ a[2] +' '+ a[3] +' '+ "
-                 "a.index +' '+ r.lastIndex +' '+ a.input"),
+                "var a = r.exec('The Quick Brown Fox Jumps Over The Lazy Dog');"
+                "a[0] +' '+ a[1] +' '+ a[2] +' '+ a[3] +' '+ "
+                "a.index +' '+ r.lastIndex +' '+ a.input"),
       nxt_string("Quick Brown Fox Jumps Brown Jumps undefined "
                  "4 25 The Quick Brown Fox Jumps Over The Lazy Dog") },
 
@@ -4085,28 +4089,29 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = { valueOf: function() { return [3] } }; --o"),
       nxt_string("NaN") },
 
-    { nxt_string("var o = { valueOf: function() { return '3' } } 10 - o"),
+    { nxt_string("var o = { valueOf: function() { return '3' } }; 10 - o"),
       nxt_string("7") },
 
-    { nxt_string("var o = { valueOf: function() { return [3] } } 10 - o"),
+    { nxt_string("var o = { valueOf: function() { return [3] } }; 10 - o"),
       nxt_string("NaN") },
 
-    { nxt_string("var o = { toString: function() { return 'OK' } } 'o:' + o"),
+    { nxt_string("var o = { toString: function() { return 'OK' } }; 'o:' + o"),
       nxt_string("o:OK") },
 
-    { nxt_string("var o = { toString: function() { return [1] } } 'o:' + o"),
+    { nxt_string("var o = { toString: function() { return [1] } }; 'o:' + o"),
       nxt_string("TypeError") },
 
-    { nxt_string("var a = { valueOf: function() { return '3' } }"
-                 "var b = { toString: function() { return 10 - a + 'OK' } }"
-                 "var c = { toString: function() { return b + 'YES' } }"
+    { nxt_string("var a = { valueOf: function() { return '3' } };"
+                 "var b = { toString: function() { return 10 - a + 'OK' } };"
+                 "var c = { toString: function() { return b + 'YES' } };"
                  "'c:' + c"),
       nxt_string("c:7OKYES") },
 
     { nxt_string("[1,2,3].valueOf()"),
       nxt_string("1,2,3") },
 
-    { nxt_string("var o = { valueOf: function() { return 'OK' } } o.valueOf()"),
+    { nxt_string("var o = { valueOf: function() { return 'OK' } };"
+                 "o.valueOf()"),
       nxt_string("OK") },
 
     { nxt_string("false.__proto__ === true.__proto__"),
@@ -4408,11 +4413,11 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("new String([1,2,3])"),
       nxt_string("1,2,3") },
 
-    { nxt_string("var o = { toString: function() { return 'OK' } }"
+    { nxt_string("var o = { toString: function() { return 'OK' } };"
                  "String(o)"),
       nxt_string("OK") },
 
-    { nxt_string("var o = { toString: function() { return 'OK' } }"
+    { nxt_string("var o = { toString: function() { return 'OK' } };"
                  "new String(o)"),
       nxt_string("OK") },
 
@@ -4917,7 +4922,7 @@ static njs_unit_test_t  njs_test[] =
                  "d.toJSON(1)"),
       nxt_string("2011-06-24T06:00:12.625Z") },
 
-    { nxt_string("var o = { toISOString: function() { return 'OK' } }"
+    { nxt_string("var o = { toISOString: function() { return 'OK' } };"
                  "Date.prototype.toJSON.call(o, 1)"),
       nxt_string("OK") },
 
