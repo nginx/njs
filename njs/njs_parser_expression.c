@@ -971,11 +971,6 @@ njs_parser_call_expression(njs_vm_t *vm, njs_parser_t *parser,
 
         func->ctor = 0;
 
-        if (token != NJS_TOKEN_OPEN_PARENTHESIS) {
-            parser->node = func;
-            return token;
-        }
-
         token = njs_parser_arguments(vm, parser, func);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
