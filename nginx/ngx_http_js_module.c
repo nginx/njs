@@ -1225,7 +1225,7 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_fd_t               fd;
     ngx_str_t             *value, file;
     nxt_int_t              rc;
-    nxt_str_t              text, ext;
+    nxt_str_t              text, ext, *export;
     nxt_lvlhsh_t           externals;
     ngx_file_info_t        fi;
     njs_vm_shared_t       *shared;
@@ -1321,7 +1321,7 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    rc = njs_vm_compile(jlcf->vm, &start, end, NULL);
+    rc = njs_vm_compile(jlcf->vm, &start, end, NULL, &export);
 
     if (rc != NJS_OK) {
         njs_vm_exception(jlcf->vm, &text);

@@ -26,10 +26,17 @@ typedef struct {
 } njs_variable_t;
 
 
+#define njs_global_variable_value(vm, var)                                    \
+    (njs_value_t *) ((u_char *) vm->global_scope                              \
+                      + njs_offset((var)->index) - NJS_INDEX_GLOBAL_OFFSET)
+
+
+
 njs_variable_t *njs_parser_name_alloc(njs_vm_t *vm, njs_parser_t *parser);
 njs_variable_t *njs_parser_variable(njs_vm_t *vm, njs_parser_t *parser,
     nxt_uint_t *level);
 njs_value_t *njs_variable_value(njs_parser_t *parser, njs_index_t index);
+nxt_str_t *njs_vm_export_functions(njs_vm_t *vm);
 
 
 #endif /* _NJS_VARIABLE_H_INCLUDED_ */

@@ -153,6 +153,65 @@ njs_parser_variable(njs_vm_t *vm, njs_parser_t *parser, nxt_uint_t *level)
 }
 
 
+nxt_str_t *
+njs_vm_export_functions(njs_vm_t *vm)
+{
+    size_t             n;
+    nxt_str_t          *ex, *export;
+    njs_value_t        *value;
+    njs_variable_t     *var;
+    nxt_lvlhsh_each_t  lhe;
+
+    n = 1;
+
+    memset(&lhe, 0, sizeof(nxt_lvlhsh_each_t));
+    lhe.proto = &njs_variables_hash_proto;
+
+    for ( ;; ) {
+        var = nxt_lvlhsh_each(&vm->variables_hash, &lhe);
+        if (var == NULL) {
+            break;
+        }
+
+        value = njs_global_variable_value(vm, var);
+
+        if (njs_is_function(value) && !value->data.u.function->native) {
+            n++;
+        }
+    }
+
+    export = nxt_mem_cache_alloc(vm->mem_cache_pool, n * sizeof(nxt_str_t));
+    if (nxt_slow_path(export == NULL)) {
+        return NULL;
+    }
+
+    memset(&lhe, 0, sizeof(nxt_lvlhsh_each_t));
+    lhe.proto = &njs_variables_hash_proto;
+
+    ex = export;
+
+    for ( ;; ) {
+        var = nxt_lvlhsh_each(&vm->variables_hash, &lhe);
+        if (var == NULL) {
+            break;
+        }
+
+        value = njs_global_variable_value(vm, var);
+
+        if (njs_is_function(value) && !value->data.u.function->native) {
+            ex->length = var->name_len;
+            ex->start = var->name_start;
+            ex++;
+        }
+    }
+
+    ex->length = 0;
+    ex->start = NULL;
+
+    return export;
+}
+
+
 njs_function_t *
 njs_vm_function(njs_vm_t *vm, nxt_str_t *name)
 {
