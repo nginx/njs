@@ -1833,6 +1833,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = {}; a.b.c"),
       nxt_string("TypeError") },
 
+    { nxt_string("'a'.b = 1"),
+      nxt_string("TypeError") },
+
     { nxt_string("a = {}; a.b = 1; a.b"),
       nxt_string("1") },
 
@@ -1867,10 +1870,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("TypeError") },
 
     { nxt_string("a = true; a.b++; a.b"),
-      nxt_string("undefined") },
+      nxt_string("TypeError") },
 
     { nxt_string("a = 1; a.b++; a.b"),
-      nxt_string("undefined") },
+      nxt_string("TypeError") },
 
     { nxt_string("a = {}; a.b = {}; a.b.c = 1; a.b['c']"),
       nxt_string("1") },
@@ -1885,7 +1888,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("2 1") },
 
     { nxt_string("a = 2; a.b = 1; c = a.b++; a +' '+ a.b +' '+ c"),
-      nxt_string("2 undefined NaN") },
+      nxt_string("TypeError") },
 
     { nxt_string("x = { a: 1 }; x.a"),
       nxt_string("1") },

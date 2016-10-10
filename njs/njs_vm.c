@@ -642,6 +642,11 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
     njs_property_query_t   pq;
     njs_vmcode_prop_set_t  *code;
 
+    if (njs_is_primitive(object)) {
+        vm->exception = &njs_exception_type_error;
+        return NXT_ERROR;
+    }
+
     code = (njs_vmcode_prop_set_t *) vm->current;
     value = njs_vmcode_operand(vm, code->value);
 
