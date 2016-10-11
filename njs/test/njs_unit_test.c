@@ -471,6 +471,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("[[]+[]]-[]+[[]-[]]"),
       nxt_string("00") },
 
+    { nxt_string("!--[][1]"),
+      nxt_string("true") },
+
     { nxt_string("'true' == true"),
       nxt_string("false") },
 

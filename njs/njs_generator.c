@@ -21,6 +21,7 @@
 #include <njs_variable.h>
 #include <njs_parser.h>
 #include <string.h>
+#include <stdio.h>
 
 
 static nxt_int_t njs_generator(njs_vm_t *vm, njs_parser_t *parser,
@@ -1848,7 +1849,8 @@ njs_generate_inc_dec_operation(njs_vm_t *vm, njs_parser_t *parser,
     if (node->dest != NULL) {
         dest_index = node->dest->index;
 
-        if (dest_index != lvalue->left->index
+        if (dest_index != NJS_INDEX_NONE
+            && dest_index != lvalue->left->index
             && dest_index != lvalue->right->index)
         {
             node->index = dest_index;
