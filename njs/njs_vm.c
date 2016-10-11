@@ -1466,8 +1466,6 @@ njs_vmcode_delete(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 {
     njs_release(vm, value);
 
-    njs_set_invalid(value);
-
     vm->retval = njs_value_true;
 
     return sizeof(njs_vmcode_2addr_t);

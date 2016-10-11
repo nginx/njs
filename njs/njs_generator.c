@@ -21,7 +21,6 @@
 #include <njs_variable.h>
 #include <njs_parser.h>
 #include <string.h>
-#include <stdio.h>
 
 
 static nxt_int_t njs_generator(njs_vm_t *vm, njs_parser_t *parser,
@@ -75,8 +74,6 @@ static nxt_int_t njs_generate_array(njs_vm_t *vm, njs_parser_t *parser,
 static nxt_int_t njs_generate_function(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node);
 static nxt_int_t njs_generate_regexp(njs_vm_t *vm, njs_parser_t *parser,
-    njs_parser_node_t *node);
-static nxt_int_t njs_generate_delete(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node);
 static nxt_int_t njs_generate_test_jump_expression(njs_vm_t *vm,
     njs_parser_t *parser, njs_parser_node_t *node);
@@ -232,8 +229,6 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
         return njs_generate_test_jump_expression(vm, parser, node);
 
     case NJS_TOKEN_DELETE:
-        return njs_generate_delete(vm, parser, node);
-
     case NJS_TOKEN_VOID:
     case NJS_TOKEN_TYPEOF:
     case NJS_TOKEN_UNARY_PLUS:
@@ -1572,78 +1567,6 @@ njs_generate_regexp(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
     regexp->code.retval = NJS_VMCODE_RETVAL;
     regexp->retval = node->index;
     regexp->pattern = node->u.value.data.u.data;
-
-    return NXT_OK;
-}
-
-
-static nxt_int_t
-njs_generate_delete(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
-{
-    double              n;
-    nxt_int_t           ret;
-    njs_index_t         index;
-    njs_parser_node_t   *operand;
-    njs_vmcode_2addr_t  *delete;
-
-    operand = node->left;
-
-    /*
-     * The "delete" operator returns "false" for "undefined", "NaN", and
-     * "Infinity" constants but not for values, expressions and "-Infinity".
-     */
-
-    switch (operand->token) {
-
-    case NJS_TOKEN_NAME:
-        if (operand->u.variable->state == NJS_VARIABLE_DECLARED) {
-            index = njs_value_index(vm, parser, &njs_value_false);
-            goto done;
-        }
-
-        /* A property of the global object. */
-
-        njs_generate_code(parser, njs_vmcode_2addr_t, delete);
-        delete->code.operation = njs_vmcode_delete;
-        delete->code.operands = NJS_VMCODE_2OPERANDS;
-        delete->code.retval = NJS_VMCODE_RETVAL;
-        delete->dst = njs_generator_node_temp_index_get(parser, node);
-        delete->src = operand->u.variable->index;
-
-        return NXT_OK;
-
-    case NJS_TOKEN_NUMBER:
-        n = operand->u.value.data.u.number;
-
-        if (!njs_is_nan(n) && !(njs_is_infinity(n) && n > 0.0)) {
-            break;
-        }
-
-        /* Fall through. */
-
-    case NJS_TOKEN_UNDEFINED:
-        index = njs_value_index(vm, parser, &njs_value_false);
-        goto done;
-
-    default:
-        ret = njs_generator(vm, parser, operand);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return ret;
-        }
-
-        ret = njs_generator_node_index_release(vm, parser, operand);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return ret;
-        }
-
-        break;
-    }
-
-    index = njs_value_index(vm, parser, &njs_value_true);
-
-done:
-
-    node->index = index;
 
     return NXT_OK;
 }

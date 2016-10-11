@@ -749,19 +749,31 @@ njs_parser_unary_expression(njs_vm_t *vm, njs_parser_t *parser,
         return next;
     }
 
-    if (token == NJS_TOKEN_TYPEOF
-        && parser->node->token == NJS_TOKEN_NAME)
-    {
+    if (token == NJS_TOKEN_DELETE) {
+
+        switch (parser->node->token) {
+
+        case NJS_TOKEN_PROPERTY:
+            parser->node->token = NJS_TOKEN_PROPERTY_DELETE;
+            parser->node->u.operation = njs_vmcode_property_delete;
+            parser->code_size += sizeof(njs_vmcode_3addr_t);
+
+            return next;
+
+        case NJS_TOKEN_NAME:
+        case NJS_TOKEN_UNDEFINED:
+            nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+                      "SyntaxError: Delete of an unqualified identifier");
+
+            return NJS_TOKEN_ILLEGAL;
+
+        default:
+            break;
+        }
+    }
+
+    if (token == NJS_TOKEN_TYPEOF && parser->node->token == NJS_TOKEN_NAME) {
         parser->node->state = NJS_VARIABLE_TYPEOF;
-
-    } else if (token == NJS_TOKEN_DELETE
-               && parser->node->token == NJS_TOKEN_PROPERTY)
-    {
-        parser->node->token = NJS_TOKEN_PROPERTY_DELETE;
-        parser->node->u.operation = njs_vmcode_property_delete;
-        parser->code_size += sizeof(njs_vmcode_3addr_t);
-
-        return next;
     }
 
     node = njs_parser_node_alloc(vm);

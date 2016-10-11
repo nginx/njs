@@ -1951,16 +1951,20 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("var a; delete a"),
-      nxt_string("false") },
+      nxt_string("SyntaxError: Delete of an unqualified identifier in 1") },
 
     { nxt_string("delete undefined"),
-      nxt_string("false") },
+      nxt_string("SyntaxError: Delete of an unqualified identifier in 1") },
+
+    /* ES5FIX: "SyntaxError". */
 
     { nxt_string("delete NaN"),
-      nxt_string("false") },
+      nxt_string("true") },
+
+    /* ES5FIX: "SyntaxError". */
 
     { nxt_string("delete Infinity"),
-      nxt_string("false") },
+      nxt_string("true") },
 
     { nxt_string("delete -Infinity"),
       nxt_string("true") },
@@ -1971,20 +1975,23 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("delete 1"),
       nxt_string("true") },
 
-    { nxt_string("delete (a = 1); a"),
+    { nxt_string("var a; delete (a = 1); a"),
       nxt_string("1") },
 
     { nxt_string("delete a"),
-      nxt_string("true") },
+      nxt_string("SyntaxError: Delete of an unqualified identifier in 1") },
 
     { nxt_string("a = 1; delete a"),
-      nxt_string("true") },
+      nxt_string("SyntaxError: Delete of an unqualified identifier in 1") },
 
-    { nxt_string("a = 1; delete a; typeof a"),
-      nxt_string("undefined") },
+    { nxt_string("function f(){} delete f"),
+      nxt_string("SyntaxError: Delete of an unqualified identifier in 1") },
 
     { nxt_string("a = { x:1 }; ('x' in a) +' '+ (1 in a)"),
       nxt_string("true false") },
+
+    { nxt_string("delete --[][1]"),
+      nxt_string("true") },
 
     { nxt_string("a = {}; 1 in a"),
       nxt_string("false") },
