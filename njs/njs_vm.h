@@ -321,12 +321,12 @@ typedef union {
         .type = NJS_FUNCTION,                                                 \
         .truth = 1,                                                           \
         .u.function = & (njs_function_t) {                                    \
-            .object.shared = 1,                                               \
             .native = 1,                                                      \
             .continuation_size = _size,                                       \
             .args_types = { __VA_ARGS__ },                                    \
             .args_offset = 1,                                                 \
             .u.native = _function,                                            \
+            .object = { .type = NJS_FUNCTION, .shared = 1 },                  \
         }                                                                     \
     }                                                                         \
 }

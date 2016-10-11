@@ -34,6 +34,16 @@ typedef struct {
 } njs_function_init_t;
 
 
+static njs_ret_t
+njs_prototype_function(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    vm->retval = njs_value_void;
+
+    return NXT_OK;
+}
+
+
 nxt_int_t
 njs_builtin_objects_create(njs_vm_t *vm)
 {
@@ -75,7 +85,11 @@ njs_builtin_objects_create(njs_vm_t *vm)
         { .object_value = { .value = njs_string(""),
                             .object = { .type = NJS_OBJECT_STRING } } },
 
-        { .object =       { .type = NJS_FUNCTION } },
+        { .function =     { .native = 1,
+                            .args_offset = 1,
+                            .u.native = njs_prototype_function,
+                            .object = { .type = NJS_FUNCTION } } },
+
         { .object =       { .type = NJS_REGEXP } },
 
         { .date =         { .time = NJS_NAN,

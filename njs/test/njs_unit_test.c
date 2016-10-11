@@ -4288,6 +4288,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("({}).constructor === Object"),
       nxt_string("true") },
 
+    { nxt_string("var a = Object.__proto__; a()"),
+      nxt_string("undefined") },
+
     { nxt_string("var a = Array(3); a"),
       nxt_string(",,") },
 
