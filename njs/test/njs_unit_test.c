@@ -4237,6 +4237,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("/./ instanceof Object"),
       nxt_string("true") },
 
+    { nxt_string("this"),
+      nxt_string("[object Object]") },
+
     { nxt_string("var o = Object(); o"),
       nxt_string("[object Object]") },
 

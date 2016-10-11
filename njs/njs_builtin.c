@@ -107,7 +107,8 @@ njs_builtin_objects_create(njs_vm_t *vm)
     };
 
     static const njs_object_init_t    *object_init[] = {
-        &njs_math_object_init,
+        NULL,                         /* global this        */
+        &njs_math_object_init,        /* Math               */
     };
 
     static const njs_object_init_t    *function_init[] = {
@@ -164,12 +165,14 @@ njs_builtin_objects_create(njs_vm_t *vm)
 
     objects = vm->shared->objects;
 
-    for (i = NJS_OBJECT_MATH; i < NJS_OBJECT_MAX; i++) {
-        ret = njs_object_hash_create(vm, &objects[i].shared_hash,
-                                     object_init[i]->properties,
-                                     object_init[i]->items);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return NXT_ERROR;
+    for (i = NJS_OBJECT_THIS; i < NJS_OBJECT_MAX; i++) {
+        if (object_init[i] != NULL) {
+            ret = njs_object_hash_create(vm, &objects[i].shared_hash,
+                                         object_init[i]->properties,
+                                         object_init[i]->items);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return NXT_ERROR;
+            }
         }
 
         objects[i].shared = 1;

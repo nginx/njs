@@ -741,7 +741,8 @@ enum njs_constructor_e {
 
 
 enum njs_object_e {
-    NJS_OBJECT_MATH = 0,
+    NJS_OBJECT_THIS = 0,
+    NJS_OBJECT_MATH,
 #define NJS_OBJECT_MAX         (NJS_OBJECT_MATH + 1)
 };
 

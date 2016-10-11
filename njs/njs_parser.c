@@ -1644,8 +1644,14 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
     case NJS_TOKEN_THIS:
         nxt_thread_log_debug("JS: this");
 
-        node->index = NJS_INDEX_THIS;
-        break;
+        if (parser->scope != NJS_SCOPE_GLOBAL) {
+            node->index = NJS_INDEX_THIS;
+            break;
+        }
+
+        node->token = NJS_TOKEN_GLOBAL_THIS;
+
+        /* Fall through. */
 
     case NJS_TOKEN_MATH:
         return njs_parser_builtin_object(vm, parser, node);
