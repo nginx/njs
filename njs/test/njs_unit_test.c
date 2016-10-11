@@ -5030,6 +5030,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var d = new Date(); d.__proto__ === Date.prototype"),
       nxt_string("true") },
 
+    { nxt_string("new Date(eval)"),
+      nxt_string("Invalid Date") },
+
+    { nxt_string("Date.UTC(eval)"),
+      nxt_string("NaN") },
+
     { nxt_string("Date.name"),
       nxt_string("Date") },
 
