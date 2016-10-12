@@ -2260,6 +2260,24 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = [1,2]; a[100] = 100; a[100] +' '+ a.length"),
       nxt_string("100 101") },
 
+    { nxt_string("Array.prototype.slice(1)"),
+      nxt_string("") },
+
+    { nxt_string("Array.prototype.slice(1,2)"),
+      nxt_string("") },
+
+    { nxt_string("Array.prototype.pop()"),
+      nxt_string("undefined") },
+
+    { nxt_string("Array.prototype.shift()"),
+      nxt_string("undefined") },
+
+    { nxt_string("[0,1,2,3,4].slice(1,4)"),
+      nxt_string("1,2,3") },
+
+    { nxt_string("[0,1,2,3,4].slice(6,7)"),
+      nxt_string("") },
+
     { nxt_string("a = [1,2,3,4,5]; b = a.slice(3); b[0] +' '+ b[1] +' '+ b[2]"),
       nxt_string("4 5 undefined") },
 

@@ -387,21 +387,29 @@ njs_array_prototype_slice(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                 }
             }
 
-            end = length;
-
-            if (nargs > 2) {
-                end = args[2].data.u.number;
-
-                if (end < 0) {
-                    end += length;
-                }
-            }
-
-            length = end - start;
-
-            if (length < 0) {
+            if (start >= length) {
                 start = 0;
                 length = 0;
+
+            } else {
+                end = length;
+
+                if (nargs > 2) {
+                    end = args[2].data.u.number;
+
+                    if (end < 0) {
+                        end += length;
+                    }
+                }
+
+                if (length >= end) {
+                    length = end - start;
+
+                    if (length < 0) {
+                        start = 0;
+                        length = 0;
+                    }
+                }
             }
         }
     }
