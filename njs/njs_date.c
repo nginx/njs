@@ -1909,165 +1909,190 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
     {
         .type = NJS_METHOD,
         .name = njs_string("valueOf"),
-        .value = njs_native_function(njs_date_prototype_value_of, 0, 0),
+        .value = njs_native_function(njs_date_prototype_value_of, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("toString"),
-        .value = njs_native_function(njs_date_prototype_to_string, 0, 0),
+        .value = njs_native_function(njs_date_prototype_to_string, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("toDateString"),
-        .value = njs_native_function(njs_date_prototype_to_date_string, 0, 0),
+        .value = njs_native_function(njs_date_prototype_to_date_string, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("toTimeString"),
-        .value = njs_native_function(njs_date_prototype_to_time_string, 0, 0),
+        .value = njs_native_function(njs_date_prototype_to_time_string, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("toLocaleString"),
-        .value = njs_native_function(njs_date_prototype_to_string, 0, 0),
+        .value = njs_native_function(njs_date_prototype_to_string, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_long_string("toLocaleDateString"),
-        .value = njs_native_function(njs_date_prototype_to_date_string, 0, 0),
+        .value = njs_native_function(njs_date_prototype_to_date_string, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_long_string("toLocaleTimeString"),
-        .value = njs_native_function(njs_date_prototype_to_time_string, 0, 0),
+        .value = njs_native_function(njs_date_prototype_to_time_string, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("toUTCString"),
-        .value = njs_native_function(njs_date_prototype_to_utc_string, 0, 0),
+        .value = njs_native_function(njs_date_prototype_to_utc_string, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("toISOString"),
-        .value = njs_native_function(njs_date_prototype_to_iso_string, 0, 0),
+        .value = njs_native_function(njs_date_prototype_to_iso_string, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("getTime"),
-        .value = njs_native_function(njs_date_prototype_value_of, 0, 0),
+        .value = njs_native_function(njs_date_prototype_value_of, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("getFullYear"),
-        .value = njs_native_function(njs_date_prototype_get_full_year, 0, 0),
+        .value = njs_native_function(njs_date_prototype_get_full_year, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("getUTCFullYear"),
-        .value = njs_native_function(njs_date_prototype_get_utc_full_year,
-                     0, 0),
+        .value = njs_native_function(njs_date_prototype_get_utc_full_year, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("getMonth"),
-        .value = njs_native_function(njs_date_prototype_get_month, 0, 0),
+        .value = njs_native_function(njs_date_prototype_get_month, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("getUTCMonth"),
-        .value = njs_native_function(njs_date_prototype_get_utc_month, 0, 0),
+        .value = njs_native_function(njs_date_prototype_get_utc_month, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("getDate"),
-        .value = njs_native_function(njs_date_prototype_get_date, 0, 0),
+        .value = njs_native_function(njs_date_prototype_get_date, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("getUTCDate"),
-        .value = njs_native_function(njs_date_prototype_get_utc_date, 0, 0),
+        .value = njs_native_function(njs_date_prototype_get_utc_date, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("getDay"),
-        .value = njs_native_function(njs_date_prototype_get_day, 0, 0),
+        .value = njs_native_function(njs_date_prototype_get_day, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("getUTCDay"),
-        .value = njs_native_function(njs_date_prototype_get_utc_day, 0, 0),
+        .value = njs_native_function(njs_date_prototype_get_utc_day, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("getHours"),
-        .value = njs_native_function(njs_date_prototype_get_hours, 0, 0),
+        .value = njs_native_function(njs_date_prototype_get_hours, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("getUTCHours"),
-        .value = njs_native_function(njs_date_prototype_get_utc_hours, 0, 0),
+        .value = njs_native_function(njs_date_prototype_get_utc_hours, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("getMinutes"),
-        .value = njs_native_function(njs_date_prototype_get_minutes, 0, 0),
+        .value = njs_native_function(njs_date_prototype_get_minutes, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("getUTCMinutes"),
-        .value = njs_native_function(njs_date_prototype_get_utc_minutes, 0, 0),
+        .value = njs_native_function(njs_date_prototype_get_utc_minutes, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("getSeconds"),
-        .value = njs_native_function(njs_date_prototype_get_seconds, 0, 0),
+        .value = njs_native_function(njs_date_prototype_get_seconds, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("getUTCSeconds"),
-        .value = njs_native_function(njs_date_prototype_get_seconds, 0, 0),
+        .value = njs_native_function(njs_date_prototype_get_seconds, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_long_string("getMilliseconds"),
-        .value = njs_native_function(njs_date_prototype_get_milliseconds, 0, 0),
+        .value = njs_native_function(njs_date_prototype_get_milliseconds, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_long_string("getUTCMilliseconds"),
-        .value = njs_native_function(njs_date_prototype_get_milliseconds, 0, 0),
+        .value = njs_native_function(njs_date_prototype_get_milliseconds, 0,
+                     NJS_DATE_ARG),
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_long_string("getTimezoneOffset"),
-        .value = njs_native_function(njs_date_prototype_get_timezone_offset,
-                     0, 0),
+        .value = njs_native_function(njs_date_prototype_get_timezone_offset, 0,
+                     NJS_DATE_ARG),
     },
 
     {
