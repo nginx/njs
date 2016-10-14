@@ -68,6 +68,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = 1; var b; a"),
       nxt_string("1") },
 
+    { nxt_string("a = 1;for(;a;a--)var a; a"),
+      nxt_string("0") },
+
+    { nxt_string("if(1)if(0){0?0:0}else\nvar a\nelse\nvar b"),
+      nxt_string("undefined") },
+
     { nxt_string("function f(){} function f(){}"),
       nxt_string("SyntaxError: Duplicate declaration \"f\" in 1") },
 

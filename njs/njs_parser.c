@@ -641,6 +641,7 @@ njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser)
     njs_variable_t     *var;
     njs_parser_node_t  *left, *stmt, *name, *assign;
 
+    parser->node = NULL;
     left = NULL;
 
     do {
