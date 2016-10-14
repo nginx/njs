@@ -2304,6 +2304,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = []; a.splice()"),
       nxt_string("") },
 
+    { nxt_string("var a = [];"
+                 "a.splice(9,0,1,2).join(':') + '|' + a"),
+      nxt_string("|1,2") },
+
     { nxt_string("var a = [0,1,2,3,4,5,6,7];"
                  "a.splice(3).join(':') + '|' + a"),
       nxt_string("3:4:5:6:7|0,1,2") },

@@ -585,6 +585,10 @@ njs_array_prototype_splice(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         if (nargs > 1) {
             start = args[1].data.u.number;
 
+            if (start > array->length) {
+                start = array->length;
+            }
+
             if (nargs > 2) {
                 delete = args[2].data.u.number;
 
