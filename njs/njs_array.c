@@ -759,6 +759,7 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     for (i = 0; i < array->length; i++) {
         value = &array->start[i];
+
         if (!njs_is_string(value)
             && njs_is_valid(value)
             && !njs_is_null_or_void(value))
@@ -783,6 +784,7 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
         for (i = 0; i < array->length; i++) {
             value = &array->start[i];
+
             if (!njs_is_string(value)
                 && njs_is_valid(value)
                 && !njs_is_null_or_void(value))

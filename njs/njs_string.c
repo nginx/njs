@@ -1018,7 +1018,7 @@ static nxt_noinline void
 njs_string_slice_args(njs_slice_prop_t *slice, njs_value_t *args,
     nxt_uint_t nargs)
 {
-    ssize_t    start, end, length;
+    ssize_t  start, end, length;
 
     length = slice->string_length;
     start = 0;
@@ -1079,30 +1079,30 @@ njs_string_slice(njs_vm_t *vm, njs_value_t *dst,
     start = string->start;
 
     if (string->size == slice->string_length) {
-	/* Byte or ASCII string. */
-	start += slice->start;
-	size = slice->length;
+        /* Byte or ASCII string. */
+        start += slice->start;
+        size = slice->length;
 
     } else {
-	/* UTF-8 string. */
+        /* UTF-8 string. */
         end = start + string->size;
-	start = njs_string_offset(start, end, slice->start);
+        start = njs_string_offset(start, end, slice->start);
 
-	/* Evaluate size of the slice in bytes and ajdust length. */
-	p = start;
-	n = length;
+        /* Evaluate size of the slice in bytes and ajdust length. */
+        p = start;
+        n = length;
 
-	do {
-	    p = nxt_utf8_next(p, end);
-	    n--;
-	} while (n != 0 && p < end);
+        do {
+            p = nxt_utf8_next(p, end);
+            n--;
+        } while (n != 0 && p < end);
 
-	size = p - start;
-	length -= n;
+        size = p - start;
+        length -= n;
     }
 
     if (nxt_fast_path(size != 0)) {
-	return njs_string_new(vm, &vm->retval, start, size, length);
+        return njs_string_new(vm, &vm->retval, start, size, length);
     }
 
     vm->retval = njs_string_empty;
