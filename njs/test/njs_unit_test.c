@@ -5602,6 +5602,7 @@ njs_unit_test(nxt_bool_t disassemble)
         if (ret == NXT_OK) {
             if (disassemble) {
                 njs_disassembler(vm);
+                fflush(stdout);
             }
 
             nvm = njs_vm_clone(vm, NULL, &ext_object);
