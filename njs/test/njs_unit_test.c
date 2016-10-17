@@ -2857,6 +2857,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abcdefgh'.slice(3)"),
       nxt_string("defgh") },
 
+    { nxt_string("'abcde'.slice(50)"),
+      nxt_string("") },
+
+    { nxt_string("'abcde'.slice(1, 50)"),
+      nxt_string("bcde") },
+
     { nxt_string("'abcdefgh'.slice(3, -2)"),
       nxt_string("def") },
 
@@ -2864,6 +2870,15 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("") },
 
     { nxt_string("'abcdefgh'.slice(100, 120)"),
+      nxt_string("") },
+
+    { nxt_string("String.prototype.substring(1, 5)"),
+      nxt_string("") },
+
+    { nxt_string("String.prototype.slice(1, 5)"),
+      nxt_string("") },
+
+    { nxt_string("String.prototype.toBytes(1, 5)"),
       nxt_string("") },
 
     { nxt_string("'abc'.charAt(1 + 1)"),

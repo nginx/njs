@@ -886,21 +886,29 @@ njs_string_prototype_substring(njs_vm_t *vm, njs_value_t *args,
 
         if (start < 0) {
             start = 0;
+
+        } else if (start > length) {
+            start = length;
         }
+
+        end = length;
 
         if (nargs > 2) {
             end = args[2].data.u.number;
 
             if (end < 0) {
                 end = 0;
-            }
 
-            length = end - start;
-
-            if (length < 0) {
-                length = -length;
-                start = end;
+            } else if (end >= length) {
+                end = length;
             }
+        }
+
+        length = end - start;
+
+        if (length < 0) {
+            length = -length;
+            start = end;
         }
     }
 
@@ -920,7 +928,7 @@ static njs_ret_t
 njs_string_prototype_substr(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    ssize_t            start, length;
+    ssize_t            start, length, n;
     njs_slice_prop_t   slice;
     njs_string_prop_t  string;
 
@@ -931,17 +939,32 @@ njs_string_prototype_substr(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     if (nargs > 1) {
         start = args[1].data.u.number;
+        if (start < length) {
 
-        if (start < 0) {
-
-            start += length;
             if (start < 0) {
-                start = 0;
-            }
-        }
+                start += length;
 
-        if (nargs > 2) {
-            length = args[2].data.u.number;
+                if (start < 0) {
+                    start = 0;
+                }
+            }
+
+            length -= start;
+
+            if (nargs > 2) {
+                n = args[2].data.u.number;
+
+                if (n < 0) {
+                    length = 0;
+
+                } else if (n < length) {
+                    length = n;
+                }
+            }
+
+        } else {
+            start = 0;
+            length = 0;
         }
     }
 
@@ -968,7 +991,8 @@ njs_string_prototype_char_at(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (nargs > 1) {
         start = args[1].data.u.number;
 
-        if (start < 0) {
+        if (start < 0 || start >= (ssize_t) slice.string_length) {
+            start = 0;
             length = 0;
         }
     }
@@ -1010,21 +1034,32 @@ njs_string_slice_args(njs_slice_prop_t *slice, njs_value_t *args,
             }
         }
 
-        end = length;
-
-        if (nargs > 2) {
-            end = args[2].data.u.number;
-
-            if (end < 0) {
-                end += length;
-            }
-        }
-
-        length = end - start;
-
-        if (length < 0) {
+        if (start >= length) {
             start = 0;
             length = 0;
+
+        } else {
+            end = length;
+
+            if (nargs > 2) {
+                end = args[2].data.u.number;
+
+                if (end < 0) {
+                    end += length;
+                }
+            }
+
+            if (length >= end) {
+                length = end - start;
+
+                if (length < 0) {
+                    start = 0;
+                    length = 0;
+                }
+
+            } else {
+                length -= start;
+            }
         }
     }
 
@@ -1038,51 +1073,36 @@ njs_string_slice(njs_vm_t *vm, njs_value_t *dst,
     const njs_string_prop_t *string, njs_slice_prop_t *slice)
 {
     size_t        size, n, length;
-    ssize_t       excess;
     const u_char  *p, *start, *end;
 
     length = slice->length;
+    start = string->start;
 
-    if (length > 0 && slice->start < slice->string_length) {
+    if (string->size == slice->string_length) {
+	/* Byte or ASCII string. */
+	start += slice->start;
+	size = slice->length;
 
-        start = string->start;
+    } else {
+	/* UTF-8 string. */
         end = start + string->size;
+	start = njs_string_offset(start, end, slice->start);
 
-        if (string->size == slice->string_length) {
-            /* Byte or ASCII string. */
-            start += slice->start;
+	/* Evaluate size of the slice in bytes and ajdust length. */
+	p = start;
+	n = length;
 
-            excess = (start + length) - end;
-            if (excess > 0) {
-                length -= excess;
-            }
+	do {
+	    p = nxt_utf8_next(p, end);
+	    n--;
+	} while (n != 0 && p < end);
 
-            size = length;
+	size = p - start;
+	length -= n;
+    }
 
-            if (string->length == 0) {
-                length = 0;
-            }
-
-        } else {
-            /* UTF-8 string. */
-            start = njs_string_offset(start, end, slice->start);
-
-            /* Evaluate size of the slice in bytes and ajdust length. */
-            p = start;
-            n = length;
-
-            do {
-                p = nxt_utf8_next(p, end);
-                n--;
-            } while (n != 0 && p < end);
-
-            size = p - start;
-            length -= n;
-        }
-
-        if (nxt_fast_path(size != 0)) {
-            return njs_string_new(vm, &vm->retval, start, size, length);
-        }
+    if (nxt_fast_path(size != 0)) {
+	return njs_string_new(vm, &vm->retval, start, size, length);
     }
 
     vm->retval = njs_string_empty;

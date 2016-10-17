@@ -409,6 +409,9 @@ njs_array_prototype_slice(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                         start = 0;
                         length = 0;
                     }
+
+                } else {
+                    length -= start;
                 }
             }
         }

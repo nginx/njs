@@ -559,14 +559,14 @@ njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
             slice.start = index;
             slice.length = 1;
             slice.string_length = njs_string_prop(&string, object);
-            /*
-             * A single codepoint string fits in vm->retval
-             * so the function cannot fail.
-             */
-            (void) njs_string_slice(vm, &vm->retval, &string, &slice);
 
-            if (nxt_fast_path(vm->retval.data.truth != 0)) {
-                /* Non-empty string. */
+            if (slice.start < slice.string_length) {
+                /*
+                 * A single codepoint string fits in vm->retval
+                 * so the function cannot fail.
+                 */
+                (void) njs_string_slice(vm, &vm->retval, &string, &slice);
+
                 return sizeof(njs_vmcode_prop_get_t);
             }
         }
