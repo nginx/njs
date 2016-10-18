@@ -315,6 +315,7 @@ njs_parser_function_declaration(njs_vm_t *vm, njs_parser_t *parser)
     }
 
     var->state = NJS_VARIABLE_DECLARED;
+    var->function = 1;
     node->index = var->index;
 
     token = njs_parser_token(parser);

@@ -20,7 +20,8 @@ typedef enum {
 typedef struct {
     u_char                *name_start;
     uint16_t              name_len;
-    njs_variable_state_t  state:8;  /* 3 bits */
+    njs_variable_state_t  state:8;   /* 3 bits */
+    uint8_t               function;  /* 1 bit */
 
     njs_index_t           index;
 } njs_variable_t;

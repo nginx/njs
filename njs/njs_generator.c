@@ -333,14 +333,9 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
 static nxt_int_t
 njs_generate_name(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
 {
-    njs_index_t               index;
-    njs_value_t               *value;
     njs_vmcode_object_copy_t  *copy;
 
-    index = node->u.variable->index;
-    value = njs_variable_value(parser, index);
-
-    if (value->type == NJS_FUNCTION) {
+    if (node->u.variable->function) {
 
         node->index = njs_generator_dest_index(vm, parser, node);
         if (nxt_slow_path(node->index == NJS_INDEX_ERROR)) {
@@ -352,7 +347,7 @@ njs_generate_name(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
         copy->code.operands = NJS_VMCODE_2OPERANDS;
         copy->code.retval = NJS_VMCODE_RETVAL;
         copy->retval = node->index;
-        copy->object = index;
+        copy->object = node->u.variable->index;
 
         return NXT_OK;
     }
