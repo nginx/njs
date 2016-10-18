@@ -1657,6 +1657,9 @@ static njs_unit_test_t  njs_test[] =
                  "for (i in a) { if (a[i] > 4) continue; s += a[i] } s"),
       nxt_string("10") },
 
+    { nxt_string("var a; for (a = 1; a; a--) switch (a) { case 0: continue }"),
+      nxt_string("undefined") },
+
     /* break. */
 
     { nxt_string("break"),

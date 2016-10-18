@@ -1089,8 +1089,8 @@ found:
     patch = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_parser_patch_t));
 
     if (nxt_fast_path(patch != NULL)) {
-        patch->next = parser->block->continuation;
-        parser->block->continuation = patch;
+        patch->next = block->continuation;
+        block->continuation = patch;
 
         njs_generate_code(parser, njs_vmcode_jump_t, jump);
         jump->code.operation = njs_vmcode_jump;
@@ -1133,8 +1133,8 @@ found:
     patch = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_parser_patch_t));
 
     if (nxt_fast_path(patch != NULL)) {
-        patch->next = parser->block->exit;
-        parser->block->exit = patch;
+        patch->next = block->exit;
+        block->exit = patch;
 
         njs_generate_code(parser, njs_vmcode_jump_t, jump);
         jump->code.operation = njs_vmcode_jump;
