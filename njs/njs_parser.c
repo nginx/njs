@@ -2135,6 +2135,9 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
 
             if (dst != NULL) {
                 dst = nxt_utf8_encode(dst, (uint32_t) u);
+                if (dst == NULL) {
+                    goto invalid;
+                }
             }
         }
 

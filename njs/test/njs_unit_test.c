@@ -2660,6 +2660,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'\\u{1234567}'"),
       nxt_string("SyntaxError: Invalid Unicode code point \"\\u{1234567}\" in 1") },
 
+    { nxt_string("'\\u{a00000}'"),
+      nxt_string("SyntaxError: Invalid Unicode code point \"\\u{a00000}\" in 1") },
+
     { nxt_string("'\\x61'"),
       nxt_string("a") },
 
