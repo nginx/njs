@@ -996,7 +996,7 @@ njs_array_index_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     index = -1;
 
-    if (nargs > 1) {
+    if (nargs > 1 && njs_is_array(&args[0])) {
         i = 0;
         array = args[0].data.u.array;
         length = array->length;

@@ -2359,6 +2359,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = [1,2,3,4,3,4]; a.indexOf(3, -10)"),
       nxt_string("2") },
 
+    { nxt_string("[].indexOf.bind(0)(0, 0)"),
+      nxt_string("-1") },
+
     { nxt_string("var a = [1,2,3,4]; a.lastIndexOf()"),
       nxt_string("-1") },
 
