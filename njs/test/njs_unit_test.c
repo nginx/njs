@@ -1795,6 +1795,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("typeof /./i"),
       nxt_string("object") },
 
+    { nxt_string("typeof Date.prototype"),
+      nxt_string("object") },
+
     { nxt_string("typeof a"),
       nxt_string("undefined") },
 
