@@ -574,8 +574,8 @@ njs_array_prototype_splice(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
     njs_ret_t    ret;
-    nxt_int_t    items, delta;
-    nxt_uint_t   i, n, start, delete, length;
+    nxt_int_t    n, start, length, items, delta, delete;
+    nxt_uint_t   i;
     njs_array_t  *array, *deleted;
 
     array = NULL;
@@ -584,19 +584,33 @@ njs_array_prototype_splice(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     if (njs_is_array(&args[0])) {
         array = args[0].data.u.array;
+        length = array->length;
 
         if (nargs > 1) {
             start = args[1].data.u.number;
 
-            if (start > array->length) {
-                start = array->length;
+            if (start < 0) {
+                start += length;
+
+                if (start < 0) {
+                    start = 0;
+                }
+
+            } else if (start > length) {
+                start = length;
             }
 
-            if (nargs > 2) {
-                delete = args[2].data.u.number;
+            delete = length - start;
 
-            } else {
-                delete = array->length - start;
+            if (nargs > 2) {
+                n = args[2].data.u.number;
+
+                if (n < 0) {
+                    delete = 0;
+
+                } else if (n < delete) {
+                    delete = n;
+                }
             }
         }
     }
@@ -606,17 +620,20 @@ njs_array_prototype_splice(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    if (array != NULL && (delete != 0 || nargs > 3)) {
-        length = array->length;
+    if (array != NULL && (delete >= 0 || nargs > 3)) {
 
         /* Move deleted items to a new array to return. */
-        for (i = 0, n = start; i < delete && n < length; i++, n++) {
+        for (i = 0, n = start; i < (nxt_uint_t) delete; i++, n++) {
             /* No retention required. */
             deleted->start[i] = array->start[n];
         }
 
         items = nargs - 3;
-        items = items >= 0 ? items : 0;
+
+        if (items < 0) {
+            items = 0;
+        }
+
         delta = items - delete;
 
         if (delta != 0) {

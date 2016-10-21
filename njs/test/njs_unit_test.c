@@ -2316,6 +2316,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = []; a.splice()"),
       nxt_string("") },
 
+    { nxt_string("[].splice(0,5,0)"),
+      nxt_string("") },
+
+    { nxt_string("[1,2,3,4,5].splice(-2,3,0)"),
+      nxt_string("4,5") },
+
+    { nxt_string("[].__proto__.splice(0,1,0)"),
+      nxt_string("") },
+
     { nxt_string("var a = [];"
                  "a.splice(9,0,1,2).join(':') + '|' + a"),
       nxt_string("|1,2") },
