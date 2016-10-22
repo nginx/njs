@@ -3070,7 +3070,6 @@ njs_string_decode(njs_vm_t *vm, njs_value_t *value, const uint32_t *reserve)
         byte = *src++;
 
         if (byte == '%') {
-
             size -= 2;
 
             if (size <= 0) {
@@ -3117,6 +3116,8 @@ njs_string_decode(njs_vm_t *vm, njs_value_t *value, const uint32_t *reserve)
         byte = *src++;
 
         if (byte == '%') {
+            size -= 2;
+
             d0 = hex[*src++];
             d1 = hex[*src++];
             byte = (d0 << 4) + d1;
@@ -3124,7 +3125,6 @@ njs_string_decode(njs_vm_t *vm, njs_value_t *value, const uint32_t *reserve)
             utf8 |= (byte >= 0x80);
 
             if ((reserve[byte >> 5] & ((uint32_t) 1 << (byte & 0x1f))) != 0) {
-                size -= 2;
                 *dst++ = '%';
                 *dst++ = src[-2];
                 byte = src[-1];
@@ -3132,7 +3132,6 @@ njs_string_decode(njs_vm_t *vm, njs_value_t *value, const uint32_t *reserve)
         }
 
         *dst++ = byte;
-
         size--;
 
     } while (size != 0);
