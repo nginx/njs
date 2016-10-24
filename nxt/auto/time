@@ -7,7 +7,7 @@
 
 nxt_feature="struct tm.tm_gmtoff"
 nxt_feature_name=NXT_HAVE_TM_GMTOFF
-nxt_feature_run=
+nxt_feature_run=no
 nxt_feature_incs=
 nxt_feature_libs=
 nxt_feature_test="#include <time.h>
@@ -27,7 +27,7 @@ nxt_feature_test="#include <time.h>
 
 nxt_feature="altzone"
 nxt_feature_name=NXT_HAVE_ALTZONE
-nxt_feature_run=
+nxt_feature_run=no
 nxt_feature_incs=
 nxt_feature_libs=
 nxt_feature_test="#include <time.h>

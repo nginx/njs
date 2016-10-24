@@ -7,7 +7,7 @@
 
 nxt_feature="getrandom()"
 nxt_feature_name=NXT_HAVE_GETRANDOM
-nxt_feature_run=
+nxt_feature_run=no
 nxt_feature_incs=
 nxt_feature_libs=
 nxt_feature_test="#include <unistd.h>
