@@ -1,5 +1,5 @@
 
-NJS_VER =	0.1.3
+NJS_VER =	0.1.4
 
 NXT_LIB =	nxt
 
