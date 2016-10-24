@@ -148,17 +148,14 @@ njs_array_add(njs_vm_t *vm, njs_array_t *array, njs_value_t *value)
 {
     njs_ret_t  ret;
 
-    if (array->size == array->length) {
-        ret = njs_array_realloc(vm, array, 0, array->size + 1);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return ret;
-        }
+    ret = njs_array_expand(vm, array, 0, 1);
+
+    if (nxt_fast_path(ret == NXT_OK)) {
+        /* GC: retain value. */
+        array->start[array->length++] = *value;
     }
 
-    /* GC: retain value. */
-    array->start[array->length++] = *value;
-
-    return NXT_OK;
+    return ret;
 }
 
 
@@ -168,31 +165,34 @@ njs_array_string_add(njs_vm_t *vm, njs_array_t *array, u_char *start,
 {
     njs_ret_t  ret;
 
-    if (array->size == array->length) {
-        ret = njs_array_realloc(vm, array, 0, array->size + 1);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return ret;
-        }
+    ret = njs_array_expand(vm, array, 0, 1);
+
+    if (nxt_fast_path(ret == NXT_OK)) {
+        return njs_string_create(vm, &array->start[array->length++],
+                                 start, size, length);
     }
 
-    return njs_string_create(vm, &array->start[array->length++],
-                            start, size, length);
+    return ret;
 }
 
 
 njs_ret_t
-njs_array_realloc(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
+njs_array_expand(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
     uint32_t size)
 {
     njs_value_t  *start, *old;
 
-    if (size != array->size) {
-        if (size < 16) {
-            size *= 2;
+    size += array->length;
 
-        } else {
-            size += size / 2;
-        }
+    if (nxt_fast_path(size <= array->size && prepend == 0)) {
+        return NXT_OK;
+    }
+
+    if (size < 16) {
+        size *= 2;
+
+    } else {
+        size += size / 2;
     }
 
     start = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
@@ -438,11 +438,9 @@ njs_array_prototype_push(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         array = args[0].data.u.array;
 
         if (nargs != 0) {
-            if (nargs > array->size - array->length) {
-                ret = njs_array_realloc(vm, array, 0, array->size + nargs);
-                if (nxt_slow_path(ret != NXT_OK)) {
-                    return ret;
-                }
+            ret = njs_array_expand(vm, array, 0, nargs);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return ret;
             }
 
             for (i = 1; i < nargs; i++) {
@@ -500,7 +498,7 @@ njs_array_prototype_unshift(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
         if (n != 0) {
             if ((intptr_t) n > (array->start - array->data)) {
-                ret = njs_array_realloc(vm, array, n, 0);
+                ret = njs_array_expand(vm, array, n, 0);
                 if (nxt_slow_path(ret != NXT_OK)) {
                     return ret;
                 }
@@ -627,7 +625,7 @@ njs_array_prototype_splice(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
              * Index of the first item is in "n".
              */
             if (delta > 0) {
-                ret = njs_array_realloc(vm, array, 0, array->size + delta);
+                ret = njs_array_expand(vm, array, 0, delta);
                 if (nxt_slow_path(ret != NXT_OK)) {
                     return ret;
                 }

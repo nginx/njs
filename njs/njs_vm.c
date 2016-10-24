@@ -1047,28 +1047,25 @@ static njs_ret_t
 njs_array_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     njs_value_t *object, int32_t index)
 {
-    size_t       size;
+    int32_t      size;
     njs_ret_t    ret;
     njs_value_t  *value;
     njs_array_t  *array;
 
     array = object->data.u.array;
+    size = index - array->length;
 
-    if ((uint32_t) index >= array->length) {
-
+    if (size >= 0) {
         if (pq->query != NJS_PROPERTY_QUERY_SET) {
             return NXT_DECLINED;
         }
 
-        if ((uint32_t) index >= array->size) {
-            ret = njs_array_realloc(vm, array, 0, index + 1);
-            if (nxt_slow_path(ret != NXT_OK)) {
-                return ret;
-            }
+        ret = njs_array_expand(vm, array, 0, size + 1);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return ret;
         }
 
         value = &array->start[array->length];
-        size = index - array->length;
 
         while (size != 0) {
             njs_set_invalid(value);

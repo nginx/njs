@@ -1659,11 +1659,9 @@ njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
                                    string.size, vm->single_match_data);
             if (ret >= 0) {
                 if (array != NULL) {
-                    if (array->length == array->size) {
-                        ret = njs_array_realloc(vm, array, 0, array->size + 1);
-                        if (nxt_slow_path(ret != NXT_OK)) {
-                            return ret;
-                        }
+                    ret = njs_array_expand(vm, array, 0, 1);
+                    if (nxt_slow_path(ret != NXT_OK)) {
+                        return ret;
                     }
 
                 } else {
