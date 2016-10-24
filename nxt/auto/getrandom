@@ -14,7 +14,7 @@ nxt_feature_test="#include <unistd.h>
                   #include <sys/syscall.h>
                   #include <linux/random.h>
 
-                  int main() {
+                  int main(void) {
                       char  buf[4];
 
                       (void) syscall(SYS_getrandom, buf, 4, 0);

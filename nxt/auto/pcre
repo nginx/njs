@@ -20,7 +20,7 @@ if /bin/sh -c "(pcre-config --version)" >> $NXT_AUTOCONF_ERR 2>&1; then
     nxt_feature_libs=$NXT_PCRE_LIB
     nxt_feature_test="#include <pcre.h>
 
-                     int main() {
+                     int main(void) {
                          pcre  *re;
 
                          re = pcre_compile(NULL, 0, NULL, 0, NULL);

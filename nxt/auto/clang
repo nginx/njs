@@ -185,7 +185,7 @@ nxt_feature_name=NXT_HAVE_BUILTIN_UNREACHABLE
 nxt_feature_run=no
 nxt_feature_incs=
 nxt_feature_libs=
-nxt_feature_test="int main() {
+nxt_feature_test="int main(void) {
                       __builtin_unreachable();
                   }"
 . ${NXT_AUTO}feature
@@ -196,7 +196,7 @@ nxt_feature_name=NXT_HAVE_BUILTIN_PREFETCH
 nxt_feature_run=no
 nxt_feature_incs=
 nxt_feature_libs=
-nxt_feature_test="int main() {
+nxt_feature_test="int main(void) {
                       __builtin_prefetch(0);
                   }"
 . ${NXT_AUTO}feature
@@ -209,7 +209,7 @@ nxt_feature_path=
 nxt_feature_libs=
 nxt_feature_test="int n __attribute__ ((visibility(\"default\")));
 
-                  int main() {
+                  int main(void) {
                       return 1;
                   }"
 . ${NXT_AUTO}feature
@@ -228,7 +228,7 @@ nxt_feature_test="#include <stdlib.h>
                       return malloc(1);
                   }
 
-                  int main() {
+                  int main(void) {
                       if (f() != NULL) {
                           return 1;
                       }
@@ -255,7 +255,7 @@ else
     nxt_feature_libs=
     nxt_feature_test="int n __attribute__ ((aligned(64)));
 
-                      int main() {
+                      int main(void) {
                           return 1;
                       }"
     . ${NXT_AUTO}feature
