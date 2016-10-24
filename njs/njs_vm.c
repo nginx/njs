@@ -366,7 +366,7 @@ njs_vmcode_object(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 njs_ret_t
 njs_vmcode_array(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 {
-    uint32_t            size;
+    uint32_t            length;
     njs_array_t         *array;
     njs_value_t         *value;
     njs_vmcode_array_t  *code;
@@ -376,14 +376,22 @@ njs_vmcode_array(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
     array = njs_array_alloc(vm, code->length, NJS_ARRAY_SPARE);
 
     if (nxt_fast_path(array != NULL)) {
-        size = array->size;
-        value = array->start;
 
-        do {
-            njs_set_invalid(value);
-            value++;
-            size--;
-        } while (size != 0);
+        if (code->code.ctor) {
+            /* Array of the form [,,,], [1,,]. */
+            value = array->start;
+            length = array->length;
+
+            do {
+                njs_set_invalid(value);
+                value++;
+                length--;
+            } while (length != 0);
+
+        } else {
+            /* Array of the form [], [,,1], [1,2,3]. */
+            array->length = 0;
+        }
 
         vm->retval.data.u.array = array;
         vm->retval.type = NJS_ARRAY;
@@ -1039,7 +1047,9 @@ static njs_ret_t
 njs_array_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     njs_value_t *object, int32_t index)
 {
+    size_t       size;
     njs_ret_t    ret;
+    njs_value_t  *value;
     njs_array_t  *array;
 
     array = object->data.u.array;
@@ -1055,6 +1065,15 @@ njs_array_property_query(njs_vm_t *vm, njs_property_query_t *pq,
             if (nxt_slow_path(ret != NXT_OK)) {
                 return ret;
             }
+        }
+
+        value = &array->start[array->length];
+        size = index - array->length;
+
+        while (size != 0) {
+            njs_set_invalid(value);
+            value++;
+            size--;
         }
 
         array->length = index + 1;
@@ -1182,7 +1201,7 @@ njs_vmcode_property_foreach(njs_vm_t *vm, njs_value_t *object,
         next->lhe.proto = &njs_object_hash_proto;
         next->index = -1;
 
-        if (njs_is_array(object) && object->data.u.array->size != 0) {
+        if (njs_is_array(object) && object->data.u.array->length != 0) {
             next->index = 0;
         }
 
@@ -1222,7 +1241,7 @@ njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
         if (next->index >= 0) {
             array = object->data.u.array;
 
-            while ((uint32_t) next->index < array->size) {
+            while ((uint32_t) next->index < array->length) {
                 n = next->index++;
 
                 if (njs_is_valid(&array->start[n])) {

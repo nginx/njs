@@ -184,8 +184,7 @@ njs_ret_t
 njs_array_realloc(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
     uint32_t size)
 {
-    nxt_uint_t   n;
-    njs_value_t  *value, *old;
+    njs_value_t  *start, *old;
 
     if (size != array->size) {
         if (size < 16) {
@@ -196,35 +195,21 @@ njs_array_realloc(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
         }
     }
 
-    value = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
+    start = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
                                 (prepend + size) * sizeof(njs_value_t));
-    if (nxt_slow_path(value == NULL)) {
+    if (nxt_slow_path(start == NULL)) {
         return NXT_ERROR;
     }
 
-    old = array->data;
-    array->data = value;
-
-    while (prepend != 0) {
-        njs_set_invalid(value);
-        value++;
-        prepend--;
-    }
-
-    memcpy(value, array->start, array->size * sizeof(njs_value_t));
-
-    array->start = value;
-    n = array->size;
     array->size = size;
 
-    value += n;
-    size -= n;
+    old = array->data;
+    array->data = start;
+    start += prepend;
 
-    while (size != 0) {
-        njs_set_invalid(value);
-        value++;
-        size--;
-    }
+    memcpy(start, array->start, array->length * sizeof(njs_value_t));
+
+    array->start = start;
 
     nxt_mem_cache_free(vm->mem_cache_pool, old);
 
@@ -515,7 +500,7 @@ njs_array_prototype_unshift(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
         if (n != 0) {
             if ((intptr_t) n > (array->start - array->data)) {
-                ret = njs_array_realloc(vm, array, n, array->size);
+                ret = njs_array_realloc(vm, array, n, 0);
                 if (nxt_slow_path(ret != NXT_OK)) {
                     return ret;
                 }

@@ -197,8 +197,9 @@ njs_disassemble(u_char *start, u_char *end)
         if (operation == njs_vmcode_array) {
             array = (njs_vmcode_array_t *) p;
 
-            printf("%05zd ARRAY             %04zX %zd\n",
-                   p - start, (size_t) array->retval, (size_t) array->length);
+            printf("%05zd ARRAY             %04zX %zd%s\n",
+                   p - start, (size_t) array->retval, (size_t) array->length,
+                   array->code.ctor ? " INIT" : "");
 
             p += sizeof(njs_vmcode_array_t);
 

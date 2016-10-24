@@ -1510,15 +1510,11 @@ njs_generate_array(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
     array->code.operation = njs_vmcode_array;
     array->code.operands = NJS_VMCODE_1OPERAND;
     array->code.retval = NJS_VMCODE_RETVAL;
+    array->code.ctor = node->ctor;
     array->retval = node->index;
     array->length = node->u.length;
 
-    if (node->left == NULL) {
-        return NXT_OK;
-    }
-
     /* Initialize array. */
-
     return njs_generator(vm, parser, node->left);
 }
 

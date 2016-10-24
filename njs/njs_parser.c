@@ -1885,6 +1885,7 @@ njs_parser_array(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
         }
 
         if (token == NJS_TOKEN_COMMA) {
+            obj->ctor = 1;
             index++;
             continue;
         }
@@ -1942,10 +1943,10 @@ njs_parser_array(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
         stmt->left = left;
         stmt->right = assign;
 
-        parser->code_size += sizeof(njs_vmcode_2addr_t);
         parser->node = stmt;
-
         left = stmt;
+
+        obj->ctor = 0;
 
         if (token == NJS_TOKEN_CLOSE_BRACKET) {
             break;
