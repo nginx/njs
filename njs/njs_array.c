@@ -84,8 +84,6 @@ static njs_ret_t njs_array_prototype_to_string_continuation(njs_vm_t *vm,
 static njs_ret_t njs_array_prototype_join_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static njs_value_t *njs_array_copy(njs_value_t *dst, njs_value_t *src);
-static njs_ret_t njs_array_index_of(njs_vm_t *vm, njs_value_t *args,
-    nxt_uint_t nargs, nxt_bool_t first);
 static njs_ret_t njs_array_prototype_for_each_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t njs_array_prototype_some_continuation(njs_vm_t *vm,
@@ -974,7 +972,59 @@ static njs_ret_t
 njs_array_prototype_index_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    return njs_array_index_of(vm, args, nargs, 1);
+    nxt_int_t    i, index, length;
+    njs_value_t  *value, *start;
+    njs_array_t  *array;
+
+    index = -1;
+
+    if (nargs < 2 || !njs_is_array(&args[0])) {
+        goto done;
+    }
+
+    array = args[0].data.u.array;
+    length = array->length;
+
+    if (length == 0) {
+        goto done;
+    }
+
+    i = 0;
+
+    if (nargs > 2) {
+        i = args[2].data.u.number;
+
+        if (i >= length) {
+            goto done;
+        }
+
+        if (i < 0) {
+            i += length;
+
+            if (i < 0) {
+                i = 0;
+            }
+        }
+    }
+
+    value = &args[1];
+    start = array->start;
+
+    do {
+        if (njs_values_strict_equal(value, &start[i])) {
+            index = i;
+            break;
+        }
+
+        i++;
+
+    } while (i < length);
+
+done:
+
+    njs_number_set(&vm->retval, index);
+
+    return NXT_OK;
 }
 
 
@@ -982,51 +1032,54 @@ static njs_ret_t
 njs_array_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    return njs_array_index_of(vm, args, nargs, 0);
-}
-
-
-static njs_ret_t
-njs_array_index_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
-    nxt_bool_t first)
-{
-    nxt_int_t    i, index, length;
-    njs_value_t  *value;
+    nxt_int_t    i, n, index, length;
+    njs_value_t  *value, *start;
     njs_array_t  *array;
 
     index = -1;
 
-    if (nargs > 1 && njs_is_array(&args[0])) {
-        i = 0;
-        array = args[0].data.u.array;
-        length = array->length;
+    if (nargs < 2 || !njs_is_array(&args[0])) {
+        goto done;
+    }
 
-        if (nargs > 2) {
-            i = args[2].data.u.number;
+    array = args[0].data.u.array;
+    length = array->length;
+
+    if (length == 0) {
+        goto done;
+    }
+
+    i = length - 1;
+
+    if (nargs > 2) {
+        n = args[2].data.u.number;
+
+        if (n < 0) {
+            i = n + length;
 
             if (i < 0) {
-                i += length;
-
-                if (i < 0) {
-                    i = 0;
-                }
-            }
-        }
-
-        value = &args[1];
-
-        while (i < length) {
-            if (njs_values_strict_equal(value, &array->start[i])) {
-                index = i;
-
-                if (first) {
-                    break;
-                }
+                goto done;
             }
 
-            i++;
+        } else if (n < length) {
+            i = n;
         }
     }
+
+    value = &args[1];
+    start = array->start;
+
+    do {
+        if (njs_values_strict_equal(value, &start[i])) {
+            index = i;
+            break;
+        }
+
+        i--;
+
+    } while (i >= 0);
+
+done:
 
     njs_number_set(&vm->retval, index);
 
