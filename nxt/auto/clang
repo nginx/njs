@@ -198,6 +198,7 @@ nxt_feature_incs=
 nxt_feature_libs=
 nxt_feature_test="int main(void) {
                       __builtin_prefetch(0);
+                      return 0;
                   }"
 . ${NXT_AUTO}feature
 
