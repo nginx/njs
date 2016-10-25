@@ -2410,6 +2410,36 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = [1,2,3,4,3,4]; a.lastIndexOf(3, -10)"),
       nxt_string("-1") },
 
+    { nxt_string("[1,2,3,4].includes()"),
+      nxt_string("false") },
+
+    { nxt_string("[1,2,3,4].includes(5)"),
+      nxt_string("false") },
+
+    { nxt_string("[1,2,3,4].includes(4, 3)"),
+      nxt_string("true") },
+
+    { nxt_string("[1,2,3,4].includes(4, 4)"),
+      nxt_string("false") },
+
+    { nxt_string("[1,2,3,4,3,4].includes(3, '2')"),
+      nxt_string("true") },
+
+    { nxt_string("[1,2,3,4,3,4].includes(4, -1)"),
+      nxt_string("true") },
+
+    { nxt_string("[1,2,3,4,3,4].includes(3, -10)"),
+      nxt_string("true") },
+
+    { nxt_string("[1,2,3,NaN,3,4].includes(NaN)"),
+      nxt_string("true") },
+
+    { nxt_string("[1,2,3,4,5].includes(NaN)"),
+      nxt_string("false") },
+
+    { nxt_string("[].includes.bind(0)(0, 0)"),
+      nxt_string("false") },
+
     { nxt_string("var a = []; var s = { sum: 0 };"
                  "a.forEach(function(v, i, a) { this.sum += v }, s); s.sum"),
       nxt_string("0") },

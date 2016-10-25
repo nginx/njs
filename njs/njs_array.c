@@ -1088,6 +1088,83 @@ done:
 
 
 static njs_ret_t
+njs_array_prototype_includes(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    nxt_int_t          i, length;
+    njs_value_t        *value, *start;
+    njs_array_t        *array;
+    const njs_value_t  *retval;
+
+    retval = &njs_value_false;
+
+    if (nargs < 2 || !njs_is_array(&args[0])) {
+        goto done;
+    }
+
+    array = args[0].data.u.array;
+    length = array->length;
+
+    if (length == 0) {
+        goto done;
+    }
+
+    i = 0;
+
+    if (nargs > 2) {
+        i = args[2].data.u.number;
+
+        if (i >= length) {
+            goto done;
+        }
+
+        if (i < 0) {
+            i += length;
+
+            if (i < 0) {
+                i = 0;
+            }
+        }
+    }
+
+    start = array->start;
+    value = &args[1];
+
+    if (njs_is_number(value) && njs_is_nan(value->data.u.number)) {
+
+        do {
+            value = &start[i];
+
+            if (njs_is_number(value) && njs_is_nan(value->data.u.number)) {
+                retval = &njs_value_true;
+                break;
+            }
+
+            i++;
+
+        } while (i < length);
+
+    } else {
+        do {
+            if (njs_values_strict_equal(value, &start[i])) {
+                retval = &njs_value_true;
+                break;
+            }
+
+            i++;
+
+        } while (i < length);
+    }
+
+done:
+
+    vm->retval = *retval;
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
 njs_array_prototype_for_each(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
@@ -1801,6 +1878,14 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("lastIndexOf"),
         .value = njs_native_function(njs_array_prototype_last_index_of, 0,
+                     NJS_OBJECT_ARG, NJS_SKIP_ARG, NJS_INTEGER_ARG),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("includes"),
+        .value = njs_native_function(njs_array_prototype_includes, 0,
                      NJS_OBJECT_ARG, NJS_SKIP_ARG, NJS_INTEGER_ARG),
     },
 
