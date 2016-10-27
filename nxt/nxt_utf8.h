@@ -29,7 +29,12 @@ NXT_EXPORT ssize_t nxt_utf8_length(const u_char *p, size_t len);
 NXT_EXPORT nxt_bool_t nxt_utf8_is_valid(const u_char *p, size_t len);
 
 
-/* nxt_utf8_next() expects a valid UTF-8 string. */
+/*
+ * nxt_utf8_next() and nxt_utf8_prev() expect a valid UTF-8 string.
+ *
+ * The leading UTF-8 byte is either 0xxxxxxx or 11xxxxxx.
+ * The continuation UTF-8 bytes are 10xxxxxx.
+ */
 
 nxt_inline const u_char *
 nxt_utf8_next(const u_char *p, const u_char *end)
@@ -41,10 +46,6 @@ nxt_utf8_next(const u_char *p, const u_char *end)
     if ((c & 0x80) != 0) {
 
         do {
-            /*
-             * The first UTF-8 byte is either 0xxxxxxx or 11xxxxxx.
-             * The next UTF-8 bytes are 10xxxxxx.
-             */
             c = *p;
 
             if ((c & 0xC0) != 0x80) {
@@ -58,6 +59,22 @@ nxt_utf8_next(const u_char *p, const u_char *end)
 
     return p;
 }
+
+
+nxt_inline const u_char *
+nxt_utf8_prev(const u_char *p)
+{
+   u_char  c;
+
+   do {
+       p--;
+       c = *p;
+
+   } while ((c & 0xC0) == 0x80);
+
+   return p;
+}
+
 
 
 #define nxt_utf8_size(u)                                                      \

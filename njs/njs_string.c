@@ -83,8 +83,6 @@ static nxt_noinline void njs_string_slice_args(njs_slice_prop_t *slice,
     njs_value_t *args, nxt_uint_t nargs);
 static njs_ret_t njs_string_from_char_code(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
-static nxt_noinline ssize_t njs_string_index_of(njs_vm_t *vm,
-    njs_value_t *src, njs_value_t *search_string, size_t index);
 static njs_ret_t njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
     njs_regexp_pattern_t *pattern);
 static njs_ret_t njs_string_split_part_add(njs_vm_t *vm, njs_array_t *array,
@@ -1288,91 +1286,86 @@ static njs_ret_t
 njs_string_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    ssize_t  ret, index, last;
+    ssize_t            index, start, length, search_length;
+    const u_char       *p, *end;
+    njs_string_prop_t  string, search;
+
+    if (nargs > 1) {
+        length = njs_string_prop(&string, &args[0]);
+        search_length = njs_string_prop(&search, &args[1]);
+
+        if (length < search_length) {
+            goto small;
+        }
+
+        index = NJS_STRING_MAX_LENGTH;
+
+        if (nargs > 2) {
+            index = args[2].data.u.number;
+
+            if (index < 0) {
+                index = 0;
+            }
+        }
+
+        if (index > length) {
+            index = length;
+        }
+
+        if (string.size == (size_t) length) {
+            /* Byte or ASCII string. */
+
+            start = length - search.size;
+
+            if (index > start) {
+                index = start;
+            }
+
+            p = string.start + index;
+
+            do {
+                if (memcmp(p, search.start, search.size) == 0) {
+                    goto done;
+                }
+
+                p--;
+                index--;
+
+            } while (index >= 0);
+
+        } else {
+            /* UTF-8 string. */
+
+            end = string.start + string.size;
+            p = njs_string_offset(string.start, end, index);
+            end -= search.size;
+
+            while (p > end) {
+                index--;
+                p = nxt_utf8_prev(p);
+            }
+
+            do {
+                if (memcmp(p, search.start, search.size) == 0) {
+                    goto done;
+                }
+
+                p = nxt_utf8_prev(p);
+                index--;
+
+            } while (index >= 0);
+        }
+    }
+
+small:
 
     index = -1;
 
-    if (nargs > 1) {
-        last = NJS_STRING_MAX_LENGTH;
-
-        if (nargs > 2) {
-            last = args[2].data.u.number;
-
-            if (last < 0) {
-                last = 0;
-            }
-        }
-
-        ret = 0;
-
-        for ( ;; ) {
-            ret = njs_string_index_of(vm, &args[0], &args[1], ret);
-
-            if (ret < 0 || ret >= last) {
-                break;
-            }
-
-            index = ret++;
-        }
-    }
+done:
 
     njs_number_set(&vm->retval, index);
 
     return NXT_OK;
-}
-
-
-static nxt_noinline ssize_t
-njs_string_index_of(njs_vm_t *vm, njs_value_t *src, njs_value_t *search_string,
-    size_t index)
-{
-    size_t             length;
-    const u_char       *p, *end;
-    njs_string_prop_t  string, search;
-
-    (void) njs_string_prop(&search, search_string);
-
-    length = njs_string_prop(&string, src);
-
-    if (index < length) {
-
-        if (string.size == length) {
-            /* Byte or ASCII string. */
-            p = string.start + index;
-            end = (string.start + string.size) - (search.size - 1);
-
-            while (p < end) {
-                if (memcmp(p, search.start, search.size) == 0) {
-                    return index;
-                }
-
-                index++;
-                p++;
-            }
-
-        } else {
-            /* UTF-8 string. */
-            end = string.start + string.size;
-
-            p = njs_string_offset(string.start, end, index);
-
-            end -= search.size - 1;
-
-            while (p < end) {
-                if (memcmp(p, search.start, search.size) == 0) {
-                    return index;
-                }
-
-                index++;
-                p = nxt_utf8_next(p, end);
-            }
-        }
-
-    } else if (search.size == 0) {
-        return length;
-    }
-
-    return -1;
 }
 
 

@@ -3224,6 +3224,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("''.indexOf.call(12345, 45, '0')"),
       nxt_string("3") },
 
+    { nxt_string("'abc'.lastIndexOf('abcdef')"),
+      nxt_string("-1") },
+
     { nxt_string("'abc abc abc abc'.lastIndexOf('abc')"),
       nxt_string("12") },
 
@@ -3231,7 +3234,43 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("8") },
 
     { nxt_string("'abc abc abc abc'.lastIndexOf('abc', 0)"),
-      nxt_string("-1") },
+      nxt_string("0") },
+
+    { nxt_string("'abc abc abc abc'.lastIndexOf('', 0)"),
+      nxt_string("0") },
+
+    { nxt_string("'abc abc abc abc'.lastIndexOf('', 5)"),
+      nxt_string("5") },
+
+    { nxt_string("'abc abc абвгд abc'.lastIndexOf('абвгд')"),
+      nxt_string("8") },
+
+    { nxt_string("'abc abc абвгдежз'.lastIndexOf('абвгд')"),
+      nxt_string("8") },
+
+    { nxt_string("'abc abc абвгдежз'.lastIndexOf('абвгд', 11)"),
+      nxt_string("8") },
+
+    { nxt_string("'abc abc абвгдежз'.lastIndexOf('абвгд', 12)"),
+      nxt_string("8") },
+
+    { nxt_string("'abc abc абвгдежз'.lastIndexOf('абвгд', 13)"),
+      nxt_string("8") },
+
+    { nxt_string("'abc abc абвгдежз'.lastIndexOf('абвгд', 14)"),
+      nxt_string("8") },
+
+    { nxt_string("'abc abc абвгдежз'.lastIndexOf('абвгд', 15)"),
+      nxt_string("8") },
+
+    { nxt_string("'abc abc абвгдежз'.lastIndexOf('')"),
+      nxt_string("16") },
+
+    { nxt_string("'abc abc абвгдежз'.lastIndexOf('', 12)"),
+      nxt_string("12") },
+
+    { nxt_string("''.lastIndexOf('')"),
+      nxt_string("0") },
 
     { nxt_string("'ABC'.toLowerCase()"),
       nxt_string("abc") },
