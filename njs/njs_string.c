@@ -1290,12 +1290,14 @@ njs_string_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
     const u_char       *p, *end;
     njs_string_prop_t  string, search;
 
+    index = -1;
+
     if (nargs > 1) {
         length = njs_string_prop(&string, &args[0]);
         search_length = njs_string_prop(&search, &args[1]);
 
         if (length < search_length) {
-            goto small;
+            goto done;
         }
 
         index = NJS_STRING_MAX_LENGTH;
@@ -1328,10 +1330,10 @@ njs_string_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
                     goto done;
                 }
 
-                p--;
                 index--;
+                p--;
 
-            } while (index >= 0);
+            } while (p >= string.start);
 
         } else {
             /* UTF-8 string. */
@@ -1345,21 +1347,21 @@ njs_string_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
                 p = nxt_utf8_prev(p);
             }
 
-            do {
+            for ( ;; ) {
                 if (memcmp(p, search.start, search.size) == 0) {
                     goto done;
                 }
 
-                p = nxt_utf8_prev(p);
                 index--;
 
-            } while (index >= 0);
+                if (p <= string.start) {
+                    break;
+                }
+
+                p = nxt_utf8_prev(p);
+            }
         }
     }
-
-small:
-
-    index = -1;
 
 done:
 
