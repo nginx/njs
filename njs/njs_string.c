@@ -1369,6 +1369,76 @@ done:
 }
 
 
+static njs_ret_t
+njs_string_prototype_includes(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    ssize_t            index, length, search_length;
+    const u_char       *p, *end;
+    const njs_value_t  *retval;
+    njs_string_prop_t  string, search;
+
+    retval = &njs_value_true;
+
+    if (nargs > 1) {
+        search_length = njs_string_prop(&search, &args[1]);
+
+        if (search_length == 0) {
+            goto done;
+        }
+
+        length = njs_string_prop(&string, &args[0]);
+
+        if (length < search_length) {
+            goto small;
+        }
+
+        index = 0;
+
+        if (nargs > 2) {
+            index = args[2].data.u.number;
+
+            if (index < 0) {
+                index = 0;
+            }
+        }
+
+        if (index < length) {
+            end = string.start + string.size;
+
+            if (string.size == (size_t) length) {
+                /* Byte or ASCII string. */
+                p = string.start + index;
+
+            } else {
+                /* UTF-8 string. */
+                p = njs_string_offset(string.start, end, index);
+            }
+
+            end -= search.size - 1;
+
+            while (p < end) {
+                if (memcmp(p, search.start, search.size) == 0) {
+                    goto done;
+                }
+
+                p++;
+            }
+        }
+    }
+
+small:
+
+    retval = &njs_value_false;
+
+done:
+
+    vm->retval = *retval;
+
+    return NXT_OK;
+}
+
+
 /*
  * njs_string_offset() assumes that index is correct
  * and the optional offset map has been initialized.
@@ -2809,6 +2879,14 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("lastIndexOf"),
         .value = njs_native_function(njs_string_prototype_last_index_of, 0,
+                     NJS_STRING_OBJECT_ARG, NJS_STRING_ARG, NJS_INTEGER_ARG),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("includes"),
+        .value = njs_native_function(njs_string_prototype_includes, 0,
                      NJS_STRING_OBJECT_ARG, NJS_STRING_ARG, NJS_INTEGER_ARG),
     },
 

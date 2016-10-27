@@ -3272,6 +3272,24 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("''.lastIndexOf('')"),
       nxt_string("0") },
 
+    { nxt_string("''.includes('')"),
+      nxt_string("true") },
+
+    { nxt_string("'12345'.includes()"),
+      nxt_string("false") },
+
+    { nxt_string("'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'.includes('лмно', 10)"),
+      nxt_string("true") },
+
+    { nxt_string("'абв абв абвгдежз'.includes('абвгд', 7)"),
+      nxt_string("true") },
+
+    { nxt_string("'абв абв абвгдежз'.includes('абвгд', 8)"),
+      nxt_string("true") },
+
+    { nxt_string("'абв абв абвгдежз'.includes('абвгд', 9)"),
+      nxt_string("false") },
+
     { nxt_string("'ABC'.toLowerCase()"),
       nxt_string("abc") },
 
