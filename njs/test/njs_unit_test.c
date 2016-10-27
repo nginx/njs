@@ -3212,8 +3212,14 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'12345'.indexOf()"),
       nxt_string("-1") },
 
+    { nxt_string("''.indexOf('')"),
+      nxt_string("0") },
+
     { nxt_string("'12345'.indexOf(45, '0')"),
       nxt_string("3") },
+
+    { nxt_string("'12'.indexOf('12345')"),
+      nxt_string("-1") },
 
     { nxt_string("''.indexOf.call(12345, 45, '0')"),
       nxt_string("3") },

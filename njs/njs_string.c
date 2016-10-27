@@ -1212,23 +1212,71 @@ static njs_ret_t
 njs_string_prototype_index_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    ssize_t  start, index;
-
-    index = -1;
+    ssize_t            index, length, search_length;
+    const u_char       *p, *end;
+    njs_string_prop_t  string, search;
 
     if (nargs > 1) {
-        start = 0;
+        length = njs_string_prop(&string, &args[0]);
+        search_length = njs_string_prop(&search, &args[1]);
+
+        if (length < search_length) {
+            goto small;
+        }
+
+        index = 0;
 
         if (nargs > 2) {
-            start = args[2].data.u.number;
+            index = args[2].data.u.number;
 
-            if (start < 0) {
-                start = 0;
+            if (index < 0) {
+                index = 0;
             }
         }
 
-        index = njs_string_index_of(vm, &args[0], &args[1], start);
+        if (index < length) {
+            end = string.start + string.size;
+
+            if (string.size == (size_t) length) {
+                /* Byte or ASCII string. */
+
+                end -= (search.size - 1);
+
+                for (p = string.start + index; p < end; p++) {
+                    if (memcmp(p, search.start, search.size) == 0) {
+                        goto done;
+                    }
+
+                    index++;
+                }
+
+            } else {
+                /* UTF-8 string. */
+
+                p = njs_string_offset(string.start, end, index);
+                end -= search.size - 1;
+
+                while (p < end) {
+                    if (memcmp(p, search.start, search.size) == 0) {
+                        goto done;
+                    }
+
+                    index++;
+                    p = nxt_utf8_next(p, end);
+                }
+            }
+
+        } else if (search.size == 0) {
+            index = length;
+            goto done;
+        }
     }
+
+small:
+
+    index = -1;
+
+done:
 
     njs_number_set(&vm->retval, index);
 
