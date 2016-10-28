@@ -70,7 +70,7 @@ nxt_random_stir(nxt_random_t *r, nxt_pid_t pid)
 
     /* Linux 3.17 getrandom(), it is not available in Glibc. */
 
-    n = syscall(SYS_getrandom, key, NXT_RANDOM_KEY_SIZE, 0));
+    n = syscall(SYS_getrandom, key, NXT_RANDOM_KEY_SIZE, 0);
 
 #endif
 
