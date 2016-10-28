@@ -1614,6 +1614,135 @@ njs_string_prototype_to_upper_case(njs_vm_t *vm, njs_value_t *args,
 }
 
 
+static njs_ret_t
+njs_string_prototype_trim(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    uint32_t           u, trim, length;
+    const u_char       *p, *prev, *start, *end;
+    njs_string_prop_t  string;
+
+    trim = 0;
+
+    njs_string_prop(&string, &args[0]);
+
+    p = string.start;
+    end = string.start + string.size;
+
+    if (string.length == 0 || string.length == string.size) {
+        /* Byte or ASCII string. */
+
+        while (p < end) {
+
+            switch (*p) {
+            case 0x09:  /* <TAB>  */
+            case 0x0A:  /* <LF>   */
+            case 0x0B:  /* <VT>   */
+            case 0x0C:  /* <FF>   */
+            case 0x0D:  /* <CR>   */
+            case 0x20:  /* <SP>   */
+            case 0xA0:  /* <NBSP> */
+                trim++;
+                p++;
+                continue;
+
+            default:
+                start = p;
+                p = end;
+
+                for ( ;; ) {
+                    p--;
+
+                    switch (*p) {
+                    case 0x09:  /* <TAB>  */
+                    case 0x0A:  /* <LF>   */
+                    case 0x0B:  /* <VT>   */
+                    case 0x0C:  /* <FF>   */
+                    case 0x0D:  /* <CR>   */
+                    case 0x20:  /* <SP>   */
+                    case 0xA0:  /* <NBSP> */
+                        trim++;
+                        continue;
+
+                    default:
+                        p++;
+                        goto done;
+                    }
+                }
+            }
+        }
+
+    } else {
+        /* UTF-8 string. */
+
+        while (p < end) {
+            prev = p;
+            u = nxt_utf8_decode(&p, end);
+
+            switch (u) {
+            case 0x0009:  /* <TAB>  */
+            case 0x000A:  /* <LF>   */
+            case 0x000B:  /* <VT>   */
+            case 0x000C:  /* <FF>   */
+            case 0x000D:  /* <CR>   */
+            case 0x0020:  /* <SP>   */
+            case 0x00A0:  /* <NBSP> */
+            case 0x2028:  /* <LS>   */
+            case 0x2029:  /* <PS>   */
+            case 0xFEFF:  /* <BOM>  */
+                trim++;
+                continue;
+
+            default:
+                start = prev;
+                prev = end;
+
+                for ( ;; ) {
+                    prev = nxt_utf8_prev(prev);
+                    p = prev;
+                    u = nxt_utf8_decode(&p, end);
+
+                    switch (u) {
+                    case 0x0009:  /* <TAB>  */
+                    case 0x000A:  /* <LF>   */
+                    case 0x000B:  /* <VT>   */
+                    case 0x000C:  /* <FF>   */
+                    case 0x000D:  /* <CR>   */
+                    case 0x0020:  /* <SP>   */
+                    case 0x00A0:  /* <NBSP> */
+                    case 0x2028:  /* <LS>   */
+                    case 0x2029:  /* <PS>   */
+                    case 0xFEFF:  /* <BOM>  */
+                        trim++;
+                        continue;
+
+                    default:
+                        goto done;
+                    }
+                }
+            }
+        }
+    }
+
+    vm->retval = njs_string_empty;
+
+    return NXT_OK;
+
+done:
+
+    if (trim == 0) {
+        /* GC: retain. */
+        vm->retval = args[0];
+
+        return NXT_OK;
+    }
+
+    length = (string.length != 0) ? string.length - trim : 0;
+
+    return njs_string_new(vm, &vm->retval, start, p - start, length);
+}
+
+
 /*
  * String.search([regexp])
  */
@@ -2903,6 +3032,13 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("toUpperCase"),
         .value = njs_native_function(njs_string_prototype_to_upper_case, 0,
+                     NJS_STRING_OBJECT_ARG),
+    },
+
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("trim"),
+        .value = njs_native_function(njs_string_prototype_trim, 0,
                      NJS_STRING_OBJECT_ARG),
     },
 

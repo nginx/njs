@@ -3326,6 +3326,36 @@ static njs_unit_test_t  njs_test[] =
                  "} a"),
       nxt_string("304,453,456,459,498,1012,7838,8486,8490,8491") },
 
+    { nxt_string("'abc'.trim()"),
+      nxt_string("abc") },
+
+    { nxt_string("''.trim()"),
+      nxt_string("") },
+
+    { nxt_string("'    '.trim()"),
+      nxt_string("") },
+
+    { nxt_string("'abc  '.trim()"),
+      nxt_string("abc") },
+
+    { nxt_string("'   abc'.trim()"),
+      nxt_string("abc") },
+
+    { nxt_string("'   abc  '.trim()"),
+      nxt_string("abc") },
+
+    { nxt_string("'абв  '.trim()"),
+      nxt_string("абв") },
+
+    { nxt_string("'   абв'.trim()"),
+      nxt_string("абв") },
+
+    { nxt_string("'   абв  '.trim()"),
+      nxt_string("абв") },
+
+    { nxt_string("'\\u2029abc\\uFEFF\\u2028'.trim()"),
+      nxt_string("abc") },
+
     { nxt_string("'abcdefgh'.search()"),
       nxt_string("0") },
 
