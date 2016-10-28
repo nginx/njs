@@ -1743,6 +1743,53 @@ done:
 }
 
 
+static njs_ret_t
+njs_string_prototype_repeat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    u_char             *p, *start;
+    int32_t            n, max;
+    uint32_t           size, length;
+    njs_string_prop_t  string;
+
+    n = 0;
+
+    (void) njs_string_prop(&string, &args[0]);
+
+    if (nargs > 1) {
+        max = NJS_STRING_MAX_LENGTH / string.size;
+        n = args[1].data.u.number;
+
+        if (nxt_slow_path(n < 0 || n > max)) {
+            vm->exception = &njs_exception_range_error;
+            return NXT_ERROR;
+        }
+    }
+
+    size = string.size * n;
+    length = string.length * n;
+
+    start = njs_string_alloc(vm, &vm->retval, size, length);
+    if (nxt_slow_path(start == NULL)) {
+        return NXT_ERROR;
+    }
+
+    p = start;
+
+    while (n != 0) {
+        p = memcpy(p, string.start, string.size);
+        p += string.size;
+        n--;
+    }
+
+    if (length >= NJS_STRING_MAP_OFFSET && size != length) {
+        njs_string_offset_map_init(start, size);
+    }
+
+    return NXT_OK;
+}
+
+
 /*
  * String.search([regexp])
  */
@@ -3040,6 +3087,14 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("trim"),
         .value = njs_native_function(njs_string_prototype_trim, 0,
                      NJS_STRING_OBJECT_ARG),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("repeat"),
+        .value = njs_native_function(njs_string_prototype_repeat, 0,
+                     NJS_STRING_OBJECT_ARG, NJS_INTEGER_ARG),
     },
 
     {

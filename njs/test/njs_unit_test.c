@@ -3611,6 +3611,24 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'0123456789'.split('').reverse().join('')"),
       nxt_string("9876543210") },
 
+    { nxt_string("'abc'.repeat(3)"),
+      nxt_string("abcabcabc") },
+
+    { nxt_string("'абв'.repeat(3)"),
+      nxt_string("абвабвабв") },
+
+    { nxt_string("'abc'.repeat(0)"),
+      nxt_string("") },
+
+    { nxt_string("'abc'.repeat(NaN)"),
+      nxt_string("") },
+
+    { nxt_string("'abc'.repeat(Infinity)"),
+      nxt_string("RangeError") },
+
+    { nxt_string("'abc'.repeat(-1)"),
+      nxt_string("RangeError") },
+
     { nxt_string("encodeURI()"),
       nxt_string("undefined")},
 
