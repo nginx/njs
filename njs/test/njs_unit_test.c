@@ -5373,6 +5373,36 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.pow()"),
       nxt_string("NaN") },
 
+    { nxt_string("Math.trunc(3.9)"),
+      nxt_string("3") },
+
+    { nxt_string("Math.trunc(-3.9)"),
+      nxt_string("-3") },
+
+    { nxt_string("Math.trunc(0)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.trunc(-0)"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.trunc(0.9)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.trunc(-0.9)"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.trunc(Infinity)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.trunc(-Infinity)"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("Math.trunc(NaN)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.trunc()"),
+      nxt_string("NaN") },
+
     /* ES5FIX: "[object Math]". */
 
     { nxt_string("Math"),

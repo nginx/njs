@@ -390,6 +390,25 @@ njs_object_math_tan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
+static njs_ret_t
+njs_object_math_trunc(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double  num;
+
+    if (nargs > 1) {
+        num = args[1].data.u.number;
+
+    } else {
+        num = NJS_NAN;
+    }
+
+    njs_number_set(&vm->retval, trunc(num));
+
+    return NXT_OK;
+}
+
+
 static const njs_object_prop_t  njs_math_object_properties[] =
 {
     {
@@ -566,6 +585,14 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("tan"),
         .value = njs_native_function(njs_object_math_tan, 0,
+                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("trunc"),
+        .value = njs_native_function(njs_object_math_trunc, 0,
                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
     },
 };
