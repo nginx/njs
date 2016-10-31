@@ -574,14 +574,13 @@ nxt_mem_cache_alloc_large(nxt_mem_cache_pool_t *pool, size_t alignment,
 
     } else {
         block = pool->proto->alloc(pool->mem, sizeof(nxt_mem_cache_block_t));
-
         if (nxt_slow_path(block == NULL)) {
-            pool->proto->free(pool->mem, block);
             return NULL;
         }
 
         p = pool->proto->align(pool->mem, alignment, size);
         if (nxt_slow_path(p == NULL)) {
+            pool->proto->free(pool->mem, block);
             return NULL;
         }
 
