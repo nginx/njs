@@ -346,7 +346,7 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
 
 fail:
 
-    if (mcp == NULL && nmcp != NULL) {
+    if (mcp == NULL) {
         nxt_mem_cache_pool_destroy(nmcp);
     }
 
