@@ -334,6 +334,29 @@ njs_object_math_round(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 
 static njs_ret_t
+njs_object_math_sign(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double  num;
+
+    if (nargs > 1) {
+        num = args[1].data.u.number;
+
+        if (!njs_is_nan(num) && num != 0) {
+            num = signbit(num) ? -1 : 1;
+        }
+
+    } else {
+        num = NJS_NAN;
+    }
+
+    njs_number_set(&vm->retval, num);
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
 njs_object_math_sin(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
@@ -564,6 +587,14 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("round"),
         .value = njs_native_function(njs_object_math_round, 0,
+                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("sign"),
+        .value = njs_native_function(njs_object_math_sign, 0,
                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
     },
 

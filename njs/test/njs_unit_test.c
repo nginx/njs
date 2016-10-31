@@ -5373,6 +5373,24 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.pow()"),
       nxt_string("NaN") },
 
+    { nxt_string("Math.sign(5)"),
+      nxt_string("1") },
+
+    { nxt_string("Math.sign(-5)"),
+      nxt_string("-1") },
+
+    { nxt_string("Math.sign(0)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.sign(-0.0)"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.sign(NaN)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.sign()"),
+      nxt_string("NaN") },
+
     { nxt_string("Math.trunc(3.9)"),
       nxt_string("3") },
 
