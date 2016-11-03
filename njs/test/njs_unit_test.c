@@ -3618,6 +3618,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'абв'.repeat(3)"),
       nxt_string("абвабвабв") },
 
+    { nxt_string("''.repeat(3)"),
+      nxt_string("") },
+
     { nxt_string("'abc'.repeat(0)"),
       nxt_string("") },
 

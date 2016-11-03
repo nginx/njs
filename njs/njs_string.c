@@ -1756,6 +1756,11 @@ njs_string_prototype_repeat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     (void) njs_string_prop(&string, &args[0]);
 
+    if (string.size == 0) {
+        vm->retval = njs_string_empty;
+        return NXT_OK;
+    }
+
     if (nargs > 1) {
         max = NJS_STRING_MAX_LENGTH / string.size;
         n = args[1].data.u.number;
