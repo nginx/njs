@@ -4167,6 +4167,17 @@ static njs_unit_test_t  njs_test[] =
                  "o.constructor === F"),
       nxt_string("true") },
 
+    { nxt_string("function F() { return }"
+                 "var o = new F();"
+                 "o.__proto__ === F.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("function F(){}; typeof F.prototype"),
+      nxt_string("object") },
+
+    { nxt_string("var F = function (){}; typeof F.prototype"),
+      nxt_string("object") },
+
     { nxt_string("function F() { return Number }"
                  "var o = new (F())(5);"
                  "typeof o +' '+ o"),

@@ -414,6 +414,7 @@ njs_vmcode_function(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
     function = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_function_t));
 
     if (nxt_fast_path(function != NULL)) {
+        function->object.shared_hash = vm->shared->function_prototype_hash;
         function->object.__proto__ =
                                 &vm->prototypes[NJS_PROTOTYPE_FUNCTION].object;
         function->args_offset = 1;
