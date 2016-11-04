@@ -11,14 +11,6 @@
 #include <math.h>
 
 
-#define njs_is_infinity(n)                                                    \
-    isinf(n)
-
-
-#define njs_is_nan(n)                                                         \
-    isnan(n)
-
-
 double njs_value_to_number(njs_value_t *value);
 double njs_number_parse(const u_char **start, const u_char *end);
 int64_t njs_number_radix_parse(u_char *p, u_char *end, uint8_t radix,

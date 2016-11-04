@@ -1174,7 +1174,7 @@ njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args,
 
     for (i = 1; i < nargs; i++) {
         num = args[i].data.u.number;
-        if (njs_is_nan(num)) {
+        if (isnan(num)) {
             goto range_error;
         }
 

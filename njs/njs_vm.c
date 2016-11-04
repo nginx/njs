@@ -1973,9 +1973,7 @@ njs_values_compare(njs_value_t *val1, njs_value_t *val2)
         if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
 
             /* NaN and void values are not comparable with anything. */
-            if (njs_is_nan(val1->data.u.number)
-                || njs_is_nan(val2->data.u.number))
-            {
+            if (isnan(val1->data.u.number) || isnan(val2->data.u.number)) {
                 return -1;
             }
 
@@ -2471,7 +2469,7 @@ njs_normalize_args(njs_vm_t *vm, njs_value_t *args, uint8_t *args_types,
 
                 /* Numbers are truncated to fit in 32-bit integers. */
 
-                if (njs_is_nan(args->data.u.number)) {
+                if (isnan(args->data.u.number)) {
                     args->data.u.number = 0;
 
                 } else if (args->data.u.number > 2147483647.0) {

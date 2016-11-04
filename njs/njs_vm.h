@@ -376,7 +376,7 @@ typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
 /* Testing for NaN first generates a better code at least on i386/amd64. */
 
 #define njs_is_number_true(num)                                               \
-    (!njs_is_nan(num) && num != 0)
+    (!isnan(num) && num != 0)
 
 
 #define njs_is_numeric(value)                                                 \

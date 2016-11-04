@@ -342,7 +342,7 @@ njs_object_math_sign(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (nargs > 1) {
         num = args[1].data.u.number;
 
-        if (!njs_is_nan(num) && num != 0) {
+        if (!isnan(num) && num != 0) {
             num = signbit(num) ? -1 : 1;
         }
 

@@ -1131,12 +1131,12 @@ njs_array_prototype_includes(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     start = array->start;
     value = &args[1];
 
-    if (njs_is_number(value) && njs_is_nan(value->data.u.number)) {
+    if (njs_is_number(value) && isnan(value->data.u.number)) {
 
         do {
             value = &start[i];
 
-            if (njs_is_number(value) && njs_is_nan(value->data.u.number)) {
+            if (njs_is_number(value) && isnan(value->data.u.number)) {
                 retval = &njs_value_true;
                 break;
             }

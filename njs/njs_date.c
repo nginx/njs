@@ -114,7 +114,7 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
                 num = args[i].data.u.number;
 
-                if (njs_is_nan(num)) {
+                if (isnan(num)) {
                     time = num;
                     goto done;
                 }
@@ -193,7 +193,7 @@ njs_date_utc(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
             num = args[i].data.u.number;
 
-            if (njs_is_nan(num)) {
+            if (isnan(num)) {
                 goto done;
             }
 
@@ -951,7 +951,7 @@ njs_date_string(njs_vm_t *vm, const char *fmt, double time)
     u_char     buf[NJS_DATE_TIME_LEN];
     struct tm  tm;
 
-    if (!njs_is_nan(time)) {
+    if (!isnan(time)) {
         clock = time / 1000;
         localtime_r(&clock, &tm);
 
@@ -984,7 +984,7 @@ njs_date_prototype_to_utc_string(njs_vm_t *vm, njs_value_t *args,
 
     time = args[0].data.u.date->time;
 
-    if (!njs_is_nan(time)) {
+    if (!isnan(time)) {
         clock = time / 1000;
         gmtime_r(&clock, &tm);
 
@@ -1016,7 +1016,7 @@ njs_date_prototype_to_iso_string(njs_vm_t *vm, njs_value_t *args,
 
     time = args[0].data.u.date->time;
 
-    if (!njs_is_nan(time)) {
+    if (!isnan(time)) {
         clock = time / 1000;
 
         gmtime_r(&clock, &tm);
@@ -1049,7 +1049,7 @@ njs_date_prototype_get_full_year(njs_vm_t *vm, njs_value_t *args,
 
     value = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(value))) {
+    if (nxt_fast_path(!isnan(value))) {
         clock = value / 1000;
         localtime_r(&clock, &tm);
 
@@ -1072,7 +1072,7 @@ njs_date_prototype_get_utc_full_year(njs_vm_t *vm, njs_value_t *args,
 
     value = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(value))) {
+    if (nxt_fast_path(!isnan(value))) {
         clock = value / 1000;
         gmtime_r(&clock, &tm);
 
@@ -1095,7 +1095,7 @@ njs_date_prototype_get_month(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     value = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(value))) {
+    if (nxt_fast_path(!isnan(value))) {
         clock = value / 1000;
         localtime_r(&clock, &tm);
 
@@ -1118,7 +1118,7 @@ njs_date_prototype_get_utc_month(njs_vm_t *vm, njs_value_t *args,
 
     value = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(value))) {
+    if (nxt_fast_path(!isnan(value))) {
         clock = value / 1000;
 
         gmtime_r(&clock, &tm);
@@ -1142,7 +1142,7 @@ njs_date_prototype_get_date(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     value = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(value))) {
+    if (nxt_fast_path(!isnan(value))) {
         clock = value / 1000;
         localtime_r(&clock, &tm);
 
@@ -1165,7 +1165,7 @@ njs_date_prototype_get_utc_date(njs_vm_t *vm, njs_value_t *args,
 
     value = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(value))) {
+    if (nxt_fast_path(!isnan(value))) {
         clock = value / 1000;
         gmtime_r(&clock, &tm);
 
@@ -1188,7 +1188,7 @@ njs_date_prototype_get_day(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     value = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(value))) {
+    if (nxt_fast_path(!isnan(value))) {
         clock = value / 1000;
         localtime_r(&clock, &tm);
 
@@ -1211,7 +1211,7 @@ njs_date_prototype_get_utc_day(njs_vm_t *vm, njs_value_t *args,
 
     value = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(value))) {
+    if (nxt_fast_path(!isnan(value))) {
         clock = value / 1000;
         gmtime_r(&clock, &tm);
 
@@ -1234,7 +1234,7 @@ njs_date_prototype_get_hours(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     value = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(value))) {
+    if (nxt_fast_path(!isnan(value))) {
         clock = value / 1000;
 
         localtime_r(&clock, &tm);
@@ -1258,7 +1258,7 @@ njs_date_prototype_get_utc_hours(njs_vm_t *vm, njs_value_t *args,
 
     value = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(value))) {
+    if (nxt_fast_path(!isnan(value))) {
         clock = value / 1000;
         gmtime_r(&clock, &tm);
 
@@ -1281,7 +1281,7 @@ njs_date_prototype_get_minutes(njs_vm_t *vm, njs_value_t *args,
 
     value = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(value))) {
+    if (nxt_fast_path(!isnan(value))) {
         clock = value / 1000;
 
         localtime_r(&clock, &tm);
@@ -1305,7 +1305,7 @@ njs_date_prototype_get_utc_minutes(njs_vm_t *vm, njs_value_t *args,
 
     value = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(value))) {
+    if (nxt_fast_path(!isnan(value))) {
         clock = value / 1000;
         gmtime_r(&clock, &tm);
 
@@ -1326,7 +1326,7 @@ njs_date_prototype_get_seconds(njs_vm_t *vm, njs_value_t *args,
 
     value = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(value))) {
+    if (nxt_fast_path(!isnan(value))) {
         value = (int64_t) (value / 1000) % 60;
     }
 
@@ -1344,7 +1344,7 @@ njs_date_prototype_get_milliseconds(njs_vm_t *vm, njs_value_t *args,
 
     value = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(value))) {
+    if (nxt_fast_path(!isnan(value))) {
         value = (int64_t) value % 1000;
     }
 
@@ -1364,7 +1364,7 @@ njs_date_prototype_get_timezone_offset(njs_vm_t *vm, njs_value_t *args,
 
     value = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(value))) {
+    if (nxt_fast_path(!isnan(value))) {
         clock = value / 1000;
         localtime_r(&clock, &tm);
 
@@ -1385,7 +1385,7 @@ njs_date_prototype_set_time(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     time = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(time))) {
+    if (nxt_fast_path(!isnan(time))) {
 
         if (nargs > 1) {
             time = args[1].data.u.number;
@@ -1410,7 +1410,7 @@ njs_date_prototype_set_milliseconds(njs_vm_t *vm, njs_value_t *args,
 
     time = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(time))) {
+    if (nxt_fast_path(!isnan(time))) {
 
         if (nargs > 1) {
             time = (int64_t) (time / 1000) * 1000 + args[1].data.u.number;
@@ -1436,7 +1436,7 @@ njs_date_prototype_set_seconds(njs_vm_t *vm, njs_value_t *args,
 
     time = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(time))) {
+    if (nxt_fast_path(!isnan(time))) {
 
         if (nargs > 1) {
             sec = args[1].data.u.number;
@@ -1467,7 +1467,7 @@ njs_date_prototype_set_minutes(njs_vm_t *vm, njs_value_t *args,
 
     time = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(time))) {
+    if (nxt_fast_path(!isnan(time))) {
 
         if (nargs > 1) {
             clock = time / 1000;
@@ -1504,7 +1504,7 @@ njs_date_prototype_set_utc_minutes(njs_vm_t *vm, njs_value_t *args,
 
     time = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(time))) {
+    if (nxt_fast_path(!isnan(time))) {
 
         if (nargs > 1) {
             clock = time / 1000;
@@ -1541,7 +1541,7 @@ njs_date_prototype_set_hours(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     time = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(time))) {
+    if (nxt_fast_path(!isnan(time))) {
 
         if (nargs > 1) {
             clock = time / 1000;
@@ -1582,7 +1582,7 @@ njs_date_prototype_set_utc_hours(njs_vm_t *vm, njs_value_t *args,
 
     time = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(time))) {
+    if (nxt_fast_path(!isnan(time))) {
 
         if (nargs > 1) {
             clock = time / 1000;
@@ -1619,7 +1619,7 @@ njs_date_prototype_set_date(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     time = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(time))) {
+    if (nxt_fast_path(!isnan(time))) {
 
         if (nargs > 1) {
             clock = time / 1000;
@@ -1651,7 +1651,7 @@ njs_date_prototype_set_utc_date(njs_vm_t *vm, njs_value_t *args,
 
     time = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(time))) {
+    if (nxt_fast_path(!isnan(time))) {
 
         if (nargs > 1) {
             clock = time / 1000;
@@ -1683,7 +1683,7 @@ njs_date_prototype_set_month(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     time = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(time))) {
+    if (nxt_fast_path(!isnan(time))) {
 
         if (nargs > 1) {
             clock = time / 1000;
@@ -1719,7 +1719,7 @@ njs_date_prototype_set_utc_month(njs_vm_t *vm, njs_value_t *args,
 
     time = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(time))) {
+    if (nxt_fast_path(!isnan(time))) {
 
         if (nargs > 1) {
             clock = time / 1000;
@@ -1755,7 +1755,7 @@ njs_date_prototype_set_full_year(njs_vm_t *vm, njs_value_t *args,
 
     time = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(time))) {
+    if (nxt_fast_path(!isnan(time))) {
 
         if (nargs > 1) {
             clock = time / 1000;
@@ -1795,7 +1795,7 @@ njs_date_prototype_set_utc_full_year(njs_vm_t *vm, njs_value_t *args,
 
     time = args[0].data.u.date->time;
 
-    if (nxt_fast_path(!njs_is_nan(time))) {
+    if (nxt_fast_path(!isnan(time))) {
 
         if (nargs > 1) {
             clock = time / 1000;

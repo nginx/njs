@@ -177,10 +177,10 @@ njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
 
     num = number->data.u.number;
 
-    if (njs_is_nan(num)) {
+    if (isnan(num)) {
         value = &njs_string_nan;
 
-    } else if (njs_is_infinity(num)) {
+    } else if (isinf(num)) {
 
         if (num < 0) {
             value = &njs_string_minus_infinity;
@@ -445,7 +445,7 @@ njs_number_is_nan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     value = &njs_value_true;
 
-    if (nargs > 1 && !njs_is_nan(args[1].data.u.number)) {
+    if (nargs > 1 && !isnan(args[1].data.u.number)) {
         value = &njs_value_false;
     }
 
@@ -467,7 +467,7 @@ njs_number_is_finite(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (nargs > 1) {
         num = args[1].data.u.number;
 
-        if (!njs_is_nan(num) && !njs_is_infinity(num)) {
+        if (!isnan(num) && !isinf(num)) {
             value = &njs_value_true;
         }
     }
