@@ -3633,6 +3633,37 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abc'.repeat(-1)"),
       nxt_string("RangeError") },
 
+    { nxt_string("''.repeat(-1)"),
+      nxt_string("RangeError") },
+
+    { nxt_string("'a'.repeat(2147483647)"),
+      nxt_string("RangeError") },
+
+    { nxt_string("'a'.repeat(2147483648)"),
+      nxt_string("RangeError") },
+
+    { nxt_string("'a'.repeat(Infinity)"),
+      nxt_string("RangeError") },
+
+    { nxt_string("'a'.repeat(NaN)"),
+      nxt_string("") },
+
+    { nxt_string("''.repeat(2147483646)"),
+      nxt_string("") },
+
+    /* ES6: "". */
+    { nxt_string("''.repeat(2147483647)"),
+      nxt_string("RangeError") },
+
+    { nxt_string("''.repeat(2147483648)"),
+      nxt_string("RangeError") },
+
+    { nxt_string("''.repeat(Infinity)"),
+      nxt_string("RangeError") },
+
+    { nxt_string("''.repeat(NaN)"),
+      nxt_string("") },
+
     { nxt_string("encodeURI()"),
       nxt_string("undefined")},
 

@@ -1756,19 +1756,21 @@ njs_string_prototype_repeat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     (void) njs_string_prop(&string, &args[0]);
 
-    if (string.size == 0) {
-        vm->retval = njs_string_empty;
-        return NXT_OK;
-    }
-
     if (nargs > 1) {
-        max = NJS_STRING_MAX_LENGTH / string.size;
+        max = (string.size > 1) ? NJS_STRING_MAX_LENGTH / string.size
+                                : NJS_STRING_MAX_LENGTH;
+
         n = args[1].data.u.number;
 
-        if (nxt_slow_path(n < 0 || n > max)) {
+        if (nxt_slow_path(n < 0 || n >= max)) {
             vm->exception = &njs_exception_range_error;
             return NXT_ERROR;
         }
+    }
+
+    if (string.size == 0) {
+        vm->retval = njs_string_empty;
+        return NXT_OK;
     }
 
     size = string.size * n;
