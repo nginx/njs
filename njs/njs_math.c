@@ -31,7 +31,7 @@ njs_object_math_abs(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = args[1].data.u.number;
 
     } else {
-        num = NJS_NAN;
+        num = NAN;
     }
 
     njs_number_set(&vm->retval, fabs(num));
@@ -50,7 +50,7 @@ njs_object_math_acos(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = args[1].data.u.number;
 
     } else {
-        num = NJS_NAN;
+        num = NAN;
     }
 
     njs_number_set(&vm->retval, acos(num));
@@ -69,7 +69,7 @@ njs_object_math_asin(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = args[1].data.u.number;
 
     } else {
-        num = NJS_NAN;
+        num = NAN;
     }
 
     njs_number_set(&vm->retval, asin(num));
@@ -88,7 +88,7 @@ njs_object_math_atan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = args[1].data.u.number;
 
     } else {
-        num = NJS_NAN;
+        num = NAN;
     }
 
     njs_number_set(&vm->retval, atan(num));
@@ -103,8 +103,8 @@ njs_object_math_atan2(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     double  y, x;
 
-    y = NJS_NAN;
-    x = NJS_NAN;
+    y = NAN;
+    x = NAN;
 
     if (nargs > 1) {
         y = args[1].data.u.number;
@@ -130,7 +130,7 @@ njs_object_math_ceil(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = args[1].data.u.number;
 
     } else {
-        num = NJS_NAN;
+        num = NAN;
     }
 
     njs_number_set(&vm->retval, ceil(num));
@@ -149,7 +149,7 @@ njs_object_math_cos(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = args[1].data.u.number;
 
     } else {
-        num = NJS_NAN;
+        num = NAN;
     }
 
     njs_number_set(&vm->retval, cos(num));
@@ -168,7 +168,7 @@ njs_object_math_exp(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = args[1].data.u.number;
 
     } else {
-        num = NJS_NAN;
+        num = NAN;
     }
 
     njs_number_set(&vm->retval, exp(num));
@@ -187,7 +187,7 @@ njs_object_math_floor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = args[1].data.u.number;
 
     } else {
-        num = NJS_NAN;
+        num = NAN;
     }
 
     njs_number_set(&vm->retval, floor(num));
@@ -206,7 +206,7 @@ njs_object_math_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = args[1].data.u.number;
 
     } else {
-        num = NJS_NAN;
+        num = NAN;
     }
 
     njs_number_set(&vm->retval, log(num));
@@ -237,7 +237,7 @@ njs_object_math_max(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
 
     } else {
-        num = -NJS_INFINITY;
+        num = -INFINITY;
     }
 
     njs_number_set(&vm->retval, num);
@@ -268,7 +268,7 @@ njs_object_math_min(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
 
     } else {
-        num = NJS_INFINITY;
+        num = INFINITY;
     }
 
     njs_number_set(&vm->retval, num);
@@ -283,8 +283,8 @@ njs_object_math_pow(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     double  base, exponent;
 
-    base = NJS_NAN;
-    exponent = NJS_NAN;
+    base = NAN;
+    exponent = NAN;
 
     if (nargs > 1) {
         base = args[1].data.u.number;
@@ -324,7 +324,7 @@ njs_object_math_round(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = args[1].data.u.number;
 
     } else {
-        num = NJS_NAN;
+        num = NAN;
     }
 
     njs_number_set(&vm->retval, round(num));
@@ -347,7 +347,7 @@ njs_object_math_sign(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
 
     } else {
-        num = NJS_NAN;
+        num = NAN;
     }
 
     njs_number_set(&vm->retval, num);
@@ -366,7 +366,7 @@ njs_object_math_sin(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = args[1].data.u.number;
 
     } else {
-        num = NJS_NAN;
+        num = NAN;
     }
 
     njs_number_set(&vm->retval, sin(num));
@@ -385,7 +385,7 @@ njs_object_math_sqrt(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = args[1].data.u.number;
 
     } else {
-        num = NJS_NAN;
+        num = NAN;
     }
 
     njs_number_set(&vm->retval, sqrt(num));
@@ -404,7 +404,7 @@ njs_object_math_tan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = args[1].data.u.number;
 
     } else {
-        num = NJS_NAN;
+        num = NAN;
     }
 
     njs_number_set(&vm->retval, tan(num));
@@ -423,7 +423,7 @@ njs_object_math_trunc(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = args[1].data.u.number;
 
     } else {
-        num = NJS_NAN;
+        num = NAN;
     }
 
     njs_number_set(&vm->retval, trunc(num));

@@ -178,7 +178,7 @@ njs_date_utc(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     nxt_uint_t  i, n;
     int32_t     values[8];
 
-    time = NJS_NAN;
+    time = NAN;
 
     if (nargs > 2) {
         memset(values, 0, 8 * sizeof(int32_t));
@@ -292,7 +292,7 @@ njs_date_parse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         time = njs_date_string_parse(&args[1]);
 
     } else {
-        time = NJS_NAN;
+        time = NAN;
     }
 
     njs_number_set(&vm->retval, time);
@@ -316,7 +316,7 @@ njs_date_string_parse(njs_value_t *date)
     end = p + string.size;
 
     if (nxt_slow_path(p >= end)) {
-        return NJS_NAN;
+        return NAN;
     }
 
     if (*p == '+') {
@@ -351,14 +351,14 @@ njs_date_string_parse(njs_value_t *date)
 
             next = njs_date_number_parse(&ext, next, end, 2);
             if (nxt_slow_path(next == NULL)) {
-                return NJS_NAN;
+                return NAN;
             }
 
             tm.tm_year = tm.tm_year * 100 + ext;
 
             if (string.start[0] == '-') {
                 if (tm.tm_year == 0) {
-                    return NJS_NAN;
+                    return NAN;
                 }
 
                 tm.tm_year = -tm.tm_year;
@@ -369,7 +369,7 @@ njs_date_string_parse(njs_value_t *date)
             }
 
             if (*next != '-') {
-                return NJS_NAN;
+                return NAN;
             }
         }
 
@@ -377,7 +377,7 @@ njs_date_string_parse(njs_value_t *date)
 
         p = njs_date_number_parse(&tm.tm_mon, next + 1, end, 2);
         if (nxt_slow_path(p == NULL)) {
-            return NJS_NAN;
+            return NAN;
         }
 
         tm.tm_mon--;
@@ -387,12 +387,12 @@ njs_date_string_parse(njs_value_t *date)
         }
 
         if (nxt_slow_path(*p != '-')) {
-            return NJS_NAN;
+            return NAN;
         }
 
         p = njs_date_number_parse(&tm.tm_mday, p + 1, end, 2);
         if (nxt_slow_path(p == NULL)) {
-            return NJS_NAN;
+            return NAN;
         }
 
         if (p == end) {
@@ -400,12 +400,12 @@ njs_date_string_parse(njs_value_t *date)
         }
 
         if (nxt_slow_path(*p != 'T')) {
-            return NJS_NAN;
+            return NAN;
         }
 
         p = njs_date_time_parse(&tm, p + 1, end);
         if (nxt_slow_path(p == NULL)) {
-            return NJS_NAN;
+            return NAN;
         }
 
         if (p == end) {
@@ -413,23 +413,23 @@ njs_date_string_parse(njs_value_t *date)
         }
 
         if (nxt_slow_path(p >= end || *p != '.')) {
-            return NJS_NAN;
+            return NAN;
         }
 
         p = njs_date_number_parse(&ms, p + 1, end, 3);
         if (nxt_slow_path(p == NULL)) {
-            return NJS_NAN;
+            return NAN;
         }
 
         if (nxt_slow_path(p >= end || *p != 'Z')) {
-            return NJS_NAN;
+            return NAN;
         }
 
         return njs_timegm(&tm) * 1000 + ms;
     }
 
     if (sign) {
-        return NJS_NAN;
+        return NAN;
     }
 
     week = 1;
@@ -456,17 +456,17 @@ njs_date_string_parse(njs_value_t *date)
         }
 
         if (!week) {
-            return NJS_NAN;
+            return NAN;
         }
 
         p = njs_date_skip_week_day(p, end);
         if (nxt_slow_path(p == NULL)) {
-            return NJS_NAN;
+            return NAN;
         }
 
         p = njs_date_skip_spaces(p, end);
         if (nxt_slow_path(p == NULL)) {
-            return NJS_NAN;
+            return NAN;
         }
 
         week = 0;
@@ -489,22 +489,22 @@ njs_date_rfc2822_string_parse(struct tm *tm, const u_char *p, const u_char *end)
 
     p = njs_date_skip_spaces(p, end);
     if (nxt_slow_path(p == NULL)) {
-        return NJS_NAN;
+        return NAN;
     }
 
     tm->tm_mon = njs_date_month_parse(p, end);
     if (nxt_slow_path(tm->tm_mon < 0)) {
-        return NJS_NAN;
+        return NAN;
     }
 
     p = njs_date_skip_spaces(p + 3, end);
     if (nxt_slow_path(p == NULL)) {
-        return NJS_NAN;
+        return NAN;
     }
 
     p = njs_date_number_parse(&tm->tm_year, p, end, 4);
     if (nxt_slow_path(p == NULL)) {
-        return NJS_NAN;
+        return NAN;
     }
 
     tm->tm_year -= 1900;
@@ -515,7 +515,7 @@ njs_date_rfc2822_string_parse(struct tm *tm, const u_char *p, const u_char *end)
 
     p = njs_date_skip_spaces(p, end);
     if (nxt_slow_path(p == NULL)) {
-        return NJS_NAN;
+        return NAN;
     }
 
     if (p == end) {
@@ -524,7 +524,7 @@ njs_date_rfc2822_string_parse(struct tm *tm, const u_char *p, const u_char *end)
 
     p = njs_date_time_parse(tm, p, end);
     if (nxt_slow_path(p == NULL)) {
-        return NJS_NAN;
+        return NAN;
     }
 
     if (p == end) {
@@ -533,7 +533,7 @@ njs_date_rfc2822_string_parse(struct tm *tm, const u_char *p, const u_char *end)
 
     p = njs_date_skip_spaces(p, end);
     if (nxt_slow_path(p == NULL)) {
-        return NJS_NAN;
+        return NAN;
     }
 
     if (p == end) {
@@ -541,7 +541,7 @@ njs_date_rfc2822_string_parse(struct tm *tm, const u_char *p, const u_char *end)
     }
 
     if (nxt_slow_path(p + 2 >= end)) {
-        return NJS_NAN;
+        return NAN;
     }
 
     if ((p[0] == 'G' && p[1] == 'M' && p[2] == 'T')
@@ -553,7 +553,7 @@ njs_date_rfc2822_string_parse(struct tm *tm, const u_char *p, const u_char *end)
         gmtoff = njs_date_gmtoff_parse(p, end);
 
         if (nxt_slow_path(gmtoff == -1)) {
-            return NJS_NAN;
+            return NAN;
         }
     }
 
@@ -572,22 +572,22 @@ njs_date_js_string_parse(struct tm *tm, const u_char *p, const u_char *end)
 
     p = njs_date_skip_spaces(p, end);
     if (nxt_slow_path(p == NULL)) {
-        return NJS_NAN;
+        return NAN;
     }
 
     p = njs_date_number_parse(&tm->tm_mday, p, end, 2);
     if (nxt_slow_path(p == NULL)) {
-        return NJS_NAN;
+        return NAN;
     }
 
     p = njs_date_skip_spaces(p, end);
     if (nxt_slow_path(p == NULL)) {
-        return NJS_NAN;
+        return NAN;
     }
 
     p = njs_date_number_parse(&tm->tm_year, p, end, 4);
     if (nxt_slow_path(p == NULL)) {
-        return NJS_NAN;
+        return NAN;
     }
 
     tm->tm_year -= 1900;
@@ -598,7 +598,7 @@ njs_date_js_string_parse(struct tm *tm, const u_char *p, const u_char *end)
 
     p = njs_date_skip_spaces(p, end);
     if (nxt_slow_path(p == NULL)) {
-        return NJS_NAN;
+        return NAN;
     }
 
     if (p == end) {
@@ -607,7 +607,7 @@ njs_date_js_string_parse(struct tm *tm, const u_char *p, const u_char *end)
 
     p = njs_date_time_parse(tm, p, end);
     if (nxt_slow_path(p == NULL)) {
-        return NJS_NAN;
+        return NAN;
     }
 
     if (p == end) {
@@ -616,7 +616,7 @@ njs_date_js_string_parse(struct tm *tm, const u_char *p, const u_char *end)
 
     p = njs_date_skip_spaces(p, end);
     if (nxt_slow_path(p == NULL)) {
-        return NJS_NAN;
+        return NAN;
     }
 
     if (p == end) {
@@ -632,7 +632,7 @@ njs_date_js_string_parse(struct tm *tm, const u_char *p, const u_char *end)
         }
     }
 
-    return NJS_NAN;
+    return NAN;
 
 done:
 
@@ -1391,7 +1391,7 @@ njs_date_prototype_set_time(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             time = args[1].data.u.number;
 
         } else {
-            time = NJS_NAN;
+            time = NAN;
         }
     }
 
@@ -1416,7 +1416,7 @@ njs_date_prototype_set_milliseconds(njs_vm_t *vm, njs_value_t *args,
             time = (int64_t) (time / 1000) * 1000 + args[1].data.u.number;
 
         } else {
-            time = NJS_NAN;
+            time = NAN;
         }
     }
 
@@ -1445,7 +1445,7 @@ njs_date_prototype_set_seconds(njs_vm_t *vm, njs_value_t *args,
             time = (int64_t) (time / 60000) * 60000 + sec * 1000 + ms;
 
         } else {
-            time = NJS_NAN;
+            time = NAN;
         }
     }
 
@@ -1484,7 +1484,7 @@ njs_date_prototype_set_minutes(njs_vm_t *vm, njs_value_t *args,
             time = njs_date_time(&tm, ms);
 
         } else {
-            time = NJS_NAN;
+            time = NAN;
         }
     }
 
@@ -1519,7 +1519,7 @@ njs_date_prototype_set_utc_minutes(njs_vm_t *vm, njs_value_t *args,
             time = clock * 1000 + ms;
 
         } else {
-            time = NJS_NAN;
+            time = NAN;
         }
     }
 
@@ -1562,7 +1562,7 @@ njs_date_prototype_set_hours(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             time = njs_date_time(&tm, ms);
 
         } else {
-            time = NJS_NAN;
+            time = NAN;
         }
     }
 
@@ -1598,7 +1598,7 @@ njs_date_prototype_set_utc_hours(njs_vm_t *vm, njs_value_t *args,
             time = clock * 1000 + ms;
 
         } else {
-            time = NJS_NAN;
+            time = NAN;
         }
     }
 
@@ -1630,7 +1630,7 @@ njs_date_prototype_set_date(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             time = njs_date_time(&tm, (int64_t) time % 1000);
 
         } else {
-            time = NJS_NAN;
+            time = NAN;
         }
     }
 
@@ -1662,7 +1662,7 @@ njs_date_prototype_set_utc_date(njs_vm_t *vm, njs_value_t *args,
             time = njs_date_utc_time(&tm, time);
 
         } else {
-            time = NJS_NAN;
+            time = NAN;
         }
     }
 
@@ -1698,7 +1698,7 @@ njs_date_prototype_set_month(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             time = njs_date_time(&tm, (int64_t) time % 1000);
 
         } else {
-            time = NJS_NAN;
+            time = NAN;
         }
     }
 
@@ -1734,7 +1734,7 @@ njs_date_prototype_set_utc_month(njs_vm_t *vm, njs_value_t *args,
             time = njs_date_utc_time(&tm, time);
 
         } else {
-            time = NJS_NAN;
+            time = NAN;
         }
     }
 
@@ -1774,7 +1774,7 @@ njs_date_prototype_set_full_year(njs_vm_t *vm, njs_value_t *args,
             time = njs_date_time(&tm, (int64_t) time % 1000);
 
         } else {
-            time = NJS_NAN;
+            time = NAN;
         }
     }
 
@@ -1814,7 +1814,7 @@ njs_date_prototype_set_utc_full_year(njs_vm_t *vm, njs_value_t *args,
             time = njs_date_utc_time(&tm, time);
 
         } else {
-            time = NJS_NAN;
+            time = NAN;
         }
     }
 
@@ -1838,7 +1838,7 @@ njs_date_time(struct tm *tm, int64_t ms)
         time = (int64_t) clock * 1000 + ms;
 
     } else {
-        time = NJS_NAN;
+        time = NAN;
     }
 
     return time;

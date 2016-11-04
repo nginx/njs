@@ -11,10 +11,6 @@
 #include <math.h>
 
 
-#define NJS_NAN       NAN
-#define NJS_INFINITY  INFINITY
-
-
 #define njs_is_infinity(n)                                                    \
     isinf(n)
 

@@ -116,11 +116,11 @@ void njs_debug(njs_index_t index, njs_value_t *value);
 
 
 const njs_value_t  njs_value_null =         njs_value(NJS_NULL, 0, 0.0);
-const njs_value_t  njs_value_void =         njs_value(NJS_VOID, 0, NJS_NAN);
+const njs_value_t  njs_value_void =         njs_value(NJS_VOID, 0, NAN);
 const njs_value_t  njs_value_false =        njs_value(NJS_BOOLEAN, 0, 0.0);
 const njs_value_t  njs_value_true =         njs_value(NJS_BOOLEAN, 1, 1.0);
 const njs_value_t  njs_value_zero =         njs_value(NJS_NUMBER, 0, 0.0);
-const njs_value_t  njs_value_nan =          njs_value(NJS_NUMBER, 0, NJS_NAN);
+const njs_value_t  njs_value_nan =          njs_value(NJS_NUMBER, 0, NAN);
 
 
 const njs_value_t  njs_string_empty =       njs_string("");
@@ -2962,7 +2962,7 @@ njs_vmcode_number_primitive(njs_vm_t *vm, njs_value_t *invld, njs_value_t *narg)
     if (nxt_fast_path(ret > 0)) {
 
         if (!njs_is_numeric(value)) {
-            num = NJS_NAN;
+            num = NAN;
 
             if (njs_is_string(value)) {
                 num = njs_string_to_number(value, 1);
@@ -3015,7 +3015,7 @@ njs_vmcode_number_argument(njs_vm_t *vm, njs_value_t *invld1,
     if (nxt_fast_path(ret > 0)) {
 
         if (!njs_is_numeric(value)) {
-            num = NJS_NAN;
+            num = NAN;
 
             if (njs_is_string(value)) {
                 num = njs_string_to_number(value, 1);

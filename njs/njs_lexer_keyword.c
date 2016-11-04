@@ -38,8 +38,8 @@ static const njs_keyword_t  njs_keywords[] = {
     { nxt_string("null"),          NJS_TOKEN_NULL, 0 },
     { nxt_string("false"),         NJS_TOKEN_BOOLEAN, 0 },
     { nxt_string("true"),          NJS_TOKEN_BOOLEAN, 1 },
-    { nxt_string("NaN"),           NJS_TOKEN_NUMBER, NJS_NAN },
-    { nxt_string("Infinity"),      NJS_TOKEN_NUMBER, NJS_INFINITY },
+    { nxt_string("NaN"),           NJS_TOKEN_NUMBER, NAN },
+    { nxt_string("Infinity"),      NJS_TOKEN_NUMBER, INFINITY },
 
     /* Operators. */
 

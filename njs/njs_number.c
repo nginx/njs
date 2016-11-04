@@ -59,7 +59,7 @@ njs_value_to_number(njs_value_t *value)
         }
     }
 
-    return NJS_NAN;
+    return NAN;
 }
 
 
@@ -489,7 +489,7 @@ njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     nxt_bool_t         minus;
     njs_string_prop_t  string;
 
-    num = NJS_NAN;
+    num = NAN;
 
     if (nargs > 1) {
         (void) njs_string_prop(&string, &args[1]);
@@ -559,7 +559,7 @@ njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     double  num;
 
-    num = NJS_NAN;
+    num = NAN;
 
     if (nargs > 1) {
         num = njs_string_to_number(&args[1], 0);

@@ -93,7 +93,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
 
         { .object =       { .type = NJS_REGEXP } },
 
-        { .date =         { .time = NJS_NAN,
+        { .date =         { .time = NAN,
                             .object = { .type = NJS_DATE } } },
     };
 

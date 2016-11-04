@@ -1127,7 +1127,7 @@ njs_string_prototype_char_code_at(njs_vm_t *vm, njs_value_t *args,
         index = args[1].data.u.number;
 
         if (nxt_slow_path(index < 0 || index >= length)) {
-            num = NJS_NAN;
+            num = NAN;
             goto done;
         }
     }
@@ -2921,7 +2921,7 @@ njs_string_to_number(njs_value_t *value, nxt_bool_t exact)
     }
 
     if (p == end) {
-        return NJS_NAN;
+        return NAN;
     }
 
     if (*p >= '0' && *p <= '9') {
@@ -2929,17 +2929,17 @@ njs_string_to_number(njs_value_t *value, nxt_bool_t exact)
 
     } else {
         if (p + infinity > end || memcmp(p, "Infinity", infinity) != 0) {
-            return NJS_NAN;
+            return NAN;
         }
 
-        num = NJS_INFINITY;
+        num = INFINITY;
         p += infinity;
     }
 
     if (exact) {
         while (p < end) {
             if (*p != ' ' && *p != '\t') {
-                return NJS_NAN;
+                return NAN;
             }
 
             p++;
