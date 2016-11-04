@@ -437,49 +437,49 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("E"),
-        .value = njs_value(NJS_NUMBER, 1, 2.718281828459045),
+        .value = njs_value(NJS_NUMBER, 1, M_E),
     },
 
     {
         .type = NJS_PROPERTY,
         .name = njs_string("LN10"),
-        .value = njs_value(NJS_NUMBER, 1, 2.302585092994046),
+        .value = njs_value(NJS_NUMBER, 1, M_LN10),
     },
 
     {
         .type = NJS_PROPERTY,
         .name = njs_string("LN2"),
-        .value = njs_value(NJS_NUMBER, 1, 0.6931471805599453),
+        .value = njs_value(NJS_NUMBER, 1, M_LN2),
     },
 
     {
         .type = NJS_PROPERTY,
         .name = njs_string("LOG10E"),
-        .value = njs_value(NJS_NUMBER, 1, 0.4342944819032518),
+        .value = njs_value(NJS_NUMBER, 1, M_LOG10E),
     },
 
     {
         .type = NJS_PROPERTY,
         .name = njs_string("LOG2E"),
-        .value = njs_value(NJS_NUMBER, 1, 1.4426950408889634),
+        .value = njs_value(NJS_NUMBER, 1, M_LOG2E),
     },
 
     {
         .type = NJS_PROPERTY,
         .name = njs_string("PI"),
-        .value = njs_value(NJS_NUMBER, 1, 3.141592653589793),
+        .value = njs_value(NJS_NUMBER, 1, M_PI),
     },
 
     {
         .type = NJS_PROPERTY,
         .name = njs_string("SQRT1_2"),
-        .value = njs_value(NJS_NUMBER, 1, 0.7071067811865476),
+        .value = njs_value(NJS_NUMBER, 1, M_SQRT1_2),
     },
 
     {
         .type = NJS_PROPERTY,
         .name = njs_string("SQRT2"),
-        .value = njs_value(NJS_NUMBER, 1, 1.4142135623730951),
+        .value = njs_value(NJS_NUMBER, 1, M_SQRT2),
     },
 
     {
