@@ -260,6 +260,74 @@ njs_number_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
+static njs_ret_t
+njs_number_is_integer(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double             num;
+    const njs_value_t  *value;
+
+    value = &njs_value_false;
+
+    if (nargs > 1 && njs_is_number(&args[1])) {
+        num = args[1].data.u.number;
+
+        if (num == trunc(num) && !isinf(num)) {
+            value = &njs_value_true;
+        }
+    }
+
+    vm->retval = *value;
+
+    return NXT_OK;
+}
+
+
+
+static njs_ret_t
+njs_number_is_safe_integer(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double             num;
+    const njs_value_t  *value;
+
+    value = &njs_value_false;
+
+    if (nargs > 1 && njs_is_number(&args[1])) {
+        num = args[1].data.u.number;
+
+        if (num == (int64_t) num && fabs(num) <= NJS_MAX_SAFE_INTEGER) {
+            value = &njs_value_true;
+        }
+    }
+
+    vm->retval = *value;
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_number_is_nan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    const njs_value_t  *value;
+
+    value = &njs_value_false;
+
+    if (nargs > 1
+        && njs_is_number(&args[1])
+        && isnan(args[1].data.u.number))
+    {
+        value = &njs_value_true;
+    }
+
+    vm->retval = *value;
+
+    return NXT_OK;
+}
+
+
 static const njs_object_prop_t  njs_number_constructor_properties[] =
 {
     /* Number.name == "Number". */
@@ -332,6 +400,50 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_long_string("NEGATIVE_INFINITY"),
         .value = njs_value(NJS_NUMBER, 1, -INFINITY),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("isFinite"),
+        .value = njs_native_function(njs_number_is_finite, 0, 0),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("isInteger"),
+        .value = njs_native_function(njs_number_is_integer, 0, 0),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("isSafeInteger"),
+        .value = njs_native_function(njs_number_is_safe_integer, 0, 0),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("isNaN"),
+        .value = njs_native_function(njs_number_is_nan, 0, 0),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("parseFloat"),
+        .value = njs_native_function(njs_number_parse_float, 0,
+                     NJS_SKIP_ARG, NJS_STRING_ARG),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("parseInt"),
+        .value = njs_native_function(njs_number_parse_int, 0,
+                     NJS_SKIP_ARG, NJS_STRING_ARG, NJS_INTEGER_ARG),
     },
 };
 
@@ -498,7 +610,7 @@ const njs_object_init_t  njs_number_prototype_init = {
 
 
 njs_ret_t
-njs_number_is_nan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+njs_number_global_is_nan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
     const njs_value_t  *value;
@@ -524,7 +636,7 @@ njs_number_is_finite(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     value = &njs_value_false;
 
-    if (nargs > 1) {
+    if (nargs > 1 && njs_is_number(&args[1])) {
         num = args[1].data.u.number;
 
         if (!isnan(num) && !isinf(num)) {

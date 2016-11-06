@@ -19,8 +19,8 @@ njs_ret_t njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
     const njs_value_t *number);
 njs_ret_t njs_number_constructor(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
-njs_ret_t njs_number_is_nan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
-    njs_index_t unused);
+njs_ret_t njs_number_global_is_nan(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused);
 njs_ret_t njs_number_is_finite(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 njs_ret_t njs_number_parse_int(njs_vm_t *vm, njs_value_t *args,

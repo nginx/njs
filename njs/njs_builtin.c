@@ -143,7 +143,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
         /* SunC does not allow empty array initialization. */
         { njs_eval_function,               { 0 } },
         { njs_object_prototype_to_string,  { 0 } },
-        { njs_number_is_nan,               { NJS_SKIP_ARG, NJS_NUMBER_ARG } },
+        { njs_number_global_is_nan,        { NJS_SKIP_ARG, NJS_NUMBER_ARG } },
         { njs_number_is_finite,            { NJS_SKIP_ARG, NJS_NUMBER_ARG } },
         { njs_number_parse_int,
           { NJS_SKIP_ARG, NJS_STRING_ARG, NJS_INTEGER_ARG } },

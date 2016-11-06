@@ -4766,6 +4766,95 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var n = new Number(1); n.__proto__ === Number.prototype"),
       nxt_string("true") },
 
+    { nxt_string("Number.isFinite()"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isFinite(123)"),
+      nxt_string("true") },
+
+    { nxt_string("Number.isFinite('123')"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isFinite(Infinity)"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isFinite(NaN)"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isInteger()"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isInteger('123')"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isInteger(123)"),
+      nxt_string("true") },
+
+    { nxt_string("Number.isInteger(-123.0)"),
+      nxt_string("true") },
+
+    { nxt_string("Number.isInteger(123.4)"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isInteger(Infinity)"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isInteger(NaN)"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isSafeInteger()"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isSafeInteger('123')"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isSafeInteger(9007199254740991)"),
+      nxt_string("true") },
+
+    { nxt_string("Number.isSafeInteger(-9007199254740991.0)"),
+      nxt_string("true") },
+
+    { nxt_string("Number.isSafeInteger(9007199254740992)"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isSafeInteger(-9007199254740992.0)"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isSafeInteger(123.4)"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isSafeInteger(Infinity)"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isSafeInteger(-Infinity)"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isSafeInteger(NaN)"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isNaN()"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isNaN('NaN')"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isNaN(NaN)"),
+      nxt_string("true") },
+
+    { nxt_string("Number.isNaN(123)"),
+      nxt_string("false") },
+
+    { nxt_string("Number.isNaN(Infinity)"),
+      nxt_string("false") },
+
+#if 0
+    { nxt_string("parseFloat === Number.parseFloat"),
+      nxt_string("true") },
+
+    { nxt_string("parseInt === Number.parseInt"),
+      nxt_string("true") },
+#endif
+
     { nxt_string("String()"),
       nxt_string("") },
 
