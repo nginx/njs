@@ -22,6 +22,15 @@
 #include <njs_function.h>
 #include <string.h>
 #include <stdio.h>
+#include <float.h>
+
+
+/*
+ * 2^53 - 1 is the largest integer n such that n and n + 1
+ * as well as -n and -n - 1 are all exactly representable
+ * in the IEEE-754 format.
+ */
+#define NJS_MAX_SAFE_INTEGER  ((1LL << 53) - 1)
 
 
 static njs_ret_t njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
@@ -272,6 +281,57 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
         .type = NJS_NATIVE_GETTER,
         .name = njs_string("prototype"),
         .value = njs_native_getter(njs_object_prototype_create),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("EPSILON"),
+        .value = njs_value(NJS_NUMBER, 1, DBL_EPSILON),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_long_string("MAX_SAFE_INTEGER"),
+        .value = njs_value(NJS_NUMBER, 1, NJS_MAX_SAFE_INTEGER),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_long_string("MIN_SAFE_INTEGER"),
+        .value = njs_value(NJS_NUMBER, 1, -NJS_MAX_SAFE_INTEGER),
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("MAX_VALUE"),
+        .value = njs_value(NJS_NUMBER, 1, DBL_MAX),
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("MIN_VALUE"),
+        .value = njs_value(NJS_NUMBER, 1, DBL_MIN),
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("NaN"),
+        .value = njs_value(NJS_NUMBER, 0, NAN),
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_long_string("POSITIVE_INFINITY"),
+        .value = njs_value(NJS_NUMBER, 1, INFINITY),
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_long_string("NEGATIVE_INFINITY"),
+        .value = njs_value(NJS_NUMBER, 1, -INFINITY),
     },
 };
 
