@@ -5519,6 +5519,27 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.abs('abc')"),
       nxt_string("NaN") },
 
+    { nxt_string("Math.hypot()"),
+      nxt_string("0") },
+
+    { nxt_string("Math.hypot(1, 2, 'abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.hypot(1, NaN, 3)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.hypot(1, NaN, -Infinity)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.hypot(-42)"),
+      nxt_string("42") },
+
+    { nxt_string("Math.hypot(8, -15)"),
+      nxt_string("17") },
+
+    { nxt_string("Math.hypot(3, -4, 12.0, '84', 132)"),
+      nxt_string("157") },
+
     { nxt_string("Math.max()"),
       nxt_string("-Infinity") },
 

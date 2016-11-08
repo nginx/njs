@@ -19,6 +19,7 @@
 #include <njs_object.h>
 #include <njs_function.h>
 #include <math.h>
+#include <errno.h>
 
 
 static njs_ret_t
@@ -191,6 +192,44 @@ njs_object_math_floor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     njs_number_set(&vm->retval, floor(num));
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_object_math_hypot(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double      num;
+    nxt_uint_t  i;
+
+    for (i = 1; i < nargs; i++) {
+        if (!njs_is_numeric(&args[i])) {
+            vm->frame->trap_scratch.data.u.value = &args[i];
+
+            return NJS_TRAP_NUMBER_ARG;
+        }
+    }
+
+    num = (nargs > 1) ? fabs(args[1].data.u.number) : 0;
+
+    for (i = 2; i < nargs; i++) {
+        num = hypot(num, args[i].data.u.number);
+
+        if (num == HUGE_VAL) {
+            /* HUGE_VAL is equal to INFINITY on IEEE-754 systems. */
+
+            if (nxt_slow_path(errno == ERANGE)) {
+                vm->exception = &njs_exception_range_error;
+                return NXT_ERROR;
+            }
+
+            break;
+        }
+    }
+
+    njs_number_set(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -549,6 +588,13 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .name = njs_string("floor"),
         .value = njs_native_function(njs_object_math_floor, 0,
                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("hypot"),
+        .value = njs_native_function(njs_object_math_hypot, 0, 0),
     },
 
     {
