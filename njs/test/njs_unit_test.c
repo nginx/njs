@@ -3291,6 +3291,51 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'абв абв абвгдежз'.includes('абвгд', 9)"),
       nxt_string("false") },
 
+    { nxt_string("''.startsWith('')"),
+      nxt_string("true") },
+
+    { nxt_string("'12345'.startsWith()"),
+      nxt_string("false") },
+
+    { nxt_string("'abc'.startsWith('abc')"),
+      nxt_string("true") },
+
+    { nxt_string("'abc'.startsWith('abc', 1)"),
+      nxt_string("false") },
+
+    { nxt_string("'abc'.startsWith('abc', -1)"),
+      nxt_string("true") },
+
+    { nxt_string("'абв абв абвгдежз'.startsWith('абвгд', 8)"),
+      nxt_string("true") },
+
+    { nxt_string("'абв абв абвгдежз'.startsWith('абвгд', 9)"),
+      nxt_string("false") },
+
+    { nxt_string("''.endsWith('')"),
+      nxt_string("true") },
+
+    { nxt_string("'12345'.endsWith()"),
+      nxt_string("false") },
+
+    { nxt_string("'abc'.endsWith('abc')"),
+      nxt_string("true") },
+
+    { nxt_string("'abc'.endsWith('abc', 4)"),
+      nxt_string("true") },
+
+    { nxt_string("'abc'.endsWith('abc', 1)"),
+      nxt_string("false") },
+
+    { nxt_string("'abc'.endsWith('abc', -1)"),
+      nxt_string("true") },
+
+    { nxt_string("'абв абв абвгдежз'.endsWith('абвгд', 13)"),
+      nxt_string("true") },
+
+    { nxt_string("'абв абв абвгдежз'.endsWith('абвгд', 14)"),
+      nxt_string("false") },
+
     { nxt_string("'ABC'.toLowerCase()"),
       nxt_string("abc") },
 
