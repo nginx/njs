@@ -76,7 +76,6 @@ nxt_utf8_prev(const u_char *p)
 }
 
 
-
 #define nxt_utf8_size(u)                                                      \
     ((u < 0x80) ? 1 : ((u < 0x0800) ? 2 : ((u < 0x10000) ? 3 : 4)))
 

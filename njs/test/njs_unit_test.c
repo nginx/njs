@@ -6218,10 +6218,11 @@ main(int argc, char **argv)
         "fibo(32).length");
 
     static nxt_str_t  fibo_bytes = nxt_string(
+        "var a = '\\x80'.toBytes();"
         "function fibo(n) {"
         "    if (n > 1)"
         "        return fibo(n - 1) + fibo(n - 2)"
-        "    return '\\x80'.toBytes()"
+        "    return a"
         "}"
         "fibo(32).length");
 

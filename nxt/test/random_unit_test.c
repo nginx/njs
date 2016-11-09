@@ -15,7 +15,7 @@
 
 
 static nxt_int_t
-random_unit_test()
+random_unit_test(void)
 {
     nxt_uint_t    n;
     nxt_random_t  r;

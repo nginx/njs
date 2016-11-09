@@ -607,7 +607,6 @@ njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     for (i = 0; i < nargs; i++) {
-
         if (!njs_is_string(&args[i])) {
             vm->frame->trap_scratch.data.u.value = &args[i];
 
@@ -3210,7 +3209,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("match"),
         .value = njs_native_function(njs_string_prototype_match, 0,
-                     NJS_STRING_ARG, NJS_REGEXP_ARG),
+                     NJS_STRING_OBJECT_ARG, NJS_REGEXP_ARG),
     },
 
     {

@@ -17,7 +17,8 @@
 
 
 static void nxt_rbtree_insert_fixup(nxt_rbtree_node_t *node);
-static void nxt_rbtree_delete_fixup(nxt_rbtree_t *tree, nxt_rbtree_node_t *node);
+static void nxt_rbtree_delete_fixup(nxt_rbtree_t *tree,
+    nxt_rbtree_node_t *node);
 nxt_inline void nxt_rbtree_left_rotate(nxt_rbtree_node_t *node);
 nxt_inline void nxt_rbtree_right_rotate(nxt_rbtree_node_t *node);
 nxt_inline void nxt_rbtree_parent_relink(nxt_rbtree_node_t *subst,
@@ -28,13 +29,7 @@ nxt_inline void nxt_rbtree_parent_relink(nxt_rbtree_node_t *subst,
 #define NXT_RBTREE_RED    1
 
 
-#define nxt_rbtree_set_callback_type(tree, type)                               \
-    (tree)->sentinel.spare = type
-
-#define nxt_rbtree_has_insertion_callback(tree)                                \
-    ((tree)->sentinel.spare != 0)
-
-#define nxt_rbtree_comparison_callback(tree)                                   \
+#define nxt_rbtree_comparison_callback(tree)                                  \
     ((nxt_rbtree_compare_t) (tree)->sentinel.right)
 
 

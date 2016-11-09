@@ -1007,7 +1007,8 @@ njs_ret_t njs_vmcode_catch(njs_vm_t *vm, njs_value_t *invld,
 njs_ret_t njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *retval);
 
-nxt_bool_t njs_values_strict_equal(njs_value_t *val1, njs_value_t *val2);
+nxt_bool_t njs_values_strict_equal(const njs_value_t *val1,
+    const njs_value_t *val2);
 
 njs_ret_t njs_normalize_args(njs_vm_t *vm, njs_value_t *args,
     uint8_t *args_types, nxt_uint_t nargs);

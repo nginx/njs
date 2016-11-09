@@ -151,7 +151,7 @@ njs_disassembler(njs_vm_t *vm)
     code = vm->code->start;
     n = vm->code->items;
 
-    while(n != 0) {
+    while (n != 0) {
         njs_disassemble(code->start, code->end);
         code++;
         n--;

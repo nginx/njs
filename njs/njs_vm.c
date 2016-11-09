@@ -79,10 +79,10 @@ static njs_ret_t njs_object_property_query(njs_vm_t *vm,
 static njs_ret_t njs_method_private_copy(njs_vm_t *vm,
     njs_property_query_t *pq);
 static nxt_noinline uint32_t njs_integer_value(double num);
-static nxt_noinline njs_ret_t njs_values_equal(njs_value_t *val1,
-    njs_value_t *val2);
-static nxt_noinline njs_ret_t njs_values_compare(njs_value_t *val1,
-    njs_value_t *val2);
+static nxt_noinline njs_ret_t njs_values_equal(const njs_value_t *val1,
+    const njs_value_t *val2);
+static nxt_noinline njs_ret_t njs_values_compare(const njs_value_t *val1,
+    const njs_value_t *val2);
 static njs_object_t *njs_function_new_object(njs_vm_t *vm, njs_value_t *value);
 static njs_ret_t njs_vmcode_method_call(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *value);
@@ -1879,7 +1879,7 @@ njs_vmcode_not_equal(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
 
 static nxt_noinline njs_ret_t
-njs_values_equal(njs_value_t *val1, njs_value_t *val2)
+njs_values_equal(const njs_value_t *val1, const njs_value_t *val2)
 {
     /* Void and null are equal and not comparable with anything else. */
     if (njs_is_null_or_void(val1)) {
@@ -1967,7 +1967,7 @@ njs_vmcode_greater_or_equal(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
  */
 
 static nxt_noinline njs_ret_t
-njs_values_compare(njs_value_t *val1, njs_value_t *val2)
+njs_values_compare(const njs_value_t *val1, const njs_value_t *val2)
 {
     if (nxt_fast_path(njs_is_numeric(val1) || njs_is_numeric(val2))) {
 
@@ -2030,7 +2030,7 @@ njs_vmcode_strict_not_equal(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
 
 nxt_noinline nxt_bool_t
-njs_values_strict_equal(njs_value_t *val1, njs_value_t *val2)
+njs_values_strict_equal(const njs_value_t *val1, const njs_value_t *val2)
 {
     size_t        size;
     const u_char  *start1, *start2;
