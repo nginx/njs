@@ -1220,10 +1220,6 @@ njs_string_prototype_index_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         length = njs_string_prop(&string, &args[0]);
         search_length = njs_string_prop(&search, &args[1]);
 
-        if (length < search_length) {
-            goto small;
-        }
-
         index = 0;
 
         if (nargs > 2) {
@@ -1234,7 +1230,7 @@ njs_string_prototype_index_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             }
         }
 
-        if (index < length) {
+        if (length - index >= search_length) {
             end = string.start + string.size;
 
             if (string.size == (size_t) length) {
@@ -1271,8 +1267,6 @@ njs_string_prototype_index_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             goto done;
         }
     }
-
-small:
 
     index = -1;
 
@@ -1393,10 +1387,6 @@ njs_string_prototype_includes(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
         length = njs_string_prop(&string, &args[0]);
 
-        if (length < search_length) {
-            goto small;
-        }
-
         index = 0;
 
         if (nargs > 2) {
@@ -1407,7 +1397,7 @@ njs_string_prototype_includes(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             }
         }
 
-        if (index < length) {
+        if (length - index >= search_length) {
             end = string.start + string.size;
 
             if (string.size == (size_t) length) {
@@ -1430,8 +1420,6 @@ njs_string_prototype_includes(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             }
         }
     }
-
-small:
 
     retval = &njs_value_false;
 
