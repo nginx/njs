@@ -18,6 +18,8 @@ nxt_feature_test="#include <stdlib.h>
 
                      if (posix_memalign(&p, 4096, 4096) != 0)
                          return 1;
+
+                     free(p);
                      return 0;
                  }"
 . ${NXT_AUTO}feature
@@ -35,8 +37,13 @@ if [ $nxt_found = no ]; then
     nxt_feature_test="#include <stdlib.h>
 
                      int main(void) {
-                         if (memalign(4096, 4096) == NULL)
+                         void  *p;
+
+                         p = memalign(4096, 4096)
+                         if (p == NULL)
                              return 1;
+
+                         free(p);
                          return 0;
                      }"
     . ${NXT_AUTO}feature
