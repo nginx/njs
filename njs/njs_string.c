@@ -178,11 +178,6 @@ njs_string_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,
 
     if (nxt_fast_path(p != NULL)) {
         memcpy(p, start, size);
-
-        if (size != length && length >= NJS_STRING_MAP_STRIDE) {
-            njs_string_offset_map_init(p, size);
-        }
-
         return NXT_OK;
     }
 
@@ -194,7 +189,7 @@ nxt_noinline u_char *
 njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size,
     uint32_t length)
 {
-    uint32_t      total;
+    uint32_t      total, map_offset, *map;
     njs_string_t  *string;
 
     value->type = NJS_STRING;
@@ -217,9 +212,11 @@ njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size,
     value->data.string_size = size;
 
     if (size != length && length > NJS_STRING_MAP_STRIDE) {
-        total = njs_string_map_offset(size) + njs_string_map_size(length);
+        map_offset = njs_string_map_offset(size);
+        total = map_offset + njs_string_map_size(length);
 
     } else {
+        map_offset = 0;
         total = size;
     }
 
@@ -232,6 +229,11 @@ njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size,
         string->start = (u_char *) string + sizeof(njs_string_t);
         string->length = length;
         string->retain = 1;
+
+        if (map_offset != 0) {
+            map = (uint32_t *) (string->start + map_offset);
+            map[0] = 0;
+        }
 
         return string->start;
     }
@@ -251,15 +253,16 @@ njs_string_copy(njs_value_t *dst, njs_value_t *src)
 
 /*
  * njs_string_validate() validates an UTF-8 string, evaluates its length,
- * sets njs_string_prop_t struct, and initializes offset map if it is required.
+ * sets njs_string_prop_t struct.
  */
 
 nxt_noinline njs_ret_t
 njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string, njs_value_t *value)
 {
-    u_char   *start;
-    size_t   new_size;
-    ssize_t  size, length;
+    u_char    *start;
+    size_t    new_size, map_offset;
+    ssize_t   size, length;
+    uint32_t  *map;
 
     size = value->short_string.size;
 
@@ -297,8 +300,8 @@ njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string, njs_value_t *value)
                      * Reallocate the long string with offset map
                      * after the string.
                      */
-                    new_size = njs_string_map_offset(size)
-                               + njs_string_map_size(length);
+                    map_offset = njs_string_map_offset(size);
+                    new_size = map_offset + njs_string_map_size(length);
 
                     start = nxt_mem_cache_alloc(vm->mem_cache_pool, new_size);
                     if (nxt_slow_path(start == NULL)) {
@@ -309,7 +312,8 @@ njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string, njs_value_t *value)
                     string->start = start;
                     value->data.u.string->start = start;
 
-                    njs_string_offset_map_init(start, size);
+                    map = (uint32_t *) (start + map_offset);
+                    map[0] = 0;
                 }
             }
 
@@ -649,10 +653,6 @@ njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         p += string.size;
     }
 
-    if (length >= NJS_STRING_MAP_STRIDE && size != length) {
-        njs_string_offset_map_init(start, size);
-    }
-
     return NXT_OK;
 }
 
@@ -765,10 +765,6 @@ njs_string_prototype_from_bytes(njs_vm_t *vm, njs_value_t *args,
 
             for (p = string.start; p < end; p++) {
                 s = nxt_utf8_encode(s, *p);
-            }
-
-            if (slice.length >= NJS_STRING_MAP_STRIDE || size != slice.length) {
-                njs_string_offset_map_init(start, size);
             }
         }
 
@@ -1518,8 +1514,7 @@ done:
 
 
 /*
- * njs_string_offset() assumes that index is correct
- * and the optional offset map has been initialized.
+ * njs_string_offset() assumes that index is correct.
  */
 
 nxt_noinline const u_char *
@@ -1530,6 +1525,10 @@ njs_string_offset(const u_char *start, const u_char *end, size_t index)
 
     if (index >= NJS_STRING_MAP_STRIDE) {
         map = njs_string_map_start(end);
+
+        if (map[0] == 0) {
+            njs_string_offset_map_init(start, end - start);
+        }
 
         start += map[index / NJS_STRING_MAP_STRIDE - 1];
     }
@@ -1543,8 +1542,7 @@ njs_string_offset(const u_char *start, const u_char *end, size_t index)
 
 
 /*
- * njs_string_index() assumes that offset is correct
- * and the optional offset map has been initialized.
+ * njs_string_index() assumes that offset is correct.
  */
 
 nxt_noinline uint32_t
@@ -1564,6 +1562,10 @@ njs_string_index(njs_string_prop_t *string, uint32_t offset)
 
         end = string->start + string->size;
         map = njs_string_map_start(end);
+
+        if (map[0] == 0) {
+            njs_string_offset_map_init(string->start, string->size);
+        }
 
         while (index + NJS_STRING_MAP_STRIDE < string->length
                && *map <= offset)
@@ -1628,10 +1630,6 @@ njs_string_prototype_to_lower_case(njs_vm_t *vm, njs_value_t *args,
             p = nxt_utf8_encode(p, nxt_utf8_lower_case(&s, end));
             size--;
         }
-
-        if (string.length >= NJS_STRING_MAP_STRIDE) {
-            njs_string_offset_map_init(start, string.size);
-        }
     }
 
     return NXT_OK;
@@ -1679,10 +1677,6 @@ njs_string_prototype_to_upper_case(njs_vm_t *vm, njs_value_t *args,
         while (size != 0) {
             p = nxt_utf8_encode(p, nxt_utf8_upper_case(&s, end));
             size--;
-        }
-
-        if (string.length >= NJS_STRING_MAP_STRIDE) {
-            njs_string_offset_map_init(start, string.size);
         }
     }
 
@@ -1863,10 +1857,6 @@ njs_string_prototype_repeat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         p = memcpy(p, string.start, string.size);
         p += string.size;
         n--;
-    }
-
-    if (length >= NJS_STRING_MAP_STRIDE && size != length) {
-        njs_string_offset_map_init(start, size);
     }
 
     return NXT_OK;
@@ -2880,10 +2870,6 @@ njs_string_replace_join(njs_vm_t *vm, njs_string_replace_t *r)
         p += part[i].size;
 
         /* GC: release valid values. */
-    }
-
-    if (length >= NJS_STRING_MAP_STRIDE && size != length) {
-        njs_string_offset_map_init(string, size);
     }
 
     nxt_array_destroy(&r->parts, &njs_array_mem_proto, vm->mem_cache_pool);

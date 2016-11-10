@@ -1556,10 +1556,6 @@ njs_vmcode_addition(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
         (void) memcpy(start, string1.start, string1.size);
         (void) memcpy(start + string1.size, string2.start, string2.size);
 
-        if (length >= NJS_STRING_MAP_STRIDE && size != length) {
-            njs_string_offset_map_init(start, size);
-        }
-
         return sizeof(njs_vmcode_3addr_t);
     }
 

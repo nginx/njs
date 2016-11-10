@@ -53,9 +53,9 @@
  * To speed up this search a map of offsets is stored after the UTF-8 string.
  * The map is aligned to uint32_t and contains byte positions of each
  * NJS_STRING_MAP_STRIDE UTF-8 character except zero position.  The map
- * can be allocated and updated on demand.  If a string come outside
- * JavaScript as byte sequnece just to be concatenated or to be used in
- * regular expressions the offset map is not required.
+ * can be initialized on demand.  If a string come outside JavaScript as
+ * byte sequnece just to be concatenated or to be used in regular expressions
+ * the offset map is not required.
  *
  * The map is not allocated:
  * 1) if the length is zero hence it is a byte string;
