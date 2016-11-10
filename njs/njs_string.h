@@ -112,8 +112,7 @@ njs_string_length(njs_utf8_t utf8, u_char *start, size_t size)
 njs_ret_t njs_string_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     uint32_t size, uint32_t length);
 u_char *njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size,
-    uint32_t length)
-    NXT_MALLOC_LIKE;
+    uint32_t length);
 void njs_string_copy(njs_value_t *dst, njs_value_t *src);
 njs_ret_t njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string,
     njs_value_t *value);
