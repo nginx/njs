@@ -39,7 +39,7 @@ if [ $nxt_found = no ]; then
                      int main(void) {
                          void  *p;
 
-                         p = memalign(4096, 4096)
+                         p = memalign(4096, 4096);
                          if (p == NULL)
                              return 1;
 
