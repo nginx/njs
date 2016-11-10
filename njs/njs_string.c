@@ -466,35 +466,6 @@ njs_string_prototype_length(njs_vm_t *vm, njs_value_t *value)
 }
 
 
-nxt_noinline void
-njs_string_offset_map_init(const u_char *start, size_t size)
-{
-    size_t        offset;
-    uint32_t      *map;
-    nxt_uint_t    n;
-    const u_char  *p, *end;
-
-    end = start + size;
-    map = njs_string_map_start(end);
-    p = start;
-    n = 0;
-    offset = NJS_STRING_MAP_STRIDE;
-
-    do {
-        if (offset == 0) {
-            map[n++] = p - start;
-            offset = NJS_STRING_MAP_STRIDE;
-        }
-
-        /* The UTF-8 string should be valid since its length is known. */
-        p = nxt_utf8_next(p, end);
-
-        offset--;
-
-    } while (p < end);
-}
-
-
 nxt_bool_t
 njs_string_eq(const njs_value_t *v1, const njs_value_t *v2)
 {
@@ -1585,6 +1556,35 @@ njs_string_index(njs_string_prop_t *string, uint32_t offset)
     }
 
     return index;
+}
+
+
+nxt_noinline void
+njs_string_offset_map_init(const u_char *start, size_t size)
+{
+    size_t        offset;
+    uint32_t      *map;
+    nxt_uint_t    n;
+    const u_char  *p, *end;
+
+    end = start + size;
+    map = njs_string_map_start(end);
+    p = start;
+    n = 0;
+    offset = NJS_STRING_MAP_STRIDE;
+
+    do {
+        if (offset == 0) {
+            map[n++] = p - start;
+            offset = NJS_STRING_MAP_STRIDE;
+        }
+
+        /* The UTF-8 string should be valid since its length is known. */
+        p = nxt_utf8_next(p, end);
+
+        offset--;
+
+    } while (p < end);
 }
 
 
