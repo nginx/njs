@@ -1984,7 +1984,7 @@ njs_parser_string_create(njs_vm_t *vm, njs_value_t *value)
     if (nxt_fast_path(p != NULL)) {
         memcpy(p, src->start, src->length);
 
-        if (length > NJS_STRING_MAP_OFFSET && (size_t) length != src->length) {
+        if (length > NJS_STRING_MAP_STRIDE && (size_t) length != src->length) {
             njs_string_offset_map_init(p, src->length);
         }
 
@@ -2144,7 +2144,7 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
         }
 
         if (start != NULL) {
-            if (length > NJS_STRING_MAP_OFFSET && length != size) {
+            if (length > NJS_STRING_MAP_STRIDE && length != size) {
                 njs_string_offset_map_init(start, size);
             }
 

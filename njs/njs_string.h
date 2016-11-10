@@ -31,7 +31,15 @@
  * division and remainder operations but no less than 16 because the maximum
  * length of short string inlined in njs_value_t is less than 16 bytes.
  */
-#define NJS_STRING_MAP_OFFSET  32
+#define NJS_STRING_MAP_STRIDE  32
+
+#define njs_string_map_offset(size)  nxt_align_size((size), sizeof(uint32_t))
+
+#define njs_string_map_start(p)                                               \
+    ((uint32_t *) nxt_align_ptr((p), sizeof(uint32_t)))
+
+#define njs_string_map_size(length)                                           \
+    (((length - 1) / NJS_STRING_MAP_STRIDE) * sizeof(uint32_t))
 
 /*
  * The JavaScript standard states that strings are stored in UTF-16.
@@ -44,7 +52,7 @@
  * encoding does not allow to get quickly a character at specified position.
  * To speed up this search a map of offsets is stored after the UTF-8 string.
  * The map is aligned to uint32_t and contains byte positions of each
- * NJS_STRING_MAP_OFFSET UTF-8 character except zero position.  The map
+ * NJS_STRING_MAP_STRIDE UTF-8 character except zero position.  The map
  * can be allocated and updated on demand.  If a string come outside
  * JavaScript as byte sequnece just to be concatenated or to be used in
  * regular expressions the offset map is not required.
@@ -53,7 +61,7 @@
  * 1) if the length is zero hence it is a byte string;
  * 2) if the size and length are equal so the string contains only ASCII
  *    characters map is not required;
- * 3) if the length is less than NJS_STRING_MAP_OFFSET.
+ * 3) if the length is less than NJS_STRING_MAP_STRIDE.
  *
  * The current implementation does not support Unicode surrogate pairs.
  * If offset in map points to surrogate pair then the previous offset

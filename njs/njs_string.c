@@ -179,7 +179,7 @@ njs_string_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     if (nxt_fast_path(p != NULL)) {
         memcpy(p, start, size);
 
-        if (size != length && length >= NJS_STRING_MAP_OFFSET) {
+        if (size != length && length >= NJS_STRING_MAP_STRIDE) {
             njs_string_offset_map_init(p, size);
         }
 
@@ -216,9 +216,8 @@ njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size,
     value->data.external0 = 0;
     value->data.string_size = size;
 
-    if (size != length && length > NJS_STRING_MAP_OFFSET) {
-        total = nxt_align_size(size, sizeof(uint32_t));
-        total += ((length - 1) / NJS_STRING_MAP_OFFSET) * sizeof(uint32_t);
+    if (size != length && length > NJS_STRING_MAP_STRIDE) {
+        total = njs_string_map_offset(size) + njs_string_map_size(length);
 
     } else {
         total = size;
@@ -293,14 +292,13 @@ njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string, njs_value_t *value)
                     return length;
                 }
 
-                if (length > NJS_STRING_MAP_OFFSET) {
+                if (length > NJS_STRING_MAP_STRIDE) {
                     /*
                      * Reallocate the long string with offset map
                      * after the string.
                      */
-                    new_size = nxt_align_size(size, sizeof(uint32_t));
-                    new_size += ((length - 1) / NJS_STRING_MAP_OFFSET)
-                                * sizeof(uint32_t);
+                    new_size = njs_string_map_offset(size)
+                               + njs_string_map_size(length);
 
                     start = nxt_mem_cache_alloc(vm->mem_cache_pool, new_size);
                     if (nxt_slow_path(start == NULL)) {
@@ -473,15 +471,15 @@ njs_string_offset_map_init(const u_char *start, size_t size)
     const u_char  *p, *end;
 
     end = start + size;
-    map = (uint32_t *) nxt_align_ptr(end, sizeof(uint32_t));
+    map = njs_string_map_start(end);
     p = start;
     n = 0;
-    offset = NJS_STRING_MAP_OFFSET;
+    offset = NJS_STRING_MAP_STRIDE;
 
     do {
         if (offset == 0) {
             map[n++] = p - start;
-            offset = NJS_STRING_MAP_OFFSET;
+            offset = NJS_STRING_MAP_STRIDE;
         }
 
         /* The UTF-8 string should be valid since its length is known. */
@@ -651,7 +649,7 @@ njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         p += string.size;
     }
 
-    if (length >= NJS_STRING_MAP_OFFSET && size != length) {
+    if (length >= NJS_STRING_MAP_STRIDE && size != length) {
         njs_string_offset_map_init(start, size);
     }
 
@@ -685,7 +683,7 @@ njs_string_prototype_from_utf8(njs_vm_t *vm, njs_value_t *args,
 
     if (length >= 0) {
 
-        if (length < NJS_STRING_MAP_OFFSET || (size_t) length == slice.length) {
+        if (length < NJS_STRING_MAP_STRIDE || (size_t) length == slice.length) {
             /* ASCII or short UTF-8 string. */
             return njs_string_create(vm, &vm->retval, string.start,
                                      slice.length, length);
@@ -769,7 +767,7 @@ njs_string_prototype_from_bytes(njs_vm_t *vm, njs_value_t *args,
                 s = nxt_utf8_encode(s, *p);
             }
 
-            if (slice.length >= NJS_STRING_MAP_OFFSET || size != slice.length) {
+            if (slice.length >= NJS_STRING_MAP_STRIDE || size != slice.length) {
                 njs_string_offset_map_init(start, size);
             }
         }
@@ -1530,13 +1528,13 @@ njs_string_offset(const u_char *start, const u_char *end, size_t index)
     uint32_t    *map;
     nxt_uint_t  skip;
 
-    if (index >= NJS_STRING_MAP_OFFSET) {
-        map = (uint32_t *) nxt_align_ptr(end, sizeof(uint32_t));
+    if (index >= NJS_STRING_MAP_STRIDE) {
+        map = njs_string_map_start(end);
 
-        start += map[index / NJS_STRING_MAP_OFFSET - 1];
+        start += map[index / NJS_STRING_MAP_STRIDE - 1];
     }
 
-    for (skip = index % NJS_STRING_MAP_OFFSET; skip != 0; skip--) {
+    for (skip = index % NJS_STRING_MAP_STRIDE; skip != 0; skip--) {
         start = nxt_utf8_next(start, end);
     }
 
@@ -1562,16 +1560,16 @@ njs_string_index(njs_string_prop_t *string, uint32_t offset)
     last = 0;
     index = 0;
 
-    if (string->length >= NJS_STRING_MAP_OFFSET) {
+    if (string->length >= NJS_STRING_MAP_STRIDE) {
 
         end = string->start + string->size;
-        map = (uint32_t *) nxt_align_ptr(end, sizeof(uint32_t));
+        map = njs_string_map_start(end);
 
-        while (index + NJS_STRING_MAP_OFFSET < string->length
+        while (index + NJS_STRING_MAP_STRIDE < string->length
                && *map <= offset)
         {
             last = *map++;
-            index += NJS_STRING_MAP_OFFSET;
+            index += NJS_STRING_MAP_STRIDE;
         }
     }
 
@@ -1631,7 +1629,7 @@ njs_string_prototype_to_lower_case(njs_vm_t *vm, njs_value_t *args,
             size--;
         }
 
-        if (string.length >= NJS_STRING_MAP_OFFSET) {
+        if (string.length >= NJS_STRING_MAP_STRIDE) {
             njs_string_offset_map_init(start, string.size);
         }
     }
@@ -1683,7 +1681,7 @@ njs_string_prototype_to_upper_case(njs_vm_t *vm, njs_value_t *args,
             size--;
         }
 
-        if (string.length >= NJS_STRING_MAP_OFFSET) {
+        if (string.length >= NJS_STRING_MAP_STRIDE) {
             njs_string_offset_map_init(start, string.size);
         }
     }
@@ -1867,7 +1865,7 @@ njs_string_prototype_repeat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         n--;
     }
 
-    if (length >= NJS_STRING_MAP_OFFSET && size != length) {
+    if (length >= NJS_STRING_MAP_STRIDE && size != length) {
         njs_string_offset_map_init(start, size);
     }
 
@@ -2884,7 +2882,7 @@ njs_string_replace_join(njs_vm_t *vm, njs_string_replace_t *r)
         /* GC: release valid values. */
     }
 
-    if (length >= NJS_STRING_MAP_OFFSET && size != length) {
+    if (length >= NJS_STRING_MAP_STRIDE && size != length) {
         njs_string_offset_map_init(string, size);
     }
 
@@ -3655,10 +3653,9 @@ njs_value_index(njs_vm_t *vm, njs_parser_t *parser, const njs_value_t *src)
 
             length = src->data.u.string->length;
 
-            if (size != length && length > NJS_STRING_MAP_OFFSET) {
-                size = nxt_align_size(size, sizeof(uint32_t));
-                size += ((length - 1) / NJS_STRING_MAP_OFFSET)
-                        * sizeof(uint32_t);
+            if (size != length && length > NJS_STRING_MAP_STRIDE) {
+                size = njs_string_map_offset(size)
+                       + njs_string_map_size(length);
             }
         }
 
