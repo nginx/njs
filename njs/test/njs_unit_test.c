@@ -6198,8 +6198,8 @@ main(int argc, char **argv)
 {
     nxt_bool_t  disassemble;
 
-    static nxt_str_t  script = nxt_string("1");
-    static nxt_str_t  result = nxt_string("1");
+    static nxt_str_t  script = nxt_string("null");
+    static nxt_str_t  result = nxt_string("null");
 
     static nxt_str_t  fibo_number = nxt_string(
         "function fibo(n) {"
