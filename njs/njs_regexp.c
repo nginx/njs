@@ -65,8 +65,7 @@ njs_regexp_init(njs_vm_t *vm)
 
     vm->regex_context->trace = &vm->trace;
 
-    return njs_regexp_create(vm, &vm->empty_regexp, (u_char *) "(?:)",
-                             sizeof("(?:)") - 1, 0);
+    return NXT_OK;
 }
 
 
@@ -128,25 +127,25 @@ njs_regexp_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
 
     if (length != 0) {
         pattern = njs_regexp_pattern_create(vm, start, length, flags);
-
-        if (nxt_fast_path(pattern != NULL)) {
-            regexp = njs_regexp_alloc(vm, pattern);
-
-            if (nxt_fast_path(regexp != NULL)) {
-                value->data.u.regexp = regexp;
-                value->type = NJS_REGEXP;
-                value->data.truth = 1;
-
-                return NXT_OK;
-            }
+        if (nxt_slow_path(pattern == NULL)) {
+            return NXT_ERROR;
         }
 
-        return NXT_ERROR;
+    } else {
+        pattern = vm->shared->empty_regexp_pattern;
     }
 
-    *value = vm->empty_regexp;
+    regexp = njs_regexp_alloc(vm, pattern);
 
-    return NXT_OK;
+    if (nxt_fast_path(regexp != NULL)) {
+        value->data.u.regexp = regexp;
+        value->type = NJS_REGEXP;
+        value->data.truth = 1;
+
+        return NXT_OK;
+    }
+
+    return NXT_ERROR;
 }
 
 

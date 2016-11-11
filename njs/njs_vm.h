@@ -845,7 +845,6 @@ struct njs_vm_s {
 
     nxt_regex_context_t      *regex_context;
     nxt_regex_match_data_t   *single_match_data;
-    njs_value_t              empty_regexp;
 
     nxt_array_t              *code;  /* of njs_vm_code_t */
 
@@ -875,6 +874,8 @@ struct njs_vm_shared_s {
      */
     njs_object_prototype_t   prototypes[NJS_PROTOTYPE_MAX];
     njs_function_t           constructors[NJS_CONSTRUCTOR_MAX];
+
+    njs_regexp_pattern_t     *empty_regexp_pattern;
 };
 
 

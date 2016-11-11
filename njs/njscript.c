@@ -102,8 +102,9 @@ njs_vm_t *
 njs_vm_create(nxt_mem_cache_pool_t *mcp, njs_vm_shared_t **shared,
     nxt_lvlhsh_t *externals)
 {
-    njs_vm_t   *vm;
-    nxt_int_t  ret;
+    njs_vm_t              *vm;
+    nxt_int_t             ret;
+    njs_regexp_pattern_t  *pattern;
 
     if (mcp == NULL) {
         mcp = nxt_mem_cache_pool_create(&njs_vm_mem_cache_pool_proto, NULL,
@@ -144,6 +145,14 @@ njs_vm_create(nxt_mem_cache_pool_t *mcp, njs_vm_shared_t **shared,
             }
 
             nxt_lvlhsh_init(&vm->shared->values_hash);
+
+            pattern = njs_regexp_pattern_create(vm, (u_char *) "(?:)",
+                                                sizeof("(?:)") - 1, 0);
+            if (nxt_slow_path(pattern == NULL)) {
+                return NULL;
+            }
+
+            vm->shared->empty_regexp_pattern = pattern;
 
             ret = njs_builtin_objects_create(vm);
             if (nxt_slow_path(ret != NXT_OK)) {

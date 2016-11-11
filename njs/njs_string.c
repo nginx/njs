@@ -1946,8 +1946,10 @@ njs_string_prototype_match(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_string_prop_t     string;
     njs_regexp_pattern_t  *pattern;
 
-    arguments[0] = vm->empty_regexp;
     arguments[1] = args[0];
+
+    string.start = NULL;
+    string.size = 0;
 
     if (nargs > 1) {
 
@@ -1964,20 +1966,23 @@ njs_string_prototype_match(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
              */
             arguments[0] = args[1];
 
-        } else if (njs_is_string(&args[1])) {
+            goto match;
+        }
+
+        if (njs_is_string(&args[1])) {
             /* string1.match(string2) is the same as /string2/.exec(string1). */
-
             (void) njs_string_prop(&string, &args[1]);
-
-            ret = njs_regexp_create(vm, &arguments[0], string.start,
-                                    string.size, 0);
-            if (nxt_slow_path(ret != NXT_OK)) {
-                return ret;
-            }
         }
 
         /* A void value. */
     }
+
+    ret = njs_regexp_create(vm, &arguments[0], string.start, string.size, 0);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
+match:
 
     return njs_regexp_prototype_exec(vm, arguments, nargs, unused);
 }

@@ -230,7 +230,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
     }
 
     prototypes[NJS_PROTOTYPE_REGEXP].regexp.pattern =
-                                     vm->empty_regexp.data.u.regexp->pattern;
+                                              vm->shared->empty_regexp_pattern;
 
     constructors = vm->shared->constructors;
 
