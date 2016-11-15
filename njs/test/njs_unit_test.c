@@ -4223,6 +4223,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var F = function (){}; typeof F.prototype"),
       nxt_string("object") },
 
+    { nxt_string("new decodeURI('%00')"),
+      nxt_string("TypeError")},
+
+    { nxt_string("new ''.toString"),
+      nxt_string("TypeError")},
+
     { nxt_string("function F() { return Number }"
                  "var o = new (F())(5);"
                  "typeof o +' '+ o"),

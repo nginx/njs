@@ -2152,6 +2152,7 @@ njs_ret_t
 njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *value, njs_value_t *nargs)
 {
     njs_ret_t                    ret;
+    nxt_bool_t                   ctor;
     njs_value_t                  val, *this;
     njs_object_t                 *object;
     njs_function_t               *function;
@@ -2160,13 +2161,17 @@ njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *value, njs_value_t *nargs)
     if (nxt_fast_path(njs_is_function(value))) {
 
         func = (njs_vmcode_function_frame_t *) vm->current;
+        ctor = func->code.ctor;
 
         function = value->data.u.function;
 
         if (function->native) {
+            if (ctor && !function->ctor) {
+                goto fail;
+            }
+
             ret = njs_function_native_frame(vm, function, &njs_value_void,
-                                            NULL, (uintptr_t) nargs, 0,
-                                            func->code.ctor);
+                                            NULL, (uintptr_t) nargs, 0, ctor);
 
             if (nxt_fast_path(ret == NXT_OK)) {
                 return sizeof(njs_vmcode_function_frame_t);
@@ -2175,7 +2180,7 @@ njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *value, njs_value_t *nargs)
             return ret;
         }
 
-        if (func->code.ctor) {
+        if (ctor) {
             object = njs_function_new_object(vm, value);
             if (nxt_slow_path(object == NULL)) {
                 return NXT_ERROR;
@@ -2191,7 +2196,7 @@ njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *value, njs_value_t *nargs)
         }
 
         ret = njs_function_frame(vm, function, this, NULL, (uintptr_t) nargs,
-                                 func->code.ctor);
+                                 ctor);
 
         if (nxt_fast_path(ret == NXT_OK)) {
             return sizeof(njs_vmcode_function_frame_t);
@@ -2199,6 +2204,8 @@ njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *value, njs_value_t *nargs)
 
         return ret;
     }
+
+fail:
 
     vm->exception = &njs_exception_type_error;
 
@@ -2329,8 +2336,13 @@ njs_vmcode_method_call(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
         return ret;
     }
 
+    if (method->code.ctor) {
+        vm->exception = &njs_exception_type_error;
+        return NXT_ERROR;
+    }
+
     ret = njs_function_native_frame(vm, function, object, NULL, method->nargs,
-                                    0, method->code.ctor);
+                                    0, 0);
 
     if (nxt_fast_path(ret == NXT_OK)) {
         njs_retain(object);

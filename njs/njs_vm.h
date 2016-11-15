@@ -230,20 +230,10 @@ struct njs_function_s {
 
     uint8_t                           args_types[NJS_ARGS_TYPES_MAX];
     uint8_t                           args_offset;
-
-    /*
-     * TODO Shared
-     * When function object is used as value: in assignments,
-     * as function argument, as property and as object to get properties.
-     */
-
-#if (NXT_64BIT)
-    uint8_t                           native;
     uint8_t                           continuation_size;
-#else
-    uint8_t                           native;
-    uint8_t                           continuation_size;
-#endif
+
+    uint8_t                           native:1;
+    uint8_t                           ctor:1;
 
     union {
         njs_function_lambda_t         *lambda;

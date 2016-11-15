@@ -237,6 +237,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
     for (i = NJS_CONSTRUCTOR_OBJECT; i < NJS_CONSTRUCTOR_MAX; i++) {
         constructors[i].object.shared = 0;
         constructors[i].native = 1;
+        constructors[i].ctor = 1;
         constructors[i].args_offset = 1;
         constructors[i].u.native = native_constructors[i].native;
         constructors[i].args_types[0] = native_constructors[i].args_types[0];
