@@ -19,7 +19,6 @@
 #include <njs_object.h>
 #include <njs_function.h>
 #include <math.h>
-#include <errno.h>
 
 
 static njs_ret_t
@@ -216,14 +215,7 @@ njs_object_math_hypot(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     for (i = 2; i < nargs; i++) {
         num = hypot(num, args[i].data.u.number);
 
-        if (num == HUGE_VAL) {
-            /* HUGE_VAL is equal to INFINITY on IEEE-754 systems. */
-
-            if (nxt_slow_path(errno == ERANGE)) {
-                vm->exception = &njs_exception_range_error;
-                return NXT_ERROR;
-            }
-
+        if (num == INFINITY) {
             break;
         }
     }
