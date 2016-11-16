@@ -29,13 +29,13 @@ njs_object_math_abs(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = args[1].data.u.number;
+        num = fabs(args[1].data.u.number);
 
     } else {
         num = NAN;
     }
 
-    njs_number_set(&vm->retval, fabs(num));
+    njs_number_set(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -48,13 +48,13 @@ njs_object_math_acos(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = args[1].data.u.number;
+        num = acos(args[1].data.u.number);
 
     } else {
         num = NAN;
     }
 
-    njs_number_set(&vm->retval, acos(num));
+    njs_number_set(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -67,13 +67,13 @@ njs_object_math_asin(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = args[1].data.u.number;
+        num = asin(args[1].data.u.number);
 
     } else {
         num = NAN;
     }
 
-    njs_number_set(&vm->retval, asin(num));
+    njs_number_set(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -86,13 +86,13 @@ njs_object_math_atan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = args[1].data.u.number;
+        num = atan(args[1].data.u.number);
 
     } else {
         num = NAN;
     }
 
-    njs_number_set(&vm->retval, atan(num));
+    njs_number_set(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -102,20 +102,19 @@ static njs_ret_t
 njs_object_math_atan2(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    double  y, x;
-
-    y = NAN;
-    x = NAN;
-
-    if (nargs > 1) {
-        y = args[1].data.u.number;
-    }
+    double  num, y, x;
 
     if (nargs > 2) {
+        y = args[1].data.u.number;
         x = args[2].data.u.number;
+
+        num = atan2(y, x);
+
+    } else {
+        num = NAN;
     }
 
-    njs_number_set(&vm->retval, atan2(y, x));
+    njs_number_set(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -128,13 +127,13 @@ njs_object_math_ceil(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = args[1].data.u.number;
+        num = ceil(args[1].data.u.number);
 
     } else {
         num = NAN;
     }
 
-    njs_number_set(&vm->retval, ceil(num));
+    njs_number_set(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -147,13 +146,13 @@ njs_object_math_cos(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = args[1].data.u.number;
+        num = cos(args[1].data.u.number);
 
     } else {
         num = NAN;
     }
 
-    njs_number_set(&vm->retval, cos(num));
+    njs_number_set(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -166,13 +165,13 @@ njs_object_math_exp(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = args[1].data.u.number;
+        num = exp(args[1].data.u.number);
 
     } else {
         num = NAN;
     }
 
-    njs_number_set(&vm->retval, exp(num));
+    njs_number_set(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -185,13 +184,13 @@ njs_object_math_floor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = args[1].data.u.number;
+        num = floor(args[1].data.u.number);
 
     } else {
         num = NAN;
     }
 
-    njs_number_set(&vm->retval, floor(num));
+    njs_number_set(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -242,13 +241,13 @@ njs_object_math_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = args[1].data.u.number;
+        num = log(args[1].data.u.number);
 
     } else {
         num = NAN;
     }
 
-    njs_number_set(&vm->retval, log(num));
+    njs_number_set(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -320,20 +319,19 @@ static njs_ret_t
 njs_object_math_pow(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    double  base, exponent;
-
-    base = NAN;
-    exponent = NAN;
-
-    if (nargs > 1) {
-        base = args[1].data.u.number;
-    }
+    double  num, base, exponent;
 
     if (nargs > 2) {
+        base = args[1].data.u.number;
         exponent = args[2].data.u.number;
+
+        num = pow(base, exponent);
+
+    } else {
+        num = NAN;
     }
 
-    njs_number_set(&vm->retval, pow(base, exponent));
+    njs_number_set(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -360,13 +358,13 @@ njs_object_math_round(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = args[1].data.u.number;
+        num = round(args[1].data.u.number);
 
     } else {
         num = NAN;
     }
 
-    njs_number_set(&vm->retval, round(num));
+    njs_number_set(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -402,13 +400,13 @@ njs_object_math_sin(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = args[1].data.u.number;
+        num = sin(args[1].data.u.number);
 
     } else {
         num = NAN;
     }
 
-    njs_number_set(&vm->retval, sin(num));
+    njs_number_set(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -421,13 +419,13 @@ njs_object_math_sqrt(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = args[1].data.u.number;
+        num = sqrt(args[1].data.u.number);
 
     } else {
         num = NAN;
     }
 
-    njs_number_set(&vm->retval, sqrt(num));
+    njs_number_set(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -440,13 +438,13 @@ njs_object_math_tan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = args[1].data.u.number;
+        num = tan(args[1].data.u.number);
 
     } else {
         num = NAN;
     }
 
-    njs_number_set(&vm->retval, tan(num));
+    njs_number_set(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -459,13 +457,13 @@ njs_object_math_trunc(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = args[1].data.u.number;
+        num = trunc(args[1].data.u.number);
 
     } else {
         num = NAN;
     }
 
-    njs_number_set(&vm->retval, trunc(num));
+    njs_number_set(&vm->retval, num);
 
     return NXT_OK;
 }
