@@ -5738,8 +5738,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.exp(-Infinity)"),
       nxt_string("0") },
 
-    { nxt_string("Math.exp(1) - Math.E"),
-      nxt_string("0") },
+    /*
+     * The difference is 2 * Number.EPSILON on FreeBSD
+     * and zero on other platforms.
+     */
+    { nxt_string("Math.exp(1) - Math.E <= 2 * Number.EPSILON"),
+      nxt_string("true") },
 
     { nxt_string("Math.floor()"),
       nxt_string("NaN") },
