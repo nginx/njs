@@ -47,7 +47,16 @@ njs_object_math_acos(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = acos(args[1].data.u.number);
+        num = args[1].data.u.number;
+
+#if (NXT_SOLARIS)
+        /* On Solaris acos(x) returns 0 for x > 1. */
+        if (fabs(num) > 1.0) {
+            num = NAN;
+        }
+#endif
+
+        num = acos(num);
 
     } else {
         num = NAN;
@@ -66,7 +75,16 @@ njs_object_math_asin(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = asin(args[1].data.u.number);
+        num = args[1].data.u.number;
+
+#if (NXT_SOLARIS)
+        /* On Solaris asin(x) returns 0 for x > 1. */
+        if (fabs(num) > 1.0) {
+            num = NAN;
+        }
+#endif
+
+        num = asin(num);
 
     } else {
         num = NAN;
