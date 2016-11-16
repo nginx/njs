@@ -5513,6 +5513,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.PI"),
       nxt_string("3.14159") },
 
+    { nxt_string("Math.abs()"),
+      nxt_string("NaN") },
+
     { nxt_string("Math.abs(5)"),
       nxt_string("5") },
 
@@ -5524,6 +5527,243 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("Math.abs('abc')"),
       nxt_string("NaN") },
+
+    { nxt_string("Math.acos()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.acos(NaN)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.acos('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.acos(1.1)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.acos(-1.1)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.acos('1')"),
+      nxt_string("0") },
+
+    { nxt_string("Math.acos(0) - Math.PI/2"),
+      nxt_string("0") },
+
+    { nxt_string("Math.asin()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.asin(NaN)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.asin('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.asin(1.1)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.asin(-1.1)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.asin(0)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.asin('-0')"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.asin(1) - Math.PI/2"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.atan(NaN)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.atan('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.atan('Infinity') - Math.PI/2"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan(-Infinity) + Math.PI/2"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan(0)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan('-0')"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.atan(1) - Math.PI/4"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.atan2(1)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.atan2('abc', 1)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.atan2(1, 0) - Math.PI/2"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2('1', -0) - Math.PI/2"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2(0, '1')"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2(0, 0)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2(0, -0) - Math.PI"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2('0', -1) - Math.PI"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2(-0, '0.1')"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.atan2(-0, 0)"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.atan2(-0, -0) + Math.PI"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2('-0', '-1') + Math.PI"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2(-0.1, 0) + Math.PI/2"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2(-1, -0) + Math.PI/2"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2(1, 'Infinity')"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2(0.1, -Infinity) - Math.PI"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2(-1, Infinity)"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.atan2('-0.1', -Infinity) + Math.PI"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2(Infinity, -5) - Math.PI/2"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2(-Infinity, 5) + Math.PI/2"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2('Infinity', 'Infinity') - Math.PI/4"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2(Infinity, -Infinity) - 3*Math.PI/4"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2(-Infinity, 'Infinity') + Math.PI/4"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2('-Infinity', -Infinity) + 3*Math.PI/4"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atan2(1, 1) - Math.atan2(-5, -5) - Math.PI"),
+      nxt_string("0") },
+
+    { nxt_string("Math.ceil()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.ceil('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.ceil(0)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.ceil('-0')"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.ceil('Infinity')"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.ceil(-Infinity)"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("Math.ceil(-0.9)"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.ceil(3.1)"),
+      nxt_string("4") },
+
+    { nxt_string("Math.cos()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.cos('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.cos('0')"),
+      nxt_string("1") },
+
+    { nxt_string("Math.cos(-0)"),
+      nxt_string("1") },
+
+    { nxt_string("Math.cos(Infinity)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.cos(-Infinity)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.cos(Math.PI*2)"),
+      nxt_string("1") },
+
+    { nxt_string("Math.exp()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.exp('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.exp('0')"),
+      nxt_string("1") },
+
+    { nxt_string("Math.exp(-0)"),
+      nxt_string("1") },
+
+    { nxt_string("Math.exp(Infinity)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.exp(-Infinity)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.exp(1) - Math.E"),
+      nxt_string("0") },
+
+    { nxt_string("Math.floor()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.floor('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.floor(0)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.floor('-0')"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.floor('Infinity')"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.floor(-Infinity)"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("Math.floor(0.9)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.floor(-3.1)"),
+      nxt_string("-4") },
 
     { nxt_string("Math.hypot()"),
       nxt_string("0") },
@@ -5545,6 +5785,30 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("Math.hypot(3, -4, 12.0, '84', 132)"),
       nxt_string("157") },
+
+    { nxt_string("Math.log()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.log('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.log(-1)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.log(0)"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("Math.log('-0')"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("Math.log(1)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.log(Infinity)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.log(Math.E)"),
+      nxt_string("1") },
 
     { nxt_string("Math.max()"),
       nxt_string("-Infinity") },
@@ -5579,6 +5843,39 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.pow()"),
       nxt_string("NaN") },
 
+    { nxt_string("var a = Math.random(); a >= 0 && a < 1"),
+      nxt_string("true") },
+
+    { nxt_string("Math.round()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.round('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.round(0)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.round('-0')"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.round('Infinity')"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.round(-Infinity)"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("Math.round(0.4)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.round('0.5')"),
+      nxt_string("1") },
+
+    { nxt_string("Math.round('-0.4')"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.round(-0.5)"),
+      nxt_string("-1") },
+
     { nxt_string("Math.sign(5)"),
       nxt_string("1") },
 
@@ -5596,6 +5893,69 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("Math.sign()"),
       nxt_string("NaN") },
+
+    { nxt_string("Math.sin()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.sin('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.sin('0')"),
+      nxt_string("0") },
+
+    { nxt_string("Math.sin(-0)"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.sin(Infinity)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.sin(-Infinity)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.sin(-Math.PI/2)"),
+      nxt_string("-1") },
+
+    { nxt_string("Math.sqrt()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.sqrt('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.sqrt('0')"),
+      nxt_string("0") },
+
+    { nxt_string("Math.sqrt(-0)"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.sqrt(Infinity)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.sqrt(-0.1)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.sqrt('9.0')"),
+      nxt_string("3") },
+
+    { nxt_string("Math.tan()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.tan('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.tan('0')"),
+      nxt_string("0") },
+
+    { nxt_string("Math.tan(-0)"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.tan(Infinity)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.tan(-Infinity)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.tan(Math.PI/3) + Math.tan(-Math.PI/3)"),
+      nxt_string("0") },
 
     { nxt_string("Math.trunc(3.9)"),
       nxt_string("3") },
