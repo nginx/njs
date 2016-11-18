@@ -69,6 +69,25 @@ njs_object_math_acos(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 
 static njs_ret_t
+njs_object_math_acosh(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double  num;
+
+    if (nargs > 1) {
+        num = acosh(args[1].data.u.number);
+
+    } else {
+        num = NAN;
+    }
+
+    njs_number_set(&vm->retval, num);
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
 njs_object_math_asin(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
@@ -85,6 +104,25 @@ njs_object_math_asin(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 #endif
 
         num = asin(num);
+
+    } else {
+        num = NAN;
+    }
+
+    njs_number_set(&vm->retval, num);
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_object_math_asinh(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double  num;
+
+    if (nargs > 1) {
+        num = asinh(args[1].data.u.number);
 
     } else {
         num = NAN;
@@ -138,6 +176,44 @@ njs_object_math_atan2(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 
 static njs_ret_t
+njs_object_math_atanh(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double  num;
+
+    if (nargs > 1) {
+        num = atanh(args[1].data.u.number);
+
+    } else {
+        num = NAN;
+    }
+
+    njs_number_set(&vm->retval, num);
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_object_math_cbrt(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double  num;
+
+    if (nargs > 1) {
+        num = cbrt(args[1].data.u.number);
+
+    } else {
+        num = NAN;
+    }
+
+    njs_number_set(&vm->retval, num);
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
 njs_object_math_ceil(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
@@ -176,6 +252,25 @@ njs_object_math_cos(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 
 static njs_ret_t
+njs_object_math_cosh(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double  num;
+
+    if (nargs > 1) {
+        num = cosh(args[1].data.u.number);
+
+    } else {
+        num = NAN;
+    }
+
+    njs_number_set(&vm->retval, num);
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
 njs_object_math_exp(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
@@ -195,6 +290,25 @@ njs_object_math_exp(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 
 static njs_ret_t
+njs_object_math_expm1(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double  num;
+
+    if (nargs > 1) {
+        num = expm1(args[1].data.u.number);
+
+    } else {
+        num = NAN;
+    }
+
+    njs_number_set(&vm->retval, num);
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
 njs_object_math_floor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
@@ -202,6 +316,25 @@ njs_object_math_floor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     if (nargs > 1) {
         num = floor(args[1].data.u.number);
+
+    } else {
+        num = NAN;
+    }
+
+    njs_number_set(&vm->retval, num);
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_object_math_fround(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double  num;
+
+    if (nargs > 1) {
+        num = (float) args[1].data.u.number;
 
     } else {
         num = NAN;
@@ -252,6 +385,72 @@ njs_object_math_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     if (nargs > 1) {
         num = log(args[1].data.u.number);
+
+    } else {
+        num = NAN;
+    }
+
+    njs_number_set(&vm->retval, num);
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_object_math_log10(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double  num;
+
+    if (nargs > 1) {
+        num = log10(args[1].data.u.number);
+
+    } else {
+        num = NAN;
+    }
+
+    njs_number_set(&vm->retval, num);
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_object_math_log1p(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double  num;
+
+    if (nargs > 1) {
+        num = log1p(args[1].data.u.number);
+
+    } else {
+        num = NAN;
+    }
+
+    njs_number_set(&vm->retval, num);
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_object_math_log2(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double  num;
+
+    if (nargs > 1) {
+        num = args[1].data.u.number;
+
+#if (NXT_SOLARIS)
+        /* On Solaris 10 log(-1) returns -Infinity. */
+        if (num < 0) {
+            num = NAN;
+        }
+#endif
+
+        num = log2(num);
 
     } else {
         num = NAN;
@@ -423,6 +622,25 @@ njs_object_math_sin(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 
 static njs_ret_t
+njs_object_math_sinh(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double  num;
+
+    if (nargs > 1) {
+        num = sinh(args[1].data.u.number);
+
+    } else {
+        num = NAN;
+    }
+
+    njs_number_set(&vm->retval, num);
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
 njs_object_math_sqrt(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
@@ -449,6 +667,25 @@ njs_object_math_tan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     if (nargs > 1) {
         num = tan(args[1].data.u.number);
+
+    } else {
+        num = NAN;
+    }
+
+    njs_number_set(&vm->retval, num);
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_object_math_tanh(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double  num;
+
+    if (nargs > 1) {
+        num = tanh(args[1].data.u.number);
 
     } else {
         num = NAN;
@@ -549,10 +786,26 @@ static const njs_object_prop_t  njs_math_object_properties[] =
                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
     },
 
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("acosh"),
+        .value = njs_native_function(njs_object_math_acosh, 0,
+                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+    },
+
     {
         .type = NJS_METHOD,
         .name = njs_string("asin"),
         .value = njs_native_function(njs_object_math_asin, 0,
+                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("asinh"),
+        .value = njs_native_function(njs_object_math_asinh, 0,
                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
     },
 
@@ -570,6 +823,22 @@ static const njs_object_prop_t  njs_math_object_properties[] =
                      NJS_SKIP_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG),
     },
 
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("atanh"),
+        .value = njs_native_function(njs_object_math_atanh, 0,
+                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("cbrt"),
+        .value = njs_native_function(njs_object_math_cbrt, 0,
+                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+    },
+
     {
         .type = NJS_METHOD,
         .name = njs_string("ceil"),
@@ -584,6 +853,14 @@ static const njs_object_prop_t  njs_math_object_properties[] =
                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
     },
 
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("cosh"),
+        .value = njs_native_function(njs_object_math_cosh, 0,
+                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+    },
+
     {
         .type = NJS_METHOD,
         .name = njs_string("exp"),
@@ -591,10 +868,26 @@ static const njs_object_prop_t  njs_math_object_properties[] =
                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
     },
 
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("expm1"),
+        .value = njs_native_function(njs_object_math_expm1, 0,
+                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+    },
+
     {
         .type = NJS_METHOD,
         .name = njs_string("floor"),
         .value = njs_native_function(njs_object_math_floor, 0,
+                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("fround"),
+        .value = njs_native_function(njs_object_math_fround, 0,
                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
     },
 
@@ -609,6 +902,30 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("log"),
         .value = njs_native_function(njs_object_math_log, 0,
+                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("log10"),
+        .value = njs_native_function(njs_object_math_log10, 0,
+                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("log1p"),
+        .value = njs_native_function(njs_object_math_log1p, 0,
+                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("log2"),
+        .value = njs_native_function(njs_object_math_log2, 0,
                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
     },
 
@@ -659,6 +976,14 @@ static const njs_object_prop_t  njs_math_object_properties[] =
                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
     },
 
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("sinh"),
+        .value = njs_native_function(njs_object_math_sinh, 0,
+                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+    },
+
     {
         .type = NJS_METHOD,
         .name = njs_string("sqrt"),
@@ -670,6 +995,14 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("tan"),
         .value = njs_native_function(njs_object_math_tan, 0,
+                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("tanh"),
+        .value = njs_native_function(njs_object_math_tanh, 0,
                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
     },
 

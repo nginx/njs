@@ -5549,6 +5549,29 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.acos(0) - Math.PI/2"),
       nxt_string("0") },
 
+    { nxt_string("Math.acosh()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.acosh('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.acosh(0.9)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.acosh(1)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.acosh('Infinity')"),
+      nxt_string("Infinity") },
+
+    /*
+     * The difference is 2 * Number.EPSILON on FreeBSD
+     * and zero on other platforms.
+     */
+    { nxt_string("Math.abs(Math.cosh(1) - (1/Math.E + Math.E)/2)"
+                 " <= 2 * Number.EPSILON"),
+      nxt_string("true") },
+
     { nxt_string("Math.asin()"),
       nxt_string("NaN") },
 
@@ -5572,6 +5595,27 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("Math.asin(1) - Math.PI/2"),
       nxt_string("0") },
+
+    { nxt_string("Math.asinh()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.asinh('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.asinh(0)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.asinh('-0')"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.asinh(Infinity)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.asinh(-Infinity)"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("Math.asinh((Math.E - 1/Math.E)/2)"),
+      nxt_string("1") },
 
     { nxt_string("Math.atan()"),
       nxt_string("NaN") },
@@ -5675,6 +5719,62 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.atan2(1, 1) - Math.atan2(-5, -5) - Math.PI"),
       nxt_string("0") },
 
+    { nxt_string("Math.atanh()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.atanh('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.atanh(-1.1)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.atanh(1.1)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.atanh(1)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.atanh('-1')"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("Math.atanh(0)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.atanh(-0)"),
+      nxt_string("-0") },
+
+    /*
+     * The difference is Number.EPSILON on Linux/i686
+     * and zero on other platforms.
+     */
+    { nxt_string("Math.abs(1 - Math.atanh((Math.E - 1)/(Math.E + 1)) * 2)"
+                 " <= Number.EPSILON"),
+      nxt_string("true") },
+
+    { nxt_string("Math.cbrt()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.cbrt('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.cbrt(0)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.cbrt('-0')"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.cbrt(Infinity)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.cbrt(-Infinity)"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("Math.cbrt('27')"),
+      nxt_string("3") },
+
+    { nxt_string("Math.cbrt(-1)"),
+      nxt_string("-1") },
+
     { nxt_string("Math.ceil()"),
       nxt_string("NaN") },
 
@@ -5720,6 +5820,32 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.cos(Math.PI*2)"),
       nxt_string("1") },
 
+    { nxt_string("Math.cosh()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.cosh('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.cosh('0')"),
+      nxt_string("1") },
+
+    { nxt_string("Math.cosh(-0)"),
+      nxt_string("1") },
+
+    { nxt_string("Math.cosh(Infinity)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.cosh(-Infinity)"),
+      nxt_string("Infinity") },
+
+    /*
+     * The difference is Number.EPSILON on FreeBSD
+     * and zero on other platforms.
+     */
+    { nxt_string("Math.abs(Math.cosh(1) - (1/Math.E + Math.E)/2)"
+                 " <= Number.EPSILON"),
+      nxt_string("true") },
+
     { nxt_string("Math.exp()"),
       nxt_string("NaN") },
 
@@ -5745,6 +5871,31 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.exp(1) - Math.E <= 2 * Number.EPSILON"),
       nxt_string("true") },
 
+    { nxt_string("Math.expm1()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.expm1('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.expm1('0')"),
+      nxt_string("0") },
+
+    { nxt_string("Math.expm1(-0)"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.expm1(Infinity)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.expm1(-Infinity)"),
+      nxt_string("-1") },
+
+    /*
+     * The difference is 2 * Number.EPSILON on FreeBSD, Solaris,
+     * and MacOSX and zero on other platforms.
+     */
+    { nxt_string("Math.abs(1 + Math.expm1(1) - Math.E) <= 2 * Number.EPSILON"),
+      nxt_string("true") },
+
     { nxt_string("Math.floor()"),
       nxt_string("NaN") },
 
@@ -5768,6 +5919,33 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("Math.floor(-3.1)"),
       nxt_string("-4") },
+
+    { nxt_string("Math.fround()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.fround('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.fround(0)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.fround('-0')"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.fround('Infinity')"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.fround(-Infinity)"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("Math.fround('-1.5')"),
+      nxt_string("-1.5") },
+
+    { nxt_string("Math.fround(16777216)"),
+      nxt_string("16777216") },
+
+    { nxt_string("Math.fround(-16777217)"),
+      nxt_string("-16777216") },
 
     { nxt_string("Math.hypot()"),
       nxt_string("0") },
@@ -5813,6 +5991,78 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("Math.log(Math.E)"),
       nxt_string("1") },
+
+    { nxt_string("Math.log10()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.log10('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.log10(-1)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.log10(0)"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("Math.log10('-0')"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("Math.log10(1)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.log10(Infinity)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.log10(1000)"),
+      nxt_string("3") },
+
+    { nxt_string("Math.log1p()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.log1p('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.log1p(-2)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.log1p('-1')"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("Math.log1p(0)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.log1p(-0)"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.log1p(Infinity)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.log1p(Math.E - 1)"),
+      nxt_string("1") },
+
+    { nxt_string("Math.log2()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.log2('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.log2(-1)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.log2(0)"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("Math.log2('-0')"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("Math.log2(1)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.log2(Infinity)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.log2(128)"),
+      nxt_string("7") },
 
     { nxt_string("Math.max()"),
       nxt_string("-Infinity") },
@@ -5919,6 +6169,27 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.sin(-Math.PI/2)"),
       nxt_string("-1") },
 
+    { nxt_string("Math.sinh()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.sinh('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.sinh('0')"),
+      nxt_string("0") },
+
+    { nxt_string("Math.sinh(-0)"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.sinh(Infinity)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.sinh(-Infinity)"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("Math.sinh(1) - (Math.E - 1/Math.E)/2"),
+      nxt_string("0") },
+
     { nxt_string("Math.sqrt()"),
       nxt_string("NaN") },
 
@@ -5959,6 +6230,27 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("NaN") },
 
     { nxt_string("Math.tan(Math.PI/3) + Math.tan(-Math.PI/3)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.tanh()"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.tanh('abc')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.tanh('0')"),
+      nxt_string("0") },
+
+    { nxt_string("Math.tanh(-0)"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.tanh(Infinity)"),
+      nxt_string("1") },
+
+    { nxt_string("Math.tanh(-Infinity)"),
+      nxt_string("-1") },
+
+    { nxt_string("Math.tanh(0.5) - (Math.E - 1)/(Math.E + 1)"),
       nxt_string("0") },
 
     { nxt_string("Math.trunc(3.9)"),
