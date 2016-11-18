@@ -5868,7 +5868,7 @@ static njs_unit_test_t  njs_test[] =
      * The difference is 2 * Number.EPSILON on FreeBSD
      * and zero on other platforms.
      */
-    { nxt_string("Math.exp(1) - Math.E <= 2 * Number.EPSILON"),
+    { nxt_string("Math.abs(Math.exp(1) - Math.E) <= 2 * Number.EPSILON"),
       nxt_string("true") },
 
     { nxt_string("Math.expm1()"),
