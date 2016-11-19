@@ -741,3 +741,28 @@ njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     return NXT_OK;
 }
+
+
+nxt_noinline uint32_t
+njs_number_to_integer(double num)
+{
+    int64_t  i64;
+
+    /*
+     * ECMAScript 5.1: integer must be modulo 2^32.
+     * 2^53 is the largest integer number which can be stored in the IEEE-754
+     * format and numbers less than 2^53 can be just converted to int64_t
+     * eliding more expensive fmod() operation.  Then the int64 integer is
+     * truncated to uint32_t.  The NaN can be converted to 0x8000000000000000
+     * and becomes 0 after truncation.  fmod() of the infinity returns NaN.
+     */
+
+    if (num < 0 || num > 9007199254740992.0) {
+        i64 = fmod(num, 4294967296.0);
+
+    } else {
+        i64 = num;
+    }
+
+    return (uint32_t) i64;
+}

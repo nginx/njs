@@ -378,6 +378,29 @@ njs_object_math_hypot(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 
 static njs_ret_t
+njs_object_math_imul(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double    num;
+    uint32_t  a, b;
+
+    if (nargs > 2) {
+        a = njs_number_to_integer(args[1].data.u.number);
+        b = njs_number_to_integer(args[2].data.u.number);
+
+        num = (int32_t) (a * b);
+
+    } else {
+        num = 0;
+    }
+
+    njs_number_set(&vm->retval, num);
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
 njs_object_math_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
@@ -896,6 +919,14 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("hypot"),
         .value = njs_native_function(njs_object_math_hypot, 0, 0),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("imul"),
+        .value = njs_native_function(njs_object_math_imul, 0,
+                     NJS_SKIP_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG),
     },
 
     {

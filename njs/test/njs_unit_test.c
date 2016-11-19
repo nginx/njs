@@ -5968,6 +5968,63 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.hypot(3, -4, 12.0, '84', 132)"),
       nxt_string("157") },
 
+    { nxt_string("Math.imul()"),
+      nxt_string("0") },
+
+    { nxt_string("Math.imul(1)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.imul('a', 1)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.imul(1, NaN)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.imul(2, '3')"),
+      nxt_string("6") },
+
+    { nxt_string("Math.imul('3.9', -2.1)"),
+      nxt_string("-6") },
+
+    { nxt_string("Math.imul(2, 2147483647)"),
+      nxt_string("-2") },
+
+    { nxt_string("Math.imul(Number.MAX_SAFE_INTEGER, 2)"),
+      nxt_string("-2") },
+
+    { nxt_string("Math.imul(1, Number.MAX_SAFE_INTEGER + 1)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.imul(2, Number.MIN_SAFE_INTEGER)"),
+      nxt_string("2") },
+
+    { nxt_string("Math.imul(Number.MIN_SAFE_INTEGER - 1, 1)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.imul(2, 4294967297)"),
+      nxt_string("2") },
+
+    { nxt_string("Math.imul(-4294967297, 4294967297)"),
+      nxt_string("-1") },
+
+    { nxt_string("Math.imul(4294967297, -4294967298)"),
+      nxt_string("-2") },
+
+    { nxt_string("Math.imul(-4294967290, 4294967290)"),
+      nxt_string("-36") },
+
+    { nxt_string("Math.imul(-Infinity, 1)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.imul(1, Infinity)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.imul(Number.MAX_VALUE, 1)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.imul(1, -Number.MAX_VALUE)"),
+      nxt_string("0") },
+
     { nxt_string("Math.log()"),
       nxt_string("NaN") },
 

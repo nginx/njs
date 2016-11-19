@@ -78,7 +78,6 @@ static njs_ret_t njs_object_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_value_t *value, njs_object_t *object);
 static njs_ret_t njs_method_private_copy(njs_vm_t *vm,
     njs_property_query_t *pq);
-static nxt_noinline uint32_t njs_integer_value(double num);
 static nxt_noinline njs_ret_t njs_values_equal(const njs_value_t *val1,
     const njs_value_t *val2);
 static nxt_noinline njs_ret_t njs_values_compare(const njs_value_t *val1,
@@ -1639,8 +1638,8 @@ njs_vmcode_left_shift(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
     if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
 
-        num1 = njs_integer_value(val1->data.u.number);
-        num2 = njs_integer_value(val2->data.u.number);
+        num1 = njs_number_to_integer(val1->data.u.number);
+        num2 = njs_number_to_integer(val2->data.u.number);
         njs_number_set(&vm->retval, num1 << (num2 & 0x1f));
 
         return sizeof(njs_vmcode_3addr_t);
@@ -1658,8 +1657,8 @@ njs_vmcode_right_shift(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
     if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
 
-        num1 = njs_integer_value(val1->data.u.number);
-        num2 = njs_integer_value(val2->data.u.number);
+        num1 = njs_number_to_integer(val1->data.u.number);
+        num2 = njs_number_to_integer(val2->data.u.number);
         njs_number_set(&vm->retval, num1 >> (num2 & 0x1f));
 
         return sizeof(njs_vmcode_3addr_t);
@@ -1678,8 +1677,8 @@ njs_vmcode_unsigned_right_shift(njs_vm_t *vm, njs_value_t *val1,
 
     if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
 
-        num1 = njs_integer_value(val1->data.u.number);
-        num2 = njs_integer_value(val2->data.u.number);
+        num1 = njs_number_to_integer(val1->data.u.number);
+        num2 = njs_number_to_integer(val2->data.u.number);
         njs_number_set(&vm->retval, num1 >> (num2 & 0x1f));
 
         return sizeof(njs_vmcode_3addr_t);
@@ -1745,7 +1744,7 @@ njs_vmcode_bitwise_not(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
     int32_t  num;
 
     if (nxt_fast_path(njs_is_numeric(value))) {
-        num = njs_integer_value(value->data.u.number);
+        num = njs_number_to_integer(value->data.u.number);
         njs_number_set(&vm->retval, ~num);
 
         return sizeof(njs_vmcode_2addr_t);
@@ -1762,8 +1761,8 @@ njs_vmcode_bitwise_and(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
     if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
 
-        num1 = njs_integer_value(val1->data.u.number);
-        num2 = njs_integer_value(val2->data.u.number);
+        num1 = njs_number_to_integer(val1->data.u.number);
+        num2 = njs_number_to_integer(val2->data.u.number);
         njs_number_set(&vm->retval, num1 & num2);
 
         return sizeof(njs_vmcode_3addr_t);
@@ -1780,8 +1779,8 @@ njs_vmcode_bitwise_xor(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
     if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
 
-        num1 = njs_integer_value(val1->data.u.number);
-        num2 = njs_integer_value(val2->data.u.number);
+        num1 = njs_number_to_integer(val1->data.u.number);
+        num2 = njs_number_to_integer(val2->data.u.number);
         njs_number_set(&vm->retval, num1 ^ num2);
 
         return sizeof(njs_vmcode_3addr_t);
@@ -1798,39 +1797,14 @@ njs_vmcode_bitwise_or(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
     if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
 
-        num1 = njs_integer_value(val1->data.u.number);
-        num2 = njs_integer_value(val2->data.u.number);
+        num1 = njs_number_to_integer(val1->data.u.number);
+        num2 = njs_number_to_integer(val2->data.u.number);
         njs_number_set(&vm->retval, num1 | num2);
 
         return sizeof(njs_vmcode_3addr_t);
     }
 
     return NJS_TRAP_NUMBERS;
-}
-
-
-static nxt_noinline uint32_t
-njs_integer_value(double num)
-{
-    int64_t  i64;
-
-    /*
-     * ECMAScript 5.1: integer must be modulo 2^32.
-     * 2^53 is the largest integer number which can be stored in the IEEE-754
-     * format and numbers less than 2^53 can be just converted to int64_t
-     * eliding more expensive fmod() operation.  Then the int64 integer is
-     * truncated to uint32_t.  The NaN can be converted to 0x8000000000000000
-     * and becomes 0 after truncation.  fmod() of the infinity returns NaN.
-     */
-
-    if (num < 0 || num > 9007199254740992.0) {
-        i64 = fmod(num, 4294967296.0);
-
-    } else {
-        i64 = num;
-    }
-
-    return (uint32_t) i64;
 }
 
 
