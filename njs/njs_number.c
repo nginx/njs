@@ -749,15 +749,16 @@ njs_number_to_integer(double num)
     int64_t  i64;
 
     /*
-     * ECMAScript 5.1: integer must be modulo 2^32.
-     * 2^53 is the largest integer number which can be stored in the IEEE-754
-     * format and numbers less than 2^53 can be just converted to int64_t
-     * eliding more expensive fmod() operation.  Then the int64 integer is
-     * truncated to uint32_t.  The NaN can be converted to 0x8000000000000000
-     * and becomes 0 after truncation.  fmod() of the infinity returns NaN.
+     * ES5.1: integer must be modulo 2^32.
+     * 2^53 is the largest integer number which can be stored safely
+     * in the IEEE-754 format and numbers less than 2^53 can be just
+     * converted to int64_t eliding more expensive fmod() operation.
+     * Then the int64 integer is truncated to uint32_t.  The NaN is
+     * converted to 0x8000000000000000 and becomes 0 after truncation.
+     * fmod() of the Infinity returns NaN.
      */
 
-    if (num < 0 || num > 9007199254740992.0) {
+    if (fabs(num) > 9007199254740992.0) {
         i64 = fmod(num, 4294967296.0);
 
     } else {
