@@ -52,6 +52,38 @@
 #endif
 
 
+#if (NXT_HAVE_BUILTIN_CLZ)
+#define nxt_leading_zeros(x)  (((x) == 0) ? 32 : __builtin_clz(x))
+
+#else
+
+nxt_inline uint32_t
+nxt_leading_zeros(uint32_t x)
+{
+    uint32_t  n;
+
+    /*
+     * There is no sense to optimize this function, since almost
+     * all platforms nowadays support the built-in instruction.
+     */
+
+    if (x == 0) {
+        return 32;
+    }
+
+    n = 0;
+
+    while ((x & 0x80000000) == 0) {
+        n++;
+        x <<= 1;
+    }
+
+    return n;
+}
+
+#endif
+
+
 #if (NXT_HAVE_GCC_ATTRIBUTE_VISIBILITY)
 #define NXT_EXPORT         __attribute__((visibility("default")))
 

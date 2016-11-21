@@ -5799,6 +5799,33 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.ceil(3.1)"),
       nxt_string("4") },
 
+    { nxt_string("Math.clz32()"),
+      nxt_string("32") },
+
+    { nxt_string("Math.clz32('abc')"),
+      nxt_string("32") },
+
+    { nxt_string("Math.clz32(NaN)"),
+      nxt_string("32") },
+
+    { nxt_string("Math.clz32(Infinity)"),
+      nxt_string("32") },
+
+    { nxt_string("Math.clz32('1')"),
+      nxt_string("31") },
+
+    { nxt_string("Math.clz32(0)"),
+      nxt_string("32") },
+
+    { nxt_string("Math.clz32('65535')"),
+      nxt_string("16") },
+
+    { nxt_string("Math.clz32(-1)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.clz32(4294967298)"),
+      nxt_string("30") },
+
     { nxt_string("Math.cos()"),
       nxt_string("NaN") },
 

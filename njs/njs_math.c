@@ -233,6 +233,27 @@ njs_object_math_ceil(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 
 static njs_ret_t
+njs_object_math_clz32(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    double    num;
+    uint32_t  ui32;
+
+    if (nargs > 1) {
+        ui32 = njs_number_to_integer(args[1].data.u.number);
+        num = nxt_leading_zeros(ui32);
+
+    } else {
+        num = 32;
+    }
+
+    njs_number_set(&vm->retval, num);
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
 njs_object_math_cos(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
@@ -866,6 +887,14 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("ceil"),
         .value = njs_native_function(njs_object_math_ceil, 0,
+                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("clz32"),
+        .value = njs_native_function(njs_object_math_clz32, 0,
                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
     },
 
