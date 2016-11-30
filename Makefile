@@ -7,14 +7,8 @@ NXT_LIB =	nxt
 
 NXT_BUILDDIR =	build
 
-unconfigured:
-	@echo
-	@echo "	Please run ./configure before make"
-	@echo
-
-main:	$(NXT_BUILDDIR)/libnjs.a
-
 $(NXT_BUILDDIR)/libnjs.a: \
+	$(NXT_LIB)/nxt_auto_config.h \
 	$(NXT_BUILDDIR)/njscript.o \
 	$(NXT_BUILDDIR)/njs_vm.o \
 	$(NXT_BUILDDIR)/njs_boolean.o \
@@ -96,6 +90,12 @@ dist:
 		njs-$(NJS_VER)
 	tar czf njs-$(NJS_VER).tar.gz njs-$(NJS_VER)
 	rm -rf njs-$(NJS_VER)
+
+$(NXT_LIB)/nxt_auto_config.h:
+	@echo
+	@echo "	Please run ./configure before make"
+	@echo
+	@exit 1
 
 $(NXT_BUILDDIR)/njscript.o: \
 	$(NXT_BUILDDIR)/libnxt.a \

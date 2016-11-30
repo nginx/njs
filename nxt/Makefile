@@ -3,6 +3,7 @@ NXT_LIB =	nxt
 
 
 $(NXT_BUILDDIR)/libnxt.a: \
+	$(NXT_LIB)/nxt_auto_config.h \
 	$(NXT_BUILDDIR)/nxt_djb_hash.o \
 	$(NXT_BUILDDIR)/nxt_utf8.o \
 	$(NXT_BUILDDIR)/nxt_array.o \

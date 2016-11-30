@@ -55,10 +55,3 @@ END
 . ${NXT_AUTO}memalign
 . ${NXT_AUTO}getrandom
 . ${NXT_AUTO}pcre
-
-
-cat << END >> $NXT_MAKEFILE_CONF
-
-target:		main
-
-END

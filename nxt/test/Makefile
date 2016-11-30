@@ -1,5 +1,6 @@
 
 lib_test: \
+	$(NXT_LIB)/nxt_auto_config.h \
 	$(NXT_BUILDDIR)/random_unit_test \
 	$(NXT_BUILDDIR)/rbtree_unit_test \
 	$(NXT_BUILDDIR)/lvlhsh_unit_test \
