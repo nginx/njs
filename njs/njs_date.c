@@ -2097,7 +2097,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
 
     {
         .type = NJS_METHOD,
-        .name = njs_long_string("setTime"),
+        .name = njs_string("setTime"),
         .value = njs_native_function(njs_date_prototype_set_time, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG),
     },
@@ -2118,21 +2118,21 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
 
     {
         .type = NJS_METHOD,
-        .name = njs_long_string("setSeconds"),
+        .name = njs_string("setSeconds"),
         .value = njs_native_function(njs_date_prototype_set_seconds, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG),
     },
 
     {
         .type = NJS_METHOD,
-        .name = njs_long_string("setUTCSeconds"),
+        .name = njs_string("setUTCSeconds"),
         .value = njs_native_function(njs_date_prototype_set_seconds, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG),
     },
 
     {
         .type = NJS_METHOD,
-        .name = njs_long_string("setMinutes"),
+        .name = njs_string("setMinutes"),
         .value = njs_native_function(njs_date_prototype_set_minutes, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG,
                      NJS_NUMBER_ARG),
@@ -2140,7 +2140,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
 
     {
         .type = NJS_METHOD,
-        .name = njs_long_string("setUTCMinutes"),
+        .name = njs_string("setUTCMinutes"),
         .value = njs_native_function(njs_date_prototype_set_utc_minutes, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG,
                      NJS_NUMBER_ARG),
@@ -2148,7 +2148,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
 
     {
         .type = NJS_METHOD,
-        .name = njs_long_string("setHours"),
+        .name = njs_string("setHours"),
         .value = njs_native_function(njs_date_prototype_set_hours, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG,
                      NJS_NUMBER_ARG, NJS_NUMBER_ARG),
@@ -2156,7 +2156,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
 
     {
         .type = NJS_METHOD,
-        .name = njs_long_string("setUTCHours"),
+        .name = njs_string("setUTCHours"),
         .value = njs_native_function(njs_date_prototype_set_utc_hours, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG,
                      NJS_NUMBER_ARG, NJS_NUMBER_ARG),
@@ -2164,35 +2164,35 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
 
     {
         .type = NJS_METHOD,
-        .name = njs_long_string("setDate"),
+        .name = njs_string("setDate"),
         .value = njs_native_function(njs_date_prototype_set_date, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG),
     },
 
     {
         .type = NJS_METHOD,
-        .name = njs_long_string("setUTCDate"),
+        .name = njs_string("setUTCDate"),
         .value = njs_native_function(njs_date_prototype_set_utc_date, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG),
     },
 
     {
         .type = NJS_METHOD,
-        .name = njs_long_string("setMonth"),
+        .name = njs_string("setMonth"),
         .value = njs_native_function(njs_date_prototype_set_month, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG),
     },
 
     {
         .type = NJS_METHOD,
-        .name = njs_long_string("setUTCMonth"),
+        .name = njs_string("setUTCMonth"),
         .value = njs_native_function(njs_date_prototype_set_utc_month, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG),
     },
 
     {
         .type = NJS_METHOD,
-        .name = njs_long_string("setFullYear"),
+        .name = njs_string("setFullYear"),
         .value = njs_native_function(njs_date_prototype_set_full_year, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG,
                      NJS_NUMBER_ARG),
@@ -2200,7 +2200,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
 
     {
         .type = NJS_METHOD,
-        .name = njs_long_string("setUTCFullYear"),
+        .name = njs_string("setUTCFullYear"),
         .value = njs_native_function(njs_date_prototype_set_utc_full_year, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG,
                      NJS_NUMBER_ARG),
@@ -2208,7 +2208,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
 
     {
         .type = NJS_METHOD,
-        .name = njs_long_string("toJSON"),
+        .name = njs_string("toJSON"),
         .value = njs_native_function(njs_date_prototype_to_json,
                      NJS_CONTINUATION_SIZE, 0),
     },

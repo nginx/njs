@@ -603,8 +603,7 @@ static const njs_value_t  njs_object_function_string =
                                      njs_long_string("[object Function]");
 static const njs_value_t  njs_object_regexp_string =
                                      njs_long_string("[object RegExp]");
-static const njs_value_t  njs_object_date_string =
-                                     njs_long_string("[object Date]");
+static const njs_value_t  njs_object_date_string = njs_string("[object Date]");
 
 
 njs_ret_t
