@@ -12,6 +12,8 @@
 #include <nxt_regex.h>
 
 
+#define NJS_MAX_STACK_SIZE       (16 * 1024 * 1024)
+
 /*
  * Negative return values handled by nJSVM interpreter as special events.
  * The values must be in range from -1 to -11, because -12 is minimal jump
@@ -829,6 +831,7 @@ struct njs_vm_s {
 
     njs_value_t              *global_scope;
     size_t                   scope_size;
+    size_t                   stack_size;
 
     njs_vm_shared_t          *shared;
     njs_parser_t             *parser;

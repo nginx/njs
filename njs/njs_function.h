@@ -89,30 +89,24 @@ struct njs_native_frame_s {
 
     njs_exception_t                exception;
 
+    uint32_t                       size;
     uint32_t                       free_size;
     uint32_t                       nargs;
 
     /* Function is called as constructor with "new" keyword. */
     uint8_t                        ctor;              /* 1 bit  */
 
-    /*
-     * The first frame in chunk.
-     * 7 bits are just to possibly initialize first and skip
-     * fields with one operation.
-     */
-    uint8_t                        first:7;           /* 1 bit  */
-
     /* Skip the Function.call() and Function.apply() methods frames. */
-    uint8_t                        skip:1;            /* 1 bit  */
+    uint8_t                        skip;              /* 1 bit  */
 
     /* A number of trap tries, it can be no more than three. */
-    uint8_t                        trap_tries:2;      /* 2 bits */
+    uint8_t                        trap_tries;        /* 2 bits */
 
     /*
      * The first operand in trap is reference to original value,
      * it is used to increment or decrement this value.
      */
-    uint8_t                        trap_reference:1;  /* 1 bit */
+    uint8_t                        trap_reference;   /* 1 bit */
 };
 
 

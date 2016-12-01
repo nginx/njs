@@ -277,7 +277,8 @@ start:
             vm->scopes[NJS_SCOPE_LOCAL] = frame->prev_local;
             vm->scopes[NJS_SCOPE_ARGUMENTS] = frame->prev_arguments;
 
-            if (frame->native.first) {
+            if (frame->native.size != 0) {
+                vm->stack_size -= frame->native.size;
                 nxt_mem_cache_free(vm->mem_cache_pool, frame);
             }
         }
@@ -2673,7 +2674,8 @@ njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame)
 
         /* GC: free frame->local, etc. */
 
-        if (frame->first) {
+        if (frame->size != 0) {
+            vm->stack_size -= frame->size;
             nxt_mem_cache_free(vm->mem_cache_pool, frame);
         }
 

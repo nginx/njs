@@ -324,12 +324,12 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
 
         nvm->frame = &frame->native;
 
+        frame->native.size = size;
         frame->native.free_size = size - (NJS_GLOBAL_FRAME_SIZE + scope_size);
 
         values = (u_char *) frame + NJS_GLOBAL_FRAME_SIZE;
 
         frame->native.free = values + scope_size;
-        frame->native.first = 1;
 
         nvm->scopes[NJS_SCOPE_GLOBAL] = (njs_value_t *) values;
         memcpy(values + NJS_INDEX_GLOBAL_OFFSET, vm->global_scope,

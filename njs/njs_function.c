@@ -16,6 +16,7 @@
 #include <nxt_mem_cache_pool.h>
 #include <njscript.h>
 #include <njs_vm.h>
+#include <njs_string.h>
 #include <njs_object.h>
 #include <njs_array.h>
 #include <njs_function.h>
@@ -199,22 +200,30 @@ njs_function_frame(njs_vm_t *vm, njs_function_t *function, njs_value_t *this,
 }
 
 
+static const njs_value_t  njs_exception_stack_size_exceeded =
+    njs_long_string("RangeError: Maximum call stack size exceeded");
+
+
 nxt_noinline njs_native_frame_t *
 njs_function_frame_alloc(njs_vm_t *vm, size_t size)
 {
-    size_t              spare_size;
-    uint8_t             first;
+    size_t              spare_size, chunk_size;
     njs_native_frame_t  *frame;
 
     spare_size = vm->frame->free_size;
 
     if (nxt_fast_path(size <= spare_size)) {
         frame = (njs_native_frame_t *) vm->frame->free;
-        first = 0;
+        chunk_size = 0;
 
     } else {
         spare_size = size + NJS_FRAME_SPARE_SIZE;
         spare_size = nxt_align_size(spare_size, NJS_FRAME_SPARE_SIZE);
+
+        if (vm->stack_size + spare_size > NJS_MAX_STACK_SIZE) {
+            vm->exception = &njs_exception_stack_size_exceeded;
+            return NULL;
+        }
 
         frame = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
                                     spare_size);
@@ -222,12 +231,13 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
             return NULL;
         }
 
-        first = 1;
+        chunk_size = spare_size;
+        vm->stack_size += spare_size;
     }
 
     memset(frame, 0, sizeof(njs_native_frame_t));
 
-    frame->first = first;
+    frame->size = chunk_size;
     frame->free_size = spare_size - size;
     frame->free = (u_char *) frame + size;
 
