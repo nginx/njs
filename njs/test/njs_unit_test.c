@@ -5568,11 +5568,11 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("Infinity") },
 
     /*
-     * The difference is 2 * Number.EPSILON on FreeBSD
+     * The difference is Number.EPSILON on Linux/i686
      * and zero on other platforms.
      */
-    { nxt_string("Math.abs(Math.cosh(1) - (1/Math.E + Math.E)/2)"
-                 " <= 2 * Number.EPSILON"),
+    { nxt_string("Math.abs(Math.acosh((1/Math.E + Math.E)/2) - 1)"
+                 " <= Number.EPSILON"),
       nxt_string("true") },
 
     { nxt_string("Math.asin()"),
