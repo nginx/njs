@@ -560,15 +560,24 @@ njs_regexp_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     u_char                *source;
     int32_t               length;
     uint32_t              size;
+    njs_value_t           *value;
     njs_regexp_pattern_t  *pattern;
 
-    pattern = args[0].data.u.regexp->pattern;
-    source = pattern->source;
+    value = &args[0];
 
-    size = strlen((char *) source);
-    length = nxt_utf8_length(source, size);
+    if (value->type == NJS_REGEXP) {
+        pattern = value->data.u.regexp->pattern;
+        source = pattern->source;
 
-    return njs_regexp_string_create(vm, &vm->retval, source, size, length);
+        size = strlen((char *) source);
+        length = nxt_utf8_length(source, size);
+
+        return njs_regexp_string_create(vm, &vm->retval, source, size, length);
+    }
+
+    vm->exception = &njs_exception_type_error;
+
+    return NXT_ERROR;
 }
 
 

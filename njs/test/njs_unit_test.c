@@ -4410,6 +4410,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var r = new RegExp('abc', 'i'); r.test('00ABC11')"),
       nxt_string("true") },
 
+    { nxt_string("[0].map(RegExp().toString)"),
+      nxt_string("TypeError") },
+
     /* Non-standard ECMA-262 features. */
 
     /* 0x10400 is not a surrogate pair of 0xD801 and 0xDC00. */
