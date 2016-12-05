@@ -252,21 +252,12 @@ nxt_noinline njs_ret_t
 njs_function_apply(njs_vm_t *vm, njs_function_t *function, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t retval)
 {
-    size_t              reserve;
     njs_ret_t           ret;
     njs_continuation_t  *cont;
 
     if (function->native) {
-
-        if (function->continuation_size == 0 && function->bound == NULL) {
-            return function->u.native(vm, args, nargs, retval);
-        }
-
-        reserve = nxt_align_size(sizeof(njs_continuation_t),
-                                 sizeof(njs_value_t)),
-
         ret = njs_function_native_frame(vm, function, &args[0], &args[1],
-                                        nargs - 1, reserve, 0);
+                                        nargs - 1, NJS_CONTINUATION_SIZE, 0);
         if (ret != NJS_OK) {
             return ret;
         }
@@ -274,6 +265,7 @@ njs_function_apply(njs_vm_t *vm, njs_function_t *function, njs_value_t *args,
         cont = njs_continuation(vm->frame);
 
         cont->function = function->u.native;
+        cont->args_types = function->args_types;
         cont->retval = retval;
 
         cont->return_address = vm->current;

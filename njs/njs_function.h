@@ -50,6 +50,7 @@ struct njs_function_lambda_s {
 
 typedef struct {
     njs_function_native_t          function;
+    uint8_t                        *args_types;
     u_char                         *return_address;
     njs_index_t                    retval;
 } njs_continuation_t;

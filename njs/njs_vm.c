@@ -2358,6 +2358,7 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
         cont = njs_continuation(vm->frame);
 
         cont->function = function->u.native;
+        cont->args_types = function->args_types;
         cont->retval = (njs_index_t) retval;
 
         cont->return_address = vm->current + sizeof(njs_vmcode_function_call_t);
@@ -2608,6 +2609,13 @@ njs_vmcode_continuation(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
     frame = vm->frame;
     cont = njs_continuation(frame);
     args = frame->arguments - frame->function->args_offset;
+
+    if (cont->args_types != NULL) {
+        ret = njs_normalize_args(vm, args, cont->args_types, frame->nargs);
+        if (ret != NJS_OK) {
+            return ret;
+        }
+    }
 
     ret = cont->function(vm, args, frame->nargs, cont->retval);
 
