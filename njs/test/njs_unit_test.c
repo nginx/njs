@@ -6215,6 +6215,66 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.pow()"),
       nxt_string("NaN") },
 
+    { nxt_string("Math.pow('a', -0)"),
+      nxt_string("1") },
+
+    { nxt_string("Math.pow(1.1, Infinity)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.pow(-1.1, -Infinity)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.pow(-1, Infinity)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.pow(1, -Infinity)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.pow(-0.9, Infinity)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.pow(0.9, -Infinity)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.pow('Infinity', 0.1)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.pow(Infinity, '-0.1')"),
+      nxt_string("0") },
+
+    { nxt_string("Math.pow(-Infinity, 3)"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("Math.pow('-Infinity', '3.1')"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.pow(-Infinity, '-3')"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.pow('-Infinity', -2)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.pow('0', 0.1)"),
+      nxt_string("0") },
+
+    { nxt_string("Math.pow(0, '-0.1')"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.pow(-0, 3)"),
+      nxt_string("-0") },
+
+    { nxt_string("Math.pow('-0', '3.1')"),
+      nxt_string("0") },
+
+    { nxt_string("Math.pow(-0, '-3')"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("Math.pow('-0', -2)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Math.pow(-3, 0.1)"),
+      nxt_string("NaN") },
+
     { nxt_string("var a = Math.random(); a >= 0 && a < 1"),
       nxt_string("true") },
 

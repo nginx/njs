@@ -578,7 +578,17 @@ njs_object_math_pow(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         base = args[1].data.u.number;
         exponent = args[2].data.u.number;
 
-        num = pow(base, exponent);
+        /*
+         * Accordig to ECMA-262 the result of Math.pow(+/-1, +/-Infinity)
+         * should be NaN.
+         */
+
+        if (fabs(base) != 1 || !isinf(exponent)) {
+            num = pow(base, exponent);
+
+        } else {
+            num = NAN;
+        }
 
     } else {
         num = NAN;
