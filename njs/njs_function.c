@@ -111,12 +111,14 @@ njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     bound = function->bound;
 
     if (bound == NULL) {
+        /* GC: njs_retain(this); */
         *value++ = *this;
 
     } else {
         n = function->args_offset;
 
         do {
+            /* GC: njs_retain(bound); */
             *value++ = *bound++;
             n--;
         } while (n != 0);
@@ -134,8 +136,9 @@ njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
 
 
 nxt_noinline njs_ret_t
-njs_function_frame(njs_vm_t *vm, njs_function_t *function, njs_value_t *this,
-    njs_value_t *args, nxt_uint_t nargs, nxt_bool_t ctor)
+njs_function_frame(njs_vm_t *vm, njs_function_t *function,
+    const njs_value_t *this, njs_value_t *args, nxt_uint_t nargs,
+    nxt_bool_t ctor)
 {
     size_t              size;
     nxt_uint_t          n, max_args;

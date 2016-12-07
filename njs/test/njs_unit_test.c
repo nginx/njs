@@ -4235,6 +4235,10 @@ static njs_unit_test_t  njs_test[] =
                  "o.__proto__ === F.prototype"),
       nxt_string("true") },
 
+    { nxt_string("f = { F: function(){} }; o = new f.F();"
+                 "o.__proto__ === f.F.prototype"),
+      nxt_string("true") },
+
     { nxt_string("function F(){}; typeof F.prototype"),
       nxt_string("object") },
 
