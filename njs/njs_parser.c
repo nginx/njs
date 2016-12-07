@@ -629,6 +629,10 @@ njs_parser_return_statement(njs_vm_t *vm, njs_parser_t *parser)
         node->right = parser->node;
         parser->node = node;
 
+        if (token == NJS_TOKEN_SEMICOLON) {
+            return njs_parser_token(parser);
+        }
+
         return token;
     }
 }

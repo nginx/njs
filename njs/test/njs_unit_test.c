@@ -1514,6 +1514,21 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = [3], b; if (1==1||2==2) { b = '1'+'2'+a[0] }; b }"),
       nxt_string("123") },
 
+    { nxt_string("(function(){ if(true) return 1 else return 0; })()"),
+      nxt_string("1") },
+
+    { nxt_string("(function(){ if(true) return 1; else return 0; })()"),
+      nxt_string("1") },
+
+    { nxt_string("(function(){ if(true) return 1;; else return 0; })()"),
+      nxt_string("SyntaxError: Unexpected token \"else\" in 1") },
+
+    { nxt_string("(function(){ if(true) return 1\n else return 0; })()"),
+      nxt_string("1") },
+
+    { nxt_string("(function(){ if(true) return 1\n;\n else return 0; })()"),
+      nxt_string("1") },
+
     /* do while. */
 
     { nxt_string("do { break } if (false)"),
