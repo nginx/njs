@@ -124,12 +124,14 @@ struct nxt_mem_cache_pool_s {
 
 
 static nxt_uint_t nxt_mem_cache_shift(nxt_uint_t n);
+#if !(NXT_DEBUG_MEMORY)
 static void *nxt_mem_cache_alloc_small(nxt_mem_cache_pool_t *pool, size_t size);
 static nxt_uint_t nxt_mem_cache_alloc_chunk(u_char *map, nxt_uint_t size);
 static nxt_mem_cache_page_t *
     nxt_mem_cache_alloc_page(nxt_mem_cache_pool_t *pool);
 static nxt_mem_cache_block_t *
     nxt_mem_cache_alloc_cluster(nxt_mem_cache_pool_t *pool);
+#endif
 static void *nxt_mem_cache_alloc_large(nxt_mem_cache_pool_t *pool,
     size_t alignment, size_t size);
 static intptr_t nxt_mem_cache_rbtree_compare(nxt_rbtree_node_t *node1,
@@ -302,9 +304,13 @@ nxt_mem_cache_alloc(nxt_mem_cache_pool_t *pool, size_t size)
         pool->proto->trace(pool->trace, "mem cache alloc: %zd", size);
     }
 
+#if !(NXT_DEBUG_MEMORY)
+
     if (size <= pool->page_size) {
         return nxt_mem_cache_alloc_small(pool, size);
     }
+
+#endif
 
     return nxt_mem_cache_alloc_large(pool, NXT_MAX_ALIGNMENT, size);
 }
@@ -337,6 +343,8 @@ nxt_mem_cache_align(nxt_mem_cache_pool_t *pool, size_t alignment, size_t size)
 
     if (nxt_fast_path((alignment - 1) & alignment) == 0) {
 
+#if !(NXT_DEBUG_MEMORY)
+
         if (size <= pool->page_size && alignment <= pool->page_alignment) {
             size = nxt_max(size, alignment);
 
@@ -344,6 +352,8 @@ nxt_mem_cache_align(nxt_mem_cache_pool_t *pool, size_t alignment, size_t size)
                 return nxt_mem_cache_alloc_small(pool, size);
             }
         }
+
+#endif
 
         return nxt_mem_cache_alloc_large(pool, alignment, size);
     }
@@ -366,6 +376,8 @@ nxt_mem_cache_zalign(nxt_mem_cache_pool_t *pool, size_t alignment, size_t size)
     return p;
 }
 
+
+#if !(NXT_DEBUG_MEMORY)
 
 static void *
 nxt_mem_cache_alloc_small(nxt_mem_cache_pool_t *pool, size_t size)
@@ -548,6 +560,8 @@ nxt_mem_cache_alloc_cluster(nxt_mem_cache_pool_t *pool)
 
     return cluster;
 }
+
+#endif
 
 
 static void *
