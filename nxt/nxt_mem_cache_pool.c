@@ -284,19 +284,6 @@ nxt_mem_cache_pool_destroy(nxt_mem_cache_pool_t *pool)
 }
 
 
-nxt_inline u_char *
-nxt_mem_cache_page_addr(nxt_mem_cache_pool_t *pool, nxt_mem_cache_page_t *page)
-{
-    nxt_mem_cache_block_t  *block;
-
-    block = (nxt_mem_cache_block_t *)
-                ((u_char *) page - page->number * sizeof(nxt_mem_cache_page_t)
-                 - offsetof(nxt_mem_cache_block_t, pages));
-
-    return block->start + (page->number << pool->page_size_shift);
-}
-
-
 void *
 nxt_mem_cache_alloc(nxt_mem_cache_pool_t *pool, size_t size)
 {
@@ -378,6 +365,19 @@ nxt_mem_cache_zalign(nxt_mem_cache_pool_t *pool, size_t alignment, size_t size)
 
 
 #if !(NXT_DEBUG_MEMORY)
+
+nxt_inline u_char *
+nxt_mem_cache_page_addr(nxt_mem_cache_pool_t *pool, nxt_mem_cache_page_t *page)
+{
+    nxt_mem_cache_block_t  *block;
+
+    block = (nxt_mem_cache_block_t *)
+                ((u_char *) page - page->number * sizeof(nxt_mem_cache_page_t)
+                 - offsetof(nxt_mem_cache_block_t, pages));
+
+    return block->start + (page->number << pool->page_size_shift);
+}
+
 
 static void *
 nxt_mem_cache_alloc_small(nxt_mem_cache_pool_t *pool, size_t size)
