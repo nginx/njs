@@ -55,9 +55,11 @@ struct njs_parser_expression_s {
 };
 
 
-static njs_token_t njs_parser_assignment_expression(njs_vm_t *vm,
+static njs_token_t njs_parser_any_expression(njs_vm_t *vm,
     njs_parser_t *parser, const njs_parser_expression_t *expr,
     njs_token_t token);
+static njs_token_t njs_parser_conditional_expression(njs_vm_t *vm,
+    njs_parser_t *parser, njs_token_t token);
 static njs_token_t njs_parser_binary_expression(njs_vm_t *vm,
     njs_parser_t *parser, const njs_parser_expression_t *expr,
     njs_token_t token);
@@ -227,7 +229,7 @@ static const njs_parser_expression_t
 static const njs_parser_expression_t
     njs_parser_comma_expression =
 {
-    njs_parser_assignment_expression,
+    njs_parser_any_expression,
     NULL,
     1, {
         { NJS_TOKEN_COMMA, NULL, 0 },
@@ -346,8 +348,16 @@ njs_parser_var_expression(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
 
 
 static njs_token_t
-njs_parser_assignment_expression(njs_vm_t *vm, njs_parser_t *parser,
+njs_parser_any_expression(njs_vm_t *vm, njs_parser_t *parser,
     const njs_parser_expression_t *expr, njs_token_t token)
+{
+    return njs_parser_assignment_expression(vm, parser, token);
+}
+
+
+njs_token_t
+njs_parser_assignment_expression(njs_vm_t *vm, njs_parser_t *parser,
+    njs_token_t token)
 {
     size_t                  size;
     njs_parser_node_t       *node, *pending;
@@ -475,7 +485,7 @@ njs_parser_assignment_expression(njs_vm_t *vm, njs_parser_t *parser,
             return token;
         }
 
-        token = njs_parser_assignment_expression(vm, parser, NULL, token);
+        token = njs_parser_assignment_expression(vm, parser, token);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
         }
@@ -568,7 +578,7 @@ njs_parser_conditional_expression(njs_vm_t *vm, njs_parser_t *parser,
         cond->right = node;
         node->token = NJS_TOKEN_BRANCHING;
 
-        token = njs_parser_assignment_expression(vm, parser, NULL, token);
+        token = njs_parser_assignment_expression(vm, parser, token);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
         }
@@ -585,7 +595,7 @@ njs_parser_conditional_expression(njs_vm_t *vm, njs_parser_t *parser,
             return token;
         }
 
-        token = njs_parser_assignment_expression(vm, parser, NULL, token);
+        token = njs_parser_assignment_expression(vm, parser, token);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
         }
@@ -1210,7 +1220,7 @@ njs_parser_arguments(njs_vm_t *vm, njs_parser_t *parser,
             break;
         }
 
-        token = njs_parser_assignment_expression(vm, parser, NULL, token);
+        token = njs_parser_assignment_expression(vm, parser, token);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
         }

@@ -1906,6 +1906,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = 1; a.b++; a.b"),
       nxt_string("TypeError") },
 
+    { nxt_string("var n = 1, o = { p: n += 1 }; o.p"),
+      nxt_string("2") },
+
     { nxt_string("a = {}; a.b = {}; a.b.c = 1; a.b['c']"),
       nxt_string("1") },
 
@@ -2072,6 +2075,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("a = [ 1, 2, 3 ]; a[0] + a[1] + a[2]"),
       nxt_string("6") },
+
+    { nxt_string("var n = 1, a = [ n += 1 ]; a"),
+      nxt_string("2") },
 
     { nxt_string("a = [ 1, 2; 3 ]; a[0] + a[1] + a[2]"),
       nxt_string("SyntaxError: Unexpected token \";\" in 1") },
