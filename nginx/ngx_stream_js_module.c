@@ -112,7 +112,7 @@ static ngx_command_t  ngx_stream_js_commands[] = {
       NULL },
 
     { ngx_string("js_set"),
-      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE2,
+      NGX_STREAM_MAIN_CONF|NGX_CONF_TAKE2,
       ngx_stream_js_set,
       NGX_STREAM_SRV_CONF_OFFSET,
       0,
