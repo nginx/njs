@@ -130,7 +130,7 @@ static char *ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent,
 static ngx_command_t  ngx_http_js_commands[] = {
 
     { ngx_string("js_include"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
       ngx_http_js_include,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,

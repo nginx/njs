@@ -105,7 +105,7 @@ static ngx_int_t ngx_stream_js_init(ngx_conf_t *cf);
 static ngx_command_t  ngx_stream_js_commands[] = {
 
     { ngx_string("js_include"),
-      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
+      NGX_STREAM_MAIN_CONF|NGX_CONF_TAKE1,
       ngx_stream_js_include,
       NGX_STREAM_SRV_CONF_OFFSET,
       0,
