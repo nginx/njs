@@ -6215,6 +6215,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.pow()"),
       nxt_string("NaN") },
 
+    { nxt_string("Math.pow(1, NaN)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Math.pow(3, NaN)"),
+      nxt_string("NaN") },
+
     { nxt_string("Math.pow('a', -0)"),
       nxt_string("1") },
 
