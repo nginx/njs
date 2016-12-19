@@ -184,6 +184,7 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
     case NJS_TOKEN_ADDITION_ASSIGNMENT:
     case NJS_TOKEN_SUBSTRACTION_ASSIGNMENT:
     case NJS_TOKEN_MULTIPLICATION_ASSIGNMENT:
+    case NJS_TOKEN_EXPONENTIATION_ASSIGNMENT:
     case NJS_TOKEN_DIVISION_ASSIGNMENT:
     case NJS_TOKEN_REMAINDER_ASSIGNMENT:
         return njs_generate_operation_assignment(vm, parser, node);
@@ -219,6 +220,7 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
     case NJS_TOKEN_ADDITION:
     case NJS_TOKEN_SUBSTRACTION:
     case NJS_TOKEN_MULTIPLICATION:
+    case NJS_TOKEN_EXPONENTIATION:
     case NJS_TOKEN_DIVISION:
     case NJS_TOKEN_REMAINDER:
     case NJS_TOKEN_PROPERTY_DELETE:

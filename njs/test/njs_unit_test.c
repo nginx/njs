@@ -224,6 +224,163 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = 1; function f(x) { a = x; return 2 }; a += f(5)"),
       nxt_string("3") },
 
+    /* Exponentiation. */
+
+    { nxt_string("2 ** (3 ** 2)"),
+      nxt_string("512") },
+
+    { nxt_string("(2 ** 3) ** 2"),
+      nxt_string("64") },
+
+    { nxt_string("3 ** 2 - 9"),
+      nxt_string("0") },
+
+    { nxt_string("-9 + 3 ** 2"),
+      nxt_string("0") },
+
+    { nxt_string("-3 ** 2"),
+      nxt_string("SyntaxError: Either left-hand side or entire exponentiation "
+                 "must be parenthesized in 1") },
+
+    { nxt_string("-(3) ** 2"),
+      nxt_string("SyntaxError: Either left-hand side or entire exponentiation "
+                 "must be parenthesized in 1") },
+
+    { nxt_string("-(3 ** 2)"),
+      nxt_string("-9") },
+
+    { nxt_string("(-3) ** 2"),
+      nxt_string("9") },
+
+    { nxt_string("1 ** NaN"),
+      nxt_string("NaN") },
+
+    { nxt_string("'a' ** -0"),
+      nxt_string("1") },
+
+    { nxt_string("1.1 ** Infinity"),
+      nxt_string("Infinity") },
+
+    { nxt_string("(-1.1) ** -Infinity"),
+      nxt_string("0") },
+
+    { nxt_string("(-1) ** Infinity"),
+      nxt_string("NaN") },
+
+    { nxt_string("1 ** -Infinity"),
+      nxt_string("NaN") },
+
+    { nxt_string("(-0.9) ** Infinity"),
+      nxt_string("0") },
+
+    { nxt_string("0.9 ** -Infinity"),
+      nxt_string("Infinity") },
+
+    { nxt_string("'Infinity' ** 0.1"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Infinity ** '-0.1'"),
+      nxt_string("0") },
+
+    { nxt_string("(-Infinity) ** 3"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("'-Infinity' ** '3.1'"),
+      nxt_string("Infinity") },
+
+    { nxt_string("(-Infinity) ** '-3'"),
+      nxt_string("-0") },
+
+    { nxt_string("'-Infinity' ** -2"),
+      nxt_string("0") },
+
+    { nxt_string("'0' ** 0.1"),
+      nxt_string("0") },
+
+    { nxt_string("0 ** '-0.1'"),
+      nxt_string("Infinity") },
+
+    { nxt_string("(-0) ** 3"),
+      nxt_string("-0") },
+
+    { nxt_string("'-0' ** '3.1'"),
+      nxt_string("0") },
+
+    { nxt_string("(-0) ** '-3'"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("'-0' ** -2"),
+      nxt_string("Infinity") },
+
+    { nxt_string("(-3) ** 0.1"),
+      nxt_string("NaN") },
+
+    { nxt_string("var a = 0.1; a **= -2"),
+      nxt_string("100") },
+
+    { nxt_string("var a = 1; a **= NaN"),
+      nxt_string("NaN") },
+
+    { nxt_string("var a = 'a'; a **= -0"),
+      nxt_string("1") },
+
+    { nxt_string("var a = 1.1; a **= Infinity"),
+      nxt_string("Infinity") },
+
+    { nxt_string("var a = -1.1; a **= -Infinity"),
+      nxt_string("0") },
+
+    { nxt_string("var a = -1; a **= Infinity"),
+      nxt_string("NaN") },
+
+    { nxt_string("var a = 1; a **= -Infinity"),
+      nxt_string("NaN") },
+
+    { nxt_string("var a = -0.9; a **= Infinity"),
+      nxt_string("0") },
+
+    { nxt_string("var a = 0.9; a **= -Infinity"),
+      nxt_string("Infinity") },
+
+    { nxt_string("var a = 'Infinity'; a **= 0.1"),
+      nxt_string("Infinity") },
+
+    { nxt_string("var a = Infinity; a **= '-0.1'"),
+      nxt_string("0") },
+
+    { nxt_string("var a = -Infinity; a **= 3"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("var a = '-Infinity'; a **= '3.1'"),
+      nxt_string("Infinity") },
+
+    { nxt_string("var a = -Infinity; a **= '-3'"),
+      nxt_string("-0") },
+
+    { nxt_string("var a = '-Infinity'; a **= -2"),
+      nxt_string("0") },
+
+    { nxt_string("var a = '0'; a **= 0.1"),
+      nxt_string("0") },
+
+    { nxt_string("var a = 0; a **= '-0.1'"),
+      nxt_string("Infinity") },
+
+    { nxt_string("var a = -0; a **= 3"),
+      nxt_string("-0") },
+
+    { nxt_string("var a = '-0'; a **= '3.1'"),
+      nxt_string("0") },
+
+    { nxt_string("var a = -0; a **= '-3'"),
+      nxt_string("-Infinity") },
+
+    { nxt_string("var a = '-0'; a **= -2"),
+      nxt_string("Infinity") },
+
+    { nxt_string("var a = -3; a **= 0.1"),
+      nxt_string("NaN") },
+
     /**/
 
     { nxt_string("12 | 6"),

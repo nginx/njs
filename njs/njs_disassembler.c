@@ -87,6 +87,8 @@ static njs_code_name_t  code_names[] = {
           nxt_string("SUBSTRACT       ") },
     { njs_vmcode_multiplication, sizeof(njs_vmcode_3addr_t),
           nxt_string("MULTIPLY        ") },
+    { njs_vmcode_exponentiation, sizeof(njs_vmcode_3addr_t),
+          nxt_string("POWER           ") },
     { njs_vmcode_division, sizeof(njs_vmcode_3addr_t),
           nxt_string("DIVIDE          ") },
     { njs_vmcode_remainder, sizeof(njs_vmcode_3addr_t),

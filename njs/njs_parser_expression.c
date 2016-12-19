@@ -63,6 +63,9 @@ static njs_token_t njs_parser_conditional_expression(njs_vm_t *vm,
 static njs_token_t njs_parser_binary_expression(njs_vm_t *vm,
     njs_parser_t *parser, const njs_parser_expression_t *expr,
     njs_token_t token);
+static njs_token_t njs_parser_exponential_expression(njs_vm_t *vm,
+    njs_parser_t *parser, const njs_parser_expression_t *expr,
+    njs_token_t token);
 static njs_token_t njs_parser_unary_expression(njs_vm_t *vm,
     njs_parser_t *parser, const njs_parser_expression_t *expr,
     njs_token_t token);
@@ -83,7 +86,7 @@ static njs_token_t njs_parser_property_brackets(njs_vm_t *vm,
 static const njs_parser_expression_t
     njs_parser_factor_expression =
 {
-    njs_parser_unary_expression,
+    njs_parser_exponential_expression,
     NULL,
     3, {
         { NJS_TOKEN_MULTIPLICATION, njs_vmcode_multiplication,
@@ -391,6 +394,11 @@ njs_parser_assignment_expression(njs_vm_t *vm, njs_parser_t *parser,
             operation = njs_vmcode_multiplication;
             break;
 
+        case NJS_TOKEN_EXPONENTIATION_ASSIGNMENT:
+            nxt_thread_log_debug("JS: **=");
+            operation = njs_vmcode_exponentiation;
+            break;
+
         case NJS_TOKEN_DIVISION_ASSIGNMENT:
             nxt_thread_log_debug("JS: /=");
             operation = njs_vmcode_division;
@@ -685,6 +693,64 @@ njs_parser_binary_expression(njs_vm_t *vm, njs_parser_t *parser,
 
 
 static njs_token_t
+njs_parser_exponential_expression(njs_vm_t *vm, njs_parser_t *parser,
+    const njs_parser_expression_t *expr, njs_token_t token)
+{
+    njs_parser_node_t  *node;
+
+    token = njs_parser_unary_expression(vm, parser, NULL, token);
+    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+        return token;
+    }
+
+    for ( ;; ) {
+        if (token == NJS_TOKEN_EXPONENTIATION) {
+
+            node = njs_parser_node_alloc(vm);
+            if (nxt_slow_path(node == NULL)) {
+                return NJS_TOKEN_ERROR;
+            }
+
+            node->token = token;
+            node->u.operation = njs_vmcode_exponentiation;
+            node->left = parser->node;
+            node->left->dest = node;
+
+            parser->code_size += sizeof(njs_vmcode_3addr_t);
+
+            token = njs_parser_token(parser);
+            if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                return token;
+            }
+
+            token = njs_parser_exponential_expression(vm, parser, NULL, token);
+            if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                return token;
+            }
+
+            node->right = parser->node;
+            node->right->dest = node;
+            parser->node = node;
+        }
+
+        if (token == NJS_TOKEN_LINE_END) {
+
+            token = njs_lexer_token(parser->lexer);
+            if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                return token;
+            }
+
+            if (njs_parser_expression_operator(token)) {
+                continue;
+            }
+        }
+
+        return token;
+    }
+}
+
+
+static njs_token_t
 njs_parser_unary_expression(njs_vm_t *vm, njs_parser_t *parser,
     const njs_parser_expression_t *expr, njs_token_t token)
 {
@@ -737,6 +803,14 @@ njs_parser_unary_expression(njs_vm_t *vm, njs_parser_t *parser,
     next = njs_parser_unary_expression(vm, parser, NULL, next);
     if (nxt_slow_path(next <= NJS_TOKEN_ILLEGAL)) {
         return next;
+    }
+
+    if (next == NJS_TOKEN_EXPONENTIATION) {
+        nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+                  "SyntaxError: Either left-hand side or entire exponentiation "
+                  "must be parenthesized");
+
+        return NJS_TOKEN_ILLEGAL;
     }
 
     if (token == NJS_TOKEN_UNARY_PLUS

@@ -927,6 +927,8 @@ njs_ret_t njs_vmcode_substraction(njs_vm_t *vm, njs_value_t *val1,
     njs_value_t *val2);
 njs_ret_t njs_vmcode_multiplication(njs_vm_t *vm, njs_value_t *val1,
     njs_value_t *val2);
+njs_ret_t njs_vmcode_exponentiation(njs_vm_t *vm, njs_value_t *val1,
+    njs_value_t *val2);
 njs_ret_t njs_vmcode_division(njs_vm_t *vm, njs_value_t *val1,
     njs_value_t *val2);
 njs_ret_t njs_vmcode_remainder(njs_vm_t *vm, njs_value_t *val1,

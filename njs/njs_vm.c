@@ -1598,6 +1598,40 @@ njs_vmcode_multiplication(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
 
 njs_ret_t
+njs_vmcode_exponentiation(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
+{
+    double      num, base, exponent;
+    nxt_bool_t  valid;
+
+    if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
+        base = val1->data.u.number;
+        exponent = val2->data.u.number;
+
+        /*
+         * According to ES7:
+         *  1. If exponent is NaN, the result should be NaN;
+         *  2. The result of +/-1 ** +/-Infinity should be NaN.
+         */
+        valid = nxt_expect(1, fabs(base) != 1
+                              || (!isnan(exponent) && !isinf(exponent)));
+
+        if (valid) {
+            num = pow(base, exponent);
+
+        } else {
+            num = NAN;
+        }
+
+        njs_number_set(&vm->retval, num);
+
+        return sizeof(njs_vmcode_3addr_t);
+    }
+
+    return NJS_TRAP_NUMBERS;
+}
+
+
+njs_ret_t
 njs_vmcode_division(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 {
     double  num;

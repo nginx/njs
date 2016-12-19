@@ -203,8 +203,14 @@ static const njs_lexer_multi_t  njs_substraction_token[] = {
 };
 
 
+static const njs_lexer_multi_t  njs_exponentiation_token[] = {
+    { '=', NJS_TOKEN_EXPONENTIATION_ASSIGNMENT, 0, NULL },
+};
+
+
 static const njs_lexer_multi_t  njs_multiplication_token[] = {
     { '=', NJS_TOKEN_MULTIPLICATION_ASSIGNMENT, 0, NULL },
+    { '*', NJS_TOKEN_EXPONENTIATION, 1, njs_exponentiation_token },
 };
 
 
