@@ -27,10 +27,12 @@
 
 
 #if (NXT_HAVE_BUILTIN_EXPECT)
-#define nxt_fast_path(x)   __builtin_expect((long) (x), 1)
-#define nxt_slow_path(x)   __builtin_expect((long) (x), 0)
+#define nxt_expect(c, x)   __builtin_expect((long) (x), (c))
+#define nxt_fast_path(x)   nxt_expect(1, x)
+#define nxt_slow_path(x)   nxt_expect(0, x)
 
 #else
+#define nxt_expect(c, x)   (x)
 #define nxt_fast_path(x)   (x)
 #define nxt_slow_path(x)   (x)
 #endif
