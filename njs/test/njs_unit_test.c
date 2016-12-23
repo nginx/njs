@@ -226,6 +226,9 @@ static njs_unit_test_t  njs_test[] =
 
     /* Exponentiation. */
 
+    { nxt_string("2 ** 3 ** 2"),
+      nxt_string("512") },
+
     { nxt_string("2 ** (3 ** 2)"),
       nxt_string("512") },
 
