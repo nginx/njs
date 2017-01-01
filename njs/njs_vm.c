@@ -3357,7 +3357,7 @@ njs_value_string_copy(njs_vm_t *vm, nxt_str_t *retval, njs_value_t *value,
 
 
 void
-njs_vm_throw_exception(njs_vm_t *vm, u_char *buf, uint32_t size)
+njs_vm_throw_exception(njs_vm_t *vm, const u_char *buf, uint32_t size)
 {
     int32_t      length;
     njs_value_t  *value;

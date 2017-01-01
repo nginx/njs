@@ -626,6 +626,8 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("x = '1'; +x + 2"),
       nxt_string("3") },
 
+    /* Weird things. */
+
     { nxt_string("'3' -+-+-+ '1' + '1' / '3' * '6' + '2'"),
       nxt_string("42") },
 
@@ -640,6 +642,11 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("!--[][1]"),
       nxt_string("true") },
+
+    { nxt_string("[].concat[1,2,3]"),
+      nxt_string("undefined") },
+
+    /**/
 
     { nxt_string("'true' == true"),
       nxt_string("false") },

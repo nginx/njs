@@ -610,7 +610,6 @@ njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     length &= mask;
 
     start = njs_string_alloc(vm, &vm->retval, size, length);
-
     if (nxt_slow_path(start == NULL)) {
         return NXT_ERROR;
     }
@@ -903,8 +902,8 @@ njs_string_prototype_substr(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     if (nargs > 1) {
         start = args[1].data.u.number;
-        if (start < length) {
 
+        if (start < length) {
             if (start < 0) {
                 start += length;
 

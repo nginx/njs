@@ -1882,7 +1882,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
                      NJS_OBJECT_ARG, NJS_SKIP_ARG, NJS_INTEGER_ARG),
     },
 
-    /* ES6. */
+    /* ES7. */
     {
         .type = NJS_METHOD,
         .name = njs_string("includes"),

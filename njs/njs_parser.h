@@ -330,7 +330,6 @@ njs_token_t njs_lexer_keyword(njs_lexer_t *lexer);
 njs_extern_t *njs_parser_external(njs_vm_t *vm, njs_parser_t *parser);
 
 njs_parser_node_t *njs_parser(njs_vm_t *vm, njs_parser_t *parser);
-njs_parser_node_t *njs_nonrecursive_parser(njs_vm_t *vm, njs_parser_t *parser);
 njs_token_t njs_parser_arguments(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *parent);
 njs_token_t njs_parser_expression(njs_vm_t *vm, njs_parser_t *parser,
