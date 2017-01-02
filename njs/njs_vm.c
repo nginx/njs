@@ -1227,6 +1227,7 @@ njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
 {
     njs_ret_t               ret;
     nxt_uint_t              n;
+    njs_value_t             *retval;
     njs_array_t             *array;
     njs_extern_t            *ext;
     njs_object_prop_t       *prop;
@@ -1234,6 +1235,7 @@ njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
     njs_vmcode_prop_next_t  *code;
 
     code = (njs_vmcode_prop_next_t *) vm->current;
+    retval = njs_vmcode_operand(vm, code->retval);
 
     if (njs_is_object(object)) {
         next = value->data.u.next;
@@ -1245,7 +1247,7 @@ njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
                 n = next->index++;
 
                 if (njs_is_valid(&array->start[n])) {
-                    njs_number_set(&vm->retval, n);
+                    njs_number_set(retval, n);
 
                     return code->offset;
                 }
@@ -1257,20 +1259,18 @@ njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
         prop = nxt_lvlhsh_each(&object->data.u.object->hash, &next->lhe);
 
         if (prop != NULL) {
-            vm->retval = prop->name;
+            *retval = prop->name;
 
             return code->offset;
         }
 
         nxt_mem_cache_free(vm->mem_cache_pool, next);
 
-        vm->retval = njs_value_void;
-
     } else if (njs_is_external(object)) {
         ext = object->data.u.external;
 
         if (ext->next != NULL) {
-            ret = ext->next(vm, &vm->retval, vm->external[ext->object], value);
+            ret = ext->next(vm, retval, vm->external[ext->object], value);
 
             if (ret == NXT_OK) {
                 return code->offset;

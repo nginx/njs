@@ -1047,7 +1047,7 @@ njs_generate_for_in_statement(njs_vm_t *vm, njs_parser_t *parser,
     njs_generate_code(parser, njs_vmcode_prop_next_t, prop_next);
     prop_next->code.operation = njs_vmcode_property_next;
     prop_next->code.operands = NJS_VMCODE_3OPERANDS;
-    prop_next->code.retval = NJS_VMCODE_RETVAL;
+    prop_next->code.retval = NJS_VMCODE_NO_RETVAL;
     prop_next->retval = foreach->left->index;
     prop_next->object = foreach->right->index;
     prop_next->next = index;

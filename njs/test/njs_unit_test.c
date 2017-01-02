@@ -4519,6 +4519,15 @@ static njs_unit_test_t  njs_test[] =
                  "for (var i in o) { s += i }; s"),
       nxt_string("abc") },
 
+    { nxt_string("var o = { a: 1, b: 2, c: 3 }; for (var i in o); i"),
+      nxt_string("c") },
+
+    { nxt_string("var o = {}; i = 7; for (var i in o); i"),
+      nxt_string("7") },
+
+    { nxt_string("var a = [1,2,3]; for (var i in a); i"),
+      nxt_string("2") },
+
     /* RegExp. */
 
     { nxt_string("/./x"),
