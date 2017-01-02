@@ -81,7 +81,7 @@ static nxt_int_t njs_generate_regexp(njs_vm_t *vm, njs_parser_t *parser,
 static nxt_int_t njs_generate_test_jump_expression(njs_vm_t *vm,
     njs_parser_t *parser, njs_parser_node_t *node);
 static nxt_int_t njs_generate_3addr_operation(njs_vm_t *vm,
-    njs_parser_t *parser, njs_parser_node_t *node);
+    njs_parser_t *parser, njs_parser_node_t *node, nxt_bool_t swap);
 static nxt_int_t njs_generate_2addr_operation(njs_vm_t *vm,
     njs_parser_t *parser, njs_parser_node_t *node);
 static nxt_int_t njs_generate_typeof_operation(njs_vm_t *vm,
@@ -128,8 +128,6 @@ static const nxt_str_t  no_label = { 0, NULL };
 static nxt_int_t
 njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
 {
-    njs_parser_node_t  *left;
-
     if (node == NULL) {
         return NXT_OK;
     }
@@ -195,19 +193,6 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
     case NJS_TOKEN_REMAINDER_ASSIGNMENT:
         return njs_generate_operation_assignment(vm, parser, node);
 
-    case NJS_TOKEN_IN:
-        /*
-         * An "in" operation is parsed as standard binary expression
-         * by njs_parser_binary_expression().  However, its operands
-         * should be swapped to be uniform with other property operations
-         * (get/set and delete) to use the property trap.
-         */
-        left = node->left;
-        node->left = node->right;
-        node->right = left;
-
-        /* Fall through. */
-
     case NJS_TOKEN_BITWISE_OR:
     case NJS_TOKEN_BITWISE_XOR:
     case NJS_TOKEN_BITWISE_AND:
@@ -231,7 +216,16 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
     case NJS_TOKEN_REMAINDER:
     case NJS_TOKEN_PROPERTY_DELETE:
     case NJS_TOKEN_PROPERTY:
-        return njs_generate_3addr_operation(vm, parser, node);
+        return njs_generate_3addr_operation(vm, parser, node, 0);
+
+    case NJS_TOKEN_IN:
+        /*
+         * An "in" operation is parsed as standard binary expression
+         * by njs_parser_binary_expression().  However, its operands
+         * should be swapped to be uniform with other property operations
+         * (get/set and delete) to use the property trap.
+         */
+        return njs_generate_3addr_operation(vm, parser, node, 1);
 
     case NJS_TOKEN_LOGICAL_AND:
     case NJS_TOKEN_LOGICAL_OR:
@@ -1707,7 +1701,7 @@ njs_generate_test_jump_expression(njs_vm_t *vm, njs_parser_t *parser,
 
 static nxt_int_t
 njs_generate_3addr_operation(njs_vm_t *vm, njs_parser_t *parser,
-    njs_parser_node_t *node)
+    njs_parser_node_t *node, nxt_bool_t swap)
 {
     nxt_int_t           ret;
     njs_index_t         index;
@@ -1751,8 +1745,15 @@ njs_generate_3addr_operation(njs_vm_t *vm, njs_parser_t *parser,
     code->code.operation = node->u.operation;
     code->code.operands = NJS_VMCODE_3OPERANDS;
     code->code.retval = NJS_VMCODE_RETVAL;
-    code->src1 = left->index;
-    code->src2 = right->index;
+
+    if (!swap) {
+        code->src1 = left->index;
+        code->src2 = right->index;
+
+    } else {
+        code->src1 = right->index;
+        code->src2 = left->index;
+    }
 
     /*
      * The temporary index of MOVE destination

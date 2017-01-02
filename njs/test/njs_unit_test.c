@@ -224,6 +224,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = 1; function f(x) { a = x; return 2 }; a += f(5)"),
       nxt_string("3") },
 
+    { nxt_string("var x; x in (x = 1, [1, 2, 3])"),
+      nxt_string("false") },
+
     /* Exponentiation. */
 
     { nxt_string("2 ** 3 ** 2"),
