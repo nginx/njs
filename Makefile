@@ -334,6 +334,7 @@ $(NXT_BUILDDIR)/njs_parser.o: \
 	njs/njs_string.h \
 	njs/njs_object.h \
 	njs/njs_function.h \
+	njs/njs_variable.h \
 	njs/njs_parser.h \
 	njs/njs_parser.c \
 
@@ -348,6 +349,7 @@ $(NXT_BUILDDIR)/njs_parser_expression.o: \
 	njs/njs_number.h \
 	njs/njs_object.h \
 	njs/njs_function.h \
+	njs/njs_variable.h \
 	njs/njs_parser.h \
 	njs/njs_parser_expression.c \
 
@@ -363,6 +365,7 @@ $(NXT_BUILDDIR)/njs_generator.o: \
 	njs/njs_string.h \
 	njs/njs_object.h \
 	njs/njs_function.h \
+	njs/njs_variable.h \
 	njs/njs_parser.h \
 	njs/njs_generator.c \
 

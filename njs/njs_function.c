@@ -307,8 +307,8 @@ njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
 #if (NXT_DEBUG)
     vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = NULL;
 #endif
-    frame->prev_local = vm->scopes[NJS_SCOPE_LOCAL];
-    vm->scopes[NJS_SCOPE_LOCAL] = frame->local;
+    frame->prev_local = vm->scopes[NJS_SCOPE_FUNCTION];
+    vm->scopes[NJS_SCOPE_FUNCTION] = frame->local;
 
     return NJS_APPLIED;
 }

@@ -76,10 +76,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("undefined") },
 
     { nxt_string("function f(){} function f(){}"),
-      nxt_string("SyntaxError: Duplicate declaration \"f\" in 1") },
+      nxt_string("SyntaxError: Identifier \"f\" has already been declared in 1") },
 
     { nxt_string("var f = 1; function f() {}"),
-      nxt_string("SyntaxError: Duplicate declaration \"f\" in 1") },
+      nxt_string("SyntaxError: Identifier \"f\" has already been declared in 1") },
 
     { nxt_string("f() = 1"),
       nxt_string("ReferenceError: Invalid left-hand side in assignment in 1") },
@@ -586,7 +586,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("false && (true || true)"),
       nxt_string("false") },
 
-    { nxt_string("a = true; a = -~!a"),
+    { nxt_string("var a = true; a = -~!a"),
       nxt_string("1") },
 
     { nxt_string("12 & 6"),
@@ -623,7 +623,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("NaN ^ 65536"),
       nxt_string("65536") },
 
-    { nxt_string("x = '1'; +x + 2"),
+    { nxt_string("var x = '1'; +x + 2"),
       nxt_string("3") },
 
     /* Weird things. */
@@ -1166,13 +1166,13 @@ static njs_unit_test_t  njs_test[] =
 
     /**/
 
-    { nxt_string("a = 1 ? 2 : 3"),
+    { nxt_string("var a; a = 1 ? 2 : 3"),
       nxt_string("2") },
 
-    { nxt_string("a = 1 ? 2 : 3 ? 4 : 5"),
+    { nxt_string("var a; a = 1 ? 2 : 3 ? 4 : 5"),
       nxt_string("2") },
 
-    { nxt_string("a = 0 ? 2 : 3 ? 4 : 5"),
+    { nxt_string("var a; a = 0 ? 2 : 3 ? 4 : 5"),
       nxt_string("4") },
 
     { nxt_string("0 ? 2 ? 3 : 4 : 5"),
@@ -1187,16 +1187,16 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("(1 ? 0 : 3) ? 4 : 5"),
       nxt_string("5") },
 
-    { nxt_string("a = (1 + 2) ? 2 ? 3 + 4 : 5 : 6"),
+    { nxt_string("var a; a = (1 + 2) ? 2 ? 3 + 4 : 5 : 6"),
       nxt_string("7") },
 
-    { nxt_string("a = (1 ? 2 : 3) + 4"),
+    { nxt_string("var a; a = (1 ? 2 : 3) + 4"),
       nxt_string("6") },
 
-    { nxt_string("a = 1 ? b = 2 + 4 : b = 3"),
+    { nxt_string("var a, b; a = 1 ? b = 2 + 4 : b = 3"),
       nxt_string("6") },
 
-    { nxt_string("a = 1 ? [1,2] : []"),
+    { nxt_string("var a; a = 1 ? [1,2] : []"),
       nxt_string("1,2") },
 
     /**/
@@ -1550,43 +1550,44 @@ static njs_unit_test_t  njs_test[] =
 
     /**/
 
-    { nxt_string("a = 2; b = ++a + ++a; a + ' ' + b"),
+    { nxt_string("var a, b; a = 2; b = ++a + ++a; a + ' ' + b"),
       nxt_string("4 7") },
 
-    { nxt_string("a = 2; b = a++ + a++; a + ' ' + b"),
+    { nxt_string("var a, b; a = 2; b = a++ + a++; a + ' ' + b"),
       nxt_string("4 5") },
 
-    { nxt_string("a = b = 7; a +' '+ b"),
+    { nxt_string("var a, b; a = b = 7; a +' '+ b"),
       nxt_string("7 7") },
 
-    { nxt_string("a = b = c = 5; a +' '+ b +' '+ c"),
+    { nxt_string("var a, b, c; a = b = c = 5; a +' '+ b +' '+ c"),
       nxt_string("5 5 5") },
 
-    { nxt_string("a = b = (c = 5) + 2; a +' '+ b +' '+ c"),
+    { nxt_string("var a, b, c; a = b = (c = 5) + 2; a +' '+ b +' '+ c"),
       nxt_string("7 7 5") },
 
     { nxt_string("1, 2 + 5, 3"),
       nxt_string("3") },
 
-    { nxt_string("a = 1 /* YES */\n b = a + 2 \n \n + 1 \n + 3"),
+    { nxt_string("var a, b; a = 1 /* YES */\n b = a + 2 \n \n + 1 \n + 3"),
       nxt_string("7") },
 
-    { nxt_string("a = 1 // YES \n b = a + 2 \n \n + 1 \n + 3"),
+    { nxt_string("var a, b; a = 1 // YES \n b = a + 2 \n \n + 1 \n + 3"),
       nxt_string("7") },
 
-    { nxt_string("a = 0; ++ \n a"),
+    { nxt_string("var a; a = 0; ++ \n a"),
       nxt_string("1") },
 
     { nxt_string("a = 0; a \n ++"),
       nxt_string("SyntaxError: Unexpected end of input in 2") },
 
-    { nxt_string("a = 1 ? 2 \n : 3"),
+    { nxt_string("var a; a = 1 ? 2 \n : 3"),
       nxt_string("2") },
 
-    { nxt_string("a = 0 / 0; b = 1 / 0; c = -1 / 0; a +' '+ b +' '+ c"),
+    { nxt_string("var a, b, c;"
+                 "a = 0 / 0; b = 1 / 0; c = -1 / 0; a +' '+ b +' '+ c"),
       nxt_string("NaN Infinity -Infinity") },
 
-    { nxt_string("a = (b = 7) + 5; var c; a +' '+ b +' '+ c"),
+    { nxt_string("var a, b; a = (b = 7) + 5; var c; a +' '+ b +' '+ c"),
       nxt_string("12 7 undefined") },
 
     { nxt_string("var a, b = 1, c; a +' '+ b +' '+ c"),
@@ -1595,13 +1596,13 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = 1, b = a + 1; a +' '+ b"),
       nxt_string("1 2") },
 
-    { nxt_string("a = a = 1"),
+    { nxt_string("var a; a = a = 1"),
       nxt_string("1") },
 
     { nxt_string("var a = 1, \n b; a +' '+ b"),
       nxt_string("1 undefined") },
 
-    { nxt_string("a = b + 1; var b; a +' '+ b"),
+    { nxt_string("var a; a = b + 1; var b; a +' '+ b"),
       nxt_string("NaN undefined") },
 
     { nxt_string("var a += 1"),
@@ -1610,26 +1611,26 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = a + 1"),
       nxt_string("undefined") },
 
-    { nxt_string("a = b + 1; var b = 1; a +' '+ b"),
+    { nxt_string("var a; a = b + 1; var b = 1; a +' '+ b"),
       nxt_string("NaN 1") },
 
-    { nxt_string("(a) = 1"),
+    { nxt_string("var a; (a) = 1"),
       nxt_string("1") },
 
     { nxt_string("a"),
-      nxt_string("ReferenceError") },
+      nxt_string("ReferenceError: \"a\" is not defined in 1") },
 
     { nxt_string("a + a"),
-      nxt_string("ReferenceError") },
+      nxt_string("ReferenceError: \"a\" is not defined in 1") },
 
     { nxt_string("a = b + 1"),
-      nxt_string("ReferenceError") },
+      nxt_string("ReferenceError: \"a\" is not defined in 1") },
 
     { nxt_string("a = a + 1"),
-      nxt_string("ReferenceError") },
+      nxt_string("ReferenceError: \"a\" is not defined in 1") },
 
     { nxt_string("a += 1"),
-      nxt_string("ReferenceError") },
+      nxt_string("ReferenceError: \"a\" is not defined in 1") },
 
     { nxt_string("a += 1; var a = 2"),
       nxt_string("undefined") },
@@ -1646,7 +1647,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = 1; a += (a = 2)"),
       nxt_string("3") },
 
-    { nxt_string("var a = b = 1; a +' '+ b"),
+    { nxt_string("var a = b = 1; var b; a +' '+ b"),
       nxt_string("1 1") },
 
     { nxt_string("var a \n if (!a) a = 3; a"),
@@ -1820,23 +1821,23 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("for ( ;null; ) { continue }"),
       nxt_string("undefined") },
 
-    { nxt_string("for (i = 0; i < 100; i++) if (i > 9) continue; i"),
+    { nxt_string("var i; for (i = 0; i < 100; i++) if (i > 9) continue; i"),
       nxt_string("100") },
 
-    { nxt_string("var a = []; for (i in a) continue"),
+    { nxt_string("var a = [], i; for (i in a) continue"),
       nxt_string("undefined") },
 
-    { nxt_string("var a = []; for (i in a) continue;"),
+    { nxt_string("var a = [], i; for (i in a) continue;"),
       nxt_string("undefined") },
 
-    { nxt_string("var a = []; for (i in a) { continue }"),
+    { nxt_string("var a = [], i; for (i in a) { continue }"),
       nxt_string("undefined") },
 
-    { nxt_string("var a = [1,2,3,4,5]; var s = 0;"
+    { nxt_string("var a = [1,2,3,4,5]; var s = 0, i;"
                  "for (i in a) { if (a[i] > 4) continue; else s += a[i] } s"),
       nxt_string("10") },
 
-    { nxt_string("var a = [1,2,3,4,5]; var s = 0;"
+    { nxt_string("var a = [1,2,3,4,5]; var s = 0, i;"
                  "for (i in a) { if (a[i] > 4) continue; s += a[i] } s"),
       nxt_string("10") },
 
@@ -1881,53 +1882,53 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("for ( ;; ) { break }"),
       nxt_string("undefined") },
 
-    { nxt_string("for (i = 0; i < 100; i++) if (i > 9) break; i"),
+    { nxt_string("var i; for (i = 0; i < 100; i++) if (i > 9) break; i"),
       nxt_string("10") },
 
-    { nxt_string("var a = []; for (i in a) break"),
+    { nxt_string("var a = [], i; for (i in a) break"),
       nxt_string("undefined") },
 
-    { nxt_string("var a = []; for (i in a) break;"),
+    { nxt_string("var a = [], i; for (i in a) break;"),
       nxt_string("undefined") },
 
-    { nxt_string("var a = []; for (i in a) { break }"),
+    { nxt_string("var a = [], i; for (i in a) { break }"),
       nxt_string("undefined") },
 
-    { nxt_string("var a = [1,2,3,4,5]; var s = 0;"
+    { nxt_string("var a = [1,2,3,4,5]; var s = 0, i;"
                  "for (i in a) { if (a[i] > 4) break; else s += a[i] } s"),
       nxt_string("10") },
 
-    { nxt_string("var a = [1,2,3,4,5]; var s = 0;"
+    { nxt_string("var a = [1,2,3,4,5]; var s = 0, i;"
                  "for (i in a) { if (a[i] > 4) break; s += a[i] } s"),
       nxt_string("10") },
 
-    { nxt_string("var a = [1,2,3,4,5]; var s = 0;"
+    { nxt_string("var a = [1,2,3,4,5]; var s = 0, i;"
                  "for (i in a) if (a[i] > 4) break; s += a[i] } s"),
       nxt_string("5") },
 
     /**/
 
-    { nxt_string("for (i = 0; i < 10; i++) { i += 1 } i"),
+    { nxt_string("var i; for (i = 0; i < 10; i++) { i += 1 } i"),
       nxt_string("10") },
 
     /* Factorial. */
 
-    { nxt_string("n = 5; f = 1; while (n--) f *= n + 1; f"),
+    { nxt_string("var n = 5, f = 1; while (n--) f *= n + 1; f"),
       nxt_string("120") },
 
-    { nxt_string("n = 5; f = 1; while (n) { f *= n; n-- } f"),
+    { nxt_string("var n = 5, f = 1; while (n) { f *= n; n-- } f"),
       nxt_string("120") },
 
     /* Fibonacci. */
 
-    { nxt_string("var n = 50, x;"
+    { nxt_string("var n = 50, x, i, j, k;"
                  "for(i=0,j=1,k=0; k<n; i=j,j=x,k++ ){ x=i+j } x"),
       nxt_string("20365011074") },
 
     { nxt_string("3 + 'abc' + 'def' + null + true + false + undefined"),
       nxt_string("3abcdefnulltruefalseundefined") },
 
-    { nxt_string("a = 0; do a++; while (a < 5) if (a == 5) a = 7.33 \n"
+    { nxt_string("var a = 0; do a++; while (a < 5) if (a == 5) a = 7.33 \n"
                  "else a = 8; while (a < 10) a++; a"),
       nxt_string("10.33") },
 
@@ -1984,11 +1985,20 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("typeof a"),
       nxt_string("undefined") },
 
+    { nxt_string("typeof a; var a"),
+      nxt_string("undefined") },
+
+    { nxt_string("typeof a; var a; a"),
+      nxt_string("undefined") },
+
+    { nxt_string("var a = 5; typeof a"),
+      nxt_string("number") },
+
     { nxt_string("typeof a; a"),
-      nxt_string("ReferenceError") },
+      nxt_string("ReferenceError: \"a\" is not defined in 1") },
 
     { nxt_string("typeof a; a = 1"),
-      nxt_string("1") },
+      nxt_string("ReferenceError: \"a\" is not defined in 1") },
 
     /**/
 
@@ -2007,142 +2017,148 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("++null"),
       nxt_string("ReferenceError: Invalid left-hand side in prefix operation in 1") },
 
-    { nxt_string("var a; b = a; a = 1; a +' '+ b"),
+    { nxt_string("var a, b; b = a; a = 1; a +' '+ b"),
       nxt_string("1 undefined") },
 
     { nxt_string("a = 1"),
+      nxt_string("ReferenceError: \"a\" is not defined in 1") },
+
+    { nxt_string("var a; a = 1; a"),
       nxt_string("1") },
 
-    { nxt_string("a; a = 1; a"),
-      nxt_string("ReferenceError") },
-
-    { nxt_string("a = {}; typeof a +' '+ a"),
+    { nxt_string("var a = {}; typeof a +' '+ a"),
       nxt_string("object [object Object]") },
 
-    { nxt_string("a = {}; a.b"),
+    { nxt_string("var a = {}; a.b"),
       nxt_string("undefined") },
 
-    { nxt_string("a = {}; a.b = 1 + 2; a.b"),
+    { nxt_string("var a = {}; a.b = 1 + 2; a.b"),
       nxt_string("3") },
 
-    { nxt_string("a = {}; a['b']"),
+    { nxt_string("var a = {}; a['b']"),
       nxt_string("undefined") },
 
-    { nxt_string("a = {}; a.b.c"),
+    { nxt_string("var a = {}; a.b.c"),
       nxt_string("TypeError") },
 
     { nxt_string("'a'.b = 1"),
       nxt_string("TypeError") },
 
-    { nxt_string("a = {}; a.b = 1; a.b"),
+    { nxt_string("var a = {}; a.b = 1; a.b"),
       nxt_string("1") },
 
-    { nxt_string("a = {}; a.b = 1; a.b += 2"),
+    { nxt_string("var a = {}; a.b = 1; a.b += 2"),
       nxt_string("3") },
 
-    { nxt_string("a = {}; a.b = 1; a.b += a.b"),
+    { nxt_string("var a = {}; a.b = 1; a.b += a.b"),
       nxt_string("2") },
 
-    { nxt_string("a = {}; a.b = 1; x = {}; x.b = 3; a.b += (x.b = 2)"),
+    { nxt_string("var a = {}; a.b = 1; var x = {}; x.b = 3; a.b += (x.b = 2)"),
       nxt_string("3") },
 
-    { nxt_string("a = {}; a.b = 1; a.b += (a.b = 2)"),
+    { nxt_string("var a = {}; a.b = 1; a.b += (a.b = 2)"),
       nxt_string("3") },
 
-    { nxt_string("a = {}; a.b += 1"),
+    { nxt_string("var a = {}; a.b += 1"),
       nxt_string("NaN") },
 
-    { nxt_string("a = 1; b = 2; a = b += 1"),
+    { nxt_string("var a = 1; var b = 2; a = b += 1"),
       nxt_string("3") },
 
-    { nxt_string("a = 1; b = { x:2 }; a = b.x += 1"),
+    { nxt_string("var a = 1; var b = { x:2 }; a = b.x += 1"),
       nxt_string("3") },
 
-    { nxt_string("a = 1; b = { x:2 }; a = b.x += (a = 1)"),
+    { nxt_string("var a = 1; var b = { x:2 }; a = b.x += (a = 1)"),
       nxt_string("3") },
 
-    { nxt_string("a = undefined; a.b++; a.b"),
+    { nxt_string("var a = undefined; a.b++; a.b"),
       nxt_string("TypeError") },
 
-    { nxt_string("a = null; a.b++; a.b"),
+    { nxt_string("var a = null; a.b++; a.b"),
       nxt_string("TypeError") },
 
-    { nxt_string("a = true; a.b++; a.b"),
+    { nxt_string("var a = true; a.b++; a.b"),
       nxt_string("TypeError") },
 
-    { nxt_string("a = 1; a.b++; a.b"),
+    { nxt_string("var a = 1; a.b++; a.b"),
       nxt_string("TypeError") },
 
     { nxt_string("var n = 1, o = { p: n += 1 }; o.p"),
       nxt_string("2") },
 
-    { nxt_string("a = {}; a.b = {}; a.b.c = 1; a.b['c']"),
+    { nxt_string("var a = {}; a.b = {}; a.b.c = 1; a.b['c']"),
       nxt_string("1") },
 
-    { nxt_string("a = {}; a.b = {}; a.b.c = 1; a['b']['c']"),
+    { nxt_string("var a = {}; a.b = {}; a.b.c = 1; a['b']['c']"),
       nxt_string("1") },
 
-    { nxt_string("a = {}; a.b = {}; c = 'd'; a.b.d = 1; a['b'][c]"),
+    { nxt_string("var a = {}; a.b = {}; var c = 'd'; a.b.d = 1; a['b'][c]"),
       nxt_string("1") },
 
-    { nxt_string("a = {}; a.b = 1; c = a.b++; a.b +' '+ c"),
+    { nxt_string("var a = {}; a.b = 1; var c = a.b++; a.b +' '+ c"),
       nxt_string("2 1") },
 
-    { nxt_string("a = 2; a.b = 1; c = a.b++; a +' '+ a.b +' '+ c"),
+    { nxt_string("var a = 2; a.b = 1; var c = a.b++; a +' '+ a.b +' '+ c"),
       nxt_string("TypeError") },
 
-    { nxt_string("x = { a: 1 }; x.a"),
+    { nxt_string("var x = { a: 1 }; x.a"),
       nxt_string("1") },
 
-    { nxt_string("a = { x:1 }; b = { y:2 }; a.x = b.y; a.x"),
+    { nxt_string("var a = { x:1 }; var b = { y:2 }; a.x = b.y; a.x"),
       nxt_string("2") },
 
-    { nxt_string("a = { x:1 }; b = { y:2 }; c = a.x = b.y; c"),
+    { nxt_string("var a = { x:1 }; var b = { y:2 }; var c; c = a.x = b.y"),
       nxt_string("2") },
 
-    { nxt_string("a = { x:1 }; b = { y:2 }; a.x = b.y"),
+    { nxt_string("var a = { x:1 }; var b = { y:2 }; var c = a.x = b.y; c"),
       nxt_string("2") },
 
-    { nxt_string("a = { x:1 }; b = a.x = 1 + 2; a.x +' '+ b"),
+    { nxt_string("var a = { x:1 }; var b = { y:2 }; a.x = b.y"),
+      nxt_string("2") },
+
+    { nxt_string("var a = { x:1 }; var b = a.x = 1 + 2; a.x +' '+ b"),
       nxt_string("3 3") },
 
-    { nxt_string("a = { x:1 }; b = { y:2 }; c = {}; c.x = a.x = b.y; c.x"),
+    { nxt_string("var a = { x:1 }; var b = { y:2 }; var c = {};"
+                 "c.x = a.x = b.y; c.x"),
       nxt_string("2") },
 
-    { nxt_string("y = 2; x = { a:1, b: y + 5, c:3 }; x.a +' '+ x.b +' '+ x.c"),
+    { nxt_string("var y = 2, x = { a:1, b: y + 5, c:3 };"
+                 "x.a +' '+ x.b +' '+ x.c"),
       nxt_string("1 7 3") },
 
-    { nxt_string("x = { a: 1, b: { a:2, c:5 } }; x.a +' '+ x.b.a +' '+ x.b.c"),
+    { nxt_string("var x = { a: 1, b: { a:2, c:5 } };"
+                 "x.a +' '+ x.b.a +' '+ x.b.c"),
       nxt_string("1 2 5") },
 
-    { nxt_string("var y = 5; x = { a:y }; x.a"),
+    { nxt_string("var y = 5, x = { a:y }; x.a"),
       nxt_string("5") },
 
-    { nxt_string("x = { a: 1; b: 2 }"),
+    { nxt_string("var x = { a: 1; b: 2 }"),
       nxt_string("SyntaxError: Unexpected token \";\" in 1") },
 
-    { nxt_string("x = { a: 1, b: x.a }"),
-      nxt_string("ReferenceError") },
+    { nxt_string("var x = { a: 1, b: x.a }"),
+      nxt_string("TypeError") },
 
-    { nxt_string("a = { b: 2 }; a.b += 1"),
+    { nxt_string("var a = { b: 2 }; a.b += 1"),
       nxt_string("3") },
 
-    { nxt_string("o = {a:1}; c = o; o.a = o = {b:5};"
+    { nxt_string("var o = {a:1}, c = o; o.a = o = {b:5};"
                  "o.a +' '+ o.b +' '+ c.a.b"),
       nxt_string("undefined 5 5") },
 
-    { nxt_string("y = { a: 2 }; x = { a: 1, b: y.a }; x.a +' '+ x.b"),
+    { nxt_string("var y = { a: 2 }, x = { a: 1, b: y.a }; x.a +' '+ x.b"),
       nxt_string("1 2") },
 
-    { nxt_string("y = { a: 1 }; x = { a: y.a++, b: y.a++ }\n"
+    { nxt_string("var y = { a: 1 }, x = { a: y.a++, b: y.a++ }\n"
                  "x.a +' '+ x.b +' '+ y.a"),
       nxt_string("1 2 3") },
 
-    { nxt_string("var a=''; var o = {a:1, b:2};"
+    { nxt_string("var a='', o = {a:1, b:2}, p;"
                  "for (p in o) { a += p +':'+ o[p] +',' } a"),
       nxt_string("a:1,b:2,") },
 
-    { nxt_string("x = { a: 1 }; b = delete x.a; x.a +' '+ b"),
+    { nxt_string("var x = { a: 1 }, b = delete x.a; x.a +' '+ b"),
       nxt_string("undefined true") },
 
     { nxt_string("delete null"),
@@ -2179,25 +2195,25 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("delete a"),
       nxt_string("SyntaxError: Delete of an unqualified identifier in 1") },
 
-    { nxt_string("a = 1; delete a"),
+    { nxt_string("var a = 1; delete a"),
       nxt_string("SyntaxError: Delete of an unqualified identifier in 1") },
 
     { nxt_string("function f(){} delete f"),
       nxt_string("SyntaxError: Delete of an unqualified identifier in 1") },
 
-    { nxt_string("a = { x:1 }; ('x' in a) +' '+ (1 in a)"),
+    { nxt_string("var a = { x:1 }; ('x' in a) +' '+ (1 in a)"),
       nxt_string("true false") },
 
     { nxt_string("delete --[][1]"),
       nxt_string("true") },
 
-    { nxt_string("a = {}; 1 in a"),
+    { nxt_string("var a = {}; 1 in a"),
       nxt_string("false") },
 
-    { nxt_string("a = 1; 1 in a"),
+    { nxt_string("var a = 1; 1 in a"),
       nxt_string("TypeError") },
 
-    { nxt_string("a = true; 1 in a"),
+    { nxt_string("var a = true; 1 in a"),
       nxt_string("TypeError") },
 
     { nxt_string("var n = { toString: function() { return 'a' } };"
@@ -2240,16 +2256,16 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("3 * [5,7]"),
       nxt_string("NaN") },
 
-    { nxt_string("a = [ 1, 2, 3 ]; a[0] + a[1] + a[2]"),
+    { nxt_string("var a = [ 1, 2, 3 ]; a[0] + a[1] + a[2]"),
       nxt_string("6") },
 
     { nxt_string("var n = 1, a = [ n += 1 ]; a"),
       nxt_string("2") },
 
-    { nxt_string("a = [ 1, 2; 3 ]; a[0] + a[1] + a[2]"),
+    { nxt_string("var a = [ 1, 2; 3 ]; a[0] + a[1] + a[2]"),
       nxt_string("SyntaxError: Unexpected token \";\" in 1") },
 
-    { nxt_string("a = [ 1, 2, 3 ]; a[0] +' '+ a[1] +' '+ a[2] +' '+ a[3]"),
+    { nxt_string("var a = [ 1, 2, 3 ]; a[0] +' '+ a[1] +' '+ a[2] +' '+ a[3]"),
       nxt_string("1 2 3 undefined") },
 
     { nxt_string("[] - 2"),
@@ -2264,13 +2280,13 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("[[[1]]] - 2"),
       nxt_string("-1") },
 
-    { nxt_string("a = []; a - 2"),
+    { nxt_string("var a = []; a - 2"),
       nxt_string("-2") },
 
-    { nxt_string("a = [1]; a - 2"),
+    { nxt_string("var a = [1]; a - 2"),
       nxt_string("-1") },
 
-    { nxt_string("a = []; a[0] = 1; a - 2"),
+    { nxt_string("var a = []; a[0] = 1; a - 2"),
       nxt_string("-1") },
 
     { nxt_string("[] + 2 + 3"),
@@ -2279,37 +2295,38 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("[1] + 2 + 3"),
       nxt_string("123") },
 
-    { nxt_string("a = []; a + 2 + 3"),
+    { nxt_string("var a = []; a + 2 + 3"),
       nxt_string("23") },
 
-    { nxt_string("a = [1]; a + 2 + 3"),
+    { nxt_string("var a = [1]; a + 2 + 3"),
       nxt_string("123") },
 
-    { nxt_string("a = [1,2]; i = 0; a[i++] += a[0] = 5 + i; a[0] +' '+ a[1]"),
+    { nxt_string("var a = [1,2], i = 0; a[i++] += a[0] = 5 + i;"
+                 "a[0] +' '+ a[1]"),
       nxt_string("7 2") },
 
-    { nxt_string("a = []; a[0] = 1; a + 2 + 3"),
+    { nxt_string("var a = []; a[0] = 1; a + 2 + 3"),
       nxt_string("123") },
 
-    { nxt_string("a = []; a['0'] = 1; a + 2 + 3"),
+    { nxt_string("var a = []; a['0'] = 1; a + 2 + 3"),
       nxt_string("123") },
 
-    { nxt_string("a = []; a[2] = 1; a[2]"),
+    { nxt_string("var a = []; a[2] = 1; a[2]"),
       nxt_string("1") },
 
-    { nxt_string("a = [1, 2]; 1 in a"),
+    { nxt_string("var a = [1, 2]; 1 in a"),
       nxt_string("true") },
 
-    { nxt_string("a = [1, 2]; 2 in a"),
+    { nxt_string("var a = [1, 2]; 2 in a"),
       nxt_string("false") },
 
-    { nxt_string("a = [1, 2]; delete a[0]; 0 in a"),
+    { nxt_string("var a = [1, 2]; delete a[0]; 0 in a"),
       nxt_string("false") },
 
     { nxt_string("var a = [ function(a) {return a + 1} ]; a[0](5)"),
       nxt_string("6") },
 
-    { nxt_string("var s = '', a = [5,1,2];"
+    { nxt_string("var s = '', a = [5,1,2], i;"
                  "a[null] = null;"
                  "a[undefined] = 'defined';"
                  "a[false] = false;"
@@ -2329,16 +2346,16 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("[1,2].length"),
       nxt_string("2") },
 
-    { nxt_string("a = [1,2]; a.length"),
+    { nxt_string("var a = [1,2]; a.length"),
       nxt_string("2") },
 
-    { nxt_string("a = [1,2,3]; a.join()"),
+    { nxt_string("var a = [1,2,3]; a.join()"),
       nxt_string("1,2,3") },
 
-    { nxt_string("a = [1,2,3]; a.join(':')"),
+    { nxt_string("var a = [1,2,3]; a.join(':')"),
       nxt_string("1:2:3") },
 
-    { nxt_string("a = []; a[5] = 5; a.join()"),
+    { nxt_string("var a = []; a[5] = 5; a.join()"),
       nxt_string(",,,,,5") },
 
     { nxt_string("var a = [,null,undefined,false,true,0,1]; a.join()"),
@@ -2352,10 +2369,10 @@ static njs_unit_test_t  njs_test[] =
                  "[o].join()"),
       nxt_string("undefined") },
 
-    { nxt_string("a = []; a[5] = 5; a"),
+    { nxt_string("var a = []; a[5] = 5; a"),
       nxt_string(",,,,,5") },
 
-    { nxt_string("a = []; a.concat([])"),
+    { nxt_string("var a = []; a.concat([])"),
       nxt_string("") },
 
     { nxt_string("var s = { toString: function() { return 'S' } };"
@@ -2372,7 +2389,7 @@ static njs_unit_test_t  njs_test[] =
 
     /* Array.toString(). */
 
-    { nxt_string("a = [1,2,3]; a.join = 'NO';"
+    { nxt_string("var a = [1,2,3]; a.join = 'NO';"
                  "Object.prototype.toString = function () { return 'A' }; a"),
       nxt_string("[object Array]") },
 
@@ -2452,13 +2469,13 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Array.isArray([])"),
       nxt_string("true") },
 
-    { nxt_string("a = [1,2,3]; a.concat(4, [5, 6, 7], 8)"),
+    { nxt_string("var a = [1,2,3]; a.concat(4, [5, 6, 7], 8)"),
       nxt_string("1,2,3,4,5,6,7,8") },
 
-    { nxt_string("a = []; a[100] = a.length; a[100] +' '+ a.length"),
+    { nxt_string("var a = []; a[100] = a.length; a[100] +' '+ a.length"),
       nxt_string("0 101") },
 
-    { nxt_string("a = [1,2]; a[100] = 100; a[100] +' '+ a.length"),
+    { nxt_string("var a = [1,2]; a[100] = 100; a[100] +' '+ a.length"),
       nxt_string("100 101") },
 
     { nxt_string("Array.prototype.slice(1)"),
@@ -2479,26 +2496,28 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("[0,1,2,3,4].slice(6,7)"),
       nxt_string("") },
 
-    { nxt_string("a = [1,2,3,4,5]; b = a.slice(3); b[0] +' '+ b[1] +' '+ b[2]"),
+    { nxt_string("var a = [1,2,3,4,5], b = a.slice(3);"
+                 "b[0] +' '+ b[1] +' '+ b[2]"),
       nxt_string("4 5 undefined") },
 
-    { nxt_string("a = [1,2]; a.pop() +' '+ a.length +' '+ a"),
+    { nxt_string("var a = [1,2]; a.pop() +' '+ a.length +' '+ a"),
       nxt_string("2 1 1") },
 
-    { nxt_string("a = [1,2]; len = a.push(3); len +' '+ a.pop() +' '+ a"),
+    { nxt_string("var a = [1,2], len = a.push(3); len +' '+ a.pop() +' '+ a"),
       nxt_string("3 3 1,2") },
 
-    { nxt_string("a = [1,2]; len = a.push(3,4,5); len +' '+ a.pop() +' '+ a"),
+    { nxt_string("var a = [1,2], len = a.push(3,4,5);"
+                 "len +' '+ a.pop() +' '+ a"),
       nxt_string("5 5 1,2,3,4") },
 
-    { nxt_string("a = [1,2,3]; a.shift() +' '+ a[0] +' '+ a.length"),
+    { nxt_string("var a = [1,2,3]; a.shift() +' '+ a[0] +' '+ a.length"),
       nxt_string("1 2 2") },
 
-    { nxt_string("a = [1,2]; len = a.unshift(3);"
+    { nxt_string("var a = [1,2], len = a.unshift(3);"
                  "len +' '+ a +' '+ a.shift()"),
       nxt_string("3 3,1,2 3") },
 
-    { nxt_string("a = [1,2]; len = a.unshift(3,4,5);"
+    { nxt_string("var a = [1,2], len = a.unshift(3,4,5);"
                  "len +' '+ a +' '+ a.shift()"),
       nxt_string("5 3,4,5,1,2 3") },
 
@@ -2960,25 +2979,25 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'囲碁織'.toUTF8().length"),
       nxt_string("9") },
 
-    { nxt_string("a = 'abc'; a.length"),
+    { nxt_string("var a = 'abc'; a.length"),
       nxt_string("3") },
 
-    { nxt_string("a = 'abc'; a['length']"),
+    { nxt_string("var a = 'abc'; a['length']"),
       nxt_string("3") },
 
-    { nxt_string("a = 'абв'; a.length"),
+    { nxt_string("var a = 'абв'; a.length"),
       nxt_string("3") },
 
-    { nxt_string("a = 'abc' + 'абв'; a.length"),
+    { nxt_string("var a = 'abc' + 'абв'; a.length"),
       nxt_string("6") },
 
-    { nxt_string("a = 'abc' + 1 + 'абв'; a +' '+ a.length"),
+    { nxt_string("var a = 'abc' + 1 + 'абв'; a +' '+ a.length"),
       nxt_string("abc1абв 7") },
 
-    { nxt_string("a = 1; a.length"),
+    { nxt_string("var a = 1; a.length"),
       nxt_string("undefined") },
 
-    { nxt_string("a = 'abc'; a.concat('абв', 123)"),
+    { nxt_string("var a = 'abc'; a.concat('абв', 123)"),
       nxt_string("abcабв123") },
 
     { nxt_string("''.concat.call(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)"),
@@ -3039,7 +3058,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'\\u00CE\\u00B1'.toBytes() === 'α'"),
       nxt_string("false") },
 
-    { nxt_string("b = '\\u00C2\\u00B6'.toBytes(); u = b.fromUTF8();"
+    { nxt_string("var b = '\\u00C2\\u00B6'.toBytes(), u = b.fromUTF8();"
                  "b.length +' '+ b +' '+ u.length +' '+ u"),
       nxt_string("2 ¶ 1 ¶") },
 
@@ -3049,28 +3068,28 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'α'.toUTF8()[0]"),
       nxt_string("\xCE") },
 
-    { nxt_string("a = 'a'.toBytes() + 'α'; a + a.length"),
+    { nxt_string("var a = 'a'.toBytes() + 'α'; a + a.length"),
       nxt_string("aα3") },
 
-    { nxt_string("a = 'µ§±®'.toBytes(); a"),
+    { nxt_string("var a = 'µ§±®'.toBytes(); a"),
       nxt_string("\xB5\xA7\xB1\xAE") },
 
-    { nxt_string("a = 'µ§±®'.toBytes(2); a"),
+    { nxt_string("var a = 'µ§±®'.toBytes(2); a"),
       nxt_string("\xB1\xAE") },
 
-    { nxt_string("a = 'µ§±®'.toBytes(1,3); a"),
+    { nxt_string("var a = 'µ§±®'.toBytes(1,3); a"),
       nxt_string("\xA7\xB1") },
 
-    { nxt_string("a = '\\xB5\\xA7\\xB1\\xAE'.toBytes(); a.fromBytes()"),
+    { nxt_string("var a = '\\xB5\\xA7\\xB1\\xAE'.toBytes(); a.fromBytes()"),
       nxt_string("µ§±®") },
 
-    { nxt_string("a = '\\xB5\\xA7\\xB1\\xAE'.toBytes(); a.fromBytes(2)"),
+    { nxt_string("var a = '\\xB5\\xA7\\xB1\\xAE'.toBytes(); a.fromBytes(2)"),
       nxt_string("±®") },
 
-    { nxt_string("a = '\\xB5\\xA7\\xB1\\xAE'.toBytes(); a.fromBytes(1, 3)"),
+    { nxt_string("var a = '\\xB5\\xA7\\xB1\\xAE'.toBytes(); a.fromBytes(1, 3)"),
       nxt_string("§±") },
 
-    { nxt_string("a = 'abcdefgh'; a.substr(3, 15)"),
+    { nxt_string("var a = 'abcdefgh'; a.substr(3, 15)"),
       nxt_string("defgh") },
 
     { nxt_string("'abcdefgh'.substr(3, 15)"),
@@ -3183,7 +3202,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abc'.charCodeAt(3)"),
       nxt_string("NaN") },
 
-    { nxt_string("a = 'abcdef'; a.3"),
+    { nxt_string("var a = 'abcdef'; a.3"),
       nxt_string("SyntaxError: Unexpected token \"3\" in 1") },
 
     { nxt_string("'abcdef'[3]"),
@@ -3204,7 +3223,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abcdef'[8]"),
       nxt_string("undefined") },
 
-    { nxt_string("a = 'abcdef'; b = 1 + 2; a[b]"),
+    { nxt_string("var a = 'abcdef', b = 1 + 2; a[b]"),
       nxt_string("d") },
 
     /**/
@@ -3244,19 +3263,19 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("typeof $r"),
       nxt_string("undefined") },
 
-    { nxt_string("a = $r.uri; s = a.fromUTF8(); s.length +' '+ s"),
+    { nxt_string("var a = $r.uri, s = a.fromUTF8(); s.length +' '+ s"),
       nxt_string("3 АБВ") },
 
-    { nxt_string("a = $r.uri; s = a.fromUTF8(2); s.length +' '+ s"),
+    { nxt_string("var a = $r.uri, s = a.fromUTF8(2); s.length +' '+ s"),
       nxt_string("2 БВ") },
 
-    { nxt_string("a = $r.uri; s = a.fromUTF8(2, 4); s.length +' '+ s"),
+    { nxt_string("var a = $r.uri, s = a.fromUTF8(2, 4); s.length +' '+ s"),
       nxt_string("1 Б") },
 
-    { nxt_string("a = $r.uri; a +' '+ a.length +' '+ a"),
+    { nxt_string("var a = $r.uri; a +' '+ a.length +' '+ a"),
       nxt_string("АБВ 6 АБВ") },
 
-    { nxt_string("$r.uri = 'αβγ'; a = $r.uri; a.length +' '+ a"),
+    { nxt_string("$r.uri = 'αβγ'; var a = $r.uri; a.length +' '+ a"),
       nxt_string("6 αβγ") },
 
     { nxt_string("$r.uri.length +' '+ $r.uri"),
@@ -3265,16 +3284,16 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("$r.uri = $r.uri.substr(2); $r.uri.length +' '+ $r.uri"),
       nxt_string("4 БВ") },
 
-    { nxt_string("a = $r.host; a +' '+ a.length +' '+ a"),
+    { nxt_string("var a = $r.host; a +' '+ a.length +' '+ a"),
       nxt_string("АБВГДЕЁЖЗИЙ 22 АБВГДЕЁЖЗИЙ") },
 
-    { nxt_string("a = $r.host; a.substr(2, 2)"),
+    { nxt_string("var a = $r.host; a.substr(2, 2)"),
       nxt_string("Б") },
 
-    { nxt_string("a = $r.header['User-Agent']; a +' '+ a.length +' '+ a"),
+    { nxt_string("var a = $r.header['User-Agent']; a +' '+ a.length +' '+ a"),
       nxt_string("User-Agent|АБВ 17 User-Agent|АБВ") },
 
-    { nxt_string("var a='';"
+    { nxt_string("var a='', p;"
                  "for (p in $r.header) { a += p +':'+ $r.header[p] +',' }"
                  "a"),
       nxt_string("01:01|АБВ,02:02|АБВ,03:03|АБВ,") },
@@ -3282,7 +3301,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("$r.some_method('YES')"),
       nxt_string("АБВ") },
 
-    { nxt_string("for (p in $r.some_method);"),
+    { nxt_string("var p; for (p in $r.some_method);"),
       nxt_string("undefined") },
 
     { nxt_string("'uri' in $r"),
@@ -3342,14 +3361,14 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abcdef'.substr(2, 4).charAt(2)"),
       nxt_string("e") },
 
-    { nxt_string("a = 'abcdef'.substr(2, 4).charAt(2).length"),
+    { nxt_string("var a = 'abcdef'.substr(2, 4).charAt(2).length; a"),
       nxt_string("1") },
 
-    { nxt_string("a = 'abcdef'.substr(2, 4).charAt(2) + '1234'"),
+    { nxt_string("var a = 'abcdef'.substr(2, 4).charAt(2) + '1234'; a"),
       nxt_string("e1234") },
 
-    { nxt_string("a = ('abcdef'.substr(2, 5 * 2 - 6).charAt(2) + '1234')"
-                 "    .length"),
+    { nxt_string("var a = ('abcdef'.substr(2, 5 * 2 - 6).charAt(2) + '1234')"
+                 "         .length; a"),
       nxt_string("5") },
 
     { nxt_string("String.fromCharCode('_')"),
@@ -3365,6 +3384,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("αβγ") },
 
     { nxt_string("(function() {"
+                 "    var n;"
                  "    for (n = 0; n <= 1114111; n++) {"
                  "        if (String.fromCharCode(n).charCodeAt(0) !== n)"
                  "            return n;"
@@ -3373,11 +3393,11 @@ static njs_unit_test_t  njs_test[] =
                  "})()"),
       nxt_string("-1") },
 
-    { nxt_string("a = 'abcdef'; function f(a) {"
+    { nxt_string("var a = 'abcdef'; function f(a) {"
                  "return a.slice(a.indexOf('cd')) } f(a)"),
       nxt_string("cdef") },
 
-    { nxt_string("a = 'abcdef'; a.slice(a.indexOf('cd'))"),
+    { nxt_string("var a = 'abcdef'; a.slice(a.indexOf('cd'))"),
       nxt_string("cdef") },
 
     { nxt_string("'abcdef'.indexOf('de', 2)"),
@@ -3542,7 +3562,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'абв'.toUpperCase()"),
       nxt_string("АБВ") },
 
-    { nxt_string("var a = [];"
+    { nxt_string("var a = [], code;"
                  "for (code = 0; code <= 1114111; code++) {"
                  "    var s = String.fromCharCode(code);"
                  "    var n = s.toUpperCase();"
@@ -3551,7 +3571,7 @@ static njs_unit_test_t  njs_test[] =
                  "} a"),
       nxt_string("181,305,383,453,456,459,498,837,962,976,977,981,982,1008,1009,1013,7835,8126") },
 
-    { nxt_string("var a = [];"
+    { nxt_string("var a = [], code;"
                  "for (code = 0; code <= 1114111; code++) {"
                  "    var s = String.fromCharCode(code);"
                  "    var n = s.toLowerCase();"
@@ -4099,31 +4119,28 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("function f(){return\n1} f()"),
       nxt_string("undefined") },
 
-    { nxt_string("function f(a) { return a + 1 } b = f(2)"),
+    { nxt_string("function f(a) { return a + 1 } var b = f(2); b"),
       nxt_string("3") },
 
-    { nxt_string("f = function(a) { a *= 2; return a }; f(10)"),
+    { nxt_string("var f = function(a) { a *= 2; return a }; f(10)"),
       nxt_string("20") },
 
     { nxt_string("var f = function b(a) { a *= 2; return a }; f(10)"),
       nxt_string("20") },
 
     { nxt_string("var f = function b(a) { a *= 2; return a }; b(10)"),
-      nxt_string("ReferenceError") },
+      nxt_string("ReferenceError: \"b\" is not defined in 1") },
 
-    { nxt_string("var f = function(a) { a *= 2; return a }; f(10)"),
+    { nxt_string("var f; f = function(a) { a *= 2; return a }; f(10)"),
       nxt_string("20") },
 
-    { nxt_string("f = function b(a) { a *= 2; return a }; b(10)"),
-      nxt_string("ReferenceError") },
-
-    { nxt_string("f = function b(a) { a *= 2; return a }; f(10)"),
+    { nxt_string("var f; f = function b(a) { a *= 2; return a }; f(10)"),
       nxt_string("20") },
 
-    { nxt_string("f = a = function(a) { a *= 2; return a }; f(10)"),
+    { nxt_string("var a, f = a = function(a) { a *= 2; return a }; f(10)"),
       nxt_string("20") },
 
-    { nxt_string("f = a = function(a) { a *= 2; return a }; a(10)"),
+    { nxt_string("var a, f = a = function(a) { a *= 2; return a }; a(10)"),
       nxt_string("20") },
 
     { nxt_string("var f = function b(a) { a *= 2; return a } = 5"),
@@ -4132,7 +4149,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("function a() { return { x:2} }; var b = a(); b.x"),
       nxt_string("2") },
 
-    { nxt_string("a = {}; function f(a) { return a + 1 } a.b = f(2); a.b"),
+    { nxt_string("var a = {}; function f(a) { return a + 1 } a.b = f(2); a.b"),
       nxt_string("3") },
 
     { nxt_string("(function(x) { return x + 1 })(2)"),
@@ -4141,40 +4158,40 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("(function(x) { return x + 1 }(2))"),
       nxt_string("3") },
 
-    { nxt_string("a = function() { return 1 }(); a"),
+    { nxt_string("var a = function() { return 1 }(); a"),
       nxt_string("1") },
 
-    { nxt_string("a = (function() { return 1 })(); a"),
+    { nxt_string("var a = (function() { return 1 })(); a"),
       nxt_string("1") },
 
-    { nxt_string("a = (function(a) { return a + 1 })(2); a"),
+    { nxt_string("var a = (function(a) { return a + 1 })(2); a"),
       nxt_string("3") },
 
-    { nxt_string("a = (function(a) { return a + 1 }(2)); a"),
+    { nxt_string("var a = (function(a) { return a + 1 }(2)); a"),
       nxt_string("3") },
 
-    { nxt_string("a = +function(a) { return a + 1 }(2); a"),
+    { nxt_string("var a = +function(a) { return a + 1 }(2); a"),
       nxt_string("3") },
 
-    { nxt_string("a = -function(a) { return a + 1 }(2); a"),
+    { nxt_string("var a = -function(a) { return a + 1 }(2); a"),
       nxt_string("-3") },
 
-    { nxt_string("a = !function(a) { return a + 1 }(2); a"),
+    { nxt_string("var a = !function(a) { return a + 1 }(2); a"),
       nxt_string("false") },
 
-    { nxt_string("a = ~function(a) { return a + 1 }(2); a"),
+    { nxt_string("var a = ~function(a) { return a + 1 }(2); a"),
       nxt_string("-4") },
 
-    { nxt_string("a = void function(a) { return a + 1 }(2); a"),
+    { nxt_string("var a = void function(a) { return a + 1 }(2); a"),
       nxt_string("undefined") },
 
-    { nxt_string("a = true && function(a) { return a + 1 }(2); a"),
+    { nxt_string("var a = true && function(a) { return a + 1 }(2); a"),
       nxt_string("3") },
 
-    { nxt_string("a = 0, function(a) { return a + 1 }(2); a"),
+    { nxt_string("var a; a = 0, function(a) { return a + 1 }(2); a"),
       nxt_string("0") },
 
-    { nxt_string("a = (0, function(a) { return a + 1 }(2)); a"),
+    { nxt_string("var a = (0, function(a) { return a + 1 }(2)); a"),
       nxt_string("3") },
 
     { nxt_string("var a = 0, function(a) { return a + 1 }(2); a"),
@@ -4185,7 +4202,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var a = +function f(a) { return a + 1 }(2);"
                  "var b = f(5); a"),
-      nxt_string("ReferenceError") },
+      nxt_string("ReferenceError: \"f\" is not defined in 1") },
 
     { nxt_string("var o = { f: function(a) { return a * 2 } }; o.f(5)"),
       nxt_string("10") },
@@ -4317,7 +4334,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("01") },
 
     { nxt_string("function f(a) { return this+a };"
-                 "o = { g: function (f, a, b) { return f.call(a, b) } };"
+                 "var o = { g: function (f, a, b) { return f.call(a, b) } };"
                  "o.g(f, '0', 1)"),
       nxt_string("01") },
 
@@ -4408,7 +4425,7 @@ static njs_unit_test_t  njs_test[] =
                  "o.__proto__ === F.prototype"),
       nxt_string("true") },
 
-    { nxt_string("f = { F: function(){} }; o = new f.F();"
+    { nxt_string("var f = { F: function(){} }; var o = new f.F();"
                  "o.__proto__ === f.F.prototype"),
       nxt_string("true") },
 
@@ -4475,8 +4492,19 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("3 5") },
 
     { nxt_string("function a() { return function(x) { return x + 1 } }"
-                 "b = a(); b(2)"),
+                 "var b = a(); b(2)"),
       nxt_string("3") },
+
+    /* Scopes. */
+
+    { nxt_string("function f(x) { a = x } var a; f(5); a"),
+      nxt_string("5") },
+
+    { nxt_string("function f(x) { var a = x } var a = 2; f(5); a"),
+      nxt_string("2") },
+
+    { nxt_string("function f(a) { return a } var a = '2'; a + f(5)"),
+      nxt_string("25") },
 
     /* RegExp. */
 
@@ -7033,6 +7061,7 @@ njs_unit_test(nxt_bool_t disassemble)
 
         printf("\"%.*s\"\n",
                (int) njs_test[i].script.length, njs_test[i].script.start);
+        fflush(stdout);
 
         vm = njs_vm_create(mcp, &shared, &externals);
         if (vm == NULL) {

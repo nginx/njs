@@ -189,7 +189,6 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end,
 {
     nxt_int_t          ret;
     njs_lexer_t        *lexer;
-    njs_value_t        *value;
     njs_parser_t       *parser;
     njs_parser_node_t  *node;
 
@@ -212,24 +211,8 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end,
     lexer->keywords_hash = vm->shared->keywords_hash;
 
     parser->code_size = sizeof(njs_vmcode_stop_t);
-    parser->scope = NJS_SCOPE_GLOBAL;
     parser->scope_offset = NJS_INDEX_GLOBAL_OFFSET;
     parser->index[NJS_SCOPE_GLOBAL - NJS_INDEX_CACHE] = NJS_INDEX_GLOBAL_OFFSET;
-
-    parser->scope_values = nxt_array_create(4, sizeof(njs_value_t),
-                                            &njs_array_mem_proto,
-                                            vm->mem_cache_pool);
-    if (nxt_slow_path(parser->scope_values == NULL)) {
-        return NJS_ERROR;
-    }
-
-    /* Empty array to minimize tests in njs_parser_variable(). */
-    parser->arguments = nxt_array_create(0, sizeof(njs_variable_t),
-                                         &njs_array_mem_proto,
-                                         vm->mem_cache_pool);
-    if (nxt_slow_path(parser->arguments == NULL)) {
-        return NJS_TOKEN_ERROR;
-    }
 
     node = njs_parser(vm, parser);
     if (nxt_slow_path(node == NULL)) {
@@ -238,8 +221,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end,
 
     if (function != NULL) {
         if (node->token == NJS_TOKEN_CALL) {
-            value = njs_variable_value(parser, node->right->index);
-            *function = value->data.u.function;
+            *function = node->right->u.value.data.u.function;
 
         } else {
             *function = NULL;
@@ -257,7 +239,6 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end,
 
     vm->global_scope = parser->local_scope;
     vm->scope_size = parser->scope_size;
-    vm->variables_hash = parser->variables_hash;
 
     vm->parser = NULL;
 

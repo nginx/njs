@@ -213,37 +213,50 @@ typedef struct {
 } njs_lexer_t;
 
 
-typedef enum {
-    NJS_VARIABLE_NORMAL = 0,
-    NJS_VARIABLE_FIRST_ASSIGNMENT,
-    NJS_VARIABLE_ASSIGNMENT,
-    NJS_VARIABLE_TYPEOF,
-} njs_variable_node_state_t;
-
-
 #define njs_parser_is_lvalue(node)                                            \
     ((node)->token == NJS_TOKEN_NAME || (node)->token == NJS_TOKEN_PROPERTY)
+
+
+typedef struct njs_parser_scope_s   njs_parser_scope_t;
+
+struct njs_parser_scope_s {
+    nxt_array_t                     *values;   /* Array of njs_value_t. */
+
+    nxt_lvlhsh_t                    variables;
+    njs_parser_scope_t              *parent;
+    njs_index_t                     next_index;
+    uint32_t                        inclusive;
+    njs_scope_t                     type:8;
+};
 
 
 typedef struct njs_parser_node_s    njs_parser_node_t;
 
 struct njs_parser_node_s {
     njs_token_t                     token:16;
-    njs_variable_node_state_t       state:2;    /* 2 bits */
     uint8_t                         ctor:1;     /* 1 bit  */
     uint8_t                         temporary;  /* 1 bit  */
     uint32_t                        token_line;
+    uint32_t                        variable_name_hash;
 
     union {
         uint32_t                    length;
-        njs_vmcode_operation_t      operation;
+        nxt_str_t                   variable_name;
         njs_value_t                 value;
-        njs_variable_t              *variable;
+        njs_vmcode_operation_t      operation;
         njs_parser_node_t           *object;
         njs_extern_t                *external;
     } u;
 
     njs_index_t                     index;
+
+    /*
+     * The scope points to
+     *   in global and function node: global or function scopes;
+     *   in variable node: a scope where variable was referenced;
+     *   in operation node: a scope to allocate indexes for temporary values.
+     */
+    njs_parser_scope_t              *scope;
 
     njs_parser_node_t               *left;
     njs_parser_node_t               *right;
@@ -275,6 +288,7 @@ typedef enum {
     NJS_PARSER_SWITCH,
 } njs_parser_block_type_t;
 
+
 typedef struct njs_parser_block_s   njs_parser_block_t;
 
 struct njs_parser_block_s {
@@ -290,18 +304,13 @@ struct njs_parser_s {
     njs_lexer_t                     *lexer;
     njs_parser_node_t               *node;
 
-    /* Vector of njs_variable_t. */
-    nxt_array_t                     *arguments;
     njs_parser_block_t              *block;
 
-    nxt_lvlhsh_t                    variables_hash;
+    njs_parser_scope_t              *scope;
 
     nxt_array_t                     *index_cache;
     njs_index_t                     index[NJS_SCOPES - NJS_INDEX_CACHE];
 
-    nxt_array_t                     *scope_values;
-
-    uint8_t                         scope;        /* 4 bits */
     uint8_t                         branch;       /* 1 bit */
 
     /* Parsing Function() or eval(). */
@@ -346,6 +355,12 @@ njs_token_t njs_parser_property_token(njs_parser_t *parser);
 njs_token_t njs_parser_token(njs_parser_t *parser);
 nxt_int_t njs_parser_string_create(njs_vm_t *vm, njs_value_t *value);
 njs_index_t njs_parser_index(njs_parser_t *parser, uint32_t scope);
+njs_ret_t njs_variable_reference(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *node);
+njs_variable_t *njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node,
+    njs_name_reference_t reference);
+njs_index_t njs_variable_index(njs_vm_t *vm, njs_parser_node_t *node,
+    njs_name_reference_t reference);
 nxt_bool_t njs_parser_has_side_effect(njs_parser_node_t *node);
 u_char *njs_parser_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
     u_char *start);

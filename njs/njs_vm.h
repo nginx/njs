@@ -491,12 +491,6 @@ typedef struct {
 
 typedef struct {
     njs_vmcode_t               code;
-    njs_index_t                index;
-} njs_vmcode_validate_t;
-
-
-typedef struct {
-    njs_vmcode_t               code;
     njs_index_t                dst;
     njs_index_t                src;
 } njs_vmcode_move_t;
@@ -673,14 +667,20 @@ typedef struct {
 
 typedef enum {
     NJS_SCOPE_ABSOLUTE = 0,
-    NJS_SCOPE_LOCAL,
     NJS_SCOPE_GLOBAL,
+    NJS_SCOPE_FUNCTION,
     NJS_SCOPE_CALLEE_ARGUMENTS,
     NJS_SCOPE_ARGUMENTS,
     NJS_SCOPE_CLOSURE,
     NJS_SCOPE_PARENT_LOCAL,
     NJS_SCOPE_PARENT_ARGUMENTS,
     NJS_SCOPE_PARENT_CLOSURE,
+    /*
+     * The block and shim scopes are not really VM scopes.
+     * They used only on parsing phase.
+     */
+    NJS_SCOPE_BLOCK = 16,
+    NJS_SCOPE_SHIM = 17,
 } njs_scope_t;
 
 
@@ -689,7 +689,7 @@ typedef enum {
 #define NJS_SCOPE_SHIFT        4
 #define NJS_SCOPE_MASK         ((uintptr_t) ((1 << NJS_SCOPE_SHIFT) - 1))
 
-#define NJS_INDEX_CACHE        NJS_SCOPE_LOCAL
+#define NJS_INDEX_CACHE        NJS_SCOPE_GLOBAL
 
 #define NJS_INDEX_NONE         ((njs_index_t) 0)
 #define NJS_INDEX_ERROR        ((njs_index_t) -1)
@@ -969,8 +969,6 @@ njs_ret_t njs_vmcode_strict_not_equal(njs_vm_t *vm, njs_value_t *val1,
     njs_value_t *val2);
 
 njs_ret_t njs_vmcode_move(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld);
-njs_ret_t njs_vmcode_validate(njs_vm_t *vm, njs_value_t *invld,
-    njs_value_t *index);
 
 njs_ret_t njs_vmcode_jump(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *offset);
@@ -1032,6 +1030,7 @@ extern const njs_value_t  njs_value_false;
 extern const njs_value_t  njs_value_true;
 extern const njs_value_t  njs_value_zero;
 extern const njs_value_t  njs_value_nan;
+extern const njs_value_t  njs_value_invalid;
 
 extern const njs_value_t  njs_string_empty;
 extern const njs_value_t  njs_string_comma;

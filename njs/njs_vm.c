@@ -120,6 +120,7 @@ const njs_value_t  njs_value_false =        njs_value(NJS_BOOLEAN, 0, 0.0);
 const njs_value_t  njs_value_true =         njs_value(NJS_BOOLEAN, 1, 1.0);
 const njs_value_t  njs_value_zero =         njs_value(NJS_NUMBER, 0, 0.0);
 const njs_value_t  njs_value_nan =          njs_value(NJS_NUMBER, 0, NAN);
+const njs_value_t  njs_value_invalid =      njs_value(NJS_INVALID, 0, 0.0);
 
 
 const njs_value_t  njs_string_empty =       njs_string("");
@@ -271,10 +272,10 @@ start:
 
             vm->frame = previous;
 
-            /* GC: NJS_SCOPE_ARGUMENTS and NJS_SCOPE_LOCAL. */
+            /* GC: NJS_SCOPE_ARGUMENTS and NJS_SCOPE_FUNCTION. */
 
             vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = previous->arguments;
-            vm->scopes[NJS_SCOPE_LOCAL] = frame->prev_local;
+            vm->scopes[NJS_SCOPE_FUNCTION] = frame->prev_local;
             vm->scopes[NJS_SCOPE_ARGUMENTS] = frame->prev_arguments;
 
             if (frame->native.size != 0) {
@@ -2098,23 +2099,6 @@ njs_vmcode_move(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 
 
 njs_ret_t
-njs_vmcode_validate(njs_vm_t *vm, njs_value_t *invld, njs_value_t *index)
-{
-    njs_value_t  *value;
-
-    value = njs_vmcode_operand(vm, index);
-
-    if (nxt_fast_path(njs_is_valid(value))) {
-        return sizeof(njs_vmcode_validate_t);
-    }
-
-    vm->exception = &njs_exception_reference_error;
-
-    return NXT_ERROR;
-}
-
-
-njs_ret_t
 njs_vmcode_jump(njs_vm_t *vm, njs_value_t *invld, njs_value_t *offset)
 {
     return (njs_ret_t) offset;
@@ -2566,7 +2550,7 @@ njs_vmcode_return(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
     vm->frame = previous;
 
     vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = previous->arguments;
-    vm->scopes[NJS_SCOPE_LOCAL] = frame->prev_local;
+    vm->scopes[NJS_SCOPE_FUNCTION] = frame->prev_local;
     args = vm->scopes[NJS_SCOPE_ARGUMENTS];
     vm->scopes[NJS_SCOPE_ARGUMENTS] = frame->prev_arguments;
 

@@ -23,8 +23,8 @@
 #include <string.h>
 
 
-static njs_variable_t *njs_variable_alloc(njs_vm_t *vm,
-    njs_parser_t *parser, nxt_str_t *name);
+static njs_variable_t *njs_variable_alloc(njs_vm_t *vm, nxt_str_t *name,
+    njs_variable_type_t type);
 
 
 static nxt_int_t
@@ -34,9 +34,7 @@ njs_variables_hash_test(nxt_lvlhsh_query_t *lhq, void *data)
 
     var = data;
 
-    if (lhq->key.length == var->name_len
-        && memcmp(var->name_start, lhq->key.start, lhq->key.length) == 0)
-    {
+    if (nxt_strstr_eq(&lhq->key, &var->name)) {
         return NXT_OK;
     }
 
@@ -56,86 +54,184 @@ static const nxt_lvlhsh_proto_t  njs_variables_hash_proto
 
 
 njs_variable_t *
-njs_parser_name_alloc(njs_vm_t *vm, njs_parser_t *parser)
+njs_builtin_add(njs_vm_t *vm, njs_parser_t *parser)
 {
     nxt_int_t           ret;
     njs_variable_t      *var;
+    njs_parser_scope_t  *scope;
     nxt_lvlhsh_query_t  lhq;
-
-    var = njs_variable_alloc(vm, parser, &parser->lexer->text);
-    if (nxt_slow_path(var == NULL)) {
-        return NULL;
-    }
 
     lhq.key_hash = parser->lexer->key_hash;
     lhq.key = parser->lexer->text;
+    lhq.proto = &njs_variables_hash_proto;
+
+    scope = parser->scope;
+
+    while (scope->type != NJS_SCOPE_GLOBAL) {
+        scope = scope->parent;
+    }
+
+    if (nxt_lvlhsh_find(&scope->variables, &lhq) == NXT_OK) {
+        var = lhq.value;
+
+        return var;
+    }
+
+    var = njs_variable_alloc(vm, &lhq.key, NJS_VARIABLE_VAR);
+    if (nxt_slow_path(var == NULL)) {
+        return var;
+    }
+
     lhq.replace = 0;
     lhq.value = var;
-    lhq.proto = &njs_variables_hash_proto;
     lhq.pool = vm->mem_cache_pool;
 
-    ret = nxt_lvlhsh_insert(&parser->variables_hash, &lhq);
+    ret = nxt_lvlhsh_insert(&scope->variables, &lhq);
 
     if (nxt_fast_path(ret == NXT_OK)) {
         return var;
     }
 
-    nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-              "SyntaxError: Duplicate declaration \"%.*s\"",
-              (int) parser->lexer->text.length, parser->lexer->text.start);
+    nxt_mem_cache_free(vm->mem_cache_pool, var->name.start);
+    nxt_mem_cache_free(vm->mem_cache_pool, var);
 
     return NULL;
 }
 
 
 njs_variable_t *
-njs_parser_variable(njs_vm_t *vm, njs_parser_t *parser, nxt_uint_t *level)
+njs_variable_add(njs_vm_t *vm, njs_parser_t *parser, njs_variable_type_t type)
 {
     nxt_int_t           ret;
-    nxt_uint_t          n;
-    njs_parser_t        *scope;
     njs_variable_t      *var;
+    njs_parser_scope_t  *scope;
     nxt_lvlhsh_query_t  lhq;
-
-    *level = 0;
 
     lhq.key_hash = parser->lexer->key_hash;
     lhq.key = parser->lexer->text;
     lhq.proto = &njs_variables_hash_proto;
 
-    scope = parser;
+    scope = parser->scope;
 
-    do {
-        var = scope->arguments->start;
-        n = scope->arguments->items;
-
-        while (n != 0) {
-            if (lhq.key.length == var->name_len
-                && memcmp(var->name_start, lhq.key.start, lhq.key.length) == 0)
-            {
-                return var;
-            }
-
-            var++;
-            n--;
+    if (type >= NJS_VARIABLE_VAR) {
+        /*
+         * A "var" and "function" declarations are
+         * stored in function or global scope.
+         */
+        while (scope->type == NJS_SCOPE_BLOCK) {
+            scope = scope->parent;
         }
-
-        if (nxt_lvlhsh_find(&scope->variables_hash, &lhq) == NXT_OK) {
-            return lhq.value;
-        }
-
-        scope = scope->parent;
-        (*level)++;
-
-    } while (scope != NULL);
-
-    *level = 0;
-
-    if (nxt_lvlhsh_find(&vm->variables_hash, &lhq) == NXT_OK) {
-        return lhq.value;
     }
 
-    var = njs_variable_alloc(vm, parser, &parser->lexer->text);
+    var = njs_variable_alloc(vm, &lhq.key, type);
+    if (nxt_slow_path(var == NULL)) {
+        return var;
+    }
+
+    lhq.replace = 0;
+    lhq.value = var;
+    lhq.pool = vm->mem_cache_pool;
+
+    ret = nxt_lvlhsh_insert(&scope->variables, &lhq);
+
+    if (nxt_fast_path(ret == NXT_OK)) {
+        return var;
+    }
+
+    nxt_mem_cache_free(vm->mem_cache_pool, var->name.start);
+    nxt_mem_cache_free(vm->mem_cache_pool, var);
+
+    if (ret == NXT_ERROR) {
+        return NULL;
+    }
+
+    /* ret == NXT_DECLINED. */
+
+    nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+              "SyntaxError: Identifier \"%.*s\" has already been declared",
+              (int) lhq.key.length, lhq.key.start);
+
+    return NULL;
+}
+
+
+njs_ret_t
+njs_variable_reference(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *node)
+{
+    njs_ret_t  ret;
+
+    ret = njs_name_copy(vm, &node->u.variable_name, &parser->lexer->text);
+
+    if (nxt_fast_path(ret == NXT_OK)) {
+        node->variable_name_hash = parser->lexer->key_hash;
+        node->scope = parser->scope;
+    }
+
+    return ret;
+}
+
+
+njs_variable_t *
+njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node,
+    njs_name_reference_t reference)
+{
+    nxt_int_t           ret;
+    nxt_array_t         *values;
+    njs_index_t         index;
+    njs_value_t         *value;
+    njs_variable_t      *var;
+    njs_parser_scope_t  *scope, *parent, *inclusive;
+    nxt_lvlhsh_query_t  lhq;
+    const njs_value_t   *initial;
+
+    lhq.key_hash = node->variable_name_hash;
+    lhq.key = node->u.variable_name;
+    lhq.proto = &njs_variables_hash_proto;
+
+    inclusive = NULL;
+    scope = node->scope;
+
+    for ( ;; ) {
+        if (nxt_lvlhsh_find(&scope->variables, &lhq) == NXT_OK) {
+            var = lhq.value;
+
+            if (scope->type == NJS_SCOPE_SHIM) {
+                scope = inclusive;
+
+            } else {
+                /*
+                 * Variables declared in a block with "let" or "const"
+                 * keywords are actually stored in function or global scope.
+                 */
+                while (scope->type == NJS_SCOPE_BLOCK) {
+                    scope = scope->parent;
+                }
+            }
+
+            initial = &njs_value_void;
+
+            goto found;
+        }
+
+        parent = scope->parent;
+
+        if (parent == NULL) {
+            /* A global scope. */
+            break;
+        }
+
+        inclusive = scope;
+        scope = parent;
+    }
+
+    if (reference != NJS_NAME_TYPEOF) {
+        goto not_found;
+    }
+
+    /* Add variable referenced by typeof to the global scope. */
+
+    var = njs_variable_alloc(vm, &lhq.key, NJS_VARIABLE_TYPEOF);
     if (nxt_slow_path(var == NULL)) {
         return NULL;
     }
@@ -144,13 +240,127 @@ njs_parser_variable(njs_vm_t *vm, njs_parser_t *parser, nxt_uint_t *level)
     lhq.value = var;
     lhq.pool = vm->mem_cache_pool;
 
-    ret = nxt_lvlhsh_insert(&parser->variables_hash, &lhq);
+    ret = nxt_lvlhsh_insert(&scope->variables, &lhq);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NULL;
+    }
+
+    initial = &njs_value_invalid;
+
+found:
+
+    if (reference == NJS_NAME_REFERENCE && var->type == NJS_VARIABLE_TYPEOF) {
+        goto not_found;
+    }
+
+    index = var->index;
+
+    if (index != NJS_INDEX_NONE) {
+        node->index = index;
+        return var;
+    }
+
+    if (reference == NJS_NAME_REFERENCE && var->type <= NJS_VARIABLE_LET) {
+        goto not_found;
+    }
+
+    values = scope->values;
+
+    if (values == NULL) {
+        values = nxt_array_create(4, sizeof(njs_value_t), &njs_array_mem_proto,
+                                  vm->mem_cache_pool);
+        if (nxt_slow_path(values == NULL)) {
+            return NULL;
+        }
+
+        scope->values = values;
+    }
+
+    value = nxt_array_add(values, &njs_array_mem_proto, vm->mem_cache_pool);
+    if (nxt_slow_path(value == NULL)) {
+        return NULL;
+    }
+
+    if (njs_is_object(&var->value)) {
+        *value = var->value;
+
+    } else {
+        *value = *initial;
+    }
+
+    index = scope->next_index;
+    scope->next_index += sizeof(njs_value_t);
+
+    var->index = index;
+    node->index = index;
+
+    return var;
+
+not_found:
+
+    nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+              "ReferenceError: \"%.*s\" is not defined",
+              (int) lhq.key.length, lhq.key.start);
+
+    return NULL;
+}
+
+
+njs_index_t
+njs_variable_index(njs_vm_t *vm, njs_parser_node_t *node,
+    njs_name_reference_t reference)
+{
+    njs_variable_t  *var;
+
+    var = njs_variable_get(vm, node, reference);
+
+    if (nxt_fast_path(var != NULL)) {
+        return var->index;
+    }
+
+    return NJS_INDEX_ERROR;
+}
+
+
+static njs_variable_t *
+njs_variable_alloc(njs_vm_t *vm, nxt_str_t *name, njs_variable_type_t type)
+{
+    njs_ret_t       ret;
+    njs_variable_t  *var;
+
+    var = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_variable_t));
+    if (nxt_slow_path(var == NULL)) {
+        return NULL;
+    }
+
+    var->type = type;
+
+    ret = njs_name_copy(vm, &var->name, name);
 
     if (nxt_fast_path(ret == NXT_OK)) {
         return var;
     }
 
+    nxt_mem_cache_free(vm->mem_cache_pool, var);
+
     return NULL;
+}
+
+
+njs_ret_t
+njs_name_copy(njs_vm_t *vm, nxt_str_t *dst, nxt_str_t *src)
+{
+    dst->length = src->length;
+
+    dst->start = nxt_mem_cache_alloc(vm->mem_cache_pool, src->length);
+
+    if (nxt_slow_path(dst->start != NULL)) {
+        (void) memcpy(dst->start, src->start, src->length);
+
+        return NXT_OK;
+    }
+
+    return NXT_ERROR;
 }
 
 
@@ -200,8 +410,7 @@ njs_vm_export_functions(njs_vm_t *vm)
         value = njs_global_variable_value(vm, var);
 
         if (njs_is_function(value) && !value->data.u.function->native) {
-            ex->length = var->name_len;
-            ex->start = var->name_start;
+            *ex = var->name;
             ex++;
         }
     }
@@ -238,45 +447,4 @@ njs_vm_function(njs_vm_t *vm, nxt_str_t *name)
     }
 
     return NULL;
-}
-
-
-static njs_variable_t *
-njs_variable_alloc(njs_vm_t *vm, njs_parser_t *parser, nxt_str_t *name)
-{
-    njs_value_t     *value;
-    njs_variable_t  *var;
-
-    var = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_variable_t));
-
-    if (nxt_fast_path(var != NULL)) {
-        var->name_start = nxt_mem_cache_alloc(vm->mem_cache_pool, name->length);
-
-        if (nxt_fast_path(var->name_start != NULL)) {
-
-            memcpy(var->name_start, name->start, name->length);
-            var->name_len = name->length;
-
-            value = nxt_array_add(parser->scope_values, &njs_array_mem_proto,
-                                  vm->mem_cache_pool);
-            if (nxt_fast_path(value != NULL)) {
-                 *value = njs_value_void;
-                 var->index = njs_parser_index(parser, parser->scope);
-                 return var;
-            }
-        }
-    }
-
-    return NULL;
-}
-
-
-njs_value_t *
-njs_variable_value(njs_parser_t *parser, njs_index_t index)
-{
-    u_char  *scope;
-
-    scope = parser->scope_values->start;
-
-    return (njs_value_t *) (scope + (njs_offset(index) - parser->scope_offset));
 }

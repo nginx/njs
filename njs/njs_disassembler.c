@@ -133,8 +133,6 @@ static njs_code_name_t  code_names[] = {
 
     { njs_vmcode_move, sizeof(njs_vmcode_move_t),
           nxt_string("MOVE            ") },
-    { njs_vmcode_validate, sizeof(njs_vmcode_validate_t),
-          nxt_string("VALIDATE        ") },
 
     { njs_vmcode_throw, sizeof(njs_vmcode_throw_t),
           nxt_string("THROW           ") },
