@@ -1666,7 +1666,7 @@ njs_generate_test_jump_expression(njs_vm_t *vm, njs_parser_t *parser,
     test_jump->code.retval = NJS_VMCODE_RETVAL;
     test_jump->value = node->left->index;
 
-    node->index = njs_generator_dest_index(vm, parser, node);
+    node->index = njs_generator_node_temp_index_get(vm, parser, node);
     if (nxt_slow_path(node->index == NJS_INDEX_ERROR)) {
         return node->index;
     }
@@ -1695,7 +1695,7 @@ njs_generate_test_jump_expression(njs_vm_t *vm, njs_parser_t *parser,
 
     test_jump->offset = parser->code_end - (u_char *) test_jump;
 
-    return njs_generator_node_index_release(vm, parser, node->right);
+    return njs_generator_children_indexes_release(vm, parser, node);
 }
 
 

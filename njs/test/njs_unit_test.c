@@ -568,6 +568,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = 1; 1 || (a = 2); a"),
       nxt_string("1") },
 
+    { nxt_string("var x; x = 0 || x; x"),
+      nxt_string("undefined") },
+
+    { nxt_string("var x; x = 1 && x; x"),
+      nxt_string("undefined") },
+
     { nxt_string("1 || 2 || 3"),
       nxt_string("1") },
 
