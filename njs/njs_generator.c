@@ -1964,9 +1964,15 @@ static nxt_int_t
 njs_generate_function_declaration(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node)
 {
+    njs_variable_t         *var;
     njs_function_lambda_t  *lambda;
 
-    lambda = node->u.value.data.u.function->u.lambda;
+    var = njs_variable_get(vm, node, NJS_NAME_DECLARATION);
+    if (nxt_slow_path(var == NULL)) {
+        return NXT_ERROR;
+    }
+
+    lambda = var->value.data.u.function->u.lambda;
 
     return njs_generate_function_scope(vm, lambda, node);
 }

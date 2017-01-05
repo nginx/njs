@@ -439,8 +439,7 @@ njs_vm_function(njs_vm_t *vm, nxt_str_t *name)
 
     var = lhq.value;
 
-    value = (njs_value_t *) ((u_char *) vm->global_scope
-                           + njs_offset(var->index) - NJS_INDEX_GLOBAL_OFFSET);
+    value = njs_global_variable_value(vm, var);
 
     if (njs_is_function(value)) {
         return value->data.u.function;

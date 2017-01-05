@@ -190,6 +190,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end,
     nxt_int_t          ret;
     njs_lexer_t        *lexer;
     njs_parser_t       *parser;
+    njs_variable_t     *var;
     njs_parser_node_t  *node;
 
     parser = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_parser_t));
@@ -221,7 +222,12 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end,
 
     if (function != NULL) {
         if (node->token == NJS_TOKEN_CALL) {
-            *function = node->right->u.value.data.u.function;
+            var = njs_variable_get(vm, node->right, NJS_NAME_DECLARATION);
+            if (nxt_slow_path(var == NULL)) {
+                return NJS_ERROR;
+            }
+
+            *function = var->value.data.u.function;
 
         } else {
             *function = NULL;
@@ -239,6 +245,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end,
 
     vm->global_scope = parser->local_scope;
     vm->scope_size = parser->scope_size;
+    vm->variables_hash = parser->scope->variables;
 
     vm->parser = NULL;
 
