@@ -309,7 +309,6 @@ struct njs_parser_s {
     njs_parser_scope_t              *scope;
 
     nxt_array_t                     *index_cache;
-    njs_index_t                     index[NJS_SCOPES - NJS_INDEX_CACHE];
 
     uint8_t                         branch;       /* 1 bit */
 
@@ -354,7 +353,6 @@ njs_token_t njs_parser_property_name(njs_vm_t *vm, njs_parser_t *parser,
 njs_token_t njs_parser_property_token(njs_parser_t *parser);
 njs_token_t njs_parser_token(njs_parser_t *parser);
 nxt_int_t njs_parser_string_create(njs_vm_t *vm, njs_value_t *value);
-njs_index_t njs_parser_index(njs_parser_t *parser, uint32_t scope);
 njs_ret_t njs_variable_reference(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node);
 njs_variable_t *njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node,

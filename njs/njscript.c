@@ -213,7 +213,6 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end,
 
     parser->code_size = sizeof(njs_vmcode_stop_t);
     parser->scope_offset = NJS_INDEX_GLOBAL_OFFSET;
-    parser->index[NJS_SCOPE_GLOBAL - NJS_INDEX_CACHE] = NJS_INDEX_GLOBAL_OFFSET;
 
     node = njs_parser(vm, parser);
     if (nxt_slow_path(node == NULL)) {

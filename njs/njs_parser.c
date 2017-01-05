@@ -2434,26 +2434,6 @@ invalid:
 }
 
 
-njs_index_t
-njs_parser_index(njs_parser_t *parser, uint32_t scope)
-{
-    nxt_uint_t   n;
-    njs_index_t  index;
-
-    /* Skip absolute scope. */
-    n = scope - NJS_INDEX_CACHE;
-
-    index = parser->index[n];
-    parser->index[n] += sizeof(njs_value_t);
-
-    index |= scope;
-
-    nxt_thread_log_debug("GET %p", index);
-
-    return index;
-}
-
-
 nxt_bool_t
 njs_parser_has_side_effect(njs_parser_node_t *node)
 {
