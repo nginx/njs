@@ -229,11 +229,9 @@ njs_parser_statement_chain(njs_vm_t *vm, njs_parser_t *parser,
 
     if (nxt_fast_path(token > NJS_TOKEN_ILLEGAL)) {
 
-        if (parser->node != last) {
-            /*
-             * The statement is not empty block, not just semicolon,
-             * and not variables declaration without initialization.
-             */
+        if (parser->node != NULL) {
+            /* The statement is not empty block or just semicolon. */
+
             node = njs_parser_node_alloc(vm);
             if (nxt_slow_path(node == NULL)) {
                 return NJS_TOKEN_ERROR;
@@ -243,6 +241,15 @@ njs_parser_statement_chain(njs_vm_t *vm, njs_parser_t *parser,
             node->left = last;
             node->right = parser->node;
             parser->node = node;
+
+            while (token == NJS_TOKEN_SEMICOLON
+                   || token == NJS_TOKEN_LINE_END)
+            {
+                token = njs_parser_token(parser);
+                if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                    break;
+                }
+            }
         }
 
     } else if (vm->exception == NULL) {
@@ -257,6 +264,8 @@ static njs_token_t
 njs_parser_statement(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token)
 {
+    parser->node = NULL;
+
     switch (token) {
 
     case NJS_TOKEN_FUNCTION:
@@ -296,7 +305,6 @@ njs_parser_statement(njs_vm_t *vm, njs_parser_t *parser,
         return njs_parser_throw_statement(vm, parser);
 
     case NJS_TOKEN_SEMICOLON:
-        parser->node = NULL;
         return njs_parser_token(parser);
 
     case NJS_TOKEN_OPEN_BRACE:
@@ -348,12 +356,12 @@ njs_parser_block_statement(njs_vm_t *vm, njs_parser_t *parser)
         return token;
     }
 
-    parser->node = NULL;
-
     ret = njs_parser_scope_begin(vm, parser, NJS_SCOPE_BLOCK);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NJS_TOKEN_ERROR;
     }
+
+    parser->node = NULL;
 
     while (token != NJS_TOKEN_CLOSE_BRACE) {
         token = njs_parser_statement_chain(vm, parser, token);
@@ -836,6 +844,8 @@ njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser)
     switch (token) {
 
     case NJS_TOKEN_SEMICOLON:
+        return njs_parser_token(parser);
+
     case NJS_TOKEN_CLOSE_BRACE:
     case NJS_TOKEN_END:
         return token;
