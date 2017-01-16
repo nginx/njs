@@ -697,14 +697,20 @@ njs_parser_function_lambda(njs_vm_t *vm, njs_function_lambda_t *lambda,
 static njs_token_t
 njs_parser_return_statement(njs_vm_t *vm, njs_parser_t *parser)
 {
-    njs_token_t        token;
-    njs_parser_node_t  *node;
+    njs_token_t         token;
+    njs_parser_node_t   *node;
+    njs_parser_scope_t  *scope;
 
-    if (parser->scope->type == NJS_SCOPE_GLOBAL) {
-        nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-                  "SyntaxError: Illegal return statement");
+    for (scope = parser->scope;
+         scope->type != NJS_SCOPE_FUNCTION;
+         scope = scope->parent)
+    {
+        if (scope->type == NJS_SCOPE_GLOBAL) {
+            nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+                      "SyntaxError: Illegal return statement");
 
-        return NXT_ERROR;
+            return NXT_ERROR;
+        }
     }
 
     node = njs_parser_node_alloc(vm);

@@ -3976,6 +3976,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("return"),
       nxt_string("SyntaxError: Illegal return statement in 1") },
 
+    { nxt_string("{return}"),
+      nxt_string("SyntaxError: Illegal return statement in 1") },
+
     { nxt_string("function f() { return f() } f()"),
       nxt_string("RangeError: Maximum call stack size exceeded") },
 
