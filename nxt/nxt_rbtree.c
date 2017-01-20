@@ -135,8 +135,12 @@ nxt_rbtree_insert_fixup(nxt_rbtree_node_t *node)
                 grandparent = parent->parent;
                 grandparent->color = NXT_RBTREE_RED;
                 nxt_rbtree_right_rotate(grandparent);
-
-                continue;
+                /*
+                 * nxt_rbtree_right_rotate() does not change node->parent
+                 * color which is now black, so testing color is not required
+                 * to return from function.
+                 */
+                return;
             }
 
         } else {
@@ -156,7 +160,8 @@ nxt_rbtree_insert_fixup(nxt_rbtree_node_t *node)
                 grandparent->color = NXT_RBTREE_RED;
                 nxt_rbtree_left_rotate(grandparent);
 
-                continue;
+                /* See the comment in the symmetric branch above. */
+                return;
             }
         }
 
