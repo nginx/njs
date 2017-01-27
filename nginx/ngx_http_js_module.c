@@ -573,6 +573,10 @@ ngx_http_js_init_vm(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
+    if (njs_vm_run(ctx->vm) != NJS_OK) {
+        return NGX_ERROR;
+    }
+
     ctx->args = &jlcf->args[0];
 
     return NGX_OK;

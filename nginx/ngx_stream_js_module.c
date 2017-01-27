@@ -668,6 +668,10 @@ ngx_stream_js_init_vm(ngx_stream_session_t *s)
         return NGX_ERROR;
     }
 
+    if (njs_vm_run(ctx->vm) != NJS_OK) {
+        return NGX_ERROR;
+    }
+
     ctx->arg = &jscf->arg;
 
     return NGX_OK;
