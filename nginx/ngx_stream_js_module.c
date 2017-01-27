@@ -1030,7 +1030,7 @@ ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    rc = njs_vm_compile(jscf->vm, &start, end, NULL, &export);
+    rc = njs_vm_compile(jscf->vm, &start, end, &export);
 
     if (rc != NJS_OK) {
         njs_vm_exception(jscf->vm, &text);

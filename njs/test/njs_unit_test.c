@@ -6758,11 +6758,6 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("parseFloat('12345abc')"),
       nxt_string("12345") },
 
-    /* External interface. */
-
-    { nxt_string("function f(req) { return req.uri }"),
-      nxt_string("АБВ") },
-
     /* Trick: number to boolean. */
 
     { nxt_string("var a = 0; !!a"),
@@ -7056,14 +7051,12 @@ njs_unit_test(nxt_bool_t disassemble)
     u_char                *start;
     njs_vm_t              *vm, *nvm;
     nxt_int_t             ret;
-    nxt_str_t             s, r_name, *export;
+    nxt_str_t             s, *export;
     nxt_uint_t            i;
     nxt_bool_t            success;
     nxt_lvlhsh_t          externals;
-    njs_function_t        *function;
     njs_vm_shared_t       *shared;
     njs_unit_test_req     r;
-    njs_opaque_value_t    value;
     nxt_mem_cache_pool_t  *mcp;
 
     /*
@@ -7105,7 +7098,7 @@ njs_unit_test(nxt_bool_t disassemble)
         start = njs_test[i].script.start;
 
         ret = njs_vm_compile(vm, &start, start + njs_test[i].script.length,
-                             &function, &export);
+                             &export);
 
         if (ret == NXT_OK) {
             if (disassemble) {
@@ -7121,20 +7114,7 @@ njs_unit_test(nxt_bool_t disassemble)
             r.uri.length = 6;
             r.uri.start = (u_char *) "АБВ";
 
-            if (function != NULL) {
-                r_name.length = 2;
-                r_name.start = (u_char *) "$r";
-
-                ret = njs_vm_external(nvm, NULL, &r_name, &value);
-                if (ret != NXT_OK) {
-                    return NXT_ERROR;
-                }
-
-                ret = njs_vm_call(nvm, function, &value, 1);
-
-            } else {
-                ret = njs_vm_run(nvm);
-            }
+            ret = njs_vm_run(nvm);
 
             if (ret == NXT_OK) {
                 if (njs_vm_retval(nvm, &s) != NXT_OK) {
@@ -7219,7 +7199,7 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
 
     start = script->start;
 
-    ret = njs_vm_compile(vm, &start, start + script->length, NULL, &export);
+    ret = njs_vm_compile(vm, &start, start + script->length, &export);
     if (ret != NXT_OK) {
         return NXT_ERROR;
     }
@@ -7232,7 +7212,6 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
         }
 
         if (njs_vm_run(nvm) == NXT_OK) {
-
             if (njs_vm_retval(nvm, &s) != NXT_OK) {
                 return NXT_ERROR;
             }

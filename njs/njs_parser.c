@@ -123,14 +123,7 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser)
 
     node = parser->node;
 
-    if (node != NULL && node->right != NULL) {
-        if (node->right->token == NJS_TOKEN_FUNCTION) {
-            node->token = NJS_TOKEN_CALL;
-            node->scope = parser->scope;
-            return node;
-        }
-
-    } else {
+    if (node == NULL) {
         /* Empty string, just semicolons or variables declarations. */
 
         node = njs_parser_node_alloc(vm);

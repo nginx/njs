@@ -184,13 +184,11 @@ njs_vm_destroy(njs_vm_t *vm)
 
 
 nxt_int_t
-njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end,
-    njs_function_t **function, nxt_str_t **export)
+njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end, nxt_str_t **export)
 {
     nxt_int_t          ret;
     njs_lexer_t        *lexer;
     njs_parser_t       *parser;
-    njs_variable_t     *var;
     njs_parser_node_t  *node;
 
     parser = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_parser_t));
@@ -217,20 +215,6 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end,
     node = njs_parser(vm, parser);
     if (nxt_slow_path(node == NULL)) {
         return NJS_ERROR;
-    }
-
-    if (function != NULL) {
-        if (node->token == NJS_TOKEN_CALL) {
-            var = njs_variable_get(vm, node->right, NJS_NAME_DECLARATION);
-            if (nxt_slow_path(var == NULL)) {
-                return NJS_ERROR;
-            }
-
-            *function = var->value.data.u.function;
-
-        } else {
-            *function = NULL;
-        }
     }
 
     *start = parser->lexer->start;

@@ -1322,7 +1322,7 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    rc = njs_vm_compile(jlcf->vm, &start, end, NULL, &export);
+    rc = njs_vm_compile(jlcf->vm, &start, end, &export);
 
     if (rc != NJS_OK) {
         njs_vm_exception(jlcf->vm, &text);

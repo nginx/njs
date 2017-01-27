@@ -14,7 +14,6 @@ typedef enum {
     NJS_TOKEN_ILLEGAL = 0,
 
     NJS_TOKEN_END,
-    NJS_TOKEN_CALL,
     NJS_TOKEN_SPACE,
     NJS_TOKEN_LINE_END,
 
