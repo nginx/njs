@@ -503,28 +503,30 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
             return NGX_ERROR;
         }
 
-        if (njs_vm_retval(ctx->vm, &value) != NJS_OK) {
-            return NGX_ERROR;
-        }
-
-        ngx_log_debug2(NGX_LOG_DEBUG_STREAM, c->log, 0,
-                       "js return value: \"%*s\"",
-                       value.length, value.start);
-
-        if (value.length) {
-            rc = ngx_atoi(value.start, value.length);
-
-            if (rc != NGX_OK && rc != -NGX_ERROR) {
-                ngx_log_error(NGX_LOG_ERR, c->log, 0,
-                              "unexpected js return code: \"%*s\"",
-                              value.length, value.start);
+        if (ctx->vm->retval.type != NJS_VOID) {
+            if (njs_vm_retval(ctx->vm, &value) != NJS_OK) {
                 return NGX_ERROR;
             }
 
-            rc = -rc;
+            ngx_log_debug2(NGX_LOG_DEBUG_STREAM, c->log, 0,
+                           "js return value: \"%*s\"",
+                           value.length, value.start);
 
-            if (rc == NGX_ERROR) {
-                return NGX_ERROR;
+            if (value.length) {
+                rc = ngx_atoi(value.start, value.length);
+
+                if (rc != NGX_OK && rc != -NGX_ERROR) {
+                    ngx_log_error(NGX_LOG_ERR, c->log, 0,
+                                  "unexpected js return code: \"%*s\"",
+                                  value.length, value.start);
+                    return NGX_ERROR;
+                }
+
+                rc = -rc;
+
+                if (rc == NGX_ERROR) {
+                    return NGX_ERROR;
+                }
             }
         }
 
