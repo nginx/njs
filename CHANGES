@@ -1,0 +1,38 @@
+
+Changes with nJScript 0.1.9                                      01 Feb 2017
+
+    *) Bugfix: global variables were not initialized when nJScript was used
+       in nginx.
+
+Changes with nJScript 0.1.8                                      24 Jan 2017
+
+    *) Change: the "strict" mode is enforced, variables must be explicitly
+       declared.
+
+    *) Feature: "for" and "for-in" loops support variable declaration.
+
+    *) Bugfix: global and function scopes have been fixed.
+
+    *) Bugfix: now "for-in" loop does not discard the last value of property
+       variable.
+
+    *) Bugfix: miscellaneous bugs and segmentation faults have been fixed.
+
+Changes with nJScript 0.1.7                                      27 Dec 2016
+
+    *) Change: the "js_include" directive has been disabled at server and
+       location levels.
+
+    *) Feature: exponentiation operators.
+
+    *) Bugfix: miscellaneous bugs and segmentation faults have been fixed.
+
+Changes with nJScript 0.1.6                                      13 Dec 2016
+
+    *) Change: the "js_set" directive has been disabled at server and
+       location levels.
+
+    *) Feature: ES6 Math methods.
+
+    *) Bugfix: miscellaneous bugs and segmentation faults have been fixed.
+
