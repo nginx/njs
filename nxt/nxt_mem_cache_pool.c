@@ -257,19 +257,16 @@ nxt_mem_cache_pool_is_empty(nxt_mem_cache_pool_t *pool)
 void
 nxt_mem_cache_pool_destroy(nxt_mem_cache_pool_t *pool)
 {
-    void                  *p;
+    void                   *p;
     nxt_rbtree_node_t      *node, *next;
     nxt_mem_cache_block_t  *block;
 
-    for (node = nxt_rbtree_min(&pool->blocks);
-         nxt_rbtree_is_there_successor(&pool->blocks, node);
-         node = next)
-    {
-        next = nxt_rbtree_node_successor(&pool->blocks, node);
+    next = nxt_rbtree_root(&pool->blocks);
 
+    while (next != nxt_rbtree_sentinel(&pool->blocks)) {
+
+        node = nxt_rbtree_destroy_next(&pool->blocks, &next);
         block = (nxt_mem_cache_block_t *) node;
-
-        nxt_rbtree_delete(&pool->blocks, &block->node);
 
         p = block->start;
 
