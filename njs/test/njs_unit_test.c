@@ -2728,6 +2728,60 @@ static njs_unit_test_t  njs_test[] =
                  "a.every(function(v, i, a) { return v > 0 })"),
       nxt_string("true") },
 
+    { nxt_string("[].fill(1);"),
+      nxt_string("") },
+
+    { nxt_string("[1,2,3].fill(5);"),
+      nxt_string("5,5,5") },
+
+    { nxt_string("[1,2,3].fill(5, 0);"),
+      nxt_string("5,5,5") },
+
+    { nxt_string("[1,2,3].fill(5, 1);"),
+      nxt_string("1,5,5") },
+
+    { nxt_string("[1,2,3].fill(5, 4);"),
+      nxt_string("1,2,3") },
+
+    { nxt_string("[1,2,3].fill(5, -2);"),
+      nxt_string("1,5,5") },
+
+    { nxt_string("[1,2,3].fill(5, -3);"),
+      nxt_string("5,5,5") },
+
+    { nxt_string("[1,2,3].fill(5, -4);"),
+      nxt_string("5,5,5") },
+
+    { nxt_string("[1,2,3].fill(5, 1, 0);"),
+      nxt_string("1,2,3") },
+
+    { nxt_string("[1,2,3].fill(5, 1, 1);"),
+      nxt_string("1,2,3") },
+
+    { nxt_string("[1,2,3].fill(5, 1, 2);"),
+      nxt_string("1,5,3") },
+
+    { nxt_string("[1,2,3].fill(5, 1, 3);"),
+      nxt_string("1,5,5") },
+
+    { nxt_string("[1,2,3].fill(5, 1, 4);"),
+      nxt_string("1,5,5") },
+
+    { nxt_string("[1,2,3].fill(5, 1, -1);"),
+      nxt_string("1,5,3") },
+
+    { nxt_string("[1,2,3].fill(5, 1, -3);"),
+      nxt_string("1,2,3") },
+
+    { nxt_string("[1,2,3].fill(5, 1, -4);"),
+      nxt_string("1,2,3") },
+
+    { nxt_string("[1,2,3].fill(\"a\", 1, 2);"),
+      nxt_string("1,a,3") },
+
+    { nxt_string("[1,2,3].fill({a:\"b\"}, 1, 2);"),
+      nxt_string("1,[object Object],3") },
+
     { nxt_string("var a = [];"
                  "a.filter(function(v, i, a) { return v > 1 })"),
       nxt_string("") },

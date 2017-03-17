@@ -1292,6 +1292,69 @@ njs_array_prototype_every_continuation(njs_vm_t *vm, njs_value_t *args,
 
 
 static njs_ret_t
+njs_array_prototype_fill(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    nxt_int_t    start, end, length;
+    njs_array_t  *array;
+
+    vm->retval = args[0];
+
+    if (nargs < 2 || !njs_is_array(&args[0])) {
+        return NXT_OK;
+    }
+
+    array = args[0].data.u.array;
+    length = array->length;
+
+    if (length == 0) {
+        return NXT_OK;
+    }
+
+    start = 0;
+    end = length;
+
+    if (nargs > 2) {
+        start = args[2].data.u.number;
+
+        if (start > length) {
+            start = length;
+        }
+
+        if (start < 0) {
+            start += length;
+
+            if (start < 0) {
+                start = 0;
+            }
+        }
+
+       if (nargs > 3) {
+           end = args[3].data.u.number;
+
+           if (end > length) {
+               end = length;
+           }
+
+           if (end < 0) {
+               end += length;
+
+               if (end < 0) {
+                   end = 0;
+               }
+           }
+       }
+    }
+
+    while (start < end) {
+        array->start[start++] = args[1];
+    }
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
 njs_array_prototype_filter(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
@@ -1909,6 +1972,15 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .name = njs_string("every"),
         .value = njs_native_function(njs_array_prototype_every,
                      njs_continuation_size(njs_array_iter_t), 0),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("fill"),
+        .value = njs_native_function(njs_array_prototype_fill, 0,
+                     NJS_OBJECT_ARG, NJS_SKIP_ARG, NJS_NUMBER_ARG,
+                     NJS_NUMBER_ARG),
     },
 
     {
