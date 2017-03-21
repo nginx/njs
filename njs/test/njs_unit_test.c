@@ -1034,10 +1034,22 @@ static njs_unit_test_t  njs_test[] =
 
     /**/
 
-    { nxt_string("undefined < null"),
+    { nxt_string("undefined == undefined"),
+      nxt_string("true") },
+
+    { nxt_string("undefined != undefined"),
+      nxt_string("false") },
+
+    { nxt_string("undefined === undefined"),
+      nxt_string("true") },
+
+    { nxt_string("undefined !== undefined"),
       nxt_string("false") },
 
     { nxt_string("undefined < undefined"),
+      nxt_string("false") },
+
+    { nxt_string("undefined < null"),
       nxt_string("false") },
 
     { nxt_string("undefined < false"),

@@ -2046,7 +2046,12 @@ njs_values_strict_equal(const njs_value_t *val1, const njs_value_t *val2)
     }
 
     if (njs_is_numeric(val1)) {
-        /* NaNs and Infinities are handled correctly by comparision. */
+
+        if (val1->type == NJS_VOID) {
+            return 1;
+        }
+
+        /* Infinities are handled correctly by comparision. */
         return (val1->data.u.number == val2->data.u.number);
     }
 
