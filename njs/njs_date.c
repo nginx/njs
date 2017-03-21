@@ -1866,7 +1866,7 @@ njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_continuation_t  *cont;
     nxt_lvlhsh_query_t  lhq;
 
-    cont = (njs_continuation_t *) njs_continuation(vm->frame);
+    cont = njs_vm_continuation(vm);
     cont->function = njs_date_prototype_to_json_continuation;
 
     if (njs_is_object(&args[0])) {

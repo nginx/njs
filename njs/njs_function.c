@@ -106,7 +106,7 @@ njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     frame->nargs = function->args_offset + nargs;
     frame->ctor = ctor;
 
-    value = (njs_value_t *) ((u_char *) njs_continuation(frame) + reserve);
+    value = (njs_value_t *) (njs_continuation(frame) + reserve);
 
     bound = function->bound;
 
@@ -265,7 +265,7 @@ njs_function_apply(njs_vm_t *vm, njs_function_t *function, njs_value_t *args,
             return ret;
         }
 
-        cont = njs_continuation(vm->frame);
+        cont = njs_vm_continuation(vm);
 
         cont->function = function->u.native;
         cont->args_types = function->args_types;
@@ -500,7 +500,7 @@ njs_function_activate(njs_vm_t *vm, njs_function_t *function, njs_value_t *this,
         /* Skip the "call/apply" method frame. */
         vm->frame->previous->skip = 1;
 
-        cont = njs_continuation(vm->frame);
+        cont = njs_vm_continuation(vm);
 
         cont->function = function->u.native;
         cont->args_types = function->args_types;

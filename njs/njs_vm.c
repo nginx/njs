@@ -2343,7 +2343,7 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
     }
 
     if (function->continuation_size != 0) {
-        cont = njs_continuation(vm->frame);
+        cont = njs_vm_continuation(vm);
 
         cont->function = function->u.native;
         cont->args_types = function->args_types;
@@ -2594,8 +2594,8 @@ njs_vmcode_continuation(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
     njs_native_frame_t  *frame;
     njs_continuation_t  *cont;
 
+    cont = njs_vm_continuation(vm);
     frame = vm->frame;
-    cont = njs_continuation(frame);
     args = frame->arguments - frame->function->args_offset;
 
     if (cont->args_types != NULL) {

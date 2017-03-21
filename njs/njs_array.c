@@ -701,7 +701,7 @@ njs_array_prototype_to_string(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_continuation_t  *cont;
     nxt_lvlhsh_query_t  lhq;
 
-    cont = (njs_continuation_t *) njs_continuation(vm->frame);
+    cont = njs_vm_continuation(vm);
     cont->function = njs_array_prototype_to_string_continuation;
 
     if (njs_is_object(&args[0])) {
@@ -751,7 +751,7 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         goto empty;
     }
 
-    join = (njs_array_join_t *) njs_continuation(vm->frame);
+    join = njs_vm_continuation(vm);
     join->values = NULL;
     join->max = 0;
     max = 0;
@@ -774,7 +774,7 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             return NXT_ERROR;
         }
 
-        join = (njs_array_join_t *) njs_continuation(vm->frame);
+        join = njs_vm_continuation(vm);
         join->cont.function = njs_array_prototype_join_continuation;
         join->values = values;
         join->max = max;
@@ -820,7 +820,7 @@ njs_array_prototype_join_continuation(njs_vm_t *vm, njs_value_t *args,
     njs_array_join_t   *join;
     njs_string_prop_t  separator, string;
 
-    join = (njs_array_join_t *) njs_continuation(vm->frame);
+    join = njs_vm_continuation(vm);
     values = join->values;
     max = join->max;
 
@@ -1177,7 +1177,7 @@ njs_array_prototype_for_each(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return ret;
     }
 
-    iter = njs_continuation(vm->frame);
+    iter = njs_vm_continuation(vm);
     iter->u.cont.function = njs_array_prototype_for_each_continuation;
 
     return njs_array_prototype_for_each_continuation(vm, args, nargs, unused);
@@ -1190,7 +1190,7 @@ njs_array_prototype_for_each_continuation(njs_vm_t *vm, njs_value_t *args,
 {
     njs_array_iter_t  *iter;
 
-    iter = njs_continuation(vm->frame);
+    iter = njs_vm_continuation(vm);
 
     if (iter->next_index >= args[0].data.u.array->length) {
         vm->retval = njs_value_void;
@@ -1213,7 +1213,7 @@ njs_array_prototype_some(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return ret;
     }
 
-    iter = njs_continuation(vm->frame);
+    iter = njs_vm_continuation(vm);
     iter->u.cont.function = njs_array_prototype_some_continuation;
     iter->retval.data.truth = 0;
 
@@ -1228,7 +1228,7 @@ njs_array_prototype_some_continuation(njs_vm_t *vm, njs_value_t *args,
     njs_array_iter_t   *iter;
     const njs_value_t  *retval;
 
-    iter = njs_continuation(vm->frame);
+    iter = njs_vm_continuation(vm);
 
     if (njs_is_true(&iter->retval)) {
         retval = &njs_value_true;
@@ -1258,7 +1258,7 @@ njs_array_prototype_every(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return ret;
     }
 
-    iter = njs_continuation(vm->frame);
+    iter = njs_vm_continuation(vm);
     iter->u.cont.function = njs_array_prototype_every_continuation;
     iter->retval.data.truth = 1;
 
@@ -1273,7 +1273,7 @@ njs_array_prototype_every_continuation(njs_vm_t *vm, njs_value_t *args,
     njs_array_iter_t   *iter;
     const njs_value_t  *retval;
 
-    iter = njs_continuation(vm->frame);
+    iter = njs_vm_continuation(vm);
 
     if (!njs_is_true(&iter->retval)) {
         retval = &njs_value_false;
@@ -1366,7 +1366,7 @@ njs_array_prototype_filter(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return ret;
     }
 
-    filter = njs_continuation(vm->frame);
+    filter = njs_vm_continuation(vm);
     filter->iter.u.cont.function = njs_array_prototype_filter_continuation;
     filter->iter.retval.data.truth = 0;
 
@@ -1387,7 +1387,7 @@ njs_array_prototype_filter_continuation(njs_vm_t *vm, njs_value_t *args,
     njs_array_t         *array;
     njs_array_filter_t  *filter;
 
-    filter = njs_continuation(vm->frame);
+    filter = njs_vm_continuation(vm);
 
     if (njs_is_true(&filter->iter.retval)) {
         ret = njs_array_add(vm, filter->array, &filter->value);
@@ -1428,7 +1428,7 @@ njs_array_prototype_map(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return ret;
     }
 
-    map = njs_continuation(vm->frame);
+    map = njs_vm_continuation(vm);
     map->iter.u.cont.function = njs_array_prototype_map_continuation;
     njs_set_invalid(&map->iter.retval);
 
@@ -1458,7 +1458,7 @@ njs_array_prototype_map_continuation(njs_vm_t *vm, njs_value_t *args,
 {
     njs_array_map_t  *map;
 
-    map = njs_continuation(vm->frame);
+    map = njs_vm_continuation(vm);
 
     if (njs_is_valid(&map->iter.retval)) {
         map->array->start[map->index] = map->iter.retval;
@@ -1492,7 +1492,7 @@ njs_array_prototype_reduce(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return ret;
     }
 
-    iter = njs_continuation(vm->frame);
+    iter = njs_vm_continuation(vm);
     iter->u.cont.function = njs_array_prototype_reduce_continuation;
 
     if (nargs > 2) {
@@ -1525,7 +1525,7 @@ njs_array_prototype_reduce_continuation(njs_vm_t *vm, njs_value_t *args,
     njs_value_t       arguments[5];
     njs_array_iter_t  *iter;
 
-    iter = njs_continuation(vm->frame);
+    iter = njs_vm_continuation(vm);
 
     if (iter->next_index >= args[0].data.u.array->length) {
         vm->retval = iter->retval;
@@ -1562,7 +1562,7 @@ njs_array_iterator_args(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs)
     if (nargs > 1 && njs_is_array(&args[0]) && njs_is_function(&args[1])) {
 
         array = args[0].data.u.array;
-        iter = njs_continuation(vm->frame);
+        iter = njs_vm_continuation(vm);
         iter->length = array->length;
         iter->next_index = njs_array_iterator_next(array, 0, array->length);
 
@@ -1640,7 +1640,7 @@ njs_array_prototype_reduce_right(njs_vm_t *vm, njs_value_t *args,
         goto type_error;
     }
 
-    iter = njs_continuation(vm->frame);
+    iter = njs_vm_continuation(vm);
     iter->u.cont.function = njs_array_prototype_reduce_right_continuation;
 
     array = args[0].data.u.array;
@@ -1680,7 +1680,7 @@ njs_array_prototype_reduce_right_continuation(njs_vm_t *vm, njs_value_t *args,
     njs_value_t       arguments[5];
     njs_array_iter_t  *iter;
 
-    iter = njs_continuation(vm->frame);
+    iter = njs_vm_continuation(vm);
 
     if ((int32_t) iter->next_index < 0) {
         vm->retval = iter->retval;
@@ -1764,7 +1764,7 @@ njs_array_prototype_sort(njs_vm_t *vm, njs_value_t *args,
 
     if (njs_is_array(&args[0]) && args[0].data.u.array->length > 1) {
 
-        sort = njs_continuation(vm->frame);
+        sort = njs_vm_continuation(vm);
         sort->u.cont.function = njs_array_prototype_sort_continuation;
         sort->current = 0;
         sort->retval = njs_value_zero;
@@ -1797,7 +1797,7 @@ njs_array_prototype_sort_continuation(njs_vm_t *vm, njs_value_t *args,
     array = args[0].data.u.array;
     start = array->start;
 
-    sort = njs_continuation(vm->frame);
+    sort = njs_vm_continuation(vm);
 
     if (njs_is_number(&sort->retval)) {
 

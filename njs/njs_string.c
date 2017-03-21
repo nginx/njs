@@ -2274,7 +2274,7 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         goto original;
     }
 
-    r = njs_continuation(vm->frame);
+    r = njs_vm_continuation(vm);
 
     r->utf8 = NJS_STRING_BYTE;
     r->type = NJS_REGEXP_BYTE;
@@ -2521,7 +2521,7 @@ njs_string_replace_regexp_continuation(njs_vm_t *vm, njs_value_t *args,
 {
     njs_string_replace_t  *r;
 
-    r = njs_continuation(vm->frame);
+    r = njs_vm_continuation(vm);
 
     if (njs_is_string(&r->retval)) {
         njs_string_replacement_copy(&r->part[1], &r->retval);
@@ -2640,7 +2640,7 @@ njs_string_replace_search_continuation(njs_vm_t *vm, njs_value_t *args,
 {
     njs_string_replace_t  *r;
 
-    r = njs_continuation(vm->frame);
+    r = njs_vm_continuation(vm);
 
     if (njs_is_string(&r->retval)) {
         njs_string_replacement_copy(&r->part[1], &r->retval);
