@@ -581,7 +581,7 @@ njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     for (i = 0; i < nargs; i++) {
         if (!njs_is_string(&args[i])) {
-            vm->frame->trap_scratch.data.u.value = &args[i];
+            njs_vm_trap_value(vm, &args[i]);
 
             return NJS_TRAP_STRING_ARG;
         }
@@ -1130,7 +1130,7 @@ njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args,
 
     for (i = 1; i < nargs; i++) {
         if (!njs_is_numeric(&args[i])) {
-            vm->frame->trap_scratch.data.u.value = &args[i];
+            njs_vm_trap_value(vm, &args[i]);
             return NJS_TRAP_NUMBER_ARG;
         }
     }

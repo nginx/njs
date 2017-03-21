@@ -840,7 +840,7 @@ njs_array_prototype_join_continuation(njs_vm_t *vm, njs_value_t *args,
                 value = &values[n++];
 
                 if (!njs_is_string(value)) {
-                    vm->frame->trap_scratch.data.u.value = value;
+                    njs_vm_trap_value(vm, value);
 
                     return NJS_TRAP_STRING_ARG;
                 }
@@ -1733,7 +1733,7 @@ njs_array_string_sort(njs_vm_t *vm, njs_value_t *args,
 
     for (i = 1; i < nargs; i++) {
         if (!njs_is_string(&args[i])) {
-            vm->frame->trap_scratch.data.u.value = &args[i];
+            njs_vm_trap_value(vm, &args[i]);
             return NJS_TRAP_STRING_ARG;
         }
     }

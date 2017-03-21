@@ -2518,7 +2518,7 @@ njs_normalize_args(njs_vm_t *vm, njs_value_t *args, uint8_t *args_types,
 
 trap:
 
-    vm->frame->trap_scratch.data.u.value = args;
+    njs_vm_trap_value(vm, args);
 
     return trap;
 

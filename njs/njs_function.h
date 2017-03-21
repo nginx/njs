@@ -68,6 +68,11 @@ typedef struct {
 #define NJS_CONTINUATION_SIZE      njs_continuation_size(njs_continuation_t)
 
 
+#define njs_vm_trap_value(vm, val)                                            \
+    (vm)->frame->trap_scratch.data.u.value = val
+
+
+
 typedef struct njs_exception_s     njs_exception_t;
 
 struct njs_exception_s {
