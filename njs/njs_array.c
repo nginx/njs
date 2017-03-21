@@ -1295,7 +1295,7 @@ static njs_ret_t
 njs_array_prototype_fill(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    nxt_int_t    start, end, length;
+    nxt_int_t    i, start, end, length;
     njs_array_t  *array;
 
     vm->retval = args[0];
@@ -1346,8 +1346,8 @@ njs_array_prototype_fill(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
        }
     }
 
-    while (start < end) {
-        array->start[start++] = args[1];
+    for (i = start; i < end; i++) {
+        array->start[i] = args[1];
     }
 
     return NXT_OK;

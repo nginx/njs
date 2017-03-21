@@ -51,7 +51,7 @@ rbtree_unit_test(nxt_uint_t n)
 
     keys = malloc(n * sizeof(uint32_t));
     if (keys == NULL) {
-        free(keys);
+        free(items);
         return NXT_ERROR;
     }
 
