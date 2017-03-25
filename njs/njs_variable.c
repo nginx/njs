@@ -176,14 +176,12 @@ njs_variable_t *
 njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node,
     njs_name_reference_t reference)
 {
-    nxt_int_t           ret;
     nxt_array_t         *values;
     njs_index_t         index;
     njs_value_t         *value;
     njs_variable_t      *var;
     njs_parser_scope_t  *scope, *parent, *inclusive;
     nxt_lvlhsh_query_t  lhq;
-    const njs_value_t   *initial;
 
     lhq.key_hash = node->variable_name_hash;
     lhq.key = node->u.variable_name;
@@ -209,8 +207,6 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node,
                 }
             }
 
-            initial = &njs_value_void;
-
             goto found;
         }
 
@@ -229,23 +225,14 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node,
         goto not_found;
     }
 
-    /* Add variable referenced by typeof to the global scope. */
-
     var = njs_variable_alloc(vm, &lhq.key, NJS_VARIABLE_TYPEOF);
     if (nxt_slow_path(var == NULL)) {
         return NULL;
     }
 
-    lhq.replace = 0;
-    lhq.value = var;
-    lhq.pool = vm->mem_cache_pool;
+    var->index = NJS_INDEX_NONE;
 
-    ret = nxt_lvlhsh_insert(&scope->variables, &lhq);
-    if (nxt_slow_path(ret != NXT_OK)) {
-        return NULL;
-    }
-
-    initial = &njs_value_invalid;
+    return var;
 
 found:
 
@@ -285,7 +272,7 @@ found:
         *value = var->value;
 
     } else {
-        *value = *initial;
+        *value = njs_value_void;
     }
 
     index = scope->next_index;

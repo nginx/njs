@@ -1444,6 +1444,8 @@ njs_vmcode_post_decrement(njs_vm_t *vm, njs_value_t *reference,
 njs_ret_t
 njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 {
+    nxt_uint_t  type;
+
     /* ECMAScript 5.1: null, array and regexp are objects. */
 
     static const njs_value_t  *types[] = {
@@ -1466,7 +1468,10 @@ njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
         &njs_string_object,
     };
 
-    vm->retval = *types[value->type];
+    /* A zero index means non-declared variable. */
+    type = (value != NULL) ? value->type : NJS_VOID;
+
+    vm->retval = *types[type];
 
     return sizeof(njs_vmcode_2addr_t);
 }
