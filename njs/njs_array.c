@@ -725,7 +725,7 @@ njs_array_prototype_to_string_continuation(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t retval)
 {
     /* Skip retval update. */
-    vm->frame->skip = 1;
+    vm->top_frame->skip = 1;
 
     return NXT_OK;
 }

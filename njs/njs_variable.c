@@ -23,6 +23,15 @@
 #include <string.h>
 
 
+typedef struct {
+    nxt_lvlhsh_query_t  lhq;
+    njs_variable_t      *variable;
+    njs_parser_scope_t  *scope;
+} njs_variable_scope_t;
+
+
+static njs_ret_t njs_variable_find(njs_vm_t *vm, njs_parser_node_t *node,
+    njs_variable_scope_t *vs);
 static njs_variable_t *njs_variable_alloc(njs_vm_t *vm, nxt_str_t *name,
     njs_variable_type_t type);
 
@@ -42,7 +51,7 @@ njs_variables_hash_test(nxt_lvlhsh_query_t *lhq, void *data)
 }
 
 
-static const nxt_lvlhsh_proto_t  njs_variables_hash_proto
+const nxt_lvlhsh_proto_t  njs_variables_hash_proto
     nxt_aligned(64) =
 {
     NXT_LVLHSH_DEFAULT,
@@ -155,103 +164,195 @@ njs_variable_add(njs_vm_t *vm, njs_parser_t *parser, njs_variable_type_t type)
 }
 
 
+static nxt_int_t
+njs_reference_hash_test(nxt_lvlhsh_query_t *lhq, void *data)
+{
+    njs_parser_node_t  *node;
+
+    node = data;
+
+    if (nxt_strstr_eq(&lhq->key, &node->u.variable_name)) {
+        return NXT_OK;
+    }
+
+    return NXT_DECLINED;
+}
+
+
+const nxt_lvlhsh_proto_t  njs_reference_hash_proto
+    nxt_aligned(64) =
+{
+    NXT_LVLHSH_DEFAULT,
+    0,
+    njs_reference_hash_test,
+    njs_lvlhsh_alloc,
+    njs_lvlhsh_free,
+};
+
+
 njs_ret_t
 njs_variable_reference(njs_vm_t *vm, njs_parser_t *parser,
-    njs_parser_node_t *node)
+    njs_parser_node_t *node, nxt_bool_t reference)
 {
-    njs_ret_t  ret;
+    njs_ret_t           ret;
+    nxt_lvlhsh_query_t  lhq;
 
     ret = njs_name_copy(vm, &node->u.variable_name, &parser->lexer->text);
 
     if (nxt_fast_path(ret == NXT_OK)) {
         node->variable_name_hash = parser->lexer->key_hash;
         node->scope = parser->scope;
+        node->reference = reference;
+
+        lhq.key_hash = node->variable_name_hash;
+        lhq.key = node->u.variable_name;
+        lhq.proto = &njs_reference_hash_proto;
+        lhq.replace = 0;
+        lhq.value = node;
+        lhq.pool = vm->mem_cache_pool;
+
+        ret = nxt_lvlhsh_insert(&parser->scope->references, &lhq);
+
+        if (nxt_slow_path(ret != NXT_ERROR)) {
+            ret = NXT_OK;
+        }
     }
 
     return ret;
 }
 
 
-njs_variable_t *
-njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node,
-    njs_name_reference_t reference)
+njs_ret_t
+njs_variables_scope_reference(njs_vm_t *vm, njs_parser_scope_t *scope)
 {
-    nxt_array_t         *values;
-    njs_index_t         index;
-    njs_value_t         *value;
+    njs_ret_t           ret;
+    nxt_queue_t         *nested;
     njs_variable_t      *var;
-    njs_parser_scope_t  *scope, *parent, *inclusive;
-    nxt_lvlhsh_query_t  lhq;
+    nxt_queue_link_t    *lnk;
+    njs_parser_node_t   *node;
+    nxt_lvlhsh_each_t   lhe;
 
-    lhq.key_hash = node->variable_name_hash;
-    lhq.key = node->u.variable_name;
-    lhq.proto = &njs_variables_hash_proto;
+    nested = &scope->nested;
 
-    inclusive = NULL;
-    scope = node->scope;
+    for (lnk = nxt_queue_first(nested);
+         lnk != nxt_queue_tail(nested);
+         lnk = nxt_queue_next(lnk))
+    {
+        scope = nxt_queue_link_data(lnk, njs_parser_scope_t, link);
 
-    for ( ;; ) {
-        if (nxt_lvlhsh_find(&scope->variables, &lhq) == NXT_OK) {
-            var = lhq.value;
+        ret = njs_variables_scope_reference(vm, scope);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return NXT_ERROR;
+        }
 
-            if (scope->type == NJS_SCOPE_SHIM) {
-                scope = inclusive;
+        memset(&lhe, 0, sizeof(nxt_lvlhsh_each_t));
+        lhe.proto = &njs_variables_hash_proto;
 
-            } else {
-                /*
-                 * Variables declared in a block with "let" or "const"
-                 * keywords are actually stored in function or global scope.
-                 */
-                while (scope->type == NJS_SCOPE_BLOCK) {
-                    scope = scope->parent;
-                }
+        for ( ;; ) {
+            node = nxt_lvlhsh_each(&scope->references, &lhe);
+
+            if (node == NULL) {
+                break;
             }
 
-            goto found;
+            var = njs_variable_get(vm, node);
+            if (nxt_slow_path(var == NULL)) {
+                return NXT_ERROR;
+            }
         }
-
-        parent = scope->parent;
-
-        if (parent == NULL) {
-            /* A global scope. */
-            break;
-        }
-
-        inclusive = scope;
-        scope = parent;
     }
 
-    if (reference != NJS_NAME_TYPEOF) {
+    return NXT_OK;
+}
+
+
+njs_index_t
+njs_variable_typeof(njs_vm_t *vm, njs_parser_node_t *node)
+{
+    nxt_int_t             ret;
+    njs_variable_scope_t  vs;
+
+    if (node->index != NJS_INDEX_NONE) {
+        return node->index;
+    }
+
+    ret = njs_variable_find(vm, node, &vs);
+
+    if (nxt_fast_path(ret == NXT_OK)) {
+        return vs.variable->index;
+    }
+
+    return NJS_INDEX_NONE;
+}
+
+
+njs_index_t
+njs_variable_index(njs_vm_t *vm, njs_parser_node_t *node)
+{
+    njs_variable_t  *var;
+
+    if (node->index != NJS_INDEX_NONE) {
+        return node->index;
+    }
+
+    var = njs_variable_get(vm, node);
+
+    if (nxt_fast_path(var != NULL)) {
+        return var->index;
+    }
+
+    return NJS_INDEX_ERROR;
+}
+
+
+njs_variable_t *
+njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
+{
+    nxt_int_t             ret;
+    nxt_uint_t            n;
+    nxt_array_t           *values;
+    njs_index_t           index;
+    njs_value_t           *value;
+    njs_variable_t        *var;
+    njs_variable_scope_t  vs;
+
+    ret = njs_variable_find(vm, node, &vs);
+
+    if (nxt_slow_path(ret != NXT_OK)) {
         goto not_found;
     }
 
-    var = njs_variable_alloc(vm, &lhq.key, NJS_VARIABLE_TYPEOF);
-    if (nxt_slow_path(var == NULL)) {
-        return NULL;
-    }
+    n = (node->scope->nesting != vs.scope->nesting);
 
-    var->index = NJS_INDEX_NONE;
-
-    return var;
-
-found:
-
-    if (reference == NJS_NAME_REFERENCE && var->type == NJS_VARIABLE_TYPEOF) {
-        goto not_found;
-    }
-
+    var = vs.variable;
     index = var->index;
 
     if (index != NJS_INDEX_NONE) {
-        node->index = index;
-        return var;
+
+        if (n == 0 || njs_scope_type(index) != NJS_SCOPE_ARGUMENTS) {
+            node->index = index;
+
+            return var;
+        }
+
+        vs.scope->argument_closures++;
+        index = (index >> NJS_SCOPE_SHIFT) + 1;
+
+        if (index > 255 || vs.scope->argument_closures == 0) {
+            nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
+                      "InternalError: too many argument closures");
+
+            return NULL;
+        }
+
+        var->argument = index;
     }
 
-    if (reference == NJS_NAME_REFERENCE && var->type <= NJS_VARIABLE_LET) {
+    if (node->reference && var->type <= NJS_VARIABLE_LET) {
         goto not_found;
     }
 
-    values = scope->values;
+    values = vs.scope->values[n];
 
     if (values == NULL) {
         values = nxt_array_create(4, sizeof(njs_value_t), &njs_array_mem_proto,
@@ -260,7 +361,7 @@ found:
             return NULL;
         }
 
-        scope->values = values;
+        vs.scope->values[n] = values;
     }
 
     value = nxt_array_add(values, &njs_array_mem_proto, vm->mem_cache_pool);
@@ -275,8 +376,8 @@ found:
         *value = njs_value_void;
     }
 
-    index = scope->next_index;
-    scope->next_index += sizeof(njs_value_t);
+    index = vs.scope->next_index[n];
+    vs.scope->next_index[n] += sizeof(njs_value_t);
 
     var->index = index;
     node->index = index;
@@ -287,25 +388,59 @@ not_found:
 
     nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
               "ReferenceError: \"%.*s\" is not defined",
-              (int) lhq.key.length, lhq.key.start);
+              (int) vs.lhq.key.length, vs.lhq.key.start);
 
     return NULL;
 }
 
 
-njs_index_t
-njs_variable_index(njs_vm_t *vm, njs_parser_node_t *node,
-    njs_name_reference_t reference)
+static njs_ret_t
+njs_variable_find(njs_vm_t *vm, njs_parser_node_t *node,
+    njs_variable_scope_t *vs)
 {
-    njs_variable_t  *var;
+    njs_parser_scope_t  *scope, *parent, *previous;
 
-    var = njs_variable_get(vm, node, reference);
+    vs->lhq.key_hash = node->variable_name_hash;
+    vs->lhq.key = node->u.variable_name;
+    vs->lhq.proto = &njs_variables_hash_proto;
 
-    if (nxt_fast_path(var != NULL)) {
-        return var->index;
+    previous = NULL;
+    scope = node->scope;
+
+    for ( ;; ) {
+        if (nxt_lvlhsh_find(&scope->variables, &vs->lhq) == NXT_OK) {
+            vs->variable = vs->lhq.value;
+
+            if (scope->type == NJS_SCOPE_SHIM) {
+                scope = previous;
+
+            } else {
+                /*
+                 * Variables declared in a block with "let" or "const"
+                 * keywords are actually stored in function or global scope.
+                 */
+                while (scope->type == NJS_SCOPE_BLOCK) {
+                    scope = scope->parent;
+                }
+            }
+
+            vs->scope = scope;
+
+            return NXT_OK;
+        }
+
+        parent = scope->parent;
+
+        if (parent == NULL) {
+            /* A global scope. */
+            vs->scope = scope;
+
+            return NXT_DECLINED;
+        }
+
+        previous = scope;
+        scope = parent;
     }
-
-    return NJS_INDEX_ERROR;
 }
 
 

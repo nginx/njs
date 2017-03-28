@@ -4127,6 +4127,39 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("(function f(a) { return (a > 1) ? a * f(a - 1) : 1 })(10)"),
       nxt_string("3628800") },
 
+    /* Nested functions and closures. */
+
+    { nxt_string("function f() { var x = 4; "
+                 "function g() { return x }; return g(); } f()"),
+      nxt_string("4") },
+
+    { nxt_string("function f(a) { function g(b) { return a + b } return g }"
+                 "var k = f('a'); k('b')"),
+      nxt_string("ab") },
+
+    { nxt_string("function f(a) { return function(b) { return a + b } }"
+                 "var k = f('a'); k('b')"),
+      nxt_string("ab") },
+
+    { nxt_string("function f(a) { return function(b) { return a + b } }"
+                 "var k = f('a'), m = f('b'); k('c') + m('d')"),
+      nxt_string("acbd") },
+
+    { nxt_string("function f(a) { return "
+                 "function(b) { return function(c) { return a + b + c } } }"
+                 "var g = f('a'), k = g('b'), m = g('c'); k('d') + m('e')"),
+      nxt_string("abdace") },
+
+    { nxt_string("function f(a) {"
+                 "function g() { return a }; return g; }"
+                 "var y = f(4); y()"),
+      nxt_string("4") },
+
+    { nxt_string("function f() { var x = 4; "
+                 "return function() { return x } }"
+                 "var y = f(); y()"),
+      nxt_string("4") },
+
     /* Recursive fibonacci. */
 
     { nxt_string("function fibo(n) {"
@@ -4396,10 +4429,8 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("[object Function]1") },
 #endif
 
-#if 0
     { nxt_string("function f() {}; function g() { return f }; g()"),
       nxt_string("[object Function]") },
-#endif
 
     { nxt_string("function f(a) { return this+a }; var a = f; a.call('0', 1)"),
       nxt_string("01") },

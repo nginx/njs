@@ -217,6 +217,11 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end, nxt_str_t **export)
         return NJS_ERROR;
     }
 
+    ret = njs_variables_scope_reference(vm, parser->scope);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NJS_ERROR;
+    }
+
     *start = parser->lexer->start;
 
     ret = njs_generate_scope(vm, parser, node);
@@ -293,7 +298,8 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
 
         memset(frame, 0, NJS_GLOBAL_FRAME_SIZE);
 
-        nvm->frame = &frame->native;
+        nvm->top_frame = &frame->native;
+        nvm->active_frame = frame;
 
         frame->native.size = size;
         frame->native.free_size = size - (NJS_GLOBAL_FRAME_SIZE + scope_size);
@@ -353,7 +359,6 @@ njs_vm_call(njs_vm_t *vm, njs_function_t *function, njs_opaque_value_t *args,
 
     ret = njs_function_frame(vm, function, this,
                              (njs_value_t *) args, nargs, 0);
-
     if (nxt_slow_path(ret != NXT_OK)) {
         return ret;
     }
@@ -361,7 +366,10 @@ njs_vm_call(njs_vm_t *vm, njs_function_t *function, njs_opaque_value_t *args,
     current = vm->current;
     vm->current = (u_char *) stop;
 
-    (void) njs_function_call(vm, NJS_INDEX_GLOBAL_RETVAL, 0);
+    ret = njs_function_call(vm, NJS_INDEX_GLOBAL_RETVAL, 0);
+    if (nxt_slow_path(ret == NXT_ERROR)) {
+        return ret;
+    }
 
     ret = njs_vmcode_interpreter(vm);
 

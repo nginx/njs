@@ -367,7 +367,7 @@ njs_string_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         value = &args[1];
     }
 
-    if (vm->frame->ctor) {
+    if (vm->top_frame->ctor) {
         object = njs_object_value_alloc(vm, value, value->type);
         if (nxt_slow_path(object == NULL)) {
             return NXT_ERROR;

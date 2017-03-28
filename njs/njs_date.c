@@ -91,7 +91,7 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_date_t  *date;
     struct tm   tm;
 
-    if (vm->frame->ctor) {
+    if (vm->top_frame->ctor) {
 
         if (nargs == 1) {
             time = njs_gettime();
@@ -1892,7 +1892,7 @@ njs_date_prototype_to_json_continuation(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t retval)
 {
     /* Skip retval update. */
-    vm->frame->skip = 1;
+    vm->top_frame->skip = 1;
 
     return NXT_OK;
 }

@@ -34,7 +34,7 @@ njs_boolean_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         value = njs_is_true(&args[1]) ? &njs_value_true : &njs_value_false;
     }
 
-    if (vm->frame->ctor) {
+    if (vm->top_frame->ctor) {
         object = njs_object_value_alloc(vm, value, value->type);
         if (nxt_slow_path(object == NULL)) {
             return NXT_ERROR;

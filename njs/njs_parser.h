@@ -216,16 +216,20 @@ typedef struct {
     ((node)->token == NJS_TOKEN_NAME || (node)->token == NJS_TOKEN_PROPERTY)
 
 
-typedef struct njs_parser_scope_s   njs_parser_scope_t;
-
 struct njs_parser_scope_s {
-    nxt_array_t                     *values;   /* Array of njs_value_t. */
+    nxt_queue_link_t                link;
+    nxt_queue_t                     nested;
 
-    nxt_lvlhsh_t                    variables;
     njs_parser_scope_t              *parent;
-    njs_index_t                     next_index;
-    uint32_t                        inclusive;
+    nxt_lvlhsh_t                    variables;
+    nxt_lvlhsh_t                    references;
+
+    nxt_array_t                     *values[2]; /* Array of njs_value_t. */
+    njs_index_t                     next_index[2];
+
     njs_scope_t                     type:8;
+    uint8_t                         nesting;    /* 4 bits */
+    uint8_t                         argument_closures;
 };
 
 
@@ -235,6 +239,7 @@ struct njs_parser_node_s {
     njs_token_t                     token:16;
     uint8_t                         ctor:1;     /* 1 bit  */
     uint8_t                         temporary;  /* 1 bit  */
+    uint8_t                         reference;  /* 1 bit  */
     uint32_t                        token_line;
     uint32_t                        variable_name_hash;
 
@@ -353,11 +358,10 @@ njs_token_t njs_parser_property_token(njs_parser_t *parser);
 njs_token_t njs_parser_token(njs_parser_t *parser);
 nxt_int_t njs_parser_string_create(njs_vm_t *vm, njs_value_t *value);
 njs_ret_t njs_variable_reference(njs_vm_t *vm, njs_parser_t *parser,
-    njs_parser_node_t *node);
-njs_variable_t *njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node,
-    njs_name_reference_t reference);
-njs_index_t njs_variable_index(njs_vm_t *vm, njs_parser_node_t *node,
-    njs_name_reference_t reference);
+    njs_parser_node_t *node, nxt_bool_t reference);
+njs_variable_t *njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node);
+njs_index_t njs_variable_typeof(njs_vm_t *vm, njs_parser_node_t *node);
+njs_index_t njs_variable_index(njs_vm_t *vm, njs_parser_node_t *node);
 nxt_bool_t njs_parser_has_side_effect(njs_parser_node_t *node);
 u_char *njs_parser_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
     u_char *start);

@@ -22,6 +22,13 @@
 struct njs_function_lambda_s {
     uint32_t                       nargs;
     uint32_t                       local_size;
+    uint32_t                       closure_size;
+
+    /* Function nesting level. */
+    uint8_t                        nesting;         /* 4 bits */
+
+    /* Function internal block closures levels. */
+    uint8_t                        block_closures;  /* 4 bits */
 
     /* Initial values of local scope. */
     njs_value_t                    *local_scope;
@@ -57,7 +64,7 @@ typedef struct {
 
 
 #define njs_vm_continuation(vm)                                               \
-    (void *) njs_continuation((vm)->frame)
+    (void *) njs_continuation((vm)->top_frame)
 
 #define njs_continuation(frame)                                               \
     ((u_char *) frame + NJS_NATIVE_FRAME_SIZE)
@@ -69,7 +76,7 @@ typedef struct {
 
 
 #define njs_vm_trap_value(vm, val)                                            \
-    (vm)->frame->trap_scratch.data.u.value = val
+    (vm)->top_frame->trap_scratch.data.u.value = val
 
 
 
@@ -119,17 +126,21 @@ struct njs_native_frame_s {
 };
 
 
-typedef struct {
+struct njs_frame_s {
     njs_native_frame_t             native;
 
-    u_char                         *return_address;
-    njs_value_t                    *prev_arguments;
-    njs_value_t                    *prev_local;
-    njs_value_t                    *local;
-    njs_value_t                    *closure;
-
     njs_index_t                    retval;
-} njs_frame_t;
+
+    u_char                         *return_address;
+    njs_frame_t                    *previous_active_frame;
+
+    njs_value_t                    *local;
+#if (NXT_SUNC)
+    njs_closure_t                  *closures[1];
+#else
+    njs_closure_t                  *closures[];
+#endif
+};
 
 
 njs_function_t *njs_function_alloc(njs_vm_t *vm);

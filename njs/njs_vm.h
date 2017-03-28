@@ -9,6 +9,7 @@
 
 
 #include <nxt_trace.h>
+#include <nxt_queue.h>
 #include <nxt_regex.h>
 
 
@@ -122,8 +123,10 @@ typedef struct njs_regexp_s           njs_regexp_t;
 typedef struct njs_regexp_pattern_s   njs_regexp_pattern_t;
 typedef struct njs_date_s             njs_date_t;
 typedef struct njs_extern_s           njs_extern_t;
+typedef struct njs_frame_s            njs_frame_t;
 typedef struct njs_native_frame_s     njs_native_frame_t;
 typedef struct njs_property_next_s    njs_property_next_t;
+typedef struct njs_parser_scope_s     njs_parser_scope_t;
 
 
 union njs_value_s {
@@ -225,6 +228,16 @@ struct njs_array_s {
 };
 
 
+typedef struct {
+    union {
+        uint32_t                      count;
+        njs_value_t                   values;
+    } u;
+
+    njs_value_t                       values[1];
+} njs_closure_t;
+
+
 #define NJS_ARGS_TYPES_MAX            5
 
 struct njs_function_s {
@@ -233,6 +246,9 @@ struct njs_function_s {
     uint8_t                           args_types[NJS_ARGS_TYPES_MAX];
     uint8_t                           args_offset;
     uint8_t                           continuation_size;
+
+    /* Function is a closure. */
+    uint8_t                           closure:1;
 
     uint8_t                           native:1;
     uint8_t                           ctor:1;
@@ -243,6 +259,11 @@ struct njs_function_s {
     } u;
 
     njs_value_t                       *bound;
+#if (NXT_SUNC)
+    njs_closure_t                     *closures[1];
+#else
+    njs_closure_t                     *closures[];
+#endif
 };
 
 
@@ -667,14 +688,17 @@ typedef struct {
 
 typedef enum {
     NJS_SCOPE_ABSOLUTE = 0,
-    NJS_SCOPE_GLOBAL,
-    NJS_SCOPE_FUNCTION,
-    NJS_SCOPE_CALLEE_ARGUMENTS,
-    NJS_SCOPE_ARGUMENTS,
-    NJS_SCOPE_CLOSURE,
-    NJS_SCOPE_PARENT_LOCAL,
-    NJS_SCOPE_PARENT_ARGUMENTS,
-    NJS_SCOPE_PARENT_CLOSURE,
+    NJS_SCOPE_GLOBAL = 1,
+    NJS_SCOPE_CALLEE_ARGUMENTS = 2,
+    /*
+     * The argument and local VM scopes should separate because a
+     * function may be called with any number of arguments.
+     */
+    NJS_SCOPE_ARGUMENTS = 3,
+    NJS_SCOPE_LOCAL = 4,
+    NJS_SCOPE_FUNCTION = NJS_SCOPE_LOCAL,
+
+    NJS_SCOPE_CLOSURE = 5,
     /*
      * The block and shim scopes are not really VM scopes.
      * They used only on parsing phase.
@@ -684,7 +708,13 @@ typedef enum {
 } njs_scope_t;
 
 
-#define NJS_SCOPES             (NJS_SCOPE_PARENT_CLOSURE + 1)
+/*
+ * The maximum possible function nesting level is (16 - NJS_SCOPE_CLOSURE),
+ * that is 11.  The 5 is reasonable limit.
+ */
+#define NJS_MAX_NESTING        5
+
+#define NJS_SCOPES             (NJS_SCOPE_CLOSURE + NJS_MAX_NESTING)
 
 #define NJS_SCOPE_SHIFT        4
 #define NJS_SCOPE_MASK         ((uintptr_t) ((1 << NJS_SCOPE_SHIFT) - 1))
@@ -694,6 +724,9 @@ typedef enum {
 #define NJS_INDEX_NONE         ((njs_index_t) 0)
 #define NJS_INDEX_ERROR        ((njs_index_t) -1)
 #define NJS_INDEX_THIS         ((njs_index_t) (0 | NJS_SCOPE_ARGUMENTS))
+
+#define njs_scope_type(index)                                                 \
+     ((uintptr_t) (index) & NJS_SCOPE_MASK)
 
 #define njs_is_callee_argument_index(index)                                   \
     (((index) & NJS_SCOPE_CALLEE_ARGUMENTS) == NJS_SCOPE_CALLEE_ARGUMENTS)
@@ -754,8 +787,8 @@ enum njs_function_e {
 };
 
 
-#define njs_scope_index(value)                                                \
-    ((njs_index_t) ((value) << NJS_SCOPE_SHIFT))
+#define njs_scope_index(value, type)                                          \
+    ((njs_index_t) (((value) << NJS_SCOPE_SHIFT) | (type)))
 
 #define njs_global_scope_index(value)                                         \
     ((njs_index_t) (((value) << NJS_SCOPE_SHIFT) | NJS_SCOPE_GLOBAL))
@@ -772,21 +805,17 @@ enum njs_function_e {
 #define NJS_INDEX_DATE           njs_global_scope_index(NJS_CONSTRUCTOR_DATE)
 
 #define NJS_INDEX_GLOBAL_RETVAL  njs_global_scope_index(NJS_CONSTRUCTOR_MAX)
-#define NJS_INDEX_GLOBAL_OFFSET  njs_scope_index(NJS_CONSTRUCTOR_MAX + 1)
+#define NJS_INDEX_GLOBAL_OFFSET  njs_scope_index(NJS_CONSTRUCTOR_MAX + 1, 0)
 
 
-#define njs_offset(index)                                                     \
+#define njs_scope_offset(index)                                               \
     ((uintptr_t) (index) & ~NJS_SCOPE_MASK)
 
 
 #define njs_vmcode_operand(vm, index)                                         \
     ((njs_value_t *)                                                          \
      ((u_char *) vm->scopes[(uintptr_t) (index) & NJS_SCOPE_MASK]             \
-      + njs_offset(index)))
-
-
-#define njs_index_size(index)                                                 \
-    njs_offset(index)
+      + njs_scope_offset(index)))
 
 
 typedef struct {
@@ -811,7 +840,8 @@ struct njs_vm_s {
 
     void                     **external;
 
-    njs_native_frame_t       *frame;
+    njs_native_frame_t       *top_frame;
+    njs_frame_t              *active_frame;
 
     const njs_value_t        *exception;
 

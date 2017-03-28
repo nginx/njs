@@ -60,7 +60,9 @@ njs_function_alloc(njs_vm_t *vm)
 njs_function_t *
 njs_function_value_copy(njs_vm_t *vm, njs_value_t *value)
 {
-    njs_function_t  *function;
+    size_t          size;
+    nxt_uint_t      n, nesting;
+    njs_function_t  *function, *copy;
 
     function = value->data.u.function;
 
@@ -68,17 +70,36 @@ njs_function_value_copy(njs_vm_t *vm, njs_value_t *value)
         return function;
     }
 
-    function = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_function_t));
+    nesting = (function->native) ? 0 : function->u.lambda->nesting;
 
-    if (nxt_fast_path(function != NULL)) {
-        *function = *value->data.u.function;
-        function->object.__proto__ =
-                                &vm->prototypes[NJS_PROTOTYPE_FUNCTION].object;
-        function->object.shared = 0;
-        value->data.u.function = function;
+    size = sizeof(njs_function_t) + nesting * sizeof(njs_closure_t *);
+
+    copy = nxt_mem_cache_alloc(vm->mem_cache_pool, size);
+    if (nxt_slow_path(copy == NULL)) {
+        return copy;
     }
 
-    return function;
+    value->data.u.function = copy;
+
+    *copy = *function;
+    copy->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION].object;
+    copy->object.shared = 0;
+
+    if (nesting == 0) {
+        return copy;
+    }
+
+    copy->closure = 1;
+
+    n = 0;
+
+    do {
+        /* GC: retain closure. */
+        copy->closures[n] = vm->active_frame->closures[n];
+        n++;
+    } while (n < nesting);
+
+    return copy;
 }
 
 
@@ -107,6 +128,7 @@ njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     frame->ctor = ctor;
 
     value = (njs_value_t *) (njs_continuation(frame) + reserve);
+    frame->arguments = value;
 
     bound = function->bound;
 
@@ -124,7 +146,6 @@ njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
         } while (n != 0);
     }
 
-    frame->arguments = value;
     vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = value;
 
     if (args != NULL) {
@@ -140,17 +161,23 @@ njs_function_frame(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, njs_value_t *args, nxt_uint_t nargs,
     nxt_bool_t ctor)
 {
-    size_t              size;
-    nxt_uint_t          n, max_args;
-    njs_value_t         *value, *bound;
-    njs_frame_t         *frame;
-    njs_native_frame_t  *native_frame;
+    size_t                 size;
+    nxt_uint_t             n, max_args, closures;;
+    njs_value_t            *value, *bound;
+    njs_frame_t            *frame;
+    njs_native_frame_t     *native_frame;
+    njs_function_lambda_t  *lambda;
 
-    max_args = nxt_max(nargs, function->u.lambda->nargs);
+    lambda = function->u.lambda;
+
+    max_args = nxt_max(nargs, lambda->nargs);
+
+    closures = lambda->nesting + lambda->block_closures;
 
     size = NJS_FRAME_SIZE
            + (function->args_offset + max_args) * sizeof(njs_value_t)
-           + function->u.lambda->local_size;
+           + lambda->local_size
+           + closures * sizeof(njs_closure_t *);
 
     native_frame = njs_function_frame_alloc(vm, size);
     if (nxt_slow_path(native_frame == NULL)) {
@@ -161,7 +188,10 @@ njs_function_frame(njs_vm_t *vm, njs_function_t *function,
     native_frame->nargs = nargs;
     native_frame->ctor = ctor;
 
+    /* Function arguments. */
+
     value = (njs_value_t *) ((u_char *) native_frame + NJS_FRAME_SIZE);
+    native_frame->arguments = value;
 
     bound = function->bound;
 
@@ -177,7 +207,6 @@ njs_function_frame(njs_vm_t *vm, njs_function_t *function,
         } while (n != 0);
     }
 
-    native_frame->arguments = value;
     vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = value;
 
     if (args != NULL) {
@@ -196,9 +225,6 @@ njs_function_frame(njs_vm_t *vm, njs_function_t *function,
     frame = (njs_frame_t *) native_frame;
     frame->local = value;
 
-    memcpy(frame->local, function->u.lambda->local_scope,
-           function->u.lambda->local_size);
-
     return NXT_OK;
 }
 
@@ -213,10 +239,10 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
     size_t              spare_size, chunk_size;
     njs_native_frame_t  *frame;
 
-    spare_size = vm->frame->free_size;
+    spare_size = vm->top_frame->free_size;
 
     if (nxt_fast_path(size <= spare_size)) {
-        frame = (njs_native_frame_t *) vm->frame->free;
+        frame = (njs_native_frame_t *) vm->top_frame->free;
         chunk_size = 0;
 
     } else {
@@ -244,8 +270,8 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
     frame->free_size = spare_size - size;
     frame->free = (u_char *) frame + size;
 
-    frame->previous = vm->frame;
-    vm->frame = frame;
+    frame->previous = vm->top_frame;
+    vm->top_frame = frame;
 
     return frame;
 }
@@ -290,25 +316,86 @@ njs_function_apply(njs_vm_t *vm, njs_function_t *function, njs_value_t *args,
 nxt_noinline njs_ret_t
 njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
 {
-    njs_frame_t     *frame;
-    njs_function_t  *function;
+    size_t                 size;
+    nxt_uint_t             n, nesting;
+    njs_frame_t            *frame;
+    njs_value_t            *value;
+    njs_closure_t          *closure, **closures;
+    njs_function_t         *function;
+    njs_function_lambda_t  *lambda;
 
-    frame = (njs_frame_t *) vm->frame;
+    frame = (njs_frame_t *) vm->top_frame;
 
     frame->retval = retval;
 
     function = frame->native.function;
     frame->return_address = vm->current + advance;
-    vm->current = function->u.lambda->u.start;
 
-    frame->prev_arguments = vm->scopes[NJS_SCOPE_ARGUMENTS];
-    vm->scopes[NJS_SCOPE_ARGUMENTS] = frame->native.arguments
-                                      - function->args_offset;
+    lambda = function->u.lambda;
+    vm->current = lambda->u.start;
+
 #if (NXT_DEBUG)
     vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = NULL;
 #endif
-    frame->prev_local = vm->scopes[NJS_SCOPE_FUNCTION];
-    vm->scopes[NJS_SCOPE_FUNCTION] = frame->local;
+
+    vm->scopes[NJS_SCOPE_ARGUMENTS] = frame->native.arguments;
+
+    /* Function local variables and temporary values. */
+
+    vm->scopes[NJS_SCOPE_LOCAL] = frame->local;
+
+    memcpy(frame->local, lambda->local_scope, lambda->local_size);
+
+    /* Parent closures values. */
+
+    n = 0;
+    nesting = lambda->nesting;
+
+    if (nesting != 0) {
+        closures = (function->closure) ? function->closures
+                                       : vm->active_frame->closures;
+        do {
+            closure = *closures++;
+
+            frame->closures[n] = closure;
+            vm->scopes[NJS_SCOPE_CLOSURE + n] = &closure->u.values;
+
+            n++;
+        } while (n < nesting);
+    }
+
+    /* Function closure values. */
+
+    if (lambda->block_closures > 0) {
+        closure = NULL;
+
+        size = lambda->closure_size;
+
+        if (size != 0) {
+            closure = nxt_mem_cache_align(vm->mem_cache_pool,
+                                          sizeof(njs_value_t), size);
+            if (nxt_slow_path(closure == NULL)) {
+                return NXT_ERROR;
+            }
+
+            /* TODO: copy initialzed values. */
+
+            size -= sizeof(njs_value_t);
+            closure->u.count = 0;
+            value = closure->values;
+
+            do {
+                *value++ = njs_value_void;
+                size -= sizeof(njs_value_t);
+            } while (size != 0);
+        }
+
+        frame->closures[n] = closure;
+        vm->scopes[NJS_SCOPE_CLOSURE + n] = &closure->u.values;
+    }
+
+    frame->previous_active_frame = vm->active_frame;
+    vm->active_frame = frame;
 
     return NJS_APPLIED;
 }
@@ -498,7 +585,7 @@ njs_function_activate(njs_vm_t *vm, njs_function_t *function, njs_value_t *this,
         }
 
         /* Skip the "call/apply" method frame. */
-        vm->frame->previous->skip = 1;
+        vm->top_frame->previous->skip = 1;
 
         cont = njs_vm_continuation(vm);
 
@@ -520,7 +607,7 @@ njs_function_activate(njs_vm_t *vm, njs_function_t *function, njs_value_t *this,
     }
 
     /* Skip the "call/apply" method frame. */
-    vm->frame->previous->skip = 1;
+    vm->top_frame->previous->skip = 1;
 
     return njs_function_call(vm, retval, sizeof(njs_vmcode_function_call_t));
 }
