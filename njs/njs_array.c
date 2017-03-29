@@ -1802,9 +1802,9 @@ njs_array_prototype_sort_continuation(njs_vm_t *vm, njs_value_t *args,
     if (njs_is_number(&sort->retval)) {
 
         /*
-         * The sort function is impelemented with the insertion sort algorithm.
+         * The sort function is implemented with the insertion sort algorithm.
          * Its worst and average computational complexity is O^2.  This point
-         * should be considired as return point from comparison function so
+         * should be considered as return point from comparison function so
          * "goto next" moves control to the appropriate step of the algorithm.
          * The first iteration also goes there because sort->retval is zero.
          */
@@ -1824,20 +1824,22 @@ njs_array_prototype_sort_continuation(njs_vm_t *vm, njs_value_t *args,
         do {
             if (n > 0) {
 
-                if (njs_is_valid(&start[n]) && njs_is_valid(&start[n - 1])) {
-                    arguments[0] = njs_value_void;
+                if (njs_is_valid(&start[n])) {
 
-                    /* GC: array elt, array */
-                    arguments[1] = start[n - 1];
-                    arguments[2] = start[n];
+                    if (njs_is_valid(&start[n - 1])) {
+                        arguments[0] = njs_value_void;
 
-                    sort->index = n;
+                        /* GC: array elt, array */
+                        arguments[1] = start[n - 1];
+                        arguments[2] = start[n];
 
-                    return njs_function_apply(vm, sort->function, arguments, 3,
-                                              (njs_index_t) &sort->retval);
-                }
+                        sort->index = n;
 
-                if (!njs_is_valid(&start[n - 1]) && njs_is_valid(&start[n])) {
+                        return njs_function_apply(vm, sort->function,
+                                                  arguments, 3,
+                                                  (njs_index_t) &sort->retval);
+                    }
+
                     /* Move invalid values to the end of array. */
                     goto swap;
                 }
