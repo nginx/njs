@@ -944,9 +944,10 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
     njs_value_t *property)
 {
     double          num;
-    int32_t         index;
+    uint32_t        index;
     uint32_t        (*hash)(const void *, size_t);
     njs_ret_t       ret;
+    nxt_bool_t      valid;
     njs_extern_t    *ext;
     njs_object_t    *obj;
     njs_function_t  *function;
@@ -983,10 +984,15 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
                 return NJS_TRAP_PROPERTY;
             }
 
-            index = (int) num;
+            if (nxt_fast_path(num >= 0)) {
+                index = (uint32_t) num;
 
-            if (nxt_fast_path(index >= 0 && (double) index == num)) {
-                return njs_array_property_query(vm, pq, object, index);
+                valid = nxt_expect(1, (index < NJS_ARRAY_MAX_LENGTH
+                                       && (double) index == num));
+
+                if (valid) {
+                    return njs_array_property_query(vm, pq, object, index);
+                }
             }
         }
 

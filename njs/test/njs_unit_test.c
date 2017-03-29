@@ -2280,6 +2280,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = [ 1, 2, 3 ]; a[0] + a[1] + a[2]"),
       nxt_string("6") },
 
+    { nxt_string("var a = [ 1, 2, 3 ]; a[-1] = 4; a + a[-1]"),
+      nxt_string("1,2,34") },
+
+    { nxt_string("var a = [ 1, 2, 3 ]; a[4294967295] = 4; a + a[4294967295]"),
+      nxt_string("1,2,34") },
+
+    { nxt_string("var a = [ 1, 2, 3 ]; a[4294967296] = 4; a + a[4294967296]"),
+      nxt_string("1,2,34") },
+
     { nxt_string("var n = 1, a = [ n += 1 ]; a"),
       nxt_string("2") },
 

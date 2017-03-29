@@ -75,7 +75,7 @@ typedef struct {
     njs_value_t             retval;
 
     njs_function_t          *function;
-    int32_t                 index;
+    uint32_t                index;
     uint32_t                current;
 } njs_array_sort_t;
 
@@ -105,7 +105,7 @@ static nxt_noinline uint32_t njs_array_iterator_next(njs_array_t *array,
     uint32_t n, uint32_t length);
 static nxt_noinline njs_ret_t njs_array_iterator_apply(njs_vm_t *vm,
     njs_array_iter_t *iter, njs_value_t *args, nxt_uint_t nargs);
-static uint32_t njs_array_reduce_right_next(njs_array_t *array, int32_t n);
+static uint32_t njs_array_reduce_right_next(njs_array_t *array, uint32_t n);
 static njs_ret_t njs_array_prototype_sort_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 
@@ -1520,7 +1520,7 @@ static njs_ret_t
 njs_array_prototype_reduce_continuation(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    nxt_int_t         n;
+    uint32_t          n;
     njs_array_t       *array;
     njs_value_t       arguments[5];
     njs_array_iter_t  *iter;
@@ -1588,7 +1588,7 @@ njs_array_iterator_next(njs_array_t *array, uint32_t n, uint32_t length)
         n++;
     }
 
-    return -1;
+    return NJS_ARRAY_INVALID_INDEX;
 }
 
 
@@ -1596,7 +1596,7 @@ static nxt_noinline njs_ret_t
 njs_array_iterator_apply(njs_vm_t *vm, njs_array_iter_t *iter,
     njs_value_t *args, nxt_uint_t nargs)
 {
-    nxt_int_t    n;
+    uint32_t     n;
     njs_array_t  *array;
     njs_value_t  arguments[4];
 
@@ -1632,7 +1632,7 @@ static njs_ret_t
 njs_array_prototype_reduce_right(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    int32_t           n;
+    uint32_t          n;
     njs_array_t       *array;
     njs_array_iter_t  *iter;
 
@@ -1652,7 +1652,7 @@ njs_array_prototype_reduce_right(njs_vm_t *vm, njs_value_t *args,
     } else {
         n = iter->next_index;
 
-        if (n < 0) {
+        if (n == NJS_ARRAY_INVALID_INDEX) {
             goto type_error;
         }
 
@@ -1675,7 +1675,7 @@ static njs_ret_t
 njs_array_prototype_reduce_right_continuation(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    nxt_int_t         n;
+    uint32_t          n;
     njs_array_t       *array;
     njs_value_t       arguments[5];
     njs_array_iter_t  *iter;
@@ -1708,11 +1708,11 @@ njs_array_prototype_reduce_right_continuation(njs_vm_t *vm, njs_value_t *args,
 
 
 static nxt_noinline uint32_t
-njs_array_reduce_right_next(njs_array_t *array, int32_t n)
+njs_array_reduce_right_next(njs_array_t *array, uint32_t n)
 {
-    n = nxt_min(n, (int32_t) array->length) - 1;
+    n = nxt_min(n, array->length) - 1;
 
-    while (n >= 0) {
+    while (n != NJS_ARRAY_INVALID_INDEX) {
         if (njs_is_valid(&array->start[n])) {
             return n;
         }
@@ -1789,7 +1789,7 @@ static njs_ret_t
 njs_array_prototype_sort_continuation(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    nxt_int_t         n;
+    uint32_t          n;
     njs_array_t       *array;
     njs_value_t       value, *start, arguments[3];
     njs_array_sort_t  *sort;

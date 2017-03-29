@@ -8,6 +8,10 @@
 #define _NJS_ARRAY_H_INCLUDED_
 
 
+#define NJS_ARRAY_MAX_LENGTH     0xffffffff
+/* The maximum valid array index is the maximum array length minus 1. */
+#define NJS_ARRAY_INVALID_INDEX  NJS_ARRAY_MAX_LENGTH
+
 #define NJS_ARRAY_SPARE  8
 
 
