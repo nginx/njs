@@ -2499,6 +2499,18 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Array.isArray([])"),
       nxt_string("true") },
 
+    { nxt_string("Array.of()"),
+      nxt_string("") },
+
+    { nxt_string("Array.of(1,2,3)"),
+      nxt_string("1,2,3") },
+
+    { nxt_string("Array.of(undefined,1)"),
+      nxt_string(",1") },
+
+    { nxt_string("Array.of(NaN,-1,{})"),
+      nxt_string("NaN,-1,[object Object]") },
+
     { nxt_string("var a = [1,2,3]; a.concat(4, [5, 6, 7], 8)"),
       nxt_string("1,2,3,4,5,6,7,8") },
 

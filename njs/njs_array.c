@@ -291,6 +291,32 @@ njs_array_is_array(njs_vm_t *vm, njs_value_t *args,
 }
 
 
+static njs_ret_t
+njs_array_of(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+        uint32_t     length, i;
+        njs_array_t  *array;
+
+        length = nargs > 1 ? nargs - 1 : 0;
+
+        array = njs_array_alloc(vm, length, NJS_ARRAY_SPARE);
+        if (nxt_slow_path(array == NULL)) {
+            return NXT_ERROR;
+        }
+
+        vm->retval.data.u.array = array;
+        vm->retval.type = NJS_ARRAY;
+        vm->retval.data.truth = 1;
+
+        for (i = 0; i < length; i++) {
+            array->start[i] = args[i + 1];
+        }
+
+        return NXT_OK;
+}
+
+
 static const njs_object_prop_t  njs_array_constructor_properties[] =
 {
     /* Array.name == "Array". */
@@ -319,6 +345,14 @@ static const njs_object_prop_t  njs_array_constructor_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("isArray"),
         .value = njs_native_function(njs_array_is_array, 0, 0),
+    },
+
+    /* ES6. */
+    /* Array.of(). */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("of"),
+        .value = njs_native_function(njs_array_of, 0, 0),
     },
 };
 
