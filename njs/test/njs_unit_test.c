@@ -156,6 +156,42 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("1845449130881..toString(36)"),
       nxt_string("njscript") },
 
+    { nxt_string("Infinity.toString()"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Infinity.toString(2)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Infinity.toString(10)"),
+      nxt_string("Infinity") },
+
+    { nxt_string("Infinity.toString(NaN)"),
+      nxt_string("RangeError") },
+
+    { nxt_string("Infinity.toString({})"),
+      nxt_string("RangeError") },
+
+    { nxt_string("Infinity.toString(Infinity)"),
+      nxt_string("RangeError") },
+
+    { nxt_string("NaN.toString()"),
+      nxt_string("NaN") },
+
+    { nxt_string("NaN.toString(2)"),
+      nxt_string("NaN") },
+
+    { nxt_string("NaN.toString(10)"),
+      nxt_string("NaN") },
+
+    { nxt_string("NaN.toString(Infinity)"),
+      nxt_string("RangeError") },
+
+    { nxt_string("NaN.toString({})"),
+      nxt_string("RangeError") },
+
+    { nxt_string("NaN.toString(NaN)"),
+      nxt_string("RangeError") },
+
     /* An object "valueOf/toString" methods. */
 
     { nxt_string("var a = { valueOf: function() { return 1 } };    +a"),

@@ -34,7 +34,7 @@
 
 
 static njs_ret_t njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
-    const njs_value_t *number, uint32_t radix);
+    double number, uint32_t radix);
 
 
 double
@@ -483,7 +483,7 @@ static njs_ret_t
 njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    double       radix;
+    double       number, radix;
     njs_value_t  *value;
 
     value = &args[0];
@@ -499,18 +499,22 @@ njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         }
     }
 
-    if (nargs == 1 || args[1].data.u.number == 10) {
-        return njs_number_to_string(vm, &vm->retval, value);
+    if (nargs > 1) {
+        radix = args[1].data.u.number;
+
+        if (radix < 2 || radix > 36 || radix != (int) radix) {
+            vm->exception = &njs_exception_range_error;
+            return NXT_ERROR;
+        }
+
+        number = value->data.u.number;
+
+        if (radix != 10 && !isnan(number) && !isinf(number)) {
+            return njs_number_to_string_radix(vm, &vm->retval, number, radix);
+        }
     }
 
-    radix = args[1].data.u.number;
-
-    if (radix < 2 || radix > 36 || radix != (int) radix) {
-        vm->exception = &njs_exception_range_error;
-        return NXT_ERROR;
-    }
-
-    return njs_number_to_string_radix(vm, &vm->retval, value, radix);
+    return njs_number_to_string(vm, &vm->retval, value);
 }
 
 
@@ -527,7 +531,7 @@ njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
 
 static njs_ret_t
 njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
-    const njs_value_t *number, uint32_t radix)
+    double number, uint32_t radix)
 {
     u_char   *p, *f, *end;
     double   n, next;
@@ -540,7 +544,7 @@ njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
     end = buf + NJS_STRING_RADIX_LEN;
     p = buf + NJS_STRING_RADIX_INTERGRAL_LEN;
 
-    n = number->data.u.number;
+    n = number;
 
     if (n < 0) {
         n = -n;
@@ -553,7 +557,7 @@ njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
         n = next;
     } while (n != 0);
 
-    n = number->data.u.number;
+    n = number;
 
     if (n < 0) {
         *(--p) = '-';
