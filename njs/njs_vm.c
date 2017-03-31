@@ -292,7 +292,7 @@ njs_value_retain(njs_value_t *value)
 {
     njs_string_t  *string;
 
-    if (value->type == NJS_STRING) {
+    if (njs_is_string(value)) {
 
         if (value->data.external0 != 0xff) {
             string = value->data.u.string;
@@ -313,7 +313,7 @@ njs_value_release(njs_vm_t *vm, njs_value_t *value)
 {
     njs_string_t  *string;
 
-    if (value->type == NJS_STRING) {
+    if (njs_is_string(value)) {
 
         if (value->data.external0 != 0xff) {
             string = value->data.u.string;
@@ -2071,7 +2071,7 @@ njs_values_strict_equal(const njs_value_t *val1, const njs_value_t *val2)
 
     if (njs_is_numeric(val1)) {
 
-        if (val1->type == NJS_VOID) {
+        if (njs_is_void(val1)) {
             return 1;
         }
 

@@ -3573,7 +3573,7 @@ njs_values_hash_test(nxt_lvlhsh_query_t *lhq, void *data)
         return NXT_OK;
     }
 
-    if (value->type == NJS_STRING
+    if (njs_is_string(value)
         && value->data.string_size == lhq->key.length
         && memcmp(value->data.u.string->start, lhq->key.start, lhq->key.length)
            == 0)

@@ -565,7 +565,7 @@ njs_regexp_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
 
     value = &args[0];
 
-    if (value->type == NJS_REGEXP) {
+    if (njs_is_regexp(value)) {
         pattern = value->data.u.regexp->pattern;
         source = pattern->source;
 
