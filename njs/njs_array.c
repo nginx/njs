@@ -1716,7 +1716,7 @@ njs_array_prototype_reduce_right_continuation(njs_vm_t *vm, njs_value_t *args,
 
     iter = njs_vm_continuation(vm);
 
-    if ((int32_t) iter->next_index < 0) {
+    if (iter->next_index == NJS_ARRAY_INVALID_INDEX) {
         vm->retval = iter->retval;
         return NXT_OK;
     }
