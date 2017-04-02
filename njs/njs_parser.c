@@ -215,6 +215,11 @@ njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser, njs_scope_t type)
 
     if (parent != NULL) {
         nxt_queue_insert_tail(&parent->nested, &scope->link);
+
+        if (nesting == 0) {
+            /* Inherit function nesting in blocks. */
+            scope->nesting = parent->nesting;
+        }
     }
 
     return NXT_OK;
