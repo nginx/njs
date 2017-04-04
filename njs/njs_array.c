@@ -100,6 +100,8 @@ static njs_ret_t njs_array_prototype_filter_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t njs_array_prototype_find_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
+static njs_ret_t njs_array_prototype_find_index_continuation(njs_vm_t *vm,
+    njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t njs_array_prototype_map_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static nxt_noinline uint32_t njs_array_prototype_map_index(njs_array_t *array,
@@ -1531,6 +1533,54 @@ njs_array_prototype_find_continuation(njs_vm_t *vm, njs_value_t *args,
 }
 
 
+static njs_ret_t
+njs_array_prototype_find_index(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    nxt_int_t         ret;
+    njs_array_iter_t  *iter;
+
+    ret = njs_array_iterator_args(vm, args, nargs);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
+    iter = njs_vm_continuation(vm);
+    iter->u.cont.function = njs_array_prototype_find_index_continuation;
+    iter->retval.data.truth = 0;
+
+    return njs_array_prototype_find_index_continuation(vm, args, nargs, unused);
+}
+
+
+static njs_ret_t
+njs_array_prototype_find_index_continuation(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    double             index;
+    njs_array_iter_t   *iter;
+
+    iter = njs_vm_continuation(vm);
+    index = iter->index;
+
+    if (!njs_is_true(&iter->retval)) {
+        iter->index++;
+
+        if (iter->index < iter->length
+            && iter->index < args[0].data.u.array->length)
+        {
+            return njs_array_prototype_find_apply(vm, iter, args, nargs);
+        }
+
+        index = -1;
+    }
+
+    njs_number_set(&vm->retval, index);
+
+    return NXT_OK;
+}
+
+
 static nxt_noinline njs_ret_t
 njs_array_prototype_find_apply(njs_vm_t *vm, njs_array_iter_t *iter,
     njs_value_t *args, nxt_uint_t nargs)
@@ -2145,6 +2195,14 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .name = njs_string("find"),
         .value = njs_native_function(njs_array_prototype_find,
                      njs_continuation_size(njs_array_find_t), 0),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("findIndex"),
+        .value = njs_native_function(njs_array_prototype_find_index,
+                     njs_continuation_size(njs_array_iter_t), 0),
     },
 
     {

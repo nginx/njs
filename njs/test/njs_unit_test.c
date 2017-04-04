@@ -2927,6 +2927,50 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("undefined") },
 
     { nxt_string("var a = [];"
+                 "a.findIndex(function(v, i, a) { return v > 1 })"),
+      nxt_string("-1") },
+
+    { nxt_string("var a = [,NaN,0,-1];"
+                 "a.findIndex(function(v, i, a) { return v > 1 })"),
+      nxt_string("-1") },
+
+    { nxt_string("var a = [,NaN,0,-1,2];"
+                 "a.findIndex(function(v, i, a) { return v > 1 })"),
+     nxt_string("4") },
+
+    { nxt_string("var a = [1,2,3,-1,5];"
+                 "a.findIndex(function(v, i, a) { return v > 1 })"),
+      nxt_string("1") },
+
+    { nxt_string("var a = [,1,,-1,5];"
+                 "a.findIndex(function(v, i, a) { return v > 1 })"),
+      nxt_string("4") },
+
+    { nxt_string("var a = [,1,,-1,5,6];"
+                 "a.findIndex(function(v, i, a) { return v > 1 })"),
+      nxt_string("4") },
+
+    { nxt_string("[].findIndex(function(v) { return (v === undefined) })"),
+      nxt_string("-1") },
+
+    { nxt_string("[,].findIndex(function(v) { return (v === undefined) })"),
+      nxt_string("0") },
+
+    { nxt_string("[1,2,,3].findIndex(function(el){return el === undefined})"),
+      nxt_string("2") },
+
+    { nxt_string("[,2,,3].findIndex(function(el){return el === undefined})"),
+      nxt_string("0") },
+
+    { nxt_string("var a = [1,2,3,4,5,6];"
+                 "a.findIndex(function(v, i, a) { a.shift(); return v == 3 })"),
+      nxt_string("1") },
+
+    { nxt_string("var a = [1,2,3,4,5,6];"
+                 "a.findIndex(function(v, i, a) { a.shift(); return v == 4 })"),
+      nxt_string("-1") },
+
+    { nxt_string("var a = [];"
                  "a.map(function(v, i, a) { return v + 1 })"),
       nxt_string("") },
 
