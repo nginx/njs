@@ -1261,9 +1261,10 @@ njs_generate_stop_statement(njs_vm_t *vm, njs_parser_t *parser,
         stop->code.retval = NJS_VMCODE_NO_RETVAL;
 
         index = NJS_INDEX_NONE;
+        node = node->right;
 
-        if (node->right != NULL) {
-            index = node->right->index;
+        if (node != NULL && node->token != NJS_TOKEN_FUNCTION) {
+            index = node->index;
         }
 
         if (index == NJS_INDEX_NONE) {
