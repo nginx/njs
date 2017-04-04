@@ -1266,7 +1266,6 @@ njs_array_prototype_some(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     iter = njs_vm_continuation(vm);
     iter->u.cont.function = njs_array_prototype_some_continuation;
-    iter->retval.data.truth = 0;
 
     return njs_array_prototype_some_continuation(vm, args, nargs, unused);
 }
@@ -1429,7 +1428,6 @@ njs_array_prototype_filter(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     filter = njs_vm_continuation(vm);
     filter->iter.u.cont.function = njs_array_prototype_filter_continuation;
-    filter->iter.retval.data.truth = 0;
 
     filter->array = njs_array_alloc(vm, 0, NJS_ARRAY_SPARE);
     if (nxt_slow_path(filter->array == NULL)) {
@@ -1490,7 +1488,6 @@ njs_array_prototype_find(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     find = njs_vm_continuation(vm);
     find->iter.u.cont.function = njs_array_prototype_find_continuation;
-    find->iter.retval.data.truth = 0;
 
     return njs_array_prototype_find_continuation(vm, args, nargs, unused);
 }
@@ -1547,7 +1544,6 @@ njs_array_prototype_find_index(njs_vm_t *vm, njs_value_t *args,
 
     iter = njs_vm_continuation(vm);
     iter->u.cont.function = njs_array_prototype_find_index_continuation;
-    iter->retval.data.truth = 0;
 
     return njs_array_prototype_find_index_continuation(vm, args, nargs, unused);
 }
@@ -1770,6 +1766,7 @@ njs_array_iterator_args(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs)
 
         iter = njs_vm_continuation(vm);
         iter->length = args[0].data.u.array->length;
+        iter->retval.data.truth = 0;
         iter->index = NJS_ARRAY_INVALID_INDEX;
 
         return NXT_OK;
