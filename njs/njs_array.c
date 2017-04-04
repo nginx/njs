@@ -58,6 +58,12 @@ typedef struct {
 
 typedef struct {
     njs_array_iter_t        iter;
+    njs_value_t             value;
+} njs_array_find_t;
+
+
+typedef struct {
+    njs_array_iter_t        iter;
     njs_array_t             *array;
 } njs_array_map_t;
 
@@ -92,6 +98,8 @@ static njs_ret_t njs_array_prototype_every_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t njs_array_prototype_filter_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
+static njs_ret_t njs_array_prototype_find_continuation(njs_vm_t *vm,
+    njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t njs_array_prototype_map_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static nxt_noinline uint32_t njs_array_prototype_map_index(njs_array_t *array,
@@ -101,6 +109,8 @@ static nxt_noinline njs_ret_t njs_array_iterator_args(njs_vm_t *vm,
 static nxt_noinline uint32_t njs_array_iterator_index(njs_array_t *array,
     njs_array_iter_t *iter);
 static nxt_noinline njs_ret_t njs_array_iterator_apply(njs_vm_t *vm,
+    njs_array_iter_t *iter, njs_value_t *args, nxt_uint_t nargs);
+static nxt_noinline njs_ret_t njs_array_prototype_find_apply(njs_vm_t *vm,
     njs_array_iter_t *iter, njs_value_t *args, nxt_uint_t nargs);
 static njs_ret_t njs_array_prototype_reduce_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
@@ -1465,6 +1475,94 @@ njs_array_prototype_filter_continuation(njs_vm_t *vm, njs_value_t *args,
 
 
 static njs_ret_t
+njs_array_prototype_find(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    nxt_int_t         ret;
+    njs_array_find_t  *find;
+
+    ret = njs_array_iterator_args(vm, args, nargs);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
+    find = njs_vm_continuation(vm);
+    find->iter.u.cont.function = njs_array_prototype_find_continuation;
+    find->iter.retval.data.truth = 0;
+
+    return njs_array_prototype_find_continuation(vm, args, nargs, unused);
+}
+
+
+static njs_ret_t
+njs_array_prototype_find_continuation(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    njs_array_t        *array;
+    njs_array_iter_t   *iter;
+    njs_array_find_t   *find;
+    const njs_value_t  *retval;
+
+    retval = &njs_value_void;
+
+    find = njs_vm_continuation(vm);
+    iter = &find->iter;
+
+    if (!njs_is_true(&iter->retval)) {
+        array = args[0].data.u.array;
+        iter->index++;
+
+        if (iter->index < iter->length && iter->index < array->length) {
+            /* GC: find->value */
+            find->value = array->start[iter->index];
+
+            return njs_array_prototype_find_apply(vm, iter, args, nargs);
+        }
+
+    } else {
+        if (njs_is_valid(&find->value)) {
+            retval = &find->value;
+        }
+    }
+
+    vm->retval = *retval;
+
+    return NXT_OK;
+}
+
+
+static nxt_noinline njs_ret_t
+njs_array_prototype_find_apply(njs_vm_t *vm, njs_array_iter_t *iter,
+    njs_value_t *args, nxt_uint_t nargs)
+{
+    uint32_t           n;
+    const njs_value_t  *value;
+    njs_value_t        arguments[4];
+
+    /* GC: array elt, array */
+
+    value = (nargs > 2) ? &args[2] : &njs_value_void;
+    arguments[0] = *value;
+
+    n = iter->index;
+    value = &args[0].data.u.array->start[n];
+
+    if (!njs_is_valid(value)) {
+        value = &njs_value_void;
+    }
+
+    arguments[1] = *value;
+
+    njs_number_set(&arguments[2], n);
+
+    arguments[3] = args[0];
+
+    return njs_function_apply(vm, args[1].data.u.function, arguments, 4,
+                              (njs_index_t) &iter->retval);
+}
+
+
+static njs_ret_t
 njs_array_prototype_map(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
@@ -2039,6 +2137,14 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .name = njs_string("filter"),
         .value = njs_native_function(njs_array_prototype_filter,
                      njs_continuation_size(njs_array_filter_t), 0),
+    },
+
+    /* ES6. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("find"),
+        .value = njs_native_function(njs_array_prototype_find,
+                     njs_continuation_size(njs_array_find_t), 0),
     },
 
     {

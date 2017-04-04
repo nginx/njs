@@ -2884,6 +2884,49 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("1,11,21,31,41,51,61") },
 
     { nxt_string("var a = [];"
+                 "a.find(function(v, i, a) { return v > 1 })"),
+      nxt_string("undefined") },
+
+    { nxt_string("var a = [,NaN,0,-1];"
+                 "a.find(function(v, i, a) { return v > 1 })"),
+      nxt_string("undefined") },
+
+    { nxt_string("var a = [,NaN,0,-1,2];"
+                 "a.find(function(v, i, a) { return v > 1 })"),
+      nxt_string("2") },
+
+    { nxt_string("var a = [1,2,3,-1,5];"
+                 "a.find(function(v, i, a) { return v > 1 })"),
+      nxt_string("2") },
+
+    { nxt_string("var a = [,1,,-1,5];"
+                 "a.find(function(v, i, a) { return v > 1 })"),
+      nxt_string("5") },
+
+    { nxt_string("var a = [,1,,-1,5,6];"
+                 "a.find(function(v, i, a) { return v > 1 })"),
+      nxt_string("5") },
+
+    { nxt_string("[].find(function(v) { return (v === undefined) })"),
+      nxt_string("undefined") },
+
+    { nxt_string("var a = [,3];"
+                 "a.find(function(v) { return (v === 3 || v === undefined) })"),
+      nxt_string("undefined") },
+
+    { nxt_string("var a = [1,,3];"
+                 "a.find(function(v) { return (v === 3 || v === undefined) })"),
+      nxt_string("undefined") },
+
+    { nxt_string("var a = [1,2,3,4,5,6];"
+                 "a.find(function(v, i, a) { a.shift(); return v == 3 })"),
+      nxt_string("3") },
+
+    { nxt_string("var a = [1,2,3,4,5,6];"
+                 "a.find(function(v, i, a) { a.shift(); return v == 4 })"),
+      nxt_string("undefined") },
+
+    { nxt_string("var a = [];"
                  "a.map(function(v, i, a) { return v + 1 })"),
       nxt_string("") },
 
