@@ -2044,7 +2044,7 @@ njs_array_prototype_sort_continuation(njs_vm_t *vm, njs_value_t *args,
             sort->current++;
             n = sort->current;
 
-        } while (sort->current < array->length);
+        } while (n < array->length);
     }
 
     vm->retval = args[0];

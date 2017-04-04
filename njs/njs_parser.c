@@ -178,7 +178,7 @@ njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser, njs_scope_t type)
     if (type == NJS_SCOPE_FUNCTION) {
         scope->next_index[0] = type;
         scope->next_index[1] = NJS_SCOPE_CLOSURE + nesting
-                               + sizeof(njs_value_t);;
+                               + sizeof(njs_value_t);
 
     } else {
         if (type == NJS_SCOPE_GLOBAL) {

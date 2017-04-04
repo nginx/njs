@@ -162,7 +162,7 @@ njs_function_frame(njs_vm_t *vm, njs_function_t *function,
     nxt_bool_t ctor)
 {
     size_t                 size;
-    nxt_uint_t             n, max_args, closures;;
+    nxt_uint_t             n, max_args, closures;
     njs_value_t            *value, *bound;
     njs_frame_t            *frame;
     njs_native_frame_t     *native_frame;
@@ -594,7 +594,7 @@ njs_function_activate(njs_vm_t *vm, njs_function_t *function, njs_value_t *this,
         cont->retval = retval;
 
         cont->return_address = vm->current
-                               + sizeof(njs_vmcode_function_call_t);;
+                               + sizeof(njs_vmcode_function_call_t);
         vm->current = (u_char *) njs_continuation_nexus;
 
         return NJS_APPLIED;
