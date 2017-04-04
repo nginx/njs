@@ -1,4 +1,13 @@
 
+Changes with nJScript 0.1.10                                     04 Apr 2017
+
+    *) Feature: nested functions and function closures.
+
+    *) Feature: Array.of(), Array.prototype.fill(), Array.prototype.find(),
+       Array.prototype.findIndex() methods.
+
+    *) Bugfix: miscellaneous bugs and segmentation faults have been fixed.
+
 Changes with nJScript 0.1.9                                      01 Feb 2017
 
     *) Bugfix: global variables were not initialized when nJScript was used
