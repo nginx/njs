@@ -86,7 +86,7 @@ clean:
 dist:
 	make clean
 	mkdir njs-$(NJS_VER)
-	cp -rp configure Makefile LICENSE README $(NXT_LIB) njs nginx \
+	cp -rp configure Makefile LICENSE README CHANGES $(NXT_LIB) njs nginx \
 		njs-$(NJS_VER)
 	tar czf njs-$(NJS_VER).tar.gz njs-$(NJS_VER)
 	rm -rf njs-$(NJS_VER)
