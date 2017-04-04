@@ -4319,6 +4319,10 @@ static njs_unit_test_t  njs_test[] =
                  "var y = f(); y()"),
       nxt_string("6") },
 
+    { nxt_string("var x; var y = 4;"
+                 "function f() { function h() { x = 3; return y; } }"),
+      nxt_string("undefined") },
+
     /* Recursive fibonacci. */
 
     { nxt_string("function fibo(n) {"

@@ -322,7 +322,11 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
         goto not_found;
     }
 
-    n = (node->scope->nesting != vs.scope->nesting);
+    n = 0;
+
+    if (vs.scope->type > NJS_SCOPE_GLOBAL) {
+        n = (node->scope->nesting != vs.scope->nesting);
+    }
 
     var = vs.variable;
     index = var->index;
