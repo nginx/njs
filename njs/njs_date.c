@@ -304,9 +304,10 @@ njs_date_parse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 static nxt_noinline double
 njs_date_string_parse(njs_value_t *date)
 {
-    int                ext, ms;
+    int                ext, ms, ms_length, skipped;
+    double             time;
     struct tm          tm;
-    nxt_bool_t         sign, week;
+    nxt_bool_t         sign, week, utc;
     const u_char       *p, *next, *end;
     njs_string_prop_t  string;
 
@@ -319,11 +320,7 @@ njs_date_string_parse(njs_value_t *date)
         return NAN;
     }
 
-    if (*p == '+') {
-        p++;
-        sign = 1;
-
-    } else if (*p == '-') {
+    if (*p == '+' || *p == '-') {
         p++;
         sign = 1;
 
@@ -403,6 +400,14 @@ njs_date_string_parse(njs_value_t *date)
             return NAN;
         }
 
+        utc = 1;
+        end--;
+
+        if (*end != 'Z') {
+           utc = 0;
+           end++;
+        }
+
         p = njs_date_time_parse(&tm, p + 1, end);
         if (nxt_slow_path(p == NULL)) {
             return NAN;
@@ -412,20 +417,42 @@ njs_date_string_parse(njs_value_t *date)
             goto done;
         }
 
-        if (nxt_slow_path(p >= end || *p != '.')) {
+        if (nxt_slow_path(p > end || *p != '.')) {
             return NAN;
         }
 
-        p = njs_date_number_parse(&ms, p + 1, end, 3);
+        p++;
+
+        ms_length = (end - p < 3) ? end - p : 3;
+
+        p = njs_date_number_parse(&ms, p, end, ms_length);
         if (nxt_slow_path(p == NULL)) {
             return NAN;
         }
 
-        if (nxt_slow_path(p >= end || *p != 'Z')) {
-            return NAN;
+        if (end > p) {
+            p = njs_date_number_parse(&skipped, p, end, end - p);
+            if (nxt_slow_path(p == NULL)) {
+                return NAN;
+            }
         }
 
-        return njs_timegm(&tm) * 1000 + ms;
+        if (ms_length == 1) {
+            ms *= 100;
+
+        } else if (ms_length == 2) {
+            ms *= 10;
+        }
+
+        if (utc) {
+            time = njs_timegm(&tm);
+
+        } else {
+            tm.tm_isdst = -1;
+            time = mktime(&tm);
+        }
+
+        return time * 1000 + ms;
     }
 
     if (sign) {

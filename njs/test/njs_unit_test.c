@@ -5713,14 +5713,46 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Date.parse('2011-06-24T06')"),
       nxt_string("NaN") },
 
-    { nxt_string("Date.parse('2011-06-24T06:01')"),
+    { nxt_string("Date.parse('2011-06-24T06:')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Date.parse('2011-06-24T06:01:')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Date.parse('2011-06-24T06:01Z')"),
       nxt_string("1308895260000") },
 
-    { nxt_string("Date.parse('2011-06-24T06:01:02')"),
+    { nxt_string("Date.parse('2011-06-24T06:01:02:')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Date.parse('2011-06-24T06:01:02Z')"),
       nxt_string("1308895262000") },
+
+    { nxt_string("Date.parse('2011-06-24T06:01:02.Z')"),
+      nxt_string("NaN") },
+
+    { nxt_string("Date.parse('2011-06-24T06:01:02.6Z')"),
+      nxt_string("1308895262600") },
+
+    { nxt_string("Date.parse('2011-06-24T06:01:02.62Z')"),
+      nxt_string("1308895262620") },
+
+    { nxt_string("Date.parse('2011-06-24T06:01:02:625Z')"),
+      nxt_string("NaN") },
 
     { nxt_string("Date.parse('2011-06-24T06:01:02.625Z')"),
       nxt_string("1308895262625") },
+
+    { nxt_string("Date.parse('2011-06-24T06:01:02.6255555Z')"),
+      nxt_string("1308895262625") },
+
+    { nxt_string("Date.parse('2011-06-24T06:01:02.625555Z5')"),
+      nxt_string("NaN") },
+
+    { nxt_string("var d = new Date(); var str = d.toISOString();"
+                 "var diff = Date.parse(str) - Date.parse(str.substring(0, str.length - 1));"
+                 "d.getTimezoneOffset() == -diff/1000/60"),
+      nxt_string("true") },
 
     { nxt_string("Date.parse('24 Jun 2011')"),
       nxt_string("1308873600000") },
