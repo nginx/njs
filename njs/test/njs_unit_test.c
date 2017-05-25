@@ -7047,6 +7047,27 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("parseInt('njscript', 36)"),
       nxt_string("1845449130881") },
 
+    { nxt_string("parseInt('0x')"),
+      nxt_string("NaN") },
+
+    { nxt_string("parseInt('0x', 10)"),
+      nxt_string("0") },
+
+    { nxt_string("parseInt('0x', 16)"),
+      nxt_string("NaN") },
+
+    { nxt_string("parseInt('0x', 33)"),
+      nxt_string("0") },
+
+    { nxt_string("parseInt('0x', 34)"),
+      nxt_string("33") },
+
+    { nxt_string("parseInt('0', 1)"),
+      nxt_string("NaN") },
+
+    { nxt_string("parseInt('0', 37)"),
+      nxt_string("NaN") },
+
     { nxt_string("parseFloat('12345abc')"),
       nxt_string("12345") },
 

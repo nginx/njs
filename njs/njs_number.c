@@ -662,7 +662,7 @@ njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     u_char             *p, *end;
     int64_t            n;
     uint8_t            radix;
-    nxt_bool_t         minus;
+    nxt_bool_t         minus, test_prefix;
     njs_string_prop_t  string;
 
     num = NAN;
@@ -693,25 +693,30 @@ njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             p++;
         }
 
-        if (end - p > 1 && p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
-            p += 2;
-            radix = 16;
+        test_prefix = (end - p > 1);
+
+        if (nargs > 2) {
+            radix = args[2].data.u.number;
+
+            if (radix < 2 || radix > 36) {
+                goto done;
+            }
+
+            if (radix != 16) {
+                test_prefix = 0;
+            }
 
         } else {
             radix = 10;
         }
 
-        if (nargs > 2) {
-            n = args[2].data.u.number;
+        if (test_prefix && p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
+            p += 2;
+            radix = 16;
+        }
 
-            if (n != 0) {
-
-                if (n < 2 || n > 36) {
-                    goto done;
-                }
-
-                radix = n;
-            }
+        if (p == end) {
+            goto done;
         }
 
         n = njs_number_radix_parse(p, end, radix, 0);
