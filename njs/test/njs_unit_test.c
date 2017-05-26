@@ -3139,6 +3139,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'\\u'"),
       nxt_string("SyntaxError: Invalid Unicode code point \"\\u\" in 1") },
 
+    { nxt_string("'\\uzzzz'"),
+      nxt_string("SyntaxError: Invalid Unicode code point \"\\uzzzz\" in 1") },
+
     { nxt_string("'\\u03B'"),
       nxt_string("SyntaxError: Invalid Unicode code point \"\\u03B\" in 1") },
 
@@ -7050,8 +7053,11 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("parseInt('0x')"),
       nxt_string("NaN") },
 
-    { nxt_string("parseInt('0x', 10)"),
-      nxt_string("0") },
+    { nxt_string("parseInt('z')"),
+      nxt_string("NaN") },
+
+    { nxt_string("parseInt('0xz')"),
+      nxt_string("NaN") },
 
     { nxt_string("parseInt('0x', 16)"),
       nxt_string("NaN") },

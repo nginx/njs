@@ -13,8 +13,7 @@
 
 double njs_value_to_number(njs_value_t *value);
 double njs_number_parse(const u_char **start, const u_char *end);
-int64_t njs_number_radix_parse(u_char *p, u_char *end, uint8_t radix,
-    nxt_bool_t exact);
+int64_t njs_number_radix_parse(u_char **start, u_char *end, uint8_t radix);
 njs_ret_t njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
     const njs_value_t *number);
 njs_ret_t njs_number_constructor(njs_vm_t *vm, njs_value_t *args,

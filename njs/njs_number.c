@@ -132,9 +132,11 @@ njs_number_parse(const u_char **start, const u_char *end)
 
 
 int64_t
-njs_number_radix_parse(u_char *p, u_char *end, uint8_t radix, nxt_bool_t exact)
+njs_number_radix_parse(u_char **start, u_char *end, uint8_t radix)
 {
+    u_char    *p;
     uint8_t   d;
+    int64_t   num;
     uint64_t  n;
 
     static const int8_t  digits[256]
@@ -158,19 +160,23 @@ njs_number_radix_parse(u_char *p, u_char *end, uint8_t radix, nxt_bool_t exact)
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     };
 
+    num = -1;
     n = 0;
 
-    while (p < end) {
-        d = digits[*p++];
+    for (p = *start; p < end; p++) {
+        d = digits[*p];
 
         if (nxt_slow_path(d >= radix)) {
-            return (exact) ? -1 : (int64_t) n;
+            break;
         }
 
         n = (n * radix) + d;
+        num = n;
     }
 
-    return n;
+    *start = p;
+
+    return num;
 }
 
 
@@ -715,11 +721,7 @@ njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             radix = 16;
         }
 
-        if (p == end) {
-            goto done;
-        }
-
-        n = njs_number_radix_parse(p, end, radix, 0);
+        n = njs_number_radix_parse(&p, end, radix);
 
         if (n >= 0) {
             num = (minus) ? -n : n;

@@ -2429,12 +2429,13 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
                 goto invalid;
             }
 
-            u = njs_number_radix_parse(src, hex_end, 16, 1);
-            if (nxt_slow_path(u < 0)) {
+            u = njs_number_radix_parse(&src, hex_end, 16);
+
+            if (nxt_slow_path(src != hex_end)) {
                 goto invalid;
             }
 
-            src = hex_end + skip;
+            src += skip;
             size += nxt_utf8_size(u);
             length++;
 
