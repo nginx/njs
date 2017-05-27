@@ -2303,7 +2303,7 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
     njs_value_t *value)
 {
     u_char   c, *p, *start, *dst, *src, *end, *hex_end;
-    size_t   size, length, hex_length, skip;
+    size_t   size, length, hex_length;
     int64_t  u;
 
     start = NULL;
@@ -2334,35 +2334,25 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
                 switch (c) {
 
                 case 'u':
-                    skip = 0;
                     hex_length = 4;
-
                     /*
                      * A character after "u" can be safely tested here
                      * because there is always a closing quote at the
                      * end of string: ...\u".
                      */
-                    if (*src == '{') {
-                        hex_length = 0;
-                        src++;
-
-                        for (p = src; p < end && *p != '}'; p++) {
-                            hex_length++;
-                        }
-
-                        if (hex_length == 0 || hex_length > 6) {
-                            goto invalid;
-                        }
-
-                        skip = 1;
+                    if (*src != '{') {
+                        goto hex_length_test;
                     }
+
+                    src++;
+                    hex_length = 0;
+                    hex_end = end;
 
                     goto hex;
 
                 case 'x':
-                    skip = 0;
                     hex_length = 2;
-                    goto hex;
+                    goto hex_length_test;
 
                 case '0':
                     c = '\0';
@@ -2421,7 +2411,7 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
 
             continue;
 
-        hex:
+        hex_length_test:
 
             hex_end = src + hex_length;
 
@@ -2429,13 +2419,26 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
                 goto invalid;
             }
 
+        hex:
+
+            p = src;
             u = njs_number_radix_parse(&src, hex_end, 16);
 
-            if (nxt_slow_path(src != hex_end)) {
+            if (nxt_slow_path(u < 0)) {
                 goto invalid;
             }
 
-            src += skip;
+            if (hex_length != 0) {
+                if (src != hex_end) {
+                    goto invalid;
+                }
+
+            } else {
+                if ((src - p) > 6 || src == end || *(++src) == '}') {
+                    goto invalid;
+                }
+            }
+
             size += nxt_utf8_size(u);
             length++;
 
