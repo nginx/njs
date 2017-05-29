@@ -2434,7 +2434,7 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
                 }
 
             } else {
-                if ((src - p) > 6 || src == end || *(++src) == '}') {
+                if ((src - p) > 6 || src == end || *src++ != '}') {
                     goto invalid;
                 }
             }
