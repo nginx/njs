@@ -16,6 +16,7 @@
 #include <nxt_mem_cache_pool.h>
 #include <njscript.h>
 #include <njs_vm.h>
+#include <njs_number.h>
 #include <njs_variable.h>
 #include <njs_parser.h>
 #include <string.h>
@@ -538,59 +539,27 @@ static njs_token_t
 njs_lexer_number(njs_lexer_t *lexer)
 {
     u_char  c, *p;
-    double  num, frac, scale;
-
-    /* TODO: "1e2" */
 
     p = lexer->start;
     c = p[-1];
 
-    /* Values below '0' become >= 208. */
-    c = c - '0';
+    /* Hexadecimal literal values. */
 
-    num = c;
+    if (c == '0' && p != lexer->end && (*p == 'x' || *p == 'X')) {
+        p++;
 
-    if (c != 0) {
-
-        while (p < lexer->end) {
-            c = *p;
-
-            /* Values below '0' become >= 208. */
-            c = c - '0';
-
-            if (nxt_slow_path(c > 9)) {
-                break;
-            }
-
-            num = num * 10 + c;
-            p++;
-        }
-    }
-
-    if (*p == '.') {
-
-        frac = 0;
-        scale = 1;
-
-        for (p++; p < lexer->end; p++) {
-            c = *p;
-
-            /* Values below '0' become >= 208. */
-            c = c - '0';
-
-            if (nxt_slow_path(c > 9)) {
-                break;
-            }
-
-            frac = frac * 10 + c;
-            scale *= 10;
+        if (p == lexer->end) {
+            return NJS_TOKEN_ILLEGAL;
         }
 
-        num += frac / scale;
+        lexer->start = p;
+        lexer->number = njs_number_hex_parse(&lexer->start, lexer->end);
+
+        return NJS_TOKEN_NUMBER;
     }
 
-    lexer->number = num;
-    lexer->start = p;
+    lexer->start = p - 1;
+    lexer->number = njs_number_dec_parse(&lexer->start, lexer->end);
 
     return NJS_TOKEN_NUMBER;
 }

@@ -115,6 +115,29 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("+1\n"),
       nxt_string("1") },
 
+    /* Hex Numbers. */
+
+    { nxt_string("0x0"),
+      nxt_string("0") },
+
+    { nxt_string("-0x1"),
+      nxt_string("-1") },
+
+    { nxt_string("0xffFF"),
+      nxt_string("65535") },
+
+    { nxt_string("0X0000BEEF"),
+      nxt_string("48879") },
+
+    { nxt_string("0x"),
+      nxt_string("SyntaxError: Unexpected token \"\" in 1") },
+
+    { nxt_string("0xffff."),
+      nxt_string("SyntaxError: Unexpected token \"\" in 1") },
+
+    { nxt_string("0x12g"),
+      nxt_string("SyntaxError: Unexpected token \"g\" in 1") },
+
     { nxt_string(""),
       nxt_string("undefined") },
 
@@ -126,6 +149,17 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("\n +1"),
       nxt_string("1") },
+
+    /* Indexes. */
+
+    { nxt_string("var a = []; a[-1] = 2; a[-1] == a['-1']"),
+      nxt_string("true") },
+
+    { nxt_string("var a = []; a[Infinity] = 2; a[Infinity] == a['Infinity']"),
+      nxt_string("true") },
+
+    { nxt_string("var a = []; a[NaN] = 2; a[NaN] == a['NaN']"),
+      nxt_string("true") },
 
     /* Number.toString(radix) method. */
 
@@ -152,6 +186,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("81985529216486895..toString(16)"),
       nxt_string("123456789abcdf0") },
+
+    { nxt_string("0xffff.toString(16)"),
+      nxt_string("ffff") },
 
     { nxt_string("1845449130881..toString(36)"),
       nxt_string("njscript") },
@@ -220,11 +257,17 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("1 + ''"),
       nxt_string("1") },
 
+    { nxt_string("0xA + ''"),
+      nxt_string("10") },
+
     { nxt_string("undefined + undefined"),
       nxt_string("NaN") },
 
     { nxt_string("1.2 + 5.7"),
       nxt_string("6.9") },
+
+    { nxt_string("0xf + 1"),
+      nxt_string("16") },
 
     { nxt_string("1 + 1 + '2' + 1 + 1"),
       nxt_string("2211") },
@@ -234,6 +277,30 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("1.2 + -'5.7'"),
       nxt_string("-4.5") },
+
+    { nxt_string("1.2 - '-5.7'"),
+      nxt_string("6.9") },
+
+    { nxt_string("5 - ' \t 12  \t'"),
+      nxt_string("-7") },
+
+    { nxt_string("5 - '12zz'"),
+      nxt_string("NaN") },
+
+    { nxt_string("5 - '0x2'"),
+      nxt_string("3") },
+
+    { nxt_string("5 - '-0x2'"),
+      nxt_string("7") },
+
+    { nxt_string("5 - '\t 0x2 \t'"),
+      nxt_string("3") },
+
+    { nxt_string("5 - '0x2 z'"),
+      nxt_string("NaN") },
+
+    { nxt_string("5 - '0x'"),
+      nxt_string("NaN") },
 
     { nxt_string("1 + +'3'"),
       nxt_string("4") },
@@ -2334,6 +2401,18 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = [ 1, 2, 3 ]; a[0] +' '+ a[1] +' '+ a[2] +' '+ a[3]"),
       nxt_string("1 2 3 undefined") },
 
+    { nxt_string("var a = [ 5, 6, 7 ]; a['1']"),
+      nxt_string("6") },
+
+    { nxt_string("var a = [ 5, 6, 7 ]; a['01']"),
+      nxt_string("undefined") },
+
+    { nxt_string("var a = [ 5, 6, 7 ]; a[0x1]"),
+      nxt_string("6") },
+
+    { nxt_string("var a = [ 5, 6, 7 ]; a['0x1']"),
+      nxt_string("undefined") },
+
     { nxt_string("[] - 2"),
       nxt_string("-2") },
 
@@ -3145,6 +3224,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'\\u03B'"),
       nxt_string("SyntaxError: Invalid Unicode code point \"\\u03B\" in 1") },
 
+    { nxt_string("'\\u03BG'"),
+      nxt_string("SyntaxError: Invalid Unicode code point \"\\u03BG\" in 1") },
+
+    { nxt_string("'\\u03B '"),
+      nxt_string("SyntaxError: Invalid Unicode code point \"\\u03B \" in 1") },
+
     { nxt_string("'\\u{61}\\u{3B1}\\u{20AC}'"),
       nxt_string("aα€") },
 
@@ -3447,6 +3532,30 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("undefined") },
 
     { nxt_string("'abcdef'[8]"),
+      nxt_string("undefined") },
+
+    { nxt_string("'abcdef'['1']"),
+      nxt_string("b") },
+
+    { nxt_string("'abcdef'[' 1']"),
+      nxt_string("undefined") },
+
+    { nxt_string("'abcdef'['1 ']"),
+      nxt_string("undefined") },
+
+    { nxt_string("'abcdef'['']"),
+      nxt_string("undefined") },
+
+    { nxt_string("'abcdef'['-']"),
+      nxt_string("undefined") },
+
+    { nxt_string("'abcdef'['-1']"),
+      nxt_string("undefined") },
+
+    { nxt_string("'abcdef'['01']"),
+      nxt_string("undefined") },
+
+    { nxt_string("'abcdef'['0x01']"),
       nxt_string("undefined") },
 
     { nxt_string("var a = 'abcdef', b = 1 + 2; a[b]"),
@@ -7076,6 +7185,21 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("parseFloat('12345abc')"),
       nxt_string("12345") },
+
+    { nxt_string("parseFloat('0x')"),
+      nxt_string("0") },
+
+    { nxt_string("parseFloat('0xff')"),
+      nxt_string("0") },
+
+    { nxt_string("parseFloat('Infinity')"),
+      nxt_string("Infinity") },
+
+    { nxt_string("parseFloat(' Infinityzz')"),
+      nxt_string("Infinity") },
+
+    { nxt_string("parseFloat('Infinit')"),
+      nxt_string("NaN") },
 
     /* Trick: number to boolean. */
 

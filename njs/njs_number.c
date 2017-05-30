@@ -37,20 +37,21 @@ static njs_ret_t njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
     double number, uint32_t radix);
 
 
-double
-njs_value_to_number(njs_value_t *value)
+uint32_t
+njs_value_to_index(njs_value_t *value)
 {
+    double       num;
     njs_array_t  *array;
 
+    num = NAN;
+
     if (nxt_fast_path(njs_is_numeric(value))) {
-        return value->data.u.number;
-    }
+        num = value->data.u.number;
 
-    if (njs_is_string(value)) {
-        return njs_string_to_number(value, 1);
-    }
+    } else if (njs_is_string(value)) {
+        num = njs_string_to_index(value);
 
-    if (njs_is_array(value)) {
+    } else if (njs_is_array(value)) {
 
         array = value->data.u.array;
 
@@ -58,42 +59,39 @@ njs_value_to_number(njs_value_t *value)
 
             if (array->length == 0) {
                 /* An empty array value is zero. */
-                return 0.0;
+                return 0;
             }
 
             if (array->length == 1 && njs_is_valid(&array->start[0])) {
                 /* A single value array is the zeroth array value. */
-                return njs_value_to_number(&array->start[0]);
+                return njs_value_to_index(&array->start[0]);
             }
         }
     }
 
-    return NAN;
+    if ((uint32_t) num == num) {
+        return (uint32_t) num;
+    }
+
+    return NJS_ARRAY_INVALID_INDEX;
 }
 
 
 double
-njs_number_parse(const u_char **start, const u_char *end)
+njs_number_dec_parse(u_char **start, u_char *end)
 {
-    u_char        c;
-    double        num, frac, scale;
-    const u_char  *p;
+    u_char  c, *p;
+    double  num, frac, scale;
 
     /* TODO: "1e2" */
 
     p = *start;
-    c = *p++;
 
-    /* Values below '0' become >= 208. */
-    c = c - '0';
-
-    num = c;
+    num = 0;
 
     while (p < end) {
-        c = *p;
-
         /* Values below '0' become >= 208. */
-        c = c - '0';
+        c = *p - '0';
 
         if (nxt_slow_path(c > 9)) {
             break;
@@ -109,10 +107,8 @@ njs_number_parse(const u_char **start, const u_char *end)
         scale = 1;
 
         for (p++; p < end; p++) {
-            c = *p;
-
             /* Values below '0' become >= 208. */
-            c = c - '0';
+            c = *p - '0';
 
             if (nxt_slow_path(c > 9)) {
                 break;
@@ -123,6 +119,43 @@ njs_number_parse(const u_char **start, const u_char *end)
         }
 
         num += frac / scale;
+    }
+
+    *start = p;
+
+    return num;
+}
+
+
+uint64_t
+njs_number_hex_parse(u_char **start, u_char *end)
+{
+    u_char    c, *p;
+    uint64_t  num;
+
+    p = *start;
+
+    num = 0;
+
+    while (p < end) {
+        c = (u_char) (*p | 0x20);
+
+        /* Values below '0' become >= 208. */
+        c = c - '0';
+
+        if (c > 9) {
+            /* Values below 'a' become >= 159. */
+            c = c - ('a' - '0');
+
+            if (nxt_slow_path(c > 5)) {
+                break;
+            }
+
+            c += 10;
+        }
+
+        num = num * 16 + c;
+        p++;
     }
 
     *start = p;
@@ -745,7 +778,7 @@ njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     num = NAN;
 
     if (nargs > 1) {
-        num = njs_string_to_number(&args[1], 0);
+        num = njs_string_to_number(&args[1], 1);
     }
 
     njs_number_set(&vm->retval, num);

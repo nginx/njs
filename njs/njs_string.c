@@ -2943,12 +2943,12 @@ njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
 
 
 double
-njs_string_to_number(njs_value_t *value, nxt_bool_t exact)
+njs_string_to_number(njs_value_t *value, nxt_bool_t parse_float)
 {
+    u_char        *p, *start, *end;
     double        num;
     size_t        size;
     nxt_bool_t    minus;
-    const u_char  *p, *end;
 
     const size_t  infinity = sizeof("Infinity") - 1;
 
@@ -2990,19 +2990,27 @@ njs_string_to_number(njs_value_t *value, nxt_bool_t exact)
         return NAN;
     }
 
-    if (*p >= '0' && *p <= '9') {
-        num = njs_number_parse(&p, end);
+    if (!parse_float
+        && p + 2 < end && p[0] == '0' && (p[1] == 'x' || p[1] == 'X'))
+    {
+        p += 2;
+        num = njs_number_hex_parse(&p, end);
 
     } else {
-        if (p + infinity > end || memcmp(p, "Infinity", infinity) != 0) {
-            return NAN;
-        }
+        start = p;
+        num = njs_number_dec_parse(&p, end);
 
-        num = INFINITY;
-        p += infinity;
+        if (p == start) {
+            if (p + infinity > end || memcmp(p, "Infinity", infinity) != 0) {
+                return NAN;
+            }
+
+            num = INFINITY;
+            p += infinity;
+        }
     }
 
-    if (exact) {
+    if (!parse_float) {
         while (p < end) {
             if (*p != ' ' && *p != '\t') {
                 return NAN;
@@ -3013,6 +3021,42 @@ njs_string_to_number(njs_value_t *value, nxt_bool_t exact)
     }
 
     return minus ? -num : num;
+}
+
+
+double
+njs_string_to_index(njs_value_t *value)
+{
+    u_char  *p, *end;
+    double  num;
+    size_t  size;
+
+    size = value->short_string.size;
+
+    if (size != NJS_STRING_LONG) {
+        p = value->short_string.start;
+
+    } else {
+        size = value->data.string_size;
+        p = value->data.u.string->start;
+    }
+
+    if (size == 0) {
+        return NAN;
+    }
+
+    if (*p == '0' && size > 1) {
+        return NAN;
+    }
+
+    end = p + size;
+    num = njs_number_dec_parse(&p, end);
+
+    if (p != end) {
+        return NAN;
+    }
+
+    return num;
 }
 
 

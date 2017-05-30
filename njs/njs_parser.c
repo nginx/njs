@@ -2302,9 +2302,9 @@ static njs_token_t
 njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
     njs_value_t *value)
 {
-    u_char   c, *p, *start, *dst, *src, *end, *hex_end;
-    size_t   size, length, hex_length;
-    int64_t  u;
+    u_char    c, *p, *start, *dst, *src, *end, *hex_end;
+    size_t    size, length, hex_length;
+    uint64_t  u;
 
     start = NULL;
     dst = NULL;
@@ -2422,11 +2422,7 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
         hex:
 
             p = src;
-            u = njs_number_radix_parse(&src, hex_end, 16);
-
-            if (nxt_slow_path(u < 0)) {
-                goto invalid;
-            }
+            u = njs_number_hex_parse(&src, hex_end);
 
             if (hex_length != 0) {
                 if (src != hex_end) {
@@ -2434,7 +2430,11 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
                 }
 
             } else {
-                if ((src - p) > 6 || src == end || *src++ != '}') {
+                if (src == p || (src - p) > 6) {
+                    goto invalid;
+                }
+
+                if (src == end || *src++ != '}') {
                     goto invalid;
                 }
             }

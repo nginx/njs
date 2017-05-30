@@ -509,7 +509,6 @@ njs_ret_t
 njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *property)
 {
-    double                num;
     int32_t               index;
     uintptr_t             data;
     njs_ret_t             ret;
@@ -576,10 +575,9 @@ njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
 
         /* string[n]. */
 
-        num = njs_value_to_number(property);
-        index = (int32_t) num;
+        index = (int32_t) njs_value_to_index(property);
 
-        if (index >= 0 && index == num) {
+        if (nxt_fast_path(index >= 0)) {
             slice.start = index;
             slice.length = 1;
             slice.string_length = njs_string_prop(&string, object);
@@ -943,11 +941,9 @@ static nxt_noinline njs_ret_t
 njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
     njs_value_t *property)
 {
-    double          num;
     uint32_t        index;
     uint32_t        (*hash)(const void *, size_t);
     njs_ret_t       ret;
-    nxt_bool_t      valid;
     njs_extern_t    *ext;
     njs_object_t    *obj;
     njs_function_t  *function;
@@ -978,21 +974,14 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
         if (nxt_fast_path(!njs_is_null_or_void_or_boolean(property))) {
 
             if (nxt_fast_path(njs_is_primitive(property))) {
-                num = njs_value_to_number(property);
+                index = njs_value_to_index(property);
+
+                if (nxt_fast_path(index < NJS_ARRAY_MAX_LENGTH)) {
+                    return njs_array_property_query(vm, pq, object, index);
+                }
 
             } else {
                 return NJS_TRAP_PROPERTY;
-            }
-
-            if (nxt_fast_path(num >= 0)) {
-                index = (uint32_t) num;
-
-                valid = nxt_expect(1, (index < NJS_ARRAY_MAX_LENGTH
-                                       && (double) index == num));
-
-                if (valid) {
-                    return njs_array_property_query(vm, pq, object, index);
-                }
             }
         }
 
@@ -3026,7 +3015,7 @@ njs_vmcode_number_primitive(njs_vm_t *vm, njs_value_t *invld, njs_value_t *narg)
             num = NAN;
 
             if (njs_is_string(value)) {
-                num = njs_string_to_number(value, 1);
+                num = njs_string_to_number(value, 0);
             }
 
             njs_number_set(value, num);
@@ -3079,7 +3068,7 @@ njs_vmcode_number_argument(njs_vm_t *vm, njs_value_t *invld1,
             num = NAN;
 
             if (njs_is_string(value)) {
-                num = njs_string_to_number(value, 1);
+                num = njs_string_to_number(value, 0);
             }
 
             njs_number_set(value, num);
