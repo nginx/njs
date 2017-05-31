@@ -101,7 +101,7 @@ njs_number_dec_parse(u_char **start, u_char *end)
         p++;
     }
 
-    if (*p == '.') {
+    if (p < end && *p == '.') {
 
         frac = 0;
         scale = 1;
