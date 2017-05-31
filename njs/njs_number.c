@@ -733,19 +733,23 @@ njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
 
         test_prefix = (end - p > 1);
+        radix = 0;
 
         if (nargs > 2) {
             radix = args[2].data.u.number;
 
-            if (radix < 2 || radix > 36) {
-                goto done;
-            }
+            if (radix != 0) {
+                if (radix < 2 || radix > 36) {
+                    goto done;
+                }
 
-            if (radix != 16) {
-                test_prefix = 0;
+                if (radix != 16) {
+                    test_prefix = 0;
+                }
             }
+        }
 
-        } else {
+        if (radix == 0) {
             radix = 10;
         }
 
