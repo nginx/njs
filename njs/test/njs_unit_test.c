@@ -7150,6 +7150,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("parseInt('0XaBc', 0)"),
       nxt_string("2748") },
 
+    { nxt_string("parseInt(' 123')"),
+      nxt_string("123") },
+
     { nxt_string("parseInt('1010', 2)"),
       nxt_string("10") },
 

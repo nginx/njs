@@ -709,10 +709,9 @@ njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (nargs > 1) {
         (void) njs_string_prop(&string, &args[1]);
 
-        p = string.start;
         end = string.start + string.size;
 
-        while (p < end) {
+        for (p = string.start; p < end; p++) {
             if (*p != ' ') {
                 goto found;
             }
