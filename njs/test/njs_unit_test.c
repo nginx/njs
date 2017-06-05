@@ -150,6 +150,62 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("\n +1"),
       nxt_string("1") },
 
+    /* Scientific notation. */
+
+    { nxt_string("0e0"),
+      nxt_string("0") },
+
+    { nxt_string("0.0e0"),
+      nxt_string("0") },
+
+    { nxt_string("1e0"),
+      nxt_string("1") },
+
+    { nxt_string("1e1"),
+      nxt_string("10") },
+
+    { nxt_string("1.e01"),
+      nxt_string("10") },
+
+    { nxt_string("5.7e1"),
+      nxt_string("57") },
+
+    { nxt_string("5.7e-1"),
+      nxt_string("0.570000") },
+
+    { nxt_string("-5.7e-1"),
+      nxt_string("-0.570000") },
+
+    { nxt_string("1.1e-01"),
+      nxt_string("0.110000") },
+
+    { nxt_string("5.7e-2"),
+      nxt_string("0.057000") },
+
+    { nxt_string("1.1e+01"),
+      nxt_string("11") },
+
+    { nxt_string("1e9"),
+      nxt_string("1000000000") },
+
+    { nxt_string("1.0e308"),
+      nxt_string("1e+308") },
+
+    { nxt_string("1e"),
+      nxt_string("SyntaxError: Unexpected token \"e\" in 1") },
+
+    { nxt_string("1.e"),
+      nxt_string("SyntaxError: Unexpected token \"e\" in 1") },
+
+    { nxt_string("1e+"),
+      nxt_string("SyntaxError: Unexpected token \"e\" in 1") },
+
+    { nxt_string("1.e-"),
+      nxt_string("SyntaxError: Unexpected token \"e\" in 1") },
+
+    { nxt_string("1eZ"),
+      nxt_string("SyntaxError: Unexpected token \"eZ\" in 1") },
+
     /* Indexes. */
 
     { nxt_string("var a = []; a[-1] = 2; a[-1] == a['-1']"),
@@ -297,6 +353,33 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("3") },
 
     { nxt_string("5 - '0x2 z'"),
+      nxt_string("NaN") },
+
+    { nxt_string("12 - '5.7e1'"),
+      nxt_string("-45") },
+
+    { nxt_string("12 - '5.e1'"),
+      nxt_string("-38") },
+
+    { nxt_string("12 - '5.7e+01'"),
+      nxt_string("-45") },
+
+    { nxt_string("12 - '5.7e-01'"),
+      nxt_string("11.43") },
+
+    { nxt_string("12 - ' 5.7e1 '"),
+      nxt_string("-45") },
+
+    { nxt_string("12 - '5.7e'"),
+      nxt_string("NaN") },
+
+    { nxt_string("12 - '5.7e+'"),
+      nxt_string("NaN") },
+
+    { nxt_string("12 - '5.7e-'"),
+      nxt_string("NaN") },
+
+    { nxt_string("12 - ' 5.7e1 z'"),
       nxt_string("NaN") },
 
     { nxt_string("5 - '0x'"),
@@ -7209,6 +7292,33 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("parseFloat('Infinit')"),
       nxt_string("NaN") },
+
+    { nxt_string("parseFloat('5.7e1')"),
+      nxt_string("57") },
+
+    { nxt_string("parseFloat('-5.7e-1')"),
+      nxt_string("-0.570000") },
+
+    { nxt_string("parseFloat('-5.e-1')"),
+      nxt_string("-0.500000") },
+
+    { nxt_string("parseFloat('5.7e+01')"),
+      nxt_string("57") },
+
+    { nxt_string("parseFloat(' 5.7e+01abc')"),
+      nxt_string("57") },
+
+    { nxt_string("parseFloat('-5.7e-1abc')"),
+      nxt_string("-0.570000") },
+
+    { nxt_string("parseFloat('-5.7e')"),
+      nxt_string("-5.7") },
+
+    { nxt_string("parseFloat('-5.7e+')"),
+      nxt_string("-5.7") },
+
+    { nxt_string("parseFloat('-5.7e+abc')"),
+      nxt_string("-5.7") },
 
     /* Trick: number to boolean. */
 

@@ -80,10 +80,9 @@ njs_value_to_index(njs_value_t *value)
 double
 njs_number_dec_parse(u_char **start, u_char *end)
 {
-    u_char  c, *p;
-    double  num, frac, scale;
-
-    /* TODO: "1e2" */
+    u_char      c, *e, *p;
+    double      num, frac, scale, exponent;
+    nxt_bool_t  minus;
 
     p = *start;
 
@@ -119,6 +118,45 @@ njs_number_dec_parse(u_char **start, u_char *end)
         }
 
         num += frac / scale;
+    }
+
+    e = p + 1;
+
+    if (e < end && (*p == 'e' || *p == 'E')) {
+        minus = 0;
+
+        if (e + 1 < end) {
+            if (*e == '-') {
+                e++;
+                minus = 1;
+
+            } else if (*e == '+') {
+                e++;
+            }
+        }
+
+        /* Values below '0' become >= 208. */
+        c = *e - '0';
+
+        if (nxt_fast_path(c <= 9)) {
+            exponent = c;
+            p = e + 1;
+
+            while (p < end) {
+                /* Values below '0' become >= 208. */
+                c = *p - '0';
+
+                if (nxt_slow_path(c > 9)) {
+                    break;
+                }
+
+                exponent = exponent * 10 + c;
+                p++;
+            }
+
+            exponent = minus ? -exponent : exponent;
+            num = num * pow(10.0, exponent);
+        }
     }
 
     *start = p;
