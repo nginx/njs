@@ -337,6 +337,7 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
+    array = NULL;
     keys_length = 0;
     array_length = 0;
 
