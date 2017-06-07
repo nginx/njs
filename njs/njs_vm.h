@@ -408,6 +408,19 @@ typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
 #define njs_string_truth(value, size)
 
 
+#define njs_string_short_start(value)                                         \
+    (value)->short_string.start
+
+
+#define njs_string_short_set(value, _size, _length)                           \
+    do {                                                                      \
+        (value)->type = NJS_STRING;                                           \
+        njs_string_truth(value, _size);                                       \
+        (value)->short_string.size = _size;                                   \
+        (value)->short_string.length = _length;                               \
+    } while (0)
+
+
 #define njs_is_primitive(value)                                               \
     ((value)->type <= NJS_STRING)
 

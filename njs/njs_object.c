@@ -19,7 +19,9 @@
 #include <njs_string.h>
 #include <njs_object.h>
 #include <njs_object_hash.h>
+#include <njs_array.h>
 #include <njs_function.h>
+#include <stdio.h>
 #include <string.h>
 
 
@@ -318,6 +320,97 @@ njs_object_create(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
+static njs_ret_t
+njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    size_t             size;
+    uint32_t           i, n, keys_length, array_length;
+    njs_value_t        *value;
+    njs_array_t        *keys, *array;
+    nxt_lvlhsh_t       *hash;
+    njs_object_prop_t  *prop;
+    nxt_lvlhsh_each_t  lhe;
+
+    if (nargs < 2 || !njs_is_object(&args[1])) {
+        vm->exception = &njs_exception_type_error;
+        return NXT_ERROR;
+    }
+
+    keys_length = 0;
+    array_length = 0;
+
+    if (njs_is_array(&args[1])) {
+        array = args[1].data.u.array;
+        array_length = array->length;
+
+        for (i = 0; i < array_length; i++) {
+            if (njs_is_valid(&array->start[i])) {
+                keys_length++;
+            }
+        }
+    }
+
+    memset(&lhe, 0, sizeof(nxt_lvlhsh_each_t));
+    lhe.proto = &njs_object_hash_proto;
+
+    hash = &args[1].data.u.object->hash;
+
+    for ( ;; ) {
+        prop = nxt_lvlhsh_each(hash, &lhe);
+
+        if (prop == NULL) {
+            break;
+        }
+
+        if (prop->enumerable) {
+            keys_length++;
+        }
+    }
+
+    keys = njs_array_alloc(vm, keys_length, NJS_ARRAY_SPARE);
+    if (nxt_slow_path(keys == NULL)) {
+        return NXT_ERROR;
+    }
+
+    n = 0;
+
+    for (i = 0; i < array_length; i++) {
+        if (njs_is_valid(&array->start[i])) {
+            value = &keys->start[n++];
+            /*
+             * The maximum array index is 4294967294, so
+             * it can be stored as a short string inside value.
+             */
+            size = snprintf((char *) njs_string_short_start(value),
+                            NJS_STRING_SHORT, "%u", i);
+            njs_string_short_set(value, size, size);
+        }
+    }
+
+    memset(&lhe, 0, sizeof(nxt_lvlhsh_each_t));
+    lhe.proto = &njs_object_hash_proto;
+
+    for ( ;; ) {
+        prop = nxt_lvlhsh_each(hash, &lhe);
+
+        if (prop == NULL) {
+            break;
+        }
+
+        if (prop->enumerable) {
+            njs_string_copy(&keys->start[n++], &prop->name);
+        }
+    }
+
+    vm->retval.data.u.array = keys;
+    vm->retval.type = NJS_ARRAY;
+    vm->retval.data.truth = 1;
+
+    return NXT_OK;
+}
+
+
 /*
  * The __proto__ property of booleans, numbers and strings primitives,
  * of objects created by Boolean(), Number(), and String() constructors,
@@ -455,6 +548,14 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("create"),
         .value = njs_native_function(njs_object_create, 0, 0),
+    },
+
+    /* Object.keys(). */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("keys"),
+        .value = njs_native_function(njs_object_keys, 0,
+                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
     },
 };
 

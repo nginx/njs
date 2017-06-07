@@ -5843,6 +5843,25 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = Object.create(null); '__proto__' in o"),
       nxt_string("false") },
 
+    { nxt_string("var o = {a:1, b:2, c:3};"
+                 "Object.keys(o)"),
+      nxt_string("a,b,c") },
+
+    { nxt_string("var a = []; a.one = 7; Object.keys(a)"),
+      nxt_string("one") },
+
+    { nxt_string("var a = [,,]; a.one = 7; Object.keys(a)"),
+      nxt_string("one") },
+
+    { nxt_string("var a = [,6,,3]; a.one = 7; Object.keys(a)"),
+      nxt_string("1,3,one") },
+
+    { nxt_string("Object.keys('a')"),
+      nxt_string("TypeError") },
+
+    { nxt_string("Object.keys(1)"),
+      nxt_string("TypeError") },
+
     { nxt_string("var d = new Date(''); d +' '+ d.getTime()"),
       nxt_string("Invalid Date NaN") },
 
