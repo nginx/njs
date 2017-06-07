@@ -412,6 +412,109 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
+static njs_ret_t
+njs_object_define_property(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    nxt_int_t           ret;
+    nxt_str_t           key;
+    njs_value_t         *name;
+    njs_object_t        *object, *descriptor;
+    njs_object_prop_t   *prop, *pr;
+    nxt_lvlhsh_query_t  lhq, pq;
+
+    if (nargs < 4 || !njs_is_object(&args[1]) || !njs_is_object(&args[3])) {
+        vm->exception = &njs_exception_type_error;
+        return NXT_ERROR;
+    }
+
+    object = args[1].data.u.object;
+    name = &args[2];
+    descriptor = args[3].data.u.object;
+
+    if (name->short_string.size != NJS_STRING_LONG) {
+        key.start = name->short_string.start;
+        key.length = name->short_string.length;
+
+    } else {
+        key.start = name->data.u.string->start;
+        key.length = name->data.string_size;
+    }
+
+    lhq.key = key;
+    lhq.key_hash = nxt_djb_hash(key.start, key.length);
+    lhq.proto = &njs_object_hash_proto;
+
+    ret = nxt_lvlhsh_find(&object->hash, &lhq);
+
+    if (ret != NXT_OK) {
+        prop = njs_object_prop_alloc(vm, name);
+
+        if (nxt_slow_path(prop == NULL)) {
+            return NXT_ERROR;
+        }
+
+        prop->configurable = 0;
+        prop->enumerable = 0;
+        prop->writable = 0;
+
+        lhq.value = prop;
+
+    } else {
+        prop = lhq.value;
+    }
+
+    pq.key = nxt_string_value("value");
+    pq.key_hash = NJS_VALUE_HASH;
+    pq.proto = &njs_object_hash_proto;
+
+    pr = njs_object_property(vm, descriptor, &pq);
+
+    if (pr != NULL) {
+        prop->value = pr->value;
+    }
+
+    pq.key = nxt_string_value("configurable");
+    pq.key_hash = NJS_CONFIGURABLE_HASH;
+
+    pr = njs_object_property(vm, descriptor, &pq);
+
+    if (pr != NULL) {
+        prop->configurable = pr->value.data.truth;
+    }
+
+    pq.key = nxt_string_value("enumerable");
+    pq.key_hash = NJS_ENUMERABLE_HASH;
+
+    pr = njs_object_property(vm, descriptor, &pq);
+
+    if (pr != NULL) {
+        prop->enumerable = pr->value.data.truth;
+    }
+
+    pq.key = nxt_string_value("writable");
+    pq.key_hash = NJS_WRITABABLE_HASH;
+
+    pr = njs_object_property(vm, descriptor, &pq);
+
+    if (pr != NULL) {
+        prop->writable = pr->value.data.truth;
+    }
+
+    lhq.replace = 0;
+    lhq.pool = vm->mem_cache_pool;
+
+    ret = nxt_lvlhsh_insert(&object->hash, &lhq);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NXT_ERROR;
+    }
+
+    vm->retval = args[1];
+
+    return NXT_OK;
+}
+
+
 /*
  * The __proto__ property of booleans, numbers and strings primitives,
  * of objects created by Boolean(), Number(), and String() constructors,
@@ -557,6 +660,15 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
         .name = njs_string("keys"),
         .value = njs_native_function(njs_object_keys, 0,
                                      NJS_SKIP_ARG, NJS_OBJECT_ARG),
+    },
+
+    /* Object.defineProperty(). */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("defineProperty"),
+        .value = njs_native_function(njs_object_define_property, 0,
+                                     NJS_SKIP_ARG, NJS_OBJECT_ARG,
+                                     NJS_STRING_ARG, NJS_OBJECT_ARG),
     },
 };
 

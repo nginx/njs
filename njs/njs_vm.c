@@ -746,7 +746,9 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
         return ret;
     }
 
-    prop->value = *value;
+    if (prop->writable) {
+        prop->value = *value;
+    }
 
     return sizeof(njs_vmcode_prop_set_t);
 }

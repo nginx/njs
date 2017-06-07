@@ -8,6 +8,22 @@
 #define _NJS_OBJECT_HASH_H_INCLUDED_
 
 
+#define NJS_CONFIGURABLE_HASH                                                 \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
+        'c'), 'o'), 'n'), 'f'), 'i'), 'g'), 'u'), 'r'), 'a'), 'b'), 'l'), 'e')
+
+
 #define NJS_CONSTRUCTOR_HASH                                                  \
     nxt_djb_hash_add(                                                         \
     nxt_djb_hash_add(                                                         \
@@ -21,6 +37,20 @@
     nxt_djb_hash_add(                                                         \
     nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
         'c'), 'o'), 'n'), 's'), 't'), 'r'), 'u'), 'c'), 't'), 'o'), 'r')
+
+
+#define NJS_ENUMERABLE_HASH                                                   \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
+        'e'), 'n'), 'u'), 'm'), 'e'), 'r'), 'a'), 'b'), 'l'), 'e')
 
 
 #define NJS_INDEX_HASH                                                        \
@@ -74,6 +104,15 @@
         't'), 'o'), 'S'), 't'), 'r'), 'i'), 'n'), 'g')
 
 
+#define NJS_VALUE_HASH                                                        \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
+        'v'), 'a'), 'l'), 'u'), 'e')
+
+
 #define NJS_VALUE_OF_HASH                                                     \
     nxt_djb_hash_add(                                                         \
     nxt_djb_hash_add(                                                         \
@@ -98,6 +137,18 @@
     nxt_djb_hash_add(                                                         \
     nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
         't'), 'o'), 'I'), 'S'), 'O'), 'S'), 't'), 'r'), 'i'), 'n'), 'g')
+
+
+#define NJS_WRITABABLE_HASH                                                   \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
+        'w'), 'r'), 'i'), 't'), 'a'), 'b'), 'l'), 'e')
 
 
 #endif /* _NJS_OBJECT_HASH_H_INCLUDED_ */

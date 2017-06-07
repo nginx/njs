@@ -5874,6 +5874,64 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.keys(1)"),
       nxt_string("TypeError") },
 
+    { nxt_string("var o = {}; Object.defineProperty(o, 'a', {}); o.a"),
+      nxt_string("undefined") },
+
+    { nxt_string("Object.defineProperty({}, 'a', {value:1})"),
+      nxt_string("[object Object]") },
+
+    { nxt_string("var o = {}; Object.defineProperty(o, 'a', {value:1}); o.a"),
+      nxt_string("1") },
+
+    { nxt_string("var o = {a:1, c:2}; Object.defineProperty(o, 'b', {});"
+                 "Object.keys(o)"),
+      nxt_string("a,c") },
+
+    { nxt_string("var o = {a:1, c:2};"
+                 "Object.defineProperty(o, 'b', {enumerable:false});"
+                 "Object.keys(o)"),
+      nxt_string("a,c") },
+
+    { nxt_string("var o = {a:1, c:3};"
+                 "Object.defineProperty(o, 'b', {enumerable:true});"
+                 "Object.keys(o)"),
+      nxt_string("a,c,b") },
+
+    { nxt_string("var o = {}; Object.defineProperty(o, 'a', {}); o.a = 1; o.a"),
+      nxt_string("undefined") },
+
+    { nxt_string("var o = {}; Object.defineProperty(o, 'a', {writable:false});"
+                 "o.a = 1; o.a"),
+      nxt_string("undefined") },
+
+    { nxt_string("var o = {}; Object.defineProperty(o, 'a', {writable:true});"
+                 "o.a = 1; o.a"),
+      nxt_string("1") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {value:1}); delete o.a; o.a"),
+      nxt_string("1") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {value:1, configurable:true});"
+                 "delete o.a; o.a"),
+      nxt_string("undefined") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {value:1, configurable:false});"
+                 "delete o.a; o.a"),
+      nxt_string("1") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', Object.create({value:2})); o.a"),
+      nxt_string("2") },
+
+    { nxt_string("var o = {}; Object.defineProperty()"),
+      nxt_string("TypeError") },
+
+    { nxt_string("var o = {}; Object.defineProperty(o)"),
+      nxt_string("TypeError") },
+
     { nxt_string("var d = new Date(''); d +' '+ d.getTime()"),
       nxt_string("Invalid Date NaN") },
 
