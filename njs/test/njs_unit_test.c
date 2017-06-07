@@ -197,6 +197,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("0e-309"),
       nxt_string("0") },
 
+    { nxt_string("1e309"),
+      nxt_string("Infinity") },
+
+    { nxt_string("-1e309"),
+      nxt_string("-Infinity") },
+
     { nxt_string("1e"),
       nxt_string("SyntaxError: Unexpected token \"e\" in 1") },
 
