@@ -154,8 +154,10 @@ njs_number_dec_parse(u_char **start, u_char *end)
                 p++;
             }
 
-            exponent = minus ? -exponent : exponent;
-            num = num * pow(10.0, exponent);
+            if (num != 0) {
+                exponent = minus ? -exponent : exponent;
+                num = num * pow(10.0, exponent);
+            }
         }
     }
 
