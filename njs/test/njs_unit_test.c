@@ -5932,6 +5932,48 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = {}; Object.defineProperty(o)"),
       nxt_string("TypeError") },
 
+    { nxt_string("var o = {a:1}; o.hasOwnProperty('a')"),
+      nxt_string("true") },
+
+    { nxt_string("var o = Object.create({a:2}); o.hasOwnProperty('a')"),
+      nxt_string("false") },
+
+    { nxt_string("var o = {a:1}; o.hasOwnProperty('b')"),
+      nxt_string("false") },
+
+    { nxt_string("var a = []; a.hasOwnProperty('0')"),
+      nxt_string("false") },
+
+    { nxt_string("var a = [,,]; a.hasOwnProperty('0')"),
+      nxt_string("false") },
+
+    { nxt_string("var a = [3,,]; a.hasOwnProperty('0')"),
+      nxt_string("true") },
+
+    { nxt_string("var a = [,4]; a.hasOwnProperty('1')"),
+      nxt_string("true") },
+
+    { nxt_string("var a = [3,4]; a.hasOwnProperty('2')"),
+      nxt_string("false") },
+
+    { nxt_string("var a = [3,4]; a.one = 1; a.hasOwnProperty('one')"),
+      nxt_string("true") },
+
+    { nxt_string("var o = {a:1}; o.hasOwnProperty(o)"),
+      nxt_string("false") },
+
+    { nxt_string("var o = {a:1}; o.hasOwnProperty(1)"),
+      nxt_string("false") },
+
+    { nxt_string("var o = {a:1}; o.hasOwnProperty()"),
+      nxt_string("false") },
+
+    { nxt_string("1..hasOwnProperty('b')"),
+      nxt_string("false") },
+
+    { nxt_string("'s'.hasOwnProperty('b')"),
+      nxt_string("false") },
+
     { nxt_string("var d = new Date(''); d +' '+ d.getTime()"),
       nxt_string("Invalid Date NaN") },
 

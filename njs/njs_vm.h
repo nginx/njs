@@ -408,6 +408,19 @@ typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
 #define njs_string_truth(value, size)
 
 
+#define njs_string_get(value, str)                                            \
+    do {                                                                      \
+        if ((value)->short_string.size != NJS_STRING_LONG) {                  \
+            (str)->length = (value)->short_string.size;                       \
+            (str)->start = (value)->short_string.start;                       \
+                                                                              \
+        } else {                                                              \
+            (str)->length = (value)->data.string_size;                        \
+            (str)->start = (value)->data.u.string->start;                     \
+        }                                                                     \
+    } while (0)
+
+
 #define njs_string_short_start(value)                                         \
     (value)->short_string.start
 

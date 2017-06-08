@@ -882,6 +882,49 @@ found:
 }
 
 
+static njs_ret_t
+njs_object_prototype_has_own_property(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    uint32_t            index;
+    nxt_int_t           ret;
+    njs_array_t         *array;
+    const njs_value_t   *retval;
+    nxt_lvlhsh_query_t  lhq;
+
+    retval = &njs_string_false;
+
+    if (njs_is_object(&args[0])) {
+
+        if (njs_is_array(&args[0])) {
+            array = args[0].data.u.array;
+            index = njs_string_to_index(&args[1]);
+
+            if (index < array->length && njs_is_valid(&array->start[index])) {
+                retval = &njs_string_true;
+                goto done;
+            }
+        }
+
+        njs_string_get(&args[1], &lhq.key);
+        lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
+        lhq.proto = &njs_object_hash_proto;
+
+        ret = nxt_lvlhsh_find(&args[0].data.u.object->hash, &lhq);
+
+        if (ret == NXT_OK) {
+            retval = &njs_string_true;
+        }
+    }
+
+done:
+
+    vm->retval = *retval;
+
+    return NXT_OK;
+}
+
+
 static const njs_object_prop_t  njs_object_prototype_properties[] =
 {
     {
@@ -906,6 +949,13 @@ static const njs_object_prop_t  njs_object_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("toString"),
         .value = njs_native_function(njs_object_prototype_to_string, 0, 0),
+    },
+
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("hasOwnProperty"),
+        .value = njs_native_function(njs_object_prototype_has_own_property, 0,
+                                     NJS_OBJECT_ARG, NJS_STRING_ARG),
     },
 };
 
