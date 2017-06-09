@@ -935,6 +935,36 @@ done:
 }
 
 
+static njs_ret_t
+njs_object_prototype_is_prototype_of(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    njs_object_t       *object, *proto;
+    const njs_value_t  *retval;
+
+    retval = &njs_string_false;
+
+    if (njs_is_object(&args[0]) && njs_is_object(&args[1])) {
+        proto = args[0].data.u.object;
+        object = args[1].data.u.object;
+
+        do {
+            object = object->__proto__;
+
+            if (object == proto) {
+                retval = &njs_string_true;
+                break;
+            }
+
+        } while (object != NULL);
+    }
+
+    vm->retval = *retval;
+
+    return NXT_OK;
+}
+
+
 static const njs_object_prop_t  njs_object_prototype_properties[] =
 {
     {
@@ -966,6 +996,13 @@ static const njs_object_prop_t  njs_object_prototype_properties[] =
         .name = njs_string("hasOwnProperty"),
         .value = njs_native_function(njs_object_prototype_has_own_property, 0,
                                      NJS_OBJECT_ARG, NJS_STRING_ARG),
+    },
+
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("isPrototypeOf"),
+        .value = njs_native_function(njs_object_prototype_is_prototype_of, 0,
+                                     NJS_OBJECT_ARG, NJS_OBJECT_ARG),
     },
 };
 

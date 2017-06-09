@@ -5992,6 +5992,31 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.getPrototypeOf('a')"),
       nxt_string("TypeError") },
 
+    { nxt_string("var p = {}; var o = Object.create(p);"
+                 "p.isPrototypeOf(o)"),
+      nxt_string("true") },
+
+    { nxt_string("var pp = {}; var p = Object.create(pp);"
+                 "var o = Object.create(p);"
+                 "pp.isPrototypeOf(o)"),
+      nxt_string("true") },
+
+    { nxt_string("var p = {}; var o = Object.create(p);"
+                 "o.isPrototypeOf(p)"),
+      nxt_string("false") },
+
+    { nxt_string("var p = {}; var o = Object.create(p);"
+                 "o.isPrototypeOf()"),
+      nxt_string("false") },
+
+    { nxt_string("var p = {}; var o = Object.create(p);"
+                 "o.isPrototypeOf(1)"),
+      nxt_string("false") },
+
+    { nxt_string("var p = {}; var o = Object.create(p);"
+                 "1..isPrototypeOf(p)"),
+      nxt_string("false") },
+
     { nxt_string("var d = new Date(''); d +' '+ d.getTime()"),
       nxt_string("Invalid Date NaN") },
 
