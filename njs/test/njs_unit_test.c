@@ -5974,6 +5974,24 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'s'.hasOwnProperty('b')"),
       nxt_string("false") },
 
+    { nxt_string("var p = { a:5 }; var o = Object.create(p);"
+                 "Object.getPrototypeOf(o) === p"),
+      nxt_string("true") },
+
+    { nxt_string("var p = { a:5 }; var o = Object.create(p);"
+                 "Object.getPrototypeOf(o) === o.__proto__"),
+      nxt_string("true") },
+
+    { nxt_string("var o = Object.create(Object.prototype);"
+                 "Object.getPrototypeOf(o) === Object.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("Object.getPrototypeOf(1)"),
+      nxt_string("TypeError") },
+
+    { nxt_string("Object.getPrototypeOf('a')"),
+      nxt_string("TypeError") },
+
     { nxt_string("var d = new Date(''); d +' '+ d.getTime()"),
       nxt_string("Invalid Date NaN") },
 

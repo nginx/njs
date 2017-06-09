@@ -503,6 +503,20 @@ njs_object_define_property(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
+static njs_ret_t
+njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    if (nargs > 1 && njs_is_object(&args[1])) {
+        njs_object_prototype_get_proto(vm, &args[1]);
+        return NXT_OK;
+    }
+
+    vm->exception = &njs_exception_type_error;
+    return NXT_ERROR;
+}
+
+
 /*
  * The __proto__ property of booleans, numbers and strings primitives,
  * of objects created by Boolean(), Number(), and String() constructors,
@@ -657,6 +671,14 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
         .value = njs_native_function(njs_object_define_property, 0,
                                      NJS_SKIP_ARG, NJS_OBJECT_ARG,
                                      NJS_STRING_ARG, NJS_OBJECT_ARG),
+    },
+
+    /* Object.getPrototypeOf(). */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("getPrototypeOf"),
+        .value = njs_native_function(njs_object_get_prototype_of, 0,
+                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
     },
 };
 
