@@ -306,15 +306,15 @@ njs_date_string_parse(njs_value_t *date)
 {
     int                ext, ms, ms_length, skipped;
     double             time;
+    nxt_str_t          string;
     struct tm          tm;
     nxt_bool_t         sign, week, utc;
     const u_char       *p, *next, *end;
-    njs_string_prop_t  string;
 
-    (void) njs_string_prop(&string, date);
+    njs_string_get(date, &string);
 
     p = string.start;
-    end = p + string.size;
+    end = p + string.length;
 
     if (nxt_slow_path(p >= end)) {
         return NAN;

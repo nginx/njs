@@ -741,15 +741,15 @@ njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     u_char             *p, *end;
     int64_t            n;
     uint8_t            radix;
+    nxt_str_t          string;
     nxt_bool_t         minus, test_prefix;
-    njs_string_prop_t  string;
 
     num = NAN;
 
     if (nargs > 1) {
-        (void) njs_string_prop(&string, &args[1]);
+        njs_string_get(&args[1], &string);
 
-        end = string.start + string.size;
+        end = string.start + string.length;
 
         for (p = string.start; p < end; p++) {
             if (*p != ' ') {

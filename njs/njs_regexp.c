@@ -87,7 +87,7 @@ njs_ret_t
 njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    njs_string_prop_t   string;
+    nxt_str_t           string;
     njs_regexp_flags_t  flags;
 
     flags = 0;
@@ -96,13 +96,14 @@ njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     case 1:
         string.start = NULL;
-        string.size = 0;
+        string.length = 0;
         break;
 
     default:
-        (void) njs_string_prop(&string, &args[2]);
+        njs_string_get(&args[2], &string);
 
-        flags = njs_regexp_flags(&string.start, string.start + string.size, 1);
+        flags = njs_regexp_flags(&string.start, string.start + string.length,
+                                 1);
         if (nxt_slow_path(flags < 0)) {
             return NXT_ERROR;
         }
@@ -110,11 +111,12 @@ njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         /* Fall through. */
 
     case 2:
-        (void) njs_string_prop(&string, &args[1]);
+        njs_string_get(&args[1], &string);
         break;
     }
 
-    return njs_regexp_create(vm, &vm->retval, string.start, string.size, flags);
+    return njs_regexp_create(vm, &vm->retval, string.start, string.length,
+                             flags);
 }
 
 

@@ -417,8 +417,6 @@ njs_object_define_property(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
     nxt_int_t           ret;
-    nxt_str_t           key;
-    njs_value_t         *name;
     njs_object_t        *object, *descriptor;
     njs_object_prop_t   *prop, *pr;
     nxt_lvlhsh_query_t  lhq, pq;
@@ -429,26 +427,16 @@ njs_object_define_property(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     object = args[1].data.u.object;
-    name = &args[2];
     descriptor = args[3].data.u.object;
 
-    if (name->short_string.size != NJS_STRING_LONG) {
-        key.start = name->short_string.start;
-        key.length = name->short_string.length;
-
-    } else {
-        key.start = name->data.u.string->start;
-        key.length = name->data.string_size;
-    }
-
-    lhq.key = key;
-    lhq.key_hash = nxt_djb_hash(key.start, key.length);
+    njs_string_get(&args[2], &lhq.key);
+    lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
     lhq.proto = &njs_object_hash_proto;
 
     ret = nxt_lvlhsh_find(&object->hash, &lhq);
 
     if (ret != NXT_OK) {
-        prop = njs_object_prop_alloc(vm, name);
+        prop = njs_object_prop_alloc(vm, &args[2]);
 
         if (nxt_slow_path(prop == NULL)) {
             return NXT_ERROR;

@@ -1940,15 +1940,15 @@ static njs_ret_t
 njs_string_prototype_match(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
+    nxt_str_t             string;
     njs_ret_t             ret;
     njs_value_t           arguments[2];
-    njs_string_prop_t     string;
     njs_regexp_pattern_t  *pattern;
 
     arguments[1] = args[0];
 
     string.start = NULL;
-    string.size = 0;
+    string.length = 0;
 
     if (nargs > 1) {
 
@@ -1970,13 +1970,13 @@ njs_string_prototype_match(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
         if (njs_is_string(&args[1])) {
             /* string1.match(string2) is the same as /string2/.exec(string1). */
-            (void) njs_string_prop(&string, &args[1]);
+            njs_string_get(&args[1], &string);
         }
 
         /* A void value. */
     }
 
-    ret = njs_regexp_create(vm, &arguments[0], string.start, string.size, 0);
+    ret = njs_regexp_create(vm, &arguments[0], string.start, string.length, 0);
     if (nxt_slow_path(ret != NXT_OK)) {
         return ret;
     }
@@ -2559,19 +2559,19 @@ njs_string_replace_search(njs_vm_t *vm, njs_value_t *args,
     u_char             *p, *end;
     size_t             size;
     njs_ret_t          ret;
-    njs_string_prop_t  search;
+    nxt_str_t          search;
 
-    (void) njs_string_prop(&search, &args[1]);
+    njs_string_get(&args[1], &search);
 
     p = r->part[0].start;
-    end = (p + r->part[0].size) - (search.size - 1);
+    end = (p + r->part[0].size) - (search.length - 1);
 
     do {
-        if (memcmp(p, search.start, search.size) == 0) {
+        if (memcmp(p, search.start, search.length) == 0) {
 
             if (r->substitutions != NULL) {
                 captures[0] = p - r->part[0].start;
-                captures[1] = captures[0] + search.size;
+                captures[1] = captures[0] + search.length;
 
                 ret = njs_string_replace_substitute(vm, r, captures);
                 if (nxt_slow_path(ret != NXT_OK)) {
@@ -2579,9 +2579,9 @@ njs_string_replace_search(njs_vm_t *vm, njs_value_t *args,
                 }
 
             } else {
-                r->part[2].start = p + search.size;
+                r->part[2].start = p + search.length;
                 size = p - r->part[0].start;
-                r->part[2].size = r->part[0].size - size - search.size;
+                r->part[2].size = r->part[0].size - size - search.length;
                 r->part[0].size = size;
                 njs_set_invalid(&r->part[2].value);
 
@@ -3344,17 +3344,17 @@ njs_string_encode(njs_vm_t *vm, njs_value_t *value, const uint32_t *escape)
 {
     u_char               byte, *src, *dst;
     size_t               n, size;
-    njs_string_prop_t    string;
+    nxt_str_t            string;
     static const u_char  hex[16] = "0123456789ABCDEF";
 
     nxt_prefetch(escape);
 
-    (void) njs_string_prop(&string, value);
+    njs_string_get(value, &string);
 
     src = string.start;
     n = 0;
 
-    for (size = string.size; size != 0; size--) {
+    for (size = string.length; size != 0; size--) {
         byte = *src++;
 
         if ((escape[byte >> 5] & ((uint32_t) 1 << (byte & 0x1f))) != 0) {
@@ -3368,14 +3368,14 @@ njs_string_encode(njs_vm_t *vm, njs_value_t *value, const uint32_t *escape)
         return NXT_OK;
     }
 
-    size = string.size + n;
+    size = string.length + n;
 
     dst = njs_string_alloc(vm, &vm->retval, size, size);
     if (nxt_slow_path(dst == NULL)) {
         return NXT_ERROR;
     }
 
-    size = string.size;
+    size = string.length;
     src = string.start;
 
     do {
@@ -3477,8 +3477,8 @@ njs_string_decode(njs_vm_t *vm, njs_value_t *value, const uint32_t *reserve)
     u_char               byte, *start, *src, *dst;
     size_t               n;
     ssize_t              size, length;
+    nxt_str_t            string;
     nxt_bool_t           utf8;
-    njs_string_prop_t    string;
 
     static const int8_t  hex[256]
         nxt_aligned(32) =
@@ -3504,12 +3504,12 @@ njs_string_decode(njs_vm_t *vm, njs_value_t *value, const uint32_t *reserve)
     nxt_prefetch(&hex['0']);
     nxt_prefetch(reserve);
 
-    (void) njs_string_prop(&string, value);
+    njs_string_get(value, &string);
 
     src = string.start;
     n = 0;
 
-    for (size = string.size; size != 0; size--) {
+    for (size = string.length; size != 0; size--) {
         byte = *src++;
 
         if (byte == '%') {
@@ -3543,7 +3543,7 @@ njs_string_decode(njs_vm_t *vm, njs_value_t *value, const uint32_t *reserve)
         return NXT_OK;
     }
 
-    n = string.size - n;
+    n = string.length - n;
 
     start = njs_string_alloc(vm, &vm->retval, n, n);
     if (nxt_slow_path(start == NULL)) {
@@ -3552,7 +3552,7 @@ njs_string_decode(njs_vm_t *vm, njs_value_t *value, const uint32_t *reserve)
 
     utf8 = 0;
     dst = start;
-    size = string.size;
+    size = string.length;
     src = string.start;
 
     do {
