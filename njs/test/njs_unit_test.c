@@ -5932,6 +5932,27 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = {}; Object.defineProperty(o)"),
       nxt_string("TypeError") },
 
+    { nxt_string("var o = Object.defineProperties({}, {a:{value:1}}); o.a"),
+      nxt_string("1") },
+
+    { nxt_string("var o = Object.defineProperties({}, {a:{enumerable:true}, b:{enumerable:true}});"
+                 "Object.keys(o)"),
+      nxt_string("a,b") },
+
+    { nxt_string("var desc = Object.defineProperty({b:{value:1, enumerable:true}}, 'a', {});"
+                 "var o = Object.defineProperties({}, desc);"
+                 "Object.keys(o)"),
+      nxt_string("b") },
+
+    { nxt_string("var o = Object.defineProperties({a:1}, {}); o.a"),
+      nxt_string("1") },
+
+    { nxt_string("Object.defineProperties(1, {})"),
+      nxt_string("TypeError") },
+
+    { nxt_string("Object.defineProperties({}, 1)"),
+      nxt_string("TypeError") },
+
     { nxt_string("var o = {a:1}; o.hasOwnProperty('a')"),
       nxt_string("true") },
 

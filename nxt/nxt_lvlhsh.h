@@ -173,6 +173,12 @@ typedef struct {
 } nxt_lvlhsh_each_t;
 
 
+#define nxt_lvlhsh_each_init(lhe, _proto)                                     \
+    do {                                                                      \
+        memset(lhe, 0, sizeof(nxt_lvlhsh_each_t));                            \
+        (lhe)->proto = _proto;                                                \
+    } while (0)
+
 NXT_EXPORT void *nxt_lvlhsh_each(nxt_lvlhsh_t *lh, nxt_lvlhsh_each_t *le);
 
 
