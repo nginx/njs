@@ -2112,8 +2112,7 @@ njs_generate_argument_closures(njs_parser_t *parser, njs_parser_node_t *node)
         return;
     }
 
-    memset(&lhe, 0, sizeof(nxt_lvlhsh_each_t));
-    lhe.proto = &njs_variables_hash_proto;
+    nxt_lvlhsh_each_init(&lhe, &njs_variables_hash_proto);
 
     do {
         var = nxt_lvlhsh_each(&node->scope->variables, &lhe);

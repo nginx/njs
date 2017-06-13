@@ -236,8 +236,7 @@ lvlhsh_unit_test(nxt_uint_t n)
         }
     }
 
-    memset(&lhe, 0, sizeof(nxt_lvlhsh_each_t));
-    lhe.proto = &lvlhsh_proto;
+    nxt_lvlhsh_each_init(&lhe, &lvlhsh_proto);
 
     for (i = 0; i < n + 1; i++) {
         if (nxt_lvlhsh_each(&lh, &lhe) == NULL) {

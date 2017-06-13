@@ -245,8 +245,7 @@ njs_variables_scope_reference(njs_vm_t *vm, njs_parser_scope_t *scope)
             return NXT_ERROR;
         }
 
-        memset(&lhe, 0, sizeof(nxt_lvlhsh_each_t));
-        lhe.proto = &njs_variables_hash_proto;
+        nxt_lvlhsh_each_init(&lhe, &njs_variables_hash_proto);
 
         for ( ;; ) {
             node = nxt_lvlhsh_each(&scope->references, &lhe);
@@ -501,8 +500,7 @@ njs_vm_export_functions(njs_vm_t *vm)
 
     n = 1;
 
-    memset(&lhe, 0, sizeof(nxt_lvlhsh_each_t));
-    lhe.proto = &njs_variables_hash_proto;
+    nxt_lvlhsh_each_init(&lhe, &njs_variables_hash_proto);
 
     for ( ;; ) {
         var = nxt_lvlhsh_each(&vm->variables_hash, &lhe);
@@ -522,8 +520,7 @@ njs_vm_export_functions(njs_vm_t *vm)
         return NULL;
     }
 
-    memset(&lhe, 0, sizeof(nxt_lvlhsh_each_t));
-    lhe.proto = &njs_variables_hash_proto;
+    nxt_lvlhsh_each_init(&lhe, &njs_variables_hash_proto);
 
     ex = export;
 

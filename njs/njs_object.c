@@ -354,8 +354,7 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
     }
 
-    memset(&lhe, 0, sizeof(nxt_lvlhsh_each_t));
-    lhe.proto = &njs_object_hash_proto;
+    nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
 
     hash = &args[1].data.u.object->hash;
 
@@ -391,8 +390,7 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
     }
 
-    memset(&lhe, 0, sizeof(nxt_lvlhsh_each_t));
-    lhe.proto = &njs_object_hash_proto;
+    nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
 
     for ( ;; ) {
         prop = nxt_lvlhsh_each(hash, &lhe);

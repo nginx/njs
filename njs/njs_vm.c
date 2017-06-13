@@ -1207,8 +1207,7 @@ njs_vmcode_property_foreach(njs_vm_t *vm, njs_value_t *object,
 
         vm->retval.data.u.next = next;
 
-        memset(&next->lhe, 0, sizeof(nxt_lvlhsh_each_t));
-        next->lhe.proto = &njs_object_hash_proto;
+        nxt_lvlhsh_each_init(&next->lhe, &njs_object_hash_proto);
         next->index = -1;
 
         if (njs_is_array(object) && object->data.u.array->length != 0) {
