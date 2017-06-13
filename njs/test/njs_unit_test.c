@@ -6038,6 +6038,39 @@ static njs_unit_test_t  njs_test[] =
                  "1..isPrototypeOf(p)"),
       nxt_string("false") },
 
+    { nxt_string("Object.getOwnPropertyDescriptor({a:1}, 'a').value"),
+      nxt_string("1") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor({a:1}, 'a').configurable"),
+      nxt_string("true") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor({a:1}, 'a').enumerable"),
+      nxt_string("true") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor({a:1}, 'a').writable"),
+      nxt_string("true") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor({a:1}, 'b')"),
+      nxt_string("undefined") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor({}, 'a')"),
+      nxt_string("undefined") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor([3,4], '1').value"),
+      nxt_string("4") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor([3,4], 1).value"),
+      nxt_string("4") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor([3,4], '3')"),
+      nxt_string("undefined") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor([], '0')"),
+      nxt_string("undefined") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor(1, '0')"),
+      nxt_string("TypeError") },
+
     { nxt_string("var d = new Date(''); d +' '+ d.getTime()"),
       nxt_string("Invalid Date NaN") },
 
