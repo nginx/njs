@@ -181,7 +181,8 @@ njs_object_hash_test(nxt_lvlhsh_query_t *lhq, void *data)
 
 
 njs_object_prop_t *
-njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name)
+njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
+    const njs_value_t *value, uint8_t attributes)
 {
     njs_object_prop_t  *prop;
 
@@ -189,15 +190,16 @@ njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name)
                                sizeof(njs_object_prop_t));
 
     if (nxt_fast_path(prop != NULL)) {
-        prop->value = njs_value_void;
+        /* GC: retain. */
+        prop->value = *value;
 
         /* GC: retain. */
         prop->name = *name;
 
         prop->type = NJS_PROPERTY;
-        prop->enumerable = 1;
-        prop->writable = 1;
-        prop->configurable = 1;
+        prop->enumerable = attributes;
+        prop->writable = attributes;
+        prop->configurable = attributes;
     }
 
     return prop;
@@ -494,15 +496,11 @@ njs_define_property(njs_vm_t *vm, njs_object_t *object, njs_value_t *name,
     ret = nxt_lvlhsh_find(&object->hash, &lhq);
 
     if (ret != NXT_OK) {
-        prop = njs_object_prop_alloc(vm, name);
+        prop = njs_object_prop_alloc(vm, name, &njs_value_void, 0);
 
         if (nxt_slow_path(prop == NULL)) {
             return NXT_ERROR;
         }
-
-        prop->configurable = 0;
-        prop->enumerable = 0;
-        prop->writable = 0;
 
         lhq.value = prop;
 
@@ -647,7 +645,7 @@ njs_property_prototype_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
 
     static const njs_value_t   prototype_string = njs_string("prototype");
 
-    prop = njs_object_prop_alloc(vm, &prototype_string);
+    prop = njs_object_prop_alloc(vm, &prototype_string, &njs_value_void, 0);
     if (nxt_slow_path(prop == NULL)) {
         return NULL;
     }
@@ -657,10 +655,6 @@ njs_property_prototype_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
     prop->value.data.u.object = prototype;
     prop->value.type = prototype->type;
     prop->value.data.truth = 1;
-
-    prop->enumerable = 0;
-    prop->writable = 0;
-    prop->configurable = 0;
 
     lhq.value = prop;
     lhq.key_hash = NJS_PROTOTYPE_HASH;
@@ -835,7 +829,7 @@ njs_property_constructor_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
 
     static const njs_value_t  constructor_string = njs_string("constructor");
 
-    prop = njs_object_prop_alloc(vm, &constructor_string);
+    prop = njs_object_prop_alloc(vm, &constructor_string, constructor, 1);
     if (nxt_slow_path(prop == NULL)) {
         return NULL;
     }

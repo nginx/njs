@@ -749,7 +749,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
         }
     }
 
-    prop = njs_object_prop_alloc(vm, &njs_string_index);
+    prop = njs_object_prop_alloc(vm, &njs_string_index, &njs_value_void, 1);
     if (nxt_slow_path(prop == NULL)) {
         goto fail;
     }
@@ -774,12 +774,10 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
         goto fail;
     }
 
-    prop = njs_object_prop_alloc(vm, &njs_string_input);
+    prop = njs_object_prop_alloc(vm, &njs_string_input, &regexp->string, 1);
     if (nxt_slow_path(prop == NULL)) {
         goto fail;
     }
-
-    njs_string_copy(&prop->value, &regexp->string);
 
     lhq.key_hash = NJS_INPUT_HASH;
     lhq.key = nxt_string_value("input");

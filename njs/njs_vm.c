@@ -683,7 +683,7 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
         break;
 
     case NXT_DECLINED:
-        prop = njs_object_prop_alloc(vm, &pq.value);
+        prop = njs_object_prop_alloc(vm, &pq.value, &njs_value_void, 1);
         if (nxt_slow_path(prop == NULL)) {
             return NXT_ERROR;
         }

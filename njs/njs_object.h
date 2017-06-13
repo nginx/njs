@@ -47,7 +47,8 @@ nxt_int_t njs_object_hash_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
     const njs_object_prop_t *prop, nxt_uint_t n);
 njs_ret_t njs_object_constructor(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
-njs_object_prop_t *njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name);
+njs_object_prop_t *njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
+        const njs_value_t *value, uint8_t attributes);
 njs_ret_t njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value);
 njs_ret_t njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value);
 njs_value_t *njs_property_prototype_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
