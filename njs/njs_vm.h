@@ -412,11 +412,11 @@ typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
     do {                                                                      \
         if ((value)->short_string.size != NJS_STRING_LONG) {                  \
             (str)->length = (value)->short_string.size;                       \
-            (str)->start = (value)->short_string.start;                       \
+            (str)->start = (u_char *) (value)->short_string.start;            \
                                                                               \
         } else {                                                              \
             (str)->length = (value)->data.string_size;                        \
-            (str)->start = (value)->data.u.string->start;                     \
+            (str)->start = (u_char *) (value)->data.u.string->start;          \
         }                                                                     \
     } while (0)
 

@@ -109,16 +109,7 @@ njs_object_hash_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
     lhq.pool = vm->mem_cache_pool;
 
     do {
-        lhq.key.length = prop->name.short_string.size;
-
-        if (lhq.key.length != NJS_STRING_LONG) {
-            lhq.key.start = (u_char *) prop->name.short_string.start;
-
-        } else {
-            lhq.key.length = prop->name.data.string_size;
-            lhq.key.start = prop->name.data.u.string->start;
-        }
-
+        njs_string_get(&prop->name, &lhq.key);
         lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
         lhq.value = (void *) prop;
 

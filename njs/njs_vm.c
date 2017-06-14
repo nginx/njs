@@ -1028,16 +1028,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
 
         if (nxt_fast_path(ret == NXT_OK)) {
 
-            pq->lhq.key.length = pq->value.short_string.size;
-
-            if (pq->lhq.key.length != NJS_STRING_LONG) {
-                pq->lhq.key.start = pq->value.short_string.start;
-
-            } else {
-                pq->lhq.key.length = pq->value.data.string_size;
-                pq->lhq.key.start = pq->value.data.u.string->start;
-            }
-
+            njs_string_get(&pq->value, &pq->lhq.key);
             pq->lhq.key_hash = hash(pq->lhq.key.start, pq->lhq.key.length);
 
             if (obj == NULL) {
