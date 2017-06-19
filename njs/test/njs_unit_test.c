@@ -6232,6 +6232,39 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = Object.preventExtensions({a:1}); o.b = 1; o.b"),
       nxt_string("undefined") },
 
+    { nxt_string("Object.isExtensible({})"),
+      nxt_string("true") },
+
+    { nxt_string("Object.isExtensible([])"),
+      nxt_string("true") },
+
+    { nxt_string("Object.isExtensible(function() {})"),
+      nxt_string("true") },
+
+    { nxt_string("Object.isExtensible(new Date(''))"),
+      nxt_string("true") },
+
+    { nxt_string("Object.isExtensible(new RegExp(''))"),
+      nxt_string("true") },
+
+    { nxt_string("Object.isExtensible(1)"),
+      nxt_string("TypeError") },
+
+    { nxt_string("Object.isExtensible('')"),
+      nxt_string("TypeError") },
+
+    { nxt_string("Object.isExtensible(Object.preventExtensions({}))"),
+      nxt_string("false") },
+
+    { nxt_string("Object.isExtensible(Object.preventExtensions([]))"),
+      nxt_string("false") },
+
+    { nxt_string("Object.isExtensible(Object.freeze({}))"),
+      nxt_string("false") },
+
+    { nxt_string("Object.isExtensible(Object.freeze([]))"),
+      nxt_string("false") },
+
     { nxt_string("var d = new Date(''); d +' '+ d.getTime()"),
       nxt_string("Invalid Date NaN") },
 

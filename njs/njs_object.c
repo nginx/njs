@@ -819,6 +819,26 @@ njs_object_prevent_extensions(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
+static njs_ret_t
+njs_object_is_extensible(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    const njs_value_t  *retval;
+
+    if (nargs < 2 || !njs_is_object(&args[1])) {
+        vm->exception = &njs_exception_type_error;
+        return NXT_ERROR;
+    }
+
+    retval = args[1].data.u.object->extensible ? &njs_string_true :
+                                                 &njs_string_false;
+
+    vm->retval = *retval;
+
+    return NXT_OK;
+}
+
+
 /*
  * The __proto__ property of booleans, numbers and strings primitives,
  * of objects created by Boolean(), Number(), and String() constructors,
@@ -1018,6 +1038,14 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
         .type = NJS_METHOD,
         .name = njs_long_string("preventExtensions"),
         .value = njs_native_function(njs_object_prevent_extensions, 0,
+                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
+    },
+
+    /* Object.isExtensible(). */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("isExtensible"),
+        .value = njs_native_function(njs_object_is_extensible, 0,
                                      NJS_SKIP_ARG, NJS_OBJECT_ARG),
     },
 };
