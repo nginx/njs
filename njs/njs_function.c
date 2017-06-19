@@ -44,6 +44,7 @@ njs_function_alloc(njs_vm_t *vm)
         function->object.shared_hash = vm->shared->function_prototype_hash;
         function->object.type = NJS_FUNCTION;
         function->object.shared = 1;
+        function->object.extensible = 1;
         function->args_offset = 1;
 
         function->u.lambda = nxt_mem_cache_zalloc(vm->mem_cache_pool,
@@ -635,6 +636,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     function->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION].object;
     function->object.shared = 0;
+    function->object.extensible = 1;
 
     if (nargs == 1) {
         args = (njs_value_t *) &njs_value_void;

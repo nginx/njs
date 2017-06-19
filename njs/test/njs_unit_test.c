@@ -6071,6 +6071,99 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.getOwnPropertyDescriptor(1, '0')"),
       nxt_string("TypeError") },
 
+    { nxt_string("Object.defineProperty(Object.freeze({}), 'b', {})"),
+      nxt_string("TypeError") },
+
+    { nxt_string("Object.defineProperties(Object.freeze({}), {b:{}})"),
+      nxt_string("TypeError") },
+
+    { nxt_string("var o = Object.freeze({a:1}); o.a = 2; o.a"),
+      nxt_string("1") },
+
+    { nxt_string("var o = Object.freeze({a:1}); delete o.a; o.a"),
+      nxt_string("1") },
+
+    { nxt_string("var o = Object.freeze({a:1}); o.b = 1; o.b"),
+      nxt_string("undefined") },
+
+    { nxt_string("var o = Object.freeze(Object.create({a:1})); o.a = 2; o.a"),
+      nxt_string("1") },
+
+    { nxt_string("var o = Object.freeze({a:{b:1}}); o.a.b = 2; o.a.b"),
+      nxt_string("2") },
+
+    { nxt_string("Object.defineProperty([1,2], 'a', {value:1}).a"),
+      nxt_string("1") },
+
+    { nxt_string("var a = Object.freeze([1,2]);"
+                 "Object.defineProperty(a, 'a', {value:1}).a"),
+      nxt_string("TypeError") },
+
+    { nxt_string("var a = [1,2]; a.a = 1; Object.freeze(a);"
+                 "delete a.a; a.a"),
+      nxt_string("1") },
+
+    { nxt_string("var a = [1,2]; a.a = 1; Object.freeze(a);"
+                 "a.a = 2; a.a"),
+      nxt_string("1") },
+
+    { nxt_string("var a = Object.freeze([1,2]); a.a = 1; a.a"),
+      nxt_string("undefined") },
+
+    { nxt_string("Object.defineProperty(function() {}, 'a', {value:1}).a"),
+      nxt_string("1") },
+
+    { nxt_string("var f = Object.freeze(function() {});"
+                 "Object.defineProperty(f, 'a', {value:1}).a"),
+      nxt_string("TypeError") },
+
+    { nxt_string("var f = function() {}; f.a = 1; Object.freeze(f);"
+                 "delete f.a; f.a"),
+      nxt_string("1") },
+
+    { nxt_string("var f = function() {}; f.a = 1; Object.freeze(f);"
+                 "f.a = 2; f.a"),
+      nxt_string("1") },
+
+    { nxt_string("var f = Object.freeze(function() {}); f.a = 1; f.a"),
+      nxt_string("undefined") },
+
+    { nxt_string("Object.defineProperty(new Date(''), 'a', {value:1}).a"),
+      nxt_string("1") },
+
+    { nxt_string("var d = Object.freeze(new Date(''));"
+                 "Object.defineProperty(d, 'a', {value:1}).a"),
+      nxt_string("TypeError") },
+
+    { nxt_string("var d = new Date(''); d.a = 1; Object.freeze(d);"
+                 "delete d.a; d.a"),
+      nxt_string("1") },
+
+    { nxt_string("var d = new Date(''); d.a = 1; Object.freeze(d);"
+                 "d.a = 2; d.a"),
+      nxt_string("1") },
+
+    { nxt_string("var d = Object.freeze(new Date('')); d.a = 1; d.a"),
+      nxt_string("undefined") },
+
+    { nxt_string("Object.defineProperty(new RegExp(''), 'a', {value:1}).a"),
+      nxt_string("1") },
+
+    { nxt_string("var r = Object.freeze(new RegExp(''));"
+                 "Object.defineProperty(r, 'a', {value:1}).a"),
+      nxt_string("TypeError") },
+
+    { nxt_string("var r = new RegExp(''); r.a = 1; Object.freeze(r);"
+                 "delete r.a; r.a"),
+      nxt_string("1") },
+
+    { nxt_string("var r = new RegExp(''); r.a = 1; Object.freeze(r);"
+                 "r.a = 2; r.a"),
+      nxt_string("1") },
+
+    { nxt_string("var r = Object.freeze(new RegExp('')); r.a = 1; r.a"),
+      nxt_string("undefined") },
+
     { nxt_string("var d = new Date(''); d +' '+ d.getTime()"),
       nxt_string("Invalid Date NaN") },
 

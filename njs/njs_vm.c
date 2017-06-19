@@ -425,6 +425,7 @@ njs_vmcode_function(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
     function->u.lambda = lambda;
     function->object.shared_hash = vm->shared->function_prototype_hash;
     function->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION].object;
+    function->object.extensible = 1;
     function->args_offset = 1;
 
     if (nesting != 0) {
@@ -683,6 +684,10 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
         break;
 
     case NXT_DECLINED:
+        if (!object->data.u.object->extensible) {
+            return sizeof(njs_vmcode_prop_set_t);
+        }
+
         prop = njs_object_prop_alloc(vm, &pq.value, &njs_value_void, 1);
         if (nxt_slow_path(prop == NULL)) {
             return NXT_ERROR;

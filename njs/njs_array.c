@@ -149,6 +149,7 @@ njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare)
     array->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_ARRAY].object;
     array->object.type = NJS_ARRAY;
     array->object.shared = 0;
+    array->object.extensible = 1;
     array->size = size;
     array->length = length;
 
@@ -1941,7 +1942,7 @@ njs_array_string_sort(njs_vm_t *vm, njs_value_t *args,
 
 
 static const njs_function_t  njs_array_string_sort_function = {
-    .object.shared = 1,
+    .object = { .type = NJS_FUNCTION, .shared = 1, .extensible = 1 },
     .native = 1,
     .continuation_size = NJS_CONTINUATION_SIZE,
     .args_types = { NJS_SKIP_ARG, NJS_STRING_ARG, NJS_STRING_ARG },

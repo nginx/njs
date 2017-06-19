@@ -154,6 +154,7 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         nxt_lvlhsh_init(&date->object.shared_hash);
         date->object.type = NJS_DATE;
         date->object.shared = 0;
+        date->object.extensible = 1;
         date->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_DATE].object;
 
         date->time = time;

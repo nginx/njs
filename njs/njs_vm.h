@@ -208,7 +208,8 @@ struct njs_object_s {
 
     /* The type is used in constructor prototypes. */
     njs_value_type_t                  type:8;
-    uint8_t                           shared;  /* 1 bit */
+    uint8_t                           shared;     /* 1 bit */
+    uint8_t                           extensible; /* 1 bit */
 };
 
 
@@ -339,7 +340,9 @@ typedef union {
             .args_types = { __VA_ARGS__ },                                    \
             .args_offset = 1,                                                 \
             .u.native = _function,                                            \
-            .object = { .type = NJS_FUNCTION, .shared = 1 },                  \
+            .object = { .type = NJS_FUNCTION,                                 \
+                        .shared = 1,                                          \
+                        .extensible = 1 },                                    \
         }                                                                     \
     }                                                                         \
 }

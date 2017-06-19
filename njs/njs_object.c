@@ -43,6 +43,7 @@ njs_object_alloc(njs_vm_t *vm)
         object->__proto__ = &vm->prototypes[NJS_PROTOTYPE_OBJECT].object;
         object->type = NJS_OBJECT;
         object->shared = 0;
+        object->extensible = 1;
     }
 
     return object;
@@ -86,6 +87,7 @@ njs_object_value_alloc(njs_vm_t *vm, const njs_value_t *value, nxt_uint_t type)
         nxt_lvlhsh_init(&ov->object.shared_hash);
         ov->object.type = njs_object_value_type(type);
         ov->object.shared = 0;
+        ov->object.extensible = 1;
 
         index = njs_primitive_prototype_index(type);
         ov->object.__proto__ = &vm->prototypes[index].object;
@@ -416,6 +418,11 @@ njs_object_define_property(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
+    if (!args[1].data.u.object->extensible) {
+        vm->exception = &njs_exception_type_error;
+        return NXT_ERROR;
+    }
+
     ret = njs_define_property(vm, args[1].data.u.object, &args[2],
                               args[3].data.u.object);
 
@@ -440,6 +447,11 @@ njs_object_define_properties(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_object_prop_t  *prop;
 
     if (nargs < 3 || !njs_is_object(&args[1]) || !njs_is_object(&args[2])) {
+        vm->exception = &njs_exception_type_error;
+        return NXT_ERROR;
+    }
+
+    if (!args[1].data.u.object->extensible) {
         vm->exception = &njs_exception_type_error;
         return NXT_ERROR;
     }
@@ -704,6 +716,44 @@ njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
+static njs_ret_t
+njs_object_freeze(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    nxt_lvlhsh_t       *hash;
+    njs_object_t       *object;
+    njs_object_prop_t  *prop;
+    nxt_lvlhsh_each_t  lhe;
+
+    if (nargs < 2 || !njs_is_object(&args[1])) {
+        vm->exception = &njs_exception_type_error;
+        return NXT_ERROR;
+    }
+
+    object = args[1].data.u.object;
+    object->extensible = 0;
+
+    nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+
+    hash = &object->hash;
+
+    for ( ;; ) {
+        prop = nxt_lvlhsh_each(hash, &lhe);
+
+        if (prop == NULL) {
+            break;
+        }
+
+        prop->writable = 0;
+        prop->configurable = 0;
+    }
+
+    vm->retval = args[1];
+
+    return NXT_OK;
+}
+
+
 /*
  * The __proto__ property of booleans, numbers and strings primitives,
  * of objects created by Boolean(), Number(), and String() constructors,
@@ -879,6 +929,14 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("getPrototypeOf"),
         .value = njs_native_function(njs_object_get_prototype_of, 0,
+                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
+    },
+
+    /* Object.freeze(). */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("freeze"),
+        .value = njs_native_function(njs_object_freeze, 0,
                                      NJS_SKIP_ARG, NJS_OBJECT_ARG),
     },
 };

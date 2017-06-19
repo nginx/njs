@@ -469,6 +469,7 @@ njs_regexp_alloc(njs_vm_t *vm, njs_regexp_pattern_t *pattern)
         regexp->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_REGEXP].object;
         regexp->object.type = NJS_REGEXP;
         regexp->object.shared = 0;
+        regexp->object.extensible = 1;
         regexp->last_index = 0;
         regexp->pattern = pattern;
     }

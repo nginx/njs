@@ -206,6 +206,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
         }
 
         functions[i].object.shared = 1;
+        functions[i].object.extensible = 1;
         functions[i].native = 1;
         functions[i].args_offset = 1;
         functions[i].u.native = native_functions[i].native;
@@ -236,6 +237,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
 
     for (i = NJS_CONSTRUCTOR_OBJECT; i < NJS_CONSTRUCTOR_MAX; i++) {
         constructors[i].object.shared = 0;
+        constructors[i].object.extensible = 1;
         constructors[i].native = 1;
         constructors[i].ctor = 1;
         constructors[i].args_offset = 1;
