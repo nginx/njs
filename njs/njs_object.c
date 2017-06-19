@@ -754,6 +754,23 @@ njs_object_freeze(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
+static njs_ret_t
+njs_object_prevent_extensions(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    if (nargs < 2 || !njs_is_object(&args[1])) {
+        vm->exception = &njs_exception_type_error;
+        return NXT_ERROR;
+    }
+
+    args[1].data.u.object->extensible = 0;
+
+    vm->retval = args[1];
+
+    return NXT_OK;
+}
+
+
 /*
  * The __proto__ property of booleans, numbers and strings primitives,
  * of objects created by Boolean(), Number(), and String() constructors,
@@ -937,6 +954,14 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("freeze"),
         .value = njs_native_function(njs_object_freeze, 0,
+                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
+    },
+
+    /* Object.preventExtensions(). */
+    {
+        .type = NJS_METHOD,
+        .name = njs_long_string("preventExtensions"),
+        .value = njs_native_function(njs_object_prevent_extensions, 0,
                                      NJS_SKIP_ARG, NJS_OBJECT_ARG),
     },
 };
