@@ -6215,6 +6215,27 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = Object.freeze({a:1}); Object.isFrozen(o)"),
       nxt_string("true") },
 
+    { nxt_string("var o = Object.seal({a:1}); o.a = 2; o.a"),
+      nxt_string("2") },
+
+    { nxt_string("var o = Object.seal({a:1}); delete o.a; o.a"),
+      nxt_string("1") },
+
+    { nxt_string("var o = Object.seal({a:1}); o.b = 1; o.b"),
+      nxt_string("undefined") },
+
+    { nxt_string("var o = Object.seal(Object.create({a:1})); o.a = 2; o.a"),
+      nxt_string("1") },
+
+    { nxt_string("var o = Object.seal({a:{b:1}}); o.a.b = 2; o.a.b"),
+      nxt_string("2") },
+
+    { nxt_string("Object.seal(1)"),
+      nxt_string("TypeError") },
+
+    { nxt_string("Object.seal('')"),
+      nxt_string("TypeError") },
+
     { nxt_string("var o = Object.preventExtensions({a:1});"
                  "Object.defineProperty(o, 'b', {value:1})"),
       nxt_string("TypeError") },
