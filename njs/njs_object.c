@@ -755,6 +755,54 @@ njs_object_freeze(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 
 static njs_ret_t
+njs_object_is_frozen(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    nxt_lvlhsh_t       *hash;
+    njs_object_t       *object;
+    njs_object_prop_t  *prop;
+    nxt_lvlhsh_each_t  lhe;
+    const njs_value_t  *retval;
+
+    if (nargs < 2 || !njs_is_object(&args[1])) {
+        vm->exception = &njs_exception_type_error;
+        return NXT_ERROR;
+    }
+
+    retval = &njs_string_false;
+
+    object = args[1].data.u.object;
+    nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+
+    hash = &object->hash;
+
+    if (object->extensible) {
+        goto done;
+    }
+
+    for ( ;; ) {
+        prop = nxt_lvlhsh_each(hash, &lhe);
+
+        if (prop == NULL) {
+            break;
+        }
+
+        if (prop->writable || prop->configurable) {
+            goto done;
+        }
+    }
+
+    retval = &njs_string_true;
+
+done:
+
+    vm->retval = *retval;
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
 njs_object_prevent_extensions(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
@@ -954,6 +1002,14 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("freeze"),
         .value = njs_native_function(njs_object_freeze, 0,
+                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
+    },
+
+    /* Object.isFrozen(). */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("isFrozen"),
+        .value = njs_native_function(njs_object_is_frozen, 0,
                                      NJS_SKIP_ARG, NJS_OBJECT_ARG),
     },
 

@@ -6164,6 +6164,57 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var r = Object.freeze(new RegExp('')); r.a = 1; r.a"),
       nxt_string("undefined") },
 
+    { nxt_string("Object.isFrozen({a:1})"),
+      nxt_string("false") },
+
+    { nxt_string("Object.isFrozen([1,2])"),
+      nxt_string("false") },
+
+    { nxt_string("Object.isFrozen(function() {})"),
+      nxt_string("false") },
+
+    { nxt_string("Object.isFrozen(new Date(''))"),
+      nxt_string("false") },
+
+    { nxt_string("Object.isFrozen(new RegExp(''))"),
+      nxt_string("false") },
+
+    { nxt_string("Object.isFrozen(1)"),
+      nxt_string("TypeError") },
+
+    { nxt_string("Object.isFrozen('')"),
+      nxt_string("TypeError") },
+
+    { nxt_string("Object.isFrozen(Object.defineProperties({}, {a:{value:1}}))"),
+      nxt_string("false") },
+
+    { nxt_string("var o = Object.defineProperties({}, {a:{}, b:{}});"
+                 "o = Object.preventExtensions(o);"
+                 "Object.isFrozen(o)"),
+      nxt_string("true") },
+
+    { nxt_string("var o = Object.defineProperties({}, {a:{}, b:{writable:1}});"
+                 "o = Object.preventExtensions(o);"
+                 "Object.isFrozen(o)"),
+      nxt_string("false") },
+
+    { nxt_string("var o = Object.defineProperties({}, {a:{writable:1}});"
+                 "o = Object.preventExtensions(o);"
+                 "Object.isFrozen(o)"),
+      nxt_string("false") },
+
+    { nxt_string("var o = Object.defineProperties({}, {a:{configurable:1}});"
+                 "o = Object.preventExtensions(o);"
+                 "Object.isFrozen(o)"),
+      nxt_string("false") },
+
+    { nxt_string("var o = Object.preventExtensions({a:1});"
+                 "Object.isFrozen(o)"),
+      nxt_string("false") },
+
+    { nxt_string("var o = Object.freeze({a:1}); Object.isFrozen(o)"),
+      nxt_string("true") },
+
     { nxt_string("var o = Object.preventExtensions({a:1});"
                  "Object.defineProperty(o, 'b', {value:1})"),
       nxt_string("TypeError") },
