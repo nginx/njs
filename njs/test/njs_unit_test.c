@@ -6236,6 +6236,57 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.seal('')"),
       nxt_string("TypeError") },
 
+    { nxt_string("Object.isSealed({a:1})"),
+      nxt_string("false") },
+
+    { nxt_string("Object.isSealed([1,2])"),
+      nxt_string("false") },
+
+    { nxt_string("Object.isSealed(function() {})"),
+      nxt_string("false") },
+
+    { nxt_string("Object.isSealed(new Date(''))"),
+      nxt_string("false") },
+
+    { nxt_string("Object.isSealed(new RegExp(''))"),
+      nxt_string("false") },
+
+    { nxt_string("Object.isSealed(1)"),
+      nxt_string("TypeError") },
+
+    { nxt_string("Object.isSealed('')"),
+      nxt_string("TypeError") },
+
+    { nxt_string("Object.isSealed(Object.defineProperties({}, {a:{value:1}}))"),
+      nxt_string("false") },
+
+    { nxt_string("var o = Object.defineProperties({}, {a:{}, b:{}});"
+                 "o = Object.preventExtensions(o);"
+                 "Object.isSealed(o)"),
+      nxt_string("true") },
+
+    { nxt_string("var o = Object.defineProperties({}, {a:{}, b:{writable:1}});"
+                 "o = Object.preventExtensions(o);"
+                 "Object.isSealed(o)"),
+      nxt_string("false") },
+
+    { nxt_string("var o = Object.defineProperties({}, {a:{writable:1}});"
+                 "o = Object.preventExtensions(o);"
+                 "Object.isSealed(o)"),
+      nxt_string("false") },
+
+    { nxt_string("var o = Object.defineProperties({}, {a:{configurable:1}});"
+                 "o = Object.preventExtensions(o);"
+                 "Object.isSealed(o)"),
+      nxt_string("true") },
+
+    { nxt_string("var o = Object.preventExtensions({a:1});"
+                 "Object.isFrozen(o)"),
+      nxt_string("false") },
+
+    { nxt_string("var o = Object.freeze({a:1}); Object.isFrozen(o)"),
+      nxt_string("true") },
+
     { nxt_string("var o = Object.preventExtensions({a:1});"
                  "Object.defineProperty(o, 'b', {value:1})"),
       nxt_string("TypeError") },
