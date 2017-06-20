@@ -5989,6 +5989,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = {a:1}; o.hasOwnProperty()"),
       nxt_string("false") },
 
+    { nxt_string("[,].hasOwnProperty()"),
+      nxt_string("false") },
+
+    { nxt_string("Object.valueOf.hasOwnProperty()"),
+      nxt_string("false") },
+
     { nxt_string("1..hasOwnProperty('b')"),
       nxt_string("false") },
 

@@ -1373,7 +1373,7 @@ njs_object_prototype_has_own_property(njs_vm_t *vm, njs_value_t *args,
 
     retval = &njs_string_false;
 
-    if (njs_is_object(&args[0])) {
+    if (nargs > 1 && njs_is_object(&args[0])) {
 
         if (njs_is_array(&args[0])) {
             array = args[0].data.u.array;
