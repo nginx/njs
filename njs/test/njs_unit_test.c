@@ -6030,6 +6030,9 @@ static njs_unit_test_t  njs_test[] =
                  "o.isPrototypeOf()"),
       nxt_string("false") },
 
+    { nxt_string("Object.valueOf.isPrototypeOf()"),
+      nxt_string("false") },
+
     { nxt_string("var p = {}; var o = Object.create(p);"
                  "o.isPrototypeOf(1)"),
       nxt_string("false") },

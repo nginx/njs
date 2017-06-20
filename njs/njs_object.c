@@ -1413,7 +1413,7 @@ njs_object_prototype_is_prototype_of(njs_vm_t *vm, njs_value_t *args,
 
     retval = &njs_string_false;
 
-    if (njs_is_object(&args[0]) && njs_is_object(&args[1])) {
+    if (nargs > 1 && njs_is_object(&args[0]) && njs_is_object(&args[1])) {
         proto = args[0].data.u.object;
         object = args[1].data.u.object;
 
