@@ -1013,7 +1013,7 @@ ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     cln = ngx_pool_cleanup_add(cf->pool, 0);
     if (cln == NULL) {
-        return NULL;
+        return NGX_CONF_ERROR;
     }
 
     cln->handler = ngx_stream_js_cleanup_mem_cache_pool;
