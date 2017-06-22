@@ -1323,6 +1323,7 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     jlcf->vm = njs_vm_create(mcp, &shared, &externals);
     if (jlcf->vm == NULL) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "failed to create JS VM");
         return NGX_CONF_ERROR;
     }
 
