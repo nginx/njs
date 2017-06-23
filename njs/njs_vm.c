@@ -73,7 +73,7 @@ struct njs_property_next_s {
 static nxt_noinline njs_ret_t njs_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_value_t *object, njs_value_t *property);
 static njs_ret_t njs_array_property_query(njs_vm_t *vm,
-    njs_property_query_t *pq, njs_value_t *object, int32_t index);
+    njs_property_query_t *pq, njs_value_t *object, uint32_t index);
 static njs_ret_t njs_object_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_value_t *value, njs_object_t *object);
 static njs_ret_t njs_method_private_copy(njs_vm_t *vm,
@@ -1054,20 +1054,21 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
 
 static njs_ret_t
 njs_array_property_query(njs_vm_t *vm, njs_property_query_t *pq,
-    njs_value_t *object, int32_t index)
+    njs_value_t *object, uint32_t index)
 {
-    int32_t      size;
+    uint32_t     size;
     njs_ret_t    ret;
     njs_value_t  *value;
     njs_array_t  *array;
 
     array = object->data.u.array;
-    size = index - array->length;
 
-    if (size >= 0) {
+    if (index >= array->length) {
         if (pq->query != NJS_PROPERTY_QUERY_SET) {
             return NXT_DECLINED;
         }
+
+        size = index - array->length;
 
         ret = njs_array_expand(vm, array, 0, size + 1);
         if (nxt_slow_path(ret != NXT_OK)) {
