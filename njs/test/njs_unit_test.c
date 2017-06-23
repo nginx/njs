@@ -6361,17 +6361,16 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.valueOf()"),
       nxt_string("1308895200000") },
 
-    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d"),
-      nxt_string("Fri Jun 24 2011 18:45:00 GMT+1245 (CHAST)") },
-
-    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.toString()"),
-      nxt_string("Fri Jun 24 2011 18:45:00 GMT+1245 (CHAST)") },
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45);"
+                 "d.toString().slice(0, 33)"),
+      nxt_string("Fri Jun 24 2011 18:45:00 GMT+1245") },
 
     { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.toDateString()"),
       nxt_string("Fri Jun 24 2011") },
 
-    { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.toTimeString()"),
-      nxt_string("18:45:00 GMT+1245 (CHAST)") },
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45);"
+                 "d.toTimeString().slice(0, 17)"),
+      nxt_string("18:45:00 GMT+1245") },
 
     { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.toUTCString()"),
       nxt_string("Fri Jun 24 2011 06:00:00 GMT") },
