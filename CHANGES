@@ -1,4 +1,26 @@
 
+Changes with nJScript 0.1.11                                     27 Jun 2017
+
+    *) Feature: Object.keys(), Object.prototype.hasOwnProperty() methods.
+
+    *) Feature: Object.defineProperty(), Object.defineProperties(),
+       Object.getOwnPropertyDescriptor() methods.
+
+    *) Feature: Object.getPrototypeOf(), Object.prototype.isPrototypeOf()
+       methods.
+
+    *) Feature: Object.preventExtensions(), Object.isExtensible(),
+       Object.freeze(), Object.isFrozen(), Object.seal(), Object.isSealed()
+       methods.
+
+    *) Feature: scientific notation literals support.
+
+    *) Feature: hexadecimal literals support.
+
+    *) Bugfix: processing of large array indexes.
+
+    *) Bugfix: in parseInt() and Date.parse().
+
 Changes with nJScript 0.1.10                                     04 Apr 2017
 
     *) Feature: nested functions and function closures.
