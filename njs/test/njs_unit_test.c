@@ -6280,17 +6280,17 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = Object.defineProperties({}, {a:{}, b:{writable:1}});"
                  "o = Object.preventExtensions(o);"
                  "Object.isSealed(o)"),
-      nxt_string("false") },
+      nxt_string("true") },
 
     { nxt_string("var o = Object.defineProperties({}, {a:{writable:1}});"
                  "o = Object.preventExtensions(o);"
                  "Object.isSealed(o)"),
-      nxt_string("false") },
+      nxt_string("true") },
 
     { nxt_string("var o = Object.defineProperties({}, {a:{configurable:1}});"
                  "o = Object.preventExtensions(o);"
                  "Object.isSealed(o)"),
-      nxt_string("true") },
+      nxt_string("false") },
 
     { nxt_string("var o = Object.preventExtensions({a:1});"
                  "Object.isFrozen(o)"),

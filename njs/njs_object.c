@@ -872,7 +872,7 @@ njs_object_is_sealed(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             break;
         }
 
-        if (prop->writable) {
+        if (prop->configurable) {
             goto done;
         }
     }
