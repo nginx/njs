@@ -1052,8 +1052,8 @@ njs_date_prototype_to_iso_string(njs_vm_t *vm, njs_value_t *args,
         year = tm.tm_year + 1900;
 
         size = snprintf((char *) buf, NJS_ISO_DATE_TIME_LEN,
-                        (year < 0) ? "%07d-%02d-%02dT%02d:%02d:%02d.%03dZ":
-                                     "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ",
+                        (year < 0) ? "%07d-%02d-%02dT%02d:%02d:%02d.%03dZ"
+                                   : "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ",
                         year, tm.tm_mon + 1, tm.tm_mday,
                         tm.tm_hour, tm.tm_min, tm.tm_sec,
                         (int) ((int64_t) time % 1000));

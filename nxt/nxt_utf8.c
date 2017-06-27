@@ -35,7 +35,7 @@ nxt_utf8_encode(u_char *p, uint32_t u)
 
     if (u < 0x0800) {
         *p++ = (u_char) (( u >> 6)          | 0xC0);
-        *p++ = (u_char) (( u        & 0x3f) | 0x80);
+        *p++ = (u_char) (( u        & 0x3F) | 0x80);
         return p;
     }
 

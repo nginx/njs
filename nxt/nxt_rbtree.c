@@ -349,7 +349,6 @@ nxt_rbtree_delete_fixup(nxt_rbtree_t *tree, nxt_rbtree_node_t *node)
          * Prefetching parent nodes does not help here according
          * to microbenchmarks.
          */
-
         parent = node->parent;
 
         if (node == parent->left) {

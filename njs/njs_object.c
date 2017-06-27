@@ -915,8 +915,8 @@ njs_object_is_extensible(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    retval = args[1].data.u.object->extensible ? &njs_string_true :
-                                                 &njs_string_false;
+    retval = args[1].data.u.object->extensible ? &njs_string_true
+                                               : &njs_string_false;
 
     vm->retval = *retval;
 

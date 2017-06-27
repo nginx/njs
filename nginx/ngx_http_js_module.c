@@ -139,7 +139,7 @@ static ngx_command_t  ngx_http_js_commands[] = {
     { ngx_string("js_set"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE2,
       ngx_http_js_set,
-      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
       0,
       NULL },
 

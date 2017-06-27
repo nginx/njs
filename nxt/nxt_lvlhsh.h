@@ -93,7 +93,7 @@ typedef struct {
 
 
 typedef struct {
-    void                       *slot;
+    void                      *slot;
 } nxt_lvlhsh_t;
 
 
@@ -179,15 +179,7 @@ typedef struct {
         (lhe)->proto = _proto;                                                \
     } while (0)
 
-NXT_EXPORT void *nxt_lvlhsh_each(nxt_lvlhsh_t *lh, nxt_lvlhsh_each_t *le);
-
-
-NXT_EXPORT void *nxt_lvlhsh_alloc(void *data, size_t size, nxt_uint_t nalloc);
-NXT_EXPORT void nxt_lvlhsh_free(void *data, void *p, size_t size);
-
-NXT_EXPORT void *nxt_lvlhsh_pool_alloc(void *ctx, size_t size,
-    nxt_uint_t nalloc);
-NXT_EXPORT void nxt_lvlhsh_pool_free(void *ctx, void *p, size_t size);
+NXT_EXPORT void *nxt_lvlhsh_each(nxt_lvlhsh_t *lh, nxt_lvlhsh_each_t *lhe);
 
 
 #endif /* _NXT_LVLHSH_H_INCLUDED_ */

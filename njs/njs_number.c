@@ -89,7 +89,7 @@ njs_number_dec_parse(u_char **start, u_char *end)
     num = 0;
 
     while (p < end) {
-        /* Values below '0' become >= 208. */
+        /* Values less than '0' become >= 208. */
         c = *p - '0';
 
         if (nxt_slow_path(c > 9)) {
@@ -106,7 +106,7 @@ njs_number_dec_parse(u_char **start, u_char *end)
         scale = 1;
 
         for (p++; p < end; p++) {
-            /* Values below '0' become >= 208. */
+            /* Values less than '0' become >= 208. */
             c = *p - '0';
 
             if (nxt_slow_path(c > 9)) {
@@ -135,7 +135,7 @@ njs_number_dec_parse(u_char **start, u_char *end)
             }
         }
 
-        /* Values below '0' become >= 208. */
+        /* Values less than '0' become >= 208. */
         c = *e - '0';
 
         if (nxt_fast_path(c <= 9)) {
@@ -143,7 +143,7 @@ njs_number_dec_parse(u_char **start, u_char *end)
             p = e + 1;
 
             while (p < end) {
-                /* Values below '0' become >= 208. */
+                /* Values less than '0' become >= 208. */
                 c = *p - '0';
 
                 if (nxt_slow_path(c > 9)) {
@@ -180,11 +180,11 @@ njs_number_hex_parse(u_char **start, u_char *end)
     while (p < end) {
         c = (u_char) (*p | 0x20);
 
-        /* Values below '0' become >= 208. */
+        /* Values less than '0' become >= 208. */
         c = c - '0';
 
         if (c > 9) {
-            /* Values below 'a' become >= 159. */
+            /* Values less than 'a' become >= 159. */
             c = c - ('a' - '0');
 
             if (nxt_slow_path(c > 5)) {
@@ -800,7 +800,7 @@ njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         n = njs_number_radix_parse(&p, end, radix);
 
         if (n >= 0) {
-            num = (minus) ? -n : n;
+            num = minus ? -n : n;
         }
     }
 
