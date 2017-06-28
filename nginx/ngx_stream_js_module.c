@@ -940,7 +940,7 @@ ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_fd_t               fd;
     ngx_str_t             *value, file;
     nxt_int_t              rc;
-    nxt_str_t              text, ext, *export;
+    nxt_str_t              text, ext;
     nxt_lvlhsh_t           externals;
     ngx_file_info_t        fi;
     njs_vm_shared_t       *shared;
@@ -1037,7 +1037,7 @@ ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    rc = njs_vm_compile(jscf->vm, &start, end, &export);
+    rc = njs_vm_compile(jscf->vm, &start, end);
 
     if (rc != NJS_OK) {
         njs_vm_exception(jscf->vm, &text);

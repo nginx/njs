@@ -8118,7 +8118,7 @@ njs_unit_test(nxt_bool_t disassemble)
     u_char                *start;
     njs_vm_t              *vm, *nvm;
     nxt_int_t             ret;
-    nxt_str_t             s, *export;
+    nxt_str_t             s;
     nxt_uint_t            i;
     nxt_bool_t            success;
     nxt_lvlhsh_t          externals;
@@ -8164,8 +8164,7 @@ njs_unit_test(nxt_bool_t disassemble)
 
         start = njs_test[i].script.start;
 
-        ret = njs_vm_compile(vm, &start, start + njs_test[i].script.length,
-                             &export);
+        ret = njs_vm_compile(vm, &start, start + njs_test[i].script.length);
 
         if (ret == NXT_OK) {
             if (disassemble) {
@@ -8232,7 +8231,7 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
     njs_vm_t              *vm, *nvm;
     uint64_t              us;
     nxt_int_t             ret;
-    nxt_str_t             s, *export;
+    nxt_str_t             s;
     nxt_uint_t            i;
     nxt_bool_t            success;
     nxt_lvlhsh_t          externals;
@@ -8266,7 +8265,7 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
 
     start = script->start;
 
-    ret = njs_vm_compile(vm, &start, start + script->length, &export);
+    ret = njs_vm_compile(vm, &start, start + script->length);
     if (ret != NXT_OK) {
         return NXT_ERROR;
     }

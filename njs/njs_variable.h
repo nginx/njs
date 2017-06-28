@@ -42,8 +42,6 @@ njs_ret_t njs_variables_scope_reference(njs_vm_t *vm,
     njs_parser_scope_t *scope);
 njs_ret_t njs_name_copy(njs_vm_t *vm, nxt_str_t *dst, nxt_str_t *src);
 
-nxt_str_t *njs_vm_export_functions(njs_vm_t *vm);
-
 extern const nxt_lvlhsh_proto_t  njs_variables_hash_proto;
 
 

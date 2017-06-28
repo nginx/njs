@@ -184,7 +184,7 @@ njs_vm_destroy(njs_vm_t *vm)
 
 
 nxt_int_t
-njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end, nxt_str_t **export)
+njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 {
     nxt_int_t          ret;
     njs_lexer_t        *lexer;
@@ -236,11 +236,6 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end, nxt_str_t **export)
     vm->variables_hash = parser->scope->variables;
 
     vm->parser = NULL;
-
-    *export = njs_vm_export_functions(vm);
-    if (nxt_slow_path(*export == NULL)) {
-        return NJS_ERROR;
-    }
 
     return NJS_OK;
 }

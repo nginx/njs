@@ -83,8 +83,7 @@ NXT_EXPORT njs_vm_t *njs_vm_create(nxt_mem_cache_pool_t *mcp,
     njs_vm_shared_t **shared, nxt_lvlhsh_t *externals);
 NXT_EXPORT void njs_vm_destroy(njs_vm_t *vm);
 
-NXT_EXPORT nxt_int_t njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end,
-    nxt_str_t **export);
+NXT_EXPORT nxt_int_t njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end);
 NXT_EXPORT njs_vm_t *njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp,
     void **external);
 NXT_EXPORT nxt_int_t njs_vm_call(njs_vm_t *vm, njs_function_t *function,
