@@ -26,6 +26,9 @@
 #include <string.h>
 
 
+static nxt_int_t njs_vm_init(njs_vm_t *vm);
+
+
 static void *
 njs_alloc(void *mem, size_t size)
 {
@@ -244,11 +247,8 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 njs_vm_t *
 njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
 {
-    u_char                *values;
-    size_t                size, scope_size;
     njs_vm_t              *nvm;
     nxt_int_t             ret;
-    njs_frame_t           *frame;
     nxt_mem_cache_pool_t  *nmcp;
 
     nxt_thread_log_debug("CLONE:");
@@ -274,53 +274,16 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
         nvm->values_hash = vm->values_hash;
         nvm->externals_hash = vm->externals_hash;
 
-        nvm->retval = njs_value_void;
         nvm->current = vm->current;
         nvm->external = external;
 
         nvm->global_scope = vm->global_scope;
-        scope_size = vm->scope_size;
-        nvm->scope_size = scope_size;
-        scope_size += NJS_INDEX_GLOBAL_OFFSET;
+        nvm->scope_size = vm->scope_size;
 
-        size = NJS_GLOBAL_FRAME_SIZE + scope_size + NJS_FRAME_SPARE_SIZE;
-        size = nxt_align_size(size, NJS_FRAME_SPARE_SIZE);
-
-        frame = nxt_mem_cache_align(nmcp, sizeof(njs_value_t), size);
-        if (nxt_slow_path(frame == NULL)) {
-            goto fail;
-        }
-
-        memset(frame, 0, NJS_GLOBAL_FRAME_SIZE);
-
-        nvm->top_frame = &frame->native;
-        nvm->active_frame = frame;
-
-        frame->native.size = size;
-        frame->native.free_size = size - (NJS_GLOBAL_FRAME_SIZE + scope_size);
-
-        values = (u_char *) frame + NJS_GLOBAL_FRAME_SIZE;
-
-        frame->native.free = values + scope_size;
-
-        nvm->scopes[NJS_SCOPE_GLOBAL] = (njs_value_t *) values;
-        memcpy(values + NJS_INDEX_GLOBAL_OFFSET, vm->global_scope,
-               vm->scope_size);
-
-        ret = njs_regexp_init(nvm);
+        ret = njs_vm_init(nvm);
         if (nxt_slow_path(ret != NXT_OK)) {
             goto fail;
         }
-
-        ret = njs_builtin_objects_clone(nvm);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            goto fail;
-        }
-
-        nvm->trace.level = NXT_LEVEL_TRACE;
-        nvm->trace.size = 2048;
-        nvm->trace.handler = njs_parser_trace_handler;
-        nvm->trace.data = nvm;
 
         return nvm;
     }
@@ -332,6 +295,61 @@ fail:
     }
 
     return NULL;
+}
+
+
+static nxt_int_t
+njs_vm_init(njs_vm_t *vm)
+{
+    size_t       size, scope_size;
+    u_char       *values;
+    nxt_int_t    ret;
+    njs_frame_t  *frame;
+
+    scope_size = vm->scope_size + NJS_INDEX_GLOBAL_OFFSET;
+
+    size = NJS_GLOBAL_FRAME_SIZE + scope_size + NJS_FRAME_SPARE_SIZE;
+    size = nxt_align_size(size, NJS_FRAME_SPARE_SIZE);
+
+    frame = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t), size);
+    if (nxt_slow_path(frame == NULL)) {
+        return NXT_ERROR;
+    }
+
+    memset(frame, 0, NJS_GLOBAL_FRAME_SIZE);
+
+    vm->top_frame = &frame->native;
+    vm->active_frame = frame;
+
+    frame->native.size = size;
+    frame->native.free_size = size - (NJS_GLOBAL_FRAME_SIZE + scope_size);
+
+    values = (u_char *) frame + NJS_GLOBAL_FRAME_SIZE;
+
+    frame->native.free = values + scope_size;
+
+    vm->scopes[NJS_SCOPE_GLOBAL] = (njs_value_t *) values;
+    memcpy(values + NJS_INDEX_GLOBAL_OFFSET, vm->global_scope,
+           vm->scope_size);
+
+    ret = njs_regexp_init(vm);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NXT_ERROR;
+    }
+
+    ret = njs_builtin_objects_clone(vm);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NXT_ERROR;
+    }
+
+    vm->retval = njs_value_void;
+
+    vm->trace.level = NXT_LEVEL_TRACE;
+    vm->trace.size = 2048;
+    vm->trace.handler = njs_parser_trace_handler;
+    vm->trace.data = vm;
+
+    return NXT_OK;
 }
 
 
