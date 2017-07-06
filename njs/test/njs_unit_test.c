@@ -8121,8 +8121,8 @@ njs_unit_test(nxt_bool_t disassemble)
     nxt_str_t             s;
     nxt_uint_t            i;
     nxt_bool_t            success;
+    njs_vm_opt_t          options;
     nxt_lvlhsh_t          externals;
-    njs_vm_shared_t       *shared;
     njs_unit_test_req     r;
     nxt_mem_cache_pool_t  *mcp;
 
@@ -8132,8 +8132,6 @@ njs_unit_test(nxt_bool_t disassemble)
      */
     (void) putenv((char *) "TZ=Pacific/Chatham");
     tzset();
-
-    shared = NULL;
 
     mcp = nxt_mem_cache_pool_create(&njs_mem_cache_pool_proto, NULL, NULL,
                                     2 * nxt_pagesize(), 128, 512, 16);
@@ -8157,7 +8155,11 @@ njs_unit_test(nxt_bool_t disassemble)
                (int) njs_test[i].script.length, njs_test[i].script.start);
         fflush(stdout);
 
-        vm = njs_vm_create(mcp, &shared, &externals);
+        options.mcp = mcp;
+        options.shared = NULL;
+        options.externals = &externals;
+
+        vm = njs_vm_create(&options);
         if (vm == NULL) {
             return NXT_ERROR;
         }
@@ -8235,12 +8237,10 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
     nxt_uint_t            i;
     nxt_bool_t            success;
     nxt_lvlhsh_t          externals;
+    njs_vm_opt_t          options;
     struct rusage         usage;
-    njs_vm_shared_t       *shared;
     njs_unit_test_req     r;
     nxt_mem_cache_pool_t  *mcp;
-
-    shared = NULL;
 
     mcp = nxt_mem_cache_pool_create(&njs_mem_cache_pool_proto, NULL, NULL,
                                     2 * nxt_pagesize(), 128, 512, 16);
@@ -8258,7 +8258,11 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
         return NXT_ERROR;
     }
 
-    vm = njs_vm_create(mcp, &shared, &externals);
+    options.mcp = mcp;
+    options.shared = NULL;
+    options.externals = &externals;
+
+    vm = njs_vm_create(&options);
     if (vm == NULL) {
         return NXT_ERROR;
     }

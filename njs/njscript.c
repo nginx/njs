@@ -99,12 +99,14 @@ const nxt_mem_proto_t  njs_array_mem_proto = {
 
 
 njs_vm_t *
-njs_vm_create(nxt_mem_cache_pool_t *mcp, njs_vm_shared_t **shared,
-    nxt_lvlhsh_t *externals)
+njs_vm_create(njs_vm_opt_t *options)
 {
     njs_vm_t              *vm;
     nxt_int_t             ret;
+    nxt_mem_cache_pool_t  *mcp;
     njs_regexp_pattern_t  *pattern;
+
+    mcp = options->mcp;
 
     if (mcp == NULL) {
         mcp = nxt_mem_cache_pool_create(&njs_vm_mem_cache_pool_proto, NULL,
@@ -124,8 +126,8 @@ njs_vm_create(nxt_mem_cache_pool_t *mcp, njs_vm_shared_t **shared,
             return NULL;
         }
 
-        if (shared != NULL && *shared != NULL) {
-            vm->shared = *shared;
+        if (options->shared != NULL) {
+            vm->shared = options->shared;
 
         } else {
             vm->shared = nxt_mem_cache_zalloc(mcp, sizeof(njs_vm_shared_t));
@@ -133,9 +135,7 @@ njs_vm_create(nxt_mem_cache_pool_t *mcp, njs_vm_shared_t **shared,
                 return NULL;
             }
 
-            if (shared != NULL) {
-                *shared = vm->shared;
-            }
+            options->shared = vm->shared;
 
             nxt_lvlhsh_init(&vm->shared->keywords_hash);
 
@@ -162,8 +162,8 @@ njs_vm_create(nxt_mem_cache_pool_t *mcp, njs_vm_shared_t **shared,
 
         nxt_lvlhsh_init(&vm->values_hash);
 
-        if (externals != NULL) {
-            vm->externals_hash = *externals;
+        if (options->externals != NULL) {
+            vm->externals_hash = *options->externals;
         }
 
         vm->trace.level = NXT_LEVEL_TRACE;

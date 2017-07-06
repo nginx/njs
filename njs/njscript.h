@@ -65,6 +65,12 @@ struct njs_external_s {
     uintptr_t                       data;
 };
 
+typedef struct {
+    nxt_lvlhsh_t                    *externals;
+    njs_vm_shared_t                 *shared;
+    nxt_mem_cache_pool_t            *mcp;
+} njs_vm_opt_t;
+
 
 #define NJS_OK                      NXT_OK
 #define NJS_ERROR                   NXT_ERROR
@@ -79,8 +85,7 @@ NXT_EXPORT nxt_int_t njs_vm_external_add(nxt_lvlhsh_t *hash,
 NXT_EXPORT nxt_int_t njs_vm_external(njs_vm_t *vm, njs_opaque_value_t *object,
     nxt_str_t *property, njs_opaque_value_t *value);
 
-NXT_EXPORT njs_vm_t *njs_vm_create(nxt_mem_cache_pool_t *mcp,
-    njs_vm_shared_t **shared, nxt_lvlhsh_t *externals);
+NXT_EXPORT njs_vm_t *njs_vm_create(njs_vm_opt_t *options);
 NXT_EXPORT void njs_vm_destroy(njs_vm_t *vm);
 
 NXT_EXPORT nxt_int_t njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end);

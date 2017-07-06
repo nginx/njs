@@ -1231,9 +1231,9 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_str_t             *value, file;
     nxt_int_t              rc;
     nxt_str_t              text, ext;
+    njs_vm_opt_t           options;
     nxt_lvlhsh_t           externals;
     ngx_file_info_t        fi;
-    njs_vm_shared_t       *shared;
     ngx_pool_cleanup_t    *cln;
     nxt_mem_cache_pool_t  *mcp;
 
@@ -1309,8 +1309,6 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     cln->handler = ngx_http_js_cleanup_mem_cache_pool;
     cln->data = mcp;
 
-    shared = NULL;
-
     nxt_lvlhsh_init(&externals);
 
     if (njs_vm_external_add(&externals, mcp, 0, ngx_http_js_externals,
@@ -1321,7 +1319,11 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    jlcf->vm = njs_vm_create(mcp, &shared, &externals);
+    options.mcp = mcp;
+    options.shared = NULL;
+    options.externals = &externals;
+
+    jlcf->vm = njs_vm_create(&options);
     if (jlcf->vm == NULL) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "failed to create JS VM");
         return NGX_CONF_ERROR;
