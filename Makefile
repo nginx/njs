@@ -76,6 +76,7 @@ all:	test lib_test
 
 test:	\
 	$(NXT_BUILDDIR)/njs_unit_test \
+	$(NXT_BUILDDIR)/njs_benchmark \
 
 	$(NXT_BUILDDIR)/njs_unit_test d
 
@@ -393,6 +394,17 @@ $(NXT_BUILDDIR)/njs_unit_test: \
 	$(NXT_CC) -o $(NXT_BUILDDIR)/njs_unit_test $(NXT_CFLAGS) \
 		-I$(NXT_LIB) -Injs \
 		njs/test/njs_unit_test.c \
+		$(NXT_BUILDDIR)/libnjs.a \
+		-lm $(NXT_PCRE_LIB)
+
+$(NXT_BUILDDIR)/njs_benchmark: \
+	$(NXT_BUILDDIR)/libnxt.a \
+	$(NXT_BUILDDIR)/libnjs.a \
+	njs/test/njs_benchmark.c \
+
+	$(NXT_CC) -o $(NXT_BUILDDIR)/njs_benchmark $(NXT_CFLAGS) \
+		-I$(NXT_LIB) -Injs \
+		njs/test/njs_benchmark.c \
 		$(NXT_BUILDDIR)/libnjs.a \
 		-lm $(NXT_PCRE_LIB)
 
