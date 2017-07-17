@@ -1319,8 +1319,9 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
+    ngx_memzero(&options, sizeof(njs_vm_opt_t));
+
     options.mcp = mcp;
-    options.shared = NULL;
     options.externals = &externals;
 
     jlcf->vm = njs_vm_create(&options);

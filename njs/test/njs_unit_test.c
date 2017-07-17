@@ -8161,8 +8161,9 @@ njs_unit_test(nxt_bool_t disassemble)
                (int) njs_test[i].script.length, njs_test[i].script.start);
         fflush(stdout);
 
+        memset(&options, 0, sizeof(njs_vm_opt_t));
+
         options.mcp = mcp;
-        options.shared = NULL;
         options.externals = &externals;
 
         vm = njs_vm_create(&options);

@@ -88,9 +88,9 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
         return NXT_ERROR;
     }
 
+    memset(&options, 0, sizeof(njs_vm_opt_t));
+
     options.mcp = mcp;
-    options.shared = NULL;
-    options.externals = NULL;
 
     vm = njs_vm_create(&options);
     if (vm == NULL) {
