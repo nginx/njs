@@ -1,0 +1,25 @@
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+
+nxt_feature="editline library"
+nxt_feature_name=NXT_HAVE_EDITLINE
+nxt_feature_run=no
+nxt_feature_incs=
+nxt_feature_libs=-ledit
+nxt_feature_test="#include <editline/readline.h>
+
+                 int main(void) {
+                     add_history(NULL);
+                     return 0;
+                 }"
+. ${NXT_AUTO}feature
+
+if [ $nxt_found = yes ]; then
+    cat << END >> $NXT_MAKEFILE_CONF
+NXT_EDITLINE_LIB = -ledit
+END
+
+else
+    $nxt_echo " - building interactive shell is not possible"
+
+fi

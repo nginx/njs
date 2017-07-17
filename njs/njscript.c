@@ -65,7 +65,7 @@ njs_free(void *mem, void *p)
 }
 
 
-static const nxt_mem_proto_t  njs_vm_mem_cache_pool_proto = {
+const nxt_mem_proto_t  njs_vm_mem_cache_pool_proto = {
     njs_alloc,
     njs_zalloc,
     njs_align,
@@ -175,6 +175,14 @@ njs_vm_create(njs_vm_opt_t *options)
         vm->trace.data = vm;
 
         vm->trailer = options->trailer;
+
+        vm->accumulative = options->accumulative;
+        if (vm->accumulative) {
+            ret = njs_vm_init(vm);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return NULL;
+            }
+        }
     }
 
     return vm;
@@ -193,7 +201,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 {
     nxt_int_t          ret;
     njs_lexer_t        *lexer;
-    njs_parser_t       *parser;
+    njs_parser_t       *parser, *prev;
     njs_parser_node_t  *node;
 
     parser = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_parser_t));
@@ -201,6 +209,11 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         return NJS_ERROR;
     }
 
+    if (vm->parser != NULL && !vm->accumulative) {
+        return NJS_ERROR;
+    }
+
+    prev = vm->parser;
     vm->parser = parser;
 
     lexer = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_lexer_t));
@@ -217,21 +230,27 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     parser->code_size = sizeof(njs_vmcode_stop_t);
     parser->scope_offset = NJS_INDEX_GLOBAL_OFFSET;
 
-    node = njs_parser(vm, parser);
+    node = njs_parser(vm, parser, prev);
     if (nxt_slow_path(node == NULL)) {
-        return NJS_ERROR;
+        goto fail;
     }
 
     ret = njs_variables_scope_reference(vm, parser->scope);
     if (nxt_slow_path(ret != NXT_OK)) {
-        return NJS_ERROR;
+        goto fail;
     }
 
     *start = parser->lexer->start;
 
+    /*
+     * Reset the code array to prevent it from being disassembled
+     * again in the next iteration of the accumulative mode.
+     */
+    vm->code = NULL;
+
     ret = njs_generate_scope(vm, parser, node);
     if (nxt_slow_path(ret != NXT_OK)) {
-        return NJS_ERROR;
+        goto fail;
     }
 
     vm->current = parser->code_start;
@@ -240,9 +259,13 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     vm->scope_size = parser->scope_size;
     vm->variables_hash = parser->scope->variables;
 
-    vm->parser = NULL;
-
     return NJS_OK;
+
+fail:
+
+    vm->parser = prev;
+
+    return NXT_ERROR;
 }
 
 
@@ -254,6 +277,10 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
     nxt_mem_cache_pool_t  *nmcp;
 
     nxt_thread_log_debug("CLONE:");
+
+    if (vm->accumulative) {
+        return NULL;
+    }
 
     nmcp = mcp;
 

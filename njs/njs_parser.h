@@ -334,6 +334,13 @@ struct njs_parser_s {
 };
 
 
+typedef struct {
+    nxt_str_t                       name;
+    njs_token_t                     token;
+    double                          number;
+} njs_keyword_t;
+
+
 njs_token_t njs_lexer_token(njs_lexer_t *lexer);
 nxt_int_t njs_lexer_keywords_init(nxt_mem_cache_pool_t *mcp,
     nxt_lvlhsh_t *hash);
@@ -341,7 +348,8 @@ njs_token_t njs_lexer_keyword(njs_lexer_t *lexer);
 
 njs_extern_t *njs_parser_external(njs_vm_t *vm, njs_parser_t *parser);
 
-njs_parser_node_t *njs_parser(njs_vm_t *vm, njs_parser_t *parser);
+njs_parser_node_t *njs_parser(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_t *prev);
 njs_token_t njs_parser_arguments(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *parent);
 njs_token_t njs_parser_expression(njs_vm_t *vm, njs_parser_t *parser,
@@ -373,6 +381,9 @@ nxt_int_t njs_generate_scope(njs_vm_t *vm, njs_parser_t *parser,
     do {                                                                      \
         code = (type *) parser->code_end; parser->code_end += sizeof(type);   \
     } while (0)
+
+
+extern const nxt_lvlhsh_proto_t  njs_keyword_hash_proto;
 
 
 #endif /* _NJS_PARSER_H_INCLUDED_ */

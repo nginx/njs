@@ -528,6 +528,7 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
 
 
 const njs_object_init_t  njs_number_constructor_init = {
+    nxt_string("Number"),
     njs_number_constructor_properties,
     nxt_nitems(njs_number_constructor_properties),
 };
@@ -687,6 +688,7 @@ static const njs_object_prop_t  njs_number_prototype_properties[] =
 
 
 const njs_object_init_t  njs_number_prototype_init = {
+    nxt_string("Number"),
     njs_number_prototype_properties,
     nxt_nitems(njs_number_prototype_properties),
 };

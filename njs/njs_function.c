@@ -497,6 +497,7 @@ static const njs_object_prop_t  njs_function_constructor_properties[] =
 
 
 const njs_object_init_t  njs_function_constructor_init = {
+    nxt_string("Function"),
     njs_function_constructor_properties,
     nxt_nitems(njs_function_constructor_properties),
 };
@@ -692,6 +693,7 @@ static const njs_object_prop_t  njs_function_prototype_properties[] =
 
 
 const njs_object_init_t  njs_function_prototype_init = {
+    nxt_string("Function"),
     njs_function_prototype_properties,
     nxt_nitems(njs_function_prototype_properties),
 };
@@ -724,6 +726,7 @@ static const njs_object_prop_t  njs_eval_function_properties[] =
 
 
 const njs_object_init_t  njs_eval_function_init = {
+    nxt_string("Function"),
     njs_eval_function_properties,
     nxt_nitems(njs_eval_function_properties),
 };

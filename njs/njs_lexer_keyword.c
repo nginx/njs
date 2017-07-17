@@ -23,13 +23,6 @@
 #include <string.h>
 
 
-typedef struct {
-    nxt_str_t        name;
-    njs_token_t      token;
-    double           number;
-} njs_keyword_t;
-
-
 static const njs_keyword_t  njs_keywords[] = {
 
     /* Values. */
@@ -150,7 +143,7 @@ njs_keyword_hash_test(nxt_lvlhsh_query_t *lhq, void *data)
 }
 
 
-static const nxt_lvlhsh_proto_t  njs_keyword_hash_proto
+const nxt_lvlhsh_proto_t  njs_keyword_hash_proto
     nxt_aligned(64) =
 {
     NXT_LVLHSH_DEFAULT,

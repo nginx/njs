@@ -32,6 +32,7 @@ typedef struct {
 
 
 struct njs_object_init_s {
+    nxt_str_t                   name;
     const njs_object_prop_t     *properties;
     nxt_uint_t                  items;
 };

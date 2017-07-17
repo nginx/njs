@@ -14,6 +14,7 @@
 #include <nxt_lvlhsh.h>
 #include <nxt_random.h>
 #include <nxt_mem_cache_pool.h>
+#include <nxt_djb_hash.h>
 #include <njscript.h>
 #include <njs_vm.h>
 #include <njs_number.h>
@@ -95,15 +96,51 @@ static njs_token_t njs_parser_unexpected_token(njs_vm_t *vm,
 
 
 njs_parser_node_t *
-njs_parser(njs_vm_t *vm, njs_parser_t *parser)
+njs_parser(njs_vm_t *vm, njs_parser_t *parser, njs_parser_t *prev)
 {
-    njs_ret_t          ret;
-    njs_token_t        token;
-    njs_parser_node_t  *node;
+    njs_ret_t           ret;
+    njs_token_t         token;
+    nxt_lvlhsh_t        *variables, *prev_variables;
+    njs_variable_t      *var;
+    njs_parser_node_t   *node;
+    nxt_lvlhsh_each_t   lhe;
+    nxt_lvlhsh_query_t  lhq;
 
     ret = njs_parser_scope_begin(vm, parser, NJS_SCOPE_GLOBAL);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NULL;
+    }
+
+    if (prev != NULL) {
+        /*
+         * Copy the global scope variables from the previous
+         * iteration of the accumulative mode.
+         */
+        nxt_lvlhsh_each_init(&lhe, &njs_variables_hash_proto);
+
+        lhq.proto = &njs_variables_hash_proto;
+        lhq.replace = 0;
+        lhq.pool = vm->mem_cache_pool;
+
+        variables = &parser->scope->variables;
+        prev_variables = &prev->scope->variables;
+
+        for ( ;; ) {
+            var = nxt_lvlhsh_each(prev_variables, &lhe);
+
+            if (var == NULL) {
+                break;
+            }
+
+            lhq.value = var;
+            lhq.key = var->name;
+            lhq.key_hash = nxt_djb_hash(var->name.start, var->name.length);
+
+            ret = nxt_lvlhsh_insert(variables, &lhq);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return NULL;
+            }
+        }
     }
 
     token = njs_parser_token(parser);

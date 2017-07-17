@@ -373,6 +373,7 @@ static const njs_object_prop_t  njs_array_constructor_properties[] =
 
 
 const njs_object_init_t  njs_array_constructor_init = {
+    nxt_string("Array"),
     njs_array_constructor_properties,
     nxt_nitems(njs_array_constructor_properties),
 };
@@ -2234,6 +2235,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
 
 
 const njs_object_init_t  njs_array_prototype_init = {
+    nxt_string("Array"),
     njs_array_prototype_properties,
     nxt_nitems(njs_array_prototype_properties),
 };

@@ -55,3 +55,4 @@ END
 . ${NXT_AUTO}memalign
 . ${NXT_AUTO}getrandom
 . ${NXT_AUTO}pcre
+. ${NXT_AUTO}editline

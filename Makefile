@@ -74,11 +74,15 @@ $(NXT_BUILDDIR)/libnjs.a: \
 
 all:	test lib_test
 
+njs:   $(NXT_BUILDDIR)/njs
+
 test:	\
 	$(NXT_BUILDDIR)/njs_unit_test \
+	$(NXT_BUILDDIR)/njs_interactive_test \
 	$(NXT_BUILDDIR)/njs_benchmark \
 
 	$(NXT_BUILDDIR)/njs_unit_test d
+	$(NXT_BUILDDIR)/njs_interactive_test
 
 clean:
 	rm -rf $(NXT_BUILDDIR)
@@ -386,6 +390,17 @@ $(NXT_BUILDDIR)/njs_disassembler.o: \
 		-I$(NXT_LIB) -Injs \
 		njs/njs_disassembler.c
 
+$(NXT_BUILDDIR)/njs: \
+	$(NXT_BUILDDIR)/libnxt.a \
+	$(NXT_BUILDDIR)/libnjs.a \
+	njs/njs.c \
+
+	$(NXT_CC) -o $(NXT_BUILDDIR)/njs $(NXT_CFLAGS) \
+		-I$(NXT_LIB) -Injs \
+		njs/njs.c \
+		$(NXT_BUILDDIR)/libnjs.a \
+		-lm $(NXT_PCRE_LIB) $(NXT_EDITLINE_LIB)
+
 $(NXT_BUILDDIR)/njs_unit_test: \
 	$(NXT_BUILDDIR)/libnxt.a \
 	$(NXT_BUILDDIR)/libnjs.a \
@@ -394,6 +409,17 @@ $(NXT_BUILDDIR)/njs_unit_test: \
 	$(NXT_CC) -o $(NXT_BUILDDIR)/njs_unit_test $(NXT_CFLAGS) \
 		-I$(NXT_LIB) -Injs \
 		njs/test/njs_unit_test.c \
+		$(NXT_BUILDDIR)/libnjs.a \
+		-lm $(NXT_PCRE_LIB)
+
+$(NXT_BUILDDIR)/njs_interactive_test: \
+	$(NXT_BUILDDIR)/libnxt.a \
+	$(NXT_BUILDDIR)/libnjs.a \
+	njs/test/njs_interactive_test.c \
+
+	$(NXT_CC) -o $(NXT_BUILDDIR)/njs_interactive_test $(NXT_CFLAGS) \
+		-I$(NXT_LIB) -Injs \
+		njs/test/njs_interactive_test.c \
 		$(NXT_BUILDDIR)/libnjs.a \
 		-lm $(NXT_PCRE_LIB)
 

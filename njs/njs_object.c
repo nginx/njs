@@ -1153,6 +1153,7 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
 
 
 const njs_object_init_t  njs_object_constructor_init = {
+    nxt_string("Object"),
     njs_object_constructor_properties,
     nxt_nitems(njs_object_constructor_properties),
 };
@@ -1477,6 +1478,7 @@ static const njs_object_prop_t  njs_object_prototype_properties[] =
 
 
 const njs_object_init_t  njs_object_prototype_init = {
+    nxt_string("Object"),
     njs_object_prototype_properties,
     nxt_nitems(njs_object_prototype_properties),
 };

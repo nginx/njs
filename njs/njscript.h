@@ -70,7 +70,8 @@ typedef struct {
     njs_vm_shared_t                 *shared;
     nxt_mem_cache_pool_t            *mcp;
 
-    uint8_t                         trailer;   /* 1 bit */
+    uint8_t                         trailer;         /* 1 bit */
+    uint8_t                         accumulative;    /* 1 bit */
 } njs_vm_opt_t;
 
 
@@ -113,5 +114,9 @@ NXT_EXPORT void *njs_value_data(njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_string_copy(njs_vm_t *vm, nxt_str_t *retval,
     njs_value_t *value, uintptr_t *next);
 
+NXT_EXPORT const char **njs_vm_completions(njs_vm_t *vm);
+
+
+const nxt_mem_proto_t  njs_vm_mem_cache_pool_proto;
 
 #endif /* _NJSCRIPT_H_INCLUDED_ */

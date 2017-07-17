@@ -904,6 +904,7 @@ struct njs_vm_s {
     nxt_random_t             random;
 
     uint8_t                  trailer;  /* 1 bit */
+    uint8_t                  accumulative; /* 1 bit */
 };
 
 

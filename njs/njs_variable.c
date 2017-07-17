@@ -137,7 +137,7 @@ njs_variable_add(njs_vm_t *vm, njs_parser_t *parser, njs_variable_type_t type)
         return var;
     }
 
-    lhq.replace = 0;
+    lhq.replace = vm->accumulative;
     lhq.value = var;
     lhq.pool = vm->mem_cache_pool;
 
@@ -355,21 +355,43 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
         goto not_found;
     }
 
-    values = vs.scope->values[n];
+    if (vm->accumulative && vs.scope->type == NJS_SCOPE_GLOBAL) {
 
-    if (values == NULL) {
-        values = nxt_array_create(4, sizeof(njs_value_t), &njs_array_mem_proto,
-                                  vm->mem_cache_pool);
-        if (nxt_slow_path(values == NULL)) {
+        /*
+         * When non-clonable VM runs in accumulative mode all
+         * global variables should be allocated in absolute scope
+         * to share them among consecutive VM invocations.
+         */
+
+        value = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
+                                    sizeof(njs_value_t));
+        if (nxt_slow_path(value == NULL)) {
             return NULL;
         }
 
-        vs.scope->values[n] = values;
-    }
+        index = (njs_index_t) value;
 
-    value = nxt_array_add(values, &njs_array_mem_proto, vm->mem_cache_pool);
-    if (nxt_slow_path(value == NULL)) {
-        return NULL;
+    } else {
+        values = vs.scope->values[n];
+
+        if (values == NULL) {
+            values = nxt_array_create(4, sizeof(njs_value_t),
+                                      &njs_array_mem_proto, vm->mem_cache_pool);
+            if (nxt_slow_path(values == NULL)) {
+                return NULL;
+            }
+
+            vs.scope->values[n] = values;
+        }
+
+        value = nxt_array_add(values, &njs_array_mem_proto, vm->mem_cache_pool);
+        if (nxt_slow_path(value == NULL)) {
+            return NULL;
+        }
+
+        index = vs.scope->next_index[n];
+        vs.scope->next_index[n] += sizeof(njs_value_t);
+
     }
 
     if (njs_is_object(&var->value)) {
@@ -378,9 +400,6 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
     } else {
         *value = njs_value_void;
     }
-
-    index = vs.scope->next_index[n];
-    vs.scope->next_index[n] += sizeof(njs_value_t);
 
     var->index = index;
     node->index = index;
