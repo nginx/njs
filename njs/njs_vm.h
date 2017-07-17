@@ -902,6 +902,8 @@ struct njs_vm_s {
 
     nxt_trace_t              trace;
     nxt_random_t             random;
+
+    uint8_t                  trailer;  /* 1 bit */
 };
 
 

@@ -28,6 +28,12 @@ typedef struct {
 
 static njs_unit_test_t  njs_test[] =
 {
+    { nxt_string("}"),
+      nxt_string("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { nxt_string("1}"),
+      nxt_string("SyntaxError: Unexpected token \"}\" in 1") },
+
     /* Variable declarations. */
 
     { nxt_string("var x"),
@@ -1898,7 +1904,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = 3; if (true) if (false); else; a = 2; a"),
       nxt_string("2") },
 
-    { nxt_string("var a = [3], b; if (1==1||2==2) { b = '1'+'2'+a[0] }; b }"),
+    { nxt_string("var a = [3], b; if (1==1||2==2) { b = '1'+'2'+a[0] }; b"),
       nxt_string("123") },
 
     { nxt_string("(function(){ if(true) return 1 else return 0; })()"),
@@ -2122,7 +2128,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("10") },
 
     { nxt_string("var a = [1,2,3,4,5]; var s = 0, i;"
-                 "for (i in a) if (a[i] > 4) break; s += a[i] } s"),
+                 "for (i in a) if (a[i] > 4) break; s += a[i]; s"),
       nxt_string("5") },
 
     /**/

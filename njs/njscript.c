@@ -173,6 +173,8 @@ njs_vm_create(njs_vm_opt_t *options)
         vm->trace.size = 2048;
         vm->trace.handler = njs_parser_trace_handler;
         vm->trace.data = vm;
+
+        vm->trailer = options->trailer;
     }
 
     return vm;

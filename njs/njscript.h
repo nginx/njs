@@ -69,6 +69,8 @@ typedef struct {
     nxt_lvlhsh_t                    *externals;
     njs_vm_shared_t                 *shared;
     nxt_mem_cache_pool_t            *mcp;
+
+    uint8_t                         trailer;   /* 1 bit */
 } njs_vm_opt_t;
 
 

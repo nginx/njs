@@ -115,7 +115,7 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser)
             return NULL;
         }
 
-        if (token == NJS_TOKEN_CLOSE_BRACE) {
+        if (token == NJS_TOKEN_CLOSE_BRACE && vm->trailer) {
             parser->lexer->start--;
             break;
         }
@@ -332,9 +332,13 @@ njs_parser_statement(njs_vm_t *vm, njs_parser_t *parser,
         return njs_parser_block_statement(vm, parser);
 
     case NJS_TOKEN_CLOSE_BRACE:
-        parser->node = NULL;
-        nxt_thread_log_debug("BLOCK END");
-        return token;
+        if (vm->trailer) {
+            parser->node = NULL;
+            nxt_thread_log_debug("BLOCK END");
+            return token;
+        }
+
+        /* Fall through. */
 
     default:
         token = njs_parser_expression(vm, parser, token);
@@ -1042,6 +1046,10 @@ njs_parser_switch_statement(njs_vm_t *vm, njs_parser_t *parser)
             } while (token == NJS_TOKEN_CASE || token == NJS_TOKEN_DEFAULT);
 
             parser->node = NULL;
+
+            if (token == NJS_TOKEN_CLOSE_BRACE) {
+                break;
+            }
 
         } else if (branch == NULL) {
             /* The first switch statment is not "case/default" keyword. */
