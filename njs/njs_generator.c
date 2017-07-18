@@ -2540,16 +2540,35 @@ njs_generator_temp_index_get(njs_vm_t *vm, njs_parser_t *parser,
          scope = scope->parent;
     }
 
-    value = nxt_array_add(scope->values[0], &njs_array_mem_proto,
-                          vm->mem_cache_pool);
-    if (nxt_slow_path(value == NULL)) {
-        return NJS_INDEX_ERROR;
+    if (vm->accumulative && scope->type == NJS_SCOPE_GLOBAL) {
+
+        /*
+         * When non-clonable VM runs in accumulative mode
+         * all global variables are allocated in absolute scope
+         * to simplify global scope handling.
+         */
+
+        value = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
+                                    sizeof(njs_value_t));
+        if (nxt_slow_path(value == NULL)) {
+            return NJS_INDEX_ERROR;
+        }
+
+        index = (njs_index_t) value;
+
+    } else {
+
+        value = nxt_array_add(scope->values[0], &njs_array_mem_proto,
+                              vm->mem_cache_pool);
+        if (nxt_slow_path(value == NULL)) {
+            return NJS_INDEX_ERROR;
+        }
+
+        index = scope->next_index[0];
+        scope->next_index[0] += sizeof(njs_value_t);
     }
 
     *value = njs_value_invalid;
-
-    index = scope->next_index[0];
-    scope->next_index[0] += sizeof(njs_value_t);
 
     return index;
 }

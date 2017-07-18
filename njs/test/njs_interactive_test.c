@@ -63,6 +63,27 @@ static njs_interactive_test_t  njs_test[] =
                  "sq(function () { return 3 })" ENTER),
       nxt_string("9") },
 
+    /* Temporary indexes */
+
+    { nxt_string("var a = [1,2,3], i; for (i in a) {Object.seal({});}" ENTER),
+      nxt_string("undefined") },
+
+    { nxt_string("var i; for (i in [1,2,3]) {Object.seal({});}" ENTER),
+      nxt_string("undefined") },
+
+    { nxt_string("var a = 'A'; switch (a) {"
+                 "case 0: a += '0';"
+                 "case 1: a += '1';"
+                 "}; a" ENTER),
+      nxt_string("A") },
+
+    { nxt_string("var a = 0; try { a = 5 }"
+                 "catch (e) { a = 9 } finally { a++ } a" ENTER),
+      nxt_string("6") },
+
+    { nxt_string("/abc/i.test('ABC')" ENTER),
+      nxt_string("true") },
+
     /* Error handling */
 
     { nxt_string("var a = ;" ENTER

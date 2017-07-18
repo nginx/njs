@@ -2069,6 +2069,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a; for (a = 1; a; a--) switch (a) { case 0: continue }"),
       nxt_string("undefined") },
 
+    { nxt_string("var a = [1,2,3], i; for (i in a) {Object.seal({})}"),
+      nxt_string("undefined") },
+
+    { nxt_string("var i; for (i in [1,2,3]) {Object.seal({});}"),
+      nxt_string("undefined") },
+
     /* break. */
 
     { nxt_string("break"),
