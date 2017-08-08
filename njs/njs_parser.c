@@ -934,8 +934,6 @@ njs_parser_if_statement(njs_vm_t *vm, njs_parser_t *parser)
     njs_token_t        token;
     njs_parser_node_t  *node, *cond, *stmt;
 
-    parser->branch = 1;
-
     token = njs_parser_grouping_expression(vm, parser);
     if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
         return token;
@@ -994,8 +992,6 @@ njs_parser_switch_statement(njs_vm_t *vm, njs_parser_t *parser)
 {
     njs_token_t        token;
     njs_parser_node_t  *node, *swtch, *branch, *dflt, **last;
-
-    parser->branch = 1;
 
     node = NULL;
     branch = NULL;
@@ -1114,8 +1110,6 @@ njs_parser_while_statement(njs_vm_t *vm, njs_parser_t *parser)
     njs_token_t        token;
     njs_parser_node_t  *node, *cond;
 
-    parser->branch = 1;
-
     token = njs_parser_grouping_expression(vm, parser);
     if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
         return token;
@@ -1149,8 +1143,6 @@ njs_parser_do_while_statement(njs_vm_t *vm, njs_parser_t *parser)
 {
     njs_token_t        token;
     njs_parser_node_t  *node, *stmt;
-
-    parser->branch = 1;
 
     token = njs_parser_token(parser);
     if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
@@ -1194,8 +1186,6 @@ njs_parser_for_statement(njs_vm_t *vm, njs_parser_t *parser)
     nxt_str_t          name;
     njs_token_t        token;
     njs_parser_node_t  *node, *init, *condition, *update, *cond, *body;
-
-    parser->branch = 1;
 
     init = NULL;
     condition = NULL;
@@ -1579,8 +1569,6 @@ njs_parser_try_statement(njs_vm_t *vm, njs_parser_t *parser)
     njs_token_t        token;
     njs_variable_t     *var;
     njs_parser_node_t  *node, *try, *catch;
-
-    parser->branch = 1;
 
     token = njs_parser_try_block(vm, parser);
     if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {

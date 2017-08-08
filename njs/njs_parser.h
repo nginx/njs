@@ -314,8 +314,6 @@ struct njs_parser_s {
 
     nxt_array_t                     *index_cache;
 
-    uint8_t                         branch;       /* 1 bit */
-
     /* Parsing Function() or eval(). */
     uint8_t                         runtime;      /* 1 bit */
 

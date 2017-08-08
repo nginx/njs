@@ -518,8 +518,6 @@ njs_parser_conditional_expression(njs_vm_t *vm, njs_parser_t *parser,
             return token;
         }
 
-        parser->branch = 1;
-
         token = njs_parser_token(parser);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
