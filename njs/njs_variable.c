@@ -356,13 +356,11 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
     }
 
     if (vm->accumulative && vs.scope->type == NJS_SCOPE_GLOBAL) {
-
         /*
          * When non-clonable VM runs in accumulative mode all
          * global variables should be allocated in absolute scope
          * to share them among consecutive VM invocations.
          */
-
         value = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
                                     sizeof(njs_value_t));
         if (nxt_slow_path(value == NULL)) {
@@ -391,7 +389,6 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
 
         index = vs.scope->next_index[n];
         vs.scope->next_index[n] += sizeof(njs_value_t);
-
     }
 
     if (njs_is_object(&var->value)) {

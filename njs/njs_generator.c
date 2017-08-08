@@ -380,7 +380,7 @@ njs_generate_builtin_object(njs_vm_t *vm, njs_parser_t *parser,
 
     node->index = njs_generator_dest_index(vm, parser, node);
     if (nxt_slow_path(node->index == NJS_INDEX_ERROR)) {
-        return node->index;
+        return NXT_ERROR;
     }
 
     njs_generate_code(parser, njs_vmcode_object_copy_t, copy);
@@ -2541,13 +2541,11 @@ njs_generator_temp_index_get(njs_vm_t *vm, njs_parser_t *parser,
     }
 
     if (vm->accumulative && scope->type == NJS_SCOPE_GLOBAL) {
-
         /*
          * When non-clonable VM runs in accumulative mode
          * all global variables are allocated in absolute scope
          * to simplify global scope handling.
          */
-
         value = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
                                     sizeof(njs_value_t));
         if (nxt_slow_path(value == NULL)) {
@@ -2557,7 +2555,6 @@ njs_generator_temp_index_get(njs_vm_t *vm, njs_parser_t *parser,
         index = (njs_index_t) value;
 
     } else {
-
         value = nxt_array_add(scope->values[0], &njs_array_mem_proto,
                               vm->mem_cache_pool);
         if (nxt_slow_path(value == NULL)) {
