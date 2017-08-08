@@ -9,7 +9,9 @@
 #define NXT_UNICODE_BLOCK_SIZE       128
 
 
-static const uint32_t  nxt_unicode_upper_case_block_000[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_000[128]
+    nxt_aligned(64) =
+{
     0x00000, 0x00001, 0x00002, 0x00003, 0x00004, 0x00005, 0x00006, 0x00007,
     0x00008, 0x00009, 0x0000a, 0x0000b, 0x0000c, 0x0000d, 0x0000e, 0x0000f,
     0x00010, 0x00011, 0x00012, 0x00013, 0x00014, 0x00015, 0x00016, 0x00017,
@@ -29,7 +31,9 @@ static const uint32_t  nxt_unicode_upper_case_block_000[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_001[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_001[128]
+    nxt_aligned(64) =
+{
     0x00080, 0x00081, 0x00082, 0x00083, 0x00084, 0x00085, 0x00086, 0x00087,
     0x00088, 0x00089, 0x0008a, 0x0008b, 0x0008c, 0x0008d, 0x0008e, 0x0008f,
     0x00090, 0x00091, 0x00092, 0x00093, 0x00094, 0x00095, 0x00096, 0x00097,
@@ -49,7 +53,9 @@ static const uint32_t  nxt_unicode_upper_case_block_001[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_002[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_002[128]
+    nxt_aligned(64) =
+{
     0x00100, 0x00100, 0x00102, 0x00102, 0x00104, 0x00104, 0x00106, 0x00106,
     0x00108, 0x00108, 0x0010a, 0x0010a, 0x0010c, 0x0010c, 0x0010e, 0x0010e,
     0x00110, 0x00110, 0x00112, 0x00112, 0x00114, 0x00114, 0x00116, 0x00116,
@@ -69,7 +75,9 @@ static const uint32_t  nxt_unicode_upper_case_block_002[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_003[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_003[128]
+    nxt_aligned(64) =
+{
     0x00243, 0x00181, 0x00182, 0x00182, 0x00184, 0x00184, 0x00186, 0x00187,
     0x00187, 0x00189, 0x0018a, 0x0018b, 0x0018b, 0x0018d, 0x0018e, 0x0018f,
     0x00190, 0x00191, 0x00191, 0x00193, 0x00194, 0x001f6, 0x00196, 0x00197,
@@ -89,7 +97,9 @@ static const uint32_t  nxt_unicode_upper_case_block_003[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_004[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_004[128]
+    nxt_aligned(64) =
+{
     0x00200, 0x00200, 0x00202, 0x00202, 0x00204, 0x00204, 0x00206, 0x00206,
     0x00208, 0x00208, 0x0020a, 0x0020a, 0x0020c, 0x0020c, 0x0020e, 0x0020e,
     0x00210, 0x00210, 0x00212, 0x00212, 0x00214, 0x00214, 0x00216, 0x00216,
@@ -109,7 +119,9 @@ static const uint32_t  nxt_unicode_upper_case_block_004[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_005[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_005[128]
+    nxt_aligned(64) =
+{
     0x001a6, 0x00281, 0x00282, 0x001a9, 0x00284, 0x00285, 0x00286, 0x00287,
     0x001ae, 0x00244, 0x001b1, 0x001b2, 0x00245, 0x0028d, 0x0028e, 0x0028f,
     0x00290, 0x00291, 0x001b7, 0x00293, 0x00294, 0x00295, 0x00296, 0x00297,
@@ -129,7 +141,9 @@ static const uint32_t  nxt_unicode_upper_case_block_005[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_006[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_006[128]
+    nxt_aligned(64) =
+{
     0x00300, 0x00301, 0x00302, 0x00303, 0x00304, 0x00305, 0x00306, 0x00307,
     0x00308, 0x00309, 0x0030a, 0x0030b, 0x0030c, 0x0030d, 0x0030e, 0x0030f,
     0x00310, 0x00311, 0x00312, 0x00313, 0x00314, 0x00315, 0x00316, 0x00317,
@@ -149,7 +163,9 @@ static const uint32_t  nxt_unicode_upper_case_block_006[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_007[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_007[128]
+    nxt_aligned(64) =
+{
     0x00380, 0x00381, 0x00382, 0x00383, 0x00384, 0x00385, 0x00386, 0x00387,
     0x00388, 0x00389, 0x0038a, 0x0038b, 0x0038c, 0x0038d, 0x0038e, 0x0038f,
     0x00390, 0x00391, 0x00392, 0x00393, 0x00394, 0x00395, 0x00396, 0x00397,
@@ -169,7 +185,9 @@ static const uint32_t  nxt_unicode_upper_case_block_007[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_008[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_008[128]
+    nxt_aligned(64) =
+{
     0x00400, 0x00401, 0x00402, 0x00403, 0x00404, 0x00405, 0x00406, 0x00407,
     0x00408, 0x00409, 0x0040a, 0x0040b, 0x0040c, 0x0040d, 0x0040e, 0x0040f,
     0x00410, 0x00411, 0x00412, 0x00413, 0x00414, 0x00415, 0x00416, 0x00417,
@@ -189,7 +207,9 @@ static const uint32_t  nxt_unicode_upper_case_block_008[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_009[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_009[128]
+    nxt_aligned(64) =
+{
     0x00480, 0x00480, 0x00482, 0x00483, 0x00484, 0x00485, 0x00486, 0x00487,
     0x00488, 0x00489, 0x0048a, 0x0048a, 0x0048c, 0x0048c, 0x0048e, 0x0048e,
     0x00490, 0x00490, 0x00492, 0x00492, 0x00494, 0x00494, 0x00496, 0x00496,
@@ -209,7 +229,9 @@ static const uint32_t  nxt_unicode_upper_case_block_009[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_00a[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_00a[128]
+    nxt_aligned(64) =
+{
     0x00500, 0x00500, 0x00502, 0x00502, 0x00504, 0x00504, 0x00506, 0x00506,
     0x00508, 0x00508, 0x0050a, 0x0050a, 0x0050c, 0x0050c, 0x0050e, 0x0050e,
     0x00510, 0x00510, 0x00512, 0x00512, 0x00514, 0x00514, 0x00516, 0x00516,
@@ -229,7 +251,9 @@ static const uint32_t  nxt_unicode_upper_case_block_00a[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_00b[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_00b[128]
+    nxt_aligned(64) =
+{
     0x00550, 0x00551, 0x00552, 0x00553, 0x00554, 0x00555, 0x00556, 0x00587,
     0x00588, 0x00589, 0x0058a, 0x0058b, 0x0058c, 0x0058d, 0x0058e, 0x0058f,
     0x00590, 0x00591, 0x00592, 0x00593, 0x00594, 0x00595, 0x00596, 0x00597,
@@ -249,7 +273,9 @@ static const uint32_t  nxt_unicode_upper_case_block_00b[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_03a[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_03a[128]
+    nxt_aligned(64) =
+{
     0x01d00, 0x01d01, 0x01d02, 0x01d03, 0x01d04, 0x01d05, 0x01d06, 0x01d07,
     0x01d08, 0x01d09, 0x01d0a, 0x01d0b, 0x01d0c, 0x01d0d, 0x01d0e, 0x01d0f,
     0x01d10, 0x01d11, 0x01d12, 0x01d13, 0x01d14, 0x01d15, 0x01d16, 0x01d17,
@@ -269,7 +295,9 @@ static const uint32_t  nxt_unicode_upper_case_block_03a[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_03c[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_03c[128]
+    nxt_aligned(64) =
+{
     0x01e00, 0x01e00, 0x01e02, 0x01e02, 0x01e04, 0x01e04, 0x01e06, 0x01e06,
     0x01e08, 0x01e08, 0x01e0a, 0x01e0a, 0x01e0c, 0x01e0c, 0x01e0e, 0x01e0e,
     0x01e10, 0x01e10, 0x01e12, 0x01e12, 0x01e14, 0x01e14, 0x01e16, 0x01e16,
@@ -289,7 +317,9 @@ static const uint32_t  nxt_unicode_upper_case_block_03c[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_03d[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_03d[128]
+    nxt_aligned(64) =
+{
     0x01e80, 0x01e80, 0x01e82, 0x01e82, 0x01e84, 0x01e84, 0x01e86, 0x01e86,
     0x01e88, 0x01e88, 0x01e8a, 0x01e8a, 0x01e8c, 0x01e8c, 0x01e8e, 0x01e8e,
     0x01e90, 0x01e90, 0x01e92, 0x01e92, 0x01e94, 0x01e94, 0x01e96, 0x01e97,
@@ -309,7 +339,9 @@ static const uint32_t  nxt_unicode_upper_case_block_03d[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_03e[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_03e[128]
+    nxt_aligned(64) =
+{
     0x01f08, 0x01f09, 0x01f0a, 0x01f0b, 0x01f0c, 0x01f0d, 0x01f0e, 0x01f0f,
     0x01f08, 0x01f09, 0x01f0a, 0x01f0b, 0x01f0c, 0x01f0d, 0x01f0e, 0x01f0f,
     0x01f18, 0x01f19, 0x01f1a, 0x01f1b, 0x01f1c, 0x01f1d, 0x01f16, 0x01f17,
@@ -329,7 +361,9 @@ static const uint32_t  nxt_unicode_upper_case_block_03e[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_03f[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_03f[128]
+    nxt_aligned(64) =
+{
     0x01f88, 0x01f89, 0x01f8a, 0x01f8b, 0x01f8c, 0x01f8d, 0x01f8e, 0x01f8f,
     0x01f88, 0x01f89, 0x01f8a, 0x01f8b, 0x01f8c, 0x01f8d, 0x01f8e, 0x01f8f,
     0x01f98, 0x01f99, 0x01f9a, 0x01f9b, 0x01f9c, 0x01f9d, 0x01f9e, 0x01f9f,
@@ -349,7 +383,9 @@ static const uint32_t  nxt_unicode_upper_case_block_03f[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_042[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_042[128]
+    nxt_aligned(64) =
+{
     0x02100, 0x02101, 0x02102, 0x02103, 0x02104, 0x02105, 0x02106, 0x02107,
     0x02108, 0x02109, 0x0210a, 0x0210b, 0x0210c, 0x0210d, 0x0210e, 0x0210f,
     0x02110, 0x02111, 0x02112, 0x02113, 0x02114, 0x02115, 0x02116, 0x02117,
@@ -369,7 +405,9 @@ static const uint32_t  nxt_unicode_upper_case_block_042[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_043[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_043[128]
+    nxt_aligned(64) =
+{
     0x02180, 0x02181, 0x02182, 0x02183, 0x02183, 0x02185, 0x02186, 0x02187,
     0x02188, 0x02189, 0x0218a, 0x0218b, 0x0218c, 0x0218d, 0x0218e, 0x0218f,
     0x02190, 0x02191, 0x02192, 0x02193, 0x02194, 0x02195, 0x02196, 0x02197,
@@ -389,7 +427,9 @@ static const uint32_t  nxt_unicode_upper_case_block_043[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_049[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_049[128]
+    nxt_aligned(64) =
+{
     0x02480, 0x02481, 0x02482, 0x02483, 0x02484, 0x02485, 0x02486, 0x02487,
     0x02488, 0x02489, 0x0248a, 0x0248b, 0x0248c, 0x0248d, 0x0248e, 0x0248f,
     0x02490, 0x02491, 0x02492, 0x02493, 0x02494, 0x02495, 0x02496, 0x02497,
@@ -409,7 +449,9 @@ static const uint32_t  nxt_unicode_upper_case_block_049[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_058[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_058[128]
+    nxt_aligned(64) =
+{
     0x02c00, 0x02c01, 0x02c02, 0x02c03, 0x02c04, 0x02c05, 0x02c06, 0x02c07,
     0x02c08, 0x02c09, 0x02c0a, 0x02c0b, 0x02c0c, 0x02c0d, 0x02c0e, 0x02c0f,
     0x02c10, 0x02c11, 0x02c12, 0x02c13, 0x02c14, 0x02c15, 0x02c16, 0x02c17,
@@ -429,7 +471,9 @@ static const uint32_t  nxt_unicode_upper_case_block_058[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_059[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_059[128]
+    nxt_aligned(64) =
+{
     0x02c80, 0x02c80, 0x02c82, 0x02c82, 0x02c84, 0x02c84, 0x02c86, 0x02c86,
     0x02c88, 0x02c88, 0x02c8a, 0x02c8a, 0x02c8c, 0x02c8c, 0x02c8e, 0x02c8e,
     0x02c90, 0x02c90, 0x02c92, 0x02c92, 0x02c94, 0x02c94, 0x02c96, 0x02c96,
@@ -449,7 +493,9 @@ static const uint32_t  nxt_unicode_upper_case_block_059[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_05a[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_05a[128]
+    nxt_aligned(64) =
+{
     0x010a0, 0x010a1, 0x010a2, 0x010a3, 0x010a4, 0x010a5, 0x010a6, 0x010a7,
     0x010a8, 0x010a9, 0x010aa, 0x010ab, 0x010ac, 0x010ad, 0x010ae, 0x010af,
     0x010b0, 0x010b1, 0x010b2, 0x010b3, 0x010b4, 0x010b5, 0x010b6, 0x010b7,
@@ -469,7 +515,9 @@ static const uint32_t  nxt_unicode_upper_case_block_05a[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_14c[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_14c[128]
+    nxt_aligned(64) =
+{
     0x0a600, 0x0a601, 0x0a602, 0x0a603, 0x0a604, 0x0a605, 0x0a606, 0x0a607,
     0x0a608, 0x0a609, 0x0a60a, 0x0a60b, 0x0a60c, 0x0a60d, 0x0a60e, 0x0a60f,
     0x0a610, 0x0a611, 0x0a612, 0x0a613, 0x0a614, 0x0a615, 0x0a616, 0x0a617,
@@ -489,7 +537,9 @@ static const uint32_t  nxt_unicode_upper_case_block_14c[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_14d[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_14d[128]
+    nxt_aligned(64) =
+{
     0x0a680, 0x0a680, 0x0a682, 0x0a682, 0x0a684, 0x0a684, 0x0a686, 0x0a686,
     0x0a688, 0x0a688, 0x0a68a, 0x0a68a, 0x0a68c, 0x0a68c, 0x0a68e, 0x0a68e,
     0x0a690, 0x0a690, 0x0a692, 0x0a692, 0x0a694, 0x0a694, 0x0a696, 0x0a696,
@@ -509,7 +559,9 @@ static const uint32_t  nxt_unicode_upper_case_block_14d[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_14e[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_14e[128]
+    nxt_aligned(64) =
+{
     0x0a700, 0x0a701, 0x0a702, 0x0a703, 0x0a704, 0x0a705, 0x0a706, 0x0a707,
     0x0a708, 0x0a709, 0x0a70a, 0x0a70b, 0x0a70c, 0x0a70d, 0x0a70e, 0x0a70f,
     0x0a710, 0x0a711, 0x0a712, 0x0a713, 0x0a714, 0x0a715, 0x0a716, 0x0a717,
@@ -529,7 +581,9 @@ static const uint32_t  nxt_unicode_upper_case_block_14e[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_14f[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_14f[128]
+    nxt_aligned(64) =
+{
     0x0a780, 0x0a780, 0x0a782, 0x0a782, 0x0a784, 0x0a784, 0x0a786, 0x0a786,
     0x0a788, 0x0a789, 0x0a78a, 0x0a78b, 0x0a78b, 0x0a78d, 0x0a78e, 0x0a78f,
     0x0a790, 0x0a790, 0x0a792, 0x0a792, 0x0a794, 0x0a795, 0x0a796, 0x0a797,
@@ -549,7 +603,9 @@ static const uint32_t  nxt_unicode_upper_case_block_14f[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_1fe[128]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_1fe[128]
+    nxt_aligned(64) =
+{
     0x0ff00, 0x0ff01, 0x0ff02, 0x0ff03, 0x0ff04, 0x0ff05, 0x0ff06, 0x0ff07,
     0x0ff08, 0x0ff09, 0x0ff0a, 0x0ff0b, 0x0ff0c, 0x0ff0d, 0x0ff0e, 0x0ff0f,
     0x0ff10, 0x0ff11, 0x0ff12, 0x0ff13, 0x0ff14, 0x0ff15, 0x0ff16, 0x0ff17,
@@ -569,7 +625,9 @@ static const uint32_t  nxt_unicode_upper_case_block_1fe[128]  nxt_aligned(64) = 
 };
 
 
-static const uint32_t  nxt_unicode_upper_case_block_208[80]  nxt_aligned(64) = {
+static const uint32_t  nxt_unicode_upper_case_block_208[80]
+    nxt_aligned(64) =
+{
     0x10400, 0x10401, 0x10402, 0x10403, 0x10404, 0x10405, 0x10406, 0x10407,
     0x10408, 0x10409, 0x1040a, 0x1040b, 0x1040c, 0x1040d, 0x1040e, 0x1040f,
     0x10410, 0x10411, 0x10412, 0x10413, 0x10414, 0x10415, 0x10416, 0x10417,
@@ -583,7 +641,9 @@ static const uint32_t  nxt_unicode_upper_case_block_208[80]  nxt_aligned(64) = {
 };
 
 
-static const uint32_t  *nxt_unicode_upper_case_blocks[]  nxt_aligned(64) = {
+static const uint32_t  *nxt_unicode_upper_case_blocks[]
+    nxt_aligned(64) =
+{
     nxt_unicode_upper_case_block_000,
     nxt_unicode_upper_case_block_001,
     nxt_unicode_upper_case_block_002,

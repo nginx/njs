@@ -56,7 +56,9 @@ for my $block (sort { $a <=> $b } keys %blocks) {
     my $block_size = ($block != $max_block) ? BLOCK_SIZE : $last_block_size;
 
     print "static const uint32_t  ";
-    printf("nxt_unicode_upper_case_block_%03x[%d]  nxt_aligned(64) = {",
+    printf("nxt_unicode_upper_case_block_%03x[%d]\n" .
+           "    nxt_aligned(64) =\n" .
+           "{",
            $block, $block_size);
 
     for my $c (0 .. $block_size - 1) {
@@ -77,7 +79,9 @@ for my $block (sort { $a <=> $b } keys %blocks) {
 }
 
 
-print "static const uint32_t  *nxt_unicode_upper_case_blocks[]  nxt_aligned(64) = {\n";
+print "static const uint32_t  *nxt_unicode_upper_case_blocks[]\n" .
+      "    nxt_aligned(64) =\n" .
+      "{\n";
 
 for my $block (0 .. $max_block) {
     if (exists($blocks{$block})) {
