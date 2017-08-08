@@ -173,7 +173,7 @@ njs_object_hash_test(nxt_lvlhsh_query_t *lhq, void *data)
 }
 
 
-njs_object_prop_t *
+nxt_noinline njs_object_prop_t *
 njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
     const njs_value_t *value, uint8_t attributes)
 {
