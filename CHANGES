@@ -1,4 +1,10 @@
 
+Changes with nJScript 0.1.12                                     08 Aug 2017
+
+    *) Feature: Interactive shell.
+
+    *) Bugfix: in Object.isSealed().
+
 Changes with nJScript 0.1.11                                     27 Jun 2017
 
     *) Feature: Object.keys(), Object.prototype.hasOwnProperty() methods.
