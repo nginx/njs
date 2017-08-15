@@ -263,8 +263,8 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
                 return NXT_ERROR;
             }
 
-            p = script.start;
-            end = p + size;
+            p = script.start + script.length;
+            end = script.start + size;
         }
 
         memcpy(p, buf, n);
