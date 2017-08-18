@@ -27,7 +27,7 @@
 #include <njs_variable.h>
 #include <njs_parser.h>
 
-#include <editline/readline.h>
+#include <readline.h>
 
 
 typedef enum {

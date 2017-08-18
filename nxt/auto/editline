@@ -1,12 +1,15 @@
 # Copyright (C) Dmitry Volyntsev
 # Copyright (C) NGINX, Inc.
 
+nxt_found=no
+
 nxt_feature="editline library"
 nxt_feature_name=NXT_HAVE_EDITLINE
 nxt_feature_run=no
-nxt_feature_incs=
-nxt_feature_libs=-ledit
-nxt_feature_test="#include <editline/readline.h>
+nxt_feature_incs="-I/usr/include/editline"
+nxt_feature_libs="-ledit"
+nxt_feature_test="#include <stdio.h>
+                  #include <readline.h>
 
                  int main(void) {
                      add_history(NULL);
@@ -14,9 +17,21 @@ nxt_feature_test="#include <editline/readline.h>
                  }"
 . ${NXT_AUTO}feature
 
+if [ $nxt_found = no ]; then
+
+    # FreeBSD port
+
+    nxt_feature="editline in /usr/include/edit"
+    nxt_feature_incs="-I/usr/include/edit/readline"
+
+    . auto/feature
+fi
+
 if [ $nxt_found = yes ]; then
     cat << END >> $NXT_MAKEFILE_CONF
-NXT_EDITLINE_LIB = -ledit
+
+NXT_EDITLINE_CFLAGS = $nxt_feature_incs
+NXT_EDITLINE_LIB = $nxt_feature_libs
 END
 
 else

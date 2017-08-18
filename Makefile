@@ -396,7 +396,7 @@ $(NXT_BUILDDIR)/njs: \
 	njs/njs.c \
 
 	$(NXT_CC) -o $(NXT_BUILDDIR)/njs $(NXT_CFLAGS) \
-		-I$(NXT_LIB) -Injs \
+		-I$(NXT_LIB) $(NXT_EDITLINE_CFLAGS) -Injs \
 		njs/njs.c \
 		$(NXT_BUILDDIR)/libnjs.a \
 		-lm $(NXT_PCRE_LIB) $(NXT_EDITLINE_LIB)
