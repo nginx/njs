@@ -74,6 +74,7 @@ lvlhsh_unit_test_add(nxt_lvlhsh_t *lh, const nxt_lvlhsh_proto_t *proto,
     case NXT_DECLINED:
         printf("lvlhsh unit test failed: key %08lX is already in hash\n",
                (long) key);
+        /* Fall through. */
 
     default:
         return NXT_ERROR;
