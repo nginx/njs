@@ -72,7 +72,14 @@ typedef struct {
 
     uint8_t                         trailer;         /* 1 bit */
     uint8_t                         accumulative;    /* 1 bit */
+    uint8_t                         backtrace;       /* 1 bit */
 } njs_vm_opt_t;
+
+
+typedef struct {
+    nxt_str_t                       name;
+    uint32_t                        line;
+} njs_backtrace_entry_t;
 
 
 #define NJS_OK                      NXT_OK
@@ -103,6 +110,7 @@ NXT_EXPORT njs_ret_t njs_vm_return_string(njs_vm_t *vm, u_char *start,
     size_t size);
 NXT_EXPORT nxt_int_t njs_vm_retval(njs_vm_t *vm, nxt_str_t *retval);
 NXT_EXPORT nxt_int_t njs_vm_exception(njs_vm_t *vm, nxt_str_t *retval);
+NXT_EXPORT nxt_array_t *njs_vm_backtrace(njs_vm_t *vm);
 
 NXT_EXPORT void njs_disassembler(njs_vm_t *vm);
 

@@ -123,6 +123,9 @@ static nxt_noinline nxt_int_t njs_generator_node_index_release(njs_vm_t *vm,
 static nxt_noinline nxt_int_t njs_generator_index_release(njs_vm_t *vm,
     njs_parser_t *parser, njs_index_t index);
 
+static nxt_int_t njs_generate_function_debug(njs_vm_t *vm, nxt_str_t *name,
+    njs_function_lambda_t *lambda, uint32_t line);
+
 
 static const nxt_str_t  no_label = { 0, NULL };
 
@@ -1609,6 +1612,13 @@ njs_generate_function(njs_vm_t *vm, njs_parser_t *parser,
         return ret;
     }
 
+    if (vm->debug != NULL) {
+        ret = njs_generate_function_debug(vm, NULL, lambda, node->token_line);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return ret;
+        }
+    }
+
     njs_generate_code(parser, njs_vmcode_function_t, function);
     function->code.operation = njs_vmcode_function;
     function->code.operands = NJS_VMCODE_1OPERAND;
@@ -1964,6 +1974,7 @@ static nxt_int_t
 njs_generate_function_declaration(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node)
 {
+    nxt_int_t              ret;
     njs_variable_t         *var;
     njs_function_lambda_t  *lambda;
 
@@ -1974,7 +1985,17 @@ njs_generate_function_declaration(njs_vm_t *vm, njs_parser_t *parser,
 
     lambda = var->value.data.u.function->u.lambda;
 
-    return njs_generate_function_scope(vm, lambda, node);
+    ret = njs_generate_function_scope(vm, lambda, node);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
+    if (vm->debug != NULL) {
+        ret = njs_generate_function_debug(vm, &var->name, lambda,
+                                          node->token_line);
+    }
+
+    return ret;
 }
 
 
@@ -2627,4 +2648,29 @@ njs_generator_index_release(njs_vm_t *vm, njs_parser_t *parser,
     }
 
     return NXT_ERROR;
+}
+
+
+static nxt_int_t
+njs_generate_function_debug(njs_vm_t *vm, nxt_str_t *name,
+    njs_function_lambda_t *lambda, uint32_t line)
+{
+    njs_function_debug_t  *debug;
+
+    debug = nxt_array_add(vm->debug, &njs_array_mem_proto, vm->mem_cache_pool);
+    if (nxt_slow_path(debug == NULL)) {
+        return NXT_ERROR;
+    }
+
+    if (name != NULL) {
+        debug->name = *name;
+
+    } else {
+        debug->name = no_label;
+    }
+
+    debug->lambda = lambda;
+    debug->line = line;
+
+    return NXT_OK;
 }

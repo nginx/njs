@@ -113,6 +113,8 @@ static njs_ret_t njs_object_value_to_string(njs_vm_t *vm, njs_value_t *value);
 static njs_ret_t njs_vmcode_value_to_string(njs_vm_t *vm, njs_value_t *invld1,
     njs_value_t *invld2);
 
+static njs_ret_t njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame);
+
 void njs_debug(njs_index_t index, njs_value_t *value);
 
 
@@ -264,7 +266,18 @@ start:
 
             if (catch != NULL) {
                 vm->current = catch;
+
+                if (vm->debug != NULL) {
+                    nxt_array_reset(vm->backtrace);
+                }
+
                 goto start;
+            }
+
+            if (vm->debug != NULL
+                && njs_vm_add_backtrace_entry(vm, frame) != NXT_OK)
+            {
+                return NXT_ERROR;
             }
 
             previous = frame->native.previous;
@@ -3430,6 +3443,70 @@ njs_vm_throw_exception(njs_vm_t *vm, const u_char *buf, uint32_t size)
 
         (void) njs_string_new(vm, value, buf, size, length);
     }
+}
+
+
+static njs_ret_t
+njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame)
+{
+    nxt_int_t              ret;
+    nxt_uint_t             i;
+    njs_function_t         *function;
+    njs_native_frame_t     *native_frame;
+    njs_function_debug_t   *debug_entry;
+    njs_function_lambda_t  *lambda;
+    njs_backtrace_entry_t  *be;
+
+    static const nxt_str_t  entry_main =        nxt_string("main");
+    static const nxt_str_t  entry_native =      nxt_string("native");
+    static const nxt_str_t  entry_unknown =     nxt_string("unknown");
+    static const nxt_str_t  entry_anonymous =   nxt_string("anonymous");
+
+    native_frame = &frame->native;
+    function = native_frame->function;
+
+    be = nxt_array_add(vm->backtrace, &njs_array_mem_proto, vm->mem_cache_pool);
+    if (nxt_slow_path(be == NULL)) {
+        return NXT_ERROR;
+    }
+
+    be->line = 0;
+
+    if (function == NULL) {
+        be->name = entry_main;
+        return NXT_OK;
+    }
+
+    if (function->native) {
+        ret = njs_builtin_match_native_function(vm, function, &be->name);
+        if (ret != NXT_OK) {
+            be->name = entry_native;
+        }
+
+        return NXT_OK;
+    }
+
+    lambda = function->u.lambda;
+    debug_entry = vm->debug->start;
+
+    for (i = 0; i < vm->debug->items; i++) {
+        if (lambda == debug_entry[i].lambda) {
+            if (debug_entry[i].name.length != 0) {
+                be->name = debug_entry[i].name;
+
+            } else {
+                be->name = entry_anonymous;
+            }
+
+            be->line = debug_entry[i].line;
+
+            return NXT_OK;
+        }
+    }
+
+    be->name = entry_unknown;
+
+    return NXT_OK;
 }
 
 

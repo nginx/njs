@@ -465,6 +465,7 @@ njs_parser_function_declaration(njs_vm_t *vm, njs_parser_t *parser)
     }
 
     node->token = NJS_TOKEN_FUNCTION;
+    node->token_line = parser->lexer->token_line;
 
     token = njs_parser_token(parser);
     if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
@@ -532,6 +533,7 @@ njs_parser_function_expression(njs_vm_t *vm, njs_parser_t *parser)
     }
 
     node->token = NJS_TOKEN_FUNCTION_EXPRESSION;
+    node->token_line = parser->lexer->token_line;
     node->scope = parser->scope;
     parser->node = node;
     parser->code_size += sizeof(njs_vmcode_function_t);

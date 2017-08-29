@@ -853,6 +853,13 @@ typedef struct {
 } njs_vm_trap_t;
 
 
+typedef struct {
+    uint32_t                  line;
+    nxt_str_t                 name;
+    njs_function_lambda_t     *lambda;
+} njs_function_debug_t;
+
+
 struct njs_vm_s {
     /* njs_vm_t must be aligned to njs_value_t due to scratch value. */
     njs_value_t              retval;
@@ -902,6 +909,9 @@ struct njs_vm_s {
 
     nxt_trace_t              trace;
     nxt_random_t             random;
+
+    nxt_array_t              *debug;
+    nxt_array_t              *backtrace;
 
     uint8_t                  trailer;  /* 1 bit */
     uint8_t                  accumulative; /* 1 bit */
@@ -1080,6 +1090,8 @@ void njs_vm_throw_exception(njs_vm_t *vm, const u_char *buf, uint32_t size);
 
 nxt_int_t njs_builtin_objects_create(njs_vm_t *vm);
 nxt_int_t njs_builtin_objects_clone(njs_vm_t *vm);
+nxt_int_t njs_builtin_match_native_function(njs_vm_t *vm,
+    njs_function_t *function, nxt_str_t *name);
 
 
 void *njs_lvlhsh_alloc(void *data, size_t size, nxt_uint_t nalloc);

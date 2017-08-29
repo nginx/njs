@@ -106,6 +106,7 @@ njs_vm_create(njs_vm_opt_t *options)
 {
     njs_vm_t              *vm;
     nxt_int_t             ret;
+    nxt_array_t           *debug;
     nxt_mem_cache_pool_t  *mcp;
     njs_regexp_pattern_t  *pattern;
 
@@ -175,6 +176,17 @@ njs_vm_create(njs_vm_opt_t *options)
         vm->trace.data = vm;
 
         vm->trailer = options->trailer;
+
+        if (options->backtrace) {
+            debug = nxt_array_create(4, sizeof(njs_function_debug_t),
+                                     &njs_array_mem_proto,
+                                     vm->mem_cache_pool);
+            if (nxt_slow_path(debug == NULL)) {
+                return NULL;
+            }
+
+            vm->debug = debug;
+        }
 
         vm->accumulative = options->accumulative;
         if (vm->accumulative) {
@@ -247,6 +259,10 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
      * again in the next iteration of the accumulative mode.
      */
     vm->code = NULL;
+
+    if (vm->backtrace != NULL) {
+        nxt_array_reset(vm->backtrace);
+    }
 
     ret = njs_generate_scope(vm, parser, node);
     if (nxt_slow_path(ret != NXT_OK)) {
@@ -334,6 +350,7 @@ njs_vm_init(njs_vm_t *vm)
     u_char       *values;
     nxt_int_t    ret;
     njs_frame_t  *frame;
+    nxt_array_t  *backtrace;
 
     scope_size = vm->scope_size + NJS_INDEX_GLOBAL_OFFSET;
 
@@ -369,6 +386,16 @@ njs_vm_init(njs_vm_t *vm)
     ret = njs_builtin_objects_clone(vm);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NXT_ERROR;
+    }
+
+    if (vm->debug != NULL) {
+        backtrace = nxt_array_create(4, sizeof(njs_backtrace_entry_t),
+                                     &njs_array_mem_proto, vm->mem_cache_pool);
+        if (nxt_slow_path(backtrace == NULL)) {
+            return NXT_ERROR;
+        }
+
+        vm->backtrace = backtrace;
     }
 
     vm->retval = njs_value_void;
@@ -492,4 +519,15 @@ nxt_int_t
 njs_vm_exception(njs_vm_t *vm, nxt_str_t *retval)
 {
     return njs_value_to_ext_string(vm, retval, vm->exception);
+}
+
+
+nxt_array_t *
+njs_vm_backtrace(njs_vm_t *vm)
+{
+    if (!nxt_array_is_empty(vm->backtrace)) {
+        return vm->backtrace;
+    }
+
+    return NULL;
 }

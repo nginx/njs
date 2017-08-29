@@ -514,3 +514,136 @@ njs_builtin_completions(njs_vm_t *vm, size_t *size, const char **completions)
 
     return NXT_OK;
 }
+
+
+nxt_int_t
+njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
+    nxt_str_t *name)
+{
+    char                    *buf;
+    size_t                  len;
+    nxt_str_t               string;
+    nxt_uint_t              i;
+    njs_object_t            *objects;
+    njs_function_t          *constructors;
+    njs_object_prop_t       *prop;
+    nxt_lvlhsh_each_t       lhe;
+    njs_object_prototype_t  *prototypes;
+
+    objects = vm->shared->objects;
+
+    for (i = NJS_OBJECT_THIS; i < NJS_OBJECT_MAX; i++) {
+        if (object_init[i] == NULL) {
+            continue;
+        }
+
+        nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+
+        for ( ;; ) {
+            prop = nxt_lvlhsh_each(&objects[i].shared_hash, &lhe);
+
+            if (prop == NULL) {
+                break;
+            }
+
+            if (!njs_is_function(&prop->value)) {
+                continue;
+            }
+
+            if (function == prop->value.data.u.function) {
+                njs_string_get(&prop->name, &string);
+                len = object_init[i]->name.length + string.length
+                      + sizeof(".");
+
+                buf = nxt_mem_cache_zalloc(vm->mem_cache_pool, len);
+                if (buf == NULL) {
+                    return NXT_ERROR;
+                }
+
+                snprintf(buf, len, "%s.%s", object_init[i]->name.start,
+                         string.start);
+
+                name->length = len;
+                name->start = (u_char *) buf;
+
+                return NXT_OK;
+            }
+        }
+    }
+
+    prototypes = vm->shared->prototypes;
+
+    for (i = NJS_PROTOTYPE_OBJECT; i < NJS_PROTOTYPE_MAX; i++) {
+        nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+
+        for ( ;; ) {
+            prop = nxt_lvlhsh_each(&prototypes[i].object.shared_hash, &lhe);
+
+            if (prop == NULL) {
+                break;
+            }
+
+            if (!njs_is_function(&prop->value)) {
+                continue;
+            }
+
+            if (function == prop->value.data.u.function) {
+                njs_string_get(&prop->name, &string);
+                len = prototype_init[i]->name.length + string.length
+                      + sizeof(".prototype.");
+
+                buf = nxt_mem_cache_zalloc(vm->mem_cache_pool, len);
+                if (buf == NULL) {
+                    return NXT_ERROR;
+                }
+
+                snprintf(buf, len, "%s.prototype.%s",
+                         prototype_init[i]->name.start, string.start);
+
+                name->length = len;
+                name->start = (u_char *) buf;
+
+                return NXT_OK;
+            }
+        }
+    }
+
+    constructors = vm->shared->constructors;
+
+    for (i = NJS_CONSTRUCTOR_OBJECT; i < NJS_CONSTRUCTOR_MAX; i++) {
+        nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+
+        for ( ;; ) {
+            prop = nxt_lvlhsh_each(&constructors[i].object.shared_hash, &lhe);
+
+            if (prop == NULL) {
+                break;
+            }
+
+            if (!njs_is_function(&prop->value)) {
+                continue;
+            }
+
+            if (function == prop->value.data.u.function) {
+                njs_string_get(&prop->name, &string);
+                len = constructor_init[i]->name.length + string.length
+                      + sizeof(".");
+
+                buf = nxt_mem_cache_zalloc(vm->mem_cache_pool, len);
+                if (buf == NULL) {
+                    return NXT_ERROR;
+                }
+
+                snprintf(buf, len, "%s.%s", constructor_init[i]->name.start,
+                         string.start);
+
+                name->length = len;
+                name->start = (u_char *) buf;
+
+                return NXT_OK;
+            }
+        }
+    }
+
+    return NXT_DECLINED;
+}
