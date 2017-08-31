@@ -32,6 +32,8 @@ if [ $nxt_found = yes ]; then
 
 NXT_EDITLINE_CFLAGS = $nxt_feature_incs
 NXT_EDITLINE_LIB = $nxt_feature_libs
+
+default:	njs
 END
 
 else
