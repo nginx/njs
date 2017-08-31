@@ -1322,7 +1322,7 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_memzero(&options, sizeof(njs_vm_opt_t));
 
     options.mcp = mcp;
-    options.externals = &externals;
+    options.externals_hash = &externals;
 
     jlcf->vm = njs_vm_create(&options);
     if (jlcf->vm == NULL) {

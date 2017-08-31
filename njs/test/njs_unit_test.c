@@ -8170,7 +8170,7 @@ njs_unit_test(nxt_bool_t disassemble)
         memset(&options, 0, sizeof(njs_vm_opt_t));
 
         options.mcp = mcp;
-        options.externals = &externals;
+        options.externals_hash = &externals;
 
         vm = njs_vm_create(&options);
         if (vm == NULL) {

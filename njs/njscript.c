@@ -162,12 +162,16 @@ njs_vm_create(njs_vm_opt_t *options)
             if (nxt_slow_path(ret != NXT_OK)) {
                 return NULL;
             }
+
+            if (options->externals_hash != NULL) {
+                vm->external = options->external;
+            }
         }
 
         nxt_lvlhsh_init(&vm->values_hash);
 
-        if (options->externals != NULL) {
-            vm->externals_hash = *options->externals;
+        if (options->externals_hash != NULL) {
+            vm->externals_hash = *options->externals_hash;
         }
 
         vm->trace.level = NXT_LEVEL_TRACE;

@@ -66,7 +66,8 @@ struct njs_external_s {
 };
 
 typedef struct {
-    nxt_lvlhsh_t                    *externals;
+    void                            **external;
+    nxt_lvlhsh_t                    *externals_hash;
     njs_vm_shared_t                 *shared;
     nxt_mem_cache_pool_t            *mcp;
 

@@ -22,6 +22,7 @@
 #include <njs_array.h>
 #include <njs_function.h>
 #include <njs_variable.h>
+#include <njs_extern.h>
 #include <njs_parser.h>
 #include <njs_regexp.h>
 #include <njs_date.h>
@@ -40,13 +41,13 @@ static nxt_int_t njs_builtin_completions(njs_vm_t *vm, size_t *size,
     const char **completions);
 
 
-static const njs_object_init_t    *object_init[] = {
+const njs_object_init_t    *njs_object_init[] = {
     NULL,                         /* global this        */
     &njs_math_object_init,        /* Math               */
 };
 
 
-static const njs_object_init_t  *prototype_init[] = {
+const njs_object_init_t  *njs_prototype_init[] = {
     &njs_object_prototype_init,
     &njs_array_prototype_init,
     &njs_boolean_prototype_init,
@@ -58,7 +59,7 @@ static const njs_object_init_t  *prototype_init[] = {
 };
 
 
-static const njs_object_init_t    *constructor_init[] = {
+const njs_object_init_t    *njs_constructor_init[] = {
     &njs_object_constructor_init,
     &njs_array_constructor_init,
     &njs_boolean_constructor_init,
@@ -189,10 +190,10 @@ njs_builtin_objects_create(njs_vm_t *vm)
     objects = vm->shared->objects;
 
     for (i = NJS_OBJECT_THIS; i < NJS_OBJECT_MAX; i++) {
-        if (object_init[i] != NULL) {
+        if (njs_object_init[i] != NULL) {
             ret = njs_object_hash_create(vm, &objects[i].shared_hash,
-                                         object_init[i]->properties,
-                                         object_init[i]->items);
+                                         njs_object_init[i]->properties,
+                                         njs_object_init[i]->items);
             if (nxt_slow_path(ret != NXT_OK)) {
                 return NXT_ERROR;
             }
@@ -231,8 +232,8 @@ njs_builtin_objects_create(njs_vm_t *vm)
         prototypes[i] = prototype_values[i];
 
         ret = njs_object_hash_create(vm, &prototypes[i].object.shared_hash,
-                                     prototype_init[i]->properties,
-                                     prototype_init[i]->items);
+                                     njs_prototype_init[i]->properties,
+                                     njs_prototype_init[i]->items);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NXT_ERROR;
         }
@@ -257,8 +258,8 @@ njs_builtin_objects_create(njs_vm_t *vm)
         constructors[i].args_types[4] = native_constructors[i].args_types[4];
 
         ret = njs_object_hash_create(vm, &constructors[i].object.shared_hash,
-                                     constructor_init[i]->properties,
-                                     constructor_init[i]->items);
+                                     njs_constructor_init[i]->properties,
+                                     njs_constructor_init[i]->items);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NXT_ERROR;
         }
@@ -375,11 +376,12 @@ njs_builtin_completions(njs_vm_t *vm, size_t *size, const char **completions)
     size_t                  n, len;
     nxt_str_t               string;
     nxt_uint_t              i, k;
+    njs_extern_t            *ext_object, *ext_prop;
     njs_object_t            *objects;
     njs_keyword_t           *keyword;
     njs_function_t          *constructors;
     njs_object_prop_t       *prop;
-    nxt_lvlhsh_each_t       lhe;
+    nxt_lvlhsh_each_t       lhe, lhe_prop;
     njs_object_prototype_t  *prototypes;
 
     n = 0;
@@ -404,7 +406,7 @@ njs_builtin_completions(njs_vm_t *vm, size_t *size, const char **completions)
     objects = vm->shared->objects;
 
     for (i = NJS_OBJECT_THIS; i < NJS_OBJECT_MAX; i++) {
-        if (object_init[i] == NULL) {
+        if (njs_object_init[i] == NULL) {
             continue;
         }
 
@@ -419,14 +421,14 @@ njs_builtin_completions(njs_vm_t *vm, size_t *size, const char **completions)
 
             if (completions != NULL) {
                 njs_string_get(&prop->name, &string);
-                len = object_init[i]->name.length + string.length + 2;
+                len = njs_object_init[i]->name.length + string.length + 2;
 
                 compl = nxt_mem_cache_zalloc(vm->mem_cache_pool, len);
                 if (compl == NULL) {
                     return NXT_ERROR;
                 }
 
-                snprintf(compl, len, "%s.%s", object_init[i]->name.start,
+                snprintf(compl, len, "%s.%s", njs_object_init[i]->name.start,
                          string.start);
 
                 completions[n++] = (char *) compl;
@@ -490,15 +492,68 @@ njs_builtin_completions(njs_vm_t *vm, size_t *size, const char **completions)
 
             if (completions != NULL) {
                 njs_string_get(&prop->name, &string);
-                len = constructor_init[i]->name.length + string.length + 2;
+                len = njs_constructor_init[i]->name.length + string.length + 2;
 
                 compl = nxt_mem_cache_zalloc(vm->mem_cache_pool, len);
                 if (compl == NULL) {
                     return NXT_ERROR;
                 }
 
-                snprintf(compl, len, "%s.%s", constructor_init[i]->name.start,
-                         string.start);
+                snprintf(compl, len, "%s.%s",
+                         njs_constructor_init[i]->name.start, string.start);
+
+                completions[n++] = (char *) compl;
+
+            } else {
+                n++;
+            }
+        }
+    }
+
+    nxt_lvlhsh_each_init(&lhe, &njs_extern_hash_proto);
+
+    for ( ;; ) {
+        ext_object = nxt_lvlhsh_each(&vm->externals_hash, &lhe);
+
+        if (ext_object == NULL) {
+            break;
+        }
+
+        nxt_lvlhsh_each_init(&lhe_prop, &njs_extern_hash_proto);
+
+        if (completions != NULL) {
+            len = ext_object->name.length + 1;
+            compl = nxt_mem_cache_zalloc(vm->mem_cache_pool, len);
+            if (compl == NULL) {
+                return NXT_ERROR;
+            }
+
+            snprintf(compl, len, "%.*s",
+                     (int) ext_object->name.length, ext_object->name.start);
+
+            completions[n++] = (char *) compl;
+
+        } else {
+            n++;
+        }
+
+        for ( ;; ) {
+            ext_prop = nxt_lvlhsh_each(&ext_object->hash, &lhe_prop);
+
+            if (ext_prop == NULL) {
+                break;
+            }
+
+            if (completions != NULL) {
+                len = ext_object->name.length + ext_prop->name.length + 2;
+                compl = nxt_mem_cache_zalloc(vm->mem_cache_pool, len);
+                if (compl == NULL) {
+                    return NXT_ERROR;
+                }
+
+                snprintf(compl, len, "%.*s.%.*s",
+                         (int) ext_object->name.length, ext_object->name.start,
+                         (int) ext_prop->name.length, ext_prop->name.start);
 
                 completions[n++] = (char *) compl;
 
@@ -533,7 +588,7 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
     objects = vm->shared->objects;
 
     for (i = NJS_OBJECT_THIS; i < NJS_OBJECT_MAX; i++) {
-        if (object_init[i] == NULL) {
+        if (njs_object_init[i] == NULL) {
             continue;
         }
 
@@ -552,7 +607,7 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
 
             if (function == prop->value.data.u.function) {
                 njs_string_get(&prop->name, &string);
-                len = object_init[i]->name.length + string.length
+                len = njs_object_init[i]->name.length + string.length
                       + sizeof(".");
 
                 buf = nxt_mem_cache_zalloc(vm->mem_cache_pool, len);
@@ -560,7 +615,7 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
                     return NXT_ERROR;
                 }
 
-                snprintf(buf, len, "%s.%s", object_init[i]->name.start,
+                snprintf(buf, len, "%s.%s", njs_object_init[i]->name.start,
                          string.start);
 
                 name->length = len;
@@ -589,7 +644,7 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
 
             if (function == prop->value.data.u.function) {
                 njs_string_get(&prop->name, &string);
-                len = prototype_init[i]->name.length + string.length
+                len = njs_prototype_init[i]->name.length + string.length
                       + sizeof(".prototype.");
 
                 buf = nxt_mem_cache_zalloc(vm->mem_cache_pool, len);
@@ -598,7 +653,7 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
                 }
 
                 snprintf(buf, len, "%s.prototype.%s",
-                         prototype_init[i]->name.start, string.start);
+                         njs_prototype_init[i]->name.start, string.start);
 
                 name->length = len;
                 name->start = (u_char *) buf;
@@ -626,7 +681,7 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
 
             if (function == prop->value.data.u.function) {
                 njs_string_get(&prop->name, &string);
-                len = constructor_init[i]->name.length + string.length
+                len = njs_constructor_init[i]->name.length + string.length
                       + sizeof(".");
 
                 buf = nxt_mem_cache_zalloc(vm->mem_cache_pool, len);
@@ -634,7 +689,7 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
                     return NXT_ERROR;
                 }
 
-                snprintf(buf, len, "%s.%s", constructor_init[i]->name.start,
+                snprintf(buf, len, "%s.%s", njs_constructor_init[i]->name.start,
                          string.start);
 
                 name->length = len;

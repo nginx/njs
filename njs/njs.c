@@ -21,9 +21,12 @@
 #include <nxt_array.h>
 #include <nxt_lvlhsh.h>
 #include <nxt_random.h>
+#include <nxt_djb_hash.h>
 #include <nxt_mem_cache_pool.h>
 #include <njscript.h>
 #include <njs_vm.h>
+#include <njs_object.h>
+#include <njs_builtin.h>
 #include <njs_variable.h>
 #include <njs_parser.h>
 
@@ -54,6 +57,7 @@ typedef struct {
 
 
 static nxt_int_t njs_get_options(njs_opts_t *opts, int argc, char **argv);
+static nxt_int_t njs_externals_init(njs_opts_t *opts, njs_vm_opt_t *vm_options);
 static nxt_int_t njs_interactive_shell(njs_opts_t *opts,
     njs_vm_opt_t *vm_options);
 static nxt_int_t njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options);
@@ -64,7 +68,56 @@ static nxt_int_t njs_editline_init(njs_vm_t *vm);
 static char **njs_completion_handler(const char *text, int start, int end);
 static char *njs_completion_generator(const char *text, int state);
 
+static njs_ret_t njs_ext_console_log(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused);
+static njs_ret_t njs_ext_console_help(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused);
 
+
+static njs_external_t  njs_ext_console[] = {
+
+    { nxt_string("log"),
+      NJS_EXTERN_METHOD,
+      NULL,
+      0,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      njs_ext_console_log,
+      0 },
+
+    { nxt_string("help"),
+      NJS_EXTERN_METHOD,
+      NULL,
+      0,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      njs_ext_console_help,
+      0 },
+};
+
+static njs_external_t  njs_externals[] = {
+
+    { nxt_string("console"),
+      NJS_EXTERN_OBJECT,
+      njs_ext_console,
+      nxt_nitems(njs_ext_console),
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      0 },
+};
+
+
+static nxt_lvlhsh_t      njs_externals_hash;
 static njs_completion_t  njs_completion;
 
 
@@ -95,6 +148,10 @@ main(int argc, char **argv)
     vm_options.mcp = mcp;
     vm_options.accumulative = 1;
     vm_options.backtrace = 1;
+
+    if (njs_externals_init(&opts, &vm_options) != NXT_OK) {
+        return EXIT_FAILURE;
+    }
 
     if (opts.interactive) {
         ret = njs_interactive_shell(&opts, &vm_options);
@@ -150,6 +207,36 @@ njs_get_options(njs_opts_t *opts, int argc, char** argv)
 
 
 static nxt_int_t
+njs_externals_init(njs_opts_t *opts, njs_vm_opt_t *vm_options)
+{
+    void        **ext;
+    nxt_uint_t  i;
+
+    nxt_lvlhsh_init(&njs_externals_hash);
+
+    for (i = 0; i < nxt_nitems(njs_externals); i++) {
+        if (njs_vm_external_add(&njs_externals_hash, vm_options->mcp,
+                                (uintptr_t) i, &njs_externals[i], 1)
+            != NXT_OK)
+        {
+            fprintf(stderr, "could not add external objects\n");
+            return NXT_ERROR;
+        }
+    }
+
+    ext = nxt_mem_cache_zalloc(vm_options->mcp, sizeof(void *) * i);
+    if (ext == NULL) {
+        return NXT_ERROR;
+    }
+
+    vm_options->external = ext;
+    vm_options->externals_hash = &njs_externals_hash;
+
+    return NXT_OK;
+}
+
+
+static nxt_int_t
 njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 {
     njs_vm_t     *vm;
@@ -168,7 +255,11 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         return NXT_ERROR;
     }
 
-    printf("interactive njscript\n");
+    printf("interactive njscript\n\n");
+
+    printf("v<Tab> -> the properties of v object.\n");
+    printf("v.<Tab> -> all the available prototype methods.\n");
+    printf("type console.help() for more information\n\n");
 
     for ( ;; ) {
         line.start = (u_char *) readline(">> ");
@@ -185,8 +276,8 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
         ret = njs_process_script(vm, opts, &line, &out);
         if (ret != NXT_OK) {
-            printf("njs_process_script() failed\n");
-            return NXT_ERROR;
+            printf("shell: failed to get retval from VM\n");
+            continue;
         }
 
         printf("%.*s\n", (int) out.length, out.start);
@@ -290,7 +381,7 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
     ret = njs_process_script(vm, opts, &script, &out);
     if (ret != NXT_OK) {
-        fprintf(stderr, "njs_process_script() failed\n");
+        fprintf(stderr, "failed to get retval from VM\n");
         return NXT_ERROR;
     }
 
@@ -497,4 +588,59 @@ njs_completion_generator(const char *text, int state)
     }
 
     return NULL;
+}
+
+
+static njs_ret_t
+njs_ext_console_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    nxt_str_t  msg;
+
+    msg.length = 0;
+
+    if (nargs >= 2
+        && njs_value_to_ext_string(vm, &msg, njs_argument(args, 1))
+           == NJS_ERROR)
+    {
+
+        return NJS_ERROR;
+    }
+
+    printf("%.*s\n", (int) msg.length, msg.start);
+
+    vm->retval = njs_value_void;
+
+    return NJS_OK;
+}
+
+
+static njs_ret_t
+njs_ext_console_help(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    nxt_uint_t  i;
+
+    printf("VM built-in objects:\n");
+    for (i = NJS_CONSTRUCTOR_OBJECT; i < NJS_CONSTRUCTOR_MAX; i++) {
+        printf("  %.*s\n", (int) njs_constructor_init[i]->name.length,
+               njs_constructor_init[i]->name.start);
+    }
+
+    for (i = NJS_OBJECT_THIS; i < NJS_OBJECT_MAX; i++) {
+        if (njs_object_init[i] != NULL) {
+            printf("  %.*s\n", (int) njs_object_init[i]->name.length,
+                   njs_object_init[i]->name.start);
+        }
+    }
+
+    printf("\nEmbedded objects:\n");
+    for (i = 0; i < nxt_nitems(njs_externals); i++) {
+        printf("  %.*s\n", (int) njs_externals[i].name.length,
+               njs_externals[i].name.start);
+    }
+
+    printf("\n");
+
+    return NJS_OK;
 }
