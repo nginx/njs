@@ -7,6 +7,12 @@ NXT_LIB =	nxt
 
 NXT_BUILDDIR =	build
 
+ifneq ($(NXT_EDITLINE_LIB),)
+default: $(NXT_BUILDDIR)/libnjs.a $(NXT_BUILDDIR)/njs
+else
+default: $(NXT_BUILDDIR)/libnjs.a
+endif
+
 $(NXT_BUILDDIR)/libnjs.a: \
 	$(NXT_LIB)/nxt_auto_config.h \
 	$(NXT_BUILDDIR)/njscript.o \
