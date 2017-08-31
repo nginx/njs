@@ -1,4 +1,17 @@
 
+Changes with nJScript 0.1.13                                     31 Aug 2017
+
+    *) Feature: console.log() and console.help() methods in interactive
+       shell.
+
+    *) Feature: interactive shell prints backtrace on exception.
+
+    *) Feature: interactive shell by default if libedit is available.
+
+    *) Bugfix: processing of large files from stdin in command line mode.
+
+    *) Bugfix: improved editline detection.
+
 Changes with nJScript 0.1.12                                     08 Aug 2017
 
     *) Feature: Interactive shell.
