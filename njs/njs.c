@@ -335,7 +335,8 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
     script.start = realloc(NULL, size);
     if (script.start == NULL) {
         fprintf(stderr, "alloc failed while reading '%s'\n", file);
-        return NXT_ERROR;
+        ret = NXT_ERROR;
+        goto done;
     }
 
     p = script.start;
@@ -351,7 +352,8 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         if (n < 0) {
             fprintf(stderr, "failed to read file: '%s' (%s)\n",
                     file, strerror(errno));
-            return NXT_ERROR;
+            ret = NXT_ERROR;
+            goto done;
         }
 
         if (p + n > end) {
@@ -360,7 +362,8 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
             script.start = realloc(script.start, size);
             if (script.start == NULL) {
                 fprintf(stderr, "alloc failed while reading '%s'\n", file);
-                return NXT_ERROR;
+                ret = NXT_ERROR;
+                goto done;
             }
 
             p = script.start + script.length;
@@ -376,13 +379,15 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
     vm = njs_vm_create(vm_options);
     if (vm == NULL) {
         fprintf(stderr, "failed to create vm\n");
-        return NXT_ERROR;
+        ret = NXT_ERROR;
+        goto done;
     }
 
     ret = njs_process_script(vm, opts, &script, &out);
     if (ret != NXT_OK) {
         fprintf(stderr, "failed to get retval from VM\n");
-        return NXT_ERROR;
+        ret = NXT_ERROR;
+        goto done;
     }
 
     if (!opts->disassemble) {
@@ -394,7 +399,19 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         }
     }
 
-    return NXT_OK;
+    ret = NXT_OK;
+
+done:
+
+    if (script.start != NULL) {
+        free(script.start);
+    }
+
+    if (fd != STDIN_FILENO) {
+        close(fd);
+    }
+
+    return ret;
 }
 
 
