@@ -323,7 +323,12 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         }
     }
 
-    fstat(fd, &sb);
+    if (fstat(fd, &sb) == -1) {
+        fprintf(stderr, "fstat(%d) failed while reading '%s' (%s)\n",
+                fd, file, strerror(errno));
+        ret = NXT_ERROR;
+        goto close_fd;
+    }
 
     size = sizeof(buf);
 
@@ -406,6 +411,8 @@ done:
     if (script.start != NULL) {
         free(script.start);
     }
+
+close_fd:
 
     if (fd != STDIN_FILENO) {
         close(fd);
