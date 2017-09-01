@@ -598,6 +598,7 @@ njs_ext_console_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     nxt_str_t  msg;
 
     msg.length = 0;
+    msg.start = NULL;
 
     if (nargs >= 2
         && njs_value_to_ext_string(vm, &msg, njs_argument(args, 1))
