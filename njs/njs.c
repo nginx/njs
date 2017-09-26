@@ -300,7 +300,7 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 {
     int          fd;
     char         *file;
-    u_char       buf[4096], *p, *end;
+    u_char       buf[4096], *p, *end, *start;
     size_t       size;
     ssize_t      n;
     njs_vm_t     *vm;
@@ -364,12 +364,14 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         if (p + n > end) {
             size *= 2;
 
-            script.start = realloc(script.start, size);
-            if (script.start == NULL) {
+            start = realloc(script.start, size);
+            if (start == NULL) {
                 fprintf(stderr, "alloc failed while reading '%s'\n", file);
                 ret = NXT_ERROR;
                 goto done;
             }
+
+            script.start = start;
 
             p = script.start + script.length;
             end = script.start + size;
