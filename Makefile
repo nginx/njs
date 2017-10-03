@@ -16,6 +16,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 	$(NXT_BUILDDIR)/njs_string.o \
 	$(NXT_BUILDDIR)/njs_object.o \
 	$(NXT_BUILDDIR)/njs_array.o \
+	$(NXT_BUILDDIR)/njs_json.o \
 	$(NXT_BUILDDIR)/njs_function.o \
 	$(NXT_BUILDDIR)/njs_regexp.o \
 	$(NXT_BUILDDIR)/njs_date.o \
@@ -48,6 +49,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 		$(NXT_BUILDDIR)/njs_string.o \
 		$(NXT_BUILDDIR)/njs_object.o \
 		$(NXT_BUILDDIR)/njs_array.o \
+		$(NXT_BUILDDIR)/njs_json.o \
 		$(NXT_BUILDDIR)/njs_function.o \
 		$(NXT_BUILDDIR)/njs_regexp.o \
 		$(NXT_BUILDDIR)/njs_date.o \
@@ -210,6 +212,18 @@ $(NXT_BUILDDIR)/njs_array.o: \
 	$(NXT_CC) -c -o $(NXT_BUILDDIR)/njs_array.o $(NXT_CFLAGS) \
 		-I$(NXT_LIB) -Injs \
 		njs/njs_array.c
+
+$(NXT_BUILDDIR)/njs_json.o: \
+	$(NXT_BUILDDIR)/libnxt.a \
+	njs/njscript.h \
+	njs/njs_vm.h \
+	njs/njs_object.h \
+	njs/njs_json.c \
+
+	$(NXT_CC) -c -o $(NXT_BUILDDIR)/njs_json.o $(NXT_CFLAGS) \
+		-I$(NXT_LIB) -Injs \
+		njs/njs_json.c
+
 
 $(NXT_BUILDDIR)/njs_function.o: \
 	$(NXT_BUILDDIR)/libnxt.a \

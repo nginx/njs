@@ -321,6 +321,29 @@ static njs_ret_t
 njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
+    njs_array_t  *keys;
+
+    if (nargs < 2 || !njs_is_object(&args[1])) {
+        vm->exception = &njs_exception_type_error;
+        return NXT_ERROR;
+    }
+
+    keys = njs_object_keys_array(vm, &args[1]);
+    if (keys == NULL) {
+        vm->exception = &njs_exception_memory_error;
+        return NXT_ERROR;
+    }
+
+    vm->retval.data.u.array = keys;
+    vm->retval.type = NJS_ARRAY;
+    vm->retval.data.truth = 1;
+
+    return NXT_OK;
+}
+
+njs_array_t*
+njs_object_keys_array(njs_vm_t *vm, njs_value_t *object)
+{
     size_t             size;
     uint32_t           i, n, keys_length, array_length;
     njs_value_t        *value;
@@ -329,17 +352,12 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_object_prop_t  *prop;
     nxt_lvlhsh_each_t  lhe;
 
-    if (nargs < 2 || !njs_is_object(&args[1])) {
-        vm->exception = &njs_exception_type_error;
-        return NXT_ERROR;
-    }
-
     array = NULL;
     keys_length = 0;
     array_length = 0;
 
-    if (njs_is_array(&args[1])) {
-        array = args[1].data.u.array;
+    if (njs_is_array(object)) {
+        array = object->data.u.array;
         array_length = array->length;
 
         for (i = 0; i < array_length; i++) {
@@ -351,7 +369,7 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
 
-    hash = &args[1].data.u.object->hash;
+    hash = &object->data.u.object->hash;
 
     for ( ;; ) {
         prop = nxt_lvlhsh_each(hash, &lhe);
@@ -367,7 +385,7 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     keys = njs_array_alloc(vm, keys_length, NJS_ARRAY_SPARE);
     if (nxt_slow_path(keys == NULL)) {
-        return NXT_ERROR;
+        return NULL;
     }
 
     n = 0;
@@ -399,11 +417,7 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
     }
 
-    vm->retval.data.u.array = keys;
-    vm->retval.type = NJS_ARRAY;
-    vm->retval.data.truth = 1;
-
-    return NXT_OK;
+    return keys;
 }
 
 

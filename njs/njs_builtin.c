@@ -20,6 +20,7 @@
 #include <njs_string.h>
 #include <njs_object.h>
 #include <njs_array.h>
+#include <njs_json.h>
 #include <njs_function.h>
 #include <njs_variable.h>
 #include <njs_extern.h>
@@ -44,6 +45,7 @@ static nxt_int_t njs_builtin_completions(njs_vm_t *vm, size_t *size,
 const njs_object_init_t    *njs_object_init[] = {
     NULL,                         /* global this        */
     &njs_math_object_init,        /* Math               */
+    &njs_json_object_init,        /* JSON               */
 };
 
 

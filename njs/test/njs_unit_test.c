@@ -7837,6 +7837,595 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("parseFloat('-5.7e+abc')"),
       nxt_string("-5.7") },
 
+    /* JSON.parse() */
+
+    { nxt_string("JSON.parse('null')"),
+      nxt_string("null") },
+
+    { nxt_string("JSON.parse('true')"),
+      nxt_string("true") },
+
+    { nxt_string("JSON.parse('false')"),
+      nxt_string("false") },
+
+    { nxt_string("JSON.parse('0')"),
+      nxt_string("0") },
+
+    { nxt_string("JSON.parse('-1234.56e2')"),
+      nxt_string("-123456") },
+
+    { nxt_string("typeof(JSON.parse('true'))"),
+      nxt_string("boolean") },
+
+    { nxt_string("typeof(JSON.parse('false'))"),
+      nxt_string("boolean") },
+
+    { nxt_string("typeof(JSON.parse('1'))"),
+      nxt_string("number") },
+
+    { nxt_string("typeof(JSON.parse('\"\"'))"),
+      nxt_string("string") },
+
+    { nxt_string("typeof(JSON.parse('{}'))"),
+      nxt_string("object") },
+
+    { nxt_string("typeof(JSON.parse('[]'))"),
+      nxt_string("object") },
+
+    { nxt_string("JSON.parse('\"abc\"')"),
+      nxt_string("abc") },
+
+    { nxt_string("JSON.parse('\"\\\\\"\"')"),
+      nxt_string("\"") },
+
+    { nxt_string("JSON.parse('\"\\\\n\"')"),
+      nxt_string("\n") },
+
+    { nxt_string("JSON.parse('\"\\\\t\"')"),
+      nxt_string("\t") },
+
+    { nxt_string("JSON.parse('\"ab\\\\\"c\"')"),
+      nxt_string("ab\"c") },
+
+    { nxt_string("JSON.parse('\"abcdefghijklmopqr\\\\\"s\"')"),
+      nxt_string("abcdefghijklmopqr\"s") },
+
+    { nxt_string("JSON.parse('\"ab\\\\\"c\"').length"),
+      nxt_string("4") },
+
+    { nxt_string("JSON.parse('\"аб\\\\\"в\"')"),
+      nxt_string("аб\"в") },
+
+    { nxt_string("JSON.parse('\"аб\\\\\"в\"').length"),
+      nxt_string("4") },
+
+    { nxt_string("JSON.parse('\"абвгдеёжзийкл\"').length"),
+      nxt_string("13") },
+
+    { nxt_string("JSON.parse('\"абвгдеёжзийкл\"').length"),
+      nxt_string("13") },
+
+    { nxt_string("JSON.parse('\"\\\\u03B1\"')"),
+      nxt_string("α") },
+
+    { nxt_string("JSON.parse('\"\\\\uD801\\\\uDC00\"')"),
+      nxt_string("𐐀") },
+
+    { nxt_string("JSON.parse('\"\\\\u03B1\"') == JSON.parse('\"\\\\u03b1\"')"),
+      nxt_string("true") },
+
+    { nxt_string("JSON.parse('\"\\\\u03B1\"').length"),
+      nxt_string("1") },
+
+    { nxt_string("JSON.parse('{\"a\":1}').a"),
+      nxt_string("1") },
+
+    { nxt_string("JSON.parse('{\"a\":1,\"a\":2}').a"),
+      nxt_string("2") },
+
+    { nxt_string("JSON.parse('{   \"a\" :  \"b\"   }').a"),
+      nxt_string("b") },
+
+    { nxt_string("JSON.parse('{\"a\":{\"b\":1}}').a.b"),
+      nxt_string("1") },
+
+    { nxt_string("JSON.parse('[{}, true ,1.1e2, {\"a\":[3,\"b\"]}]')[3].a[1]"),
+      nxt_string("b") },
+
+    { nxt_string("var o = JSON.parse('{\"a\":2}');"
+                 "Object.getOwnPropertyDescriptor(o, 'a').configurable"),
+      nxt_string("true") },
+
+    { nxt_string("var o = JSON.parse('{\"a\":2}');"
+                 "Object.getOwnPropertyDescriptor(o, 'a').writable"),
+      nxt_string("true") },
+
+    { nxt_string("var o = JSON.parse('{\"a\":2}');"
+                 "Object.getOwnPropertyDescriptor(o, 'a').enumerable"),
+      nxt_string("true") },
+
+    { nxt_string("var o = JSON.parse('{\"a\":2}');"
+                 "o.a = 3; o.a"),
+      nxt_string("3") },
+
+    { nxt_string("var o = JSON.parse('{\"a\":2}');"
+                 "o.b = 3; o.b"),
+      nxt_string("3") },
+
+    { nxt_string("var o = JSON.parse('{}', function(k, v) {return v;}); o"),
+      nxt_string("[object Object]") },
+
+    { nxt_string("var o = JSON.parse('{\"a\":2, \"b\":4, \"a\":{}}',"
+                 "                    function(k, v) {return undefined;});"
+                 "o"),
+      nxt_string("undefined") },
+
+    { nxt_string("var o = JSON.parse('{\"a\":2, \"c\":4, \"b\":\"x\"}',"
+                 "  function(k, v) {if (k === '' || typeof v === 'number') return v });"
+                 "Object.keys(o)"),
+      nxt_string("a,c") },
+
+    { nxt_string("var o = JSON.parse('{\"a\":2, \"b\":{}}',"
+                 "                    function(k, v) {return k;});"
+                 "o+typeof(o)"),
+      nxt_string("string") },
+
+    { nxt_string("var o = JSON.parse('[\"a\", \"b\"]',"
+                 "                    function(k, v) {return v;});"
+                 "o"),
+      nxt_string("a,b") },
+
+    { nxt_string("var o = JSON.parse('{\"a\":[1,{\"b\":1},3]}',"
+                 "                    function(k, v) {return v;});"
+                 "o.a[1].b"),
+      nxt_string("1") },
+
+    { nxt_string("var o = JSON.parse('{\"a\":[1,2]}',"
+                 "  function(k, v) {if (k === '' || k === 'a') {return v;}});"
+                 "o.a"),
+      nxt_string(",") },
+
+    { nxt_string("var o = JSON.parse('{\"a\":[1,2]}',"
+                 "  function(k, v) {return (k === '' || k === 'a') ? v : v*2});"
+                 "o.a"),
+      nxt_string("2,4") },
+
+    { nxt_string("var o = JSON.parse('{\"a\":2, \"b\":{\"c\":[\"xx\"]}}',"
+                 "   function(k, v) {return typeof v === 'number' ? v * 2 : v;});"
+                 "o.a+o.b.c[0]"),
+      nxt_string("4xx") },
+
+    { nxt_string("var o = JSON.parse('{\"aa\":{\"b\":1}, \"abb\":1, \"c\":1}',"
+                 "   function(k, v) {return (k === '' || /^a/.test(k)) ? v : undefined;});"
+                 "Object.keys(o)"),
+      nxt_string("aa,abb") },
+
+    { nxt_string("var o = JSON.parse('{\"a\":\"x\"}',"
+                 "   function(k, v) {if (k === 'a') {this.b='y';} return v});"
+                 "o.a+o.b"),
+      nxt_string("xy") },
+
+    { nxt_string("var o = JSON.parse('{\"a\":\"x\"}',"
+                 "   function(k, v) {return (k === 'a' ? {x:1} : v)});"
+                 "o.a.x"),
+      nxt_string("1") },
+
+    { nxt_string("var keys = []; var o = JSON.parse('{\"a\":2, \"b\":{\"c\":\"xx\"}}',"
+                 "   function(k, v) {keys.push(k); return v;});"
+                 "keys"),
+      nxt_string("a,c,b,") },
+
+    { nxt_string("var args = []; var o = JSON.parse('[2,{\"a\":3}]',"
+                 "   function(k, v) {args.push(k+\":\"+v); return v;});"
+                 "args.join('|')"),
+      nxt_string("0:2|a:3|1:[object Object]|:2,[object Object]") },
+
+    { nxt_string("JSON.parse()"),
+      nxt_string("SyntaxError: Unexpected token at position 0") },
+
+    { nxt_string("JSON.parse([])"),
+      nxt_string("SyntaxError: Unexpected end of input at position 0") },
+
+    { nxt_string("JSON.parse('')"),
+      nxt_string("SyntaxError: Unexpected end of input at position 0") },
+
+    { nxt_string("JSON.parse('fals')"),
+      nxt_string("SyntaxError: Unexpected token at position 0") },
+
+    { nxt_string("JSON.parse(' t')"),
+      nxt_string("SyntaxError: Unexpected token at position 1") },
+
+    { nxt_string("JSON.parse('nu')"),
+      nxt_string("SyntaxError: Unexpected token at position 0") },
+
+    { nxt_string("JSON.parse('-')"),
+      nxt_string("SyntaxError: Unexpected number at position 0") },
+
+    { nxt_string("JSON.parse('--')"),
+      nxt_string("SyntaxError: Unexpected number at position 1") },
+
+    { nxt_string("JSON.parse('1-')"),
+      nxt_string("SyntaxError: Unexpected token at position 1") },
+
+    { nxt_string("JSON.parse('1ee1')"),
+      nxt_string("SyntaxError: Unexpected token at position 1") },
+
+    { nxt_string("JSON.parse('1eg')"),
+      nxt_string("SyntaxError: Unexpected token at position 1") },
+
+    { nxt_string("JSON.parse('0x01')"),
+      nxt_string("SyntaxError: Unexpected token at position 1") },
+
+    { nxt_string("JSON.parse('\"абв')"),
+      nxt_string("SyntaxError: Unexpected end of input at position 4") },
+
+    { nxt_string("JSON.parse('\"\b')"),
+      nxt_string("SyntaxError: Forbidden source char at position 1") },
+
+    { nxt_string("JSON.parse('\"\\\\u')"),
+      nxt_string("SyntaxError: Unexpected end of input at position 3") },
+
+    { nxt_string("JSON.parse('\"\\\\q\"')"),
+      nxt_string("SyntaxError: Unknown escape char at position 2") },
+
+    { nxt_string("JSON.parse('\"\\\\uDC01\"')"),
+      nxt_string("SyntaxError: Invalid Unicode char at position 7") },
+
+    { nxt_string("JSON.parse('\"\\\\uD801\\\\uE000\"')"),
+      nxt_string("SyntaxError: Invalid surrogate pair at position 13") },
+
+    { nxt_string("JSON.parse('{')"),
+      nxt_string("SyntaxError: Unexpected end of input at position 1") },
+
+    { nxt_string("JSON.parse('{{')"),
+      nxt_string("SyntaxError: Unexpected token at position 1") },
+
+    { nxt_string("JSON.parse('{[')"),
+      nxt_string("SyntaxError: Unexpected token at position 1") },
+
+    { nxt_string("JSON.parse('{\"a\"')"),
+      nxt_string("SyntaxError: Unexpected token at position 4") },
+
+    { nxt_string("JSON.parse('{\"a\":')"),
+      nxt_string("SyntaxError: Unexpected end of input at position 5") },
+
+    { nxt_string("JSON.parse('{\"a\":{')"),
+      nxt_string("SyntaxError: Unexpected end of input at position 6") },
+
+    { nxt_string("JSON.parse('{\"a\":{}')"),
+      nxt_string("SyntaxError: Unexpected end of input at position 7") },
+
+    { nxt_string("JSON.parse('{\"a\":{}g')"),
+      nxt_string("SyntaxError: Unexpected token at position 7") },
+
+    { nxt_string("JSON.parse('{\"a\":{},')"),
+      nxt_string("SyntaxError: Unexpected end of input at position 8") },
+
+    { nxt_string("JSON.parse('{\"a\":{},}')"),
+      nxt_string("SyntaxError: Trailing comma at position 7") },
+
+    { nxt_string("JSON.parse('{\"a\":{},,')"),
+      nxt_string("SyntaxError: Unexpected token at position 8") },
+
+    { nxt_string("JSON.parse('{\"a\":{},,}')"),
+      nxt_string("SyntaxError: Unexpected token at position 8") },
+
+    { nxt_string("JSON.parse('[')"),
+      nxt_string("SyntaxError: Unexpected end of input at position 1") },
+
+    { nxt_string("JSON.parse('[q')"),
+      nxt_string("SyntaxError: Unexpected token at position 1") },
+
+    { nxt_string("JSON.parse('[\"a')"),
+      nxt_string("SyntaxError: Unexpected end of input at position 3") },
+
+    { nxt_string("JSON.parse('[1 ')"),
+      nxt_string("SyntaxError: Unexpected end of input at position 3") },
+
+    { nxt_string("JSON.parse('[1,]')"),
+      nxt_string("SyntaxError: Trailing comma at position 2") },
+
+    { nxt_string("JSON.parse('[1 , 5 ')"),
+      nxt_string("SyntaxError: Unexpected end of input at position 7") },
+
+    { nxt_string("JSON.parse('{\"a\":'.repeat(32))"),
+      nxt_string("SyntaxError: Nested too deep at position 155") },
+
+    { nxt_string("JSON.parse('['.repeat(32))"),
+      nxt_string("SyntaxError: Nested too deep at position 31") },
+
+    { nxt_string("var o = JSON.parse('{', function(k, v) {return v;});o"),
+      nxt_string("SyntaxError: Unexpected end of input at position 1") },
+
+    { nxt_string("var o = JSON.parse('{\"a\":1}', "
+                 "                   function(k, v) {return v.a.a;}); o"),
+      nxt_string("TypeError") },
+
+    /* JSON.stringify() */
+
+    { nxt_string("JSON.stringify()"),
+      nxt_string("undefined") },
+
+    { nxt_string("JSON.stringify('')"),
+      nxt_string("\"\"") },
+
+    { nxt_string("JSON.stringify('abc')"),
+      nxt_string("\"abc\"") },
+
+    { nxt_string("JSON.stringify(new String('abc'))"),
+      nxt_string("\"abc\"") },
+
+    { nxt_string("JSON.stringify(123)"),
+      nxt_string("123") },
+
+    { nxt_string("JSON.stringify(new Number(123))"),
+      nxt_string("123") },
+
+    { nxt_string("JSON.stringify(true)"),
+      nxt_string("true") },
+
+    { nxt_string("JSON.stringify(false)"),
+      nxt_string("false") },
+
+    { nxt_string("JSON.stringify(new Boolean(1))"),
+      nxt_string("true") },
+
+    { nxt_string("JSON.stringify(new Boolean(0))"),
+      nxt_string("false") },
+
+    { nxt_string("JSON.stringify(null)"),
+      nxt_string("null") },
+
+    { nxt_string("JSON.stringify(undefined)"),
+      nxt_string("undefined") },
+
+    { nxt_string("JSON.stringify({})"),
+      nxt_string("{}") },
+
+    { nxt_string("JSON.stringify([])"),
+      nxt_string("[]") },
+
+    { nxt_string("JSON.stringify({a:\"b\",c:19,e:null,t:true,f:false})"),
+      nxt_string("{\"a\":\"b\",\"c\":19,\"e\":null,\"t\":true,\"f\":false}") },
+
+    { nxt_string("JSON.stringify({a:1, b:undefined})"),
+      nxt_string("{\"a\":1}") },
+
+    { nxt_string("var o = {a:1, c:2};"
+                 "Object.defineProperty(o, 'b', {enumerable:false, value:3});"
+                 "JSON.stringify(o)"),
+      nxt_string("{\"a\":1,\"c\":2}") },
+
+    { nxt_string("JSON.stringify({a:{}, b:[function(v){}]})"),
+      nxt_string("{\"a\":{},\"b\":[null]}") },
+
+    /* Ignoring named properties of an array. */
+
+    { nxt_string("var a = [1,2]; a.a = 1;"
+                 "JSON.stringify(a)"),
+      nxt_string("[1,2]") },
+
+    { nxt_string("JSON.stringify({a:{b:{c:{d:1}, e:function(v){}}}})"),
+      nxt_string("{\"a\":{\"b\":{\"c\":{\"d\":1}}}}") },
+
+    { nxt_string("JSON.stringify([[\"b\",undefined],1,[5],{a:1}])"),
+      nxt_string("[[\"b\",null],1,[5],{\"a\":1}]") },
+
+    { nxt_string("var json = '{\"a\":{\"b\":{\"c\":{\"d\":1},\"e\":[true]}}}';"
+                 "json == JSON.stringify(JSON.parse(json))"),
+      nxt_string("true") },
+
+    { nxt_string("var json = '{\"a\":\"абв\",\"b\":\"α\"}';"
+                 "json == JSON.stringify(JSON.parse(json))"),
+      nxt_string("true") },
+
+    /* Multibyte characters: z - 1 byte, α - 2 bytes, 𐐀 - 4 bytes */
+
+    { nxt_string("JSON.stringify('α𐐀z'.repeat(10))"),
+      nxt_string("\"α𐐀zα𐐀zα𐐀zα𐐀zα𐐀zα𐐀zα𐐀zα𐐀zα𐐀zα𐐀z\"") },
+
+    { nxt_string("JSON.stringify('α𐐀z'.repeat(10)).length"),
+      nxt_string("32") },
+
+    { nxt_string("JSON.stringify('a\nbc')"),
+      nxt_string("\"a\\nbc\"") },
+
+    { nxt_string("JSON.stringify('а\tбв')"),
+      nxt_string("\"а\\tбв\"") },
+
+    { nxt_string("JSON.stringify('\n\t\r\"\f\b ')"),
+      nxt_string("\"\\n\\t\\r\\\"\\f\\b \"") },
+
+    { nxt_string("JSON.stringify('\x00\x01\x02\x1f')"),
+      nxt_string("\"\\u0000\\u0001\\u0002\\u001F\"") },
+
+    { nxt_string("JSON.stringify('abc\x00')"),
+      nxt_string("\"abc\\u0000\"") },
+
+    { nxt_string("JSON.stringify('\x00zz')"),
+      nxt_string("\"\\u0000zz\"") },
+
+    { nxt_string("JSON.stringify('\x00')"),
+      nxt_string("\"\\u0000\"") },
+
+    { nxt_string("JSON.stringify('a\x00z')"),
+      nxt_string("\"a\\u0000z\"") },
+
+    { nxt_string("JSON.stringify('\x00z\x00')"),
+      nxt_string("\"\\u0000z\\u0000\"") },
+
+    { nxt_string("var i, s, r = true;"
+                 " for (i = 0; i < 128; i++) {"
+                 "  s = 'α𐐀z'.repeat(i);"
+                 "  r &= (JSON.stringify(s) == ('\"' + s + '\"'));"
+                 "}; r"),
+      nxt_string("1") },
+
+    { nxt_string("JSON.stringify('\\u0000'.repeat(10)) == ('\"' + '\\\\u0000'.repeat(10) + '\"')"),
+      nxt_string("true") },
+
+    { nxt_string("JSON.stringify('abc'.repeat(100)).length"),
+      nxt_string("302") },
+
+    { nxt_string("JSON.stringify('абв'.repeat(100)).length"),
+      nxt_string("302") },
+
+    /* Byte strings. */
+
+    { nxt_string("JSON.stringify('\\u00CE\\u00B1\\u00C2\\u00B6'.toBytes())"),
+      nxt_string("\"α¶\"") },
+
+    { nxt_string("JSON.stringify('µ§±®'.toBytes())"),
+      nxt_string("\"\xB5\xA7\xB1\xAE\"") },
+
+    /* Optional arguments. */
+
+    { nxt_string("JSON.stringify(undefined, undefined, 1)"),
+      nxt_string("undefined") },
+
+    { nxt_string("JSON.stringify([{a:1,b:{c:2}},1], undefined, 0)"),
+      nxt_string("[{\"a\":1,\"b\":{\"c\":2}},1]") },
+
+    { nxt_string("JSON.stringify([{a:1,b:{c:2}},1], undefined, 1)"),
+      nxt_string("[\n {\n  \"a\": 1,\n  \"b\": {\n   \"c\": 2\n  }\n },\n 1\n]") },
+
+    { nxt_string("JSON.stringify([{a:1,b:{c:2}},1], undefined, ' ')"),
+      nxt_string("[\n {\n  \"a\": 1,\n  \"b\": {\n   \"c\": 2\n  }\n },\n 1\n]") },
+
+    { nxt_string("JSON.stringify([{a:1,b:{c:2}},1], undefined, '#')"),
+      nxt_string("[\n#{\n##\"a\": 1,\n##\"b\": {\n###\"c\": 2\n##}\n#},\n#1\n]") },
+
+    { nxt_string("JSON.stringify([1], undefined, 'AAAAABBBBBC')"),
+      nxt_string("[\nAAAAABBBBB1\n]") },
+
+    { nxt_string("JSON.stringify([1], undefined, 11)"),
+      nxt_string("[\n          1\n]") },
+
+    { nxt_string("JSON.stringify([{a:1,b:{c:2}},1], undefined, -1)"),
+      nxt_string("[{\"a\":1,\"b\":{\"c\":2}},1]") },
+
+    { nxt_string("JSON.stringify([{a:1,b:{c:2}},1], undefined, new Date())"),
+      nxt_string("[{\"a\":1,\"b\":{\"c\":2}},1]") },
+
+    { nxt_string("JSON.stringify({toJSON:function(k){}})"),
+      nxt_string("undefined") },
+
+    { nxt_string("JSON.stringify({toJSON:function(k){return k}})"),
+      nxt_string("\"\"") },
+
+    { nxt_string("JSON.stringify(new Date(1308895323625))"),
+      nxt_string("\"2011-06-24T06:02:03.625Z\"") },
+
+    { nxt_string("JSON.stringify({a:new Date(1308895323625)})"),
+      nxt_string("{\"a\":\"2011-06-24T06:02:03.625Z\"}") },
+
+    { nxt_string("JSON.stringify({b:{toJSON:function(k){return undefined}}})"),
+      nxt_string("{}") },
+
+    { nxt_string("JSON.stringify({b:{toJSON:function(k){}},c:1})"),
+      nxt_string("{\"c\":1}") },
+
+    { nxt_string("JSON.stringify({b:{toJSON:function(k){return k}}})"),
+      nxt_string("{\"b\":\"b\"}") },
+
+    { nxt_string("JSON.stringify({a:1,b:new Date(1308895323625),c:2})"),
+      nxt_string("{\"a\":1,\"b\":\"2011-06-24T06:02:03.625Z\",\"c\":2}") },
+
+    { nxt_string("JSON.stringify({a:{b:new Date(1308895323625)}})"),
+      nxt_string("{\"a\":{\"b\":\"2011-06-24T06:02:03.625Z\"}}") },
+
+    { nxt_string("function key(k){return k}; function und(k){}"
+                 "JSON.stringify([{toJSON:key},{toJSON:und},{toJSON:key}])"),
+      nxt_string("[\"0\",null,\"2\"]") },
+
+    { nxt_string("JSON.stringify({b:{a:1,c:[2]}}, function(k,v){return v})"),
+      nxt_string("{\"b\":{\"a\":1,\"c\":[2]}}") },
+
+    { nxt_string("JSON.stringify([{a:1}, 2], function(k,v){return v})"),
+      nxt_string("[{\"a\":1},2]") },
+
+    { nxt_string("JSON.stringify({a:{toJSON:function(k){}}}, function(k,v){return v})"),
+      nxt_string("{}") },
+
+    { nxt_string("JSON.stringify({a:{toJSON:function(k){return 1}}}, function(k,v){return v})"),
+      nxt_string("{\"a\":1}") },
+
+    { nxt_string("JSON.stringify([{toJSON:function(k){}}], function(k,v){return v})"),
+      nxt_string("[null]") },
+
+    { nxt_string("JSON.stringify([{toJSON:function(k){return 1}}], function(k,v){return v})"),
+      nxt_string("[1]") },
+
+    { nxt_string("JSON.stringify({a:new Date(1308895323625)}, function(k,v){return v})"),
+      nxt_string("{\"a\":\"2011-06-24T06:02:03.625Z\"}") },
+
+    { nxt_string("JSON.stringify([new Date(1308895323625)], function(k,v){return v})"),
+      nxt_string("[\"2011-06-24T06:02:03.625Z\"]") },
+
+    { nxt_string("JSON.stringify([new Date(1308895323625)], "
+                 "  function(k,v){return (typeof v === 'string') ? v.toLowerCase() : v})"),
+      nxt_string("[\"2011-06-24t06:02:03.625z\"]") },
+
+    { nxt_string("JSON.stringify([new Date(1308895323625)], "
+                 "  function(k,v){return (typeof v === 'string') ? v.toLowerCase() : v}, '#')"),
+      nxt_string("[\n#\"2011-06-24t06:02:03.625z\"\n]") },
+
+    { nxt_string("JSON.stringify({a:new Date(1308895323625),b:1,c:'a'}, "
+                 "  function(k,v){return (typeof v === 'string') ? undefined : v})"),
+      nxt_string("{\"b\":1}") },
+
+    { nxt_string("JSON.stringify({a:new Date(1308895323625),b:1,c:'a'}, "
+                 "  function(k,v){return (typeof v === 'string') ? undefined : v}, '#')"),
+      nxt_string("{\n#\"b\": 1\n}") },
+
+    { nxt_string("JSON.stringify([new Date(1308895323625),1,'a'], "
+                 "  function(k,v){return (typeof v === 'string') ? undefined : v})"),
+      nxt_string("[null,1,null]") },
+
+    { nxt_string("var keys = []; var o = JSON.stringify({a:2, b:{c:1}},"
+                 "   function(k, v) {keys.push(k); return v;});"
+                 "keys"),
+      nxt_string(",a,b,c") },
+
+    { nxt_string("JSON.stringify(['a', 'b', 'c'], "
+                 "    function(i, v) { if (i === '0') {return undefined} "
+                 "                     else if (i == 1) {return 2} "
+                 "                     else {return v}})"),
+      nxt_string("[null,2,\"c\"]") },
+
+    { nxt_string("JSON.stringify({a:2, b:{c:1}},"
+                 "               function(k, v) {delete this['b']; return v;})"),
+      nxt_string("{\"a\":2}") },
+
+    { nxt_string("JSON.stringify(JSON.parse('{\"a\":1,\"b\":2}', "
+                 "          function(k, v) {delete this['b']; return v;}))"),
+      nxt_string("{\"a\":1}") },
+
+    { nxt_string("var keys = []; var o = JSON.stringify([[1,2],{a:3}, 4],"
+                 "   function(k, v) {keys.push(k); return v;});"
+                 "keys"),
+      nxt_string(",0,0,1,1,a,2") },
+
+    { nxt_string("JSON.stringify({b:{a:1,c:[2]}}, ['a', undefined, 'b', {}, 'a'])"),
+      nxt_string("{\"b\":{\"a\":1}}") },
+
+    { nxt_string("JSON.stringify({b:{a:1,c:[2]}}, [new String('a'), new String('b')])"),
+      nxt_string("{\"b\":{\"a\":1}}") },
+
+    { nxt_string("JSON.stringify({'1':1,'2':2,'3':3}, [1, new Number(2)])"),
+      nxt_string("{\"1\":1,\"2\":2}") },
+
+    { nxt_string("var objs = []; var o = JSON.stringify({a:1},"
+                 "   function(k, v) {objs.push(this); return v});"
+                 "JSON.stringify(objs)"),
+      nxt_string("[{\"\":{\"a\":1}},{\"a\":1}]") },
+
+    { nxt_string("var a = []; a[0] = a; JSON.stringify(a)"),
+      nxt_string("TypeError: Nested too deep or a cyclic structure") },
+
+    { nxt_string("var a = {}; a.a = a; JSON.stringify(a)"),
+      nxt_string("TypeError: Nested too deep or a cyclic structure") },
+
     /* Trick: number to boolean. */
 
     { nxt_string("var a = 0; !!a"),

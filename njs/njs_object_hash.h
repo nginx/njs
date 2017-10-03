@@ -92,6 +92,16 @@
         'p'), 'r'), 'o'), 't'), 'o'), 't'), 'y'), 'p'), 'e')
 
 
+#define NJS_TO_JSON_HASH                                                      \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
+        't'), 'o'), 'J'), 'S'), 'O'), 'N')
+
+
 #define NJS_TO_STRING_HASH                                                    \
     nxt_djb_hash_add(                                                         \
     nxt_djb_hash_add(                                                         \

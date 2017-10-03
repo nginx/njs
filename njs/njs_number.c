@@ -257,9 +257,8 @@ njs_ret_t
 njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
     const njs_value_t *number)
 {
-    double             n, num;
+    double             num;
     size_t             size;
-    const char         *fmt;
     const njs_value_t  *value;
     u_char             buf[128];
 
@@ -278,25 +277,7 @@ njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
         }
 
     } else {
-        n = fabs(num);
-
-        if (n == 0) {
-            fmt = "%g";
-
-        } else if (n < 1) {
-            fmt = "%f";
-
-        } else if (n < 1000000) {
-            fmt = "%g";
-
-        } else if (n < 1e20) {
-            fmt = "%1.f";
-
-        } else {
-            fmt = "%1.e";
-        }
-
-        size = snprintf((char *) buf, sizeof(buf), fmt, num);
+        size = njs_num_to_buf(num, buf, sizeof(buf));
 
         return njs_string_new(vm, string, buf, size, size);
     }
@@ -304,6 +285,34 @@ njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
     *string = *value;
 
     return NXT_OK;
+}
+
+
+size_t
+njs_num_to_buf(double num, u_char *buf, size_t size)
+{
+    double      n;
+    const char  *fmt;
+
+    n = fabs(num);
+
+    if (n == 0) {
+        fmt = "%g";
+
+    } else if (n < 1) {
+        fmt = "%f";
+
+    } else if (n < 1000000) {
+        fmt = "%g";
+
+    } else if (n < 1e20) {
+        fmt = "%1.f";
+
+    } else {
+        fmt = "%1.e";
+    }
+
+    return snprintf((char *) buf, size, fmt, num);
 }
 
 

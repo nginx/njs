@@ -298,6 +298,7 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
 
     case NJS_TOKEN_GLOBAL_THIS:
     case NJS_TOKEN_MATH:
+    case NJS_TOKEN_JSON:
     case NJS_TOKEN_EVAL:
     case NJS_TOKEN_TO_STRING:
     case NJS_TOKEN_IS_NAN:

@@ -76,6 +76,36 @@ nxt_utf8_prev(const u_char *p)
 }
 
 
+nxt_inline u_char *
+nxt_utf8_copy(u_char *dst, const u_char **src, const u_char *end)
+{
+    u_char        c;
+    const u_char  *p;
+
+    p = *src;
+    c = *p++;
+    *dst++ = c;
+
+    if ((c & 0x80) != 0) {
+
+        do {
+            c = *p;
+
+            if ((c & 0xC0) != 0x80) {
+                break;
+            }
+
+            *dst++ = c;
+            p++;
+
+        } while (p < end);
+    }
+
+    *src = p;
+    return dst;
+}
+
+
 #define nxt_utf8_size(u)                                                      \
     ((u < 0x80) ? 1 : ((u < 0x0800) ? 2 : ((u < 0x10000) ? 3 : 4)))
 

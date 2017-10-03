@@ -157,7 +157,7 @@ njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare)
 }
 
 
-static njs_ret_t
+njs_ret_t
 njs_array_add(njs_vm_t *vm, njs_array_t *array, njs_value_t *value)
 {
     njs_ret_t  ret;
