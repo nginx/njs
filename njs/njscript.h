@@ -123,7 +123,7 @@ NXT_EXPORT void *njs_value_data(njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_string_copy(njs_vm_t *vm, nxt_str_t *retval,
     njs_value_t *value, uintptr_t *next);
 
-NXT_EXPORT const char **njs_vm_completions(njs_vm_t *vm);
+NXT_EXPORT nxt_array_t *njs_vm_completions(njs_vm_t *vm, nxt_str_t *expression);
 
 
 extern const nxt_mem_proto_t  njs_vm_mem_cache_pool_proto;

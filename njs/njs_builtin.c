@@ -8,6 +8,7 @@
 #include <nxt_types.h>
 #include <nxt_clang.h>
 #include <nxt_string.h>
+#include <nxt_djb_hash.h>
 #include <nxt_stub.h>
 #include <nxt_array.h>
 #include <nxt_lvlhsh.h>
@@ -39,7 +40,10 @@ typedef struct {
 
 
 static nxt_int_t njs_builtin_completions(njs_vm_t *vm, size_t *size,
-    const char **completions);
+    nxt_str_t *completions);
+static nxt_array_t *njs_vm_expression_completions(njs_vm_t *vm,
+    nxt_str_t *expression);
+static nxt_array_t *njs_object_completions(njs_vm_t *vm, njs_object_t *object);
 
 
 const njs_object_init_t    *njs_object_init[] = {
@@ -346,33 +350,40 @@ njs_builtin_objects_clone(njs_vm_t *vm)
 }
 
 
-const char **
-njs_vm_completions(njs_vm_t *vm)
+nxt_array_t *
+njs_vm_completions(njs_vm_t *vm, nxt_str_t *expression)
 {
-    size_t      size;
-    const char  **completions;
+    size_t       size;
+    nxt_array_t  *completions;
 
-    if (njs_builtin_completions(vm, &size, NULL) != NXT_OK) {
-        return NULL;
+    if (expression == NULL) {
+        if (njs_builtin_completions(vm, &size, NULL) != NXT_OK) {
+            return NULL;
+        }
+
+        completions = nxt_array_create(size, sizeof(nxt_str_t),
+                                       &njs_array_mem_proto,
+                                       vm->mem_cache_pool);
+
+        if (nxt_slow_path(completions == NULL)) {
+            return NULL;
+        }
+
+        if (njs_builtin_completions(vm, &size, completions->start) != NXT_OK) {
+            return NULL;
+        }
+
+        completions->items = size;
+
+        return completions;
     }
 
-    completions = nxt_mem_cache_zalloc(vm->mem_cache_pool,
-                                       sizeof(char *) * (size + 1));
-
-    if (completions == NULL) {
-        return NULL;
-    }
-
-    if (njs_builtin_completions(vm, NULL, completions) != NXT_OK) {
-        return NULL;
-    }
-
-    return completions;
+    return njs_vm_expression_completions(vm, expression);
 }
 
 
 static nxt_int_t
-njs_builtin_completions(njs_vm_t *vm, size_t *size, const char **completions)
+njs_builtin_completions(njs_vm_t *vm, size_t *size, nxt_str_t *completions)
 {
     char                    *compl;
     size_t                  n, len;
@@ -398,7 +409,7 @@ njs_builtin_completions(njs_vm_t *vm, size_t *size, const char **completions)
         }
 
         if (completions != NULL) {
-            completions[n++] = (char *) keyword->name.start;
+            completions[n++] = keyword->name;
 
         } else {
             n++;
@@ -433,7 +444,8 @@ njs_builtin_completions(njs_vm_t *vm, size_t *size, const char **completions)
                 snprintf(compl, len, "%s.%s", njs_object_init[i]->name.start,
                          string.start);
 
-                completions[n++] = (char *) compl;
+                completions[n].length = len;
+                completions[n++].start = (u_char *) compl;
 
             } else {
                 n++;
@@ -465,13 +477,16 @@ njs_builtin_completions(njs_vm_t *vm, size_t *size, const char **completions)
                 snprintf(compl, len, ".%s", string.start);
 
                 for (k = 0; k < n; k++) {
-                    if (strncmp(completions[k], compl, len) == 0) {
+                    if (strncmp((char *) completions[k].start, compl, len)
+                        == 0)
+                    {
                         break;
                     }
                 }
 
                 if (k == n) {
-                    completions[n++] = (char *) compl;
+                    completions[n].length = len;
+                    completions[n++].start = (u_char *) compl;
                 }
 
             } else {
@@ -504,7 +519,8 @@ njs_builtin_completions(njs_vm_t *vm, size_t *size, const char **completions)
                 snprintf(compl, len, "%s.%s",
                          njs_constructor_init[i]->name.start, string.start);
 
-                completions[n++] = (char *) compl;
+                completions[n].length = len;
+                completions[n++].start = (u_char *) compl;
 
             } else {
                 n++;
@@ -533,7 +549,8 @@ njs_builtin_completions(njs_vm_t *vm, size_t *size, const char **completions)
             snprintf(compl, len, "%.*s",
                      (int) ext_object->name.length, ext_object->name.start);
 
-            completions[n++] = (char *) compl;
+            completions[n].length = len;
+            completions[n++].start = (u_char *) compl;
 
         } else {
             n++;
@@ -557,7 +574,8 @@ njs_builtin_completions(njs_vm_t *vm, size_t *size, const char **completions)
                          (int) ext_object->name.length, ext_object->name.start,
                          (int) ext_prop->name.length, ext_prop->name.start);
 
-                completions[n++] = (char *) compl;
+                completions[n].length = len;
+                completions[n++].start = (u_char *) compl;
 
             } else {
                 n++;
@@ -570,6 +588,181 @@ njs_builtin_completions(njs_vm_t *vm, size_t *size, const char **completions)
     }
 
     return NXT_OK;
+}
+
+
+static nxt_array_t *
+njs_vm_expression_completions(njs_vm_t *vm, nxt_str_t *expression)
+{
+    u_char              *p, *end;
+    nxt_int_t           ret;
+    njs_value_t         *value;
+    njs_variable_t      *var;
+    njs_object_prop_t   *prop;
+    nxt_lvlhsh_query_t  lhq;
+
+    if (nxt_slow_path(vm->parser == NULL)) {
+        return NULL;
+    }
+
+    p = expression->start;
+    end = p + expression->length;
+
+    lhq.key.start = p;
+
+    while (p < end && *p != '.') { p++; }
+
+    lhq.proto = &njs_variables_hash_proto;
+    lhq.key.length = p - lhq.key.start;
+    lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
+
+    ret = nxt_lvlhsh_find(&vm->parser->scope->variables, &lhq);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NULL;
+    }
+
+    var = lhq.value;
+    value = njs_vmcode_operand(vm, var->index);
+
+    if (!njs_is_object(value)) {
+        return NULL;
+    }
+
+    lhq.proto = &njs_object_hash_proto;
+
+    for ( ;; ) {
+
+        if (p == end) {
+            break;
+        }
+
+        lhq.key.start = ++p;
+
+        while (p < end && *p != '.') { p++; }
+
+        lhq.key.length = p - lhq.key.start;
+        lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
+
+        ret = nxt_lvlhsh_find(&value->data.u.object->hash, &lhq);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return NULL;
+        }
+
+        prop = lhq.value;
+
+        if (!njs_is_object(&prop->value)) {
+            return NULL;
+        }
+
+        value = &prop->value;
+    }
+
+    return njs_object_completions(vm, value->data.u.object);
+}
+
+
+static nxt_array_t *
+njs_object_completions(njs_vm_t *vm, njs_object_t *object)
+{
+    size_t             size;
+    nxt_uint_t         n, k;
+    nxt_str_t          *compl;
+    nxt_array_t        *completions;
+    njs_object_t       *o;
+    njs_object_prop_t  *prop;
+    nxt_lvlhsh_each_t  lhe;
+
+    size = 0;
+    o = object;
+
+    do {
+        nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+
+        for ( ;; ) {
+            prop = nxt_lvlhsh_each(&o->hash, &lhe);
+            if (prop == NULL) {
+                break;
+            }
+
+            size++;
+        }
+
+        nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+
+        for ( ;; ) {
+            prop = nxt_lvlhsh_each(&o->shared_hash, &lhe);
+            if (prop == NULL) {
+                break;
+            }
+
+            size++;
+        }
+
+        o = o->__proto__;
+
+    } while (o != NULL);
+
+    completions = nxt_array_create(size, sizeof(nxt_str_t),
+                                   &njs_array_mem_proto, vm->mem_cache_pool);
+
+    if (nxt_slow_path(completions == NULL)) {
+        return NULL;
+    }
+
+    n = 0;
+    o = object;
+    compl = completions->start;
+
+    do {
+        nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+
+        for ( ;; ) {
+            prop = nxt_lvlhsh_each(&o->hash, &lhe);
+            if (prop == NULL) {
+                break;
+            }
+
+            njs_string_get(&prop->name, &compl[n]);
+
+            for (k = 0; k < n; k++) {
+                if (nxt_strstr_eq(&compl[k], &compl[n])) {
+                    break;
+                }
+            }
+
+            if (k == n) {
+                n++;
+            }
+        }
+
+        nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+
+        for ( ;; ) {
+            prop = nxt_lvlhsh_each(&o->shared_hash, &lhe);
+            if (prop == NULL) {
+                break;
+            }
+
+            njs_string_get(&prop->name, &compl[n]);
+
+            for (k = 0; k < n; k++) {
+                if (nxt_strstr_eq(&compl[k], &compl[n])) {
+                    break;
+                }
+            }
+
+            if (k == n) {
+                n++;
+            }
+        }
+
+        o = o->__proto__;
+
+    } while (o != NULL);
+
+    completions->items = n;
+
+    return completions;
 }
 
 

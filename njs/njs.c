@@ -50,7 +50,8 @@ typedef struct {
     size_t                  index;
     size_t                  length;
     njs_vm_t                *vm;
-    const char              **completions;
+    nxt_array_t             *completions;
+    nxt_array_t             *suffix_completions;
     nxt_lvlhsh_each_t       lhe;
     njs_completion_phase_t  phase;
 } njs_completion_t;
@@ -257,8 +258,7 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
     printf("interactive njscript\n\n");
 
-    printf("v<Tab> -> the properties of v object.\n");
-    printf("v.<Tab> -> all the available prototype methods.\n");
+    printf("v.<Tab> -> the properties and prototype methods of v.\n");
     printf("type console.help() for more information\n\n");
 
     for ( ;; ) {
@@ -487,7 +487,7 @@ njs_editline_init(njs_vm_t *vm)
     rl_attempted_completion_function = njs_completion_handler;
     rl_basic_word_break_characters = (char *) " \t\n\"\\'`@$><=;,|&{(";
 
-    njs_completion.completions = njs_vm_completions(vm);
+    njs_completion.completions = njs_vm_completions(vm, NULL);
     if (njs_completion.completions == NULL) {
         return NXT_ERROR;
     }
@@ -507,12 +507,18 @@ njs_completion_handler(const char *text, int start, int end)
 }
 
 
+/* editline frees the buffer every time. */
+#define njs_editline(s) strndup((char *) (s)->start, (s)->length)
+
+#define njs_completion(c, i) &(((nxt_str_t *) (c)->start)[i])
+
 static char *
 njs_completion_generator(const char *text, int state)
 {
     char              *completion;
     size_t            len;
-    const char        *name, *p;
+    nxt_str_t         expression, *suffix;
+    const char        *p;
     njs_variable_t    *var;
     njs_completion_t  *cmpl;
 
@@ -528,20 +534,20 @@ njs_completion_generator(const char *text, int state)
 
     if (cmpl->phase == NJS_COMPLETION_GLOBAL) {
         for ( ;; ) {
-            name = cmpl->completions[cmpl->index];
-            if (name == NULL) {
+            if (cmpl->index >= cmpl->completions->items) {
                 break;
             }
 
-            cmpl->index++;
+            suffix = njs_completion(cmpl->completions, cmpl->index++);
 
-            if (name[0] == '.') {
+            if (suffix->start[0] == '.' || suffix->length < cmpl->length) {
                 continue;
             }
 
-            if (strncmp(name, text, cmpl->length) == 0) {
-                /* editline frees the buffer every time. */
-                return strdup(name);
+            if (strncmp(text, (char *) suffix->start,
+                        nxt_min(suffix->length, cmpl->length)) == 0)
+            {
+                return njs_editline(suffix);
             }
         }
 
@@ -549,22 +555,14 @@ njs_completion_generator(const char *text, int state)
             for ( ;; ) {
                 var = nxt_lvlhsh_each(&cmpl->vm->parser->scope->variables,
                                       &cmpl->lhe);
-                if (var == NULL) {
+                if (var == NULL || var->name.length < cmpl->length) {
                     break;
                 }
 
-                if (strncmp((char *) var->name.start, text, cmpl->length)
-                    == 0)
+                if (strncmp(text, (char *) var->name.start,
+                            nxt_min(var->name.length, cmpl->length)) == 0)
                 {
-                    completion = malloc(var->name.length + 1);
-                    if (completion == NULL) {
-                        return NULL;
-                    }
-
-                    memcpy(completion, var->name.start, var->name.length);
-                    completion[var->name.length] = '\0';
-
-                    return completion;
+                    return njs_editline(&var->name);
                 }
             }
         }
@@ -573,11 +571,30 @@ njs_completion_generator(const char *text, int state)
             return NULL;
         }
 
+        /* Getting the longest prefix before a '.' */
+
+        p = &text[cmpl->length - 1];
+        while (p > text && *p != '.') { p--; }
+
+        if (*p != '.') {
+            return NULL;
+        }
+
+        expression.start = (u_char *) text;
+        expression.length = p - text;
+
+        cmpl->suffix_completions = njs_vm_completions(cmpl->vm, &expression);
+        if (cmpl->suffix_completions == NULL) {
+            return NULL;
+        }
+
         cmpl->index = 0;
         cmpl->phase = NJS_COMPLETION_SUFFIX;
     }
 
-    len = 1;
+    /* Getting the right-most suffix after a '.' */
+
+    len = 0;
     p = &text[cmpl->length - 1];
 
     while (p > text && *p != '.') {
@@ -585,31 +602,29 @@ njs_completion_generator(const char *text, int state)
         len++;
     }
 
-    if (*p != '.') {
-        return NULL;
-    }
+    p++;
 
     for ( ;; ) {
-        name = cmpl->completions[cmpl->index++];
-        if (name == NULL) {
+        if (cmpl->index >= cmpl->suffix_completions->items) {
             break;
         }
 
-        if (name[0] != '.') {
+        suffix = njs_completion(cmpl->suffix_completions, cmpl->index++);
+
+        if (len != 0 && strncmp((char *) suffix->start, p,
+                                nxt_min(len, suffix->length)) != 0)
+        {
             continue;
         }
 
-        if (strncmp(name, p, len) != 0) {
-            continue;
-        }
-
-        len = strlen(name) + (p - text) + 2;
+        len = suffix->length + (p - text) + 1;
         completion = malloc(len);
         if (completion == NULL) {
             return NULL;
         }
 
-        snprintf(completion, len, "%.*s%s", (int) (p - text), text, name);
+        snprintf(completion, len, "%.*s%.*s", (int) (p - text), text,
+                 (int) suffix->length, suffix->start);
         return completion;
     }
 

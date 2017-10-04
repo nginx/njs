@@ -1,0 +1,168 @@
+#
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+#
+
+proc njs_test {body} {
+    spawn  -nottycopy njs
+    expect "interactive njscript\r
+\r
+v.<Tab> -> the properties and prototype methods of v.\r
+type console.help() for more information\r
+\r
+>> "
+
+    set len [llength $body]
+    for {set i 0} {$i < $len} {incr i} {
+        set pair [lindex $body $i]
+        send [lindex $pair 0]
+        expect [lindex $pair 1]
+    }
+
+    # Ctrl-C
+    send \x03
+    expect eof
+}
+
+# simple multi line interation
+njs_test {
+    {"var a = 1\r\n"
+     "var a = 1\r\nundefined\r\n>> "}
+    {"a *= 2\r\n"
+     "a *= 2\r\n2\r\n>> "}
+}
+
+# Global completions, no
+njs_test {
+    {"\t\tn"
+     "\a\r\nDisplay all*possibilities? (y or n)*>> "}
+}
+
+# Global completions, yes
+njs_test {
+    {"\t\ty"
+     "\a\r\nDisplay all*possibilities? (y or n)*abstract"}
+}
+
+# Global completions, single partial match
+njs_test {
+    {"O\t"
+     "O\abject"}
+}
+
+njs_test {
+    {"M\t"
+     "M\aath"}
+}
+
+njs_test {
+    {"conso\t"
+     "conso\ale"}
+}
+
+# Global completions, multiple partial match
+njs_test {
+    {"cons\t\t"
+     "console*console.help*console.log*const"}
+}
+
+njs_test {
+    {"O\t"
+     "O\abject"}
+    {".\t\t"
+     "Object.create*Object.isSealed"}
+}
+
+njs_test {
+    {"Object.\t\t"
+     "Object.create*Object.isSealed"}
+}
+
+njs_test {
+    {"Object.g\t"
+     "Object.g\aet"}
+    {"\t"
+     "Object.getOwnPropertyDescriptor*Object.getPrototypeOf"}
+}
+
+njs_test {
+    {"M\t"
+     "M\aath"}
+    {".\t\t"
+     "Math.__proto__*Math.cbrt*Math.fround*Math.log2"}
+}
+
+# Global completions, no matches
+njs_test {
+    {"1.\t\t"
+     "1."}
+}
+
+njs_test {
+    {"1..\t\t"
+     "1.."}
+}
+
+njs_test {
+    {"'abc'.\t\t"
+     "'abc'."}
+}
+
+# Global completions, global vars
+njs_test {
+    {"var a = 1; var aa = 2\r\n"
+     "var a = 1; var aa = 2\r\nundefined\r\n>> "}
+    {"a\t\t"
+     "a*aa*abstract"}
+}
+
+njs_test {
+    {"var zz = 1\r\n"
+     "var zz = 1\r\nundefined\r\n>> "}
+    {"1 + z\t\r\n"
+     "1 + zz\r\n2"}
+}
+
+njs_test {
+    {"unknown_var\t\t"
+     "unknown_var"}
+}
+
+njs_test {
+    {"unknown_var.\t\t"
+     "unknown_var."}
+}
+
+# An object's level completions
+njs_test {
+    {"var o = {zz:1, zb:2}\r\n"
+     "var o = {zz:1, zb:2}\r\nundefined\r\n>> "}
+    {"o.z\t\t"
+     "o.zb*o.zz"}
+}
+
+njs_test {
+    {"var d = new Date()\r\n"
+     "var d = new Date()\r\nundefined\r\n>> "}
+    {"d.to\t\t"
+     "d.toDateString*d.toLocaleDateString*d.toString"}
+}
+
+njs_test {
+    {"var o = {a:new Date()}\r\n"
+     "var o = {a:new Date()}\r\nundefined\r\n>> "}
+    {"o.a.to\t\t"
+     "o.a.toDateString*o.a.toLocaleDateString*o.a.toString"}
+}
+
+# console object
+njs_test {
+    {"console.log()\r\n"
+     "console.log()\r\n\r\nundefined\r\n>> "}
+    {"console.log(1)\r\n"
+     "console.log(1)\r\n1\r\nundefined\r\n>> "}
+    {"console.log('abc')\r\n"
+     "console.log('abc')\r\nabc\r\nundefined\r\n>> "}
+    {"console.help()\r\n"
+     "console.help()\r\nVM built-in objects:"}
+}

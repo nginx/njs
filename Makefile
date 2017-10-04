@@ -78,13 +78,14 @@ all:	test lib_test
 
 njs:   $(NXT_BUILDDIR)/njs
 
-test:	\
+njs_interactive_test:	njs_expect_test $(NXT_BUILDDIR)/njs_interactive_test
+	$(NXT_BUILDDIR)/njs_interactive_test
+
+test:	njs_interactive_test \
 	$(NXT_BUILDDIR)/njs_unit_test \
-	$(NXT_BUILDDIR)/njs_interactive_test \
 	$(NXT_BUILDDIR)/njs_benchmark \
 
 	$(NXT_BUILDDIR)/njs_unit_test d
-	$(NXT_BUILDDIR)/njs_interactive_test
 
 clean:
 	rm -rf $(NXT_BUILDDIR)
