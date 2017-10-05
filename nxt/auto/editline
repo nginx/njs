@@ -39,4 +39,9 @@ END
 else
     $nxt_echo " - building interactive shell is not possible"
 
+    cat << END >> $NXT_MAKEFILE_CONF
+
+default:	all
+END
+
 fi
