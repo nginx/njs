@@ -27,6 +27,16 @@ if [ $nxt_found = no ]; then
     . auto/feature
 fi
 
+if [ $nxt_found = no ]; then
+
+    # NetBSD
+
+    nxt_feature="editline in /usr/include"
+    nxt_feature_incs="-I/usr/include/readline"
+
+    . auto/feature
+fi
+
 if [ $nxt_found = yes ]; then
     NXT_HAVE_LIBEDIT=YES
     cat << END >> $NXT_MAKEFILE_CONF
