@@ -76,7 +76,9 @@ $(NXT_BUILDDIR)/libnjs.a: \
 
 all:	test lib_test
 
-njs:   $(NXT_BUILDDIR)/njs
+njs:	$(NXT_BUILDDIR)/njs
+
+libnjs:	$(NXT_BUILDDIR)/libnjs.a
 
 njs_interactive_test:	njs_expect_test $(NXT_BUILDDIR)/njs_interactive_test
 	$(NXT_BUILDDIR)/njs_interactive_test

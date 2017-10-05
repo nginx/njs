@@ -43,7 +43,7 @@ else
 
     cat << END >> $NXT_MAKEFILE_CONF
 
-default:	all
+default:	libnjs
 END
 
 fi
