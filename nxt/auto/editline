@@ -28,6 +28,7 @@ if [ $nxt_found = no ]; then
 fi
 
 if [ $nxt_found = yes ]; then
+    NXT_HAVE_LIBEDIT=YES
     cat << END >> $NXT_MAKEFILE_CONF
 
 NXT_EDITLINE_CFLAGS = $nxt_feature_incs
@@ -37,6 +38,7 @@ default:	njs
 END
 
 else
+    NXT_HAVE_LIBEDIT=NO
     $nxt_echo " - building interactive shell is not possible"
 
     cat << END >> $NXT_MAKEFILE_CONF
