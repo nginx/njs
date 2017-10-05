@@ -1014,7 +1014,7 @@ njs_json_parse_continuation(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                 }
 
             } else {
-                state = njs_json_pop_parse_state(parse);
+                (void) njs_json_pop_parse_state(parse);
             }
 
             return njs_json_parse_continuation_apply(vm, parse);

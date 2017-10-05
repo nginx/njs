@@ -269,8 +269,6 @@ njs_parser_var_expression(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
     }
 
     for ( ;; ) {
-        size = sizeof(njs_vmcode_3addr_t);
-
         switch (token) {
 
         case NJS_TOKEN_ASSIGNMENT:
@@ -294,8 +292,6 @@ njs_parser_var_expression(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
         default:
             return token;
         }
-
-        node = parser->node;
 
         if (!njs_parser_is_lvalue(parser->node)) {
             nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
@@ -434,8 +430,6 @@ njs_parser_assignment_expression(njs_vm_t *vm, njs_parser_t *parser,
         default:
             return token;
         }
-
-        node = parser->node;
 
         if (!njs_parser_is_lvalue(parser->node)) {
             nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
