@@ -1,4 +1,15 @@
 
+Changes with nJScript 0.1.14                                     09 Oct 2017
+
+    *) Feature: JSON object.
+
+    *) Feature: object level completions in interactive shell.
+
+    *) Feature: various configure improvements.
+
+    *) Bugfix: miscellaneous bugs have been fixed in the core and
+       interactive shell.
+
 Changes with nJScript 0.1.13                                     31 Aug 2017
 
     *) Feature: console.log() and console.help() methods in interactive
