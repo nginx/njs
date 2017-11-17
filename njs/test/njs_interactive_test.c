@@ -178,6 +178,11 @@ static njs_interactive_test_t  njs_test[] =
                  "    at f (:1)\n"
                  "    at main (native)\n") },
 
+    { nxt_string("var fs = require('fs'); fs.readFile()" ENTER),
+      nxt_string("TypeError: too few arguments\n"
+                 "    at fs.readFile (native)\n"
+                 "    at main (native)\n") },
+
     /* Exception in njs_vm_retval() */
 
     { nxt_string("var o = { toString: function() { return [1] } }" ENTER

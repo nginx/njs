@@ -182,3 +182,224 @@ njs_test {
     {"JSON.parse(Error()\r\n"
      "JSON.parse(Error()\r\nSyntaxError: Unexpected token \"\" in 1"}
 }
+
+# require('fs')
+
+set file [open /tmp/njs_test_file w]
+puts -nonewline $file "αβZγ"
+flush $file
+
+exec /bin/echo -ne {\x80\x80} > /tmp/njs_test_file_non_utf8
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.read\t"
+     "fs.read\aFile"}
+}
+
+# require('fs').readFile()
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFile('/tmp/njs_test_file', 'utf8', function (e, data) {console.log(data[2]+data.length)})\r\n"
+     "Z4\r\nundefined\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFile('/tmp/njs_test_file', function (e, data) {console.log(data[4]+data.length)})\r\n"
+     "Z7\r\nundefined\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFile('/tmp/njs_test_file', {encoding:'utf8',flag:'r+'}, function (e, data) {console.log(data)})\r\n"
+     "αβZγ\r\nundefined\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs'); \r\n"
+     "undefined\r\n>> "}
+    {"fs.readFile('/tmp/njs_unknown_path', 'utf8', function (e) {console.log(JSON.stringify(e))})\r\n"
+     "{\"errno\":2,\"path\":\"/tmp/njs_unknown_path\",\"syscall\":\"open\"}\r\nundefined\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs'); \r\n"
+     "undefined\r\n>> "}
+    {"fs.readFile('/tmp/njs_unknown_path', {encoding:'utf8', flag:'r+'}, function (e) {console.log(e)})\r\n"
+     "Error: No such file or directory\r\nundefined\r\n>> "}
+}
+
+# require('fs').readFileSync()
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync('/tmp/njs_test_file', 'utf8')[2]\r\n"
+     "Z\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync('/tmp/njs_test_file')[4]\r\n"
+     "Z\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync('/tmp/njs_test_file', {encoding:'utf8',flag:'r+'})\r\n"
+     "αβZγ\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs'); \r\n"
+     "undefined\r\n>> "}
+    {"try { fs.readFileSync('/tmp/njs_unknown_path')} catch (e) {console.log(JSON.stringify(e))}\r\n"
+     "{\"errno\":2,\"path\":\"/tmp/njs_unknown_path\",\"syscall\":\"open\"}\r\nundefined\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync('/tmp/njs_test_file_non_utf8').charCodeAt(1)\r\n"
+     "128"}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync('/tmp/njs_test_file_non_utf8', 'utf8')\r\n"
+     "Error: Non-UTF8 file, convertion is not implemented"}
+}
+
+
+# require('fs').writeFile()
+
+exec rm -fr /tmp/njs_test_file2
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"function h1(e) {if (e) {throw e}; console.log(fs.readFileSync('/tmp/njs_test_file2'))}\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFile('/tmp/njs_test_file2', 'ABC', h1)\r\n"
+     "ABC\r\nundefined\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFile('/tmp/njs_test_file2', 'ABC', 'utf8', function (e) { if (e) {throw e}; console.log(fs.readFileSync('/tmp/njs_test_file2'))})\r\n"
+     "ABC\r\nundefined\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFile('/tmp/njs_test_file2', 'ABC', {encoding:'utf8', mode:0o666}, function (e) { if (e) {throw e}; console.log(fs.readFileSync('/tmp/njs_test_file2'))})\r\n"
+     "ABC\r\nundefined\r\n>> "}
+}
+
+exec rm -fr /tmp/njs_wo_file
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFile('/tmp/njs_wo_file', 'ABC', {mode:0o222}, function (e) {console.log(fs.readFileSync('/tmp/njs_wo_file'))})\r\n"
+     "Error: Permission denied"}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFile('/invalid_path', 'ABC', function (e) { console.log(JSON.stringify(e))})\r\n"
+     "{\"errno\":13,\"path\":\"/invalid_path\",\"syscall\":\"open\"}\r\nundefined\r\n>> "}
+}
+
+# require('fs').writeFileSync()
+
+exec rm -fr /tmp/njs_test_file2
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFileSync('/tmp/njs_test_file2', 'ABC')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync('/tmp/njs_test_file2')\r\n"
+     "ABC\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFileSync('/tmp/njs_test_file2', 'ABC', 'utf8')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync('/tmp/njs_test_file2')\r\n"
+     "ABC\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFileSync('/tmp/njs_test_file2', 'ABC')\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFileSync('/tmp/njs_test_file2', 'ABC')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync('/tmp/njs_test_file2')\r\n"
+     "ABC\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFileSync('/tmp/njs_test_file2', 'ABC', {encoding:'utf8', mode:0o666})\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync('/tmp/njs_test_file2')\r\n"
+     "ABC\r\n>> "}
+}
+
+exec rm -fr /tmp/njs_wo_file
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFileSync('/tmp/njs_wo_file', 'ABC', {mode:0o222}); fs.readFileSync('/tmp/njs_wo_file')\r\n"
+     "Error: Permission denied"}
+}
+
+# require('fs').appendFile()
+
+exec rm -fr /tmp/njs_test_file2
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"function h1(e) {console.log(fs.readFileSync('/tmp/njs_test_file2'))}\r\n"
+     "undefined\r\n>> "}
+    {"function h2(e) {fs.appendFile('/tmp/njs_test_file2', 'ABC', h1)}\r\n"
+     "undefined\r\n>> "}
+    {"fs.appendFile('/tmp/njs_test_file2', 'ABC', h2)\r\n"
+     "ABCABC\r\nundefined\r\n>> "}
+}
+
+# require('fs').appendFileSync()
+
+exec rm -fr /tmp/njs_test_file2
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.appendFileSync('/tmp/njs_test_file2', 'ABC')\r\n"
+     "undefined\r\n>> "}
+    {"fs.appendFileSync('/tmp/njs_test_file2', 'ABC')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync('/tmp/njs_test_file2')\r\n"
+     "ABCABC\r\n>> "}
+}

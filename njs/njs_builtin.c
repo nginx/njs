@@ -30,6 +30,8 @@
 #include <njs_date.h>
 #include <njs_error.h>
 #include <njs_math.h>
+#include <njs_module.h>
+#include <njs_fs.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -51,6 +53,11 @@ const njs_object_init_t    *njs_object_init[] = {
     NULL,                         /* global this        */
     &njs_math_object_init,        /* Math               */
     &njs_json_object_init,        /* JSON               */
+};
+
+
+const njs_object_init_t    *njs_module_init[] = {
+    &njs_fs_object_init          /* fs                 */
 };
 
 
@@ -111,8 +118,10 @@ njs_builtin_objects_create(njs_vm_t *vm)
 {
     nxt_int_t               ret;
     nxt_uint_t              i;
+    njs_module_t            *module;
     njs_object_t            *objects;
     njs_function_t          *functions, *constructors;
+    nxt_lvlhsh_query_t      lhq;
     njs_object_prototype_t  *prototypes;
 
     static const njs_object_prototype_t  prototype_values[] = {
@@ -193,6 +202,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
         NULL,                         /* encodeURIComponent */
         NULL,                         /* decodeURI          */
         NULL,                         /* decodeURIComponent */
+        NULL,                         /* require */
     };
 
     static const njs_function_init_t  native_functions[] = {
@@ -208,6 +218,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
         { njs_string_encode_uri_component, { NJS_SKIP_ARG, NJS_STRING_ARG } },
         { njs_string_decode_uri,           { NJS_SKIP_ARG, NJS_STRING_ARG } },
         { njs_string_decode_uri_component, { NJS_SKIP_ARG, NJS_STRING_ARG } },
+        { njs_module_require,              { NJS_SKIP_ARG, NJS_STRING_ARG } },
     };
 
     static const njs_object_prop_t    null_proto_property = {
@@ -247,6 +258,37 @@ njs_builtin_objects_create(njs_vm_t *vm)
         }
 
         objects[i].shared = 1;
+    }
+
+    lhq.replace = 0;
+    lhq.proto = &njs_modules_hash_proto;
+    lhq.pool = vm->mem_cache_pool;
+
+    for (i = NJS_MODULE_FS; i < NJS_MODULE_MAX; i++) {
+        module = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_module_t));
+        if (nxt_slow_path(module == NULL)) {
+            return NJS_ERROR;
+        }
+
+        module->name = njs_module_init[i]->name;
+
+        ret = njs_object_hash_create(vm, &module->object.shared_hash,
+                                     njs_module_init[i]->properties,
+                                     njs_module_init[i]->items);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return NXT_ERROR;
+        }
+
+        module->object.shared = 1;
+
+        lhq.key = module->name;
+        lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
+        lhq.value = module;
+
+        ret = nxt_lvlhsh_insert(&vm->modules_hash, &lhq);
+        if (nxt_fast_path(ret != NXT_OK)) {
+            return NXT_ERROR;
+        }
     }
 
     functions = vm->shared->functions;
@@ -857,10 +899,11 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
     size_t                  len;
     nxt_str_t               string;
     nxt_uint_t              i;
+    njs_module_t            *module;
     njs_object_t            *objects;
     njs_function_t          *constructors;
     njs_object_prop_t       *prop;
-    nxt_lvlhsh_each_t       lhe;
+    nxt_lvlhsh_each_t       lhe, lhe_prop;
     njs_object_prototype_t  *prototypes;
 
     objects = vm->shared->objects;
@@ -969,6 +1012,45 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
 
                 snprintf(buf, len, "%s.%s", njs_constructor_init[i]->name.start,
                          string.start);
+
+                name->length = len;
+                name->start = (u_char *) buf;
+
+                return NXT_OK;
+            }
+        }
+    }
+
+    nxt_lvlhsh_each_init(&lhe, &njs_modules_hash_proto);
+
+    for ( ;; ) {
+        module = nxt_lvlhsh_each(&vm->modules_hash, &lhe);
+        if (module == NULL) {
+            break;
+        }
+
+        nxt_lvlhsh_each_init(&lhe_prop, &njs_object_hash_proto);
+
+        for ( ;; ) {
+            prop = nxt_lvlhsh_each(&module->object.shared_hash, &lhe_prop);
+            if (prop == NULL) {
+                break;
+            }
+
+            if (!njs_is_function(&prop->value)) {
+                continue;
+            }
+
+            if (function == prop->value.data.u.function) {
+                njs_string_get(&prop->name, &string);
+                len = module->name.length + string.length + sizeof(".");
+
+                buf = nxt_mem_cache_zalloc(vm->mem_cache_pool, len);
+                if (buf == NULL) {
+                    return NXT_ERROR;
+                }
+
+                snprintf(buf, len, "%s.%s", module->name.start, string.start);
 
                 name->length = len;
                 name->start = (u_char *) buf;

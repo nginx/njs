@@ -53,6 +53,35 @@
         'e'), 'n'), 'u'), 'm'), 'e'), 'r'), 'a'), 'b'), 'l'), 'e')
 
 
+#define NJS_ERRNO_HASH                                                        \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
+        'e'), 'r'), 'r'), 'n'), 'o')
+
+
+#define NJS_ENCODING_HASH                                                     \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
+        'e'), 'n'), 'c'), 'o'), 'd'), 'i'), 'n'), 'g')
+
+
+#define NJS_FLAG_HASH                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
+        'f'), 'l'), 'a'), 'g')
+
+
 #define NJS_INDEX_HASH                                                        \
     nxt_djb_hash_add(                                                         \
     nxt_djb_hash_add(                                                         \
@@ -96,6 +125,33 @@
     nxt_djb_hash_add(                                                         \
     nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
         'm'), 'e'), 's'), 's'), 'a'), 'g'), 'e')
+
+
+#define NJS_MODE_HASH                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
+        'm'), 'o'), 'd'), 'e')
+
+
+#define NJS_SYSCALL_HASH                                                      \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
+        's'), 'y'), 's'), 'c'), 'a'), 'l'), 'l')
+
+
+#define NJS_PATH_HASH                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
+        'p'), 'a'), 't'), 'h')
 
 
 #define NJS_PROTOTYPE_HASH                                                    \

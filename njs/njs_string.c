@@ -17,6 +17,7 @@
 #include <nxt_random.h>
 #include <nxt_pcre.h>
 #include <nxt_malloc.h>
+#include <nxt_string.h>
 #include <nxt_mem_cache_pool.h>
 #include <njscript.h>
 #include <njs_vm.h>
@@ -3059,6 +3060,51 @@ njs_string_to_index(njs_value_t *value)
     }
 
     return num;
+}
+
+
+/*
+ * If string value is null-terminated the corresponding C string
+ * is returned as is, otherwise the new copy is allocated with
+ * the terminating zero byte.
+ */
+u_char *
+njs_string_to_c_string(njs_vm_t *vm, njs_value_t *value)
+{
+    u_char  *p, *data, *start;
+    size_t  size;
+
+    if (value->short_string.size != NJS_STRING_LONG) {
+        start = value->short_string.start;
+        size = value->short_string.size;
+
+        if (start[size] == '\0') {
+            return start;
+
+        } else if (size < NJS_STRING_SHORT) {
+            start[size] = '\0';
+            return start;
+        }
+
+    } else {
+        start = value->data.u.string->start;
+        size = value->data.string_size;
+
+        if (start[size] == '\0') {
+            return start;
+        }
+    }
+
+    data = nxt_mem_cache_alloc(vm->mem_cache_pool, size + 1);
+    if (nxt_slow_path(data == NULL)) {
+        njs_exception_memory_error(vm);
+        return NULL;
+    }
+
+    p = nxt_cpymem(data, start, size);
+    *p++ = '\0';
+
+    return data;
 }
 
 

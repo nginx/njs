@@ -449,6 +449,16 @@ typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
     } while (0)
 
 
+#define njs_string_length_set(value, _length)                                 \
+    do {                                                                      \
+        if ((value)->short_string.size != NJS_STRING_LONG) {                  \
+            (value)->short_string.length = length;                            \
+                                                                              \
+        } else {                                                              \
+            (value)->data.u.string->length = length;                          \
+        }                                                                     \
+    } while (0)
+
 #define njs_is_primitive(value)                                               \
     ((value)->type <= NJS_STRING)
 
@@ -836,6 +846,12 @@ enum njs_object_e {
 };
 
 
+enum njs_module_e {
+    NJS_MODULE_FS = 0,
+#define NJS_MODULE_MAX         (NJS_MODULE_FS + 1)
+};
+
+
 enum njs_function_e {
     NJS_FUNCTION_EVAL = 0,
     NJS_FUNCTION_TO_STRING,
@@ -847,7 +863,8 @@ enum njs_function_e {
     NJS_FUNCTION_STRING_ENCODE_URI_COMPONENT,
     NJS_FUNCTION_STRING_DECODE_URI,
     NJS_FUNCTION_STRING_DECODE_URI_COMPONENT,
-#define NJS_FUNCTION_MAX       (NJS_FUNCTION_STRING_DECODE_URI_COMPONENT + 1)
+    NJS_FUNCTION_REQUIRE,
+#define NJS_FUNCTION_MAX       (NJS_FUNCTION_REQUIRE + 1)
 };
 
 
@@ -934,6 +951,7 @@ struct njs_vm_s {
     nxt_lvlhsh_t             externals_hash;
     nxt_lvlhsh_t             variables_hash;
     nxt_lvlhsh_t             values_hash;
+    nxt_lvlhsh_t             modules_hash;
 
     /*
      * The prototypes and constructors arrays must be together because

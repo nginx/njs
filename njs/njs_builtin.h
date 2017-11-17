@@ -9,6 +9,7 @@
 
 
 extern const njs_object_init_t  *njs_object_init[];
+extern const njs_object_init_t  *njs_module_init[];
 extern const njs_object_init_t  *njs_prototype_init[];
 extern const njs_object_init_t  *njs_constructor_init[];
 

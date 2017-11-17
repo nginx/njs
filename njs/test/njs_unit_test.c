@@ -8750,6 +8750,142 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = {}; a.a = a; JSON.stringify(a)"),
       nxt_string("TypeError: Nested too deep or a cyclic structure") },
 
+    /* require(). */
+
+    { nxt_string("require('unknown_module')"),
+      nxt_string("Error: Cannot find module 'unknown_module'") },
+
+    { nxt_string("require()"),
+      nxt_string("TypeError: missing path") },
+
+    { nxt_string("var fs = require('fs'); typeof fs"),
+      nxt_string("object") },
+
+    /* require('fs').readFile() */
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.readFile()"),
+      nxt_string("TypeError: too few arguments") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.readFile('/njs_unknown_path')"),
+      nxt_string("TypeError: too few arguments") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.readFile('/njs_unknown_path', {flag:'xx'})"),
+      nxt_string("TypeError: callback must be a function") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.readFile('/njs_unknown_path', {flag:'xx'}, 1)"),
+      nxt_string("TypeError: callback must be a function") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.readFile('/njs_unknown_path', {flag:'xx'}, function () {})"),
+      nxt_string("TypeError: Unknown file open flags: 'xx'") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.readFile('/njs_unknown_path', {encoding:'ascii'}, function () {})"),
+      nxt_string("TypeError: Unknown encoding: 'ascii'") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.readFile('/njs_unknown_path', 'ascii', function () {})"),
+      nxt_string("TypeError: Unknown encoding: 'ascii'") },
+
+    /* require('fs').readFileSync() */
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.readFileSync()"),
+      nxt_string("TypeError: too few arguments") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.readFileSync({})"),
+      nxt_string("TypeError: path must be a string") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.readFileSync('/njs_unknown_path', {flag:'xx'})"),
+      nxt_string("TypeError: Unknown file open flags: 'xx'") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.readFileSync('/njs_unknown_path', {encoding:'ascii'})"),
+      nxt_string("TypeError: Unknown encoding: 'ascii'") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.readFileSync('/njs_unknown_path', 'ascii')"),
+      nxt_string("TypeError: Unknown encoding: 'ascii'") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.readFileSync('/njs_unknown_path', true)"),
+      nxt_string("TypeError: Unknown options type (a string or object required)") },
+
+
+    /* require('fs').writeFile() */
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.writeFile()"),
+      nxt_string("TypeError: too few arguments") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.writeFile('/njs_unknown_path')"),
+      nxt_string("TypeError: too few arguments") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.writeFile('/njs_unknown_path', '')"),
+      nxt_string("TypeError: too few arguments") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.writeFile({}, '', function () {})"),
+      nxt_string("TypeError: path must be a string") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.writeFile('/njs_unknown_path', '', 'utf8')"),
+      nxt_string("TypeError: callback must be a function") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.writeFile('/njs_unknown_path', '', {flag:'xx'}, function () {})"),
+      nxt_string("TypeError: Unknown file open flags: 'xx'") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.writeFile('/njs_unknown_path', '', {encoding:'ascii'}, function () {})"),
+      nxt_string("TypeError: Unknown encoding: 'ascii'") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.writeFile('/njs_unknown_path', '', 'ascii', function () {})"),
+      nxt_string("TypeError: Unknown encoding: 'ascii'") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.writeFile('/njs_unknown_path', '', true, function () {})"),
+      nxt_string("TypeError: Unknown options type (a string or object required)") },
+
+    /* require('fs').writeFileSync() */
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.writeFileSync()"),
+      nxt_string("TypeError: too few arguments") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.writeFileSync('/njs_unknown_path')"),
+      nxt_string("TypeError: too few arguments") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.writeFileSync({}, '')"),
+      nxt_string("TypeError: path must be a string") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.writeFileSync('/njs_unknown_path', '', {flag:'xx'})"),
+      nxt_string("TypeError: Unknown file open flags: 'xx'") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.writeFileSync('/njs_unknown_path', '', {encoding:'ascii'})"),
+      nxt_string("TypeError: Unknown encoding: 'ascii'") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.writeFileSync('/njs_unknown_path', '', 'ascii')"),
+      nxt_string("TypeError: Unknown encoding: 'ascii'") },
+
+    { nxt_string("var fs = require('fs');"
+                 "fs.writeFileSync('/njs_unknown_path', '', true)"),
+      nxt_string("TypeError: Unknown options type (a string or object required)") },
+
     /* Trick: number to boolean. */
 
     { nxt_string("var a = 0; !!a"),

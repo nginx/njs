@@ -159,6 +159,8 @@ njs_vm_create(njs_vm_opt_t *options)
 
             vm->shared->empty_regexp_pattern = pattern;
 
+            nxt_lvlhsh_init(&vm->modules_hash);
+
             ret = njs_builtin_objects_create(vm);
             if (nxt_slow_path(ret != NXT_OK)) {
                 return NULL;
@@ -324,6 +326,7 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
 
         nvm->variables_hash = vm->variables_hash;
         nvm->values_hash = vm->values_hash;
+        nvm->modules_hash = vm->modules_hash;
         nvm->externals_hash = vm->externals_hash;
 
         nvm->current = vm->current;
