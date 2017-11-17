@@ -332,6 +332,8 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
         nvm->global_scope = vm->global_scope;
         nvm->scope_size = vm->scope_size;
 
+        nvm->debug = vm->debug;
+
         ret = njs_vm_init(nvm);
         if (nxt_slow_path(ret != NXT_OK)) {
             goto fail;
