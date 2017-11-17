@@ -533,7 +533,7 @@ njs_vm_exception(njs_vm_t *vm, nxt_str_t *retval)
 nxt_array_t *
 njs_vm_backtrace(njs_vm_t *vm)
 {
-    if (!nxt_array_is_empty(vm->backtrace)) {
+    if (vm->backtrace != NULL && !nxt_array_is_empty(vm->backtrace)) {
         return vm->backtrace;
     }
 
