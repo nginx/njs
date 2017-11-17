@@ -121,6 +121,37 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("+1\n"),
       nxt_string("1") },
 
+    /* Octal Numbers. */
+
+    { nxt_string("0o0"),
+      nxt_string("0") },
+
+    { nxt_string("0o011"),
+      nxt_string("9") },
+
+    { nxt_string("-0o777"),
+      nxt_string("-511") },
+
+    /* Legacy Octal Numbers are deprecated. */
+
+    { nxt_string("00"),
+      nxt_string("SyntaxError: Unexpected token \"\" in 1") },
+
+    { nxt_string("08"),
+      nxt_string("SyntaxError: Unexpected token \"\" in 1") },
+
+    { nxt_string("09"),
+      nxt_string("SyntaxError: Unexpected token \"\" in 1") },
+
+    { nxt_string("0011"),
+      nxt_string("SyntaxError: Unexpected token \"\" in 1") },
+
+    { nxt_string("0o"),
+      nxt_string("SyntaxError: Unexpected token \"\" in 1") },
+
+    { nxt_string("0o778"),
+      nxt_string("SyntaxError: Unexpected token \"\" in 1") },
+
     /* Hex Numbers. */
 
     { nxt_string("0x0"),

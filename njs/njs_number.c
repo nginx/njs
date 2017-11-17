@@ -169,6 +169,34 @@ njs_number_dec_parse(u_char **start, u_char *end)
 
 
 uint64_t
+njs_number_oct_parse(u_char **start, u_char *end)
+{
+    u_char    c, *p;
+    uint64_t  num;
+
+    p = *start;
+
+    num = 0;
+
+    while (p < end) {
+        /* Values less than '0' become >= 208. */
+        c = *p - '0';
+
+        if (nxt_slow_path(c > 7)) {
+            break;
+        }
+
+        num = num * 8 + c;
+        p++;
+    }
+
+    *start = p;
+
+    return num;
+}
+
+
+uint64_t
 njs_number_hex_parse(u_char **start, u_char *end)
 {
     u_char    c, *p;

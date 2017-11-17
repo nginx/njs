@@ -543,19 +543,48 @@ njs_lexer_number(njs_lexer_t *lexer)
     p = lexer->start;
     c = p[-1];
 
-    /* Hexadecimal literal values. */
+    if (c == '0' && p != lexer->end) {
 
-    if (c == '0' && p != lexer->end && (*p == 'x' || *p == 'X')) {
-        p++;
+        /* Hexadecimal literal values. */
 
-        if (p == lexer->end) {
-            return NJS_TOKEN_ILLEGAL;
+        if (*p == 'x' || *p == 'X') {
+            p++;
+
+            if (p == lexer->end) {
+                return NJS_TOKEN_ILLEGAL;
+            }
+
+            lexer->start = p;
+            lexer->number = njs_number_hex_parse(&lexer->start, lexer->end);
+
+            return NJS_TOKEN_NUMBER;
         }
 
-        lexer->start = p;
-        lexer->number = njs_number_hex_parse(&lexer->start, lexer->end);
+        /* Octal literal values. */
 
-        return NJS_TOKEN_NUMBER;
+        if (*p == 'o') {
+            p++;
+
+            if (p == lexer->end) {
+                return NJS_TOKEN_ILLEGAL;
+            }
+
+            lexer->start = p;
+            lexer->number = njs_number_oct_parse(&lexer->start, lexer->end);
+            p = lexer->start;
+
+            if (p < lexer->end && (*p == '8' || *p == '9')) {
+                return NJS_TOKEN_ILLEGAL;
+            }
+
+            return NJS_TOKEN_NUMBER;
+        }
+
+        /* Legacy Octal literals are deprecated. */
+
+        if (*p >= '0' && *p <= '9') {
+            return NJS_TOKEN_ILLEGAL;
+        }
     }
 
     lexer->start = p - 1;
