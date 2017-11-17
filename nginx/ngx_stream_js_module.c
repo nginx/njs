@@ -1032,6 +1032,7 @@ ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_memzero(&options, sizeof(njs_vm_opt_t));
 
     options.mcp = mcp;
+    options.backtrace = 1;
     options.externals_hash = &externals;
 
     jscf->vm = njs_vm_create(&options);
