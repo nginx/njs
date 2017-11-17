@@ -445,7 +445,7 @@ ngx_http_js_handler(ngx_http_request_t *r)
     }
 
     if (njs_vm_call(ctx->vm, func, ctx->args, 2) != NJS_OK) {
-        njs_vm_exception(ctx->vm, &exception);
+        njs_vm_retval(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "js exception: %*s", exception.length, exception.start);
@@ -496,7 +496,7 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
     }
 
     if (njs_vm_call(ctx->vm, func, ctx->args, 2) != NJS_OK) {
-        njs_vm_exception(ctx->vm, &exception);
+        njs_vm_retval(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "js exception: %*s", exception.length, exception.start);
@@ -1333,7 +1333,7 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     rc = njs_vm_compile(jlcf->vm, &start, end);
 
     if (rc != NJS_OK) {
-        njs_vm_exception(jlcf->vm, &text);
+        njs_vm_retval(jlcf->vm, &text);
 
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "%*s, included",

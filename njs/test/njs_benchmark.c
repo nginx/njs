@@ -111,13 +111,10 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
             return NXT_ERROR;
         }
 
-        if (njs_vm_run(nvm) == NXT_OK) {
-            if (njs_vm_retval(nvm, &s) != NXT_OK) {
-                return NXT_ERROR;
-            }
+        (void) njs_vm_run(nvm);
 
-        } else {
-            njs_vm_exception(nvm, &s);
+        if (njs_vm_retval(nvm, &s) != NXT_OK) {
+            return NXT_ERROR;
         }
 
         success = nxt_strstr_eq(result, &s);

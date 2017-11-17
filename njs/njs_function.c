@@ -701,6 +701,8 @@ njs_ret_t
 njs_eval_function(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
+    njs_exception_internal_error(vm, "Not implemented", NULL);
+
     return NXT_ERROR;
 }
 

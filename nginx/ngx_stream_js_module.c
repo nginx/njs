@@ -408,7 +408,7 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
     }
 
     if (njs_vm_call(ctx->vm, func, ctx->arg, 1) != NJS_OK) {
-        njs_vm_exception(ctx->vm, &exception);
+        njs_vm_retval(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %*s",
                       exception.length, exception.start);
@@ -495,7 +495,7 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
         ctx->buf = in->buf;
 
         if (njs_vm_call(ctx->vm, func, ctx->arg, 1) != NJS_OK) {
-            njs_vm_exception(ctx->vm, &exception);
+            njs_vm_retval(ctx->vm, &exception);
 
             ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %*s",
                           exception.length, exception.start);
@@ -593,7 +593,7 @@ ngx_stream_js_variable(ngx_stream_session_t *s, ngx_stream_variable_value_t *v,
     }
 
     if (njs_vm_call(ctx->vm, func, ctx->arg, 1) != NJS_OK) {
-        njs_vm_exception(ctx->vm, &exception);
+        njs_vm_retval(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
                       "js exception: %*s", exception.length, exception.start);
@@ -1043,7 +1043,7 @@ ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     rc = njs_vm_compile(jscf->vm, &start, end);
 
     if (rc != NJS_OK) {
-        njs_vm_exception(jscf->vm, &text);
+        njs_vm_retval(jscf->vm, &text);
 
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "%*s, included",

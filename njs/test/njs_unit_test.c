@@ -4457,6 +4457,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("function f() { return 1\n 2 } f()"),
       nxt_string("1") },
 
+    { nxt_string("function f() { return 1\n 2 } f()"),
+      nxt_string("1") },
+
     { nxt_string("function f(a) { if (a) return 'OK' } f(1)+f(0)"),
       nxt_string("OKundefined") },
 
@@ -4480,6 +4483,10 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("function x(a) { while (a < 2) a++; return a + 1 } x(1) "),
       nxt_string("3") },
+
+    { nxt_string("(function(){(function(){(function(){(function(){"
+                    "(function(){(function(){(function(){})})})})})})})"),
+      nxt_string("SyntaxError: The maximum function nesting level is \"5\" in 1") },
 
     /* Recursive factorial. */
 
@@ -5420,7 +5427,7 @@ static njs_unit_test_t  njs_test[] =
     /* Exceptions. */
 
     { nxt_string("throw null"),
-      nxt_string("") },
+      nxt_string("null") },
 
     { nxt_string("var a; try { throw null } catch (e) { a = e } a"),
       nxt_string("null") },
@@ -5428,8 +5435,14 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a; try { throw Error('e') } catch (e) { a = e.message } a"),
       nxt_string("e") },
 
+    { nxt_string("var a; try { NaN.toString(NaN) } catch (e) { a = e.name } a"),
+      nxt_string("RangeError") },
+
     { nxt_string("try { throw null } catch (e) { throw e }"),
-      nxt_string("") },
+      nxt_string("null") },
+
+    { nxt_string("try { throw Error('e') } catch (e) { throw Error(e.message + '2') }"),
+      nxt_string("Error: e2") },
 
     { nxt_string("try { throw null } catch (null) { throw e }"),
       nxt_string("SyntaxError: Unexpected token \"null\" in 1") },
@@ -5447,27 +5460,27 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var a = 0; try { throw 3 }"
                  "catch (e) { throw e + 1 } finally { a++ }"),
-      nxt_string("") },
+      nxt_string("4") },
 
     { nxt_string("var a = 0; try { throw 3 }"
                  "catch (e) { a = e } finally { throw a }"),
-      nxt_string("") },
+      nxt_string("3") },
 
     { nxt_string("try { throw null } catch (e) { } finally { }"),
       nxt_string("undefined") },
 
     { nxt_string("var a = 0; try { throw 3 }"
                  "catch (e) { throw 4 } finally { throw a }"),
-      nxt_string("") },
+      nxt_string("0") },
 
     { nxt_string("var a = 0; try { a = 5 } finally { a++ } a"),
       nxt_string("6") },
 
     { nxt_string("var a = 0; try { throw 5 } finally { a++ }"),
-      nxt_string("") },
+      nxt_string("5") },
 
     { nxt_string("var a = 0; try { a = 5 } finally { throw 7 }"),
-      nxt_string("") },
+      nxt_string("7") },
 
     { nxt_string("function f(a) {"
                  "   if (a > 1) return f(a - 1);"
@@ -5493,6 +5506,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var o = { toString: function() { return 'OK' } }; 'o:' + o"),
       nxt_string("o:OK") },
+
+    { nxt_string("var o = { toString: function() { return [1] } }; o"),
+      nxt_string("TypeError") },
 
     { nxt_string("var o = { toString: function() { return [1] } }; 'o:' + o"),
       nxt_string("TypeError") },
@@ -7032,7 +7048,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("eval()"),
-      nxt_string("") },
+      nxt_string("InternalError: Not implemented") },
 
     /* Math. */
 
@@ -9063,17 +9079,15 @@ njs_unit_test(nxt_bool_t disassemble)
 
             ret = njs_vm_run(nvm);
 
-            if (ret == NXT_OK) {
-                if (njs_vm_retval(nvm, &s) != NXT_OK) {
-                    return NXT_ERROR;
-                }
-
-            } else {
-                njs_vm_exception(nvm, &s);
+            if (njs_vm_retval(nvm, &s) != NXT_OK) {
+                return NXT_ERROR;
             }
 
         } else {
-            njs_vm_exception(vm, &s);
+            if (njs_vm_retval(vm, &s) != NXT_OK) {
+                return NXT_ERROR;
+            }
+
             nvm = NULL;
         }
 

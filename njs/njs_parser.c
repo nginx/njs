@@ -21,6 +21,7 @@
 #include <njs_string.h>
 #include <njs_object.h>
 #include <njs_function.h>
+#include <njs_error.h>
 #include <njs_variable.h>
 #include <njs_parser.h>
 #include <njs_regexp.h>
@@ -196,9 +197,9 @@ njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser, njs_scope_t type)
                     break;
                 }
 
-                nxt_alert(&vm->trace, NXT_LEVEL_ERROR, "SyntaxError: "
-                          "The maximum function nesting level is \"%d\"",
-                          NJS_MAX_NESTING);
+                njs_parser_syntax_error(vm, parser,
+                                        "The maximum function nesting "
+                                        "level is \"%d\"", NJS_MAX_NESTING);
 
                 return NXT_ERROR;
             }
@@ -310,7 +311,7 @@ njs_parser_statement_chain(njs_vm_t *vm, njs_parser_t *parser,
             }
         }
 
-    } else if (vm->exception == NULL) {
+    } else if (!njs_is_error(&vm->retval)) {
         (void) njs_parser_unexpected_token(vm, parser, token);
     }
 
@@ -770,8 +771,8 @@ njs_parser_return_statement(njs_vm_t *vm, njs_parser_t *parser)
          scope = scope->parent)
     {
         if (scope->type == NJS_SCOPE_GLOBAL) {
-            nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-                      "SyntaxError: Illegal return statement");
+            njs_parser_syntax_error(vm, parser, "Illegal return statement",
+                                    NULL);
 
             return NXT_ERROR;
         }
@@ -1053,9 +1054,9 @@ njs_parser_switch_statement(njs_vm_t *vm, njs_parser_t *parser)
 
                } else {
                     if (dflt != NULL) {
-                        nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-                                  "SyntaxError: More than one default clause "
-                                  "in switch statement");
+                        njs_parser_syntax_error(vm, parser,
+                                                "More than one default clause "
+                                                "in switch statement", NULL);
 
                         return NJS_TOKEN_ILLEGAL;
                     }
@@ -1461,9 +1462,9 @@ njs_parser_for_in_statement(njs_vm_t *vm, njs_parser_t *parser, nxt_str_t *name,
     node = parser->node->left;
 
     if (node->token != NJS_TOKEN_NAME) {
-        nxt_alert(&vm->trace, NXT_LEVEL_ERROR, "ReferenceError: Invalid "
-                  "left-hand side \"%.*s\" in for-in statement",
-                  (int) name->length, name->start);
+        njs_parser_ref_error(vm, parser, "Invalid left-hand side \"%.*s\" "
+                             "in for-in statement", (int) name->length,
+                             name->start);
 
         return NJS_TOKEN_ILLEGAL;
     }
@@ -1686,8 +1687,8 @@ njs_parser_try_statement(njs_vm_t *vm, njs_parser_t *parser)
     }
 
     if (try->right == NULL) {
-        nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-                  "SyntaxError: Missing catch or finally after try");
+        njs_parser_syntax_error(vm, parser, "Missing catch or "
+                                "finally after try", NULL);
 
         return NJS_TOKEN_ILLEGAL;
     }
@@ -1936,9 +1937,9 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
         break;
 
     case NJS_TOKEN_UNTERMINATED_STRING:
-        nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-                  "SyntaxError: Unterminated string \"%.*s\"",
-                  (int) parser->lexer->text.length, parser->lexer->text.start);
+        njs_parser_syntax_error(vm, parser, "Unterminated string \"%.*s\"",
+                                (int) parser->lexer->text.length,
+                                parser->lexer->text.start);
 
         return NJS_TOKEN_ILLEGAL;
 
@@ -2540,9 +2541,9 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
 
 invalid:
 
-    nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-              "SyntaxError: Invalid Unicode code point \"%.*s\"",
-              (int) parser->lexer->text.length, parser->lexer->text.start);
+    njs_parser_syntax_error(vm, parser, "Invalid Unicode code point \"%.*s\"",
+                            (int) parser->lexer->text.length,
+                            parser->lexer->text.start);
 
     return NJS_TOKEN_ILLEGAL;
 }
@@ -2584,13 +2585,12 @@ njs_parser_unexpected_token(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token)
 {
     if (token != NJS_TOKEN_END) {
-        nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-                  "SyntaxError: Unexpected token \"%.*s\"",
-                  (int) parser->lexer->text.length, parser->lexer->text.start);
+        njs_parser_syntax_error(vm, parser, "Unexpected token \"%.*s\"",
+                                (int) parser->lexer->text.length,
+                                parser->lexer->text.start);
 
     } else {
-        nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-                  "SyntaxError: Unexpected end of input");
+        njs_parser_syntax_error(vm, parser, "Unexpected end of input", NULL);
     }
 
     return NJS_TOKEN_ILLEGAL;
@@ -2601,18 +2601,13 @@ u_char *
 njs_parser_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
     u_char *start)
 {
-    int       n;
     u_char    *p;
-    ssize_t   size;
+    size_t    size;
     njs_vm_t  *vm;
 
-    p = start;
-
-    if (td->level == NXT_LEVEL_CRIT) {
-        size = sizeof("InternalError: ") - 1;
-        memcpy(p, "InternalError: ", size);
-        p = start + size;
-    }
+    size = sizeof("InternalError: ") - 1;
+    memcpy(start, "InternalError: ", size);
+    p = start + size;
 
     vm = trace->data;
 
@@ -2620,16 +2615,43 @@ njs_parser_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
     p = trace->handler(trace, td, p);
 
     if (vm->parser != NULL) {
-        size = td->end - start;
-
-        n = snprintf((char *) p, size, " in %u", vm->parser->lexer->line);
-
-        if (n < size) {
-            p += n;
-        }
+        njs_exception_internal_error(vm, "%s in %u", start,
+                                     vm->parser->lexer->line);
+    } else {
+        njs_exception_internal_error(vm, "%s", start);
     }
 
-    njs_vm_throw_exception(vm, start, p - start);
-
     return p;
+}
+
+
+void
+njs_parser_syntax_error(njs_vm_t *vm, njs_parser_t *parser, const char* fmt,
+    ...)
+{
+    va_list  args;
+
+    static char  buf[256];
+
+    va_start(args, fmt);
+    (void) vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+
+    njs_exception_syntax_error(vm, "%s in %u", buf, parser->lexer->line);
+}
+
+
+void
+njs_parser_ref_error(njs_vm_t *vm, njs_parser_t *parser, const char* fmt,
+    ...)
+{
+    va_list  args;
+
+    static char  buf[256];
+
+    va_start(args, fmt);
+    (void) vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+
+    njs_exception_ref_error(vm, "%s in %u", buf, parser->lexer->line);
 }

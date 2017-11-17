@@ -121,67 +121,71 @@ static njs_interactive_test_t  njs_test[] =
                  "function f(o) {return ff(o)}" ENTER
                  "f({})" ENTER),
       nxt_string("TypeError\n"
-                 "at ff (:1)\n"
-                 "at f (:1)\n"
-                 "at main\n") },
+                 "    at ff (:1)\n"
+                 "    at f (:1)\n"
+                 "    at main (native)\n") },
 
     { nxt_string("function ff(o) {return o.a.a}" ENTER
                  "function f(o) {try {return ff(o)} "
                                  "finally {return o.a.a}}" ENTER
                  "f({})" ENTER),
       nxt_string("TypeError\n"
-                 "at f (:1)\n"
-                 "at main\n") },
+                 "    at f (:1)\n"
+                 "    at main (native)\n") },
 
     { nxt_string("function f(ff, o) {return ff(o)}" ENTER
                  "f(function (o) {return o.a.a}, {})" ENTER),
       nxt_string("TypeError\n"
-                 "at anonymous (:1)\n"
-                 "at f (:1)\n"
-                 "at main\n") },
+                 "    at anonymous (:1)\n"
+                 "    at f (:1)\n"
+                 "    at main (native)\n") },
 
     { nxt_string("'str'.replace(/t/g,"
                  "              function(m) {return m.a.a})" ENTER),
       nxt_string("TypeError\n"
-                 "at anonymous (:1)\n"
-                 "at String.prototype.replace\n"
-                 "at main\n") },
+                 "    at anonymous (:1)\n"
+                 "    at String.prototype.replace (native)\n"
+                 "    at main (native)\n") },
 
     { nxt_string("function f(o) {return Object.keys(o)}" ENTER
                  "f()" ENTER),
       nxt_string("TypeError\n"
-                 "at Object.keys\n"
-                 "at f (:1)\n"
-                 "at main\n") },
+                 "    at Object.keys (native)\n"
+                 "    at f (:1)\n"
+                 "    at main (native)\n") },
 
     { nxt_string("String.fromCharCode(3.14)" ENTER),
       nxt_string("RangeError\n"
-                 "at String.fromCharCode\n"
-                 "at main\n") },
+                 "    at String.fromCharCode (native)\n"
+                 "    at main (native)\n") },
 
     { nxt_string("Math.log({}.a.a)" ENTER),
       nxt_string("TypeError\n"
-                 "at Math.log\n"
-                 "at main\n") },
+                 "    at Math.log (native)\n"
+                 "    at main (native)\n") },
 
     { nxt_string("function f(o) {function f_in(o) {return o.a.a};"
                  "               return f_in(o)}; f({})" ENTER),
       nxt_string("TypeError\n"
-                 "at f_in (:1)\n"
-                 "at f (:1)\n"
-                 "at main\n") },
+                 "    at f_in (:1)\n"
+                 "    at f (:1)\n"
+                 "    at main (native)\n") },
 
     { nxt_string("function f(o) {var ff = function (o) {return o.a.a};"
                  "               return ff(o)}; f({})" ENTER),
       nxt_string("TypeError\n"
-                 "at anonymous (:1)\n"
-                 "at f (:1)\n"
+                 "    at anonymous (:1)\n"
+                 "    at f (:1)\n"
+                 "    at main (native)\n") },
+
+    /* Exception in njs_vm_retval() */
+
+    { nxt_string("var o = { toString: function() { return [1] } }" ENTER
+                 "o" ENTER),
+      nxt_string("TypeError\n"
                  "at main\n") },
 
 };
-
-
-static void njs_report_backtrace(nxt_array_t *backtrace, nxt_str_t *s);
 
 
 static nxt_int_t
@@ -193,7 +197,6 @@ njs_interactive_test(void)
     nxt_str_t               s;
     nxt_uint_t              i;
     nxt_bool_t              success;
-    nxt_array_t             *backtrace;
     njs_vm_opt_t            options;
     nxt_mem_cache_pool_t    *mcp;
     njs_interactive_test_t  *test;
@@ -242,18 +245,8 @@ njs_interactive_test(void)
             }
         }
 
-        if (ret == NXT_OK) {
-            if (njs_vm_retval(vm, &s) != NXT_OK) {
-                goto fail;
-            }
-
-        } else {
-            njs_vm_exception(vm, &s);
-
-            backtrace = njs_vm_backtrace(vm);
-            if (backtrace != NULL) {
-                njs_report_backtrace(backtrace, &s);
-            }
+        if (njs_vm_retval(vm, &s) != NXT_OK) {
+            return NXT_ERROR;
         }
 
         success = nxt_strstr_eq(&test->ret, &s);
@@ -278,34 +271,6 @@ fail:
     nxt_mem_cache_pool_destroy(mcp);
 
     return ret;
-}
-
-
-static void
-njs_report_backtrace(nxt_array_t *backtrace, nxt_str_t *s)
-{
-    char                   *p;
-    nxt_uint_t             i;
-    njs_backtrace_entry_t  *be;
-
-    static char            buf[4096];
-
-    p = buf + sprintf(buf, "%.*s\n", (int) s->length, s->start);
-
-    be = backtrace->start;
-    for (i = 0; i < backtrace->items; i++) {
-        if (be[i].line != 0) {
-            p += sprintf(p, "at %.*s (:%d)\n", (int) be[i].name.length,
-                         be[i].name.start, be[i].line);
-
-        } else {
-            p += sprintf(p, "at %.*s\n", (int) be[i].name.length,
-                         be[i].name.start);
-        }
-    }
-
-    s->length = strlen(buf);
-    s->start = (u_char *) buf;
 }
 
 

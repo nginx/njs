@@ -20,6 +20,7 @@
 #include <njs_vm.h>
 #include <njs_variable.h>
 #include <njs_parser.h>
+#include <njs_error.h>
 #include <string.h>
 
 
@@ -156,9 +157,9 @@ njs_variable_add(njs_vm_t *vm, njs_parser_t *parser, njs_variable_type_t type)
 
     /* ret == NXT_DECLINED. */
 
-    nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-              "SyntaxError: Identifier \"%.*s\" has already been declared",
-              (int) lhq.key.length, lhq.key.start);
+    njs_parser_syntax_error(vm, parser, "Identifier \"%.*s\" "
+                            "has already been declared",
+                            (int) lhq.key.length, lhq.key.start);
 
     return NULL;
 }
@@ -342,8 +343,8 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
         index = (index >> NJS_SCOPE_SHIFT) + 1;
 
         if (index > 255 || vs.scope->argument_closures == 0) {
-            nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-                      "InternalError: too many argument closures");
+            njs_exception_internal_error(vm, "too many argument closures",
+                                         NULL);
 
             return NULL;
         }
@@ -405,9 +406,8 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
 
 not_found:
 
-    nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-              "ReferenceError: \"%.*s\" is not defined",
-              (int) vs.lhq.key.length, vs.lhq.key.start);
+    njs_parser_ref_error(vm, vm->parser, "\"%.*s\" is not defined",
+                         (int) vs.lhq.key.length, vs.lhq.key.start);
 
     return NULL;
 }

@@ -3454,25 +3454,6 @@ njs_value_string_copy(njs_vm_t *vm, nxt_str_t *retval, njs_value_t *value,
 }
 
 
-void
-njs_vm_throw_exception(njs_vm_t *vm, const u_char *buf, uint32_t size)
-{
-    int32_t      length;
-    njs_value_t  *value;
-
-    value = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_value_t));
-
-    if (nxt_fast_path(value != NULL)) {
-        vm->exception = value;
-
-        length = nxt_utf8_length(buf, size);
-        length = (length >= 0) ? length : 0;
-
-        (void) njs_string_new(vm, value, buf, size, length);
-    }
-}
-
-
 static njs_ret_t
 njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame)
 {

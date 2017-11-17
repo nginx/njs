@@ -110,7 +110,6 @@ NXT_EXPORT njs_function_t *njs_vm_function(njs_vm_t *vm, nxt_str_t *name);
 NXT_EXPORT njs_ret_t njs_vm_return_string(njs_vm_t *vm, u_char *start,
     size_t size);
 NXT_EXPORT nxt_int_t njs_vm_retval(njs_vm_t *vm, nxt_str_t *retval);
-NXT_EXPORT nxt_int_t njs_vm_exception(njs_vm_t *vm, nxt_str_t *retval);
 NXT_EXPORT nxt_array_t *njs_vm_backtrace(njs_vm_t *vm);
 
 NXT_EXPORT void njs_disassembler(njs_vm_t *vm);

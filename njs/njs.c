@@ -64,7 +64,6 @@ static nxt_int_t njs_interactive_shell(njs_opts_t *opts,
 static nxt_int_t njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options);
 static nxt_int_t njs_process_script(njs_vm_t *vm, njs_opts_t *opts,
     const nxt_str_t *script, nxt_str_t *out);
-static void njs_print_backtrace(nxt_array_t *backtrace);
 static nxt_int_t njs_editline_init(njs_vm_t *vm);
 static char **njs_completion_handler(const char *text, int start, int end);
 static char *njs_completion_generator(const char *text, int state);
@@ -240,10 +239,9 @@ njs_externals_init(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 static nxt_int_t
 njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 {
-    njs_vm_t     *vm;
-    nxt_int_t    ret;
-    nxt_str_t    line, out;
-    nxt_array_t  *backtrace;
+    njs_vm_t   *vm;
+    nxt_int_t  ret;
+    nxt_str_t  line, out;
 
     vm = njs_vm_create(vm_options);
     if (vm == NULL) {
@@ -282,11 +280,6 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
         printf("%.*s\n", (int) out.length, out.start);
 
-        backtrace = njs_vm_backtrace(vm);
-        if (backtrace != NULL) {
-            njs_print_backtrace(backtrace);
-        }
-
         /* editline allocs a new buffer every time. */
         free(line.start);
     }
@@ -307,7 +300,6 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
     nxt_int_t    ret;
     nxt_str_t    out, script;
     struct stat  sb;
-    nxt_array_t  *backtrace;
 
     file = opts->file;
 
@@ -399,11 +391,6 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
     if (!opts->disassemble) {
         printf("%.*s\n", (int) out.length, out.start);
-
-        backtrace = njs_vm_backtrace(vm);
-        if (backtrace != NULL) {
-            njs_print_backtrace(backtrace);
-        }
     }
 
     ret = NXT_OK;
@@ -442,41 +429,16 @@ njs_process_script(njs_vm_t *vm, njs_opts_t *opts, const nxt_str_t *script,
         }
 
         ret = njs_vm_run(vm);
-
-        if (ret == NXT_OK) {
-            if (njs_vm_retval(vm, out) != NXT_OK) {
-                return NXT_ERROR;
-            }
-
-        } else {
-            njs_vm_exception(vm, out);
+        if (ret == NXT_AGAIN) {
+            return ret;
         }
+    }
 
-    } else {
-        njs_vm_exception(vm, out);
+    if (njs_vm_retval(vm, out) != NXT_OK) {
+        return NXT_ERROR;
     }
 
     return NXT_OK;
-}
-
-
-static void
-njs_print_backtrace(nxt_array_t *backtrace)
-{
-    nxt_uint_t             i;
-    njs_backtrace_entry_t  *be;
-
-    be = backtrace->start;
-
-    for (i = 0; i < backtrace->items; i++) {
-        if (be[i].line != 0) {
-            printf("at %.*s (:%d)\n", (int) be[i].name.length, be[i].name.start,
-                   be[i].line);
-
-        } else {
-            printf("at %.*s\n", (int) be[i].name.length, be[i].name.start);
-        }
-    }
 }
 
 

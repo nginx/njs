@@ -24,6 +24,7 @@
 #include <njs_parser.h>
 #include <njs_regexp.h>
 #include <string.h>
+#include <stdio.h>
 
 
 static nxt_int_t njs_vm_init(njs_vm_t *vm);
@@ -198,6 +199,8 @@ njs_vm_create(njs_vm_opt_t *options)
             if (nxt_slow_path(ret != NXT_OK)) {
                 return NULL;
             }
+
+            vm->retval = njs_value_void;
         }
     }
 
@@ -246,6 +249,10 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     parser->code_size = sizeof(njs_vmcode_stop_t);
     parser->scope_offset = NJS_INDEX_GLOBAL_OFFSET;
 
+    if (vm->backtrace != NULL) {
+        nxt_array_reset(vm->backtrace);
+    }
+
     node = njs_parser(vm, parser, prev);
     if (nxt_slow_path(node == NULL)) {
         goto fail;
@@ -263,10 +270,6 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
      * again in the next iteration of the accumulative mode.
      */
     vm->code = NULL;
-
-    if (vm->backtrace != NULL) {
-        nxt_array_reset(vm->backtrace);
-    }
 
     ret = njs_generate_scope(vm, parser, node);
     if (nxt_slow_path(ret != NXT_OK)) {
@@ -333,6 +336,8 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
         if (nxt_slow_path(ret != NXT_OK)) {
             goto fail;
         }
+
+        nvm->retval = njs_value_void;
 
         return nvm;
     }
@@ -402,8 +407,6 @@ njs_vm_init(njs_vm_t *vm)
         vm->backtrace = backtrace;
     }
 
-    vm->retval = njs_value_void;
-
     vm->trace.level = NXT_LEVEL_TRACE;
     vm->trace.size = 2048;
     vm->trace.handler = njs_parser_trace_handler;
@@ -464,6 +467,10 @@ njs_vm_run(njs_vm_t *vm)
 
     nxt_thread_log_debug("RUN:");
 
+    if (vm->backtrace != NULL) {
+        nxt_array_reset(vm->backtrace);
+    }
+
     ret = njs_vmcode_interpreter(vm);
 
     if (nxt_slow_path(ret == NXT_AGAIN)) {
@@ -515,18 +522,76 @@ njs_vm_return_string(njs_vm_t *vm, u_char *start, size_t size)
 nxt_int_t
 njs_vm_retval(njs_vm_t *vm, nxt_str_t *retval)
 {
-    return njs_value_to_ext_string(vm, retval, &vm->retval);
-}
+    u_char                 *p, *start;
+    size_t                 len;
+    nxt_int_t              ret;
+    nxt_uint_t             i;
+    nxt_array_t            *backtrace;
+    njs_backtrace_entry_t  *be;
 
+    if (vm->top_frame == NULL) {
+        /* An exception was thrown during compilation. */
 
-nxt_int_t
-njs_vm_exception(njs_vm_t *vm, nxt_str_t *retval)
-{
-    if (vm->top_frame != NULL) {
-        vm->top_frame->trap_tries = 0;
+        njs_vm_init(vm);
     }
 
-    return njs_value_to_ext_string(vm, retval, vm->exception);
+    ret = njs_value_to_ext_string(vm, retval, &vm->retval);
+
+    if (ret != NXT_OK) {
+        /* retval evaluation threw an exception. */
+
+        vm->top_frame->trap_tries = 0;
+
+        ret = njs_value_to_ext_string(vm, retval, &vm->retval);
+        if (ret != NXT_OK) {
+            return ret;
+        }
+    }
+
+    backtrace = njs_vm_backtrace(vm);
+
+    if (backtrace != NULL) {
+
+        len = retval->length + 1;
+
+        be = backtrace->start;
+
+        for (i = 0; i < backtrace->items; i++) {
+            if (be[i].line != 0) {
+                len += sizeof("    at  (:)\n") - 1 + 10 + be[i].name.length;
+
+            } else {
+                len += sizeof("    at  (native)\n") - 1 + be[i].name.length;
+            }
+        }
+
+        p = nxt_mem_cache_alloc(vm->mem_cache_pool, len);
+        if (p == NULL) {
+            return NXT_ERROR;
+        }
+
+        start = p;
+
+        p = nxt_cpymem(p, retval->start, retval->length);
+        *p++ = '\n';
+
+        for (i = 0; i < backtrace->items; i++) {
+            if (be[i].line != 0) {
+                p += sprintf((char *) p, "    at %.*s (:%u)\n",
+                             (int) be[i].name.length, be[i].name.start,
+                             be[i].line);
+
+            } else {
+                p += sprintf((char *) p, "    at %.*s (native)\n",
+                             (int) be[i].name.length, be[i].name.start);
+            }
+        }
+
+        retval->start = start;
+        retval->length = p - retval->start;
+    }
+
+    return NXT_OK;
 }
 
 

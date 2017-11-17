@@ -294,8 +294,8 @@ njs_parser_var_expression(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
         }
 
         if (!njs_parser_is_lvalue(parser->node)) {
-            nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-                      "ReferenceError: Invalid left-hand side in assignment");
+            njs_parser_ref_error(vm, parser,
+                                 "Invalid left-hand side in assignment", NULL);
             return NJS_TOKEN_ILLEGAL;
         }
 
@@ -432,8 +432,8 @@ njs_parser_assignment_expression(njs_vm_t *vm, njs_parser_t *parser,
         }
 
         if (!njs_parser_is_lvalue(parser->node)) {
-            nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-                      "ReferenceError: Invalid left-hand side in assignment");
+            njs_parser_ref_error(vm, parser, "Invalid left-hand side "
+                                 "in assignment", NULL);
             return NJS_TOKEN_ILLEGAL;
         }
 
@@ -756,9 +756,8 @@ njs_parser_unary_expression(njs_vm_t *vm, njs_parser_t *parser,
     }
 
     if (next == NJS_TOKEN_EXPONENTIATION) {
-        nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-                  "SyntaxError: Either left-hand side or entire exponentiation "
-                  "must be parenthesized");
+        njs_parser_syntax_error(vm, parser, "Either left-hand side or entire "
+                                "exponentiation must be parenthesized");
 
         return NJS_TOKEN_ILLEGAL;
     }
@@ -796,8 +795,8 @@ njs_parser_unary_expression(njs_vm_t *vm, njs_parser_t *parser,
 
         case NJS_TOKEN_NAME:
         case NJS_TOKEN_UNDEFINED:
-            nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-                      "SyntaxError: Delete of an unqualified identifier");
+        njs_parser_syntax_error(vm, parser,
+                                "Delete of an unqualified identifier", NULL);
 
             return NJS_TOKEN_ILLEGAL;
 
@@ -856,8 +855,8 @@ njs_parser_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
     }
 
     if (!njs_parser_is_lvalue(parser->node)) {
-        nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-                  "ReferenceError: Invalid left-hand side in prefix operation");
+        njs_parser_ref_error(vm, parser, "Invalid left-hand side "
+                             "in prefix operation", NULL);
         return NJS_TOKEN_ILLEGAL;
     }
 
@@ -911,8 +910,8 @@ njs_parser_post_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
     }
 
     if (!njs_parser_is_lvalue(parser->node)) {
-        nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-                "ReferenceError: Invalid left-hand side in postfix operation");
+        njs_parser_ref_error(vm, parser, "Invalid left-hand side "
+                             "in postfix operation", NULL);
         return NJS_TOKEN_ILLEGAL;
     }
 

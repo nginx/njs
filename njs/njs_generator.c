@@ -1150,8 +1150,7 @@ njs_generate_continue_statement(njs_vm_t *vm, njs_parser_t *parser,
         }
     }
 
-    nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-              "SyntaxError: Illegal continue statement");
+    njs_parser_syntax_error(vm, parser, "Illegal continue statement", NULL);
 
     return NXT_ERROR;
 
@@ -1194,8 +1193,7 @@ njs_generate_break_statement(njs_vm_t *vm, njs_parser_t *parser,
         }
     }
 
-    nxt_alert(&vm->trace, NXT_LEVEL_ERROR,
-              "SyntaxError: Illegal break statement");
+    njs_parser_syntax_error(vm, parser, "Illegal break statement", NULL);
 
     return NXT_ERROR;
 

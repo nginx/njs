@@ -931,8 +931,6 @@ struct njs_vm_s {
     njs_native_frame_t       *top_frame;
     njs_frame_t              *active_frame;
 
-    const njs_value_t        *exception;
-
     nxt_lvlhsh_t             externals_hash;
     nxt_lvlhsh_t             variables_hash;
     nxt_lvlhsh_t             values_hash;
@@ -962,7 +960,6 @@ struct njs_vm_s {
      * with the generic type NJS_OBJECT_INTERNAL_ERROR but its own prototype
      * object NJS_PROTOTYPE_MEMORY_ERROR.
      */
-    njs_value_t              memory_error;
     njs_object_t             memory_error_object;
 
     nxt_array_t              *code;  /* of njs_vm_code_t */
@@ -1145,8 +1142,6 @@ njs_ret_t njs_native_function_arguments(njs_vm_t *vm, njs_value_t *args,
 njs_ret_t njs_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst,
     const njs_value_t *src);
 void njs_number_set(njs_value_t *value, double num);
-
-void njs_vm_throw_exception(njs_vm_t *vm, const u_char *buf, uint32_t size);
 
 nxt_int_t njs_builtin_objects_create(njs_vm_t *vm);
 nxt_int_t njs_builtin_objects_clone(njs_vm_t *vm);

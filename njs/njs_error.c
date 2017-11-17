@@ -37,7 +37,7 @@ njs_exception_error_create(njs_vm_t *vm, njs_value_type_t type,
     size_t        size;
     va_list       args;
     nxt_int_t     ret;
-    njs_value_t   string, *value;
+    njs_value_t   string;
     njs_object_t  *error;
 
     static char  buf[256];
@@ -61,16 +61,9 @@ njs_exception_error_create(njs_vm_t *vm, njs_value_type_t type,
         goto memory_error;
     }
 
-    value = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_value_t));
-    if (nxt_slow_path(value == NULL)) {
-        goto memory_error;
-    }
-
-    value->data.u.object = error;
-    value->type = type;
-    value->data.truth = 1;
-
-    vm->exception = value;
+    vm->retval.data.u.object = error;
+    vm->retval.type = type;
+    vm->retval.data.truth = 1;
 
     return;
 
@@ -495,9 +488,8 @@ const njs_object_init_t  njs_uri_error_constructor_init = {
 
 
 static void
-njs_init_memory_error(njs_vm_t *vm)
+njs_set_memory_error(njs_vm_t *vm)
 {
-    njs_value_t             *value;
     njs_object_t            *object;
     njs_object_prototype_t  *prototypes;
 
@@ -516,21 +508,17 @@ njs_init_memory_error(njs_vm_t *vm)
      */
     object->extensible = 0;
 
-    value = &vm->memory_error;
-
-    value->data.type = NJS_OBJECT_INTERNAL_ERROR;
-    value->data.truth = 1;
-    value->data.u.number = NAN;
-    value->data.u.object = object;
+    vm->retval.data.type = NJS_OBJECT_INTERNAL_ERROR;
+    vm->retval.data.truth = 1;
+    vm->retval.data.u.number = NAN;
+    vm->retval.data.u.object = object;
 }
 
 
 void
 njs_exception_memory_error(njs_vm_t *vm)
 {
-    njs_init_memory_error(vm);
-
-    vm->exception = &vm->memory_error;
+    njs_set_memory_error(vm);
 }
 
 
@@ -538,9 +526,7 @@ njs_ret_t
 njs_memory_error_constructor(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    njs_init_memory_error(vm);
-
-    vm->retval = vm->memory_error;
+    njs_set_memory_error(vm);
 
     return NXT_OK;
 }
