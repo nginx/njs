@@ -26,6 +26,7 @@
 #include <njs_object_hash.h>
 #include <njs_array.h>
 #include <njs_function.h>
+#include <njs_error.h>
 #include <njs_variable.h>
 #include <njs_parser.h>
 #include <njs_regexp.h>
@@ -551,7 +552,7 @@ njs_string_prototype_value_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             value = &value->data.u.object_value->value;
 
         } else {
-            vm->exception = &njs_exception_type_error;
+            njs_exception_type_error(vm, NULL, NULL);
             return NXT_ERROR;
         }
     }
@@ -576,7 +577,7 @@ njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_string_prop_t  string;
 
     if (njs_is_null_or_void(&args[0])) {
-        vm->exception = &njs_exception_type_error;
+        njs_exception_type_error(vm, NULL, NULL);
         return NXT_ERROR;
     }
 
@@ -1166,7 +1167,7 @@ njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args,
 
 range_error:
 
-    vm->exception = &njs_exception_range_error;
+    njs_exception_range_error(vm, NULL, NULL);
 
     return NXT_ERROR;
 }
@@ -1833,7 +1834,7 @@ njs_string_prototype_repeat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         n = args[1].data.u.number;
 
         if (nxt_slow_path(n < 0 || n >= max)) {
-            vm->exception = &njs_exception_range_error;
+            njs_exception_range_error(vm, NULL, NULL);
             return NXT_ERROR;
         }
     }
@@ -2537,7 +2538,7 @@ njs_string_replace_regexp_continuation(njs_vm_t *vm, njs_value_t *args,
 
     nxt_regex_match_data_free(r->match_data, vm->regex_context);
 
-    vm->exception = &njs_exception_type_error;
+    njs_exception_type_error(vm, NULL, NULL);
 
     return NXT_ERROR;
 }
@@ -2649,7 +2650,7 @@ njs_string_replace_search_continuation(njs_vm_t *vm, njs_value_t *args,
         return njs_string_replace_join(vm, r);
     }
 
-    vm->exception = &njs_exception_type_error;
+    njs_exception_type_error(vm, NULL, NULL);
 
     return NXT_ERROR;
 }
@@ -3600,7 +3601,7 @@ njs_string_decode(njs_vm_t *vm, njs_value_t *value, const uint32_t *reserve)
 
 uri_error:
 
-    vm->exception = &njs_exception_uri_error;
+    njs_exception_uri_error(vm, NULL, NULL);
 
     return NXT_ERROR;
 }

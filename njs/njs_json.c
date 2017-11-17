@@ -23,6 +23,7 @@
 #include <njs_object_hash.h>
 #include <njs_array.h>
 #include <njs_function.h>
+#include <njs_error.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -147,8 +148,6 @@ static njs_json_state_t *njs_json_push_stringify_state(njs_vm_t *vm,
     njs_json_stringify_t *stringify, njs_value_t *value);
 static njs_json_state_t *njs_json_pop_stringify_state(
     njs_json_stringify_t *stringify);
-static void njs_json_stringify_exception(njs_json_stringify_t *stringify,
-    const char* msg);
 
 static nxt_int_t njs_json_append_value(njs_json_stringify_t *stringify,
     njs_value_t *value);
@@ -188,7 +187,7 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     value = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_value_t));
     if (nxt_slow_path(value == NULL)) {
-        vm->exception = &njs_exception_memory_error;
+        njs_exception_memory_error(vm);
         return NXT_ERROR;
     }
 
@@ -256,7 +255,8 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 memory_error:
 
-    vm->exception = &njs_exception_memory_error;
+    njs_exception_memory_error(vm);
+
     return NXT_ERROR;
 }
 
@@ -342,7 +342,8 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 memory_error:
 
-    vm->exception = &njs_exception_memory_error;
+    njs_exception_memory_error(vm);
+
     return NXT_ERROR;
 }
 
@@ -486,7 +487,7 @@ njs_json_parse_object(njs_json_parse_ctx_t *ctx, njs_value_t *value, u_char *p)
 
         ret = nxt_lvlhsh_insert(&object->hash, &lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
-            ctx->vm->exception = &njs_exception_internal_error;
+            njs_exception_internal_error(ctx->vm, NULL, NULL);
             return NULL;
         }
 
@@ -526,7 +527,7 @@ error_end:
 
 memory_error:
 
-    ctx->vm->exception = &njs_exception_memory_error;
+    njs_exception_memory_error(ctx->vm);
 
     return NULL;
 }
@@ -546,7 +547,7 @@ njs_json_parse_array(njs_json_parse_ctx_t *ctx, njs_value_t *value, u_char *p)
 
     array = njs_array_alloc(ctx->vm, 0, 0);
     if (nxt_slow_path(array == NULL)) {
-        ctx->vm->exception = &njs_exception_memory_error;
+        njs_exception_memory_error(ctx->vm);
         return NULL;
     }
 
@@ -569,7 +570,7 @@ njs_json_parse_array(njs_json_parse_ctx_t *ctx, njs_value_t *value, u_char *p)
 
         element = nxt_mem_cache_alloc(ctx->pool, sizeof(njs_value_t));
         if (nxt_slow_path(element == NULL)) {
-            ctx->vm->exception = &njs_exception_memory_error;
+            njs_exception_memory_error(ctx->vm);
             return NULL;
         }
 
@@ -580,7 +581,7 @@ njs_json_parse_array(njs_json_parse_ctx_t *ctx, njs_value_t *value, u_char *p)
 
         ret = njs_array_add(ctx->vm, array, element);
         if (nxt_slow_path(ret != NXT_OK)) {
-            ctx->vm->exception = &njs_exception_internal_error;
+            njs_exception_internal_error(ctx->vm, NULL, NULL);
             return NULL;
         }
 
@@ -735,7 +736,7 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value, u_char *p)
 
         start = nxt_mem_cache_alloc(ctx->pool, size);
         if (nxt_slow_path(start == NULL)) {
-            ctx->vm->exception = &njs_exception_memory_error;
+            njs_exception_memory_error(ctx->vm);;
             return NULL;
         }
 
@@ -820,7 +821,7 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value, u_char *p)
 
     ret = njs_string_create(ctx->vm, value, start, size, length);
     if (nxt_slow_path(ret != NXT_OK)) {
-        ctx->vm->exception = &njs_exception_memory_error;
+        njs_exception_memory_error(ctx->vm);
         return NULL;
     }
 
@@ -991,7 +992,7 @@ njs_json_parse_continuation(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             }
 
             if (nxt_slow_path(ret != NXT_OK)) {
-                vm->exception = &njs_exception_internal_error;
+                njs_exception_internal_error(vm, NULL, NULL);
                 return NXT_ERROR;
             }
 
@@ -1029,14 +1030,14 @@ njs_json_parse_continuation(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             break;
 
         default:
-            vm->exception = &njs_exception_internal_error;
+            njs_exception_internal_error(vm, NULL, NULL);
             return NXT_ERROR;
         }
     }
 
 memory_error:
 
-    vm->exception = &njs_exception_memory_error;
+    njs_exception_memory_error(vm);
 
     return NXT_ERROR;
 }
@@ -1071,7 +1072,7 @@ njs_json_parse_continuation_apply(njs_vm_t *vm, njs_json_parse_t *parse)
         break;
 
     default:
-        vm->exception = &njs_exception_internal_error;
+        njs_exception_internal_error(vm, NULL, NULL);
         return NXT_ERROR;
     }
 
@@ -1131,34 +1132,14 @@ static void
 njs_json_parse_exception(njs_json_parse_ctx_t *ctx, const char* msg,
     u_char *pos)
 {
-    size_t       size;
-    ssize_t      length;
-    njs_ret_t    ret;
-    njs_value_t  *exception;
-
-    static u_char  buf[256];
-
-    exception = nxt_mem_cache_alloc(ctx->pool, sizeof(njs_value_t));
-    if (nxt_slow_path(exception == NULL)) {
-        ctx->vm->exception = &njs_exception_memory_error;
-        return;
-    }
+    ssize_t  length;
 
     length = nxt_utf8_length(ctx->start, pos - ctx->start);
     if (nxt_slow_path(length < 0)) {
         length = 0;
     }
 
-    size = snprintf((char *) buf, sizeof(buf),
-                    "SyntaxError: %s at position %zu", msg, length);
-
-    ret = njs_string_new(ctx->vm, exception, buf, size, size);
-    if (nxt_slow_path(ret != NXT_OK)) {
-        ctx->vm->exception = &njs_exception_memory_error;
-        return;
-    }
-
-    ctx->vm->exception = exception;
+    njs_exception_syntax_error(ctx->vm, "%s at position %zu", msg, length);
 }
 
 
@@ -1450,7 +1431,8 @@ done:
 
 memory_error:
 
-    vm->exception = &njs_exception_memory_error;
+    njs_exception_memory_error(vm);
+
     return NXT_ERROR;
 }
 
@@ -1513,7 +1495,7 @@ njs_json_stringify_to_json(njs_vm_t *vm, njs_json_stringify_t* stringify,
         break;
 
     default:
-        vm->exception = &njs_exception_internal_error;
+        njs_exception_internal_error(vm, NULL, NULL);
         return NXT_ERROR;
     }
 
@@ -1557,7 +1539,7 @@ njs_json_stringify_replacer(njs_vm_t *vm, njs_json_stringify_t* stringify,
         break;
 
     default:
-        vm->exception = &njs_exception_internal_error;
+        njs_exception_internal_error(vm, NULL, NULL);
         return NXT_ERROR;
     }
 
@@ -1651,15 +1633,15 @@ njs_json_push_stringify_state(njs_vm_t *vm, njs_json_stringify_t *stringify,
     njs_json_state_t  *state;
 
     if (stringify->stack.items >= 32) {
-        njs_json_stringify_exception(stringify,
-                                     "Nested too deep or a cyclic structure");
+        njs_exception_type_error(stringify->vm,
+                                 "Nested too deep or a cyclic structure", NULL);
         return NULL;
     }
 
     state = nxt_array_add(&stringify->stack, &njs_array_mem_proto,
                            vm->mem_cache_pool);
     if (nxt_slow_path(state == NULL)) {
-        vm->exception = &njs_exception_memory_error;
+        njs_exception_memory_error(vm);
         return NULL;
     }
 
@@ -1705,33 +1687,6 @@ njs_json_pop_stringify_state(njs_json_stringify_t *stringify)
 }
 
 
-static void
-njs_json_stringify_exception(njs_json_stringify_t *stringify, const char* msg)
-{
-    size_t       size;
-    njs_ret_t    ret;
-    njs_value_t  *exception;
-
-    static u_char  buf[256];
-
-    exception = nxt_mem_cache_alloc(stringify->pool, sizeof(njs_value_t));
-    if (nxt_slow_path(exception == NULL)) {
-        stringify->vm->exception = &njs_exception_memory_error;
-        return;
-    }
-
-    size = snprintf((char *) buf, sizeof(buf), "TypeError: %s", msg);
-
-    ret = njs_string_new(stringify->vm, exception, buf, size, size);
-    if (nxt_slow_path(ret != NXT_OK)) {
-        stringify->vm->exception = &njs_exception_memory_error;
-        return;
-    }
-
-    stringify->vm->exception = exception;
-}
-
-
 static nxt_int_t
 njs_json_append_value(njs_json_stringify_t *stringify, njs_value_t *value)
 {
@@ -1768,7 +1723,8 @@ njs_json_append_value(njs_json_stringify_t *stringify, njs_value_t *value)
         return njs_json_buf_append(stringify, "null", 4);
 
     default:
-        njs_json_stringify_exception(stringify, "Non-serializable object");
+        njs_exception_type_error(stringify->vm, "Non-serializable object",
+                                 NULL);
         return NXT_DECLINED;
     }
 }

@@ -23,6 +23,7 @@
 #include <njs_object_hash.h>
 #include <njs_array.h>
 #include <njs_function.h>
+#include <njs_error.h>
 #include <string.h>
 
 
@@ -248,7 +249,7 @@ njs_array_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         size = (uint32_t) num;
 
         if ((double) size != num) {
-            vm->exception = &njs_exception_range_error;
+            njs_exception_range_error(vm, NULL, NULL);
             return NXT_ERROR;
         }
 
@@ -1713,7 +1714,7 @@ njs_array_prototype_reduce(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         n = njs_array_iterator_index(array, iter);
 
         if (n == NJS_ARRAY_INVALID_INDEX) {
-            vm->exception = &njs_exception_type_error;
+            njs_exception_type_error(vm, NULL, NULL);
             return NXT_ERROR;
         }
 
@@ -1774,7 +1775,7 @@ njs_array_iterator_args(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs)
         return NXT_OK;
     }
 
-    vm->exception = &njs_exception_type_error;
+    njs_exception_type_error(vm, NULL, NULL);
 
     return NXT_ERROR;
 }
@@ -1858,7 +1859,7 @@ njs_array_prototype_reduce_right(njs_vm_t *vm, njs_value_t *args,
                                                          unused);
 type_error:
 
-    vm->exception = &njs_exception_type_error;
+    njs_exception_type_error(vm, NULL, NULL);
 
     return NXT_ERROR;
 }

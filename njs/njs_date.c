@@ -25,6 +25,7 @@
 #include <njs_object_hash.h>
 #include <njs_function.h>
 #include <njs_date.h>
+#include <njs_error.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
@@ -1062,7 +1063,7 @@ njs_date_prototype_to_iso_string(njs_vm_t *vm, njs_value_t *args,
         return njs_string_new(vm, &vm->retval, buf, size, size);
     }
 
-    vm->exception = &njs_exception_range_error;
+    njs_exception_range_error(vm, NULL, NULL);
 
     return NXT_ERROR;
 }
@@ -1910,7 +1911,7 @@ njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
     }
 
-    vm->exception = &njs_exception_type_error;
+    njs_exception_type_error(vm, NULL, NULL);
 
     return NXT_ERROR;
 }

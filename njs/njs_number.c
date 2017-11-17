@@ -20,6 +20,7 @@
 #include <njs_object.h>
 #include <njs_array.h>
 #include <njs_function.h>
+#include <njs_error.h>
 #include <string.h>
 #include <stdio.h>
 #include <float.h>
@@ -557,7 +558,7 @@ njs_number_prototype_value_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             value = &value->data.u.object_value->value;
 
         } else {
-            vm->exception = &njs_exception_type_error;
+            njs_exception_type_error(vm, NULL, NULL);
             return NXT_ERROR;
         }
     }
@@ -583,7 +584,7 @@ njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
             value = &value->data.u.object_value->value;
 
         } else {
-            vm->exception = &njs_exception_type_error;
+            njs_exception_type_error(vm, NULL, NULL);
             return NXT_ERROR;
         }
     }
@@ -592,7 +593,7 @@ njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         radix = args[1].data.u.number;
 
         if (radix < 2 || radix > 36 || radix != (int) radix) {
-            vm->exception = &njs_exception_range_error;
+            njs_exception_range_error(vm, NULL, NULL);
             return NXT_ERROR;
         }
 

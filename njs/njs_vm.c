@@ -24,6 +24,7 @@
 #include <njs_object_hash.h>
 #include <njs_array.h>
 #include <njs_function.h>
+#include <njs_error.h>
 #include <njs_extern.h>
 #include <njs_variable.h>
 #include <njs_parser.h>
@@ -144,13 +145,7 @@ const njs_value_t  njs_string_string =      njs_string("string");
 const njs_value_t  njs_string_object =      njs_string("object");
 const njs_value_t  njs_string_function =    njs_string("function");
 
-const njs_value_t  njs_exception_syntax_error =    njs_string("SyntaxError");
-const njs_value_t  njs_exception_reference_error = njs_string("ReferenceError");
-const njs_value_t  njs_exception_type_error =      njs_string("TypeError");
-const njs_value_t  njs_exception_range_error =     njs_string("RangeError");
-const njs_value_t  njs_exception_uri_error =       njs_string("URIError");
-const njs_value_t  njs_exception_memory_error =    njs_string("MemoryError");
-const njs_value_t  njs_exception_internal_error =  njs_string("InternalError");
+const njs_value_t  njs_string_memory_error = njs_string("MemoryError");
 
 
 /*
@@ -679,7 +674,7 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
     njs_vmcode_prop_set_t  *code;
 
     if (njs_is_primitive(object)) {
-        vm->exception = &njs_exception_type_error;
+        njs_exception_type_error(vm, NULL, NULL);
         return NXT_ERROR;
     }
 
@@ -799,7 +794,7 @@ njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *object, njs_value_t *property)
 
     case NJS_PRIMITIVE_VALUE:
     case NJS_STRING_VALUE:
-        vm->exception = &njs_exception_type_error;
+        njs_exception_type_error(vm, NULL, NULL);
 
         return NXT_ERROR;
 
@@ -1013,6 +1008,14 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
     case NJS_OBJECT_STRING:
     case NJS_REGEXP:
     case NJS_DATE:
+    case NJS_OBJECT_ERROR:
+    case NJS_OBJECT_EVAL_ERROR:
+    case NJS_OBJECT_INTERNAL_ERROR:
+    case NJS_OBJECT_RANGE_ERROR:
+    case NJS_OBJECT_REF_ERROR:
+    case NJS_OBJECT_SYNTAX_ERROR:
+    case NJS_OBJECT_TYPE_ERROR:
+    case NJS_OBJECT_URI_ERROR:
         obj = object->data.u.object;
         break;
 
@@ -1036,7 +1039,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
         break;
 
     default:  /* NJS_VOID, NJS_NULL. */
-        vm->exception = &njs_exception_type_error;
+        njs_exception_type_error(vm, NULL, NULL);
         return NXT_ERROR;
     }
 
@@ -1319,7 +1322,7 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     nxt_lvlhsh_query_t  lhq;
 
     if (!njs_is_function(constructor)) {
-        vm->exception = &njs_exception_type_error;
+        njs_exception_type_error(vm, NULL, NULL);
         return NXT_ERROR;
     }
 
@@ -1476,6 +1479,14 @@ njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
         &njs_string_void,
         &njs_string_void,
         &njs_string_void,
+        &njs_string_void,
+        &njs_string_void,
+        &njs_string_void,
+        &njs_string_void,
+        &njs_string_void,
+        &njs_string_void,
+        &njs_string_void,
+        &njs_string_void,
 
         &njs_string_object,
         &njs_string_object,
@@ -1483,6 +1494,14 @@ njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
         &njs_string_object,
         &njs_string_object,
         &njs_string_function,
+        &njs_string_object,
+        &njs_string_object,
+        &njs_string_object,
+        &njs_string_object,
+        &njs_string_object,
+        &njs_string_object,
+        &njs_string_object,
+        &njs_string_object,
         &njs_string_object,
         &njs_string_object,
     };
@@ -2226,7 +2245,7 @@ njs_function_frame_create(njs_vm_t *vm, njs_value_t *value,
         }
     }
 
-    vm->exception = &njs_exception_type_error;
+    njs_exception_type_error(vm, NULL, NULL);
 
     return NXT_ERROR;
 }
@@ -2334,7 +2353,7 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
 
 type_error:
 
-    vm->exception = &njs_exception_type_error;
+    njs_exception_type_error(vm, NULL, NULL);
 
     return NXT_ERROR;
 }
@@ -2555,7 +2574,7 @@ trap:
 
 type_error:
 
-    vm->exception = &njs_exception_type_error;
+    njs_exception_type_error(vm, NULL, NULL);
 
     return NXT_ERROR;
 }
@@ -3154,7 +3173,7 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
         if (!njs_is_primitive(retval)) {
 
             for ( ;; ) {
-                vm->exception = &njs_exception_type_error;
+                njs_exception_type_error(vm, NULL, NULL);
                 ret = NXT_ERROR;
 
                 if (njs_is_object(value) && vm->top_frame->trap_tries < 2) {
@@ -3259,6 +3278,14 @@ njs_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst, const njs_value_t *src)
     njs_value_t  value;
 
     if (nxt_fast_path(src != NULL)) {
+
+        if (nxt_slow_path(src->type == NJS_OBJECT_INTERNAL_ERROR)) {
+
+            /* MemoryError is a nonextensible internal error. */
+            if (!src->data.u.object->extensible) {
+                src = &njs_string_memory_error;
+            }
+        }
 
         value = *src;
 

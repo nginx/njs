@@ -40,6 +40,9 @@ nxt_upper_case(u_char c)
 }
 
 
+#define nxt_cpymem(dst, src, n)   (((u_char *) memcpy(dst, src, n)) + (n))
+
+
 #define nxt_strstr_eq(s1, s2)                                                 \
     (((s1)->length == (s2)->length)                                           \
      && (memcmp((s1)->start, (s2)->start, (s1)->length) == 0))

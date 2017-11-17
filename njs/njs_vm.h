@@ -54,16 +54,16 @@
  */
 
 typedef enum {
-    NJS_NULL            = 0x00,
-    NJS_VOID            = 0x01,
+    NJS_NULL                  = 0x00,
+    NJS_VOID                  = 0x01,
 
     /* The order of the above type is used in njs_is_null_or_void(). */
 
-    NJS_BOOLEAN         = 0x02,
+    NJS_BOOLEAN               = 0x02,
     /*
      * The order of the above type is used in njs_is_null_or_void_or_boolean().
      */
-    NJS_NUMBER          = 0x03,
+    NJS_NUMBER                = 0x03,
     /*
      * The order of the above type is used in njs_is_numeric().
      * Booleans, null and void values can be used in mathematical operations:
@@ -71,14 +71,14 @@ typedef enum {
      *   a numeric value of the null and false values is zero,
      *   a numeric value of the void value is NaN.
      */
-    NJS_STRING          = 0x04,
+    NJS_STRING                = 0x04,
 
     /* The order of the above type is used in njs_is_primitive(). */
 
-    /* Reserved           0x05, */
+    /* Reserved                 0x05, */
 
     /* The type is external code. */
-    NJS_EXTERNAL        = 0x06,
+    NJS_EXTERNAL              = 0x06,
 
     /*
      * The invalid value type is used:
@@ -86,23 +86,31 @@ typedef enum {
      *   to detect non-declared explicitly or implicitly variables,
      *   for native property getters.
      */
-    NJS_INVALID         = 0x07,
+    NJS_INVALID               = 0x07,
 
     /*
-     * The object types have the third bit set.  It is used in njs_is_object().
+     * The object types have the fourth bit set.  It is used in njs_is_object().
      * NJS_OBJECT_BOOLEAN, NJS_OBJECT_NUMBER, and NJS_OBJECT_STRING must be
      * in the same order as NJS_BOOLEAN, NJS_NUMBER, and NJS_STRING.  It is
      * used in njs_primitive_prototype_index().  The order of object types
      * is used in vm->prototypes and vm->constructors arrays.
      */
-    NJS_OBJECT          = 0x08,
-    NJS_ARRAY           = 0x09,
-    NJS_OBJECT_BOOLEAN  = 0x0a,
-    NJS_OBJECT_NUMBER   = 0x0b,
-    NJS_OBJECT_STRING   = 0x0c,
-    NJS_FUNCTION        = 0x0d,
-    NJS_REGEXP          = 0x0e,
-    NJS_DATE            = 0x0f,
+    NJS_OBJECT                = 0x10,
+    NJS_ARRAY                 = 0x11,
+    NJS_OBJECT_BOOLEAN        = 0x12,
+    NJS_OBJECT_NUMBER         = 0x13,
+    NJS_OBJECT_STRING         = 0x14,
+    NJS_FUNCTION              = 0x15,
+    NJS_REGEXP                = 0x16,
+    NJS_DATE                  = 0x17,
+    NJS_OBJECT_ERROR          = 0x18,
+    NJS_OBJECT_EVAL_ERROR     = 0x19,
+    NJS_OBJECT_INTERNAL_ERROR = 0x1a,
+    NJS_OBJECT_RANGE_ERROR    = 0x1b,
+    NJS_OBJECT_REF_ERROR      = 0x1c,
+    NJS_OBJECT_SYNTAX_ERROR   = 0x1d,
+    NJS_OBJECT_TYPE_ERROR     = 0x1e,
+    NJS_OBJECT_URI_ERROR      = 0x1f,
 } njs_value_type_t;
 
 
@@ -145,7 +153,7 @@ union njs_value_s {
      * the maximum size of short string to 13.
      */
     struct {
-        njs_value_type_t              type:8;  /* 4 bits */
+        njs_value_type_t              type:8;  /* 5 bits */
         /*
          * The truth field is set during value assignment and then can be
          * quickly tested by logical and conditional operations regardless
@@ -181,7 +189,7 @@ union njs_value_s {
     } data;
 
     struct {
-        njs_value_type_t              type:8;  /* 4 bits */
+        njs_value_type_t              type:8;  /* 5 bits */
 
 #define NJS_STRING_SHORT              14
 #define NJS_STRING_LONG               15
@@ -192,7 +200,7 @@ union njs_value_s {
         u_char                        start[NJS_STRING_SHORT];
     } short_string;
 
-    njs_value_type_t                  type:8;  /* 4 bits */
+    njs_value_type_t                  type:8;  /* 5 bits */
 };
 
 
@@ -401,6 +409,10 @@ typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
 
 #define njs_is_string(value)                                                  \
     ((value)->type == NJS_STRING)
+
+#define njs_is_error(value)                                                   \
+    ((value)->type >= NJS_OBJECT_ERROR                                        \
+     && (value)->type <= NJS_OBJECT_URI_ERROR)
 
 
 /*
@@ -760,7 +772,6 @@ typedef enum {
 #define njs_is_callee_argument_index(index)                                   \
     (((index) & NJS_SCOPE_CALLEE_ARGUMENTS) == NJS_SCOPE_CALLEE_ARGUMENTS)
 
-
 enum njs_prototypes_e {
     NJS_PROTOTYPE_OBJECT = 0,
     NJS_PROTOTYPE_ARRAY,
@@ -770,27 +781,50 @@ enum njs_prototypes_e {
     NJS_PROTOTYPE_FUNCTION,
     NJS_PROTOTYPE_REGEXP,
     NJS_PROTOTYPE_DATE,
-#define NJS_PROTOTYPE_MAX      (NJS_PROTOTYPE_DATE + 1)
+    NJS_PROTOTYPE_ERROR,
+    NJS_PROTOTYPE_EVAL_ERROR,
+    NJS_PROTOTYPE_INTERNAL_ERROR,
+    NJS_PROTOTYPE_RANGE_ERROR,
+    NJS_PROTOTYPE_REF_ERROR,
+    NJS_PROTOTYPE_SYNTAX_ERROR,
+    NJS_PROTOTYPE_TYPE_ERROR,
+    NJS_PROTOTYPE_URI_ERROR,
+    NJS_PROTOTYPE_MEMORY_ERROR,
+#define NJS_PROTOTYPE_MAX      (NJS_PROTOTYPE_MEMORY_ERROR + 1)
 };
 
 
 #define njs_primitive_prototype_index(type)                                   \
     (NJS_PROTOTYPE_BOOLEAN + ((type) - NJS_BOOLEAN))
 
+
+#define njs_error_prototype_index(type)                                       \
+    (NJS_PROTOTYPE_ERROR + ((type) - NJS_OBJECT_ERROR))
+
+
 #define njs_prototype_type(index)                                             \
     (index + NJS_OBJECT)
 
 
 enum njs_constructor_e {
-    NJS_CONSTRUCTOR_OBJECT =   NJS_PROTOTYPE_OBJECT,
-    NJS_CONSTRUCTOR_ARRAY =    NJS_PROTOTYPE_ARRAY,
-    NJS_CONSTRUCTOR_BOOLEAN =  NJS_PROTOTYPE_BOOLEAN,
-    NJS_CONSTRUCTOR_NUMBER =   NJS_PROTOTYPE_NUMBER,
-    NJS_CONSTRUCTOR_STRING =   NJS_PROTOTYPE_STRING,
-    NJS_CONSTRUCTOR_FUNCTION = NJS_PROTOTYPE_FUNCTION,
-    NJS_CONSTRUCTOR_REGEXP =   NJS_PROTOTYPE_REGEXP,
-    NJS_CONSTRUCTOR_DATE =     NJS_PROTOTYPE_DATE,
-#define NJS_CONSTRUCTOR_MAX    (NJS_CONSTRUCTOR_DATE + 1)
+    NJS_CONSTRUCTOR_OBJECT =         NJS_PROTOTYPE_OBJECT,
+    NJS_CONSTRUCTOR_ARRAY =          NJS_PROTOTYPE_ARRAY,
+    NJS_CONSTRUCTOR_BOOLEAN =        NJS_PROTOTYPE_BOOLEAN,
+    NJS_CONSTRUCTOR_NUMBER =         NJS_PROTOTYPE_NUMBER,
+    NJS_CONSTRUCTOR_STRING =         NJS_PROTOTYPE_STRING,
+    NJS_CONSTRUCTOR_FUNCTION =       NJS_PROTOTYPE_FUNCTION,
+    NJS_CONSTRUCTOR_REGEXP =         NJS_PROTOTYPE_REGEXP,
+    NJS_CONSTRUCTOR_DATE =           NJS_PROTOTYPE_DATE,
+    NJS_CONSTRUCTOR_ERROR =          NJS_PROTOTYPE_ERROR,
+    NJS_CONSTRUCTOR_EVAL_ERROR =     NJS_PROTOTYPE_EVAL_ERROR,
+    NJS_CONSTRUCTOR_INTERNAL_ERROR = NJS_PROTOTYPE_INTERNAL_ERROR,
+    NJS_CONSTRUCTOR_RANGE_ERROR =    NJS_PROTOTYPE_RANGE_ERROR,
+    NJS_CONSTRUCTOR_REF_ERROR =      NJS_PROTOTYPE_REF_ERROR,
+    NJS_CONSTRUCTOR_SYNTAX_ERROR =   NJS_PROTOTYPE_SYNTAX_ERROR,
+    NJS_CONSTRUCTOR_TYPE_ERROR =     NJS_PROTOTYPE_TYPE_ERROR,
+    NJS_CONSTRUCTOR_URI_ERROR =      NJS_PROTOTYPE_URI_ERROR,
+    NJS_CONSTRUCTOR_MEMORY_ERROR =   NJS_PROTOTYPE_MEMORY_ERROR,
+#define NJS_CONSTRUCTOR_MAX    (NJS_CONSTRUCTOR_MEMORY_ERROR + 1)
 };
 
 
@@ -833,6 +867,23 @@ enum njs_function_e {
     njs_global_scope_index(NJS_CONSTRUCTOR_FUNCTION)
 #define NJS_INDEX_REGEXP         njs_global_scope_index(NJS_CONSTRUCTOR_REGEXP)
 #define NJS_INDEX_DATE           njs_global_scope_index(NJS_CONSTRUCTOR_DATE)
+#define NJS_INDEX_OBJECT_ERROR   njs_global_scope_index(NJS_CONSTRUCTOR_ERROR)
+#define NJS_INDEX_OBJECT_EVAL_ERROR                                           \
+    njs_global_scope_index(NJS_CONSTRUCTOR_EVAL_ERROR)
+#define NJS_INDEX_OBJECT_INTERNAL_ERROR                                       \
+    njs_global_scope_index(NJS_CONSTRUCTOR_INTERNAL_ERROR)
+#define NJS_INDEX_OBJECT_RANGE_ERROR                                          \
+    njs_global_scope_index(NJS_CONSTRUCTOR_RANGE_ERROR)
+#define NJS_INDEX_OBJECT_REF_ERROR                                            \
+    njs_global_scope_index(NJS_CONSTRUCTOR_REF_ERROR)
+#define NJS_INDEX_OBJECT_SYNTAX_ERROR                                         \
+    njs_global_scope_index(NJS_CONSTRUCTOR_SYNTAX_ERROR)
+#define NJS_INDEX_OBJECT_TYPE_ERROR                                           \
+    njs_global_scope_index(NJS_CONSTRUCTOR_TYPE_ERROR)
+#define NJS_INDEX_OBJECT_URI_ERROR                                            \
+    njs_global_scope_index(NJS_CONSTRUCTOR_URI_ERROR)
+#define NJS_INDEX_OBJECT_MEMORY_ERROR                                         \
+    njs_global_scope_index(NJS_CONSTRUCTOR_MEMORY_ERROR)
 
 #define NJS_INDEX_GLOBAL_RETVAL  njs_global_scope_index(NJS_CONSTRUCTOR_MAX)
 #define NJS_INDEX_GLOBAL_OFFSET  njs_scope_index(NJS_CONSTRUCTOR_MAX + 1, 0)
@@ -905,6 +956,14 @@ struct njs_vm_s {
 
     nxt_regex_context_t      *regex_context;
     nxt_regex_match_data_t   *single_match_data;
+
+    /*
+     * MemoryError is statically allocated immutable Error object
+     * with the generic type NJS_OBJECT_INTERNAL_ERROR but its own prototype
+     * object NJS_PROTOTYPE_MEMORY_ERROR.
+     */
+    njs_value_t              memory_error;
+    njs_object_t             memory_error_object;
 
     nxt_array_t              *code;  /* of njs_vm_code_t */
 
@@ -1117,14 +1176,8 @@ extern const njs_value_t  njs_string_native;
 extern const njs_value_t  njs_string_minus_infinity;
 extern const njs_value_t  njs_string_plus_infinity;
 extern const njs_value_t  njs_string_nan;
-
-extern const njs_value_t  njs_exception_syntax_error;
-extern const njs_value_t  njs_exception_reference_error;
-extern const njs_value_t  njs_exception_type_error;
-extern const njs_value_t  njs_exception_range_error;
-extern const njs_value_t  njs_exception_uri_error;
-extern const njs_value_t  njs_exception_memory_error;
-extern const njs_value_t  njs_exception_internal_error;
+extern const njs_value_t  njs_string_internal_error;
+extern const njs_value_t  njs_string_memory_error;
 
 extern const nxt_mem_proto_t     njs_array_mem_proto;
 extern const nxt_lvlhsh_proto_t  njs_object_hash_proto;

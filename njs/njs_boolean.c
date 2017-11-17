@@ -18,6 +18,7 @@
 #include <njs_boolean.h>
 #include <njs_object.h>
 #include <njs_function.h>
+#include <njs_error.h>
 
 
 njs_ret_t
@@ -98,7 +99,7 @@ njs_boolean_prototype_value_of(njs_vm_t *vm, njs_value_t *args,
             value = &value->data.u.object_value->value;
 
         } else {
-            vm->exception = &njs_exception_type_error;
+            njs_exception_type_error(vm, NULL, NULL);
             return NXT_ERROR;
         }
     }
@@ -123,7 +124,7 @@ njs_boolean_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
             value = &value->data.u.object_value->value;
 
         } else {
-            vm->exception = &njs_exception_type_error;
+            njs_exception_type_error(vm, NULL, NULL);
             return NXT_ERROR;
         }
     }

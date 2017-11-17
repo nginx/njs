@@ -522,6 +522,10 @@ njs_vm_retval(njs_vm_t *vm, nxt_str_t *retval)
 nxt_int_t
 njs_vm_exception(njs_vm_t *vm, nxt_str_t *retval)
 {
+    if (vm->top_frame != NULL) {
+        vm->top_frame->trap_tries = 0;
+    }
+
     return njs_value_to_ext_string(vm, retval, vm->exception);
 }
 

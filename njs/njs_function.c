@@ -20,6 +20,7 @@
 #include <njs_object.h>
 #include <njs_array.h>
 #include <njs_function.h>
+#include <njs_error.h>
 #include <string.h>
 
 
@@ -230,10 +231,6 @@ njs_function_frame(njs_vm_t *vm, njs_function_t *function,
 }
 
 
-static const njs_value_t  njs_exception_stack_size_exceeded =
-    njs_long_string("RangeError: Maximum call stack size exceeded");
-
-
 nxt_noinline njs_native_frame_t *
 njs_function_frame_alloc(njs_vm_t *vm, size_t size)
 {
@@ -251,7 +248,8 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
         spare_size = nxt_align_size(spare_size, NJS_FRAME_SPARE_SIZE);
 
         if (vm->stack_size + spare_size > NJS_MAX_STACK_SIZE) {
-            vm->exception = &njs_exception_stack_size_exceeded;
+            njs_exception_range_error(vm, "Maximum call stack size exceeded",
+                                      NULL);
             return NULL;
         }
 
@@ -511,7 +509,7 @@ njs_function_prototype_call(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_function_t  *function;
 
     if (!njs_is_function(&args[0])) {
-        vm->exception = &njs_exception_type_error;
+        njs_exception_type_error(vm, NULL, NULL);
         return NXT_ERROR;
     }
 
@@ -566,7 +564,7 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 type_error:
 
-    vm->exception = &njs_exception_type_error;
+    njs_exception_type_error(vm, NULL, NULL);
 
     return NXT_ERROR;
 }
@@ -624,7 +622,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_function_t  *function;
 
     if (!njs_is_function(&args[0])) {
-        vm->exception = &njs_exception_type_error;
+        njs_exception_type_error(vm, NULL, NULL);
         return NXT_ERROR;
     }
 

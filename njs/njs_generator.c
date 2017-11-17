@@ -21,6 +21,7 @@
 #include <njs_function.h>
 #include <njs_variable.h>
 #include <njs_parser.h>
+#include <njs_error.h>
 #include <string.h>
 
 
@@ -290,6 +291,15 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
     case NJS_TOKEN_FUNCTION_CONSTRUCTOR:
     case NJS_TOKEN_REGEXP_CONSTRUCTOR:
     case NJS_TOKEN_DATE_CONSTRUCTOR:
+    case NJS_TOKEN_ERROR_CONSTRUCTOR:
+    case NJS_TOKEN_EVAL_ERROR_CONSTRUCTOR:
+    case NJS_TOKEN_INTERNAL_ERROR_CONSTRUCTOR:
+    case NJS_TOKEN_RANGE_ERROR_CONSTRUCTOR:
+    case NJS_TOKEN_REF_ERROR_CONSTRUCTOR:
+    case NJS_TOKEN_SYNTAX_ERROR_CONSTRUCTOR:
+    case NJS_TOKEN_TYPE_ERROR_CONSTRUCTOR:
+    case NJS_TOKEN_URI_ERROR_CONSTRUCTOR:
+    case NJS_TOKEN_MEMORY_ERROR_CONSTRUCTOR:
     case NJS_TOKEN_EXTERNAL:
         return NXT_OK;
 
@@ -331,7 +341,7 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
 
     default:
         nxt_thread_log_debug("unknown token: %d", node->token);
-        vm->exception = &njs_exception_syntax_error;
+        njs_exception_syntax_error(vm, "unknown token", NULL);
 
         return NXT_ERROR;
     }
@@ -2071,7 +2081,7 @@ njs_generate_scope(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
                          parser->code_size, code_size);
 
     if (nxt_slow_path(parser->code_size < code_size)) {
-        vm->exception = &njs_exception_internal_error;
+        njs_exception_internal_error(vm, NULL, NULL);
         return NXT_ERROR;
     }
 

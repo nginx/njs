@@ -5161,6 +5161,262 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var chars = '𐒠'; chars.length +' '+ chars.charCodeAt(0)"),
       nxt_string("1 66720") },
 
+    /* Error object. */
+
+    { nxt_string("Error()"),
+      nxt_string("Error") },
+
+    { nxt_string("new Error()"),
+      nxt_string("Error") },
+
+    { nxt_string("Error('e')"),
+      nxt_string("Error: e") },
+
+    { nxt_string("var e = Error('e'); e.name = 'E'; e"),
+      nxt_string("E: e") },
+
+    { nxt_string("var e = Error('e'); e.name = ''; e"),
+      nxt_string("e") },
+
+    { nxt_string("var e = Error(); e.name = ''; e"),
+      nxt_string("") },
+
+    { nxt_string("var e = Error(); e.name = ''; e.message = 'e'; e"),
+      nxt_string("e") },
+
+    { nxt_string("Error('e').name + ': ' + Error('e').message"),
+      nxt_string("Error: e") },
+
+    { nxt_string("Error(1)"),
+      nxt_string("Error: 1") },
+
+    { nxt_string("Error.__proto__ == Function.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("Error.prototype.name"),
+      nxt_string("Error") },
+
+    { nxt_string("Error.prototype.message"),
+      nxt_string("") },
+
+    { nxt_string("Error.prototype.constructor == Error"),
+      nxt_string("true") },
+
+    { nxt_string("Error().__proto__ == Error.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("Error().__proto__.__proto__ == Object.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("EvalError('e')"),
+      nxt_string("EvalError: e") },
+
+    { nxt_string("InternalError('e')"),
+      nxt_string("InternalError: e") },
+
+    { nxt_string("RangeError('e')"),
+      nxt_string("RangeError: e") },
+
+    { nxt_string("ReferenceError('e')"),
+      nxt_string("ReferenceError: e") },
+
+    { nxt_string("SyntaxError('e')"),
+      nxt_string("SyntaxError: e") },
+
+    { nxt_string("TypeError('e')"),
+      nxt_string("TypeError: e") },
+
+    { nxt_string("URIError('e')"),
+      nxt_string("URIError: e") },
+
+    { nxt_string("MemoryError('e')"),
+      nxt_string("MemoryError") },
+
+    { nxt_string("EvalError('e').name + ': ' + EvalError('e').message"),
+      nxt_string("EvalError: e") },
+
+    { nxt_string("InternalError('e').name + ': ' + InternalError('e').message"),
+      nxt_string("InternalError: e") },
+
+    { nxt_string("RangeError('e').name + ': ' + RangeError('e').message"),
+      nxt_string("RangeError: e") },
+
+    { nxt_string("ReferenceError('e').name + ': ' + ReferenceError('e').message"),
+      nxt_string("ReferenceError: e") },
+
+    { nxt_string("SyntaxError('e').name + ': ' + SyntaxError('e').message"),
+      nxt_string("SyntaxError: e") },
+
+    { nxt_string("TypeError('e').name + ': ' + TypeError('e').message"),
+      nxt_string("TypeError: e") },
+
+    { nxt_string("URIError('e').name + ': ' + URIError('e').message"),
+      nxt_string("URIError: e") },
+
+    { nxt_string("MemoryError('e').name + ': ' + MemoryError('e').message"),
+      nxt_string("MemoryError: ") },
+
+    { nxt_string("var e = EvalError('e'); e.name = 'E'; e"),
+      nxt_string("E: e") },
+
+    { nxt_string("var e = InternalError('e'); e.name = 'E'; e"),
+      nxt_string("E: e") },
+
+    { nxt_string("var e = RangeError('e'); e.name = 'E'; e"),
+      nxt_string("E: e") },
+
+    { nxt_string("var e = ReferenceError('e'); e.name = 'E'; e"),
+      nxt_string("E: e") },
+
+    { nxt_string("var e = SyntaxError('e'); e.name = 'E'; e"),
+      nxt_string("E: e") },
+
+    { nxt_string("var e = TypeError('e'); e.name = 'E'; e"),
+      nxt_string("E: e") },
+
+    { nxt_string("var e = URIError('e'); e.name = 'E'; e"),
+      nxt_string("E: e") },
+
+    /* Memory object is immutable. */
+
+    { nxt_string("var e = MemoryError('e'); e.name = 'E'; e.message = 'e'; e"),
+      nxt_string("MemoryError") },
+
+    { nxt_string("EvalError.prototype.name"),
+      nxt_string("EvalError") },
+
+    { nxt_string("InternalError.prototype.name"),
+      nxt_string("InternalError") },
+
+    { nxt_string("RangeError.prototype.name"),
+      nxt_string("RangeError") },
+
+    { nxt_string("ReferenceError.prototype.name"),
+      nxt_string("ReferenceError") },
+
+    { nxt_string("SyntaxError.prototype.name"),
+      nxt_string("SyntaxError") },
+
+    { nxt_string("TypeError.prototype.name"),
+      nxt_string("TypeError") },
+
+    { nxt_string("URIError.prototype.name"),
+      nxt_string("URIError") },
+
+    { nxt_string("MemoryError.prototype.name"),
+      nxt_string("MemoryError") },
+
+    { nxt_string("EvalError.prototype.message"),
+      nxt_string("") },
+
+    { nxt_string("InternalError.prototype.message"),
+      nxt_string("") },
+
+    { nxt_string("RangeError.prototype.message"),
+      nxt_string("") },
+
+    { nxt_string("ReferenceError.prototype.message"),
+      nxt_string("") },
+
+    { nxt_string("SyntaxError.prototype.message"),
+      nxt_string("") },
+
+    { nxt_string("TypeError.prototype.message"),
+      nxt_string("") },
+
+    { nxt_string("URIError.prototype.message"),
+      nxt_string("") },
+
+    { nxt_string("MemoryError.prototype.message"),
+      nxt_string("") },
+
+    { nxt_string("EvalError.prototype.constructor == EvalError"),
+      nxt_string("true") },
+
+    { nxt_string("RangeError.prototype.constructor == RangeError"),
+      nxt_string("true") },
+
+    { nxt_string("ReferenceError.prototype.constructor == ReferenceError"),
+      nxt_string("true") },
+
+    { nxt_string("SyntaxError.prototype.constructor == SyntaxError"),
+      nxt_string("true") },
+
+    { nxt_string("TypeError.prototype.constructor == TypeError"),
+      nxt_string("true") },
+
+    { nxt_string("URIError.prototype.constructor == URIError"),
+      nxt_string("true") },
+
+    { nxt_string("EvalError().__proto__ == EvalError.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("RangeError().__proto__ == RangeError.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("ReferenceError().__proto__ == ReferenceError.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("SyntaxError().__proto__ == SyntaxError.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("TypeError().__proto__ == TypeError.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("URIError().__proto__ == URIError.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("EvalError().__proto__.__proto__ == Error.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("RangeError().__proto__.__proto__ == Error.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("ReferenceError().__proto__.__proto__ == Error.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("SyntaxError().__proto__.__proto__ == Error.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("TypeError().__proto__.__proto__ == Error.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("URIError().__proto__.__proto__ == Error.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("MemoryError().__proto__ == MemoryError.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("MemoryError().__proto__.__proto__ == Error.prototype"),
+      nxt_string("true") },
+
+    { nxt_string("typeof Error()"),
+      nxt_string("object") },
+
+    { nxt_string("typeof EvalError()"),
+      nxt_string("object") },
+
+    { nxt_string("typeof InternalError()"),
+      nxt_string("object") },
+
+    { nxt_string("typeof RangeError()"),
+      nxt_string("object") },
+
+    { nxt_string("typeof ReferenceError()"),
+      nxt_string("object") },
+
+    { nxt_string("typeof SyntaxError()"),
+      nxt_string("object") },
+
+    { nxt_string("typeof TypeError()"),
+      nxt_string("object") },
+
+    { nxt_string("typeof URIError()"),
+      nxt_string("object") },
+
+    { nxt_string("typeof MemoryError()"),
+      nxt_string("object") },
+
     /* Exceptions. */
 
     { nxt_string("throw null"),
@@ -5168,6 +5424,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var a; try { throw null } catch (e) { a = e } a"),
       nxt_string("null") },
+
+    { nxt_string("var a; try { throw Error('e') } catch (e) { a = e.message } a"),
+      nxt_string("e") },
 
     { nxt_string("try { throw null } catch (e) { throw e }"),
       nxt_string("") },
@@ -8201,6 +8460,21 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("JSON.stringify(RegExp())"),
       nxt_string("{}") },
+
+    { nxt_string("JSON.stringify(SyntaxError('e'))"),
+      nxt_string("{}") },
+
+    { nxt_string("JSON.stringify(URIError('e'))"),
+      nxt_string("{}") },
+
+    { nxt_string("var e = URIError('e'); e.name = 'E'; JSON.stringify(e)"),
+      nxt_string("{\"name\":\"E\"}") },
+
+    { nxt_string("var e = URIError('e'); e.message = 'E'; JSON.stringify(e)"),
+      nxt_string("{}") },
+
+    { nxt_string("var e = URIError('e'); e.foo = 'E'; JSON.stringify(e)"),
+      nxt_string("{\"foo\":\"E\"}") },
 
     /* Ignoring named properties of an array. */
 

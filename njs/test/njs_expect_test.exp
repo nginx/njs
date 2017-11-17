@@ -51,8 +51,8 @@ njs_test {
 }
 
 njs_test {
-    {"M\t"
-     "M\aath"}
+    {"Ma\t"
+     "Ma\ath"}
 }
 
 njs_test {
@@ -86,8 +86,8 @@ njs_test {
 }
 
 njs_test {
-    {"M\t"
-     "M\aath"}
+    {"Ma\t"
+     "Ma\ath"}
     {".\t\t"
      "Math.__proto__*Math.cbrt*Math.fround*Math.log2"}
 }

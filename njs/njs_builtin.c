@@ -28,6 +28,7 @@
 #include <njs_parser.h>
 #include <njs_regexp.h>
 #include <njs_date.h>
+#include <njs_error.h>
 #include <njs_math.h>
 #include <string.h>
 #include <stdio.h>
@@ -62,6 +63,15 @@ const njs_object_init_t  *njs_prototype_init[] = {
     &njs_function_prototype_init,
     &njs_regexp_prototype_init,
     &njs_date_prototype_init,
+    &njs_error_prototype_init,
+    &njs_eval_error_prototype_init,
+    &njs_internal_error_prototype_init,
+    &njs_range_error_prototype_init,
+    &njs_ref_error_prototype_init,
+    &njs_syntax_error_prototype_init,
+    &njs_type_error_prototype_init,
+    &njs_uri_error_prototype_init,
+    &njs_memory_error_prototype_init,
 };
 
 
@@ -74,6 +84,15 @@ const njs_object_init_t    *njs_constructor_init[] = {
     &njs_function_constructor_init,
     &njs_regexp_constructor_init,
     &njs_date_constructor_init,
+    &njs_error_constructor_init,
+    &njs_eval_error_constructor_init,
+    &njs_internal_error_constructor_init,
+    &njs_range_error_constructor_init,
+    &njs_ref_error_constructor_init,
+    &njs_syntax_error_constructor_init,
+    &njs_type_error_constructor_init,
+    &njs_uri_error_constructor_init,
+    &njs_memory_error_constructor_init,
 };
 
 
@@ -126,6 +145,16 @@ njs_builtin_objects_create(njs_vm_t *vm)
 
         { .date =         { .time = NAN,
                             .object = { .type = NJS_DATE } } },
+
+        { .object =       { .type = NJS_OBJECT_ERROR } },
+        { .object =       { .type = NJS_OBJECT_EVAL_ERROR } },
+        { .object =       { .type = NJS_OBJECT_INTERNAL_ERROR } },
+        { .object =       { .type = NJS_OBJECT_RANGE_ERROR } },
+        { .object =       { .type = NJS_OBJECT_REF_ERROR } },
+        { .object =       { .type = NJS_OBJECT_SYNTAX_ERROR } },
+        { .object =       { .type = NJS_OBJECT_TYPE_ERROR } },
+        { .object =       { .type = NJS_OBJECT_URI_ERROR } },
+        { .object =       { .type = NJS_OBJECT_INTERNAL_ERROR } },
     };
 
     static const njs_function_init_t  native_constructors[] = {
@@ -139,6 +168,18 @@ njs_builtin_objects_create(njs_vm_t *vm)
         { njs_regexp_constructor,
           { NJS_SKIP_ARG, NJS_STRING_ARG, NJS_STRING_ARG } },
         { njs_date_constructor,       { 0 } },
+        { njs_error_constructor,      { NJS_SKIP_ARG, NJS_STRING_ARG } },
+        { njs_eval_error_constructor, { NJS_SKIP_ARG, NJS_STRING_ARG } },
+        { njs_internal_error_constructor,
+          { NJS_SKIP_ARG, NJS_STRING_ARG } },
+        { njs_range_error_constructor,
+          { NJS_SKIP_ARG, NJS_STRING_ARG } },
+        { njs_ref_error_constructor,  { NJS_SKIP_ARG, NJS_STRING_ARG } },
+        { njs_syntax_error_constructor,
+          { NJS_SKIP_ARG, NJS_STRING_ARG } },
+        { njs_type_error_constructor, { NJS_SKIP_ARG, NJS_STRING_ARG } },
+        { njs_uri_error_constructor,  { NJS_SKIP_ARG, NJS_STRING_ARG } },
+        { njs_memory_error_constructor,  { NJS_SKIP_ARG, NJS_STRING_ARG } },
     };
 
     static const njs_object_init_t    *function_init[] = {
@@ -309,6 +350,42 @@ njs_builtin_objects_create(njs_vm_t *vm)
  * Date.__proto__               -> Function_Prototype,
  * Date_Prototype.__proto__     -> Object_Prototype,
  *
+ * Error(),
+ * Error.__proto__               -> Function_Prototype,
+ * Error_Prototype.__proto__     -> Object_Prototype,
+ *
+ * EvalError(),
+ * EvalError.__proto__           -> Function_Prototype,
+ * EvalError_Prototype.__proto__ -> Error_Prototype,
+ *
+ * InternalError(),
+ * InternalError.__proto__           -> Function_Prototype,
+ * InternalError_Prototype.__proto__ -> Error_Prototype,
+ *
+ * RangeError(),
+ * RangeError.__proto__           -> Function_Prototype,
+ * RangeError_Prototype.__proto__ -> Error_Prototype,
+ *
+ * ReferenceError(),
+ * ReferenceError.__proto__           -> Function_Prototype,
+ * ReferenceError_Prototype.__proto__ -> Error_Prototype,
+ *
+ * SyntaxError(),
+ * SyntaxError.__proto__           -> Function_Prototype,
+ * SyntaxError_Prototype.__proto__ -> Error_Prototype,
+ *
+ * TypeError(),
+ * TypeError.__proto__           -> Function_Prototype,
+ * TypeError_Prototype.__proto__ -> Error_Prototype,
+ *
+ * URIError(),
+ * URIError.__proto__           -> Function_Prototype,
+ * URIError_Prototype.__proto__ -> Error_Prototype,
+ *
+ * MemoryError(),
+ * MemoryError.__proto__           -> Function_Prototype,
+ * MemoryError_Prototype.__proto__ -> Error_Prototype,
+ *
  * eval(),
  * eval.__proto__               -> Function_Prototype.
  */
@@ -319,7 +396,7 @@ njs_builtin_objects_clone(njs_vm_t *vm)
     size_t        size;
     nxt_uint_t    i;
     njs_value_t   *values;
-    njs_object_t  *object_prototype, *function_prototype;
+    njs_object_t  *object_prototype, *function_prototype, *error_prototype;
 
     /*
      * Copy both prototypes and constructors arrays by one memcpy()
@@ -332,8 +409,14 @@ njs_builtin_objects_clone(njs_vm_t *vm)
 
     object_prototype = &vm->prototypes[NJS_PROTOTYPE_OBJECT].object;
 
-    for (i = NJS_PROTOTYPE_ARRAY; i < NJS_PROTOTYPE_MAX; i++) {
+    for (i = NJS_PROTOTYPE_ARRAY; i < NJS_PROTOTYPE_EVAL_ERROR; i++) {
         vm->prototypes[i].object.__proto__ = object_prototype;
+    }
+
+    error_prototype = &vm->prototypes[NJS_PROTOTYPE_ERROR].object;
+
+    for (i = NJS_PROTOTYPE_EVAL_ERROR; i < NJS_PROTOTYPE_MAX; i++) {
+        vm->prototypes[i].object.__proto__ = error_prototype;
     }
 
     function_prototype = &vm->prototypes[NJS_CONSTRUCTOR_FUNCTION].object;

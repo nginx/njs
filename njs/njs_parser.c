@@ -2024,6 +2024,42 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
         node->index = NJS_INDEX_DATE;
         break;
 
+    case NJS_TOKEN_ERROR_CONSTRUCTOR:
+        node->index = NJS_INDEX_OBJECT_ERROR;
+        break;
+
+    case NJS_TOKEN_EVAL_ERROR_CONSTRUCTOR:
+        node->index = NJS_INDEX_OBJECT_EVAL_ERROR;
+        break;
+
+    case NJS_TOKEN_INTERNAL_ERROR_CONSTRUCTOR:
+        node->index = NJS_INDEX_OBJECT_INTERNAL_ERROR;
+        break;
+
+    case NJS_TOKEN_RANGE_ERROR_CONSTRUCTOR:
+        node->index = NJS_INDEX_OBJECT_RANGE_ERROR;
+        break;
+
+    case NJS_TOKEN_REF_ERROR_CONSTRUCTOR:
+        node->index = NJS_INDEX_OBJECT_REF_ERROR;
+        break;
+
+    case NJS_TOKEN_SYNTAX_ERROR_CONSTRUCTOR:
+        node->index = NJS_INDEX_OBJECT_SYNTAX_ERROR;
+        break;
+
+    case NJS_TOKEN_TYPE_ERROR_CONSTRUCTOR:
+        node->index = NJS_INDEX_OBJECT_TYPE_ERROR;
+        break;
+
+    case NJS_TOKEN_URI_ERROR_CONSTRUCTOR:
+        node->index = NJS_INDEX_OBJECT_URI_ERROR;
+        break;
+
+    case NJS_TOKEN_MEMORY_ERROR_CONSTRUCTOR:
+        node->index = NJS_INDEX_OBJECT_MEMORY_ERROR;
+        break;
+
     case NJS_TOKEN_EVAL:
     case NJS_TOKEN_TO_STRING:
     case NJS_TOKEN_IS_NAN:
