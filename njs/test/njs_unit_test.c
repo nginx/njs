@@ -8199,6 +8199,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("JSON.stringify({a:{}, b:[function(v){}]})"),
       nxt_string("{\"a\":{},\"b\":[null]}") },
 
+    { nxt_string("JSON.stringify(RegExp())"),
+      nxt_string("{}") },
+
     /* Ignoring named properties of an array. */
 
     { nxt_string("var a = [1,2]; a.a = 1;"

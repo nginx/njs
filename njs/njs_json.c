@@ -1162,8 +1162,10 @@ njs_json_parse_exception(njs_json_parse_ctx_t *ctx, const char* msg,
 }
 
 
-#define njs_is_object_or_array(value)                                         \
-    (((value)->type == NJS_OBJECT) || ((value)->type == NJS_ARRAY))
+#define njs_json_is_object(value)                                             \
+    (((value)->type == NJS_OBJECT)                                            \
+     || ((value)->type == NJS_ARRAY)                                          \
+     || ((value)->type >= NJS_REGEXP))
 
 
 #define njs_json_stringify_append(str, len)                                   \
@@ -1280,7 +1282,7 @@ njs_json_stringify_continuation(njs_vm_t *vm, njs_value_t *args,
 
             njs_json_stringify_append_key(&prop->name);
 
-            if (njs_is_object_or_array(&prop->value)) {
+            if (njs_json_is_object(&prop->value)) {
                 state = njs_json_push_stringify_state(vm, stringify,
                                                       &prop->value);
                 if (state == NULL) {
@@ -1371,7 +1373,7 @@ njs_json_stringify_continuation(njs_vm_t *vm, njs_value_t *args,
                 return njs_json_stringify_replacer(vm, stringify, NULL, value);
             }
 
-            if (njs_is_object_or_array(value)) {
+            if (njs_json_is_object(value)) {
                 state = njs_json_push_stringify_state(vm, stringify, value);
                 if (state == NULL) {
                     return NXT_ERROR;
@@ -1397,7 +1399,7 @@ njs_json_stringify_continuation(njs_vm_t *vm, njs_value_t *args,
         case NJS_JSON_ARRAY_REPLACED:
             state->type = NJS_JSON_ARRAY_CONTINUE;
 
-            if (njs_is_object_or_array(&stringify->retval)) {
+            if (njs_json_is_object(&stringify->retval)) {
                 state = njs_json_push_stringify_state(vm, stringify,
                                                       &stringify->retval);
                 if (state == NULL) {
