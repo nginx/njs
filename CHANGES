@@ -1,4 +1,19 @@
 
+Changes with nJScript 0.1.15                                     20 Nov 2017
+
+    *) Feature: Error, EvalError, InternalError, RangeError,
+       ReferenceError, SyntaxError, TypeError, URIError objects.
+
+    *) Feature: octal literals support.
+
+    *) Feature: File system access fs.readFile(), fs.readFileSync(),
+       fs.appendFile(),  fs.appendFileSync(), fs.writeFile(),
+       fs.writeFileSync() methods.
+
+    *) Feature: nginx modules print backtrace on exception.
+
+    *) Bugfix: miscellaneous bugs have been fixed.
+
 Changes with nJScript 0.1.14                                     09 Oct 2017
 
     *) Feature: JSON object.
