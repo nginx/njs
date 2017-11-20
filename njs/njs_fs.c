@@ -277,8 +277,8 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 done:
 
-    if (fd > 0) {
-        close(fd);
+    if (fd != -1) {
+        (void) close(fd);
     }
 
     if (description != 0) {
@@ -305,8 +305,8 @@ done:
 
 memory_error:
 
-    if (fd > 0) {
-        close(fd);
+    if (fd != -1) {
+        (void) close(fd);
     }
 
     njs_exception_memory_error(vm);
@@ -476,8 +476,8 @@ njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 done:
 
-    if (fd > 0) {
-        close(fd);
+    if (fd != -1) {
+        (void) close(fd);
     }
 
     if (description != 0) {
@@ -491,8 +491,8 @@ done:
 
 memory_error:
 
-    if (fd > 0) {
-        close(fd);
+    if (fd != -1) {
+        (void) close(fd);
     }
 
     njs_exception_memory_error(vm);
@@ -696,8 +696,8 @@ static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
 
 done:
 
-    if (fd > 0) {
-        close(fd);
+    if (fd != -1) {
+        (void) close(fd);
     }
 
     if (description != 0) {
@@ -868,8 +868,8 @@ njs_fs_write_file_sync_internal(njs_vm_t *vm, njs_value_t *args,
 
 done:
 
-    if (fd > 0) {
-        close(fd);
+    if (fd != -1) {
+        (void) close(fd);
     }
 
     if (description != 0) {
