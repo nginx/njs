@@ -5291,9 +5291,6 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("URIError('e').name + ': ' + URIError('e').message"),
       nxt_string("URIError: e") },
 
-    { nxt_string("MemoryError('e').name + ': ' + MemoryError('e').message"),
-      nxt_string("MemoryError: ") },
-
     { nxt_string("var e = EvalError('e'); e.name = 'E'; e"),
       nxt_string("E: e") },
 
@@ -5342,7 +5339,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("URIError") },
 
     { nxt_string("MemoryError.prototype.name"),
-      nxt_string("MemoryError") },
+      nxt_string("InternalError") },
 
     { nxt_string("EvalError.prototype.message"),
       nxt_string("") },

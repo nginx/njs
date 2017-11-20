@@ -498,7 +498,7 @@ njs_set_memory_error(njs_vm_t *vm)
 
     nxt_lvlhsh_init(&object->hash);
     nxt_lvlhsh_init(&object->shared_hash);
-    object->__proto__ = &prototypes[NJS_PROTOTYPE_MEMORY_ERROR].object;
+    object->__proto__ = &prototypes[NJS_PROTOTYPE_INTERNAL_ERROR].object;
     object->type = NJS_OBJECT_INTERNAL_ERROR;
     object->shared = 1;
 
@@ -532,6 +532,30 @@ njs_memory_error_constructor(njs_vm_t *vm, njs_value_t *args,
 }
 
 
+static njs_ret_t
+njs_memory_error_prototype_create(njs_vm_t *vm, njs_value_t *value)
+{
+    int32_t         index;
+    njs_value_t     *proto;
+    njs_function_t  *function;
+
+    /* MemoryError has no its own prototype. */
+
+    index = NJS_PROTOTYPE_INTERNAL_ERROR;
+
+    function = value->data.u.function;
+    proto = njs_property_prototype_create(vm, &function->object.hash,
+                                          &vm->prototypes[index].object);
+    if (proto == NULL) {
+        proto = (njs_value_t *) &njs_value_void;
+    }
+
+    vm->retval = *proto;
+
+    return NXT_OK;
+}
+
+
 static const njs_object_prop_t  njs_memory_error_constructor_properties[] =
 {
     /* MemoryError.name == "MemoryError". */
@@ -552,7 +576,7 @@ static const njs_object_prop_t  njs_memory_error_constructor_properties[] =
     {
         .type = NJS_NATIVE_GETTER,
         .name = njs_string("prototype"),
-        .value = njs_native_getter(njs_object_prototype_create),
+        .value = njs_native_getter(njs_memory_error_prototype_create),
     },
 };
 
@@ -701,12 +725,39 @@ const njs_object_init_t  njs_eval_error_prototype_init = {
 };
 
 
+static njs_ret_t
+njs_internal_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    if (nargs >= 1 && njs_is_object(&args[0])) {
+
+        /* MemoryError is a nonextensible internal error. */
+        if (!args[0].data.u.object->extensible) {
+            static const njs_value_t name = njs_string("MemoryError");
+
+            vm->retval = name;
+
+            return NJS_OK;
+        }
+    }
+
+    return njs_error_prototype_to_string(vm, args, nargs, unused);
+}
+
+
 static const njs_object_prop_t  njs_internal_error_prototype_properties[] =
 {
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
         .value = njs_string("InternalError"),
+    },
+
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("toString"),
+        .value = njs_native_function(njs_internal_error_prototype_to_string,
+                                     0, 0),
     },
 };
 
@@ -800,52 +851,4 @@ const njs_object_init_t  njs_uri_error_prototype_init = {
     nxt_string("URIError"),
     njs_uri_error_prototype_properties,
     nxt_nitems(njs_uri_error_prototype_properties),
-};
-
-
-static njs_ret_t
-njs_memory_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
-    nxt_uint_t nargs, njs_index_t unused)
-{
-    static const njs_value_t  name = njs_string("MemoryError");
-
-    vm->retval = name;
-
-    return NJS_OK;
-}
-
-
-static const njs_object_prop_t  njs_memory_error_prototype_properties[] =
-{
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("MemoryError"),
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("message"),
-        .value = njs_string(""),
-    },
-
-    {
-        .type = NJS_METHOD,
-        .name = njs_string("valueOf"),
-        .value = njs_native_function(njs_error_prototype_value_of, 0, 0),
-    },
-
-    {
-        .type = NJS_METHOD,
-        .name = njs_string("toString"),
-        .value = njs_native_function(njs_memory_error_prototype_to_string,
-                                     0, 0),
-    },
-};
-
-
-const njs_object_init_t  njs_memory_error_prototype_init = {
-    nxt_string("MemoryError"),
-    njs_memory_error_prototype_properties,
-    nxt_nitems(njs_memory_error_prototype_properties),
 };

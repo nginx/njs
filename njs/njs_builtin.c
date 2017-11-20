@@ -78,7 +78,6 @@ const njs_object_init_t  *njs_prototype_init[] = {
     &njs_syntax_error_prototype_init,
     &njs_type_error_prototype_init,
     &njs_uri_error_prototype_init,
-    &njs_memory_error_prototype_init,
 };
 
 

@@ -799,8 +799,7 @@ enum njs_prototypes_e {
     NJS_PROTOTYPE_SYNTAX_ERROR,
     NJS_PROTOTYPE_TYPE_ERROR,
     NJS_PROTOTYPE_URI_ERROR,
-    NJS_PROTOTYPE_MEMORY_ERROR,
-#define NJS_PROTOTYPE_MAX      (NJS_PROTOTYPE_MEMORY_ERROR + 1)
+#define NJS_PROTOTYPE_MAX      (NJS_PROTOTYPE_URI_ERROR + 1)
 };
 
 
@@ -833,7 +832,8 @@ enum njs_constructor_e {
     NJS_CONSTRUCTOR_SYNTAX_ERROR =   NJS_PROTOTYPE_SYNTAX_ERROR,
     NJS_CONSTRUCTOR_TYPE_ERROR =     NJS_PROTOTYPE_TYPE_ERROR,
     NJS_CONSTRUCTOR_URI_ERROR =      NJS_PROTOTYPE_URI_ERROR,
-    NJS_CONSTRUCTOR_MEMORY_ERROR =   NJS_PROTOTYPE_MEMORY_ERROR,
+    /* MemoryError has no its own prototype. */
+    NJS_CONSTRUCTOR_MEMORY_ERROR,
 #define NJS_CONSTRUCTOR_MAX    (NJS_CONSTRUCTOR_MEMORY_ERROR + 1)
 };
 
@@ -975,8 +975,7 @@ struct njs_vm_s {
 
     /*
      * MemoryError is statically allocated immutable Error object
-     * with the generic type NJS_OBJECT_INTERNAL_ERROR but its own prototype
-     * object NJS_PROTOTYPE_MEMORY_ERROR.
+     * with the generic type NJS_OBJECT_INTERNAL_ERROR.
      */
     njs_object_t             memory_error_object;
 

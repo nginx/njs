@@ -71,7 +71,6 @@ extern const njs_object_init_t  njs_ref_error_prototype_init;
 extern const njs_object_init_t  njs_syntax_error_prototype_init;
 extern const njs_object_init_t  njs_type_error_prototype_init;
 extern const njs_object_init_t  njs_uri_error_prototype_init;
-extern const njs_object_init_t  njs_memory_error_prototype_init;
 
 
 #endif /* _NJS_BOOLEAN_H_INCLUDED_ */
