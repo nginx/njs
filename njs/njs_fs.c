@@ -566,6 +566,8 @@ static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
     }
 
     mode = NULL;
+    /* GCC complains about uninitialized flag.length. */
+    flag.length = 0;
     flag.start = NULL;
     encoding.length = 0;
     encoding.start = NULL;
@@ -753,6 +755,8 @@ njs_fs_write_file_sync_internal(njs_vm_t *vm, njs_value_t *args,
     }
 
     mode = NULL;
+    /* GCC complains about uninitialized flag.length. */
+    flag.length = 0;
     flag.start = NULL;
     encoding.length = 0;
     encoding.start = NULL;
