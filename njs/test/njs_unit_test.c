@@ -538,8 +538,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'0' ** 0.1"),
       nxt_string("0") },
 
+#ifndef __NetBSD__  /* NetBSD 7: pow(0, negative) == -Infinity. */
     { nxt_string("0 ** '-0.1'"),
       nxt_string("Infinity") },
+#endif
 
     { nxt_string("(-0) ** 3"),
       nxt_string("-0") },
@@ -550,8 +552,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("(-0) ** '-3'"),
       nxt_string("-Infinity") },
 
+#ifndef __NetBSD__  /* NetBSD 7: pow(0, negative) == -Infinity. */
     { nxt_string("'-0' ** -2"),
       nxt_string("Infinity") },
+#endif
 
     { nxt_string("(-3) ** 0.1"),
       nxt_string("NaN") },
@@ -604,8 +608,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = '0'; a **= 0.1"),
       nxt_string("0") },
 
+#ifndef __NetBSD__  /* NetBSD 7: pow(0, negative) == -Infinity. */
     { nxt_string("var a = 0; a **= '-0.1'"),
       nxt_string("Infinity") },
+#endif
 
     { nxt_string("var a = -0; a **= 3"),
       nxt_string("-0") },
@@ -616,8 +622,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = -0; a **= '-3'"),
       nxt_string("-Infinity") },
 
+#ifndef __NetBSD__  /* NetBSD 7: pow(0, negative) == -Infinity. */
     { nxt_string("var a = '-0'; a **= -2"),
       nxt_string("Infinity") },
+#endif
 
     { nxt_string("var a = -3; a **= 0.1"),
       nxt_string("NaN") },
@@ -7799,8 +7807,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.pow('0', 0.1)"),
       nxt_string("0") },
 
+#ifndef __NetBSD__  /* NetBSD 7: pow(0, negative) == -Infinity. */
     { nxt_string("Math.pow(0, '-0.1')"),
       nxt_string("Infinity") },
+#endif
 
     { nxt_string("Math.pow(-0, 3)"),
       nxt_string("-0") },
@@ -7811,8 +7821,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.pow(-0, '-3')"),
       nxt_string("-Infinity") },
 
+#ifndef __NetBSD__  /* NetBSD 7: pow(0, negative) == -Infinity. */
     { nxt_string("Math.pow('-0', -2)"),
       nxt_string("Infinity") },
+#endif
 
     { nxt_string("Math.pow(-3, 0.1)"),
       nxt_string("NaN") },
