@@ -182,6 +182,14 @@ njs_test {
      "JSON.parse(Error()\r\nSyntaxError: Unexpected token \"\" in 1"}
 }
 
+# Non-ASCII characters
+njs_test {
+    {"'絵文字'\r\n"
+     "絵文字"}
+    {"var v = 'абвгдеёжзийкл';v[10]\r\n"
+     "й"}
+}
+
 # require('fs')
 
 set file [open njs_test_file w]

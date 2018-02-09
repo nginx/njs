@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <locale.h>
 
 #include <nxt_auto_config.h>
 #include <nxt_types.h>
@@ -458,6 +459,8 @@ njs_editline_init(njs_vm_t *vm)
     rl_completion_append_character = '\0';
     rl_attempted_completion_function = njs_completion_handler;
     rl_basic_word_break_characters = (char *) " \t\n\"\\'`@$><=;,|&{(";
+
+    setlocale(LC_ALL, "");
 
     njs_completion.completions = njs_vm_completions(vm, NULL);
     if (njs_completion.completions == NULL) {
