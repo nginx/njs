@@ -223,15 +223,17 @@ njs_variable_reference(njs_vm_t *vm, njs_parser_t *parser,
 }
 
 
-njs_ret_t
-njs_variables_scope_reference(njs_vm_t *vm, njs_parser_scope_t *scope)
+static njs_ret_t
+njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
+    nxt_bool_t local_scope)
 {
-    njs_ret_t           ret;
-    nxt_queue_t         *nested;
-    njs_variable_t      *var;
-    nxt_queue_link_t    *lnk;
-    njs_parser_node_t   *node;
-    nxt_lvlhsh_each_t   lhe;
+    njs_ret_t             ret;
+    nxt_queue_t           *nested;
+    njs_variable_t        *var;
+    nxt_queue_link_t      *lnk;
+    njs_parser_node_t     *node;
+    nxt_lvlhsh_each_t     lhe;
+    njs_variable_scope_t  vs;
 
     nested = &scope->nested;
 
@@ -241,7 +243,7 @@ njs_variables_scope_reference(njs_vm_t *vm, njs_parser_scope_t *scope)
     {
         scope = nxt_queue_link_data(lnk, njs_parser_scope_t, link);
 
-        ret = njs_variables_scope_reference(vm, scope);
+        ret = njs_variables_scope_resolve(vm, scope, local_scope);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NXT_ERROR;
         }
@@ -255,11 +257,55 @@ njs_variables_scope_reference(njs_vm_t *vm, njs_parser_scope_t *scope)
                 break;
             }
 
+            if (!local_scope) {
+                ret = njs_variable_find(vm, node, &vs);
+                if (nxt_slow_path(ret != NXT_OK)) {
+                    continue;
+                }
+
+                if (vs.scope->type == NJS_SCOPE_GLOBAL) {
+                    continue;
+                }
+
+                if (node->scope->nesting == vs.scope->nesting) {
+                    /*
+                     * A variable is referenced locally here, but may be
+                     * referenced non-locally in other places, skipping.
+                     */
+                    continue;
+                }
+            }
+
             var = njs_variable_get(vm, node);
             if (nxt_slow_path(var == NULL)) {
                 return NXT_ERROR;
             }
         }
+    }
+
+    return NXT_OK;
+}
+
+
+njs_ret_t
+njs_variables_scope_reference(njs_vm_t *vm, njs_parser_scope_t *scope)
+{
+    njs_ret_t  ret;
+
+    /*
+     * Calculating proper scope types for variables.
+     * A variable is considered to be local variable if it is referenced
+     * only in the local scope (reference and definition nestings are the same).
+     */
+
+    ret = njs_variables_scope_resolve(vm, scope, 0);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NXT_ERROR;
+    }
+
+    ret = njs_variables_scope_resolve(vm, scope, 1);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NXT_ERROR;
     }
 
     return NXT_OK;
@@ -309,7 +355,7 @@ njs_variable_t *
 njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
 {
     nxt_int_t             ret;
-    nxt_uint_t            n;
+    nxt_uint_t            scope_index;
     nxt_array_t           *values;
     njs_index_t           index;
     njs_value_t           *value;
@@ -322,10 +368,10 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
         goto not_found;
     }
 
-    n = 0;
+    scope_index = 0;
 
     if (vs.scope->type > NJS_SCOPE_GLOBAL) {
-        n = (node->scope->nesting != vs.scope->nesting);
+        scope_index = (node->scope->nesting != vs.scope->nesting);
     }
 
     var = vs.variable;
@@ -333,7 +379,7 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
 
     if (index != NJS_INDEX_NONE) {
 
-        if (n == 0 || njs_scope_type(index) != NJS_SCOPE_ARGUMENTS) {
+        if (scope_index == 0 || njs_scope_type(index) != NJS_SCOPE_ARGUMENTS) {
             node->index = index;
 
             return var;
@@ -371,7 +417,7 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
         index = (njs_index_t) value;
 
     } else {
-        values = vs.scope->values[n];
+        values = vs.scope->values[scope_index];
 
         if (values == NULL) {
             values = nxt_array_create(4, sizeof(njs_value_t),
@@ -380,7 +426,7 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
                 return NULL;
             }
 
-            vs.scope->values[n] = values;
+            vs.scope->values[scope_index] = values;
         }
 
         value = nxt_array_add(values, &njs_array_mem_proto, vm->mem_cache_pool);
@@ -388,8 +434,8 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
             return NULL;
         }
 
-        index = vs.scope->next_index[n];
-        vs.scope->next_index[n] += sizeof(njs_value_t);
+        index = vs.scope->next_index[scope_index];
+        vs.scope->next_index[scope_index] += sizeof(njs_value_t);
     }
 
     if (njs_is_object(&var->value)) {

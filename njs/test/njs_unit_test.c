@@ -4591,6 +4591,27 @@ static njs_unit_test_t  njs_test[] =
                  "function f() { function h() { x = 3; return y; } }"),
       nxt_string("undefined") },
 
+    { nxt_string("function f() {"
+                 "    var a = 'a';"
+                 "    if (0) { a = 'b' };"
+                 "    function f2() { return a };"
+                 "    return f2"
+                 "};"
+                 "f()()"),
+      nxt_string("a") },
+
+    { nxt_string("function f() {"
+                 "    var a = 'a'; "
+                 "    if (0) { if (0) {a = 'b'} };"
+                 "    function f2() { return a };"
+                 "    return f2"
+                 "};"
+                 "f()()"),
+      nxt_string("a") },
+
+    { nxt_string("function f() { var a = f2(); }"),
+      nxt_string("ReferenceError: \"f2\" is not defined in 1") },
+
     /* Recursive fibonacci. */
 
     { nxt_string("function fibo(n) {"

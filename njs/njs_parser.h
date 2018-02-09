@@ -235,11 +235,15 @@ struct njs_parser_scope_s {
     nxt_lvlhsh_t                    variables;
     nxt_lvlhsh_t                    references;
 
-    nxt_array_t                     *values[2]; /* Array of njs_value_t. */
+    /*
+     * 0: local scope index;
+     * 1: closure scope index.
+     */
+    nxt_array_t                     *values[2];  /* Array of njs_value_t. */
     njs_index_t                     next_index[2];
 
     njs_scope_t                     type:8;
-    uint8_t                         nesting;    /* 4 bits */
+    uint8_t                         nesting;     /* 4 bits */
     uint8_t                         argument_closures;
 };
 
@@ -248,9 +252,9 @@ typedef struct njs_parser_node_s    njs_parser_node_t;
 
 struct njs_parser_node_s {
     njs_token_t                     token:16;
-    uint8_t                         ctor:1;     /* 1 bit  */
-    uint8_t                         temporary;  /* 1 bit  */
-    uint8_t                         reference;  /* 1 bit  */
+    uint8_t                         ctor:1;      /* 1 bit  */
+    uint8_t                         temporary;   /* 1 bit  */
+    uint8_t                         reference;   /* 1 bit  */
     uint32_t                        token_line;
     uint32_t                        variable_name_hash;
 
