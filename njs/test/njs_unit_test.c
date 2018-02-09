@@ -6433,6 +6433,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.defineProperties(Object.freeze({}), {b:{}})"),
       nxt_string("TypeError") },
 
+    { nxt_string("Object.freeze()"),
+      nxt_string("undefined") },
+
     { nxt_string("var o = Object.freeze({a:1}); o.a = 2; o.a"),
       nxt_string("1") },
 
@@ -6535,11 +6538,14 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.isFrozen(new RegExp(''))"),
       nxt_string("false") },
 
+    { nxt_string("Object.isFrozen()"),
+      nxt_string("true") },
+
     { nxt_string("Object.isFrozen(1)"),
-      nxt_string("TypeError") },
+      nxt_string("true") },
 
     { nxt_string("Object.isFrozen('')"),
-      nxt_string("TypeError") },
+      nxt_string("true") },
 
     { nxt_string("Object.isFrozen(Object.defineProperties({}, {a:{value:1}}))"),
       nxt_string("false") },
@@ -6586,11 +6592,14 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = Object.seal({a:{b:1}}); o.a.b = 2; o.a.b"),
       nxt_string("2") },
 
+    { nxt_string("Object.seal()"),
+      nxt_string("undefined") },
+
     { nxt_string("Object.seal(1)"),
-      nxt_string("TypeError") },
+      nxt_string("1") },
 
     { nxt_string("Object.seal('')"),
-      nxt_string("TypeError") },
+      nxt_string("") },
 
     { nxt_string("Object.isSealed({a:1})"),
       nxt_string("false") },
@@ -6607,11 +6616,14 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.isSealed(new RegExp(''))"),
       nxt_string("false") },
 
+    { nxt_string("Object.isSealed()"),
+      nxt_string("true") },
+
     { nxt_string("Object.isSealed(1)"),
-      nxt_string("TypeError") },
+      nxt_string("true") },
 
     { nxt_string("Object.isSealed('')"),
-      nxt_string("TypeError") },
+      nxt_string("true") },
 
     { nxt_string("Object.isSealed(Object.defineProperties({}, {a:{value:1}}))"),
       nxt_string("false") },
@@ -6660,6 +6672,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = Object.preventExtensions({a:1}); o.b = 1; o.b"),
       nxt_string("undefined") },
 
+    { nxt_string("Object.preventExtensions()"),
+      nxt_string("undefined") },
+
+    { nxt_string("Object.preventExtensions(1)"),
+      nxt_string("1") },
+
+    { nxt_string("Object.preventExtensions('')"),
+      nxt_string("") },
+
     { nxt_string("Object.isExtensible({})"),
       nxt_string("true") },
 
@@ -6675,11 +6696,14 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.isExtensible(new RegExp(''))"),
       nxt_string("true") },
 
+    { nxt_string("Object.isExtensible()"),
+      nxt_string("false") },
+
     { nxt_string("Object.isExtensible(1)"),
-      nxt_string("TypeError") },
+      nxt_string("false") },
 
     { nxt_string("Object.isExtensible('')"),
-      nxt_string("TypeError") },
+      nxt_string("false") },
 
     { nxt_string("Object.isExtensible(Object.preventExtensions({}))"),
       nxt_string("false") },

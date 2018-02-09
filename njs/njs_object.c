@@ -741,8 +741,8 @@ njs_object_freeze(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     nxt_lvlhsh_each_t  lhe;
 
     if (nargs < 2 || !njs_is_object(&args[1])) {
-        njs_exception_type_error(vm, NULL, NULL);
-        return NXT_ERROR;
+        vm->retval = njs_value_void;
+        return NXT_OK;
     }
 
     object = args[1].data.u.object;
@@ -780,8 +780,8 @@ njs_object_is_frozen(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     const njs_value_t  *retval;
 
     if (nargs < 2 || !njs_is_object(&args[1])) {
-        njs_exception_type_error(vm, NULL, NULL);
-        return NXT_ERROR;
+        vm->retval = njs_string_true;
+        return NXT_OK;
     }
 
     retval = &njs_string_false;
@@ -827,8 +827,8 @@ njs_object_seal(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     nxt_lvlhsh_each_t  lhe;
 
     if (nargs < 2 || !njs_is_object(&args[1])) {
-        njs_exception_type_error(vm, NULL, NULL);
-        return NXT_ERROR;
+        vm->retval = (nargs < 2) ? njs_value_void : args[1];
+        return NXT_OK;
     }
 
     object = args[1].data.u.object;
@@ -865,8 +865,8 @@ njs_object_is_sealed(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     const njs_value_t  *retval;
 
     if (nargs < 2 || !njs_is_object(&args[1])) {
-        njs_exception_type_error(vm, NULL, NULL);
-        return NXT_ERROR;
+        vm->retval = njs_string_true;
+        return NXT_OK;
     }
 
     retval = &njs_string_false;
@@ -907,8 +907,8 @@ njs_object_prevent_extensions(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
     if (nargs < 2 || !njs_is_object(&args[1])) {
-        njs_exception_type_error(vm, NULL, NULL);
-        return NXT_ERROR;
+        vm->retval = (nargs < 2) ? njs_value_void : args[1];
+        return NXT_OK;
     }
 
     args[1].data.u.object->extensible = 0;
@@ -926,8 +926,8 @@ njs_object_is_extensible(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     const njs_value_t  *retval;
 
     if (nargs < 2 || !njs_is_object(&args[1])) {
-        njs_exception_type_error(vm, NULL, NULL);
-        return NXT_ERROR;
+        vm->retval = njs_string_false;
+        return NXT_OK;
     }
 
     retval = args[1].data.u.object->extensible ? &njs_string_true
