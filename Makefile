@@ -1,6 +1,4 @@
 
-NJS_VER =	0.1.15
-
 NXT_LIB =	nxt
 
 -include	$(NXT_LIB)/Makefile.conf
@@ -100,12 +98,12 @@ clean:
 	rm -f $(NXT_LIB)/Makefile.conf $(NXT_LIB)/nxt_auto_config.h
 
 dist:
-	make clean
-	mkdir njs-$(NJS_VER)
-	cp -rp configure Makefile LICENSE README CHANGES $(NXT_LIB) njs nginx \
-		njs-$(NJS_VER)
-	tar czf njs-$(NJS_VER).tar.gz njs-$(NJS_VER)
-	rm -rf njs-$(NJS_VER)
+	NJS_VER=`grep NJS_VERSION njs/njscript.h | sed -e 's/.*"\(.*\)".*/\1/'`; \
+	rm -rf njs-$${NJS_VER} \
+	&& hg archive njs-$${NJS_VER}.tar.gz \
+		      -p njs-$${NJS_VER} \
+		      -X ".hg*" \
+	&& echo njs-$${NJS_VER}.tar.gz done
 
 $(NXT_LIB)/nxt_auto_config.h:
 	@echo

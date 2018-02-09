@@ -7,6 +7,8 @@
 #ifndef _NJSCRIPT_H_INCLUDED_
 #define _NJSCRIPT_H_INCLUDED_
 
+#define NJS_VERSION                 "0.1.15"
+
 
 typedef intptr_t                    njs_ret_t;
 typedef uintptr_t                   njs_index_t;
