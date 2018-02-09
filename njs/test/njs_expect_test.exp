@@ -196,8 +196,6 @@ set file [open njs_test_file w]
 puts -nonewline $file "αβZγ"
 flush $file
 
-exec /bin/echo -ne {\x80\x80} > njs_test_file_non_utf8
-
 njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
@@ -277,14 +275,14 @@ njs_test {
 njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
-    {"fs.readFileSync('njs_test_file_non_utf8').charCodeAt(1)\r\n"
+    {"fs.readFileSync('./njs/test/non_utf8').charCodeAt(1)\r\n"
      "128"}
 }
 
 njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
-    {"fs.readFileSync('njs_test_file_non_utf8', 'utf8')\r\n"
+    {"fs.readFileSync('./njs/test/non_utf8', 'utf8')\r\n"
      "Error: Non-UTF8 file, convertion is not implemented"}
 }
 
