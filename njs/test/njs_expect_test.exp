@@ -5,9 +5,8 @@
 
 proc njs_test {body} {
     spawn  -nottycopy njs
-    expect "interactive njscript\r
-\r
-v.<Tab> -> the properties and prototype methods of v.\r
+    expect -re "interactive njscript \\d+\.\\d+\.\\d+\r\n\r"
+    expect "v.<Tab> -> the properties and prototype methods of v.\r
 type console.help() for more information\r
 \r
 >> "

@@ -41,6 +41,7 @@ typedef enum {
 
 typedef struct {
     char                    *file;
+    nxt_int_t               version;
     nxt_int_t               disassemble;
     nxt_int_t               interactive;
 } njs_opts_t;
@@ -137,6 +138,11 @@ main(int argc, char **argv)
         return (ret == NXT_DONE) ? EXIT_SUCCESS : EXIT_FAILURE;
     }
 
+    if (opts.version != 0) {
+        printf("%s\n", NJS_VERSION);
+        return EXIT_SUCCESS;
+    }
+
     mcp = nxt_mem_cache_pool_create(&njs_vm_mem_cache_pool_proto, NULL,
                                     NULL, 2 * nxt_pagesize(), 128, 512, 16);
     if (nxt_slow_path(mcp == NULL)) {
@@ -189,6 +195,10 @@ njs_get_options(njs_opts_t *opts, int argc, char** argv)
             opts->disassemble = 1;
             break;
 
+        case 'V':
+            opts->version = 1;
+            break;
+
         default:
             fprintf(stderr, "Unknown argument: \"%s\"\n", argv[i]);
             ret = NXT_ERROR;
@@ -197,7 +207,7 @@ njs_get_options(njs_opts_t *opts, int argc, char** argv)
 
         case 'h':
         case '?':
-            printf("Usage: %s [<file>|-] [-d]\n", argv[0]);
+            printf("Usage: %s [<file>|-] [-dV]\n", argv[0]);
             return ret;
         }
     }
@@ -254,7 +264,7 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         return NXT_ERROR;
     }
 
-    printf("interactive njscript\n\n");
+    printf("interactive njscript %s\n\n", NJS_VERSION);
 
     printf("v.<Tab> -> the properties and prototype methods of v.\n");
     printf("type console.help() for more information\n\n");
