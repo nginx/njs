@@ -659,5 +659,7 @@ njs_ext_console_help(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     printf("\n");
 
+    vm->retval = njs_value_void;
+
     return NJS_OK;
 }
