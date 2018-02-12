@@ -21,7 +21,7 @@ if [ $nxt_found = yes -a $NXT_HAVE_LIBEDIT = YES ]; then
     cat << END >> $NXT_MAKEFILE_CONF
 
 njs_expect_test:	njs njs/test/njs_expect_test.exp
-	PATH=\$(PATH):\$(NXT_BUILDDIR) expect -f njs/test/njs_expect_test.exp
+	PATH=\$(NXT_BUILDDIR):\$(PATH) expect -f njs/test/njs_expect_test.exp
 END
 
 else
