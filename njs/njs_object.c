@@ -823,11 +823,13 @@ njs_object_seal(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     nxt_lvlhsh_t       *hash;
     njs_object_t       *object;
+    const njs_value_t  *retval;
     njs_object_prop_t  *prop;
     nxt_lvlhsh_each_t  lhe;
 
     if (nargs < 2 || !njs_is_object(&args[1])) {
-        vm->retval = (nargs < 2) ? njs_value_void : args[1];
+        retval = (nargs < 2) ? &njs_value_void : &args[1];
+        vm->retval = *retval;
         return NXT_OK;
     }
 
@@ -906,8 +908,11 @@ static njs_ret_t
 njs_object_prevent_extensions(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
+    const njs_value_t  *retval;
+
     if (nargs < 2 || !njs_is_object(&args[1])) {
-        vm->retval = (nargs < 2) ? njs_value_void : args[1];
+        retval = (nargs < 2) ? &njs_value_void : &args[1];
+        vm->retval = *retval;
         return NXT_OK;
     }
 
