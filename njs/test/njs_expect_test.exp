@@ -166,12 +166,17 @@ njs_test {
      "console.help()\r\nVM built-in objects:"}
 }
 
+njs_test {
+    {"console.ll()\r\n"
+     "console.ll()\r\nTypeError: cannot find property 'll' of an external object"}
+}
+
 # Exception in njs_vm_retval()
 njs_test {
     {"var o = { toString: function() { return [1] } }\r\n"
      "undefined\r\n>> "}
     {"o\r\n"
-     "TypeError"}
+     "TypeError: cannot evaluate an object's value"}
 }
 
 # Backtraces are reset between invocations

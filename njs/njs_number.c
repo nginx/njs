@@ -586,7 +586,8 @@ njs_number_prototype_value_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             value = &value->data.u.object_value->value;
 
         } else {
-            njs_exception_type_error(vm, NULL, NULL);
+            njs_exception_type_error(vm, "unexpected value type:%s",
+                                     njs_type_string(value->type));
             return NXT_ERROR;
         }
     }
@@ -612,7 +613,8 @@ njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
             value = &value->data.u.object_value->value;
 
         } else {
-            njs_exception_type_error(vm, NULL, NULL);
+            njs_exception_type_error(vm, "unexpected value type:%s",
+                                     njs_type_string(value->type));
             return NXT_ERROR;
         }
     }

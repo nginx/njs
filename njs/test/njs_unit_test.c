@@ -2309,10 +2309,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("undefined") },
 
     { nxt_string("var a = {}; a.b.c"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: cannot get property 'c' of undefined") },
 
     { nxt_string("'a'.b = 1"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: property set on primitive string type") },
 
     { nxt_string("var a = {}; a.b = 1; a.b"),
       nxt_string("1") },
@@ -2342,16 +2342,16 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("3") },
 
     { nxt_string("var a = undefined; a.b++; a.b"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: cannot get property 'b' of undefined") },
 
     { nxt_string("var a = null; a.b++; a.b"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: cannot get property 'b' of undefined") },
 
     { nxt_string("var a = true; a.b++; a.b"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: property set on primitive boolean type") },
 
     { nxt_string("var a = 1; a.b++; a.b"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: property set on primitive number type") },
 
     { nxt_string("var n = 1, o = { p: n += 1 }; o.p"),
       nxt_string("2") },
@@ -2369,7 +2369,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("2 1") },
 
     { nxt_string("var a = 2; a.b = 1; var c = a.b++; a +' '+ a.b +' '+ c"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: property set on primitive number type") },
 
     { nxt_string("var x = { a: 1 }; x.a"),
       nxt_string("1") },
@@ -2408,7 +2408,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("SyntaxError: Unexpected token \";\" in 1") },
 
     { nxt_string("var x = { a: 1, b: x.a }"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: cannot get property 'a' of undefined") },
 
     { nxt_string("var a = { b: 2 }; a.b += 1"),
       nxt_string("3") },
@@ -2481,10 +2481,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("false") },
 
     { nxt_string("var a = 1; 1 in a"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: property in on a primitive value") },
 
     { nxt_string("var a = true; 1 in a"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: property in on a primitive value") },
 
     { nxt_string("var n = { toString: function() { return 'a' } };"
                  "var o = { a: 5 }; o[n]"),
@@ -3224,7 +3224,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var a = [];"
                  "a.reduce(function(p, v, i, a) { return p + v })"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: invalid index") },
 
     { nxt_string("var a = [];"
                  "a.reduce(function(p, v, i, a) { return p + v }, 10)"),
@@ -3232,7 +3232,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var a = [,,];"
                  "a.reduce(function(p, v, i, a) { return p + v })"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: invalid index") },
 
     { nxt_string("var a = [,,];"
                  "a.reduce(function(p, v, i, a) { return p + v }, 10)"),
@@ -3260,7 +3260,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var a = [];"
                  "a.reduceRight(function(p, v, i, a) { return p + v })"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: invalid index") },
 
     { nxt_string("var a = [];"
                  "a.reduceRight(function(p, v, i, a) { return p + v }, 10)"),
@@ -3268,7 +3268,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var a = [,,];"
                  "a.reduceRight(function(p, v, i, a) { return p + v })"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: invalid index") },
 
     { nxt_string("var a = [,,];"
                  "a.reduceRight(function(p, v, i, a) { return p + v }, 10)"),
@@ -3725,7 +3725,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("abc") },
 
     { nxt_string("String.prototype.toString.call(1)"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: unexpected value type:number") },
 
     { nxt_string("'abc'.valueOf()"),
       nxt_string("abc") },
@@ -4131,7 +4131,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var r = { toString: function() { return /45/ } };"
                  "'123456'.search(r)"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: cannot evaluate an object's value") },
 
     { nxt_string("var r = { toString: function() { return /34/ },"
                  "          valueOf:  function() { return 45 } };"
@@ -4265,7 +4265,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var r = { toString: function() { return /45/ } };"
                  "'123456'.match(r)"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: cannot evaluate an object's value") },
 
     { nxt_string("var r = { toString: function() { return /34/ },"
                  "          valueOf:  function() { return 45 } };"
@@ -4509,10 +4509,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("OKundefined") },
 
     { nxt_string("var a = 1; a()"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: object is not callable") },
 
     { nxt_string("var o = {a:1}; o.a()"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: object is not callable") },
 
     { nxt_string("(function(){})()"),
       nxt_string("undefined") },
@@ -4800,7 +4800,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("5") },
 
     { nxt_string("var f = function(a) { return this + a }; f.apply(5, 1)"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: second argument is not an array") },
 
     { nxt_string("var f = function(a, b) { return this + a + b };"
                  "f.apply(5, [1, 2])"),
@@ -4814,7 +4814,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("[object Function]") },
 
     { nxt_string("''.concat.call()"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: 'this' argument is null or undefined") },
 
     { nxt_string("''.concat.call('a', 'b', 'c')"),
       nxt_string("abc") },
@@ -4829,13 +4829,13 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("ab,cd") },
 
     { nxt_string("''.concat.apply()"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: 'this' argument is null or undefined") },
 
     { nxt_string("''.concat.apply('a')"),
       nxt_string("a") },
 
     { nxt_string("''.concat.apply('a', 'b')"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: second argument is not an array") },
 
     { nxt_string("''.concat.apply('a', [ 'b', 'c' ])"),
       nxt_string("abc") },
@@ -4853,10 +4853,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("1552553") },
 
     { nxt_string("[].join.call()"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: cannot convert void to object") },
 
     { nxt_string("[].slice.call()"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: cannot convert void to object") },
 
     { nxt_string("function f(a) {} ; var a = f; var b = f; a === b"),
       nxt_string("true") },
@@ -4900,7 +4900,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("01") },
 
     { nxt_string("var concat = ''.concat; concat(1,2,3)"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: 'this' argument is null or undefined") },
 
     { nxt_string("var concat = ''.concat; concat.call(1,2,3)"),
       nxt_string("123") },
@@ -4997,10 +4997,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("object") },
 
     { nxt_string("new decodeURI('%00')"),
-      nxt_string("TypeError")},
+      nxt_string("TypeError: object is not callable")},
 
     { nxt_string("new ''.toString"),
-      nxt_string("TypeError")},
+      nxt_string("TypeError: object is not callable")},
 
     { nxt_string("function F() { return Number }"
                  "var o = new (F())(5);"
@@ -5214,7 +5214,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("[0].map(RegExp().toString)"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: 'this' argument is not a regexp") },
 
     /* Non-standard ECMA-262 features. */
 
@@ -5565,10 +5565,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("o:OK") },
 
     { nxt_string("var o = { toString: function() { return [1] } }; o"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: cannot evaluate an object's value") },
 
     { nxt_string("var o = { toString: function() { return [1] } }; 'o:' + o"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: cannot evaluate an object's value") },
 
     { nxt_string("var a = { valueOf: function() { return '3' } };"
                  "var b = { toString: function() { return 10 - a + 'OK' } };"
@@ -5620,7 +5620,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("[] instanceof []"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: right argument is not a function") },
 
     { nxt_string("[] instanceof Array"),
       nxt_string("true") },
@@ -6202,6 +6202,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = Object.create(null); '__proto__' in o"),
       nxt_string("false") },
 
+    { nxt_string("Object.create()"),
+      nxt_string("TypeError: too few arguments") },
+
     { nxt_string("var o = {a:1, b:2, c:3};"
                  "Object.keys(o)"),
       nxt_string("a,b,c") },
@@ -6215,11 +6218,14 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = [,6,,3]; a.one = 7; Object.keys(a)"),
       nxt_string("1,3,one") },
 
+    { nxt_string("Object.keys()"),
+      nxt_string("TypeError: cannot convert null argument to object") },
+
     { nxt_string("Object.keys('a')"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: cannot convert string argument to object") },
 
     { nxt_string("Object.keys(1)"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: cannot convert number argument to object") },
 
     { nxt_string("var o = {}; Object.defineProperty(o, 'a', {}); o.a"),
       nxt_string("undefined") },
@@ -6274,10 +6280,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("2") },
 
     { nxt_string("var o = {}; Object.defineProperty()"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: cannot convert null argument to object") },
 
     { nxt_string("var o = {}; Object.defineProperty(o)"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: descriptor is not an object") },
 
     { nxt_string("var o = Object.defineProperties({}, {a:{value:1}}); o.a"),
       nxt_string("1") },
@@ -6295,10 +6301,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("1") },
 
     { nxt_string("Object.defineProperties(1, {})"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: cannot convert number argument to object") },
 
     { nxt_string("Object.defineProperties({}, 1)"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: descriptor is not an object") },
 
     { nxt_string("var o = {a:1}; o.hasOwnProperty('a')"),
       nxt_string("true") },
@@ -6361,10 +6367,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("Object.getPrototypeOf(1)"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: cannot convert number argument to object") },
 
     { nxt_string("Object.getPrototypeOf('a')"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: cannot convert string argument to object") },
 
     { nxt_string("var p = {}; var o = Object.create(p);"
                  "p.isPrototypeOf(o)"),
@@ -6425,13 +6431,13 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("undefined") },
 
     { nxt_string("Object.getOwnPropertyDescriptor(1, '0')"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: cannot convert number argument to object") },
 
     { nxt_string("Object.defineProperty(Object.freeze({}), 'b', {})"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: object is not extensible") },
 
     { nxt_string("Object.defineProperties(Object.freeze({}), {b:{}})"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: object is not extensible") },
 
     { nxt_string("Object.freeze()"),
       nxt_string("undefined") },
@@ -6456,7 +6462,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var a = Object.freeze([1,2]);"
                  "Object.defineProperty(a, 'a', {value:1}).a"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: object is not extensible") },
 
     { nxt_string("var a = [1,2]; a.a = 1; Object.freeze(a);"
                  "delete a.a; a.a"),
@@ -6474,7 +6480,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var f = Object.freeze(function() {});"
                  "Object.defineProperty(f, 'a', {value:1}).a"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: object is not extensible") },
 
     { nxt_string("var f = function() {}; f.a = 1; Object.freeze(f);"
                  "delete f.a; f.a"),
@@ -6492,7 +6498,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var d = Object.freeze(new Date(''));"
                  "Object.defineProperty(d, 'a', {value:1}).a"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: object is not extensible") },
 
     { nxt_string("var d = new Date(''); d.a = 1; Object.freeze(d);"
                  "delete d.a; d.a"),
@@ -6510,7 +6516,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var r = Object.freeze(new RegExp(''));"
                  "Object.defineProperty(r, 'a', {value:1}).a"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: object is not extensible") },
 
     { nxt_string("var r = new RegExp(''); r.a = 1; Object.freeze(r);"
                  "delete r.a; r.a"),
@@ -6657,11 +6663,11 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var o = Object.preventExtensions({a:1});"
                  "Object.defineProperty(o, 'b', {value:1})"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: object is not extensible") },
 
     { nxt_string("var o = Object.preventExtensions({a:1});"
                  "Object.defineProperties(o, {b:{value:1}})"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: object is not extensible") },
 
     { nxt_string("var o = Object.preventExtensions({a:1}); o.a = 2; o.a"),
       nxt_string("2") },
@@ -7079,7 +7085,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("[0].map(new Date().getDate)"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: cannot convert void to regexp") },
 
     { nxt_string("new Date(eval)"),
       nxt_string("Invalid Date") },
@@ -8499,7 +8505,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var o = JSON.parse('{\"a\":1}', "
                  "                   function(k, v) {return v.a.a;}); o"),
-      nxt_string("TypeError") },
+      nxt_string("TypeError: cannot get property 'a' of undefined") },
 
     /* JSON.stringify() */
 

@@ -573,7 +573,7 @@ njs_regexp_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         return njs_regexp_string_create(vm, &vm->retval, source, size, length);
     }
 
-    njs_exception_type_error(vm, NULL, NULL);
+    njs_exception_type_error(vm, "'this' argument is not a regexp", NULL);
 
     return NXT_ERROR;
 }
@@ -591,7 +591,7 @@ njs_regexp_prototype_test(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_regexp_pattern_t  *pattern;
 
     if (!njs_is_regexp(&args[0])) {
-        njs_exception_type_error(vm, NULL, NULL);
+        njs_exception_type_error(vm, "'this' argument is not a regexp", NULL);
         return NXT_ERROR;
     }
 
@@ -641,7 +641,7 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     nxt_regex_match_data_t  *match_data;
 
     if (!njs_is_regexp(&args[0])) {
-        njs_exception_type_error(vm, NULL, NULL);
+        njs_exception_type_error(vm, "'this' argument is not a regexp", NULL);
         return NXT_ERROR;
     }
 

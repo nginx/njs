@@ -509,7 +509,7 @@ njs_function_prototype_call(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_function_t  *function;
 
     if (!njs_is_function(&args[0])) {
-        njs_exception_type_error(vm, NULL, NULL);
+        njs_exception_type_error(vm, "'this' argument is not a function", NULL);
         return NXT_ERROR;
     }
 
@@ -537,7 +537,8 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_function_t  *function;
 
     if (!njs_is_function(&args[0])) {
-        goto type_error;
+        njs_exception_type_error(vm, "'this' argument is not a function", NULL);
+        return NXT_ERROR;
     }
 
     function = args[0].data.u.function;
@@ -545,7 +546,9 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     if (nargs > 2) {
         if (!njs_is_array(&args[2])) {
-            goto type_error;
+            njs_exception_type_error(vm, "second argument is not an array",
+                                     NULL);
+            return NXT_ERROR;
         }
 
         array = args[2].data.u.array;
@@ -561,12 +564,6 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     return njs_function_activate(vm, function, this, args, nargs, retval);
-
-type_error:
-
-    njs_exception_type_error(vm, NULL, NULL);
-
-    return NXT_ERROR;
 }
 
 
@@ -622,7 +619,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_function_t  *function;
 
     if (!njs_is_function(&args[0])) {
-        njs_exception_type_error(vm, NULL, NULL);
+        njs_exception_type_error(vm, "'this' argument is not a function", NULL);
         return NXT_ERROR;
     }
 

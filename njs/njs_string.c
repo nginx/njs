@@ -553,7 +553,8 @@ njs_string_prototype_value_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             value = &value->data.u.object_value->value;
 
         } else {
-            njs_exception_type_error(vm, NULL, NULL);
+            njs_exception_type_error(vm, "unexpected value type:%s",
+                                     njs_type_string(value->type));
             return NXT_ERROR;
         }
     }
@@ -578,7 +579,8 @@ njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_string_prop_t  string;
 
     if (njs_is_null_or_void(&args[0])) {
-        njs_exception_type_error(vm, NULL, NULL);
+        njs_exception_type_error(vm, "'this' argument is null or undefined",
+                                 NULL);
         return NXT_ERROR;
     }
 
@@ -2539,7 +2541,8 @@ njs_string_replace_regexp_continuation(njs_vm_t *vm, njs_value_t *args,
 
     nxt_regex_match_data_free(r->match_data, vm->regex_context);
 
-    njs_exception_type_error(vm, NULL, NULL);
+    njs_exception_internal_error(vm, "unexpected continuation retval type:%s",
+                                 njs_type_string(r->retval.type));
 
     return NXT_ERROR;
 }
@@ -2651,7 +2654,8 @@ njs_string_replace_search_continuation(njs_vm_t *vm, njs_value_t *args,
         return njs_string_replace_join(vm, r);
     }
 
-    njs_exception_type_error(vm, NULL, NULL);
+    njs_exception_internal_error(vm, "unexpected continuation retval type:%s",
+                                 njs_type_string(r->retval.type));
 
     return NXT_ERROR;
 }

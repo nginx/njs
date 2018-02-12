@@ -674,7 +674,8 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
     njs_vmcode_prop_set_t  *code;
 
     if (njs_is_primitive(object)) {
-        njs_exception_type_error(vm, NULL, NULL);
+        njs_exception_type_error(vm, "property set on primitive %s type",
+                                 njs_type_string(object->type));
         return NXT_ERROR;
     }
 
@@ -794,7 +795,7 @@ njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *object, njs_value_t *property)
 
     case NJS_PRIMITIVE_VALUE:
     case NJS_STRING_VALUE:
-        njs_exception_type_error(vm, NULL, NULL);
+        njs_exception_type_error(vm, "property in on a primitive value", NULL);
 
         return NXT_ERROR;
 
@@ -1039,7 +1040,23 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
         break;
 
     default:  /* NJS_VOID, NJS_NULL. */
-        njs_exception_type_error(vm, NULL, NULL);
+        if (nxt_fast_path(njs_is_primitive(property))) {
+
+            ret = njs_primitive_value_to_string(vm, &pq->value, property);
+
+            if (nxt_fast_path(ret == NXT_OK)) {
+                njs_string_get(&pq->value, &pq->lhq.key);
+                njs_exception_type_error(vm,
+                                      "cannot get property '%.*s' of undefined",
+                                      (int) pq->lhq.key.length,
+                                      pq->lhq.key.start);
+                return NXT_ERROR;
+            }
+        }
+
+        njs_exception_type_error(vm,
+                            "cannot get property 'unknown' of undefined", NULL);
+
         return NXT_ERROR;
     }
 
@@ -1322,7 +1339,7 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     nxt_lvlhsh_query_t  lhq;
 
     if (!njs_is_function(constructor)) {
-        njs_exception_type_error(vm, NULL, NULL);
+        njs_exception_type_error(vm, "right argument is not a function", NULL);
         return NXT_ERROR;
     }
 
@@ -2245,7 +2262,7 @@ njs_function_frame_create(njs_vm_t *vm, njs_value_t *value,
         }
     }
 
-    njs_exception_type_error(vm, NULL, NULL);
+    njs_exception_type_error(vm, "object is not callable", NULL);
 
     return NXT_ERROR;
 }
@@ -2304,7 +2321,9 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
 
     pq.query = NJS_PROPERTY_QUERY_GET;
 
-    switch (njs_property_query(vm, &pq, object, name)) {
+    ret = njs_property_query(vm, &pq, object, name);
+
+    switch (ret) {
 
     case NXT_OK:
         prop = pq.lhq.value;
@@ -2326,13 +2345,20 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
         ret = nxt_lvlhsh_find(&ext->hash, &pq.lhq);
 
         if (nxt_slow_path(ret != NXT_OK)) {
-            goto type_error;
+            njs_exception_type_error(vm,
+                            "cannot find property '%.*s' of an external object",
+                            (int) pq.lhq.key.length, pq.lhq.key.start);
+            return NXT_ERROR;
+
         }
 
         ext = pq.lhq.value;
 
         if (nxt_slow_path(ext->type != NJS_EXTERN_METHOD)) {
-            goto type_error;
+            njs_exception_type_error(vm,
+                          "method '%.*s' of an external object is not callable",
+                          (int) pq.lhq.key.length, pq.lhq.key.start);
+            return NXT_ERROR;
         }
 
         this.data.u.data = vm->external[ext->object];
@@ -2342,7 +2368,10 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
         break;
 
     default:
-        goto type_error;
+        njs_exception_internal_error(vm, "method '%.*s' query failed:%d",
+                                     (int) pq.lhq.key.length, pq.lhq.key.start,
+                                     ret);
+        return NXT_ERROR;
     }
 
     if (nxt_fast_path(ret == NXT_OK)) {
@@ -2350,12 +2379,6 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
     }
 
     return ret;
-
-type_error:
-
-    njs_exception_type_error(vm, NULL, NULL);
-
-    return NXT_ERROR;
 }
 
 
@@ -2574,9 +2597,127 @@ trap:
 
 type_error:
 
-    njs_exception_type_error(vm, NULL, NULL);
+    njs_exception_type_error(vm, "cannot convert %s to %s",
+                             njs_type_string(args->type),
+                             njs_arg_type_string(*args_types));
 
     return NXT_ERROR;
+}
+
+
+const char *
+njs_type_string(njs_value_type_t type)
+{
+    switch (type) {
+    case NJS_NULL:
+        return "null";
+
+    case NJS_VOID:
+        return "void";
+
+    case NJS_BOOLEAN:
+        return "boolean";
+
+    case NJS_NUMBER:
+        return "number";
+
+    case NJS_STRING:
+        return "string";
+
+    case NJS_EXTERNAL:
+        return "external";
+
+    case NJS_INVALID:
+        return "invalid";
+
+    case NJS_OBJECT:
+        return "object";
+
+    case NJS_ARRAY:
+        return "array";
+
+    case NJS_OBJECT_BOOLEAN:
+        return "object boolean";
+
+    case NJS_OBJECT_NUMBER:
+        return "object number";
+
+    case NJS_OBJECT_STRING:
+        return "object string";
+
+    case NJS_FUNCTION:
+        return "function";
+
+    case NJS_REGEXP:
+        return "regexp";
+
+    case NJS_DATE:
+        return "date";
+
+    case NJS_OBJECT_ERROR:
+        return "error";
+
+    case NJS_OBJECT_EVAL_ERROR:
+        return "eval error";
+
+    case NJS_OBJECT_INTERNAL_ERROR:
+        return "internal error";
+
+    case NJS_OBJECT_RANGE_ERROR:
+        return "range error";
+
+    case NJS_OBJECT_REF_ERROR:
+        return "reference error";
+
+    case NJS_OBJECT_SYNTAX_ERROR:
+        return "syntax error";
+
+    case NJS_OBJECT_TYPE_ERROR:
+        return "type error";
+
+    case NJS_OBJECT_URI_ERROR:
+        return "uri error";
+
+    default:
+        return NULL;
+    }
+}
+
+
+const char *
+njs_arg_type_string(uint8_t arg)
+{
+    switch (arg) {
+    case NJS_SKIP_ARG:
+        return "skip";
+
+    case NJS_NUMBER_ARG:
+        return "number";
+
+    case NJS_INTEGER_ARG:
+        return "integer";
+
+    case NJS_STRING_ARG:
+        return "string";
+
+    case NJS_OBJECT_ARG:
+        return "object";
+
+    case NJS_STRING_OBJECT_ARG:
+        return "string object";
+
+    case NJS_FUNCTION_ARG:
+        return "function";
+
+    case NJS_REGEXP_ARG:
+        return "regexp";
+
+    case NJS_DATE_ARG:
+        return "regexp";
+
+    default:
+        return "unknown";
+    }
 }
 
 
@@ -3173,7 +3314,6 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
         if (!njs_is_primitive(retval)) {
 
             for ( ;; ) {
-                njs_exception_type_error(vm, NULL, NULL);
                 ret = NXT_ERROR;
 
                 if (njs_is_object(value) && vm->top_frame->trap_tries < 2) {
@@ -3219,6 +3359,11 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
                             ret = 0;
                         }
                     }
+                }
+
+                if (ret == NXT_ERROR) {
+                    njs_exception_type_error(vm, "cannot evaluate an object's "
+                                             "value", NULL);
                 }
 
                 return ret;
