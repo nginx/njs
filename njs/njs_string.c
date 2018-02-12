@@ -120,8 +120,8 @@ static njs_ret_t njs_string_decode(njs_vm_t *vm, njs_value_t *value,
 
 
 njs_ret_t
-njs_string_create(njs_vm_t *vm, njs_value_t *value, u_char *start, size_t size,
-    size_t length)
+njs_string_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
+    uint32_t size, uint32_t length)
 {
     u_char        *dst, *src;
     njs_string_t  *string;

@@ -119,7 +119,7 @@ NXT_EXPORT njs_value_t *njs_vm_retval(njs_vm_t *vm);
 NXT_EXPORT u_char * njs_string_alloc(njs_vm_t *vm, njs_value_t *value,
     uint32_t size, uint32_t length);
 NXT_EXPORT njs_ret_t njs_string_create(njs_vm_t *vm, njs_value_t *value,
-    u_char *start, size_t size, size_t length);
+    u_char *start, uint32_t size, uint32_t length);
 
 NXT_EXPORT nxt_int_t njs_value_string_copy(njs_vm_t *vm, nxt_str_t *retval,
     njs_value_t *value, uintptr_t *next);
