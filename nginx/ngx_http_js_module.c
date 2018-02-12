@@ -20,8 +20,6 @@
 #include <nxt_mem_cache_pool.h>
 
 #include <njscript.h>
-#include <njs_vm.h>
-#include <njs_string.h>
 
 
 #define NGX_HTTP_JS_MCP_CLUSTER_SIZE    (2 * ngx_pagesize)
@@ -445,7 +443,7 @@ ngx_http_js_handler(ngx_http_request_t *r)
     }
 
     if (njs_vm_call(ctx->vm, func, ctx->args, 2) != NJS_OK) {
-        njs_vm_retval(ctx->vm, &exception);
+        njs_vm_retval_to_ext_string(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "js exception: %*s", exception.length, exception.start);
@@ -496,7 +494,7 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
     }
 
     if (njs_vm_call(ctx->vm, func, ctx->args, 2) != NJS_OK) {
-        njs_vm_retval(ctx->vm, &exception);
+        njs_vm_retval_to_ext_string(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "js exception: %*s", exception.length, exception.start);
@@ -505,7 +503,7 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
         return NGX_OK;
     }
 
-    if (njs_vm_retval(ctx->vm, &value) != NJS_OK) {
+    if (njs_vm_retval_to_ext_string(ctx->vm, &value) != NJS_OK) {
         return NGX_ERROR;
     }
 
@@ -1024,7 +1022,8 @@ ngx_http_js_ext_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     r = njs_value_data(njs_argument(args, 0));
     c = r->connection;
 
-    if (njs_value_to_ext_string(vm, &msg, njs_argument(args, 1)) == NJS_ERROR)
+    if (njs_vm_value_to_ext_string(vm, &msg, njs_argument(args, 1), 0)
+        == NJS_ERROR)
     {
         return NJS_ERROR;
     }
@@ -1334,7 +1333,7 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     rc = njs_vm_compile(jlcf->vm, &start, end);
 
     if (rc != NJS_OK) {
-        njs_vm_retval(jlcf->vm, &text);
+        njs_vm_retval_to_ext_string(jlcf->vm, &text);
 
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "%*s, included",

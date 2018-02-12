@@ -183,7 +183,7 @@ static njs_interactive_test_t  njs_test[] =
                  "    at fs.readFile (native)\n"
                  "    at main (native)\n") },
 
-    /* Exception in njs_vm_retval() */
+    /* Exception in njs_vm_retval_to_ext_string() */
 
     { nxt_string("var o = { toString: function() { return [1] } }" ENTER
                  "o" ENTER),
@@ -250,7 +250,7 @@ njs_interactive_test(void)
             }
         }
 
-        if (njs_vm_retval(vm, &s) != NXT_OK) {
+        if (njs_vm_retval_to_ext_string(vm, &s) != NXT_OK) {
             return NXT_ERROR;
         }
 

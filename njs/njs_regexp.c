@@ -487,7 +487,7 @@ njs_regexp_prototype_last_index(njs_vm_t *vm, njs_value_t *value)
     (void) njs_string_prop(&string, &regexp->string);
 
     index = njs_string_index(&string, regexp->last_index);
-    njs_number_set(&vm->retval, index);
+    njs_value_number_set(&vm->retval, index);
 
     return NXT_OK;
 }
@@ -752,7 +752,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
 
     /* TODO: Non UTF-8 position */
 
-    njs_number_set(&prop->value, regexp->last_index + captures[0]);
+    njs_value_number_set(&prop->value, regexp->last_index + captures[0]);
 
     if (regexp->pattern->global) {
         regexp->last_index += captures[1];

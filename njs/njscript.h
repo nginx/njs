@@ -2,6 +2,8 @@
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) NGINX, Inc.
+ *
+ * njsScript public header.
  */
 
 #ifndef _NJSCRIPT_H_INCLUDED_
@@ -108,23 +110,31 @@ NXT_EXPORT nxt_int_t njs_vm_call(njs_vm_t *vm, njs_function_t *function,
     njs_opaque_value_t *args, nxt_uint_t nargs);
 NXT_EXPORT nxt_int_t njs_vm_run(njs_vm_t *vm);
 
-NXT_EXPORT njs_function_t *njs_vm_function(njs_vm_t *vm, nxt_str_t *name);
-NXT_EXPORT njs_ret_t njs_vm_return_string(njs_vm_t *vm, u_char *start,
-    size_t size);
-NXT_EXPORT nxt_int_t njs_vm_retval(njs_vm_t *vm, nxt_str_t *retval);
-NXT_EXPORT nxt_array_t *njs_vm_backtrace(njs_vm_t *vm);
-
 NXT_EXPORT void njs_disassembler(njs_vm_t *vm);
+NXT_EXPORT nxt_array_t *njs_vm_completions(njs_vm_t *vm, nxt_str_t *expression);
 
+NXT_EXPORT njs_function_t *njs_vm_function(njs_vm_t *vm, nxt_str_t *name);
+NXT_EXPORT njs_value_t *njs_vm_retval(njs_vm_t *vm);
+
+NXT_EXPORT u_char * njs_string_alloc(njs_vm_t *vm, njs_value_t *value,
+    uint32_t size, uint32_t length);
 NXT_EXPORT njs_ret_t njs_string_create(njs_vm_t *vm, njs_value_t *value,
     u_char *start, size_t size, size_t length);
-NXT_EXPORT njs_ret_t njs_void_set(njs_value_t *value);
 
-NXT_EXPORT void *njs_value_data(njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_string_copy(njs_vm_t *vm, nxt_str_t *retval,
     njs_value_t *value, uintptr_t *next);
 
-NXT_EXPORT nxt_array_t *njs_vm_completions(njs_vm_t *vm, nxt_str_t *expression);
+NXT_EXPORT njs_ret_t njs_vm_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst,
+    const njs_value_t *src, nxt_uint_t handle_exception);
+NXT_EXPORT njs_ret_t njs_vm_retval_to_ext_string(njs_vm_t *vm,
+        nxt_str_t *retval);
+
+NXT_EXPORT void njs_value_void_set(njs_value_t *value);
+NXT_EXPORT void njs_value_boolean_set(njs_value_t *value, int yn);
+NXT_EXPORT void njs_value_number_set(njs_value_t *value, double num);
+NXT_EXPORT void *njs_value_data(njs_value_t *value);
+
+NXT_EXPORT nxt_int_t njs_value_is_void(njs_value_t *value);
 
 
 extern const nxt_mem_proto_t  njs_vm_mem_cache_pool_proto;

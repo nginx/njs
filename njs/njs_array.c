@@ -383,7 +383,7 @@ const njs_object_init_t  njs_array_constructor_init = {
 static njs_ret_t
 njs_array_prototype_length(njs_vm_t *vm, njs_value_t *array)
 {
-    njs_number_set(&vm->retval, array->data.u.array->length);
+    njs_value_number_set(&vm->retval, array->data.u.array->length);
 
     njs_release(vm, array);
 
@@ -499,7 +499,7 @@ njs_array_prototype_push(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             }
         }
 
-        njs_number_set(&vm->retval, array->length);
+        njs_value_number_set(&vm->retval, array->length);
     }
 
     return NXT_OK;
@@ -565,7 +565,7 @@ njs_array_prototype_unshift(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             } while (n > 1);
         }
 
-        njs_number_set(&vm->retval, array->length);
+        njs_value_number_set(&vm->retval, array->length);
     }
 
     return NXT_OK;
@@ -1074,7 +1074,7 @@ njs_array_prototype_index_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 done:
 
-    njs_number_set(&vm->retval, index);
+    njs_value_number_set(&vm->retval, index);
 
     return NXT_OK;
 }
@@ -1133,7 +1133,7 @@ njs_array_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
 
 done:
 
-    njs_number_set(&vm->retval, index);
+    njs_value_number_set(&vm->retval, index);
 
     return NXT_OK;
 }
@@ -1574,7 +1574,7 @@ njs_array_prototype_find_index_continuation(njs_vm_t *vm, njs_value_t *args,
         index = -1;
     }
 
-    njs_number_set(&vm->retval, index);
+    njs_value_number_set(&vm->retval, index);
 
     return NXT_OK;
 }
@@ -1602,7 +1602,7 @@ njs_array_prototype_find_apply(njs_vm_t *vm, njs_array_iter_t *iter,
 
     arguments[1] = *value;
 
-    njs_number_set(&arguments[2], n);
+    njs_value_number_set(&arguments[2], n);
 
     arguments[3] = args[0];
 
@@ -1751,7 +1751,7 @@ njs_array_prototype_reduce_continuation(njs_vm_t *vm, njs_value_t *args,
 
     arguments[2] = array->start[n];
 
-    njs_number_set(&arguments[3], n);
+    njs_value_number_set(&arguments[3], n);
 
     arguments[4] = args[0];
 
@@ -1815,7 +1815,7 @@ njs_array_iterator_apply(njs_vm_t *vm, njs_array_iter_t *iter,
     n = iter->index;
     arguments[1] = args[0].data.u.array->start[n];
 
-    njs_number_set(&arguments[2], n);
+    njs_value_number_set(&arguments[2], n);
 
     arguments[3] = args[0];
 
@@ -1888,7 +1888,7 @@ njs_array_prototype_reduce_right_continuation(njs_vm_t *vm, njs_value_t *args,
 
     arguments[2] = array->start[n];
 
-    njs_number_set(&arguments[3], n);
+    njs_value_number_set(&arguments[3], n);
 
     arguments[4] = args[0];
 
@@ -1934,7 +1934,7 @@ njs_array_string_sort(njs_vm_t *vm, njs_value_t *args,
 
     ret = njs_string_cmp(&args[1], &args[2]);
 
-    njs_number_set(&vm->retval, ret);
+    njs_value_number_set(&vm->retval, ret);
 
     return NXT_OK;
 }

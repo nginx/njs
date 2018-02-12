@@ -1158,15 +1158,12 @@ const char *njs_arg_type_string(uint8_t arg);
 njs_ret_t njs_native_function_arguments(njs_vm_t *vm, njs_value_t *args,
     uint8_t *args_types, nxt_uint_t nargs);
 
-njs_ret_t njs_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst,
-    const njs_value_t *src);
-void njs_number_set(njs_value_t *value, double num);
-
 nxt_int_t njs_builtin_objects_create(njs_vm_t *vm);
 nxt_int_t njs_builtin_objects_clone(njs_vm_t *vm);
 nxt_int_t njs_builtin_match_native_function(njs_vm_t *vm,
     njs_function_t *function, nxt_str_t *name);
 
+nxt_array_t *njs_vm_backtrace(njs_vm_t *vm);
 
 void *njs_lvlhsh_alloc(void *data, size_t size, nxt_uint_t nalloc);
 void njs_lvlhsh_free(void *data, void *p, size_t size);

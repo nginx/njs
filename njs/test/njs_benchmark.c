@@ -113,7 +113,7 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
 
         (void) njs_vm_run(nvm);
 
-        if (njs_vm_retval(nvm, &s) != NXT_OK) {
+        if (njs_vm_retval_to_ext_string(nvm, &s) != NXT_OK) {
             return NXT_ERROR;
         }
 

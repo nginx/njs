@@ -445,7 +445,7 @@ njs_process_script(njs_vm_t *vm, njs_opts_t *opts, const nxt_str_t *script,
         }
     }
 
-    if (njs_vm_retval(vm, out) != NXT_OK) {
+    if (njs_vm_retval_to_ext_string(vm, out) != NXT_OK) {
         return NXT_ERROR;
     }
 
@@ -617,7 +617,7 @@ njs_ext_console_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     msg.start = NULL;
 
     if (nargs >= 2
-        && njs_value_to_ext_string(vm, &msg, njs_argument(args, 1))
+        && njs_vm_value_to_ext_string(vm, &msg, njs_argument(args, 1), 0)
            == NJS_ERROR)
     {
 

@@ -848,7 +848,7 @@ njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 done:
 
-    njs_number_set(&vm->retval, num);
+    njs_value_number_set(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -866,7 +866,7 @@ njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = njs_string_to_number(&args[1], 1);
     }
 
-    njs_number_set(&vm->retval, num);
+    njs_value_number_set(&vm->retval, num);
 
     return NXT_OK;
 }

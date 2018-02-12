@@ -20,8 +20,6 @@
 #include <nxt_mem_cache_pool.h>
 
 #include <njscript.h>
-#include <njs_vm.h>
-#include <njs_string.h>
 
 
 #define NGX_STREAM_JS_MCP_CLUSTER_SIZE    (2 * ngx_pagesize)
@@ -408,7 +406,7 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
     }
 
     if (njs_vm_call(ctx->vm, func, ctx->arg, 1) != NJS_OK) {
-        njs_vm_retval(ctx->vm, &exception);
+        njs_vm_retval_to_ext_string(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %*s",
                       exception.length, exception.start);
@@ -416,11 +414,11 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
         return NGX_ERROR;
     }
 
-    if (ctx->vm->retval.type == NJS_VOID) {
+    if (njs_value_is_void(njs_vm_retval(ctx->vm))) {
         return NGX_OK;
     }
 
-    if (njs_vm_retval(ctx->vm, &value) != NJS_OK) {
+    if (njs_vm_retval_to_ext_string(ctx->vm, &value) != NJS_OK) {
         return NGX_ERROR;
     }
 
@@ -495,7 +493,7 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
         ctx->buf = in->buf;
 
         if (njs_vm_call(ctx->vm, func, ctx->arg, 1) != NJS_OK) {
-            njs_vm_retval(ctx->vm, &exception);
+            njs_vm_retval_to_ext_string(ctx->vm, &exception);
 
             ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %*s",
                           exception.length, exception.start);
@@ -503,8 +501,8 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
             return NGX_ERROR;
         }
 
-        if (ctx->vm->retval.type != NJS_VOID) {
-            if (njs_vm_retval(ctx->vm, &value) != NJS_OK) {
+        if (!njs_value_is_void(njs_vm_retval(ctx->vm))) {
+            if (njs_vm_retval_to_ext_string(ctx->vm, &value) != NJS_OK) {
                 return NGX_ERROR;
             }
 
@@ -593,7 +591,7 @@ ngx_stream_js_variable(ngx_stream_session_t *s, ngx_stream_variable_value_t *v,
     }
 
     if (njs_vm_call(ctx->vm, func, ctx->arg, 1) != NJS_OK) {
-        njs_vm_retval(ctx->vm, &exception);
+        njs_vm_retval_to_ext_string(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
                       "js exception: %*s", exception.length, exception.start);
@@ -602,7 +600,7 @@ ngx_stream_js_variable(ngx_stream_session_t *s, ngx_stream_variable_value_t *v,
         return NGX_OK;
     }
 
-    if (njs_vm_retval(ctx->vm, &value) != NJS_OK) {
+    if (njs_vm_retval_to_ext_string(ctx->vm, &value) != NJS_OK) {
         return NGX_ERROR;
     }
 
@@ -746,7 +744,7 @@ ngx_stream_js_ext_get_eof(njs_vm_t *vm, njs_value_t *value, void *obj,
 
     b = ctx->filter ? ctx->buf : c->buffer;
 
-    *value = (b && b->last_buf ? njs_value_true : njs_value_false);
+    njs_value_boolean_set(value, b && b->last_buf);
 
     return NJS_OK;
 }
@@ -762,7 +760,7 @@ ngx_stream_js_ext_get_from_upstream(njs_vm_t *vm, njs_value_t *value, void *obj,
     s = (ngx_stream_session_t *) obj;
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
-    *value = (ctx->from_upstream ? njs_value_true : njs_value_false);
+    njs_value_boolean_set(value, ctx->from_upstream);
 
     return NJS_OK;
 }
@@ -874,7 +872,9 @@ ngx_stream_js_ext_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     s = njs_value_data(njs_argument(args, 0));
     c = s->connection;
 
-    if (njs_value_to_ext_string(vm, &msg, njs_argument(args, 1)) == NJS_ERROR) {
+    if (njs_vm_value_to_ext_string(vm, &msg, njs_argument(args, 1), 0)
+        == NJS_ERROR)
+    {
         return NJS_ERROR;
     }
 
@@ -920,10 +920,7 @@ static njs_ret_t
 ngx_stream_js_ext_get_code(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
-    ngx_memzero(value, sizeof(njs_value_t));
-
-    value->data.type = NJS_NUMBER;
-    value->data.u.number = data;
+    njs_value_number_set(value, (double) data);
 
     return NJS_OK;
 }
@@ -1044,7 +1041,7 @@ ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     rc = njs_vm_compile(jscf->vm, &start, end);
 
     if (rc != NJS_OK) {
-        njs_vm_retval(jscf->vm, &text);
+        njs_vm_retval_to_ext_string(jscf->vm, &text);
 
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "%*s, included",

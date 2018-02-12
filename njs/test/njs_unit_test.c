@@ -9095,7 +9095,8 @@ njs_unit_test_method_external(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
         if (ret == NXT_OK && s.length == 3 && memcmp(s.start, "YES", 3) == 0) {
             r = njs_value_data(njs_argument(args, 0));
-            njs_vm_return_string(vm, r->uri.start, r->uri.length);
+            njs_string_create(vm, njs_vm_retval(vm), r->uri.start,
+                              r->uri.length, 0);
 
             return NXT_OK;
         }
@@ -9306,12 +9307,12 @@ njs_unit_test(nxt_bool_t disassemble)
 
             ret = njs_vm_run(nvm);
 
-            if (njs_vm_retval(nvm, &s) != NXT_OK) {
+            if (njs_vm_retval_to_ext_string(nvm, &s) != NXT_OK) {
                 return NXT_ERROR;
             }
 
         } else {
-            if (njs_vm_retval(vm, &s) != NXT_OK) {
+            if (njs_vm_retval_to_ext_string(vm, &s) != NXT_OK) {
                 return NXT_ERROR;
             }
 

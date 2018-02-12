@@ -461,7 +461,7 @@ njs_string_prototype_length(njs_vm_t *vm, njs_value_t *value)
         length = (length == 0) ? size : length;
     }
 
-    njs_number_set(&vm->retval, length);
+    njs_value_number_set(&vm->retval, length);
 
     njs_release(vm, value);
 
@@ -1117,7 +1117,7 @@ njs_string_prototype_char_code_at(njs_vm_t *vm, njs_value_t *args,
 
 done:
 
-    njs_number_set(&vm->retval, num);
+    njs_value_number_set(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -1240,7 +1240,7 @@ njs_string_prototype_index_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 done:
 
-    njs_number_set(&vm->retval, index);
+    njs_value_number_set(&vm->retval, index);
 
     return NXT_OK;
 }
@@ -1329,7 +1329,7 @@ njs_string_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
 
 done:
 
-    njs_number_set(&vm->retval, index);
+    njs_value_number_set(&vm->retval, index);
 
     return NXT_OK;
 }
@@ -1931,7 +1931,7 @@ njs_string_prototype_search(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 done:
 
-    njs_number_set(&vm->retval, index);
+    njs_value_number_set(&vm->retval, index);
 
     return NXT_OK;
 }
@@ -2501,7 +2501,7 @@ njs_string_replace_regexp_function(njs_vm_t *vm, njs_value_t *args,
     }
 
     /* The offset of the matched substring. */
-    njs_number_set(&arguments[n + 1], captures[0]);
+    njs_value_number_set(&arguments[n + 1], captures[0]);
 
     /* The whole string being examined. */
     length = njs_string_length(r->utf8, r->part[0].start, r->part[0].size);
@@ -2630,7 +2630,7 @@ njs_string_replace_search_function(njs_vm_t *vm, njs_value_t *args,
     arguments[1] = args[1];
 
     /* The offset of the matched substring. */
-    njs_number_set(&arguments[2], r->part[0].size);
+    njs_value_number_set(&arguments[2], r->part[0].size);
 
     /* The whole string being examined. */
     arguments[3] = args[0];

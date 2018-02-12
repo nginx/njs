@@ -30,6 +30,7 @@
 #include <njs_parser.h>
 #include <njs_regexp.h>
 #include <string.h>
+#include <stdio.h>
 
 
 /* The values must be greater than NXT_OK. */
@@ -738,7 +739,7 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
         }
 
         if (ext->set != NULL) {
-            ret = njs_value_to_ext_string(vm, &s, value);
+            ret = njs_vm_value_to_ext_string(vm, &s, value, 0);
             if (nxt_slow_path(ret != NXT_OK)) {
                 return ret;
             }
@@ -1286,7 +1287,7 @@ njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
                 n = next->index++;
 
                 if (njs_is_valid(&array->start[n])) {
-                    njs_number_set(retval, n);
+                    njs_value_number_set(retval, n);
 
                     return code->offset;
                 }
@@ -1408,7 +1409,7 @@ njs_vmcode_increment(njs_vm_t *vm, njs_value_t *reference, njs_value_t *value)
 
         njs_release(vm, reference);
 
-        njs_number_set(reference, num);
+        njs_value_number_set(reference, num);
         vm->retval = *reference;
 
         return sizeof(njs_vmcode_3addr_t);
@@ -1428,7 +1429,7 @@ njs_vmcode_decrement(njs_vm_t *vm, njs_value_t *reference, njs_value_t *value)
 
         njs_release(vm, reference);
 
-        njs_number_set(reference, num);
+        njs_value_number_set(reference, num);
         vm->retval = *reference;
 
         return sizeof(njs_vmcode_3addr_t);
@@ -1449,8 +1450,8 @@ njs_vmcode_post_increment(njs_vm_t *vm, njs_value_t *reference,
 
         njs_release(vm, reference);
 
-        njs_number_set(reference, num + 1.0);
-        njs_number_set(&vm->retval, num);
+        njs_value_number_set(reference, num + 1.0);
+        njs_value_number_set(&vm->retval, num);
 
         return sizeof(njs_vmcode_3addr_t);
     }
@@ -1470,8 +1471,8 @@ njs_vmcode_post_decrement(njs_vm_t *vm, njs_value_t *reference,
 
         njs_release(vm, reference);
 
-        njs_number_set(reference, num - 1.0);
-        njs_number_set(&vm->retval, num);
+        njs_value_number_set(reference, num - 1.0);
+        njs_value_number_set(&vm->retval, num);
 
         return sizeof(njs_vmcode_3addr_t);
     }
@@ -1556,7 +1557,7 @@ njs_ret_t
 njs_vmcode_unary_plus(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 {
     if (nxt_fast_path(njs_is_numeric(value))) {
-        njs_number_set(&vm->retval, value->data.u.number);
+        njs_value_number_set(&vm->retval, value->data.u.number);
         return sizeof(njs_vmcode_2addr_t);
     }
 
@@ -1568,7 +1569,7 @@ njs_ret_t
 njs_vmcode_unary_negation(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 {
     if (nxt_fast_path(njs_is_numeric(value))) {
-        njs_number_set(&vm->retval, - value->data.u.number);
+        njs_value_number_set(&vm->retval, - value->data.u.number);
         return sizeof(njs_vmcode_2addr_t);
     }
 
@@ -1587,7 +1588,7 @@ njs_vmcode_addition(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
     if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
 
         num = val1->data.u.number + val2->data.u.number;
-        njs_number_set(&vm->retval, num);
+        njs_value_number_set(&vm->retval, num);
 
         return sizeof(njs_vmcode_3addr_t);
     }
@@ -1632,7 +1633,7 @@ njs_vmcode_substraction(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
     if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
 
         num = val1->data.u.number - val2->data.u.number;
-        njs_number_set(&vm->retval, num);
+        njs_value_number_set(&vm->retval, num);
 
         return sizeof(njs_vmcode_3addr_t);
     }
@@ -1649,7 +1650,7 @@ njs_vmcode_multiplication(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
     if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
 
         num = val1->data.u.number * val2->data.u.number;
-        njs_number_set(&vm->retval, num);
+        njs_value_number_set(&vm->retval, num);
 
         return sizeof(njs_vmcode_3addr_t);
     }
@@ -1683,7 +1684,7 @@ njs_vmcode_exponentiation(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
             num = NAN;
         }
 
-        njs_number_set(&vm->retval, num);
+        njs_value_number_set(&vm->retval, num);
 
         return sizeof(njs_vmcode_3addr_t);
     }
@@ -1700,7 +1701,7 @@ njs_vmcode_division(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
     if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
 
         num = val1->data.u.number / val2->data.u.number;
-        njs_number_set(&vm->retval, num);
+        njs_value_number_set(&vm->retval, num);
 
         return sizeof(njs_vmcode_3addr_t);
     }
@@ -1717,7 +1718,7 @@ njs_vmcode_remainder(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
     if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
 
         num = fmod(val1->data.u.number, val2->data.u.number);
-        njs_number_set(&vm->retval, num);
+        njs_value_number_set(&vm->retval, num);
 
         return sizeof(njs_vmcode_3addr_t);
     }
@@ -1736,7 +1737,7 @@ njs_vmcode_left_shift(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
         num1 = njs_number_to_integer(val1->data.u.number);
         num2 = njs_number_to_integer(val2->data.u.number);
-        njs_number_set(&vm->retval, num1 << (num2 & 0x1f));
+        njs_value_number_set(&vm->retval, num1 << (num2 & 0x1f));
 
         return sizeof(njs_vmcode_3addr_t);
     }
@@ -1755,7 +1756,7 @@ njs_vmcode_right_shift(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
         num1 = njs_number_to_integer(val1->data.u.number);
         num2 = njs_number_to_integer(val2->data.u.number);
-        njs_number_set(&vm->retval, num1 >> (num2 & 0x1f));
+        njs_value_number_set(&vm->retval, num1 >> (num2 & 0x1f));
 
         return sizeof(njs_vmcode_3addr_t);
     }
@@ -1775,7 +1776,7 @@ njs_vmcode_unsigned_right_shift(njs_vm_t *vm, njs_value_t *val1,
 
         num1 = njs_number_to_integer(val1->data.u.number);
         num2 = njs_number_to_integer(val2->data.u.number);
-        njs_number_set(&vm->retval, num1 >> (num2 & 0x1f));
+        njs_value_number_set(&vm->retval, num1 >> (num2 & 0x1f));
 
         return sizeof(njs_vmcode_3addr_t);
     }
@@ -1841,7 +1842,7 @@ njs_vmcode_bitwise_not(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 
     if (nxt_fast_path(njs_is_numeric(value))) {
         num = njs_number_to_integer(value->data.u.number);
-        njs_number_set(&vm->retval, ~num);
+        njs_value_number_set(&vm->retval, ~num);
 
         return sizeof(njs_vmcode_2addr_t);
     }
@@ -1859,7 +1860,7 @@ njs_vmcode_bitwise_and(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
         num1 = njs_number_to_integer(val1->data.u.number);
         num2 = njs_number_to_integer(val2->data.u.number);
-        njs_number_set(&vm->retval, num1 & num2);
+        njs_value_number_set(&vm->retval, num1 & num2);
 
         return sizeof(njs_vmcode_3addr_t);
     }
@@ -1877,7 +1878,7 @@ njs_vmcode_bitwise_xor(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
         num1 = njs_number_to_integer(val1->data.u.number);
         num2 = njs_number_to_integer(val2->data.u.number);
-        njs_number_set(&vm->retval, num1 ^ num2);
+        njs_value_number_set(&vm->retval, num1 ^ num2);
 
         return sizeof(njs_vmcode_3addr_t);
     }
@@ -1895,7 +1896,7 @@ njs_vmcode_bitwise_or(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
         num1 = njs_number_to_integer(val1->data.u.number);
         num2 = njs_number_to_integer(val2->data.u.number);
-        njs_number_set(&vm->retval, num1 | num2);
+        njs_value_number_set(&vm->retval, num1 | num2);
 
         return sizeof(njs_vmcode_3addr_t);
     }
@@ -3189,7 +3190,7 @@ njs_vmcode_number_primitive(njs_vm_t *vm, njs_value_t *invld, njs_value_t *narg)
                 num = njs_string_to_number(value, 0);
             }
 
-            njs_number_set(value, num);
+            njs_value_number_set(value, num);
         }
 
         ret = sizeof(njs_vmcode_1addr_t);
@@ -3242,7 +3243,7 @@ njs_vmcode_number_argument(njs_vm_t *vm, njs_value_t *invld1,
                 num = njs_string_to_number(value, 0);
             }
 
-            njs_number_set(value, num);
+            njs_value_number_set(value, num);
         }
 
         *vm->top_frame->trap_values[1].data.u.value = *value;
@@ -3415,12 +3416,20 @@ njs_vmcode_restart(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 
 
 njs_ret_t
-njs_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst, const njs_value_t *src)
+njs_vm_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst, const njs_value_t *src,
+    nxt_uint_t handle_exception)
 {
-    u_char       *start;
-    size_t       size;
-    njs_ret_t    ret;
-    njs_value_t  value;
+    u_char                 *p, *start;
+    size_t                 len, size;
+    njs_ret_t              ret;
+    nxt_uint_t             i, exception;
+    nxt_array_t            *backtrace;
+    njs_value_t            value;
+    njs_backtrace_entry_t  *be;
+
+    exception = handle_exception;
+
+again:
 
     if (nxt_fast_path(src != NULL)) {
 
@@ -3464,11 +3473,67 @@ njs_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst, const njs_value_t *src)
             dst->length = size;
             dst->start = start;
 
+            if (exception && njs_vm_backtrace(vm) != NULL) {
+
+                backtrace = njs_vm_backtrace(vm);
+
+                len = dst->length + 1;
+
+                be = backtrace->start;
+
+                for (i = 0; i < backtrace->items; i++) {
+                    if (be[i].line != 0) {
+                        len += sizeof("    at  (:)\n") - 1 + 10
+                               + be[i].name.length;
+
+                    } else {
+                        len += sizeof("    at  (native)\n") - 1
+                               + be[i].name.length;
+                    }
+                }
+
+                p = nxt_mem_cache_alloc(vm->mem_cache_pool, len);
+                if (p == NULL) {
+                    return NXT_ERROR;
+                }
+
+                start = p;
+
+                p = nxt_cpymem(p, dst->start, dst->length);
+                *p++ = '\n';
+
+                for (i = 0; i < backtrace->items; i++) {
+                    if (be[i].line != 0) {
+                        p += sprintf((char *) p, "    at %.*s (:%u)\n",
+                                     (int) be[i].name.length, be[i].name.start,
+                                     be[i].line);
+
+                    } else {
+                        p += sprintf((char *) p, "    at %.*s (native)\n",
+                                     (int) be[i].name.length, be[i].name.start);
+                    }
+                }
+
+                dst->start = start;
+                dst->length = p - dst->start;
+            }
+
             return NXT_OK;
         }
     }
 
 fail:
+
+    if (handle_exception) {
+        handle_exception = 0;
+
+        /* value evaluation threw an exception. */
+
+        vm->top_frame->trap_tries = 0;
+
+        src = &vm->retval;
+        goto again;
+    }
 
     dst->length = 0;
     dst->start = NULL;
@@ -3535,7 +3600,21 @@ njs_vmcode_value_to_string(njs_vm_t *vm, njs_value_t *invld1,
 
 
 nxt_noinline void
-njs_number_set(njs_value_t *value, double num)
+njs_value_void_set(njs_value_t *value)
+{
+    *value = njs_value_void;
+}
+
+
+nxt_noinline void
+njs_value_boolean_set(njs_value_t *value, int yn)
+{
+    *value = yn ? njs_value_true : njs_value_false;
+}
+
+
+nxt_noinline void
+njs_value_number_set(njs_value_t *value, double num)
 {
     value->data.u.number = num;
     value->type = NJS_NUMBER;
@@ -3543,18 +3622,17 @@ njs_number_set(njs_value_t *value, double num)
 }
 
 
-njs_ret_t
-njs_void_set(njs_value_t *value)
-{
-    *value = njs_value_void;
-    return NXT_OK;
-}
-
-
-void *
+nxt_noinline void *
 njs_value_data(njs_value_t *value)
 {
     return value->data.u.data;
+}
+
+
+nxt_noinline nxt_int_t
+njs_value_is_void(njs_value_t *value)
+{
+    return value->type == NJS_VOID;
 }
 
 
@@ -3595,7 +3673,7 @@ njs_value_string_copy(njs_vm_t *vm, nxt_str_t *retval, njs_value_t *value,
         return NXT_ERROR;
     }
 
-    return njs_value_to_ext_string(vm, retval, value);
+    return njs_vm_value_to_ext_string(vm, retval, value, 0);
 }
 
 
@@ -3660,6 +3738,17 @@ njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame)
     be->name = entry_unknown;
 
     return NXT_OK;
+}
+
+
+nxt_array_t *
+njs_vm_backtrace(njs_vm_t *vm)
+{
+    if (vm->backtrace != NULL && !nxt_array_is_empty(vm->backtrace)) {
+        return vm->backtrace;
+    }
+
+    return NULL;
 }
 
 

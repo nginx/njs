@@ -171,7 +171,7 @@ njs_test {
      "console.ll()\r\nTypeError: cannot find property 'll' of an external object"}
 }
 
-# Exception in njs_vm_retval()
+# Exception in njs_vm_retval_to_ext_string()
 njs_test {
     {"var o = { toString: function() { return [1] } }\r\n"
      "undefined\r\n>> "}

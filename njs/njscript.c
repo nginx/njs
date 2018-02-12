@@ -24,7 +24,6 @@
 #include <njs_parser.h>
 #include <njs_regexp.h>
 #include <string.h>
-#include <stdio.h>
 
 
 static nxt_int_t njs_vm_init(njs_vm_t *vm);
@@ -496,7 +495,7 @@ njs_vm_run(njs_vm_t *vm)
 
     } else if (vm->retval.type == NJS_STRING) {
 
-        if (njs_value_to_ext_string(vm, &s, &vm->retval) == NJS_OK) {
+        if (njs_vm_value_to_ext_string(vm, &s, &vm->retval, 0) == NJS_OK) {
             nxt_thread_log_debug("VM: '%V'", &s);
         }
 
@@ -517,95 +516,20 @@ njs_vm_run(njs_vm_t *vm)
 }
 
 
-njs_ret_t
-njs_vm_return_string(njs_vm_t *vm, u_char *start, size_t size)
+nxt_noinline njs_value_t *
+njs_vm_retval(njs_vm_t *vm)
 {
-    return njs_string_create(vm, &vm->retval, start, size, 0);
+    return &vm->retval;
 }
 
 
-nxt_int_t
-njs_vm_retval(njs_vm_t *vm, nxt_str_t *retval)
+njs_ret_t njs_vm_retval_to_ext_string(njs_vm_t *vm, nxt_str_t *retval)
 {
-    u_char                 *p, *start;
-    size_t                 len;
-    nxt_int_t              ret;
-    nxt_uint_t             i;
-    nxt_array_t            *backtrace;
-    njs_backtrace_entry_t  *be;
-
     if (vm->top_frame == NULL) {
         /* An exception was thrown during compilation. */
 
         njs_vm_init(vm);
     }
 
-    ret = njs_value_to_ext_string(vm, retval, &vm->retval);
-
-    if (ret != NXT_OK) {
-        /* retval evaluation threw an exception. */
-
-        vm->top_frame->trap_tries = 0;
-
-        ret = njs_value_to_ext_string(vm, retval, &vm->retval);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-    }
-
-    backtrace = njs_vm_backtrace(vm);
-
-    if (backtrace != NULL) {
-
-        len = retval->length + 1;
-
-        be = backtrace->start;
-
-        for (i = 0; i < backtrace->items; i++) {
-            if (be[i].line != 0) {
-                len += sizeof("    at  (:)\n") - 1 + 10 + be[i].name.length;
-
-            } else {
-                len += sizeof("    at  (native)\n") - 1 + be[i].name.length;
-            }
-        }
-
-        p = nxt_mem_cache_alloc(vm->mem_cache_pool, len);
-        if (p == NULL) {
-            return NXT_ERROR;
-        }
-
-        start = p;
-
-        p = nxt_cpymem(p, retval->start, retval->length);
-        *p++ = '\n';
-
-        for (i = 0; i < backtrace->items; i++) {
-            if (be[i].line != 0) {
-                p += sprintf((char *) p, "    at %.*s (:%u)\n",
-                             (int) be[i].name.length, be[i].name.start,
-                             be[i].line);
-
-            } else {
-                p += sprintf((char *) p, "    at %.*s (native)\n",
-                             (int) be[i].name.length, be[i].name.start);
-            }
-        }
-
-        retval->start = start;
-        retval->length = p - retval->start;
-    }
-
-    return NXT_OK;
-}
-
-
-nxt_array_t *
-njs_vm_backtrace(njs_vm_t *vm)
-{
-    if (vm->backtrace != NULL && !nxt_array_is_empty(vm->backtrace)) {
-        return vm->backtrace;
-    }
-
-    return NULL;
+    return njs_vm_value_to_ext_string(vm, retval, &vm->retval, 1);
 }

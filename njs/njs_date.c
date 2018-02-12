@@ -219,7 +219,7 @@ njs_date_utc(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 done:
 
-    njs_number_set(&vm->retval, time);
+    njs_value_number_set(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -278,7 +278,7 @@ static njs_ret_t
 njs_date_now(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    njs_number_set(&vm->retval, njs_gettime());
+    njs_value_number_set(&vm->retval, njs_gettime());
 
     return NXT_OK;
 }
@@ -297,7 +297,7 @@ njs_date_parse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         time = NAN;
     }
 
-    njs_number_set(&vm->retval, time);
+    njs_value_number_set(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -942,7 +942,7 @@ static njs_ret_t
 njs_date_prototype_value_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    njs_number_set(&vm->retval, args[0].data.u.date->time);
+    njs_value_number_set(&vm->retval, args[0].data.u.date->time);
 
     return NXT_OK;
 }
@@ -1086,7 +1086,7 @@ njs_date_prototype_get_full_year(njs_vm_t *vm, njs_value_t *args,
         value = tm.tm_year + 1900;
     }
 
-    njs_number_set(&vm->retval, value);
+    njs_value_number_set(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1109,7 +1109,7 @@ njs_date_prototype_get_utc_full_year(njs_vm_t *vm, njs_value_t *args,
         value = tm.tm_year + 1900;
     }
 
-    njs_number_set(&vm->retval, value);
+    njs_value_number_set(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1132,7 +1132,7 @@ njs_date_prototype_get_month(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         value = tm.tm_mon;
     }
 
-    njs_number_set(&vm->retval, value);
+    njs_value_number_set(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1156,7 +1156,7 @@ njs_date_prototype_get_utc_month(njs_vm_t *vm, njs_value_t *args,
         value = tm.tm_mon;
     }
 
-    njs_number_set(&vm->retval, value);
+    njs_value_number_set(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1179,7 +1179,7 @@ njs_date_prototype_get_date(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         value = tm.tm_mday;
     }
 
-    njs_number_set(&vm->retval, value);
+    njs_value_number_set(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1202,7 +1202,7 @@ njs_date_prototype_get_utc_date(njs_vm_t *vm, njs_value_t *args,
         value = tm.tm_mday;
     }
 
-    njs_number_set(&vm->retval, value);
+    njs_value_number_set(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1225,7 +1225,7 @@ njs_date_prototype_get_day(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         value = tm.tm_wday;
     }
 
-    njs_number_set(&vm->retval, value);
+    njs_value_number_set(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1248,7 +1248,7 @@ njs_date_prototype_get_utc_day(njs_vm_t *vm, njs_value_t *args,
         value = tm.tm_wday;
     }
 
-    njs_number_set(&vm->retval, value);
+    njs_value_number_set(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1272,7 +1272,7 @@ njs_date_prototype_get_hours(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         value = tm.tm_hour;
     }
 
-    njs_number_set(&vm->retval, value);
+    njs_value_number_set(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1295,7 +1295,7 @@ njs_date_prototype_get_utc_hours(njs_vm_t *vm, njs_value_t *args,
         value = tm.tm_hour;
     }
 
-    njs_number_set(&vm->retval, value);
+    njs_value_number_set(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1319,7 +1319,7 @@ njs_date_prototype_get_minutes(njs_vm_t *vm, njs_value_t *args,
         value = tm.tm_min;
     }
 
-    njs_number_set(&vm->retval, value);
+    njs_value_number_set(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1342,7 +1342,7 @@ njs_date_prototype_get_utc_minutes(njs_vm_t *vm, njs_value_t *args,
         value = tm.tm_min;
     }
 
-    njs_number_set(&vm->retval, value);
+    njs_value_number_set(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1360,7 +1360,7 @@ njs_date_prototype_get_seconds(njs_vm_t *vm, njs_value_t *args,
         value = (int64_t) (value / 1000) % 60;
     }
 
-    njs_number_set(&vm->retval, value);
+    njs_value_number_set(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1378,7 +1378,7 @@ njs_date_prototype_get_milliseconds(njs_vm_t *vm, njs_value_t *args,
         value = (int64_t) value % 1000;
     }
 
-    njs_number_set(&vm->retval, value);
+    njs_value_number_set(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1401,7 +1401,7 @@ njs_date_prototype_get_timezone_offset(njs_vm_t *vm, njs_value_t *args,
         value = - nxt_timezone(&tm) / 60;
     }
 
-    njs_number_set(&vm->retval, value);
+    njs_value_number_set(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1426,7 +1426,7 @@ njs_date_prototype_set_time(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     args[0].data.u.date->time = time;
-    njs_number_set(&vm->retval, time);
+    njs_value_number_set(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1451,7 +1451,7 @@ njs_date_prototype_set_milliseconds(njs_vm_t *vm, njs_value_t *args,
     }
 
     args[0].data.u.date->time = time;
-    njs_number_set(&vm->retval, time);
+    njs_value_number_set(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1480,7 +1480,7 @@ njs_date_prototype_set_seconds(njs_vm_t *vm, njs_value_t *args,
     }
 
     args[0].data.u.date->time = time;
-    njs_number_set(&vm->retval, time);
+    njs_value_number_set(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1519,7 +1519,7 @@ njs_date_prototype_set_minutes(njs_vm_t *vm, njs_value_t *args,
     }
 
     args[0].data.u.date->time = time;
-    njs_number_set(&vm->retval, time);
+    njs_value_number_set(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1554,7 +1554,7 @@ njs_date_prototype_set_utc_minutes(njs_vm_t *vm, njs_value_t *args,
     }
 
     args[0].data.u.date->time = time;
-    njs_number_set(&vm->retval, time);
+    njs_value_number_set(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1597,7 +1597,7 @@ njs_date_prototype_set_hours(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     args[0].data.u.date->time = time;
-    njs_number_set(&vm->retval, time);
+    njs_value_number_set(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1633,7 +1633,7 @@ njs_date_prototype_set_utc_hours(njs_vm_t *vm, njs_value_t *args,
     }
 
     args[0].data.u.date->time = time;
-    njs_number_set(&vm->retval, time);
+    njs_value_number_set(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1665,7 +1665,7 @@ njs_date_prototype_set_date(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     args[0].data.u.date->time = time;
-    njs_number_set(&vm->retval, time);
+    njs_value_number_set(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1697,7 +1697,7 @@ njs_date_prototype_set_utc_date(njs_vm_t *vm, njs_value_t *args,
     }
 
     args[0].data.u.date->time = time;
-    njs_number_set(&vm->retval, time);
+    njs_value_number_set(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1733,7 +1733,7 @@ njs_date_prototype_set_month(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     args[0].data.u.date->time = time;
-    njs_number_set(&vm->retval, time);
+    njs_value_number_set(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1769,7 +1769,7 @@ njs_date_prototype_set_utc_month(njs_vm_t *vm, njs_value_t *args,
     }
 
     args[0].data.u.date->time = time;
-    njs_number_set(&vm->retval, time);
+    njs_value_number_set(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1809,7 +1809,7 @@ njs_date_prototype_set_full_year(njs_vm_t *vm, njs_value_t *args,
     }
 
     args[0].data.u.date->time = time;
-    njs_number_set(&vm->retval, time);
+    njs_value_number_set(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1849,7 +1849,7 @@ njs_date_prototype_set_utc_full_year(njs_vm_t *vm, njs_value_t *args,
     }
 
     args[0].data.u.date->time = time;
-    njs_number_set(&vm->retval, time);
+    njs_value_number_set(&vm->retval, time);
 
     return NXT_OK;
 }
