@@ -192,7 +192,7 @@ static njs_interactive_test_t  njs_test[] =
 
 
 static nxt_int_t
-njs_interactive_test(void)
+njs_interactive_test(nxt_bool_t verbose)
 {
     u_char                  *start, *last, *end;
     njs_vm_t                *vm;
@@ -210,8 +210,10 @@ njs_interactive_test(void)
 
         test = &njs_test[i];
 
-        printf("\"%.*s\"\n", (int) test->script.length, test->script.start);
-        fflush(stdout);
+        if (verbose) {
+            printf("\"%.*s\"\n", (int) test->script.length, test->script.start);
+            fflush(stdout);
+        }
 
         memset(&options, 0, sizeof(njs_vm_opt_t));
 
@@ -279,5 +281,21 @@ done:
 int nxt_cdecl
 main(int argc, char **argv)
 {
-    return njs_interactive_test();
+    nxt_bool_t  verbose;
+
+    verbose = 0;
+
+    if (argc > 1) {
+        switch (argv[1][0]) {
+
+        case 'v':
+            verbose = 1;
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    return njs_interactive_test(verbose);
 }

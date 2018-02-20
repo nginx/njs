@@ -9376,7 +9376,7 @@ njs_externals_init(njs_vm_t *vm)
 
 
 static nxt_int_t
-njs_unit_test(nxt_bool_t disassemble)
+njs_unit_test(nxt_bool_t disassemble, nxt_bool_t verbose)
 {
     u_char        *start;
     njs_vm_t      *vm, *nvm;
@@ -9401,9 +9401,11 @@ njs_unit_test(nxt_bool_t disassemble)
 
     for (i = 0; i < nxt_nitems(njs_test); i++) {
 
-        printf("\"%.*s\"\n",
-               (int) njs_test[i].script.length, njs_test[i].script.start);
-        fflush(stdout);
+        if (verbose) {
+            printf("\"%.*s\"\n",
+                   (int) njs_test[i].script.length, njs_test[i].script.start);
+            fflush(stdout);
+        }
 
         memset(&options, 0, sizeof(njs_vm_opt_t));
 
@@ -9462,10 +9464,10 @@ njs_unit_test(nxt_bool_t disassemble)
             continue;
         }
 
-        printf("njs(\"%.*s\") failed: \"%.*s\" vs \"%.*s\"\n",
+        printf("njs(\"%.*s\")\nexpected: \"%.*s\"\n     got: \"%.*s\"\n",
                (int) njs_test[i].script.length, njs_test[i].script.start,
-               (int) njs_test[i].ret.length, njs_test[i].ret.start,
-               (int) s.length, s.start);
+               (int) s.length, s.start, (int) njs_test[i].ret.length,
+               njs_test[i].ret.start);
 
         goto done;
     }
@@ -9493,9 +9495,10 @@ done:
 int nxt_cdecl
 main(int argc, char **argv)
 {
-    nxt_bool_t  disassemble;
+    nxt_bool_t  disassemble, verbose;
 
     disassemble = 0;
+    verbose = 0;
 
     if (argc > 1) {
         switch (argv[1][0]) {
@@ -9504,10 +9507,14 @@ main(int argc, char **argv)
             disassemble = 1;
             break;
 
+        case 'v':
+            verbose = 1;
+            break;
+
         default:
             break;
         }
     }
 
-    return njs_unit_test(disassemble);
+    return njs_unit_test(disassemble, verbose);
 }

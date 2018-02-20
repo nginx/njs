@@ -91,7 +91,7 @@ test:	njs_interactive_test \
 	$(NXT_BUILDDIR)/njs_unit_test \
 	$(NXT_BUILDDIR)/njs_benchmark \
 
-	$(NXT_BUILDDIR)/njs_unit_test d
+	$(NXT_BUILDDIR)/njs_unit_test
 
 clean:
 	rm -rf $(NXT_BUILDDIR)
