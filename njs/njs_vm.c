@@ -3744,9 +3744,17 @@ njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame)
 
     if (function->native) {
         ret = njs_builtin_match_native_function(vm, function, &be->name);
-        if (ret != NXT_OK) {
-            be->name = entry_native;
+        if (ret == NXT_OK) {
+            return NXT_OK;
         }
+
+        ret = njs_external_match_native_function(vm, function->u.native,
+                                                 &be->name);
+        if (ret == NXT_OK) {
+            return NXT_OK;
+        }
+
+        be->name = entry_native;
 
         return NXT_OK;
     }

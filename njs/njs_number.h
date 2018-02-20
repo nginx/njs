@@ -35,5 +35,10 @@ nxt_noinline uint32_t njs_number_to_integer(double num);
 extern const njs_object_init_t  njs_number_constructor_init;
 extern const njs_object_init_t  njs_number_prototype_init;
 
+extern const njs_object_init_t  njs_is_nan_function_init;
+extern const njs_object_init_t  njs_is_finite_function_init;
+extern const njs_object_init_t  njs_parse_int_function_init;
+extern const njs_object_init_t  njs_parse_float_function_init;
+
 
 #endif /* _NJS_NUMBER_H_INCLUDED_ */

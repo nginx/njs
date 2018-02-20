@@ -896,3 +896,31 @@ njs_number_to_integer(double num)
 
     return (uint32_t) i64;
 }
+
+
+const njs_object_init_t  njs_is_nan_function_init = {
+    nxt_string("isNaN"),
+    NULL,
+    0,
+};
+
+
+const njs_object_init_t  njs_is_finite_function_init = {
+    nxt_string("isFinite"),
+    NULL,
+    0,
+};
+
+
+const njs_object_init_t  njs_parse_int_function_init = {
+    nxt_string("parseInt"),
+    NULL,
+    0,
+};
+
+
+const njs_object_init_t  njs_parse_float_function_init = {
+    nxt_string("parseFloat"),
+    NULL,
+    0,
+};

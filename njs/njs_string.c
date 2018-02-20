@@ -3791,3 +3791,38 @@ njs_value_index(njs_vm_t *vm, njs_parser_t *parser, const njs_value_t *src)
 
     return (njs_index_t) value;
 }
+
+
+const njs_object_init_t  njs_to_string_function_init = {
+    nxt_string("toString"),
+    NULL,
+    0,
+};
+
+
+const njs_object_init_t  njs_encode_uri_function_init = {
+    nxt_string("encodeURI"),
+    NULL,
+    0,
+};
+
+
+const njs_object_init_t  njs_encode_uri_component_function_init = {
+    nxt_string("encodeURIComponent"),
+    NULL,
+    0,
+};
+
+
+const njs_object_init_t  njs_decode_uri_function_init = {
+    nxt_string("decodeURI"),
+    NULL,
+    0,
+};
+
+
+const njs_object_init_t  njs_decode_uri_component_function_init = {
+    nxt_string("decodeURIComponent"),
+    NULL,
+    0,
+};

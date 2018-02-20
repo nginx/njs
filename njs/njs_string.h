@@ -158,5 +158,11 @@ njs_index_t njs_value_index(njs_vm_t *vm, njs_parser_t *parser,
 extern const njs_object_init_t  njs_string_constructor_init;
 extern const njs_object_init_t  njs_string_prototype_init;
 
+extern const njs_object_init_t  njs_to_string_function_init;
+extern const njs_object_init_t  njs_encode_uri_function_init;
+extern const njs_object_init_t  njs_encode_uri_component_function_init;
+extern const njs_object_init_t  njs_decode_uri_function_init;
+extern const njs_object_init_t  njs_decode_uri_component_function_init;
+
 
 #endif /* _NJS_STRING_H_INCLUDED_ */

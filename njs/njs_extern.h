@@ -38,6 +38,10 @@ typedef struct {
 } njs_extern_value_t;
 
 
+nxt_int_t njs_external_match_native_function(njs_vm_t *vm,
+    njs_function_native_t func, nxt_str_t *name);
+
+
 extern const nxt_lvlhsh_proto_t  njs_extern_hash_proto;
 extern const nxt_lvlhsh_proto_t  njs_extern_value_hash_proto;
 

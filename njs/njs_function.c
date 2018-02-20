@@ -723,7 +723,7 @@ static const njs_object_prop_t  njs_eval_function_properties[] =
 
 
 const njs_object_init_t  njs_eval_function_init = {
-    nxt_string("Function"),
+    nxt_string("eval"),
     njs_eval_function_properties,
     nxt_nitems(njs_eval_function_properties),
 };

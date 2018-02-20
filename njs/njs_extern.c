@@ -22,6 +22,15 @@
 #include <njs_variable.h>
 #include <njs_parser.h>
 #include <string.h>
+#include <stdio.h>
+
+
+typedef struct njs_extern_part_s  njs_extern_part_t;
+
+struct njs_extern_part_s {
+    njs_extern_part_t  *next;
+    nxt_str_t          str;
+};
 
 
 static nxt_int_t
@@ -241,4 +250,97 @@ njs_parser_external(njs_vm_t *vm, njs_parser_t *parser)
     }
 
     return NULL;
+}
+
+
+static nxt_int_t
+njs_external_match(njs_vm_t *vm, njs_function_native_t func, njs_extern_t *ext,
+    nxt_str_t *name, njs_extern_part_t *head, njs_extern_part_t *ppart)
+{
+    char               *buf, *p;
+    size_t             len;
+    nxt_int_t          ret;
+    njs_extern_t       *prop;
+    njs_extern_part_t  part, *pr;
+    nxt_lvlhsh_each_t  lhe;
+
+    ppart->next = &part;
+
+    nxt_lvlhsh_each_init(&lhe, &njs_extern_hash_proto);
+
+    for ( ;; ) {
+        prop = nxt_lvlhsh_each(&ext->hash, &lhe);
+        if (prop == NULL) {
+            break;
+        }
+
+        part.next = NULL;
+        part.str = prop->name;
+
+        if (prop->function && prop->function->u.native == func) {
+            goto found;
+        }
+
+        ret = njs_external_match(vm, func, prop, name, head, &part);
+        if (ret != NXT_DECLINED) {
+            return ret;
+        }
+    }
+
+    return NXT_DECLINED;
+
+found:
+
+    len = 0;
+
+    for (pr = head; pr != NULL; pr = pr->next) {
+        len += pr->str.length + sizeof(".") - 1;
+    }
+
+    buf = nxt_mem_cache_zalloc(vm->mem_cache_pool, len);
+    if (buf == NULL) {
+        return NXT_ERROR;
+    }
+
+    p = buf;
+
+    for (pr = head; pr != NULL; pr = pr->next) {
+        p += snprintf(p, buf + len - p, "%.*s.", (int) pr->str.length,
+                      pr->str.start);
+    }
+
+    name->start = (u_char *) buf;
+    name->length = len;
+
+    return NXT_OK;
+}
+
+
+nxt_int_t
+njs_external_match_native_function(njs_vm_t *vm, njs_function_native_t func,
+    nxt_str_t *name)
+{
+    nxt_int_t          ret;
+    njs_extern_t       *ext;
+    njs_extern_part_t  part;
+    nxt_lvlhsh_each_t  lhe;
+
+    nxt_lvlhsh_each_init(&lhe, &njs_extern_hash_proto);
+
+    for ( ;; ) {
+        ext = nxt_lvlhsh_each(&vm->external_prototypes_hash, &lhe);
+        if (ext == NULL) {
+            break;
+        }
+
+        part.next = NULL;
+        part.str = ext->name;
+
+        ret = njs_external_match(vm, func, ext, name, &part, &part);
+        if (ret != NXT_DECLINED) {
+            return ret;
+        }
+    }
+
+    return NXT_DECLINED;
 }

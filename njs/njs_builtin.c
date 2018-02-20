@@ -102,6 +102,38 @@ const njs_object_init_t    *njs_constructor_init[] = {
 };
 
 
+const njs_object_init_t    *njs_function_init[] = {
+    &njs_eval_function_init,
+    &njs_to_string_function_init,
+    &njs_is_nan_function_init,
+    &njs_is_finite_function_init,
+    &njs_parse_int_function_init,
+    &njs_parse_float_function_init,
+    &njs_encode_uri_function_init,
+    &njs_encode_uri_component_function_init,
+    &njs_decode_uri_function_init,
+    &njs_decode_uri_component_function_init,
+    &njs_require_function_init
+};
+
+
+const njs_function_init_t  njs_native_functions[] = {
+    /* SunC does not allow empty array initialization. */
+    { njs_eval_function,               { 0 } },
+    { njs_object_prototype_to_string,  { 0 } },
+    { njs_number_global_is_nan,        { NJS_SKIP_ARG, NJS_NUMBER_ARG } },
+    { njs_number_is_finite,            { NJS_SKIP_ARG, NJS_NUMBER_ARG } },
+    { njs_number_parse_int,
+      { NJS_SKIP_ARG, NJS_STRING_ARG, NJS_INTEGER_ARG } },
+    { njs_number_parse_float,          { NJS_SKIP_ARG, NJS_STRING_ARG } },
+    { njs_string_encode_uri,           { NJS_SKIP_ARG, NJS_STRING_ARG } },
+    { njs_string_encode_uri_component, { NJS_SKIP_ARG, NJS_STRING_ARG } },
+    { njs_string_decode_uri,           { NJS_SKIP_ARG, NJS_STRING_ARG } },
+    { njs_string_decode_uri_component, { NJS_SKIP_ARG, NJS_STRING_ARG } },
+    { njs_module_require,              { NJS_SKIP_ARG, NJS_STRING_ARG } },
+};
+
+
 static njs_ret_t
 njs_prototype_function(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
@@ -190,36 +222,6 @@ njs_builtin_objects_create(njs_vm_t *vm)
         { njs_memory_error_constructor,  { NJS_SKIP_ARG, NJS_STRING_ARG } },
     };
 
-    static const njs_object_init_t    *function_init[] = {
-        &njs_eval_function_init,      /* eval               */
-        NULL,                         /* toString           */
-        NULL,                         /* isNaN              */
-        NULL,                         /* isFinite           */
-        NULL,                         /* parseInt           */
-        NULL,                         /* parseFloat         */
-        NULL,                         /* encodeURI          */
-        NULL,                         /* encodeURIComponent */
-        NULL,                         /* decodeURI          */
-        NULL,                         /* decodeURIComponent */
-        NULL,                         /* require */
-    };
-
-    static const njs_function_init_t  native_functions[] = {
-        /* SunC does not allow empty array initialization. */
-        { njs_eval_function,               { 0 } },
-        { njs_object_prototype_to_string,  { 0 } },
-        { njs_number_global_is_nan,        { NJS_SKIP_ARG, NJS_NUMBER_ARG } },
-        { njs_number_is_finite,            { NJS_SKIP_ARG, NJS_NUMBER_ARG } },
-        { njs_number_parse_int,
-          { NJS_SKIP_ARG, NJS_STRING_ARG, NJS_INTEGER_ARG } },
-        { njs_number_parse_float,          { NJS_SKIP_ARG, NJS_STRING_ARG } },
-        { njs_string_encode_uri,           { NJS_SKIP_ARG, NJS_STRING_ARG } },
-        { njs_string_encode_uri_component, { NJS_SKIP_ARG, NJS_STRING_ARG } },
-        { njs_string_decode_uri,           { NJS_SKIP_ARG, NJS_STRING_ARG } },
-        { njs_string_decode_uri_component, { NJS_SKIP_ARG, NJS_STRING_ARG } },
-        { njs_module_require,              { NJS_SKIP_ARG, NJS_STRING_ARG } },
-    };
-
     static const njs_object_prop_t    null_proto_property = {
         .type = NJS_WHITEOUT,
         .name = njs_string("__proto__"),
@@ -293,10 +295,10 @@ njs_builtin_objects_create(njs_vm_t *vm)
     functions = vm->shared->functions;
 
     for (i = NJS_FUNCTION_EVAL; i < NJS_FUNCTION_MAX; i++) {
-        if (function_init[i] != NULL) {
+        if (njs_function_init[i]->items != 0) {
             ret = njs_object_hash_create(vm, &functions[i].object.shared_hash,
-                                         function_init[i]->properties,
-                                         function_init[i]->items);
+                                         njs_function_init[i]->properties,
+                                         njs_function_init[i]->items);
             if (nxt_slow_path(ret != NXT_OK)) {
                 return NXT_ERROR;
             }
@@ -306,12 +308,12 @@ njs_builtin_objects_create(njs_vm_t *vm)
         functions[i].object.extensible = 1;
         functions[i].native = 1;
         functions[i].args_offset = 1;
-        functions[i].u.native = native_functions[i].native;
-        functions[i].args_types[0] = native_functions[i].args_types[0];
-        functions[i].args_types[1] = native_functions[i].args_types[1];
-        functions[i].args_types[2] = native_functions[i].args_types[2];
-        functions[i].args_types[3] = native_functions[i].args_types[3];
-        functions[i].args_types[4] = native_functions[i].args_types[4];
+        functions[i].u.native = njs_native_functions[i].native;
+        functions[i].args_types[0] = njs_native_functions[i].args_types[0];
+        functions[i].args_types[1] = njs_native_functions[i].args_types[1];
+        functions[i].args_types[2] = njs_native_functions[i].args_types[2];
+        functions[i].args_types[3] = njs_native_functions[i].args_types[3];
+        functions[i].args_types[4] = njs_native_functions[i].args_types[4];
     }
 
     prototypes = vm->shared->prototypes;
@@ -1019,6 +1021,18 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
 
                 return NXT_OK;
             }
+        }
+    }
+
+    for (i = NJS_FUNCTION_EVAL; i < NJS_FUNCTION_MAX; i++) {
+        if (njs_function_init[i] == NULL) {
+            continue;
+        }
+
+        if (function->u.native == njs_native_functions[i].native) {
+            *name = njs_function_init[i]->name;
+
+            return NXT_OK;
         }
     }
 

@@ -162,6 +162,16 @@ static njs_interactive_test_t  njs_test[] =
                  "    at Math.log (native)\n"
                  "    at main (native)\n") },
 
+    { nxt_string("eval()" ENTER),
+      nxt_string("InternalError: Not implemented\n"
+                 "    at eval (native)\n"
+                 "    at main (native)\n") },
+
+    { nxt_string("require()" ENTER),
+      nxt_string("TypeError: missing path\n"
+                 "    at require (native)\n"
+                 "    at main (native)\n") },
+
     { nxt_string("function f(o) {function f_in(o) {return o.a.a};"
                  "               return f_in(o)}; f({})" ENTER),
       nxt_string("TypeError: cannot get property 'a' of undefined\n"

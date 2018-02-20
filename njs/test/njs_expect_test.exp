@@ -171,6 +171,12 @@ njs_test {
      "console.ll()\r\nTypeError: cannot find property 'll' of an external object"}
 }
 
+# Backtraces for external objects
+njs_test {
+    {"console.log(console)\r\n"
+     "console.log(console)\r\nTypeError:*at console.log (native)"}
+}
+
 # Exception in njs_vm_retval_to_ext_string()
 njs_test {
     {"var o = { toString: function() { return [1] } }\r\n"
