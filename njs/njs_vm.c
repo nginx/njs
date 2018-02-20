@@ -519,15 +519,16 @@ njs_ret_t
 njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *property)
 {
+    void                  *obj;
     int32_t               index;
     uintptr_t             data;
     njs_ret_t             ret;
-    njs_value_t           *val;
-    njs_extern_t          *ext;
+    njs_value_t           *val, ext_val;
     njs_slice_prop_t      slice;
     njs_string_prop_t     string;
     njs_object_prop_t     *prop;
     const njs_value_t     *retval;
+    const njs_extern_t    *ext_proto;
     njs_property_query_t  pq;
 
     pq.query = NJS_PROPERTY_QUERY_GET;
@@ -615,19 +616,24 @@ njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
         break;
 
     case NJS_EXTERNAL_VALUE:
-        ext = object->data.u.external;
+        ext_proto = object->external.proto;
 
-        ret = nxt_lvlhsh_find(&ext->hash, &pq.lhq);
+        ret = nxt_lvlhsh_find(&ext_proto->hash, &pq.lhq);
 
         if (ret == NXT_OK) {
-            ext = pq.lhq.value;
+            ext_proto = pq.lhq.value;
 
-            if ((ext->type & NJS_EXTERN_OBJECT) != 0) {
-                retval = &ext->value;
+            ext_val.type = NJS_EXTERNAL;
+            ext_val.data.truth = 1;
+            ext_val.external.proto = ext_proto;
+            ext_val.external.index = object->external.index;
+
+            if ((ext_proto->type & NJS_EXTERN_OBJECT) != 0) {
+                retval = &ext_val;
                 break;
             }
 
-            data = ext->data;
+            data = ext_proto->data;
 
         } else {
             data = (uintptr_t) &pq.lhq.key;
@@ -635,13 +641,15 @@ njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
 
         vm->retval = njs_value_void;
 
-        if (ext->get != NULL) {
-            ret = ext->get(vm, &vm->retval, vm->external[ext->object], data);
+        if (ext_proto->get != NULL) {
+            obj = njs_extern_object(vm, object);
+
+            ret = ext_proto->get(vm, &vm->retval, obj, data);
             if (nxt_slow_path(ret != NXT_OK)) {
                 return ret;
             }
 
-            /* The vm->retval is already retained by ext->get(). */
+            /* The vm->retval is already retained by ext_proto->get(). */
         }
 
         return sizeof(njs_vmcode_prop_get_t);
@@ -665,12 +673,13 @@ njs_ret_t
 njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *property)
 {
+    void                   *obj;
     uintptr_t              data;
     nxt_str_t              s;
     njs_ret_t              ret;
     njs_value_t            *p, *value;
-    njs_extern_t           *ext;
     njs_object_prop_t      *prop;
+    const njs_extern_t     *ext_proto;
     njs_property_query_t   pq;
     njs_vmcode_prop_set_t  *code;
 
@@ -726,19 +735,19 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
         return sizeof(njs_vmcode_prop_set_t);
 
     case NJS_EXTERNAL_VALUE:
-        ext = object->data.u.external;
+        ext_proto = object->external.proto;
 
-        ret = nxt_lvlhsh_find(&ext->hash, &pq.lhq);
+        ret = nxt_lvlhsh_find(&ext_proto->hash, &pq.lhq);
 
         if (ret == NXT_OK) {
-            ext = pq.lhq.value;
-            data = ext->data;
+            ext_proto = pq.lhq.value;
+            data = ext_proto->data;
 
         } else {
             data = (uintptr_t) &pq.lhq.key;
         }
 
-        if (ext->set != NULL) {
+        if (ext_proto->set != NULL) {
             ret = njs_vm_value_to_ext_string(vm, &s, value, 0);
             if (nxt_slow_path(ret != NXT_OK)) {
                 return ret;
@@ -746,7 +755,9 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
 
             /* TODO retain value if it is string. */
 
-            ret = ext->set(vm, vm->external[ext->object], data, &s);
+            obj = njs_extern_object(vm, object);
+
+            ret = ext_proto->set(vm, obj, data, &s);
             if (nxt_slow_path(ret != NXT_OK)) {
                 return ret;
             }
@@ -772,11 +783,12 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
 njs_ret_t
 njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *object, njs_value_t *property)
 {
+    void                  *obj;
     uintptr_t             data;
     njs_ret_t             ret;
     njs_value_t           *value;
-    njs_extern_t          *ext;
     const njs_value_t     *retval;
+    const njs_extern_t    *ext_proto;
     njs_property_query_t  pq;
 
     retval = &njs_value_false;
@@ -810,9 +822,9 @@ njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *object, njs_value_t *property)
         break;
 
     case NJS_EXTERNAL_VALUE:
-        ext = object->data.u.external;
+        ext_proto = object->external.proto;
 
-        ret = nxt_lvlhsh_find(&ext->hash, &pq.lhq);
+        ret = nxt_lvlhsh_find(&ext_proto->hash, &pq.lhq);
 
         if (ret == NXT_OK) {
             retval = &njs_value_true;
@@ -820,8 +832,10 @@ njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *object, njs_value_t *property)
         } else {
             data = (uintptr_t) &pq.lhq.key;
 
-            if (ext->find != NULL) {
-                ret = ext->find(vm, vm->external[ext->object], data, 0);
+            if (ext_proto->find != NULL) {
+                obj = njs_extern_object(vm, object);
+
+                ret = ext_proto->find(vm, obj, data, 0);
 
                 if (nxt_slow_path(ret == NXT_ERROR)) {
                     return ret;
@@ -852,12 +866,13 @@ njs_ret_t
 njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *property)
 {
+    void                  *obj;
     uintptr_t             data;
     njs_ret_t             ret;
-    njs_value_t           *value;
-    njs_extern_t          *ext;
+    njs_value_t           *value, ext_val;
     const njs_value_t     *retval;
     njs_object_prop_t     *prop;
+    const njs_extern_t    *ext_proto;
     njs_property_query_t  pq;
 
     retval = &njs_value_false;
@@ -896,26 +911,34 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
 
     case NJS_EXTERNAL_VALUE:
 
-        ext = object->data.u.external;
+        ext_proto = object->external.proto;
 
-        ret = nxt_lvlhsh_find(&ext->hash, &pq.lhq);
+        ret = nxt_lvlhsh_find(&ext_proto->hash, &pq.lhq);
 
         if (ret == NXT_OK) {
-            ext = pq.lhq.value;
+            ext_proto = pq.lhq.value;
 
-            if ((ext->type & NJS_EXTERN_OBJECT) != 0) {
-                data = (uintptr_t) &ext->value;
+            if ((ext_proto->type & NJS_EXTERN_OBJECT) != 0) {
+
+                ext_val.type = NJS_EXTERNAL;
+                ext_val.data.truth = 1;
+                ext_val.external.proto = ext_proto;
+                ext_val.external.index = object->external.index;
+
+                data = (uintptr_t) &ext_val;
 
             } else {
-                data = ext->data;
+                data = ext_proto->data;
             }
 
         } else {
             data = (uintptr_t) &pq.lhq.key;
         }
 
-        if (ext->find != NULL) {
-            ret = ext->find(vm, vm->external[ext->object], data, 1);
+        if (ext_proto->find != NULL) {
+            obj = njs_extern_object(vm, object);
+
+            ret = ext_proto->find(vm, obj, data, 1);
 
             if (nxt_slow_path(ret == NXT_ERROR)) {
                 return ret;
@@ -958,12 +981,12 @@ static nxt_noinline njs_ret_t
 njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
     njs_value_t *property)
 {
-    uint32_t        index;
-    uint32_t        (*hash)(const void *, size_t);
-    njs_ret_t       ret;
-    njs_extern_t    *ext;
-    njs_object_t    *obj;
-    njs_function_t  *function;
+    uint32_t            index;
+    uint32_t            (*hash)(const void *, size_t);
+    njs_ret_t           ret;
+    njs_object_t        *obj;
+    njs_function_t      *function;
+    const njs_extern_t  *ext_proto;
 
     hash = nxt_djb_hash;
 
@@ -1031,9 +1054,9 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
         break;
 
     case NJS_EXTERNAL:
-        ext = object->data.u.external;
+        ext_proto = object->external.proto;
 
-        if (ext->type == NJS_EXTERN_CASELESS_OBJECT) {
+        if (ext_proto->type == NJS_EXTERN_CASELESS_OBJECT) {
             hash = nxt_djb_hash_lowcase;
         }
 
@@ -1224,9 +1247,10 @@ njs_ret_t
 njs_vmcode_property_foreach(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *invld)
 {
+    void                       *obj;
     njs_ret_t                  ret;
-    njs_extern_t               *ext;
     njs_property_next_t        *next;
+    const njs_extern_t         *ext_proto;
     njs_vmcode_prop_foreach_t  *code;
 
     if (njs_is_object(object)) {
@@ -1246,10 +1270,12 @@ njs_vmcode_property_foreach(njs_vm_t *vm, njs_value_t *object,
         }
 
     } else if (njs_is_external(object)) {
-        ext = object->data.u.external;
+        ext_proto = object->external.proto;
 
-        if (ext->foreach != NULL) {
-            ret = ext->foreach(vm, vm->external[ext->object], &vm->retval);
+        if (ext_proto->foreach != NULL) {
+            obj = njs_extern_object(vm, object);
+
+            ret = ext_proto->foreach(vm, obj, &vm->retval);
             if (nxt_slow_path(ret != NXT_OK)) {
                 return ret;
             }
@@ -1265,13 +1291,14 @@ njs_vmcode_property_foreach(njs_vm_t *vm, njs_value_t *object,
 njs_ret_t
 njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
 {
+    void                    *obj;
     njs_ret_t               ret;
     nxt_uint_t              n;
     njs_value_t             *retval;
     njs_array_t             *array;
-    njs_extern_t            *ext;
     njs_object_prop_t       *prop;
     njs_property_next_t     *next;
+    const njs_extern_t      *ext_proto;
     njs_vmcode_prop_next_t  *code;
 
     code = (njs_vmcode_prop_next_t *) vm->current;
@@ -1307,10 +1334,12 @@ njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
         nxt_mem_cache_free(vm->mem_cache_pool, next);
 
     } else if (njs_is_external(object)) {
-        ext = object->data.u.external;
+        ext_proto = object->external.proto;
 
-        if (ext->next != NULL) {
-            ret = ext->next(vm, retval, vm->external[ext->object], value);
+        if (ext_proto->next != NULL) {
+            obj = njs_extern_object(vm, object);
+
+            ret = ext_proto->next(vm, retval, obj, value);
 
             if (ret == NXT_OK) {
                 return code->offset;
@@ -2313,11 +2342,12 @@ njs_function_new_object(njs_vm_t *vm, njs_value_t *value)
 njs_ret_t
 njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
 {
+    void                       *obj;
     njs_ret_t                  ret;
     njs_value_t                this, *value;
-    njs_extern_t               *ext;
     njs_object_prop_t          *prop;
     njs_property_query_t       pq;
+    const njs_extern_t         *ext_proto;
     njs_vmcode_method_frame_t  *method;
 
     method = (njs_vmcode_method_frame_t *) vm->current;
@@ -2343,9 +2373,9 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
         break;
 
     case NJS_EXTERNAL_VALUE:
-        ext = object->data.u.external;
+        ext_proto = object->external.proto;
 
-        ret = nxt_lvlhsh_find(&ext->hash, &pq.lhq);
+        ret = nxt_lvlhsh_find(&ext_proto->hash, &pq.lhq);
 
         if (nxt_slow_path(ret != NXT_OK)) {
             njs_exception_type_error(vm,
@@ -2355,18 +2385,20 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
 
         }
 
-        ext = pq.lhq.value;
+        ext_proto = pq.lhq.value;
 
-        if (nxt_slow_path(ext->type != NJS_EXTERN_METHOD)) {
+        if (nxt_slow_path(ext_proto->type != NJS_EXTERN_METHOD)) {
             njs_exception_type_error(vm,
                           "method '%.*s' of an external object is not callable",
                           (int) pq.lhq.key.length, pq.lhq.key.start);
             return NXT_ERROR;
         }
 
-        this.data.u.data = vm->external[ext->object];
+        obj = njs_extern_object(vm, object);
 
-        ret = njs_function_native_frame(vm, ext->function, &this, NULL,
+        this.data.u.data = obj;
+
+        ret = njs_function_native_frame(vm, ext_proto->function, &this, NULL,
                                         method->nargs, 0, method->code.ctor);
         break;
 

@@ -15,37 +15,21 @@
 #include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_array.h>
-#include <nxt_random.h>
-#include <nxt_lvlhsh.h>
-#include <nxt_mem_cache_pool.h>
 
 #include <njscript.h>
 
 
-#define NGX_HTTP_JS_MCP_CLUSTER_SIZE    (2 * ngx_pagesize)
-#define NGX_HTTP_JS_MCP_PAGE_ALIGNMENT  128
-#define NGX_HTTP_JS_MCP_PAGE_SIZE       512
-#define NGX_HTTP_JS_MCP_MIN_CHUNK_SIZE  16
-
-
-#define ngx_http_js_create_mem_cache_pool()                                   \
-    nxt_mem_cache_pool_create(&ngx_http_js_mem_cache_pool_proto, NULL, NULL,  \
-                              NGX_HTTP_JS_MCP_CLUSTER_SIZE,                   \
-                              NGX_HTTP_JS_MCP_PAGE_ALIGNMENT,                 \
-                              NGX_HTTP_JS_MCP_PAGE_SIZE,                      \
-                              NGX_HTTP_JS_MCP_MIN_CHUNK_SIZE)
-
-
 typedef struct {
     njs_vm_t            *vm;
-    njs_opaque_value_t   args[2];
     ngx_str_t            content;
+    const njs_extern_t  *req_proto;
+    const njs_extern_t  *res_proto;
 } ngx_http_js_loc_conf_t;
 
 
 typedef struct {
     njs_vm_t            *vm;
-    njs_opaque_value_t  *args;
+    njs_opaque_value_t   args[2];
 } ngx_http_js_ctx_t;
 
 
@@ -59,12 +43,7 @@ static ngx_int_t ngx_http_js_handler(ngx_http_request_t *r);
 static ngx_int_t ngx_http_js_variable(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data);
 static ngx_int_t ngx_http_js_init_vm(ngx_http_request_t *r);
-static void ngx_http_js_cleanup_mem_cache_pool(void *data);
-
-static void *ngx_http_js_alloc(void *mem, size_t size);
-static void *ngx_http_js_calloc(void *mem, size_t size);
-static void *ngx_http_js_memalign(void *mem, size_t alignment, size_t size);
-static void ngx_http_js_free(void *mem, void *p);
+static void ngx_http_js_cleanup_vm(void *data);
 
 static njs_ret_t ngx_http_js_ext_get_string(njs_vm_t *vm, njs_value_t *value,
     void *obj, uintptr_t data);
@@ -183,17 +162,6 @@ ngx_module_t  ngx_http_js_module = {
 };
 
 
-static const nxt_mem_proto_t  ngx_http_js_mem_cache_pool_proto = {
-    ngx_http_js_alloc,
-    ngx_http_js_calloc,
-    ngx_http_js_memalign,
-    NULL,
-    ngx_http_js_free,
-    NULL,
-    NULL,
-};
-
-
 static njs_external_t  ngx_http_js_ext_response[] = {
 
     { nxt_string("headers"),
@@ -283,18 +251,6 @@ static njs_external_t  ngx_http_js_ext_response[] = {
 
 
 static njs_external_t  ngx_http_js_ext_request[] = {
-
-    { nxt_string("response"),
-      NJS_EXTERN_OBJECT,
-      ngx_http_js_ext_response,
-      nxt_nitems(ngx_http_js_ext_response),
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      0 },
 
     { nxt_string("log"),
       NJS_EXTERN_METHOD,
@@ -396,10 +352,22 @@ static njs_external_t  ngx_http_js_ext_request[] = {
 
 static njs_external_t  ngx_http_js_externals[] = {
 
-    { nxt_string("$r"),
+    { nxt_string("request"),
       NJS_EXTERN_OBJECT,
       ngx_http_js_ext_request,
       nxt_nitems(ngx_http_js_ext_request),
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      0 },
+
+    { nxt_string("response"),
+      NJS_EXTERN_OBJECT,
+      ngx_http_js_ext_response,
+      nxt_nitems(ngx_http_js_ext_response),
       NULL,
       NULL,
       NULL,
@@ -520,11 +488,10 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
 static ngx_int_t
 ngx_http_js_init_vm(ngx_http_request_t *r)
 {
-    void                    **ext;
-    ngx_http_js_ctx_t        *ctx;
-    ngx_pool_cleanup_t       *cln;
-    nxt_mem_cache_pool_t     *mcp;
-    ngx_http_js_loc_conf_t   *jlcf;
+    nxt_int_t                rc;
+    ngx_http_js_ctx_t       *ctx;
+    ngx_pool_cleanup_t      *cln;
+    ngx_http_js_loc_conf_t  *jlcf;
 
     jlcf = ngx_http_get_module_loc_conf(r, ngx_http_js_module);
     if (jlcf->vm == NULL) {
@@ -546,8 +513,8 @@ ngx_http_js_init_vm(ngx_http_request_t *r)
         return NGX_OK;
     }
 
-    mcp = ngx_http_js_create_mem_cache_pool();
-    if (mcp == NULL) {
+    ctx->vm = njs_vm_clone(jlcf->vm, r);
+    if (ctx->vm == NULL) {
         return NGX_ERROR;
     }
 
@@ -556,65 +523,33 @@ ngx_http_js_init_vm(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    cln->handler = ngx_http_js_cleanup_mem_cache_pool;
-    cln->data = mcp;
-
-    ext = ngx_palloc(r->pool, sizeof(void *));
-    if (ext == NULL) {
-        return NGX_ERROR;
-    }
-
-    *ext = r;
-
-    ctx->vm = njs_vm_clone(jlcf->vm, mcp, ext);
-    if (ctx->vm == NULL) {
-        return NGX_ERROR;
-    }
+    cln->handler = ngx_http_js_cleanup_vm;
+    cln->data = ctx->vm;
 
     if (njs_vm_run(ctx->vm) != NJS_OK) {
         return NGX_ERROR;
     }
 
-    ctx->args = &jlcf->args[0];
+    rc = njs_vm_external_create(ctx->vm, &ctx->args[0], jlcf->req_proto, r);
+    if (rc != NXT_OK) {
+        return NGX_ERROR;
+    }
+
+    rc = njs_vm_external_create(ctx->vm, &ctx->args[1], jlcf->res_proto, r);
+    if (rc != NXT_OK) {
+        return NGX_ERROR;
+    }
 
     return NGX_OK;
 }
 
 
 static void
-ngx_http_js_cleanup_mem_cache_pool(void *data)
+ngx_http_js_cleanup_vm(void *data)
 {
-    nxt_mem_cache_pool_t *mcp = data;
+    njs_vm_t *vm = data;
 
-    nxt_mem_cache_pool_destroy(mcp);
-}
-
-
-static void *
-ngx_http_js_alloc(void *mem, size_t size)
-{
-    return ngx_alloc(size, ngx_cycle->log);
-}
-
-
-static void *
-ngx_http_js_calloc(void *mem, size_t size)
-{
-    return ngx_calloc(size, ngx_cycle->log);
-}
-
-
-static void *
-ngx_http_js_memalign(void *mem, size_t alignment, size_t size)
-{
-    return ngx_memalign(alignment, size, ngx_cycle->log);
-}
-
-
-static void
-ngx_http_js_free(void *mem, void *p)
-{
-    ngx_free(p);
+    njs_vm_destroy(vm);
 }
 
 
@@ -1229,12 +1164,10 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_fd_t               fd;
     ngx_str_t             *value, file;
     nxt_int_t              rc;
-    nxt_str_t              text, ext;
+    nxt_str_t              text;
     njs_vm_opt_t           options;
-    nxt_lvlhsh_t           externals;
     ngx_file_info_t        fi;
     ngx_pool_cleanup_t    *cln;
-    nxt_mem_cache_pool_t  *mcp;
 
     if (jlcf->vm) {
         return "is duplicate";
@@ -1295,8 +1228,13 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     end = start + size;
 
-    mcp = ngx_http_js_create_mem_cache_pool();
-    if (mcp == NULL) {
+    ngx_memzero(&options, sizeof(njs_vm_opt_t));
+
+    options.backtrace = 1;
+
+    jlcf->vm = njs_vm_create(&options);
+    if (jlcf->vm == NULL) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "failed to create JS VM");
         return NGX_CONF_ERROR;
     }
 
@@ -1305,28 +1243,21 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    cln->handler = ngx_http_js_cleanup_mem_cache_pool;
-    cln->data = mcp;
+    cln->handler = ngx_http_js_cleanup_vm;
+    cln->data = jlcf->vm;
 
-    nxt_lvlhsh_init(&externals);
-
-    if (njs_vm_external_add(&externals, mcp, 0, ngx_http_js_externals,
-                            nxt_nitems(ngx_http_js_externals))
-        != NJS_OK)
-    {
-        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "could not add js externals");
+    jlcf->req_proto = njs_vm_external_prototype(jlcf->vm,
+                                                &ngx_http_js_externals[0]);
+    if (jlcf->req_proto == NULL) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "failed to add request proto");
         return NGX_CONF_ERROR;
     }
 
-    ngx_memzero(&options, sizeof(njs_vm_opt_t));
-
-    options.mcp = mcp;
-    options.backtrace = 1;
-    options.externals_hash = &externals;
-
-    jlcf->vm = njs_vm_create(&options);
-    if (jlcf->vm == NULL) {
-        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "failed to create JS VM");
+    jlcf->res_proto = njs_vm_external_prototype(jlcf->vm,
+                                                &ngx_http_js_externals[1]);
+    if (jlcf->res_proto == NULL) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "failed to add response proto");
         return NGX_CONF_ERROR;
     }
 
@@ -1345,25 +1276,6 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "extra characters in js script: \"%*s\", included",
                            end - start, start);
-        return NGX_CONF_ERROR;
-    }
-
-    ext = nxt_string_value("$r");
-
-    if (njs_vm_external(jlcf->vm, NULL, &ext, &jlcf->args[0]) != NJS_OK) {
-        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "js external \"%*s\" not found",
-                           ext.length, ext.start);
-        return NGX_CONF_ERROR;
-    }
-
-    ext = nxt_string_value("response");
-
-    rc = njs_vm_external(jlcf->vm, &jlcf->args[0], &ext, &jlcf->args[1]);
-    if (rc != NXT_OK) {
-        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "js external \"$r.%*s\" not found",
-                           ext.length, ext.start);
         return NGX_CONF_ERROR;
     }
 
@@ -1443,6 +1355,8 @@ ngx_http_js_create_loc_conf(ngx_conf_t *cf)
      * set by ngx_pcalloc():
      *
      *     conf->vm = NULL;
+     *     conf->req_proto = NULL;
+     *     conf->res_proto = NULL;
      */
 
     return conf;
@@ -1457,8 +1371,8 @@ ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 
     if (conf->vm == NULL) {
         conf->vm = prev->vm;
-        conf->args[0] = prev->args[0];
-        conf->args[1] = prev->args[1];
+        conf->req_proto = prev->req_proto;
+        conf->res_proto = prev->res_proto;
     }
 
     return NGX_CONF_OK;

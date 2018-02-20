@@ -264,7 +264,6 @@ struct njs_parser_node_s {
         njs_value_t                 value;
         njs_vmcode_operation_t      operation;
         njs_parser_node_t           *object;
-        njs_extern_t                *external;
     } u;
 
     njs_index_t                     index;
@@ -359,7 +358,7 @@ nxt_int_t njs_lexer_keywords_init(nxt_mem_cache_pool_t *mcp,
     nxt_lvlhsh_t *hash);
 njs_token_t njs_lexer_keyword(njs_lexer_t *lexer);
 
-njs_extern_t *njs_parser_external(njs_vm_t *vm, njs_parser_t *parser);
+njs_value_t *njs_parser_external(njs_vm_t *vm, njs_parser_t *parser);
 
 njs_parser_node_t *njs_parser(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_t *prev);

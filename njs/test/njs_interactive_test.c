@@ -11,8 +11,6 @@
 #include <nxt_stub.h>
 #include <nxt_malloc.h>
 #include <nxt_array.h>
-#include <nxt_lvlhsh.h>
-#include <nxt_mem_cache_pool.h>
 #include <njscript.h>
 #include <string.h>
 #include <stdio.h>
@@ -203,15 +201,9 @@ njs_interactive_test(void)
     nxt_uint_t              i;
     nxt_bool_t              success;
     njs_vm_opt_t            options;
-    nxt_mem_cache_pool_t    *mcp;
     njs_interactive_test_t  *test;
 
-    mcp = nxt_mem_cache_pool_create(&njs_vm_mem_cache_pool_proto, NULL, NULL,
-                                    2 * nxt_pagesize(), 128, 512, 16);
-    if (nxt_slow_path(mcp == NULL)) {
-        return NXT_ERROR;
-    }
-
+    vm = NULL;
     ret = NXT_ERROR;
 
     for (i = 0; i < nxt_nitems(njs_test); i++) {
@@ -223,13 +215,13 @@ njs_interactive_test(void)
 
         memset(&options, 0, sizeof(njs_vm_opt_t));
 
-        options.mcp = mcp;
         options.accumulative = 1;
         options.backtrace = 1;
 
         vm = njs_vm_create(&options);
         if (vm == NULL) {
-            goto fail;
+            printf("njs_vm_create() failed\n");
+            goto done;
         }
 
         start = test->script.start;
@@ -251,11 +243,14 @@ njs_interactive_test(void)
         }
 
         if (njs_vm_retval_to_ext_string(vm, &s) != NXT_OK) {
-            return NXT_ERROR;
+            printf("njs_vm_retval_to_ext_string() failed\n");
+            goto done;
         }
 
         success = nxt_strstr_eq(&test->ret, &s);
         if (success) {
+            njs_vm_destroy(vm);
+            vm = NULL;
             continue;
         }
 
@@ -264,16 +259,18 @@ njs_interactive_test(void)
                (int) test->ret.length, test->ret.start,
                (int) s.length, s.start);
 
-        goto fail;
+        goto done;
     }
 
     ret = NXT_OK;
 
     printf("njs interactive tests passed\n");
 
-fail:
+done:
 
-    nxt_mem_cache_pool_destroy(mcp);
+    if (vm != NULL) {
+        njs_vm_destroy(vm);
+    }
 
     return ret;
 }

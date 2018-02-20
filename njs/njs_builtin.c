@@ -513,12 +513,13 @@ njs_builtin_completions(njs_vm_t *vm, size_t *size, nxt_str_t *completions)
     size_t                  n, len;
     nxt_str_t               string;
     nxt_uint_t              i, k;
-    njs_extern_t            *ext_object, *ext_prop;
     njs_object_t            *objects;
     njs_keyword_t           *keyword;
     njs_function_t          *constructors;
     njs_object_prop_t       *prop;
     nxt_lvlhsh_each_t       lhe, lhe_prop;
+    njs_extern_value_t      *ev;
+    const njs_extern_t      *ext_proto, *ext_prop;
     njs_object_prototype_t  *prototypes;
 
     n = 0;
@@ -652,26 +653,27 @@ njs_builtin_completions(njs_vm_t *vm, size_t *size, nxt_str_t *completions)
         }
     }
 
-    nxt_lvlhsh_each_init(&lhe, &njs_extern_hash_proto);
+    nxt_lvlhsh_each_init(&lhe, &njs_extern_value_hash_proto);
 
     for ( ;; ) {
-        ext_object = nxt_lvlhsh_each(&vm->externals_hash, &lhe);
+        ev = nxt_lvlhsh_each(&vm->externals_hash, &lhe);
 
-        if (ext_object == NULL) {
+        if (ev == NULL) {
             break;
         }
+
+        ext_proto = ev->value->external.proto;
 
         nxt_lvlhsh_each_init(&lhe_prop, &njs_extern_hash_proto);
 
         if (completions != NULL) {
-            len = ext_object->name.length + 1;
+            len = ev->name.length + 1;
             compl = nxt_mem_cache_zalloc(vm->mem_cache_pool, len);
             if (compl == NULL) {
                 return NXT_ERROR;
             }
 
-            snprintf(compl, len, "%.*s",
-                     (int) ext_object->name.length, ext_object->name.start);
+            snprintf(compl, len, "%.*s", (int) ev->name.length, ev->name.start);
 
             completions[n].length = len;
             completions[n++].start = (u_char *) compl;
@@ -681,22 +683,22 @@ njs_builtin_completions(njs_vm_t *vm, size_t *size, nxt_str_t *completions)
         }
 
         for ( ;; ) {
-            ext_prop = nxt_lvlhsh_each(&ext_object->hash, &lhe_prop);
+            ext_prop = nxt_lvlhsh_each(&ext_proto->hash, &lhe_prop);
 
             if (ext_prop == NULL) {
                 break;
             }
 
             if (completions != NULL) {
-                len = ext_object->name.length + ext_prop->name.length + 2;
+                len = ev->name.length + ev->name.length + 2;
                 compl = nxt_mem_cache_zalloc(vm->mem_cache_pool, len);
                 if (compl == NULL) {
                     return NXT_ERROR;
                 }
 
-                snprintf(compl, len, "%.*s.%.*s",
-                         (int) ext_object->name.length, ext_object->name.start,
-                         (int) ext_prop->name.length, ext_prop->name.start);
+                snprintf(compl, len, "%.*s.%.*s", (int) ev->name.length,
+                         ev->name.start, (int) ext_prop->name.length,
+                         ext_prop->name.start);
 
                 completions[n].length = len;
                 completions[n++].start = (u_char *) compl;

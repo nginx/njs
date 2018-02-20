@@ -11,6 +11,7 @@
 #include <nxt_trace.h>
 #include <nxt_queue.h>
 #include <nxt_regex.h>
+#include <nxt_random.h>
 
 
 #define NJS_MAX_STACK_SIZE       (16 * 1024 * 1024)
@@ -130,7 +131,6 @@ typedef struct njs_function_lambda_s  njs_function_lambda_t;
 typedef struct njs_regexp_s           njs_regexp_t;
 typedef struct njs_regexp_pattern_s   njs_regexp_pattern_t;
 typedef struct njs_date_s             njs_date_t;
-typedef struct njs_extern_s           njs_extern_t;
 typedef struct njs_frame_s            njs_frame_t;
 typedef struct njs_native_frame_s     njs_native_frame_t;
 typedef struct njs_property_next_s    njs_property_next_t;
@@ -176,7 +176,6 @@ union njs_value_s {
             njs_regexp_t              *regexp;
             njs_date_t                *date;
             njs_getter_t              getter;
-            njs_extern_t              *external;
             njs_value_t               *value;
             njs_property_next_t       *next;
             void                      *data;
@@ -206,6 +205,16 @@ union njs_value_s {
         uint32_t                      size;
         njs_string_t                  *data;
     } long_string;
+
+    struct {
+        njs_value_type_t              type:8;  /* 5 bits */
+        uint8_t                       truth;
+
+        uint16_t                      _spare;
+
+        uint32_t                      index;
+        const njs_extern_t            *proto;
+    } external;
 
     njs_value_type_t                  type:8;  /* 5 bits */
 };
@@ -950,12 +959,16 @@ struct njs_vm_s {
 
     njs_value_t              *scopes[NJS_SCOPES];
 
-    void                     **external;
+    void                     *external;
 
     njs_native_frame_t       *top_frame;
     njs_frame_t              *active_frame;
 
+    nxt_array_t              *external_objects; /* of void * */
+
     nxt_lvlhsh_t             externals_hash;
+    nxt_lvlhsh_t             external_prototypes_hash;
+
     nxt_lvlhsh_t             variables_hash;
     nxt_lvlhsh_t             values_hash;
     nxt_lvlhsh_t             modules_hash;

@@ -174,7 +174,7 @@ static void *nxt_lvlhsh_bucket_each(nxt_lvlhsh_each_t *lhe);
 
 
 nxt_int_t
-nxt_lvlhsh_find(nxt_lvlhsh_t *lh, nxt_lvlhsh_query_t *lhq)
+nxt_lvlhsh_find(const nxt_lvlhsh_t *lh, nxt_lvlhsh_query_t *lhq)
 {
     void  *slot;
 
@@ -739,7 +739,7 @@ nxt_lvlhsh_bucket_delete(nxt_lvlhsh_query_t *lhq, void **bkt)
 
 
 void *
-nxt_lvlhsh_each(nxt_lvlhsh_t *lh, nxt_lvlhsh_each_t *lhe)
+nxt_lvlhsh_each(const nxt_lvlhsh_t *lh, nxt_lvlhsh_each_t *lhe)
 {
     void  **slot;
 

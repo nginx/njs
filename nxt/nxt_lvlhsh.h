@@ -126,7 +126,8 @@ struct nxt_lvlhsh_query_s {
  *
  * The required nxt_lvlhsh_query_t fields: key_hash, key, proto.
  */
-NXT_EXPORT nxt_int_t nxt_lvlhsh_find(nxt_lvlhsh_t *lh, nxt_lvlhsh_query_t *lhq);
+NXT_EXPORT nxt_int_t nxt_lvlhsh_find(const nxt_lvlhsh_t *lh,
+    nxt_lvlhsh_query_t *lhq);
 
 /*
  * nxt_lvlhsh_insert() adds a hash element.  If the element already
@@ -179,7 +180,8 @@ typedef struct {
         (lhe)->proto = _proto;                                                \
     } while (0)
 
-NXT_EXPORT void *nxt_lvlhsh_each(nxt_lvlhsh_t *lh, nxt_lvlhsh_each_t *lhe);
+NXT_EXPORT void *nxt_lvlhsh_each(const nxt_lvlhsh_t *lh,
+    nxt_lvlhsh_each_t *lhe);
 
 
 #endif /* _NXT_LVLHSH_H_INCLUDED_ */

@@ -8,9 +8,11 @@
 #define _NJS_EXTERN_H_INCLUDED_
 
 
-struct njs_extern_s {
-    njs_value_t                  value;
+#define njs_extern_object(vm, ext)                                          \
+    (*(void **) nxt_array_item((vm)->external_objects, (ext)->external.index))
 
+
+struct njs_extern_s {
     /* A hash of inclusive njs_extern_t. */
     nxt_lvlhsh_t                 hash;
 
@@ -26,12 +28,18 @@ struct njs_extern_s {
 
     njs_function_t               *function;
 
-    uintptr_t                    object;
     uintptr_t                    data;
 };
 
 
+typedef struct {
+    nxt_str_t               name;
+    njs_value_t             *value;
+} njs_extern_value_t;
+
+
 extern const nxt_lvlhsh_proto_t  njs_extern_hash_proto;
+extern const nxt_lvlhsh_proto_t  njs_extern_value_hash_proto;
 
 
 #endif /* _NJS_EXTERN_H_INCLUDED_ */

@@ -110,14 +110,10 @@ njs_vm_create(njs_vm_opt_t *options)
     nxt_mem_cache_pool_t  *mcp;
     njs_regexp_pattern_t  *pattern;
 
-    mcp = options->mcp;
-
-    if (mcp == NULL) {
-        mcp = nxt_mem_cache_pool_create(&njs_vm_mem_cache_pool_proto, NULL,
-                                        NULL, 2 * nxt_pagesize(), 128, 512, 16);
-        if (nxt_slow_path(mcp == NULL)) {
-            return NULL;
-        }
+    mcp = nxt_mem_cache_pool_create(&njs_vm_mem_cache_pool_proto, NULL,
+                                    NULL, 2 * nxt_pagesize(), 128, 512, 16);
+    if (nxt_slow_path(mcp == NULL)) {
+        return NULL;
     }
 
     vm = nxt_mem_cache_zalign(mcp, sizeof(njs_value_t), sizeof(njs_vm_t));
@@ -164,17 +160,21 @@ njs_vm_create(njs_vm_opt_t *options)
             if (nxt_slow_path(ret != NXT_OK)) {
                 return NULL;
             }
-
-            if (options->externals_hash != NULL) {
-                vm->external = options->external;
-            }
         }
 
         nxt_lvlhsh_init(&vm->values_hash);
 
-        if (options->externals_hash != NULL) {
-            vm->externals_hash = *options->externals_hash;
+        vm->external = options->external;
+
+        vm->external_objects = nxt_array_create(4, sizeof(void *),
+                                                &njs_array_mem_proto,
+                                                vm->mem_cache_pool);
+        if (nxt_slow_path(vm->external_objects == NULL)) {
+            return NULL;
         }
+
+        nxt_lvlhsh_init(&vm->externals_hash);
+        nxt_lvlhsh_init(&vm->external_prototypes_hash);
 
         vm->trace.level = NXT_LEVEL_TRACE;
         vm->trace.size = 2048;
@@ -294,9 +294,10 @@ fail:
 
 
 njs_vm_t *
-njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
+njs_vm_clone(njs_vm_t *vm, void *external)
 {
     njs_vm_t              *nvm;
+    uint32_t              items;
     nxt_int_t             ret;
     nxt_mem_cache_pool_t  *nmcp;
 
@@ -306,14 +307,10 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
         return NULL;
     }
 
-    nmcp = mcp;
-
-    if (nmcp == NULL) {
-        nmcp = nxt_mem_cache_pool_create(&njs_vm_mem_cache_pool_proto, NULL,
-                                        NULL, 2 * nxt_pagesize(), 128, 512, 16);
-        if (nxt_slow_path(nmcp == NULL)) {
-            return NULL;
-        }
+    nmcp = nxt_mem_cache_pool_create(&njs_vm_mem_cache_pool_proto, NULL,
+                                    NULL, 2 * nxt_pagesize(), 128, 512, 16);
+    if (nxt_slow_path(nmcp == NULL)) {
+        return NULL;
     }
 
     nvm = nxt_mem_cache_zalloc(nmcp, sizeof(njs_vm_t));
@@ -326,9 +323,26 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
         nvm->variables_hash = vm->variables_hash;
         nvm->values_hash = vm->values_hash;
         nvm->modules_hash = vm->modules_hash;
+
         nvm->externals_hash = vm->externals_hash;
+        nvm->external_prototypes_hash = vm->external_prototypes_hash;
+
+        items = vm->external_objects->items;
+        nvm->external_objects = nxt_array_create(items + 4, sizeof(void *),
+                                                 &njs_array_mem_proto,
+                                                 vm->mem_cache_pool);
+        if (nxt_slow_path(vm->external_objects == NULL)) {
+            return NULL;
+        }
+
+        if (items > 0) {
+            memcpy(nvm->external_objects->start, vm->external_objects->start,
+                   items * sizeof(void *));
+            vm->external_objects->items = items;
+        }
 
         nvm->current = vm->current;
+
         nvm->external = external;
 
         nvm->global_scope = vm->global_scope;
@@ -348,9 +362,7 @@ njs_vm_clone(njs_vm_t *vm, nxt_mem_cache_pool_t *mcp, void **external)
 
 fail:
 
-    if (mcp == NULL) {
-        nxt_mem_cache_pool_destroy(nmcp);
-    }
+    nxt_mem_cache_pool_destroy(nmcp);
 
     return NULL;
 }
@@ -520,6 +532,13 @@ nxt_noinline njs_value_t *
 njs_vm_retval(njs_vm_t *vm)
 {
     return &vm->retval;
+}
+
+
+nxt_noinline void
+njs_vm_retval_set(njs_vm_t *vm, njs_opaque_value_t *value)
+{
+    vm->retval = *(njs_value_t *) value;
 }
 
 

@@ -60,7 +60,7 @@ typedef struct {
 
 
 static nxt_int_t njs_get_options(njs_opts_t *opts, int argc, char **argv);
-static nxt_int_t njs_externals_init(njs_opts_t *opts, njs_vm_opt_t *vm_options);
+static nxt_int_t njs_externals_init(njs_vm_t *vm);
 static nxt_int_t njs_interactive_shell(njs_opts_t *opts,
     njs_vm_opt_t *vm_options);
 static nxt_int_t njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options);
@@ -119,17 +119,15 @@ static njs_external_t  njs_externals[] = {
 };
 
 
-static nxt_lvlhsh_t      njs_externals_hash;
 static njs_completion_t  njs_completion;
 
 
 int
 main(int argc, char **argv)
 {
-    nxt_int_t             ret;
-    njs_opts_t            opts;
-    njs_vm_opt_t          vm_options;
-    nxt_mem_cache_pool_t  *mcp;
+    nxt_int_t     ret;
+    njs_opts_t    opts;
+    njs_vm_opt_t  vm_options;
 
     memset(&opts, 0, sizeof(njs_opts_t));
     opts.interactive = 1;
@@ -144,21 +142,10 @@ main(int argc, char **argv)
         return EXIT_SUCCESS;
     }
 
-    mcp = nxt_mem_cache_pool_create(&njs_vm_mem_cache_pool_proto, NULL,
-                                    NULL, 2 * nxt_pagesize(), 128, 512, 16);
-    if (nxt_slow_path(mcp == NULL)) {
-        return EXIT_FAILURE;
-    }
-
     memset(&vm_options, 0, sizeof(njs_vm_opt_t));
 
-    vm_options.mcp = mcp;
     vm_options.accumulative = 1;
     vm_options.backtrace = 1;
-
-    if (njs_externals_init(&opts, &vm_options) != NXT_OK) {
-        return EXIT_FAILURE;
-    }
 
     if (opts.interactive) {
         ret = njs_interactive_shell(&opts, &vm_options);
@@ -218,30 +205,35 @@ njs_get_options(njs_opts_t *opts, int argc, char** argv)
 
 
 static nxt_int_t
-njs_externals_init(njs_opts_t *opts, njs_vm_opt_t *vm_options)
+njs_externals_init(njs_vm_t *vm)
 {
-    void        **ext;
-    nxt_uint_t  i;
+    nxt_uint_t          ret;
+    const njs_extern_t  *proto;
+    njs_opaque_value_t  *value;
 
-    nxt_lvlhsh_init(&njs_externals_hash);
+    static const nxt_str_t name = nxt_string_value("console");
 
-    for (i = 0; i < nxt_nitems(njs_externals); i++) {
-        if (njs_vm_external_add(&njs_externals_hash, vm_options->mcp,
-                                (uintptr_t) i, &njs_externals[i], 1)
-            != NXT_OK)
-        {
-            fprintf(stderr, "could not add external objects\n");
-            return NXT_ERROR;
-        }
-    }
-
-    ext = nxt_mem_cache_zalloc(vm_options->mcp, sizeof(void *) * i);
-    if (ext == NULL) {
+    proto = njs_vm_external_prototype(vm, &njs_externals[0]);
+    if (proto == NULL) {
+        fprintf(stderr, "failed to add console proto\n");
         return NXT_ERROR;
     }
 
-    vm_options->external = ext;
-    vm_options->externals_hash = &njs_externals_hash;
+    value = nxt_mem_cache_zalloc(vm->mem_cache_pool,
+                                 sizeof(njs_opaque_value_t));
+    if (value == NULL) {
+        return NXT_ERROR;
+    }
+
+    ret = njs_vm_external_create(vm, value, proto, NULL);
+    if (ret != NXT_OK) {
+        return NXT_ERROR;
+    }
+
+    ret = njs_vm_external_bind(vm, &name, value);
+    if (ret != NXT_OK) {
+        return NXT_ERROR;
+    }
 
     return NXT_OK;
 }
@@ -257,6 +249,10 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
     vm = njs_vm_create(vm_options);
     if (vm == NULL) {
         fprintf(stderr, "failed to create vm\n");
+        return NXT_ERROR;
+    }
+
+    if (njs_externals_init(vm) != NXT_OK) {
         return NXT_ERROR;
     }
 
@@ -391,6 +387,10 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         fprintf(stderr, "failed to create vm\n");
         ret = NXT_ERROR;
         goto done;
+    }
+
+    if (njs_externals_init(vm) != NXT_OK) {
+        return NXT_ERROR;
     }
 
     ret = njs_process_script(vm, opts, &script, &out);
@@ -652,10 +652,7 @@ njs_ext_console_help(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     printf("\nEmbedded objects:\n");
-    for (i = 0; i < nxt_nitems(njs_externals); i++) {
-        printf("  %.*s\n", (int) njs_externals[i].name.length,
-               njs_externals[i].name.start);
-    }
+    printf("  console\n");
 
     printf("\n");
 

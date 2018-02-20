@@ -14,6 +14,7 @@
 #include <nxt_lvlhsh.h>
 #include <nxt_mem_cache_pool.h>
 #include <njscript.h>
+#include <njs_vm.h>
 #include <string.h>
 #include <stdio.h>
 #include <sys/resource.h>
@@ -3750,6 +3751,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = $r.uri, s = a.fromUTF8(); s.length +' '+ s"),
       nxt_string("3 АБВ") },
 
+    { nxt_string("var a = $r.uri, b = $r2.uri, c = $r3.uri; a+b+c"),
+      nxt_string("АБВαβγabc") },
+
+    { nxt_string("var a = $r.uri; $r.uri = $r2.uri; $r2.uri = a; $r2.uri+$r.uri"),
+      nxt_string("АБВαβγ") },
+
     { nxt_string("var a = $r.uri, s = a.fromUTF8(2); s.length +' '+ s"),
       nxt_string("2 БВ") },
 
@@ -3768,6 +3775,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("$r.uri = $r.uri.substr(2); $r.uri.length +' '+ $r.uri"),
       nxt_string("4 БВ") },
 
+    { nxt_string("'' + $r.props.a + $r2.props.a + $r.props.a"),
+      nxt_string("121") },
+
+    { nxt_string("var p1 = $r.props, p2 = $r2.props; '' + p2.a + p1.a"),
+      nxt_string("21") },
+
+    { nxt_string("var p1 = $r.props, p2 = $r2.props; '' + p1.a + p2.a"),
+      nxt_string("12") },
+
     { nxt_string("var a = $r.host; a +' '+ a.length +' '+ a"),
       nxt_string("АБВГДЕЁЖЗИЙ 22 АБВГДЕЁЖЗИЙ") },
 
@@ -3785,6 +3801,17 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("$r.some_method('YES')"),
       nxt_string("АБВ") },
 
+    { nxt_string("$r.create('XXX').uri"),
+      nxt_string("XXX") },
+
+    { nxt_string("var sr = $r.create('XXX'); sr.uri = 'YYY'; sr.uri"),
+      nxt_string("YYY") },
+
+    { nxt_string("var sr = $r.create('XXX'), sr2 = $r.create('YYY');"
+                 "sr.uri = 'ZZZ'; "
+                 "sr.uri + sr2.uri"),
+      nxt_string("ZZZYYY") },
+
     { nxt_string("var p; for (p in $r.some_method);"),
       nxt_string("undefined") },
 
@@ -3793,6 +3820,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("'one' in $r"),
       nxt_string("false") },
+
+    { nxt_string("'a' in $r.props"),
+      nxt_string("true") },
 
     { nxt_string("delete $r.uri"),
       nxt_string("false") },
@@ -8982,18 +9012,20 @@ static njs_unit_test_t  njs_test[] =
 
 
 typedef struct {
-    nxt_mem_cache_pool_t  *mem_cache_pool;
     nxt_str_t             uri;
-} njs_unit_test_req;
+    uint32_t              a;
+    nxt_mem_cache_pool_t  *mem_cache_pool;
+    const njs_extern_t    *proto;
+} njs_unit_test_req_t;
 
 
 static njs_ret_t
 njs_unit_test_r_get_uri_external(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
-    njs_unit_test_req  *r;
+    njs_unit_test_req_t  *r;
 
-    r = (njs_unit_test_req *) obj;
+    r = (njs_unit_test_req_t *) obj;
 
     return njs_string_create(vm, value, r->uri.start, r->uri.length, 0);
 }
@@ -9003,12 +9035,29 @@ static njs_ret_t
 njs_unit_test_r_set_uri_external(njs_vm_t *vm, void *obj, uintptr_t data,
     nxt_str_t *value)
 {
-    njs_unit_test_req  *r;
+    njs_unit_test_req_t  *r;
 
-    r = (njs_unit_test_req *) obj;
+    r = (njs_unit_test_req_t *) obj;
+
     r->uri = *value;
 
     return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_unit_test_r_get_a_external(njs_vm_t *vm, njs_value_t *value, void *obj,
+    uintptr_t data)
+{
+    char                 buf[16];
+    size_t               len;
+    njs_unit_test_req_t  *r;
+
+    r = (njs_unit_test_req_t *) obj;
+
+    len = sprintf(buf, "%u", r->a);
+
+    return njs_string_create(vm, value, (u_char *) buf, len, 0);
 }
 
 
@@ -9024,27 +9073,24 @@ static njs_ret_t
 njs_unit_test_header_external(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
-    u_char             *s, *p;
-    uint32_t           size;
-    nxt_str_t          *h;
-    njs_unit_test_req  *r;
+    u_char     *p;
+    uint32_t   size;
+    nxt_str_t  *h;
 
-    r = (njs_unit_test_req *) obj;
     h = (nxt_str_t *) data;
 
     size = 7 + h->length;
 
-    s = nxt_mem_cache_alloc(r->mem_cache_pool, size);
-    if (nxt_slow_path(s == NULL)) {
-        return NXT_ERROR;
+    p = njs_string_alloc(vm, value, size, 0);
+    if (p == NULL) {
+        return NJS_ERROR;
     }
 
-    p = memcpy(s, h->start, h->length);
-    p += h->length;
+    p = nxt_cpymem(p, h->start, h->length);
     *p++ = '|';
     memcpy(p, "АБВ", 6);
 
-    return njs_string_create(vm, value, s, size, 0);
+    return NJS_OK;
 }
 
 
@@ -9082,10 +9128,10 @@ static njs_ret_t
 njs_unit_test_method_external(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    nxt_int_t          ret;
-    nxt_str_t          s;
-    uintptr_t          next;
-    njs_unit_test_req  *r;
+    nxt_int_t            ret;
+    nxt_str_t            s;
+    uintptr_t            next;
+    njs_unit_test_req_t  *r;
 
     next = 0;
 
@@ -9104,6 +9150,70 @@ njs_unit_test_method_external(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     return NXT_ERROR;
 }
+
+
+static njs_ret_t
+njs_unit_test_create_external(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    nxt_int_t            ret;
+    nxt_str_t            uri;
+    njs_opaque_value_t   *value;
+    njs_unit_test_req_t  *r, *sr;
+
+    if (nargs > 1) {
+        r = njs_value_data(njs_argument(args, 0));
+
+        if (njs_vm_value_to_ext_string(vm, &uri, njs_argument(args, 1), 0)
+            == NJS_ERROR)
+        {
+            return NJS_ERROR;
+        }
+
+        value = nxt_mem_cache_zalloc(r->mem_cache_pool,
+                                     sizeof(njs_opaque_value_t));
+        if (value == NULL) {
+            return NXT_ERROR;
+        }
+
+        sr = nxt_mem_cache_zalloc(r->mem_cache_pool,
+                                  sizeof(njs_unit_test_req_t));
+        if (sr == NULL) {
+            return NXT_ERROR;
+        }
+
+        sr->uri = uri;
+        sr->mem_cache_pool = r->mem_cache_pool;
+        sr->proto = r->proto;
+
+        ret = njs_vm_external_create(vm, value, sr->proto, sr);
+        if (ret != NXT_OK) {
+            return NXT_ERROR;
+        }
+
+        njs_vm_retval_set(vm, value);
+
+        return NXT_OK;
+    }
+
+    return NXT_ERROR;
+}
+
+
+static njs_external_t  njs_unit_test_r_props[] = {
+
+    { nxt_string("a"),
+      NJS_EXTERN_PROPERTY,
+      NULL,
+      0,
+      njs_unit_test_r_get_a_external,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      0 },
+};
 
 
 static njs_external_t  njs_unit_test_r_external[] = {
@@ -9125,6 +9235,18 @@ static njs_external_t  njs_unit_test_r_external[] = {
       NULL,
       0,
       njs_unit_test_host_external,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      0 },
+
+    { nxt_string("props"),
+      NJS_EXTERN_OBJECT,
+      njs_unit_test_r_props,
+      nxt_nitems(njs_unit_test_r_props),
+      NULL,
       NULL,
       NULL,
       NULL,
@@ -9156,12 +9278,24 @@ static njs_external_t  njs_unit_test_r_external[] = {
       njs_unit_test_method_external,
       0 },
 
+    { nxt_string("create"),
+      NJS_EXTERN_METHOD,
+      NULL,
+      0,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      njs_unit_test_create_external,
+      0 },
+
 };
 
 
 static njs_external_t  nxt_test_external[] = {
 
-    { nxt_string("$r"),
+    { nxt_string("request.proto"),
       NJS_EXTERN_OBJECT,
       njs_unit_test_r_external,
       nxt_nitems(njs_unit_test_r_external),
@@ -9176,77 +9310,81 @@ static njs_external_t  nxt_test_external[] = {
 };
 
 
+typedef struct {
+    nxt_str_t            name;
+    njs_unit_test_req_t  request;
+} njs_unit_test_req_t_init_t;
+
+
+static const njs_unit_test_req_t_init_t nxt_test_requests[] = {
+    { nxt_string("$r"),  {.uri = nxt_string("АБВ"), .a = 1}},
+    { nxt_string("$r2"), {.uri = nxt_string("αβγ"), .a = 2}},
+    { nxt_string("$r3"), {.uri = nxt_string("abc"), .a = 3}},
+};
+
+
 static nxt_int_t
-njs_unit_test_externals(nxt_lvlhsh_t *externals, nxt_mem_cache_pool_t *mcp)
+njs_externals_init(njs_vm_t *vm)
 {
-    nxt_lvlhsh_init(externals);
+    nxt_int_t            ret;
+    nxt_uint_t           i;
+    const njs_extern_t   *proto;
+    njs_opaque_value_t   *values;
+    njs_unit_test_req_t  *requests;
 
-    return njs_vm_external_add(externals, mcp, 0, nxt_test_external,
-                               nxt_nitems(nxt_test_external));
-}
-
-
-static void *
-njs_alloc(void *mem, size_t size)
-{
-    return nxt_malloc(size);
-}
-
-
-static void *
-njs_zalloc(void *mem, size_t size)
-{
-    void  *p;
-
-    p = nxt_malloc(size);
-
-    if (p != NULL) {
-        memset(p, 0, size);
+    proto = njs_vm_external_prototype(vm, &nxt_test_external[0]);
+    if (proto == NULL) {
+        printf("njs_vm_external_prototype() failed\n");
+        return NXT_ERROR;
     }
 
-    return p;
+    values = nxt_mem_cache_zalloc(vm->mem_cache_pool,
+                                  nxt_nitems(nxt_test_requests)
+                                  * sizeof(njs_opaque_value_t));
+    if (values == NULL) {
+        return NXT_ERROR;
+    }
+
+    requests = nxt_mem_cache_zalloc(vm->mem_cache_pool,
+                                    nxt_nitems(nxt_test_requests)
+                                    * sizeof(njs_unit_test_req_t));
+    if (requests == NULL) {
+        return NXT_ERROR;
+    }
+
+    for (i = 0; i < nxt_nitems(nxt_test_requests); i++) {
+
+        requests[i] = nxt_test_requests[i].request;
+        requests[i].mem_cache_pool = vm->mem_cache_pool;
+        requests[i].proto = proto;
+
+        ret = njs_vm_external_create(vm, &values[i], proto, &requests[i]);
+        if (ret != NXT_OK) {
+            printf("njs_vm_external_create() failed\n");
+            return NXT_ERROR;
+        }
+
+        ret = njs_vm_external_bind(vm, &nxt_test_requests[i].name, &values[i]);
+        if (ret != NXT_OK) {
+            printf("njs_vm_external_bind() failed\n");
+            return NXT_ERROR;
+        }
+    }
+
+    return NXT_OK;
 }
-
-
-static void *
-njs_align(void *mem, size_t alignment, size_t size)
-{
-    return nxt_memalign(alignment, size);
-}
-
-
-static void
-njs_free(void *mem, void *p)
-{
-    nxt_free(p);
-}
-
-
-static const nxt_mem_proto_t  njs_mem_cache_pool_proto = {
-    njs_alloc,
-    njs_zalloc,
-    njs_align,
-    NULL,
-    njs_free,
-    NULL,
-    NULL,
-};
 
 
 static nxt_int_t
 njs_unit_test(nxt_bool_t disassemble)
 {
-    void                  *ext_object;
-    u_char                *start;
-    njs_vm_t              *vm, *nvm;
-    nxt_int_t             ret;
-    nxt_str_t             s;
-    nxt_uint_t            i;
-    nxt_bool_t            success;
-    njs_vm_opt_t          options;
-    nxt_lvlhsh_t          externals;
-    njs_unit_test_req     r;
-    nxt_mem_cache_pool_t  *mcp;
+    u_char        *start;
+    njs_vm_t      *vm, *nvm;
+    nxt_int_t     ret, rc;
+    nxt_str_t     s;
+    nxt_uint_t    i;
+    nxt_bool_t    success;
+    njs_vm_opt_t  options;
 
     /*
      * Chatham Islands NZ-CHAT time zone.
@@ -9255,21 +9393,11 @@ njs_unit_test(nxt_bool_t disassemble)
     (void) putenv((char *) "TZ=Pacific/Chatham");
     tzset();
 
-    mcp = nxt_mem_cache_pool_create(&njs_mem_cache_pool_proto, NULL, NULL,
-                                    2 * nxt_pagesize(), 128, 512, 16);
-    if (nxt_slow_path(mcp == NULL)) {
-        return NXT_ERROR;
-    }
 
-    r.mem_cache_pool = mcp;
-    r.uri.length = 6;
-    r.uri.start = (u_char *) "АБВ";
+    vm = NULL;
+    nvm = NULL;
 
-    ext_object = &r;
-
-    if (njs_unit_test_externals(&externals, mcp) != NXT_OK) {
-        return NXT_ERROR;
-    }
+    rc = NXT_ERROR;
 
     for (i = 0; i < nxt_nitems(njs_test); i++) {
 
@@ -9279,12 +9407,15 @@ njs_unit_test(nxt_bool_t disassemble)
 
         memset(&options, 0, sizeof(njs_vm_opt_t));
 
-        options.mcp = mcp;
-        options.externals_hash = &externals;
-
         vm = njs_vm_create(&options);
         if (vm == NULL) {
-            return NXT_ERROR;
+            printf("njs_vm_create() failed\n");
+            goto done;
+        }
+
+        ret = njs_externals_init(vm);
+        if (ret != NXT_OK) {
+            goto done;
         }
 
         start = njs_test[i].script.start;
@@ -9297,26 +9428,24 @@ njs_unit_test(nxt_bool_t disassemble)
                 fflush(stdout);
             }
 
-            nvm = njs_vm_clone(vm, NULL, &ext_object);
+            nvm = njs_vm_clone(vm, NULL);
             if (nvm == NULL) {
-                return NXT_ERROR;
+                printf("njs_vm_clone() failed\n");
+                goto done;
             }
-
-            r.uri.length = 6;
-            r.uri.start = (u_char *) "АБВ";
 
             ret = njs_vm_run(nvm);
 
             if (njs_vm_retval_to_ext_string(nvm, &s) != NXT_OK) {
-                return NXT_ERROR;
+                printf("njs_vm_retval_to_ext_string() failed\n");
+                goto done;
             }
 
         } else {
             if (njs_vm_retval_to_ext_string(vm, &s) != NXT_OK) {
-                return NXT_ERROR;
+                printf("njs_vm_retval_to_ext_string() failed\n");
+                goto done;
             }
-
-            nvm = NULL;
         }
 
         success = nxt_strstr_eq(&njs_test[i].ret, &s);
@@ -9324,7 +9453,11 @@ njs_unit_test(nxt_bool_t disassemble)
         if (success) {
             if (nvm != NULL) {
                 njs_vm_destroy(nvm);
+                nvm = NULL;
             }
+
+            njs_vm_destroy(vm);
+            vm = NULL;
 
             continue;
         }
@@ -9334,12 +9467,24 @@ njs_unit_test(nxt_bool_t disassemble)
                (int) njs_test[i].ret.length, njs_test[i].ret.start,
                (int) s.length, s.start);
 
-        return NXT_ERROR;
+        goto done;
     }
 
-    nxt_mem_cache_pool_destroy(mcp);
+    rc = NXT_OK;
 
-    printf("njs unit tests passed\n");
+done:
+
+    if (nvm != NULL) {
+        njs_vm_destroy(nvm);
+    }
+
+    if (vm != NULL) {
+        njs_vm_destroy(vm);
+    }
+
+    if (rc == NXT_OK) {
+        printf("njs unit tests passed\n");
+    }
 
     return NXT_OK;
 }

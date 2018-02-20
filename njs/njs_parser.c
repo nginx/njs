@@ -17,6 +17,7 @@
 #include <nxt_djb_hash.h>
 #include <njscript.h>
 #include <njs_vm.h>
+#include <njs_extern.h>
 #include <njs_number.h>
 #include <njs_string.h>
 #include <njs_object.h>
@@ -1807,7 +1808,7 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
 {
     double             num;
     njs_ret_t          ret;
-    njs_extern_t       *ext;
+    njs_value_t        *ext;
     njs_parser_node_t  *node;
 
     if (token == NJS_TOKEN_OPEN_PARENTHESIS) {
@@ -1846,8 +1847,7 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
 
         if (ext != NULL) {
             node->token = NJS_TOKEN_EXTERNAL;
-            node->u.value.type = NJS_EXTERNAL;
-            node->u.value.data.truth = 1;
+            node->u.value = *ext;
             node->index = (njs_index_t) ext;
             break;
         }

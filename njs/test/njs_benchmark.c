@@ -11,8 +11,6 @@
 #include <nxt_stub.h>
 #include <nxt_malloc.h>
 #include <nxt_array.h>
-#include <nxt_lvlhsh.h>
-#include <nxt_mem_cache_pool.h>
 #include <njscript.h>
 #include <string.h>
 #include <stdio.h>
@@ -20,113 +18,67 @@
 #include <time.h>
 
 
-static void *
-njs_alloc(void *mem, size_t size)
-{
-    return nxt_malloc(size);
-}
-
-
-static void *
-njs_zalloc(void *mem, size_t size)
-{
-    void  *p;
-
-    p = nxt_malloc(size);
-
-    if (p != NULL) {
-        memset(p, 0, size);
-    }
-
-    return p;
-}
-
-
-static void *
-njs_align(void *mem, size_t alignment, size_t size)
-{
-    return nxt_memalign(alignment, size);
-}
-
-
-static void
-njs_free(void *mem, void *p)
-{
-    nxt_free(p);
-}
-
-
-static const nxt_mem_proto_t  njs_mem_cache_pool_proto = {
-    njs_alloc,
-    njs_zalloc,
-    njs_align,
-    NULL,
-    njs_free,
-    NULL,
-    NULL,
-};
-
-
 static nxt_int_t
 njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
     nxt_uint_t n)
 {
-    u_char                *start;
-    njs_vm_t              *vm, *nvm;
-    uint64_t              us;
-    nxt_int_t             ret;
-    nxt_str_t             s;
-    nxt_uint_t            i;
-    nxt_bool_t            success;
-    njs_vm_opt_t          options;
-    struct rusage         usage;
-    nxt_mem_cache_pool_t  *mcp;
-
-    mcp = nxt_mem_cache_pool_create(&njs_mem_cache_pool_proto, NULL, NULL,
-                                    2 * nxt_pagesize(), 128, 512, 16);
-    if (nxt_slow_path(mcp == NULL)) {
-        return NXT_ERROR;
-    }
+    u_char         *start;
+    njs_vm_t       *vm, *nvm;
+    uint64_t       us;
+    nxt_int_t      ret, rc;
+    nxt_str_t      s;
+    nxt_uint_t     i;
+    nxt_bool_t     success;
+    njs_vm_opt_t   options;
+    struct rusage  usage;
 
     memset(&options, 0, sizeof(njs_vm_opt_t));
 
-    options.mcp = mcp;
+    vm = NULL;
+    nvm = NULL;
+    rc = NXT_ERROR;
 
     vm = njs_vm_create(&options);
     if (vm == NULL) {
-        return NXT_ERROR;
+        printf("njs_vm_create() failed\n");
+        goto done;
     }
 
     start = script->start;
 
     ret = njs_vm_compile(vm, &start, start + script->length);
     if (ret != NXT_OK) {
-        return NXT_ERROR;
+        printf("njs_vm_compile() failed\n");
+        goto done;
     }
 
     for (i = 0; i < n; i++) {
 
-        nvm = njs_vm_clone(vm, NULL, NULL);
+        nvm = njs_vm_clone(vm, NULL);
         if (nvm == NULL) {
-            return NXT_ERROR;
+            printf("njs_vm_clone() failed\n");
+            goto done;
         }
 
         (void) njs_vm_run(nvm);
 
         if (njs_vm_retval_to_ext_string(nvm, &s) != NXT_OK) {
-            return NXT_ERROR;
+            printf("njs_vm_retval_to_ext_string() failed\n");
+            goto done;
         }
 
         success = nxt_strstr_eq(result, &s);
 
         if (!success) {
-            return NXT_ERROR;
+            printf("failed: \"%.*s\" vs \"%.*s\"\n",
+                   (int) result->length, result->start, (int) s.length,
+                   s.start);
+            goto done;
         }
 
         njs_vm_destroy(nvm);
+        nvm = NULL;
     }
-
-    nxt_mem_cache_pool_destroy(mcp);
 
     getrusage(RUSAGE_SELF, &usage);
 
@@ -141,7 +93,19 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
                msg, (double) us / n, (int) ((uint64_t) n * 1000000 / us));
     }
 
-    return NXT_OK;
+    rc = NXT_OK;
+
+done:
+
+    if (nvm != NULL) {
+        njs_vm_destroy(nvm);
+    }
+
+    if (vm != NULL) {
+        njs_vm_destroy(vm);
+    }
+
+    return rc;
 }
 
 

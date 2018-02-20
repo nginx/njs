@@ -39,6 +39,10 @@ NXT_EXPORT void *nxt_array_zero_add(nxt_array_t *array,
 NXT_EXPORT void nxt_array_remove(nxt_array_t *array, void *item);
 
 
+#define nxt_array_item(array, i)                                              \
+    ((void *) ((char *) (array)->start + (array)->item_size * (i)))
+
+
 #define nxt_array_last(array)                                                 \
     ((void *)                                                                 \
         ((char *) (array)->start                                              \
