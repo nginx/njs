@@ -143,8 +143,8 @@ union njs_value_s {
      * to provide 4 bits to encode scope in njs_index_t.  This space is
      * used to store short strings.  The maximum size of a short string
      * is 14 (NJS_STRING_SHORT).  If the short_string.size field is 15
-     * (NJS_STRING_LONG) then the size is in the data.string_size field
-     * and the data.u.string field points to a long string.
+     * (NJS_STRING_LONG) then the size is in the long_string.size field
+     * and the long_string.data field points to a long string.
      *
      * The number of the string types is limited to 2 types to minimize
      * overhead of processing string fields.  It is also possible to add
@@ -163,28 +163,23 @@ union njs_value_s {
          */
         uint8_t                       truth;
 
-        /* 0xff if u.data.string is external string. */
-        uint8_t                       external0;
-        uint8_t                       _spare;
-
-        /* A long string size. */
-        uint32_t                      string_size;
+        uint16_t                      _spare1;
+        uint32_t                      _spare2;
 
         union {
-            double                     number;
-            njs_string_t               *string;
-            njs_object_t               *object;
-            njs_array_t                *array;
-            njs_object_value_t         *object_value;
-            njs_function_t             *function;
-            njs_function_lambda_t      *lambda;
-            njs_regexp_t               *regexp;
-            njs_date_t                 *date;
-            njs_getter_t               getter;
-            njs_extern_t               *external;
-            njs_value_t                *value;
-            njs_property_next_t        *next;
-            void                       *data;
+            double                    number;
+            njs_object_t              *object;
+            njs_array_t               *array;
+            njs_object_value_t        *object_value;
+            njs_function_t            *function;
+            njs_function_lambda_t     *lambda;
+            njs_regexp_t              *regexp;
+            njs_date_t                *date;
+            njs_getter_t              getter;
+            njs_extern_t              *external;
+            njs_value_t               *value;
+            njs_property_next_t       *next;
+            void                      *data;
         } u;
     } data;
 
@@ -199,6 +194,18 @@ union njs_value_s {
 
         u_char                        start[NJS_STRING_SHORT];
     } short_string;
+
+    struct {
+        njs_value_type_t              type:8;  /* 5 bits */
+        uint8_t                       truth;
+
+        /* 0xff if data is external string. */
+        uint8_t                       external;
+        uint8_t                       _spare;
+
+        uint32_t                      size;
+        njs_string_t                  *data;
+    } long_string;
 
     njs_value_type_t                  type:8;  /* 5 bits */
 };
@@ -326,11 +333,11 @@ typedef union {
 /* NJS_STRING_LONG is set for both big and little endian platforms. */
 
 #define njs_long_string(s) {                                                  \
-    .data = {                                                                 \
+    .long_string = {                                                          \
         .type = NJS_STRING,                                                   \
         .truth = (NJS_STRING_LONG << 4) | NJS_STRING_LONG,                    \
-        .string_size = sizeof(s) - 1,                                         \
-        .u.string = & (njs_string_t) {                                        \
+        .size = sizeof(s) - 1,                                                \
+        .data = & (njs_string_t) {                                            \
             .start = (u_char *) s,                                            \
             .length = sizeof(s) - 1,                                          \
         }                                                                     \
@@ -430,8 +437,8 @@ typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
             (str)->start = (u_char *) (value)->short_string.start;            \
                                                                               \
         } else {                                                              \
-            (str)->length = (value)->data.string_size;                        \
-            (str)->start = (u_char *) (value)->data.u.string->start;          \
+            (str)->length = (value)->long_string.size;                        \
+            (str)->start = (u_char *) (value)->long_string.data->start;       \
         }                                                                     \
     } while (0)
 
@@ -455,7 +462,7 @@ typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
             (value)->short_string.length = length;                            \
                                                                               \
         } else {                                                              \
-            (value)->data.u.string->length = length;                          \
+            (value)->long_string.data->length = length;                       \
         }                                                                     \
     } while (0)
 

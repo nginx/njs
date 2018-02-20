@@ -303,11 +303,11 @@ njs_value_retain(njs_value_t *value)
 
     if (njs_is_string(value)) {
 
-        if (value->data.external0 != 0xff) {
-            string = value->data.u.string;
+        if (value->long_string.external != 0xff) {
+            string = value->long_string.data;
 
             nxt_thread_log_debug("retain:%uxD \"%*s\"", string->retain,
-                                 value->data.string_size, string->start);
+                                 value->long_string.size, string->start);
 
             if (string->retain != 0xffff) {
                 string->retain++;
@@ -324,11 +324,11 @@ njs_value_release(njs_vm_t *vm, njs_value_t *value)
 
     if (njs_is_string(value)) {
 
-        if (value->data.external0 != 0xff) {
-            string = value->data.u.string;
+        if (value->long_string.external != 0xff) {
+            string = value->long_string.data;
 
             nxt_thread_log_debug("release:%uxD \"%*s\"", string->retain,
-                                 value->data.string_size, string->start);
+                                 value->long_string.size, string->start);
 
             if (string->retain != 0xffff) {
                 string->retain--;
@@ -2132,18 +2132,20 @@ njs_values_strict_equal(const njs_value_t *val1, const njs_value_t *val2)
             start2 = val2->short_string.start;
 
         } else {
-            size = val1->data.string_size;
+            size = val1->long_string.size;
 
-            if (size != val2->data.string_size) {
+            if (size != val2->long_string.size) {
                 return 0;
             }
 
-            if (val1->data.u.string->length != val2->data.u.string->length) {
+            if (val1->long_string.data->length
+                != val2->long_string.data->length)
+            {
                 return 0;
             }
 
-            start1 = val1->data.u.string->start;
-            start2 = val2->data.u.string->start;
+            start1 = val1->long_string.data->start;
+            start2 = val2->long_string.data->start;
         }
 
         return (memcmp(start1, start2, size) == 0);
@@ -3466,8 +3468,8 @@ again:
                 memcpy(start, value.short_string.start, size);
 
             } else {
-                size = value.data.string_size;
-                start = value.data.u.string->start;
+                size = value.long_string.size;
+                start = value.long_string.data->start;
             }
 
             dst->length = size;
@@ -3784,8 +3786,8 @@ njs_debug(njs_index_t index, njs_value_t *value)
             p = value->short_string.start;
 
         } else {
-            length = value->data.string_size;
-            p = value->data.u.string->start;
+            length = value->long_string.size;
+            p = value->long_string.data->start;
         }
 
         nxt_thread_log_debug("%p [\"%*s\"]", index, length, p);

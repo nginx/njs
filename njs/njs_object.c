@@ -159,11 +159,11 @@ njs_object_hash_test(nxt_lvlhsh_query_t *lhq, void *data)
         start = prop->name.short_string.start;
 
     } else {
-        if (lhq->key.length != prop->name.data.string_size) {
+        if (lhq->key.length != prop->name.long_string.size) {
             return NXT_DECLINED;
         }
 
-        start = prop->name.data.u.string->start;
+        start = prop->name.long_string.data->start;
     }
 
     if (memcmp(start, lhq->key.start, lhq->key.length) == 0) {

@@ -151,15 +151,15 @@ njs_string_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
          */
         value->short_string.size = NJS_STRING_LONG;
         value->short_string.length = 0;
-        value->data.external0 = 0xff;
-        value->data.string_size = size;
+        value->long_string.external = 0xff;
+        value->long_string.size = size;
 
         string = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_string_t));
         if (nxt_slow_path(string == NULL)) {
             return NXT_ERROR;
         }
 
-        value->data.u.string = string;
+        value->long_string.data = string;
 
         string->start = start;
         string->length = length;
@@ -210,8 +210,8 @@ njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size,
      */
     value->short_string.size = NJS_STRING_LONG;
     value->short_string.length = 0;
-    value->data.external0 = 0;
-    value->data.string_size = size;
+    value->long_string.external = 0;
+    value->long_string.size = size;
 
     if (size != length && length > NJS_STRING_MAP_STRIDE) {
         map_offset = njs_string_map_offset(size);
@@ -226,7 +226,7 @@ njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size,
                                  sizeof(njs_string_t) + total);
 
     if (nxt_fast_path(string != NULL)) {
-        value->data.u.string = string;
+        value->long_string.data = string;
 
         string->start = (u_char *) string + sizeof(njs_string_t);
         string->length = length;
@@ -284,9 +284,9 @@ njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string, njs_value_t *value)
         }
 
     } else {
-        string->start = value->data.u.string->start;
-        size = value->data.string_size;
-        length = value->data.u.string->length;
+        string->start = value->long_string.data->start;
+        size = value->long_string.size;
+        length = value->long_string.data->length;
 
         if (length == 0 && length != size) {
             length = nxt_utf8_length(string->start, size);
@@ -312,14 +312,14 @@ njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string, njs_value_t *value)
 
                     memcpy(start, string->start, size);
                     string->start = start;
-                    value->data.u.string->start = start;
+                    value->long_string.data->start = start;
 
                     map = (uint32_t *) (start + map_offset);
                     map[0] = 0;
                 }
             }
 
-            value->data.u.string->length = length;
+            value->long_string.data->length = length;
         }
     }
 
@@ -343,9 +343,9 @@ njs_string_prop(njs_string_prop_t *string, njs_value_t *value)
         length = value->short_string.length;
 
     } else {
-        string->start = value->data.u.string->start;
-        size = value->data.string_size;
-        length = value->data.u.string->length;
+        string->start = value->long_string.data->start;
+        size = value->long_string.size;
+        length = value->long_string.data->length;
     }
 
     string->size = size;
@@ -454,8 +454,8 @@ njs_string_prototype_length(njs_vm_t *vm, njs_value_t *value)
         length = value->short_string.length;
 
         if (size == NJS_STRING_LONG) {
-            size = value->data.string_size;
-            length = value->data.u.string->length;
+            size = value->long_string.size;
+            length = value->long_string.data->length;
         }
 
         length = (length == 0) ? size : length;
@@ -486,14 +486,14 @@ njs_string_eq(const njs_value_t *v1, const njs_value_t *v2)
         start2 = v2->short_string.start;
 
     } else {
-        size = v1->data.string_size;
+        size = v1->long_string.size;
 
-        if (size != v2->data.string_size) {
+        if (size != v2->long_string.size) {
             return 0;
         }
 
-        start1 = v1->data.u.string->start;
-        start2 = v2->data.u.string->start;
+        start1 = v1->long_string.data->start;
+        start2 = v2->long_string.data->start;
     }
 
     return (memcmp(start1, start2, size) == 0);
@@ -513,8 +513,8 @@ njs_string_cmp(const njs_value_t *v1, const njs_value_t *v2)
         start1 = v1->short_string.start;
 
     } else {
-        size1 = v1->data.string_size;
-        start1 = v1->data.u.string->start;
+        size1 = v1->long_string.size;
+        start1 = v1->long_string.data->start;
     }
 
     size2 = v2->short_string.size;
@@ -523,8 +523,8 @@ njs_string_cmp(const njs_value_t *v1, const njs_value_t *v2)
         start2 = v2->short_string.start;
 
     } else {
-        size2 = v2->data.string_size;
-        start2 = v2->data.u.string->start;
+        size2 = v2->long_string.size;
+        start2 = v2->long_string.data->start;
     }
 
     size = nxt_min(size1, size2);
@@ -2903,8 +2903,8 @@ njs_string_replacement_copy(njs_string_replace_part_t *string,
         string->start = NULL;
 
     } else {
-        string->start = value->data.u.string->start;
-        size = value->data.string_size;
+        string->start = value->long_string.data->start;
+        size = value->long_string.size;
     }
 
     string->size = size;
@@ -2965,8 +2965,8 @@ njs_string_to_number(njs_value_t *value, nxt_bool_t parse_float)
         p = value->short_string.start;
 
     } else {
-        size = value->data.string_size;
-        p = value->data.u.string->start;
+        size = value->long_string.size;
+        p = value->long_string.data->start;
     }
 
     end = p + size;
@@ -3044,8 +3044,8 @@ njs_string_to_index(njs_value_t *value)
         p = value->short_string.start;
 
     } else {
-        size = value->data.string_size;
-        p = value->data.u.string->start;
+        size = value->long_string.size;
+        p = value->long_string.data->start;
     }
 
     if (size == 0) {
@@ -3091,8 +3091,8 @@ njs_string_to_c_string(njs_vm_t *vm, njs_value_t *value)
         }
 
     } else {
-        start = value->data.u.string->start;
-        size = value->data.string_size;
+        start = value->long_string.data->start;
+        size = value->long_string.size;
 
         if (start[size] == '\0') {
             return start;
@@ -3643,7 +3643,7 @@ njs_string_decode(njs_vm_t *vm, njs_value_t *value, const uint32_t *reserve)
             vm->retval.short_string.length = length;
 
         } else {
-            vm->retval.data.u.string->length = length;
+            vm->retval.long_string.data->length = length;
         }
     }
 
@@ -3671,8 +3671,9 @@ njs_values_hash_test(nxt_lvlhsh_query_t *lhq, void *data)
     }
 
     if (njs_is_string(value)
-        && value->data.string_size == lhq->key.length
-        && memcmp(value->data.u.string->start, lhq->key.start, lhq->key.length)
+        && value->long_string.size == lhq->key.length
+        && memcmp(value->long_string.data->start, lhq->key.start,
+                  lhq->key.length)
            == 0)
     {
         return NXT_OK;
@@ -3714,8 +3715,8 @@ njs_value_index(njs_vm_t *vm, njs_parser_t *parser, const njs_value_t *src)
         start = (u_char *) src;
 
     } else {
-        size = src->data.string_size;
-        start = src->data.u.string->start;
+        size = src->long_string.size;
+        start = src->long_string.data->start;
     }
 
     lhq.key_hash = nxt_djb_hash(start, size);
@@ -3738,7 +3739,7 @@ njs_value_index(njs_vm_t *vm, njs_parser_t *parser, const njs_value_t *src)
             /* Long string value is allocated together with string. */
             value_size = sizeof(njs_value_t) + sizeof(njs_string_t);
 
-            length = src->data.u.string->length;
+            length = src->long_string.data->length;
 
             if (size != length && length > NJS_STRING_MAP_STRIDE) {
                 size = njs_string_map_offset(size)
@@ -3756,10 +3757,10 @@ njs_value_index(njs_vm_t *vm, njs_parser_t *parser, const njs_value_t *src)
 
         if (start != (u_char *) src) {
             string = (njs_string_t *) ((u_char *) value + sizeof(njs_value_t));
-            value->data.u.string = string;
+            value->long_string.data = string;
 
             string->start = (u_char *) string + sizeof(njs_string_t);
-            string->length = src->data.u.string->length;
+            string->length = src->long_string.data->length;
             string->retain = 0xffff;
 
             memcpy(string->start, start, size);
