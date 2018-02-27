@@ -253,6 +253,7 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
     }
 
     if (njs_externals_init(vm) != NXT_OK) {
+        fprintf(stderr, "failed to add external protos\n");
         return NXT_ERROR;
     }
 
@@ -389,8 +390,11 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         goto done;
     }
 
-    if (njs_externals_init(vm) != NXT_OK) {
-        return NXT_ERROR;
+    ret = njs_externals_init(vm);
+    if (ret != NXT_OK) {
+        fprintf(stderr, "failed to add external protos\n");
+        ret = NXT_ERROR;
+        goto done;
     }
 
     ret = njs_process_script(vm, opts, &script, &out);
