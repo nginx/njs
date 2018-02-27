@@ -9466,8 +9466,8 @@ njs_unit_test(nxt_bool_t disassemble, nxt_bool_t verbose)
 
         printf("njs(\"%.*s\")\nexpected: \"%.*s\"\n     got: \"%.*s\"\n",
                (int) njs_test[i].script.length, njs_test[i].script.start,
-               (int) s.length, s.start, (int) njs_test[i].ret.length,
-               njs_test[i].ret.start);
+               (int) njs_test[i].ret.length, njs_test[i].ret.start,
+               (int) s.length, s.start);
 
         goto done;
     }
