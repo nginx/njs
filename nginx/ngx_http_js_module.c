@@ -891,6 +891,10 @@ ngx_http_js_ext_send(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                 return NJS_ERROR;
             }
 
+            if (s.length == 0) {
+                continue;
+            }
+
             /* TODO: njs_value_release(vm, value) in buf completion */
 
             ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
