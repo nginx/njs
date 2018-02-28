@@ -3529,6 +3529,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'α'.toUTF8()[0]"),
       nxt_string("\xCE") },
 
+    { nxt_string("/^\\x80$/.test('\\x80'.toBytes())"),
+      nxt_string("true") },
+
+    { nxt_string("/^\\xC2\\x80$/.test('\\x80'.toUTF8())"),
+      nxt_string("true") },
+
+    { nxt_string("'α'.toUTF8().toBytes()"),
+      nxt_string("α") },
+
     { nxt_string("var a = 'a'.toBytes() + 'α'; a + a.length"),
       nxt_string("aα3") },
 

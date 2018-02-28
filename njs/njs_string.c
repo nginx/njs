@@ -1051,6 +1051,11 @@ njs_string_slice(njs_vm_t *vm, njs_value_t *dst,
         start += slice->start;
         size = slice->length;
 
+        if (string->length == 0) {
+            /* Byte string. */
+            length = 0;
+        }
+
     } else {
         /* UTF-8 string. */
         end = start + string->size;
