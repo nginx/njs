@@ -745,7 +745,7 @@ njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
     if (nargs > 1 && njs_is_object(&args[1])) {
-        njs_object_prototype_get_proto(vm, &args[1]);
+        njs_object_prototype_get_proto(vm, &args[1], &vm->retval);
         return NXT_OK;
     }
 
@@ -976,7 +976,8 @@ njs_object_is_extensible(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
  */
 
 njs_ret_t
-njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value)
+njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *retval)
 {
     nxt_uint_t    index;
     njs_object_t  *proto;
@@ -993,9 +994,9 @@ njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value)
         proto = &vm->prototypes[index].object;
     }
 
-    vm->retval.data.u.object = proto;
-    vm->retval.type = proto->type;
-    vm->retval.data.truth = 1;
+    retval->data.u.object = proto;
+    retval->type = proto->type;
+    retval->data.truth = 1;
 
     return NXT_OK;
 }
@@ -1008,7 +1009,8 @@ njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value)
  */
 
 njs_ret_t
-njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value)
+njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *retval)
 {
     int32_t         index;
     njs_value_t     *proto;
@@ -1027,7 +1029,7 @@ njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value)
         proto = (njs_value_t *) &njs_value_void;
     }
 
-    vm->retval = *proto;
+    *retval = *proto;
 
     return NXT_OK;
 }
@@ -1205,19 +1207,20 @@ const njs_object_init_t  njs_object_constructor_init = {
 
 
 njs_ret_t
-njs_object_prototype_get_proto(njs_vm_t *vm, njs_value_t *value)
+njs_object_prototype_get_proto(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *retval)
 {
     njs_object_t  *proto;
 
     proto = value->data.u.object->__proto__;
 
     if (nxt_fast_path(proto != NULL)) {
-        vm->retval.data.u.object = proto;
-        vm->retval.type = proto->type;
-        vm->retval.data.truth = 1;
+        retval->data.u.object = proto;
+        retval->type = proto->type;
+        retval->data.truth = 1;
 
     } else {
-        vm->retval = njs_value_null;
+        *retval = njs_value_null;
     }
 
     return NXT_OK;
@@ -1231,7 +1234,8 @@ njs_object_prototype_get_proto(njs_vm_t *vm, njs_value_t *value)
  */
 
 static njs_ret_t
-njs_object_prototype_create_constructor(njs_vm_t *vm, njs_value_t *value)
+njs_object_prototype_create_constructor(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *retval)
 {
     int32_t                 index;
     njs_value_t             *cons;
@@ -1267,7 +1271,7 @@ found:
     cons = njs_property_constructor_create(vm, &prototype->object.hash,
                                           &vm->scopes[NJS_SCOPE_GLOBAL][index]);
     if (nxt_fast_path(cons != NULL)) {
-        vm->retval = *cons;
+        *retval = *cons;
         return NXT_OK;
     }
 

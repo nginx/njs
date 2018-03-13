@@ -533,7 +533,8 @@ njs_memory_error_constructor(njs_vm_t *vm, njs_value_t *args,
 
 
 static njs_ret_t
-njs_memory_error_prototype_create(njs_vm_t *vm, njs_value_t *value)
+njs_memory_error_prototype_create(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *retval)
 {
     int32_t         index;
     njs_value_t     *proto;
@@ -550,7 +551,7 @@ njs_memory_error_prototype_create(njs_vm_t *vm, njs_value_t *value)
         proto = (njs_value_t *) &njs_value_void;
     }
 
-    vm->retval = *proto;
+    *retval = *proto;
 
     return NXT_OK;
 }

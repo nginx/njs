@@ -474,7 +474,8 @@ njs_regexp_alloc(njs_vm_t *vm, njs_regexp_pattern_t *pattern)
 
 
 static njs_ret_t
-njs_regexp_prototype_last_index(njs_vm_t *vm, njs_value_t *value)
+njs_regexp_prototype_last_index(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *retval)
 {
     uint32_t           index;
     njs_regexp_t       *regexp;
@@ -487,19 +488,20 @@ njs_regexp_prototype_last_index(njs_vm_t *vm, njs_value_t *value)
     (void) njs_string_prop(&string, &regexp->string);
 
     index = njs_string_index(&string, regexp->last_index);
-    njs_value_number_set(&vm->retval, index);
+    njs_value_number_set(retval, index);
 
     return NXT_OK;
 }
 
 
 static njs_ret_t
-njs_regexp_prototype_global(njs_vm_t *vm, njs_value_t *value)
+njs_regexp_prototype_global(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *retval)
 {
     njs_regexp_pattern_t  *pattern;
 
     pattern = value->data.u.regexp->pattern;
-    vm->retval = pattern->global ? njs_value_true : njs_value_false;
+    *retval = pattern->global ? njs_value_true : njs_value_false;
     njs_release(vm, value);
 
     return NXT_OK;
@@ -507,12 +509,13 @@ njs_regexp_prototype_global(njs_vm_t *vm, njs_value_t *value)
 
 
 static njs_ret_t
-njs_regexp_prototype_ignore_case(njs_vm_t *vm, njs_value_t *value)
+njs_regexp_prototype_ignore_case(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *retval)
 {
     njs_regexp_pattern_t  *pattern;
 
     pattern = value->data.u.regexp->pattern;
-    vm->retval = pattern->ignore_case ? njs_value_true : njs_value_false;
+    *retval = pattern->ignore_case ? njs_value_true : njs_value_false;
     njs_release(vm, value);
 
     return NXT_OK;
@@ -520,12 +523,13 @@ njs_regexp_prototype_ignore_case(njs_vm_t *vm, njs_value_t *value)
 
 
 static njs_ret_t
-njs_regexp_prototype_multiline(njs_vm_t *vm, njs_value_t *value)
+njs_regexp_prototype_multiline(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *retval)
 {
     njs_regexp_pattern_t  *pattern;
 
     pattern = value->data.u.regexp->pattern;
-    vm->retval = pattern->multiline ? njs_value_true : njs_value_false;
+    *retval = pattern->multiline ? njs_value_true : njs_value_false;
     njs_release(vm, value);
 
     return NXT_OK;
@@ -533,7 +537,8 @@ njs_regexp_prototype_multiline(njs_vm_t *vm, njs_value_t *value)
 
 
 static njs_ret_t
-njs_regexp_prototype_source(njs_vm_t *vm, njs_value_t *value)
+njs_regexp_prototype_source(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *retval)
 {
     u_char                *source;
     int32_t               length;
@@ -547,7 +552,7 @@ njs_regexp_prototype_source(njs_vm_t *vm, njs_value_t *value)
     size = strlen((char *) source) - pattern->flags;
     length = nxt_utf8_length(source, size);
 
-    return njs_regexp_string_create(vm, &vm->retval, source, size, length);
+    return njs_regexp_string_create(vm, retval, source, size, length);
 }
 
 

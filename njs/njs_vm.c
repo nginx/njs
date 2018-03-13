@@ -53,6 +53,10 @@
 
 typedef struct {
     nxt_lvlhsh_query_t             lhq;
+
+    /* scratch is used to get the value of an NJS_NATIVE_GETTER property. */
+    njs_object_prop_t              scratch;
+
     njs_value_t                    value;
     njs_object_t                   *prototype;
     uint8_t                        query;
@@ -560,15 +564,6 @@ njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
         case NJS_PROPERTY:
             retval = &prop->value;
             break;
-
-        case NJS_NATIVE_GETTER:
-            ret = prop->value.data.u.getter(vm, object);
-
-            if (nxt_fast_path(ret == NXT_OK)) {
-                return sizeof(njs_vmcode_prop_get_t);
-            }
-
-            return ret;
 
         default:
             nxt_thread_log_alert("invalid property get type:%d", prop->type);
@@ -1168,6 +1163,7 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 
             if (prop->type != NJS_WHITEOUT) {
                 pq->shared = 0;
+
                 return ret;
             }
 
@@ -1183,13 +1179,31 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 
         if (ret == NXT_OK) {
             pq->shared = 1;
+            prop = pq->lhq.value;
 
-            if (pq->query == NJS_PROPERTY_QUERY_IN) {
+            switch (pq->query) {
+            case NJS_PROPERTY_QUERY_GET:
+                if (prop->type == NJS_NATIVE_GETTER) {
+                    pq->scratch = *prop;
+                    prop = &pq->scratch;
+                    ret = prop->value.data.u.getter(vm, value, &prop->value);
+
+                    if (nxt_fast_path(ret == NXT_OK)) {
+                        prop->type = NJS_PROPERTY;
+                        pq->lhq.value = prop;
+                    }
+                }
+
+                break;
+
+            case NJS_PROPERTY_QUERY_IN:
                 prop = pq->lhq.value;
 
                 if (prop->type == NJS_WHITEOUT) {
                     return NXT_DECLINED;
                 }
+
+                break;
             }
 
             return ret;
@@ -1361,12 +1375,14 @@ njs_ret_t
 njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *constructor)
 {
-    nxt_int_t           ret;
-    njs_value_t         *value;
-    njs_object_t        *prototype, *proto;
-    njs_object_prop_t   *prop;
-    const njs_value_t   *retval;
-    nxt_lvlhsh_query_t  lhq;
+    nxt_int_t             ret;
+    njs_value_t           *value;
+    njs_object_t          *prototype, *proto;
+    njs_object_prop_t     *prop;
+    const njs_value_t     *retval;
+    njs_property_query_t  pq;
+
+    static njs_value_t prototype_string = njs_string("prototype");
 
     if (!njs_is_function(constructor)) {
         njs_exception_type_error(vm, "right argument is not a function", NULL);
@@ -1376,27 +1392,13 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     retval = &njs_value_false;
 
     if (njs_is_object(object)) {
+        pq.query = NJS_PROPERTY_QUERY_GET;
 
-        lhq.key_hash = NJS_PROTOTYPE_HASH;
-        lhq.key = nxt_string_value("prototype");
+        ret = njs_property_query(vm, &pq, constructor, &prototype_string);
 
-        prop = njs_object_property(vm, constructor->data.u.object, &lhq);
-
-        if (prop != NULL) {
+        if (nxt_fast_path(ret == NXT_OK)) {
+            prop = pq.lhq.value;
             value = &prop->value;
-
-            if (prop->type == NJS_NATIVE_GETTER) {
-                /*
-                 * STUB: getter should be called by some njs_object_property()
-                 */
-                ret = prop->value.data.u.getter(vm, constructor);
-
-                if (nxt_slow_path(ret != NXT_OK)) {
-                    return ret;
-                }
-
-                value = &vm->retval;
-            }
 
             /* TODO: test prop->value is object. */
 

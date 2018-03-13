@@ -146,7 +146,8 @@ struct njs_frame_s {
 njs_function_t *njs_function_alloc(njs_vm_t *vm);
 njs_function_t *njs_function_value_copy(njs_vm_t *vm, njs_value_t *value);
 njs_native_frame_t *njs_function_frame_alloc(njs_vm_t *vm, size_t size);
-njs_ret_t njs_function_prototype_create(njs_vm_t *vm, njs_value_t *value);
+njs_ret_t njs_function_prototype_create(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *retval);
 njs_value_t *njs_function_property_prototype_create(njs_vm_t *vm,
     njs_value_t *value);
 njs_ret_t njs_function_constructor(njs_vm_t *vm, njs_value_t *args,

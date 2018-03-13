@@ -411,14 +411,15 @@ njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
  */
 
 njs_ret_t
-njs_function_prototype_create(njs_vm_t *vm, njs_value_t *value)
+njs_function_prototype_create(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *retval)
 {
     njs_value_t  *proto;
 
     proto = njs_function_property_prototype_create(vm, value);
 
     if (nxt_fast_path(proto != NULL)) {
-        vm->retval = *proto;
+        *retval = *proto;
         return NXT_OK;
     }
 

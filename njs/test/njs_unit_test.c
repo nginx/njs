@@ -5724,7 +5724,13 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("({}).constructor === Object"),
       nxt_string("true") },
 
+    { nxt_string("({}).constructor()"),
+      nxt_string("[object Object]") },
+
     { nxt_string("var a = Object.__proto__; a()"),
+      nxt_string("undefined") },
+
+    { nxt_string("Object.__proto__()"),
       nxt_string("undefined") },
 
     { nxt_string("var a = Array(3); a"),
@@ -5792,6 +5798,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("[].constructor === Array"),
       nxt_string("true") },
+
+    { nxt_string("([]).constructor()"),
+      nxt_string("") },
 
     { nxt_string("Boolean()"),
       nxt_string("false") },

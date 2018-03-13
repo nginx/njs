@@ -434,7 +434,8 @@ const njs_object_init_t  njs_string_constructor_init = {
 
 
 static njs_ret_t
-njs_string_prototype_length(njs_vm_t *vm, njs_value_t *value)
+njs_string_prototype_length(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *retval)
 {
     size_t     size;
     uintptr_t  length;
@@ -461,7 +462,7 @@ njs_string_prototype_length(njs_vm_t *vm, njs_value_t *value)
         length = (length == 0) ? size : length;
     }
 
-    njs_value_number_set(&vm->retval, length);
+    njs_value_number_set(retval, length);
 
     njs_release(vm, value);
 

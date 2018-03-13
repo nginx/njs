@@ -117,7 +117,8 @@ typedef enum {
 
 typedef struct njs_parser_s           njs_parser_t;
 
-typedef njs_ret_t (*njs_getter_t) (njs_vm_t *vm, njs_value_t *obj);
+typedef njs_ret_t (*njs_getter_t) (njs_vm_t *vm, njs_value_t *obj,
+    njs_value_t *retval);
 typedef njs_ret_t (*njs_function_native_t) (njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t retval);
 

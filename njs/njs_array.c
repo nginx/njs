@@ -381,9 +381,10 @@ const njs_object_init_t  njs_array_constructor_init = {
 
 
 static njs_ret_t
-njs_array_prototype_length(njs_vm_t *vm, njs_value_t *array)
+njs_array_prototype_length(njs_vm_t *vm, njs_value_t *array,
+    njs_value_t *retval)
 {
-    njs_value_number_set(&vm->retval, array->data.u.array->length);
+    njs_value_number_set(retval, array->data.u.array->length);
 
     njs_release(vm, array);
 
