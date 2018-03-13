@@ -3514,11 +3514,11 @@ again:
 
                 for (i = 0; i < backtrace->items; i++) {
                     if (be[i].line != 0) {
-                        len += sizeof("    at  (:)\n") - 1 + 10
+                        len += sizeof("    at  (:)\n") + 10
                                + be[i].name.length;
 
                     } else {
-                        len += sizeof("    at  (native)\n") - 1
+                        len += sizeof("    at  (native)\n")
                                + be[i].name.length;
                     }
                 }

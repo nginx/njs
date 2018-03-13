@@ -5706,6 +5706,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.prototype.__proto__ === null"),
       nxt_string("true") },
 
+    { nxt_string("Object.prototype.__proto__.f()"),
+      nxt_string("InternalError: method 'f' query failed:-1") },
+
     { nxt_string("Object.prototype.toString.call(Object.prototype)"),
       nxt_string("[object Object]") },
 
