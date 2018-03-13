@@ -222,23 +222,11 @@ njs_builtin_objects_create(njs_vm_t *vm)
         { njs_memory_error_constructor,  { NJS_SKIP_ARG, NJS_STRING_ARG } },
     };
 
-    static const njs_object_prop_t    null_proto_property = {
-        .type = NJS_WHITEOUT,
-        .name = njs_string("__proto__"),
-        .value = njs_value(NJS_NULL, 0, 0.0),
-    };
-
     static const njs_object_prop_t    function_prototype_property = {
         .type = NJS_NATIVE_GETTER,
         .name = njs_string("prototype"),
         .value = njs_native_getter(njs_function_prototype_create),
     };
-
-    ret = njs_object_hash_create(vm, &vm->shared->null_proto_hash,
-                                 &null_proto_property, 1);
-    if (nxt_slow_path(ret != NXT_OK)) {
-        return NXT_ERROR;
-    }
 
     ret = njs_object_hash_create(vm, &vm->shared->function_prototype_hash,
                                  &function_prototype_property, 1);

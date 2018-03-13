@@ -1198,11 +1198,6 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 
             case NJS_PROPERTY_QUERY_IN:
                 prop = pq->lhq.value;
-
-                if (prop->type == NJS_WHITEOUT) {
-                    return NXT_DECLINED;
-                }
-
                 break;
             }
 

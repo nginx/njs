@@ -299,7 +299,6 @@ njs_object_create(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                 object->__proto__ = args[1].data.u.object;
 
             } else {
-                object->shared_hash = vm->shared->null_proto_hash;
                 object->__proto__ = NULL;
             }
 

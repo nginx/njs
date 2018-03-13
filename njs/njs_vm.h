@@ -1022,7 +1022,6 @@ typedef struct {
 struct njs_vm_shared_s {
     nxt_lvlhsh_t             keywords_hash;
     nxt_lvlhsh_t             values_hash;
-    nxt_lvlhsh_t             null_proto_hash;
     nxt_lvlhsh_t             function_prototype_hash;
 
     njs_object_t             objects[NJS_OBJECT_MAX];
