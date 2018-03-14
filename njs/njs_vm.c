@@ -1179,10 +1179,10 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 
         if (ret == NXT_OK) {
             pq->shared = 1;
-            prop = pq->lhq.value;
 
-            switch (pq->query) {
-            case NJS_PROPERTY_QUERY_GET:
+            if (pq->query == NJS_PROPERTY_QUERY_GET) {
+                prop = pq->lhq.value;
+
                 if (prop->type == NJS_NATIVE_GETTER) {
                     pq->scratch = *prop;
                     prop = &pq->scratch;
@@ -1193,12 +1193,6 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
                         pq->lhq.value = prop;
                     }
                 }
-
-                break;
-
-            case NJS_PROPERTY_QUERY_IN:
-                prop = pq->lhq.value;
-                break;
             }
 
             return ret;
