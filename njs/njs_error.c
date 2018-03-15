@@ -39,8 +39,7 @@ njs_exception_error_create(njs_vm_t *vm, njs_value_type_t type,
     nxt_int_t     ret;
     njs_value_t   string;
     njs_object_t  *error;
-
-    static char  buf[256];
+    char          buf[256];
 
     if (fmt != NULL) {
         va_start(args, fmt);
