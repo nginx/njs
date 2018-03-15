@@ -386,12 +386,7 @@ njs_regexp_compile_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
     u_char *start)
 {
     u_char    *p;
-    size_t    size;
     njs_vm_t  *vm;
-
-    size = sizeof("SyntaxError: ") - 1;
-    memcpy(start, "SyntaxError: ", size);
-    p = start + size;
 
     vm = trace->data;
 
@@ -433,17 +428,12 @@ njs_regexp_match_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
     u_char *start)
 {
     u_char    *p;
-    size_t    size;
     njs_vm_t  *vm;
-
-    size = sizeof("InternalError: ") - 1;
-    memcpy(start, "InternalError: ", size);
-    p = start + size;
 
     vm = trace->data;
 
     trace = trace->next;
-    p = trace->handler(trace, td, p);
+    p = trace->handler(trace, td, start);
 
     njs_exception_internal_error(vm, (const char *) start, NULL);
 
