@@ -5543,6 +5543,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("try { throw null } catch (null) { throw e }"),
       nxt_string("SyntaxError: Unexpected token \"null\" in 1") },
 
+    { nxt_string("'a'.f()"),
+      nxt_string("InternalError: method 'f' query failed:2") },
+
+    { nxt_string("1..f()"),
+      nxt_string("InternalError: method 'f' query failed:-3") },
+
     { nxt_string("try {}"),
       nxt_string("SyntaxError: Missing catch or finally after try in 1") },
 
@@ -5707,7 +5713,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("Object.prototype.__proto__.f()"),
-      nxt_string("InternalError: method 'f' query failed:-1") },
+      nxt_string("TypeError: cannot get property 'f' of undefined") },
 
     { nxt_string("Object.prototype.toString.call(Object.prototype)"),
       nxt_string("[object Object]") },

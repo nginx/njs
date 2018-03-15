@@ -2343,6 +2343,8 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
 
     method = (njs_vmcode_method_frame_t *) vm->current;
 
+    pq.lhq.key.length = 0;
+    pq.lhq.key.start = NULL;
     pq.query = NJS_PROPERTY_QUERY_GET;
 
     ret = njs_property_query(vm, &pq, object, name);
@@ -2392,6 +2394,12 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
         ret = njs_function_native_frame(vm, ext_proto->function, &this, NULL,
                                         method->nargs, 0, method->code.ctor);
         break;
+
+    case NXT_ERROR:
+
+        /* An exception was set in  njs_property_query(). */
+
+        return NXT_ERROR;
 
     default:
         njs_exception_internal_error(vm, "method '%.*s' query failed:%d",
