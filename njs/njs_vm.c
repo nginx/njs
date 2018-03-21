@@ -3655,6 +3655,54 @@ njs_value_number_set(njs_value_t *value, double num)
 }
 
 
+void
+njs_value_error_set(njs_vm_t *vm, njs_value_t *value, const char *fmt, ...)
+{
+    size_t        size;
+    va_list       args;
+    nxt_int_t     ret;
+    njs_value_t   string;
+    njs_object_t  *error;
+    char          buf[256];
+
+    if (fmt != NULL) {
+        va_start(args, fmt);
+        size = vsnprintf(buf, sizeof(buf), fmt, args);
+        va_end(args);
+
+    } else {
+        size = 0;
+    }
+
+    ret = njs_string_new(vm, &string, (u_char *) buf, size, size);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        goto memory_error;
+    }
+
+    error = njs_error_alloc(vm, NJS_OBJECT_ERROR, NULL, &string);
+    if (nxt_slow_path(error == NULL)) {
+        goto memory_error;
+    }
+
+    value->data.u.object = error;
+    value->type = NJS_OBJECT_ERROR;
+    value->data.truth = 1;
+
+    return;
+
+memory_error:
+
+    njs_set_memory_error(vm, value);
+}
+
+
+nxt_noinline double
+njs_value_number(njs_value_t *value)
+{
+    return value->data.u.number;
+}
+
+
 nxt_noinline void *
 njs_value_data(njs_value_t *value)
 {
@@ -3662,10 +3710,52 @@ njs_value_data(njs_value_t *value)
 }
 
 
+nxt_noinline njs_function_t *
+njs_value_function(njs_value_t *value)
+{
+    return value->data.u.function;
+}
+
+
 nxt_noinline nxt_int_t
 njs_value_is_void(njs_value_t *value)
 {
-    return value->type == NJS_VOID;
+    return njs_is_void(value);
+}
+
+
+nxt_noinline nxt_int_t
+njs_value_is_true(njs_value_t *value)
+{
+    return njs_is_true(value);
+}
+
+
+nxt_noinline nxt_int_t
+njs_value_is_number(njs_value_t *value)
+{
+    return njs_is_number(value);
+}
+
+
+nxt_noinline nxt_int_t
+njs_value_is_string(njs_value_t *value)
+{
+    return njs_is_string(value);
+}
+
+
+nxt_noinline nxt_int_t
+njs_value_is_object(njs_value_t *value)
+{
+    return njs_is_object(value);
+}
+
+
+nxt_noinline nxt_int_t
+njs_value_is_function(njs_value_t *value)
+{
+    return njs_is_function(value);
 }
 
 

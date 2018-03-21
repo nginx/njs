@@ -14,6 +14,7 @@
 #include <nxt_lvlhsh.h>
 #include <nxt_random.h>
 #include <nxt_malloc.h>
+#include <nxt_djb_hash.h>
 #include <nxt_mem_cache_pool.h>
 #include <njscript.h>
 #include <njs_vm.h>
@@ -503,6 +504,43 @@ njs_vm_call(njs_vm_t *vm, njs_function_t *function, njs_opaque_value_t *args,
 }
 
 
+njs_vm_event_t
+njs_vm_add_event(njs_vm_t *vm, njs_function_t *function,
+    njs_host_event_t host_ev, njs_event_destructor destructor)
+{
+    njs_event_t  *event;
+
+    event = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_event_t));
+    if (nxt_slow_path(event == NULL)) {
+        return NULL;
+    }
+
+    event->host_event = host_ev;
+    event->destructor = destructor;
+    event->function = function;
+    event->posted = 0;
+    event->nargs = 0;
+    event->args = NULL;
+
+    if (njs_add_event(vm, event) != NJS_OK) {
+        return NULL;
+    }
+
+    return event;
+}
+
+
+void
+njs_vm_del_event(njs_vm_t *vm, njs_vm_event_t vm_event)
+{
+    njs_event_t  *event;
+
+    event = (njs_event_t *) vm_event;
+
+    njs_del_event(vm, event, NJS_EVENT_RELEASE | NJS_EVENT_DELETE);
+}
+
+
 nxt_int_t
 njs_vm_pending(njs_vm_t *vm)
 {
@@ -511,11 +549,23 @@ njs_vm_pending(njs_vm_t *vm)
 
 
 nxt_int_t
-njs_vm_post_event(njs_vm_t *vm, njs_vm_event_t vm_event)
+njs_vm_post_event(njs_vm_t *vm, njs_vm_event_t vm_event,
+    njs_opaque_value_t *args, nxt_uint_t nargs)
 {
     njs_event_t  *event;
 
     event = (njs_event_t *) vm_event;
+
+    if (nargs != 0 && !event->posted) {
+        event->nargs = nargs;
+        event->args = nxt_mem_cache_alloc(vm->mem_cache_pool,
+                                          sizeof(njs_opaque_value_t) * nargs);
+        if (nxt_slow_path(event->args == NULL)) {
+            return NJS_ERROR;
+        }
+
+        memcpy(event->args, args, sizeof(njs_opaque_value_t) * nargs);
+    }
 
     if (!event->posted) {
         event->posted = 1;
@@ -638,4 +688,30 @@ njs_ret_t njs_vm_retval_to_ext_string(njs_vm_t *vm, nxt_str_t *retval)
     }
 
     return njs_vm_value_to_ext_string(vm, retval, &vm->retval, 1);
+}
+
+
+njs_value_t *
+njs_vm_object_prop(njs_vm_t *vm, njs_value_t *value, const nxt_str_t *key)
+{
+    nxt_int_t           ret;
+    njs_object_prop_t   *prop;
+    nxt_lvlhsh_query_t  lhq;
+
+    if (nxt_slow_path(!njs_is_object(value))) {
+        return NULL;
+    }
+
+    lhq.key = *key;
+    lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
+    lhq.proto = &njs_object_hash_proto;
+
+    ret = nxt_lvlhsh_find(&value->data.u.object->hash, &lhq);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NULL;
+    }
+
+    prop = lhq.value;
+
+    return &prop->value;
 }

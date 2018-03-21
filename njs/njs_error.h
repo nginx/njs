@@ -29,6 +29,7 @@ void njs_exception_error_create(njs_vm_t *vm, njs_value_type_t type,
     const char* fmt, ...);
 
 void njs_exception_memory_error(njs_vm_t *vm);
+void njs_set_memory_error(njs_vm_t *vm, njs_value_t *value);
 
 njs_object_t *njs_error_alloc(njs_vm_t *vm, njs_value_type_t type,
     const njs_value_t *name, const njs_value_t *message);

@@ -3867,6 +3867,9 @@ static njs_unit_test_t  njs_test[] =
                  "          valueOf: function() { return 1 } };  a"),
       nxt_string("1") },
 
+    { nxt_string("var o = {b:$r.props.b}; o.b"),
+      nxt_string("42") },
+
     /**/
 
     { nxt_string("'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'.charCodeAt(5)"),
@@ -9108,6 +9111,16 @@ njs_unit_test_r_get_a_external(njs_vm_t *vm, njs_value_t *value, void *obj,
 
 
 static njs_ret_t
+njs_unit_test_r_get_b_external(njs_vm_t *vm, njs_value_t *value, void *obj,
+    uintptr_t data)
+{
+    njs_value_number_set(value, data);
+
+    return NJS_OK;
+}
+
+
+static njs_ret_t
 njs_unit_test_host_external(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
@@ -9259,6 +9272,18 @@ static njs_external_t  njs_unit_test_r_props[] = {
       NULL,
       NULL,
       0 },
+
+    { nxt_string("b"),
+      NJS_EXTERN_PROPERTY,
+      NULL,
+      0,
+      njs_unit_test_r_get_b_external,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      42 },
 };
 
 
