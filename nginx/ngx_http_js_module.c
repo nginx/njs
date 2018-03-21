@@ -29,6 +29,7 @@ typedef struct {
 
 typedef struct {
     njs_vm_t            *vm;
+    ngx_log_t           *log;
     njs_opaque_value_t   args[2];
 } ngx_http_js_ctx_t;
 
@@ -39,10 +40,21 @@ typedef struct {
 } ngx_http_js_table_entry_t;
 
 
-static ngx_int_t ngx_http_js_handler(ngx_http_request_t *r);
+typedef struct {
+    ngx_http_request_t  *request;
+    njs_vm_event_t       vm_event;
+    void                *unused;
+    ngx_int_t            ident;
+} ngx_http_js_event_t;
+
+
+static ngx_int_t ngx_http_js_content_handler(ngx_http_request_t *r);
+static void ngx_http_js_content_event_handler(ngx_http_request_t *r);
+static void ngx_http_js_content_write_event_handler(ngx_http_request_t *r);
 static ngx_int_t ngx_http_js_variable(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data);
 static ngx_int_t ngx_http_js_init_vm(ngx_http_request_t *r);
+static void ngx_http_js_cleanup_ctx(void *data);
 static void ngx_http_js_cleanup_vm(void *data);
 
 static njs_ret_t ngx_http_js_ext_get_string(njs_vm_t *vm, njs_value_t *value,
@@ -93,6 +105,14 @@ static njs_ret_t ngx_http_js_ext_next_arg(njs_vm_t *vm, njs_value_t *value,
     void *obj, void *next);
 static njs_ret_t ngx_http_js_ext_get_variable(njs_vm_t *vm, njs_value_t *value,
     void *obj, uintptr_t data);
+
+static njs_host_event_t ngx_http_js_set_timer(njs_external_ptr_t external,
+    uint64_t delay, njs_vm_event_t vm_event);
+static void ngx_http_js_clear_timer(njs_external_ptr_t external,
+    njs_host_event_t event);
+static void ngx_http_js_timer_handler(ngx_event_t *ev);
+static void ngx_http_js_handle_event(ngx_http_request_t *r,
+    njs_vm_event_t vm_event);
 
 static char *ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
@@ -378,8 +398,33 @@ static njs_external_t  ngx_http_js_externals[] = {
 };
 
 
+static njs_vm_ops_t ngx_http_js_ops = {
+    ngx_http_js_set_timer,
+    ngx_http_js_clear_timer
+};
+
+
 static ngx_int_t
-ngx_http_js_handler(ngx_http_request_t *r)
+ngx_http_js_content_handler(ngx_http_request_t *r)
+{
+    ngx_int_t  rc;
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "http js content handler");
+
+    rc = ngx_http_read_client_request_body(r,
+                                           ngx_http_js_content_event_handler);
+
+    if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+        return rc;
+    }
+
+    return NGX_DONE;
+}
+
+
+static void
+ngx_http_js_content_event_handler(ngx_http_request_t *r)
 {
     ngx_int_t                rc;
     nxt_str_t                name, exception;
@@ -387,10 +432,14 @@ ngx_http_js_handler(ngx_http_request_t *r)
     ngx_http_js_ctx_t       *ctx;
     ngx_http_js_loc_conf_t  *jlcf;
 
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "http js content event handler");
+
     rc = ngx_http_js_init_vm(r);
 
     if (rc == NGX_ERROR || rc == NGX_DECLINED) {
-        return rc;
+        ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+        return;
     }
 
     jlcf = ngx_http_get_module_loc_conf(r, ngx_http_js_module);
@@ -407,7 +456,8 @@ ngx_http_js_handler(ngx_http_request_t *r)
     if (func == NULL) {
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "js function \"%V\" not found", &jlcf->content);
-        return NGX_DECLINED;
+        ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+        return;
     }
 
     if (njs_vm_call(ctx->vm, func, ctx->args, 2) != NJS_OK) {
@@ -416,10 +466,66 @@ ngx_http_js_handler(ngx_http_request_t *r)
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "js exception: %*s", exception.length, exception.start);
 
-        return NGX_ERROR;
+        ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+        return;
     }
 
-    return NGX_OK;
+    if (njs_vm_pending(ctx->vm)) {
+        r->write_event_handler = ngx_http_js_content_write_event_handler;
+        return;
+    }
+
+    ngx_http_finalize_request(r, NGX_OK);
+}
+
+
+static void
+ngx_http_js_content_write_event_handler(ngx_http_request_t *r)
+{
+    ngx_event_t               *wev;
+    ngx_connection_t          *c;
+    ngx_http_js_ctx_t         *ctx;
+    ngx_http_core_loc_conf_t  *clcf;
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "http js content write event handler");
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (!njs_vm_pending(ctx->vm)) {
+        ngx_http_finalize_request(r, NGX_OK);
+        return;
+    }
+
+    c = r->connection;
+    wev = c->write;
+
+    if (wev->timedout) {
+        ngx_connection_error(c, NGX_ETIMEDOUT, "client timed out");
+        ngx_http_finalize_request(r, NGX_HTTP_REQUEST_TIME_OUT);
+        return;
+    }
+
+    if (ngx_http_output_filter(r, NULL) == NGX_ERROR) {
+        ngx_http_finalize_request(r, NGX_ERROR);
+        return;
+    }
+
+    clcf = ngx_http_get_module_loc_conf(r->main, ngx_http_core_module);
+
+    if (ngx_handle_write_event(wev, clcf->send_lowat) != NGX_OK) {
+        ngx_http_finalize_request(r, NGX_ERROR);
+        return;
+    }
+
+    if (!wev->delayed) {
+        if (wev->active && !wev->ready) {
+            ngx_add_timer(wev, clcf->send_timeout);
+
+        } else if (wev->timer_set) {
+            ngx_del_timer(wev);
+        }
+    }
 }
 
 
@@ -430,6 +536,7 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
     ngx_str_t *fname = (ngx_str_t *) data;
 
     ngx_int_t           rc;
+    nxt_int_t           pending;
     nxt_str_t           name, value, exception;
     njs_function_t     *func;
     ngx_http_js_ctx_t  *ctx;
@@ -461,6 +568,8 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
         return NGX_OK;
     }
 
+    pending = njs_vm_pending(ctx->vm);
+
     if (njs_vm_call(ctx->vm, func, ctx->args, 2) != NJS_OK) {
         njs_vm_retval_to_ext_string(ctx->vm, &exception);
 
@@ -472,6 +581,12 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
     }
 
     if (njs_vm_retval_to_ext_string(ctx->vm, &value) != NJS_OK) {
+        return NGX_ERROR;
+    }
+
+    if (!pending && njs_vm_pending(ctx->vm)) {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "async operation inside \"%V\" variable handler", fname);
         return NGX_ERROR;
     }
 
@@ -489,6 +604,7 @@ static ngx_int_t
 ngx_http_js_init_vm(ngx_http_request_t *r)
 {
     nxt_int_t                rc;
+    nxt_str_t                exception;
     ngx_http_js_ctx_t       *ctx;
     ngx_pool_cleanup_t      *cln;
     ngx_http_js_loc_conf_t  *jlcf;
@@ -523,10 +639,17 @@ ngx_http_js_init_vm(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    cln->handler = ngx_http_js_cleanup_vm;
-    cln->data = ctx->vm;
+    ctx->log = r->connection->log;
 
-    if (njs_vm_run(ctx->vm) != NJS_OK) {
+    cln->handler = ngx_http_js_cleanup_ctx;
+    cln->data = ctx;
+
+    if (njs_vm_run(ctx->vm) == NJS_ERROR) {
+        njs_vm_retval_to_ext_string(ctx->vm, &exception);
+
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "js exception: %*s", exception.length, exception.start);
+
         return NGX_ERROR;
     }
 
@@ -541,6 +664,19 @@ ngx_http_js_init_vm(ngx_http_request_t *r)
     }
 
     return NGX_OK;
+}
+
+
+static void
+ngx_http_js_cleanup_ctx(void *data)
+{
+    ngx_http_js_ctx_t *ctx = data;
+
+    if (njs_vm_pending(ctx->vm)) {
+        ngx_log_error(NGX_LOG_ERR, ctx->log, 0, "pending events");
+    }
+
+    njs_vm_destroy(ctx->vm);
 }
 
 
@@ -1157,6 +1293,98 @@ ngx_http_js_ext_get_variable(njs_vm_t *vm, njs_value_t *value, void *obj,
 }
 
 
+static njs_host_event_t
+ngx_http_js_set_timer(njs_external_ptr_t external, uint64_t delay,
+    njs_vm_event_t vm_event)
+{
+    ngx_event_t          *ev;
+    ngx_http_request_t   *r;
+    ngx_http_js_event_t  *js_event;
+
+    r = (ngx_http_request_t *) external;
+
+    ev = ngx_pcalloc(r->pool, sizeof(ngx_event_t));
+    if (ev == NULL) {
+        return NULL;
+    }
+
+    js_event = ngx_palloc(r->pool, sizeof(ngx_http_js_event_t));
+    if (js_event == NULL) {
+        return NULL;
+    }
+
+    js_event->request = r;
+    js_event->vm_event = vm_event;
+    js_event->ident = r->connection->fd;
+
+    ev->data = js_event;
+    ev->log = r->connection->log;
+    ev->handler = ngx_http_js_timer_handler;
+
+    ngx_add_timer(ev, delay);
+
+    return ev;
+}
+
+
+static void
+ngx_http_js_clear_timer(njs_external_ptr_t external, njs_host_event_t event)
+{
+    ngx_event_t  *ev = event;
+
+    if (ev->timer_set) {
+        ngx_del_timer(ev);
+    }
+}
+
+
+static void
+ngx_http_js_timer_handler(ngx_event_t *ev)
+{
+    ngx_connection_t     *c;
+    ngx_http_request_t   *r;
+    ngx_http_js_event_t  *js_event;
+
+    js_event = (ngx_http_js_event_t *) ev->data;
+
+    r = js_event->request;
+
+    c = r->connection;
+
+    ngx_http_js_handle_event(r, js_event->vm_event);
+
+    ngx_http_run_posted_requests(c);
+}
+
+
+static void
+ngx_http_js_handle_event(ngx_http_request_t *r, njs_vm_event_t vm_event)
+{
+    njs_ret_t           rc;
+    nxt_str_t           exception;
+    ngx_http_js_ctx_t  *ctx;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    njs_vm_post_event(ctx->vm, vm_event);
+
+    rc = njs_vm_run(ctx->vm);
+
+    if (rc == NJS_ERROR) {
+        njs_vm_retval_to_ext_string(ctx->vm, &exception);
+
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "js exception: %*s", exception.length, exception.start);
+
+        ngx_http_finalize_request(r, NGX_ERROR);
+    }
+
+    if (rc == NJS_OK) {
+        ngx_http_post_request(r, NULL);
+    }
+}
+
+
 static char *
 ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1235,6 +1463,7 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_memzero(&options, sizeof(njs_vm_opt_t));
 
     options.backtrace = 1;
+    options.ops = &ngx_http_js_ops;
 
     jlcf->vm = njs_vm_create(&options);
     if (jlcf->vm == NULL) {
@@ -1339,7 +1568,7 @@ ngx_http_js_content(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     jlcf->content = value[1];
 
     clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
-    clcf->handler = ngx_http_js_handler;
+    clcf->handler = ngx_http_js_content_handler;
 
     return NGX_CONF_OK;
 }

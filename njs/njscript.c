@@ -20,13 +20,17 @@
 #include <njs_string.h>
 #include <njs_object.h>
 #include <njs_function.h>
+#include <njs_error.h>
 #include <njs_variable.h>
 #include <njs_parser.h>
 #include <njs_regexp.h>
+#include <njs_event.h>
+#include <njs_time.h>
 #include <string.h>
 
 
 static nxt_int_t njs_vm_init(njs_vm_t *vm);
+static nxt_int_t njs_vm_handle_events(njs_vm_t *vm);
 
 
 static void *
@@ -176,6 +180,8 @@ njs_vm_create(njs_vm_opt_t *options)
         nxt_lvlhsh_init(&vm->externals_hash);
         nxt_lvlhsh_init(&vm->external_prototypes_hash);
 
+        vm->ops = options->ops;
+
         vm->trace.level = NXT_LEVEL_TRACE;
         vm->trace.size = 2048;
         vm->trace.handler = njs_parser_trace_handler;
@@ -212,6 +218,23 @@ njs_vm_create(njs_vm_opt_t *options)
 void
 njs_vm_destroy(njs_vm_t *vm)
 {
+    njs_event_t        *event;
+    nxt_lvlhsh_each_t  lhe;
+
+    if (njs_is_pending_events(vm)) {
+        nxt_lvlhsh_each_init(&lhe, &njs_event_hash_proto);
+
+        for ( ;; ) {
+            event = nxt_lvlhsh_each(&vm->events_hash, &lhe);
+
+            if (event == NULL) {
+                break;
+            }
+
+            njs_del_event(vm, event, NJS_EVENT_RELEASE);
+        }
+    }
+
     nxt_mem_cache_pool_destroy(vm->mem_cache_pool);
 }
 
@@ -294,7 +317,7 @@ fail:
 
 
 njs_vm_t *
-njs_vm_clone(njs_vm_t *vm, void *external)
+njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
 {
     njs_vm_t              *nvm;
     uint32_t              items;
@@ -340,6 +363,8 @@ njs_vm_clone(njs_vm_t *vm, void *external)
                    items * sizeof(void *));
             vm->external_objects->items = items;
         }
+
+        nvm->ops = vm->ops;
 
         nvm->current = vm->current;
 
@@ -413,6 +438,9 @@ njs_vm_init(njs_vm_t *vm)
         return NXT_ERROR;
     }
 
+    nxt_lvlhsh_init(&vm->events_hash);
+    nxt_queue_init(&vm->posted_events);
+
     if (vm->debug != NULL) {
         backtrace = nxt_array_create(4, sizeof(njs_backtrace_entry_t),
                                      &njs_array_mem_proto, vm->mem_cache_pool);
@@ -476,6 +504,29 @@ njs_vm_call(njs_vm_t *vm, njs_function_t *function, njs_opaque_value_t *args,
 
 
 nxt_int_t
+njs_vm_pending(njs_vm_t *vm)
+{
+    return njs_is_pending_events(vm);
+}
+
+
+nxt_int_t
+njs_vm_post_event(njs_vm_t *vm, njs_vm_event_t vm_event)
+{
+    njs_event_t  *event;
+
+    event = (njs_event_t *) vm_event;
+
+    if (!event->posted) {
+        event->posted = 1;
+        nxt_queue_insert_tail(&vm->posted_events, &event->link);
+    }
+
+    return NJS_OK;
+}
+
+
+nxt_int_t
 njs_vm_run(njs_vm_t *vm)
 {
     nxt_str_t  s;
@@ -488,6 +539,10 @@ njs_vm_run(njs_vm_t *vm)
     }
 
     ret = njs_vmcode_interpreter(vm);
+
+    if (ret == NJS_STOP) {
+        ret = njs_vm_handle_events(vm);
+    }
 
     if (nxt_slow_path(ret == NXT_AGAIN)) {
         nxt_thread_log_debug("VM: AGAIN");
@@ -525,6 +580,38 @@ njs_vm_run(njs_vm_t *vm)
     }
 
     return NJS_OK;
+}
+
+
+static nxt_int_t
+njs_vm_handle_events(njs_vm_t *vm)
+{
+    nxt_int_t         ret;
+    njs_event_t       *ev;
+    nxt_queue_t       *events;
+    nxt_queue_link_t  *link;
+
+    events = &vm->posted_events;
+
+    for ( ;; ) {
+        link = nxt_queue_first(events);
+
+        if (link == nxt_queue_tail(events)) {
+            break;
+        }
+
+        ev = nxt_queue_link_data(link, njs_event_t, link);
+
+        njs_del_event(vm, ev, NJS_EVENT_DELETE);
+
+        ret = njs_vm_call(vm, ev->function, ev->args, ev->nargs);
+
+        if (ret == NJS_ERROR) {
+            return ret;
+        }
+    }
+
+    return njs_is_pending_events(vm) ? NJS_AGAIN : NJS_STOP;
 }
 
 

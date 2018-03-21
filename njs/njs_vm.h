@@ -881,7 +881,9 @@ enum njs_function_e {
     NJS_FUNCTION_STRING_DECODE_URI,
     NJS_FUNCTION_STRING_DECODE_URI_COMPONENT,
     NJS_FUNCTION_REQUIRE,
-#define NJS_FUNCTION_MAX       (NJS_FUNCTION_REQUIRE + 1)
+    NJS_FUNCTION_SET_TIMEOUT,
+    NJS_FUNCTION_CLEAR_TIMEOUT,
+#define NJS_FUNCTION_MAX       (NJS_FUNCTION_CLEAR_TIMEOUT + 1)
 };
 
 
@@ -960,12 +962,12 @@ struct njs_vm_s {
 
     njs_value_t              *scopes[NJS_SCOPES];
 
-    void                     *external;
+    njs_external_ptr_t       external;
 
     njs_native_frame_t       *top_frame;
     njs_frame_t              *active_frame;
 
-    nxt_array_t              *external_objects; /* of void * */
+    nxt_array_t              *external_objects; /* of njs_external_ptr_t */
 
     nxt_lvlhsh_t             externals_hash;
     nxt_lvlhsh_t             external_prototypes_hash;
@@ -973,6 +975,12 @@ struct njs_vm_s {
     nxt_lvlhsh_t             variables_hash;
     nxt_lvlhsh_t             values_hash;
     nxt_lvlhsh_t             modules_hash;
+
+    uint32_t                 event_id;
+    nxt_lvlhsh_t             events_hash;
+    nxt_queue_t              posted_events;
+
+    njs_vm_ops_t             *ops;
 
     /*
      * The prototypes and constructors arrays must be together because

@@ -172,6 +172,11 @@ static njs_interactive_test_t  njs_test[] =
                  "    at require (native)\n"
                  "    at main (native)\n") },
 
+    { nxt_string("setTimeout()" ENTER),
+      nxt_string("TypeError: too few arguments\n"
+                 "    at setTimeout (native)\n"
+                 "    at main (native)\n") },
+
     { nxt_string("function f(o) {function f_in(o) {return o.a.a};"
                  "               return f_in(o)}; f({})" ENTER),
       nxt_string("TypeError: cannot get property 'a' of undefined\n"

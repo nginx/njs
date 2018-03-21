@@ -30,6 +30,7 @@
 #include <njs_date.h>
 #include <njs_error.h>
 #include <njs_math.h>
+#include <njs_time.h>
 #include <njs_module.h>
 #include <njs_fs.h>
 #include <string.h>
@@ -113,7 +114,9 @@ const njs_object_init_t    *njs_function_init[] = {
     &njs_encode_uri_component_function_init,
     &njs_decode_uri_function_init,
     &njs_decode_uri_component_function_init,
-    &njs_require_function_init
+    &njs_require_function_init,
+    &njs_set_timeout_function_init,
+    &njs_clear_timeout_function_init
 };
 
 
@@ -131,6 +134,9 @@ const njs_function_init_t  njs_native_functions[] = {
     { njs_string_decode_uri,           { NJS_SKIP_ARG, NJS_STRING_ARG } },
     { njs_string_decode_uri_component, { NJS_SKIP_ARG, NJS_STRING_ARG } },
     { njs_module_require,              { NJS_SKIP_ARG, NJS_STRING_ARG } },
+    { njs_set_timeout,
+      { NJS_SKIP_ARG, NJS_FUNCTION_ARG, NJS_NUMBER_ARG } },
+    { njs_clear_timeout,               { NJS_SKIP_ARG, NJS_NUMBER_ARG } },
 };
 
 

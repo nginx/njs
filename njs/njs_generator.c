@@ -320,6 +320,8 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
     case NJS_TOKEN_DECODE_URI:
     case NJS_TOKEN_DECODE_URI_COMPONENT:
     case NJS_TOKEN_REQUIRE:
+    case NJS_TOKEN_SET_TIMEOUT:
+    case NJS_TOKEN_CLEAR_TIMEOUT:
         return njs_generate_builtin_object(vm, parser, node);
 
     case NJS_TOKEN_FUNCTION:

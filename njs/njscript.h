@@ -70,9 +70,47 @@ struct njs_external_s {
     uintptr_t                       data;
 };
 
+
+/*
+ * NJS and event loops.
+ *
+ * njs_vm_ops_t callbacks are used to interact with the event loop environment.
+ *
+ * Functions get an external object as the first argument. The external
+ * object is provided as the third argument to njs_vm_clone().
+ *
+ * The callbacks are expected to return to the VM the unique id of an
+ * underlying event.  This id will be passed as the second argument to
+ * njs_event_destructor() at the moment the VM wants to destroy it.
+ *
+ * When an underlying events fires njs_vm_post_event() should be invoked with
+ * the value provided as vm_event.
+ *
+ * The events posted by njs_vm_post_event() are processed as soon as
+ * njs_vm_run() is invoked. njs_vm_run() returns NJS_AGAIN until pending events
+ * are present.
+ */
+
+typedef void *                      njs_vm_event_t;
+typedef void *                      njs_host_event_t;
+typedef void *                      njs_external_ptr_t;
+
+typedef njs_host_event_t (*njs_set_timer)(njs_external_ptr_t external,
+    uint64_t delay, njs_vm_event_t vm_event);
+typedef void (*njs_event_destructor)(njs_external_ptr_t external,
+    njs_host_event_t event);
+
+
 typedef struct {
-    void                            *external;
+    njs_set_timer                   set_timer;
+    njs_event_destructor            clear_timer;
+} njs_vm_ops_t;
+
+
+typedef struct {
+    njs_external_ptr_t              external;
     njs_vm_shared_t                 *shared;
+    njs_vm_ops_t                    *ops;
 
     uint8_t                         trailer;         /* 1 bit */
     uint8_t                         accumulative;    /* 1 bit */
@@ -97,9 +135,13 @@ NXT_EXPORT njs_vm_t *njs_vm_create(njs_vm_opt_t *options);
 NXT_EXPORT void njs_vm_destroy(njs_vm_t *vm);
 
 NXT_EXPORT nxt_int_t njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end);
-NXT_EXPORT njs_vm_t *njs_vm_clone(njs_vm_t *vm, void *external);
+NXT_EXPORT njs_vm_t *njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external);
 NXT_EXPORT nxt_int_t njs_vm_call(njs_vm_t *vm, njs_function_t *function,
     njs_opaque_value_t *args, nxt_uint_t nargs);
+
+NXT_EXPORT nxt_int_t njs_vm_pending(njs_vm_t *vm);
+NXT_EXPORT nxt_int_t njs_vm_post_event(njs_vm_t *vm, njs_vm_event_t vm_event);
+
 NXT_EXPORT nxt_int_t njs_vm_run(njs_vm_t *vm);
 
 NXT_EXPORT const njs_extern_t *njs_vm_external_prototype(njs_vm_t *vm,

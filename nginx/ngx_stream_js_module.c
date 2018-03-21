@@ -30,6 +30,7 @@ typedef struct {
 
 typedef struct {
     njs_vm_t              *vm;
+    ngx_log_t             *log;
     njs_opaque_value_t     arg;
     ngx_buf_t             *buf;
     ngx_chain_t           *free;
@@ -49,6 +50,7 @@ static ngx_int_t ngx_stream_js_body_filter(ngx_stream_session_t *s,
 static ngx_int_t ngx_stream_js_variable(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, uintptr_t data);
 static ngx_int_t ngx_stream_js_init_vm(ngx_stream_session_t *s);
+static void ngx_stream_js_cleanup_ctx(void *data);
 static void ngx_stream_js_cleanup_vm(void *data);
 
 static njs_ret_t ngx_stream_js_ext_get_remote_address(njs_vm_t *vm,
@@ -526,6 +528,7 @@ ngx_stream_js_variable(ngx_stream_session_t *s, ngx_stream_variable_value_t *v,
     ngx_str_t *fname = (ngx_str_t *) data;
 
     ngx_int_t             rc;
+    nxt_int_t             pending;
     nxt_str_t             name, value, exception;
     njs_function_t       *func;
     ngx_stream_js_ctx_t  *ctx;
@@ -557,6 +560,8 @@ ngx_stream_js_variable(ngx_stream_session_t *s, ngx_stream_variable_value_t *v,
         return NGX_OK;
     }
 
+    pending = njs_vm_pending(ctx->vm);
+
     if (njs_vm_call(ctx->vm, func, &ctx->arg, 1) != NJS_OK) {
         njs_vm_retval_to_ext_string(ctx->vm, &exception);
 
@@ -568,6 +573,12 @@ ngx_stream_js_variable(ngx_stream_session_t *s, ngx_stream_variable_value_t *v,
     }
 
     if (njs_vm_retval_to_ext_string(ctx->vm, &value) != NJS_OK) {
+        return NGX_ERROR;
+    }
+
+    if (!pending && njs_vm_pending(ctx->vm)) {
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+                      "async operation inside \"%V\" variable handler", fname);
         return NGX_ERROR;
     }
 
@@ -585,6 +596,7 @@ static ngx_int_t
 ngx_stream_js_init_vm(ngx_stream_session_t *s)
 {
     nxt_int_t                  rc;
+    nxt_str_t                  exception;
     ngx_pool_cleanup_t        *cln;
     ngx_stream_js_ctx_t       *ctx;
     ngx_stream_js_srv_conf_t  *jscf;
@@ -619,10 +631,17 @@ ngx_stream_js_init_vm(ngx_stream_session_t *s)
         return NGX_ERROR;
     }
 
-    cln->handler = ngx_stream_js_cleanup_vm;
-    cln->data = ctx->vm;
+    ctx->log = s->connection->log;
 
-    if (njs_vm_run(ctx->vm) != NJS_OK) {
+    cln->handler = ngx_stream_js_cleanup_ctx;
+    cln->data = ctx;
+
+    if (njs_vm_run(ctx->vm) == NJS_ERROR) {
+        njs_vm_retval_to_ext_string(ctx->vm, &exception);
+
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+                      "js exception: %*s", exception.length, exception.start);
+
         return NGX_ERROR;
     }
 
@@ -632,6 +651,19 @@ ngx_stream_js_init_vm(ngx_stream_session_t *s)
     }
 
     return NGX_OK;
+}
+
+
+static void
+ngx_stream_js_cleanup_ctx(void *data)
+{
+    ngx_stream_js_ctx_t *ctx = data;
+
+    if (njs_vm_pending(ctx->vm)) {
+        ngx_log_error(NGX_LOG_ERR, ctx->log, 0, "pending events");
+    }
+
+    njs_vm_destroy(ctx->vm);
 }
 
 

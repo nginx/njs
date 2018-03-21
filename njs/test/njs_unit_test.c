@@ -9003,6 +9003,25 @@ static njs_unit_test_t  njs_test[] =
                  "fs.writeFileSync('/njs_unknown_path', '', true)"),
       nxt_string("TypeError: Unknown options type (a string or object required)") },
 
+    /* setTimeout(). */
+
+    { nxt_string("setTimeout()"),
+      nxt_string("TypeError: too few arguments") },
+
+    { nxt_string("setTimeout(function(){})"),
+      nxt_string("InternalError: not supported by host environment") },
+
+    { nxt_string("setTimeout(function(){}, 12)"),
+      nxt_string("InternalError: not supported by host environment") },
+
+    /* clearTimeout(). */
+
+    { nxt_string("clearTimeout()"),
+      nxt_string("undefined") },
+
+    { nxt_string("clearTimeout(123)"),
+      nxt_string("undefined") },
+
     /* Trick: number to boolean. */
 
     { nxt_string("var a = 0; !!a"),
