@@ -105,6 +105,8 @@ static njs_ret_t ngx_http_js_ext_next_arg(njs_vm_t *vm, njs_value_t *value,
     void *obj, void *next);
 static njs_ret_t ngx_http_js_ext_get_variable(njs_vm_t *vm, njs_value_t *value,
     void *obj, uintptr_t data);
+static njs_ret_t ngx_http_js_ext_get_response(njs_vm_t *vm, njs_value_t *value,
+    void *obj, uintptr_t data);
 
 static njs_host_event_t ngx_http_js_set_timer(njs_external_ptr_t external,
     uint64_t delay, njs_vm_event_t vm_event);
@@ -361,6 +363,18 @@ static njs_external_t  ngx_http_js_ext_request[] = {
       NULL,
       0,
       ngx_http_js_ext_get_variable,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      0 },
+
+    { nxt_string("response"),
+      NJS_EXTERN_PROPERTY,
+      NULL,
+      0,
+      ngx_http_js_ext_get_response,
       NULL,
       NULL,
       NULL,
@@ -1290,6 +1304,23 @@ ngx_http_js_ext_get_variable(njs_vm_t *vm, njs_value_t *value, void *obj,
     }
 
     return njs_string_create(vm, value, vv->data, vv->len, 0);
+}
+
+
+static njs_ret_t
+ngx_http_js_ext_get_response(njs_vm_t *vm, njs_value_t *value, void *obj,
+    uintptr_t data)
+{
+    ngx_http_js_ctx_t   *ctx;
+    ngx_http_request_t  *r;
+
+    r = (ngx_http_request_t *) obj;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    njs_vm_retval_set(ctx->vm, &ctx->args[1]);
+
+    return NJS_OK;
 }
 
 
