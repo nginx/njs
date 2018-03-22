@@ -337,7 +337,7 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
         return NULL;
     }
 
-    nvm = nxt_mem_cache_zalloc(nmcp, sizeof(njs_vm_t));
+    nvm = nxt_mem_cache_zalign(nmcp, sizeof(njs_value_t), sizeof(njs_vm_t));
 
     if (nxt_fast_path(nvm != NULL)) {
         nvm->mem_cache_pool = nmcp;
