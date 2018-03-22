@@ -2975,6 +2975,9 @@ static njs_unit_test_t  njs_test[] =
                  "a.forEach(function(v, i, a) { a[i+3] = a.length }); a"),
       nxt_string("1,2,3,3,4,5") },
 
+    { nxt_string("function f() { var c; [1].forEach(function(v) { c })}; f()"),
+      nxt_string("undefined") },
+
     { nxt_string("var a = [1,2,3]; var s = { sum: 0 };"
                  "[].forEach.call(a, function(v, i, a) { this.sum += v }, s);"
                  "s.sum"),

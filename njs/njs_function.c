@@ -237,6 +237,14 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
     size_t              spare_size, chunk_size;
     njs_native_frame_t  *frame;
 
+    /*
+     * The size value must be aligned to njs_value_t because vm->top_frame
+     * may point to frame->free and vm->top_frame is used as a base pointer
+     * in njs_vm_continuation() which is expected to return pointers aligned
+     * to njs_value_t.
+     */
+    size = nxt_align_size(size, sizeof(njs_value_t));
+
     spare_size = vm->top_frame->free_size;
 
     if (nxt_fast_path(size <= spare_size)) {
