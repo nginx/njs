@@ -111,7 +111,7 @@ njs_object_hash_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
     lhq.proto = &njs_object_hash_proto;
     lhq.pool = vm->mem_cache_pool;
 
-    do {
+    while (n != 0) {
         njs_string_get(&prop->name, &lhq.key);
         lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
         lhq.value = (void *) prop;
@@ -123,7 +123,7 @@ njs_object_hash_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
 
         prop++;
         n--;
-    } while (n != 0);
+    }
 
     return NXT_OK;
 }
