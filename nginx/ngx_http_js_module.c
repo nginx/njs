@@ -1503,7 +1503,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     method = 0;
     args_arg.length = 0;
-    body_arg.length = 0;
+    args_arg.start = NULL;
     has_body = 0;
 
     if (nargs > 2 && !njs_value_is_function(njs_argument(args, 2))) {
