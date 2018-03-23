@@ -323,6 +323,7 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
     njs_vm_t              *nvm;
     uint32_t              items;
     nxt_int_t             ret;
+    nxt_array_t           *externals;
     nxt_mem_cache_pool_t  *nmcp;
 
     nxt_thread_log_debug("CLONE:");
@@ -352,18 +353,20 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
         nvm->external_prototypes_hash = vm->external_prototypes_hash;
 
         items = vm->external_objects->items;
-        nvm->external_objects = nxt_array_create(items + 4, sizeof(void *),
-                                                 &njs_array_mem_proto,
-                                                 vm->mem_cache_pool);
-        if (nxt_slow_path(vm->external_objects == NULL)) {
+        externals = nxt_array_create(items + 4, sizeof(void *),
+                                     &njs_array_mem_proto, nvm->mem_cache_pool);
+
+        if (nxt_slow_path(externals == NULL)) {
             return NULL;
         }
 
         if (items > 0) {
-            memcpy(nvm->external_objects->start, vm->external_objects->start,
+            memcpy(externals->start, vm->external_objects->start,
                    items * sizeof(void *));
-            vm->external_objects->items = items;
+            externals->items = items;
         }
+
+        nvm->external_objects = externals;
 
         nvm->ops = vm->ops;
 
