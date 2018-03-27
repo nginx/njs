@@ -679,8 +679,8 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
     njs_vmcode_prop_set_t  *code;
 
     if (njs_is_primitive(object)) {
-        njs_exception_type_error(vm, "property set on primitive %s type",
-                                 njs_type_string(object->type));
+        njs_type_error(vm, "property set on primitive %s type",
+                       njs_type_string(object->type));
         return NXT_ERROR;
     }
 
@@ -803,7 +803,7 @@ njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *object, njs_value_t *property)
 
     case NJS_PRIMITIVE_VALUE:
     case NJS_STRING_VALUE:
-        njs_exception_type_error(vm, "property in on a primitive value", NULL);
+        njs_type_error(vm, "property in on a primitive value", NULL);
 
         return NXT_ERROR;
 
@@ -1065,16 +1065,13 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
 
             if (nxt_fast_path(ret == NXT_OK)) {
                 njs_string_get(&pq->value, &pq->lhq.key);
-                njs_exception_type_error(vm,
-                                      "cannot get property '%.*s' of undefined",
-                                      (int) pq->lhq.key.length,
-                                      pq->lhq.key.start);
+                njs_type_error(vm, "cannot get property '%.*s' of undefined",
+                               (int) pq->lhq.key.length, pq->lhq.key.start);
                 return NXT_ERROR;
             }
         }
 
-        njs_exception_type_error(vm,
-                            "cannot get property 'unknown' of undefined", NULL);
+        njs_type_error(vm, "cannot get property 'unknown' of undefined", NULL);
 
         return NXT_ERROR;
     }
@@ -1374,7 +1371,7 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     static njs_value_t prototype_string = njs_string("prototype");
 
     if (!njs_is_function(constructor)) {
-        njs_exception_type_error(vm, "right argument is not a function", NULL);
+        njs_type_error(vm, "right argument is not a function", NULL);
         return NXT_ERROR;
     }
 
@@ -2285,7 +2282,7 @@ njs_function_frame_create(njs_vm_t *vm, njs_value_t *value,
         }
     }
 
-    njs_exception_type_error(vm, "object is not callable", NULL);
+    njs_type_error(vm, "object is not callable", NULL);
 
     return NXT_ERROR;
 }
@@ -2371,9 +2368,9 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
         ret = nxt_lvlhsh_find(&ext_proto->hash, &pq.lhq);
 
         if (nxt_slow_path(ret != NXT_OK)) {
-            njs_exception_type_error(vm,
-                            "cannot find property '%.*s' of an external object",
-                            (int) pq.lhq.key.length, pq.lhq.key.start);
+            njs_type_error(vm,
+                           "cannot find property '%.*s' of an external object",
+                           (int) pq.lhq.key.length, pq.lhq.key.start);
             return NXT_ERROR;
 
         }
@@ -2381,7 +2378,7 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
         ext_proto = pq.lhq.value;
 
         if (nxt_slow_path(ext_proto->type != NJS_EXTERN_METHOD)) {
-            njs_exception_type_error(vm,
+            njs_type_error(vm,
                           "method '%.*s' of an external object is not callable",
                           (int) pq.lhq.key.length, pq.lhq.key.start);
             return NXT_ERROR;
@@ -2402,9 +2399,8 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
         return NXT_ERROR;
 
     default:
-        njs_exception_internal_error(vm, "method '%.*s' query failed:%d",
-                                     (int) pq.lhq.key.length, pq.lhq.key.start,
-                                     ret);
+        njs_internal_error(vm, "method '%.*s' query failed:%d",
+                           (int) pq.lhq.key.length, pq.lhq.key.start, ret);
         return NXT_ERROR;
     }
 
@@ -2631,9 +2627,8 @@ trap:
 
 type_error:
 
-    njs_exception_type_error(vm, "cannot convert %s to %s",
-                             njs_type_string(args->type),
-                             njs_arg_type_string(*args_types));
+    njs_type_error(vm, "cannot convert %s to %s", njs_type_string(args->type),
+                   njs_arg_type_string(*args_types));
 
     return NXT_ERROR;
 }
@@ -3396,8 +3391,8 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
                 }
 
                 if (ret == NXT_ERROR) {
-                    njs_exception_type_error(vm, "cannot evaluate an object's "
-                                             "value", NULL);
+                    njs_type_error(vm, "cannot evaluate an object's value",
+                                   NULL);
                 }
 
                 return ret;

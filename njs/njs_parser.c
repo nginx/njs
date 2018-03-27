@@ -1688,8 +1688,8 @@ njs_parser_try_statement(njs_vm_t *vm, njs_parser_t *parser)
     }
 
     if (try->right == NULL) {
-        njs_parser_syntax_error(vm, parser, "Missing catch or "
-                                "finally after try", NULL);
+        njs_parser_syntax_error(vm, parser,
+                                "Missing catch or finally after try", NULL);
 
         return NJS_TOKEN_ILLEGAL;
     }
@@ -2618,10 +2618,9 @@ njs_parser_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
     p = trace->handler(trace, td, p);
 
     if (vm->parser != NULL) {
-        njs_exception_internal_error(vm, "%s in %u", start,
-                                     vm->parser->lexer->line);
+        njs_internal_error(vm, "%s in %u", start, vm->parser->lexer->line);
     } else {
-        njs_exception_internal_error(vm, "%s", start);
+        njs_internal_error(vm, "%s", start);
     }
 
     return p;
@@ -2640,7 +2639,7 @@ njs_parser_syntax_error(njs_vm_t *vm, njs_parser_t *parser, const char* fmt,
     (void) vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
 
-    njs_exception_syntax_error(vm, "%s in %u", buf, parser->lexer->line);
+    njs_syntax_error(vm, "%s in %u", buf, parser->lexer->line);
 }
 
 
@@ -2656,5 +2655,5 @@ njs_parser_ref_error(njs_vm_t *vm, njs_parser_t *parser, const char* fmt,
     (void) vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
 
-    njs_exception_ref_error(vm, "%s in %u", buf, parser->lexer->line);
+    njs_reference_error(vm, "%s in %u", buf, parser->lexer->line);
 }

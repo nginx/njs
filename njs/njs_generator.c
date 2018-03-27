@@ -344,7 +344,7 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
 
     default:
         nxt_thread_log_debug("unknown token: %d", node->token);
-        njs_exception_syntax_error(vm, "unknown token", NULL);
+        njs_syntax_error(vm, "unknown token", NULL);
 
         return NXT_ERROR;
     }
@@ -2082,7 +2082,7 @@ njs_generate_scope(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
                          parser->code_size, code_size);
 
     if (nxt_slow_path(parser->code_size < code_size)) {
-        njs_exception_internal_error(vm, NULL, NULL);
+        njs_internal_error(vm, NULL, NULL);
         return NXT_ERROR;
     }
 

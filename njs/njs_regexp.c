@@ -342,7 +342,7 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
     if (nxt_fast_path(ret >= 0)) {
 
         if (nxt_slow_path((u_int) ret != pattern->ncaptures)) {
-            njs_exception_internal_error(vm, NULL, NULL);
+            njs_internal_error(vm, NULL, NULL);
             nxt_mem_cache_free(vm->mem_cache_pool, pattern);
             return NULL;
         }
@@ -394,11 +394,10 @@ njs_regexp_compile_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
     p = trace->handler(trace, td, start);
 
     if (vm->parser != NULL) {
-        njs_exception_syntax_error(vm, "%s in %u", start,
-                                   vm->parser->lexer->line);
+        njs_syntax_error(vm, "%s in %u", start, vm->parser->lexer->line);
 
     } else {
-        njs_exception_syntax_error(vm, "%s", start);
+        njs_syntax_error(vm, "%s", start);
     }
 
     return p;
@@ -435,7 +434,7 @@ njs_regexp_match_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
     trace = trace->next;
     p = trace->handler(trace, td, start);
 
-    njs_exception_internal_error(vm, (const char *) start, NULL);
+    njs_internal_error(vm, (const char *) start, NULL);
 
     return p;
 }
@@ -568,7 +567,7 @@ njs_regexp_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         return njs_regexp_string_create(vm, &vm->retval, source, size, length);
     }
 
-    njs_exception_type_error(vm, "'this' argument is not a regexp", NULL);
+    njs_type_error(vm, "'this' argument is not a regexp", NULL);
 
     return NXT_ERROR;
 }
@@ -586,7 +585,7 @@ njs_regexp_prototype_test(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_regexp_pattern_t  *pattern;
 
     if (!njs_is_regexp(&args[0])) {
-        njs_exception_type_error(vm, "'this' argument is not a regexp", NULL);
+        njs_type_error(vm, "'this' argument is not a regexp", NULL);
         return NXT_ERROR;
     }
 
@@ -636,7 +635,7 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     nxt_regex_match_data_t  *match_data;
 
     if (!njs_is_regexp(&args[0])) {
-        njs_exception_type_error(vm, "'this' argument is not a regexp", NULL);
+        njs_type_error(vm, "'this' argument is not a regexp", NULL);
         return NXT_ERROR;
     }
 

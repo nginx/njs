@@ -68,7 +68,7 @@ njs_exception_error_create(njs_vm_t *vm, njs_value_type_t type,
 
 memory_error:
 
-    njs_exception_memory_error(vm);
+    njs_memory_error(vm);
 }
 
 
@@ -154,7 +154,7 @@ njs_error_create(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     error = njs_error_alloc(vm, type, NULL, value);
     if (nxt_slow_path(error == NULL)) {
-        njs_exception_memory_error(vm);
+        njs_memory_error(vm);
         return NXT_ERROR;
     }
 
@@ -327,14 +327,14 @@ const njs_object_init_t  njs_range_error_constructor_init = {
 
 
 njs_ret_t
-njs_ref_error_constructor(njs_vm_t *vm, njs_value_t *args,
+njs_reference_error_constructor(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
     return njs_error_create(vm, args, nargs, NJS_OBJECT_REF_ERROR);
 }
 
 
-static const njs_object_prop_t  njs_ref_error_constructor_properties[] =
+static const njs_object_prop_t  njs_reference_error_constructor_properties[] =
 {
     /* ReferenceError.name == "ReferenceError". */
     {
@@ -359,10 +359,10 @@ static const njs_object_prop_t  njs_ref_error_constructor_properties[] =
 };
 
 
-const njs_object_init_t  njs_ref_error_constructor_init = {
+const njs_object_init_t  njs_reference_error_constructor_init = {
     nxt_string("ReferenceError"),
-    njs_ref_error_constructor_properties,
-    nxt_nitems(njs_ref_error_constructor_properties),
+    njs_reference_error_constructor_properties,
+    nxt_nitems(njs_reference_error_constructor_properties),
 };
 
 
@@ -515,7 +515,7 @@ njs_set_memory_error(njs_vm_t *vm, njs_value_t *value)
 
 
 void
-njs_exception_memory_error(njs_vm_t *vm)
+njs_memory_error(njs_vm_t *vm)
 {
     njs_set_memory_error(vm, &vm->retval);
 }
@@ -612,7 +612,7 @@ njs_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     static const njs_value_t  default_name = njs_string("Error");
 
     if (nargs < 1 || !njs_is_object(&args[0])) {
-        njs_exception_type_error(vm, "'this' argument is not an object", NULL);
+        njs_type_error(vm, "'this' argument is not an object", NULL);
         return NXT_ERROR;
     }
 
@@ -668,7 +668,7 @@ njs_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NJS_OK;
     }
 
-    njs_exception_memory_error(vm);
+    njs_memory_error(vm);
     return NJS_ERROR;
 }
 
@@ -786,7 +786,7 @@ const njs_object_init_t  njs_range_error_prototype_init = {
 };
 
 
-static const njs_object_prop_t  njs_ref_error_prototype_properties[] =
+static const njs_object_prop_t  njs_reference_error_prototype_properties[] =
 {
     {
         .type = NJS_PROPERTY,
@@ -796,10 +796,10 @@ static const njs_object_prop_t  njs_ref_error_prototype_properties[] =
 };
 
 
-const njs_object_init_t  njs_ref_error_prototype_init = {
+const njs_object_init_t  njs_reference_error_prototype_init = {
     nxt_string("ReferenceError"),
-    njs_ref_error_prototype_properties,
-    nxt_nitems(njs_ref_error_prototype_properties),
+    njs_reference_error_prototype_properties,
+    nxt_nitems(njs_reference_error_prototype_properties),
 };
 
 

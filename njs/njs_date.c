@@ -1063,7 +1063,7 @@ njs_date_prototype_to_iso_string(njs_vm_t *vm, njs_value_t *args,
         return njs_string_new(vm, &vm->retval, buf, size, size);
     }
 
-    njs_exception_range_error(vm, NULL, NULL);
+    njs_range_error(vm, NULL, NULL);
 
     return NXT_ERROR;
 }
@@ -1911,7 +1911,7 @@ njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
     }
 
-    njs_exception_type_error(vm, "'this' argument is not an object", NULL);
+    njs_type_error(vm, "'this' argument is not an object", NULL);
 
     return NXT_ERROR;
 }

@@ -262,8 +262,8 @@ njs_object_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             type = njs_object_value_type(value->type);
 
         } else {
-            njs_exception_type_error(vm, "unexpected constructor argument:%s",
-                                     njs_type_string(value->type));
+            njs_type_error(vm, "unexpected constructor argument:%s",
+                           njs_type_string(value->type));
 
             return NXT_ERROR;
         }
@@ -310,7 +310,7 @@ njs_object_create(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
     }
 
-    njs_exception_type_error(vm, "too few arguments", NULL);
+    njs_type_error(vm, "too few arguments", NULL);
 
     return NXT_ERROR;
 }
@@ -323,16 +323,15 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_array_t  *keys;
 
     if (nargs < 2 || !njs_is_object(&args[1])) {
-        njs_exception_type_error(vm, "cannot convert %s argument to object",
-                                 (nargs >= 2) ? njs_type_string(args[1].type)
-                                              : "null");
+        njs_type_error(vm, "cannot convert %s argument to object",
+                       (nargs >= 2) ? njs_type_string(args[1].type) : "null");
 
         return NXT_ERROR;
     }
 
     keys = njs_object_keys_array(vm, &args[1]);
     if (keys == NULL) {
-        njs_exception_memory_error(vm);
+        njs_memory_error(vm);
         return NXT_ERROR;
     }
 
@@ -433,18 +432,17 @@ njs_object_define_property(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (nargs < 4 || !njs_is_object(&args[1]) || !njs_is_object(&args[3])) {
         if (nargs < 2 || !njs_is_object(&args[1])) {
             type = (nargs > 1) ? njs_type_string(args[1].type) : "null";
-            njs_exception_type_error(vm, "cannot convert %s argument to object",
-                                     type);
+            njs_type_error(vm, "cannot convert %s argument to object", type);
 
         } else {
-            njs_exception_type_error(vm, "descriptor is not an object", NULL);
+            njs_type_error(vm, "descriptor is not an object", NULL);
         }
 
         return NXT_ERROR;
     }
 
     if (!args[1].data.u.object->extensible) {
-        njs_exception_type_error(vm, "object is not extensible", NULL);
+        njs_type_error(vm, "object is not extensible", NULL);
         return NXT_ERROR;
     }
 
@@ -475,18 +473,17 @@ njs_object_define_properties(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (nargs < 3 || !njs_is_object(&args[1]) || !njs_is_object(&args[2])) {
         if (nargs < 2 || !njs_is_object(&args[1])) {
             type = (nargs > 1) ? njs_type_string(args[1].type) : "null";
-            njs_exception_type_error(vm, "cannot convert %s argument to object",
-                                     type);
+            njs_type_error(vm, "cannot convert %s argument to object", type);
 
         } else {
-            njs_exception_type_error(vm, "descriptor is not an object", NULL);
+            njs_type_error(vm, "descriptor is not an object", NULL);
         }
 
         return NXT_ERROR;
     }
 
     if (!args[1].data.u.object->extensible) {
-        njs_exception_type_error(vm, "object is not extensible", NULL);
+        njs_type_error(vm, "object is not extensible", NULL);
         return NXT_ERROR;
     }
 
@@ -618,8 +615,7 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
 
     if (nargs < 3 || !njs_is_object(&args[1])) {
         type = (nargs > 1) ? njs_type_string(args[1].type) : "null";
-        njs_exception_type_error(vm, "cannot convert %s argument to object",
-                                 type);
+        njs_type_error(vm, "cannot convert %s argument to object", type);
         return NXT_ERROR;
     }
 
@@ -748,9 +744,8 @@ njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_OK;
     }
 
-    njs_exception_type_error(vm, "cannot convert %s argument to object",
-                             (nargs > 1) ? njs_type_string(args[1].type)
-                                         : "null");
+    njs_type_error(vm, "cannot convert %s argument to object",
+                   (nargs > 1) ? njs_type_string(args[1].type) : "null");
     return NXT_ERROR;
 }
 
@@ -1069,7 +1064,7 @@ njs_property_prototype_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
     }
 
     /* Memory allocation or NXT_DECLINED error. */
-    njs_exception_internal_error(vm, NULL, NULL);
+    njs_internal_error(vm, NULL, NULL);
 
     return NULL;
 }
@@ -1312,7 +1307,7 @@ njs_property_constructor_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
     }
 
     /* Memory allocation or NXT_DECLINED error. */
-    njs_exception_internal_error(vm, NULL, NULL);
+    njs_internal_error(vm, NULL, NULL);
 
     return NULL;
 }

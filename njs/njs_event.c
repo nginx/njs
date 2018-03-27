@@ -79,8 +79,8 @@ njs_add_event(njs_vm_t *vm, njs_event_t *event)
 
     ret = nxt_lvlhsh_insert(&vm->events_hash, &lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
-        njs_exception_internal_error(vm, "Failed to add event with id: %s",
-                                     njs_string_short_start(&event->id));
+        njs_internal_error(vm, "Failed to add event with id: %s",
+                           njs_string_short_start(&event->id));
 
         njs_del_event(vm, event, NJS_EVENT_RELEASE | NJS_EVENT_DELETE);
         return NJS_ERROR;

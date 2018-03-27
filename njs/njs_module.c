@@ -59,7 +59,7 @@ njs_ret_t njs_module_require(njs_vm_t *vm, njs_value_t *args,
     nxt_lvlhsh_query_t  lhq;
 
     if (nargs < 2) {
-        njs_exception_type_error(vm, "missing path", NULL);
+        njs_type_error(vm, "missing path", NULL);
         return NJS_ERROR;
     }
 
@@ -78,8 +78,8 @@ njs_ret_t njs_module_require(njs_vm_t *vm, njs_value_t *args,
         return NXT_OK;
     }
 
-    njs_exception_error(vm, "Cannot find module '%.*s'", (int) lhq.key.length,
-                        lhq.key.start);
+    njs_error(vm, "Cannot find module '%.*s'",
+              (int) lhq.key.length, lhq.key.start);
 
     return NJS_ERROR;
 }

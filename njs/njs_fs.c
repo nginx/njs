@@ -116,12 +116,12 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     nxt_lvlhsh_query_t  lhq;
 
     if (nxt_slow_path(nargs < 3)) {
-        njs_exception_type_error(vm, "too few arguments", NULL);
+        njs_type_error(vm, "too few arguments", NULL);
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_string(&args[1]))) {
-        njs_exception_type_error(vm, "path must be a string", NULL);
+        njs_type_error(vm, "path must be a string", NULL);
         return NJS_ERROR;
     }
 
@@ -155,13 +155,13 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             }
 
         } else {
-            njs_exception_type_error(vm, "Unknown options type "
-                                     "(a string or object required)", NULL);
+            njs_type_error(vm, "Unknown options type "
+                           "(a string or object required)", NULL);
             return NJS_ERROR;
         }
 
         if (nxt_slow_path(nargs < 4 || !njs_is_function(&args[3]))) {
-            njs_exception_type_error(vm, "callback must be a function", NULL);
+            njs_type_error(vm, "callback must be a function", NULL);
             return NJS_ERROR;
         }
 
@@ -169,7 +169,7 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     } else {
         if (nxt_slow_path(!njs_is_function(&args[2]))) {
-            njs_exception_type_error(vm, "callback must be a function", NULL);
+            njs_type_error(vm, "callback must be a function", NULL);
             return NJS_ERROR;
         }
 
@@ -182,8 +182,8 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     flags = njs_fs_flags(&flag);
     if (nxt_slow_path(flags == -1)) {
-        njs_exception_type_error(vm, "Unknown file open flags: '%.*s'",
-                                 (int) flag.length, flag.start);
+        njs_type_error(vm, "Unknown file open flags: '%.*s'",
+                       (int) flag.length, flag.start);
         return NJS_ERROR;
     }
 
@@ -195,8 +195,8 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (encoding.length != 0
         && (encoding.length != 4 || memcmp(encoding.start, "utf8", 4) != 0))
     {
-        njs_exception_type_error(vm, "Unknown encoding: '%.*s'",
-                                 (int) encoding.length, encoding.start);
+        njs_type_error(vm, "Unknown encoding: '%.*s'",
+                       (int) encoding.length, encoding.start);
         return NJS_ERROR;
     }
 
@@ -309,7 +309,7 @@ memory_error:
         (void) close(fd);
     }
 
-    njs_exception_memory_error(vm);
+    njs_memory_error(vm);
 
     return NJS_ERROR;
 }
@@ -330,12 +330,12 @@ njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     nxt_lvlhsh_query_t  lhq;
 
     if (nxt_slow_path(nargs < 2)) {
-        njs_exception_type_error(vm, "too few arguments", NULL);
+        njs_type_error(vm, "too few arguments", NULL);
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_string(&args[1]))) {
-        njs_exception_type_error(vm, "path must be a string", NULL);
+        njs_type_error(vm, "path must be a string", NULL);
         return NJS_ERROR;
     }
 
@@ -369,8 +369,8 @@ njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             }
 
         } else {
-            njs_exception_type_error(vm, "Unknown options type "
-                                     "(a string or object required)", NULL);
+            njs_type_error(vm, "Unknown options type "
+                           "(a string or object required)", NULL);
             return NJS_ERROR;
         }
     }
@@ -381,8 +381,8 @@ njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     flags = njs_fs_flags(&flag);
     if (nxt_slow_path(flags == -1)) {
-        njs_exception_type_error(vm, "Unknown file open flags: '%.*s'",
-                                 (int) flag.length, flag.start);
+        njs_type_error(vm, "Unknown file open flags: '%.*s'",
+                       (int) flag.length, flag.start);
         return NJS_ERROR;
     }
 
@@ -394,8 +394,8 @@ njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (encoding.length != 0
         && (encoding.length != 4 || memcmp(encoding.start, "utf8", 4) != 0))
     {
-        njs_exception_type_error(vm, "Unknown encoding: '%.*s'",
-                                 (int) encoding.length, encoding.start);
+        njs_type_error(vm, "Unknown encoding: '%.*s'",
+                       (int) encoding.length, encoding.start);
         return NJS_ERROR;
     }
 
@@ -495,7 +495,7 @@ memory_error:
         (void) close(fd);
     }
 
-    njs_exception_memory_error(vm);
+    njs_memory_error(vm);
 
     return NJS_ERROR;
 }
@@ -551,17 +551,17 @@ static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
     nxt_lvlhsh_query_t  lhq;
 
     if (nxt_slow_path(nargs < 4)) {
-        njs_exception_type_error(vm, "too few arguments", NULL);
+        njs_type_error(vm, "too few arguments", NULL);
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_string(&args[1]))) {
-        njs_exception_type_error(vm, "path must be a string", NULL);
+        njs_type_error(vm, "path must be a string", NULL);
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_string(&args[2]))) {
-        njs_exception_type_error(vm, "data must be a string", NULL);
+        njs_type_error(vm, "data must be a string", NULL);
         return NJS_ERROR;
     }
 
@@ -608,13 +608,13 @@ static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
             }
 
         } else {
-            njs_exception_type_error(vm, "Unknown options type "
-                                     "(a string or object required)", NULL);
+            njs_type_error(vm, "Unknown options type "
+                           "(a string or object required)", NULL);
             return NJS_ERROR;
         }
 
         if (nxt_slow_path(nargs < 5 || !njs_is_function(&args[4]))) {
-            njs_exception_type_error(vm, "callback must be a function", NULL);
+            njs_type_error(vm, "callback must be a function", NULL);
             return NJS_ERROR;
         }
 
@@ -622,7 +622,7 @@ static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
 
     } else {
         if (nxt_slow_path(!njs_is_function(&args[3]))) {
-            njs_exception_type_error(vm, "callback must be a function", NULL);
+            njs_type_error(vm, "callback must be a function", NULL);
             return NJS_ERROR;
         }
 
@@ -632,8 +632,8 @@ static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
     if (flag.start != NULL) {
         flags = njs_fs_flags(&flag);
         if (nxt_slow_path(flags == -1)) {
-            njs_exception_type_error(vm, "Unknown file open flags: '%.*s'",
-                                     (int) flag.length, flag.start);
+            njs_type_error(vm, "Unknown file open flags: '%.*s'",
+                           (int) flag.length, flag.start);
             return NJS_ERROR;
         }
 
@@ -656,8 +656,8 @@ static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
     if (encoding.length != 0
         && (encoding.length != 4 || memcmp(encoding.start, "utf8", 4) != 0))
     {
-        njs_exception_type_error(vm, "Unknown encoding: '%.*s'",
-                                 (int) encoding.length, encoding.start);
+        njs_type_error(vm, "Unknown encoding: '%.*s'",
+                       (int) encoding.length, encoding.start);
         return NJS_ERROR;
     }
 
@@ -740,17 +740,17 @@ njs_fs_write_file_sync_internal(njs_vm_t *vm, njs_value_t *args,
     nxt_lvlhsh_query_t  lhq;
 
     if (nxt_slow_path(nargs < 3)) {
-        njs_exception_type_error(vm, "too few arguments", NULL);
+        njs_type_error(vm, "too few arguments", NULL);
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_string(&args[1]))) {
-        njs_exception_type_error(vm, "path must be a string", NULL);
+        njs_type_error(vm, "path must be a string", NULL);
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_string(&args[2]))) {
-        njs_exception_type_error(vm, "data must be a string", NULL);
+        njs_type_error(vm, "data must be a string", NULL);
         return NJS_ERROR;
     }
 
@@ -797,8 +797,8 @@ njs_fs_write_file_sync_internal(njs_vm_t *vm, njs_value_t *args,
             }
 
         } else {
-            njs_exception_type_error(vm, "Unknown options type "
-                                     "(a string or object required)", NULL);
+            njs_type_error(vm, "Unknown options type "
+                           "(a string or object required)", NULL);
             return NJS_ERROR;
         }
     }
@@ -806,8 +806,8 @@ njs_fs_write_file_sync_internal(njs_vm_t *vm, njs_value_t *args,
     if (flag.start != NULL) {
         flags = njs_fs_flags(&flag);
         if (nxt_slow_path(flags == -1)) {
-            njs_exception_type_error(vm, "Unknown file open flags: '%.*s'",
-                                     (int) flag.length, flag.start);
+            njs_type_error(vm, "Unknown file open flags: '%.*s'",
+                           (int) flag.length, flag.start);
             return NJS_ERROR;
         }
 
@@ -830,8 +830,8 @@ njs_fs_write_file_sync_internal(njs_vm_t *vm, njs_value_t *args,
     if (encoding.length != 0
         && (encoding.length != 4 || memcmp(encoding.start, "utf8", 4) != 0))
     {
-        njs_exception_type_error(vm, "Unknown encoding: '%.*s'",
-                                 (int) encoding.length, encoding.start);
+        njs_type_error(vm, "Unknown encoding: '%.*s'",
+                       (int) encoding.length, encoding.start);
         return NJS_ERROR;
     }
 
@@ -944,7 +944,7 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
 
         ret = nxt_lvlhsh_insert(&error->hash, &lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
-            njs_exception_internal_error(vm, NULL, NULL);
+            njs_internal_error(vm, NULL, NULL);
             return NJS_ERROR;
         }
     }
@@ -963,7 +963,7 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
 
         ret = nxt_lvlhsh_insert(&error->hash, &lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
-            njs_exception_internal_error(vm, NULL, NULL);
+            njs_internal_error(vm, NULL, NULL);
             return NJS_ERROR;
         }
     }
@@ -988,7 +988,7 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
 
         ret = nxt_lvlhsh_insert(&error->hash, &lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
-            njs_exception_internal_error(vm, NULL, NULL);
+            njs_internal_error(vm, NULL, NULL);
             return NJS_ERROR;
         }
     }
@@ -1001,7 +1001,7 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
 
 memory_error:
 
-    njs_exception_memory_error(vm);
+    njs_memory_error(vm);
 
     return NJS_ERROR;
 }

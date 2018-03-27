@@ -249,7 +249,7 @@ njs_array_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         size = (uint32_t) num;
 
         if ((double) size != num) {
-            njs_exception_range_error(vm, NULL, NULL);
+            njs_range_error(vm, NULL, NULL);
             return NXT_ERROR;
         }
 
@@ -1715,7 +1715,7 @@ njs_array_prototype_reduce(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         n = njs_array_iterator_index(array, iter);
 
         if (n == NJS_ARRAY_INVALID_INDEX) {
-            njs_exception_type_error(vm, "invalid index", NULL);
+            njs_type_error(vm, "invalid index", NULL);
             return NXT_ERROR;
         }
 
@@ -1776,7 +1776,7 @@ njs_array_iterator_args(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs)
         return NXT_OK;
     }
 
-    njs_exception_type_error(vm, "unexpected iterator arguments", NULL);
+    njs_type_error(vm, "unexpected iterator arguments", NULL);
 
     return NXT_ERROR;
 }
@@ -1850,7 +1850,7 @@ njs_array_prototype_reduce_right(njs_vm_t *vm, njs_value_t *args,
         n = njs_array_reduce_right_index(array, iter);
 
         if (n == NJS_ARRAY_INVALID_INDEX) {
-            njs_exception_type_error(vm, "invalid index", NULL);
+            njs_type_error(vm, "invalid index", NULL);
 
             return NXT_ERROR;
         }

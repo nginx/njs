@@ -389,8 +389,7 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
         index = (index >> NJS_SCOPE_SHIFT) + 1;
 
         if (index > 255 || vs.scope->argument_closures == 0) {
-            njs_exception_internal_error(vm, "too many argument closures",
-                                         NULL);
+            njs_internal_error(vm, "too many argument closures", NULL);
 
             return NULL;
         }
