@@ -63,8 +63,16 @@ static njs_ret_t ngx_stream_js_ext_get_buffer(njs_vm_t *vm, njs_value_t *value,
     void *obj, uintptr_t data);
 static njs_ret_t ngx_stream_js_ext_set_buffer(njs_vm_t *vm, void *obj,
     uintptr_t data, nxt_str_t *value);
- static njs_ret_t ngx_stream_js_ext_log(njs_vm_t *vm, njs_value_t *args,
+
+static njs_ret_t ngx_stream_js_ext_log(njs_vm_t *vm, njs_value_t *args,
      nxt_uint_t nargs, njs_index_t unused);
+static njs_ret_t ngx_stream_js_ext_warn(njs_vm_t *vm, njs_value_t *args,
+     nxt_uint_t nargs, njs_index_t unused);
+static njs_ret_t ngx_stream_js_ext_error(njs_vm_t *vm, njs_value_t *args,
+     nxt_uint_t nargs, njs_index_t unused);
+static njs_ret_t ngx_stream_js_ext_log_core(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, ngx_uint_t level);
+
 static njs_ret_t ngx_stream_js_ext_get_variable(njs_vm_t *vm,
     njs_value_t *value, void *obj, uintptr_t data);
 static njs_ret_t ngx_stream_js_ext_get_code(njs_vm_t *vm,
@@ -199,6 +207,19 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
       NULL,
       0 },
 
+
+    { nxt_string("variables"),
+      NJS_EXTERN_OBJECT,
+      NULL,
+      0,
+      ngx_stream_js_ext_get_variable,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      0 },
+
     { nxt_string("log"),
       NJS_EXTERN_METHOD,
       NULL,
@@ -211,16 +232,28 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
       ngx_stream_js_ext_log,
       0 },
 
-    { nxt_string("variables"),
-      NJS_EXTERN_OBJECT,
+    { nxt_string("warn"),
+      NJS_EXTERN_METHOD,
       NULL,
       0,
-      ngx_stream_js_ext_get_variable,
       NULL,
       NULL,
       NULL,
       NULL,
       NULL,
+      ngx_stream_js_ext_warn,
+      0 },
+
+    { nxt_string("error"),
+      NJS_EXTERN_METHOD,
+      NULL,
+      0,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      ngx_stream_js_ext_error,
       0 },
 
     { nxt_string("OK"),
@@ -825,6 +858,30 @@ static njs_ret_t
 ngx_stream_js_ext_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
+    return ngx_stream_js_ext_log_core(vm, args, nargs, NGX_LOG_INFO);
+}
+
+
+static njs_ret_t
+ngx_stream_js_ext_warn(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    return ngx_stream_js_ext_log_core(vm, args, nargs, NGX_LOG_WARN);
+}
+
+
+static njs_ret_t
+ngx_stream_js_ext_error(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    return ngx_stream_js_ext_log_core(vm, args, nargs, NGX_LOG_ERR);
+}
+
+
+static njs_ret_t
+ngx_stream_js_ext_log_core(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    ngx_uint_t level)
+{
     nxt_str_t              msg;
     ngx_connection_t      *c;
     ngx_log_handler_pt     handler;
@@ -842,7 +899,7 @@ ngx_stream_js_ext_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     handler = c->log->handler;
     c->log->handler = NULL;
 
-    ngx_log_error(NGX_LOG_INFO, c->log, 0, "js: %*s", msg.length, msg.start);
+    ngx_log_error(level, c->log, 0, "js: %*s", msg.length, msg.start);
 
     c->log->handler = handler;
 
