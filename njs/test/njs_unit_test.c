@@ -447,6 +447,59 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("undefined - undefined"),
       nxt_string("NaN") },
 
+    /* String.toString() method. */
+
+    { nxt_string("'A'.toString()"),
+      nxt_string("A") },
+
+    { nxt_string("'A'.toString('hex')"),
+      nxt_string("TypeError: argument must be a byte string") },
+
+    { nxt_string("'A'.toBytes().toString('latin1')"),
+      nxt_string("TypeError: Unknown encoding: 'latin1'") },
+
+    { nxt_string("'ABCD'.toBytes().toString('hex')"),
+      nxt_string("41424344") },
+
+    { nxt_string("'\\x00\\xAA\\xBB\\xFF'.toBytes().toString('hex')"),
+      nxt_string("00aabbff") },
+
+    { nxt_string("'\\x00\\xAA\\xBB\\xFF'.toBytes().toString('base64')"),
+      nxt_string("AKq7/w==") },
+
+    { nxt_string("'ABCD'.toBytes().toString('base64')"),
+      nxt_string("QUJDRA==") },
+
+    { nxt_string("'ABC'.toBytes().toString('base64')"),
+      nxt_string("QUJD") },
+
+    { nxt_string("'AB'.toBytes().toString('base64')"),
+      nxt_string("QUI=") },
+
+    { nxt_string("'A'.toBytes().toString('base64')"),
+      nxt_string("QQ==") },
+
+    { nxt_string("''.toBytes().toString('base64')"),
+      nxt_string("") },
+
+    { nxt_string("'\\x00\\xAA\\xBB\\xFF'.toBytes().toString('base64url')"),
+      nxt_string("AKq7_w") },
+
+    { nxt_string("'ABCD'.toBytes().toString('base64url')"),
+      nxt_string("QUJDRA") },
+
+    { nxt_string("'ABC'.toBytes().toString('base64url')"),
+      nxt_string("QUJD") },
+
+    { nxt_string("'AB'.toBytes().toString('base64url')"),
+      nxt_string("QUI") },
+
+    { nxt_string("'A'.toBytes().toString('base64url')"),
+      nxt_string("QQ") },
+
+    { nxt_string("''.toBytes().toString('base64url')"),
+      nxt_string("") },
+
     /* Assignment. */
 
     { nxt_string("var a, b = (a = [2]) * (3 * 4); a +' '+ b"),

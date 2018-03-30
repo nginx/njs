@@ -730,6 +730,67 @@ njs_string_prototype_value_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     return NXT_OK;
 }
 
+
+/*
+ * String.toString([encoding]).
+ * Returns the string as is if no additional argument is provided,
+ * otherwise converts a byte string into an encoded string: hex, base64,
+ * base64url.
+ */
+
+static njs_ret_t
+njs_string_prototype_to_string(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    nxt_int_t          ret;
+    nxt_str_t          enc, str;
+    njs_value_t        value;
+    njs_string_prop_t  string;
+
+    ret = njs_string_prototype_value_of(vm, args, nargs, unused);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
+    if (nargs < 2) {
+        return NJS_OK;
+    }
+
+    if (nxt_slow_path(!njs_is_string(&args[1]))) {
+        njs_type_error(vm, "encoding must be a string", NULL);
+        return NJS_ERROR;
+    }
+
+    value = vm->retval;
+
+    (void) njs_string_prop(&string, &value);
+
+    if (nxt_slow_path(string.length != 0)) {
+        njs_type_error(vm, "argument must be a byte string", NULL);
+        return NJS_ERROR;
+    }
+
+    njs_string_get(&args[1], &enc);
+
+    str.length = string.size;
+    str.start = string.start;
+
+    if (enc.length == 3 && memcmp(enc.start, "hex", 3) == 0) {
+        return njs_string_hex(vm, &vm->retval, &str);
+
+    } else if (enc.length == 6 && memcmp(enc.start, "base64", 6) == 0) {
+        return njs_string_base64(vm, &vm->retval, &str);
+
+    } else if (enc.length == 9 && memcmp(enc.start, "base64url", 9) == 0) {
+        return njs_string_base64url(vm, &vm->retval, &str);
+    }
+
+    njs_type_error(vm, "Unknown encoding: '%.*s'", (int) enc.length, enc.start);
+
+    return NJS_ERROR;
+}
+
+
 /*
  * String.concat(string2[, ..., stringN]).
  * JavaScript 1.2, ECMAScript 3.
@@ -3305,7 +3366,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
     {
         .type = NJS_METHOD,
         .name = njs_string("toString"),
-        .value = njs_native_function(njs_string_prototype_value_of, 0, 0),
+        .value = njs_native_function(njs_string_prototype_to_string, 0, 0),
     },
 
     {

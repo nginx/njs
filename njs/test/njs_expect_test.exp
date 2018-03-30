@@ -258,6 +258,13 @@ njs_test {
 njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
+    {"fs.readFileSync('njs_test_file').toString('base64')\r\n"
+     "zrHOslrOsw==\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
     {"fs.readFileSync('njs_test_file', 'utf8')[2]\r\n"
      "Z\r\n>> "}
 }
