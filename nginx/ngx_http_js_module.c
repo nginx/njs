@@ -1202,9 +1202,6 @@ ngx_http_js_ext_send(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
             /* TODO: njs_value_release(vm, value) in buf completion */
 
-            ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                           "http js send: \"%*s\"", s.length, s.start);
-
             b = ngx_calloc_buf(r->pool);
             if (b == NULL) {
                 return NJS_ERROR;
