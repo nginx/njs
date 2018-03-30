@@ -79,6 +79,8 @@ typedef struct {
 } njs_string_replace_t;
 
 
+static void njs_encode_base64_core(nxt_str_t *dst, const nxt_str_t *src,
+    const u_char *basis, nxt_uint_t padding);
 static nxt_noinline void njs_string_slice_prop(njs_string_prop_t *string,
     njs_slice_prop_t *slice, njs_value_t *args, nxt_uint_t nargs);
 static nxt_noinline void njs_string_slice_args(njs_slice_prop_t *slice,
@@ -117,6 +119,9 @@ static njs_ret_t njs_string_encode(njs_vm_t *vm, njs_value_t *value,
     const uint32_t *escape);
 static njs_ret_t njs_string_decode(njs_vm_t *vm, njs_value_t *value,
     const uint32_t *reserve);
+
+
+#define njs_base64_encoded_length(len)  (((len + 2) / 3) * 4)
 
 
 njs_ret_t
@@ -272,6 +277,135 @@ njs_string_hex(njs_vm_t *vm, njs_value_t *value, const nxt_str_t *src)
     njs_memory_error(vm);
 
     return NXT_ERROR;
+}
+
+
+static void
+njs_encode_base64(nxt_str_t *dst, const nxt_str_t *src)
+{
+    static u_char   basis64[] =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+    njs_encode_base64_core(dst, src, basis64, 1);
+}
+
+
+static void
+njs_encode_base64url(nxt_str_t *dst, const nxt_str_t *src)
+{
+    static u_char   basis64[] =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+    njs_encode_base64_core(dst, src, basis64, 0);
+}
+
+
+static void
+njs_encode_base64_core(nxt_str_t *dst, const nxt_str_t *src,
+    const u_char *basis, nxt_bool_t padding)
+{
+   u_char  *d, *s, c0, c1, c2;
+   size_t  len;
+
+    len = src->length;
+    s = src->start;
+    d = dst->start;
+
+    while (len > 2) {
+        c0 = s[0];
+        c1 = s[1];
+        c2 = s[2];
+
+        *d++ = basis[c0 >> 2];
+        *d++ = basis[((c0 & 0x03) << 4) | (c1 >> 4)];
+        *d++ = basis[((c1 & 0x0f) << 2) | (c2 >> 6)];
+        *d++ = basis[c2 & 0x3f];
+
+        s += 3;
+        len -= 3;
+    }
+
+    if (len > 0) {
+        c0 = s[0];
+        *d++ = basis[c0 >> 2];
+
+        if (len == 1) {
+            *d++ = basis[(c0 & 0x03) << 4];
+            if (padding) {
+                *d++ = '=';
+                *d++ = '=';
+            }
+
+        } else {
+            c1 = s[1];
+
+            *d++ = basis[((c0 & 0x03) << 4) | (c1 >> 4)];
+            *d++ = basis[(c1 & 0x0f) << 2];
+
+            if (padding) {
+                *d++ = '=';
+            }
+        }
+
+    }
+
+    dst->length = d - dst->start;
+}
+
+
+nxt_noinline njs_ret_t
+njs_string_base64(njs_vm_t *vm, njs_value_t *value, const nxt_str_t *src)
+{
+    nxt_str_t  dst;
+
+    if (nxt_slow_path(src->length == 0)) {
+        vm->retval = njs_string_empty;
+        return NXT_OK;
+    }
+
+    dst.length = njs_base64_encoded_length(src->length);
+
+    dst.start = njs_string_alloc(vm, &vm->retval, dst.length, dst.length);
+    if (nxt_slow_path(dst.start == NULL)) {
+        njs_memory_error(vm);
+        return NXT_ERROR;
+    }
+
+    njs_encode_base64(&dst, src);
+
+    return NXT_OK;
+}
+
+
+nxt_noinline njs_ret_t
+njs_string_base64url(njs_vm_t *vm, njs_value_t *value, const nxt_str_t *src)
+{
+    size_t     padding;
+    nxt_str_t  dst;
+
+    if (nxt_slow_path(src->length == 0)) {
+        vm->retval = njs_string_empty;
+        return NXT_OK;
+    }
+
+    padding = src->length % 3;
+
+    /*
+     * Calculating the padding length: 0 -> 0, 1 -> 2, 2 -> 1.
+     */
+    padding = (4 >> padding) & 0x03;
+
+    dst.length = njs_base64_encoded_length(src->length) - padding;
+
+    dst.start = njs_string_alloc(vm, &vm->retval, dst.length, dst.length);
+    if (nxt_slow_path(dst.start == NULL)) {
+        njs_memory_error(vm);
+        return NXT_ERROR;
+    }
+
+    njs_encode_base64url(&dst, src);
+
+    return NXT_OK;
 }
 
 
