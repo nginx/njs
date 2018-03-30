@@ -244,6 +244,37 @@ njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size,
 }
 
 
+nxt_noinline njs_ret_t
+njs_string_hex(njs_vm_t *vm, njs_value_t *value, const nxt_str_t *src)
+{
+    u_char        *p, c;
+    size_t        len;
+    nxt_uint_t    i;
+    const u_char  *start;
+
+    static const u_char  hex[16] = "0123456789abcdef";
+
+    len = src->length;
+    start = src->start;
+
+    p = njs_string_alloc(vm, value, len * 2, len * 2);
+
+    if (nxt_fast_path(p != NULL)) {
+        for (i = 0; i < len; i++) {
+            c = start[i];
+            *p++ = hex[c >> 4];
+            *p++ = hex[c & 0x0f];
+        }
+
+        return NXT_OK;
+    }
+
+    njs_memory_error(vm);
+
+    return NXT_ERROR;
+}
+
+
 void
 njs_string_copy(njs_value_t *dst, njs_value_t *src)
 {
