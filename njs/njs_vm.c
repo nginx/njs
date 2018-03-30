@@ -3691,6 +3691,13 @@ memory_error:
 }
 
 
+nxt_noinline uint8_t
+njs_value_bool(njs_value_t *value)
+{
+    return value->data.truth;
+}
+
+
 nxt_noinline double
 njs_value_number(njs_value_t *value)
 {
@@ -3720,9 +3727,9 @@ njs_value_is_void(njs_value_t *value)
 
 
 nxt_noinline nxt_int_t
-njs_value_is_true(njs_value_t *value)
+njs_value_is_boolean(njs_value_t *value)
 {
-    return njs_is_true(value);
+    return njs_is_boolean(value);
 }
 
 

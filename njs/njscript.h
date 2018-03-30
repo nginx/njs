@@ -182,12 +182,13 @@ NXT_EXPORT void njs_value_number_set(njs_value_t *value, double num);
 NXT_EXPORT void njs_value_error_set(njs_vm_t *vm, njs_value_t *value,
     const char *fmt, ...);
 
+NXT_EXPORT uint8_t njs_value_bool(njs_value_t *value);
 NXT_EXPORT double njs_value_number(njs_value_t *value);
 NXT_EXPORT void *njs_value_data(njs_value_t *value);
 NXT_EXPORT njs_function_t *njs_value_function(njs_value_t *value);
 
 NXT_EXPORT nxt_int_t njs_value_is_void(njs_value_t *value);
-NXT_EXPORT nxt_int_t njs_value_is_true(njs_value_t *value);
+NXT_EXPORT nxt_int_t njs_value_is_boolean(njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_is_number(njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_is_string(njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_is_object(njs_value_t *value);
