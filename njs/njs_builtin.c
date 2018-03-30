@@ -33,6 +33,7 @@
 #include <njs_time.h>
 #include <njs_module.h>
 #include <njs_fs.h>
+#include <njs_crypto.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -58,7 +59,8 @@ const njs_object_init_t    *njs_object_init[] = {
 
 
 const njs_object_init_t    *njs_module_init[] = {
-    &njs_fs_object_init          /* fs                 */
+    &njs_fs_object_init,         /* fs                 */
+    &njs_crypto_object_init      /* crypto             */
 };
 
 
@@ -71,6 +73,8 @@ const njs_object_init_t  *njs_prototype_init[] = {
     &njs_function_prototype_init,
     &njs_regexp_prototype_init,
     &njs_date_prototype_init,
+    &njs_hash_prototype_init,
+    &njs_hmac_prototype_init,
     &njs_error_prototype_init,
     &njs_eval_error_prototype_init,
     &njs_internal_error_prototype_init,
@@ -91,6 +95,8 @@ const njs_object_init_t    *njs_constructor_init[] = {
     &njs_function_constructor_init,
     &njs_regexp_constructor_init,
     &njs_date_constructor_init,
+    &njs_hash_constructor_init,
+    &njs_hmac_constructor_init,
     &njs_error_constructor_init,
     &njs_eval_error_constructor_init,
     &njs_internal_error_constructor_init,
@@ -192,6 +198,12 @@ njs_builtin_objects_create(njs_vm_t *vm)
         { .date =         { .time = NAN,
                             .object = { .type = NJS_DATE } } },
 
+        { .object_value = { .value = njs_value(NJS_DATA, 0, 0.0),
+                            .object = { .type = NJS_OBJECT } } },
+
+        { .object_value = { .value = njs_value(NJS_DATA, 0, 0.0),
+                            .object = { .type = NJS_OBJECT } } },
+
         { .object =       { .type = NJS_OBJECT_ERROR } },
         { .object =       { .type = NJS_OBJECT_EVAL_ERROR } },
         { .object =       { .type = NJS_OBJECT_INTERNAL_ERROR } },
@@ -214,6 +226,9 @@ njs_builtin_objects_create(njs_vm_t *vm)
         { njs_regexp_constructor,
           { NJS_SKIP_ARG, NJS_STRING_ARG, NJS_STRING_ARG } },
         { njs_date_constructor,       { 0 } },
+        { njs_hash_constructor,       { NJS_SKIP_ARG, NJS_STRING_ARG } },
+        { njs_hmac_constructor,       { NJS_SKIP_ARG, NJS_STRING_ARG,
+                                        NJS_STRING_ARG } },
         { njs_error_constructor,      { NJS_SKIP_ARG, NJS_STRING_ARG } },
         { njs_eval_error_constructor, { NJS_SKIP_ARG, NJS_STRING_ARG } },
         { njs_internal_error_constructor,

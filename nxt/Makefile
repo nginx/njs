@@ -11,6 +11,9 @@ $(NXT_BUILDDIR)/libnxt.a: \
 	$(NXT_BUILDDIR)/nxt_rbtree.o \
 	$(NXT_BUILDDIR)/nxt_lvlhsh.o \
 	$(NXT_BUILDDIR)/nxt_random.o \
+	$(NXT_BUILDDIR)/nxt_md5.o \
+	$(NXT_BUILDDIR)/nxt_sha1.o \
+	$(NXT_BUILDDIR)/nxt_sha2.o \
 	$(NXT_BUILDDIR)/nxt_pcre.o \
 	$(NXT_BUILDDIR)/nxt_malloc.o \
 	$(NXT_BUILDDIR)/nxt_trace.o \
@@ -23,6 +26,9 @@ $(NXT_BUILDDIR)/libnxt.a: \
 		$(NXT_BUILDDIR)/nxt_rbtree.o \
 		$(NXT_BUILDDIR)/nxt_lvlhsh.o \
 		$(NXT_BUILDDIR)/nxt_random.o \
+		$(NXT_BUILDDIR)/nxt_md5.o \
+		$(NXT_BUILDDIR)/nxt_sha1.o \
+		$(NXT_BUILDDIR)/nxt_sha2.o \
 		$(NXT_BUILDDIR)/nxt_pcre.o \
 		$(NXT_BUILDDIR)/nxt_malloc.o \
 		$(NXT_BUILDDIR)/nxt_trace.o \
@@ -110,6 +116,36 @@ $(NXT_BUILDDIR)/nxt_random.o: \
 	$(NXT_CC) -c -o $(NXT_BUILDDIR)/nxt_random.o $(NXT_CFLAGS) \
 		-I$(NXT_LIB) \
 		$(NXT_LIB)/nxt_random.c
+
+$(NXT_BUILDDIR)/nxt_md5.o: \
+	$(NXT_LIB)/nxt_types.h \
+	$(NXT_LIB)/nxt_clang.h \
+	$(NXT_LIB)/nxt_md5.h \
+	$(NXT_LIB)/nxt_md5.c \
+
+	$(NXT_CC) -c -o $(NXT_BUILDDIR)/nxt_md5.o $(NXT_CFLAGS) \
+		-I$(NXT_LIB) \
+		$(NXT_LIB)/nxt_md5.c
+
+$(NXT_BUILDDIR)/nxt_sha1.o: \
+	$(NXT_LIB)/nxt_types.h \
+	$(NXT_LIB)/nxt_clang.h \
+	$(NXT_LIB)/nxt_sha1.h \
+	$(NXT_LIB)/nxt_sha1.c \
+
+	$(NXT_CC) -c -o $(NXT_BUILDDIR)/nxt_sha1.o $(NXT_CFLAGS) \
+		-I$(NXT_LIB) \
+		$(NXT_LIB)/nxt_sha1.c
+
+$(NXT_BUILDDIR)/nxt_sha2.o: \
+	$(NXT_LIB)/nxt_types.h \
+	$(NXT_LIB)/nxt_clang.h \
+	$(NXT_LIB)/nxt_sha2.h \
+	$(NXT_LIB)/nxt_sha2.c \
+
+	$(NXT_CC) -c -o $(NXT_BUILDDIR)/nxt_sha2.o $(NXT_CFLAGS) \
+		-I$(NXT_LIB) \
+		$(NXT_LIB)/nxt_sha2.c
 
 $(NXT_BUILDDIR)/nxt_pcre.o: \
 	$(NXT_LIB)/nxt_types.h \

@@ -24,6 +24,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 	$(NXT_BUILDDIR)/njs_module.o \
 	$(NXT_BUILDDIR)/njs_event.o \
 	$(NXT_BUILDDIR)/njs_fs.o \
+	$(NXT_BUILDDIR)/njs_crypto.o \
 	$(NXT_BUILDDIR)/njs_extern.o \
 	$(NXT_BUILDDIR)/njs_variable.o \
 	$(NXT_BUILDDIR)/njs_builtin.o \
@@ -40,6 +41,9 @@ $(NXT_BUILDDIR)/libnjs.a: \
 	$(NXT_BUILDDIR)/nxt_lvlhsh.o \
 	$(NXT_BUILDDIR)/nxt_trace.o \
 	$(NXT_BUILDDIR)/nxt_random.o \
+	$(NXT_BUILDDIR)/nxt_md5.o \
+	$(NXT_BUILDDIR)/nxt_sha1.o \
+	$(NXT_BUILDDIR)/nxt_sha2.o \
 	$(NXT_BUILDDIR)/nxt_pcre.o \
 	$(NXT_BUILDDIR)/nxt_malloc.o \
 	$(NXT_BUILDDIR)/nxt_mem_cache_pool.o \
@@ -62,6 +66,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 		$(NXT_BUILDDIR)/njs_module.o \
 		$(NXT_BUILDDIR)/njs_event.o \
 		$(NXT_BUILDDIR)/njs_fs.o \
+		$(NXT_BUILDDIR)/njs_crypto.o \
 		$(NXT_BUILDDIR)/njs_extern.o \
 		$(NXT_BUILDDIR)/njs_variable.o \
 		$(NXT_BUILDDIR)/njs_builtin.o \
@@ -78,6 +83,9 @@ $(NXT_BUILDDIR)/libnjs.a: \
 		$(NXT_BUILDDIR)/nxt_lvlhsh.o \
 		$(NXT_BUILDDIR)/nxt_trace.o \
 		$(NXT_BUILDDIR)/nxt_random.o \
+		$(NXT_BUILDDIR)/nxt_md5.o \
+		$(NXT_BUILDDIR)/nxt_sha1.o \
+		$(NXT_BUILDDIR)/nxt_sha2.o \
 		$(NXT_BUILDDIR)/nxt_pcre.o \
 		$(NXT_BUILDDIR)/nxt_malloc.o \
 		$(NXT_BUILDDIR)/nxt_mem_cache_pool.o \
@@ -349,6 +357,17 @@ $(NXT_BUILDDIR)/njs_fs.o: \
 	$(NXT_CC) -c -o $(NXT_BUILDDIR)/njs_fs.o $(NXT_CFLAGS) \
 		-I$(NXT_LIB) -Injs \
 		njs/njs_fs.c
+
+$(NXT_BUILDDIR)/njs_crypto.o: \
+	$(NXT_BUILDDIR)/libnxt.a \
+	njs/njscript.h \
+	njs/njs_vm.h \
+	njs/njs_crypto.h \
+	njs/njs_crypto.c \
+
+	$(NXT_CC) -c -o $(NXT_BUILDDIR)/njs_crypto.o $(NXT_CFLAGS) \
+		-I$(NXT_LIB) -Injs \
+		njs/njs_crypto.c
 
 $(NXT_BUILDDIR)/njs_extern.o: \
 	$(NXT_BUILDDIR)/libnxt.a \

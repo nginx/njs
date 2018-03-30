@@ -1036,6 +1036,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
     case NJS_OBJECT_SYNTAX_ERROR:
     case NJS_OBJECT_TYPE_ERROR:
     case NJS_OBJECT_URI_ERROR:
+    case NJS_OBJECT_VALUE:
         obj = object->data.u.object;
         break;
 
@@ -3647,6 +3648,15 @@ njs_value_number_set(njs_value_t *value, double num)
     value->data.u.number = num;
     value->type = NJS_NUMBER;
     value->data.truth = njs_is_number_true(num);
+}
+
+
+nxt_noinline void
+njs_value_data_set(njs_value_t *value, void *data)
+{
+    value->data.u.data = data;
+    value->type = NJS_DATA;
+    value->data.truth = 1;
 }
 
 

@@ -76,7 +76,7 @@ typedef enum {
 
     /* The order of the above type is used in njs_is_primitive(). */
 
-    /* Reserved                 0x05, */
+    NJS_DATA                  = 0x05,
 
     /* The type is external code. */
     NJS_EXTERNAL              = 0x06,
@@ -90,7 +90,7 @@ typedef enum {
     NJS_INVALID               = 0x07,
 
     /*
-     * The object types have the fourth bit set.  It is used in njs_is_object().
+     * The object types are >= NJS_OBJECT, this is used in njs_is_object().
      * NJS_OBJECT_BOOLEAN, NJS_OBJECT_NUMBER, and NJS_OBJECT_STRING must be
      * in the same order as NJS_BOOLEAN, NJS_NUMBER, and NJS_STRING.  It is
      * used in njs_primitive_prototype_index().  The order of object types
@@ -112,6 +112,7 @@ typedef enum {
     NJS_OBJECT_SYNTAX_ERROR   = 0x1d,
     NJS_OBJECT_TYPE_ERROR     = 0x1e,
     NJS_OBJECT_URI_ERROR      = 0x1f,
+    NJS_OBJECT_VALUE          = 0x20,
 } njs_value_type_t;
 
 
@@ -154,7 +155,7 @@ union njs_value_s {
      * the maximum size of short string to 13.
      */
     struct {
-        njs_value_type_t              type:8;  /* 5 bits */
+        njs_value_type_t              type:8;  /* 6 bits */
         /*
          * The truth field is set during value assignment and then can be
          * quickly tested by logical and conditional operations regardless
@@ -184,7 +185,7 @@ union njs_value_s {
     } data;
 
     struct {
-        njs_value_type_t              type:8;  /* 5 bits */
+        njs_value_type_t              type:8;  /* 6 bits */
 
 #define NJS_STRING_SHORT              14
 #define NJS_STRING_LONG               15
@@ -196,7 +197,7 @@ union njs_value_s {
     } short_string;
 
     struct {
-        njs_value_type_t              type:8;  /* 5 bits */
+        njs_value_type_t              type:8;  /* 6 bits */
         uint8_t                       truth;
 
         /* 0xff if data is external string. */
@@ -208,7 +209,7 @@ union njs_value_s {
     } long_string;
 
     struct {
-        njs_value_type_t              type:8;  /* 5 bits */
+        njs_value_type_t              type:8;  /* 6 bits */
         uint8_t                       truth;
 
         uint16_t                      _spare;
@@ -217,7 +218,7 @@ union njs_value_s {
         const njs_extern_t            *proto;
     } external;
 
-    njs_value_type_t                  type:8;  /* 5 bits */
+    njs_value_type_t                  type:8;  /* 6 bits */
 };
 
 
@@ -480,8 +481,16 @@ typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
     ((value)->type <= NJS_STRING)
 
 
+#define njs_is_data(value)                                                    \
+    ((value)->type == NJS_DATA)
+
+
 #define njs_is_object(value)                                                  \
-    (((value)->type & NJS_OBJECT) != 0)
+    ((value)->type >= NJS_OBJECT)
+
+
+#define njs_is_object_value(value)                                            \
+    ((value)->type == NJS_OBJECT_VALUE)
 
 
 #define njs_object_value_type(type)                                           \
@@ -808,6 +817,8 @@ enum njs_prototypes_e {
     NJS_PROTOTYPE_FUNCTION,
     NJS_PROTOTYPE_REGEXP,
     NJS_PROTOTYPE_DATE,
+    NJS_PROTOTYPE_CRYPTO_HASH,
+    NJS_PROTOTYPE_CRYPTO_HMAC,
     NJS_PROTOTYPE_ERROR,
     NJS_PROTOTYPE_EVAL_ERROR,
     NJS_PROTOTYPE_INTERNAL_ERROR,
@@ -841,6 +852,8 @@ enum njs_constructor_e {
     NJS_CONSTRUCTOR_FUNCTION =       NJS_PROTOTYPE_FUNCTION,
     NJS_CONSTRUCTOR_REGEXP =         NJS_PROTOTYPE_REGEXP,
     NJS_CONSTRUCTOR_DATE =           NJS_PROTOTYPE_DATE,
+    NJS_CONSTRUCTOR_CRYPTO_HASH =    NJS_PROTOTYPE_CRYPTO_HASH,
+    NJS_CONSTRUCTOR_CRYPTO_HMAC =    NJS_PROTOTYPE_CRYPTO_HMAC,
     NJS_CONSTRUCTOR_ERROR =          NJS_PROTOTYPE_ERROR,
     NJS_CONSTRUCTOR_EVAL_ERROR =     NJS_PROTOTYPE_EVAL_ERROR,
     NJS_CONSTRUCTOR_INTERNAL_ERROR = NJS_PROTOTYPE_INTERNAL_ERROR,
@@ -865,7 +878,8 @@ enum njs_object_e {
 
 enum njs_module_e {
     NJS_MODULE_FS = 0,
-#define NJS_MODULE_MAX         (NJS_MODULE_FS + 1)
+    NJS_MODULE_CRYPTO,
+#define NJS_MODULE_MAX         (NJS_MODULE_CRYPTO + 1)
 };
 
 

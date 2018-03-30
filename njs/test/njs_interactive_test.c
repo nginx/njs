@@ -177,6 +177,28 @@ static njs_interactive_test_t  njs_test[] =
                  "    at setTimeout (native)\n"
                  "    at main (native)\n") },
 
+    { nxt_string("require('crypto').createHash('sha')" ENTER),
+      nxt_string("TypeError: not supported algorithm: 'sha'\n"
+                 "    at crypto.createHash (native)\n"
+                 "    at main (native)\n") },
+
+    { nxt_string("var h = require('crypto').createHash('sha1')" ENTER
+                 "h.update([])" ENTER),
+      nxt_string("TypeError: data must be a string\n"
+                 "    at Hash.prototype.update (native)\n"
+                 "    at main (native)\n") },
+
+    { nxt_string("require('crypto').createHmac('sha1', [])" ENTER),
+      nxt_string("TypeError: key must be a string\n"
+                 "    at crypto.createHmac (native)\n"
+                 "    at main (native)\n") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha1', 'secret')" ENTER
+                 "h.update([])" ENTER),
+      nxt_string("TypeError: data must be a string\n"
+                 "    at Hmac.prototype.update (native)\n"
+                 "    at main (native)\n") },
+
     { nxt_string("function f(o) {function f_in(o) {return o.a.a};"
                  "               return f_in(o)}; f({})" ENTER),
       nxt_string("TypeError: cannot get property 'a' of undefined\n"

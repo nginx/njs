@@ -1332,6 +1332,10 @@ static const njs_value_t  njs_object_number_string =
                                      njs_long_string("[object Number]");
 static const njs_value_t  njs_object_string_string =
                                      njs_long_string("[object String]");
+static const njs_value_t  njs_object_data_string =
+                                     njs_string("[object Data]");
+static const njs_value_t  njs_object_exernal_string =
+                                     njs_long_string("[object External]");
 static const njs_value_t  njs_object_object_string =
                                      njs_long_string("[object Object]");
 static const njs_value_t  njs_object_array_string =
@@ -1357,6 +1361,9 @@ static const njs_value_t  njs_object_type_error_string =
                                      njs_long_string("[object TypeError]");
 static const njs_value_t  njs_object_uri_error_string =
                                      njs_long_string("[object URIError]");
+static const njs_value_t  njs_object_object_value_string =
+                                     njs_long_string("[object ObjectValue]");
+
 
 
 njs_ret_t
@@ -1375,8 +1382,8 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         &njs_object_number_string,
         &njs_object_string_string,
 
-        &njs_string_empty,
-        &njs_object_function_string,
+        &njs_object_data_string,
+        &njs_object_exernal_string,
         &njs_string_empty,
         &njs_string_empty,
         &njs_string_empty,
@@ -1404,6 +1411,7 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         &njs_object_syntax_error_string,
         &njs_object_type_error_string,
         &njs_object_uri_error_string,
+        &njs_object_object_value_string,
     };
 
     index = args[0].type;

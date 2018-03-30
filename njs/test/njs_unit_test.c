@@ -9062,6 +9062,169 @@ static njs_unit_test_t  njs_test[] =
                  "fs.writeFileSync('/njs_unknown_path', '', true)"),
       nxt_string("TypeError: Unknown options type (a string or object required)") },
 
+    /* require('crypto').createHash() */
+
+    { nxt_string("require('crypto').createHash('sha1')"),
+      nxt_string("[object Hash]") },
+
+    { nxt_string("var h = require('crypto').createHash('md5');"
+                 "h.update('AB').digest('hex')"),
+      nxt_string("b86fc6b051f63d73de262d4c34e3a0a9") },
+
+    { nxt_string("var h = require('crypto').createHash('sha1');"
+                 "h.update('A').update('B').digest('hex')"),
+      nxt_string("06d945942aa26a61be18c3e22bf19bbca8dd2b5d") },
+
+    { nxt_string("var h = require('crypto').createHash('sha1');"
+                 "h.update('AB').digest('hex')"),
+      nxt_string("06d945942aa26a61be18c3e22bf19bbca8dd2b5d") },
+
+    { nxt_string("var h = require('crypto').createHash('sha1');"
+                 "h.update('AB').digest().toString('hex')"),
+      nxt_string("06d945942aa26a61be18c3e22bf19bbca8dd2b5d") },
+
+    { nxt_string("var h = require('crypto').createHash('sha1');"
+                 "h.update('AB').digest('base64')"),
+      nxt_string("BtlFlCqiamG+GMPiK/GbvKjdK10=") },
+
+    { nxt_string("var h = require('crypto').createHash('sha1');"
+                 "h.update('AB').digest().toString('base64')"),
+      nxt_string("BtlFlCqiamG+GMPiK/GbvKjdK10=") },
+
+    { nxt_string("var h = require('crypto').createHash('sha1');"
+                 "h.update('abc'.repeat(100)).digest('hex')"),
+      nxt_string("c95466320eaae6d19ee314ae4f135b12d45ced9a") },
+
+    { nxt_string("var h = require('crypto').createHash('sha256');"
+                 "h.update('A').update('B').digest('hex')"),
+      nxt_string("38164fbd17603d73f696b8b4d72664d735bb6a7c88577687fd2ae33fd6964153") },
+
+    { nxt_string("var h = require('crypto').createHash('sha256');"
+                 "h.update('AB').digest('hex')"),
+      nxt_string("38164fbd17603d73f696b8b4d72664d735bb6a7c88577687fd2ae33fd6964153") },
+
+    { nxt_string("var h = require('crypto').createHash('sha256');"
+                 "h.update('abc'.repeat(100)).digest('hex')"),
+      nxt_string("d9f5aeb06abebb3be3f38adec9a2e3b94228d52193be923eb4e24c9b56ee0930") },
+
+    { nxt_string("var h = require('crypto').createHash()"),
+      nxt_string("TypeError: algorithm must be a string") },
+
+    { nxt_string("var h = require('crypto').createHash([])"),
+      nxt_string("TypeError: algorithm must be a string") },
+
+    { nxt_string("var h = require('crypto').createHash('sha512')"),
+      nxt_string("TypeError: not supported algorithm: 'sha512'") },
+
+    { nxt_string("var h = require('crypto').createHash('sha1');"
+                 "h.update()"),
+      nxt_string("TypeError: data must be a string") },
+
+    { nxt_string("var h = require('crypto').createHash('sha1');"
+                 "h.update({})"),
+      nxt_string("TypeError: data must be a string") },
+
+    { nxt_string("var h = require('crypto').createHash('sha1');"
+                 "h.update('A').digest('latin1')"),
+      nxt_string("TypeError: Unknown digest encoding: 'latin1'") },
+
+    { nxt_string("var h = require('crypto').createHash('sha1');"
+                 "h.update('A').digest('hex'); h.digest('hex')"),
+      nxt_string("Error: Digest already called") },
+
+    /* require('crypto').createHash() */
+
+    { nxt_string("require('crypto').createHmac('sha1', '')"),
+      nxt_string("[object Hmac]") },
+
+    { nxt_string("var h = require('crypto').createHmac('md5', '');"
+                 "h.digest('hex')"),
+      nxt_string("74e6f7298a9c2d168935f58c001bad88") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha1', '');"
+                 "h.digest('hex')"),
+      nxt_string("fbdb1d1b18aa6c08324b7d64b71fb76370690e1d") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha1', '');"
+                 "h.digest().toString('hex')"),
+      nxt_string("fbdb1d1b18aa6c08324b7d64b71fb76370690e1d") },
+
+    { nxt_string("var h = require('crypto').createHmac('md5', 'secret key');"
+                 "h.update('AB').digest('hex')"),
+      nxt_string("9c72728915eb26620a5caeafd0063b29") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha1', 'secret key');"
+                 "h.update('A').update('B').digest('hex')"),
+      nxt_string("adc60e03459c4bae7cf4eb6d9730003e9490b22f") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha1', 'secret key');"
+                 "h.update('AB').digest('hex')"),
+      nxt_string("adc60e03459c4bae7cf4eb6d9730003e9490b22f") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha1', 'secret key');"
+                 "h.update('AB').digest('base64')"),
+      nxt_string("rcYOA0WcS6589OttlzAAPpSQsi8=") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha1', 'secret key');"
+                 "h.update('AB').digest().toString('base64')"),
+      nxt_string("rcYOA0WcS6589OttlzAAPpSQsi8=") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha1', 'secret key');"
+                 "h.update('abc'.repeat(100)).digest('hex')"),
+      nxt_string("b105ad6921e4c54d3fa0a9ec3f7f0ee9bd2c659d") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha1', 'A'.repeat(64));"
+                 "h.update('AB').digest('hex')"),
+      nxt_string("400ce530816c6b3247e2959f3982a12aaf58c0c9") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha1', 'A'.repeat(100));"
+                 "h.update('AB').digest('hex')"),
+      nxt_string("670e7cdebae6392797e000e79e51d3b6589d8fad") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha256', '');"
+                 "h.digest('hex')"),
+      nxt_string("b613679a0814d9ec772f95d778c35fc5ff1697c493715653c6c712144292c5ad") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha256', 'secret key');"
+                 "h.update('A').update('B').digest('hex')"),
+      nxt_string("46085184b3b45a13d838bf71a0ce03675dab30931e0f1f68fa636ea65fdb286d") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha256', 'secret key');"
+                 "h.update('AB').digest('hex')"),
+      nxt_string("46085184b3b45a13d838bf71a0ce03675dab30931e0f1f68fa636ea65fdb286d") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha256', 'A'.repeat(64));"
+                 "h.update('AB').digest('hex')"),
+      nxt_string("ee9dce43b12eb3e865614ad9c1a8d4fad4b6eac2b64647bd24cd192888d3f367") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha256', 'A'.repeat(100));"
+                 "h.update('AB').digest('hex')"),
+      nxt_string("5647b6c429701ff512f0f18232b4507065d2376ca8899a816a0a6e721bf8ddcc") },
+
+    { nxt_string("var h = require('crypto').createHmac('md5', 'secret key');"
+                 "h.update('abc'.repeat(100)).digest('hex')"),
+      nxt_string("5dd706af43536f8c9c83e7ea55b1a5a2") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha1', 'secret key');"
+                 "h.update('abc'.repeat(100)).digest('hex')"),
+      nxt_string("b105ad6921e4c54d3fa0a9ec3f7f0ee9bd2c659d") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha256', 'secret key');"
+                 "h.update('abc'.repeat(100)).digest('hex')"),
+      nxt_string("f6550d398ce350ee8d94a0f44f2cf6b9bc8d316ae4625fb4434f22980a276bac") },
+
+    { nxt_string("var h = require('crypto').createHmac()"),
+      nxt_string("TypeError: algorithm must be a string") },
+
+    { nxt_string("var h = require('crypto').createHmac([])"),
+      nxt_string("TypeError: algorithm must be a string") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha512', '')"),
+      nxt_string("TypeError: not supported algorithm: 'sha512'") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha1', [])"),
+      nxt_string("TypeError: key must be a string") },
+
     /* setTimeout(). */
 
     { nxt_string("setTimeout()"),
