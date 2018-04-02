@@ -9,7 +9,7 @@
 #ifndef _NJSCRIPT_H_INCLUDED_
 #define _NJSCRIPT_H_INCLUDED_
 
-#define NJS_VERSION                 "0.1.15"
+#define NJS_VERSION                 "0.2.0"
 
 
 typedef intptr_t                    njs_ret_t;
