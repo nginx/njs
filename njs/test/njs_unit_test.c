@@ -9088,6 +9088,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("BtlFlCqiamG+GMPiK/GbvKjdK10=") },
 
     { nxt_string("var h = require('crypto').createHash('sha1');"
+                 "h.update('AB').digest('base64url')"),
+      nxt_string("BtlFlCqiamG-GMPiK_GbvKjdK10") },
+
+    { nxt_string("var h = require('crypto').createHash('sha1');"
                  "h.update('AB').digest().toString('base64')"),
       nxt_string("BtlFlCqiamG+GMPiK/GbvKjdK10=") },
 
@@ -9164,6 +9168,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var h = require('crypto').createHmac('sha1', 'secret key');"
                  "h.update('AB').digest('base64')"),
       nxt_string("rcYOA0WcS6589OttlzAAPpSQsi8=") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha1', 'secret key');"
+                 "h.update('AB').digest('base64url')"),
+      nxt_string("rcYOA0WcS6589OttlzAAPpSQsi8") },
 
     { nxt_string("var h = require('crypto').createHmac('sha1', 'secret key');"
                  "h.update('AB').digest().toString('base64')"),

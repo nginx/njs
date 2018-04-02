@@ -127,6 +127,11 @@ static njs_crypto_enc_t njs_encodings[] = {
    },
 
    {
+     nxt_string("base64url"),
+     njs_string_base64url
+   },
+
+   {
     nxt_null_string,
     NULL
    }
