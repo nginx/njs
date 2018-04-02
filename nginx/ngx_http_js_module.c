@@ -33,6 +33,7 @@ typedef struct {
     ngx_log_t           *log;
     njs_opaque_value_t   args[2];
     ngx_uint_t           done;
+    ngx_int_t            status;
 } ngx_http_js_ctx_t;
 
 
@@ -88,6 +89,8 @@ static njs_ret_t ngx_http_js_ext_send_header(njs_vm_t *vm, njs_value_t *args,
 static njs_ret_t ngx_http_js_ext_send(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t ngx_http_js_ext_finish(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused);
+static njs_ret_t ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 
 static njs_ret_t ngx_http_js_ext_log(njs_vm_t *vm, njs_value_t *args,
@@ -289,6 +292,18 @@ static njs_external_t  ngx_http_js_ext_response[] = {
       NULL,
       NULL,
       ngx_http_js_ext_finish,
+      0 },
+
+    { nxt_string("return"),
+      NJS_EXTERN_METHOD,
+      NULL,
+      0,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      ngx_http_js_ext_return,
       0 },
 };
 
@@ -658,7 +673,7 @@ ngx_http_js_content_event_handler(ngx_http_request_t *r)
         return;
     }
 
-    ngx_http_finalize_request(r, NGX_OK);
+    ngx_http_finalize_request(r, ctx->status);
 }
 
 
@@ -676,7 +691,7 @@ ngx_http_js_content_write_event_handler(ngx_http_request_t *r)
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
     if (!njs_vm_pending(ctx->vm)) {
-        ngx_http_finalize_request(r, NGX_OK);
+        ngx_http_finalize_request(r, ctx->status);
         return;
     }
 
@@ -1248,6 +1263,80 @@ ngx_http_js_ext_finish(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     return NJS_OK;
+}
+
+
+static njs_ret_t
+ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    nxt_str_t                  text;
+    ngx_int_t                  status;
+    const char                *description;
+    njs_value_t               *value;
+    ngx_http_js_ctx_t         *ctx;
+    ngx_http_request_t        *r;
+    ngx_http_complex_value_t   cv;
+
+    if (nargs < 2) {
+        description = "too few arguments";
+        goto exception;
+    }
+
+    value = njs_argument(args, 1);
+    if (!njs_value_is_number(value)) {
+        description = "code is not a number";
+        goto exception;
+    }
+
+    status = njs_value_number(value);
+
+    if (status < 0 || status > 999) {
+        description = "code is out of range";
+        goto exception;
+    }
+
+    if (nargs < 3) {
+        text.start = NULL;
+        text.length = 0;
+
+    } else {
+        if (njs_vm_value_to_ext_string(vm, &text, njs_argument(args, 2), 0)
+            == NJS_ERROR)
+        {
+            description = "failed to convert text";
+            goto exception;
+        }
+    }
+
+    r = njs_value_data(njs_argument(args, 0));
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (status < NGX_HTTP_BAD_REQUEST || text.length) {
+        ngx_memzero(&cv, sizeof(ngx_http_complex_value_t));
+
+        cv.value.data = text.start;
+        cv.value.len = text.length;
+
+        ctx->status = ngx_http_send_response(r, status, NULL, &cv);
+
+        if (ctx->status == NGX_ERROR) {
+            description = "failed to send response";
+            goto exception;
+        }
+
+    } else {
+        ctx->status = status;
+    }
+
+    return NJS_OK;
+
+exception:
+
+    njs_value_error_set(vm, njs_vm_retval(vm), description, NULL);
+
+    return NJS_ERROR;
 }
 
 
