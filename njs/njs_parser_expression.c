@@ -762,19 +762,16 @@ njs_parser_unary_expression(njs_vm_t *vm, njs_parser_t *parser,
         return NJS_TOKEN_ILLEGAL;
     }
 
-    if (token == NJS_TOKEN_UNARY_PLUS
-        && parser->node->token == NJS_TOKEN_NUMBER)
-    {
+    node = parser->node;
+
+    if (token == NJS_TOKEN_UNARY_PLUS && node->token == NJS_TOKEN_NUMBER) {
         /* Skip the unary plus of number. */
         return next;
     }
 
-    if (token == NJS_TOKEN_UNARY_NEGATION
-        && parser->node->token == NJS_TOKEN_NUMBER)
-    {
-        /* Optimization of common negative number. */
+    if (token == NJS_TOKEN_UNARY_NEGATION && node->token == NJS_TOKEN_NUMBER) {
 
-        node = parser->node;
+        /* Optimization of common negative number. */
         num = -node->u.value.data.u.number;
         node->u.value.data.u.number = num;
         node->u.value.data.truth = njs_is_number_true(num);
@@ -784,11 +781,11 @@ njs_parser_unary_expression(njs_vm_t *vm, njs_parser_t *parser,
 
     if (token == NJS_TOKEN_DELETE) {
 
-        switch (parser->node->token) {
+        switch (node->token) {
 
         case NJS_TOKEN_PROPERTY:
-            parser->node->token = NJS_TOKEN_PROPERTY_DELETE;
-            parser->node->u.operation = njs_vmcode_property_delete;
+            node->token = NJS_TOKEN_PROPERTY_DELETE;
+            node->u.operation = njs_vmcode_property_delete;
             parser->code_size += sizeof(njs_vmcode_3addr_t);
 
             return next;
@@ -805,8 +802,8 @@ njs_parser_unary_expression(njs_vm_t *vm, njs_parser_t *parser,
         }
     }
 
-    if (token == NJS_TOKEN_TYPEOF && parser->node->token == NJS_TOKEN_NAME) {
-        parser->node->reference = NJS_TYPEOF;
+    if (token == NJS_TOKEN_TYPEOF && node->token == NJS_TOKEN_NAME) {
+        node->reference = NJS_TYPEOF;
     }
 
     node = njs_parser_node_alloc(vm);
@@ -876,7 +873,7 @@ njs_parser_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
     node->left = parser->node;
     parser->node = node;
 
-    parser->code_size += (parser->node->token == NJS_TOKEN_NAME) ?
+    parser->code_size += (node->token == NJS_TOKEN_NAME) ?
                              sizeof(njs_vmcode_3addr_t):
                              sizeof(njs_vmcode_prop_get_t)
                              + sizeof(njs_vmcode_3addr_t)
