@@ -112,7 +112,8 @@ njs_string_length(njs_utf8_t utf8, u_char *start, size_t size)
     case NJS_STRING_ASCII:
         return size;
 
-    default:  /* NJS_STRING_UTF8 */
+    case NJS_STRING_UTF8:
+    default:
         length = nxt_utf8_length(start, size);
 
         return (length >= 0) ? length : 0;

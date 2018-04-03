@@ -649,9 +649,9 @@ njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
 
         return sizeof(njs_vmcode_prop_get_t);
 
+    case NJS_TRAP_PROPERTY:
+    case NXT_ERROR:
     default:
-        /* NJS_TRAP_PROPERTY */
-        /* NXT_ERROR */
 
         return ret;
     }
@@ -760,9 +760,9 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
 
         return sizeof(njs_vmcode_prop_set_t);
 
+    case NJS_TRAP_PROPERTY:
+    case NXT_ERROR:
     default:
-        /* NJS_TRAP_PROPERTY */
-        /* NXT_ERROR */
 
         return ret;
     }
@@ -844,9 +844,9 @@ njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *object, njs_value_t *property)
 
         break;
 
+    case NJS_TRAP_PROPERTY:
+    case NXT_ERROR:
     default:
-        /* NJS_TRAP_PROPERTY */
-        /* NXT_ERROR */
 
         return ret;
     }
@@ -946,9 +946,9 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
 
         break;
 
+    case NJS_TRAP_PROPERTY:
+    case NXT_ERROR:
     default:
-        /* NJS_TRAP_PROPERTY */
-        /* NXT_ERROR */
 
         return ret;
     }
@@ -1059,7 +1059,9 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
         obj = NULL;
         break;
 
-    default:  /* NJS_VOID, NJS_NULL. */
+    case NJS_VOID:
+    case NJS_NULL:
+    default:
         if (nxt_fast_path(njs_is_primitive(property))) {
 
             ret = njs_primitive_value_to_string(vm, &pq->value, property);

@@ -427,7 +427,8 @@ njs_lexer_next_token(njs_lexer_t *lexer)
             lexer->text.length = lexer->start - lexer->text.start;
             return token;
 
-        default:  /* NJS_TOKEN_ILLEGAL */
+        case NJS_TOKEN_ILLEGAL:
+        default:
             lexer->start--;
             return token;
         }

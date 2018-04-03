@@ -2137,7 +2137,8 @@ njs_string_prototype_search(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
             goto done;
 
-        default:  /* NJS_VOID */
+        case NJS_VOID:
+        default:
             goto done;
         }
 
@@ -2452,7 +2453,8 @@ njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
             goto done;
 
-        default: /* NJS_VOID */
+        case NJS_VOID:
+        default:
             break;
         }
     }
