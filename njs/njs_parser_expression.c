@@ -805,6 +805,10 @@ njs_parser_unary_expression(njs_vm_t *vm, njs_parser_t *parser,
         }
     }
 
+    if (token == NJS_TOKEN_TYPEOF && parser->node->token == NJS_TOKEN_NAME) {
+        parser->node->reference = NJS_TYPEOF;
+    }
+
     node = njs_parser_node_alloc(vm);
     if (nxt_slow_path(node == NULL)) {
         return NJS_TOKEN_ERROR;

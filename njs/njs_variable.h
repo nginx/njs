@@ -18,6 +18,13 @@ typedef enum {
 } njs_variable_type_t;
 
 
+typedef enum {
+    NJS_DECLARATION = 0,
+    NJS_REFERENCE,
+    NJS_TYPEOF,
+} njs_variable_reference_t;
+
+
 typedef struct {
     nxt_str_t             name;
 

@@ -2318,6 +2318,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = 5; typeof a"),
       nxt_string("number") },
 
+    { nxt_string("function f() { return typeof a } ; f()"),
+      nxt_string("undefined") },
+
     { nxt_string("typeof a; a"),
       nxt_string("ReferenceError: \"a\" is not defined in 1") },
 

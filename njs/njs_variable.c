@@ -193,7 +193,7 @@ const nxt_lvlhsh_proto_t  njs_reference_hash_proto
 
 njs_ret_t
 njs_variable_reference(njs_vm_t *vm, njs_parser_t *parser,
-    njs_parser_node_t *node, nxt_bool_t reference)
+    njs_parser_node_t *node, njs_variable_reference_t reference)
 {
     njs_ret_t           ret;
     nxt_lvlhsh_query_t  lhq;
@@ -277,8 +277,11 @@ njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
             }
 
             var = njs_variable_get(vm, node);
+
             if (nxt_slow_path(var == NULL)) {
-                return NXT_ERROR;
+                if (node->reference != NJS_TYPEOF) {
+                    return NXT_ERROR;
+                }
             }
         }
     }
@@ -397,7 +400,7 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
         var->argument = index;
     }
 
-    if (node->reference && var->type <= NJS_VARIABLE_LET) {
+    if (node->reference != NJS_DECLARATION && var->type <= NJS_VARIABLE_LET) {
         goto not_found;
     }
 

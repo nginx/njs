@@ -483,7 +483,7 @@ njs_parser_function_declaration(njs_vm_t *vm, njs_parser_t *parser)
         return NJS_TOKEN_ERROR;
     }
 
-    ret = njs_variable_reference(vm, parser, node, 0);
+    ret = njs_variable_reference(vm, parser, node, NJS_DECLARATION);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NJS_TOKEN_ERROR;
     }
@@ -857,7 +857,7 @@ njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser)
 
         name->token = NJS_TOKEN_NAME;
 
-        ret = njs_variable_reference(vm, parser, name, 0);
+        ret = njs_variable_reference(vm, parser, name, NJS_DECLARATION);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NJS_TOKEN_ERROR;
         }
@@ -1342,7 +1342,7 @@ njs_parser_for_var_statement(njs_vm_t *vm, njs_parser_t *parser)
 
         name->token = NJS_TOKEN_NAME;
 
-        ret = njs_variable_reference(vm, parser, name, 0);
+        ret = njs_variable_reference(vm, parser, name, NJS_DECLARATION);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NJS_TOKEN_ERROR;
         }
@@ -1634,7 +1634,7 @@ njs_parser_try_statement(njs_vm_t *vm, njs_parser_t *parser)
 
         node->token = NJS_TOKEN_NAME;
 
-        ret = njs_variable_reference(vm, parser, node, 0);
+        ret = njs_variable_reference(vm, parser, node, NJS_DECLARATION);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NJS_TOKEN_ERROR;
         }
@@ -1852,7 +1852,7 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
             break;
         }
 
-        ret = njs_variable_reference(vm, parser, node, 1);
+        ret = njs_variable_reference(vm, parser, node, NJS_REFERENCE);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NJS_TOKEN_ERROR;
         }
@@ -2106,7 +2106,7 @@ njs_parser_builtin_object(njs_vm_t *vm, njs_parser_t *parser,
     var->value.type = NJS_OBJECT;
     var->value.data.truth = 1;
 
-    ret = njs_variable_reference(vm, parser, node, 1);
+    ret = njs_variable_reference(vm, parser, node, NJS_REFERENCE);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NJS_TOKEN_ERROR;
     }
@@ -2139,7 +2139,7 @@ njs_parser_builtin_function(njs_vm_t *vm, njs_parser_t *parser,
     var->value.type = NJS_FUNCTION;
     var->value.data.truth = 1;
 
-    ret = njs_variable_reference(vm, parser, node, 1);
+    ret = njs_variable_reference(vm, parser, node, NJS_REFERENCE);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NJS_TOKEN_ERROR;
     }
