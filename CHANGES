@@ -1,4 +1,25 @@
 
+Changes with nJScript 0.2.0                                      3 Apr 2018
+
+    *) Feature: reporting njs version by CLI.
+
+    *) Feature: textual description for type converting exceptions.
+
+    *) Feature: setTimeout() and clearTimeout() methods.
+
+    *) Feature: Byte string to hex, base64, base64url encodings.
+
+    *) Feature: Node.js style crypto methods.
+
+    *) Feature: HTTP and stream warn() and error() methods.
+
+    *) Feature: HTTP subrequest() method.
+
+    *) Feature: HTTP return() method.
+
+    *) Bugfix: miscellaneous bugs have been fixed in the core and
+       interactive shell.
+
 Changes with nJScript 0.1.15                                     20 Nov 2017
 
     *) Feature: Error, EvalError, InternalError, RangeError,
