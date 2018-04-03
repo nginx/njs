@@ -870,6 +870,7 @@ enum njs_constructor_e {
 
 enum njs_object_e {
     NJS_OBJECT_THIS = 0,
+    NJS_OBJECT_NJS,
     NJS_OBJECT_MATH,
     NJS_OBJECT_JSON,
 #define NJS_OBJECT_MAX         (NJS_OBJECT_JSON + 1)

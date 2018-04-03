@@ -23,6 +23,11 @@ type console.help() for more information\r
     expect eof
 }
 
+njs_test {
+    {"njs.version\r\n"
+     "njs.version\r\n\*\.\*\.\*"}
+}
+
 # simple multi line interation
 njs_test {
     {"var a = 1\r\n"

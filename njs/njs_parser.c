@@ -1989,6 +1989,7 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
 
         /* Fall through. */
 
+    case NJS_TOKEN_NJS:
     case NJS_TOKEN_MATH:
     case NJS_TOKEN_JSON:
         return njs_parser_builtin_object(vm, parser, node);

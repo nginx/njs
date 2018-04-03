@@ -50,9 +50,11 @@ static nxt_array_t *njs_vm_expression_completions(njs_vm_t *vm,
     nxt_str_t *expression);
 static nxt_array_t *njs_object_completions(njs_vm_t *vm, njs_object_t *object);
 
+const njs_object_init_t     njs_njs_object_init;
 
 const njs_object_init_t    *njs_object_init[] = {
     NULL,                         /* global this        */
+    &njs_njs_object_init,         /* global njs object  */
     &njs_math_object_init,        /* Math               */
     &njs_json_object_init,        /* JSON               */
 };
@@ -1086,3 +1088,20 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
 
     return NXT_DECLINED;
 }
+
+
+static const njs_object_prop_t  njs_njs_object_properties[] =
+{
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("version"),
+        .value = njs_string(NJS_VERSION),
+    },
+};
+
+
+const njs_object_init_t  njs_njs_object_init = {
+    nxt_string("njs"),
+    njs_njs_object_properties,
+    nxt_nitems(njs_njs_object_properties),
+};
