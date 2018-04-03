@@ -389,9 +389,9 @@ nxt_bool_t njs_parser_has_side_effect(njs_parser_node_t *node);
 u_char *njs_parser_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
     u_char *start);
 void njs_parser_syntax_error(njs_vm_t *vm, njs_parser_t *parser,
-	const char* fmt, ...);
+    const char* fmt, ...);
 void njs_parser_ref_error(njs_vm_t *vm, njs_parser_t *parser, const char* fmt,
-	...);
+    ...);
 nxt_int_t njs_generate_scope(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node);
 

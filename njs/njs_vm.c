@@ -2394,9 +2394,7 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
         break;
 
     case NXT_ERROR:
-
-        /* An exception was set in  njs_property_query(). */
-
+        /* An exception was set in njs_property_query(). */
         return NXT_ERROR;
 
     default:
