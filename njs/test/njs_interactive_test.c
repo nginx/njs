@@ -211,6 +211,11 @@ static njs_interactive_test_t  njs_test[] =
                  "    at fs.readFile (native)\n"
                  "    at main (native)\n") },
 
+    { nxt_string("parseInt({ toString: function() { return [1] } })" ENTER),
+      nxt_string("TypeError: Cannot convert object to primitive value\n"
+                 "    at parseInt (native)\n"
+                 "    at main (native)\n") },
+
     /* Exception in njs_vm_retval_to_ext_string() */
 
     { nxt_string("var o = { toString: function() { return [1] } }" ENTER

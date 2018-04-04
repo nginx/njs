@@ -539,3 +539,8 @@ njs_test {
     {"var fs = require('fs')\r\n"
      "Error: Cannot find module 'fs'\r\n"}
 } "-s"
+
+njs_test {
+    {"var crypto = require('crypto')\r\n"
+     "undefined\r\n"}
+} "-s"

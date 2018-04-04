@@ -1022,6 +1022,12 @@ njs_fs_mode(njs_value_t *value)
 static const njs_object_prop_t  njs_fs_object_properties[] =
 {
     {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("fs"),
+    },
+
+    {
         .type = NJS_METHOD,
         .name = njs_string("readFile"),
         .value = njs_native_function(njs_fs_read_file,

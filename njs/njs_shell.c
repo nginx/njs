@@ -735,19 +735,20 @@ static njs_ret_t
 njs_ext_console_help(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    nxt_uint_t  i;
+    const njs_object_init_t  *obj, **objpp;
 
     printf("VM built-in objects:\n");
-    for (i = NJS_CONSTRUCTOR_OBJECT; i < NJS_CONSTRUCTOR_MAX; i++) {
-        printf("  %.*s\n", (int) njs_constructor_init[i]->name.length,
-               njs_constructor_init[i]->name.start);
+
+    for (objpp = njs_constructor_init; *objpp != NULL; objpp++) {
+        obj = *objpp;
+
+        printf("  %.*s\n", (int) obj->name.length, obj->name.start);
     }
 
-    for (i = NJS_OBJECT_THIS; i < NJS_OBJECT_MAX; i++) {
-        if (njs_object_init[i] != NULL) {
-            printf("  %.*s\n", (int) njs_object_init[i]->name.length,
-                   njs_object_init[i]->name.start);
-        }
+    for (objpp = njs_object_init; *objpp != NULL; objpp++) {
+        obj = *objpp;
+
+        printf("  %.*s\n", (int) obj->name.length, obj->name.start);
     }
 
     printf("\nEmbedded objects:\n");

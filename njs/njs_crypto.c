@@ -645,6 +645,18 @@ const njs_object_init_t  njs_hmac_constructor_init = {
 static const njs_object_prop_t  njs_crypto_object_properties[] =
 {
     {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("crypto"),
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("sandbox"),
+        .value = njs_value(NJS_BOOLEAN, 1, 1.0),
+    },
+
+    {
         .type = NJS_METHOD,
         .name = njs_string("createHash"),
         .value = njs_native_function(njs_crypto_create_hash, 0,

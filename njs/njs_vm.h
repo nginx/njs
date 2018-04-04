@@ -915,13 +915,6 @@ enum njs_object_e {
 };
 
 
-enum njs_module_e {
-    NJS_MODULE_FS = 0,
-    NJS_MODULE_CRYPTO,
-#define NJS_MODULE_MAX         (NJS_MODULE_CRYPTO + 1)
-};
-
-
 enum njs_function_e {
     NJS_FUNCTION_EVAL = 0,
     NJS_FUNCTION_TO_STRING,
