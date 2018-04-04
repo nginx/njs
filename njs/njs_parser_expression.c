@@ -862,6 +862,11 @@ njs_parser_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
         return NJS_TOKEN_ILLEGAL;
     }
 
+    parser->code_size += (parser->node->token == NJS_TOKEN_NAME)
+                             ? sizeof(njs_vmcode_3addr_t)
+                             : sizeof(njs_vmcode_3addr_t)
+                               + sizeof(njs_vmcode_prop_set_t);
+
     node = njs_parser_node_alloc(vm);
     if (nxt_slow_path(node == NULL)) {
         return NJS_TOKEN_ERROR;
@@ -872,12 +877,6 @@ njs_parser_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
     node->scope = parser->scope;
     node->left = parser->node;
     parser->node = node;
-
-    parser->code_size += (token == NJS_TOKEN_NAME)
-                             ? sizeof(njs_vmcode_3addr_t)
-                             : sizeof(njs_vmcode_prop_get_t)
-                               + sizeof(njs_vmcode_3addr_t)
-                               + sizeof(njs_vmcode_prop_set_t);
 
     return next;
 }
@@ -918,6 +917,11 @@ njs_parser_post_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
         return NJS_TOKEN_ILLEGAL;
     }
 
+    parser->code_size += (parser->node->token == NJS_TOKEN_NAME)
+                             ? sizeof(njs_vmcode_3addr_t)
+                             : sizeof(njs_vmcode_3addr_t)
+                               + sizeof(njs_vmcode_prop_set_t);
+
     node = njs_parser_node_alloc(vm);
     if (nxt_slow_path(node == NULL)) {
         return NJS_TOKEN_ERROR;
@@ -928,12 +932,6 @@ njs_parser_post_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
     node->scope = parser->scope;
     node->left = parser->node;
     parser->node = node;
-
-    parser->code_size += (token == NJS_TOKEN_NAME)
-                             ? sizeof(njs_vmcode_3addr_t)
-                             : sizeof(njs_vmcode_prop_get_t)
-                               + sizeof(njs_vmcode_3addr_t)
-                               + sizeof(njs_vmcode_prop_set_t);
 
     return njs_parser_token(parser);
 }
