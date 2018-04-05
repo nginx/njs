@@ -9142,6 +9142,10 @@ static njs_unit_test_t  njs_test[] =
                  "h.update('A').digest('hex'); h.digest('hex')"),
       nxt_string("Error: Digest already called") },
 
+    { nxt_string("var h = require('crypto').createHash('sha1');"
+                 "h.update('A').digest('hex'); h.update('B')"),
+      nxt_string("Error: Digest already called") },
+
     /* require('crypto').createHash() */
 
     { nxt_string("require('crypto').createHmac('sha1', '')"),
@@ -9238,6 +9242,14 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var h = require('crypto').createHmac('sha1', [])"),
       nxt_string("TypeError: key must be a string") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha1', 'secret key');"
+                 "h.update('A').digest('hex'); h.digest('hex')"),
+      nxt_string("Error: Digest already called") },
+
+    { nxt_string("var h = require('crypto').createHmac('sha1', 'secret key');"
+                 "h.update('A').digest('hex'); h.update('B')"),
+      nxt_string("Error: Digest already called") },
 
     /* setTimeout(). */
 

@@ -243,6 +243,12 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_string_get(&args[1], &data);
 
     dgst = njs_value_data(&hash->value);
+
+    if (nxt_slow_path(dgst->alg == NULL)) {
+        njs_error(vm, "Digest already called", NULL);
+        return NJS_ERROR;
+    }
+
     dgst->alg->update(&dgst->u, data.start, data.length);
 
     vm->retval = args[0];
@@ -504,6 +510,12 @@ njs_hmac_prototype_update(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_string_get(&args[1], &data);
 
     ctx = njs_value_data(&hmac->value);
+
+    if (nxt_slow_path(ctx->alg == NULL)) {
+        njs_error(vm, "Digest already called", NULL);
+        return NJS_ERROR;
+    }
+
     ctx->alg->update(&ctx->u, data.start, data.length);
 
     vm->retval = args[0];
