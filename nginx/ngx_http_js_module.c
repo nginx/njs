@@ -1284,7 +1284,7 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     value = njs_argument(args, 1);
-    if (!njs_value_is_number(value)) {
+    if (!njs_value_is_valid_number(value)) {
         description = "code is not a number";
         goto exception;
     }
