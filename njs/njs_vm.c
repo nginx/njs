@@ -3751,6 +3751,15 @@ njs_value_is_number(njs_value_t *value)
 
 
 nxt_noinline nxt_int_t
+njs_value_is_valid_number(njs_value_t *value)
+{
+    return njs_is_number(value)
+           && !isnan(value->data.u.number)
+           && !isinf(value->data.u.number);
+}
+
+
+nxt_noinline nxt_int_t
 njs_value_is_string(njs_value_t *value)
 {
     return njs_is_string(value);

@@ -191,6 +191,7 @@ NXT_EXPORT njs_function_t *njs_value_function(njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_is_void(njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_is_boolean(njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_is_number(njs_value_t *value);
+NXT_EXPORT nxt_int_t njs_value_is_valid_number(njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_is_string(njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_is_object(njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_is_function(njs_value_t *value);
