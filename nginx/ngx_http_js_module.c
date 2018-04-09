@@ -34,6 +34,7 @@ typedef struct {
     njs_opaque_value_t   args[2];
     ngx_uint_t           done;
     ngx_int_t            status;
+    njs_opaque_value_t   request_body;
 } ngx_http_js_ctx_t;
 
 
@@ -106,6 +107,8 @@ static njs_ret_t ngx_http_js_ext_get_http_version(njs_vm_t *vm,
     njs_value_t *value, void *obj, uintptr_t data);
 static njs_ret_t ngx_http_js_ext_get_remote_address(njs_vm_t *vm,
     njs_value_t *value, void *obj, uintptr_t data);
+static njs_ret_t ngx_http_js_ext_get_request_body(njs_vm_t *vm,
+    njs_value_t *value, void *obj, uintptr_t data);
 static njs_ret_t ngx_http_js_ext_get_header_in(njs_vm_t *vm, njs_value_t *value,
     void *obj, uintptr_t data);
 static njs_ret_t ngx_http_js_ext_foreach_header_in(njs_vm_t *vm, void *obj,
@@ -129,8 +132,8 @@ static ngx_int_t ngx_http_js_subrequest_done(ngx_http_request_t *r,
     void *data, ngx_int_t rc);
 static njs_ret_t ngx_http_js_ext_get_parent(njs_vm_t *vm, njs_value_t *value,
     void *obj, uintptr_t data);
-static njs_ret_t ngx_http_js_ext_get_body(njs_vm_t *vm, njs_value_t *value,
-    void *obj, uintptr_t data);
+static njs_ret_t ngx_http_js_ext_get_reply_body(njs_vm_t *vm,
+    njs_value_t *value, void *obj, uintptr_t data);
 
 static njs_host_event_t ngx_http_js_set_timer(njs_external_ptr_t external,
     uint64_t delay, njs_vm_event_t vm_event);
@@ -358,6 +361,18 @@ static njs_external_t  ngx_http_js_ext_request[] = {
       NULL,
       0 },
 
+    { nxt_string("body"),
+      NJS_EXTERN_PROPERTY,
+      NULL,
+      0,
+      ngx_http_js_ext_get_request_body,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      0 },
+
     { nxt_string("headers"),
       NJS_EXTERN_OBJECT,
       NULL,
@@ -546,7 +561,7 @@ static njs_external_t  ngx_http_js_ext_reply[] = {
       NJS_EXTERN_PROPERTY,
       NULL,
       0,
-      ngx_http_js_ext_get_body,
+      ngx_http_js_ext_get_reply_body,
       NULL,
       NULL,
       NULL,
@@ -1436,6 +1451,85 @@ ngx_http_js_ext_get_remote_address(njs_vm_t *vm, njs_value_t *value, void *obj,
 
 
 static njs_ret_t
+ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_value_t *value, void *obj,
+    uintptr_t data)
+{
+    u_char              *p, *body;
+    size_t               len;
+    ngx_buf_t           *buf;
+    njs_ret_t            ret;
+    njs_value_t         *request_body;
+    ngx_chain_t         *cl;
+    ngx_http_js_ctx_t   *ctx;
+    ngx_http_request_t  *r;
+
+    r = (ngx_http_request_t *) obj;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+    request_body = (njs_value_t *) &ctx->request_body;
+
+    if (!njs_value_is_null(request_body)) {
+        njs_value_assign(value, request_body);
+        return NJS_OK;
+    }
+
+    if (r->request_body == NULL || r->request_body->bufs == NULL) {
+        njs_vm_error(vm, "request body is unavailable");
+        return NJS_ERROR;
+    }
+
+    if (r->request_body->temp_file) {
+        njs_vm_error(vm, "request body is in a file");
+        return NJS_ERROR;
+    }
+
+    cl = r->request_body->bufs;
+    buf = cl->buf;
+
+    if (cl->next == NULL) {
+        len = buf->last - buf->pos;
+        body = buf->pos;
+
+        goto done;
+    }
+
+    len = buf->last - buf->pos;
+    cl = cl->next;
+
+    for ( /* void */ ; cl; cl = cl->next) {
+        buf = cl->buf;
+        len += buf->last - buf->pos;
+    }
+
+    p = ngx_pnalloc(r->pool, len);
+    if (p == NULL) {
+        njs_vm_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    body = p;
+    cl = r->request_body->bufs;
+
+    for ( /* void */ ; cl; cl = cl->next) {
+        buf = cl->buf;
+        p = ngx_cpymem(p, buf->pos, buf->last - buf->pos);
+    }
+
+done:
+
+    ret = njs_string_create(vm, request_body, body, len, 0);
+
+    if (ret != NXT_OK) {
+        return NJS_ERROR;
+    }
+
+    njs_value_assign(value, request_body);
+
+    return NJS_OK;
+}
+
+
+static njs_ret_t
 ngx_http_js_ext_get_header_in(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
@@ -1939,7 +2033,7 @@ ngx_http_js_ext_get_parent(njs_vm_t *vm, njs_value_t *value, void *obj,
 
 
 static njs_ret_t
-ngx_http_js_ext_get_body(njs_vm_t *vm, njs_value_t *value, void *obj,
+ngx_http_js_ext_get_reply_body(njs_vm_t *vm, njs_value_t *value, void *obj,
 	uintptr_t data)
 {
     size_t               len;

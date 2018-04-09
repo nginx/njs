@@ -29,6 +29,9 @@ typedef struct {
 #define njs_argument(args, n)                                                 \
     (njs_value_t *) ((u_char *) args + n * 16)
 
+#define njs_value_assign(dst, src)                                            \
+    *((njs_opaque_value_t *) dst) = *((njs_opaque_value_t *) src);
+
 #define njs_vm_error(vm, fmt, ...)                                            \
     njs_value_error_set(vm, njs_vm_retval(vm), fmt, ##__VA_ARGS__)
 
@@ -193,6 +196,7 @@ NXT_EXPORT double njs_value_number(njs_value_t *value);
 NXT_EXPORT void *njs_value_data(njs_value_t *value);
 NXT_EXPORT njs_function_t *njs_value_function(njs_value_t *value);
 
+NXT_EXPORT nxt_int_t njs_value_is_null(njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_is_void(njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_is_boolean(njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_is_number(njs_value_t *value);

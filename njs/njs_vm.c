@@ -3730,6 +3730,13 @@ njs_value_function(njs_value_t *value)
 
 
 nxt_noinline nxt_int_t
+njs_value_is_null(njs_value_t *value)
+{
+    return njs_is_null(value);
+}
+
+
+nxt_noinline nxt_int_t
 njs_value_is_void(njs_value_t *value)
 {
     return njs_is_void(value);
