@@ -682,6 +682,13 @@ njs_vm_retval_set(njs_vm_t *vm, njs_opaque_value_t *value)
 }
 
 
+nxt_noinline void
+njs_vm_memory_error(njs_vm_t *vm)
+{
+    njs_set_memory_error(vm, &vm->retval);
+}
+
+
 njs_ret_t njs_vm_retval_to_ext_string(njs_vm_t *vm, nxt_str_t *retval)
 {
     if (vm->top_frame == NULL) {
