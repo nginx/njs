@@ -4,8 +4,13 @@ The documentation is available online:
   http://nginx.org/en/docs/http/ngx_http_js_module.html
   http://nginx.org/en/docs/stream/ngx_stream_js_module.html
 
-Please report your experiences to the NGINX development mailing list
-nginx-devel@nginx.org (http://mailman.nginx.org/mailman/listinfo/nginx-devel).
+Please ask questions, report issues, and send patches to the mailing list:
+
+    nginx-devel@nginx.org (http://mailman.nginx.org/mailman/listinfo/nginx-devel)
+
+or via Github:
+
+    https://github.com/nginx/njs
 
 --
 NGINX, Inc., http://nginx.com
