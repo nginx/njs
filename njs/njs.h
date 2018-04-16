@@ -229,7 +229,8 @@ NXT_EXPORT njs_external_ptr_t njs_vm_external(njs_vm_t *vm,
 NXT_EXPORT void njs_disassembler(njs_vm_t *vm);
 NXT_EXPORT nxt_array_t *njs_vm_completions(njs_vm_t *vm, nxt_str_t *expression);
 
-NXT_EXPORT njs_function_t *njs_vm_function(njs_vm_t *vm, nxt_str_t *name);
+NXT_EXPORT const njs_value_t *njs_vm_value(njs_vm_t *vm, const nxt_str_t *name);
+NXT_EXPORT njs_function_t *njs_vm_function(njs_vm_t *vm, const nxt_str_t *name);
 NXT_EXPORT njs_value_t *njs_vm_retval(njs_vm_t *vm);
 NXT_EXPORT void njs_vm_retval_set(njs_vm_t *vm, const njs_value_t *value);
 

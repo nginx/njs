@@ -598,24 +598,35 @@ njs_name_copy(njs_vm_t *vm, nxt_str_t *dst, nxt_str_t *src)
 }
 
 
-njs_function_t *
-njs_vm_function(njs_vm_t *vm, nxt_str_t *name)
+const njs_value_t *
+njs_vm_value(njs_vm_t *vm, const nxt_str_t *name)
 {
-    njs_value_t         *value;
-    njs_variable_t      *var;
     nxt_lvlhsh_query_t  lhq;
 
     lhq.key_hash = nxt_djb_hash(name->start, name->length);
     lhq.key = *name;
     lhq.proto = &njs_variables_hash_proto;
 
-    if (nxt_slow_path(nxt_lvlhsh_find(&vm->variables_hash, &lhq) != NXT_OK)) {
-        return NULL;
+    if (nxt_lvlhsh_find(&vm->variables_hash, &lhq) == NXT_OK) {
+        return njs_vmcode_operand(vm, ((njs_variable_t *) lhq.value)->index);
     }
 
-    var = lhq.value;
+    lhq.proto = &njs_extern_value_hash_proto;
 
-    value = njs_global_variable_value(vm, var);
+    if (nxt_lvlhsh_find(&vm->externals_hash, &lhq) == NXT_OK) {
+        return &((njs_extern_value_t *) lhq.value)->value;
+    }
+
+    return &njs_value_undefined;
+}
+
+
+njs_function_t *
+njs_vm_function(njs_vm_t *vm, const nxt_str_t *name)
+{
+    const njs_value_t  *value;
+
+    value = njs_vm_value(vm, name);
 
     if (njs_is_function(value)) {
         return value->data.u.function;
