@@ -14,10 +14,14 @@
 
 typedef struct {
     njs_vm_t            *vm;
-    ngx_str_t            content;
     const njs_extern_t  *req_proto;
     const njs_extern_t  *res_proto;
     const njs_extern_t  *rep_proto;
+} ngx_http_js_main_conf_t;
+
+
+typedef struct {
+    ngx_str_t            content;
 } ngx_http_js_loc_conf_t;
 
 
@@ -141,6 +145,7 @@ static char *ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd,
 static char *ngx_http_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 static char *ngx_http_js_content(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
+static void *ngx_http_js_create_main_conf(ngx_conf_t *cf);
 static void *ngx_http_js_create_loc_conf(ngx_conf_t *cf);
 static char *ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent,
     void *child);
@@ -151,7 +156,7 @@ static ngx_command_t  ngx_http_js_commands[] = {
     { ngx_string("js_include"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
       ngx_http_js_include,
-      NGX_HTTP_LOC_CONF_OFFSET,
+      NGX_HTTP_MAIN_CONF_OFFSET,
       0,
       NULL },
 
@@ -177,7 +182,7 @@ static ngx_http_module_t  ngx_http_js_module_ctx = {
     NULL,                          /* preconfiguration */
     NULL,                          /* postconfiguration */
 
-    NULL,                          /* create main configuration */
+    ngx_http_js_create_main_conf,  /* create main configuration */
     NULL,                          /* init main configuration */
 
     NULL,                          /* create server configuration */
@@ -809,14 +814,14 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
 static ngx_int_t
 ngx_http_js_init_vm(ngx_http_request_t *r)
 {
-    nxt_int_t                rc;
-    nxt_str_t                exception;
-    ngx_http_js_ctx_t       *ctx;
-    ngx_pool_cleanup_t      *cln;
-    ngx_http_js_loc_conf_t  *jlcf;
+    nxt_int_t                 rc;
+    nxt_str_t                 exception;
+    ngx_http_js_ctx_t        *ctx;
+    ngx_pool_cleanup_t       *cln;
+    ngx_http_js_main_conf_t  *jmcf;
 
-    jlcf = ngx_http_get_module_loc_conf(r, ngx_http_js_module);
-    if (jlcf->vm == NULL) {
+    jmcf = ngx_http_get_module_main_conf(r, ngx_http_js_module);
+    if (jmcf->vm == NULL) {
         return NGX_DECLINED;
     }
 
@@ -835,7 +840,7 @@ ngx_http_js_init_vm(ngx_http_request_t *r)
         return NGX_OK;
     }
 
-    ctx->vm = njs_vm_clone(jlcf->vm, r);
+    ctx->vm = njs_vm_clone(jmcf->vm, r);
     if (ctx->vm == NULL) {
         return NGX_ERROR;
     }
@@ -860,13 +865,13 @@ ngx_http_js_init_vm(ngx_http_request_t *r)
     }
 
     rc = njs_vm_external_create(ctx->vm, njs_value_arg(&ctx->args[0]),
-                                jlcf->req_proto, r);
+                                jmcf->req_proto, r);
     if (rc != NXT_OK) {
         return NGX_ERROR;
     }
 
     rc = njs_vm_external_create(ctx->vm, njs_value_arg(&ctx->args[1]),
-                                jlcf->res_proto, r);
+                                jmcf->res_proto, r);
     if (rc != NXT_OK) {
         return NGX_ERROR;
     }
@@ -1949,10 +1954,10 @@ ngx_http_js_subrequest_done(ngx_http_request_t *r, void *data, ngx_int_t rc)
 {
     njs_vm_event_t  vm_event = data;
 
-    nxt_int_t                ret;
-    ngx_http_js_ctx_t       *ctx;
-    njs_opaque_value_t       reply;
-    ngx_http_js_loc_conf_t  *jlcf;
+    nxt_int_t                 ret;
+    ngx_http_js_ctx_t        *ctx;
+    njs_opaque_value_t        reply;
+    ngx_http_js_main_conf_t  *jmcf;
 
     if (rc != NGX_OK || r->connection->error || r->buffered) {
         return rc;
@@ -1975,7 +1980,7 @@ ngx_http_js_subrequest_done(ngx_http_request_t *r, void *data, ngx_int_t rc)
 
     ctx->done = 1;
 
-    jlcf = ngx_http_get_module_loc_conf(r->parent, ngx_http_js_module);
+    jmcf = ngx_http_get_module_main_conf(r, ngx_http_js_module);
 
     ctx = ngx_http_get_module_ctx(r->parent, ngx_http_js_module);
 
@@ -1991,7 +1996,7 @@ ngx_http_js_subrequest_done(ngx_http_request_t *r, void *data, ngx_int_t rc)
     }
 
     ret = njs_vm_external_create(ctx->vm, njs_value_arg(&reply),
-                                 jlcf->rep_proto, r);
+                                 jmcf->rep_proto, r);
     if (ret != NXT_OK) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "js subrequest reply creation failed");
@@ -2152,7 +2157,7 @@ ngx_http_js_handle_event(ngx_http_request_t *r, njs_vm_event_t vm_event,
 static char *
 ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_http_js_loc_conf_t *jlcf = conf;
+    ngx_http_js_main_conf_t *jmcf = conf;
 
     size_t                 size;
     u_char                *start, *end;
@@ -2165,7 +2170,7 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_file_info_t        fi;
     ngx_pool_cleanup_t    *cln;
 
-    if (jlcf->vm) {
+    if (jmcf->vm) {
         return "is duplicate";
     }
 
@@ -2229,8 +2234,8 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     options.backtrace = 1;
     options.ops = &ngx_http_js_ops;
 
-    jlcf->vm = njs_vm_create(&options);
-    if (jlcf->vm == NULL) {
+    jmcf->vm = njs_vm_create(&options);
+    if (jmcf->vm == NULL) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "failed to create JS VM");
         return NGX_CONF_ERROR;
     }
@@ -2241,34 +2246,34 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     cln->handler = ngx_http_js_cleanup_vm;
-    cln->data = jlcf->vm;
+    cln->data = jmcf->vm;
 
-    jlcf->req_proto = njs_vm_external_prototype(jlcf->vm,
+    jmcf->req_proto = njs_vm_external_prototype(jmcf->vm,
                                                 &ngx_http_js_externals[0]);
-    if (jlcf->req_proto == NULL) {
+    if (jmcf->req_proto == NULL) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "failed to add request proto");
         return NGX_CONF_ERROR;
     }
 
-    jlcf->res_proto = njs_vm_external_prototype(jlcf->vm,
+    jmcf->res_proto = njs_vm_external_prototype(jmcf->vm,
                                                 &ngx_http_js_externals[1]);
-    if (jlcf->res_proto == NULL) {
+    if (jmcf->res_proto == NULL) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "failed to add response proto");
         return NGX_CONF_ERROR;
     }
 
-    jlcf->rep_proto = njs_vm_external_prototype(jlcf->vm,
+    jmcf->rep_proto = njs_vm_external_prototype(jmcf->vm,
                                                 &ngx_http_js_externals[2]);
-    if (jlcf->rep_proto == NULL) {
+    if (jmcf->rep_proto == NULL) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "failed to add reply proto");
         return NGX_CONF_ERROR;
     }
 
-    rc = njs_vm_compile(jlcf->vm, &start, end);
+    rc = njs_vm_compile(jmcf->vm, &start, end);
 
     if (rc != NJS_OK) {
-        njs_vm_retval_to_ext_string(jlcf->vm, &text);
+        njs_vm_retval_to_ext_string(jmcf->vm, &text);
 
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "%*s, included",
@@ -2346,11 +2351,11 @@ ngx_http_js_content(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 
 static void *
-ngx_http_js_create_loc_conf(ngx_conf_t *cf)
+ngx_http_js_create_main_conf(ngx_conf_t *cf)
 {
-    ngx_http_js_loc_conf_t  *conf;
+    ngx_http_js_main_conf_t  *conf;
 
-    conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_js_loc_conf_t));
+    conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_js_main_conf_t));
     if (conf == NULL) {
         return NULL;
     }
@@ -2368,18 +2373,28 @@ ngx_http_js_create_loc_conf(ngx_conf_t *cf)
 }
 
 
+static void *
+ngx_http_js_create_loc_conf(ngx_conf_t *cf)
+{
+    ngx_http_js_loc_conf_t  *conf;
+
+    conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_js_loc_conf_t));
+    if (conf == NULL) {
+        return NULL;
+    }
+
+    /*
+     * set by ngx_pcalloc():
+     *
+     *     conf->content = { 0, NULL };
+     */
+
+    return conf;
+}
+
+
 static char *
 ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 {
-    ngx_http_js_loc_conf_t *prev = parent;
-    ngx_http_js_loc_conf_t *conf = child;
-
-    if (conf->vm == NULL) {
-        conf->vm = prev->vm;
-        conf->req_proto = prev->req_proto;
-        conf->res_proto = prev->res_proto;
-        conf->rep_proto = prev->rep_proto;
-    }
-
     return NGX_CONF_OK;
 }

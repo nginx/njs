@@ -14,10 +14,14 @@
 
 typedef struct {
     njs_vm_t              *vm;
+    const njs_extern_t    *proto;
+} ngx_stream_js_main_conf_t;
+
+
+typedef struct {
     ngx_str_t              access;
     ngx_str_t              preread;
     ngx_str_t              filter;
-    const njs_extern_t    *proto;
 } ngx_stream_js_srv_conf_t;
 
 
@@ -75,6 +79,7 @@ static char *ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static char *ngx_stream_js_set(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
+static void *ngx_stream_js_create_main_conf(ngx_conf_t *cf);
 static void *ngx_stream_js_create_srv_conf(ngx_conf_t *cf);
 static char *ngx_stream_js_merge_srv_conf(ngx_conf_t *cf, void *parent,
     void *child);
@@ -86,14 +91,14 @@ static ngx_command_t  ngx_stream_js_commands[] = {
     { ngx_string("js_include"),
       NGX_STREAM_MAIN_CONF|NGX_CONF_TAKE1,
       ngx_stream_js_include,
-      NGX_STREAM_SRV_CONF_OFFSET,
+      NGX_STREAM_MAIN_CONF_OFFSET,
       0,
       NULL },
 
     { ngx_string("js_set"),
       NGX_STREAM_MAIN_CONF|NGX_CONF_TAKE2,
       ngx_stream_js_set,
-      NGX_STREAM_SRV_CONF_OFFSET,
+      0,
       0,
       NULL },
 
@@ -123,29 +128,29 @@ static ngx_command_t  ngx_stream_js_commands[] = {
 
 
 static ngx_stream_module_t  ngx_stream_js_module_ctx = {
-    NULL,                          /* preconfiguration */
-    ngx_stream_js_init,            /* postconfiguration */
+    NULL,                           /* preconfiguration */
+    ngx_stream_js_init,             /* postconfiguration */
 
-    NULL,                          /* create main configuration */
-    NULL,                          /* init main configuration */
+    ngx_stream_js_create_main_conf, /* create main configuration */
+    NULL,                           /* init main configuration */
 
-    ngx_stream_js_create_srv_conf, /* create server configuration */
-    ngx_stream_js_merge_srv_conf,  /* merge server configuration */
+    ngx_stream_js_create_srv_conf,  /* create server configuration */
+    ngx_stream_js_merge_srv_conf,   /* merge server configuration */
 };
 
 
 ngx_module_t  ngx_stream_js_module = {
     NGX_MODULE_V1,
-    &ngx_stream_js_module_ctx,     /* module context */
-    ngx_stream_js_commands,        /* module directives */
-    NGX_STREAM_MODULE,             /* module type */
-    NULL,                          /* init master */
-    NULL,                          /* init module */
-    NULL,                          /* init process */
-    NULL,                          /* init thread */
-    NULL,                          /* exit thread */
-    NULL,                          /* exit process */
-    NULL,                          /* exit master */
+    &ngx_stream_js_module_ctx,      /* module context */
+    ngx_stream_js_commands,         /* module directives */
+    NGX_STREAM_MODULE,              /* module type */
+    NULL,                           /* init master */
+    NULL,                           /* init module */
+    NULL,                           /* init process */
+    NULL,                           /* init thread */
+    NULL,                           /* exit thread */
+    NULL,                           /* exit process */
+    NULL,                           /* exit master */
     NGX_MODULE_V1_PADDING
 };
 
@@ -621,14 +626,14 @@ ngx_stream_js_variable(ngx_stream_session_t *s, ngx_stream_variable_value_t *v,
 static ngx_int_t
 ngx_stream_js_init_vm(ngx_stream_session_t *s)
 {
-    nxt_int_t                  rc;
-    nxt_str_t                  exception;
-    ngx_pool_cleanup_t        *cln;
-    ngx_stream_js_ctx_t       *ctx;
-    ngx_stream_js_srv_conf_t  *jscf;
+    nxt_int_t                   rc;
+    nxt_str_t                   exception;
+    ngx_pool_cleanup_t         *cln;
+    ngx_stream_js_ctx_t        *ctx;
+    ngx_stream_js_main_conf_t  *jmcf;
 
-    jscf = ngx_stream_get_module_srv_conf(s, ngx_stream_js_module);
-    if (jscf->vm == NULL) {
+    jmcf = ngx_stream_get_module_main_conf(s, ngx_stream_js_module);
+    if (jmcf->vm == NULL) {
         return NGX_DECLINED;
     }
 
@@ -647,7 +652,7 @@ ngx_stream_js_init_vm(ngx_stream_session_t *s)
         return NGX_OK;
     }
 
-    ctx->vm = njs_vm_clone(jscf->vm, s);
+    ctx->vm = njs_vm_clone(jmcf->vm, s);
     if (ctx->vm == NULL) {
         return NGX_ERROR;
     }
@@ -671,7 +676,7 @@ ngx_stream_js_init_vm(ngx_stream_session_t *s)
         return NGX_ERROR;
     }
 
-    rc = njs_vm_external_create(ctx->vm, njs_value_arg(&ctx->arg), jscf->proto,
+    rc = njs_vm_external_create(ctx->vm, njs_value_arg(&ctx->arg), jmcf->proto,
                                 s);
     if (rc != NXT_OK) {
         return NGX_ERROR;
@@ -941,7 +946,7 @@ ngx_stream_js_ext_get_code(njs_vm_t *vm, njs_value_t *value, void *obj,
 static char *
 ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_stream_js_srv_conf_t *jscf = conf;
+    ngx_stream_js_main_conf_t *jmcf = conf;
 
     size_t                 size;
     u_char                *start, *end;
@@ -954,7 +959,7 @@ ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_file_info_t        fi;
     ngx_pool_cleanup_t    *cln;
 
-    if (jscf->vm) {
+    if (jmcf->vm) {
         return "is duplicate";
     }
 
@@ -1017,8 +1022,8 @@ ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     options.backtrace = 1;
 
-    jscf->vm = njs_vm_create(&options);
-    if (jscf->vm == NULL) {
+    jmcf->vm = njs_vm_create(&options);
+    if (jmcf->vm == NULL) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "failed to create JS VM");
         return NGX_CONF_ERROR;
     }
@@ -1029,20 +1034,20 @@ ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     cln->handler = ngx_stream_js_cleanup_vm;
-    cln->data = jscf->vm;
+    cln->data = jmcf->vm;
 
-    jscf->proto = njs_vm_external_prototype(jscf->vm,
+    jmcf->proto = njs_vm_external_prototype(jmcf->vm,
                                             &ngx_stream_js_externals[0]);
 
-    if (jscf->proto == NULL) {
+    if (jmcf->proto == NULL) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "failed to add stream proto");
         return NGX_CONF_ERROR;
     }
 
-    rc = njs_vm_compile(jscf->vm, &start, end);
+    rc = njs_vm_compile(jmcf->vm, &start, end);
 
     if (rc != NJS_OK) {
-        njs_vm_retval_to_ext_string(jscf->vm, &text);
+        njs_vm_retval_to_ext_string(jmcf->vm, &text);
 
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "%*s, included",
@@ -1098,6 +1103,27 @@ ngx_stream_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 
 static void *
+ngx_stream_js_create_main_conf(ngx_conf_t *cf)
+{
+    ngx_stream_js_srv_conf_t  *conf;
+
+    conf = ngx_pcalloc(cf->pool, sizeof(ngx_stream_js_main_conf_t));
+    if (conf == NULL) {
+        return NULL;
+    }
+
+    /*
+     * set by ngx_pcalloc():
+     *
+     *     conf->vm = NULL;
+     *     conf->proto = NULL;
+     */
+
+    return conf;
+}
+
+
+static void *
 ngx_stream_js_create_srv_conf(ngx_conf_t *cf)
 {
     ngx_stream_js_srv_conf_t  *conf;
@@ -1110,8 +1136,6 @@ ngx_stream_js_create_srv_conf(ngx_conf_t *cf)
     /*
      * set by ngx_pcalloc():
      *
-     *     conf->vm = NULL;
-     *     conf->proto = NULL;
      *     conf->access = { 0, NULL };
      *     conf->preread = { 0, NULL };
      *     conf->filter = { 0, NULL };
@@ -1126,11 +1150,6 @@ ngx_stream_js_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
 {
     ngx_stream_js_srv_conf_t *prev = parent;
     ngx_stream_js_srv_conf_t *conf = child;
-
-    if (conf->vm == NULL) {
-        conf->vm = prev->vm;
-        conf->proto = prev->proto;
-    }
 
     ngx_conf_merge_str_value(conf->access, prev->access, "");
     ngx_conf_merge_str_value(conf->preread, prev->preread, "");
