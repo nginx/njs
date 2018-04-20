@@ -8673,6 +8673,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("JSON.stringify([])"),
       nxt_string("[]") },
 
+    { nxt_string("var a = [1]; a[2] = 'x'; JSON.stringify(a)"),
+      nxt_string("[1,null,\"x\"]") },
+
     { nxt_string("JSON.stringify({a:\"b\",c:19,e:null,t:true,f:false})"),
       nxt_string("{\"a\":\"b\",\"c\":19,\"e\":null,\"t\":true,\"f\":false}") },
 
