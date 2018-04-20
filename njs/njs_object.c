@@ -740,7 +740,7 @@ njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
     if (nargs > 1 && njs_is_object(&args[1])) {
-        njs_object_prototype_get_proto(vm, &args[1], &vm->retval);
+        njs_object_prototype_get_proto(vm, &args[1], NULL, &vm->retval);
         return NXT_OK;
     }
 
@@ -971,7 +971,7 @@ njs_object_is_extensible(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 njs_ret_t
 njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *retval)
+    njs_value_t *setval, njs_value_t *retval)
 {
     nxt_uint_t    index;
     njs_object_t  *proto;
@@ -1004,7 +1004,7 @@ njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value,
 
 njs_ret_t
 njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *retval)
+    njs_value_t *setval, njs_value_t *retval)
 {
     int32_t         index;
     njs_value_t     *proto;
@@ -1088,9 +1088,9 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
 
     /* Object.prototype. */
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
-        .value = njs_native_getter(njs_object_prototype_create),
+        .value = njs_prop_handler(njs_object_prototype_create),
     },
 
     /* Object.create(). */
@@ -1202,7 +1202,7 @@ const njs_object_init_t  njs_object_constructor_init = {
 
 njs_ret_t
 njs_object_prototype_get_proto(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *retval)
+    njs_value_t *setval, njs_value_t *retval)
 {
     njs_object_t  *proto;
 
@@ -1229,7 +1229,7 @@ njs_object_prototype_get_proto(njs_vm_t *vm, njs_value_t *value,
 
 static njs_ret_t
 njs_object_prototype_create_constructor(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *retval)
+    njs_value_t *setval, njs_value_t *retval)
 {
     int32_t                 index;
     njs_value_t             *cons;
@@ -1521,15 +1521,15 @@ njs_object_prototype_is_prototype_of(njs_vm_t *vm, njs_value_t *args,
 static const njs_object_prop_t  njs_object_prototype_properties[] =
 {
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("__proto__"),
-        .value = njs_native_getter(njs_object_prototype_get_proto),
+        .value = njs_prop_handler(njs_object_prototype_get_proto),
     },
 
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("constructor"),
-        .value = njs_native_getter(njs_object_prototype_create_constructor),
+        .value = njs_prop_handler(njs_object_prototype_create_constructor),
     },
 
     {

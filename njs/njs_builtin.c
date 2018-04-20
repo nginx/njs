@@ -246,9 +246,9 @@ njs_builtin_objects_create(njs_vm_t *vm)
     };
 
     static const njs_object_prop_t    function_prototype_property = {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
-        .value = njs_native_getter(njs_function_prototype_create),
+        .value = njs_prop_handler(njs_function_prototype_create),
     };
 
     ret = njs_object_hash_create(vm, &vm->shared->function_prototype_hash,

@@ -118,8 +118,13 @@ typedef enum {
 
 typedef struct njs_parser_s           njs_parser_t;
 
-typedef njs_ret_t (*njs_getter_t) (njs_vm_t *vm, njs_value_t *obj,
-    njs_value_t *retval);
+/*
+ * njs_prop_handler_t operates as a property getter and/or setter.
+ * The handler receives NULL setval if it is invoked in GET context and
+ * non-null otherwise.
+ */
+typedef njs_ret_t (*njs_prop_handler_t) (njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 typedef njs_ret_t (*njs_function_native_t) (njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t retval);
 
@@ -177,7 +182,7 @@ union njs_value_s {
             njs_function_lambda_t     *lambda;
             njs_regexp_t              *regexp;
             njs_date_t                *date;
-            njs_getter_t              getter;
+            njs_prop_handler_t        prop_handler;
             njs_value_t               *value;
             njs_property_next_t       *next;
             void                      *data;
@@ -374,11 +379,11 @@ typedef union {
 }
 
 
-#define njs_native_getter(_getter) {                                          \
+#define njs_prop_handler(_handler) {                                          \
     .data = {                                                                 \
         .type = NJS_INVALID,                                                  \
         .truth = 1,                                                           \
-        .u = { .getter = _getter }                                            \
+        .u = { .prop_handler = _handler }                                     \
     }                                                                         \
 }
 

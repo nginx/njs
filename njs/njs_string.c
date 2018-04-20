@@ -570,9 +570,9 @@ static const njs_object_prop_t  njs_string_constructor_properties[] =
 
     /* String.prototype. */
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
-        .value = njs_native_getter(njs_object_prototype_create),
+        .value = njs_prop_handler(njs_object_prototype_create),
     },
 
     /* String.fromCharCode(). */
@@ -600,7 +600,7 @@ const njs_object_init_t  njs_string_constructor_init = {
 
 static njs_ret_t
 njs_string_prototype_length(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *retval)
+    njs_value_t *setval, njs_value_t *retval)
 {
     size_t     size;
     uintptr_t  length;
@@ -3348,15 +3348,15 @@ njs_string_to_c_string(njs_vm_t *vm, njs_value_t *value)
 static const njs_object_prop_t  njs_string_prototype_properties[] =
 {
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("__proto__"),
-        .value = njs_native_getter(njs_primitive_prototype_get_proto),
+        .value = njs_prop_handler(njs_primitive_prototype_get_proto),
     },
 
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("length"),
-        .value = njs_native_getter(njs_string_prototype_length),
+        .value = njs_prop_handler(njs_string_prototype_length),
     },
 
     {

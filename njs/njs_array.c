@@ -351,9 +351,9 @@ static const njs_object_prop_t  njs_array_constructor_properties[] =
 
     /* Array.prototype. */
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
-        .value = njs_native_getter(njs_object_prototype_create),
+        .value = njs_prop_handler(njs_object_prototype_create),
     },
 
     /* Array.isArray(). */
@@ -382,7 +382,7 @@ const njs_object_init_t  njs_array_constructor_init = {
 
 static njs_ret_t
 njs_array_prototype_length(njs_vm_t *vm, njs_value_t *array,
-    njs_value_t *retval)
+    njs_value_t *setval, njs_value_t *retval)
 {
     njs_value_number_set(retval, array->data.u.array->length);
 
@@ -2057,9 +2057,9 @@ njs_array_prototype_sort_continuation(njs_vm_t *vm, njs_value_t *args,
 static const njs_object_prop_t  njs_array_prototype_properties[] =
 {
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("length"),
-        .value = njs_native_getter(njs_array_prototype_length),
+        .value = njs_prop_handler(njs_array_prototype_length),
     },
 
     {

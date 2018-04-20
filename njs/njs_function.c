@@ -419,7 +419,7 @@ njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
 
 njs_ret_t
 njs_function_prototype_create(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *retval)
+    njs_value_t *setval, njs_value_t *retval)
 {
     njs_value_t  *proto;
 
@@ -495,9 +495,9 @@ static const njs_object_prop_t  njs_function_constructor_properties[] =
 
     /* Function.prototype. */
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
-        .value = njs_native_getter(njs_object_prototype_create),
+        .value = njs_prop_handler(njs_object_prototype_create),
     },
 };
 

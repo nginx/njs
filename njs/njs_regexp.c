@@ -464,7 +464,7 @@ njs_regexp_alloc(njs_vm_t *vm, njs_regexp_pattern_t *pattern)
 
 static njs_ret_t
 njs_regexp_prototype_last_index(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *retval)
+    njs_value_t *setval, njs_value_t *retval)
 {
     uint32_t           index;
     njs_regexp_t       *regexp;
@@ -485,7 +485,7 @@ njs_regexp_prototype_last_index(njs_vm_t *vm, njs_value_t *value,
 
 static njs_ret_t
 njs_regexp_prototype_global(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *retval)
+    njs_value_t *setval, njs_value_t *retval)
 {
     njs_regexp_pattern_t  *pattern;
 
@@ -499,7 +499,7 @@ njs_regexp_prototype_global(njs_vm_t *vm, njs_value_t *value,
 
 static njs_ret_t
 njs_regexp_prototype_ignore_case(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *retval)
+    njs_value_t *setval, njs_value_t *retval)
 {
     njs_regexp_pattern_t  *pattern;
 
@@ -513,7 +513,7 @@ njs_regexp_prototype_ignore_case(njs_vm_t *vm, njs_value_t *value,
 
 static njs_ret_t
 njs_regexp_prototype_multiline(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *retval)
+    njs_value_t *setval, njs_value_t *retval)
 {
     njs_regexp_pattern_t  *pattern;
 
@@ -527,7 +527,7 @@ njs_regexp_prototype_multiline(njs_vm_t *vm, njs_value_t *value,
 
 static njs_ret_t
 njs_regexp_prototype_source(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *retval)
+    njs_value_t *setval, njs_value_t *retval)
 {
     u_char                *source;
     int32_t               length;
@@ -824,9 +824,9 @@ static const njs_object_prop_t  njs_regexp_constructor_properties[] =
 
     /* RegExp.prototype. */
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
-        .value = njs_native_getter(njs_object_prototype_create),
+        .value = njs_prop_handler(njs_object_prototype_create),
     },
 };
 
@@ -841,33 +841,33 @@ const njs_object_init_t  njs_regexp_constructor_init = {
 static const njs_object_prop_t  njs_regexp_prototype_properties[] =
 {
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("lastIndex"),
-        .value = njs_native_getter(njs_regexp_prototype_last_index),
+        .value = njs_prop_handler(njs_regexp_prototype_last_index),
     },
 
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("global"),
-        .value = njs_native_getter(njs_regexp_prototype_global),
+        .value = njs_prop_handler(njs_regexp_prototype_global),
     },
 
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("ignoreCase"),
-        .value = njs_native_getter(njs_regexp_prototype_ignore_case),
+        .value = njs_prop_handler(njs_regexp_prototype_ignore_case),
     },
 
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("multiline"),
-        .value = njs_native_getter(njs_regexp_prototype_multiline),
+        .value = njs_prop_handler(njs_regexp_prototype_multiline),
     },
 
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("source"),
-        .value = njs_native_getter(njs_regexp_prototype_source),
+        .value = njs_prop_handler(njs_regexp_prototype_source),
     },
 
     {

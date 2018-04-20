@@ -905,9 +905,9 @@ static const njs_object_prop_t  njs_date_constructor_properties[] =
 
     /* Date.prototype. */
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
-        .value = njs_native_getter(njs_object_prototype_create),
+        .value = njs_prop_handler(njs_object_prototype_create),
     },
 
     {
@@ -1931,9 +1931,9 @@ njs_date_prototype_to_json_continuation(njs_vm_t *vm, njs_value_t *args,
 static const njs_object_prop_t  njs_date_prototype_properties[] =
 {
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("__proto__"),
-        .value = njs_native_getter(njs_primitive_prototype_get_proto),
+        .value = njs_prop_handler(njs_primitive_prototype_get_proto),
     },
 
     {

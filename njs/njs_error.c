@@ -192,9 +192,9 @@ static const njs_object_prop_t  njs_error_constructor_properties[] =
 
     /* Error.prototype. */
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
-        .value = njs_native_getter(njs_object_prototype_create),
+        .value = njs_prop_handler(njs_object_prototype_create),
     },
 };
 
@@ -232,9 +232,9 @@ static const njs_object_prop_t  njs_eval_error_constructor_properties[] =
 
     /* EvalError.prototype. */
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
-        .value = njs_native_getter(njs_object_prototype_create),
+        .value = njs_prop_handler(njs_object_prototype_create),
     },
 };
 
@@ -272,9 +272,9 @@ static const njs_object_prop_t  njs_internal_error_constructor_properties[] =
 
     /* InternalError.prototype. */
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
-        .value = njs_native_getter(njs_object_prototype_create),
+        .value = njs_prop_handler(njs_object_prototype_create),
     },
 };
 
@@ -312,9 +312,9 @@ static const njs_object_prop_t  njs_range_error_constructor_properties[] =
 
     /* RangeError.prototype. */
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
-        .value = njs_native_getter(njs_object_prototype_create),
+        .value = njs_prop_handler(njs_object_prototype_create),
     },
 };
 
@@ -352,9 +352,9 @@ static const njs_object_prop_t  njs_reference_error_constructor_properties[] =
 
     /* ReferenceError.prototype. */
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
-        .value = njs_native_getter(njs_object_prototype_create),
+        .value = njs_prop_handler(njs_object_prototype_create),
     },
 };
 
@@ -392,9 +392,9 @@ static const njs_object_prop_t  njs_syntax_error_constructor_properties[] =
 
     /* SyntaxError.prototype. */
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
-        .value = njs_native_getter(njs_object_prototype_create),
+        .value = njs_prop_handler(njs_object_prototype_create),
     },
 };
 
@@ -432,9 +432,9 @@ static const njs_object_prop_t  njs_type_error_constructor_properties[] =
 
     /* TypeError.prototype. */
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
-        .value = njs_native_getter(njs_object_prototype_create),
+        .value = njs_prop_handler(njs_object_prototype_create),
     },
 };
 
@@ -472,9 +472,9 @@ static const njs_object_prop_t  njs_uri_error_constructor_properties[] =
 
     /* URIError.prototype. */
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
-        .value = njs_native_getter(njs_object_prototype_create),
+        .value = njs_prop_handler(njs_object_prototype_create),
     },
 };
 
@@ -533,7 +533,7 @@ njs_memory_error_constructor(njs_vm_t *vm, njs_value_t *args,
 
 static njs_ret_t
 njs_memory_error_prototype_create(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *retval)
+    njs_value_t *setval, njs_value_t *retval)
 {
     int32_t         index;
     njs_value_t     *proto;
@@ -574,9 +574,9 @@ static const njs_object_prop_t  njs_memory_error_constructor_properties[] =
 
     /* MemoryError.prototype. */
     {
-        .type = NJS_NATIVE_GETTER,
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
-        .value = njs_native_getter(njs_memory_error_prototype_create),
+        .value = njs_prop_handler(njs_memory_error_prototype_create),
     },
 };
 

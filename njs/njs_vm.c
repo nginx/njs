@@ -54,7 +54,7 @@
 typedef struct {
     nxt_lvlhsh_query_t             lhq;
 
-    /* scratch is used to get the value of an NJS_NATIVE_GETTER property. */
+    /* scratch is used to get the value of an NJS_PROPERTY_HANDLER property. */
     njs_object_prop_t              scratch;
 
     njs_value_t                    value;
@@ -82,6 +82,8 @@ static njs_ret_t njs_array_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_value_t *object, uint32_t index);
 static njs_ret_t njs_object_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_value_t *value, njs_object_t *object);
+static njs_ret_t njs_object_query_prop_handler(njs_property_query_t *pq,
+    njs_object_t *object);
 static njs_ret_t njs_method_private_copy(njs_vm_t *vm,
     njs_property_query_t *pq);
 static nxt_noinline njs_ret_t njs_values_equal(const njs_value_t *val1,
@@ -695,6 +697,17 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
 
     case NXT_OK:
         prop = pq.lhq.value;
+
+        if (prop->type == NJS_PROPERTY_HANDLER) {
+            ret = prop->value.data.u.prop_handler(vm, object, value,
+                                                  &vm->retval);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return ret;
+            }
+
+            return sizeof(njs_vmcode_prop_set_t);
+        }
+
         break;
 
     case NXT_DECLINED:
@@ -1153,6 +1166,13 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 
     pq->lhq.proto = &njs_object_hash_proto;
 
+    if (pq->query == NJS_PROPERTY_QUERY_SET) {
+        ret = njs_object_query_prop_handler(pq, object);
+        if (ret == NXT_OK) {
+            return ret;
+        }
+    }
+
     do {
         pq->prototype = object;
 
@@ -1183,10 +1203,11 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
             if (pq->query == NJS_PROPERTY_QUERY_GET) {
                 prop = pq->lhq.value;
 
-                if (prop->type == NJS_NATIVE_GETTER) {
+                if (prop->type == NJS_PROPERTY_HANDLER) {
                     pq->scratch = *prop;
                     prop = &pq->scratch;
-                    ret = prop->value.data.u.getter(vm, value, &prop->value);
+                    ret = prop->value.data.u.prop_handler(vm, value, NULL,
+                                                          &prop->value);
 
                     if (nxt_fast_path(ret == NXT_OK)) {
                         prop->type = NJS_PROPERTY;
@@ -1216,6 +1237,33 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     /* NXT_DECLINED */
 
     return ret;
+}
+
+
+static njs_ret_t
+njs_object_query_prop_handler(njs_property_query_t *pq, njs_object_t *object)
+{
+    njs_ret_t          ret;
+    njs_object_prop_t  *prop;
+
+    do {
+        pq->prototype = object;
+
+        ret = nxt_lvlhsh_find(&object->shared_hash, &pq->lhq);
+
+        if (ret == NXT_OK) {
+            prop = pq->lhq.value;
+
+            if (prop->type == NJS_PROPERTY_HANDLER) {
+                return NXT_OK;
+            }
+        }
+
+        object = object->__proto__;
+
+    } while (object != NULL);
+
+    return NXT_DECLINED;
 }
 
 
