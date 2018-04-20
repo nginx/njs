@@ -2700,6 +2700,41 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = [1,2]; a.length"),
       nxt_string("2") },
 
+    /* Array.length setter */
+
+    { nxt_string("[].length = {}"),
+      nxt_string("RangeError: Invalid array length") },
+
+    { nxt_string("[].length = 2**32"),
+      nxt_string("RangeError: Invalid array length") },
+
+    { nxt_string("[].length = -1"),
+      nxt_string("RangeError: Invalid array length") },
+
+    { nxt_string("var a = []; a.length = 0; JSON.stringify(a)"),
+      nxt_string("[]") },
+
+    { nxt_string("var a = []; a.length = 1; JSON.stringify(a)"),
+      nxt_string("[null]") },
+
+    { nxt_string("var a = [1]; a.length = 1; JSON.stringify(a)"),
+      nxt_string("[1]") },
+
+    { nxt_string("var a = [1]; a.length = 2; JSON.stringify(a)"),
+      nxt_string("[1,null]") },
+
+    { nxt_string("var a = [1]; a.length = 4; a.length = 0; JSON.stringify(a)"),
+      nxt_string("[]") },
+
+    { nxt_string("var a = [1,2,3]; a.length = 2; JSON.stringify(a)"),
+      nxt_string("[1,2]") },
+
+    { nxt_string("var a = [1,2,3]; a.length = 3; a"),
+      nxt_string("1,2,3") },
+
+    { nxt_string("var a = [1,2,3]; a.length = 16; a"),
+      nxt_string("1,2,3,,,,,,,,,,,,,") },
+
     { nxt_string("var a = [1,2,3]; a.join()"),
       nxt_string("1,2,3") },
 

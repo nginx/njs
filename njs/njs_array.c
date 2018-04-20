@@ -381,14 +381,51 @@ const njs_object_init_t  njs_array_constructor_init = {
 
 
 static njs_ret_t
-njs_array_prototype_length(njs_vm_t *vm, njs_value_t *array,
+njs_array_prototype_length(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
-    njs_value_number_set(retval, array->data.u.array->length);
+    double       num;
+    int32_t      size;
+    uint32_t     length;
+    njs_ret_t    ret;
+    njs_value_t  *val;
+    njs_array_t  *array;
 
-    njs_release(vm, array);
+    array = value->data.u.array;
 
-    return NXT_OK;
+    if (setval != NULL) {
+        num = setval->data.u.number;
+        length = (uint32_t) num;
+
+        if ((double) length != num) {
+            njs_range_error(vm, "Invalid array length", NULL);
+            return NJS_ERROR;
+        }
+
+        size = (int32_t) (length - array->length);
+
+        if (size > 0) {
+            ret = njs_array_expand(vm, array, 0, size);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                njs_memory_error(vm);
+                return NJS_ERROR;
+            }
+
+            val = &array->start[array->length];
+
+            do {
+                njs_set_invalid(val);
+                val++;
+                size--;
+            } while (size != 0);
+        }
+
+        array->length = length;
+    }
+
+    njs_value_number_set(retval, array->length);
+
+    return NJS_OK;
 }
 
 
