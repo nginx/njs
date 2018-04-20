@@ -8708,6 +8708,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var e = URIError('e'); e.foo = 'E'; JSON.stringify(e)"),
       nxt_string("{\"foo\":\"E\"}") },
 
+    { nxt_string("JSON.stringify($r)"),
+      nxt_string("TypeError: Non-serializable object") },
+
     /* Ignoring named properties of an array. */
 
     { nxt_string("var a = [1,2]; a.a = 1;"

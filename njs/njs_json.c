@@ -1184,6 +1184,10 @@ njs_json_parse_exception(njs_json_parse_ctx_t *ctx, const char* msg,
     state->written = 1;                                                       \
     ret = njs_json_append_value(stringify, value);                            \
     if (nxt_slow_path(ret != NXT_OK)) {                                       \
+        if (ret == NXT_DECLINED) {                                            \
+            return NXT_ERROR;                                                 \
+        }                                                                     \
+                                                                              \
         goto memory_error;                                                    \
     }
 
