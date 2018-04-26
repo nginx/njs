@@ -11,11 +11,12 @@
 #include <math.h>
 
 
-uint32_t njs_value_to_index(njs_value_t *value);
-double njs_number_dec_parse(u_char **start, u_char *end);
-uint64_t njs_number_oct_parse(u_char **start, u_char *end);
-uint64_t njs_number_hex_parse(u_char **start, u_char *end);
-int64_t njs_number_radix_parse(u_char **start, u_char *end, uint8_t radix);
+uint32_t njs_value_to_index(const njs_value_t *value);
+double njs_number_dec_parse(const u_char **start, const u_char *end);
+uint64_t njs_number_oct_parse(const u_char **start, const u_char *end);
+uint64_t njs_number_hex_parse(const u_char **start, const u_char *end);
+int64_t njs_number_radix_parse(const u_char **start, const u_char *end,
+    uint8_t radix);
 njs_ret_t njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
     const njs_value_t *number);
 size_t njs_num_to_buf(double num, u_char *buf, size_t size);

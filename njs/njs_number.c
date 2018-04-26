@@ -39,7 +39,7 @@ static njs_ret_t njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
 
 
 uint32_t
-njs_value_to_index(njs_value_t *value)
+njs_value_to_index(const njs_value_t *value)
 {
     double       num;
     njs_array_t  *array;
@@ -79,11 +79,12 @@ njs_value_to_index(njs_value_t *value)
 
 
 double
-njs_number_dec_parse(u_char **start, u_char *end)
+njs_number_dec_parse(const u_char **start, const u_char *end)
 {
-    u_char      c, *e, *p;
-    double      num, frac, scale, exponent;
-    nxt_bool_t  minus;
+    u_char        c;
+    double        num, frac, scale, exponent;
+    nxt_bool_t    minus;
+    const u_char  *e, *p;
 
     p = *start;
 
@@ -169,10 +170,11 @@ njs_number_dec_parse(u_char **start, u_char *end)
 
 
 uint64_t
-njs_number_oct_parse(u_char **start, u_char *end)
+njs_number_oct_parse(const u_char **start, const u_char *end)
 {
-    u_char    c, *p;
-    uint64_t  num;
+    u_char        c;
+    uint64_t      num;
+    const u_char  *p;
 
     p = *start;
 
@@ -197,10 +199,11 @@ njs_number_oct_parse(u_char **start, u_char *end)
 
 
 uint64_t
-njs_number_hex_parse(u_char **start, u_char *end)
+njs_number_hex_parse(const u_char **start, const u_char *end)
 {
-    u_char    c, *p;
-    uint64_t  num;
+    u_char        c;
+    uint64_t      num;
+    const u_char  *p;
 
     p = *start;
 
@@ -234,12 +237,12 @@ njs_number_hex_parse(u_char **start, u_char *end)
 
 
 int64_t
-njs_number_radix_parse(u_char **start, u_char *end, uint8_t radix)
+njs_number_radix_parse(const u_char **start, const u_char *end, uint8_t radix)
 {
-    u_char    *p;
-    uint8_t   d;
-    int64_t   num;
-    uint64_t  n;
+    uint8_t       d;
+    int64_t       num;
+    uint64_t      n;
+    const u_char  *p;
 
     static const int8_t  digits[256]
         nxt_aligned(32) =
@@ -780,11 +783,11 @@ njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
     double             num;
-    u_char             *p, *end;
     int64_t            n;
     uint8_t            radix;
     nxt_str_t          string;
     nxt_bool_t         minus, test_prefix;
+    const u_char       *p, *end;
 
     num = NAN;
 

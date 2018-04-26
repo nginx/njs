@@ -3183,12 +3183,12 @@ njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
 
 
 double
-njs_string_to_number(njs_value_t *value, nxt_bool_t parse_float)
+njs_string_to_number(const njs_value_t *value, nxt_bool_t parse_float)
 {
-    u_char      *p, *start, *end;
-    double      num;
-    size_t      size;
-    nxt_bool_t  minus;
+    double        num;
+    size_t        size;
+    nxt_bool_t    minus;
+    const u_char  *p, *start, *end;
 
     const size_t  infinity = sizeof("Infinity") - 1;
 
@@ -3265,11 +3265,11 @@ njs_string_to_number(njs_value_t *value, nxt_bool_t parse_float)
 
 
 double
-njs_string_to_index(njs_value_t *value)
+njs_string_to_index(const njs_value_t *value)
 {
-    u_char  *p, *end;
-    double  num;
-    size_t  size;
+    double        num;
+    size_t        size;
+    const u_char  *p, *end;
 
     size = value->short_string.size;
 
@@ -3305,7 +3305,7 @@ njs_string_to_index(njs_value_t *value)
  * is returned as is, otherwise the new copy is allocated with
  * the terminating zero byte.
  */
-u_char *
+const u_char *
 njs_string_to_c_string(njs_vm_t *vm, njs_value_t *value)
 {
     u_char  *p, *data, *start;

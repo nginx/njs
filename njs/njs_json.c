@@ -32,8 +32,8 @@ typedef struct {
     njs_vm_t                   *vm;
     nxt_mem_cache_pool_t       *pool;
     nxt_uint_t                 depth;
-    u_char                     *start;
-    u_char                     *end;
+    const u_char               *start;
+    const u_char               *end;
 } njs_json_parse_ctx_t;
 
 
@@ -110,18 +110,19 @@ typedef struct {
 } njs_json_stringify_t;
 
 
-static u_char *njs_json_parse_value(njs_json_parse_ctx_t *ctx,
-    njs_value_t *value, u_char *p);
-static u_char *njs_json_parse_object(njs_json_parse_ctx_t *ctx,
-    njs_value_t *value, u_char *p);
-static u_char *njs_json_parse_array(njs_json_parse_ctx_t *ctx,
-    njs_value_t *value, u_char *p);
-static u_char *njs_json_parse_string(njs_json_parse_ctx_t *ctx,
-    njs_value_t *value, u_char *p);
-static u_char *njs_json_parse_number(njs_json_parse_ctx_t *ctx,
-    njs_value_t *value, u_char *p);
+static const u_char *njs_json_parse_value(njs_json_parse_ctx_t *ctx,
+    njs_value_t *value, const u_char *p);
+static const u_char *njs_json_parse_object(njs_json_parse_ctx_t *ctx,
+    njs_value_t *value, const u_char *p);
+static const u_char *njs_json_parse_array(njs_json_parse_ctx_t *ctx,
+    njs_value_t *value, const u_char *p);
+static const u_char *njs_json_parse_string(njs_json_parse_ctx_t *ctx,
+    njs_value_t *value, const u_char *p);
+static const u_char *njs_json_parse_number(njs_json_parse_ctx_t *ctx,
+    njs_value_t *value, const u_char *p);
 nxt_inline uint32_t njs_json_unicode(const u_char *p);
-static u_char *njs_json_skip_space(u_char *start, u_char *end);
+static const u_char *njs_json_skip_space(const u_char *start,
+    const u_char *end);
 
 static njs_ret_t njs_json_parse_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
@@ -131,7 +132,7 @@ static njs_json_state_t *njs_json_push_parse_state(njs_vm_t *vm,
     njs_json_parse_t *parse, njs_value_t *value);
 static njs_json_state_t *njs_json_pop_parse_state(njs_json_parse_t *parse);
 static void njs_json_parse_exception(njs_json_parse_ctx_t *ctx,
-    const char* msg, u_char *pos);
+    const char* msg, const u_char *pos);
 
 static njs_ret_t njs_json_stringify_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
@@ -179,8 +180,8 @@ static njs_ret_t
 njs_json_parse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    u_char                *p, *end;
     njs_value_t           arg, *value, *wrapper;
+    const u_char          *p, *end;
     njs_json_parse_t      *parse;
     njs_string_prop_t     string;
     njs_json_parse_ctx_t  ctx;
@@ -348,8 +349,9 @@ memory_error:
 }
 
 
-static u_char *
-njs_json_parse_value(njs_json_parse_ctx_t *ctx, njs_value_t *value, u_char *p)
+static const u_char *
+njs_json_parse_value(njs_json_parse_ctx_t *ctx, njs_value_t *value,
+    const u_char *p)
 {
     switch (*p) {
     case '{':
@@ -401,8 +403,9 @@ error:
 }
 
 
-static u_char *
-njs_json_parse_object(njs_json_parse_ctx_t *ctx, njs_value_t *value, u_char *p)
+static const u_char *
+njs_json_parse_object(njs_json_parse_ctx_t *ctx, njs_value_t *value,
+    const u_char *p)
 {
     nxt_int_t           ret;
     njs_object_t        *object;
@@ -533,8 +536,9 @@ memory_error:
 }
 
 
-static u_char *
-njs_json_parse_array(njs_json_parse_ctx_t *ctx, njs_value_t *value, u_char *p)
+static const u_char *
+njs_json_parse_array(njs_json_parse_ctx_t *ctx, njs_value_t *value,
+    const u_char *p)
 {
     nxt_int_t    ret;
     njs_array_t  *array;
@@ -621,14 +625,16 @@ error_end:
 }
 
 
-static u_char *
-njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value, u_char *p)
+static const u_char *
+njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value,
+    const u_char *p)
 {
-    u_char      *s, ch, *last, *start;
-    size_t      size, surplus;
-    ssize_t     length;
-    uint32_t    utf, utf_low;
-    njs_ret_t   ret;
+    u_char        ch, *s, *dst;
+    size_t        size, surplus;
+    ssize_t       length;
+    uint32_t      utf, utf_low;
+    njs_ret_t     ret;
+    const u_char  *start, *last;
 
     enum {
         sw_usual = 0,
@@ -734,13 +740,13 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value, u_char *p)
     if (surplus != 0) {
         p = start;
 
-        start = nxt_mem_cache_alloc(ctx->pool, size);
+        dst = nxt_mem_cache_alloc(ctx->pool, size);
         if (nxt_slow_path(start == NULL)) {
             njs_memory_error(ctx->vm);;
             return NULL;
         }
 
-        s = start;
+        s = dst;
 
         do {
             ch = *p++;
@@ -811,7 +817,8 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value, u_char *p)
 
         } while (p != last);
 
-        size = s - start;
+        size = s - dst;
+        start = dst;
     }
 
     length = nxt_utf8_length(start, size);
@@ -819,7 +826,7 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value, u_char *p)
         length = 0;
     }
 
-    ret = njs_string_create(ctx->vm, value, start, size, length);
+    ret = njs_string_create(ctx->vm, value, (u_char *) start, size, length);
     if (nxt_slow_path(ret != NXT_OK)) {
         njs_memory_error(ctx->vm);
         return NULL;
@@ -829,12 +836,13 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value, u_char *p)
 }
 
 
-static u_char *
-njs_json_parse_number(njs_json_parse_ctx_t *ctx, njs_value_t *value, u_char *p)
+static const u_char *
+njs_json_parse_number(njs_json_parse_ctx_t *ctx, njs_value_t *value,
+    const u_char *p)
 {
-    u_char     *start;
-    double     num;
-    nxt_int_t  sign;
+    double        num;
+    nxt_int_t     sign;
+    const u_char  *start;
 
     sign = 1;
 
@@ -888,10 +896,10 @@ njs_json_unicode(const u_char *p)
 }
 
 
-static u_char *
-njs_json_skip_space(u_char *start, u_char *end)
+static const u_char *
+njs_json_skip_space(const u_char *start, const u_char *end)
 {
-    u_char  *p;
+    const u_char  *p;
 
     for (p = start; nxt_fast_path(p != end); p++) {
 
@@ -1130,7 +1138,7 @@ njs_json_pop_parse_state(njs_json_parse_t *parse)
 
 static void
 njs_json_parse_exception(njs_json_parse_ctx_t *ctx, const char* msg,
-    u_char *pos)
+    const u_char *pos)
 {
     ssize_t  length;
 

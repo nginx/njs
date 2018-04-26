@@ -556,7 +556,8 @@ njs_lexer_number(njs_lexer_t *lexer)
             }
 
             lexer->start = p;
-            lexer->number = njs_number_hex_parse(&lexer->start, lexer->end);
+            lexer->number = njs_number_hex_parse((const u_char **) &lexer->start,
+                                                 lexer->end);
 
             return NJS_TOKEN_NUMBER;
         }
@@ -571,7 +572,8 @@ njs_lexer_number(njs_lexer_t *lexer)
             }
 
             lexer->start = p;
-            lexer->number = njs_number_oct_parse(&lexer->start, lexer->end);
+            lexer->number = njs_number_oct_parse((const u_char **) &lexer->start,
+                                                 lexer->end);
             p = lexer->start;
 
             if (p < lexer->end && (*p == '8' || *p == '9')) {
@@ -589,7 +591,8 @@ njs_lexer_number(njs_lexer_t *lexer)
     }
 
     lexer->start = p - 1;
-    lexer->number = njs_number_dec_parse(&lexer->start, lexer->end);
+    lexer->number = njs_number_dec_parse((const u_char **) &lexer->start,
+                                         lexer->end);
 
     return NJS_TOKEN_NUMBER;
 }

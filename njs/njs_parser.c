@@ -2379,9 +2379,10 @@ static njs_token_t
 njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
     njs_value_t *value)
 {
-    u_char    c, *p, *start, *dst, *src, *end, *hex_end;
-    size_t    size, length, hex_length;
-    uint64_t  u;
+    u_char        c, *start, *dst;
+    size_t        size,length, hex_length;
+    uint64_t      u;
+    const u_char  *p, *src, *end, *hex_end;
 
     start = NULL;
     dst = NULL;
