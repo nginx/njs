@@ -9878,7 +9878,7 @@ done:
         printf("njs unit tests passed\n");
     }
 
-    return NXT_OK;
+    return rc;
 }
 
 
