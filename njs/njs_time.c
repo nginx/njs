@@ -103,7 +103,7 @@ njs_clear_timeout(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     nxt_lvlhsh_query_t  lhq;
 
     if (nxt_fast_path(nargs < 2) || !njs_is_number(&args[1])) {
-        vm->retval = njs_string_void;
+        vm->retval = njs_value_void;
         return NJS_OK;
     }
 
@@ -120,7 +120,7 @@ njs_clear_timeout(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         njs_del_event(vm, event, NJS_EVENT_RELEASE | NJS_EVENT_DELETE);
     }
 
-    vm->retval = njs_string_void;
+    vm->retval = njs_value_void;
 
     return NJS_OK;
 }
