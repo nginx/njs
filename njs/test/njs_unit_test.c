@@ -6603,7 +6603,13 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("undefined") },
 
     { nxt_string("Object.getOwnPropertyDescriptor(1, '0')"),
-      nxt_string("TypeError: cannot convert number argument to object") },
+      nxt_string("undefined") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor()"),
+      nxt_string("TypeError: cannot convert void argument to object") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor(undefined)"),
+      nxt_string("TypeError: cannot convert void argument to object") },
 
     { nxt_string("Object.defineProperty(Object.freeze({}), 'b', {})"),
       nxt_string("TypeError: object is not extensible") },

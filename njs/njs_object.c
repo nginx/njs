@@ -629,9 +629,14 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
     value = njs_arg(args, nargs, 1);
 
     if (!njs_is_object(value)) {
-        njs_type_error(vm, "cannot convert %s argument to object",
-                       njs_type_string(value->type));
-        return NXT_ERROR;
+        if (njs_is_null_or_void(value)) {
+            njs_type_error(vm, "cannot convert %s argument to object",
+                           njs_type_string(value->type));
+            return NXT_ERROR;
+        }
+
+        vm->retval = njs_value_void;
+        return NXT_OK;
     }
 
     prop = NULL;
@@ -662,7 +667,7 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
         ret = nxt_lvlhsh_find(&value->data.u.object->hash, &lhq);
 
         if (ret != NXT_OK) {
-            vm->retval = njs_string_void;
+            vm->retval = njs_value_void;
             return NXT_OK;
         }
 
@@ -1164,7 +1169,7 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
         .type = NJS_METHOD,
         .name = njs_long_string("getOwnPropertyDescriptor"),
         .value = njs_native_function(njs_object_get_own_property_descriptor, 0,
-                                     NJS_SKIP_ARG, NJS_OBJECT_ARG,
+                                     NJS_SKIP_ARG, NJS_SKIP_ARG,
                                      NJS_STRING_ARG),
     },
 
