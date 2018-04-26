@@ -695,7 +695,7 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
     lhq.key = nxt_string_value("configurable");
     lhq.key_hash = NJS_CONFIGURABLE_HASH;
 
-    setval = (prop->configurable == 1) ? &njs_string_true : &njs_string_false;
+    setval = (prop->configurable == 1) ? &njs_value_true : &njs_value_false;
 
     pr = njs_object_prop_alloc(vm, &njs_object_configurable_string, setval, 1);
     if (nxt_slow_path(pr == NULL)) {
@@ -712,7 +712,7 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
     lhq.key = nxt_string_value("enumerable");
     lhq.key_hash = NJS_ENUMERABLE_HASH;
 
-    setval = (prop->enumerable == 1) ? &njs_string_true : &njs_string_false;
+    setval = (prop->enumerable == 1) ? &njs_value_true : &njs_value_false;
 
     pr = njs_object_prop_alloc(vm, &njs_object_enumerable_string, setval, 1);
     if (nxt_slow_path(pr == NULL)) {
@@ -729,7 +729,7 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
     lhq.key = nxt_string_value("writable");
     lhq.key_hash = NJS_WRITABABLE_HASH;
 
-    setval = (prop->writable == 1) ? &njs_string_true : &njs_string_false;
+    setval = (prop->writable == 1) ? &njs_value_true : &njs_value_false;
 
     pr = njs_object_prop_alloc(vm, &njs_object_writable_string, setval, 1);
     if (nxt_slow_path(pr == NULL)) {
@@ -826,11 +826,11 @@ njs_object_is_frozen(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     value = njs_arg(args, nargs, 1);
 
     if (!njs_is_object(value)) {
-        vm->retval = njs_string_true;
+        vm->retval = njs_value_true;
         return NXT_OK;
     }
 
-    retval = &njs_string_false;
+    retval = &njs_value_false;
 
     object = value->data.u.object;
     nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
@@ -853,7 +853,7 @@ njs_object_is_frozen(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
     }
 
-    retval = &njs_string_true;
+    retval = &njs_value_true;
 
 done:
 
@@ -916,11 +916,11 @@ njs_object_is_sealed(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     value = njs_arg(args, nargs, 1);
 
     if (!njs_is_object(value)) {
-        vm->retval = njs_string_true;
+        vm->retval = njs_value_true;
         return NXT_OK;
     }
 
-    retval = &njs_string_false;
+    retval = &njs_value_false;
 
     object = value->data.u.object;
     nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
@@ -943,7 +943,7 @@ njs_object_is_sealed(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
     }
 
-    retval = &njs_string_true;
+    retval = &njs_value_true;
 
 done:
 
@@ -983,12 +983,12 @@ njs_object_is_extensible(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     value = njs_arg(args, nargs, 1);
 
     if (!njs_is_object(value)) {
-        vm->retval = njs_string_false;
+        vm->retval = njs_value_false;
         return NXT_OK;
     }
 
-    retval = value->data.u.object->extensible ? &njs_string_true
-                                              : &njs_string_false;
+    retval = value->data.u.object->extensible ? &njs_value_true
+                                              : &njs_value_false;
 
     vm->retval = *retval;
 
@@ -1490,7 +1490,7 @@ njs_object_prototype_has_own_property(njs_vm_t *vm, njs_value_t *args,
     const njs_value_t   *value, *prop, *retval;
     nxt_lvlhsh_query_t  lhq;
 
-    retval = &njs_string_false;
+    retval = &njs_value_false;
     value = &args[0];
 
     if (njs_is_object(value)) {
@@ -1502,7 +1502,7 @@ njs_object_prototype_has_own_property(njs_vm_t *vm, njs_value_t *args,
             index = njs_string_to_index(prop);
 
             if (index < array->length && njs_is_valid(&array->start[index])) {
-                retval = &njs_string_true;
+                retval = &njs_value_true;
                 goto done;
             }
         }
@@ -1514,7 +1514,7 @@ njs_object_prototype_has_own_property(njs_vm_t *vm, njs_value_t *args,
         ret = nxt_lvlhsh_find(&value->data.u.object->hash, &lhq);
 
         if (ret == NXT_OK) {
-            retval = &njs_string_true;
+            retval = &njs_value_true;
         }
     }
 
@@ -1533,7 +1533,7 @@ njs_object_prototype_is_prototype_of(njs_vm_t *vm, njs_value_t *args,
     njs_object_t       *object, *proto;
     const njs_value_t  *value, *obj, *retval;
 
-    retval = &njs_string_false;
+    retval = &njs_value_false;
     value = &args[0];
     obj = njs_arg(args, nargs, 1);
 
@@ -1545,7 +1545,7 @@ njs_object_prototype_is_prototype_of(njs_vm_t *vm, njs_value_t *args,
             object = object->__proto__;
 
             if (object == proto) {
-                retval = &njs_string_true;
+                retval = &njs_value_true;
                 break;
             }
 

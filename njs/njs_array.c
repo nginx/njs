@@ -295,10 +295,10 @@ njs_array_is_array(njs_vm_t *vm, njs_value_t *args,
     const njs_value_t  *value;
 
     if (nargs > 1 && njs_is_array(&args[1])) {
-        value = &njs_string_true;
+        value = &njs_value_true;
 
     } else {
-        value = &njs_string_false;
+        value = &njs_value_false;
     }
 
     vm->retval = *value;

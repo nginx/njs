@@ -2852,7 +2852,13 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Array.isArray(1)"),
       nxt_string("false") },
 
+    { nxt_string("Array.isArray(1) ? 'true' : 'false'"),
+      nxt_string("false") },
+
     { nxt_string("Array.isArray([])"),
+      nxt_string("true") },
+
+    { nxt_string("Array.isArray([]) ? 'true' : 'false'"),
       nxt_string("true") },
 
     { nxt_string("Array.of()"),
