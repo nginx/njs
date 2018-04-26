@@ -1531,15 +1531,15 @@ njs_object_prototype_is_prototype_of(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
     njs_object_t       *object, *proto;
-    const njs_value_t  *value, *obj, *retval;
+    const njs_value_t  *prototype, *value, *retval;
 
     retval = &njs_value_false;
-    value = &args[0];
-    obj = njs_arg(args, nargs, 1);
+    prototype = &args[0];
+    value = njs_arg(args, nargs, 1);
 
-    if (njs_is_object(value) && njs_is_object(obj)) {
-        proto = value->data.u.object;
-        object = obj->data.u.object;
+    if (njs_is_object(prototype) && njs_is_object(value)) {
+        proto = prototype->data.u.object;
+        object = value->data.u.object;
 
         do {
             object = object->__proto__;
