@@ -40,6 +40,9 @@ struct njs_function_lambda_s {
 };
 
 
+#define njs_arg(args, nargs, n)                                               \
+    ((n < nargs) ? &(args)[n] : &njs_value_void)
+
 /* The frame size must be aligned to njs_value_t. */
 #define NJS_NATIVE_FRAME_SIZE                                                 \
     nxt_align_size(sizeof(njs_native_frame_t), sizeof(njs_value_t))

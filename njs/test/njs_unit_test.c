@@ -6366,7 +6366,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("false") },
 
     { nxt_string("Object.create()"),
-      nxt_string("TypeError: too few arguments") },
+      nxt_string("TypeError: prototype may only be an object or null: void") },
+
+    { nxt_string("Object.create(1)"),
+      nxt_string("TypeError: prototype may only be an object or null: number") },
 
     { nxt_string("var o = {a:1, b:2, c:3};"
                  "Object.keys(o)"),
@@ -6382,7 +6385,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("1,3,one") },
 
     { nxt_string("Object.keys()"),
-      nxt_string("TypeError: cannot convert null argument to object") },
+      nxt_string("TypeError: cannot convert void argument to object") },
 
     { nxt_string("Object.keys('a')"),
       nxt_string("TypeError: cannot convert string argument to object") },
@@ -6443,7 +6446,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("2") },
 
     { nxt_string("var o = {}; Object.defineProperty()"),
-      nxt_string("TypeError: cannot convert null argument to object") },
+      nxt_string("TypeError: cannot convert void argument to object") },
 
     { nxt_string("var o = {}; Object.defineProperty(o)"),
       nxt_string("TypeError: descriptor is not an object") },

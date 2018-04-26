@@ -28,7 +28,7 @@
 
 static nxt_int_t njs_object_hash_test(nxt_lvlhsh_query_t *lhq, void *data);
 static njs_ret_t njs_define_property(njs_vm_t *vm, njs_object_t *object,
-    njs_value_t *name, njs_object_t *descriptor);
+    const njs_value_t *name, const njs_object_t *descriptor);
 
 
 nxt_noinline njs_object_t *
@@ -201,7 +201,8 @@ njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
 
 
 nxt_noinline njs_object_prop_t *
-njs_object_property(njs_vm_t *vm, njs_object_t *object, nxt_lvlhsh_query_t *lhq)
+njs_object_property(njs_vm_t *vm, const njs_object_t *object,
+    nxt_lvlhsh_query_t *lhq)
 {
     nxt_int_t  ret;
 
@@ -232,13 +233,14 @@ njs_ret_t
 njs_object_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    nxt_uint_t    type;
-    njs_value_t   *value;
-    njs_object_t  *object;
+    nxt_uint_t         type;
+    njs_object_t       *object;
+    const njs_value_t  *value;
 
     type = NJS_OBJECT;
+    value = njs_arg(args, nargs, 1);
 
-    if (nargs == 1 || njs_is_null_or_void(&args[1])) {
+    if (njs_is_null_or_void(value)) {
 
         object = njs_object_alloc(vm);
         if (nxt_slow_path(object == NULL)) {
@@ -246,7 +248,6 @@ njs_object_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
 
     } else {
-        value = &args[1];
 
         if (njs_is_object(value)) {
             object = value->data.u.object;
@@ -283,34 +284,35 @@ static njs_ret_t
 njs_object_create(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    njs_object_t  *object;
+    njs_object_t       *object;
+    const njs_value_t  *value;
 
-    if (nargs > 1) {
+    value = njs_arg(args, nargs, 1);
 
-        if (njs_is_object(&args[1]) || njs_is_null(&args[1])) {
+    if (njs_is_object(value) || njs_is_null(value)) {
 
-            object = njs_object_alloc(vm);
-            if (nxt_slow_path(object == NULL)) {
-                return NXT_ERROR;
-            }
-
-            if (!njs_is_null(&args[1])) {
-                /* GC */
-                object->__proto__ = args[1].data.u.object;
-
-            } else {
-                object->__proto__ = NULL;
-            }
-
-            vm->retval.data.u.object = object;
-            vm->retval.type = NJS_OBJECT;
-            vm->retval.data.truth = 1;
-
-            return NXT_OK;
+        object = njs_object_alloc(vm);
+        if (nxt_slow_path(object == NULL)) {
+            return NXT_ERROR;
         }
+
+        if (!njs_is_null(value)) {
+            /* GC */
+            object->__proto__ = value->data.u.object;
+
+        } else {
+            object->__proto__ = NULL;
+        }
+
+        vm->retval.data.u.object = object;
+        vm->retval.type = NJS_OBJECT;
+        vm->retval.data.truth = 1;
+
+        return NXT_OK;
     }
 
-    njs_type_error(vm, "too few arguments", NULL);
+    njs_type_error(vm, "prototype may only be an object or null: %s",
+                   njs_type_string(value->type));
 
     return NXT_ERROR;
 }
@@ -320,16 +322,19 @@ static njs_ret_t
 njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    njs_array_t  *keys;
+    njs_array_t        *keys;
+    const njs_value_t  *value;
 
-    if (nargs < 2 || !njs_is_object(&args[1])) {
+    value = njs_arg(args, nargs, 1);
+
+    if (!njs_is_object(value)) {
         njs_type_error(vm, "cannot convert %s argument to object",
-                       (nargs >= 2) ? njs_type_string(args[1].type) : "null");
+                       njs_type_string(value->type));
 
         return NXT_ERROR;
     }
 
-    keys = njs_object_keys_array(vm, &args[1]);
+    keys = njs_object_keys_array(vm, value);
     if (keys == NULL) {
         njs_memory_error(vm);
         return NXT_ERROR;
@@ -343,7 +348,7 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 njs_array_t*
-njs_object_keys_array(njs_vm_t *vm, njs_value_t *object)
+njs_object_keys_array(njs_vm_t *vm, const njs_value_t *object)
 {
     size_t             size;
     uint32_t           i, n, keys_length, array_length;
@@ -427,33 +432,38 @@ njs_object_define_property(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
     nxt_int_t   ret;
-    const char  *type;
+    const njs_value_t  *value, *name, *descriptor;
 
-    if (nargs < 4 || !njs_is_object(&args[1]) || !njs_is_object(&args[3])) {
-        if (nargs < 2 || !njs_is_object(&args[1])) {
-            type = (nargs > 1) ? njs_type_string(args[1].type) : "null";
-            njs_type_error(vm, "cannot convert %s argument to object", type);
+    value = njs_arg(args, nargs, 1);
 
-        } else {
-            njs_type_error(vm, "descriptor is not an object", NULL);
-        }
-
+    if (!njs_is_object(value)) {
+        njs_type_error(vm, "cannot convert %s argument to object",
+                       njs_type_string(value->type));
         return NXT_ERROR;
     }
 
-    if (!args[1].data.u.object->extensible) {
+    if (!value->data.u.object->extensible) {
         njs_type_error(vm, "object is not extensible", NULL);
         return NXT_ERROR;
     }
 
-    ret = njs_define_property(vm, args[1].data.u.object, &args[2],
-                              args[3].data.u.object);
+    descriptor = njs_arg(args, nargs, 3);
+
+    if (!njs_is_object(descriptor)){
+        njs_type_error(vm, "descriptor is not an object", NULL);
+        return NXT_ERROR;
+    }
+
+    name = njs_arg(args, nargs, 2);
+
+    ret = njs_define_property(vm, value->data.u.object, name,
+                              descriptor->data.u.object);
 
     if (nxt_slow_path(ret != NXT_OK)) {
         return NXT_ERROR;
     }
 
-    vm->retval = args[1];
+    vm->retval = *value;
 
     return NXT_OK;
 }
@@ -464,33 +474,37 @@ njs_object_define_properties(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
     nxt_int_t          ret;
-    const char         *type;
     nxt_lvlhsh_t       *hash;
     njs_object_t       *object;
     nxt_lvlhsh_each_t  lhe;
     njs_object_prop_t  *prop;
+    const njs_value_t  *value, *descriptor;
 
-    if (nargs < 3 || !njs_is_object(&args[1]) || !njs_is_object(&args[2])) {
-        if (nargs < 2 || !njs_is_object(&args[1])) {
-            type = (nargs > 1) ? njs_type_string(args[1].type) : "null";
-            njs_type_error(vm, "cannot convert %s argument to object", type);
+    value = njs_arg(args, nargs, 1);
 
-        } else {
-            njs_type_error(vm, "descriptor is not an object", NULL);
-        }
+    if (!njs_is_object(value)) {
+        njs_type_error(vm, "cannot convert %s argument to object",
+                       njs_type_string(value->type));
 
         return NXT_ERROR;
     }
 
-    if (!args[1].data.u.object->extensible) {
+    if (!value->data.u.object->extensible) {
         njs_type_error(vm, "object is not extensible", NULL);
+        return NXT_ERROR;
+    }
+
+    descriptor = njs_arg(args, nargs, 2);
+
+    if (!njs_is_object(descriptor)) {
+        njs_type_error(vm, "descriptor is not an object", NULL);
         return NXT_ERROR;
     }
 
     nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
 
-    object = args[1].data.u.object;
-    hash = &args[2].data.u.object->hash;
+    object = value->data.u.object;
+    hash = &descriptor->data.u.object->hash;
 
     for ( ;; ) {
         prop = nxt_lvlhsh_each(hash, &lhe);
@@ -509,15 +523,15 @@ njs_object_define_properties(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
     }
 
-    vm->retval = args[1];
+    vm->retval = *value;
 
     return NXT_OK;
 }
 
 
 static njs_ret_t
-njs_define_property(njs_vm_t *vm, njs_object_t *object, njs_value_t *name,
-    njs_object_t *descriptor)
+njs_define_property(njs_vm_t *vm, njs_object_t *object, const njs_value_t *name,
+    const njs_object_t *descriptor)
 {
     nxt_int_t           ret;
     njs_object_prop_t   *prop, *pr;
@@ -606,29 +620,31 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
 {
     uint32_t            index;
     nxt_int_t           ret;
-    const char          *type;
     njs_array_t         *array;
     njs_object_t        *descriptor;
     njs_object_prop_t   *pr, *prop, array_prop;
-    const njs_value_t   *value;
+    const njs_value_t   *value, *property, *setval;
     nxt_lvlhsh_query_t  lhq;
 
-    if (nargs < 3 || !njs_is_object(&args[1])) {
-        type = (nargs > 1) ? njs_type_string(args[1].type) : "null";
-        njs_type_error(vm, "cannot convert %s argument to object", type);
+    value = njs_arg(args, nargs, 1);
+
+    if (!njs_is_object(value)) {
+        njs_type_error(vm, "cannot convert %s argument to object",
+                       njs_type_string(value->type));
         return NXT_ERROR;
     }
 
     prop = NULL;
+    property = njs_arg(args, nargs, 2);
 
-    if (njs_is_array(&args[1])) {
-        array = args[1].data.u.array;
-        index = njs_string_to_index(&args[2]);
+    if (njs_is_array(value)) {
+        array = value->data.u.array;
+        index = njs_string_to_index(property);
 
         if (index < array->length && njs_is_valid(&array->start[index])) {
             prop = &array_prop;
 
-            array_prop.name = args[2];
+            array_prop.name = *property;
             array_prop.value = array->start[index];
 
             array_prop.configurable = 1;
@@ -640,10 +656,10 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
     lhq.proto = &njs_object_hash_proto;
 
     if (prop == NULL) {
-        njs_string_get(&args[2], &lhq.key);
+        njs_string_get(property, &lhq.key);
         lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
 
-        ret = nxt_lvlhsh_find(&args[1].data.u.object->hash, &lhq);
+        ret = nxt_lvlhsh_find(&value->data.u.object->hash, &lhq);
 
         if (ret != NXT_OK) {
             vm->retval = njs_string_void;
@@ -679,9 +695,9 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
     lhq.key = nxt_string_value("configurable");
     lhq.key_hash = NJS_CONFIGURABLE_HASH;
 
-    value = (prop->configurable == 1) ? &njs_string_true : &njs_string_false;
+    setval = (prop->configurable == 1) ? &njs_string_true : &njs_string_false;
 
-    pr = njs_object_prop_alloc(vm, &njs_object_configurable_string, value, 1);
+    pr = njs_object_prop_alloc(vm, &njs_object_configurable_string, setval, 1);
     if (nxt_slow_path(pr == NULL)) {
         return NXT_ERROR;
     }
@@ -696,9 +712,9 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
     lhq.key = nxt_string_value("enumerable");
     lhq.key_hash = NJS_ENUMERABLE_HASH;
 
-    value = (prop->enumerable == 1) ? &njs_string_true : &njs_string_false;
+    setval = (prop->enumerable == 1) ? &njs_string_true : &njs_string_false;
 
-    pr = njs_object_prop_alloc(vm, &njs_object_enumerable_string, value, 1);
+    pr = njs_object_prop_alloc(vm, &njs_object_enumerable_string, setval, 1);
     if (nxt_slow_path(pr == NULL)) {
         return NXT_ERROR;
     }
@@ -713,9 +729,9 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
     lhq.key = nxt_string_value("writable");
     lhq.key_hash = NJS_WRITABABLE_HASH;
 
-    value = (prop->writable == 1) ? &njs_string_true : &njs_string_false;
+    setval = (prop->writable == 1) ? &njs_string_true : &njs_string_false;
 
-    pr = njs_object_prop_alloc(vm, &njs_object_writable_string, value, 1);
+    pr = njs_object_prop_alloc(vm, &njs_object_writable_string, setval, 1);
     if (nxt_slow_path(pr == NULL)) {
         return NXT_ERROR;
     }
@@ -739,13 +755,19 @@ static njs_ret_t
 njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    if (nargs > 1 && njs_is_object(&args[1])) {
-        njs_object_prototype_get_proto(vm, &args[1], NULL, &vm->retval);
+    const njs_value_t  *value;
+
+    value = njs_arg(args, nargs, 1);
+
+    if (njs_is_object(value)) {
+        njs_object_prototype_get_proto(vm, (njs_value_t *) value, NULL,
+                                       &vm->retval);
         return NXT_OK;
     }
 
     njs_type_error(vm, "cannot convert %s argument to object",
-                   (nargs > 1) ? njs_type_string(args[1].type) : "null");
+                   njs_type_string(value->type));
+
     return NXT_ERROR;
 }
 
@@ -758,13 +780,16 @@ njs_object_freeze(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_object_t       *object;
     njs_object_prop_t  *prop;
     nxt_lvlhsh_each_t  lhe;
+    const njs_value_t  *value;
 
-    if (nargs < 2 || !njs_is_object(&args[1])) {
+    value = njs_arg(args, nargs, 1);
+
+    if (!njs_is_object(value)) {
         vm->retval = njs_value_void;
         return NXT_OK;
     }
 
-    object = args[1].data.u.object;
+    object = value->data.u.object;
     object->extensible = 0;
 
     nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
@@ -782,7 +807,7 @@ njs_object_freeze(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         prop->configurable = 0;
     }
 
-    vm->retval = args[1];
+    vm->retval = *value;
 
     return NXT_OK;
 }
@@ -796,16 +821,18 @@ njs_object_is_frozen(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_object_t       *object;
     njs_object_prop_t  *prop;
     nxt_lvlhsh_each_t  lhe;
-    const njs_value_t  *retval;
+    const njs_value_t  *value, *retval;
 
-    if (nargs < 2 || !njs_is_object(&args[1])) {
+    value = njs_arg(args, nargs, 1);
+
+    if (!njs_is_object(value)) {
         vm->retval = njs_string_true;
         return NXT_OK;
     }
 
     retval = &njs_string_false;
 
-    object = args[1].data.u.object;
+    object = value->data.u.object;
     nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
 
     hash = &object->hash;
@@ -842,17 +869,18 @@ njs_object_seal(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     nxt_lvlhsh_t       *hash;
     njs_object_t       *object;
-    const njs_value_t  *retval;
+    const njs_value_t  *value;
     njs_object_prop_t  *prop;
     nxt_lvlhsh_each_t  lhe;
 
-    if (nargs < 2 || !njs_is_object(&args[1])) {
-        retval = (nargs < 2) ? &njs_value_void : &args[1];
-        vm->retval = *retval;
+    value = njs_arg(args, nargs, 1);
+
+    if (!njs_is_object(value)) {
+        vm->retval = *value;
         return NXT_OK;
     }
 
-    object = args[1].data.u.object;
+    object = value->data.u.object;
     object->extensible = 0;
 
     nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
@@ -869,7 +897,7 @@ njs_object_seal(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         prop->configurable = 0;
     }
 
-    vm->retval = args[1];
+    vm->retval = *value;
 
     return NXT_OK;
 }
@@ -883,16 +911,18 @@ njs_object_is_sealed(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_object_t       *object;
     njs_object_prop_t  *prop;
     nxt_lvlhsh_each_t  lhe;
-    const njs_value_t  *retval;
+    const njs_value_t  *value, *retval;
 
-    if (nargs < 2 || !njs_is_object(&args[1])) {
+    value = njs_arg(args, nargs, 1);
+
+    if (!njs_is_object(value)) {
         vm->retval = njs_string_true;
         return NXT_OK;
     }
 
     retval = &njs_string_false;
 
-    object = args[1].data.u.object;
+    object = value->data.u.object;
     nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
 
     hash = &object->hash;
@@ -927,17 +957,18 @@ static njs_ret_t
 njs_object_prevent_extensions(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    const njs_value_t  *retval;
+    const njs_value_t  *value;
 
-    if (nargs < 2 || !njs_is_object(&args[1])) {
-        retval = (nargs < 2) ? &njs_value_void : &args[1];
-        vm->retval = *retval;
+    value = njs_arg(args, nargs, 1);
+
+    if (!njs_is_object(value)) {
+        vm->retval = *value;
         return NXT_OK;
     }
 
     args[1].data.u.object->extensible = 0;
 
-    vm->retval = args[1];
+    vm->retval = *value;
 
     return NXT_OK;
 }
@@ -947,15 +978,17 @@ static njs_ret_t
 njs_object_is_extensible(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    const njs_value_t  *retval;
+    const njs_value_t  *value, *retval;
 
-    if (nargs < 2 || !njs_is_object(&args[1])) {
+    value = njs_arg(args, nargs, 1);
+
+    if (!njs_is_object(value)) {
         vm->retval = njs_string_false;
         return NXT_OK;
     }
 
-    retval = args[1].data.u.object->extensible ? &njs_string_true
-                                               : &njs_string_false;
+    retval = value->data.u.object->extensible ? &njs_string_true
+                                              : &njs_string_false;
 
     vm->retval = *retval;
 
@@ -1006,9 +1039,9 @@ njs_ret_t
 njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
-    int32_t         index;
-    njs_value_t     *proto;
-    njs_function_t  *function;
+    int32_t            index;
+    njs_function_t     *function;
+    const njs_value_t  *proto;
 
     proto = NULL;
     function = value->data.u.function;
@@ -1020,7 +1053,7 @@ njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value,
     }
 
     if (proto == NULL) {
-        proto = (njs_value_t *) &njs_value_void;
+        proto = &njs_value_void;
     }
 
     *retval = *proto;
@@ -1372,6 +1405,7 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
 {
     int32_t                 index;
     njs_object_t            *object;
+    const njs_value_t       *value;
     njs_object_prototype_t  *prototype;
 
     static const njs_value_t  *class_name[] = {
@@ -1414,10 +1448,11 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         &njs_object_object_value_string,
     };
 
-    index = args[0].type;
+    value = &args[0];
+    index = value->type;
 
-    if (njs_is_object(&args[0])) {
-        object = args[0].data.u.object;
+    if (njs_is_object(value)) {
+        object = value->data.u.object;
 
         do {
             prototype = (njs_object_prototype_t *) object;
@@ -1452,16 +1487,19 @@ njs_object_prototype_has_own_property(njs_vm_t *vm, njs_value_t *args,
     uint32_t            index;
     nxt_int_t           ret;
     njs_array_t         *array;
-    const njs_value_t   *retval;
+    const njs_value_t   *value, *prop, *retval;
     nxt_lvlhsh_query_t  lhq;
 
     retval = &njs_string_false;
+    value = &args[0];
 
-    if (nargs > 1 && njs_is_object(&args[0])) {
+    if (njs_is_object(value)) {
 
-        if (njs_is_array(&args[0])) {
-            array = args[0].data.u.array;
-            index = njs_string_to_index(&args[1]);
+        prop = njs_arg(args, nargs, 1);
+
+        if (njs_is_array(value)) {
+            array = value->data.u.array;
+            index = njs_string_to_index(prop);
 
             if (index < array->length && njs_is_valid(&array->start[index])) {
                 retval = &njs_string_true;
@@ -1469,11 +1507,11 @@ njs_object_prototype_has_own_property(njs_vm_t *vm, njs_value_t *args,
             }
         }
 
-        njs_string_get(&args[1], &lhq.key);
+        njs_string_get(prop, &lhq.key);
         lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
         lhq.proto = &njs_object_hash_proto;
 
-        ret = nxt_lvlhsh_find(&args[0].data.u.object->hash, &lhq);
+        ret = nxt_lvlhsh_find(&value->data.u.object->hash, &lhq);
 
         if (ret == NXT_OK) {
             retval = &njs_string_true;
@@ -1493,13 +1531,15 @@ njs_object_prototype_is_prototype_of(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
     njs_object_t       *object, *proto;
-    const njs_value_t  *retval;
+    const njs_value_t  *value, *obj, *retval;
 
     retval = &njs_string_false;
+    value = &args[0];
+    obj = njs_arg(args, nargs, 1);
 
-    if (nargs > 1 && njs_is_object(&args[0]) && njs_is_object(&args[1])) {
-        proto = args[0].data.u.object;
-        object = args[1].data.u.object;
+    if (njs_is_object(value) && njs_is_object(obj)) {
+        proto = value->data.u.object;
+        object = obj->data.u.object;
 
         do {
             object = object->__proto__;

@@ -1628,7 +1628,7 @@ njs_array_prototype_find_apply(njs_vm_t *vm, njs_array_iter_t *iter,
 
     /* GC: array elt, array */
 
-    value = (nargs > 2) ? &args[2] : &njs_value_void;
+    value = njs_arg(args, nargs, 2);
     arguments[0] = *value;
 
     n = iter->index;
@@ -1847,7 +1847,7 @@ njs_array_iterator_apply(njs_vm_t *vm, njs_array_iter_t *iter,
 
     /* GC: array elt, array */
 
-    value = (nargs > 2) ? &args[2] : &njs_value_void;
+    value = njs_arg(args, nargs, 2);
     arguments[0] = *value;
 
     n = iter->index;
