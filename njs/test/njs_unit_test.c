@@ -9384,6 +9384,8 @@ typedef struct {
     uint32_t              a;
     nxt_mem_cache_pool_t  *mem_cache_pool;
     const njs_extern_t    *proto;
+
+    njs_opaque_value_t    value;
 } njs_unit_test_req_t;
 
 
@@ -9719,19 +9721,11 @@ njs_externals_init(njs_vm_t *vm)
     nxt_int_t            ret;
     nxt_uint_t           i;
     const njs_extern_t   *proto;
-    njs_opaque_value_t   *values;
     njs_unit_test_req_t  *requests;
 
     proto = njs_vm_external_prototype(vm, &nxt_test_external[0]);
     if (proto == NULL) {
         printf("njs_vm_external_prototype() failed\n");
-        return NXT_ERROR;
-    }
-
-    values = nxt_mem_cache_zalloc(vm->mem_cache_pool,
-                                  nxt_nitems(nxt_test_requests)
-                                  * sizeof(njs_opaque_value_t));
-    if (values == NULL) {
         return NXT_ERROR;
     }
 
@@ -9748,13 +9742,15 @@ njs_externals_init(njs_vm_t *vm)
         requests[i].mem_cache_pool = vm->mem_cache_pool;
         requests[i].proto = proto;
 
-        ret = njs_vm_external_create(vm, &values[i], proto, &requests[i]);
+        ret = njs_vm_external_create(vm, &requests[i].value, proto,
+                                     &requests[i]);
         if (ret != NXT_OK) {
             printf("njs_vm_external_create() failed\n");
             return NXT_ERROR;
         }
 
-        ret = njs_vm_external_bind(vm, &nxt_test_requests[i].name, &values[i]);
+        ret = njs_vm_external_bind(vm, &nxt_test_requests[i].name,
+                                   &requests[i].value);
         if (ret != NXT_OK) {
             printf("njs_vm_external_bind() failed\n");
             return NXT_ERROR;

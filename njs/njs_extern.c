@@ -210,13 +210,14 @@ njs_vm_external_bind(njs_vm_t *vm, const nxt_str_t *var_name,
         return NXT_ERROR;
     }
 
-    ev = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_extern_value_t));
+    ev = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
+                             sizeof(njs_extern_value_t));
     if (nxt_slow_path(ev == NULL)) {
         return NXT_ERROR;
     }
 
+    ev->value = *value;
     ev->name = *var_name;
-    ev->value = value;
 
     lhq.key = *var_name;
     lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
@@ -246,7 +247,7 @@ njs_parser_external(njs_vm_t *vm, njs_parser_t *parser)
 
     if (nxt_lvlhsh_find(&vm->externals_hash, &lhq) == NXT_OK) {
         ev = (njs_extern_value_t *) lhq.value;
-        return ev->value;
+        return &ev->value;
     }
 
     return NULL;

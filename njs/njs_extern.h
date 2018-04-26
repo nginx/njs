@@ -33,8 +33,8 @@ struct njs_extern_s {
 
 
 typedef struct {
+    njs_value_t             value;
     nxt_str_t               name;
-    njs_value_t             *value;
 } njs_extern_value_t;
 
 

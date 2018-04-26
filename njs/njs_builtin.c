@@ -675,7 +675,7 @@ njs_builtin_completions(njs_vm_t *vm, size_t *size, nxt_str_t *completions)
             break;
         }
 
-        ext_proto = ev->value->external.proto;
+        ext_proto = ev->value.external.proto;
 
         nxt_lvlhsh_each_init(&lhe_prop, &njs_extern_hash_proto);
 
