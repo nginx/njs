@@ -30,6 +30,20 @@ typedef struct {
 } njs_object_prop_t;
 
 
+typedef struct {
+    nxt_lvlhsh_query_t          lhq;
+
+    /* scratch is used to get the value of an NJS_PROPERTY_HANDLER property. */
+    njs_object_prop_t           scratch;
+
+    njs_value_t                 value;
+    njs_object_t                *prototype;
+    uint8_t                     query;
+    uint8_t                     shared;
+} njs_property_query_t;
+
+
+
 struct njs_object_init_s {
     nxt_str_t                   name;
     const njs_object_prop_t     *properties;
@@ -44,6 +58,8 @@ njs_object_t *njs_object_value_alloc(njs_vm_t *vm, const njs_value_t *value,
 njs_array_t *njs_object_keys_array(njs_vm_t *vm, const njs_value_t *object);
 njs_object_prop_t *njs_object_property(njs_vm_t *vm, const njs_object_t *obj,
     nxt_lvlhsh_query_t *lhq);
+njs_ret_t njs_property_query(njs_vm_t *vm, njs_property_query_t *pq,
+    njs_value_t *object, njs_value_t *property);
 nxt_int_t njs_object_hash_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
     const njs_object_prop_t *prop, nxt_uint_t n);
 njs_ret_t njs_object_constructor(njs_vm_t *vm, njs_value_t *args,

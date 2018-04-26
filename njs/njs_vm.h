@@ -49,6 +49,24 @@
 #define NJS_APPLIED              NXT_DONE
 
 
+/* The values must be greater than NXT_OK. */
+#define NJS_PRIMITIVE_VALUE        1
+#define NJS_STRING_VALUE           2
+#define NJS_ARRAY_VALUE            3
+#define NJS_EXTERNAL_VALUE         4
+
+
+/*
+ * NJS_PROPERTY_QUERY_GET must be less or equal to NJS_PROPERTY_QUERY_IN,
+ * NJS_PROPERTY_QUERY_SET and NJS_PROPERTY_QUERY_DELETE must be greater
+ * than NJS_PROPERTY_QUERY_IN.
+ */
+#define NJS_PROPERTY_QUERY_GET     0
+#define NJS_PROPERTY_QUERY_IN      1
+#define NJS_PROPERTY_QUERY_SET     2
+#define NJS_PROPERTY_QUERY_DELETE  3
+
+
 /*
  * The order of the enum is used in njs_vmcode_typeof()
  * and njs_object_prototype_to_string().

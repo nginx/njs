@@ -19,7 +19,9 @@
 #include <njs_string.h>
 #include <njs_object.h>
 #include <njs_object_hash.h>
+#include <njs_number.h>
 #include <njs_array.h>
+#include <njs_extern.h>
 #include <njs_function.h>
 #include <njs_error.h>
 #include <stdio.h>
@@ -27,6 +29,12 @@
 
 
 static nxt_int_t njs_object_hash_test(nxt_lvlhsh_query_t *lhq, void *data);
+static njs_ret_t njs_object_property_query(njs_vm_t *vm,
+    njs_property_query_t *pq, njs_value_t *value, njs_object_t *object);
+static njs_ret_t njs_array_property_query(njs_vm_t *vm,
+    njs_property_query_t *pq, njs_value_t *object, uint32_t index);
+static njs_ret_t njs_object_query_prop_handler(njs_property_query_t *pq,
+    njs_object_t *object);
 static njs_ret_t njs_define_property(njs_vm_t *vm, njs_object_t *object,
     const njs_value_t *name, const njs_object_t *descriptor);
 
@@ -226,6 +234,301 @@ njs_object_property(njs_vm_t *vm, const njs_object_t *object,
     } while (object != NULL);
 
     return NULL;
+}
+
+
+/*
+ * The njs_property_query() returns values
+ *   NXT_OK               property has been found in object,
+ *   NXT_DECLINED         property was not found in object,
+ *   NJS_PRIMITIVE_VALUE  property operation was applied to a numeric
+ *                        or boolean value,
+ *   NJS_STRING_VALUE     property operation was applied to a string,
+ *   NJS_ARRAY_VALUE      object is array,
+ *   NJS_EXTERNAL_VALUE   object is external entity,
+ *   NJS_TRAP_PROPERTY    the property trap must be called,
+ *   NXT_ERROR            exception has been thrown.
+ */
+
+njs_ret_t
+njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
+    njs_value_t *property)
+{
+    uint32_t            index;
+    uint32_t            (*hash)(const void *, size_t);
+    njs_ret_t           ret;
+    njs_object_t        *obj;
+    njs_function_t      *function;
+    const njs_extern_t  *ext_proto;
+
+    hash = nxt_djb_hash;
+
+    switch (object->type) {
+
+    case NJS_BOOLEAN:
+    case NJS_NUMBER:
+        if (pq->query != NJS_PROPERTY_QUERY_GET) {
+            return NJS_PRIMITIVE_VALUE;
+        }
+
+        index = njs_primitive_prototype_index(object->type);
+        obj = &vm->prototypes[index].object;
+        break;
+
+    case NJS_STRING:
+        if (pq->query == NJS_PROPERTY_QUERY_DELETE) {
+            return NXT_DECLINED;
+        }
+
+        obj = &vm->prototypes[NJS_PROTOTYPE_STRING].object;
+        break;
+
+    case NJS_ARRAY:
+        if (nxt_fast_path(!njs_is_null_or_void_or_boolean(property))) {
+
+            if (nxt_fast_path(njs_is_primitive(property))) {
+                index = njs_value_to_index(property);
+
+                if (nxt_fast_path(index < NJS_ARRAY_MAX_LENGTH)) {
+                    return njs_array_property_query(vm, pq, object, index);
+                }
+
+            } else {
+                return NJS_TRAP_PROPERTY;
+            }
+        }
+
+        /* Fall through. */
+
+    case NJS_OBJECT:
+    case NJS_OBJECT_BOOLEAN:
+    case NJS_OBJECT_NUMBER:
+    case NJS_OBJECT_STRING:
+    case NJS_REGEXP:
+    case NJS_DATE:
+    case NJS_OBJECT_ERROR:
+    case NJS_OBJECT_EVAL_ERROR:
+    case NJS_OBJECT_INTERNAL_ERROR:
+    case NJS_OBJECT_RANGE_ERROR:
+    case NJS_OBJECT_REF_ERROR:
+    case NJS_OBJECT_SYNTAX_ERROR:
+    case NJS_OBJECT_TYPE_ERROR:
+    case NJS_OBJECT_URI_ERROR:
+    case NJS_OBJECT_VALUE:
+        obj = object->data.u.object;
+        break;
+
+    case NJS_FUNCTION:
+        function = njs_function_value_copy(vm, object);
+        if (nxt_slow_path(function == NULL)) {
+            return NXT_ERROR;
+        }
+
+        obj = &function->object;
+        break;
+
+    case NJS_EXTERNAL:
+        ext_proto = object->external.proto;
+
+        if (ext_proto->type == NJS_EXTERN_CASELESS_OBJECT) {
+            hash = nxt_djb_hash_lowcase;
+        }
+
+        obj = NULL;
+        break;
+
+    case NJS_VOID:
+    case NJS_NULL:
+    default:
+        if (nxt_fast_path(njs_is_primitive(property))) {
+
+            ret = njs_primitive_value_to_string(vm, &pq->value, property);
+
+            if (nxt_fast_path(ret == NXT_OK)) {
+                njs_string_get(&pq->value, &pq->lhq.key);
+                njs_type_error(vm, "cannot get property '%.*s' of undefined",
+                               (int) pq->lhq.key.length, pq->lhq.key.start);
+                return NXT_ERROR;
+            }
+        }
+
+        njs_type_error(vm, "cannot get property 'unknown' of undefined", NULL);
+
+        return NXT_ERROR;
+    }
+
+    if (nxt_fast_path(njs_is_primitive(property))) {
+
+        ret = njs_primitive_value_to_string(vm, &pq->value, property);
+
+        if (nxt_fast_path(ret == NXT_OK)) {
+
+            njs_string_get(&pq->value, &pq->lhq.key);
+            pq->lhq.key_hash = hash(pq->lhq.key.start, pq->lhq.key.length);
+
+            if (obj == NULL) {
+                pq->lhq.proto = &njs_extern_hash_proto;
+
+                return NJS_EXTERNAL_VALUE;
+            }
+
+            return njs_object_property_query(vm, pq, object, obj);
+        }
+
+        return ret;
+    }
+
+    return NJS_TRAP_PROPERTY;
+}
+
+
+njs_ret_t
+njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
+    njs_value_t *value, njs_object_t *object)
+{
+    njs_ret_t          ret;
+    njs_object_prop_t  *prop;
+
+    pq->lhq.proto = &njs_object_hash_proto;
+
+    if (pq->query == NJS_PROPERTY_QUERY_SET) {
+        ret = njs_object_query_prop_handler(pq, object);
+        if (ret == NXT_OK) {
+            return ret;
+        }
+    }
+
+    do {
+        pq->prototype = object;
+
+        ret = nxt_lvlhsh_find(&object->hash, &pq->lhq);
+
+        if (ret == NXT_OK) {
+            prop = pq->lhq.value;
+
+            if (prop->type != NJS_WHITEOUT) {
+                pq->shared = 0;
+
+                return ret;
+            }
+
+            goto next;
+        }
+
+        if (pq->query > NJS_PROPERTY_QUERY_IN) {
+            /* NXT_DECLINED */
+            return ret;
+        }
+
+        ret = nxt_lvlhsh_find(&object->shared_hash, &pq->lhq);
+
+        if (ret == NXT_OK) {
+            pq->shared = 1;
+
+            if (pq->query == NJS_PROPERTY_QUERY_GET) {
+                prop = pq->lhq.value;
+
+                if (prop->type == NJS_PROPERTY_HANDLER) {
+                    pq->scratch = *prop;
+                    prop = &pq->scratch;
+                    ret = prop->value.data.u.prop_handler(vm, value, NULL,
+                                                          &prop->value);
+
+                    if (nxt_fast_path(ret == NXT_OK)) {
+                        prop->type = NJS_PROPERTY;
+                        pq->lhq.value = prop;
+                    }
+                }
+            }
+
+            return ret;
+        }
+
+        if (pq->query > NJS_PROPERTY_QUERY_IN) {
+            /* NXT_DECLINED */
+            return ret;
+        }
+
+    next:
+
+        object = object->__proto__;
+
+    } while (object != NULL);
+
+    if (njs_is_string(value)) {
+        return NJS_STRING_VALUE;
+    }
+
+    /* NXT_DECLINED */
+
+    return ret;
+}
+
+
+static njs_ret_t
+njs_array_property_query(njs_vm_t *vm, njs_property_query_t *pq,
+    njs_value_t *object, uint32_t index)
+{
+    uint32_t     size;
+    njs_ret_t    ret;
+    njs_value_t  *value;
+    njs_array_t  *array;
+
+    array = object->data.u.array;
+
+    if (index >= array->length) {
+        if (pq->query != NJS_PROPERTY_QUERY_SET) {
+            return NXT_DECLINED;
+        }
+
+        size = index - array->length;
+
+        ret = njs_array_expand(vm, array, 0, size + 1);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return ret;
+        }
+
+        value = &array->start[array->length];
+
+        while (size != 0) {
+            njs_set_invalid(value);
+            value++;
+            size--;
+        }
+
+        array->length = index + 1;
+    }
+
+    pq->lhq.value = &array->start[index];
+
+    return NJS_ARRAY_VALUE;
+}
+
+
+static njs_ret_t
+njs_object_query_prop_handler(njs_property_query_t *pq, njs_object_t *object)
+{
+    njs_ret_t          ret;
+    njs_object_prop_t  *prop;
+
+    do {
+        pq->prototype = object;
+
+        ret = nxt_lvlhsh_find(&object->shared_hash, &pq->lhq);
+
+        if (ret == NXT_OK) {
+            prop = pq->lhq.value;
+
+            if (prop->type == NJS_PROPERTY_HANDLER) {
+                return NXT_OK;
+            }
+        }
+
+        object = object->__proto__;
+
+    } while (object != NULL);
+
+    return NXT_DECLINED;
 }
 
 
@@ -618,13 +921,15 @@ static njs_ret_t
 njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    uint32_t            index;
-    nxt_int_t           ret;
-    njs_array_t         *array;
-    njs_object_t        *descriptor;
-    njs_object_prop_t   *pr, *prop, array_prop;
-    const njs_value_t   *value, *property, *setval;
-    nxt_lvlhsh_query_t  lhq;
+    double                num;
+    uint32_t              index;
+    nxt_int_t             ret;
+    njs_array_t           *array;
+    njs_object_t          *descriptor;
+    njs_object_prop_t     *pr, *prop, array_prop;
+    const njs_value_t     *value, *property, *setval;
+    nxt_lvlhsh_query_t    lhq;
+    njs_property_query_t  pq;
 
     value = njs_arg(args, nargs, 1);
 
@@ -644,9 +949,13 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
 
     if (njs_is_array(value)) {
         array = value->data.u.array;
-        index = njs_string_to_index(property);
+        num = njs_string_to_index(property);
+        index = num;
 
-        if (index < array->length && njs_is_valid(&array->start[index])) {
+        if ((double) index == num
+            && index < array->length
+            && njs_is_valid(&array->start[index]))
+        {
             prop = &array_prop;
 
             array_prop.name = *property;
@@ -661,17 +970,19 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
     lhq.proto = &njs_object_hash_proto;
 
     if (prop == NULL) {
-        njs_string_get(property, &lhq.key);
-        lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
+        pq.query = NJS_PROPERTY_QUERY_GET;
+        pq.lhq.key.length = 0;
+        pq.lhq.key.start = NULL;
 
-        ret = nxt_lvlhsh_find(&value->data.u.object->hash, &lhq);
+        ret = njs_property_query(vm, &pq, (njs_value_t *) value,
+                                 (njs_value_t *) property);
 
         if (ret != NXT_OK) {
             vm->retval = njs_value_void;
             return NXT_OK;
         }
 
-        prop = lhq.value;
+        prop = pq.lhq.value;
     }
 
     descriptor = njs_object_alloc(vm);
@@ -681,6 +992,7 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
 
     lhq.replace = 0;
     lhq.pool = vm->mem_cache_pool;
+    lhq.proto = &njs_object_hash_proto;
 
     lhq.key = nxt_string_value("value");
     lhq.key_hash = NJS_VALUE_HASH;

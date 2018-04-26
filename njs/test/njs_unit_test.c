@@ -6596,6 +6596,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.getOwnPropertyDescriptor([3,4], 1).value"),
       nxt_string("4") },
 
+    { nxt_string("Object.getOwnPropertyDescriptor([], 'length').value"),
+      nxt_string("0") },
+
     { nxt_string("Object.getOwnPropertyDescriptor([3,4], '3')"),
       nxt_string("undefined") },
 
@@ -6610,6 +6613,12 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("Object.getOwnPropertyDescriptor(undefined)"),
       nxt_string("TypeError: cannot convert void argument to object") },
+
+    { nxt_string("var o = {}; o[void 0] = 'a'; Object.getOwnPropertyDescriptor(o).value"),
+      nxt_string("a") },
+
+    { nxt_string("var o = {}; o[void 0] = 'a'; Object.getOwnPropertyDescriptor(o, undefined).value"),
+      nxt_string("a") },
 
     { nxt_string("Object.defineProperty(Object.freeze({}), 'b', {})"),
       nxt_string("TypeError: object is not extensible") },
