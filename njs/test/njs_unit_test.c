@@ -6599,6 +6599,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.getOwnPropertyDescriptor([], 'length').value"),
       nxt_string("0") },
 
+    { nxt_string("JSON.stringify(Object.getOwnPropertyDescriptor([3,4], 'length'))"),
+      nxt_string("{\"value\":2,\"configurable\":false,\"enumerable\":false,\"writable\":true}") },
+
     { nxt_string("Object.getOwnPropertyDescriptor([3,4], '3')"),
       nxt_string("undefined") },
 

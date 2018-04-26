@@ -2097,6 +2097,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("length"),
         .value = njs_prop_handler(njs_array_prototype_length),
+        .writable = 1
     },
 
     {
