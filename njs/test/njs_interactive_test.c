@@ -4,13 +4,6 @@
  * Copyright (C) NGINX, Inc.
  */
 
-#include <nxt_auto_config.h>
-#include <nxt_types.h>
-#include <nxt_clang.h>
-#include <nxt_string.h>
-#include <nxt_stub.h>
-#include <nxt_malloc.h>
-#include <nxt_array.h>
 #include <njscript.h>
 #include <string.h>
 #include <stdio.h>

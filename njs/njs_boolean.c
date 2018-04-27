@@ -4,21 +4,7 @@
  * Copyright (C) NGINX, Inc.
  */
 
-#include <nxt_auto_config.h>
-#include <nxt_types.h>
-#include <nxt_clang.h>
-#include <nxt_string.h>
-#include <nxt_stub.h>
-#include <nxt_array.h>
-#include <nxt_lvlhsh.h>
-#include <nxt_random.h>
-#include <nxt_mem_cache_pool.h>
-#include <njscript.h>
-#include <njs_vm.h>
-#include <njs_boolean.h>
-#include <njs_object.h>
-#include <njs_function.h>
-#include <njs_error.h>
+#include <njs_core.h>
 
 
 njs_ret_t

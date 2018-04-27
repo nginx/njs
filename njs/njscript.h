@@ -9,7 +9,17 @@
 #ifndef _NJSCRIPT_H_INCLUDED_
 #define _NJSCRIPT_H_INCLUDED_
 
+#include <nxt_auto_config.h>
+
 #define NJS_VERSION                 "0.2.1"
+
+
+#include <nxt_types.h>
+#include <nxt_clang.h>
+#include <nxt_string.h>
+#include <nxt_stub.h>
+#include <nxt_array.h>
+#include <nxt_lvlhsh.h>
 
 
 typedef intptr_t                    njs_ret_t;

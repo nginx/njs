@@ -7,7 +7,8 @@
 #ifndef _NJS_REGEXP_PATTERN_H_INCLUDED_
 #define _NJS_REGEXP_PATTERN_H_INCLUDED_
 
-#include <pcre.h>
+#include <nxt_pcre.h>
+#include <nxt_regex.h>
 
 
 typedef enum {

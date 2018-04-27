@@ -12,6 +12,8 @@
 #include <nxt_queue.h>
 #include <nxt_regex.h>
 #include <nxt_random.h>
+#include <nxt_djb_hash.h>
+#include <nxt_mem_cache_pool.h>
 
 
 #define NJS_MAX_STACK_SIZE       (16 * 1024 * 1024)

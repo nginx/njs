@@ -4,33 +4,12 @@
  * Copyright (C) NGINX, Inc.
  */
 
-#include <nxt_auto_config.h>
-#include <nxt_types.h>
-#include <nxt_clang.h>
-#include <nxt_string.h>
-#include <nxt_djb_hash.h>
-#include <nxt_stub.h>
-#include <nxt_array.h>
-#include <nxt_lvlhsh.h>
-#include <nxt_random.h>
-#include <nxt_mem_cache_pool.h>
-#include <njscript.h>
-#include <njs_vm.h>
-#include <njs_boolean.h>
-#include <njs_number.h>
-#include <njs_string.h>
-#include <njs_object.h>
-#include <njs_array.h>
-#include <njs_json.h>
-#include <njs_function.h>
-#include <njs_variable.h>
-#include <njs_extern.h>
-#include <njs_parser.h>
+#include <njs_core.h>
 #include <njs_regexp.h>
 #include <njs_date.h>
-#include <njs_error.h>
-#include <njs_math.h>
 #include <njs_time.h>
+#include <njs_math.h>
+#include <njs_json.h>
 #include <njs_module.h>
 #include <njs_fs.h>
 #include <njs_crypto.h>
