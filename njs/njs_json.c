@@ -741,7 +741,7 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value,
         p = start;
 
         dst = nxt_mem_cache_alloc(ctx->pool, size);
-        if (nxt_slow_path(start == NULL)) {
+        if (nxt_slow_path(dst == NULL)) {
             njs_memory_error(ctx->vm);;
             return NULL;
         }
