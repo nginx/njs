@@ -9,7 +9,7 @@
 #include <ngx_core.h>
 #include <ngx_stream.h>
 
-#include <njscript.h>
+#include <njs.h>
 
 
 typedef struct {

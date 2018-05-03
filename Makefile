@@ -7,7 +7,7 @@ NXT_BUILDDIR =	build
 
 $(NXT_BUILDDIR)/libnjs.a: \
 	$(NXT_LIB)/nxt_auto_config.h \
-	$(NXT_BUILDDIR)/njscript.o \
+	$(NXT_BUILDDIR)/njs_shell.o \
 	$(NXT_BUILDDIR)/njs_vm.o \
 	$(NXT_BUILDDIR)/njs_boolean.o \
 	$(NXT_BUILDDIR)/njs_number.o \
@@ -49,7 +49,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 	$(NXT_BUILDDIR)/nxt_mem_cache_pool.o \
 
 	ar -r -c $(NXT_BUILDDIR)/libnjs.a \
-		$(NXT_BUILDDIR)/njscript.o \
+		$(NXT_BUILDDIR)/njs_shell.o \
 		$(NXT_BUILDDIR)/njs_vm.o \
 		$(NXT_BUILDDIR)/njs_boolean.o \
 		$(NXT_BUILDDIR)/njs_number.o \
@@ -110,7 +110,7 @@ clean:
 	rm -f $(NXT_LIB)/Makefile.conf $(NXT_LIB)/nxt_auto_config.h
 
 dist:
-	NJS_VER=`grep NJS_VERSION njs/njscript.h | sed -e 's/.*"\(.*\)".*/\1/'`; \
+	NJS_VER=`grep NJS_VERSION njs/njs.h | sed -e 's/.*"\(.*\)".*/\1/'`; \
 	rm -rf njs-$${NJS_VER} \
 	&& hg archive njs-$${NJS_VER}.tar.gz \
 		      -p njs-$${NJS_VER} \
@@ -123,25 +123,25 @@ $(NXT_LIB)/nxt_auto_config.h:
 	@echo
 	@exit 1
 
-$(NXT_BUILDDIR)/njscript.o: \
+$(NXT_BUILDDIR)/njs_shell.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_string.h \
 	njs/njs_object.h \
 	njs/njs_function.h \
 	njs/njs_parser.h \
-	njs/njscript.h \
-	njs/njscript.c \
+	njs/njs.h \
+	njs/njs.c \
 
-	$(NXT_CC) -c -o $(NXT_BUILDDIR)/njscript.o $(NXT_CFLAGS) \
+	$(NXT_CC) -c -o $(NXT_BUILDDIR)/njs_shell.o $(NXT_CFLAGS) \
 		-I$(NXT_LIB) -Injs \
-		njs/njscript.c
+		njs/njs.c
 
 $(NXT_BUILDDIR)/njs_vm.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_number.h \
@@ -162,7 +162,7 @@ $(NXT_BUILDDIR)/njs_vm.o: \
 
 $(NXT_BUILDDIR)/njs_boolean.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_vm.h \
 	njs/njs_boolean.h \
 	njs/njs_object.h \
@@ -175,7 +175,7 @@ $(NXT_BUILDDIR)/njs_boolean.o: \
 
 $(NXT_BUILDDIR)/njs_number.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_number.h \
@@ -191,7 +191,7 @@ $(NXT_BUILDDIR)/njs_number.o: \
 
 $(NXT_BUILDDIR)/njs_string.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_number.h \
@@ -210,7 +210,7 @@ $(NXT_BUILDDIR)/njs_string.o: \
 
 $(NXT_BUILDDIR)/njs_object.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_object.h \
@@ -224,7 +224,7 @@ $(NXT_BUILDDIR)/njs_object.o: \
 
 $(NXT_BUILDDIR)/njs_array.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_number.h \
@@ -241,7 +241,7 @@ $(NXT_BUILDDIR)/njs_array.o: \
 
 $(NXT_BUILDDIR)/njs_json.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_object.h \
@@ -254,7 +254,7 @@ $(NXT_BUILDDIR)/njs_json.o: \
 
 $(NXT_BUILDDIR)/njs_function.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_object.h \
@@ -268,7 +268,7 @@ $(NXT_BUILDDIR)/njs_function.o: \
 
 $(NXT_BUILDDIR)/njs_regexp.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_string.h \
@@ -285,7 +285,7 @@ $(NXT_BUILDDIR)/njs_regexp.o: \
 
 $(NXT_BUILDDIR)/njs_date.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_string.h \
@@ -300,7 +300,7 @@ $(NXT_BUILDDIR)/njs_date.o: \
 
 $(NXT_BUILDDIR)/njs_error.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_string.h \
@@ -315,7 +315,7 @@ $(NXT_BUILDDIR)/njs_error.o: \
 
 $(NXT_BUILDDIR)/njs_math.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_object.h \
@@ -328,7 +328,7 @@ $(NXT_BUILDDIR)/njs_math.o: \
 
 $(NXT_BUILDDIR)/njs_time.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_object.h \
@@ -341,7 +341,7 @@ $(NXT_BUILDDIR)/njs_time.o: \
 
 $(NXT_BUILDDIR)/njs_module.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_module.h \
@@ -353,7 +353,7 @@ $(NXT_BUILDDIR)/njs_module.o: \
 
 $(NXT_BUILDDIR)/njs_event.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_event.h \
@@ -365,7 +365,7 @@ $(NXT_BUILDDIR)/njs_event.o: \
 
 $(NXT_BUILDDIR)/njs_fs.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_vm.h \
 	njs/njs_fs.h \
 	njs/njs_fs.c \
@@ -376,7 +376,7 @@ $(NXT_BUILDDIR)/njs_fs.o: \
 
 $(NXT_BUILDDIR)/njs_crypto.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_crypto.h \
@@ -388,7 +388,7 @@ $(NXT_BUILDDIR)/njs_crypto.o: \
 
 $(NXT_BUILDDIR)/njs_extern.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_parser.h \
@@ -401,7 +401,7 @@ $(NXT_BUILDDIR)/njs_extern.o: \
 
 $(NXT_BUILDDIR)/njs_variable.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_parser.h \
@@ -414,7 +414,7 @@ $(NXT_BUILDDIR)/njs_variable.o: \
 
 $(NXT_BUILDDIR)/njs_builtin.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_boolean.h \
@@ -434,7 +434,7 @@ $(NXT_BUILDDIR)/njs_builtin.o: \
 
 $(NXT_BUILDDIR)/njs_lexer.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_parser.h \
@@ -446,7 +446,7 @@ $(NXT_BUILDDIR)/njs_lexer.o: \
 
 $(NXT_BUILDDIR)/njs_lexer_keyword.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_vm.h \
 	njs/njs_number.h \
 	njs/njs_object.h \
@@ -459,7 +459,7 @@ $(NXT_BUILDDIR)/njs_lexer_keyword.o: \
 
 $(NXT_BUILDDIR)/njs_parser.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_string.h \
@@ -475,7 +475,7 @@ $(NXT_BUILDDIR)/njs_parser.o: \
 
 $(NXT_BUILDDIR)/njs_parser_expression.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_number.h \
@@ -491,7 +491,7 @@ $(NXT_BUILDDIR)/njs_parser_expression.o: \
 
 $(NXT_BUILDDIR)/njs_generator.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_number.h \
@@ -508,7 +508,7 @@ $(NXT_BUILDDIR)/njs_generator.o: \
 
 $(NXT_BUILDDIR)/njs_disassembler.o: \
 	$(NXT_BUILDDIR)/libnxt.a \
-	njs/njscript.h \
+	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
 	njs/njs_object.h \
@@ -522,11 +522,11 @@ $(NXT_BUILDDIR)/njs_disassembler.o: \
 $(NXT_BUILDDIR)/njs: \
 	$(NXT_BUILDDIR)/libnxt.a \
 	$(NXT_BUILDDIR)/libnjs.a \
-	njs/njs.c \
+	njs/njs_shell.c \
 
 	$(NXT_CC) -o $(NXT_BUILDDIR)/njs $(NXT_CFLAGS) \
 		-I$(NXT_LIB) $(NXT_EDITLINE_CFLAGS) -Injs \
-		njs/njs.c \
+		njs/njs_shell.c \
 		$(NXT_BUILDDIR)/libnjs.a \
 		-lm $(NXT_PCRE_LIB) $(NXT_EDITLINE_LIB)
 

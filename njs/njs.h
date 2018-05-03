@@ -3,11 +3,11 @@
  * Copyright (C) Igor Sysoev
  * Copyright (C) NGINX, Inc.
  *
- * njsScript public header.
+ * njs public header.
  */
 
-#ifndef _NJSCRIPT_H_INCLUDED_
-#define _NJSCRIPT_H_INCLUDED_
+#ifndef _NJS_H_INCLUDED_
+#define _NJS_H_INCLUDED_
 
 #include <nxt_auto_config.h>
 
@@ -220,4 +220,4 @@ NXT_EXPORT njs_value_t *njs_vm_object_prop(njs_vm_t *vm, njs_value_t *value,
 
 extern const nxt_mem_proto_t  njs_vm_mem_cache_pool_proto;
 
-#endif /* _NJSCRIPT_H_INCLUDED_ */
+#endif /* _NJS_H_INCLUDED_ */

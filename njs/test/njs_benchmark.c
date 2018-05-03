@@ -4,7 +4,7 @@
  * Copyright (C) NGINX, Inc.
  */
 
-#include <njscript.h>
+#include <njs.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
