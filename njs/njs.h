@@ -134,12 +134,6 @@ typedef struct {
 } njs_vm_opt_t;
 
 
-typedef struct {
-    nxt_str_t                       name;
-    uint32_t                        line;
-} njs_backtrace_entry_t;
-
-
 #define NJS_OK                      NXT_OK
 #define NJS_ERROR                   NXT_ERROR
 #define NJS_AGAIN                   NXT_AGAIN

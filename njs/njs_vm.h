@@ -347,6 +347,12 @@ typedef union {
 } njs_object_prototype_t;
 
 
+typedef struct {
+    nxt_str_t                       name;
+    uint32_t                        line;
+} njs_backtrace_entry_t;
+
+
 #define njs_value(_type, _truth, _number) {                                   \
     .data = {                                                                 \
         .type = _type,                                                        \
