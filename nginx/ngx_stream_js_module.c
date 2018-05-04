@@ -400,7 +400,7 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
         return NGX_ERROR;
     }
 
-    if (njs_vm_call(ctx->vm, func, &ctx->arg, 1) != NJS_OK) {
+    if (njs_vm_call(ctx->vm, func, njs_value_arg(&ctx->arg), 1) != NJS_OK) {
         njs_vm_retval_to_ext_string(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %*s",
@@ -487,7 +487,7 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
     while (in) {
         ctx->buf = in->buf;
 
-        if (njs_vm_call(ctx->vm, func, &ctx->arg, 1) != NJS_OK) {
+        if (njs_vm_call(ctx->vm, func, njs_value_arg(&ctx->arg), 1) != NJS_OK) {
             njs_vm_retval_to_ext_string(ctx->vm, &exception);
 
             ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %*s",
@@ -588,7 +588,7 @@ ngx_stream_js_variable(ngx_stream_session_t *s, ngx_stream_variable_value_t *v,
 
     pending = njs_vm_pending(ctx->vm);
 
-    if (njs_vm_call(ctx->vm, func, &ctx->arg, 1) != NJS_OK) {
+    if (njs_vm_call(ctx->vm, func, njs_value_arg(&ctx->arg), 1) != NJS_OK) {
         njs_vm_retval_to_ext_string(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
@@ -671,7 +671,8 @@ ngx_stream_js_init_vm(ngx_stream_session_t *s)
         return NGX_ERROR;
     }
 
-    rc = njs_vm_external_create(ctx->vm, &ctx->arg, jscf->proto, s);
+    rc = njs_vm_external_create(ctx->vm, njs_value_arg(&ctx->arg), jscf->proto,
+                                s);
     if (rc != NXT_OK) {
         return NGX_ERROR;
     }

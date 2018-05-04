@@ -444,7 +444,7 @@ njs_vm_init(njs_vm_t *vm)
 
 
 nxt_int_t
-njs_vm_call(njs_vm_t *vm, njs_function_t *function, njs_opaque_value_t *args,
+njs_vm_call(njs_vm_t *vm, njs_function_t *function, njs_value_t *args,
     nxt_uint_t nargs)
 {
     u_char       *current;
@@ -460,8 +460,7 @@ njs_vm_call(njs_vm_t *vm, njs_function_t *function, njs_opaque_value_t *args,
 
     this = (njs_value_t *) &njs_value_void;
 
-    ret = njs_function_frame(vm, function, this,
-                             (njs_value_t *) args, nargs, 0);
+    ret = njs_function_frame(vm, function, this, args, nargs, 0);
     if (nxt_slow_path(ret != NXT_OK)) {
         return ret;
     }
@@ -532,7 +531,7 @@ njs_vm_pending(njs_vm_t *vm)
 
 nxt_int_t
 njs_vm_post_event(njs_vm_t *vm, njs_vm_event_t vm_event,
-    njs_opaque_value_t *args, nxt_uint_t nargs)
+    njs_value_t *args, nxt_uint_t nargs)
 {
     njs_event_t  *event;
 
@@ -541,12 +540,12 @@ njs_vm_post_event(njs_vm_t *vm, njs_vm_event_t vm_event,
     if (nargs != 0 && !event->posted) {
         event->nargs = nargs;
         event->args = nxt_mem_cache_alloc(vm->mem_cache_pool,
-                                          sizeof(njs_opaque_value_t) * nargs);
+                                          sizeof(njs_value_t) * nargs);
         if (nxt_slow_path(event->args == NULL)) {
             return NJS_ERROR;
         }
 
-        memcpy(event->args, args, sizeof(njs_opaque_value_t) * nargs);
+        memcpy(event->args, args, sizeof(njs_value_t) * nargs);
     }
 
     if (!event->posted) {
@@ -655,7 +654,7 @@ njs_vm_retval(njs_vm_t *vm)
 
 
 nxt_noinline void
-njs_vm_retval_set(njs_vm_t *vm, njs_opaque_value_t *value)
+njs_vm_retval_set(njs_vm_t *vm, njs_value_t *value)
 {
     vm->retval = *(njs_value_t *) value;
 }

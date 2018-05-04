@@ -134,7 +134,7 @@ static void ngx_http_js_clear_timer(njs_external_ptr_t external,
     njs_host_event_t event);
 static void ngx_http_js_timer_handler(ngx_event_t *ev);
 static void ngx_http_js_handle_event(ngx_http_request_t *r,
-    njs_vm_event_t vm_event, njs_opaque_value_t *args, nxt_uint_t nargs);
+    njs_vm_event_t vm_event, njs_value_t *args, nxt_uint_t nargs);
 
 static char *ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
@@ -666,7 +666,7 @@ ngx_http_js_content_event_handler(ngx_http_request_t *r)
         return;
     }
 
-    if (njs_vm_call(ctx->vm, func, ctx->args, 2) != NJS_OK) {
+    if (njs_vm_call(ctx->vm, func, njs_value_arg(ctx->args), 2) != NJS_OK) {
         njs_vm_retval_to_ext_string(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
@@ -776,7 +776,7 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
 
     pending = njs_vm_pending(ctx->vm);
 
-    if (njs_vm_call(ctx->vm, func, ctx->args, 2) != NJS_OK) {
+    if (njs_vm_call(ctx->vm, func, njs_value_arg(ctx->args), 2) != NJS_OK) {
         njs_vm_retval_to_ext_string(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
@@ -859,12 +859,14 @@ ngx_http_js_init_vm(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    rc = njs_vm_external_create(ctx->vm, &ctx->args[0], jlcf->req_proto, r);
+    rc = njs_vm_external_create(ctx->vm, njs_value_arg(&ctx->args[0]),
+                                jlcf->req_proto, r);
     if (rc != NXT_OK) {
         return NGX_ERROR;
     }
 
-    rc = njs_vm_external_create(ctx->vm, &ctx->args[1], jlcf->res_proto, r);
+    rc = njs_vm_external_create(ctx->vm, njs_value_arg(&ctx->args[1]),
+                                jlcf->res_proto, r);
     if (rc != NXT_OK) {
         return NGX_ERROR;
     }
@@ -1670,7 +1672,7 @@ ngx_http_js_ext_get_response(njs_vm_t *vm, njs_value_t *value, void *obj,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    njs_vm_retval_set(ctx->vm, &ctx->args[1]);
+    njs_vm_retval_set(ctx->vm, njs_value_arg(&ctx->args[1]));
 
     return NJS_OK;
 }
@@ -1988,7 +1990,8 @@ ngx_http_js_subrequest_done(ngx_http_request_t *r, void *data, ngx_int_t rc)
         return NGX_ERROR;
     }
 
-    ret = njs_vm_external_create(ctx->vm, &reply, jlcf->rep_proto, r);
+    ret = njs_vm_external_create(ctx->vm, njs_value_arg(&reply),
+                                 jlcf->rep_proto, r);
     if (ret != NXT_OK) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "js subrequest reply creation failed");
@@ -1996,7 +1999,7 @@ ngx_http_js_subrequest_done(ngx_http_request_t *r, void *data, ngx_int_t rc)
         return NGX_ERROR;
     }
 
-    ngx_http_js_handle_event(r->parent, vm_event, &reply, 1);
+    ngx_http_js_handle_event(r->parent, vm_event, njs_value_arg(&reply), 1);
 
     return NGX_OK;
 }
@@ -2019,7 +2022,7 @@ ngx_http_js_ext_get_parent(njs_vm_t *vm, njs_value_t *value, void *obj,
         return NJS_ERROR;
     }
 
-    njs_vm_retval_set(ctx->vm, &ctx->args[0]);
+    njs_vm_retval_set(ctx->vm, njs_value_arg(&ctx->args[0]));
 
     return NJS_OK;
 }
@@ -2119,7 +2122,7 @@ ngx_http_js_timer_handler(ngx_event_t *ev)
 
 static void
 ngx_http_js_handle_event(ngx_http_request_t *r, njs_vm_event_t vm_event,
-    njs_opaque_value_t *args, nxt_uint_t nargs)
+    njs_value_t *args, nxt_uint_t nargs)
 {
     njs_ret_t           rc;
     nxt_str_t           exception;

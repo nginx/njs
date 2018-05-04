@@ -150,11 +150,10 @@ njs_vm_external_prototype(njs_vm_t *vm, njs_external_t *external)
 
 
 nxt_int_t
-njs_vm_external_create(njs_vm_t *vm, njs_opaque_value_t *value,
+njs_vm_external_create(njs_vm_t *vm, njs_value_t *ext_val,
     const njs_extern_t *proto,  void *object)
 {
-    void         *obj;
-    njs_value_t  *ext_val;
+    void  *obj;
 
     if (nxt_slow_path(proto == NULL)) {
         return NXT_ERROR;
@@ -168,8 +167,6 @@ njs_vm_external_create(njs_vm_t *vm, njs_opaque_value_t *value,
 
     memcpy(obj, &object, sizeof(void *));
 
-    ext_val = (njs_value_t *) value;
-
     ext_val->type = NJS_EXTERNAL;
     ext_val->data.truth = 1;
     ext_val->external.proto = proto;
@@ -181,14 +178,11 @@ njs_vm_external_create(njs_vm_t *vm, njs_opaque_value_t *value,
 
 nxt_int_t
 njs_vm_external_bind(njs_vm_t *vm, const nxt_str_t *var_name,
-    njs_opaque_value_t *val)
+    njs_value_t *value)
 {
     nxt_int_t           ret;
-    njs_value_t         *value;
     njs_extern_value_t  *ev;
     nxt_lvlhsh_query_t  lhq;
-
-    value = (njs_value_t *) val;
 
     if (nxt_slow_path(!njs_is_external(value))) {
         return NXT_ERROR;

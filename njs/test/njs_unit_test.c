@@ -9533,7 +9533,7 @@ njs_unit_test_create_external(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     nxt_int_t            ret;
     nxt_str_t            uri;
-    njs_opaque_value_t   *value;
+    njs_value_t          *value;
     njs_unit_test_req_t  *r, *sr;
 
     if (nargs > 1) {
@@ -9737,15 +9737,15 @@ njs_externals_init(njs_vm_t *vm)
         requests[i].mem_cache_pool = vm->mem_cache_pool;
         requests[i].proto = proto;
 
-        ret = njs_vm_external_create(vm, &requests[i].value, proto,
-                                     &requests[i]);
+        ret = njs_vm_external_create(vm, njs_value_arg(&requests[i].value),
+                                     proto, &requests[i]);
         if (ret != NXT_OK) {
             printf("njs_vm_external_create() failed\n");
             return NXT_ERROR;
         }
 
         ret = njs_vm_external_bind(vm, &nxt_test_requests[i].name,
-                                   &requests[i].value);
+                                   njs_value_arg(&requests[i].value));
         if (ret != NXT_OK) {
             printf("njs_vm_external_bind() failed\n");
             return NXT_ERROR;

@@ -193,8 +193,8 @@ static nxt_int_t
 njs_externals_init(njs_vm_t *vm)
 {
     nxt_uint_t          ret;
+    njs_value_t         *value;
     const njs_extern_t  *proto;
-    njs_opaque_value_t  *value;
 
     static const nxt_str_t name = nxt_string_value("console");
 

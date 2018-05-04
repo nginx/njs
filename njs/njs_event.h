@@ -17,7 +17,7 @@
 
 typedef struct {
     njs_function_t        *function;
-    njs_opaque_value_t    *args;
+    njs_value_t           *args;
     nxt_uint_t            nargs;
     njs_host_event_t      host_event;
     njs_event_destructor  destructor;
