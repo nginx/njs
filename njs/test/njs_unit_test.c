@@ -9256,6 +9256,10 @@ static njs_unit_test_t  njs_test[] =
                  "h.update('abc'.repeat(100)).digest('hex')"),
       nxt_string("b105ad6921e4c54d3fa0a9ec3f7f0ee9bd2c659d") },
 
+    { nxt_string("var h = require('crypto').createHmac('sha1', 'A'.repeat(40));"
+                 "h.update('AB').digest('hex')"),
+      nxt_string("0b84f78ca5275d76d4b7dafb5845ee2b6a79c4c2") },
+
     { nxt_string("var h = require('crypto').createHmac('sha1', 'A'.repeat(64));"
                  "h.update('AB').digest('hex')"),
       nxt_string("400ce530816c6b3247e2959f3982a12aaf58c0c9") },
