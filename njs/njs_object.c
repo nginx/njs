@@ -333,7 +333,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
             }
         }
 
-        njs_type_error(vm, "cannot get property 'unknown' of undefined", NULL);
+        njs_type_error(vm, "cannot get property 'unknown' of undefined");
 
         return NXT_ERROR;
     }
@@ -727,14 +727,14 @@ njs_object_define_property(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     if (!value->data.u.object->extensible) {
-        njs_type_error(vm, "object is not extensible", NULL);
+        njs_type_error(vm, "object is not extensible");
         return NXT_ERROR;
     }
 
     descriptor = njs_arg(args, nargs, 3);
 
     if (!njs_is_object(descriptor)){
-        njs_type_error(vm, "descriptor is not an object", NULL);
+        njs_type_error(vm, "descriptor is not an object");
         return NXT_ERROR;
     }
 
@@ -774,14 +774,14 @@ njs_object_define_properties(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     if (!value->data.u.object->extensible) {
-        njs_type_error(vm, "object is not extensible", NULL);
+        njs_type_error(vm, "object is not extensible");
         return NXT_ERROR;
     }
 
     descriptor = njs_arg(args, nargs, 2);
 
     if (!njs_is_object(descriptor)) {
-        njs_type_error(vm, "descriptor is not an object", NULL);
+        njs_type_error(vm, "descriptor is not an object");
         return NXT_ERROR;
     }
 
@@ -1395,7 +1395,7 @@ njs_property_prototype_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
     }
 
     /* Memory allocation or NXT_DECLINED error. */
-    njs_internal_error(vm, NULL, NULL);
+    njs_internal_error(vm, NULL);
 
     return NULL;
 }
@@ -1638,7 +1638,7 @@ njs_property_constructor_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
     }
 
     /* Memory allocation or NXT_DECLINED error. */
-    njs_internal_error(vm, NULL, NULL);
+    njs_internal_error(vm, NULL);
 
     return NULL;
 }

@@ -240,7 +240,7 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
         spare_size = nxt_align_size(spare_size, NJS_FRAME_SPARE_SIZE);
 
         if (vm->stack_size + spare_size > NJS_MAX_STACK_SIZE) {
-            njs_range_error(vm, "Maximum call stack size exceeded", NULL);
+            njs_range_error(vm, "Maximum call stack size exceeded");
             return NULL;
         }
 
@@ -501,7 +501,7 @@ njs_function_prototype_call(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_function_t  *function;
 
     if (!njs_is_function(&args[0])) {
-        njs_type_error(vm, "'this' argument is not a function", NULL);
+        njs_type_error(vm, "'this' argument is not a function");
         return NXT_ERROR;
     }
 
@@ -529,7 +529,7 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_function_t  *function;
 
     if (!njs_is_function(&args[0])) {
-        njs_type_error(vm, "'this' argument is not a function", NULL);
+        njs_type_error(vm, "'this' argument is not a function");
         return NXT_ERROR;
     }
 
@@ -538,7 +538,7 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     if (nargs > 2) {
         if (!njs_is_array(&args[2])) {
-            njs_type_error(vm, "second argument is not an array", NULL);
+            njs_type_error(vm, "second argument is not an array");
             return NXT_ERROR;
         }
 
@@ -610,7 +610,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_function_t  *function;
 
     if (!njs_is_function(&args[0])) {
-        njs_type_error(vm, "'this' argument is not a function", NULL);
+        njs_type_error(vm, "'this' argument is not a function");
         return NXT_ERROR;
     }
 
@@ -689,7 +689,7 @@ njs_ret_t
 njs_eval_function(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    njs_internal_error(vm, "Not implemented", NULL);
+    njs_internal_error(vm, "Not implemented");
 
     return NXT_ERROR;
 }

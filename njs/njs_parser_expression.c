@@ -277,7 +277,7 @@ njs_parser_var_expression(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
 
         if (!njs_parser_is_lvalue(parser->node)) {
             njs_parser_ref_error(vm, parser,
-                                 "Invalid left-hand side in assignment", NULL);
+                                 "Invalid left-hand side in assignment");
             return NJS_TOKEN_ILLEGAL;
         }
 
@@ -415,7 +415,7 @@ njs_parser_assignment_expression(njs_vm_t *vm, njs_parser_t *parser,
 
         if (!njs_parser_is_lvalue(parser->node)) {
             njs_parser_ref_error(vm, parser,
-                                 "Invalid left-hand side in assignment", NULL);
+                                 "Invalid left-hand side in assignment");
             return NJS_TOKEN_ILLEGAL;
         }
 
@@ -839,8 +839,7 @@ njs_parser_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
 
     if (!njs_parser_is_lvalue(parser->node)) {
         njs_parser_ref_error(vm, parser,
-                             "Invalid left-hand side in prefix operation",
-                             NULL);
+                             "Invalid left-hand side in prefix operation");
         return NJS_TOKEN_ILLEGAL;
     }
 
@@ -894,8 +893,7 @@ njs_parser_post_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
 
     if (!njs_parser_is_lvalue(parser->node)) {
         njs_parser_ref_error(vm, parser,
-                             "Invalid left-hand side in postfix operation",
-                             NULL);
+                             "Invalid left-hand side in postfix operation");
         return NJS_TOKEN_ILLEGAL;
     }
 

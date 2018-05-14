@@ -158,7 +158,7 @@ njs_crypto_create_hash(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_object_value_t  *hash;
 
     if (nxt_slow_path(nargs < 2 || !njs_is_string(&args[1]))) {
-        njs_type_error(vm, "algorithm must be a string", NULL);
+        njs_type_error(vm, "algorithm must be a string");
         return NJS_ERROR;
     }
 
@@ -208,17 +208,17 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_object_value_t  *hash;
 
     if (nxt_slow_path(nargs < 2 || !njs_is_string(&args[1]))) {
-        njs_type_error(vm, "data must be a string", NULL);
+        njs_type_error(vm, "data must be a string");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_object_value(&args[0]))) {
-        njs_type_error(vm, "'this' is not an object_value", NULL);
+        njs_type_error(vm, "'this' is not an object_value");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_data(&args[0].data.u.object_value->value))) {
-        njs_type_error(vm, "value of 'this' is not a data type", NULL);
+        njs_type_error(vm, "value of 'this' is not a data type");
         return NJS_ERROR;
     }
 
@@ -229,7 +229,7 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     dgst = njs_value_data(&hash->value);
 
     if (nxt_slow_path(dgst->alg == NULL)) {
-        njs_error(vm, "Digest already called", NULL);
+        njs_error(vm, "Digest already called");
         return NJS_ERROR;
     }
 
@@ -254,17 +254,17 @@ njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_object_value_t  *hash;
 
     if (nxt_slow_path(nargs > 1 && !njs_is_string(&args[1]))) {
-        njs_type_error(vm, "encoding must be a string", NULL);
+        njs_type_error(vm, "encoding must be a string");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_object_value(&args[0]))) {
-        njs_type_error(vm, "'this' is not an object_value", NULL);
+        njs_type_error(vm, "'this' is not an object_value");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_data(&args[0].data.u.object_value->value))) {
-        njs_type_error(vm, "value of 'this' is not a data type", NULL);
+        njs_type_error(vm, "value of 'this' is not a data type");
         return NJS_ERROR;
     }
 
@@ -284,7 +284,7 @@ njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     dgst = njs_value_data(&hash->value);
 
     if (nxt_slow_path(dgst->alg == NULL)) {
-        njs_error(vm, "Digest already called", NULL);
+        njs_error(vm, "Digest already called");
         return NJS_ERROR;
     }
 
@@ -392,12 +392,12 @@ njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_object_value_t  *hmac;
 
     if (nxt_slow_path(nargs < 2 || !njs_is_string(&args[1]))) {
-        njs_type_error(vm, "algorithm must be a string", NULL);
+        njs_type_error(vm, "algorithm must be a string");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(nargs < 3 || !njs_is_string(&args[2]))) {
-        njs_type_error(vm, "key must be a string", NULL);
+        njs_type_error(vm, "key must be a string");
         return NJS_ERROR;
     }
 
@@ -471,17 +471,17 @@ njs_hmac_prototype_update(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_object_value_t  *hmac;
 
     if (nxt_slow_path(nargs < 2 || !njs_is_string(&args[1]))) {
-        njs_type_error(vm, "data must be a string", NULL);
+        njs_type_error(vm, "data must be a string");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_object_value(&args[0]))) {
-        njs_type_error(vm, "'this' is not an object_value", NULL);
+        njs_type_error(vm, "'this' is not an object_value");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_data(&args[0].data.u.object_value->value))) {
-        njs_type_error(vm, "value of 'this' is not a data type", NULL);
+        njs_type_error(vm, "value of 'this' is not a data type");
         return NJS_ERROR;
     }
 
@@ -492,7 +492,7 @@ njs_hmac_prototype_update(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     ctx = njs_value_data(&hmac->value);
 
     if (nxt_slow_path(ctx->alg == NULL)) {
-        njs_error(vm, "Digest already called", NULL);
+        njs_error(vm, "Digest already called");
         return NJS_ERROR;
     }
 
@@ -517,17 +517,17 @@ njs_hmac_prototype_digest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_object_value_t  *hmac;
 
     if (nxt_slow_path(nargs > 1 && !njs_is_string(&args[1]))) {
-        njs_type_error(vm, "encoding must be a string", NULL);
+        njs_type_error(vm, "encoding must be a string");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_object_value(&args[0]))) {
-        njs_type_error(vm, "'this' is not an object_value", NULL);
+        njs_type_error(vm, "'this' is not an object_value");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_data(&args[0].data.u.object_value->value))) {
-        njs_type_error(vm, "value of 'this' is not a data type", NULL);
+        njs_type_error(vm, "value of 'this' is not a data type");
         return NJS_ERROR;
     }
 
@@ -547,7 +547,7 @@ njs_hmac_prototype_digest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     ctx = njs_value_data(&hmac->value);
 
     if (nxt_slow_path(ctx->alg == NULL)) {
-        njs_error(vm, "Digest already called", NULL);
+        njs_error(vm, "Digest already called");
         return NJS_ERROR;
     }
 

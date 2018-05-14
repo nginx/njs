@@ -611,7 +611,7 @@ njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         radix = args[1].data.u.number;
 
         if (radix < 2 || radix > 36 || radix != (int) radix) {
-            njs_range_error(vm, NULL, NULL);
+            njs_range_error(vm, NULL);
             return NXT_ERROR;
         }
 

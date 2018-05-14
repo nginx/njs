@@ -732,7 +732,7 @@ njs_string_prototype_to_string(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs
     }
 
     if (nxt_slow_path(!njs_is_string(&args[1]))) {
-        njs_type_error(vm, "encoding must be a string", NULL);
+        njs_type_error(vm, "encoding must be a string");
         return NJS_ERROR;
     }
 
@@ -741,7 +741,7 @@ njs_string_prototype_to_string(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs
     (void) njs_string_prop(&string, &value);
 
     if (nxt_slow_path(string.length != 0)) {
-        njs_type_error(vm, "argument must be a byte string", NULL);
+        njs_type_error(vm, "argument must be a byte string");
         return NJS_ERROR;
     }
 
@@ -781,7 +781,7 @@ njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_string_prop_t  string;
 
     if (njs_is_null_or_void(&args[0])) {
-        njs_type_error(vm, "'this' argument is null or undefined", NULL);
+        njs_type_error(vm, "'this' argument is null or undefined");
         return NXT_ERROR;
     }
 
@@ -1376,7 +1376,7 @@ njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args,
 
 range_error:
 
-    njs_range_error(vm, NULL, NULL);
+    njs_range_error(vm, NULL);
 
     return NXT_ERROR;
 }
@@ -2043,7 +2043,7 @@ njs_string_prototype_repeat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         n = args[1].data.u.number;
 
         if (nxt_slow_path(n < 0 || n >= max)) {
-            njs_range_error(vm, NULL, NULL);
+            njs_range_error(vm, NULL);
             return NXT_ERROR;
         }
     }
@@ -3859,7 +3859,7 @@ njs_string_decode(njs_vm_t *vm, njs_value_t *value, const uint32_t *reserve)
 
 uri_error:
 
-    njs_uri_error(vm, NULL, NULL);
+    njs_uri_error(vm, NULL);
 
     return NXT_ERROR;
 }

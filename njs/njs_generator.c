@@ -328,7 +328,7 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
 
     default:
         nxt_thread_log_debug("unknown token: %d", node->token);
-        njs_syntax_error(vm, "unknown token", NULL);
+        njs_syntax_error(vm, "unknown token");
 
         return NXT_ERROR;
     }
@@ -1137,7 +1137,7 @@ njs_generate_continue_statement(njs_vm_t *vm, njs_parser_t *parser,
         }
     }
 
-    njs_parser_syntax_error(vm, parser, "Illegal continue statement", NULL);
+    njs_parser_syntax_error(vm, parser, "Illegal continue statement");
 
     return NXT_ERROR;
 
@@ -1180,7 +1180,7 @@ njs_generate_break_statement(njs_vm_t *vm, njs_parser_t *parser,
         }
     }
 
-    njs_parser_syntax_error(vm, parser, "Illegal break statement", NULL);
+    njs_parser_syntax_error(vm, parser, "Illegal break statement");
 
     return NXT_ERROR;
 
@@ -2066,7 +2066,7 @@ njs_generate_scope(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
                          parser->code_size, code_size);
 
     if (nxt_slow_path(parser->code_size < code_size)) {
-        njs_internal_error(vm, NULL, NULL);
+        njs_internal_error(vm, NULL);
         return NXT_ERROR;
     }
 

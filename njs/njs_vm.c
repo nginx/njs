@@ -755,7 +755,7 @@ njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *object, njs_value_t *property)
 
     case NJS_PRIMITIVE_VALUE:
     case NJS_STRING_VALUE:
-        njs_type_error(vm, "property in on a primitive value", NULL);
+        njs_type_error(vm, "property in on a primitive value");
 
         return NXT_ERROR;
 
@@ -1066,7 +1066,7 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     static njs_value_t prototype_string = njs_string("prototype");
 
     if (!njs_is_function(constructor)) {
-        njs_type_error(vm, "right argument is not a function", NULL);
+        njs_type_error(vm, "right argument is not a function");
         return NXT_ERROR;
     }
 
@@ -1977,7 +1977,7 @@ njs_function_frame_create(njs_vm_t *vm, njs_value_t *value,
         }
     }
 
-    njs_type_error(vm, "object is not callable", NULL);
+    njs_type_error(vm, "object is not callable");
 
     return NXT_ERROR;
 }
@@ -3084,8 +3084,7 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
                 }
 
                 if (ret == NXT_ERROR) {
-                    njs_type_error(vm, "cannot evaluate an object's value",
-                                   NULL);
+                    njs_type_error(vm, "cannot evaluate an object's value");
                 }
 
                 return ret;

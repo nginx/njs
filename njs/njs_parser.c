@@ -752,8 +752,7 @@ njs_parser_return_statement(njs_vm_t *vm, njs_parser_t *parser)
          scope = scope->parent)
     {
         if (scope->type == NJS_SCOPE_GLOBAL) {
-            njs_parser_syntax_error(vm, parser, "Illegal return statement",
-                                    NULL);
+            njs_parser_syntax_error(vm, parser, "Illegal return statement");
 
             return NXT_ERROR;
         }
@@ -1037,7 +1036,7 @@ njs_parser_switch_statement(njs_vm_t *vm, njs_parser_t *parser)
                     if (dflt != NULL) {
                         njs_parser_syntax_error(vm, parser,
                                                 "More than one default clause "
-                                                "in switch statement", NULL);
+                                                "in switch statement");
 
                         return NJS_TOKEN_ILLEGAL;
                     }
@@ -2575,7 +2574,7 @@ njs_parser_unexpected_token(njs_vm_t *vm, njs_parser_t *parser,
                                 parser->lexer->text.start);
 
     } else {
-        njs_parser_syntax_error(vm, parser, "Unexpected end of input", NULL);
+        njs_parser_syntax_error(vm, parser, "Unexpected end of input");
     }
 
     return NJS_TOKEN_ILLEGAL;

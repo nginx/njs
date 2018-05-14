@@ -9,21 +9,21 @@
 
 
 #define njs_error(vm, fmt, ...)                                               \
-    njs_exception_error_create(vm, NJS_OBJECT_ERROR, fmt, __VA_ARGS__)
+    njs_exception_error_create(vm, NJS_OBJECT_ERROR, fmt, ##__VA_ARGS__)
 #define njs_eval_error(vm, fmt, ...)                                          \
-    njs_exception_error_create(vm, NJS_OBJECT_EVAL_ERROR, fmt, __VA_ARGS__)
+    njs_exception_error_create(vm, NJS_OBJECT_EVAL_ERROR, fmt, ##__VA_ARGS__)
 #define njs_internal_error(vm, fmt, ...)                                      \
-    njs_exception_error_create(vm, NJS_OBJECT_INTERNAL_ERROR, fmt, __VA_ARGS__)
+    njs_exception_error_create(vm, NJS_OBJECT_INTERNAL_ERROR, fmt, ##__VA_ARGS__)
 #define njs_range_error(vm, fmt, ...)                                         \
-    njs_exception_error_create(vm, NJS_OBJECT_RANGE_ERROR, fmt, __VA_ARGS__)
+    njs_exception_error_create(vm, NJS_OBJECT_RANGE_ERROR, fmt, ##__VA_ARGS__)
 #define njs_reference_error(vm, fmt, ...)                                     \
-    njs_exception_error_create(vm, NJS_OBJECT_REF_ERROR, fmt, __VA_ARGS__)
+    njs_exception_error_create(vm, NJS_OBJECT_REF_ERROR, fmt, ##__VA_ARGS__)
 #define njs_syntax_error(vm, fmt, ...)                                        \
-    njs_exception_error_create(vm, NJS_OBJECT_SYNTAX_ERROR, fmt, __VA_ARGS__)
+    njs_exception_error_create(vm, NJS_OBJECT_SYNTAX_ERROR, fmt, ##__VA_ARGS__)
 #define njs_type_error(vm, fmt, ...)                                          \
-    njs_exception_error_create(vm, NJS_OBJECT_TYPE_ERROR, fmt, __VA_ARGS__)
+    njs_exception_error_create(vm, NJS_OBJECT_TYPE_ERROR, fmt, ##__VA_ARGS__)
 #define njs_uri_error(vm, fmt, ...)                                           \
-    njs_exception_error_create(vm, NJS_OBJECT_URI_ERROR, fmt, __VA_ARGS__)
+    njs_exception_error_create(vm, NJS_OBJECT_URI_ERROR, fmt, ##__VA_ARGS__)
 
 void njs_exception_error_create(njs_vm_t *vm, njs_value_type_t type,
     const char* fmt, ...);

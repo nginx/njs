@@ -99,12 +99,12 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     nxt_lvlhsh_query_t  lhq;
 
     if (nxt_slow_path(nargs < 3)) {
-        njs_type_error(vm, "too few arguments", NULL);
+        njs_type_error(vm, "too few arguments");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_string(&args[1]))) {
-        njs_type_error(vm, "path must be a string", NULL);
+        njs_type_error(vm, "path must be a string");
         return NJS_ERROR;
     }
 
@@ -139,12 +139,12 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
         } else {
             njs_type_error(vm, "Unknown options type "
-                           "(a string or object required)", NULL);
+                           "(a string or object required)");
             return NJS_ERROR;
         }
 
         if (nxt_slow_path(nargs < 4 || !njs_is_function(&args[3]))) {
-            njs_type_error(vm, "callback must be a function", NULL);
+            njs_type_error(vm, "callback must be a function");
             return NJS_ERROR;
         }
 
@@ -152,7 +152,7 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     } else {
         if (nxt_slow_path(!njs_is_function(&args[2]))) {
-            njs_type_error(vm, "callback must be a function", NULL);
+            njs_type_error(vm, "callback must be a function");
             return NJS_ERROR;
         }
 
@@ -313,12 +313,12 @@ njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     nxt_lvlhsh_query_t  lhq;
 
     if (nxt_slow_path(nargs < 2)) {
-        njs_type_error(vm, "too few arguments", NULL);
+        njs_type_error(vm, "too few arguments");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_string(&args[1]))) {
-        njs_type_error(vm, "path must be a string", NULL);
+        njs_type_error(vm, "path must be a string");
         return NJS_ERROR;
     }
 
@@ -353,7 +353,7 @@ njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
         } else {
             njs_type_error(vm, "Unknown options type "
-                           "(a string or object required)", NULL);
+                           "(a string or object required)");
             return NJS_ERROR;
         }
     }
@@ -534,17 +534,17 @@ static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
     nxt_lvlhsh_query_t  lhq;
 
     if (nxt_slow_path(nargs < 4)) {
-        njs_type_error(vm, "too few arguments", NULL);
+        njs_type_error(vm, "too few arguments");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_string(&args[1]))) {
-        njs_type_error(vm, "path must be a string", NULL);
+        njs_type_error(vm, "path must be a string");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_string(&args[2]))) {
-        njs_type_error(vm, "data must be a string", NULL);
+        njs_type_error(vm, "data must be a string");
         return NJS_ERROR;
     }
 
@@ -592,12 +592,12 @@ static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
 
         } else {
             njs_type_error(vm, "Unknown options type "
-                           "(a string or object required)", NULL);
+                           "(a string or object required)");
             return NJS_ERROR;
         }
 
         if (nxt_slow_path(nargs < 5 || !njs_is_function(&args[4]))) {
-            njs_type_error(vm, "callback must be a function", NULL);
+            njs_type_error(vm, "callback must be a function");
             return NJS_ERROR;
         }
 
@@ -605,7 +605,7 @@ static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
 
     } else {
         if (nxt_slow_path(!njs_is_function(&args[3]))) {
-            njs_type_error(vm, "callback must be a function", NULL);
+            njs_type_error(vm, "callback must be a function");
             return NJS_ERROR;
         }
 
@@ -723,17 +723,17 @@ njs_fs_write_file_sync_internal(njs_vm_t *vm, njs_value_t *args,
     nxt_lvlhsh_query_t  lhq;
 
     if (nxt_slow_path(nargs < 3)) {
-        njs_type_error(vm, "too few arguments", NULL);
+        njs_type_error(vm, "too few arguments");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_string(&args[1]))) {
-        njs_type_error(vm, "path must be a string", NULL);
+        njs_type_error(vm, "path must be a string");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_string(&args[2]))) {
-        njs_type_error(vm, "data must be a string", NULL);
+        njs_type_error(vm, "data must be a string");
         return NJS_ERROR;
     }
 
@@ -781,7 +781,7 @@ njs_fs_write_file_sync_internal(njs_vm_t *vm, njs_value_t *args,
 
         } else {
             njs_type_error(vm, "Unknown options type "
-                           "(a string or object required)", NULL);
+                           "(a string or object required)");
             return NJS_ERROR;
         }
     }
@@ -927,7 +927,7 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
 
         ret = nxt_lvlhsh_insert(&error->hash, &lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
-            njs_internal_error(vm, NULL, NULL);
+            njs_internal_error(vm, NULL);
             return NJS_ERROR;
         }
     }
@@ -946,7 +946,7 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
 
         ret = nxt_lvlhsh_insert(&error->hash, &lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
-            njs_internal_error(vm, NULL, NULL);
+            njs_internal_error(vm, NULL);
             return NJS_ERROR;
         }
     }
@@ -971,7 +971,7 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
 
         ret = nxt_lvlhsh_insert(&error->hash, &lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
-            njs_internal_error(vm, NULL, NULL);
+            njs_internal_error(vm, NULL);
             return NJS_ERROR;
         }
     }

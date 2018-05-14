@@ -596,7 +596,7 @@ njs_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     static const njs_value_t  default_name = njs_string("Error");
 
     if (nargs < 1 || !njs_is_object(&args[0])) {
-        njs_type_error(vm, "'this' argument is not an object", NULL);
+        njs_type_error(vm, "'this' argument is not an object");
         return NXT_ERROR;
     }
 

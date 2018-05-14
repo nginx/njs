@@ -43,7 +43,7 @@ njs_ret_t njs_module_require(njs_vm_t *vm, njs_value_t *args,
     nxt_lvlhsh_query_t  lhq;
 
     if (nargs < 2) {
-        njs_type_error(vm, "missing path", NULL);
+        njs_type_error(vm, "missing path");
         return NJS_ERROR;
     }
 

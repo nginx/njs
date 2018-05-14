@@ -19,18 +19,18 @@ njs_set_timeout(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_vm_ops_t  *ops;
 
     if (nxt_slow_path(nargs < 2)) {
-        njs_type_error(vm, "too few arguments", NULL);
+        njs_type_error(vm, "too few arguments");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_function(&args[1]))) {
-        njs_type_error(vm, "first arg must be a function", NULL);
+        njs_type_error(vm, "first arg must be a function");
         return NJS_ERROR;
     }
 
     ops = vm->ops;
     if (nxt_slow_path(ops == NULL)) {
-        njs_internal_error(vm, "not supported by host environment", NULL);
+        njs_internal_error(vm, "not supported by host environment");
         return NJS_ERROR;
     }
 
@@ -62,7 +62,7 @@ njs_set_timeout(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     event->host_event = ops->set_timer(vm->external, delay, event);
     if (event->host_event == NULL) {
-        njs_internal_error(vm, "set_timer() failed", NULL);
+        njs_internal_error(vm, "set_timer() failed");
         return NJS_ERROR;
     }
 
