@@ -123,7 +123,7 @@ static ngx_command_t  ngx_stream_js_commands[] = {
       offsetof(ngx_stream_js_srv_conf_t, filter),
       NULL },
 
-    ngx_null_command
+      ngx_null_command
 };
 
 
