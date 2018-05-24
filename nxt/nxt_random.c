@@ -13,6 +13,8 @@
 #include <sys/time.h>
 #include <unistd.h>
 #if (NXT_HAVE_GETRANDOM)
+#include <sys/random.h>
+#elif (NXT_HAVE_LINUX_SYS_GETRANDOM)
 #include <sys/syscall.h>
 #include <linux/random.h>
 #endif
@@ -66,7 +68,11 @@ nxt_random_stir(nxt_random_t *r, nxt_pid_t pid)
 
 #if (NXT_HAVE_GETRANDOM)
 
-    /* Linux 3.17 getrandom(), it is not available in Glibc. */
+    n = getrandom(&key, NXT_RANDOM_KEY_SIZE, 0);
+
+#elif (NXT_HAVE_LINUX_SYS_GETRANDOM)
+
+    /* Linux 3.17 SYS_getrandom, not available in Glibc prior to 2.25. */
 
     n = syscall(SYS_getrandom, &key, NXT_RANDOM_KEY_SIZE, 0);
 
