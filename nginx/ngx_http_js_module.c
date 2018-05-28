@@ -665,8 +665,8 @@ ngx_http_js_content_event_handler(ngx_http_request_t *r)
 
     func = njs_vm_function(ctx->vm, &name);
     if (func == NULL) {
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "js function \"%V\" not found", &jlcf->content);
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "js function \"%V\" not found", &jlcf->content);
         ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
         return;
     }
@@ -773,8 +773,8 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
 
     func = njs_vm_function(ctx->vm, &name);
     if (func == NULL) {
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "js function \"%V\" not found", fname);
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "js function \"%V\" not found", fname);
         v->not_found = 1;
         return NGX_OK;
     }

@@ -585,8 +585,8 @@ ngx_stream_js_variable(ngx_stream_session_t *s, ngx_stream_variable_value_t *v,
 
     func = njs_vm_function(ctx->vm, &name);
     if (func == NULL) {
-        ngx_log_debug1(NGX_LOG_DEBUG_STREAM, s->connection->log, 0,
-                       "js function \"%V\" not found", fname);
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+                      "js function \"%V\" not found", fname);
         v->not_found = 1;
         return NGX_OK;
     }
