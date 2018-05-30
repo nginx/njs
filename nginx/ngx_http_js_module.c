@@ -694,7 +694,7 @@ ngx_http_js_content_event_handler(ngx_http_request_t *r)
     }
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "http js content rc: %ui", ctx->status);
+                   "http js content rc: %i", ctx->status);
 
     ngx_http_finalize_request(r, ctx->status);
 }
@@ -715,7 +715,7 @@ ngx_http_js_content_write_event_handler(ngx_http_request_t *r)
 
     if (!njs_vm_pending(ctx->vm)) {
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "http js content rc: %ui", ctx->status);
+                       "http js content rc: %i", ctx->status);
 
         ngx_http_finalize_request(r, ctx->status);
         return;
