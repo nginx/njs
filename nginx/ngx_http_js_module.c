@@ -671,6 +671,13 @@ ngx_http_js_content_event_handler(ngx_http_request_t *r)
         return;
     }
 
+    /*
+     * status is expected to be overriden by finish() or return() methods,
+     * otherwise the content handler is considered invalid.
+     */
+
+    ctx->status = NGX_HTTP_INTERNAL_SERVER_ERROR;
+
     if (njs_vm_call(ctx->vm, func, njs_value_arg(ctx->args), 2) != NJS_OK) {
         njs_vm_retval_to_ext_string(ctx->vm, &exception);
 
@@ -1269,6 +1276,7 @@ static njs_ret_t
 ngx_http_js_ext_finish(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
+    ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
     r = njs_value_data(njs_argument(args, 0));
@@ -1276,6 +1284,10 @@ ngx_http_js_ext_finish(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (ngx_http_send_special(r, NGX_HTTP_LAST) == NGX_ERROR) {
         return NJS_ERROR;
     }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    ctx->status = NGX_OK;
 
     return NJS_OK;
 }
