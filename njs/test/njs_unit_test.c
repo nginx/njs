@@ -287,8 +287,8 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("0xffff.toString(16)"),
       nxt_string("ffff") },
 
-    { nxt_string("1845449130881..toString(36)"),
-      nxt_string("njscript") },
+    { nxt_string("30520..toString(36)"),
+      nxt_string("njs") },
 
     { nxt_string("Infinity.toString()"),
       nxt_string("Infinity") },

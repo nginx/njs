@@ -247,7 +247,7 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         return NXT_ERROR;
     }
 
-    printf("interactive njscript %s\n\n", NJS_VERSION);
+    printf("interactive njs %s\n\n", NJS_VERSION);
 
     printf("v.<Tab> -> the properties and prototype methods of v.\n");
     printf("type console.help() for more information\n\n");

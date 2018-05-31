@@ -1,5 +1,5 @@
 
-Changes with nJScript 0.2.0                                      3 Apr 2018
+Changes with njs 0.2.0                                           3 Apr 2018
 
     *) Feature: reporting njs version by CLI.
 
@@ -20,7 +20,7 @@ Changes with nJScript 0.2.0                                      3 Apr 2018
     *) Bugfix: miscellaneous bugs have been fixed in the core and
        interactive shell.
 
-Changes with nJScript 0.1.15                                     20 Nov 2017
+Changes with njs 0.1.15                                          20 Nov 2017
 
     *) Feature: Error, EvalError, InternalError, RangeError,
        ReferenceError, SyntaxError, TypeError, URIError objects.
@@ -35,7 +35,7 @@ Changes with nJScript 0.1.15                                     20 Nov 2017
 
     *) Bugfix: miscellaneous bugs have been fixed.
 
-Changes with nJScript 0.1.14                                     09 Oct 2017
+Changes with njs 0.1.14                                          09 Oct 2017
 
     *) Feature: JSON object.
 
@@ -46,7 +46,7 @@ Changes with nJScript 0.1.14                                     09 Oct 2017
     *) Bugfix: miscellaneous bugs have been fixed in the core and
        interactive shell.
 
-Changes with nJScript 0.1.13                                     31 Aug 2017
+Changes with njs 0.1.13                                          31 Aug 2017
 
     *) Feature: console.log() and console.help() methods in interactive
        shell.
@@ -59,13 +59,13 @@ Changes with nJScript 0.1.13                                     31 Aug 2017
 
     *) Bugfix: improved editline detection.
 
-Changes with nJScript 0.1.12                                     08 Aug 2017
+Changes with njs 0.1.12                                          08 Aug 2017
 
     *) Feature: Interactive shell.
 
     *) Bugfix: in Object.isSealed().
 
-Changes with nJScript 0.1.11                                     27 Jun 2017
+Changes with njs 0.1.11                                          27 Jun 2017
 
     *) Feature: Object.keys(), Object.prototype.hasOwnProperty() methods.
 
@@ -87,7 +87,7 @@ Changes with nJScript 0.1.11                                     27 Jun 2017
 
     *) Bugfix: in parseInt() and Date.parse().
 
-Changes with nJScript 0.1.10                                     04 Apr 2017
+Changes with njs 0.1.10                                          04 Apr 2017
 
     *) Feature: nested functions and function closures.
 
@@ -96,12 +96,12 @@ Changes with nJScript 0.1.10                                     04 Apr 2017
 
     *) Bugfix: miscellaneous bugs and segmentation faults have been fixed.
 
-Changes with nJScript 0.1.9                                      01 Feb 2017
+Changes with njs 0.1.9                                           01 Feb 2017
 
-    *) Bugfix: global variables were not initialized when nJScript was used
+    *) Bugfix: global variables were not initialized when njs was used
        in nginx.
 
-Changes with nJScript 0.1.8                                      24 Jan 2017
+Changes with njs 0.1.8                                           24 Jan 2017
 
     *) Change: the "strict" mode is enforced, variables must be explicitly
        declared.
@@ -115,7 +115,7 @@ Changes with nJScript 0.1.8                                      24 Jan 2017
 
     *) Bugfix: miscellaneous bugs and segmentation faults have been fixed.
 
-Changes with nJScript 0.1.7                                      27 Dec 2016
+Changes with njs 0.1.7                                           27 Dec 2016
 
     *) Change: the "js_include" directive has been disabled at server and
        location levels.
@@ -124,7 +124,7 @@ Changes with nJScript 0.1.7                                      27 Dec 2016
 
     *) Bugfix: miscellaneous bugs and segmentation faults have been fixed.
 
-Changes with nJScript 0.1.6                                      13 Dec 2016
+Changes with njs 0.1.6                                           13 Dec 2016
 
     *) Change: the "js_set" directive has been disabled at server and
        location levels.
