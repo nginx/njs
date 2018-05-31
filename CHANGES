@@ -1,4 +1,54 @@
 
+Changes with njs 0.2.1                                           31 May 2018
+
+    Nginx modules:
+
+    *) Feature: HTTP request body getter.
+
+    *) Improvement: moved njs vm to the main configuration.
+
+    *) Improvement: improved logging for js_set and js_content directives.
+
+    *) Improvement: setting status code to 500 by default in
+       js_content handler.
+
+    *) Improvement: added the debug for the returned status code in
+       js_content.
+
+    *) Bugfix: fixed error logging in js_include.
+
+    Core:
+
+    *) Feature: added array length setter.
+
+    *) Improvement: public header cleanup. njscript.h is renamed to njs.h.
+
+    *) Bugfix: fixed crypto update() method after digest() is called.
+
+    *) Bugfix: fixed crypto.createHmac() for keys with size >= alg size
+       and < 64.
+
+    *) Bugfix: fixed JSON.stringify() for arrays with empty cells.
+
+    *) Bugfix: fixed exception type for unsupported types in
+       JSON.stringify().
+
+    *) Bugfix: fixed handling of undefined arguments of functions.
+
+    *) Bugfix: fixed handling of missing arg of
+       Object.getOwnPropertyDescriptor().
+
+    *) Bugfix: fixed handling of properties in
+       Object.getOwnPropertyDescriptor().
+
+    *) Bugfix: fixed the writeable flag of Array.length property.
+
+    *) Bugfix: fixed return value type of clearTimeout().
+
+    *) Bugfix: fixed njs_vm_external_bind().
+
+    *) Bugfix: miscellaneous additional bugs have been fixed.
+
 Changes with njs 0.2.0                                           3 Apr 2018
 
     *) Feature: reporting njs version by CLI.
