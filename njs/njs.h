@@ -11,7 +11,7 @@
 
 #include <nxt_auto_config.h>
 
-#define NJS_VERSION                 "0.2.1"
+#define NJS_VERSION                 "0.2.2"
 
 
 #include <nxt_types.h>
