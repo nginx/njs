@@ -1305,28 +1305,27 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     nxt_str_t                  text;
     ngx_int_t                  status;
-    const char                *description;
     njs_value_t               *value;
     ngx_http_js_ctx_t         *ctx;
     ngx_http_request_t        *r;
     ngx_http_complex_value_t   cv;
 
     if (nargs < 2) {
-        description = "too few arguments";
-        goto exception;
+        njs_vm_error(vm, "too few arguments");
+        return NJS_ERROR;
     }
 
     value = njs_argument(args, 1);
     if (!njs_value_is_valid_number(value)) {
-        description = "code is not a number";
-        goto exception;
+        njs_vm_error(vm, "code is not a number");
+        return NJS_ERROR;
     }
 
     status = njs_value_number(value);
 
     if (status < 0 || status > 999) {
-        description = "code is out of range";
-        goto exception;
+        njs_vm_error(vm, "code is out of range");
+        return NJS_ERROR;
     }
 
     if (nargs < 3) {
@@ -1337,8 +1336,8 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         if (njs_vm_value_to_ext_string(vm, &text, njs_argument(args, 2), 0)
             == NJS_ERROR)
         {
-            description = "failed to convert text";
-            goto exception;
+            njs_vm_error(vm, "failed to convert text");
+            return NJS_ERROR;
         }
     }
 
@@ -1355,8 +1354,8 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         ctx->status = ngx_http_send_response(r, status, NULL, &cv);
 
         if (ctx->status == NGX_ERROR) {
-            description = "failed to send response";
-            goto exception;
+            njs_vm_error(vm, "failed to send response");
+            return NJS_ERROR;
         }
 
     } else {
@@ -1364,12 +1363,6 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     return NJS_OK;
-
-exception:
-
-    njs_value_error_set(vm, njs_vm_retval(vm), description, NULL);
-
-    return NJS_ERROR;
 }
 
 
@@ -1708,7 +1701,6 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     ngx_int_t                 rc;
     nxt_str_t                 uri_arg, args_arg, method_name, body_arg;
     ngx_uint_t                cb_index, method, n, has_body;
-    const char               *description;
     njs_value_t              *arg2, *options, *value;
     njs_function_t           *callback;
     ngx_http_request_t       *r, *sr;
@@ -1740,8 +1732,8 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     static const nxt_str_t body_key = nxt_string("body");
 
     if (nargs < 2) {
-        description = "too few arguments";
-        goto exception;
+        njs_vm_error(vm, "too few arguments");
+        return NJS_ERROR;
     }
 
     r = njs_value_data(njs_argument(args, 0));
@@ -1749,8 +1741,8 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (njs_vm_value_to_ext_string(vm, &uri_arg, njs_argument(args, 1), 0)
         == NJS_ERROR)
     {
-        description = "failed to convert uri arg";
-        goto exception;
+        njs_vm_error(vm, "failed to convert uri arg");
+        return NJS_ERROR;
     }
 
     options = NULL;
@@ -1770,13 +1762,13 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             if (njs_vm_value_to_ext_string(vm, &args_arg, arg2, 0)
                 == NJS_ERROR)
             {
-                description = "failed to convert args";
-                goto exception;
+                njs_vm_error(vm, "failed to convert args");
+                return NJS_ERROR;
             }
 
         } else {
-            description = "failed to convert args";
-            goto exception;
+            njs_vm_error(vm, "failed to convert args");
+            return NJS_ERROR;
         }
 
         cb_index = 3;
@@ -1791,8 +1783,8 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             if (njs_vm_value_to_ext_string(vm, &args_arg, value, 0)
                 == NJS_ERROR)
             {
-                description = "failed to convert options.args";
-                goto exception;
+                njs_vm_error(vm, "failed to convert options.args");
+                return NJS_ERROR;
             }
         }
 
@@ -1801,8 +1793,8 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             if (njs_vm_value_to_ext_string(vm, &method_name, value, 0)
                 == NJS_ERROR)
             {
-                description = "failed to convert options.method";
-                goto exception;
+                njs_vm_error(vm, "failed to convert options.method");
+                return NJS_ERROR;
             }
 
             n = sizeof(methods) / sizeof(methods[0]);
@@ -1820,11 +1812,8 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             }
 
             if (method == n) {
-                njs_value_error_set(vm, njs_vm_retval(vm),
-                                    "unknown method \"%.*s\"",
-                                    (int) method_name.length,
-                                    method_name.start);
-
+                njs_vm_error(vm, "unknown method \"%.*s\"",
+                             (int) method_name.length, method_name.start);
                 return NJS_ERROR;
             }
         }
@@ -1834,8 +1823,8 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             if (njs_vm_value_to_ext_string(vm, &body_arg, value, 0)
                 == NJS_ERROR)
             {
-                description = "failed to convert options.body";
-                goto exception;
+                njs_vm_error(vm, "failed to convert options.body");
+                return NJS_ERROR;
             }
 
             has_body = 1;
@@ -1846,8 +1835,8 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     if (cb_index < nargs) {
         if (!njs_value_is_function(njs_argument(args, cb_index))) {
-            description = "callback is not a function";
-            goto exception;
+            njs_vm_error(vm, "callback is not a function");
+            return NJS_ERROR;
 
         } else {
             callback = njs_value_function(njs_argument(args, cb_index));
@@ -1893,12 +1882,6 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     return NJS_OK;
-
-exception:
-
-    njs_value_error_set(vm, njs_vm_retval(vm), description, NULL);
-
-    return NJS_ERROR;
 }
 
 
@@ -1908,7 +1891,6 @@ ngx_http_js_subrequest(ngx_http_request_t *r, nxt_str_t *uri_arg,
 {
     ngx_int_t                    flags;
     ngx_str_t                    uri, args;
-    const char                  *description;
     njs_vm_event_t               vm_event;
     ngx_http_js_ctx_t           *ctx;
     ngx_http_post_subrequest_t  *ps;
@@ -1920,14 +1902,14 @@ ngx_http_js_subrequest(ngx_http_request_t *r, nxt_str_t *uri_arg,
     if (callback != NULL) {
         ps = ngx_palloc(r->pool, sizeof(ngx_http_post_subrequest_t));
         if (ps == NULL) {
-            description = "internal error";
-            goto exception;
+            njs_vm_error(ctx->vm, "internal error");
+            return NJS_ERROR;
         }
 
         vm_event = njs_vm_add_event(ctx->vm, callback, NULL, NULL);
         if (vm_event == NULL) {
-            description = "internal error";
-            goto exception;
+            njs_vm_error(ctx->vm, "internal error");
+            return NJS_ERROR;
         }
 
         ps->handler = ngx_http_js_subrequest_done;
@@ -1953,17 +1935,11 @@ ngx_http_js_subrequest(ngx_http_request_t *r, nxt_str_t *uri_arg,
             njs_vm_del_event(ctx->vm, vm_event);
         }
 
-        description = "subrequest creation failed";
-        goto exception;
+        njs_vm_error(ctx->vm, "subrequest creation failed");
+        return NJS_ERROR;
     }
 
     return NJS_OK;
-
-exception:
-
-    njs_value_error_set(ctx->vm, njs_vm_retval(ctx->vm), description, NULL);
-
-    return NJS_ERROR;
 }
 
 
@@ -2040,8 +2016,7 @@ ngx_http_js_ext_get_parent(njs_vm_t *vm, njs_value_t *value, void *obj,
     ctx = ngx_http_get_module_ctx(r->parent, ngx_http_js_module);
 
     if (ctx == NULL) {
-        njs_value_error_set(vm, njs_vm_retval(vm),
-                            "failed to get the parent context", NULL);
+        njs_vm_error(vm, "failed to get the parent context");
         return NJS_ERROR;
     }
 
