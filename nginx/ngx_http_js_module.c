@@ -31,6 +31,7 @@ typedef struct {
     ngx_uint_t           done;
     ngx_int_t            status;
     njs_opaque_value_t   request_body;
+    ngx_str_t            redirect_uri;
 } ngx_http_js_ctx_t;
 
 
@@ -51,6 +52,8 @@ typedef struct {
 static ngx_int_t ngx_http_js_content_handler(ngx_http_request_t *r);
 static void ngx_http_js_content_event_handler(ngx_http_request_t *r);
 static void ngx_http_js_content_write_event_handler(ngx_http_request_t *r);
+static void ngx_http_js_content_finalize(ngx_http_request_t *r,
+    ngx_http_js_ctx_t *ctx);
 static ngx_int_t ngx_http_js_variable(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data);
 static ngx_int_t ngx_http_js_init_vm(ngx_http_request_t *r);
@@ -89,6 +92,8 @@ static njs_ret_t ngx_http_js_ext_finish(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
+static njs_ret_t ngx_http_js_ext_internal_redirect(njs_vm_t *vm,
+    njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 
 static njs_ret_t ngx_http_js_ext_log(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
@@ -589,6 +594,18 @@ static njs_external_t  ngx_http_js_ext_request[] = {
       NULL,
       ngx_http_js_ext_return,
       0 },
+
+    { nxt_string("internalRedirect"),
+      NJS_EXTERN_METHOD,
+      NULL,
+      0,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      ngx_http_js_ext_internal_redirect,
+      0 },
 };
 
 
@@ -683,8 +700,9 @@ ngx_http_js_content_event_handler(ngx_http_request_t *r)
     }
 
     /*
-     * status is expected to be overriden by finish() or return() methods,
-     * otherwise the content handler is considered invalid.
+     * status is expected to be overriden by finish(), return() or
+     * internalRedirect() methods, otherwise the content handler is
+     * considered invalid.
      */
 
     ctx->status = NGX_HTTP_INTERNAL_SERVER_ERROR;
@@ -704,10 +722,7 @@ ngx_http_js_content_event_handler(ngx_http_request_t *r)
         return;
     }
 
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "http js content rc: %i", ctx->status);
-
-    ngx_http_finalize_request(r, ctx->status);
+    ngx_http_js_content_finalize(r, ctx);
 }
 
 
@@ -725,10 +740,7 @@ ngx_http_js_content_write_event_handler(ngx_http_request_t *r)
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
     if (!njs_vm_pending(ctx->vm)) {
-        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                       "http js content rc: %i", ctx->status);
-
-        ngx_http_finalize_request(r, ctx->status);
+        ngx_http_js_content_finalize(r, ctx);
         return;
     }
 
@@ -761,6 +773,28 @@ ngx_http_js_content_write_event_handler(ngx_http_request_t *r)
             ngx_del_timer(wev);
         }
     }
+}
+
+
+static void
+ngx_http_js_content_finalize(ngx_http_request_t *r, ngx_http_js_ctx_t *ctx)
+{
+    ngx_str_t  args;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "http js content rc: %i", ctx->status);
+
+    if (ctx->redirect_uri.len) {
+        if (ctx->redirect_uri.data[0] == '@') {
+            ngx_http_named_location(r, &ctx->redirect_uri);
+
+        } else {
+            ngx_http_split_args(r, &ctx->redirect_uri, &args);
+            ngx_http_internal_redirect(r, &ctx->redirect_uri, &args);
+        }
+    }
+
+    ngx_http_finalize_request(r, ctx->status);
 }
 
 
@@ -1385,6 +1419,44 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     } else {
         ctx->status = status;
     }
+
+    return NJS_OK;
+}
+
+
+static njs_ret_t
+ngx_http_js_ext_internal_redirect(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    nxt_str_t            uri;
+    ngx_http_js_ctx_t   *ctx;
+    ngx_http_request_t  *r;
+
+    if (nargs < 2) {
+        njs_vm_error(vm, "too few arguments");
+        return NJS_ERROR;
+    }
+
+    r = njs_value_data(njs_argument(args, 0));
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (njs_vm_value_to_ext_string(vm, &uri, njs_argument(args, 1), 0)
+        == NJS_ERROR)
+    {
+        njs_vm_error(vm, "failed to convert uri arg");
+        return NJS_ERROR;
+    }
+
+    if (uri.length == 0) {
+        njs_vm_error(vm, "uri is empty");
+        return NJS_ERROR;
+    }
+
+    ctx->redirect_uri.data = uri.start;
+    ctx->redirect_uri.len = uri.length;
+
+    ctx->status = NGX_DONE;
 
     return NJS_OK;
 }
