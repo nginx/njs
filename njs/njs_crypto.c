@@ -417,7 +417,7 @@ njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     ctx->alg = alg;
 
-    if (key.length > 64) {
+    if (key.length > sizeof(key_buf)) {
         alg->init(&ctx->u);
         alg->update(&ctx->u, key.start, key.length);
         alg->final(digest, &ctx->u);
@@ -426,7 +426,7 @@ njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         memset(key_buf + alg->size, 0, sizeof(key_buf) - alg->size);
 
     } else {
-        memcpy(key_buf, key.start, sizeof(key_buf));
+        memcpy(key_buf, key.start, key.length);
         memset(key_buf + key.length, 0, sizeof(key_buf) - key.length);
     }
 
