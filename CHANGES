@@ -1,7 +1,38 @@
 
+Changes with njs 0.2.2                                           19 Jun 2018
+
+    nginx modules:
+
+    *) Change: merged HTTP Response and Reply into Request.
+        New members of Request:
+        req.status (res.status)
+        req.parent (reply.parent)
+        req.requestBody (req.body)
+        req.responseBody (reply.body)
+        req.headersIn (req.headers)
+        req.headersOut (res.headers)
+        req.sendHeader() (res.sendHeader())
+        req.send() (res.send())
+        req.finish() (res.finish())
+        req.return() (res.return())
+
+        Deprecated members of Request:
+        req.body (use req.requestBody or req.responseBody)
+        req.headers (use req.headersIn or req.headersOut)
+        req.response
+
+        The deprecated properties will be removed in the following
+        releases.
+
+    *) Feature: HTTP internalRedirect() method.
+
+    Core:
+
+    *) Bugfix: fixed heap-buffer-overflow in crypto.createHmac().
+
 Changes with njs 0.2.1                                           31 May 2018
 
-    Nginx modules:
+    nginx modules:
 
     *) Feature: HTTP request body getter.
 
