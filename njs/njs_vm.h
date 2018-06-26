@@ -365,8 +365,8 @@ typedef struct {
 #define njs_string(s) {                                                       \
     .short_string = {                                                         \
         .type = NJS_STRING,                                                   \
-        .size = sizeof(s) - 1,                                                \
-        .length = sizeof(s) - 1,                                              \
+        .size = nxt_length(s),                                                \
+        .length = nxt_length(s),                                              \
         .start = s,                                                           \
     }                                                                         \
 }
@@ -378,10 +378,10 @@ typedef struct {
     .long_string = {                                                          \
         .type = NJS_STRING,                                                   \
         .truth = (NJS_STRING_LONG << 4) | NJS_STRING_LONG,                    \
-        .size = sizeof(s) - 1,                                                \
+        .size = nxt_length(s),                                                \
         .data = & (njs_string_t) {                                            \
             .start = (u_char *) s,                                            \
-            .length = sizeof(s) - 1,                                          \
+            .length = nxt_length(s),                                          \
         }                                                                     \
     }                                                                         \
 }

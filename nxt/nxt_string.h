@@ -21,7 +21,8 @@ typedef struct {
  * So a separate nxt_string_value() macro is intended to use in assignment.
  */
 
-#define nxt_string(s)        { sizeof(s) - 1, (u_char *) s }
+#define nxt_length(s)        (sizeof(s) - 1)
+#define nxt_string(s)        { nxt_length(s), (u_char *) s }
 #define nxt_null_string      { 0, NULL }
 #define nxt_string_value(s)  (nxt_str_t) nxt_string(s)
 

@@ -177,8 +177,8 @@ utf8_unit_test(nxt_uint_t start)
 
     n = nxt_utf8_casecmp((u_char *) "ABC АБВ ΑΒΓ",
                          (u_char *) "abc абв αβγ",
-                         sizeof("ABC АБВ ΑΒΓ") - 1,
-                         sizeof("abc абв αβγ") - 1);
+                         nxt_length("ABC АБВ ΑΒΓ"),
+                         nxt_length("abc абв αβγ"));
 
     if (n != 0) {
         printf("nxt_utf8_casecmp() failed\n");

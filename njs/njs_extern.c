@@ -273,7 +273,7 @@ found:
     len = 0;
 
     for (pr = head; pr != NULL; pr = pr->next) {
-        len += pr->str.length + sizeof(".") - 1;
+        len += pr->str.length + nxt_length(".");
     }
 
     buf = nxt_mem_cache_zalloc(vm->mem_cache_pool, len);

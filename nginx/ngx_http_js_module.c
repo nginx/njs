@@ -1157,9 +1157,9 @@ ngx_http_js_ext_set_header_out(njs_vm_t *vm, void *obj, uintptr_t data,
     h->value.data = p;
     h->value.len = value->length;
 
-    if (h->key.len == sizeof("Content-Length") - 1
+    if (h->key.len == nxt_length("Content-Length")
         && ngx_strncasecmp(h->key.data, (u_char *) "Content-Length",
-                           sizeof("Content-Length") - 1) == 0)
+                           nxt_length("Content-Length")) == 0)
     {
         n = ngx_atoi(value->start, value->length);
         if (n == NGX_ERROR) {

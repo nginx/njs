@@ -131,7 +131,7 @@ njs_vm_create(njs_vm_opt_t *options)
             nxt_lvlhsh_init(&vm->shared->values_hash);
 
             pattern = njs_regexp_pattern_create(vm, (u_char *) "(?:)",
-                                                sizeof("(?:)") - 1, 0);
+                                                nxt_length("(?:)"), 0);
             if (nxt_slow_path(pattern == NULL)) {
                 return NULL;
             }

@@ -2589,7 +2589,7 @@ njs_parser_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
     size_t    size;
     njs_vm_t  *vm;
 
-    size = sizeof("InternalError: ") - 1;
+    size = nxt_length("InternalError: ");
     memcpy(start, "InternalError: ", size);
     p = start + size;
 

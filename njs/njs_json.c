@@ -1400,19 +1400,19 @@ done:
      * The value to stringify is wrapped as '{"": value}'.
      * An empty object means empty result.
      */
-    if (str.length <= sizeof("{\n\n}") - 1) {
+    if (str.length <= nxt_length("{\n\n}")) {
         vm->retval = njs_value_void;
         return NXT_OK;
     }
 
     /* Stripping the wrapper's data. */
 
-    str.start += sizeof("{\"\":") - 1;
-    str.length -= sizeof("{\"\":}") - 1;
+    str.start += nxt_length("{\"\":");
+    str.length -= nxt_length("{\"\":}");
 
     if (stringify->space.length != 0) {
-        str.start += sizeof("\n ") - 1;
-        str.length -= sizeof("\n \n") - 1;
+        str.start += nxt_length("\n ");
+        str.length -= nxt_length("\n \n");
     }
 
     length = nxt_utf8_length(str.start, str.length);

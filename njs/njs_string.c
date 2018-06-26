@@ -3165,7 +3165,7 @@ njs_string_to_number(const njs_value_t *value, nxt_bool_t parse_float)
     nxt_bool_t    minus;
     const u_char  *p, *start, *end;
 
-    const size_t  infinity = sizeof("Infinity") - 1;
+    const size_t  infinity = nxt_length("Infinity");
 
     size = value->short_string.size;
 
