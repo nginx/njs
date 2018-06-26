@@ -622,20 +622,26 @@ static njs_ret_t
 njs_ext_console_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    nxt_str_t  msg;
+    nxt_str_t   msg;
+    nxt_uint_t  n;
 
-    msg.length = 0;
-    msg.start = NULL;
+    n = 1;
 
-    if (nargs >= 2
-        && njs_vm_value_to_ext_string(vm, &msg, njs_argument(args, 1), 0)
-           == NJS_ERROR)
-    {
+    while (n < nargs) {
+        if (njs_vm_value_to_ext_string(vm, &msg, njs_argument(args, n), 0)
+            == NJS_ERROR)
+        {
+            return NJS_ERROR;
+        }
 
-        return NJS_ERROR;
+        printf("%s%.*s", (n != 1) ? " " : "", (int) msg.length, msg.start);
+
+        n++;
     }
 
-    printf("%.*s\n", (int) msg.length, msg.start);
+    if (nargs > 1) {
+        printf("\n");
+    }
 
     vm->retval = njs_value_void;
 
