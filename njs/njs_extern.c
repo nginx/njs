@@ -75,6 +75,7 @@ njs_vm_external_add(njs_vm_t *vm, nxt_lvlhsh_t *hash, njs_external_t *external,
 {
     nxt_int_t           ret;
     njs_extern_t        *ext, *child;
+    njs_function_t      *function;
     nxt_lvlhsh_query_t  lhq;
 
     do {
@@ -96,15 +97,29 @@ njs_vm_external_add(njs_vm_t *vm, nxt_lvlhsh_t *hash, njs_external_t *external,
         ext->data = external->data;
 
         if (external->method != NULL) {
-            ext->function = nxt_mem_cache_zalloc(vm->mem_cache_pool,
-                                                 sizeof(njs_function_t));
-            if (nxt_slow_path(ext->function == NULL)) {
+            function = nxt_mem_cache_zalloc(vm->mem_cache_pool,
+                                            sizeof(njs_function_t));
+            if (nxt_slow_path(function == NULL)) {
                 return NULL;
             }
 
-            ext->function->native = 1;
-            ext->function->args_offset = 1;
-            ext->function->u.native = external->method;
+            /*
+             * nxt_mem_cache_zalloc() does also:
+             *   nxt_lvlhsh_init(&function->object.hash);
+             *   function->object.__proto__ = NULL;
+             */
+
+            function->object.__proto__ =
+                              &vm->prototypes[NJS_CONSTRUCTOR_FUNCTION].object;
+            function->object.shared_hash = vm->shared->function_prototype_hash;
+            function->object.type = NJS_FUNCTION;
+            function->object.shared = 1;
+            function->object.extensible = 1;
+            function->args_offset = 1;
+            function->native = 1;
+            function->u.native = external->method;
+
+            ext->function = function;
 
         } else {
             ext->function = NULL;

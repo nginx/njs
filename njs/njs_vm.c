@@ -588,6 +588,12 @@ njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
             /* The vm->retval is already retained by ext_proto->get(). */
         }
 
+        if (ext_proto->type == NJS_EXTERN_METHOD) {
+            vm->retval.data.u.function = ext_proto->function;
+            vm->retval.type = NJS_FUNCTION;
+            vm->retval.data.truth = 1;
+        }
+
         return sizeof(njs_vmcode_prop_get_t);
 
     case NJS_TRAP_PROPERTY:

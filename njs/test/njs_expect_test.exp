@@ -176,6 +176,11 @@ njs_test {
      "console.ll()\r\nTypeError: cannot find property 'll' of an external object"}
 }
 
+njs_test {
+    {"var print = console.log.bind(console); print(1, 'a', [1, 2])\r\n"
+     "var print = console.log.bind(console); print(1, 'a', \\\[1, 2])\r\n1 a 1,2\r\nundefined\r\n>> "}
+}
+
 # Backtraces for external objects
 njs_test {
     {"console.log(console)\r\n"
