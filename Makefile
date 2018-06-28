@@ -99,7 +99,8 @@ libnjs:	$(NXT_BUILDDIR)/libnjs.a
 njs_interactive_test:	njs_expect_test $(NXT_BUILDDIR)/njs_interactive_test
 	$(NXT_BUILDDIR)/njs_interactive_test
 
-test:	njs_interactive_test \
+test:	lib_test \
+	njs_interactive_test \
 	$(NXT_BUILDDIR)/njs_unit_test \
 	$(NXT_BUILDDIR)/njs_benchmark \
 
