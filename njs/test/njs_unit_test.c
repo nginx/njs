@@ -4557,6 +4557,105 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("''.repeat(NaN)"),
       nxt_string("") },
 
+    { nxt_string("'abc'.padStart(7)"),
+      nxt_string("    abc") },
+
+    { nxt_string("'абв'.padStart(7)"),
+      nxt_string("    абв") },
+
+    { nxt_string("'abc'.padStart(3)"),
+      nxt_string("abc") },
+
+    { nxt_string("'абв'.padStart(0)"),
+      nxt_string("абв") },
+
+    { nxt_string("'abc'.padStart(NaN)"),
+      nxt_string("abc") },
+
+    { nxt_string("'abc'.padStart(2147483647)"),
+      nxt_string("RangeError") },
+
+    { nxt_string("'abc'.padStart(2147483646, '')"),
+      nxt_string("abc") },
+
+    { nxt_string("''.padStart(0, '')"),
+      nxt_string("") },
+
+    { nxt_string("'1'.padStart(5, 0)"),
+      nxt_string("00001") },
+
+    { nxt_string("''.padStart(1, 'я')"),
+      nxt_string("я") },
+
+    { nxt_string("'abc'.padStart(6, NaN)"),
+      nxt_string("NaNabc") },
+
+    { nxt_string("'abc'.padStart(11, 123)"),
+      nxt_string("12312312abc") },
+
+    { nxt_string("'abc'.padStart(6, 12345)"),
+      nxt_string("123abc") },
+
+    { nxt_string("'абв'.padStart(6, 'эюя')"),
+      nxt_string("эюяабв") },
+
+    { nxt_string("'абв'.padStart(4, 'эюя')"),
+      nxt_string("эабв") },
+
+    { nxt_string("'абв'.padStart(7, 'эюя')"),
+      nxt_string("эюяэабв") },
+
+    { nxt_string("'абв'.padStart(10, 'эю')"),
+      nxt_string("эюэюэюэабв") },
+
+    { nxt_string("'1234'.padEnd(4)"),
+      nxt_string("1234") },
+
+    { nxt_string("'1234'.padEnd(-1)"),
+      nxt_string("1234") },
+
+    { nxt_string("'я'.padEnd(1)"),
+      nxt_string("я") },
+
+    { nxt_string("'1234'.padEnd(5)"),
+      nxt_string("1234 ") },
+
+    { nxt_string("'я'.padEnd(6)"),
+      nxt_string("я     ") },
+
+    { nxt_string("'я'.padEnd(2147483647)"),
+      nxt_string("RangeError") },
+
+    { nxt_string("'я'.padEnd(2147483646, '')"),
+      nxt_string("я") },
+
+    { nxt_string("''.padEnd(0, '')"),
+      nxt_string("") },
+
+    { nxt_string("'эю'.padEnd(3, 'я')"),
+      nxt_string("эюя") },
+
+    { nxt_string("''.padEnd(1, 0)"),
+      nxt_string("0") },
+
+    { nxt_string("'1234'.padEnd(8, 'abcd')"),
+      nxt_string("1234abcd") },
+
+    { nxt_string("'1234'.padEnd(10, 'abcd')"),
+      nxt_string("1234abcdab") },
+
+    { nxt_string("'1234'.padEnd(7, 'abcd')"),
+      nxt_string("1234abc") },
+
+    { nxt_string("'абв'.padEnd(5, 'ГД')"),
+      nxt_string("абвГД") },
+
+    { nxt_string("'абв'.padEnd(4, 'ГДУ')"),
+      nxt_string("абвГ") },
+
+    { nxt_string("'абвг'.padEnd(10, 'ДЕЖЗ')"),
+      nxt_string("абвгДЕЖЗДЕ") },
+
     { nxt_string("encodeURI()"),
       nxt_string("undefined")},
 

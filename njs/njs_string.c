@@ -64,6 +64,8 @@ static njs_ret_t njs_string_from_char_code(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t njs_string_starts_or_ends_with(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, nxt_bool_t starts);
+static njs_ret_t njs_string_prototype_pad(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, nxt_bool_t pad_start);
 static njs_ret_t njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
     njs_regexp_pattern_t *pattern);
 static njs_ret_t njs_string_split_part_add(njs_vm_t *vm, njs_array_t *array,
@@ -2073,6 +2075,113 @@ njs_string_prototype_repeat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
+static njs_ret_t
+njs_string_prototype_pad_start(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    return njs_string_prototype_pad(vm, args, nargs, 1);
+}
+
+
+static njs_ret_t
+njs_string_prototype_pad_end(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    return njs_string_prototype_pad(vm, args, nargs, 0);
+}
+
+
+static njs_ret_t
+njs_string_prototype_pad(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    nxt_bool_t pad_start)
+{
+    u_char             *p, *start;
+    size_t             padding, trunc, new_size;
+    int32_t            length, new_length;
+    uint32_t           n, pad_length;
+    const u_char       *end;
+    njs_string_prop_t  string, pad_string;
+
+    length = njs_string_prop(&string, &args[0]);
+    new_length = nargs > 1 ? args[1].data.u.number : 0;
+
+    if (new_length <= length) {
+        vm->retval = args[0];
+        return NJS_OK;
+    }
+
+    if (nxt_slow_path(new_length >= NJS_STRING_MAX_LENGTH)) {
+        njs_range_error(vm, NULL);
+        return NJS_ERROR;
+    }
+
+    padding = new_length - length;
+
+    /* GCC and Clang complain about uninitialized n and trunc. */
+    n = 0;
+    trunc = 0;
+
+    if (nargs > 2) {
+        pad_length = njs_string_prop(&pad_string, &args[2]);
+
+        if (pad_string.size == 0) {
+            vm->retval = args[0];
+            return NJS_OK;
+        }
+
+        if (pad_string.size > 1) {
+            n = padding / pad_length;
+            trunc = padding % pad_length;
+
+            if (pad_string.size != (size_t) pad_length) {
+                /* UTF-8 string. */
+                end = pad_string.start + pad_string.size;
+                end = njs_string_offset(pad_string.start, end, trunc);
+
+                trunc = end - pad_string.start;
+                padding = pad_string.size * n + trunc;
+            }
+        }
+    }
+
+    new_size = string.size + padding;
+
+    start = njs_string_alloc(vm, &vm->retval, new_size, new_length);
+    if (nxt_slow_path(start == NULL)) {
+        return NJS_ERROR;
+    }
+
+    p = start;
+
+    if (pad_start) {
+        start += padding;
+
+    } else {
+        p += string.size;
+    }
+
+    memcpy(start, string.start, string.size);
+
+    if (nargs == 2) {
+        memset(p, ' ', padding);
+
+    } else if (pad_string.size == 1) {
+        memset(p, pad_string.start[0], padding);
+
+    } else {
+        while (n != 0) {
+            memcpy(p, pad_string.start, pad_string.size);
+            p += pad_string.size;
+            n--;
+        }
+
+        memcpy(p, pad_string.start, trunc);
+    }
+
+    return NJS_OK;
+}
+
+
 /*
  * String.search([regexp])
  */
@@ -3488,6 +3597,22 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("repeat"),
         .value = njs_native_function(njs_string_prototype_repeat, 0,
                      NJS_STRING_OBJECT_ARG, NJS_INTEGER_ARG),
+    },
+
+    /* ES8. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("padStart"),
+        .value = njs_native_function(njs_string_prototype_pad_start, 0,
+                     NJS_STRING_OBJECT_ARG, NJS_INTEGER_ARG, NJS_STRING_ARG),
+    },
+
+    /* ES8. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("padEnd"),
+        .value = njs_native_function(njs_string_prototype_pad_end, 0,
+                     NJS_STRING_OBJECT_ARG, NJS_INTEGER_ARG, NJS_STRING_ARG),
     },
 
     {
