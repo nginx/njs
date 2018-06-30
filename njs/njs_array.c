@@ -375,6 +375,11 @@ njs_array_prototype_length(njs_vm_t *vm, njs_value_t *value,
     array = value->data.u.array;
 
     if (setval != NULL) {
+        if (!njs_is_number(setval)) {
+            njs_range_error(vm, "Invalid array length");
+            return NJS_ERROR;
+        }
+
         num = setval->data.u.number;
         length = (uint32_t) num;
 
