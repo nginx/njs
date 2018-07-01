@@ -118,10 +118,13 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("0o0"),
       nxt_string("0") },
 
+    { nxt_string("0O10"),
+      nxt_string("8") },
+
     { nxt_string("0o011"),
       nxt_string("9") },
 
-    { nxt_string("-0o777"),
+    { nxt_string("-0O777"),
       nxt_string("-511") },
 
     /* Legacy Octal Numbers are deprecated. */
@@ -141,7 +144,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("0o"),
       nxt_string("SyntaxError: Unexpected token \"\" in 1") },
 
-    { nxt_string("0o778"),
+    { nxt_string("0O778"),
       nxt_string("SyntaxError: Unexpected token \"\" in 1") },
 
     /* Hex Numbers. */

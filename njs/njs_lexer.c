@@ -550,7 +550,7 @@ njs_lexer_number(njs_lexer_t *lexer)
 
         /* Octal literal values. */
 
-        if (*p == 'o') {
+        if (*p == 'o' || *p == 'O') {
             p++;
 
             if (p == lexer->end) {
