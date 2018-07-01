@@ -14,6 +14,7 @@
 uint32_t njs_value_to_index(const njs_value_t *value);
 double njs_number_dec_parse(const u_char **start, const u_char *end);
 uint64_t njs_number_oct_parse(const u_char **start, const u_char *end);
+uint64_t njs_number_bin_parse(const u_char **start, const u_char *end);
 uint64_t njs_number_hex_parse(const u_char **start, const u_char *end);
 int64_t njs_number_radix_parse(const u_char **start, const u_char *end,
     uint8_t radix);

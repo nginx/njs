@@ -147,6 +147,26 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("0O778"),
       nxt_string("SyntaxError: Unexpected token \"\" in 1") },
 
+    /* Binary Numbers. */
+
+    { nxt_string("0b0"),
+      nxt_string("0") },
+
+    { nxt_string("0B10"),
+      nxt_string("2") },
+
+    { nxt_string("0b0101"),
+      nxt_string("5") },
+
+    { nxt_string("-0B11111111"),
+      nxt_string("-255") },
+
+    { nxt_string("0b"),
+      nxt_string("SyntaxError: Unexpected token \"\" in 1") },
+
+    { nxt_string("0B12"),
+      nxt_string("SyntaxError: Unexpected token \"\" in 1") },
+
     /* Hex Numbers. */
 
     { nxt_string("0x0"),

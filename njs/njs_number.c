@@ -184,6 +184,35 @@ njs_number_oct_parse(const u_char **start, const u_char *end)
 
 
 uint64_t
+njs_number_bin_parse(const u_char **start, const u_char *end)
+{
+    u_char        c;
+    uint64_t      num;
+    const u_char  *p;
+
+    p = *start;
+
+    num = 0;
+
+    while (p < end) {
+        /* Values less than '0' become >= 208. */
+        c = *p - '0';
+
+        if (nxt_slow_path(c > 1)) {
+            break;
+        }
+
+        num = num * 2 + c;
+        p++;
+    }
+
+    *start = p;
+
+    return num;
+}
+
+
+uint64_t
 njs_number_hex_parse(const u_char **start, const u_char *end)
 {
     u_char        c;

@@ -569,6 +569,27 @@ njs_lexer_number(njs_lexer_t *lexer)
             return NJS_TOKEN_NUMBER;
         }
 
+        /* Binary literal values. */
+
+        if (*p == 'b' || *p == 'B') {
+            p++;
+
+            if (p == lexer->end) {
+                return NJS_TOKEN_ILLEGAL;
+            }
+
+            lexer->start = p;
+            lexer->number = njs_number_bin_parse((const u_char **) &lexer->start,
+                                                 lexer->end);
+            p = lexer->start;
+
+            if (p < lexer->end && (*p >= '2' && *p <= '9')) {
+                return NJS_TOKEN_ILLEGAL;
+            }
+
+            return NJS_TOKEN_NUMBER;
+        }
+
         /* Legacy Octal literals are deprecated. */
 
         if (*p >= '0' && *p <= '9') {
