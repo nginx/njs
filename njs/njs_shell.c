@@ -390,10 +390,6 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         goto done;
     }
 
-    if (!opts->disassemble) {
-        printf("%.*s\n", (int) out.length, out.start);
-    }
-
     ret = NXT_OK;
 
 done:
