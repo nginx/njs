@@ -20,8 +20,9 @@
 
 
 typedef enum {
-    NJS_COMPLETION_GLOBAL = 0,
+    NJS_COMPLETION_VAR = 0,
     NJS_COMPLETION_SUFFIX,
+    NJS_COMPLETION_GLOBAL
 } njs_completion_phase_t;
 
 
@@ -476,6 +477,11 @@ njs_completion_handler(const char *text, int start, int end)
 
 #define njs_completion(c, i) &(((nxt_str_t *) (c)->start)[i])
 
+#define njs_next_phase(c)                                                   \
+    (c)->index = 0;                                                         \
+    (c)->phase++;                                                           \
+    goto next;
+
 static char *
 njs_completion_generator(const char *text, int state)
 {
@@ -489,14 +495,108 @@ njs_completion_generator(const char *text, int state)
     cmpl = &njs_completion;
 
     if (state == 0) {
+        cmpl->phase = 0;
         cmpl->index = 0;
         cmpl->length = strlen(text);
-        cmpl->phase = NJS_COMPLETION_GLOBAL;
+        cmpl->suffix_completions = NULL;
 
         nxt_lvlhsh_each_init(&cmpl->lhe, &njs_variables_hash_proto);
     }
 
-    if (cmpl->phase == NJS_COMPLETION_GLOBAL) {
+next:
+
+    switch (cmpl->phase) {
+    case NJS_COMPLETION_VAR:
+        if (cmpl->vm->parser == NULL) {
+            njs_next_phase(cmpl);
+        }
+
+        for ( ;; ) {
+            var = nxt_lvlhsh_each(&cmpl->vm->parser->scope->variables,
+                                  &cmpl->lhe);
+
+            if (var == NULL) {
+                break;
+            }
+
+            if (var->name.length < cmpl->length) {
+                continue;
+            }
+
+            if (strncmp(text, (char *) var->name.start, cmpl->length) == 0) {
+                return njs_editline(&var->name);
+            }
+        }
+
+        njs_next_phase(cmpl);
+
+    case NJS_COMPLETION_SUFFIX:
+        if (cmpl->length == 0) {
+            njs_next_phase(cmpl);
+        }
+
+        if (cmpl->suffix_completions == NULL) {
+            /* Getting the longest prefix before a '.' */
+
+            p = &text[cmpl->length - 1];
+            while (p > text && *p != '.') { p--; }
+
+            if (*p != '.') {
+                njs_next_phase(cmpl);
+            }
+
+            expression.start = (u_char *) text;
+            expression.length = p - text;
+
+            cmpl->suffix_completions = njs_vm_completions(cmpl->vm,
+                                                          &expression);
+            if (cmpl->suffix_completions == NULL) {
+                njs_next_phase(cmpl);
+            }
+        }
+
+        /* Getting the right-most suffix after a '.' */
+
+        len = 0;
+        p = &text[cmpl->length - 1];
+
+        while (p > text && *p != '.') {
+            p--;
+            len++;
+        }
+
+        p++;
+
+        for ( ;; ) {
+            if (cmpl->index >= cmpl->suffix_completions->items) {
+                njs_next_phase(cmpl);
+            }
+
+            suffix = njs_completion(cmpl->suffix_completions, cmpl->index++);
+
+            if (len != 0 && strncmp((char *) suffix->start, p,
+                                    nxt_min(len, suffix->length)) != 0)
+            {
+                continue;
+            }
+
+            len = suffix->length + (p - text) + 1;
+            completion = malloc(len);
+            if (completion == NULL) {
+                return NULL;
+            }
+
+            snprintf(completion, len, "%.*s%.*s", (int) (p - text), text,
+                     (int) suffix->length, suffix->start);
+            return completion;
+        }
+
+    case NJS_COMPLETION_GLOBAL:
+        if (cmpl->suffix_completions != NULL) {
+            /* No global completions if suffixes were found. */
+            njs_next_phase(cmpl);
+        }
+
         for ( ;; ) {
             if (cmpl->index >= cmpl->completions->items) {
                 break;
@@ -508,88 +608,10 @@ njs_completion_generator(const char *text, int state)
                 continue;
             }
 
-            if (strncmp(text, (char *) suffix->start,
-                        nxt_min(suffix->length, cmpl->length)) == 0)
-            {
+            if (strncmp(text, (char *) suffix->start, cmpl->length) == 0) {
                 return njs_editline(suffix);
             }
         }
-
-        if (cmpl->vm->parser != NULL) {
-            for ( ;; ) {
-                var = nxt_lvlhsh_each(&cmpl->vm->parser->scope->variables,
-                                      &cmpl->lhe);
-                if (var == NULL || var->name.length < cmpl->length) {
-                    break;
-                }
-
-                if (strncmp(text, (char *) var->name.start,
-                            nxt_min(var->name.length, cmpl->length)) == 0)
-                {
-                    return njs_editline(&var->name);
-                }
-            }
-        }
-
-        if (cmpl->length == 0) {
-            return NULL;
-        }
-
-        /* Getting the longest prefix before a '.' */
-
-        p = &text[cmpl->length - 1];
-        while (p > text && *p != '.') { p--; }
-
-        if (*p != '.') {
-            return NULL;
-        }
-
-        expression.start = (u_char *) text;
-        expression.length = p - text;
-
-        cmpl->suffix_completions = njs_vm_completions(cmpl->vm, &expression);
-        if (cmpl->suffix_completions == NULL) {
-            return NULL;
-        }
-
-        cmpl->index = 0;
-        cmpl->phase = NJS_COMPLETION_SUFFIX;
-    }
-
-    /* Getting the right-most suffix after a '.' */
-
-    len = 0;
-    p = &text[cmpl->length - 1];
-
-    while (p > text && *p != '.') {
-        p--;
-        len++;
-    }
-
-    p++;
-
-    for ( ;; ) {
-        if (cmpl->index >= cmpl->suffix_completions->items) {
-            break;
-        }
-
-        suffix = njs_completion(cmpl->suffix_completions, cmpl->index++);
-
-        if (len != 0 && strncmp((char *) suffix->start, p,
-                                nxt_min(len, suffix->length)) != 0)
-        {
-            continue;
-        }
-
-        len = suffix->length + (p - text) + 1;
-        completion = malloc(len);
-        if (completion == NULL) {
-            return NULL;
-        }
-
-        snprintf(completion, len, "%.*s%.*s", (int) (p - text), text,
-                 (int) suffix->length, suffix->start);
-        return completion;
     }
 
     return NULL;
