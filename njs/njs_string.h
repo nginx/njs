@@ -126,9 +126,9 @@ njs_ret_t njs_string_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,
 njs_ret_t njs_string_hex(njs_vm_t *vm, njs_value_t *value,
     const nxt_str_t *src);
 njs_ret_t njs_string_base64(njs_vm_t *vm, njs_value_t *value,
-	const nxt_str_t *src);
+    const nxt_str_t *src);
 njs_ret_t njs_string_base64url(njs_vm_t *vm, njs_value_t *value,
-	const nxt_str_t *src);
+    const nxt_str_t *src);
 void njs_string_copy(njs_value_t *dst, njs_value_t *src);
 njs_ret_t njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string,
     njs_value_t *value);

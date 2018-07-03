@@ -716,8 +716,8 @@ njs_string_prototype_value_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
  */
 
 static njs_ret_t
-njs_string_prototype_to_string(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
-    njs_index_t unused)
+njs_string_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
 {
     nxt_int_t          ret;
     nxt_str_t          enc, str;

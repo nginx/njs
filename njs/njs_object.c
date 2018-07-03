@@ -631,7 +631,8 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     return NXT_OK;
 }
 
-njs_array_t*
+
+njs_array_t *
 njs_object_keys_array(njs_vm_t *vm, const njs_value_t *object)
 {
     size_t             size;

@@ -13,7 +13,8 @@
 #define njs_eval_error(vm, fmt, ...)                                          \
     njs_exception_error_create(vm, NJS_OBJECT_EVAL_ERROR, fmt, ##__VA_ARGS__)
 #define njs_internal_error(vm, fmt, ...)                                      \
-    njs_exception_error_create(vm, NJS_OBJECT_INTERNAL_ERROR, fmt, ##__VA_ARGS__)
+    njs_exception_error_create(vm, NJS_OBJECT_INTERNAL_ERROR, fmt,            \
+                               ##__VA_ARGS__)
 #define njs_range_error(vm, fmt, ...)                                         \
     njs_exception_error_create(vm, NJS_OBJECT_RANGE_ERROR, fmt, ##__VA_ARGS__)
 #define njs_reference_error(vm, fmt, ...)                                     \

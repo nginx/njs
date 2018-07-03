@@ -43,8 +43,8 @@ static njs_ret_t njs_fs_write_file_sync(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, int default_flags);
-static njs_ret_t njs_fs_write_file_sync_internal(njs_vm_t *vm, njs_value_t *args,
-    nxt_uint_t nargs, int default_flags);
+static njs_ret_t njs_fs_write_file_sync_internal(njs_vm_t *vm,
+    njs_value_t *args, nxt_uint_t nargs, int default_flags);
 static njs_ret_t njs_fs_done(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 
