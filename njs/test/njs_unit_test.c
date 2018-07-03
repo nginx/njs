@@ -6117,6 +6117,30 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("new Number"),
       nxt_string("0") },
 
+    { nxt_string("new Number(undefined)"),
+      nxt_string("NaN") },
+
+    { nxt_string("new Number(null)"),
+      nxt_string("0") },
+
+    { nxt_string("new Number(true)"),
+      nxt_string("1") },
+
+    { nxt_string("new Number(false)"),
+      nxt_string("0") },
+
+    { nxt_string("Number(undefined)"),
+      nxt_string("NaN") },
+
+    { nxt_string("Number(null)"),
+      nxt_string("0") },
+
+    { nxt_string("Number(true)"),
+      nxt_string("1") },
+
+    { nxt_string("Number(false)"),
+      nxt_string("0") },
+
     { nxt_string("Number(123)"),
       nxt_string("123") },
 

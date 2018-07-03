@@ -377,7 +377,7 @@ njs_number_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     if (vm->top_frame->ctor) {
-        object = njs_object_value_alloc(vm, value, value->type);
+        object = njs_object_value_alloc(vm, value, NJS_NUMBER);
         if (nxt_slow_path(object == NULL)) {
             return NXT_ERROR;
         }
@@ -387,7 +387,7 @@ njs_number_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         vm->retval.data.truth = 1;
 
     } else {
-        vm->retval = *value;
+        njs_value_number_set(&vm->retval, value->data.u.number);
     }
 
     return NXT_OK;
