@@ -127,25 +127,25 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("-0O777"),
       nxt_string("-511") },
 
+    { nxt_string("0o"),
+      nxt_string("SyntaxError: Unexpected token \"0o\" in 1") },
+
+    { nxt_string("0O778"),
+      nxt_string("SyntaxError: Unexpected token \"0O778\" in 1") },
+
     /* Legacy Octal Numbers are deprecated. */
 
     { nxt_string("00"),
-      nxt_string("SyntaxError: Unexpected token \"\" in 1") },
+      nxt_string("SyntaxError: Unexpected token \"00\" in 1") },
 
     { nxt_string("08"),
-      nxt_string("SyntaxError: Unexpected token \"\" in 1") },
+      nxt_string("SyntaxError: Unexpected token \"08\" in 1") },
 
     { nxt_string("09"),
-      nxt_string("SyntaxError: Unexpected token \"\" in 1") },
+      nxt_string("SyntaxError: Unexpected token \"09\" in 1") },
 
     { nxt_string("0011"),
-      nxt_string("SyntaxError: Unexpected token \"\" in 1") },
-
-    { nxt_string("0o"),
-      nxt_string("SyntaxError: Unexpected token \"\" in 1") },
-
-    { nxt_string("0O778"),
-      nxt_string("SyntaxError: Unexpected token \"\" in 1") },
+      nxt_string("SyntaxError: Unexpected token \"00\" in 1") },
 
     /* Binary Numbers. */
 
@@ -162,10 +162,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("-255") },
 
     { nxt_string("0b"),
-      nxt_string("SyntaxError: Unexpected token \"\" in 1") },
+      nxt_string("SyntaxError: Unexpected token \"0b\" in 1") },
 
     { nxt_string("0B12"),
-      nxt_string("SyntaxError: Unexpected token \"\" in 1") },
+      nxt_string("SyntaxError: Unexpected token \"0B12\" in 1") },
 
     /* Hex Numbers. */
 
@@ -182,7 +182,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("48879") },
 
     { nxt_string("0x"),
-      nxt_string("SyntaxError: Unexpected token \"\" in 1") },
+      nxt_string("SyntaxError: Unexpected token \"0x\" in 1") },
 
     { nxt_string("0xffff."),
       nxt_string("SyntaxError: Unexpected token \"\" in 1") },

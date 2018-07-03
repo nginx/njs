@@ -21,7 +21,7 @@ struct njs_lexer_multi_s {
 static njs_token_t njs_lexer_next_token(njs_lexer_t *lexer);
 static njs_token_t njs_lexer_word(njs_lexer_t *lexer, u_char c);
 static njs_token_t njs_lexer_string(njs_lexer_t *lexer, u_char quote);
-static njs_token_t njs_lexer_number(njs_lexer_t *lexer);
+static njs_token_t njs_lexer_number(njs_lexer_t *lexer, u_char c);
 static njs_token_t njs_lexer_multi(njs_lexer_t *lexer,
     njs_token_t token, nxt_uint_t n, const njs_lexer_multi_t *multi);
 static njs_token_t njs_lexer_division(njs_lexer_t *lexer,
@@ -316,7 +316,7 @@ njs_lexer_next_token(njs_lexer_t *lexer)
             return njs_lexer_string(lexer, c);
 
         case NJS_TOKEN_DIGIT:
-            return njs_lexer_number(lexer);
+            return njs_lexer_number(lexer, c);
 
         case NJS_TOKEN_ASSIGNMENT:
             n = nxt_nitems(njs_assignment_token),
@@ -523,12 +523,11 @@ njs_lexer_string(njs_lexer_t *lexer, u_char quote)
 
 
 static njs_token_t
-njs_lexer_number(njs_lexer_t *lexer)
+njs_lexer_number(njs_lexer_t *lexer, u_char c)
 {
-    u_char  c, *p;
+    const u_char  *p;
 
     p = lexer->start;
-    c = p[-1];
 
     if (c == '0' && p != lexer->end) {
 
@@ -538,14 +537,12 @@ njs_lexer_number(njs_lexer_t *lexer)
             p++;
 
             if (p == lexer->end) {
-                return NJS_TOKEN_ILLEGAL;
+                goto illegal_token;
             }
 
-            lexer->start = p;
-            lexer->number = njs_number_hex_parse((const u_char **) &lexer->start,
-                                                 lexer->end);
+            lexer->number = njs_number_hex_parse(&p, lexer->end);
 
-            return NJS_TOKEN_NUMBER;
+            goto done;
         }
 
         /* Octal literal values. */
@@ -554,19 +551,16 @@ njs_lexer_number(njs_lexer_t *lexer)
             p++;
 
             if (p == lexer->end) {
-                return NJS_TOKEN_ILLEGAL;
+                goto illegal_token;
             }
 
-            lexer->start = p;
-            lexer->number = njs_number_oct_parse((const u_char **) &lexer->start,
-                                                 lexer->end);
-            p = lexer->start;
+            lexer->number = njs_number_oct_parse(&p, lexer->end);
 
             if (p < lexer->end && (*p == '8' || *p == '9')) {
-                return NJS_TOKEN_ILLEGAL;
+                goto illegal_trailer;
             }
 
-            return NJS_TOKEN_NUMBER;
+            goto done;
         }
 
         /* Binary literal values. */
@@ -575,33 +569,44 @@ njs_lexer_number(njs_lexer_t *lexer)
             p++;
 
             if (p == lexer->end) {
-                return NJS_TOKEN_ILLEGAL;
+                goto illegal_token;
             }
 
-            lexer->start = p;
-            lexer->number = njs_number_bin_parse((const u_char **) &lexer->start,
-                                                 lexer->end);
-            p = lexer->start;
+            lexer->number = njs_number_bin_parse(&p, lexer->end);
 
             if (p < lexer->end && (*p >= '2' && *p <= '9')) {
-                return NJS_TOKEN_ILLEGAL;
+                goto illegal_trailer;
             }
 
-            return NJS_TOKEN_NUMBER;
+            goto done;
         }
 
         /* Legacy Octal literals are deprecated. */
 
         if (*p >= '0' && *p <= '9') {
-            return NJS_TOKEN_ILLEGAL;
+            goto illegal_trailer;
         }
     }
 
-    lexer->start = p - 1;
-    lexer->number = njs_number_dec_parse((const u_char **) &lexer->start,
-                                         lexer->end);
+    p--;
+    lexer->number = njs_number_dec_parse(&p, lexer->end);
+
+done:
+
+    lexer->start = (u_char *) p;
 
     return NJS_TOKEN_NUMBER;
+
+illegal_trailer:
+
+    p++;
+
+illegal_token:
+
+    lexer->text.start = lexer->start - 1;
+    lexer->text.length = p - lexer->text.start;
+
+    return NJS_TOKEN_ILLEGAL;
 }
 
 
