@@ -229,7 +229,6 @@ static nxt_int_t
 njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 {
     njs_vm_t   *vm;
-    nxt_int_t  ret;
     nxt_str_t  line, out;
 
     vm = njs_vm_create(vm_options);
@@ -266,11 +265,7 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
         add_history((char *) line.start);
 
-        ret = njs_process_script(vm, opts, &line, &out);
-        if (ret != NXT_OK) {
-            printf("shell: failed to get retval from VM\n");
-            continue;
-        }
+        njs_process_script(vm, opts, &line, &out);
 
         printf("%.*s\n", (int) out.length, out.start);
 
@@ -385,7 +380,7 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
     ret = njs_process_script(vm, opts, &script, &out);
     if (ret != NXT_OK) {
-        fprintf(stderr, "failed to get retval from VM\n");
+        fprintf(stderr, "%.*s\n", (int) out.length, out.start);
         ret = NXT_ERROR;
         goto done;
     }
@@ -426,16 +421,14 @@ njs_process_script(njs_vm_t *vm, njs_opts_t *opts, const nxt_str_t *script,
         }
 
         ret = njs_vm_run(vm);
-        if (ret == NXT_AGAIN) {
-            return ret;
-        }
     }
 
     if (njs_vm_retval_to_ext_string(vm, out) != NXT_OK) {
+        *out = nxt_string_value("failed to get retval from VM");
         return NXT_ERROR;
     }
 
-    return NXT_OK;
+    return ret;
 }
 
 
