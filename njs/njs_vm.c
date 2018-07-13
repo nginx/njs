@@ -3162,8 +3162,10 @@ again:
         if (nxt_slow_path(src->type == NJS_OBJECT_INTERNAL_ERROR)) {
 
             /* MemoryError is a nonextensible internal error. */
+
             if (!src->data.u.object->extensible) {
-                src = &njs_string_memory_error;
+                njs_string_get(&njs_string_memory_error, dst);
+                return NXT_OK;
             }
         }
 
