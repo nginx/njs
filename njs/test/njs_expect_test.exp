@@ -203,6 +203,13 @@ njs_test {
      "JSON.parse(Error()\r\nSyntaxError: Unexpected token \"\" in 1"}
 }
 
+njs_test {
+    {"try { console.log({ toString: function() { throw 'test'; } }) } catch (e) {}\r\n"
+     "undefined"}
+    {"function f() { throw 't' }; try { console.log({ toString: function() { return f() } }) } catch (e) {}\r\n"
+     "undefined"}
+}
+
 # Non-ASCII characters
 njs_test {
     {"'絵文字'\r\n"

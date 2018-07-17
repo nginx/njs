@@ -3273,8 +3273,9 @@ fail:
 static njs_ret_t
 njs_object_value_to_string(njs_vm_t *vm, njs_value_t *value)
 {
-    u_char     *current;
-    njs_ret_t  ret;
+    u_char              *current;
+    njs_ret_t           ret;
+    njs_native_frame_t  *previous;
 
     static const njs_vmcode_1addr_t  value_to_string[] = {
         { .code = { .operation = njs_vmcode_value_to_string,
@@ -3298,6 +3299,14 @@ njs_object_value_to_string(njs_vm_t *vm, njs_value_t *value)
     njs_set_invalid(&vm->top_frame->trap_scratch);
     vm->top_frame->trap_values[0] = *value;
 
+    /*
+     * Prevent njs_vmcode_interpreter() to unwind the current frame if
+     * an exception happens.  It preserves the current frame state if
+     * njs_vm_value_to_ext_string() is called from within njs_vm_run().
+     */
+    previous = vm->top_frame->previous;
+    vm->top_frame->previous = NULL;
+
     ret = njs_vmcode_interpreter(vm);
 
     if (ret == NJS_STOP) {
@@ -3306,6 +3315,7 @@ njs_object_value_to_string(njs_vm_t *vm, njs_value_t *value)
     }
 
     vm->current = current;
+    vm->top_frame->previous = previous;
 
     return ret;
 }
