@@ -56,12 +56,20 @@ typedef struct {
 
 static void njs_encode_base64_core(nxt_str_t *dst, const nxt_str_t *src,
     const u_char *basis, nxt_uint_t padding);
+static njs_ret_t njs_decode_base64_core(njs_vm_t *vm,
+    njs_value_t *value, const nxt_str_t *src, const u_char *basis);
 static nxt_noinline void njs_string_slice_prop(njs_string_prop_t *string,
     njs_slice_prop_t *slice, njs_value_t *args, nxt_uint_t nargs);
 static nxt_noinline void njs_string_slice_args(njs_slice_prop_t *slice,
     njs_value_t *args, nxt_uint_t nargs);
 static njs_ret_t njs_string_from_char_code(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
+static njs_ret_t njs_string_bytes_from(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused);
+static njs_ret_t njs_string_bytes_from_array(njs_vm_t *vm,
+    const njs_value_t *value);
+static njs_ret_t njs_string_bytes_from_string(njs_vm_t *vm,
+    const njs_value_t *args, nxt_uint_t nargs);
 static njs_ret_t njs_string_starts_or_ends_with(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, nxt_bool_t starts);
 static njs_ret_t njs_string_prototype_pad(njs_vm_t *vm, njs_value_t *args,
@@ -99,6 +107,7 @@ static njs_ret_t njs_string_decode(njs_vm_t *vm, njs_value_t *value,
 
 
 #define njs_base64_encoded_length(len)  (((len + 2) / 3) * 4)
+#define njs_base64_decoded_length(len)  (((len + 3) / 4) * 3)
 
 
 njs_ret_t
@@ -165,6 +174,8 @@ njs_string_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,
         return NXT_OK;
     }
 
+    njs_memory_error(vm);
+
     return NXT_ERROR;
 }
 
@@ -222,7 +233,38 @@ njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size,
         return string->start;
     }
 
+    njs_memory_error(vm);
+
     return NULL;
+}
+
+
+void
+njs_string_truncate(njs_value_t *value, uint32_t size)
+{
+    u_char  *dst, *src;
+
+    if (size <= NJS_STRING_SHORT) {
+        if (value->short_string.size != NJS_STRING_LONG) {
+            value->short_string.size = size;
+
+        } else {
+            value->short_string.size = size;
+            dst = value->short_string.start;
+            src = value->long_string.data->start;
+
+            while (size != 0) {
+                /* The maximum size is just 14 bytes. */
+                nxt_pragma_loop_disable_vectorization;
+
+                *dst++ = *src++;
+                size--;
+            }
+        }
+
+    } else {
+        value->long_string.size = size;
+    }
 }
 
 
@@ -551,6 +593,15 @@ static const njs_object_prop_t  njs_string_constructor_properties[] =
         .name = njs_string("prototype"),
         .value = njs_prop_handler(njs_object_prototype_create),
     },
+
+    /* String.bytesFrom(). */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("bytesFrom"),
+        .value = njs_native_function(njs_string_bytes_from, 0, NJS_SKIP_ARG,
+                                     NJS_SKIP_ARG, NJS_STRING_ARG),
+    },
+
 
     /* String.fromCharCode(). */
     {
@@ -1326,6 +1377,270 @@ njs_string_prototype_char_code_at(njs_vm_t *vm, njs_value_t *args,
 done:
 
     njs_value_number_set(&vm->retval, num);
+
+    return NXT_OK;
+}
+
+
+/*
+ * String.bytesFrom(array).
+ * Converts an array containing octets into a byte string.
+ *
+ * String.bytesFrom(string[, encoding]).
+ * Converts a string using provided encoding: hex, base64, base64url to
+ * a byte string.
+ */
+
+static njs_ret_t
+njs_string_bytes_from(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    const njs_value_t  *value;
+
+    value = njs_arg(args, nargs, 1);
+
+    if (njs_is_string(value)) {
+        return njs_string_bytes_from_string(vm, args, nargs);
+    }
+
+    if (njs_is_array(value)) {
+        return njs_string_bytes_from_array(vm, njs_arg(args, nargs, 1));
+    }
+
+    njs_type_error(vm, "value must be a string or array");
+
+    return NJS_ERROR;
+}
+
+
+static njs_ret_t
+njs_string_bytes_from_array(njs_vm_t *vm, const njs_value_t *value)
+{
+    u_char       *p;
+    uint32_t     i, length;
+    njs_array_t  *array;
+    njs_value_t  *octet;
+
+    array = value->data.u.array;
+    length = array->length;
+
+    for (i = 0; i < length; i++) {
+        if (!njs_is_numeric(&array->start[i])) {
+            njs_vm_trap_value(vm, &array->start[i]);
+            return NJS_TRAP_NUMBER_ARG;
+        }
+    }
+
+    p = njs_string_alloc(vm, &vm->retval, length, 0);
+    if (nxt_slow_path(p == NULL)) {
+        return NJS_ERROR;
+    }
+
+    octet = array->start;
+
+    while (length != 0) {
+        *p++ = (u_char) njs_number_to_integer(octet->data.u.number);
+        octet++;
+        length--;
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_ret_t
+njs_string_bytes_from_string(njs_vm_t *vm, const njs_value_t *args,
+    nxt_uint_t nargs)
+{
+    nxt_str_t          enc, str;
+    const njs_value_t  *enc_val;
+
+    enc_val = njs_arg(args, nargs, 2);
+
+    if (nxt_slow_path(nargs > 1 && !njs_is_string(enc_val))) {
+        njs_type_error(vm, "encoding must be a string");
+        return NJS_ERROR;
+    }
+
+    njs_string_get(enc_val, &enc);
+    njs_string_get(&args[1], &str);
+
+    if (enc.length == 3 && memcmp(enc.start, "hex", 3) == 0) {
+        return njs_string_decode_hex(vm, &vm->retval, &str);
+
+    } else if (enc.length == 6 && memcmp(enc.start, "base64", 6) == 0) {
+        return njs_string_decode_base64(vm, &vm->retval, &str);
+
+    } else if (enc.length == 9 && memcmp(enc.start, "base64url", 6) == 0) {
+        return njs_string_decode_base64url(vm, &vm->retval, &str);
+    }
+
+    njs_type_error(vm, "Unknown encoding: '%.*s'", (int) enc.length,
+                   enc.start);
+
+    return NJS_ERROR;
+}
+
+
+nxt_noinline njs_ret_t
+njs_string_decode_hex(njs_vm_t *vm, njs_value_t *value, const nxt_str_t *src)
+{
+    u_char        *p, *dst;
+    size_t        len;
+    nxt_int_t     c;
+    nxt_uint_t    i, n;
+    const u_char  *start;
+
+    len = src->length;
+    start = src->start;
+
+    if (nxt_slow_path(len == 0)) {
+        vm->retval = njs_string_empty;
+        return NJS_OK;
+    }
+
+    dst = njs_string_alloc(vm, value, len / 2, 0);
+    if (nxt_slow_path(dst == NULL)) {
+        return NJS_ERROR;
+    }
+
+    n = 0;
+    p = dst;
+
+    for (i = 0; i < len; i++) {
+        c = njs_char_to_hex(start[i]);
+        if (nxt_slow_path(c < 0)) {
+            break;
+        }
+
+        n = n * 16 + c;
+
+        if ((i & 1) != 0) {
+            *p++ = (u_char) n;
+            n = 0;
+        }
+    }
+
+    if (nxt_slow_path((size_t) (p - dst) != (len / 2))) {
+        njs_string_truncate(value, p - dst);
+    }
+
+    return NJS_OK;
+}
+
+
+nxt_noinline njs_ret_t
+njs_string_decode_base64(njs_vm_t *vm, njs_value_t *value, const nxt_str_t *src)
+{
+    static u_char   basis64[] = {
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 62, 77, 77, 77, 63,
+        52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 77, 77, 77, 77, 77, 77,
+        77,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+        15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 77, 77, 77, 77, 77,
+        77, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+        41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 77, 77, 77, 77, 77,
+
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77
+    };
+
+    return njs_decode_base64_core(vm, value, src, basis64);
+}
+
+
+nxt_noinline njs_ret_t
+njs_string_decode_base64url(njs_vm_t *vm, njs_value_t *value,
+    const nxt_str_t *src)
+{
+    static u_char   basis64[] = {
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 62, 77, 77,
+        52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 77, 77, 77, 77, 77, 77,
+        77,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+        15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 77, 77, 77, 77, 63,
+        77, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+        41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 77, 77, 77, 77, 77,
+
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
+        77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77
+    };
+
+    return njs_decode_base64_core(vm, value, src, basis64);
+}
+
+
+static njs_ret_t
+njs_decode_base64_core(njs_vm_t *vm, njs_value_t *value, const nxt_str_t *src,
+    const u_char *basis)
+{
+    size_t  len, dst_len;
+    u_char  *d, *s, *dst;
+
+    if (nxt_slow_path(src->length == 0)) {
+        vm->retval = njs_string_empty;
+        return NJS_OK;
+    }
+
+    for (len = 0; len < src->length; len++) {
+        if (src->start[len] == '=') {
+            break;
+        }
+
+        if (basis[src->start[len]] == 77) {
+            break;
+        }
+    }
+
+    if (len % 4 == 1) {
+        /* Rounding down to integer multiple of 4. */
+        len -= 1;
+    }
+
+    dst_len = njs_base64_decoded_length(len);
+
+    dst = njs_string_alloc(vm, value, dst_len, 0);
+    if (nxt_slow_path(dst == NULL)) {
+        return NJS_ERROR;
+    }
+
+    s = src->start;
+    d = dst;
+
+    while (len > 3) {
+        *d++ = (u_char) (basis[s[0]] << 2 | basis[s[1]] >> 4);
+        *d++ = (u_char) (basis[s[1]] << 4 | basis[s[2]] >> 2);
+        *d++ = (u_char) (basis[s[2]] << 6 | basis[s[3]]);
+
+        s += 4;
+        len -= 4;
+    }
+
+    if (len > 1) {
+        *d++ = (u_char) (basis[s[0]] << 2 | basis[s[1]] >> 4);
+    }
+
+    if (len > 2) {
+        *d++ = (u_char) (basis[s[1]] << 4 | basis[s[2]] >> 2);
+    }
+
+    if (nxt_slow_path((size_t) (d - dst) != dst_len)) {
+        njs_string_truncate(value, d - dst);
+    }
 
     return NXT_OK;
 }

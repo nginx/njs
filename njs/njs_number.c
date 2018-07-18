@@ -215,8 +215,8 @@ njs_number_bin_parse(const u_char **start, const u_char *end)
 uint64_t
 njs_number_hex_parse(const u_char **start, const u_char *end)
 {
-    u_char        c;
     uint64_t      num;
+    nxt_int_t     n;
     const u_char  *p;
 
     p = *start;
@@ -224,23 +224,12 @@ njs_number_hex_parse(const u_char **start, const u_char *end)
     num = 0;
 
     while (p < end) {
-        c = (u_char) (*p | 0x20);
-
-        /* Values less than '0' become >= 208. */
-        c = c - '0';
-
-        if (c > 9) {
-            /* Values less than 'a' become >= 159. */
-            c = c - ('a' - '0');
-
-            if (nxt_slow_path(c > 5)) {
-                break;
-            }
-
-            c += 10;
+        n = njs_char_to_hex(*p);
+        if (nxt_slow_path(n < 0)) {
+            break;
         }
 
-        num = num * 16 + c;
+        num = num * 16 + n;
         p++;
     }
 

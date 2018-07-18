@@ -34,6 +34,29 @@ njs_ret_t njs_number_parse_float(njs_vm_t *vm, njs_value_t *args,
 nxt_noinline uint32_t njs_number_to_integer(double num);
 
 
+nxt_inline nxt_int_t
+njs_char_to_hex(u_char c)
+{
+    c |= 0x20;
+
+    /* Values less than '0' become >= 208. */
+    c = c - '0';
+
+    if (c > 9) {
+        /* Values less than 'a' become >= 159. */
+        c = c - ('a' - '0');
+
+        if (nxt_slow_path(c > 5)) {
+            return -1;
+        }
+
+        c += 10;
+    }
+
+    return c;
+}
+
+
 extern const njs_object_init_t  njs_number_constructor_init;
 extern const njs_object_init_t  njs_number_prototype_init;
 

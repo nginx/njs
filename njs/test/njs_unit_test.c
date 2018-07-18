@@ -4656,6 +4656,69 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'абвг'.padEnd(10, 'ДЕЖЗ')"),
       nxt_string("абвгДЕЖЗДЕ") },
 
+    { nxt_string("String.bytesFrom({})"),
+      nxt_string("TypeError: value must be a string or array") },
+
+    { nxt_string("String.bytesFrom([1, 2, 0.23, '5', 'A']).toString('hex')"),
+      nxt_string("0102000500") },
+
+    { nxt_string("String.bytesFrom([NaN, Infinity]).toString('hex')"),
+      nxt_string("0000") },
+
+    { nxt_string("String.bytesFrom('', 'hex')"),
+      nxt_string("") },
+
+    { nxt_string("String.bytesFrom('00aabbcc', 'hex').toString('hex')"),
+      nxt_string("00aabbcc") },
+
+    { nxt_string("String.bytesFrom('deadBEEF##', 'hex').toString('hex')"),
+      nxt_string("deadbeef") },
+
+    { nxt_string("String.bytesFrom('aa0', 'hex').toString('hex')"),
+      nxt_string("aa") },
+
+    { nxt_string("String.bytesFrom('', 'base64')"),
+      nxt_string("") },
+
+    { nxt_string("String.bytesFrom('#', 'base64')"),
+      nxt_string("") },
+
+    { nxt_string("String.bytesFrom('QQ==', 'base64')"),
+      nxt_string("A") },
+
+    { nxt_string("String.bytesFrom('QQ', 'base64')"),
+      nxt_string("A") },
+
+    { nxt_string("String.bytesFrom('QUI=', 'base64')"),
+      nxt_string("AB") },
+
+    { nxt_string("String.bytesFrom('QUI', 'base64')"),
+      nxt_string("AB") },
+
+    { nxt_string("String.bytesFrom('QUJD', 'base64')"),
+      nxt_string("ABC") },
+
+    { nxt_string("String.bytesFrom('QUJDRA==', 'base64')"),
+      nxt_string("ABCD") },
+
+    { nxt_string("String.bytesFrom('', 'base64url')"),
+      nxt_string("") },
+
+    { nxt_string("String.bytesFrom('QQ', 'base64url')"),
+      nxt_string("A") },
+
+    { nxt_string("String.bytesFrom('QUI', 'base64url')"),
+      nxt_string("AB") },
+
+    { nxt_string("String.bytesFrom('QUJD', 'base64url')"),
+      nxt_string("ABC") },
+
+    { nxt_string("String.bytesFrom('QUJDRA', 'base64url')"),
+      nxt_string("ABCD") },
+
+    { nxt_string("String.bytesFrom('QUJDRA#', 'base64url')"),
+      nxt_string("ABCD") },
+
     { nxt_string("encodeURI()"),
       nxt_string("undefined")},
 
