@@ -15,6 +15,8 @@
 #include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_utf8.h>
+#include <nxt_dtoa.h>
+#include <nxt_strtod.h>
 #include <nxt_djb_hash.h>
 #include <nxt_trace.h>
 #include <nxt_array.h>

@@ -20,7 +20,6 @@ int64_t njs_number_radix_parse(const u_char **start, const u_char *end,
     uint8_t radix);
 njs_ret_t njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
     const njs_value_t *number);
-size_t njs_num_to_buf(double num, u_char *buf, size_t size);
 njs_ret_t njs_number_constructor(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 njs_ret_t njs_number_global_is_nan(njs_vm_t *vm, njs_value_t *args,

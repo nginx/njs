@@ -66,91 +66,7 @@ njs_value_to_index(const njs_value_t *value)
 double
 njs_number_dec_parse(const u_char **start, const u_char *end)
 {
-    u_char        c;
-    double        num, frac, scale, exponent;
-    nxt_bool_t    minus;
-    const u_char  *e, *p;
-
-    p = *start;
-
-    num = 0;
-
-    while (p < end) {
-        /* Values less than '0' become >= 208. */
-        c = *p - '0';
-
-        if (nxt_slow_path(c > 9)) {
-            break;
-        }
-
-        num = num * 10 + c;
-        p++;
-    }
-
-    if (p < end && *p == '.') {
-
-        frac = 0;
-        scale = 1;
-
-        for (p++; p < end; p++) {
-            /* Values less than '0' become >= 208. */
-            c = *p - '0';
-
-            if (nxt_slow_path(c > 9)) {
-                break;
-            }
-
-            frac = frac * 10 + c;
-            scale *= 10;
-        }
-
-        num += frac / scale;
-    }
-
-    e = p + 1;
-
-    if (e < end && (*p == 'e' || *p == 'E')) {
-        minus = 0;
-
-        if (e + 1 < end) {
-            if (*e == '-') {
-                e++;
-                minus = 1;
-
-            } else if (*e == '+') {
-                e++;
-            }
-        }
-
-        /* Values less than '0' become >= 208. */
-        c = *e - '0';
-
-        if (nxt_fast_path(c <= 9)) {
-            exponent = c;
-            p = e + 1;
-
-            while (p < end) {
-                /* Values less than '0' become >= 208. */
-                c = *p - '0';
-
-                if (nxt_slow_path(c > 9)) {
-                    break;
-                }
-
-                exponent = exponent * 10 + c;
-                p++;
-            }
-
-            if (num != 0) {
-                exponent = minus ? -exponent : exponent;
-                num = num * pow(10.0, exponent);
-            }
-        }
-    }
-
-    *start = p;
-
-    return num;
+    return nxt_strtod(start, end);
 }
 
 
@@ -312,7 +228,7 @@ njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
         }
 
     } else {
-        size = njs_num_to_buf(num, buf, sizeof(buf));
+        size = nxt_dtoa(num, (char *) buf);
 
         return njs_string_new(vm, string, buf, size, size);
     }
@@ -320,34 +236,6 @@ njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
     *string = *value;
 
     return NXT_OK;
-}
-
-
-size_t
-njs_num_to_buf(double num, u_char *buf, size_t size)
-{
-    double      n;
-    const char  *fmt;
-
-    n = fabs(num);
-
-    if (n == 0) {
-        fmt = "%g";
-
-    } else if (n < 1) {
-        fmt = "%f";
-
-    } else if (n < 1000000) {
-        fmt = "%g";
-
-    } else if (n < 1e20) {
-        fmt = "%1.f";
-
-    } else {
-        fmt = "%1.e";
-    }
-
-    return snprintf((char *) buf, size, fmt, num);
 }
 
 

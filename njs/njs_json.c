@@ -1844,7 +1844,7 @@ njs_json_append_number(njs_json_stringify_t *stringify, njs_value_t *value)
             return NXT_ERROR;
         }
 
-        size = njs_num_to_buf(num, p, 64);
+        size = nxt_dtoa(num, (char *) p);
 
         njs_json_buf_written(stringify, size);
     }

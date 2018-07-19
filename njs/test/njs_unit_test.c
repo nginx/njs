@@ -93,19 +93,44 @@ static njs_unit_test_t  njs_test[] =
 
     /* Numbers. */
 
+    { nxt_string("0"),
+      nxt_string("0") },
+
+    { nxt_string("-0"),
+      nxt_string("-0") },
+
+    { nxt_string("0.1"),
+      nxt_string("0.1") },
+
+    { nxt_string("0.000001"),
+      nxt_string("0.000001") },
+
+    { nxt_string("0.00000123456"),
+      nxt_string("0.00000123456") },
+
+    { nxt_string("0.0000001"),
+      nxt_string("1e-7") },
+
+    { nxt_string("1.1000000"),
+      nxt_string("1.1") },
+
+    { nxt_string("99999999999999999999"),
+      nxt_string("100000000000000000000") },
+
+    { nxt_string("99999999999999999999.111"),
+      nxt_string("100000000000000000000") },
+
     { nxt_string("999999999999999999999"),
       nxt_string("1e+21") },
 
-#if 0
     { nxt_string("9223372036854775808"),
-      nxt_string("9223372036854775808") },
+      nxt_string("9223372036854776000") },
 
     { nxt_string("18446744073709551616"),
       nxt_string("18446744073709552000") },
 
     { nxt_string("1.7976931348623157E+308"),
       nxt_string("1.7976931348623157e+308") },
-#endif
 
     { nxt_string("+1"),
       nxt_string("1") },
@@ -223,16 +248,16 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("57") },
 
     { nxt_string("5.7e-1"),
-      nxt_string("0.570000") },
+      nxt_string("0.57") },
 
     { nxt_string("-5.7e-1"),
-      nxt_string("-0.570000") },
+      nxt_string("-0.57") },
 
     { nxt_string("1.1e-01"),
-      nxt_string("0.110000") },
+      nxt_string("0.11") },
 
     { nxt_string("5.7e-2"),
-      nxt_string("0.057000") },
+      nxt_string("0.057") },
 
     { nxt_string("1.1e+01"),
       nxt_string("11") },
@@ -629,7 +654,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("NaN") },
 
     { nxt_string("var a = 0.1; a **= -2"),
-      nxt_string("100") },
+      nxt_string("99.99999999999999") },
 
     { nxt_string("var a = 1; a **= NaN"),
       nxt_string("NaN") },
@@ -6210,6 +6235,24 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Number('123')"),
       nxt_string("123") },
 
+    { nxt_string("Number('0.'+'1'.repeat(128))"),
+      nxt_string("0.1111111111111111") },
+
+    { nxt_string("Number('1'.repeat(128))"),
+      nxt_string("1.1111111111111113e+127") },
+
+    { nxt_string("Number('1'.repeat(129))"),
+      nxt_string("1.1111111111111112e+128") },
+
+    { nxt_string("Number('1'.repeat(129))"),
+      nxt_string("1.1111111111111112e+128") },
+
+    { nxt_string("Number('1'.repeat(129)+'e-100')"),
+      nxt_string("1.1111111111111112e+28") },
+
+    { nxt_string("Number('1'.repeat(310))"),
+      nxt_string("Infinity") },
+
     { nxt_string("var o = { valueOf: function() { return 123 } };"
                  "Number(o)"),
       nxt_string("123") },
@@ -7530,7 +7573,7 @@ static njs_unit_test_t  njs_test[] =
     /* Math. */
 
     { nxt_string("Math.PI"),
-      nxt_string("3.14159") },
+      nxt_string("3.141592653589793") },
 
     { nxt_string("Math.abs()"),
       nxt_string("NaN") },
@@ -7788,8 +7831,8 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.cbrt(-Infinity)"),
       nxt_string("-Infinity") },
 
-    { nxt_string("Math.cbrt('27')"),
-      nxt_string("3") },
+    { nxt_string("(Math.cbrt('27') - 3) < 1e-15"),
+      nxt_string("true") },
 
     { nxt_string("Math.cbrt(-1)"),
       nxt_string("-1") },
@@ -8570,10 +8613,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("57") },
 
     { nxt_string("parseFloat('-5.7e-1')"),
-      nxt_string("-0.570000") },
+      nxt_string("-0.57") },
 
     { nxt_string("parseFloat('-5.e-1')"),
-      nxt_string("-0.500000") },
+      nxt_string("-0.5") },
 
     { nxt_string("parseFloat('5.7e+01')"),
       nxt_string("57") },
@@ -8582,7 +8625,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("57") },
 
     { nxt_string("parseFloat('-5.7e-1abc')"),
-      nxt_string("-0.570000") },
+      nxt_string("-0.57") },
 
     { nxt_string("parseFloat('-5.7e')"),
       nxt_string("-5.7") },
@@ -8913,6 +8956,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("JSON.stringify(123)"),
       nxt_string("123") },
+
+    { nxt_string("JSON.stringify(0.00000123)"),
+      nxt_string("0.00000123") },
 
     { nxt_string("JSON.stringify(new Number(123))"),
       nxt_string("123") },

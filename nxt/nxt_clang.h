@@ -86,6 +86,38 @@ nxt_leading_zeros(uint32_t x)
 #endif
 
 
+#if (NXT_HAVE_BUILTIN_CLZLL)
+#define nxt_leading_zeros64(x)  (((x) == 0) ? 64 : __builtin_clzll(x))
+
+#else
+
+nxt_inline uint64_t
+nxt_leading_zeros64(uint64_t x)
+{
+    uint64_t  n;
+
+    /*
+     * There is no sense to optimize this function, since almost
+     * all platforms nowadays support the built-in instruction.
+     */
+
+    if (x == 0) {
+        return 64;
+    }
+
+    n = 0;
+
+    while ((x & 0x8000000000000000) == 0) {
+        n++;
+        x <<= 1;
+    }
+
+    return n;
+}
+
+#endif
+
+
 #if (NXT_HAVE_GCC_ATTRIBUTE_VISIBILITY)
 #define NXT_EXPORT         __attribute__((visibility("default")))
 

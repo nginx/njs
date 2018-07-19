@@ -34,6 +34,9 @@ $(NXT_BUILDDIR)/libnjs.a: \
 	$(NXT_BUILDDIR)/njs_parser_expression.o \
 	$(NXT_BUILDDIR)/njs_generator.o \
 	$(NXT_BUILDDIR)/njs_disassembler.o \
+	$(NXT_BUILDDIR)/nxt_diyfp.o \
+	$(NXT_BUILDDIR)/nxt_dtoa.o \
+	$(NXT_BUILDDIR)/nxt_strtod.o \
 	$(NXT_BUILDDIR)/nxt_djb_hash.o \
 	$(NXT_BUILDDIR)/nxt_utf8.o \
 	$(NXT_BUILDDIR)/nxt_array.o \
@@ -76,6 +79,9 @@ $(NXT_BUILDDIR)/libnjs.a: \
 		$(NXT_BUILDDIR)/njs_parser_expression.o \
 		$(NXT_BUILDDIR)/njs_generator.o \
 		$(NXT_BUILDDIR)/njs_disassembler.o \
+		$(NXT_BUILDDIR)/nxt_diyfp.o \
+		$(NXT_BUILDDIR)/nxt_dtoa.o \
+		$(NXT_BUILDDIR)/nxt_strtod.o \
 		$(NXT_BUILDDIR)/nxt_djb_hash.o \
 		$(NXT_BUILDDIR)/nxt_utf8.o \
 		$(NXT_BUILDDIR)/nxt_array.o \

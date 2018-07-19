@@ -4,6 +4,9 @@ NXT_LIB =	nxt
 
 $(NXT_BUILDDIR)/libnxt.a: \
 	$(NXT_LIB)/nxt_auto_config.h \
+	$(NXT_BUILDDIR)/nxt_diyfp.o \
+	$(NXT_BUILDDIR)/nxt_dtoa.o \
+	$(NXT_BUILDDIR)/nxt_strtod.o \
 	$(NXT_BUILDDIR)/nxt_djb_hash.o \
 	$(NXT_BUILDDIR)/nxt_utf8.o \
 	$(NXT_BUILDDIR)/nxt_array.o \
@@ -20,6 +23,9 @@ $(NXT_BUILDDIR)/libnxt.a: \
 	$(NXT_BUILDDIR)/nxt_mem_cache_pool.o \
 
 	ar -r -c $(NXT_BUILDDIR)/libnxt.a \
+		$(NXT_BUILDDIR)/nxt_diyfp.o \
+		$(NXT_BUILDDIR)/nxt_dtoa.o \
+		$(NXT_BUILDDIR)/nxt_strtod.o \
 		$(NXT_BUILDDIR)/nxt_djb_hash.o \
 		$(NXT_BUILDDIR)/nxt_utf8.o \
 		$(NXT_BUILDDIR)/nxt_array.o \
@@ -33,6 +39,36 @@ $(NXT_BUILDDIR)/libnxt.a: \
 		$(NXT_BUILDDIR)/nxt_malloc.o \
 		$(NXT_BUILDDIR)/nxt_trace.o \
 		$(NXT_BUILDDIR)/nxt_mem_cache_pool.o \
+
+$(NXT_BUILDDIR)/nxt_diyfp.o: \
+	$(NXT_LIB)/nxt_types.h \
+	$(NXT_LIB)/nxt_clang.h \
+	$(NXT_LIB)/nxt_diyfp.h \
+	$(NXT_LIB)/nxt_diyfp.c \
+
+	$(NXT_CC) -c -o $(NXT_BUILDDIR)/nxt_diyfp.o $(NXT_CFLAGS) \
+		-I$(NXT_LIB) \
+		$(NXT_LIB)/nxt_diyfp.c
+
+$(NXT_BUILDDIR)/nxt_dtoa.o: \
+	$(NXT_LIB)/nxt_types.h \
+	$(NXT_LIB)/nxt_clang.h \
+	$(NXT_LIB)/nxt_dtoa.h \
+	$(NXT_LIB)/nxt_dtoa.c \
+
+	$(NXT_CC) -c -o $(NXT_BUILDDIR)/nxt_dtoa.o $(NXT_CFLAGS) \
+		-I$(NXT_LIB) \
+		$(NXT_LIB)/nxt_dtoa.c
+
+$(NXT_BUILDDIR)/nxt_strtod.o: \
+	$(NXT_LIB)/nxt_types.h \
+	$(NXT_LIB)/nxt_clang.h \
+	$(NXT_LIB)/nxt_strtod.h \
+	$(NXT_LIB)/nxt_strtod.c \
+
+	$(NXT_CC) -c -o $(NXT_BUILDDIR)/nxt_strtod.o $(NXT_CFLAGS) \
+		-I$(NXT_LIB) \
+		$(NXT_LIB)/nxt_strtod.c
 
 $(NXT_BUILDDIR)/nxt_murmur_hash.o: \
 	$(NXT_LIB)/nxt_types.h \

@@ -50,6 +50,11 @@ typedef uintptr_t       nxt_uint_t;
 #endif
 
 
+#if (NXT_HAVE_UNSIGNED_INT128)
+typedef unsigned __int128 nxt_uint128_t;
+#endif
+
+
 typedef nxt_uint_t      nxt_bool_t;
 
 
