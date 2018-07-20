@@ -106,6 +106,9 @@ nxt_grisu2_gen(nxt_diyfp_t W, nxt_diyfp_t Mp, uint64_t delta, char *start,
 
     p = start;
 
+    /* GCC 4.2 complains about uninitialized d. */
+    d = 0;
+
     kappa = nxt_dec_count(p1);
 
     while (kappa > 0) {
