@@ -9,6 +9,7 @@ NXT_SYSTEM=`uname -s 2>/dev/null`
 case "$NXT_SYSTEM" in
 
     Linux)
+        nxt_define=NXT_LINUX . ${NXT_AUTO}define
         NXT_SYSTEM_VERSION=`uname -r 2>/dev/null`
         # Linux uname -p can return "unknown".
         NXT_SYSTEM_PLATFORM=`uname -m 2>/dev/null`

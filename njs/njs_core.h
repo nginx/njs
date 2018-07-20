@@ -9,6 +9,7 @@
 
 #include <nxt_auto_config.h>
 
+#include <nxt_unix.h>
 #include <nxt_types.h>
 #include <nxt_clang.h>
 #include <nxt_alignment.h>

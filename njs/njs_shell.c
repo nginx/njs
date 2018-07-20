@@ -150,6 +150,14 @@ njs_get_options(njs_opts_t *opts, int argc, char** argv)
     char     *p;
     nxt_int_t  i, ret;
 
+    static const char  help[] =
+        "Interactive njs shell.\n"
+        "\n"
+        "Options:\n"
+        "  -v              print njs version and exit.\n"
+        "  -d              print disassembled code.\n"
+        "  <filename> | -  run code from a file or stdin.\n";
+
     ret = NXT_DONE;
 
     for (i = 1; i < argc; i++) {
@@ -165,24 +173,24 @@ njs_get_options(njs_opts_t *opts, int argc, char** argv)
         p++;
 
         switch (*p) {
+        case '?':
+        case 'h':
+            (void) write(STDIN_FILENO, help, nxt_length(help));
+            return ret;
+
         case 'd':
             opts->disassemble = 1;
             break;
 
+        case 'v':
         case 'V':
             opts->version = 1;
             break;
 
         default:
-            fprintf(stderr, "Unknown argument: \"%s\"\n", argv[i]);
-            ret = NXT_ERROR;
-
-            /* Fall through. */
-
-        case 'h':
-        case '?':
-            printf("Usage: %s [<file>|-] [-dV]\n", argv[0]);
-            return ret;
+            fprintf(stderr, "Unknown argument: \"%s\" "
+                    "try \"%s -h\" for available options\n", argv[i], argv[0]);
+            return NXT_ERROR;
         }
     }
 
