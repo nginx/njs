@@ -1825,7 +1825,7 @@ ngx_http_js_ext_get_response(njs_vm_t *vm, njs_value_t *value, void *obj,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    njs_vm_retval_set(ctx->vm, njs_value_arg(&ctx->args[1]));
+    njs_vm_retval_set(vm, njs_value_arg(&ctx->args[1]));
 
     return NJS_OK;
 }
@@ -1840,6 +1840,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     ngx_uint_t                cb_index, method, n, has_body;
     njs_value_t              *arg2, *options, *value;
     njs_function_t           *callback;
+    ngx_http_js_ctx_t        *ctx;
     ngx_http_request_t       *r, *sr;
     ngx_http_request_body_t  *rb;
 
@@ -1874,6 +1875,14 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     r = njs_value_data(njs_argument(args, 0));
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (ctx->vm != vm) {
+        njs_vm_error(vm, "subrequest can only be created for "
+                         "the primary request");
+        return NJS_ERROR;
+    }
 
     if (njs_vm_value_to_ext_string(vm, &uri_arg, njs_argument(args, 1), 0)
         == NJS_ERROR)
@@ -2150,14 +2159,15 @@ ngx_http_js_ext_get_parent(njs_vm_t *vm, njs_value_t *value, void *obj,
 
     r = (ngx_http_request_t *) obj;
 
-    ctx = ngx_http_get_module_ctx(r->parent, ngx_http_js_module);
+    ctx = r->parent ? ngx_http_get_module_ctx(r->parent, ngx_http_js_module)
+                    : NULL;
 
-    if (ctx == NULL) {
-        njs_vm_error(vm, "failed to get the parent context");
+    if (ctx == NULL || ctx->vm != vm) {
+        njs_vm_error(vm, "parent can only be returned for a subrequest");
         return NJS_ERROR;
     }
 
-    njs_vm_retval_set(ctx->vm, njs_value_arg(&ctx->args[0]));
+    njs_vm_retval_set(vm, njs_value_arg(&ctx->args[0]));
 
     return NJS_OK;
 }
