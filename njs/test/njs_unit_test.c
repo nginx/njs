@@ -386,6 +386,9 @@ static njs_unit_test_t  njs_test[] =
                  "          toString: function() { return '1' } }; +a"),
       nxt_string("1") },
 
+    { nxt_string("var a = { valueOf: function() { return 1 } }; ''+a"),
+      nxt_string("1") },
+
     { nxt_string("var a = { valueOf: function() { return [] },"
                  "          toString: function() { return '1' } }; +a"),
       nxt_string("1") },
@@ -7158,6 +7161,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var d = new Date(''); d +' '+ d.getTime()"),
       nxt_string("Invalid Date NaN") },
+
+    { nxt_string("var d = new Date(1); d = d + ''; d.slice(0, 33)"),
+      nxt_string("Thu Jan 01 1970 12:45:00 GMT+1245") },
 
     { nxt_string("var d = new Date(1308895200000); d.getTime()"),
       nxt_string("1308895200000") },

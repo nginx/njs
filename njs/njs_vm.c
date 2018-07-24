@@ -23,6 +23,8 @@ struct njs_property_next_s {
  * and should fit in CPU L1 instruction cache.
  */
 
+static nxt_noinline njs_ret_t njs_string_concat(njs_vm_t *vm,
+    njs_value_t *val1, njs_value_t *val2);
 static njs_ret_t njs_method_private_copy(njs_vm_t *vm,
     njs_property_query_t *pq);
 static nxt_noinline njs_ret_t njs_values_equal(njs_vm_t *vm,
@@ -48,6 +50,10 @@ static njs_ret_t njs_vmcode_number_primitive(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *narg);
 static njs_ret_t njs_vmcode_string_primitive(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *narg);
+static njs_ret_t njs_vmcode_addition_primitive(njs_vm_t *vm, njs_value_t *invld,
+    njs_value_t *narg);
+static njs_ret_t njs_vmcode_comparison_primitive(njs_vm_t *vm,
+    njs_value_t *invld, njs_value_t *narg);
 static njs_ret_t njs_vmcode_number_argument(njs_vm_t *vm, njs_value_t *invld1,
     njs_value_t *inlvd2);
 static njs_ret_t njs_vmcode_string_argument(njs_vm_t *vm, njs_value_t *invld1,
@@ -181,7 +187,8 @@ start:
             /* Fall through. */
 
         case NJS_TRAP_NUMBERS:
-        case NJS_TRAP_STRINGS:
+        case NJS_TRAP_ADDITION:
+        case NJS_TRAP_COMPARISON:
         case NJS_TRAP_INCDEC:
         case NJS_TRAP_PROPERTY:
 
@@ -1301,10 +1308,9 @@ njs_vmcode_unary_negation(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 njs_ret_t
 njs_vmcode_addition(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 {
-    double             num;
-    u_char             *start;
-    size_t             size, length;
-    njs_string_prop_t  string1, string2;
+    double       num;
+    njs_ret_t    ret;
+    njs_value_t  *s1, *s2, *src, dst;
 
     if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
 
@@ -1315,34 +1321,70 @@ njs_vmcode_addition(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
     }
 
     if (nxt_fast_path(njs_is_string(val1) && njs_is_string(val2))) {
-
-        (void) njs_string_prop(&string1, val1);
-        (void) njs_string_prop(&string2, val2);
-
-        if ((string1.length != 0 || string1.size == 0)
-            && (string2.length != 0 || string2.size == 0))
-        {
-            length = string1.length + string2.length;
-
-        } else {
-            length = 0;
-        }
-
-        size = string1.size + string2.size;
-
-        start = njs_string_alloc(vm, &vm->retval, size, length);
-
-        if (nxt_slow_path(start == NULL)) {
-            return NXT_ERROR;
-        }
-
-        (void) memcpy(start, string1.start, string1.size);
-        (void) memcpy(start + string1.size, string2.start, string2.size);
-
-        return sizeof(njs_vmcode_3addr_t);
+        return njs_string_concat(vm, val1, val2);
     }
 
-    return njs_trap(vm, NJS_TRAP_STRINGS);
+    if (nxt_fast_path(njs_is_primitive(val1) && njs_is_primitive(val2))) {
+
+        if (njs_is_string(val1)) {
+            s1 = val1;
+            s2 = &dst;
+            src = val2;
+
+        } else {
+            s1 = &dst;
+            s2 = val2;
+            src = val1;
+        }
+
+        ret = njs_primitive_value_to_string(vm, &dst, src);
+
+        if (nxt_fast_path(ret == NXT_OK)) {
+            return njs_string_concat(vm, s1, s2);
+        }
+
+        return ret;
+    }
+
+    return njs_trap(vm, NJS_TRAP_ADDITION);
+}
+
+
+static nxt_noinline njs_ret_t
+njs_string_concat(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
+{
+    u_char             *start;
+    size_t             size, length;
+    njs_string_prop_t  string1, string2;
+
+    (void) njs_string_prop(&string1, val1);
+    (void) njs_string_prop(&string2, val2);
+
+    /*
+     * A result of concatenation of Byte and ASCII or UTF-8 strings
+     * is a Byte string.
+     */
+    if ((string1.length != 0 || string1.size == 0)
+        && (string2.length != 0 || string2.size == 0))
+    {
+        length = string1.length + string2.length;
+
+    } else {
+        length = 0;
+    }
+
+    size = string1.size + string2.size;
+
+    start = njs_string_alloc(vm, &vm->retval, size, length);
+
+    if (nxt_slow_path(start == NULL)) {
+        return NXT_ERROR;
+    }
+
+    (void) memcpy(start, string1.start, string1.size);
+    (void) memcpy(start + string1.size, string2.start, string2.size);
+
+    return sizeof(njs_vmcode_3addr_t);
 }
 
 
@@ -1778,7 +1820,7 @@ njs_values_compare(njs_vm_t *vm, const njs_value_t *val1,
         return (njs_string_cmp(val1, val2) < 0) ? 1 : 0;
     }
 
-    return njs_trap(vm, NJS_TRAP_STRINGS);
+    return njs_trap(vm, NJS_TRAP_COMPARISON);
 }
 
 
@@ -2781,15 +2823,11 @@ njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
 }
 
 
-static const njs_vmcode_1addr_t  njs_trap_strings[] = {
-    { .code = { .operation = njs_vmcode_string_primitive,
+static const njs_vmcode_1addr_t  njs_trap_number[] = {
+    { .code = { .operation = njs_vmcode_number_primitive,
                 .operands =  NJS_VMCODE_1OPERAND,
                 .retval = NJS_VMCODE_NO_RETVAL },
       .index = 0 },
-    { .code = { .operation = njs_vmcode_string_primitive,
-                .operands =  NJS_VMCODE_1OPERAND,
-                .retval = NJS_VMCODE_NO_RETVAL },
-      .index = 1 },
     { .code = { .operation = njs_vmcode_restart,
                 .operands =  NJS_VMCODE_NO_OPERAND,
                 .retval = NJS_VMCODE_NO_RETVAL } },
@@ -2811,11 +2849,41 @@ static const njs_vmcode_1addr_t  njs_trap_numbers[] = {
 };
 
 
-static const njs_vmcode_1addr_t  njs_trap_number[] = {
-    { .code = { .operation = njs_vmcode_number_primitive,
+static const njs_vmcode_1addr_t  njs_trap_addition[] = {
+    { .code = { .operation = njs_vmcode_addition_primitive,
                 .operands =  NJS_VMCODE_1OPERAND,
                 .retval = NJS_VMCODE_NO_RETVAL },
       .index = 0 },
+    { .code = { .operation = njs_vmcode_addition_primitive,
+                .operands =  NJS_VMCODE_1OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL },
+      .index = 1 },
+    { .code = { .operation = njs_vmcode_restart,
+                .operands =  NJS_VMCODE_NO_OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL } },
+};
+
+
+static const njs_vmcode_1addr_t  njs_trap_comparison[] = {
+    { .code = { .operation = njs_vmcode_comparison_primitive,
+                .operands =  NJS_VMCODE_1OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL },
+      .index = 0 },
+    { .code = { .operation = njs_vmcode_comparison_primitive,
+                .operands =  NJS_VMCODE_1OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL },
+      .index = 1 },
+    { .code = { .operation = njs_vmcode_restart,
+                .operands =  NJS_VMCODE_NO_OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL } },
+};
+
+
+static const njs_vmcode_1addr_t  njs_trap_property[] = {
+    { .code = { .operation = njs_vmcode_string_primitive,
+                .operands =  NJS_VMCODE_1OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL },
+      .index = 1 },
     { .code = { .operation = njs_vmcode_restart,
                 .operands =  NJS_VMCODE_NO_OPERAND,
                 .retval = NJS_VMCODE_NO_RETVAL } },
@@ -2839,10 +2907,11 @@ static const njs_vmcode_1addr_t  njs_trap_string_argument = {
 static const njs_vm_trap_t  njs_vm_traps[] = {
     /* NJS_TRAP_NUMBER     */  { .code = &njs_trap_number[0]       },
     /* NJS_TRAP_NUMBERS    */  { .code = &njs_trap_numbers[0]      },
+    /* NJS_TRAP_ADDITION   */  { .code = &njs_trap_addition[0]     },
+    /* NJS_TRAP_COMPARISON */  { .code = &njs_trap_comparison[0]   },
     /* NJS_TRAP_INCDEC     */  { .code = &njs_trap_numbers[1],
                                  .reference = 1                    },
-    /* NJS_TRAP_STRINGS    */  { .code = &njs_trap_strings[0]      },
-    /* NJS_TRAP_PROPERTY   */  { .code = &njs_trap_strings[1]      },
+    /* NJS_TRAP_PROPERTY   */  { .code = &njs_trap_property[0]     },
     /* NJS_TRAP_NUMBER_ARG */  { .code = &njs_trap_number_argument },
     /* NJS_TRAP_STRING_ARG */  { .code = &njs_trap_string_argument },
 };
@@ -2944,6 +3013,51 @@ njs_vmcode_string_primitive(njs_vm_t *vm, njs_value_t *invld, njs_value_t *narg)
         if (nxt_fast_path(ret == NXT_OK)) {
             return sizeof(njs_vmcode_1addr_t);
         }
+    }
+
+    return ret;
+}
+
+
+static njs_ret_t
+njs_vmcode_addition_primitive(njs_vm_t *vm, njs_value_t *invld,
+    njs_value_t *narg)
+{
+    njs_ret_t    ret;
+    nxt_uint_t   hint;
+    njs_value_t  *value;
+
+    value = &vm->top_frame->trap_values[(uintptr_t) narg];
+
+    /*
+     * ECMAScript 5.1:
+     *   Date should return String, other types sould return Number.
+     */
+    hint = njs_is_date(value);
+
+    ret = njs_primitive_value(vm, value, hint);
+
+    if (nxt_fast_path(ret > 0)) {
+        return sizeof(njs_vmcode_1addr_t);
+    }
+
+    return ret;
+}
+
+
+static njs_ret_t
+njs_vmcode_comparison_primitive(njs_vm_t *vm, njs_value_t *invld,
+    njs_value_t *narg)
+{
+    njs_ret_t    ret;
+    njs_value_t  *value;
+
+    value = &vm->top_frame->trap_values[(uintptr_t) narg];
+
+    ret = njs_primitive_value(vm, value, 0);
+
+    if (nxt_fast_path(ret > 0)) {
+        return sizeof(njs_vmcode_1addr_t);
     }
 
     return ret;
