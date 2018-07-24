@@ -2441,7 +2441,7 @@ njs_arg_type_string(uint8_t arg)
         return "regexp";
 
     case NJS_DATE_ARG:
-        return "regexp";
+        return "date";
 
     default:
         return "unknown";

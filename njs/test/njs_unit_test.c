@@ -7518,7 +7518,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("[0].map(new Date().getDate)"),
-      nxt_string("TypeError: cannot convert void to regexp") },
+      nxt_string("TypeError: cannot convert void to date") },
 
     { nxt_string("new Date(eval)"),
       nxt_string("Invalid Date") },
