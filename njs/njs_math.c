@@ -365,7 +365,7 @@ njs_object_math_hypot(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         if (!njs_is_numeric(&args[i])) {
             njs_vm_trap_value(vm, &args[i]);
 
-            return NJS_TRAP_NUMBER_ARG;
+            return njs_trap(vm, NJS_TRAP_NUMBER_ARG);
         }
     }
 
@@ -504,7 +504,8 @@ njs_object_math_max(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         for (i = 1; i < nargs; i++) {
             if (!njs_is_numeric(&args[i])) {
                 njs_vm_trap_value(vm, &args[i]);
-                return NJS_TRAP_NUMBER_ARG;
+
+                return njs_trap(vm, NJS_TRAP_NUMBER_ARG);
             }
         }
 
@@ -535,7 +536,8 @@ njs_object_math_min(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         for (i = 1; i < nargs; i++) {
             if (!njs_is_numeric(&args[i])) {
                 njs_vm_trap_value(vm, &args[i]);
-                return NJS_TRAP_NUMBER_ARG;
+
+                return njs_trap(vm, NJS_TRAP_NUMBER_ARG);
             }
         }
 

@@ -842,7 +842,7 @@ njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         if (!njs_is_string(&args[i])) {
             njs_vm_trap_value(vm, &args[i]);
 
-            return NJS_TRAP_STRING_ARG;
+            return njs_trap(vm, NJS_TRAP_STRING_ARG);
         }
     }
 
@@ -1427,7 +1427,8 @@ njs_string_bytes_from_array(njs_vm_t *vm, const njs_value_t *value)
     for (i = 0; i < length; i++) {
         if (!njs_is_numeric(&array->start[i])) {
             njs_vm_trap_value(vm, &array->start[i]);
-            return NJS_TRAP_NUMBER_ARG;
+
+            return njs_trap(vm, NJS_TRAP_NUMBER_ARG);
         }
     }
 
@@ -1659,7 +1660,8 @@ njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args,
     for (i = 1; i < nargs; i++) {
         if (!njs_is_numeric(&args[i])) {
             njs_vm_trap_value(vm, &args[i]);
-            return NJS_TRAP_NUMBER_ARG;
+
+            return njs_trap(vm, NJS_TRAP_NUMBER_ARG);
         }
     }
 

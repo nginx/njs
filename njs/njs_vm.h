@@ -27,22 +27,31 @@
  *    -3:                        not used;
  *    -4 (NJS_STOP/NXT_DONE):    njs_vmcode_stop() has stopped execution,
  *                               execution has completed successfully;
- *    -5 .. -11:                 traps to convert objects to primitive values.
+ *    -5 (NJS_TRAP)              trap to convert objects to primitive values;
+ *    -6 .. -11:                 not used.
  */
 
 #define NJS_STOP                 NXT_DONE
+#define NJS_TRAP                 (-5)
+
+/* The last return value which preempts execution. */
+#define NJS_PREEMPT              (-11)
 
 /*  Traps events. */
-#define NJS_TRAP_NUMBER          (-5)
-#define NJS_TRAP_NUMBERS         (-6)
-#define NJS_TRAP_INCDEC          (-7)
-#define NJS_TRAP_STRINGS         (-8)
-#define NJS_TRAP_PROPERTY        (-9)
-#define NJS_TRAP_NUMBER_ARG      (-10)
-#define NJS_TRAP_STRING_ARG      (-11)
-#define NJS_TRAP_BASE            NJS_TRAP_STRING_ARG
+typedef enum {
+    NJS_TRAP_NUMBER = 0,
+    NJS_TRAP_NUMBERS,
+    NJS_TRAP_INCDEC,
+    NJS_TRAP_STRINGS,
+    NJS_TRAP_PROPERTY,
+    NJS_TRAP_NUMBER_ARG,
+    NJS_TRAP_STRING_ARG,
+} njs_trap_t;
 
-#define NJS_PREEMPT              (-11)
+
+#define njs_trap(vm, code)                                                    \
+    vm->trap = code, NJS_TRAP;
+
 
 /*
  * A user-defined function is prepared to run.  This code is never
@@ -983,7 +992,7 @@ enum njs_function_e {
 
 typedef struct {
     const njs_vmcode_1addr_t  *code;
-    nxt_bool_t                reference_value;
+    nxt_bool_t                reference;
 } njs_vm_trap_t;
 
 
@@ -1062,6 +1071,7 @@ struct njs_vm_s {
     nxt_array_t              *debug;
     nxt_array_t              *backtrace;
 
+    njs_trap_t               trap:8;
     uint8_t                  trailer;  /* 1 bit */
     uint8_t                  accumulative; /* 1 bit */
 };

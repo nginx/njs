@@ -227,7 +227,7 @@ njs_object_property(njs_vm_t *vm, const njs_object_t *object,
  *   NJS_STRING_VALUE     property operation was applied to a string,
  *   NJS_ARRAY_VALUE      object is array,
  *   NJS_EXTERNAL_VALUE   object is external entity,
- *   NJS_TRAP_PROPERTY    the property trap must be called,
+ *   NJS_TRAP             the property trap must be called,
  *   NXT_ERROR            exception has been thrown.
  */
 
@@ -275,7 +275,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
                 }
 
             } else {
-                return NJS_TRAP_PROPERTY;
+                return njs_trap(vm, NJS_TRAP_PROPERTY);
             }
         }
 
@@ -359,7 +359,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
         return ret;
     }
 
-    return NJS_TRAP_PROPERTY;
+    return njs_trap(vm, NJS_TRAP_PROPERTY);
 }
 
 

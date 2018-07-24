@@ -90,7 +90,8 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             for (i = 1; i < n; i++) {
                 if (!njs_is_numeric(&args[i])) {
                     njs_vm_trap_value(vm, &args[i]);
-                    return NJS_TRAP_NUMBER_ARG;
+
+                    return njs_trap(vm, NJS_TRAP_NUMBER_ARG);
                 }
 
                 num = args[i].data.u.number;
@@ -170,7 +171,8 @@ njs_date_utc(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         for (i = 1; i < n; i++) {
             if (!njs_is_numeric(&args[i])) {
                 njs_vm_trap_value(vm, &args[i]);
-                return NJS_TRAP_NUMBER_ARG;
+
+                return njs_trap(vm, NJS_TRAP_NUMBER_ARG);
             }
 
             num = args[i].data.u.number;

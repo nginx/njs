@@ -917,7 +917,7 @@ njs_array_prototype_join_continuation(njs_vm_t *vm, njs_value_t *args,
                 if (!njs_is_string(value)) {
                     njs_vm_trap_value(vm, value);
 
-                    return NJS_TRAP_STRING_ARG;
+                    return njs_trap(vm, NJS_TRAP_STRING_ARG);
                 }
             }
 
@@ -1952,7 +1952,8 @@ njs_array_string_sort(njs_vm_t *vm, njs_value_t *args,
     for (i = 1; i < nargs; i++) {
         if (!njs_is_string(&args[i])) {
             njs_vm_trap_value(vm, &args[i]);
-            return NJS_TRAP_STRING_ARG;
+
+            return njs_trap(vm, NJS_TRAP_STRING_ARG);
         }
     }
 
