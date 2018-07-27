@@ -31,6 +31,8 @@ njs_regexp_t *njs_regexp_alloc(njs_vm_t *vm, njs_regexp_pattern_t *pattern);
 njs_ret_t njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 
+njs_ret_t njs_regexp_to_string(njs_vm_t *vm, njs_value_t *retval,
+    const njs_value_t *regexp);
 
 extern const njs_object_init_t  njs_regexp_constructor_init;
 extern const njs_object_init_t  njs_regexp_prototype_init;

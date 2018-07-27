@@ -1069,12 +1069,41 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
 }
 
 
+static njs_ret_t
+njs_dump_value(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    nxt_str_t          str;
+    nxt_uint_t         n;
+    const njs_value_t  *value, *indent;
+
+    value = njs_arg(args, nargs, 1);
+    indent = njs_arg(args, nargs, 2);
+
+    n = indent->data.u.number;
+    n = nxt_min(n, 5);
+
+    if (njs_vm_value_dump(vm, &str, value, n) != NXT_OK) {
+        return NXT_ERROR;
+    }
+
+    return njs_string_new(vm, &vm->retval, str.start, str.length, 0);
+}
+
+
 static const njs_object_prop_t  njs_njs_object_properties[] =
 {
     {
         .type = NJS_PROPERTY,
         .name = njs_string("version"),
         .value = njs_string(NJS_VERSION),
+    },
+
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("dump"),
+        .value = njs_native_function(njs_dump_value, 0,
+                                    NJS_SKIP_ARG, NJS_SKIP_ARG, NJS_NUMBER_ARG),
     },
 };
 

@@ -9258,6 +9258,17 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = {}; a.a = a; JSON.stringify(a)"),
       nxt_string("TypeError: Nested too deep or a cyclic structure") },
 
+    /* njs.dump(). */
+
+    { nxt_string("njs.dump({a:1, b:[1,,2,{c:new Boolean(1)}]})"),
+      nxt_string("{a:1,b:[1,<empty>,2,{c:[Boolean: true]}]}") },
+
+    { nxt_string("njs.dump($r.props)"),
+      nxt_string("{a:{type:\"property\",props:[\"getter\"]},b:{type:\"property\",props:[\"getter\"]}}") },
+
+    { nxt_string("njs.dump($r.header)"),
+      nxt_string("{type:\"object\",props:[\"getter\",\"foreach\",\"next\"]}") },
+
     /* require(). */
 
     { nxt_string("require('unknown_module')"),

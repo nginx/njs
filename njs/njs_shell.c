@@ -58,6 +58,8 @@ static char *njs_completion_generator(const char *text, int state);
 
 static njs_ret_t njs_ext_console_log(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
+static njs_ret_t njs_ext_console_dump(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t njs_ext_console_help(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 
@@ -74,6 +76,18 @@ static njs_external_t  njs_ext_console[] = {
       NULL,
       NULL,
       njs_ext_console_log,
+      0 },
+
+    { nxt_string("dump"),
+      NJS_EXTERN_METHOD,
+      NULL,
+      0,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      njs_ext_console_dump,
       0 },
 
     { nxt_string("help"),
@@ -431,7 +445,7 @@ njs_process_script(njs_vm_t *vm, njs_opts_t *opts, const nxt_str_t *script,
         ret = njs_vm_run(vm);
     }
 
-    if (njs_vm_retval_to_ext_string(vm, out) != NXT_OK) {
+    if (njs_vm_value_dump(vm, out, njs_vm_retval(vm), 1) != NXT_OK) {
         *out = nxt_string_value("failed to get retval from VM");
         return NXT_ERROR;
     }
@@ -625,7 +639,38 @@ njs_ext_console_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     n = 1;
 
     while (n < nargs) {
-        if (njs_vm_value_to_ext_string(vm, &msg, njs_argument(args, n), 0)
+        if (njs_vm_value_dump(vm, &msg, njs_argument(args, n), 0)
+            == NJS_ERROR)
+        {
+            return NJS_ERROR;
+        }
+
+        printf("%s%.*s", (n != 1) ? " " : "", (int) msg.length, msg.start);
+
+        n++;
+    }
+
+    if (nargs > 1) {
+        printf("\n");
+    }
+
+    vm->retval = njs_value_void;
+
+    return NJS_OK;
+}
+
+
+static njs_ret_t
+njs_ext_console_dump(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    nxt_str_t   msg;
+    nxt_uint_t  n;
+
+    n = 1;
+
+    while (n < nargs) {
+        if (njs_vm_value_dump(vm, &msg, njs_argument(args, n), 1)
             == NJS_ERROR)
         {
             return NJS_ERROR;

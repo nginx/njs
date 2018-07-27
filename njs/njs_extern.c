@@ -228,6 +228,60 @@ njs_vm_external_bind(njs_vm_t *vm, const nxt_str_t *var_name,
 }
 
 
+njs_array_t *
+njs_extern_keys_array(njs_vm_t *vm, const njs_extern_t *external)
+{
+    uint32_t            n, keys_length;
+    njs_ret_t           ret;
+    njs_array_t         *keys;
+    const nxt_lvlhsh_t  *hash;
+    nxt_lvlhsh_each_t   lhe;
+    const njs_extern_t  *ext;
+
+    keys_length = 0;
+
+    nxt_lvlhsh_each_init(&lhe, &njs_extern_hash_proto);
+
+    hash = &external->hash;
+
+    for ( ;; ) {
+        ext = nxt_lvlhsh_each(hash, &lhe);
+
+        if (ext == NULL) {
+            break;
+        }
+
+        keys_length++;
+    }
+
+    keys = njs_array_alloc(vm, keys_length, NJS_ARRAY_SPARE);
+    if (nxt_slow_path(keys == NULL)) {
+        return NULL;
+    }
+
+    n = 0;
+
+    nxt_lvlhsh_each_init(&lhe, &njs_extern_hash_proto);
+
+    for ( ;; ) {
+        ext = nxt_lvlhsh_each(hash, &lhe);
+
+        if (ext == NULL) {
+            break;
+        }
+
+        ret = njs_string_create(vm, &keys->start[n++], ext->name.start,
+                                ext->name.length, 0);
+
+        if (ret != NXT_OK) {
+            return NULL;
+        }
+    }
+
+    return keys;
+}
+
+
 njs_value_t *
 njs_parser_external(njs_vm_t *vm, njs_parser_t *parser)
 {

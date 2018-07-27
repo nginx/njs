@@ -586,6 +586,18 @@ static njs_ret_t
 njs_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
+    if (nargs < 1 || !njs_is_object(&args[0])) {
+        njs_type_error(vm, "'this' argument is not an object");
+        return NXT_ERROR;
+    }
+
+    return njs_error_to_string(vm, &vm->retval, &args[0]);
+}
+
+
+njs_ret_t
+njs_error_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *error)
+{
     size_t              size;
     u_char              *p;
     nxt_str_t           name, message;
@@ -595,16 +607,11 @@ njs_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     static const njs_value_t  default_name = njs_string("Error");
 
-    if (nargs < 1 || !njs_is_object(&args[0])) {
-        njs_type_error(vm, "'this' argument is not an object");
-        return NXT_ERROR;
-    }
-
     lhq.key_hash = NJS_NAME_HASH;
     lhq.key = nxt_string_value("name");
     lhq.proto = &njs_object_hash_proto;
 
-    prop = njs_object_property(vm, args[0].data.u.object, &lhq);
+    prop = njs_object_property(vm, error->data.u.object, &lhq);
 
     if (prop != NULL) {
         name_value = &prop->value;
@@ -618,7 +625,7 @@ njs_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     lhq.key_hash = NJS_MESSAGE_HASH;
     lhq.key = nxt_string_value("message");
 
-    prop = njs_object_property(vm, args[0].data.u.object, &lhq);
+    prop = njs_object_property(vm, error->data.u.object, &lhq);
 
     if (prop != NULL) {
         message_value = &prop->value;
@@ -630,18 +637,18 @@ njs_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_string_get(message_value, &message);
 
     if (name.length == 0) {
-        vm->retval = *message_value;
+        *retval = *message_value;
         return NJS_OK;
     }
 
     if (message.length == 0) {
-        vm->retval = *name_value;
+        *retval = *name_value;
         return NJS_OK;
     }
 
     size = name.length + message.length + 2;
 
-    p = njs_string_alloc(vm, &vm->retval, size, size);
+    p = njs_string_alloc(vm, retval, size, size);
 
     if (nxt_fast_path(p != NULL)) {
         p = nxt_cpymem(p, name.start, name.length);
@@ -653,6 +660,7 @@ njs_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     njs_memory_error(vm);
+
     return NJS_ERROR;
 }
 

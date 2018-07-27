@@ -1019,6 +1019,13 @@ static njs_ret_t
 njs_date_prototype_to_iso_string(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
+    return njs_date_to_string(vm, &vm->retval, &args[0]);
+}
+
+
+njs_ret_t
+njs_date_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *date)
+{
     int32_t    year;
     double     time;
     size_t     size;
@@ -1026,7 +1033,7 @@ njs_date_prototype_to_iso_string(njs_vm_t *vm, njs_value_t *args,
     u_char     buf[NJS_ISO_DATE_TIME_LEN];
     struct tm  tm;
 
-    time = args[0].data.u.date->time;
+    time = date->data.u.date->time;
 
     if (!isnan(time)) {
         clock = time / 1000;
@@ -1042,7 +1049,7 @@ njs_date_prototype_to_iso_string(njs_vm_t *vm, njs_value_t *args,
                         tm.tm_hour, tm.tm_min, tm.tm_sec,
                         (int) ((int64_t) time % 1000));
 
-        return njs_string_new(vm, &vm->retval, buf, size, size);
+        return njs_string_new(vm, retval, buf, size, size);
     }
 
     njs_range_error(vm, NULL);

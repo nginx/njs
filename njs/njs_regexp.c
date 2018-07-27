@@ -527,27 +527,32 @@ static njs_ret_t
 njs_regexp_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    u_char                *source;
-    int32_t               length;
-    uint32_t              size;
-    njs_value_t           *value;
-    njs_regexp_pattern_t  *pattern;
-
-    value = &args[0];
-
-    if (njs_is_regexp(value)) {
-        pattern = value->data.u.regexp->pattern;
-        source = pattern->source;
-
-        size = strlen((char *) source);
-        length = nxt_utf8_length(source, size);
-
-        return njs_regexp_string_create(vm, &vm->retval, source, size, length);
+    if (njs_is_regexp(&args[0])) {
+        return njs_regexp_to_string(vm, &vm->retval, &args[0]);
     }
 
     njs_type_error(vm, "'this' argument is not a regexp");
 
     return NXT_ERROR;
+}
+
+
+njs_ret_t
+njs_regexp_to_string(njs_vm_t *vm, njs_value_t *retval,
+    const njs_value_t *value)
+{
+    u_char                *source;
+    int32_t               length;
+    uint32_t              size;
+    njs_regexp_pattern_t  *pattern;
+
+    pattern = value->data.u.regexp->pattern;
+    source = pattern->source;
+
+    size = strlen((char *) source);
+    length = nxt_utf8_length(source, size);
+
+    return njs_regexp_string_create(vm, retval, source, size, length);
 }
 
 
