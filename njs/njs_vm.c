@@ -2077,9 +2077,8 @@ njs_function_new_object(njs_vm_t *vm, njs_value_t *value)
 njs_ret_t
 njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
 {
-    void                       *obj;
     njs_ret_t                  ret;
-    njs_value_t                this, *value;
+    njs_value_t                *value;
     njs_object_prop_t          *prop;
     njs_property_query_t       pq;
     const njs_extern_t         *ext_proto;
@@ -2131,11 +2130,7 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
             return NXT_ERROR;
         }
 
-        obj = njs_extern_object(vm, object);
-
-        this.data.u.data = obj;
-
-        ret = njs_function_native_frame(vm, ext_proto->function, &this, NULL,
+        ret = njs_function_native_frame(vm, ext_proto->function, object, NULL,
                                         method->nargs, 0, method->code.ctor);
         break;
 

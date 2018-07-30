@@ -1256,7 +1256,10 @@ ngx_http_js_ext_send_header(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     ngx_http_request_t  *r;
 
-    r = njs_value_data(njs_argument(args, 0));
+    r = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    if (nxt_slow_path(r == NULL)) {
+        return NXT_ERROR;
+    }
 
     if (ngx_http_send_header(r) == NGX_ERROR) {
         return NJS_ERROR;
@@ -1278,7 +1281,10 @@ ngx_http_js_ext_send(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     ngx_chain_t         *out, *cl, **ll;
     ngx_http_request_t  *r;
 
-    r = njs_value_data(njs_argument(args, 0));
+    r = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    if (nxt_slow_path(r == NULL)) {
+        return NXT_ERROR;
+    }
 
     out = NULL;
     ll = &out;
@@ -1343,7 +1349,10 @@ ngx_http_js_ext_finish(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
-    r = njs_value_data(njs_argument(args, 0));
+    r = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    if (nxt_slow_path(r == NULL)) {
+        return NXT_ERROR;
+    }
 
     if (ngx_http_send_special(r, NGX_HTTP_LAST) == NGX_ERROR) {
         return NJS_ERROR;
@@ -1399,7 +1408,10 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
     }
 
-    r = njs_value_data(njs_argument(args, 0));
+    r = njs_vm_external(vm, njs_argument(args, 0));
+    if (nxt_slow_path(r == NULL)) {
+        return NXT_ERROR;
+    }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
@@ -1437,7 +1449,10 @@ ngx_http_js_ext_internal_redirect(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
-    r = njs_value_data(njs_argument(args, 0));
+    r = njs_vm_external(vm, njs_argument(args, 0));
+    if (nxt_slow_path(r == NULL)) {
+        return NXT_ERROR;
+    }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
@@ -1495,10 +1510,14 @@ ngx_http_js_ext_log_core(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     ngx_log_handler_pt   handler;
     ngx_http_request_t  *r;
 
-    r = njs_value_data(njs_argument(args, 0));
+    r = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    if (nxt_slow_path(r == NULL)) {
+        return NXT_ERROR;
+    }
+
     c = r->connection;
 
-    if (njs_vm_value_to_ext_string(vm, &msg, njs_argument(args, 1), 0)
+    if (njs_vm_value_to_ext_string(vm, &msg, njs_arg(args, nargs, 1), 0)
         == NJS_ERROR)
     {
         return NJS_ERROR;
@@ -1874,7 +1893,10 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NJS_ERROR;
     }
 
-    r = njs_value_data(njs_argument(args, 0));
+    r = njs_vm_external(vm, njs_argument(args, 0));
+    if (nxt_slow_path(r == NULL)) {
+        return NXT_ERROR;
+    }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 

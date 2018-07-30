@@ -886,10 +886,14 @@ ngx_stream_js_ext_log_core(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     ngx_log_handler_pt     handler;
     ngx_stream_session_t  *s;
 
-    s = njs_value_data(njs_argument(args, 0));
+    s = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    if (nxt_slow_path(s == NULL)) {
+        return NXT_ERROR;
+    }
+
     c = s->connection;
 
-    if (njs_vm_value_to_ext_string(vm, &msg, njs_argument(args, 1), 0)
+    if (njs_vm_value_to_ext_string(vm, &msg, njs_arg(args, nargs, 1), 0)
         == NJS_ERROR)
     {
         return NJS_ERROR;

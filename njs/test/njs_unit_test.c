@@ -3981,13 +3981,20 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("delete $r.one"),
       nxt_string("false") },
 
-#if 0
     { nxt_string("$r.some_method.call($r, 'YES')"),
+      nxt_string("АБВ") },
+
+    { nxt_string("var f = $r.some_method.bind($r); f('YES')"),
+      nxt_string("АБВ") },
+
+    { nxt_string("function f(fn, arg) {return fn(arg);}; f($r.some_method.bind($r), 'YES')"),
       nxt_string("АБВ") },
 
     { nxt_string("$r.some_method.apply($r, ['YES'])"),
       nxt_string("АБВ") },
-#endif
+
+    { nxt_string("$r.some_method.call([], 'YES')"),
+      nxt_string("TypeError: external value is expected") },
 
     { nxt_string("$r.nonexistent"),
       nxt_string("undefined") },
@@ -9777,25 +9784,22 @@ njs_unit_test_method_external(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     nxt_int_t            ret;
     nxt_str_t            s;
-    uintptr_t            next;
     njs_unit_test_req_t  *r;
 
-    next = 0;
-
-    if (nargs > 1) {
-
-        ret = njs_value_string_copy(vm, &s, njs_argument(args, 1), &next);
-
-        if (ret == NXT_OK && s.length == 3 && memcmp(s.start, "YES", 3) == 0) {
-            r = njs_value_data(njs_argument(args, 0));
-            njs_string_create(vm, njs_vm_retval(vm), r->uri.start,
-                              r->uri.length, 0);
-
-            return NXT_OK;
-        }
+    r = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    if (nxt_slow_path(r == NULL)) {
+        return NXT_ERROR;
     }
 
-    return NXT_ERROR;
+    ret = njs_vm_value_to_ext_string(vm, &s, njs_arg(args, nargs, 1), 0);
+    if (ret == NXT_OK && s.length == 3 && memcmp(s.start, "YES", 3) == 0) {
+        return njs_string_create(vm, njs_vm_retval(vm), r->uri.start,
+                                 r->uri.length, 0);
+    }
+
+    vm->retval = njs_value_void;
+
+    return NXT_OK;
 }
 
 
@@ -9808,40 +9812,43 @@ njs_unit_test_create_external(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_value_t          *value;
     njs_unit_test_req_t  *r, *sr;
 
-    if (nargs > 1) {
-        r = njs_value_data(njs_argument(args, 0));
-
-        if (njs_vm_value_to_ext_string(vm, &uri, njs_argument(args, 1), 0)
-            == NJS_ERROR)
-        {
-            return NJS_ERROR;
-        }
-
-        value = nxt_mem_cache_zalloc(r->mem_cache_pool,
-                                     sizeof(njs_opaque_value_t));
-        if (value == NULL) {
-            return NXT_ERROR;
-        }
-
-        sr = nxt_mem_cache_zalloc(r->mem_cache_pool,
-                                  sizeof(njs_unit_test_req_t));
-        if (sr == NULL) {
-            return NXT_ERROR;
-        }
-
-        sr->uri = uri;
-        sr->mem_cache_pool = r->mem_cache_pool;
-        sr->proto = r->proto;
-
-        ret = njs_vm_external_create(vm, value, sr->proto, sr);
-        if (ret != NXT_OK) {
-            return NXT_ERROR;
-        }
-
-        njs_vm_retval_set(vm, value);
-
-        return NXT_OK;
+    r = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    if (nxt_slow_path(r == NULL)) {
+        return NXT_ERROR;
     }
+
+    if (njs_vm_value_to_ext_string(vm, &uri, njs_arg(args, nargs, 1), 0)
+        != NJS_OK)
+    {
+        return NXT_ERROR;
+    }
+
+    value = nxt_mem_cache_zalloc(r->mem_cache_pool, sizeof(njs_opaque_value_t));
+    if (value == NULL) {
+        goto memory_error;
+    }
+
+    sr = nxt_mem_cache_zalloc(r->mem_cache_pool, sizeof(njs_unit_test_req_t));
+    if (sr == NULL) {
+        goto memory_error;
+    }
+
+    sr->uri = uri;
+    sr->mem_cache_pool = r->mem_cache_pool;
+    sr->proto = r->proto;
+
+    ret = njs_vm_external_create(vm, value, sr->proto, sr);
+    if (ret != NXT_OK) {
+        return NXT_ERROR;
+    }
+
+    njs_vm_retval_set(vm, value);
+
+    return NXT_OK;
+
+memory_error:
+
+    njs_memory_error(vm);
 
     return NXT_ERROR;
 }

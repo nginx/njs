@@ -166,7 +166,7 @@ njs_vm_external_prototype(njs_vm_t *vm, njs_external_t *external)
 
 nxt_int_t
 njs_vm_external_create(njs_vm_t *vm, njs_value_t *ext_val,
-    const njs_extern_t *proto,  void *object)
+    const njs_extern_t *proto,  njs_external_ptr_t object)
 {
     void  *obj;
 
@@ -225,6 +225,19 @@ njs_vm_external_bind(njs_vm_t *vm, const nxt_str_t *var_name,
     }
 
     return NXT_OK;
+}
+
+
+nxt_noinline njs_external_ptr_t
+njs_vm_external(njs_vm_t *vm, const njs_value_t *value)
+{
+    if (nxt_fast_path(njs_is_external(value))) {
+        return njs_extern_object(vm, value);
+    }
+
+    njs_type_error(vm, "external value is expected");
+
+    return NULL;
 }
 
 
