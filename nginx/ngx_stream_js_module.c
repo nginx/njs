@@ -888,7 +888,7 @@ ngx_stream_js_ext_log_core(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     s = njs_vm_external(vm, njs_arg(args, nargs, 0));
     if (nxt_slow_path(s == NULL)) {
-        return NXT_ERROR;
+        return NJS_ERROR;
     }
 
     c = s->connection;

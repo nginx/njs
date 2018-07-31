@@ -1258,7 +1258,7 @@ ngx_http_js_ext_send_header(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     r = njs_vm_external(vm, njs_arg(args, nargs, 0));
     if (nxt_slow_path(r == NULL)) {
-        return NXT_ERROR;
+        return NJS_ERROR;
     }
 
     if (ngx_http_send_header(r) == NGX_ERROR) {
@@ -1283,7 +1283,7 @@ ngx_http_js_ext_send(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     r = njs_vm_external(vm, njs_arg(args, nargs, 0));
     if (nxt_slow_path(r == NULL)) {
-        return NXT_ERROR;
+        return NJS_ERROR;
     }
 
     out = NULL;
@@ -1351,7 +1351,7 @@ ngx_http_js_ext_finish(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     r = njs_vm_external(vm, njs_arg(args, nargs, 0));
     if (nxt_slow_path(r == NULL)) {
-        return NXT_ERROR;
+        return NJS_ERROR;
     }
 
     if (ngx_http_send_special(r, NGX_HTTP_LAST) == NGX_ERROR) {
@@ -1410,7 +1410,7 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     r = njs_vm_external(vm, njs_argument(args, 0));
     if (nxt_slow_path(r == NULL)) {
-        return NXT_ERROR;
+        return NJS_ERROR;
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
@@ -1451,7 +1451,7 @@ ngx_http_js_ext_internal_redirect(njs_vm_t *vm, njs_value_t *args,
 
     r = njs_vm_external(vm, njs_argument(args, 0));
     if (nxt_slow_path(r == NULL)) {
-        return NXT_ERROR;
+        return NJS_ERROR;
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
@@ -1512,7 +1512,7 @@ ngx_http_js_ext_log_core(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     r = njs_vm_external(vm, njs_arg(args, nargs, 0));
     if (nxt_slow_path(r == NULL)) {
-        return NXT_ERROR;
+        return NJS_ERROR;
     }
 
     c = r->connection;
@@ -1895,7 +1895,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     r = njs_vm_external(vm, njs_argument(args, 0));
     if (nxt_slow_path(r == NULL)) {
-        return NXT_ERROR;
+        return NJS_ERROR;
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);

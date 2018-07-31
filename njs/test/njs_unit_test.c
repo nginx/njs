@@ -9788,7 +9788,7 @@ njs_unit_test_method_external(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     r = njs_vm_external(vm, njs_arg(args, nargs, 0));
     if (nxt_slow_path(r == NULL)) {
-        return NXT_ERROR;
+        return NJS_ERROR;
     }
 
     ret = njs_vm_value_to_ext_string(vm, &s, njs_arg(args, nargs, 1), 0);
@@ -9799,7 +9799,7 @@ njs_unit_test_method_external(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     vm->retval = njs_value_void;
 
-    return NXT_OK;
+    return NJS_OK;
 }
 
 
@@ -9814,13 +9814,13 @@ njs_unit_test_create_external(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     r = njs_vm_external(vm, njs_arg(args, nargs, 0));
     if (nxt_slow_path(r == NULL)) {
-        return NXT_ERROR;
+        return NJS_ERROR;
     }
 
     if (njs_vm_value_to_ext_string(vm, &uri, njs_arg(args, nargs, 1), 0)
         != NJS_OK)
     {
-        return NXT_ERROR;
+        return NJS_ERROR;
     }
 
     value = nxt_mem_cache_zalloc(r->mem_cache_pool, sizeof(njs_opaque_value_t));
@@ -9839,12 +9839,12 @@ njs_unit_test_create_external(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     ret = njs_vm_external_create(vm, value, sr->proto, sr);
     if (ret != NXT_OK) {
-        return NXT_ERROR;
+        return NJS_ERROR;
     }
 
     njs_vm_retval_set(vm, value);
 
-    return NXT_OK;
+    return NJS_OK;
 
 memory_error:
 
