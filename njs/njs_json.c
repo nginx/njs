@@ -1723,11 +1723,8 @@ njs_json_append_value(njs_json_stringify_t *stringify, const njs_value_t *value)
     case NJS_NULL:
     case NJS_INVALID:
     case NJS_FUNCTION:
-        return njs_json_buf_append(stringify, "null", 4);
-
     default:
-        njs_type_error(stringify->vm, "Non-serializable object");
-        return NXT_DECLINED;
+        return njs_json_buf_append(stringify, "null", 4);
     }
 }
 
