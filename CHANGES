@@ -1,4 +1,49 @@
 
+Changes with njs 0.2.3                                           31 Jul 2018
+
+    nginx modules:
+
+    *) Bugfix: making a subrequest from a Reply object caused
+        a segmentation fault.
+
+    *) Bugfix: getting the parent property of the main Request
+        object caused a segmentation fault.
+
+    Core:
+
+    *) Feature: added the pretty string representation for values.
+
+    *) Feature: correctly printing floating point numbers.
+
+    *) Feature: correctly parsing floating point numbers.
+
+    *) Feature: String.bytesFrom() method (decoding hex, base64,
+        base64url into a byte string).
+
+    *) Feature: String.padStart() and String.padEnd() methods.
+
+    *) Feature: added support of binary literals.
+
+    *) Improvement: added information about illegal token in number parsing.
+
+    *) Improvement: allowed uppercased O in octal literal values.
+
+    *) Improvement: added support for multiple arguments in console.log().
+
+    *) Bugfix: fixed applying call() to methods of external values.
+
+    *) Bugfix: fixed addition operator applied to an object.
+
+    *) Bugfix: fixed exception handling in njs_vm_value_to_ext_string().
+
+    *) Bugfix: fixed Number() with boolean, null and undefined arguments.
+
+    *) Bugfix: fixed error handling of setting non-numeric Array.length.
+
+    *) Bugfix: fixed autocompletion for global objects.
+
+    *) Bugfix: miscellaneous additional bugs have been fixed.
+
 Changes with njs 0.2.2                                           19 Jun 2018
 
     nginx modules:
