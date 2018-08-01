@@ -193,7 +193,7 @@ njs_vm_external_create(njs_vm_t *vm, njs_value_t *ext_val,
 
 nxt_int_t
 njs_vm_external_bind(njs_vm_t *vm, const nxt_str_t *var_name,
-    njs_value_t *value)
+    const njs_value_t *value)
 {
     nxt_int_t           ret;
     njs_extern_value_t  *ev;

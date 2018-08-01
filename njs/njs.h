@@ -48,8 +48,7 @@ typedef struct {
 extern const njs_value_t            njs_value_void;
 
 #define njs_arg(args, nargs, n)                                               \
-    (njs_value_t *) ((n < nargs) ? njs_argument(args, n)                      \
-                                 : &njs_value_void)
+    ((n < nargs) ? njs_argument(args, n) : &njs_value_void)
 
 #define njs_value_assign(dst, src)                                            \
     *((njs_opaque_value_t *) dst) = *((njs_opaque_value_t *) src);
@@ -162,7 +161,7 @@ NXT_EXPORT void njs_vm_destroy(njs_vm_t *vm);
 NXT_EXPORT nxt_int_t njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end);
 NXT_EXPORT njs_vm_t *njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external);
 NXT_EXPORT nxt_int_t njs_vm_call(njs_vm_t *vm, njs_function_t *function,
-    njs_value_t *args, nxt_uint_t nargs);
+    const njs_value_t *args, nxt_uint_t nargs);
 
 NXT_EXPORT njs_vm_event_t njs_vm_add_event(njs_vm_t *vm,
     njs_function_t *function, njs_host_event_t host_ev,
@@ -170,7 +169,7 @@ NXT_EXPORT njs_vm_event_t njs_vm_add_event(njs_vm_t *vm,
 NXT_EXPORT void njs_vm_del_event(njs_vm_t *vm, njs_vm_event_t vm_event);
 NXT_EXPORT nxt_int_t njs_vm_pending(njs_vm_t *vm);
 NXT_EXPORT nxt_int_t njs_vm_post_event(njs_vm_t *vm, njs_vm_event_t vm_event,
-    njs_value_t *args, nxt_uint_t nargs);
+    const njs_value_t *args, nxt_uint_t nargs);
 
 NXT_EXPORT nxt_int_t njs_vm_run(njs_vm_t *vm);
 
@@ -179,7 +178,7 @@ NXT_EXPORT const njs_extern_t *njs_vm_external_prototype(njs_vm_t *vm,
 NXT_EXPORT nxt_int_t njs_vm_external_create(njs_vm_t *vm,
     njs_value_t *value, const njs_extern_t *proto, njs_external_ptr_t object);
 NXT_EXPORT nxt_int_t njs_vm_external_bind(njs_vm_t *vm,
-    const nxt_str_t *var_name, njs_value_t *value);
+    const nxt_str_t *var_name, const njs_value_t *value);
 NXT_EXPORT njs_external_ptr_t njs_vm_external(njs_vm_t *vm,
     const njs_value_t *value);
 
@@ -188,7 +187,7 @@ NXT_EXPORT nxt_array_t *njs_vm_completions(njs_vm_t *vm, nxt_str_t *expression);
 
 NXT_EXPORT njs_function_t *njs_vm_function(njs_vm_t *vm, nxt_str_t *name);
 NXT_EXPORT njs_value_t *njs_vm_retval(njs_vm_t *vm);
-NXT_EXPORT void njs_vm_retval_set(njs_vm_t *vm, njs_value_t *value);
+NXT_EXPORT void njs_vm_retval_set(njs_vm_t *vm, const njs_value_t *value);
 
 NXT_EXPORT u_char * njs_string_alloc(njs_vm_t *vm, njs_value_t *value,
     uint32_t size, uint32_t length);
@@ -196,7 +195,7 @@ NXT_EXPORT njs_ret_t njs_string_create(njs_vm_t *vm, njs_value_t *value,
     u_char *start, uint32_t size, uint32_t length);
 
 NXT_EXPORT nxt_int_t njs_value_string_copy(njs_vm_t *vm, nxt_str_t *retval,
-    njs_value_t *value, uintptr_t *next);
+    const njs_value_t *value, uintptr_t *next);
 
 NXT_EXPORT njs_ret_t njs_vm_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst,
     const njs_value_t *src, nxt_uint_t handle_exception);
@@ -212,24 +211,24 @@ NXT_EXPORT void njs_value_data_set(njs_value_t *value, void *data);
 NXT_EXPORT void njs_value_error_set(njs_vm_t *vm, njs_value_t *value,
     const char *fmt, ...);
 
-NXT_EXPORT uint8_t njs_value_bool(njs_value_t *value);
-NXT_EXPORT double njs_value_number(njs_value_t *value);
-NXT_EXPORT void *njs_value_data(njs_value_t *value);
-NXT_EXPORT njs_function_t *njs_value_function(njs_value_t *value);
+NXT_EXPORT uint8_t njs_value_bool(const njs_value_t *value);
+NXT_EXPORT double njs_value_number(const njs_value_t *value);
+NXT_EXPORT void *njs_value_data(const njs_value_t *value);
+NXT_EXPORT njs_function_t *njs_value_function(const njs_value_t *value);
 
-NXT_EXPORT nxt_int_t njs_value_is_null(njs_value_t *value);
-NXT_EXPORT nxt_int_t njs_value_is_void(njs_value_t *value);
-NXT_EXPORT nxt_int_t njs_value_is_boolean(njs_value_t *value);
-NXT_EXPORT nxt_int_t njs_value_is_number(njs_value_t *value);
-NXT_EXPORT nxt_int_t njs_value_is_valid_number(njs_value_t *value);
-NXT_EXPORT nxt_int_t njs_value_is_string(njs_value_t *value);
-NXT_EXPORT nxt_int_t njs_value_is_object(njs_value_t *value);
-NXT_EXPORT nxt_int_t njs_value_is_function(njs_value_t *value);
+NXT_EXPORT nxt_int_t njs_value_is_null(const njs_value_t *value);
+NXT_EXPORT nxt_int_t njs_value_is_void(const njs_value_t *value);
+NXT_EXPORT nxt_int_t njs_value_is_boolean(const njs_value_t *value);
+NXT_EXPORT nxt_int_t njs_value_is_number(const njs_value_t *value);
+NXT_EXPORT nxt_int_t njs_value_is_valid_number(const njs_value_t *value);
+NXT_EXPORT nxt_int_t njs_value_is_string(const njs_value_t *value);
+NXT_EXPORT nxt_int_t njs_value_is_object(const njs_value_t *value);
+NXT_EXPORT nxt_int_t njs_value_is_function(const njs_value_t *value);
 
 NXT_EXPORT njs_ret_t njs_vm_value_dump(njs_vm_t *vm, nxt_str_t *retval,
     const njs_value_t *value, nxt_uint_t indent);
-NXT_EXPORT njs_value_t *njs_vm_object_prop(njs_vm_t *vm, njs_value_t *value,
-    const nxt_str_t *key);
+NXT_EXPORT njs_value_t *njs_vm_object_prop(njs_vm_t *vm,
+    const njs_value_t *value, const nxt_str_t *key);
 
 extern const nxt_mem_proto_t  njs_vm_mem_cache_pool_proto;
 

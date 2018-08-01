@@ -3521,63 +3521,63 @@ memory_error:
 
 
 nxt_noinline uint8_t
-njs_value_bool(njs_value_t *value)
+njs_value_bool(const njs_value_t *value)
 {
     return value->data.truth;
 }
 
 
 nxt_noinline double
-njs_value_number(njs_value_t *value)
+njs_value_number(const njs_value_t *value)
 {
     return value->data.u.number;
 }
 
 
 nxt_noinline void *
-njs_value_data(njs_value_t *value)
+njs_value_data(const njs_value_t *value)
 {
     return value->data.u.data;
 }
 
 
 nxt_noinline njs_function_t *
-njs_value_function(njs_value_t *value)
+njs_value_function(const njs_value_t *value)
 {
     return value->data.u.function;
 }
 
 
 nxt_noinline nxt_int_t
-njs_value_is_null(njs_value_t *value)
+njs_value_is_null(const njs_value_t *value)
 {
     return njs_is_null(value);
 }
 
 
 nxt_noinline nxt_int_t
-njs_value_is_void(njs_value_t *value)
+njs_value_is_void(const njs_value_t *value)
 {
     return njs_is_void(value);
 }
 
 
 nxt_noinline nxt_int_t
-njs_value_is_boolean(njs_value_t *value)
+njs_value_is_boolean(const njs_value_t *value)
 {
     return njs_is_boolean(value);
 }
 
 
 nxt_noinline nxt_int_t
-njs_value_is_number(njs_value_t *value)
+njs_value_is_number(const njs_value_t *value)
 {
     return njs_is_number(value);
 }
 
 
 nxt_noinline nxt_int_t
-njs_value_is_valid_number(njs_value_t *value)
+njs_value_is_valid_number(const njs_value_t *value)
 {
     return njs_is_number(value)
            && !isnan(value->data.u.number)
@@ -3586,28 +3586,28 @@ njs_value_is_valid_number(njs_value_t *value)
 
 
 nxt_noinline nxt_int_t
-njs_value_is_string(njs_value_t *value)
+njs_value_is_string(const njs_value_t *value)
 {
     return njs_is_string(value);
 }
 
 
 nxt_noinline nxt_int_t
-njs_value_is_object(njs_value_t *value)
+njs_value_is_object(const njs_value_t *value)
 {
     return njs_is_object(value);
 }
 
 
 nxt_noinline nxt_int_t
-njs_value_is_function(njs_value_t *value)
+njs_value_is_function(const njs_value_t *value)
 {
     return njs_is_function(value);
 }
 
 
 nxt_int_t
-njs_value_string_copy(njs_vm_t *vm, nxt_str_t *retval, njs_value_t *value,
+njs_value_string_copy(njs_vm_t *vm, nxt_str_t *retval, const njs_value_t *value,
     uintptr_t *next)
 {
     uintptr_t    n;

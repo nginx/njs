@@ -158,7 +158,7 @@ njs_ret_t njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, njs_value_t *args, nxt_uint_t nargs,
     size_t reserve, nxt_bool_t ctor);
 njs_ret_t njs_function_frame(njs_vm_t *vm, njs_function_t *function,
-    const njs_value_t *this, njs_value_t *args, nxt_uint_t nargs,
+    const njs_value_t *this, const njs_value_t *args, nxt_uint_t nargs,
     nxt_bool_t ctor);
 njs_ret_t njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance);
 
