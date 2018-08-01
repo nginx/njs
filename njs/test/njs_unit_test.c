@@ -6518,6 +6518,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("function f() {} f.__proto__ === Function.prototype"),
       nxt_string("true") },
 
+    { nxt_string("Function()"),
+      nxt_string("InternalError: Not implemented") },
+
     { nxt_string("RegExp()"),
       nxt_string("/(?:)/") },
 
