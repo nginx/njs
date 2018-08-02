@@ -142,9 +142,12 @@ njs_crypto_object_value_alloc(njs_vm_t *vm, nxt_uint_t proto)
         ov->object.extensible = 1;
 
         ov->object.__proto__ = &vm->prototypes[proto].object;
+        return ov;
     }
 
-    return ov;
+    njs_memory_error(vm);
+
+    return NULL;
 }
 
 
@@ -171,12 +174,13 @@ njs_crypto_create_hash(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     hash = njs_crypto_object_value_alloc(vm, NJS_PROTOTYPE_CRYPTO_HASH);
     if (nxt_slow_path(hash == NULL)) {
-        goto memory_error;
+        return NJS_ERROR;
     }
 
     dgst = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_digest_t));
     if (nxt_slow_path(dgst == NULL)) {
-        goto memory_error;
+        njs_memory_error(vm);
+        return NJS_ERROR;
     }
 
     dgst->alg = alg;
@@ -190,12 +194,6 @@ njs_crypto_create_hash(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     vm->retval.data.truth = 1;
 
     return NJS_OK;
-
-memory_error:
-
-    njs_memory_error(vm);
-
-    return NJS_ERROR;
 }
 
 
@@ -412,7 +410,8 @@ njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     ctx = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_hmac_t));
     if (nxt_slow_path(ctx == NULL)) {
-        goto memory_error;
+        njs_memory_error(vm);
+        return NJS_ERROR;
     }
 
     ctx->alg = alg;
@@ -443,7 +442,7 @@ njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     hmac = njs_crypto_object_value_alloc(vm, NJS_PROTOTYPE_CRYPTO_HMAC);
     if (nxt_slow_path(hmac == NULL)) {
-        goto memory_error;
+        return NJS_ERROR;
     }
 
     njs_value_data_set(&hmac->value, ctx);
@@ -453,12 +452,6 @@ njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     vm->retval.data.truth = 1;
 
     return NJS_OK;
-
-memory_error:
-
-    njs_memory_error(vm);
-
-    return NJS_ERROR;
 }
 
 

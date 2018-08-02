@@ -81,7 +81,7 @@ njs_vm_external_add(njs_vm_t *vm, nxt_lvlhsh_t *hash, njs_external_t *external,
     do {
         ext = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_extern_t));
         if (nxt_slow_path(ext == NULL)) {
-            return NULL;
+            goto memory_error;
         }
 
         ext->name = external->name;
@@ -100,7 +100,7 @@ njs_vm_external_add(njs_vm_t *vm, nxt_lvlhsh_t *hash, njs_external_t *external,
             function = nxt_mem_cache_zalloc(vm->mem_cache_pool,
                                             sizeof(njs_function_t));
             if (nxt_slow_path(function == NULL)) {
-                return NULL;
+                goto memory_error;
             }
 
             /*
@@ -129,7 +129,7 @@ njs_vm_external_add(njs_vm_t *vm, nxt_lvlhsh_t *hash, njs_external_t *external,
             child = njs_vm_external_add(vm, &ext->hash, external->properties,
                                         external->nproperties);
             if (nxt_slow_path(child == NULL)) {
-                return NULL;
+                goto memory_error;
             }
         }
 
@@ -144,6 +144,7 @@ njs_vm_external_add(njs_vm_t *vm, nxt_lvlhsh_t *hash, njs_external_t *external,
 
             ret = nxt_lvlhsh_insert(hash, &lhq);
             if (nxt_slow_path(ret != NXT_OK)) {
+                njs_internal_error(vm, NULL);
                 return NULL;
             }
         }
@@ -154,6 +155,12 @@ njs_vm_external_add(njs_vm_t *vm, nxt_lvlhsh_t *hash, njs_external_t *external,
     } while (n != 0);
 
     return ext;
+
+memory_error:
+
+    njs_memory_error(vm);
+
+    return NULL;
 }
 
 
@@ -206,6 +213,7 @@ njs_vm_external_bind(njs_vm_t *vm, const nxt_str_t *var_name,
     ev = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
                              sizeof(njs_extern_value_t));
     if (nxt_slow_path(ev == NULL)) {
+        njs_memory_error(vm);
         return NXT_ERROR;
     }
 
@@ -221,6 +229,7 @@ njs_vm_external_bind(njs_vm_t *vm, const nxt_str_t *var_name,
 
     ret = nxt_lvlhsh_insert(&vm->externals_hash, &lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
+        njs_internal_error(vm, NULL);
         return ret;
     }
 

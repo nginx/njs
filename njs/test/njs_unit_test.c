@@ -5566,6 +5566,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var r = new RegExp('abc', 'i'); r.test('00ABC11')"),
       nxt_string("true") },
 
+    { nxt_string("new RegExp('', 'x')"),
+      nxt_string("SyntaxError: Invalid RegExp flags \"x\"") },
+
     { nxt_string("[0].map(RegExp().toString)"),
       nxt_string("TypeError: 'this' argument is not a regexp") },
 
@@ -6081,16 +6084,19 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("1,two,3") },
 
     { nxt_string("var a = Array(-1)"),
-      nxt_string("RangeError") },
+      nxt_string("RangeError: Invalid array length") },
 
     { nxt_string("var a = Array(2.5)"),
-      nxt_string("RangeError") },
+      nxt_string("RangeError: Invalid array length") },
 
     { nxt_string("var a = Array(NaN)"),
-      nxt_string("RangeError") },
+      nxt_string("RangeError: Invalid array length") },
 
     { nxt_string("var a = Array(Infinity)"),
-      nxt_string("RangeError") },
+      nxt_string("RangeError: Invalid array length") },
+
+    { nxt_string("var a = Array(1111111111)"),
+      nxt_string("MemoryError") },
 
     { nxt_string("var a = new Array(3); a"),
       nxt_string(",,") },
@@ -7532,6 +7538,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var d = new Date(); d.__proto__ === Date.prototype"),
       nxt_string("true") },
+
+    { nxt_string("new Date(NaN)"),
+      nxt_string("Invalid Date") },
 
     { nxt_string("[0].map(new Date().getDate)"),
       nxt_string("TypeError: cannot convert void to date") },

@@ -36,23 +36,15 @@ njs_exception_error_create(njs_vm_t *vm, njs_value_type_t type,
 
     ret = njs_string_new(vm, &string, (const u_char *) buf, size, size);
     if (nxt_slow_path(ret != NXT_OK)) {
-        goto memory_error;
+        return;
     }
 
     error = njs_error_alloc(vm, type, NULL, &string);
-    if (nxt_slow_path(error == NULL)) {
-        goto memory_error;
+    if (nxt_fast_path(error != NULL)) {
+        vm->retval.data.u.object = error;
+        vm->retval.type = type;
+        vm->retval.data.truth = 1;
     }
-
-    vm->retval.data.u.object = error;
-    vm->retval.type = type;
-    vm->retval.data.truth = 1;
-
-    return;
-
-memory_error:
-
-    njs_memory_error(vm);
 }
 
 
@@ -67,6 +59,7 @@ njs_error_alloc(njs_vm_t *vm, njs_value_type_t type, const njs_value_t *name,
 
     error = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_object_t));
     if (nxt_slow_path(error == NULL)) {
+        njs_memory_error(vm);
         return NULL;
     }
 
@@ -94,6 +87,7 @@ njs_error_alloc(njs_vm_t *vm, njs_value_type_t type, const njs_value_t *name,
 
         ret = nxt_lvlhsh_insert(&error->hash, &lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
+            njs_internal_error(vm, NULL);
             return NULL;
         }
     }
@@ -114,6 +108,7 @@ njs_error_alloc(njs_vm_t *vm, njs_value_type_t type, const njs_value_t *name,
 
         ret = nxt_lvlhsh_insert(&error->hash, &lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
+            njs_internal_error(vm, NULL);
             return NULL;
         }
     }
@@ -138,7 +133,6 @@ njs_error_create(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     error = njs_error_alloc(vm, type, NULL, value);
     if (nxt_slow_path(error == NULL)) {
-        njs_memory_error(vm);
         return NXT_ERROR;
     }
 

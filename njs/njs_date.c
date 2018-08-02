@@ -129,6 +129,7 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
         date = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_date_t));
         if (nxt_slow_path(date == NULL)) {
+            njs_memory_error(vm);
             return NXT_ERROR;
         }
 
@@ -1052,9 +1053,9 @@ njs_date_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *date)
         return njs_string_new(vm, retval, buf, size, size);
     }
 
-    njs_range_error(vm, NULL);
+    vm->retval = njs_string_invalid_date;
 
-    return NXT_ERROR;
+    return NXT_OK;
 }
 
 

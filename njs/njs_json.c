@@ -535,7 +535,6 @@ njs_json_parse_array(njs_json_parse_ctx_t *ctx, njs_value_t *value,
 
     array = njs_array_alloc(ctx->vm, 0, 0);
     if (nxt_slow_path(array == NULL)) {
-        njs_memory_error(ctx->vm);
         return NULL;
     }
 
@@ -812,7 +811,6 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value,
 
     ret = njs_string_create(ctx->vm, value, (u_char *) start, size, length);
     if (nxt_slow_path(ret != NXT_OK)) {
-        njs_memory_error(ctx->vm);
         return NULL;
     }
 

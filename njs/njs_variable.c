@@ -83,6 +83,7 @@ njs_builtin_add(njs_vm_t *vm, njs_parser_t *parser)
     ret = nxt_lvlhsh_insert(&scope->variables, &lhq);
 
     if (nxt_fast_path(ret == NXT_OK)) {
+        njs_internal_error(vm, NULL);
         return var;
     }
 
@@ -397,6 +398,7 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
         value = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
                                     sizeof(njs_value_t));
         if (nxt_slow_path(value == NULL)) {
+            njs_memory_error(vm);
             return NULL;
         }
 
@@ -503,6 +505,7 @@ njs_variable_alloc(njs_vm_t *vm, nxt_str_t *name, njs_variable_type_t type)
 
     var = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_variable_t));
     if (nxt_slow_path(var == NULL)) {
+        njs_memory_error(vm);
         return NULL;
     }
 
@@ -532,6 +535,8 @@ njs_name_copy(njs_vm_t *vm, nxt_str_t *dst, nxt_str_t *src)
 
         return NXT_OK;
     }
+
+    njs_memory_error(vm);
 
     return NXT_ERROR;
 }

@@ -34,9 +34,12 @@ njs_object_alloc(njs_vm_t *vm)
         object->type = NJS_OBJECT;
         object->shared = 0;
         object->extensible = 1;
+        return object;
     }
 
-    return object;
+    njs_memory_error(vm);
+
+    return NULL;
 }
 
 
@@ -58,9 +61,12 @@ njs_object_value_copy(njs_vm_t *vm, njs_value_t *value)
         object->__proto__ = &vm->prototypes[NJS_PROTOTYPE_OBJECT].object;
         object->shared = 0;
         value->data.u.object = object;
+        return object;
     }
 
-    return object;
+    njs_memory_error(vm);
+
+    return NULL;
 }
 
 
@@ -83,9 +89,13 @@ njs_object_value_alloc(njs_vm_t *vm, const njs_value_t *value, nxt_uint_t type)
         ov->object.__proto__ = &vm->prototypes[index].object;
 
         ov->value = *value;
+
+        return &ov->object;
     }
 
-    return &ov->object;
+    njs_memory_error(vm);
+
+    return NULL;
 }
 
 
@@ -107,6 +117,7 @@ njs_object_hash_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
 
         ret = nxt_lvlhsh_insert(hash, &lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
+            njs_internal_error(vm, NULL);
             return NXT_ERROR;
         }
 
@@ -183,9 +194,12 @@ njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
         prop->enumerable = attributes;
         prop->writable = attributes;
         prop->configurable = attributes;
+        return prop;
     }
 
-    return prop;
+    njs_memory_error(vm);
+
+    return NULL;
 }
 
 
@@ -988,6 +1002,7 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
 
     ret = nxt_lvlhsh_insert(&descriptor->hash, &lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
+        njs_internal_error(vm, NULL);
         return NXT_ERROR;
     }
 
@@ -1005,6 +1020,7 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
 
     ret = nxt_lvlhsh_insert(&descriptor->hash, &lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
+        njs_internal_error(vm, NULL);
         return NXT_ERROR;
     }
 
@@ -1022,6 +1038,7 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
 
     ret = nxt_lvlhsh_insert(&descriptor->hash, &lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
+        njs_internal_error(vm, NULL);
         return NXT_ERROR;
     }
 
@@ -1039,6 +1056,7 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
 
     ret = nxt_lvlhsh_insert(&descriptor->hash, &lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
+        njs_internal_error(vm, NULL);
         return NXT_ERROR;
     }
 
@@ -1395,7 +1413,6 @@ njs_property_prototype_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
         return &prop->value;
     }
 
-    /* Memory allocation or NXT_DECLINED error. */
     njs_internal_error(vm, NULL);
 
     return NULL;
@@ -1638,7 +1655,6 @@ njs_property_constructor_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
         return &prop->value;
     }
 
-    /* Memory allocation or NXT_DECLINED error. */
     njs_internal_error(vm, NULL);
 
     return NULL;

@@ -35,11 +35,16 @@ njs_function_alloc(njs_vm_t *vm)
         function->u.lambda = nxt_mem_cache_zalloc(vm->mem_cache_pool,
                                                  sizeof(njs_function_lambda_t));
         if (nxt_slow_path(function->u.lambda == NULL)) {
+            njs_memory_error(vm);
             return NULL;
         }
+
+        return function;
     }
 
-    return function;
+    njs_memory_error(vm);
+
+    return NULL;
 }
 
 
@@ -62,7 +67,8 @@ njs_function_value_copy(njs_vm_t *vm, njs_value_t *value)
 
     copy = nxt_mem_cache_alloc(vm->mem_cache_pool, size);
     if (nxt_slow_path(copy == NULL)) {
-        return copy;
+        njs_memory_error(vm);
+        return NULL;
     }
 
     value->data.u.function = copy;
@@ -247,6 +253,7 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
         frame = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
                                     spare_size);
         if (nxt_slow_path(frame == NULL)) {
+            njs_memory_error(vm);
             return NULL;
         }
 
@@ -365,6 +372,7 @@ njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
             closure = nxt_mem_cache_align(vm->mem_cache_pool,
                                           sizeof(njs_value_t), size);
             if (nxt_slow_path(closure == NULL)) {
+                njs_memory_error(vm);
                 return NXT_ERROR;
             }
 
@@ -618,6 +626,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     function = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_function_t));
     if (nxt_slow_path(function == NULL)) {
+        njs_memory_error(vm);
         return NXT_ERROR;
     }
 
@@ -640,6 +649,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     values = nxt_mem_cache_alloc(vm->mem_cache_pool, size);
     if (nxt_slow_path(values == NULL)) {
+        njs_memory_error(vm);
         nxt_mem_cache_free(vm->mem_cache_pool, function);
         return NXT_ERROR;
     }

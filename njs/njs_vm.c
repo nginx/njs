@@ -383,6 +383,7 @@ njs_vmcode_function(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 
     function = nxt_mem_cache_zalloc(vm->mem_cache_pool, size);
     if (nxt_slow_path(function == NULL)) {
+        njs_memory_error(vm);
         return NXT_ERROR;
     }
 
@@ -935,6 +936,7 @@ njs_method_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
 
     prop = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_object_prop_t));
     if (nxt_slow_path(prop == NULL)) {
+        njs_memory_error(vm);
         return NXT_ERROR;
     }
 
@@ -968,6 +970,7 @@ njs_vmcode_property_foreach(njs_vm_t *vm, njs_value_t *object,
         next = nxt_mem_cache_alloc(vm->mem_cache_pool,
                                    sizeof(njs_property_next_t));
         if (nxt_slow_path(next == NULL)) {
+            njs_memory_error(vm);
             return NXT_ERROR;
         }
 
@@ -2721,6 +2724,7 @@ njs_vmcode_try_start(njs_vm_t *vm, njs_value_t *value, njs_value_t *offset)
     if (vm->top_frame->exception.catch != NULL) {
         e = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_exception_t));
         if (nxt_slow_path(e == NULL)) {
+            njs_memory_error(vm);
             return NXT_ERROR;
         }
 
@@ -3298,6 +3302,7 @@ again:
             if (size != NJS_STRING_LONG) {
                 start = nxt_mem_cache_alloc(vm->mem_cache_pool, size);
                 if (nxt_slow_path(start == NULL)) {
+                    njs_memory_error(vm);
                     return NXT_ERROR;
                 }
 
@@ -3332,6 +3337,7 @@ again:
 
                 p = nxt_mem_cache_alloc(vm->mem_cache_pool, len);
                 if (p == NULL) {
+                    njs_memory_error(vm);
                     return NXT_ERROR;
                 }
 

@@ -109,20 +109,24 @@ static njs_ret_t njs_array_prototype_sort_continuation(njs_vm_t *vm,
 nxt_noinline njs_array_t *
 njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare)
 {
-    uint32_t     size;
+    size_t       size;
     njs_array_t  *array;
 
     array = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_array_t));
     if (nxt_slow_path(array == NULL)) {
-        return NULL;
+        goto memory_error;
     }
 
     size = length + spare;
 
+    if (nxt_slow_path(size * sizeof(njs_value_t) < size)) {
+        goto memory_error;
+    }
+
     array->data = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
                                       size * sizeof(njs_value_t));
     if (nxt_slow_path(array->data == NULL)) {
-        return NULL;
+        goto memory_error;
     }
 
     array->start = array->data;
@@ -136,6 +140,12 @@ njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare)
     array->length = length;
 
     return array;
+
+memory_error:
+
+    njs_memory_error(vm);
+
+    return NULL;
 }
 
 
@@ -194,6 +204,7 @@ njs_array_expand(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
     start = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
                                 (prepend + size) * sizeof(njs_value_t));
     if (nxt_slow_path(start == NULL)) {
+        njs_memory_error(vm);
         return NXT_ERROR;
     }
 
@@ -230,7 +241,7 @@ njs_array_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         size = (uint32_t) num;
 
         if ((double) size != num) {
-            njs_range_error(vm, NULL);
+            njs_range_error(vm, "Invalid array length");
             return NXT_ERROR;
         }
 
@@ -393,7 +404,6 @@ njs_array_prototype_length(njs_vm_t *vm, njs_value_t *value,
         if (size > 0) {
             ret = njs_array_expand(vm, array, 0, size);
             if (nxt_slow_path(ret != NXT_OK)) {
-                njs_memory_error(vm);
                 return NJS_ERROR;
             }
 
@@ -846,6 +856,7 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         values = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
                                      sizeof(njs_value_t) * max);
         if (nxt_slow_path(values == NULL)) {
+            njs_memory_error(vm);
             return NXT_ERROR;
         }
 

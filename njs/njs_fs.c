@@ -221,7 +221,7 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     start = njs_string_alloc(vm, &arguments[2], sb.st_size, length);
     if (nxt_slow_path(start == NULL)) {
-        goto memory_error;
+        goto fail;
     }
 
     p = start;
@@ -286,13 +286,11 @@ done:
     return njs_function_apply(vm, callback->data.u.function,
                               arguments, 3, (njs_index_t) &vm->retval);
 
-memory_error:
+fail:
 
     if (fd != -1) {
         (void) close(fd);
     }
-
-    njs_memory_error(vm);
 
     return NJS_ERROR;
 }
@@ -420,7 +418,7 @@ njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     start = njs_string_alloc(vm, &vm->retval, sb.st_size, length);
     if (nxt_slow_path(start == NULL)) {
-        goto memory_error;
+        goto fail;
     }
 
     p = start;
@@ -472,13 +470,11 @@ done:
 
     return NJS_OK;
 
-memory_error:
+fail:
 
     if (fd != -1) {
         (void) close(fd);
     }
-
-    njs_memory_error(vm);
 
     return NJS_ERROR;
 }
@@ -898,12 +894,12 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
 
     ret = njs_string_new(vm, &string, (u_char *) description, size, size);
     if (nxt_slow_path(ret != NXT_OK)) {
-        goto memory_error;
+        return NJS_ERROR;
     }
 
     error = njs_error_alloc(vm, NJS_OBJECT_ERROR, NULL, &string);
     if (nxt_slow_path(error == NULL)) {
-        goto memory_error;
+        return NJS_ERROR;
     }
 
     lhq.replace = 0;
@@ -920,7 +916,7 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
 
         prop = njs_object_prop_alloc(vm, &njs_fs_errno_string, &value, 1);
         if (nxt_slow_path(prop == NULL)) {
-            goto memory_error;
+            return NJS_ERROR;
         }
 
         lhq.value = prop;
@@ -939,7 +935,7 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
 
         prop = njs_object_prop_alloc(vm, &njs_fs_path_string, path, 1);
         if (nxt_slow_path(prop == NULL)) {
-            goto memory_error;
+            return NJS_ERROR;
         }
 
         lhq.value = prop;
@@ -955,7 +951,7 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
         size = strlen(syscall);
         ret = njs_string_new(vm, &string, (u_char *) syscall, size, size);
         if (nxt_slow_path(ret != NXT_OK)) {
-            goto memory_error;
+            return NJS_ERROR;
         }
 
         lhq.key = nxt_string_value("sycall");
@@ -964,7 +960,7 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
 
         prop = njs_object_prop_alloc(vm, &njs_fs_syscall_string, &string, 1);
         if (nxt_slow_path(prop == NULL)) {
-            goto memory_error;
+            return NJS_ERROR;
         }
 
         lhq.value = prop;
@@ -981,12 +977,6 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
     retval->data.truth = 1;
 
     return NJS_OK;
-
-memory_error:
-
-    njs_memory_error(vm);
-
-    return NJS_ERROR;
 }
 
 

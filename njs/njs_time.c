@@ -71,6 +71,7 @@ njs_set_timeout(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 memory_error:
 
     njs_memory_error(vm);
+
     return NJS_ERROR;
 }
 

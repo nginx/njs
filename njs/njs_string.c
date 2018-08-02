@@ -147,6 +147,7 @@ njs_string_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
 
         string = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_string_t));
         if (nxt_slow_path(string == NULL)) {
+            njs_memory_error(vm);
             return NXT_ERROR;
         }
 
@@ -173,8 +174,6 @@ njs_string_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,
         memcpy(p, start, size);
         return NXT_OK;
     }
-
-    njs_memory_error(vm);
 
     return NXT_ERROR;
 }
@@ -293,8 +292,6 @@ njs_string_hex(njs_vm_t *vm, njs_value_t *value, const nxt_str_t *src)
         return NXT_OK;
     }
 
-    njs_memory_error(vm);
-
     return NXT_ERROR;
 }
 
@@ -386,7 +383,6 @@ njs_string_base64(njs_vm_t *vm, njs_value_t *value, const nxt_str_t *src)
 
     dst.start = njs_string_alloc(vm, &vm->retval, dst.length, dst.length);
     if (nxt_slow_path(dst.start == NULL)) {
-        njs_memory_error(vm);
         return NXT_ERROR;
     }
 
@@ -418,7 +414,6 @@ njs_string_base64url(njs_vm_t *vm, njs_value_t *value, const nxt_str_t *src)
 
     dst.start = njs_string_alloc(vm, &vm->retval, dst.length, dst.length);
     if (nxt_slow_path(dst.start == NULL)) {
-        njs_memory_error(vm);
         return NXT_ERROR;
     }
 
@@ -491,6 +486,7 @@ njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string, njs_value_t *value)
 
                     start = nxt_mem_cache_alloc(vm->mem_cache_pool, new_size);
                     if (nxt_slow_path(start == NULL)) {
+                        njs_memory_error(vm);
                         return NXT_ERROR;
                     }
 

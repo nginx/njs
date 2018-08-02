@@ -34,11 +34,13 @@ njs_regexp_init(njs_vm_t *vm)
     vm->regex_context = nxt_regex_context_create(njs_regexp_malloc,
                                           njs_regexp_free, vm->mem_cache_pool);
     if (nxt_slow_path(vm->regex_context == NULL)) {
+        njs_memory_error(vm);
         return NXT_ERROR;
     }
 
     vm->single_match_data = nxt_regex_match_data(NULL, vm->regex_context);
     if (nxt_slow_path(vm->single_match_data == NULL)) {
+        njs_memory_error(vm);
         return NXT_ERROR;
     }
 
@@ -66,6 +68,7 @@ njs_ret_t
 njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
+    u_char              *start;
     nxt_str_t           string;
     njs_regexp_flags_t  flags;
 
@@ -81,9 +84,12 @@ njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     default:
         njs_string_get(&args[2], &string);
 
-        flags = njs_regexp_flags(&string.start, string.start + string.length,
-                                 1);
+        start = string.start;
+
+        flags = njs_regexp_flags(&start, start + string.length, 1);
         if (nxt_slow_path(flags < 0)) {
+            njs_syntax_error(vm, "Invalid RegExp flags \"%.*s\"",
+                             (int) string.length, string.start);
             return NXT_ERROR;
         }
 
@@ -267,6 +273,7 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
                                    sizeof(njs_regexp_pattern_t)
                                    + 1 + length + size + 1);
     if (nxt_slow_path(pattern == NULL)) {
+        njs_memory_error(vm);
         return NULL;
     }
 
@@ -434,9 +441,12 @@ njs_regexp_alloc(njs_vm_t *vm, njs_regexp_pattern_t *pattern)
         regexp->object.extensible = 1;
         regexp->last_index = 0;
         regexp->pattern = pattern;
+        return regexp;
     }
 
-    return regexp;
+    njs_memory_error(vm);
+
+    return NULL;
 }
 
 
@@ -655,6 +665,7 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         match_data = nxt_regex_match_data(&pattern->regex[type],
                                           vm->regex_context);
         if (nxt_slow_path(match_data == NULL)) {
+            njs_memory_error(vm);
             return NXT_ERROR;
         }
 
@@ -744,6 +755,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
 
     ret = nxt_lvlhsh_insert(&array->object.hash, &lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
+        njs_internal_error(vm, NULL);
         goto fail;
     }
 
