@@ -215,7 +215,7 @@ static njs_interactive_test_t  njs_test[] =
 
     { nxt_string("var o = { toString: function() { return [1] } }" ENTER
                  "o" ENTER),
-      nxt_string("TypeError: cannot evaluate an object's value\n"
+      nxt_string("TypeError: Cannot convert object to primitive value\n"
                  "    at main (native)\n") },
 
 };

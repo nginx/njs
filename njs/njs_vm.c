@@ -3204,7 +3204,8 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
                 }
 
                 if (ret == NXT_ERROR) {
-                    njs_type_error(vm, "cannot evaluate an object's value");
+                    njs_type_error(vm,
+                                   "Cannot convert object to primitive value");
                 }
 
                 return ret;

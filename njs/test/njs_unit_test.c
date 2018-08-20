@@ -4322,7 +4322,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var r = { toString: function() { return /45/ } };"
                  "'123456'.search(r)"),
-      nxt_string("TypeError: cannot evaluate an object's value") },
+      nxt_string("TypeError: Cannot convert object to primitive value") },
 
     { nxt_string("var r = { toString: function() { return /34/ },"
                  "          valueOf:  function() { return 45 } };"
@@ -4456,7 +4456,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var r = { toString: function() { return /45/ } };"
                  "'123456'.match(r)"),
-      nxt_string("TypeError: cannot evaluate an object's value") },
+      nxt_string("TypeError: Cannot convert object to primitive value") },
 
     { nxt_string("var r = { toString: function() { return /34/ },"
                  "          valueOf:  function() { return 45 } };"
@@ -5927,10 +5927,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("o:OK") },
 
     { nxt_string("var o = { toString: function() { return [1] } }; o"),
-      nxt_string("TypeError: cannot evaluate an object's value") },
+      nxt_string("TypeError: Cannot convert object to primitive value") },
 
     { nxt_string("var o = { toString: function() { return [1] } }; 'o:' + o"),
-      nxt_string("TypeError: cannot evaluate an object's value") },
+      nxt_string("TypeError: Cannot convert object to primitive value") },
 
     { nxt_string("var a = { valueOf: function() { return '3' } };"
                  "var b = { toString: function() { return 10 - a + 'OK' } };"
