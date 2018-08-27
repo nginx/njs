@@ -88,6 +88,7 @@ const njs_value_t  njs_string_boolean =     njs_string("boolean");
 const njs_value_t  njs_string_false =       njs_string("false");
 const njs_value_t  njs_string_true =        njs_string("true");
 const njs_value_t  njs_string_number =      njs_string("number");
+const njs_value_t  njs_string_minus_zero =  njs_string("-0");
 const njs_value_t  njs_string_minus_infinity =
                                             njs_string("-Infinity");
 const njs_value_t  njs_string_plus_infinity =
@@ -3310,7 +3311,16 @@ again:
             }
         }
 
-        ret = njs_primitive_value_to_string(vm, &value, &value);
+        if (nxt_slow_path((value.type == NJS_NUMBER
+                            && value.data.u.number == 0
+                            && signbit(value.data.u.number))))
+        {
+            value = njs_string_minus_zero;
+            ret = NXT_OK;
+
+        } else {
+            ret = njs_primitive_value_to_string(vm, &value, &value);
+        }
 
         if (nxt_fast_path(ret == NXT_OK)) {
             size = value.short_string.size;

@@ -346,16 +346,16 @@ nxt_dtoa(double value, char *start)
     minus = 0;
     p = start;
 
-    if (signbit(value)) {
-        *p++ = '-';
-        value = -value;
-        minus = 1;
-    }
-
     if (value == 0) {
         *p++ = '0';
 
         return (p - start);
+    }
+
+    if (signbit(value)) {
+        *p++ = '-';
+        value = -value;
+        minus = 1;
     }
 
     length = nxt_grisu2(value, p, &dec_exp);

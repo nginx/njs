@@ -420,6 +420,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("1 + 1 + '2' + 1 + 1"),
       nxt_string("2211") },
 
+    { nxt_string("'gg' + -0"),
+      nxt_string("gg0") },
+
     { nxt_string("1.2 - '5.7'"),
       nxt_string("-4.5") },
 
@@ -8975,6 +8978,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("JSON.stringify(123)"),
       nxt_string("123") },
+
+    { nxt_string("JSON.stringify(-0)"),
+      nxt_string("0") },
 
     { nxt_string("JSON.stringify(0.00000123)"),
       nxt_string("0.00000123") },

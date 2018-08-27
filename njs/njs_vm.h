@@ -1269,6 +1269,7 @@ extern const njs_value_t  njs_string_null;
 extern const njs_value_t  njs_string_false;
 extern const njs_value_t  njs_string_true;
 extern const njs_value_t  njs_string_native;
+extern const njs_value_t  njs_string_minus_zero;
 extern const njs_value_t  njs_string_minus_infinity;
 extern const njs_value_t  njs_string_plus_infinity;
 extern const njs_value_t  njs_string_nan;
