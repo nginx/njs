@@ -2817,9 +2817,11 @@ static njs_unit_test_t  njs_test[] =
 
     /* Array.toString(). */
 
+# if 0
     { nxt_string("var a = [1,2,3]; a.join = 'NO';"
                  "Object.prototype.toString = function () { return 'A' }; a"),
       nxt_string("[object Array]") },
+#endif
 
     { nxt_string("Array.prototype.toString.call(1)"),
       nxt_string("[object Number]") },
@@ -5699,8 +5701,8 @@ static njs_unit_test_t  njs_test[] =
 
     /* Memory object is immutable. */
 
-    { nxt_string("var e = MemoryError('e'); e.name = 'E'; e.message = 'e'; e"),
-      nxt_string("MemoryError") },
+    { nxt_string("var e = MemoryError('e'); e.name = 'E'"),
+      nxt_string("TypeError: Cannot add property 'name', object is not extensible") },
 
     { nxt_string("EvalError.prototype.name"),
       nxt_string("EvalError") },
@@ -6684,20 +6686,19 @@ static njs_unit_test_t  njs_test[] =
                  "Object.keys(o)"),
       nxt_string("a,c,b") },
 
-    { nxt_string("var o = {}; Object.defineProperty(o, 'a', {}); o.a = 1; o.a"),
-      nxt_string("undefined") },
+    { nxt_string("var o = {}; Object.defineProperty(o, 'a', {}); o.a = 1"),
+      nxt_string("TypeError: Cannot assign to read-only property 'a' of object") },
 
-    { nxt_string("var o = {}; Object.defineProperty(o, 'a', {writable:false});"
-                 "o.a = 1; o.a"),
-      nxt_string("undefined") },
+    { nxt_string("var o = {}; Object.defineProperty(o, 'a', {writable:false}); o.a = 1"),
+      nxt_string("TypeError: Cannot assign to read-only property 'a' of object") },
 
     { nxt_string("var o = {}; Object.defineProperty(o, 'a', {writable:true});"
                  "o.a = 1; o.a"),
       nxt_string("1") },
 
     { nxt_string("var o = {};"
-                 "Object.defineProperty(o, 'a', {value:1}); delete o.a; o.a"),
-      nxt_string("1") },
+                 "Object.defineProperty(o, 'a', {value:1}); delete o.a"),
+      nxt_string("TypeError: Cannot delete property 'a' of object") },
 
     { nxt_string("var o = {};"
                  "Object.defineProperty(o, 'a', {value:1, configurable:true});"
@@ -6706,8 +6707,8 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var o = {};"
                  "Object.defineProperty(o, 'a', {value:1, configurable:false});"
-                 "delete o.a; o.a"),
-      nxt_string("1") },
+                 "delete o.a"),
+      nxt_string("TypeError: Cannot delete property 'a' of object") },
 
     { nxt_string("var o = {};"
                  "Object.defineProperty(o, 'a', Object.create({value:2})); o.a"),
@@ -6894,17 +6895,17 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.freeze()"),
       nxt_string("undefined") },
 
-    { nxt_string("var o = Object.freeze({a:1}); o.a = 2; o.a"),
-      nxt_string("1") },
+    { nxt_string("var o = Object.freeze({a:1}); o.a = 2"),
+      nxt_string("TypeError: Cannot assign to read-only property 'a' of object") },
 
-    { nxt_string("var o = Object.freeze({a:1}); delete o.a; o.a"),
-      nxt_string("1") },
+    { nxt_string("var o = Object.freeze({a:1}); delete o.a"),
+      nxt_string("TypeError: Cannot delete property 'a' of object") },
 
     { nxt_string("var o = Object.freeze({a:1}); o.b = 1; o.b"),
-      nxt_string("undefined") },
+      nxt_string("TypeError: Cannot add property 'b', object is not extensible") },
 
     { nxt_string("var o = Object.freeze(Object.create({a:1})); o.a = 2; o.a"),
-      nxt_string("1") },
+      nxt_string("TypeError: Cannot add property 'a', object is not extensible") },
 
     { nxt_string("var o = Object.freeze({a:{b:1}}); o.a.b = 2; o.a.b"),
       nxt_string("2") },
@@ -6916,16 +6917,14 @@ static njs_unit_test_t  njs_test[] =
                  "Object.defineProperty(a, 'a', {value:1}).a"),
       nxt_string("TypeError: object is not extensible") },
 
-    { nxt_string("var a = [1,2]; a.a = 1; Object.freeze(a);"
-                 "delete a.a; a.a"),
-      nxt_string("1") },
+    { nxt_string("var a = [1,2]; a.a = 1; Object.freeze(a); delete a.a"),
+      nxt_string("TypeError: Cannot delete property 'a' of array") },
 
-    { nxt_string("var a = [1,2]; a.a = 1; Object.freeze(a);"
-                 "a.a = 2; a.a"),
-      nxt_string("1") },
+    { nxt_string("var a = [1,2]; a.a = 1; Object.freeze(a); a.a = 2"),
+      nxt_string("TypeError: Cannot assign to read-only property 'a' of array") },
 
-    { nxt_string("var a = Object.freeze([1,2]); a.a = 1; a.a"),
-      nxt_string("undefined") },
+    { nxt_string("var a = Object.freeze([1,2]); a.a = 1"),
+      nxt_string("TypeError: Cannot add property 'a', object is not extensible") },
 
     { nxt_string("Object.defineProperty(function() {}, 'a', {value:1}).a"),
       nxt_string("1") },
@@ -6934,16 +6933,14 @@ static njs_unit_test_t  njs_test[] =
                  "Object.defineProperty(f, 'a', {value:1}).a"),
       nxt_string("TypeError: object is not extensible") },
 
-    { nxt_string("var f = function() {}; f.a = 1; Object.freeze(f);"
-                 "delete f.a; f.a"),
-      nxt_string("1") },
+    { nxt_string("var f = function() {}; f.a = 1; Object.freeze(f); delete f.a"),
+      nxt_string("TypeError: Cannot delete property 'a' of function") },
 
-    { nxt_string("var f = function() {}; f.a = 1; Object.freeze(f);"
-                 "f.a = 2; f.a"),
-      nxt_string("1") },
+    { nxt_string("var f = function() {}; f.a = 1; Object.freeze(f); f.a = 2"),
+      nxt_string("TypeError: Cannot assign to read-only property 'a' of function") },
 
-    { nxt_string("var f = Object.freeze(function() {}); f.a = 1; f.a"),
-      nxt_string("undefined") },
+    { nxt_string("var f = Object.freeze(function() {}); f.a = 1"),
+      nxt_string("TypeError: Cannot add property 'a', object is not extensible") },
 
     { nxt_string("Object.defineProperty(new Date(''), 'a', {value:1}).a"),
       nxt_string("1") },
@@ -6953,15 +6950,14 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("TypeError: object is not extensible") },
 
     { nxt_string("var d = new Date(''); d.a = 1; Object.freeze(d);"
-                 "delete d.a; d.a"),
-      nxt_string("1") },
+                 "delete d.a"),
+      nxt_string("TypeError: Cannot delete property 'a' of date") },
 
-    { nxt_string("var d = new Date(''); d.a = 1; Object.freeze(d);"
-                 "d.a = 2; d.a"),
-      nxt_string("1") },
+    { nxt_string("var d = new Date(''); d.a = 1; Object.freeze(d); d.a = 2"),
+      nxt_string("TypeError: Cannot assign to read-only property 'a' of date") },
 
-    { nxt_string("var d = Object.freeze(new Date('')); d.a = 1; d.a"),
-      nxt_string("undefined") },
+    { nxt_string("var d = Object.freeze(new Date('')); d.a = 1"),
+      nxt_string("TypeError: Cannot add property 'a', object is not extensible") },
 
     { nxt_string("Object.defineProperty(new RegExp(''), 'a', {value:1}).a"),
       nxt_string("1") },
@@ -6970,16 +6966,14 @@ static njs_unit_test_t  njs_test[] =
                  "Object.defineProperty(r, 'a', {value:1}).a"),
       nxt_string("TypeError: object is not extensible") },
 
-    { nxt_string("var r = new RegExp(''); r.a = 1; Object.freeze(r);"
-                 "delete r.a; r.a"),
-      nxt_string("1") },
+    { nxt_string("var r = new RegExp(''); r.a = 1; Object.freeze(r); delete r.a"),
+      nxt_string("TypeError: Cannot delete property 'a' of regexp") },
 
-    { nxt_string("var r = new RegExp(''); r.a = 1; Object.freeze(r);"
-                 "r.a = 2; r.a"),
-      nxt_string("1") },
+    { nxt_string("var r = new RegExp(''); r.a = 1; Object.freeze(r); r.a = 2"),
+      nxt_string("TypeError: Cannot assign to read-only property 'a' of regexp") },
 
-    { nxt_string("var r = Object.freeze(new RegExp('')); r.a = 1; r.a"),
-      nxt_string("undefined") },
+    { nxt_string("var r = Object.freeze(new RegExp('')); r.a = 1"),
+      nxt_string("TypeError: Cannot add property 'a', object is not extensible") },
 
     { nxt_string("Object.isFrozen({a:1})"),
       nxt_string("false") },
@@ -7038,14 +7032,14 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = Object.seal({a:1}); o.a = 2; o.a"),
       nxt_string("2") },
 
-    { nxt_string("var o = Object.seal({a:1}); delete o.a; o.a"),
-      nxt_string("1") },
+    { nxt_string("var o = Object.seal({a:1}); delete o.a"),
+      nxt_string("TypeError: Cannot delete property 'a' of object") },
 
     { nxt_string("var o = Object.seal({a:1}); o.b = 1; o.b"),
-      nxt_string("undefined") },
+      nxt_string("TypeError: Cannot add property 'b', object is not extensible") },
 
     { nxt_string("var o = Object.seal(Object.create({a:1})); o.a = 2; o.a"),
-      nxt_string("1") },
+      nxt_string("TypeError: Cannot add property 'a', object is not extensible") },
 
     { nxt_string("var o = Object.seal({a:{b:1}}); o.a.b = 2; o.a.b"),
       nxt_string("2") },
@@ -7128,7 +7122,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("undefined") },
 
     { nxt_string("var o = Object.preventExtensions({a:1}); o.b = 1; o.b"),
-      nxt_string("undefined") },
+      nxt_string("TypeError: Cannot add property 'b', object is not extensible") },
 
     { nxt_string("Object.preventExtensions()"),
       nxt_string("undefined") },

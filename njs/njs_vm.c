@@ -645,6 +645,7 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
     code = (njs_vmcode_prop_set_t *) vm->current;
     value = njs_vmcode_operand(vm, code->value);
 
+    pq.lhq.key.length = 0;
     pq.query = NJS_PROPERTY_QUERY_SET;
 
     ret = njs_property_query(vm, &pq, object, property);
@@ -667,8 +668,11 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
         break;
 
     case NXT_DECLINED:
-        if (!object->data.u.object->extensible) {
-            return sizeof(njs_vmcode_prop_set_t);
+        if (nxt_slow_path(!object->data.u.object->extensible)) {
+            njs_type_error(vm, "Cannot add property '%.*s', "
+                           "object is not extensible", pq.lhq.key.length,
+                           pq.lhq.key.start);
+            return NXT_ERROR;
         }
 
         prop = njs_object_prop_alloc(vm, &pq.value, &njs_value_void, 1);
@@ -736,9 +740,14 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
         return ret;
     }
 
-    if (prop->writable) {
-        prop->value = *value;
+    if (nxt_slow_path(!prop->writable)) {
+        njs_type_error(vm, "Cannot assign to read-only property '%.*s' of %s",
+                       pq.lhq.key.length, pq.lhq.key.start,
+                       njs_type_string(object->type));
+        return NXT_ERROR;
     }
+
+    prop->value = *value;
 
     return sizeof(njs_vmcode_prop_set_t);
 }
@@ -841,6 +850,7 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
 
     retval = &njs_value_false;
 
+    pq.lhq.key.length = 0;
     pq.query = NJS_PROPERTY_QUERY_DELETE;
 
     ret = njs_property_query(vm, &pq, object, property);
@@ -850,15 +860,20 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
     case NXT_OK:
         prop = pq.lhq.value;
 
-        if (prop->configurable) {
-            pq.lhq.pool = vm->mem_cache_pool;
-
-            (void) nxt_lvlhsh_delete(&object->data.u.object->hash, &pq.lhq);
-
-            njs_release(vm, property);
-
-            retval = &njs_value_true;
+        if (nxt_slow_path(!prop->configurable)) {
+            njs_type_error(vm, "Cannot delete property '%.*s' of %s",
+                           pq.lhq.key.length, pq.lhq.key.start,
+                           njs_type_string(object->type));
+            return NXT_ERROR;
         }
+
+        pq.lhq.pool = vm->mem_cache_pool;
+
+        (void) nxt_lvlhsh_delete(&object->data.u.object->hash, &pq.lhq);
+
+        njs_release(vm, property);
+
+        retval = &njs_value_true;
 
         break;
 
