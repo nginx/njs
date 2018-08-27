@@ -503,6 +503,36 @@ const njs_object_init_t  njs_function_constructor_init = {
 };
 
 
+/*
+ * ES5.1, 15.3.5.1 length
+ *      the typical number of arguments expected by the function.
+ */
+static njs_ret_t
+njs_function_prototype_length(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval)
+{
+    nxt_uint_t      n;
+    njs_function_t  *function;
+
+    function = value->data.u.function;
+
+    if (function->native) {
+        for (n = function->args_offset; n <= NJS_ARGS_TYPES_MAX; n++) {
+            if (function->args_types[n] == 0) {
+                break;
+            }
+        }
+
+    } else {
+        n = function->u.lambda->nargs + 1;
+    }
+
+    njs_value_number_set(retval, n - function->args_offset);
+
+    return NXT_OK;
+}
+
+
 static njs_ret_t
 njs_function_prototype_call(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t retval)
@@ -670,6 +700,12 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 static const njs_object_prop_t  njs_function_prototype_properties[] =
 {
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("length"),
+        .value = njs_prop_handler(njs_function_prototype_length),
+    },
+
     {
         .type = NJS_METHOD,
         .name = njs_string("call"),

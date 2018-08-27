@@ -4833,6 +4833,27 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("function f() { }"),
       nxt_string("undefined") },
 
+    { nxt_string("function f() { }; f.length"),
+      nxt_string("0") },
+
+    { nxt_string("function f() { }; f.length = 1"),
+      nxt_string("TypeError: Cannot assign to read-only property 'length' of function") },
+
+    { nxt_string("function f(a,b) { }; f.length"),
+      nxt_string("2") },
+
+    { nxt_string("function f(a,b) { }; var ff = f.bind(f, 1); ff.length"),
+      nxt_string("1") },
+
+    { nxt_string("JSON.parse.length"),
+      nxt_string("2") },
+
+    { nxt_string("JSON.parse.bind(JSON, '[]').length"),
+      nxt_string("1") },
+
+    { nxt_string("var o = {}; o.hasOwnProperty.length"),
+      nxt_string("1") },
+
     { nxt_string("var x; function f() { }"),
       nxt_string("undefined") },
 

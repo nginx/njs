@@ -183,6 +183,11 @@ njs_test {
 }
 
 njs_test {
+    {"console.log.length\r\n"
+     "console.log.length\r\n0"}
+}
+
+njs_test {
     {"var print = console.log.bind(console); print(1, 'a', [1, 2])\r\n"
      "1 'a' \\\[1,2]\r\nundefined\r\n>> "}
     {"var print = console.dump.bind(console); print(1, 'a', [1, 2])\r\n"
