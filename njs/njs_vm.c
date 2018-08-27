@@ -656,7 +656,7 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
     case NXT_OK:
         prop = pq.lhq.value;
 
-        if (prop->type == NJS_PROPERTY_HANDLER) {
+        if (prop->type == NJS_PROPERTY_HANDLER && prop->writable) {
             ret = prop->value.data.u.prop_handler(vm, object, value,
                                                   &vm->retval);
             if (nxt_slow_path(ret != NXT_OK)) {

@@ -6065,10 +6065,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("({}).__proto__ = 1"),
-      nxt_string("1") },
-
-    { nxt_string("var o = {}; o.__proto__ = 1; o.__proto__"),
-      nxt_string("[object Object]") },
+      nxt_string("TypeError: Cannot assign to read-only property '__proto__' of object") },
 
     { nxt_string("({}).__proto__.constructor === Object"),
       nxt_string("true") },
