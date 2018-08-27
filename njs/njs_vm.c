@@ -1053,12 +1053,18 @@ njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
             next->index = -1;
         }
 
-        prop = nxt_lvlhsh_each(&object->data.u.object->hash, &next->lhe);
+        for ( ;; ) {
+            prop = nxt_lvlhsh_each(&object->data.u.object->hash, &next->lhe);
 
-        if (prop != NULL) {
-            *retval = prop->name;
+            if (prop == NULL) {
+                break;
+            }
 
-            return code->offset;
+            if (prop->enumerable) {
+                *retval = prop->name;
+
+                return code->offset;
+            }
         }
 
         nxt_mem_cache_free(vm->mem_cache_pool, next);

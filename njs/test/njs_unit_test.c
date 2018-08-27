@@ -2070,6 +2070,18 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("for (null in undefined);"),
       nxt_string("ReferenceError: Invalid left-hand side \"null\" in for-in statement in 1") },
 
+    { nxt_string("var s = ''; for (var p in [1,2]) {s += p}; s"),
+      nxt_string("01") },
+
+    { nxt_string("var s = ''; for (var p in {a:1, b:2}) {s += p}; s"),
+      nxt_string("ab") },
+
+    { nxt_string("var s = '';"
+                 "var o = Object.defineProperty({}, 'x', {value:1});"
+                 "Object.defineProperty(o, 'y', {value:2, enumerable:true});"
+                 "for (var p in o) {s += p}; s"),
+      nxt_string("y") },
+
     /* switch. */
 
     { nxt_string("switch"),
