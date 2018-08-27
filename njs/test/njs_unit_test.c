@@ -6717,6 +6717,67 @@ static njs_unit_test_t  njs_test[] =
                  "Object.defineProperty(o, 'a', Object.create({value:2})); o.a"),
       nxt_string("2") },
 
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {configurable:false});"
+                 "Object.defineProperty(o, 'a', {configurable:true})"),
+      nxt_string("TypeError: Cannot redefine property: 'a'") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {configurable:false});"
+                 "Object.defineProperty(o, 'a', {enumerable:true})"),
+      nxt_string("TypeError: Cannot redefine property: 'a'") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {configurable:false});"
+                 "Object.defineProperty(o, 'a', {writable:true})"),
+      nxt_string("TypeError: Cannot redefine property: 'a'") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {configurable:false});"
+                 "Object.defineProperty(o, 'a', {enumerable:false}).a"),
+      nxt_string("undefined") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {configurable:false});"
+                 "Object.defineProperty(o, 'a', {}).a"),
+      nxt_string("undefined") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {configurable:false, writable:true});"
+                 "Object.defineProperty(o, 'a', {writable:false}).a"),
+      nxt_string("undefined") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {configurable:true, writable:false});"
+                 "Object.defineProperty(o, 'a', {writable:true}).a"),
+      nxt_string("undefined") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {});"
+                 "Object.defineProperty(o, 'a', {}).a"),
+      nxt_string("undefined") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {value:1});"
+                 "Object.defineProperty(o, 'a', {value:1}).a"),
+      nxt_string("1") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {value:1});"
+                 "Object.defineProperty(o, 'a', {value:2}).a"),
+      nxt_string("TypeError: Cannot redefine property: 'a'") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {configurable:true});"
+                 "Object.defineProperty(o, 'a', {value:1}).a"),
+      nxt_string("1") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', { configurable: true, value: 0 });"
+                 "Object.defineProperty(o, 'a', { value: 1 });"
+                 "Object.defineProperty(o, 'a', { configurable: false, value: 2 }).a"),
+      nxt_string("2") },
+
     { nxt_string("var o = {}; Object.defineProperty()"),
       nxt_string("TypeError: cannot convert void argument to object") },
 

@@ -18,15 +18,26 @@ typedef enum {
 } njs_object_property_type_t;
 
 
+/*
+ * Attributes are generally used as Boolean values.
+ * The UNSET value is used internally only by njs_define_property().
+ */
+typedef enum {
+    NJS_ATTRIBUTE_FALSE = 0,
+    NJS_ATTRIBUTE_TRUE = 1,
+    NJS_ATTRIBUTE_UNSET,
+} njs_object_attribute_t;
+
 typedef struct {
     /* Must be aligned to njs_value_t. */
     njs_value_t                 value;
     njs_value_t                 name;
 
-    njs_object_property_type_t  type:8;        /* 3 bits */
-    uint8_t                     enumerable;    /* 1 bit  */
-    uint8_t                     writable;      /* 1 bit  */
-    uint8_t                     configurable;  /* 1 bit  */
+    njs_object_property_type_t  type:8;          /* 3 bits */
+
+    njs_object_attribute_t      enumerable:8;    /* 2 bits */
+    njs_object_attribute_t      writable:8;      /* 2 bits */
+    njs_object_attribute_t      configurable:8;  /* 2 bits */
 } njs_object_prop_t;
 
 

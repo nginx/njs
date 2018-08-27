@@ -828,13 +828,72 @@ njs_object_define_properties(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
+static uint8_t
+njs_descriptor_attribute(njs_vm_t *vm, const njs_object_t *descriptor,
+    nxt_lvlhsh_query_t *pq, nxt_bool_t unset)
+{
+    njs_object_prop_t  *prop;
+
+    prop = njs_object_property(vm, descriptor, pq);
+    if (prop != NULL) {
+        return prop->value.data.truth;
+    }
+
+    return unset ? NJS_ATTRIBUTE_UNSET : 0;
+}
+
+
+static njs_object_prop_t *
+njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
+    const njs_object_t *descriptor, nxt_bool_t unset)
+{
+    const njs_value_t   *value;
+    njs_object_prop_t   *prop, *pr;
+    nxt_lvlhsh_query_t  pq;
+
+    value = unset ? &njs_value_invalid : &njs_value_void;
+    prop = njs_object_prop_alloc(vm, name, value, 0);
+    if (nxt_slow_path(prop == NULL)) {
+        return NULL;
+    }
+
+    pq.key = nxt_string_value("configurable");
+    pq.key_hash = NJS_CONFIGURABLE_HASH;
+    prop->configurable = njs_descriptor_attribute(vm, descriptor, &pq, unset);
+
+    pq.key = nxt_string_value("enumerable");
+    pq.key_hash = NJS_ENUMERABLE_HASH;
+    prop->enumerable = njs_descriptor_attribute(vm, descriptor, &pq, unset);
+
+    pq.key = nxt_string_value("writable");
+    pq.key_hash = NJS_WRITABABLE_HASH;
+    prop->writable = njs_descriptor_attribute(vm, descriptor, &pq, unset);
+
+    pq.key = nxt_string_value("value");
+    pq.key_hash = NJS_VALUE_HASH;
+    pq.proto = &njs_object_hash_proto;
+
+    pr = njs_object_property(vm, descriptor, &pq);
+    if (pr != NULL) {
+        prop->value = pr->value;
+    }
+
+    return prop;
+}
+
+
+/*
+ * ES5.1, 8.12.9: [[DefineOwnProperty]]
+ *      Only data descriptors are suppored.
+ */
 static njs_ret_t
 njs_define_property(njs_vm_t *vm, njs_object_t *object, const njs_value_t *name,
     const njs_object_t *descriptor)
 {
     nxt_int_t           ret;
-    njs_object_prop_t   *prop, *pr;
-    nxt_lvlhsh_query_t  lhq, pq;
+    nxt_bool_t          unset;
+    njs_object_prop_t   *desc, *current;
+    nxt_lvlhsh_query_t  lhq;
 
     njs_string_get(name, &lhq.key);
     lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
@@ -842,65 +901,79 @@ njs_define_property(njs_vm_t *vm, njs_object_t *object, const njs_value_t *name,
 
     ret = nxt_lvlhsh_find(&object->hash, &lhq);
 
-    if (ret != NXT_OK) {
-        prop = njs_object_prop_alloc(vm, name, &njs_value_void, 0);
-
-        if (nxt_slow_path(prop == NULL)) {
-            return NXT_ERROR;
-        }
-
-        lhq.value = prop;
-
-    } else {
-        prop = lhq.value;
-    }
-
-    pq.key = nxt_string_value("value");
-    pq.key_hash = NJS_VALUE_HASH;
-    pq.proto = &njs_object_hash_proto;
-
-    pr = njs_object_property(vm, descriptor, &pq);
-
-    if (pr != NULL) {
-        prop->value = pr->value;
-    }
-
-    pq.key = nxt_string_value("configurable");
-    pq.key_hash = NJS_CONFIGURABLE_HASH;
-
-    pr = njs_object_property(vm, descriptor, &pq);
-
-    if (pr != NULL) {
-        prop->configurable = pr->value.data.truth;
-    }
-
-    pq.key = nxt_string_value("enumerable");
-    pq.key_hash = NJS_ENUMERABLE_HASH;
-
-    pr = njs_object_property(vm, descriptor, &pq);
-
-    if (pr != NULL) {
-        prop->enumerable = pr->value.data.truth;
-    }
-
-    pq.key = nxt_string_value("writable");
-    pq.key_hash = NJS_WRITABABLE_HASH;
-
-    pr = njs_object_property(vm, descriptor, &pq);
-
-    if (pr != NULL) {
-        prop->writable = pr->value.data.truth;
-    }
-
-    lhq.replace = 0;
-    lhq.pool = vm->mem_cache_pool;
-
-    ret = nxt_lvlhsh_insert(&object->hash, &lhq);
-    if (nxt_slow_path(ret != NXT_OK)) {
+    unset = (ret == NXT_OK);
+    desc = njs_descriptor_prop(vm, name, descriptor, unset);
+    if (nxt_slow_path(desc == NULL)) {
         return NXT_ERROR;
     }
 
+    if (nxt_fast_path(ret == NXT_DECLINED)) {
+        lhq.value = desc;
+        lhq.replace = 0;
+        lhq.pool = vm->mem_cache_pool;
+
+        ret = nxt_lvlhsh_insert(&object->hash, &lhq);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            njs_internal_error(vm, NULL);
+            return NXT_ERROR;
+        }
+
+        return NXT_OK;
+    }
+
+    /* Updating existing prop. */
+
+    current = lhq.value;
+
+    if (!current->configurable) {
+        if (desc->configurable == NJS_ATTRIBUTE_TRUE) {
+            goto exception;
+        }
+
+        if (desc->enumerable != NJS_ATTRIBUTE_UNSET
+            && current->enumerable != desc->enumerable)
+        {
+            goto exception;
+        }
+
+        if (desc->writable == NJS_ATTRIBUTE_TRUE
+            && current->writable == NJS_ATTRIBUTE_FALSE)
+        {
+            goto exception;
+        }
+
+        if (njs_is_valid(&desc->value)
+            && current->writable == NJS_ATTRIBUTE_FALSE
+            && !njs_values_strict_equal(&desc->value, &current->value))
+        {
+            goto exception;
+        }
+    }
+
+    if (desc->configurable != NJS_ATTRIBUTE_UNSET) {
+        current->configurable = desc->configurable;
+    }
+
+    if (desc->enumerable != NJS_ATTRIBUTE_UNSET) {
+        current->enumerable = desc->enumerable;
+    }
+
+    if (desc->writable != NJS_ATTRIBUTE_UNSET) {
+        current->writable = desc->writable;
+    }
+
+    if (njs_is_valid(&desc->value)) {
+        current->value = desc->value;
+    }
+
     return NXT_OK;
+
+exception:
+
+    njs_type_error(vm, "Cannot redefine property: '%.*s'",
+                   (int) lhq.key.length, lhq.key.start);
+
+    return NXT_ERROR;
 }
 
 
