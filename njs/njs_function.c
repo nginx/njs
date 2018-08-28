@@ -216,6 +216,7 @@ njs_function_frame(njs_vm_t *vm, njs_function_t *function,
 
     frame = (njs_frame_t *) native_frame;
     frame->local = value;
+    frame->previous_active_frame = vm->active_frame;
 
     return NXT_OK;
 }
@@ -392,7 +393,6 @@ njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
         vm->scopes[NJS_SCOPE_CLOSURE + n] = &closure->u.values;
     }
 
-    frame->previous_active_frame = vm->active_frame;
     vm->active_frame = frame;
 
     return NJS_APPLIED;

@@ -5907,6 +5907,11 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("try {}"),
       nxt_string("SyntaxError: Missing catch or finally after try in 1") },
 
+    { nxt_string("function f(a) {return a;}; "
+                 "function thrower() {throw TypeError('Oops')}; "
+                 "f(thrower())"),
+      nxt_string("TypeError: Oops") },
+
     { nxt_string("var a = 0; try { a = 5 }"
                  "catch (e) { a = 9 } finally { a++ } a"),
       nxt_string("6") },
