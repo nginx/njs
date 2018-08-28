@@ -517,7 +517,7 @@ njs_function_prototype_length(njs_vm_t *vm, njs_value_t *value,
     function = value->data.u.function;
 
     if (function->native) {
-        for (n = function->args_offset; n <= NJS_ARGS_TYPES_MAX; n++) {
+        for (n = function->args_offset; n < NJS_ARGS_TYPES_MAX; n++) {
             if (function->args_types[n] == 0) {
                 break;
             }
