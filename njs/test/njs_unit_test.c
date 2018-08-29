@@ -6081,6 +6081,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.prototype.toString.call(Object.prototype)"),
       nxt_string("[object Object]") },
 
+    { nxt_string("Object.prototype.toString.call(new Array)"),
+      nxt_string("[object Array]") },
+
+    { nxt_string("Object.prototype.toString.call(new URIError)"),
+      nxt_string("[object Error]") },
+
     { nxt_string("Object.prototype"),
       nxt_string("[object Object]") },
 
@@ -9524,6 +9530,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("require('crypto').createHash('sha1')"),
       nxt_string("[object Hash]") },
+
+    { nxt_string("Object.prototype.toString.call(require('crypto').createHash('sha1'))"),
+      nxt_string("[object Object]") },
 
     { nxt_string("var h = require('crypto').createHash('md5');"
                  "h.update('AB').digest('hex')"),

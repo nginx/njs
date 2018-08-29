@@ -1768,33 +1768,14 @@ static const njs_value_t  njs_object_regexp_string =
 static const njs_value_t  njs_object_date_string = njs_string("[object Date]");
 static const njs_value_t  njs_object_error_string =
                                      njs_string("[object Error]");
-static const njs_value_t  njs_object_eval_error_string =
-                                     njs_long_string("[object EvalError]");
-static const njs_value_t  njs_object_internal_error_string =
-                                     njs_long_string("[object InternalError]");
-static const njs_value_t  njs_object_range_error_string =
-                                     njs_long_string("[object RangeError]");
-static const njs_value_t  njs_object_ref_error_string =
-                                     njs_long_string("[object RefError]");
-static const njs_value_t  njs_object_syntax_error_string =
-                                     njs_long_string("[object SyntaxError]");
-static const njs_value_t  njs_object_type_error_string =
-                                     njs_long_string("[object TypeError]");
-static const njs_value_t  njs_object_uri_error_string =
-                                     njs_long_string("[object URIError]");
-static const njs_value_t  njs_object_object_value_string =
-                                     njs_long_string("[object ObjectValue]");
-
 
 
 njs_ret_t
 njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    int32_t                 index;
-    njs_object_t            *object;
-    const njs_value_t       *value;
-    njs_object_prototype_t  *prototype;
+    int32_t            index;
+    const njs_value_t  *value;
 
     static const njs_value_t  *class_name[] = {
         /* Primitives. */
@@ -1826,41 +1807,23 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         &njs_object_regexp_string,
         &njs_object_date_string,
         &njs_object_error_string,
-        &njs_object_eval_error_string,
-        &njs_object_internal_error_string,
-        &njs_object_range_error_string,
-        &njs_object_ref_error_string,
-        &njs_object_syntax_error_string,
-        &njs_object_type_error_string,
-        &njs_object_uri_error_string,
-        &njs_object_object_value_string,
+        &njs_object_error_string,
+        &njs_object_error_string,
+        &njs_object_error_string,
+        &njs_object_error_string,
+        &njs_object_error_string,
+        &njs_object_error_string,
+        &njs_object_error_string,
+        &njs_object_object_string,
     };
 
     value = &args[0];
     index = value->type;
 
-    if (njs_is_object(value)) {
-        object = value->data.u.object;
-
-        do {
-            prototype = (njs_object_prototype_t *) object;
-            index = prototype - vm->prototypes;
-
-            if (index >= 0 && index < NJS_PROTOTYPE_MAX) {
-                index += NJS_OBJECT;
-                goto found;
-            }
-
-            object = object->__proto__;
-
-        } while (object != NULL);
-
-        nxt_thread_log_alert("prototype not found");
-
+    if (nxt_slow_path(class_name[index] == &njs_string_empty)) {
+        njs_internal_error(vm, "Unknown value type");
         return NXT_ERROR;
     }
-
-found:
 
     vm->retval = *class_name[index];
 
