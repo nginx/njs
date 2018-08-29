@@ -535,8 +535,8 @@ njs_object_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_object_t       *object;
     const njs_value_t  *value;
 
-    type = NJS_OBJECT;
     value = njs_arg(args, nargs, 1);
+    type = value->type;
 
     if (njs_is_null_or_void(value)) {
 
@@ -544,6 +544,8 @@ njs_object_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         if (nxt_slow_path(object == NULL)) {
             return NXT_ERROR;
         }
+
+        type = NJS_OBJECT;
 
     } else {
 
@@ -553,16 +555,16 @@ njs_object_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         } else if (njs_is_primitive(value)) {
 
             /* value->type is the same as prototype offset. */
-            object = njs_object_value_alloc(vm, value, value->type);
+            object = njs_object_value_alloc(vm, value, type);
             if (nxt_slow_path(object == NULL)) {
                 return NXT_ERROR;
             }
 
-            type = njs_object_value_type(value->type);
+            type = njs_object_value_type(type);
 
         } else {
             njs_type_error(vm, "unexpected constructor argument:%s",
-                           njs_type_string(value->type));
+                           njs_type_string(type));
 
             return NXT_ERROR;
         }

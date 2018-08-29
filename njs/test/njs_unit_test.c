@@ -6060,6 +6060,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = {}; o === new Object(o)"),
       nxt_string("true") },
 
+    { nxt_string("var o = Object([]); Object.prototype.toString.call(o)"),
+      nxt_string("[object Array]") },
+
     { nxt_string("Object.name"),
       nxt_string("Object") },
 
