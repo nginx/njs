@@ -1776,8 +1776,7 @@ njs_ret_t
 njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    int32_t            index;
-    const njs_value_t  *value;
+    const njs_value_t  *name;
 
     static const njs_value_t  *class_name[] = {
         /* Primitives. */
@@ -1789,15 +1788,15 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
 
         &njs_object_data_string,
         &njs_object_exernal_string,
-        &njs_string_empty,
-        &njs_string_empty,
-        &njs_string_empty,
-        &njs_string_empty,
-        &njs_string_empty,
-        &njs_string_empty,
-        &njs_string_empty,
-        &njs_string_empty,
-        &njs_string_empty,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
 
         /* Objects. */
         &njs_object_object_string,
@@ -1819,17 +1818,17 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         &njs_object_object_string,
     };
 
-    value = &args[0];
-    index = value->type;
+    name = class_name[args[0].type];
 
-    if (nxt_slow_path(class_name[index] == &njs_string_empty)) {
-        njs_internal_error(vm, "Unknown value type");
-        return NXT_ERROR;
+    if (nxt_fast_path(name != NULL)) {
+        vm->retval = *name;
+
+        return NXT_OK;
     }
 
-    vm->retval = *class_name[index];
+    njs_internal_error(vm, "Unknown value type");
 
-    return NXT_OK;
+    return NXT_ERROR;
 }
 
 
