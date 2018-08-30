@@ -1814,6 +1814,7 @@ njs_vmcode_greater_or_equal(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
 
 /*
+ * ECMAScript 5.1: 11.8.5
  * njs_values_compare() returns
  *   1 if val1 is less than val2,
  *   0 if val1 is greater than or equal to val2,
@@ -1825,24 +1826,35 @@ static nxt_noinline njs_ret_t
 njs_values_compare(njs_vm_t *vm, const njs_value_t *val1,
     const njs_value_t *val2)
 {
-    if (nxt_fast_path(njs_is_numeric(val1) || njs_is_numeric(val2))) {
+    double  num1, num2;
 
-        if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
+    if (nxt_fast_path(njs_is_primitive(val1) && njs_is_primitive(val2))) {
 
-            /* NaN and void values are not comparable with anything. */
-            if (isnan(val1->data.u.number) || isnan(val2->data.u.number)) {
-                return -1;
+        if (nxt_fast_path(njs_is_numeric(val1))) {
+            num1 = val1->data.u.number;
+
+            if (nxt_fast_path(njs_is_numeric(val2))) {
+                num2 = val2->data.u.number;
+
+            } else {
+                num2 = njs_string_to_number(val2, 0);
             }
 
-            /* Infinities are handled correctly by comparision. */
-            return (val1->data.u.number < val2->data.u.number);
+        } else if (njs_is_numeric(val2)) {
+            num1 = njs_string_to_number(val1, 0);
+            num2 = val2->data.u.number;
+
+        } else {
+            return (njs_string_cmp(val1, val2) < 0) ? 1 : 0;
         }
 
-        return njs_trap(vm, NJS_TRAP_NUMBERS);
-    }
+        /* NaN and void values are not comparable with anything. */
+        if (isnan(num1) || isnan(num2)) {
+            return -1;
+        }
 
-    if (nxt_fast_path(njs_is_string(val1) && njs_is_string(val2))) {
-        return (njs_string_cmp(val1, val2) < 0) ? 1 : 0;
+        /* Infinities are handled correctly by comparision. */
+        return (num1 < num2);
     }
 
     return njs_trap(vm, NJS_TRAP_COMPARISON);

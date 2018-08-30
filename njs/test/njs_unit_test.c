@@ -1528,6 +1528,34 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("false") },
 
     /**/
+    { nxt_string("new String('1') > new Number(1)"),
+      nxt_string("false") },
+
+    { nxt_string("new Boolean(true) > '1'"),
+      nxt_string("false") },
+
+    { nxt_string("'0' >= new Number(1)"),
+      nxt_string("false") },
+
+    { nxt_string("'1' >= new Number(1)"),
+      nxt_string("true") },
+
+    { nxt_string("new String('1') < new Number(1)"),
+      nxt_string("false") },
+
+    { nxt_string("new Boolean(true) < '1'"),
+      nxt_string("false") },
+
+    { nxt_string("new String('1') <= new Number(1)"),
+      nxt_string("true") },
+
+    { nxt_string("new Boolean(true) <= '1'"),
+      nxt_string("true") },
+
+    { nxt_string("'-1' < {valueOf: function() {return -2}}"),
+      nxt_string("false") },
+
+    /**/
 
     { nxt_string("var a; a = 1 ? 2 : 3"),
       nxt_string("2") },
