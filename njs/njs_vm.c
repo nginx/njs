@@ -3280,6 +3280,12 @@ njs_vmcode_restart(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 
     ret = vmcode->code.operation(vm, value1, &frame->trap_values[1]);
 
+    if (nxt_slow_path(ret == NJS_TRAP)) {
+        /* Trap handlers are not reentrant. */
+        njs_internal_error(vm, "trap inside restart instruction");
+        return NXT_ERROR;
+    }
+
     retval = njs_vmcode_operand(vm, vmcode->operand1);
 
     //njs_release(vm, retval);
