@@ -923,7 +923,7 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
 
         ret = nxt_lvlhsh_insert(&error->hash, &lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
-            njs_internal_error(vm, NULL);
+            njs_internal_error(vm, "lvlhsh insert failed");
             return NJS_ERROR;
         }
     }
@@ -942,7 +942,7 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
 
         ret = nxt_lvlhsh_insert(&error->hash, &lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
-            njs_internal_error(vm, NULL);
+            njs_internal_error(vm, "lvlhsh insert failed");
             return NJS_ERROR;
         }
     }
@@ -967,7 +967,7 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
 
         ret = nxt_lvlhsh_insert(&error->hash, &lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
-            njs_internal_error(vm, NULL);
+            njs_internal_error(vm, "lvlhsh insert failed");
             return NJS_ERROR;
         }
     }

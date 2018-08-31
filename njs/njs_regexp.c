@@ -327,7 +327,7 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
     if (nxt_fast_path(ret >= 0)) {
 
         if (nxt_slow_path((u_int) ret != pattern->ncaptures)) {
-            njs_internal_error(vm, NULL);
+            njs_internal_error(vm, "regexp pattern compile failed");
             nxt_mem_cache_free(vm->mem_cache_pool, pattern);
             return NULL;
         }
@@ -755,7 +755,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
 
     ret = nxt_lvlhsh_insert(&array->object.hash, &lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
-        njs_internal_error(vm, NULL);
+        njs_internal_error(vm, "lvlhsh insert failed");
         goto fail;
     }
 

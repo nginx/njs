@@ -87,7 +87,7 @@ njs_error_alloc(njs_vm_t *vm, njs_value_type_t type, const njs_value_t *name,
 
         ret = nxt_lvlhsh_insert(&error->hash, &lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
-            njs_internal_error(vm, NULL);
+            njs_internal_error(vm, "lvlhsh insert failed");
             return NULL;
         }
     }
@@ -108,7 +108,7 @@ njs_error_alloc(njs_vm_t *vm, njs_value_type_t type, const njs_value_t *name,
 
         ret = nxt_lvlhsh_insert(&error->hash, &lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
-            njs_internal_error(vm, NULL);
+            njs_internal_error(vm, "lvlhsh insert failed");
             return NULL;
         }
     }

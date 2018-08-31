@@ -117,7 +117,7 @@ njs_object_hash_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
 
         ret = nxt_lvlhsh_insert(hash, &lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
-            njs_internal_error(vm, NULL);
+            njs_internal_error(vm, "lvlhsh insert failed");
             return NXT_ERROR;
         }
 
@@ -916,7 +916,7 @@ njs_define_property(njs_vm_t *vm, njs_object_t *object, const njs_value_t *name,
 
         ret = nxt_lvlhsh_insert(&object->hash, &lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
-            njs_internal_error(vm, NULL);
+            njs_internal_error(vm, "lvlhsh insert failed");
             return NXT_ERROR;
         }
 
@@ -1077,7 +1077,7 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
 
     ret = nxt_lvlhsh_insert(&descriptor->hash, &lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
-        njs_internal_error(vm, NULL);
+        njs_internal_error(vm, "lvlhsh insert failed");
         return NXT_ERROR;
     }
 
@@ -1095,7 +1095,7 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
 
     ret = nxt_lvlhsh_insert(&descriptor->hash, &lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
-        njs_internal_error(vm, NULL);
+        njs_internal_error(vm, "lvlhsh insert failed");
         return NXT_ERROR;
     }
 
@@ -1113,7 +1113,7 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
 
     ret = nxt_lvlhsh_insert(&descriptor->hash, &lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
-        njs_internal_error(vm, NULL);
+        njs_internal_error(vm, "lvlhsh insert failed");
         return NXT_ERROR;
     }
 
@@ -1131,7 +1131,7 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
 
     ret = nxt_lvlhsh_insert(&descriptor->hash, &lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
-        njs_internal_error(vm, NULL);
+        njs_internal_error(vm, "lvlhsh insert failed");
         return NXT_ERROR;
     }
 
@@ -1488,7 +1488,7 @@ njs_property_prototype_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
         return &prop->value;
     }
 
-    njs_internal_error(vm, NULL);
+    njs_internal_error(vm, "lvlhsh insert failed");
 
     return NULL;
 }
@@ -1730,7 +1730,7 @@ njs_property_constructor_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
         return &prop->value;
     }
 
-    njs_internal_error(vm, NULL);
+    njs_internal_error(vm, "lvlhsh insert failed");
 
     return NULL;
 }

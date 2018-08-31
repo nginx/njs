@@ -474,7 +474,7 @@ njs_json_parse_object(njs_json_parse_ctx_t *ctx, njs_value_t *value,
 
         ret = nxt_lvlhsh_insert(&object->hash, &lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
-            njs_internal_error(ctx->vm, NULL);
+            njs_internal_error(ctx->vm, "lvlhsh insert/replace failed");
             return NULL;
         }
 
@@ -568,7 +568,6 @@ njs_json_parse_array(njs_json_parse_ctx_t *ctx, njs_value_t *value,
 
         ret = njs_array_add(ctx->vm, array, element);
         if (nxt_slow_path(ret != NXT_OK)) {
-            njs_internal_error(ctx->vm, NULL);
             return NULL;
         }
 
@@ -982,7 +981,7 @@ njs_json_parse_continuation(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             }
 
             if (nxt_slow_path(ret != NXT_OK)) {
-                njs_internal_error(vm, NULL);
+                njs_internal_error(vm, "lvlhsh insert/replace failed");
                 return NXT_ERROR;
             }
 
@@ -1020,7 +1019,8 @@ njs_json_parse_continuation(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             break;
 
         default:
-            njs_internal_error(vm, NULL);
+            njs_internal_error(vm, "Unexpected state %d in JSON.parse()",
+                               state->type);
             return NXT_ERROR;
         }
     }
@@ -1062,7 +1062,8 @@ njs_json_parse_continuation_apply(njs_vm_t *vm, njs_json_parse_t *parse)
         break;
 
     default:
-        njs_internal_error(vm, NULL);
+        njs_internal_error(vm, "Unexpected state %d in JSON.parse() apply",
+                           state->type);
         return NXT_ERROR;
     }
 
@@ -1489,7 +1490,8 @@ njs_json_stringify_to_json(njs_vm_t *vm, njs_json_stringify_t* stringify,
         break;
 
     default:
-        njs_internal_error(vm, NULL);
+        njs_internal_error(vm, "Unexpected state %d in JSON.stringify() apply",
+                           state->type);
         return NXT_ERROR;
     }
 
@@ -1533,7 +1535,8 @@ njs_json_stringify_replacer(njs_vm_t *vm, njs_json_stringify_t* stringify,
         break;
 
     default:
-        njs_internal_error(vm, NULL);
+        njs_internal_error(vm, "Unexpected state %d in "
+                           "JSON.stringify() replacer", state->type);
         return NXT_ERROR;
     }
 

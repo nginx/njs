@@ -144,7 +144,7 @@ njs_vm_external_add(njs_vm_t *vm, nxt_lvlhsh_t *hash, njs_external_t *external,
 
             ret = nxt_lvlhsh_insert(hash, &lhq);
             if (nxt_slow_path(ret != NXT_OK)) {
-                njs_internal_error(vm, NULL);
+                njs_internal_error(vm, "lvlhsh insert failed");
                 return NULL;
             }
         }
@@ -229,7 +229,7 @@ njs_vm_external_bind(njs_vm_t *vm, const nxt_str_t *var_name,
 
     ret = nxt_lvlhsh_insert(&vm->externals_hash, &lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
-        njs_internal_error(vm, NULL);
+        njs_internal_error(vm, "lvlhsh insert failed");
         return ret;
     }
 

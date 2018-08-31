@@ -83,7 +83,7 @@ njs_builtin_add(njs_vm_t *vm, njs_parser_t *parser)
     ret = nxt_lvlhsh_insert(&scope->variables, &lhq);
 
     if (nxt_fast_path(ret == NXT_OK)) {
-        njs_internal_error(vm, NULL);
+        njs_internal_error(vm, "lvlhsh insert failed");
         return var;
     }
 
