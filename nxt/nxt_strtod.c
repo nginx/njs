@@ -111,6 +111,7 @@ nxt_adjust_pow10(int exp)
         return nxt_diyfp(nxt_uint64(0x98968000, 00000000), -40);
     default:
         nxt_unreachable();
+        return nxt_diyfp(0, 0);
     }
 }
 
