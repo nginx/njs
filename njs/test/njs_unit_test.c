@@ -10300,9 +10300,103 @@ done:
 }
 
 
+static nxt_int_t
+njs_vm_object_alloc_test(njs_vm_t * vm, nxt_bool_t disassemble,
+    nxt_bool_t verbose)
+{
+    njs_ret_t    ret;
+    njs_value_t  args[2], obj;
+
+    static const njs_value_t num_key = njs_string("num");
+    static const njs_value_t bool_key = njs_string("bool");
+
+    njs_value_number_set(njs_argument(&args, 0), 1);
+    njs_value_boolean_set(njs_argument(&args, 1), 0);
+
+    ret = njs_vm_object_alloc(vm, &obj, NULL);
+    if (ret != NJS_OK) {
+        return NXT_ERROR;
+    }
+
+    ret = njs_vm_object_alloc(vm, &obj, &num_key, NULL);
+    if (ret == NJS_OK) {
+        return NXT_ERROR;
+    }
+
+    ret = njs_vm_object_alloc(vm, &obj, &num_key, &args[0], NULL);
+    if (ret != NJS_OK) {
+        return NXT_ERROR;
+    }
+
+    ret = njs_vm_object_alloc(vm, &obj, &num_key, &args[0], &bool_key, &args[1],
+                              NULL);
+    if (ret != NJS_OK) {
+        return NXT_ERROR;
+    }
+
+    return NXT_OK;
+}
+
+
+typedef struct {
+    nxt_int_t  (*test)(njs_vm_t *, nxt_bool_t, nxt_bool_t);
+    nxt_str_t  name;
+} njs_api_test_t;
+
+
+static nxt_int_t
+njs_api_test(nxt_bool_t disassemble, nxt_bool_t verbose)
+{
+    njs_vm_t        *vm;
+    nxt_int_t       ret, rc;
+    nxt_uint_t      i;
+    njs_vm_opt_t    options;
+    njs_api_test_t  *test;
+
+    static njs_api_test_t  njs_api_test[] =
+    {
+        { njs_vm_object_alloc_test,
+          nxt_string("njs_vm_object_alloc_test") }
+    };
+
+    rc = NXT_ERROR;
+
+    vm = NULL;
+    memset(&options, 0, sizeof(njs_vm_opt_t));
+
+    for (i = 0; i < nxt_nitems(njs_api_test); i++) {
+        test = &njs_api_test[i];
+
+        vm = njs_vm_create(&options);
+        if (vm == NULL) {
+            printf("njs_vm_create() failed\n");
+            goto done;
+        }
+
+        ret = test->test(vm, disassemble, verbose);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            printf("njs_api_test: \"%.*s\" test failed\n",
+                   (int) test->name.length, test->name.start);
+            goto done;
+        }
+    }
+
+    rc = NXT_OK;
+
+done:
+
+    if (vm != NULL) {
+        njs_vm_destroy(vm);
+    }
+
+    return rc;
+}
+
+
 int nxt_cdecl
 main(int argc, char **argv)
 {
+    nxt_int_t   ret;
     nxt_bool_t  disassemble, verbose;
 
     disassemble = 0;
@@ -10324,5 +10418,10 @@ main(int argc, char **argv)
         }
     }
 
-    return njs_unit_test(disassemble, verbose);
+    ret = njs_unit_test(disassemble, verbose);
+    if (ret != NXT_OK) {
+        return ret;
+    }
+
+    return njs_api_test(disassemble, verbose);
 }

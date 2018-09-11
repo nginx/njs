@@ -686,6 +686,78 @@ njs_ret_t njs_vm_retval_to_ext_string(njs_vm_t *vm, nxt_str_t *retval)
 }
 
 
+njs_ret_t
+njs_vm_object_alloc(njs_vm_t *vm, njs_value_t *retval, ...)
+{
+    va_list             args;
+    nxt_int_t           ret;
+    njs_ret_t           rc;
+    njs_value_t         *name, *value;
+    njs_object_t        *object;
+    njs_object_prop_t   *prop;
+    nxt_lvlhsh_query_t  lhq;
+
+    object = njs_object_alloc(vm);
+    if (nxt_slow_path(object == NULL)) {
+        return NJS_ERROR;
+    }
+
+    rc = NJS_ERROR;
+
+    va_start(args, retval);
+
+    for ( ;; ) {
+        name = va_arg(args, njs_value_t *);
+        if (name == NULL) {
+            break;
+        }
+
+        value = va_arg(args, njs_value_t *);
+        if (value == NULL) {
+            njs_type_error(vm, "missed value for a key");
+            goto done;
+        }
+
+        if (nxt_slow_path(!njs_is_string(name))) {
+            njs_type_error(vm, "prop name is not a string");
+            goto done;
+        }
+
+        lhq.replace = 0;
+        lhq.pool = vm->mem_cache_pool;
+        lhq.proto = &njs_object_hash_proto;
+
+        njs_string_get(name, &lhq.key);
+        lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
+
+        prop = njs_object_prop_alloc(vm, name, value, 1);
+        if (nxt_slow_path(prop == NULL)) {
+            goto done;
+        }
+
+        lhq.value = prop;
+
+        ret = nxt_lvlhsh_insert(&object->hash, &lhq);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            njs_internal_error(vm, NULL);
+            goto done;
+        }
+    }
+
+    rc = NJS_OK;
+
+    retval->data.u.object = object;
+    retval->type = NJS_OBJECT;
+    retval->data.truth = 1;
+
+done:
+
+    va_end(args);
+
+    return rc;
+}
+
+
 njs_value_t *
 njs_vm_object_prop(njs_vm_t *vm, const njs_value_t *value, const nxt_str_t *key)
 {

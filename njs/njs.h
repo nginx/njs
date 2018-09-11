@@ -227,6 +227,8 @@ NXT_EXPORT nxt_int_t njs_value_is_function(const njs_value_t *value);
 
 NXT_EXPORT njs_ret_t njs_vm_value_dump(njs_vm_t *vm, nxt_str_t *retval,
     const njs_value_t *value, nxt_uint_t indent);
+NXT_EXPORT njs_ret_t njs_vm_object_alloc(njs_vm_t *vm, njs_value_t *retval,
+    ...);
 NXT_EXPORT njs_value_t *njs_vm_object_prop(njs_vm_t *vm,
     const njs_value_t *value, const nxt_str_t *key);
 
