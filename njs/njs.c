@@ -486,7 +486,7 @@ njs_vm_call(njs_vm_t *vm, njs_function_t *function, const njs_value_t *args,
 
 
 njs_vm_event_t
-njs_vm_add_event(njs_vm_t *vm, njs_function_t *function,
+njs_vm_add_event(njs_vm_t *vm, njs_function_t *function, nxt_uint_t once,
     njs_host_event_t host_ev, njs_event_destructor destructor)
 {
     njs_event_t  *event;
@@ -499,6 +499,7 @@ njs_vm_add_event(njs_vm_t *vm, njs_function_t *function,
     event->host_event = host_ev;
     event->destructor = destructor;
     event->function = function;
+    event->once = once;
     event->posted = 0;
     event->nargs = 0;
     event->args = NULL;
@@ -633,7 +634,13 @@ njs_vm_handle_events(njs_vm_t *vm)
 
         ev = nxt_queue_link_data(link, njs_event_t, link);
 
-        njs_del_event(vm, ev, NJS_EVENT_DELETE);
+        if (ev->once) {
+            njs_del_event(vm, ev, NJS_EVENT_DELETE);
+
+        } else {
+            ev->posted = 0;
+            nxt_queue_remove(&ev->link);
+        }
 
         ret = njs_vm_call(vm, ev->function, ev->args, ev->nargs);
 

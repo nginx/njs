@@ -164,7 +164,7 @@ NXT_EXPORT nxt_int_t njs_vm_call(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *args, nxt_uint_t nargs);
 
 NXT_EXPORT njs_vm_event_t njs_vm_add_event(njs_vm_t *vm,
-    njs_function_t *function, njs_host_event_t host_ev,
+    njs_function_t *function, nxt_uint_t once, njs_host_event_t host_ev,
     njs_event_destructor destructor);
 NXT_EXPORT void njs_vm_del_event(njs_vm_t *vm, njs_vm_event_t vm_event);
 NXT_EXPORT nxt_int_t njs_vm_pending(njs_vm_t *vm);

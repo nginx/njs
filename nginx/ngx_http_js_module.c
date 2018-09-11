@@ -2074,7 +2074,7 @@ ngx_http_js_subrequest(ngx_http_request_t *r, nxt_str_t *uri_arg,
             return NJS_ERROR;
         }
 
-        vm_event = njs_vm_add_event(ctx->vm, callback, NULL, NULL);
+        vm_event = njs_vm_add_event(ctx->vm, callback, 1, NULL, NULL);
         if (vm_event == NULL) {
             njs_vm_error(ctx->vm, "internal error");
             return NJS_ERROR;

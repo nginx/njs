@@ -48,6 +48,7 @@ njs_set_timeout(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     event->destructor = ops->clear_timer;
     event->function = args[1].data.u.function;
     event->nargs = (nargs >= 3) ? nargs - 3 : 0;
+    event->once = 1;
     event->posted = 0;
 
     if (event->nargs != 0) {

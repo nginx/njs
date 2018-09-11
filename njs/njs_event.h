@@ -26,6 +26,7 @@ typedef struct {
     nxt_queue_link_t      link;
 
     unsigned              posted:1;
+    unsigned              once:1;
 } njs_event_t;
 
 
