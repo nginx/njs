@@ -45,8 +45,9 @@ struct njs_function_lambda_s {
     nxt_align_size(sizeof(njs_native_frame_t), sizeof(njs_value_t))
 
 /* The frame size must be aligned to njs_value_t. */
-#define NJS_FRAME_SIZE                                                        \
-    nxt_align_size(sizeof(njs_frame_t), sizeof(njs_value_t))
+#define njs_frame_size(closures)                                              \
+    nxt_align_size(sizeof(njs_frame_t) + closures * sizeof(njs_closure_t *),  \
+                   sizeof(njs_value_t))
 
 /* The retval field is not used in the global frame. */
 #define NJS_GLOBAL_FRAME_SIZE                                                 \

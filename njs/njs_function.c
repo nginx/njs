@@ -166,10 +166,9 @@ njs_function_frame(njs_vm_t *vm, njs_function_t *function,
 
     closures = lambda->nesting + lambda->block_closures;
 
-    size = NJS_FRAME_SIZE
+    size = njs_frame_size(closures)
            + (function->args_offset + max_args) * sizeof(njs_value_t)
-           + lambda->local_size
-           + closures * sizeof(njs_closure_t *);
+           + lambda->local_size;
 
     native_frame = njs_function_frame_alloc(vm, size);
     if (nxt_slow_path(native_frame == NULL)) {
@@ -182,7 +181,8 @@ njs_function_frame(njs_vm_t *vm, njs_function_t *function,
 
     /* Function arguments. */
 
-    value = (njs_value_t *) ((u_char *) native_frame + NJS_FRAME_SIZE);
+    value = (njs_value_t *) ((u_char *) native_frame +
+                             njs_frame_size(closures));
     native_frame->arguments = value;
 
     bound = function->bound;
