@@ -145,6 +145,7 @@ typedef struct {
     uint8_t                         trailer;         /* 1 bit */
     uint8_t                         accumulative;    /* 1 bit */
     uint8_t                         backtrace;       /* 1 bit */
+    uint8_t                         sandbox;         /* 1 bit */
 } njs_vm_opt_t;
 
 

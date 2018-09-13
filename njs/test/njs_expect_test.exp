@@ -3,8 +3,15 @@
 # Copyright (C) NGINX, Inc.
 #
 
-proc njs_test {body} {
-    spawn  -nottycopy njs
+proc njs_test {body {opts ""}} {
+
+    if {$opts eq ""} {
+        spawn  -nottycopy njs
+
+    } else {
+        spawn  -nottycopy njs $opts
+    }
+
     expect -re "interactive njs \\d+\.\\d+\.\\d+\r\n\r"
     expect "v.<Tab> -> the properties and prototype methods of v.\r
 type console.help() for more information\r
@@ -20,6 +27,12 @@ type console.help() for more information\r
 
     # Ctrl-C
     send \x03
+    expect eof
+}
+
+proc njs_run {opts output} {
+    spawn  -nottycopy njs $opts
+    expect -re $output
     expect eof
 }
 
@@ -490,3 +503,23 @@ njs_test {
     {"fs.readFileSync('njs_test_file2')\r\n"
      "'ABCABC'\r\n>> "}
 }
+
+# CLI OPTIONS
+
+# version
+
+njs_run "-v" "\\d+\.\\d+\.\\d+"
+
+# disassemble
+
+njs_test {
+    {"1+1\r\n"
+     "00000 ADD*\r\n00040 STOP*\r\n\r\n2"}
+} "-d"
+
+# sandboxing
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "Error: Cannot find module 'fs'\r\n"}
+} "-s"

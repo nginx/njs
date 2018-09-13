@@ -134,7 +134,7 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser, njs_parser_t *prev)
             return NULL;
         }
 
-        if (token == NJS_TOKEN_CLOSE_BRACE && vm->trailer) {
+        if (token == NJS_TOKEN_CLOSE_BRACE && vm->options.trailer) {
             parser->lexer->start--;
             break;
         }
@@ -351,7 +351,7 @@ njs_parser_statement(njs_vm_t *vm, njs_parser_t *parser,
         return njs_parser_block_statement(vm, parser);
 
     case NJS_TOKEN_CLOSE_BRACE:
-        if (vm->trailer) {
+        if (vm->options.trailer) {
             parser->node = NULL;
             nxt_thread_log_debug("BLOCK END");
             return token;

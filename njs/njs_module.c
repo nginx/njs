@@ -74,3 +74,19 @@ const njs_object_init_t  njs_require_function_init = {
     NULL,
     0,
 };
+
+
+nxt_bool_t
+njs_sandbox_module(enum njs_module_e module)
+{
+    switch (module) {
+    case NJS_MODULE_CRYPTO:
+        return 1;
+
+    case NJS_MODULE_FS:
+    default:
+        break;
+    }
+
+    return 0;
+}

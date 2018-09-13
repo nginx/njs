@@ -2558,7 +2558,7 @@ njs_generator_temp_index_get(njs_vm_t *vm, njs_parser_t *parser,
          scope = scope->parent;
     }
 
-    if (vm->accumulative && scope->type == NJS_SCOPE_GLOBAL) {
+    if (vm->options.accumulative && scope->type == NJS_SCOPE_GLOBAL) {
         /*
          * When non-clonable VM runs in accumulative mode
          * all global variables are allocated in absolute scope

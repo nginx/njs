@@ -15,6 +15,7 @@ typedef struct {
 
 njs_ret_t njs_module_require(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
+nxt_bool_t njs_sandbox_module(enum njs_module_e module);
 
 extern const nxt_lvlhsh_proto_t  njs_modules_hash_proto;
 

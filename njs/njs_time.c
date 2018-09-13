@@ -28,7 +28,7 @@ njs_set_timeout(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NJS_ERROR;
     }
 
-    ops = vm->ops;
+    ops = vm->options.ops;
     if (nxt_slow_path(ops == NULL)) {
         njs_internal_error(vm, "not supported by host environment");
         return NJS_ERROR;

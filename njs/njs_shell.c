@@ -31,6 +31,7 @@ typedef struct {
     nxt_int_t               version;
     nxt_int_t               disassemble;
     nxt_int_t               interactive;
+    nxt_int_t               sandbox;
 } njs_opts_t;
 
 
@@ -146,6 +147,7 @@ main(int argc, char **argv)
 
     vm_options.accumulative = 1;
     vm_options.backtrace = 1;
+    vm_options.sandbox = opts.sandbox;
 
     if (opts.interactive) {
         ret = njs_interactive_shell(&opts, &vm_options);
@@ -170,6 +172,7 @@ njs_get_options(njs_opts_t *opts, int argc, char** argv)
         "Options:\n"
         "  -v              print njs version and exit.\n"
         "  -d              print disassembled code.\n"
+        "  -s              sandbox mode.\n"
         "  <filename> | -  run code from a file or stdin.\n";
 
     ret = NXT_DONE;
@@ -199,6 +202,10 @@ njs_get_options(njs_opts_t *opts, int argc, char** argv)
         case 'v':
         case 'V':
             opts->version = 1;
+            break;
+
+        case 's':
+            opts->sandbox = 1;
             break;
 
         default:

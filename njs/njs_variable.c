@@ -123,7 +123,7 @@ njs_variable_add(njs_vm_t *vm, njs_parser_t *parser, njs_variable_type_t type)
         return var;
     }
 
-    lhq.replace = vm->accumulative;
+    lhq.replace = vm->options.accumulative;
     lhq.value = var;
     lhq.pool = vm->mem_cache_pool;
 
@@ -389,7 +389,7 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
         goto not_found;
     }
 
-    if (vm->accumulative && vs.scope->type == NJS_SCOPE_GLOBAL) {
+    if (vm->options.accumulative && vs.scope->type == NJS_SCOPE_GLOBAL) {
         /*
          * When non-clonable VM runs in accumulative mode all
          * global variables should be allocated in absolute scope

@@ -1036,7 +1036,7 @@ struct njs_vm_s {
     nxt_lvlhsh_t             events_hash;
     nxt_queue_t              posted_events;
 
-    njs_vm_ops_t             *ops;
+    njs_vm_opt_t             options;
 
     /*
      * The prototypes and constructors arrays must be together because
@@ -1073,8 +1073,6 @@ struct njs_vm_s {
     nxt_array_t              *backtrace;
 
     njs_trap_t               trap:8;
-    uint8_t                  trailer;  /* 1 bit */
-    uint8_t                  accumulative; /* 1 bit */
 };
 
 

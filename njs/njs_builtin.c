@@ -256,6 +256,10 @@ njs_builtin_objects_create(njs_vm_t *vm)
     lhq.pool = vm->mem_cache_pool;
 
     for (i = NJS_MODULE_FS; i < NJS_MODULE_MAX; i++) {
+        if (vm->options.sandbox && !njs_sandbox_module(i)) {
+            continue;
+        }
+
         module = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_module_t));
         if (nxt_slow_path(module == NULL)) {
             return NJS_ERROR;

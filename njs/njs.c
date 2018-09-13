@@ -110,6 +110,8 @@ njs_vm_create(njs_vm_opt_t *options)
             return NULL;
         }
 
+        vm->options = *options;
+
         if (options->shared != NULL) {
             vm->shared = options->shared;
 
@@ -160,14 +162,10 @@ njs_vm_create(njs_vm_opt_t *options)
         nxt_lvlhsh_init(&vm->externals_hash);
         nxt_lvlhsh_init(&vm->external_prototypes_hash);
 
-        vm->ops = options->ops;
-
         vm->trace.level = NXT_LEVEL_TRACE;
         vm->trace.size = 2048;
         vm->trace.handler = njs_parser_trace_handler;
         vm->trace.data = vm;
-
-        vm->trailer = options->trailer;
 
         if (options->backtrace) {
             debug = nxt_array_create(4, sizeof(njs_function_debug_t),
@@ -180,8 +178,7 @@ njs_vm_create(njs_vm_opt_t *options)
             vm->debug = debug;
         }
 
-        vm->accumulative = options->accumulative;
-        if (vm->accumulative) {
+        if (options->accumulative) {
             ret = njs_vm_init(vm);
             if (nxt_slow_path(ret != NXT_OK)) {
                 return NULL;
@@ -232,7 +229,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         return NJS_ERROR;
     }
 
-    if (vm->parser != NULL && !vm->accumulative) {
+    if (vm->parser != NULL && !vm->options.accumulative) {
         return NJS_ERROR;
     }
 
@@ -307,7 +304,7 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
 
     nxt_thread_log_debug("CLONE:");
 
-    if (vm->accumulative) {
+    if (vm->options.accumulative) {
         return NULL;
     }
 
@@ -347,7 +344,7 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
 
         nvm->external_objects = externals;
 
-        nvm->ops = vm->ops;
+        nvm->options = vm->options;
 
         nvm->current = vm->current;
 
