@@ -5,7 +5,6 @@
  */
 
 #include <njs_core.h>
-#include <stdio.h>
 #include <string.h>
 
 
@@ -651,7 +650,6 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 njs_array_t *
 njs_object_keys_array(njs_vm_t *vm, const njs_value_t *object)
 {
-    size_t             size;
     uint32_t           i, n, keys_length, array_length;
     njs_value_t        *value;
     njs_array_t        *keys, *array;
@@ -704,9 +702,7 @@ njs_object_keys_array(njs_vm_t *vm, const njs_value_t *object)
              * The maximum array index is 4294967294, so
              * it can be stored as a short string inside value.
              */
-            size = snprintf((char *) njs_string_short_start(value),
-                            NJS_STRING_SHORT, "%u", i);
-            njs_string_short_set(value, size, size);
+            njs_uint32_to_string(value, i);
         }
     }
 

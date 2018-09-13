@@ -8,7 +8,6 @@
 #include <njs_json.h>
 #include <njs_date.h>
 #include <njs_regexp.h>
-#include <stdio.h>
 #include <string.h>
 
 
@@ -1036,7 +1035,6 @@ memory_error:
 static njs_ret_t
 njs_json_parse_continuation_apply(njs_vm_t *vm, njs_json_parse_t *parse)
 {
-    size_t            size;
     njs_value_t       arguments[3];
     njs_json_state_t  *state;
 
@@ -1053,9 +1051,7 @@ njs_json_parse_continuation_apply(njs_vm_t *vm, njs_json_parse_t *parse)
         break;
 
     case NJS_JSON_ARRAY_START:
-        size = snprintf((char *) njs_string_short_start(&arguments[1]),
-                        NJS_STRING_SHORT, "%u", state->index);
-        njs_string_short_set(&arguments[1], size, size);
+        njs_uint32_to_string(&arguments[1], state->index);
         arguments[2] = state->value.data.u.array->start[state->index];
 
         state->type = NJS_JSON_ARRAY_REPLACED;
@@ -1455,7 +1451,6 @@ static njs_ret_t
 njs_json_stringify_to_json(njs_vm_t *vm, njs_json_stringify_t* stringify,
     njs_function_t *function, njs_value_t *key, njs_value_t *value)
 {
-    size_t            size;
     njs_value_t       arguments[2];
     njs_json_state_t  *state;
 
@@ -1482,9 +1477,7 @@ njs_json_stringify_to_json(njs_vm_t *vm, njs_json_stringify_t* stringify,
 
     case NJS_JSON_ARRAY_START:
     case NJS_JSON_ARRAY_CONTINUE:
-        size = snprintf((char *) njs_string_short_start(&arguments[1]),
-                        NJS_STRING_SHORT, "%u", state->index - 1);
-        njs_string_short_set(&arguments[1], size, size);
+        njs_uint32_to_string(&arguments[1], state->index - 1);
 
         state->type = NJS_JSON_ARRAY_TO_JSON_REPLACED;
         break;
@@ -1504,7 +1497,6 @@ static njs_ret_t
 njs_json_stringify_replacer(njs_vm_t *vm, njs_json_stringify_t* stringify,
     njs_value_t *key, njs_value_t *value)
 {
-    size_t            size;
     njs_value_t       arguments[3];
     njs_json_state_t  *state;
 
@@ -1526,9 +1518,7 @@ njs_json_stringify_replacer(njs_vm_t *vm, njs_json_stringify_t* stringify,
     case NJS_JSON_ARRAY_START:
     case NJS_JSON_ARRAY_CONTINUE:
     case NJS_JSON_ARRAY_TO_JSON_REPLACED:
-        size = snprintf((char *) njs_string_short_start(&arguments[1]),
-                        NJS_STRING_SHORT, "%u", state->index - 1);
-        njs_string_short_set(&arguments[1], size, size);
+        njs_uint32_to_string(&arguments[1], state->index - 1);
         arguments[2] = *value;
 
         state->type = NJS_JSON_ARRAY_REPLACED;

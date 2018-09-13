@@ -6,7 +6,6 @@
 
 #include <njs_core.h>
 #include <string.h>
-#include <stdio.h>
 
 
 static nxt_int_t njs_event_hash_test(nxt_lvlhsh_query_t *lhq, void *data);
@@ -44,13 +43,10 @@ njs_event_hash_test(nxt_lvlhsh_query_t *lhq, void *data)
 nxt_int_t
 njs_add_event(njs_vm_t *vm, njs_event_t *event)
 {
-    size_t              size;
     nxt_int_t           ret;
     nxt_lvlhsh_query_t  lhq;
 
-    size = snprintf((char *) njs_string_short_start(&event->id),
-                    NJS_STRING_SHORT, "%u", vm->event_id++);
-    njs_string_short_set(&event->id, size, size);
+    njs_uint32_to_string(&event->id, vm->event_id++);
 
     njs_string_get(&event->id, &lhq.key);
     lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);

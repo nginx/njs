@@ -9,6 +9,7 @@
 
 
 #include <math.h>
+#include <stdio.h>
 
 
 uint32_t njs_value_to_index(const njs_value_t *value);
@@ -53,6 +54,17 @@ njs_char_to_hex(u_char c)
     }
 
     return c;
+}
+
+
+nxt_inline void
+njs_uint32_to_string(njs_value_t *value, uint32_t u32)
+{
+    size_t  size;
+
+    size = snprintf((char *) njs_string_short_start(value),
+                    NJS_STRING_SHORT, "%u", u32);
+    njs_string_short_set(value, size, size);
 }
 
 
