@@ -1288,7 +1288,7 @@ njs_string_slice_args(njs_slice_prop_t *slice, njs_value_t *args,
 
 nxt_noinline njs_ret_t
 njs_string_slice(njs_vm_t *vm, njs_value_t *dst,
-    const njs_string_prop_t *string, njs_slice_prop_t *slice)
+    const njs_string_prop_t *string, const njs_slice_prop_t *slice)
 {
     size_t        size, n, length;
     const u_char  *p, *start, *end;
@@ -1325,10 +1325,10 @@ njs_string_slice(njs_vm_t *vm, njs_value_t *dst,
     }
 
     if (nxt_fast_path(size != 0)) {
-        return njs_string_new(vm, &vm->retval, start, size, length);
+        return njs_string_new(vm, dst, start, size, length);
     }
 
-    vm->retval = njs_string_empty;
+    *dst = njs_string_empty;
 
     return NXT_OK;
 }
