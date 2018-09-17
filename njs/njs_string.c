@@ -1236,48 +1236,49 @@ static nxt_noinline void
 njs_string_slice_args(njs_slice_prop_t *slice, njs_value_t *args,
     nxt_uint_t nargs)
 {
-    ssize_t  start, end, length;
+    ssize_t            start, end, length;
+    const njs_value_t  *value;
 
     length = slice->string_length;
-    start = 0;
 
-    if (nargs > 1) {
-        start = args[1].data.u.number;
+    value = njs_arg(args, nargs, 1);
+    start = value->data.u.number;
+
+    if (start < 0) {
+        start += length;
 
         if (start < 0) {
-            start += length;
-
-            if (start < 0) {
-                start = 0;
-            }
-        }
-
-        if (start >= length) {
             start = 0;
-            length = 0;
+        }
+    }
+
+    if (start >= length) {
+        start = 0;
+        length = 0;
+
+    } else {
+        if (!njs_is_void(njs_arg(args, nargs, 2))) {
+            value = njs_arg(args, nargs, 2);
+            end = value->data.u.number;
 
         } else {
             end = length;
+        }
 
-            if (nargs > 2) {
-                end = args[2].data.u.number;
+        if (end < 0) {
+            end += length;
+        }
 
-                if (end < 0) {
-                    end += length;
-                }
+        if (length >= end) {
+            length = end - start;
+
+            if (length < 0) {
+                start = 0;
+                length = 0;
             }
 
-            if (length >= end) {
-                length = end - start;
-
-                if (length < 0) {
-                    start = 0;
-                    length = 0;
-                }
-
-            } else {
-                length -= start;
-            }
+        } else {
+            length -= start;
         }
     }
 

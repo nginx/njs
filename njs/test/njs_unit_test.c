@@ -3794,6 +3794,18 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abcdefgh'.slice(3)"),
       nxt_string("defgh") },
 
+    { nxt_string("'abcdefgh'.slice(undefined, undefined)"),
+      nxt_string("abcdefgh") },
+
+    { nxt_string("'abcdefgh'.slice(undefined)"),
+      nxt_string("abcdefgh") },
+
+    { nxt_string("'abcdefgh'.slice(undefined, 1)"),
+      nxt_string("a") },
+
+    { nxt_string("'abcdefgh'.slice(3, undefined)"),
+      nxt_string("defgh") },
+
     { nxt_string("'abcde'.slice(50)"),
       nxt_string("") },
 
