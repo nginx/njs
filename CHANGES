@@ -1,4 +1,60 @@
 
+Changes with njs 0.2.4                                           18 Aug 2018
+
+    nginx modules:
+
+    *) Change: stream module handlers are refactored.
+
+       New methods and properties:
+       s.on(), s.off(), s.allow(), s.done(), s.decline(),
+       s.deny().
+
+       Removed properties of Stream object:
+       s.OK, s.ABORT, s.AGAIN, s.DECLINED, s.ERROR (replaced
+       with s.allow(), s.done([code]), s.deny()).
+
+       s.buffer (for reading replaced with data argument of
+       the corresponding callback, for writing use s.send()).
+
+       s.fromUpstream (replaced with a callback for a corresponding
+       event).
+
+       s.eof (replaced with flags.last).
+
+    Core:
+
+    *) Feature: added Function.prototype.length.
+
+    *) Feature: introduced sandboxing mode.
+
+    *) Improvement: added exception strings where appropriate.
+
+    *) Improvement: improved wording for primitive type conversion
+       exception.
+
+    *) Bugfix: throwing TypeError for attempts to change frozen
+       properties.
+
+    *) Bugfix: fixed Object.defineProperty() for existing properties.
+
+    *) Bugfix: respecting the enumerable attribute while iterating
+       by for in.
+
+    *) Bugfix: respecting writable attribute for property handlers.
+
+    *) Bugfix: fixed exception handling in arguments of a function.
+
+    *) Bugfix: fixed Object.prototype.toString for different
+       value types.
+
+    *) Bugfix: fixed Object() constructor for object types arguments.
+
+    *) Bugfix: fixed comparison of objects and strings.
+
+    *) Bugfix: fixed String.slice() for undefined arguments.
+
+    *) Bugfix: miscellaneous additional bugs have been fixed.
+
 Changes with njs 0.2.3                                           31 Jul 2018
 
     nginx modules:
