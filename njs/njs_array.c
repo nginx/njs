@@ -377,7 +377,7 @@ njs_array_prototype_length(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
     double       num;
-    int32_t      size;
+    int64_t      size;
     uint32_t     length;
     njs_ret_t    ret;
     njs_value_t  *val;
@@ -399,7 +399,7 @@ njs_array_prototype_length(njs_vm_t *vm, njs_value_t *value,
             return NJS_ERROR;
         }
 
-        size = (int32_t) (length - array->length);
+        size = (int64_t) length - array->length;
 
         if (size > 0) {
             ret = njs_array_expand(vm, array, 0, size);

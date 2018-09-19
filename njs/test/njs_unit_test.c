@@ -2790,7 +2790,13 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("[].length = {}"),
       nxt_string("RangeError: Invalid array length") },
 
+    { nxt_string("[].length = 2**32 - 1"),
+      nxt_string("MemoryError") },
+
     { nxt_string("[].length = 2**32"),
+      nxt_string("RangeError: Invalid array length") },
+
+    { nxt_string("[].length = 2**32 + 1"),
       nxt_string("RangeError: Invalid array length") },
 
     { nxt_string("[].length = -1"),
