@@ -1190,7 +1190,7 @@ ngx_http_js_ext_get_status(njs_vm_t *vm, njs_value_t *value, void *obj,
 
     r = (ngx_http_request_t *) obj;
 
-    njs_value_number_set(njs_vm_retval(vm), r->headers_out.status);
+    njs_value_number_set(value, r->headers_out.status);
 
     return NJS_OK;
 }
@@ -1224,7 +1224,7 @@ ngx_http_js_ext_get_content_length(njs_vm_t *vm, njs_value_t *value, void *obj,
 
     r = (ngx_http_request_t *) obj;
 
-    njs_value_number_set(njs_vm_retval(vm), r->headers_out.content_length_n);
+    njs_value_number_set(value, r->headers_out.content_length_n);
 
     return NJS_OK;
 }
