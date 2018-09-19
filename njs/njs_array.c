@@ -117,7 +117,7 @@ njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare)
         goto memory_error;
     }
 
-    size = length + spare;
+    size = (size_t) length + spare;
 
     if (nxt_slow_path(size * sizeof(njs_value_t) < size)) {
         goto memory_error;
