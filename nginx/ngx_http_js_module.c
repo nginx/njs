@@ -1844,7 +1844,7 @@ ngx_http_js_ext_get_response(njs_vm_t *vm, njs_value_t *value, void *obj,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    njs_vm_retval_set(vm, njs_value_arg(&ctx->args[1]));
+    njs_value_assign(value, njs_value_arg(&ctx->args[1]));
 
     return NJS_OK;
 }
@@ -2189,7 +2189,7 @@ ngx_http_js_ext_get_parent(njs_vm_t *vm, njs_value_t *value, void *obj,
         return NJS_ERROR;
     }
 
-    njs_vm_retval_set(vm, njs_value_arg(&ctx->args[0]));
+    njs_value_assign(value, njs_value_arg(&ctx->args[0]));
 
     return NJS_OK;
 }
