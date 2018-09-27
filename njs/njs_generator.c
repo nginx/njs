@@ -2066,7 +2066,7 @@ njs_generate_scope(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
                          parser->code_size, code_size);
 
     if (nxt_slow_path(parser->code_size < code_size)) {
-        njs_internal_error(vm, "code size mismatch actual %uz < expected %uz",
+        njs_internal_error(vm, "code size mismatch expected %uz < actual %uz",
                            parser->code_size, code_size);
         return NXT_ERROR;
     }
