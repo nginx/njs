@@ -7327,34 +7327,34 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("Invalid Date NaN") },
 
     { nxt_string("var d = new Date(1); d = d + ''; d.slice(0, 33)"),
-      nxt_string("Thu Jan 01 1970 12:45:00 GMT+1245") },
+      nxt_string("Thu Jan 01 1970 00:00:00 GMT+0000") },
 
     { nxt_string("var d = new Date(1308895200000); d.getTime()"),
       nxt_string("1308895200000") },
 
     { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getTime()"),
-      nxt_string("1308895200000") },
+      nxt_string("1308941100000") },
 
     { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.valueOf()"),
-      nxt_string("1308895200000") },
+      nxt_string("1308941100000") },
 
     { nxt_string("var d = new Date(2011, 5, 24, 18, 45);"
                  "d.toString().slice(0, 33)"),
-      nxt_string("Fri Jun 24 2011 18:45:00 GMT+1245") },
+      nxt_string("Fri Jun 24 2011 18:45:00 GMT+0000") },
 
     { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.toDateString()"),
       nxt_string("Fri Jun 24 2011") },
 
     { nxt_string("var d = new Date(2011, 5, 24, 18, 45);"
                  "d.toTimeString().slice(0, 17)"),
-      nxt_string("18:45:00 GMT+1245") },
+      nxt_string("18:45:00 GMT+0000") },
 
     { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.toUTCString()"),
-      nxt_string("Fri Jun 24 2011 06:00:00 GMT") },
+      nxt_string("Fri Jun 24 2011 18:45:00 GMT") },
 
     { nxt_string("var d = new Date(2011, 5, 24, 18, 45, 12, 625);"
                  "d.toISOString()"),
-      nxt_string("2011-06-24T06:00:12.625Z") },
+      nxt_string("2011-06-24T18:45:12.625Z") },
 
 #if 0
     /* These tests fail on Solaris: gmtime_r() returns off by one day. */
@@ -7523,13 +7523,13 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("18") },
 
     { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getUTCHours()"),
-      nxt_string("6") },
+      nxt_string("18") },
 
     { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getMinutes()"),
       nxt_string("45") },
 
     { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getUTCMinutes()"),
-      nxt_string("0") },
+      nxt_string("45") },
 
     { nxt_string("var d = new Date(2011, 5, 24, 18, 45, 12);"
                  "d.getSeconds()"),
@@ -7549,7 +7549,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var d = new Date(2011, 5, 24, 18, 45, 12, 625);"
                  "d.getTimezoneOffset()"),
-      nxt_string("-765") },
+      nxt_string("0") },
 
     { nxt_string("var d = new Date(); d.setTime(1308895200000); d.getTime()"),
       nxt_string("1308895200000") },
@@ -7568,15 +7568,15 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var d = new Date(1308895323625); d.setMinutes(3, 2, 5003);"
                  "d.getTime()"),
-      nxt_string("1308892687003") },
+      nxt_string("1308895387003") },
 
     { nxt_string("var d = new Date(1308895323625); d.setMinutes(3, 2);"
                  "d.getTime()"),
-      nxt_string("1308892682625") },
+      nxt_string("1308895382625") },
 
     { nxt_string("var d = new Date(1308895323625); d.setMinutes(3);"
                  "d.getTime()"),
-      nxt_string("1308892683625") },
+      nxt_string("1308895383625") },
 
     { nxt_string("var d = new Date(1308895323625); d.setUTCMinutes(3, 2, 5003);"
                  "d.getTime()"),
@@ -7592,19 +7592,19 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var d = new Date(1308895323625); d.setHours(20, 3, 2, 5003);"
                  "d.getTime()"),
-      nxt_string("1308899887003") },
+      nxt_string("1308945787003") },
 
     { nxt_string("var d = new Date(1308895323625); d.setHours(20, 3, 2);"
                  "d.getTime()"),
-      nxt_string("1308899882625") },
+      nxt_string("1308945782625") },
 
     { nxt_string("var d = new Date(1308895323625); d.setHours(20, 3);"
                  "d.getTime()"),
-      nxt_string("1308899883625") },
+      nxt_string("1308945783625") },
 
     { nxt_string("var d = new Date(1308895323625); d.setHours(20);"
                  "d.getTime()"),
-      nxt_string("1308902523625") },
+      nxt_string("1308945723625") },
 
     { nxt_string("var d = new Date(1308895323625);"
                  "d.setUTCHours(20, 3, 2, 5003); d.getTime()"),
@@ -7632,7 +7632,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var d = new Date(1308895323625); d.setMonth(2, 10);"
                  "d.getTime()"),
-      nxt_string("1299733323625") },
+      nxt_string("1299736923625") },
 
     { nxt_string("var d = new Date(1308895323625); d.setUTCMonth(2, 10);"
                  "d.getTime()"),
@@ -7640,7 +7640,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var d = new Date(1308895323625); d.setMonth(2);"
                  "d.getTime()"),
-      nxt_string("1300942923625") },
+      nxt_string("1300946523625") },
 
     { nxt_string("var d = new Date(1308895323625); d.setUTCMonth(2);"
                  "d.getTime()"),
@@ -7648,7 +7648,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var d = new Date(1308895323625); d.setFullYear(2010, 2, 10);"
                  "d.getTime()"),
-      nxt_string("1268197323625") },
+      nxt_string("1268200923625") },
 
     { nxt_string("var d = new Date(1308895323625);"
                  "d.setUTCFullYear(2010, 2, 10); d.getTime()"),
@@ -7656,7 +7656,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var d = new Date(1308895323625); d.setFullYear(2010, 2);"
                  "d.getTime()"),
-      nxt_string("1269406923625") },
+      nxt_string("1269410523625") },
 
     { nxt_string("var d = new Date(1308895323625); d.setUTCFullYear(2010, 2);"
                  "d.getTime()"),
@@ -7672,7 +7672,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var d = new Date(2011, 5, 24, 18, 45, 12, 625);"
                  "d.toJSON(1)"),
-      nxt_string("2011-06-24T06:00:12.625Z") },
+      nxt_string("2011-06-24T18:45:12.625Z") },
 
     { nxt_string("var o = { toISOString: function() { return 'OK' } };"
                  "Date.prototype.toJSON.call(o, 1)"),
@@ -9819,6 +9819,92 @@ static njs_unit_test_t  njs_test[] =
 };
 
 
+static njs_unit_test_t  njs_tz_test[] =
+{
+     { nxt_string("var d = new Date(1); d = d + ''; d.slice(0, 33)"),
+       nxt_string("Thu Jan 01 1970 12:45:00 GMT+1245") },
+
+     { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getTime()"),
+       nxt_string("1308895200000") },
+
+     { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.valueOf()"),
+       nxt_string("1308895200000") },
+
+     { nxt_string("var d = new Date(2011, 5, 24, 18, 45);"
+                  "d.toString().slice(0, 33)"),
+       nxt_string("Fri Jun 24 2011 18:45:00 GMT+1245") },
+
+     { nxt_string("var d = new Date(2011, 5, 24, 18, 45);"
+                  "d.toTimeString().slice(0, 17)"),
+       nxt_string("18:45:00 GMT+1245") },
+
+     { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.toUTCString()"),
+       nxt_string("Fri Jun 24 2011 06:00:00 GMT") },
+
+     { nxt_string("var d = new Date(2011, 5, 24, 18, 45, 12, 625);"
+                  "d.toISOString()"),
+       nxt_string("2011-06-24T06:00:12.625Z") },
+
+     { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getUTCHours()"),
+       nxt_string("6") },
+
+     { nxt_string("var d = new Date(2011, 5, 24, 18, 45); d.getUTCMinutes()"),
+       nxt_string("0") },
+
+     { nxt_string("var d = new Date(2011, 5, 24, 18, 45, 12, 625);"
+                  "d.getTimezoneOffset()"),
+       nxt_string("-765") },
+
+     { nxt_string("var d = new Date(1308895323625); d.setMinutes(3, 2, 5003);"
+                  "d.getTime()"),
+       nxt_string("1308892687003") },
+
+     { nxt_string("var d = new Date(1308895323625); d.setMinutes(3, 2);"
+                  "d.getTime()"),
+       nxt_string("1308892682625") },
+
+     { nxt_string("var d = new Date(1308895323625); d.setMinutes(3);"
+                  "d.getTime()"),
+       nxt_string("1308892683625") },
+
+     { nxt_string("var d = new Date(1308895323625); d.setHours(20, 3, 2, 5003);"
+                  "d.getTime()"),
+       nxt_string("1308899887003") },
+
+     { nxt_string("var d = new Date(1308895323625); d.setHours(20, 3, 2);"
+                  "d.getTime()"),
+       nxt_string("1308899882625") },
+
+     { nxt_string("var d = new Date(1308895323625); d.setHours(20, 3);"
+                  "d.getTime()"),
+       nxt_string("1308899883625") },
+
+     { nxt_string("var d = new Date(1308895323625); d.setHours(20);"
+                  "d.getTime()"),
+       nxt_string("1308902523625") },
+
+     { nxt_string("var d = new Date(1308895323625); d.setMonth(2, 10);"
+                  "d.getTime()"),
+       nxt_string("1299733323625") },
+
+     { nxt_string("var d = new Date(1308895323625); d.setMonth(2);"
+                  "d.getTime()"),
+       nxt_string("1300942923625") },
+
+     { nxt_string("var d = new Date(1308895323625); d.setFullYear(2010, 2, 10);"
+                  "d.getTime()"),
+       nxt_string("1268197323625") },
+
+     { nxt_string("var d = new Date(1308895323625); d.setFullYear(2010, 2);"
+                  "d.getTime()"),
+       nxt_string("1269406923625") },
+
+     { nxt_string("var d = new Date(2011, 5, 24, 18, 45, 12, 625);"
+                  "d.toJSON(1)"),
+       nxt_string("2011-06-24T06:00:12.625Z") },
+};
+
+
 typedef struct {
     nxt_str_t             uri;
     uint32_t              a;
@@ -10202,7 +10288,8 @@ njs_externals_init(njs_vm_t *vm)
 
 
 static nxt_int_t
-njs_unit_test(nxt_bool_t disassemble, nxt_bool_t verbose)
+njs_unit_test(njs_unit_test_t tests[], size_t num, nxt_bool_t disassemble,
+    nxt_bool_t verbose)
 {
     u_char        *start;
     njs_vm_t      *vm, *nvm;
@@ -10212,20 +10299,12 @@ njs_unit_test(nxt_bool_t disassemble, nxt_bool_t verbose)
     nxt_bool_t    success;
     njs_vm_opt_t  options;
 
-    /*
-     * Chatham Islands NZ-CHAT time zone.
-     * Standard time: UTC+12:45, Daylight Saving time: UTC+13:45.
-     */
-    (void) putenv((char *) "TZ=Pacific/Chatham");
-    tzset();
-
-
     vm = NULL;
     nvm = NULL;
 
     rc = NXT_ERROR;
 
-    for (i = 0; i < nxt_nitems(njs_test); i++) {
+    for (i = 0; i < num; i++) {
 
         if (verbose) {
             printf("\"%.*s\"\n",
@@ -10308,10 +10387,6 @@ done:
 
     if (vm != NULL) {
         njs_vm_destroy(vm);
-    }
-
-    if (rc == NXT_OK) {
-        printf("njs unit tests passed\n");
     }
 
     return rc;
@@ -10414,6 +10489,10 @@ done:
 int nxt_cdecl
 main(int argc, char **argv)
 {
+    size_t      size;
+    u_char      buf[16];
+    time_t      clock;
+    struct tm   tm;
     nxt_int_t   ret;
     nxt_bool_t  disassemble, verbose;
 
@@ -10436,10 +10515,41 @@ main(int argc, char **argv)
         }
     }
 
-    ret = njs_unit_test(disassemble, verbose);
+    (void) putenv((char *) "TZ=UTC");
+    tzset();
+
+    ret = njs_unit_test(njs_test, nxt_nitems(njs_test), disassemble, verbose);
     if (ret != NXT_OK) {
         return ret;
     }
+
+    printf("njs unit tests passed\n");
+
+    /*
+     * Chatham Islands NZ-CHAT time zone.
+     * Standard time: UTC+12:45, Daylight Saving time: UTC+13:45.
+     */
+    (void) putenv((char *) "TZ=Pacific/Chatham");
+    tzset();
+
+    clock = 0;
+    localtime_r(&clock, &tm);
+
+    size = strftime((char *) buf, sizeof(buf), "%z", &tm);
+
+    if (memcmp(buf, "+1245", size) == 0) {
+        ret = njs_unit_test(njs_tz_test, nxt_nitems(njs_tz_test), disassemble,
+                            verbose);
+        if (ret != NXT_OK) {
+            return ret;
+        }
+
+        printf("njs timezone tests passed\n");
+
+    } else {
+        printf("njs timezone tests skipped, timezone is unavailable\n");
+    }
+
 
     return njs_api_test(disassemble, verbose);
 }
