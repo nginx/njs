@@ -1,0 +1,40 @@
+
+# Copyright (C) Igor Sysoev
+# Copyright (C) NGINX, Inc.
+
+
+# Linux (glibc and musl from 1.1.20), OpenBSD, FreeBSD and NetBSD.
+
+nxt_feature="explicit_bzero()"
+nxt_feature_name=NXT_HAVE_EXPLICIT_BZERO
+nxt_feature_run=yes
+nxt_feature_incs=
+nxt_feature_libs=
+nxt_feature_test="#include <strings.h>
+                  #include <string.h>
+
+                  int main(void) {
+                      int r;
+
+                      explicit_bzero(&r, sizeof(r));
+                      return 0;
+                  }"
+. ${NXT_AUTO}feature
+
+
+if [ $nxt_found = no ]; then
+
+    # NetBSD has explicit_memset instead.
+
+    nxt_feature="explicit_memset()"
+    nxt_feature_name=NXT_HAVE_EXPLICIT_MEMSET
+    nxt_feature_test="#include <string.h>
+
+                      int main(void) {
+                          int r;
+
+                          explicit_memset(&r, 0, sizeof(r));
+                          return 0;
+                      }"
+    . ${NXT_AUTO}feature
+fi

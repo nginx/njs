@@ -44,6 +44,21 @@ nxt_upper_case(u_char c)
 #define nxt_cpymem(dst, src, n)   (((u_char *) memcpy(dst, src, n)) + (n))
 
 
+#define nxt_memzero(buf, length)   (void) (memset(buf, 0, length))
+
+
+#if (NXT_HAVE_EXPLICIT_BZERO)
+#define nxt_explicit_memzero(buf, length)                                     \
+    (void) (explicit_bzero(buf, length))
+#elif (NXT_HAVE_EXPLICIT_MEMSET)
+#define nxt_explicit_memzero(buf, length)                                     \
+    (void) (explicit_memset(buf, 0, length))
+#else
+#define nxt_explicit_memzero(buf, length)                                     \
+    nxt_memzero(buf, length)
+#endif
+
+
 #define nxt_strstr_eq(s1, s2)                                                 \
     (((s1)->length == (s2)->length)                                           \
      && (memcmp((s1)->start, (s2)->start, (s1)->length) == 0))

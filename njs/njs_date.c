@@ -81,7 +81,7 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             time = njs_date_string_parse(&args[1]);
 
         } else {
-            memset(values, 0, 8 * sizeof(int64_t));
+            nxt_memzero(values, 8 * sizeof(int64_t));
             /* Month. */
             values[2] = 1;
 
@@ -165,7 +165,7 @@ njs_date_utc(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     time = NAN;
 
     if (nargs > 2) {
-        memset(values, 0, 8 * sizeof(int32_t));
+        nxt_memzero(values, 8 * sizeof(int32_t));
 
         n = nxt_min(8, nargs);
 

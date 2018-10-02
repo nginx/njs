@@ -54,6 +54,7 @@ END
 . ${NXT_AUTO}time
 . ${NXT_AUTO}memalign
 . ${NXT_AUTO}getrandom
+. ${NXT_AUTO}explicit_bzero
 . ${NXT_AUTO}pcre
 . ${NXT_AUTO}editline
 . ${NXT_AUTO}expect

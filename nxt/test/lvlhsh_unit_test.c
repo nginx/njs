@@ -146,7 +146,7 @@ lvlhsh_zalloc(void *mem, size_t size)
     p = nxt_malloc(size);
 
     if (p != NULL) {
-        memset(p, 0, size);
+        nxt_memzero(p, size);
     }
 
     return p;
@@ -216,7 +216,7 @@ lvlhsh_unit_test(nxt_uint_t n)
 
     printf("lvlhsh unit test started: %ld items\n", (long) n);
 
-    memset(&lh, 0, sizeof(nxt_lvlhsh_t));
+    nxt_memzero(&lh, sizeof(nxt_lvlhsh_t));
 
     key = 0;
     for (i = 0; i < n; i++) {

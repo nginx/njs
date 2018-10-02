@@ -10233,7 +10233,7 @@ njs_unit_test(nxt_bool_t disassemble, nxt_bool_t verbose)
             fflush(stdout);
         }
 
-        memset(&options, 0, sizeof(njs_vm_opt_t));
+        nxt_memzero(&options, sizeof(njs_vm_opt_t));
 
         vm = njs_vm_create(&options);
         if (vm == NULL) {
@@ -10380,7 +10380,7 @@ njs_api_test(nxt_bool_t disassemble, nxt_bool_t verbose)
     rc = NXT_ERROR;
 
     vm = NULL;
-    memset(&options, 0, sizeof(njs_vm_opt_t));
+    nxt_memzero(&options, sizeof(njs_vm_opt_t));
 
     for (i = 0; i < nxt_nitems(njs_api_test); i++) {
         test = &njs_api_test[i];

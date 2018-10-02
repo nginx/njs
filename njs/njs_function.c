@@ -262,7 +262,7 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
         vm->stack_size += spare_size;
     }
 
-    memset(frame, 0, sizeof(njs_native_frame_t));
+    nxt_memzero(frame, sizeof(njs_native_frame_t));
 
     frame->size = chunk_size;
     frame->free_size = spare_size - size;

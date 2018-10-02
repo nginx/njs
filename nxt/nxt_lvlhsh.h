@@ -176,7 +176,7 @@ typedef struct {
 
 #define nxt_lvlhsh_each_init(lhe, _proto)                                     \
     do {                                                                      \
-        memset(lhe, 0, sizeof(nxt_lvlhsh_each_t));                            \
+        nxt_memzero(lhe, sizeof(nxt_lvlhsh_each_t));                          \
         (lhe)->proto = _proto;                                                \
     } while (0)
 

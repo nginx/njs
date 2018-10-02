@@ -28,7 +28,7 @@ njs_zalloc(void *mem, size_t size)
     p = nxt_malloc(size);
 
     if (p != NULL) {
-        memset(p, 0, size);
+        nxt_memzero(p, size);
     }
 
     return p;
@@ -392,7 +392,7 @@ njs_vm_init(njs_vm_t *vm)
         return NXT_ERROR;
     }
 
-    memset(frame, 0, NJS_GLOBAL_FRAME_SIZE);
+    nxt_memzero(frame, NJS_GLOBAL_FRAME_SIZE);
 
     vm->top_frame = &frame->native;
     vm->active_frame = frame;

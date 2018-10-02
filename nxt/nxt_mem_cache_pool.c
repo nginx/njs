@@ -9,6 +9,7 @@
 #include <nxt_clang.h>
 #include <nxt_alignment.h>
 #include <nxt_stub.h>
+#include <nxt_string.h>
 #include <nxt_queue.h>
 #include <nxt_rbtree.h>
 #include <nxt_mem_cache_pool.h>
@@ -322,7 +323,7 @@ nxt_mem_cache_zalloc(nxt_mem_cache_pool_t *pool, size_t size)
     p = nxt_mem_cache_alloc(pool, size);
 
     if (nxt_fast_path(p != NULL)) {
-        memset(p, 0, size);
+        nxt_memzero(p, size);
     }
 
     return p;
@@ -368,7 +369,7 @@ nxt_mem_cache_zalign(nxt_mem_cache_pool_t *pool, size_t alignment, size_t size)
     p = nxt_mem_cache_align(pool, alignment, size);
 
     if (nxt_fast_path(p != NULL)) {
-        memset(p, 0, size);
+        nxt_memzero(p, size);
     }
 
     return p;

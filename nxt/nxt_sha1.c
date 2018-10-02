@@ -11,6 +11,7 @@
 #include <nxt_types.h>
 #include <nxt_clang.h>
 #include <nxt_sha1.h>
+#include <nxt_string.h>
 #include <string.h>
 
 
@@ -74,13 +75,13 @@ nxt_sha1_final(u_char result[20], nxt_sha1_t *ctx)
     free = 64 - used;
 
     if (free < 8) {
-        memset(&ctx->buffer[used], 0, free);
+        nxt_memzero(&ctx->buffer[used], free);
         (void) nxt_sha1_body(ctx, ctx->buffer, 64);
         used = 0;
         free = 64;
     }
 
-    memset(&ctx->buffer[used], 0, free - 8);
+    nxt_memzero(&ctx->buffer[used], free - 8);
 
     ctx->bytes <<= 3;
     ctx->buffer[56] = (u_char) (ctx->bytes >> 56);
@@ -115,7 +116,7 @@ nxt_sha1_final(u_char result[20], nxt_sha1_t *ctx)
     result[18] = (u_char) (ctx->e >> 8);
     result[19] = (u_char)  ctx->e;
 
-    memset(ctx, 0, sizeof(*ctx));
+    nxt_memzero(ctx, sizeof(*ctx));
 }
 
 

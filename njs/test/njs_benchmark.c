@@ -26,7 +26,7 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
     njs_vm_opt_t   options;
     struct rusage  usage;
 
-    memset(&options, 0, sizeof(njs_vm_opt_t));
+    nxt_memzero(&options, sizeof(njs_vm_opt_t));
 
     vm = NULL;
     nvm = NULL;

@@ -9,6 +9,7 @@
 #include <nxt_clang.h>
 #include <nxt_stub.h>
 #include <nxt_array.h>
+#include <nxt_string.h>
 #include <string.h>
 
 
@@ -140,7 +141,7 @@ nxt_array_zero_add(nxt_array_t *array, const nxt_mem_proto_t *proto, void *pool)
     item = nxt_array_add(array, proto, pool);
 
     if (nxt_fast_path(item != NULL)) {
-        memset(item, 0, array->item_size);
+        nxt_memzero(item, array->item_size);
     }
 
     return item;

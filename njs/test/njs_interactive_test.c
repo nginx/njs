@@ -245,7 +245,7 @@ njs_interactive_test(nxt_bool_t verbose)
             fflush(stdout);
         }
 
-        memset(&options, 0, sizeof(njs_vm_opt_t));
+        nxt_memzero(&options, sizeof(njs_vm_opt_t));
 
         options.accumulative = 1;
         options.backtrace = 1;

@@ -465,7 +465,7 @@ nxt_lvlhsh_convert_bucket_to_level(nxt_lvlhsh_query_t *lhq, void **slot,
         return NXT_ERROR;
     }
 
-    memset(lvl, 0, size * (sizeof(void *)));
+    nxt_memzero(lvl, size * (sizeof(void *)));
 
     level = lvl;
     shift = 0;

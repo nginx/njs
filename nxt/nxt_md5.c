@@ -10,6 +10,7 @@
 #include <nxt_types.h>
 #include <nxt_clang.h>
 #include <nxt_md5.h>
+#include <nxt_string.h>
 #include <string.h>
 
 
@@ -72,13 +73,13 @@ nxt_md5_final(u_char result[16], nxt_md5_t *ctx)
     free = 64 - used;
 
     if (free < 8) {
-        memset(&ctx->buffer[used], 0, free);
+        nxt_memzero(&ctx->buffer[used], free);
         (void) nxt_md5_body(ctx, ctx->buffer, 64);
         used = 0;
         free = 64;
     }
 
-    memset(&ctx->buffer[used], 0, free - 8);
+    nxt_memzero(&ctx->buffer[used], free - 8);
 
     ctx->bytes <<= 3;
     ctx->buffer[56] = (u_char)  ctx->bytes;
@@ -109,7 +110,7 @@ nxt_md5_final(u_char result[16], nxt_md5_t *ctx)
     result[14] = (u_char) (ctx->d >> 16);
     result[15] = (u_char) (ctx->d >> 24);
 
-    memset(ctx, 0, sizeof(*ctx));
+    nxt_memzero(ctx, sizeof(*ctx));
 }
 
 

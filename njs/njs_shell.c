@@ -130,7 +130,7 @@ main(int argc, char **argv)
     njs_opts_t    opts;
     njs_vm_opt_t  vm_options;
 
-    memset(&opts, 0, sizeof(njs_opts_t));
+    nxt_memzero(&opts, sizeof(njs_opts_t));
     opts.interactive = 1;
 
     ret = njs_get_options(&opts, argc, argv);
@@ -143,7 +143,7 @@ main(int argc, char **argv)
         return EXIT_SUCCESS;
     }
 
-    memset(&vm_options, 0, sizeof(njs_vm_opt_t));
+    nxt_memzero(&vm_options, sizeof(njs_vm_opt_t));
 
     vm_options.accumulative = 1;
     vm_options.backtrace = 1;
