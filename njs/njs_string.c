@@ -2477,10 +2477,10 @@ njs_string_prototype_pad(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     memcpy(start, string.start, string.size);
 
     if (nargs == 2) {
-        memset(p, ' ', padding);
+        nxt_memset(p, ' ', padding);
 
     } else if (pad_string.size == 1) {
-        memset(p, pad_string.start[0], padding);
+        nxt_memset(p, pad_string.start[0], padding);
 
     } else {
         while (n != 0) {

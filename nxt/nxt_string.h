@@ -44,6 +44,9 @@ nxt_upper_case(u_char c)
 #define nxt_cpymem(dst, src, n)   (((u_char *) memcpy(dst, src, n)) + (n))
 
 
+#define nxt_memset(buf, c, length)   (void) (memset(buf, c, length))
+
+
 #define nxt_memzero(buf, length)   (void) (memset(buf, 0, length))
 
 

@@ -280,7 +280,7 @@ nxt_prettify(char *start, size_t len, int dec_exp)
         /* 1234e7 -> 12340000000 */
 
         if (kk - length > 0) {
-            memset(&start[length], '0', kk - length);
+            nxt_memset(&start[length], '0', kk - length);
         }
 
         return kk;
@@ -305,7 +305,7 @@ nxt_prettify(char *start, size_t len, int dec_exp)
         start[1] = '.';
 
         if (offset - 2 > 0) {
-            memset(&start[2], '0', offset - 2);
+            nxt_memset(&start[2], '0', offset - 2);
         }
 
         return (length + offset);

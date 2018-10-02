@@ -8,6 +8,7 @@
 #include <nxt_types.h>
 #include <nxt_clang.h>
 #include <nxt_stub.h>
+#include <nxt_string.h>
 #include <nxt_rbtree.h>
 #include <nxt_murmur_hash.h>
 #include <stdio.h>
@@ -102,7 +103,7 @@ rbtree_unit_test(nxt_uint_t n)
 
     for (i = 0; i < n; i++) {
         nxt_rbtree_delete(&tree, &items[i].node);
-        memset(&items[i], 0xA5, sizeof(nxt_rbtree_test_t));
+        nxt_memset(&items[i], 0xA5, sizeof(nxt_rbtree_test_t));
     }
 
     if (!nxt_rbtree_is_empty(&tree)) {

@@ -131,7 +131,7 @@ struct nxt_mem_cache_pool_s {
 
 
 #define nxt_mem_cache_free_junk(p, size)                                      \
-    memset((p), 0x5A, size)
+    nxt_memset((p), 0x5A, size)
 
 
 #define nxt_is_power_of_two(value)                                            \

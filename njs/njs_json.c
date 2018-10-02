@@ -2316,7 +2316,7 @@ njs_vm_value_dump(njs_vm_t *vm, nxt_str_t *retval, const njs_value_t *value,
         goto memory_error;
     }
 
-    memset(stringify->space.start, ' ', indent);
+    nxt_memset(stringify->space.start, ' ', indent);
 
     if (nxt_array_init(&stringify->stack, NULL, 4, sizeof(njs_json_state_t),
                        &njs_array_mem_proto, vm->mem_cache_pool)
