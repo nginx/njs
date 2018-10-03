@@ -49,16 +49,27 @@ nxt_upper_case(u_char c)
 
 #define nxt_memzero(buf, length)   (void) (memset(buf, 0, length))
 
+nxt_inline void
+nxt_memzero_unop(void *buf, size_t length)
+{
+	nxt_uint_t i;
+	volatile u_char *ubuf = (volatile u_char *)buf;
+
+	for (i = 0; i < length; i ++) {
+		ubuf[i] = 0;
+	}
+}
+
 
 #if (NXT_HAVE_EXPLICIT_BZERO)
 #define nxt_explicit_memzero(buf, length)                                     \
-    (void) (explicit_bzero(buf, length))
+    (explicit_bzero(buf, length))
 #elif (NXT_HAVE_EXPLICIT_MEMSET)
 #define nxt_explicit_memzero(buf, length)                                     \
     (void) (explicit_memset(buf, 0, length))
 #else
 #define nxt_explicit_memzero(buf, length)                                     \
-    nxt_memzero(buf, length)
+    nxt_memzero_unop(buf, length)
 #endif
 
 
