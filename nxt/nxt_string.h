@@ -52,7 +52,7 @@ nxt_upper_case(u_char c)
 
 #if (NXT_HAVE_EXPLICIT_BZERO)
 #define nxt_explicit_memzero(buf, length)                                     \
-    (void) (explicit_bzero(buf, length))
+    explicit_bzero(buf, length)
 #elif (NXT_HAVE_EXPLICIT_MEMSET)
 #define nxt_explicit_memzero(buf, length)                                     \
     (void) (explicit_memset(buf, 0, length))
