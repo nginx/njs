@@ -57,8 +57,16 @@ nxt_upper_case(u_char c)
 #define nxt_explicit_memzero(buf, length)                                     \
     (void) (explicit_memset(buf, 0, length))
 #else
-#define nxt_explicit_memzero(buf, length)                                     \
-    nxt_memzero(buf, length)
+nxt_inline void
+nxt_explicit_memzero(u_char *buf, size_t length)
+{
+    volatile u_char  *p = (volatile u_char *) buf;
+
+    while (length != 0) {
+        *p++ = 0;
+        length--;
+    }
+}
 #endif
 
 
