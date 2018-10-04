@@ -749,6 +749,16 @@ ngx_stream_js_cleanup_ctx(void *data)
 {
     ngx_stream_js_ctx_t *ctx = data;
 
+    if (ctx->upload_event != NULL) {
+        njs_vm_del_event(ctx->vm, ctx->upload_event);
+        ctx->upload_event = NULL;
+    }
+
+    if (ctx->download_event != NULL) {
+        njs_vm_del_event(ctx->vm, ctx->download_event);
+        ctx->download_event = NULL;
+    }
+
     if (njs_vm_pending(ctx->vm)) {
         ngx_log_error(NGX_LOG_ERR, ctx->log, 0, "pending events");
     }
