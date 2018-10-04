@@ -1081,6 +1081,8 @@ ngx_stream_js_ext_off(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NJS_ERROR;
     }
 
+    njs_vm_del_event(vm, *event);
+
     *event = NULL;
 
     return NJS_OK;
