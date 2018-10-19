@@ -145,6 +145,8 @@ njs_ret_t njs_string_constructor(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 nxt_bool_t njs_string_eq(const njs_value_t *val1, const njs_value_t *val2);
 nxt_int_t njs_string_cmp(const njs_value_t *val1, const njs_value_t *val2);
+nxt_noinline void njs_string_slice_string_prop(njs_string_prop_t *dst,
+    const njs_string_prop_t *string, const njs_slice_prop_t *slice);
 njs_ret_t njs_string_slice(njs_vm_t *vm, njs_value_t *dst,
     const njs_string_prop_t *string, const njs_slice_prop_t *slice);
 const u_char *njs_string_offset(const u_char *start, const u_char *end,
