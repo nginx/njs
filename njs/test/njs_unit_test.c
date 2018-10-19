@@ -3671,6 +3671,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abc'.length"),
       nxt_string("3") },
 
+    { nxt_string("''.hasOwnProperty('length')"),
+      nxt_string("true") },
+
+    { nxt_string("'abc'.hasOwnProperty('length')"),
+      nxt_string("true") },
+
+    { nxt_string("(new String('abc')).hasOwnProperty('length')"),
+      nxt_string("true") },
+
     { nxt_string("'abc'.toUTF8().length"),
       nxt_string("3") },
 
@@ -7102,6 +7111,21 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("[,].hasOwnProperty()"),
       nxt_string("false") },
+
+    { nxt_string("[1,2].hasOwnProperty('len')"),
+      nxt_string("false") },
+
+    { nxt_string("[].hasOwnProperty('length')"),
+      nxt_string("true") },
+
+    { nxt_string("[1,2].hasOwnProperty('length')"),
+      nxt_string("true") },
+
+    { nxt_string("(new Array()).hasOwnProperty('length')"),
+      nxt_string("true") },
+
+    { nxt_string("(new Array(10)).hasOwnProperty('length')"),
+      nxt_string("true") },
 
     { nxt_string("Object.valueOf.hasOwnProperty()"),
       nxt_string("false") },

@@ -2079,45 +2079,38 @@ static njs_ret_t
 njs_object_prototype_has_own_property(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    uint32_t            index;
-    nxt_int_t           ret;
-    njs_array_t         *array;
-    const njs_value_t   *value, *prop, *retval;
-    nxt_lvlhsh_query_t  lhq;
+    nxt_int_t             ret;
+    const njs_value_t     *value, *property;
+    njs_property_query_t  pq;
 
-    retval = &njs_value_false;
-    value = &args[0];
+    value = njs_arg(args, nargs, 0);
 
-    if (njs_is_object(value)) {
-
-        prop = njs_arg(args, nargs, 1);
-
-        if (njs_is_array(value)) {
-            array = value->data.u.array;
-            index = njs_string_to_index(prop);
-
-            if (index < array->length && njs_is_valid(&array->start[index])) {
-                retval = &njs_value_true;
-                goto done;
-            }
-        }
-
-        njs_string_get(prop, &lhq.key);
-        lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
-        lhq.proto = &njs_object_hash_proto;
-
-        ret = nxt_lvlhsh_find(&value->data.u.object->hash, &lhq);
-
-        if (ret == NXT_OK) {
-            retval = &njs_value_true;
-        }
+    if (njs_is_null_or_void(value)) {
+        njs_type_error(vm, "cannot convert %s argument to object",
+                       njs_type_string(value->type));
+        return NXT_ERROR;
     }
 
-done:
+    property = njs_arg(args, nargs, 1);
 
-    vm->retval = *retval;
+    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 1);
 
-    return NXT_OK;
+    ret = njs_property_query(vm, &pq, (njs_value_t *) value, property);
+
+    switch (ret) {
+    case NXT_OK:
+        vm->retval = njs_value_true;
+        return NXT_OK;
+
+    case NXT_DECLINED:
+        vm->retval = njs_value_false;
+        return NXT_OK;
+
+    case NJS_TRAP:
+    case NXT_ERROR:
+    default:
+        return ret;
+    }
 }
 
 
