@@ -109,7 +109,7 @@ static njs_ret_t njs_array_prototype_sort_continuation(njs_vm_t *vm,
 nxt_noinline njs_array_t *
 njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare)
 {
-    size_t       size;
+    uint64_t     size;
     njs_array_t  *array;
 
     array = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_array_t));
@@ -117,9 +117,9 @@ njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare)
         goto memory_error;
     }
 
-    size = (size_t) length + spare;
+    size = (uint64_t) length + spare;
 
-    if (nxt_slow_path(size * sizeof(njs_value_t) < size)) {
+    if (nxt_slow_path((size * sizeof(njs_value_t)) >= 0xffffffff)) {
         goto memory_error;
     }
 
