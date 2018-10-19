@@ -934,6 +934,12 @@ njs_json_parse_continuation(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                 }
 
                 prop = lhq.value;
+
+                if (prop->type == NJS_WHITEOUT) {
+                    state->index++;
+                    break;
+                }
+
                 state->prop_value = &prop->value;
 
                 if (njs_json_is_non_empty(&prop->value)) {
@@ -1233,6 +1239,7 @@ njs_json_stringify_continuation(njs_vm_t *vm, njs_value_t *args,
 
             if (!prop->enumerable
                 || njs_is_void(&prop->value)
+                || !njs_is_valid(&prop->value)
                 || njs_is_function(&prop->value))
             {
                 break;
@@ -2382,7 +2389,7 @@ njs_vm_value_dump(njs_vm_t *vm, nxt_str_t *retval, const njs_value_t *value,
                 prop = lhq.value;
                 val = &prop->value;
 
-                if (!prop->enumerable) {
+                if (prop->type == NJS_WHITEOUT || !prop->enumerable) {
                     break;
                 }
             }

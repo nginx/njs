@@ -2112,6 +2112,14 @@ static njs_unit_test_t  njs_test[] =
                  "for (var p in o) {s += p}; s"),
       nxt_string("y") },
 
+    { nxt_string("var o = {a:1, b:2}; var arr = []; "
+                 "for (var a in o) {arr.push(a)}; arr"),
+      nxt_string("a,b") },
+
+    { nxt_string("var o = {a:1, b:2}; var arr = []; delete o.a; "
+                 "for (var a in o) {arr.push(a)}; arr"),
+      nxt_string("b") },
+
     /* switch. */
 
     { nxt_string("switch"),
@@ -2636,6 +2644,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("delete --[][1]"),
       nxt_string("true") },
 
+    { nxt_string("var a = [1,2]; delete a.length"),
+      nxt_string("false") },
+
     { nxt_string("var a = [1,2,3]; a.x = 10;  delete a[1]"),
       nxt_string("true") },
 
@@ -2653,6 +2664,14 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("Math.E = 1"),
       nxt_string("TypeError: Cannot assign to read-only property 'E' of object") },
+
+    { nxt_string("var o = { 'a': 1, 'b': 2 }; var i; "
+                 "for (i in o) { delete o.a; delete o.b; }; njs.dump(o)"),
+      nxt_string("{}") },
+
+    { nxt_string("var o  = {}; Object.defineProperty(o, 'a', {value:1, configurable:1}); "
+                 "delete o.a; o.a=2; o.a"),
+      nxt_string("2") },
 
     { nxt_string("var a = {}; 1 in a"),
       nxt_string("false") },
@@ -6893,6 +6912,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var a = [,6,,3]; a.one = 7; Object.keys(a)"),
       nxt_string("1,3,one") },
+
+    { nxt_string("var o = {a:1,b:2}; delete o.a; Object.keys(o)"),
+      nxt_string("b") },
 
     { nxt_string("Object.keys()"),
       nxt_string("TypeError: cannot convert void argument to object") },

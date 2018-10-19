@@ -552,6 +552,19 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
             return NXT_ERROR;
         }
 
+        if (nxt_slow_path(pq.lhq.value != NULL)) {
+            prop = pq.lhq.value;
+
+            if (nxt_slow_path(prop->type == NJS_WHITEOUT)) {
+                /* Previously deleted property.  */
+                prop->type = NJS_PROPERTY;
+                prop->enumerable = 1;
+                prop->configurable = 1;
+                prop->writable = 1;
+                break;
+            }
+        }
+
         prop = njs_object_prop_alloc(vm, &pq.value, &njs_value_void, 1);
         if (nxt_slow_path(prop == NULL)) {
             return NXT_ERROR;
@@ -695,11 +708,9 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
             return NXT_ERROR;
         }
 
-        pq.lhq.pool = vm->mem_cache_pool;
-
-        (void) nxt_lvlhsh_delete(&object->data.u.object->hash, &pq.lhq);
-
-        njs_release(vm, property);
+        /* GC: release value. */
+        prop->type = NJS_WHITEOUT;
+        njs_set_invalid(&prop->value);
 
         retval = &njs_value_true;
 
@@ -811,7 +822,7 @@ njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
                 break;
             }
 
-            if (prop->enumerable) {
+            if (prop->type != NJS_WHITEOUT && prop->enumerable) {
                 *retval = prop->name;
 
                 return code->offset;

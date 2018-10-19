@@ -922,7 +922,7 @@ njs_object_keys_array(njs_vm_t *vm, const njs_value_t *object)
             break;
         }
 
-        if (prop->enumerable) {
+        if (prop->type != NJS_WHITEOUT && prop->enumerable) {
             keys_length++;
         }
     }
@@ -954,7 +954,7 @@ njs_object_keys_array(njs_vm_t *vm, const njs_value_t *object)
             break;
         }
 
-        if (prop->enumerable) {
+        if (prop->type != NJS_WHITEOUT && prop->enumerable) {
             njs_string_copy(&keys->start[n++], &prop->name);
         }
     }
