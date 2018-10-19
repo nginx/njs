@@ -5,6 +5,8 @@
  */
 
 #include <njs_core.h>
+#include <nxt_lvlhsh.h>
+#include <nxt_djb_hash.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -2453,7 +2455,22 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = {}; a.b.c"),
       nxt_string("TypeError: cannot get property 'c' of undefined") },
 
+    { nxt_string("'a'[0]"),
+      nxt_string("a") },
+
+    { nxt_string("'a'[undefined]"),
+      nxt_string("undefined") },
+
+    { nxt_string("'a'[null]"),
+      nxt_string("undefined") },
+
+    { nxt_string("'a'[false]"),
+      nxt_string("undefined") },
+
     { nxt_string("'a'.b = 1"),
+      nxt_string("TypeError: property set on primitive string type") },
+
+    { nxt_string("'a'[2] = 1"),
       nxt_string("TypeError: property set on primitive string type") },
 
     { nxt_string("var a = {}; a.b = 1; a.b"),
@@ -2619,8 +2636,32 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("delete --[][1]"),
       nxt_string("true") },
 
+    { nxt_string("var a = [1,2,3]; a.x = 10;  delete a[1]"),
+      nxt_string("true") },
+
+    { nxt_string("var o = Object.create({a:1}); o.a = 2; delete o.a; o.a"),
+      nxt_string("1") },
+
+    { nxt_string("function Foo() {this.bar = 10;}; Foo.prototype.bar = 42; "
+                 "var v = new Foo(); delete v.bar; v.bar"),
+      nxt_string("42") },
+
+    /* Math object is immutable. */
+
+    { nxt_string("delete Math.max"),
+      nxt_string("TypeError: Cannot delete property 'max' of object") },
+
+    { nxt_string("Math.E = 1"),
+      nxt_string("TypeError: Cannot assign to read-only property 'E' of object") },
+
     { nxt_string("var a = {}; 1 in a"),
       nxt_string("false") },
+
+    { nxt_string("'a' in {a:1}"),
+      nxt_string("true") },
+
+    { nxt_string("'a' in Object.create({a:1})"),
+      nxt_string("true") },
 
     { nxt_string("var a = 1; 1 in a"),
       nxt_string("TypeError: property in on a primitive value") },
@@ -2784,6 +2825,17 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var a = [1,2]; a.length"),
       nxt_string("2") },
+
+#if 0
+    { nxt_string("Object.create([1,2]).length"),
+      nxt_string("2") },
+#endif
+
+    { nxt_string("Object.create(['α','β'])[1]"),
+      nxt_string("β") },
+
+    { nxt_string("Object.create(['α','β'])[false]"),
+      nxt_string("undefined") },
 
     /* Array.length setter */
 
@@ -3998,6 +4050,62 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var p1 = $r.props, p2 = $r2.props; '' + p1.a + p2.a"),
       nxt_string("12") },
 
+    { nxt_string("var p = $r3.props; p.a = 1"),
+      nxt_string("TypeError: Cannot assign to read-only property 'a' of external") },
+    { nxt_string("var p = $r3.props; delete p.a"),
+      nxt_string("TypeError: Cannot delete property 'a' of external") },
+
+    { nxt_string("$r.vars.p + $r2.vars.q + $r3.vars.k"),
+      nxt_string("pvalqvalkval") },
+
+    { nxt_string("$r.vars.unset"),
+      nxt_string("undefined") },
+
+    { nxt_string("var v = $r3.vars; v.k"),
+      nxt_string("kval") },
+
+    { nxt_string("var v = $r3.vars; v.unset = 1; v.unset"),
+      nxt_string("1") },
+
+    { nxt_string("$r.vars.unset = 'a'; $r2.vars.unset = 'b';"
+                 "$r.vars.unset + $r2.vars.unset"),
+      nxt_string("ab") },
+
+    { nxt_string("$r.vars.unset = 1; $r2.vars.unset = 2;"
+                 "$r.vars.unset + $r2.vars.unset"),
+      nxt_string("12") },
+
+    { nxt_string("$r3.vars.p = 'a'; $r3.vars.p2 = 'b';"
+                 "$r3.vars.p + $r3.vars.p2"),
+      nxt_string("ab") },
+
+    { nxt_string("$r3.vars.p = 'a'; delete $r3.vars.p; $r3.vars.p"),
+      nxt_string("undefined") },
+
+    { nxt_string("$r3.vars.p = 'a'; delete $r3.vars.p; $r3.vars.p = 'b'; $r3.vars.p"),
+      nxt_string("b") },
+
+    { nxt_string("$r3.vars.error = 1"),
+      nxt_string("Error: cannot set 'error' prop") },
+
+    { nxt_string("delete $r3.vars.error"),
+      nxt_string("Error: cannot delete 'error' prop") },
+
+    { nxt_string("delete $r3.vars.e"),
+      nxt_string("true") },
+
+    { nxt_string("$r3.consts.k"),
+      nxt_string("kval") },
+
+    { nxt_string("$r3.consts.k = 1"),
+      nxt_string("TypeError: Cannot assign to read-only property 'k' of external") },
+
+    { nxt_string("delete $r3.consts.k"),
+      nxt_string("TypeError: Cannot delete property 'k' of external") },
+
+    { nxt_string("delete $r3.vars.p; $r3.vars.p"),
+      nxt_string("undefined") },
+
     { nxt_string("var a = $r.host; a +' '+ a.length +' '+ a"),
       nxt_string("АБВГДЕЁЖЗИЙ 22 АБВГДЕЁЖЗИЙ") },
 
@@ -4026,6 +4134,9 @@ static njs_unit_test_t  njs_test[] =
                  "sr.uri + sr2.uri"),
       nxt_string("ZZZYYY") },
 
+    { nxt_string("var sr = $r.create('XXX'); sr.vars.p = 'a'; sr.vars.p"),
+      nxt_string("a") },
+
     { nxt_string("var p; for (p in $r.some_method);"),
       nxt_string("undefined") },
 
@@ -4039,10 +4150,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("delete $r.uri"),
-      nxt_string("false") },
+      nxt_string("TypeError: Cannot delete property 'uri' of external") },
 
     { nxt_string("delete $r.one"),
-      nxt_string("false") },
+      nxt_string("TypeError: Cannot delete property 'one' of external") },
 
     { nxt_string("$r.some_method.call($r, 'YES')"),
       nxt_string("АБВ") },
@@ -4063,7 +4174,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("undefined") },
 
     { nxt_string("$r.error = 'OK'"),
-      nxt_string("OK") },
+      nxt_string("TypeError: Cannot assign to read-only property 'error' of external") },
 
     { nxt_string("var a = { toString: function() { return 1 } }; a"),
       nxt_string("1") },
@@ -4949,7 +5060,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("TypeError: object is not callable") },
 
     { nxt_string("var o = {a:1}; o.a()"),
-      nxt_string("TypeError: object is not callable") },
+      nxt_string("TypeError: 'a' is not a function") },
 
     { nxt_string("(function(){})()"),
       nxt_string("undefined") },
@@ -5945,10 +6056,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("SyntaxError: Unexpected token \"null\" in 1") },
 
     { nxt_string("'a'.f()"),
-      nxt_string("InternalError: method 'f' query failed:2") },
+      nxt_string("TypeError: 'f' is not a function") },
 
     { nxt_string("1..f()"),
-      nxt_string("InternalError: method 'f' query failed:-3") },
+      nxt_string("TypeError: 'f' is not a function") },
 
     { nxt_string("try {}"),
       nxt_string("SyntaxError: Missing catch or finally after try in 1") },
@@ -6530,6 +6641,42 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("new String([1,2,3])"),
       nxt_string("1,2,3") },
 
+    { nxt_string("var s = new String('αβ'); s.one = 1; 'one' in s"),
+      nxt_string("true") },
+
+    { nxt_string("var s = new String('αβ'); 'one' in s"),
+      nxt_string("false") },
+
+    { nxt_string("var s = new String('αβ'); s.one = 1; '1' in s"),
+      nxt_string("true") },
+
+    { nxt_string("var s = new String('αβ'); s.one = 1; 1 in s"),
+      nxt_string("true") },
+
+    { nxt_string("var s = new String('αβ'); s.one = 1; 2 in s"),
+      nxt_string("false") },
+
+    { nxt_string("var s = new String('αβ'); s[1]"),
+      nxt_string("β") },
+
+    { nxt_string("Object.create(new String('αβ'))[1]"),
+      nxt_string("β") },
+
+    { nxt_string("var s = new String('αβ'); s[1] = 'b'"),
+      nxt_string("TypeError: Cannot assign to read-only property '1' of object string") },
+
+    { nxt_string("var s = new String('αβ'); s[4] = 'ab'; s[4]"),
+      nxt_string("ab") },
+
+
+#if 0
+    { nxt_string("Object.create(new String('αβ')).length"),
+      nxt_string("2") },
+#endif
+
+    { nxt_string("var s = new String('αβ'); s.valueOf()[1]"),
+      nxt_string("β") },
+
     { nxt_string("var o = { toString: function() { return 'OK' } };"
                  "String(o)"),
       nxt_string("OK") },
@@ -7007,6 +7154,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.getOwnPropertyDescriptor({}, 'a')"),
       nxt_string("undefined") },
 
+    { nxt_string("Object.getOwnPropertyDescriptor(Object.create({a:1}), 'a')"),
+      nxt_string("undefined") },
+
     { nxt_string("Object.getOwnPropertyDescriptor([3,4], '1').value"),
       nxt_string("4") },
 
@@ -7016,17 +7166,55 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.getOwnPropertyDescriptor([], 'length').value"),
       nxt_string("0") },
 
-    { nxt_string("JSON.stringify(Object.getOwnPropertyDescriptor([3,4], 'length'))"),
-      nxt_string("{\"value\":2,\"configurable\":false,\"enumerable\":false,\"writable\":true}") },
-
-    { nxt_string("Object.getOwnPropertyDescriptor([3,4], '3')"),
-      nxt_string("undefined") },
-
     { nxt_string("Object.getOwnPropertyDescriptor([], '0')"),
       nxt_string("undefined") },
 
+    { nxt_string("Object.getOwnPropertyDescriptor([1,2], '1').value"),
+      nxt_string("2") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor([1,2], new String('1')).value"),
+      nxt_string("2") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor({undefined:1}, void 0).value"),
+      nxt_string("1") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor([1,2], 1).value"),
+      nxt_string("2") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor([1,,,3], '1')"),
+      nxt_string("undefined") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor([1,2], '3')"),
+      nxt_string("undefined") },
+
+    { nxt_string("JSON.stringify(Object.getOwnPropertyDescriptor([3,4], 'length'))"),
+      nxt_string("{\"value\":2,\"configurable\":false,\"enumerable\":false,\"writable\":true}") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor(Array.of, 'length').value"),
+      nxt_string("0") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor('αβγδ', '1').value"),
+      nxt_string("β") },
+
+    { nxt_string("Object.getOwnPropertyDescriptor(new String('αβγδ'), '1').value"),
+      nxt_string("β") },
+
+    { nxt_string("var s = new String('αβγδ'); s.a = 1;"
+                 "Object.getOwnPropertyDescriptor(s, 'a').value"),
+      nxt_string("1") },
+
+    { nxt_string("JSON.stringify(Object.getOwnPropertyDescriptor('αβγδ', '2'))"),
+      nxt_string("{\"value\":\"γ\",\"configurable\":false,\"enumerable\":true,\"writable\":false}") },
+
+    { nxt_string("JSON.stringify(Object.getOwnPropertyDescriptor(new String('abc'), 'length'))"),
+      nxt_string("{\"value\":3,\"configurable\":false,\"enumerable\":false,\"writable\":false}") },
+
     { nxt_string("Object.getOwnPropertyDescriptor(1, '0')"),
       nxt_string("undefined") },
+
+    { nxt_string("var min = Object.getOwnPropertyDescriptor(Math, 'min').value;"
+                 "[min(1,2), min(2,1), min(-1,1)]"),
+      nxt_string("1,1,-1") },
 
     { nxt_string("Object.getOwnPropertyDescriptor()"),
       nxt_string("TypeError: cannot convert void argument to object") },
@@ -9906,24 +10094,121 @@ static njs_unit_test_t  njs_tz_test[] =
 
 
 typedef struct {
-    nxt_str_t             uri;
-    uint32_t              a;
-    nxt_mem_cache_pool_t  *mem_cache_pool;
+    nxt_lvlhsh_t          hash;
     const njs_extern_t    *proto;
+    nxt_mem_cache_pool_t  *mem_cache_pool;
+
+    uint32_t              a;
+    nxt_str_t             uri;
 
     njs_opaque_value_t    value;
 } njs_unit_test_req_t;
+
+
+typedef struct {
+    njs_value_t           name;
+    njs_value_t           value;
+} njs_unit_test_prop_t;
+
+
+static nxt_int_t
+lvlhsh_unit_test_key_test(nxt_lvlhsh_query_t *lhq, void *data)
+{
+    nxt_str_t             name;
+    njs_unit_test_prop_t  *prop;
+
+    prop = data;
+    njs_string_get(&prop->name, &name);
+
+    if (name.length != lhq->key.length) {
+        return NXT_DECLINED;
+    }
+
+    if (memcmp(name.start, lhq->key.start, lhq->key.length) == 0) {
+        return NXT_OK;
+    }
+
+    return NXT_DECLINED;
+}
+
+
+static void *
+lvlhsh_unit_test_pool_alloc(void *pool, size_t size, nxt_uint_t nalloc)
+{
+    return nxt_mem_cache_align(pool, size, size);
+}
+
+
+static void
+lvlhsh_unit_test_pool_free(void *pool, void *p, size_t size)
+{
+    nxt_mem_cache_free(pool, p);
+}
+
+
+static const nxt_lvlhsh_proto_t  lvlhsh_proto  nxt_aligned(64) = {
+    NXT_LVLHSH_LARGE_SLAB,
+    0,
+    lvlhsh_unit_test_key_test,
+    lvlhsh_unit_test_pool_alloc,
+    lvlhsh_unit_test_pool_free,
+};
+
+
+static njs_unit_test_prop_t *
+lvlhsh_unit_test_alloc(nxt_mem_cache_pool_t *pool, const njs_value_t *name,
+    const njs_value_t *value)
+{
+    njs_unit_test_prop_t *prop;
+
+    prop = nxt_mem_cache_alloc(pool, sizeof(njs_unit_test_prop_t));
+    if (prop == NULL) {
+        return NULL;
+    }
+
+    prop->name = *name;
+    prop->value = *value;
+
+    return prop;
+}
+
+
+static nxt_int_t
+lvlhsh_unit_test_add(njs_unit_test_req_t *r, njs_unit_test_prop_t *prop)
+{
+    nxt_lvlhsh_query_t  lhq;
+
+    njs_string_get(&prop->name, &lhq.key);
+    lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
+
+    lhq.replace = 1;
+    lhq.value = (void *) prop;
+    lhq.proto = &lvlhsh_proto;
+    lhq.pool = r->mem_cache_pool;
+
+    switch (nxt_lvlhsh_insert(&r->hash, &lhq)) {
+
+    case NXT_OK:
+        return NXT_OK;
+
+    case NXT_DECLINED:
+    default:
+        return NXT_ERROR;
+    }
+}
 
 
 static njs_ret_t
 njs_unit_test_r_get_uri_external(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
-    njs_unit_test_req_t  *r;
+    char *p = obj;
 
-    r = (njs_unit_test_req_t *) obj;
+    nxt_str_t  *field;
 
-    return njs_string_create(vm, value, r->uri.start, r->uri.length, 0);
+    field = (nxt_str_t *) (p + data);
+
+    return njs_string_create(vm, value, field->start, field->length, 0);
 }
 
 
@@ -9931,11 +10216,13 @@ static njs_ret_t
 njs_unit_test_r_set_uri_external(njs_vm_t *vm, void *obj, uintptr_t data,
     nxt_str_t *value)
 {
-    njs_unit_test_req_t  *r;
+    char *p = obj;
 
-    r = (njs_unit_test_req_t *) obj;
+    nxt_str_t  *field;
 
-    r->uri = *value;
+    field = (nxt_str_t *) (p + data);
+
+    *field = *value;
 
     return NXT_OK;
 }
@@ -9972,6 +10259,109 @@ njs_unit_test_host_external(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
     return njs_string_create(vm, value, (u_char *) "АБВГДЕЁЖЗИЙ", 22, 0);
+}
+
+
+static njs_ret_t
+njs_unit_test_r_get_vars(njs_vm_t *vm, njs_value_t *value, void *obj,
+    uintptr_t data)
+{
+    nxt_int_t             ret;
+    nxt_str_t             *key;
+    nxt_lvlhsh_query_t    lhq;
+    njs_unit_test_req_t   *r;
+    njs_unit_test_prop_t  *prop;
+
+    r = (njs_unit_test_req_t *) obj;
+    key = (nxt_str_t *) data;
+
+    lhq.key = *key;
+    lhq.key_hash = nxt_djb_hash(key->start, key->length);
+    lhq.proto = &lvlhsh_proto;
+
+    ret = nxt_lvlhsh_find(&r->hash, &lhq);
+
+    prop = lhq.value;
+
+    if (ret == NXT_OK && njs_is_valid(&prop->value)) {
+        *value = prop->value;
+        return NXT_OK;
+    }
+
+    njs_value_void_set(value);
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_unit_test_r_set_vars(njs_vm_t *vm, void *obj, uintptr_t data,
+    nxt_str_t *value)
+{
+    nxt_int_t             ret;
+    nxt_str_t             *key;
+    njs_value_t           name, val;
+    njs_unit_test_req_t   *r;
+    njs_unit_test_prop_t  *prop;
+
+    r = (njs_unit_test_req_t *) obj;
+    key = (nxt_str_t *) data;
+
+    if (key->length == 5 && memcmp(key->start, "error", 5) == 0) {
+        njs_vm_error(vm, "cannot set 'error' prop");
+        return NXT_ERROR;
+    }
+
+    njs_string_create(vm, &name, key->start, key->length, 0);
+    njs_string_create(vm, &val, value->start, value->length, 0);
+
+    prop = lvlhsh_unit_test_alloc(vm->mem_cache_pool, &name, &val);
+    if (prop == NULL) {
+        njs_memory_error(vm);
+        return NXT_ERROR;
+    }
+
+    ret = lvlhsh_unit_test_add(r, prop);
+    if (ret != NXT_OK) {
+        njs_vm_error(vm, "lvlhsh_unit_test_add() failed");
+        return NXT_ERROR;
+    }
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_unit_test_r_del_vars(njs_vm_t *vm, void *obj, uintptr_t data,
+    nxt_bool_t delete)
+{
+    nxt_int_t             ret;
+    nxt_str_t             *key;
+    nxt_lvlhsh_query_t    lhq;
+    njs_unit_test_req_t   *r;
+    njs_unit_test_prop_t  *prop;
+
+    r = (njs_unit_test_req_t *) obj;
+    key = (nxt_str_t *) data;
+
+    if (key->length == 5 && memcmp(key->start, "error", 5) == 0) {
+        njs_vm_error(vm, "cannot delete 'error' prop");
+        return NXT_ERROR;
+    }
+
+    lhq.key = *key;
+    lhq.key_hash = nxt_djb_hash(key->start, key->length);
+    lhq.proto = &lvlhsh_proto;
+
+    ret = nxt_lvlhsh_find(&r->hash, &lhq);
+
+    prop = lhq.value;
+
+    if (ret == NXT_OK) {
+        njs_set_invalid(&prop->value);
+    }
+
+    return NXT_OK;
 }
 
 
@@ -10146,7 +10536,7 @@ static njs_external_t  njs_unit_test_r_external[] = {
       NULL,
       NULL,
       NULL,
-      0 },
+      offsetof(njs_unit_test_req_t, uri) },
 
     { nxt_string("host"),
       NJS_EXTERN_PROPERTY,
@@ -10165,6 +10555,30 @@ static njs_external_t  njs_unit_test_r_external[] = {
       njs_unit_test_r_props,
       nxt_nitems(njs_unit_test_r_props),
       NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      0 },
+
+    { nxt_string("vars"),
+      NJS_EXTERN_OBJECT,
+      NULL,
+      0,
+      njs_unit_test_r_get_vars,
+      njs_unit_test_r_set_vars,
+      njs_unit_test_r_del_vars,
+      NULL,
+      NULL,
+      NULL,
+      0 },
+
+    { nxt_string("consts"),
+      NJS_EXTERN_OBJECT,
+      NULL,
+      0,
+      njs_unit_test_r_get_vars,
       NULL,
       NULL,
       NULL,
@@ -10231,23 +10645,55 @@ static njs_external_t  nxt_test_external[] = {
 typedef struct {
     nxt_str_t            name;
     njs_unit_test_req_t  request;
+    njs_unit_test_prop_t props[2];
 } njs_unit_test_req_t_init_t;
 
 
 static const njs_unit_test_req_t_init_t nxt_test_requests[] = {
-    { nxt_string("$r"),  {.uri = nxt_string("АБВ"), .a = 1}},
-    { nxt_string("$r2"), {.uri = nxt_string("αβγ"), .a = 2}},
-    { nxt_string("$r3"), {.uri = nxt_string("abc"), .a = 3}},
+
+    { nxt_string("$r"),
+     {
+         .uri = nxt_string("АБВ"),
+         .a = 1
+     },
+     {
+         { njs_string("p"), njs_string("pval") },
+         { njs_string("p2"), njs_string("p2val") },
+     }
+    },
+
+    { nxt_string("$r2"),
+     {
+         .uri = nxt_string("αβγ"),
+         .a = 2
+     },
+     {
+         { njs_string("q"), njs_string("qval") },
+         { njs_string("q2"), njs_string("q2val") },
+     }
+    },
+
+    { nxt_string("$r3"),
+     {
+         .uri = nxt_string("abc"),
+         .a = 3
+     },
+     {
+         { njs_string("k"), njs_string("kval") },
+         { njs_string("k2"), njs_string("k2val") },
+     }
+    },
 };
 
 
 static nxt_int_t
 njs_externals_init(njs_vm_t *vm)
 {
-    nxt_int_t            ret;
-    nxt_uint_t           i;
-    const njs_extern_t   *proto;
-    njs_unit_test_req_t  *requests;
+    nxt_int_t             ret;
+    nxt_uint_t            i, j;
+    const njs_extern_t    *proto;
+    njs_unit_test_req_t   *requests;
+    njs_unit_test_prop_t  *prop;
 
     proto = njs_vm_external_prototype(vm, &nxt_test_external[0]);
     if (proto == NULL) {
@@ -10280,6 +10726,23 @@ njs_externals_init(njs_vm_t *vm)
         if (ret != NXT_OK) {
             printf("njs_vm_external_bind() failed\n");
             return NXT_ERROR;
+        }
+
+        for (j = 0; j < nxt_nitems(nxt_test_requests[i].props); j++) {
+            prop = lvlhsh_unit_test_alloc(vm->mem_cache_pool,
+                                          &nxt_test_requests[i].props[j].name,
+                                          &nxt_test_requests[i].props[j].value);
+
+            if (prop == NULL) {
+                printf("lvlhsh_unit_test_alloc() failed\n");
+                return NXT_ERROR;
+            }
+
+            ret = lvlhsh_unit_test_add(&requests[i], prop);
+            if (ret != NXT_OK) {
+                printf("lvlhsh_unit_test_add() failed\n");
+                return NXT_ERROR;
+            }
         }
     }
 

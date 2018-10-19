@@ -25,8 +25,6 @@ struct njs_property_next_s {
 
 static nxt_noinline njs_ret_t njs_string_concat(njs_vm_t *vm,
     njs_value_t *val1, njs_value_t *val2);
-static njs_ret_t njs_method_private_copy(njs_vm_t *vm,
-    njs_property_query_t *pq);
 static nxt_noinline njs_ret_t njs_values_equal(njs_vm_t *vm,
     const njs_value_t *val1, const njs_value_t *val2);
 static nxt_noinline njs_ret_t njs_values_compare(njs_vm_t *vm,
@@ -476,150 +474,14 @@ njs_ret_t
 njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *property)
 {
-    void                  *obj;
-    int32_t               index;
-    uintptr_t             data;
-    njs_ret_t             ret;
-    njs_value_t           *val, ext_val;
-    njs_slice_prop_t      slice;
-    njs_string_prop_t     string;
-    njs_object_prop_t     *prop;
-    const njs_value_t     *retval;
-    const njs_extern_t    *ext_proto;
-    njs_property_query_t  pq;
+    njs_ret_t  ret;
 
-    pq.query = NJS_PROPERTY_QUERY_GET;
-
-    ret = njs_property_query(vm, &pq, object, property);
-
-    retval = &njs_value_void;
-
-    switch (ret) {
-
-    case NXT_OK:
-        prop = pq.lhq.value;
-
-        switch (prop->type) {
-
-        case NJS_METHOD:
-            if (pq.shared) {
-                ret = njs_method_private_copy(vm, &pq);
-
-                if (nxt_slow_path(ret != NXT_OK)) {
-                    return ret;
-                }
-
-                prop = pq.lhq.value;
-            }
-
-            /* Fall through. */
-
-        case NJS_PROPERTY:
-            retval = &prop->value;
-            break;
-
-        default:
-            nxt_thread_log_alert("invalid property get type:%d", prop->type);
-
-            return NXT_ERROR;
-        }
-
-        break;
-
-    case NXT_DECLINED:
-    case NJS_PRIMITIVE_VALUE:
-        break;
-
-    case NJS_STRING_VALUE:
-
-        /* string[n]. */
-
-        index = (int32_t) njs_value_to_index(property);
-
-        if (nxt_fast_path(index >= 0)) {
-            slice.start = index;
-            slice.length = 1;
-            slice.string_length = njs_string_prop(&string, object);
-
-            if (slice.start < slice.string_length) {
-                /*
-                 * A single codepoint string fits in vm->retval
-                 * so the function cannot fail.
-                 */
-                (void) njs_string_slice(vm, &vm->retval, &string, &slice);
-
-                return sizeof(njs_vmcode_prop_get_t);
-            }
-        }
-
-        break;
-
-    case NJS_ARRAY_VALUE:
-        val = pq.lhq.value;
-
-        if (njs_is_valid(val)) {
-            retval = val;
-        }
-
-        break;
-
-    case NJS_EXTERNAL_VALUE:
-        ext_proto = object->external.proto;
-
-        ret = nxt_lvlhsh_find(&ext_proto->hash, &pq.lhq);
-
-        if (ret == NXT_OK) {
-            ext_proto = pq.lhq.value;
-
-            ext_val.type = NJS_EXTERNAL;
-            ext_val.data.truth = 1;
-            ext_val.external.proto = ext_proto;
-            ext_val.external.index = object->external.index;
-
-            if ((ext_proto->type & NJS_EXTERN_OBJECT) != 0) {
-                retval = &ext_val;
-                break;
-            }
-
-            data = ext_proto->data;
-
-        } else {
-            data = (uintptr_t) &pq.lhq.key;
-        }
-
-        vm->retval = njs_value_void;
-
-        if (ext_proto->get != NULL) {
-            obj = njs_extern_object(vm, object);
-
-            ret = ext_proto->get(vm, &vm->retval, obj, data);
-            if (nxt_slow_path(ret != NXT_OK)) {
-                return ret;
-            }
-
-            /* The vm->retval is already retained by ext_proto->get(). */
-        }
-
-        if (ext_proto->type == NJS_EXTERN_METHOD) {
-            vm->retval.data.u.function = ext_proto->function;
-            vm->retval.type = NJS_FUNCTION;
-            vm->retval.data.truth = 1;
-        }
-
+    ret = njs_value_property(vm, object, property, &vm->retval);
+    if (ret == NXT_OK || ret == NXT_DECLINED) {
         return sizeof(njs_vmcode_prop_get_t);
-
-    case NJS_TRAP:
-    case NXT_ERROR:
-    default:
-
-        return ret;
     }
 
-    vm->retval = *retval;
-
-    /* GC: njs_retain(retval) */
-
-    return sizeof(njs_vmcode_prop_get_t);
+    return ret;
 }
 
 
@@ -627,13 +489,9 @@ njs_ret_t
 njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *property)
 {
-    void                   *obj;
-    uintptr_t              data;
-    nxt_str_t              s;
     njs_ret_t              ret;
-    njs_value_t            *p, *value;
+    njs_value_t            *value;
     njs_object_prop_t      *prop;
-    const njs_extern_t     *ext_proto;
     njs_property_query_t   pq;
     njs_vmcode_prop_set_t  *code;
 
@@ -646,8 +504,7 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
     code = (njs_vmcode_prop_set_t *) vm->current;
     value = njs_vmcode_operand(vm, code->value);
 
-    pq.lhq.key.length = 0;
-    pq.query = NJS_PROPERTY_QUERY_SET;
+    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_SET, 0);
 
     ret = njs_property_query(vm, &pq, object, property);
 
@@ -656,14 +513,33 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
     case NXT_OK:
         prop = pq.lhq.value;
 
-        if (prop->type == NJS_PROPERTY_HANDLER && prop->writable) {
-            ret = prop->value.data.u.prop_handler(vm, object, value,
-                                                  &vm->retval);
-            if (nxt_slow_path(ret != NXT_OK)) {
-                return ret;
+        switch (prop->type) {
+        case NJS_PROPERTY:
+            break;
+
+        case NJS_PROPERTY_REF:
+            *prop->value.data.u.value = *value;
+            return sizeof(njs_vmcode_prop_set_t);
+
+        case NJS_PROPERTY_HANDLER:
+            if (prop->writable) {
+                ret = prop->value.data.u.prop_handler(vm, object, value,
+                                                      &vm->retval);
+                if (nxt_slow_path(ret != NXT_OK)) {
+                    return ret;
+                }
+
+                return sizeof(njs_vmcode_prop_set_t);
             }
 
-            return sizeof(njs_vmcode_prop_set_t);
+            break;
+
+        default:
+            njs_internal_error(vm, "unexpected property type '%s' "
+                               "while setting",
+                               njs_prop_type_string(prop->type));
+
+            return NXT_ERROR;
         }
 
         break;
@@ -687,52 +563,11 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
 
         ret = nxt_lvlhsh_insert(&object->data.u.object->hash, &pq.lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
-            /* Only NXT_ERROR can be returned here. */
-            return ret;
+            njs_internal_error(vm, "lvlhsh insert failed");
+            return NXT_ERROR;
         }
 
         break;
-
-    case NJS_PRIMITIVE_VALUE:
-    case NJS_STRING_VALUE:
-        return sizeof(njs_vmcode_prop_set_t);
-
-    case NJS_ARRAY_VALUE:
-        p = pq.lhq.value;
-        *p = *value;
-
-        return sizeof(njs_vmcode_prop_set_t);
-
-    case NJS_EXTERNAL_VALUE:
-        ext_proto = object->external.proto;
-
-        ret = nxt_lvlhsh_find(&ext_proto->hash, &pq.lhq);
-
-        if (ret == NXT_OK) {
-            ext_proto = pq.lhq.value;
-            data = ext_proto->data;
-
-        } else {
-            data = (uintptr_t) &pq.lhq.key;
-        }
-
-        if (ext_proto->set != NULL) {
-            ret = njs_vm_value_to_ext_string(vm, &s, value, 0);
-            if (nxt_slow_path(ret != NXT_OK)) {
-                return ret;
-            }
-
-            /* TODO retain value if it is string. */
-
-            obj = njs_extern_object(vm, object);
-
-            ret = ext_proto->set(vm, obj, data, &s);
-            if (nxt_slow_path(ret != NXT_OK)) {
-                return ret;
-            }
-        }
-
-        return sizeof(njs_vmcode_prop_set_t);
 
     case NJS_TRAP:
     case NXT_ERROR:
@@ -757,68 +592,34 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
 njs_ret_t
 njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *object, njs_value_t *property)
 {
-    void                  *obj;
-    uintptr_t             data;
     njs_ret_t             ret;
-    njs_value_t           *value;
+    njs_object_prop_t     *prop;
     const njs_value_t     *retval;
-    const njs_extern_t    *ext_proto;
     njs_property_query_t  pq;
 
     retval = &njs_value_false;
 
-    pq.query = NJS_PROPERTY_QUERY_IN;
+    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 0);
 
     ret = njs_property_query(vm, &pq, object, property);
 
     switch (ret) {
 
     case NXT_OK:
+        prop = pq.lhq.value;
+
+        if (!njs_is_valid(&prop->value)) {
+            break;
+        }
+
         retval = &njs_value_true;
         break;
 
     case NXT_DECLINED:
-        break;
+        if (!njs_is_object(object) && !njs_is_external(object)) {
+            njs_type_error(vm, "property in on a primitive value");
 
-    case NJS_PRIMITIVE_VALUE:
-    case NJS_STRING_VALUE:
-        njs_type_error(vm, "property in on a primitive value");
-
-        return NXT_ERROR;
-
-    case NJS_ARRAY_VALUE:
-        value = pq.lhq.value;
-
-        if (njs_is_valid(value)) {
-            retval = &njs_value_true;
-        }
-
-        break;
-
-    case NJS_EXTERNAL_VALUE:
-        ext_proto = object->external.proto;
-
-        ret = nxt_lvlhsh_find(&ext_proto->hash, &pq.lhq);
-
-        if (ret == NXT_OK) {
-            retval = &njs_value_true;
-
-        } else {
-            data = (uintptr_t) &pq.lhq.key;
-
-            if (ext_proto->find != NULL) {
-                obj = njs_extern_object(vm, object);
-
-                ret = ext_proto->find(vm, obj, data, 0);
-
-                if (nxt_slow_path(ret == NXT_ERROR)) {
-                    return ret;
-                }
-
-                if (ret == NXT_OK) {
-                    retval = &njs_value_true;
-                }
-            }
+            return NXT_ERROR;
         }
 
         break;
@@ -840,19 +641,14 @@ njs_ret_t
 njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *property)
 {
-    void                  *obj;
-    uintptr_t             data;
     njs_ret_t             ret;
-    njs_value_t           *value, ext_val;
     const njs_value_t     *retval;
     njs_object_prop_t     *prop;
-    const njs_extern_t    *ext_proto;
     njs_property_query_t  pq;
 
     retval = &njs_value_false;
 
-    pq.lhq.key.length = 0;
-    pq.query = NJS_PROPERTY_QUERY_DELETE;
+    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_DELETE, 1);
 
     ret = njs_property_query(vm, &pq, object, property);
 
@@ -860,6 +656,37 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
 
     case NXT_OK:
         prop = pq.lhq.value;
+
+        switch (prop->type) {
+        case NJS_PROPERTY:
+        case NJS_METHOD:
+            break;
+
+        case NJS_PROPERTY_REF:
+            njs_set_invalid(prop->value.data.u.value);
+            retval = &njs_value_true;
+            goto done;
+
+        case NJS_PROPERTY_HANDLER:
+            if (prop->configurable) {
+                ret = prop->value.data.u.prop_handler(vm, object, NULL, NULL);
+                if (nxt_slow_path(ret != NXT_OK)) {
+                    return ret;
+                }
+
+                retval = &njs_value_true;
+                goto done;
+            }
+
+            break;
+
+        default:
+            njs_internal_error(vm, "unexpected property type '%s' "
+                               "while deleting",
+                               njs_prop_type_string(prop->type));
+
+            return NXT_ERROR;
+        }
 
         if (nxt_slow_path(!prop->configurable)) {
             njs_type_error(vm, "Cannot delete property '%.*s' of %s",
@@ -879,56 +706,6 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
         break;
 
     case NXT_DECLINED:
-    case NJS_PRIMITIVE_VALUE:
-    case NJS_STRING_VALUE:
-        break;
-
-    case NJS_ARRAY_VALUE:
-        value = pq.lhq.value;
-        njs_set_invalid(value);
-        retval = &njs_value_true;
-        break;
-
-    case NJS_EXTERNAL_VALUE:
-
-        ext_proto = object->external.proto;
-
-        ret = nxt_lvlhsh_find(&ext_proto->hash, &pq.lhq);
-
-        if (ret == NXT_OK) {
-            ext_proto = pq.lhq.value;
-
-            if ((ext_proto->type & NJS_EXTERN_OBJECT) != 0) {
-
-                ext_val.type = NJS_EXTERNAL;
-                ext_val.data.truth = 1;
-                ext_val.external.proto = ext_proto;
-                ext_val.external.index = object->external.index;
-
-                data = (uintptr_t) &ext_val;
-
-            } else {
-                data = ext_proto->data;
-            }
-
-        } else {
-            data = (uintptr_t) &pq.lhq.key;
-        }
-
-        if (ext_proto->find != NULL) {
-            obj = njs_extern_object(vm, object);
-
-            ret = ext_proto->find(vm, obj, data, 1);
-
-            if (nxt_slow_path(ret == NXT_ERROR)) {
-                return ret;
-            }
-
-            if (ret == NXT_OK) {
-                retval = &njs_value_true;
-            }
-        }
-
         break;
 
     case NJS_TRAP:
@@ -938,37 +715,11 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
         return ret;
     }
 
+done:
+
     vm->retval = *retval;
 
     return sizeof(njs_vmcode_3addr_t);
-}
-
-
-static njs_ret_t
-njs_method_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
-{
-    njs_function_t     *function;
-    njs_object_prop_t  *prop, *shared;
-
-    prop = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_object_prop_t));
-    if (nxt_slow_path(prop == NULL)) {
-        njs_memory_error(vm);
-        return NXT_ERROR;
-    }
-
-    shared = pq->lhq.value;
-    *prop = *shared;
-
-    function = njs_function_value_copy(vm, &prop->value);
-    if (nxt_slow_path(function == NULL)) {
-        return NXT_ERROR;
-    }
-
-    pq->lhq.replace = 0;
-    pq->lhq.value = prop;
-    pq->lhq.pool = vm->mem_cache_pool;
-
-    return nxt_lvlhsh_insert(&pq->prototype->hash, &pq->lhq);
 }
 
 
@@ -1097,12 +848,10 @@ njs_ret_t
 njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *constructor)
 {
-    nxt_int_t             ret;
-    njs_value_t           *value;
-    njs_object_t          *prototype, *proto;
-    njs_object_prop_t     *prop;
-    const njs_value_t     *retval;
-    njs_property_query_t  pq;
+    nxt_int_t          ret;
+    njs_value_t        value;
+    njs_object_t       *prototype, *proto;
+    const njs_value_t  *retval;
 
     static njs_value_t prototype_string = njs_string("prototype");
 
@@ -1114,17 +863,17 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     retval = &njs_value_false;
 
     if (njs_is_object(object)) {
-        pq.query = NJS_PROPERTY_QUERY_GET;
-
-        ret = njs_property_query(vm, &pq, constructor, &prototype_string);
+        value = njs_value_void;
+        ret = njs_value_property(vm, constructor, &prototype_string, &value);
 
         if (nxt_fast_path(ret == NXT_OK)) {
-            prop = pq.lhq.value;
-            value = &prop->value;
 
-            /* TODO: test prop->value is object. */
+            if (nxt_slow_path(!njs_is_object(&value))) {
+                njs_internal_error(vm, "prototype is not an object");
+                return NXT_ERROR;
+            }
 
-            prototype = value->data.u.object;
+            prototype = value.data.u.object;
             proto = object->data.u.object;
 
             do {
@@ -2115,17 +1864,16 @@ njs_ret_t
 njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
 {
     njs_ret_t                  ret;
+    nxt_str_t                  string;
     njs_value_t                *value;
     njs_object_prop_t          *prop;
     njs_property_query_t       pq;
-    const njs_extern_t         *ext_proto;
     njs_vmcode_method_frame_t  *method;
 
+    value = NULL;
     method = (njs_vmcode_method_frame_t *) vm->current;
 
-    pq.lhq.key.length = 0;
-    pq.lhq.key.start = NULL;
-    pq.query = NJS_PROPERTY_QUERY_GET;
+    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 0);
 
     ret = njs_property_query(vm, &pq, object, name);
 
@@ -2134,52 +1882,53 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
     case NXT_OK:
         prop = pq.lhq.value;
 
-        ret = njs_function_frame_create(vm, &prop->value, object, method->nargs,
-                                        method->code.ctor);
-        break;
+        switch (prop->type) {
+        case NJS_PROPERTY:
+        case NJS_METHOD:
+            break;
 
-    case NJS_ARRAY_VALUE:
-        value = pq.lhq.value;
+        case NJS_PROPERTY_HANDLER:
+            pq.scratch = *prop;
+            prop = &pq.scratch;
+            ret = prop->value.data.u.prop_handler(vm, object, NULL,
+                                                  &prop->value);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return ret;
+            }
 
-        ret = njs_function_frame_create(vm, value, object, method->nargs,
-                                        method->code.ctor);
-        break;
+            break;
 
-    case NJS_EXTERNAL_VALUE:
-        ext_proto = object->external.proto;
+        default:
+            njs_internal_error(vm, "unexpected property type '%s' "
+                               "while getting method",
+                               njs_prop_type_string(prop->type));
 
-        ret = nxt_lvlhsh_find(&ext_proto->hash, &pq.lhq);
-
-        if (nxt_slow_path(ret != NXT_OK)) {
-            njs_type_error(vm,
-                           "cannot find property '%.*s' of an external object",
-                           (int) pq.lhq.key.length, pq.lhq.key.start);
-            return NXT_ERROR;
-
-        }
-
-        ext_proto = pq.lhq.value;
-
-        if (nxt_slow_path(ext_proto->type != NJS_EXTERN_METHOD)) {
-            njs_type_error(vm,
-                          "method '%.*s' of an external object is not callable",
-                          (int) pq.lhq.key.length, pq.lhq.key.start);
             return NXT_ERROR;
         }
 
-        ret = njs_function_native_frame(vm, ext_proto->function, object, NULL,
-                                        method->nargs, 0, method->code.ctor);
+        value = &prop->value;
+
         break;
 
+    case NXT_DECLINED:
+        break;
+
+    case NJS_TRAP:
     case NXT_ERROR:
-        /* An exception was set in njs_property_query(). */
-        return NXT_ERROR;
-
     default:
-        njs_internal_error(vm, "method '%.*s' query failed:%d",
-                           (int) pq.lhq.key.length, pq.lhq.key.start, ret);
+
+        return ret;
+    }
+
+    if (value == NULL || !njs_is_function(value)) {
+        njs_string_get(name, &string);
+        njs_type_error(vm, "'%.*s' is not a function", (int) string.length,
+                       string.start);
         return NXT_ERROR;
     }
+
+    ret = njs_function_frame_create(vm, value, object, method->nargs,
+                                    method->code.ctor);
 
     if (nxt_fast_path(ret == NXT_OK)) {
         return sizeof(njs_vmcode_method_frame_t);
@@ -3159,6 +2908,45 @@ njs_vmcode_string_argument(njs_vm_t *vm, njs_value_t *invld1,
 }
 
 
+static njs_ret_t
+njs_vmcode_restart(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
+{
+    u_char                *restart;
+    njs_ret_t             ret;
+    njs_value_t           *retval, *value1;
+    njs_native_frame_t    *frame;
+    njs_vmcode_generic_t  *vmcode;
+
+    frame = vm->top_frame;
+    restart = frame->trap_restart;
+    frame->trap_restart = NULL;
+    vm->current = restart;
+    vmcode = (njs_vmcode_generic_t *) restart;
+
+    value1 = &frame->trap_values[0];
+
+    if (frame->trap_reference) {
+        value1 = value1->data.u.value;
+    }
+
+    ret = vmcode->code.operation(vm, value1, &frame->trap_values[1]);
+
+    if (nxt_slow_path(ret == NJS_TRAP)) {
+        /* Trap handlers are not reentrant. */
+        njs_internal_error(vm, "trap inside restart instruction");
+        return NXT_ERROR;
+    }
+
+    retval = njs_vmcode_operand(vm, vmcode->operand1);
+
+    //njs_release(vm, retval);
+
+    *retval = vm->retval;
+
+    return ret;
+}
+
+
 /*
  * A hint value is 0 for numbers and 1 for strings.  The value chooses
  * method calls order specified by ECMAScript 5.1: "valueOf", "toString"
@@ -3257,42 +3045,88 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
 }
 
 
-static njs_ret_t
-njs_vmcode_restart(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
+/*
+ * ES5.1, 8.12.3: [[Get]].
+ *   NXT_OK               property has been found in object,
+ *      retval will contain the property's value
+ *
+ *   NXT_DECLINED         property was not found in object,
+ *   NJS_TRAP             the property trap must be called,
+ *   NXT_ERROR            exception has been thrown.
+ *      retval will contain undefined
+ */
+njs_ret_t
+njs_value_property(njs_vm_t *vm, njs_value_t *value,
+    const njs_value_t *property, njs_value_t *retval)
 {
-    u_char                *restart;
     njs_ret_t             ret;
-    njs_value_t           *retval, *value1;
-    njs_native_frame_t    *frame;
-    njs_vmcode_generic_t  *vmcode;
+    njs_object_prop_t     *prop;
+    njs_property_query_t  pq;
 
-    frame = vm->top_frame;
-    restart = frame->trap_restart;
-    frame->trap_restart = NULL;
-    vm->current = restart;
-    vmcode = (njs_vmcode_generic_t *) restart;
+    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 0);
 
-    value1 = &frame->trap_values[0];
+    ret = njs_property_query(vm, &pq, value, property);
 
-    if (frame->trap_reference) {
-        value1 = value1->data.u.value;
+    switch (ret) {
+
+    case NXT_OK:
+        prop = pq.lhq.value;
+
+        switch (prop->type) {
+
+        case NJS_METHOD:
+            if (pq.shared) {
+                ret = njs_method_private_copy(vm, &pq);
+
+                if (nxt_slow_path(ret != NXT_OK)) {
+                    return ret;
+                }
+
+                prop = pq.lhq.value;
+            }
+
+            /* Fall through. */
+
+        case NJS_PROPERTY:
+            *retval = prop->value;
+            break;
+
+        case NJS_PROPERTY_HANDLER:
+            pq.scratch = *prop;
+            prop = &pq.scratch;
+            ret = prop->value.data.u.prop_handler(vm, value, NULL,
+                                                  &prop->value);
+
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return ret;
+            }
+
+            *retval = prop->value;
+            break;
+
+        default:
+            njs_internal_error(vm, "unexpected property type '%s' "
+                               "while getting",
+                               njs_prop_type_string(prop->type));
+
+            return NXT_ERROR;
+        }
+
+        break;
+
+    case NXT_DECLINED:
+        *retval = njs_value_void;
+
+        return NXT_DECLINED;
+
+    case NJS_TRAP:
+    case NXT_ERROR:
+    default:
+
+        return ret;
     }
 
-    ret = vmcode->code.operation(vm, value1, &frame->trap_values[1]);
-
-    if (nxt_slow_path(ret == NJS_TRAP)) {
-        /* Trap handlers are not reentrant. */
-        njs_internal_error(vm, "trap inside restart instruction");
-        return NXT_ERROR;
-    }
-
-    retval = njs_vmcode_operand(vm, vmcode->operand1);
-
-    //njs_release(vm, retval);
-
-    *retval = vm->retval;
-
-    return ret;
+    return NXT_OK;
 }
 
 

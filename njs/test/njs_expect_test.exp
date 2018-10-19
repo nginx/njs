@@ -192,7 +192,7 @@ njs_test {
 
 njs_test {
     {"console.ll()\r\n"
-     "console.ll()\r\nTypeError: cannot find property 'll' of an external object"}
+     "console.ll()\r\nTypeError: 'll' is not a function"}
 }
 
 njs_test {

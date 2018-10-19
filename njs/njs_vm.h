@@ -61,22 +61,13 @@ typedef enum {
 #define NJS_APPLIED              NXT_DONE
 
 
-/* The values must be greater than NXT_OK. */
-#define NJS_PRIMITIVE_VALUE        1
-#define NJS_STRING_VALUE           2
-#define NJS_ARRAY_VALUE            3
-#define NJS_EXTERNAL_VALUE         4
-
-
 /*
- * NJS_PROPERTY_QUERY_GET must be less or equal to NJS_PROPERTY_QUERY_IN,
- * NJS_PROPERTY_QUERY_SET and NJS_PROPERTY_QUERY_DELETE must be greater
- * than NJS_PROPERTY_QUERY_IN.
+ * NJS_PROPERTY_QUERY_GET must be less to NJS_PROPERTY_QUERY_SET
+ * and NJS_PROPERTY_QUERY_DELETE.
  */
 #define NJS_PROPERTY_QUERY_GET     0
-#define NJS_PROPERTY_QUERY_IN      1
-#define NJS_PROPERTY_QUERY_SET     2
-#define NJS_PROPERTY_QUERY_DELETE  3
+#define NJS_PROPERTY_QUERY_SET     1
+#define NJS_PROPERTY_QUERY_DELETE  2
 
 
 /*
@@ -1073,6 +1064,13 @@ struct njs_vm_s {
     nxt_array_t              *backtrace;
 
     njs_trap_t               trap:8;
+
+    /*
+     * njs_property_query() uses it to store reference to a temporary
+     * PROPERTY_HANDLERs for NJS_EXTERNAL values in NJS_PROPERTY_QUERY_SET
+     * and NJS_PROPERTY_QUERY_DELETE modes.
+     */
+    uintptr_t                stash; /* njs_property_query_t * */
 };
 
 

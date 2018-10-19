@@ -11,6 +11,9 @@
 #define njs_extern_object(vm, ext)                                          \
     (*(void **) nxt_array_item((vm)->external_objects, (ext)->external.index))
 
+#define njs_extern_index(vm, idx)                                          \
+    (*(void **) nxt_array_item((vm)->external_objects, idx))
+
 
 struct njs_extern_s {
     /* A hash of inclusive njs_extern_t. */
