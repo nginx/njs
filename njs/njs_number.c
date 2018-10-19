@@ -64,6 +64,24 @@ njs_value_to_index(const njs_value_t *value)
 
 
 double
+njs_primitive_value_to_number(const njs_value_t *value)
+{
+    if (nxt_fast_path(njs_is_numeric(value))) {
+        return value->data.u.number;
+    }
+
+    return njs_string_to_number(value, 1);
+}
+
+
+uint32_t
+njs_primitive_value_to_integer(const njs_value_t *value)
+{
+    return njs_number_to_integer(njs_primitive_value_to_number(value));
+}
+
+
+double
 njs_number_dec_parse(const u_char **start, const u_char *end)
 {
     return nxt_strtod(start, end);

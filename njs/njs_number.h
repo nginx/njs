@@ -13,6 +13,8 @@
 
 
 uint32_t njs_value_to_index(const njs_value_t *value);
+double njs_primitive_value_to_number(const njs_value_t *value);
+uint32_t njs_primitive_value_to_integer(const njs_value_t *value);
 double njs_number_dec_parse(const u_char **start, const u_char *end);
 uint64_t njs_number_oct_parse(const u_char **start, const u_char *end);
 uint64_t njs_number_bin_parse(const u_char **start, const u_char *end);
