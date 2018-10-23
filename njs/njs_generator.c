@@ -14,6 +14,8 @@ static nxt_int_t njs_generate_name(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node);
 static nxt_int_t njs_generate_builtin_object(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node);
+static nxt_int_t njs_generate_arguments_object(njs_vm_t *vm,
+    njs_parser_t *parser, njs_parser_node_t *node);
 static nxt_int_t njs_generate_variable(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node);
 static nxt_int_t njs_generate_var_statement(njs_vm_t *vm, njs_parser_t *parser,
@@ -308,6 +310,9 @@ njs_generator(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node)
     case NJS_TOKEN_CLEAR_TIMEOUT:
         return njs_generate_builtin_object(vm, parser, node);
 
+    case NJS_TOKEN_ARGUMENTS:
+        return njs_generate_arguments_object(vm, parser, node);
+
     case NJS_TOKEN_FUNCTION:
         return njs_generate_function_declaration(vm, parser, node);
 
@@ -390,6 +395,29 @@ njs_generate_builtin_object(njs_vm_t *vm, njs_parser_t *parser,
     copy->code.retval = NJS_VMCODE_RETVAL;
     copy->retval = node->index;
     copy->object = index;
+
+    return NXT_OK;
+}
+
+
+static nxt_int_t
+njs_generate_arguments_object(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *node)
+{
+    njs_vmcode_arguments_t  *gen;
+
+    parser->arguments_object = 1;
+
+    node->index = njs_generator_object_dest_index(vm, parser, node);
+    if (nxt_slow_path(node->index == NJS_INDEX_ERROR)) {
+        return NXT_ERROR;
+    }
+
+    njs_generate_code(parser, njs_vmcode_arguments_t, gen);
+    gen->code.operation = njs_vmcode_arguments;
+    gen->code.operands = NJS_VMCODE_1OPERAND;
+    gen->code.retval = NJS_VMCODE_RETVAL;
+    gen->retval = node->index;
 
     return NXT_OK;
 }
@@ -2010,6 +2038,7 @@ njs_generate_function_scope(njs_vm_t *vm, njs_function_lambda_t *lambda,
     parser->code_size += node->scope->argument_closures
                          * sizeof(njs_vmcode_move_t);
 
+    parser->arguments_object = 0;
     ret = njs_generate_scope(vm, parser, node);
 
     if (nxt_fast_path(ret == NXT_OK)) {
@@ -2023,6 +2052,7 @@ njs_generate_function_scope(njs_vm_t *vm, njs_function_lambda_t *lambda,
 
         lambda->nesting = node->scope->nesting;
         lambda->closure_size = size;
+        lambda->arguments_object = parser->arguments_object;
 
         lambda->local_size = parser->scope_size;
         lambda->local_scope = parser->local_scope;

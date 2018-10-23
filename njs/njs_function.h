@@ -25,10 +25,12 @@ struct njs_function_lambda_s {
     uint32_t                       closure_size;
 
     /* Function nesting level. */
-    uint8_t                        nesting;         /* 4 bits */
+    uint8_t                        nesting;           /* 4 bits */
 
     /* Function internal block closures levels. */
-    uint8_t                        block_closures;  /* 4 bits */
+    uint8_t                        block_closures;    /* 4 bits */
+
+    uint8_t                        arguments_object;  /* 1 bit */
 
     /* Initial values of local scope. */
     njs_value_t                    *local_scope;
@@ -102,7 +104,9 @@ struct njs_native_frame_s {
 
     njs_function_t                 *function;
     njs_native_frame_t             *previous;
+
     njs_value_t                    *arguments;
+    njs_object_t                   *arguments_object;
 
     njs_exception_t                exception;
 
@@ -147,6 +151,10 @@ struct njs_frame_s {
 njs_function_t *njs_function_alloc(njs_vm_t *vm);
 njs_function_t *njs_function_value_copy(njs_vm_t *vm, njs_value_t *value);
 njs_native_frame_t *njs_function_frame_alloc(njs_vm_t *vm, size_t size);
+njs_ret_t njs_function_arguments_object_init(njs_vm_t *vm,
+    njs_native_frame_t *frame);
+njs_ret_t njs_function_arguments_thrower(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 njs_ret_t njs_function_prototype_create(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval);
 njs_value_t *njs_function_property_prototype_create(njs_vm_t *vm,

@@ -455,6 +455,13 @@ njs_parser_function_declaration(njs_vm_t *vm, njs_parser_t *parser)
     }
 
     if (token != NJS_TOKEN_NAME) {
+        if (token == NJS_TOKEN_ARGUMENTS || token ==  NJS_TOKEN_EVAL) {
+            njs_parser_syntax_error(vm, parser, "Identifier \"%.*s\" "
+                                    "is forbidden in function declaration",
+                                    (int) parser->lexer->text.length,
+                                    parser->lexer->text.start);
+        }
+
         return NJS_TOKEN_ILLEGAL;
     }
 
@@ -821,6 +828,13 @@ njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser)
         }
 
         if (token != NJS_TOKEN_NAME) {
+            if (token == NJS_TOKEN_ARGUMENTS || token ==  NJS_TOKEN_EVAL) {
+                njs_parser_syntax_error(vm, parser, "Identifier \"%.*s\" "
+                                        "is forbidden in var declaration",
+                                        (int) parser->lexer->text.length,
+                                        parser->lexer->text.start);
+            }
+
             return NJS_TOKEN_ILLEGAL;
         }
 
@@ -1306,6 +1320,13 @@ njs_parser_for_var_statement(njs_vm_t *vm, njs_parser_t *parser)
         }
 
         if (token != NJS_TOKEN_NAME) {
+            if (token == NJS_TOKEN_ARGUMENTS || token ==  NJS_TOKEN_EVAL) {
+                njs_parser_syntax_error(vm, parser, "Identifier \"%.*s\" "
+                                       "is forbidden in for-in var declaration",
+                                       (int) parser->lexer->text.length,
+                                       parser->lexer->text.start);
+            }
+
             return NJS_TOKEN_ILLEGAL;
         }
 
@@ -1972,6 +1993,24 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
     case NJS_TOKEN_MATH:
     case NJS_TOKEN_JSON:
         return njs_parser_builtin_object(vm, parser, node);
+
+    case NJS_TOKEN_ARGUMENTS:
+        nxt_thread_log_debug("JS: arguments");
+
+        if (parser->scope->type <= NJS_SCOPE_GLOBAL) {
+            njs_parser_syntax_error(vm, parser, "\"%.*s\" object "
+                                    "in global scope",
+                                    (int) parser->lexer->text.length,
+                                    parser->lexer->text.start);
+
+            return NJS_TOKEN_ILLEGAL;
+        }
+
+        node->token = NJS_TOKEN_ARGUMENTS;
+
+        parser->code_size += sizeof(njs_vmcode_arguments_t);
+
+        break;
 
     case NJS_TOKEN_OBJECT_CONSTRUCTOR:
         node->index = NJS_INDEX_OBJECT;

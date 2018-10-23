@@ -161,6 +161,7 @@ typedef enum {
     NJS_TOKEN_THROW,
 
     NJS_TOKEN_THIS,
+    NJS_TOKEN_ARGUMENTS,
 
 #define NJS_TOKEN_FIRST_OBJECT     NJS_TOKEN_GLOBAL_THIS
 
@@ -346,6 +347,8 @@ struct njs_parser_s {
     u_char                          *code_end;
 
     njs_parser_t                    *parent;
+
+    nxt_uint_t                      arguments_object;
 };
 
 

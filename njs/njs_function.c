@@ -95,6 +95,87 @@ njs_function_value_copy(njs_vm_t *vm, njs_value_t *value)
 }
 
 
+/*
+ * ES5.1, 10.6: CreateArgumentsObject.
+ */
+njs_ret_t
+njs_function_arguments_object_init(njs_vm_t *vm, njs_native_frame_t *frame)
+{
+    nxt_int_t           ret;
+    nxt_uint_t          nargs, n;
+    njs_value_t         value;
+    njs_object_t        *arguments;
+    njs_object_prop_t   *prop;
+    nxt_lvlhsh_query_t  lhq;
+
+    static const njs_value_t  njs_string_length = njs_string("length");
+
+    arguments = njs_object_alloc(vm);
+    if (nxt_slow_path(arguments == NULL)) {
+        return NXT_ERROR;
+    }
+
+    arguments->shared_hash = vm->shared->arguments_object_hash;
+
+    nargs = frame->nargs;
+
+    njs_value_number_set(&value, nargs);
+
+    prop = njs_object_prop_alloc(vm, &njs_string_length, &value, 1);
+    if (nxt_slow_path(prop == NULL)) {
+        return NXT_ERROR;
+    }
+
+    prop->enumerable = 0;
+
+    lhq.value = prop;
+    lhq.key_hash = NJS_LENGTH_HASH;
+    njs_string_get(&prop->name, &lhq.key);
+
+    lhq.replace = 0;
+    lhq.pool = vm->mem_cache_pool;
+    lhq.proto = &njs_object_hash_proto;
+
+    ret = nxt_lvlhsh_insert(&arguments->hash, &lhq);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        njs_internal_error(vm, "lvlhsh insert failed");
+        return NXT_ERROR;
+    }
+
+    for (n = 0; n < nargs; n++) {
+        njs_uint32_to_string(&value, n);
+
+        prop = njs_object_prop_alloc(vm, &value, &frame->arguments[n + 1], 1);
+        if (nxt_slow_path(prop == NULL)) {
+            return NXT_ERROR;
+        }
+
+        lhq.value = prop;
+        njs_string_get(&prop->name, &lhq.key);
+        lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
+
+        ret = nxt_lvlhsh_insert(&arguments->hash, &lhq);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            njs_internal_error(vm, "lvlhsh insert failed");
+            return NXT_ERROR;
+        }
+    }
+
+    frame->arguments_object = arguments;
+
+    return NXT_OK;
+}
+
+
+njs_ret_t
+njs_function_arguments_thrower(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval)
+{
+    njs_type_error(vm, "'caller', 'callee' properties may not be accessed");
+    return NXT_ERROR;
+}
+
+
 njs_ret_t
 njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, njs_value_t *args, nxt_uint_t nargs,
@@ -315,6 +396,7 @@ nxt_noinline njs_ret_t
 njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
 {
     size_t                 size;
+    njs_ret_t              ret;
     nxt_uint_t             n, nesting;
     njs_frame_t            *frame;
     njs_value_t            *value;
@@ -391,6 +473,13 @@ njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
 
         frame->closures[n] = closure;
         vm->scopes[NJS_SCOPE_CLOSURE + n] = &closure->u.values;
+    }
+
+    if (lambda->arguments_object) {
+        ret = njs_function_arguments_object_init(vm, &frame->native);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return NXT_ERROR;
+        }
     }
 
     vm->active_frame = frame;

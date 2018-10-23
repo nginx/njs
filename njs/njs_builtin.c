@@ -127,6 +127,22 @@ const njs_function_init_t  njs_native_functions[] = {
 };
 
 
+const njs_object_prop_t  njs_arguments_object_properties[] =
+{
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("caller"),
+        .value = njs_prop_handler(njs_function_arguments_thrower),
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("callee"),
+        .value = njs_prop_handler(njs_function_arguments_thrower),
+    },
+};
+
+
 static njs_ret_t
 njs_prototype_function(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
@@ -232,6 +248,13 @@ njs_builtin_objects_create(njs_vm_t *vm)
 
     ret = njs_object_hash_create(vm, &vm->shared->function_prototype_hash,
                                  &function_prototype_property, 1);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NXT_ERROR;
+    }
+
+    ret = njs_object_hash_create(vm, &vm->shared->arguments_object_hash,
+                                 njs_arguments_object_properties,
+                                 nxt_nitems(njs_arguments_object_properties));
     if (nxt_slow_path(ret != NXT_OK)) {
         return NXT_ERROR;
     }

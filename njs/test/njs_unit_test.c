@@ -5713,6 +5713,74 @@ static njs_unit_test_t  njs_test[] =
                  "var b = a(); b(2)"),
       nxt_string("3") },
 
+    /* arguments object. */
+
+    { nxt_string("var arguments"),
+      nxt_string("SyntaxError: Identifier \"arguments\" is forbidden in var declaration in 1") },
+
+    { nxt_string("for (var arguments in []) {}"),
+      nxt_string("SyntaxError: Identifier \"arguments\" is forbidden in for-in var declaration in 1") },
+
+    { nxt_string("function arguments(){}"),
+      nxt_string("SyntaxError: Identifier \"arguments\" is forbidden in function declaration in 1") },
+
+    { nxt_string("(function () {arguments = [];})"),
+      nxt_string("SyntaxError: Identifier \"arguments\" is forbidden as left-hand in assignment in 1") },
+
+    { nxt_string("(function(){return arguments[0];})(1,2,3)"),
+      nxt_string("1") },
+
+    { nxt_string("(function(){return arguments[2];})(1,2,3)"),
+      nxt_string("3") },
+
+    { nxt_string("(function(){return arguments[3];})(1,2,3)"),
+      nxt_string("undefined") },
+
+    { nxt_string("(function(a,b,c){return a;})(1,2,3)"),
+      nxt_string("1") },
+
+    { nxt_string("(function(a,b,c){arguments[0] = 4; return a;})(1,2,3)"),
+      nxt_string("1") },
+
+    { nxt_string("(function(a,b,c){a = 4; return arguments[0];})(1,2,3)"),
+      nxt_string("1") },
+
+    { nxt_string("function check(v) {if (v == false) {throw TypeError('Too few arguments')}}; "
+                 "function f() {check(arguments.length > 1); return 1}; f()"),
+      nxt_string("TypeError: Too few arguments") },
+
+    { nxt_string("function check(v) {if (v == false) {throw TypeError('Too few arguments')}}; "
+                 "function f() {check(arguments.length > 1); return 1}; f(1,2)"),
+      nxt_string("1") },
+
+    { nxt_string("(function(a,b){delete arguments[0]; return arguments[0]})(1,1)"),
+      nxt_string("undefined") },
+
+    { nxt_string("(function(){return arguments.length;})()"),
+      nxt_string("0") },
+
+    { nxt_string("(function(){return arguments.length;})(1,2,3)"),
+      nxt_string("3") },
+
+    { nxt_string("(function(){arguments.length = 1; return arguments.length;})(1,2,3)"),
+      nxt_string("1") },
+
+    { nxt_string("(function(){return arguments.callee;})()"),
+      nxt_string("TypeError: 'caller', 'callee' properties may not be accessed") },
+
+    { nxt_string("(function(){return arguments.caller;})()"),
+      nxt_string("TypeError: 'caller', 'callee' properties may not be accessed") },
+
+    { nxt_string("function sum() { var args = Array.prototype.slice.call(arguments); "
+                 "return args.reduce(function(prev, curr) {return prev + curr})};"
+                 "[sum(1), sum(1,2), sum(1,2,3), sum(1,2,3,4)]"),
+      nxt_string("1,3,6,10") },
+
+    { nxt_string("function concat(sep) { var args = Array.prototype.slice.call(arguments, 1); "
+                 "return args.join(sep)};"
+                 "[concat('.',1,2,3), concat('+',1,2,3,4)]"),
+      nxt_string("1.2.3,1+2+3+4") },
+
     /* Scopes. */
 
     { nxt_string("function f(x) { a = x } var a; f(5); a"),

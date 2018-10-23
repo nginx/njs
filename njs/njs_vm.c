@@ -413,6 +413,29 @@ njs_vmcode_function(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 
 
 njs_ret_t
+njs_vmcode_arguments(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
+{
+    njs_ret_t    ret;
+    njs_frame_t  *frame;
+
+    frame = (njs_frame_t *) vm->active_frame;
+
+    if (frame->native.arguments_object == NULL) {
+        ret = njs_function_arguments_object_init(vm, &frame->native);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return NXT_ERROR;
+        }
+    }
+
+    vm->retval.data.u.object = frame->native.arguments_object;
+    vm->retval.type = NJS_OBJECT;
+    vm->retval.data.truth = 1;
+
+    return sizeof(njs_vmcode_arguments_t);
+}
+
+
+njs_ret_t
 njs_vmcode_regexp(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 {
     njs_regexp_t         *regexp;
