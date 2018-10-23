@@ -108,6 +108,16 @@
         'j'), 'o'), 'i'), 'n')
 
 
+#define NJS_LENGTH_HASH                                                       \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
+        'l'), 'e'), 'n'), 'g'), 't'), 'h')
+
+
 #define NJS_NAME_HASH                                                         \
     nxt_djb_hash_add(                                                         \
     nxt_djb_hash_add(                                                         \

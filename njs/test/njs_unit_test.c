@@ -3052,11 +3052,92 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Array.prototype.slice(1,2)"),
       nxt_string("") },
 
+    { nxt_string("Array.prototype.slice.call(undefined)"),
+      nxt_string("TypeError: cannot convert void to object") },
+
+    { nxt_string("Array.prototype.slice.call(1)"),
+      nxt_string("") },
+
+    { nxt_string("Array.prototype.slice.call(false)"),
+      nxt_string("") },
+
+    { nxt_string("Array.prototype.slice.call({'0':'a', '1':'b', length:1})"),
+      nxt_string("a") },
+
+    { nxt_string("Array.prototype.slice.call({'0':'a', '1':'b', length:2})"),
+      nxt_string("a,b") },
+
+    { nxt_string("Array.prototype.slice.call({'0':'a', '1':'b', length:4})"),
+      nxt_string("a,b,,") },
+
+    { nxt_string("Array.prototype.slice.call({'0':'a', '1':'b', length:2}, 1)"),
+      nxt_string("b") },
+
+    { nxt_string("Array.prototype.slice.call({'0':'a', '1':'b', length:2}, 1, 2)"),
+      nxt_string("b") },
+
+    { nxt_string("Array.prototype.slice.call({length:'2'})"),
+      nxt_string(",") },
+
+    { nxt_string("njs.dump(Array.prototype.slice.call({length: 3, 1: undefined }))"),
+      nxt_string("[<empty>,undefined,<empty>]") },
+
+    { nxt_string("Array.prototype.slice.call({length:new Number(3)})"),
+      nxt_string(",,") },
+
+    { nxt_string("Array.prototype.slice.call({length: { valueOf: function() { return 2; } }})"),
+      nxt_string(",") },
+
+    { nxt_string("Array.prototype.slice.call({ length: Object.create(null) })"),
+      nxt_string("TypeError: Cannot convert object to primitive value") },
+
+    { nxt_string("Array.prototype.slice.call({length:-1})"),
+      nxt_string("MemoryError") },
+
+    { nxt_string("Array.prototype.slice.call('αβZγ')"),
+      nxt_string("α,β,Z,γ") },
+
+    { nxt_string("Array.prototype.slice.call('αβZγ', 1)"),
+      nxt_string("β,Z,γ") },
+
+    { nxt_string("Array.prototype.slice.call('αβZγ', 2)"),
+      nxt_string("Z,γ") },
+
+    { nxt_string("Array.prototype.slice.call('αβZγ', 3)"),
+      nxt_string("γ") },
+
+    { nxt_string("Array.prototype.slice.call('αβZγ', 4)"),
+      nxt_string("") },
+
+    { nxt_string("Array.prototype.slice.call('αβZγ', 0, 1)"),
+      nxt_string("α") },
+
+    { nxt_string("Array.prototype.slice.call('αβZγ', 1, 2)"),
+      nxt_string("β") },
+
+    { nxt_string("Array.prototype.slice.call('αβZγ').length"),
+      nxt_string("4") },
+
+    { nxt_string("Array.prototype.slice.call('αβZγ')[1].length"),
+      nxt_string("1") },
+
+    { nxt_string("Array.prototype.slice.call(new String('αβZγ'))"),
+      nxt_string("α,β,Z,γ") },
+
     { nxt_string("Array.prototype.pop()"),
       nxt_string("undefined") },
 
     { nxt_string("Array.prototype.shift()"),
       nxt_string("undefined") },
+
+    { nxt_string("[0,1].slice()"),
+      nxt_string("0,1") },
+
+    { nxt_string("[0,1].slice(undefined)"),
+      nxt_string("0,1") },
+
+    { nxt_string("[0,1].slice(undefined, undefined)"),
+      nxt_string("0,1") },
 
     { nxt_string("[0,1,2,3,4].slice(1,4)"),
       nxt_string("1,2,3") },
@@ -9666,6 +9747,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("njs.dump({a:1, b:[1,,2,{c:new Boolean(1)}]})"),
       nxt_string("{a:1,b:[1,<empty>,2,{c:[Boolean: true]}]}") },
+
+    { nxt_string("njs.dump(Array.prototype.slice.call({'1':'b', length:2}))"),
+      nxt_string("[<empty>,'b']") },
 
     { nxt_string("njs.dump($r.props)"),
       nxt_string("{a:{type:\"property\",props:[\"getter\"]},b:{type:\"property\",props:[\"getter\"]}}") },
