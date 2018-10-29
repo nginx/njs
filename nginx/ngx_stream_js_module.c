@@ -570,6 +570,8 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
                 goto exception;
             }
 
+            ctx->buf->pos = ctx->buf->last;
+
         } else {
             cl = ngx_alloc_chain_link(c->pool);
             if (cl == NULL) {
