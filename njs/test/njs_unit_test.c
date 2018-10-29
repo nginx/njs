@@ -101,8 +101,17 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("-0"),
       nxt_string("-0") },
 
+    { nxt_string(".0"),
+      nxt_string("0") },
+
     { nxt_string("0.1"),
       nxt_string("0.1") },
+
+    { nxt_string(".9"),
+      nxt_string("0.9") },
+
+    { nxt_string("-.01"),
+      nxt_string("-0.01") },
 
     { nxt_string("0.000001"),
       nxt_string("0.000001") },
@@ -139,6 +148,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("+1\n"),
       nxt_string("1") },
+
+    { nxt_string("."),
+      nxt_string("SyntaxError: Unexpected token \".\" in 1") },
 
     /* Octal Numbers. */
 
@@ -264,6 +276,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("1.1e+01"),
       nxt_string("11") },
 
+    { nxt_string("-.01e-01"),
+      nxt_string("-0.001") },
+
     { nxt_string("1e9"),
       nxt_string("1000000000") },
 
@@ -296,6 +311,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("1eZ"),
       nxt_string("SyntaxError: Unexpected token \"eZ\" in 1") },
+
+    { nxt_string(".e1"),
+      nxt_string("SyntaxError: Unexpected token \".\" in 1") },
 
     /* Indexes. */
 
@@ -4039,7 +4057,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("NaN") },
 
     { nxt_string("var a = 'abcdef'; a.3"),
-      nxt_string("SyntaxError: Unexpected token \"3\" in 1") },
+      nxt_string("SyntaxError: Unexpected token \".3\" in 1") },
 
     { nxt_string("'abcdef'[3]"),
       nxt_string("d") },

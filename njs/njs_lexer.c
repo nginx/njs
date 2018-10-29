@@ -290,7 +290,7 @@ njs_lexer_token(njs_lexer_t *lexer)
 static njs_token_t
 njs_lexer_next_token(njs_lexer_t *lexer)
 {
-    u_char                   c;
+    u_char                   c, *p;
     nxt_uint_t               n;
     njs_token_t              token;
     const njs_lexer_multi_t  *multi;
@@ -314,6 +314,16 @@ njs_lexer_next_token(njs_lexer_t *lexer)
         case NJS_TOKEN_DOUBLE_QUOTE:
         case NJS_TOKEN_SINGLE_QUOTE:
             return njs_lexer_string(lexer, c);
+
+        case NJS_TOKEN_DOT:
+            p = lexer->start;
+
+            if (p == lexer->end || njs_tokens[*p] != NJS_TOKEN_DIGIT) {
+                lexer->text.length = p - lexer->text.start;
+                return NJS_TOKEN_DOT;
+            }
+
+            /* Fall through. */
 
         case NJS_TOKEN_DIGIT:
             return njs_lexer_number(lexer, c);
@@ -405,7 +415,6 @@ njs_lexer_next_token(njs_lexer_t *lexer)
         case NJS_TOKEN_CLOSE_BRACKET:
         case NJS_TOKEN_OPEN_BRACE:
         case NJS_TOKEN_CLOSE_BRACE:
-        case NJS_TOKEN_DOT:
         case NJS_TOKEN_COMMA:
         case NJS_TOKEN_COLON:
         case NJS_TOKEN_SEMICOLON:
@@ -527,6 +536,8 @@ njs_lexer_number(njs_lexer_t *lexer, u_char c)
 {
     const u_char  *p;
 
+    lexer->text.start = lexer->start - 1;
+
     p = lexer->start;
 
     if (c == '0' && p != lexer->end) {
@@ -594,6 +605,7 @@ njs_lexer_number(njs_lexer_t *lexer, u_char c)
 done:
 
     lexer->start = (u_char *) p;
+    lexer->text.length = p - lexer->text.start;
 
     return NJS_TOKEN_NUMBER;
 
@@ -603,7 +615,6 @@ illegal_trailer:
 
 illegal_token:
 
-    lexer->text.start = lexer->start - 1;
     lexer->text.length = p - lexer->text.start;
 
     return NJS_TOKEN_ILLEGAL;
