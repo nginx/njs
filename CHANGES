@@ -1,4 +1,45 @@
 
+Changes with njs 0.2.5                                           30 Oct 2018
+
+    nginx modules:
+
+    *) Bugfix: fixed counting pending events in stream module.
+
+    *) Bugfix: fixed s.off() in stream module.
+
+    *) Bugfix: fixed processing of data chunks in js_filter in stream module.
+
+    *) Bugfix: fixed http status and contentType getter in http module.
+
+    *) Bugfix: fixed http response and parent getters in http module.
+
+    Core:
+
+    *) Feature: arguments object support.
+
+    *) Feature: non-integer fractions support.
+
+    *) Improvement: handling non-array values in Array.prototype.slice().
+
+    *) Bugfix: fixed Array.prototype.length setter.
+
+    *) Bugfix: fixed njs_array_alloc() for length > 2**31.
+
+    *) Bugfix: handling int overflow in njs_array_alloc() on 32bit
+       archs.
+
+    *) Bugfix: fixed code size mismatch error message.
+
+    *) Bugfix: fixed delete operator in a loop.
+
+    *) Bugfix: fixed Object.getOwnPropertyDescriptor() for complex
+       object (inherited from Array and string values).
+
+    *) Bugfix: fixed Object.prototype.hasOwnProperty() for non-object
+       properties.
+
+    *) Bugfix: miscellaneous additional bugs have been fixed.
+
 Changes with njs 0.2.4                                           18 Aug 2018
 
     nginx modules:
