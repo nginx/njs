@@ -2047,11 +2047,13 @@ njs_generate_function_scope(njs_vm_t *vm, njs_function_lambda_t *lambda,
 
         if (closure != NULL) {
             lambda->block_closures = 1;
+            lambda->closure_scope = closure->start;
             size = (1 + closure->items) * sizeof(njs_value_t);
         }
 
-        lambda->nesting = node->scope->nesting;
         lambda->closure_size = size;
+
+        lambda->nesting = node->scope->nesting;
         lambda->arguments_object = parser->arguments_object;
 
         lambda->local_size = parser->scope_size;

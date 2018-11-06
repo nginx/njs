@@ -34,6 +34,7 @@ struct njs_function_lambda_s {
 
     /* Initial values of local scope. */
     njs_value_t                    *local_scope;
+    njs_value_t                    *closure_scope;
 
     union {
         u_char                     *start;

@@ -5287,6 +5287,46 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("function f() { var a = f2(); }"),
       nxt_string("ReferenceError: \"f2\" is not defined in 1") },
 
+    { nxt_string("(function(){ function f() {return f}; return f()})()"),
+      nxt_string("[object Function]") },
+
+    { nxt_string("var a = ''; "
+                 "function f(list) {"
+                 "    function add(v) {a+=v};"
+                 "    list.forEach(function(v) {add(v)});"
+                 "};"
+                 "f(['a', 'b', 'c']); a"),
+      nxt_string("abc") },
+
+    { nxt_string("var l = [];"
+                 "var f = function() { "
+                 "    function f2() { l.push(f); l.push(f2); }; "
+                 "    l.push(f); l.push(f2); "
+                 "    f2(); "
+                 "}; "
+                 "f(); "
+                 "l.every(function(v) {return typeof v == 'function'})"),
+      nxt_string("true") },
+
+    { nxt_string("var l = [];"
+                 "function baz() {"
+                 "  function foo(v) {"
+                 "     function bar() { foo(0); }"
+                 "     l.push(v);"
+                 "     if (v === 1) { bar(); }"
+                 "  }"
+                 "  foo(1);"
+                 "}; baz(); l"),
+      nxt_string("1,0") },
+
+    { nxt_string("var gen = (function(){  "
+                 "           var s = 0; "
+                 "           return { inc: function() {s++}, "
+                 "                    s: function() {return s} };});"
+                 "var o1 = gen(); var o2 = gen();"
+                 "[o1.s(),o2.s(),o1.inc(),o1.s(),o2.s(),o2.inc(),o1.s(),o2.s()]"),
+      nxt_string("0,0,,1,0,,1,1") },
+
     /* Recursive fibonacci. */
 
     { nxt_string("function fibo(n) {"

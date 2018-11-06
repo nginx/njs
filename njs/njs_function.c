@@ -399,7 +399,7 @@ njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
     njs_ret_t              ret;
     nxt_uint_t             n, nesting;
     njs_frame_t            *frame;
-    njs_value_t            *value;
+    njs_value_t            *dst, *src;
     njs_closure_t          *closure, **closures;
     njs_function_t         *function;
     njs_function_lambda_t  *lambda;
@@ -459,14 +459,14 @@ njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
                 return NXT_ERROR;
             }
 
-            /* TODO: copy initialzed values. */
-
             size -= sizeof(njs_value_t);
             closure->u.count = 0;
-            value = closure->values;
+            dst = closure->values;
+
+            src = lambda->closure_scope;
 
             do {
-                *value++ = njs_value_void;
+                *dst++ = *src++;
                 size -= sizeof(njs_value_t);
             } while (size != 0);
         }
