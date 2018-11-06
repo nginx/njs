@@ -3071,7 +3071,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("") },
 
     { nxt_string("Array.prototype.slice.call(undefined)"),
-      nxt_string("TypeError: cannot convert void to object") },
+      nxt_string("TypeError: cannot convert undefined to object") },
 
     { nxt_string("Array.prototype.slice.call(1)"),
       nxt_string("") },
@@ -5528,10 +5528,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("1552553") },
 
     { nxt_string("[].join.call()"),
-      nxt_string("TypeError: cannot convert void to object") },
+      nxt_string("TypeError: cannot convert undefined to object") },
 
     { nxt_string("[].slice.call()"),
-      nxt_string("TypeError: cannot convert void to object") },
+      nxt_string("TypeError: cannot convert undefined to object") },
 
     { nxt_string("function f(a) {} ; var a = f; var b = f; a === b"),
       nxt_string("true") },
@@ -7071,7 +7071,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("false") },
 
     { nxt_string("Object.create()"),
-      nxt_string("TypeError: prototype may only be an object or null: void") },
+      nxt_string("TypeError: prototype may only be an object or null: undefined") },
 
     { nxt_string("Object.create(1)"),
       nxt_string("TypeError: prototype may only be an object or null: number") },
@@ -7093,7 +7093,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("b") },
 
     { nxt_string("Object.keys()"),
-      nxt_string("TypeError: cannot convert void argument to object") },
+      nxt_string("TypeError: cannot convert undefined argument to object") },
 
     { nxt_string("Object.keys('a')"),
       nxt_string("TypeError: cannot convert string argument to object") },
@@ -7214,7 +7214,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("2") },
 
     { nxt_string("var o = {}; Object.defineProperty()"),
-      nxt_string("TypeError: cannot convert void argument to object") },
+      nxt_string("TypeError: cannot convert undefined argument to object") },
 
     { nxt_string("var o = {}; Object.defineProperty(o)"),
       nxt_string("TypeError: descriptor is not an object") },
@@ -7430,10 +7430,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("1,1,-1") },
 
     { nxt_string("Object.getOwnPropertyDescriptor()"),
-      nxt_string("TypeError: cannot convert void argument to object") },
+      nxt_string("TypeError: cannot convert undefined argument to object") },
 
     { nxt_string("Object.getOwnPropertyDescriptor(undefined)"),
-      nxt_string("TypeError: cannot convert void argument to object") },
+      nxt_string("TypeError: cannot convert undefined argument to object") },
 
     { nxt_string("var o = {}; o[void 0] = 'a'; Object.getOwnPropertyDescriptor(o).value"),
       nxt_string("a") },
@@ -8092,7 +8092,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("Invalid Date") },
 
     { nxt_string("[0].map(new Date().getDate)"),
-      nxt_string("TypeError: cannot convert void to date") },
+      nxt_string("TypeError: cannot convert undefined to date") },
 
     { nxt_string("new Date(eval)"),
       nxt_string("Invalid Date") },

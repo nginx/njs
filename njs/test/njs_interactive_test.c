@@ -140,7 +140,7 @@ static njs_interactive_test_t  njs_test[] =
 
     { nxt_string("function f(o) {return Object.keys(o)}" ENTER
                  "f()" ENTER),
-      nxt_string("TypeError: cannot convert void to object\n"
+      nxt_string("TypeError: cannot convert undefined to object\n"
                  "    at Object.keys (native)\n"
                  "    at f (:1)\n"
                  "    at main (native)\n") },

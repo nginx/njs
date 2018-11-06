@@ -2207,7 +2207,7 @@ njs_type_string(njs_value_type_t type)
         return "null";
 
     case NJS_VOID:
-        return "void";
+        return "undefined";
 
     case NJS_BOOLEAN:
         return "boolean";
