@@ -1847,9 +1847,14 @@ njs_function_frame_create(njs_vm_t *vm, njs_value_t *value,
             return njs_function_native_frame(vm, function, this, NULL,
                                              nargs, 0, ctor);
         }
+
+        njs_type_error(vm, "%s is not a constructor",
+                       njs_type_string(value->type));
+
+        return NXT_ERROR;
     }
 
-    njs_type_error(vm, "object is not callable");
+    njs_type_error(vm, "%s is not a function", njs_type_string(value->type));
 
     return NXT_ERROR;
 }

@@ -5184,7 +5184,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("OKundefined") },
 
     { nxt_string("var a = 1; a()"),
-      nxt_string("TypeError: object is not callable") },
+      nxt_string("TypeError: number is not a function") },
 
     { nxt_string("var o = {a:1}; o.a()"),
       nxt_string("TypeError: 'a' is not a function") },
@@ -5672,10 +5672,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("object") },
 
     { nxt_string("new decodeURI('%00')"),
-      nxt_string("TypeError: object is not callable")},
+      nxt_string("TypeError: function is not a constructor")},
 
     { nxt_string("new ''.toString"),
-      nxt_string("TypeError: object is not callable")},
+      nxt_string("TypeError: function is not a constructor")},
 
     { nxt_string("function F() { return Number }"
                  "var o = new (F())(5);"
