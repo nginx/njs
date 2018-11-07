@@ -183,8 +183,6 @@ njs_vm_create(njs_vm_opt_t *options)
             if (nxt_slow_path(ret != NXT_OK)) {
                 return NULL;
             }
-
-            vm->retval = njs_value_void;
         }
     }
 
@@ -283,6 +281,13 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     vm->scope_size = parser->scope_size;
     vm->variables_hash = parser->scope->variables;
 
+    if (vm->options.init) {
+        ret = njs_vm_init(vm);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return ret;
+        }
+    }
+
     return NJS_OK;
 
 fail:
@@ -360,8 +365,6 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
             goto fail;
         }
 
-        nvm->retval = njs_value_void;
-
         return nvm;
     }
 
@@ -435,6 +438,10 @@ njs_vm_init(njs_vm_t *vm)
     vm->trace.size = 2048;
     vm->trace.handler = njs_parser_trace_handler;
     vm->trace.data = vm;
+
+    if (njs_is_null(&vm->retval)) {
+        vm->retval = njs_value_void;
+    }
 
     return NXT_OK;
 }
@@ -558,12 +565,9 @@ njs_vm_post_event(njs_vm_t *vm, njs_vm_event_t vm_event,
 nxt_int_t
 njs_vm_run(njs_vm_t *vm)
 {
-    nxt_str_t  s;
     nxt_int_t  ret;
 
-    nxt_thread_log_debug("RUN:");
-
-    if (vm->backtrace != NULL) {
+    if (nxt_slow_path(vm->backtrace != NULL)) {
         nxt_array_reset(vm->backtrace);
     }
 
@@ -573,42 +577,15 @@ njs_vm_run(njs_vm_t *vm)
         ret = njs_vm_handle_events(vm);
     }
 
-    if (nxt_slow_path(ret == NXT_AGAIN)) {
-        nxt_thread_log_debug("VM: AGAIN");
+    switch (ret) {
+    case NJS_STOP:
+        return NJS_OK;
+
+    case NXT_AGAIN:
+    case NXT_ERROR:
+    default:
         return ret;
     }
-
-    if (nxt_slow_path(ret != NJS_STOP)) {
-        nxt_thread_log_debug("VM: ERROR");
-        return ret;
-    }
-
-    if (vm->retval.type == NJS_NUMBER) {
-        nxt_thread_log_debug("VM: %f", vm->retval.data.u.number);
-
-    } else if (vm->retval.type == NJS_BOOLEAN) {
-        nxt_thread_log_debug("VM: boolean: %d", vm->retval.data.truth);
-
-    } else if (vm->retval.type == NJS_STRING) {
-
-        if (njs_vm_value_to_ext_string(vm, &s, &vm->retval, 0) == NJS_OK) {
-            nxt_thread_log_debug("VM: '%V'", &s);
-        }
-
-    } else if (vm->retval.type == NJS_FUNCTION) {
-        nxt_thread_log_debug("VM: function");
-
-    } else if (vm->retval.type == NJS_NULL) {
-        nxt_thread_log_debug("VM: null");
-
-    } else if (vm->retval.type == NJS_VOID) {
-        nxt_thread_log_debug("VM: void");
-
-    } else {
-        nxt_thread_log_debug("VM: unknown: %d", vm->retval.type);
-    }
-
-    return NJS_OK;
 }
 
 

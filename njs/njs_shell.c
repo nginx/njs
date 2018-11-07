@@ -145,6 +145,7 @@ main(int argc, char **argv)
 
     nxt_memzero(&vm_options, sizeof(njs_vm_opt_t));
 
+    vm_options.init = !opts.interactive;
     vm_options.accumulative = opts.interactive;
     vm_options.backtrace = 1;
     vm_options.sandbox = opts.sandbox;
