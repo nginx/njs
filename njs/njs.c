@@ -671,7 +671,8 @@ njs_vm_memory_error(njs_vm_t *vm)
 }
 
 
-njs_ret_t njs_vm_retval_to_ext_string(njs_vm_t *vm, nxt_str_t *retval)
+njs_ret_t
+njs_vm_retval_to_ext_string(njs_vm_t *vm, nxt_str_t *dst)
 {
     if (vm->top_frame == NULL) {
         /* An exception was thrown during compilation. */
@@ -679,7 +680,20 @@ njs_ret_t njs_vm_retval_to_ext_string(njs_vm_t *vm, nxt_str_t *retval)
         njs_vm_init(vm);
     }
 
-    return njs_vm_value_to_ext_string(vm, retval, &vm->retval, 1);
+    return njs_vm_value_to_ext_string(vm, dst, &vm->retval, 1);
+}
+
+
+njs_ret_t
+njs_vm_retval_dump(njs_vm_t *vm, nxt_str_t *dst, nxt_uint_t indent)
+{
+    if (vm->top_frame == NULL) {
+        /* An exception was thrown during compilation. */
+
+        njs_vm_init(vm);
+    }
+
+    return njs_vm_value_dump(vm, dst, &vm->retval, 1);
 }
 
 

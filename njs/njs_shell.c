@@ -452,7 +452,7 @@ njs_process_script(njs_vm_t *vm, njs_opts_t *opts, const nxt_str_t *script,
         ret = njs_vm_run(vm);
     }
 
-    if (njs_vm_value_dump(vm, out, njs_vm_retval(vm), 1) != NXT_OK) {
+    if (njs_vm_retval_dump(vm, out, 1) != NXT_OK) {
         *out = nxt_string_value("failed to get retval from VM");
         return NXT_ERROR;
     }

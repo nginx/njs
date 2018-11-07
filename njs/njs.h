@@ -200,8 +200,12 @@ NXT_EXPORT nxt_int_t njs_value_string_copy(njs_vm_t *vm, nxt_str_t *retval,
 
 NXT_EXPORT njs_ret_t njs_vm_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst,
     const njs_value_t *src, nxt_uint_t handle_exception);
-NXT_EXPORT njs_ret_t njs_vm_retval_to_ext_string(njs_vm_t *vm,
-    nxt_str_t *retval);
+NXT_EXPORT njs_ret_t njs_vm_retval_to_ext_string(njs_vm_t *vm, nxt_str_t *dst);
+
+NXT_EXPORT njs_ret_t njs_vm_value_dump(njs_vm_t *vm, nxt_str_t *dst,
+    const njs_value_t *value, nxt_uint_t indent);
+NXT_EXPORT njs_ret_t njs_vm_retval_dump(njs_vm_t *vm, nxt_str_t *dst,
+    nxt_uint_t indent);
 
 NXT_EXPORT void njs_vm_memory_error(njs_vm_t *vm);
 
@@ -226,8 +230,6 @@ NXT_EXPORT nxt_int_t njs_value_is_string(const njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_is_object(const njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_is_function(const njs_value_t *value);
 
-NXT_EXPORT njs_ret_t njs_vm_value_dump(njs_vm_t *vm, nxt_str_t *retval,
-    const njs_value_t *value, nxt_uint_t indent);
 NXT_EXPORT njs_ret_t njs_vm_object_alloc(njs_vm_t *vm, njs_value_t *retval,
     ...);
 NXT_EXPORT njs_value_t *njs_vm_object_prop(njs_vm_t *vm,
