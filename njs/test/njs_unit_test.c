@@ -1136,6 +1136,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("({}) == false"),
       nxt_string("false") },
 
+    { nxt_string("new Number(1) == new String('1')"),
+      nxt_string("false") },
+
+    { nxt_string("var a = Object; a == Object"),
+      nxt_string("true") },
+
     { nxt_string("var a = { valueOf: function() { return 5 } };   a == 5"),
       nxt_string("true") },
 

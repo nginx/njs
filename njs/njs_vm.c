@@ -1543,6 +1543,10 @@ njs_values_equal(njs_vm_t *vm, const njs_value_t *val1, const njs_value_t *val2)
         return (val1->data.u.object == val2->data.u.object);
     }
 
+    if (njs_is_object(val1) && njs_is_object(val2)) {
+        return 0;
+    }
+
     return njs_trap(vm, NJS_TRAP_NUMBERS);
 }
 
