@@ -1142,6 +1142,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = Object; a == Object"),
       nxt_string("true") },
 
+    { nxt_string("'1' == new Number(1)"),
+      nxt_string("true") },
+
+    { nxt_string("new String('abc') == 'abc'"),
+      nxt_string("true") },
+
+    { nxt_string("false == new String('0')"),
+      nxt_string("true") },
+
     { nxt_string("var a = { valueOf: function() { return 5 } };   a == 5"),
       nxt_string("true") },
 
@@ -1150,6 +1159,16 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var a = { valueOf: function() { return '5' } }; a == '5'"),
       nxt_string("true") },
+
+    { nxt_string("var a = { valueOf: function() { return 5 } }; a == '5'"),
+      nxt_string("true") },
+
+    { nxt_string("var a = { toString: function() { return true } }; '1' == a"),
+      nxt_string("true") },
+
+    { nxt_string("var a = { valueOf: function() { return 'b' },"
+                 "          toString: function() { return 'a' } }; a == 'a'"),
+      nxt_string("false") },
 
     /* Comparisions. */
 

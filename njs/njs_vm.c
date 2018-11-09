@@ -1519,7 +1519,8 @@ njs_vmcode_not_equal(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 static nxt_noinline njs_ret_t
 njs_values_equal(njs_vm_t *vm, const njs_value_t *val1, const njs_value_t *val2)
 {
-    nxt_bool_t  nv1, nv2;
+    nxt_bool_t         nv1, nv2;
+    const njs_value_t  *hv, *lv;
 
     nv1 = njs_is_null_or_void(val1);
     nv2 = njs_is_null_or_void(val2);
@@ -1543,11 +1544,29 @@ njs_values_equal(njs_vm_t *vm, const njs_value_t *val1, const njs_value_t *val2)
         return (val1->data.u.object == val2->data.u.object);
     }
 
-    if (njs_is_object(val1) && njs_is_object(val2)) {
+    /* Sort values as: numeric < string < objects. */
+
+    if (val1->type > val2->type) {
+        hv = val1;
+        lv = val2;
+
+    } else {
+        hv = val2;
+        lv = val1;
+    }
+
+    /* If "lv" is an object then "hv" can only be another object. */
+    if (njs_is_object(lv)) {
         return 0;
     }
 
-    return njs_trap(vm, NJS_TRAP_NUMBERS);
+    /* If "hv" is a string then "lv" can only be a numeric. */
+    if (njs_is_string(hv)) {
+        return (lv->data.u.number == njs_string_to_number(hv, 0));
+    }
+
+    /* "hv" is an object and "lv" is either a string or a numeric. */
+    return njs_trap(vm, NJS_TRAP_COMPARISON);
 }
 
 
