@@ -1025,6 +1025,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("null == false"),
       nxt_string("false") },
 
+    { nxt_string("0 == null"),
+      nxt_string("false") },
+
     { nxt_string("!null"),
       nxt_string("true") },
 

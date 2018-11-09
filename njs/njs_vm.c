@@ -1519,9 +1519,14 @@ njs_vmcode_not_equal(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 static nxt_noinline njs_ret_t
 njs_values_equal(njs_vm_t *vm, const njs_value_t *val1, const njs_value_t *val2)
 {
+    nxt_bool_t  nv1, nv2;
+
+    nv1 = njs_is_null_or_void(val1);
+    nv2 = njs_is_null_or_void(val2);
+
     /* Void and null are equal and not comparable with anything else. */
-    if (njs_is_null_or_void(val1)) {
-        return (njs_is_null_or_void(val2));
+    if (nv1 || nv2) {
+        return (nv1 && nv2);
     }
 
     if (njs_is_numeric(val1) && njs_is_numeric(val2)) {
