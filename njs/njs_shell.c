@@ -227,7 +227,7 @@ njs_externals_init(njs_vm_t *vm)
     njs_value_t         *value;
     const njs_extern_t  *proto;
 
-    static const nxt_str_t name = nxt_string_value("console");
+    static const nxt_str_t name = nxt_string("console");
 
     proto = njs_vm_external_prototype(vm, &njs_externals[0]);
     if (proto == NULL) {
