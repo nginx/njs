@@ -644,42 +644,44 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     (void) njs_string_prop(&string, value);
 
-    utf8 = NJS_STRING_BYTE;
-    type = NJS_REGEXP_BYTE;
+    if (string.size >= regexp->last_index) {
+        utf8 = NJS_STRING_BYTE;
+        type = NJS_REGEXP_BYTE;
 
-    if (string.length != 0) {
-        utf8 = NJS_STRING_ASCII;
-        type = NJS_REGEXP_UTF8;
+        if (string.length != 0) {
+            utf8 = NJS_STRING_ASCII;
+            type = NJS_REGEXP_UTF8;
 
-        if (string.length != string.size) {
-            utf8 = NJS_STRING_UTF8;
-        }
-    }
-
-    pattern = regexp->pattern;
-
-    if (nxt_regex_is_valid(&pattern->regex[type])) {
-        string.start += regexp->last_index;
-        string.size -= regexp->last_index;
-
-        match_data = nxt_regex_match_data(&pattern->regex[type],
-                                          vm->regex_context);
-        if (nxt_slow_path(match_data == NULL)) {
-            njs_memory_error(vm);
-            return NXT_ERROR;
+            if (string.length != string.size) {
+                utf8 = NJS_STRING_UTF8;
+            }
         }
 
-        ret = njs_regexp_match(vm, &pattern->regex[type], string.start,
-                               string.size, match_data);
-        if (ret >= 0) {
-            return njs_regexp_exec_result(vm, regexp, utf8, string.start,
-                                          match_data);
-        }
+        pattern = regexp->pattern;
 
-        if (nxt_slow_path(ret != NXT_REGEX_NOMATCH)) {
-            nxt_regex_match_data_free(match_data, vm->regex_context);
+        if (nxt_regex_is_valid(&pattern->regex[type])) {
+            string.start += regexp->last_index;
+            string.size -= regexp->last_index;
 
-            return NXT_ERROR;
+            match_data = nxt_regex_match_data(&pattern->regex[type],
+                                              vm->regex_context);
+            if (nxt_slow_path(match_data == NULL)) {
+                njs_memory_error(vm);
+                return NXT_ERROR;
+            }
+
+            ret = njs_regexp_match(vm, &pattern->regex[type], string.start,
+                                   string.size, match_data);
+            if (ret >= 0) {
+                return njs_regexp_exec_result(vm, regexp, utf8, string.start,
+                                              match_data);
+            }
+
+            if (nxt_slow_path(ret != NXT_REGEX_NOMATCH)) {
+                nxt_regex_match_data_free(match_data, vm->regex_context);
+
+                return NXT_ERROR;
+            }
         }
     }
 

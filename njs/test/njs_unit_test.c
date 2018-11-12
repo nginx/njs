@@ -5973,6 +5973,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = /^$/.exec(''); a.length +' '+ a"),
       nxt_string("1 ") },
 
+    { nxt_string("var r = /3/g; r.exec('123') +' '+ r.exec('3')"),
+      nxt_string("3 null") },
+
     { nxt_string("var r = /бв/ig;"
                  "var a = r.exec('АБВ');"
                  "r.lastIndex +' '+ a +' '+ "
