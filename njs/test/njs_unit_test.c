@@ -75,11 +75,34 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("if(1)if(0){0?0:0}else\nvar a\nelse\nvar b"),
       nxt_string("undefined") },
 
-    { nxt_string("function f(){} function f(){}"),
-      nxt_string("SyntaxError: Identifier \"f\" has already been declared in 1") },
+    { nxt_string("var a = 1; var a; a"),
+      nxt_string("1") },
 
-    { nxt_string("var f = 1; function f() {}"),
-      nxt_string("SyntaxError: Identifier \"f\" has already been declared in 1") },
+    { nxt_string("(function (x) {if (x) { var a = 3; return a} else { var a = 4; return a}})(1)"),
+      nxt_string("3") },
+
+    { nxt_string("(function (x) {if (x) { var a = 3; return a} else { var a = 4; return a}})(0)"),
+      nxt_string("4") },
+
+    { nxt_string("function f(){return 2}; var f; f()"),
+      nxt_string("2") },
+
+    { nxt_string("function f(){return 2}; var f = 1; f()"),
+      nxt_string("TypeError: number is not a function") },
+
+    { nxt_string("function f(){return 1}; function f(){return 2}; f()"),
+      nxt_string("2") },
+
+    { nxt_string("var f = 1; function f() {}; f"),
+      nxt_string("1") },
+
+#if 0 /* TODO */
+    { nxt_string("var a; Object.getOwnPropertyDescriptor(this, 'a').value"),
+      nxt_string("undefined") },
+
+    { nxt_string("this.a = 1; a"),
+      nxt_string("1") },
+#endif
 
     { nxt_string("f() = 1"),
       nxt_string("ReferenceError: Invalid left-hand side in assignment in 1") },

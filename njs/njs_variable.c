@@ -119,12 +119,17 @@ njs_variable_add(njs_vm_t *vm, njs_parser_t *parser, njs_variable_type_t type)
         }
     }
 
+    if (nxt_lvlhsh_find(&scope->variables, &lhq) == NXT_OK) {
+        var = lhq.value;
+        return var;
+    }
+
     var = njs_variable_alloc(vm, &lhq.key, type);
     if (nxt_slow_path(var == NULL)) {
         return var;
     }
 
-    lhq.replace = vm->options.accumulative;
+    lhq.replace = 0;
     lhq.value = var;
     lhq.pool = vm->mem_cache_pool;
 
@@ -137,15 +142,7 @@ njs_variable_add(njs_vm_t *vm, njs_parser_t *parser, njs_variable_type_t type)
     nxt_mem_cache_free(vm->mem_cache_pool, var->name.start);
     nxt_mem_cache_free(vm->mem_cache_pool, var);
 
-    if (ret == NXT_ERROR) {
-        return NULL;
-    }
-
-    /* ret == NXT_DECLINED. */
-
-    njs_parser_syntax_error(vm, parser, "Identifier \"%.*s\" "
-                            "has already been declared",
-                            (int) lhq.key.length, lhq.key.start);
+    njs_type_error(vm, "lvlhsh insert failed");
 
     return NULL;
 }

@@ -496,7 +496,7 @@ njs_parser_function_declaration(njs_vm_t *vm, njs_parser_t *parser)
         return NJS_TOKEN_ERROR;
     }
 
-    function->u.lambda->u.parser = parser;
+    function->u.lambda->parser = parser;
 
     token = njs_parser_function_lambda(vm, function->u.lambda, token);
 
@@ -578,7 +578,7 @@ njs_parser_function_expression(njs_vm_t *vm, njs_parser_t *parser)
     }
 
     node->u.value.data.u.lambda = lambda;
-    lambda->u.parser = parser;
+    lambda->parser = parser;
 
     token = njs_parser_function_lambda(vm, lambda, token);
 
@@ -619,7 +619,7 @@ njs_parser_function_lambda(njs_vm_t *vm, njs_function_lambda_t *lambda,
     njs_variable_t     *arg;
     njs_parser_node_t  *node, *body, *last;
 
-    parser = lambda->u.parser;
+    parser = lambda->parser;
 
     ret = njs_parser_scope_begin(vm, parser, NJS_SCOPE_FUNCTION);
     if (nxt_slow_path(ret != NXT_OK)) {

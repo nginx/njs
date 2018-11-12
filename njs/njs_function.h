@@ -36,10 +36,8 @@ struct njs_function_lambda_s {
     njs_value_t                    *local_scope;
     njs_value_t                    *closure_scope;
 
-    union {
-        u_char                     *start;
-        njs_parser_t               *parser;
-    } u;
+    u_char                         *start;
+    njs_parser_t                   *parser;
 };
 
 

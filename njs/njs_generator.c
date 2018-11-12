@@ -2007,6 +2007,11 @@ njs_generate_function_declaration(njs_vm_t *vm, njs_parser_t *parser,
         return NXT_ERROR;
     }
 
+    if (!njs_is_function(&var->value)) {
+        /* A variable was declared with the same name. */
+        return NXT_OK;
+    }
+
     lambda = var->value.data.u.function->u.lambda;
 
     ret = njs_generate_function_scope(vm, lambda, node);
@@ -2032,7 +2037,7 @@ njs_generate_function_scope(njs_vm_t *vm, njs_function_lambda_t *lambda,
     nxt_array_t   *closure;
     njs_parser_t  *parser;
 
-    parser = lambda->u.parser;
+    parser = lambda->parser;
     node = node->right;
 
     parser->code_size += node->scope->argument_closures
@@ -2058,7 +2063,7 @@ njs_generate_function_scope(njs_vm_t *vm, njs_function_lambda_t *lambda,
 
         lambda->local_size = parser->scope_size;
         lambda->local_scope = parser->local_scope;
-        lambda->u.start = parser->code_start;
+        lambda->start = parser->code_start;
     }
 
     return ret;

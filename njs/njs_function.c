@@ -412,7 +412,7 @@ njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
     frame->return_address = vm->current + advance;
 
     lambda = function->u.lambda;
-    vm->current = lambda->u.start;
+    vm->current = lambda->start;
 
 #if (NXT_DEBUG)
     vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = NULL;
