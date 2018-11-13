@@ -9071,10 +9071,13 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.sinh(-Infinity)"),
       nxt_string("-Infinity") },
 
-#ifndef __SUNPRO_C /* Sun C 5.15: round error */
-    { nxt_string("Math.sinh(1) - (Math.E - 1/Math.E)/2"),
-      nxt_string("0") },
-#endif
+    /*
+     * The difference is Number.EPSILON on Solaris
+     * and zero on other platforms.
+     */
+    { nxt_string("Math.abs(Math.sinh(1) - (Math.E - 1/Math.E)/2)"
+                 " <= Number.EPSILON"),
+      nxt_string("true") },
 
     { nxt_string("Math.sqrt()"),
       nxt_string("NaN") },
