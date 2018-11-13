@@ -9071,8 +9071,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.sinh(-Infinity)"),
       nxt_string("-Infinity") },
 
+#ifndef __SUNPRO_C /* Sun C 5.15: round error */
     { nxt_string("Math.sinh(1) - (Math.E - 1/Math.E)/2"),
       nxt_string("0") },
+#endif
 
     { nxt_string("Math.sqrt()"),
       nxt_string("NaN") },
