@@ -80,7 +80,7 @@ njs_test {
 # Global completions, multiple partial match
 njs_test {
     {"cons\t\t"
-     "console*console.help*console.log*const"}
+     "console*console.help*console.time*const"}
 }
 
 njs_test {
@@ -188,6 +188,22 @@ njs_test {
      "console.dump(1, 'a')\r\n1 'a'\r\nundefined\r\n>> "}
     {"console.help()\r\n"
      "console.help()\r\nVM built-in objects:"}
+}
+
+# console.time* functions
+njs_test {
+    {"console.time()\r\n"
+     "console.time()\r\nundefined\r\n>> "}
+    {"console.time(undefined)\r\n"
+     "console.time(undefined)\r\nundefined\r\n>> "}
+    {"console.timeEnd()\r\n"
+     "console.timeEnd()\r\ndefault: *.*ms\r\nundefined\r\n>> "}
+    {"console.time('a')\r\n"
+     "console.time('a')\r\nError: labels not implemented"}
+    {"console.timeEnd('a')\r\n"
+     "console.timeEnd('a')\r\nError: labels not implemented"}
+    {"console.timeEnd()\r\n"
+     "console.timeEnd()\r\nTimer \"default\" doesn’t exist."}
 }
 
 njs_test {
