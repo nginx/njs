@@ -6485,6 +6485,8 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("/./ instanceof Object"),
       nxt_string("true") },
 
+    /* global this. */
+
     { nxt_string("this"),
       nxt_string("[object Object]") },
 
@@ -6514,6 +6516,21 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("this.NaN + 1"),
       nxt_string("NaN") },
+
+    { nxt_string("if (1) {new this}"),
+      nxt_string("TypeError: object is not a function") },
+
+    { nxt_string("if (1) {this()}"),
+      nxt_string("TypeError: object is not a function") },
+
+    { nxt_string("var ex; try {new this} catch (e) {ex = e}; ex"),
+      nxt_string("TypeError: object is not a function") },
+
+    { nxt_string("var ex; try {({}) instanceof this} catch (e) {ex = e}; ex"),
+      nxt_string("TypeError: right argument is not a function") },
+
+    { nxt_string("Function.call(this, 'var x / = 1;')"),
+      nxt_string("InternalError: Not implemented") },
 
     { nxt_string("njs"),
       nxt_string("[object Object]") },

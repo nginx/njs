@@ -1806,10 +1806,11 @@ njs_parser_token(njs_parser_t *parser)
 njs_token_t
 njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
 {
-    double             num;
-    njs_ret_t          ret;
-    njs_value_t        *ext;
-    njs_parser_node_t  *node;
+    double              num;
+    njs_ret_t           ret;
+    njs_value_t         *ext;
+    njs_parser_node_t   *node;
+    njs_parser_scope_t  *scope;
 
     if (token == NJS_TOKEN_OPEN_PARENTHESIS) {
 
@@ -1980,8 +1981,18 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
     case NJS_TOKEN_THIS:
         nxt_thread_log_debug("JS: this");
 
-        if (parser->scope->type != NJS_SCOPE_GLOBAL) {
-            node->index = NJS_INDEX_THIS;
+        scope = parser->scope;
+
+        while (scope->type != NJS_SCOPE_GLOBAL) {
+            if (scope->type == NJS_SCOPE_FUNCTION) {
+                node->index = NJS_INDEX_THIS;
+                break;
+            }
+
+            scope = scope->parent;
+        }
+
+        if (node->index == NJS_INDEX_THIS) {
             break;
         }
 
