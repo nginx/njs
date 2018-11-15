@@ -196,7 +196,7 @@ static const nxt_mem_proto_t  mem_cache_pool_proto = {
 static nxt_int_t
 lvlhsh_unit_test(nxt_uint_t n)
 {
-    uintptr_t             key;
+    uint32_t              key;
     nxt_uint_t            i;
     nxt_lvlhsh_t          lh;
     nxt_lvlhsh_each_t     lhe;
