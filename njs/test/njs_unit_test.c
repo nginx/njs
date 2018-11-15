@@ -7236,11 +7236,26 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.keys()"),
       nxt_string("TypeError: cannot convert undefined argument to object") },
 
-    { nxt_string("Object.keys('a')"),
-      nxt_string("TypeError: cannot convert string argument to object") },
+    { nxt_string("Object.keys('αβZ')"),
+      nxt_string("0,1,2") },
+
+    { nxt_string("Object.keys(new String('αβZ'))"),
+      nxt_string("0,1,2") },
+
+    { nxt_string("var s = new String('αβZ'); s.a = 1; Object.keys(s)"),
+      nxt_string("0,1,2,a") },
+
+    { nxt_string("var r = new RegExp('αbc'); r.a = 1; Object.keys(r)"),
+      nxt_string("a") },
+
+    { nxt_string("Object.keys(Object.create(new String('abc')))"),
+      nxt_string("") },
 
     { nxt_string("Object.keys(1)"),
-      nxt_string("TypeError: cannot convert number argument to object") },
+      nxt_string("") },
+
+    { nxt_string("Object.keys(true)"),
+      nxt_string("") },
 
     { nxt_string("var o = {}; Object.defineProperty(o, 'a', {}); o.a"),
       nxt_string("undefined") },

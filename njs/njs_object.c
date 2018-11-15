@@ -865,7 +865,7 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     value = njs_arg(args, nargs, 1);
 
-    if (!njs_is_object(value)) {
+    if (njs_is_null_or_void(value)) {
         njs_type_error(vm, "cannot convert %s argument to object",
                        njs_type_string(value->type));
 
@@ -874,7 +874,6 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     keys = njs_object_keys_array(vm, value);
     if (keys == NULL) {
-        njs_memory_error(vm);
         return NXT_ERROR;
     }
 
@@ -887,43 +886,69 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 
 njs_array_t *
-njs_object_keys_array(njs_vm_t *vm, const njs_value_t *object)
+njs_object_keys_array(njs_vm_t *vm, const njs_value_t *value)
 {
-    uint32_t           i, n, keys_length, array_length;
-    njs_value_t        *value;
+    uint32_t           i, n, length, keys_length;
+    njs_value_t        *string;
     njs_array_t        *keys, *array;
     nxt_lvlhsh_t       *hash;
     njs_object_prop_t  *prop;
+    njs_string_prop_t  string_prop;
     nxt_lvlhsh_each_t  lhe;
 
     array = NULL;
+    length = 0;
     keys_length = 0;
-    array_length = 0;
 
-    if (njs_is_array(object)) {
-        array = object->data.u.array;
-        array_length = array->length;
+    switch (value->type) {
+    case NJS_ARRAY:
+        array = value->data.u.array;
+        length = array->length;
 
-        for (i = 0; i < array_length; i++) {
+        for (i = 0; i < length; i++) {
             if (njs_is_valid(&array->start[i])) {
                 keys_length++;
             }
         }
-    }
 
-    nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+        break;
 
-    hash = &object->data.u.object->hash;
+    case NJS_STRING:
+    case NJS_OBJECT_STRING:
+        if (value->type == NJS_OBJECT_STRING) {
+            string = &value->data.u.object_value->value;
 
-    for ( ;; ) {
-        prop = nxt_lvlhsh_each(hash, &lhe);
-
-        if (prop == NULL) {
-            break;
+        } else {
+            string = (njs_value_t *) value;
         }
 
-        if (prop->type != NJS_WHITEOUT && prop->enumerable) {
-            keys_length++;
+        length = njs_string_prop(&string_prop, string);
+        keys_length += length;
+        break;
+
+    default:
+        break;
+    }
+
+    if (nxt_fast_path(njs_is_object(value))) {
+        nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+        hash = &value->data.u.object->hash;
+
+    } else {
+        hash = NULL;
+    }
+
+    if (nxt_fast_path(hash != NULL)) {
+        for ( ;; ) {
+            prop = nxt_lvlhsh_each(hash, &lhe);
+
+            if (prop == NULL) {
+                break;
+            }
+
+            if (prop->type != NJS_WHITEOUT && prop->enumerable) {
+                keys_length++;
+            }
         }
     }
 
@@ -934,28 +959,48 @@ njs_object_keys_array(njs_vm_t *vm, const njs_value_t *object)
 
     n = 0;
 
-    for (i = 0; i < array_length; i++) {
-        if (njs_is_valid(&array->start[i])) {
-            value = &keys->start[n++];
-            /*
-             * The maximum array index is 4294967294, so
-             * it can be stored as a short string inside value.
-             */
-            njs_uint32_to_string(value, i);
+    switch (value->type) {
+    case NJS_ARRAY:
+        for (i = 0; i < length; i++) {
+            if (njs_is_valid(&array->start[i])) {
+                njs_uint32_to_string(&keys->start[n++], i);
+            }
         }
+
+        break;
+
+    case NJS_STRING:
+    case NJS_OBJECT_STRING:
+        if (value->type == NJS_OBJECT_STRING) {
+            string = &value->data.u.object_value->value;
+
+        } else {
+            string = (njs_value_t *) value;
+        }
+
+        for (i = 0; i < length; i++) {
+            njs_uint32_to_string(&keys->start[n++], i);
+        }
+
+        break;
+
+    default:
+        break;
     }
 
-    nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+    if (nxt_fast_path(hash != NULL)) {
+        nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
 
-    for ( ;; ) {
-        prop = nxt_lvlhsh_each(hash, &lhe);
+        for ( ;; ) {
+            prop = nxt_lvlhsh_each(hash, &lhe);
 
-        if (prop == NULL) {
-            break;
-        }
+            if (prop == NULL) {
+                break;
+            }
 
-        if (prop->type != NJS_WHITEOUT && prop->enumerable) {
-            njs_string_copy(&keys->start[n++], &prop->name);
+            if (prop->type != NJS_WHITEOUT && prop->enumerable) {
+                njs_string_copy(&keys->start[n++], &prop->name);
+            }
         }
     }
 
