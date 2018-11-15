@@ -6488,6 +6488,33 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("this"),
       nxt_string("[object Object]") },
 
+    { nxt_string("this.a = 1; this.a"),
+      nxt_string("1") },
+
+    { nxt_string("this.undefined = 42"),
+      nxt_string("TypeError: Cannot assign to read-only property 'undefined' of object") },
+
+    { nxt_string("this.Infinity = 42"),
+      nxt_string("TypeError: Cannot assign to read-only property 'Infinity' of object") },
+
+    { nxt_string("this.NaN = 42"),
+      nxt_string("TypeError: Cannot assign to read-only property 'NaN' of object") },
+
+    { nxt_string("typeof this.undefined"),
+      nxt_string("undefined") },
+
+    { nxt_string("typeof this.Infinity"),
+      nxt_string("number") },
+
+    { nxt_string("this.Infinity + 1"),
+      nxt_string("Infinity") },
+
+    { nxt_string("typeof this.NaN"),
+      nxt_string("number") },
+
+    { nxt_string("this.NaN + 1"),
+      nxt_string("NaN") },
+
     { nxt_string("njs"),
       nxt_string("[object Object]") },
 
@@ -9176,6 +9203,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("Math"),
       nxt_string("[object Object]") },
+
+    { nxt_string("Math.x = function (x) {return 2*x;}; Math.x(3)"),
+      nxt_string("6") },
 
     { nxt_string("isNaN"),
       nxt_string("[object Function]") },

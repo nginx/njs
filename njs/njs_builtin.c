@@ -276,6 +276,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
         }
 
         object->shared = 1;
+        object->extensible = 1;
 
         object++;
     }
@@ -1118,8 +1119,30 @@ const njs_object_init_t  njs_njs_object_init = {
 };
 
 
+static const njs_object_prop_t  njs_global_this_object_properties[] =
+{
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("NaN"),
+        .value = njs_value(NJS_NUMBER, 0, NAN),
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("Infinity"),
+        .value = njs_value(NJS_NUMBER, 0, INFINITY),
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("undefined"),
+        .value = njs_value(NJS_VOID, 0, NAN),
+    },
+};
+
+
 const njs_object_init_t  njs_global_this_init = {
     nxt_string("this"),
-    NULL,
-    0
+    njs_global_this_object_properties,
+    nxt_nitems(njs_global_this_object_properties)
 };
