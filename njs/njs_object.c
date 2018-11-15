@@ -24,7 +24,7 @@ static njs_ret_t njs_external_property_delete(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval);
 static njs_ret_t njs_object_query_prop_handler(njs_property_query_t *pq,
     njs_object_t *object);
-static njs_ret_t njs_define_property(njs_vm_t *vm, njs_object_t *object,
+static njs_ret_t njs_define_property(njs_vm_t *vm, njs_value_t *object,
     const njs_value_t *name, const njs_object_t *descriptor);
 
 
@@ -967,16 +967,17 @@ static njs_ret_t
 njs_object_define_property(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    nxt_int_t   ret;
-    const njs_value_t  *value, *name, *descriptor;
+    nxt_int_t          ret;
+    njs_value_t        *value;
+    const njs_value_t  *name, *descriptor;
 
-    value = njs_arg(args, nargs, 1);
-
-    if (!njs_is_object(value)) {
+    if (!njs_is_object(njs_arg(args, nargs, 1))) {
         njs_type_error(vm, "cannot convert %s argument to object",
-                       njs_type_string(value->type));
+                       njs_type_string(njs_arg(args, nargs, 1)->type));
         return NXT_ERROR;
     }
+
+    value = &args[1];
 
     if (!value->data.u.object->extensible) {
         njs_type_error(vm, "object is not extensible");
@@ -985,16 +986,14 @@ njs_object_define_property(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     descriptor = njs_arg(args, nargs, 3);
 
-    if (!njs_is_object(descriptor)){
+    if (!njs_is_object(descriptor)) {
         njs_type_error(vm, "descriptor is not an object");
         return NXT_ERROR;
     }
 
     name = njs_arg(args, nargs, 2);
 
-    ret = njs_define_property(vm, value->data.u.object, name,
-                              descriptor->data.u.object);
-
+    ret = njs_define_property(vm, value, name, descriptor->data.u.object);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NXT_ERROR;
     }
@@ -1010,13 +1009,13 @@ njs_object_define_properties(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
     nxt_int_t          ret;
+    njs_value_t        *value;
     nxt_lvlhsh_t       *hash;
-    njs_object_t       *object;
     nxt_lvlhsh_each_t  lhe;
     njs_object_prop_t  *prop;
-    const njs_value_t  *value, *descriptor;
+    const njs_value_t  *descriptor;
 
-    value = njs_arg(args, nargs, 1);
+    value = &args[1];
 
     if (!njs_is_object(value)) {
         njs_type_error(vm, "cannot convert %s argument to object",
@@ -1039,7 +1038,6 @@ njs_object_define_properties(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
 
-    object = value->data.u.object;
     hash = &descriptor->data.u.object->hash;
 
     for ( ;; ) {
@@ -1050,7 +1048,7 @@ njs_object_define_properties(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
 
         if (prop->enumerable && njs_is_object(&prop->value)) {
-            ret = njs_define_property(vm, object, &prop->name,
+            ret = njs_define_property(vm, value, &prop->name,
                                       prop->value.data.u.object);
 
             if (nxt_slow_path(ret != NXT_OK)) {
@@ -1121,22 +1119,29 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
 
 /*
  * ES5.1, 8.12.9: [[DefineOwnProperty]]
- *      Only data descriptors are suppored.
+ *   Limited support of special descriptors like length and array index
+ *   (values can be set, but without property flags support).
  */
 static njs_ret_t
-njs_define_property(njs_vm_t *vm, njs_object_t *object, const njs_value_t *name,
+njs_define_property(njs_vm_t *vm, njs_value_t *object, const njs_value_t *name,
     const njs_object_t *descriptor)
 {
-    nxt_int_t           ret;
-    nxt_bool_t          unset;
-    njs_object_prop_t   *desc, *current;
-    nxt_lvlhsh_query_t  lhq;
+    nxt_int_t             ret;
+    nxt_bool_t            unset;
+    njs_object_prop_t     *desc, *current;
+    njs_property_query_t  pq;
 
-    njs_string_get(name, &lhq.key);
-    lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
-    lhq.proto = &njs_object_hash_proto;
+    njs_string_get(name, &pq.lhq.key);
+    pq.lhq.key_hash = nxt_djb_hash(pq.lhq.key.start, pq.lhq.key.length);
+    pq.lhq.proto = &njs_object_hash_proto;
 
-    ret = nxt_lvlhsh_find(&object->hash, &lhq);
+    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_SET, 0);
+
+    ret = njs_property_query(vm, &pq, object, name);
+
+    if (ret != NXT_OK && ret != NXT_DECLINED) {
+        return ret;
+    }
 
     unset = (ret == NXT_OK);
     desc = njs_descriptor_prop(vm, name, descriptor, unset);
@@ -1145,14 +1150,24 @@ njs_define_property(njs_vm_t *vm, njs_object_t *object, const njs_value_t *name,
     }
 
     if (nxt_fast_path(ret == NXT_DECLINED)) {
-        lhq.value = desc;
-        lhq.replace = 0;
-        lhq.pool = vm->mem_cache_pool;
+        if (nxt_slow_path(pq.lhq.value != NULL)) {
+            current = pq.lhq.value;
 
-        ret = nxt_lvlhsh_insert(&object->hash, &lhq);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            njs_internal_error(vm, "lvlhsh insert failed");
-            return NXT_ERROR;
+            if (nxt_slow_path(current->type == NJS_WHITEOUT)) {
+                /* Previously deleted property.  */
+                *current = *desc;
+            }
+
+        } else {
+            pq.lhq.value = desc;
+            pq.lhq.replace = 0;
+            pq.lhq.pool = vm->mem_cache_pool;
+
+            ret = nxt_lvlhsh_insert(&object->data.u.object->hash, &pq.lhq);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                njs_internal_error(vm, "lvlhsh insert failed");
+                return NXT_ERROR;
+            }
         }
 
         return NXT_OK;
@@ -1160,7 +1175,40 @@ njs_define_property(njs_vm_t *vm, njs_object_t *object, const njs_value_t *name,
 
     /* Updating existing prop. */
 
-    current = lhq.value;
+    current = pq.lhq.value;
+
+    switch (current->type) {
+    case NJS_PROPERTY:
+        break;
+
+    case NJS_PROPERTY_REF:
+        if (njs_is_valid(&desc->value)) {
+            *current->value.data.u.value = desc->value;
+        } else {
+            *current->value.data.u.value = njs_value_void;
+        }
+
+        return NXT_OK;
+
+    case NJS_PROPERTY_HANDLER:
+        if (current->writable && njs_is_valid(&desc->value)) {
+            ret = current->value.data.u.prop_handler(vm, object, &desc->value,
+                                                     &vm->retval);
+
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return ret;
+            }
+        }
+
+        return NXT_OK;
+
+    default:
+        njs_internal_error(vm, "unexpected property type '%s' "
+                           "while defining property",
+                           njs_prop_type_string(current->type));
+
+        return NXT_ERROR;
+    }
 
     if (!current->configurable) {
         if (desc->configurable == NJS_ATTRIBUTE_TRUE) {
@@ -1208,7 +1256,7 @@ njs_define_property(njs_vm_t *vm, njs_object_t *object, const njs_value_t *name,
 exception:
 
     njs_type_error(vm, "Cannot redefine property: '%.*s'",
-                   (int) lhq.key.length, lhq.key.start);
+                   (int) pq.lhq.key.length, pq.lhq.key.start);
 
     return NXT_ERROR;
 }

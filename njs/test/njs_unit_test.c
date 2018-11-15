@@ -2933,6 +2933,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("[].length = 2**32 - 1"),
       nxt_string("MemoryError") },
 
+    { nxt_string("Object.defineProperty([], 'length',{value: 2**32 - 1})"),
+      nxt_string("MemoryError") },
+
     { nxt_string("[].length = 2**32"),
       nxt_string("RangeError: Invalid array length") },
 
@@ -7368,6 +7371,46 @@ static njs_unit_test_t  njs_test[] =
                  "var o = Object.defineProperties({}, desc);"
                  "Object.keys(o)"),
       nxt_string("b") },
+
+    { nxt_string("var o = {a:1}; delete o.a;"
+                 "Object.defineProperty(o, 'a', { value: 1 }); o.a"),
+      nxt_string("1") },
+
+    { nxt_string("var o = {a:1}; delete o.a;"
+                 "Object.defineProperty(o, 'a', { value: 1 }); o.a = 2; o.a"),
+      nxt_string("TypeError: Cannot assign to read-only property 'a' of object") },
+
+    { nxt_string("var o = {a:1}; delete o.a;"
+                 "Object.defineProperty(o, 'a', { value: 1, writable:1 }); o.a = 2; o.a"),
+      nxt_string("2") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, new String('a'), { value: 1}); o.a"),
+      nxt_string("1") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, {toString:function(){return 'a'}}, { value: 1}); o.a"),
+      nxt_string("1") },
+
+    { nxt_string("var a = [1, 2];"
+                 "Object.defineProperty(a, '1', {value: 5}); a[1]"),
+      nxt_string("5") },
+
+    { nxt_string("var a = [1, 2];"
+                 "Object.defineProperty(a, '3', {}); njs.dump(a)"),
+      nxt_string("[1,2,<empty>,undefined]") },
+
+    { nxt_string("var a = [1, 2];"
+                 "Object.defineProperty(a, 'length', {}); a"),
+      nxt_string("1,2") },
+
+    { nxt_string("var a = [1, 2];"
+                 "Object.defineProperty(a, 'length', {value: 1}); a"),
+      nxt_string("1") },
+
+    { nxt_string("var a = [1, 2];"
+                 "Object.defineProperty(a, 'length', {value: 5}); a"),
+      nxt_string("1,2,,,") },
 
     { nxt_string("var o = Object.defineProperties({a:1}, {}); o.a"),
       nxt_string("1") },
