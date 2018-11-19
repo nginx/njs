@@ -225,7 +225,6 @@ const njs_object_prototype_t  njs_prototype_values[] = {
     { .object =       { .type = NJS_OBJECT_SYNTAX_ERROR } },
     { .object =       { .type = NJS_OBJECT_TYPE_ERROR } },
     { .object =       { .type = NJS_OBJECT_URI_ERROR } },
-    { .object =       { .type = NJS_OBJECT_INTERNAL_ERROR } },
 };
 
 
