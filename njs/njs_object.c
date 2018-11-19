@@ -959,33 +959,17 @@ njs_object_keys_array(njs_vm_t *vm, const njs_value_t *value)
 
     n = 0;
 
-    switch (value->type) {
-    case NJS_ARRAY:
+    if (array != NULL) {
         for (i = 0; i < length; i++) {
             if (njs_is_valid(&array->start[i])) {
                 njs_uint32_to_string(&keys->start[n++], i);
             }
         }
 
-        break;
-
-    case NJS_STRING:
-    case NJS_OBJECT_STRING:
-        if (value->type == NJS_OBJECT_STRING) {
-            string = &value->data.u.object_value->value;
-
-        } else {
-            string = (njs_value_t *) value;
-        }
-
+    } else if (length != 0) {
         for (i = 0; i < length; i++) {
             njs_uint32_to_string(&keys->start[n++], i);
         }
-
-        break;
-
-    default:
-        break;
     }
 
     if (nxt_fast_path(hash != NULL)) {
