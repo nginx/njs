@@ -33,6 +33,7 @@ typedef struct {
     nxt_int_t               disassemble;
     nxt_int_t               interactive;
     nxt_int_t               sandbox;
+    nxt_int_t               quiet;
 } njs_opts_t;
 
 
@@ -203,9 +204,10 @@ njs_get_options(njs_opts_t *opts, int argc, char** argv)
         "Interactive njs shell.\n"
         "\n"
         "Options:\n"
-        "  -v              print njs version and exit.\n"
         "  -d              print disassembled code.\n"
+        "  -q              disable interactive introduction prompt.\n"
         "  -s              sandbox mode.\n"
+        "  -v              print njs version and exit.\n"
         "  <filename> | -  run code from a file or stdin.\n";
 
     ret = NXT_DONE;
@@ -232,13 +234,17 @@ njs_get_options(njs_opts_t *opts, int argc, char** argv)
             opts->disassemble = 1;
             break;
 
-        case 'v':
-        case 'V':
-            opts->version = 1;
+        case 'q':
+            opts->quiet = 1;
             break;
 
         case 's':
             opts->sandbox = 1;
+            break;
+
+        case 'v':
+        case 'V':
+            opts->version = 1;
             break;
 
         default:
@@ -309,10 +315,12 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         return NXT_ERROR;
     }
 
-    printf("interactive njs %s\n\n", NJS_VERSION);
+    if (!opts->quiet) {
+        printf("interactive njs %s\n\n", NJS_VERSION);
 
-    printf("v.<Tab> -> the properties and prototype methods of v.\n");
-    printf("type console.help() for more information\n\n");
+        printf("v.<Tab> -> the properties and prototype methods of v.\n");
+        printf("type console.help() for more information\n\n");
+    }
 
     for ( ;; ) {
         line.start = (u_char *) readline(">> ");

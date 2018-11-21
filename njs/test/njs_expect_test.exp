@@ -522,6 +522,10 @@ njs_test {
 
 # CLI OPTIONS
 
+# help
+
+njs_run "-h" "Interactive njs shell.\r\n\r\nOptions:"
+
 # version
 
 njs_run "-v" "\\d+\.\\d+\.\\d+"
