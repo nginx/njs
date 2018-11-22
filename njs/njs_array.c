@@ -6,6 +6,7 @@
 
 #include <njs_core.h>
 #include <string.h>
+#include <stdint.h>
 
 
 typedef struct {
@@ -136,7 +137,7 @@ njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare)
 
     size = (uint64_t) length + spare;
 
-    if (nxt_slow_path((size * sizeof(njs_value_t)) >= 0xffffffff)) {
+    if (nxt_slow_path((size * sizeof(njs_value_t)) >= UINT32_MAX)) {
         goto memory_error;
     }
 
@@ -201,11 +202,12 @@ njs_array_string_add(njs_vm_t *vm, njs_array_t *array, u_char *start,
 
 njs_ret_t
 njs_array_expand(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
-    uint32_t size)
+    uint32_t new_size)
 {
+    uint64_t     size;
     njs_value_t  *start, *old;
 
-    size += array->length;
+    size = (uint64_t) new_size + array->length;
 
     if (nxt_fast_path(size <= array->size && prepend == 0)) {
         return NXT_OK;
@@ -218,11 +220,14 @@ njs_array_expand(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
         size += size / 2;
     }
 
+    if (nxt_slow_path(((prepend + size) * sizeof(njs_value_t)) >= UINT32_MAX)) {
+        goto memory_error;
+    }
+
     start = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
                                 (prepend + size) * sizeof(njs_value_t));
     if (nxt_slow_path(start == NULL)) {
-        njs_memory_error(vm);
-        return NXT_ERROR;
+        goto memory_error;
     }
 
     array->size = size;
@@ -238,6 +243,12 @@ njs_array_expand(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
     nxt_mem_cache_free(vm->mem_cache_pool, old);
 
     return NXT_OK;
+
+memory_error:
+
+    njs_memory_error(vm);
+
+    return NXT_ERROR;
 }
 
 

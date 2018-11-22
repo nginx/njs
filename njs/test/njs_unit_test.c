@@ -2905,6 +2905,9 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("0:0,1:1,2:2,null:null,undefined:defined,false:false,"
                  "true:true,Infinity:Infinity,-Infinity:-Infinity,NaN:NaN,") },
 
+    { nxt_string("--[][3e9]"),
+      nxt_string("MemoryError") },
+
     { nxt_string("[].length"),
       nxt_string("0") },
 
@@ -2931,6 +2934,9 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("RangeError: Invalid array length") },
 
     { nxt_string("[].length = 2**32 - 1"),
+      nxt_string("MemoryError") },
+
+    { nxt_string("[].length = 3e9"),
       nxt_string("MemoryError") },
 
     { nxt_string("Object.defineProperty([], 'length',{value: 2**32 - 1})"),

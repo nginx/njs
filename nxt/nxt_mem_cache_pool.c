@@ -14,6 +14,7 @@
 #include <nxt_rbtree.h>
 #include <nxt_mem_cache_pool.h>
 #include <string.h>
+#include <stdint.h>
 
 
 /*
@@ -586,7 +587,7 @@ nxt_mem_cache_alloc_large(nxt_mem_cache_pool_t *pool, size_t alignment,
     nxt_mem_cache_block_t  *block;
 
     /* Allocation must be less than 4G. */
-    if (nxt_slow_path(size >= 0xffffffff)) {
+    if (nxt_slow_path(size >= UINT32_MAX)) {
         return NULL;
     }
 
