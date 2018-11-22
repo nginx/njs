@@ -134,6 +134,7 @@ typedef enum {
     NJS_OBJECT_TYPE_ERROR     = 0x1e,
     NJS_OBJECT_URI_ERROR      = 0x1f,
     NJS_OBJECT_VALUE          = 0x20,
+#define NJS_TYPE_MAX         (NJS_OBJECT_VALUE + 1)
 } njs_value_type_t;
 
 

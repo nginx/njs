@@ -2098,7 +2098,7 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
 {
     const njs_value_t  *name;
 
-    static const njs_value_t  *class_name[] = {
+    static const njs_value_t  *class_name[NJS_TYPE_MAX] = {
         /* Primitives. */
         &njs_object_null_string,
         &njs_object_undefined_string,
