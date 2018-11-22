@@ -358,6 +358,8 @@ njs_builtin_objects_create(njs_vm_t *vm)
             return NXT_ERROR;
         }
 
+        prototype->object.extensible = 1;
+
         prototype++;
     }
 

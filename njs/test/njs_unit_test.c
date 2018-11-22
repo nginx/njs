@@ -338,6 +338,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string(".e1"),
       nxt_string("SyntaxError: Unexpected token \".\" in 1") },
 
+    { nxt_string("Number.prototype.X = function(){return 123;};"
+                 "(1).X()"),
+      nxt_string("123") },
+
     /* Indexes. */
 
     { nxt_string("var a = []; a[-1] = 2; a[-1] == a['-1']"),
@@ -2731,9 +2735,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = Object.create({a:1}); o.a = 2; delete o.a; o.a"),
       nxt_string("1") },
 
+    /* Inheritance. */
+
     { nxt_string("function Foo() {this.bar = 10;}; Foo.prototype.bar = 42; "
                  "var v = new Foo(); delete v.bar; v.bar"),
       nxt_string("42") },
+
+    { nxt_string("function Cl(x,y) {this.x = x; this.y = y}; "
+                 "var c = new Cl('a', 'b'); Cl.prototype.z = 1; c.z"),
+      nxt_string("1") },
 
     /* Math object is immutable. */
 
@@ -3770,6 +3780,12 @@ static njs_unit_test_t  njs_test[] =
                  "var b = 'abcdefghij' + 'klmnop';"
                  "    a = b"),
       nxt_string("abcdefghijklmnop") },
+
+    { nxt_string("String.prototype.my = function f() {return 7}; 'a'.my()"),
+      nxt_string("7") },
+
+    { nxt_string("'a'.my"),
+      nxt_string("undefined") },
 
     /* Escape strings. */
 
@@ -5270,6 +5286,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("(function(){(function(){(function(){(function(){"
                     "(function(){(function(){(function(){})})})})})})})"),
       nxt_string("SyntaxError: The maximum function nesting level is \"5\" in 1") },
+
+    { nxt_string("Function.prototype.toString = function () {return 'X'};"
+                 "eval"),
+      nxt_string("X") },
 
     /* Recursive factorial. */
 
