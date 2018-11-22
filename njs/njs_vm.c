@@ -3202,12 +3202,12 @@ njs_vm_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst, const njs_value_t *src,
     nxt_uint_t handle_exception)
 {
     u_char                 *p, *start;
-    size_t                 len, size;
+    size_t                 len, size, count;
     njs_ret_t              ret;
     nxt_uint_t             i, exception;
     nxt_array_t            *backtrace;
     njs_value_t            value;
-    njs_backtrace_entry_t  *be;
+    njs_backtrace_entry_t  *be, *prev;
 
     exception = handle_exception;
 
@@ -3273,17 +3273,35 @@ again:
 
                 len = dst->length + 1;
 
+                count = 0;
+                prev = NULL;
+
                 be = backtrace->start;
 
                 for (i = 0; i < backtrace->items; i++) {
-                    if (be[i].line != 0) {
-                        len += sizeof("    at  (:)\n") + 10
-                               + be[i].name.length;
+                    if (i != 0 && prev->name.start == be[i].name.start
+                        && prev->line == be[i].line)
+                    {
+                        count++;
 
                     } else {
-                        len += sizeof("    at  (native)\n")
-                               + be[i].name.length;
+
+                        if (count != 0) {
+                            len += sizeof("      repeats  times\n") + 10;
+                            count = 0;
+                        }
+
+                        if (be[i].line != 0) {
+                            len += sizeof("    at  (:)\n") + 10
+                                   + be[i].name.length;
+
+                        } else {
+                            len += sizeof("    at  (native)\n")
+                                   + be[i].name.length;
+                        }
                     }
+
+                    prev = &be[i];
                 }
 
                 p = nxt_mem_cache_alloc(vm->mem_cache_pool, len);
@@ -3297,16 +3315,35 @@ again:
                 p = nxt_cpymem(p, dst->start, dst->length);
                 *p++ = '\n';
 
+                count = 0;
+                prev = NULL;
+
                 for (i = 0; i < backtrace->items; i++) {
-                    if (be[i].line != 0) {
-                        p += sprintf((char *) p, "    at %.*s (:%u)\n",
-                                     (int) be[i].name.length, be[i].name.start,
-                                     be[i].line);
+                    if (i != 0 && prev->name.start == be[i].name.start
+                        && prev->line == be[i].line)
+                    {
+                        count++;
 
                     } else {
-                        p += sprintf((char *) p, "    at %.*s (native)\n",
-                                     (int) be[i].name.length, be[i].name.start);
+                        if (count != 0) {
+                            p += sprintf((char *) p,
+                                         "      repeats %zu times\n", count);
+                            count =0;
+                        }
+
+                        if (be[i].line != 0) {
+                            p += sprintf((char *) p, "    at %.*s (:%u)\n",
+                                         (int) be[i].name.length,
+                                         be[i].name.start, be[i].line);
+
+                        } else {
+                            p += sprintf((char *) p, "    at %.*s (native)\n",
+                                         (int) be[i].name.length,
+                                         be[i].name.start);
+                        }
                     }
+
+                    prev = &be[i];
                 }
 
                 dst->start = start;

@@ -220,6 +220,12 @@ static njs_interactive_test_t  njs_test[] =
                  "    at parseInt (native)\n"
                  "    at main (native)\n") },
 
+    { nxt_string("function f(n) { if (n == 0) { throw 'a'; } return f(n-1); }; f(2)" ENTER),
+      nxt_string("a\n"
+                 "    at f (:1)\n"
+                 "      repeats 2 times\n"
+                 "    at main (native)\n") },
+
     /* Exception in njs_vm_retval_to_ext_string() */
 
     { nxt_string("var o = { toString: function() { return [1] } }" ENTER
