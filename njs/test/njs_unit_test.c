@@ -6356,6 +6356,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("try {}"),
       nxt_string("SyntaxError: Missing catch or finally after try in 1") },
 
+    { nxt_string("try{}catch(a[]"),
+      nxt_string("SyntaxError: Unexpected token \"[\" in 1") },
+
     { nxt_string("function f(a) {return a;}; "
                  "function thrower() {throw TypeError('Oops')}; "
                  "f(thrower())"),

@@ -639,7 +639,7 @@ njs_parser_function_lambda(njs_vm_t *vm, njs_function_lambda_t *lambda,
     while (token != NJS_TOKEN_CLOSE_PARENTHESIS) {
 
         if (nxt_slow_path(token != NJS_TOKEN_NAME)) {
-            return NJS_TOKEN_ERROR;
+            return NJS_TOKEN_ILLEGAL;
         }
 
         arg = njs_variable_add(vm, parser, NJS_VARIABLE_VAR);
@@ -676,7 +676,7 @@ njs_parser_function_lambda(njs_vm_t *vm, njs_function_lambda_t *lambda,
     }
 
     if (nxt_slow_path(token != NJS_TOKEN_OPEN_BRACE)) {
-        return NJS_TOKEN_ERROR;
+        return NJS_TOKEN_ILLEGAL;
     }
 
     token = njs_parser_token(parser);
@@ -1649,7 +1649,7 @@ njs_parser_try_statement(njs_vm_t *vm, njs_parser_t *parser)
         }
 
         if (nxt_slow_path(token != NJS_TOKEN_CLOSE_PARENTHESIS)) {
-            return token;
+            return NJS_TOKEN_ILLEGAL;
         }
 
         token = njs_parser_try_block(vm, parser);
@@ -1689,7 +1689,7 @@ njs_parser_try_statement(njs_vm_t *vm, njs_parser_t *parser)
 
     if (try->right == NULL) {
         njs_parser_syntax_error(vm, parser,
-                                "Missing catch or finally after try", NULL);
+                                "Missing catch or finally after try");
 
         return NJS_TOKEN_ILLEGAL;
     }

@@ -252,6 +252,8 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         nxt_array_reset(vm->backtrace);
     }
 
+    vm->retval = njs_value_void;
+
     node = njs_parser(vm, parser, prev);
     if (nxt_slow_path(node == NULL)) {
         goto fail;

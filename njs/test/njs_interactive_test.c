@@ -106,6 +106,10 @@ static njs_interactive_test_t  njs_test[] =
                  "f({})" ENTER),
       nxt_string("1") },
 
+    { nxt_string("arguments" ENTER
+                 "function(){}()" ENTER),
+      nxt_string("SyntaxError: Unexpected token \"(\" in 1") },
+
     /* Backtraces */
 
     { nxt_string("function ff(o) {return o.a.a}" ENTER
