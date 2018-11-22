@@ -2159,6 +2159,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("(function(){ if(true) return 1\n;\n else return 0; })()"),
       nxt_string("1") },
 
+    { nxt_string("function f(n) {if (n)\n throw 'foo'\nelse return 1}; f(0)"),
+      nxt_string("1") },
+
+    { nxt_string("function f(n) {if (n)\n throw 'foo'\nelse return 1}; f(1)"),
+      nxt_string("foo") },
+
+    { nxt_string("function f(n) {if (n == 1) throw 'foo'\nelse if (n == 2) return 1}; f(2)"),
+      nxt_string("1") },
+
     /* do while. */
 
     { nxt_string("do { break } if (false)"),

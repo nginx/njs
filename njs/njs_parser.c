@@ -1696,7 +1696,23 @@ njs_parser_try_statement(njs_vm_t *vm, njs_parser_t *parser)
 
     parser->node = try;
 
-    return token;
+    switch (token) {
+
+    case NJS_TOKEN_SEMICOLON:
+    case NJS_TOKEN_LINE_END:
+        return njs_parser_token(parser);
+
+    case NJS_TOKEN_CLOSE_BRACE:
+    case NJS_TOKEN_END:
+        return token;
+
+    default:
+        if (parser->lexer->prev_token == NJS_TOKEN_LINE_END) {
+            return token;
+        }
+
+        return NJS_TOKEN_ILLEGAL;
+    }
 }
 
 
