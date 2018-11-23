@@ -6441,6 +6441,9 @@ static njs_unit_test_t  njs_test[] =
                  "       catch(x) { a += x } a"),
       nxt_string("8") },
 
+    { nxt_string("throw\nnull"),
+      nxt_string("SyntaxError: Illegal newline after throw in 2") },
+
     { nxt_string("var o = { valueOf: function() { return '3' } }; --o"),
       nxt_string("2") },
 
