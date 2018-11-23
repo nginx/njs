@@ -2149,7 +2149,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("123") },
 
     { nxt_string("(function(){ if(true) return 1 else return 0; })()"),
-      nxt_string("1") },
+      nxt_string("SyntaxError: Unexpected token \"else\" in 1") },
 
     { nxt_string("(function(){ if(true) return 1; else return 0; })()"),
       nxt_string("1") },
@@ -2163,6 +2163,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("(function(){ if(true) return 1\n;\n else return 0; })()"),
       nxt_string("1") },
 
+    { nxt_string("function f(n) {if (n) throw 'foo' else return 1}; f(0)"),
+      nxt_string("SyntaxError: Unexpected token \"else\" in 1") },
+
     { nxt_string("function f(n) {if (n)\n throw 'foo'\nelse return 1}; f(0)"),
       nxt_string("1") },
 
@@ -2171,6 +2174,24 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("function f(n) {if (n == 1) throw 'foo'\nelse if (n == 2) return 1}; f(2)"),
       nxt_string("1") },
+
+    { nxt_string("(function(){ for (var p in [1] ){ if (1) break else return 0; }})()"),
+      nxt_string("SyntaxError: Unexpected token \"else\" in 1") },
+
+    { nxt_string("(function(){ for (var p in [1] ){ if (1) break\n else return 0; }})()"),
+      nxt_string("undefined") },
+
+    { nxt_string("(function(){ for (var p in [1] ){ if (1) break; else return 0; }})()"),
+      nxt_string("undefined") },
+
+    { nxt_string("(function(){ for (var p in [1] ){ if (1) continue else return 0; }})()"),
+      nxt_string("SyntaxError: Unexpected token \"else\" in 1") },
+
+    { nxt_string("(function(){ for (var p in [1] ){ if (1) continue\n else return 0; }})()"),
+      nxt_string("undefined") },
+
+    { nxt_string("(function(){ for (var p in [1] ){ if (1) continue; else return 0; }})()"),
+      nxt_string("undefined") },
 
     /* do while. */
 
@@ -5259,6 +5280,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("function f() { return 1\n 2 } f()"),
       nxt_string("1") },
 
+    { nxt_string("(function f() { return 2.toString(); })()"),
+      nxt_string("SyntaxError: Unexpected token \"toString\" in 1") },
+
+    { nxt_string("(function f() { return 2..toString(); })()"),
+      nxt_string("2") },
+
     { nxt_string("function f(a) { if (a) return 'OK' } f(1)+f(0)"),
       nxt_string("OKundefined") },
 
@@ -5295,7 +5322,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("function f(a) {"
                  "    if (a > 1)"
-                 "        return a * f(a - 1)"
+                 "        return a * f(a - 1)\n"
                  "    return 1"
                  "}"
                  "f(10)"),
@@ -5420,7 +5447,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("function fibo(n) {"
                  "    if (n > 1)"
-                 "        return fibo(n-1) + fibo(n-2)"
+                 "        return fibo(n-1) + fibo(n-2)\n"
                  "     return 1"
                  "}"
                  "fibo(10)"),
@@ -5428,7 +5455,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("function fibo(n) {"
                  "    if (n > 1)"
-                 "        return fibo(n-1) + fibo(n-2)"
+                 "        return fibo(n-1) + fibo(n-2)\n"
                  "     return '.'"
                  "}"
                  "fibo(10).length"),
@@ -5436,7 +5463,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("function fibo(n) {"
                  "    if (n > 1)"
-                 "        return fibo(n-1) + fibo(n-2)"
+                 "        return fibo(n-1) + fibo(n-2)\n"
                  "     return 1"
                  "}"
                  "fibo('10')"),

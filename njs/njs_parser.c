@@ -311,12 +311,6 @@ njs_parser_statement(njs_vm_t *vm, njs_parser_t *parser,
     case NJS_TOKEN_FUNCTION:
         return njs_parser_function_declaration(vm, parser);
 
-    case NJS_TOKEN_RETURN:
-        return njs_parser_return_statement(vm, parser);
-
-    case NJS_TOKEN_VAR:
-        return njs_parser_var_statement(vm, parser);
-
     case NJS_TOKEN_IF:
         return njs_parser_if_statement(vm, parser);
 
@@ -332,17 +326,8 @@ njs_parser_statement(njs_vm_t *vm, njs_parser_t *parser,
     case NJS_TOKEN_FOR:
         return njs_parser_for_statement(vm, parser);
 
-    case NJS_TOKEN_CONTINUE:
-        return njs_parser_continue_statement(vm, parser);
-
-    case NJS_TOKEN_BREAK:
-        return njs_parser_break_statement(vm, parser);
-
     case NJS_TOKEN_TRY:
         return njs_parser_try_statement(vm, parser);
-
-    case NJS_TOKEN_THROW:
-        return njs_parser_throw_statement(vm, parser);
 
     case NJS_TOKEN_SEMICOLON:
         return njs_parser_token(parser);
@@ -360,7 +345,33 @@ njs_parser_statement(njs_vm_t *vm, njs_parser_t *parser,
         /* Fall through. */
 
     default:
-        token = njs_parser_expression(vm, parser, token);
+
+        switch (token) {
+        case NJS_TOKEN_VAR:
+            token = njs_parser_var_statement(vm, parser);
+            break;
+
+        case NJS_TOKEN_CONTINUE:
+            token = njs_parser_continue_statement(vm, parser);
+            break;
+
+        case NJS_TOKEN_BREAK:
+            token = njs_parser_break_statement(vm, parser);
+            break;
+
+        case NJS_TOKEN_RETURN:
+            token = njs_parser_return_statement(vm, parser);
+            break;
+
+        case NJS_TOKEN_THROW:
+            token = njs_parser_throw_statement(vm, parser);
+            break;
+
+        default:
+            token = njs_parser_expression(vm, parser, token);
+            break;
+        }
+
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
         }
@@ -781,11 +792,12 @@ njs_parser_return_statement(njs_vm_t *vm, njs_parser_t *parser)
 
     switch (token) {
 
-    case NJS_TOKEN_SEMICOLON:
     case NJS_TOKEN_LINE_END:
         return njs_parser_token(parser);
 
+    case NJS_TOKEN_SEMICOLON:
     case NJS_TOKEN_CLOSE_BRACE:
+    case NJS_TOKEN_END:
         return token;
 
     default:
@@ -800,10 +812,6 @@ njs_parser_return_statement(njs_vm_t *vm, njs_parser_t *parser)
 
         node->right = parser->node;
         parser->node = node;
-
-        if (token == NJS_TOKEN_SEMICOLON) {
-            return njs_parser_token(parser);
-        }
 
         return token;
     }
@@ -902,26 +910,7 @@ njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser)
 
     } while (token == NJS_TOKEN_COMMA);
 
-    /*
-     * A var statement must be terminated by semicolon,
-     * or by a close curly brace or by the end of line.
-     */
-    switch (token) {
-
-    case NJS_TOKEN_SEMICOLON:
-        return njs_parser_token(parser);
-
-    case NJS_TOKEN_CLOSE_BRACE:
-    case NJS_TOKEN_END:
-        return token;
-
-    default:
-        if (parser->lexer->prev_token == NJS_TOKEN_LINE_END) {
-            return token;
-        }
-
-        return NJS_TOKEN_ILLEGAL;
-    }
+    return token;
 }
 
 
@@ -1516,10 +1505,10 @@ njs_parser_continue_statement(njs_vm_t *vm, njs_parser_t *parser)
 
     switch (token) {
 
-    case NJS_TOKEN_SEMICOLON:
     case NJS_TOKEN_LINE_END:
         return njs_parser_token(parser);
 
+    case NJS_TOKEN_SEMICOLON:
     case NJS_TOKEN_CLOSE_BRACE:
     case NJS_TOKEN_END:
         return token;
@@ -1551,10 +1540,10 @@ njs_parser_break_statement(njs_vm_t *vm, njs_parser_t *parser)
 
     switch (token) {
 
-    case NJS_TOKEN_SEMICOLON:
     case NJS_TOKEN_LINE_END:
         return njs_parser_token(parser);
 
+    case NJS_TOKEN_SEMICOLON:
     case NJS_TOKEN_CLOSE_BRACE:
     case NJS_TOKEN_END:
         return token;
