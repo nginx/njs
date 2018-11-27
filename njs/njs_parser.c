@@ -10,17 +10,6 @@
 #include <stdio.h>
 
 
-/*
- * The LL(2) parser.  The two lookahead tokens are required because
- * JavaScript inserts automatically semicolon at the end of line in
- *    a = 1
- *    b = 2
- * whilst
- *    a = 1
- *    + b
- * is treated as a single expiression.
- */
-
 static njs_ret_t njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser,
     njs_scope_t type);
 static void njs_parser_scope_end(njs_vm_t *vm, njs_parser_t *parser);
@@ -282,9 +271,7 @@ njs_parser_statement_chain(njs_vm_t *vm, njs_parser_t *parser,
             node->right = parser->node;
             parser->node = node;
 
-            while (token == NJS_TOKEN_SEMICOLON
-                   || token == NJS_TOKEN_LINE_END)
-            {
+            while (token == NJS_TOKEN_SEMICOLON) {
                 token = njs_parser_token(parser);
                 if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
                     break;
@@ -1811,7 +1798,7 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
 
     if (token == NJS_TOKEN_OPEN_PARENTHESIS) {
 
-        token = njs_lexer_token(parser->lexer);
+        token = njs_parser_token(parser);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
         }
@@ -2109,7 +2096,7 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
 
     parser->node = node;
 
-    return njs_lexer_token(parser->lexer);
+    return njs_parser_token(parser);
 }
 
 
@@ -2142,7 +2129,7 @@ njs_parser_builtin_object(njs_vm_t *vm, njs_parser_t *parser,
     parser->node = node;
     parser->code_size += sizeof(njs_vmcode_object_copy_t);
 
-    return njs_lexer_token(parser->lexer);
+    return njs_parser_token(parser);
 }
 
 
@@ -2175,7 +2162,7 @@ njs_parser_builtin_function(njs_vm_t *vm, njs_parser_t *parser,
     parser->node = node;
     parser->code_size += sizeof(njs_vmcode_object_copy_t);
 
-    return njs_lexer_token(parser->lexer);
+    return njs_parser_token(parser);
 }
 
 

@@ -230,14 +230,6 @@ njs_parser_expression(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
 }
 
 
-nxt_inline nxt_bool_t
-njs_parser_expression_operator(njs_token_t token)
-{
-    return (token >= NJS_TOKEN_FIRST_OPERATOR
-            && token <= NJS_TOKEN_LAST_OPERATOR);
-}
-
-
 njs_token_t
 njs_parser_var_expression(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
 {
@@ -258,18 +250,6 @@ njs_parser_var_expression(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
             operation = njs_vmcode_move;
             size = sizeof(njs_vmcode_move_t);
             break;
-
-        case NJS_TOKEN_LINE_END:
-            token = njs_lexer_token(parser->lexer);
-            if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-                return token;
-            }
-
-            if (njs_parser_expression_operator(token)) {
-                continue;
-            }
-
-            /* Fall through. */
 
         default:
             return token;
@@ -396,18 +376,6 @@ njs_parser_assignment_expression(njs_vm_t *vm, njs_parser_t *parser,
             nxt_thread_log_debug("JS: |=");
             operation = njs_vmcode_bitwise_or;
             break;
-
-        case NJS_TOKEN_LINE_END:
-            token = njs_lexer_token(parser->lexer);
-            if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-                return token;
-            }
-
-            if (njs_parser_expression_operator(token)) {
-                continue;
-            }
-
-            /* Fall through. */
 
         default:
             return token;
@@ -588,18 +556,6 @@ njs_parser_binary_expression(njs_vm_t *vm, njs_parser_t *parser,
 
         } while (n != 0);
 
-        if (token == NJS_TOKEN_LINE_END) {
-
-            token = njs_lexer_token(parser->lexer);
-            if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-                return token;
-            }
-
-            if (njs_parser_expression_operator(token)) {
-                continue;
-            }
-        }
-
         return token;
 
     found:
@@ -674,18 +630,6 @@ njs_parser_exponential_expression(njs_vm_t *vm, njs_parser_t *parser,
             node->right = parser->node;
             node->right->dest = node;
             parser->node = node;
-        }
-
-        if (token == NJS_TOKEN_LINE_END) {
-
-            token = njs_lexer_token(parser->lexer);
-            if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-                return token;
-            }
-
-            if (njs_parser_expression_operator(token)) {
-                continue;
-            }
         }
 
         return token;
@@ -900,6 +844,13 @@ njs_parser_post_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
 
     default:
         return token;
+    }
+
+    /* Automatic semicolon insertion. */
+
+    if (parser->lexer->prev_token == NJS_TOKEN_LINE_END) {
+        njs_lexer_rollback(parser->lexer);
+        return NJS_TOKEN_SEMICOLON;
     }
 
     if (!njs_parser_is_lvalue(parser->node)) {

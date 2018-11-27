@@ -2046,6 +2046,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a = 0; a \n ++"),
       nxt_string("SyntaxError: Unexpected end of input in 2") },
 
+    { nxt_string("a = 0; a \n --"),
+      nxt_string("SyntaxError: Unexpected end of input in 2") },
+
+    { nxt_string("var a = 0; a \n + 1"),
+      nxt_string("1") },
+
+    { nxt_string("var a = 0; a \n +\n 1"),
+      nxt_string("1") },
+
     { nxt_string("var a; a = 1 ? 2 \n : 3"),
       nxt_string("2") },
 
@@ -2118,6 +2127,11 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var a \n if (!a) a = 3; a"),
       nxt_string("3") },
+
+    /* automatic semicolon insertion. */
+
+    { nxt_string("var x = 0, y = 2; x\n--\ny; [x,y]"),
+      nxt_string("0,1") },
 
     /* if. */
 
@@ -2192,6 +2206,21 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("(function(){ for (var p in [1] ){ if (1) continue; else return 0; }})()"),
       nxt_string("undefined") },
+
+    { nxt_string("(function(x){ if\n(x) return -1; else return 0; })(0)"),
+      nxt_string("0") },
+
+    { nxt_string("(function(x){ if\n(\nx) return -1; else return 0; })(0)"),
+      nxt_string("0") },
+
+    { nxt_string("(function(x){ if\n(\nx)\nreturn -1; else return 0; })(0)"),
+      nxt_string("0") },
+
+    { nxt_string("(function(x){ if\n(\nx)\nreturn -1\n else return 0; })(0)"),
+      nxt_string("0") },
+
+    { nxt_string("(function(x){ if\n(\nx)\nreturn -1\n else\nreturn 0; })(0)"),
+      nxt_string("0") },
 
     /* do while. */
 
@@ -2956,6 +2985,15 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var a = [1,2]; a.length"),
       nxt_string("2") },
+
+    { nxt_string("[\n1]"),
+      nxt_string("1") },
+
+    { nxt_string("\n[\n1\n]"),
+      nxt_string("1") },
+
+    { nxt_string("\n[\n1\n,\n2]\n[\n0]"),
+      nxt_string("1") },
 
 #if 0
     { nxt_string("Object.create([1,2]).length"),
@@ -3807,6 +3845,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("'a'.my"),
       nxt_string("undefined") },
+
+    { nxt_string("var a = '123'\n[2].toString();a"),
+      nxt_string("3") },
 
     /* Escape strings. */
 
@@ -5317,6 +5358,33 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Function.prototype.toString = function () {return 'X'};"
                  "eval"),
       nxt_string("X") },
+
+    { nxt_string("var o = {f:function(x){ return x**2}}; o.f\n(2)"),
+      nxt_string("4") },
+
+    { nxt_string("var o = {f:function(x){ return x**2}}; o\n.f\n(2)"),
+      nxt_string("4") },
+
+    { nxt_string("var o = {f:function(x){ return x**2}}; o\n.\nf\n(2)"),
+      nxt_string("4") },
+
+    { nxt_string("function f(x){ return x**2}; [f(2)\n, f\n(2),\nf\n(\n2),\nf\n(\n2\n)]"),
+      nxt_string("4,4,4,4") },
+
+    { nxt_string("function f (x){ return x**2}; f\n(2)"),
+      nxt_string("4") },
+
+    { nxt_string("function f (x){ return x**2}; f\n(\n2)"),
+      nxt_string("4") },
+
+    { nxt_string("function f (x){ return x**2}; f\n(\n2\n)"),
+      nxt_string("4") },
+
+    { nxt_string("function f (x){ return x**2}; f\n(2\n)"),
+      nxt_string("4") },
+
+    { nxt_string("function f (x){ return x**2}; f(2\n)"),
+      nxt_string("4") },
 
     /* Recursive factorial. */
 

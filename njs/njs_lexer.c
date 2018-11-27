@@ -277,6 +277,7 @@ njs_lexer_token(njs_lexer_t *lexer)
 {
     njs_token_t  token;
 
+    lexer->prev_start = lexer->start;
     lexer->prev_token = lexer->token;
 
     token = njs_lexer_next_token(lexer);
@@ -284,6 +285,13 @@ njs_lexer_token(njs_lexer_t *lexer)
     lexer->token = token;
 
     return token;
+}
+
+
+void
+njs_lexer_rollback(njs_lexer_t *lexer)
+{
+    lexer->start = lexer->prev_start;
 }
 
 

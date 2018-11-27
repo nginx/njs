@@ -31,8 +31,6 @@ typedef enum {
     NJS_TOKEN_DOT,
     NJS_TOKEN_SEMICOLON,
 
-#define NJS_TOKEN_FIRST_OPERATOR    NJS_TOKEN_COLON
-
     NJS_TOKEN_COLON,
     NJS_TOKEN_CONDITIONAL,
 
@@ -102,8 +100,6 @@ typedef enum {
     NJS_TOKEN_NEW,
     NJS_TOKEN_DELETE,
     NJS_TOKEN_YIELD,
-
-#define NJS_TOKEN_LAST_OPERATOR   NJS_TOKEN_YIELD
 
     NJS_TOKEN_DIGIT,
     NJS_TOKEN_LETTER,
@@ -223,6 +219,7 @@ typedef struct {
     nxt_lvlhsh_t                    keywords_hash;
 
     u_char                          *start;
+    u_char                          *prev_start;
     u_char                          *end;
 } njs_lexer_t;
 
@@ -360,6 +357,7 @@ typedef struct {
 
 
 njs_token_t njs_lexer_token(njs_lexer_t *lexer);
+void njs_lexer_rollback(njs_lexer_t *lexer);
 nxt_int_t njs_lexer_keywords_init(nxt_mem_cache_pool_t *mcp,
     nxt_lvlhsh_t *hash);
 njs_token_t njs_lexer_keyword(njs_lexer_t *lexer);
