@@ -1,4 +1,46 @@
 
+Changes with njs 0.2.6                                           27 Nov 2018
+
+    Core:
+
+    *) Feature: making built-in prototypes mutable.
+
+    *) Feature: making global object mutable.
+
+    *) Feature: console.time() and console.timeEnd() methods.
+
+    *) Feature: allowing variables and functions to be redeclared.
+
+    *) Feature: extending Object.defineProperty() spec conformance.
+
+    *) Feature: introduced quiet mode for CLI to handle simple expressions
+       from stdin.
+
+    *) Feature: introduced compact form of backtraces to handle stack
+       overflows.
+
+    *) Improvement: improved wording for various exceptions.
+
+    *) Bugfix: fixed closure values handling.
+
+    *) Bugfix: fixed equality operator for various value types.
+
+    *) Bugfix: fixed handling of "this" keyword in various scopes.
+
+    *) Bugfix: fixed handling non-object values in Object.keys().
+
+    *) Bugfix: fixed parsing of throw statement inside if statement.
+
+    *) Bugfix: fixed parsing of newline after throw statement.
+
+    *) Bugfix: fixed parsing of statements in if statement without newline.
+
+    *) Bugfix: fixed size uint32_t overflow in njs_array_expand().
+
+    *) Bugfix: fixed typeof operator for object_value type.
+
+    *) Bugfix: miscellaneous additional bugs have been fixed.
+
 Changes with njs 0.2.5                                           30 Oct 2018
 
     nginx modules:
