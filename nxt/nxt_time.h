@@ -21,4 +21,7 @@
 #endif
 
 
+uint64_t nxt_time(void);
+
+
 #endif /* _NXT_TIME_H_INCLUDED_ */

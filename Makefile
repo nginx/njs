@@ -48,6 +48,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 	$(NXT_BUILDDIR)/nxt_sha1.o \
 	$(NXT_BUILDDIR)/nxt_sha2.o \
 	$(NXT_BUILDDIR)/nxt_pcre.o \
+	$(NXT_BUILDDIR)/nxt_time.o \
 	$(NXT_BUILDDIR)/nxt_malloc.o \
 	$(NXT_BUILDDIR)/nxt_mem_cache_pool.o \
 
@@ -93,6 +94,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 		$(NXT_BUILDDIR)/nxt_sha1.o \
 		$(NXT_BUILDDIR)/nxt_sha2.o \
 		$(NXT_BUILDDIR)/nxt_pcre.o \
+		$(NXT_BUILDDIR)/nxt_time.o \
 		$(NXT_BUILDDIR)/nxt_malloc.o \
 		$(NXT_BUILDDIR)/nxt_mem_cache_pool.o \
 
@@ -535,7 +537,7 @@ $(NXT_BUILDDIR)/njs: \
 		-I$(NXT_LIB) $(NXT_EDITLINE_CFLAGS) -Injs \
 		njs/njs_shell.c \
 		$(NXT_BUILDDIR)/libnjs.a \
-		-lm $(NXT_PCRE_LIB) $(NXT_EDITLINE_LIB)
+		-lm $(NXT_PCRE_LIB) $(NXT_LIBRT) $(NXT_EDITLINE_LIB)
 
 $(NXT_BUILDDIR)/njs_unit_test: \
 	$(NXT_BUILDDIR)/libnxt.a \
@@ -546,7 +548,7 @@ $(NXT_BUILDDIR)/njs_unit_test: \
 		-I$(NXT_LIB) -Injs \
 		njs/test/njs_unit_test.c \
 		$(NXT_BUILDDIR)/libnjs.a \
-		-lm $(NXT_PCRE_LIB)
+		-lm $(NXT_PCRE_LIB) $(NXT_LIBRT)
 
 $(NXT_BUILDDIR)/njs_interactive_test: \
 	$(NXT_BUILDDIR)/libnxt.a \
@@ -557,7 +559,7 @@ $(NXT_BUILDDIR)/njs_interactive_test: \
 		-I$(NXT_LIB) -Injs \
 		njs/test/njs_interactive_test.c \
 		$(NXT_BUILDDIR)/libnjs.a \
-		-lm $(NXT_PCRE_LIB)
+		-lm $(NXT_PCRE_LIB) $(NXT_LIBRT)
 
 $(NXT_BUILDDIR)/njs_benchmark: \
 	$(NXT_BUILDDIR)/libnxt.a \
@@ -568,6 +570,6 @@ $(NXT_BUILDDIR)/njs_benchmark: \
 		-I$(NXT_LIB) -Injs \
 		njs/test/njs_benchmark.c \
 		$(NXT_BUILDDIR)/libnjs.a \
-		-lm $(NXT_PCRE_LIB)
+		-lm $(NXT_PCRE_LIB) $(NXT_LIBRT)
 
 include $(NXT_LIB)/Makefile
