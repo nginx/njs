@@ -597,6 +597,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a, b = (a = [2]) * (3 * 4); a +' '+ b"),
       nxt_string("2 24") },
 
+    { nxt_string("var a = 1; var b = a += 1; b"),
+      nxt_string("2") },
+
+    { nxt_string("var a = 1; var b = a -= 1; b"),
+      nxt_string("0") },
+
+    { nxt_string("var a = 1; var b = a <<= 1; b"),
+      nxt_string("2") },
+
     /* 3 address operation and side effect. */
 
     { nxt_string("var a = 1; function f(x) { a = x; return 2 }; a+f(5)+' '+a"),

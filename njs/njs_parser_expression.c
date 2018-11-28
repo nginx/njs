@@ -237,7 +237,7 @@ njs_parser_var_expression(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
     njs_parser_node_t       *node;
     njs_vmcode_operation_t  operation;
 
-    token = njs_parser_conditional_expression(vm, parser, token);
+    token = njs_parser_assignment_expression(vm, parser, token);
     if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
         return token;
     }
