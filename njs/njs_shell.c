@@ -153,7 +153,7 @@ static njs_external_t  njs_externals[] = {
 static njs_completion_t  njs_completion;
 
 
-static struct timeval njs_console_time;
+static uint64_t njs_console_time = UINT64_MAX;
 
 
 int
@@ -781,7 +781,7 @@ njs_ext_console_time(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     vm->retval = njs_value_void;
 
-    gettimeofday(&njs_console_time, NULL);
+    njs_console_time = nxt_time();
 
     return NJS_OK;
 }
@@ -791,28 +791,25 @@ static njs_ret_t
 njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    int64_t         us, ms;
-    struct timeval  tv;
+    uint64_t  ns, ms;
 
-    gettimeofday(&tv, NULL);
+    ns = nxt_time();
 
     if (!njs_value_is_void(njs_arg(args, nargs, 1))) {
         njs_vm_error(vm, "labels not implemented");
         return NJS_ERROR;
     }
 
-    if (nxt_fast_path(njs_console_time.tv_sec || njs_console_time.tv_usec)) {
+    if (nxt_fast_path(njs_console_time != UINT64_MAX)) {
 
-        us = ((int64_t) tv.tv_sec - njs_console_time.tv_sec) * 1000000
-             + ((int64_t) tv.tv_usec - njs_console_time.tv_usec);
+        ns = ns - njs_console_time;
 
-        ms = us / 1000;
-        us = us % 1000;
+        ms = ns / 1000000;
+        ns = ns % 1000000;
 
-        printf("default: %" PRIu64 ".%03" PRIu64 "ms\n", ms, us);
+        printf("default: %" PRIu64 ".%06" PRIu64 "ms\n", ms, ns);
 
-        njs_console_time.tv_sec = 0;
-        njs_console_time.tv_usec = 0;
+        njs_console_time = UINT64_MAX;
 
     } else {
         printf("Timer \"default\" doesn’t exist.\n");
