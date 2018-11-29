@@ -314,7 +314,7 @@ nxt_feature_test="#include <math.h>
                   #include <stdint.h>
 
                   int main(void) {
-                      int64_t  i64 = sqrt(-1);
+                      int64_t  i64 = acosh(0);
                       printf(\"%x\", (uint32_t) i64);
                       return 0;
                   }"
