@@ -789,6 +789,17 @@ njs_number_to_integer(double num)
 {
     int64_t  i64;
 
+#if (NXT_NAN_TO_UINT_CONVERSION != 0)
+    /*
+     * PPC32: NaN and Inf are converted to 0x8000000080000000
+     * and become non-zero after truncation.
+     */
+
+    if (isnan(num) || isinf(num)) {
+        return 0;
+    }
+#endif
+
     /*
      * ES5.1: integer must be modulo 2^32.
      * 2^53 is the largest integer number which can be stored safely

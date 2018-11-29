@@ -1085,7 +1085,7 @@ njs_dump_value(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     value = njs_arg(args, nargs, 1);
     indent = njs_arg(args, nargs, 2);
 
-    n = indent->data.u.number;
+    n = njs_primitive_value_to_integer(indent);
     n = nxt_min(n, 5);
 
     if (njs_vm_value_dump(vm, &str, value, n) != NXT_OK) {

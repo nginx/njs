@@ -302,3 +302,20 @@ else
     . ${NXT_AUTO}feature
 
 fi
+
+
+nxt_feature="NAN to uint conversion"
+nxt_feature_name=NXT_NAN_TO_UINT_CONVERSION
+nxt_feature_run=value
+nxt_feature_incs=
+nxt_feature_libs=-lm
+nxt_feature_test="#include <math.h>
+                  #include <stdio.h>
+                  #include <stdint.h>
+
+                  int main(void) {
+                      int64_t  i64 = sqrt(-1);
+                      printf(\"%x\", (uint32_t) i64);
+                      return 0;
+                  }"
+. ${NXT_AUTO}feature
