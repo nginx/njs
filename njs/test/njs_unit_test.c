@@ -2337,6 +2337,16 @@ static njs_unit_test_t  njs_test[] =
                  "} a"),
       nxt_string("A123DT") },
 
+    { nxt_string("var t; "
+                 "switch ($r3.uri) {"
+                 "case 'abc': "
+                 "  t='A'; "
+                 "  break; "
+                 "default: "
+                 "  t='F'; "
+                 "}; t"),
+      nxt_string("A") },
+
     /* continue. */
 
     { nxt_string("continue"),
@@ -4045,7 +4055,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("'\\u00CE\\u00B1'.toBytes() === 'α'"),
-      nxt_string("false") },
+      nxt_string("true") },
 
     { nxt_string("var b = '\\u00C2\\u00B6'.toBytes(), u = b.fromUTF8();"
                  "b.length +' '+ b +' '+ u.length +' '+ u"),
@@ -4086,6 +4096,12 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var a = '\\xB5\\xA7\\xB1\\xAE'.toBytes(); a.fromBytes(1, 3)"),
       nxt_string("§±") },
+
+    { nxt_string("'A'.repeat(8).toBytes() === 'A'.repeat(8)"),
+      nxt_string("true") },
+
+    { nxt_string("'A'.repeat(16).toBytes() === 'A'.repeat(16)"),
+      nxt_string("true") },
 
     { nxt_string("var a = 'abcdefgh'; a.substr(3, 15)"),
       nxt_string("defgh") },
@@ -4475,6 +4491,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var o = {b:$r.props.b}; o.b"),
       nxt_string("42") },
+
+    { nxt_string("$r2.uri == 'αβγ' && $r2.uri === 'αβγ'"),
+      nxt_string("true") },
 
     /**/
 

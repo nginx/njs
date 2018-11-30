@@ -1712,7 +1712,7 @@ njs_vmcode_strict_not_equal(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 nxt_noinline nxt_bool_t
 njs_values_strict_equal(const njs_value_t *val1, const njs_value_t *val2)
 {
-    size_t        size;
+    size_t        size, length1, length2;
     const u_char  *start1, *start2;
 
     if (val1->type != val2->type) {
@@ -1737,7 +1737,14 @@ njs_values_strict_equal(const njs_value_t *val1, const njs_value_t *val2)
         }
 
         if (size != NJS_STRING_LONG) {
-            if (val1->short_string.length != val2->short_string.length) {
+            length1 = val1->short_string.length;
+            length2 = val2->short_string.length;
+
+            /*
+             * Using full memcmp() comparison if at least one string
+             * is a Byte string.
+             */
+            if (length1 != 0 && length2 != 0 && length1 != length2) {
                 return 0;
             }
 
@@ -1751,9 +1758,14 @@ njs_values_strict_equal(const njs_value_t *val1, const njs_value_t *val2)
                 return 0;
             }
 
-            if (val1->long_string.data->length
-                != val2->long_string.data->length)
-            {
+            length1 = val1->long_string.data->length;
+            length2 = val2->long_string.data->length;
+
+            /*
+             * Using full memcmp() comparison if at least one string
+             * is a Byte string.
+             */
+            if (length1 != 0 && length2 != 0 && length1 != length2) {
                 return 0;
             }
 
