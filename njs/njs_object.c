@@ -888,7 +888,7 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 njs_array_t *
 njs_object_keys_array(njs_vm_t *vm, const njs_value_t *value)
 {
-    uint32_t           i, n, length, keys_length;
+    uint32_t           i, n, length, keys_length, properties;
     njs_value_t        *string;
     njs_array_t        *keys, *array;
     nxt_lvlhsh_t       *hash;
@@ -930,15 +930,14 @@ njs_object_keys_array(njs_vm_t *vm, const njs_value_t *value)
         break;
     }
 
+    /* GCC 4 and Clang 3 complain about uninitialized hash. */
+    hash = NULL;
+    properties = 0;
+
     if (nxt_fast_path(njs_is_object(value))) {
         nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
         hash = &value->data.u.object->hash;
 
-    } else {
-        hash = NULL;
-    }
-
-    if (nxt_fast_path(hash != NULL)) {
         for ( ;; ) {
             prop = nxt_lvlhsh_each(hash, &lhe);
 
@@ -947,9 +946,11 @@ njs_object_keys_array(njs_vm_t *vm, const njs_value_t *value)
             }
 
             if (prop->type != NJS_WHITEOUT && prop->enumerable) {
-                keys_length++;
+                properties++;
             }
         }
+
+        keys_length += properties;
     }
 
     keys = njs_array_alloc(vm, keys_length, NJS_ARRAY_SPARE);
@@ -966,13 +967,13 @@ njs_object_keys_array(njs_vm_t *vm, const njs_value_t *value)
             }
         }
 
-    } else if (length != 0) {
+    } else {
         for (i = 0; i < length; i++) {
             njs_uint32_to_string(&keys->start[n++], i);
         }
     }
 
-    if (nxt_fast_path(hash != NULL)) {
+    if (nxt_fast_path(properties != 0)) {
         nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
 
         for ( ;; ) {
