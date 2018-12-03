@@ -20,6 +20,7 @@ typedef enum {
 typedef enum {
     NJS_ENUM_KEYS = 0,
     NJS_ENUM_VALUES,
+    NJS_ENUM_BOTH,
 } njs_object_enum_t;
 
 

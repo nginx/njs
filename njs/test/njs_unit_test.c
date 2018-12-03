@@ -7445,6 +7445,29 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.values()"),
       nxt_string("TypeError: cannot convert undefined argument to object") },
 
+    { nxt_string("Object.entries('abc')"),
+      nxt_string("0,a,1,b,2,c") },
+
+    { nxt_string("JSON.stringify(Object.entries('эюя'))"),
+      nxt_string("[[\"0\",\"э\"],[\"1\",\"ю\"],[\"2\",\"я\"]]") },
+
+    { nxt_string("var o = {a:\"а\", b:\"б\", c:\"ц\"};"
+                 "JSON.stringify(Object.entries(o))"),
+      nxt_string("[[\"a\",\"а\"],[\"b\",\"б\"],[\"c\",\"ц\"]]") },
+
+    { nxt_string("JSON.stringify(Object.entries([0]))"),
+      nxt_string("[[\"0\",0]]") },
+
+    { nxt_string("var s = new String('αβ'); s.two = null; s[3] = true;"
+                 "Object.entries(s)"),
+      nxt_string("0,α,1,β,two,,3,true") },
+
+    { nxt_string("Object.entries(true)"),
+      nxt_string("") },
+
+    { nxt_string("Object.entries()"),
+      nxt_string("TypeError: cannot convert undefined argument to object") },
+
     { nxt_string("var o = {}; Object.defineProperty(o, 'a', {}); o.a"),
       nxt_string("undefined") },
 
@@ -7481,6 +7504,20 @@ static njs_unit_test_t  njs_test[] =
                  "Object.defineProperty(o, 'b', {enumerable:true, value:2});"
                  "Object.values(o)"),
       nxt_string("1,3,2") },
+
+    { nxt_string("var o = {a:1, c:2}; Object.defineProperty(o, 'b', {});"
+                 "Object.entries(o)"),
+      nxt_string("a,1,c,2") },
+
+    { nxt_string("var o = {a:1, c:2};"
+                 "Object.defineProperty(o, 'b', {enumerable:false, value:3});"
+                 "Object.entries(o)"),
+      nxt_string("a,1,c,2") },
+
+    { nxt_string("var o = {a:1, c:3};"
+                 "Object.defineProperty(o, 'b', {enumerable:true, value:2});"
+                 "Object.entries(o)"),
+      nxt_string("a,1,c,3,b,2") },
 
     { nxt_string("var o = {}; Object.defineProperty(o, 'a', {}); o.a = 1"),
       nxt_string("TypeError: Cannot assign to read-only property 'a' of object") },

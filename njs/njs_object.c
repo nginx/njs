@@ -914,6 +914,35 @@ njs_object_values(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
+static njs_ret_t
+njs_object_entries(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+ {
+    njs_array_t        *array;
+    const njs_value_t  *value;
+
+    value = njs_arg(args, nargs, 1);
+
+    if (njs_is_null_or_void(value)) {
+        njs_type_error(vm, "cannot convert %s argument to object",
+                       njs_type_string(value->type));
+
+        return NXT_ERROR;
+    }
+
+    array = njs_object_enumerate(vm, value, NJS_ENUM_BOTH);
+    if (array == NULL) {
+        return NXT_ERROR;
+    }
+
+    vm->retval.data.u.array = array;
+    vm->retval.type = NJS_ARRAY;
+    vm->retval.data.truth = 1;
+
+    return NXT_OK;
+}
+
+
 njs_array_t *
 njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
     njs_object_enum_t kind)
@@ -921,7 +950,7 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
     u_char             *dst;
     uint32_t           i, length, size, items_length, properties;
     njs_value_t        *string, *item;
-    njs_array_t        *items, *array;
+    njs_array_t        *items, *array, *entry;
     nxt_lvlhsh_t       *hash;
     const u_char       *src, *end;
     njs_object_prop_t  *prop;
@@ -1013,6 +1042,29 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
             }
 
             break;
+
+        case NJS_ENUM_BOTH:
+            for (i = 0; i < length; i++) {
+                if (njs_is_valid(&array->start[i])) {
+                    entry = njs_array_alloc(vm, 2, 0);
+                    if (nxt_slow_path(entry == NULL)) {
+                        return NULL;
+                    }
+
+                    njs_uint32_to_string(&entry->start[0], i);
+
+                    /* GC: retain. */
+                    entry->start[1] = array->start[i];
+
+                    item->data.u.array = entry;
+                    item->type = NJS_ARRAY;
+                    item->data.truth = 1;
+
+                    item++;
+                }
+            }
+
+            break;
         }
 
     } else if (length != 0) {
@@ -1057,6 +1109,66 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
             }
 
             break;
+
+        case NJS_ENUM_BOTH:
+            if (string_prop.size == (size_t) length) {
+                /* Byte or ASCII string. */
+
+                for (i = 0; i < length; i++) {
+                    entry = njs_array_alloc(vm, 2, 0);
+                    if (nxt_slow_path(entry == NULL)) {
+                        return NULL;
+                    }
+
+                    njs_uint32_to_string(&entry->start[0], i);
+
+                    string = &entry->start[1];
+
+                    dst = njs_string_short_start(string);
+                    dst[0] = string_prop.start[i];
+
+                    njs_string_short_set(string, 1, 1);
+
+                    item->data.u.array = entry;
+                    item->type = NJS_ARRAY;
+                    item->data.truth = 1;
+
+                    item++;
+                }
+
+            } else {
+                /* UTF-8 string. */
+
+                src = string_prop.start;
+                end = src + string_prop.size;
+                i = 0;
+
+                do {
+                    entry = njs_array_alloc(vm, 2, 0);
+                    if (nxt_slow_path(entry == NULL)) {
+                        return NULL;
+                    }
+
+                    njs_uint32_to_string(&entry->start[0], i++);
+
+                    string = &entry->start[1];
+
+                    dst = njs_string_short_start(string);
+                    dst = nxt_utf8_copy(dst, &src, end);
+                    size = dst - njs_string_short_start(value);
+
+                    njs_string_short_set(string, size, 1);
+
+                    item->data.u.array = entry;
+                    item->type = NJS_ARRAY;
+                    item->data.truth = 1;
+
+                    item++;
+
+                } while (src != end);
+            }
+
+            break;
         }
     }
 
@@ -1091,6 +1203,35 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
                 if (prop->type != NJS_WHITEOUT && prop->enumerable) {
                     /* GC: retain. */
                     *item++ = prop->value;
+                }
+            }
+
+            break;
+
+        case NJS_ENUM_BOTH:
+            for ( ;; ) {
+                prop = nxt_lvlhsh_each(hash, &lhe);
+
+                if (prop == NULL) {
+                    break;
+                }
+
+                if (prop->type != NJS_WHITEOUT && prop->enumerable) {
+                    entry = njs_array_alloc(vm, 2, 0);
+                    if (nxt_slow_path(entry == NULL)) {
+                        return NULL;
+                    }
+
+                    njs_string_copy(&entry->start[0], &prop->name);
+
+                    /* GC: retain. */
+                    entry->start[1] = prop->value;
+
+                    item->data.u.array = entry;
+                    item->type = NJS_ARRAY;
+                    item->data.truth = 1;
+
+                    item++;
                 }
             }
 
@@ -1967,6 +2108,14 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("values"),
         .value = njs_native_function(njs_object_values, 0,
+                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
+    },
+
+    /* ES8: Object.entries(). */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("entries"),
+        .value = njs_native_function(njs_object_entries, 0,
                                      NJS_SKIP_ARG, NJS_OBJECT_ARG),
     },
 
