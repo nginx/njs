@@ -872,7 +872,7 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    keys = njs_object_keys_array(vm, value);
+    keys = njs_object_enumerate(vm, value, NJS_ENUM_KEYS);
     if (keys == NULL) {
         return NXT_ERROR;
     }
@@ -885,20 +885,52 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
+static njs_ret_t
+njs_object_values(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+ {
+    njs_array_t        *array;
+    const njs_value_t  *value;
+
+    value = njs_arg(args, nargs, 1);
+
+    if (njs_is_null_or_void(value)) {
+        njs_type_error(vm, "cannot convert %s argument to object",
+                       njs_type_string(value->type));
+
+        return NXT_ERROR;
+    }
+
+    array = njs_object_enumerate(vm, value, NJS_ENUM_VALUES);
+    if (array == NULL) {
+        return NXT_ERROR;
+    }
+
+    vm->retval.data.u.array = array;
+    vm->retval.type = NJS_ARRAY;
+    vm->retval.data.truth = 1;
+
+    return NXT_OK;
+}
+
+
 njs_array_t *
-njs_object_keys_array(njs_vm_t *vm, const njs_value_t *value)
+njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
+    njs_object_enum_t kind)
 {
-    uint32_t           i, n, length, keys_length, properties;
-    njs_value_t        *string;
-    njs_array_t        *keys, *array;
+    u_char             *dst;
+    uint32_t           i, length, size, items_length, properties;
+    njs_value_t        *string, *item;
+    njs_array_t        *items, *array;
     nxt_lvlhsh_t       *hash;
+    const u_char       *src, *end;
     njs_object_prop_t  *prop;
     njs_string_prop_t  string_prop;
     nxt_lvlhsh_each_t  lhe;
 
     array = NULL;
     length = 0;
-    keys_length = 0;
+    items_length = 0;
 
     switch (value->type) {
     case NJS_ARRAY:
@@ -907,7 +939,7 @@ njs_object_keys_array(njs_vm_t *vm, const njs_value_t *value)
 
         for (i = 0; i < length; i++) {
             if (njs_is_valid(&array->start[i])) {
-                keys_length++;
+                items_length++;
             }
         }
 
@@ -923,7 +955,7 @@ njs_object_keys_array(njs_vm_t *vm, const njs_value_t *value)
         }
 
         length = njs_string_prop(&string_prop, string);
-        keys_length += length;
+        items_length += length;
         break;
 
     default:
@@ -950,46 +982,123 @@ njs_object_keys_array(njs_vm_t *vm, const njs_value_t *value)
             }
         }
 
-        keys_length += properties;
+        items_length += properties;
     }
 
-    keys = njs_array_alloc(vm, keys_length, NJS_ARRAY_SPARE);
-    if (nxt_slow_path(keys == NULL)) {
+    items = njs_array_alloc(vm, items_length, NJS_ARRAY_SPARE);
+    if (nxt_slow_path(items == NULL)) {
         return NULL;
     }
 
-    n = 0;
+    item = items->start;
 
     if (array != NULL) {
-        for (i = 0; i < length; i++) {
-            if (njs_is_valid(&array->start[i])) {
-                njs_uint32_to_string(&keys->start[n++], i);
+
+        switch (kind) {
+        case NJS_ENUM_KEYS:
+            for (i = 0; i < length; i++) {
+                if (njs_is_valid(&array->start[i])) {
+                    njs_uint32_to_string(item++, i);
+                }
             }
+
+            break;
+
+        case NJS_ENUM_VALUES:
+            for (i = 0; i < length; i++) {
+                if (njs_is_valid(&array->start[i])) {
+                    /* GC: retain. */
+                    *item++ = array->start[i];
+                }
+            }
+
+            break;
         }
 
-    } else {
-        for (i = 0; i < length; i++) {
-            njs_uint32_to_string(&keys->start[n++], i);
+    } else if (length != 0) {
+
+        switch (kind) {
+        case NJS_ENUM_KEYS:
+            for (i = 0; i < length; i++) {
+                njs_uint32_to_string(item++, i);
+            }
+
+            break;
+
+        case NJS_ENUM_VALUES:
+            if (string_prop.size == (size_t) length) {
+                /* Byte or ASCII string. */
+
+                for (i = 0; i < length; i++) {
+                    dst = njs_string_short_start(item);
+                    dst[0] = string_prop.start[i];
+
+                    njs_string_short_set(item, 1, 1);
+
+                    item++;
+                }
+
+            } else {
+                /* UTF-8 string. */
+
+                src = string_prop.start;
+                end = src + string_prop.size;
+
+                do {
+                    dst = njs_string_short_start(item);
+                    dst = nxt_utf8_copy(dst, &src, end);
+                    size = dst - njs_string_short_start(value);
+
+                    njs_string_short_set(item, size, 1);
+
+                    item++;
+
+                } while (src != end);
+            }
+
+            break;
         }
     }
 
     if (nxt_fast_path(properties != 0)) {
         nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
 
-        for ( ;; ) {
-            prop = nxt_lvlhsh_each(hash, &lhe);
+        switch (kind) {
 
-            if (prop == NULL) {
-                break;
+        case NJS_ENUM_KEYS:
+            for ( ;; ) {
+                prop = nxt_lvlhsh_each(hash, &lhe);
+
+                if (prop == NULL) {
+                    break;
+                }
+
+                if (prop->type != NJS_WHITEOUT && prop->enumerable) {
+                    njs_string_copy(item++, &prop->name);
+                }
             }
 
-            if (prop->type != NJS_WHITEOUT && prop->enumerable) {
-                njs_string_copy(&keys->start[n++], &prop->name);
+            break;
+
+        case NJS_ENUM_VALUES:
+            for ( ;; ) {
+                prop = nxt_lvlhsh_each(hash, &lhe);
+
+                if (prop == NULL) {
+                    break;
+                }
+
+                if (prop->type != NJS_WHITEOUT && prop->enumerable) {
+                    /* GC: retain. */
+                    *item++ = prop->value;
+                }
             }
+
+            break;
         }
     }
 
-    return keys;
+    return items;
 }
 
 
@@ -1850,6 +1959,14 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("keys"),
         .value = njs_native_function(njs_object_keys, 0,
+                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
+    },
+
+    /* ES8: Object.values(). */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("values"),
+        .value = njs_native_function(njs_object_values, 0,
                                      NJS_SKIP_ARG, NJS_OBJECT_ARG),
     },
 
