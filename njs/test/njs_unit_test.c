@@ -2244,6 +2244,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var s = ''; for (var p in [1,2]) {s += p}; s"),
       nxt_string("01") },
 
+    { nxt_string("var s; for (var p in [1]) {s = typeof(p)}; s"),
+      nxt_string("string") },
+
     { nxt_string("var s = ''; for (var p in {a:1, b:2}) {s += p}; s"),
       nxt_string("ab") },
 

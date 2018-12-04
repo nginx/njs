@@ -829,7 +829,7 @@ njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
                 n = next->index++;
 
                 if (njs_is_valid(&array->start[n])) {
-                    njs_value_number_set(retval, n);
+                    njs_uint32_to_string(retval, n);
 
                     return code->offset;
                 }
