@@ -27,20 +27,14 @@ if [ $nxt_found = no ]; then
     nxt_feature="clock_gettime(CLOCK_MONOTONIC) in librt"
     nxt_feature_libs="-lrt"
     . ${NXT_AUTO}feature
-fi
 
-if [ $nxt_found = yes ]; then
-    cat << END >> $NXT_MAKEFILE_CONF
+    if [ $nxt_found = yes ]; then
+        cat << END >> $NXT_MAKEFILE_CONF
 
-NXT_LIBRT = -lrt
+NXT_LIBRT =	-lrt
 END
 
-else
-    cat << END >> $NXT_MAKEFILE_CONF
-
-NXT_LIBRT =
-END
-
+    fi
 fi
 
 # Linux, FreeBSD, MacOSX.
