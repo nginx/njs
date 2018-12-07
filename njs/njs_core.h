@@ -32,6 +32,7 @@
 #include <njs_vm.h>
 #include <njs_variable.h>
 #include <njs_parser.h>
+#include <njs_generator.h>
 #include <njs_function.h>
 #include <njs_boolean.h>
 #include <njs_number.h>

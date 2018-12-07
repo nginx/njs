@@ -291,12 +291,12 @@ typedef struct njs_parser_patch_s   njs_parser_patch_t;
 
 struct njs_parser_patch_s {
     /*
-     * The address field points to jump offset field which contains a small
+     * The jump_offset field points to jump offset field which contains a small
      * adjustment and the adjustment should be added as (njs_ret_t *) because
      * pointer to u_char accesses only one byte so this does not work on big
      * endian platforms.
      */
-    njs_ret_t                       *address;
+    njs_ret_t                       jump_offset;
     njs_parser_patch_t              *next;
 };
 
@@ -393,14 +393,6 @@ void njs_parser_syntax_error(njs_vm_t *vm, njs_parser_t *parser,
     const char* fmt, ...);
 void njs_parser_ref_error(njs_vm_t *vm, njs_parser_t *parser, const char* fmt,
     ...);
-nxt_int_t njs_generate_scope(njs_vm_t *vm, njs_parser_t *parser,
-    njs_parser_node_t *node);
-
-
-#define njs_generate_code(parser, type, code)                                 \
-    do {                                                                      \
-        code = (type *) parser->code_end; parser->code_end += sizeof(type);   \
-    } while (0)
 
 
 extern const nxt_lvlhsh_proto_t  njs_keyword_hash_proto;

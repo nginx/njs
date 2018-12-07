@@ -523,7 +523,6 @@ njs_parser_function_expression(njs_vm_t *vm, njs_parser_t *parser)
     node->token_line = parser->lexer->token_line;
     node->scope = parser->scope;
     parser->node = node;
-    parser->code_size += sizeof(njs_vmcode_function_t);
 
     parser = njs_parser_function_create(vm, parser);
     if (nxt_slow_path(parser == NULL)) {
@@ -732,8 +731,6 @@ njs_parser_function_lambda(njs_vm_t *vm, njs_function_lambda_t *lambda,
         }
 
         node->right->token = NJS_TOKEN_RETURN;
-
-        parser->code_size += sizeof(njs_vmcode_return_t);
     }
 
     parser->parent->node->right = parser->node;
@@ -770,7 +767,6 @@ njs_parser_return_statement(njs_vm_t *vm, njs_parser_t *parser)
 
     node->token = NJS_TOKEN_RETURN;
     parser->node = node;
-    parser->code_size += sizeof(njs_vmcode_return_t);
 
     token = njs_lexer_token(parser->lexer);
     if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
@@ -891,7 +887,6 @@ njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser)
         stmt->left = left;
         stmt->right = assign;
         parser->node = stmt;
-        parser->code_size += sizeof(njs_vmcode_2addr_t);
 
         left = stmt;
 
@@ -942,7 +937,6 @@ njs_parser_if_statement(njs_vm_t *vm, njs_parser_t *parser)
         node->left = stmt;
         node->right = parser->node;
         parser->node = node;
-        parser->code_size += sizeof(njs_vmcode_jump_t);
     }
 
     node = njs_parser_node_alloc(vm);
@@ -954,7 +948,6 @@ njs_parser_if_statement(njs_vm_t *vm, njs_parser_t *parser)
     node->left = cond;
     node->right = parser->node;
     parser->node = node;
-    parser->code_size += sizeof(njs_vmcode_cond_jump_t);
 
     return token;
 }
@@ -1020,8 +1013,6 @@ njs_parser_switch_statement(njs_vm_t *vm, njs_parser_t *parser)
 
                     branch->right = node;
 
-                    parser->code_size += sizeof(njs_vmcode_equal_jump_t);
-
                } else {
                     if (dflt != NULL) {
                         njs_parser_syntax_error(vm, parser,
@@ -1071,7 +1062,6 @@ njs_parser_switch_statement(njs_vm_t *vm, njs_parser_t *parser)
     }
 
     parser->node = swtch;
-    parser->code_size += sizeof(njs_vmcode_move_t) + sizeof(njs_vmcode_jump_t);
 
     return njs_parser_token(parser);
 }
@@ -1104,8 +1094,6 @@ njs_parser_while_statement(njs_vm_t *vm, njs_parser_t *parser)
     node->left = parser->node;
     node->right = cond;
     parser->node = node;
-    parser->code_size += sizeof(njs_vmcode_jump_t)
-                         + sizeof(njs_vmcode_cond_jump_t);
 
     return token;
 }
@@ -1147,7 +1135,6 @@ njs_parser_do_while_statement(njs_vm_t *vm, njs_parser_t *parser)
     node->left = stmt;
     node->right = parser->node;
     parser->node = node;
-    parser->code_size += sizeof(njs_vmcode_cond_jump_t);
 
     return token;
 }
@@ -1272,8 +1259,7 @@ njs_parser_for_statement(njs_vm_t *vm, njs_parser_t *parser)
     body->right = update;
 
     parser->node = node;
-    parser->code_size += sizeof(njs_vmcode_jump_t)
-                         + sizeof(njs_vmcode_cond_jump_t);
+
     return token;
 }
 
@@ -1368,7 +1354,6 @@ njs_parser_for_var_statement(njs_vm_t *vm, njs_parser_t *parser)
         stmt->left = left;
         stmt->right = assign;
         parser->node = stmt;
-        parser->code_size += sizeof(njs_vmcode_2addr_t);
 
         left = stmt;
 
@@ -1424,8 +1409,7 @@ njs_parser_for_var_in_statement(njs_vm_t *vm, njs_parser_t *parser,
     foreach->right = parser->node;
 
     parser->node = foreach;
-    parser->code_size += sizeof(njs_vmcode_prop_foreach_t)
-                         + sizeof(njs_vmcode_prop_next_t);
+
     return token;
 }
 
@@ -1466,8 +1450,7 @@ njs_parser_for_in_statement(njs_vm_t *vm, njs_parser_t *parser, nxt_str_t *name,
 
     node->right = parser->node;
     parser->node = node;
-    parser->code_size += sizeof(njs_vmcode_prop_foreach_t)
-                         + sizeof(njs_vmcode_prop_next_t);
+
     return token;
 }
 
@@ -1486,7 +1469,6 @@ njs_parser_continue_statement(njs_vm_t *vm, njs_parser_t *parser)
     node->token = NJS_TOKEN_CONTINUE;
     node->token_line = parser->lexer->token_line;
     parser->node = node;
-    parser->code_size += sizeof(njs_vmcode_jump_t);
 
     token = njs_lexer_token(parser->lexer);
 
@@ -1521,7 +1503,6 @@ njs_parser_break_statement(njs_vm_t *vm, njs_parser_t *parser)
     node->token = NJS_TOKEN_BREAK;
     node->token_line = parser->lexer->token_line;
     parser->node = node;
-    parser->code_size += sizeof(njs_vmcode_jump_t);
 
     token = njs_lexer_token(parser->lexer);
 
@@ -1563,8 +1544,6 @@ njs_parser_try_statement(njs_vm_t *vm, njs_parser_t *parser)
     try->token = NJS_TOKEN_TRY;
     try->scope = parser->scope;
     try->left = parser->node;
-    parser->code_size += sizeof(njs_vmcode_try_start_t)
-                         + sizeof(njs_vmcode_try_end_t);
 
     if (token == NJS_TOKEN_CATCH) {
         token = njs_parser_token(parser);
@@ -1617,8 +1596,6 @@ njs_parser_try_statement(njs_vm_t *vm, njs_parser_t *parser)
 
         catch->left = node;
 
-        parser->code_size += sizeof(njs_vmcode_catch_t);
-
         token = njs_parser_token(parser);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
@@ -1655,12 +1632,9 @@ njs_parser_try_statement(njs_vm_t *vm, njs_parser_t *parser)
 
         if (try->right != NULL) {
             node->left = try->right;
-            parser->code_size += sizeof(njs_vmcode_try_end_t);
         }
 
         try->right = node;
-        parser->code_size += sizeof(njs_vmcode_catch_t)
-                             + sizeof(njs_vmcode_finally_t);
     }
 
     if (try->right == NULL) {
@@ -1842,7 +1816,6 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
             return NJS_TOKEN_ERROR;
         }
 
-        parser->code_size += sizeof(njs_vmcode_object_copy_t);
         break;
 
     case NJS_TOKEN_OPEN_BRACE:
@@ -1860,8 +1833,6 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
             node->left = parser->node;
             parser->node = node;
         }
-
-        parser->code_size += sizeof(njs_vmcode_1addr_t);
 
         return token;
 
@@ -1881,8 +1852,6 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
             parser->node = node;
         }
 
-        parser->code_size += sizeof(njs_vmcode_2addr_t);
-
         return token;
 
     case NJS_TOKEN_DIVISION:
@@ -1895,7 +1864,6 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
 
         node->token = NJS_TOKEN_REGEXP;
         node->scope = parser->scope;
-        parser->code_size += sizeof(njs_vmcode_regexp_t);
 
         break;
 
@@ -2002,8 +1970,6 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
         }
 
         node->token = NJS_TOKEN_ARGUMENTS;
-
-        parser->code_size += sizeof(njs_vmcode_arguments_t);
 
         break;
 
@@ -2127,7 +2093,6 @@ njs_parser_builtin_object(njs_vm_t *vm, njs_parser_t *parser,
     node->scope = parser->scope;
 
     parser->node = node;
-    parser->code_size += sizeof(njs_vmcode_object_copy_t);
 
     return njs_parser_token(parser);
 }
@@ -2160,7 +2125,6 @@ njs_parser_builtin_function(njs_vm_t *vm, njs_parser_t *parser,
     node->scope = parser->scope;
 
     parser->node = node;
-    parser->code_size += sizeof(njs_vmcode_object_copy_t);
 
     return njs_parser_token(parser);
 }
@@ -2207,7 +2171,6 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
         propref->token = NJS_TOKEN_PROPERTY;
         propref->left = object;
         propref->right = parser->node;
-        parser->code_size += sizeof(njs_vmcode_3addr_t);
 
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
@@ -2242,7 +2205,6 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
         stmt->left = left;
         stmt->right = assign;
 
-        parser->code_size += sizeof(njs_vmcode_2addr_t);
         parser->node = stmt;
 
         left = stmt;
@@ -2311,7 +2273,6 @@ njs_parser_array(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
         propref->token = NJS_TOKEN_PROPERTY;
         propref->left = object;
         propref->right = node;
-        parser->code_size += sizeof(njs_vmcode_3addr_t);
 
         token = njs_parser_assignment_expression(vm, parser, token);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
