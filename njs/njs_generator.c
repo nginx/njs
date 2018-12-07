@@ -452,6 +452,8 @@ njs_generate_reserve(njs_vm_t *vm, njs_generator_t *generator, size_t size)
     size = generator->code_end - generator->code_start;
     memcpy(p, generator->code_start, size);
 
+    nxt_mem_cache_free(vm->mem_cache_pool, generator->code_start);
+
     generator->code_start = p;
     generator->code_end = p + size;
 
@@ -2222,6 +2224,8 @@ njs_generate_function_scope(njs_vm_t *vm, njs_function_lambda_t *lambda,
 
         lambda->start = generator->code_start;
     }
+
+    nxt_mem_cache_free(vm->mem_cache_pool, generator);
 
     return ret;
 }
