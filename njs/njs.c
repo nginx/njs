@@ -220,6 +220,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     nxt_int_t          ret;
     njs_lexer_t        *lexer;
     njs_parser_t       *parser, *prev;
+    njs_generator_t    *generator;
     njs_parser_node_t  *node;
 
     parser = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_parser_t));
@@ -245,9 +246,6 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     lexer->line = 1;
     lexer->keywords_hash = vm->shared->keywords_hash;
 
-    parser->code_size = sizeof(njs_vmcode_stop_t);
-    parser->scope_offset = NJS_INDEX_GLOBAL_OFFSET;
-
     if (vm->backtrace != NULL) {
         nxt_array_reset(vm->backtrace);
     }
@@ -272,15 +270,25 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
      */
     vm->code = NULL;
 
-    ret = njs_generate_scope(vm, parser, node);
+    generator = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
+                                    sizeof(njs_generator_t));
+
+    if (nxt_slow_path(generator == NULL)) {
+        goto fail;
+    }
+
+    nxt_memzero(generator, sizeof(njs_generator_t));
+
+    ret = njs_generate_scope(vm, generator, node);
     if (nxt_slow_path(ret != NXT_OK)) {
         goto fail;
     }
 
-    vm->current = parser->code_start;
+    vm->current = generator->code_start;
 
-    vm->global_scope = parser->local_scope;
-    vm->scope_size = parser->scope_size;
+    vm->global_scope = generator->local_scope;
+    vm->scope_size = generator->scope_size;
+
     vm->variables_hash = parser->scope->variables;
 
     if (vm->options.init) {

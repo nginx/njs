@@ -24,7 +24,7 @@ static njs_token_t njs_parser_function_declaration(njs_vm_t *vm,
 static njs_parser_t *njs_parser_function_create(njs_vm_t *vm,
     njs_parser_t *parent);
 static njs_token_t njs_parser_function_lambda(njs_vm_t *vm,
-    njs_function_lambda_t *lambda, njs_token_t token);
+    njs_parser_t *parser, njs_function_lambda_t *lambda, njs_token_t token);
 static njs_token_t njs_parser_return_statement(njs_vm_t *vm,
     njs_parser_t *parser);
 static njs_token_t njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser);
@@ -494,9 +494,7 @@ njs_parser_function_declaration(njs_vm_t *vm, njs_parser_t *parser)
         return NJS_TOKEN_ERROR;
     }
 
-    function->u.lambda->parser = parser;
-
-    token = njs_parser_function_lambda(vm, function->u.lambda, token);
+    token = njs_parser_function_lambda(vm, parser, function->u.lambda, token);
 
     vm->parser = parser->parent;
 
@@ -575,9 +573,8 @@ njs_parser_function_expression(njs_vm_t *vm, njs_parser_t *parser)
     }
 
     node->u.value.data.u.lambda = lambda;
-    lambda->parser = parser;
 
-    token = njs_parser_function_lambda(vm, lambda, token);
+    token = njs_parser_function_lambda(vm, parser, lambda, token);
 
     njs_parser_scope_end(vm, parser);
 
@@ -607,16 +604,13 @@ njs_parser_function_create(njs_vm_t *vm, njs_parser_t *parent)
 
 
 static njs_token_t
-njs_parser_function_lambda(njs_vm_t *vm, njs_function_lambda_t *lambda,
-    njs_token_t token)
+njs_parser_function_lambda(njs_vm_t *vm, njs_parser_t *parser,
+    njs_function_lambda_t *lambda, njs_token_t token)
 {
     njs_ret_t          ret;
     njs_index_t        index;
-    njs_parser_t       *parser;
     njs_variable_t     *arg;
     njs_parser_node_t  *node, *body, *last;
-
-    parser = lambda->parser;
 
     ret = njs_parser_scope_begin(vm, parser, NJS_SCOPE_FUNCTION);
     if (nxt_slow_path(ret != NXT_OK)) {
@@ -1696,8 +1690,6 @@ njs_parser_throw_statement(njs_vm_t *vm, njs_parser_t *parser)
 
         node->right = parser->node;
         parser->node = node;
-
-        parser->code_size += sizeof(njs_vmcode_throw_t);
 
         return token;
     }

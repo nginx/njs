@@ -4361,7 +4361,7 @@ static const nxt_lvlhsh_proto_t  njs_values_hash_proto
  */
 
 njs_index_t
-njs_value_index(njs_vm_t *vm, njs_parser_t *parser, const njs_value_t *src)
+njs_value_index(njs_vm_t *vm, const njs_value_t *src, nxt_uint_t runtime)
 {
     u_char              *start;
     uint32_t            value_size, size, length;
@@ -4388,9 +4388,7 @@ njs_value_index(njs_vm_t *vm, njs_parser_t *parser, const njs_value_t *src)
     if (nxt_lvlhsh_find(&vm->shared->values_hash, &lhq) == NXT_OK) {
         value = lhq.value;
 
-    } else if (parser->runtime
-               && nxt_lvlhsh_find(&vm->values_hash, &lhq) == NXT_OK)
-    {
+    } else if (runtime && nxt_lvlhsh_find(&vm->values_hash, &lhq) == NXT_OK) {
         value = lhq.value;
 
     } else {
@@ -4431,8 +4429,7 @@ njs_value_index(njs_vm_t *vm, njs_parser_t *parser, const njs_value_t *src)
         lhq.value = value;
         lhq.pool = vm->mem_cache_pool;
 
-        values_hash = parser->runtime ? &vm->values_hash
-                                      : &vm->shared->values_hash;
+        values_hash = runtime ? &vm->values_hash : &vm->shared->values_hash;
 
         ret = nxt_lvlhsh_insert(values_hash, &lhq);
 

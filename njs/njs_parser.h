@@ -287,65 +287,11 @@ struct njs_parser_node_s {
     nxt_mem_cache_zalloc((vm)->mem_cache_pool, sizeof(njs_parser_node_t))
 
 
-typedef struct njs_parser_patch_s   njs_parser_patch_t;
-
-struct njs_parser_patch_s {
-    /*
-     * The jump_offset field points to jump offset field which contains a small
-     * adjustment and the adjustment should be added as (njs_ret_t *) because
-     * pointer to u_char accesses only one byte so this does not work on big
-     * endian platforms.
-     */
-    njs_ret_t                       jump_offset;
-    njs_parser_patch_t              *next;
-};
-
-
-typedef enum {
-    NJS_PARSER_BLOCK = 0,
-    NJS_PARSER_LOOP,
-    NJS_PARSER_SWITCH,
-} njs_parser_block_type_t;
-
-
-typedef struct njs_parser_block_s   njs_parser_block_t;
-
-struct njs_parser_block_s {
-    njs_parser_block_type_t         type;    /* 2 bits */
-    nxt_str_t                       label;
-    njs_parser_patch_t              *continuation;
-    njs_parser_patch_t              *exit;
-    njs_parser_block_t              *next;
-};
-
-
 struct njs_parser_s {
     njs_lexer_t                     *lexer;
     njs_parser_node_t               *node;
-
-    njs_parser_block_t              *block;
-
     njs_parser_scope_t              *scope;
-
-    nxt_array_t                     *index_cache;
-
-    /* Parsing Function() or eval(). */
-    uint8_t                         runtime;      /* 1 bit */
-
-    size_t                          code_size;
-
-    /* Generator. */
-
-    njs_value_t                     *local_scope;
-    size_t                          scope_size;
-    size_t                          scope_offset;
-
-    u_char                          *code_start;
-    u_char                          *code_end;
-
     njs_parser_t                    *parent;
-
-    nxt_uint_t                      arguments_object;
 };
 
 

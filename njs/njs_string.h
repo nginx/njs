@@ -168,8 +168,8 @@ njs_ret_t njs_string_decode_uri(njs_vm_t *vm, njs_value_t *args,
 njs_ret_t njs_string_decode_uri_component(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 
-njs_index_t njs_value_index(njs_vm_t *vm, njs_parser_t *parser,
-    const njs_value_t *src);
+njs_index_t njs_value_index(njs_vm_t *vm, const njs_value_t *src,
+    nxt_uint_t runtime);
 
 extern const njs_object_init_t  njs_string_constructor_init;
 extern const njs_object_init_t  njs_string_prototype_init;

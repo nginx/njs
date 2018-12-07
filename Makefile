@@ -141,6 +141,7 @@ $(NXT_BUILDDIR)/njs_shell.o: \
 	njs/njs_object.h \
 	njs/njs_function.h \
 	njs/njs_parser.h \
+	njs/njs_generator.h \
 	njs/njs.h \
 	njs/njs.c \
 
@@ -503,12 +504,8 @@ $(NXT_BUILDDIR)/njs_generator.o: \
 	njs/njs.h \
 	njs/njs_core.h \
 	njs/njs_vm.h \
-	njs/njs_number.h \
-	njs/njs_string.h \
-	njs/njs_object.h \
-	njs/njs_function.h \
-	njs/njs_variable.h \
 	njs/njs_parser.h \
+	njs/njs_generator.h \
 	njs/njs_generator.c \
 
 	$(NXT_CC) -c -o $(NXT_BUILDDIR)/njs_generator.o $(NXT_CFLAGS) \

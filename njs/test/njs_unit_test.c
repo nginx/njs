@@ -2355,6 +2355,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("continue"),
       nxt_string("SyntaxError: Illegal continue statement in 1") },
 
+    { nxt_string("\n{\ncontinue;\n}"),
+      nxt_string("SyntaxError: Illegal continue statement in 3") },
+
     { nxt_string("do continue while (false)"),
       nxt_string("SyntaxError: Unexpected token \"while\" in 1") },
 
@@ -2421,6 +2424,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("break"),
       nxt_string("SyntaxError: Illegal break statement in 1") },
+
+    { nxt_string("\nbreak"),
+      nxt_string("SyntaxError: Illegal break statement in 2") },
 
     { nxt_string("do break while (true)"),
       nxt_string("SyntaxError: Unexpected token \"while\" in 1") },
@@ -5285,6 +5291,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("{return}"),
       nxt_string("SyntaxError: Illegal return statement in 1") },
+
+    { nxt_string("\n{\nreturn;\n}"),
+      nxt_string("SyntaxError: Illegal return statement in 3") },
 
     { nxt_string("function f() { return f() } f()"),
       nxt_string("RangeError: Maximum call stack size exceeded") },

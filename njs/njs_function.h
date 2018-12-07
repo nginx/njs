@@ -37,7 +37,6 @@ struct njs_function_lambda_s {
     njs_value_t                    *closure_scope;
 
     u_char                         *start;
-    njs_parser_t                   *parser;
 };
 
 

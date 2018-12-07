@@ -139,6 +139,7 @@ typedef enum {
 
 
 typedef struct njs_parser_s           njs_parser_t;
+typedef struct njs_generator_s        njs_generator_t;
 
 /*
  * njs_prop_handler_t operates as a property getter and/or setter.
