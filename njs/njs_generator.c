@@ -438,7 +438,7 @@ njs_generate_reserve(njs_vm_t *vm, njs_generator_t *generator, size_t size)
         size *= 2;
 
     } else {
-        size += size/ 2;
+        size += size / 2;
     }
 
     p = nxt_mem_cache_alloc(vm->mem_cache_pool, size);
