@@ -326,6 +326,15 @@ njs_lexer_next_token(njs_lexer_t *lexer)
         case NJS_TOKEN_DOT:
             p = lexer->start;
 
+            if (p + 1 < lexer->end
+                && njs_tokens[p[0]] == NJS_TOKEN_DOT
+                && njs_tokens[p[1]] == NJS_TOKEN_DOT)
+            {
+                lexer->text.length = (p - lexer->text.start) + 2;
+                lexer->start += 2;
+                return NJS_TOKEN_ELLIPSIS;
+            }
+
             if (p == lexer->end || njs_tokens[*p] != NJS_TOKEN_DIGIT) {
                 lexer->text.length = p - lexer->text.start;
                 return NJS_TOKEN_DOT;

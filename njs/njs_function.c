@@ -168,6 +168,42 @@ njs_function_arguments_object_init(njs_vm_t *vm, njs_native_frame_t *frame)
 
 
 njs_ret_t
+njs_function_rest_parameters_init(njs_vm_t *vm, njs_native_frame_t *frame)
+{
+    uint32_t     length;
+    nxt_uint_t   nargs, n, i;
+    njs_array_t  *array;
+    njs_value_t  *rest_arguments;
+
+    nargs = frame->nargs;
+    n = frame->function->u.lambda->nargs;
+    length = (nargs >= n) ? (nargs - n + 1) : 0;
+
+    array = njs_array_alloc(vm, length, 0);
+    if (nxt_slow_path(array == NULL)) {
+        return NXT_ERROR;
+    }
+
+    if (n <= nargs) {
+        i = 0;
+        do {
+            /* GC: retain. */
+            array->start[i++] = frame->arguments[n++];
+        } while (n <= nargs);
+    }
+
+    rest_arguments = &frame->arguments[frame->function->u.lambda->nargs];
+
+    /* GC: retain. */
+    rest_arguments->type = NJS_ARRAY;
+    rest_arguments->data.u.array = array;
+    rest_arguments->data.truth = 1;
+
+    return NXT_OK;
+}
+
+
+njs_ret_t
 njs_function_arguments_thrower(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
@@ -482,6 +518,13 @@ njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
         }
     }
 
+    if (lambda->rest_parameters) {
+        ret = njs_function_rest_parameters_init(vm, &frame->native);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return NXT_ERROR;
+        }
+    }
+
     vm->active_frame = frame;
 
     return NJS_APPLIED;
@@ -600,8 +643,9 @@ static njs_ret_t
 njs_function_prototype_length(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
-    nxt_uint_t      n;
-    njs_function_t  *function;
+    nxt_uint_t             n;
+    njs_function_t         *function;
+    njs_function_lambda_t  *lambda;
 
     function = value->data.u.function;
 
@@ -613,10 +657,18 @@ njs_function_prototype_length(njs_vm_t *vm, njs_value_t *value,
         }
 
     } else {
-        n = function->u.lambda->nargs + 1;
+        lambda = function->u.lambda;
+        n = lambda->nargs + 1 - lambda->rest_parameters;
     }
 
-    njs_value_number_set(retval, n - function->args_offset);
+    if (n >= function->args_offset) {
+        n -= function->args_offset;
+
+    } else {
+        n = 0;
+    }
+
+    njs_value_number_set(retval, n);
 
     return NXT_OK;
 }

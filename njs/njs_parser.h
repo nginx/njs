@@ -29,6 +29,7 @@ typedef enum {
 
     NJS_TOKEN_COMMA,
     NJS_TOKEN_DOT,
+    NJS_TOKEN_ELLIPSIS,
     NJS_TOKEN_SEMICOLON,
 
     NJS_TOKEN_COLON,

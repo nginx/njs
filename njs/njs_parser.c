@@ -629,6 +629,19 @@ njs_parser_function_lambda(njs_vm_t *vm, njs_parser_t *parser,
 
     while (token != NJS_TOKEN_CLOSE_PARENTHESIS) {
 
+        if (nxt_slow_path(lambda->rest_parameters)) {
+            return NJS_TOKEN_ILLEGAL;
+        }
+
+        if (nxt_slow_path(token == NJS_TOKEN_ELLIPSIS)) {
+            lambda->rest_parameters = 1;
+
+            token = njs_parser_token(parser);
+            if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                return NJS_TOKEN_ILLEGAL;
+            }
+        }
+
         if (nxt_slow_path(token != NJS_TOKEN_NAME)) {
             return NJS_TOKEN_ILLEGAL;
         }

@@ -5310,8 +5310,18 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("function f() { }; f.length = 1"),
       nxt_string("TypeError: Cannot assign to read-only property 'length' of function") },
 
+    { nxt_string("function f(...rest) { }; f.length"),
+      nxt_string("0") },
+
+    { nxt_string("function f(...rest) { }; var binded = f.bind(this, [1,2]);"
+                 "binded.length"),
+      nxt_string("0") },
+
     { nxt_string("function f(a,b) { }; f.length"),
       nxt_string("2") },
+
+    { nxt_string("function f(a,...rest) { }; f.length"),
+      nxt_string("1") },
 
     { nxt_string("function f(a,b) { }; var ff = f.bind(f, 1); ff.length"),
       nxt_string("1") },
@@ -6062,6 +6072,36 @@ static njs_unit_test_t  njs_test[] =
                  "return args.join(sep)};"
                  "[concat('.',1,2,3), concat('+',1,2,3,4)]"),
       nxt_string("1.2.3,1+2+3+4") },
+
+    /* rest parameters. */
+
+    { nxt_string("function myFoo(a,b,...other) { return other };"
+                 "myFoo(1,2,3,4,5);" ),
+      nxt_string("3,4,5") },
+
+    { nxt_string("function myFoo(a,b,...other, c) { return other };"),
+      nxt_string("SyntaxError: Unexpected token \"c\" in 1") },
+
+    { nxt_string("function sum(a, b, c, ...other) { return a+b+c+other[2] };"
+                 "sum(\"one \",2,\" three \",\"four \",\"five \",\"the long enough sixth argument \");"),
+      nxt_string("one 2 three the long enough sixth argument ") },
+
+    { nxt_string("function myFoo1(a,...other) { return other };"
+                 "function myFoo2(a,b,...other) { return other };"
+                 "myFoo1(1,2,3,4,5,myFoo2(1,2,3,4));"),
+      nxt_string("2,3,4,5,3,4") },
+
+    { nxt_string("function myFoo(...other) { return (other instanceof Array) };"
+                 "myFoo(1);" ),
+      nxt_string("true") },
+
+    { nxt_string("function myFoo(a,...other) { return other.length };"
+                 "myFoo(1,2,3,4,5);" ),
+      nxt_string("4") },
+
+    { nxt_string("function myFoo(a,b,...other) { return other };"
+                 "myFoo(1,2);" ),
+      nxt_string("") },
 
     /* Scopes. */
 
