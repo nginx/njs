@@ -1,4 +1,30 @@
 
+Changes with njs 0.2.7                                           25 Dec 2018
+
+    Core:
+
+    *) Feature: rest parameters syntax (destructuring is not supported).
+       Thanks to Alexander Pyshchev.
+
+    *) Feature: added Object.entries() method.
+
+    *) Feature: added Object.values() method.
+
+    *) Improvement: code generator refactored and simplified.
+
+    *) Bugfix: fixed automatic semicolon insertion.
+
+    *) Bugfix: fixed assignment expression from compound assignment.
+
+    *) Bugfix: fixed comparison of Byte and UTF8 strings.
+
+    *) Bugfix: fixed type of iteration variable in for-in with array
+       values.
+
+    *) Bugfix: fixed building on paltforms without librt.
+
+    *) Bugfix: miscellaneous additional bugs have been fixed.
+
 Changes with njs 0.2.6                                           27 Nov 2018
 
     Core:
