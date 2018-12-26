@@ -132,7 +132,8 @@ start:
          *   njs_vmcode_function_call(),
          *   njs_vmcode_return(),
          *   njs_vmcode_try_start(),
-         *   njs_vmcode_try_next(),
+         *   njs_vmcode_try_continue(),
+         *   njs_vmcode_try_break(),
          *   njs_vmcode_try_end(),
          *   njs_vmcode_catch().
          *   njs_vmcode_throw().
@@ -2580,9 +2581,12 @@ njs_vmcode_stop(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
  */
 
 njs_ret_t
-njs_vmcode_try_start(njs_vm_t *vm, njs_value_t *value, njs_value_t *offset)
+njs_vmcode_try_start(njs_vm_t *vm, njs_value_t *exception_value,
+    njs_value_t *offset)
 {
-    njs_exception_t  *e;
+    njs_value_t             *exit_value;
+    njs_exception_t         *e;
+    njs_vmcode_try_start_t  *try_start;
 
     if (vm->top_frame->exception.catch != NULL) {
         e = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_exception_t));
@@ -2597,9 +2601,64 @@ njs_vmcode_try_start(njs_vm_t *vm, njs_value_t *value, njs_value_t *offset)
 
     vm->top_frame->exception.catch = vm->current + (njs_ret_t) offset;
 
-    njs_set_invalid(value);
+    njs_set_invalid(exception_value);
+
+    try_start = (njs_vmcode_try_start_t *) vm->current;
+    exit_value = njs_vmcode_operand(vm, try_start->exit_value);
+
+    njs_set_invalid(exit_value);
+    exit_value->data.u.number = 0;
 
     return sizeof(njs_vmcode_try_start_t);
+}
+
+
+/*
+ * njs_vmcode_try_break() sets exit_value to INVALID 1, and jumps to
+ * the nearest try_end block. The exit_value is checked by njs_vmcode_finally().
+ */
+
+nxt_noinline njs_ret_t
+njs_vmcode_try_break(njs_vm_t *vm, njs_value_t *exit_value,
+    njs_value_t *offset)
+{
+    exit_value->data.u.number = 1;
+
+    return (njs_ret_t) offset;
+}
+
+
+/*
+ * njs_vmcode_try_break() sets exit_value to INVALID -1, and jumps to
+ * the nearest try_end block. The exit_value is checked by njs_vmcode_finally().
+ */
+
+nxt_noinline njs_ret_t
+njs_vmcode_try_continue(njs_vm_t *vm, njs_value_t *exit_value,
+    njs_value_t *offset)
+{
+    exit_value->data.u.number = -1;
+
+    return (njs_ret_t) offset;
+}
+
+/*
+ * njs_vmcode_try_return() saves a return value to use it later by
+ * njs_vmcode_finally(), and jumps to the nearest try_end block.
+ */
+
+nxt_noinline njs_ret_t
+njs_vmcode_try_return(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
+{
+    njs_vmcode_try_return_t  *try_return;
+
+    vm->retval = *value;
+
+    njs_retain(value);
+
+    try_return = (njs_vmcode_try_return_t *) vm->current;
+
+    return try_return->offset;
 }
 
 
@@ -2664,24 +2723,48 @@ njs_vmcode_catch(njs_vm_t *vm, njs_value_t *exception, njs_value_t *offset)
 
 
 /*
- * njs_vmcode_finally() is set on the end of a "finally" block to throw
- * uncaught exception.
+ * njs_vmcode_finally() is set on the end of a "finally" or a "catch" block.
+ *   1) to throw uncaught exception.
+ *   2) to make a jump to an enslosing loop exit if "continue" or "break"
+ *      statement was used inside try block.
+ *   3) to finalize "return" instruction from "try" block.
  */
 
 njs_ret_t
 njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
 {
-    njs_value_t  *value;
+    njs_value_t           *exception_value, *exit_value;
+    njs_vmcode_finally_t  *finally;
 
-    value = njs_vmcode_operand(vm, retval);
+    exception_value = njs_vmcode_operand(vm, retval);
 
-    if (!njs_is_valid(value)) {
-        return sizeof(njs_vmcode_finally_t);
+    if (njs_is_valid(exception_value)) {
+        vm->retval = *exception_value;
+
+        return NXT_ERROR;
     }
 
-    vm->retval = *value;
+    finally = (njs_vmcode_finally_t *) vm->current;
+    exit_value = njs_vmcode_operand(vm, finally->exit_value);
 
-    return NXT_ERROR;
+    /*
+     * exit_value is set by:
+     *   vmcode_try_start to INVALID 0
+     *   vmcode_try_break to INVALID 1
+     *   vmcode_try_continue to INVALID -1
+     *   vmcode_try_return to a valid return value
+     */
+
+    if (njs_is_valid(exit_value)) {
+        return njs_vmcode_return(vm, NULL, exit_value);
+
+    } else if (exit_value->data.u.number != 0) {
+        return (njs_ret_t) (exit_value->data.u.number > 0)
+                                ? finally->break_offset
+                                : finally->continue_offset;
+    }
+
+    return sizeof(njs_vmcode_finally_t);
 }
 
 

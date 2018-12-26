@@ -125,8 +125,6 @@ static njs_code_name_t  code_names[] = {
 
     { njs_vmcode_throw, sizeof(njs_vmcode_throw_t),
           nxt_string("THROW           ") },
-    { njs_vmcode_finally, sizeof(njs_vmcode_finally_t),
-          nxt_string("FINALLY         ") },
 
 };
 
@@ -162,15 +160,18 @@ njs_disassemble(u_char *start, u_char *end)
     njs_vmcode_3addr_t           *code3;
     njs_vmcode_array_t           *array;
     njs_vmcode_catch_t           *catch;
+    njs_vmcode_finally_t         *finally;
     njs_vmcode_try_end_t         *try_end;
     njs_vmcode_try_start_t       *try_start;
     njs_vmcode_operation_t       operation;
     njs_vmcode_cond_jump_t       *cond_jump;
     njs_vmcode_test_jump_t       *test_jump;
     njs_vmcode_prop_next_t       *prop_next;
+    njs_vmcode_try_return_t      *try_return;
     njs_vmcode_equal_jump_t      *equal;
     njs_vmcode_prop_foreach_t    *prop_foreach;
     njs_vmcode_method_frame_t    *method;
+    njs_vmcode_try_trampoline_t  *try_tramp;
     njs_vmcode_function_frame_t  *function;
 
     p = start;
@@ -323,11 +324,49 @@ njs_disassemble(u_char *start, u_char *end)
         if (operation == njs_vmcode_try_start) {
             try_start = (njs_vmcode_try_start_t *) p;
 
-            printf("%05zd TRY START         %04zX +%zd\n",
-                   p - start, (size_t) try_start->value,
+            printf("%05zd TRY START         %04zX %04zX +%zd\n",
+                   p - start, (size_t) try_start->exception_value,
+                   (size_t) try_start->exit_value,
                    (size_t) try_start->offset);
 
             p += sizeof(njs_vmcode_try_start_t);
+
+            continue;
+        }
+
+        if (operation == njs_vmcode_try_break) {
+            try_tramp = (njs_vmcode_try_trampoline_t *) p;
+
+            printf("%05zd TRY BREAK         %04zX %zd\n",
+                   p - start, (size_t) try_tramp->exit_value,
+                   (size_t) try_tramp->offset);
+
+            p += sizeof(njs_vmcode_try_trampoline_t);
+
+            continue;
+        }
+
+        if (operation == njs_vmcode_try_continue) {
+            try_tramp = (njs_vmcode_try_trampoline_t *) p;
+
+            printf("%05zd TRY CONTINUE      %04zX %zd\n",
+                   p - start, (size_t) try_tramp->exit_value,
+                   (size_t) try_tramp->offset);
+
+            p += sizeof(njs_vmcode_try_trampoline_t);
+
+            continue;
+        }
+
+        if (operation == njs_vmcode_try_return) {
+            try_return = (njs_vmcode_try_return_t *) p;
+
+            printf("%05zd TRY RETURN        %04zX %04zX +%zd\n",
+                   p - start, (size_t) try_return->save,
+                   (size_t) try_return->retval,
+                   (size_t) try_return->offset);
+
+            p += sizeof(njs_vmcode_try_return_t);
 
             continue;
         }
@@ -351,6 +390,20 @@ njs_disassemble(u_char *start, u_char *end)
                    p - start, (size_t) try_end->offset);
 
             p += sizeof(njs_vmcode_try_end_t);
+
+            continue;
+        }
+
+        if (operation == njs_vmcode_finally) {
+            finally = (njs_vmcode_finally_t *) p;
+
+            printf("%05zd TRY FINALLY       %04zX %04zX +%zd +%zd\n",
+                   p - start, (size_t) finally->retval,
+                   (size_t) finally->exit_value,
+                   (size_t) finally->continue_offset,
+                   (size_t) finally->break_offset);
+
+            p += sizeof(njs_vmcode_finally_t);
 
             continue;
         }

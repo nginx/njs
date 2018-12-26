@@ -6619,6 +6619,286 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("throw\nnull"),
       nxt_string("SyntaxError: Illegal newline after throw in 2") },
 
+    { nxt_string("for (var x in [1,2]) { try{ continue; } catch(e) {} } throw 1"),
+      nxt_string("1") },
+
+    { nxt_string("for (var x in [1,2]) { try{ break; } catch(e) {} } throw 1"),
+      nxt_string("1") },
+
+    { nxt_string("try\n {\n continue; } catch(e) {}"),
+      nxt_string("SyntaxError: Illegal continue statement in 3") },
+
+    { nxt_string("var a = 1; "
+                 "switch (a) {"
+                 "default:"
+                 "  try\n {\n continue; } "
+                 "  catch(e) {}"
+                 "}"),
+      nxt_string("SyntaxError: Illegal continue statement in 3") },
+
+    { nxt_string("try\n {\n break; } catch(e) {}"),
+      nxt_string("SyntaxError: Illegal break statement in 3") },
+
+    { nxt_string("try\n { }\n catch(e) {continue;}"),
+      nxt_string("SyntaxError: Illegal continue statement in 3") },
+
+    { nxt_string("try { } catch(e) {break;}"),
+      nxt_string("SyntaxError: Illegal break statement in 1") },
+
+    { nxt_string("try { continue; } finally {}"),
+      nxt_string("SyntaxError: Illegal continue statement in 1") },
+
+    { nxt_string("try { break; } finally {}"),
+      nxt_string("SyntaxError: Illegal break statement in 1") },
+
+    { nxt_string("try\n {\n try\n {\n continue; } finally {} } finally {}"),
+      nxt_string("SyntaxError: Illegal continue statement in 5") },
+
+    /* break from try in try/catch. */
+
+    { nxt_string("function f(n) {"
+                 "    var pre = 0; var post = 0;"
+                 "    for (var x in [1, 2, 3]) {"
+                 "        pre++;"
+                 "        try { "
+                 "            if (n == 'b') {break;}"
+                 "        }"
+                 "        catch (e) {};"
+                 "        post++"
+                 "    }"
+                 "    return [pre, post];"
+                 "}; njs.dump([f(),f('b')])"),
+      nxt_string("[[3,3],"
+                  "[1,0]]") },
+
+    { nxt_string("function f(v, n) {"
+                 "    var pre = 0; var post = 0; var case2 = 0;"
+                 "    switch (v) {"
+                 "    case 1: "
+                 "        pre++;"
+                 "        try { "
+                 "            if (n == 'b') {break;}"
+                 "        }"
+                 "        catch (e) {};"
+                 "        post++;"
+                 "        break;"
+                 "    default:"
+                 "        case2++;"
+                 "    }"
+                 "    return [pre, post, case2];"
+                 "}; njs.dump([f(),f(1)])"),
+      nxt_string("[[0,0,1],"
+                  "[1,1,0]]") },
+
+    /* continue from try in try/catch. */
+
+    { nxt_string("function f(n) {"
+                 "    var pre = 0; var post = 0;"
+                 "    for (var x in [1, 2, 3]) {"
+                 "        pre++;"
+                 "        try { "
+                 "            if (n == 'c') {continue;}"
+                 "        }"
+                 "        catch (e) {};"
+                 "        post++"
+                 "    }"
+                 "    return [pre, post];"
+                 "}; njs.dump([f(),f('c')])"),
+      nxt_string("[[3,3],"
+                  "[3,0]]") },
+
+    /* Multiple break/continue from try in try/catch. */
+
+    { nxt_string("function f(n) {"
+                 "    var pre = 0; var mid = 0; var post = 0;"
+                 "    for (var x in [1, 2, 3]) {"
+                 "        pre++;"
+                 "        try { "
+                 "            if (n == 'c') {continue;}"
+                 "            if (n == 'b') {break;}"
+                 "            mid++;"
+                 "            if (n == 'c2') {continue;}"
+                 "            if (n == 'b2') {break;}"
+                 "        }"
+                 "        catch (e) {};"
+                 "        post++"
+                 "    }"
+                 "    return [pre, mid, post];"
+                 "}; njs.dump([f(),f('c'),f('b'),f('c2'),f('b2')])"),
+      nxt_string("[[3,3,3],"
+                  "[3,0,0],"
+                  "[1,0,0],"
+                  "[3,3,0],"
+                  "[1,1,0]]") },
+
+    /* Multiple break/continue from catch in try/catch. */
+
+    { nxt_string("function f(t, n) {"
+                 "    var pre = 0; var mid = 0; var post = 0;"
+                 "    for (var x in [1, 2, 3]) {"
+                 "        pre++;"
+                 "        try { "
+                 "            if (t) {throw 'a'}"
+                 "        }"
+                 "        catch (e) {"
+                 "            if (n == 'c') {continue;}"
+                 "            if (n == 'b') {break;}"
+                 "            mid++;"
+                 "            if (n == 'c2') {continue;}"
+                 "            if (n == 'b2') {break;}"
+                 "        };"
+                 "        post++"
+                 "    }"
+                 "    return [pre, mid, post];"
+                 "}; njs.dump([f(), f(1), f(1, 'c'), f(1, 'b'), f(1, 'c2'), f(1, 'b2')])"),
+      nxt_string("[[3,0,3],"
+                  "[3,3,3],"
+                  "[3,0,0],"
+                  "[1,0,0],"
+                  "[3,3,0],"
+                  "[1,1,0]]") },
+
+    /* break from try in try/finally. */
+
+    { nxt_string("function f(n) {"
+                 "    var pre = 0; var mid = 0; var fin = 0; var post = 0;"
+                 "    for (var x in [1, 2, 3]) {"
+                 "        pre++;"
+                 "        try { "
+                 "            if (n == 'c') {continue;}"
+                 "            if (n == 'b') {break;}"
+                 "            mid++;"
+                 "            if (n == 'c2') {continue;}"
+                 "            if (n == 'b2') {break;}"
+                 "        }"
+                 "        finally {fin++};"
+                 "        post++"
+                 "    }"
+                 "    return [pre, mid, fin, post];"
+                 "}; njs.dump([f(),f('c'),f('b'),f('c2'),f('b2')])"),
+      nxt_string("[[3,3,3,3],"
+                  "[3,0,3,0],"
+                  "[1,0,1,0],"
+                  "[3,3,3,0],"
+                  "[1,1,1,0]]") },
+
+    /* Multiple break/continue from try in try/catch/finally. */
+
+    { nxt_string("function f(n) {"
+                 "    var pre = 0; var mid = 0; var fin = 0; var post = 0;"
+                 "    for (var x in [1, 2, 3]) {"
+                 "        pre++;"
+                 "        try { "
+                 "            if (n == 'c') {continue;}"
+                 "            if (n == 'b') {break;}"
+                 "            mid++;"
+                 "            if (n == 'c2') {continue;}"
+                 "            if (n == 'b2') {break;}"
+                 "        }"
+                 "        catch (e) {}"
+                 "        finally {fin++};"
+                 "        post++"
+                 "    }"
+                 "    return [pre, mid, fin, post];"
+                 "}; njs.dump([f(),f('c'),f('b'),f('c2'),f('b2')])"),
+      nxt_string("[[3,3,3,3],"
+                  "[3,0,3,0],"
+                  "[1,0,1,0],"
+                  "[3,3,3,0],"
+                  "[1,1,1,0]]") },
+
+    /* Multiple break/continue from catch in try/catch/finally. */
+
+    { nxt_string("function f(t, n) {"
+                 "    var pre = 0; var mid = 0; var fin = 0; var post = 0;"
+                 "    for (var x in [1, 2, 3]) {"
+                 "        pre++;"
+                 "        try {if (t) {throw 'a'}}"
+                 "        catch (e) { "
+                 "            if (n == 'c') {continue;}"
+                 "            if (n == 'b') {break;}"
+                 "            mid++;"
+                 "            if (n == 'c2') {continue;}"
+                 "            if (n == 'b2') {break;}"
+                 "        }"
+                 "        finally {fin++};"
+                 "        post++"
+                 "    }"
+                 "    return [pre, mid, fin, post];"
+                 "}; njs.dump([f(), f(1), f(1, 'c'), f(1, 'b'), f(1, 'c2'), f(1, 'b2')])"),
+      nxt_string("[[3,0,3,3],"
+                  "[3,3,3,3],"
+                  "[3,0,3,0],"
+                  "[1,0,1,0],"
+                  "[3,3,3,0],"
+                  "[1,1,1,0]]") },
+
+    /* Multiple return from try. */
+
+    { nxt_string("var r = 0; "
+                 "function f(i, n) {"
+                 "   try { "
+                 "      var a = 'x'; "
+                 "      if (i != 0) {"
+                 "         return a.repeat(n);"
+                 "      } else {"
+                 "         return;"
+                 "      }"
+                 "   }"
+                 "   catch (e) {  } "
+                 "   finally { r++; }};"
+                 "[f(1,1), f(1,2), f(0), r]"),
+      nxt_string("x,xx,,3") },
+
+    { nxt_string("var r = 0; "
+                 "function f(i) {"
+                 "   try { "
+                 "      return i;"
+                 "   }"
+                 "   catch (e) {  } "
+                 "   finally { r++; }};"
+                 "[f(true), f(false), r]"),
+      nxt_string("true,false,2") },
+
+    /* Multiple return from catch. */
+
+    { nxt_string("var r = 0; "
+                 "function f(i, n) {"
+                 "   try { "
+                 "      throw 1;"
+                 "   }"
+                 "   catch (e) {  "
+                 "      var a = 'x'; "
+                 "      if (i != 0) {"
+                 "         return a.repeat(n);"
+                 "      } else {"
+                 "         return;"
+                 "      }"
+                 "   } "
+                 "   finally { r++; }};"
+                 "[f(1,1), f(1,2), f(0), r]"),
+      nxt_string("x,xx,,3") },
+
+    /* return overrun by finally. */
+
+    { nxt_string("function f() {"
+                 "   try { "
+                 "      return 'a';"
+                 "   }"
+                 "   catch (e) {  "
+                 "   } "
+                 "   finally { "
+                 "      return 'b'; "
+                 "   }}; "
+                 "f()"),
+      nxt_string("b") },
+
+    { nxt_string("(function (f, val) { "
+                 "  try { return f(val); } "
+                 "  finally { return val; }"
+                 "})(function () {throw 'a'}, 'v')"),
+      nxt_string("v") },
+
     { nxt_string("var o = { valueOf: function() { return '3' } }; --o"),
       nxt_string("2") },
 
