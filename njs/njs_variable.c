@@ -106,7 +106,7 @@ njs_reference_hash_test(nxt_lvlhsh_query_t *lhq, void *data)
 
     node = data;
 
-    if (nxt_strstr_eq(&lhq->key, &node->u.variable_name)) {
+    if (nxt_strstr_eq(&lhq->key, &node->u.variable_name.name)) {
         return NXT_OK;
     }
 
@@ -133,15 +133,15 @@ njs_variable_reference(njs_vm_t *vm, njs_parser_scope_t *scope,
     njs_ret_t           ret;
     nxt_lvlhsh_query_t  lhq;
 
-    ret = njs_name_copy(vm, &node->u.variable_name, name);
+    ret = njs_name_copy(vm, &node->u.variable_name.name, name);
 
     if (nxt_fast_path(ret == NXT_OK)) {
-        node->variable_name_hash = hash;
+        node->u.variable_name.hash = hash;
         node->scope = scope;
         node->reference = reference;
 
-        lhq.key_hash = node->variable_name_hash;
-        lhq.key = node->u.variable_name;
+        lhq.key_hash = node->u.variable_name.hash;
+        lhq.key = node->u.variable_name.name;
         lhq.proto = &njs_reference_hash_proto;
         lhq.replace = 0;
         lhq.value = node;
@@ -194,8 +194,8 @@ njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
 
             if (closure) {
                 ret = njs_variable_find(vm, node->scope, &vs,
-                                        &node->u.variable_name,
-                                        node->variable_name_hash);
+                                        &node->u.variable_name.name,
+                                        node->u.variable_name.hash);
                 if (nxt_slow_path(ret != NXT_OK)) {
                     continue;
                 }
@@ -262,8 +262,8 @@ njs_variable_typeof(njs_vm_t *vm, njs_parser_node_t *node)
         return node->index;
     }
 
-    ret = njs_variable_find(vm, node->scope, &vs, &node->u.variable_name,
-                            node->variable_name_hash);
+    ret = njs_variable_find(vm, node->scope, &vs, &node->u.variable_name.name,
+                            node->u.variable_name.hash);
 
     if (nxt_fast_path(ret == NXT_OK)) {
         return vs.variable->index;
@@ -303,8 +303,8 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
     njs_variable_t        *var;
     njs_variable_scope_t  vs;
 
-    ret = njs_variable_find(vm, node->scope, &vs, &node->u.variable_name,
-                            node->variable_name_hash);
+    ret = njs_variable_find(vm, node->scope, &vs, &node->u.variable_name.name,
+                            node->u.variable_name.hash);
 
     if (nxt_slow_path(ret != NXT_OK)) {
         goto not_found;

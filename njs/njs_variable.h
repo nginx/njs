@@ -26,6 +26,12 @@ typedef enum {
 
 
 typedef struct {
+    uint32_t              hash;
+    nxt_str_t             name;
+} njs_variable_name_t;
+
+
+typedef struct {
     nxt_str_t             name;
 
     njs_variable_type_t   type:8;    /* 3 bits */
