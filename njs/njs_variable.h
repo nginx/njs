@@ -18,6 +18,25 @@ typedef enum {
 } njs_variable_type_t;
 
 
+typedef struct {
+    nxt_str_t             name;
+
+    njs_variable_type_t   type:8;    /* 3 bits */
+    uint8_t               closure;   /* 1 bit  */
+    uint8_t               argument;
+
+    njs_index_t           index;
+    njs_value_t           value;
+} njs_variable_t;
+
+
+typedef struct {
+    nxt_lvlhsh_query_t    lhq;
+    njs_variable_t        *variable;
+    njs_parser_scope_t    *scope;
+} njs_variable_scope_t;
+
+
 typedef enum {
     NJS_DECLARATION = 0,
     NJS_REFERENCE,
@@ -29,19 +48,8 @@ typedef struct {
     njs_reference_type_t  type:2;
     uint32_t              hash;
     nxt_str_t             name;
+    njs_variable_scope_t  variable_scope;
 } njs_variable_reference_t;
-
-
-typedef struct {
-    nxt_str_t             name;
-
-    njs_variable_type_t   type:8;    /* 3 bits */
-    uint8_t               closure;   /* 1 bit  */
-    uint8_t               argument;
-
-    njs_index_t           index;
-    njs_value_t           value;
-} njs_variable_t;
 
 
 #define njs_global_variable_value(vm, var)                                    \
