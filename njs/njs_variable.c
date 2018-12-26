@@ -385,7 +385,7 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
 not_found:
 
     njs_parser_ref_error(vm, vm->parser, "\"%.*s\" is not defined",
-                         (int) vs->lhq.key.length, vs->lhq.key.start);
+                         (int) node->u.reference.name.length, node->u.reference.name.start);
 
     return NULL;
 }
@@ -394,21 +394,22 @@ not_found:
 static njs_ret_t
 njs_variable_find(njs_vm_t *vm, njs_parser_node_t *node)
 {
+    nxt_lvlhsh_query_t    lhq;
     njs_parser_scope_t    *scope, *parent, *previous;
     njs_variable_scope_t  *vs;
 
     vs = &node->u.reference.variable_scope;
 
-    vs->lhq.key_hash = node->u.reference.hash;
-    vs->lhq.key = node->u.reference.name;
-    vs->lhq.proto = &njs_variables_hash_proto;
+    lhq.key_hash = node->u.reference.hash;
+    lhq.key = node->u.reference.name;
+    lhq.proto = &njs_variables_hash_proto;
 
     scope = node->scope;
     previous = NULL;
 
     for ( ;; ) {
-        if (nxt_lvlhsh_find(&scope->variables, &vs->lhq) == NXT_OK) {
-            vs->variable = vs->lhq.value;
+        if (nxt_lvlhsh_find(&scope->variables, &lhq) == NXT_OK) {
+            vs->variable = lhq.value;
 
             if (scope->type == NJS_SCOPE_SHIM) {
                 scope = previous;

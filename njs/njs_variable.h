@@ -31,7 +31,6 @@ typedef struct {
 
 
 typedef struct {
-    nxt_lvlhsh_query_t    lhq;
     njs_variable_t        *variable;
     njs_parser_scope_t    *scope;
 } njs_variable_scope_t;
