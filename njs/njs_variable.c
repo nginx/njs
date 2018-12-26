@@ -16,8 +16,8 @@ typedef struct {
 } njs_variable_scope_t;
 
 
-static njs_ret_t njs_variable_find(njs_vm_t *vm, njs_parser_scope_t *scope,
-    njs_variable_scope_t *vs, nxt_str_t *name, uint32_t hash);
+static njs_ret_t njs_variable_find(njs_vm_t *vm, njs_parser_node_t *node,
+    njs_variable_scope_t *vs);
 static njs_variable_t *njs_variable_alloc(njs_vm_t *vm, nxt_str_t *name,
     njs_variable_type_t type);
 
@@ -193,9 +193,7 @@ njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
             }
 
             if (closure) {
-                ret = njs_variable_find(vm, node->scope, &vs,
-                                        &node->u.variable_name.name,
-                                        node->u.variable_name.hash);
+                ret = njs_variable_find(vm, node, &vs);
                 if (nxt_slow_path(ret != NXT_OK)) {
                     continue;
                 }
@@ -262,9 +260,7 @@ njs_variable_typeof(njs_vm_t *vm, njs_parser_node_t *node)
         return node->index;
     }
 
-    ret = njs_variable_find(vm, node->scope, &vs, &node->u.variable_name.name,
-                            node->u.variable_name.hash);
-
+    ret = njs_variable_find(vm, node, &vs);
     if (nxt_fast_path(ret == NXT_OK)) {
         return vs.variable->index;
     }
@@ -303,9 +299,7 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
     njs_variable_t        *var;
     njs_variable_scope_t  vs;
 
-    ret = njs_variable_find(vm, node->scope, &vs, &node->u.variable_name.name,
-                            node->u.variable_name.hash);
-
+    ret = njs_variable_find(vm, node, &vs);
     if (nxt_slow_path(ret != NXT_OK)) {
         goto not_found;
     }
@@ -402,10 +396,17 @@ not_found:
 
 
 static njs_ret_t
-njs_variable_find(njs_vm_t *vm, njs_parser_scope_t *scope,
-    njs_variable_scope_t *vs, nxt_str_t *name, uint32_t hash)
+njs_variable_find(njs_vm_t *vm, njs_parser_node_t *node,
+    njs_variable_scope_t *vs)
 {
+    uint32_t            hash;
+    nxt_str_t           *name;
+    njs_parser_scope_t  *scope;
     njs_parser_scope_t  *parent, *previous;
+
+    scope = node->scope;
+    name = &node->u.variable_name.name;
+    hash = node->u.variable_name.hash;
 
     vs->lhq.key_hash = hash;
     vs->lhq.key = *name;
