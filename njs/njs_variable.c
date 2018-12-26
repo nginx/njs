@@ -9,7 +9,7 @@
 #include <string.h>
 
 
-static njs_ret_t njs_variable_find(njs_vm_t *vm, njs_parser_scope_t *scope,
+static njs_ret_t njs_variable_find(njs_vm_t *vm, njs_parser_scope_t *node_scope,
     njs_variable_reference_t *vr);
 static njs_variable_t *njs_variable_alloc(njs_vm_t *vm, nxt_str_t *name,
     njs_variable_type_t type);
@@ -178,11 +178,7 @@ njs_variables_scope_index(njs_vm_t *vm, njs_parser_scope_t *scope,
                 continue;
             }
 
-            if (node->scope->nesting == vr->scope->nesting) {
-                /*
-                 * A variable is referenced locally here, but may be
-                 * referenced non-locally in other places, skipping.
-                 */
+            if (vr->scope_index == 0) {
                 continue;
             }
         }
@@ -292,11 +288,7 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
         goto not_found;
     }
 
-    scope_index = 0;
-
-    if (vr->scope->type > NJS_SCOPE_GLOBAL) {
-        scope_index = (node->scope->nesting != vr->scope->nesting);
-    }
+    scope_index = vr->scope_index;
 
     var = vr->variable;
     index = var->index;
@@ -386,16 +378,17 @@ not_found:
 
 
 static njs_ret_t
-njs_variable_find(njs_vm_t *vm, njs_parser_scope_t *scope,
+njs_variable_find(njs_vm_t *vm, njs_parser_scope_t *node_scope,
     njs_variable_reference_t *vr)
 {
     nxt_lvlhsh_query_t        lhq;
-    njs_parser_scope_t        *parent, *previous;
+    njs_parser_scope_t        *scope, *parent, *previous;
 
     lhq.key_hash = vr->hash;
     lhq.key = vr->name;
     lhq.proto = &njs_variables_hash_proto;
 
+    scope = node_scope;
     previous = NULL;
 
     for ( ;; ) {
@@ -416,6 +409,13 @@ njs_variable_find(njs_vm_t *vm, njs_parser_scope_t *scope,
             }
 
             vr->scope = scope;
+
+            if (vr->scope->type <= NJS_SCOPE_GLOBAL) {
+                vr->scope_index = 0;
+
+            } else {
+                vr->scope_index = (node_scope->nesting != vr->scope->nesting);
+            }
 
             return NXT_OK;
         }

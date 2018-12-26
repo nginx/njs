@@ -43,6 +43,7 @@ typedef struct {
     nxt_str_t             name;
     njs_variable_t        *variable;
     njs_parser_scope_t    *scope;
+    uint8_t               scope_index:2; /* 0: local, 1: closure */
 } njs_variable_reference_t;
 
 
