@@ -670,7 +670,7 @@ njs_parser_unary_expression(njs_vm_t *vm, njs_parser_t *parser,
     }
 
     if (token == NJS_TOKEN_TYPEOF && node->token == NJS_TOKEN_NAME) {
-        node->reference = NJS_TYPEOF;
+        node->u.reference.type = NJS_TYPEOF;
     }
 
     node = njs_parser_node_alloc(vm);

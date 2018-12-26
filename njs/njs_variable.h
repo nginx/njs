@@ -22,13 +22,14 @@ typedef enum {
     NJS_DECLARATION = 0,
     NJS_REFERENCE,
     NJS_TYPEOF,
-} njs_variable_reference_t;
+} njs_reference_type_t;
 
 
 typedef struct {
+    njs_reference_type_t  type:2;
     uint32_t              hash;
     nxt_str_t             name;
-} njs_variable_name_t;
+} njs_variable_reference_t;
 
 
 typedef struct {
@@ -52,7 +53,7 @@ njs_variable_t *njs_variable_add(njs_vm_t *vm, njs_parser_scope_t *scope,
     nxt_str_t *name, uint32_t hash, njs_variable_type_t type);
 njs_ret_t njs_variable_reference(njs_vm_t *vm, njs_parser_scope_t *scope,
     njs_parser_node_t *node, nxt_str_t *name, uint32_t hash,
-    njs_variable_reference_t reference);
+    njs_reference_type_t type);
 njs_ret_t njs_variables_scope_reference(njs_vm_t *vm,
     njs_parser_scope_t *scope);
 njs_ret_t njs_name_copy(njs_vm_t *vm, nxt_str_t *dst, nxt_str_t *src);

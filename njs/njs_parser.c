@@ -440,7 +440,7 @@ njs_parser_variable_add(njs_vm_t *vm, njs_parser_t *parser,
 
 nxt_inline njs_ret_t
 njs_parser_variable_reference(njs_vm_t *vm, njs_parser_t *parser,
-    njs_parser_node_t *node, njs_variable_reference_t type)
+    njs_parser_node_t *node, njs_reference_type_t type)
 {
     return njs_variable_reference(vm, parser->scope, node, &parser->lexer->text,
                                   parser->lexer->key_hash, type);

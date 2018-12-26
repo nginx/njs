@@ -106,7 +106,7 @@ njs_reference_hash_test(nxt_lvlhsh_query_t *lhq, void *data)
 
     node = data;
 
-    if (nxt_strstr_eq(&lhq->key, &node->u.variable_name.name)) {
+    if (nxt_strstr_eq(&lhq->key, &node->u.reference.name)) {
         return NXT_OK;
     }
 
@@ -128,20 +128,20 @@ const nxt_lvlhsh_proto_t  njs_reference_hash_proto
 njs_ret_t
 njs_variable_reference(njs_vm_t *vm, njs_parser_scope_t *scope,
     njs_parser_node_t *node, nxt_str_t *name, uint32_t hash,
-    njs_variable_reference_t reference)
+    njs_reference_type_t type)
 {
     njs_ret_t           ret;
     nxt_lvlhsh_query_t  lhq;
 
-    ret = njs_name_copy(vm, &node->u.variable_name.name, name);
+    ret = njs_name_copy(vm, &node->u.reference.name, name);
 
     if (nxt_fast_path(ret == NXT_OK)) {
-        node->u.variable_name.hash = hash;
+        node->u.reference.hash = hash;
         node->scope = scope;
-        node->reference = reference;
+        node->u.reference.type = type;
 
-        lhq.key_hash = node->u.variable_name.hash;
-        lhq.key = node->u.variable_name.name;
+        lhq.key_hash = node->u.reference.hash;
+        lhq.key = node->u.reference.name;
         lhq.proto = &njs_reference_hash_proto;
         lhq.replace = 0;
         lhq.value = node;
@@ -214,7 +214,7 @@ njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
             var = njs_variable_get(vm, node);
 
             if (nxt_slow_path(var == NULL)) {
-                if (node->reference != NJS_TYPEOF) {
+                if (node->u.reference.type != NJS_TYPEOF) {
                     return NXT_ERROR;
                 }
             }
@@ -333,7 +333,7 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
         var->argument = index;
     }
 
-    if (node->reference != NJS_DECLARATION && var->type <= NJS_VARIABLE_LET) {
+    if (node->u.reference.type != NJS_DECLARATION && var->type <= NJS_VARIABLE_LET) {
         goto not_found;
     }
 
@@ -401,8 +401,8 @@ njs_variable_find(njs_vm_t *vm, njs_parser_node_t *node,
 {
     njs_parser_scope_t  *scope, *parent, *previous;
 
-    vs->lhq.key_hash = node->u.variable_name.hash;
-    vs->lhq.key = node->u.variable_name.name;
+    vs->lhq.key_hash = node->u.reference.hash;
+    vs->lhq.key = node->u.reference.name;
     vs->lhq.proto = &njs_variables_hash_proto;
 
     scope = node->scope;
