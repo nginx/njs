@@ -250,8 +250,6 @@ struct njs_parser_scope_s {
 };
 
 
-typedef struct njs_parser_node_s    njs_parser_node_t;
-
 struct njs_parser_node_s {
     njs_token_t                     token:16;
     uint8_t                         ctor:1;
@@ -328,8 +326,9 @@ njs_token_t njs_parser_property_name(njs_vm_t *vm, njs_parser_t *parser,
 njs_token_t njs_parser_property_token(njs_parser_t *parser);
 njs_token_t njs_parser_token(njs_parser_t *parser);
 nxt_int_t njs_parser_string_create(njs_vm_t *vm, njs_value_t *value);
-njs_ret_t njs_variable_reference(njs_vm_t *vm, njs_parser_t *parser,
-    njs_parser_node_t *node, njs_variable_reference_t reference);
+njs_ret_t njs_variable_reference(njs_vm_t *vm, njs_parser_scope_t *scope,
+    njs_parser_node_t *node, nxt_str_t *name, uint32_t hash,
+    njs_variable_reference_t reference);
 njs_variable_t *njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node);
 njs_index_t njs_variable_typeof(njs_vm_t *vm, njs_parser_node_t *node);
 njs_index_t njs_variable_index(njs_vm_t *vm, njs_parser_node_t *node);

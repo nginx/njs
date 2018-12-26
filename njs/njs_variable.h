@@ -42,9 +42,11 @@ typedef struct {
          + njs_scope_offset((var)->index) - NJS_INDEX_GLOBAL_OFFSET)
 
 
-njs_variable_t *njs_builtin_add(njs_vm_t *vm, njs_parser_t *parser);
-njs_variable_t *njs_variable_add(njs_vm_t *vm, njs_parser_t *parser,
-    njs_variable_type_t type);
+njs_variable_t *njs_variable_add(njs_vm_t *vm, njs_parser_scope_t *scope,
+    nxt_str_t *name, uint32_t hash, njs_variable_type_t type);
+njs_ret_t njs_variable_reference(njs_vm_t *vm, njs_parser_scope_t *scope,
+    njs_parser_node_t *node, nxt_str_t *name, uint32_t hash,
+    njs_variable_reference_t reference);
 njs_ret_t njs_variables_scope_reference(njs_vm_t *vm,
     njs_parser_scope_t *scope);
 njs_ret_t njs_name_copy(njs_vm_t *vm, nxt_str_t *dst, nxt_str_t *src);

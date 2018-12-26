@@ -1,6 +1,7 @@
 
 /*
  * Copyright (C) Igor Sysoev
+ * Copyright (C) Dmitry Volyntsev
  * Copyright (C) NGINX, Inc.
  */
 
@@ -15,8 +16,8 @@ typedef struct {
 } njs_variable_scope_t;
 
 
-static njs_ret_t njs_variable_find(njs_vm_t *vm, njs_parser_node_t *node,
-    njs_variable_scope_t *vs);
+static njs_ret_t  njs_variable_find(njs_vm_t *vm, njs_parser_scope_t *scope,
+    njs_variable_scope_t *vs, nxt_str_t *name, uint32_t hash);
 static njs_variable_t *njs_variable_alloc(njs_vm_t *vm, nxt_str_t *name,
     njs_variable_type_t type);
 
@@ -48,66 +49,16 @@ const nxt_lvlhsh_proto_t  njs_variables_hash_proto
 
 
 njs_variable_t *
-njs_builtin_add(njs_vm_t *vm, njs_parser_t *parser)
+njs_variable_add(njs_vm_t *vm, njs_parser_scope_t *scope, nxt_str_t *name,
+    uint32_t hash, njs_variable_type_t type)
 {
     nxt_int_t           ret;
     njs_variable_t      *var;
-    njs_parser_scope_t  *scope;
     nxt_lvlhsh_query_t  lhq;
 
-    lhq.key_hash = parser->lexer->key_hash;
-    lhq.key = parser->lexer->text;
+    lhq.key_hash = hash;
+    lhq.key = *name;
     lhq.proto = &njs_variables_hash_proto;
-
-    scope = parser->scope;
-
-    while (scope->type != NJS_SCOPE_GLOBAL) {
-        scope = scope->parent;
-    }
-
-    if (nxt_lvlhsh_find(&scope->variables, &lhq) == NXT_OK) {
-        var = lhq.value;
-
-        return var;
-    }
-
-    var = njs_variable_alloc(vm, &lhq.key, NJS_VARIABLE_VAR);
-    if (nxt_slow_path(var == NULL)) {
-        return var;
-    }
-
-    lhq.replace = 0;
-    lhq.value = var;
-    lhq.pool = vm->mem_cache_pool;
-
-    ret = nxt_lvlhsh_insert(&scope->variables, &lhq);
-
-    if (nxt_fast_path(ret == NXT_OK)) {
-        return var;
-    }
-
-    njs_internal_error(vm, "lvlhsh insert failed");
-
-    nxt_mem_cache_free(vm->mem_cache_pool, var->name.start);
-    nxt_mem_cache_free(vm->mem_cache_pool, var);
-
-    return NULL;
-}
-
-
-njs_variable_t *
-njs_variable_add(njs_vm_t *vm, njs_parser_t *parser, njs_variable_type_t type)
-{
-    nxt_int_t           ret;
-    njs_variable_t      *var;
-    njs_parser_scope_t  *scope;
-    nxt_lvlhsh_query_t  lhq;
-
-    lhq.key_hash = parser->lexer->key_hash;
-    lhq.key = parser->lexer->text;
-    lhq.proto = &njs_variables_hash_proto;
-
-    scope = parser->scope;
 
     if (type >= NJS_VARIABLE_VAR) {
         /*
@@ -175,17 +126,18 @@ const nxt_lvlhsh_proto_t  njs_reference_hash_proto
 
 
 njs_ret_t
-njs_variable_reference(njs_vm_t *vm, njs_parser_t *parser,
-    njs_parser_node_t *node, njs_variable_reference_t reference)
+njs_variable_reference(njs_vm_t *vm, njs_parser_scope_t *scope,
+    njs_parser_node_t *node, nxt_str_t *name, uint32_t hash,
+    njs_variable_reference_t reference)
 {
     njs_ret_t           ret;
     nxt_lvlhsh_query_t  lhq;
 
-    ret = njs_name_copy(vm, &node->u.variable_name, &parser->lexer->text);
+    ret = njs_name_copy(vm, &node->u.variable_name, name);
 
     if (nxt_fast_path(ret == NXT_OK)) {
-        node->variable_name_hash = parser->lexer->key_hash;
-        node->scope = parser->scope;
+        node->variable_name_hash = hash;
+        node->scope = scope;
         node->reference = reference;
 
         lhq.key_hash = node->variable_name_hash;
@@ -195,7 +147,7 @@ njs_variable_reference(njs_vm_t *vm, njs_parser_t *parser,
         lhq.value = node;
         lhq.pool = vm->mem_cache_pool;
 
-        ret = nxt_lvlhsh_insert(&parser->scope->references, &lhq);
+        ret = nxt_lvlhsh_insert(&scope->references, &lhq);
 
         if (nxt_slow_path(ret != NXT_ERROR)) {
             ret = NXT_OK;
@@ -241,7 +193,9 @@ njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
             }
 
             if (!local_scope) {
-                ret = njs_variable_find(vm, node, &vs);
+                ret = njs_variable_find(vm, node->scope, &vs,
+                                        &node->u.variable_name,
+                                        node->variable_name_hash);
                 if (nxt_slow_path(ret != NXT_OK)) {
                     continue;
                 }
@@ -308,7 +262,8 @@ njs_variable_typeof(njs_vm_t *vm, njs_parser_node_t *node)
         return node->index;
     }
 
-    ret = njs_variable_find(vm, node, &vs);
+    ret = njs_variable_find(vm, node->scope, &vs, &node->u.variable_name,
+                            node->variable_name_hash);
 
     if (nxt_fast_path(ret == NXT_OK)) {
         return vs.variable->index;
@@ -348,7 +303,8 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
     njs_variable_t        *var;
     njs_variable_scope_t  vs;
 
-    ret = njs_variable_find(vm, node, &vs);
+    ret = njs_variable_find(vm, node->scope, &vs, &node->u.variable_name,
+                            node->variable_name_hash);
 
     if (nxt_slow_path(ret != NXT_OK)) {
         goto not_found;
@@ -446,17 +402,16 @@ not_found:
 
 
 static njs_ret_t
-njs_variable_find(njs_vm_t *vm, njs_parser_node_t *node,
-    njs_variable_scope_t *vs)
+njs_variable_find(njs_vm_t *vm, njs_parser_scope_t *scope,
+    njs_variable_scope_t *vs, nxt_str_t *name, uint32_t hash)
 {
-    njs_parser_scope_t  *scope, *parent, *previous;
+    njs_parser_scope_t  *parent, *previous;
 
-    vs->lhq.key_hash = node->variable_name_hash;
-    vs->lhq.key = node->u.variable_name;
+    vs->lhq.key_hash = hash;
+    vs->lhq.key = *name;
     vs->lhq.proto = &njs_variables_hash_proto;
 
     previous = NULL;
-    scope = node->scope;
 
     for ( ;; ) {
         if (nxt_lvlhsh_find(&scope->variables, &vs->lhq) == NXT_OK) {
@@ -516,6 +471,8 @@ njs_variable_alloc(njs_vm_t *vm, nxt_str_t *name, njs_variable_type_t type)
     }
 
     nxt_mem_cache_free(vm->mem_cache_pool, var);
+
+    njs_memory_error(vm);
 
     return NULL;
 }
