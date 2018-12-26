@@ -399,19 +399,13 @@ static njs_ret_t
 njs_variable_find(njs_vm_t *vm, njs_parser_node_t *node,
     njs_variable_scope_t *vs)
 {
-    uint32_t            hash;
-    nxt_str_t           *name;
-    njs_parser_scope_t  *scope;
-    njs_parser_scope_t  *parent, *previous;
+    njs_parser_scope_t  *scope, *parent, *previous;
 
-    scope = node->scope;
-    name = &node->u.variable_name.name;
-    hash = node->u.variable_name.hash;
-
-    vs->lhq.key_hash = hash;
-    vs->lhq.key = *name;
+    vs->lhq.key_hash = node->u.variable_name.hash;
+    vs->lhq.key = node->u.variable_name.name;
     vs->lhq.proto = &njs_variables_hash_proto;
 
+    scope = node->scope;
     previous = NULL;
 
     for ( ;; ) {
