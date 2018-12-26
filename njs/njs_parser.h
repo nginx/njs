@@ -325,7 +325,6 @@ njs_token_t njs_parser_property_token(njs_parser_t *parser);
 njs_token_t njs_parser_token(njs_parser_t *parser);
 nxt_int_t njs_parser_string_create(njs_vm_t *vm, njs_value_t *value);
 njs_variable_t *njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node);
-njs_index_t njs_variable_typeof(njs_vm_t *vm, njs_parser_node_t *node);
 njs_index_t njs_variable_index(njs_vm_t *vm, njs_parser_node_t *node);
 nxt_bool_t njs_parser_has_side_effect(njs_parser_node_t *node);
 u_char *njs_parser_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,

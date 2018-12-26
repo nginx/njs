@@ -170,14 +170,11 @@ njs_variables_scope_index(njs_vm_t *vm, njs_parser_scope_t *scope,
             break;
         }
 
+        vr = &node->u.reference;
+
         if (closure) {
-            vr = &node->u.reference;
             ret = njs_variable_find(vm, node->scope, vr);
             if (nxt_slow_path(ret != NXT_OK)) {
-                continue;
-            }
-
-            if (vr->scope->type == NJS_SCOPE_GLOBAL) {
                 continue;
             }
 
@@ -193,7 +190,7 @@ njs_variables_scope_index(njs_vm_t *vm, njs_parser_scope_t *scope,
         var = njs_variable_get(vm, node);
 
         if (nxt_slow_path(var == NULL)) {
-            if (node->u.reference.type != NJS_TYPEOF) {
+            if (vr->type != NJS_TYPEOF) {
                 return NXT_ERROR;
             }
         }
@@ -204,17 +201,15 @@ njs_variables_scope_index(njs_vm_t *vm, njs_parser_scope_t *scope,
 
 
 static njs_ret_t
-njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
+njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *parent,
     nxt_bool_t closure)
 {
     njs_ret_t                 ret;
-    nxt_queue_t               *nested;
     nxt_queue_link_t          *lnk;
+    njs_parser_scope_t        *scope;
 
-    nested = &scope->nested;
-
-    for (lnk = nxt_queue_first(nested);
-         lnk != nxt_queue_tail(nested);
+    for (lnk = nxt_queue_first(&parent->nested);
+         lnk != nxt_queue_tail(&parent->nested);
          lnk = nxt_queue_next(lnk))
     {
         scope = nxt_queue_link_data(lnk, njs_parser_scope_t, link);
@@ -223,11 +218,11 @@ njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
         if (nxt_slow_path(ret != NXT_OK)) {
             return NXT_ERROR;
         }
+    }
 
-        ret = njs_variables_scope_index(vm, scope, closure);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return NXT_ERROR;
-        }
+    ret = njs_variables_scope_index(vm, parent, closure);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NXT_ERROR;
     }
 
     return NXT_OK;
@@ -260,30 +255,9 @@ njs_variables_scope_reference(njs_vm_t *vm, njs_parser_scope_t *scope)
 
 
 njs_index_t
-njs_variable_typeof(njs_vm_t *vm, njs_parser_node_t *node)
-{
-    nxt_int_t                 ret;
-    njs_variable_reference_t  *vr;
-
-    if (node->index != NJS_INDEX_NONE) {
-        return node->index;
-    }
-
-    vr = &node->u.reference;
-
-    ret = njs_variable_find(vm, node->scope, vr);
-    if (nxt_fast_path(ret == NXT_OK)) {
-        return vr->variable->index;
-    }
-
-    return NJS_INDEX_NONE;
-}
-
-
-njs_index_t
 njs_variable_index(njs_vm_t *vm, njs_parser_node_t *node)
 {
-    njs_variable_t  *var;
+    njs_variable_t            *var;
 
     if (node->index != NJS_INDEX_NONE) {
         return node->index;
@@ -291,11 +265,12 @@ njs_variable_index(njs_vm_t *vm, njs_parser_node_t *node)
 
     var = njs_variable_get(vm, node);
 
-    if (nxt_fast_path(var != NULL)) {
+    if (nxt_fast_path(var != NXT_OK)) {
         return var->index;
     }
 
-    return NJS_INDEX_ERROR;
+    return node->u.reference.type == NJS_TYPEOF 
+               ? NJS_INDEX_NONE : NJS_INDEX_ERROR;
 }
 
 
@@ -401,8 +376,10 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
 
 not_found:
 
-    njs_parser_ref_error(vm, vm->parser, "\"%.*s\" is not defined",
-                         (int) vr->name.length, vr->name.start);
+    if (vr->type != NJS_TYPEOF) {
+        njs_parser_ref_error(vm, vm->parser, "\"%.*s\" is not defined",
+                             (int) vr->name.length, vr->name.start);
+    }
 
     return NULL;
 }
