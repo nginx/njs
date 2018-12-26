@@ -30,12 +30,6 @@ typedef struct {
 } njs_variable_t;
 
 
-typedef struct {
-    njs_variable_t        *variable;
-    njs_parser_scope_t    *scope;
-} njs_variable_scope_t;
-
-
 typedef enum {
     NJS_DECLARATION = 0,
     NJS_REFERENCE,
@@ -47,7 +41,8 @@ typedef struct {
     njs_reference_type_t  type:2;
     uint32_t              hash;
     nxt_str_t             name;
-    njs_variable_scope_t  variable_scope;
+    njs_variable_t        *variable;
+    njs_parser_scope_t    *scope;
 } njs_variable_reference_t;
 
 

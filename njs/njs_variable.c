@@ -154,13 +154,13 @@ static njs_ret_t
 njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
     nxt_bool_t closure)
 {
-    njs_ret_t             ret;
-    nxt_queue_t           *nested;
-    njs_variable_t        *var;
-    nxt_queue_link_t      *lnk;
-    njs_parser_node_t     *node;
-    nxt_lvlhsh_each_t     lhe;
-    njs_variable_scope_t  *vs;
+    njs_ret_t                 ret;
+    nxt_queue_t               *nested;
+    njs_variable_t            *var;
+    nxt_queue_link_t          *lnk;
+    njs_parser_node_t         *node;
+    nxt_lvlhsh_each_t         lhe;
+    njs_variable_reference_t  *vr;
 
     nested = &scope->nested;
 
@@ -190,13 +190,13 @@ njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
                     continue;
                 }
 
-                vs = &node->u.reference.variable_scope;
+                vr = &node->u.reference;
 
-                if (vs->scope->type == NJS_SCOPE_GLOBAL) {
+                if (vr->scope->type == NJS_SCOPE_GLOBAL) {
                     continue;
                 }
 
-                if (node->scope->nesting == vs->scope->nesting) {
+                if (node->scope->nesting == vr->scope->nesting) {
                     /*
                      * A variable is referenced locally here, but may be
                      * referenced non-locally in other places, skipping.
@@ -255,7 +255,7 @@ njs_variable_typeof(njs_vm_t *vm, njs_parser_node_t *node)
 
     ret = njs_variable_find(vm, node);
     if (nxt_fast_path(ret == NXT_OK)) {
-        return node->u.reference.variable_scope.variable->index;
+        return node->u.reference.variable->index;
     }
 
     return NJS_INDEX_NONE;
@@ -284,17 +284,17 @@ njs_variable_index(njs_vm_t *vm, njs_parser_node_t *node)
 njs_variable_t *
 njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
 {
-    nxt_int_t             ret;
-    nxt_uint_t            scope_index;
-    nxt_array_t           *values;
-    njs_index_t           index;
-    njs_value_t           *value;
-    njs_variable_t        *var;
-    njs_variable_scope_t  *vs;
+    nxt_int_t                 ret;
+    nxt_uint_t                scope_index;
+    nxt_array_t               *values;
+    njs_index_t               index;
+    njs_value_t               *value;
+    njs_variable_t            *var;
+    njs_variable_reference_t  *vr;
 
     ret = njs_variable_find(vm, node);
 
-    vs = &node->u.reference.variable_scope;
+    vr = &node->u.reference;
 
     if (nxt_slow_path(ret != NXT_OK)) {
         goto not_found;
@@ -302,11 +302,11 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
 
     scope_index = 0;
 
-    if (vs->scope->type > NJS_SCOPE_GLOBAL) {
-        scope_index = (node->scope->nesting != vs->scope->nesting);
+    if (vr->scope->type > NJS_SCOPE_GLOBAL) {
+        scope_index = (node->scope->nesting != vr->scope->nesting);
     }
 
-    var = vs->variable;
+    var = vr->variable;
     index = var->index;
 
     if (index != NJS_INDEX_NONE) {
@@ -317,10 +317,10 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
             return var;
         }
 
-        vs->scope->argument_closures++;
+        vr->scope->argument_closures++;
         index = (index >> NJS_SCOPE_SHIFT) + 1;
 
-        if (index > 255 || vs->scope->argument_closures == 0) {
+        if (index > 255 || vr->scope->argument_closures == 0) {
             njs_internal_error(vm, "too many argument closures");
 
             return NULL;
@@ -333,7 +333,7 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
         goto not_found;
     }
 
-    if (vm->options.accumulative && vs->scope->type == NJS_SCOPE_GLOBAL) {
+    if (vm->options.accumulative && vr->scope->type == NJS_SCOPE_GLOBAL) {
         /*
          * When non-clonable VM runs in accumulative mode all
          * global variables should be allocated in absolute scope
@@ -349,7 +349,7 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
         index = (njs_index_t) value;
 
     } else {
-        values = vs->scope->values[scope_index];
+        values = vr->scope->values[scope_index];
 
         if (values == NULL) {
             values = nxt_array_create(4, sizeof(njs_value_t),
@@ -358,7 +358,7 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
                 return NULL;
             }
 
-            vs->scope->values[scope_index] = values;
+            vr->scope->values[scope_index] = values;
         }
 
         value = nxt_array_add(values, &njs_array_mem_proto, vm->mem_cache_pool);
@@ -366,8 +366,8 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
             return NULL;
         }
 
-        index = vs->scope->next_index[scope_index];
-        vs->scope->next_index[scope_index] += sizeof(njs_value_t);
+        index = vr->scope->next_index[scope_index];
+        vr->scope->next_index[scope_index] += sizeof(njs_value_t);
     }
 
     if (njs_is_object(&var->value)) {
@@ -394,11 +394,11 @@ not_found:
 static njs_ret_t
 njs_variable_find(njs_vm_t *vm, njs_parser_node_t *node)
 {
-    nxt_lvlhsh_query_t    lhq;
-    njs_parser_scope_t    *scope, *parent, *previous;
-    njs_variable_scope_t  *vs;
+    nxt_lvlhsh_query_t        lhq;
+    njs_parser_scope_t        *scope, *parent, *previous;
+    njs_variable_reference_t  *vr;
 
-    vs = &node->u.reference.variable_scope;
+    vr = &node->u.reference;
 
     lhq.key_hash = node->u.reference.hash;
     lhq.key = node->u.reference.name;
@@ -409,7 +409,7 @@ njs_variable_find(njs_vm_t *vm, njs_parser_node_t *node)
 
     for ( ;; ) {
         if (nxt_lvlhsh_find(&scope->variables, &lhq) == NXT_OK) {
-            vs->variable = lhq.value;
+            vr->variable = lhq.value;
 
             if (scope->type == NJS_SCOPE_SHIM) {
                 scope = previous;
@@ -424,7 +424,7 @@ njs_variable_find(njs_vm_t *vm, njs_parser_node_t *node)
                 }
             }
 
-            vs->scope = scope;
+            vr->scope = scope;
 
             return NXT_OK;
         }
@@ -433,7 +433,7 @@ njs_variable_find(njs_vm_t *vm, njs_parser_node_t *node)
 
         if (parent == NULL) {
             /* A global scope. */
-            vs->scope = scope;
+            vr->scope = scope;
 
             return NXT_DECLINED;
         }
