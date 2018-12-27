@@ -160,7 +160,7 @@ njs_variable_reference(njs_vm_t *vm, njs_parser_scope_t *scope,
 
 static njs_ret_t
 njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
-    nxt_bool_t local_scope)
+    nxt_bool_t closure)
 {
     njs_ret_t             ret;
     nxt_queue_t           *nested;
@@ -178,7 +178,7 @@ njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
     {
         scope = nxt_queue_link_data(lnk, njs_parser_scope_t, link);
 
-        ret = njs_variables_scope_resolve(vm, scope, local_scope);
+        ret = njs_variables_scope_resolve(vm, scope, closure);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NXT_ERROR;
         }
@@ -192,7 +192,7 @@ njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
                 break;
             }
 
-            if (!local_scope) {
+            if (closure) {
                 ret = njs_variable_find(vm, node->scope, &vs,
                                         &node->u.variable_name,
                                         node->variable_name_hash);
@@ -238,12 +238,12 @@ njs_variables_scope_reference(njs_vm_t *vm, njs_parser_scope_t *scope)
      * only in the local scope (reference and definition nestings are the same).
      */
 
-    ret = njs_variables_scope_resolve(vm, scope, 0);
+    ret = njs_variables_scope_resolve(vm, scope, 1);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NXT_ERROR;
     }
 
-    ret = njs_variables_scope_resolve(vm, scope, 1);
+    ret = njs_variables_scope_resolve(vm, scope, 0);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NXT_ERROR;
     }
