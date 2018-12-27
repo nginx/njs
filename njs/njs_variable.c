@@ -16,7 +16,7 @@ typedef struct {
 } njs_variable_scope_t;
 
 
-static njs_ret_t  njs_variable_find(njs_vm_t *vm, njs_parser_scope_t *scope,
+static njs_ret_t njs_variable_find(njs_vm_t *vm, njs_parser_scope_t *scope,
     njs_variable_scope_t *vs, nxt_str_t *name, uint32_t hash);
 static njs_variable_t *njs_variable_alloc(njs_vm_t *vm, nxt_str_t *name,
     njs_variable_type_t type);
