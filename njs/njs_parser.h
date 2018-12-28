@@ -254,14 +254,12 @@ struct njs_parser_scope_s {
 struct njs_parser_node_s {
     njs_token_t                     token:16;
     uint8_t                         ctor:1;
-    njs_variable_reference_t        reference:2;
     uint8_t                         temporary;    /* 1 bit  */
     uint32_t                        token_line;
-    uint32_t                        variable_name_hash;
 
     union {
         uint32_t                    length;
-        nxt_str_t                   variable_name;
+        njs_variable_reference_t    reference;
         njs_value_t                 value;
         njs_vmcode_operation_t      operation;
         njs_parser_node_t           *object;
