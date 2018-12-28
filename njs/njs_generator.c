@@ -2103,19 +2103,13 @@ njs_generate_typeof_operation(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
     nxt_int_t           ret;
-    njs_index_t         index;
     njs_parser_node_t   *expr;
     njs_vmcode_2addr_t  *code;
 
     expr = node->left;
 
     if (expr->token == NJS_TOKEN_NAME) {
-        index = njs_variable_typeof(vm, expr);
-        if (nxt_slow_path(index == NJS_INDEX_ERROR)) {
-            return NXT_ERROR;
-        }
-
-        expr->index = index;
+        expr->index = njs_variable_typeof(vm, expr);
 
     } else {
         ret = njs_generator(vm, generator, node->left);
