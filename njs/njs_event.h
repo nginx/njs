@@ -12,7 +12,9 @@
 #define NJS_EVENT_DELETE       2
 
 
-#define njs_is_pending_events(vm) (!nxt_lvlhsh_is_empty(&(vm)->events_hash))
+#define njs_waiting_events(vm) (!nxt_lvlhsh_is_empty(&(vm)->events_hash))
+
+#define njs_posted_events(vm) (!nxt_queue_is_empty(&(vm)->posted_events))
 
 
 typedef struct {

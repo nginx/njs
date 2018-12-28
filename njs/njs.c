@@ -196,7 +196,7 @@ njs_vm_destroy(njs_vm_t *vm)
     njs_event_t        *event;
     nxt_lvlhsh_each_t  lhe;
 
-    if (njs_is_pending_events(vm)) {
+    if (njs_waiting_events(vm)) {
         nxt_lvlhsh_each_init(&lhe, &njs_event_hash_proto);
 
         for ( ;; ) {
@@ -558,9 +558,16 @@ njs_vm_del_event(njs_vm_t *vm, njs_vm_event_t vm_event)
 
 
 nxt_int_t
-njs_vm_pending(njs_vm_t *vm)
+njs_vm_waiting(njs_vm_t *vm)
 {
-    return njs_is_pending_events(vm);
+    return njs_waiting_events(vm);
+}
+
+
+nxt_int_t
+njs_vm_posted(njs_vm_t *vm)
+{
+    return njs_posted_events(vm);
 }
 
 
@@ -652,7 +659,7 @@ njs_vm_handle_events(njs_vm_t *vm)
         }
     }
 
-    return njs_is_pending_events(vm) ? NJS_AGAIN : NJS_OK;
+    return njs_posted_events(vm) ? NJS_AGAIN : NJS_OK;
 }
 
 

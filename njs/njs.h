@@ -167,9 +167,21 @@ NXT_EXPORT njs_vm_event_t njs_vm_add_event(njs_vm_t *vm,
     njs_function_t *function, nxt_uint_t once, njs_host_event_t host_ev,
     njs_event_destructor destructor);
 NXT_EXPORT void njs_vm_del_event(njs_vm_t *vm, njs_vm_event_t vm_event);
-NXT_EXPORT nxt_int_t njs_vm_pending(njs_vm_t *vm);
 NXT_EXPORT nxt_int_t njs_vm_post_event(njs_vm_t *vm, njs_vm_event_t vm_event,
     const njs_value_t *args, nxt_uint_t nargs);
+
+/*
+ * Returns 1 if async events are present.
+ */
+NXT_EXPORT nxt_int_t njs_vm_waiting(njs_vm_t *vm);
+
+/*
+ * Returns 1 if posted events are ready to be executed.
+ */
+NXT_EXPORT nxt_int_t njs_vm_posted(njs_vm_t *vm);
+
+#define njs_vm_pending(vm)  (njs_vm_waiting(vm) || njs_vm_posted(vm))
+
 
 /*
  * Runs the specified function with provided arguments.
