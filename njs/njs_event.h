@@ -18,17 +18,17 @@
 
 
 typedef struct {
-    njs_function_t        *function;
-    njs_value_t           *args;
-    nxt_uint_t            nargs;
-    njs_host_event_t      host_event;
-    njs_event_destructor  destructor;
+    njs_function_t          *function;
+    njs_value_t             *args;
+    nxt_uint_t              nargs;
+    njs_host_event_t        host_event;
+    njs_event_destructor_t  destructor;
 
-    njs_value_t           id;
-    nxt_queue_link_t      link;
+    njs_value_t             id;
+    nxt_queue_link_t        link;
 
-    unsigned              posted:1;
-    unsigned              once:1;
+    unsigned                posted:1;
+    unsigned                once:1;
 } njs_event_t;
 
 

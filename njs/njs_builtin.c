@@ -111,6 +111,7 @@ const njs_object_init_t    *njs_function_init[] = {
     &njs_decode_uri_component_function_init,
     &njs_require_function_init,
     &njs_set_timeout_function_init,
+    &njs_set_immediate_function_init,
     &njs_clear_timeout_function_init,
     NULL
 };
@@ -132,6 +133,8 @@ const njs_function_init_t  njs_native_functions[] = {
     { njs_module_require,              { NJS_SKIP_ARG, NJS_STRING_ARG } },
     { njs_set_timeout,
       { NJS_SKIP_ARG, NJS_FUNCTION_ARG, NJS_NUMBER_ARG } },
+    { njs_set_immediate,
+      { NJS_SKIP_ARG, NJS_FUNCTION_ARG } },
     { njs_clear_timeout,               { NJS_SKIP_ARG, NJS_NUMBER_ARG } },
 };
 

@@ -90,6 +90,7 @@ static const njs_keyword_t  njs_keywords[] = {
     { nxt_string("decodeURIComponent"),  NJS_TOKEN_DECODE_URI_COMPONENT, 0 },
     { nxt_string("require"),      NJS_TOKEN_REQUIRE, 0 },
     { nxt_string("setTimeout"),   NJS_TOKEN_SET_TIMEOUT, 0 },
+    { nxt_string("setImmediate"), NJS_TOKEN_SET_IMMEDIATE, 0 },
     { nxt_string("clearTimeout"), NJS_TOKEN_CLEAR_TIMEOUT, 0 },
 
     /* Reserved words. */

@@ -521,7 +521,7 @@ njs_vm_call(njs_vm_t *vm, njs_function_t *function, const njs_value_t *args,
 
 njs_vm_event_t
 njs_vm_add_event(njs_vm_t *vm, njs_function_t *function, nxt_uint_t once,
-    njs_host_event_t host_ev, njs_event_destructor destructor)
+    njs_host_event_t host_ev, njs_event_destructor_t destructor)
 {
     njs_event_t  *event;
 

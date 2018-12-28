@@ -125,15 +125,15 @@ typedef void *                      njs_vm_event_t;
 typedef void *                      njs_host_event_t;
 typedef void *                      njs_external_ptr_t;
 
-typedef njs_host_event_t (*njs_set_timer)(njs_external_ptr_t external,
+typedef njs_host_event_t (*njs_set_timer_t)(njs_external_ptr_t external,
     uint64_t delay, njs_vm_event_t vm_event);
-typedef void (*njs_event_destructor)(njs_external_ptr_t external,
+typedef void (*njs_event_destructor_t)(njs_external_ptr_t external,
     njs_host_event_t event);
 
 
 typedef struct {
-    njs_set_timer                   set_timer;
-    njs_event_destructor            clear_timer;
+    njs_set_timer_t                 set_timer;
+    njs_event_destructor_t          clear_timer;
 } njs_vm_ops_t;
 
 
@@ -165,7 +165,7 @@ NXT_EXPORT njs_vm_t *njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external);
 
 NXT_EXPORT njs_vm_event_t njs_vm_add_event(njs_vm_t *vm,
     njs_function_t *function, nxt_uint_t once, njs_host_event_t host_ev,
-    njs_event_destructor destructor);
+    njs_event_destructor_t destructor);
 NXT_EXPORT void njs_vm_del_event(njs_vm_t *vm, njs_vm_event_t vm_event);
 NXT_EXPORT nxt_int_t njs_vm_post_event(njs_vm_t *vm, njs_vm_event_t vm_event,
     const njs_value_t *args, nxt_uint_t nargs);

@@ -2075,6 +2075,7 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
     case NJS_TOKEN_DECODE_URI_COMPONENT:
     case NJS_TOKEN_REQUIRE:
     case NJS_TOKEN_SET_TIMEOUT:
+    case NJS_TOKEN_SET_IMMEDIATE:
     case NJS_TOKEN_CLEAR_TIMEOUT:
         return njs_parser_builtin_function(vm, parser, node);
 
