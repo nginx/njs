@@ -828,7 +828,7 @@ typedef enum {
     NJS_SCOPE_GLOBAL = 1,
     NJS_SCOPE_CALLEE_ARGUMENTS = 2,
     /*
-     * The argument and local VM scopes should separate because a
+     * The argument and local VM scopes should be separated because a
      * function may be called with any number of arguments.
      */
     NJS_SCOPE_ARGUMENTS = 3,
@@ -838,7 +838,7 @@ typedef enum {
     NJS_SCOPE_CLOSURE = 5,
     /*
      * The block and shim scopes are not really VM scopes.
-     * They used only on parsing phase.
+     * They are used only on parsing phase.
      */
     NJS_SCOPE_BLOCK = 16,
     NJS_SCOPE_SHIM = 17,
