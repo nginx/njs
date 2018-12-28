@@ -54,7 +54,7 @@ static nxt_int_t njs_interactive_shell(njs_opts_t *opts,
     njs_vm_opt_t *vm_options);
 static nxt_int_t njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options);
 static nxt_int_t njs_process_script(njs_vm_t *vm, njs_opts_t *opts,
-    const nxt_str_t *script, nxt_str_t *out);
+    const nxt_str_t *script);
 static nxt_int_t njs_editline_init(njs_vm_t *vm);
 static char **njs_completion_handler(const char *text, int start, int end);
 static char *njs_completion_generator(const char *text, int state);
@@ -297,7 +297,7 @@ static nxt_int_t
 njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 {
     njs_vm_t   *vm;
-    nxt_str_t  line, out;
+    nxt_str_t  line;
 
     vm = njs_vm_create(vm_options);
     if (vm == NULL) {
@@ -335,9 +335,7 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
         add_history((char *) line.start);
 
-        njs_process_script(vm, opts, &line, &out);
-
-        printf("%.*s\n", (int) out.length, out.start);
+        njs_process_script(vm, opts, &line);
 
         /* editline allocs a new buffer every time. */
         free(line.start);
@@ -357,7 +355,7 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
     ssize_t      n;
     njs_vm_t     *vm;
     nxt_int_t    ret;
-    nxt_str_t    out, script;
+    nxt_str_t    script;
     struct stat  sb;
 
     file = opts->file;
@@ -448,9 +446,8 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         goto done;
     }
 
-    ret = njs_process_script(vm, opts, &script, &out);
+    ret = njs_process_script(vm, opts, &script);
     if (ret != NXT_OK) {
-        fprintf(stderr, "%.*s\n", (int) out.length, out.start);
         ret = NXT_ERROR;
         goto done;
     }
@@ -473,9 +470,27 @@ close_fd:
 }
 
 
+static void
+njs_output(njs_vm_t *vm, njs_opts_t *opts, njs_ret_t ret)
+{
+    nxt_str_t  out;
+
+    if (njs_vm_retval_dump(vm, &out, 1) != NXT_OK) {
+        out = nxt_string_value("failed to get retval from VM");
+        ret = NJS_ERROR;
+    }
+
+    if (ret != NJS_OK) {
+        fprintf(stderr, "%.*s\n", (int) out.length, out.start);
+
+    } else if (opts->interactive) {
+        printf("%.*s\n", (int) out.length, out.start);
+    }
+}
+
+
 static nxt_int_t
-njs_process_script(njs_vm_t *vm, njs_opts_t *opts, const nxt_str_t *script,
-    nxt_str_t *out)
+njs_process_script(njs_vm_t *vm, njs_opts_t *opts, const nxt_str_t *script)
 {
     u_char     *start;
     nxt_int_t  ret;
@@ -493,9 +508,17 @@ njs_process_script(njs_vm_t *vm, njs_opts_t *opts, const nxt_str_t *script,
         ret = njs_vm_start(vm);
     }
 
-    if (njs_vm_retval_dump(vm, out, 1) != NXT_OK) {
-        *out = nxt_string_value("failed to get retval from VM");
-        return NXT_ERROR;
+    njs_output(vm, opts, ret);
+
+    if (ret == NJS_OK) {
+        while (njs_vm_posted(vm)) {
+            ret = njs_vm_run(vm);
+
+            if (ret == NJS_ERROR) {
+                njs_output(vm, opts, ret);
+                return ret;
+            }
+        }
     }
 
     return ret;
