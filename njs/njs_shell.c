@@ -20,13 +20,6 @@
 #include <readline.h>
 
 
-typedef enum {
-    NJS_COMPLETION_VAR = 0,
-    NJS_COMPLETION_SUFFIX,
-    NJS_COMPLETION_GLOBAL
-} njs_completion_phase_t;
-
-
 typedef struct {
     char                    *file;
     nxt_int_t               version;
@@ -40,22 +33,45 @@ typedef struct {
 typedef struct {
     size_t                  index;
     size_t                  length;
-    njs_vm_t                *vm;
     nxt_array_t             *completions;
     nxt_array_t             *suffix_completions;
     nxt_lvlhsh_each_t       lhe;
-    njs_completion_phase_t  phase;
+
+    enum {
+       NJS_COMPLETION_VAR = 0,
+       NJS_COMPLETION_SUFFIX,
+       NJS_COMPLETION_GLOBAL
+    }                       phase;
 } njs_completion_t;
 
 
+typedef struct {
+    njs_vm_event_t          vm_event;
+    nxt_queue_link_t        link;
+} njs_ev_t;
+
+
+typedef struct {
+    njs_vm_t                *vm;
+
+    nxt_lvlhsh_t            events;  /* njs_ev_t * */
+    nxt_queue_t             posted_events;
+
+    uint64_t                time;
+
+    njs_completion_t        completion;
+} njs_console_t;
+
+
 static nxt_int_t njs_get_options(njs_opts_t *opts, int argc, char **argv);
-static nxt_int_t njs_externals_init(njs_vm_t *vm);
+static nxt_int_t njs_console_init(njs_vm_t *vm, njs_console_t *console);
+static nxt_int_t njs_externals_init(njs_vm_t *vm, njs_console_t *console);
 static nxt_int_t njs_interactive_shell(njs_opts_t *opts,
     njs_vm_opt_t *vm_options);
 static nxt_int_t njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options);
-static nxt_int_t njs_process_script(njs_vm_t *vm, njs_opts_t *opts,
+static nxt_int_t njs_process_script(njs_console_t *console, njs_opts_t *opts,
     const nxt_str_t *script);
-static nxt_int_t njs_editline_init(njs_vm_t *vm);
+static nxt_int_t njs_editline_init(void);
 static char **njs_completion_handler(const char *text, int start, int end);
 static char *njs_completion_generator(const char *text, int state);
 
@@ -69,6 +85,15 @@ static njs_ret_t njs_ext_console_time(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
+
+static njs_host_event_t njs_console_set_timer(njs_external_ptr_t external,
+    uint64_t delay, njs_vm_event_t vm_event);
+static void njs_console_clear_timer(njs_external_ptr_t external,
+    njs_host_event_t event);
+
+static nxt_int_t lvlhsh_key_test(nxt_lvlhsh_query_t *lhq, void *data);
+static void *lvlhsh_pool_alloc(void *pool, size_t size, nxt_uint_t nalloc);
+static void lvlhsh_pool_free(void *pool, void *p, size_t size);
 
 
 static njs_external_t  njs_ext_console[] = {
@@ -150,10 +175,22 @@ static njs_external_t  njs_externals[] = {
 };
 
 
-static njs_completion_t  njs_completion;
+static const nxt_lvlhsh_proto_t  lvlhsh_proto  nxt_aligned(64) = {
+    NXT_LVLHSH_LARGE_SLAB,
+    0,
+    lvlhsh_key_test,
+    lvlhsh_pool_alloc,
+    lvlhsh_pool_free,
+};
 
 
-static uint64_t njs_console_time = UINT64_MAX;
+static njs_vm_ops_t njs_console_ops = {
+    njs_console_set_timer,
+    njs_console_clear_timer
+};
+
+
+static njs_console_t  njs_console;
 
 
 int
@@ -182,6 +219,8 @@ main(int argc, char **argv)
     vm_options.accumulative = opts.interactive;
     vm_options.backtrace = 1;
     vm_options.sandbox = opts.sandbox;
+    vm_options.ops = &njs_console_ops;
+    vm_options.external = &njs_console;
 
     if (opts.interactive) {
         ret = njs_interactive_shell(&opts, &vm_options);
@@ -259,7 +298,26 @@ njs_get_options(njs_opts_t *opts, int argc, char** argv)
 
 
 static nxt_int_t
-njs_externals_init(njs_vm_t *vm)
+njs_console_init(njs_vm_t *vm, njs_console_t *console)
+{
+    console->vm = vm;
+
+    nxt_lvlhsh_init(&console->events);
+    nxt_queue_init(&console->posted_events);
+
+    console->time = UINT64_MAX;
+
+    console->completion.completions = njs_vm_completions(vm, NULL);
+    if (console->completion.completions == NULL) {
+        return NXT_ERROR;
+    }
+
+    return NXT_OK;
+}
+
+
+static nxt_int_t
+njs_externals_init(njs_vm_t *vm, njs_console_t *console)
 {
     nxt_uint_t          ret;
     njs_value_t         *value;
@@ -279,12 +337,17 @@ njs_externals_init(njs_vm_t *vm)
         return NXT_ERROR;
     }
 
-    ret = njs_vm_external_create(vm, value, proto, NULL);
+    ret = njs_vm_external_create(vm, value, proto, console);
     if (ret != NXT_OK) {
         return NXT_ERROR;
     }
 
     ret = njs_vm_external_bind(vm, &name, value);
+    if (ret != NXT_OK) {
+        return NXT_ERROR;
+    }
+
+    ret = njs_console_init(vm, console);
     if (ret != NXT_OK) {
         return NXT_ERROR;
     }
@@ -299,19 +362,19 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
     njs_vm_t   *vm;
     nxt_str_t  line;
 
+    if (njs_editline_init() != NXT_OK) {
+        fprintf(stderr, "failed to init completions\n");
+        return NXT_ERROR;
+    }
+
     vm = njs_vm_create(vm_options);
     if (vm == NULL) {
         fprintf(stderr, "failed to create vm\n");
         return NXT_ERROR;
     }
 
-    if (njs_externals_init(vm) != NXT_OK) {
+    if (njs_externals_init(vm, vm_options->external) != NXT_OK) {
         fprintf(stderr, "failed to add external protos\n");
-        return NXT_ERROR;
-    }
-
-    if (njs_editline_init(vm) != NXT_OK) {
-        fprintf(stderr, "failed to init completions\n");
         return NXT_ERROR;
     }
 
@@ -335,7 +398,7 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
         add_history((char *) line.start);
 
-        njs_process_script(vm, opts, &line);
+        njs_process_script(vm_options->external, opts, &line);
 
         /* editline allocs a new buffer every time. */
         free(line.start);
@@ -439,14 +502,14 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         goto done;
     }
 
-    ret = njs_externals_init(vm);
+    ret = njs_externals_init(vm, vm_options->external);
     if (ret != NXT_OK) {
         fprintf(stderr, "failed to add external protos\n");
         ret = NXT_ERROR;
         goto done;
     }
 
-    ret = njs_process_script(vm, opts, &script);
+    ret = njs_process_script(vm_options->external, opts, &script);
     if (ret != NXT_OK) {
         ret = NXT_ERROR;
         goto done;
@@ -490,11 +553,43 @@ njs_output(njs_vm_t *vm, njs_opts_t *opts, njs_ret_t ret)
 
 
 static nxt_int_t
-njs_process_script(njs_vm_t *vm, njs_opts_t *opts, const nxt_str_t *script)
+njs_process_events(njs_console_t *console, njs_opts_t *opts)
+{
+    njs_ev_t          *ev;
+    nxt_queue_t       *events;
+    nxt_queue_link_t  *link;
+
+    events = &console->posted_events;
+
+    for ( ;; ) {
+        link = nxt_queue_first(events);
+
+        if (link == nxt_queue_tail(events)) {
+            break;
+        }
+
+        ev = nxt_queue_link_data(link, njs_ev_t, link);
+
+        nxt_queue_remove(&ev->link);
+        ev->link.prev = NULL;
+        ev->link.next = NULL;
+
+        njs_vm_post_event(console->vm, ev->vm_event, NULL, 0);
+    }
+
+    return NXT_OK;
+}
+
+
+static nxt_int_t
+njs_process_script(njs_console_t *console, njs_opts_t *opts,
+    const nxt_str_t *script)
 {
     u_char     *start;
+    njs_vm_t   *vm;
     nxt_int_t  ret;
 
+    vm = console->vm;
     start = script->start;
 
     ret = njs_vm_compile(vm, &start, start + script->length);
@@ -510,14 +605,31 @@ njs_process_script(njs_vm_t *vm, njs_opts_t *opts, const nxt_str_t *script)
 
     njs_output(vm, opts, ret);
 
-    if (ret == NJS_OK) {
-        while (njs_vm_posted(vm)) {
-            ret = njs_vm_run(vm);
+    for ( ;; ) {
+        if (!njs_vm_pending(vm)) {
+            break;
+        }
 
-            if (ret == NJS_ERROR) {
-                njs_output(vm, opts, ret);
-                return ret;
-            }
+        ret = njs_process_events(console, opts);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            fprintf(stderr, "njs_process_events() failed\n");
+            ret = NJS_ERROR;
+            break;
+        }
+
+        if (njs_vm_waiting(vm) && !njs_vm_posted(vm)) {
+            /*TODO: async events. */
+
+            fprintf(stderr, "njs_process_script(): "
+                    "async events unsupported\n");
+            ret = NJS_ERROR;
+            break;
+        }
+
+        ret = njs_vm_run(vm);
+
+        if (ret == NJS_ERROR) {
+            njs_output(vm, opts, ret);
         }
     }
 
@@ -526,20 +638,13 @@ njs_process_script(njs_vm_t *vm, njs_opts_t *opts, const nxt_str_t *script)
 
 
 static nxt_int_t
-njs_editline_init(njs_vm_t *vm)
+njs_editline_init(void)
 {
     rl_completion_append_character = '\0';
     rl_attempted_completion_function = njs_completion_handler;
     rl_basic_word_break_characters = (char *) " \t\n\"\\'`@$><=;,|&{(";
 
     setlocale(LC_ALL, "");
-
-    njs_completion.completions = njs_vm_completions(vm, NULL);
-    if (njs_completion.completions == NULL) {
-        return NXT_ERROR;
-    }
-
-    njs_completion.vm = vm;
 
     return NXT_OK;
 }
@@ -571,10 +676,12 @@ njs_completion_generator(const char *text, int state)
     size_t            len;
     nxt_str_t         expression, *suffix;
     const char        *p;
+    njs_vm_t          *vm;
     njs_variable_t    *var;
     njs_completion_t  *cmpl;
 
-    cmpl = &njs_completion;
+    vm = njs_console.vm;
+    cmpl = &njs_console.completion;
 
     if (state == 0) {
         cmpl->phase = 0;
@@ -589,12 +696,12 @@ next:
 
     switch (cmpl->phase) {
     case NJS_COMPLETION_VAR:
-        if (cmpl->vm->parser == NULL) {
+        if (vm->parser == NULL) {
             njs_next_phase(cmpl);
         }
 
         for ( ;; ) {
-            var = nxt_lvlhsh_each(&cmpl->vm->parser->scope->variables,
+            var = nxt_lvlhsh_each(&vm->parser->scope->variables,
                                   &cmpl->lhe);
 
             if (var == NULL) {
@@ -630,8 +737,7 @@ next:
             expression.start = (u_char *) text;
             expression.length = p - text;
 
-            cmpl->suffix_completions = njs_vm_completions(cmpl->vm,
-                                                          &expression);
+            cmpl->suffix_completions = njs_vm_completions(vm, &expression);
             if (cmpl->suffix_completions == NULL) {
                 njs_next_phase(cmpl);
             }
@@ -797,14 +903,21 @@ static njs_ret_t
 njs_ext_console_time(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
+    njs_console_t  *console;
+
     if (!njs_value_is_void(njs_arg(args, nargs, 1))) {
         njs_vm_error(vm, "labels not implemented");
         return NJS_ERROR;
     }
 
-    vm->retval = njs_value_void;
+    console = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    if (nxt_slow_path(console == NULL)) {
+        return NJS_ERROR;
+    }
 
-    njs_console_time = nxt_time();
+    console->time = nxt_time();
+
+    vm->retval = njs_value_void;
 
     return NJS_OK;
 }
@@ -814,7 +927,8 @@ static njs_ret_t
 njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    uint64_t  ns, ms;
+    uint64_t       ns, ms;
+    njs_console_t  *console;
 
     ns = nxt_time();
 
@@ -823,16 +937,21 @@ njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (nxt_fast_path(njs_console_time != UINT64_MAX)) {
+    console = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    if (nxt_slow_path(console == NULL)) {
+        return NJS_ERROR;
+    }
 
-        ns = ns - njs_console_time;
+    if (nxt_fast_path(console->time != UINT64_MAX)) {
+
+        ns = ns - console->time;
 
         ms = ns / 1000000;
         ns = ns % 1000000;
 
         printf("default: %" PRIu64 ".%06" PRIu64 "ms\n", ms, ns);
 
-        njs_console_time = UINT64_MAX;
+        console->time = UINT64_MAX;
 
     } else {
         printf("Timer \"default\" doesn’t exist.\n");
@@ -842,3 +961,111 @@ njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     return NJS_OK;
 }
+
+
+static njs_host_event_t
+njs_console_set_timer(njs_external_ptr_t external, uint64_t delay,
+    njs_vm_event_t vm_event)
+{
+    njs_ev_t            *ev;
+    njs_vm_t            *vm;
+    nxt_int_t           ret;
+    njs_console_t       *console;
+    nxt_lvlhsh_query_t  lhq;
+
+    if (delay != 0) {
+        fprintf(stderr, "njs_console_set_timer(): async timers unsupported\n");
+        return NULL;
+    }
+
+    console = external;
+    vm = console->vm;
+
+    ev = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_ev_t));
+    if (nxt_slow_path(ev == NULL)) {
+        return NULL;
+    }
+
+    ev->vm_event = vm_event;
+
+    lhq.key.start = (u_char *) &ev->vm_event;
+    lhq.key.length = sizeof(njs_vm_event_t);
+    lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
+
+    lhq.replace = 0;
+    lhq.value = ev;
+    lhq.proto = &lvlhsh_proto;
+    lhq.pool = vm->mem_cache_pool;
+
+    ret = nxt_lvlhsh_insert(&console->events, &lhq);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NULL;
+    }
+
+    nxt_queue_insert_tail(&console->posted_events, &ev->link);
+
+    return (njs_host_event_t) ev;
+}
+
+
+static void
+njs_console_clear_timer(njs_external_ptr_t external, njs_host_event_t event)
+{
+    njs_vm_t            *vm;
+    njs_ev_t            *ev;
+    nxt_int_t           ret;
+    njs_console_t       *console;
+    nxt_lvlhsh_query_t  lhq;
+
+    ev = event;
+    console = external;
+    vm = console->vm;
+
+    lhq.key.start = (u_char *) &ev->vm_event;
+    lhq.key.length = sizeof(njs_vm_event_t);
+    lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
+
+    lhq.proto = &lvlhsh_proto;
+    lhq.pool = vm->mem_cache_pool;
+
+    if (ev->link.prev != NULL) {
+        nxt_queue_remove(&ev->link);
+    }
+
+    ret = nxt_lvlhsh_delete(&console->events, &lhq);
+    if (ret != NXT_OK) {
+        fprintf(stderr, "nxt_lvlhsh_delete() failed\n");
+    }
+
+    nxt_mem_cache_free(vm->mem_cache_pool, ev);
+}
+
+
+static nxt_int_t
+lvlhsh_key_test(nxt_lvlhsh_query_t *lhq, void *data)
+{
+    njs_ev_t  *ev;
+
+    ev = data;
+
+    if (memcmp(&ev->vm_event, lhq->key.start, sizeof(njs_vm_event_t)) == 0) {
+        return NXT_OK;
+    }
+
+    return NXT_DECLINED;
+}
+
+
+static void *
+lvlhsh_pool_alloc(void *pool, size_t size, nxt_uint_t nalloc)
+{
+    return nxt_mem_cache_align(pool, size, size);
+}
+
+
+static void
+lvlhsh_pool_free(void *pool, void *p, size_t size)
+{
+    nxt_mem_cache_free(pool, p);
+}
+

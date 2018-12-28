@@ -292,6 +292,67 @@ njs_test {
      "'й'"}
 }
 
+# Immediate events
+
+njs_test {
+    {"var t = setImmediate(console.log, 'a', 'aa')\r\n"
+     "undefined\r\n'a' 'aa'"}
+}
+
+njs_test {
+    {"var a = 1 + 1; setTimeout(function (x) {a = x}, 0, 'a'); a\r\n"
+     "2"}
+    {"a\r\n"
+     "a\r\n'a'"}
+}
+
+njs_test {
+    {"setTimeout(function () {}, 1, 'a')\r\n"
+     "njs_console_set_timer(): async timers unsupported"}
+}
+
+njs_test {
+    {"var a = 1 + 1; setTimeout(function (x) { setTimeout(function (y) {a = y}, 0, x)}, 0, 'a'); a\r\n"
+     "2"}
+    {"a\r\n"
+     "a\r\n'a'"}
+}
+
+njs_test {
+    {"var a = 1 + 1; setImmediate(function (x) { setImmediate(function (y) {a = y}, x)}, 'a'); a\r\n"
+     "2"}
+    {"a\r\n"
+     "a\r\n'a'"}
+}
+
+njs_test {
+    {"var i = 0; (function x() { if (i < 10) setImmediate(x); i++; })()\r\n"
+     "undefined"}
+    {"i\r\n"
+     "i\r\n11"}
+}
+
+njs_test {
+    {"var a = 0, t = setImmediate(function() {a = 1}); clearTimeout(t)\r\n"
+     "undefined"}
+    {"a\r\n"
+     "a\r\n0"}
+}
+
+njs_test {
+    {"var i = 0; (function x() { if (i < 3) setImmediate(x); i++; throw 'Oops';})()\r\n"
+     "Oops"}
+    {"i\r\n"
+     "i\r\n4"}
+}
+
+njs_test {
+    {"var i = 0, queue = []; (function x() { if (i < 5) setImmediate(x); queue.push(i++); })()\r\n"
+     "undefined"}
+    {"queue.toString()\r\n"
+     "queue.toString()\r\n'0,1,2,3,4,5'"}
+}
+
 # require('fs')
 
 set file [open njs_test_file w]

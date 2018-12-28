@@ -645,7 +645,7 @@ njs_vm_handle_events(njs_vm_t *vm)
         ev = nxt_queue_link_data(link, njs_event_t, link);
 
         if (ev->once) {
-            njs_del_event(vm, ev, NJS_EVENT_DELETE);
+            njs_del_event(vm, ev, NJS_EVENT_RELEASE | NJS_EVENT_DELETE);
 
         } else {
             ev->posted = 0;
