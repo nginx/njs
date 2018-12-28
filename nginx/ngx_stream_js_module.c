@@ -727,7 +727,7 @@ ngx_stream_js_init_vm(ngx_stream_session_t *s)
     cln->handler = ngx_stream_js_cleanup_ctx;
     cln->data = ctx;
 
-    if (njs_vm_run(ctx->vm) == NJS_ERROR) {
+    if (njs_vm_start(ctx->vm) == NJS_ERROR) {
         njs_vm_retval_to_ext_string(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,

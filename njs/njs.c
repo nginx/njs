@@ -595,27 +595,26 @@ njs_vm_post_event(njs_vm_t *vm, njs_vm_event_t vm_event,
 nxt_int_t
 njs_vm_run(njs_vm_t *vm)
 {
-    nxt_int_t  ret;
-
     if (nxt_slow_path(vm->backtrace != NULL)) {
         nxt_array_reset(vm->backtrace);
     }
 
+    return njs_vm_handle_events(vm);
+}
+
+
+nxt_int_t
+njs_vm_start(njs_vm_t *vm)
+{
+    njs_ret_t  ret;
+
     ret = njs_vmcode_interpreter(vm);
 
     if (ret == NJS_STOP) {
-        ret = njs_vm_handle_events(vm);
+        ret = NJS_OK;
     }
 
-    switch (ret) {
-    case NJS_STOP:
-        return NJS_OK;
-
-    case NXT_AGAIN:
-    case NXT_ERROR:
-    default:
-        return ret;
-    }
+    return ret;
 }
 
 
@@ -653,7 +652,7 @@ njs_vm_handle_events(njs_vm_t *vm)
         }
     }
 
-    return njs_is_pending_events(vm) ? NJS_AGAIN : NJS_STOP;
+    return njs_is_pending_events(vm) ? NJS_AGAIN : NJS_OK;
 }
 
 

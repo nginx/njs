@@ -285,7 +285,7 @@ njs_interactive_test(nxt_bool_t verbose)
 
             ret = njs_vm_compile(vm, &start, end);
             if (ret == NXT_OK) {
-                ret = njs_vm_run(vm);
+                ret = njs_vm_start(vm);
             }
         }
 

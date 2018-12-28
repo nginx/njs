@@ -490,7 +490,7 @@ njs_process_script(njs_vm_t *vm, njs_opts_t *opts, const nxt_str_t *script,
             printf("\n");
         }
 
-        ret = njs_vm_run(vm);
+        ret = njs_vm_start(vm);
     }
 
     if (njs_vm_retval_dump(vm, out, 1) != NXT_OK) {

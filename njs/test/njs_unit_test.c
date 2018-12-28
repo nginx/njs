@@ -11801,7 +11801,7 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, nxt_bool_t disassemble,
                 goto done;
             }
 
-            ret = njs_vm_run(nvm);
+            ret = njs_vm_start(nvm);
 
             if (njs_vm_retval_to_ext_string(nvm, &s) != NXT_OK) {
                 printf("njs_vm_retval_to_ext_string() failed\n");

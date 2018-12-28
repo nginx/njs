@@ -913,7 +913,7 @@ ngx_http_js_init_vm(ngx_http_request_t *r)
     cln->handler = ngx_http_js_cleanup_ctx;
     cln->data = ctx;
 
-    if (njs_vm_run(ctx->vm) == NJS_ERROR) {
+    if (njs_vm_start(ctx->vm) == NJS_ERROR) {
         njs_vm_retval_to_ext_string(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
