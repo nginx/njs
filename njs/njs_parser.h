@@ -238,10 +238,9 @@ struct njs_parser_scope_s {
     nxt_lvlhsh_t                    variables;
     nxt_lvlhsh_t                    references;
 
-    /*
-     * 0: local scope index;
-     * 1: closure scope index.
-     */
+#define NJS_SCOPE_INDEX_LOCAL       0
+#define NJS_SCOPE_INDEX_CLOSURE     1
+
     nxt_array_t                     *values[2];  /* Array of njs_value_t. */
     njs_index_t                     next_index[2];
 

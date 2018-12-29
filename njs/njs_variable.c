@@ -9,7 +9,7 @@
 #include <string.h>
 
 
-static njs_ret_t njs_variable_find(njs_vm_t *vm, njs_parser_scope_t *scope,
+static njs_ret_t njs_variable_find(njs_vm_t *vm, njs_parser_scope_t *node_scope,
     njs_variable_reference_t *vr);
 static njs_variable_t *njs_variable_alloc(njs_vm_t *vm, nxt_str_t *name,
     njs_variable_type_t type);
@@ -196,15 +196,7 @@ njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
                     continue;
                 }
 
-                if (vr->scope->type == NJS_SCOPE_GLOBAL) {
-                    continue;
-                }
-
-                if (node->scope->nesting == vr->scope->nesting) {
-                    /*
-                     * A variable is referenced locally here, but may be
-                     * referenced non-locally in other places, skipping.
-                     */
+                if (vr->scope_index == NJS_SCOPE_INDEX_LOCAL) {
                     continue;
                 }
             }
@@ -308,18 +300,16 @@ njs_variable_get(njs_vm_t *vm, njs_parser_node_t *node)
         goto not_found;
     }
 
-    scope_index = 0;
-
-    if (vr->scope->type > NJS_SCOPE_GLOBAL) {
-        scope_index = (node->scope->nesting != vr->scope->nesting);
-    }
+    scope_index = vr->scope_index;
 
     var = vr->variable;
     index = var->index;
 
     if (index != NJS_INDEX_NONE) {
 
-        if (scope_index == 0 || njs_scope_type(index) != NJS_SCOPE_ARGUMENTS) {
+        if (scope_index == NJS_SCOPE_INDEX_LOCAL
+            || njs_scope_type(index) != NJS_SCOPE_ARGUMENTS)
+        {
             node->index = index;
 
             return var;
@@ -400,16 +390,17 @@ not_found:
 
 
 static njs_ret_t
-njs_variable_find(njs_vm_t *vm, njs_parser_scope_t *scope,
+njs_variable_find(njs_vm_t *vm, njs_parser_scope_t *node_scope,
     njs_variable_reference_t *vr)
 {
     nxt_lvlhsh_query_t  lhq;
-    njs_parser_scope_t  *parent, *previous;
+    njs_parser_scope_t  *scope, *parent, *previous;
 
     lhq.key_hash = vr->hash;
     lhq.key = vr->name;
     lhq.proto = &njs_variables_hash_proto;
 
+    scope = node_scope;
     previous = NULL;
 
     for ( ;; ) {
@@ -430,6 +421,14 @@ njs_variable_find(njs_vm_t *vm, njs_parser_scope_t *scope,
             }
 
             vr->scope = scope;
+
+            vr->scope_index = NJS_SCOPE_INDEX_LOCAL;
+
+            if (vr->scope->type > NJS_SCOPE_GLOBAL
+                && node_scope->nesting != vr->scope->nesting)
+            {
+                vr->scope_index = NJS_SCOPE_INDEX_CLOSURE;
+            }
 
             return NXT_OK;
         }
