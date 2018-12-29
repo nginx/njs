@@ -48,7 +48,7 @@ njs_set_timer(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     n = immediate ? 2 : 3;
 
-    event->destructor = (ops != NULL) ? ops->clear_timer : NULL;
+    event->destructor = ops->clear_timer;
     event->function = args[1].data.u.function;
     event->nargs = (nargs >= n) ? nargs - n : 0;
     event->once = 1;
