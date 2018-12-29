@@ -488,7 +488,7 @@ njs_generate_name(njs_vm_t *vm, njs_generator_t *generator,
     njs_variable_t            *var;
     njs_vmcode_object_copy_t  *copy;
 
-    var = njs_variable_get(vm, node);
+    var = njs_variable_resolve(vm, node);
     if (nxt_slow_path(var == NULL)) {
         return NXT_ERROR;
     }
@@ -2257,7 +2257,7 @@ njs_generate_function_declaration(njs_vm_t *vm, njs_generator_t *generator,
     njs_variable_t         *var;
     njs_function_lambda_t  *lambda;
 
-    var = njs_variable_get(vm, node);
+    var = njs_variable_resolve(vm, node);
     if (nxt_slow_path(var == NULL)) {
         return NXT_ERROR;
     }
