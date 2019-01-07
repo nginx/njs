@@ -479,13 +479,9 @@ njs_vm_call(njs_vm_t *vm, njs_function_t *function, const njs_value_t *args,
         return ret;
     }
 
-    ret = njs_vmcode_interpreter(vm);
+    ret = njs_vm_start(vm);
 
     vm->current = current;
-
-    if (ret == NJS_STOP) {
-        ret = NXT_OK;
-    }
 
     return ret;
 }
