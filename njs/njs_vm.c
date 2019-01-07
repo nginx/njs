@@ -2086,8 +2086,14 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
          * If a retval is in a callee arguments scope it
          * must be in the previous callee arguments scope.
          */
-        vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] =
-                              vm->top_frame->arguments + function->args_offset;
+        args = vm->top_frame->arguments;
+        function = vm->top_frame->function;
+
+        if (function != NULL) {
+            args += function->args_offset;
+        }
+
+        vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = args;
 
         retval = njs_vmcode_operand(vm, retval);
         /*

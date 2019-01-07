@@ -4017,6 +4017,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var f = ''.concat.bind(0, 1, 2, 3, 4); f(5, 6, 7, 8, 9)"),
       nxt_string("0123456789") },
 
+    { nxt_string("var f = ''.concat.bind(0, 1, 2, 3, 4); f(Math.sqrt(25))"),
+      nxt_string("012345") },
+
     { nxt_string("var f = String.prototype.concat.bind(0, 1); f(2)"),
       nxt_string("012") },
 
