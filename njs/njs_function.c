@@ -531,6 +531,98 @@ njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
 }
 
 
+njs_ret_t
+njs_function_native_call(njs_vm_t *vm, njs_function_native_t native,
+    njs_value_t *args, nxt_uint_t nargs, njs_index_t retval)
+{
+    njs_ret_t           ret;
+    njs_value_t         *value;
+    njs_function_t      *function;
+    njs_native_frame_t  *frame;
+
+    ret = native(vm, args, nargs, retval);
+
+    /*
+     * A native method can return:
+     *   NXT_OK on method success;
+     *   NJS_APPLIED by Function.apply() and Function.call();
+     *   NXT_AGAIN to postpone nJSVM processing;
+     *   NXT_ERROR.
+     *
+     * The callee arguments must be preserved
+     * for NJS_APPLIED and NXT_AGAIN cases.
+     */
+    if (ret == NXT_OK) {
+        frame = vm->top_frame;
+
+        vm->top_frame = njs_function_previous_frame(frame);
+        njs_function_frame_free(vm, frame);
+
+        /*
+         * If a retval is in a callee arguments scope it
+         * must be in the previous callee arguments scope.
+         */
+        args = vm->top_frame->arguments;
+        function = vm->top_frame->function;
+
+        if (function != NULL) {
+            args += function->args_offset;
+        }
+
+        vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = args;
+
+        if (!frame->skip) {
+            value = njs_vmcode_operand(vm, retval);
+            /*
+             * GC: value external/internal++ depending
+             * on vm->retval and retval type
+             */
+            *value = vm->retval;
+        }
+
+        return NXT_OK;
+    }
+
+    return ret;
+}
+
+
+njs_native_frame_t *
+njs_function_previous_frame(njs_native_frame_t *frame)
+{
+    njs_native_frame_t  *previous;
+
+    do {
+        previous = frame->previous;
+        frame = previous;
+
+    } while (frame->skip);
+
+    return frame;
+}
+
+
+void
+njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame)
+{
+    njs_native_frame_t  *previous;
+
+    do {
+        previous = frame->previous;
+
+        /* GC: free frame->local, etc. */
+
+        if (frame->size != 0) {
+            vm->stack_size -= frame->size;
+            nxt_mem_cache_free(vm->mem_cache_pool, frame);
+        }
+
+        frame = previous;
+
+    } while (frame->skip);
+}
+
+
 /*
  * The "prototype" property of user defined functions is created on
  * demand in private hash of the functions by the "prototype" getter.

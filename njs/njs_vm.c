@@ -36,10 +36,6 @@ static void njs_vm_scopes_restore(njs_vm_t *vm, njs_frame_t *frame,
     njs_native_frame_t *previous);
 static njs_ret_t njs_vmcode_continuation(njs_vm_t *vm, njs_value_t *invld1,
     njs_value_t *invld2);
-static njs_native_frame_t *
-    njs_function_previous_frame(njs_native_frame_t *frame);
-static void njs_function_frame_free(njs_vm_t *vm,
-    njs_native_frame_t *frame);
 
 static void njs_vm_trap(njs_vm_t *vm, njs_trap_t trap, njs_value_t *value1,
     njs_value_t *value2);
@@ -2064,52 +2060,19 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
         return 0;
     }
 
-     ret = function->u.native(vm, args, nargs, (njs_index_t) retval);
+    ret = njs_function_native_call(vm, function->u.native, args, nargs,
+                                   (njs_index_t) retval);
 
-    /*
-     * A native method can return:
-     *   NXT_OK on method success;
-     *   NJS_APPLIED by Function.apply() and Function.call();
-     *   NXT_AGAIN to postpone nJSVM processing;
-     *   NXT_ERROR.
-     *
-     * The callee arguments must be preserved
-     * for NJS_APPLIED and NXT_AGAIN cases.
-     */
-    if (ret == NXT_OK) {
-        frame = vm->top_frame;
+    switch (ret) {
+    case NXT_OK:
+        return sizeof(njs_vmcode_function_call_t);
 
-        vm->top_frame = njs_function_previous_frame(frame);
-        njs_function_frame_free(vm, frame);
+    case NJS_APPLIED:
+        return 0;
 
-        /*
-         * If a retval is in a callee arguments scope it
-         * must be in the previous callee arguments scope.
-         */
-        args = vm->top_frame->arguments;
-        function = vm->top_frame->function;
-
-        if (function != NULL) {
-            args += function->args_offset;
-        }
-
-        vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = args;
-
-        retval = njs_vmcode_operand(vm, retval);
-        /*
-         * GC: value external/internal++ depending
-         * on vm->retval and retval type
-         */
-        *retval = vm->retval;
-
-        ret = sizeof(njs_vmcode_function_call_t);
-
-    } else if (ret == NJS_APPLIED) {
-        /* A user-defined method has been prepared to run. */
-        ret = 0;
+    default:
+        return ret;
     }
-
-    return ret;
 }
 
 
@@ -2467,60 +2430,27 @@ static njs_ret_t
 njs_vmcode_continuation(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 {
     njs_ret_t           ret;
-    nxt_bool_t          skip;
-    njs_value_t         *args, *retval;
-    njs_function_t      *function;
     njs_native_frame_t  *frame;
     njs_continuation_t  *cont;
 
     cont = njs_vm_continuation(vm);
     frame = vm->top_frame;
-    args = frame->arguments;
 
     if (cont->args_types != NULL) {
-        ret = njs_normalize_args(vm, args, cont->args_types, frame->nargs);
+        ret = njs_normalize_args(vm, frame->arguments, cont->args_types,
+                                 frame->nargs);
         if (ret != NJS_OK) {
             return ret;
         }
     }
 
-    ret = cont->function(vm, args, frame->nargs, cont->retval);
+    ret = njs_function_native_call(vm, cont->function, frame->arguments,
+                                   frame->nargs, cont->retval);
 
     switch (ret) {
-
     case NXT_OK:
-
-        frame = vm->top_frame;
-        skip = frame->skip;
-
-        vm->top_frame = njs_function_previous_frame(frame);
-
-        /*
-         * If a retval is in a callee arguments scope it
-         * must be in the previous callee arguments scope.
-         */
-        args = vm->top_frame->arguments;
-        function = vm->top_frame->function;
-
-        if (function != NULL) {
-            args += function->args_offset;
-        }
-
-        vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = args;
-
-        if (!skip) {
-            retval = njs_vmcode_operand(vm, cont->retval);
-            /*
-             * GC: value external/internal++ depending
-             * on vm->retval and retval type
-             */
-            *retval = vm->retval;
-        }
-
         vm->current = cont->return_address;
-        (void) njs_function_frame_free(vm, frame);
-
-        return 0;
+        /* Fall through. */
 
     case NJS_APPLIED:
         return 0;
@@ -2528,42 +2458,6 @@ njs_vmcode_continuation(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
     default:
         return ret;
     }
-}
-
-
-static njs_native_frame_t *
-njs_function_previous_frame(njs_native_frame_t *frame)
-{
-    njs_native_frame_t  *previous;
-
-    do {
-        previous = frame->previous;
-        frame = previous;
-
-    } while (frame->skip);
-
-    return frame;
-}
-
-
-static void
-njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame)
-{
-    njs_native_frame_t  *previous;
-
-    do {
-        previous = frame->previous;
-
-        /* GC: free frame->local, etc. */
-
-        if (frame->size != 0) {
-            vm->stack_size -= frame->size;
-            nxt_mem_cache_free(vm->mem_cache_pool, frame);
-        }
-
-        frame = previous;
-
-    } while (frame->skip);
 }
 
 

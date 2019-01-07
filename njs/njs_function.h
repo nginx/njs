@@ -171,6 +171,10 @@ njs_ret_t njs_function_frame(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, const njs_value_t *args, nxt_uint_t nargs,
     nxt_bool_t ctor);
 njs_ret_t njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance);
+njs_ret_t njs_function_native_call(njs_vm_t *vm, njs_function_native_t native,
+    njs_value_t *args, nxt_uint_t nargs, njs_index_t retval);
+njs_native_frame_t *njs_function_previous_frame(njs_native_frame_t *frame);
+void njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame);
 
 extern const njs_object_init_t  njs_function_constructor_init;
 extern const njs_object_init_t  njs_function_prototype_init;
