@@ -1878,7 +1878,8 @@ njs_function_frame_create(njs_vm_t *vm, njs_value_t *value,
                 this = &val;
             }
 
-            return njs_function_frame(vm, function, this, NULL, nargs, ctor);
+            return njs_function_lambda_frame(vm, function, this, NULL,
+                                             nargs, ctor);
         }
 
         if (!ctor || function->ctor) {
@@ -2029,8 +2030,8 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
     function = frame->function;
 
     if (!function->native) {
-        ret = njs_function_call(vm, (njs_index_t) retval,
-                                sizeof(njs_vmcode_function_call_t));
+        ret = njs_function_lambda_call(vm, (njs_index_t) retval,
+                                       sizeof(njs_vmcode_function_call_t));
 
         if (nxt_fast_path(ret != NJS_ERROR)) {
             return 0;

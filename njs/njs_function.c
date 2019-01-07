@@ -266,7 +266,7 @@ njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
 
 
 nxt_noinline njs_ret_t
-njs_function_frame(njs_vm_t *vm, njs_function_t *function,
+njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, const njs_value_t *args, nxt_uint_t nargs,
     nxt_bool_t ctor)
 {
@@ -393,7 +393,7 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
 
 
 nxt_noinline njs_ret_t
-njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
+njs_function_lambda_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
 {
     size_t                 size;
     njs_ret_t              ret;
@@ -968,13 +968,13 @@ njs_function_activate(njs_vm_t *vm, njs_function_t *function,
         return NJS_APPLIED;
     }
 
-    ret = njs_function_frame(vm, function, this, args, nargs, 0);
+    ret = njs_function_lambda_frame(vm, function, this, args, nargs, 0);
 
     if (nxt_slow_path(ret != NXT_OK)) {
         return ret;
     }
 
-    return njs_function_call(vm, retval, advance);
+    return njs_function_lambda_call(vm, retval, advance);
 }
 
 
