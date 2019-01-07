@@ -475,11 +475,9 @@ njs_vm_call(njs_vm_t *vm, njs_function_t *function, const njs_value_t *args,
                                 NJS_INDEX_GLOBAL_RETVAL,
                                 sizeof(njs_vmcode_generic_t));
 
-    if (nxt_slow_path(ret == NXT_ERROR)) {
-        return ret;
+    if (nxt_fast_path(ret == NJS_APPLIED)) {
+        ret = njs_vm_start(vm);
     }
-
-    ret = njs_vm_start(vm);
 
     vm->current = current;
 
