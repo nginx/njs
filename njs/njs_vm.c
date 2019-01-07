@@ -2281,10 +2281,15 @@ njs_vm_scopes_restore(njs_vm_t *vm, njs_frame_t *frame,
 }
 
 
-const njs_vmcode_1addr_t  njs_continuation_nexus[] = {
+const njs_vmcode_generic_t  njs_continuation_nexus[] = {
     { .code = { .operation = njs_vmcode_continuation,
                 .operands =  NJS_VMCODE_NO_OPERAND,
                 .retval = NJS_VMCODE_NO_RETVAL } },
+
+    { .code = { .operation = njs_vmcode_stop,
+                .operands =  NJS_VMCODE_1OPERAND,
+                .retval = NJS_VMCODE_NO_RETVAL },
+      .operand1 = NJS_INDEX_GLOBAL_RETVAL },
 };
 
 

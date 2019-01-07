@@ -1304,7 +1304,7 @@ extern const njs_value_t  njs_string_memory_error;
 extern const nxt_mem_proto_t     njs_array_mem_proto;
 extern const nxt_lvlhsh_proto_t  njs_object_hash_proto;
 
-extern const njs_vmcode_1addr_t  njs_continuation_nexus[];
+extern const njs_vmcode_generic_t  njs_continuation_nexus[];
 
 
 #endif /* _NJS_VM_H_INCLUDED_ */
