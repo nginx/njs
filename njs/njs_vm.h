@@ -1262,8 +1262,6 @@ njs_ret_t njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld,
 nxt_bool_t njs_values_strict_equal(const njs_value_t *val1,
     const njs_value_t *val2);
 
-njs_ret_t njs_normalize_args(njs_vm_t *vm, njs_value_t *args,
-    uint8_t *args_types, nxt_uint_t nargs);
 const char *njs_type_string(njs_value_type_t type);
 const char *njs_arg_type_string(uint8_t arg);
 

@@ -8,6 +8,8 @@
 #include <string.h>
 
 
+static njs_ret_t njs_normalize_args(njs_vm_t *vm, njs_value_t *args,
+    uint8_t *args_types, nxt_uint_t nargs);
 static njs_ret_t njs_function_activate(njs_vm_t *vm, njs_function_t *function,
     njs_value_t *this, njs_value_t *args, nxt_uint_t nargs, njs_index_t retval);
 
@@ -533,12 +535,18 @@ njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
 
 njs_ret_t
 njs_function_native_call(njs_vm_t *vm, njs_function_native_t native,
-    njs_value_t *args, nxt_uint_t nargs, njs_index_t retval)
+    njs_value_t *args, uint8_t *args_types, nxt_uint_t nargs,
+    njs_index_t retval)
 {
     njs_ret_t           ret;
     njs_value_t         *value;
     njs_function_t      *function;
     njs_native_frame_t  *frame;
+
+    ret = njs_normalize_args(vm, args, args_types, nargs);
+    if (ret != NJS_OK) {
+        return ret;
+    }
 
     ret = native(vm, args, nargs, retval);
 
@@ -584,6 +592,140 @@ njs_function_native_call(njs_vm_t *vm, njs_function_native_t native,
     }
 
     return ret;
+}
+
+
+static njs_ret_t
+njs_normalize_args(njs_vm_t *vm, njs_value_t *args, uint8_t *args_types,
+    nxt_uint_t nargs)
+{
+    nxt_uint_t  n;
+    njs_trap_t  trap;
+
+    n = nxt_min(nargs, NJS_ARGS_TYPES_MAX);
+
+    while (n != 0) {
+
+        switch (*args_types) {
+
+        case NJS_STRING_OBJECT_ARG:
+
+            if (njs_is_null_or_void(args)) {
+                goto type_error;
+            }
+
+            /* Fall through. */
+
+        case NJS_STRING_ARG:
+
+            if (njs_is_string(args)) {
+                break;
+            }
+
+            trap = NJS_TRAP_STRING_ARG;
+            goto trap;
+
+        case NJS_NUMBER_ARG:
+
+            if (njs_is_numeric(args)) {
+                break;
+            }
+
+            trap = NJS_TRAP_NUMBER_ARG;
+            goto trap;
+
+        case NJS_INTEGER_ARG:
+
+            if (njs_is_numeric(args)) {
+
+                /* Numbers are truncated to fit in 32-bit integers. */
+
+                if (isnan(args->data.u.number)) {
+                    args->data.u.number = 0;
+
+                } else if (args->data.u.number > 2147483647.0) {
+                    args->data.u.number = 2147483647.0;
+
+                } else if (args->data.u.number < -2147483648.0) {
+                    args->data.u.number = -2147483648.0;
+                }
+
+                break;
+            }
+
+            trap = NJS_TRAP_NUMBER_ARG;
+            goto trap;
+
+        case NJS_FUNCTION_ARG:
+
+            switch (args->type) {
+            case NJS_STRING:
+            case NJS_FUNCTION:
+                break;
+
+            default:
+                trap = NJS_TRAP_STRING_ARG;
+                goto trap;
+            }
+
+            break;
+
+        case NJS_REGEXP_ARG:
+
+            switch (args->type) {
+            case NJS_VOID:
+            case NJS_STRING:
+            case NJS_REGEXP:
+                break;
+
+            default:
+                trap = NJS_TRAP_STRING_ARG;
+                goto trap;
+            }
+
+            break;
+
+        case NJS_DATE_ARG:
+            if (!njs_is_date(args)) {
+                goto type_error;
+            }
+
+            break;
+
+        case NJS_OBJECT_ARG:
+
+            if (njs_is_null_or_void(args)) {
+                goto type_error;
+            }
+
+            break;
+
+        case NJS_SKIP_ARG:
+            break;
+
+        case 0:
+            return NJS_OK;
+        }
+
+        args++;
+        args_types++;
+        n--;
+    }
+
+    return NJS_OK;
+
+trap:
+
+    njs_vm_trap_value(vm, args);
+
+    return njs_trap(vm, trap);
+
+type_error:
+
+    njs_type_error(vm, "cannot convert %s to %s", njs_type_string(args->type),
+                   njs_arg_type_string(*args_types));
+
+    return NXT_ERROR;
 }
 
 
