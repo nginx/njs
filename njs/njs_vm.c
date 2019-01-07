@@ -38,7 +38,7 @@ static njs_ret_t njs_vmcode_continuation(njs_vm_t *vm, njs_value_t *invld1,
     njs_value_t *invld2);
 static njs_native_frame_t *
     njs_function_previous_frame(njs_native_frame_t *frame);
-static njs_ret_t njs_function_frame_free(njs_vm_t *vm,
+static void njs_function_frame_free(njs_vm_t *vm,
     njs_native_frame_t *frame);
 
 static void njs_vm_trap(njs_vm_t *vm, njs_trap_t trap, njs_value_t *value1,
@@ -2080,7 +2080,7 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
         frame = vm->top_frame;
 
         vm->top_frame = njs_function_previous_frame(frame);
-        (void) njs_function_frame_free(vm, frame);
+        njs_function_frame_free(vm, frame);
 
         /*
          * If a retval is in a callee arguments scope it
@@ -2398,7 +2398,9 @@ njs_vmcode_return(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
 
     vm->current = frame->return_address;
 
-    return njs_function_frame_free(vm, &frame->native);
+    njs_function_frame_free(vm, &frame->native);
+
+    return 0;
 }
 
 
@@ -2544,7 +2546,7 @@ njs_function_previous_frame(njs_native_frame_t *frame)
 }
 
 
-static njs_ret_t
+static void
 njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame)
 {
     njs_native_frame_t  *previous;
@@ -2562,8 +2564,6 @@ njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame)
         frame = previous;
 
     } while (frame->skip);
-
-    return 0;
 }
 
 
