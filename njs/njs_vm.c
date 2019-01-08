@@ -1864,9 +1864,15 @@ njs_function_frame_create(njs_vm_t *vm, njs_value_t *value,
 
         function = value->data.u.function;
 
-        if (!function->native) {
+        if (ctor) {
+            if (function->native) {
+                if (!function->ctor) {
+                    njs_type_error(vm, "%s is not a constructor",
+                                   njs_type_string(value->type));
+                    return NXT_ERROR;
+                }
 
-            if (ctor) {
+            } else {
                 object = njs_function_new_object(vm, value);
                 if (nxt_slow_path(object == NULL)) {
                     return NXT_ERROR;
@@ -1877,20 +1883,9 @@ njs_function_frame_create(njs_vm_t *vm, njs_value_t *value,
                 val.data.truth = 1;
                 this = &val;
             }
-
-            return njs_function_lambda_frame(vm, function, this, NULL,
-                                             nargs, ctor);
         }
 
-        if (!ctor || function->ctor) {
-            return njs_function_native_frame(vm, function, this, NULL,
-                                             nargs, 0, ctor);
-        }
-
-        njs_type_error(vm, "%s is not a constructor",
-                       njs_type_string(value->type));
-
-        return NXT_ERROR;
+        return njs_function_frame(vm, function, this, NULL, nargs, 0, ctor);
     }
 
     njs_type_error(vm, "%s is not a function", njs_type_string(value->type));

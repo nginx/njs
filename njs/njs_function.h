@@ -180,6 +180,21 @@ void njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame);
 
 
 nxt_inline njs_ret_t
+njs_function_frame(njs_vm_t *vm, njs_function_t *function,
+    const njs_value_t *this, const njs_value_t *args, nxt_uint_t nargs,
+    size_t reserve, nxt_bool_t ctor)
+{
+    if (function->native) {
+        return njs_function_native_frame(vm, function, this, args, nargs,
+                                         reserve, ctor);
+
+    } else {
+        return njs_function_lambda_frame(vm, function, this, args, nargs, ctor);
+    }
+}
+
+
+nxt_inline njs_ret_t
 njs_function_apply(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *args, nxt_uint_t nargs, njs_index_t retval)
 {
