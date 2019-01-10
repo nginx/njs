@@ -8,6 +8,7 @@
 #include <string.h>
 
 
+static njs_native_frame_t *njs_function_frame_alloc(njs_vm_t *vm, size_t size);
 static njs_ret_t njs_normalize_args(njs_vm_t *vm, njs_value_t *args,
     uint8_t *args_types, nxt_uint_t nargs);
 
