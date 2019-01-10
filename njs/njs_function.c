@@ -729,21 +729,6 @@ type_error:
 }
 
 
-njs_native_frame_t *
-njs_function_previous_frame(njs_native_frame_t *frame)
-{
-    njs_native_frame_t  *previous;
-
-    do {
-        previous = frame->previous;
-        frame = previous;
-
-    } while (frame->skip);
-
-    return frame;
-}
-
-
 void
 njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame)
 {

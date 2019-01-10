@@ -174,8 +174,23 @@ njs_ret_t njs_function_call(njs_vm_t *vm, njs_index_t retval, size_t advance);
 njs_ret_t njs_function_native_call(njs_vm_t *vm, njs_function_native_t native,
     njs_value_t *args, uint8_t *args_types, nxt_uint_t nargs,
     njs_index_t retval);
-njs_native_frame_t *njs_function_previous_frame(njs_native_frame_t *frame);
 void njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame);
+
+
+nxt_inline njs_native_frame_t *
+njs_function_previous_frame(njs_native_frame_t *frame)
+{
+    njs_native_frame_t  *previous;
+
+    do {
+        previous = frame->previous;
+        frame = previous;
+
+    } while (frame->skip);
+
+    return frame;
+}
+
 
 extern const njs_object_init_t  njs_function_constructor_init;
 extern const njs_object_init_t  njs_function_prototype_init;
