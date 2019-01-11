@@ -216,16 +216,16 @@ njs_function_arguments_thrower(njs_vm_t *vm, njs_value_t *value,
 njs_ret_t
 njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, const njs_value_t *args, nxt_uint_t nargs,
-    size_t reserve, nxt_bool_t ctor)
+    size_t continuation_size, nxt_bool_t ctor)
 {
     size_t              size;
     nxt_uint_t          n;
     njs_value_t         *value, *bound;
     njs_native_frame_t  *frame;
 
-    reserve = nxt_max(reserve, function->continuation_size);
+    continuation_size = nxt_max(continuation_size, function->continuation_size);
 
-    size = NJS_NATIVE_FRAME_SIZE + reserve
+    size = NJS_NATIVE_FRAME_SIZE + continuation_size
            + (function->args_offset + nargs) * sizeof(njs_value_t);
 
     frame = njs_function_frame_alloc(vm, size);
@@ -237,7 +237,7 @@ njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     frame->nargs = function->args_offset + nargs;
     frame->ctor = ctor;
 
-    value = (njs_value_t *) (njs_continuation(frame) + reserve);
+    value = (njs_value_t *) (njs_continuation(frame) + continuation_size);
     frame->arguments = value;
 
     bound = function->bound;

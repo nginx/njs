@@ -163,7 +163,7 @@ njs_ret_t njs_function_constructor(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 njs_ret_t njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, const njs_value_t *args, nxt_uint_t nargs,
-    size_t reserve, nxt_bool_t ctor);
+    size_t continuation_size, nxt_bool_t ctor);
 njs_ret_t njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, const njs_value_t *args, nxt_uint_t nargs,
     nxt_bool_t ctor);
@@ -181,11 +181,11 @@ void njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame);
 nxt_inline njs_ret_t
 njs_function_frame(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, const njs_value_t *args, nxt_uint_t nargs,
-    size_t reserve, nxt_bool_t ctor)
+    size_t continuation_size, nxt_bool_t ctor)
 {
     if (function->native) {
         return njs_function_native_frame(vm, function, this, args, nargs,
-                                         reserve, ctor);
+                                         continuation_size, ctor);
 
     } else {
         return njs_function_lambda_frame(vm, function, this, args, nargs, ctor);
