@@ -2014,9 +2014,8 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
 njs_ret_t
 njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
 {
+    u_char              *return_address;
     njs_ret_t           ret;
-    nxt_uint_t          nargs;
-    njs_value_t         *args;
     njs_function_t      *function;
     njs_continuation_t  *cont;
     njs_native_frame_t  *frame;
@@ -2024,36 +2023,32 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
     frame = vm->top_frame;
     function = frame->function;
 
-    if (!function->native) {
-        ret = njs_function_lambda_call(vm, (njs_index_t) retval,
-                                       sizeof(njs_vmcode_function_call_t));
+    return_address = vm->current + sizeof(njs_vmcode_function_call_t);
 
-        if (nxt_fast_path(ret != NJS_ERROR)) {
-            return 0;
+    if (function->native) {
+        if (function->continuation_size != 0) {
+            cont = njs_vm_continuation(vm);
+
+            cont->function = function->u.native;
+            cont->args_types = function->args_types;
+            cont->retval = (njs_index_t) retval;
+            cont->return_address = return_address;
+
+            vm->current = (u_char *) njs_continuation_nexus;
+
+            ret = NJS_APPLIED;
+
+        } else {
+            ret = njs_function_native_call(vm, function->u.native,
+                                           frame->arguments,
+                                           function->args_types, frame->nargs,
+                                           (njs_index_t) retval);
         }
 
-        return ret;
+    } else {
+        ret = njs_function_lambda_call(vm, (njs_index_t) retval,
+                                       return_address);
     }
-
-    args = frame->arguments;
-    nargs = frame->nargs;
-
-    if (function->continuation_size != 0) {
-        cont = njs_vm_continuation(vm);
-
-        cont->function = function->u.native;
-        cont->args_types = function->args_types;
-        cont->retval = (njs_index_t) retval;
-
-        cont->return_address = vm->current + sizeof(njs_vmcode_function_call_t);
-        vm->current = (u_char *) njs_continuation_nexus;
-
-        return 0;
-    }
-
-    ret = njs_function_native_call(vm, function->u.native, args,
-                                   function->args_types, nargs,
-                                   (njs_index_t) retval);
 
     switch (ret) {
     case NXT_OK:

@@ -171,7 +171,7 @@ njs_ret_t njs_function_activate(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, const njs_value_t *args, nxt_uint_t nargs,
     njs_index_t retval, size_t advance);
 njs_ret_t njs_function_lambda_call(njs_vm_t *vm, njs_index_t retval,
-    size_t advance);
+    u_char *return_address);
 njs_ret_t njs_function_native_call(njs_vm_t *vm, njs_function_native_t native,
     njs_value_t *args, uint8_t *args_types, nxt_uint_t nargs,
     njs_index_t retval);

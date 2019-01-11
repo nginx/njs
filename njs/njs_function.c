@@ -394,7 +394,8 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
 
 
 nxt_noinline njs_ret_t
-njs_function_lambda_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
+njs_function_lambda_call(njs_vm_t *vm, njs_index_t retval,
+    u_char *return_address)
 {
     size_t                 size;
     njs_ret_t              ret;
@@ -408,9 +409,9 @@ njs_function_lambda_call(njs_vm_t *vm, njs_index_t retval, size_t advance)
     frame = (njs_frame_t *) vm->top_frame;
 
     frame->retval = retval;
+    frame->return_address = return_address;
 
     function = frame->native.function;
-    frame->return_address = vm->current + advance;
 
     lambda = function->u.lambda;
     vm->current = lambda->start;
@@ -947,35 +948,35 @@ njs_function_activate(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, const njs_value_t *args, nxt_uint_t nargs,
     njs_index_t retval, size_t advance)
 {
+    u_char              *return_address;
     njs_ret_t           ret;
     njs_continuation_t  *cont;
 
-    if (function->native) {
-        ret = njs_function_native_frame(vm, function, this, args, nargs,
-                                        NJS_CONTINUATION_SIZE, 0);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return ret;
-        }
+    ret = njs_function_frame(vm, function, this, args, nargs,
+                             NJS_CONTINUATION_SIZE, 0);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
 
+    return_address = vm->current + advance;
+
+    if (function->native) {
         cont = njs_vm_continuation(vm);
 
         cont->function = function->u.native;
         cont->args_types = function->args_types;
         cont->retval = retval;
+        cont->return_address = return_address;
 
-        cont->return_address = vm->current + advance;
         vm->current = (u_char *) njs_continuation_nexus;
 
-        return NJS_APPLIED;
+        ret = NJS_APPLIED;
+
+    } else {
+        ret = njs_function_lambda_call(vm, retval, return_address);
     }
 
-    ret = njs_function_lambda_frame(vm, function, this, args, nargs, 0);
-
-    if (nxt_slow_path(ret != NXT_OK)) {
-        return ret;
-    }
-
-    return njs_function_lambda_call(vm, retval, advance);
+    return ret;
 }
 
 
