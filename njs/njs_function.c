@@ -528,7 +528,6 @@ njs_function_native_call(njs_vm_t *vm, njs_function_native_t native,
         frame = vm->top_frame;
 
         vm->top_frame = njs_function_previous_frame(frame);
-        njs_function_frame_free(vm, frame);
 
         /*
          * If a retval is in a callee arguments scope it
@@ -551,6 +550,8 @@ njs_function_native_call(njs_vm_t *vm, njs_function_native_t native,
              */
             *value = vm->retval;
         }
+
+        njs_function_frame_free(vm, frame);
 
         return NXT_OK;
     }

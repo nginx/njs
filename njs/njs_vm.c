@@ -2287,12 +2287,15 @@ const njs_vmcode_generic_t  njs_continuation_nexus[] = {
 static njs_ret_t
 njs_vmcode_continuation(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 {
+    u_char              *return_address;
     njs_ret_t           ret;
     njs_native_frame_t  *frame;
     njs_continuation_t  *cont;
 
     frame = vm->top_frame;
+
     cont = njs_vm_continuation(vm);
+    return_address = cont->return_address;
 
     ret = njs_function_native_call(vm, cont->function, frame->arguments,
                                    cont->args_types, frame->nargs,
@@ -2300,7 +2303,7 @@ njs_vmcode_continuation(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 
     switch (ret) {
     case NXT_OK:
-        vm->current = cont->return_address;
+        vm->current = return_address;
         /* Fall through. */
 
     case NJS_APPLIED:
