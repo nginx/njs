@@ -99,6 +99,8 @@ static nxt_int_t njs_generate_break_statement(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static nxt_int_t njs_generate_statement(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
+static nxt_int_t njs_generate_block_statement(njs_vm_t *vm,
+    njs_generator_t *generator, njs_parser_node_t *node);
 static nxt_int_t njs_generate_children(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node);
 static nxt_int_t njs_generate_stop_statement(njs_vm_t *vm,
@@ -256,6 +258,9 @@ njs_generator(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
 
     case NJS_TOKEN_STATEMENT:
         return njs_generate_statement(vm, generator, node);
+
+    case NJS_TOKEN_BLOCK:
+        return njs_generate_block_statement(vm, generator, node);
 
     case NJS_TOKEN_END:
         return njs_generate_stop_statement(vm, generator, node);
@@ -1501,6 +1506,29 @@ njs_generate_statement(njs_vm_t *vm, njs_generator_t *generator,
     if (nxt_fast_path(ret == NXT_OK)) {
         return njs_generate_node_index_release(vm, generator, node->right);
     }
+
+    return ret;
+}
+
+
+static nxt_int_t
+njs_generate_block_statement(njs_vm_t *vm, njs_generator_t *generator,
+    njs_parser_node_t *node)
+{
+    nxt_int_t  ret;
+
+    ret = njs_generate_start_block(vm, generator, NJS_GENERATOR_BLOCK,
+                                   &no_label);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
+    ret = njs_generate_statement(vm, generator, node->left);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
+    njs_generate_patch_block_exit(vm, generator);
 
     return ret;
 }
