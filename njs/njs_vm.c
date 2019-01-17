@@ -2386,7 +2386,7 @@ njs_vmcode_try_break(njs_vm_t *vm, njs_value_t *exit_value,
 
 
 /*
- * njs_vmcode_try_break() sets exit_value to INVALID -1, and jumps to
+ * njs_vmcode_try_continue() sets exit_value to INVALID -1, and jumps to
  * the nearest try_end block. The exit_value is checked by njs_vmcode_finally().
  */
 
@@ -2401,7 +2401,7 @@ njs_vmcode_try_continue(njs_vm_t *vm, njs_value_t *exit_value,
 
 /*
  * njs_vmcode_try_return() saves a return value to use it later by
- * njs_vmcode_finally(), and jumps to the nearest try_end block.
+ * njs_vmcode_finally(), and jumps to the nearest try_break block.
  */
 
 nxt_noinline njs_ret_t
