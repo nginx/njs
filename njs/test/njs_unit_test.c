@@ -6902,6 +6902,9 @@ static njs_unit_test_t  njs_test[] =
                  "})(function () {throw 'a'}, 'v')"),
       nxt_string("v") },
 
+    { nxt_string("(function() { try { return ['a'];} finally {} } )()"),
+      nxt_string("a") },
+
     { nxt_string("var o = { valueOf: function() { return '3' } }; --o"),
       nxt_string("2") },
 
