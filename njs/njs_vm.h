@@ -1021,12 +1021,6 @@ struct njs_vm_s {
     /* njs_vm_t must be aligned to njs_value_t due to scratch value. */
     njs_value_t              retval;
 
-    /*
-     * The scratch value is used for lvalue operations on nonexistent
-     * properties of non-object values: "a = 1; a.b++".
-     */
-    njs_value_t              scratch;
-
     u_char                   *current;
 
     njs_value_t              *scopes[NJS_SCOPES];
