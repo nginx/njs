@@ -817,7 +817,7 @@ njs_generate_switch_statement(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t        *node, *expr, *branch;
     njs_vmcode_move_t        *move;
     njs_vmcode_jump_t        *jump;
-    njs_generator_patch_t       *patch, *next, *patches, **last;
+    njs_generator_patch_t    *patch, *next, *patches, **last;
     njs_vmcode_equal_jump_t  *equal;
 
     /* The "switch" expression. */

@@ -173,7 +173,7 @@ njs_vm_external_prototype(njs_vm_t *vm, njs_external_t *external)
 
 nxt_int_t
 njs_vm_external_create(njs_vm_t *vm, njs_value_t *ext_val,
-    const njs_extern_t *proto,  njs_external_ptr_t object)
+    const njs_extern_t *proto, njs_external_ptr_t object)
 {
     void  *obj;
 
