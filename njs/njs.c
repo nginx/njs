@@ -335,6 +335,7 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
         nvm->mem_cache_pool = nmcp;
 
         nvm->shared = vm->shared;
+        nvm->trace = vm->trace;
 
         nvm->variables_hash = vm->variables_hash;
         nvm->values_hash = vm->values_hash;
@@ -443,11 +444,6 @@ njs_vm_init(njs_vm_t *vm)
 
         vm->backtrace = backtrace;
     }
-
-    vm->trace.level = NXT_LEVEL_TRACE;
-    vm->trace.size = 2048;
-    vm->trace.handler = njs_parser_trace_handler;
-    vm->trace.data = vm;
 
     if (njs_is_null(&vm->retval)) {
         vm->retval = njs_value_void;
