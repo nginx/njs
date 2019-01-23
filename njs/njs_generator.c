@@ -2303,7 +2303,7 @@ njs_generate_function_scope(njs_vm_t *vm, njs_function_lambda_t *lambda,
 
     node = node->right;
 
-    ret = njs_generate_scope(vm, generator, node);
+    ret = njs_generate_scope(vm, generator, node->scope);
 
     if (nxt_fast_path(ret == NXT_OK)) {
         size = 0;
@@ -2334,18 +2334,15 @@ njs_generate_function_scope(njs_vm_t *vm, njs_function_lambda_t *lambda,
 
 nxt_int_t
 njs_generate_scope(njs_vm_t *vm, njs_generator_t *generator,
-    njs_parser_node_t *node)
+    njs_parser_scope_t *scope)
 {
-    u_char              *p;
-    size_t              size;
-    uintptr_t           scope_size;
-    nxt_int_t           ret;
-    nxt_uint_t          n;
-    njs_value_t         *value;
-    njs_vm_code_t       *code;
-    njs_parser_scope_t  *scope;
-
-    scope = node->scope;
+    u_char         *p;
+    size_t          size;
+    uintptr_t       scope_size;
+    nxt_int_t       ret;
+    nxt_uint_t      n;
+    njs_value_t    *value;
+    njs_vm_code_t  *code;
 
     generator->code_size = 128;
 
@@ -2357,12 +2354,12 @@ njs_generate_scope(njs_vm_t *vm, njs_generator_t *generator,
     generator->code_start = p;
     generator->code_end = p;
 
-    ret = njs_generate_argument_closures(vm, generator, node);
+    ret = njs_generate_argument_closures(vm, generator, scope->node);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NXT_ERROR;
     }
 
-    if (nxt_slow_path(njs_generator(vm, generator, node) != NXT_OK)) {
+    if (nxt_slow_path(njs_generator(vm, generator, scope->node) != NXT_OK)) {
         return NXT_ERROR;
     }
 

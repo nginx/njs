@@ -29,7 +29,7 @@ struct njs_generator_s {
 
 
 nxt_int_t njs_generate_scope(njs_vm_t *vm, njs_generator_t *generator,
-    njs_parser_node_t *node);
+    njs_parser_scope_t *scope);
 
 
 #endif /* _NJS_GENERATOR_H_INCLUDED_ */

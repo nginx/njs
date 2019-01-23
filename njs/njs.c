@@ -217,11 +217,10 @@ njs_vm_destroy(njs_vm_t *vm)
 nxt_int_t
 njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 {
-    nxt_int_t          ret;
-    njs_lexer_t        *lexer;
-    njs_parser_t       *parser, *prev;
-    njs_generator_t    *generator;
-    njs_parser_node_t  *node;
+    nxt_int_t         ret;
+    njs_lexer_t      *lexer;
+    njs_parser_t     *parser, *prev;
+    njs_generator_t  *generator;
 
     parser = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_parser_t));
     if (nxt_slow_path(parser == NULL)) {
@@ -252,8 +251,8 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 
     vm->retval = njs_value_void;
 
-    node = njs_parser(vm, parser, prev);
-    if (nxt_slow_path(node == NULL)) {
+    ret = njs_parser(vm, parser, prev);
+    if (nxt_slow_path(ret != NXT_OK)) {
         goto fail;
     }
 
@@ -279,7 +278,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 
     nxt_memzero(generator, sizeof(njs_generator_t));
 
-    ret = njs_generate_scope(vm, generator, node);
+    ret = njs_generate_scope(vm, generator, parser->scope);
     if (nxt_slow_path(ret != NXT_OK)) {
         goto fail;
     }

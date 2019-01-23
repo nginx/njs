@@ -232,6 +232,8 @@ typedef struct {
 
 
 struct njs_parser_scope_s {
+    njs_parser_node_t               *node;
+
     nxt_queue_link_t                link;
     nxt_queue_t                     nested;
 
@@ -289,7 +291,6 @@ struct njs_parser_s {
     njs_lexer_t                     *lexer;
     njs_parser_node_t               *node;
     njs_parser_scope_t              *scope;
-    njs_parser_t                    *parent;
 };
 
 
@@ -308,7 +309,7 @@ njs_token_t njs_lexer_keyword(njs_lexer_t *lexer);
 
 njs_value_t *njs_parser_external(njs_vm_t *vm, njs_parser_t *parser);
 
-njs_parser_node_t *njs_parser(njs_vm_t *vm, njs_parser_t *parser,
+nxt_int_t njs_parser(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_t *prev);
 njs_token_t njs_parser_arguments(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *parent);
