@@ -59,6 +59,8 @@ njs_ret_t njs_variable_reference(njs_vm_t *vm, njs_parser_scope_t *scope,
     njs_reference_type_t type);
 njs_ret_t njs_variables_scope_reference(njs_vm_t *vm,
     njs_parser_scope_t *scope);
+njs_index_t njs_scope_next_index(njs_vm_t *vm, njs_parser_scope_t *scope,
+    nxt_uint_t scope_index, const njs_value_t *default_value);
 njs_ret_t njs_name_copy(njs_vm_t *vm, nxt_str_t *dst, nxt_str_t *src);
 
 extern const nxt_lvlhsh_proto_t  njs_variables_hash_proto;

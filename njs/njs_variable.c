@@ -286,10 +286,9 @@ njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node)
 {
     nxt_int_t                 ret;
     nxt_uint_t                scope_index;
-    nxt_array_t               *values;
     njs_index_t               index;
-    njs_value_t               *value;
     njs_variable_t            *var;
+    const njs_value_t         *default_value;
     njs_variable_reference_t  *vr;
 
     vr = &node->u.reference;
@@ -331,48 +330,12 @@ njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node)
         goto not_found;
     }
 
-    if (vm->options.accumulative && vr->scope->type == NJS_SCOPE_GLOBAL) {
-        /*
-         * When non-clonable VM runs in accumulative mode all
-         * global variables should be allocated in absolute scope
-         * to share them among consecutive VM invocations.
-         */
-        value = nxt_mp_align(vm->mem_pool, sizeof(njs_value_t),
-                             sizeof(njs_value_t));
-        if (nxt_slow_path(value == NULL)) {
-            njs_memory_error(vm);
-            return NULL;
-        }
+    default_value = njs_is_object(&var->value) ? &var->value : &njs_value_void;
 
-        index = (njs_index_t) value;
+    index = njs_scope_next_index(vm, vr->scope, scope_index, default_value);
 
-    } else {
-        values = vr->scope->values[scope_index];
-
-        if (values == NULL) {
-            values = nxt_array_create(4, sizeof(njs_value_t),
-                                      &njs_array_mem_proto, vm->mem_pool);
-            if (nxt_slow_path(values == NULL)) {
-                return NULL;
-            }
-
-            vr->scope->values[scope_index] = values;
-        }
-
-        value = nxt_array_add(values, &njs_array_mem_proto, vm->mem_pool);
-        if (nxt_slow_path(value == NULL)) {
-            return NULL;
-        }
-
-        index = vr->scope->next_index[scope_index];
-        vr->scope->next_index[scope_index] += sizeof(njs_value_t);
-    }
-
-    if (njs_is_object(&var->value)) {
-        *value = var->value;
-
-    } else {
-        *value = njs_value_void;
+    if (nxt_slow_path(index == NJS_INDEX_ERROR)) {
+        return NULL;
     }
 
     var->index = index;
@@ -445,6 +408,56 @@ njs_variable_reference_resolve(njs_vm_t *vm, njs_variable_reference_t *vr,
         previous = scope;
         scope = parent;
     }
+}
+
+
+njs_index_t
+njs_scope_next_index(njs_vm_t *vm, njs_parser_scope_t *scope,
+    nxt_uint_t scope_index, const njs_value_t *default_value)
+{
+    njs_index_t  index;
+    njs_value_t  *value;
+    nxt_array_t  *values;
+
+    if (vm->options.accumulative && scope->type == NJS_SCOPE_GLOBAL) {
+        /*
+         * When non-clonable VM runs in accumulative mode all
+         * global variables should be allocated in absolute scope
+         * to share them among consecutive VM invocations.
+         */
+        value = nxt_mp_align(vm->mem_pool, sizeof(njs_value_t),
+                             sizeof(njs_value_t));
+        if (nxt_slow_path(value == NULL)) {
+            return NJS_INDEX_ERROR;
+        }
+
+        index = (njs_index_t) value;
+
+    } else {
+        values = scope->values[scope_index];
+
+        if (values == NULL) {
+            values = nxt_array_create(4, sizeof(njs_value_t),
+                                      &njs_array_mem_proto, vm->mem_pool);
+            if (nxt_slow_path(values == NULL)) {
+                return NJS_INDEX_ERROR;
+            }
+
+            scope->values[scope_index] = values;
+        }
+
+        value = nxt_array_add(values, &njs_array_mem_proto, vm->mem_pool);
+        if (nxt_slow_path(value == NULL)) {
+            return NJS_INDEX_ERROR;
+        }
+
+        index = scope->next_index[scope_index];
+        scope->next_index[scope_index] += sizeof(njs_value_t);
+    }
+
+    *value = *default_value;
+
+    return index;
 }
 
 
