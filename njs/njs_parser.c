@@ -720,7 +720,7 @@ njs_parser_function_lambda(njs_vm_t *vm, njs_parser_t *parser,
         }
     }
 
-    token =  njs_parser_token(parser);
+    token = njs_parser_token(parser);
     if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
         return token;
     }
