@@ -15,7 +15,6 @@
 typedef struct {
     njs_vm_t            *vm;
     const njs_extern_t  *req_proto;
-    const njs_extern_t  *res_proto;
 } ngx_http_js_main_conf_t;
 
 
@@ -27,9 +26,9 @@ typedef struct {
 typedef struct {
     njs_vm_t            *vm;
     ngx_log_t           *log;
-    njs_opaque_value_t   args[2];
     ngx_uint_t           done;
     ngx_int_t            status;
+    njs_opaque_value_t   request;
     njs_opaque_value_t   request_body;
     ngx_str_t            redirect_uri;
 } ngx_http_js_ctx_t;
@@ -62,8 +61,6 @@ static void ngx_http_js_cleanup_vm(void *data);
 
 static njs_ret_t ngx_http_js_ext_get_string(njs_vm_t *vm, njs_value_t *value,
     void *obj, uintptr_t data);
-static njs_ret_t ngx_http_js_ext_set_string(njs_vm_t *vm, void *obj,
-    uintptr_t data, nxt_str_t *value);
 static njs_ret_t ngx_http_js_ext_foreach_header(njs_vm_t *vm, void *obj,
     void *next, uintptr_t data);
 static njs_ret_t ngx_http_js_ext_next_header(njs_vm_t *vm, njs_value_t *value,
@@ -79,10 +76,6 @@ static njs_ret_t ngx_http_js_ext_foreach_header_out(njs_vm_t *vm, void *obj,
 static njs_ret_t ngx_http_js_ext_get_status(njs_vm_t *vm, njs_value_t *value,
     void *obj, uintptr_t data);
 static njs_ret_t ngx_http_js_ext_set_status(njs_vm_t *vm, void *obj,
-    uintptr_t data, nxt_str_t *value);
-static njs_ret_t ngx_http_js_ext_get_content_length(njs_vm_t *vm,
-    njs_value_t *value, void *obj, uintptr_t data);
-static njs_ret_t ngx_http_js_ext_set_content_length(njs_vm_t *vm, void *obj,
     uintptr_t data, nxt_str_t *value);
 static njs_ret_t ngx_http_js_ext_send_header(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
@@ -110,10 +103,6 @@ static njs_ret_t ngx_http_js_ext_get_remote_address(njs_vm_t *vm,
     njs_value_t *value, void *obj, uintptr_t data);
 static njs_ret_t ngx_http_js_ext_get_request_body(njs_vm_t *vm,
     njs_value_t *value, void *obj, uintptr_t data);
-static njs_ret_t ngx_http_js_ext_get_headers(njs_vm_t *vm, njs_value_t *value,
-    void *obj, uintptr_t data);
-static njs_ret_t ngx_http_js_ext_foreach_headers(njs_vm_t *vm, void *obj,
-    void *next); /*FIXME*/
 static njs_ret_t ngx_http_js_ext_get_header_in(njs_vm_t *vm, njs_value_t *value,
     void *obj, uintptr_t data);
 static njs_ret_t ngx_http_js_ext_foreach_header_in(njs_vm_t *vm, void *obj,
@@ -125,8 +114,6 @@ static njs_ret_t ngx_http_js_ext_foreach_arg(njs_vm_t *vm, void *obj,
 static njs_ret_t ngx_http_js_ext_next_arg(njs_vm_t *vm, njs_value_t *value,
     void *obj, void *next);
 static njs_ret_t ngx_http_js_ext_get_variable(njs_vm_t *vm, njs_value_t *value,
-    void *obj, uintptr_t data);
-static njs_ret_t ngx_http_js_ext_get_response(njs_vm_t *vm, njs_value_t *value,
     void *obj, uintptr_t data);
 static njs_ret_t ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
@@ -217,106 +204,6 @@ ngx_module_t  ngx_http_js_module = {
 };
 
 
-static njs_external_t  ngx_http_js_ext_response[] = {
-
-    { nxt_string("headers"),
-      NJS_EXTERN_OBJECT,
-      NULL,
-      0,
-      ngx_http_js_ext_get_header_out,
-      ngx_http_js_ext_set_header_out,
-      NULL,
-      ngx_http_js_ext_foreach_header_out,
-      ngx_http_js_ext_next_header,
-      NULL,
-      0 },
-
-    { nxt_string("status"),
-      NJS_EXTERN_PROPERTY,
-      NULL,
-      0,
-      ngx_http_js_ext_get_status,
-      ngx_http_js_ext_set_status,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      offsetof(ngx_http_request_t, headers_out.status) },
-
-    { nxt_string("contentType"),
-      NJS_EXTERN_PROPERTY,
-      NULL,
-      0,
-      ngx_http_js_ext_get_string,
-      ngx_http_js_ext_set_string,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      offsetof(ngx_http_request_t, headers_out.content_type) },
-
-    { nxt_string("contentLength"),
-      NJS_EXTERN_PROPERTY,
-      NULL,
-      0,
-      ngx_http_js_ext_get_content_length,
-      ngx_http_js_ext_set_content_length,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      0 },
-
-    { nxt_string("sendHeader"),
-      NJS_EXTERN_METHOD,
-      NULL,
-      0,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      ngx_http_js_ext_send_header,
-      0 },
-
-    { nxt_string("send"),
-      NJS_EXTERN_METHOD,
-      NULL,
-      0,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      ngx_http_js_ext_send,
-      0 },
-
-    { nxt_string("finish"),
-      NJS_EXTERN_METHOD,
-      NULL,
-      0,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      ngx_http_js_ext_finish,
-      0 },
-
-    { nxt_string("return"),
-      NJS_EXTERN_METHOD,
-      NULL,
-      0,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      ngx_http_js_ext_return,
-      0 },
-};
-
-
 static njs_external_t  ngx_http_js_ext_request[] = {
 
     { nxt_string("uri"),
@@ -379,18 +266,6 @@ static njs_external_t  ngx_http_js_ext_request[] = {
       NULL,
       0 },
 
-    { nxt_string("body"),
-      NJS_EXTERN_PROPERTY,
-      NULL,
-      0,
-      ngx_http_js_ext_get_reply_body,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      0 },
-
     { nxt_string("requestBody"),
       NJS_EXTERN_PROPERTY,
       NULL,
@@ -412,18 +287,6 @@ static njs_external_t  ngx_http_js_ext_request[] = {
       NULL,
       NULL,
       NULL,
-      NULL,
-      0 },
-
-    { nxt_string("headers"),
-      NJS_EXTERN_OBJECT,
-      NULL,
-      0,
-      ngx_http_js_ext_get_headers,
-      NULL,
-      NULL,
-      ngx_http_js_ext_foreach_headers,
-      ngx_http_js_ext_next_header,
       NULL,
       0 },
 
@@ -484,18 +347,6 @@ static njs_external_t  ngx_http_js_ext_request[] = {
       NULL,
       ngx_http_js_ext_foreach_header_out,
       ngx_http_js_ext_next_header,
-      NULL,
-      0 },
-
-    { nxt_string("response"),
-      NJS_EXTERN_PROPERTY,
-      NULL,
-      0,
-      ngx_http_js_ext_get_response,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
       NULL,
       0 },
 
@@ -622,18 +473,6 @@ static njs_external_t  ngx_http_js_externals[] = {
       NULL,
       NULL,
       0 },
-
-    { nxt_string("response"),
-      NJS_EXTERN_OBJECT,
-      ngx_http_js_ext_response,
-      nxt_nitems(ngx_http_js_ext_response),
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      0 },
 };
 
 
@@ -707,7 +546,7 @@ ngx_http_js_content_event_handler(ngx_http_request_t *r)
 
     ctx->status = NGX_HTTP_INTERNAL_SERVER_ERROR;
 
-    if (njs_vm_call(ctx->vm, func, njs_value_arg(ctx->args), 2) != NJS_OK) {
+    if (njs_vm_call(ctx->vm, func, njs_value_arg(&ctx->request), 1) != NJS_OK) {
         njs_vm_retval_to_ext_string(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
@@ -839,7 +678,7 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
 
     pending = njs_vm_pending(ctx->vm);
 
-    if (njs_vm_call(ctx->vm, func, njs_value_arg(ctx->args), 2) != NJS_OK) {
+    if (njs_vm_call(ctx->vm, func, njs_value_arg(&ctx->request), 1) != NJS_OK) {
         njs_vm_retval_to_ext_string(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
@@ -922,14 +761,8 @@ ngx_http_js_init_vm(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    rc = njs_vm_external_create(ctx->vm, njs_value_arg(&ctx->args[0]),
+    rc = njs_vm_external_create(ctx->vm, njs_value_arg(&ctx->request),
                                 jmcf->req_proto, r);
-    if (rc != NXT_OK) {
-        return NGX_ERROR;
-    }
-
-    rc = njs_vm_external_create(ctx->vm, njs_value_arg(&ctx->args[1]),
-                                jmcf->res_proto, r);
     if (rc != NXT_OK) {
         return NGX_ERROR;
     }
@@ -971,31 +804,6 @@ ngx_http_js_ext_get_string(njs_vm_t *vm, njs_value_t *value, void *obj,
     field = (ngx_str_t *) (p + data);
 
     return njs_string_create(vm, value, field->data, field->len, 0);
-}
-
-
-static njs_ret_t
-ngx_http_js_ext_set_string(njs_vm_t *vm, void *obj, uintptr_t data,
-    nxt_str_t *value)
-{
-    char *p = obj;
-
-    ngx_str_t           *field;
-    ngx_http_request_t  *r;
-
-    r = (ngx_http_request_t *) obj;
-
-    field = (ngx_str_t *) (p + data);
-    field->len = value->length;
-
-    field->data = ngx_pnalloc(r->pool, value->length);
-    if (field->data == NULL) {
-        return NJS_ERROR;
-    }
-
-    ngx_memcpy(field->data, value->start, value->length);
-
-    return NJS_OK;
 }
 
 
@@ -1211,40 +1019,6 @@ ngx_http_js_ext_set_status(njs_vm_t *vm, void *obj, uintptr_t data,
     r = (ngx_http_request_t *) obj;
 
     r->headers_out.status = n;
-
-    return NJS_OK;
-}
-
-
-static njs_ret_t
-ngx_http_js_ext_get_content_length(njs_vm_t *vm, njs_value_t *value, void *obj,
-    uintptr_t data)
-{
-    ngx_http_request_t  *r;
-
-    r = (ngx_http_request_t *) obj;
-
-    njs_value_number_set(value, r->headers_out.content_length_n);
-
-    return NJS_OK;
-}
-
-
-static njs_ret_t
-ngx_http_js_ext_set_content_length(njs_vm_t *vm, void *obj, uintptr_t data,
-    nxt_str_t *value)
-{
-    ngx_int_t            n;
-    ngx_http_request_t  *r;
-
-    n = ngx_atoi(value->start, value->length);
-    if (n == NGX_ERROR) {
-        return NJS_ERROR;
-    }
-
-    r = (ngx_http_request_t *) obj;
-
-    r->headers_out.content_length_n = n;
 
     return NJS_OK;
 }
@@ -1656,27 +1430,6 @@ done:
 
 
 static njs_ret_t
-ngx_http_js_ext_get_headers(njs_vm_t *vm, njs_value_t *value,
-    void *obj, uintptr_t data)
-{
-    ngx_http_js_ctx_t   *ctx;
-    ngx_http_request_t  *r;
-
-    r = (ngx_http_request_t *) obj;
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
-
-    if (ctx->done) {
-        /* simulate Reply.headers behavior */
-
-        return ngx_http_js_ext_get_header_out(vm, value, obj, data);
-    }
-
-    return ngx_http_js_ext_get_header_in(vm, value, obj, data);
-}
-
-
-static njs_ret_t
 ngx_http_js_ext_get_header_in(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
@@ -1694,26 +1447,6 @@ ngx_http_js_ext_get_header_in(njs_vm_t *vm, njs_value_t *value, void *obj,
     }
 
     return njs_string_create(vm, value, h->value.data, h->value.len, 0);
-}
-
-
-static njs_ret_t
-ngx_http_js_ext_foreach_headers(njs_vm_t *vm, void *obj, void *next)
-{
-    ngx_http_js_ctx_t   *ctx;
-    ngx_http_request_t  *r;
-
-    r = (ngx_http_request_t *) obj;
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
-
-    if (ctx->done) {
-        /* simulate Reply.headers behavior */
-
-        return ngx_http_js_ext_foreach_header_out(vm, obj, next);
-    }
-
-    return ngx_http_js_ext_foreach_header_in(vm, obj, next);
 }
 
 
@@ -1830,23 +1563,6 @@ ngx_http_js_ext_get_variable(njs_vm_t *vm, njs_value_t *value, void *obj,
     }
 
     return njs_string_create(vm, value, vv->data, vv->len, 0);
-}
-
-
-static njs_ret_t
-ngx_http_js_ext_get_response(njs_vm_t *vm, njs_value_t *value, void *obj,
-    uintptr_t data)
-{
-    ngx_http_js_ctx_t   *ctx;
-    ngx_http_request_t  *r;
-
-    r = (ngx_http_request_t *) obj;
-
-    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
-
-    njs_value_assign(value, njs_value_arg(&ctx->args[1]));
-
-    return NJS_OK;
 }
 
 
@@ -2189,7 +1905,7 @@ ngx_http_js_ext_get_parent(njs_vm_t *vm, njs_value_t *value, void *obj,
         return NJS_ERROR;
     }
 
-    njs_value_assign(value, njs_value_arg(&ctx->args[0]));
+    njs_value_assign(value, njs_value_arg(&ctx->request));
 
     return NJS_OK;
 }
@@ -2417,14 +2133,6 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    jmcf->res_proto = njs_vm_external_prototype(jmcf->vm,
-                                                &ngx_http_js_externals[1]);
-    if (jmcf->res_proto == NULL) {
-        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "failed to add response proto");
-        return NGX_CONF_ERROR;
-    }
-
     rc = njs_vm_compile(jmcf->vm, &start, end);
 
     if (rc != NJS_OK) {
@@ -2520,7 +2228,6 @@ ngx_http_js_create_main_conf(ngx_conf_t *cf)
      *
      *     conf->vm = NULL;
      *     conf->req_proto = NULL;
-     *     conf->res_proto = NULL;
      */
 
     return conf;
