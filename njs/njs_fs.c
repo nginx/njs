@@ -903,7 +903,7 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
     }
 
     lhq.replace = 0;
-    lhq.pool = vm->mem_cache_pool;
+    lhq.pool = vm->mem_pool;
 
     if (errn != 0) {
         lhq.key = nxt_string_value("errno");

@@ -41,7 +41,7 @@ njs_set_timer(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         delay = args[2].data.u.number;
     }
 
-    event = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_event_t));
+    event = nxt_mp_alloc(vm->mem_pool, sizeof(njs_event_t));
     if (nxt_slow_path(event == NULL)) {
         goto memory_error;
     }
@@ -55,8 +55,8 @@ njs_set_timer(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     event->posted = 0;
 
     if (event->nargs != 0) {
-        event->args = nxt_mem_cache_alloc(vm->mem_cache_pool,
-                                          sizeof(njs_value_t) * event->nargs);
+        event->args = nxt_mp_alloc(vm->mem_pool,
+                                   sizeof(njs_value_t) * event->nargs);
         if (nxt_slow_path(event->args == NULL)) {
             goto memory_error;
         }
@@ -115,7 +115,7 @@ njs_clear_timeout(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                               (unsigned) args[1].data.u.number);
     lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
     lhq.proto = &njs_event_hash_proto;
-    lhq.pool = vm->mem_cache_pool;
+    lhq.pool = vm->mem_pool;
 
     ret = nxt_lvlhsh_find(&vm->events_hash, &lhq);
     if (ret == NXT_OK) {

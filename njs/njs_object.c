@@ -33,7 +33,7 @@ njs_object_alloc(njs_vm_t *vm)
 {
     njs_object_t  *object;
 
-    object = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_object_t));
+    object = nxt_mp_alloc(vm->mem_pool, sizeof(njs_object_t));
 
     if (nxt_fast_path(object != NULL)) {
         nxt_lvlhsh_init(&object->hash);
@@ -62,7 +62,7 @@ njs_object_value_copy(njs_vm_t *vm, njs_value_t *value)
         return object;
     }
 
-    object = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_object_t));
+    object = nxt_mp_alloc(vm->mem_pool, sizeof(njs_object_t));
 
     if (nxt_fast_path(object != NULL)) {
         *object = *value->data.u.object;
@@ -84,7 +84,7 @@ njs_object_value_alloc(njs_vm_t *vm, const njs_value_t *value, nxt_uint_t type)
     nxt_uint_t          index;
     njs_object_value_t  *ov;
 
-    ov = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_object_value_t));
+    ov = nxt_mp_alloc(vm->mem_pool, sizeof(njs_object_value_t));
 
     if (nxt_fast_path(ov != NULL)) {
         nxt_lvlhsh_init(&ov->object.hash);
@@ -116,7 +116,7 @@ njs_object_hash_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
 
     lhq.replace = 0;
     lhq.proto = &njs_object_hash_proto;
-    lhq.pool = vm->mem_cache_pool;
+    lhq.pool = vm->mem_pool;
 
     while (n != 0) {
         njs_string_get(&prop->name, &lhq.key);
@@ -188,8 +188,8 @@ njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
 {
     njs_object_prop_t  *prop;
 
-    prop = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
-                               sizeof(njs_object_prop_t));
+    prop = nxt_mp_align(vm->mem_pool, sizeof(njs_value_t),
+                        sizeof(njs_object_prop_t));
 
     if (nxt_fast_path(prop != NULL)) {
         /* GC: retain. */
@@ -743,7 +743,7 @@ njs_method_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
     njs_function_t     *function;
     njs_object_prop_t  *prop, *shared;
 
-    prop = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_object_prop_t));
+    prop = nxt_mp_alloc(vm->mem_pool, sizeof(njs_object_prop_t));
     if (nxt_slow_path(prop == NULL)) {
         njs_memory_error(vm);
         return NXT_ERROR;
@@ -759,7 +759,7 @@ njs_method_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
 
     pq->lhq.replace = 0;
     pq->lhq.value = prop;
-    pq->lhq.pool = vm->mem_cache_pool;
+    pq->lhq.pool = vm->mem_pool;
 
     return nxt_lvlhsh_insert(&pq->prototype->hash, &pq->lhq);
 }
@@ -1441,7 +1441,7 @@ njs_define_property(njs_vm_t *vm, njs_value_t *object, const njs_value_t *name,
         } else {
             pq.lhq.value = desc;
             pq.lhq.replace = 0;
-            pq.lhq.pool = vm->mem_cache_pool;
+            pq.lhq.pool = vm->mem_pool;
 
             ret = nxt_lvlhsh_insert(&object->data.u.object->hash, &pq.lhq);
             if (nxt_slow_path(ret != NXT_OK)) {
@@ -1633,7 +1633,7 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
 
     lhq.proto = &njs_object_hash_proto;
     lhq.replace = 0;
-    lhq.pool = vm->mem_cache_pool;
+    lhq.pool = vm->mem_pool;
     lhq.proto = &njs_object_hash_proto;
 
     lhq.key = nxt_string_value("value");
@@ -2050,7 +2050,7 @@ njs_property_prototype_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
     lhq.key_hash = NJS_PROTOTYPE_HASH;
     lhq.key = nxt_string_value("prototype");
     lhq.replace = 0;
-    lhq.pool = vm->mem_cache_pool;
+    lhq.pool = vm->mem_pool;
     lhq.proto = &njs_object_hash_proto;
 
     ret = nxt_lvlhsh_insert(hash, &lhq);
@@ -2308,7 +2308,7 @@ njs_property_constructor_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
     lhq.key_hash = NJS_CONSTRUCTOR_HASH;
     lhq.key = nxt_string_value("constructor");
     lhq.replace = 0;
-    lhq.pool = vm->mem_cache_pool;
+    lhq.pool = vm->mem_pool;
     lhq.proto = &njs_object_hash_proto;
 
     ret = nxt_lvlhsh_insert(hash, &lhq);

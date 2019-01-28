@@ -91,7 +91,7 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser, njs_parser_t *prev)
 
         lhq.proto = &njs_variables_hash_proto;
         lhq.replace = 0;
-        lhq.pool = vm->mem_cache_pool;
+        lhq.pool = vm->mem_pool;
 
         variables = &parser->scope->variables;
         prev_variables = &prev->scope->variables;
@@ -178,7 +178,7 @@ njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser, njs_scope_t type)
         }
     }
 
-    scope = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_parser_scope_t));
+    scope = nxt_mp_alloc(vm->mem_pool, sizeof(njs_parser_scope_t));
     if (nxt_slow_path(scope == NULL)) {
         return NXT_ERROR;
     }
@@ -210,7 +210,7 @@ njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser, njs_scope_t type)
 
     if (scope->type < NJS_SCOPE_BLOCK) {
         values = nxt_array_create(4, sizeof(njs_value_t), &njs_array_mem_proto,
-                                  vm->mem_cache_pool);
+                                  vm->mem_pool);
         if (nxt_slow_path(values == NULL)) {
             return NXT_ERROR;
         }
@@ -450,7 +450,7 @@ njs_parser_block(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
     if (node != NULL && node->token == NJS_TOKEN_BLOCK) {
         parser->node = node->left;
 
-        nxt_mem_cache_free(vm->mem_cache_pool, node);
+        nxt_mp_free(vm->mem_pool, node);
     }
 
     return token;
@@ -609,8 +609,7 @@ njs_parser_function_expression(njs_vm_t *vm, njs_parser_t *parser)
 
     } else {
         /* Anonymous function. */
-        lambda = nxt_mem_cache_zalloc(vm->mem_cache_pool,
-                                      sizeof(njs_function_lambda_t));
+        lambda = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_function_lambda_t));
         if (nxt_slow_path(lambda == NULL)) {
             return NJS_TOKEN_ERROR;
         }
@@ -1706,7 +1705,7 @@ njs_parser_try_block(njs_vm_t *vm, njs_parser_t *parser)
     if (node != NULL && node->token == NJS_TOKEN_BLOCK) {
         parser->node = node->left;
 
-        nxt_mem_cache_free(vm->mem_cache_pool, node);
+        nxt_mp_free(vm->mem_pool, node);
     }
 
     return token;

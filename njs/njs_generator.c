@@ -461,7 +461,7 @@ njs_generate_reserve(njs_vm_t *vm, njs_generator_t *generator, size_t size)
         size += size / 2;
     }
 
-    p = nxt_mem_cache_alloc(vm->mem_cache_pool, size);
+    p = nxt_mp_alloc(vm->mem_pool, size);
     if (nxt_slow_path(p == NULL)) {
         njs_memory_error(vm);
         return NULL;
@@ -472,7 +472,7 @@ njs_generate_reserve(njs_vm_t *vm, njs_generator_t *generator, size_t size)
     size = generator->code_end - generator->code_start;
     memcpy(p, generator->code_start, size);
 
-    nxt_mem_cache_free(vm->mem_cache_pool, generator->code_start);
+    nxt_mp_free(vm->mem_pool, generator->code_start);
 
     generator->code_start = p;
     generator->code_end = p + size;
@@ -880,8 +880,7 @@ njs_generate_switch_statement(njs_vm_t *vm, njs_generator_t *generator,
                 return ret;
             }
 
-            patch = nxt_mem_cache_alloc(vm->mem_cache_pool,
-                                        sizeof(njs_generator_patch_t));
+            patch = nxt_mp_alloc(vm->mem_pool, sizeof(njs_generator_patch_t));
             if (nxt_slow_path(patch == NULL)) {
                 return NXT_ERROR;
             }
@@ -921,7 +920,7 @@ njs_generate_switch_statement(njs_vm_t *vm, njs_generator_t *generator,
 
             next = patch->next;
 
-            nxt_mem_cache_free(vm->mem_cache_pool, patch);
+            nxt_mp_free(vm->mem_pool, patch);
 
             patch = next;
             node = branch->right;
@@ -1259,8 +1258,7 @@ njs_generate_start_block(njs_vm_t *vm, njs_generator_t *generator,
 {
     njs_generator_block_t  *block;
 
-    block = nxt_mem_cache_alloc(vm->mem_cache_pool,
-                                sizeof(njs_generator_block_t));
+    block = nxt_mp_alloc(vm->mem_pool, sizeof(njs_generator_block_t));
 
     if (nxt_fast_path(block != NULL)) {
         block->next = generator->block;
@@ -1301,8 +1299,7 @@ njs_generate_make_continuation_patch(njs_vm_t *vm, njs_generator_t *generator,
 {
     njs_generator_patch_t  *patch;
 
-    patch = nxt_mem_cache_alloc(vm->mem_cache_pool,
-                                sizeof(njs_generator_patch_t));
+    patch = nxt_mp_alloc(vm->mem_pool, sizeof(njs_generator_patch_t));
     if (nxt_slow_path(patch == NULL)) {
         njs_memory_error(vm);
         return NXT_ERROR;
@@ -1327,7 +1324,7 @@ njs_generate_patch_block(njs_vm_t *vm, njs_generator_t *generator,
         njs_code_update_offset(generator, patch);
         next = patch->next;
 
-        nxt_mem_cache_free(vm->mem_cache_pool, patch);
+        nxt_mp_free(vm->mem_pool, patch);
     }
 }
 
@@ -1338,8 +1335,7 @@ njs_generate_make_exit_patch(njs_vm_t *vm, njs_generator_t *generator,
 {
     njs_generator_patch_t  *patch;
 
-    patch = nxt_mem_cache_alloc(vm->mem_cache_pool,
-                                sizeof(njs_generator_patch_t));
+    patch = nxt_mp_alloc(vm->mem_pool, sizeof(njs_generator_patch_t));
     if (nxt_slow_path(patch == NULL)) {
         njs_memory_error(vm);
         return NXT_ERROR;
@@ -1364,7 +1360,7 @@ njs_generate_patch_block_exit(njs_vm_t *vm, njs_generator_t *generator)
 
     njs_generate_patch_block(vm, generator, block->exit);
 
-    nxt_mem_cache_free(vm->mem_cache_pool, block);
+    nxt_mp_free(vm->mem_pool, block);
 }
 
 
@@ -1391,8 +1387,7 @@ njs_generate_continue_statement(njs_vm_t *vm, njs_generator_t *generator,
 
     /* TODO: LABEL */
 
-    patch = nxt_mem_cache_alloc(vm->mem_cache_pool,
-                                sizeof(njs_generator_patch_t));
+    patch = nxt_mp_alloc(vm->mem_pool, sizeof(njs_generator_patch_t));
 
     if (nxt_fast_path(patch != NULL)) {
         patch->next = block->continuation;
@@ -1441,8 +1436,7 @@ njs_generate_break_statement(njs_vm_t *vm, njs_generator_t *generator,
 
     /* TODO: LABEL: loop and switch may have label, block must have label. */
 
-    patch = nxt_mem_cache_alloc(vm->mem_cache_pool,
-                                sizeof(njs_generator_patch_t));
+    patch = nxt_mp_alloc(vm->mem_pool, sizeof(njs_generator_patch_t));
 
     if (nxt_fast_path(patch != NULL)) {
         patch->next = block->exit;
@@ -2293,8 +2287,8 @@ njs_generate_function_scope(njs_vm_t *vm, njs_function_lambda_t *lambda,
     nxt_array_t      *closure;
     njs_generator_t  *generator;
 
-    generator = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
-                                    sizeof(njs_generator_t));
+    generator = nxt_mp_align(vm->mem_pool, sizeof(njs_value_t),
+                             sizeof(njs_generator_t));
     if (nxt_slow_path(generator == NULL)) {
         return NXT_ERROR;
     }
@@ -2326,7 +2320,7 @@ njs_generate_function_scope(njs_vm_t *vm, njs_function_lambda_t *lambda,
         lambda->start = generator->code_start;
     }
 
-    nxt_mem_cache_free(vm->mem_cache_pool, generator);
+    nxt_mp_free(vm->mem_pool, generator);
 
     return ret;
 }
@@ -2346,7 +2340,7 @@ njs_generate_scope(njs_vm_t *vm, njs_generator_t *generator,
 
     generator->code_size = 128;
 
-    p = nxt_mem_cache_alloc(vm->mem_cache_pool, generator->code_size);
+    p = nxt_mp_alloc(vm->mem_pool, generator->code_size);
     if (nxt_slow_path(p == NULL)) {
         return NXT_ERROR;
     }
@@ -2371,8 +2365,7 @@ njs_generate_scope(njs_vm_t *vm, njs_generator_t *generator,
         scope_size -= NJS_INDEX_GLOBAL_OFFSET;
     }
 
-    generator->local_scope = nxt_mem_cache_alloc(vm->mem_cache_pool,
-                                                 scope_size);
+    generator->local_scope = nxt_mp_alloc(vm->mem_pool, scope_size);
     if (nxt_slow_path(generator->local_scope == NULL)) {
         return NXT_ERROR;
     }
@@ -2392,13 +2385,13 @@ njs_generate_scope(njs_vm_t *vm, njs_generator_t *generator,
 
     if (vm->code == NULL) {
         vm->code = nxt_array_create(4, sizeof(njs_vm_code_t),
-                                    &njs_array_mem_proto, vm->mem_cache_pool);
+                                    &njs_array_mem_proto, vm->mem_pool);
         if (nxt_slow_path(vm->code == NULL)) {
             return NXT_ERROR;
         }
     }
 
-    code = nxt_array_add(vm->code, &njs_array_mem_proto, vm->mem_cache_pool);
+    code = nxt_array_add(vm->code, &njs_array_mem_proto, vm->mem_pool);
     if (nxt_slow_path(code == NULL)) {
         return NXT_ERROR;
     }
@@ -2489,8 +2482,7 @@ njs_generate_return_statement(njs_vm_t *vm, njs_generator_t *generator,
         return NXT_OK;
     }
 
-    patch = nxt_mem_cache_alloc(vm->mem_cache_pool,
-                                sizeof(njs_generator_patch_t));
+    patch = nxt_mp_alloc(vm->mem_pool, sizeof(njs_generator_patch_t));
     if (nxt_slow_path(patch == NULL)) {
         return NXT_ERROR;
     }
@@ -3087,8 +3079,8 @@ njs_generate_temp_index_get(njs_vm_t *vm, njs_generator_t *generator,
          * all global variables are allocated in absolute scope
          * to simplify global scope handling.
          */
-        value = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
-                                    sizeof(njs_value_t));
+        value = nxt_mp_align(vm->mem_pool, sizeof(njs_value_t),
+                             sizeof(njs_value_t));
         if (nxt_slow_path(value == NULL)) {
             return NJS_INDEX_ERROR;
         }
@@ -3097,7 +3089,7 @@ njs_generate_temp_index_get(njs_vm_t *vm, njs_generator_t *generator,
 
     } else {
         value = nxt_array_add(scope->values[0], &njs_array_mem_proto,
-                              vm->mem_cache_pool);
+                              vm->mem_pool);
         if (nxt_slow_path(value == NULL)) {
             return NJS_INDEX_ERROR;
         }
@@ -3153,7 +3145,7 @@ njs_generate_index_release(njs_vm_t *vm, njs_generator_t *generator,
 
     if (cache == NULL) {
         cache = nxt_array_create(4, sizeof(njs_value_t *),
-                                 &njs_array_mem_proto, vm->mem_cache_pool);
+                                 &njs_array_mem_proto, vm->mem_pool);
         if (nxt_slow_path(cache == NULL)) {
             return NXT_ERROR;
         }
@@ -3161,7 +3153,7 @@ njs_generate_index_release(njs_vm_t *vm, njs_generator_t *generator,
         generator->index_cache = cache;
     }
 
-    last = nxt_array_add(cache, &njs_array_mem_proto, vm->mem_cache_pool);
+    last = nxt_array_add(cache, &njs_array_mem_proto, vm->mem_pool);
     if (nxt_fast_path(last != NULL)) {
         *last = index;
         return NXT_OK;
@@ -3177,7 +3169,7 @@ njs_generate_function_debug(njs_vm_t *vm, nxt_str_t *name,
 {
     njs_function_debug_t  *debug;
 
-    debug = nxt_array_add(vm->debug, &njs_array_mem_proto, vm->mem_cache_pool);
+    debug = nxt_array_add(vm->debug, &njs_array_mem_proto, vm->mem_pool);
     if (nxt_slow_path(debug == NULL)) {
         return NXT_ERROR;
     }

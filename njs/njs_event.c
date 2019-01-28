@@ -52,7 +52,7 @@ njs_add_event(njs_vm_t *vm, njs_event_t *event)
     lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
     lhq.value = event;
     lhq.proto = &njs_event_hash_proto;
-    lhq.pool = vm->mem_cache_pool;
+    lhq.pool = vm->mem_pool;
 
     ret = nxt_lvlhsh_insert(&vm->events_hash, &lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
@@ -86,7 +86,7 @@ njs_del_event(njs_vm_t *vm, njs_event_t *ev, nxt_uint_t action)
         njs_string_get(&ev->id, &lhq.key);
         lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
         lhq.proto = &njs_event_hash_proto;
-        lhq.pool = vm->mem_cache_pool;
+        lhq.pool = vm->mem_pool;
 
         if (ev->posted) {
             ev->posted = 0;

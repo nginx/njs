@@ -11099,7 +11099,7 @@ static njs_unit_test_t  njs_tz_test[] =
 typedef struct {
     nxt_lvlhsh_t          hash;
     const njs_extern_t    *proto;
-    nxt_mem_cache_pool_t  *mem_cache_pool;
+    nxt_mp_t              *pool;
 
     uint32_t              a;
     nxt_str_t             uri;
@@ -11138,14 +11138,14 @@ lvlhsh_unit_test_key_test(nxt_lvlhsh_query_t *lhq, void *data)
 static void *
 lvlhsh_unit_test_pool_alloc(void *pool, size_t size, nxt_uint_t nalloc)
 {
-    return nxt_mem_cache_align(pool, size, size);
+    return nxt_mp_align(pool, size, size);
 }
 
 
 static void
 lvlhsh_unit_test_pool_free(void *pool, void *p, size_t size)
 {
-    nxt_mem_cache_free(pool, p);
+    nxt_mp_free(pool, p);
 }
 
 
@@ -11159,12 +11159,12 @@ static const nxt_lvlhsh_proto_t  lvlhsh_proto  nxt_aligned(64) = {
 
 
 static njs_unit_test_prop_t *
-lvlhsh_unit_test_alloc(nxt_mem_cache_pool_t *pool, const njs_value_t *name,
+lvlhsh_unit_test_alloc(nxt_mp_t *pool, const njs_value_t *name,
     const njs_value_t *value)
 {
     njs_unit_test_prop_t *prop;
 
-    prop = nxt_mem_cache_alloc(pool, sizeof(njs_unit_test_prop_t));
+    prop = nxt_mp_alloc(pool, sizeof(njs_unit_test_prop_t));
     if (prop == NULL) {
         return NULL;
     }
@@ -11187,7 +11187,7 @@ lvlhsh_unit_test_add(njs_unit_test_req_t *r, njs_unit_test_prop_t *prop)
     lhq.replace = 1;
     lhq.value = (void *) prop;
     lhq.proto = &lvlhsh_proto;
-    lhq.pool = r->mem_cache_pool;
+    lhq.pool = r->pool;
 
     switch (nxt_lvlhsh_insert(&r->hash, &lhq)) {
 
@@ -11318,7 +11318,7 @@ njs_unit_test_r_set_vars(njs_vm_t *vm, void *obj, uintptr_t data,
     njs_string_create(vm, &name, key->start, key->length, 0);
     njs_string_create(vm, &val, value->start, value->length, 0);
 
-    prop = lvlhsh_unit_test_alloc(vm->mem_cache_pool, &name, &val);
+    prop = lvlhsh_unit_test_alloc(vm->mem_pool, &name, &val);
     if (prop == NULL) {
         njs_memory_error(vm);
         return NXT_ERROR;
@@ -11468,18 +11468,18 @@ njs_unit_test_create_external(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NJS_ERROR;
     }
 
-    value = nxt_mem_cache_zalloc(r->mem_cache_pool, sizeof(njs_opaque_value_t));
+    value = nxt_mp_zalloc(r->pool, sizeof(njs_opaque_value_t));
     if (value == NULL) {
         goto memory_error;
     }
 
-    sr = nxt_mem_cache_zalloc(r->mem_cache_pool, sizeof(njs_unit_test_req_t));
+    sr = nxt_mp_zalloc(r->pool, sizeof(njs_unit_test_req_t));
     if (sr == NULL) {
         goto memory_error;
     }
 
     sr->uri = uri;
-    sr->mem_cache_pool = r->mem_cache_pool;
+    sr->pool = r->pool;
     sr->proto = r->proto;
 
     ret = njs_vm_external_create(vm, value, sr->proto, sr);
@@ -11704,9 +11704,9 @@ njs_externals_init(njs_vm_t *vm)
         return NXT_ERROR;
     }
 
-    requests = nxt_mem_cache_zalloc(vm->mem_cache_pool,
-                                    nxt_nitems(nxt_test_requests)
-                                    * sizeof(njs_unit_test_req_t));
+    requests = nxt_mp_zalloc(vm->mem_pool,
+                             nxt_nitems(nxt_test_requests)
+                             * sizeof(njs_unit_test_req_t));
     if (requests == NULL) {
         return NXT_ERROR;
     }
@@ -11714,7 +11714,7 @@ njs_externals_init(njs_vm_t *vm)
     for (i = 0; i < nxt_nitems(nxt_test_requests); i++) {
 
         requests[i] = nxt_test_requests[i].request;
-        requests[i].mem_cache_pool = vm->mem_cache_pool;
+        requests[i].pool = vm->mem_pool;
         requests[i].proto = proto;
 
         ret = njs_vm_external_create(vm, njs_value_arg(&requests[i].value),
@@ -11732,7 +11732,7 @@ njs_externals_init(njs_vm_t *vm)
         }
 
         for (j = 0; j < nxt_nitems(nxt_test_requests[i].props); j++) {
-            prop = lvlhsh_unit_test_alloc(vm->mem_cache_pool,
+            prop = lvlhsh_unit_test_alloc(vm->mem_pool,
                                           &nxt_test_requests[i].props[j].name,
                                           &nxt_test_requests[i].props[j].value);
 

@@ -284,7 +284,7 @@ struct njs_parser_node_s {
 
 
 #define njs_parser_node_alloc(vm)                                             \
-    nxt_mem_cache_zalloc((vm)->mem_cache_pool, sizeof(njs_parser_node_t))
+    nxt_mp_zalloc((vm)->mem_pool, sizeof(njs_parser_node_t))
 
 
 struct njs_parser_s {
@@ -303,8 +303,7 @@ typedef struct {
 
 njs_token_t njs_lexer_token(njs_lexer_t *lexer);
 void njs_lexer_rollback(njs_lexer_t *lexer);
-nxt_int_t njs_lexer_keywords_init(nxt_mem_cache_pool_t *mcp,
-    nxt_lvlhsh_t *hash);
+nxt_int_t njs_lexer_keywords_init(nxt_mp_t *mcp, nxt_lvlhsh_t *hash);
 njs_token_t njs_lexer_keyword(njs_lexer_t *lexer);
 
 njs_value_t *njs_parser_external(njs_vm_t *vm, njs_parser_t *parser);

@@ -18,11 +18,11 @@ njs_function_alloc(njs_vm_t *vm)
 {
     njs_function_t  *function;
 
-    function = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_function_t));
+    function = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_function_t));
 
     if (nxt_fast_path(function != NULL)) {
         /*
-         * nxt_mem_cache_zalloc() does also:
+         * nxt_mp_zalloc() does also:
          *   nxt_lvlhsh_init(&function->object.hash);
          *   function->object.__proto__ = NULL;
          */
@@ -33,8 +33,8 @@ njs_function_alloc(njs_vm_t *vm)
         function->object.extensible = 1;
         function->args_offset = 1;
 
-        function->u.lambda = nxt_mem_cache_zalloc(vm->mem_cache_pool,
-                                                 sizeof(njs_function_lambda_t));
+        function->u.lambda = nxt_mp_zalloc(vm->mem_pool,
+                                           sizeof(njs_function_lambda_t));
         if (nxt_slow_path(function->u.lambda == NULL)) {
             njs_memory_error(vm);
             return NULL;
@@ -66,7 +66,7 @@ njs_function_value_copy(njs_vm_t *vm, njs_value_t *value)
 
     size = sizeof(njs_function_t) + nesting * sizeof(njs_closure_t *);
 
-    copy = nxt_mem_cache_alloc(vm->mem_cache_pool, size);
+    copy = nxt_mp_alloc(vm->mem_pool, size);
     if (nxt_slow_path(copy == NULL)) {
         njs_memory_error(vm);
         return NULL;
@@ -134,7 +134,7 @@ njs_function_arguments_object_init(njs_vm_t *vm, njs_native_frame_t *frame)
     njs_string_get(&prop->name, &lhq.key);
 
     lhq.replace = 0;
-    lhq.pool = vm->mem_cache_pool;
+    lhq.pool = vm->mem_pool;
     lhq.proto = &njs_object_hash_proto;
 
     ret = nxt_lvlhsh_insert(&arguments->hash, &lhq);
@@ -369,8 +369,7 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
             return NULL;
         }
 
-        frame = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
-                                    spare_size);
+        frame = nxt_mp_align(vm->mem_pool, sizeof(njs_value_t), spare_size);
         if (nxt_slow_path(frame == NULL)) {
             njs_memory_error(vm);
             return NULL;
@@ -454,8 +453,7 @@ njs_function_lambda_call(njs_vm_t *vm, njs_index_t retval,
         size = lambda->closure_size;
 
         if (size != 0) {
-            closure = nxt_mem_cache_align(vm->mem_cache_pool,
-                                          sizeof(njs_value_t), size);
+            closure = nxt_mp_align(vm->mem_pool, sizeof(njs_value_t), size);
             if (nxt_slow_path(closure == NULL)) {
                 njs_memory_error(vm);
                 return NXT_ERROR;
@@ -706,7 +704,7 @@ njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame)
 
         if (frame->size != 0) {
             vm->stack_size -= frame->size;
-            nxt_mem_cache_free(vm->mem_cache_pool, frame);
+            nxt_mp_free(vm->mem_pool, frame);
         }
 
         frame = previous;
@@ -994,7 +992,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    function = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_function_t));
+    function = nxt_mp_alloc(vm->mem_pool, sizeof(njs_function_t));
     if (nxt_slow_path(function == NULL)) {
         njs_memory_error(vm);
         return NXT_ERROR;
@@ -1017,10 +1015,10 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     function->args_offset = nargs;
     size = nargs * sizeof(njs_value_t);
 
-    values = nxt_mem_cache_alloc(vm->mem_cache_pool, size);
+    values = nxt_mp_alloc(vm->mem_pool, size);
     if (nxt_slow_path(values == NULL)) {
         njs_memory_error(vm);
-        nxt_mem_cache_free(vm->mem_cache_pool, function);
+        nxt_mp_free(vm->mem_pool, function);
         return NXT_ERROR;
     }
 

@@ -13,7 +13,7 @@
 
 typedef struct {
     njs_vm_t                   *vm;
-    nxt_mem_cache_pool_t       *pool;
+    nxt_mp_t                   *pool;
     nxt_uint_t                 depth;
     const u_char               *start;
     const u_char               *end;
@@ -82,7 +82,7 @@ typedef struct {
     njs_value_t                key;
 
     njs_vm_t                   *vm;
-    nxt_mem_cache_pool_t       *pool;
+    nxt_mp_t                   *pool;
     njs_chb_node_t             *nodes;
     njs_chb_node_t             *last;
     nxt_array_t                stack;
@@ -169,7 +169,7 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_string_prop_t     string;
     njs_json_parse_ctx_t  ctx;
 
-    value = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_value_t));
+    value = nxt_mp_alloc(vm->mem_pool, sizeof(njs_value_t));
     if (nxt_slow_path(value == NULL)) {
         njs_memory_error(vm);
         return NXT_ERROR;
@@ -187,7 +187,7 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     end = p + string.size;
 
     ctx.vm = vm;
-    ctx.pool = vm->mem_cache_pool;
+    ctx.pool = vm->mem_pool;
     ctx.depth = 32;
     ctx.start = string.start;
     ctx.end = end;
@@ -220,7 +220,7 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         parse->function = args[2].data.u.function;
 
         if (nxt_array_init(&parse->stack, NULL, 4, sizeof(njs_json_state_t),
-                           &njs_array_mem_proto, vm->mem_cache_pool)
+                           &njs_array_mem_proto, vm->mem_pool)
             == NULL)
         {
             goto memory_error;
@@ -262,7 +262,7 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     stringify = njs_vm_continuation(vm);
     stringify->vm = vm;
-    stringify->pool = vm->mem_cache_pool;
+    stringify->pool = vm->mem_pool;
     stringify->u.cont.function = njs_json_stringify_continuation;
     stringify->nodes = NULL;
     stringify->last = NULL;
@@ -293,8 +293,8 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                 num = nxt_min(num, 10);
 
                 stringify->space.length = (size_t) num;
-                stringify->space.start = nxt_mem_cache_alloc(vm->mem_cache_pool,
-                                                             (size_t) num + 1);
+                stringify->space.start = nxt_mp_alloc(vm->mem_pool,
+                                                      (size_t) num + 1);
                 if (nxt_slow_path(stringify->space.start == NULL)) {
                     goto memory_error;
                 }
@@ -307,7 +307,7 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     if (nxt_array_init(&stringify->stack, NULL, 4, sizeof(njs_json_state_t),
-                       &njs_array_mem_proto, vm->mem_cache_pool)
+                       &njs_array_mem_proto, vm->mem_pool)
         == NULL)
     {
         goto memory_error;
@@ -427,7 +427,7 @@ njs_json_parse_object(njs_json_parse_ctx_t *ctx, njs_value_t *value,
             goto error_token;
         }
 
-        prop_name = nxt_mem_cache_alloc(ctx->pool, sizeof(njs_value_t));
+        prop_name = nxt_mp_alloc(ctx->pool, sizeof(njs_value_t));
         if (nxt_slow_path(prop_name == NULL)) {
             goto memory_error;
         }
@@ -448,7 +448,7 @@ njs_json_parse_object(njs_json_parse_ctx_t *ctx, njs_value_t *value,
             goto error_end;
         }
 
-        prop_value = nxt_mem_cache_alloc(ctx->pool, sizeof(njs_value_t));
+        prop_value = nxt_mp_alloc(ctx->pool, sizeof(njs_value_t));
         if (nxt_slow_path(prop_value == NULL)) {
             goto memory_error;
         }
@@ -554,7 +554,7 @@ njs_json_parse_array(njs_json_parse_ctx_t *ctx, njs_value_t *value,
             break;
         }
 
-        element = nxt_mem_cache_alloc(ctx->pool, sizeof(njs_value_t));
+        element = nxt_mp_alloc(ctx->pool, sizeof(njs_value_t));
         if (nxt_slow_path(element == NULL)) {
             njs_memory_error(ctx->vm);
             return NULL;
@@ -721,7 +721,7 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value,
     if (surplus != 0) {
         p = start;
 
-        dst = nxt_mem_cache_alloc(ctx->pool, size);
+        dst = nxt_mp_alloc(ctx->pool, size);
         if (nxt_slow_path(dst == NULL)) {
             njs_memory_error(ctx->vm);;
             return NULL;
@@ -968,7 +968,7 @@ njs_json_parse_continuation(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
             lhq.replace = 1;
             lhq.proto = &njs_object_hash_proto;
-            lhq.pool = vm->mem_cache_pool;
+            lhq.pool = vm->mem_pool;
 
             if (njs_is_void(&parse->retval)) {
                 ret = nxt_lvlhsh_delete(&state->value.data.u.object->hash,
@@ -1082,8 +1082,7 @@ njs_json_push_parse_state(njs_vm_t *vm, njs_json_parse_t *parse,
 {
     njs_json_state_t  *state;
 
-    state = nxt_array_add(&parse->stack, &njs_array_mem_proto,
-                           vm->mem_cache_pool);
+    state = nxt_array_add(&parse->stack, &njs_array_mem_proto, vm->mem_pool);
     if (state != NULL) {
         state = nxt_array_last(&parse->stack);
         state->value = *value;
@@ -1633,7 +1632,7 @@ njs_json_push_stringify_state(njs_vm_t *vm, njs_json_stringify_t *stringify,
     }
 
     state = nxt_array_add(&stringify->stack, &njs_array_mem_proto,
-                           vm->mem_cache_pool);
+                          vm->mem_pool);
     if (nxt_slow_path(state == NULL)) {
         njs_memory_error(vm);
         return NULL;
@@ -1873,7 +1872,7 @@ njs_json_wrap_value(njs_vm_t *vm, njs_value_t *value)
     njs_object_prop_t     *prop;
     nxt_lvlhsh_query_t    lhq;
 
-    wrapper = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_value_t));
+    wrapper = nxt_mp_alloc(vm->mem_pool, sizeof(njs_value_t));
     if (nxt_slow_path(wrapper == NULL)) {
         return NULL;
     }
@@ -1888,7 +1887,7 @@ njs_json_wrap_value(njs_vm_t *vm, njs_value_t *value)
 
     lhq.replace = 0;
     lhq.proto = &njs_object_hash_proto;
-    lhq.pool = vm->mem_cache_pool;
+    lhq.pool = vm->mem_pool;
     lhq.key = nxt_string_value("");
     lhq.key_hash = NXT_DJB_HASH_INIT;
 
@@ -1946,7 +1945,7 @@ njs_json_buf_reserve(njs_json_stringify_t *stringify, size_t size)
         size = NJS_JSON_BUF_MIN_SIZE;
     }
 
-    n = nxt_mem_cache_alloc(stringify->pool, sizeof(njs_chb_node_t) + size);
+    n = nxt_mp_alloc(stringify->pool, sizeof(njs_chb_node_t) + size);
     if (nxt_slow_path(n == NULL)) {
         return NULL;
     }
@@ -1997,7 +1996,7 @@ njs_json_buf_pullup(njs_json_stringify_t *stringify, nxt_str_t *str)
         n = n->next;
     }
 
-    start = nxt_mem_cache_alloc(stringify->pool, size);
+    start = nxt_mp_alloc(stringify->pool, size);
     if (nxt_slow_path(start == NULL)) {
         return NXT_ERROR;
     }
@@ -2296,15 +2295,14 @@ njs_vm_value_dump(njs_vm_t *vm, nxt_str_t *retval, const njs_value_t *value,
         goto exception;
     }
 
-    stringify = nxt_mem_cache_alloc(vm->mem_cache_pool,
-                                    sizeof(njs_json_stringify_t));
+    stringify = nxt_mp_alloc(vm->mem_pool, sizeof(njs_json_stringify_t));
 
     if (nxt_slow_path(stringify == NULL)) {
         goto memory_error;
     }
 
     stringify->vm = vm;
-    stringify->pool = vm->mem_cache_pool;
+    stringify->pool = vm->mem_pool;
     stringify->nodes = NULL;
     stringify->last = NULL;
 
@@ -2318,7 +2316,7 @@ njs_vm_value_dump(njs_vm_t *vm, nxt_str_t *retval, const njs_value_t *value,
     }
 
     stringify->space.length = indent;
-    stringify->space.start = nxt_mem_cache_alloc(vm->mem_cache_pool, indent);
+    stringify->space.start = nxt_mp_alloc(vm->mem_pool, indent);
     if (nxt_slow_path(stringify->space.start == NULL)) {
         goto memory_error;
     }
@@ -2326,7 +2324,7 @@ njs_vm_value_dump(njs_vm_t *vm, nxt_str_t *retval, const njs_value_t *value,
     nxt_memset(stringify->space.start, ' ', indent);
 
     if (nxt_array_init(&stringify->stack, NULL, 4, sizeof(njs_json_state_t),
-                       &njs_array_mem_proto, vm->mem_cache_pool)
+                       &njs_array_mem_proto, vm->mem_pool)
         == NULL)
     {
         goto memory_error;

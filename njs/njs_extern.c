@@ -79,7 +79,7 @@ njs_vm_external_add(njs_vm_t *vm, nxt_lvlhsh_t *hash, njs_external_t *external,
     nxt_lvlhsh_query_t  lhq;
 
     do {
-        ext = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_extern_t));
+        ext = nxt_mp_alloc(vm->mem_pool, sizeof(njs_extern_t));
         if (nxt_slow_path(ext == NULL)) {
             goto memory_error;
         }
@@ -97,14 +97,13 @@ njs_vm_external_add(njs_vm_t *vm, nxt_lvlhsh_t *hash, njs_external_t *external,
         ext->data = external->data;
 
         if (external->method != NULL) {
-            function = nxt_mem_cache_zalloc(vm->mem_cache_pool,
-                                            sizeof(njs_function_t));
+            function = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_function_t));
             if (nxt_slow_path(function == NULL)) {
                 goto memory_error;
             }
 
             /*
-             * nxt_mem_cache_zalloc() does also:
+             * nxt_mp_zalloc() does also:
              *   nxt_lvlhsh_init(&function->object.hash);
              *   function->object.__proto__ = NULL;
              */
@@ -139,7 +138,7 @@ njs_vm_external_add(njs_vm_t *vm, nxt_lvlhsh_t *hash, njs_external_t *external,
             lhq.key = ext->name;
             lhq.replace = 0;
             lhq.value = ext;
-            lhq.pool = vm->mem_cache_pool;
+            lhq.pool = vm->mem_pool;
             lhq.proto = &njs_extern_hash_proto;
 
             ret = nxt_lvlhsh_insert(hash, &lhq);
@@ -182,7 +181,7 @@ njs_vm_external_create(njs_vm_t *vm, njs_value_t *ext_val,
     }
 
     obj = nxt_array_add(vm->external_objects, &njs_array_mem_proto,
-                        vm->mem_cache_pool);
+                        vm->mem_pool);
     if (nxt_slow_path(obj == NULL)) {
         return NXT_ERROR;
     }
@@ -210,8 +209,8 @@ njs_vm_external_bind(njs_vm_t *vm, const nxt_str_t *var_name,
         return NXT_ERROR;
     }
 
-    ev = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
-                             sizeof(njs_extern_value_t));
+    ev = nxt_mp_align(vm->mem_pool, sizeof(njs_value_t),
+                      sizeof(njs_extern_value_t));
     if (nxt_slow_path(ev == NULL)) {
         njs_memory_error(vm);
         return NXT_ERROR;
@@ -225,7 +224,7 @@ njs_vm_external_bind(njs_vm_t *vm, const nxt_str_t *var_name,
     lhq.proto = &njs_extern_value_hash_proto;
     lhq.value = ev;
     lhq.replace = 0;
-    lhq.pool = vm->mem_cache_pool;
+    lhq.pool = vm->mem_pool;
 
     ret = nxt_lvlhsh_insert(&vm->externals_hash, &lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
@@ -367,7 +366,7 @@ found:
         len += pr->str.length + nxt_length(".");
     }
 
-    buf = nxt_mem_cache_zalloc(vm->mem_cache_pool, len);
+    buf = nxt_mp_zalloc(vm->mem_pool, len);
     if (buf == NULL) {
         return NXT_ERROR;
     }

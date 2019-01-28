@@ -57,7 +57,7 @@ njs_error_alloc(njs_vm_t *vm, njs_value_type_t type, const njs_value_t *name,
     njs_object_prop_t   *prop;
     nxt_lvlhsh_query_t  lhq;
 
-    error = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_object_t));
+    error = nxt_mp_alloc(vm->mem_pool, sizeof(njs_object_t));
     if (nxt_slow_path(error == NULL)) {
         njs_memory_error(vm);
         return NULL;
@@ -71,7 +71,7 @@ njs_error_alloc(njs_vm_t *vm, njs_value_type_t type, const njs_value_t *name,
     error->__proto__ = &vm->prototypes[njs_error_prototype_index(type)].object;
 
     lhq.replace = 0;
-    lhq.pool = vm->mem_cache_pool;
+    lhq.pool = vm->mem_pool;
 
     if (name != NULL) {
         lhq.key = nxt_string_value("name");

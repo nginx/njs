@@ -130,7 +130,7 @@ njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare)
     uint64_t     size;
     njs_array_t  *array;
 
-    array = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_array_t));
+    array = nxt_mp_alloc(vm->mem_pool, sizeof(njs_array_t));
     if (nxt_slow_path(array == NULL)) {
         goto memory_error;
     }
@@ -141,8 +141,8 @@ njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare)
         goto memory_error;
     }
 
-    array->data = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
-                                      size * sizeof(njs_value_t));
+    array->data = nxt_mp_align(vm->mem_pool, sizeof(njs_value_t),
+                               size * sizeof(njs_value_t));
     if (nxt_slow_path(array->data == NULL)) {
         goto memory_error;
     }
@@ -224,8 +224,8 @@ njs_array_expand(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
         goto memory_error;
     }
 
-    start = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
-                                (prepend + size) * sizeof(njs_value_t));
+    start = nxt_mp_align(vm->mem_pool, sizeof(njs_value_t),
+                         (prepend + size) * sizeof(njs_value_t));
     if (nxt_slow_path(start == NULL)) {
         goto memory_error;
     }
@@ -240,7 +240,7 @@ njs_array_expand(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
 
     array->start = start;
 
-    nxt_mem_cache_free(vm->mem_cache_pool, old);
+    nxt_mp_free(vm->mem_pool, old);
 
     return NXT_OK;
 
@@ -970,8 +970,8 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     if (max != 0) {
-        values = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
-                                     sizeof(njs_value_t) * max);
+        values = nxt_mp_align(vm->mem_pool, sizeof(njs_value_t),
+                              sizeof(njs_value_t) * max);
         if (nxt_slow_path(values == NULL)) {
             njs_memory_error(vm);
             return NXT_ERROR;
@@ -1105,7 +1105,7 @@ njs_array_prototype_join_continuation(njs_vm_t *vm, njs_value_t *args,
         njs_release(vm, &values[i]);
     }
 
-    nxt_mem_cache_free(vm->mem_cache_pool, values);
+    nxt_mp_free(vm->mem_pool, values);
 
     return NXT_OK;
 }

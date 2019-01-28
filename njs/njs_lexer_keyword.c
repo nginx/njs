@@ -156,7 +156,7 @@ const nxt_lvlhsh_proto_t  njs_keyword_hash_proto
 
 
 nxt_int_t
-njs_lexer_keywords_init(nxt_mem_cache_pool_t *mcp, nxt_lvlhsh_t *hash)
+njs_lexer_keywords_init(nxt_mp_t *mcp, nxt_lvlhsh_t *hash)
 {
     nxt_uint_t           n;
     nxt_lvlhsh_query_t   lhq;

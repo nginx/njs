@@ -132,7 +132,7 @@ njs_crypto_object_value_alloc(njs_vm_t *vm, nxt_uint_t proto)
 {
     njs_object_value_t  *ov;
 
-    ov = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_object_value_t));
+    ov = nxt_mp_alloc(vm->mem_pool, sizeof(njs_object_value_t));
 
     if (nxt_fast_path(ov != NULL)) {
         nxt_lvlhsh_init(&ov->object.hash);
@@ -177,7 +177,7 @@ njs_crypto_create_hash(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NJS_ERROR;
     }
 
-    dgst = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_digest_t));
+    dgst = nxt_mp_alloc(vm->mem_pool, sizeof(njs_digest_t));
     if (nxt_slow_path(dgst == NULL)) {
         njs_memory_error(vm);
         return NJS_ERROR;
@@ -408,7 +408,7 @@ njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     njs_string_get(&args[2], &key);
 
-    ctx = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_hmac_t));
+    ctx = nxt_mp_alloc(vm->mem_pool, sizeof(njs_hmac_t));
     if (nxt_slow_path(ctx == NULL)) {
         njs_memory_error(vm);
         return NJS_ERROR;

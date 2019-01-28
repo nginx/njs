@@ -12,7 +12,7 @@
 #include <nxt_malloc.h>
 #include <nxt_lvlhsh.h>
 #include <nxt_murmur_hash.h>
-#include <nxt_mem_cache_pool.h>
+#include <nxt_mp.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -32,14 +32,14 @@ lvlhsh_unit_test_key_test(nxt_lvlhsh_query_t *lhq, void *data)
 static void *
 lvlhsh_unit_test_pool_alloc(void *pool, size_t size, nxt_uint_t nalloc)
 {
-    return nxt_mem_cache_align(pool, size, size);
+    return nxt_mp_align(pool, size, size);
 }
 
 
 static void
 lvlhsh_unit_test_pool_free(void *pool, void *p, size_t size)
 {
-    nxt_mem_cache_free(pool, p);
+    nxt_mp_free(pool, p);
 }
 
 
@@ -182,7 +182,7 @@ lvlhsh_alert(void *mem, const char *fmt, ...)
 }
 
 
-static const nxt_mem_proto_t  mem_cache_pool_proto = {
+static const nxt_mem_proto_t  lvl_mp_proto = {
     lvlhsh_malloc,
     lvlhsh_zalloc,
     lvlhsh_align,
@@ -196,20 +196,19 @@ static const nxt_mem_proto_t  mem_cache_pool_proto = {
 static nxt_int_t
 lvlhsh_unit_test(nxt_uint_t n)
 {
-    uint32_t              key;
-    nxt_uint_t            i;
-    nxt_lvlhsh_t          lh;
-    nxt_lvlhsh_each_t     lhe;
-    nxt_mem_cache_pool_t  *pool;
+    nxt_mp_t           *pool;
+    uint32_t           key;
+    nxt_uint_t         i;
+    nxt_lvlhsh_t       lh;
+    nxt_lvlhsh_each_t  lhe;
 
-    const size_t          min_chunk_size = 32;
-    const size_t          page_size = 1024;
-    const size_t          page_alignment = 128;
-    const size_t          cluster_size = 4096;
+    const size_t       min_chunk_size = 32;
+    const size_t       page_size = 1024;
+    const size_t       page_alignment = 128;
+    const size_t       cluster_size = 4096;
 
-    pool = nxt_mem_cache_pool_create(&mem_cache_pool_proto, NULL, NULL,
-                                     cluster_size, page_alignment,
-                                     page_size, min_chunk_size);
+    pool = nxt_mp_create(&lvl_mp_proto, NULL, NULL, cluster_size,
+                         page_alignment, page_size, min_chunk_size);
     if (pool == NULL) {
         return NXT_ERROR;
     }
@@ -260,12 +259,12 @@ lvlhsh_unit_test(nxt_uint_t n)
         }
     }
 
-    if (!nxt_mem_cache_pool_is_empty(pool)) {
+    if (!nxt_mp_is_empty(pool)) {
         printf("mem cache pool is not empty\n");
         return NXT_ERROR;
     }
 
-    nxt_mem_cache_pool_destroy(pool);
+    nxt_mp_destroy(pool);
 
     printf("lvlhsh unit test passed\n");
 

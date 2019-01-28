@@ -75,7 +75,7 @@ njs_variable_add(njs_vm_t *vm, njs_parser_scope_t *scope, nxt_str_t *name,
 
     lhq.replace = 0;
     lhq.value = var;
-    lhq.pool = vm->mem_cache_pool;
+    lhq.pool = vm->mem_pool;
 
     ret = nxt_lvlhsh_insert(&scope->variables, &lhq);
 
@@ -83,8 +83,8 @@ njs_variable_add(njs_vm_t *vm, njs_parser_scope_t *scope, nxt_str_t *name,
         return var;
     }
 
-    nxt_mem_cache_free(vm->mem_cache_pool, var->name.start);
-    nxt_mem_cache_free(vm->mem_cache_pool, var);
+    nxt_mp_free(vm->mem_pool, var->name.start);
+    nxt_mp_free(vm->mem_pool, var);
 
     njs_type_error(vm, "lvlhsh insert failed");
 
@@ -141,7 +141,7 @@ njs_variable_reference(njs_vm_t *vm, njs_parser_scope_t *scope,
         lhq.proto = &njs_reference_hash_proto;
         lhq.replace = 0;
         lhq.value = node;
-        lhq.pool = vm->mem_cache_pool;
+        lhq.pool = vm->mem_pool;
 
         ret = nxt_lvlhsh_insert(&scope->references, &lhq);
 
@@ -337,8 +337,8 @@ njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node)
          * global variables should be allocated in absolute scope
          * to share them among consecutive VM invocations.
          */
-        value = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
-                                    sizeof(njs_value_t));
+        value = nxt_mp_align(vm->mem_pool, sizeof(njs_value_t),
+                             sizeof(njs_value_t));
         if (nxt_slow_path(value == NULL)) {
             njs_memory_error(vm);
             return NULL;
@@ -351,7 +351,7 @@ njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node)
 
         if (values == NULL) {
             values = nxt_array_create(4, sizeof(njs_value_t),
-                                      &njs_array_mem_proto, vm->mem_cache_pool);
+                                      &njs_array_mem_proto, vm->mem_pool);
             if (nxt_slow_path(values == NULL)) {
                 return NULL;
             }
@@ -359,7 +359,7 @@ njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node)
             vr->scope->values[scope_index] = values;
         }
 
-        value = nxt_array_add(values, &njs_array_mem_proto, vm->mem_cache_pool);
+        value = nxt_array_add(values, &njs_array_mem_proto, vm->mem_pool);
         if (nxt_slow_path(value == NULL)) {
             return NULL;
         }
@@ -454,7 +454,7 @@ njs_variable_alloc(njs_vm_t *vm, nxt_str_t *name, njs_variable_type_t type)
     njs_ret_t       ret;
     njs_variable_t  *var;
 
-    var = nxt_mem_cache_zalloc(vm->mem_cache_pool, sizeof(njs_variable_t));
+    var = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_variable_t));
     if (nxt_slow_path(var == NULL)) {
         njs_memory_error(vm);
         return NULL;
@@ -468,7 +468,7 @@ njs_variable_alloc(njs_vm_t *vm, nxt_str_t *name, njs_variable_type_t type)
         return var;
     }
 
-    nxt_mem_cache_free(vm->mem_cache_pool, var);
+    nxt_mp_free(vm->mem_pool, var);
 
     njs_memory_error(vm);
 
@@ -481,7 +481,7 @@ njs_name_copy(njs_vm_t *vm, nxt_str_t *dst, nxt_str_t *src)
 {
     dst->length = src->length;
 
-    dst->start = nxt_mem_cache_alloc(vm->mem_cache_pool, src->length);
+    dst->start = nxt_mp_alloc(vm->mem_pool, src->length);
 
     if (nxt_slow_path(dst->start != NULL)) {
         (void) memcpy(dst->start, src->start, src->length);

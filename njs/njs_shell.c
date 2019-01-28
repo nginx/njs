@@ -331,8 +331,7 @@ njs_externals_init(njs_vm_t *vm, njs_console_t *console)
         return NXT_ERROR;
     }
 
-    value = nxt_mem_cache_zalloc(vm->mem_cache_pool,
-                                 sizeof(njs_opaque_value_t));
+    value = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_opaque_value_t));
     if (value == NULL) {
         return NXT_ERROR;
     }
@@ -981,7 +980,7 @@ njs_console_set_timer(njs_external_ptr_t external, uint64_t delay,
     console = external;
     vm = console->vm;
 
-    ev = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_ev_t));
+    ev = nxt_mp_alloc(vm->mem_pool, sizeof(njs_ev_t));
     if (nxt_slow_path(ev == NULL)) {
         return NULL;
     }
@@ -995,7 +994,7 @@ njs_console_set_timer(njs_external_ptr_t external, uint64_t delay,
     lhq.replace = 0;
     lhq.value = ev;
     lhq.proto = &lvlhsh_proto;
-    lhq.pool = vm->mem_cache_pool;
+    lhq.pool = vm->mem_pool;
 
     ret = nxt_lvlhsh_insert(&console->events, &lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
@@ -1026,7 +1025,7 @@ njs_console_clear_timer(njs_external_ptr_t external, njs_host_event_t event)
     lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
 
     lhq.proto = &lvlhsh_proto;
-    lhq.pool = vm->mem_cache_pool;
+    lhq.pool = vm->mem_pool;
 
     if (ev->link.prev != NULL) {
         nxt_queue_remove(&ev->link);
@@ -1037,7 +1036,7 @@ njs_console_clear_timer(njs_external_ptr_t external, njs_host_event_t event)
         fprintf(stderr, "nxt_lvlhsh_delete() failed\n");
     }
 
-    nxt_mem_cache_free(vm->mem_cache_pool, ev);
+    nxt_mp_free(vm->mem_pool, ev);
 }
 
 
@@ -1059,13 +1058,13 @@ lvlhsh_key_test(nxt_lvlhsh_query_t *lhq, void *data)
 static void *
 lvlhsh_pool_alloc(void *pool, size_t size, nxt_uint_t nalloc)
 {
-    return nxt_mem_cache_align(pool, size, size);
+    return nxt_mp_align(pool, size, size);
 }
 
 
 static void
 lvlhsh_pool_free(void *pool, void *p, size_t size)
 {
-    nxt_mem_cache_free(pool, p);
+    nxt_mp_free(pool, p);
 }
 

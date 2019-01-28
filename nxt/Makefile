@@ -21,7 +21,7 @@ $(NXT_BUILDDIR)/libnxt.a: \
 	$(NXT_BUILDDIR)/nxt_malloc.o \
 	$(NXT_BUILDDIR)/nxt_trace.o \
 	$(NXT_BUILDDIR)/nxt_time.o \
-	$(NXT_BUILDDIR)/nxt_mem_cache_pool.o \
+	$(NXT_BUILDDIR)/nxt_mp.o \
 
 	ar -r -c $(NXT_BUILDDIR)/libnxt.a \
 		$(NXT_BUILDDIR)/nxt_diyfp.o \
@@ -40,7 +40,7 @@ $(NXT_BUILDDIR)/libnxt.a: \
 		$(NXT_BUILDDIR)/nxt_malloc.o \
 		$(NXT_BUILDDIR)/nxt_time.o \
 		$(NXT_BUILDDIR)/nxt_trace.o \
-		$(NXT_BUILDDIR)/nxt_mem_cache_pool.o \
+		$(NXT_BUILDDIR)/nxt_mp.o \
 
 $(NXT_BUILDDIR)/nxt_diyfp.o: \
 	$(NXT_LIB)/nxt_types.h \
@@ -231,17 +231,17 @@ $(NXT_BUILDDIR)/nxt_trace.o: \
 		-I$(NXT_LIB) \
 		$(NXT_LIB)/nxt_trace.c
 
-$(NXT_BUILDDIR)/nxt_mem_cache_pool.o: \
+$(NXT_BUILDDIR)/nxt_mp.o: \
 	$(NXT_LIB)/nxt_types.h \
 	$(NXT_LIB)/nxt_clang.h \
 	$(NXT_LIB)/nxt_alignment.h \
 	$(NXT_LIB)/nxt_queue.h \
 	$(NXT_LIB)/nxt_rbtree.h \
-	$(NXT_LIB)/nxt_mem_cache_pool.h \
-	$(NXT_LIB)/nxt_mem_cache_pool.c \
+	$(NXT_LIB)/nxt_mp.h \
+	$(NXT_LIB)/nxt_mp.c \
 
-	$(NXT_CC) -c -o $(NXT_BUILDDIR)/nxt_mem_cache_pool.o $(NXT_CFLAGS) \
+	$(NXT_CC) -c -o $(NXT_BUILDDIR)/nxt_mp.o $(NXT_CFLAGS) \
 		-I$(NXT_LIB) \
-		$(NXT_LIB)/nxt_mem_cache_pool.c
+		$(NXT_LIB)/nxt_mp.c
 
 include $(NXT_LIB)/test/Makefile

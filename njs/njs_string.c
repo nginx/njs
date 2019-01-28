@@ -145,7 +145,7 @@ njs_string_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
         value->long_string.external = 0xff;
         value->long_string.size = size;
 
-        string = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_string_t));
+        string = nxt_mp_alloc(vm->mem_pool, sizeof(njs_string_t));
         if (nxt_slow_path(string == NULL)) {
             njs_memory_error(vm);
             return NXT_ERROR;
@@ -214,8 +214,7 @@ njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size,
         total = size;
     }
 
-    string = nxt_mem_cache_alloc(vm->mem_cache_pool,
-                                 sizeof(njs_string_t) + total);
+    string = nxt_mp_alloc(vm->mem_pool, sizeof(njs_string_t) + total);
 
     if (nxt_fast_path(string != NULL)) {
         value->long_string.data = string;
@@ -484,7 +483,7 @@ njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string, njs_value_t *value)
                     map_offset = njs_string_map_offset(size);
                     new_size = map_offset + njs_string_map_size(length);
 
-                    start = nxt_mem_cache_alloc(vm->mem_cache_pool, new_size);
+                    start = nxt_mp_alloc(vm->mem_pool, new_size);
                     if (nxt_slow_path(start == NULL)) {
                         njs_memory_error(vm);
                         return NXT_ERROR;
@@ -2955,7 +2954,7 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     /* This cannot fail. */
     r->part = nxt_array_init(&r->parts, &r->array,
                              3, sizeof(njs_string_replace_part_t),
-                             &njs_array_mem_proto, vm->mem_cache_pool);
+                             &njs_array_mem_proto, vm->mem_pool);
 
     r->substitutions = NULL;
     r->function = NULL;
@@ -3050,13 +3049,13 @@ njs_string_replace_regexp(njs_vm_t *vm, njs_value_t *args,
             } else {
                 if (r->part != r->parts.start) {
                     r->part = nxt_array_add(&r->parts, &njs_array_mem_proto,
-                                            vm->mem_cache_pool);
+                                            vm->mem_pool);
                     if (nxt_slow_path(r->part == NULL)) {
                         return NXT_ERROR;
                     }
 
                     r->part = nxt_array_add(&r->parts, &njs_array_mem_proto,
-                                            vm->mem_cache_pool);
+                                            vm->mem_pool);
                     if (nxt_slow_path(r->part == NULL)) {
                         return NXT_ERROR;
                     }
@@ -3101,7 +3100,7 @@ njs_string_replace_regexp(njs_vm_t *vm, njs_value_t *args,
 
     nxt_regex_match_data_free(r->match_data, vm->regex_context);
 
-    nxt_array_destroy(&r->parts, &njs_array_mem_proto, vm->mem_cache_pool);
+    nxt_array_destroy(&r->parts, &njs_array_mem_proto, vm->mem_pool);
 
     njs_string_copy(&vm->retval, &args[0]);
 
@@ -3122,8 +3121,7 @@ njs_string_replace_regexp_function(njs_vm_t *vm, njs_value_t *args,
     r->u.cont.function = njs_string_replace_regexp_continuation;
     njs_set_invalid(&r->retval);
 
-    arguments = nxt_mem_cache_alloc(vm->mem_cache_pool,
-                                    (n + 3) * sizeof(njs_value_t));
+    arguments = nxt_mp_alloc(vm->mem_pool, (n + 3) * sizeof(njs_value_t));
     if (nxt_slow_path(arguments == NULL)) {
         return NXT_ERROR;
     }
@@ -3315,7 +3313,7 @@ njs_string_replace_parse(njs_vm_t *vm, njs_string_replace_t *r, u_char *p,
     njs_string_subst_t  *s;
 
     r->substitutions = nxt_array_create(4, sizeof(njs_string_subst_t),
-                                     &njs_array_mem_proto, vm->mem_cache_pool);
+                                     &njs_array_mem_proto, vm->mem_pool);
 
     if (nxt_slow_path(r->substitutions == NULL)) {
         return NXT_ERROR;
@@ -3330,8 +3328,7 @@ njs_string_replace_parse(njs_vm_t *vm, njs_string_replace_t *r, u_char *p,
 copy:
 
     if (s == NULL) {
-        s = nxt_array_add(r->substitutions, &njs_array_mem_proto,
-                          vm->mem_cache_pool);
+        s = nxt_array_add(r->substitutions, &njs_array_mem_proto, vm->mem_pool);
         if (nxt_slow_path(s == NULL)) {
             return NXT_ERROR;
         }
@@ -3395,8 +3392,7 @@ skip:
             goto copy;
         }
 
-        s = nxt_array_add(r->substitutions, &njs_array_mem_proto,
-                          vm->mem_cache_pool);
+        s = nxt_array_add(r->substitutions, &njs_array_mem_proto, vm->mem_pool);
         if (nxt_slow_path(s == NULL)) {
             return NXT_ERROR;
         }
@@ -3419,8 +3415,8 @@ njs_string_replace_substitute(njs_vm_t *vm, njs_string_replace_t *r,
 
     last = r->substitutions->items;
 
-    part = nxt_array_add_multiple(&r->parts, &njs_array_mem_proto,
-                                  vm->mem_cache_pool, last + 1);
+    part = nxt_array_add_multiple(&r->parts, &njs_array_mem_proto, vm->mem_pool,
+                                  last + 1);
     if (nxt_slow_path(part == NULL)) {
         return NXT_ERROR;
     }
@@ -3528,7 +3524,7 @@ njs_string_replace_join(njs_vm_t *vm, njs_string_replace_t *r)
         /* GC: release valid values. */
     }
 
-    nxt_array_destroy(&r->parts, &njs_array_mem_proto, vm->mem_cache_pool);
+    nxt_array_destroy(&r->parts, &njs_array_mem_proto, vm->mem_pool);
 
     return NXT_OK;
 }
@@ -3744,7 +3740,7 @@ njs_string_to_c_string(njs_vm_t *vm, njs_value_t *value)
         }
     }
 
-    data = nxt_mem_cache_alloc(vm->mem_cache_pool, size + 1);
+    data = nxt_mp_alloc(vm->mem_pool, size + 1);
     if (nxt_slow_path(data == NULL)) {
         njs_memory_error(vm);
         return NULL;
@@ -4406,8 +4402,8 @@ njs_value_index(njs_vm_t *vm, const njs_value_t *src, nxt_uint_t runtime)
             }
         }
 
-        value = nxt_mem_cache_align(vm->mem_cache_pool, sizeof(njs_value_t),
-                                    value_size + size);
+        value = nxt_mp_align(vm->mem_pool, sizeof(njs_value_t),
+                             value_size + size);
         if (nxt_slow_path(value == NULL)) {
             return NJS_INDEX_NONE;
         }
@@ -4427,7 +4423,7 @@ njs_value_index(njs_vm_t *vm, const njs_value_t *src, nxt_uint_t runtime)
 
         lhq.replace = 0;
         lhq.value = value;
-        lhq.pool = vm->mem_cache_pool;
+        lhq.pool = vm->mem_pool;
 
         values_hash = runtime ? &vm->values_hash : &vm->shared->values_hash;
 

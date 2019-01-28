@@ -32,7 +32,7 @@ njs_ret_t
 njs_regexp_init(njs_vm_t *vm)
 {
     vm->regex_context = nxt_regex_context_create(njs_regexp_malloc,
-                                          njs_regexp_free, vm->mem_cache_pool);
+                                          njs_regexp_free, vm->mem_pool);
     if (nxt_slow_path(vm->regex_context == NULL)) {
         njs_memory_error(vm);
         return NXT_ERROR;
@@ -53,14 +53,14 @@ njs_regexp_init(njs_vm_t *vm)
 static void *
 njs_regexp_malloc(size_t size, void *memory_data)
 {
-    return nxt_mem_cache_alloc(memory_data, size);
+    return nxt_mp_alloc(memory_data, size);
 }
 
 
 static void
 njs_regexp_free(void *p, void *memory_data)
 {
-    nxt_mem_cache_free(memory_data, p);
+    nxt_mp_free(memory_data, p);
 }
 
 
@@ -269,9 +269,9 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
     size += ((flags & NJS_REGEXP_IGNORE_CASE) != 0);
     size += ((flags & NJS_REGEXP_MULTILINE) != 0);
 
-    pattern = nxt_mem_cache_zalloc(vm->mem_cache_pool,
-                                   sizeof(njs_regexp_pattern_t)
-                                   + 1 + length + size + 1);
+    pattern = nxt_mp_zalloc(vm->mem_pool,
+							sizeof(njs_regexp_pattern_t)
+                            + 1 + length + size + 1);
     if (nxt_slow_path(pattern == NULL)) {
         njs_memory_error(vm);
         return NULL;
@@ -328,12 +328,12 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
 
         if (nxt_slow_path((u_int) ret != pattern->ncaptures)) {
             njs_internal_error(vm, "regexp pattern compile failed");
-            nxt_mem_cache_free(vm->mem_cache_pool, pattern);
+            nxt_mp_free(vm->mem_pool, pattern);
             return NULL;
         }
 
     } else if (ret != NXT_DECLINED) {
-        nxt_mem_cache_free(vm->mem_cache_pool, pattern);
+        nxt_mp_free(vm->mem_pool, pattern);
         return NULL;
     }
 
@@ -430,7 +430,7 @@ njs_regexp_alloc(njs_vm_t *vm, njs_regexp_pattern_t *pattern)
 {
     njs_regexp_t  *regexp;
 
-    regexp = nxt_mem_cache_alloc(vm->mem_cache_pool, sizeof(njs_regexp_t));
+    regexp = nxt_mp_alloc(vm->mem_pool, sizeof(njs_regexp_t));
 
     if (nxt_fast_path(regexp != NULL)) {
         nxt_lvlhsh_init(&regexp->object.hash);
@@ -752,7 +752,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
     lhq.key = nxt_string_value("index");
     lhq.replace = 0;
     lhq.value = prop;
-    lhq.pool = vm->mem_cache_pool;
+    lhq.pool = vm->mem_pool;
     lhq.proto = &njs_object_hash_proto;
 
     ret = nxt_lvlhsh_insert(&array->object.hash, &lhq);
