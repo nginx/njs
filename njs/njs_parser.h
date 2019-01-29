@@ -283,10 +283,6 @@ struct njs_parser_node_s {
 };
 
 
-#define njs_parser_node_alloc(vm)                                             \
-    nxt_mp_zalloc((vm)->mem_pool, sizeof(njs_parser_node_t))
-
-
 struct njs_parser_s {
     njs_lexer_t                     *lexer;
     njs_parser_node_t               *node;
@@ -335,6 +331,22 @@ void njs_parser_syntax_error(njs_vm_t *vm, njs_parser_t *parser,
     const char* fmt, ...);
 void njs_parser_ref_error(njs_vm_t *vm, njs_parser_t *parser, const char* fmt,
     ...);
+
+
+nxt_inline njs_parser_node_t *
+njs_parser_node_new(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
+{
+    njs_parser_node_t  *node;
+
+    node = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_parser_node_t));
+
+    if (nxt_fast_path(node != NULL)) {
+        node->token = token;
+        node->scope = parser->scope;
+    }
+
+    return node;
+}
 
 
 extern const nxt_lvlhsh_proto_t  njs_keyword_hash_proto;
