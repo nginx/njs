@@ -28,6 +28,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("1}"),
       nxt_string("SyntaxError: Unexpected token \"}\" in 1") },
 
+    { nxt_string("/***/1/*\n**/"),
+      nxt_string("1") },
+
     /* Variable declarations. */
 
     { nxt_string("var x"),

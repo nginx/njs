@@ -233,6 +233,23 @@ static njs_interactive_test_t  njs_test[] =
       nxt_string("TypeError: Cannot convert object to primitive value\n"
                  "    at main (native)\n") },
 
+    /* line numbers */
+
+    { nxt_string("/**/(function(){throw Error();})()" ENTER),
+      nxt_string("Error\n"
+                 "    at anonymous (:1)\n"
+                 "    at main (native)\n") },
+
+    { nxt_string("/***/(function(){throw Error();})()" ENTER),
+      nxt_string("Error\n"
+                 "    at anonymous (:1)\n"
+                 "    at main (native)\n") },
+
+    { nxt_string("/*\n**/(function(){throw Error();})()" ENTER),
+      nxt_string("Error\n"
+                 "    at anonymous (:2)\n"
+                 "    at main (native)\n") },
+
 };
 
 

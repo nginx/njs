@@ -704,10 +704,8 @@ njs_lexer_division(njs_lexer_t *lexer, njs_token_t token)
                 }
 
                 if (*p == '*') {
-                    p++;
-
-                    if (p < lexer->end && *p == '/') {
-                        lexer->start = p + 1;
+                    if (p + 1 < lexer->end && p[1] == '/') {
+                        lexer->start = p + 2;
                         return NJS_TOKEN_AGAIN;
                     }
                 }
