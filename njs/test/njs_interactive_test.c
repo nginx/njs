@@ -17,7 +17,7 @@ typedef struct {
 } njs_interactive_test_t;
 
 
-#define ENTER "\n"
+#define ENTER "\n\3"
 
 
 static njs_interactive_test_t  njs_test[] =
@@ -276,12 +276,12 @@ njs_interactive_test(nxt_bool_t verbose)
         end = NULL;
 
         for ( ;; ) {
-            start = (end != NULL) ? end + 1 : start;
+            start = (end != NULL) ? end + nxt_length(ENTER) : start;
             if (start >= last) {
                 break;
             }
 
-            end = (u_char *) strchr((char *) start, '\n');
+            end = (u_char *) strstr((char *) start, ENTER);
 
             ret = njs_vm_compile(vm, &start, end);
             if (ret == NXT_OK) {
