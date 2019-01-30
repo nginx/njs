@@ -208,7 +208,7 @@ njs_ret_t
 njs_function_arguments_thrower(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
-    njs_type_error(vm, "'caller', 'callee' properties may not be accessed");
+    njs_type_error(vm, "\"caller\", \"callee\" properties may not be accessed");
     return NXT_ERROR;
 }
 
@@ -865,7 +865,7 @@ njs_function_prototype_call(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_function_t  *function;
 
     if (!njs_is_function(&args[0])) {
-        njs_type_error(vm, "'this' argument is not a function");
+        njs_type_error(vm, "\"this\" argument is not a function");
         return NXT_ERROR;
     }
 
@@ -903,7 +903,7 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_function_t  *function;
 
     if (!njs_is_function(&args[0])) {
-        njs_type_error(vm, "'this' argument is not a function");
+        njs_type_error(vm, "\"this\" argument is not a function");
         return NXT_ERROR;
     }
 
@@ -988,7 +988,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_function_t  *function;
 
     if (!njs_is_function(&args[0])) {
-        njs_type_error(vm, "'this' argument is not a function");
+        njs_type_error(vm, "\"this\" argument is not a function");
         return NXT_ERROR;
     }
 

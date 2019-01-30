@@ -165,7 +165,7 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     flags = njs_fs_flags(&flag);
     if (nxt_slow_path(flags == -1)) {
-        njs_type_error(vm, "Unknown file open flags: '%V'", &flag);
+        njs_type_error(vm, "Unknown file open flags: \"%V\"", &flag);
         return NJS_ERROR;
     }
 
@@ -177,7 +177,7 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (encoding.length != 0
         && (encoding.length != 4 || memcmp(encoding.start, "utf8", 4) != 0))
     {
-        njs_type_error(vm, "Unknown encoding: '%V'", &encoding);
+        njs_type_error(vm, "Unknown encoding: \"%V\"", &encoding);
         return NJS_ERROR;
     }
 
@@ -360,7 +360,7 @@ njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     flags = njs_fs_flags(&flag);
     if (nxt_slow_path(flags == -1)) {
-        njs_type_error(vm, "Unknown file open flags: '%V'", &flag);
+        njs_type_error(vm, "Unknown file open flags: \"%V\"", &flag);
         return NJS_ERROR;
     }
 
@@ -372,7 +372,7 @@ njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (encoding.length != 0
         && (encoding.length != 4 || memcmp(encoding.start, "utf8", 4) != 0))
     {
-        njs_type_error(vm, "Unknown encoding: '%V'", &encoding);
+        njs_type_error(vm, "Unknown encoding: \"%V\"", &encoding);
         return NJS_ERROR;
     }
 
@@ -607,7 +607,7 @@ static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
     if (flag.start != NULL) {
         flags = njs_fs_flags(&flag);
         if (nxt_slow_path(flags == -1)) {
-            njs_type_error(vm, "Unknown file open flags: '%V'", &flag);
+            njs_type_error(vm, "Unknown file open flags: \"%V\"", &flag);
             return NJS_ERROR;
         }
 
@@ -630,7 +630,7 @@ static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
     if (encoding.length != 0
         && (encoding.length != 4 || memcmp(encoding.start, "utf8", 4) != 0))
     {
-        njs_type_error(vm, "Unknown encoding: '%V'", &encoding);
+        njs_type_error(vm, "Unknown encoding: \"%V\"", &encoding);
         return NJS_ERROR;
     }
 
@@ -779,7 +779,7 @@ njs_fs_write_file_sync_internal(njs_vm_t *vm, njs_value_t *args,
     if (flag.start != NULL) {
         flags = njs_fs_flags(&flag);
         if (nxt_slow_path(flags == -1)) {
-            njs_type_error(vm, "Unknown file open flags: '%V'", &flag);
+            njs_type_error(vm, "Unknown file open flags: \"%V\"", &flag);
             return NJS_ERROR;
         }
 
@@ -802,7 +802,7 @@ njs_fs_write_file_sync_internal(njs_vm_t *vm, njs_value_t *args,
     if (encoding.length != 0
         && (encoding.length != 4 || memcmp(encoding.start, "utf8", 4) != 0))
     {
-        njs_type_error(vm, "Unknown encoding: '%V'", &encoding);
+        njs_type_error(vm, "Unknown encoding: \"%V\"", &encoding);
         return NJS_ERROR;
     }
 

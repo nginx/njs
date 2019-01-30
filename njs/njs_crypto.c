@@ -211,12 +211,12 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     if (nxt_slow_path(!njs_is_object_value(&args[0]))) {
-        njs_type_error(vm, "'this' is not an object_value");
+        njs_type_error(vm, "\"this\" is not an object_value");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_data(&args[0].data.u.object_value->value))) {
-        njs_type_error(vm, "value of 'this' is not a data type");
+        njs_type_error(vm, "value of \"this\" is not a data type");
         return NJS_ERROR;
     }
 
@@ -257,12 +257,12 @@ njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     if (nxt_slow_path(!njs_is_object_value(&args[0]))) {
-        njs_type_error(vm, "'this' is not an object_value");
+        njs_type_error(vm, "\"this\" is not an object_value");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_data(&args[0].data.u.object_value->value))) {
-        njs_type_error(vm, "value of 'this' is not a data type");
+        njs_type_error(vm, "value of \"this\" is not a data type");
         return NJS_ERROR;
     }
 
@@ -470,12 +470,12 @@ njs_hmac_prototype_update(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     if (nxt_slow_path(!njs_is_object_value(&args[0]))) {
-        njs_type_error(vm, "'this' is not an object_value");
+        njs_type_error(vm, "\"this\" is not an object_value");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_data(&args[0].data.u.object_value->value))) {
-        njs_type_error(vm, "value of 'this' is not a data type");
+        njs_type_error(vm, "value of \"this\" is not a data type");
         return NJS_ERROR;
     }
 
@@ -516,12 +516,12 @@ njs_hmac_prototype_digest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     if (nxt_slow_path(!njs_is_object_value(&args[0]))) {
-        njs_type_error(vm, "'this' is not an object_value");
+        njs_type_error(vm, "\"this\" is not an object_value");
         return NJS_ERROR;
     }
 
     if (nxt_slow_path(!njs_is_data(&args[0].data.u.object_value->value))) {
-        njs_type_error(vm, "value of 'this' is not a data type");
+        njs_type_error(vm, "value of \"this\" is not a data type");
         return NJS_ERROR;
     }
 
@@ -691,7 +691,7 @@ njs_crypto_alg(njs_vm_t *vm, const nxt_str_t *name)
         }
     }
 
-    njs_type_error(vm, "not supported algorithm: '%V'", name);
+    njs_type_error(vm, "not supported algorithm: \"%V\"", name);
 
     return NULL;
 }
@@ -708,7 +708,7 @@ njs_crypto_encoding(njs_vm_t *vm, const nxt_str_t *name)
         }
     }
 
-    njs_type_error(vm, "Unknown digest encoding: '%V'", name);
+    njs_type_error(vm, "Unknown digest encoding: \"%V\"", name);
 
     return NULL;
 }

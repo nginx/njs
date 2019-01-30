@@ -208,7 +208,7 @@ njs_test {
 
 njs_test {
     {"console.ll()\r\n"
-     "console.ll()\r\nTypeError: 'll' is not a function"}
+     "console.ll()\r\nTypeError: \"ll\" is not a function"}
 }
 
 njs_test {
@@ -606,7 +606,7 @@ njs_test {
 
 njs_test {
     {"var fs = require('fs')\r\n"
-     "Error: Cannot find module 'fs'\r\n"}
+     "Error: Cannot find module \"fs\"\r\n"}
 } "-s"
 
 njs_test {
