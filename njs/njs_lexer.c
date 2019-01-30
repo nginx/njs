@@ -450,6 +450,8 @@ njs_lexer_next_token(njs_lexer_t *lexer)
         return njs_lexer_multi(lexer, token, n, multi);
     }
 
+    lexer->text.length = lexer->start - lexer->text.start;
+
     return NJS_TOKEN_END;
 }
 
