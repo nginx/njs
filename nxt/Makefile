@@ -22,6 +22,7 @@ $(NXT_BUILDDIR)/libnxt.a: \
 	$(NXT_BUILDDIR)/nxt_trace.o \
 	$(NXT_BUILDDIR)/nxt_time.o \
 	$(NXT_BUILDDIR)/nxt_mp.o \
+	$(NXT_BUILDDIR)/nxt_sprintf.o \
 
 	ar -r -c $(NXT_BUILDDIR)/libnxt.a \
 		$(NXT_BUILDDIR)/nxt_diyfp.o \
@@ -41,6 +42,7 @@ $(NXT_BUILDDIR)/libnxt.a: \
 		$(NXT_BUILDDIR)/nxt_time.o \
 		$(NXT_BUILDDIR)/nxt_trace.o \
 		$(NXT_BUILDDIR)/nxt_mp.o \
+		$(NXT_BUILDDIR)/nxt_sprintf.o \
 
 $(NXT_BUILDDIR)/nxt_diyfp.o: \
 	$(NXT_LIB)/nxt_types.h \
@@ -243,5 +245,16 @@ $(NXT_BUILDDIR)/nxt_mp.o: \
 	$(NXT_CC) -c -o $(NXT_BUILDDIR)/nxt_mp.o $(NXT_CFLAGS) \
 		-I$(NXT_LIB) \
 		$(NXT_LIB)/nxt_mp.c
+
+$(NXT_BUILDDIR)/nxt_sprintf.o: \
+	$(NXT_LIB)/nxt_types.h \
+	$(NXT_LIB)/nxt_clang.h \
+	$(NXT_LIB)/nxt_alignment.h \
+	$(NXT_LIB)/nxt_sprintf.h \
+	$(NXT_LIB)/nxt_sprintf.c \
+
+	$(NXT_CC) -c -o $(NXT_BUILDDIR)/nxt_sprintf.o $(NXT_CFLAGS) \
+		-I$(NXT_LIB) \
+		$(NXT_LIB)/nxt_sprintf.c
 
 include $(NXT_LIB)/test/Makefile

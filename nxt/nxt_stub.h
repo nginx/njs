@@ -38,8 +38,6 @@ typedef struct {
 #define nxt_log_error(...)
 #define nxt_thread_log_debug(...)
 
-#define NXT_DOUBLE_LEN   1024
-
 #include <unistd.h>
 #define nxt_pagesize()      getpagesize()
 

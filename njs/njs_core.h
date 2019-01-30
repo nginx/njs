@@ -27,6 +27,7 @@
 #include <nxt_time.h>
 #include <nxt_malloc.h>
 #include <nxt_mp.h>
+#include <nxt_sprintf.h>
 
 #include <njs.h>
 #include <njs_vm.h>

@@ -51,6 +51,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 	$(NXT_BUILDDIR)/nxt_time.o \
 	$(NXT_BUILDDIR)/nxt_malloc.o \
 	$(NXT_BUILDDIR)/nxt_mp.o \
+	$(NXT_BUILDDIR)/nxt_sprintf.o \
 
 	ar -r -c $(NXT_BUILDDIR)/libnjs.a \
 		$(NXT_BUILDDIR)/njs_shell.o \
@@ -97,6 +98,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 		$(NXT_BUILDDIR)/nxt_time.o \
 		$(NXT_BUILDDIR)/nxt_malloc.o \
 		$(NXT_BUILDDIR)/nxt_mp.o \
+		$(NXT_BUILDDIR)/nxt_sprintf.o \
 
 all:	test lib_test
 
