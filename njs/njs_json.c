@@ -1131,7 +1131,7 @@ njs_json_parse_exception(njs_json_parse_ctx_t *ctx, const char* msg,
         length = 0;
     }
 
-    njs_syntax_error(ctx->vm, "%s at position %zu", msg, length);
+    njs_syntax_error(ctx->vm, "%s at position %z", msg, length);
 }
 
 

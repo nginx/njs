@@ -23,12 +23,14 @@ njs_exception_error_create(njs_vm_t *vm, njs_value_type_t type,
     nxt_int_t     ret;
     njs_value_t   string;
     njs_object_t  *error;
-    char          buf[256];
+    u_char        buf[256], *p;
 
     if (fmt != NULL) {
         va_start(args, fmt);
-        size = vsnprintf(buf, sizeof(buf), fmt, args);
+        p = nxt_vsprintf(buf, buf + sizeof(buf), fmt, args);
         va_end(args);
+
+        size = p - buf;
 
     } else {
         size = 0;

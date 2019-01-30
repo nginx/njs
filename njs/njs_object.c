@@ -364,8 +364,8 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
 
         if (nxt_fast_path(ret == NXT_OK)) {
             njs_string_get(&pq->value, &pq->lhq.key);
-            njs_type_error(vm, "cannot get property '%.*s' of undefined",
-                           (int) pq->lhq.key.length, pq->lhq.key.start);
+            njs_type_error(vm, "cannot get property '%V' of undefined",
+                           &pq->lhq.key);
             return NXT_ERROR;
         }
 
@@ -1535,8 +1535,7 @@ njs_define_property(njs_vm_t *vm, njs_value_t *object, const njs_value_t *name,
 
 exception:
 
-    njs_type_error(vm, "Cannot redefine property: '%.*s'",
-                   (int) pq.lhq.key.length, pq.lhq.key.start);
+    njs_type_error(vm, "Cannot redefine property: '%V'", &pq.lhq.key);
 
     return NXT_ERROR;
 }

@@ -691,8 +691,7 @@ njs_crypto_alg(njs_vm_t *vm, const nxt_str_t *name)
         }
     }
 
-    njs_type_error(vm, "not supported algorithm: '%.*s'",
-                   (int) name->length, name->start);
+    njs_type_error(vm, "not supported algorithm: '%V'", name);
 
     return NULL;
 }
@@ -709,8 +708,7 @@ njs_crypto_encoding(njs_vm_t *vm, const nxt_str_t *name)
         }
     }
 
-    njs_type_error(vm, "Unknown digest encoding: '%.*s'",
-                   (int) name->length, name->start);
+    njs_type_error(vm, "Unknown digest encoding: '%V'", name);
 
     return NULL;
 }

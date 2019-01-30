@@ -510,10 +510,9 @@ njs_parser_function_declaration(njs_vm_t *vm, njs_parser_t *parser)
 
     if (token != NJS_TOKEN_NAME) {
         if (token == NJS_TOKEN_ARGUMENTS || token ==  NJS_TOKEN_EVAL) {
-            njs_parser_syntax_error(vm, parser, "Identifier \"%.*s\" "
+            njs_parser_syntax_error(vm, parser, "Identifier \"%V\" "
                                     "is forbidden in function declaration",
-                                    (int) parser->lexer->text.length,
-                                    parser->lexer->text.start);
+                                    &parser->lexer->text);
         }
 
         return NJS_TOKEN_ILLEGAL;
@@ -854,10 +853,9 @@ njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser)
 
         if (token != NJS_TOKEN_NAME) {
             if (token == NJS_TOKEN_ARGUMENTS || token ==  NJS_TOKEN_EVAL) {
-                njs_parser_syntax_error(vm, parser, "Identifier \"%.*s\" "
+                njs_parser_syntax_error(vm, parser, "Identifier \"%V\" "
                                         "is forbidden in var declaration",
-                                        (int) parser->lexer->text.length,
-                                        parser->lexer->text.start);
+                                        &parser->lexer->text);
             }
 
             return NJS_TOKEN_ILLEGAL;
@@ -1317,10 +1315,9 @@ njs_parser_for_var_statement(njs_vm_t *vm, njs_parser_t *parser)
 
         if (token != NJS_TOKEN_NAME) {
             if (token == NJS_TOKEN_ARGUMENTS || token ==  NJS_TOKEN_EVAL) {
-                njs_parser_syntax_error(vm, parser, "Identifier \"%.*s\" "
+                njs_parser_syntax_error(vm, parser, "Identifier \"%V\" "
                                        "is forbidden in for-in var declaration",
-                                       (int) parser->lexer->text.length,
-                                       parser->lexer->text.start);
+                                       &parser->lexer->text);
             }
 
             return NJS_TOKEN_ILLEGAL;
@@ -1457,9 +1454,8 @@ njs_parser_for_in_statement(njs_vm_t *vm, njs_parser_t *parser, nxt_str_t *name,
     node = parser->node->left;
 
     if (node->token != NJS_TOKEN_NAME) {
-        njs_parser_ref_error(vm, parser, "Invalid left-hand side \"%.*s\" "
-                             "in for-in statement", (int) name->length,
-                             name->start);
+        njs_parser_ref_error(vm, parser, "Invalid left-hand side \"%V\" "
+                             "in for-in statement", name);
 
         return NJS_TOKEN_ILLEGAL;
     }
@@ -1936,9 +1932,8 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
         break;
 
     case NJS_TOKEN_UNTERMINATED_STRING:
-        njs_parser_syntax_error(vm, parser, "Unterminated string \"%.*s\"",
-                                (int) parser->lexer->text.length,
-                                parser->lexer->text.start);
+        njs_parser_syntax_error(vm, parser, "Unterminated string \"%V\"",
+                                &parser->lexer->text);
 
         return NJS_TOKEN_ILLEGAL;
 
@@ -2007,10 +2002,8 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
         nxt_thread_log_debug("JS: arguments");
 
         if (parser->scope->type <= NJS_SCOPE_GLOBAL) {
-            njs_parser_syntax_error(vm, parser, "\"%.*s\" object "
-                                    "in global scope",
-                                    (int) parser->lexer->text.length,
-                                    parser->lexer->text.start);
+            njs_parser_syntax_error(vm, parser, "\"%V\" object "
+                                    "in global scope", &parser->lexer->text);
 
             return NJS_TOKEN_ILLEGAL;
         }
@@ -2591,9 +2584,8 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
 
 invalid:
 
-    njs_parser_syntax_error(vm, parser, "Invalid Unicode code point \"%.*s\"",
-                            (int) parser->lexer->text.length,
-                            parser->lexer->text.start);
+    njs_parser_syntax_error(vm, parser, "Invalid Unicode code point \"%V\"",
+                            &parser->lexer->text);
 
     return NJS_TOKEN_ILLEGAL;
 }
@@ -2635,9 +2627,8 @@ njs_parser_unexpected_token(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token)
 {
     if (token != NJS_TOKEN_END) {
-        njs_parser_syntax_error(vm, parser, "Unexpected token \"%.*s\"",
-                                (int) parser->lexer->text.length,
-                                parser->lexer->text.start);
+        njs_parser_syntax_error(vm, parser, "Unexpected token \"%V\"",
+                                &parser->lexer->text);
 
     } else {
         njs_parser_syntax_error(vm, parser, "Unexpected end of input");
@@ -2665,7 +2656,7 @@ njs_parser_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
     p = trace->handler(trace, td, p);
 
     if (vm->parser != NULL) {
-        njs_internal_error(vm, "%s in %u", start, vm->parser->lexer->line);
+        njs_internal_error(vm, "%s in %uD", start, vm->parser->lexer->line);
     } else {
         njs_internal_error(vm, "%s", start);
     }
@@ -2679,14 +2670,13 @@ njs_parser_syntax_error(njs_vm_t *vm, njs_parser_t *parser, const char* fmt,
     ...)
 {
     va_list  args;
-
-    static char  buf[256];
+    u_char   buf[256], *end;
 
     va_start(args, fmt);
-    (void) vsnprintf(buf, sizeof(buf), fmt, args);
+    end = nxt_vsprintf(buf, buf + sizeof(buf), fmt, args);
     va_end(args);
 
-    njs_syntax_error(vm, "%s in %u", buf, parser->lexer->line);
+    njs_syntax_error(vm, "%*s in %uD", end - buf, buf, parser->lexer->line);
 }
 
 
@@ -2695,12 +2685,11 @@ njs_parser_ref_error(njs_vm_t *vm, njs_parser_t *parser, const char* fmt,
     ...)
 {
     va_list  args;
-
-    static char  buf[256];
+    u_char   buf[256], *end;
 
     va_start(args, fmt);
-    (void) vsnprintf(buf, sizeof(buf), fmt, args);
+    end = nxt_vsprintf(buf, buf + sizeof(buf), fmt, args);
     va_end(args);
 
-    njs_reference_error(vm, "%s in %u", buf, parser->lexer->line);
+    njs_reference_error(vm, "%*s in %uD", end - buf, buf, parser->lexer->line);
 }

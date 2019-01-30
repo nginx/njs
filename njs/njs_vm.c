@@ -566,9 +566,8 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
 
     case NXT_DECLINED:
         if (nxt_slow_path(!object->data.u.object->extensible)) {
-            njs_type_error(vm, "Cannot add property '%.*s', "
-                           "object is not extensible", pq.lhq.key.length,
-                           pq.lhq.key.start);
+            njs_type_error(vm, "Cannot add property '%V', "
+                           "object is not extensible", &pq.lhq.key);
             return NXT_ERROR;
         }
 
@@ -610,9 +609,8 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
     }
 
     if (nxt_slow_path(!prop->writable)) {
-        njs_type_error(vm, "Cannot assign to read-only property '%.*s' of %s",
-                       pq.lhq.key.length, pq.lhq.key.start,
-                       njs_type_string(object->type));
+        njs_type_error(vm, "Cannot assign to read-only property '%V' of %s",
+                       &pq.lhq.key, njs_type_string(object->type));
         return NXT_ERROR;
     }
 
@@ -722,9 +720,8 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
         }
 
         if (nxt_slow_path(!prop->configurable)) {
-            njs_type_error(vm, "Cannot delete property '%.*s' of %s",
-                           pq.lhq.key.length, pq.lhq.key.start,
-                           njs_type_string(object->type));
+            njs_type_error(vm, "Cannot delete property '%V' of %s",
+                           &pq.lhq.key, njs_type_string(object->type));
             return NXT_ERROR;
         }
 
@@ -1994,8 +1991,7 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
 
     if (value == NULL || !njs_is_function(value)) {
         njs_string_get(name, &string);
-        njs_type_error(vm, "'%.*s' is not a function", (int) string.length,
-                       string.start);
+        njs_type_error(vm, "'%V' is not a function", &string);
         return NXT_ERROR;
     }
 

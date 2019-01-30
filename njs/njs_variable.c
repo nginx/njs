@@ -345,8 +345,7 @@ njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node)
 
 not_found:
 
-    njs_parser_ref_error(vm, vm->parser, "\"%.*s\" is not defined",
-                         (int) vr->name.length, vr->name.start);
+    njs_parser_ref_error(vm, vm->parser, "\"%V\" is not defined", &vr->name);
 
     return NULL;
 }

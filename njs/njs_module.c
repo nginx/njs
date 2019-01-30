@@ -62,8 +62,7 @@ njs_ret_t njs_module_require(njs_vm_t *vm, njs_value_t *args,
         return NXT_OK;
     }
 
-    njs_error(vm, "Cannot find module '%.*s'",
-              (int) lhq.key.length, lhq.key.start);
+    njs_error(vm, "Cannot find module '%V'", &lhq.key);
 
     return NJS_ERROR;
 }

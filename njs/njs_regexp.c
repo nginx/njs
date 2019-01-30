@@ -88,8 +88,7 @@ njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
         flags = njs_regexp_flags(&start, start + string.length, 1);
         if (nxt_slow_path(flags < 0)) {
-            njs_syntax_error(vm, "Invalid RegExp flags \"%.*s\"",
-                             (int) string.length, string.start);
+            njs_syntax_error(vm, "Invalid RegExp flags \"%V\"", &string);
             return NXT_ERROR;
         }
 
@@ -163,7 +162,7 @@ njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
 
             if (nxt_slow_path(flags < 0)) {
                 njs_parser_syntax_error(vm, parser,
-                                        "Invalid RegExp flags \"%.*s\"",
+                                        "Invalid RegExp flags \"%*s\"",
                                         p - lexer->start, lexer->start);
 
                 return NJS_TOKEN_ILLEGAL;
@@ -183,7 +182,7 @@ njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
         }
     }
 
-    njs_parser_syntax_error(vm, parser, "Unterminated RegExp \"%.*s\"",
+    njs_parser_syntax_error(vm, parser, "Unterminated RegExp \"%*s\"",
                             p - (lexer->start - 1), lexer->start - 1);
 
     return NJS_TOKEN_ILLEGAL;
@@ -379,7 +378,7 @@ njs_regexp_compile_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
     p = trace->handler(trace, td, start);
 
     if (vm->parser != NULL) {
-        njs_syntax_error(vm, "%s in %u", start, vm->parser->lexer->line);
+        njs_syntax_error(vm, "%s in %uD", start, vm->parser->lexer->line);
 
     } else {
         njs_syntax_error(vm, "%s", start);

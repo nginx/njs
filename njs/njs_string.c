@@ -808,7 +808,7 @@ njs_string_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         return njs_string_base64url(vm, &vm->retval, &str);
     }
 
-    njs_type_error(vm, "Unknown encoding: '%.*s'", (int) enc.length, enc.start);
+    njs_type_error(vm, "Unknown encoding: '%V'", &enc);
 
     return NJS_ERROR;
 }
@@ -1486,8 +1486,7 @@ njs_string_bytes_from_string(njs_vm_t *vm, const njs_value_t *args,
         return njs_string_decode_base64url(vm, &vm->retval, &str);
     }
 
-    njs_type_error(vm, "Unknown encoding: '%.*s'", (int) enc.length,
-                   enc.start);
+    njs_type_error(vm, "Unknown encoding: '%V'", &enc);
 
     return NJS_ERROR;
 }

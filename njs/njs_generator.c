@@ -3166,12 +3166,11 @@ njs_generate_syntax_error(njs_vm_t *vm, uint32_t token_line,
     const char* fmt, ...)
 {
     va_list  args;
-
-    static char  buf[256];
+    u_char   buf[256], *end;
 
     va_start(args, fmt);
-    (void) vsnprintf(buf, sizeof(buf), fmt, args);
+    end = nxt_vsprintf(buf, buf + sizeof(buf), fmt, args);
     va_end(args);
 
-    njs_syntax_error(vm, "%s in %u", buf, token_line);
+    njs_syntax_error(vm, "%*s in %uD", end - buf, buf, token_line);
 }
