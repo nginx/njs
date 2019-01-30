@@ -184,7 +184,7 @@ njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
     }
 
     njs_parser_syntax_error(vm, parser, "Unterminated RegExp \"%.*s\"",
-                            p - lexer->start - 1, lexer->start - 1);
+                            p - (lexer->start - 1), lexer->start - 1);
 
     return NJS_TOKEN_ILLEGAL;
 }
