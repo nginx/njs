@@ -2151,6 +2151,13 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
 
     left = NULL;
 
+    object = njs_parser_node_new(vm, parser, NJS_TOKEN_OBJECT_VALUE);
+    if (nxt_slow_path(object == NULL)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    object->u.object = obj;
+
     for ( ;; ) {
         token = njs_parser_property_token(parser);
 
@@ -2176,13 +2183,6 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
         }
-
-        object = njs_parser_node_new(vm, parser, NJS_TOKEN_OBJECT_VALUE);
-        if (nxt_slow_path(object == NULL)) {
-            return NJS_TOKEN_ERROR;
-        }
-
-        object->u.object = obj;
 
         propref = njs_parser_node_new(vm, parser, NJS_TOKEN_PROPERTY);
         if (nxt_slow_path(propref == NULL)) {
