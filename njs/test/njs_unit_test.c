@@ -2816,6 +2816,18 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = Object.create({a:1}); o.a = 2; delete o.a; o.a"),
       nxt_string("1") },
 
+    { nxt_string("njs.dump({break:1,3:2,'a':4,\"b\":2,true:1,null:0})"),
+      nxt_string("{break:1,3:2,a:4,b:2,true:1,null:0}") },
+
+    { nxt_string("var o1 = {a:1,b:2}, o2 = {c:3}; o1.a + o2.c"),
+      nxt_string("4") },
+
+    { nxt_string("({[]:1})"),
+      nxt_string("SyntaxError: Unexpected token \"[\" in 1") },
+
+    { nxt_string("({'AB\n\\cd':1})['AB\n\\cd']"),
+      nxt_string("1") },
+
     /* Inheritance. */
 
     { nxt_string("function Foo() {this.bar = 10;}; Foo.prototype.bar = 42; "

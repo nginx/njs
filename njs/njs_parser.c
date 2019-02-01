@@ -2163,9 +2163,18 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
             token = njs_parser_property_name(vm, parser, token);
             break;
 
-        default:
+        case NJS_TOKEN_NUMBER:
+        case NJS_TOKEN_STRING:
+        case NJS_TOKEN_ESCAPE_STRING:
             token = njs_parser_terminal(vm, parser, token);
             break;
+
+        default:
+            return NJS_TOKEN_ILLEGAL;
+        }
+
+        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+            return token;
         }
 
         object = njs_parser_node_new(vm, parser, NJS_TOKEN_OBJECT_VALUE);
@@ -2182,10 +2191,6 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
 
         propref->left = object;
         propref->right = parser->node;
-
-        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-            return token;
-        }
 
         token = njs_parser_match(vm, parser, token, NJS_TOKEN_COLON);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
