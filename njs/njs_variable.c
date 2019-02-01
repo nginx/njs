@@ -132,7 +132,6 @@ njs_variable_reference(njs_vm_t *vm, njs_parser_scope_t *scope,
     ret = njs_name_copy(vm, &vr->name, name);
 
     if (nxt_fast_path(ret == NXT_OK)) {
-        node->scope = scope;
         vr->hash = hash;
         vr->type = type;
 

@@ -2095,8 +2095,6 @@ njs_parser_builtin_object(njs_vm_t *vm, njs_parser_t *parser,
         return NJS_TOKEN_ERROR;
     }
 
-    node->scope = parser->scope;
-
     parser->node = node;
 
     return njs_parser_token(parser);
@@ -2138,8 +2136,6 @@ njs_parser_builtin_function(njs_vm_t *vm, njs_parser_t *parser,
     if (nxt_slow_path(ret != NXT_OK)) {
         return NJS_TOKEN_ERROR;
     }
-
-    node->scope = parser->scope;
 
     parser->node = node;
 
