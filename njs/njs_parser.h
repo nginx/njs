@@ -232,7 +232,7 @@ typedef struct {
 
 
 struct njs_parser_scope_s {
-    njs_parser_node_t               *node;
+    njs_parser_node_t               *top;
 
     nxt_queue_link_t                link;
     nxt_queue_t                     nested;

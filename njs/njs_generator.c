@@ -2348,12 +2348,12 @@ njs_generate_scope(njs_vm_t *vm, njs_generator_t *generator,
     generator->code_start = p;
     generator->code_end = p;
 
-    ret = njs_generate_argument_closures(vm, generator, scope->node);
+    ret = njs_generate_argument_closures(vm, generator, scope->top);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NXT_ERROR;
     }
 
-    if (nxt_slow_path(njs_generator(vm, generator, scope->node) != NXT_OK)) {
+    if (nxt_slow_path(njs_generator(vm, generator, scope->top) != NXT_OK)) {
         return NXT_ERROR;
     }
 
