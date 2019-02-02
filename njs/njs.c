@@ -10,6 +10,8 @@
 
 
 static nxt_int_t njs_vm_init(njs_vm_t *vm);
+static nxt_int_t njs_vm_invoke(njs_vm_t *vm, njs_function_t *function,
+    const njs_value_t *args, nxt_uint_t nargs, njs_index_t retval);
 static nxt_int_t njs_vm_handle_events(njs_vm_t *vm);
 
 
@@ -455,6 +457,14 @@ nxt_int_t
 njs_vm_call(njs_vm_t *vm, njs_function_t *function, const njs_value_t *args,
     nxt_uint_t nargs)
 {
+    return  njs_vm_invoke(vm, function, args, nargs, NJS_INDEX_GLOBAL_RETVAL);
+}
+
+
+static nxt_int_t
+njs_vm_invoke(njs_vm_t *vm, njs_function_t *function, const njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t retval)
+{
     u_char       *current;
     njs_ret_t    ret;
     njs_value_t  *this;
@@ -465,12 +475,15 @@ njs_vm_call(njs_vm_t *vm, njs_function_t *function, const njs_value_t *args,
 
     vm->current = (u_char *) njs_continuation_nexus;
 
-    ret = njs_function_activate(vm, function, this, args, nargs,
-                                NJS_INDEX_GLOBAL_RETVAL,
+    ret = njs_function_activate(vm, function, this, args, nargs, retval,
                                 sizeof(njs_vmcode_generic_t));
 
     if (nxt_fast_path(ret == NJS_APPLIED)) {
-        ret = njs_vm_start(vm);
+        ret = njs_vmcode_interpreter(vm);
+
+        if (ret == NJS_STOP) {
+            ret = NXT_OK;
+        }
     }
 
     vm->current = current;
