@@ -141,6 +141,7 @@ typedef struct {
     njs_external_ptr_t              external;
     njs_vm_shared_t                 *shared;
     njs_vm_ops_t                    *ops;
+    nxt_str_t                       file;
 
     uint8_t                         trailer;         /* 1 bit */
     uint8_t                         init;            /* 1 bit */

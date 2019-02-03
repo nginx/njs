@@ -244,6 +244,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     lexer->start = *start;
     lexer->end = end;
     lexer->line = 1;
+    lexer->file = vm->options.file;
     lexer->keywords_hash = vm->shared->keywords_hash;
 
     if (vm->backtrace != NULL) {

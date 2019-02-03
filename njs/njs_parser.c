@@ -2604,9 +2604,10 @@ u_char *
 njs_parser_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
     u_char *start)
 {
-    u_char    *p;
-    size_t    size;
-    njs_vm_t  *vm;
+    u_char       *p;
+    size_t       size;
+    njs_vm_t     *vm;
+    njs_lexer_t  *lexer;
 
     size = nxt_length("InternalError: ");
     memcpy(start, "InternalError: ", size);
@@ -2618,7 +2619,15 @@ njs_parser_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
     p = trace->handler(trace, td, p);
 
     if (vm->parser != NULL) {
-        njs_internal_error(vm, "%s in %uD", start, vm->parser->lexer->line);
+        lexer = vm->parser->lexer;
+
+        if (lexer->file.start != NULL) {
+            njs_internal_error(vm, "%s in %V:%uD", start, &lexer->file,
+                               lexer->line);
+        } else {
+            njs_internal_error(vm, "%s in %uD", start, lexer->line);
+        }
+
     } else {
         njs_internal_error(vm, "%s", start);
     }
@@ -2628,30 +2637,36 @@ njs_parser_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
 
 
 void
-njs_parser_syntax_error(njs_vm_t *vm, njs_parser_t *parser, const char* fmt,
-    ...)
-{
-    va_list  args;
-    u_char   buf[256], *end;
+njs_parser_error(njs_vm_t *vm, njs_parser_t *parser, njs_value_type_t type,
+    const char *fmt, ...)
+ {
+    size_t       width;
+    u_char       *p, *end;
+    u_char       msg[NXT_MAX_ERROR_STR];
+    va_list      args;
+    njs_lexer_t  *lexer;
+
+    p = msg;
+    end = msg + NXT_MAX_ERROR_STR;
 
     va_start(args, fmt);
-    end = nxt_vsprintf(buf, buf + sizeof(buf), fmt, args);
+    p = nxt_vsprintf(p, end, fmt, args);
     va_end(args);
 
-    njs_syntax_error(vm, "%*s in %uD", end - buf, buf, parser->lexer->line);
-}
+    lexer = parser->lexer;
 
+    width = nxt_length(" in ") + lexer->file.length + NXT_INT_T_LEN;
 
-void
-njs_parser_ref_error(njs_vm_t *vm, njs_parser_t *parser, const char* fmt,
-    ...)
-{
-    va_list  args;
-    u_char   buf[256], *end;
+    if (p > end - width) {
+        p = end - width;
+    }
 
-    va_start(args, fmt);
-    end = nxt_vsprintf(buf, buf + sizeof(buf), fmt, args);
-    va_end(args);
+    if (lexer->file.start != NULL) {
+        p = nxt_sprintf(p, end, " in %V:%uD", &lexer->file, lexer->line);
 
-    njs_reference_error(vm, "%*s in %uD", end - buf, buf, parser->lexer->line);
-}
+    } else {
+        p = nxt_sprintf(p, end, " in %uD", lexer->line);
+    }
+
+    njs_error_new(vm, type, msg, p - msg);
+ }

@@ -215,6 +215,11 @@ main(int argc, char **argv)
 
     nxt_memzero(&vm_options, sizeof(njs_vm_opt_t));
 
+    if (opts.file != NULL) {
+        vm_options.file.start = (u_char *) opts.file;
+        vm_options.file.length = strlen(opts.file);
+    }
+
     vm_options.init = !opts.interactive;
     vm_options.accumulative = opts.interactive;
     vm_options.backtrace = 1;

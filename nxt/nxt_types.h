@@ -116,5 +116,7 @@ typedef pid_t          nxt_pid_t;
 
 #define NXT_DOUBLE_LEN       (1 + DBL_MAX_10_EXP)
 
+#define NXT_MAX_ERROR_STR    2048
+
 
 #endif /* _NXT_TYPES_H_INCLUDED_ */
