@@ -37,11 +37,10 @@ njs_error_new(njs_vm_t *vm, njs_value_type_t type, u_char *start, size_t size)
 
 
 void
-njs_exception_error_create(njs_vm_t *vm, njs_value_type_t type,
-    const char* fmt, ...)
+njs_error_fmt_new(njs_vm_t *vm, njs_value_type_t type, const char* fmt, ...)
 {
     va_list  args;
-    u_char   buf[256], *p;
+    u_char   buf[NXT_MAX_ERROR_STR], *p;
 
     p = buf;
 
