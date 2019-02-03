@@ -15,38 +15,43 @@ static const njs_value_t  njs_error_name_string = njs_string("name");
 
 
 void
-njs_exception_error_create(njs_vm_t *vm, njs_value_type_t type,
-    const char* fmt, ...)
+njs_error_new(njs_vm_t *vm, njs_value_type_t type, u_char *start, size_t size)
 {
-    size_t        size;
-    va_list       args;
     nxt_int_t     ret;
     njs_value_t   string;
     njs_object_t  *error;
-    u_char        buf[256], *p;
 
-    if (fmt != NULL) {
-        va_start(args, fmt);
-        p = nxt_vsprintf(buf, buf + sizeof(buf), fmt, args);
-        va_end(args);
-
-        size = p - buf;
-
-    } else {
-        size = 0;
-    }
-
-    ret = njs_string_new(vm, &string, (const u_char *) buf, size, size);
+    ret = njs_string_new(vm, &string, start, size, size);
     if (nxt_slow_path(ret != NXT_OK)) {
         return;
     }
 
     error = njs_error_alloc(vm, type, NULL, &string);
+
     if (nxt_fast_path(error != NULL)) {
         vm->retval.data.u.object = error;
         vm->retval.type = type;
         vm->retval.data.truth = 1;
     }
+}
+
+
+void
+njs_exception_error_create(njs_vm_t *vm, njs_value_type_t type,
+    const char* fmt, ...)
+{
+    va_list  args;
+    u_char   buf[256], *p;
+
+    p = buf;
+
+    if (fmt != NULL) {
+        va_start(args, fmt);
+        p = nxt_vsprintf(buf, buf + sizeof(buf), fmt, args);
+        va_end(args);
+    }
+
+    njs_error_new(vm, type, buf, p - buf);
 }
 
 
@@ -467,7 +472,7 @@ const njs_object_init_t  njs_uri_error_constructor_init = {
 
 
 void
-njs_set_memory_error(njs_vm_t *vm, njs_value_t *value)
+njs_memory_error_set(njs_vm_t *vm, njs_value_t *value)
 {
     njs_object_t            *object;
     njs_object_prototype_t  *prototypes;
@@ -497,7 +502,7 @@ njs_set_memory_error(njs_vm_t *vm, njs_value_t *value)
 void
 njs_memory_error(njs_vm_t *vm)
 {
-    njs_set_memory_error(vm, &vm->retval);
+    njs_memory_error_set(vm, &vm->retval);
 }
 
 
@@ -505,7 +510,7 @@ njs_ret_t
 njs_memory_error_constructor(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    njs_set_memory_error(vm, &vm->retval);
+    njs_memory_error_set(vm, &vm->retval);
 
     return NXT_OK;
 }

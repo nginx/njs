@@ -652,7 +652,7 @@ njs_vm_retval_set(njs_vm_t *vm, const njs_value_t *value)
 nxt_noinline void
 njs_vm_memory_error(njs_vm_t *vm)
 {
-    njs_set_memory_error(vm, &vm->retval);
+    njs_memory_error_set(vm, &vm->retval);
 }
 
 

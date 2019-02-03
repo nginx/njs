@@ -3358,7 +3358,7 @@ njs_value_error_set(njs_vm_t *vm, njs_value_t *value, const char *fmt, ...)
 
 memory_error:
 
-    njs_set_memory_error(vm, value);
+    njs_memory_error_set(vm, value);
 }
 
 
