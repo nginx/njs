@@ -326,7 +326,7 @@ static nxt_int_t
 njs_external_match(njs_vm_t *vm, njs_function_native_t func, njs_extern_t *ext,
     nxt_str_t *name, njs_extern_part_t *head, njs_extern_part_t *ppart)
 {
-    char               *buf, *p;
+    u_char             *buf, *p;
     size_t             len;
     nxt_int_t          ret;
     njs_extern_t       *prop;
@@ -374,12 +374,11 @@ found:
     p = buf;
 
     for (pr = head; pr != NULL; pr = pr->next) {
-        p += snprintf(p, buf + len - p, "%.*s.", (int) pr->str.length,
-                      pr->str.start);
+        p = nxt_sprintf(p, buf + len, "%V.", &pr->str);
     }
 
     name->start = (u_char *) buf;
-    name->length = len;
+    name->length = len - 1;
 
     return NXT_OK;
 }

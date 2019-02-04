@@ -3049,7 +3049,7 @@ njs_ret_t
 njs_vm_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst, const njs_value_t *src,
     nxt_uint_t handle_exception)
 {
-    u_char                 *p, *start;
+    u_char                 *p, *start, *end;
     size_t                 len, size, count;
     njs_ret_t              ret;
     nxt_uint_t             i, exception;
@@ -3135,16 +3135,17 @@ again:
                     } else {
 
                         if (count != 0) {
-                            len += sizeof("      repeats  times\n") + 10;
+                            len += nxt_length("      repeats  times\n")
+                                   + NXT_INT_T_LEN;
                             count = 0;
                         }
 
                         if (be[i].line != 0) {
-                            len += sizeof("    at  (:)\n") + 10
+                            len += nxt_length("    at  (:)\n") + NXT_INT_T_LEN
                                    + be[i].name.length;
 
                         } else {
-                            len += sizeof("    at  (native)\n")
+                            len += nxt_length("    at  (native)\n")
                                    + be[i].name.length;
                         }
                     }
@@ -3159,6 +3160,7 @@ again:
                 }
 
                 start = p;
+                end = start + len;
 
                 p = nxt_cpymem(p, dst->start, dst->length);
                 *p++ = '\n';
@@ -3174,20 +3176,18 @@ again:
 
                     } else {
                         if (count != 0) {
-                            p += sprintf((char *) p,
-                                         "      repeats %zu times\n", count);
-                            count =0;
+                            p = nxt_sprintf(p, end,
+                                            "      repeats %uz times\n", count);
+                            count = 0;
                         }
 
                         if (be[i].line != 0) {
-                            p += sprintf((char *) p, "    at %.*s (:%u)\n",
-                                         (int) be[i].name.length,
-                                         be[i].name.start, be[i].line);
+                            p = nxt_sprintf(p, end, "    at %V (:%uD)\n",
+                                            &be[i].name, be[i].line);
 
                         } else {
-                            p += sprintf((char *) p, "    at %.*s (native)\n",
-                                         (int) be[i].name.length,
-                                         be[i].name.start);
+                            p = nxt_sprintf(p, end, "    at %V (native)\n",
+                                            &be[i].name);
                         }
                     }
 
