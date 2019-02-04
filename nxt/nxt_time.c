@@ -10,6 +10,7 @@
 #include <nxt_time.h>
 
 #include <time.h>
+#include <sys/time.h>
 
 uint64_t
 nxt_time(void)
