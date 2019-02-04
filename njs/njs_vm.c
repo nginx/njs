@@ -3127,8 +3127,8 @@ again:
                 be = backtrace->start;
 
                 for (i = 0; i < backtrace->items; i++) {
-                    if (i != 0 && prev->name.start == be[i].name.start
-                        && prev->line == be[i].line)
+                    if (i != 0 && prev->name.start == be->name.start
+                        && prev->line == be->line)
                     {
                         count++;
 
@@ -3140,17 +3140,18 @@ again:
                             count = 0;
                         }
 
-                        if (be[i].line != 0) {
-                            len += nxt_length("    at  (:)\n") + NXT_INT_T_LEN
-                                   + be[i].name.length;
+                        len += be->name.length + nxt_length("    at  ()\n");
+
+                        if (be->line != 0) {
+                            len += be->file.length + NXT_INT_T_LEN + 1;
 
                         } else {
-                            len += nxt_length("    at  (native)\n")
-                                   + be[i].name.length;
+                            len += nxt_length("native");
                         }
                     }
 
-                    prev = &be[i];
+                    prev = be;
+                    be++;
                 }
 
                 p = nxt_mp_alloc(vm->mem_pool, len);
@@ -3168,30 +3169,34 @@ again:
                 count = 0;
                 prev = NULL;
 
+                be = backtrace->start;
+
                 for (i = 0; i < backtrace->items; i++) {
-                    if (i != 0 && prev->name.start == be[i].name.start
-                        && prev->line == be[i].line)
+                    if (i != 0 && prev->name.start == be->name.start
+                        && prev->line == be->line)
                     {
                         count++;
 
                     } else {
                         if (count != 0) {
-                            p = nxt_sprintf(p, end,
-                                            "      repeats %uz times\n", count);
+                            p = nxt_sprintf(p, end, "      repeats %uz times\n",
+                                            count);
                             count = 0;
                         }
 
-                        if (be[i].line != 0) {
-                            p = nxt_sprintf(p, end, "    at %V (:%uD)\n",
-                                            &be[i].name, be[i].line);
+                        p = nxt_sprintf(p, end, "    at %V ", &be->name);
+
+                        if (be->line != 0) {
+                            p = nxt_sprintf(p, end, "(%V:%uD)\n", &be->file,
+                                            be->line);
 
                         } else {
-                            p = nxt_sprintf(p, end, "    at %V (native)\n",
-                                            &be[i].name);
+                            p = nxt_sprintf(p, end, "(native)\n");
                         }
                     }
 
-                    prev = &be[i];
+                    prev = be;
+                    be++;
                 }
 
                 dst->start = start;
@@ -3549,6 +3554,7 @@ njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame)
                 be->name = entry_anonymous;
             }
 
+            be->file = debug_entry[i].file;
             be->line = debug_entry[i].line;
 
             return NXT_OK;

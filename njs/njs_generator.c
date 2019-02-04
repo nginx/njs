@@ -160,8 +160,7 @@ static nxt_noinline nxt_int_t njs_generate_index_release(njs_vm_t *vm,
     njs_generator_t *generator, njs_index_t index);
 
 static nxt_int_t njs_generate_function_debug(njs_vm_t *vm, nxt_str_t *name,
-    njs_function_lambda_t *lambda, uint32_t line);
-
+    njs_function_lambda_t *lambda, njs_parser_node_t *node);
 
 static void njs_generate_syntax_error(njs_vm_t *vm, njs_parser_node_t *node,
     const char *fmt, ...);
@@ -1888,7 +1887,7 @@ njs_generate_function(njs_vm_t *vm, njs_generator_t *generator,
     }
 
     if (vm->debug != NULL) {
-        ret = njs_generate_function_debug(vm, NULL, lambda, node->token_line);
+        ret = njs_generate_function_debug(vm, NULL, lambda, node);
         if (nxt_slow_path(ret != NXT_OK)) {
             return ret;
         }
@@ -2269,8 +2268,7 @@ njs_generate_function_declaration(njs_vm_t *vm, njs_generator_t *generator,
     }
 
     if (vm->debug != NULL) {
-        ret = njs_generate_function_debug(vm, &var->name, lambda,
-                                          node->token_line);
+        ret = njs_generate_function_debug(vm, &var->name, lambda, node);
     }
 
     return ret;
@@ -3137,7 +3135,7 @@ njs_generate_index_release(njs_vm_t *vm, njs_generator_t *generator,
 
 static nxt_int_t
 njs_generate_function_debug(njs_vm_t *vm, nxt_str_t *name,
-    njs_function_lambda_t *lambda, uint32_t line)
+    njs_function_lambda_t *lambda, njs_parser_node_t *node)
 {
     njs_function_debug_t  *debug;
 
@@ -3154,7 +3152,8 @@ njs_generate_function_debug(njs_vm_t *vm, nxt_str_t *name,
     }
 
     debug->lambda = lambda;
-    debug->line = line;
+    debug->line = node->token_line;
+    debug->file = node->scope->file;
 
     return NXT_OK;
 }

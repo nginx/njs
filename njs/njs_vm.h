@@ -352,8 +352,9 @@ typedef union {
 
 
 typedef struct {
-    nxt_str_t                       name;
-    uint32_t                        line;
+    nxt_str_t                         name;
+    nxt_str_t                         file;
+    uint32_t                          line;
 } njs_backtrace_entry_t;
 
 
@@ -1012,6 +1013,7 @@ typedef struct {
 
 typedef struct {
     uint32_t                  line;
+    nxt_str_t                 file;
     nxt_str_t                 name;
     njs_function_lambda_t     *lambda;
 } njs_function_debug_t;
