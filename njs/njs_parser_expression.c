@@ -648,8 +648,8 @@ njs_parser_unary_expression(njs_vm_t *vm, njs_parser_t *parser,
 
         case NJS_TOKEN_NAME:
         case NJS_TOKEN_UNDEFINED:
-        njs_parser_syntax_error(vm, parser,
-                                "Delete of an unqualified identifier", NULL);
+            njs_parser_syntax_error(vm, parser,
+                                    "Delete of an unqualified identifier");
 
             return NJS_TOKEN_ILLEGAL;
 
