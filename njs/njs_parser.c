@@ -162,6 +162,7 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser, njs_parser_t *prev)
 static njs_ret_t
 njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser, njs_scope_t type)
 {
+    nxt_int_t           ret;
     nxt_uint_t          nesting;
     nxt_array_t         *values;
     njs_parser_scope_t  *scope, *parent;
@@ -188,13 +189,12 @@ njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser, njs_scope_t type)
         }
     }
 
-    scope = nxt_mp_alloc(vm->mem_pool, sizeof(njs_parser_scope_t));
+    scope = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_parser_scope_t));
     if (nxt_slow_path(scope == NULL)) {
         return NXT_ERROR;
     }
 
     scope->type = type;
-    scope->top = NULL;
 
     if (type == NJS_SCOPE_FUNCTION) {
         scope->next_index[0] = type;
@@ -229,6 +229,13 @@ njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser, njs_scope_t type)
 
     scope->values[0] = values;
     scope->values[1] = NULL;
+
+    if (parser->lexer->file.start != NULL) {
+        ret = njs_name_copy(vm, &scope->file, &parser->lexer->file);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return NXT_ERROR;
+        }
+    }
 
     parent = parser->scope;
     scope->parent = parent;
@@ -2639,7 +2646,7 @@ njs_parser_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
 void
 njs_parser_error(njs_vm_t *vm, njs_parser_t *parser, njs_value_type_t type,
     const char *fmt, ...)
- {
+{
     size_t       width;
     u_char       *p, *end;
     u_char       msg[NXT_MAX_ERROR_STR];

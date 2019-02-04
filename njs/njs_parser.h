@@ -249,6 +249,8 @@ struct njs_parser_scope_s {
     nxt_array_t                     *values[2];  /* Array of njs_value_t. */
     njs_index_t                     next_index[2];
 
+    nxt_str_t                       file;
+
     njs_scope_t                     type:8;
     uint8_t                         nesting;     /* 4 bits */
     uint8_t                         argument_closures;

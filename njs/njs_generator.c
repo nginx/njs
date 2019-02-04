@@ -163,8 +163,8 @@ static nxt_int_t njs_generate_function_debug(njs_vm_t *vm, nxt_str_t *name,
     njs_function_lambda_t *lambda, uint32_t line);
 
 
-static void njs_generate_syntax_error(njs_vm_t *vm, uint32_t token_line,
-    const char* fmt, ...);
+static void njs_generate_syntax_error(njs_vm_t *vm, njs_parser_node_t *node,
+    const char *fmt, ...);
 
 
 #define njs_generate_code(generator, type, code)                              \
@@ -1407,8 +1407,7 @@ njs_generate_continue_statement(njs_vm_t *vm, njs_generator_t *generator,
 
 syntax_error:
 
-    njs_generate_syntax_error(vm, node->token_line,
-                              "Illegal continue statement");
+    njs_generate_syntax_error(vm, node, "Illegal continue statement");
 
     return NXT_ERROR;
 }
@@ -1456,7 +1455,7 @@ njs_generate_break_statement(njs_vm_t *vm, njs_generator_t *generator,
 
 syntax_error:
 
-    njs_generate_syntax_error(vm, node->token_line, "Illegal break statement");
+    njs_generate_syntax_error(vm, node, "Illegal break statement");
 
     return NXT_ERROR;
 }
@@ -3162,15 +3161,36 @@ njs_generate_function_debug(njs_vm_t *vm, nxt_str_t *name,
 
 
 static void
-njs_generate_syntax_error(njs_vm_t *vm, uint32_t token_line,
-    const char* fmt, ...)
+njs_generate_syntax_error(njs_vm_t *vm, njs_parser_node_t *node,
+    const char *fmt, ...)
 {
-    va_list  args;
-    u_char   buf[256], *end;
+    size_t              width;
+    u_char              msg[NXT_MAX_ERROR_STR];
+    u_char              *p, *end;
+    va_list             args;
+    njs_parser_scope_t  *scope;
+
+    p = msg;
+    end = msg + NXT_MAX_ERROR_STR;
 
     va_start(args, fmt);
-    end = nxt_vsprintf(buf, buf + sizeof(buf), fmt, args);
+    p = nxt_vsprintf(p, end, fmt, args);
     va_end(args);
 
-    njs_syntax_error(vm, "%*s in %uD", end - buf, buf, token_line);
+    scope = node->scope;
+
+    width = nxt_length(" in ") + scope->file.length + NXT_INT_T_LEN;
+
+    if (p > end - width) {
+        p = end - width;
+    }
+
+    if (scope->file.start != NULL) {
+        p = nxt_sprintf(p, end, " in %V:%uD", &scope->file, node->token_line);
+
+    } else {
+        p = nxt_sprintf(p, end, " in %uD", node->token_line);
+    }
+
+    njs_error_new(vm, NJS_OBJECT_SYNTAX_ERROR, msg, p - msg);
 }
