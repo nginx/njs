@@ -1035,6 +1035,10 @@ ngx_http_js_ext_send_header(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NJS_ERROR;
     }
 
+    if (ngx_http_set_content_type(r) != NGX_OK) {
+        return NJS_ERROR;
+    }
+
     if (ngx_http_send_header(r) == NGX_ERROR) {
         return NJS_ERROR;
     }
