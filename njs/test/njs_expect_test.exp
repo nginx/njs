@@ -269,7 +269,7 @@ njs_test {
     {"JSON.parse(Error())\r\n"
      "JSON.parse(Error())\r\nSyntaxError: Unexpected token at position 0*at JSON.parse (native)"}
     {"JSON.parse(Error()\r\n"
-     "JSON.parse(Error()\r\nSyntaxError: Unexpected token \"\" in 1"}
+     "JSON.parse(Error()\r\nSyntaxError: Unexpected token \"\" in shell:1"}
 }
 
 njs_test {
@@ -281,7 +281,7 @@ njs_test {
 
 njs_test {
     {"(function() { throw 'test' })()\r\n"
-     "test\r\n    at anonymous (:1)"}
+     "test\r\n    at anonymous (shell:1)"}
 }
 
 # Non-ASCII characters

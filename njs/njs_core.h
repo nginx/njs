@@ -25,6 +25,7 @@
 #include <nxt_lvlhsh.h>
 #include <nxt_random.h>
 #include <nxt_time.h>
+#include <nxt_file.h>
 #include <nxt_malloc.h>
 #include <nxt_mp.h>
 #include <nxt_sprintf.h>

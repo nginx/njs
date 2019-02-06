@@ -49,6 +49,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 	$(NXT_BUILDDIR)/nxt_sha2.o \
 	$(NXT_BUILDDIR)/nxt_pcre.o \
 	$(NXT_BUILDDIR)/nxt_time.o \
+	$(NXT_BUILDDIR)/nxt_file.o \
 	$(NXT_BUILDDIR)/nxt_malloc.o \
 	$(NXT_BUILDDIR)/nxt_mp.o \
 	$(NXT_BUILDDIR)/nxt_sprintf.o \
@@ -96,6 +97,7 @@ $(NXT_BUILDDIR)/libnjs.a: \
 		$(NXT_BUILDDIR)/nxt_sha2.o \
 		$(NXT_BUILDDIR)/nxt_pcre.o \
 		$(NXT_BUILDDIR)/nxt_time.o \
+		$(NXT_BUILDDIR)/nxt_file.o \
 		$(NXT_BUILDDIR)/nxt_malloc.o \
 		$(NXT_BUILDDIR)/nxt_mp.o \
 		$(NXT_BUILDDIR)/nxt_sprintf.o \

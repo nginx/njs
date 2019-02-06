@@ -215,8 +215,10 @@ main(int argc, char **argv)
     nxt_memzero(&vm_options, sizeof(njs_vm_opt_t));
 
     if (opts.file != NULL) {
-        vm_options.file.start = (u_char *) opts.file;
-        vm_options.file.length = strlen(opts.file);
+        nxt_file_name(&vm_options.file, opts.file);
+
+    } else {
+        vm_options.file = nxt_string_value("shell");
     }
 
     vm_options.init = !opts.interactive;
@@ -1071,4 +1073,3 @@ lvlhsh_pool_free(void *pool, void *p, size_t size)
 {
     nxt_mp_free(pool, p);
 }
-

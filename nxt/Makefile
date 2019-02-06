@@ -21,6 +21,7 @@ $(NXT_BUILDDIR)/libnxt.a: \
 	$(NXT_BUILDDIR)/nxt_malloc.o \
 	$(NXT_BUILDDIR)/nxt_trace.o \
 	$(NXT_BUILDDIR)/nxt_time.o \
+	$(NXT_BUILDDIR)/nxt_file.o \
 	$(NXT_BUILDDIR)/nxt_mp.o \
 	$(NXT_BUILDDIR)/nxt_sprintf.o \
 
@@ -40,6 +41,7 @@ $(NXT_BUILDDIR)/libnxt.a: \
 		$(NXT_BUILDDIR)/nxt_pcre.o \
 		$(NXT_BUILDDIR)/nxt_malloc.o \
 		$(NXT_BUILDDIR)/nxt_time.o \
+		$(NXT_BUILDDIR)/nxt_file.o \
 		$(NXT_BUILDDIR)/nxt_trace.o \
 		$(NXT_BUILDDIR)/nxt_mp.o \
 		$(NXT_BUILDDIR)/nxt_sprintf.o \
@@ -220,6 +222,17 @@ $(NXT_BUILDDIR)/nxt_time.o: \
 	$(NXT_CC) -c -o $(NXT_BUILDDIR)/nxt_time.o $(NXT_CFLAGS) \
 		-I$(NXT_LIB) \
 		$(NXT_LIB)/nxt_time.c
+
+$(NXT_BUILDDIR)/nxt_file.o: \
+	$(NXT_LIB)/nxt_auto_config.h \
+	$(NXT_LIB)/nxt_types.h \
+	$(NXT_LIB)/nxt_clang.h \
+	$(NXT_LIB)/nxt_file.h \
+	$(NXT_LIB)/nxt_file.c \
+
+	$(NXT_CC) -c -o $(NXT_BUILDDIR)/nxt_file.o $(NXT_CFLAGS) \
+		-I$(NXT_LIB) \
+		$(NXT_LIB)/nxt_file.c
 
 $(NXT_BUILDDIR)/nxt_trace.o: \
 	$(NXT_LIB)/nxt_auto_config.h \
