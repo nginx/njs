@@ -1377,6 +1377,10 @@ ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     options.backtrace = 1;
     options.ops = &ngx_stream_js_ops;
 
+    file = value[1];
+    options.file.start = file.data;
+    options.file.length = file.len;
+
     jmcf->vm = njs_vm_create(&options);
     if (jmcf->vm == NULL) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "failed to create JS VM");
