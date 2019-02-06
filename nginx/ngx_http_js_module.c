@@ -934,6 +934,18 @@ ngx_http_js_ext_set_header_out(njs_vm_t *vm, void *obj, uintptr_t data,
     r = (ngx_http_request_t *) obj;
     v = (nxt_str_t *) data;
 
+    if (v->length == nxt_length("Content-Type")
+        && ngx_strncasecmp(v->start, (u_char *) "Content-Type",
+                           v->length) == 0)
+    {
+        r->headers_out.content_type.len = value->length;
+        r->headers_out.content_type_len = r->headers_out.content_type.len;
+        r->headers_out.content_type.data = value->start;
+        r->headers_out.content_type_lowcase = NULL;
+
+        return NJS_OK;
+    }
+
     h = ngx_http_js_get_header(&r->headers_out.headers.part, v->start,
                                v->length);
 
@@ -965,12 +977,21 @@ ngx_http_js_ext_set_header_out(njs_vm_t *vm, void *obj, uintptr_t data,
     h->value.data = p;
     h->value.len = value->length;
 
-    if (h->key.len == nxt_length("Content-Length")
-        && ngx_strncasecmp(h->key.data, (u_char *) "Content-Length",
-                           nxt_length("Content-Length")) == 0)
+    if (v->length == nxt_length("Content-Encoding")
+        && ngx_strncasecmp(v->start, (u_char *) "Content-Encoding",
+                           v->length) == 0)
+    {
+        r->headers_out.content_encoding = h;
+    }
+
+    if (v->length == nxt_length("Content-Length")
+        && ngx_strncasecmp(v->start, (u_char *) "Content-Length",
+                           v->length) == 0)
     {
         n = ngx_atoi(value->start, value->length);
         if (n == NGX_ERROR) {
+            h->hash = 0;
+            njs_vm_error(vm, "failed converting argument to integer");
             return NJS_ERROR;
         }
 
