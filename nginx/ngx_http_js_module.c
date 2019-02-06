@@ -949,7 +949,12 @@ ngx_http_js_ext_set_header_out(njs_vm_t *vm, void *obj, uintptr_t data,
     h = ngx_http_js_get_header(&r->headers_out.headers.part, v->start,
                                v->length);
 
-    if (h == NULL || h->hash == 0) {
+    if (h != NULL && value->length == 0) {
+        h->hash = 0;
+        h = NULL;
+    }
+
+    if (h == NULL && value->length != 0) {
         h = ngx_list_push(&r->headers_out.headers);
         if (h == NULL) {
             return NJS_ERROR;
@@ -964,18 +969,20 @@ ngx_http_js_ext_set_header_out(njs_vm_t *vm, void *obj, uintptr_t data,
 
         h->key.data = p;
         h->key.len = v->length;
+    }
+
+    if (h != NULL) {
+        p = ngx_pnalloc(r->pool, value->length);
+        if (p == NULL) {
+            return NJS_ERROR;
+        }
+
+        ngx_memcpy(p, value->start, value->length);
+
+        h->value.data = p;
+        h->value.len = value->length;
         h->hash = 1;
     }
-
-    p = ngx_pnalloc(r->pool, value->length);
-    if (p == NULL) {
-        return NJS_ERROR;
-    }
-
-    ngx_memcpy(p, value->start, value->length);
-
-    h->value.data = p;
-    h->value.len = value->length;
 
     if (v->length == nxt_length("Content-Encoding")
         && ngx_strncasecmp(v->start, (u_char *) "Content-Encoding",
@@ -988,15 +995,20 @@ ngx_http_js_ext_set_header_out(njs_vm_t *vm, void *obj, uintptr_t data,
         && ngx_strncasecmp(v->start, (u_char *) "Content-Length",
                            v->length) == 0)
     {
-        n = ngx_atoi(value->start, value->length);
-        if (n == NGX_ERROR) {
-            h->hash = 0;
-            njs_vm_error(vm, "failed converting argument to integer");
-            return NJS_ERROR;
-        }
+        if (h != NULL) {
+            n = ngx_atoi(value->start, value->length);
+            if (n == NGX_ERROR) {
+                h->hash = 0;
+                njs_vm_error(vm, "failed converting argument to integer");
+                return NJS_ERROR;
+            }
 
-        r->headers_out.content_length_n = n;
-        r->headers_out.content_length = h;
+            r->headers_out.content_length = h;
+            r->headers_out.content_length_n = n;
+
+        } else {
+            ngx_http_clear_content_length(r);
+        }
     }
 
     return NJS_OK;
