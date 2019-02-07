@@ -860,6 +860,10 @@ ngx_http_js_ext_next_header(njs_vm_t *vm, njs_value_t *value, void *obj,
         header = entry->part->elts;
         h = &header[entry->item++];
 
+        if (h->hash == 0) {
+            continue;
+        }
+
         return njs_string_create(vm, value, h->key.data, h->key.len, 0);
     }
 
