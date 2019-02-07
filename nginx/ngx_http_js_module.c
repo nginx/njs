@@ -71,6 +71,8 @@ static njs_ret_t ngx_http_js_ext_get_header_out(njs_vm_t *vm,
     njs_value_t *value, void *obj, uintptr_t data);
 static njs_ret_t ngx_http_js_ext_set_header_out(njs_vm_t *vm, void *obj,
     uintptr_t data, nxt_str_t *value);
+static njs_ret_t ngx_http_js_ext_delete_header_out(njs_vm_t *vm, void *obj,
+    uintptr_t data, nxt_bool_t delete);
 static njs_ret_t ngx_http_js_ext_foreach_header_out(njs_vm_t *vm, void *obj,
     void *next); /*FIXME*/
 static njs_ret_t ngx_http_js_ext_get_status(njs_vm_t *vm, njs_value_t *value,
@@ -344,7 +346,7 @@ static njs_external_t  ngx_http_js_ext_request[] = {
       0,
       ngx_http_js_ext_get_header_out,
       ngx_http_js_ext_set_header_out,
-      NULL,
+      ngx_http_js_ext_delete_header_out,
       ngx_http_js_ext_foreach_header_out,
       ngx_http_js_ext_next_header,
       NULL,
@@ -1012,6 +1014,18 @@ ngx_http_js_ext_set_header_out(njs_vm_t *vm, void *obj, uintptr_t data,
     }
 
     return NJS_OK;
+}
+
+
+static njs_ret_t
+ngx_http_js_ext_delete_header_out(njs_vm_t *vm, void *obj, uintptr_t data,
+    nxt_bool_t unused)
+{
+    nxt_str_t  value;
+
+    value = nxt_string_value("");
+
+    return ngx_http_js_ext_set_header_out(vm, obj, data, &value);
 }
 
 
