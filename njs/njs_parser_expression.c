@@ -993,7 +993,7 @@ njs_parser_property_expression(njs_vm_t *vm, njs_parser_t *parser,
                 return NJS_TOKEN_ILLEGAL;
             }
 
-            token = njs_parser_property_name(vm, parser, token);
+            token = njs_parser_property_name(vm, parser);
 
         } else {
             token = njs_parser_token(parser);
@@ -1015,7 +1015,7 @@ njs_parser_property_expression(njs_vm_t *vm, njs_parser_t *parser,
 
 
 njs_token_t
-njs_parser_property_name(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
+njs_parser_property_name(njs_vm_t *vm, njs_parser_t *parser)
 {
     nxt_int_t          ret;
     njs_parser_node_t  *node;

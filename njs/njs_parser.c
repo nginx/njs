@@ -2191,7 +2191,7 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
             return njs_parser_token(parser);
 
         case NJS_TOKEN_NAME:
-            token = njs_parser_property_name(vm, parser, token);
+            token = njs_parser_property_name(vm, parser);
             break;
 
         case NJS_TOKEN_NUMBER:
