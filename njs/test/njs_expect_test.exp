@@ -58,7 +58,7 @@ njs_test {
 # Global completions, yes
 njs_test {
     {"\t\ty"
-     "\a\r\nDisplay all*possibilities? (y or n)*abstract"}
+     "\a\r\nDisplay all*possibilities? (y or n)*await"}
 }
 
 # Global completions, single partial match
@@ -130,7 +130,7 @@ njs_test {
     {"var a = 1; var aa = 2\r\n"
      "var a = 1; var aa = 2\r\nundefined\r\n>> "}
     {"a\t\t"
-     "a*aa*abstract"}
+     "a*aa*arguments*await"}
 }
 
 njs_test {
