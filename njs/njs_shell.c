@@ -214,11 +214,13 @@ main(int argc, char **argv)
 
     nxt_memzero(&vm_options, sizeof(njs_vm_opt_t));
 
-    if (opts.file != NULL) {
-        nxt_file_name(&vm_options.file, opts.file);
+    if (!opts.quiet) {
+        if (opts.file != NULL) {
+            nxt_file_name(&vm_options.file, opts.file);
 
-    } else {
-        vm_options.file = nxt_string_value("shell");
+        } else {
+            vm_options.file = nxt_string_value("shell");
+        }
     }
 
     vm_options.init = !opts.interactive;
