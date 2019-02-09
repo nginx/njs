@@ -320,10 +320,8 @@ njs_token_t njs_parser_assignment_expression(njs_vm_t *vm,
     njs_parser_t *parser, njs_token_t token);
 njs_token_t njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token);
-njs_token_t njs_parser_property_name(njs_vm_t *vm, njs_parser_t *parser);
-njs_token_t njs_parser_property_token(njs_parser_t *parser);
+njs_token_t njs_parser_property_token(njs_vm_t *vm, njs_parser_t *parser);
 njs_token_t njs_parser_token(njs_parser_t *parser);
-nxt_int_t njs_parser_string_create(njs_vm_t *vm, njs_value_t *value);
 njs_variable_t *njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node);
 njs_index_t njs_variable_typeof(njs_vm_t *vm, njs_parser_node_t *node);
 njs_index_t njs_variable_index(njs_vm_t *vm, njs_parser_node_t *node);

@@ -60,6 +60,7 @@ static njs_token_t njs_parser_object(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *obj);
 static njs_token_t njs_parser_array(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *obj);
+static nxt_int_t njs_parser_string_create(njs_vm_t *vm, njs_value_t *value);
 static njs_token_t njs_parser_escape_string_create(njs_vm_t *vm,
     njs_parser_t *parser, njs_value_t *value);
 static njs_token_t njs_parser_unexpected_token(njs_vm_t *vm,
@@ -1756,15 +1757,31 @@ njs_parser_grouping_expression(njs_vm_t *vm, njs_parser_t *parser)
 
 
 njs_token_t
-njs_parser_property_token(njs_parser_t *parser)
+njs_parser_property_token(njs_vm_t *vm, njs_parser_t *parser)
 {
-    njs_token_t  token;
+    nxt_int_t          ret;
+    njs_token_t        token;
+    njs_parser_node_t  *node;
 
     parser->lexer->property = 1;
 
     token = njs_parser_token(parser);
 
     parser->lexer->property = 0;
+
+    if (token == NJS_TOKEN_NAME) {
+        node = njs_parser_node_new(vm, parser, NJS_TOKEN_STRING);
+        if (nxt_slow_path(node == NULL)) {
+            return NJS_TOKEN_ERROR;
+        }
+
+        ret = njs_parser_string_create(vm, &node->u.value);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return NJS_TOKEN_ERROR;
+        }
+
+        parser->node = node;
+    }
 
     return token;
 }
@@ -2183,7 +2200,7 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
     object->u.object = obj;
 
     for ( ;; ) {
-        token = njs_parser_property_token(parser);
+        token = njs_parser_property_token(vm, parser);
 
         switch (token) {
 
@@ -2191,7 +2208,7 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
             return njs_parser_token(parser);
 
         case NJS_TOKEN_NAME:
-            token = njs_parser_property_name(vm, parser);
+            token = njs_parser_token(parser);
             break;
 
         case NJS_TOKEN_NUMBER:
@@ -2351,7 +2368,7 @@ njs_parser_array(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
 }
 
 
-nxt_int_t
+static nxt_int_t
 njs_parser_string_create(njs_vm_t *vm, njs_value_t *value)
 {
     u_char     *p;
