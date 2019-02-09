@@ -304,13 +304,13 @@ njs_extern_keys_array(njs_vm_t *vm, const njs_extern_t *external)
 
 
 njs_value_t *
-njs_parser_external(njs_vm_t *vm, njs_parser_t *parser)
+njs_external_lookup(njs_vm_t *vm, nxt_str_t *name, uint32_t hash)
 {
     nxt_lvlhsh_query_t  lhq;
     njs_extern_value_t  *ev;
 
-    lhq.key_hash = parser->lexer->key_hash;
-    lhq.key = parser->lexer->text;
+    lhq.key_hash = hash;
+    lhq.key = *name;
     lhq.proto = &njs_extern_value_hash_proto;
 
     if (nxt_lvlhsh_find(&vm->externals_hash, &lhq) == NXT_OK) {

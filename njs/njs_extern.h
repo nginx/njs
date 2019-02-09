@@ -42,6 +42,7 @@ typedef struct {
 
 
 njs_array_t *njs_extern_keys_array(njs_vm_t *vm, const njs_extern_t *external);
+njs_value_t *njs_external_lookup(njs_vm_t *vm, nxt_str_t *name, uint32_t hash);
 nxt_int_t njs_external_match_native_function(njs_vm_t *vm,
     njs_function_native_t func, nxt_str_t *name);
 

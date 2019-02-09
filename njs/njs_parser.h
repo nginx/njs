@@ -306,8 +306,6 @@ void njs_lexer_rollback(njs_lexer_t *lexer);
 nxt_int_t njs_lexer_keywords_init(nxt_mp_t *mcp, nxt_lvlhsh_t *hash);
 njs_token_t njs_lexer_keyword(njs_lexer_t *lexer);
 
-njs_value_t *njs_parser_external(njs_vm_t *vm, njs_parser_t *parser);
-
 nxt_int_t njs_parser(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_t *prev);
 njs_token_t njs_parser_arguments(njs_vm_t *vm, njs_parser_t *parser,
