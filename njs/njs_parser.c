@@ -2215,13 +2215,29 @@ njs_parser_builtin(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node,
 }
 
 
+/*
+ * ES6: 12.2.6 Object Initializer
+ * Supported syntax:
+ *   PropertyDefinition:
+ *     PropertyName : AssignmentExpression
+ *     IdentifierReference
+ *   PropertyName:
+ *    IdentifierName, StringLiteral, NumericLiteral.
+ */
 static njs_token_t
 njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
 {
+    uint32_t           hash;
+    nxt_str_t          name;
     njs_token_t        token;
-    njs_parser_node_t  *stmt, *assign, *object, *propref, *left;
+    njs_lexer_t        *lexer;
+    njs_parser_node_t  *stmt, *assign, *object, *propref, *left, *expression;
 
     left = NULL;
+    lexer = parser->lexer;
+
+    /* GCC and Clang complain about uninitialized hash. */
+    hash = 0;
 
     object = njs_parser_node_new(vm, parser, NJS_TOKEN_OBJECT_VALUE);
     if (nxt_slow_path(object == NULL)) {
@@ -2233,12 +2249,17 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
     for ( ;; ) {
         token = njs_parser_property_token(vm, parser);
 
+        name.start = NULL;
+
         switch (token) {
 
         case NJS_TOKEN_CLOSE_BRACE:
             return njs_parser_token(parser);
 
         case NJS_TOKEN_NAME:
+            name = lexer->text;
+            hash = lexer->key_hash;
+
             token = njs_parser_token(parser);
             break;
 
@@ -2264,14 +2285,29 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
         propref->left = object;
         propref->right = parser->node;
 
-        token = njs_parser_match(vm, parser, token, NJS_TOKEN_COLON);
-        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-            return token;
-        }
+        if (name.start != NULL
+            && (token == NJS_TOKEN_COMMA || token == NJS_TOKEN_CLOSE_BRACE)
+            && lexer->property_token != NJS_TOKEN_THIS
+            && lexer->property_token != NJS_TOKEN_GLOBAL_THIS)
+        {
+            expression = njs_parser_reference(vm, parser, lexer->property_token,
+                                              &name, hash);
+            if (nxt_slow_path(expression == NULL)) {
+                return NJS_TOKEN_ERROR;
+            }
 
-        token = njs_parser_assignment_expression(vm, parser, token);
-        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-            return token;
+        } else {
+            token = njs_parser_match(vm, parser, token, NJS_TOKEN_COLON);
+            if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                return token;
+            }
+
+            token = njs_parser_assignment_expression(vm, parser, token);
+            if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                return token;
+            }
+
+            expression = parser->node;
         }
 
         assign = njs_parser_node_new(vm, parser, NJS_TOKEN_ASSIGNMENT);
@@ -2281,7 +2317,7 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
 
         assign->u.operation = njs_vmcode_move;
         assign->left = propref;
-        assign->right = parser->node;
+        assign->right = expression;
 
         stmt = njs_parser_node_new(vm, parser, NJS_TOKEN_STATEMENT);
         if (nxt_slow_path(stmt == NULL)) {

@@ -459,7 +459,8 @@ njs_lexer_next_token(njs_lexer_t *lexer)
 static njs_token_t
 njs_lexer_word(njs_lexer_t *lexer, u_char c)
 {
-    u_char  *p;
+    u_char       *p;
+    njs_token_t  token;
 
     /* TODO: UTF-8 */
 
@@ -498,11 +499,14 @@ njs_lexer_word(njs_lexer_t *lexer, u_char c)
     lexer->start = p;
     lexer->text.length = p - lexer->text.start;
 
+    token = njs_lexer_keyword(lexer);
+
     if (lexer->property) {
+        lexer->property_token = token;
         return NJS_TOKEN_NAME;
     }
 
-    return njs_lexer_keyword(lexer);
+    return token;
 }
 
 

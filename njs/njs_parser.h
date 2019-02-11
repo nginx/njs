@@ -210,7 +210,10 @@ typedef enum {
 typedef struct {
     njs_token_t                     token:16;
     njs_token_t                     prev_token:16;
+
     uint8_t                         property;      /* 1 bit */
+    njs_token_t                     property_token:16;
+
     uint32_t                        key_hash;
 
     uint32_t                        token_line;

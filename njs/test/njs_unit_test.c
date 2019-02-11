@@ -2761,6 +2761,44 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var x = { a: 1 }, b = delete x.a; x.a +' '+ b"),
       nxt_string("undefined true") },
 
+    /* Shorthand Object literals. */
+
+    { nxt_string("var a = 1; njs.dump({a})"),
+      nxt_string("{a:1}") },
+
+    { nxt_string("var a = 1, b; njs.dump({a,b})"),
+      nxt_string("{a:1,b:undefined}") },
+
+    { nxt_string("var a = 1, b = 2; ({a,b,c})"),
+      nxt_string("ReferenceError: \"c\" is not defined in 1") },
+
+    { nxt_string("var a = 1, b = 2; njs.dump({a,b,c:3})"),
+      nxt_string("{a:1,b:2,c:3}") },
+
+    { nxt_string("var b = 2, c = 3; njs.dump({a:1,b,c})"),
+      nxt_string("{a:1,b:2,c:3}") },
+
+    { nxt_string("({1})"),
+      nxt_string("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { nxt_string("({default})"),
+      nxt_string("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { nxt_string("({var})"),
+      nxt_string("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { nxt_string("({this})"),
+        nxt_string("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { nxt_string("typeof ({Number}).Number"),
+      nxt_string("function") },
+
+    { nxt_string("typeof ({eval}).eval"),
+      nxt_string("function") },
+
+    { nxt_string("typeof ({Math}).Math.sin"),
+      nxt_string("function") },
+
     { nxt_string("delete null"),
       nxt_string("true") },
 
