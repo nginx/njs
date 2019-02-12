@@ -100,7 +100,7 @@ njs_ret_t
 njs_clear_timeout(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    u_char              buf[16];
+    u_char              buf[16], *p;
     njs_ret_t           ret;
     njs_event_t         *event;
     nxt_lvlhsh_query_t  lhq;
@@ -110,9 +110,11 @@ njs_clear_timeout(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NJS_OK;
     }
 
+    p = nxt_sprintf(buf, buf + nxt_length(buf), "%uD",
+                    (unsigned) args[1].data.u.number);
+
     lhq.key.start = buf;
-    lhq.key.length = snprintf((char *) buf, sizeof(buf) - 1, "%u",
-                              (unsigned) args[1].data.u.number);
+    lhq.key.length = p - buf;
     lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
     lhq.proto = &njs_event_hash_proto;
     lhq.pool = vm->mem_pool;

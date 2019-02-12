@@ -719,7 +719,7 @@ next:
                 continue;
             }
 
-            if (strncmp(text, (char *) var->name.start, cmpl->length) == 0) {
+            if (nxt_strncmp(text, var->name.start, cmpl->length) == 0) {
                 return njs_editline(&var->name);
             }
         }
@@ -769,8 +769,8 @@ next:
 
             suffix = njs_completion(cmpl->suffix_completions, cmpl->index++);
 
-            if (len != 0 && strncmp((char *) suffix->start, p,
-                                    nxt_min(len, suffix->length)) != 0)
+            if (len != 0 && nxt_strncmp(suffix->start, p,
+                                        nxt_min(len, suffix->length)) != 0)
             {
                 continue;
             }
@@ -781,8 +781,8 @@ next:
                 return NULL;
             }
 
-            snprintf(completion, len, "%.*s%.*s", (int) (p - text), text,
-                     (int) suffix->length, suffix->start);
+            nxt_sprintf((u_char *) completion, (u_char *) completion + len,
+                        "%*s%V%Z", (int) (p - text), text, suffix);
             return completion;
         }
 
@@ -803,7 +803,7 @@ next:
                 continue;
             }
 
-            if (strncmp(text, (char *) suffix->start, cmpl->length) == 0) {
+            if (nxt_strncmp(text, suffix->start, cmpl->length) == 0) {
                 return njs_editline(suffix);
             }
         }

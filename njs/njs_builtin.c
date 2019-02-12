@@ -595,7 +595,7 @@ njs_builtin_completions_size(njs_vm_t *vm)
 static nxt_array_t *
 njs_builtin_completions(njs_vm_t *vm, nxt_array_t *array)
 {
-    char                     *compl;
+    u_char                   *compl;
     size_t                   n, len;
     nxt_str_t                string, *completions;
     nxt_uint_t               i, k;
@@ -634,7 +634,8 @@ njs_builtin_completions(njs_vm_t *vm, nxt_array_t *array)
                 return NULL;
             }
 
-            snprintf(compl, len, "%s.%s", obj->name.start, string.start);
+            nxt_sprintf(compl, compl + len, "%s.%s%Z", obj->name.start,
+                        string.start);
 
             completions[n].length = len;
             completions[n++].start = (u_char *) compl;
@@ -654,12 +655,10 @@ njs_builtin_completions(njs_vm_t *vm, nxt_array_t *array)
                 return NULL;
             }
 
-            snprintf(compl, len, ".%s", string.start);
+            nxt_sprintf(compl, compl + len, ".%s%Z", string.start);
 
             for (k = 0; k < n; k++) {
-                if (strncmp((char *) completions[k].start, compl, len)
-                    == 0)
-                {
+                if (nxt_strncmp(completions[k].start, compl, len) == 0) {
                     break;
                 }
             }
@@ -684,7 +683,8 @@ njs_builtin_completions(njs_vm_t *vm, nxt_array_t *array)
                 return NULL;
             }
 
-            snprintf(compl, len, "%s.%s", obj->name.start, string.start);
+            nxt_sprintf(compl, compl + len, "%s.%s%Z", obj->name.start,
+                        string.start);
 
             completions[n].length = len;
             completions[n++].start = (u_char *) compl;
@@ -710,7 +710,7 @@ njs_builtin_completions(njs_vm_t *vm, nxt_array_t *array)
             return NULL;
         }
 
-        snprintf(compl, len, "%.*s", (int) ev->name.length, ev->name.start);
+        nxt_sprintf(compl, compl + len, "%V%Z", &ev->name);
 
         completions[n].length = len;
         completions[n++].start = (u_char *) compl;
@@ -728,9 +728,8 @@ njs_builtin_completions(njs_vm_t *vm, nxt_array_t *array)
                 return NULL;
             }
 
-            snprintf(compl, len, "%.*s.%.*s", (int) ev->name.length,
-                     ev->name.start, (int) ext_prop->name.length,
-                     ext_prop->name.start);
+            nxt_sprintf(compl, compl + len, "%V.%V%Z", &ev->name,
+                        &ext_prop->name);
 
             completions[n].length = len;
             completions[n++].start = (u_char *) compl;

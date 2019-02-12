@@ -2069,13 +2069,12 @@ const njs_object_init_t  njs_json_object_init = {
 static nxt_int_t
 njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value)
 {
-    size_t              len;
     njs_ret_t           ret;
     nxt_str_t           str;
     nxt_uint_t          written;
     njs_value_t         str_val;
     const njs_extern_t  *ext_proto;
-    char                buf[32];
+    u_char              buf[32], *p;
 
     njs_ret_t           (*to_string)(njs_vm_t *, njs_value_t *,
                                      const njs_value_t *);
@@ -2243,9 +2242,9 @@ njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value)
         return njs_json_buf_append(stringify, (char *) str.start, str.length);
 
     default:
-        len = snprintf(buf, sizeof(buf), "[Unknown value type:%d]",
-                       value->type);
-        return njs_json_buf_append(stringify, buf, len);
+        p = nxt_sprintf(buf, buf + nxt_length(buf), "[Unknown value type:%uD]",
+                        value->type);
+        return njs_json_buf_append(stringify, (char *) buf, p - buf);
     }
 
     return ret;

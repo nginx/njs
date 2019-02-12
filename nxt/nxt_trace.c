@@ -8,6 +8,7 @@
 #include <nxt_types.h>
 #include <nxt_clang.h>
 #include <nxt_malloc.h>
+#include <nxt_sprintf.h>
 #include <nxt_trace.h>
 #include <stdio.h>
 
@@ -15,14 +16,14 @@
 static u_char *
 nxt_last_handler(nxt_trace_t *trace, nxt_trace_data_t *td, u_char *start)
 {
-    int      n;
+    u_char   *p;
     ssize_t  size;
 
     size = td->end - start;
-    n = vsnprintf((char *) start, size, td->fmt, td->args);
+    p = nxt_vsprintf(start, start + size, td->fmt, td->args);
 
-    if (n < size) {
-        start += n;
+    if (p - start < size) {
+        start = p;
     }
 
     return start;

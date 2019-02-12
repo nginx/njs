@@ -984,9 +984,8 @@ njs_date_prototype_to_utc_string(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
     double             time;
-    size_t             size;
     time_t             clock;
-    u_char             buf[NJS_DATE_TIME_LEN];
+    u_char             buf[NJS_DATE_TIME_LEN], *p;
     struct tm          tm;
 
     static const char  *week[] = { "Sun", "Mon", "Tue", "Wed",
@@ -1001,13 +1000,12 @@ njs_date_prototype_to_utc_string(njs_vm_t *vm, njs_value_t *args,
         clock = time / 1000;
         gmtime_r(&clock, &tm);
 
-        size = snprintf((char *) buf, NJS_DATE_TIME_LEN,
+        p = nxt_sprintf(buf, buf + NJS_DATE_TIME_LEN,
                         "%s %s %02d %4d %02d:%02d:%02d GMT",
-                        week[tm.tm_wday], month[tm.tm_mon],
-                        tm.tm_mday, tm.tm_year + 1900,
-                        tm.tm_hour, tm.tm_min, tm.tm_sec);
+                        week[tm.tm_wday], month[tm.tm_mon], tm.tm_mday,
+                        tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
-        return njs_string_new(vm, &vm->retval, buf, size, size);
+        return njs_string_new(vm, &vm->retval, buf, p - buf, p - buf);
     }
 
     vm->retval = njs_string_invalid_date;
@@ -1029,9 +1027,8 @@ njs_date_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *date)
 {
     int32_t    year;
     double     time;
-    size_t     size;
     time_t     clock;
-    u_char     buf[NJS_ISO_DATE_TIME_LEN];
+    u_char     buf[NJS_ISO_DATE_TIME_LEN], *p;
     struct tm  tm;
 
     time = date->data.u.date->time;
@@ -1043,14 +1040,13 @@ njs_date_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *date)
 
         year = tm.tm_year + 1900;
 
-        size = snprintf((char *) buf, NJS_ISO_DATE_TIME_LEN,
+        p = nxt_sprintf(buf, buf + NJS_ISO_DATE_TIME_LEN,
                         (year < 0) ? "%07d-%02d-%02dT%02d:%02d:%02d.%03dZ"
                                    : "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ",
-                        year, tm.tm_mon + 1, tm.tm_mday,
-                        tm.tm_hour, tm.tm_min, tm.tm_sec,
-                        (int) ((int64_t) time % 1000));
+                        year, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min,
+                        tm.tm_sec, (int) ((int64_t) time % 1000));
 
-        return njs_string_new(vm, retval, buf, size, size);
+        return njs_string_new(vm, retval, buf, p - buf, p - buf);
     }
 
     vm->retval = njs_string_invalid_date;

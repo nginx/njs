@@ -62,11 +62,12 @@ njs_char_to_hex(u_char c)
 nxt_inline void
 njs_uint32_to_string(njs_value_t *value, uint32_t u32)
 {
-    size_t  size;
+    u_char  *dst, *p;
 
-    size = snprintf((char *) njs_string_short_start(value),
-                    NJS_STRING_SHORT, "%u", u32);
-    njs_string_short_set(value, size, size);
+    dst = njs_string_short_start(value);
+    p = nxt_sprintf(dst, dst + NJS_STRING_SHORT, "%uD", u32);
+
+    njs_string_short_set(value, p - dst, p - dst);
 }
 
 

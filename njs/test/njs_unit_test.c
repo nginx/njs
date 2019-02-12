@@ -11288,15 +11288,14 @@ static njs_ret_t
 njs_unit_test_r_get_a_external(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
-    char                 buf[16];
-    size_t               len;
+    u_char               buf[16], *p;
     njs_unit_test_req_t  *r;
 
     r = (njs_unit_test_req_t *) obj;
 
-    len = sprintf(buf, "%u", r->a);
+    p = nxt_sprintf(buf, buf + nxt_length(buf), "%uD", r->a);
 
-    return njs_string_create(vm, value, (u_char *) buf, len, 0);
+    return njs_string_create(vm, value, buf, p - buf, 0);
 }
 
 
