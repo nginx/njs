@@ -2759,5 +2759,5 @@ njs_parser_error(njs_vm_t *vm, njs_parser_t *parser, njs_value_type_t type,
         p = nxt_sprintf(p, end, " in %uD", lexer->line);
     }
 
-    njs_error_new(vm, type, msg, p - msg);
+    njs_error_new(vm, &vm->retval, type, msg, p - msg);
  }

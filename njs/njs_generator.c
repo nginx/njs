@@ -3191,5 +3191,5 @@ njs_generate_syntax_error(njs_vm_t *vm, njs_parser_node_t *node,
         p = nxt_sprintf(p, end, " in %uD", node->token_line);
     }
 
-    njs_error_new(vm, NJS_OBJECT_SYNTAX_ERROR, msg, p - msg);
+    njs_error_new(vm, &vm->retval, NJS_OBJECT_SYNTAX_ERROR, msg, p - msg);
 }

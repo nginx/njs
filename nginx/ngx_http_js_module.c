@@ -1751,8 +1751,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             }
 
             if (method == n) {
-                njs_vm_error(vm, "unknown method \"%.*s\"",
-                             (int) method_name.length, method_name.start);
+                njs_vm_error(vm, "unknown method \"%V\"", &method_name);
                 return NJS_ERROR;
             }
         }

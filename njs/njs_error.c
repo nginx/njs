@@ -15,7 +15,8 @@ static const njs_value_t  njs_error_name_string = njs_string("name");
 
 
 void
-njs_error_new(njs_vm_t *vm, njs_value_type_t type, u_char *start, size_t size)
+njs_error_new(njs_vm_t *vm, njs_value_t *dst, njs_value_type_t type,
+    u_char *start, size_t size)
 {
     nxt_int_t     ret;
     njs_value_t   string;
@@ -29,15 +30,16 @@ njs_error_new(njs_vm_t *vm, njs_value_type_t type, u_char *start, size_t size)
     error = njs_error_alloc(vm, type, NULL, &string);
 
     if (nxt_fast_path(error != NULL)) {
-        vm->retval.data.u.object = error;
-        vm->retval.type = type;
-        vm->retval.data.truth = 1;
+        dst->data.u.object = error;
+        dst->type = type;
+        dst->data.truth = 1;
     }
 }
 
 
 void
-njs_error_fmt_new(njs_vm_t *vm, njs_value_type_t type, const char* fmt, ...)
+njs_error_fmt_new(njs_vm_t *vm, njs_value_t *dst, njs_value_type_t type,
+    const char* fmt, ...)
 {
     va_list  args;
     u_char   buf[NXT_MAX_ERROR_STR], *p;
@@ -50,7 +52,7 @@ njs_error_fmt_new(njs_vm_t *vm, njs_value_type_t type, const char* fmt, ...)
         va_end(args);
     }
 
-    njs_error_new(vm, type, buf, p - buf);
+    njs_error_new(vm, dst, type, buf, p - buf);
 }
 
 
@@ -65,8 +67,7 @@ njs_error_alloc(njs_vm_t *vm, njs_value_type_t type, const njs_value_t *name,
 
     error = nxt_mp_alloc(vm->mem_pool, sizeof(njs_object_t));
     if (nxt_slow_path(error == NULL)) {
-        njs_memory_error(vm);
-        return NULL;
+        goto memory_error;
     }
 
     nxt_lvlhsh_init(&error->hash);
@@ -86,7 +87,7 @@ njs_error_alloc(njs_vm_t *vm, njs_value_type_t type, const njs_value_t *name,
 
         prop = njs_object_prop_alloc(vm, &njs_error_name_string, name, 1);
         if (nxt_slow_path(prop == NULL)) {
-            return NULL;
+            goto memory_error;
         }
 
         lhq.value = prop;
@@ -105,7 +106,7 @@ njs_error_alloc(njs_vm_t *vm, njs_value_type_t type, const njs_value_t *name,
 
         prop = njs_object_prop_alloc(vm, &njs_error_message_string, message, 1);
         if (nxt_slow_path(prop == NULL)) {
-            return NULL;
+            goto memory_error;
         }
 
         prop->enumerable = 0;
@@ -120,6 +121,12 @@ njs_error_alloc(njs_vm_t *vm, njs_value_type_t type, const njs_value_t *name,
     }
 
     return error;
+
+memory_error:
+
+    njs_memory_error(vm);
+
+    return NULL;
 }
 
 

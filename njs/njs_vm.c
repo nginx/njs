@@ -3329,41 +3329,18 @@ njs_value_data_set(njs_value_t *value, void *data)
 void
 njs_value_error_set(njs_vm_t *vm, njs_value_t *value, const char *fmt, ...)
 {
-    size_t        size;
-    va_list       args;
-    nxt_int_t     ret;
-    njs_value_t   string;
-    njs_object_t  *error;
-    char          buf[256];
+    va_list  args;
+    u_char   buf[NXT_MAX_ERROR_STR], *p;
+
+    p = buf;
 
     if (fmt != NULL) {
         va_start(args, fmt);
-        size = vsnprintf(buf, sizeof(buf), fmt, args);
+        p = nxt_vsprintf(buf, buf + sizeof(buf), fmt, args);
         va_end(args);
-
-    } else {
-        size = 0;
     }
 
-    ret = njs_string_new(vm, &string, (u_char *) buf, size, size);
-    if (nxt_slow_path(ret != NXT_OK)) {
-        goto memory_error;
-    }
-
-    error = njs_error_alloc(vm, NJS_OBJECT_ERROR, NULL, &string);
-    if (nxt_slow_path(error == NULL)) {
-        goto memory_error;
-    }
-
-    value->data.u.object = error;
-    value->type = NJS_OBJECT_ERROR;
-    value->data.truth = 1;
-
-    return;
-
-memory_error:
-
-    njs_memory_error_set(vm, value);
+    njs_error_new(vm, value, NJS_OBJECT_ERROR, buf, p - buf);
 }
 
 

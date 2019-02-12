@@ -862,8 +862,7 @@ ngx_stream_js_event(ngx_stream_session_t *s, nxt_str_t *event)
     }
 
     if (i == n) {
-        njs_vm_error(ctx->vm, "unknown event \"%.*s\"", (int) event->length,
-                     event->start);
+        njs_vm_error(ctx->vm, "unknown event \"%V\"", event);
         return NULL;
     }
 
@@ -1053,8 +1052,7 @@ ngx_stream_js_ext_on(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     if (*event != NULL) {
-        njs_vm_error(vm, "event handler \"%.*s\" is already set",
-                     (int) name.length, name.start);
+        njs_vm_error(vm, "event handler \"%V\" is already set", &name);
         return NJS_ERROR;
     }
 
