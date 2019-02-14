@@ -1967,7 +1967,7 @@ ngx_http_js_ext_get_parent(njs_vm_t *vm, njs_value_t *value, void *obj,
 
 static njs_ret_t
 ngx_http_js_ext_get_reply_body(njs_vm_t *vm, njs_value_t *value, void *obj,
-	uintptr_t data)
+    uintptr_t data)
 {
     size_t               len;
     u_char              *p;

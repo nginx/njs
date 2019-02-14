@@ -268,9 +268,8 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
     size += ((flags & NJS_REGEXP_IGNORE_CASE) != 0);
     size += ((flags & NJS_REGEXP_MULTILINE) != 0);
 
-    pattern = nxt_mp_zalloc(vm->mem_pool,
-							sizeof(njs_regexp_pattern_t)
-                            + 1 + length + size + 1);
+    pattern = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_regexp_pattern_t) + 1
+                                          + length + size + 1);
     if (nxt_slow_path(pattern == NULL)) {
         njs_memory_error(vm);
         return NULL;
