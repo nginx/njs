@@ -162,9 +162,6 @@ static nxt_noinline nxt_int_t njs_generate_index_release(njs_vm_t *vm,
 static nxt_int_t njs_generate_function_debug(njs_vm_t *vm, nxt_str_t *name,
     njs_function_lambda_t *lambda, njs_parser_node_t *node);
 
-static void njs_generate_syntax_error(njs_vm_t *vm, njs_parser_node_t *node,
-    const char *fmt, ...);
-
 
 #define njs_generate_code(generator, type, code)                              \
     do {                                                                      \
@@ -206,6 +203,9 @@ static void njs_generate_syntax_error(njs_vm_t *vm, njs_parser_node_t *node,
     *(njs_code_jump_ptr(generator, patch->jump_offset)) +=                    \
         njs_code_offset_diff(generator, patch->jump_offset)
 
+
+#define njs_generate_syntax_error(vm, node, fmt, ...)                         \
+    njs_parser_node_error(vm, node, NJS_OBJECT_SYNTAX_ERROR, fmt, ##__VA_ARGS__)
 
 
 static const nxt_str_t  no_label = { 0, NULL };
@@ -3156,40 +3156,4 @@ njs_generate_function_debug(njs_vm_t *vm, nxt_str_t *name,
     debug->file = node->scope->file;
 
     return NXT_OK;
-}
-
-
-static void
-njs_generate_syntax_error(njs_vm_t *vm, njs_parser_node_t *node,
-    const char *fmt, ...)
-{
-    size_t              width;
-    u_char              msg[NXT_MAX_ERROR_STR];
-    u_char              *p, *end;
-    va_list             args;
-    njs_parser_scope_t  *scope;
-
-    p = msg;
-    end = msg + NXT_MAX_ERROR_STR;
-
-    va_start(args, fmt);
-    p = nxt_vsprintf(p, end, fmt, args);
-    va_end(args);
-
-    scope = node->scope;
-
-    width = nxt_length(" in ") + scope->file.length + NXT_INT_T_LEN;
-
-    if (p > end - width) {
-        p = end - width;
-    }
-
-    if (scope->file.start != NULL) {
-        p = nxt_sprintf(p, end, " in %V:%uD", &scope->file, node->token_line);
-
-    } else {
-        p = nxt_sprintf(p, end, " in %uD", node->token_line);
-    }
-
-    njs_error_new(vm, &vm->retval, NJS_OBJECT_SYNTAX_ERROR, msg, p - msg);
 }

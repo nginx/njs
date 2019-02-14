@@ -329,14 +329,19 @@ njs_index_t njs_variable_index(njs_vm_t *vm, njs_parser_node_t *node);
 nxt_bool_t njs_parser_has_side_effect(njs_parser_node_t *node);
 u_char *njs_parser_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
     u_char *start);
-void njs_parser_error(njs_vm_t *vm, njs_parser_t *parser,
+void njs_parser_lexer_error(njs_vm_t *vm, njs_parser_t *parser,
+    njs_value_type_t type, const char *fmt, ...);
+void njs_parser_node_error(njs_vm_t *vm, njs_parser_node_t *node,
     njs_value_type_t type, const char *fmt, ...);
 
-#define njs_parser_syntax_error(vm, parser, fmt, ...)  \
-    njs_parser_error(vm, parser, NJS_OBJECT_SYNTAX_ERROR, fmt, ##__VA_ARGS__)
 
-#define njs_parser_ref_error(vm, parser, fmt, ...)  \
-    njs_parser_error(vm, parser, NJS_OBJECT_REF_ERROR, fmt, ##__VA_ARGS__)
+#define njs_parser_syntax_error(vm, parser, fmt, ...)                         \
+    njs_parser_lexer_error(vm, parser, NJS_OBJECT_SYNTAX_ERROR, fmt,          \
+                           ##__VA_ARGS__)
+
+
+#define njs_parser_ref_error(vm, parser, fmt, ...)                            \
+    njs_parser_lexer_error(vm, parser, NJS_OBJECT_REF_ERROR, fmt, ##__VA_ARGS__)
 
 
 nxt_inline njs_parser_node_t *

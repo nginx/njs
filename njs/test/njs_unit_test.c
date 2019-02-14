@@ -2107,6 +2107,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("a"),
       nxt_string("ReferenceError: \"a\" is not defined in 1") },
 
+    { nxt_string("\na"),
+      nxt_string("ReferenceError: \"a\" is not defined in 2") },
+
+    { nxt_string("\n\na"),
+      nxt_string("ReferenceError: \"a\" is not defined in 3") },
+
     { nxt_string("a + a"),
       nxt_string("ReferenceError: \"a\" is not defined in 1") },
 

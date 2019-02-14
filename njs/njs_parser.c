@@ -2141,6 +2141,8 @@ njs_parser_reference(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
     case NJS_TOKEN_NAME:
         nxt_thread_log_debug("JS: %V", name);
 
+        node->token_line = parser->lexer->token_line;
+
         ext = njs_external_lookup(vm, name, hash);
 
         if (ext != NULL) {
@@ -2727,37 +2729,59 @@ njs_parser_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
 }
 
 
-void
-njs_parser_error(njs_vm_t *vm, njs_parser_t *parser, njs_value_type_t type,
-    const char *fmt, ...)
+static void
+njs_parser_scope_error(njs_vm_t *vm, njs_parser_scope_t *scope,
+    njs_value_type_t type, uint32_t line, const char *fmt, va_list args)
 {
-    size_t       width;
-    u_char       *p, *end;
-    u_char       msg[NXT_MAX_ERROR_STR];
-    va_list      args;
-    njs_lexer_t  *lexer;
+    size_t     width;
+    u_char     msg[NXT_MAX_ERROR_STR];
+    u_char     *p, *end;
+    nxt_str_t  *file;
+
+    file = &scope->file;
 
     p = msg;
     end = msg + NXT_MAX_ERROR_STR;
 
-    va_start(args, fmt);
     p = nxt_vsprintf(p, end, fmt, args);
-    va_end(args);
 
-    lexer = parser->lexer;
-
-    width = nxt_length(" in ") + lexer->file.length + NXT_INT_T_LEN;
+    width = nxt_length(" in ") + file->length + NXT_INT_T_LEN;
 
     if (p > end - width) {
         p = end - width;
     }
 
-    if (lexer->file.start != NULL) {
-        p = nxt_sprintf(p, end, " in %V:%uD", &lexer->file, lexer->line);
+    if (file->start != NULL) {
+        p = nxt_sprintf(p, end, " in %V:%uD", file, line);
 
     } else {
-        p = nxt_sprintf(p, end, " in %uD", lexer->line);
+        p = nxt_sprintf(p, end, " in %uD", line);
     }
 
     njs_error_new(vm, &vm->retval, type, msg, p - msg);
- }
+}
+
+
+void
+njs_parser_lexer_error(njs_vm_t *vm, njs_parser_t *parser,
+    njs_value_type_t type, const char *fmt, ...)
+{
+    va_list  args;
+
+    va_start(args, fmt);
+    njs_parser_scope_error(vm, parser->scope, type, parser->lexer->line, fmt,
+                           args);
+    va_end(args);
+}
+
+
+void
+njs_parser_node_error(njs_vm_t *vm, njs_parser_node_t *node,
+    njs_value_type_t type, const char *fmt, ...)
+{
+    va_list  args;
+
+    va_start(args, fmt);
+    njs_parser_scope_error(vm, node->scope, type, node->token_line, fmt, args);
+    va_end(args);
+}
