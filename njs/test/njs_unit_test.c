@@ -5078,6 +5078,18 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abc'.split('')"),
       nxt_string("a,b,c") },
 
+    { nxt_string("'αβγ'.split('')"),
+      nxt_string("α,β,γ") },
+
+    { nxt_string("'囲碁織'.split('')"),
+      nxt_string("囲,碁,織") },
+
+    { nxt_string("'𝟘𝟙𝟚𝟛'.split('')"),
+      nxt_string("𝟘,𝟙,𝟚,𝟛") },
+
+    { nxt_string("'囲α碁α織'.split('α')"),
+      nxt_string("囲,碁,織") },
+
     { nxt_string("'abc'.split('abc')"),
       nxt_string(",") },
 

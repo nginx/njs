@@ -2798,8 +2798,8 @@ njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
                 /* Empty split string. */
                 if (p == next) {
-                    p++;
-                    next++;
+                    p = nxt_utf8_next(p, end);
+                    next = p;
                 }
 
                 size = p - start;
@@ -2845,8 +2845,8 @@ njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
                 /* Empty split regexp. */
                 if (p == next) {
-                    p++;
-                    next++;
+                    p = nxt_utf8_next(p, end);
+                    next = p;
                 }
 
                 size = p - start;
