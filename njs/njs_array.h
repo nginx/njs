@@ -17,8 +17,8 @@
 
 njs_array_t *njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare);
 njs_ret_t njs_array_add(njs_vm_t *vm, njs_array_t *array, njs_value_t *value);
-njs_ret_t njs_array_string_add(njs_vm_t *vm, njs_array_t *array, u_char *start,
-    size_t size, size_t length);
+njs_ret_t njs_array_string_add(njs_vm_t *vm, njs_array_t *array,
+    const u_char *start, size_t size, size_t length);
 njs_ret_t njs_array_expand(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
     uint32_t size);
 njs_ret_t njs_array_constructor(njs_vm_t *vm, njs_value_t *args,

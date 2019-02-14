@@ -77,7 +77,7 @@ static njs_ret_t njs_string_prototype_pad(njs_vm_t *vm, njs_value_t *args,
 static njs_ret_t njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
     njs_regexp_pattern_t *pattern);
 static njs_ret_t njs_string_split_part_add(njs_vm_t *vm, njs_array_t *array,
-    njs_utf8_t utf8, u_char *start, size_t size);
+    njs_utf8_t utf8, const u_char *start, size_t size);
 static njs_ret_t njs_string_replace_regexp(njs_vm_t *vm, njs_value_t *args,
     njs_string_replace_t *r);
 static njs_ret_t njs_string_replace_regexp_function(njs_vm_t *vm,
@@ -111,10 +111,11 @@ static njs_ret_t njs_string_decode(njs_vm_t *vm, njs_value_t *value,
 
 
 njs_ret_t
-njs_string_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
+njs_string_create(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     uint32_t size, uint32_t length)
 {
-    u_char        *dst, *src;
+    u_char        *dst;
+    const u_char  *src;
     njs_string_t  *string;
 
     value->type = NJS_STRING;
@@ -153,7 +154,7 @@ njs_string_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
 
         value->long_string.data = string;
 
-        string->start = start;
+        string->start = (u_char *) start;
         string->length = length;
         string->retain = 1;
     }
@@ -2729,12 +2730,11 @@ njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
     int                   ret, *captures;
-    u_char                *p, *start, *next;
     size_t                size;
     uint32_t              limit;
     njs_utf8_t            utf8;
     njs_array_t           *array;
-    const u_char          *end;
+    const u_char          *p, *start, *next, *end;
     njs_regexp_utf8_t     type;
     njs_string_prop_t     string, split;
     njs_regexp_pattern_t  *pattern;
@@ -2887,7 +2887,7 @@ done:
 
 static njs_ret_t
 njs_string_split_part_add(njs_vm_t *vm, njs_array_t *array, njs_utf8_t utf8,
-    u_char *start, size_t size)
+    const u_char *start, size_t size)
 {
     ssize_t  length;
 

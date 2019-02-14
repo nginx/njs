@@ -184,7 +184,7 @@ njs_array_add(njs_vm_t *vm, njs_array_t *array, njs_value_t *value)
 
 
 njs_ret_t
-njs_array_string_add(njs_vm_t *vm, njs_array_t *array, u_char *start,
+njs_array_string_add(njs_vm_t *vm, njs_array_t *array, const u_char *start,
     size_t size, size_t length)
 {
     njs_ret_t  ret;

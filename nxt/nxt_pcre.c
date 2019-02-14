@@ -209,13 +209,13 @@ nxt_pcre_default_free(void *p, void *memory_data)
 
 
 nxt_int_t
-nxt_regex_match(nxt_regex_t *regex, u_char *subject, size_t len,
+nxt_regex_match(nxt_regex_t *regex, const u_char *subject, size_t len,
     nxt_regex_match_data_t *match_data, nxt_regex_context_t *ctx)
 {
     int  ret;
 
-    ret = pcre_exec(regex->code, regex->extra, (char *) subject, len, 0, 0,
-                    match_data->captures, match_data->ncaptures);
+    ret = pcre_exec(regex->code, regex->extra, (const char *) subject, len,
+                    0, 0, match_data->captures, match_data->ncaptures);
 
     /* PCRE_ERROR_NOMATCH is -1. */
 

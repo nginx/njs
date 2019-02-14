@@ -389,8 +389,8 @@ njs_regexp_compile_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
 
 
 nxt_int_t
-njs_regexp_match(njs_vm_t *vm, nxt_regex_t *regex, u_char *subject, size_t len,
-    nxt_regex_match_data_t *match_data)
+njs_regexp_match(njs_vm_t *vm, nxt_regex_t *regex, const u_char *subject,
+    size_t len, nxt_regex_match_data_t *match_data)
 {
     nxt_int_t            ret;
     nxt_trace_handler_t  handler;
