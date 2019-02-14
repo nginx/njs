@@ -530,9 +530,20 @@ njs_lexer_string(njs_lexer_t *lexer, u_char quote)
             }
 
             p++;
+
+            /* Line continuation. */
+            if (p < lexer->end && p[-1] == '\r' && p[0] == '\n') {
+                p++;
+            }
+
             escape = 1;
 
             continue;
+        }
+
+        /* Line terminator. */
+        if (c == '\r' || c == '\n') {
+            break;
         }
 
         if (c == quote) {

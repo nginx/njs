@@ -2863,7 +2863,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("({[]:1})"),
       nxt_string("SyntaxError: Unexpected token \"[\" in 1") },
 
-    { nxt_string("({'AB\n\\cd':1})['AB\n\\cd']"),
+    { nxt_string("({'AB\\ncd':1})['AB\\ncd']"),
       nxt_string("1") },
 
     /* Inheritance. */
@@ -3935,6 +3935,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'\\a \\' \\\" \\\\ \\0 \\b \\f \\n \\r \\t \\v'"),
       nxt_string("a ' \" \\ \0 \b \f \n \r \t \v") },
 
+    { nxt_string("'\\\n'"),
+      nxt_string("") },
+
+    { nxt_string("'\\\r'"),
+      nxt_string("") },
+
+    { nxt_string("'\\\r\n'"),
+      nxt_string("") },
+
     { nxt_string("'a\\\nb'"),
       nxt_string("ab") },
 
@@ -3944,14 +3953,32 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'a\\\r\nb'"),
       nxt_string("ab") },
 
+    { nxt_string("'a\\\n\rb'"),
+      nxt_string("SyntaxError: Unterminated string \"'a\\\n\r\" in 1") },
+
+    { nxt_string("'a\\\nb\nc'"),
+      nxt_string("SyntaxError: Unterminated string \"'a\\\nb\n\" in 1") },
+
     { nxt_string("'abcde"),
       nxt_string("SyntaxError: Unterminated string \"'abcde\" in 1") },
 
     { nxt_string("'\\"),
       nxt_string("SyntaxError: Unterminated string \"'\\\" in 1") },
 
+    { nxt_string("'\\\r\n"),
+      nxt_string("SyntaxError: Unterminated string \"'\\\r\n\" in 1") },
+
     { nxt_string("'\\'"),
       nxt_string("SyntaxError: Unterminated string \"'\\'\" in 1") },
+
+    { nxt_string("'a\n"),
+      nxt_string("SyntaxError: Unterminated string \"'a\n\" in 1") },
+
+    { nxt_string("'a\r"),
+      nxt_string("SyntaxError: Unterminated string \"'a\r\" in 1") },
+
+    { nxt_string("\"a\n"),
+      nxt_string("SyntaxError: Unterminated string \"\"a\n\" in 1") },
 
     { nxt_string("'\\u03B1'"),
       nxt_string("α") },
@@ -10464,14 +10491,14 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("JSON.stringify('α𐐀z'.repeat(10)).length"),
       nxt_string("32") },
 
-    { nxt_string("JSON.stringify('a\nbc')"),
+    { nxt_string("JSON.stringify('a\\nbc')"),
       nxt_string("\"a\\nbc\"") },
 
     { nxt_string("JSON.stringify('а\tбв')"),
       nxt_string("\"а\\tбв\"") },
 
-    { nxt_string("JSON.stringify('\n\t\r\"\f\b ')"),
-      nxt_string("\"\\n\\t\\r\\\"\\f\\b \"") },
+    { nxt_string("JSON.stringify('\\n\\t\\r\\\"\\f\\b')"),
+      nxt_string("\"\\n\\t\\r\\\"\\f\\b\"") },
 
     { nxt_string("JSON.stringify('\x00\x01\x02\x1f')"),
       nxt_string("\"\\u0000\\u0001\\u0002\\u001F\"") },
