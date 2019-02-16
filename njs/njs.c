@@ -217,7 +217,7 @@ nxt_int_t
 njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 {
     nxt_int_t        ret;
-    njs_lexer_t      *lexer;
+    njs_lexer_t      lexer;
     njs_parser_t     *parser, *prev;
     njs_generator_t  generator;
 
@@ -233,17 +233,15 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     prev = vm->parser;
     vm->parser = parser;
 
-    lexer = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_lexer_t));
-    if (nxt_slow_path(lexer == NULL)) {
-        return NJS_ERROR;
-    }
+    nxt_memzero(&lexer, sizeof(njs_lexer_t));
 
-    parser->lexer = lexer;
-    lexer->start = *start;
-    lexer->end = end;
-    lexer->line = 1;
-    lexer->file = vm->options.file;
-    lexer->keywords_hash = vm->shared->keywords_hash;
+    lexer.start = *start;
+    lexer.end = end;
+    lexer.line = 1;
+    lexer.file = vm->options.file;
+    lexer.keywords_hash = vm->shared->keywords_hash;
+
+    parser->lexer = &lexer;
 
     if (vm->backtrace != NULL) {
         nxt_array_reset(vm->backtrace);
@@ -261,7 +259,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         goto fail;
     }
 
-    *start = parser->lexer->start;
+    *start = lexer.start;
 
     /*
      * Reset the code array to prevent it from being disassembled
