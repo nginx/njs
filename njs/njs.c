@@ -10,8 +10,6 @@
 
 
 static nxt_int_t njs_vm_init(njs_vm_t *vm);
-static nxt_int_t njs_vm_invoke(njs_vm_t *vm, njs_function_t *function,
-    const njs_value_t *args, nxt_uint_t nargs, njs_index_t retval);
 static nxt_int_t njs_vm_handle_events(njs_vm_t *vm);
 
 
@@ -458,11 +456,11 @@ nxt_int_t
 njs_vm_call(njs_vm_t *vm, njs_function_t *function, const njs_value_t *args,
     nxt_uint_t nargs)
 {
-    return  njs_vm_invoke(vm, function, args, nargs, NJS_INDEX_GLOBAL_RETVAL);
+    return njs_vm_invoke(vm, function, args, nargs, NJS_INDEX_GLOBAL_RETVAL);
 }
 
 
-static nxt_int_t
+nxt_int_t
 njs_vm_invoke(njs_vm_t *vm, njs_function_t *function, const njs_value_t *args,
     nxt_uint_t nargs, njs_index_t retval)
 {

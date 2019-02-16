@@ -193,6 +193,8 @@ NXT_EXPORT nxt_int_t njs_vm_posted(njs_vm_t *vm);
  */
 NXT_EXPORT nxt_int_t njs_vm_call(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *args, nxt_uint_t nargs);
+NXT_EXPORT nxt_int_t njs_vm_invoke(njs_vm_t *vm, njs_function_t *function,
+    const njs_value_t *args, nxt_uint_t nargs, njs_index_t retval);
 
 /*
  * Runs posted events.
