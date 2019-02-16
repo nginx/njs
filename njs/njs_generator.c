@@ -2282,19 +2282,13 @@ njs_generate_function_scope(njs_vm_t *vm, njs_function_lambda_t *lambda,
     size_t           size;
     nxt_int_t        ret;
     nxt_array_t      *closure;
-    njs_generator_t  *generator;
-
-    generator = nxt_mp_align(vm->mem_pool, sizeof(njs_value_t),
-                             sizeof(njs_generator_t));
-    if (nxt_slow_path(generator == NULL)) {
-        return NXT_ERROR;
-    }
-
-    nxt_memzero(generator, sizeof(njs_generator_t));
+    njs_generator_t  generator;
 
     node = node->right;
 
-    ret = njs_generate_scope(vm, generator, node->scope);
+    nxt_memzero(&generator, sizeof(njs_generator_t));
+
+    ret = njs_generate_scope(vm, &generator, node->scope);
 
     if (nxt_fast_path(ret == NXT_OK)) {
         size = 0;
@@ -2309,15 +2303,12 @@ njs_generate_function_scope(njs_vm_t *vm, njs_function_lambda_t *lambda,
         lambda->closure_size = size;
 
         lambda->nesting = node->scope->nesting;
-        lambda->arguments_object = generator->arguments_object;
+        lambda->arguments_object = generator.arguments_object;
 
-        lambda->local_size = generator->scope_size;
-        lambda->local_scope = generator->local_scope;
-
-        lambda->start = generator->code_start;
+        lambda->start = generator.code_start;
+        lambda->local_size = generator.scope_size;
+        lambda->local_scope = generator.local_scope;
     }
-
-    nxt_mp_free(vm->mem_pool, generator);
 
     return ret;
 }
