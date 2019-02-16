@@ -144,7 +144,7 @@ njs_variable_reference(njs_vm_t *vm, njs_parser_scope_t *scope,
 
         ret = nxt_lvlhsh_insert(&scope->references, &lhq);
 
-        if (nxt_slow_path(ret != NXT_ERROR)) {
+        if (nxt_fast_path(ret != NXT_ERROR)) {
             ret = NXT_OK;
         }
     }
@@ -493,7 +493,7 @@ njs_name_copy(njs_vm_t *vm, nxt_str_t *dst, nxt_str_t *src)
 
     dst->start = nxt_mp_alloc(vm->mem_pool, src->length);
 
-    if (nxt_slow_path(dst->start != NULL)) {
+    if (nxt_fast_path(dst->start != NULL)) {
         (void) memcpy(dst->start, src->start, src->length);
 
         return NXT_OK;
