@@ -216,10 +216,11 @@ njs_vm_destroy(njs_vm_t *vm)
 nxt_int_t
 njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 {
-    nxt_int_t        ret;
-    njs_lexer_t      lexer;
-    njs_parser_t     *parser, *prev;
-    njs_generator_t  generator;
+    nxt_int_t           ret;
+    njs_lexer_t         lexer;
+    njs_parser_t        *parser, *prev;
+    njs_generator_t     generator;
+    njs_parser_scope_t  *scope;
 
     if (vm->parser != NULL && !vm->options.accumulative) {
         return NJS_ERROR;
@@ -254,7 +255,9 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         goto fail;
     }
 
-    ret = njs_variables_scope_reference(vm, parser->scope);
+    scope = parser->scope;
+
+    ret = njs_variables_scope_reference(vm, scope);
     if (nxt_slow_path(ret != NXT_OK)) {
         goto fail;
     }
@@ -269,7 +272,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 
     nxt_memzero(&generator, sizeof(njs_generator_t));
 
-    ret = njs_generate_scope(vm, &generator, parser->scope);
+    ret = njs_generate_scope(vm, &generator, scope);
     if (nxt_slow_path(ret != NXT_OK)) {
         goto fail;
     }
@@ -278,7 +281,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     vm->global_scope = generator.local_scope;
     vm->scope_size = generator.scope_size;
 
-    vm->variables_hash = parser->scope->variables;
+    vm->variables_hash = scope->variables;
 
     if (vm->options.init) {
         ret = njs_vm_init(vm);
