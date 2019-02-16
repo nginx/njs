@@ -356,7 +356,7 @@ njs_variable_reference_resolve(njs_vm_t *vm, njs_variable_reference_t *vr,
     njs_parser_scope_t *node_scope)
 {
     nxt_lvlhsh_query_t  lhq;
-    njs_parser_scope_t  *scope, *parent, *previous;
+    njs_parser_scope_t  *scope, *previous;
 
     lhq.key_hash = vr->hash;
     lhq.key = vr->name;
@@ -395,9 +395,7 @@ njs_variable_reference_resolve(njs_vm_t *vm, njs_variable_reference_t *vr,
             return NXT_OK;
         }
 
-        parent = scope->parent;
-
-        if (parent == NULL) {
+        if (scope->parent == NULL) {
             /* A global scope. */
             vr->scope = scope;
 
@@ -405,7 +403,7 @@ njs_variable_reference_resolve(njs_vm_t *vm, njs_variable_reference_t *vr,
         }
 
         previous = scope;
-        scope = parent;
+        scope = scope->parent;
     }
 }
 

@@ -360,6 +360,21 @@ njs_parser_node_new(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
 }
 
 
+nxt_inline njs_parser_scope_t *
+njs_parser_global_scope(njs_vm_t *vm)
+{
+    njs_parser_scope_t  *scope;
+
+    scope = vm->parser->scope;
+
+    while (scope->type != NJS_SCOPE_GLOBAL) {
+        scope = scope->parent;
+    }
+
+    return scope;
+}
+
+
 extern const nxt_lvlhsh_proto_t  njs_keyword_hash_proto;
 
 

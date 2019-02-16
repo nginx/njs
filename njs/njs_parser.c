@@ -2178,11 +2178,7 @@ njs_parser_builtin(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node,
     njs_variable_t      *var;
     njs_parser_scope_t  *scope;
 
-    scope = parser->scope;
-
-    while (scope->type != NJS_SCOPE_GLOBAL) {
-        scope = scope->parent;
-    }
+    scope = njs_parser_global_scope(vm);
 
     var = njs_variable_add(vm, scope, name, hash, NJS_VARIABLE_VAR);
     if (nxt_slow_path(var == NULL)) {
