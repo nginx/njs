@@ -291,8 +291,8 @@ njs_extern_keys_array(njs_vm_t *vm, const njs_extern_t *external)
             break;
         }
 
-        ret = njs_string_create(vm, &keys->start[n++], ext->name.start,
-                                ext->name.length, 0);
+        ret = njs_string_new(vm, &keys->start[n++], ext->name.start,
+                             ext->name.length, 0);
 
         if (ret != NXT_OK) {
             return NULL;

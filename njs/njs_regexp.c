@@ -798,7 +798,7 @@ njs_regexp_string_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
 {
     length = (length >= 0) ? length : 0;
 
-    return njs_string_create(vm, value, start, size, length);
+    return njs_string_new(vm, value, start, size, length);
 }
 
 

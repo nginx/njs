@@ -907,14 +907,6 @@ njs_string_prototype_from_utf8(njs_vm_t *vm, njs_value_t *args,
     length = nxt_utf8_length(string.start, slice.length);
 
     if (length >= 0) {
-
-        if (length < NJS_STRING_MAP_STRIDE || (size_t) length == slice.length) {
-            /* ASCII or short UTF-8 string. */
-            return njs_string_create(vm, &vm->retval, string.start,
-                                     slice.length, length);
-        }
-
-        /* Long UTF-8 string. */
         return njs_string_new(vm, &vm->retval, string.start, slice.length,
                               length);
     }
@@ -2699,8 +2691,8 @@ njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
 
                 length = njs_string_length(utf8, start, size);
 
-                ret = njs_string_create(vm, &array->start[array->length],
-                                        start, size, length);
+                ret = njs_string_new(vm, &array->start[array->length],
+                                     start, size, length);
                 if (nxt_slow_path(ret != NXT_OK)) {
                     return ret;
                 }
@@ -3136,7 +3128,7 @@ njs_string_replace_regexp_function(njs_vm_t *vm, njs_value_t *args,
 
         length = njs_string_length(r->utf8, start, size);
 
-        ret = njs_string_create(vm, &arguments[i], start, size, length);
+        ret = njs_string_new(vm, &arguments[i], start, size, length);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NXT_ERROR;
         }
@@ -3148,8 +3140,8 @@ njs_string_replace_regexp_function(njs_vm_t *vm, njs_value_t *args,
     /* The whole string being examined. */
     length = njs_string_length(r->utf8, r->part[0].start, r->part[0].size);
 
-    ret = njs_string_create(vm, &arguments[n + 2], r->part[0].start,
-                            r->part[0].size, length);
+    ret = njs_string_new(vm, &arguments[n + 2], r->part[0].start,
+                         r->part[0].size, length);
 
     if (nxt_slow_path(ret != NXT_OK)) {
         return NXT_ERROR;

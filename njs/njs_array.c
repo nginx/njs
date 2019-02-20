@@ -192,8 +192,8 @@ njs_array_string_add(njs_vm_t *vm, njs_array_t *array, const u_char *start,
     ret = njs_array_expand(vm, array, 0, 1);
 
     if (nxt_fast_path(ret == NXT_OK)) {
-        return njs_string_create(vm, &array->start[array->length++],
-                                 start, size, length);
+        return njs_string_new(vm, &array->start[array->length++], start, size,
+                              length);
     }
 
     return ret;

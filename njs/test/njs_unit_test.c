@@ -4993,6 +4993,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'$1,$2'.replace(/(\\$(\\d))/g, '$$1-$1$2')"),
       nxt_string("$1-$11,$1-$22") },
 
+    { nxt_string("('β' + 'α'.repeat(33)+'β').replace(/(α+)(β+)/, function(m, p1) { return p1[32]; })"),
+      nxt_string("βα") },
+
     { nxt_string("'abcdefgh'.match()"),
       nxt_string("") },
 
@@ -5062,6 +5065,9 @@ static njs_unit_test_t  njs_test[] =
                  "a +' '+ a.length"),
       nxt_string("αα 2") },
 
+    { nxt_string("('β' + 'α'.repeat(33) +'β').match(/α+/g)[0][32]"),
+      nxt_string("α") },
+
     { nxt_string("var a = '\\u00CE\\u00B1'.toBytes().match(/α/g)[0] + 'α';"
                  "a +' '+ a.length"),
       nxt_string("αα 4") },
@@ -5089,6 +5095,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("'囲α碁α織'.split('α')"),
       nxt_string("囲,碁,織") },
+
+    { nxt_string("('α'+'β'.repeat(33)).repeat(2).split('α')[1][32]"),
+      nxt_string("β") },
 
     { nxt_string("'abc'.split('abc')"),
       nxt_string(",") },
@@ -6363,6 +6372,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var r = new RegExp('abc', 'i'); r.test('00ABC11')"),
       nxt_string("true") },
+
+    { nxt_string("RegExp('α'.repeat(33)).toString()[32]"),
+      nxt_string("α") },
 
     { nxt_string("new RegExp('', 'x')"),
       nxt_string("SyntaxError: Invalid RegExp flags \"x\"") },
@@ -10154,8 +10166,8 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("JSON.parse('\"абвгдеёжзийкл\"').length"),
       nxt_string("13") },
 
-    { nxt_string("JSON.parse('\"абвгдеёжзийкл\"').length"),
-      nxt_string("13") },
+    { nxt_string("JSON.parse('[\"' + 'α'.repeat(33) + '\"]')[0][32]"),
+      nxt_string("α") },
 
     { nxt_string("JSON.parse('\"\\\\u03B1\"')"),
       nxt_string("α") },
@@ -10508,6 +10520,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("JSON.stringify('α𐐀z'.repeat(10)).length"),
       nxt_string("32") },
+
+    { nxt_string("JSON.stringify('α'.repeat(33))[32]"),
+      nxt_string("α") },
 
     { nxt_string("JSON.stringify('a\\nbc')"),
       nxt_string("\"a\\nbc\"") },
