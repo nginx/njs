@@ -54,7 +54,7 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
             goto done;
         }
 
-        (void) njs_vm_run(nvm);
+        (void) njs_vm_start(nvm);
 
         if (njs_vm_retval_to_ext_string(nvm, &s) != NXT_OK) {
             printf("njs_vm_retval_to_ext_string() failed\n");
@@ -112,7 +112,7 @@ main(int argc, char **argv)
     static nxt_str_t  fibo_number = nxt_string(
         "function fibo(n) {"
         "    if (n > 1)"
-        "        return fibo(n - 1) + fibo(n - 2)"
+        "        return fibo(n - 1) + fibo(n - 2);"
         "    return 1"
         "}"
         "fibo(32)");
@@ -120,7 +120,7 @@ main(int argc, char **argv)
     static nxt_str_t  fibo_ascii = nxt_string(
         "function fibo(n) {"
         "    if (n > 1)"
-        "        return fibo(n - 1) + fibo(n - 2)"
+        "        return fibo(n - 1) + fibo(n - 2);"
         "    return '.'"
         "}"
         "fibo(32).length");
@@ -129,7 +129,7 @@ main(int argc, char **argv)
         "var a = '\\x80'.toBytes();"
         "function fibo(n) {"
         "    if (n > 1)"
-        "        return fibo(n - 1) + fibo(n - 2)"
+        "        return fibo(n - 1) + fibo(n - 2);"
         "    return a"
         "}"
         "fibo(32).length");
@@ -137,7 +137,7 @@ main(int argc, char **argv)
     static nxt_str_t  fibo_utf8 = nxt_string(
         "function fibo(n) {"
         "    if (n > 1)"
-        "        return fibo(n - 1) + fibo(n - 2)"
+        "        return fibo(n - 1) + fibo(n - 2);"
         "    return 'α'"
         "}"
         "fibo(32).length");
