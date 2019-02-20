@@ -784,7 +784,7 @@ next:
             }
 
             nxt_sprintf((u_char *) completion, (u_char *) completion + len,
-                        "%*s%V%Z", (int) (p - text), text, suffix);
+                        "%*s%V%Z", p - text, text, suffix);
             return completion;
         }
 
