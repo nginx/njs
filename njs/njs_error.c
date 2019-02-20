@@ -39,7 +39,7 @@ njs_error_new(njs_vm_t *vm, njs_value_t *dst, njs_value_type_t type,
 
 void
 njs_error_fmt_new(njs_vm_t *vm, njs_value_t *dst, njs_value_type_t type,
-    const char* fmt, ...)
+    const char *fmt, ...)
 {
     va_list  args;
     u_char   buf[NXT_MAX_ERROR_STR], *p;

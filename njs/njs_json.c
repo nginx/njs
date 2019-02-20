@@ -115,7 +115,7 @@ static njs_json_state_t *njs_json_push_parse_state(njs_vm_t *vm,
     njs_json_parse_t *parse, njs_value_t *value);
 static njs_json_state_t *njs_json_pop_parse_state(njs_json_parse_t *parse);
 static void njs_json_parse_exception(njs_json_parse_ctx_t *ctx,
-    const char* msg, const u_char *pos);
+    const char *msg, const u_char *pos);
 
 static njs_ret_t njs_json_stringify_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
@@ -152,7 +152,7 @@ static njs_value_t *njs_json_wrap_value(njs_vm_t *vm, njs_value_t *value);
 #define njs_json_buf_node_room(n) (size_t) ((n)->end - (n)->pos)
 
 static nxt_int_t njs_json_buf_append(njs_json_stringify_t *stringify,
-    const char* msg, size_t len);
+    const char *msg, size_t len);
 static u_char *njs_json_buf_reserve(njs_json_stringify_t *stringify,
     size_t size);
 static nxt_int_t njs_json_buf_pullup(njs_json_stringify_t *stringify,
@@ -1126,7 +1126,7 @@ njs_json_pop_parse_state(njs_json_parse_t *parse)
 
 
 static void
-njs_json_parse_exception(njs_json_parse_ctx_t *ctx, const char* msg,
+njs_json_parse_exception(njs_json_parse_ctx_t *ctx, const char *msg,
     const u_char *pos)
 {
     ssize_t  length;
@@ -1927,7 +1927,7 @@ njs_json_wrap_value(njs_vm_t *vm, njs_value_t *value)
 
 
 static nxt_int_t
-njs_json_buf_append(njs_json_stringify_t *stringify, const char* msg,
+njs_json_buf_append(njs_json_stringify_t *stringify, const char *msg,
     size_t len)
 {
     u_char  *p;

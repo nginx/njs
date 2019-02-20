@@ -35,7 +35,7 @@
 void njs_error_new(njs_vm_t *vm, njs_value_t *dst, njs_value_type_t type,
     u_char *start, size_t size);
 void njs_error_fmt_new(njs_vm_t *vm, njs_value_t *dst, njs_value_type_t type,
-    const char* fmt, ...);
+    const char *fmt, ...);
 
 void njs_memory_error(njs_vm_t *vm);
 void njs_memory_error_set(njs_vm_t *vm, njs_value_t *value);
