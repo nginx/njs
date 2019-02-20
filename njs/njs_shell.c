@@ -216,7 +216,9 @@ main(int argc, char **argv)
 
     if (!opts.quiet) {
         if (opts.file != NULL) {
-            nxt_file_name(&vm_options.file, opts.file);
+            vm_options.file.start = (u_char *) opts.file;
+            vm_options.file.length = strlen(opts.file);
+            nxt_file_basename(&vm_options.file, &vm_options.file);
 
         } else {
             vm_options.file = nxt_string_value("shell");

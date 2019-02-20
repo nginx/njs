@@ -11994,6 +11994,97 @@ njs_vm_object_alloc_test(njs_vm_t * vm, nxt_bool_t disassemble,
 }
 
 
+static nxt_int_t
+nxt_file_basename_test(njs_vm_t * vm, nxt_bool_t disassemble,
+    nxt_bool_t verbose)
+{
+    nxt_str_t   name;
+    nxt_bool_t  success;
+    nxt_uint_t  i;
+
+    static const struct {
+        nxt_str_t   path;
+        nxt_str_t   expected;
+    } tests[] = {
+        { nxt_string(""),            nxt_string("") },
+        { nxt_string("/"),           nxt_string("") },
+        { nxt_string("/a"),          nxt_string("a") },
+        { nxt_string("///"),         nxt_string("") },
+        { nxt_string("///a"),        nxt_string("a") },
+        { nxt_string("///a/"),       nxt_string("") },
+        { nxt_string("a"),           nxt_string("a") },
+        { nxt_string("a/"),          nxt_string("") },
+        { nxt_string("a//"),         nxt_string("") },
+        { nxt_string("path/name"),   nxt_string("name") },
+        { nxt_string("/path/name"),  nxt_string("name") },
+        { nxt_string("/path/name/"), nxt_string("") },
+    };
+
+    for (i = 0; i < nxt_nitems(tests); i++) {
+        nxt_file_basename(&tests[i].path, &name);
+
+        success = nxt_strstr_eq(&tests[i].expected, &name);
+
+        if (!success) {
+            printf("nxt_file_basename_test(\"%.*s\"):\n"
+                   "expected: \"%.*s\"\n     got: \"%.*s\"\n",
+                   (int) tests[i].path.length, tests[i].path.start,
+                   (int) tests[i].expected.length, tests[i].expected.start,
+                   (int) name.length, name.start);
+            return NXT_ERROR;
+        }
+    }
+
+    return NXT_OK;
+}
+
+
+static nxt_int_t
+nxt_file_dirname_test(njs_vm_t * vm, nxt_bool_t disassemble,
+    nxt_bool_t verbose)
+{
+    nxt_str_t   name;
+    nxt_bool_t  success;
+    nxt_uint_t  i;
+
+    static const struct {
+        nxt_str_t   path;
+        nxt_str_t   expected;
+    } tests[] = {
+        { nxt_string(""),               nxt_string("") },
+        { nxt_string("/"),              nxt_string("/") },
+        { nxt_string("/a"),             nxt_string("/") },
+        { nxt_string("///"),            nxt_string("///") },
+        { nxt_string("///a"),           nxt_string("///") },
+        { nxt_string("///a/"),          nxt_string("///a") },
+        { nxt_string("a"),              nxt_string("") },
+        { nxt_string("a/"),             nxt_string("a") },
+        { nxt_string("a//"),            nxt_string("a") },
+        { nxt_string("p1/p2/name"),     nxt_string("p1/p2") },
+        { nxt_string("/p1/p2/name"),    nxt_string("/p1/p2") },
+        { nxt_string("/p1/p2///name"),  nxt_string("/p1/p2") },
+        { nxt_string("/p1/p2/name/"),   nxt_string("/p1/p2/name") },
+    };
+
+    for (i = 0; i < nxt_nitems(tests); i++) {
+        nxt_file_dirname(&tests[i].path, &name);
+
+        success = nxt_strstr_eq(&tests[i].expected, &name);
+
+        if (!success) {
+            printf("nxt_file_dirname_test(\"%.*s\"):\n"
+                   "expected: \"%.*s\"\n     got: \"%.*s\"\n",
+                   (int) tests[i].path.length, tests[i].path.start,
+                   (int) tests[i].expected.length, tests[i].expected.start,
+                   (int) name.length, name.start);
+            return NXT_ERROR;
+        }
+    }
+
+    return NXT_OK;
+}
+
+
 typedef struct {
     nxt_int_t  (*test)(njs_vm_t *, nxt_bool_t, nxt_bool_t);
     nxt_str_t  name;
@@ -12009,10 +12100,13 @@ njs_api_test(nxt_bool_t disassemble, nxt_bool_t verbose)
     njs_vm_opt_t    options;
     njs_api_test_t  *test;
 
-    static njs_api_test_t  njs_api_test[] =
-    {
+    static njs_api_test_t  njs_api_test[] = {
         { njs_vm_object_alloc_test,
-          nxt_string("njs_vm_object_alloc_test") }
+          nxt_string("njs_vm_object_alloc_test") },
+        { nxt_file_basename_test,
+          nxt_string("nxt_file_basename_test") },
+        { nxt_file_dirname_test,
+          nxt_string("nxt_file_dirname_test") },
     };
 
     rc = NXT_ERROR;
