@@ -117,6 +117,8 @@ static njs_ret_t ngx_http_js_ext_next_arg(njs_vm_t *vm, njs_value_t *value,
     void *obj, void *next);
 static njs_ret_t ngx_http_js_ext_get_variable(njs_vm_t *vm, njs_value_t *value,
     void *obj, uintptr_t data);
+static njs_ret_t ngx_http_js_ext_set_variable(njs_vm_t *vm, void *obj,
+       uintptr_t data, nxt_str_t *value);
 static njs_ret_t ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 static ngx_int_t ngx_http_js_subrequest(ngx_http_request_t *r,
@@ -321,7 +323,7 @@ static njs_external_t  ngx_http_js_ext_request[] = {
       NULL,
       0,
       ngx_http_js_ext_get_variable,
-      NULL,
+      ngx_http_js_ext_set_variable,
       NULL,
       NULL,
       NULL,
@@ -1620,6 +1622,73 @@ ngx_http_js_ext_get_variable(njs_vm_t *vm, njs_value_t *value, void *obj,
     }
 
     return njs_vm_value_string_set(vm, value, vv->data, vv->len);
+}
+
+
+static njs_ret_t
+ngx_http_js_ext_set_variable(njs_vm_t *vm, void *obj, uintptr_t data,
+    nxt_str_t *value)
+{
+    nxt_str_t                  *val;
+    ngx_str_t                   name;
+    ngx_uint_t                  key;
+    ngx_http_request_t         *r;
+    ngx_http_variable_t        *v;
+    ngx_http_variable_value_t  *vv;
+    ngx_http_core_main_conf_t  *cmcf;
+
+    r = (ngx_http_request_t *) obj;
+    val = (nxt_str_t *) data;
+
+    name.data = val->start;
+    name.len = val->length;
+
+    cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
+
+    key = ngx_hash_strlow(name.data, name.data, name.len);
+
+    v = ngx_hash_find(&cmcf->variables_hash, key, name.data, name.len);
+
+    if (v == NULL) {
+        njs_vm_error(vm, "variable not found");
+        return NJS_ERROR;
+    }
+
+    if (v->set_handler != NULL) {
+        vv = ngx_pcalloc(r->pool, sizeof(ngx_http_variable_value_t));
+        if (vv == NULL) {
+            return NJS_ERROR;
+        }
+
+        vv->valid = 1;
+        vv->not_found = 0;
+        vv->data = value->start;
+        vv->len = value->length;
+
+        v->set_handler(r, vv, v->data);
+
+        return NJS_OK;
+    }
+
+    if (!(v->flags & NGX_HTTP_VAR_INDEXED)) {
+        njs_vm_error(vm, "variable is not writable");
+        return NJS_ERROR;
+    }
+
+    vv = &r->variables[v->index];
+
+    vv->valid = 1;
+    vv->not_found = 0;
+
+    vv->data = ngx_pnalloc(r->pool, value->length);
+    if (vv->data == NULL) {
+        return NJS_ERROR;
+    }
+
+    vv->len = value->length;
+    ngx_memcpy(vv->data, value->start, vv->len);
+
+    return NJS_OK;
 }
 
 
