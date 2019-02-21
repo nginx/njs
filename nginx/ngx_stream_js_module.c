@@ -794,7 +794,7 @@ ngx_stream_js_buffer_arg(ngx_stream_session_t *s, njs_value_t *buffer)
 
     len = b ? b->last - b->pos : 0;
 
-    p = njs_string_alloc(ctx->vm, buffer, len, 0);
+    p = njs_vm_value_string_alloc(ctx->vm, buffer, len);
     if (p == NULL) {
         return NJS_ERROR;
     }
@@ -821,8 +821,8 @@ ngx_stream_js_flags_arg(ngx_stream_session_t *s, njs_value_t *flags)
 
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
-    njs_string_create(ctx->vm, njs_value_arg(&last_key), last_str.start,
-                      last_str.length, 0);
+    njs_vm_value_string_set(ctx->vm, njs_value_arg(&last_key), last_str.start,
+                            last_str.length);
 
     c = s->connection;
 
@@ -884,7 +884,8 @@ ngx_stream_js_ext_get_remote_address(njs_vm_t *vm, njs_value_t *value,
     s = (ngx_stream_session_t *) obj;
     c = s->connection;
 
-    return njs_string_create(vm, value, c->addr_text.data, c->addr_text.len, 0);
+    return njs_vm_value_string_set(vm, value, c->addr_text.data,
+                                   c->addr_text.len);
 }
 
 
@@ -1200,10 +1201,10 @@ ngx_stream_js_ext_get_variable(njs_vm_t *vm, njs_value_t *value, void *obj,
 
     vv = ngx_stream_get_variable(s, &name, key);
     if (vv == NULL || vv->not_found) {
-        return njs_string_create(vm, value, NULL, 0, 0);
+        return njs_vm_value_string_set(vm, value, NULL, 0);
     }
 
-    return njs_string_create(vm, value, vv->data, vv->len, 0);
+    return njs_vm_value_string_set(vm, value, vv->data, vv->len);
 }
 
 

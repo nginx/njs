@@ -57,7 +57,7 @@ extern const njs_value_t            njs_value_void;
 
 
 #define njs_vm_error(vm, fmt, ...)                                            \
-    njs_value_error_set(vm, njs_vm_retval(vm), fmt, ##__VA_ARGS__)
+    njs_vm_value_error_set(vm, njs_vm_retval(vm), fmt, ##__VA_ARGS__)
 
 
 typedef njs_ret_t (*njs_extern_get_t)(njs_vm_t *vm, njs_value_t *value,
@@ -231,14 +231,16 @@ NXT_EXPORT njs_function_t *njs_vm_function(njs_vm_t *vm, nxt_str_t *name);
 NXT_EXPORT njs_value_t *njs_vm_retval(njs_vm_t *vm);
 NXT_EXPORT void njs_vm_retval_set(njs_vm_t *vm, const njs_value_t *value);
 
-NXT_EXPORT u_char * njs_string_alloc(njs_vm_t *vm, njs_value_t *value,
-    uint32_t size, uint32_t length);
-NXT_EXPORT njs_ret_t njs_string_create(njs_vm_t *vm, njs_value_t *value,
-    const u_char *start, uint32_t size, uint32_t length);
-
-NXT_EXPORT nxt_int_t njs_value_string_copy(njs_vm_t *vm, nxt_str_t *retval,
+/*
+ * Sets a byte string value.
+ *   start data is not copied and should not be freed.
+ */
+NXT_EXPORT njs_ret_t njs_vm_value_string_set(njs_vm_t *vm, njs_value_t *value,
+    const u_char *start, uint32_t size);
+NXT_EXPORT u_char *njs_vm_value_string_alloc(njs_vm_t *vm, njs_value_t *value,
+    uint32_t size);
+NXT_EXPORT nxt_int_t njs_vm_value_string_copy(njs_vm_t *vm, nxt_str_t *retval,
     const njs_value_t *value, uintptr_t *next);
-
 NXT_EXPORT njs_ret_t njs_vm_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst,
     const njs_value_t *src, nxt_uint_t handle_exception);
 NXT_EXPORT njs_ret_t njs_vm_retval_to_ext_string(njs_vm_t *vm, nxt_str_t *dst);
@@ -248,14 +250,14 @@ NXT_EXPORT njs_ret_t njs_vm_value_dump(njs_vm_t *vm, nxt_str_t *dst,
 NXT_EXPORT njs_ret_t njs_vm_retval_dump(njs_vm_t *vm, nxt_str_t *dst,
     nxt_uint_t indent);
 
+NXT_EXPORT void njs_vm_value_error_set(njs_vm_t *vm, njs_value_t *value,
+    const char *fmt, ...);
 NXT_EXPORT void njs_vm_memory_error(njs_vm_t *vm);
 
 NXT_EXPORT void njs_value_void_set(njs_value_t *value);
 NXT_EXPORT void njs_value_boolean_set(njs_value_t *value, int yn);
 NXT_EXPORT void njs_value_number_set(njs_value_t *value, double num);
 NXT_EXPORT void njs_value_data_set(njs_value_t *value, void *data);
-NXT_EXPORT void njs_value_error_set(njs_vm_t *vm, njs_value_t *value,
-    const char *fmt, ...);
 
 NXT_EXPORT uint8_t njs_value_bool(const njs_value_t *value);
 NXT_EXPORT double njs_value_number(const njs_value_t *value);

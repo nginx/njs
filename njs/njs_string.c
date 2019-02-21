@@ -111,8 +111,8 @@ static njs_ret_t njs_string_decode(njs_vm_t *vm, njs_value_t *value,
 
 
 njs_ret_t
-njs_string_create(njs_vm_t *vm, njs_value_t *value, const u_char *start,
-    uint32_t size, uint32_t length)
+njs_string_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
+    uint32_t size)
 {
     u_char        *dst;
     const u_char  *src;
@@ -123,7 +123,7 @@ njs_string_create(njs_vm_t *vm, njs_value_t *value, const u_char *start,
 
     if (size <= NJS_STRING_SHORT) {
         value->short_string.size = size;
-        value->short_string.length = length;
+        value->short_string.length = 0;
 
         dst = value->short_string.start;
         src = start;
@@ -155,7 +155,7 @@ njs_string_create(njs_vm_t *vm, njs_value_t *value, const u_char *start,
         value->long_string.data = string;
 
         string->start = (u_char *) start;
-        string->length = length;
+        string->length = 0;
         string->retain = 1;
     }
 

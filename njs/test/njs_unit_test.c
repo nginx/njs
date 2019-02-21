@@ -11324,7 +11324,7 @@ njs_unit_test_r_get_uri_external(njs_vm_t *vm, njs_value_t *value, void *obj,
 
     field = (nxt_str_t *) (p + data);
 
-    return njs_string_create(vm, value, field->start, field->length, 0);
+    return njs_vm_value_string_set(vm, value, field->start, field->length);
 }
 
 
@@ -11355,7 +11355,7 @@ njs_unit_test_r_get_a_external(njs_vm_t *vm, njs_value_t *value, void *obj,
 
     p = nxt_sprintf(buf, buf + nxt_length(buf), "%uD", r->a);
 
-    return njs_string_create(vm, value, buf, p - buf, 0);
+    return njs_vm_value_string_set(vm, value, buf, p - buf);
 }
 
 
@@ -11373,7 +11373,7 @@ static njs_ret_t
 njs_unit_test_host_external(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
-    return njs_string_create(vm, value, (u_char *) "АБВГДЕЁЖЗИЙ", 22, 0);
+    return njs_vm_value_string_set(vm, value, (u_char *) "АБВГДЕЁЖЗИЙ", 22);
 }
 
 
@@ -11427,8 +11427,8 @@ njs_unit_test_r_set_vars(njs_vm_t *vm, void *obj, uintptr_t data,
         return NXT_ERROR;
     }
 
-    njs_string_create(vm, &name, key->start, key->length, 0);
-    njs_string_create(vm, &val, value->start, value->length, 0);
+    njs_vm_value_string_set(vm, &name, key->start, key->length);
+    njs_vm_value_string_set(vm, &val, value->start, value->length);
 
     prop = lvlhsh_unit_test_alloc(vm->mem_pool, &name, &val);
     if (prop == NULL) {
@@ -11492,7 +11492,7 @@ njs_unit_test_header_external(njs_vm_t *vm, njs_value_t *value, void *obj,
 
     size = 7 + h->length;
 
-    p = njs_string_alloc(vm, value, size, 0);
+    p = njs_vm_value_string_alloc(vm, value, size);
     if (p == NULL) {
         return NJS_ERROR;
     }
@@ -11531,7 +11531,7 @@ njs_unit_test_header_next_external(njs_vm_t *vm, njs_value_t *value, void *obj,
         return NXT_DONE;
     }
 
-    return njs_string_create(vm, value, s, 2, 0);
+    return njs_vm_value_string_set(vm, value, s, 2);
 }
 
 
@@ -11550,8 +11550,8 @@ njs_unit_test_method_external(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     ret = njs_vm_value_to_ext_string(vm, &s, njs_arg(args, nargs, 1), 0);
     if (ret == NXT_OK && s.length == 3 && memcmp(s.start, "YES", 3) == 0) {
-        return njs_string_create(vm, njs_vm_retval(vm), r->uri.start,
-                                 r->uri.length, 0);
+        return njs_vm_value_string_set(vm, njs_vm_retval(vm), r->uri.start,
+                                       r->uri.length);
     }
 
     vm->retval = njs_value_void;

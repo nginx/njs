@@ -3326,8 +3326,23 @@ njs_value_data_set(njs_value_t *value, void *data)
 }
 
 
+nxt_noinline njs_ret_t
+njs_vm_value_string_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
+    uint32_t size)
+{
+    return njs_string_set(vm, value, start, size);
+}
+
+
+nxt_noinline u_char *
+njs_vm_value_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size)
+{
+    return njs_string_alloc(vm, value, size, 0);
+}
+
+
 void
-njs_value_error_set(njs_vm_t *vm, njs_value_t *value, const char *fmt, ...)
+njs_vm_value_error_set(njs_vm_t *vm, njs_value_t *value, const char *fmt, ...)
 {
     va_list  args;
     u_char   buf[NXT_MAX_ERROR_STR], *p;
@@ -3431,8 +3446,8 @@ njs_value_is_function(const njs_value_t *value)
 
 
 nxt_int_t
-njs_value_string_copy(njs_vm_t *vm, nxt_str_t *retval, const njs_value_t *value,
-    uintptr_t *next)
+njs_vm_value_string_copy(njs_vm_t *vm, nxt_str_t *retval,
+    const njs_value_t *value, uintptr_t *next)
 {
     uintptr_t    n;
     njs_array_t  *array;
