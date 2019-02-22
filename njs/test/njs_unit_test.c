@@ -5096,6 +5096,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'囲α碁α織'.split('α')"),
       nxt_string("囲,碁,織") },
 
+    { nxt_string("'a'.repeat(16).split('a'.repeat(15))"),
+      nxt_string(",a") },
+
     { nxt_string("('α'+'β'.repeat(33)).repeat(2).split('α')[1][32]"),
       nxt_string("β") },
 

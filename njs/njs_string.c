@@ -2726,7 +2726,7 @@ njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     uint32_t              limit;
     njs_utf8_t            utf8;
     njs_array_t           *array;
-    const u_char          *p, *start, *next, *end;
+    const u_char          *p, *start, *next, *last, *end;
     njs_regexp_utf8_t     type;
     njs_string_prop_t     string, split;
     njs_regexp_pattern_t  *pattern;
@@ -2778,13 +2778,18 @@ njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
             start = string.start;
             end = string.start + string.size;
+            last = end - split.size;
 
             do {
-                for (p = start; p < end; p++) {
+                for (p = start; p <= last; p++) {
                     if (memcmp(p, split.start, split.size) == 0) {
-                        break;
+                        goto found;
                     }
                 }
+
+                p = end;
+
+found:
 
                 next = p + split.size;
 
