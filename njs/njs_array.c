@@ -1406,21 +1406,21 @@ njs_array_prototype_fill(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             }
         }
 
-       if (nargs > 3) {
-           end = args[3].data.u.number;
+        if (nargs > 3) {
+            end = args[3].data.u.number;
 
-           if (end > length) {
-               end = length;
-           }
+            if (end > length) {
+                end = length;
+            }
 
-           if (end < 0) {
-               end += length;
+            if (end < 0) {
+                end += length;
 
-               if (end < 0) {
-                   end = 0;
-               }
-           }
-       }
+                if (end < 0) {
+                    end = 0;
+                }
+            }
+        }
     }
 
     for (i = start; i < end; i++) {
