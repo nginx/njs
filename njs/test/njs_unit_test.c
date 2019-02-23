@@ -3668,6 +3668,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("[1,2,3].fill({a:\"b\"}, 1, 2);"),
       nxt_string("1,[object Object],3") },
 
+    { nxt_string("Array(3).fill().reduce(function(a, x)"
+                                 "{ return a + (x === undefined); }, 0)"),
+      nxt_string("3") },
+
     { nxt_string("var a = [];"
                  "a.filter(function(v, i, a) { return v > 1 })"),
       nxt_string("") },
