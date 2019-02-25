@@ -292,6 +292,32 @@ void
 njs_lexer_rollback(njs_lexer_t *lexer)
 {
     lexer->start = lexer->prev_start;
+    lexer->token = lexer->prev_token;
+}
+
+
+njs_token_t
+njs_lexer_peek_token(njs_lexer_t *lexer)
+{
+    u_char       *start;
+    njs_token_t  token;
+
+    start = lexer->start;
+
+    while (start < lexer->end) {
+        token = njs_tokens[*start++];
+
+        switch (token) {
+        case NJS_TOKEN_SPACE:
+        case NJS_TOKEN_LINE_END:
+            continue;
+
+        default:
+            return token;
+        }
+    }
+
+    return NJS_TOKEN_END;
 }
 
 

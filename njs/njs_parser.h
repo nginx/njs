@@ -243,6 +243,7 @@ struct njs_parser_scope_s {
     nxt_queue_t                     nested;
 
     njs_parser_scope_t              *parent;
+    nxt_lvlhsh_t                    labels;
     nxt_lvlhsh_t                    variables;
     nxt_lvlhsh_t                    references;
 
@@ -273,6 +274,8 @@ struct njs_parser_node_s {
         njs_vmcode_operation_t      operation;
         njs_parser_node_t           *object;
     } u;
+
+    nxt_str_t                       label;
 
     njs_index_t                     index;
 
@@ -306,6 +309,7 @@ typedef struct {
 
 njs_token_t njs_lexer_token(njs_lexer_t *lexer);
 void njs_lexer_rollback(njs_lexer_t *lexer);
+njs_token_t njs_lexer_peek_token(njs_lexer_t *lexer);
 nxt_int_t njs_lexer_keywords_init(nxt_mp_t *mcp, nxt_lvlhsh_t *hash);
 njs_token_t njs_lexer_keyword(njs_lexer_t *lexer);
 

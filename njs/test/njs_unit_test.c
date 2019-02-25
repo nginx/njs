@@ -2434,6 +2434,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("break"),
       nxt_string("SyntaxError: Illegal break statement in 1") },
 
+    { nxt_string("{break}"),
+      nxt_string("SyntaxError: Illegal break statement in 1") },
+
     { nxt_string("\nbreak"),
       nxt_string("SyntaxError: Illegal break statement in 2") },
 
@@ -2493,6 +2496,268 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = [1,2,3,4,5]; var s = 0, i;"
                  "for (i in a) if (a[i] > 4) break; s += a[i]; s"),
       nxt_string("5") },
+
+    /* Labels. */
+
+    { nxt_string("var n = 0; a:{n++}; a:{n++}; n"),
+      nxt_string("2") },
+
+    { nxt_string("a: throw 'a'"),
+      nxt_string("a") },
+
+    { nxt_string("a : var n = 0; b :++n"),
+      nxt_string("1") },
+
+    { nxt_string("a:{a:1}"),
+      nxt_string("SyntaxError: Label \"a\" has already been declared in 1") },
+
+    { nxt_string("for (var i in [1]) {break b}"),
+      nxt_string("SyntaxError: Undefined label \"b\" in 1") },
+
+    { nxt_string("for (var i in [1]) {continue b}"),
+      nxt_string("SyntaxError: Undefined label \"b\" in 1") },
+
+    { nxt_string("a:{break b}"),
+      nxt_string("SyntaxError: Undefined label \"b\" in 1") },
+
+    { nxt_string("a:{continue b}"),
+      nxt_string("SyntaxError: Undefined label \"b\" in 1") },
+
+#if 0 /* TODO */
+    { nxt_string("a:{1; break a}"),
+      nxt_string("1") },
+#endif
+
+    { nxt_string("var a = 0; a:{a++}; a"),
+      nxt_string("1") },
+
+    { nxt_string("var a = 0; a:{break a; a++}; a"),
+      nxt_string("0") },
+
+    { nxt_string("var r = 0; "
+                 "out: for (var i in [1,2,3]) { if (i == 2) {break out;}; r++}; r"),
+      nxt_string("2") },
+
+    { nxt_string("var r = 0; "
+                 "out: for (var i = 0; i < 5; i++) { if (i == 2) {break out;}; r++}; r"),
+      nxt_string("2") },
+
+    { nxt_string("var l1 = 0, l2 = 0; "
+                 "out: "
+                 "for (var i in [1,2,3]) { "
+                 "  for (var j in [1,2,3]) { "
+                 "    if (i == 1 && j == 1) {break;}"
+                 "    l2++;"
+                 "  }"
+                 "  l1++;"
+                 "}; [l1, l2]"),
+      nxt_string("3,7") },
+
+    { nxt_string("var l1 = 0, l2 = 0; "
+                 "out: "
+                 "for (var i in [1,2,3]) { "
+                 "  for (var j in [1,2,3]) { "
+                 "    if (i == 1 && j == 1) {break out;}"
+                 "    l2++;"
+                 "  }"
+                 "  l1++;"
+                 "}; [l1, l2]"),
+      nxt_string("1,4") },
+
+    { nxt_string("var l1 = 0, l2 = 0; "
+                 "out: "
+                 "for (var i in [1,2,3]) { "
+                 "  for (var j in [1,2,3]) { "
+                 "    if (i == 1 && j == 1) {continue out;}"
+                 "    l2++;"
+                 "  }"
+                 "  l1++;"
+                 "}; [l1, l2]"),
+      nxt_string("2,7") },
+
+    { nxt_string("var l1 = 0, l2 = 0; "
+                 "out: "
+                 "for (var i in [1,2,3]) { "
+                 "  l1++;"
+                 "  switch (i) { "
+                 "    case '1':"
+                 "      break out;"
+                 "    default:"
+                 "  }"
+                 "  l2++;"
+                 "}; [l1, l2]"),
+      nxt_string("2,1") },
+
+    { nxt_string("var l1 = 0, l2 = 0; "
+                 "out: "
+                 "for (var i in [1,2,3]) { "
+                 "  l1++;"
+                 "  switch (i) { "
+                 "    case '1':"
+                 "      continue out;"
+                 "    default:"
+                 "  }"
+                 "  l2++;"
+                 "}; [l1, l2]"),
+      nxt_string("3,2") },
+
+    { nxt_string("var l1 = 0, l2 = 0, i = 0, j; "
+                 "out: "
+                 "while (i < 3) { "
+                 "  j = 0;"
+                 "  while (j < 3) { "
+                 "    if (i == 1 && j == 1) {break out;}"
+                 "    l2++;"
+                 "    j++;"
+                 "  }"
+                 "  l1++;"
+                 "  i++;"
+                 "}; [l1, l2]"),
+      nxt_string("1,4") },
+
+    { nxt_string("var l1 = 0, l2 = 0, i = 0, j; "
+                 "out: "
+                 "while (i < 3) { "
+                 "  j = 0;"
+                 "  while (j < 3) { "
+                 "    if (i == 1 && j == 1) {i++; continue out;}"
+                 "    l2++;"
+                 "    j++;"
+                 "  }"
+                 "  l1++;"
+                 "  i++;"
+                 "}; [l1, l2]"),
+      nxt_string("2,7") },
+
+    { nxt_string("var l1 = 0, l2 = 0, i = 0, j; "
+                 "out: "
+                 "do { "
+                 "  j = 0;"
+                 "  do { "
+                 "    if (i == 1 && j == 1) {break out;}"
+                 "    l2++;"
+                 "    j++;"
+                 "  } while (j < 3)"
+                 "  l1++;"
+                 "  i++;"
+                 "} while (i < 3); [l1, l2]"),
+      nxt_string("1,4") },
+
+    { nxt_string("var l1 = 0, l2 = 0, i = 0, j; "
+                 "out: "
+                 "do { "
+                 "  j = 0;"
+                 "  do { "
+                 "    if (i == 1 && j == 1) {i++; continue out;}"
+                 "    l2++;"
+                 "    j++;"
+                 "  } while (j < 3)"
+                 "  l1++;"
+                 "  i++;"
+                 "} while (i < 3); [l1, l2]"),
+      nxt_string("2,7") },
+
+    { nxt_string("out1: while (1) { out2: while (1) { "
+                 "  try { break out1; break out2; } catch (e) {}"
+                 "}}"),
+      nxt_string("InternalError: break/return instructions with different labels "
+                 "(\"out1\" vs \"out2\") from try-catch block are not supported") },
+
+    { nxt_string("out1: while (1) { out2: while (1) { "
+                 "  try { } catch (e) {break out1; break out2;} finally {}"
+                 "}}"),
+      nxt_string("InternalError: break/return instructions with different labels "
+                 "(\"out1\" vs \"out2\") from try-catch block are not supported") },
+
+    { nxt_string("out1: while (1) { out2: while (1) { "
+                 "  try { break out1; } catch (e) {break out2;} finally {}"
+                 "}}"),
+      nxt_string("InternalError: try break/return instructions with different labels "
+                 "(\"out1\" vs \"out2\") from try-catch block are not supported") },
+
+    { nxt_string("out1: while (1) { out2: while (1) { "
+                 "  try { break out1; break out2; } finally {}"
+                 "}}"),
+      nxt_string("InternalError: break/return instructions with different labels "
+                 "(\"out1\" vs \"out2\") from try-catch block are not supported") },
+
+    { nxt_string("out1: while (1) { out2: while (1) { "
+                 "  try { continue out1; continue out2; } catch (e) {}"
+                 "}}"),
+      nxt_string("InternalError: continue instructions with different labels "
+                 "(\"out1\" vs \"out2\") from try-catch block are not supported") },
+
+    { nxt_string("out1: while (1) { out2: while (1) { "
+                 "  try { continue out1; } catch (e) {continue out2;} finally {}"
+                 "}}"),
+      nxt_string("InternalError: try continue instructions with different labels "
+                 "(\"out1\" vs \"out2\") from try-catch block are not supported") },
+
+    { nxt_string("function f() {"
+                 "  a:{ try { try { return 'a'; } catch (e) {break a;} finally {} } "
+                 "      catch (e) {} finally {}; }"
+                 "}"),
+      nxt_string("InternalError: try break/return instructions with different labels "
+                 "(\"@return\" vs \"a\") from try-catch block are not supported") },
+
+    { nxt_string("a:{ try { try { continue a; } catch (e) {} finally {} } "
+                 "    catch (e) {} finally {}; "
+                 "}"),
+      nxt_string("SyntaxError: Illegal continue statement in 1") },
+
+    { nxt_string("var i = 0, j = 0, r = 0;"
+                 "out1: while (i < 3) "
+                 "{ "
+                 "  i++;"
+                 "  out2: while (j < 3) { "
+                 "      j++; try { break out1; } catch (e) {} finally {r++}"
+                 "  }"
+                 "}; [i, j, r]"),
+      nxt_string("1,1,1") },
+
+    { nxt_string("var i = 0, j = 0, r = 0;"
+                 "out1: while (i < 3) "
+                 "{ "
+                 "  i++;"
+                 "  out2: while (j < 3) { "
+                 "      j++; try { continue out1; } catch (e) {} finally {r++}"
+                 "  }"
+                 "}; [i, j, r]"),
+      nxt_string("3,3,3") },
+
+    { nxt_string("var c=0,fin=0;"
+                 "try {"
+                 " while (c < 2) {"
+                 "    try { c += 1; throw 'e';}"
+                 "    finally { fin = 1; break;}"
+                 "    fin = -1;"
+                 "    c += 2;"
+                 " }"
+                 "} catch(e) {c = 10;}; [c, fin]"),
+      nxt_string("1,1") },
+
+    /* jumping out of a nested try-catch block. */
+
+    { nxt_string("var r = 0; "
+                 "function f () { try { try {return 'a';} finally { r++; }} "
+                 "                finally { r++; } }; "
+                 "[f(), r]"),
+      nxt_string("a,2") },
+
+    { nxt_string("function f(n) { "
+                 "  var r1 = 0, r2 = 0, r3 = 0;"
+                 "  a:{ try { try { "
+                 "              if (n == 0) { break a; } "
+                 "              if (n == 1) { throw 'a'; } "
+                 "            } "
+                 "            catch (e) { break a; } finally { r1++; } } "
+                 "      catch (e) {} "
+                 "      finally { r2++; } "
+                 "      r3++;  "
+                 "  }; "
+                 "return [r1, r2, r3]"
+                 "}; njs.dump([f(0), f(1), f(3)])"),
+      nxt_string("[[1,1,0],[1,1,0],[1,1,1]]") },
 
     /**/
 

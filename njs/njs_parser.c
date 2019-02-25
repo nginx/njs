@@ -21,6 +21,8 @@ static njs_token_t njs_parser_block_statement(njs_vm_t *vm,
     njs_parser_t *parser);
 static njs_token_t njs_parser_block(njs_vm_t *vm,
     njs_parser_t *parser, njs_token_t token);
+static njs_token_t njs_parser_labelled_statement(njs_vm_t *vm,
+    njs_parser_t *parser);
 static njs_token_t njs_parser_function_declaration(njs_vm_t *vm,
     njs_parser_t *parser);
 static njs_token_t njs_parser_function_lambda(njs_vm_t *vm,
@@ -42,10 +44,8 @@ static njs_token_t njs_parser_for_var_in_statement(njs_vm_t *vm,
     njs_parser_t *parser, njs_parser_node_t *name);
 static njs_token_t njs_parser_for_in_statement(njs_vm_t *vm,
     njs_parser_t *parser, nxt_str_t *name, njs_token_t token);
-static njs_token_t njs_parser_continue_statement(njs_vm_t *vm,
-    njs_parser_t *parser);
-static njs_token_t njs_parser_break_statement(njs_vm_t *vm,
-    njs_parser_t *parser);
+static njs_token_t njs_parser_brk_statement(njs_vm_t *vm,
+    njs_parser_t *parser, njs_token_t token);
 static njs_token_t njs_parser_try_statement(njs_vm_t *vm, njs_parser_t *parser);
 static njs_token_t njs_parser_try_block(njs_vm_t *vm, njs_parser_t *parser);
 static njs_token_t njs_parser_throw_statement(njs_vm_t *vm,
@@ -216,6 +216,7 @@ njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser, njs_scope_t type)
     scope->argument_closures = 0;
 
     nxt_queue_init(&scope->nested);
+    nxt_lvlhsh_init(&scope->labels);
     nxt_lvlhsh_init(&scope->variables);
     nxt_lvlhsh_init(&scope->references);
 
@@ -354,17 +355,15 @@ njs_parser_statement(njs_vm_t *vm, njs_parser_t *parser,
 
     default:
 
+        if (token == NJS_TOKEN_NAME
+            && njs_lexer_peek_token(parser->lexer) == NJS_TOKEN_COLON)
+        {
+            return njs_parser_labelled_statement(vm, parser);
+        }
+
         switch (token) {
         case NJS_TOKEN_VAR:
             token = njs_parser_var_statement(vm, parser);
-            break;
-
-        case NJS_TOKEN_CONTINUE:
-            token = njs_parser_continue_statement(vm, parser);
-            break;
-
-        case NJS_TOKEN_BREAK:
-            token = njs_parser_break_statement(vm, parser);
             break;
 
         case NJS_TOKEN_RETURN:
@@ -373,6 +372,11 @@ njs_parser_statement(njs_vm_t *vm, njs_parser_t *parser,
 
         case NJS_TOKEN_THROW:
             token = njs_parser_throw_statement(vm, parser);
+            break;
+
+        case NJS_TOKEN_CONTINUE:
+        case NJS_TOKEN_BREAK:
+            token = njs_parser_brk_statement(vm, parser, token);
             break;
 
         default:
@@ -502,6 +506,63 @@ njs_parser_variable_reference(njs_vm_t *vm, njs_parser_t *parser,
 {
     return njs_variable_reference(vm, parser->scope, node, &parser->lexer->text,
                                   parser->lexer->key_hash, type);
+}
+
+
+static njs_token_t
+njs_parser_labelled_statement(njs_vm_t *vm, njs_parser_t *parser)
+{
+    uint32_t        hash;
+    njs_ret_t       ret;
+    nxt_str_t       name;
+    njs_token_t     token;
+    njs_variable_t  *label;
+
+    name = parser->lexer->text;
+    hash = parser->lexer->key_hash;
+
+    label = njs_label_find(vm, parser->scope, &name, hash);
+    if (nxt_slow_path(label != NULL)) {
+        njs_parser_syntax_error(vm, parser, "Label \"%V\" "
+                                "has already been declared", &name);
+        return NJS_TOKEN_ILLEGAL;
+    }
+
+    label = njs_label_add(vm, parser->scope, &name, hash);
+    if (nxt_slow_path(label == NULL)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    token = njs_parser_token(parser);
+    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+        return token;
+    }
+
+    token = njs_parser_match(vm, parser, token, NJS_TOKEN_COLON);
+    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+        return token;
+    }
+
+    token = njs_parser_statement(vm, parser, token);
+
+    if (nxt_fast_path(token > NJS_TOKEN_ILLEGAL)) {
+
+        if (parser->node != NULL) {
+            /* The statement is not empty block or just semicolon. */
+
+            ret = njs_name_copy(vm, &parser->node->label, &name);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return NJS_TOKEN_ERROR;
+            }
+
+            ret = njs_label_remove(vm, parser->scope, &name, hash);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return NJS_TOKEN_ERROR;
+            }
+        }
+    }
+
+    return token;
 }
 
 
@@ -1483,12 +1544,15 @@ njs_parser_for_in_statement(njs_vm_t *vm, njs_parser_t *parser, nxt_str_t *name,
 
 
 static njs_token_t
-njs_parser_continue_statement(njs_vm_t *vm, njs_parser_t *parser)
+njs_parser_brk_statement(njs_vm_t *vm, njs_parser_t *parser,
+    njs_token_t token)
 {
-    njs_token_t        token;
+    uint32_t           hash;
+    njs_ret_t          ret;
+    nxt_str_t          name;
     njs_parser_node_t  *node;
 
-    node = njs_parser_node_new(vm, parser, NJS_TOKEN_CONTINUE);
+    node = njs_parser_node_new(vm, parser, token);
     if (nxt_slow_path(node == NULL)) {
         return NJS_TOKEN_ERROR;
     }
@@ -1503,37 +1567,21 @@ njs_parser_continue_statement(njs_vm_t *vm, njs_parser_t *parser)
     case NJS_TOKEN_LINE_END:
         return njs_parser_token(parser);
 
-    case NJS_TOKEN_SEMICOLON:
-    case NJS_TOKEN_CLOSE_BRACE:
-    case NJS_TOKEN_END:
-        return token;
+    case NJS_TOKEN_NAME:
+        name = parser->lexer->text;
+        hash = parser->lexer->key_hash;
 
-    default:
-        /* TODO: LABEL */
-        return NJS_TOKEN_ILLEGAL;
-    }
-}
+        if (njs_label_find(vm, parser->scope, &name, hash) == NULL) {
+            njs_parser_syntax_error(vm, parser, "Undefined label \"%V\"",
+                                    &name);
+            return NJS_TOKEN_ILLEGAL;
+        }
 
+        ret = njs_name_copy(vm, &parser->node->label, &parser->lexer->text);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return NJS_TOKEN_ERROR;
+        }
 
-static njs_token_t
-njs_parser_break_statement(njs_vm_t *vm, njs_parser_t *parser)
-{
-    njs_token_t        token;
-    njs_parser_node_t  *node;
-
-    node = njs_parser_node_new(vm, parser, NJS_TOKEN_BREAK);
-    if (nxt_slow_path(node == NULL)) {
-        return NJS_TOKEN_ERROR;
-    }
-
-    node->token_line = parser->lexer->token_line;
-    parser->node = node;
-
-    token = njs_lexer_token(parser->lexer);
-
-    switch (token) {
-
-    case NJS_TOKEN_LINE_END:
         return njs_parser_token(parser);
 
     case NJS_TOKEN_SEMICOLON:

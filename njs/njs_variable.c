@@ -92,6 +92,74 @@ njs_variable_add(njs_vm_t *vm, njs_parser_scope_t *scope, nxt_str_t *name,
 }
 
 
+njs_variable_t *
+njs_label_add(njs_vm_t *vm, njs_parser_scope_t *scope, nxt_str_t *name,
+    uint32_t hash)
+{
+    nxt_int_t           ret;
+    njs_variable_t      *label;
+    nxt_lvlhsh_query_t  lhq;
+
+    lhq.key_hash = hash;
+    lhq.key = *name;
+    lhq.proto = &njs_variables_hash_proto;
+
+    if (nxt_lvlhsh_find(&scope->labels, &lhq) == NXT_OK) {
+        return lhq.value;
+    }
+
+    label = njs_variable_alloc(vm, &lhq.key, NJS_VARIABLE_CONST);
+    if (nxt_slow_path(label == NULL)) {
+        return label;
+    }
+
+    lhq.replace = 0;
+    lhq.value = label;
+    lhq.pool = vm->mem_pool;
+
+    ret = nxt_lvlhsh_insert(&scope->labels, &lhq);
+
+    if (nxt_fast_path(ret == NXT_OK)) {
+        return label;
+    }
+
+    nxt_mp_free(vm->mem_pool, label->name.start);
+    nxt_mp_free(vm->mem_pool, label);
+
+    njs_internal_error(vm, "lvlhsh insert failed");
+
+    return NULL;
+}
+
+
+njs_ret_t
+njs_label_remove(njs_vm_t *vm, njs_parser_scope_t *scope, nxt_str_t *name,
+    uint32_t hash)
+{
+    nxt_int_t           ret;
+    njs_variable_t      *label;
+    nxt_lvlhsh_query_t  lhq;
+
+    lhq.key_hash = hash;
+    lhq.key = *name;
+    lhq.proto = &njs_variables_hash_proto;
+    lhq.pool = vm->mem_pool;
+
+    ret = nxt_lvlhsh_delete(&scope->labels, &lhq);
+
+    if (nxt_fast_path(ret == NXT_OK)) {
+        label = lhq.value;
+        nxt_mp_free(vm->mem_pool, label->name.start);
+        nxt_mp_free(vm->mem_pool, label);
+
+    } else {
+        njs_internal_error(vm, "lvlhsh delete failed");
+    }
+
+    return ret;
+}
+
+
 static nxt_int_t
 njs_reference_hash_test(nxt_lvlhsh_query_t *lhq, void *data)
 {
@@ -348,6 +416,30 @@ not_found:
                           "\"%V\" is not defined", &vr->name);
 
     return NULL;
+}
+
+
+njs_variable_t *
+njs_label_find(njs_vm_t *vm, njs_parser_scope_t *scope, nxt_str_t *name,
+    uint32_t hash)
+{
+    nxt_lvlhsh_query_t  lhq;
+
+    lhq.key_hash = hash;
+    lhq.key = *name;
+    lhq.proto = &njs_variables_hash_proto;
+
+    for ( ;; ) {
+        if (nxt_lvlhsh_find(&scope->labels, &lhq) == NXT_OK) {
+            return lhq.value;
+        }
+
+        scope = scope->parent;
+
+        if (scope == NULL) {
+            return NULL;
+        }
+    }
 }
 
 
