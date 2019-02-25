@@ -1657,6 +1657,7 @@ ngx_http_js_ext_set_variable(njs_vm_t *vm, void *obj, uintptr_t data,
     if (v->set_handler != NULL) {
         vv = ngx_pcalloc(r->pool, sizeof(ngx_http_variable_value_t));
         if (vv == NULL) {
+            njs_vm_error(vm, "internal error");
             return NJS_ERROR;
         }
 
@@ -1682,6 +1683,7 @@ ngx_http_js_ext_set_variable(njs_vm_t *vm, void *obj, uintptr_t data,
 
     vv->data = ngx_pnalloc(r->pool, value->length);
     if (vv->data == NULL) {
+        njs_vm_error(vm, "internal error");
         return NJS_ERROR;
     }
 
@@ -1864,19 +1866,19 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (has_body) {
         rb = ngx_pcalloc(r->pool, sizeof(ngx_http_request_body_t));
         if (rb == NULL) {
-            return NJS_ERROR;
+            goto memory_error;
         }
 
         rb->bufs = ngx_alloc_chain_link(r->pool);
         if (rb->bufs == NULL) {
-            return NJS_ERROR;
+            goto memory_error;
         }
 
         rb->bufs->next = NULL;
 
         rb->bufs->buf = ngx_calloc_buf(r->pool);
         if (rb->bufs->buf == NULL) {
-            return NJS_ERROR;
+            goto memory_error;
         }
 
         rb->bufs->buf->memory = 1;
@@ -1891,6 +1893,12 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     return NJS_OK;
+
+memory_error:
+
+    njs_vm_error(ctx->vm, "internal error");
+
+    return NJS_ERROR;
 }
 
 
