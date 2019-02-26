@@ -278,30 +278,28 @@ njs_parser_statement_chain(njs_vm_t *vm, njs_parser_t *parser,
 
     token = njs_parser_statement(vm, parser, token);
 
-    if (nxt_fast_path(token > NJS_TOKEN_ILLEGAL)) {
+    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+        return njs_parser_unexpected_token(vm, parser, token);
+    }
 
-        if (parser->node != NULL) {
-            /* The statement is not empty block or just semicolon. */
+    if (parser->node != NULL) {
+        /* The statement is not empty block or just semicolon. */
 
-            node = njs_parser_node_new(vm, parser, NJS_TOKEN_STATEMENT);
-            if (nxt_slow_path(node == NULL)) {
-                return NJS_TOKEN_ERROR;
-            }
-
-            node->left = last;
-            node->right = parser->node;
-            *dest = node;
-
-            while (token == NJS_TOKEN_SEMICOLON) {
-                token = njs_parser_token(parser);
-                if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-                    break;
-                }
-            }
+        node = njs_parser_node_new(vm, parser, NJS_TOKEN_STATEMENT);
+        if (nxt_slow_path(node == NULL)) {
+            return NJS_TOKEN_ERROR;
         }
 
-    } else if (!njs_is_error(&vm->retval)) {
-        (void) njs_parser_unexpected_token(vm, parser, token);
+        node->left = last;
+        node->right = parser->node;
+        *dest = node;
+
+        while (token == NJS_TOKEN_SEMICOLON) {
+            token = njs_parser_token(parser);
+            if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                break;
+            }
+        }
     }
 
     return token;
@@ -2829,6 +2827,10 @@ njs_parser_lexer_error(njs_vm_t *vm, njs_parser_t *parser,
     njs_value_type_t type, const char *fmt, ...)
 {
     va_list  args;
+
+    if (njs_is_error(&vm->retval)) {
+        return;
+    }
 
     va_start(args, fmt);
     njs_parser_scope_error(vm, parser->scope, type, parser->lexer->line, fmt,
