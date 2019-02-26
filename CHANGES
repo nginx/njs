@@ -1,4 +1,55 @@
 
+Changes with njs 0.2.8                                           26 Feb 2019
+
+    nginx modules:
+
+    *) Change: properties of HTTP request deprecarted in 0.2.2 are
+       removed.
+
+    *) Feature: added support for delete operation in r.headersOut.
+
+    *) Feature: added support for setting nginx variables.
+
+    *) Bugfix: fixed r.subrequest() for empty body value.
+
+    *) Improvement: setting special response headers in r.headersOut.
+
+    Core:
+
+    *) Feature: added labels support.
+
+    *) Feature: added setImmediate() method.
+
+    *) Feature: added support for shorthand property names for Object
+       literals.
+
+    *) Bugfix: fixed Function.prototype.bind().
+
+    *) Bugfix: fixed parsing of string literals containing newline
+       characters.
+
+    *) Bugfix: fixed line number in reporting variable reference errors.
+
+    *) Bugfix: fixed creation of long UTF8 strings.
+
+    *) Bugfix: fixed String.prototype.split() for unicode strings.
+
+    *) Bugfix: fixed heap-buffer-overflow in String.prototype.split().
+
+    *) Bugfix: fixed Array.prototype.fill().
+       Thanks to Artem S. Povalyukhin.
+
+    *) Improvement: code related to function invocation is refactored.
+       Thanks to 洪志道 (Hong Zhi Dao).
+
+    *) Improvement: code related to variables is refactored.
+       Thanks to 洪志道 (Hong Zhi Dao).
+
+    *) Improvement: parser is refactored.
+       Thanks to 洪志道 (Hong Zhi Dao).
+
+    *) Improvement: reporting filenames in exceptions.
+
 Changes with njs 0.2.7                                           25 Dec 2018
 
     Core:
