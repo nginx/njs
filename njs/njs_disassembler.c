@@ -412,39 +412,39 @@ njs_disassemble(u_char *start, u_char *end)
         n = nxt_nitems(code_names);
 
         do {
-             if (operation == code_name->operation) {
-                 name = &code_name->name;
+            if (operation == code_name->operation) {
+                name = &code_name->name;
 
-                 if (code_name->size == sizeof(njs_vmcode_3addr_t)) {
-                     code3 = (njs_vmcode_3addr_t *) p;
+                if (code_name->size == sizeof(njs_vmcode_3addr_t)) {
+                    code3 = (njs_vmcode_3addr_t *) p;
 
-                     printf("%05zd %*s  %04zX %04zX %04zX\n",
-                            p - start, (int) name->length, name->start,
-                            (size_t) code3->dst, (size_t) code3->src1,
-                            (size_t) code3->src2);
+                    printf("%05zd %*s  %04zX %04zX %04zX\n",
+                           p - start, (int) name->length, name->start,
+                           (size_t) code3->dst, (size_t) code3->src1,
+                           (size_t) code3->src2);
 
-                 } else if (code_name->size == sizeof(njs_vmcode_2addr_t)) {
-                     code2 = (njs_vmcode_2addr_t *) p;
+                } else if (code_name->size == sizeof(njs_vmcode_2addr_t)) {
+                    code2 = (njs_vmcode_2addr_t *) p;
 
-                     printf("%05zd %*s  %04zX %04zX\n",
-                            p - start, (int) name->length, name->start,
-                            (size_t) code2->dst, (size_t) code2->src);
+                    printf("%05zd %*s  %04zX %04zX\n",
+                           p - start, (int) name->length, name->start,
+                           (size_t) code2->dst, (size_t) code2->src);
 
-                 } else if (code_name->size == sizeof(njs_vmcode_1addr_t)) {
-                     code1 = (njs_vmcode_1addr_t *) p;
+                } else if (code_name->size == sizeof(njs_vmcode_1addr_t)) {
+                    code1 = (njs_vmcode_1addr_t *) p;
 
-                     printf("%05zd %*s  %04zX\n",
-                            p - start, (int) name->length, name->start,
-                            (size_t) code1->index);
-                 }
+                    printf("%05zd %*s  %04zX\n",
+                           p - start, (int) name->length, name->start,
+                           (size_t) code1->index);
+                }
 
-                 p += code_name->size;
+                p += code_name->size;
 
-                 goto next;
-             }
+                goto next;
+            }
 
-             code_name++;
-             n--;
+            code_name++;
+            n--;
 
         } while (n != 0);
 
