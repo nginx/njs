@@ -1869,23 +1869,25 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             goto memory_error;
         }
 
-        rb->bufs = ngx_alloc_chain_link(r->pool);
-        if (rb->bufs == NULL) {
-            goto memory_error;
+        if (body_arg.length != 0) {
+            rb->bufs = ngx_alloc_chain_link(r->pool);
+            if (rb->bufs == NULL) {
+                goto memory_error;
+            }
+
+            rb->bufs->next = NULL;
+
+            rb->bufs->buf = ngx_calloc_buf(r->pool);
+            if (rb->bufs->buf == NULL) {
+                goto memory_error;
+            }
+
+            rb->bufs->buf->memory = 1;
+            rb->bufs->buf->last_buf = 1;
+
+            rb->bufs->buf->pos = body_arg.start;
+            rb->bufs->buf->last = body_arg.start + body_arg.length;
         }
-
-        rb->bufs->next = NULL;
-
-        rb->bufs->buf = ngx_calloc_buf(r->pool);
-        if (rb->bufs->buf == NULL) {
-            goto memory_error;
-        }
-
-        rb->bufs->buf->memory = 1;
-        rb->bufs->buf->last_buf = 1;
-
-        rb->bufs->buf->pos = body_arg.start;
-        rb->bufs->buf->last = body_arg.start + body_arg.length;
 
         sr->request_body = rb;
         sr->headers_in.content_length_n = body_arg.length;
