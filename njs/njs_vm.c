@@ -3295,7 +3295,7 @@ njs_vmcode_value_to_string(njs_vm_t *vm, njs_value_t *invld1,
 
 
 nxt_noinline void
-njs_value_void_set(njs_value_t *value)
+njs_value_undefined_set(njs_value_t *value)
 {
     *value = njs_value_void;
 }

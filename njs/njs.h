@@ -254,7 +254,7 @@ NXT_EXPORT void njs_vm_value_error_set(njs_vm_t *vm, njs_value_t *value,
     const char *fmt, ...);
 NXT_EXPORT void njs_vm_memory_error(njs_vm_t *vm);
 
-NXT_EXPORT void njs_value_void_set(njs_value_t *value);
+NXT_EXPORT void njs_value_undefined_set(njs_value_t *value);
 NXT_EXPORT void njs_value_boolean_set(njs_value_t *value, int yn);
 NXT_EXPORT void njs_value_number_set(njs_value_t *value, double num);
 NXT_EXPORT void njs_value_data_set(njs_value_t *value, void *data);

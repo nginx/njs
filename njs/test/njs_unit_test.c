@@ -11675,7 +11675,7 @@ njs_unit_test_r_get_vars(njs_vm_t *vm, njs_value_t *value, void *obj,
         return NXT_OK;
     }
 
-    njs_value_void_set(value);
+    njs_value_undefined_set(value);
 
     return NXT_OK;
 }
