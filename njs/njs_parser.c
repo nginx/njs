@@ -164,9 +164,9 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser, njs_parser_t *prev)
 static njs_ret_t
 njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser, njs_scope_t type)
 {
-    nxt_int_t           ret;
     nxt_uint_t          nesting;
     nxt_array_t         *values;
+    njs_lexer_t         *lexer;
     njs_parser_scope_t  *scope, *parent;
 
     nesting = 0;
@@ -233,11 +233,10 @@ njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser, njs_scope_t type)
     scope->values[0] = values;
     scope->values[1] = NULL;
 
-    if (parser->lexer->file.length != 0) {
-        ret = njs_name_copy(vm, &scope->file, &parser->lexer->file);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return NXT_ERROR;
-        }
+    lexer = parser->lexer;
+
+    if (lexer->file.length != 0) {
+        nxt_file_basename(&lexer->file, &scope->file);
     }
 
     parent = parser->scope;
