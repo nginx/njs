@@ -4313,22 +4313,23 @@ uri_error:
 static nxt_int_t
 njs_values_hash_test(nxt_lvlhsh_query_t *lhq, void *data)
 {
+    u_char       *start;
     njs_value_t  *value;
 
     value = data;
 
-    if (lhq->key.length == sizeof(njs_value_t)
-        && memcmp(lhq->key.start, value, sizeof(njs_value_t)) == 0)
-    {
-        return NXT_OK;
+    if (lhq->key.length == sizeof(njs_value_t)) {
+        start = (u_char *) value;
+
+    } else {
+        /*
+         * Only primitive values are added into values_hash.
+         * If size != sizeof(njs_value_t) it is a long string.
+         */
+        start = value->long_string.data->start;
     }
 
-    if (njs_is_string(value)
-        && value->long_string.size == lhq->key.length
-        && memcmp(value->long_string.data->start, lhq->key.start,
-                  lhq->key.length)
-           == 0)
-    {
+    if (memcmp(lhq->key.start, start, lhq->key.length) == 0) {
         return NXT_OK;
     }
 
@@ -4349,7 +4350,7 @@ static const nxt_lvlhsh_proto_t  njs_values_hash_proto
 
 /*
  * Constant values such as njs_value_true are copied to values_hash during
- * code generation when them are used as operands to guarantee aligned value.
+ * code generation when they are used as operands to guarantee aligned value.
  */
 
 njs_index_t
@@ -4358,18 +4359,22 @@ njs_value_index(njs_vm_t *vm, const njs_value_t *src, nxt_uint_t runtime)
     u_char              *start;
     uint32_t            value_size, size, length;
     nxt_int_t           ret;
+    nxt_bool_t          long_string;
     njs_value_t         *value;
     njs_string_t        *string;
     nxt_lvlhsh_t        *values_hash;
     nxt_lvlhsh_query_t  lhq;
 
-    if (src->type != NJS_STRING || src->short_string.size != NJS_STRING_LONG) {
-        size = sizeof(njs_value_t);
-        start = (u_char *) src;
+    long_string = src->type == NJS_STRING
+                  && src->short_string.size == NJS_STRING_LONG;
 
-    } else {
+    if (long_string) {
         size = src->long_string.size;
         start = src->long_string.data->start;
+
+    } else {
+        size = sizeof(njs_value_t);
+        start = (u_char *) src;
     }
 
     lhq.key_hash = nxt_djb_hash(start, size);
@@ -4386,7 +4391,7 @@ njs_value_index(njs_vm_t *vm, const njs_value_t *src, nxt_uint_t runtime)
     } else {
         value_size = 0;
 
-        if (start != (u_char *) src) {
+        if (long_string) {
             /* Long string value is allocated together with string. */
             value_size = sizeof(njs_value_t) + sizeof(njs_string_t);
 
@@ -4406,7 +4411,7 @@ njs_value_index(njs_vm_t *vm, const njs_value_t *src, nxt_uint_t runtime)
 
         *value = *src;
 
-        if (start != (u_char *) src) {
+        if (long_string) {
             string = (njs_string_t *) ((u_char *) value + sizeof(njs_value_t));
             value->long_string.data = string;
 
