@@ -379,6 +379,10 @@ njs_parser_global_scope(njs_vm_t *vm)
 }
 
 
+#define njs_scope_accumulative(vm, scope)                                     \
+    ((vm)->options.accumulative && (scope)->type == NJS_SCOPE_GLOBAL)
+
+
 extern const nxt_lvlhsh_proto_t  njs_keyword_hash_proto;
 
 

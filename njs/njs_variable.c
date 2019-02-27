@@ -508,7 +508,7 @@ njs_scope_next_index(njs_vm_t *vm, njs_parser_scope_t *scope,
     njs_value_t  *value;
     nxt_array_t  *values;
 
-    if (vm->options.accumulative && scope->type == NJS_SCOPE_GLOBAL) {
+    if (njs_scope_accumulative(vm, scope)) {
         /*
          * When non-clonable VM runs in accumulative mode all
          * global variables should be allocated in absolute scope

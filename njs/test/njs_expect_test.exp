@@ -172,6 +172,18 @@ njs_test {
      "o.a.toDateString*o.a.toLocaleDateString*o.a.toString"}
 }
 
+# function declarations in interactive mode
+njs_test {
+    {"function a() { return 1; }\r\n"
+     "undefined\r\n>> "}
+    {"a();\r\n"
+     "1\r\n>> "}
+    {"function a() { return 2; }\r\n"
+     "undefined\r\n>> "}
+    {"a();\r\n"
+     "2\r\n>> "}
+}
+
 # console object
 njs_test {
     {"console.log()\r\n"
