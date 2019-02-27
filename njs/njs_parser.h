@@ -310,7 +310,7 @@ typedef struct {
 njs_token_t njs_lexer_token(njs_lexer_t *lexer);
 void njs_lexer_rollback(njs_lexer_t *lexer);
 njs_token_t njs_lexer_peek_token(njs_lexer_t *lexer);
-nxt_int_t njs_lexer_keywords_init(nxt_mp_t *mcp, nxt_lvlhsh_t *hash);
+nxt_int_t njs_lexer_keywords_init(nxt_mp_t *mp, nxt_lvlhsh_t *hash);
 njs_token_t njs_lexer_keyword(njs_lexer_t *lexer);
 
 nxt_int_t njs_parser(njs_vm_t *vm, njs_parser_t *parser,

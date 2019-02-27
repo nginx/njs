@@ -142,7 +142,7 @@ const nxt_lvlhsh_proto_t  njs_keyword_hash_proto
 
 
 nxt_int_t
-njs_lexer_keywords_init(nxt_mp_t *mcp, nxt_lvlhsh_t *hash)
+njs_lexer_keywords_init(nxt_mp_t *mp, nxt_lvlhsh_t *hash)
 {
     nxt_uint_t           n;
     nxt_lvlhsh_query_t   lhq;
@@ -153,7 +153,7 @@ njs_lexer_keywords_init(nxt_mp_t *mcp, nxt_lvlhsh_t *hash)
 
     lhq.replace = 0;
     lhq.proto = &njs_keyword_hash_proto;
-    lhq.pool = mcp;
+    lhq.pool = mp;
 
     do {
         lhq.key_hash = nxt_djb_hash(keyword->name.start, keyword->name.length);
