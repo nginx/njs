@@ -6627,6 +6627,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var r = /LS/i.exec(false); r[0]"),
       nxt_string("ls") },
 
+    { nxt_string("var r = (/^.+$/mg), s = 'ab\\nc'; [r.exec(s), r.exec(s)]"),
+      nxt_string("ab,c") },
+
+    { nxt_string("var r = (/^.+$/mg); [r.global, r.multiline, r.ignoreCase]"),
+      nxt_string("true,true,false") },
+
     { nxt_string("var r = /./; r"),
       nxt_string("/./") },
 
