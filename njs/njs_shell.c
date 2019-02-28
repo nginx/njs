@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <sys/param.h>
 #include <locale.h>
 
 #include <readline.h>
@@ -195,6 +196,7 @@ static njs_console_t  njs_console;
 int
 main(int argc, char **argv)
 {
+    char          path[MAXPATHLEN], *p;
     nxt_int_t     ret;
     njs_opts_t    opts;
     njs_vm_opt_t  vm_options;
@@ -215,14 +217,19 @@ main(int argc, char **argv)
     nxt_memzero(&vm_options, sizeof(njs_vm_opt_t));
 
     if (!opts.quiet) {
-        if (opts.file != NULL) {
-            vm_options.file.start = (u_char *) opts.file;
-            vm_options.file.length = strlen(opts.file);
-            nxt_file_basename(&vm_options.file, &vm_options.file);
+        if (opts.file == NULL) {
+            p = getcwd(path, sizeof(path));
+            if (p == NULL) {
+                fprintf(stderr, "getcwd() failed:%s\n", strerror(errno));
+                return EXIT_FAILURE;
+            }
 
-        } else {
-            vm_options.file = nxt_string_value("shell");
+            memcpy(path + strlen(path), "/shell", sizeof("/shell"));
+            opts.file = path;
         }
+
+        vm_options.file.start = (u_char *) opts.file;
+        vm_options.file.length = strlen(opts.file);
     }
 
     vm_options.init = !opts.interactive;
