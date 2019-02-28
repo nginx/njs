@@ -255,6 +255,8 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         goto fail;
     }
 
+    parser->lexer = NULL;
+
     scope = parser->scope;
 
     ret = njs_variables_scope_reference(vm, scope);
@@ -327,7 +329,9 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
         nvm->mem_pool = nmp;
 
         nvm->shared = vm->shared;
+
         nvm->trace = vm->trace;
+        nvm->trace.data = nvm;
 
         nvm->variables_hash = vm->variables_hash;
         nvm->values_hash = vm->values_hash;

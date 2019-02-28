@@ -376,7 +376,7 @@ njs_regexp_compile_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
     trace = trace->next;
     p = trace->handler(trace, td, start);
 
-    if (vm->parser != NULL) {
+    if (vm->parser != NULL && vm->parser->lexer != NULL) {
         njs_syntax_error(vm, "%*s in %uD", p - start, start,
                          vm->parser->lexer->line);
 

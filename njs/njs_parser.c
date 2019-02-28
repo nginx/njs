@@ -2771,7 +2771,7 @@ njs_parser_trace_handler(nxt_trace_t *trace, nxt_trace_data_t *td,
     trace = trace->next;
     p = trace->handler(trace, td, p);
 
-    if (vm->parser != NULL) {
+    if (vm->parser != NULL && vm->parser->lexer != NULL) {
         lexer = vm->parser->lexer;
 
         if (lexer->file.length != 0) {

@@ -6651,6 +6651,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("new RegExp('', 'x')"),
       nxt_string("SyntaxError: Invalid RegExp flags \"x\"") },
 
+    { nxt_string("new RegExp('[')"),
+      nxt_string("SyntaxError: pcre_compile(\"[\") failed: missing terminating ] for character class") },
+
     { nxt_string("[0].map(RegExp().toString)"),
       nxt_string("TypeError: \"this\" argument is not a regexp") },
 
