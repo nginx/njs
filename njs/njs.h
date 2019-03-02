@@ -215,6 +215,8 @@ NXT_EXPORT nxt_int_t njs_vm_run(njs_vm_t *vm);
  */
 NXT_EXPORT nxt_int_t njs_vm_start(njs_vm_t *vm);
 
+NXT_EXPORT nxt_int_t njs_vm_add_path(njs_vm_t *vm, const nxt_str_t *path);
+
 NXT_EXPORT const njs_extern_t *njs_vm_external_prototype(njs_vm_t *vm,
     njs_external_t *external);
 NXT_EXPORT nxt_int_t njs_vm_external_create(njs_vm_t *vm,

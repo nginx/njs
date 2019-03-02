@@ -294,6 +294,8 @@ njs_builtin_objects_create(njs_vm_t *vm)
             return NJS_ERROR;
         }
 
+        module->function.native = 1;
+
         ret = njs_object_hash_create(vm, &module->object.shared_hash,
                                      obj->properties, obj->items);
         if (nxt_slow_path(ret != NXT_OK)) {

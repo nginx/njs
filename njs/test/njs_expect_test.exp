@@ -9,7 +9,7 @@ proc njs_test {body {opts ""}} {
         spawn  -nottycopy njs
 
     } else {
-        spawn  -nottycopy njs $opts
+        eval spawn  -nottycopy njs $opts
     }
 
     expect -re "interactive njs \\d+\.\\d+\.\\d+\r\n\r"
@@ -31,7 +31,7 @@ type console.help() for more information\r
 }
 
 proc njs_run {opts output} {
-    spawn  -nottycopy njs $opts
+    eval spawn  -nottycopy njs $opts
     expect -re $output
     expect eof
 }
@@ -603,6 +603,26 @@ njs_test {
      "'ABCABC'\r\n>> "}
 }
 
+# Modules
+
+njs_run "-p njs/test/module/libs ./njs/test/module/normal.js" \
+        "passed!"
+
+njs_run "-p njs/test/module/libs/ ./njs/test/module/normal.js" \
+        "passed!"
+
+njs_run "-p njs/test/module -p njs/test/module/libs ./njs/test/module/normal.js" \
+        "passed!"
+
+njs_run "./njs/test/module/normal.js" \
+        "SyntaxError: Cannot find module \"hash.js\" in sub2.js:5"
+
+njs_run "-p njs/test/module/libs ./njs/test/module/exception.js" \
+        "at error \\(sub1.js:5\\)\r\n    at exception \\(lib3.js:5\\)"
+
+njs_run "-p njs/test/module ./njs/test/module/recursive.js" \
+        "SyntaxError: Cannot import itself \"./recursive.js\" in recursive.js:3"
+
 # CLI OPTIONS
 
 # help
@@ -635,3 +655,31 @@ njs_test {
     {"var crypto = require('crypto')\r\n"
      "undefined\r\n"}
 } "-s"
+
+# modules
+
+njs_test {
+    {"import lib1 from 'lib1.js'\r\n"
+     "undefined\r\n"}
+    {"import lib2 from 'lib1.js'\r\n"
+     "undefined\r\n"}
+    {"lib2.inc()\r\n"
+     "undefined\r\n"}
+    {"lib1.get()\r\n"
+     "1\r\n"}
+    {"import m from 'return.js'\r\n"
+     "Illegal return statement in return.js:1\r\n"}
+    {"import m from 'empty.js'\r\n"
+     "export statement is required in empty.js:1\r\n"}
+    {"import m from 'export.js'\r\n"
+     "Identifier \"default\" has already been declared in export.js:5\r\n"}
+    {"import m from 'export_non_default.js'\r\n"
+     "Non-default export is not supported in export_non_default.js:3\r\n"}
+    {"import m from 'loading_exception.js'\r\n"
+     "Error: loading exception\r\n    at module \\(loading_exception.js:1\\)"}
+    {"import lib3 from 'lib1.js'\r\n"
+     "undefined\r\n"}
+} "-p njs/test/module/"
+
+njs_run "-p njs/test/module/libs/ -d ./njs/test/module/normal.js" \
+        "passed!"

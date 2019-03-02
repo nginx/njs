@@ -154,6 +154,10 @@ static nxt_int_t njs_generate_try_statement(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static nxt_int_t njs_generate_throw_statement(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
+static nxt_int_t njs_generate_import_statement(njs_vm_t *vm,
+    njs_generator_t *generator, njs_parser_node_t *node);
+static nxt_int_t njs_generate_export_statement(njs_vm_t *vm,
+    njs_generator_t *generator, njs_parser_node_t *node);
 static nxt_noinline njs_index_t njs_generate_dest_index(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static nxt_noinline njs_index_t
@@ -171,8 +175,9 @@ static nxt_noinline nxt_int_t njs_generate_node_index_release(njs_vm_t *vm,
 static nxt_noinline nxt_int_t njs_generate_index_release(njs_vm_t *vm,
     njs_generator_t *generator, njs_index_t index);
 
-static nxt_int_t njs_generate_function_debug(njs_vm_t *vm, nxt_str_t *name,
-    njs_function_lambda_t *lambda, njs_parser_node_t *node);
+static nxt_int_t njs_generate_function_debug(njs_vm_t *vm,
+    const nxt_str_t *name, njs_function_lambda_t *lambda,
+    njs_parser_node_t *node);
 
 
 #define njs_generate_code(generator, type, _code, _operation, nargs, _retval) \
@@ -466,6 +471,12 @@ njs_generator(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
 
     case NJS_TOKEN_THROW:
         return njs_generate_throw_statement(vm, generator, node);
+
+    case NJS_TOKEN_IMPORT:
+        return njs_generate_import_statement(vm, generator, node);
+
+    case NJS_TOKEN_EXPORT:
+        return njs_generate_export_statement(vm, generator, node);
 
     default:
         nxt_thread_log_debug("unknown token: %d", node->token);
@@ -1909,19 +1920,25 @@ njs_generate_function(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
     nxt_int_t              ret;
+    nxt_bool_t             module;
+    const nxt_str_t        *name;
     njs_function_lambda_t  *lambda;
     njs_vmcode_function_t  *function;
 
     lambda = node->u.value.data.u.lambda;
+    module = node->right->scope->module;
 
-    ret = njs_generate_function_scope(vm, lambda, node, &njs_entry_anonymous);
+    name = module ? &njs_entry_module : &njs_entry_anonymous;
+
+    ret = njs_generate_function_scope(vm, lambda, node, name);
 
     if (nxt_slow_path(ret != NXT_OK)) {
         return ret;
     }
 
     if (vm->debug != NULL) {
-        ret = njs_generate_function_debug(vm, NULL, lambda, node);
+        ret = njs_generate_function_debug(vm, name, lambda,
+                                          module ? node->right : node);
         if (nxt_slow_path(ret != NXT_OK)) {
             return ret;
         }
@@ -2450,7 +2467,6 @@ njs_generate_return_statement(njs_vm_t *vm, njs_generator_t *generator,
     njs_vmcode_try_return_t  *try_return;
 
     ret = njs_generator(vm, generator, node->right);
-
     if (nxt_slow_path(ret != NXT_OK)) {
         return ret;
     }
@@ -3012,6 +3028,66 @@ njs_generate_throw_statement(njs_vm_t *vm, njs_generator_t *generator,
 }
 
 
+static nxt_int_t
+njs_generate_import_statement(njs_vm_t *vm, njs_generator_t *generator,
+    njs_parser_node_t *node)
+{
+    nxt_int_t                 ret;
+    njs_index_t               index;
+    njs_module_t              *module;
+    njs_parser_node_t         *lvalue, *expr;
+    njs_vmcode_object_copy_t  *copy;
+
+    lvalue = node->left;
+    expr = node->right;
+
+    index = njs_variable_index(vm, lvalue);
+    if (nxt_slow_path(index == NJS_INDEX_ERROR)) {
+        return NXT_ERROR;
+    }
+
+    if (expr->left != NULL) {
+        ret = njs_generator(vm, generator, expr->left);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return ret;
+        }
+    }
+
+    module = (njs_module_t *) expr->index;
+
+    njs_generate_code(generator, njs_vmcode_object_copy_t, copy,
+                      njs_vmcode_object_copy, 2, 1);
+    copy->retval = index;
+    copy->object = module->index;
+
+    return NXT_OK;
+}
+
+
+static nxt_int_t
+njs_generate_export_statement(njs_vm_t *vm, njs_generator_t *generator,
+    njs_parser_node_t *node)
+{
+    nxt_int_t            ret;
+    njs_parser_node_t    *obj;
+    njs_vmcode_return_t  *code;
+
+    obj = node->right;
+
+    ret = njs_generator(vm, generator, obj);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
+    njs_generate_code(generator, njs_vmcode_return_t, code,
+                      njs_vmcode_return, 1, 0);
+    code->retval = obj->index;
+    node->index = obj->index;
+
+    return NXT_OK;
+}
+
+
 static nxt_noinline njs_index_t
 njs_generate_dest_index(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
@@ -3162,7 +3238,7 @@ njs_generate_index_release(njs_vm_t *vm, njs_generator_t *generator,
 
 
 static nxt_int_t
-njs_generate_function_debug(njs_vm_t *vm, nxt_str_t *name,
+njs_generate_function_debug(njs_vm_t *vm, const nxt_str_t *name,
     njs_function_lambda_t *lambda, njs_parser_node_t *node)
 {
     njs_function_debug_t  *debug;
@@ -3172,16 +3248,10 @@ njs_generate_function_debug(njs_vm_t *vm, nxt_str_t *name,
         return NXT_ERROR;
     }
 
-    if (name != NULL) {
-        debug->name = *name;
-
-    } else {
-        debug->name = no_label;
-    }
-
     debug->lambda = lambda;
     debug->line = node->token_line;
     debug->file = node->scope->file;
+    debug->name = (name != NULL) ? *name : no_label;
 
     return NXT_OK;
 }

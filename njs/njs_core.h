@@ -7,6 +7,7 @@
 #ifndef _NJS_CORE_H_INCLUDED_
 #define _NJS_CORE_H_INCLUDED_
 
+
 #include <nxt_auto_config.h>
 
 #include <nxt_unix.h>
@@ -46,7 +47,8 @@
 #include <njs_error.h>
 
 #include <njs_event.h>
-
 #include <njs_extern.h>
+#include <njs_module.h>
+
 
 #endif /* _NJS_CORE_H_INCLUDED_ */

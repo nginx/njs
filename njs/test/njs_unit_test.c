@@ -11481,6 +11481,35 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("typeof(null) === \"object\""),
       nxt_string("true") },
 
+    /* Module. */
+
+    { nxt_string("import;"),
+      nxt_string("SyntaxError: Non-default import is not supported in 1") },
+
+    { nxt_string("import {x} from y"),
+      nxt_string("SyntaxError: Non-default import is not supported in 1") },
+
+    { nxt_string("import x from y"),
+      nxt_string("SyntaxError: Unexpected token \"y\" in 1") },
+
+    { nxt_string("import x from {"),
+      nxt_string("SyntaxError: Unexpected token \"{\" in 1") },
+
+    { nxt_string("import x from ''"),
+      nxt_string("SyntaxError: Cannot find module \"\" in 1") },
+
+    { nxt_string("import x from 'crypto'"),
+      nxt_string("undefined") },
+
+    { nxt_string("import x from 'crypto' 1"),
+      nxt_string("SyntaxError: Unexpected token \"1\" in 1") },
+
+    { nxt_string("if (1) {import x from 'crypto'}"),
+      nxt_string("SyntaxError: Illegal import statement in 1") },
+
+    { nxt_string("export"),
+      nxt_string("SyntaxError: Illegal export statement in 1") },
+
 };
 
 

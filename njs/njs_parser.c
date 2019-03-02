@@ -59,6 +59,13 @@ static njs_token_t njs_parser_try_statement(njs_vm_t *vm, njs_parser_t *parser);
 static njs_token_t njs_parser_try_block(njs_vm_t *vm, njs_parser_t *parser);
 static njs_token_t njs_parser_throw_statement(njs_vm_t *vm,
     njs_parser_t *parser);
+static njs_token_t njs_parser_import_statement(njs_vm_t *vm,
+    njs_parser_t *parser);
+static njs_token_t njs_parser_export_statement(njs_vm_t *vm,
+    njs_parser_t *parser);
+static nxt_int_t njs_parser_import_hoist(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *new_node);
+static nxt_int_t njs_parser_export_sink(njs_vm_t *vm, njs_parser_t *parser);
 static njs_token_t njs_parser_grouping_expression(njs_vm_t *vm,
     njs_parser_t *parser);
 static njs_parser_node_t *njs_parser_reference(njs_vm_t *vm,
@@ -86,9 +93,6 @@ static njs_token_t njs_parser_unexpected_token(njs_vm_t *vm,
 
 #define njs_parser_chain_top_set(parser, node)                      \
     (parser)->scope->top = node
-
-#define njs_parser_text(parser)                                     \
-    &(parser)->lexer->lexer_token->text
 
 #define njs_parser_key_hash(parser)                                 \
     (parser)->lexer->lexer_token->key_hash
@@ -259,6 +263,7 @@ njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser, njs_scope_t type)
 
     if (lexer->file.length != 0) {
         nxt_file_basename(&lexer->file, &scope->file);
+        nxt_file_dirname(&lexer->file, &scope->cwd);
     }
 
     parent = parser->scope;
@@ -392,6 +397,14 @@ njs_parser_statement(njs_vm_t *vm, njs_parser_t *parser,
         case NJS_TOKEN_CONTINUE:
         case NJS_TOKEN_BREAK:
             token = njs_parser_brk_statement(vm, parser, token);
+            break;
+
+        case NJS_TOKEN_IMPORT:
+            token = njs_parser_import_statement(vm, parser);
+            break;
+
+        case NJS_TOKEN_EXPORT:
+            token = njs_parser_export_statement(vm, parser);
             break;
 
         case NJS_TOKEN_NAME:
@@ -955,9 +968,13 @@ njs_parser_return_statement(njs_vm_t *vm, njs_parser_t *parser)
     njs_parser_scope_t  *scope;
 
     for (scope = parser->scope;
-         scope->type != NJS_SCOPE_FUNCTION;
+         scope != NULL;
          scope = scope->parent)
     {
+        if (scope->type == NJS_SCOPE_FUNCTION && !scope->module) {
+            break;
+        }
+
         if (scope->type == NJS_SCOPE_GLOBAL) {
             njs_parser_syntax_error(vm, parser, "Illegal return statement");
 
@@ -1874,6 +1891,289 @@ njs_parser_throw_statement(njs_vm_t *vm, njs_parser_t *parser)
 
         return token;
     }
+}
+
+
+static njs_token_t
+njs_parser_import_statement(njs_vm_t *vm, njs_parser_t *parser)
+{
+    njs_ret_t          ret;
+    njs_token_t        token;
+    njs_variable_t     *var;
+    njs_parser_node_t  *name, *import;
+
+    if (parser->scope->type != NJS_SCOPE_GLOBAL
+        && !parser->scope->module)
+    {
+        njs_parser_syntax_error(vm, parser, "Illegal import statement");
+
+        return NJS_TOKEN_ERROR;
+    }
+
+    token = njs_parser_token(vm, parser);
+    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+        return token;
+    }
+
+    if (token != NJS_TOKEN_NAME) {
+        njs_parser_syntax_error(vm, parser,
+                                "Non-default import is not supported");
+        return NJS_TOKEN_ILLEGAL;
+    }
+
+    var = njs_parser_variable_add(vm, parser, NJS_VARIABLE_VAR);
+    if (nxt_slow_path(var == NULL)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    name = njs_parser_node_new(vm, parser, NJS_TOKEN_NAME);
+    if (nxt_slow_path(name == NULL)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    ret = njs_parser_variable_reference(vm, parser, name, NJS_DECLARATION);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    token = njs_parser_token(vm, parser);
+    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+        return token;
+    }
+
+    token = njs_parser_match(vm, parser, token, NJS_TOKEN_FROM);
+    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+        return token;
+    }
+
+    if (token != NJS_TOKEN_STRING) {
+        return NJS_TOKEN_ILLEGAL;
+    }
+
+    ret = njs_parser_module(vm, parser);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    import = njs_parser_node_new(vm, parser, NJS_TOKEN_IMPORT);
+    if (nxt_slow_path(import == NULL)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    import->left = name;
+    import->right = parser->node;
+
+    ret = njs_parser_import_hoist(vm, parser, import);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    parser->node = NULL;
+
+    return njs_parser_token(vm, parser);
+}
+
+
+njs_token_t
+njs_parser_module_lambda(njs_vm_t *vm, njs_parser_t *parser)
+{
+    njs_ret_t              ret;
+    njs_token_t            token;
+    njs_parser_node_t      *node, *parent;
+    njs_function_lambda_t  *lambda;
+
+    node = njs_parser_node_new(vm, parser, NJS_TOKEN_FUNCTION_EXPRESSION);
+    if (nxt_slow_path(node == NULL)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    node->token_line = njs_parser_token_line(parser);
+
+    token = njs_parser_token(vm, parser);
+    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+        return token;
+    }
+
+    lambda = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_function_lambda_t));
+    if (nxt_slow_path(lambda == NULL)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    node->u.value.data.u.lambda = lambda;
+    parser->node = node;
+
+    ret = njs_parser_scope_begin(vm, parser, NJS_SCOPE_FUNCTION);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    parser->scope->module = 1;
+
+    token = njs_parser_match(vm, parser, token, NJS_TOKEN_OPEN_PARENTHESIS);
+    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+        return token;
+    }
+
+    parent = parser->node;
+
+    token = njs_parser_match(vm, parser, token, NJS_TOKEN_CLOSE_PARENTHESIS);
+    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+        return token;
+    }
+
+    token = njs_parser_lambda_statements(vm, parser, token);
+    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+        return token;
+    }
+
+    ret = njs_parser_export_sink(vm, parser);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    parent->right = njs_parser_chain_top(parser);
+    parent->right->token_line = 1;
+
+    parser->node = parent;
+
+    njs_parser_scope_end(vm, parser);
+
+    return token;
+}
+
+
+static njs_token_t
+njs_parser_export_statement(njs_vm_t *vm, njs_parser_t *parser)
+{
+    njs_token_t        token;
+    njs_parser_node_t  *node;
+
+    if (!parser->scope->module) {
+        njs_parser_syntax_error(vm, parser, "Illegal export statement");
+        return NXT_ERROR;
+    }
+
+    node = njs_parser_node_new(vm, parser, NJS_TOKEN_EXPORT);
+    if (nxt_slow_path(node == NULL)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    parser->node = node;
+
+    token = njs_parser_token(vm, parser);
+    if (nxt_slow_path(token != NJS_TOKEN_DEFAULT)) {
+        njs_parser_syntax_error(vm, parser,
+                                "Non-default export is not supported");
+        return NJS_TOKEN_ILLEGAL;
+    }
+
+    token = njs_parser_token(vm, parser);
+    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+        return token;
+    }
+
+    token = njs_parser_expression(vm, parser, token);
+    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+        return token;
+    }
+
+    if (parser->node->token != NJS_TOKEN_OBJECT) {
+        njs_parser_syntax_error(vm, parser, "Illegal export value");
+        return NXT_ERROR;
+    }
+
+    node->right = parser->node;
+    parser->node = node;
+
+    return token;
+}
+
+
+static nxt_int_t
+njs_parser_import_hoist(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *new_node)
+{
+    njs_parser_node_t  *node, *stmt, **child;
+
+    child = &njs_parser_chain_top(parser);
+
+    while (*child != NULL) {
+        node = *child;
+
+        if (node->right != NULL
+            && node->right->token == NJS_TOKEN_IMPORT)
+        {
+            break;
+        }
+
+        child = &node->left;
+    }
+
+    stmt = njs_parser_node_new(vm, parser, NJS_TOKEN_STATEMENT);
+    if (nxt_slow_path(stmt == NULL)) {
+        return NXT_ERROR;
+    }
+
+    stmt->left = *child;
+    stmt->right = new_node;
+
+    *child = stmt;
+
+    return NXT_OK;
+}
+
+
+static nxt_int_t
+njs_parser_export_sink(njs_vm_t *vm, njs_parser_t *parser)
+{
+    nxt_uint_t         n;
+    njs_parser_node_t  *node, *prev;
+
+    n = 0;
+
+    for (node = njs_parser_chain_top(parser);
+         node != NULL;
+         node = node->left)
+    {
+        if (node->right != NULL
+            && node->right->token == NJS_TOKEN_EXPORT)
+        {
+            n++;
+        }
+    }
+
+    if (n != 1) {
+        njs_parser_syntax_error(vm, parser,
+             (n == 0) ? "export statement is required"
+                      : "Identifier \"default\" has already been declared");
+        return NXT_ERROR;
+    }
+
+    node = njs_parser_chain_top(parser);
+
+    if (node->right && node->right->token == NJS_TOKEN_EXPORT) {
+        return NXT_OK;
+    }
+
+    prev = njs_parser_chain_top(parser);
+
+    while (prev->left != NULL) {
+        node = prev->left;
+
+        if (node->right != NULL
+            && node->right->token == NJS_TOKEN_EXPORT)
+        {
+            prev->left = node->left;
+            break;
+        }
+
+        prev = prev->left;
+    }
+
+    node->left = njs_parser_chain_top(parser);
+    njs_parser_chain_top_set(parser, node);
+
+    return NXT_OK;
 }
 
 

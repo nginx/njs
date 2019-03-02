@@ -332,6 +332,8 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
 
         nvm->variables_hash = vm->variables_hash;
         nvm->values_hash = vm->values_hash;
+
+        nvm->modules = vm->modules;
         nvm->modules_hash = vm->modules_hash;
 
         nvm->externals_hash = vm->externals_hash;
@@ -580,6 +582,11 @@ njs_vm_start(njs_vm_t *vm)
 {
     njs_ret_t  ret;
 
+    ret = njs_module_load(vm);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
     ret = njs_vmcode_interpreter(vm);
 
     if (ret == NJS_STOP) {
@@ -625,6 +632,30 @@ njs_vm_handle_events(njs_vm_t *vm)
     }
 
     return njs_posted_events(vm) ? NJS_AGAIN : NJS_OK;
+}
+
+
+nxt_int_t
+njs_vm_add_path(njs_vm_t *vm, const nxt_str_t *path)
+{
+    nxt_str_t  *item;
+
+    if (vm->paths == NULL) {
+        vm->paths = nxt_array_create(4, sizeof(nxt_str_t),
+                                     &njs_array_mem_proto, vm->mem_pool);
+        if (nxt_slow_path(vm->paths == NULL)) {
+            return NXT_ERROR;
+        }
+    }
+
+    item = nxt_array_add(vm->paths, &njs_array_mem_proto, vm->mem_pool);
+    if (nxt_slow_path(item == NULL)) {
+        return NXT_ERROR;
+    }
+
+    *item = *path;
+
+    return NXT_OK;
 }
 
 

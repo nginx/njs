@@ -25,12 +25,14 @@ struct njs_parser_scope_s {
     nxt_array_t                     *values[2];  /* Array of njs_value_t. */
     njs_index_t                     next_index[2];
 
+    nxt_str_t                       cwd;
     nxt_str_t                       file;
 
     njs_scope_t                     type:8;
     uint8_t                         nesting;     /* 4 bits */
     uint8_t                         argument_closures;
     uint8_t                         arguments_object;
+    uint8_t                         module;
 };
 
 
@@ -83,6 +85,7 @@ njs_token_t njs_parser_var_expression(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token);
 njs_token_t njs_parser_assignment_expression(njs_vm_t *vm,
     njs_parser_t *parser, njs_token_t token);
+njs_token_t njs_parser_module_lambda(njs_vm_t *vm, njs_parser_t *parser);
 njs_token_t njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token);
 njs_token_t njs_parser_property_token(njs_vm_t *vm, njs_parser_t *parser);
@@ -106,6 +109,10 @@ void njs_parser_node_error(njs_vm_t *vm, njs_parser_node_t *node,
 
 #define njs_scope_accumulative(vm, scope)                                     \
     ((vm)->options.accumulative && (scope)->type == NJS_SCOPE_GLOBAL)
+
+
+#define njs_parser_text(parser)                                               \
+    &(parser)->lexer->lexer_token->text
 
 
 #define njs_parser_syntax_error(vm, parser, fmt, ...)                         \

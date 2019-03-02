@@ -203,6 +203,10 @@ typedef enum {
     NJS_TOKEN_SET_IMMEDIATE,
     NJS_TOKEN_CLEAR_TIMEOUT,
 
+    NJS_TOKEN_IMPORT,
+    NJS_TOKEN_FROM,
+    NJS_TOKEN_EXPORT,
+
     NJS_TOKEN_RESERVED,
 } njs_token_t;
 

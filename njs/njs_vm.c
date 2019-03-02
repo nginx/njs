@@ -96,6 +96,7 @@ const njs_value_t  njs_string_memory_error = njs_string("MemoryError");
 
 
 const nxt_str_t  njs_entry_main =           nxt_string("main");
+const nxt_str_t  njs_entry_module =         nxt_string("module");
 const nxt_str_t  njs_entry_native =         nxt_string("native");
 const nxt_str_t  njs_entry_unknown =        nxt_string("unknown");
 const nxt_str_t  njs_entry_anonymous =      nxt_string("anonymous");

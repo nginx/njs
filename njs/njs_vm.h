@@ -1024,6 +1024,8 @@ struct njs_vm_s {
     /* njs_vm_t must be aligned to njs_value_t due to scratch value. */
     njs_value_t              retval;
 
+    nxt_array_t              *paths;
+
     u_char                   *current;
 
     njs_value_t              *scopes[NJS_SCOPES];
@@ -1040,6 +1042,8 @@ struct njs_vm_s {
 
     nxt_lvlhsh_t             variables_hash;
     nxt_lvlhsh_t             values_hash;
+
+    nxt_array_t              *modules;
     nxt_lvlhsh_t             modules_hash;
 
     uint32_t                 event_id;
@@ -1301,6 +1305,7 @@ extern const njs_value_t  njs_string_internal_error;
 extern const njs_value_t  njs_string_memory_error;
 
 extern const nxt_str_t    njs_entry_main;
+extern const nxt_str_t    njs_entry_module;
 extern const nxt_str_t    njs_entry_native;
 extern const nxt_str_t    njs_entry_unknown;
 extern const nxt_str_t    njs_entry_anonymous;

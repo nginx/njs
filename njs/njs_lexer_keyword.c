@@ -93,6 +93,11 @@ static const njs_keyword_t  njs_keywords[] = {
     { nxt_string("setImmediate"),  NJS_TOKEN_SET_IMMEDIATE, 0 },
     { nxt_string("clearTimeout"),  NJS_TOKEN_CLEAR_TIMEOUT, 0 },
 
+    /* Module. */
+    { nxt_string("import"),        NJS_TOKEN_IMPORT, 0 },
+    { nxt_string("from"),          NJS_TOKEN_FROM, 0 },
+    { nxt_string("export"),        NJS_TOKEN_EXPORT, 0 },
+
     /* Reserved words. */
 
     { nxt_string("await"),         NJS_TOKEN_RESERVED, 0 },
@@ -100,10 +105,8 @@ static const njs_keyword_t  njs_keywords[] = {
     { nxt_string("const"),         NJS_TOKEN_RESERVED, 0 },
     { nxt_string("debugger"),      NJS_TOKEN_RESERVED, 0 },
     { nxt_string("enum"),          NJS_TOKEN_RESERVED, 0 },
-    { nxt_string("export"),        NJS_TOKEN_RESERVED, 0 },
     { nxt_string("extends"),       NJS_TOKEN_RESERVED, 0 },
     { nxt_string("implements"),    NJS_TOKEN_RESERVED, 0 },
-    { nxt_string("import"),        NJS_TOKEN_RESERVED, 0 },
     { nxt_string("interface"),     NJS_TOKEN_RESERVED, 0 },
     { nxt_string("let"),           NJS_TOKEN_RESERVED, 0 },
     { nxt_string("package"),       NJS_TOKEN_RESERVED, 0 },
