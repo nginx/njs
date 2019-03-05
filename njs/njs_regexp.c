@@ -138,7 +138,7 @@ njs_regexp_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
 njs_token_t
 njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
 {
-    u_char                *p;
+    u_char                *p, c;
     njs_lexer_t           *lexer;
     njs_regexp_flags_t    flags;
     njs_regexp_pattern_t  *pattern;
@@ -147,12 +147,13 @@ njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
 
     for (p = lexer->start; p < lexer->end; p++) {
 
-        if (*p == '\\') {
-            p++;
-            continue;
+        c = *p;
+
+        if (c == '\n' || c == '\r') {
+            break;
         }
 
-        if (*p == '/') {
+        if (c == '/' && !(p > lexer->start && p[-1] == '\\')) {
             lexer->text.start = lexer->start;
             lexer->text.length = p - lexer->text.start;
             p++;

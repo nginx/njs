@@ -6526,6 +6526,21 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("/"),
       nxt_string("SyntaxError: Unterminated RegExp \"/\" in 1") },
 
+    { nxt_string("/a\n/"),
+      nxt_string("SyntaxError: Unterminated RegExp \"/a\" in 1") },
+
+    { nxt_string("/a\r/"),
+      nxt_string("SyntaxError: Unterminated RegExp \"/a\" in 1") },
+
+    { nxt_string("/a\\q/"),
+      nxt_string("/a\\q/") },
+
+    { nxt_string("/a\\q/.test('a\\q')"),
+      nxt_string("true") },
+
+    { nxt_string("/(\\.(?!com|org)|\\/)/.test('ah.info')"),
+      nxt_string("true") },
+
     { nxt_string("/(/.test('')"),
       nxt_string("SyntaxError: pcre_compile(\"(\") failed: missing ) in 1") },
 
