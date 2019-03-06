@@ -367,10 +367,6 @@ njs_test {
 
 # require('fs')
 
-set file [open njs_test_file w]
-puts -nonewline $file "αβZγ"
-flush $file
-
 njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
@@ -383,37 +379,44 @@ njs_test {
 njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
-    {"fs.readFile('njs_test_file', 'utf8', function (e, data) {console.log(data[2]+data.length)})\r\n"
+    {"fs.readFile('njs/test/fs/utf8', 'utf8', function (e, data) {console.log(data[2]+data.length)})\r\n"
      "'Z4'\r\nundefined\r\n>> "}
 }
 
 njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
-    {"fs.readFile('njs_test_file', function (e, data) {console.log(data[4]+data.length)})\r\n"
+    {"fs.readFile('njs/test/fs/utf8', function (e, data) {console.log(data[4]+data.length)})\r\n"
      "'Z7'\r\nundefined\r\n>> "}
 }
 
 njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
-    {"fs.readFile('njs_test_file', {encoding:'utf8',flag:'r+'}, function (e, data) {console.log(data)})\r\n"
+    {"fs.readFile('njs/test/fs/utf8', {encoding:'utf8',flag:'r+'}, function (e, data) {console.log(data)})\r\n"
      "'αβZγ'\r\nundefined\r\n>> "}
 }
 
-exec rm -fr njs_unknown_path
-
 njs_test {
-    {"var fs = require('fs'); \r\n"
+    {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
-    {"fs.readFile('njs_unknown_path', 'utf8', function (e) {console.log(JSON.stringify(e))})\r\n"
-     "'{\"errno\":2,\"path\":\"njs_unknown_path\",\"syscall\":\"open\"}'\r\nundefined\r\n>> "}
+    {"fs.readFile('njs/test/fs/ascii', function (e, data) {console.log(data[599])})\r\n"
+     "'x'\r\nundefined\r\n>> "}
+    {"fs.readFile('njs/test/fs/ascii', {encoding:'utf8',flag:'r+'}, function (e, data) {console.log(data[599])})\r\n"
+     "'x'\r\nundefined\r\n>> "}
 }
 
 njs_test {
     {"var fs = require('fs'); \r\n"
      "undefined\r\n>> "}
-    {"fs.readFile('njs_unknown_path', {encoding:'utf8', flag:'r+'}, function (e) {console.log(e)})\r\n"
+    {"fs.readFile('njs/test/fs/nonexistent', 'utf8', function (e) {console.log(JSON.stringify(e))})\r\n"
+     "'{\"errno\":2,\"path\":\"njs/test/fs/nonexistent\",\"syscall\":\"open\"}'\r\nundefined\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs'); \r\n"
+     "undefined\r\n>> "}
+    {"fs.readFile('njs/test/fs/nonexistent', {encoding:'utf8', flag:'r+'}, function (e) {console.log(e)})\r\n"
      "Error: No such file or directory\r\nundefined\r\n>> "}
 }
 
@@ -422,49 +425,56 @@ njs_test {
 njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
-    {"fs.readFileSync('njs_test_file').toString('base64')\r\n"
+    {"fs.readFileSync('njs/test/fs/utf8').toString('base64')\r\n"
      "'zrHOslrOsw=='\r\n>> "}
 }
 
 njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
-    {"fs.readFileSync('njs_test_file', 'utf8')[2]\r\n"
+    {"fs.readFileSync('njs/test/fs/utf8', 'utf8')[2]\r\n"
      "'Z'\r\n>> "}
 }
 
 njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
-    {"fs.readFileSync('njs_test_file')[4]\r\n"
+    {"fs.readFileSync('njs/test/fs/utf8')[4]\r\n"
      "'Z'\r\n>> "}
 }
 
 njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
-    {"fs.readFileSync('njs_test_file', {encoding:'utf8',flag:'r+'})\r\n"
+    {"fs.readFileSync('njs/test/fs/utf8', {encoding:'utf8',flag:'r+'})\r\n"
      "'αβZγ'\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs'), fn = 'njs/test/fs/ascii'\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync(fn)[599] + fs.readFileSync(fn, 'utf8')[599]\r\n"
+     "'xx'\r\n>> "}
 }
 
 njs_test {
     {"var fs = require('fs'); \r\n"
      "undefined\r\n>> "}
-    {"try { fs.readFileSync('njs_unknown_path')} catch (e) {console.log(JSON.stringify(e))}\r\n"
-     "'{\"errno\":2,\"path\":\"njs_unknown_path\",\"syscall\":\"open\"}'\r\nundefined\r\n>> "}
+    {"try { fs.readFileSync('njs/test/fs/nonexistent')} catch (e) {console.log(JSON.stringify(e))}\r\n"
+     "'{\"errno\":2,\"path\":\"njs/test/fs/nonexistent\",\"syscall\":\"open\"}'\r\nundefined\r\n>> "}
 }
 
 njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
-    {"fs.readFileSync('./njs/test/non_utf8').charCodeAt(1)\r\n"
+    {"fs.readFileSync('njs/test/fs/non_utf8').charCodeAt(1)\r\n"
      "128"}
 }
 
 njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
-    {"fs.readFileSync('./njs/test/non_utf8', 'utf8')\r\n"
+    {"fs.readFileSync('njs/test/fs/non_utf8', 'utf8')\r\n"
      "Error: Non-UTF8 file, convertion is not implemented"}
 }
 

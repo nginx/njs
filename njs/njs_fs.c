@@ -213,6 +213,16 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (encoding.length != 0) {
         length = sb.st_size;
 
+        if (length > NJS_STRING_MAP_STRIDE) {
+            /*
+             * At this point length is not known, in order to set it to
+             * the correct value after file is read, we need to ensure that
+             * offset_map is allocated by njs_string_alloc(). This can be
+             * achieved by making length != size.
+             */
+            length += 1;
+        }
+
     } else {
         length = 0;
     }
@@ -245,7 +255,6 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         length = nxt_utf8_length(start, sb.st_size);
 
         if (length >= 0) {
-            njs_string_offset_map_init(start, sb.st_size);
             njs_string_length_set(&arguments[2], length);
 
         } else {
@@ -408,6 +417,16 @@ njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (encoding.length != 0) {
         length = sb.st_size;
 
+        if (length > NJS_STRING_MAP_STRIDE) {
+            /*
+             * At this point length is not known, in order to set it to
+             * the correct value after file is read, we need to ensure that
+             * offset_map is allocated by njs_string_alloc(). This can be
+             * achieved by making length != size.
+             */
+            length += 1;
+        }
+
     } else {
         length = 0;
     }
@@ -440,7 +459,6 @@ njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         length = nxt_utf8_length(start, sb.st_size);
 
         if (length >= 0) {
-            njs_string_offset_map_init(start, sb.st_size);
             njs_string_length_set(&vm->retval, length);
 
         } else {
