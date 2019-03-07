@@ -173,22 +173,19 @@ njs_lexer_keywords_init(nxt_mp_t *mp, nxt_lvlhsh_t *hash)
 }
 
 
-njs_token_t
-njs_lexer_keyword(njs_lexer_t *lexer)
+void
+njs_lexer_keyword(njs_lexer_t *lexer, njs_lexer_token_t *lt)
 {
     njs_keyword_t       *keyword;
     nxt_lvlhsh_query_t  lhq;
 
-    lhq.key_hash = lexer->key_hash;
-    lhq.key = lexer->text;
+    lhq.key_hash = lt->key_hash;
+    lhq.key = lt->text;
     lhq.proto = &njs_keyword_hash_proto;
 
     if (nxt_lvlhsh_find(&lexer->keywords_hash, &lhq) == NXT_OK) {
         keyword = lhq.value;
-        lexer->number = keyword->number;
-
-        return keyword->token;
+        lt->token = keyword->token;
+        lt->number = keyword->number;
     }
-
-    return NJS_TOKEN_NAME;
 }

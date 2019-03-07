@@ -139,6 +139,7 @@ njs_token_t
 njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
 {
     u_char                *p, c;
+    nxt_str_t             text;
     njs_lexer_t           *lexer;
     njs_regexp_flags_t    flags;
     njs_regexp_pattern_t  *pattern;
@@ -154,8 +155,8 @@ njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
         }
 
         if (c == '/' && !(p > lexer->start && p[-1] == '\\')) {
-            lexer->text.start = lexer->start;
-            lexer->text.length = p - lexer->text.start;
+            text.start = lexer->start;
+            text.length = p - text.start;
             p++;
             lexer->start = p;
 
@@ -171,8 +172,8 @@ njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
 
             lexer->start = p;
 
-            pattern = njs_regexp_pattern_create(vm, lexer->text.start,
-                                                lexer->text.length, flags);
+            pattern = njs_regexp_pattern_create(vm, text.start, text.length,
+                                                flags);
             if (nxt_slow_path(pattern == NULL)) {
                 return NJS_TOKEN_ILLEGAL;
             }
