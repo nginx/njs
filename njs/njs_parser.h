@@ -8,10 +8,6 @@
 #define _NJS_PARSER_H_INCLUDED_
 
 
-#define njs_parser_is_lvalue(node)                                            \
-    ((node)->token == NJS_TOKEN_NAME || (node)->token == NJS_TOKEN_PROPERTY)
-
-
 struct njs_parser_scope_s {
     njs_parser_node_t               *top;
 
@@ -89,10 +85,8 @@ njs_token_t njs_parser_assignment_expression(njs_vm_t *vm,
 njs_token_t njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token);
 njs_token_t njs_parser_property_token(njs_vm_t *vm, njs_parser_t *parser);
-njs_token_t njs_parser_token(njs_vm_t *vm, njs_parser_t *parser);
 njs_token_t njs_parser_lambda_statements(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token);
-
 njs_variable_t *njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node);
 njs_index_t njs_variable_typeof(njs_vm_t *vm, njs_parser_node_t *node);
 njs_index_t njs_variable_index(njs_vm_t *vm, njs_parser_node_t *node);
@@ -105,6 +99,18 @@ void njs_parser_node_error(njs_vm_t *vm, njs_parser_node_t *node,
     njs_value_type_t type, const char *fmt, ...);
 
 
+#define njs_parser_peek_token(vm, parser, offset)                             \
+    njs_lexer_peek_token(vm, (parser)->lexer, offset)
+
+
+#define njs_parser_is_lvalue(node)                                            \
+    ((node)->token == NJS_TOKEN_NAME || (node)->token == NJS_TOKEN_PROPERTY)
+
+
+#define njs_scope_accumulative(vm, scope)                                     \
+    ((vm)->options.accumulative && (scope)->type == NJS_SCOPE_GLOBAL)
+
+
 #define njs_parser_syntax_error(vm, parser, fmt, ...)                         \
     njs_parser_lexer_error(vm, parser, NJS_OBJECT_SYNTAX_ERROR, fmt,          \
                            ##__VA_ARGS__)
@@ -112,6 +118,24 @@ void njs_parser_node_error(njs_vm_t *vm, njs_parser_node_t *node,
 
 #define njs_parser_ref_error(vm, parser, fmt, ...)                            \
     njs_parser_lexer_error(vm, parser, NJS_OBJECT_REF_ERROR, fmt, ##__VA_ARGS__)
+
+
+nxt_inline njs_token_t
+njs_parser_token(njs_vm_t *vm, njs_parser_t *parser)
+{
+    njs_token_t  token;
+
+    do {
+        token = njs_lexer_token(vm, parser->lexer);
+
+        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+            return token;
+        }
+
+    } while (nxt_slow_path(token == NJS_TOKEN_LINE_END));
+
+    return token;
+}
 
 
 nxt_inline njs_parser_node_t *
@@ -143,10 +167,6 @@ njs_parser_global_scope(njs_vm_t *vm)
 
     return scope;
 }
-
-
-#define njs_scope_accumulative(vm, scope)                                     \
-    ((vm)->options.accumulative && (scope)->type == NJS_SCOPE_GLOBAL)
 
 
 extern const nxt_lvlhsh_proto_t  njs_keyword_hash_proto;

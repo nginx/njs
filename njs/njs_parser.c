@@ -375,7 +375,7 @@ njs_parser_statement(njs_vm_t *vm, njs_parser_t *parser,
     default:
 
         if (token == NJS_TOKEN_NAME
-            && njs_lexer_peek_token(vm, parser->lexer, 0) == NJS_TOKEN_COLON)
+            && njs_parser_peek_token(vm, parser, 0) == NJS_TOKEN_COLON)
         {
             return njs_parser_labelled_statement(vm, parser);
         }
@@ -1923,24 +1923,6 @@ njs_parser_property_token(njs_vm_t *vm, njs_parser_t *parser)
 
         parser->node = node;
     }
-
-    return token;
-}
-
-
-njs_token_t
-njs_parser_token(njs_vm_t *vm, njs_parser_t *parser)
-{
-    njs_token_t  token;
-
-    do {
-        token = njs_lexer_token(vm, parser->lexer);
-
-        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-            return token;
-        }
-
-    } while (nxt_slow_path(token == NJS_TOKEN_LINE_END));
 
     return token;
 }
