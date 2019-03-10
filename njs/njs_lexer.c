@@ -371,7 +371,7 @@ njs_lexer_token_push(njs_vm_t *vm, njs_lexer_t *lexer)
 {
     njs_lexer_token_t  *lt;
 
-    lt = nxt_mp_alloc(vm->mem_pool, sizeof(njs_lexer_token_t));
+    lt = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_lexer_token_t));
     if (nxt_slow_path(lt == NULL)) {
         return NULL;
     }
@@ -542,23 +542,8 @@ njs_lexer_next_token(njs_lexer_t *lexer, njs_lexer_token_t *lt)
 
             /* Fall through. */
 
-        case NJS_TOKEN_BITWISE_NOT:
-        case NJS_TOKEN_OPEN_PARENTHESIS:
-        case NJS_TOKEN_CLOSE_PARENTHESIS:
-        case NJS_TOKEN_OPEN_BRACKET:
-        case NJS_TOKEN_CLOSE_BRACKET:
-        case NJS_TOKEN_OPEN_BRACE:
-        case NJS_TOKEN_CLOSE_BRACE:
-        case NJS_TOKEN_COMMA:
-        case NJS_TOKEN_COLON:
-        case NJS_TOKEN_SEMICOLON:
-        case NJS_TOKEN_CONDITIONAL:
-            lt->text.length = lexer->start - lt->text.start;
-            return token;
-
-        case NJS_TOKEN_ILLEGAL:
         default:
-            lexer->start--;
+            lt->text.length = lexer->start - lt->text.start;
             return token;
         }
 

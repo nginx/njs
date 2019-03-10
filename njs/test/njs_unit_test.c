@@ -22,6 +22,9 @@ typedef struct {
 
 static njs_unit_test_t  njs_test[] =
 {
+    { nxt_string("@"),
+      nxt_string("SyntaxError: Unexpected token \"@\" in 1") },
+
     { nxt_string("}"),
       nxt_string("SyntaxError: Unexpected token \"}\" in 1") },
 
