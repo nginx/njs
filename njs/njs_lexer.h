@@ -213,11 +213,13 @@ typedef struct {
     uint32_t                        key_hash;
     nxt_str_t                       text;
     double                          number;
+    nxt_queue_link_t                link;
 } njs_lexer_token_t;
 
 
 typedef struct {
     njs_lexer_token_t               *lexer_token;
+    nxt_queue_t                     preread; /*  of njs_lexer_token_t */
 
     u_char                          *prev_start;
     njs_token_t                     prev_token:16;
@@ -244,8 +246,8 @@ typedef struct {
 
 nxt_int_t njs_lexer_init(njs_vm_t *vm, njs_lexer_t *lexer, nxt_str_t *file,
     u_char *start, u_char *end);
-njs_token_t njs_lexer_token(njs_lexer_t *lexer);
-njs_token_t njs_lexer_peek_token(njs_lexer_t *lexer);
+njs_token_t njs_lexer_token(njs_vm_t *vm, njs_lexer_t *lexer);
+njs_token_t njs_lexer_peek_token(njs_vm_t *vm, njs_lexer_t *lexer, size_t offset);
 nxt_int_t njs_lexer_keywords_init(nxt_mp_t *mp, nxt_lvlhsh_t *hash);
 void njs_lexer_keyword(njs_lexer_t *lexer, njs_lexer_token_t *lt);
 
