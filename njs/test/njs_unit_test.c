@@ -8464,6 +8464,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("[1,2].hasOwnProperty('len')"),
       nxt_string("false") },
 
+    { nxt_string("[1,2].hasOwnProperty('0')"),
+      nxt_string("true") },
+
+    { nxt_string("[1,2].hasOwnProperty('2')"),
+      nxt_string("false") },
+
     { nxt_string("[].hasOwnProperty('length')"),
       nxt_string("true") },
 
@@ -8483,6 +8489,12 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("false") },
 
     { nxt_string("'s'.hasOwnProperty('b')"),
+      nxt_string("false") },
+
+    { nxt_string("'s'.hasOwnProperty('0')"),
+      nxt_string("true") },
+
+    { nxt_string("'s'.hasOwnProperty('1')"),
       nxt_string("false") },
 
     { nxt_string("var p = { a:5 }; var o = Object.create(p);"
@@ -8606,6 +8618,18 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("Object.getOwnPropertyDescriptor(1, '0')"),
       nxt_string("undefined") },
+
+    { nxt_string("'αβγδ'.propertyIsEnumerable('0')"),
+      nxt_string("true") },
+
+    { nxt_string("({a:1}).propertyIsEnumerable({toString:function () {return 'a';}})"),
+      nxt_string("true") },
+
+    { nxt_string("'αβγδ'.propertyIsEnumerable('a')"),
+      nxt_string("false") },
+
+    { nxt_string("'αβγδ'.propertyIsEnumerable('length')"),
+      nxt_string("false") },
 
     { nxt_string("var min = Object.getOwnPropertyDescriptor(Math, 'min').value;"
                  "[min(1,2), min(2,1), min(-1,1)]"),

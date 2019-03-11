@@ -2458,6 +2458,51 @@ njs_object_prototype_has_own_property(njs_vm_t *vm, njs_value_t *args,
 
 
 static njs_ret_t
+njs_object_prototype_prop_is_enumerable(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    nxt_int_t             ret;
+    const njs_value_t     *value, *property, *retval;
+    njs_object_prop_t     *prop;
+    njs_property_query_t  pq;
+
+    value = njs_arg(args, nargs, 0);
+
+    if (njs_is_null_or_void(value)) {
+        njs_type_error(vm, "cannot convert %s argument to object",
+                       njs_type_string(value->type));
+        return NXT_ERROR;
+    }
+
+    property = njs_arg(args, nargs, 1);
+
+    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 1);
+
+    ret = njs_property_query(vm, &pq, (njs_value_t *) value, property);
+
+    switch (ret) {
+    case NXT_OK:
+        prop = pq.lhq.value;
+        retval = prop->enumerable ? &njs_value_true : &njs_value_false;
+        break;
+
+    case NXT_DECLINED:
+        retval = &njs_value_false;
+        break;
+
+    case NJS_TRAP:
+    case NXT_ERROR:
+    default:
+        return ret;
+    }
+
+    vm->retval = *retval;
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
 njs_object_prototype_is_prototype_of(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
@@ -2519,6 +2564,13 @@ static const njs_object_prop_t  njs_object_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("hasOwnProperty"),
         .value = njs_native_function(njs_object_prototype_has_own_property, 0,
+                                     NJS_OBJECT_ARG, NJS_STRING_ARG),
+    },
+
+    {
+        .type = NJS_METHOD,
+        .name = njs_long_string("propertyIsEnumerable"),
+        .value = njs_native_function(njs_object_prototype_prop_is_enumerable, 0,
                                      NJS_OBJECT_ARG, NJS_STRING_ARG),
     },
 
