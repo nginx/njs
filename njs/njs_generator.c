@@ -579,8 +579,6 @@ njs_generate_arguments_object(njs_vm_t *vm, njs_generator_t *generator,
 {
     njs_vmcode_arguments_t  *gen;
 
-    generator->arguments_object = 1;
-
     node->index = njs_generate_object_dest_index(vm, generator, node);
     if (nxt_slow_path(node->index == NJS_INDEX_ERROR)) {
         return NXT_ERROR;
@@ -2312,7 +2310,7 @@ njs_generate_function_scope(njs_vm_t *vm, njs_function_lambda_t *lambda,
         lambda->closure_size = size;
 
         lambda->nesting = node->scope->nesting;
-        lambda->arguments_object = generator.arguments_object;
+        lambda->arguments_object = node->scope->arguments_object;
 
         lambda->start = generator.code_start;
         lambda->local_size = generator.scope_size;

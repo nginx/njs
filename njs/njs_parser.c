@@ -2169,6 +2169,8 @@ njs_parser_reference(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
             return NULL;
         }
 
+        parser->scope->arguments_object = 1;
+
         break;
 
     case NJS_TOKEN_OBJECT_CONSTRUCTOR:
