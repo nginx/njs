@@ -1095,6 +1095,8 @@ struct njs_vm_s {
 typedef struct {
     u_char                   *start;
     u_char                   *end;
+    nxt_str_t                file;
+    nxt_str_t                name;
 } njs_vm_code_t;
 
 
@@ -1296,6 +1298,11 @@ extern const njs_value_t  njs_string_plus_infinity;
 extern const njs_value_t  njs_string_nan;
 extern const njs_value_t  njs_string_internal_error;
 extern const njs_value_t  njs_string_memory_error;
+
+extern const nxt_str_t    njs_entry_main;
+extern const nxt_str_t    njs_entry_native;
+extern const nxt_str_t    njs_entry_unknown;
+extern const nxt_str_t    njs_entry_anonymous;
 
 extern const nxt_mem_proto_t     njs_array_mem_proto;
 extern const nxt_lvlhsh_proto_t  njs_object_hash_proto;

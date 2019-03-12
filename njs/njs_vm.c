@@ -95,6 +95,12 @@ const njs_value_t  njs_string_function =    njs_string("function");
 const njs_value_t  njs_string_memory_error = njs_string("MemoryError");
 
 
+const nxt_str_t  njs_entry_main =           nxt_string("main");
+const nxt_str_t  njs_entry_native =         nxt_string("native");
+const nxt_str_t  njs_entry_unknown =        nxt_string("unknown");
+const nxt_str_t  njs_entry_anonymous =      nxt_string("anonymous");
+
+
 /*
  * The nJSVM is optimized for an ABIs where the first several arguments
  * are passed in registers (AMD64, ARM32/64): two pointers to the operand
@@ -3497,11 +3503,6 @@ njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame)
     njs_function_lambda_t  *lambda;
     njs_backtrace_entry_t  *be;
 
-    static const nxt_str_t  entry_main =        nxt_string("main");
-    static const nxt_str_t  entry_native =      nxt_string("native");
-    static const nxt_str_t  entry_unknown =     nxt_string("unknown");
-    static const nxt_str_t  entry_anonymous =   nxt_string("anonymous");
-
     native_frame = &frame->native;
     function = native_frame->function;
 
@@ -3513,7 +3514,7 @@ njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame)
     be->line = 0;
 
     if (function == NULL) {
-        be->name = entry_main;
+        be->name = njs_entry_main;
         return NXT_OK;
     }
 
@@ -3529,7 +3530,7 @@ njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame)
             return NXT_OK;
         }
 
-        be->name = entry_native;
+        be->name = njs_entry_native;
 
         return NXT_OK;
     }
@@ -3543,7 +3544,7 @@ njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame)
                 be->name = debug_entry[i].name;
 
             } else {
-                be->name = entry_anonymous;
+                be->name = njs_entry_anonymous;
             }
 
             be->file = debug_entry[i].file;
@@ -3553,7 +3554,7 @@ njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame)
         }
     }
 
-    be->name = entry_unknown;
+    be->name = njs_entry_unknown;
 
     return NXT_OK;
 }

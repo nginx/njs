@@ -138,7 +138,8 @@ static nxt_int_t njs_generate_inc_dec_operation(njs_vm_t *vm,
 static nxt_int_t njs_generate_function_declaration(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static nxt_int_t njs_generate_function_scope(njs_vm_t *vm,
-    njs_function_lambda_t *lambda, njs_parser_node_t *node);
+    njs_function_lambda_t *lambda, njs_parser_node_t *node,
+    const nxt_str_t *name);
 static nxt_int_t njs_generate_argument_closures(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static nxt_int_t njs_generate_return_statement(njs_vm_t *vm,
@@ -1913,7 +1914,7 @@ njs_generate_function(njs_vm_t *vm, njs_generator_t *generator,
 
     lambda = node->u.value.data.u.lambda;
 
-    ret = njs_generate_function_scope(vm, lambda, node);
+    ret = njs_generate_function_scope(vm, lambda, node, &njs_entry_anonymous);
 
     if (nxt_slow_path(ret != NXT_OK)) {
         return ret;
@@ -2269,7 +2270,8 @@ njs_generate_function_declaration(njs_vm_t *vm, njs_generator_t *generator,
 
     lambda = var->value.data.u.function->u.lambda;
 
-    ret = njs_generate_function_scope(vm, lambda, node);
+    ret = njs_generate_function_scope(vm, lambda, node,
+                                      &node->u.reference.name);
     if (nxt_slow_path(ret != NXT_OK)) {
         return ret;
     }
@@ -2284,7 +2286,7 @@ njs_generate_function_declaration(njs_vm_t *vm, njs_generator_t *generator,
 
 static nxt_int_t
 njs_generate_function_scope(njs_vm_t *vm, njs_function_lambda_t *lambda,
-    njs_parser_node_t *node)
+    njs_parser_node_t *node, const nxt_str_t *name)
 {
     size_t           size;
     nxt_int_t        ret;
@@ -2295,7 +2297,7 @@ njs_generate_function_scope(njs_vm_t *vm, njs_function_lambda_t *lambda,
 
     nxt_memzero(&generator, sizeof(njs_generator_t));
 
-    ret = njs_generate_scope(vm, &generator, node->scope);
+    ret = njs_generate_scope(vm, &generator, node->scope, name);
 
     if (nxt_fast_path(ret == NXT_OK)) {
         size = 0;
@@ -2323,7 +2325,7 @@ njs_generate_function_scope(njs_vm_t *vm, njs_function_lambda_t *lambda,
 
 nxt_int_t
 njs_generate_scope(njs_vm_t *vm, njs_generator_t *generator,
-    njs_parser_scope_t *scope)
+    njs_parser_scope_t *scope, const nxt_str_t *name)
 {
     u_char         *p;
     size_t          size;
@@ -2393,6 +2395,8 @@ njs_generate_scope(njs_vm_t *vm, njs_generator_t *generator,
 
     code->start = generator->code_start;
     code->end = generator->code_end;
+    code->file = scope->file;
+    code->name = *name;
 
     return NXT_OK;
 }

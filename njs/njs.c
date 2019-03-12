@@ -271,7 +271,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 
     nxt_memzero(&generator, sizeof(njs_generator_t));
 
-    ret = njs_generate_scope(vm, &generator, scope);
+    ret = njs_generate_scope(vm, &generator, scope, &njs_entry_main);
     if (nxt_slow_path(ret != NXT_OK)) {
         goto fail;
     }

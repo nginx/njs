@@ -139,6 +139,8 @@ njs_disassembler(njs_vm_t *vm)
     n = vm->code->items;
 
     while (n != 0) {
+        printf("%.*s:%.*s\n", (int) code->file.length, code->file.start,
+               (int) code->name.length, code->name.start);
         njs_disassemble(code->start, code->end);
         code++;
         n--;
