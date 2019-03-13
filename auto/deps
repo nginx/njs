@@ -1,0 +1,29 @@
+
+# Copyright (C) Igor Sysoev
+# Copyright (C) NGINX, Inc.
+
+
+case "$NXT_CC_NAME" in
+
+    SunC):
+        nxt_gen_dep_flags() {
+            $echo "-xMMD -xMF $NXT_BUILD_DIR/$1.tmp"
+        }
+
+        nxt_gen_dep_post() {
+            $echo -n "@sed -e 's#^.*:#$NXT_BUILD_DIR/$2:#' "
+            $echo -n "$NXT_BUILD_DIR/$1.tmp > $NXT_BUILD_DIR/$1"
+            $echo " && rm -f $NXT_BUILD_DIR/$1.tmp"
+        }
+    ;;
+
+    *)
+        nxt_gen_dep_flags() {
+            $echo "-MMD -MF $NXT_BUILD_DIR/$1 -MT $NXT_BUILD_DIR/$2"
+        }
+
+        nxt_gen_dep_post() {
+            $echo ""
+        }
+    ;;
+esac

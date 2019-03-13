@@ -3,7 +3,7 @@
 # Copyright (C) NGINX, Inc.
 
 
-$nxt_echo checking for C compiler: $CC
+$echo checking for C compiler: $CC
 cat << END >> $NXT_AUTOCONF_ERR
 ----------------------------------------
 checking for C compiler: $CC
@@ -14,9 +14,9 @@ END
 set +e
 
 if [ -z `which $CC` ]; then
-    $nxt_echo
-    $nxt_echo $0: error: $CC not found.
-    $nxt_echo
+    $echo
+    $echo $0: error: $CC not found.
+    $echo
     exit 1;
 fi
 
@@ -24,34 +24,34 @@ fi
 if `/bin/sh -c "($CC -v)" 2>&1 | grep "gcc version" >> $NXT_AUTOCONF_ERR 2>&1`
 then
     NXT_CC_NAME=gcc
-    $nxt_echo " + using GNU C compiler"
+    $echo " + using GNU C compiler"
     NXT_CC_VERSION=`/bin/sh -c "($CC -v)" 2>&1 | grep "gcc version" 2>&1`
-    $nxt_echo " + $NXT_CC_VERSION"
+    $echo " + $NXT_CC_VERSION"
 
 else
 if `/bin/sh -c "($CC -v)" 2>&1 | grep "clang version" >> $NXT_AUTOCONF_ERR 2>&1`
 then
     NXT_CC_NAME=clang
-    $nxt_echo " + using Clang C compiler"
+    $echo " + using Clang C compiler"
     NXT_CC_VERSION=`/bin/sh -c "($CC -v)" 2>&1 | grep "clang version" 2>&1`
-    $nxt_echo " + $NXT_CC_VERSION"
+    $echo " + $NXT_CC_VERSION"
 
 else
 if `/bin/sh -c "($CC -v)" 2>&1 \
                  | grep "Apple LLVM version" >> $NXT_AUTOCONF_ERR 2>&1`
 then
     NXT_CC_NAME=clang
-    $nxt_echo " + using Clang C compiler"
+    $echo " + using Clang C compiler"
     NXT_CC_VERSION=`/bin/sh -c "($CC -v)" 2>&1 | grep "Apple LLVM version" 2>&1`
-    $nxt_echo " + $NXT_CC_VERSION"
+    $echo " + $NXT_CC_VERSION"
 
 else
 if `/bin/sh -c "($CC -V)" 2>&1 | grep "Sun C" >> $NXT_AUTOCONF_ERR 2>&1`
 then
     NXT_CC_NAME=SunC
-    $nxt_echo " + using Sun C compiler"
+    $echo " + using Sun C compiler"
     NXT_CC_VERSION=`/bin/sh -c "($CC -V)" 2>&1 | grep "Sun C" 2>&1`
-    $nxt_echo " + $NXT_CC_VERSION"
+    $echo " + $NXT_CC_VERSION"
 
 fi # SunC
 fi # Apple LLVM clang
@@ -62,7 +62,7 @@ fi # gcc
 case $NXT_CC_NAME in
 
     gcc)
-        nxt_define=NXT_GCC . ${NXT_AUTO}define
+        nxt_define=NXT_GCC . auto/define
 
         NXT_CFLAGS="$NXT_CFLAGS -pipe"
         NXT_CFLAGS="$NXT_CFLAGS -fPIC"
@@ -102,7 +102,7 @@ case $NXT_CC_NAME in
     ;;
 
     clang)
-        nxt_define=NXT_CLANG . ${NXT_AUTO}define
+        nxt_define=NXT_CLANG . auto/define
 
         NXT_CFLAGS="$NXT_CFLAGS -pipe"
         NXT_CFLAGS="$NXT_CFLAGS -fPIC"
@@ -138,7 +138,7 @@ case $NXT_CC_NAME in
     ;;
 
     SunC)
-        nxt_define=NXT_SUNC . ${NXT_AUTO}define
+        nxt_define=NXT_SUNC . auto/define
 
         NXT_CFLAGS="$NXT_CFLAGS -fPIC"
         # Optimization.
@@ -157,7 +157,7 @@ esac
 # Stop on error exit status again.
 set -e
 
-cat << END >> $NXT_MAKEFILE_CONF
+cat << END >> $NXT_MAKEFILE
 
 NXT_CC =	${CC}
 NXT_CFLAGS =	${NXT_CFLAGS} ${CFLAGS}
@@ -175,7 +175,7 @@ nxt_feature_test="int main(void) {
                       unsigned __int128 p = 0;
                       return (int) p;
                   }"
-. ${NXT_AUTO}feature
+. auto/feature
 
 
 nxt_feature="GCC __builtin_expect()"
@@ -189,7 +189,7 @@ nxt_feature_test="int main(int argc, char *const *argv) {
                           return 0;
                       return 1;
                   }"
-. ${NXT_AUTO}feature
+. auto/feature
 
 
 nxt_feature="GCC __builtin_unreachable()"
@@ -200,7 +200,7 @@ nxt_feature_libs=
 nxt_feature_test="int main(void) {
                       __builtin_unreachable();
                   }"
-. ${NXT_AUTO}feature
+. auto/feature
 
 
 nxt_feature="GCC __builtin_prefetch()"
@@ -212,7 +212,7 @@ nxt_feature_test="int main(void) {
                       __builtin_prefetch(0);
                       return 0;
                   }"
-. ${NXT_AUTO}feature
+. auto/feature
 
 
 nxt_feature="GCC __builtin_clz()"
@@ -226,7 +226,7 @@ nxt_feature_test="int main(void) {
                       }
                       return 0;
                   }"
-. ${NXT_AUTO}feature
+. auto/feature
 
 
 nxt_feature="GCC __builtin_clzll()"
@@ -240,7 +240,7 @@ nxt_feature_test="int main(void) {
                       }
                       return 0;
                   }"
-. ${NXT_AUTO}feature
+. auto/feature
 
 
 nxt_feature="GCC __attribute__ visibility"
@@ -253,7 +253,7 @@ nxt_feature_test="int n __attribute__ ((visibility(\"default\")));
                   int main(void) {
                       return 0;
                   }"
-. ${NXT_AUTO}feature
+. auto/feature
 
 
 nxt_feature="GCC __attribute__ malloc"
@@ -275,7 +275,7 @@ nxt_feature_test="#include <stdlib.h>
                       }
                       return 0;
                   }"
-. ${NXT_AUTO}feature
+. auto/feature
 
 
 nxt_os="$NXT_SYSTEM/$NXT_SYSTEM_PLATFORM"
@@ -299,7 +299,7 @@ else
                       int main(void) {
                           return 0;
                       }"
-    . ${NXT_AUTO}feature
+    . auto/feature
 
 fi
 
@@ -318,4 +318,4 @@ nxt_feature_test="#include <math.h>
                       printf(\"%x\", (uint32_t) i64);
                       return 0;
                   }"
-. ${NXT_AUTO}feature
+. auto/feature

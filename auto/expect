@@ -3,31 +3,31 @@
 # Copyright (C) NGINX, Inc.
 
 nxt_found=no
-$nxt_echo -n "checking for expect ..."
+$echo -n "checking for expect ..."
 
 if /bin/sh -c "(expect -v)" >> $NXT_AUTOCONF_ERR 2>&1; then
     nxt_found=yes
 fi
 
 if [ $nxt_found = yes ]; then
-    $nxt_echo " found"
-    $nxt_echo " + Expect version: `expect -v`"
+    $echo " found"
+    $echo " + Expect version: `expect -v`"
 
 else
-    $nxt_echo " not found"
+    $echo " not found"
 fi
 
 if [ $nxt_found = yes -a $NXT_HAVE_LIBEDIT = YES ]; then
-    cat << END >> $NXT_MAKEFILE_CONF
+    cat << END >> $NXT_MAKEFILE
 
 njs_expect_test:	njs njs/test/njs_expect_test.exp
-	PATH=\$(NXT_BUILDDIR):\$(PATH) expect -f njs/test/njs_expect_test.exp
+	PATH=$NXT_BUILD_DIR:\$(PATH) expect -f njs/test/njs_expect_test.exp
 END
 
 else
-    $nxt_echo " - expect tests are disabled"
+    $echo " - expect tests are disabled"
 
-    cat << END >> $NXT_MAKEFILE_CONF
+    cat << END >> $NXT_MAKEFILE
 
 njs_expect_test:
 	@echo "Skipping expect tests"

@@ -1,6 +1,10 @@
 # Copyright (C) Dmitry Volyntsev
 # Copyright (C) NGINX, Inc.
 
+
+NXT_EDITLINE_CFLAGS=
+NXT_EDITLINE_LIB=
+
 nxt_found=no
 
 nxt_feature="editline library"
@@ -15,7 +19,7 @@ nxt_feature_test="#include <stdio.h>
                      add_history(NULL);
                      return 0;
                  }"
-. ${NXT_AUTO}feature
+. auto/feature
 
 if [ $nxt_found = no ]; then
 
@@ -37,23 +41,15 @@ if [ $nxt_found = no ]; then
     . auto/feature
 fi
 
+NXT_DEFAULT_TARGET=libnjs
+
 if [ $nxt_found = yes ]; then
     NXT_HAVE_LIBEDIT=YES
-    cat << END >> $NXT_MAKEFILE_CONF
+    NXT_EDITLINE_CFLAGS=$nxt_feature_incs
+    NXT_EDITLINE_LIB=$nxt_feature_libs
 
-NXT_EDITLINE_CFLAGS = $nxt_feature_incs
-NXT_EDITLINE_LIB = $nxt_feature_libs
-
-default:	njs
-END
-
+	NXT_DEFAULT_TARGET="$NXT_DEFAULT_TARGET njs"
 else
     NXT_HAVE_LIBEDIT=NO
-    $nxt_echo " - building interactive shell is not possible"
-
-    cat << END >> $NXT_MAKEFILE_CONF
-
-default:	libnjs
-END
-
+    $echo " - building interactive shell is not possible"
 fi

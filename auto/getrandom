@@ -22,7 +22,7 @@ nxt_feature_test="#include <unistd.h>
 
                       return 0;
                   }"
-. ${NXT_AUTO}feature
+. auto/feature
 
 
 if [ $nxt_found = no ]; then
@@ -44,7 +44,7 @@ if [ $nxt_found = no ]; then
 
                           return 0;
                       }"
-    . ${NXT_AUTO}feature
+    . auto/feature
 fi
 
 
@@ -65,7 +65,7 @@ if [ $nxt_found = no ]; then
 
                           return 0;
                       }"
-    . ${NXT_AUTO}feature
+    . auto/feature
 fi
 
 
@@ -87,5 +87,5 @@ if [ $nxt_found = no ]; then
 
                           return 0;
                       }"
-    . ${NXT_AUTO}feature
+    . auto/feature
 fi

@@ -22,7 +22,7 @@ nxt_feature_test="#include <stdlib.h>
                      free(p);
                      return 0;
                  }"
-. ${NXT_AUTO}feature
+. auto/feature
 
 
 if [ $nxt_found = no ]; then
@@ -46,5 +46,5 @@ if [ $nxt_found = no ]; then
                          free(p);
                          return 0;
                      }"
-    . ${NXT_AUTO}feature
+    . auto/feature
 fi

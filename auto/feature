@@ -3,7 +3,7 @@
 # Copyright (C) NGINX, Inc.
 
 
-$nxt_echo -n "checking for $nxt_feature ..."
+$echo -n "checking for $nxt_feature ..."
 
 cat << END >> $NXT_AUTOCONF_ERR
 ----------------------------------------
@@ -52,10 +52,10 @@ if [ -x $NXT_AUTOTEST ]; then
 
         value)
             if /bin/sh -c "($NXT_AUTOTEST)" >> $NXT_AUTOCONF_ERR 2>&1; then
-                $nxt_echo >> $NXT_AUTOCONF_ERR
+                $echo >> $NXT_AUTOCONF_ERR
                 nxt_found=yes
                 nxt_feature_value=`$NXT_AUTOTEST`
-                $nxt_echo " $nxt_feature_value"
+                $echo " $nxt_feature_value"
                 if [ -n "$nxt_feature_name" ]; then
                     cat << END >> $NXT_AUTO_CONFIG_H
 
@@ -66,13 +66,13 @@ if [ -x $NXT_AUTOTEST ]; then
 END
                 fi
             else
-                $nxt_echo " not found"
+                $echo " not found"
             fi
         ;;
 
         yes)
             if /bin/sh -c "($NXT_AUTOTEST)" >> $NXT_AUTOCONF_ERR 2>&1; then
-                $nxt_echo " found"
+                $echo " found"
                 nxt_found=yes
                 cat << END >> $NXT_AUTO_CONFIG_H
 
@@ -82,12 +82,12 @@ END
 
 END
             else
-                $nxt_echo " found but is not working"
+                $echo " found but is not working"
             fi
         ;;
 
         *)
-            $nxt_echo " found"
+            $echo " found"
             nxt_found=yes
             cat << END >> $NXT_AUTO_CONFIG_H
 
@@ -100,13 +100,13 @@ END
     esac
 
 else
-    $nxt_echo " not found"
+    $echo " not found"
 
-    $nxt_echo "----------"    >> $NXT_AUTOCONF_ERR
+    $echo "----------"    >> $NXT_AUTOCONF_ERR
     cat $NXT_AUTOTEST.c       >> $NXT_AUTOCONF_ERR
-    $nxt_echo "----------"    >> $NXT_AUTOCONF_ERR
-    $nxt_echo $nxt_test       >> $NXT_AUTOCONF_ERR
-    $nxt_echo "----------"    >> $NXT_AUTOCONF_ERR
+    $echo "----------"    >> $NXT_AUTOCONF_ERR
+    $echo $nxt_test       >> $NXT_AUTOCONF_ERR
+    $echo "----------"    >> $NXT_AUTOCONF_ERR
 fi
 
 rm -rf $NXT_AUTOTEST*

@@ -19,7 +19,7 @@ nxt_feature_test="#include <strings.h>
                       explicit_bzero(&r, sizeof(r));
                       return 0;
                   }"
-. ${NXT_AUTO}feature
+. auto/feature
 
 
 if [ $nxt_found = no ]; then
@@ -36,5 +36,5 @@ if [ $nxt_found = no ]; then
                           explicit_memset(&r, 0, sizeof(r));
                           return 0;
                       }"
-    . ${NXT_AUTO}feature
+    . auto/feature
 fi
