@@ -354,7 +354,7 @@ njs_parser_assignment_expression(njs_vm_t *vm, njs_parser_t *parser,
         if (!njs_parser_is_lvalue(parser->node)) {
             token = parser->node->token;
 
-            if (token == NJS_TOKEN_ARGUMENTS || token ==  NJS_TOKEN_EVAL) {
+            if (token == NJS_TOKEN_ARGUMENTS || token == NJS_TOKEN_EVAL) {
                 njs_parser_syntax_error(vm, parser, "Identifier \"%s\" "
                                       "is forbidden as left-hand in assignment",
                                        (token == NJS_TOKEN_EVAL) ? "eval"

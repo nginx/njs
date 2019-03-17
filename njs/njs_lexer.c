@@ -404,7 +404,7 @@ njs_lexer_token_name_resolve(njs_lexer_t *lexer, njs_lexer_token_t *lt)
 
         if (lexer->property) {
             lexer->property_token = lt->token;
-            return NJS_TOKEN_NAME;
+            lt->token = NJS_TOKEN_NAME;
         }
     }
 

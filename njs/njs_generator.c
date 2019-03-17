@@ -2431,7 +2431,7 @@ njs_generate_argument_closures(njs_vm_t *vm, njs_generator_t *generator,
             n--;
         }
 
-    } while(n != 0);
+    } while (n != 0);
 
     return NXT_OK;
 }
@@ -2611,7 +2611,7 @@ njs_generate_method_call(njs_vm_t *vm, njs_generator_t *generator,
 
 static nxt_noinline nxt_int_t
 njs_generate_call(njs_vm_t *vm, njs_generator_t *generator,
-                  njs_parser_node_t *node)
+    njs_parser_node_t *node)
 {
     nxt_int_t                   ret;
     nxt_uint_t                  nargs;
