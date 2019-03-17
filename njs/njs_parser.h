@@ -100,10 +100,6 @@ void njs_parser_node_error(njs_vm_t *vm, njs_parser_node_t *node,
     njs_value_type_t type, const char *fmt, ...);
 
 
-#define njs_parser_peek_token(vm, parser, offset)                             \
-    njs_lexer_peek_token(vm, (parser)->lexer, offset)
-
-
 #define njs_parser_is_lvalue(node)                                            \
     ((node)->token == NJS_TOKEN_NAME || (node)->token == NJS_TOKEN_PROPERTY)
 
@@ -128,11 +124,19 @@ njs_parser_token(njs_vm_t *vm, njs_parser_t *parser)
 
     do {
         token = njs_lexer_token(vm, parser->lexer);
+    } while (nxt_slow_path(token == NJS_TOKEN_LINE_END));
 
-        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-            return token;
-        }
+    return token;
+}
 
+
+nxt_inline njs_token_t
+njs_parser_peek_token(njs_vm_t *vm, njs_parser_t *parser, size_t *offset)
+{
+    njs_token_t  token;
+
+    do {
+        token = njs_lexer_peek_token(vm, parser->lexer, (*offset)++);
     } while (nxt_slow_path(token == NJS_TOKEN_LINE_END));
 
     return token;

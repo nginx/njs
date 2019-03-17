@@ -2058,6 +2058,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a; a = 0; ++ \n a"),
       nxt_string("1") },
 
+    { nxt_string("var a; a = 0\n ++a"),
+      nxt_string("1") },
+
     { nxt_string("a = 0; a \n ++"),
       nxt_string("SyntaxError: Unexpected end of input in 2") },
 
@@ -2507,6 +2510,18 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("a: throw 'a'"),
       nxt_string("a") },
+
+    { nxt_string("a\n:\n1"),
+      nxt_string("1") },
+
+    { nxt_string("a\n\n:1"),
+      nxt_string("1") },
+
+    { nxt_string("a:\n\n1"),
+      nxt_string("1") },
+
+    { nxt_string("a:\n\n"),
+      nxt_string("SyntaxError: Unexpected end of input in 3") },
 
     { nxt_string("a : var n = 0; b :++n"),
       nxt_string("1") },
