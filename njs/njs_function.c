@@ -32,6 +32,7 @@ njs_function_alloc(njs_vm_t *vm)
         function->object.shared = 1;
         function->object.extensible = 1;
         function->args_offset = 1;
+        function->ctor = 1;
 
         function->u.lambda = nxt_mp_zalloc(vm->mem_pool,
                                            sizeof(njs_function_lambda_t));

@@ -394,6 +394,7 @@ njs_vmcode_function(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
     function->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION].object;
     function->object.extensible = 1;
     function->args_offset = 1;
+    function->ctor = 1;
 
     if (nesting != 0) {
         function->closure = 1;
@@ -1867,14 +1868,13 @@ njs_function_frame_create(njs_vm_t *vm, njs_value_t *value,
         function = value->data.u.function;
 
         if (ctor) {
-            if (function->native) {
-                if (!function->ctor) {
-                    njs_type_error(vm, "%s is not a constructor",
-                                   njs_type_string(value->type));
-                    return NXT_ERROR;
-                }
+            if (!function->ctor) {
+                njs_type_error(vm, "%s is not a constructor",
+                               njs_type_string(value->type));
+                return NXT_ERROR;
+            }
 
-            } else {
+            if (!function->native) {
                 object = njs_function_new_object(vm, value);
                 if (nxt_slow_path(object == NULL)) {
                     return NXT_ERROR;
