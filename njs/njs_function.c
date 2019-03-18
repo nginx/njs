@@ -310,6 +310,7 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
 
     } else {
         n = function->args_offset;
+        native_frame->nargs += n - 1;
 
         do {
             *value++ = *bound++;

@@ -6306,6 +6306,14 @@ static njs_unit_test_t  njs_test[] =
                  "var b = f.bind('1', '2', '3'); b.apply()"),
       nxt_string("123") },
 
+    { nxt_string("var obj = {prop:'abc'}; "
+                 "var func = function(x) { "
+                 "    return this === obj && x === 1 && arguments[0] === 1 "
+                 "           && arguments.length === 1 && this.prop === 'abc';"
+                 "};"
+                 "Function.prototype.bind.call(func, obj, 1)()"),
+      nxt_string("true") },
+
     { nxt_string("function F(a, b) { this.a = a + b }"
                  "var o = new F(1, 2);"
                  "o.a"),
@@ -6456,6 +6464,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("(function(){arguments.length = 1; return arguments.length;})(1,2,3)"),
       nxt_string("1") },
+
+     { nxt_string("(function(){return arguments[3];}).bind(null, 0)('a','b','c')"),
+       nxt_string("c") },
 
     { nxt_string("(function(){return arguments.callee;})()"),
       nxt_string("TypeError: \"caller\", \"callee\" properties may not be accessed") },
