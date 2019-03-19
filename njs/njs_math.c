@@ -502,7 +502,11 @@ njs_object_math_max(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     if (nargs > 1) {
         for (i = 1; i < nargs; i++) {
-            if (!njs_is_numeric(&args[i])) {
+            if (njs_is_undefined(&args[i])) {
+                num = NAN;
+                goto done;
+
+            } else if (!njs_is_numeric(&args[i])) {
                 njs_vm_trap_value(vm, &args[i]);
 
                 return njs_trap(vm, NJS_TRAP_NUMBER_ARG);
@@ -518,6 +522,8 @@ njs_object_math_max(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     } else {
         num = -INFINITY;
     }
+
+done:
 
     njs_value_number_set(&vm->retval, num);
 
