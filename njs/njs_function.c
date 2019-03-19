@@ -330,7 +330,7 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
     }
 
     while (max_args != 0) {
-        *value++ = njs_value_void;
+        *value++ = njs_value_undefined;
         max_args--;
     }
 
@@ -575,7 +575,7 @@ njs_normalize_args(njs_vm_t *vm, njs_value_t *args, uint8_t *args_types,
 
         case NJS_STRING_OBJECT_ARG:
 
-            if (njs_is_null_or_void(args)) {
+            if (njs_is_null_or_undefined(args)) {
                 goto type_error;
             }
 
@@ -638,7 +638,7 @@ njs_normalize_args(njs_vm_t *vm, njs_value_t *args, uint8_t *args_types,
         case NJS_REGEXP_ARG:
 
             switch (args->type) {
-            case NJS_VOID:
+            case NJS_UNDEFINED:
             case NJS_STRING:
             case NJS_REGEXP:
                 break;
@@ -659,7 +659,7 @@ njs_normalize_args(njs_vm_t *vm, njs_value_t *args, uint8_t *args_types,
 
         case NJS_OBJECT_ARG:
 
-            if (njs_is_null_or_void(args)) {
+            if (njs_is_null_or_undefined(args)) {
                 goto type_error;
             }
 
@@ -876,7 +876,7 @@ njs_function_prototype_call(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         nargs -= 2;
 
     } else {
-        this = (njs_value_t *) &njs_value_void;
+        this = (njs_value_t *) &njs_value_undefined;
         nargs = 0;
     }
 
@@ -924,7 +924,7 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     } else {
         if (nargs == 1) {
-            this = (njs_value_t *) &njs_value_void;
+            this = (njs_value_t *) &njs_value_undefined;
         }
 
         nargs = 0;
@@ -1007,7 +1007,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     function->object.extensible = 1;
 
     if (nargs == 1) {
-        args = (njs_value_t *) &njs_value_void;
+        args = (njs_value_t *) &njs_value_undefined;
 
     } else {
         nargs--;

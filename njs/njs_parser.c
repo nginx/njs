@@ -2128,7 +2128,7 @@ njs_parser_reference(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
     case NJS_TOKEN_UNDEFINED:
         nxt_thread_log_debug("JS: undefined");
 
-        node->u.value = njs_value_void;
+        node->u.value = njs_value_undefined;
         break;
 
     case NJS_TOKEN_THIS:

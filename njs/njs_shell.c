@@ -847,7 +847,7 @@ njs_ext_console_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         printf("\n");
     }
 
-    vm->retval = njs_value_void;
+    vm->retval = njs_value_undefined;
 
     return NJS_OK;
 }
@@ -878,7 +878,7 @@ njs_ext_console_dump(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         printf("\n");
     }
 
-    vm->retval = njs_value_void;
+    vm->retval = njs_value_undefined;
 
     return NJS_OK;
 }
@@ -909,7 +909,7 @@ njs_ext_console_help(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     printf("\n");
 
-    vm->retval = njs_value_void;
+    vm->retval = njs_value_undefined;
 
     return NJS_OK;
 }
@@ -921,7 +921,7 @@ njs_ext_console_time(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     njs_console_t  *console;
 
-    if (!njs_value_is_void(njs_arg(args, nargs, 1))) {
+    if (!njs_value_is_undefined(njs_arg(args, nargs, 1))) {
         njs_vm_error(vm, "labels not implemented");
         return NJS_ERROR;
     }
@@ -933,7 +933,7 @@ njs_ext_console_time(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     console->time = nxt_time();
 
-    vm->retval = njs_value_void;
+    vm->retval = njs_value_undefined;
 
     return NJS_OK;
 }
@@ -948,7 +948,7 @@ njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     ns = nxt_time();
 
-    if (!njs_value_is_void(njs_arg(args, nargs, 1))) {
+    if (!njs_value_is_undefined(njs_arg(args, nargs, 1))) {
         njs_vm_error(vm, "labels not implemented");
         return NJS_ERROR;
     }
@@ -973,7 +973,7 @@ njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         printf("Timer \"default\" doesn’t exist.\n");
     }
 
-    vm->retval = njs_value_void;
+    vm->retval = njs_value_undefined;
 
     return NJS_OK;
 }

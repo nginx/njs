@@ -176,7 +176,7 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     if (nargs < 2) {
-        arg = njs_string_void;
+        arg = njs_string_undefined;
     } else {
         arg = args[1];
     }
@@ -256,7 +256,7 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_json_stringify_t  *stringify;
 
     if (nargs < 2) {
-        vm->retval = njs_value_void;
+        vm->retval = njs_value_undefined;
         return NXT_OK;
     }
 
@@ -277,7 +277,7 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
 
     } else {
-        stringify->replacer = njs_value_void;
+        stringify->replacer = njs_value_undefined;
     }
 
     stringify->space.length = 0;
@@ -975,7 +975,7 @@ njs_json_parse_continuation(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             lhq.proto = &njs_object_hash_proto;
             lhq.pool = vm->mem_pool;
 
-            if (njs_is_void(&parse->retval)) {
+            if (njs_is_undefined(&parse->retval)) {
                 ret = nxt_lvlhsh_delete(&state->value.data.u.object->hash,
                                         &lhq);
 
@@ -1244,7 +1244,7 @@ njs_json_stringify_continuation(njs_vm_t *vm, njs_value_t *args,
             prop = lhq.value;
 
             if (!prop->enumerable
-                || njs_is_void(&prop->value)
+                || njs_is_undefined(&prop->value)
                 || !njs_is_valid(&prop->value)
                 || njs_is_function(&prop->value))
             {
@@ -1282,7 +1282,7 @@ njs_json_stringify_continuation(njs_vm_t *vm, njs_value_t *args,
             break;
 
         case NJS_JSON_OBJECT_TO_JSON_REPLACED:
-            if (njs_is_void(&stringify->retval)) {
+            if (njs_is_undefined(&stringify->retval)) {
                 state->type = NJS_JSON_OBJECT_CONTINUE;
                 break;
             }
@@ -1298,7 +1298,7 @@ njs_json_stringify_continuation(njs_vm_t *vm, njs_value_t *args,
         case NJS_JSON_OBJECT_REPLACED:
             state->type = NJS_JSON_OBJECT_CONTINUE;
 
-            if (njs_is_void(&stringify->retval)) {
+            if (njs_is_undefined(&stringify->retval)) {
                 break;
             }
 
@@ -1372,7 +1372,7 @@ njs_json_stringify_continuation(njs_vm_t *vm, njs_value_t *args,
             break;
 
         case NJS_JSON_ARRAY_TO_JSON_REPLACED:
-            if (!njs_is_void(&stringify->retval)
+            if (!njs_is_undefined(&stringify->retval)
                 && njs_is_function(&stringify->replacer))
             {
                 return njs_json_stringify_replacer(vm, stringify, NULL,
@@ -1412,7 +1412,7 @@ done:
      * An empty object means empty result.
      */
     if (str.length <= nxt_length("{\n\n}")) {
-        vm->retval = njs_value_void;
+        vm->retval = njs_value_undefined;
         goto release;
     }
 
@@ -1735,7 +1735,7 @@ njs_json_append_value(njs_json_stringify_t *stringify, const njs_value_t *value)
             return njs_json_buf_append(stringify, "false", 5);
         }
 
-    case NJS_VOID:
+    case NJS_UNDEFINED:
     case NJS_NULL:
     case NJS_INVALID:
     case NJS_FUNCTION:
@@ -2150,7 +2150,7 @@ njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value)
 
         break;
 
-    case NJS_VOID:
+    case NJS_UNDEFINED:
         njs_dump("undefined");
         break;
 

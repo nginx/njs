@@ -403,7 +403,7 @@ static njs_ret_t
 njs_prototype_function(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    vm->retval = njs_value_void;
+    vm->retval = njs_value_undefined;
 
     return NXT_OK;
 }
@@ -1105,7 +1105,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("undefined"),
-        .value = njs_value(NJS_VOID, 0, NAN),
+        .value = njs_value(NJS_UNDEFINED, 0, NAN),
     },
 };
 

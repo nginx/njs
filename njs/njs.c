@@ -245,7 +245,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         nxt_array_reset(vm->backtrace);
     }
 
-    vm->retval = njs_value_void;
+    vm->retval = njs_value_undefined;
 
     ret = njs_parser(vm, parser, prev);
     if (nxt_slow_path(ret != NXT_OK)) {
@@ -439,7 +439,7 @@ njs_vm_init(njs_vm_t *vm)
     }
 
     if (njs_is_null(&vm->retval)) {
-        vm->retval = njs_value_void;
+        vm->retval = njs_value_undefined;
     }
 
     return NXT_OK;
@@ -462,7 +462,7 @@ njs_vm_invoke(njs_vm_t *vm, njs_function_t *function, const njs_value_t *args,
     njs_ret_t    ret;
     njs_value_t  *this;
 
-    this = (njs_value_t *) &njs_value_void;
+    this = (njs_value_t *) &njs_value_undefined;
 
     current = vm->current;
 

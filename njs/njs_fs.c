@@ -279,13 +279,13 @@ done:
             return NJS_ERROR;
         }
 
-        arguments[2] = njs_value_void;
+        arguments[2] = njs_value_undefined;
 
     } else {
-        arguments[1] = njs_value_void;
+        arguments[1] = njs_value_undefined;
     }
 
-    arguments[0] = njs_value_void;
+    arguments[0] = njs_value_undefined;
 
     cont = njs_vm_continuation(vm);
     cont->u.cont.function = njs_fs_done;
@@ -702,10 +702,10 @@ done:
         }
 
     } else {
-        arguments[1] = njs_value_void;
+        arguments[1] = njs_value_undefined;
     }
 
-    arguments[0] = njs_value_void;
+    arguments[0] = njs_value_undefined;
 
     cont = njs_vm_continuation(vm);
     cont->u.cont.function = njs_fs_done;
@@ -874,7 +874,7 @@ done:
         }
 
     } else {
-        vm->retval = njs_value_void;
+        vm->retval = njs_value_undefined;
     }
 
     return NJS_OK;
@@ -884,7 +884,7 @@ done:
 static njs_ret_t njs_fs_done(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    vm->retval = njs_value_void;
+    vm->retval = njs_value_undefined;
 
     return NJS_OK;
 }

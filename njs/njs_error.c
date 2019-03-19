@@ -538,7 +538,7 @@ njs_memory_error_prototype_create(njs_vm_t *vm, njs_value_t *value,
     proto = njs_property_prototype_create(vm, &function->object.hash,
                                           &vm->prototypes[index].object);
     if (proto == NULL) {
-        proto = (njs_value_t *) &njs_value_void;
+        proto = (njs_value_t *) &njs_value_undefined;
     }
 
     *retval = *proto;

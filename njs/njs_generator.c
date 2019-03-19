@@ -1606,7 +1606,7 @@ njs_generate_stop_statement(njs_vm_t *vm, njs_generator_t *generator,
         }
 
         if (index == NJS_INDEX_NONE) {
-            index = njs_value_index(vm, &njs_value_void, generator->runtime);
+            index = njs_value_index(vm, &njs_value_undefined, generator->runtime);
         }
 
         stop->retval = index;
@@ -2377,7 +2377,7 @@ njs_generate_scope(njs_vm_t *vm, njs_generator_t *generator,
     value = (njs_value_t *) (p + size);
 
     for (n = scope_size - size; n != 0; n -= sizeof(njs_value_t)) {
-        *value++ = njs_value_void;
+        *value++ = njs_value_undefined;
     }
 
     if (vm->code == NULL) {
@@ -2459,7 +2459,7 @@ njs_generate_return_statement(njs_vm_t *vm, njs_generator_t *generator,
         index = node->right->index;
 
     } else {
-        index = njs_value_index(vm, &njs_value_void, generator->runtime);
+        index = njs_value_index(vm, &njs_value_undefined, generator->runtime);
     }
 
     immediate = njs_generate_lookup_block(generator->block, NJS_GENERATOR_TRY,

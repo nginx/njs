@@ -45,10 +45,10 @@ typedef struct {
     (njs_value_t *) ((u_char *) args + n * 16)
 
 
-extern const njs_value_t            njs_value_void;
+extern const njs_value_t            njs_value_undefined;
 
 #define njs_arg(args, nargs, n)                                               \
-    ((n < nargs) ? njs_argument(args, n) : &njs_value_void)
+    ((n < nargs) ? njs_argument(args, n) : &njs_value_undefined)
 
 #define njs_value_assign(dst, src)                                            \
     *((njs_opaque_value_t *) dst) = *((njs_opaque_value_t *) src);
@@ -265,7 +265,8 @@ NXT_EXPORT void *njs_value_data(const njs_value_t *value);
 NXT_EXPORT njs_function_t *njs_value_function(const njs_value_t *value);
 
 NXT_EXPORT nxt_int_t njs_value_is_null(const njs_value_t *value);
-NXT_EXPORT nxt_int_t njs_value_is_void(const njs_value_t *value);
+NXT_EXPORT nxt_int_t njs_value_is_undefined(const njs_value_t *value);
+NXT_EXPORT nxt_int_t njs_value_is_null_or_undefined(const njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_is_boolean(const njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_is_number(const njs_value_t *value);
 NXT_EXPORT nxt_int_t njs_value_is_valid_number(const njs_value_t *value);

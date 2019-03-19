@@ -397,7 +397,8 @@ njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node)
         goto not_found;
     }
 
-    default_value = njs_is_object(&var->value) ? &var->value : &njs_value_void;
+    default_value = njs_is_object(&var->value) ? &var->value :
+                                                 &njs_value_undefined;
 
     index = njs_scope_next_index(vm, vr->scope, scope_index, default_value);
 

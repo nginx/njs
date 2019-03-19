@@ -77,13 +77,14 @@ typedef enum {
 
 typedef enum {
     NJS_NULL                  = 0x00,
-    NJS_VOID                  = 0x01,
+    NJS_UNDEFINED             = 0x01,
 
-    /* The order of the above type is used in njs_is_null_or_void(). */
+    /* The order of the above type is used in njs_is_null_or_undefined(). */
 
     NJS_BOOLEAN               = 0x02,
     /*
-     * The order of the above type is used in njs_is_null_or_void_or_boolean().
+     * The order of the above type is used in
+     * njs_is_null_or_undefined_or_boolean().
      */
     NJS_NUMBER                = 0x03,
     /*
@@ -427,19 +428,19 @@ typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
     ((value)->type == NJS_NULL)
 
 
-#define njs_is_void(value)                                                    \
-    ((value)->type == NJS_VOID)
+#define njs_is_undefined(value)                                               \
+    ((value)->type == NJS_UNDEFINED)
 
 
-#define njs_is_null_or_void(value)                                            \
-    ((value)->type <= NJS_VOID)
+#define njs_is_null_or_undefined(value)                                       \
+    ((value)->type <= NJS_UNDEFINED)
 
 
 #define njs_is_boolean(value)                                                 \
     ((value)->type == NJS_BOOLEAN)
 
 
-#define njs_is_null_or_void_or_boolean(value)                                 \
+#define njs_is_null_or_undefined_or_boolean(value)                            \
     ((value)->type <= NJS_BOOLEAN)
 
 
@@ -1277,7 +1278,7 @@ void *njs_lvlhsh_alloc(void *data, size_t size, nxt_uint_t nalloc);
 void njs_lvlhsh_free(void *data, void *p, size_t size);
 
 
-extern const njs_value_t  njs_value_void;
+extern const njs_value_t  njs_value_undefined;
 extern const njs_value_t  njs_value_null;
 extern const njs_value_t  njs_value_false;
 extern const njs_value_t  njs_value_true;
@@ -1287,7 +1288,7 @@ extern const njs_value_t  njs_value_invalid;
 
 extern const njs_value_t  njs_string_empty;
 extern const njs_value_t  njs_string_comma;
-extern const njs_value_t  njs_string_void;
+extern const njs_value_t  njs_string_undefined;
 extern const njs_value_t  njs_string_null;
 extern const njs_value_t  njs_string_false;
 extern const njs_value_t  njs_string_true;

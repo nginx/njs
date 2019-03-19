@@ -286,7 +286,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
         break;
 
     case NJS_STRING:
-        if (nxt_fast_path(!njs_is_null_or_void_or_boolean(property))) {
+        if (nxt_fast_path(!njs_is_null_or_undefined_or_boolean(property))) {
             index = njs_value_to_index(property);
 
             if (nxt_fast_path(index < NJS_STRING_MAX_LENGTH)) {
@@ -298,7 +298,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
         break;
 
     case NJS_OBJECT_STRING:
-        if (nxt_fast_path(!njs_is_null_or_void_or_boolean(property))) {
+        if (nxt_fast_path(!njs_is_null_or_undefined_or_boolean(property))) {
             index = njs_value_to_index(property);
 
             if (nxt_fast_path(index < NJS_STRING_MAX_LENGTH)) {
@@ -316,7 +316,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
         break;
 
     case NJS_ARRAY:
-        if (nxt_fast_path(!njs_is_null_or_void_or_boolean(property))) {
+        if (nxt_fast_path(!njs_is_null_or_undefined_or_boolean(property))) {
             index = njs_value_to_index(property);
 
             if (nxt_fast_path(index < NJS_ARRAY_MAX_LENGTH)) {
@@ -357,7 +357,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
         obj = NULL;
         break;
 
-    case NJS_VOID:
+    case NJS_UNDEFINED:
     case NJS_NULL:
     default:
         ret = njs_primitive_value_to_string(vm, &pq->value, property);
@@ -434,7 +434,9 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
                 goto next;
             }
 
-            if (proto != object && !njs_is_null_or_void_or_boolean(property)) {
+            if (proto != object
+                && !njs_is_null_or_undefined_or_boolean(property))
+            {
                 switch (proto->type) {
                 case NJS_ARRAY:
                     index = njs_value_to_index(property);
@@ -776,7 +778,7 @@ njs_object_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     value = njs_arg(args, nargs, 1);
     type = value->type;
 
-    if (njs_is_null_or_void(value)) {
+    if (njs_is_null_or_undefined(value)) {
 
         object = njs_object_alloc(vm);
         if (nxt_slow_path(object == NULL)) {
@@ -865,7 +867,7 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     value = njs_arg(args, nargs, 1);
 
-    if (njs_is_null_or_void(value)) {
+    if (njs_is_null_or_undefined(value)) {
         njs_type_error(vm, "cannot convert %s argument to object",
                        njs_type_string(value->type));
 
@@ -894,7 +896,7 @@ njs_object_values(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     value = njs_arg(args, nargs, 1);
 
-    if (njs_is_null_or_void(value)) {
+    if (njs_is_null_or_undefined(value)) {
         njs_type_error(vm, "cannot convert %s argument to object",
                        njs_type_string(value->type));
 
@@ -923,7 +925,7 @@ njs_object_entries(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     value = njs_arg(args, nargs, 1);
 
-    if (njs_is_null_or_void(value)) {
+    if (njs_is_null_or_undefined(value)) {
         njs_type_error(vm, "cannot convert %s argument to object",
                        njs_type_string(value->type));
 
@@ -1366,7 +1368,7 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
     njs_object_prop_t   *prop, *pr;
     nxt_lvlhsh_query_t  pq;
 
-    value = unset ? &njs_value_invalid : &njs_value_void;
+    value = unset ? &njs_value_invalid : &njs_value_undefined;
     prop = njs_object_prop_alloc(vm, name, value, 0);
     if (nxt_slow_path(prop == NULL)) {
         return NULL;
@@ -1465,7 +1467,7 @@ njs_define_property(njs_vm_t *vm, njs_value_t *object, const njs_value_t *name,
         if (njs_is_valid(&desc->value)) {
             *current->value.data.u.value = desc->value;
         } else {
-            *current->value.data.u.value = njs_value_void;
+            *current->value.data.u.value = njs_value_undefined;
         }
 
         return NXT_OK;
@@ -1563,7 +1565,7 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
 
     value = njs_arg(args, nargs, 1);
 
-    if (njs_is_null_or_void(value)) {
+    if (njs_is_null_or_undefined(value)) {
         njs_type_error(vm, "cannot convert %s argument to object",
                        njs_type_string(value->type));
         return NXT_ERROR;
@@ -1580,7 +1582,7 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
         break;
 
     case NXT_DECLINED:
-        vm->retval = njs_value_void;
+        vm->retval = njs_value_undefined;
         return NXT_OK;
 
     case NJS_TRAP:
@@ -1747,7 +1749,7 @@ njs_object_freeze(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     value = njs_arg(args, nargs, 1);
 
     if (!njs_is_object(value)) {
-        vm->retval = njs_value_void;
+        vm->retval = njs_value_undefined;
         return NXT_OK;
     }
 
@@ -2015,7 +2017,7 @@ njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value,
     }
 
     if (proto == NULL) {
-        proto = &njs_value_void;
+        proto = &njs_value_undefined;
     }
 
     *retval = *proto;
@@ -2032,9 +2034,9 @@ njs_property_prototype_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
     njs_object_prop_t          *prop;
     nxt_lvlhsh_query_t         lhq;
 
-    static const njs_value_t   prototype_string = njs_string("prototype");
+    static const njs_value_t   proto_string = njs_string("prototype");
 
-    prop = njs_object_prop_alloc(vm, &prototype_string, &njs_value_void, 0);
+    prop = njs_object_prop_alloc(vm, &proto_string, &njs_value_undefined, 0);
     if (nxt_slow_path(prop == NULL)) {
         return NULL;
     }
@@ -2428,7 +2430,7 @@ njs_object_prototype_has_own_property(njs_vm_t *vm, njs_value_t *args,
 
     value = njs_arg(args, nargs, 0);
 
-    if (njs_is_null_or_void(value)) {
+    if (njs_is_null_or_undefined(value)) {
         njs_type_error(vm, "cannot convert %s argument to object",
                        njs_type_string(value->type));
         return NXT_ERROR;
@@ -2468,7 +2470,7 @@ njs_object_prototype_prop_is_enumerable(njs_vm_t *vm, njs_value_t *args,
 
     value = njs_arg(args, nargs, 0);
 
-    if (njs_is_null_or_void(value)) {
+    if (njs_is_null_or_undefined(value)) {
         njs_type_error(vm, "cannot convert %s argument to object",
                        njs_type_string(value->type));
         return NXT_ERROR;

@@ -66,7 +66,7 @@ void njs_debug(njs_index_t index, njs_value_t *value);
 
 
 const njs_value_t  njs_value_null =         njs_value(NJS_NULL, 0, 0.0);
-const njs_value_t  njs_value_void =         njs_value(NJS_VOID, 0, NAN);
+const njs_value_t  njs_value_undefined =    njs_value(NJS_UNDEFINED, 0, NAN);
 const njs_value_t  njs_value_false =        njs_value(NJS_BOOLEAN, 0, 0.0);
 const njs_value_t  njs_value_true =         njs_value(NJS_BOOLEAN, 1, 1.0);
 const njs_value_t  njs_value_zero =         njs_value(NJS_NUMBER, 0, 0.0);
@@ -77,7 +77,7 @@ const njs_value_t  njs_value_invalid =      njs_value(NJS_INVALID, 0, 0.0);
 const njs_value_t  njs_string_empty =       njs_string("");
 const njs_value_t  njs_string_comma =       njs_string(",");
 const njs_value_t  njs_string_null =        njs_string("null");
-const njs_value_t  njs_string_void =        njs_string("undefined");
+const njs_value_t  njs_string_undefined =   njs_string("undefined");
 const njs_value_t  njs_string_boolean =     njs_string("boolean");
 const njs_value_t  njs_string_false =       njs_string("false");
 const njs_value_t  njs_string_true =        njs_string("true");
@@ -591,7 +591,7 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
             }
         }
 
-        prop = njs_object_prop_alloc(vm, &pq.value, &njs_value_void, 1);
+        prop = njs_object_prop_alloc(vm, &pq.value, &njs_value_undefined, 1);
         if (nxt_slow_path(prop == NULL)) {
             return NXT_ERROR;
         }
@@ -897,7 +897,7 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     retval = &njs_value_false;
 
     if (njs_is_object(object)) {
-        value = njs_value_void;
+        value = njs_value_undefined;
         ret = njs_value_property(vm, constructor, &prototype_string, &value);
 
         if (nxt_fast_path(ret == NXT_OK)) {
@@ -1026,21 +1026,21 @@ njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 
     static const njs_value_t  *types[NJS_TYPE_MAX] = {
         &njs_string_object,
-        &njs_string_void,
+        &njs_string_undefined,
         &njs_string_boolean,
         &njs_string_number,
         &njs_string_string,
-        &njs_string_void,
-        &njs_string_void,
-        &njs_string_void,
-        &njs_string_void,
-        &njs_string_void,
-        &njs_string_void,
-        &njs_string_void,
-        &njs_string_void,
-        &njs_string_void,
-        &njs_string_void,
-        &njs_string_void,
+        &njs_string_undefined,
+        &njs_string_undefined,
+        &njs_string_undefined,
+        &njs_string_undefined,
+        &njs_string_undefined,
+        &njs_string_undefined,
+        &njs_string_undefined,
+        &njs_string_undefined,
+        &njs_string_undefined,
+        &njs_string_undefined,
+        &njs_string_undefined,
 
         &njs_string_object,
         &njs_string_object,
@@ -1062,7 +1062,7 @@ njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
     };
 
     /* A zero index means non-declared variable. */
-    type = (value != NULL) ? value->type : NJS_VOID;
+    type = (value != NULL) ? value->type : NJS_UNDEFINED;
 
     vm->retval = *types[type];
 
@@ -1073,7 +1073,7 @@ njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 njs_ret_t
 njs_vmcode_void(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 {
-    vm->retval = njs_value_void;
+    vm->retval = njs_value_undefined;
 
     return sizeof(njs_vmcode_2addr_t);
 }
@@ -1523,8 +1523,8 @@ njs_values_equal(njs_vm_t *vm, const njs_value_t *val1, const njs_value_t *val2)
     nxt_bool_t         nv1, nv2;
     const njs_value_t  *hv, *lv;
 
-    nv1 = njs_is_null_or_void(val1);
-    nv2 = njs_is_null_or_void(val2);
+    nv1 = njs_is_null_or_undefined(val1);
+    nv2 = njs_is_null_or_undefined(val2);
 
     /* Void and null are equal and not comparable with anything else. */
     if (nv1 || nv2) {
@@ -1721,7 +1721,7 @@ njs_values_strict_equal(const njs_value_t *val1, const njs_value_t *val2)
 
     if (njs_is_numeric(val1)) {
 
-        if (njs_is_void(val1)) {
+        if (njs_is_undefined(val1)) {
             return 1;
         }
 
@@ -1844,7 +1844,7 @@ njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *value, njs_value_t *nargs)
 
     /* TODO: external object instead of void this. */
 
-    ret = njs_function_frame_create(vm, value, &njs_value_void,
+    ret = njs_function_frame_create(vm, value, &njs_value_undefined,
                                     (uintptr_t) nargs, function->code.ctor);
 
     if (nxt_fast_path(ret == NXT_OK)) {
@@ -2071,7 +2071,7 @@ njs_type_string(njs_value_type_t type)
     case NJS_NULL:
         return "null";
 
-    case NJS_VOID:
+    case NJS_UNDEFINED:
         return "undefined";
 
     case NJS_BOOLEAN:
@@ -3036,7 +3036,7 @@ njs_value_property(njs_vm_t *vm, njs_value_t *value,
         break;
 
     case NXT_DECLINED:
-        *retval = njs_value_void;
+        *retval = njs_value_undefined;
 
         return NXT_DECLINED;
 
@@ -3303,7 +3303,7 @@ njs_vmcode_value_to_string(njs_vm_t *vm, njs_value_t *invld1,
 nxt_noinline void
 njs_value_undefined_set(njs_value_t *value)
 {
-    *value = njs_value_void;
+    *value = njs_value_undefined;
 }
 
 
@@ -3401,9 +3401,16 @@ njs_value_is_null(const njs_value_t *value)
 
 
 nxt_noinline nxt_int_t
-njs_value_is_void(const njs_value_t *value)
+njs_value_is_undefined(const njs_value_t *value)
 {
-    return njs_is_void(value);
+    return njs_is_undefined(value);
+}
+
+
+nxt_noinline nxt_int_t
+njs_value_is_null_or_undefined(const njs_value_t *value)
+{
+    return njs_is_null_or_undefined(value);
 }
 
 
@@ -3584,7 +3591,7 @@ njs_debug(njs_index_t index, njs_value_t *value)
         nxt_thread_log_debug("%p [null]", index);
         return;
 
-    case NJS_VOID:
+    case NJS_UNDEFINED:
         nxt_thread_log_debug("%p [void]", index);
         return;
 

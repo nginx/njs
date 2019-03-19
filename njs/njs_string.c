@@ -829,7 +829,7 @@ njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     nxt_uint_t         i;
     njs_string_prop_t  string;
 
-    if (njs_is_null_or_void(&args[0])) {
+    if (njs_is_null_or_undefined(&args[0])) {
         njs_type_error(vm, "\"this\" argument is null or undefined");
         return NXT_ERROR;
     }
@@ -1249,7 +1249,7 @@ njs_string_slice_args(njs_slice_prop_t *slice, njs_value_t *args,
         length = 0;
 
     } else {
-        if (!njs_is_void(njs_arg(args, nargs, 2))) {
+        if (!njs_is_undefined(njs_arg(args, nargs, 2))) {
             value = njs_arg(args, nargs, 2);
             end = value->data.u.number;
 
@@ -2540,7 +2540,7 @@ njs_string_prototype_search(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
             goto done;
 
-        case NJS_VOID:
+        case NJS_UNDEFINED:
         default:
             goto done;
         }
@@ -2860,7 +2860,7 @@ found:
 
             goto done;
 
-        case NJS_VOID:
+        case NJS_UNDEFINED:
         default:
             break;
         }
@@ -2958,7 +2958,7 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     /* A literal replacement is stored in the second part. */
 
     if (nargs == 2) {
-        njs_string_replacement_copy(&r->part[1], &njs_string_void);
+        njs_string_replacement_copy(&r->part[1], &njs_string_undefined);
 
     } else if (njs_is_string(&args[2])) {
         njs_string_replacement_copy(&r->part[1], &args[2]);
@@ -3122,7 +3122,7 @@ njs_string_replace_regexp_function(njs_vm_t *vm, njs_value_t *args,
         return NXT_ERROR;
     }
 
-    arguments[0] = njs_value_void;
+    arguments[0] = njs_value_undefined;
 
     /* Matched substring and parenthesized submatch strings. */
     for (k = 0, i = 1; i <= n; i++) {
@@ -3261,7 +3261,7 @@ njs_string_replace_search_function(njs_vm_t *vm, njs_value_t *args,
 
     r->u.cont.function = njs_string_replace_search_continuation;
 
-    arguments[0] = njs_value_void;
+    arguments[0] = njs_value_undefined;
 
     /* GC, args[0], args[1] */
 
@@ -3560,8 +3560,8 @@ njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
         value = &njs_string_null;
         break;
 
-    case NJS_VOID:
-        value = &njs_string_void;
+    case NJS_UNDEFINED:
+        value = &njs_string_undefined;
         break;
 
     case NJS_BOOLEAN:
@@ -4003,7 +4003,7 @@ njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return njs_string_encode(vm, &args[1], escape);
     }
 
-    vm->retval = njs_string_void;
+    vm->retval = njs_string_undefined;
 
     return NXT_OK;
 }
@@ -4039,7 +4039,7 @@ njs_string_encode_uri_component(njs_vm_t *vm, njs_value_t *args,
         return njs_string_encode(vm, &args[1], escape);
     }
 
-    vm->retval = njs_string_void;
+    vm->retval = njs_string_undefined;
 
     return NXT_OK;
 }
@@ -4134,7 +4134,7 @@ njs_string_decode_uri(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return njs_string_decode(vm, &args[1], reserve);
     }
 
-    vm->retval = njs_string_void;
+    vm->retval = njs_string_undefined;
 
     return NXT_OK;
 }
@@ -4170,7 +4170,7 @@ njs_string_decode_uri_component(njs_vm_t *vm, njs_value_t *args,
         return njs_string_decode(vm, &args[1], reserve);
     }
 
-    vm->retval = njs_string_void;
+    vm->retval = njs_string_undefined;
 
     return NXT_OK;
 }
