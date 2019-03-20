@@ -1564,7 +1564,7 @@ ngx_http_js_ext_next_arg(njs_vm_t *vm, njs_value_t *value, void *obj,
     ngx_str_t **e = next;
 
     size_t      len;
-    u_char     *p, *start, *end;
+    u_char     *v, *p, *start, *end;
     ngx_str_t  *entry;
 
     entry = *e;
@@ -1576,17 +1576,19 @@ ngx_http_js_ext_next_arg(njs_vm_t *vm, njs_value_t *value, void *obj,
     start = entry->data;
     end = start + entry->len;
 
-    p = ngx_strlchr(start, end, '=');
+    p = ngx_strlchr(start, end, '&');
     if (p == NULL) {
-        return NJS_ERROR;
+        p = end;
     }
 
-    len = p - start;
-    p++;
+    v = ngx_strlchr(start, p, '=');
+    if (v == NULL) {
+        v = p;
+    }
 
-    p = ngx_strlchr(p, end, '&');
+    len = v - start;
 
-    if (p) {
+    if (p != end) {
         entry->data = &p[1];
         entry->len = end - entry->data;
 
