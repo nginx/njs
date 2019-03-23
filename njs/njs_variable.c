@@ -488,7 +488,7 @@ njs_variable_reference_resolve(njs_vm_t *vm, njs_variable_reference_t *vr,
             return NXT_OK;
         }
 
-        if (scope->module || scope->parent == NULL) {
+        if (scope->parent == NULL) {
             /* A global scope. */
             vr->scope = scope;
 

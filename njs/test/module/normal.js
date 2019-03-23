@@ -6,30 +6,36 @@ import crypto from 'crypto';
 var h = crypto.createHash('md5');
 var hash = h.update('AB').digest('hex');
 
+var fails = 0;
 if (lib1.hash() != hash) {
-    console.log("failed!");
+    fails++;
 }
 
 if (lib2.hash() != hash) {
-    console.log("failed!");
+    fails++;
 }
 
 if (lib1.get() != 0) {
-    console.log("failed!");
+    fails++;
 }
 
 if (lib1_2.get() != 0) {
-    console.log("failed!");
+    fails++;
 }
 
 lib1.inc();
 
 if (lib1.get() != 1) {
-    console.log("failed!");
+    fails++;
 }
 
 if (lib1_2.get() != 1) {
-    console.log("failed!");
+    fails++;
 }
 
-console.log("passed!");
+if (JSON.stringify({}) != "{}") {
+    fails++;
+}
+
+setImmediate(console.log,
+             fails ? "failed: " + fails : "passed!");
