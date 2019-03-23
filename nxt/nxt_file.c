@@ -38,8 +38,7 @@ nxt_file_dirname(const nxt_str_t *path, nxt_str_t *name)
     const u_char  *p, *end;
 
     if (path->length == 0) {
-        *name = nxt_string_value("");
-        return;
+        goto current_dir;
     }
 
     p = path->start + path->length - 1;
@@ -51,8 +50,7 @@ nxt_file_dirname(const nxt_str_t *path, nxt_str_t *name)
     end = p + 1;
 
     if (end == path->start) {
-        *name = nxt_string_value("");
-        return;
+        goto current_dir;
     }
 
     /* Stripping trailing slashes. */
@@ -67,4 +65,10 @@ nxt_file_dirname(const nxt_str_t *path, nxt_str_t *name)
 
     name->start = path->start;
     name->length = p - path->start;
+
+    return;
+
+current_dir:
+
+    *name = nxt_string_value(".");
 }

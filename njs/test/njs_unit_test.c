@@ -12456,13 +12456,13 @@ nxt_file_dirname_test(njs_vm_t * vm, nxt_bool_t disassemble,
         nxt_str_t   path;
         nxt_str_t   expected;
     } tests[] = {
-        { nxt_string(""),               nxt_string("") },
+        { nxt_string(""),               nxt_string(".") },
         { nxt_string("/"),              nxt_string("/") },
         { nxt_string("/a"),             nxt_string("/") },
         { nxt_string("///"),            nxt_string("///") },
         { nxt_string("///a"),           nxt_string("///") },
         { nxt_string("///a/"),          nxt_string("///a") },
-        { nxt_string("a"),              nxt_string("") },
+        { nxt_string("a"),              nxt_string(".") },
         { nxt_string("a/"),             nxt_string("a") },
         { nxt_string("a//"),            nxt_string("a") },
         { nxt_string("p1/p2/name"),     nxt_string("p1/p2") },
