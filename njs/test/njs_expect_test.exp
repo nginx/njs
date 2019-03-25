@@ -659,9 +659,7 @@ njs_test {
 # modules
 
 njs_test {
-    {"import lib1 from 'lib1.js'\r\n"
-     "undefined\r\n"}
-    {"import lib2 from 'lib1.js'\r\n"
+    {"import lib1 from 'lib1.js'; import lib2 from 'lib1.js'\r\n"
      "undefined\r\n"}
     {"lib2.inc()\r\n"
      "undefined\r\n"}
@@ -675,6 +673,14 @@ njs_test {
      "Identifier \"default\" has already been declared in export.js:5\r\n"}
     {"import m from 'export_non_default.js'\r\n"
      "Non-default export is not supported in export_non_default.js:3\r\n"}
+    {"import ref from 'ref_exception.js'\r\n"
+     "ReferenceError: \"undeclared\" is not defined in ref_exception.js:1"}
+    {"ref\r\n"
+     "ReferenceError: \"ref\" is not defined in shell:1\r\n"}
+    {"var ref\r\n"
+     "undefined\r\n"}
+    {"import ref from 'ref_exception.js'\r\n"
+     "ReferenceError: \"undeclared\" is not defined in ref_exception.js:1"}
     {"import m from 'loading_exception.js'\r\n"
      "Error: loading exception\r\n    at module \\(loading_exception.js:1\\)"}
     {"import lib3 from 'lib1.js'\r\n"

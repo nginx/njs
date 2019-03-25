@@ -63,22 +63,46 @@ njs_module_load(njs_vm_t *vm)
         } else {
             ret = njs_vm_invoke(vm, &module->function, NULL, 0, module->index);
             if (ret == NXT_ERROR) {
-                goto done;
+                return ret;
             }
         }
 
         item++;
     }
 
-    ret = NXT_OK;
+    return NXT_OK;
+}
 
-done:
 
-    if (vm->options.accumulative) {
-        nxt_array_reset(vm->modules);
+void
+njs_module_reset(njs_vm_t *vm)
+{
+    nxt_uint_t          i;
+    njs_module_t        **item, *module;
+    nxt_lvlhsh_query_t  lhq;
+
+    if (vm->modules == NULL) {
+        return;
     }
 
-    return ret;
+    item = vm->modules->start;
+
+    for (i = 0; i < vm->modules->items; i++) {
+        module = *item;
+
+        if (!module->function.native) {
+            lhq.key = module->name;
+            lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
+            lhq.proto = &njs_modules_hash_proto;
+            lhq.pool = vm->mem_pool;
+
+            (void) nxt_lvlhsh_delete(&vm->modules_hash, &lhq);
+        }
+
+        item++;
+    }
+
+    nxt_array_reset(vm->modules);
 }
 
 

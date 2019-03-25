@@ -226,6 +226,10 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         return NJS_ERROR;
     }
 
+    if (vm->modules != NULL && vm->options.accumulative) {
+        njs_module_reset(vm);
+    }
+
     parser = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_parser_t));
     if (nxt_slow_path(parser == NULL)) {
         return NJS_ERROR;
