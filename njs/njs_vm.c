@@ -9,7 +9,6 @@
 #include <string.h>
 
 
-
 struct njs_property_next_s {
     int32_t                        index;
     nxt_lvlhsh_each_t              lhe;
@@ -394,8 +393,10 @@ njs_vmcode_function(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 njs_ret_t
 njs_vmcode_arguments(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 {
-    njs_ret_t    ret;
-    njs_frame_t  *frame;
+    nxt_int_t               ret;
+    njs_frame_t             *frame;
+    njs_value_t             *value;
+    njs_vmcode_arguments_t  *code;
 
     frame = (njs_frame_t *) vm->active_frame;
 
@@ -406,9 +407,12 @@ njs_vmcode_arguments(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
         }
     }
 
-    vm->retval.data.u.object = frame->native.arguments_object;
-    vm->retval.type = NJS_OBJECT;
-    vm->retval.data.truth = 1;
+    code = (njs_vmcode_arguments_t *) vm->current;
+
+    value = njs_vmcode_operand(vm, code->dst);
+    value->data.u.object = frame->native.arguments_object;
+    value->type = NJS_OBJECT;
+    value->data.truth = 1;
 
     return sizeof(njs_vmcode_arguments_t);
 }

@@ -30,7 +30,6 @@ struct njs_function_lambda_s {
     /* Function internal block closures levels. */
     uint8_t                        block_closures;    /* 4 bits */
 
-    uint8_t                        arguments_object;  /* 1 bit */
     uint8_t                        rest_parameters;   /* 1 bit */
 
     /* Initial values of local scope. */

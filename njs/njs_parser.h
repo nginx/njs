@@ -31,7 +31,6 @@ struct njs_parser_scope_s {
     njs_scope_t                     type:8;
     uint8_t                         nesting;     /* 4 bits */
     uint8_t                         argument_closures;
-    uint8_t                         arguments_object;
     uint8_t                         module;
 };
 

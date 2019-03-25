@@ -639,7 +639,7 @@ typedef struct {
 
 typedef struct {
     njs_vmcode_t               code;
-    njs_index_t                retval;
+    njs_index_t                dst;
 } njs_vmcode_arguments_t;
 
 

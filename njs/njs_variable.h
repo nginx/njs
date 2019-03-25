@@ -23,6 +23,7 @@ typedef struct {
 
     njs_variable_type_t   type:8;    /* 3 bits */
     uint8_t               argument;
+    uint8_t               arguments_object;
 
     njs_index_t           index;
     njs_value_t           value;

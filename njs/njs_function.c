@@ -495,13 +495,6 @@ njs_function_lambda_call(njs_vm_t *vm, njs_index_t retval,
         vm->scopes[NJS_SCOPE_CLOSURE + n] = &closure->u.values;
     }
 
-    if (lambda->arguments_object) {
-        ret = njs_function_arguments_object_init(vm, &frame->native);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return NXT_ERROR;
-        }
-    }
-
     if (lambda->rest_parameters) {
         ret = njs_function_rest_parameters_init(vm, &frame->native);
         if (nxt_slow_path(ret != NXT_OK)) {
