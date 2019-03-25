@@ -209,12 +209,14 @@ main(int argc, char **argv)
 
     ret = njs_get_options(&opts, argc, argv);
     if (ret != NXT_OK) {
-        return (ret == NXT_DONE) ? EXIT_SUCCESS : EXIT_FAILURE;
+        ret = (ret == NXT_DONE) ? NXT_OK : NXT_ERROR;
+        goto done;
     }
 
     if (opts.version != 0) {
         printf("%s\n", NJS_VERSION);
-        return EXIT_SUCCESS;
+        ret = NXT_OK;
+        goto done;
     }
 
     nxt_memzero(&vm_options, sizeof(njs_vm_opt_t));
@@ -224,7 +226,8 @@ main(int argc, char **argv)
             p = getcwd(path, sizeof(path));
             if (p == NULL) {
                 fprintf(stderr, "getcwd() failed:%s\n", strerror(errno));
-                return EXIT_FAILURE;
+                ret = NXT_ERROR;
+                goto done;
             }
 
             memcpy(path + strlen(path), "/shell", sizeof("/shell"));
@@ -249,6 +252,8 @@ main(int argc, char **argv)
         ret = njs_process_file(&opts, &vm_options);
     }
 
+done:
+
     if (opts.paths != NULL) {
         free(opts.paths);
     }
@@ -260,7 +265,7 @@ main(int argc, char **argv)
 static nxt_int_t
 njs_get_options(njs_opts_t *opts, int argc, char** argv)
 {
-    char     *p;
+    char     *p, **paths;
     nxt_int_t  i, ret;
 
     static const char  help[] =
@@ -309,13 +314,13 @@ njs_get_options(njs_opts_t *opts, int argc, char** argv)
         case 'p':
             if (argv[++i] != NULL) {
                 opts->n_paths++;
-                opts->paths = realloc(opts->paths,
-                                      opts->n_paths * sizeof(char *));
-                if (opts->paths == NULL) {
+                paths = realloc(opts->paths, opts->n_paths * sizeof(char *));
+                if (paths == NULL) {
                     fprintf(stderr, "failed to add path\n");
                     return NXT_ERROR;
                 }
 
+                opts->paths = paths;
                 opts->paths[opts->n_paths - 1] = argv[i];
                 break;
             }
