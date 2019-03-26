@@ -8673,6 +8673,41 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = {}; o[void 0] = 'a'; Object.getOwnPropertyDescriptor(o, undefined).value"),
       nxt_string("a") },
 
+    { nxt_string("Object.getOwnPropertyNames()"),
+      nxt_string("TypeError: cannot convert undefined argument to object") },
+
+    { nxt_string("Array.isArray(Object.getOwnPropertyNames({}))"),
+      nxt_string("true") },
+
+    { nxt_string("Object.getOwnPropertyNames({a:1, b:1, c:1})"),
+      nxt_string("a,b,c") },
+
+    { nxt_string("Object.getOwnPropertyNames(Object.defineProperty({a:1}, 'b', {}))"),
+      nxt_string("a,b") },
+
+    { nxt_string("Object.getOwnPropertyNames(Object.defineProperty([], 'b', {}))"),
+      nxt_string("length,b") },
+
+    { nxt_string("Object.getOwnPropertyNames(Object.defineProperty(new String(), 'b', {}))"),
+      nxt_string("length,b") },
+
+    { nxt_string("Object.getOwnPropertyNames([1,2,3])"),
+      nxt_string("0,1,2,length") },
+
+    { nxt_string("Object.getOwnPropertyNames('abc')"),
+      nxt_string("0,1,2,length") },
+
+    { nxt_string("Object.getOwnPropertyNames(function() {})"),
+      nxt_string("length,prototype") },
+
+    { nxt_string("Object.getOwnPropertyNames(Array)"),
+      nxt_string("name,length,prototype,isArray,of") },
+
+#if 0
+    { nxt_string("Object.getOwnPropertyNames(Array.isArray)"),
+      nxt_string("length") },
+#endif
+
     { nxt_string("Object.defineProperty(Object.freeze({}), 'b', {})"),
       nxt_string("TypeError: object is not extensible") },
 

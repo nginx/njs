@@ -417,7 +417,7 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     do {
         pq->prototype = proto;
 
-        /* length and other shared properties should be Own property */
+        /* TODO: length should be Own property */
 
         if (nxt_fast_path(!pq->own || proto == object)) {
             ret = nxt_lvlhsh_find(&proto->hash, &pq->lhq);
@@ -879,7 +879,7 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    keys = njs_object_enumerate(vm, value, NJS_ENUM_KEYS);
+    keys = njs_object_enumerate(vm, value, NJS_ENUM_KEYS, 0);
     if (keys == NULL) {
         return NXT_ERROR;
     }
@@ -908,7 +908,7 @@ njs_object_values(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    array = njs_object_enumerate(vm, value, NJS_ENUM_VALUES);
+    array = njs_object_enumerate(vm, value, NJS_ENUM_VALUES, 0);
     if (array == NULL) {
         return NXT_ERROR;
     }
@@ -937,7 +937,7 @@ njs_object_entries(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    array = njs_object_enumerate(vm, value, NJS_ENUM_BOTH);
+    array = njs_object_enumerate(vm, value, NJS_ENUM_BOTH, 0);
     if (array == NULL) {
         return NXT_ERROR;
     }
@@ -952,8 +952,9 @@ njs_object_entries(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 njs_array_t *
 njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
-    njs_object_enum_t kind)
+    njs_object_enum_t kind, nxt_bool_t all)
 {
+    nxt_bool_t         exotic_length;
     u_char             *dst;
     uint32_t           i, length, size, items_length, properties;
     njs_value_t        *string, *item;
@@ -963,6 +964,12 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
     njs_object_prop_t  *prop;
     njs_string_prop_t  string_prop;
     nxt_lvlhsh_each_t  lhe;
+
+    static const njs_value_t  njs_string_length = njs_string("length");
+
+    /* TODO: "length" is in a shared_hash. */
+
+    exotic_length = 0;
 
     array = NULL;
     length = 0;
@@ -979,6 +986,8 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
             }
         }
 
+        exotic_length = all;
+
         break;
 
     case NJS_STRING:
@@ -992,7 +1001,14 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
 
         length = njs_string_prop(&string_prop, string);
         items_length += length;
+        exotic_length = all;
+
         break;
+
+    case NJS_FUNCTION:
+        exotic_length = all && (value->data.u.function->native == 0);
+
+        /* Fall through. */
 
     default:
         break;
@@ -1013,7 +1029,22 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
                 break;
             }
 
-            if (prop->type != NJS_WHITEOUT && prop->enumerable) {
+            if (prop->type != NJS_WHITEOUT && (prop->enumerable || all)) {
+                properties++;
+            }
+        }
+
+        if (nxt_slow_path(all)) {
+            nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+            hash = &value->data.u.object->shared_hash;
+
+            for ( ;; ) {
+                prop = nxt_lvlhsh_each(hash, &lhe);
+
+                if (prop == NULL) {
+                    break;
+                }
+
                 properties++;
             }
         }
@@ -1021,7 +1052,7 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
         items_length += properties;
     }
 
-    items = njs_array_alloc(vm, items_length, NJS_ARRAY_SPARE);
+    items = njs_array_alloc(vm, items_length + exotic_length, NJS_ARRAY_SPARE);
     if (nxt_slow_path(items == NULL)) {
         return NULL;
     }
@@ -1179,12 +1210,17 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
         }
     }
 
+    if (nxt_slow_path(exotic_length != 0)) {
+        *item++ = njs_string_length;
+    }
+
     if (nxt_fast_path(properties != 0)) {
         nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
 
         switch (kind) {
 
         case NJS_ENUM_KEYS:
+            hash = &value->data.u.object->hash;
             for ( ;; ) {
                 prop = nxt_lvlhsh_each(hash, &lhe);
 
@@ -1192,7 +1228,22 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
                     break;
                 }
 
-                if (prop->type != NJS_WHITEOUT && prop->enumerable) {
+                if (prop->type != NJS_WHITEOUT && (prop->enumerable || all)) {
+                    njs_string_copy(item++, &prop->name);
+                }
+            }
+
+            if (nxt_slow_path(all)) {
+                nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+                hash = &value->data.u.object->shared_hash;
+
+                for ( ;; ) {
+                    prop = nxt_lvlhsh_each(hash, &lhe);
+
+                    if (prop == NULL) {
+                        break;
+                    }
+
                     njs_string_copy(item++, &prop->name);
                 }
             }
@@ -1200,6 +1251,7 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
             break;
 
         case NJS_ENUM_VALUES:
+            hash = &value->data.u.object->hash;
             for ( ;; ) {
                 prop = nxt_lvlhsh_each(hash, &lhe);
 
@@ -1721,6 +1773,35 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
 
 
 static njs_ret_t
+njs_object_get_own_property_names(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    njs_array_t        *names;
+    const njs_value_t  *value;
+
+    value = njs_arg(args, nargs, 1);
+
+    if (njs_is_null_or_undefined(value)) {
+        njs_type_error(vm, "cannot convert %s argument to object",
+                       njs_type_string(value->type));
+
+        return NXT_ERROR;
+    }
+
+    names = njs_object_enumerate(vm, value, NJS_ENUM_KEYS, 1);
+    if (names == NULL) {
+        return NXT_ERROR;
+    }
+
+    vm->retval.data.u.array = names;
+    vm->retval.type = NJS_ARRAY;
+    vm->retval.data.truth = 1;
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
 njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
@@ -2150,6 +2231,14 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
         .value = njs_native_function(njs_object_get_own_property_descriptor, 0,
                                      NJS_SKIP_ARG, NJS_SKIP_ARG,
                                      NJS_STRING_ARG),
+    },
+
+    /* Object.getOwnPropertyNames(). */
+    {
+        .type = NJS_METHOD,
+        .name = njs_long_string("getOwnPropertyNames"),
+        .value = njs_native_function(njs_object_get_own_property_names, 0,
+                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
     },
 
     /* Object.getPrototypeOf(). */

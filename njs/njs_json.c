@@ -1099,7 +1099,7 @@ njs_json_push_parse_state(njs_vm_t *vm, njs_json_parse_t *parse,
         } else {
             state->type = NJS_JSON_OBJECT_START;
             state->prop_value = NULL;
-            state->keys = njs_object_enumerate(vm, value, NJS_ENUM_KEYS);
+            state->keys = njs_object_enumerate(vm, value, NJS_ENUM_KEYS, 0);
             if (state->keys == NULL) {
                 return NULL;
             }
@@ -1677,7 +1677,7 @@ njs_json_push_stringify_state(njs_vm_t *vm, njs_json_stringify_t *stringify,
                 state->keys = njs_extern_keys_array(vm, value->external.proto);
 
             } else {
-                state->keys = njs_object_enumerate(vm, value, NJS_ENUM_KEYS);
+                state->keys = njs_object_enumerate(vm, value, NJS_ENUM_KEYS, 0);
             }
 
             if (state->keys == NULL) {
