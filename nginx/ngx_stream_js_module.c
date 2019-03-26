@@ -109,6 +109,8 @@ static void ngx_stream_js_clear_timer(njs_external_ptr_t external,
 static void ngx_stream_js_timer_handler(ngx_event_t *ev);
 static void ngx_stream_js_handle_event(ngx_stream_session_t *s,
     njs_vm_event_t vm_event, njs_value_t *args, nxt_uint_t nargs);
+static njs_ret_t ngx_stream_js_string(njs_vm_t *vm, const njs_value_t *value,
+    nxt_str_t *str);
 
 static char *ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
@@ -930,8 +932,9 @@ ngx_stream_js_ext_set_status(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (nargs > 1) {
-        code = njs_arg(args, nargs, 1);
+    code = njs_arg(args, nargs, 1);
+
+    if (!njs_value_is_undefined(code)) {
         if (!njs_value_is_valid_number(code)) {
             njs_vm_error(vm, "code is not a number");
             return NJS_ERROR;
@@ -1132,9 +1135,7 @@ ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (njs_vm_value_to_ext_string(vm, &buffer, njs_arg(args, nargs, 1), 0)
-        == NJS_ERROR)
-    {
+    if (ngx_stream_js_string(vm, njs_arg(args, nargs, 1), &buffer) != NJS_OK) {
         njs_vm_error(vm, "failed to get buffer arg");
         return NJS_ERROR;
     }
@@ -1364,6 +1365,23 @@ ngx_stream_js_handle_event(ngx_stream_session_t *s, njs_vm_event_t vm_event,
     if (rc == NJS_OK) {
         ngx_post_event(s->connection->read, &ngx_posted_events);
     }
+}
+
+
+static njs_ret_t
+ngx_stream_js_string(njs_vm_t *vm, const njs_value_t *value, nxt_str_t *str)
+{
+    if (!njs_value_is_null_or_undefined(value)) {
+        if (njs_vm_value_to_ext_string(vm, str, value, 0) == NJS_ERROR) {
+            return NJS_ERROR;
+        }
+
+    } else {
+        str->start = NULL;
+        str->length = 0;
+    }
+
+    return NJS_OK;
 }
 
 

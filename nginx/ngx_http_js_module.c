@@ -138,6 +138,8 @@ static void ngx_http_js_clear_timer(njs_external_ptr_t external,
 static void ngx_http_js_timer_handler(ngx_event_t *ev);
 static void ngx_http_js_handle_event(ngx_http_request_t *r,
     njs_vm_event_t vm_event, njs_value_t *args, nxt_uint_t nargs);
+static njs_ret_t ngx_http_js_string(njs_vm_t *vm, const njs_value_t *value,
+    nxt_str_t *str);
 
 static char *ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
@@ -1205,17 +1207,17 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     nxt_str_t                  text;
     ngx_int_t                  status;
-    njs_value_t               *value;
     ngx_http_js_ctx_t         *ctx;
     ngx_http_request_t        *r;
+    const njs_value_t         *value;
     ngx_http_complex_value_t   cv;
 
-    if (nargs < 2) {
-        njs_vm_error(vm, "too few arguments");
+    r = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    if (nxt_slow_path(r == NULL)) {
         return NJS_ERROR;
     }
 
-    value = njs_argument(args, 1);
+    value = njs_arg(args, nargs, 1);
     if (!njs_value_is_valid_number(value)) {
         njs_vm_error(vm, "code is not a number");
         return NJS_ERROR;
@@ -1228,21 +1230,8 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (nargs < 3) {
-        text.start = NULL;
-        text.length = 0;
-
-    } else {
-        if (njs_vm_value_to_ext_string(vm, &text, njs_argument(args, 2), 0)
-            == NJS_ERROR)
-        {
-            njs_vm_error(vm, "failed to convert text");
-            return NJS_ERROR;
-        }
-    }
-
-    r = njs_vm_external(vm, njs_argument(args, 0));
-    if (nxt_slow_path(r == NULL)) {
+    if (ngx_http_js_string(vm, njs_arg(args, nargs, 2), &text) != NJS_OK) {
+        njs_vm_error(vm, "failed to convert text");
         return NJS_ERROR;
     }
 
@@ -1277,21 +1266,14 @@ ngx_http_js_ext_internal_redirect(njs_vm_t *vm, njs_value_t *args,
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
-    if (nargs < 2) {
-        njs_vm_error(vm, "too few arguments");
-        return NJS_ERROR;
-    }
-
-    r = njs_vm_external(vm, njs_argument(args, 0));
+    r = njs_vm_external(vm, njs_arg(args, nargs, 0));
     if (nxt_slow_path(r == NULL)) {
         return NJS_ERROR;
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    if (njs_vm_value_to_ext_string(vm, &uri, njs_argument(args, 1), 0)
-        == NJS_ERROR)
-    {
+    if (ngx_http_js_string(vm, njs_arg(args, nargs, 1), &uri) != NJS_OK) {
         njs_vm_error(vm, "failed to convert uri arg");
         return NJS_ERROR;
     }
@@ -1707,10 +1689,11 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     ngx_int_t                 rc;
     nxt_str_t                 uri_arg, args_arg, method_name, body_arg;
-    ngx_uint_t                cb_index, method, n, has_body;
-    njs_value_t              *arg2, *options, *value;
+    ngx_uint_t                method, n, has_body;
+    njs_value_t              *value;
     njs_function_t           *callback;
     ngx_http_js_ctx_t        *ctx;
+    const njs_value_t        *arg, *options;
     ngx_http_request_t       *r, *sr;
     ngx_http_request_body_t  *rb;
 
@@ -1739,12 +1722,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     static const nxt_str_t method_key = nxt_string("method");
     static const nxt_str_t body_key = nxt_string("body");
 
-    if (nargs < 2) {
-        njs_vm_error(vm, "too few arguments");
-        return NJS_ERROR;
-    }
-
-    r = njs_vm_external(vm, njs_argument(args, 0));
+    r = njs_vm_external(vm, njs_arg(args, nargs, 0));
     if (nxt_slow_path(r == NULL)) {
         return NJS_ERROR;
     }
@@ -1757,51 +1735,47 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (njs_vm_value_to_ext_string(vm, &uri_arg, njs_argument(args, 1), 0)
-        == NJS_ERROR)
-    {
+    if (ngx_http_js_string(vm, njs_arg(args, nargs, 1), &uri_arg) != NJS_OK) {
         njs_vm_error(vm, "failed to convert uri arg");
         return NJS_ERROR;
     }
 
+    if (uri_arg.length == 0) {
+        njs_vm_error(vm, "uri is empty");
+        return NJS_ERROR;
+    }
+
     options = NULL;
+    callback = NULL;
 
     method = 0;
     args_arg.length = 0;
     args_arg.start = NULL;
     has_body = 0;
 
-    if (nargs > 2 && !njs_value_is_function(njs_argument(args, 2))) {
-        arg2 = njs_argument(args, 2);
+    arg = njs_arg(args, nargs, 2);
 
-        if (njs_value_is_object(arg2)) {
-            options = arg2;
-
-        } else if (njs_value_is_string(arg2)) {
-            if (njs_vm_value_to_ext_string(vm, &args_arg, arg2, 0)
-                == NJS_ERROR)
-            {
-                njs_vm_error(vm, "failed to convert args");
-                return NJS_ERROR;
-            }
-
-        } else {
+    if (njs_value_is_string(arg)) {
+        if (njs_vm_value_to_ext_string(vm, &args_arg, arg, 0) != NJS_OK) {
             njs_vm_error(vm, "failed to convert args");
             return NJS_ERROR;
         }
 
-        cb_index = 3;
+    } else if (njs_value_is_function(arg)) {
+        callback = njs_value_function(arg);
 
-    } else {
-        cb_index = 2;
+    } else if (njs_value_is_object(arg)) {
+        options = arg;
+
+    } else if (!njs_value_is_undefined(arg)) {
+        njs_vm_error(vm, "failed to convert args");
+        return NJS_ERROR;
     }
 
     if (options != NULL) {
         value = njs_vm_object_prop(vm, options, &args_key);
         if (value != NULL) {
-            if (njs_vm_value_to_ext_string(vm, &args_arg, value, 0)
-                == NJS_ERROR)
-            {
+            if (ngx_http_js_string(vm, value, &args_arg) != NJS_OK) {
                 njs_vm_error(vm, "failed to convert options.args");
                 return NJS_ERROR;
             }
@@ -1809,9 +1783,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
         value = njs_vm_object_prop(vm, options, &method_key);
         if (value != NULL) {
-            if (njs_vm_value_to_ext_string(vm, &method_name, value, 0)
-                == NJS_ERROR)
-            {
+            if (ngx_http_js_string(vm, value, &method_name) != NJS_OK) {
                 njs_vm_error(vm, "failed to convert options.method");
                 return NJS_ERROR;
             }
@@ -1838,9 +1810,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
         value = njs_vm_object_prop(vm, options, &body_key);
         if (value != NULL) {
-            if (njs_vm_value_to_ext_string(vm, &body_arg, value, 0)
-                == NJS_ERROR)
-            {
+            if (ngx_http_js_string(vm, value, &body_arg) != NJS_OK) {
                 njs_vm_error(vm, "failed to convert options.body");
                 return NJS_ERROR;
             }
@@ -1849,15 +1819,15 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
     }
 
-    callback = NULL;
+    arg = njs_arg(args, nargs, 3);
 
-    if (cb_index < nargs) {
-        if (!njs_value_is_function(njs_argument(args, cb_index))) {
+    if (callback == NULL && !njs_value_is_undefined(arg)) {
+        if (!njs_value_is_function(arg)) {
             njs_vm_error(vm, "callback is not a function");
             return NJS_ERROR;
 
         } else {
-            callback = njs_value_function(njs_argument(args, cb_index));
+            callback = njs_value_function(arg);
         }
     }
 
@@ -2171,6 +2141,23 @@ ngx_http_js_handle_event(ngx_http_request_t *r, njs_vm_event_t vm_event,
     if (rc == NJS_OK) {
         ngx_http_post_request(r, NULL);
     }
+}
+
+
+static njs_ret_t
+ngx_http_js_string(njs_vm_t *vm, const njs_value_t *value, nxt_str_t *str)
+{
+    if (!njs_value_is_null_or_undefined(value)) {
+        if (njs_vm_value_to_ext_string(vm, str, value, 0) == NJS_ERROR) {
+            return NJS_ERROR;
+        }
+
+    } else {
+        str->start = NULL;
+        str->length = 0;
+    }
+
+    return NJS_OK;
 }
 
 
