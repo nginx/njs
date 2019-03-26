@@ -14,6 +14,7 @@
 
 typedef struct {
     njs_vm_t            *vm;
+    ngx_array_t         *paths;
     const njs_extern_t  *req_proto;
 } ngx_http_js_main_conf_t;
 
@@ -159,6 +160,13 @@ static ngx_command_t  ngx_http_js_commands[] = {
       ngx_http_js_include,
       NGX_HTTP_MAIN_CONF_OFFSET,
       0,
+      NULL },
+
+    { ngx_string("js_path"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_array_slot,
+      NGX_HTTP_MAIN_CONF_OFFSET,
+      offsetof(ngx_http_js_main_conf_t, paths),
       NULL },
 
     { ngx_string("js_set"),
@@ -2170,9 +2178,10 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     u_char                *start, *end;
     ssize_t                n;
     ngx_fd_t               fd;
-    ngx_str_t             *value, file;
+    ngx_str_t             *m, *value, file;
     nxt_int_t              rc;
-    nxt_str_t              text;
+    nxt_str_t              text, path;
+    ngx_uint_t             i;
     njs_vm_opt_t           options;
     ngx_file_info_t        fi;
     ngx_pool_cleanup_t    *cln;
@@ -2258,6 +2267,34 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     cln->handler = ngx_http_js_cleanup_vm;
     cln->data = jmcf->vm;
+
+    path.start = ngx_cycle->prefix.data;
+    path.length = ngx_cycle->prefix.len;
+
+    rc = njs_vm_add_path(jmcf->vm, &path);
+    if (rc != NXT_OK) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "failed to add path");
+        return NGX_CONF_ERROR;
+    }
+
+    if (jmcf->paths != NGX_CONF_UNSET_PTR) {
+        m = jmcf->paths->elts;
+
+        for (i = 0; i < jmcf->paths->nelts; i++) {
+            if (ngx_conf_full_name(cf->cycle, &m[i], 0) != NGX_OK) {
+                return NGX_CONF_ERROR;
+            }
+
+            path.start = m[i].data;
+            path.length = m[i].len;
+
+            rc = njs_vm_add_path(jmcf->vm, &path);
+            if (rc != NXT_OK) {
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "failed to add path");
+                return NGX_CONF_ERROR;
+            }
+        }
+    }
 
     jmcf->req_proto = njs_vm_external_prototype(jmcf->vm,
                                                 &ngx_http_js_externals[0]);
@@ -2362,6 +2399,8 @@ ngx_http_js_create_main_conf(ngx_conf_t *cf)
      *     conf->vm = NULL;
      *     conf->req_proto = NULL;
      */
+
+    conf->paths = NGX_CONF_UNSET_PTR;
 
     return conf;
 }
