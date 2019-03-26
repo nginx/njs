@@ -1,4 +1,40 @@
 
+Changes with njs 0.3.0                                           26 Mar 2019
+
+    nginx modules:
+
+    *) Feature: added js_path directive.
+
+    *) Change: returning undefined value instead of empty strings
+       for absent properties in the following objects: r.args,
+       r.headersIn, r.headersOut, r.variables, s.variables.
+
+    *) Change: returning undefined value instead of throwing an
+       exception for r.requestBody when request body is unavailable.
+
+    *) Bugfix: fixed crash while iterating over r.args when a value is
+       absent in a key-value pair.
+
+    Core:
+
+    *) Feature: added initial ES6 modules support. Default import and
+       default export statements are supported.
+       Thanks to 洪志道 (Hong Zhi Dao).
+
+    *) Feature: added Object.prototype.propertyIsEnumerable().
+
+    *) Feature: reporting file name and function name in disassembler
+       output.
+
+    *) Bugfix: fixed function redeclarations in interactive shell.
+       Thanks to 洪志道 (Hong Zhi Dao).
+
+    *) Bugfix: fixed RegExp literals parsing.
+
+    *) Bugfix: fixed setting length of UTF8 string in fs.readFileSync().
+
+    *) Bugfix: fixed nxt_file_dirname() for paths with no dir component.
+
 Changes with njs 0.2.8                                           26 Feb 2019
 
     nginx modules:
