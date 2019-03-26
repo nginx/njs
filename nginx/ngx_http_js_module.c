@@ -922,7 +922,8 @@ ngx_http_js_ext_get_header_out(njs_vm_t *vm, njs_value_t *value, void *obj,
     h = ngx_http_js_get_header(&r->headers_out.headers.part, v->start,
                                v->length);
     if (h == NULL) {
-        return njs_vm_value_string_set(vm, value, NULL, 0);
+        njs_value_undefined_set(value);
+        return NJS_OK;
     }
 
     return njs_vm_value_string_set(vm, value, h->value.data, h->value.len);
@@ -1433,8 +1434,8 @@ ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_value_t *value, void *obj,
     }
 
     if (r->request_body == NULL || r->request_body->bufs == NULL) {
-        njs_vm_error(vm, "request body is unavailable");
-        return NJS_ERROR;
+        njs_value_undefined_set(value);
+        return NJS_OK;
     }
 
     if (r->request_body->temp_file) {
@@ -1502,7 +1503,8 @@ ngx_http_js_ext_get_header_in(njs_vm_t *vm, njs_value_t *value, void *obj,
     h = ngx_http_js_get_header(&r->headers_in.headers.part, v->start,
                                v->length);
     if (h == NULL) {
-        return njs_vm_value_string_set(vm, value, NULL, 0);
+        njs_value_undefined_set(value);
+        return NJS_OK;
     }
 
     return njs_vm_value_string_set(vm, value, h->value.data, h->value.len);
@@ -1531,7 +1533,9 @@ ngx_http_js_ext_get_arg(njs_vm_t *vm, njs_value_t *value, void *obj,
         return njs_vm_value_string_set(vm, value, arg.data, arg.len);
     }
 
-    return njs_vm_value_string_set(vm, value, NULL, 0);
+    njs_value_undefined_set(value);
+
+    return NJS_OK;
 }
 
 
@@ -1620,7 +1624,8 @@ ngx_http_js_ext_get_variable(njs_vm_t *vm, njs_value_t *value, void *obj,
 
     vv = ngx_http_get_variable(r, &name, key);
     if (vv == NULL || vv->not_found) {
-        return njs_vm_value_string_set(vm, value, NULL, 0);
+        njs_value_undefined_set(value);
+        return NJS_OK;
     }
 
     return njs_vm_value_string_set(vm, value, vv->data, vv->len);

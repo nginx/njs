@@ -1203,7 +1203,8 @@ ngx_stream_js_ext_get_variable(njs_vm_t *vm, njs_value_t *value, void *obj,
 
     vv = ngx_stream_get_variable(s, &name, key);
     if (vv == NULL || vv->not_found) {
-        return njs_vm_value_string_set(vm, value, NULL, 0);
+        njs_value_undefined_set(value);
+        return NJS_OK;
     }
 
     return njs_vm_value_string_set(vm, value, vv->data, vv->len);
