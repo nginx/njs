@@ -64,6 +64,23 @@ nxt_sprintf(u_char *buf, u_char *end, const char *fmt, ...)
 }
 
 
+int
+nxt_dprintf(int fd, const char *fmt, ...)
+{
+    size_t   size;
+    u_char   text[2048], *p;
+    va_list  args;
+
+    va_start(args, fmt);
+    p = nxt_vsprintf(text, text + sizeof(text), fmt, args);
+    va_end(args);
+
+    size = p - text;
+
+    return write(fd, text, size);
+}
+
+
 /*
  * nxt_sprintf_t is used:
  *    to pass several parameters of nxt_integer() via single pointer

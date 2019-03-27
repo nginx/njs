@@ -12,5 +12,9 @@ NXT_EXPORT u_char *nxt_sprintf(u_char *buf, u_char *end, const char *fmt, ...);
 NXT_EXPORT u_char *nxt_vsprintf(u_char *buf, u_char *end, const char *fmt,
     va_list args);
 
+NXT_EXPORT int nxt_dprintf(int fd, const char *fmt, ...);
+
+#define nxt_printf(fmt, ...)                                                  \
+    nxt_dprintf(STDOUT_FILENO, fmt, ##__VA_ARGS__)
 
 #endif /* _NXT_SPRINTF_H_INCLUDED_ */
