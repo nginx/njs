@@ -1610,25 +1610,15 @@ static const njs_value_t  njs_object_writable_string =
 
 
 static njs_ret_t
-njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
-    nxt_uint_t nargs, njs_index_t unused)
+njs_object_property_descriptor(njs_vm_t *vm, njs_value_t *dest,
+    const njs_value_t *value, const njs_value_t *property)
 {
     nxt_int_t             ret;
     njs_object_t          *descriptor;
     njs_object_prop_t     *pr, *prop;
-    const njs_value_t     *value, *property, *setval;
+    const njs_value_t     *setval;
     nxt_lvlhsh_query_t    lhq;
     njs_property_query_t  pq;
-
-    value = njs_arg(args, nargs, 1);
-
-    if (njs_is_null_or_undefined(value)) {
-        njs_type_error(vm, "cannot convert %s argument to object",
-                       njs_type_string(value->type));
-        return NXT_ERROR;
-    }
-
-    property = njs_arg(args, nargs, 2);
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 1);
 
@@ -1639,7 +1629,7 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
         break;
 
     case NXT_DECLINED:
-        vm->retval = njs_value_undefined;
+        *dest = njs_value_undefined;
         return NXT_OK;
 
     case NJS_TRAP:
@@ -1764,11 +1754,31 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
         return NXT_ERROR;
     }
 
-    vm->retval.data.u.object = descriptor;
-    vm->retval.type = NJS_OBJECT;
-    vm->retval.data.truth = 1;
+    dest->data.u.object = descriptor;
+    dest->type = NJS_OBJECT;
+    dest->data.truth = 1;
 
     return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    const njs_value_t  *value, *property;
+
+    value = njs_arg(args, nargs, 1);
+
+    if (njs_is_null_or_undefined(value)) {
+        njs_type_error(vm, "cannot convert %s argument to object",
+                       njs_type_string(value->type));
+        return NXT_ERROR;
+    }
+
+    property = njs_arg(args, nargs, 2);
+
+    return njs_object_property_descriptor(vm, &vm->retval, value, property);
 }
 
 
