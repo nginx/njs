@@ -12424,8 +12424,8 @@ njs_vm_object_alloc_test(njs_vm_t * vm, nxt_bool_t disassemble,
         return NXT_ERROR;
     }
 
-    ret = njs_vm_object_alloc(vm, &obj, &num_key, &args[0], &bool_key, &args[1],
-                              NULL);
+    ret = njs_vm_object_alloc(vm, &obj, &num_key, &args[0], &bool_key,
+                              &args[1], NULL);
     if (ret != NJS_OK) {
         return NXT_ERROR;
     }
@@ -12525,22 +12525,18 @@ nxt_file_dirname_test(njs_vm_t * vm, nxt_bool_t disassemble,
 }
 
 
-typedef struct {
-    nxt_int_t  (*test)(njs_vm_t *, nxt_bool_t, nxt_bool_t);
-    nxt_str_t  name;
-} njs_api_test_t;
-
-
 static nxt_int_t
 njs_api_test(nxt_bool_t disassemble, nxt_bool_t verbose)
 {
-    njs_vm_t        *vm;
-    nxt_int_t       ret, rc;
-    nxt_uint_t      i;
-    njs_vm_opt_t    options;
-    njs_api_test_t  *test;
+    njs_vm_t      *vm;
+    nxt_int_t     ret, rc;
+    nxt_uint_t    i;
+    njs_vm_opt_t  options;
 
-    static njs_api_test_t  njs_api_test[] = {
+    static const struct {
+        nxt_int_t  (*test)(njs_vm_t *, nxt_bool_t, nxt_bool_t);
+        nxt_str_t  name;
+    } tests[] = {
         { njs_vm_object_alloc_test,
           nxt_string("njs_vm_object_alloc_test") },
         { nxt_file_basename_test,
@@ -12554,26 +12550,30 @@ njs_api_test(nxt_bool_t disassemble, nxt_bool_t verbose)
     vm = NULL;
     nxt_memzero(&options, sizeof(njs_vm_opt_t));
 
-    for (i = 0; i < nxt_nitems(njs_api_test); i++) {
-        test = &njs_api_test[i];
-
+    for (i = 0; i < nxt_nitems(tests); i++) {
         vm = njs_vm_create(&options);
         if (vm == NULL) {
-            printf("njs_vm_create() failed\n");
+            nxt_printf("njs_vm_create() failed\n");
             goto done;
         }
 
-        ret = test->test(vm, disassemble, verbose);
+        ret = tests[i].test(vm, disassemble, verbose);
         if (nxt_slow_path(ret != NXT_OK)) {
-            printf("njs_api_test: \"%.*s\" test failed\n",
-                   (int) test->name.length, test->name.start);
+            nxt_printf("njs_api_test: \"%V\" test failed\n", &tests[i].name);
             goto done;
         }
+
+        njs_vm_destroy(vm);
+        vm = NULL;
     }
 
     rc = NXT_OK;
 
 done:
+
+    if (rc == NXT_OK) {
+        nxt_printf("njs_api_test passed\n");
+    }
 
     if (vm != NULL) {
         njs_vm_destroy(vm);
