@@ -12397,6 +12397,131 @@ done:
 
 
 static nxt_int_t
+njs_vm_json_test(nxt_bool_t disassemble, nxt_bool_t verbose)
+{
+    njs_vm_t           *vm;
+    nxt_int_t          ret, rc;
+    nxt_str_t          s, *script;
+    nxt_uint_t         i;
+    nxt_bool_t         success;
+    njs_value_t        args[3];
+    njs_vm_opt_t       options;
+
+    static const nxt_str_t fname = nxt_string("replacer");
+    static const nxt_str_t iname = nxt_string("indent");
+
+    static njs_unit_test_t tests[] = {
+        { nxt_string("'[1, true, \"x\", {\"a\": {}}]'"),
+          nxt_string("[1,true,\"x\",{\"a\":{}}]") },
+        { nxt_string("'{\"a\":{\"b\":1}}'"),
+          nxt_string("{\"a\":{\"b\":1}}") },
+        { nxt_string("'[[[],{}]]'"),
+          nxt_string("[[[],{}]]") },
+        { nxt_string("var indent = 1; '[]'"),
+          nxt_string("[\n \n]") },
+        { nxt_string("function replacer(k, v) {return v}; '{\"a\":{\"b\":1}}'"),
+          nxt_string("{\"a\":{\"b\":1}}") },
+        { nxt_string("function replacer(k, v) {"
+                     "   return (typeof v === 'string') ? undefined : v};"
+                     "'{\"a\":1, \"b\":\"x\"}'"),
+          nxt_string("{\"a\":1}") },
+    };
+
+    vm = NULL;
+
+    rc = NXT_ERROR;
+
+    for (i = 0; i < nxt_nitems(tests); i++) {
+
+        memset(&options, 0, sizeof(njs_vm_opt_t));
+        options.init = 1;
+
+        vm = njs_vm_create(&options);
+        if (vm == NULL) {
+            nxt_printf("njs_vm_create() failed\n");
+            goto done;
+        }
+
+        script = &tests[i].script;
+
+        ret = njs_vm_compile(vm, &script->start,
+                             script->start + script->length);
+
+        if (ret != NXT_OK) {
+            nxt_printf("njs_vm_compile() failed\n");
+            goto done;
+        }
+
+        ret = njs_vm_start(vm);
+        if (ret != NXT_OK) {
+            nxt_printf("njs_vm_run() failed\n");
+            goto done;
+        }
+
+        args[0] = *njs_vm_retval(vm);
+
+        ret = njs_vm_json_parse(vm, args, 1);
+        if (ret != NXT_OK) {
+            nxt_printf("njs_vm_json_parse() failed\n");
+            goto done;
+        }
+
+        args[0] = vm->retval;
+        args[1] = *njs_vm_value(vm, &fname);
+        args[2] = *njs_vm_value(vm, &iname);
+
+        ret = njs_vm_json_stringify(vm, args, 3);
+        if (ret != NXT_OK) {
+            nxt_printf("njs_vm_json_stringify() failed\n");
+            goto done;
+        }
+
+        if (njs_vm_retval_to_ext_string(vm, &s) != NXT_OK) {
+            nxt_printf("njs_vm_retval_to_ext_string() failed\n");
+            goto done;
+        }
+
+        success = nxt_strstr_eq(&tests[i].ret, &s);
+
+        if (!success) {
+            nxt_printf("njs_vm_json_test(\"%V\")\n"
+                       "expected: \"%V\"\n     got: \"%V\"\n", script,
+                       &tests[i].ret, &s);
+
+            goto done;
+        }
+
+        njs_vm_destroy(vm);
+        vm = NULL;
+    }
+
+    rc = NXT_OK;
+
+done:
+
+    if (rc == NXT_OK) {
+        nxt_printf("njs_vm_json_test passed\n");
+
+    } else {
+        if (njs_vm_retval_to_ext_string(vm, &s) != NXT_OK) {
+            nxt_printf("njs_vm_retval_to_ext_string() failed\n");
+
+        } else {
+            nxt_printf("%V\n", &s);
+        }
+    }
+
+    if (vm != NULL) {
+        njs_vm_destroy(vm);
+    }
+
+    return rc;
+}
+
+
+
+
+static nxt_int_t
 njs_vm_object_alloc_test(njs_vm_t * vm, nxt_bool_t disassemble,
     nxt_bool_t verbose)
 {
@@ -12647,6 +12772,10 @@ main(int argc, char **argv)
         printf("njs timezone tests skipped, timezone is unavailable\n");
     }
 
+    ret = njs_vm_json_test(disassemble, verbose);
+    if (ret != NXT_OK) {
+        return ret;
+    }
 
     return njs_api_test(disassemble, verbose);
 }

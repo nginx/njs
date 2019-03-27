@@ -159,6 +159,9 @@ static nxt_int_t njs_json_buf_pullup(njs_json_stringify_t *stringify,
     nxt_str_t *str);
 
 
+static const njs_object_prop_t  njs_json_object_properties[];
+
+
 static njs_ret_t
 njs_json_parse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
@@ -248,6 +251,17 @@ memory_error:
 }
 
 
+njs_ret_t
+njs_vm_json_parse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs)
+{
+    njs_function_t  *parse;
+
+    parse = njs_json_object_properties[0].value.data.u.function;
+
+    return njs_vm_call(vm, parse, args, nargs);
+}
+
+
 static njs_ret_t
 njs_json_stringify(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
@@ -332,6 +346,17 @@ memory_error:
     njs_memory_error(vm);
 
     return NXT_ERROR;
+}
+
+
+njs_ret_t
+njs_vm_json_stringify(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs)
+{
+    njs_function_t  *stringify;
+
+    stringify = njs_json_object_properties[1].value.data.u.function;
+
+    return njs_vm_call(vm, stringify, args, nargs);
 }
 
 

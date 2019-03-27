@@ -282,6 +282,11 @@ NXT_EXPORT njs_ret_t njs_vm_object_alloc(njs_vm_t *vm, njs_value_t *retval,
 NXT_EXPORT njs_value_t *njs_vm_object_prop(njs_vm_t *vm,
     const njs_value_t *value, const nxt_str_t *key);
 
+NXT_EXPORT njs_ret_t njs_vm_json_parse(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs);
+NXT_EXPORT njs_ret_t njs_vm_json_stringify(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs);
+
 extern const nxt_mem_proto_t  njs_vm_mp_proto;
 
 #endif /* _NJS_H_INCLUDED_ */
