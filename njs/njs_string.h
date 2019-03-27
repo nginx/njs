@@ -144,7 +144,7 @@ void njs_string_copy(njs_value_t *dst, njs_value_t *src);
 njs_ret_t njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string,
     njs_value_t *value);
 nxt_noinline size_t njs_string_prop(njs_string_prop_t *string,
-    njs_value_t *value);
+    const njs_value_t *value);
 njs_ret_t njs_string_constructor(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 nxt_bool_t njs_string_eq(const njs_value_t *val1, const njs_value_t *val2);

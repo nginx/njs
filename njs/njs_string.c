@@ -511,7 +511,7 @@ njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string, njs_value_t *value)
 
 
 nxt_noinline size_t
-njs_string_prop(njs_string_prop_t *string, njs_value_t *value)
+njs_string_prop(njs_string_prop_t *string, const njs_value_t *value)
 {
     size_t     size;
     uintptr_t  length;
@@ -519,11 +519,11 @@ njs_string_prop(njs_string_prop_t *string, njs_value_t *value)
     size = value->short_string.size;
 
     if (size != NJS_STRING_LONG) {
-        string->start = value->short_string.start;
+        string->start = (u_char *) value->short_string.start;
         length = value->short_string.length;
 
     } else {
-        string->start = value->long_string.data->start;
+        string->start = (u_char *) value->long_string.data->start;
         size = value->long_string.size;
         length = value->long_string.data->length;
     }
