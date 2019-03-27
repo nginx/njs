@@ -8672,6 +8672,22 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = {}; o[void 0] = 'a'; Object.getOwnPropertyDescriptor(o, undefined).value"),
       nxt_string("a") },
 
+    { nxt_string("Object.getOwnPropertyDescriptors()"),
+      nxt_string("TypeError: cannot convert undefined argument to object") },
+
+    { nxt_string("typeof Object.getOwnPropertyDescriptors(1)"),
+      nxt_string("object") },
+
+    { nxt_string("Object.keys(Object.getOwnPropertyDescriptors([]))"),
+      nxt_string("length") },
+
+    { nxt_string("Object.getOwnPropertyDescriptors(function(a,b,c) {}).length.value"),
+      nxt_string("3") },
+
+    { nxt_string("Object.values(Object.getOwnPropertyDescriptors('abc'))"
+                 ".reduce(function(a, x) { return a += x.value; }, '')"),
+      nxt_string("abc3") },
+
     { nxt_string("Object.getOwnPropertyNames()"),
       nxt_string("TypeError: cannot convert undefined argument to object") },
 
