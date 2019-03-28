@@ -2076,11 +2076,6 @@ njs_parser_export_statement(njs_vm_t *vm, njs_parser_t *parser)
         return token;
     }
 
-    if (parser->node->token != NJS_TOKEN_OBJECT) {
-        njs_parser_syntax_error(vm, parser, "Illegal export value");
-        return NXT_ERROR;
-    }
-
     node->right = parser->node;
     parser->node = node;
 

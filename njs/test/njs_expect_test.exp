@@ -685,6 +685,18 @@ njs_test {
      "Error: loading exception\r\n    at module \\(loading_exception.js:1\\)"}
     {"import lib3 from 'lib1.js'\r\n"
      "undefined\r\n"}
+    {"import m from 'export_name.js'\r\n"
+     "undefined\r\n"}
+    {"m.prod(3,4)\r\n"
+     "12\r\n"}
+    {"import m from 'export_expression.js'\r\n"
+     "undefined\r\n"}
+    {"m.sum(3,4)\r\n"
+     "7\r\n"}
+    {"import m from 'export_expression2.js'\r\n"
+     "undefined\r\n"}
+    {"m.prod(3,4)\r\n"
+     "12\r\n"}
 } "-p njs/test/module/"
 
 njs_run "-p njs/test/module/libs/ -d ./njs/test/module/normal.js" \
