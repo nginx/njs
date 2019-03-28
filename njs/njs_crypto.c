@@ -9,7 +9,6 @@
 #include <nxt_sha1.h>
 #include <nxt_sha2.h>
 #include <njs_crypto.h>
-#include <stdio.h>
 #include <string.h>
 #include <math.h>
 

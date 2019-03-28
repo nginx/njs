@@ -6,7 +6,6 @@
 
 #include <njs_core.h>
 #include <njs_date.h>
-#include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>

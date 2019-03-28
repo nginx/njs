@@ -10,7 +10,6 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <errno.h>
-#include <stdio.h>
 
 
 typedef struct {

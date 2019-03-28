@@ -7,7 +7,6 @@
 #include <njs_core.h>
 #include <njs_regexp.h>
 #include <string.h>
-#include <stdio.h>
 
 
 static njs_ret_t njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser,

@@ -17,4 +17,7 @@ NXT_EXPORT int nxt_dprintf(int fd, const char *fmt, ...);
 #define nxt_printf(fmt, ...)                                                  \
     nxt_dprintf(STDOUT_FILENO, fmt, ##__VA_ARGS__)
 
+#define nxt_error(fmt, ...)                                                  \
+    nxt_dprintf(STDERR_FILENO, fmt, ##__VA_ARGS__)
+
 #endif /* _NXT_SPRINTF_H_INCLUDED_ */

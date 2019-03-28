@@ -7,7 +7,6 @@
 #include <njs_core.h>
 #include <njs_time.h>
 #include <string.h>
-#include <stdio.h>
 
 
 static njs_ret_t

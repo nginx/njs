@@ -7,7 +7,6 @@
 #include <njs_core.h>
 #include <njs_regexp.h>
 #include <string.h>
-#include <stdio.h>
 
 
 

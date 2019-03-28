@@ -5,7 +5,6 @@
  */
 
 #include <njs_core.h>
-#include <stdio.h>
 
 
 static void njs_disassemble(u_char *start, u_char *end);
@@ -139,8 +138,7 @@ njs_disassembler(njs_vm_t *vm)
     n = vm->code->items;
 
     while (n != 0) {
-        printf("%.*s:%.*s\n", (int) code->file.length, code->file.start,
-               (int) code->name.length, code->name.start);
+        nxt_printf("%V:%V\n", &code->file, &code->name);
         njs_disassemble(code->start, code->end);
         code++;
         n--;
@@ -190,9 +188,9 @@ njs_disassemble(u_char *start, u_char *end)
         if (operation == njs_vmcode_array) {
             array = (njs_vmcode_array_t *) p;
 
-            printf("%05zd ARRAY             %04zX %zd%s\n",
-                   p - start, (size_t) array->retval, (size_t) array->length,
-                   array->code.ctor ? " INIT" : "");
+            nxt_printf("%05uz ARRAY             %04Xz %uz%s\n",
+                       p - start, (size_t) array->retval,
+                       (size_t) array->length, array->code.ctor ? " INIT" : "");
 
             p += sizeof(njs_vmcode_array_t);
 
@@ -203,9 +201,9 @@ njs_disassemble(u_char *start, u_char *end)
             cond_jump = (njs_vmcode_cond_jump_t *) p;
             sign = (cond_jump->offset >= 0) ? "+" : "";
 
-            printf("%05zd JUMP IF TRUE      %04zX %s%zd\n",
-                   p - start, (size_t) cond_jump->cond, sign,
-                   (size_t) cond_jump->offset);
+            nxt_printf("%05uz JUMP IF TRUE      %04Xz %s%uz\n",
+                       p - start, (size_t) cond_jump->cond, sign,
+                       (size_t) cond_jump->offset);
 
             p += sizeof(njs_vmcode_cond_jump_t);
 
@@ -216,9 +214,9 @@ njs_disassemble(u_char *start, u_char *end)
             cond_jump = (njs_vmcode_cond_jump_t *) p;
             sign = (cond_jump->offset >= 0) ? "+" : "";
 
-            printf("%05zd JUMP IF FALSE     %04zX %s%zd\n",
-                   p - start, (size_t) cond_jump->cond, sign,
-                   (size_t) cond_jump->offset);
+            nxt_printf("%05uz JUMP IF FALSE     %04Xz %s%uz\n",
+                       p - start, (size_t) cond_jump->cond, sign,
+                       (size_t) cond_jump->offset);
 
             p += sizeof(njs_vmcode_cond_jump_t);
 
@@ -229,8 +227,8 @@ njs_disassemble(u_char *start, u_char *end)
             jump = (njs_vmcode_jump_t *) p;
             sign = (jump->offset >= 0) ? "+" : "";
 
-            printf("%05zd JUMP              %s%zd\n",
-                   p - start, sign, (size_t) jump->offset);
+            nxt_printf("%05uz JUMP              %s%uz\n",
+                       p - start, sign, (size_t) jump->offset);
 
             p += sizeof(njs_vmcode_jump_t);
 
@@ -240,9 +238,9 @@ njs_disassemble(u_char *start, u_char *end)
         if (operation == njs_vmcode_if_equal_jump) {
             equal = (njs_vmcode_equal_jump_t *) p;
 
-            printf("%05zd JUMP IF EQUAL     %04zX %04zX +%zd\n",
-                   p - start, (size_t) equal->value1, (size_t) equal->value2,
-                   (size_t) equal->offset);
+            nxt_printf("%05uz JUMP IF EQUAL     %04Xz %04Xz +%uz\n",
+                       p - start, (size_t) equal->value1,
+                       (size_t) equal->value2, (size_t) equal->offset);
 
             p += sizeof(njs_vmcode_equal_jump_t);
 
@@ -252,9 +250,9 @@ njs_disassemble(u_char *start, u_char *end)
         if (operation == njs_vmcode_test_if_true) {
             test_jump = (njs_vmcode_test_jump_t *) p;
 
-            printf("%05zd TEST IF TRUE      %04zX %04zX +%zd\n",
-                   p - start, (size_t) test_jump->retval,
-                   (size_t) test_jump->value, (size_t) test_jump->offset);
+            nxt_printf("%05uz TEST IF TRUE      %04Xz %04Xz +%uz\n",
+                       p - start, (size_t) test_jump->retval,
+                       (size_t) test_jump->value, (size_t) test_jump->offset);
 
             p += sizeof(njs_vmcode_test_jump_t);
 
@@ -264,9 +262,9 @@ njs_disassemble(u_char *start, u_char *end)
         if (operation == njs_vmcode_test_if_false) {
             test_jump = (njs_vmcode_test_jump_t *) p;
 
-            printf("%05zd TEST IF FALSE     %04zX %04zX +%zd\n",
-                   p - start, (size_t) test_jump->retval,
-                   (size_t) test_jump->value, (size_t) test_jump->offset);
+            nxt_printf("%05uz TEST IF FALSE     %04Xz %04Xz +%uz\n",
+                       p - start, (size_t) test_jump->retval,
+                       (size_t) test_jump->value, (size_t) test_jump->offset);
 
             p += sizeof(njs_vmcode_test_jump_t);
 
@@ -276,9 +274,9 @@ njs_disassemble(u_char *start, u_char *end)
         if (operation == njs_vmcode_function_frame) {
             function = (njs_vmcode_function_frame_t *) p;
 
-            printf("%05zd FUNCTION FRAME    %04zX %zd%s\n",
-                   p - start, (size_t) function->name, function->nargs,
-                   function->code.ctor ? " CTOR" : "");
+            nxt_printf("%05uz FUNCTION FRAME    %04Xz %uz%s\n",
+                       p - start, (size_t) function->name, function->nargs,
+                       function->code.ctor ? " CTOR" : "");
 
             p += sizeof(njs_vmcode_function_frame_t);
 
@@ -288,9 +286,10 @@ njs_disassemble(u_char *start, u_char *end)
         if (operation == njs_vmcode_method_frame) {
             method = (njs_vmcode_method_frame_t *) p;
 
-            printf("%05zd METHOD FRAME      %04zX %04zX %zd%s\n",
-                   p - start, (size_t) method->object, (size_t) method->method,
-                   method->nargs, method->code.ctor ? " CTOR" : "");
+            nxt_printf("%05uz METHOD FRAME      %04Xz %04Xz %uz%s\n",
+                       p - start, (size_t) method->object,
+                       (size_t) method->method, method->nargs,
+                       method->code.ctor ? " CTOR" : "");
 
 
             p += sizeof(njs_vmcode_method_frame_t);
@@ -300,10 +299,10 @@ njs_disassemble(u_char *start, u_char *end)
         if (operation == njs_vmcode_property_foreach) {
             prop_foreach = (njs_vmcode_prop_foreach_t *) p;
 
-            printf("%05zd PROPERTY FOREACH  %04zX %04zX +%zd\n",
-                   p - start, (size_t) prop_foreach->next,
-                   (size_t) prop_foreach->object,
-                   (size_t) prop_foreach->offset);
+            nxt_printf("%05uz PROPERTY FOREACH  %04Xz %04Xz +%uz\n",
+                       p - start, (size_t) prop_foreach->next,
+                       (size_t) prop_foreach->object,
+                       (size_t) prop_foreach->offset);
 
 
             p += sizeof(njs_vmcode_prop_foreach_t);
@@ -313,10 +312,10 @@ njs_disassemble(u_char *start, u_char *end)
         if (operation == njs_vmcode_property_next) {
             prop_next = (njs_vmcode_prop_next_t *) p;
 
-            printf("%05zd PROPERTY NEXT     %04zX %04zX %04zX %zd\n",
-                   p - start, (size_t) prop_next->retval,
-                   (size_t) prop_next->object, (size_t) prop_next->next,
-                   (size_t) prop_next->offset);
+            nxt_printf("%05uz PROPERTY NEXT     %04Xz %04Xz %04Xz %uz\n",
+                       p - start, (size_t) prop_next->retval,
+                       (size_t) prop_next->object, (size_t) prop_next->next,
+                       (size_t) prop_next->offset);
 
             p += sizeof(njs_vmcode_prop_next_t);
 
@@ -326,10 +325,10 @@ njs_disassemble(u_char *start, u_char *end)
         if (operation == njs_vmcode_try_start) {
             try_start = (njs_vmcode_try_start_t *) p;
 
-            printf("%05zd TRY START         %04zX %04zX +%zd\n",
-                   p - start, (size_t) try_start->exception_value,
-                   (size_t) try_start->exit_value,
-                   (size_t) try_start->offset);
+            nxt_printf("%05uz TRY START         %04Xz %04Xz +%uz\n",
+                       p - start, (size_t) try_start->exception_value,
+                       (size_t) try_start->exit_value,
+                       (size_t) try_start->offset);
 
             p += sizeof(njs_vmcode_try_start_t);
 
@@ -339,9 +338,9 @@ njs_disassemble(u_char *start, u_char *end)
         if (operation == njs_vmcode_try_break) {
             try_tramp = (njs_vmcode_try_trampoline_t *) p;
 
-            printf("%05zd TRY BREAK         %04zX %zd\n",
-                   p - start, (size_t) try_tramp->exit_value,
-                   (size_t) try_tramp->offset);
+            nxt_printf("%05uz TRY BREAK         %04Xz %uz\n",
+                       p - start, (size_t) try_tramp->exit_value,
+                       (size_t) try_tramp->offset);
 
             p += sizeof(njs_vmcode_try_trampoline_t);
 
@@ -351,9 +350,9 @@ njs_disassemble(u_char *start, u_char *end)
         if (operation == njs_vmcode_try_continue) {
             try_tramp = (njs_vmcode_try_trampoline_t *) p;
 
-            printf("%05zd TRY CONTINUE      %04zX %zd\n",
-                   p - start, (size_t) try_tramp->exit_value,
-                   (size_t) try_tramp->offset);
+            nxt_printf("%05uz TRY CONTINUE      %04Xz %uz\n",
+                       p - start, (size_t) try_tramp->exit_value,
+                       (size_t) try_tramp->offset);
 
             p += sizeof(njs_vmcode_try_trampoline_t);
 
@@ -363,10 +362,10 @@ njs_disassemble(u_char *start, u_char *end)
         if (operation == njs_vmcode_try_return) {
             try_return = (njs_vmcode_try_return_t *) p;
 
-            printf("%05zd TRY RETURN        %04zX %04zX +%zd\n",
-                   p - start, (size_t) try_return->save,
-                   (size_t) try_return->retval,
-                   (size_t) try_return->offset);
+            nxt_printf("%05uz TRY RETURN        %04Xz %04Xz +%uz\n",
+                       p - start, (size_t) try_return->save,
+                       (size_t) try_return->retval,
+                       (size_t) try_return->offset);
 
             p += sizeof(njs_vmcode_try_return_t);
 
@@ -376,9 +375,9 @@ njs_disassemble(u_char *start, u_char *end)
         if (operation == njs_vmcode_catch) {
             catch = (njs_vmcode_catch_t *) p;
 
-            printf("%05zd CATCH             %04zX +%zd\n",
-                   p - start, (size_t) catch->exception,
-                   (size_t) catch->offset);
+            nxt_printf("%05uz CATCH             %04Xz +%uz\n",
+                       p - start, (size_t) catch->exception,
+                       (size_t) catch->offset);
 
             p += sizeof(njs_vmcode_catch_t);
 
@@ -388,8 +387,8 @@ njs_disassemble(u_char *start, u_char *end)
         if (operation == njs_vmcode_try_end) {
             try_end = (njs_vmcode_try_end_t *) p;
 
-            printf("%05zd TRY END           +%zd\n",
-                   p - start, (size_t) try_end->offset);
+            nxt_printf("%05uz TRY END           +%uz\n",
+                       p - start, (size_t) try_end->offset);
 
             p += sizeof(njs_vmcode_try_end_t);
 
@@ -399,11 +398,11 @@ njs_disassemble(u_char *start, u_char *end)
         if (operation == njs_vmcode_finally) {
             finally = (njs_vmcode_finally_t *) p;
 
-            printf("%05zd TRY FINALLY       %04zX %04zX +%zd +%zd\n",
-                   p - start, (size_t) finally->retval,
-                   (size_t) finally->exit_value,
-                   (size_t) finally->continue_offset,
-                   (size_t) finally->break_offset);
+            nxt_printf("%05uz TRY FINALLY       %04Xz %04Xz +%uz +%uz\n",
+                       p - start, (size_t) finally->retval,
+                       (size_t) finally->exit_value,
+                       (size_t) finally->continue_offset,
+                       (size_t) finally->break_offset);
 
             p += sizeof(njs_vmcode_finally_t);
 
@@ -420,24 +419,24 @@ njs_disassemble(u_char *start, u_char *end)
                 if (code_name->size == sizeof(njs_vmcode_3addr_t)) {
                     code3 = (njs_vmcode_3addr_t *) p;
 
-                    printf("%05zd %*s  %04zX %04zX %04zX\n",
-                           p - start, (int) name->length, name->start,
-                           (size_t) code3->dst, (size_t) code3->src1,
-                           (size_t) code3->src2);
+                    nxt_printf("%05uz %*s  %04Xz %04Xz %04Xz\n",
+                               p - start, (int) name->length, name->start,
+                               (size_t) code3->dst, (size_t) code3->src1,
+                               (size_t) code3->src2);
 
                 } else if (code_name->size == sizeof(njs_vmcode_2addr_t)) {
                     code2 = (njs_vmcode_2addr_t *) p;
 
-                    printf("%05zd %*s  %04zX %04zX\n",
-                           p - start, (int) name->length, name->start,
-                           (size_t) code2->dst, (size_t) code2->src);
+                    nxt_printf("%05uz %*s  %04Xz %04Xz\n",
+                               p - start, (int) name->length, name->start,
+                               (size_t) code2->dst, (size_t) code2->src);
 
                 } else if (code_name->size == sizeof(njs_vmcode_1addr_t)) {
                     code1 = (njs_vmcode_1addr_t *) p;
 
-                    printf("%05zd %*s  %04zX\n",
-                           p - start, (int) name->length, name->start,
-                           (size_t) code1->index);
+                    nxt_printf("%05uz %*s  %04Xz\n",
+                               p - start, (int) name->length, name->start,
+                               (size_t) code1->index);
                 }
 
                 p += code_name->size;
@@ -450,8 +449,8 @@ njs_disassemble(u_char *start, u_char *end)
 
         } while (n != 0);
 
-        printf("%05zd UNKNOWN           %04zX\n",
-               p - start, (size_t) (uintptr_t) operation);
+        nxt_printf("%05uz UNKNOWN           %04Xz\n",
+                   p - start, (size_t) (uintptr_t) operation);
 
         p += sizeof(njs_vmcode_operation_t);
 

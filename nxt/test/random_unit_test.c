@@ -7,10 +7,10 @@
 #include <nxt_auto_config.h>
 #include <nxt_types.h>
 #include <nxt_clang.h>
+#include <nxt_sprintf.h>
 #include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_random.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -39,17 +39,17 @@ random_unit_test(void)
         }
 
         if (nxt_random(&r) == 0x6FCAE186) {
-            printf("random unit test passed\n");
+            nxt_printf("random unit test passed\n");
 
             nxt_random_stir(&r, getpid());
 
-            printf("random unit test: 0x%08X\n", nxt_random(&r));
+            nxt_printf("random unit test: 0x%08uXD\n", nxt_random(&r));
 
             return NXT_OK;
         }
     }
 
-    printf("random unit test failed\n");
+    nxt_printf("random unit test failed\n");
 
     return NXT_ERROR;
 }

@@ -9,7 +9,6 @@
 
 
 #include <math.h>
-#include <stdio.h>
 
 
 uint32_t njs_value_to_index(const njs_value_t *value);

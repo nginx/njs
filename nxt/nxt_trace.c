@@ -10,7 +10,6 @@
 #include <nxt_malloc.h>
 #include <nxt_sprintf.h>
 #include <nxt_trace.h>
-#include <stdio.h>
 
 
 static u_char *

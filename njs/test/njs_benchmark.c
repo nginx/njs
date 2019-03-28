@@ -7,7 +7,7 @@
 #include <njs.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdio.h>
+#include <nxt_sprintf.h>
 #include <sys/resource.h>
 #include <time.h>
 
@@ -34,7 +34,7 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
 
     vm = njs_vm_create(&options);
     if (vm == NULL) {
-        printf("njs_vm_create() failed\n");
+        nxt_printf("njs_vm_create() failed\n");
         goto done;
     }
 
@@ -42,7 +42,7 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
 
     ret = njs_vm_compile(vm, &start, start + script->length);
     if (ret != NXT_OK) {
-        printf("njs_vm_compile() failed\n");
+        nxt_printf("njs_vm_compile() failed\n");
         goto done;
     }
 
@@ -50,23 +50,21 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
 
         nvm = njs_vm_clone(vm, NULL);
         if (nvm == NULL) {
-            printf("njs_vm_clone() failed\n");
+            nxt_printf("njs_vm_clone() failed\n");
             goto done;
         }
 
         (void) njs_vm_start(nvm);
 
         if (njs_vm_retval_to_ext_string(nvm, &s) != NXT_OK) {
-            printf("njs_vm_retval_to_ext_string() failed\n");
+            nxt_printf("njs_vm_retval_to_ext_string() failed\n");
             goto done;
         }
 
         success = nxt_strstr_eq(result, &s);
 
         if (!success) {
-            printf("failed: \"%.*s\" vs \"%.*s\"\n",
-                   (int) result->length, result->start, (int) s.length,
-                   s.start);
+            nxt_printf("failed: \"%V\" vs \"%V\"\n", result, &s);
             goto done;
         }
 
@@ -80,11 +78,11 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
          + usage.ru_stime.tv_sec * 1000000 + usage.ru_stime.tv_usec;
 
     if (n == 1) {
-        printf("%s: %.3fs\n", msg, (double) us / 1000000);
+        nxt_printf("%s: %.3fs\n", msg, (double) us / 1000000);
 
     } else {
-        printf("%s: %.3fµs, %d times/s\n",
-               msg, (double) us / n, (int) ((uint64_t) n * 1000000 / us));
+        nxt_printf("%s: %.3fµs, %d times/s\n",
+                   msg, (double) us / n, (int) ((uint64_t) n * 1000000 / us));
     }
 
     rc = NXT_OK;
@@ -170,6 +168,6 @@ main(int argc, char **argv)
         }
     }
 
-    printf("unknown agrument\n");
+    nxt_printf("unknown agrument\n");
     return EXIT_FAILURE;
 }

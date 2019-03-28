@@ -6,7 +6,7 @@
 
 #include <njs.h>
 #include <string.h>
-#include <stdio.h>
+#include <nxt_sprintf.h>
 #include <sys/resource.h>
 #include <time.h>
 
@@ -273,8 +273,7 @@ njs_interactive_test(nxt_bool_t verbose)
         test = &njs_test[i];
 
         if (verbose) {
-            printf("\"%.*s\"\n", (int) test->script.length, test->script.start);
-            fflush(stdout);
+            nxt_printf("\"%V\"\n", &test->script);
         }
 
         nxt_memzero(&options, sizeof(njs_vm_opt_t));
@@ -284,7 +283,7 @@ njs_interactive_test(nxt_bool_t verbose)
 
         vm = njs_vm_create(&options);
         if (vm == NULL) {
-            printf("njs_vm_create() failed\n");
+            nxt_printf("njs_vm_create() failed\n");
             goto done;
         }
 
@@ -307,7 +306,7 @@ njs_interactive_test(nxt_bool_t verbose)
         }
 
         if (njs_vm_retval_to_ext_string(vm, &s) != NXT_OK) {
-            printf("njs_vm_retval_to_ext_string() failed\n");
+            nxt_printf("njs_vm_retval_to_ext_string() failed\n");
             goto done;
         }
 
@@ -318,17 +317,15 @@ njs_interactive_test(nxt_bool_t verbose)
             continue;
         }
 
-        printf("njs_interactive(\"%.*s\") failed: \"%.*s\" vs \"%.*s\"\n",
-               (int) test->script.length, test->script.start,
-               (int) test->ret.length, test->ret.start,
-               (int) s.length, s.start);
+        nxt_printf("njs_interactive(\"%V\") failed: \"%V\" vs \"%V\"\n",
+                   &test->script, &test->ret, &s);
 
         goto done;
     }
 
     ret = NXT_OK;
 
-    printf("njs interactive tests passed\n");
+    nxt_printf("njs interactive tests passed\n");
 
 done:
 

@@ -10,13 +10,13 @@
 #include <time.h>
 #include <errno.h>
 #include <string.h>
-#include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/param.h>
 #include <locale.h>
 
+#include <stdio.h>
 #include <readline.h>
 
 
@@ -214,7 +214,7 @@ main(int argc, char **argv)
     }
 
     if (opts.version != 0) {
-        printf("%s\n", NJS_VERSION);
+        nxt_printf("%s\n", NJS_VERSION);
         ret = NXT_OK;
         goto done;
     }
@@ -225,7 +225,7 @@ main(int argc, char **argv)
         if (opts.file == NULL) {
             p = getcwd(path, sizeof(path));
             if (p == NULL) {
-                fprintf(stderr, "getcwd() failed:%s\n", strerror(errno));
+                nxt_error("getcwd() failed:%s\n", strerror(errno));
                 ret = NXT_ERROR;
                 goto done;
             }
@@ -316,7 +316,7 @@ njs_get_options(njs_opts_t *opts, int argc, char** argv)
                 opts->n_paths++;
                 paths = realloc(opts->paths, opts->n_paths * sizeof(char *));
                 if (paths == NULL) {
-                    fprintf(stderr, "failed to add path\n");
+                    nxt_error("failed to add path\n");
                     return NXT_ERROR;
                 }
 
@@ -325,7 +325,7 @@ njs_get_options(njs_opts_t *opts, int argc, char** argv)
                 break;
             }
 
-            fprintf(stderr, "option \"-p\" requires directory name\n");
+            nxt_error("option \"-p\" requires directory name\n");
             return NXT_ERROR;
 
         case 'v':
@@ -334,8 +334,9 @@ njs_get_options(njs_opts_t *opts, int argc, char** argv)
             break;
 
         default:
-            fprintf(stderr, "Unknown argument: \"%s\" "
-                    "try \"%s -h\" for available options\n", argv[i], argv[0]);
+            nxt_error("Unknown argument: \"%s\" "
+                      "try \"%s -h\" for available options\n", argv[i],
+                      argv[0]);
             return NXT_ERROR;
         }
     }
@@ -374,7 +375,7 @@ njs_externals_init(njs_vm_t *vm, njs_console_t *console)
 
     proto = njs_vm_external_prototype(vm, &njs_externals[0]);
     if (proto == NULL) {
-        fprintf(stderr, "failed to add console proto\n");
+        nxt_error("failed to add console proto\n");
         return NXT_ERROR;
     }
 
@@ -409,7 +410,7 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
     nxt_str_t  line;
 
     if (njs_editline_init() != NXT_OK) {
-        fprintf(stderr, "failed to init completions\n");
+        nxt_error("failed to init completions\n");
         return NXT_ERROR;
     }
 
@@ -419,10 +420,10 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
     }
 
     if (!opts->quiet) {
-        printf("interactive njs %s\n\n", NJS_VERSION);
+        nxt_printf("interactive njs %s\n\n", NJS_VERSION);
 
-        printf("v.<Tab> -> the properties and prototype methods of v.\n");
-        printf("type console.help() for more information\n\n");
+        nxt_printf("v.<Tab> -> the properties and prototype methods of v.\n");
+        nxt_printf("type console.help() for more information\n\n");
     }
 
     for ( ;; ) {
@@ -469,15 +470,15 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
     } else {
         fd = open(file, O_RDONLY);
         if (fd == -1) {
-            fprintf(stderr, "failed to open file: '%s' (%s)\n",
-                    file, strerror(errno));
+            nxt_error("failed to open file: '%s' (%s)\n",
+                      file, strerror(errno));
             return NXT_ERROR;
         }
     }
 
     if (fstat(fd, &sb) == -1) {
-        fprintf(stderr, "fstat(%d) failed while reading '%s' (%s)\n",
-                fd, file, strerror(errno));
+        nxt_error("fstat(%d) failed while reading '%s' (%s)\n",
+                  fd, file, strerror(errno));
         ret = NXT_ERROR;
         goto close_fd;
     }
@@ -491,7 +492,7 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
     script.length = 0;
     script.start = realloc(NULL, size);
     if (script.start == NULL) {
-        fprintf(stderr, "alloc failed while reading '%s'\n", file);
+        nxt_error("alloc failed while reading '%s'\n", file);
         ret = NXT_ERROR;
         goto done;
     }
@@ -507,8 +508,8 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         }
 
         if (n < 0) {
-            fprintf(stderr, "failed to read file: '%s' (%s)\n",
-                    file, strerror(errno));
+            nxt_error("failed to read file: '%s' (%s)\n",
+                      file, strerror(errno));
             ret = NXT_ERROR;
             goto done;
         }
@@ -518,7 +519,7 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
             start = realloc(script.start, size);
             if (start == NULL) {
-                fprintf(stderr, "alloc failed while reading '%s'\n", file);
+                nxt_error("alloc failed while reading '%s'\n", file);
                 ret = NXT_ERROR;
                 goto done;
             }
@@ -576,12 +577,12 @@ njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
     vm = njs_vm_create(vm_options);
     if (vm == NULL) {
-        fprintf(stderr, "failed to create vm\n");
+        nxt_error("failed to create vm\n");
         return NULL;
     }
 
     if (njs_externals_init(vm, vm_options->external) != NXT_OK) {
-        fprintf(stderr, "failed to add external protos\n");
+        nxt_error("failed to add external protos\n");
         return NULL;
     }
 
@@ -591,7 +592,7 @@ njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
         ret = njs_vm_add_path(vm, &path);
         if (ret != NXT_OK) {
-            fprintf(stderr, "failed to add path\n");
+            nxt_error("failed to add path\n");
             return NULL;
         }
     }
@@ -609,7 +610,7 @@ njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
         ret = njs_vm_add_path(vm, &path);
         if (ret != NXT_OK) {
-            fprintf(stderr, "failed to add path\n");
+            nxt_error("failed to add path\n");
             return NULL;
         }
 
@@ -635,10 +636,10 @@ njs_output(njs_vm_t *vm, njs_opts_t *opts, njs_ret_t ret)
     }
 
     if (ret != NJS_OK) {
-        fprintf(stderr, "%.*s\n", (int) out.length, out.start);
+        nxt_error("%V\n", &out);
 
     } else if (opts->interactive) {
-        printf("%.*s\n", (int) out.length, out.start);
+        nxt_printf("%V\n", &out);
     }
 }
 
@@ -688,7 +689,7 @@ njs_process_script(njs_console_t *console, njs_opts_t *opts,
     if (ret == NXT_OK) {
         if (opts->disassemble) {
             njs_disassembler(vm);
-            printf("\n");
+            nxt_printf("\n");
         }
 
         ret = njs_vm_start(vm);
@@ -703,7 +704,7 @@ njs_process_script(njs_console_t *console, njs_opts_t *opts,
 
         ret = njs_process_events(console, opts);
         if (nxt_slow_path(ret != NXT_OK)) {
-            fprintf(stderr, "njs_process_events() failed\n");
+            nxt_error("njs_process_events() failed\n");
             ret = NJS_ERROR;
             break;
         }
@@ -711,8 +712,7 @@ njs_process_script(njs_console_t *console, njs_opts_t *opts,
         if (njs_vm_waiting(vm) && !njs_vm_posted(vm)) {
             /*TODO: async events. */
 
-            fprintf(stderr, "njs_process_script(): "
-                    "async events unsupported\n");
+            nxt_error("njs_process_script(): async events unsupported\n");
             ret = NJS_ERROR;
             break;
         }
@@ -913,13 +913,13 @@ njs_ext_console_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             return NJS_ERROR;
         }
 
-        printf("%s%.*s", (n != 1) ? " " : "", (int) msg.length, msg.start);
+        nxt_printf("%s%V", (n != 1) ? " " : "", &msg);
 
         n++;
     }
 
     if (nargs > 1) {
-        printf("\n");
+        nxt_printf("\n");
     }
 
     vm->retval = njs_value_undefined;
@@ -944,13 +944,13 @@ njs_ext_console_dump(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             return NJS_ERROR;
         }
 
-        printf("%s%.*s", (n != 1) ? " " : "", (int) msg.length, msg.start);
+        nxt_printf("%s%V", (n != 1) ? " " : "", &msg);
 
         n++;
     }
 
     if (nargs > 1) {
-        printf("\n");
+        nxt_printf("\n");
     }
 
     vm->retval = njs_value_undefined;
@@ -965,24 +965,24 @@ njs_ext_console_help(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     const njs_object_init_t  *obj, **objpp;
 
-    printf("VM built-in objects:\n");
+    nxt_printf("VM built-in objects:\n");
 
     for (objpp = njs_constructor_init; *objpp != NULL; objpp++) {
         obj = *objpp;
 
-        printf("  %.*s\n", (int) obj->name.length, obj->name.start);
+        nxt_printf("  %V\n", &obj->name);
     }
 
     for (objpp = njs_object_init; *objpp != NULL; objpp++) {
         obj = *objpp;
 
-        printf("  %.*s\n", (int) obj->name.length, obj->name.start);
+        nxt_printf("  %V\n", &obj->name);
     }
 
-    printf("\nEmbedded objects:\n");
-    printf("  console\n");
+    nxt_printf("\nEmbedded objects:\n");
+    nxt_printf("  console\n");
 
-    printf("\n");
+    nxt_printf("\n");
 
     vm->retval = njs_value_undefined;
 
@@ -1040,12 +1040,12 @@ njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         ms = ns / 1000000;
         ns = ns % 1000000;
 
-        printf("default: %" PRIu64 ".%06" PRIu64 "ms\n", ms, ns);
+        nxt_printf("default: %uL.%06uLms\n", ms, ns);
 
         console->time = UINT64_MAX;
 
     } else {
-        printf("Timer \"default\" doesn’t exist.\n");
+        nxt_printf("Timer \"default\" doesn’t exist.\n");
     }
 
     vm->retval = njs_value_undefined;
@@ -1065,7 +1065,7 @@ njs_console_set_timer(njs_external_ptr_t external, uint64_t delay,
     nxt_lvlhsh_query_t  lhq;
 
     if (delay != 0) {
-        fprintf(stderr, "njs_console_set_timer(): async timers unsupported\n");
+        nxt_error("njs_console_set_timer(): async timers unsupported\n");
         return NULL;
     }
 
@@ -1125,7 +1125,7 @@ njs_console_clear_timer(njs_external_ptr_t external, njs_host_event_t event)
 
     ret = nxt_lvlhsh_delete(&console->events, &lhq);
     if (ret != NXT_OK) {
-        fprintf(stderr, "nxt_lvlhsh_delete() failed\n");
+        nxt_error("nxt_lvlhsh_delete() failed\n");
     }
 
     nxt_mp_free(vm->mem_pool, ev);

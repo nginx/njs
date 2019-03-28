@@ -7,7 +7,6 @@
 #include <njs_core.h>
 #include <math.h>
 #include <string.h>
-#include <stdio.h>
 #include <float.h>
 
 

@@ -6,7 +6,6 @@
 
 #include <njs_core.h>
 #include <string.h>
-#include <stdio.h>
 
 
 typedef struct njs_extern_part_s  njs_extern_part_t;

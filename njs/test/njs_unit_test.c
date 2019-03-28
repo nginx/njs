@@ -9,7 +9,6 @@
 #include <nxt_djb_hash.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <sys/resource.h>
 #include <time.h>
 
@@ -12237,7 +12236,7 @@ njs_externals_init(njs_vm_t *vm)
 
     proto = njs_vm_external_prototype(vm, &nxt_test_external[0]);
     if (proto == NULL) {
-        printf("njs_vm_external_prototype() failed\n");
+        nxt_printf("njs_vm_external_prototype() failed\n");
         return NXT_ERROR;
     }
 
@@ -12257,14 +12256,14 @@ njs_externals_init(njs_vm_t *vm)
         ret = njs_vm_external_create(vm, njs_value_arg(&requests[i].value),
                                      proto, &requests[i]);
         if (ret != NXT_OK) {
-            printf("njs_vm_external_create() failed\n");
+            nxt_printf("njs_vm_external_create() failed\n");
             return NXT_ERROR;
         }
 
         ret = njs_vm_external_bind(vm, &nxt_test_requests[i].name,
                                    njs_value_arg(&requests[i].value));
         if (ret != NXT_OK) {
-            printf("njs_vm_external_bind() failed\n");
+            nxt_printf("njs_vm_external_bind() failed\n");
             return NXT_ERROR;
         }
 
@@ -12274,13 +12273,13 @@ njs_externals_init(njs_vm_t *vm)
                                           &nxt_test_requests[i].props[j].value);
 
             if (prop == NULL) {
-                printf("lvlhsh_unit_test_alloc() failed\n");
+                nxt_printf("lvlhsh_unit_test_alloc() failed\n");
                 return NXT_ERROR;
             }
 
             ret = lvlhsh_unit_test_add(&requests[i], prop);
             if (ret != NXT_OK) {
-                printf("lvlhsh_unit_test_add() failed\n");
+                nxt_printf("lvlhsh_unit_test_add() failed\n");
                 return NXT_ERROR;
             }
         }
@@ -12310,16 +12309,14 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, nxt_bool_t disassemble,
     for (i = 0; i < num; i++) {
 
         if (verbose) {
-            printf("\"%.*s\"\n",
-                   (int) njs_test[i].script.length, njs_test[i].script.start);
-            fflush(stdout);
+            nxt_printf("\"%V\"\n", &njs_test[i].script);
         }
 
         nxt_memzero(&options, sizeof(njs_vm_opt_t));
 
         vm = njs_vm_create(&options);
         if (vm == NULL) {
-            printf("njs_vm_create() failed\n");
+            nxt_printf("njs_vm_create() failed\n");
             goto done;
         }
 
@@ -12335,25 +12332,24 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, nxt_bool_t disassemble,
         if (ret == NXT_OK) {
             if (disassemble) {
                 njs_disassembler(vm);
-                fflush(stdout);
             }
 
             nvm = njs_vm_clone(vm, NULL);
             if (nvm == NULL) {
-                printf("njs_vm_clone() failed\n");
+                nxt_printf("njs_vm_clone() failed\n");
                 goto done;
             }
 
             ret = njs_vm_start(nvm);
 
             if (njs_vm_retval_to_ext_string(nvm, &s) != NXT_OK) {
-                printf("njs_vm_retval_to_ext_string() failed\n");
+                nxt_printf("njs_vm_retval_to_ext_string() failed\n");
                 goto done;
             }
 
         } else {
             if (njs_vm_retval_to_ext_string(vm, &s) != NXT_OK) {
-                printf("njs_vm_retval_to_ext_string() failed\n");
+                nxt_printf("njs_vm_retval_to_ext_string() failed\n");
                 goto done;
             }
         }
@@ -12372,10 +12368,8 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, nxt_bool_t disassemble,
             continue;
         }
 
-        printf("njs(\"%.*s\")\nexpected: \"%.*s\"\n     got: \"%.*s\"\n",
-               (int) njs_test[i].script.length, njs_test[i].script.start,
-               (int) njs_test[i].ret.length, njs_test[i].ret.start,
-               (int) s.length, s.start);
+        nxt_printf("njs(\"%V\")\nexpected: \"%V\"\n     got: \"%V\"\n",
+                   &njs_test[i].script, &njs_test[i].ret, &s);
 
         goto done;
     }
@@ -12591,11 +12585,9 @@ nxt_file_basename_test(njs_vm_t * vm, nxt_bool_t disassemble,
         success = nxt_strstr_eq(&tests[i].expected, &name);
 
         if (!success) {
-            printf("nxt_file_basename_test(\"%.*s\"):\n"
-                   "expected: \"%.*s\"\n     got: \"%.*s\"\n",
-                   (int) tests[i].path.length, tests[i].path.start,
-                   (int) tests[i].expected.length, tests[i].expected.start,
-                   (int) name.length, name.start);
+            nxt_printf("nxt_file_basename_test(\"%V\"):\n"
+                       "expected: \"%V\"\n     got: \"%V\"\n",
+                       &tests[i].path, &tests[i].expected, &name);
             return NXT_ERROR;
         }
     }
@@ -12637,11 +12629,9 @@ nxt_file_dirname_test(njs_vm_t * vm, nxt_bool_t disassemble,
         success = nxt_strstr_eq(&tests[i].expected, &name);
 
         if (!success) {
-            printf("nxt_file_dirname_test(\"%.*s\"):\n"
-                   "expected: \"%.*s\"\n     got: \"%.*s\"\n",
-                   (int) tests[i].path.length, tests[i].path.start,
-                   (int) tests[i].expected.length, tests[i].expected.start,
-                   (int) name.length, name.start);
+            nxt_printf("nxt_file_dirname_test(\"%V\"):\n"
+                       "expected: \"%V\"\n     got: \"%V\"\n",
+                       &tests[i].path, &tests[i].expected, &name);
             return NXT_ERROR;
         }
     }
@@ -12745,7 +12735,7 @@ main(int argc, char **argv)
         return ret;
     }
 
-    printf("njs unit tests passed\n");
+    nxt_printf("njs unit tests passed\n");
 
     /*
      * Chatham Islands NZ-CHAT time zone.
@@ -12766,10 +12756,10 @@ main(int argc, char **argv)
             return ret;
         }
 
-        printf("njs timezone tests passed\n");
+        nxt_printf("njs timezone tests passed\n");
 
     } else {
-        printf("njs timezone tests skipped, timezone is unavailable\n");
+        nxt_printf("njs timezone tests skipped, timezone is unavailable\n");
     }
 
     ret = njs_vm_json_test(disassemble, verbose);

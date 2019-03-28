@@ -9,7 +9,6 @@
 #include <njs_regexp_pattern.h>
 
 #include <string.h>
-#include <stdio.h>
 
 
 static void *njs_regexp_malloc(size_t size, void *memory_data);

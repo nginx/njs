@@ -7,10 +7,10 @@
 #include <nxt_auto_config.h>
 #include <nxt_types.h>
 #include <nxt_clang.h>
+#include <nxt_sprintf.h>
 #include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_utf8.h>
-#include <stdio.h>
 #include <string.h>
 
 
@@ -72,8 +72,8 @@ utf8_overlong(u_char *overlong, size_t len)
                 u = (u << 8) + overlong[i];
             }
 
-            printf("nxt_utf8_decode(%05Xd, %zd) failed: %05Xd, %zd\n",
-                   u, len, d, size);
+            nxt_printf("nxt_utf8_decode(%05uXD, %uz) failed: %05uXD, %uz\n",
+                       u, len, d, size);
 
             return NXT_ERROR;
         }
@@ -93,7 +93,7 @@ utf8_unit_test(nxt_uint_t start)
     nxt_uint_t    i, k, l, m;
     const u_char  *pp;
 
-    printf("utf8 unit test started\n");
+    nxt_printf("utf8 unit test started\n");
 
     /* Test valid UTF-8. */
 
@@ -102,7 +102,7 @@ utf8_unit_test(nxt_uint_t start)
         p = nxt_utf8_encode(utf8, u);
 
         if (p == NULL) {
-            printf("nxt_utf8_encode(%05Xd) failed\n", u);
+            nxt_printf("nxt_utf8_encode(%05uXD) failed\n", u);
             return NXT_ERROR;
         }
 
@@ -111,7 +111,7 @@ utf8_unit_test(nxt_uint_t start)
         d = nxt_utf8_decode(&pp, p);
 
         if (u != d) {
-            printf("nxt_utf8_decode(%05Xd) failed: %05uxD\n", u, d);
+            nxt_printf("nxt_utf8_decode(%05uXD) failed: %05uxD\n", u, d);
             return NXT_ERROR;
         }
     }
@@ -137,7 +137,8 @@ utf8_unit_test(nxt_uint_t start)
                 u = (u << 8) + utf8[i];
             }
 
-            printf("nxt_utf8_decode(%05Xd, %zd) failed: %05Xd\n", u, len, d);
+            nxt_printf("nxt_utf8_decode(%05uXD, %uz) failed: %05uXD\n",
+                       u, len, d);
             return NXT_ERROR;
         }
     }
@@ -182,11 +183,11 @@ utf8_unit_test(nxt_uint_t start)
                          nxt_length("abc абв αβγ"));
 
     if (n != 0) {
-        printf("nxt_utf8_casecmp() failed\n");
+        nxt_printf("nxt_utf8_casecmp() failed\n");
         return NXT_ERROR;
     }
 
-    printf("utf8 unit test passed\n");
+    nxt_printf("utf8 unit test passed\n");
     return NXT_OK;
 }
 

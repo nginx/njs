@@ -8,10 +8,10 @@
 #include <nxt_types.h>
 #include <nxt_clang.h>
 #include <nxt_stub.h>
+#include <nxt_sprintf.h>
 #include <nxt_string.h>
 #include <nxt_rbtree.h>
 #include <nxt_murmur_hash.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -39,7 +39,7 @@ rbtree_unit_test(nxt_uint_t n)
     nxt_rbtree_node_t  *node;
     nxt_rbtree_test_t  *items, *item;
 
-    printf("rbtree unit test started: %ld nodes\n", (long) n);
+    nxt_printf("rbtree unit test started: %l nodes\n", (long) n);
 
     nxt_rbtree_init(&tree, rbtree_unit_test_comparison);
 
@@ -74,7 +74,8 @@ rbtree_unit_test(nxt_uint_t n)
         node = nxt_rbtree_find(&tree, &items[i].node);
 
         if (node != (nxt_rbtree_node_t *) &items[i].node) {
-            printf("rbtree unit test failed: %08X not found\n", items[i].key);
+            nxt_printf("rbtree unit test failed: %08uXD not found\n",
+                       items[i].key);
             goto fail;
         }
     }
@@ -87,8 +88,8 @@ rbtree_unit_test(nxt_uint_t n)
         item = (nxt_rbtree_test_t *) node;
 
         if (keys[i] != item->key) {
-            printf("rbtree unit test failed: %ld: %08X %08X\n",
-                   (long) i, keys[i], item->key);
+            nxt_printf("rbtree unit test failed: %l: %08uXD %08uXD\n",
+                       (long) i, keys[i], item->key);
             goto fail;
         }
 
@@ -97,7 +98,7 @@ rbtree_unit_test(nxt_uint_t n)
     }
 
     if (i != n) {
-        printf("rbtree unit test failed: %ld\n", (long) i);
+        nxt_printf("rbtree unit test failed: %l\n", (long) i);
         goto fail;
     }
 
@@ -107,21 +108,21 @@ rbtree_unit_test(nxt_uint_t n)
     }
 
     if (!nxt_rbtree_is_empty(&tree)) {
-        printf("rbtree unit test failed: tree is not empty\n");
+        nxt_printf("rbtree unit test failed: tree is not empty\n");
         goto fail;
     }
 
     /* Check that the sentinel callback was not modified. */
 
     if (mark != tree.sentinel.right) {
-        printf("rbtree sentinel unit test failed\n");
+        nxt_printf("rbtree sentinel unit test failed\n");
         goto fail;
     }
 
     free(keys);
     free(items);
 
-    printf("rbtree unit test passed\n");
+    nxt_printf("rbtree unit test passed\n");
 
     return NXT_OK;
 

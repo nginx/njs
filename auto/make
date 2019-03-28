@@ -103,7 +103,7 @@ $NXT_BUILD_DIR/$nxt_bin: $nxt_src \\
 	\$(NXT_CC) -o $NXT_BUILD_DIR/$nxt_bin \$(NXT_CFLAGS) \\
 		\$(NXT_LIB_INCS) $nxt_dep_flags \\
 		$nxt_src $NXT_BUILD_DIR/libnxt.a \\
-		$nxt_dep_post
+		$nxt_dep_post -lm
 
 -include $NXT_BUILD_DIR/$nxt_dep
 

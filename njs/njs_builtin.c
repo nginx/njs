@@ -15,7 +15,6 @@
 #include <njs_fs.h>
 #include <njs_crypto.h>
 #include <string.h>
-#include <stdio.h>
 
 
 typedef struct {

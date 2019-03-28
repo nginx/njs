@@ -7,14 +7,13 @@
 #include <nxt_auto_config.h>
 #include <nxt_types.h>
 #include <nxt_clang.h>
+#include <nxt_sprintf.h>
 #include <nxt_string.h>
 #include <nxt_stub.h>
 #include <nxt_malloc.h>
 #include <nxt_lvlhsh.h>
 #include <nxt_murmur_hash.h>
 #include <nxt_mp.h>
-#include <stdio.h>
-#include <stdarg.h>
 #include <string.h>
 
 
@@ -72,8 +71,8 @@ lvlhsh_unit_test_add(nxt_lvlhsh_t *lh, const nxt_lvlhsh_proto_t *proto,
         return NXT_OK;
 
     case NXT_DECLINED:
-        printf("lvlhsh unit test failed: key %08lX is already in hash\n",
-               (long) key);
+        nxt_printf("lvlhsh unit test failed: key %08Xl is already in hash\n",
+                   (long) key);
         /* Fall through. */
 
     default:
@@ -100,8 +99,8 @@ lvlhsh_unit_test_get(nxt_lvlhsh_t *lh, const nxt_lvlhsh_proto_t *proto,
         }
     }
 
-    printf("lvlhsh unit test failed: key %08lX not found in hash\n",
-           (long) key);
+    nxt_printf("lvlhsh unit test failed: key %08Xl not found in hash\n",
+               (long) key);
 
     return NXT_ERROR;
 }
@@ -123,7 +122,7 @@ lvlhsh_unit_test_delete(nxt_lvlhsh_t *lh, const nxt_lvlhsh_proto_t *proto,
     ret = nxt_lvlhsh_delete(lh, &lhq);
 
     if (ret != NXT_OK) {
-        printf("lvlhsh unit test failed: key %08lX not found in hash\n",
+        nxt_printf("lvlhsh unit test failed: key %08lX not found in hash\n",
                (long) key);
     }
 
@@ -170,15 +169,14 @@ lvlhsh_free(void *mem, void *p)
 static void
 lvlhsh_alert(void *mem, const char *fmt, ...)
 {
-    int      n;
+    u_char   buf[1024], *p;
     va_list  args;
-    char     buf[1024];
 
     va_start(args, fmt);
-    n = vsnprintf(buf, sizeof(buf), fmt, args);
+    p = nxt_sprintf(buf, buf + sizeof(buf), fmt, args);
     va_end(args);
 
-    (void) printf("alert: \"%.*s\"\n", n, buf);
+    (void) nxt_error("alert: \"%*s\"\n", p - buf, buf);
 }
 
 
@@ -213,7 +211,7 @@ lvlhsh_unit_test(nxt_uint_t n)
         return NXT_ERROR;
     }
 
-    printf("lvlhsh unit test started: %ld items\n", (long) n);
+    nxt_printf("lvlhsh unit test started: %l items\n", (long) n);
 
     nxt_memzero(&lh, sizeof(nxt_lvlhsh_t));
 
@@ -222,7 +220,7 @@ lvlhsh_unit_test(nxt_uint_t n)
         key = nxt_murmur_hash2(&key, sizeof(uint32_t));
 
         if (lvlhsh_unit_test_add(&lh, &lvlhsh_proto, pool, key) != NXT_OK) {
-            printf("lvlhsh add unit test failed at %ld\n", (long) i);
+            nxt_printf("lvlhsh add unit test failed at %l\n", (long) i);
             return NXT_ERROR;
         }
     }
@@ -245,8 +243,8 @@ lvlhsh_unit_test(nxt_uint_t n)
     }
 
     if (i != n) {
-        printf("lvlhsh each unit test failed at %ld of %ld\n",
-                (long) i, (long) n);
+        nxt_printf("lvlhsh each unit test failed at %l of %l\n",
+                   (long) i, (long) n);
         return NXT_ERROR;
     }
 
@@ -260,13 +258,13 @@ lvlhsh_unit_test(nxt_uint_t n)
     }
 
     if (!nxt_mp_is_empty(pool)) {
-        printf("mem cache pool is not empty\n");
+        nxt_printf("mem cache pool is not empty\n");
         return NXT_ERROR;
     }
 
     nxt_mp_destroy(pool);
 
-    printf("lvlhsh unit test passed\n");
+    nxt_printf("lvlhsh unit test passed\n");
 
     return NXT_OK;
 }
