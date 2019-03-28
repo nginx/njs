@@ -1217,10 +1217,11 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
     if (nxt_fast_path(properties != 0)) {
         nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
 
+        hash = &value->data.u.object->hash;
+
         switch (kind) {
 
         case NJS_ENUM_KEYS:
-            hash = &value->data.u.object->hash;
             for ( ;; ) {
                 prop = nxt_lvlhsh_each(hash, &lhe);
 
@@ -1251,7 +1252,6 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
             break;
 
         case NJS_ENUM_VALUES:
-            hash = &value->data.u.object->hash;
             for ( ;; ) {
                 prop = nxt_lvlhsh_each(hash, &lhe);
 
