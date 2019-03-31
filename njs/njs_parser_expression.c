@@ -62,6 +62,8 @@ static njs_token_t njs_parser_property_expression(njs_vm_t *vm,
     njs_parser_t *parser, njs_token_t token);
 static njs_token_t njs_parser_property_brackets(njs_vm_t *vm,
     njs_parser_t *parser, njs_token_t token);
+static njs_token_t njs_parser_arguments(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *parent);
 
 
 static const njs_parser_expression_t
@@ -1031,7 +1033,7 @@ njs_parser_property_brackets(njs_vm_t *vm, njs_parser_t *parser,
 }
 
 
-njs_token_t
+static njs_token_t
 njs_parser_arguments(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *parent)
 {

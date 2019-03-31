@@ -53,6 +53,7 @@ NJS_LIB_SRCS=" \
    njs/njs_lexer.c \
    njs/njs_lexer_keyword.c \
    njs/njs_parser.c \
+   njs/njs_parser_terminal.c \
    njs/njs_parser_expression.c \
    njs/njs_generator.c \
    njs/njs_disassembler.c \
