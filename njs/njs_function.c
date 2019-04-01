@@ -14,35 +14,53 @@ static njs_ret_t njs_normalize_args(njs_vm_t *vm, njs_value_t *args,
 
 
 njs_function_t *
-njs_function_alloc(njs_vm_t *vm)
+njs_function_alloc(njs_vm_t *vm, njs_function_lambda_t *lambda,
+    njs_closure_t *closures[], nxt_bool_t shared)
 {
+    size_t          size;
+    nxt_uint_t      n, nesting;
     njs_function_t  *function;
 
-    function = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_function_t));
+    nesting = lambda->nesting;
+    size = sizeof(njs_function_t) + nesting * sizeof(njs_closure_t *);
 
-    if (nxt_fast_path(function != NULL)) {
-        /*
-         * nxt_mp_zalloc() does also:
-         *   nxt_lvlhsh_init(&function->object.hash);
-         *   function->object.__proto__ = NULL;
-         */
-
-        function->object.shared_hash = vm->shared->function_prototype_hash;
-        function->object.type = NJS_FUNCTION;
-        function->object.shared = 1;
-        function->object.extensible = 1;
-        function->args_offset = 1;
-        function->ctor = 1;
-
-        function->u.lambda = nxt_mp_zalloc(vm->mem_pool,
-                                           sizeof(njs_function_lambda_t));
-        if (nxt_slow_path(function->u.lambda == NULL)) {
-            njs_memory_error(vm);
-            return NULL;
-        }
-
-        return function;
+    function = nxt_mp_zalloc(vm->mem_pool, size);
+    if (nxt_slow_path(function == NULL)) {
+        goto fail;
     }
+
+
+    /*
+     * nxt_mp_zalloc() does also:
+     *   nxt_lvlhsh_init(&function->object.hash);
+     *   function->object.__proto__ = NULL;
+     */
+
+    function->ctor = 1;
+    function->args_offset = 1;
+    function->u.lambda = lambda;
+
+    function->object.shared_hash = vm->shared->function_prototype_hash;
+    function->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION].object;
+    function->object.type = NJS_FUNCTION;
+    function->object.shared = shared;
+    function->object.extensible = 1;
+
+    if (nesting != 0 && closures != NULL) {
+        function->closure = 1;
+
+        n = 0;
+
+        do {
+            /* GC: retain closure. */
+            function->closures[n] = closures[n];
+            n++;
+        } while (n < nesting);
+    }
+
+    return function;
+
+fail:
 
     njs_memory_error(vm);
 

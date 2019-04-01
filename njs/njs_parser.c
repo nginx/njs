@@ -552,10 +552,23 @@ static njs_function_t *
 njs_parser_function_alloc(njs_vm_t *vm, njs_parser_t *parser,
     njs_variable_t *var)
 {
-    njs_value_t     *value;
-    njs_function_t  *function;
+    njs_value_t            *value;
+    njs_function_t         *function;
+    njs_function_lambda_t  *lambda;
 
-    function = njs_function_alloc(vm);
+    lambda = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_function_lambda_t));
+    if (nxt_slow_path(lambda == NULL)) {
+        njs_memory_error(vm);
+        return NULL;
+    }
+
+    /* TODO:
+     *  njs_function_t is used to pass lambda to
+     *  njs_generate_function_declaration() and is not actually needed.
+     *  real njs_function_t is created by njs_vmcode_function() in runtime.
+     */
+
+    function = njs_function_alloc(vm, lambda, NULL, 1);
     if (nxt_slow_path(function == NULL)) {
         return NULL;
     }

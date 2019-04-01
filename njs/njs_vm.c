@@ -371,41 +371,16 @@ njs_vmcode_array(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 njs_ret_t
 njs_vmcode_function(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 {
-    size_t                 size;
-    nxt_uint_t             n, nesting;
     njs_function_t         *function;
     njs_function_lambda_t  *lambda;
     njs_vmcode_function_t  *code;
 
     code = (njs_vmcode_function_t *) vm->current;
     lambda = code->lambda;
-    nesting = lambda->nesting;
 
-    size = sizeof(njs_function_t) + nesting * sizeof(njs_closure_t *);
-
-    function = nxt_mp_zalloc(vm->mem_pool, size);
+    function = njs_function_alloc(vm, lambda, vm->active_frame->closures, 0);
     if (nxt_slow_path(function == NULL)) {
-        njs_memory_error(vm);
         return NXT_ERROR;
-    }
-
-    function->u.lambda = lambda;
-    function->object.shared_hash = vm->shared->function_prototype_hash;
-    function->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION].object;
-    function->object.extensible = 1;
-    function->args_offset = 1;
-    function->ctor = 1;
-
-    if (nesting != 0) {
-        function->closure = 1;
-
-        n = 0;
-
-        do {
-            /* GC: retain closure. */
-            function->closures[n] = vm->active_frame->closures[n];
-            n++;
-        } while (n < nesting);
     }
 
     vm->retval.data.u.function = function;
