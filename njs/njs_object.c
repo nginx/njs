@@ -1889,8 +1889,8 @@ njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     value = njs_arg(args, nargs, 1);
 
     if (njs_is_object(value)) {
-        njs_object_prototype_get_proto(vm, (njs_value_t *) value, NULL,
-                                       &vm->retval);
+        njs_object_prototype_proto(vm, (njs_value_t *) value, NULL,
+                                   &vm->retval);
         return NXT_OK;
     }
 
@@ -2393,13 +2393,71 @@ const njs_object_init_t  njs_object_constructor_init = {
 };
 
 
+/*
+ * ES6, 9.1.2: [[SetPrototypeOf]].
+ */
+static nxt_bool_t
+njs_object_set_prototype_of(njs_vm_t *vm, njs_object_t *object,
+    const njs_value_t *value)
+{
+    const njs_object_t *proto;
+
+    proto = njs_is_object(value) ? value->data.u.object->__proto__
+                                 : NULL;
+
+    if (nxt_slow_path(object->__proto__ == proto)) {
+        return 1;
+    }
+
+    if (nxt_slow_path(proto == NULL)) {
+        object->__proto__ = NULL;
+        return 1;
+    }
+
+    do {
+        if (proto == object) {
+            return 0;
+        }
+
+        proto = proto->__proto__;
+
+    } while (proto != NULL);
+
+    object->__proto__ = value->data.u.object;
+
+    return 1;
+}
+
+
 njs_ret_t
-njs_object_prototype_get_proto(njs_vm_t *vm, njs_value_t *value,
+njs_object_prototype_proto(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
-    njs_object_t  *proto;
+    nxt_bool_t    ret;
+    njs_object_t  *proto, *object;
 
-    proto = value->data.u.object->__proto__;
+    if (!njs_is_object(value)) {
+        *retval = *value;
+        return NJS_OK;
+    }
+
+    object = value->data.u.object;
+
+    if (setval != NULL) {
+        if (njs_is_object(setval) || njs_is_null(setval)) {
+            ret = njs_object_set_prototype_of(vm, object, setval);
+            if (nxt_slow_path(!ret)) {
+                njs_type_error(vm, "Cyclic __proto__ value");
+                return NXT_ERROR;
+            }
+        }
+
+        *retval = njs_value_undefined;
+
+        return NJS_OK;
+    }
+
+    proto = object->__proto__;
 
     if (nxt_fast_path(proto != NULL)) {
         retval->data.u.object = proto;
@@ -2722,7 +2780,8 @@ static const njs_object_prop_t  njs_object_prototype_properties[] =
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("__proto__"),
-        .value = njs_prop_handler(njs_object_prototype_get_proto),
+        .value = njs_prop_handler(njs_object_prototype_proto),
+        .writable = 1,
     },
 
     {

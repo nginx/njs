@@ -819,7 +819,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("__proto__"),
-        .value = njs_prop_handler(njs_object_prototype_get_proto),
+        .value = njs_prop_handler(njs_object_prototype_proto),
     },
 
     {

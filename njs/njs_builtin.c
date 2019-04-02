@@ -414,7 +414,7 @@ njs_prototype_function(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
  * Object(),
  * Object.__proto__             -> Function_Prototype,
  * Object_Prototype.__proto__   -> null,
- *   the null value is handled by njs_object_prototype_get_proto(),
+ *   the null value is handled by njs_object_prototype_proto(),
  *
  * Array(),
  * Array.__proto__              -> Function_Prototype,

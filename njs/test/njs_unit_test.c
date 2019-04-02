@@ -7507,6 +7507,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.prototype.__proto__ === null"),
       nxt_string("true") },
 
+    { nxt_string("Object.prototype.__proto__ = {}"),
+      nxt_string("TypeError: Cyclic __proto__ value") },
+
+    { nxt_string("var o = {}; var o2 = Object.create(o); o.__proto__ = o2"),
+      nxt_string("TypeError: Cyclic __proto__ value") },
+
     { nxt_string("Object.prototype.__proto__.f()"),
       nxt_string("TypeError: cannot get property \"f\" of undefined") },
 
@@ -7529,7 +7535,13 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("({}).__proto__ = 1"),
-      nxt_string("TypeError: Cannot assign to read-only property \"__proto__\" of object") },
+      nxt_string("1") },
+
+    { nxt_string("({}).__proto__ = null"),
+      nxt_string("null") },
+
+    { nxt_string("({__proto__: []}) instanceof Array"),
+      nxt_string("true") },
 
     { nxt_string("({}).__proto__.constructor === Object"),
       nxt_string("true") },

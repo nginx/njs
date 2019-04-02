@@ -106,7 +106,7 @@ njs_ret_t njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval);
 njs_value_t *njs_property_prototype_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
     njs_object_t *prototype);
-njs_ret_t njs_object_prototype_get_proto(njs_vm_t *vm, njs_value_t *value,
+njs_ret_t njs_object_prototype_proto(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval);
 njs_value_t *njs_property_constructor_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
     njs_value_t *constructor);
