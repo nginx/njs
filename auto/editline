@@ -7,26 +7,33 @@ NXT_EDITLINE_LIB=
 
 nxt_found=no
 
-nxt_feature="editline library"
+nxt_feature="editline library in editline/readline.h"
 nxt_feature_name=NXT_HAVE_EDITLINE
 nxt_feature_run=no
-nxt_feature_incs="-I/usr/include/editline"
+nxt_feature_incs=
 nxt_feature_libs="-ledit"
 nxt_feature_test="#include <stdio.h>
-                  #include <readline.h>
+                  #include <editline/readline.h>
 
-                 int main(void) {
-                     add_history(NULL);
-                     return 0;
-                 }"
+                  int main(void) {
+                      add_history(NULL);
+                      return 0;
+                  }"
 . auto/feature
 
 if [ $nxt_found = no ]; then
 
     # FreeBSD port
 
-    nxt_feature="editline in /usr/include/edit"
-    nxt_feature_incs="-I/usr/include/edit/readline"
+    nxt_feature_name=NXT_HAVE_EDIT_READLINE
+    nxt_feature="editline in edit/readline/readline.h"
+    nxt_feature_test="#include <stdio.h>
+                      #include <edit/readline/readline.h>
+
+                      int main(void) {
+                          add_history(NULL);
+                          return 0;
+                      }"
 
     . auto/feature
 fi
@@ -35,9 +42,15 @@ if [ $nxt_found = no ]; then
 
     # NetBSD
 
-    nxt_feature="editline in /usr/include"
-    nxt_feature_incs="-I/usr/include/readline"
+    nxt_feature_name=NXT_HAVE_READLINE
+    nxt_feature="editline in readline/readline.h"
+    nxt_feature_test="#include <stdio.h>
+                      #include <readline/readline.h>
 
+                      int main(void) {
+                          add_history(NULL);
+                          return 0;
+                      }"
     . auto/feature
 fi
 
@@ -47,8 +60,8 @@ if [ $nxt_found = yes ]; then
     NXT_HAVE_LIBEDIT=YES
     NXT_EDITLINE_CFLAGS=$nxt_feature_incs
     NXT_EDITLINE_LIB=$nxt_feature_libs
+    NXT_DEFAULT_TARGET="$NXT_DEFAULT_TARGET njs"
 
-	NXT_DEFAULT_TARGET="$NXT_DEFAULT_TARGET njs"
 else
     NXT_HAVE_LIBEDIT=NO
     $echo " - building interactive shell is not possible"

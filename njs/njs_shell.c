@@ -17,7 +17,13 @@
 #include <locale.h>
 
 #include <stdio.h>
-#include <readline.h>
+#if (NXT_HAVE_EDITLINE)
+#include <editline/readline.h>
+#elif (NXT_HAVE_EDIT_READLINE)
+#include <edit/readline/readline.h>
+#else
+#include <readline/readline.h>
+#endif
 
 
 typedef struct {
