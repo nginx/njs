@@ -2956,7 +2956,7 @@ njs_primitive_value(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
  *      retval will contain undefined
  */
 njs_ret_t
-njs_value_property(njs_vm_t *vm, njs_value_t *value,
+njs_value_property(njs_vm_t *vm, const njs_value_t *value,
     const njs_value_t *property, njs_value_t *retval)
 {
     njs_ret_t             ret;
@@ -2965,7 +2965,7 @@ njs_value_property(njs_vm_t *vm, njs_value_t *value,
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 0);
 
-    ret = njs_property_query(vm, &pq, value, property);
+    ret = njs_property_query(vm, &pq, (njs_value_t *) value, property);
 
     switch (ret) {
 
@@ -2994,8 +2994,8 @@ njs_value_property(njs_vm_t *vm, njs_value_t *value,
         case NJS_PROPERTY_HANDLER:
             pq.scratch = *prop;
             prop = &pq.scratch;
-            ret = prop->value.data.u.prop_handler(vm, value, NULL,
-                                                  &prop->value);
+            ret = prop->value.data.u.prop_handler(vm, (njs_value_t *) value,
+                                                  NULL, &prop->value);
 
             if (nxt_slow_path(ret != NXT_OK)) {
                 return ret;
