@@ -37,7 +37,8 @@ static njs_parser_node_t *njs_parser_return_set(njs_vm_t *vm,
     njs_parser_t *parser, njs_parser_node_t *expr);
 static njs_token_t njs_parser_return_statement(njs_vm_t *vm,
     njs_parser_t *parser);
-static njs_token_t njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser);
+static njs_token_t njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser,
+    nxt_bool_t var_in);
 static njs_token_t njs_parser_if_statement(njs_vm_t *vm, njs_parser_t *parser);
 static njs_token_t njs_parser_switch_statement(njs_vm_t *vm,
     njs_parser_t *parser);
@@ -46,9 +47,7 @@ static njs_token_t njs_parser_while_statement(njs_vm_t *vm,
 static njs_token_t njs_parser_do_while_statement(njs_vm_t *vm,
     njs_parser_t *parser);
 static njs_token_t njs_parser_for_statement(njs_vm_t *vm, njs_parser_t *parser);
-static njs_token_t njs_parser_for_var_statement(njs_vm_t *vm,
-    njs_parser_t *parser);
-static njs_token_t njs_parser_for_var_in_statement(njs_vm_t *vm,
+static njs_token_t njs_parser_var_in_statement(njs_vm_t *vm,
     njs_parser_t *parser, njs_parser_node_t *name);
 static njs_token_t njs_parser_for_in_statement(njs_vm_t *vm,
     njs_parser_t *parser, nxt_str_t *name, njs_token_t token);
@@ -358,7 +357,7 @@ njs_parser_statement(njs_vm_t *vm, njs_parser_t *parser,
 
         switch (token) {
         case NJS_TOKEN_VAR:
-            token = njs_parser_var_statement(vm, parser);
+            token = njs_parser_var_statement(vm, parser, 0);
             break;
 
         case NJS_TOKEN_RETURN:
@@ -1009,7 +1008,7 @@ njs_parser_return_statement(njs_vm_t *vm, njs_parser_t *parser)
 
 
 static njs_token_t
-njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser)
+njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser, nxt_bool_t var_in)
 {
     njs_token_t        token;
     njs_parser_node_t  *left, *stmt, *name, *assign, *expr;
@@ -1026,15 +1025,17 @@ njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser)
         if (token != NJS_TOKEN_NAME) {
             if (token == NJS_TOKEN_ARGUMENTS || token == NJS_TOKEN_EVAL) {
                 njs_parser_syntax_error(vm, parser, "Identifier \"%V\" "
-                                        "is forbidden in var declaration",
-                                        njs_parser_text(parser));
+                                        "is forbidden in %s declaration",
+                                        njs_parser_text(parser),
+                                        var_in ? "for-in var" : "var");
             }
 
             return NJS_TOKEN_ILLEGAL;
         }
 
 
-        name = njs_parser_variable_node(vm, parser, njs_parser_text(parser),
+        name = njs_parser_variable_node(vm, parser,
+                                        njs_parser_text(parser),
                                         njs_parser_key_hash(parser),
                                         NJS_VARIABLE_VAR);
         if (nxt_slow_path(name == NULL)) {
@@ -1044,6 +1045,10 @@ njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser)
         token = njs_parser_token(vm, parser);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
+        }
+
+        if (var_in && token == NJS_TOKEN_IN) {
+            return njs_parser_var_in_statement(vm, parser, name);
         }
 
         expr = NULL;
@@ -1353,7 +1358,7 @@ njs_parser_for_statement(njs_vm_t *vm, njs_parser_t *parser)
 
         if (token == NJS_TOKEN_VAR) {
 
-            token = njs_parser_for_var_statement(vm, parser);
+            token = njs_parser_var_statement(vm, parser, 1);
             if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
                 return token;
             }
@@ -1452,91 +1457,7 @@ njs_parser_for_statement(njs_vm_t *vm, njs_parser_t *parser)
 
 
 static njs_token_t
-njs_parser_for_var_statement(njs_vm_t *vm, njs_parser_t *parser)
-{
-    njs_token_t        token;
-    njs_parser_node_t  *left, *stmt, *name, *assign, *expr;
-
-    parser->node = NULL;
-    left = NULL;
-
-    do {
-        token = njs_parser_token(vm, parser);
-        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-            return token;
-        }
-
-        if (token != NJS_TOKEN_NAME) {
-            if (token == NJS_TOKEN_ARGUMENTS || token == NJS_TOKEN_EVAL) {
-                njs_parser_syntax_error(vm, parser, "Identifier \"%V\" "
-                                       "is forbidden in for-in var declaration",
-                                       njs_parser_text(parser));
-            }
-
-            return NJS_TOKEN_ILLEGAL;
-        }
-
-        name = njs_parser_variable_node(vm, parser, njs_parser_text(parser),
-                                        njs_parser_key_hash(parser),
-                                        NJS_VARIABLE_VAR);
-        if (nxt_slow_path(name == NULL)) {
-            return NJS_TOKEN_ERROR;
-        }
-
-        token = njs_parser_token(vm, parser);
-        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-            return token;
-        }
-
-        if (token == NJS_TOKEN_IN) {
-            return njs_parser_for_var_in_statement(vm, parser, name);
-        }
-
-        expr = NULL;
-
-        if (token == NJS_TOKEN_ASSIGNMENT) {
-
-            token = njs_parser_token(vm, parser);
-            if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-                return token;
-            }
-
-            token = njs_parser_assignment_expression(vm, parser, token);
-            if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-                return token;
-            }
-
-            expr = parser->node;
-        }
-
-        assign = njs_parser_node_new(vm, parser, NJS_TOKEN_VAR);
-        if (nxt_slow_path(assign == NULL)) {
-            return NJS_TOKEN_ERROR;
-        }
-
-        assign->u.operation = njs_vmcode_move;
-        assign->left = name;
-        assign->right = expr;
-
-        stmt = njs_parser_node_new(vm, parser, NJS_TOKEN_STATEMENT);
-        if (nxt_slow_path(stmt == NULL)) {
-            return NJS_TOKEN_ERROR;
-        }
-
-        stmt->left = left;
-        stmt->right = assign;
-        parser->node = stmt;
-
-        left = stmt;
-
-    } while (token == NJS_TOKEN_COMMA);
-
-    return token;
-}
-
-
-static njs_token_t
-njs_parser_for_var_in_statement(njs_vm_t *vm, njs_parser_t *parser,
+njs_parser_var_in_statement(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *name)
 {
     njs_token_t        token;
