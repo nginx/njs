@@ -906,44 +906,89 @@ njs_function_prototype_call(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
+/*
+ * Non-primitive length values are not supported yet. To handle non-primitive
+ * values a continuation is needed. Currently, only one continuation per frame
+ * is supported. apply() is a special function which can add a second
+ * continuation to the continuation of the underling function.
+ *
+ * TODO:
+ *   String.prototype.concat.apply('a', { length:{ valueOf:
+ *                                        function() { return 2; } },
+ *                                        0:'b', 1:'c'})
+ */
 static njs_ret_t
 njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t retval)
 {
-    njs_ret_t       ret;
-    njs_array_t     *array;
-    njs_value_t     *this;
-    njs_function_t  *function;
+    uint32_t           i;
+    njs_ret_t          ret;
+    njs_value_t        length, name;
+    njs_array_t        *arr;
+    njs_function_t     *func;
+    const njs_value_t  *this, *arr_like;
 
-    if (!njs_is_function(&args[0])) {
+    static const njs_value_t  njs_string_length = njs_string("length");
+
+    if (!njs_is_function(njs_arg(args, nargs, 0))) {
         njs_type_error(vm, "\"this\" argument is not a function");
         return NXT_ERROR;
     }
 
-    function = args[0].data.u.function;
-    this = &args[1];
+    func = (njs_argument(args, 0))->data.u.function;
+    this = njs_arg(args, nargs, 1);
+    arr_like = njs_arg(args, nargs, 2);
 
-    if (nargs > 2) {
-        if (!njs_is_array(&args[2])) {
-            njs_type_error(vm, "second argument is not an array");
-            return NXT_ERROR;
-        }
-
-        array = args[2].data.u.array;
-        args = array->start;
-        nargs = array->length;
-
-    } else {
-        if (nargs == 1) {
-            this = (njs_value_t *) &njs_value_undefined;
-        }
-
+    if (njs_is_null_or_undefined(arr_like)) {
         nargs = 0;
+
+        goto activate;
+
+    } else if (njs_is_array(arr_like)) {
+        arr = arr_like->data.u.array;
+
+        args = arr->start;
+        nargs = arr->length;
+
+        goto activate;
+
+    } else if (nxt_slow_path(!njs_is_object(arr_like))) {
+        njs_type_error(vm, "second argument is not an array-like object");
+        return NXT_ERROR;
     }
 
-    ret = njs_function_activate(vm, function, this, args, nargs, retval,
-                                sizeof(njs_vmcode_function_call_t));
+    ret = njs_value_property(vm, arr_like, &njs_string_length, &length);
+    if (nxt_slow_path(ret == NXT_ERROR)) {
+        return ret;
+    }
 
+    if (!njs_is_primitive(&length)) {
+        njs_type_error(vm, "non-primitive length values are not supported");
+        return NXT_ERROR;
+    }
+
+    nargs = njs_primitive_value_to_number(&length);
+
+    arr = njs_array_alloc(vm, nargs, NJS_ARRAY_SPARE);
+    if (nxt_slow_path(arr == NULL)) {
+        return NXT_ERROR;
+    }
+
+    args = arr->start;
+
+    for (i = 0; i < nargs; i++) {
+        njs_uint32_to_string(&name, i);
+
+        ret = njs_value_property(vm, arr_like, &name, &args[i]);
+        if (nxt_slow_path(ret == NXT_ERROR)) {
+            return ret;
+        }
+    }
+
+activate:
+
+    ret = njs_function_activate(vm, func, this, args, nargs, retval,
+                                sizeof(njs_vmcode_function_call_t));
     if (nxt_slow_path(ret == NXT_ERROR)) {
         return ret;
     }

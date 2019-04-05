@@ -6148,7 +6148,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("5") },
 
     { nxt_string("var f = function(a) { return this + a }; f.apply(5, 1)"),
-      nxt_string("TypeError: second argument is not an array") },
+      nxt_string("TypeError: second argument is not an array-like object") },
 
     { nxt_string("var f = function(a, b) { return this + a + b };"
                  "f.apply(5, [1, 2])"),
@@ -6157,6 +6157,57 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var f = function(a, b) { return this + a + b };"
                  "f.apply(5, [1, 2], 3)"),
       nxt_string("8") },
+
+    { nxt_string("var f = function(a, b) { return this + a + b };"
+                 "f.apply(5, {'length':2, '0':1, '1':2})"),
+      nxt_string("8") },
+
+    { nxt_string("var f = function(a, b) { return this + a + b };"
+                 "f.apply(5, {'length':2, '0':1, '1':2, '2':3})"),
+      nxt_string("8") },
+
+    { nxt_string("var f = function(a, b, c) { return this + a + b + c};"
+                 "f.apply(\"a\", {'length':2, '0':1, '1':2, '2':3})"),
+      nxt_string("a12undefined") },
+
+    { nxt_string("var f = function(a, b) { return this + a + b };"
+                 "f.apply(5, {'length':3, '0':1, '1':2, '2':3})"),
+      nxt_string("8") },
+
+    { nxt_string("var f = function(a) { return this + a };"
+                 "f.apply(5, {'nolength':3, '0':1, '1':2})"),
+      nxt_string("NaN") },
+
+    { nxt_string("var f = function(a) { return this };"
+                 "f.apply(5, {'nolength':3, '0':1, '1':2})"),
+      nxt_string("5") },
+
+    { nxt_string("var f = function(a, b, c) { return this + a + b + c };"
+                 "f.apply(\"a\", {'length':3, '0':1, '1':2})"),
+      nxt_string("a12undefined") },
+
+    { nxt_string("var f = function(a, b) { return this + a + b };"
+                 "f.apply(\"a\", {'length':2, '0':undefined, '1':null})"),
+      nxt_string("aundefinednull") },
+
+    { nxt_string("var f = function() { return this };"
+                 "f.apply(123, {})"),
+      nxt_string("123") },
+
+    { nxt_string("String.prototype.concat.apply('a', "
+                 "{length:2, 0:{toString:function() {return 'b'}}, 1:'c'})"),
+      nxt_string("abc") },
+
+#if 0
+    /* TODO: non-primitive length values are not supported yet. */
+    { nxt_string("String.prototype.concat.apply('a',"
+                 "{length:{valueOf:function() {return 2}},  0:'b', 1:'c'})"),
+      nxt_string("abc") },
+#else
+    { nxt_string("String.prototype.concat.apply('a',"
+                 "{length:{valueOf:function() {return 2}},  0:'b', 1:'c'})"),
+      nxt_string("TypeError: non-primitive length values are not supported") },
+#endif
 
     { nxt_string("var a = function() { return 1 } + ''; a"),
       nxt_string("[object Function]") },
@@ -6183,7 +6234,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("a") },
 
     { nxt_string("''.concat.apply('a', 'b')"),
-      nxt_string("TypeError: second argument is not an array") },
+      nxt_string("TypeError: second argument is not an array-like object") },
 
     { nxt_string("''.concat.apply('a', [ 'b', 'c' ])"),
       nxt_string("abc") },
