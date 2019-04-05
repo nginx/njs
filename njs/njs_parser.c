@@ -1055,7 +1055,7 @@ njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser)
                 return token;
             }
 
-            token = njs_parser_var_expression(vm, parser, token);
+            token = njs_parser_assignment_expression(vm, parser, token);
             if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
                 return token;
             }
@@ -1501,7 +1501,7 @@ njs_parser_for_var_statement(njs_vm_t *vm, njs_parser_t *parser)
                 return token;
             }
 
-            token = njs_parser_var_expression(vm, parser, token);
+            token = njs_parser_assignment_expression(vm, parser, token);
             if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
                 return token;
             }

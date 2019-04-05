@@ -210,59 +210,6 @@ njs_parser_expression(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
 }
 
 
-njs_token_t
-njs_parser_var_expression(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
-{
-    njs_parser_node_t       *node;
-    njs_vmcode_operation_t  operation;
-
-    token = njs_parser_assignment_expression(vm, parser, token);
-    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-        return token;
-    }
-
-    for ( ;; ) {
-        switch (token) {
-
-        case NJS_TOKEN_ASSIGNMENT:
-            nxt_thread_log_debug("JS: =");
-            operation = njs_vmcode_move;
-            break;
-
-        default:
-            return token;
-        }
-
-        if (!njs_parser_is_lvalue(parser->node)) {
-            njs_parser_ref_error(vm, parser,
-                                 "Invalid left-hand side in assignment");
-            return NJS_TOKEN_ILLEGAL;
-        }
-
-        node = njs_parser_node_new(vm, parser, token);
-        if (nxt_slow_path(node == NULL)) {
-            return NJS_TOKEN_ERROR;
-        }
-
-        node->u.operation = operation;
-        node->left = parser->node;
-
-        token = njs_parser_token(vm, parser);
-        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-            return token;
-        }
-
-        token = njs_parser_var_expression(vm, parser, token);
-        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-            return token;
-        }
-
-        node->right = parser->node;
-        parser->node = node;
-    }
-}
-
-
 static njs_token_t
 njs_parser_any_expression(njs_vm_t *vm, njs_parser_t *parser,
     const njs_parser_expression_t *expr, njs_token_t token)

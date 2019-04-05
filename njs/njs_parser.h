@@ -78,8 +78,6 @@ nxt_int_t njs_parser(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_t *prev);
 njs_token_t njs_parser_expression(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token);
-njs_token_t njs_parser_var_expression(njs_vm_t *vm, njs_parser_t *parser,
-    njs_token_t token);
 njs_token_t njs_parser_assignment_expression(njs_vm_t *vm,
     njs_parser_t *parser, njs_token_t token);
 njs_token_t njs_parser_function_expression(njs_vm_t *vm, njs_parser_t *parser);
