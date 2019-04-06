@@ -8,6 +8,8 @@
 #include <string.h>
 
 
+static njs_function_t *njs_function_copy(njs_vm_t *vm,
+    const njs_function_t *function);
 static njs_native_frame_t *njs_function_frame_alloc(njs_vm_t *vm, size_t size);
 static njs_ret_t njs_normalize_args(njs_vm_t *vm, njs_value_t *args,
     uint8_t *args_types, nxt_uint_t nargs);
@@ -71,8 +73,6 @@ fail:
 njs_function_t *
 njs_function_value_copy(njs_vm_t *vm, njs_value_t *value)
 {
-    size_t          size;
-    nxt_uint_t      n, nesting;
     njs_function_t  *function, *copy;
 
     function = value->data.u.function;
@@ -80,6 +80,25 @@ njs_function_value_copy(njs_vm_t *vm, njs_value_t *value)
     if (!function->object.shared) {
         return function;
     }
+
+    copy = njs_function_copy(vm, function);
+    if (nxt_slow_path(copy == NULL)) {
+        njs_memory_error(vm);
+        return NULL;
+    }
+
+    value->data.u.function = copy;
+
+    return copy;
+}
+
+
+static njs_function_t *
+njs_function_copy(njs_vm_t *vm, const njs_function_t *function)
+{
+    size_t          size;
+    nxt_uint_t      n, nesting;
+    njs_function_t  *copy;
 
     nesting = (function->native) ? 0 : function->u.lambda->nesting;
 
@@ -90,8 +109,6 @@ njs_function_value_copy(njs_vm_t *vm, njs_value_t *value)
         njs_memory_error(vm);
         return NULL;
     }
-
-    value->data.u.function = copy;
 
     *copy = *function;
     copy->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION].object;
@@ -1050,17 +1067,11 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    function = nxt_mp_alloc(vm->mem_pool, sizeof(njs_function_t));
+    function = njs_function_copy(vm, args[0].data.u.function);
     if (nxt_slow_path(function == NULL)) {
         njs_memory_error(vm);
         return NXT_ERROR;
     }
-
-    *function = *args[0].data.u.function;
-
-    function->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION].object;
-    function->object.shared = 0;
-    function->object.extensible = 1;
 
     if (nargs == 1) {
         args = (njs_value_t *) &njs_value_undefined;

@@ -6356,6 +6356,16 @@ static njs_unit_test_t  njs_test[] =
                  "var b = f.bind('1', '2', '3'); b.apply()"),
       nxt_string("123") },
 
+    { nxt_string("function f() { var a; return (function() { a = 1; return a; }).bind()() } f()"),
+      nxt_string("1") },
+
+    { nxt_string("function f() { var a; function baz() { a = 1; return a; } return baz.bind()(); } f()"),
+      nxt_string("1") },
+
+    { nxt_string("function f(a, b) { return a + b }"
+                 "f(3,4) === f.bind()(3,4)"),
+      nxt_string("true") },
+
     { nxt_string("var obj = {prop:'abc'}; "
                  "var func = function(x) { "
                  "    return this === obj && x === 1 && arguments[0] === 1 "
