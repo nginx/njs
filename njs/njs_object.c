@@ -764,7 +764,12 @@ njs_method_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
         return NXT_ERROR;
     }
 
-    function->object.shared_hash = vm->shared->function_instance_hash;
+    if (function->ctor) {
+        function->object.shared_hash = vm->shared->function_instance_hash;
+
+    } else {
+        function->object.shared_hash = vm->shared->arrow_instance_hash;
+    }
 
     pq->lhq.replace = 0;
     pq->lhq.value = prop;

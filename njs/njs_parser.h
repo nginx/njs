@@ -32,6 +32,7 @@ struct njs_parser_scope_s {
     uint8_t                         nesting;     /* 4 bits */
     uint8_t                         argument_closures;
     uint8_t                         module;
+    uint8_t                         arrow_function;
 };
 
 
@@ -81,6 +82,10 @@ njs_token_t njs_parser_expression(njs_vm_t *vm, njs_parser_t *parser,
 njs_token_t njs_parser_assignment_expression(njs_vm_t *vm,
     njs_parser_t *parser, njs_token_t token);
 njs_token_t njs_parser_function_expression(njs_vm_t *vm, njs_parser_t *parser);
+nxt_int_t njs_parser_match_arrow_expression(njs_vm_t *vm, njs_parser_t *parser,
+    njs_token_t token);
+njs_token_t njs_parser_arrow_expression(njs_vm_t *vm, njs_parser_t *parser,
+    njs_token_t token);
 njs_token_t njs_parser_module_lambda(njs_vm_t *vm, njs_parser_t *parser);
 njs_token_t njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token);
@@ -226,10 +231,12 @@ njs_parser_global_scope(njs_vm_t *vm)
 
 
 nxt_inline njs_parser_scope_t *
-njs_function_scope(njs_parser_scope_t *scope)
+njs_function_scope(njs_parser_scope_t *scope, nxt_bool_t any)
 {
     while (scope->type != NJS_SCOPE_GLOBAL) {
-        if (scope->type == NJS_SCOPE_FUNCTION) {
+        if (scope->type == NJS_SCOPE_FUNCTION
+            && (any || !scope->arrow_function))
+        {
             return scope;
         }
 

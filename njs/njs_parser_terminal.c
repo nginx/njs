@@ -35,6 +35,11 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
     njs_ret_t          ret;
     njs_parser_node_t  *node;
 
+    ret = njs_parser_match_arrow_expression(vm, parser, token);
+    if (ret == NXT_OK) {
+        return njs_parser_arrow_expression(vm, parser, token);
+    }
+
     if (token == NJS_TOKEN_OPEN_PARENTHESIS) {
 
         token = njs_parser_token(vm, parser);
@@ -211,20 +216,10 @@ njs_parser_reference(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
     case NJS_TOKEN_THIS:
         nxt_thread_log_debug("JS: this");
 
-        scope = parser->scope;
+        scope = njs_function_scope(parser->scope, 0);
 
-        while (scope->type != NJS_SCOPE_GLOBAL) {
-            if (scope->type == NJS_SCOPE_FUNCTION) {
-                break;
-            }
-
-            scope = scope->parent;
-        }
-
-        if (scope->type != NJS_SCOPE_GLOBAL) {
-            if (njs_function_scope(scope)
-                == njs_function_scope(parser->scope))
-            {
+        if (scope != NULL) {
+            if (scope == njs_function_scope(parser->scope, 1)) {
                 node->index = NJS_INDEX_THIS;
 
             } else {
@@ -232,14 +227,13 @@ njs_parser_reference(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
 
                 node->token_line = token_line;
 
-                ret = njs_variable_reference(vm, parser->scope, node, name,
-                                             hash, NJS_REFERENCE);
+                ret = njs_variable_reference(vm, scope, node, name, hash,
+                                             NJS_REFERENCE);
                 if (nxt_slow_path(ret != NXT_OK)) {
                     return NULL;
                 }
 
-                var = njs_variable_add(vm, parser->scope, name, hash,
-                                       NJS_VARIABLE_VAR);
+                var = njs_variable_add(vm, scope, name, hash, NJS_VARIABLE_VAR);
                 if (nxt_slow_path(var == NULL)) {
                     return NULL;
                 }
@@ -361,7 +355,9 @@ njs_parser_reference(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
     case NJS_TOKEN_ARGUMENTS:
         nxt_thread_log_debug("JS: arguments");
 
-        if (parser->scope->type <= NJS_SCOPE_GLOBAL) {
+        scope = njs_function_scope(parser->scope, 0);
+
+        if (scope == NULL) {
             njs_parser_syntax_error(vm, parser, "\"%V\" object "
                                     "in global scope", name);
 
@@ -370,13 +366,13 @@ njs_parser_reference(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
 
         node->token_line = token_line;
 
-        ret = njs_variable_reference(vm, parser->scope, node, name, hash,
+        ret = njs_variable_reference(vm, scope, node, name, hash,
                                      NJS_REFERENCE);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NULL;
         }
 
-        var = njs_variable_add(vm, parser->scope, name, hash, NJS_VARIABLE_VAR);
+        var = njs_variable_add(vm, scope, name, hash, NJS_VARIABLE_VAR);
         if (nxt_slow_path(var == NULL)) {
             return NULL;
         }

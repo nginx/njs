@@ -257,6 +257,12 @@ njs_builtin_objects_create(njs_vm_t *vm)
         return NXT_ERROR;
     }
 
+    ret = njs_object_hash_init(vm, &shared->arrow_instance_hash,
+                               &njs_arrow_instance_init);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NXT_ERROR;
+    }
+
     ret = njs_object_hash_init(vm, &shared->arguments_object_instance_hash,
                                &njs_arguments_object_instance_init);
     if (nxt_slow_path(ret != NXT_OK)) {

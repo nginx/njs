@@ -105,11 +105,12 @@ njs_vm_external_add(njs_vm_t *vm, nxt_lvlhsh_t *hash, njs_external_t *external,
              * nxt_mp_zalloc() does also:
              *   nxt_lvlhsh_init(&function->object.hash);
              *   function->object.__proto__ = NULL;
+             *   function->ctor = 0;
              */
 
             function->object.__proto__ =
                               &vm->prototypes[NJS_CONSTRUCTOR_FUNCTION].object;
-            function->object.shared_hash = vm->shared->function_instance_hash;
+            function->object.shared_hash = vm->shared->arrow_instance_hash;
             function->object.type = NJS_FUNCTION;
             function->object.shared = 1;
             function->object.extensible = 1;

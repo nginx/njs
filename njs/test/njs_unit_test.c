@@ -6526,6 +6526,12 @@ static njs_unit_test_t  njs_test[] =
 
     /* arguments object. */
 
+    { nxt_string("arguments"),
+      nxt_string("SyntaxError: \"arguments\" object in global scope in 1") },
+
+    { nxt_string("{arguments}"),
+      nxt_string("SyntaxError: \"arguments\" object in global scope in 1") },
+
     { nxt_string("var arguments"),
       nxt_string("SyntaxError: Identifier \"arguments\" is forbidden in var declaration in 1") },
 
@@ -6624,6 +6630,138 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("function myFoo(a,b,...other) { return other };"
                  "myFoo(1,2);" ),
       nxt_string("") },
+
+    /* arrow functions. */
+
+    { nxt_string("()"),
+      nxt_string("SyntaxError: Unexpected token \")\" in 1") },
+
+    { nxt_string("() => "),
+      nxt_string("SyntaxError: Unexpected end of input in 1") },
+
+    { nxt_string("() => {"),
+      nxt_string("SyntaxError: Unexpected end of input in 1") },
+
+    { nxt_string("a\n => 1"),
+      nxt_string("SyntaxError: Unexpected token \"=>\" in 2") },
+
+    { nxt_string("new (()=>1)"),
+      nxt_string("TypeError: function is not a constructor")},
+
+    { nxt_string("(\n) => {}"),
+      nxt_string("[object Function]") },
+
+    { nxt_string("a => 1"),
+      nxt_string("[object Function]") },
+
+    { nxt_string("({f:()=>1, g:()=>2}).f()"),
+      nxt_string("1") },
+
+    { nxt_string("var f = f => {return 1;}; f()"),
+      nxt_string("1") },
+
+    { nxt_string("var f = (f) => {return 1;}; f()"),
+      nxt_string("1") },
+
+    { nxt_string("var f = (f, a, b) => {return 1;}; f()"),
+      nxt_string("1") },
+
+    { nxt_string("var f = () => {return 1;}; f()"),
+      nxt_string("1") },
+
+    { nxt_string("(f => {return 1;})()"),
+      nxt_string("1") },
+
+    { nxt_string("((f) => {return 1;})()"),
+      nxt_string("1") },
+
+    { nxt_string("(((f) => {return 1;}))()"),
+      nxt_string("1") },
+
+    { nxt_string("var f = f => 1; f()"),
+      nxt_string("1") },
+
+    { nxt_string("() => 1"),
+      nxt_string("[object Function]") },
+
+    { nxt_string("var f = ()=>{}; f()"),
+      nxt_string("undefined") },
+
+    { nxt_string("var f = ()=>({}); f()"),
+      nxt_string("[object Object]") },
+
+    { nxt_string("var materials = ['Hydrogen', 'Helium', 'Lithium', 'Beryllium'];"
+                 "materials.map(material => { return material.length; });"),
+      nxt_string("8,6,7,9") },
+
+    { nxt_string("var materials = ['Hydrogen', 'Helium', 'Lithium', 'Beryllium'];"
+                 "materials.map(material => material.length);"),
+      nxt_string("8,6,7,9") },
+
+    { nxt_string("var materials = ['Hydrogen', 'Helium', 'Lithium', 'Beryllium'];"
+                 "materials.map(material => { material.length });"),
+      nxt_string(",,,") },
+
+    { nxt_string("function f(a, b, c) {a = 1; return () => { return arguments[1]; };};"
+                 "f(1, 2, 3)('a', 'b');"),
+      nxt_string("2") },
+
+    { nxt_string("var f = (...c) => { return (function() { return arguments.length; }).bind(null, c); };"
+                 "var x = f(1,'a',false, {}); x()"),
+      nxt_string("1") },
+
+    { nxt_string("var f = (...c) => { return (function() { return arguments.length; }).bind(null, c); };"
+                 "var x = f(1,'a',false, {}); x(1,2,3)"),
+      nxt_string("4") },
+
+    { nxt_string("function Car(){ this.age = 0; (() => { this.age++;})();}"
+                 "(new Car()).age"),
+      nxt_string("1") },
+
+    { nxt_string("function Car(){ this.age = 0; (function(){ this.age++;})();}"
+                 "(new Car()).age"),
+      nxt_string("TypeError: cannot get property \"age\" of undefined") },
+
+    /* arrow functions + global this. */
+
+    { nxt_string("(() => this)()"),
+      nxt_string("[object Object]") },
+
+    { nxt_string("(() => this).call('abc')"),
+      nxt_string("[object Object]") },
+
+    { nxt_string("(() => this).apply('abc')"),
+      nxt_string("[object Object]") },
+
+    { nxt_string("(() => this).bind('abc')()"),
+      nxt_string("[object Object]") },
+
+    { nxt_string("(function() { return (() => this); })()()"),
+      nxt_string("undefined") },
+
+    { nxt_string("(function() { return (() => this); }).call('abc')()"),
+      nxt_string("abc") },
+
+    { nxt_string("(function() { return (() => this); }).bind('abc')()()"),
+      nxt_string("abc") },
+
+    { nxt_string("(function() { return (() => this); })"
+                 ".call('abc').call('bca')"),
+      nxt_string("abc") },
+
+    { nxt_string("(function() { return (() => this); })"
+                 ".call('abc').bind('bca')()"),
+      nxt_string("abc") },
+
+    { nxt_string("(function() { return function() { return () => this; }; })"
+                 ".call('bca').call('abc')()"),
+      nxt_string("abc") },
+
+     { nxt_string("var f = () => 1; f.prototype"),
+       nxt_string("undefined") },
+
+     { nxt_string("var f = (a,b) => 0; f.length"),
+       nxt_string("2") },
 
     /* Scopes. */
 
@@ -7568,6 +7706,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("this.NaN + 1"),
       nxt_string("NaN") },
 
+    { nxt_string("{this}"),
+      nxt_string("undefined") },
+
     { nxt_string("if (1) {new this}"),
       nxt_string("TypeError: object is not a function") },
 
@@ -7639,6 +7780,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("Object.prototype"),
       nxt_string("[object Object]") },
+
+    { nxt_string("Object.prototype.valueOf.prototype"),
+      nxt_string("undefined") },
 
     { nxt_string("Object.constructor === Function"),
       nxt_string("true") },

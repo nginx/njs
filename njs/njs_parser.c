@@ -2103,6 +2103,172 @@ njs_parser_property_token(njs_vm_t *vm, njs_parser_t *parser)
 }
 
 
+nxt_int_t
+njs_parser_match_arrow_expression(njs_vm_t *vm, njs_parser_t *parser,
+    njs_token_t token)
+{
+    size_t      offset;
+    nxt_bool_t  rest_parameters;
+
+    if (token != NJS_TOKEN_OPEN_PARENTHESIS && token != NJS_TOKEN_NAME) {
+        return NXT_DECLINED;
+    }
+
+    offset = 0;
+
+    if (token == NJS_TOKEN_NAME) {
+        goto arrow;
+    }
+
+    token = njs_parser_peek_token(vm, parser, &offset);
+    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+        return NXT_DECLINED;
+    }
+
+    rest_parameters = 0;
+
+    while (token != NJS_TOKEN_CLOSE_PARENTHESIS) {
+
+        if (rest_parameters) {
+            return NXT_DECLINED;
+        }
+
+        if (nxt_slow_path(token == NJS_TOKEN_ELLIPSIS)) {
+            rest_parameters = 1;
+
+            token = njs_parser_peek_token(vm, parser, &offset);
+            if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                return NXT_DECLINED;
+            }
+        }
+
+        if (nxt_slow_path(token != NJS_TOKEN_NAME)) {
+            return NXT_DECLINED;
+        }
+
+        token = njs_parser_peek_token(vm, parser, &offset);
+        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+            return token;
+        }
+
+        if (token == NJS_TOKEN_COMMA) {
+            token = njs_parser_peek_token(vm, parser, &offset);
+            if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+               return NXT_DECLINED;
+            }
+        }
+    }
+
+arrow:
+
+    token = njs_parser_peek_token(vm, parser, &offset);
+    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+        return NXT_DECLINED;
+    }
+
+    if (parser->lexer->prev_token == NJS_TOKEN_LINE_END) {
+        return NXT_DECLINED;
+    }
+
+    if (nxt_slow_path(token != NJS_TOKEN_ARROW)) {
+        return NXT_DECLINED;
+    }
+
+    return NXT_OK;
+}
+
+
+njs_token_t
+njs_parser_arrow_expression(njs_vm_t *vm, njs_parser_t *parser,
+    njs_token_t token)
+{
+    njs_ret_t               ret;
+    njs_index_t             index;
+    njs_parser_node_t       *node, *body, *parent;
+    njs_function_lambda_t  *lambda;
+
+    node = njs_parser_node_new(vm, parser, NJS_TOKEN_FUNCTION_EXPRESSION);
+    if (nxt_slow_path(node == NULL)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    node->token_line = njs_parser_token_line(parser);
+    parser->node = node;
+
+    lambda = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_function_lambda_t));
+    if (nxt_slow_path(lambda == NULL)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    lambda->arrow = 1;
+
+    node->u.value.data.u.lambda = lambda;
+
+    ret = njs_parser_scope_begin(vm, parser, NJS_SCOPE_FUNCTION);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    parser->scope->arrow_function = 1;
+
+    index = NJS_SCOPE_ARGUMENTS;
+
+    /* A "this" reservation. */
+    index += sizeof(njs_value_t);
+
+    if (token == NJS_TOKEN_OPEN_PARENTHESIS) {
+        token = njs_parser_lambda_arguments(vm, parser, lambda, index, token);
+        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+            return token;
+        }
+
+    } else {
+        token = njs_parser_lambda_argument(vm, parser, index);
+        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+            return token;
+        }
+
+        lambda->nargs = 1;
+    }
+
+    if (parser->lexer->prev_token == NJS_TOKEN_LINE_END) {
+        return NJS_TOKEN_ILLEGAL;
+    }
+
+    token = njs_parser_match(vm, parser, token, NJS_TOKEN_ARROW);
+    if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+        return token;
+    }
+
+    if (token == NJS_TOKEN_OPEN_BRACE) {
+        token = njs_parser_lambda_body(vm, parser, token);
+        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+            return token;
+        }
+
+    } else {
+        parent = parser->node;
+
+        token = njs_parser_assignment_expression(vm, parser, token);
+        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+            return token;
+        }
+
+        body = njs_parser_return_set(vm, parser, parser->node);
+        if (nxt_slow_path(body == NULL)) {
+            return NJS_TOKEN_ERROR;
+        }
+
+        parent->right = body;
+        parser->node = parent;
+    }
+
+    njs_parser_scope_end(vm, parser);
+
+    return token;
+}
+
+
 nxt_bool_t
 njs_parser_has_side_effect(njs_parser_node_t *node)
 {

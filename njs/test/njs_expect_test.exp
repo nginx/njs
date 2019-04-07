@@ -663,6 +663,8 @@ njs_test {
 njs_test {
     {"this\r\n"
      "this\r\nundefined"}
+    {"(() => this)()\r\n"
+     "(() => this)()\r\nundefined"}
 } "-t module"
 
 njs_test {

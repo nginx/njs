@@ -278,6 +278,7 @@ static const njs_lexer_multi_t  njs_greater_token[] = {
 
 static const njs_lexer_multi_t  njs_assignment_token[] = {
     { '=', NJS_TOKEN_EQUAL, 1, njs_strict_equal_token },
+    { '>', NJS_TOKEN_ARROW, 0, NULL },
 };
 
 

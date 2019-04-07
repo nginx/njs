@@ -38,11 +38,17 @@ njs_function_alloc(njs_vm_t *vm, njs_function_lambda_t *lambda,
      *   function->object.__proto__ = NULL;
      */
 
-    function->ctor = 1;
+    function->ctor = !lambda->arrow;
     function->args_offset = 1;
     function->u.lambda = lambda;
 
-    function->object.shared_hash = vm->shared->function_instance_hash;
+    if (lambda->arrow || !function->ctor) {
+        function->object.shared_hash = vm->shared->arrow_instance_hash;
+
+    } else {
+        function->object.shared_hash = vm->shared->function_instance_hash;
+    }
+
     function->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION].object;
     function->object.type = NJS_FUNCTION;
     function->object.shared = shared;
@@ -1192,6 +1198,23 @@ const njs_object_init_t  njs_function_instance_init = {
     nxt_string("Function instance"),
     njs_function_instance_properties,
     nxt_nitems(njs_function_instance_properties),
+};
+
+
+const njs_object_prop_t  njs_arrow_instance_properties[] =
+{
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("length"),
+        .value = njs_prop_handler(njs_function_instance_length),
+    },
+};
+
+
+const njs_object_init_t  njs_arrow_instance_init = {
+    nxt_string("Arrow instance"),
+    njs_arrow_instance_properties,
+    nxt_nitems(njs_arrow_instance_properties),
 };
 
 

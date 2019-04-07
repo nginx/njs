@@ -30,6 +30,7 @@ struct njs_function_lambda_s {
     /* Function internal block closures levels. */
     uint8_t                        block_closures;    /* 4 bits */
 
+    uint8_t                        arrow;             /* 1 bit */
     uint8_t                        rest_parameters;   /* 1 bit */
 
     /* Initial values of local scope. */
@@ -218,6 +219,7 @@ njs_function_previous_frame(njs_native_frame_t *frame)
 extern const njs_object_init_t  njs_function_constructor_init;
 extern const njs_object_init_t  njs_function_prototype_init;
 extern const njs_object_init_t  njs_function_instance_init;
+extern const njs_object_init_t  njs_arrow_instance_init;
 extern const njs_object_init_t  njs_arguments_object_instance_init;
 
 njs_ret_t njs_eval_function(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
