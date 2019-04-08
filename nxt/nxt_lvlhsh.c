@@ -842,6 +842,7 @@ nxt_lvlhsh_bucket_each(nxt_lvlhsh_each_t *lhe)
     } while (nxt_lvlhsh_free_entry(bucket));
 
     value = nxt_lvlhsh_entry_value(bucket);
+    lhe->key_hash = nxt_lvlhsh_entry_key(bucket);
 
     lhe->entries--;
 

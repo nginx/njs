@@ -171,6 +171,7 @@ typedef struct {
     uint32_t                  current;
     uint32_t                  entry;
     uint32_t                  entries;
+    uint32_t                  key_hash;
 } nxt_lvlhsh_each_t;
 
 
