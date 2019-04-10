@@ -225,6 +225,21 @@ njs_parser_global_scope(njs_vm_t *vm)
 }
 
 
+nxt_inline njs_parser_scope_t *
+njs_function_scope(njs_parser_scope_t *scope)
+{
+    while (scope->type != NJS_SCOPE_GLOBAL) {
+        if (scope->type == NJS_SCOPE_FUNCTION) {
+            return scope;
+        }
+
+        scope = scope->parent;
+    }
+
+    return NULL;
+}
+
+
 extern const nxt_lvlhsh_proto_t  njs_keyword_hash_proto;
 
 

@@ -391,6 +391,23 @@ njs_vmcode_function(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 
 
 njs_ret_t
+njs_vmcode_this(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
+{
+    njs_frame_t        *frame;
+    njs_value_t        *value;
+    njs_vmcode_this_t  *code;
+
+    frame = (njs_frame_t *) vm->active_frame;
+    code = (njs_vmcode_this_t *) vm->current;
+
+    value = njs_vmcode_operand(vm, code->dst);
+    *value = frame->native.arguments[0];
+
+    return sizeof(njs_vmcode_this_t);
+}
+
+
+njs_ret_t
 njs_vmcode_arguments(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 {
     nxt_int_t               ret;

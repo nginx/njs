@@ -215,14 +215,38 @@ njs_parser_reference(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
 
         while (scope->type != NJS_SCOPE_GLOBAL) {
             if (scope->type == NJS_SCOPE_FUNCTION) {
-                node->index = NJS_INDEX_THIS;
                 break;
             }
 
             scope = scope->parent;
         }
 
-        if (node->index == NJS_INDEX_THIS) {
+        if (scope->type != NJS_SCOPE_GLOBAL) {
+            if (njs_function_scope(scope)
+                == njs_function_scope(parser->scope))
+            {
+                node->index = NJS_INDEX_THIS;
+
+            } else {
+                node->token = NJS_TOKEN_NON_LOCAL_THIS;
+
+                node->token_line = token_line;
+
+                ret = njs_variable_reference(vm, parser->scope, node, name,
+                                             hash, NJS_REFERENCE);
+                if (nxt_slow_path(ret != NXT_OK)) {
+                    return NULL;
+                }
+
+                var = njs_variable_add(vm, parser->scope, name, hash,
+                                       NJS_VARIABLE_VAR);
+                if (nxt_slow_path(var == NULL)) {
+                    return NULL;
+                }
+
+                var->this_object = 1;
+            }
+
             break;
         }
 

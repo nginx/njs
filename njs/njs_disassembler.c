@@ -23,6 +23,8 @@ static njs_code_name_t  code_names[] = {
           nxt_string("OBJECT          ") },
     { njs_vmcode_function, sizeof(njs_vmcode_function_t),
           nxt_string("FUNCTION        ") },
+    { njs_vmcode_this, sizeof(njs_vmcode_this_t),
+          nxt_string("THIS            ") },
     { njs_vmcode_arguments, sizeof(njs_vmcode_arguments_t),
           nxt_string("ARGUMENTS       ") },
     { njs_vmcode_regexp, sizeof(njs_vmcode_regexp_t),

@@ -427,6 +427,7 @@ njs_generator(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
 
     case NJS_TOKEN_NAME:
     case NJS_TOKEN_ARGUMENTS:
+    case NJS_TOKEN_NON_LOCAL_THIS:
         return njs_generate_name(vm, generator, node);
 
     case NJS_TOKEN_GLOBAL_THIS:
@@ -2414,6 +2415,7 @@ njs_generate_lambda_variables(njs_vm_t *vm, njs_generator_t *generator,
     njs_variable_t          *var;
     njs_vmcode_move_t       *move;
     nxt_lvlhsh_each_t       lhe;
+    njs_vmcode_this_t       *this;
     njs_vmcode_arguments_t  *arguments;
 
     nxt_lvlhsh_each_init(&lhe, &njs_variables_hash_proto);
@@ -2429,6 +2431,12 @@ njs_generate_lambda_variables(njs_vm_t *vm, njs_generator_t *generator,
             index = njs_scope_index((var->argument - 1), NJS_SCOPE_ARGUMENTS);
 
             njs_generate_code_move(generator, move, var->index, index);
+        }
+
+        if (var->this_object) {
+            njs_generate_code(generator, njs_vmcode_this_t, this,
+                              njs_vmcode_this, 1, 0);
+            this->dst = var->index;
         }
 
         if (var->arguments_object) {
