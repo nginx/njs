@@ -9,15 +9,10 @@
 
 
 static njs_function_t *njs_function_copy(njs_vm_t *vm,
-    const njs_function_t *function);
+    njs_function_t *function);
 static njs_native_frame_t *njs_function_frame_alloc(njs_vm_t *vm, size_t size);
 static njs_ret_t njs_normalize_args(njs_vm_t *vm, njs_value_t *args,
     uint8_t *args_types, nxt_uint_t nargs);
-
-
-#define njs_function_closures(vm, function)                                 \
-    (njs_closure_t **) ((function->closure) ? function->closures            \
-                                            : vm->active_frame->closures)
 
 
 njs_function_t *
@@ -98,8 +93,16 @@ njs_function_value_copy(njs_vm_t *vm, njs_value_t *value)
 }
 
 
+nxt_inline njs_closure_t **
+njs_function_closures(njs_vm_t *vm, njs_function_t *function)
+{
+    return (function->closure) ? function->closures
+                               : vm->active_frame->closures;
+}
+
+
 static njs_function_t *
-njs_function_copy(njs_vm_t *vm, const njs_function_t *function)
+njs_function_copy(njs_vm_t *vm, njs_function_t *function)
 {
     size_t          size;
     nxt_uint_t      n, nesting;
