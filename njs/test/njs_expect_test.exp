@@ -658,6 +658,18 @@ njs_test {
      "undefined\r\n"}
 } "-s"
 
+# source type
+
+njs_test {
+    {"this\r\n"
+     "this\r\nundefined"}
+} "-t module"
+
+njs_test {
+    {"this.NaN\r\n"
+     "this.NaN\r\nNaN"}
+} "-t script"
+
 # modules
 
 njs_test {

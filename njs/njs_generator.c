@@ -382,7 +382,6 @@ njs_generator(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
     case NJS_TOKEN_NUMBER:
     case NJS_TOKEN_STRING:
         node->index = njs_value_index(vm, &node->u.value, generator->runtime);
-
         if (nxt_fast_path(node->index != NJS_INDEX_NONE)) {
             return NXT_OK;
         }
@@ -431,6 +430,18 @@ njs_generator(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
         return njs_generate_name(vm, generator, node);
 
     case NJS_TOKEN_GLOBAL_THIS:
+        if (vm->options.module) {
+            node->index = njs_value_index(vm, &node->u.value,
+                                          generator->runtime);
+            if (nxt_fast_path(node->index != NJS_INDEX_NONE)) {
+                return NXT_OK;
+            }
+
+            return NXT_ERROR;
+        }
+
+        /* Fall through. */
+
     case NJS_TOKEN_NJS:
     case NJS_TOKEN_MATH:
     case NJS_TOKEN_JSON:
