@@ -5716,6 +5716,27 @@ static njs_unit_test_t  njs_test[] =
                  "binded.length"),
       nxt_string("0") },
 
+    { nxt_string("function f(a,a) { };"),
+      nxt_string("SyntaxError: Duplicate parameter names in 1") },
+
+    { nxt_string("function f(a,b,a) { };"),
+      nxt_string("SyntaxError: Duplicate parameter names in 1") },
+
+    { nxt_string("function f(a, ...a) { };"),
+      nxt_string("SyntaxError: Duplicate parameter names in 1") },
+
+    { nxt_string("(function(a,a) { })"),
+      nxt_string("SyntaxError: Duplicate parameter names in 1") },
+
+    { nxt_string("(function(a,...a) { })"),
+      nxt_string("SyntaxError: Duplicate parameter names in 1") },
+
+    { nxt_string("(function f(a,a) { })"),
+      nxt_string("SyntaxError: Duplicate parameter names in 1") },
+
+    { nxt_string("(function f(a,...a) { })"),
+      nxt_string("SyntaxError: Duplicate parameter names in 1") },
+
     { nxt_string("function f(a,b) { }; f.length"),
       nxt_string("2") },
 

@@ -837,6 +837,12 @@ njs_parser_lambda_argument(njs_vm_t *vm, njs_parser_t *parser,
         return NJS_TOKEN_ERROR;
     }
 
+    if (arg->index > 0) {
+        njs_parser_syntax_error(vm, parser, "Duplicate parameter names");
+
+        return NJS_TOKEN_ILLEGAL;
+    }
+
     arg->index = index;
 
     ret = njs_name_copy(vm, &arg->name, njs_parser_text(parser));
