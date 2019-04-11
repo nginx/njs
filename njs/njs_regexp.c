@@ -526,7 +526,7 @@ njs_regexp_prototype_source(njs_vm_t *vm, njs_value_t *value,
     /* Skip starting "/". */
     source = pattern->source + 1;
 
-    size = strlen((char *) source) - pattern->flags;
+    size = nxt_strlen(source) - pattern->flags;
     length = nxt_utf8_length(source, size);
 
     return njs_regexp_string_create(vm, retval, source, size, length);
@@ -559,7 +559,7 @@ njs_regexp_to_string(njs_vm_t *vm, njs_value_t *retval,
     pattern = value->data.u.regexp->pattern;
     source = pattern->source;
 
-    size = strlen((char *) source);
+    size = nxt_strlen(source);
     length = nxt_utf8_length(source, size);
 
     return njs_regexp_string_create(vm, retval, source, size, length);

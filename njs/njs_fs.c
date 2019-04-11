@@ -899,7 +899,7 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
     njs_object_prop_t   *prop;
     nxt_lvlhsh_query_t  lhq;
 
-    size = description != NULL ? strlen(description) : 0;
+    size = description != NULL ? nxt_strlen(description) : 0;
 
     ret = njs_string_new(vm, &string, (u_char *) description, size, size);
     if (nxt_slow_path(ret != NXT_OK)) {
@@ -957,7 +957,7 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
     }
 
     if (syscall != NULL) {
-        size = strlen(syscall);
+        size = nxt_strlen(syscall);
         ret = njs_string_new(vm, &string, (u_char *) syscall, size, size);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NJS_ERROR;

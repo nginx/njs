@@ -41,6 +41,27 @@ nxt_upper_case(u_char c)
 }
 
 
+nxt_inline u_char *
+nxt_strlchr(u_char *p, u_char *last, u_char c)
+{
+    while (p < last) {
+
+        if (*p == c) {
+            return p;
+        }
+
+        p++;
+    }
+
+    return NULL;
+}
+
+
+#define                                                                       \
+nxt_strlen(s)                                                                 \
+    strlen((char *) s)
+
+
 #define                                                                       \
 nxt_cpymem(dst, src, n)                                                       \
     (((u_char *) memcpy(dst, src, n)) + (n))
@@ -49,6 +70,11 @@ nxt_cpymem(dst, src, n)                                                       \
 #define                                                                       \
 nxt_strncmp(s1, s2, n)                                                        \
     strncmp((char *) s1, (char *) s2, n)
+
+
+#define                                                                       \
+nxt_strchr(s1, c)                                                             \
+    (u_char *) strchr((const char *) s1, (int) c)
 
 
 #define                                                                       \

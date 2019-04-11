@@ -236,12 +236,12 @@ main(int argc, char **argv)
                 goto done;
             }
 
-            memcpy(path + strlen(path), "/shell", sizeof("/shell"));
+            memcpy(path + nxt_strlen(path), "/shell", sizeof("/shell"));
             opts.file = path;
         }
 
         vm_options.file.start = (u_char *) opts.file;
-        vm_options.file.length = strlen(opts.file);
+        vm_options.file.length = nxt_strlen(opts.file);
     }
 
     vm_options.init = !opts.interactive;
@@ -438,7 +438,7 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
             break;
         }
 
-        line.length = strlen((char *) line.start);
+        line.length = nxt_strlen(line.start);
         if (line.length == 0) {
             continue;
         }
@@ -575,7 +575,7 @@ close_fd:
 static njs_vm_t *
 njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 {
-    char        *p, *start;
+    u_char      *p, *start;
     njs_vm_t    *vm;
     nxt_int_t   ret;
     nxt_str_t   path;
@@ -594,7 +594,7 @@ njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
     for (i = 0; i < opts->n_paths; i++) {
         path.start = (u_char *) opts->paths[i];
-        path.length = strlen(opts->paths[i]);
+        path.length = nxt_strlen(opts->paths[i]);
 
         ret = njs_vm_add_path(vm, &path);
         if (ret != NXT_OK) {
@@ -603,16 +603,16 @@ njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         }
     }
 
-    start = getenv("NJS_PATH");
+    start = (u_char *) getenv("NJS_PATH");
     if (start == NULL) {
         return vm;
     }
 
     for ( ;; ) {
-        p = strchr(start, ':');
+        p = nxt_strchr(start, ':');
 
-        path.start = (u_char *) start;
-        path.length = (p != NULL) ? (size_t) (p - start) : strlen(start);
+        path.start = start;
+        path.length = (p != NULL) ? (size_t) (p - start) : nxt_strlen(start);
 
         ret = njs_vm_add_path(vm, &path);
         if (ret != NXT_OK) {
@@ -784,7 +784,7 @@ njs_completion_generator(const char *text, int state)
     if (state == 0) {
         cmpl->phase = 0;
         cmpl->index = 0;
-        cmpl->length = strlen(text);
+        cmpl->length = nxt_strlen(text);
         cmpl->suffix_completions = NULL;
 
         nxt_lvlhsh_each_init(&cmpl->lhe, &njs_variables_hash_proto);
