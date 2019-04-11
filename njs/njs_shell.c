@@ -645,7 +645,8 @@ njs_output(njs_vm_t *vm, njs_opts_t *opts, njs_ret_t ret)
         nxt_error("%V\n", &out);
 
     } else if (opts->interactive) {
-        nxt_printf("%V\n", &out);
+        nxt_print(out.start, out.length);
+        nxt_printf("\n");
     }
 }
 
@@ -919,7 +920,8 @@ njs_ext_console_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             return NJS_ERROR;
         }
 
-        nxt_printf("%s%V", (n != 1) ? " " : "", &msg);
+        nxt_printf("%s", (n != 1) ? " " : "");
+        nxt_print(msg.start, msg.length);
 
         n++;
     }
@@ -950,7 +952,8 @@ njs_ext_console_dump(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             return NJS_ERROR;
         }
 
-        nxt_printf("%s%V", (n != 1) ? " " : "", &msg);
+        nxt_printf("%s", (n != 1) ? " " : "");
+        nxt_print(msg.start, msg.length);
 
         n++;
     }
