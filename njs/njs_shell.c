@@ -465,7 +465,7 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
     ssize_t      n;
     njs_vm_t     *vm;
     nxt_int_t    ret;
-    nxt_str_t    script;
+    nxt_str_t    source, script;
     struct stat  sb;
 
     file = opts->file;
@@ -495,15 +495,15 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         size = sb.st_size;
     }
 
-    script.length = 0;
-    script.start = realloc(NULL, size);
-    if (script.start == NULL) {
+    source.length = 0;
+    source.start = realloc(NULL, size);
+    if (source.start == NULL) {
         nxt_error("alloc failed while reading '%s'\n", file);
         ret = NXT_ERROR;
         goto done;
     }
 
-    p = script.start;
+    p = source.start;
     end = p + size;
 
     for ( ;; ) {
@@ -523,29 +523,45 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         if (p + n > end) {
             size *= 2;
 
-            start = realloc(script.start, size);
+            start = realloc(source.start, size);
             if (start == NULL) {
                 nxt_error("alloc failed while reading '%s'\n", file);
                 ret = NXT_ERROR;
                 goto done;
             }
 
-            script.start = start;
+            source.start = start;
 
-            p = script.start + script.length;
-            end = script.start + size;
+            p = source.start + source.length;
+            end = source.start + size;
         }
 
         memcpy(p, buf, n);
 
         p += n;
-        script.length += n;
+        source.length += n;
     }
 
     vm = njs_create_vm(opts, vm_options);
     if (vm == NULL) {
         ret = NXT_ERROR;
         goto done;
+    }
+
+    script = source;
+
+    /* shebang */
+
+    if (script.length > 2 && memcmp(script.start, "#!", 2) == 0) {
+        p = nxt_strlchr(script.start, script.start + script.length, '\n');
+
+        if (p != NULL) {
+            script.length -= (p + 1 - script.start);
+            script.start = p + 1;
+
+        } else {
+            script.length = 0;
+        }
     }
 
     ret = njs_process_script(vm_options->external, opts, &script);
@@ -558,8 +574,8 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
 done:
 
-    if (script.start != NULL) {
-        free(script.start);
+    if (source.start != NULL) {
+        free(source.start);
     }
 
 close_fd:
