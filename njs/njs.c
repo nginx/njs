@@ -706,7 +706,7 @@ njs_vm_retval_dump(njs_vm_t *vm, nxt_str_t *dst, nxt_uint_t indent)
         njs_vm_init(vm);
     }
 
-    return njs_vm_value_dump(vm, dst, &vm->retval, 1);
+    return njs_vm_value_dump(vm, dst, &vm->retval, 0, 1);
 }
 
 

@@ -192,6 +192,8 @@ njs_test {
      "console.log(1)\r\n1\r\nundefined\r\n>> "}
     {"console.log(1, 'a')\r\n"
      "console.log(1, 'a')\r\n1 a\r\nundefined\r\n>> "}
+    {"console.log('\\tабв\\nгд')\r\n"
+     "console.log('\\\\tабв\\\\nгд')\r\n\tабв\r\nгд\r\nundefined\r\n>> "}
     {"console.dump()\r\n"
      "console.dump()\r\nundefined\r\n>> "}
     {"console.dump(1)\r\n"
@@ -315,7 +317,7 @@ njs_test {
     {"var a = 1 + 1; setTimeout(function (x) {a = x}, 0, 'a'); a\r\n"
      "2"}
     {"a\r\n"
-     "a\r\na"}
+     "a\r\n'a'"}
 }
 
 njs_test {
@@ -327,14 +329,14 @@ njs_test {
     {"var a = 1 + 1; setTimeout(function (x) { setTimeout(function (y) {a = y}, 0, x)}, 0, 'a'); a\r\n"
      "2"}
     {"a\r\n"
-     "a\r\na"}
+     "a\r\n'a'"}
 }
 
 njs_test {
     {"var a = 1 + 1; setImmediate(function (x) { setImmediate(function (y) {a = y}, x)}, 'a'); a\r\n"
      "2"}
     {"a\r\n"
-     "a\r\na"}
+     "a\r\n'a'"}
 }
 
 njs_test {
@@ -362,7 +364,7 @@ njs_test {
     {"var i = 0, queue = []; (function x() { if (i < 5) setImmediate(x); queue.push(i++); })()\r\n"
      "undefined"}
     {"queue.toString()\r\n"
-     "queue.toString()\r\n0,1,2,3,4,5"}
+     "queue.toString()\r\n'0,1,2,3,4,5'"}
 }
 
 # require('fs')
@@ -426,35 +428,35 @@ njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
     {"fs.readFileSync('njs/test/fs/utf8').toString('base64')\r\n"
-     "zrHOslrOsw==\r\n>> "}
+     "'zrHOslrOsw=='\r\n>> "}
 }
 
 njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
     {"fs.readFileSync('njs/test/fs/utf8', 'utf8')[2]\r\n"
-     "Z\r\n>> "}
+     "'Z'\r\n>> "}
 }
 
 njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
     {"fs.readFileSync('njs/test/fs/utf8')[4]\r\n"
-     "Z\r\n>> "}
+     "'Z'\r\n>> "}
 }
 
 njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
     {"fs.readFileSync('njs/test/fs/utf8', {encoding:'utf8',flag:'r+'})\r\n"
-     "αβZγ\r\n>> "}
+     "'αβZγ'\r\n>> "}
 }
 
 njs_test {
     {"var fs = require('fs'), fn = 'njs/test/fs/ascii'\r\n"
      "undefined\r\n>> "}
     {"fs.readFileSync(fn)[599] + fs.readFileSync(fn, 'utf8')[599]\r\n"
-     "xx\r\n>> "}
+     "'xx'\r\n>> "}
 }
 
 njs_test {
@@ -532,7 +534,7 @@ njs_test {
     {"fs.writeFileSync('njs_test_file2', 'ABC')\r\n"
      "undefined\r\n>> "}
     {"fs.readFileSync('njs_test_file2')\r\n"
-     "ABC\r\n>> "}
+     "'ABC'\r\n>> "}
 }
 
 njs_test {
@@ -541,7 +543,7 @@ njs_test {
     {"fs.writeFileSync('njs_test_file2', 'ABC', 'utf8')\r\n"
      "undefined\r\n>> "}
     {"fs.readFileSync('njs_test_file2')\r\n"
-     "ABC\r\n>> "}
+     "'ABC'\r\n>> "}
 }
 
 njs_test {
@@ -552,7 +554,7 @@ njs_test {
     {"fs.writeFileSync('njs_test_file2', 'ABC')\r\n"
      "undefined\r\n>> "}
     {"fs.readFileSync('njs_test_file2')\r\n"
-     "ABC\r\n>> "}
+     "'ABC'\r\n>> "}
 }
 
 njs_test {
@@ -561,7 +563,7 @@ njs_test {
     {"fs.writeFileSync('njs_test_file2', 'ABC', {encoding:'utf8', mode:0o666})\r\n"
      "undefined\r\n>> "}
     {"fs.readFileSync('njs_test_file2')\r\n"
-     "ABC\r\n>> "}
+     "'ABC'\r\n>> "}
 }
 
 exec rm -fr njs_wo_file
@@ -600,7 +602,7 @@ njs_test {
     {"fs.appendFileSync('njs_test_file2', 'ABC')\r\n"
      "undefined\r\n>> "}
     {"fs.readFileSync('njs_test_file2')\r\n"
-     "ABCABC\r\n>> "}
+     "'ABCABC'\r\n>> "}
 }
 
 # Modules

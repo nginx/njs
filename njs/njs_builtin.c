@@ -1057,7 +1057,7 @@ njs_dump_value(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     n = njs_primitive_value_to_integer(indent);
     n = nxt_min(n, 5);
 
-    if (njs_vm_value_dump(vm, &str, value, n) != NXT_OK) {
+    if (njs_vm_value_dump(vm, &str, value, 1, n) != NXT_OK) {
         return NXT_ERROR;
     }
 

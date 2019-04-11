@@ -249,7 +249,7 @@ NXT_EXPORT njs_ret_t njs_vm_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst,
 NXT_EXPORT njs_ret_t njs_vm_retval_to_ext_string(njs_vm_t *vm, nxt_str_t *dst);
 
 NXT_EXPORT njs_ret_t njs_vm_value_dump(njs_vm_t *vm, nxt_str_t *dst,
-    const njs_value_t *value, nxt_uint_t indent);
+    const njs_value_t *value, nxt_uint_t console, nxt_uint_t indent);
 NXT_EXPORT njs_ret_t njs_vm_retval_dump(njs_vm_t *vm, nxt_str_t *dst,
     nxt_uint_t indent);
 

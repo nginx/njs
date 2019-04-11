@@ -930,7 +930,7 @@ njs_ext_console_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     n = 1;
 
     while (n < nargs) {
-        if (njs_vm_value_dump(vm, &msg, njs_argument(args, n), 0)
+        if (njs_vm_value_dump(vm, &msg, njs_argument(args, n), 1, 0)
             == NJS_ERROR)
         {
             return NJS_ERROR;
@@ -962,7 +962,7 @@ njs_ext_console_dump(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     n = 1;
 
     while (n < nargs) {
-        if (njs_vm_value_dump(vm, &msg, njs_argument(args, n), 1)
+        if (njs_vm_value_dump(vm, &msg, njs_argument(args, n), 1, 1)
             == NJS_ERROR)
         {
             return NJS_ERROR;
