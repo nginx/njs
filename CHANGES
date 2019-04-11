@@ -318,6 +318,10 @@ Changes with njs 0.2.2                                           19 Jun 2018
         req.headers (use req.headersIn or req.headersOut)
         req.response
 
+        Deprecated members of Response:
+        res.contentLength (use req.headersOut['Content-Length'])
+        res.contentType (use req.headersOut['Content-Type'])
+
         The deprecated properties will be removed in the following
         releases.
 
