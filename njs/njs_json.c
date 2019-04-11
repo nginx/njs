@@ -1798,7 +1798,9 @@ njs_json_append_string(njs_json_stringify_t *stringify,
 
     dst_end = dst + 64;
 
-    *dst++ = quote;
+    if (quote) {
+        *dst++ = quote;
+    }
 
     while (p < end) {
 
@@ -1874,7 +1876,10 @@ njs_json_append_string(njs_json_stringify_t *stringify,
     }
 
     njs_json_buf_written(stringify, dst - stringify->last->pos);
-    njs_json_buf_append(stringify, &quote, 1);
+
+    if (quote) {
+        njs_json_buf_append(stringify, &quote, 1);
+    }
 
     return NXT_OK;
 }
@@ -2116,6 +2121,7 @@ const njs_object_init_t  njs_json_object_init = {
 static nxt_int_t
 njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value)
 {
+    char                quote;
     njs_ret_t           ret;
     nxt_str_t           str;
     nxt_uint_t          written;
@@ -2139,7 +2145,13 @@ njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value)
 
     case NJS_STRING:
         njs_string_get(value, &str);
-        return njs_json_append_string(stringify, value, '\'');
+
+        quote = '\0';
+        if (stringify->stack.items != 0) {
+            quote = '\'';
+        }
+
+        return njs_json_append_string(stringify, value, quote);
 
     case NJS_OBJECT_NUMBER:
         value = &value->data.u.object_value->value;
@@ -2351,6 +2363,7 @@ njs_vm_value_dump(njs_vm_t *vm, nxt_str_t *retval, const njs_value_t *value,
     stringify->pool = vm->mem_pool;
     stringify->nodes = NULL;
     stringify->last = NULL;
+    stringify->stack.items = 0;
 
     if (!njs_dump_is_object(value)) {
         ret = njs_dump_value(stringify, value);
