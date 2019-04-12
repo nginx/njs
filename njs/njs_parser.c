@@ -13,7 +13,7 @@ static njs_ret_t njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser,
     njs_scope_t type);
 static void njs_parser_scope_end(njs_vm_t *vm, njs_parser_t *parser);
 static njs_token_t njs_parser_statement_chain(njs_vm_t *vm,
-    njs_parser_t *parser, njs_token_t token, njs_parser_node_t **dest);
+    njs_parser_t *parser, njs_token_t token, nxt_bool_t top);
 static njs_token_t njs_parser_statement(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token);
 static njs_token_t njs_parser_block_statement(njs_vm_t *vm,
@@ -61,8 +61,6 @@ static njs_token_t njs_parser_import_statement(njs_vm_t *vm,
     njs_parser_t *parser);
 static njs_token_t njs_parser_export_statement(njs_vm_t *vm,
     njs_parser_t *parser);
-static nxt_int_t njs_parser_import_hoist(njs_vm_t *vm, njs_parser_t *parser,
-    njs_parser_node_t *new_node);
 static nxt_int_t njs_parser_export_sink(njs_vm_t *vm, njs_parser_t *parser);
 static njs_token_t njs_parser_grouping_expression(njs_vm_t *vm,
     njs_parser_t *parser);
@@ -130,8 +128,7 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser, njs_parser_t *prev)
 
     while (token != NJS_TOKEN_END) {
 
-        token = njs_parser_statement_chain(vm, parser, token,
-                                           &njs_parser_chain_top(parser));
+        token = njs_parser_statement_chain(vm, parser, token, 1);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return NXT_ERROR;
         }
@@ -271,35 +268,58 @@ njs_parser_scope_end(njs_vm_t *vm, njs_parser_t *parser)
 
 static njs_token_t
 njs_parser_statement_chain(njs_vm_t *vm, njs_parser_t *parser,
-    njs_token_t token, njs_parser_node_t **dest)
+    njs_token_t token, nxt_bool_t top)
 {
-    njs_parser_node_t  *node, *last;
+    njs_parser_node_t  *stmt, *last, *node, *new_node, **child;
 
-    last = *dest;
+    child = top ? &njs_parser_chain_top(parser)
+                : &njs_parser_chain_current(parser);
+
+    last = *child;
 
     token = njs_parser_statement(vm, parser, token);
-
     if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
         return njs_parser_unexpected_token(vm, parser, token);
     }
 
-    if (parser->node != NULL) {
-        /* The statement is not empty block or just semicolon. */
+    if (parser->node == NULL) {
+        /* The statement is empty block or just semicolon. */
+        return token;
+    }
 
-        node = njs_parser_node_new(vm, parser, NJS_TOKEN_STATEMENT);
-        if (nxt_slow_path(node == NULL)) {
-            return NJS_TOKEN_ERROR;
-        }
+    new_node = parser->node;
 
-        node->left = last;
-        node->right = parser->node;
-        *dest = node;
+    if (new_node->hoist) {
+        child = &njs_parser_chain_top(parser);
 
-        while (token == NJS_TOKEN_SEMICOLON) {
-            token = njs_parser_token(vm, parser);
-            if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+        while (*child != NULL) {
+            node = *child;
+
+            if (node->hoist) {
                 break;
             }
+
+            child = &node->left;
+        }
+
+        last = *child;
+    }
+
+    stmt = njs_parser_node_new(vm, parser, NJS_TOKEN_STATEMENT);
+    if (nxt_slow_path(stmt == NULL)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    stmt->hoist = new_node->hoist;
+    stmt->left = last;
+    stmt->right = new_node;
+
+    *child = stmt;
+
+    while (token == NJS_TOKEN_SEMICOLON) {
+        token = njs_parser_token(vm, parser);
+        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+            break;
         }
     }
 
@@ -442,8 +462,7 @@ njs_parser_block_statement(njs_vm_t *vm, njs_parser_t *parser)
     parser->node = NULL;
 
     while (token != NJS_TOKEN_CLOSE_BRACE) {
-        token = njs_parser_statement_chain(vm, parser, token,
-                                           &njs_parser_chain_current(parser));
+        token = njs_parser_statement_chain(vm, parser, token, 0);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
         }
@@ -940,8 +959,7 @@ njs_parser_lambda_statements(njs_vm_t *vm, njs_parser_t *parser,
     parser->node = NULL;
 
     while (token != NJS_TOKEN_CLOSE_BRACE) {
-        token = njs_parser_statement_chain(vm, parser, token,
-                                           &njs_parser_chain_top(parser));
+        token = njs_parser_statement_chain(vm, parser, token, 1);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
         }
@@ -1253,8 +1271,7 @@ njs_parser_switch_statement(njs_vm_t *vm, njs_parser_t *parser)
             return NJS_TOKEN_ILLEGAL;
         }
 
-        token = njs_parser_statement_chain(vm, parser, token,
-                                           &njs_parser_chain_current(parser));
+        token = njs_parser_statement_chain(vm, parser, token, 0);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
         }
@@ -1839,12 +1856,8 @@ njs_parser_import_statement(njs_vm_t *vm, njs_parser_t *parser)
     import->left = name;
     import->right = parser->node;
 
-    ret = njs_parser_import_hoist(vm, parser, import);
-    if (nxt_slow_path(ret != NXT_OK)) {
-        return NJS_TOKEN_ERROR;
-    }
-
-    parser->node = NULL;
+    parser->node = import;
+    parser->node->hoist = 1;
 
     return njs_parser_token(vm, parser);
 }
@@ -1957,40 +1970,6 @@ njs_parser_export_statement(njs_vm_t *vm, njs_parser_t *parser)
     parser->node = node;
 
     return token;
-}
-
-
-static nxt_int_t
-njs_parser_import_hoist(njs_vm_t *vm, njs_parser_t *parser,
-    njs_parser_node_t *new_node)
-{
-    njs_parser_node_t  *node, *stmt, **child;
-
-    child = &njs_parser_chain_top(parser);
-
-    while (*child != NULL) {
-        node = *child;
-
-        if (node->right != NULL
-            && node->right->token == NJS_TOKEN_IMPORT)
-        {
-            break;
-        }
-
-        child = &node->left;
-    }
-
-    stmt = njs_parser_node_new(vm, parser, NJS_TOKEN_STATEMENT);
-    if (nxt_slow_path(stmt == NULL)) {
-        return NXT_ERROR;
-    }
-
-    stmt->left = *child;
-    stmt->right = new_node;
-
-    *child = stmt;
-
-    return NXT_OK;
 }
 
 

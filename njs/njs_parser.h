@@ -40,6 +40,7 @@ struct njs_parser_node_s {
     njs_token_t                     token:16;
     uint8_t                         ctor:1;
     uint8_t                         temporary;    /* 1 bit  */
+    uint8_t                         hoist;        /* 1 bit  */
     uint32_t                        token_line;
 
     union {
