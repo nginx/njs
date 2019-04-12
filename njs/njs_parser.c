@@ -559,7 +559,7 @@ njs_parser_labelled_statement(njs_vm_t *vm, njs_parser_t *parser)
         if (parser->node != NULL) {
             /* The statement is not empty block or just semicolon. */
 
-            ret = njs_name_copy(vm, &parser->node->label, &name);
+            ret = njs_name_copy(vm, &parser->node->name, &name);
             if (nxt_slow_path(ret != NXT_OK)) {
                 return NJS_TOKEN_ERROR;
             }
@@ -1584,7 +1584,7 @@ njs_parser_brk_statement(njs_vm_t *vm, njs_parser_t *parser,
             return NJS_TOKEN_ILLEGAL;
         }
 
-        ret = njs_name_copy(vm, &parser->node->label, &name);
+        ret = njs_name_copy(vm, &parser->node->name, &name);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NJS_TOKEN_ERROR;
         }

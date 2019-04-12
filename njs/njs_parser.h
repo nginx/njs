@@ -50,7 +50,7 @@ struct njs_parser_node_s {
         njs_parser_node_t           *object;
     } u;
 
-    nxt_str_t                       label;
+    nxt_str_t                       name;
 
     njs_index_t                     index;
 
