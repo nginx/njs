@@ -2378,7 +2378,7 @@ njs_parser_scope_error(njs_vm_t *vm, njs_parser_scope_t *scope,
         p = end - width;
     }
 
-    if (file->length != 0) {
+    if (file->length != 0 && !vm->options.quiet) {
         p = nxt_sprintf(p, end, " in %V:%uD", file, line);
 
     } else {

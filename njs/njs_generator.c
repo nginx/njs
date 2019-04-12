@@ -3246,7 +3246,14 @@ njs_generate_function_debug(njs_vm_t *vm, const nxt_str_t *name,
 
     debug->lambda = lambda;
     debug->line = node->token_line;
-    debug->file = node->scope->file;
+
+    if (!vm->options.quiet) {
+        debug->file = node->scope->file;
+
+    } else {
+        debug->file = nxt_string_value("");
+    }
+
     debug->name = (name != NULL) ? *name : no_label;
 
     return NXT_OK;

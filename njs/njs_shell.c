@@ -228,28 +228,28 @@ main(int argc, char **argv)
 
     nxt_memzero(&vm_options, sizeof(njs_vm_opt_t));
 
-    if (!opts.quiet) {
-        if (opts.file == NULL) {
-            p = getcwd(path, sizeof(path));
-            if (p == NULL) {
-                nxt_error("getcwd() failed:%s\n", strerror(errno));
-                ret = NXT_ERROR;
-                goto done;
-            }
-
-            memcpy(path + nxt_strlen(path), "/shell", sizeof("/shell"));
-            opts.file = path;
+    if (opts.file == NULL) {
+        p = getcwd(path, sizeof(path));
+        if (p == NULL) {
+            nxt_error("getcwd() failed:%s\n", strerror(errno));
+            ret = NXT_ERROR;
+            goto done;
         }
 
-        vm_options.file.start = (u_char *) opts.file;
-        vm_options.file.length = nxt_strlen(opts.file);
+        memcpy(path + nxt_strlen(path), "/shell", sizeof("/shell"));
+        opts.file = path;
     }
+
+    vm_options.file.start = (u_char *) opts.file;
+    vm_options.file.length = nxt_strlen(opts.file);
 
     vm_options.init = !opts.interactive;
     vm_options.accumulative = opts.interactive;
     vm_options.backtrace = 1;
+    vm_options.quiet = opts.quiet;
     vm_options.sandbox = opts.sandbox;
     vm_options.module = opts.module;
+
     vm_options.ops = &njs_console_ops;
     vm_options.external = &njs_console;
 

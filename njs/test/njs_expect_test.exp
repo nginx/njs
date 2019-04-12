@@ -715,5 +715,8 @@ njs_test {
      "12\r\n"}
 } "-p njs/test/module/"
 
+njs_run "-q ./njs/test/module/normal.js" \
+        "SyntaxError: Cannot find module \"hash.js\" in 5"
+
 njs_run "-p njs/test/module/libs/ -d ./njs/test/module/normal.js" \
         "passed!"
