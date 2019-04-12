@@ -177,6 +177,7 @@ njs_index_t njs_value_index(njs_vm_t *vm, const njs_value_t *src,
 
 extern const njs_object_init_t  njs_string_constructor_init;
 extern const njs_object_init_t  njs_string_prototype_init;
+extern const njs_object_init_t  njs_string_instance_init;
 
 extern const njs_object_init_t  njs_to_string_function_init;
 extern const njs_object_init_t  njs_encode_uri_function_init;

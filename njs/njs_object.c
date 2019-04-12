@@ -294,7 +294,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
             }
         }
 
-        obj = &vm->prototypes[NJS_PROTOTYPE_STRING].object;
+        obj = &vm->string_object;
         break;
 
     case NJS_OBJECT_STRING:
@@ -764,6 +764,8 @@ njs_method_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
         return NXT_ERROR;
     }
 
+    function->object.shared_hash = vm->shared->function_instance_hash;
+
     pq->lhq.replace = 0;
     pq->lhq.value = prop;
     pq->lhq.pool = vm->mem_pool;
@@ -954,25 +956,20 @@ njs_array_t *
 njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
     njs_object_enum_t kind, nxt_bool_t all)
 {
-    nxt_bool_t         exotic_length;
     u_char             *dst;
     uint32_t           i, length, size, items_length, properties;
     njs_value_t        *string, *item;
     njs_array_t        *items, *array, *entry;
     nxt_lvlhsh_t       *hash;
     const u_char       *src, *end;
+    njs_object_t       *object;
     njs_object_prop_t  *prop;
     njs_string_prop_t  string_prop;
     nxt_lvlhsh_each_t  lhe;
 
-    static const njs_value_t  njs_string_length = njs_string("length");
-
-    /* TODO: "length" is in a shared_hash. */
-
-    exotic_length = 0;
-
     array = NULL;
     length = 0;
+    object = NULL;
     items_length = 0;
 
     switch (value->type) {
@@ -986,8 +983,6 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
             }
         }
 
-        exotic_length = all;
-
         break;
 
     case NJS_STRING:
@@ -997,18 +992,13 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
 
         } else {
             string = (njs_value_t *) value;
+            object = &vm->string_object;
         }
 
         length = njs_string_prop(&string_prop, string);
         items_length += length;
-        exotic_length = all;
 
         break;
-
-    case NJS_FUNCTION:
-        exotic_length = all && (value->data.u.function->native == 0);
-
-        /* Fall through. */
 
     default:
         break;
@@ -1019,8 +1009,12 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
     properties = 0;
 
     if (nxt_fast_path(njs_is_object(value))) {
+        object = value->data.u.object;
+    }
+
+    if (object != NULL) {
         nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
-        hash = &value->data.u.object->hash;
+        hash = &object->hash;
 
         for ( ;; ) {
             prop = nxt_lvlhsh_each(hash, &lhe);
@@ -1036,7 +1030,7 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
 
         if (nxt_slow_path(all)) {
             nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
-            hash = &value->data.u.object->shared_hash;
+            hash = &object->shared_hash;
 
             for ( ;; ) {
                 prop = nxt_lvlhsh_each(hash, &lhe);
@@ -1052,7 +1046,7 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
         items_length += properties;
     }
 
-    items = njs_array_alloc(vm, items_length + exotic_length, NJS_ARRAY_SPARE);
+    items = njs_array_alloc(vm, items_length, NJS_ARRAY_SPARE);
     if (nxt_slow_path(items == NULL)) {
         return NULL;
     }
@@ -1210,14 +1204,10 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
         }
     }
 
-    if (nxt_slow_path(exotic_length != 0)) {
-        *item++ = njs_string_length;
-    }
-
     if (nxt_fast_path(properties != 0)) {
         nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
 
-        hash = &value->data.u.object->hash;
+        hash = &object->hash;
 
         switch (kind) {
 
@@ -1236,7 +1226,7 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
 
             if (nxt_slow_path(all)) {
                 nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
-                hash = &value->data.u.object->shared_hash;
+                hash = &object->shared_hash;
 
                 for ( ;; ) {
                     prop = nxt_lvlhsh_each(hash, &lhe);

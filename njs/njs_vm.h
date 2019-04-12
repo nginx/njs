@@ -1078,6 +1078,8 @@ struct njs_vm_s {
      */
     njs_object_t             memory_error_object;
 
+    njs_object_t             string_object;
+
     nxt_array_t              *code;  /* of njs_vm_code_t */
 
     nxt_trace_t              trace;
@@ -1108,9 +1110,12 @@ typedef struct {
 struct njs_vm_shared_s {
     nxt_lvlhsh_t             keywords_hash;
     nxt_lvlhsh_t             values_hash;
-    nxt_lvlhsh_t             function_prototype_hash;
-    nxt_lvlhsh_t             arguments_object_hash;
+    nxt_lvlhsh_t             array_instance_hash;
+    nxt_lvlhsh_t             string_instance_hash;
+    nxt_lvlhsh_t             function_instance_hash;
+    nxt_lvlhsh_t             arguments_object_instance_hash;
 
+    njs_object_t             string_object;
     njs_object_t             objects[NJS_OBJECT_MAX];
     njs_function_t           functions[NJS_FUNCTION_MAX];
 

@@ -138,22 +138,6 @@ const njs_function_init_t  njs_native_functions[] = {
 };
 
 
-const njs_object_prop_t  njs_arguments_object_properties[] =
-{
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("caller"),
-        .value = njs_prop_handler(njs_function_arguments_thrower),
-    },
-
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("callee"),
-        .value = njs_prop_handler(njs_function_arguments_thrower),
-    },
-};
-
-
 const njs_function_init_t  njs_native_constructors[] = {
     /* SunC does not allow empty array initialization. */
     { njs_object_constructor,     { 0 } },
@@ -230,48 +214,61 @@ const njs_object_prototype_t  njs_prototype_values[] = {
 };
 
 
+nxt_inline nxt_int_t
+njs_object_hash_init(njs_vm_t *vm, nxt_lvlhsh_t *hash,
+    const njs_object_init_t *init)
+{
+    return njs_object_hash_create(vm, hash, init->properties, init->items);
+}
+
 
 nxt_int_t
 njs_builtin_objects_create(njs_vm_t *vm)
 {
     nxt_int_t                  ret;
     njs_module_t               *module;
-    njs_object_t               *object;
+    njs_object_t               *object, *string_object;
     njs_function_t             *func;
     nxt_lvlhsh_query_t         lhq;
+    njs_vm_shared_t            *shared;
     njs_object_prototype_t     *prototype;
     const njs_object_init_t    *obj, **p;
     const njs_function_init_t  *f;
 
-    static const njs_object_prop_t    function_prototype_property = {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_function_prototype_create),
-    };
-
     static const nxt_str_t  sandbox_key = nxt_string("sandbox");
 
-    ret = njs_object_hash_create(vm, &vm->shared->function_prototype_hash,
-                                 &function_prototype_property, 1);
+    shared = vm->shared;
+
+    ret = njs_object_hash_init(vm, &shared->array_instance_hash,
+                               &njs_array_instance_init);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NXT_ERROR;
     }
 
-    ret = njs_object_hash_create(vm, &vm->shared->arguments_object_hash,
-                                 njs_arguments_object_properties,
-                                 nxt_nitems(njs_arguments_object_properties));
+    ret = njs_object_hash_init(vm, &shared->string_instance_hash,
+                               &njs_string_instance_init);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NXT_ERROR;
     }
 
-    object = vm->shared->objects;
+    ret = njs_object_hash_init(vm, &shared->function_instance_hash,
+                               &njs_function_instance_init);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NXT_ERROR;
+    }
+
+    ret = njs_object_hash_init(vm, &shared->arguments_object_instance_hash,
+                               &njs_arguments_object_instance_init);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NXT_ERROR;
+    }
+
+    object = shared->objects;
 
     for (p = njs_object_init; *p != NULL; p++) {
         obj = *p;
 
-        ret = njs_object_hash_create(vm, &object->shared_hash,
-                                     obj->properties, obj->items);
-
+        ret = njs_object_hash_init(vm, &object->shared_hash, obj);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NXT_ERROR;
         }
@@ -295,8 +292,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
 
         module->function.native = 1;
 
-        ret = njs_object_hash_create(vm, &module->object.shared_hash,
-                                     obj->properties, obj->items);
+        ret = njs_object_hash_init(vm, &module->object.shared_hash, obj);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NXT_ERROR;
         }
@@ -327,13 +323,12 @@ njs_builtin_objects_create(njs_vm_t *vm)
     }
 
     f = njs_native_functions;
-    func = vm->shared->functions;
+    func = shared->functions;
 
     for (p = njs_function_init; *p != NULL; p++) {
         obj = *p;
 
-        ret = njs_object_hash_create(vm, &func->object.shared_hash,
-                                     obj->properties, obj->items);
+        ret = njs_object_hash_init(vm, &func->object.shared_hash, obj);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NXT_ERROR;
         }
@@ -350,14 +345,13 @@ njs_builtin_objects_create(njs_vm_t *vm)
         func++;
     }
 
-    prototype = vm->shared->prototypes;
+    prototype = shared->prototypes;
     memcpy(prototype, njs_prototype_values, sizeof(njs_prototype_values));
 
     for (p = njs_prototype_init; *p != NULL; p++) {
         obj = *p;
 
-        ret = njs_object_hash_create(vm, &prototype->object.shared_hash,
-                                     obj->properties, obj->items);
+        ret = njs_object_hash_init(vm, &prototype->object.shared_hash, obj);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NXT_ERROR;
         }
@@ -367,11 +361,19 @@ njs_builtin_objects_create(njs_vm_t *vm)
         prototype++;
     }
 
-    vm->shared->prototypes[NJS_PROTOTYPE_REGEXP].regexp.pattern =
+    shared->prototypes[NJS_PROTOTYPE_REGEXP].regexp.pattern =
                                               vm->shared->empty_regexp_pattern;
 
+    string_object = &shared->string_object;
+    nxt_lvlhsh_init(&string_object->hash);
+    string_object->shared_hash = vm->shared->string_instance_hash;
+    string_object->type = NJS_OBJECT_STRING;
+    string_object->shared = 1;
+    string_object->extensible = 0;
+    string_object->__proto__ = &vm->prototypes[NJS_PROTOTYPE_STRING].object;
+
     f = njs_native_constructors;
-    func = vm->shared->constructors;
+    func = shared->constructors;
 
     for (p = njs_constructor_init; *p != NULL; p++) {
         obj = *p;
@@ -386,8 +388,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
 
         memcpy(func->args_types, f->args_types, NJS_ARGS_TYPES_MAX);
 
-        ret = njs_object_hash_create(vm, &func->object.shared_hash,
-                                     obj->properties, obj->items);
+        ret = njs_object_hash_init(vm, &func->object.shared_hash, obj);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NXT_ERROR;
         }
@@ -522,6 +523,9 @@ njs_builtin_objects_clone(njs_vm_t *vm)
         values[i].data.u.function = &vm->constructors[i];
         vm->constructors[i].object.__proto__ = function_prototype;
     }
+
+    vm->string_object = vm->shared->string_object;
+    vm->string_object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_STRING].object;
 
     return NXT_OK;
 }

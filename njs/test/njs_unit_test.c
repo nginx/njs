@@ -3134,7 +3134,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("var a = [1,2]; delete a.length"),
-      nxt_string("false") },
+      nxt_string("TypeError: Cannot delete property \"length\" of array") },
 
     { nxt_string("var a = [1,2,3]; a.x = 10;  delete a[1]"),
       nxt_string("true") },
@@ -5638,6 +5638,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("String.bytesFrom('QUJDRA#', 'base64url')"),
       nxt_string("ABCD") },
 
+    { nxt_string("encodeURI.name"),
+      nxt_string("encodeURI")},
+
+    { nxt_string("encodeURI.length"),
+      nxt_string("1")},
+
     { nxt_string("encodeURI()"),
       nxt_string("undefined")},
 
@@ -5647,8 +5653,20 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("encodeURI('~}|{`_^]\\\\[@?>=<;:/.-,+*)(\\\'&%$#\"! ')"),
       nxt_string("~%7D%7C%7B%60_%5E%5D%5C%5B@?%3E=%3C;:/.-,+*)('&%25$#%22!%20")},
 
+    { nxt_string("encodeURIComponent.name"),
+      nxt_string("encodeURIComponent")},
+
+    { nxt_string("encodeURIComponent.length"),
+      nxt_string("1")},
+
     { nxt_string("encodeURIComponent('~}|{`_^]\\\\[@?>=<;:/.-,+*)(\\\'&%$#\"! ')"),
       nxt_string("~%7D%7C%7B%60_%5E%5D%5C%5B%40%3F%3E%3D%3C%3B%3A%2F.-%2C%2B*)('%26%25%24%23%22!%20")},
+
+    { nxt_string("decodeURI.name"),
+      nxt_string("decodeURI")},
+
+    { nxt_string("decodeURI.length"),
+      nxt_string("1")},
 
     { nxt_string("decodeURI()"),
       nxt_string("undefined")},
@@ -5670,6 +5688,12 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("decodeURI('%7e%7d%7c%7b%60%5f%5e%5d%5c%5b%40%3f%3e%3d%3c%3b%3a%2f%2e%2c%2b%2a%29%28%27%26%25%24%23%22%21%20')"),
       nxt_string("~}|{`_^]\\[%40%3f>%3d<%3b%3a%2f.%2c%2b*)('%26%%24%23\"! ")},
+
+    { nxt_string("decodeURIComponent.name"),
+      nxt_string("decodeURIComponent")},
+
+    { nxt_string("decodeURIComponent.length"),
+      nxt_string("1")},
 
     { nxt_string("decodeURIComponent('%7e%7d%7c%7b%60%5f%5e%5d%5c%5b%40%3f%3e%3d%3c%3b%3a%2f%2e%2c%2b%2a%29%28%27%26%25%24%23%22%21%20')"),
       nxt_string("~}|{`_^]\\[@?>=<;:/.,+*)('&%$#\"! ")},
@@ -7700,6 +7724,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Array.prototype"),
       nxt_string("") },
 
+    { nxt_string("Array.prototype.length"),
+      nxt_string("0") },
+
     { nxt_string("Array.constructor === Function"),
       nxt_string("true") },
 
@@ -8131,6 +8158,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("Function.prototype"),
       nxt_string("[object Function]") },
+
+    { nxt_string("Function.prototype.length"),
+      nxt_string("0") },
 
     { nxt_string("Function.constructor === Function"),
       nxt_string("true") },
@@ -8801,10 +8831,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("a,b") },
 
     { nxt_string("Object.getOwnPropertyNames(Object.defineProperty([], 'b', {}))"),
-      nxt_string("length,b") },
+      nxt_string("b,length") },
 
     { nxt_string("Object.getOwnPropertyNames(Object.defineProperty(new String(), 'b', {}))"),
-      nxt_string("length,b") },
+      nxt_string("b,length") },
 
     { nxt_string("Object.getOwnPropertyNames([1,2,3])"),
       nxt_string("0,1,2,length") },
@@ -10483,6 +10513,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("isNaN"),
       nxt_string("[object Function]") },
 
+    { nxt_string("isNaN.name"),
+      nxt_string("isNaN") },
+
+    { nxt_string("isNaN.length"),
+      nxt_string("1") },
+
     { nxt_string("isNaN()"),
       nxt_string("true") },
 
@@ -10501,6 +10537,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("isFinite"),
       nxt_string("[object Function]") },
 
+    { nxt_string("isFinite.name"),
+      nxt_string("isFinite") },
+
+    { nxt_string("isFinite.length"),
+      nxt_string("1") },
+
     { nxt_string("isFinite()"),
       nxt_string("false") },
 
@@ -10515,6 +10557,12 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("isFinite('abc')"),
       nxt_string("false") },
+
+    { nxt_string("parseInt.name"),
+      nxt_string("parseInt") },
+
+    { nxt_string("parseInt.length"),
+      nxt_string("2") },
 
     { nxt_string("parseInt('12345abc')"),
       nxt_string("12345") },
@@ -10566,6 +10614,12 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("parseInt('0', 37)"),
       nxt_string("NaN") },
+
+    { nxt_string("parseFloat.name"),
+      nxt_string("parseFloat") },
+
+    { nxt_string("parseFloat.length"),
+      nxt_string("1") },
 
     { nxt_string("parseFloat('12345abc')"),
       nxt_string("12345") },

@@ -555,6 +555,8 @@ njs_string_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             return NXT_ERROR;
         }
 
+        object->shared_hash = vm->shared->string_instance_hash;
+
         vm->retval.data.u.object = object;
         vm->retval.type = NJS_OBJECT_STRING;
         vm->retval.data.truth = 1;
@@ -623,7 +625,7 @@ const njs_object_init_t  njs_string_constructor_init = {
 
 
 static njs_ret_t
-njs_string_prototype_length(njs_vm_t *vm, njs_value_t *value,
+njs_string_instance_length(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
     size_t     size;
@@ -3752,15 +3754,15 @@ njs_string_to_c_string(njs_vm_t *vm, njs_value_t *value)
 static const njs_object_prop_t  njs_string_prototype_properties[] =
 {
     {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("__proto__"),
-        .value = njs_prop_handler(njs_primitive_prototype_get_proto),
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 0, 0.0),
     },
 
     {
         .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("length"),
-        .value = njs_prop_handler(njs_string_prototype_length),
+        .name = njs_string("__proto__"),
+        .value = njs_prop_handler(njs_primitive_prototype_get_proto),
     },
 
     {
@@ -3970,6 +3972,23 @@ const njs_object_init_t  njs_string_prototype_init = {
     nxt_string("String"),
     njs_string_prototype_properties,
     nxt_nitems(njs_string_prototype_properties),
+};
+
+
+const njs_object_prop_t  njs_string_instance_properties[] =
+{
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("length"),
+        .value = njs_prop_handler(njs_string_instance_length),
+    },
+};
+
+
+const njs_object_init_t  njs_string_instance_init = {
+    nxt_string("String instance"),
+    njs_string_instance_properties,
+    nxt_nitems(njs_string_instance_properties),
 };
 
 
@@ -4448,36 +4467,126 @@ njs_value_index(njs_vm_t *vm, const njs_value_t *src, nxt_uint_t runtime)
 }
 
 
+static const njs_object_prop_t  njs_to_string_function_properties[] =
+{
+    /* toString.name == "toString". */
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("toString"),
+    },
+
+    /* toString.length == 0. */
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 0, 0.0),
+    },
+};
+
+
 const njs_object_init_t  njs_to_string_function_init = {
     nxt_string("toString"),
-    NULL,
-    0,
+    njs_to_string_function_properties,
+    nxt_nitems(njs_to_string_function_properties),
+};
+
+
+static const njs_object_prop_t  njs_encode_uri_function_properties[] =
+{
+    /* encodeURI.name == "encodeURI". */
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("encodeURI"),
+    },
+
+    /* encodeURI.length == 1. */
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 1, 1.0),
+    },
 };
 
 
 const njs_object_init_t  njs_encode_uri_function_init = {
     nxt_string("encodeURI"),
-    NULL,
-    0,
+    njs_encode_uri_function_properties,
+    nxt_nitems(njs_encode_uri_function_properties),
+};
+
+
+static const njs_object_prop_t  njs_encode_uri_component_function_properties[] =
+{
+    /* encodeURIComponent.name == "encodeURIComponent". */
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_long_string("encodeURIComponent"),
+    },
+
+    /* encodeURIComponent.length == 1. */
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 1, 1.0),
+    },
 };
 
 
 const njs_object_init_t  njs_encode_uri_component_function_init = {
     nxt_string("encodeURIComponent"),
-    NULL,
-    0,
+    njs_encode_uri_component_function_properties,
+    nxt_nitems(njs_encode_uri_component_function_properties),
+};
+
+
+static const njs_object_prop_t  njs_decode_uri_function_properties[] =
+{
+    /* decodeURI.name == "decodeURI". */
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("decodeURI"),
+    },
+
+    /* decodeURI.length == 1. */
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 1, 1.0),
+    },
 };
 
 
 const njs_object_init_t  njs_decode_uri_function_init = {
     nxt_string("decodeURI"),
-    NULL,
-    0,
+    njs_decode_uri_function_properties,
+    nxt_nitems(njs_decode_uri_function_properties),
+};
+
+
+static const njs_object_prop_t  njs_decode_uri_component_function_properties[] =
+{
+    /* decodeURIComponent.name == "decodeURIComponent". */
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_long_string("decodeURIComponent"),
+    },
+
+    /* decodeURIComponent.length == 1. */
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 1, 1.0),
+    },
 };
 
 
 const njs_object_init_t  njs_decode_uri_component_function_init = {
     nxt_string("decodeURIComponent"),
-    NULL,
-    0,
+    njs_decode_uri_component_function_properties,
+    nxt_nitems(njs_decode_uri_component_function_properties),
 };

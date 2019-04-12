@@ -42,7 +42,7 @@ njs_function_alloc(njs_vm_t *vm, njs_function_lambda_t *lambda,
     function->args_offset = 1;
     function->u.lambda = lambda;
 
-    function->object.shared_hash = vm->shared->function_prototype_hash;
+    function->object.shared_hash = vm->shared->function_instance_hash;
     function->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION].object;
     function->object.type = NJS_FUNCTION;
     function->object.shared = shared;
@@ -162,7 +162,7 @@ njs_function_arguments_object_init(njs_vm_t *vm, njs_native_frame_t *frame)
         return NXT_ERROR;
     }
 
-    arguments->shared_hash = vm->shared->arguments_object_hash;
+    arguments->shared_hash = vm->shared->arguments_object_instance_hash;
 
     nargs = frame->nargs;
 
@@ -250,13 +250,36 @@ njs_function_rest_parameters_init(njs_vm_t *vm, njs_native_frame_t *frame)
 }
 
 
-njs_ret_t
+static njs_ret_t
 njs_function_arguments_thrower(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
     njs_type_error(vm, "\"caller\", \"callee\" properties may not be accessed");
     return NXT_ERROR;
 }
+
+
+const njs_object_prop_t  njs_arguments_object_instance_properties[] =
+{
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("caller"),
+        .value = njs_prop_handler(njs_function_arguments_thrower),
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("callee"),
+        .value = njs_prop_handler(njs_function_arguments_thrower),
+    },
+};
+
+
+const njs_object_init_t  njs_arguments_object_instance_init = {
+    nxt_string("Argument object instance"),
+    njs_arguments_object_instance_properties,
+    nxt_nitems(njs_arguments_object_instance_properties),
+};
 
 
 njs_ret_t
@@ -861,7 +884,7 @@ const njs_object_init_t  njs_function_constructor_init = {
  *      the typical number of arguments expected by the function.
  */
 static njs_ret_t
-njs_function_prototype_length(njs_vm_t *vm, njs_value_t *value,
+njs_function_instance_length(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
     nxt_uint_t             n;
@@ -1117,9 +1140,9 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 static const njs_object_prop_t  njs_function_prototype_properties[] =
 {
     {
-        .type = NJS_PROPERTY_HANDLER,
+        .type = NJS_PROPERTY,
         .name = njs_string("length"),
-        .value = njs_prop_handler(njs_function_prototype_length),
+        .value = njs_value(NJS_NUMBER, 0, 0.0),
     },
 
     {
@@ -1146,6 +1169,29 @@ const njs_object_init_t  njs_function_prototype_init = {
     nxt_string("Function"),
     njs_function_prototype_properties,
     nxt_nitems(njs_function_prototype_properties),
+};
+
+
+const njs_object_prop_t  njs_function_instance_properties[] =
+{
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("length"),
+        .value = njs_prop_handler(njs_function_instance_length),
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("prototype"),
+        .value = njs_prop_handler(njs_function_prototype_create),
+    },
+};
+
+
+const njs_object_init_t  njs_function_instance_init = {
+    nxt_string("Function instance"),
+    njs_function_instance_properties,
+    nxt_nitems(njs_function_instance_properties),
 };
 
 

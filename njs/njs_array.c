@@ -149,7 +149,7 @@ njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare)
 
     array->start = array->data;
     nxt_lvlhsh_init(&array->object.hash);
-    nxt_lvlhsh_init(&array->object.shared_hash);
+    array->object.shared_hash = vm->shared->array_instance_hash;
     array->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_ARRAY].object;
     array->object.type = NJS_ARRAY;
     array->object.shared = 0;
@@ -401,8 +401,8 @@ const njs_object_init_t  njs_array_constructor_init = {
 
 
 static njs_ret_t
-njs_array_prototype_length(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_array_length(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     double       num;
     int64_t      size;
@@ -2214,7 +2214,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("length"),
-        .value = njs_prop_handler(njs_array_prototype_length),
+        .value = njs_prop_handler(njs_array_length),
         .writable = 1
     },
 
@@ -2394,4 +2394,22 @@ const njs_object_init_t  njs_array_prototype_init = {
     nxt_string("Array"),
     njs_array_prototype_properties,
     nxt_nitems(njs_array_prototype_properties),
+};
+
+
+const njs_object_prop_t  njs_array_instance_properties[] =
+{
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("length"),
+        .value = njs_prop_handler(njs_array_length),
+        .writable = 1
+    },
+};
+
+
+const njs_object_init_t  njs_array_instance_init = {
+    nxt_string("Array instance"),
+    njs_array_instance_properties,
+    nxt_nitems(njs_array_instance_properties),
 };

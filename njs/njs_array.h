@@ -26,6 +26,7 @@ njs_ret_t njs_array_constructor(njs_vm_t *vm, njs_value_t *args,
 
 extern const njs_object_init_t  njs_array_constructor_init;
 extern const njs_object_init_t  njs_array_prototype_init;
+extern const njs_object_init_t  njs_array_instance_init;
 
 
 #endif /* _NJS_ARRAY_H_INCLUDED_ */
