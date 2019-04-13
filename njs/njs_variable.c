@@ -65,6 +65,11 @@ njs_variable_add(njs_vm_t *vm, njs_parser_scope_t *scope, nxt_str_t *name,
 
     if (nxt_lvlhsh_find(&scope->variables, &lhq) == NXT_OK) {
         var = lhq.value;
+
+        if (type == NJS_VARIABLE_FUNCTION) {
+            var->type = type;
+        }
+
         return var;
     }
 
