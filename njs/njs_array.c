@@ -493,7 +493,7 @@ njs_array_prototype_slice_continuation(njs_vm_t *vm, njs_value_t *args,
         return njs_trap(vm, NJS_TRAP_NUMBER_ARG);
     }
 
-    start = (int32_t) njs_primitive_value_to_integer(njs_arg(args, nargs, 1));
+    start = njs_primitive_value_to_integer(njs_arg(args, nargs, 1));
     length = njs_primitive_value_to_integer(&slice->length);
 
     if (start < 0) {
@@ -510,7 +510,7 @@ njs_array_prototype_slice_continuation(njs_vm_t *vm, njs_value_t *args,
 
     } else {
         if (!njs_is_undefined(njs_arg(args, nargs, 2))) {
-            end = (int32_t) njs_primitive_value_to_integer(&args[2]);
+            end = njs_primitive_value_to_integer(&args[2]);
 
         } else {
             end = length;

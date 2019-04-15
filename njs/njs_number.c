@@ -73,7 +73,7 @@ njs_primitive_value_to_number(const njs_value_t *value)
 }
 
 
-uint32_t
+int32_t
 njs_primitive_value_to_integer(const njs_value_t *value)
 {
     return njs_number_to_integer(njs_primitive_value_to_number(value));
@@ -783,11 +783,9 @@ njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
-nxt_noinline uint32_t
-njs_number_to_integer(double num)
+nxt_inline int64_t
+njs_number_to_int64(double num)
 {
-    int64_t  i64;
-
 #if (NXT_NAN_TO_UINT_CONVERSION != 0)
     /*
      * PPC32: NaN and Inf are converted to 0x8000000080000000
@@ -810,13 +808,17 @@ njs_number_to_integer(double num)
      */
 
     if (fabs(num) > 9007199254740992.0) {
-        i64 = fmod(num, 4294967296.0);
-
-    } else {
-        i64 = num;
+        return (int64_t) fmod(num, 4294967296.0);
     }
 
-    return (uint32_t) i64;
+    return (int64_t) num;
+}
+
+
+nxt_noinline int32_t
+njs_number_to_integer(double num)
+{
+    return (int32_t) njs_number_to_int64(num);
 }
 
 
