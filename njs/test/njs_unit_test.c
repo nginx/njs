@@ -3617,7 +3617,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("TypeError: Cannot convert object to primitive value") },
 
     { nxt_string("Array.prototype.slice.call({length:-1})"),
-      nxt_string("MemoryError") },
+      nxt_string("") },
 
     { nxt_string("Array.prototype.slice.call('αβZγ')"),
       nxt_string("α,β,Z,γ") },

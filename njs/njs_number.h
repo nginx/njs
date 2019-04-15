@@ -14,6 +14,9 @@
 uint32_t njs_value_to_index(const njs_value_t *value);
 double njs_primitive_value_to_number(const njs_value_t *value);
 int32_t njs_primitive_value_to_integer(const njs_value_t *value);
+int32_t njs_primitive_value_to_int32(const njs_value_t *value);
+uint32_t njs_primitive_value_to_uint32(const njs_value_t *value);
+uint32_t njs_primitive_value_to_length(const njs_value_t *value);
 double njs_number_dec_parse(const u_char **start, const u_char *end);
 uint64_t njs_number_oct_parse(const u_char **start, const u_char *end);
 uint64_t njs_number_bin_parse(const u_char **start, const u_char *end);
@@ -33,7 +36,9 @@ njs_ret_t njs_number_parse_int(njs_vm_t *vm, njs_value_t *args,
 njs_ret_t njs_number_parse_float(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 nxt_noinline int32_t njs_number_to_integer(double num);
-
+nxt_noinline int32_t njs_number_to_int32(double num);
+nxt_noinline uint32_t njs_number_to_uint32(double num);
+nxt_noinline uint32_t njs_number_to_length(double num);
 
 nxt_inline nxt_int_t
 njs_char_to_hex(u_char c)

@@ -1445,7 +1445,7 @@ njs_string_bytes_from_array(njs_vm_t *vm, const njs_value_t *value)
     octet = array->start;
 
     while (length != 0) {
-        *p++ = (u_char) njs_number_to_integer(octet->data.u.number);
+        *p++ = (u_char) njs_number_to_uint32(octet->data.u.number);
         octet++;
         length--;
     }

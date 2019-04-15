@@ -227,7 +227,7 @@ njs_object_math_clz32(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     uint32_t  ui32;
 
     if (nargs > 1) {
-        ui32 = njs_number_to_integer(args[1].data.u.number);
+        ui32 = njs_number_to_uint32(args[1].data.u.number);
         num = nxt_leading_zeros(ui32);
 
     } else {
@@ -393,8 +393,8 @@ njs_object_math_imul(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     uint32_t  a, b;
 
     if (nargs > 2) {
-        a = njs_number_to_integer(args[1].data.u.number);
-        b = njs_number_to_integer(args[2].data.u.number);
+        a = njs_number_to_uint32(args[1].data.u.number);
+        b = njs_number_to_uint32(args[2].data.u.number);
 
         num = (int32_t) (a * b);
 

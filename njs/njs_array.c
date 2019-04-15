@@ -494,7 +494,7 @@ njs_array_prototype_slice_continuation(njs_vm_t *vm, njs_value_t *args,
     }
 
     start = njs_primitive_value_to_integer(njs_arg(args, nargs, 1));
-    length = njs_primitive_value_to_integer(&slice->length);
+    length = njs_primitive_value_to_length(&slice->length);
 
     if (start < 0) {
         start += length;

@@ -80,6 +80,27 @@ njs_primitive_value_to_integer(const njs_value_t *value)
 }
 
 
+int32_t
+njs_primitive_value_to_int32(const njs_value_t *value)
+{
+    return njs_number_to_int32(njs_primitive_value_to_number(value));
+}
+
+
+uint32_t
+njs_primitive_value_to_uint32(const njs_value_t *value)
+{
+    return njs_number_to_uint32(njs_primitive_value_to_number(value));
+}
+
+
+uint32_t
+njs_primitive_value_to_length(const njs_value_t *value)
+{
+    return njs_number_to_length(njs_primitive_value_to_number(value));
+}
+
+
 double
 njs_number_dec_parse(const u_char **start, const u_char *end)
 {
@@ -820,6 +841,41 @@ njs_number_to_integer(double num)
 {
     return (int32_t) njs_number_to_int64(num);
 }
+
+
+nxt_noinline int32_t
+njs_number_to_int32(double num)
+{
+    return (int32_t) njs_number_to_int64(num);
+}
+
+
+nxt_noinline uint32_t
+njs_number_to_uint32(double num)
+{
+    return (uint32_t) njs_number_to_int64(num);
+}
+
+
+nxt_noinline uint32_t
+njs_number_to_length(double num)
+{
+#if (NXT_NAN_TO_UINT_CONVERSION != 0)
+    if (isnan(num)) {
+        return 0;
+    }
+#endif
+
+    if (num > UINT32_MAX) {
+        return UINT32_MAX;
+
+    } else if (num < 0.0) {
+        return 0;
+    }
+
+    return (uint32_t) (int64_t) num;
+}
+
 
 
 static const njs_object_prop_t  njs_is_nan_function_properties[] =

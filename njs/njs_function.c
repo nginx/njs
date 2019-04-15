@@ -1022,7 +1022,7 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    nargs = njs_primitive_value_to_number(&length);
+    nargs = njs_primitive_value_to_length(&length);
 
     arr = njs_array_alloc(vm, nargs, NJS_ARRAY_SPARE);
     if (nxt_slow_path(arr == NULL)) {

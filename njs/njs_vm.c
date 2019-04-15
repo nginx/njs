@@ -1303,8 +1303,8 @@ njs_vmcode_left_shift(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
     if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
 
-        num1 = njs_number_to_integer(val1->data.u.number);
-        num2 = njs_number_to_integer(val2->data.u.number);
+        num1 = njs_number_to_int32(val1->data.u.number);
+        num2 = njs_number_to_uint32(val2->data.u.number);
         njs_value_number_set(&vm->retval, num1 << (num2 & 0x1f));
 
         return sizeof(njs_vmcode_3addr_t);
@@ -1322,8 +1322,8 @@ njs_vmcode_right_shift(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
     if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
 
-        num1 = njs_number_to_integer(val1->data.u.number);
-        num2 = njs_number_to_integer(val2->data.u.number);
+        num1 = njs_number_to_int32(val1->data.u.number);
+        num2 = njs_number_to_uint32(val2->data.u.number);
         njs_value_number_set(&vm->retval, num1 >> (num2 & 0x1f));
 
         return sizeof(njs_vmcode_3addr_t);
@@ -1337,13 +1337,12 @@ njs_ret_t
 njs_vmcode_unsigned_right_shift(njs_vm_t *vm, njs_value_t *val1,
     njs_value_t *val2)
 {
-    int32_t   num2;
-    uint32_t  num1;
+    uint32_t  num1, num2;
 
     if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
 
-        num1 = njs_number_to_integer(val1->data.u.number);
-        num2 = njs_number_to_integer(val2->data.u.number);
+        num1 = njs_number_to_uint32(val1->data.u.number);
+        num2 = njs_number_to_uint32(val2->data.u.number);
         njs_value_number_set(&vm->retval, num1 >> (num2 & 0x1f));
 
         return sizeof(njs_vmcode_3addr_t);
@@ -1462,8 +1461,8 @@ njs_vmcode_bitwise_or(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
     if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
 
-        num1 = njs_number_to_integer(val1->data.u.number);
-        num2 = njs_number_to_integer(val2->data.u.number);
+        num1 = njs_number_to_uint32(val1->data.u.number);
+        num2 = njs_number_to_uint32(val2->data.u.number);
         njs_value_number_set(&vm->retval, num1 | num2);
 
         return sizeof(njs_vmcode_3addr_t);
