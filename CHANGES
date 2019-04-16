@@ -6,10 +6,10 @@ Changes with njs 0.3.1                                           16 Apr 2019
     *) Feature: added arrow functions support.
        Thanks to 洪志道 (Hong Zhi Dao) and Artem S. Povalyukhin.
 
-    *) Feature: added Added Object.getOwnPropertyNames().
+    *) Feature: added Object.getOwnPropertyNames().
        Thanks to Artem S. Povalyukhin.
 
-    *) Feature: added Added Object.getOwnPropertyDescriptors().
+    *) Feature: added Object.getOwnPropertyDescriptors().
        Thanks to Artem S. Povalyukhin.
 
     *) Feature: making __proto__ accessor descriptor of Object instances
