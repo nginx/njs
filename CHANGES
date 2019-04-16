@@ -1,4 +1,47 @@
 
+Changes with njs 0.3.1                                           16 Apr 2019
+
+    Core:
+
+    *) Feature: added arrow functions support.
+       Thanks to 洪志道 (Hong Zhi Dao) and Artem S. Povalyukhin.
+
+    *) Feature: added Added Object.getOwnPropertyNames().
+       Thanks to Artem S. Povalyukhin.
+
+    *) Feature: added Added Object.getOwnPropertyDescriptors().
+       Thanks to Artem S. Povalyukhin.
+
+    *) Feature: making __proto__ accessor descriptor of Object instances
+       mutable.
+
+    *) Feature: added shebang support in CLI.
+
+    *) Feature: added support for module mode execution in CLI. In module
+       mode global this is unavailable.
+
+    *) Bugfix: fixed editline detection.
+
+    *) Bugfix: fixed Function.prototype.bind().
+       Thanks to 洪志道 (Hong Zhi Dao).
+
+    *) Bugfix: fixed checking of duplication of parameters for functions.
+       Thanks to 洪志道 (Hong Zhi Dao).
+
+    *) Bugfix: fixed function declaration with the same name as a variable.
+       Thanks to 洪志道 (Hong Zhi Dao).
+
+    *) Improvement: code related to parsing of objects, variables and
+       functions is refactored.
+       Thanks to 洪志道 (Hong Zhi Dao).
+
+    *) Improvement: console.log() improved for outputting large values.
+
+    *) Improvement: console.log() improved for outputting strings in a
+       compliant way (without escaping and quotes).
+
+    *) Improvement: using ES6 version of ToInt32(), ToUint32(), ToLength().
+
 Changes with njs 0.3.0                                           26 Mar 2019
 
     nginx modules:
