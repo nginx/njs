@@ -3636,3 +3636,45 @@ njs_lvlhsh_free(void *data, void *p, size_t size)
 {
     nxt_mp_free(data, p);
 }
+
+
+njs_array_t *
+njs_value_enumerate(njs_vm_t *vm, const njs_value_t *value,
+    njs_object_enum_t kind, nxt_bool_t all)
+{
+    njs_object_value_t  obj_val;
+
+    if (njs_is_object(value)) {
+        return njs_object_enumerate(vm, value->data.u.object, kind, all);
+    }
+
+    if (value->type != NJS_STRING) {
+        return njs_array_alloc(vm, 0, NJS_ARRAY_SPARE);
+    }
+
+    obj_val.object = vm->string_object;
+    obj_val.value = *value;
+
+    return njs_object_enumerate(vm, (njs_object_t *) &obj_val, kind, all);
+}
+
+
+njs_array_t *
+njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
+    njs_object_enum_t kind, nxt_bool_t all)
+{
+    njs_object_value_t  obj_val;
+
+    if (njs_is_object(value)) {
+        return njs_object_own_enumerate(vm, value->data.u.object, kind, all);
+    }
+
+    if (value->type != NJS_STRING) {
+        return njs_array_alloc(vm, 0, NJS_ARRAY_SPARE);
+    }
+
+    obj_val.object = vm->string_object;
+    obj_val.value = *value;
+
+    return njs_object_own_enumerate(vm, (njs_object_t *) &obj_val, kind, all);
+}

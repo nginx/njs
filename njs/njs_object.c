@@ -27,6 +27,25 @@ static njs_ret_t njs_object_query_prop_handler(njs_property_query_t *pq,
 static njs_ret_t njs_define_property(njs_vm_t *vm, njs_value_t *object,
     const njs_value_t *name, const njs_object_t *descriptor);
 
+static njs_object_prop_t * njs_object_exist_in_proto(const njs_object_t *begin,
+    const njs_object_t *end, nxt_lvlhsh_query_t *lhq);
+static uint32_t njs_object_enumerate_array_length(const njs_object_t *object);
+static uint32_t njs_object_enumerate_string_length(const njs_object_t *object);
+static uint32_t njs_object_enumerate_object_length(const njs_object_t *object,
+    nxt_bool_t all);
+static uint32_t njs_object_own_enumerate_object_length(
+    const njs_object_t *object, const njs_object_t *parent, nxt_bool_t all);
+static njs_ret_t njs_object_enumerate_array(njs_vm_t *vm,
+    const njs_array_t *array, njs_array_t *items, njs_object_enum_t kind);
+static njs_ret_t njs_object_enumerate_string(njs_vm_t *vm,
+    const njs_value_t *value, njs_array_t *items, njs_object_enum_t kind);
+static njs_ret_t njs_object_enumerate_object(njs_vm_t *vm,
+    const njs_object_t *object, njs_array_t *items, njs_object_enum_t kind,
+    nxt_bool_t all);
+static njs_ret_t njs_object_own_enumerate_object(njs_vm_t *vm,
+    const njs_object_t *object, const njs_object_t *parent, njs_array_t *items,
+    njs_object_enum_t kind, nxt_bool_t all);
+
 
 nxt_noinline njs_object_t *
 njs_object_alloc(njs_vm_t *vm)
@@ -886,7 +905,7 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    keys = njs_object_enumerate(vm, value, NJS_ENUM_KEYS, 0);
+    keys = njs_value_own_enumerate(vm, value, NJS_ENUM_KEYS, 0);
     if (keys == NULL) {
         return NXT_ERROR;
     }
@@ -915,7 +934,7 @@ njs_object_values(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    array = njs_object_enumerate(vm, value, NJS_ENUM_VALUES, 0);
+    array = njs_value_own_enumerate(vm, value, NJS_ENUM_VALUES, 0);
     if (array == NULL) {
         return NXT_ERROR;
     }
@@ -944,7 +963,7 @@ njs_object_entries(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    array = njs_object_enumerate(vm, value, NJS_ENUM_BOTH, 0);
+    array = njs_value_own_enumerate(vm, value, NJS_ENUM_BOTH, 0);
     if (array == NULL) {
         return NXT_ERROR;
     }
@@ -957,69 +976,306 @@ njs_object_entries(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
-njs_array_t *
-njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
-    njs_object_enum_t kind, nxt_bool_t all)
+static njs_object_prop_t *
+njs_object_exist_in_proto(const njs_object_t *begin, const njs_object_t *end,
+    nxt_lvlhsh_query_t *lhq)
 {
-    u_char             *dst;
-    uint32_t           i, length, size, items_length, properties;
-    njs_value_t        *string, *item;
-    njs_array_t        *items, *array, *entry;
-    nxt_lvlhsh_t       *hash;
-    const u_char       *src, *end;
-    njs_object_t       *object;
+    nxt_int_t          ret;
     njs_object_prop_t  *prop;
-    njs_string_prop_t  string_prop;
-    nxt_lvlhsh_each_t  lhe;
 
-    array = NULL;
-    length = 0;
-    object = NULL;
-    items_length = 0;
+    lhq->proto = &njs_object_hash_proto;
 
-    switch (value->type) {
-    case NJS_ARRAY:
-        array = value->data.u.array;
-        length = array->length;
+    while (begin != end) {
+        ret = nxt_lvlhsh_find(&begin->hash, lhq);
 
-        for (i = 0; i < length; i++) {
-            if (njs_is_valid(&array->start[i])) {
-                items_length++;
+        if (nxt_fast_path(ret == NXT_OK)) {
+            prop = lhq->value;
+
+            if (prop->type == NJS_WHITEOUT) {
+                goto next;
             }
+
+            return lhq->value;
         }
 
+        ret = nxt_lvlhsh_find(&begin->shared_hash, lhq);
+
+        if (nxt_fast_path(ret == NXT_OK)) {
+            return lhq->value;
+        }
+
+next:
+
+        begin = begin->__proto__;
+    }
+
+    return NULL;
+}
+
+
+nxt_inline uint32_t
+njs_object_enumerate_length(const njs_object_t *object, nxt_bool_t all)
+{
+    uint32_t  length;
+
+    length = njs_object_enumerate_object_length(object, all);
+
+    switch (object->type) {
+    case NJS_ARRAY:
+        length += njs_object_enumerate_array_length(object);
         break;
 
-    case NJS_STRING:
     case NJS_OBJECT_STRING:
-        if (value->type == NJS_OBJECT_STRING) {
-            string = &value->data.u.object_value->value;
-
-        } else {
-            string = (njs_value_t *) value;
-            object = &vm->string_object;
-        }
-
-        length = njs_string_prop(&string_prop, string);
-        items_length += length;
-
+        length += njs_object_enumerate_string_length(object);
         break;
 
     default:
         break;
     }
 
-    /* GCC 4 and Clang 3 complain about uninitialized hash. */
-    hash = NULL;
-    properties = 0;
+    return length;
+}
 
-    if (nxt_fast_path(njs_is_object(value))) {
-        object = value->data.u.object;
+
+nxt_inline uint32_t
+njs_object_own_enumerate_length(const njs_object_t *object,
+    const njs_object_t *parent, nxt_bool_t all)
+{
+    uint32_t  length;
+
+    length = njs_object_own_enumerate_object_length(object, parent, all);
+
+    switch (object->type) {
+    case NJS_ARRAY:
+        length += njs_object_enumerate_array_length(object);
+        break;
+
+    case NJS_OBJECT_STRING:
+        length += njs_object_enumerate_string_length(object);
+        break;
+
+    default:
+        break;
     }
 
-    if (object != NULL) {
+    return length;
+}
+
+
+nxt_inline njs_ret_t
+njs_object_enumerate_value(njs_vm_t *vm, const njs_object_t *object,
+    njs_array_t *items, njs_object_enum_t kind, nxt_bool_t all)
+{
+    njs_ret_t           ret;
+    njs_object_value_t  *obj_val;
+
+    switch (object->type) {
+    case NJS_ARRAY:
+        ret = njs_object_enumerate_array(vm, (njs_array_t *) object, items,
+                                         kind);
+        break;
+
+    case NJS_OBJECT_STRING:
+        obj_val = (njs_object_value_t *) object;
+
+        ret = njs_object_enumerate_string(vm, &obj_val->value, items, kind);
+        break;
+
+    default:
+        goto object;
+    }
+
+    if (nxt_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+object:
+
+    ret = njs_object_enumerate_object(vm, object, items, kind, all);
+    if (nxt_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    return NJS_OK;
+}
+
+
+nxt_inline njs_ret_t
+njs_object_own_enumerate_value(njs_vm_t *vm, const njs_object_t *object,
+    const njs_object_t *parent, njs_array_t *items, njs_object_enum_t kind,
+    nxt_bool_t all)
+{
+    njs_ret_t           ret;
+    njs_object_value_t  *obj_val;
+
+    switch (object->type) {
+    case NJS_ARRAY:
+        ret = njs_object_enumerate_array(vm, (njs_array_t *) object, items,
+                                            kind);
+        break;
+
+    case NJS_OBJECT_STRING:
+        obj_val = (njs_object_value_t *) object;
+
+        ret = njs_object_enumerate_string(vm, &obj_val->value, items, kind);
+        break;
+
+    default:
+        goto object;
+    }
+
+    if (nxt_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+object:
+
+    ret = njs_object_own_enumerate_object(vm, object, parent, items, kind, all);
+    if (nxt_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    return NJS_OK;
+}
+
+
+njs_array_t *
+njs_object_enumerate(njs_vm_t *vm, const njs_object_t *object,
+    njs_object_enum_t kind, nxt_bool_t all)
+{
+    uint32_t     length;
+    njs_ret_t    ret;
+    njs_array_t  *items;
+
+    length = njs_object_enumerate_length(object, all);
+
+    items = njs_array_alloc(vm, length, NJS_ARRAY_SPARE);
+    if (nxt_slow_path(items == NULL)) {
+        return NULL;
+    }
+
+    ret = njs_object_enumerate_value(vm, object, items, kind, all);
+    if (nxt_slow_path(ret != NJS_OK)) {
+        return NULL;
+    }
+
+    items->start -= items->length;
+
+    return items;
+}
+
+
+njs_array_t *
+njs_object_own_enumerate(njs_vm_t *vm, const njs_object_t *object,
+    njs_object_enum_t kind, nxt_bool_t all)
+{
+    uint32_t     length;
+    njs_ret_t    ret;
+    njs_array_t  *items;
+
+    length = njs_object_own_enumerate_length(object, object, all);
+
+    items = njs_array_alloc(vm, length, NJS_ARRAY_SPARE);
+    if (nxt_slow_path(items == NULL)) {
+        return NULL;
+    }
+
+    ret = njs_object_own_enumerate_value(vm, object, object, items, kind, all);
+    if (nxt_slow_path(ret != NJS_OK)) {
+        return NULL;
+    }
+
+    items->start -= items->length;
+
+    return items;
+}
+
+
+static uint32_t
+njs_object_enumerate_array_length(const njs_object_t *object)
+{
+    uint32_t     i, length;
+    njs_array_t  *array;
+
+    length = 0;
+    array = (njs_array_t *) object;
+
+    for (i = 0; i < array->length; i++) {
+        if (njs_is_valid(&array->start[i])) {
+            length++;
+        }
+    }
+
+    return length;
+}
+
+
+static uint32_t
+njs_object_enumerate_string_length(const njs_object_t *object)
+{
+    njs_object_value_t  *obj_val;
+
+    obj_val = (njs_object_value_t *) object;
+
+    return njs_string_length(&obj_val->value);
+}
+
+
+static uint32_t
+njs_object_enumerate_object_length(const njs_object_t *object, nxt_bool_t all)
+{
+    uint32_t            length;
+    const njs_object_t  *ptr;
+
+    length = njs_object_own_enumerate_object_length(object, object, all);
+
+    for (ptr = object->__proto__; ptr != NULL; ptr = ptr->__proto__) {
+
+        length += njs_object_own_enumerate_length(ptr, object, all);
+    }
+
+    return length;
+}
+
+
+static uint32_t
+njs_object_own_enumerate_object_length(const njs_object_t *object,
+    const njs_object_t *parent, nxt_bool_t all)
+{
+    uint32_t            length;
+    nxt_int_t           ret;
+    nxt_lvlhsh_each_t   lhe;
+    njs_object_prop_t   *prop, *ext_prop;
+    nxt_lvlhsh_query_t  lhq;
+    const nxt_lvlhsh_t  *hash;
+
+    nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+    hash = &object->hash;
+
+    length = 0;
+
+    for ( ;; ) {
+        prop = nxt_lvlhsh_each(hash, &lhe);
+
+        if (prop == NULL) {
+            break;
+        }
+
+        lhq.key_hash = lhe.key_hash;
+        njs_string_get(&prop->name, &lhq.key);
+
+        ext_prop = njs_object_exist_in_proto(parent, object, &lhq);
+
+        if (ext_prop == NULL && prop->type != NJS_WHITEOUT
+            && (prop->enumerable || all))
+        {
+            length++;
+        }
+    }
+
+    if (nxt_slow_path(all)) {
         nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
-        hash = &object->hash;
+        hash = &object->shared_hash;
 
         for ( ;; ) {
             prop = nxt_lvlhsh_each(hash, &lhe);
@@ -1028,8 +1284,271 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
                 break;
             }
 
-            if (prop->type != NJS_WHITEOUT && (prop->enumerable || all)) {
-                properties++;
+            lhq.key_hash = lhe.key_hash;
+            njs_string_get(&prop->name, &lhq.key);
+
+            lhq.proto = &njs_object_hash_proto;
+            ret = nxt_lvlhsh_find(&object->hash, &lhq);
+
+            if (ret != NXT_OK) {
+                ext_prop = njs_object_exist_in_proto(parent, object, &lhq);
+
+                if (ext_prop == NULL) {
+                    length++;
+                }
+            }
+        }
+    }
+
+    return length;
+}
+
+
+static njs_ret_t
+njs_object_enumerate_array(njs_vm_t *vm, const njs_array_t *array,
+    njs_array_t *items, njs_object_enum_t kind)
+{
+    uint32_t     i;
+    njs_value_t  *item;
+    njs_array_t  *entry;
+
+    item = items->start;
+
+    switch (kind) {
+    case NJS_ENUM_KEYS:
+        for (i = 0; i < array->length; i++) {
+            if (njs_is_valid(&array->start[i])) {
+                njs_uint32_to_string(item++, i);
+            }
+        }
+
+        break;
+
+    case NJS_ENUM_VALUES:
+        for (i = 0; i < array->length; i++) {
+            if (njs_is_valid(&array->start[i])) {
+                /* GC: retain. */
+                *item++ = array->start[i];
+            }
+        }
+
+        break;
+
+    case NJS_ENUM_BOTH:
+        for (i = 0; i < array->length; i++) {
+            if (njs_is_valid(&array->start[i])) {
+
+                entry = njs_array_alloc(vm, 2, 0);
+                if (nxt_slow_path(entry == NULL)) {
+                    return NJS_ERROR;
+                }
+
+                njs_uint32_to_string(&entry->start[0], i);
+
+                /* GC: retain. */
+                entry->start[1] = array->start[i];
+
+                item->data.u.array = entry;
+                item->type = NJS_ARRAY;
+                item->data.truth = 1;
+
+                item++;
+            }
+        }
+
+        break;
+    }
+
+    items->start = item;
+
+    return NJS_OK;
+}
+
+
+static njs_ret_t
+njs_object_enumerate_string(njs_vm_t *vm, const njs_value_t *value,
+    njs_array_t *items, njs_object_enum_t kind)
+{
+    u_char             *begin;
+    uint32_t           i, len, size;
+    njs_value_t        *item, *string;
+    njs_array_t        *entry;
+    const u_char       *src, *end;
+    njs_string_prop_t  str_prop;
+
+    item = items->start;
+    len = (uint32_t) njs_string_prop(&str_prop, value);
+
+    switch (kind) {
+    case NJS_ENUM_KEYS:
+        for (i = 0; i < len; i++) {
+            njs_uint32_to_string(item++, i);
+        }
+
+        break;
+
+    case NJS_ENUM_VALUES:
+        if (str_prop.size == (size_t) len) {
+            /* Byte or ASCII string. */
+
+            for (i = 0; i < len; i++) {
+                begin = njs_string_short_start(item);
+                *begin = str_prop.start[i];
+
+                njs_string_short_set(item, 1, 1);
+
+                item++;
+            }
+
+        } else {
+            /* UTF-8 string. */
+
+            src = str_prop.start;
+            end = src + str_prop.size;
+
+            do {
+                begin = (u_char *) src;
+                nxt_utf8_copy(njs_string_short_start(item), &src, end);
+                size = (uint32_t) (src - begin);
+
+                njs_string_short_set(item, size, 1);
+
+                item++;
+
+            } while (src != end);
+        }
+
+        break;
+
+    case NJS_ENUM_BOTH:
+        if (str_prop.size == (size_t) len) {
+            /* Byte or ASCII string. */
+
+            for (i = 0; i < len; i++) {
+
+                entry = njs_array_alloc(vm, 2, 0);
+                if (nxt_slow_path(entry == NULL)) {
+                    return NJS_ERROR;
+                }
+
+                njs_uint32_to_string(&entry->start[0], i);
+
+                string = &entry->start[1];
+
+                begin = njs_string_short_start(string);
+                *begin = str_prop.start[i];
+
+                njs_string_short_set(string, 1, 1);
+
+                item->data.u.array = entry;
+                item->type = NJS_ARRAY;
+                item->data.truth = 1;
+
+                item++;
+            }
+
+        } else {
+            /* UTF-8 string. */
+
+            src = str_prop.start;
+            end = src + str_prop.size;
+            i = 0;
+
+            do {
+                entry = njs_array_alloc(vm, 2, 0);
+                if (nxt_slow_path(entry == NULL)) {
+                    return NJS_ERROR;
+                }
+
+                njs_uint32_to_string(&entry->start[0], i++);
+
+                string = &entry->start[1];
+
+                begin = (u_char *) src;
+                nxt_utf8_copy(njs_string_short_start(string), &src, end);
+                size = (uint32_t) (src - begin);
+
+                njs_string_short_set(string, size, 1);
+
+                item->data.u.array = entry;
+                item->type = NJS_ARRAY;
+                item->data.truth = 1;
+
+                item++;
+
+            } while (src != end);
+        }
+
+        break;
+    }
+
+    items->start = item;
+
+    return NJS_OK;
+}
+
+
+static njs_ret_t
+njs_object_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
+    njs_array_t *items, njs_object_enum_t kind, nxt_bool_t all)
+{
+    njs_ret_t           ret;
+    const njs_object_t  *ptr;
+
+    ret = njs_object_own_enumerate_object(vm, object, object, items, kind, all);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NXT_ERROR;
+    }
+
+    for (ptr = object->__proto__; ptr != NULL; ptr = ptr->__proto__) {
+
+        ret = njs_object_own_enumerate_value(vm, ptr, object, items, kind,
+                                             all);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return NXT_ERROR;
+        }
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_ret_t
+njs_object_own_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
+    const njs_object_t *parent, njs_array_t *items, njs_object_enum_t kind,
+    nxt_bool_t all)
+{
+    nxt_int_t           ret;
+    njs_value_t         *item;
+    njs_array_t         *entry;
+    nxt_lvlhsh_each_t   lhe;
+    njs_object_prop_t   *prop, *ext_prop;
+    nxt_lvlhsh_query_t  lhq;
+    const nxt_lvlhsh_t  *hash;
+
+    nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+
+    item = items->start;
+    hash = &object->hash;
+
+    switch (kind) {
+    case NJS_ENUM_KEYS:
+        for ( ;; ) {
+            prop = nxt_lvlhsh_each(hash, &lhe);
+
+            if (prop == NULL) {
+                break;
+            }
+
+            lhq.key_hash = lhe.key_hash;
+            njs_string_get(&prop->name, &lhq.key);
+
+            ext_prop = njs_object_exist_in_proto(parent, object, &lhq);
+
+            if (ext_prop == NULL && prop->type != NJS_WHITEOUT
+                && (prop->enumerable || all))
+            {
+                njs_string_copy(item++, &prop->name);
             }
         }
 
@@ -1044,179 +1563,49 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
                     break;
                 }
 
-                properties++;
+                lhq.key_hash = lhe.key_hash;
+                njs_string_get(&prop->name, &lhq.key);
+
+                lhq.proto = &njs_object_hash_proto;
+                ret = nxt_lvlhsh_find(&object->hash, &lhq);
+
+                if (ret != NXT_OK) {
+                    ext_prop = njs_object_exist_in_proto(parent, object, &lhq);
+
+                    if (ext_prop == NULL) {
+                        njs_string_copy(item++, &prop->name);
+                    }
+                }
             }
         }
 
-        items_length += properties;
-    }
+        break;
 
-    items = njs_array_alloc(vm, items_length, NJS_ARRAY_SPARE);
-    if (nxt_slow_path(items == NULL)) {
-        return NULL;
-    }
+    case NJS_ENUM_VALUES:
+        for ( ;; ) {
+            prop = nxt_lvlhsh_each(hash, &lhe);
 
-    item = items->start;
-
-    if (array != NULL) {
-
-        switch (kind) {
-        case NJS_ENUM_KEYS:
-            for (i = 0; i < length; i++) {
-                if (njs_is_valid(&array->start[i])) {
-                    njs_uint32_to_string(item++, i);
-                }
+            if (prop == NULL) {
+                break;
             }
 
-            break;
+            lhq.key_hash = lhe.key_hash;
+            njs_string_get(&prop->name, &lhq.key);
 
-        case NJS_ENUM_VALUES:
-            for (i = 0; i < length; i++) {
-                if (njs_is_valid(&array->start[i])) {
-                    /* GC: retain. */
-                    *item++ = array->start[i];
-                }
+            ext_prop = njs_object_exist_in_proto(parent, object, &lhq);
+
+            if (ext_prop == NULL && prop->type != NJS_WHITEOUT
+                && (prop->enumerable || all))
+            {
+                /* GC: retain. */
+                *item++ = prop->value;
             }
-
-            break;
-
-        case NJS_ENUM_BOTH:
-            for (i = 0; i < length; i++) {
-                if (njs_is_valid(&array->start[i])) {
-                    entry = njs_array_alloc(vm, 2, 0);
-                    if (nxt_slow_path(entry == NULL)) {
-                        return NULL;
-                    }
-
-                    njs_uint32_to_string(&entry->start[0], i);
-
-                    /* GC: retain. */
-                    entry->start[1] = array->start[i];
-
-                    item->data.u.array = entry;
-                    item->type = NJS_ARRAY;
-                    item->data.truth = 1;
-
-                    item++;
-                }
-            }
-
-            break;
         }
 
-    } else if (length != 0) {
+        if (nxt_slow_path(all)) {
+            nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+            hash = &object->shared_hash;
 
-        switch (kind) {
-        case NJS_ENUM_KEYS:
-            for (i = 0; i < length; i++) {
-                njs_uint32_to_string(item++, i);
-            }
-
-            break;
-
-        case NJS_ENUM_VALUES:
-            if (string_prop.size == (size_t) length) {
-                /* Byte or ASCII string. */
-
-                for (i = 0; i < length; i++) {
-                    dst = njs_string_short_start(item);
-                    dst[0] = string_prop.start[i];
-
-                    njs_string_short_set(item, 1, 1);
-
-                    item++;
-                }
-
-            } else {
-                /* UTF-8 string. */
-
-                src = string_prop.start;
-                end = src + string_prop.size;
-
-                do {
-                    dst = njs_string_short_start(item);
-                    dst = nxt_utf8_copy(dst, &src, end);
-                    size = dst - njs_string_short_start(value);
-
-                    njs_string_short_set(item, size, 1);
-
-                    item++;
-
-                } while (src != end);
-            }
-
-            break;
-
-        case NJS_ENUM_BOTH:
-            if (string_prop.size == (size_t) length) {
-                /* Byte or ASCII string. */
-
-                for (i = 0; i < length; i++) {
-                    entry = njs_array_alloc(vm, 2, 0);
-                    if (nxt_slow_path(entry == NULL)) {
-                        return NULL;
-                    }
-
-                    njs_uint32_to_string(&entry->start[0], i);
-
-                    string = &entry->start[1];
-
-                    dst = njs_string_short_start(string);
-                    dst[0] = string_prop.start[i];
-
-                    njs_string_short_set(string, 1, 1);
-
-                    item->data.u.array = entry;
-                    item->type = NJS_ARRAY;
-                    item->data.truth = 1;
-
-                    item++;
-                }
-
-            } else {
-                /* UTF-8 string. */
-
-                src = string_prop.start;
-                end = src + string_prop.size;
-                i = 0;
-
-                do {
-                    entry = njs_array_alloc(vm, 2, 0);
-                    if (nxt_slow_path(entry == NULL)) {
-                        return NULL;
-                    }
-
-                    njs_uint32_to_string(&entry->start[0], i++);
-
-                    string = &entry->start[1];
-
-                    dst = njs_string_short_start(string);
-                    dst = nxt_utf8_copy(dst, &src, end);
-                    size = dst - njs_string_short_start(value);
-
-                    njs_string_short_set(string, size, 1);
-
-                    item->data.u.array = entry;
-                    item->type = NJS_ARRAY;
-                    item->data.truth = 1;
-
-                    item++;
-
-                } while (src != end);
-            }
-
-            break;
-        }
-    }
-
-    if (nxt_fast_path(properties != 0)) {
-        nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
-
-        hash = &object->hash;
-
-        switch (kind) {
-
-        case NJS_ENUM_KEYS:
             for ( ;; ) {
                 prop = nxt_lvlhsh_each(hash, &lhe);
 
@@ -1224,76 +1613,105 @@ njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
                     break;
                 }
 
-                if (prop->type != NJS_WHITEOUT && (prop->enumerable || all)) {
-                    njs_string_copy(item++, &prop->name);
-                }
-            }
+                lhq.key_hash = lhe.key_hash;
+                njs_string_get(&prop->name, &lhq.key);
 
-            if (nxt_slow_path(all)) {
-                nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
-                hash = &object->shared_hash;
+                lhq.proto = &njs_object_hash_proto;
+                ret = nxt_lvlhsh_find(&object->hash, &lhq);
 
-                for ( ;; ) {
-                    prop = nxt_lvlhsh_each(hash, &lhe);
+                if (ret != NXT_OK) {
+                    ext_prop = njs_object_exist_in_proto(parent, object, &lhq);
 
-                    if (prop == NULL) {
-                        break;
+                    if (ext_prop == NULL) {
+                        *item++ = prop->value;
                     }
-
-                    njs_string_copy(item++, &prop->name);
                 }
             }
-
-            break;
-
-        case NJS_ENUM_VALUES:
-            for ( ;; ) {
-                prop = nxt_lvlhsh_each(hash, &lhe);
-
-                if (prop == NULL) {
-                    break;
-                }
-
-                if (prop->type != NJS_WHITEOUT && prop->enumerable) {
-                    /* GC: retain. */
-                    *item++ = prop->value;
-                }
-            }
-
-            break;
-
-        case NJS_ENUM_BOTH:
-            for ( ;; ) {
-                prop = nxt_lvlhsh_each(hash, &lhe);
-
-                if (prop == NULL) {
-                    break;
-                }
-
-                if (prop->type != NJS_WHITEOUT && prop->enumerable) {
-                    entry = njs_array_alloc(vm, 2, 0);
-                    if (nxt_slow_path(entry == NULL)) {
-                        return NULL;
-                    }
-
-                    njs_string_copy(&entry->start[0], &prop->name);
-
-                    /* GC: retain. */
-                    entry->start[1] = prop->value;
-
-                    item->data.u.array = entry;
-                    item->type = NJS_ARRAY;
-                    item->data.truth = 1;
-
-                    item++;
-                }
-            }
-
-            break;
         }
+
+        break;
+
+    case NJS_ENUM_BOTH:
+        for ( ;; ) {
+            prop = nxt_lvlhsh_each(hash, &lhe);
+
+            if (prop == NULL) {
+                break;
+            }
+
+            lhq.key_hash = lhe.key_hash;
+            njs_string_get(&prop->name, &lhq.key);
+
+            ext_prop = njs_object_exist_in_proto(parent, object, &lhq);
+
+            if (ext_prop == NULL && prop->type != NJS_WHITEOUT
+                && (prop->enumerable || all))
+            {
+                entry = njs_array_alloc(vm, 2, 0);
+                if (nxt_slow_path(entry == NULL)) {
+                    return NJS_ERROR;
+                }
+
+                njs_string_copy(&entry->start[0], &prop->name);
+
+                /* GC: retain. */
+                entry->start[1] = prop->value;
+
+                item->data.u.array = entry;
+                item->type = NJS_ARRAY;
+                item->data.truth = 1;
+
+                item++;
+            }
+        }
+
+        if (nxt_slow_path(all)) {
+            nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+            hash = &object->shared_hash;
+
+            for ( ;; ) {
+                prop = nxt_lvlhsh_each(hash, &lhe);
+
+                if (prop == NULL) {
+                    break;
+                }
+
+                lhq.key_hash = lhe.key_hash;
+                njs_string_get(&prop->name, &lhq.key);
+
+                lhq.proto = &njs_object_hash_proto;
+                ret = nxt_lvlhsh_find(&object->hash, &lhq);
+
+                if (ret != NXT_OK) {
+                    ext_prop = njs_object_exist_in_proto(parent, object, &lhq);
+
+                    if (ext_prop == NULL) {
+                        entry = njs_array_alloc(vm, 2, 0);
+                        if (nxt_slow_path(entry == NULL)) {
+                            return NJS_ERROR;
+                        }
+
+                        njs_string_copy(&entry->start[0], &prop->name);
+
+                        /* GC: retain. */
+                        entry->start[1] = prop->value;
+
+                        item->data.u.array = entry;
+                        item->type = NJS_ARRAY;
+                        item->data.truth = 1;
+
+                        item++;
+                    }
+                }
+            }
+        }
+
+        break;
     }
 
-    return items;
+    items->start = item;
+
+    return NJS_OK;
 }
 
 
@@ -1799,7 +2217,7 @@ njs_object_get_own_property_descriptors(njs_vm_t *vm, njs_value_t *args,
         return NXT_ERROR;
     }
 
-    names = njs_object_enumerate(vm, value, NJS_ENUM_KEYS, 1);
+    names = njs_value_own_enumerate(vm, value, NJS_ENUM_KEYS, 1);
     if (nxt_slow_path(names == NULL)) {
         return NXT_ERROR;
     }
@@ -1862,7 +2280,7 @@ njs_object_get_own_property_names(njs_vm_t *vm, njs_value_t *args,
         return NXT_ERROR;
     }
 
-    names = njs_object_enumerate(vm, value, NJS_ENUM_KEYS, 1);
+    names = njs_value_own_enumerate(vm, value, NJS_ENUM_KEYS, 1);
     if (names == NULL) {
         return NXT_ERROR;
     }

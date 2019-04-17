@@ -1137,6 +1137,13 @@ struct njs_vm_shared_s {
 };
 
 
+typedef enum {
+    NJS_ENUM_KEYS,
+    NJS_ENUM_VALUES,
+    NJS_ENUM_BOTH,
+} njs_object_enum_t;
+
+
 nxt_int_t njs_vmcode_interpreter(njs_vm_t *vm);
 
 void njs_value_retain(njs_value_t *value);
@@ -1295,6 +1302,10 @@ nxt_array_t *njs_vm_backtrace(njs_vm_t *vm);
 void *njs_lvlhsh_alloc(void *data, size_t size, nxt_uint_t nalloc);
 void njs_lvlhsh_free(void *data, void *p, size_t size);
 
+njs_array_t * njs_value_enumerate(njs_vm_t *vm, const njs_value_t *value,
+    njs_object_enum_t kind, nxt_bool_t all);
+njs_array_t * njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
+    njs_object_enum_t kind, nxt_bool_t all);
 
 extern const njs_value_t  njs_value_undefined;
 extern const njs_value_t  njs_value_null;

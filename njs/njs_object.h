@@ -17,13 +17,6 @@ typedef enum {
 } njs_object_property_type_t;
 
 
-typedef enum {
-    NJS_ENUM_KEYS,
-    NJS_ENUM_VALUES,
-    NJS_ENUM_BOTH,
-} njs_object_enum_t;
-
-
 /*
  * Attributes are generally used as Boolean values.
  * The UNSET value is used internally only by njs_define_property().
@@ -86,7 +79,9 @@ njs_object_t *njs_object_alloc(njs_vm_t *vm);
 njs_object_t *njs_object_value_copy(njs_vm_t *vm, njs_value_t *value);
 njs_object_t *njs_object_value_alloc(njs_vm_t *vm, const njs_value_t *value,
     nxt_uint_t type);
-njs_array_t *njs_object_enumerate(njs_vm_t *vm, const njs_value_t *value,
+njs_array_t *njs_object_enumerate(njs_vm_t *vm, const njs_object_t *object,
+    njs_object_enum_t kind, nxt_bool_t all);
+njs_array_t *njs_object_own_enumerate(njs_vm_t *vm, const njs_object_t *object,
     njs_object_enum_t kind, nxt_bool_t all);
 njs_ret_t njs_value_property(njs_vm_t *vm, const njs_value_t *value,
     const njs_value_t *property, njs_value_t *retval);
