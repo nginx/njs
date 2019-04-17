@@ -10,8 +10,8 @@
 
 
 struct njs_property_next_s {
-    int32_t                        index;
-    nxt_lvlhsh_each_t              lhe;
+    uint32_t     index;
+    njs_array_t  *array;
 };
 
 
@@ -764,23 +764,7 @@ njs_vmcode_property_foreach(njs_vm_t *vm, njs_value_t *object,
     const njs_extern_t         *ext_proto;
     njs_vmcode_prop_foreach_t  *code;
 
-    if (njs_is_object(object)) {
-        next = nxt_mp_alloc(vm->mem_pool, sizeof(njs_property_next_t));
-        if (nxt_slow_path(next == NULL)) {
-            njs_memory_error(vm);
-            return NXT_ERROR;
-        }
-
-        vm->retval.data.u.next = next;
-
-        nxt_lvlhsh_each_init(&next->lhe, &njs_object_hash_proto);
-        next->index = -1;
-
-        if (njs_is_array(object) && object->data.u.array->length != 0) {
-            next->index = 0;
-        }
-
-    } else if (njs_is_external(object)) {
+    if (njs_is_external(object)) {
         ext_proto = object->external.proto;
 
         if (ext_proto->foreach != NULL) {
@@ -791,7 +775,26 @@ njs_vmcode_property_foreach(njs_vm_t *vm, njs_value_t *object,
                 return ret;
             }
         }
+
+        goto done;
     }
+
+    next = nxt_mp_alloc(vm->mem_pool, sizeof(njs_property_next_t));
+    if (nxt_slow_path(next == NULL)) {
+        njs_memory_error(vm);
+        return NXT_ERROR;
+    }
+
+    next->index = 0;
+    next->array = njs_value_enumerate(vm, object, NJS_ENUM_KEYS, 0);
+    if (nxt_slow_path(next->array == NULL)) {
+        njs_memory_error(vm);
+        return NXT_ERROR;
+    }
+
+    vm->retval.data.u.next = next;
+
+done:
 
     code = (njs_vmcode_prop_foreach_t *) vm->current;
 
@@ -804,10 +807,7 @@ njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
 {
     void                    *obj;
     njs_ret_t               ret;
-    nxt_uint_t              n;
     njs_value_t             *retval;
-    njs_array_t             *array;
-    njs_object_prop_t       *prop;
     njs_property_next_t     *next;
     const njs_extern_t      *ext_proto;
     njs_vmcode_prop_next_t  *code;
@@ -815,42 +815,7 @@ njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
     code = (njs_vmcode_prop_next_t *) vm->current;
     retval = njs_vmcode_operand(vm, code->retval);
 
-    if (njs_is_object(object)) {
-        next = value->data.u.next;
-
-        if (next->index >= 0) {
-            array = object->data.u.array;
-
-            while ((uint32_t) next->index < array->length) {
-                n = next->index++;
-
-                if (njs_is_valid(&array->start[n])) {
-                    njs_uint32_to_string(retval, n);
-
-                    return code->offset;
-                }
-            }
-
-            next->index = -1;
-        }
-
-        for ( ;; ) {
-            prop = nxt_lvlhsh_each(&object->data.u.object->hash, &next->lhe);
-
-            if (prop == NULL) {
-                break;
-            }
-
-            if (prop->type != NJS_WHITEOUT && prop->enumerable) {
-                *retval = prop->name;
-
-                return code->offset;
-            }
-        }
-
-        nxt_mp_free(vm->mem_pool, next);
-
-    } else if (njs_is_external(object)) {
+    if (njs_is_external(object)) {
         ext_proto = object->external.proto;
 
         if (ext_proto->next != NULL) {
@@ -868,7 +833,19 @@ njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
 
             /* ret == NJS_DONE. */
         }
+
+        return sizeof(njs_vmcode_prop_next_t);
     }
+
+    next = value->data.u.next;
+
+    if (next->index < next->array->length) {
+        *retval = next->array->data[ next->index++ ];
+
+        return code->offset;
+    }
+
+    nxt_mp_free(vm->mem_pool, next);
 
     return sizeof(njs_vmcode_prop_next_t);
 }

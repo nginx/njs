@@ -7819,6 +7819,62 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.prototype.__proto__.f()"),
       nxt_string("TypeError: cannot get property \"f\" of undefined") },
 
+    { nxt_string("var obj = Object.create(null); obj.one = 1;"
+                 "var res = [];"
+                 "for (var val in obj) res.push(val); res"),
+      nxt_string("one") },
+
+    { nxt_string("var o1 = Object.create(null); o1.one = 1;"
+                 "var o2 = Object.create(o1); o2.two = 2;"
+                 "var o3 = Object.create(o2); o3.three = 3;"
+                 "var res = [];"
+                 "for (var val in o3) res.push(val); res"),
+      nxt_string("three,two,one") },
+
+    { nxt_string("var o1 = Object.create(null); o1.one = 1;"
+                 "var o2 = Object.create(o1);"
+                 "var o3 = Object.create(o2); o3.three = 3;"
+                 "var res = [];"
+                 "for (var val in o3) res.push(val); res"),
+      nxt_string("three,one") },
+
+    { nxt_string("var o1 = Object.create(null); o1.one = 1;"
+                 "var o2 = Object.create(o1);"
+                 "var o3 = Object.create(o2);"
+                 "var res = [];"
+                 "for (var val in o3) res.push(val); res"),
+      nxt_string("one") },
+
+    { nxt_string("var o1 = Object.create(null); o1.one = 1;"
+                 "var o2 = Object.create(o1); o2.two = 2;"
+                 "var o3 = Object.create(o2); o3.three = 3;"
+                 "o3.two = -2; o3.one = -1;"
+                 "var res = [];"
+                 "for (var val in o3) res.push(val); res"),
+      nxt_string("three,two,one") },
+
+    { nxt_string("var a = []; for(var p in 'abc') a.push(p); a"),
+      nxt_string("0,1,2") },
+
+    { nxt_string("var a = []; for(var p in Object('abc')) a.push(p); a"),
+      nxt_string("0,1,2") },
+
+    { nxt_string("var o = Object('abc'); var x = Object.create(o);"
+                 "x.a = 1; x.b = 2;"
+                 "var a = []; for(var p in x) a.push(p); a"),
+      nxt_string("a,b,0,1,2") },
+
+#if 0
+    /* TODO: No properties implementation for array type
+     * (enumerable, writable, configurable).
+     */
+
+    { nxt_string("var o = Object("abc"); var x = Object.create(o);"
+                 "x['sd'] = 44; x[1] = 8; x[55] = 8;"
+                 "Object.keys(x)"),
+      nxt_string("55,sd") },
+#endif
+
     { nxt_string("Object.prototype.toString.call(Object.prototype)"),
       nxt_string("[object Object]") },
 
