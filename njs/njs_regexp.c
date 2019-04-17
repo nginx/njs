@@ -334,6 +334,8 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
             goto fail;
         }
 
+        pattern->ncaptures = ret;
+
     } else if (ret != NXT_DECLINED) {
         goto fail;
     }
@@ -633,14 +635,14 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     njs_ret_t               ret;
     njs_utf8_t              utf8;
-    njs_value_t             *value;
     njs_regexp_t            *regexp;
     njs_string_prop_t       string;
     njs_regexp_utf8_t       type;
+    const njs_value_t       *value;
     njs_regexp_pattern_t    *pattern;
     nxt_regex_match_data_t  *match_data;
 
-    if (!njs_is_regexp(&args[0])) {
+    if (!njs_is_regexp(njs_arg(args, nargs, 0))) {
         njs_type_error(vm, "\"this\" argument is not a regexp");
         return NXT_ERROR;
     }
@@ -649,7 +651,7 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         value = &args[1];
 
     } else {
-        value = (njs_value_t *) &njs_string_undefined;
+        value = &njs_string_undefined;
     }
 
     regexp = args[0].data.u.regexp;

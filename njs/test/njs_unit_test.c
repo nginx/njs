@@ -11980,6 +11980,9 @@ static njs_unit_test_t  njs_regexp_test[] =
 
     { nxt_string("RegExp('[\\\\u0430-\\\\u044f]+').test('тест')"),
       nxt_string("true") },
+
+    { nxt_string("RegExp('[\\\\u0430-\\\\u044f]+').exec('тест')[0]"),
+      nxt_string("тест") },
 };
 
 
