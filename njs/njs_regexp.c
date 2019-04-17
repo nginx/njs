@@ -797,7 +797,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
             start = &string[captures[n]];
             size = captures[n + 1] - captures[n];
 
-            length = njs_string_length(utf8, start, size);
+            length = njs_string_calc_length(utf8, start, size);
 
             ret = njs_regexp_string_create(vm, &array->start[i], start, size,
                                            length);

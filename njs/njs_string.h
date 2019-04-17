@@ -100,7 +100,7 @@ typedef enum {
 
 
 nxt_inline uint32_t
-njs_string_length(njs_utf8_t utf8, const u_char *start, size_t size)
+njs_string_calc_length(njs_utf8_t utf8, const u_char *start, size_t size)
 {
     ssize_t  length;
 
@@ -118,6 +118,24 @@ njs_string_length(njs_utf8_t utf8, const u_char *start, size_t size)
 
         return (length >= 0) ? length : 0;
     }
+}
+
+
+nxt_inline uint32_t
+njs_string_length(njs_value_t *string)
+{
+    uint32_t  length, size;
+
+    if (string->short_string.size != NJS_STRING_LONG) {
+        size = string->short_string.size;
+        length = string->short_string.length;
+
+    } else {
+        size = string->long_string.size;
+        length = string->long_string.data->length;
+    }
+
+    return (length == 0) ? size : length;
 }
 
 

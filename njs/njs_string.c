@@ -2691,7 +2691,7 @@ njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
 
                 size = captures[1] - captures[0];
 
-                length = njs_string_length(utf8, start, size);
+                length = njs_string_calc_length(utf8, start, size);
 
                 ret = njs_string_new(vm, &array->start[array->length],
                                      start, size, length);
@@ -2890,7 +2890,7 @@ njs_string_split_part_add(njs_vm_t *vm, njs_array_t *array, njs_utf8_t utf8,
 {
     ssize_t  length;
 
-    length = njs_string_length(utf8, start, size);
+    length = njs_string_calc_length(utf8, start, size);
 
     return njs_array_string_add(vm, array, start, size, length);
 }
@@ -3133,7 +3133,7 @@ njs_string_replace_regexp_function(njs_vm_t *vm, njs_value_t *args,
         size = captures[k + 1] - captures[k];
         k += 2;
 
-        length = njs_string_length(r->utf8, start, size);
+        length = njs_string_calc_length(r->utf8, start, size);
 
         ret = njs_string_new(vm, &arguments[i], start, size, length);
         if (nxt_slow_path(ret != NXT_OK)) {
@@ -3145,7 +3145,7 @@ njs_string_replace_regexp_function(njs_vm_t *vm, njs_value_t *args,
     njs_value_number_set(&arguments[n + 1], captures[0]);
 
     /* The whole string being examined. */
-    length = njs_string_length(r->utf8, r->part[0].start, r->part[0].size);
+    length = njs_string_calc_length(r->utf8, r->part[0].start, r->part[0].size);
 
     ret = njs_string_new(vm, &arguments[n + 2], r->part[0].start,
                          r->part[0].size, length);
