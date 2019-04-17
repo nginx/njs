@@ -7,6 +7,7 @@
 #include <njs_core.h>
 #include <nxt_lvlhsh.h>
 #include <nxt_djb_hash.h>
+#include <nxt_pcre.h>
 #include <string.h>
 #include <stdlib.h>
 #include <sys/resource.h>
@@ -4450,6 +4451,12 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("'α'.toUTF8()[0]"),
       nxt_string("\xCE") },
+
+    { nxt_string("var r = /^\\x80$/; r.source + r.source.length"),
+      nxt_string("^\\x80$6") },
+
+    { nxt_string("var r = /^\\\\x80$/; r.source + r.source.length"),
+      nxt_string("^\\\\x80$7") },
 
     { nxt_string("/^\\x80$/.test('\\x80'.toBytes())"),
       nxt_string("true") },
@@ -11957,6 +11964,25 @@ static njs_unit_test_t  njs_tz_test[] =
 };
 
 
+static njs_unit_test_t  njs_regexp_test[] =
+{
+    { nxt_string("/[\\\\u02E0-\\\\u02E4]/"),
+      nxt_string("/[\\\\u02E0-\\\\u02E4]/") },
+
+    { nxt_string("/[\\u02E0-\\u02E4]/"),
+      nxt_string("/[\\u02E0-\\u02E4]/") },
+
+    { nxt_string("RegExp('[\\\\u02E0-\\\\u02E4]')"),
+      nxt_string("/[\\u02E0-\\u02E4]/") },
+
+    { nxt_string("/[\\u0430-\\u044f]+/.test('тест')"),
+      nxt_string("true") },
+
+    { nxt_string("RegExp('[\\\\u0430-\\\\u044f]+').test('тест')"),
+      nxt_string("true") },
+};
+
+
 typedef struct {
     nxt_lvlhsh_t          hash;
     const njs_extern_t    *proto;
@@ -12715,6 +12741,85 @@ done:
 
 
 static nxt_int_t
+njs_timezone_optional_test(nxt_bool_t disassemble, nxt_bool_t verbose)
+{
+    size_t      size;
+    u_char      buf[16];
+    time_t      clock;
+    struct tm   tm;
+    nxt_int_t   ret;
+
+    /*
+     * Chatham Islands NZ-CHAT time zone.
+     * Standard time: UTC+12:45, Daylight Saving time: UTC+13:45.
+     */
+    (void) putenv((char *) "TZ=Pacific/Chatham");
+    tzset();
+
+    clock = 0;
+    localtime_r(&clock, &tm);
+
+    size = strftime((char *) buf, sizeof(buf), "%z", &tm);
+
+    if (memcmp(buf, "+1245", size) == 0) {
+        ret = njs_unit_test(njs_tz_test, nxt_nitems(njs_tz_test), disassemble,
+                            verbose);
+        if (ret != NXT_OK) {
+            return ret;
+        }
+
+        nxt_printf("njs timezone tests passed\n");
+
+    } else {
+        nxt_printf("njs timezone tests skipped, timezone is unavailable\n");
+    }
+
+    return NXT_OK;
+}
+
+static nxt_int_t
+njs_regexp_optional_test(nxt_bool_t disassemble, nxt_bool_t verbose)
+{
+    int         erroff;
+    pcre        *re1, *re2;
+    njs_ret_t   ret;
+    const char  *errstr;
+
+    /*
+     * pcre-8.21 crashes when it compiles unicode escape codes inside
+     * square brackets when PCRE_UTF8 option is provided.
+     * Catching it in runtime by compiling it without PCRE_UTF8. Normally it
+     * should return NULL and "character value in \u.... sequence is too large"
+     * error string.
+     */
+    re1 = pcre_compile("/[\\u0410]/", PCRE_JAVASCRIPT_COMPAT, &errstr, &erroff,
+                      NULL);
+
+    /*
+     * pcre-7.8 fails to compile unicode escape codes inside square brackets
+     * even when PCRE_UTF8 option is provided.
+     */
+    re2 = pcre_compile("/[\\u0410]/", PCRE_JAVASCRIPT_COMPAT | PCRE_UTF8,
+                       &errstr, &erroff, NULL);
+
+    if (re1 == NULL && re2 != NULL) {
+        ret = njs_unit_test(njs_regexp_test, nxt_nitems(njs_regexp_test),
+                            disassemble, verbose);
+        if (ret != NXT_OK) {
+            return ret;
+        }
+
+        nxt_printf("njs unicode regexp tests passed\n");
+
+    } else {
+        nxt_printf("njs unicode regexp tests skipped, libpcre fails\n");
+    }
+
+    return NXT_OK;
+}
+
+
+static nxt_int_t
 njs_vm_json_test(nxt_bool_t disassemble, nxt_bool_t verbose)
 {
     njs_vm_t           *vm;
@@ -13025,10 +13130,6 @@ done:
 int nxt_cdecl
 main(int argc, char **argv)
 {
-    size_t      size;
-    u_char      buf[16];
-    time_t      clock;
-    struct tm   tm;
     nxt_int_t   ret;
     nxt_bool_t  disassemble, verbose;
 
@@ -13059,32 +13160,17 @@ main(int argc, char **argv)
         return ret;
     }
 
-    nxt_printf("njs unit tests passed\n");
-
-    /*
-     * Chatham Islands NZ-CHAT time zone.
-     * Standard time: UTC+12:45, Daylight Saving time: UTC+13:45.
-     */
-    (void) putenv((char *) "TZ=Pacific/Chatham");
-    tzset();
-
-    clock = 0;
-    localtime_r(&clock, &tm);
-
-    size = strftime((char *) buf, sizeof(buf), "%z", &tm);
-
-    if (memcmp(buf, "+1245", size) == 0) {
-        ret = njs_unit_test(njs_tz_test, nxt_nitems(njs_tz_test), disassemble,
-                            verbose);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        nxt_printf("njs timezone tests passed\n");
-
-    } else {
-        nxt_printf("njs timezone tests skipped, timezone is unavailable\n");
+    ret = njs_timezone_optional_test(disassemble, verbose);
+    if (ret != NXT_OK) {
+        return ret;
     }
+
+    ret = njs_regexp_optional_test(disassemble, verbose);
+    if (ret != NXT_OK) {
+        return ret;
+    }
+
+    nxt_printf("njs unit tests passed\n");
 
     ret = njs_vm_json_test(disassemble, verbose);
     if (ret != NXT_OK) {

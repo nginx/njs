@@ -92,6 +92,8 @@ nxt_regex_compile(nxt_regex_t *regex, u_char *source, size_t len,
                       "pcre_compile(\"%s\") failed: %s", pattern, errstr);
         }
 
+        ret = NXT_DECLINED;
+
         goto done;
     }
 

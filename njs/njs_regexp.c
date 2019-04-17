@@ -315,30 +315,43 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
 
     ret = njs_regexp_pattern_compile(vm, &pattern->regex[0],
                                      &pattern->source[1], options);
-    if (nxt_slow_path(ret < 0)) {
-        return NULL;
-    }
 
-    pattern->ncaptures = ret;
+    if (nxt_fast_path(ret >= 0)) {
+        pattern->ncaptures = ret;
+
+    } else if (ret < 0 && ret != NXT_DECLINED) {
+        goto fail;
+    }
 
     ret = njs_regexp_pattern_compile(vm, &pattern->regex[1],
                                      &pattern->source[1], options | PCRE_UTF8);
     if (nxt_fast_path(ret >= 0)) {
 
-        if (nxt_slow_path((u_int) ret != pattern->ncaptures)) {
+        if (nxt_slow_path(nxt_regex_is_valid(&pattern->regex[0])
+                          && (u_int) ret != pattern->ncaptures))
+        {
             njs_internal_error(vm, "regexp pattern compile failed");
-            nxt_mp_free(vm->mem_pool, pattern);
-            return NULL;
+            goto fail;
         }
 
     } else if (ret != NXT_DECLINED) {
-        nxt_mp_free(vm->mem_pool, pattern);
-        return NULL;
+        goto fail;
+    }
+
+    if (!nxt_regex_is_valid(&pattern->regex[0])
+        && !nxt_regex_is_valid(&pattern->regex[1]))
+    {
+        goto fail;
     }
 
     *end = '/';
 
     return pattern;
+
+fail:
+
+    nxt_mp_free(vm->mem_pool, pattern);
+    return NULL;
 }
 
 
