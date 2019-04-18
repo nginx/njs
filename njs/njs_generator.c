@@ -1648,12 +1648,10 @@ njs_generate_assignment(njs_vm_t *vm, njs_generator_t *generator,
 
     if (lvalue->token == NJS_TOKEN_NAME) {
 
-        index = njs_variable_index(vm, lvalue);
-        if (nxt_slow_path(index == NJS_INDEX_ERROR)) {
-            return NXT_ERROR;
+        ret = njs_generate_variable(vm, generator, lvalue);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return ret;
         }
-
-        lvalue->index = index;
 
         expr->dest = lvalue;
 
@@ -1757,6 +1755,7 @@ njs_generate_operation_assignment(njs_vm_t *vm, njs_generator_t *generator,
     lvalue = node->left;
 
     if (lvalue->token == NJS_TOKEN_NAME) {
+
         ret = njs_generate_variable(vm, generator, lvalue);
         if (nxt_slow_path(ret != NXT_OK)) {
             return ret;

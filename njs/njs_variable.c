@@ -360,7 +360,6 @@ njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node)
     nxt_uint_t                scope_index;
     njs_index_t               index;
     njs_variable_t            *var;
-    const njs_value_t         *default_value;
     njs_variable_reference_t  *vr;
 
     vr = &node->u.reference;
@@ -398,14 +397,7 @@ njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node)
         var->argument = index;
     }
 
-    if (vr->type != NJS_DECLARATION && var->type <= NJS_VARIABLE_LET) {
-        goto not_found;
-    }
-
-    default_value = njs_is_object(&var->value) ? &var->value :
-                                                 &njs_value_undefined;
-
-    index = njs_scope_next_index(vm, vr->scope, scope_index, default_value);
+    index = njs_scope_next_index(vm, vr->scope, scope_index, &var->value);
 
     if (nxt_slow_path(index == NJS_INDEX_ERROR)) {
         return NULL;

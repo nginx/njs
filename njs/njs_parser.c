@@ -522,6 +522,19 @@ njs_parser_variable_node(njs_vm_t *vm, njs_parser_t *parser, nxt_str_t *name,
         return NULL;
     }
 
+    if (njs_is_null(&var->value)) {
+
+        switch (type) {
+
+        case NJS_VARIABLE_VAR:
+            var->value = njs_value_undefined;
+            break;
+
+        default:
+            break;
+        }
+    }
+
     node = njs_parser_node_new(vm, parser, NJS_TOKEN_NAME);
     if (nxt_slow_path(node == NULL)) {
         return NULL;
@@ -1389,7 +1402,7 @@ njs_parser_for_statement(njs_vm_t *vm, njs_parser_t *parser)
             init = parser->node;
 
             if (init->token == NJS_TOKEN_FOR_IN) {
-                return token;
+                goto done;
             }
 
         } else {
@@ -1404,7 +1417,12 @@ njs_parser_for_statement(njs_vm_t *vm, njs_parser_t *parser)
             init = parser->node;
 
             if (init->token == NJS_TOKEN_IN) {
-                return njs_parser_for_in_statement(vm, parser, &name, token);
+                token = njs_parser_for_in_statement(vm, parser, &name, token);
+                if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                    return token;
+                }
+
+                goto done;
             }
         }
     }
@@ -1474,6 +1492,8 @@ njs_parser_for_statement(njs_vm_t *vm, njs_parser_t *parser)
     body->right = update;
 
     parser->node = node;
+
+done:
 
     return token;
 }
