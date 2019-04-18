@@ -188,6 +188,8 @@ njs_test {
 njs_test {
     {"console.log()\r\n"
      "console.log()\r\nundefined\r\n>> "}
+    {"console.log('')\r\n"
+     "console.log('')\r\n\r\nundefined\r\n>> "}
     {"console.log(1)\r\n"
      "console.log(1)\r\n1\r\nundefined\r\n>> "}
     {"console.log(1, 'a')\r\n"

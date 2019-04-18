@@ -1961,14 +1961,16 @@ njs_json_buf_append(njs_json_stringify_t *stringify, const char *msg,
 {
     u_char  *p;
 
-    p = njs_json_buf_reserve(stringify, len);
-    if (nxt_slow_path(p == NULL)) {
-        return NXT_ERROR;
+    if (len != 0) {
+        p = njs_json_buf_reserve(stringify, len);
+        if (nxt_slow_path(p == NULL)) {
+            return NXT_ERROR;
+        }
+
+        memcpy(p, msg, len);
+
+        njs_json_buf_written(stringify, len);
     }
-
-    memcpy(p, msg, len);
-
-    njs_json_buf_written(stringify, len);
 
     return NXT_OK;
 }
