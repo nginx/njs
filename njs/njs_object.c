@@ -27,7 +27,7 @@ static njs_ret_t njs_object_query_prop_handler(njs_property_query_t *pq,
 static njs_ret_t njs_define_property(njs_vm_t *vm, njs_value_t *object,
     const njs_value_t *name, const njs_object_t *descriptor);
 
-static njs_object_prop_t * njs_object_exist_in_proto(const njs_object_t *begin,
+static njs_object_prop_t *njs_object_exist_in_proto(const njs_object_t *begin,
     const njs_object_t *end, nxt_lvlhsh_query_t *lhq);
 static uint32_t njs_object_enumerate_array_length(const njs_object_t *object);
 static uint32_t njs_object_enumerate_string_length(const njs_object_t *object);
@@ -977,7 +977,7 @@ njs_object_entries(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 
 static njs_object_prop_t *
-njs_object_exist_in_proto(const njs_object_t *begin, const njs_object_t *end,
+njs_object_exist_in_proto(const njs_object_t *object, const njs_object_t *end,
     nxt_lvlhsh_query_t *lhq)
 {
     nxt_int_t          ret;
@@ -985,8 +985,8 @@ njs_object_exist_in_proto(const njs_object_t *begin, const njs_object_t *end,
 
     lhq->proto = &njs_object_hash_proto;
 
-    while (begin != end) {
-        ret = nxt_lvlhsh_find(&begin->hash, lhq);
+    while (object != end) {
+        ret = nxt_lvlhsh_find(&object->hash, lhq);
 
         if (nxt_fast_path(ret == NXT_OK)) {
             prop = lhq->value;
@@ -998,7 +998,7 @@ njs_object_exist_in_proto(const njs_object_t *begin, const njs_object_t *end,
             return lhq->value;
         }
 
-        ret = nxt_lvlhsh_find(&begin->shared_hash, lhq);
+        ret = nxt_lvlhsh_find(&object->shared_hash, lhq);
 
         if (nxt_fast_path(ret == NXT_OK)) {
             return lhq->value;
@@ -1006,7 +1006,7 @@ njs_object_exist_in_proto(const njs_object_t *begin, const njs_object_t *end,
 
 next:
 
-        begin = begin->__proto__;
+        object = object->__proto__;
     }
 
     return NULL;
@@ -1111,7 +1111,7 @@ njs_object_own_enumerate_value(njs_vm_t *vm, const njs_object_t *object,
     switch (object->type) {
     case NJS_ARRAY:
         ret = njs_object_enumerate_array(vm, (njs_array_t *) object, items,
-                                            kind);
+                                         kind);
         break;
 
     case NJS_OBJECT_STRING:
@@ -1225,13 +1225,15 @@ static uint32_t
 njs_object_enumerate_object_length(const njs_object_t *object, nxt_bool_t all)
 {
     uint32_t            length;
-    const njs_object_t  *ptr;
+    const njs_object_t  *proto;
 
     length = njs_object_own_enumerate_object_length(object, object, all);
 
-    for (ptr = object->__proto__; ptr != NULL; ptr = ptr->__proto__) {
+    proto = object->__proto__;
 
-        length += njs_object_own_enumerate_length(ptr, object, all);
+    while (proto != NULL) {
+        length += njs_object_own_enumerate_length(proto, object, all);
+        proto = proto->__proto__;
     }
 
     return length;
@@ -1493,20 +1495,23 @@ njs_object_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
     njs_array_t *items, njs_object_enum_t kind, nxt_bool_t all)
 {
     njs_ret_t           ret;
-    const njs_object_t  *ptr;
+    const njs_object_t  *proto;
 
     ret = njs_object_own_enumerate_object(vm, object, object, items, kind, all);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NXT_ERROR;
     }
 
-    for (ptr = object->__proto__; ptr != NULL; ptr = ptr->__proto__) {
+    proto = object->__proto__;
 
-        ret = njs_object_own_enumerate_value(vm, ptr, object, items, kind,
+    while (proto != NULL) {
+        ret = njs_object_own_enumerate_value(vm, proto, object, items, kind,
                                              all);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NXT_ERROR;
         }
+
+        proto = proto->__proto__;
     }
 
     return NJS_OK;

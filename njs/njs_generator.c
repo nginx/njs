@@ -1606,7 +1606,8 @@ njs_generate_stop_statement(njs_vm_t *vm, njs_generator_t *generator,
         }
 
         if (index == NJS_INDEX_NONE) {
-            index = njs_value_index(vm, &njs_value_undefined, generator->runtime);
+            index = njs_value_index(vm, &njs_value_undefined,
+                                    generator->runtime);
         }
 
         stop->retval = index;
@@ -2548,6 +2549,7 @@ njs_generate_function_call(njs_vm_t *vm, njs_generator_t *generator,
         if (nxt_slow_path(ret != NXT_OK)) {
             return ret;
         }
+
         name = node;
     }
 

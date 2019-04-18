@@ -25,7 +25,6 @@
     (sizeof(x) / sizeof((x)[0]))
 
 
-
 #if (NXT_HAVE_BUILTIN_EXPECT)
 #define nxt_expect(c, x)   __builtin_expect((long) (x), (c))
 #define nxt_fast_path(x)   nxt_expect(1, x)

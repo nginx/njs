@@ -840,7 +840,7 @@ njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
     next = value->data.u.next;
 
     if (next->index < next->array->length) {
-        *retval = next->array->data[ next->index++ ];
+        *retval = next->array->data[next->index++];
 
         return code->offset;
     }
@@ -3023,6 +3023,48 @@ njs_value_property(njs_vm_t *vm, const njs_value_t *value,
 }
 
 
+njs_array_t *
+njs_value_enumerate(njs_vm_t *vm, const njs_value_t *value,
+    njs_object_enum_t kind, nxt_bool_t all)
+{
+    njs_object_value_t  obj_val;
+
+    if (njs_is_object(value)) {
+        return njs_object_enumerate(vm, value->data.u.object, kind, all);
+    }
+
+    if (value->type != NJS_STRING) {
+        return njs_array_alloc(vm, 0, NJS_ARRAY_SPARE);
+    }
+
+    obj_val.object = vm->string_object;
+    obj_val.value = *value;
+
+    return njs_object_enumerate(vm, (njs_object_t *) &obj_val, kind, all);
+}
+
+
+njs_array_t *
+njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
+    njs_object_enum_t kind, nxt_bool_t all)
+{
+    njs_object_value_t  obj_val;
+
+    if (njs_is_object(value)) {
+        return njs_object_own_enumerate(vm, value->data.u.object, kind, all);
+    }
+
+    if (value->type != NJS_STRING) {
+        return njs_array_alloc(vm, 0, NJS_ARRAY_SPARE);
+    }
+
+    obj_val.object = vm->string_object;
+    obj_val.value = *value;
+
+    return njs_object_own_enumerate(vm, (njs_object_t *) &obj_val, kind, all);
+}
+
+
 njs_ret_t
 njs_vm_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst, const njs_value_t *src,
     nxt_uint_t handle_exception)
@@ -3612,46 +3654,4 @@ void
 njs_lvlhsh_free(void *data, void *p, size_t size)
 {
     nxt_mp_free(data, p);
-}
-
-
-njs_array_t *
-njs_value_enumerate(njs_vm_t *vm, const njs_value_t *value,
-    njs_object_enum_t kind, nxt_bool_t all)
-{
-    njs_object_value_t  obj_val;
-
-    if (njs_is_object(value)) {
-        return njs_object_enumerate(vm, value->data.u.object, kind, all);
-    }
-
-    if (value->type != NJS_STRING) {
-        return njs_array_alloc(vm, 0, NJS_ARRAY_SPARE);
-    }
-
-    obj_val.object = vm->string_object;
-    obj_val.value = *value;
-
-    return njs_object_enumerate(vm, (njs_object_t *) &obj_val, kind, all);
-}
-
-
-njs_array_t *
-njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
-    njs_object_enum_t kind, nxt_bool_t all)
-{
-    njs_object_value_t  obj_val;
-
-    if (njs_is_object(value)) {
-        return njs_object_own_enumerate(vm, value->data.u.object, kind, all);
-    }
-
-    if (value->type != NJS_STRING) {
-        return njs_array_alloc(vm, 0, NJS_ARRAY_SPARE);
-    }
-
-    obj_val.object = vm->string_object;
-    obj_val.value = *value;
-
-    return njs_object_own_enumerate(vm, (njs_object_t *) &obj_val, kind, all);
 }

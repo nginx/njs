@@ -9,11 +9,11 @@ import crypto from 'crypto';
 var state = {count:0}
 
 function inc() {
-	state.count++;
+    state.count++;
 }
 
 function get() {
-	return state.count;
+    return state.count;
 }
 
 export default {hash, inc, get};
