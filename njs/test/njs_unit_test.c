@@ -12907,6 +12907,14 @@ njs_regexp_optional_test(nxt_bool_t disassemble, nxt_bool_t verbose)
         nxt_printf("njs unicode regexp tests skipped, libpcre fails\n");
     }
 
+    if (re1 != NULL) {
+        pcre_free(re1);
+    }
+
+    if (re2 != NULL) {
+        pcre_free(re2);
+    }
+
     return NXT_OK;
 }
 
