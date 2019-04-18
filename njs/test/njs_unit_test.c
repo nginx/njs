@@ -6967,6 +6967,39 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("new RegExp('', 'x')"),
       nxt_string("SyntaxError: Invalid RegExp flags \"x\"") },
 
+    { nxt_string("RegExp({})"),
+      nxt_string("/[object Object]/") },
+
+    { nxt_string("RegExp(true)"),
+      nxt_string("/true/") },
+
+    { nxt_string("RegExp(undefined)"),
+      nxt_string("/(?:)/") },
+
+    { nxt_string("RegExp('abc', undefined)"),
+      nxt_string("/abc/") },
+
+    { nxt_string("RegExp('abc', {})"),
+      nxt_string("SyntaxError: Invalid RegExp flags \"[object Object]\"") },
+
+    { nxt_string("RegExp(/expr/)"),
+      nxt_string("/expr/") },
+
+    { nxt_string("RegExp(/expr/i).ignoreCase"),
+      nxt_string("true") },
+
+    { nxt_string("RegExp(/expr/, 'x')"),
+      nxt_string("SyntaxError: Invalid RegExp flags \"x\"") },
+
+    { nxt_string("RegExp(new RegExp('expr'))"),
+      nxt_string("/expr/") },
+
+    { nxt_string("RegExp(new RegExp('expr')).multiline"),
+      nxt_string("false") },
+
+    { nxt_string("RegExp(new RegExp('expr'), 'm').multiline"),
+      nxt_string("true") },
+
     { nxt_string("new RegExp('[')"),
       nxt_string("SyntaxError: pcre_compile(\"[\") failed: missing terminating ] for character class") },
 
