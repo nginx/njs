@@ -552,7 +552,7 @@ static njs_ret_t
 njs_regexp_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    if (njs_is_regexp(&args[0])) {
+    if (njs_is_regexp(njs_arg(args, nargs, 0))) {
         return njs_regexp_to_string(vm, &vm->retval, &args[0]);
     }
 
@@ -587,23 +587,20 @@ njs_regexp_prototype_test(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     njs_ret_t             ret;
     nxt_uint_t            n;
-    njs_value_t           *value;
-    const njs_value_t     *retval;
+    const njs_value_t     *value, *retval;
     njs_string_prop_t     string;
     njs_regexp_pattern_t  *pattern;
 
-    if (!njs_is_regexp(&args[0])) {
+    if (!njs_is_regexp(njs_arg(args, nargs, 0))) {
         njs_type_error(vm, "\"this\" argument is not a regexp");
         return NXT_ERROR;
     }
 
     retval = &njs_value_false;
 
-    if (nargs > 1) {
-        value = &args[1];
-
-    } else {
-        value = (njs_value_t *) &njs_string_undefined;
+    value = njs_arg(args, nargs, 1);
+    if (njs_is_undefined(value)) {
+        value = &njs_string_undefined;
     }
 
     (void) njs_string_prop(&string, value);
@@ -647,10 +644,8 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    if (nargs > 1) {
-        value = &args[1];
-
-    } else {
+    value = njs_arg(args, nargs, 1);
+    if (njs_is_undefined(value)) {
         value = &njs_string_undefined;
     }
 
