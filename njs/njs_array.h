@@ -8,14 +8,14 @@
 #define _NJS_ARRAY_H_INCLUDED_
 
 
-#define NJS_ARRAY_MAX_LENGTH     0xffffffff
-/* The maximum valid array index is the maximum array length minus 1. */
-#define NJS_ARRAY_INVALID_INDEX  NJS_ARRAY_MAX_LENGTH
+#define NJS_ARRAY_MAX_INDEX      0xffffffff
+#define NJS_ARRAY_INVALID_INDEX  NJS_ARRAY_MAX_INDEX
 
-#define NJS_ARRAY_SPARE  8
+#define NJS_ARRAY_SPARE          8
+#define NJS_ARRAY_MAX_LENGTH     (UINT32_MAX/ sizeof(njs_value_t))
 
 
-njs_array_t *njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare);
+njs_array_t *njs_array_alloc(njs_vm_t *vm, uint64_t length, uint32_t spare);
 njs_ret_t njs_array_add(njs_vm_t *vm, njs_array_t *array, njs_value_t *value);
 njs_ret_t njs_array_string_add(njs_vm_t *vm, njs_array_t *array,
     const u_char *start, size_t size, size_t length);

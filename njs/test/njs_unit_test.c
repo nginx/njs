@@ -7950,6 +7950,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = Array(1111111111)"),
       nxt_string("MemoryError") },
 
+    { nxt_string("var x = Array(2**32)"),
+      nxt_string("RangeError: Invalid array length") },
+
+    { nxt_string("var x = Array(2**28)"),
+      nxt_string("MemoryError") },
+
     { nxt_string("var a = new Array(3); a"),
       nxt_string(",,") },
 

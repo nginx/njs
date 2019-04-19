@@ -125,19 +125,23 @@ static njs_ret_t njs_array_prototype_sort_continuation(njs_vm_t *vm,
 
 
 nxt_noinline njs_array_t *
-njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare)
+njs_array_alloc(njs_vm_t *vm, uint64_t length, uint32_t spare)
 {
     uint64_t     size;
     njs_array_t  *array;
 
-    array = nxt_mp_alloc(vm->mem_pool, sizeof(njs_array_t));
-    if (nxt_slow_path(array == NULL)) {
+    if (nxt_slow_path(length > UINT32_MAX)) {
+        goto overflow;
+    }
+
+    size = length + spare;
+
+    if (nxt_slow_path(size > NJS_ARRAY_MAX_LENGTH)) {
         goto memory_error;
     }
 
-    size = (uint64_t) length + spare;
-
-    if (nxt_slow_path((size * sizeof(njs_value_t)) >= UINT32_MAX)) {
+    array = nxt_mp_alloc(vm->mem_pool, sizeof(njs_array_t));
+    if (nxt_slow_path(array == NULL)) {
         goto memory_error;
     }
 
@@ -162,6 +166,12 @@ njs_array_alloc(njs_vm_t *vm, uint32_t length, uint32_t spare)
 memory_error:
 
     njs_memory_error(vm);
+
+    return NULL;
+
+overflow:
+
+    njs_range_error(vm, "Invalid array length");
 
     return NULL;
 }
