@@ -1125,7 +1125,7 @@ static njs_ret_t
 njs_array_prototype_concat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    size_t       length;
+    uint64_t     length;
     nxt_uint_t   i;
     njs_value_t  *value;
     njs_array_t  *array;
