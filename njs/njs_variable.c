@@ -349,7 +349,7 @@ njs_variable_index(njs_vm_t *vm, njs_parser_node_t *node)
         return var->index;
     }
 
-    return NJS_INDEX_ERROR;
+    return NJS_INDEX_NONE;
 }
 
 

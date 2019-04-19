@@ -575,7 +575,7 @@ njs_generate_builtin_object(njs_vm_t *vm, njs_generator_t *generator,
     njs_vmcode_object_copy_t  *copy;
 
     index = njs_variable_index(vm, node);
-    if (nxt_slow_path(index == NJS_INDEX_ERROR)) {
+    if (nxt_slow_path(index == NJS_INDEX_NONE)) {
         return NXT_ERROR;
     }
 
@@ -600,7 +600,7 @@ njs_generate_variable(njs_vm_t *vm, njs_generator_t *generator,
     njs_index_t  index;
 
     index = njs_variable_index(vm, node);
-    if (nxt_slow_path(index == NJS_INDEX_ERROR)) {
+    if (nxt_slow_path(index == NJS_INDEX_NONE)) {
         return NXT_ERROR;
     }
 
@@ -622,7 +622,7 @@ njs_generate_var_statement(njs_vm_t *vm, njs_generator_t *generator,
     lvalue = node->left;
 
     index = njs_variable_index(vm, lvalue);
-    if (nxt_slow_path(index == NJS_INDEX_ERROR)) {
+    if (nxt_slow_path(index == NJS_INDEX_NONE)) {
         return NXT_ERROR;
     }
 
@@ -2128,6 +2128,17 @@ njs_generate_typeof_operation(njs_vm_t *vm, njs_generator_t *generator,
     if (expr->token == NJS_TOKEN_NAME) {
         expr->index = njs_variable_typeof(vm, expr);
 
+        if (expr->u.reference.variable) {
+            ret = njs_generate_variable(vm, generator, expr);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return NXT_ERROR;
+            }
+
+        } else {
+            expr->index = njs_value_index(vm, &njs_value_undefined,
+                                          generator->runtime);
+        }
+
     } else {
         ret = njs_generator(vm, generator, node->left);
         if (nxt_slow_path(ret != NXT_OK)) {
@@ -2794,7 +2805,7 @@ njs_generate_try_statement(njs_vm_t *vm, njs_generator_t *generator,
         /* A "try/catch" case. */
 
         catch_index = njs_variable_index(vm, node->left);
-        if (nxt_slow_path(catch_index == NJS_INDEX_ERROR)) {
+        if (nxt_slow_path(catch_index == NJS_INDEX_NONE)) {
             return NXT_ERROR;
         }
 
@@ -2853,7 +2864,7 @@ njs_generate_try_statement(njs_vm_t *vm, njs_generator_t *generator,
             /* A try/catch/finally case. */
 
             catch_index = njs_variable_index(vm, node->left->left);
-            if (nxt_slow_path(catch_index == NJS_INDEX_ERROR)) {
+            if (nxt_slow_path(catch_index == NJS_INDEX_NONE)) {
                 return NXT_ERROR;
             }
 
@@ -3039,7 +3050,7 @@ njs_generate_import_statement(njs_vm_t *vm, njs_generator_t *generator,
     expr = node->right;
 
     index = njs_variable_index(vm, lvalue);
-    if (nxt_slow_path(index == NJS_INDEX_ERROR)) {
+    if (nxt_slow_path(index == NJS_INDEX_NONE)) {
         return NXT_ERROR;
     }
 
