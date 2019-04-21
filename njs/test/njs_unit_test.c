@@ -5725,6 +5725,27 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("\n{\nreturn;\n}"),
       nxt_string("SyntaxError: Illegal return statement in 3") },
 
+    { nxt_string("if (1) function f(){}"),
+      nxt_string("SyntaxError: Functions can only be declared at top level or inside a block in 1") },
+
+    { nxt_string("if (1) { function f(){}}"),
+      nxt_string("undefined") },
+
+    { nxt_string("while (1) function f() { }"),
+      nxt_string("SyntaxError: Functions can only be declared at top level or inside a block in 1") },
+
+    { nxt_string("while (1) { break; function f(){}}"),
+      nxt_string("undefined") },
+
+    { nxt_string("for (;;) function f() { }"),
+      nxt_string("SyntaxError: Functions can only be declared at top level or inside a block in 1") },
+
+    { nxt_string("for (;;) { break; function f(){}}"),
+      nxt_string("undefined") },
+
+    { nxt_string("do function f() { } while (0)"),
+      nxt_string("SyntaxError: Functions can only be declared at top level or inside a block in 1") },
+
     { nxt_string("function f() { return f() } f()"),
       nxt_string("RangeError: Maximum call stack size exceeded") },
 

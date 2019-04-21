@@ -492,6 +492,12 @@ njs_parser_block(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
 {
     njs_parser_node_t  *node;
 
+    if (token == NJS_TOKEN_FUNCTION) {
+        njs_parser_syntax_error(vm, parser,
+              "Functions can only be declared at top level or inside a block");
+        return NJS_TOKEN_ILLEGAL;
+    }
+
     token = njs_parser_statement(vm, parser, token);
     if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
         return token;
