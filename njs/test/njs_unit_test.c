@@ -12746,8 +12746,8 @@ njs_externals_init(njs_vm_t *vm)
 
 
 static nxt_int_t
-njs_unit_test(njs_unit_test_t tests[], size_t num, nxt_bool_t disassemble,
-    nxt_bool_t verbose)
+njs_unit_test(njs_unit_test_t tests[], size_t num, nxt_bool_t module,
+    nxt_bool_t disassemble, nxt_bool_t verbose)
 {
     u_char        *start;
     njs_vm_t      *vm, *nvm;
@@ -12765,10 +12765,12 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, nxt_bool_t disassemble,
     for (i = 0; i < num; i++) {
 
         if (verbose) {
-            nxt_printf("\"%V\"\n", &njs_test[i].script);
+            nxt_printf("\"%V\"\n", &tests[i].script);
         }
 
         nxt_memzero(&options, sizeof(njs_vm_opt_t));
+
+        options.module = module;
 
         vm = njs_vm_create(&options);
         if (vm == NULL) {
@@ -12781,9 +12783,9 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, nxt_bool_t disassemble,
             goto done;
         }
 
-        start = njs_test[i].script.start;
+        start = tests[i].script.start;
 
-        ret = njs_vm_compile(vm, &start, start + njs_test[i].script.length);
+        ret = njs_vm_compile(vm, &start, start + tests[i].script.length);
 
         if (ret == NXT_OK) {
             if (disassemble) {
@@ -12810,7 +12812,7 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, nxt_bool_t disassemble,
             }
         }
 
-        success = nxt_strstr_eq(&njs_test[i].ret, &s);
+        success = nxt_strstr_eq(&tests[i].ret, &s);
 
         if (success) {
             if (nvm != NULL) {
@@ -12825,7 +12827,7 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, nxt_bool_t disassemble,
         }
 
         nxt_printf("njs(\"%V\")\nexpected: \"%V\"\n     got: \"%V\"\n",
-                   &njs_test[i].script, &njs_test[i].ret, &s);
+                   &tests[i].script, &tests[i].ret, &s);
 
         goto done;
     }
@@ -12868,8 +12870,8 @@ njs_timezone_optional_test(nxt_bool_t disassemble, nxt_bool_t verbose)
     size = strftime((char *) buf, sizeof(buf), "%z", &tm);
 
     if (memcmp(buf, "+1245", size) == 0) {
-        ret = njs_unit_test(njs_tz_test, nxt_nitems(njs_tz_test), disassemble,
-                            verbose);
+        ret = njs_unit_test(njs_tz_test, nxt_nitems(njs_tz_test), 0,
+                            disassemble, verbose);
         if (ret != NXT_OK) {
             return ret;
         }
@@ -12882,6 +12884,7 @@ njs_timezone_optional_test(nxt_bool_t disassemble, nxt_bool_t verbose)
 
     return NXT_OK;
 }
+
 
 static nxt_int_t
 njs_regexp_optional_test(nxt_bool_t disassemble, nxt_bool_t verbose)
@@ -12909,7 +12912,7 @@ njs_regexp_optional_test(nxt_bool_t disassemble, nxt_bool_t verbose)
                        &errstr, &erroff, NULL);
 
     if (re1 == NULL && re2 != NULL) {
-        ret = njs_unit_test(njs_regexp_test, nxt_nitems(njs_regexp_test),
+        ret = njs_unit_test(njs_regexp_test, nxt_nitems(njs_regexp_test), 0,
                             disassemble, verbose);
         if (ret != NXT_OK) {
             return ret;
@@ -13054,8 +13057,6 @@ done:
 
     return rc;
 }
-
-
 
 
 static nxt_int_t
@@ -13269,7 +13270,8 @@ main(int argc, char **argv)
     (void) putenv((char *) "TZ=UTC");
     tzset();
 
-    ret = njs_unit_test(njs_test, nxt_nitems(njs_test), disassemble, verbose);
+    ret = njs_unit_test(njs_test, nxt_nitems(njs_test), 0,
+                        disassemble, verbose);
     if (ret != NXT_OK) {
         return ret;
     }
