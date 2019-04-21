@@ -5746,6 +5746,21 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("do function f() { } while (0)"),
       nxt_string("SyntaxError: Functions can only be declared at top level or inside a block in 1") },
 
+    { nxt_string("function f() { return 1; } { function f() { return 2; } } f()"),
+      nxt_string("1") },
+
+    { nxt_string("function f() { return 1; } { function f() { return 2; } { function f() { return 3; } }} f()"),
+      nxt_string("1") },
+
+    { nxt_string("{ var f; function f() {} }"),
+      nxt_string("SyntaxError: \"f\" has already been declared in 1") },
+
+    { nxt_string("{ function f() {} var f; }"),
+      nxt_string("SyntaxError: \"f\" has already been declared in 1") },
+
+    { nxt_string("{ function f() {} { var f }}"),
+      nxt_string("SyntaxError: \"f\" has already been declared in 1") },
+
     { nxt_string("function f() { return f() } f()"),
       nxt_string("RangeError: Maximum call stack size exceeded") },
 
@@ -11998,6 +12013,25 @@ static njs_unit_test_t  njs_test[] =
 };
 
 
+static njs_unit_test_t  njs_module_test[] =
+{
+    { nxt_string("function f(){return 2}; var f; f()"),
+      nxt_string("SyntaxError: \"f\" has already been declared in 1") },
+
+    { nxt_string("function f(){return 2}; var f = 1; f()"),
+      nxt_string("SyntaxError: \"f\" has already been declared in 1") },
+
+    { nxt_string("function f(){return 1}; function f(){return 2}; f()"),
+      nxt_string("SyntaxError: \"f\" has already been declared in 1") },
+
+    { nxt_string("var f = 1; function f() {};"),
+      nxt_string("SyntaxError: \"f\" has already been declared in 1") },
+
+    { nxt_string("{ var f = 1; } function f() {};"),
+      nxt_string("SyntaxError: \"f\" has already been declared in 1") },
+};
+
+
 static njs_unit_test_t  njs_tz_test[] =
 {
      { nxt_string("var d = new Date(1); d = d + ''; d.slice(0, 33)"),
@@ -13287,7 +13321,17 @@ main(int argc, char **argv)
     (void) putenv((char *) "TZ=UTC");
     tzset();
 
-    ret = njs_unit_test(njs_test, nxt_nitems(njs_test), 0,
+    /* script tests. */
+
+    ret = njs_unit_test(njs_test, nxt_nitems(njs_test), 0, disassemble,
+                        verbose);
+    if (ret != NXT_OK) {
+        return ret;
+    }
+
+    /* module tests. */
+
+    ret = njs_unit_test(njs_module_test, nxt_nitems(njs_module_test), 1,
                         disassemble, verbose);
     if (ret != NXT_OK) {
         return ret;

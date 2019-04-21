@@ -9,6 +9,9 @@
 #include <string.h>
 
 
+static njs_variable_t *njs_variable_scope_add(njs_vm_t *vm,
+    njs_parser_scope_t *scope, nxt_lvlhsh_query_t *lhq,
+    njs_variable_type_t type);
 static njs_ret_t njs_variable_reference_resolve(njs_vm_t *vm,
     njs_variable_reference_t *vr, njs_parser_scope_t *node_scope);
 static njs_variable_t *njs_variable_alloc(njs_vm_t *vm, nxt_str_t *name,
@@ -45,7 +48,6 @@ njs_variable_t *
 njs_variable_add(njs_vm_t *vm, njs_parser_scope_t *scope, nxt_str_t *name,
     uint32_t hash, njs_variable_type_t type)
 {
-    nxt_int_t           ret;
     njs_variable_t      *var;
     nxt_lvlhsh_query_t  lhq;
 
@@ -53,36 +55,68 @@ njs_variable_add(njs_vm_t *vm, njs_parser_scope_t *scope, nxt_str_t *name,
     lhq.key = *name;
     lhq.proto = &njs_variables_hash_proto;
 
-    if (type >= NJS_VARIABLE_VAR) {
-        /*
-         * A "var" and "function" declarations are
-         * stored in function or global scope.
-         */
-        while (scope->type == NJS_SCOPE_BLOCK) {
-            scope = scope->parent;
-        }
-    }
-
-    if (nxt_lvlhsh_find(&scope->variables, &lhq) == NXT_OK) {
-        var = lhq.value;
-
-        if (type == NJS_VARIABLE_FUNCTION) {
-            var->type = type;
-        }
-
-        return var;
-    }
-
-    var = njs_variable_alloc(vm, &lhq.key, type);
+    var = njs_variable_scope_add(vm, scope, &lhq, type);
     if (nxt_slow_path(var == NULL)) {
+        return NULL;
+    }
+
+    if (type == NJS_VARIABLE_VAR && scope->type == NJS_SCOPE_BLOCK) {
+        /* A "var" declaration is stored in function or global scope. */
+        do {
+            scope = scope->parent;
+
+            var = njs_variable_scope_add(vm, scope, &lhq, type);
+            if (nxt_slow_path(var == NULL)) {
+                return NULL;
+            }
+
+        } while (scope->type == NJS_SCOPE_BLOCK);
+    }
+
+    if (type == NJS_VARIABLE_FUNCTION) {
+        var->type = type;
+    }
+
+    return var;
+}
+
+
+static njs_variable_t *
+njs_variable_scope_add(njs_vm_t *vm, njs_parser_scope_t *scope,
+    nxt_lvlhsh_query_t *lhq, njs_variable_type_t type)
+{
+    nxt_int_t       ret;
+    njs_variable_t  *var;
+
+    if (nxt_lvlhsh_find(&scope->variables, lhq) == NXT_OK) {
+        var = lhq->value;
+
+        if (!scope->module && scope->type != NJS_SCOPE_BLOCK) {
+            return var;
+        }
+
+        if (type == NJS_VARIABLE_FUNCTION
+            || var->type == NJS_VARIABLE_FUNCTION)
+        {
+            njs_parser_syntax_error(vm, vm->parser,
+                                    "\"%V\" has already been declared",
+                                    &lhq->key);
+            return NULL;
+        }
+
         return var;
     }
 
-    lhq.replace = 0;
-    lhq.value = var;
-    lhq.pool = vm->mem_pool;
+    var = njs_variable_alloc(vm, &lhq->key, type);
+    if (nxt_slow_path(var == NULL)) {
+        return NULL;
+    }
 
-    ret = nxt_lvlhsh_insert(&scope->variables, &lhq);
+    lhq->replace = 0;
+    lhq->value = var;
+    lhq->pool = vm->mem_pool;
+
+    ret = nxt_lvlhsh_insert(&scope->variables, lhq);
 
     if (nxt_fast_path(ret == NXT_OK)) {
         return var;
@@ -458,6 +492,13 @@ njs_variable_reference_resolve(njs_vm_t *vm, njs_variable_reference_t *vr,
     for ( ;; ) {
         if (nxt_lvlhsh_find(&scope->variables, &lhq) == NXT_OK) {
             vr->variable = lhq.value;
+
+            if (scope->type == NJS_SCOPE_BLOCK
+                && vr->variable->type == NJS_VARIABLE_VAR)
+            {
+                scope = scope->parent;
+                continue;
+            }
 
             if (scope->type == NJS_SCOPE_SHIM) {
                 scope = previous;

@@ -699,6 +699,8 @@ njs_test {
      "undefined\r\n"}
     {"import ref from 'ref_exception.js'\r\n"
      "ReferenceError: \"undeclared\" is not defined in ref_exception.js:1"}
+    {"import m from 'declaration_exception.js'\r\n"
+     "SyntaxError: \"f\" has already been declared in declaration_exception.js:6"}
     {"import m from 'loading_exception.js'\r\n"
      "Error: loading exception\r\n    at module \\(loading_exception.js:1\\)"}
     {"import lib3 from 'lib1.js'\r\n"
