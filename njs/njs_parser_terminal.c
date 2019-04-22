@@ -28,6 +28,8 @@ static nxt_int_t njs_parser_template_expression(njs_vm_t *vm,
     njs_parser_t *parser);
 static nxt_int_t njs_parser_template_string(njs_vm_t *vm,
     njs_parser_t *parser);
+static njs_ret_t njs_parser_escape_string_calc_length(njs_vm_t *vm,
+    njs_parser_t *parser, size_t *out_size, size_t *out_length);
 static njs_token_t njs_parser_escape_string_create(njs_vm_t *vm,
     njs_parser_t *parser, njs_value_t *value);
 
@@ -923,176 +925,265 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
     njs_value_t *value)
 {
     u_char        c, *start, *dst;
-    size_t        size,length, hex_length;
-    uint64_t      u;
+    size_t        size, length, hex_length;
+    uint64_t      cp;
+    njs_ret_t     ret;
     nxt_str_t     *string;
-    const u_char  *p, *src, *end, *hex_end;
+    const u_char  *src, *end, *hex_end;
 
-    start = NULL;
-    dst = NULL;
+    ret = njs_parser_escape_string_calc_length(vm, parser, &size, &length);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NJS_TOKEN_ILLEGAL;
+    }
 
-    for ( ;; ) {
-        /*
-         * The loop runs twice: at the first step string size and
-         * UTF-8 length are evaluated.  Then the string is allocated
-         * and at the second step string content is copied.
-         */
-        size = 0;
-        length = 0;
+    start = njs_string_alloc(vm, value, size, length);
+    if (nxt_slow_path(start == NULL)) {
+        return NJS_TOKEN_ERROR;
+    }
 
-        string = njs_parser_text(parser);
-        src = string->start;
-        end = src + string->length;
+    dst = start;
 
-        while (src < end) {
+    string = njs_parser_text(parser);
+    src = string->start;
+    end = src + string->length;
+
+    while (src < end) {
+        c = *src++;
+
+        if (c == '\\') {
+            /*
+             * Testing "src == end" is not required here
+             * since this has been already tested by lexer.
+             */
+
             c = *src++;
 
-            if (c == '\\') {
+            switch (c) {
+            case 'u':
                 /*
-                 * Testing "src == end" is not required here
-                 * since this has been already tested by lexer.
+                 * A character after "u" can be safely tested here
+                 * because there is always a closing quote at the
+                 * end of string: ...\u".
                  */
-                c = *src++;
 
-                switch (c) {
-
-                case 'u':
+                if (*src != '{') {
                     hex_length = 4;
-                    /*
-                     * A character after "u" can be safely tested here
-                     * because there is always a closing quote at the
-                     * end of string: ...\u".
-                     */
-                    if (*src != '{') {
-                        goto hex_length_test;
-                    }
-
-                    src++;
-                    hex_length = 0;
-                    hex_end = end;
-
-                    goto hex;
-
-                case 'x':
-                    hex_length = 2;
-                    goto hex_length_test;
-
-                case '0':
-                    c = '\0';
-                    break;
-
-                case 'b':
-                    c = '\b';
-                    break;
-
-                case 'f':
-                    c = '\f';
-                    break;
-
-                case 'n':
-                    c = '\n';
-                    break;
-
-                case 'r':
-                    c = '\r';
-                    break;
-
-                case 't':
-                    c = '\t';
-                    break;
-
-                case 'v':
-                    c = '\v';
-                    break;
-
-                case '\r':
-                    /*
-                     * A character after "\r" can be safely tested here
-                     * because there is always a closing quote at the
-                     * end of string: ...\\r".
-                     */
-                    if (*src == '\n') {
-                        src++;
-                    }
-
-                    continue;
-
-                case '\n':
-                    continue;
-
-                default:
-                    break;
+                    goto hex_length;
                 }
+
+                src++;
+                hex_length = 0;
+                hex_end = end;
+
+                goto hex;
+
+            case 'x':
+                hex_length = 2;
+                goto hex_length;
+
+            case '0':
+                c = '\0';
+                break;
+
+            case 'b':
+                c = '\b';
+                break;
+
+            case 'f':
+                c = '\f';
+                break;
+
+            case 'n':
+                c = '\n';
+                break;
+
+            case 'r':
+                c = '\r';
+                break;
+
+            case 't':
+                c = '\t';
+                break;
+
+            case 'v':
+                c = '\v';
+                break;
+
+            case '\r':
+                /*
+                 * A character after "\r" can be safely tested here
+                 * because there is always a closing quote at the
+                 * end of string: ...\\r".
+                 */
+
+                if (*src == '\n') {
+                    src++;
+                }
+
+                continue;
+
+            case '\n':
+                continue;
+
+            default:
+                break;
             }
+        }
 
-            size++;
-            length++;
+        *dst++ = c;
 
-            if (dst != NULL) {
-                *dst++ = c;
+        continue;
+
+    hex_length:
+
+        hex_end = src + hex_length;
+
+    hex:
+        cp = njs_number_hex_parse(&src, hex_end);
+
+        dst = nxt_utf8_encode(dst, (uint32_t) cp);
+        if (nxt_slow_path(dst == NULL)) {
+            njs_parser_syntax_error(vm, parser,
+                                    "Invalid Unicode code point \"%V\"",
+                                    njs_parser_text(parser));
+
+            return NJS_TOKEN_ILLEGAL;
+        }
+
+        /* Skip '}' character */
+
+        if (hex_length == 0) {
+            src++;
+        }
+    }
+
+    if (length > NJS_STRING_MAP_STRIDE && length != size) {
+        njs_string_offset_map_init(start, size);
+    }
+
+    return NJS_TOKEN_STRING;
+}
+
+
+static njs_ret_t
+njs_parser_escape_string_calc_length(njs_vm_t *vm, njs_parser_t *parser,
+    size_t *out_size, size_t *out_length)
+{
+    size_t        size, length, hex_length;
+    uint64_t      cp;
+    nxt_str_t     *string;
+    const u_char  *ptr, *src, *end, *hex_end;
+
+    size = 0;
+    length = 0;
+
+    string = njs_parser_text(parser);
+    src = string->start;
+    end = src + string->length;
+
+    while (src < end) {
+
+        if (*src == '\\') {
+            src++;
+
+            switch (*src) {
+            case 'u':
+                src++;
+
+                if (*src != '{') {
+                    hex_length = 4;
+                    goto hex_length;
+                }
+
+                src++;
+                hex_length = 0;
+                hex_end = end;
+
+                goto hex;
+
+            case 'x':
+                src++;
+                hex_length = 2;
+                goto hex_length;
+
+            case '\r':
+                src++;
+
+                if (*src == '\n') {
+                    src++;
+                }
+
+                continue;
+
+            case '\n':
+                src++;
+                continue;
+
+            default:
+                break;
             }
+        }
 
-            continue;
+        if (*src >= 0x80) {
+            ptr = src;
 
-        hex_length_test:
-
-            hex_end = src + hex_length;
-
-            if (hex_end > end) {
+            if (nxt_slow_path(nxt_utf8_decode(&src, end) == 0xffffffff)) {
                 goto invalid;
             }
 
-        hex:
-
-            p = src;
-            u = njs_number_hex_parse(&src, hex_end);
-
-            if (hex_length != 0) {
-                if (src != hex_end) {
-                    goto invalid;
-                }
-
-            } else {
-                if (src == p || (src - p) > 6) {
-                    goto invalid;
-                }
-
-                if (src == end || *src++ != '}') {
-                    goto invalid;
-                }
-            }
-
-            size += nxt_utf8_size(u);
+            size += src - ptr;
             length++;
 
-            if (dst != NULL) {
-                dst = nxt_utf8_encode(dst, (uint32_t) u);
-                if (dst == NULL) {
-                    goto invalid;
-                }
+            continue;
+        }
+
+        src++;
+        size++;
+        length++;
+
+        continue;
+
+    hex_length:
+
+        hex_end = src + hex_length;
+
+        if (nxt_slow_path(hex_end > end)) {
+            goto invalid;
+        }
+
+    hex:
+
+        ptr = src;
+        cp = njs_number_hex_parse(&src, hex_end);
+
+        if (hex_length != 0) {
+            if (src != hex_end) {
+                goto invalid;
+            }
+
+        } else {
+            if (src == ptr || (src - ptr) > 6) {
+                goto invalid;
+            }
+
+            if (src == end || *src++ != '}') {
+                goto invalid;
             }
         }
 
-        if (start != NULL) {
-            if (length > NJS_STRING_MAP_STRIDE && length != size) {
-                njs_string_offset_map_init(start, size);
-            }
-
-            return NJS_TOKEN_STRING;
-        }
-
-        start = njs_string_alloc(vm, value, size, length);
-        if (nxt_slow_path(start == NULL)) {
-            return NJS_TOKEN_ERROR;
-        }
-
-        dst = start;
+        size += nxt_utf8_size(cp);
+        length++;
     }
+
+    *out_size = size;
+    *out_length = length;
+
+    return NXT_OK;
 
 invalid:
 
     njs_parser_syntax_error(vm, parser, "Invalid Unicode code point \"%V\"",
                             njs_parser_text(parser));
 
-    return NJS_TOKEN_ILLEGAL;
+    return NJS_ERROR;
 }

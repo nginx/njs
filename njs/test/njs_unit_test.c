@@ -4381,6 +4381,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abc'.length"),
       nxt_string("3") },
 
+    { nxt_string("'привет\\n'.length"),
+      nxt_string("7") },
+
+    { nxt_string("'привет\\n\\u{61}\\u{3B1}\\u{20AC}'.length"),
+      nxt_string("10") },
+
     { nxt_string("''.hasOwnProperty('length')"),
       nxt_string("true") },
 
