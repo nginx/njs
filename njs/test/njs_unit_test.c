@@ -7977,13 +7977,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var x = Array(2**28)"),
       nxt_string("MemoryError") },
 
-    { nxt_string("var r; try {"
-                 "    var x = Array(2**27), y = Array(2**5).fill(x);"
-                 "    Array.prototype.concat.apply(y[0], y.slice(1));"
-                 "} catch (e) {"
-                 "    r = e.name == 'InternalError' || e.name == 'RangeError'"
-                 "} r"),
-      nxt_string("true") },
+    { nxt_string("var x = Array(2**20), y = Array(2**12).fill(x);"
+                 "Array.prototype.concat.apply(y[0], y.slice(1))"),
+      nxt_string("RangeError: Invalid array length") },
 
     { nxt_string("var a = new Array(3); a"),
       nxt_string(",,") },
