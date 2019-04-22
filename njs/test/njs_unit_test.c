@@ -4387,6 +4387,23 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'привет\\n\\u{61}\\u{3B1}\\u{20AC}'.length"),
       nxt_string("10") },
 
+    { nxt_string("'\\ud83d\\udc4d'"),
+      nxt_string("\xf0\x9f\x91\x8d") },
+
+    { nxt_string("'\\ud83d\\udc4d'.length"),
+      nxt_string("1") },
+
+    { nxt_string("'\\ud83d abc \\udc4d'"),
+      nxt_string("SyntaxError: Invalid surrogate pair "
+                 "\"\\ud83d abc \\udc4d\" in 1") },
+
+    { nxt_string("'\\ud83d'"),
+      nxt_string("SyntaxError: Invalid surrogate pair \"\\ud83d\" in 1") },
+
+    { nxt_string("'\\ud83d\\uabcd'"),
+      nxt_string("SyntaxError: Invalid surrogate pair "
+                 "\"\\ud83d\\uabcd\" in 1") },
+
     { nxt_string("''.hasOwnProperty('length')"),
       nxt_string("true") },
 

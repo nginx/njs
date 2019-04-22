@@ -926,7 +926,7 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
 {
     u_char        c, *start, *dst;
     size_t        size, length, hex_length;
-    uint64_t      cp;
+    uint64_t      cp, cp_pair;
     njs_ret_t     ret;
     nxt_str_t     *string;
     const u_char  *src, *end, *hex_end;
@@ -942,6 +942,7 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
     }
 
     dst = start;
+    cp_pair = 0;
 
     string = njs_parser_text(parser);
     src = string->start;
@@ -1041,6 +1042,23 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
     hex:
         cp = njs_number_hex_parse(&src, hex_end);
 
+        /* Skip '}' character. */
+
+        if (hex_length == 0) {
+            src++;
+        }
+
+        /* Surrogate pair. */
+
+        if (cp_pair != 0) {
+            cp = 0x10000 + ((cp_pair - 0xd800) << 10) + (cp - 0xdc00);
+            cp_pair = 0;
+
+        } else if (cp >= 0xd800 && cp <= 0xdfff) {
+            cp_pair = cp;
+            continue;
+        }
+
         dst = nxt_utf8_encode(dst, (uint32_t) cp);
         if (nxt_slow_path(dst == NULL)) {
             njs_parser_syntax_error(vm, parser,
@@ -1048,12 +1066,6 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
                                     njs_parser_text(parser));
 
             return NJS_TOKEN_ILLEGAL;
-        }
-
-        /* Skip '}' character */
-
-        if (hex_length == 0) {
-            src++;
         }
     }
 
@@ -1070,12 +1082,13 @@ njs_parser_escape_string_calc_length(njs_vm_t *vm, njs_parser_t *parser,
     size_t *out_size, size_t *out_length)
 {
     size_t        size, length, hex_length;
-    uint64_t      cp;
+    uint64_t      cp, cp_pair;
     nxt_str_t     *string;
     const u_char  *ptr, *src, *end, *hex_end;
 
     size = 0;
     length = 0;
+    cp_pair = 0;
 
     string = njs_parser_text(parser);
     src = string->start;
@@ -1171,6 +1184,25 @@ njs_parser_escape_string_calc_length(njs_vm_t *vm, njs_parser_t *parser,
             }
         }
 
+        /* Surrogate pair. */
+
+        if (cp_pair != 0) {
+            if (nxt_slow_path(cp < 0xdc00 || cp > 0xdfff)) {
+                goto invalid_pair;
+            }
+
+            cp = 0x10000 + ((cp_pair - 0xd800) << 10) + (cp - 0xdc00);
+            cp_pair = 0;
+
+        } else if (cp >= 0xd800 && cp <= 0xdfff) {
+            if (nxt_slow_path(cp > 0xdbff || src[0] != '\\' || src[1] != 'u')) {
+                goto invalid_pair;
+            }
+
+            cp_pair = cp;
+            continue;
+        }
+
         size += nxt_utf8_size(cp);
         length++;
     }
@@ -1183,6 +1215,13 @@ njs_parser_escape_string_calc_length(njs_vm_t *vm, njs_parser_t *parser,
 invalid:
 
     njs_parser_syntax_error(vm, parser, "Invalid Unicode code point \"%V\"",
+                            njs_parser_text(parser));
+
+    return NJS_ERROR;
+
+invalid_pair:
+
+    njs_parser_syntax_error(vm, parser, "Invalid surrogate pair \"%V\"",
                             njs_parser_text(parser));
 
     return NJS_ERROR;
