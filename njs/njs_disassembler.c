@@ -29,6 +29,8 @@ static njs_code_name_t  code_names[] = {
           nxt_string("ARGUMENTS       ") },
     { njs_vmcode_regexp, sizeof(njs_vmcode_regexp_t),
           nxt_string("REGEXP          ") },
+    { njs_vmcode_template_literal, sizeof(njs_vmcode_template_literal_t),
+          nxt_string("TEMPLATE LITERAL") },
     { njs_vmcode_object_copy, sizeof(njs_vmcode_object_copy_t),
           nxt_string("OBJECT COPY     ") },
 

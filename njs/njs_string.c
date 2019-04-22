@@ -822,7 +822,7 @@ njs_string_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
  * JavaScript 1.2, ECMAScript 3.
  */
 
-static njs_ret_t
+njs_ret_t
 njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {

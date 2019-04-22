@@ -458,6 +458,39 @@ njs_vmcode_regexp(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 
 
 njs_ret_t
+njs_vmcode_template_literal(njs_vm_t *vm, njs_value_t *invld1,
+    njs_value_t *retval)
+{
+    nxt_int_t    ret;
+    njs_array_t  *array;
+    njs_value_t  *value;
+
+    static const njs_function_t  concat = {
+          .native = 1,
+          .args_offset = 1,
+          .u.native = njs_string_prototype_concat
+    };
+
+    value = njs_vmcode_operand(vm, retval);
+
+    if (!njs_is_primitive(value)) {
+        array = value->data.u.array;
+
+        ret = njs_function_activate(vm, (njs_function_t *) &concat,
+                                    &njs_string_empty, array->start,
+                                    array->length, (njs_index_t) retval, 0);
+        if (ret == NJS_APPLIED) {
+            return 0;
+        }
+
+        return NXT_ERROR;
+    }
+
+    return sizeof(njs_vmcode_template_literal_t);
+}
+
+
+njs_ret_t
 njs_vmcode_object_copy(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 {
     njs_object_t    *object;

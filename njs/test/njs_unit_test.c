@@ -4207,6 +4207,69 @@ static njs_unit_test_t  njs_test[] =
                  "a.sort(function(x, y) { return x - y })"),
       nxt_string("1,") },
 
+    /* Template literal. */
+
+    { nxt_string("`"),
+      nxt_string("SyntaxError: Unterminated template literal in 1") },
+
+    { nxt_string("`$"),
+      nxt_string("SyntaxError: Unterminated template literal in 1") },
+
+    { nxt_string("`${"),
+      nxt_string("SyntaxError: Unexpected end of input in 1") },
+
+    { nxt_string("`${a"),
+      nxt_string("SyntaxError: Missing \"}\" in template expression in 1") },
+
+    { nxt_string("`${}"),
+      nxt_string("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { nxt_string("`${a}"),
+      nxt_string("SyntaxError: Unterminated template literal in 1") },
+
+    { nxt_string("`${a}bc"),
+      nxt_string("SyntaxError: Unterminated template literal in 1") },
+
+    { nxt_string("`\\"),
+      nxt_string("SyntaxError: Unterminated template literal in 1") },
+
+    { nxt_string("`\\${a}bc"),
+      nxt_string("SyntaxError: Unterminated template literal in 1") },
+
+    { nxt_string("`text1\ntext2`;"),
+      nxt_string("text1\ntext2") },
+
+    { nxt_string("var o = 1; `o = \\`${o}\\``"),
+      nxt_string("o = `1`") },
+
+    { nxt_string("`\\unicode`"),
+      nxt_string("SyntaxError: Invalid Unicode code point \"\\unicode\" in 1") },
+
+    { nxt_string("var a = 5; var b = 10;"
+                 "`Fifteen is ${a + b} and \nnot ${2 * a + b}.`;"),
+      nxt_string("Fifteen is 15 and \nnot 20.") },
+
+    { nxt_string("var s = `1undefined`; s;"),
+      nxt_string("1undefined") },
+
+    { nxt_string("var s = '0'; s = `x${s += '1'}`;"),
+      nxt_string("x01") },
+
+    { nxt_string("var d = new Date(2011, 5, 24, 18, 45, 12, 625);"
+                 "var something = 'test'; var one = 1; var two = 2;"
+                 "`[${d.toISOString()}] the message contents ${something} ${one + two}`"),
+      nxt_string("[2011-06-24T18:45:12.625Z] the message contents test 3") },
+
+    { nxt_string("function isLargeScreen() { return false; }"
+                 "var item = { isCollapsed: true };"
+                 "`header ${ isLargeScreen() ? '' : `icon-${item.isCollapsed ? 'expander' : 'collapser'}` }`;"),
+      nxt_string("header icon-expander") },
+
+    { nxt_string("function foo(strings, person, age) { return `${strings[0]}${strings[1]}${person}${age}` };"
+                 "var person = 'Mike'; var age = 21;"
+                 "foo`That ${person} is a ${age}`;"),
+      nxt_string("That  is a Mike21") },
+
     /* Strings. */
 
     { nxt_string("var a = '0123456789' + '012345';"

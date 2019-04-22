@@ -657,6 +657,12 @@ typedef struct {
 
 
 typedef struct {
+     njs_vmcode_t              code;
+     njs_index_t               retval;
+} njs_vmcode_template_literal_t;
+
+
+typedef struct {
     njs_vmcode_t               code;
     njs_index_t                retval;
     njs_function_lambda_t      *lambda;
@@ -1161,6 +1167,8 @@ njs_ret_t njs_vmcode_arguments(njs_vm_t *vm, njs_value_t *inlvd1,
     njs_value_t *invld2);
 njs_ret_t njs_vmcode_regexp(njs_vm_t *vm, njs_value_t *inlvd1,
     njs_value_t *invld2);
+njs_ret_t njs_vmcode_template_literal(njs_vm_t *vm, njs_value_t *inlvd1,
+    njs_value_t *inlvd2);
 njs_ret_t njs_vmcode_object_copy(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *invld);
 

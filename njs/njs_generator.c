@@ -123,6 +123,8 @@ static nxt_int_t njs_generate_function(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node);
 static nxt_int_t njs_generate_regexp(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node);
+static nxt_int_t njs_generate_template_literal(njs_vm_t *vm,
+    njs_generator_t *generator, njs_parser_node_t *node);
 static nxt_int_t njs_generate_test_jump_expression(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static nxt_int_t njs_generate_3addr_operation(njs_vm_t *vm,
@@ -403,6 +405,9 @@ njs_generator(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
 
     case NJS_TOKEN_REGEXP:
         return njs_generate_regexp(vm, generator, node);
+
+    case NJS_TOKEN_TEMPLATE_LITERAL:
+        return njs_generate_template_literal(vm, generator, node);
 
     case NJS_TOKEN_THIS:
     case NJS_TOKEN_OBJECT_CONSTRUCTOR:
@@ -1963,6 +1968,28 @@ njs_generate_regexp(njs_vm_t *vm, njs_generator_t *generator,
                       njs_vmcode_regexp, 1, 1);
     regexp->retval = node->index;
     regexp->pattern = node->u.value.data.u.data;
+
+    return NXT_OK;
+}
+
+
+static nxt_int_t
+njs_generate_template_literal(njs_vm_t *vm, njs_generator_t *generator,
+    njs_parser_node_t *node)
+{
+    nxt_int_t                      ret;
+    njs_vmcode_template_literal_t  *code;
+
+    ret = njs_generator(vm, generator, node->left);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
+    njs_generate_code(generator, njs_vmcode_template_literal_t, code,
+                      njs_vmcode_template_literal, 1, 1);
+    code->retval = node->left->index;
+
+    node->index = node->left->index;
 
     return NXT_OK;
 }

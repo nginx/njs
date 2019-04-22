@@ -93,7 +93,7 @@ static const uint8_t  njs_tokens[256]  nxt_aligned(64) = {
     /* \ ] */   NJS_TOKEN_ILLEGAL,           NJS_TOKEN_CLOSE_BRACKET,
     /* ^ _ */   NJS_TOKEN_BITWISE_XOR,       NJS_TOKEN_LETTER,
 
-    /* ` a */   NJS_TOKEN_ILLEGAL,           NJS_TOKEN_LETTER,
+    /* ` a */   NJS_TOKEN_GRAVE,             NJS_TOKEN_LETTER,
     /* b c */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
     /* d e */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,
     /* f g */   NJS_TOKEN_LETTER,            NJS_TOKEN_LETTER,

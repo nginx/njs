@@ -753,7 +753,7 @@ njs_parser_call_expression(njs_vm_t *vm, njs_parser_t *parser,
             return token;
         }
 
-        if (token != NJS_TOKEN_OPEN_PARENTHESIS) {
+        if (token != NJS_TOKEN_OPEN_PARENTHESIS && token != NJS_TOKEN_GRAVE) {
             return token;
         }
 
@@ -822,6 +822,14 @@ njs_parser_call(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
 
     case NJS_TOKEN_OPEN_PARENTHESIS:
         token = njs_parser_arguments(vm, parser, func);
+        if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+            return token;
+        }
+
+        break;
+
+    case NJS_TOKEN_GRAVE:
+        token = njs_parser_template_literal(vm, parser, func);
         if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
         }
