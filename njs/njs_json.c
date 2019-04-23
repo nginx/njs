@@ -820,7 +820,7 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value,
                     return NULL;
                 }
 
-                utf = 0x10000 + ((utf - 0xd800) << 10) + (utf_low - 0xdc00);
+                utf = njs_string_surrogate_pair(utf, utf_low);
             }
 
             s = nxt_utf8_encode(s, utf);
