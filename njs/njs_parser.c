@@ -203,7 +203,6 @@ njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser, njs_scope_t type)
     } else {
         if (type == NJS_SCOPE_GLOBAL) {
             type += NJS_INDEX_GLOBAL_OFFSET;
-            scope->module = vm->options.module;
         }
 
         scope->next_index[0] = type;
