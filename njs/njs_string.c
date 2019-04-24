@@ -2660,65 +2660,64 @@ njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
     }
 
     if (nxt_regex_is_valid(&pattern->regex[type])) {
-        array = NULL;
+
+        array = njs_array_alloc(vm, 0, NJS_ARRAY_SPARE);
+        if (nxt_slow_path(array == NULL)) {
+            return NXT_ERROR;
+        }
+
         p = string.start;
         end = p + string.size;
 
         do {
             ret = njs_regexp_match(vm, &pattern->regex[type], p, string.size,
                                    vm->single_match_data);
-            if (ret >= 0) {
-                if (array != NULL) {
-                    ret = njs_array_expand(vm, array, 0, 1);
-                    if (nxt_slow_path(ret != NXT_OK)) {
-                        return ret;
-                    }
-
-                } else {
-                    array = njs_array_alloc(vm, 0, NJS_ARRAY_SPARE);
-                    if (nxt_slow_path(array == NULL)) {
-                        return NXT_ERROR;
-                    }
-
-                    vm->retval.data.u.array = array;
-                    vm->retval.type = NJS_ARRAY;
-                    vm->retval.data.truth = 1;
+            if (ret < 0) {
+                if (nxt_fast_path(ret == NXT_REGEX_NOMATCH)) {
+                    break;
                 }
 
-                captures = nxt_regex_captures(vm->single_match_data);
-                start = p + captures[0];
+                njs_internal_error(vm, "njs_regexp_match() failed");
 
-                if (captures[1] == 0) {
-                    p = nxt_utf8_next(start, end);
-                    string.size = end - p;
-
-                    size = 0;
-                    length = 0;
-
-                } else {
-                    p += captures[1];
-                    string.size -= captures[1];
-
-                    size = captures[1] - captures[0];
-                    length = njs_string_calc_length(utf8, start, size);
-                }
-
-                ret = njs_string_new(vm, &array->start[array->length],
-                                     start, size, length);
-                if (nxt_slow_path(ret != NXT_OK)) {
-                    return ret;
-                }
-
-                array->length++;
-
-            } else if (ret == NXT_REGEX_NOMATCH) {
-                break;
-
-            } else {
                 return NXT_ERROR;
             }
 
+            ret = njs_array_expand(vm, array, 0, 1);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return ret;
+            }
+
+            captures = nxt_regex_captures(vm->single_match_data);
+            start = p + captures[0];
+
+            if (captures[1] == 0) {
+                p = nxt_utf8_next(start, end);
+                string.size = end - p;
+
+                size = 0;
+                length = 0;
+
+            } else {
+                p += captures[1];
+                string.size -= captures[1];
+
+                size = captures[1] - captures[0];
+                length = njs_string_calc_length(utf8, start, size);
+            }
+
+            ret = njs_string_new(vm, &array->start[array->length],
+                                 start, size, length);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return ret;
+            }
+
+            array->length++;
+
         } while (p <= end);
+
+        vm->retval.data.u.array = array;
+        vm->retval.type = NJS_ARRAY;
+        vm->retval.data.truth = 1;
     }
 
     return NXT_OK;
