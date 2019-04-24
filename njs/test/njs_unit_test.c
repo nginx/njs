@@ -5375,6 +5375,33 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("('β' + 'α'.repeat(33)+'β').replace(/(α+)(β+)/, function(m, p1) { return p1[32]; })"),
       nxt_string("βα") },
 
+    { nxt_string("'abc'.match(/a*/g)"),
+      nxt_string("a,,,") },
+
+    { nxt_string("'abc'.match(/z*/g)"),
+      nxt_string(",,,") },
+
+    { nxt_string("'abc'.match(/.?/g)"),
+      nxt_string("a,b,c,") },
+
+    { nxt_string("''.match(/a*/g)"),
+      nxt_string("") },
+
+    { nxt_string("''.match(/.?/g)"),
+      nxt_string("") },
+
+    { nxt_string("'абв'.match(/я?/g)"),
+      nxt_string(",,,") },
+
+    { nxt_string("'αβγ'.match(/z*/g)"),
+      nxt_string(",,,") },
+
+    { nxt_string("'囲碁織'.match(/z*/g)"),
+      nxt_string(",,,") },
+
+    { nxt_string("'𝟘𝟙𝟚𝟛'.match(/z*/g)"),
+      nxt_string(",,,,") },
+
     { nxt_string("'abcdefgh'.match()"),
       nxt_string("") },
 

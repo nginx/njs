@@ -2634,11 +2634,11 @@ njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
     njs_regexp_pattern_t *pattern)
 {
     int                *captures;
-    u_char             *start;
     int32_t            size, length;
     njs_ret_t          ret;
     njs_utf8_t         utf8;
     njs_array_t        *array;
+    const u_char       *p, *start, *end;
     njs_regexp_utf8_t  type;
     njs_string_prop_t  string;
 
@@ -2661,10 +2661,12 @@ njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
 
     if (nxt_regex_is_valid(&pattern->regex[type])) {
         array = NULL;
+        p = string.start;
+        end = p + string.size;
 
         do {
-            ret = njs_regexp_match(vm, &pattern->regex[type], string.start,
-                                   string.size, vm->single_match_data);
+            ret = njs_regexp_match(vm, &pattern->regex[type], p, string.size,
+                                   vm->single_match_data);
             if (ret >= 0) {
                 if (array != NULL) {
                     ret = njs_array_expand(vm, array, 0, 1);
@@ -2684,14 +2686,22 @@ njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
                 }
 
                 captures = nxt_regex_captures(vm->single_match_data);
-                start = &string.start[captures[0]];
+                start = p + captures[0];
 
-                string.start += captures[1];
-                string.size -= captures[1];
+                if (captures[1] == 0) {
+                    p = nxt_utf8_next(start, end);
+                    string.size = end - p;
 
-                size = captures[1] - captures[0];
+                    size = 0;
+                    length = 0;
 
-                length = njs_string_calc_length(utf8, start, size);
+                } else {
+                    p += captures[1];
+                    string.size -= captures[1];
+
+                    size = captures[1] - captures[0];
+                    length = njs_string_calc_length(utf8, start, size);
+                }
 
                 ret = njs_string_new(vm, &array->start[array->length],
                                      start, size, length);
@@ -2708,7 +2718,7 @@ njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
                 return NXT_ERROR;
             }
 
-        } while (string.size > 0);
+        } while (p <= end);
     }
 
     return NXT_OK;
