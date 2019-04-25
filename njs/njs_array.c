@@ -420,8 +420,19 @@ njs_array_length(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
     njs_ret_t    ret;
     njs_value_t  *val;
     njs_array_t  *array;
+    njs_object_t *proto;
 
-    array = value->data.u.array;
+    proto = value->data.u.object;
+
+    do {
+        if (nxt_fast_path(proto->type == NJS_ARRAY)) {
+            break;
+        }
+
+        proto = proto->__proto__;
+    } while (proto != NULL);
+
+    array = (njs_array_t *) proto;
 
     if (setval != NULL) {
         if (!njs_is_number(setval)) {

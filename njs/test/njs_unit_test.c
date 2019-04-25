@@ -9110,6 +9110,18 @@ static njs_unit_test_t  njs_test[] =
                  "1..isPrototypeOf(p)"),
       nxt_string("false") },
 
+    { nxt_string("Object.create(new String('asdf')).length"),
+      nxt_string("4") },
+
+    { nxt_string("Object.create(Object('123')).length"),
+      nxt_string("3") },
+
+    { nxt_string("Object.create([1,2]).length"),
+      nxt_string("2") },
+
+    { nxt_string("Object.create(function(a,b,c){}).length"),
+      nxt_string("3") },
+
     { nxt_string("Object.getOwnPropertyDescriptor({a:1}, 'a').value"),
       nxt_string("1") },
 

@@ -894,10 +894,21 @@ njs_function_instance_length(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
     nxt_uint_t             n;
+    njs_object_t           *proto;
     njs_function_t         *function;
     njs_function_lambda_t  *lambda;
 
-    function = value->data.u.function;
+    proto = value->data.u.object;
+
+    do {
+        if (nxt_fast_path(proto->type == NJS_FUNCTION)) {
+            break;
+        }
+
+        proto = proto->__proto__;
+    } while (proto != NULL);
+
+    function = (njs_function_t *) proto;
 
     if (function->native) {
         for (n = function->args_offset; n < NJS_ARGS_TYPES_MAX; n++) {

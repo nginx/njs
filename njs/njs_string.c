@@ -626,8 +626,10 @@ static njs_ret_t
 njs_string_instance_length(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
-    size_t     size;
-    uintptr_t  length;
+    size_t              size;
+    uintptr_t           length;
+    njs_object_t        *proto;
+    njs_object_value_t  *ov;
 
     /*
      * This getter can be called for string primitive, String object,
@@ -635,8 +637,21 @@ njs_string_instance_length(njs_vm_t *vm, njs_value_t *value,
      */
     length = 0;
 
-    if (value->type == NJS_OBJECT_STRING) {
-        value = &value->data.u.object_value->value;
+    if (nxt_slow_path(njs_is_object(value))) {
+        proto = value->data.u.object;
+
+        do {
+            if (nxt_fast_path(proto->type == NJS_OBJECT_STRING)) {
+                break;
+            }
+
+            proto = proto->__proto__;
+        } while (proto != NULL);
+
+        if (proto != NULL) {
+            ov = (njs_object_value_t *) proto;
+            value = &ov->value;
+        }
     }
 
     if (njs_is_string(value)) {

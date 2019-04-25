@@ -283,7 +283,6 @@ njs_object_property(njs_vm_t *vm, const njs_object_t *object,
  *   NXT_ERROR            exception has been thrown.
  *
  *   TODO:
- *     Object.create([1,2]).length
  *     Object.defineProperty([1,2], '1', {configurable:false})
  */
 
