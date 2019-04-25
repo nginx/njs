@@ -9563,11 +9563,47 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.isExtensible(Object.freeze([]))"),
       nxt_string("false") },
 
+    { nxt_string("new Date(undefined)"),
+      nxt_string("Invalid Date") },
+
+    { nxt_string("new Date(Infinity)"),
+      nxt_string("Invalid Date") },
+
+    { nxt_string("new Date(NaN)"),
+      nxt_string("Invalid Date") },
+
+    { nxt_string("new Date(8.65e15)"),
+      nxt_string("Invalid Date") },
+
+    { nxt_string("new Date(0e0.o0)"),
+      nxt_string("Invalid Date") },
+
+    { nxt_string("(new Date(8.639e15)).getTime()"),
+      nxt_string("8639000000000000") },
+
+    { nxt_string("new Date(8.641e15)"),
+      nxt_string("Invalid Date") },
+
+    { nxt_string("(new Date(null)).getTime()"),
+      nxt_string("0") },
+
+    { nxt_string("(new Date(86400)).getTime()"),
+      nxt_string("86400") },
+
     { nxt_string("var d = new Date(''); d +' '+ d.getTime()"),
       nxt_string("Invalid Date NaN") },
 
     { nxt_string("var d = new Date(1); d = d + ''; d.slice(0, 33)"),
       nxt_string("Thu Jan 01 1970 00:00:00 GMT+0000") },
+
+    { nxt_string("var d = new Date({valueOf:()=>86400000}); d = d + ''; d.slice(0, 33)"),
+      nxt_string("Fri Jan 02 1970 00:00:00 GMT+0000") },
+
+    { nxt_string("(new Date({toString:()=>'2011'})).getTime()"),
+      nxt_string("1293840000000") },
+
+    { nxt_string("(new Date({valueOf: ()=>86400, toString:()=>'2011'})).getTime()"),
+      nxt_string("86400") },
 
     { nxt_string("var d = new Date(1308895200000); d.getTime()"),
       nxt_string("1308895200000") },

@@ -804,7 +804,7 @@ njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
-nxt_inline int64_t
+int64_t
 njs_number_to_int64(double num)
 {
 #if (NXT_NAN_TO_UINT_CONVERSION != 0)

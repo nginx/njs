@@ -47,6 +47,7 @@ typedef enum {
     NJS_TRAP_PROPERTY,
     NJS_TRAP_NUMBER_ARG,
     NJS_TRAP_STRING_ARG,
+    NJS_TRAP_PRIMITIVE_ARG,
 } njs_trap_t;
 
 

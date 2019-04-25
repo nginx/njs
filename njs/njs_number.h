@@ -35,6 +35,7 @@ njs_ret_t njs_number_parse_int(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 njs_ret_t njs_number_parse_float(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
+int64_t njs_number_to_int64(double num);
 nxt_noinline int32_t njs_number_to_integer(double num);
 nxt_noinline int32_t njs_number_to_int32(double num);
 nxt_noinline uint32_t njs_number_to_uint32(double num);
