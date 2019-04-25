@@ -1645,6 +1645,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'-1' < {valueOf: function() {return -2}}"),
       nxt_string("false") },
 
+    { nxt_string("new 0[isNaN]"),
+      nxt_string("TypeError: (intermediate value)[\"[object Function]\"] is not a function") },
+
     /**/
 
     { nxt_string("var a; a = 1 ? 2 : 3"),
@@ -5990,7 +5993,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("TypeError: number is not a function") },
 
     { nxt_string("var o = {a:1}; o.a()"),
-      nxt_string("TypeError: \"a\" is not a function") },
+      nxt_string("TypeError: (intermediate value)[\"a\"] is not a function") },
 
     { nxt_string("(function(){})()"),
       nxt_string("undefined") },
@@ -7444,10 +7447,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("SyntaxError: Unexpected token \"null\" in 1") },
 
     { nxt_string("'a'.f()"),
-      nxt_string("TypeError: \"f\" is not a function") },
+      nxt_string("TypeError: (intermediate value)[\"f\"] is not a function") },
 
     { nxt_string("1..f()"),
-      nxt_string("TypeError: \"f\" is not a function") },
+      nxt_string("TypeError: (intermediate value)[\"f\"] is not a function") },
 
     { nxt_string("try {}"),
       nxt_string("SyntaxError: Missing catch or finally after try in 1") },

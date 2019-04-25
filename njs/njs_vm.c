@@ -1997,7 +1997,8 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
 
     if (value == NULL || !njs_is_function(value)) {
         njs_string_get(name, &string);
-        njs_type_error(vm, "\"%V\" is not a function", &string);
+        njs_type_error(vm, "(intermediate value)[\"%V\"] is not a function",
+                       &string);
         return NXT_ERROR;
     }
 

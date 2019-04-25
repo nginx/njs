@@ -224,7 +224,7 @@ njs_test {
 
 njs_test {
     {"console.ll()\r\n"
-     "console.ll()\r\nTypeError: \"ll\" is not a function"}
+     "console.ll()\r\nTypeError: (intermediate value)\\\[\"ll\"] is not a function"}
 }
 
 njs_test {
