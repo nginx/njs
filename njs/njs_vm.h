@@ -562,6 +562,8 @@ typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
     (value)->type = NJS_INVALID
 
 
+#if 0 /* GC: todo */
+
 #define njs_retain(value)                                                     \
     do {                                                                      \
         if ((value)->data.truth == NJS_STRING_LONG) {                         \
@@ -576,6 +578,15 @@ typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
             njs_value_release((vm), (value));                                 \
         }                                                                     \
     } while (0)
+
+#else
+
+#define njs_retain(value)
+
+
+#define njs_release(vm, value)
+
+#endif
 
 
 #define NJS_VMCODE_3OPERANDS   0

@@ -172,7 +172,7 @@ start:
 
         if (vmcode->code.retval) {
             retval = njs_vmcode_operand(vm, vmcode->operand1);
-            //njs_release(vm, retval);
+            njs_release(vm, retval);
             *retval = vm->retval;
         }
     }
@@ -2860,7 +2860,7 @@ njs_vmcode_restart(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 
     retval = njs_vmcode_operand(vm, vmcode->operand1);
 
-    //njs_release(vm, retval);
+    njs_release(vm, retval);
 
     *retval = vm->retval;
 
