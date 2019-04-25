@@ -8437,6 +8437,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("new String(123)"),
       nxt_string("123") },
 
+    { nxt_string("Object('123').length"),
+      nxt_string("3") },
+
     { nxt_string("new String(123).length"),
       nxt_string("3") },
 

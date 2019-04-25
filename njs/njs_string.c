@@ -555,8 +555,6 @@ njs_string_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             return NXT_ERROR;
         }
 
-        object->shared_hash = vm->shared->string_instance_hash;
-
         vm->retval.data.u.object = object;
         vm->retval.type = NJS_OBJECT_STRING;
         vm->retval.data.truth = 1;
