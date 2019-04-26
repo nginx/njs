@@ -173,7 +173,7 @@ njs_ret_t njs_function_lambda_call(njs_vm_t *vm, njs_index_t retval,
     u_char *return_address);
 njs_ret_t njs_function_native_call(njs_vm_t *vm, njs_function_native_t native,
     njs_value_t *args, uint8_t *args_types, nxt_uint_t nargs,
-    njs_index_t retval);
+    njs_index_t retval, u_char *return_address);
 void njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame);
 
 

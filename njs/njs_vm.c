@@ -2047,7 +2047,8 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
             ret = njs_function_native_call(vm, function->u.native,
                                            frame->arguments,
                                            function->args_types, frame->nargs,
-                                           (njs_index_t) retval);
+                                           (njs_index_t) retval,
+                                           return_address);
         }
 
     } else {
@@ -2055,16 +2056,7 @@ njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
                                        return_address);
     }
 
-    switch (ret) {
-    case NXT_OK:
-        return sizeof(njs_vmcode_function_call_t);
-
-    case NJS_APPLIED:
-        return 0;
-
-    default:
-        return ret;
-    }
+    return (ret == NJS_APPLIED) ? 0 : ret;
 }
 
 
@@ -2292,31 +2284,18 @@ const njs_vmcode_generic_t  njs_continuation_nexus[] = {
 static njs_ret_t
 njs_vmcode_continuation(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 {
-    u_char              *return_address;
     njs_ret_t           ret;
     njs_native_frame_t  *frame;
     njs_continuation_t  *cont;
 
     frame = vm->top_frame;
-
     cont = njs_vm_continuation(vm);
-    return_address = cont->return_address;
 
     ret = njs_function_native_call(vm, cont->function, frame->arguments,
                                    cont->args_types, frame->nargs,
-                                   cont->retval);
+                                   cont->retval, cont->return_address);
 
-    switch (ret) {
-    case NXT_OK:
-        vm->current = return_address;
-        /* Fall through. */
-
-    case NJS_APPLIED:
-        return 0;
-
-    default:
-        return ret;
-    }
+    return (ret == NJS_APPLIED) ? 0 : ret;
 }
 
 
