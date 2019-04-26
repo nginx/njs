@@ -6039,6 +6039,24 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("function f (x){ return x**2}; f(2\n)"),
       nxt_string("4") },
 
+    { nxt_string("var fn = Function.prototype.call; fn.call(() => 1)"),
+      nxt_string("1") },
+
+    { nxt_string("var fn = Function.prototype.call; fn.call(fn, () => 1)"),
+      nxt_string("1") },
+
+    { nxt_string("var fn = Function.prototype.call; fn.call(fn, fn, () => 1)"),
+      nxt_string("1") },
+
+    { nxt_string("eval.call.call(Number)"),
+      nxt_string("0") },
+
+    { nxt_string("URIError.apply.apply(RegExp)"),
+      nxt_string("/(?:)/") },
+
+    { nxt_string("[0].some(function(){return Array.call.bind(isNaN)}())"),
+      nxt_string("false") },
+
     /* Recursive factorial. */
 
     { nxt_string("function f(a) {"
