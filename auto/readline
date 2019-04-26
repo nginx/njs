@@ -2,24 +2,39 @@
 # Copyright (C) NGINX, Inc.
 
 
-NXT_EDITLINE_CFLAGS=
-NXT_EDITLINE_LIB=
+NXT_READLINE_CFLAGS=
+NXT_READLINE_LIB=
 
 nxt_found=no
 
-nxt_feature="editline library in editline/readline.h"
-nxt_feature_name=NXT_HAVE_EDITLINE
+nxt_feature="GNU readline library"
+nxt_feature_name=NXT_HAVE_GNU_READLINE
 nxt_feature_run=no
 nxt_feature_incs=
-nxt_feature_libs="-ledit"
+nxt_feature_libs="-lreadline"
 nxt_feature_test="#include <stdio.h>
-                  #include <editline/readline.h>
+                  #include <readline/readline.h>
+                  #include <readline/history.h>
 
                   int main(void) {
                       add_history(NULL);
                       return 0;
                   }"
 . auto/feature
+
+if [ $nxt_found = no ]; then
+    nxt_feature="editline library in editline/readline.h"
+    nxt_feature_name=NXT_HAVE_EDITLINE
+    nxt_feature_libs="-ledit"
+    nxt_feature_test="#include <stdio.h>
+                      #include <editline/readline.h>
+
+                      int main(void) {
+                          add_history(NULL);
+                          return 0;
+                      }"
+    . auto/feature
+fi
 
 if [ $nxt_found = no ]; then
 
@@ -42,7 +57,7 @@ if [ $nxt_found = no ]; then
 
     # NetBSD
 
-    nxt_feature_name=NXT_HAVE_READLINE
+    nxt_feature_name=NXT_HAVE_NETBSD_READLINE
     nxt_feature="editline in readline/readline.h"
     nxt_feature_test="#include <stdio.h>
                       #include <readline/readline.h>
@@ -54,15 +69,17 @@ if [ $nxt_found = no ]; then
     . auto/feature
 fi
 
+
+
 NXT_DEFAULT_TARGET=libnjs
 
 if [ $nxt_found = yes ]; then
-    NXT_HAVE_LIBEDIT=YES
-    NXT_EDITLINE_CFLAGS=$nxt_feature_incs
-    NXT_EDITLINE_LIB=$nxt_feature_libs
+    NXT_HAVE_READLINE=YES
+    NXT_READLINE_CFLAGS=$nxt_feature_incs
+    NXT_READLINE_LIB=$nxt_feature_libs
     NXT_DEFAULT_TARGET="$NXT_DEFAULT_TARGET njs"
 
 else
-    NXT_HAVE_LIBEDIT=NO
+    NXT_HAVE_READLINE=NO
     $echo " - building interactive shell is not possible"
 fi

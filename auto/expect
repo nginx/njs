@@ -17,7 +17,7 @@ else
     $echo " not found"
 fi
 
-if [ $nxt_found = yes -a $NXT_HAVE_LIBEDIT = YES ]; then
+if [ $nxt_found = yes -a $NXT_HAVE_READLINE = YES ]; then
     cat << END >> $NXT_MAKEFILE
 
 njs_expect_test:	njs njs/test/njs_expect_test.exp

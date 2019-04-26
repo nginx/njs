@@ -52,7 +52,7 @@ NXT_LIBRT=
 . auto/getrandom
 . auto/explicit_bzero
 . auto/pcre
-. auto/editline
+. auto/readline
 . auto/sources
 
 NXT_LIB_AUX_CFLAGS="$NXT_PCRE_CFLAGS"

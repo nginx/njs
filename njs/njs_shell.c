@@ -23,6 +23,9 @@
 #include <edit/readline/readline.h>
 #else
 #include <readline/readline.h>
+#if (NXT_HAVE_GNU_READLINE)
+#include <readline/history.h>
+#endif
 #endif
 
 
