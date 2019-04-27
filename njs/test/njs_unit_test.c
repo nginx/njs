@@ -2157,6 +2157,12 @@ static njs_unit_test_t  njs_test[] =
 
     /* automatic semicolon insertion. */
 
+    { nxt_string("(a\n--"),
+      nxt_string("SyntaxError: Unexpected token \"--\" in 2") },
+
+    { nxt_string("(a\n++"),
+      nxt_string("SyntaxError: Unexpected token \"++\" in 2") },
+
     { nxt_string("var x = 0, y = 2; x\n--\ny; [x,y]"),
       nxt_string("0,1") },
 

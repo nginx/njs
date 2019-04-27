@@ -307,11 +307,6 @@ njs_lexer_token(njs_vm_t *vm, njs_lexer_t *lexer)
 
     lexer->prev_start = lexer->start;
 
-    if (lexer->lexer_token != NULL) {
-        lexer->prev_token = lexer->lexer_token->token;
-        nxt_mp_free(vm->mem_pool, lexer->lexer_token);
-    }
-
     if (nxt_queue_is_empty(&lexer->preread)) {
         lt = njs_lexer_token_push(vm, lexer);
         if (nxt_slow_path(lt == NULL)) {
@@ -319,7 +314,14 @@ njs_lexer_token(njs_vm_t *vm, njs_lexer_t *lexer)
         }
     }
 
-    lexer->lexer_token = njs_lexer_token_pop(lexer);
+    lt = njs_lexer_token_pop(lexer);
+
+    if (lexer->lexer_token != NULL && lexer->lexer_token != lt) {
+        lexer->prev_token = lexer->lexer_token->token;
+        nxt_mp_free(vm->mem_pool, lexer->lexer_token);
+    }
+
+    lexer->lexer_token = lt;
 
     return njs_lexer_token_name_resolve(lexer, lexer->lexer_token);
 }

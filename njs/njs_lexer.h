@@ -264,7 +264,6 @@ void njs_lexer_keyword(njs_lexer_t *lexer, njs_lexer_token_t *lt);
 #define njs_lexer_rollback(lexer)                                              \
     do {                                                                       \
         nxt_queue_insert_head(&(lexer)->preread, &(lexer)->lexer_token->link); \
-        (lexer)->lexer_token = NULL;                                           \
     } while (0)
 
 
