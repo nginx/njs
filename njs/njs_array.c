@@ -432,6 +432,11 @@ njs_array_length(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
         proto = proto->__proto__;
     } while (proto != NULL);
 
+    if (nxt_slow_path(proto == NULL)) {
+        njs_internal_error(vm, "no array in proto chain");
+        return NJS_ERROR;
+    }
+
     array = (njs_array_t *) proto;
 
     if (setval != NULL) {
