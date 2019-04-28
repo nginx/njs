@@ -4975,6 +4975,14 @@ static njs_unit_test_t  njs_test[] =
                  "          valueOf: function() { return 1 } };  a"),
       nxt_string("1") },
 
+    { nxt_string("var a = { toString: function() { return [] },"
+                 "          valueOf: function() { return 1 } };"
+                 "var o = {}; o[a] = 'test'"),
+      nxt_string("test") },
+
+    { nxt_string("({})[{}] = 'test'"),
+      nxt_string("test") },
+
     { nxt_string("var o = {b:$r.props.b}; o.b"),
       nxt_string("42") },
 
