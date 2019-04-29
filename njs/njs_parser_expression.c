@@ -682,6 +682,7 @@ static njs_token_t
 njs_parser_post_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token)
 {
+    nxt_int_t               ret;
     njs_parser_node_t       *node;
     njs_vmcode_operation_t  operation;
 
@@ -709,7 +710,11 @@ njs_parser_post_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
     /* Automatic semicolon insertion. */
 
     if (parser->lexer->prev_token == NJS_TOKEN_LINE_END) {
-        njs_lexer_rollback(parser->lexer);
+        ret = njs_lexer_rollback(vm, parser->lexer);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return NJS_TOKEN_ERROR;
+        }
+
         return NJS_TOKEN_SEMICOLON;
     }
 

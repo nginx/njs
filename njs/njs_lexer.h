@@ -258,13 +258,9 @@ nxt_int_t njs_lexer_init(njs_vm_t *vm, njs_lexer_t *lexer, nxt_str_t *file,
 njs_token_t njs_lexer_token(njs_vm_t *vm, njs_lexer_t *lexer);
 njs_token_t njs_lexer_peek_token(njs_vm_t *vm, njs_lexer_t *lexer,
     size_t offset);
+nxt_int_t njs_lexer_rollback(njs_vm_t *vm, njs_lexer_t *lexer);
 nxt_int_t njs_lexer_keywords_init(nxt_mp_t *mp, nxt_lvlhsh_t *hash);
 void njs_lexer_keyword(njs_lexer_t *lexer, njs_lexer_token_t *lt);
-
-#define njs_lexer_rollback(lexer)                                              \
-    do {                                                                       \
-        nxt_queue_insert_head(&(lexer)->preread, &(lexer)->lexer_token->link); \
-    } while (0)
 
 
 #endif /* _NJS_LEXER_H_INCLUDED_ */

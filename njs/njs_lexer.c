@@ -307,6 +307,11 @@ njs_lexer_token(njs_vm_t *vm, njs_lexer_t *lexer)
 
     lexer->prev_start = lexer->start;
 
+    if (lexer->lexer_token != NULL) {
+        lexer->prev_token = lexer->lexer_token->token;
+        nxt_mp_free(vm->mem_pool, lexer->lexer_token);
+    }
+
     if (nxt_queue_is_empty(&lexer->preread)) {
         lt = njs_lexer_token_push(vm, lexer);
         if (nxt_slow_path(lt == NULL)) {
@@ -314,14 +319,7 @@ njs_lexer_token(njs_vm_t *vm, njs_lexer_t *lexer)
         }
     }
 
-    lt = njs_lexer_token_pop(lexer);
-
-    if (lexer->lexer_token != NULL && lexer->lexer_token != lt) {
-        lexer->prev_token = lexer->lexer_token->token;
-        nxt_mp_free(vm->mem_pool, lexer->lexer_token);
-    }
-
-    lexer->lexer_token = lt;
+    lexer->lexer_token = njs_lexer_token_pop(lexer);
 
     return njs_lexer_token_name_resolve(lexer, lexer->lexer_token);
 }
@@ -396,6 +394,24 @@ njs_lexer_token_pop(njs_lexer_t *lexer)
     nxt_queue_remove(lnk);
 
     return nxt_queue_link_data(lnk, njs_lexer_token_t, link);
+}
+
+
+nxt_int_t
+njs_lexer_rollback(njs_vm_t *vm, njs_lexer_t *lexer)
+{
+    njs_lexer_token_t  *lt;
+
+    lt = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_lexer_token_t));
+    if (nxt_slow_path(lt == NULL)) {
+        return NXT_ERROR;
+    }
+
+    *lt = *lexer->lexer_token;
+
+    nxt_queue_insert_head(&lexer->preread, &lt->link);
+
+    return NXT_OK;
 }
 
 
