@@ -91,16 +91,23 @@ njs_variable_scope_add(njs_vm_t *vm, njs_parser_scope_t *scope,
     if (nxt_lvlhsh_find(&scope->variables, lhq) == NXT_OK) {
         var = lhq->value;
 
-        if (scope->module || scope->type == NJS_SCOPE_BLOCK
-            || (scope->type == NJS_SCOPE_GLOBAL && vm->options.module))
-        {
+        if (scope->module || scope->type == NJS_SCOPE_BLOCK) {
+
             if (type == NJS_VARIABLE_FUNCTION
                 || var->type == NJS_VARIABLE_FUNCTION)
             {
-                njs_parser_syntax_error(vm, vm->parser,
-                                        "\"%V\" has already been declared",
-                                        &lhq->key);
-                return NULL;
+                goto fail;
+            }
+        }
+
+        if (scope->type == NJS_SCOPE_GLOBAL) {
+
+            if (vm->options.module) {
+                if (type == NJS_VARIABLE_FUNCTION
+                    || var->type == NJS_VARIABLE_FUNCTION)
+                {
+                    goto fail;
+                }
             }
         }
 
@@ -127,6 +134,13 @@ njs_variable_scope_add(njs_vm_t *vm, njs_parser_scope_t *scope,
 
     njs_type_error(vm, "lvlhsh insert failed");
 
+    return NULL;
+
+fail:
+
+    njs_parser_syntax_error(vm, vm->parser,
+                            "\"%V\" has already been declared",
+                            &lhq->key);
     return NULL;
 }
 
