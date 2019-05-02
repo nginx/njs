@@ -1057,9 +1057,8 @@ njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser, njs_token_t parent,
         if (token != NJS_TOKEN_NAME) {
             if (token == NJS_TOKEN_ARGUMENTS || token == NJS_TOKEN_EVAL) {
                 njs_parser_syntax_error(vm, parser, "Identifier \"%V\" "
-                                        "is forbidden in %s declaration",
-                                        njs_parser_text(parser),
-                                        var_in ? "for-in var" : "var");
+                                        "is forbidden in var declaration",
+                                        njs_parser_text(parser));
             }
 
             return NJS_TOKEN_ILLEGAL;

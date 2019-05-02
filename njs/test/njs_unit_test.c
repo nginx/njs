@@ -6737,7 +6737,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("SyntaxError: Identifier \"arguments\" is forbidden in var declaration in 1") },
 
     { nxt_string("for (var arguments in []) {}"),
-      nxt_string("SyntaxError: Identifier \"arguments\" is forbidden in for-in var declaration in 1") },
+      nxt_string("SyntaxError: Identifier \"arguments\" is forbidden in var declaration in 1") },
 
     { nxt_string("function arguments(){}"),
       nxt_string("SyntaxError: Identifier \"arguments\" is forbidden in function declaration in 1") },
