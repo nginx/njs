@@ -1078,8 +1078,12 @@ njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser, njs_token_t parent,
             return token;
         }
 
-        if (var_in && token == NJS_TOKEN_IN) {
-            return njs_parser_var_in_statement(vm, parser, name);
+        if (var_in) {
+            if (token == NJS_TOKEN_IN) {
+                return njs_parser_var_in_statement(vm, parser, name);
+            }
+
+            var_in = 0;
         }
 
         expr = NULL;
