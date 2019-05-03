@@ -856,6 +856,8 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
         goto done;
     }
 
+    njs_internal_error(vm, "lvlhsh insert failed");
+
 fail:
 
     ret = NXT_ERROR;
