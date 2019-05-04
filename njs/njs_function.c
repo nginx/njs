@@ -42,11 +42,11 @@ njs_function_alloc(njs_vm_t *vm, njs_function_lambda_t *lambda,
     function->args_offset = 1;
     function->u.lambda = lambda;
 
-    if (lambda->arrow || !function->ctor) {
-        function->object.shared_hash = vm->shared->arrow_instance_hash;
+    if (function->ctor) {
+        function->object.shared_hash = vm->shared->function_instance_hash;
 
     } else {
-        function->object.shared_hash = vm->shared->function_instance_hash;
+        function->object.shared_hash = vm->shared->arrow_instance_hash;
     }
 
     function->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION].object;
