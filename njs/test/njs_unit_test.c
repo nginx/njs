@@ -13104,11 +13104,11 @@ done:
 static nxt_int_t
 njs_timezone_optional_test(nxt_bool_t disassemble, nxt_bool_t verbose)
 {
-    size_t      size;
-    u_char      buf[16];
-    time_t      clock;
-    struct tm   tm;
-    nxt_int_t   ret;
+    size_t     size;
+    u_char     buf[16];
+    time_t     clock;
+    struct tm  tm;
+    nxt_int_t  ret;
 
     /*
      * Chatham Islands NZ-CHAT time zone.

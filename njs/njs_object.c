@@ -2619,11 +2619,11 @@ njs_value_t *
 njs_property_prototype_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
     njs_object_t *prototype)
 {
-    nxt_int_t                  ret;
-    njs_object_prop_t          *prop;
-    nxt_lvlhsh_query_t         lhq;
+    nxt_int_t                 ret;
+    njs_object_prop_t         *prop;
+    nxt_lvlhsh_query_t        lhq;
 
-    static const njs_value_t   proto_string = njs_string("prototype");
+    static const njs_value_t  proto_string = njs_string("prototype");
 
     prop = njs_object_prop_alloc(vm, &proto_string, &njs_value_undefined, 0);
     if (nxt_slow_path(prop == NULL)) {

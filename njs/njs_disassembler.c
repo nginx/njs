@@ -295,7 +295,6 @@ njs_disassemble(u_char *start, u_char *end)
                        (size_t) method->method, method->nargs,
                        method->code.ctor ? " CTOR" : "");
 
-
             p += sizeof(njs_vmcode_method_frame_t);
             continue;
         }
@@ -307,7 +306,6 @@ njs_disassemble(u_char *start, u_char *end)
                        p - start, (size_t) prop_foreach->next,
                        (size_t) prop_foreach->object,
                        (size_t) prop_foreach->offset);
-
 
             p += sizeof(njs_vmcode_prop_foreach_t);
             continue;

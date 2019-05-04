@@ -598,7 +598,6 @@ static const njs_object_prop_t  njs_string_constructor_properties[] =
                                      NJS_SKIP_ARG, NJS_STRING_ARG),
     },
 
-
     /* String.fromCharCode(). */
     {
         .type = NJS_METHOD,

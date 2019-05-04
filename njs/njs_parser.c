@@ -1064,7 +1064,6 @@ njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser, njs_token_t parent,
             return NJS_TOKEN_ILLEGAL;
         }
 
-
         name = njs_parser_variable_node(vm, parser,
                                         njs_parser_text(parser),
                                         njs_parser_key_hash(parser),
@@ -2179,9 +2178,9 @@ njs_token_t
 njs_parser_arrow_expression(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token)
 {
-    njs_ret_t               ret;
-    njs_index_t             index;
-    njs_parser_node_t       *node, *body, *parent;
+    njs_ret_t              ret;
+    njs_index_t            index;
+    njs_parser_node_t      *node, *body, *parent;
     njs_function_lambda_t  *lambda;
 
     node = njs_parser_node_new(vm, parser, NJS_TOKEN_FUNCTION_EXPRESSION);

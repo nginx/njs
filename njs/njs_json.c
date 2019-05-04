@@ -1916,10 +1916,10 @@ njs_json_append_number(njs_json_stringify_t *stringify,
 static njs_value_t *
 njs_json_wrap_value(njs_vm_t *vm, const njs_value_t *value)
 {
-    nxt_int_t             ret;
-    njs_value_t           *wrapper;
-    njs_object_prop_t     *prop;
-    nxt_lvlhsh_query_t    lhq;
+    nxt_int_t           ret;
+    njs_value_t         *wrapper;
+    njs_object_prop_t   *prop;
+    nxt_lvlhsh_query_t  lhq;
 
     wrapper = nxt_mp_alloc(vm->mem_pool, sizeof(njs_value_t));
     if (nxt_slow_path(wrapper == NULL)) {

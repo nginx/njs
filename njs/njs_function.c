@@ -31,7 +31,6 @@ njs_function_alloc(njs_vm_t *vm, njs_function_lambda_t *lambda,
         goto fail;
     }
 
-
     /*
      * nxt_mp_zalloc() does also:
      *   nxt_lvlhsh_init(&function->object.hash);
