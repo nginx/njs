@@ -1175,6 +1175,12 @@ static const njs_object_prop_t  njs_function_prototype_properties[] =
 {
     {
         .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string(""),
+    },
+
+    {
+        .type = NJS_PROPERTY,
         .name = njs_string("length"),
         .value = njs_value(NJS_NUMBER, 0, 0.0),
     },
