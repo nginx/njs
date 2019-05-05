@@ -442,8 +442,6 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     do {
         pq->prototype = proto;
 
-        /* TODO: length should be Own property */
-
         if (nxt_fast_path(!pq->own || proto == object)) {
             ret = nxt_lvlhsh_find(&proto->hash, &pq->lhq);
 

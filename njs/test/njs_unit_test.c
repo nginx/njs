@@ -9310,10 +9310,8 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.getOwnPropertyNames(Array)"),
       nxt_string("name,length,prototype,isArray,of") },
 
-#if 0
     { nxt_string("Object.getOwnPropertyNames(Array.isArray)"),
       nxt_string("length") },
-#endif
 
     { nxt_string("Object.defineProperty(Object.freeze({}), 'b', {})"),
       nxt_string("TypeError: object is not extensible") },
