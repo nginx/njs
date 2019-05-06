@@ -773,7 +773,8 @@ njs_method_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
     njs_function_t     *function;
     njs_object_prop_t  *prop, *shared;
 
-    prop = nxt_mp_alloc(vm->mem_pool, sizeof(njs_object_prop_t));
+    prop = nxt_mp_align(vm->mem_pool, sizeof(njs_value_t),
+                        sizeof(njs_object_prop_t));
     if (nxt_slow_path(prop == NULL)) {
         njs_memory_error(vm);
         return NXT_ERROR;
