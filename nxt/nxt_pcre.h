@@ -18,6 +18,9 @@ struct nxt_regex_s {
     pcre        *code;
     pcre_extra  *extra;
     int         ncaptures;
+    int         nentries;
+    int         entry_size;
+    char        *entries;
 };
 
 

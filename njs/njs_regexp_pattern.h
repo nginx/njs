@@ -17,6 +17,9 @@ typedef enum {
 } njs_regexp_utf8_t;
 
 
+typedef struct njs_regexp_group_s  njs_regexp_group_t;
+
+
 struct njs_regexp_pattern_s {
     nxt_regex_t           regex[2];
 
@@ -30,20 +33,15 @@ struct njs_regexp_pattern_s {
      */
     u_char                *source;
 
-#if (NXT_64BIT)
-    uint32_t              ncaptures;
-    uint8_t               flags;        /* 2 bits */
+    uint16_t              ncaptures;
+    uint16_t              ngroups;
 
+    uint8_t               flags;        /* 2 bits */
     uint8_t               global;       /* 1 bit */
     uint8_t               ignore_case;  /* 1 bit */
     uint8_t               multiline;    /* 1 bit */
-#else
-    uint16_t              ncaptures;
-    uint8_t               flags;        /* 2 bits */
-    uint8_t               global:1;
-    uint8_t               ignore_case:1;
-    uint8_t               multiline:1;
-#endif
+
+    njs_regexp_group_t    *groups;
 };
 
 

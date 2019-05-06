@@ -100,6 +100,16 @@
         'i'), 'n'), 'p'), 'u'), 't')
 
 
+#define NJS_GROUPS_HASH                                                       \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
+        'g'), 'r'), 'o'), 'u'), 'p'), 's')
+
+
 #define NJS_JOIN_HASH                                                         \
     nxt_djb_hash_add(                                                         \
     nxt_djb_hash_add(                                                         \

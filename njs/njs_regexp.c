@@ -11,6 +11,13 @@
 #include <string.h>
 
 
+struct njs_regexp_group_s {
+    nxt_str_t  name;
+    uint32_t   hash;
+    uint32_t   capture;
+};
+
+
 static void *njs_regexp_malloc(size_t size, void *memory_data);
 static void njs_regexp_free(void *p, void *memory_data);
 static njs_regexp_flags_t njs_regexp_flags(u_char **start, u_char *end,
@@ -327,6 +334,9 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
     int                   options, ret;
     u_char                *p, *end;
     size_t                size;
+    nxt_uint_t            n;
+    nxt_regex_t           *regex;
+    njs_regexp_group_t    *group;
     njs_regexp_pattern_t  *pattern;
 
     size = 1;  /* A trailing "/". */
@@ -405,13 +415,41 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
         goto fail;
     }
 
-    if (!nxt_regex_is_valid(&pattern->regex[0])
-        && !nxt_regex_is_valid(&pattern->regex[1]))
-    {
+    if (nxt_regex_is_valid(&pattern->regex[0])) {
+        regex = &pattern->regex[0];
+
+    } else if (nxt_regex_is_valid(&pattern->regex[1])) {
+        regex = &pattern->regex[1];
+
+    } else {
         goto fail;
     }
 
     *end = '/';
+
+    pattern->ngroups = nxt_regex_named_captures(regex, NULL, 0);
+
+    if (pattern->ngroups != 0) {
+        size = sizeof(njs_regexp_group_t) * pattern->ngroups;
+
+        pattern->groups = nxt_mp_alloc(vm->mem_pool, size);
+        if (nxt_slow_path(pattern->groups == NULL)) {
+            njs_memory_error(vm);
+            return NULL;
+        }
+
+        n = 0;
+
+        do {
+            group = &pattern->groups[n];
+
+            group->capture = nxt_regex_named_captures(regex, &group->name, n);
+            group->hash = nxt_djb_hash(group->name.start, group->name.length);
+
+            n++;
+
+        } while (n != pattern->ngroups);
+    }
 
     return pattern;
 
@@ -777,11 +815,15 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
     njs_ret_t           ret;
     nxt_uint_t          i, n;
     njs_array_t         *array;
+    njs_value_t         name;
+    njs_object_t        *groups;
     njs_object_prop_t   *prop;
+    njs_regexp_group_t  *group;
     nxt_lvlhsh_query_t  lhq;
 
     static const njs_value_t  string_index = njs_string("index");
     static const njs_value_t  string_input = njs_string("input");
+    static const njs_value_t  string_groups = njs_string("groups");
 
     array = njs_array_alloc(vm, regexp->pattern->ncaptures, 0);
     if (nxt_slow_path(array == NULL)) {
@@ -832,8 +874,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
 
     ret = nxt_lvlhsh_insert(&array->object.hash, &lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
-        njs_internal_error(vm, "lvlhsh insert failed");
-        goto fail;
+        goto insert_fail;
     }
 
     prop = njs_object_prop_alloc(vm, &string_input, &regexp->string, 1);
@@ -846,15 +887,73 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
     lhq.value = prop;
 
     ret = nxt_lvlhsh_insert(&array->object.hash, &lhq);
-
-    if (nxt_fast_path(ret == NXT_OK)) {
-        vm->retval.data.u.array = array;
-        vm->retval.type = NJS_ARRAY;
-        vm->retval.data.truth = 1;
-
-        ret = NXT_OK;
-        goto done;
+    if (nxt_slow_path(ret != NXT_OK)) {
+        goto insert_fail;
     }
+
+    prop = njs_object_prop_alloc(vm, &string_groups, &njs_value_undefined, 1);
+    if (nxt_slow_path(prop == NULL)) {
+        goto fail;
+    }
+
+    lhq.key_hash = NJS_GROUPS_HASH;
+    lhq.key = nxt_string_value("groups");
+    lhq.value = prop;
+
+    ret = nxt_lvlhsh_insert(&array->object.hash, &lhq);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        goto insert_fail;
+    }
+
+    if (regexp->pattern->ngroups != 0) {
+        groups = njs_object_alloc(vm);
+        if (nxt_slow_path(groups == NULL)) {
+            goto fail;
+        }
+
+        prop->value.data.u.object = groups;
+        prop->value.type = NJS_OBJECT;
+        prop->value.data.truth = 1;
+
+        i = 0;
+
+        do {
+            group = &regexp->pattern->groups[i];
+
+            ret = njs_string_set(vm, &name, group->name.start,
+                                 group->name.length);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                goto fail;
+            }
+
+            prop = njs_object_prop_alloc(vm, &name,
+                                         &array->start[group->capture], 1);
+            if (nxt_slow_path(prop == NULL)) {
+                goto fail;
+            }
+
+            lhq.key_hash = group->hash;
+            lhq.key = group->name;
+            lhq.value = prop;
+
+            ret = nxt_lvlhsh_insert(&groups->hash, &lhq);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                goto insert_fail;
+            }
+
+            i++;
+
+        } while (i < regexp->pattern->ngroups);
+    }
+
+    vm->retval.data.u.array = array;
+    vm->retval.type = NJS_ARRAY;
+    vm->retval.data.truth = 1;
+
+    ret = NXT_OK;
+    goto done;
+
+insert_fail:
 
     njs_internal_error(vm, "lvlhsh insert failed");
 

@@ -9,6 +9,7 @@
 #include <nxt_clang.h>
 #include <nxt_stub.h>
 #include <nxt_trace.h>
+#include <nxt_string.h>
 #include <nxt_regex.h>
 #include <nxt_pcre.h>
 #include <string.h>
@@ -120,6 +121,41 @@ nxt_regex_compile(nxt_regex_t *regex, u_char *source, size_t len,
     /* Reserve additional elements for the first "$0" capture. */
     regex->ncaptures++;
 
+    if (regex->ncaptures > 1) {
+        err = pcre_fullinfo(regex->code, NULL, PCRE_INFO_NAMECOUNT,
+                            &regex->nentries);
+
+        if (nxt_slow_path(err < 0)) {
+            nxt_alert(ctx->trace, NXT_LEVEL_ERROR,
+                      "pcre_fullinfo(\"%s\", PCRE_INFO_NAMECOUNT) failed: %d",
+                      pattern, err);
+
+            goto done;
+        }
+
+        if (regex->nentries != 0) {
+            err = pcre_fullinfo(regex->code, NULL, PCRE_INFO_NAMEENTRYSIZE,
+                                &regex->entry_size);
+
+            if (nxt_slow_path(err < 0)) {
+                nxt_alert(ctx->trace, NXT_LEVEL_ERROR, "pcre_fullinfo(\"%s\", "
+                          "PCRE_INFO_NAMEENTRYSIZE) failed: %d", pattern, err);
+
+                goto done;
+            }
+
+            err = pcre_fullinfo(regex->code, NULL, PCRE_INFO_NAMETABLE,
+                                &regex->entries);
+
+            if (nxt_slow_path(err < 0)) {
+                nxt_alert(ctx->trace, NXT_LEVEL_ERROR, "pcre_fullinfo(\"%s\", "
+                          "PCRE_INFO_NAMETABLE) failed: %d", pattern, err);
+
+                goto done;
+            }
+        }
+    }
+
     ret = NXT_OK;
 
 done:
@@ -143,6 +179,28 @@ nxt_uint_t
 nxt_regex_ncaptures(nxt_regex_t *regex)
 {
     return regex->ncaptures;
+}
+
+
+nxt_int_t
+nxt_regex_named_captures(nxt_regex_t *regex, nxt_str_t *name, int n)
+{
+    char  *entry;
+
+    if (name == NULL) {
+        return regex->nentries;
+    }
+
+    if (n >= regex->nentries) {
+        return NXT_ERROR;
+    }
+
+    entry = regex->entries + regex->entry_size * n;
+
+    name->start = (u_char *) entry + 2;
+    name->length = nxt_strlen(name->start);
+
+    return (entry[0] << 8) + entry[1];
 }
 
 

@@ -7118,6 +7118,18 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("Quick Brown Fox Jumps Brown Jumps undefined "
                  "4 25 The Quick Brown Fox Jumps Over The Lazy Dog") },
 
+    { nxt_string("var r = /a/.exec('a'); ['groups' in r, typeof r.groups]"),
+      nxt_string("true,undefined") },
+
+    { nxt_string("var r = /(?<m>[0-9]{2})\\/(?<d>[0-9]{2})\\/(?<y>[0-9]{4})/;"
+                 "var g = r.exec('12/31/1986').groups;"
+                 "g.d + '.' + g.m + '.' + g.y"),
+      nxt_string("31.12.1986") },
+
+    { nxt_string("var g = /(?<r>(?<no>no)?(?<yes>yes)?)/.exec('yes').groups;"
+                 "[Object.keys(g).length,'no' in g, typeof g.no, g.yes, g.r]"),
+      nxt_string("3,true,undefined,yes,yes") },
+
     { nxt_string("var s; var r = /./g; while (s = r.exec('abc')); s"),
       nxt_string("null") },
 

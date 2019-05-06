@@ -31,6 +31,8 @@ NXT_EXPORT nxt_int_t nxt_regex_compile(nxt_regex_t *regex, u_char *source,
     size_t len, nxt_uint_t options, nxt_regex_context_t *ctx);
 NXT_EXPORT nxt_bool_t nxt_regex_is_valid(nxt_regex_t *regex);
 NXT_EXPORT nxt_uint_t nxt_regex_ncaptures(nxt_regex_t *regex);
+NXT_EXPORT nxt_int_t nxt_regex_named_captures(nxt_regex_t *regex,
+    nxt_str_t *name, int n);
 NXT_EXPORT nxt_regex_match_data_t *nxt_regex_match_data(nxt_regex_t *regex,
     nxt_regex_context_t *ctx);
 NXT_EXPORT void nxt_regex_match_data_free(nxt_regex_match_data_t *match_data,
