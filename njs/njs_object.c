@@ -417,7 +417,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
 }
 
 
-njs_ret_t
+static njs_ret_t
 njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     njs_object_t *object, const njs_value_t *property)
 {
