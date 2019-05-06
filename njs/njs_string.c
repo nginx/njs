@@ -574,6 +574,7 @@ static const njs_object_prop_t  njs_string_constructor_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
         .value = njs_string("String"),
+        .configurable = 1,
     },
 
     /* String.length == 1. */
@@ -581,6 +582,7 @@ static const njs_object_prop_t  njs_string_constructor_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
         .value = njs_value(NJS_NUMBER, 1, 1.0),
+        .configurable = 1,
     },
 
     /* String.prototype. */
@@ -596,6 +598,7 @@ static const njs_object_prop_t  njs_string_constructor_properties[] =
         .name = njs_string("bytesFrom"),
         .value = njs_native_function(njs_string_bytes_from, 0, NJS_SKIP_ARG,
                                      NJS_SKIP_ARG, NJS_STRING_ARG),
+        .configurable = 1,
     },
 
     /* String.fromCharCode(). */
@@ -603,6 +606,7 @@ static const njs_object_prop_t  njs_string_constructor_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("fromCharCode"),
         .value = njs_native_function(njs_string_from_char_code, 0, 0),
+        .configurable = 1,
     },
 
     /* String.fromCodePoint(), ECMAScript 6. */
@@ -610,6 +614,7 @@ static const njs_object_prop_t  njs_string_constructor_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("fromCodePoint"),
         .value = njs_native_function(njs_string_from_char_code, 0, 0),
+        .configurable = 1,
     },
 };
 
@@ -3784,30 +3789,35 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("__proto__"),
         .value = njs_prop_handler(njs_primitive_prototype_get_proto),
+        .configurable = 1,
     },
 
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("constructor"),
         .value = njs_prop_handler(njs_object_prototype_create_constructor),
+        .configurable = 1,
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("valueOf"),
         .value = njs_native_function(njs_string_prototype_value_of, 0, 0),
+        .configurable = 1,
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("toString"),
         .value = njs_native_function(njs_string_prototype_to_string, 0, 0),
+        .configurable = 1,
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("concat"),
         .value = njs_native_function(njs_string_prototype_concat, 0, 0),
+        .configurable = 1,
     },
 
     {
@@ -3815,6 +3825,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("fromUTF8"),
         .value = njs_native_function(njs_string_prototype_from_utf8, 0,
                      NJS_STRING_OBJECT_ARG, NJS_INTEGER_ARG, NJS_INTEGER_ARG),
+        .configurable = 1,
     },
 
     {
@@ -3822,6 +3833,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("toUTF8"),
         .value = njs_native_function(njs_string_prototype_to_utf8, 0,
                      NJS_STRING_OBJECT_ARG, NJS_INTEGER_ARG, NJS_INTEGER_ARG),
+        .configurable = 1,
     },
 
     {
@@ -3829,6 +3841,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("fromBytes"),
         .value = njs_native_function(njs_string_prototype_from_bytes, 0,
                      NJS_STRING_OBJECT_ARG, NJS_INTEGER_ARG, NJS_INTEGER_ARG),
+        .configurable = 1,
     },
 
     {
@@ -3836,6 +3849,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("toBytes"),
         .value = njs_native_function(njs_string_prototype_to_bytes, 0,
                      NJS_STRING_OBJECT_ARG, NJS_INTEGER_ARG, NJS_INTEGER_ARG),
+        .configurable = 1,
     },
 
     {
@@ -3843,6 +3857,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("slice"),
         .value = njs_native_function(njs_string_prototype_slice, 0,
                      NJS_STRING_OBJECT_ARG, NJS_INTEGER_ARG, NJS_INTEGER_ARG),
+        .configurable = 1,
     },
 
     {
@@ -3850,6 +3865,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("substring"),
         .value = njs_native_function(njs_string_prototype_substring, 0,
                      NJS_STRING_OBJECT_ARG, NJS_INTEGER_ARG, NJS_INTEGER_ARG),
+        .configurable = 1,
     },
 
     {
@@ -3857,6 +3873,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("substr"),
         .value = njs_native_function(njs_string_prototype_substr, 0,
                      NJS_STRING_OBJECT_ARG, NJS_INTEGER_ARG, NJS_INTEGER_ARG),
+        .configurable = 1,
     },
 
     {
@@ -3864,6 +3881,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("charAt"),
         .value = njs_native_function(njs_string_prototype_char_at, 0,
                      NJS_STRING_OBJECT_ARG, NJS_INTEGER_ARG),
+        .configurable = 1,
     },
 
     {
@@ -3871,6 +3889,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("charCodeAt"),
         .value = njs_native_function(njs_string_prototype_char_code_at, 0,
                      NJS_STRING_OBJECT_ARG, NJS_INTEGER_ARG),
+        .configurable = 1,
     },
 
     /* String.codePointAt(), ECMAScript 6. */
@@ -3879,6 +3898,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("codePointAt"),
         .value = njs_native_function(njs_string_prototype_char_code_at, 0,
                      NJS_STRING_OBJECT_ARG, NJS_INTEGER_ARG),
+        .configurable = 1,
     },
 
     {
@@ -3886,6 +3906,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("indexOf"),
         .value = njs_native_function(njs_string_prototype_index_of, 0,
                      NJS_STRING_OBJECT_ARG, NJS_STRING_ARG, NJS_INTEGER_ARG),
+        .configurable = 1,
     },
 
     {
@@ -3893,6 +3914,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("lastIndexOf"),
         .value = njs_native_function(njs_string_prototype_last_index_of, 0,
                      NJS_STRING_OBJECT_ARG, NJS_STRING_ARG, NJS_INTEGER_ARG),
+        .configurable = 1,
     },
 
     /* ES6. */
@@ -3901,6 +3923,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("includes"),
         .value = njs_native_function(njs_string_prototype_includes, 0,
                      NJS_STRING_OBJECT_ARG, NJS_STRING_ARG, NJS_INTEGER_ARG),
+        .configurable = 1,
     },
 
     /* ES6. */
@@ -3909,6 +3932,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("startsWith"),
         .value = njs_native_function(njs_string_prototype_starts_with, 0,
                      NJS_STRING_OBJECT_ARG, NJS_STRING_ARG, NJS_INTEGER_ARG),
+        .configurable = 1,
     },
 
     /* ES6. */
@@ -3917,6 +3941,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("endsWith"),
         .value = njs_native_function(njs_string_prototype_ends_with, 0,
                      NJS_STRING_OBJECT_ARG, NJS_STRING_ARG, NJS_INTEGER_ARG),
+        .configurable = 1,
     },
 
     {
@@ -3924,6 +3949,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("toLowerCase"),
         .value = njs_native_function(njs_string_prototype_to_lower_case, 0,
                      NJS_STRING_OBJECT_ARG),
+        .configurable = 1,
     },
 
     {
@@ -3931,6 +3957,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("toUpperCase"),
         .value = njs_native_function(njs_string_prototype_to_upper_case, 0,
                      NJS_STRING_OBJECT_ARG),
+        .configurable = 1,
     },
 
     {
@@ -3938,6 +3965,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("trim"),
         .value = njs_native_function(njs_string_prototype_trim, 0,
                      NJS_STRING_OBJECT_ARG),
+        .configurable = 1,
     },
 
     /* ES6. */
@@ -3946,6 +3974,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("repeat"),
         .value = njs_native_function(njs_string_prototype_repeat, 0,
                      NJS_STRING_OBJECT_ARG, NJS_INTEGER_ARG),
+        .configurable = 1,
     },
 
     /* ES8. */
@@ -3954,6 +3983,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("padStart"),
         .value = njs_native_function(njs_string_prototype_pad_start, 0,
                      NJS_STRING_OBJECT_ARG, NJS_INTEGER_ARG, NJS_STRING_ARG),
+        .configurable = 1,
     },
 
     /* ES8. */
@@ -3962,6 +3992,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("padEnd"),
         .value = njs_native_function(njs_string_prototype_pad_end, 0,
                      NJS_STRING_OBJECT_ARG, NJS_INTEGER_ARG, NJS_STRING_ARG),
+        .configurable = 1,
     },
 
     {
@@ -3969,6 +4000,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("search"),
         .value = njs_native_function(njs_string_prototype_search, 0,
                      NJS_STRING_OBJECT_ARG, NJS_REGEXP_ARG),
+        .configurable = 1,
     },
 
     {
@@ -3976,6 +4008,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("match"),
         .value = njs_native_function(njs_string_prototype_match, 0,
                      NJS_STRING_OBJECT_ARG, NJS_REGEXP_ARG),
+        .configurable = 1,
     },
 
     {
@@ -3983,6 +4016,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .name = njs_string("split"),
         .value = njs_native_function(njs_string_prototype_split, 0,
                      NJS_STRING_OBJECT_ARG, NJS_REGEXP_ARG, NJS_INTEGER_ARG),
+        .configurable = 1,
     },
 
     {
@@ -3991,6 +4025,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .value = njs_native_function(njs_string_prototype_replace,
                      njs_continuation_size(njs_string_replace_t),
                      NJS_STRING_OBJECT_ARG, NJS_REGEXP_ARG, NJS_FUNCTION_ARG),
+        .configurable = 1,
     },
 };
 
@@ -4501,6 +4536,7 @@ static const njs_object_prop_t  njs_to_string_function_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
         .value = njs_string("toString"),
+        .configurable = 1,
     },
 
     /* toString.length == 0. */
@@ -4508,6 +4544,7 @@ static const njs_object_prop_t  njs_to_string_function_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
         .value = njs_value(NJS_NUMBER, 0, 0.0),
+        .configurable = 1,
     },
 };
 
@@ -4526,6 +4563,7 @@ static const njs_object_prop_t  njs_encode_uri_function_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
         .value = njs_string("encodeURI"),
+        .configurable = 1,
     },
 
     /* encodeURI.length == 1. */
@@ -4533,6 +4571,7 @@ static const njs_object_prop_t  njs_encode_uri_function_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
         .value = njs_value(NJS_NUMBER, 1, 1.0),
+        .configurable = 1,
     },
 };
 
@@ -4551,6 +4590,7 @@ static const njs_object_prop_t  njs_encode_uri_component_function_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
         .value = njs_long_string("encodeURIComponent"),
+        .configurable = 1,
     },
 
     /* encodeURIComponent.length == 1. */
@@ -4558,6 +4598,7 @@ static const njs_object_prop_t  njs_encode_uri_component_function_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
         .value = njs_value(NJS_NUMBER, 1, 1.0),
+        .configurable = 1,
     },
 };
 
@@ -4576,6 +4617,7 @@ static const njs_object_prop_t  njs_decode_uri_function_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
         .value = njs_string("decodeURI"),
+        .configurable = 1,
     },
 
     /* decodeURI.length == 1. */
@@ -4583,6 +4625,7 @@ static const njs_object_prop_t  njs_decode_uri_function_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
         .value = njs_value(NJS_NUMBER, 1, 1.0),
+        .configurable = 1,
     },
 };
 
@@ -4601,6 +4644,7 @@ static const njs_object_prop_t  njs_decode_uri_component_function_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
         .value = njs_long_string("decodeURIComponent"),
+        .configurable = 1,
     },
 
     /* decodeURIComponent.length == 1. */
@@ -4608,6 +4652,7 @@ static const njs_object_prop_t  njs_decode_uri_component_function_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
         .value = njs_value(NJS_NUMBER, 1, 1.0),
+        .configurable = 1,
     },
 };
 

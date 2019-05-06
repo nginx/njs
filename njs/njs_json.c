@@ -2077,6 +2077,7 @@ static const njs_object_prop_t  njs_json_object_properties[] =
                                     njs_continuation_size(njs_json_parse_t),
                                     NJS_SKIP_ARG, NJS_STRING_ARG,
                                     NJS_OBJECT_ARG),
+        .configurable = 1,
     },
 
     /* JSON.stringify(). */
@@ -2087,6 +2088,7 @@ static const njs_object_prop_t  njs_json_object_properties[] =
                                     njs_continuation_size(njs_json_stringify_t),
                                     NJS_SKIP_ARG, NJS_SKIP_ARG, NJS_SKIP_ARG,
                                     NJS_SKIP_ARG),
+        .configurable = 1,
     },
 };
 

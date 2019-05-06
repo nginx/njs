@@ -64,6 +64,7 @@ typedef struct {
         (pq)->lhq.key.length = 0;                                             \
         (pq)->lhq.value = NULL;                                               \
         (pq)->query = _query;                                                 \
+        (pq)->shared = 0;                                                     \
         (pq)->own = _own;                                                     \
     } while (0)
 

@@ -3164,6 +3164,19 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = Object.create({a:1}); o.a = 2; delete o.a; o.a"),
       nxt_string("1") },
 
+    { nxt_string("delete Array.name"),
+      nxt_string("true") },
+
+    { nxt_string("delete Math.max"),
+      nxt_string("true") },
+
+    { nxt_string("delete Math.max.length"),
+      nxt_string("true") },
+
+    { nxt_string("function f(a,b) {} "
+                 "[f.length, delete f.length, f.length, delete f.length]"),
+      nxt_string("2,true,0,true") },
+
     { nxt_string("njs.dump({break:1,3:2,'a':4,\"b\":2,true:1,null:0})"),
       nxt_string("{break:1,3:2,a:4,b:2,true:1,null:0}") },
 
@@ -3186,10 +3199,10 @@ static njs_unit_test_t  njs_test[] =
                  "var c = new Cl('a', 'b'); Cl.prototype.z = 1; c.z"),
       nxt_string("1") },
 
-    /* Math object is immutable. */
+    /**/
 
-    { nxt_string("delete Math.max"),
-      nxt_string("TypeError: Cannot delete property \"max\" of object") },
+    { nxt_string("delete Math.E"),
+      nxt_string("TypeError: Cannot delete property \"E\" of object") },
 
     { nxt_string("Math.E = 1"),
       nxt_string("TypeError: Cannot assign to read-only property \"E\" of object") },
@@ -9675,6 +9688,35 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("Object.isExtensible(Object.freeze([]))"),
       nxt_string("false") },
+
+    { nxt_string(
+        "var fail;"
+        "function isConfigurableMethods(o) {"
+        "    var except = ["
+        "        'prototype',"
+        "    ];"
+        "    return Object.getOwnPropertyNames(o)"
+        "                 .filter(v => !except.includes(v)"
+        "                              && typeof o[v] == 'function')"
+        "                 .every(v => Object.getOwnPropertyDescriptor(o, v)"
+        "                                   .configurable"
+        "                             || !(fail = `${o.name}.${v}`));"
+        "}"
+        "["
+        "    Boolean, Boolean.prototype,"
+        "    Number, Number.prototype,"
+        "    String, String.prototype,"
+        "    Object, Object.prototype,"
+        "    Array, Array.prototype,"
+        "    Function, Function.prototype,"
+        "    RegExp, RegExp.prototype,"
+        "    Date, Date.prototype,"
+        "    Error, Error.prototype,"
+        "    Math,"
+        "    JSON,"
+        "].every(obj => isConfigurableMethods(obj)) || fail"),
+
+      nxt_string("true") },
 
     { nxt_string("new Date(undefined)"),
       nxt_string("Invalid Date") },

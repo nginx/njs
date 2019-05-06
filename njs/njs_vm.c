@@ -712,7 +712,7 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *property)
 {
     njs_ret_t             ret;
-    njs_object_prop_t     *prop;
+    njs_object_prop_t     *prop, *whipeout;
     njs_property_query_t  pq;
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_DELETE, 1);
@@ -724,6 +724,37 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
     case NXT_OK:
         prop = pq.lhq.value;
 
+        if (nxt_slow_path(!prop->configurable)) {
+            njs_type_error(vm, "Cannot delete property \"%V\" of %s",
+                           &pq.lhq.key, njs_type_string(object->type));
+            return NXT_ERROR;
+        }
+
+        if (nxt_slow_path(pq.shared)) {
+            whipeout = nxt_mp_align(vm->mem_pool, sizeof(njs_value_t),
+                                    sizeof(njs_object_prop_t));
+            if (nxt_slow_path(whipeout == NULL)) {
+                njs_memory_error(vm);
+                return NXT_ERROR;
+            }
+
+            njs_set_invalid(&whipeout->value);
+            whipeout->name = prop->name;
+            whipeout->type = NJS_WHITEOUT;
+
+            pq.lhq.replace = 0;
+            pq.lhq.value = whipeout;
+            pq.lhq.pool = vm->mem_pool;
+
+            ret = nxt_lvlhsh_insert(&pq.prototype->hash, &pq.lhq);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                njs_internal_error(vm, "lvlhsh insert failed");
+                return NXT_ERROR;
+            }
+
+            break;
+        }
+
         switch (prop->type) {
         case NJS_PROPERTY:
         case NJS_METHOD:
@@ -734,28 +765,18 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
             goto done;
 
         case NJS_PROPERTY_HANDLER:
-            if (prop->configurable) {
-                ret = prop->value.data.u.prop_handler(vm, object, NULL, NULL);
-                if (nxt_slow_path(ret != NXT_OK)) {
-                    return ret;
-                }
-
-                goto done;
+            ret = prop->value.data.u.prop_handler(vm, object, NULL, NULL);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return ret;
             }
 
-            break;
+            goto done;
 
         default:
             njs_internal_error(vm, "unexpected property type \"%s\" "
                                "while deleting",
                                njs_prop_type_string(prop->type));
 
-            return NXT_ERROR;
-        }
-
-        if (nxt_slow_path(!prop->configurable)) {
-            njs_type_error(vm, "Cannot delete property \"%V\" of %s",
-                           &pq.lhq.key, njs_type_string(object->type));
             return NXT_ERROR;
         }
 

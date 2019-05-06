@@ -986,6 +986,7 @@ static const njs_object_prop_t  njs_regexp_constructor_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
         .value = njs_string("RegExp"),
+        .configurable = 1,
     },
 
     /* RegExp.length == 2. */
@@ -993,6 +994,7 @@ static const njs_object_prop_t  njs_regexp_constructor_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
         .value = njs_value(NJS_NUMBER, 1, 2.0),
+        .configurable = 1,
     },
 
     /* RegExp.prototype. */
@@ -1029,30 +1031,35 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("global"),
         .value = njs_prop_handler(njs_regexp_prototype_global),
+        .configurable = 1,
     },
 
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("ignoreCase"),
         .value = njs_prop_handler(njs_regexp_prototype_ignore_case),
+        .configurable = 1,
     },
 
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("multiline"),
         .value = njs_prop_handler(njs_regexp_prototype_multiline),
+        .configurable = 1,
     },
 
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("source"),
         .value = njs_prop_handler(njs_regexp_prototype_source),
+        .configurable = 1,
     },
 
     {
         .type = NJS_METHOD,
         .name = njs_string("toString"),
         .value = njs_native_function(njs_regexp_prototype_to_string, 0, 0),
+        .configurable = 1,
     },
 
     {
@@ -1060,6 +1067,7 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
         .name = njs_string("test"),
         .value = njs_native_function(njs_regexp_prototype_test, 0,
                      NJS_OBJECT_ARG, NJS_STRING_ARG),
+        .configurable = 1,
     },
 
     {
@@ -1067,6 +1075,7 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
         .name = njs_string("exec"),
         .value = njs_native_function(njs_regexp_prototype_exec, 0,
                      NJS_OBJECT_ARG, NJS_STRING_ARG),
+        .configurable = 1,
     },
 };
 
