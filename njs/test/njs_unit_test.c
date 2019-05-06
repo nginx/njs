@@ -7258,6 +7258,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Error.prototype.constructor == Error"),
       nxt_string("true") },
 
+    { nxt_string("Error.prototype.hasOwnProperty('constructor')"),
+      nxt_string("true") },
+
     { nxt_string("Error().__proto__ == Error.prototype"),
       nxt_string("true") },
 
@@ -7399,6 +7402,24 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("URIError.prototype.constructor == URIError"),
+      nxt_string("true") },
+
+    { nxt_string("EvalError.prototype.hasOwnProperty('constructor')"),
+      nxt_string("true") },
+
+    { nxt_string("RangeError.prototype.hasOwnProperty('constructor')"),
+      nxt_string("true") },
+
+    { nxt_string("ReferenceError.prototype.hasOwnProperty('constructor')"),
+      nxt_string("true") },
+
+    { nxt_string("SyntaxError.prototype.hasOwnProperty('constructor')"),
+      nxt_string("true") },
+
+    { nxt_string("TypeError.prototype.hasOwnProperty('constructor')"),
+      nxt_string("true") },
+
+    { nxt_string("URIError.prototype.hasOwnProperty('constructor')"),
       nxt_string("true") },
 
     { nxt_string("EvalError().__proto__ == EvalError.prototype"),
@@ -8006,6 +8027,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.prototype.constructor === Object"),
       nxt_string("true") },
 
+    { nxt_string("Object.prototype.hasOwnProperty('constructor')"),
+      nxt_string("true") },
+
     { nxt_string("Object.prototype.__proto__ === null"),
       nxt_string("true") },
 
@@ -8174,6 +8198,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Array.prototype.constructor === Array"),
       nxt_string("true") },
 
+    { nxt_string("Array.prototype.hasOwnProperty('constructor')"),
+      nxt_string("true") },
+
     { nxt_string("Array.prototype.__proto__ === Object.prototype"),
       nxt_string("true") },
 
@@ -8250,6 +8277,9 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("Boolean.prototype.constructor === Boolean"),
+      nxt_string("true") },
+
+    { nxt_string("Boolean.prototype.hasOwnProperty('constructor')"),
       nxt_string("true") },
 
     { nxt_string("Boolean.prototype.__proto__ === Object.prototype"),
@@ -8360,6 +8390,9 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("Number.prototype.constructor === Number"),
+      nxt_string("true") },
+
+    { nxt_string("Number.prototype.hasOwnProperty('constructor')"),
       nxt_string("true") },
 
     { nxt_string("Number.prototype.__proto__ === Object.prototype"),
@@ -8576,6 +8609,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("String.prototype.constructor === String"),
       nxt_string("true") },
 
+    { nxt_string("String.prototype.hasOwnProperty('constructor')"),
+      nxt_string("true") },
+
     { nxt_string("String.prototype.__proto__ === Object.prototype"),
       nxt_string("true") },
 
@@ -8610,6 +8646,9 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("Function.prototype.constructor === Function"),
+      nxt_string("true") },
+
+    { nxt_string("Function.prototype.hasOwnProperty('constructor')"),
       nxt_string("true") },
 
     { nxt_string("Function.prototype.__proto__ === Object.prototype"),
@@ -8652,6 +8691,9 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("RegExp.prototype.constructor === RegExp"),
+      nxt_string("true") },
+
+    { nxt_string("RegExp.prototype.hasOwnProperty('constructor')"),
       nxt_string("true") },
 
     { nxt_string("RegExp.prototype.__proto__ === Object.prototype"),
@@ -10047,6 +10089,9 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("true") },
 
     { nxt_string("Date.prototype.constructor === Date"),
+      nxt_string("true") },
+
+    { nxt_string("Date.prototype.hasOwnProperty('constructor')"),
       nxt_string("true") },
 
     { nxt_string("Date.prototype.__proto__ === Object.prototype"),

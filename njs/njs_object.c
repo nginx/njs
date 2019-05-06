@@ -2869,7 +2869,7 @@ njs_object_prototype_proto(njs_vm_t *vm, njs_value_t *value,
  * "constructor" getter.  The properties are set to appropriate function.
  */
 
-static njs_ret_t
+njs_ret_t
 njs_object_prototype_create_constructor(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {

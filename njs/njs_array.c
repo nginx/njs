@@ -2245,6 +2245,12 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("constructor"),
+        .value = njs_prop_handler(njs_object_prototype_create_constructor),
+    },
+
+    {
         .type = NJS_METHOD,
         .name = njs_string("slice"),
         .value = njs_native_function(njs_array_prototype_slice,

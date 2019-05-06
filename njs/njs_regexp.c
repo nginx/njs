@@ -1015,6 +1015,12 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
 {
     {
         .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("constructor"),
+        .value = njs_prop_handler(njs_object_prototype_create_constructor),
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("lastIndex"),
         .value = njs_prop_handler(njs_regexp_prototype_last_index),
     },

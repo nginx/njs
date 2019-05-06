@@ -680,6 +680,12 @@ static const njs_object_prop_t  njs_error_prototype_properties[] =
     },
 
     {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("constructor"),
+        .value = njs_prop_handler(njs_object_prototype_create_constructor),
+    },
+
+    {
         .type = NJS_PROPERTY,
         .name = njs_string("message"),
         .value = njs_string(""),
@@ -712,6 +718,12 @@ static const njs_object_prop_t  njs_eval_error_prototype_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
         .value = njs_string("EvalError"),
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("constructor"),
+        .value = njs_prop_handler(njs_object_prototype_create_constructor),
     },
 };
 
@@ -774,6 +786,12 @@ static const njs_object_prop_t  njs_range_error_prototype_properties[] =
         .name = njs_string("name"),
         .value = njs_string("RangeError"),
     },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("constructor"),
+        .value = njs_prop_handler(njs_object_prototype_create_constructor),
+    },
 };
 
 
@@ -790,6 +808,12 @@ static const njs_object_prop_t  njs_reference_error_prototype_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
         .value = njs_string("ReferenceError"),
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("constructor"),
+        .value = njs_prop_handler(njs_object_prototype_create_constructor),
     },
 };
 
@@ -808,6 +832,12 @@ static const njs_object_prop_t  njs_syntax_error_prototype_properties[] =
         .name = njs_string("name"),
         .value = njs_string("SyntaxError"),
     },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("constructor"),
+        .value = njs_prop_handler(njs_object_prototype_create_constructor),
+    },
 };
 
 
@@ -825,6 +855,12 @@ static const njs_object_prop_t  njs_type_error_prototype_properties[] =
         .name = njs_string("name"),
         .value = njs_string("TypeError"),
     },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("constructor"),
+        .value = njs_prop_handler(njs_object_prototype_create_constructor),
+    },
 };
 
 
@@ -837,6 +873,12 @@ const njs_object_init_t  njs_type_error_prototype_init = {
 
 static const njs_object_prop_t  njs_uri_error_prototype_properties[] =
 {
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("constructor"),
+        .value = njs_prop_handler(njs_object_prototype_create_constructor),
+    },
+
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
