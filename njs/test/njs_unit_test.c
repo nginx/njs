@@ -3128,6 +3128,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("delete 1"),
       nxt_string("true") },
 
+    { nxt_string("var a = []; delete a[1]"),
+      nxt_string("true") },
+
+    { nxt_string("var o = {}; [delete o.m, delete o.m]"),
+      nxt_string("true,true") },
+
+    { nxt_string("[delete Array.nonexistent, delete Array.Array]"),
+      nxt_string("true,true") },
+
     { nxt_string("var a; delete (a = 1); a"),
       nxt_string("1") },
 
@@ -3261,7 +3270,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("1,2,34") },
 
     { nxt_string("delete[]['4e9']"),
-      nxt_string("false") },
+      nxt_string("true") },
 
     { nxt_string("var n = 1, a = [ n += 1 ]; a"),
       nxt_string("2") },

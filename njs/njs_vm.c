@@ -712,11 +712,8 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *property)
 {
     njs_ret_t             ret;
-    const njs_value_t     *retval;
     njs_object_prop_t     *prop;
     njs_property_query_t  pq;
-
-    retval = &njs_value_false;
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_DELETE, 1);
 
@@ -734,7 +731,6 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
 
         case NJS_PROPERTY_REF:
             njs_set_invalid(prop->value.data.u.value);
-            retval = &njs_value_true;
             goto done;
 
         case NJS_PROPERTY_HANDLER:
@@ -744,7 +740,6 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
                     return ret;
                 }
 
-                retval = &njs_value_true;
                 goto done;
             }
 
@@ -768,8 +763,6 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
         prop->type = NJS_WHITEOUT;
         njs_set_invalid(&prop->value);
 
-        retval = &njs_value_true;
-
         break;
 
     case NXT_DECLINED:
@@ -784,7 +777,7 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
 
 done:
 
-    vm->retval = *retval;
+    vm->retval = njs_value_true;
 
     return sizeof(njs_vmcode_3addr_t);
 }
