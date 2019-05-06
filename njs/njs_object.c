@@ -322,39 +322,11 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
         obj = &vm->string_object;
         break;
 
-    case NJS_OBJECT_STRING:
-        if (nxt_fast_path(!njs_is_null_or_undefined_or_boolean(property))) {
-            index = njs_value_to_index(property);
-
-            if (nxt_fast_path(index < NJS_STRING_MAX_LENGTH)) {
-                ret = njs_string_property_query(vm, pq,
-                                            &object->data.u.object_value->value,
-                                            index);
-
-                if (nxt_fast_path(ret != NXT_DECLINED)) {
-                    return ret;
-                }
-            }
-        }
-
-        obj = object->data.u.object;
-        break;
-
-    case NJS_ARRAY:
-        if (nxt_fast_path(!njs_is_null_or_undefined_or_boolean(property))) {
-            index = njs_value_to_index(property);
-
-            if (nxt_fast_path(index < NJS_ARRAY_MAX_INDEX)) {
-                return njs_array_property_query(vm, pq, object->data.u.array,
-                                                index);
-            }
-        }
-
-        /* Fall through. */
-
     case NJS_OBJECT:
+    case NJS_ARRAY:
     case NJS_OBJECT_BOOLEAN:
     case NJS_OBJECT_NUMBER:
+    case NJS_OBJECT_STRING:
     case NJS_REGEXP:
     case NJS_DATE:
     case NJS_OBJECT_ERROR:
@@ -442,61 +414,57 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     do {
         pq->prototype = proto;
 
-        if (nxt_fast_path(!pq->own || proto == object)) {
-            ret = nxt_lvlhsh_find(&proto->hash, &pq->lhq);
-
-            if (ret == NXT_OK) {
-                prop = pq->lhq.value;
-
-                if (prop->type != NJS_WHITEOUT) {
-                    pq->shared = 0;
-
-                    return ret;
+        if (!njs_is_null_or_undefined_or_boolean(property)) {
+            switch (proto->type) {
+            case NJS_ARRAY:
+                index = njs_value_to_index(property);
+                if (nxt_fast_path(index < NJS_ARRAY_MAX_INDEX)) {
+                    array = (njs_array_t *) proto;
+                    return njs_array_property_query(vm, pq, array, index);
                 }
 
-                goto next;
-            }
+                break;
 
-            if (proto != object
-                && !njs_is_null_or_undefined_or_boolean(property))
-            {
-                switch (proto->type) {
-                case NJS_ARRAY:
-                    index = njs_value_to_index(property);
-                    if (nxt_fast_path(index < NJS_ARRAY_MAX_INDEX)) {
-                        array = (njs_array_t *) proto;
-                        return njs_array_property_query(vm, pq, array, index);
+            case NJS_OBJECT_STRING:
+                index = njs_value_to_index(property);
+                if (nxt_fast_path(index < NJS_STRING_MAX_LENGTH)) {
+                    ov = (njs_object_value_t *) proto;
+                    ret = njs_string_property_query(vm, pq, &ov->value, index);
+
+                    if (nxt_fast_path(ret != NXT_DECLINED)) {
+                        return ret;
                     }
-
-                    break;
-
-                case NJS_OBJECT_STRING:
-                    index = njs_value_to_index(property);
-                    if (nxt_fast_path(index < NJS_STRING_MAX_LENGTH)) {
-                        ov = (njs_object_value_t *) proto;
-                        return njs_string_property_query(vm, pq, &ov->value,
-                                                         index);
-                    }
-
-                default:
-                    break;
                 }
+
+            default:
+                break;
             }
         }
 
-        ret = nxt_lvlhsh_find(&proto->shared_hash, &pq->lhq);
+        ret = nxt_lvlhsh_find(&proto->hash, &pq->lhq);
 
         if (ret == NXT_OK) {
-            pq->shared = 1;
+            prop = pq->lhq.value;
 
-            return ret;
+            if (prop->type != NJS_WHITEOUT) {
+                pq->shared = 0;
+
+                return ret;
+            }
+
+        } else {
+            ret = nxt_lvlhsh_find(&proto->shared_hash, &pq->lhq);
+
+            if (ret == NXT_OK) {
+                pq->shared = 1;
+
+                return ret;
+            }
         }
 
-        if (pq->query > NJS_PROPERTY_QUERY_GET) {
+        if (pq->own || pq->query > NJS_PROPERTY_QUERY_GET) {
             return NXT_DECLINED;
         }
-
-next:
 
         proto = proto->__proto__;
 

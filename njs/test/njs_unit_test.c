@@ -9102,6 +9102,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'s'.hasOwnProperty('1')"),
       nxt_string("false") },
 
+    { nxt_string("Object.hasOwnProperty('hasOwnProperty')"),
+      nxt_string("false") },
+
+    { nxt_string("Object.prototype.hasOwnProperty('hasOwnProperty')"),
+      nxt_string("true") },
+
     { nxt_string("var p = { a:5 }; var o = Object.create(p);"
                  "Object.getPrototypeOf(o) === p"),
       nxt_string("true") },
@@ -9159,6 +9165,17 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("Object.create(function(a,b,c){}).length"),
       nxt_string("3") },
+
+    { nxt_string("Object.create(Math).hasOwnProperty('abs')"),
+      nxt_string("false") },
+
+    { nxt_string("var m = Object.create(Math); m.abs = 3;"
+                 "[m.hasOwnProperty('abs'), m.abs]"),
+      nxt_string("true,3") },
+
+    { nxt_string("var m = Object.create(Math); m.abs = Math.floor;"
+                 "[m.hasOwnProperty('abs'), delete m.abs, m.abs(-1)]"),
+      nxt_string("true,true,1") },
 
     { nxt_string("Object.getOwnPropertyDescriptor({a:1}, 'a').value"),
       nxt_string("1") },
