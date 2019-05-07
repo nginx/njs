@@ -649,10 +649,6 @@ njs_run "-p njs/test/module ./njs/test/module/recursive.js" \
 
 njs_run "-h" "Interactive njs shell.\r\n\r\nOptions:"
 
-# version
-
-njs_run "-v" "\\d+\.\\d+\.\\d+"
-
 # disassemble
 
 njs_test {
@@ -663,32 +659,6 @@ njs_test {
     {"(function() {try {return} finally{}})()\r\n"
      "00000 TRY START*\r\n*TRY RETURN*STOP*\r\n\r\nundefined"}
 } "-d"
-
-# sandboxing
-
-njs_test {
-    {"var fs = require('fs')\r\n"
-     "Error: Cannot find module \"fs\"\r\n"}
-} "-s"
-
-njs_test {
-    {"var crypto = require('crypto')\r\n"
-     "undefined\r\n"}
-} "-s"
-
-# source type
-
-njs_test {
-    {"this\r\n"
-     "this\r\nundefined"}
-    {"(() => this)()\r\n"
-     "(() => this)()\r\nundefined"}
-} "-t module"
-
-njs_test {
-    {"this.NaN\r\n"
-     "this.NaN\r\nNaN"}
-} "-t script"
 
 # modules
 
@@ -740,3 +710,36 @@ njs_run "-q ./njs/test/module/normal.js" \
 
 njs_run "-p njs/test/module/libs/ -d ./njs/test/module/normal.js" \
         "passed!"
+
+# sandboxing
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "Error: Cannot find module \"fs\"\r\n"}
+} "-s"
+
+njs_test {
+    {"var crypto = require('crypto')\r\n"
+     "undefined\r\n"}
+} "-s"
+
+
+# source type
+
+njs_test {
+    {"this\r\n"
+     "this\r\nundefined"}
+    {"(() => this)()\r\n"
+     "(() => this)()\r\nundefined"}
+} "-t module"
+
+njs_test {
+    {"this.NaN\r\n"
+     "this.NaN\r\nNaN"}
+} "-t script"
+
+
+# version
+
+njs_run "-v" "\\d+\.\\d+\.\\d+"
+
