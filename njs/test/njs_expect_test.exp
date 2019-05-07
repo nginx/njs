@@ -649,6 +649,12 @@ njs_run "-p njs/test/module ./njs/test/module/recursive.js" \
 
 njs_run "-h" "Interactive njs shell.\r\n\r\nOptions:"
 
+# command
+
+njs_run "-c 'console.log(\"a b c\")'" "a b c"
+
+njs_run "-c 'console.log('" "SyntaxError: Unexpected token \"\" in string:1"
+
 # disassemble
 
 njs_test {
