@@ -12,6 +12,18 @@ proc njs_test {body {opts ""}} {
         eval spawn  -nottycopy njs $opts
     }
 
+    # TODO:
+    # SIGINT handling race condition
+    #   deb9-amd64-generic-njs-try
+    #   ub1404-armv7-generic-njs-try
+    #   ub1804-arm64-generic-njs-try
+    # UTF8 terminal support issue
+    #   sol11-amd64-sunpro-njs-try
+    #   ub1604-arm64-generic-njs-try
+
+    # set timeout 30
+    # expect_before timeout { exit 1 }
+
     expect -re "interactive njs \\d+\.\\d+\.\\d+\r\n\r"
     expect "v.<Tab> -> the properties and prototype methods of v.\r
 type console.help() for more information\r
@@ -33,7 +45,6 @@ type console.help() for more information\r
 proc njs_run {opts output} {
     eval spawn  -nottycopy njs $opts
     expect -re $output
-    expect eof
 }
 
 njs_test {
@@ -41,7 +52,7 @@ njs_test {
      "njs.version\r\n\*\.\*\.\*"}
 }
 
-# simple multi line interation
+# simple multi line interaction
 njs_test {
     {"var a = 1\r\n"
      "var a = 1\r\nundefined\r\n>> "}
@@ -62,30 +73,33 @@ njs_test {
 }
 
 # Global completions, single partial match
+
+# \a* is WORKAROUND for libedit-20170329.3.1-r3
+# which inserts '\rESC[6G' after '\a'.
 njs_test {
     {"O\t"
-     "O\abject"}
+     "O\a*bject"}
 }
 
 njs_test {
     {"Ma\t"
-     "Ma\ath"}
+     "Ma\a*th"}
 }
 
 njs_test {
     {"conso\t"
-     "conso\ale"}
+     "conso\a*le"}
 }
 
 # Global completions, multiple partial match
 njs_test {
     {"cons\t\t"
-     "console*console.help*console.time*const"}
+     "console*const"}
 }
 
 njs_test {
     {"O\t"
-     "O\abject"}
+     "O\a*bject"}
     {".\t\t"
      "Object.create*Object.isSealed"}
 }
@@ -97,16 +111,16 @@ njs_test {
 
 njs_test {
     {"Object.g\t"
-     "Object.g\aet"}
-    {"\t"
+     "Object.g\a*et"}
+    {"\t\t"
      "Object.getOwnPropertyDescriptor*Object.getPrototypeOf"}
 }
 
 njs_test {
     {"Ma\t"
-     "Ma\ath"}
+     "Ma\a*th"}
     {".\t\t"
-     "Math.__proto__*Math.cbrt*Math.fround*Math.log2"}
+     "Math.abs*Math.atan2"}
 }
 
 # Global completions, no matches
@@ -133,11 +147,13 @@ njs_test {
      "a*aa*arguments*await"}
 }
 
+# z*z is WORKAROUND for libedit-20170329.3.1-r3
+# which inserts bogus '\a' between 'z'
 njs_test {
     {"var zz = 1\r\n"
      "var zz = 1\r\nundefined\r\n>> "}
     {"1 + z\t\r\n"
-     "1 + zz\r\n2"}
+     "1 + z*z*\r\n2"}
 }
 
 njs_test {
@@ -375,7 +391,7 @@ njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
     {"fs.read\t"
-     "fs.read\aFile"}
+     "fs.read\a*File"}
 }
 
 # require('fs').readFile()
@@ -641,7 +657,7 @@ njs_run "-v" "\\d+\.\\d+\.\\d+"
 
 njs_test {
     {"1+1\r\n"
-     "00000 ADD*\r\n00040 STOP*\r\n\r\n2"}
+     "00000 ADD*\r\n*2"}
     {"for (var n in [1]) {try {break} finally{}}\r\n"
      "00000 ARRAY*\r\n*TRY BREAK*STOP*\r\n\r\nundefined"}
     {"(function() {try {return} finally{}})()\r\n"
