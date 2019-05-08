@@ -5451,6 +5451,39 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("('β' + 'α'.repeat(33)+'β').replace(/(α+)(β+)/, function(m, p1) { return p1[32]; })"),
       nxt_string("βα") },
 
+    { nxt_string("'abc'.replace(/(h*)(z*)(g*)/g, '$1nn$2zz$3')"),
+      nxt_string("nnzzannzzbnnzzcnnzz") },
+
+    { nxt_string("'abc'.replace(/(h*)(z*)/g, '$1nn$2zz$3yy')"),
+      nxt_string("nnzz$3yyannzz$3yybnnzz$3yycnnzz$3yy") },
+
+    { nxt_string("'ъ'.replace(/(h*)/g, '$1ЮЙ')"),
+      nxt_string("ЮЙъЮЙ") },
+
+    { nxt_string("'ъg'.replace(/(h*)/g, '$1ЮЙ')"),
+      nxt_string("ЮЙъЮЙgЮЙ") },
+
+    { nxt_string("'ъg'.replace(/(ъ*)/g, '$1ЮЙ')"),
+      nxt_string("ъЮЙЮЙgЮЙ") },
+
+    { nxt_string("'ъg'.replace(/(h*)/g, 'fg$1ЮЙ')"),
+      nxt_string("fgЮЙъfgЮЙgfgЮЙ") },
+
+    { nxt_string("'юgёfя'.replace(/(gё)/g, 'n$1i')"),
+      nxt_string("юngёifя") },
+
+    { nxt_string("'aabbccaa'.replace(/a*/g, '')"),
+      nxt_string("bbcc") },
+
+    { nxt_string("'aabbccaab'.replace(/z*/g, '')"),
+      nxt_string("aabbccaab") },
+
+    { nxt_string("'αβγ'.replace(/z*/g, '|')"),
+      nxt_string("|α|β|γ|") },
+
+    { nxt_string("''.replace(/a*/g, '')"),
+      nxt_string("") },
+
     { nxt_string("'abc'.match(/a*/g)"),
       nxt_string("a,,,") },
 
