@@ -3730,6 +3730,9 @@ static njs_unit_test_t  njs_test[] =
                  "len +' '+ a +' '+ a.shift()"),
       nxt_string("5 3,4,5,1,2 3") },
 
+    { nxt_string("var a=[0], n = 64; while(--n) {a.push(n); a.shift()}; a"),
+      nxt_string("1") },
+
     { nxt_string("var a = []; a.splice()"),
       nxt_string("") },
 
