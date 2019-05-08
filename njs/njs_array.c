@@ -230,7 +230,7 @@ njs_array_expand(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
         size += size / 2;
     }
 
-    if (nxt_slow_path(((prepend + size) * sizeof(njs_value_t)) >= UINT32_MAX)) {
+    if (nxt_slow_path((prepend + size) > NJS_ARRAY_MAX_LENGTH)) {
         goto memory_error;
     }
 
