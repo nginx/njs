@@ -212,12 +212,12 @@ njs_array_string_add(njs_vm_t *vm, njs_array_t *array, const u_char *start,
 
 njs_ret_t
 njs_array_expand(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
-    uint32_t new_size)
+    uint32_t append)
 {
     uint64_t     size;
     njs_value_t  *start, *old;
 
-    size = (uint64_t) new_size + array->length;
+    size = (uint64_t) append + array->length;
 
     if (nxt_fast_path(size <= array->size && prepend == 0)) {
         return NXT_OK;
