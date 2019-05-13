@@ -3239,7 +3239,7 @@ njs_string_replace_search(njs_vm_t *vm, njs_value_t *args,
     p = r->part[0].start;
     end = (p + r->part[0].size) - (search.length - 1);
 
-    do {
+    while (p < end) {
         if (memcmp(p, search.start, search.length) == 0) {
 
             if (r->substitutions != NULL) {
@@ -3272,8 +3272,7 @@ njs_string_replace_search(njs_vm_t *vm, njs_value_t *args,
         } else {
             p = (u_char *) nxt_utf8_next(p, end);
         }
-
-    } while (p < end);
+    }
 
     njs_string_copy(&vm->retval, &args[0]);
 

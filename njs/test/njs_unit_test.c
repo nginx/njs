@@ -5336,6 +5336,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abcdefgh'.replace('d', undefined)"),
       nxt_string("abcundefinedefgh") },
 
+    { nxt_string("'a'.repeat(16).replace('a'.repeat(17)) === 'a'.repeat(16)"),
+      nxt_string("true") },
+
     { nxt_string("'abcdefgh'.replace('d', null)"),
       nxt_string("abcnullefgh") },
 
