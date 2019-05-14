@@ -5484,6 +5484,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("''.replace(/a*/g, '')"),
       nxt_string("") },
 
+    { nxt_string("'12345'.replace(3, () => 0)"),
+      nxt_string("12045") },
+
+    { nxt_string("'123'.replace(3, function() { return {toString: ()=>({})}; })"),
+      nxt_string("TypeError: Cannot convert object to primitive value") },
+
+    { nxt_string("'12345'.replace(3, () => ({toString: () => 'aaaa'}))"),
+      nxt_string("12aaaa45") },
+
     { nxt_string("'abc'.match(/a*/g)"),
       nxt_string("a,,,") },
 

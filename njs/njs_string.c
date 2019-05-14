@@ -3355,20 +3355,28 @@ static njs_ret_t
 njs_string_replace_search_continuation(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
+    njs_ret_t             ret;
+    njs_value_t           string;
     njs_string_replace_t  *r;
 
     r = njs_vm_continuation(vm);
 
-    if (njs_is_string(&r->retval)) {
-        njs_string_replacement_copy(&r->part[1], &r->retval);
-
-        return njs_string_replace_join(vm, r);
+    if (!njs_is_primitive(&r->retval)) {
+        njs_vm_trap_value(vm, &r->retval);
+        return njs_trap(vm, NJS_TRAP_STRING_ARG);
     }
 
-    njs_internal_error(vm, "unexpected continuation retval type:%s",
+    ret = njs_primitive_value_to_string(vm, &string, &r->retval);
+    if (nxt_slow_path(ret != NJS_OK)) {
+        njs_type_error(vm, "cannot convert primitive value to string: %s",
                        njs_type_string(r->retval.type));
 
-    return NXT_ERROR;
+        return NXT_ERROR;
+    }
+
+    njs_string_replacement_copy(&r->part[1], &string);
+
+    return njs_string_replace_join(vm, r);
 }
 
 
