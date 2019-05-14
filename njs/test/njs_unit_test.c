@@ -5127,6 +5127,18 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abc abc абвгд abc'.lastIndexOf('абвгд')"),
       nxt_string("8") },
 
+    { nxt_string("'abc abc абвгд abc'.lastIndexOf('абвгд', undefined)"),
+      nxt_string("8") },
+
+    { nxt_string("'abc abc абвгд abc'.lastIndexOf('абвгд', NaN)"),
+      nxt_string("8") },
+
+    { nxt_string("'abc abc абвгд abc'.lastIndexOf('абвгд', {})"),
+      nxt_string("8") },
+
+    { nxt_string("String.prototype.lastIndexOf.call({toString:()=>'abc abc абвгд abc'}, 'абвгд')"),
+      nxt_string("8") },
+
     { nxt_string("'abc abc абвгдежз'.lastIndexOf('абвгд')"),
       nxt_string("8") },
 
@@ -5153,6 +5165,12 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("''.lastIndexOf('')"),
       nxt_string("0") },
+
+    { nxt_string("''.lastIndexOf()"),
+      nxt_string("-1") },
+
+    { nxt_string("''.lastIndexOf(undefined)"),
+      nxt_string("-1") },
 
     { nxt_string("''.includes('')"),
       nxt_string("true") },

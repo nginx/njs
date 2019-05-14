@@ -1796,80 +1796,90 @@ static njs_ret_t
 njs_string_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
+    double             pos;
     ssize_t            index, start, length, search_length;
     const u_char       *p, *end;
+    const njs_value_t  *search_string;
     njs_string_prop_t  string, search;
 
     index = -1;
 
-    if (nargs > 1) {
-        length = njs_string_prop(&string, &args[0]);
-        search_length = njs_string_prop(&search, &args[1]);
+    length = njs_string_prop(&string, njs_arg(args, nargs, 0));
 
-        if (length < search_length) {
-            goto done;
-        }
+    search_string = njs_arg(args, nargs, 1);
 
+    if (njs_is_undefined(search_string)) {
+        search_string = &njs_string_undefined;
+    }
+
+    search_length = njs_string_prop(&search, search_string);
+
+    if (length < search_length) {
+        goto done;
+    }
+
+    pos = njs_arg(args, nargs, 2)->data.u.number;
+
+    if (isnan(pos)) {
         index = NJS_STRING_MAX_LENGTH;
 
-        if (nargs > 2) {
-            index = args[2].data.u.number;
+    } else {
+        index = njs_number_to_integer(pos);
 
-            if (index < 0) {
-                index = 0;
-            }
+        if (index < 0) {
+            index = 0;
+        }
+    }
+
+    if (index > length) {
+        index = length;
+    }
+
+    if (string.size == (size_t) length) {
+        /* Byte or ASCII string. */
+
+        start = length - search.size;
+
+        if (index > start) {
+            index = start;
         }
 
-        if (index > length) {
-            index = length;
+        p = string.start + index;
+
+        do {
+            if (memcmp(p, search.start, search.size) == 0) {
+                goto done;
+            }
+
+            index--;
+            p--;
+
+        } while (p >= string.start);
+
+    } else {
+        /* UTF-8 string. */
+
+        end = string.start + string.size;
+        p = njs_string_offset(string.start, end, index);
+        end -= search.size;
+
+        while (p > end) {
+            index--;
+            p = nxt_utf8_prev(p);
         }
 
-        if (string.size == (size_t) length) {
-            /* Byte or ASCII string. */
-
-            start = length - search.size;
-
-            if (index > start) {
-                index = start;
+        for ( ;; ) {
+            if (memcmp(p, search.start, search.size) == 0) {
+                goto done;
             }
 
-            p = string.start + index;
+            index--;
 
-            do {
-                if (memcmp(p, search.start, search.size) == 0) {
-                    goto done;
-                }
-
-                index--;
-                p--;
-
-            } while (p >= string.start);
-
-        } else {
-            /* UTF-8 string. */
-
-            end = string.start + string.size;
-            p = njs_string_offset(string.start, end, index);
-            end -= search.size;
-
-            while (p > end) {
-                index--;
-                p = nxt_utf8_prev(p);
+            if (p <= string.start) {
+                break;
             }
 
-            for ( ;; ) {
-                if (memcmp(p, search.start, search.size) == 0) {
-                    goto done;
-                }
-
-                index--;
-
-                if (p <= string.start) {
-                    break;
-                }
-
-                p = nxt_utf8_prev(p);
-            }
+            p = nxt_utf8_prev(p);
         }
     }
 
@@ -3912,7 +3922,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("lastIndexOf"),
         .value = njs_native_function(njs_string_prototype_last_index_of, 0,
-                     NJS_STRING_OBJECT_ARG, NJS_STRING_ARG, NJS_INTEGER_ARG),
+                     NJS_STRING_OBJECT_ARG, NJS_STRING_ARG, NJS_NUMBER_ARG),
         .configurable = 1,
     },
 
