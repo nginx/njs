@@ -5172,6 +5172,16 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("''.lastIndexOf(undefined)"),
       nxt_string("-1") },
 
+    { nxt_string("'β'.repeat(32).lastIndexOf('β')"),
+      nxt_string("31") },
+
+    { nxt_string("'β'.repeat(32).lastIndexOf``"),
+      nxt_string("32") },
+
+    { nxt_string("JSON.stringify(Array(24).fill(true).map((v,i) => 'abc abc ab abc абвгдежзab'.lastIndexOf('abc', i)))"
+                 "== JSON.stringify([].concat(Array(4).fill(0), Array(7).fill(4), Array(13).fill(11)))"),
+      nxt_string("true") },
+
     { nxt_string("''.includes('')"),
       nxt_string("true") },
 

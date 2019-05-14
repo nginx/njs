@@ -1831,8 +1831,13 @@ njs_string_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
         }
     }
 
-    if (index > length) {
-        index = length;
+    if (search_length == 0) {
+        index = nxt_min(index, length);
+        goto done;
+    }
+
+    if (index >= length) {
+        index = length - 1;
     }
 
     if (string.size == (size_t) length) {
