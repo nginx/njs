@@ -209,7 +209,7 @@ njs_regexp_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
 njs_token_t
 njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
 {
-    u_char                *p, c;
+    u_char                *p;
     nxt_str_t             text;
     njs_lexer_t           *lexer;
     njs_regexp_flags_t    flags;
@@ -219,13 +219,37 @@ njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
 
     for (p = lexer->start; p < lexer->end; p++) {
 
-        c = *p;
+        switch (*p) {
+        case '\n':
+        case '\r':
+            goto failed;
 
-        if (c == '\n' || c == '\r') {
+        case '[':
+            while (++p < lexer->end && *p != ']') {
+                switch (*p) {
+                case '\n':
+                case '\r':
+                    goto failed;
+
+                case '\\':
+                    if (++p < lexer->end && (*p == '\n' || *p == '\r')) {
+                        goto failed;
+                    }
+
+                    break;
+                }
+            }
+
             break;
-        }
 
-        if (c == '/' && !(p > lexer->start && p[-1] == '\\')) {
+        case '\\':
+            if (++p < lexer->end && (*p == '\n' || *p == '\r')) {
+                goto failed;
+            }
+
+            break;
+
+        case '/':
             text.start = lexer->start;
             text.length = p - text.start;
             p++;
@@ -254,6 +278,8 @@ njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
             return NJS_TOKEN_REGEXP;
         }
     }
+
+failed:
 
     njs_parser_syntax_error(vm, parser, "Unterminated RegExp \"%*s\"",
                             p - (lexer->start - 1), lexer->start - 1);

@@ -7073,6 +7073,37 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("/a\\q/"),
       nxt_string("/a\\q/") },
 
+    { nxt_string("/\\\\/"),
+      nxt_string("/\\\\/") },
+
+    { nxt_string("/\\\\\\/"),
+      nxt_string("SyntaxError: Unterminated RegExp \"/\\\\\\/\" in 1") },
+
+    { nxt_string("/\\\\\\\\/"),
+      nxt_string("/\\\\\\\\/") },
+
+    { nxt_string("/\\\\\\//"),
+      nxt_string("/\\\\\\//") },
+
+    { nxt_string("/[A-Z/]/"),
+      nxt_string("/[A-Z/]/") },
+
+    { nxt_string("/[A-Z\n]/"),
+      nxt_string("SyntaxError: Unterminated RegExp \"/[A-Z\" in 1") },
+
+    { nxt_string("/[A-Z\\\n]/"),
+      nxt_string("SyntaxError: Unterminated RegExp \"/[A-Z\\\" in 1") },
+
+    { nxt_string("/\\\n/"),
+      nxt_string("SyntaxError: Unterminated RegExp \"/\\\" in 1") },
+
+    { nxt_string("/^[A-Za-z0-9+/]{4}$/.test('////')"),
+      nxt_string("true") },
+
+    { nxt_string("'[]!\"#$%&\\'()*+,.\\/:;<=>?@\\^_`{|}-'.split('')"
+                 ".every(ch=>/[\\]\\[!\"#$%&'()*+,.\\/:;<=>?@\\^_`{|}-]/.test(ch))"),
+      nxt_string("true") },
+
     { nxt_string("/a\\q/.test('a\\q')"),
       nxt_string("true") },
 
