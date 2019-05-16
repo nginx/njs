@@ -1705,7 +1705,7 @@ njs_object_define_property(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    value = &args[1];
+    value = njs_argument(args, 1);
 
     if (!value->data.u.object->extensible) {
         njs_type_error(vm, "object is not extensible");
@@ -1743,14 +1743,13 @@ njs_object_define_properties(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_object_prop_t  *prop;
     const njs_value_t  *descriptor;
 
-    value = &args[1];
-
-    if (!njs_is_object(value)) {
+    if (!njs_is_object(njs_arg(args, nargs, 1))) {
         njs_type_error(vm, "cannot convert %s argument to object",
-                       njs_type_string(value->type));
-
+                       njs_type_string(njs_arg(args, nargs, 1)->type));
         return NXT_ERROR;
     }
+
+    value = njs_argument(args, 1);
 
     if (!value->data.u.object->extensible) {
         njs_type_error(vm, "object is not extensible");

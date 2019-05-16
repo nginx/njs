@@ -9162,6 +9162,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = Object.defineProperties({a:1}, {}); o.a"),
       nxt_string("1") },
 
+    { nxt_string("Object.defineProperties()"),
+      nxt_string("TypeError: cannot convert undefined argument to object") },
+
     { nxt_string("Object.defineProperties(1, {})"),
       nxt_string("TypeError: cannot convert number argument to object") },
 
