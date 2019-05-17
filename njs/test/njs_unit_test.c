@@ -3657,6 +3657,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Array.prototype.slice.call('αβZγ')"),
       nxt_string("α,β,Z,γ") },
 
+    { nxt_string("Array.prototype.slice.call(String.bytesFrom(Array(16).fill(0x9d)))[0].charCodeAt(0)"),
+      nxt_string("157") },
+
     { nxt_string("Array.prototype.slice.call('αβZγ', 1)"),
       nxt_string("β,Z,γ") },
 
