@@ -2757,7 +2757,7 @@ njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
 
 
 /*
- * String.split([string|regexp[, limit]])
+ * String.prototype.split([string|regexp[, limit]])
  */
 
 static njs_ret_t
@@ -2838,7 +2838,8 @@ found:
 
                 /* Empty split string. */
                 if (p == next) {
-                    p = nxt_utf8_next(p, end);
+                    p = (utf8 != NJS_STRING_BYTE) ? nxt_utf8_next(p, end)
+                                                  : p + 1;
                     next = p;
                 }
 
@@ -2885,7 +2886,8 @@ found:
 
                 /* Empty split regexp. */
                 if (p == next) {
-                    p = nxt_utf8_next(p, end);
+                    p = (utf8 != NJS_STRING_BYTE) ? nxt_utf8_next(p, end)
+                                                  : p + 1;
                     next = p;
                 }
 
