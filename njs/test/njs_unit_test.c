@@ -5496,6 +5496,36 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'12345'.replace(3, () => ({toString: () => 'aaaa'}))"),
       nxt_string("12aaaa45") },
 
+    { nxt_string("/]/"),
+      nxt_string("/\\]/") },
+
+    { nxt_string("/\\]/"),
+      nxt_string("/\\]/") },
+
+    { nxt_string("/ab]cd/"),
+      nxt_string("/ab\\]cd/") },
+
+    { nxt_string("/ab]/"),
+      nxt_string("/ab\\]/") },
+
+    { nxt_string("/]cd/"),
+      nxt_string("/\\]cd/") },
+
+    { nxt_string("']'.match(/]/)"),
+      nxt_string("]") },
+
+    { nxt_string("'ab]cd'.match(/]/)"),
+      nxt_string("]") },
+
+    { nxt_string("'ab]'.match(/]/)"),
+      nxt_string("]") },
+
+    { nxt_string("']cd'.match(/]/)"),
+      nxt_string("]") },
+
+    { nxt_string("'ab]cd'.match(/\\]/)"),
+      nxt_string("]") },
+
     { nxt_string("'abc'.match(/a*/g)"),
       nxt_string("a,,,") },
 
