@@ -1558,7 +1558,7 @@ njs_generate_block_statement(njs_vm_t *vm, njs_generator_t *generator,
         return ret;
     }
 
-    ret = njs_generate_statement(vm, generator, node->left);
+    ret = njs_generate_statement(vm, generator, node);
     if (nxt_slow_path(ret != NXT_OK)) {
         return ret;
     }

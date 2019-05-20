@@ -6016,6 +6016,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("function f() { return 1; } { function f() { return 2; } { function f() { return 3; } }} f()"),
       nxt_string("1") },
 
+    { nxt_string("{function f() {} {} f() }"),
+      nxt_string("undefined") },
+
     { nxt_string("{ var f; function f() {} }"),
       nxt_string("SyntaxError: \"f\" has already been declared in 1") },
 

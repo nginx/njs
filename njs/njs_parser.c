@@ -468,18 +468,14 @@ njs_parser_block_statement(njs_vm_t *vm, njs_parser_t *parser)
         }
     }
 
-    if (parser->node != NULL) {
-        /* The statement is not empty block or just semicolon. */
-
-        node = njs_parser_node_new(vm, parser, NJS_TOKEN_BLOCK);
-        if (nxt_slow_path(node == NULL)) {
-            return NJS_TOKEN_ERROR;
-        }
-
-        node->left = parser->node;
-        node->right = NULL;
-        parser->node = node;
+    node = njs_parser_node_new(vm, parser, NJS_TOKEN_BLOCK);
+    if (nxt_slow_path(node == NULL)) {
+        return NJS_TOKEN_ERROR;
     }
+
+    node->left = parser->node;
+    node->right = NULL;
+    parser->node = node;
 
     njs_parser_scope_end(vm, parser);
 
