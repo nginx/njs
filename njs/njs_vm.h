@@ -894,6 +894,7 @@ typedef enum {
 #define njs_is_callee_argument_index(index)                                   \
     (((index) & NJS_SCOPE_CALLEE_ARGUMENTS) == NJS_SCOPE_CALLEE_ARGUMENTS)
 
+
 enum njs_prototypes_e {
     NJS_PROTOTYPE_OBJECT = 0,
     NJS_PROTOTYPE_ARRAY,

@@ -805,7 +805,7 @@ njs_parser_template_expression(njs_vm_t *vm, njs_parser_t *parser)
 
     if (token != NJS_TOKEN_CLOSE_BRACE) {
         njs_parser_syntax_error(vm, parser,
-                            "Missing \"}\" in template expression");
+                                "Missing \"}\" in template expression");
         return NXT_ERROR;
     }
 

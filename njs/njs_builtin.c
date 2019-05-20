@@ -30,11 +30,11 @@ static nxt_array_t *njs_vm_expression_completions(njs_vm_t *vm,
 static nxt_array_t *njs_object_completions(njs_vm_t *vm, njs_object_t *object);
 
 
-const njs_object_init_t     njs_njs_object_init;
-const njs_object_init_t     njs_global_this_init;
+const njs_object_init_t  njs_njs_object_init;
+const njs_object_init_t  njs_global_this_init;
 
 
-const njs_object_init_t    *njs_object_init[] = {
+const njs_object_init_t  *njs_object_init[] = {
     &njs_global_this_init,        /* global this        */
     &njs_njs_object_init,         /* global njs object  */
     &njs_math_object_init,        /* Math               */
@@ -43,9 +43,9 @@ const njs_object_init_t    *njs_object_init[] = {
 };
 
 
-const njs_object_init_t    *njs_module_init[] = {
-    &njs_fs_object_init,         /* fs                 */
-    &njs_crypto_object_init,     /* crypto             */
+const njs_object_init_t  *njs_module_init[] = {
+    &njs_fs_object_init,          /* fs                 */
+    &njs_crypto_object_init,      /* crypto             */
     NULL
 };
 
@@ -73,7 +73,7 @@ const njs_object_init_t  *njs_prototype_init[] = {
 };
 
 
-const njs_object_init_t    *njs_constructor_init[] = {
+const njs_object_init_t  *njs_constructor_init[] = {
     &njs_object_constructor_init,
     &njs_array_constructor_init,
     &njs_boolean_constructor_init,
@@ -97,7 +97,7 @@ const njs_object_init_t    *njs_constructor_init[] = {
 };
 
 
-const njs_object_init_t    *njs_function_init[] = {
+const njs_object_init_t  *njs_function_init[] = {
     &njs_eval_function_init,
     &njs_to_string_function_init,
     &njs_is_nan_function_init,
@@ -164,6 +164,7 @@ const njs_function_init_t  njs_native_constructors[] = {
     { njs_uri_error_constructor,  { NJS_SKIP_ARG, NJS_STRING_ARG } },
     { njs_memory_error_constructor,  { NJS_SKIP_ARG, NJS_STRING_ARG } },
 };
+
 
 const njs_object_prototype_t  njs_prototype_values[] = {
     /*
