@@ -4620,6 +4620,11 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'A'.repeat(16).toBytes() === 'A'.repeat(16)"),
       nxt_string("true") },
 
+    { nxt_string("var s = 'x'.repeat(2**10).repeat(2**14);"
+                 "var a = Array(200).fill(s);"
+                 "String.prototype.concat.apply(s, a.slice(1))"),
+      nxt_string("RangeError: invalid string length") },
+
     { nxt_string("var a = 'abcdefgh'; a.substr(3, 15)"),
       nxt_string("defgh") },
 

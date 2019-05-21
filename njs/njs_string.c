@@ -181,11 +181,16 @@ njs_string_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,
 
 
 nxt_noinline u_char *
-njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size,
-    uint32_t length)
+njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint64_t size,
+    uint64_t length)
 {
     uint32_t      total, map_offset, *map;
     njs_string_t  *string;
+
+    if (nxt_slow_path(size > NJS_STRING_MAX_LENGTH)) {
+        njs_range_error(vm, "invalid string length");
+        return NULL;
+    }
 
     value->type = NJS_STRING;
     njs_string_truth(value, size);
@@ -844,7 +849,7 @@ njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
     u_char             *p, *start;
-    size_t             size, length, mask;
+    uint64_t           size, length, mask;
     nxt_uint_t         i;
     njs_string_prop_t  string;
 

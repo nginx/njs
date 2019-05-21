@@ -145,8 +145,8 @@ njs_string_length(njs_value_t *string)
 
 njs_ret_t njs_string_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     uint32_t size);
-u_char *njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size,
-    uint32_t length);
+u_char *njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint64_t size,
+    uint64_t length);
 njs_ret_t njs_string_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     uint32_t size, uint32_t length);
 njs_ret_t njs_string_hex(njs_vm_t *vm, njs_value_t *value,
