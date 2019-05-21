@@ -43,8 +43,6 @@ static nxt_noinline njs_ret_t njs_date_string(njs_vm_t *vm, const char *fmt,
     double time);
 static nxt_noinline double njs_date_time(struct tm *tm, int64_t ms);
 static double njs_date_utc_time(struct tm *tm, double time);
-static njs_ret_t njs_date_prototype_to_json_continuation(njs_vm_t *vm,
-    njs_value_t *args, nxt_uint_t nargs, njs_index_t retval);
 
 
 static const njs_value_t  njs_string_invalid_date = njs_string("Invalid Date");
@@ -1895,22 +1893,12 @@ njs_date_utc_time(struct tm *tm, double time)
 }
 
 
-/*
- * ECMAScript 5.1: call object method "toISOString".
- * Date.toJSON() must be a continuation otherwise it may endlessly
- * call Date.toISOString().
- */
-
 static njs_ret_t
 njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t retval)
 {
     njs_object_prop_t   *prop;
-    njs_continuation_t  *cont;
     nxt_lvlhsh_query_t  lhq;
-
-    cont = njs_vm_continuation(vm);
-    cont->function = njs_date_prototype_to_json_continuation;
 
     if (njs_is_object(&args[0])) {
         lhq.key_hash = NJS_TO_ISO_STRING_HASH;
@@ -1919,25 +1907,14 @@ njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         prop = njs_object_property(vm, args[0].data.u.object, &lhq);
 
         if (nxt_fast_path(prop != NULL && njs_is_function(&prop->value))) {
-            return njs_function_apply(vm, prop->value.data.u.function,
-                                      args, nargs, retval);
+            return njs_function_replace(vm, prop->value.data.u.function,
+                                        args, nargs, retval);
         }
     }
 
     njs_type_error(vm, "\"this\" argument is not an object");
 
     return NXT_ERROR;
-}
-
-
-static njs_ret_t
-njs_date_prototype_to_json_continuation(njs_vm_t *vm, njs_value_t *args,
-    nxt_uint_t nargs, njs_index_t retval)
-{
-    /* Skip retval update. */
-    vm->top_frame->skip = 1;
-
-    return NXT_OK;
 }
 
 

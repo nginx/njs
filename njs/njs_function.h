@@ -200,6 +200,36 @@ njs_function_apply(njs_vm_t *vm, njs_function_t *function,
 }
 
 
+/*
+ * Replaces the current function with a new one.
+ * Can only be used for continuation functions
+ * (data.u.function.continuation_size > 0).
+ */
+nxt_inline njs_ret_t
+njs_function_replace(njs_vm_t *vm, njs_function_t *function,
+    const njs_value_t *args, nxt_uint_t nargs, njs_index_t retval)
+{
+    nxt_int_t  ret;
+
+    ret = njs_function_apply(vm, function, args, nargs, retval);
+    if (nxt_slow_path(ret == NXT_ERROR)) {
+        return ret;
+    }
+
+    /*
+     * 1) njs_function_apply() allocs a new function frame,
+     *    in order to preserve the retval of a new function and ignore
+     *    retval of the current function during stack unwinding
+     *    skip flag is needed.
+     * 2) it is also needed for correct callee arguments update in
+     *    njs_function_native_call() see "Object((new Date(0)).toJSON())".
+     */
+    vm->top_frame->previous->skip = 1;
+
+    return NJS_APPLIED;
+}
+
+
 nxt_inline njs_native_frame_t *
 njs_function_previous_frame(njs_native_frame_t *frame)
 {

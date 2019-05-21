@@ -6085,6 +6085,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("function f(a,b) { }; var ff = f.bind(f, 1); ff.length"),
       nxt_string("1") },
 
+    { nxt_string("Object((new Date(0)).toJSON())+0"),
+      nxt_string("1970-01-01T00:00:00.000Z0") },
+
+    { nxt_string("Object((new Array(0)).toString())+0"),
+      nxt_string("0") },
+
     { nxt_string("JSON.parse.length"),
       nxt_string("2") },
 

@@ -85,8 +85,6 @@ static njs_ret_t njs_array_prototype_slice_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t njs_array_prototype_slice_copy(njs_vm_t *vm,
     njs_value_t *this, int64_t start, int64_t length);
-static njs_ret_t njs_array_prototype_to_string_continuation(njs_vm_t *vm,
-    njs_value_t *args, nxt_uint_t nargs, njs_index_t retval);
 static njs_ret_t njs_array_prototype_join_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static njs_value_t *njs_array_copy(njs_value_t *dst, njs_value_t *src);
@@ -935,23 +933,12 @@ njs_array_prototype_reverse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
-/*
- * ECMAScript 5.1: try first to use object method "join", then
- * use the standard built-in method Object.prototype.toString().
- * Array.toString() must be a continuation otherwise it may
- * endlessly call Array.join().
- */
-
 static njs_ret_t
 njs_array_prototype_to_string(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t retval)
 {
     njs_object_prop_t   *prop;
-    njs_continuation_t  *cont;
     nxt_lvlhsh_query_t  lhq;
-
-    cont = njs_vm_continuation(vm);
-    cont->function = njs_array_prototype_to_string_continuation;
 
     if (njs_is_object(&args[0])) {
         lhq.key_hash = NJS_JOIN_HASH;
@@ -960,23 +947,12 @@ njs_array_prototype_to_string(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         prop = njs_object_property(vm, args[0].data.u.object, &lhq);
 
         if (nxt_fast_path(prop != NULL && njs_is_function(&prop->value))) {
-            return njs_function_apply(vm, prop->value.data.u.function,
-                                      args, nargs, retval);
+            return njs_function_replace(vm, prop->value.data.u.function,
+                                        args, nargs, retval);
         }
     }
 
     return njs_object_prototype_to_string(vm, args, nargs, retval);
-}
-
-
-static njs_ret_t
-njs_array_prototype_to_string_continuation(njs_vm_t *vm, njs_value_t *args,
-    nxt_uint_t nargs, njs_index_t retval)
-{
-    /* Skip retval update. */
-    vm->top_frame->skip = 1;
-
-    return NXT_OK;
 }
 
 
