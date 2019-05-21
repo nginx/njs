@@ -1,4 +1,72 @@
 
+Changes with njs 0.3.2                                           21 May 2019
+
+    Core:
+
+    *) Feature: added support for template literals.
+       Thanks to 洪志道 (Hong Zhi Dao) and Artem S. Povalyukhin.
+
+    *) Feature: executing command from command line arguments.
+
+    *) Feature: added support for RegExp "groups" object (ES9).
+
+    *) Feature: added block scoped function definitions support.
+
+    *) Feature: added support for building with GNU Readline library.
+
+    *) Feature: made configurable "length", "name", and most of built-in
+       methods.
+
+    *) Feature: made all constructor properties configurable.
+
+    *) Bugfix: fixed Regexp.prototype.exec() for Unicode-only regexps.
+
+    *) Bugfix: fixed njs_vm_value_dump() for empty string values.
+
+    *) Bugfix: fixed RegExp constructor for regexp value arguments.
+
+    *) Bugfix: fixed walking over prototypes chain during iteration
+       over an object.
+
+    *) Bugfix: fixed overflow in Array.prototype.concat().
+
+    *) Bugfix: fixed length calculation for UTF-8 string with escape
+       characters.
+
+    *) Bugfix: fixed parsing surrogate pair presents as UTF-16 escape
+       sequences.
+
+    *) Bugfix: fixed processing asterisk quantifier for
+       String.prototype.match().
+
+    *) Bugfix: fixed Date() constructor with one argument.
+
+    *) Bugfix: fixed arrays expansion.
+
+    *) Bugfix: fixed heap-buffer-overflow in String.prototype.replace().
+
+    *) Bugfix: fixed heap-buffer-overflow in
+       String.prototype.lastIndexOf().
+
+    *) Bugfix: fixed regexp literals parsing with escaped backslash and
+       backslash in square brackets.
+
+    *) Bugfix: fixed regexp literals with lone closing brackets.
+
+    *) Bugfix: fixed uninitialized-memory-access in
+       Object.defineProperties().
+
+    *) Bugfix: fixed processing "*" quantifier for
+       String.prototype.replace().
+
+    *) Bugfix: fixed Array.prototype.slice() for UTF8-invalid byte
+       strings.
+
+    *) Bugfix: fixed String.prototype.split() for UTF8-invalid byte
+       strings.
+
+    *) Bugfix: fixed handling of empty block statements.
+
 Changes with njs 0.3.1                                           16 Apr 2019
 
     Core:
