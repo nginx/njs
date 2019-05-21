@@ -3399,10 +3399,8 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("\n[\n1\n,\n2]\n[\n0]"),
       nxt_string("1") },
 
-#if 0
     { nxt_string("Object.create([1,2]).length"),
       nxt_string("2") },
-#endif
 
     { nxt_string("Object.create(['α','β'])[1]"),
       nxt_string("β") },
