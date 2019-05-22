@@ -174,6 +174,8 @@ static nxt_noinline nxt_int_t njs_generate_node_index_release(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static nxt_noinline nxt_int_t njs_generate_index_release(njs_vm_t *vm,
     njs_generator_t *generator, njs_index_t index);
+static nxt_int_t njs_generate_reference_error(njs_vm_t *vm,
+    njs_generator_t *generator, njs_parser_node_t *node);
 
 static nxt_int_t njs_generate_function_debug(njs_vm_t *vm,
     const nxt_str_t *name, njs_function_lambda_t *lambda,
@@ -550,7 +552,7 @@ njs_generate_name(njs_vm_t *vm, njs_generator_t *generator,
 
     var = njs_variable_resolve(vm, node);
     if (nxt_slow_path(var == NULL)) {
-        return NXT_ERROR;
+        return njs_generate_reference_error(vm, generator, node);
     }
 
     if (var->type == NJS_VARIABLE_FUNCTION) {
@@ -606,7 +608,7 @@ njs_generate_variable(njs_vm_t *vm, njs_generator_t *generator,
 
     index = njs_variable_index(vm, node);
     if (nxt_slow_path(index == NJS_INDEX_NONE)) {
-        return NXT_ERROR;
+        return njs_generate_reference_error(vm, generator, node);
     }
 
     node->index = index;
@@ -2304,7 +2306,7 @@ njs_generate_function_declaration(njs_vm_t *vm, njs_generator_t *generator,
 
     var = njs_variable_resolve(vm, node);
     if (nxt_slow_path(var == NULL)) {
-        return NXT_ERROR;
+        return njs_generate_reference_error(vm, generator, node);
     }
 
     if (!njs_is_function(&var->value)) {
@@ -2589,6 +2591,10 @@ njs_generate_function_call(njs_vm_t *vm, njs_generator_t *generator,
         }
 
         name = node;
+    }
+
+    if (node->u.reference.not_defined) {
+        return NXT_OK;
     }
 
     njs_generate_code(generator, njs_vmcode_function_frame_t, func,
@@ -3269,6 +3275,27 @@ njs_generate_index_release(njs_vm_t *vm, njs_generator_t *generator,
     }
 
     return NXT_ERROR;
+}
+
+
+static nxt_int_t
+njs_generate_reference_error(njs_vm_t *vm, njs_generator_t *generator,
+                             njs_parser_node_t *node)
+{
+    njs_vmcode_reference_error_t  *ref_err;
+
+    if (nxt_slow_path(!node->u.reference.not_defined)) {
+        njs_internal_error(vm, "variable is not defined but not_defined "
+                               "is not set");
+        return NJS_ERROR;
+    }
+
+    njs_generate_code(generator, njs_vmcode_reference_error_t, ref_err,
+                      njs_vmcode_reference_error, 0, 0);
+
+    ref_err->token_line = node->token_line;
+
+    return njs_name_copy(vm, &ref_err->name, &node->u.reference.name);
 }
 
 

@@ -2523,6 +2523,21 @@ njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
 }
 
 
+njs_ret_t
+njs_vmcode_reference_error(njs_vm_t *vm, njs_value_t *invld1,
+    njs_value_t *invld2)
+{
+    njs_vmcode_reference_error_t  *ref_err;
+
+    ref_err = (njs_vmcode_reference_error_t *) vm->current;
+
+    njs_reference_error(vm, "\"%V\" is not defined in %uD", &ref_err->name,
+                        ref_err->token_line);
+
+    return NJS_ERROR;
+}
+
+
 static const njs_vmcode_1addr_t  njs_trap_number[] = {
     { .code = { .operation = njs_vmcode_number_primitive,
                 .operands =  NJS_VMCODE_1OPERAND,

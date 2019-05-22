@@ -411,6 +411,14 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
+        if (operation == njs_vmcode_reference_error) {
+            nxt_printf("%05uz REFERENCE ERROR\n", p - start);
+
+            p += sizeof(njs_vmcode_reference_error_t);
+
+            continue;
+        }
+
         code_name = code_names;
         n = nxt_nitems(code_names);
 

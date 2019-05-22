@@ -6294,7 +6294,31 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("a") },
 
     { nxt_string("function f() { var a = f2(); }"),
+      nxt_string("undefined") },
+
+    { nxt_string("function f() { var a = f2(); } f();"),
       nxt_string("ReferenceError: \"f2\" is not defined in 1") },
+
+    { nxt_string("typeof Buffer !== 'undefined' ? Buffer : function Buffer(){}"),
+      nxt_string("[object Function]") },
+
+    { nxt_string("1 == 2 ? func() : '123'"),
+      nxt_string("123") },
+
+    { nxt_string("1 == 1 ? func() : '123'"),
+      nxt_string("ReferenceError: \"func\" is not defined in 1") },
+
+    { nxt_string("function f(){ if (1 == 1) { 1 == 2 ? some_var : '123' } }; f()"),
+      nxt_string("undefined") },
+
+    { nxt_string("function f(){ if (1 == 1) { 1 == 1 ? some_var : '123' } }; f()"),
+      nxt_string("ReferenceError: \"some_var\" is not defined in 1") },
+
+    { nxt_string("function f(){ if (1 == 1) { 1 == 2 ? some_func() : '123' } }; f()"),
+      nxt_string("undefined") },
+
+    { nxt_string("function f(){ if (1 == 1) { 1 == 1 ? some_func() : '123' } }; f()"),
+      nxt_string("ReferenceError: \"some_func\" is not defined in 1") },
 
     { nxt_string("(function(){ function f() {return f}; return f()})()"),
       nxt_string("[object Function]") },

@@ -280,7 +280,6 @@ njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
 {
     njs_ret_t                 ret;
     nxt_queue_t               *nested;
-    njs_variable_t            *var;
     nxt_queue_link_t          *lnk;
     njs_parser_node_t         *node;
     nxt_lvlhsh_each_t         lhe;
@@ -321,13 +320,7 @@ njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
                 }
             }
 
-            var = njs_variable_resolve(vm, node);
-
-            if (nxt_slow_path(var == NULL)) {
-                if (vr->type != NJS_TYPEOF) {
-                    return NXT_ERROR;
-                }
-            }
+            (void) njs_variable_resolve(vm, node);
         }
     }
 
@@ -415,7 +408,8 @@ njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node)
     ret = njs_variable_reference_resolve(vm, vr, node->scope);
 
     if (nxt_slow_path(ret != NXT_OK)) {
-        goto not_found;
+        node->u.reference.not_defined = 1;
+        return NULL;
     }
 
     scope_index = vr->scope_index;
@@ -455,13 +449,6 @@ njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node)
     node->index = index;
 
     return var;
-
-not_found:
-
-    njs_parser_node_error(vm, node, NJS_OBJECT_REF_ERROR,
-                          "\"%V\" is not defined", &vr->name);
-
-    return NULL;
 }
 
 
