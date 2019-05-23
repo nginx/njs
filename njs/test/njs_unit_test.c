@@ -3995,6 +3995,20 @@ static njs_unit_test_t  njs_test[] =
                                  "{ return a + (x === undefined); }, 0)"),
       nxt_string("3") },
 
+    { nxt_string("var a = Array.prototype.fill.apply("
+                 "Object({length: 40}), [\"a\", 1, 20]); Object.values(a)"),
+      nxt_string("a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,40,a,a,a,a") },
+
+    { nxt_string("var a = Array.prototype.fill.apply({length: "
+                 "{ valueOf: function() { return 40 }}}, [\"a\", 1, 20]);"
+                 "Object.values(a)"),
+      nxt_string("a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,[object Object],a,a,a,a") },
+
+    { nxt_string("[NaN, false, ''].map("
+                 "(x) => Array.prototype.fill.call(x)"
+                 ").every((x) => typeof x == 'object')"),
+      nxt_string("true") },
+
     { nxt_string("var a = [];"
                  "a.filter(function(v, i, a) { return v > 1 })"),
       nxt_string("") },

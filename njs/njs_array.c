@@ -23,6 +23,16 @@ typedef struct {
 
 
 typedef struct {
+    union {
+        njs_continuation_t  cont;
+        u_char              padding[NJS_CONTINUATION_SIZE];
+    } u;
+
+    njs_value_t             length;
+} njs_array_fill_t;
+
+
+typedef struct {
     njs_continuation_t      cont;
     njs_value_t             *values;
     uint32_t                max;
@@ -88,6 +98,8 @@ static njs_ret_t njs_array_prototype_slice_copy(njs_vm_t *vm,
 static njs_ret_t njs_array_prototype_join_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static njs_value_t *njs_array_copy(njs_value_t *dst, njs_value_t *src);
+static njs_ret_t njs_array_prototype_fill_continuation(njs_vm_t *vm,
+    njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t njs_array_prototype_for_each_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t njs_array_prototype_some_continuation(njs_vm_t *vm,
@@ -1395,62 +1407,111 @@ static njs_ret_t
 njs_array_prototype_fill(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
+    njs_ret_t         ret;
+    njs_value_t       *this;
+    njs_array_fill_t  *fill;
+
+    static const njs_value_t  njs_string_length = njs_string("length");
+
+    this = (njs_value_t *) njs_arg(args, nargs, 0);
+
+    if (njs_is_primitive(this)) {
+        if (njs_is_null_or_undefined(this)) {
+            njs_type_error(vm, "\"this\" argument cannot be "
+                               "undefined or null value");
+            return NJS_ERROR;
+        }
+
+    } else if (!njs_is_array(this)) {
+        fill = njs_vm_continuation(vm);
+        fill->u.cont.function = njs_array_prototype_fill_continuation;
+
+        ret = njs_value_property(vm, this, &njs_string_length, &fill->length);
+        if (nxt_slow_path(ret == NXT_ERROR || ret == NJS_TRAP)) {
+            return ret;
+        }
+    }
+
+    return njs_array_prototype_fill_continuation(vm, args, nargs, unused);
+}
+
+
+static njs_ret_t
+njs_array_prototype_fill_continuation(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    njs_ret_t          ret;
     nxt_int_t          i, start, end, length;
     njs_array_t        *array;
-    const njs_value_t  *value;
+    njs_value_t        name;
+    njs_object_t       *object;
+    njs_array_fill_t   *fill;
+    const njs_value_t  *this, *value;
 
-    vm->retval = args[0];
+    array = NULL;
 
-    if (!njs_is_array(&args[0])) {
+    this = njs_arg(args, nargs, 0);
+
+    if (njs_is_primitive(this)) {
+        object = njs_object_value_alloc(vm, this, this->type);
+        if (nxt_slow_path(object == NULL)) {
+            return NXT_ERROR;
+        }
+
+        vm->retval.data.u.object = object;
+        vm->retval.type = object->type;
+        vm->retval.data.truth = 1;
+
         return NXT_OK;
     }
 
-    array = args[0].data.u.array;
-    length = array->length;
+    if (njs_is_array(this)) {
+        array = this->data.u.array;
+        length = array->length;
 
-    if (length == 0) {
-        return NXT_OK;
+    } else {
+        fill = njs_vm_continuation(vm);
+
+        if (nxt_slow_path(!njs_is_primitive(&fill->length))) {
+            njs_vm_trap_value(vm, &fill->length);
+            return njs_trap(vm, NJS_TRAP_NUMBER_ARG);
+        }
+
+        length = njs_primitive_value_to_length(&fill->length);
     }
 
-    start = 0;
-    end = length;
+    start = njs_primitive_value_to_integer(njs_arg(args, nargs, 2));
+    start = (start < 0) ? nxt_max(length + start, 0) : nxt_min(start, length);
 
-    if (nargs > 2) {
-        start = args[2].data.u.number;
+    if (njs_is_undefined(njs_arg(args, nargs, 3))) {
+        end = length;
 
-        if (start > length) {
-            start = length;
-        }
-
-        if (start < 0) {
-            start += length;
-
-            if (start < 0) {
-                start = 0;
-            }
-        }
-
-        if (nargs > 3) {
-            end = args[3].data.u.number;
-
-            if (end > length) {
-                end = length;
-            }
-
-            if (end < 0) {
-                end += length;
-
-                if (end < 0) {
-                    end = 0;
-                }
-            }
-        }
+    } else {
+        end = njs_primitive_value_to_integer(njs_arg(args, nargs, 3));
     }
+
+    end = (end < 0) ? nxt_max(length + end, 0) : nxt_min(end, length);
 
     value = njs_arg(args, nargs, 1);
 
+    vm->retval = *this;
+
+    if (array != NULL) {
+        for (i = start; i < end; i++) {
+            array->start[i] = *value;
+        }
+
+        return NXT_OK;
+    }
+
     for (i = start; i < end; i++) {
-        array->start[i] = *value;
+        njs_uint32_to_string(&name, i);
+
+        ret = njs_value_property_set(vm, &vm->retval, &name,
+                                     (njs_value_t *) value);
+        if (nxt_slow_path(ret == NXT_ERROR)) {
+            return ret;
+        }
     }
 
     return NXT_OK;
@@ -2395,7 +2456,8 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     {
         .type = NJS_METHOD,
         .name = njs_string("fill"),
-        .value = njs_native_function(njs_array_prototype_fill, 0,
+        .value = njs_native_function(njs_array_prototype_fill,
+                     njs_continuation_size(njs_array_fill_t),
                      NJS_OBJECT_ARG, NJS_SKIP_ARG, NJS_NUMBER_ARG,
                      NJS_NUMBER_ARG),
         .writable = 1,
