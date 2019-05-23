@@ -1042,6 +1042,7 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
         .name = njs_string("readFile"),
         .value = njs_native_function(njs_fs_read_file,
                                      njs_continuation_size(njs_fs_cont_t), 0),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -1049,6 +1050,7 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("readFileSync"),
         .value = njs_native_function(njs_fs_read_file_sync, 0, 0),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -1057,6 +1059,7 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
         .name = njs_string("appendFile"),
         .value = njs_native_function(njs_fs_append_file,
                                      njs_continuation_size(njs_fs_cont_t), 0),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -1065,6 +1068,7 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
         .name = njs_string("appendFileSync"),
         .value = njs_native_function(njs_fs_append_file_sync,
                                      njs_continuation_size(njs_fs_cont_t), 0),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -1073,6 +1077,7 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
         .name = njs_string("writeFile"),
         .value = njs_native_function(njs_fs_write_file,
                                      njs_continuation_size(njs_fs_cont_t), 0),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -1081,6 +1086,7 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
         .name = njs_string("writeFileSync"),
         .value = njs_native_function(njs_fs_write_file_sync,
                                      njs_continuation_size(njs_fs_cont_t), 0),
+        .writable = 1,
         .configurable = 1,
     },
 

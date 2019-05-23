@@ -918,6 +918,7 @@ static const njs_object_prop_t  njs_date_constructor_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("UTC"),
         .value = njs_native_function(njs_date_utc, 0, 0),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -925,6 +926,7 @@ static const njs_object_prop_t  njs_date_constructor_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("now"),
         .value = njs_native_function(njs_date_now, 0, 0),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -933,6 +935,7 @@ static const njs_object_prop_t  njs_date_constructor_properties[] =
         .name = njs_string("parse"),
         .value = njs_native_function(njs_date_parse, 0,
                      NJS_SKIP_ARG, NJS_STRING_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 };
@@ -1944,6 +1947,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("__proto__"),
         .value = njs_prop_handler(njs_primitive_prototype_get_proto),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -1951,6 +1955,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("constructor"),
         .value = njs_prop_handler(njs_object_prototype_create_constructor),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -1959,6 +1964,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("valueOf"),
         .value = njs_native_function(njs_date_prototype_value_of, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -1967,6 +1973,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("toString"),
         .value = njs_native_function(njs_date_prototype_to_string, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -1975,6 +1982,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("toDateString"),
         .value = njs_native_function(njs_date_prototype_to_date_string, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -1983,6 +1991,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("toTimeString"),
         .value = njs_native_function(njs_date_prototype_to_time_string, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -1991,6 +2000,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("toLocaleString"),
         .value = njs_native_function(njs_date_prototype_to_string, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -1999,6 +2009,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_long_string("toLocaleDateString"),
         .value = njs_native_function(njs_date_prototype_to_date_string, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2007,6 +2018,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_long_string("toLocaleTimeString"),
         .value = njs_native_function(njs_date_prototype_to_time_string, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2015,6 +2027,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("toUTCString"),
         .value = njs_native_function(njs_date_prototype_to_utc_string, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2023,6 +2036,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("toISOString"),
         .value = njs_native_function(njs_date_prototype_to_iso_string, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2031,6 +2045,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("getTime"),
         .value = njs_native_function(njs_date_prototype_value_of, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2039,6 +2054,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("getFullYear"),
         .value = njs_native_function(njs_date_prototype_get_full_year, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2047,6 +2063,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("getUTCFullYear"),
         .value = njs_native_function(njs_date_prototype_get_utc_full_year, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2055,6 +2072,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("getMonth"),
         .value = njs_native_function(njs_date_prototype_get_month, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2063,6 +2081,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("getUTCMonth"),
         .value = njs_native_function(njs_date_prototype_get_utc_month, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2071,6 +2090,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("getDate"),
         .value = njs_native_function(njs_date_prototype_get_date, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2079,6 +2099,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("getUTCDate"),
         .value = njs_native_function(njs_date_prototype_get_utc_date, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2087,6 +2108,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("getDay"),
         .value = njs_native_function(njs_date_prototype_get_day, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2095,6 +2117,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("getUTCDay"),
         .value = njs_native_function(njs_date_prototype_get_utc_day, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2103,6 +2126,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("getHours"),
         .value = njs_native_function(njs_date_prototype_get_hours, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2111,6 +2135,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("getUTCHours"),
         .value = njs_native_function(njs_date_prototype_get_utc_hours, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2119,6 +2144,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("getMinutes"),
         .value = njs_native_function(njs_date_prototype_get_minutes, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2127,6 +2153,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("getUTCMinutes"),
         .value = njs_native_function(njs_date_prototype_get_utc_minutes, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2135,6 +2162,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("getSeconds"),
         .value = njs_native_function(njs_date_prototype_get_seconds, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2143,6 +2171,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("getUTCSeconds"),
         .value = njs_native_function(njs_date_prototype_get_seconds, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2151,6 +2180,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_long_string("getMilliseconds"),
         .value = njs_native_function(njs_date_prototype_get_milliseconds, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2159,6 +2189,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_long_string("getUTCMilliseconds"),
         .value = njs_native_function(njs_date_prototype_get_milliseconds, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2167,6 +2198,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_long_string("getTimezoneOffset"),
         .value = njs_native_function(njs_date_prototype_get_timezone_offset, 0,
                      NJS_DATE_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2175,6 +2207,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("setTime"),
         .value = njs_native_function(njs_date_prototype_set_time, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2183,6 +2216,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_long_string("setMilliseconds"),
         .value = njs_native_function(njs_date_prototype_set_milliseconds, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2191,6 +2225,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_long_string("setUTCMilliseconds"),
         .value = njs_native_function(njs_date_prototype_set_milliseconds, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2199,6 +2234,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("setSeconds"),
         .value = njs_native_function(njs_date_prototype_set_seconds, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2207,6 +2243,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("setUTCSeconds"),
         .value = njs_native_function(njs_date_prototype_set_seconds, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2216,6 +2253,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .value = njs_native_function(njs_date_prototype_set_minutes, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG,
                      NJS_NUMBER_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2225,6 +2263,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .value = njs_native_function(njs_date_prototype_set_utc_minutes, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG,
                      NJS_NUMBER_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2234,6 +2273,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .value = njs_native_function(njs_date_prototype_set_hours, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG,
                      NJS_NUMBER_ARG, NJS_NUMBER_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2243,6 +2283,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .value = njs_native_function(njs_date_prototype_set_utc_hours, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG,
                      NJS_NUMBER_ARG, NJS_NUMBER_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2251,6 +2292,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("setDate"),
         .value = njs_native_function(njs_date_prototype_set_date, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2259,6 +2301,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("setUTCDate"),
         .value = njs_native_function(njs_date_prototype_set_utc_date, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2267,6 +2310,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("setMonth"),
         .value = njs_native_function(njs_date_prototype_set_month, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2275,6 +2319,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("setUTCMonth"),
         .value = njs_native_function(njs_date_prototype_set_utc_month, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2284,6 +2329,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .value = njs_native_function(njs_date_prototype_set_full_year, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG,
                      NJS_NUMBER_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2293,6 +2339,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .value = njs_native_function(njs_date_prototype_set_utc_full_year, 0,
                      NJS_DATE_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG,
                      NJS_NUMBER_ARG),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -2301,6 +2348,7 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
         .name = njs_string("toJSON"),
         .value = njs_native_function(njs_date_prototype_to_json,
                      NJS_CONTINUATION_SIZE, 0),
+        .writable = 1,
         .configurable = 1,
     },
 };

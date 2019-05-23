@@ -1193,6 +1193,7 @@ static const njs_object_prop_t  njs_function_prototype_properties[] =
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("constructor"),
         .value = njs_prop_handler(njs_object_prototype_create_constructor),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -1200,6 +1201,7 @@ static const njs_object_prop_t  njs_function_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("call"),
         .value = njs_native_function(njs_function_prototype_call, 0, 0),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -1207,6 +1209,7 @@ static const njs_object_prop_t  njs_function_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("apply"),
         .value = njs_native_function(njs_function_prototype_apply, 0, 0),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -1214,6 +1217,7 @@ static const njs_object_prop_t  njs_function_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("bind"),
         .value = njs_native_function(njs_function_prototype_bind, 0, 0),
+        .writable = 1,
         .configurable = 1,
     },
 };

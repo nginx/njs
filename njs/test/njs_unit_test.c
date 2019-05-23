@@ -3485,7 +3485,6 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = []; a.concat([])"),
       nxt_string("") },
 
-#if 0  /* Most built-in methods and properties must be writable. */
     { nxt_string("var s = { toString: function() { return 'S' } };"
                  "var v = { toString: 8, valueOf: function() { return 'V' } };"
                  "var o = [9]; o.join = function() { return 'O' };"
@@ -3503,7 +3502,6 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = [1,2,3]; a.join = 'NO';"
                  "Object.prototype.toString = function () { return 'A' }; a"),
       nxt_string("[object Array]") },
-#endif
 
     { nxt_string("Array.prototype.toString.call(1)"),
       nxt_string("[object Number]") },
@@ -6166,11 +6164,9 @@ static njs_unit_test_t  njs_test[] =
                     "(function(){(function(){(function(){})})})})})})})"),
       nxt_string("SyntaxError: The maximum function nesting level is \"5\" in 1") },
 
-#if 0  /* Most built-in methods and properties must be writable. */
     { nxt_string("Function.prototype.toString = function () {return 'X'};"
                  "eval"),
       nxt_string("X") },
-#endif
 
     { nxt_string("var o = {f:function(x){ return x**2}}; o.f\n(2)"),
       nxt_string("4") },
@@ -7429,7 +7425,6 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Error('e')"),
       nxt_string("Error: e") },
 
-#if 0  /* Most built-in methods and properties must be writable. */
     { nxt_string("var e = Error('e'); e.name = 'E'; e"),
       nxt_string("E: e") },
 
@@ -7441,7 +7436,6 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var e = Error(); e.name = ''; e.message = 'e'; e"),
       nxt_string("e") },
-#endif
 
     { nxt_string("Error('e').name + ': ' + Error('e').message"),
       nxt_string("Error: e") },
@@ -7515,7 +7509,6 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("URIError('e').name + ': ' + URIError('e').message"),
       nxt_string("URIError: e") },
 
-#if 0  /* Most built-in methods and properties must be writable. */
     { nxt_string("var e = EvalError('e'); e.name = 'E'; e"),
       nxt_string("E: e") },
 
@@ -7541,7 +7534,6 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var e = MemoryError('e'); e.name = 'E'"),
       nxt_string("TypeError: Cannot add property \"name\", object is not extensible") },
-#endif
 
     { nxt_string("EvalError.prototype.name"),
       nxt_string("EvalError") },
@@ -8292,6 +8284,9 @@ static njs_unit_test_t  njs_test[] =
                  "var a = []; for(var p in x) a.push(p); a"),
       nxt_string("a,b,0,1,2") },
 
+    { nxt_string("var o = Object.create(Math); o.abs = -5; Math.abs(o.abs)"),
+      nxt_string("5") },
+
     { nxt_string("Object.prototype.toString.call(Object.prototype)"),
       nxt_string("[object Object]") },
 
@@ -8418,10 +8413,8 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Array.constructor === Function"),
       nxt_string("true") },
 
-#if 0  /* Most built-in methods and properties must be writable. */
     { nxt_string("var a = []; a.join = 'OK'; a"),
       nxt_string("[object Array]") },
-#endif
 
     { nxt_string("[].__proto__ === Array.prototype"),
       nxt_string("true") },
@@ -9460,7 +9453,6 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.create(Math).hasOwnProperty('abs')"),
       nxt_string("false") },
 
-#if 0  /* Most built-in methods and properties must be writable. */
     { nxt_string("var m = Object.create(Math); m.abs = 3;"
                  "[m.hasOwnProperty('abs'), m.abs]"),
       nxt_string("true,3") },
@@ -9468,7 +9460,6 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var m = Object.create(Math); m.abs = Math.floor;"
                  "[m.hasOwnProperty('abs'), delete m.abs, m.abs(-1)]"),
       nxt_string("true,true,1") },
-#endif
 
     { nxt_string("Object.getOwnPropertyDescriptor({a:1}, 'a').value"),
       nxt_string("1") },
@@ -9932,6 +9923,35 @@ static njs_unit_test_t  njs_test[] =
         "    Math,"
         "    JSON,"
         "].every(obj => isConfigurableMethods(obj)) || fail"),
+
+      nxt_string("true") },
+
+    { nxt_string(
+        "var fail;"
+        "function isWritableMethods(o) {"
+        "    var except = ["
+        "        'prototype',"
+        "    ];"
+        "    return Object.getOwnPropertyNames(o)"
+        "                 .filter(v => !except.includes(v)"
+        "                              && typeof o[v] == 'function')"
+        "                 .every(v => Object.getOwnPropertyDescriptor(o, v)"
+        "                                   .writable"
+        "                             || !(fail = `${o.name}.${v}`));"
+        "}"
+        "["
+        "    Boolean, Boolean.prototype,"
+        "    Number, Number.prototype,"
+        "    String, String.prototype,"
+        "    Object, Object.prototype,"
+        "    Array, Array.prototype,"
+        "    Function, Function.prototype,"
+        "    RegExp, RegExp.prototype,"
+        "    Date, Date.prototype,"
+        "    Error, Error.prototype,"
+        "    Math,"
+        "    JSON,"
+        "].every(obj => isWritableMethods(obj)) || fail"),
 
       nxt_string("true") },
 
@@ -11884,10 +11904,8 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("JSON.stringify(URIError('e'))"),
       nxt_string("{}") },
 
-#if 0  /* Most built-in methods and properties must be writable. */
     { nxt_string("var e = URIError('e'); e.name = 'E'; JSON.stringify(e)"),
       nxt_string("{\"name\":\"E\"}") },
-#endif
 
     { nxt_string("var e = URIError('e'); e.message = 'E'; JSON.stringify(e)"),
       nxt_string("{}") },

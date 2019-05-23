@@ -131,6 +131,7 @@ static const njs_object_prop_t  njs_boolean_prototype_properties[] =
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("__proto__"),
         .value = njs_prop_handler(njs_primitive_prototype_get_proto),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -138,6 +139,7 @@ static const njs_object_prop_t  njs_boolean_prototype_properties[] =
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("constructor"),
         .value = njs_prop_handler(njs_object_prototype_create_constructor),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -145,6 +147,7 @@ static const njs_object_prop_t  njs_boolean_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("valueOf"),
         .value = njs_native_function(njs_boolean_prototype_value_of, 0, 0),
+        .writable = 1,
         .configurable = 1,
     },
 
@@ -152,6 +155,7 @@ static const njs_object_prop_t  njs_boolean_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("toString"),
         .value = njs_native_function(njs_boolean_prototype_to_string, 0, 0),
+        .writable = 1,
         .configurable = 1,
     },
 };
