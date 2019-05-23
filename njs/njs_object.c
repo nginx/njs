@@ -2909,8 +2909,11 @@ njs_object_prototype_create_constructor(njs_vm_t *vm, njs_value_t *value,
 
 found:
 
-    cons = njs_property_constructor_create(vm, &prototype->object.hash,
-                                          &vm->scopes[NJS_SCOPE_GLOBAL][index]);
+    if (setval == NULL) {
+        setval = &vm->scopes[NJS_SCOPE_GLOBAL][index];
+    }
+
+    cons = njs_property_constructor_create(vm, &prototype->object.hash, setval);
     if (nxt_fast_path(cons != NULL)) {
         *retval = *cons;
         return NXT_OK;
@@ -2943,7 +2946,7 @@ njs_property_constructor_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
     lhq.value = prop;
     lhq.key_hash = NJS_CONSTRUCTOR_HASH;
     lhq.key = nxt_string_value("constructor");
-    lhq.replace = 0;
+    lhq.replace = 1;
     lhq.pool = vm->mem_pool;
     lhq.proto = &njs_object_hash_proto;
 
@@ -2953,7 +2956,7 @@ njs_property_constructor_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
         return &prop->value;
     }
 
-    njs_internal_error(vm, "lvlhsh insert failed");
+    njs_internal_error(vm, "lvlhsh insert/replace failed");
 
     return NULL;
 }

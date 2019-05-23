@@ -8480,6 +8480,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Boolean.prototype.constructor === Boolean"),
       nxt_string("true") },
 
+    { nxt_string("Boolean.prototype.constructor = 1;"
+                 "Boolean.prototype.constructor"),
+      nxt_string("1") },
+
+    { nxt_string("var c = Boolean.prototype.constructor;"
+                 "Boolean.prototype.constructor = 1;"
+                 "[c(0), Boolean.prototype.constructor]"),
+      nxt_string("false,1") },
+
     { nxt_string("Boolean.prototype.hasOwnProperty('constructor')"),
       nxt_string("true") },
 
