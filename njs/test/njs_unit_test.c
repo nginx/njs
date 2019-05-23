@@ -9625,7 +9625,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("name,length,prototype,isArray,of") },
 
     { nxt_string("Object.getOwnPropertyNames(Array.isArray)"),
-      nxt_string("length") },
+      nxt_string("name,length") },
 
     { nxt_string("Object.defineProperty(Object.freeze({}), 'b', {})"),
       nxt_string("TypeError: object is not extensible") },
@@ -12172,6 +12172,37 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("njs.dump($r.header)"),
       nxt_string("{type:\"object\",props:[\"getter\",\"foreach\",\"next\"]}") },
+
+    /* Built-in methods name. */
+
+    { nxt_string(
+        "var fail;"
+        "function isMethodsHaveName(o) {"
+        "    var except = ["
+        "        'prototype',"
+        "        'constructor',"
+        "    ];"
+        "    return Object.getOwnPropertyNames(o)"
+        "                 .filter(v => !except.includes(v)"
+        "                              && typeof o[v] == 'function')"
+        "                 .every(v => o[v].name == v"
+        "                             || !(fail = `${o.name}.${v}: ${o[v].name}`));"
+        "}"
+        "["
+        "    Boolean, Boolean.prototype,"
+        "    Number, Number.prototype,"
+        "    String, String.prototype,"
+        "    Object, Object.prototype,"
+        "    Array, Array.prototype,"
+        "    Function, Function.prototype,"
+        "    RegExp, RegExp.prototype,"
+        "    Date, Date.prototype,"
+        "    Error, Error.prototype,"
+        "    Math,"
+        "    JSON,"
+        "].every(obj => isMethodsHaveName(obj)) || fail"),
+
+      nxt_string("true") },
 
     /* require(). */
 

@@ -710,8 +710,12 @@ njs_external_property_delete(njs_vm_t *vm, njs_value_t *value,
 njs_ret_t
 njs_method_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
 {
-    njs_function_t     *function;
-    njs_object_prop_t  *prop, *shared;
+    nxt_int_t           ret;
+    njs_function_t      *function;
+    njs_object_prop_t   *prop, *shared, *name;
+    nxt_lvlhsh_query_t  lhq;
+
+    static const njs_value_t  name_string = njs_string("name");
 
     prop = nxt_mp_align(vm->mem_pool, sizeof(njs_value_t),
                         sizeof(njs_object_prop_t));
@@ -733,6 +737,26 @@ njs_method_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
 
     } else {
         function->object.shared_hash = vm->shared->arrow_instance_hash;
+    }
+
+    name = njs_object_prop_alloc(vm, &name_string, &prop->name, 0);
+    if (nxt_slow_path(name == NULL)) {
+        return NXT_ERROR;
+    }
+
+    name->configurable = 1;
+
+    lhq.key_hash = NJS_NAME_HASH;
+    lhq.key = nxt_string_value("name");
+    lhq.replace = 0;
+    lhq.value = name;
+    lhq.proto = &njs_object_hash_proto;
+    lhq.pool = vm->mem_pool;
+
+    ret = nxt_lvlhsh_insert(&function->object.hash, &lhq);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        njs_internal_error(vm, "lvlhsh insert failed");
+        return NXT_ERROR;
     }
 
     pq->lhq.replace = 0;
