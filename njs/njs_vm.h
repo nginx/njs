@@ -147,6 +147,11 @@ typedef struct njs_generator_s        njs_generator_t;
  * njs_prop_handler_t operates as a property getter and/or setter.
  * The handler receives NULL setval if it is invoked in GET context and
  * non-null otherwise.
+ *
+ * njs_prop_handler_t is expected to return:
+ *   NXT_OK - handler executed successfully;
+ *   NXT_ERROR - some error, vm->retval contains appropriate exception;
+ *   NXT_DECLINED - handler was applied to inappropriate object.
  */
 typedef njs_ret_t (*njs_prop_handler_t) (njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval);

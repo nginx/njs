@@ -434,57 +434,65 @@ njs_array_length(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
 
     proto = value->data.u.object;
 
-    do {
-        if (nxt_fast_path(proto->type == NJS_ARRAY)) {
-            break;
+    if (setval == NULL) {
+        do {
+            if (nxt_fast_path(proto->type == NJS_ARRAY)) {
+                break;
+            }
+
+            proto = proto->__proto__;
+        } while (proto != NULL);
+
+        if (nxt_slow_path(proto == NULL)) {
+            njs_internal_error(vm, "no array in proto chain");
+            return NJS_ERROR;
         }
 
-        proto = proto->__proto__;
-    } while (proto != NULL);
+        array = (njs_array_t *) proto;
 
-    if (nxt_slow_path(proto == NULL)) {
-        njs_internal_error(vm, "no array in proto chain");
+        njs_value_number_set(retval, array->length);
+        return NJS_OK;
+    }
+
+    if (proto->type != NJS_ARRAY) {
+        return NJS_DECLINED;
+    }
+
+    if (!njs_is_number(setval)) {
+        njs_range_error(vm, "Invalid array length");
+        return NJS_ERROR;
+    }
+
+    num = setval->data.u.number;
+    length = (uint32_t) num;
+
+    if ((double) length != num) {
+        njs_range_error(vm, "Invalid array length");
         return NJS_ERROR;
     }
 
     array = (njs_array_t *) proto;
 
-    if (setval != NULL) {
-        if (!njs_is_number(setval)) {
-            njs_range_error(vm, "Invalid array length");
+    size = (int64_t) length - array->length;
+
+    if (size > 0) {
+        ret = njs_array_expand(vm, array, 0, size);
+        if (nxt_slow_path(ret != NXT_OK)) {
             return NJS_ERROR;
         }
 
-        num = setval->data.u.number;
-        length = (uint32_t) num;
+        val = &array->start[array->length];
 
-        if ((double) length != num) {
-            njs_range_error(vm, "Invalid array length");
-            return NJS_ERROR;
-        }
-
-        size = (int64_t) length - array->length;
-
-        if (size > 0) {
-            ret = njs_array_expand(vm, array, 0, size);
-            if (nxt_slow_path(ret != NXT_OK)) {
-                return NJS_ERROR;
-            }
-
-            val = &array->start[array->length];
-
-            do {
-                njs_set_invalid(val);
-                val++;
-                size--;
-            } while (size != 0);
-        }
-
-        array->length = length;
+        do {
+            njs_set_invalid(val);
+            val++;
+            size--;
+        } while (size != 0);
     }
 
-    njs_value_number_set(retval, array->length);
+    array->length = length;
 
+    njs_value_number_set(retval, length);
     return NJS_OK;
 }
 

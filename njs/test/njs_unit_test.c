@@ -8405,6 +8405,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Array.prototype.length = 3, Array.prototype"),
       nxt_string(",,") },
 
+    { nxt_string("var o = Object.create(Array.prototype); o.length = 3;"
+                 "[Array.prototype, Array.prototype.length, o.length]"),
+      nxt_string(",0,3") },
+
     { nxt_string("var o = Object.create(Array.prototype);"
                  "Object.defineProperty(o, 'length', {value: 3});"
                  "[Array.prototype, Array.prototype.length, o.length]"),

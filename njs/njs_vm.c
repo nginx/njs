@@ -694,11 +694,17 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
         if (prop->type == NJS_PROPERTY_HANDLER) {
             ret = prop->value.data.u.prop_handler(vm, object, value,
                                                   &vm->retval);
-            if (nxt_slow_path(ret != NXT_OK)) {
+
+            switch (ret) {
+            case NXT_OK:
+                return sizeof(njs_vmcode_prop_set_t);
+
+            case NXT_DECLINED:
+                break;
+
+            default:
                 return ret;
             }
-
-            return sizeof(njs_vmcode_prop_set_t);
         }
 
         if (pq.own) {
