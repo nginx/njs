@@ -1194,6 +1194,8 @@ njs_ret_t njs_vmcode_object_copy(njs_vm_t *vm, njs_value_t *value,
 
 njs_ret_t njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *property);
+njs_ret_t njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *object,
+    njs_value_t *property);
 njs_ret_t njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *property);
 njs_ret_t njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *property,

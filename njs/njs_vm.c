@@ -545,12 +545,122 @@ njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
 
 
 njs_ret_t
+njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *object,
+    njs_value_t *property)
+{
+    uint32_t               index, size;
+    njs_ret_t              ret;
+    njs_array_t            *array;
+    njs_value_t            *init, *value, name;
+    njs_object_t           *obj;
+    njs_object_prop_t      *prop;
+    nxt_lvlhsh_query_t     lhq;
+    njs_vmcode_prop_set_t  *code;
+
+    code = (njs_vmcode_prop_set_t *) vm->current;
+    init = njs_vmcode_operand(vm, code->value);
+
+    switch (object->type) {
+    case NJS_ARRAY:
+        index = njs_value_to_index(property);
+        if (nxt_slow_path(index == NJS_ARRAY_INVALID_INDEX)) {
+            njs_internal_error(vm,
+                               "invalid index while property initialization");
+            return NXT_ERROR;
+        }
+
+        array = object->data.u.array;
+
+        if (index >= array->length) {
+            size = index - array->length;
+
+            ret = njs_array_expand(vm, array, 0, size + 1);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return ret;
+            }
+
+            value = &array->start[array->length];
+
+            while (size != 0) {
+                njs_set_invalid(value);
+                value++;
+                size--;
+            }
+
+            array->length = index + 1;
+        }
+
+        /* GC: retain. */
+        array->start[index] = *init;
+
+        break;
+
+    case NJS_OBJECT:
+        ret = njs_primitive_value_to_string(vm, &name, property);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            njs_internal_error(vm, "failed conversion of type \"%s\" "
+                               "to string while property initialization",
+                               njs_type_string(property->type));
+            return NXT_ERROR;
+        }
+
+        njs_string_get(&name, &lhq.key);
+        lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
+        lhq.proto = &njs_object_hash_proto;
+        lhq.pool = vm->mem_pool;
+
+        obj = object->data.u.object;
+
+        ret = nxt_lvlhsh_find(&obj->__proto__->shared_hash, &lhq);
+        if (ret == NXT_OK) {
+            prop = lhq.value;
+
+            if (prop->type == NJS_PROPERTY_HANDLER) {
+                ret = prop->value.data.u.prop_handler(vm, object, init,
+                                                      &vm->retval);
+                if (nxt_slow_path(ret != NXT_OK)) {
+                    return ret;
+                }
+
+                break;
+            }
+        }
+
+        prop = njs_object_prop_alloc(vm, &name, init, 1);
+        if (nxt_slow_path(prop == NULL)) {
+            return NXT_ERROR;
+        }
+
+        lhq.value = prop;
+        lhq.replace = 1;
+
+        ret = nxt_lvlhsh_insert(&obj->hash, &lhq);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            njs_internal_error(vm, "lvlhsh insert/replace failed");
+            return NXT_ERROR;
+        }
+
+        break;
+
+    default:
+        njs_internal_error(vm, "unexpected object type \"%s\" "
+                           "while property initialization",
+                           njs_type_string(object->type));
+
+        return NXT_ERROR;
+    }
+
+    return sizeof(njs_vmcode_prop_set_t);
+}
+
+
+njs_ret_t
 njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *property)
 {
     njs_ret_t              ret;
     njs_value_t            *value;
-    njs_object_prop_t      *prop;
+    njs_object_prop_t      *prop, *shared;
     njs_property_query_t   pq;
     njs_vmcode_prop_set_t  *code;
 
@@ -563,6 +673,8 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
     code = (njs_vmcode_prop_set_t *) vm->current;
     value = njs_vmcode_operand(vm, code->value);
 
+    shared = NULL;
+
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_SET, 0);
 
     ret = njs_property_query(vm, &pq, object, property);
@@ -572,70 +684,62 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
     case NXT_OK:
         prop = pq.lhq.value;
 
-        switch (prop->type) {
-        case NJS_PROPERTY:
-            break;
+        if (nxt_slow_path(!prop->writable)) {
+            njs_type_error(vm,
+                           "Cannot assign to read-only property \"%V\" of %s",
+                           &pq.lhq.key, njs_type_string(object->type));
+            return NXT_ERROR;
+        }
 
-        case NJS_PROPERTY_REF:
-            *prop->value.data.u.value = *value;
+        if (prop->type == NJS_PROPERTY_HANDLER) {
+            ret = prop->value.data.u.prop_handler(vm, object, value,
+                                                  &vm->retval);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return ret;
+            }
+
             return sizeof(njs_vmcode_prop_set_t);
+        }
 
-        case NJS_PROPERTY_HANDLER:
-            if (prop->writable) {
-                ret = prop->value.data.u.prop_handler(vm, object, value,
-                                                      &vm->retval);
-                if (nxt_slow_path(ret != NXT_OK)) {
-                    return ret;
+        if (pq.own) {
+            switch (prop->type) {
+            case NJS_PROPERTY:
+            case NJS_METHOD:
+                if (nxt_slow_path(pq.shared)) {
+                    shared = prop;
+                    break;
                 }
 
+                goto found;
+
+            case NJS_PROPERTY_REF:
+                *prop->value.data.u.value = *value;
                 return sizeof(njs_vmcode_prop_set_t);
+
+            default:
+                njs_internal_error(vm, "unexpected property type \"%s\" "
+                                   "while setting",
+                                   njs_prop_type_string(prop->type));
+
+                return NXT_ERROR;
             }
 
             break;
-
-        default:
-            njs_internal_error(vm, "unexpected property type \"%s\" "
-                               "while setting",
-                               njs_prop_type_string(prop->type));
-
-            return NXT_ERROR;
         }
 
-        break;
+        /* Fall through. */
 
     case NXT_DECLINED:
-        if (nxt_slow_path(!object->data.u.object->extensible)) {
-            njs_type_error(vm, "Cannot add property \"%V\", "
-                           "object is not extensible", &pq.lhq.key);
-            return NXT_ERROR;
-        }
+        if (nxt_slow_path(pq.own_whiteout != NULL)) {
+            /* Previously deleted property. */
+            prop = pq.own_whiteout;
 
-        if (nxt_slow_path(pq.lhq.value != NULL)) {
-            prop = pq.lhq.value;
+            prop->type = NJS_PROPERTY;
+            prop->enumerable = 1;
+            prop->configurable = 1;
+            prop->writable = 1;
 
-            if (nxt_slow_path(prop->type == NJS_WHITEOUT)) {
-                /* Previously deleted property.  */
-                prop->type = NJS_PROPERTY;
-                prop->enumerable = 1;
-                prop->configurable = 1;
-                prop->writable = 1;
-                break;
-            }
-        }
-
-        prop = njs_object_prop_alloc(vm, &pq.value, &njs_value_undefined, 1);
-        if (nxt_slow_path(prop == NULL)) {
-            return NXT_ERROR;
-        }
-
-        pq.lhq.replace = 0;
-        pq.lhq.value = prop;
-        pq.lhq.pool = vm->mem_pool;
-
-        ret = nxt_lvlhsh_insert(&object->data.u.object->hash, &pq.lhq);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            njs_internal_error(vm, "lvlhsh insert failed");
-            return NXT_ERROR;
+            goto found;
         }
 
         break;
@@ -647,11 +751,33 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
         return ret;
     }
 
-    if (nxt_slow_path(!prop->writable)) {
-        njs_type_error(vm, "Cannot assign to read-only property \"%V\" of %s",
-                       &pq.lhq.key, njs_type_string(object->type));
+    if (nxt_slow_path(!object->data.u.object->extensible)) {
+        njs_type_error(vm, "Cannot add property \"%V\", "
+                       "object is not extensible", &pq.lhq.key);
         return NXT_ERROR;
     }
+
+    prop = njs_object_prop_alloc(vm, &pq.value, &njs_value_undefined, 1);
+    if (nxt_slow_path(prop == NULL)) {
+        return NXT_ERROR;
+    }
+
+    if (nxt_slow_path(shared != NULL)) {
+        prop->enumerable = shared->enumerable;
+        prop->configurable = shared->configurable;
+    }
+
+    pq.lhq.replace = 0;
+    pq.lhq.value = prop;
+    pq.lhq.pool = vm->mem_pool;
+
+    ret = nxt_lvlhsh_insert(&object->data.u.object->hash, &pq.lhq);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        njs_internal_error(vm, "lvlhsh insert failed");
+        return NXT_ERROR;
+    }
+
+found:
 
     prop->value = *value;
 

@@ -3408,6 +3408,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.create(['α','β'])[false]"),
       nxt_string("undefined") },
 
+    { nxt_string("var a = ['abc']; var o = Object.create(a); o[0] = 32;"
+                 "[a,o[0]]"),
+      nxt_string("abc,32") },
+
     /* Array.length setter */
 
     { nxt_string("[].length = {}"),
@@ -3481,6 +3485,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = []; a.concat([])"),
       nxt_string("") },
 
+#if 0  /* Most built-in methods and properties must be writable. */
     { nxt_string("var s = { toString: function() { return 'S' } };"
                  "var v = { toString: 8, valueOf: function() { return 'V' } };"
                  "var o = [9]; o.join = function() { return 'O' };"
@@ -3495,7 +3500,6 @@ static njs_unit_test_t  njs_test[] =
 
     /* Array.toString(). */
 
-# if 0
     { nxt_string("var a = [1,2,3]; a.join = 'NO';"
                  "Object.prototype.toString = function () { return 'A' }; a"),
       nxt_string("[object Array]") },
@@ -6162,9 +6166,11 @@ static njs_unit_test_t  njs_test[] =
                     "(function(){(function(){(function(){})})})})})})})"),
       nxt_string("SyntaxError: The maximum function nesting level is \"5\" in 1") },
 
+#if 0  /* Most built-in methods and properties must be writable. */
     { nxt_string("Function.prototype.toString = function () {return 'X'};"
                  "eval"),
       nxt_string("X") },
+#endif
 
     { nxt_string("var o = {f:function(x){ return x**2}}; o.f\n(2)"),
       nxt_string("4") },
@@ -7128,6 +7134,9 @@ static njs_unit_test_t  njs_test[] =
      { nxt_string("var f = (a,b) => 0; f.length"),
        nxt_string("2") },
 
+    { nxt_string("var o = Object.create(f => 1); o.length = 3"),
+      nxt_string("TypeError: Cannot assign to read-only property \"length\" of object") },
+
     /* Scopes. */
 
     { nxt_string("function f(x) { a = x } var a; f(5); a"),
@@ -7420,6 +7429,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Error('e')"),
       nxt_string("Error: e") },
 
+#if 0  /* Most built-in methods and properties must be writable. */
     { nxt_string("var e = Error('e'); e.name = 'E'; e"),
       nxt_string("E: e") },
 
@@ -7431,6 +7441,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var e = Error(); e.name = ''; e.message = 'e'; e"),
       nxt_string("e") },
+#endif
 
     { nxt_string("Error('e').name + ': ' + Error('e').message"),
       nxt_string("Error: e") },
@@ -7504,6 +7515,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("URIError('e').name + ': ' + URIError('e').message"),
       nxt_string("URIError: e") },
 
+#if 0  /* Most built-in methods and properties must be writable. */
     { nxt_string("var e = EvalError('e'); e.name = 'E'; e"),
       nxt_string("E: e") },
 
@@ -7529,6 +7541,7 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var e = MemoryError('e'); e.name = 'E'"),
       nxt_string("TypeError: Cannot add property \"name\", object is not extensible") },
+#endif
 
     { nxt_string("EvalError.prototype.name"),
       nxt_string("EvalError") },
@@ -8279,17 +8292,6 @@ static njs_unit_test_t  njs_test[] =
                  "var a = []; for(var p in x) a.push(p); a"),
       nxt_string("a,b,0,1,2") },
 
-#if 0
-    /* TODO: No properties implementation for array type
-     * (enumerable, writable, configurable).
-     */
-
-    { nxt_string("var o = Object("abc"); var x = Object.create(o);"
-                 "x['sd'] = 44; x[1] = 8; x[55] = 8;"
-                 "Object.keys(x)"),
-      nxt_string("55,sd") },
-#endif
-
     { nxt_string("Object.prototype.toString.call(Object.prototype)"),
       nxt_string("[object Object]") },
 
@@ -8405,11 +8407,21 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Array.prototype.length"),
       nxt_string("0") },
 
+    { nxt_string("Array.prototype.length = 3, Array.prototype"),
+      nxt_string(",,") },
+
+    { nxt_string("var o = Object.create(Array.prototype);"
+                 "Object.defineProperty(o, 'length', {value: 3});"
+                 "[Array.prototype, Array.prototype.length, o.length]"),
+      nxt_string(",0,3") },
+
     { nxt_string("Array.constructor === Function"),
       nxt_string("true") },
 
+#if 0  /* Most built-in methods and properties must be writable. */
     { nxt_string("var a = []; a.join = 'OK'; a"),
       nxt_string("[object Array]") },
+#endif
 
     { nxt_string("[].__proto__ === Array.prototype"),
       nxt_string("true") },
@@ -8751,6 +8763,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var s = new String('αβ'); s[1] = 'b'"),
       nxt_string("TypeError: Cannot assign to read-only property \"1\" of object string") },
 
+    { nxt_string("var o = Object.create(new String('αβ')); o[1] = 'a'"),
+      nxt_string("TypeError: Cannot assign to read-only property \"1\" of object") },
+
     { nxt_string("var s = new String('αβ'); s[4] = 'ab'; s[4]"),
       nxt_string("ab") },
 
@@ -8827,6 +8842,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("'test'.constructor.prototype === String.prototype"),
       nxt_string("true") },
+
+    { nxt_string("var o = Object.create(String.prototype); o.length = 1"),
+      nxt_string("TypeError: Cannot assign to read-only property \"length\" of object") },
 
     { nxt_string("Function.name"),
       nxt_string("Function") },
@@ -9127,6 +9145,30 @@ static njs_unit_test_t  njs_test[] =
                  "o.a = 1; o.a"),
       nxt_string("1") },
 
+    { nxt_string("Object.defineProperty(Object.prototype, 'a', {writable:false});"
+                 "var o = {a: 1}; [o.a++, o.a]"),
+      nxt_string("1,2") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(Object.prototype, 'a', {writable:false});"
+                 "o.a = 1"),
+      nxt_string("TypeError: Cannot assign to read-only property \"a\" of object") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(Object.prototype, 'a', {writable:true});"
+                 "o.a = 1; o.a"),
+      nxt_string("1") },
+
+    { nxt_string("var p = Object.create(Function);"
+                 "Object.defineProperty(p, 'length', {writable: true});"
+                 "p.length = 32; p.length"),
+      nxt_string("32") },
+
+    { nxt_string("var p = Object.create(Math.abs);"
+                 "Object.defineProperty(p, 'length', {writable: true});"
+                 "p.length = 23; p.length"),
+      nxt_string("23") },
+
     { nxt_string("var o = {};"
                  "Object.defineProperty(o, 'a', {value:1}); delete o.a"),
       nxt_string("TypeError: Cannot delete property \"a\" of object") },
@@ -9418,6 +9460,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.create(Math).hasOwnProperty('abs')"),
       nxt_string("false") },
 
+#if 0  /* Most built-in methods and properties must be writable. */
     { nxt_string("var m = Object.create(Math); m.abs = 3;"
                  "[m.hasOwnProperty('abs'), m.abs]"),
       nxt_string("true,3") },
@@ -9425,6 +9468,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var m = Object.create(Math); m.abs = Math.floor;"
                  "[m.hasOwnProperty('abs'), delete m.abs, m.abs(-1)]"),
       nxt_string("true,true,1") },
+#endif
 
     { nxt_string("Object.getOwnPropertyDescriptor({a:1}, 'a').value"),
       nxt_string("1") },
@@ -11840,8 +11884,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("JSON.stringify(URIError('e'))"),
       nxt_string("{}") },
 
+#if 0  /* Most built-in methods and properties must be writable. */
     { nxt_string("var e = URIError('e'); e.name = 'E'; JSON.stringify(e)"),
       nxt_string("{\"name\":\"E\"}") },
+#endif
 
     { nxt_string("var e = URIError('e'); e.message = 'E'; JSON.stringify(e)"),
       nxt_string("{}") },

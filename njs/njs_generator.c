@@ -1682,7 +1682,7 @@ njs_generate_assignment(njs_vm_t *vm, njs_generator_t *generator,
         return NXT_OK;
     }
 
-    /* lvalue->token == NJS_TOKEN_PROPERTY */
+    /* lvalue->token == NJS_TOKEN_PROPERTY(_INIT) */
 
     /* Object. */
 
@@ -1735,8 +1735,14 @@ njs_generate_assignment(njs_vm_t *vm, njs_generator_t *generator,
         return ret;
     }
 
-    njs_generate_code(generator, njs_vmcode_prop_set_t, prop_set,
-                      njs_vmcode_property_set, 3, 0);
+    if (lvalue->token == NJS_TOKEN_PROPERTY_INIT) {
+        njs_generate_code(generator, njs_vmcode_prop_set_t, prop_set,
+                          njs_vmcode_property_init, 3, 0);
+    } else {
+        njs_generate_code(generator, njs_vmcode_prop_set_t, prop_set,
+                          njs_vmcode_property_set, 3, 0);
+    }
+
     prop_set->value = expr->index;
     prop_set->object = object->index;
     prop_set->property = property->index;

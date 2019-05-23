@@ -22,8 +22,6 @@ static njs_ret_t njs_external_property_set(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval);
 static njs_ret_t njs_external_property_delete(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval);
-static njs_ret_t njs_object_query_prop_handler(njs_property_query_t *pq,
-    njs_object_t *object);
 static njs_ret_t njs_define_property(njs_vm_t *vm, njs_value_t *object,
     const njs_value_t *name, const njs_object_t *descriptor);
 
@@ -379,6 +377,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
         pq->lhq.key_hash = hash(pq->lhq.key.start, pq->lhq.key.length);
 
         if (obj == NULL) {
+            pq->own = 1;
             return njs_external_property_query(vm, pq, object);
         }
 
@@ -395,6 +394,7 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 {
     uint32_t            index;
     njs_ret_t           ret;
+    nxt_bool_t          own;
     njs_array_t         *array;
     njs_object_t        *proto;
     njs_object_prop_t   *prop;
@@ -402,12 +402,8 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 
     pq->lhq.proto = &njs_object_hash_proto;
 
-    if (pq->query == NJS_PROPERTY_QUERY_SET) {
-        ret = njs_object_query_prop_handler(pq, object);
-        if (ret == NXT_OK) {
-            return ret;
-        }
-    }
+    own = pq->own;
+    pq->own = 1;
 
     proto = object;
 
@@ -450,6 +446,10 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
                 return ret;
             }
 
+            if (pq->own) {
+                pq->own_whiteout = prop;
+            }
+
         } else {
             ret = nxt_lvlhsh_find(&proto->shared_hash, &pq->lhq);
 
@@ -460,10 +460,11 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
             }
         }
 
-        if (pq->own || pq->query > NJS_PROPERTY_QUERY_GET) {
+        if (own) {
             return NXT_DECLINED;
         }
 
+        pq->own = 0;
         proto = proto->__proto__;
 
     } while (proto != NULL);
@@ -703,33 +704,6 @@ njs_external_property_delete(njs_vm_t *vm, njs_value_t *value,
     obj = njs_extern_index(vm, pq->ext_index);
 
     return pq->ext_proto->find(vm, obj, pq->ext_data, 1);
-}
-
-
-static njs_ret_t
-njs_object_query_prop_handler(njs_property_query_t *pq, njs_object_t *object)
-{
-    njs_ret_t          ret;
-    njs_object_prop_t  *prop;
-
-    do {
-        pq->prototype = object;
-
-        ret = nxt_lvlhsh_find(&object->shared_hash, &pq->lhq);
-
-        if (ret == NXT_OK) {
-            prop = pq->lhq.value;
-
-            if (prop->type == NJS_PROPERTY_HANDLER) {
-                return NXT_OK;
-            }
-        }
-
-        object = object->__proto__;
-
-    } while (object != NULL);
-
-    return NXT_DECLINED;
 }
 
 
@@ -1862,7 +1836,7 @@ njs_define_property(njs_vm_t *vm, njs_value_t *object, const njs_value_t *name,
     pq.lhq.key_hash = nxt_djb_hash(pq.lhq.key.start, pq.lhq.key.length);
     pq.lhq.proto = &njs_object_hash_proto;
 
-    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_SET, 0);
+    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_SET, 1);
 
     ret = njs_property_query(vm, &pq, object, name);
 

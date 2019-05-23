@@ -599,7 +599,7 @@ njs_parser_object_property(njs_vm_t *vm, njs_parser_t *parser,
 
     object->u.object = parent;
 
-    propref = njs_parser_node_new(vm, parser, NJS_TOKEN_PROPERTY);
+    propref = njs_parser_node_new(vm, parser, NJS_TOKEN_PROPERTY_INIT);
     if (nxt_slow_path(propref == NULL)) {
         return NXT_ERROR;
     }
