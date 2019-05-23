@@ -88,6 +88,8 @@ njs_array_t *njs_object_own_enumerate(njs_vm_t *vm, const njs_object_t *object,
     njs_object_enum_t kind, nxt_bool_t all);
 njs_ret_t njs_value_property(njs_vm_t *vm, const njs_value_t *value,
     const njs_value_t *property, njs_value_t *retval);
+njs_ret_t njs_value_property_set(njs_vm_t *vm, njs_value_t *object,
+    const njs_value_t *property, njs_value_t *value);
 njs_object_prop_t *njs_object_property(njs_vm_t *vm, const njs_object_t *obj,
     nxt_lvlhsh_query_t *lhq);
 njs_ret_t njs_property_query(njs_vm_t *vm, njs_property_query_t *pq,
