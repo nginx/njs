@@ -857,6 +857,7 @@ typedef struct {
 typedef struct {
     njs_vmcode_t               code;
     nxt_str_t                  name;
+    nxt_str_t                  file;
     uint32_t                   token_line;
 } njs_vmcode_reference_error_t;
 

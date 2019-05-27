@@ -3288,6 +3288,7 @@ static nxt_int_t
 njs_generate_reference_error(njs_vm_t *vm, njs_generator_t *generator,
                              njs_parser_node_t *node)
 {
+    njs_ret_t                     ret;
     njs_vmcode_reference_error_t  *ref_err;
 
     if (nxt_slow_path(!node->u.reference.not_defined)) {
@@ -3300,6 +3301,11 @@ njs_generate_reference_error(njs_vm_t *vm, njs_generator_t *generator,
                       njs_vmcode_reference_error, 0, 0);
 
     ref_err->token_line = node->token_line;
+
+    ret = njs_name_copy(vm, &ref_err->file, &node->scope->file);
+    if (nxt_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
 
     return njs_name_copy(vm, &ref_err->name, &node->u.reference.name);
 }

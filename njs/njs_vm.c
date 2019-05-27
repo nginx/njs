@@ -2659,12 +2659,21 @@ njs_ret_t
 njs_vmcode_reference_error(njs_vm_t *vm, njs_value_t *invld1,
     njs_value_t *invld2)
 {
+    nxt_str_t                     *file;
     njs_vmcode_reference_error_t  *ref_err;
 
     ref_err = (njs_vmcode_reference_error_t *) vm->current;
 
-    njs_reference_error(vm, "\"%V\" is not defined in %uD", &ref_err->name,
-                        ref_err->token_line);
+    file = &ref_err->file;
+
+    if (file->length != 0 && !vm->options.quiet) {
+        njs_reference_error(vm, "\"%V\" is not defined in %V:%uD",
+                            &ref_err->name, file, ref_err->token_line);
+
+    } else {
+        njs_reference_error(vm, "\"%V\" is not defined in %uD", &ref_err->name,
+                            ref_err->token_line);
+    }
 
     return NJS_ERROR;
 }
