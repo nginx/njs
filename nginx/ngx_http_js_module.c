@@ -922,12 +922,43 @@ static njs_ret_t
 ngx_http_js_ext_get_header_out(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
+    u_char              *p, *start;
     nxt_str_t           *v;
+    ngx_str_t           *hdr;
     ngx_table_elt_t     *h;
     ngx_http_request_t  *r;
+    u_char               content_len[NGX_OFF_T_LEN];
 
     r = (ngx_http_request_t *) obj;
     v = (nxt_str_t *) data;
+
+    if (v->length == nxt_length("Content-Type")
+        && ngx_strncasecmp(v->start, (u_char *) "Content-Type",
+                           v->length) == 0)
+    {
+        hdr = &r->headers_out.content_type;
+        return njs_vm_value_string_set(vm, value, hdr->data, hdr->len);
+    }
+
+    if (v->length == nxt_length("Content-Length")
+        && ngx_strncasecmp(v->start, (u_char *) "Content-Length",
+                           v->length) == 0)
+    {
+        if (r->headers_out.content_length == NULL
+            && r->headers_out.content_length_n >= 0)
+        {
+            p = ngx_sprintf(content_len, "%O", r->headers_out.content_length_n);
+
+            start = njs_vm_value_string_alloc(vm, value, p - content_len);
+            if (start == NULL) {
+                return NJS_ERROR;
+            }
+
+            ngx_memcpy(start, content_len, p - content_len);
+
+            return NJS_OK;
+        }
+    }
 
     h = ngx_http_js_get_header(&r->headers_out.headers.part, v->start,
                                v->length);
