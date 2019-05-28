@@ -601,7 +601,7 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
 
     *ctx->last_out = NULL;
 
-    if (out != NULL) {
+    if (out != NULL || c->buffered) {
         rc = ngx_stream_next_filter(s, out, from_upstream);
 
         ngx_chain_update_chains(c->pool, &ctx->free, &ctx->busy, &out,
