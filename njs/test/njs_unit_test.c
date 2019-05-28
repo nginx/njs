@@ -4448,15 +4448,25 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("1") },
 
     { nxt_string("'\\ud83d abc \\udc4d'"),
-      nxt_string("SyntaxError: Invalid surrogate pair "
-                 "\"\\ud83d abc \\udc4d\" in 1") },
+      nxt_string("� abc �") },
 
     { nxt_string("'\\ud83d'"),
-      nxt_string("SyntaxError: Invalid surrogate pair \"\\ud83d\" in 1") },
+      nxt_string("�") },
 
     { nxt_string("'\\ud83d\\uabcd'"),
-      nxt_string("SyntaxError: Invalid surrogate pair "
-                 "\"\\ud83d\\uabcd\" in 1") },
+      nxt_string("�ꯍ") },
+
+    { nxt_string("'\\u{d800}\\u{dB00}'"),
+      nxt_string("��") },
+
+    { nxt_string("'\\u{d800}\\u{d7ff}'"),
+      nxt_string("�퟿") },
+
+    { nxt_string("'\\u{d800}['"),
+      nxt_string("�[") },
+
+    { nxt_string("'\\u{D800}\\u{'"),
+      nxt_string("SyntaxError: Invalid Unicode code point \"\\u{D800}\\u{\" in 1") },
 
     { nxt_string("''.hasOwnProperty('length')"),
       nxt_string("true") },

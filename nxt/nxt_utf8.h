@@ -15,6 +15,8 @@
  */
 #define NXT_UTF8_SORT_INVALID  0x0EEE0EEE
 
+#define NXT_UTF8_REPLACEMENT   0xFFFD
+
 
 NXT_EXPORT u_char *nxt_utf8_encode(u_char *p, uint32_t u);
 NXT_EXPORT uint32_t nxt_utf8_decode(const u_char **start, const u_char *end);
