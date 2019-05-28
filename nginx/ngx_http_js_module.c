@@ -1728,7 +1728,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     ngx_int_t                 rc;
     nxt_str_t                 uri_arg, args_arg, method_name, body_arg;
-    ngx_uint_t                method, n, has_body;
+    ngx_uint_t                method, methods_max, has_body;
     njs_value_t              *value;
     njs_function_t           *callback;
     ngx_http_js_ctx_t        *ctx;
@@ -1788,6 +1788,8 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     callback = NULL;
 
     method = 0;
+    methods_max = sizeof(methods) / sizeof(methods[0]);
+
     args_arg.length = 0;
     args_arg.start = NULL;
     has_body = 0;
@@ -1827,9 +1829,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                 return NJS_ERROR;
             }
 
-            n = sizeof(methods) / sizeof(methods[0]);
-
-            while (method < n) {
+            while (method < methods_max) {
                 if (method_name.length == methods[method].name.len
                     && ngx_memcmp(method_name.start, methods[method].name.data,
                                   method_name.length)
@@ -1839,11 +1839,6 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                 }
 
                 method++;
-            }
-
-            if (method == n) {
-                njs_vm_error(vm, "unknown method \"%V\"", &method_name);
-                return NJS_ERROR;
             }
         }
 
@@ -1875,8 +1870,16 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NJS_ERROR;
     }
 
-    sr->method = methods[method].value;
-    sr->method_name = methods[method].name;
+    if (method != methods_max) {
+        sr->method = methods[method].value;
+        sr->method_name = methods[method].name;
+
+    } else {
+        sr->method = NGX_HTTP_UNKNOWN;
+        sr->method_name.len = method_name.length;
+        sr->method_name.data = method_name.start;
+    }
+
     sr->header_only = (sr->method == NGX_HTTP_HEAD) || (callback == NULL);
 
     if (has_body) {
