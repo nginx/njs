@@ -806,8 +806,8 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value,
                 /* Surrogate pair. */
 
                 if (utf > 0xdbff || p[0] != '\\' || p[1] != 'u') {
-                    njs_json_parse_exception(ctx, "Invalid Unicode char", p);
-                    return NULL;
+                    s = nxt_utf8_encode(s, NXT_UTF8_REPLACEMENT);
+                    continue;
                 }
 
                 p += 2;
@@ -815,12 +815,17 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value,
                 utf_low = njs_json_unicode(p);
                 p += 4;
 
-                if (nxt_slow_path(utf_low < 0xdc00 || utf_low > 0xdfff)) {
-                    njs_json_parse_exception(ctx, "Invalid surrogate pair", p);
-                    return NULL;
-                }
+                if (nxt_fast_path(utf_low >= 0xdc00 && utf_low <= 0xdfff)) {
+                    utf = njs_string_surrogate_pair(utf, utf_low);
 
-                utf = njs_string_surrogate_pair(utf, utf_low);
+                } else if (utf_low >= 0xd800 && utf_low <= 0xdbff) {
+                    utf = NXT_UTF8_REPLACEMENT;
+                    s = nxt_utf8_encode(s, NXT_UTF8_REPLACEMENT);
+
+                } else {
+                    utf = utf_low;
+                    s = nxt_utf8_encode(s, NXT_UTF8_REPLACEMENT);
+                }
             }
 
             s = nxt_utf8_encode(s, utf);

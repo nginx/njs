@@ -11799,10 +11799,19 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("SyntaxError: Unknown escape char at position 2") },
 
     { nxt_string("JSON.parse('\"\\\\uDC01\"')"),
-      nxt_string("SyntaxError: Invalid Unicode char at position 7") },
+      nxt_string("�") },
 
     { nxt_string("JSON.parse('\"\\\\uD801\\\\uE000\"')"),
-      nxt_string("SyntaxError: Invalid surrogate pair at position 13") },
+      nxt_string("�") },
+
+    { nxt_string("JSON.parse('\"\\\\uD83D\"')"),
+      nxt_string("�") },
+
+    { nxt_string("JSON.parse('\"\\\\uD800\\\\uDB00\"')"),
+      nxt_string("��") },
+
+    { nxt_string("JSON.parse('\"\\\\ud800[\"')"),
+      nxt_string("�[") },
 
     { nxt_string("JSON.parse('{')"),
       nxt_string("SyntaxError: Unexpected end of input at position 1") },
