@@ -7240,9 +7240,6 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("/^[A-Za-z0-9+/]{4}$/.test('////')"),
       nxt_string("true") },
 
-    { nxt_string("/[\\uFDE0-\\uFFFD]/g; export default 1"),
-      nxt_string("SyntaxError: Illegal export statement in 1") },
-
     { nxt_string("'[]!\"#$%&\\'()*+,.\\/:;<=>?@\\^_`{|}-'.split('')"
                  ".every(ch=>/[\\]\\[!\"#$%&'()*+,.\\/:;<=>?@\\^_`{|}-]/.test(ch))"),
       nxt_string("true") },
@@ -12785,6 +12782,9 @@ static njs_unit_test_t  njs_regexp_test[] =
 
     { nxt_string("RegExp('[\\\\u0430-\\\\u044f]+').exec('тест')[0]"),
       nxt_string("тест") },
+
+    { nxt_string("/[\\uFDE0-\\uFFFD]/g; export default 1"),
+      nxt_string("SyntaxError: Illegal export statement in 1") },
 };
 
 
