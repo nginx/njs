@@ -5277,8 +5277,8 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'абв абв абвгдежз'.endsWith('абвгд', 14)"),
       nxt_string("false") },
 
-    { nxt_string("'ABC'.toLowerCase()"),
-      nxt_string("abc") },
+    { nxt_string("'\x00АБВГДЕЁЖЗ'.toLowerCase().length"),
+      nxt_string("10") },
 
     { nxt_string("'ΑΒΓ'.toLowerCase()"),
       nxt_string("αβγ") },
@@ -5292,8 +5292,8 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'αβγ'.toUpperCase()"),
       nxt_string("ΑΒΓ") },
 
-    { nxt_string("'абв'.toUpperCase()"),
-      nxt_string("АБВ") },
+    { nxt_string("'\x00абвгдеёжз'.toUpperCase().length"),
+      nxt_string("10") },
 
     { nxt_string("var a = [], code;"
                  "for (code = 0; code <= 1114111; code++) {"

@@ -2171,7 +2171,7 @@ static njs_ret_t
 njs_string_prototype_to_lower_case(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    size_t             size;
+    size_t             size, length;
     u_char             *p, *start;
     const u_char       *s, *end;
     njs_string_prop_t  string;
@@ -2198,10 +2198,11 @@ njs_string_prototype_to_lower_case(njs_vm_t *vm, njs_value_t *args,
     } else {
         /* UTF-8 string. */
         end = s + size;
+        length = string.length;
 
-        while (size != 0) {
+        while (length != 0) {
             p = nxt_utf8_encode(p, nxt_utf8_lower_case(&s, end));
-            size--;
+            length--;
         }
     }
 
@@ -2219,7 +2220,7 @@ static njs_ret_t
 njs_string_prototype_to_upper_case(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    size_t             size;
+    size_t             size, length;
     u_char             *p, *start;
     const u_char       *s, *end;
     njs_string_prop_t  string;
@@ -2246,10 +2247,11 @@ njs_string_prototype_to_upper_case(njs_vm_t *vm, njs_value_t *args,
     } else {
         /* UTF-8 string. */
         end = s + size;
+        length = string.length;
 
-        while (size != 0) {
+        while (length != 0) {
             p = nxt_utf8_encode(p, nxt_utf8_upper_case(&s, end));
-            size--;
+            length--;
         }
     }
 
