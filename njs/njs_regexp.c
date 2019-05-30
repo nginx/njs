@@ -206,56 +206,93 @@ njs_regexp_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
 }
 
 
+/*
+ * PCRE with PCRE_JAVASCRIPT_COMPAT flag rejects regexps with
+ * lone closing square brackets as invalid.  Whereas according
+ * to ES6: 11.8.5 it is a valid regexp expression.
+ *
+ * Escaping it here as a workaround.
+ */
+
 nxt_inline njs_ret_t
-njs_regexp_escape_bracket(njs_vm_t *vm, nxt_str_t *text, size_t count)
+njs_regexp_escape(njs_vm_t *vm, nxt_str_t *text)
 {
-    size_t  length, diff;
-    u_char  *p, *dst, *start, *end;
-
-    length = text->length + count;
-
-    dst = nxt_mp_alloc(vm->mem_pool, length);
-    if (nxt_slow_path(dst == NULL)) {
-        njs_memory_error(vm);
-        return NJS_ERROR;
-    }
+    size_t      brackets;
+    u_char      *p, *dst, *start, *end;
+    nxt_bool_t  in;
 
     start = text->start;
     end = text->start + text->length;
+
+    in = 0;
+    brackets = 0;
 
     for (p = start; p < end; p++) {
 
         switch (*p) {
         case '[':
-            while (++p < end && *p != ']') {
-                if (*p == '\\') {
-                    p++;
-                }
-            }
-
+            in = 1;
             break;
 
         case ']':
-            diff = p - start;
-            dst = nxt_cpymem(dst, start, diff);
-            dst = nxt_cpymem(dst, "\\]", 2);
+            if (!in) {
+                brackets++;
+            }
 
-            start = p + 1;
+            in = 0;
             break;
 
         case '\\':
             p++;
-            break;
         }
     }
 
-    diff = p - start;
-    memcpy(dst, start, diff);
+    if (!brackets) {
+        return NXT_OK;
+    }
 
-    text->start = dst - (length - diff);
-    text->length = length;
+    text->length = text->length + brackets;
 
-    return NJS_OK;
+    text->start = nxt_mp_alloc(vm->mem_pool, text->length);
+    if (nxt_slow_path(text->start == NULL)) {
+        njs_memory_error(vm);
+        return NXT_ERROR;
+    }
+
+    in = 0;
+    dst = text->start;
+
+    for (p = start; p < end; p++) {
+
+        switch (*p) {
+        case '[':
+            in = 1;
+            break;
+
+        case ']':
+            if (!in) {
+                *dst++ = '\\';
+            }
+
+            in = 0;
+            break;
+
+        case '\\':
+            *dst++ = *p++;
+
+            if (p == end) {
+                goto done;
+            }
+        }
+
+        *dst++ = *p;
+    }
+
+done:
+
+    text->length = dst - text->start;
+
+    return NXT_OK;
 }
 
 
@@ -263,14 +300,11 @@ njs_token_t
 njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
 {
     u_char                *p;
-    size_t                closing_brackets;
     nxt_str_t             text;
-    njs_ret_t             ret;
     njs_lexer_t           *lexer;
     njs_regexp_flags_t    flags;
     njs_regexp_pattern_t  *pattern;
 
-    closing_brackets = 0;
     lexer = parser->lexer;
 
     for (p = lexer->start; p < lexer->end; p++) {
@@ -298,10 +332,6 @@ njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
 
             break;
 
-        case ']':
-            closing_brackets++;
-            break;
-
         case '\\':
             if (++p < lexer->end && (*p == '\n' || *p == '\r')) {
                 goto failed;
@@ -327,27 +357,8 @@ njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
 
             lexer->start = p;
 
-            if (closing_brackets != 0) {
-                /*
-                 * PCRE with PCRE_JAVASCRIPT_COMPAT flag rejects regexps with
-                 * lone closing square brackets as invalid.  Whereas according
-                 * to ES6: 11.8.5 it is a valid regexp expression.
-                 *
-                 * Escaping it here as a workaround.
-                 */
-
-                ret = njs_regexp_escape_bracket(vm, &text, closing_brackets);
-                if (nxt_slow_path(ret != NXT_OK)) {
-                    return NJS_TOKEN_ILLEGAL;
-                }
-            }
-
             pattern = njs_regexp_pattern_create(vm, text.start, text.length,
                                                 flags);
-
-            if (closing_brackets != 0) {
-                nxt_mp_free(vm->mem_pool, text.start);
-            }
 
             if (nxt_slow_path(pattern == NULL)) {
                 return NJS_TOKEN_ILLEGAL;
@@ -440,6 +451,7 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
     int                   options, ret;
     u_char                *p, *end;
     size_t                size;
+    nxt_str_t             text;
     nxt_uint_t            n;
     nxt_regex_t           *regex;
     njs_regexp_group_t    *group;
@@ -450,8 +462,16 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
     size += ((flags & NJS_REGEXP_IGNORE_CASE) != 0);
     size += ((flags & NJS_REGEXP_MULTILINE) != 0);
 
+    text.start = start;
+    text.length = length;
+
+    ret = njs_regexp_escape(vm, &text);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NULL;
+    }
+
     pattern = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_regexp_pattern_t) + 1
-                                          + length + size + 1);
+                                          + text.length + size + 1);
     if (nxt_slow_path(pattern == NULL)) {
         njs_memory_error(vm);
         return NULL;
@@ -463,8 +483,8 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
     pattern->source = p;
 
     *p++ = '/';
-    p = memcpy(p, start, length);
-    p += length;
+    p = memcpy(p, text.start, text.length);
+    p += text.length;
     end = p;
     *p++ = '\0';
 

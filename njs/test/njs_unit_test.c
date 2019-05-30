@@ -5540,7 +5540,19 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("/]/"),
       nxt_string("/\\]/") },
 
+    { nxt_string("RegExp(']')"),
+      nxt_string("/\\]/") },
+
+    { nxt_string("RegExp('[\\\\\\\\]]')"),
+      nxt_string("/[\\\\]\\]/") },
+
+    { nxt_string("/[\\\\]]/"),
+      nxt_string("/[\\\\]\\]/") },
+
     { nxt_string("/\\]/"),
+      nxt_string("/\\]/") },
+
+    { nxt_string("RegExp('\\]')"),
       nxt_string("/\\]/") },
 
     { nxt_string("/ab]cd/"),
@@ -7440,6 +7452,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("new RegExp('[')"),
       nxt_string("SyntaxError: pcre_compile(\"[\") failed: missing terminating ] for character class") },
+
+    { nxt_string("new RegExp('\\\\')"),
+      nxt_string("SyntaxError: pcre_compile(\"\\\") failed: \\ at end of pattern") },
 
     { nxt_string("[0].map(RegExp().toString)"),
       nxt_string("TypeError: \"this\" argument is not a regexp") },
