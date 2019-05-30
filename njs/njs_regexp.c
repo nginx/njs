@@ -557,6 +557,8 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
         } while (n != pattern->ngroups);
     }
 
+    njs_value_undefined_set(&vm->retval);
+
     return pattern;
 
 fail:

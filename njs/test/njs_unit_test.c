@@ -7240,6 +7240,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("/^[A-Za-z0-9+/]{4}$/.test('////')"),
       nxt_string("true") },
 
+    { nxt_string("/[\\uFDE0-\\uFFFD]/g; export default 1"),
+      nxt_string("SyntaxError: Illegal export statement in 1") },
+
     { nxt_string("'[]!\"#$%&\\'()*+,.\\/:;<=>?@\\^_`{|}-'.split('')"
                  ".every(ch=>/[\\]\\[!\"#$%&'()*+,.\\/:;<=>?@\\^_`{|}-]/.test(ch))"),
       nxt_string("true") },
