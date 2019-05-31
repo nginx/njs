@@ -1048,7 +1048,7 @@ njs_string_prototype_to_bytes(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     if (nxt_fast_path(p != NULL)) {
 
-        if (string.length != 0) {
+        if (string.length != string.size) {
             /* UTF-8 string. */
             end = string.start + string.size;
 

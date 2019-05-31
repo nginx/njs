@@ -4644,6 +4644,18 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'A'.repeat(16).toBytes() === 'A'.repeat(16)"),
       nxt_string("true") },
 
+    { nxt_string("'A'.repeat(38).toBytes(-5) === 'AAAAA'"),
+      nxt_string("true") },
+
+    { nxt_string("('α' + 'A'.repeat(32)).toBytes()"),
+      nxt_string("null") },
+
+    { nxt_string("('α' + 'A'.repeat(32)).toBytes(1) === 'A'.repeat(32)"),
+      nxt_string("true") },
+
+    { nxt_string("('α' + 'A'.repeat(40)).toBytes(-3,-1)"),
+      nxt_string("AA") },
+
     { nxt_string("var s = 'x'.repeat(2**10).repeat(2**14);"
                  "var a = Array(200).fill(s);"
                  "String.prototype.concat.apply(s, a.slice(1))"),
