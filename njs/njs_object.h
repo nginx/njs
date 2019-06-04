@@ -115,7 +115,7 @@ njs_value_t *njs_property_constructor_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
 njs_ret_t njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 
-njs_ret_t njs_method_private_copy(njs_vm_t *vm, njs_property_query_t *pq);
+njs_ret_t njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq);
 const char * njs_prop_type_string(njs_object_property_type_t type);
 
 extern const njs_object_init_t  njs_object_constructor_init;

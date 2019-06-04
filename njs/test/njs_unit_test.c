@@ -9320,6 +9320,18 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = {}; Object.defineProperty(o)"),
       nxt_string("TypeError: descriptor is not an object") },
 
+    { nxt_string("Object.defineProperty(Function.prototype, 'name', {value:'x'}).name"),
+      nxt_string("x") },
+
+    { nxt_string("Object.defineProperty(Function.prototype, 'xxx', {value:'x'}).xxx"),
+      nxt_string("x") },
+
+    { nxt_string("Object.defineProperty(Object, 'name', {value:'x'}).name"),
+      nxt_string("x") },
+
+    { nxt_string("Object.defineProperty(Object.prototype, 'toString', {value:1}).toString"),
+      nxt_string("1") },
+
     { nxt_string("var o = Object.defineProperties({}, {a:{value:1}}); o.a"),
       nxt_string("1") },
 

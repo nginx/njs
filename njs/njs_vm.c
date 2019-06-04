@@ -3069,7 +3069,7 @@ njs_value_property(njs_vm_t *vm, const njs_value_t *value,
 
         case NJS_METHOD:
             if (pq.shared) {
-                ret = njs_method_private_copy(vm, &pq);
+                ret = njs_prop_private_copy(vm, &pq);
 
                 if (nxt_slow_path(ret != NXT_OK)) {
                     return ret;
