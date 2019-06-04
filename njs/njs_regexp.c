@@ -207,9 +207,11 @@ njs_regexp_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
 
 
 /*
- * PCRE with PCRE_JAVASCRIPT_COMPAT flag rejects regexps with
+ * 1) PCRE with PCRE_JAVASCRIPT_COMPAT flag rejects regexps with
  * lone closing square brackets as invalid.  Whereas according
  * to ES6: 11.8.5 it is a valid regexp expression.
+ *
+ * 2) escaping zero byte characters as "\u0000".
  *
  * Escaping it here as a workaround.
  */
@@ -217,7 +219,7 @@ njs_regexp_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
 nxt_inline njs_ret_t
 njs_regexp_escape(njs_vm_t *vm, nxt_str_t *text)
 {
-    size_t      brackets;
+    size_t      brackets, zeros;
     u_char      *p, *dst, *start, *end;
     nxt_bool_t  in;
 
@@ -225,6 +227,7 @@ njs_regexp_escape(njs_vm_t *vm, nxt_str_t *text)
     end = text->start + text->length;
 
     in = 0;
+    zeros = 0;
     brackets = 0;
 
     for (p = start; p < end; p++) {
@@ -244,14 +247,24 @@ njs_regexp_escape(njs_vm_t *vm, nxt_str_t *text)
 
         case '\\':
             p++;
+
+            if (p == end || *p != '\0') {
+                break;
+            }
+
+            /* Fall through. */
+
+        case '\0':
+            zeros++;
+            break;
         }
     }
 
-    if (!brackets) {
+    if (!brackets && !zeros) {
         return NXT_OK;
     }
 
-    text->length = text->length + brackets;
+    text->length = text->length + brackets + zeros * nxt_length("\\u0000");
 
     text->start = nxt_mp_alloc(vm->mem_pool, text->length);
     if (nxt_slow_path(text->start == NULL)) {
@@ -283,6 +296,16 @@ njs_regexp_escape(njs_vm_t *vm, nxt_str_t *text)
             if (p == end) {
                 goto done;
             }
+
+            if (*p != '\0') {
+                break;
+            }
+
+            /* Fall through. */
+
+        case '\0':
+            dst = nxt_cpymem(dst, "\\u0000", 6);
+            continue;
         }
 
         *dst++ = *p;
