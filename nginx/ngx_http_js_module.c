@@ -1808,7 +1808,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     } else if (njs_value_is_object(arg)) {
         options = arg;
 
-    } else if (!njs_value_is_undefined(arg)) {
+    } else if (!njs_value_is_null_or_undefined(arg)) {
         njs_vm_error(vm, "failed to convert args");
         return NJS_ERROR;
     }
