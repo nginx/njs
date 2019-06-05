@@ -9598,7 +9598,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("undefined") },
 
     { nxt_string("JSON.stringify(Object.getOwnPropertyDescriptor([3,4], 'length'))"),
-      nxt_string("{\"value\":2,\"configurable\":false,\"enumerable\":false,\"writable\":true}") },
+      nxt_string("{\"value\":2,\"writable\":true,\"enumerable\":false,\"configurable\":false}") },
 
     { nxt_string("Object.getOwnPropertyDescriptor(Array.of, 'length').value"),
       nxt_string("0") },
@@ -9614,10 +9614,10 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("1") },
 
     { nxt_string("JSON.stringify(Object.getOwnPropertyDescriptor('αβγδ', '2'))"),
-      nxt_string("{\"value\":\"γ\",\"configurable\":false,\"enumerable\":true,\"writable\":false}") },
+      nxt_string("{\"value\":\"γ\",\"writable\":false,\"enumerable\":true,\"configurable\":false}") },
 
     { nxt_string("JSON.stringify(Object.getOwnPropertyDescriptor(new String('abc'), 'length'))"),
-      nxt_string("{\"value\":3,\"configurable\":false,\"enumerable\":false,\"writable\":false}") },
+      nxt_string("{\"value\":3,\"writable\":false,\"enumerable\":false,\"configurable\":false}") },
 
     { nxt_string("Object.getOwnPropertyDescriptor(1, '0')"),
       nxt_string("undefined") },

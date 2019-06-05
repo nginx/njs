@@ -27,6 +27,7 @@ typedef enum {
     NJS_ATTRIBUTE_UNSET,
 } njs_object_attribute_t;
 
+
 typedef struct {
     /* Must be aligned to njs_value_t. */
     njs_value_t                 value;
@@ -34,8 +35,8 @@ typedef struct {
 
     njs_object_property_type_t  type:8;          /* 3 bits */
 
-    njs_object_attribute_t      enumerable:8;    /* 2 bits */
     njs_object_attribute_t      writable:8;      /* 2 bits */
+    njs_object_attribute_t      enumerable:8;    /* 2 bits */
     njs_object_attribute_t      configurable:8;  /* 2 bits */
 } njs_object_prop_t;
 
@@ -99,7 +100,7 @@ nxt_int_t njs_object_hash_create(njs_vm_t *vm, nxt_lvlhsh_t *hash,
 njs_ret_t njs_object_constructor(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 njs_object_prop_t *njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
-        const njs_value_t *value, uint8_t attributes);
+    const njs_value_t *value, uint8_t attributes);
 njs_ret_t njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval);
 njs_ret_t njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value,
@@ -116,9 +117,10 @@ njs_ret_t njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 
 njs_ret_t njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq);
-const char * njs_prop_type_string(njs_object_property_type_t type);
+const char *njs_prop_type_string(njs_object_property_type_t type);
 
 extern const njs_object_init_t  njs_object_constructor_init;
 extern const njs_object_init_t  njs_object_prototype_init;
+
 
 #endif /* _NJS_OBJECT_H_INCLUDED_ */
