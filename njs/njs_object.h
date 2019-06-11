@@ -14,7 +14,7 @@ typedef enum {
     NJS_METHOD,
     NJS_PROPERTY_HANDLER,
     NJS_WHITEOUT,
-} njs_object_property_type_t;
+} njs_object_prop_type_t;
 
 
 /*
@@ -33,7 +33,7 @@ typedef struct {
     njs_value_t                 value;
     njs_value_t                 name;
 
-    njs_object_property_type_t  type:8;          /* 3 bits */
+    njs_object_prop_type_t      type:8;          /* 3 bits */
 
     njs_object_attribute_t      writable:8;      /* 2 bits */
     njs_object_attribute_t      enumerable:8;    /* 2 bits */
@@ -116,12 +116,12 @@ njs_object_prop_t *njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
     const njs_value_t *value, uint8_t attributes);
 njs_object_prop_t *njs_object_property(njs_vm_t *vm, const njs_object_t *obj,
     nxt_lvlhsh_query_t *lhq);
-njs_ret_t njs_define_property(njs_vm_t *vm, njs_value_t *object,
+njs_ret_t njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
     const njs_value_t *name, const njs_object_t *descriptor);
-njs_ret_t njs_object_property_descriptor(njs_vm_t *vm, njs_value_t *dest,
+njs_ret_t njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
     const njs_value_t *value, const njs_value_t *property);
 njs_ret_t njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq);
-const char *njs_prop_type_string(njs_object_property_type_t type);
+const char *njs_prop_type_string(njs_object_prop_type_t type);
 
 extern const njs_object_init_t  njs_object_constructor_init;
 extern const njs_object_init_t  njs_object_prototype_init;

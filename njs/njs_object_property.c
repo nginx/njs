@@ -748,8 +748,8 @@ njs_object_property(njs_vm_t *vm, const njs_object_t *object,
  *   (values can be set, but without property flags support).
  */
 njs_ret_t
-njs_define_property(njs_vm_t *vm, njs_value_t *object, const njs_value_t *name,
-    const njs_object_t *descriptor)
+njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
+    const njs_value_t *name, const njs_object_t *descriptor)
 {
     nxt_int_t             ret;
     njs_object_prop_t     *desc, *current;
@@ -970,7 +970,7 @@ static const njs_value_t  njs_object_configurable_string =
 
 
 njs_ret_t
-njs_object_property_descriptor(njs_vm_t *vm, njs_value_t *dest,
+njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
     const njs_value_t *value, const njs_value_t *property)
 {
     nxt_int_t             ret;
@@ -1192,7 +1192,7 @@ njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
 
 
 const char *
-njs_prop_type_string(njs_object_property_type_t type)
+njs_prop_type_string(njs_object_prop_type_t type)
 {
     switch (type) {
     case NJS_PROPERTY_REF:

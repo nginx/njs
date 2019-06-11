@@ -1142,7 +1142,7 @@ njs_object_define_property(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     name = njs_arg(args, nargs, 2);
 
-    ret = njs_define_property(vm, value, name, descriptor->data.u.object);
+    ret = njs_object_prop_define(vm, value, name, descriptor->data.u.object);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NXT_ERROR;
     }
@@ -1196,7 +1196,7 @@ njs_object_define_properties(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
 
         if (prop->enumerable && njs_is_object(&prop->value)) {
-            ret = njs_define_property(vm, value, &prop->name,
+            ret = njs_object_prop_define(vm, value, &prop->name,
                                       prop->value.data.u.object);
 
             if (nxt_slow_path(ret != NXT_OK)) {
@@ -1227,7 +1227,7 @@ njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
 
     property = njs_arg(args, nargs, 2);
 
-    return njs_object_property_descriptor(vm, &vm->retval, value, property);
+    return njs_object_prop_descriptor(vm, &vm->retval, value, property);
 }
 
 
@@ -1271,7 +1271,7 @@ njs_object_get_own_property_descriptors(njs_vm_t *vm, njs_value_t *args,
 
     for (i = 0; i < length; i++) {
         key = &names->start[i];
-        ret = njs_object_property_descriptor(vm, &descriptor, value, key);
+        ret = njs_object_prop_descriptor(vm, &descriptor, value, key);
         if (nxt_slow_path(ret != NXT_OK)) {
             return ret;
         }
