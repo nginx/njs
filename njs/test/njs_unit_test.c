@@ -11724,6 +11724,30 @@ static njs_unit_test_t  njs_test[] =
                  "o.b = 3; o.b"),
       nxt_string("3") },
 
+    { nxt_string("JSON.parse('2') || 10"),
+      nxt_string("2") },
+
+    { nxt_string("JSON.parse('0') || 10"),
+      nxt_string("10") },
+
+    { nxt_string("JSON.parse('-0') || 10"),
+      nxt_string("10") },
+
+    { nxt_string("JSON.parse('\"a\"') || 10"),
+      nxt_string("a") },
+
+    { nxt_string("JSON.parse('\"\"') || 10"),
+      nxt_string("10") },
+
+    { nxt_string("JSON.parse('true') || 10"),
+      nxt_string("true") },
+
+    { nxt_string("JSON.parse('false') || 10"),
+      nxt_string("10") },
+
+    { nxt_string("JSON.parse('null') || 10"),
+      nxt_string("10") },
+
     { nxt_string("var o = JSON.parse('{}', function(k, v) {return v;}); o"),
       nxt_string("[object Object]") },
 

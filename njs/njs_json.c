@@ -876,8 +876,9 @@ njs_json_parse_number(njs_json_parse_ctx_t *ctx, njs_value_t *value,
     start = p;
     num = njs_number_dec_parse(&p, ctx->end);
     if (p != start) {
-        *value = njs_value_zero;
         value->data.u.number = sign * num;
+        value->type = NJS_NUMBER;
+        value->data.truth = njs_is_number_true(num);
 
         return p;
     }
