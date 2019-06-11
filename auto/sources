@@ -35,6 +35,7 @@ NJS_LIB_SRCS=" \
    njs/njs_number.c \
    njs/njs_string.c \
    njs/njs_object.c \
+   njs/njs_object_property.c \
    njs/njs_array.c \
    njs/njs_json.c \
    njs/njs_function.c \
