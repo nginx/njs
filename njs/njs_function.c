@@ -1042,7 +1042,7 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    ret = njs_value_property(vm, arr_like, &njs_string_length, &length);
+    ret = njs_value_property(vm, arr_like, &njs_string_length, &length, 0);
     if (nxt_slow_path(ret == NXT_ERROR)) {
         return ret;
     }
@@ -1064,7 +1064,7 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     for (i = 0; i < nargs; i++) {
         njs_uint32_to_string(&name, i);
 
-        ret = njs_value_property(vm, arr_like, &name, &args[i]);
+        ret = njs_value_property(vm, arr_like, &name, &args[i], 0);
         if (nxt_slow_path(ret == NXT_ERROR)) {
             return ret;
         }

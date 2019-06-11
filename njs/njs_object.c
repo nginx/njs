@@ -1421,7 +1421,11 @@ njs_object_is_frozen(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             break;
         }
 
-        if (prop->writable || prop->configurable) {
+        if (prop->configurable) {
+            goto done;
+        }
+
+        if (njs_is_data_descriptor(prop) && prop->writable) {
             goto done;
         }
     }

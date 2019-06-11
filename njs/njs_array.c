@@ -29,6 +29,8 @@ typedef struct {
     } u;
 
     njs_value_t             length;
+    nxt_int_t               start;
+    nxt_int_t               end;
 } njs_array_fill_t;
 
 
@@ -99,6 +101,8 @@ static njs_ret_t njs_array_prototype_join_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static njs_value_t *njs_array_copy(njs_value_t *dst, njs_value_t *src);
 static njs_ret_t njs_array_prototype_fill_continuation(njs_vm_t *vm,
+    njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
+static njs_ret_t njs_array_prototype_fill_object_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t njs_array_prototype_for_each_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
@@ -524,8 +528,13 @@ njs_array_prototype_slice(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     slice = njs_vm_continuation(vm);
     slice->u.cont.function = njs_array_prototype_slice_continuation;
 
-    ret = njs_value_property(vm, &args[0], &njs_string_length, &slice->length);
-    if (nxt_slow_path(ret == NXT_ERROR || ret == NJS_TRAP)) {
+    ret = njs_value_property(vm, &args[0], &njs_string_length, &slice->length,
+                             0);
+
+    if (nxt_slow_path(ret == NXT_ERROR
+                      || ret == NJS_TRAP
+                      || ret == NJS_APPLIED))
+    {
         return ret;
     }
 
@@ -671,7 +680,7 @@ njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
                 njs_uint32_to_string(&name, start++);
 
                 value = &array->start[n++];
-                ret = njs_value_property(vm, this, &name, value);
+                ret = njs_value_property(vm, this, &name, value, 0);
 
                 if (ret != NXT_OK) {
                     *value = njs_value_invalid;
@@ -1426,8 +1435,13 @@ njs_array_prototype_fill(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         fill = njs_vm_continuation(vm);
         fill->u.cont.function = njs_array_prototype_fill_continuation;
 
-        ret = njs_value_property(vm, this, &njs_string_length, &fill->length);
-        if (nxt_slow_path(ret == NXT_ERROR || ret == NJS_TRAP)) {
+        ret = njs_value_property(vm, this, &njs_string_length, &fill->length,
+                                 0);
+
+        if (nxt_slow_path(ret == NXT_ERROR
+                          || ret == NJS_TRAP
+                          || ret == NJS_APPLIED))
+        {
             return ret;
         }
     }
@@ -1440,10 +1454,8 @@ static njs_ret_t
 njs_array_prototype_fill_continuation(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    njs_ret_t          ret;
     nxt_int_t          i, start, end, length;
     njs_array_t        *array;
-    njs_value_t        name;
     njs_object_t       *object;
     njs_array_fill_t   *fill;
     const njs_value_t  *this, *value;
@@ -1465,12 +1477,13 @@ njs_array_prototype_fill_continuation(njs_vm_t *vm, njs_value_t *args,
         return NXT_OK;
     }
 
+    fill = njs_vm_continuation(vm);
+
     if (njs_is_array(this)) {
         array = this->data.u.array;
         length = array->length;
 
     } else {
-        fill = njs_vm_continuation(vm);
 
         if (nxt_slow_path(!njs_is_primitive(&fill->length))) {
             njs_vm_trap_value(vm, &fill->length);
@@ -1494,22 +1507,47 @@ njs_array_prototype_fill_continuation(njs_vm_t *vm, njs_value_t *args,
 
     value = njs_arg(args, nargs, 1);
 
-    vm->retval = *this;
-
     if (array != NULL) {
         for (i = start; i < end; i++) {
             array->start[i] = *value;
         }
 
+        vm->retval = *this;
+
         return NXT_OK;
     }
 
-    for (i = start; i < end; i++) {
-        njs_uint32_to_string(&name, i);
+    fill->u.cont.function = njs_array_prototype_fill_object_continuation;
+    fill->start = start;
+    fill->end = end;
+
+    return njs_array_prototype_fill_object_continuation(vm, args, nargs,
+                                                        unused);
+}
+
+
+static njs_ret_t
+njs_array_prototype_fill_object_continuation(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    njs_ret_t          ret;
+    nxt_int_t          end;
+    njs_value_t        name;
+    njs_array_fill_t   *fill;
+    const njs_value_t  *value;
+
+    fill = njs_vm_continuation(vm);
+    end = fill->end;
+
+    vm->retval = *njs_arg(args, nargs, 0);
+    value = njs_arg(args, nargs, 1);
+
+    while (fill->start < end) {
+        njs_uint32_to_string(&name, fill->start++);
 
         ret = njs_value_property_set(vm, &vm->retval, &name,
-                                     (njs_value_t *) value);
-        if (nxt_slow_path(ret == NXT_ERROR)) {
+                                     (njs_value_t *) value, 0);
+        if (nxt_slow_path(ret == NXT_ERROR || ret == NJS_APPLIED)) {
             return ret;
         }
     }

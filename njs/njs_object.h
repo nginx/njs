@@ -19,7 +19,10 @@ typedef enum {
 
 /*
  * Attributes are generally used as Boolean values.
- * The UNSET value is used internally only by njs_define_property().
+ * The UNSET value is can be seen:
+ * for newly created property descriptors in njs_define_property(),
+ * for writable attribute of accessor descriptors (desc->writable
+ * cannot be used as a boolean value).
  */
 typedef enum {
     NJS_ATTRIBUTE_FALSE = 0,
@@ -32,13 +35,28 @@ typedef struct {
     /* Must be aligned to njs_value_t. */
     njs_value_t                 value;
     njs_value_t                 name;
+    njs_value_t                 getter;
+    njs_value_t                 setter;
 
+    /* TODO: get rid of types */
     njs_object_prop_type_t      type:8;          /* 3 bits */
 
     njs_object_attribute_t      writable:8;      /* 2 bits */
     njs_object_attribute_t      enumerable:8;    /* 2 bits */
     njs_object_attribute_t      configurable:8;  /* 2 bits */
 } njs_object_prop_t;
+
+
+#define njs_is_data_descriptor(prop)                                          \
+    ((prop)->writable != NJS_ATTRIBUTE_UNSET || njs_is_valid(&(prop)->value))
+
+
+#define njs_is_accessor_descriptor(prop)                                      \
+    (njs_is_valid(&(prop)->getter) || njs_is_valid(&(prop)->setter))
+
+
+#define njs_is_generic_descriptor(prop)                                       \
+    (!njs_is_data_descriptor(prop) && !njs_is_accessor_descriptor(prop))
 
 
 typedef struct {
@@ -109,9 +127,9 @@ njs_ret_t njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
 njs_ret_t njs_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     njs_value_t *object, const njs_value_t *property);
 njs_ret_t njs_value_property(njs_vm_t *vm, const njs_value_t *value,
-    const njs_value_t *property, njs_value_t *retval);
+    const njs_value_t *property, njs_value_t *retval, size_t advance);
 njs_ret_t njs_value_property_set(njs_vm_t *vm, njs_value_t *object,
-    const njs_value_t *property, njs_value_t *value);
+    const njs_value_t *property, njs_value_t *value, size_t advance);
 njs_object_prop_t *njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
     const njs_value_t *value, uint8_t attributes);
 njs_object_prop_t *njs_object_property(njs_vm_t *vm, const njs_object_t *obj,

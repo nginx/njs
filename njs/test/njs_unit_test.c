@@ -4009,6 +4009,29 @@ static njs_unit_test_t  njs_test[] =
                  ").every((x) => typeof x == 'object')"),
       nxt_string("true") },
 
+    { nxt_string("var o = {}; Object.defineProperty(o, 'length', {get:()=>2}); "
+                 "Array.prototype.slice.call(Array.prototype.fill.call(o, 1))"),
+      nxt_string("1,1") },
+
+    { nxt_string("var o = {}; Object.defineProperty(o, 'length', {get:()=> {throw TypeError('Boom')}}); "
+                 "Array.prototype.fill.call(o, 1)"),
+      nxt_string("TypeError: Boom") },
+
+    { nxt_string("var o = Object({length: 3});"
+                 "Object.defineProperty(o, '0', {set: ()=>{throw TypeError('Boom')}});"
+                 "Array.prototype.fill.call(o, 1)"),
+      nxt_string("TypeError: Boom") },
+
+    { nxt_string("var o = Object({length: 3});"
+                 "Object.defineProperty(o, '0', {set: function(v){this.a = 2 * v}});"
+                 "Array.prototype.fill.call(o, 2).a"),
+      nxt_string("4") },
+
+    { nxt_string("var o = Object({length: 3});"
+                 "Object.defineProperty(o, '0', {set: function(v){this[0] = 2 * v}});"
+                 "Array.prototype.fill.call(o, 2)"),
+      nxt_string("RangeError: Maximum call stack size exceeded") },
+
     { nxt_string("var a = [];"
                  "a.filter(function(v, i, a) { return v > 1 })"),
       nxt_string("") },
@@ -8201,6 +8224,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("/./ instanceof Object"),
       nxt_string("true") },
 
+    { nxt_string("Object.defineProperty(Function.prototype, \"prototype\", {get: ()=>Array.prototype});"
+                 "[] instanceof Function.prototype"),
+      nxt_string("InternalError: getter is not supported in instanceof") },
+
     /* global this. */
 
     { nxt_string("this"),
@@ -9159,6 +9186,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var o = {}; Object.defineProperty(o, 'a', {value:1}); o.a"),
       nxt_string("1") },
 
+    { nxt_string("var o = {}; Object.defineProperty(o, 'a', Object.create({value:1})); o.a"),
+      nxt_string("1") },
+
     { nxt_string("var o = {a:1, c:2}; Object.defineProperty(o, 'b', {});"
                  "Object.keys(o)"),
       nxt_string("a,c") },
@@ -9309,6 +9339,32 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("1") },
 
     { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {configurable:true, get:()=>1});"
+                 "Object.defineProperty(o, 'a', {value:1});"
+                 "var d = Object.getOwnPropertyDescriptor(o, 'a'); "
+                 "[d.value, d.writable, d.enumerable, d.configurable, d.get, d.set]"),
+      nxt_string("1,false,false,true,,") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {configurable:true, value:1});"
+                 "Object.defineProperty(o, 'a', {set:()=>1});"
+                 "var d = Object.getOwnPropertyDescriptor(o, 'a'); "
+                 "[d.value, d.writable, d.enumerable, d.configurable, d.get, d.set]"),
+      nxt_string(",,false,true,,[object Function]") },
+
+    { nxt_string("var o = {}; Object.defineProperty(o, 'a', {get: ()=>1, configurable:true}); "
+                 "Object.defineProperty(o, 'a', {value:123}); o.a =2"),
+      nxt_string("TypeError: Cannot assign to read-only property \"a\" of object") },
+
+    { nxt_string("var o = {}; Object.defineProperty(o, 'a', {get: ()=>1, configurable:true}); "
+                 "Object.defineProperty(o, 'a', {writable:false}); o.a"),
+      nxt_string("undefined") },
+
+    { nxt_string("var o = {}; Object.defineProperty(o, 'a', {value: 1, configurable:true}); "
+                 "Object.defineProperty(o, 'a', {get:()=>1}); o.a = 2"),
+      nxt_string("TypeError: Cannot set property \"a\" of object which has only a getter") },
+
+    { nxt_string("var o = {};"
                  "Object.defineProperty(o, 'a', { configurable: true, value: 0 });"
                  "Object.defineProperty(o, 'a', { value: 1 });"
                  "Object.defineProperty(o, 'a', { configurable: false, value: 2 }).a"),
@@ -9386,6 +9442,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var o = Object.defineProperties({a:1}, {}); o.a"),
       nxt_string("1") },
+
+    { nxt_string("var arr = [0, 1]; Object.defineProperty(arr, 'length', {value:3}); arr.length"),
+      nxt_string("3") },
 
     { nxt_string("Object.defineProperties()"),
       nxt_string("TypeError: cannot convert undefined argument to object") },
@@ -9476,6 +9535,133 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("Object.prototype.hasOwnProperty('hasOwnProperty')"),
       nxt_string("true") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {get:undefined, set:undefined}).a"),
+      nxt_string("undefined") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {get:1})"),
+      nxt_string("TypeError: Getter must be a function") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {get:undefined}).a"),
+      nxt_string("undefined") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {get:function(){return 1}}).a"),
+      nxt_string("1") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {set:1})"),
+      nxt_string("TypeError: Setter must be a function") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {set:undefined}); o.a"),
+      nxt_string("undefined") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {set:undefined}); o.a = 4;"),
+      nxt_string("TypeError: Cannot set property \"a\" of object which has only a getter") },
+
+    { nxt_string("var o = {a: 0};"
+                 "Object.defineProperty(o, 'b', {set:function(x){this.a = x / 2;}}); o.b = 4; o.a;"),
+      nxt_string("2") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {value:undefined});"
+                 "Object.defineProperty(o, 'a', {get:undefined})"),
+      nxt_string("TypeError: Cannot redefine property: \"a\"") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {});"
+                 "Object.defineProperty(o, 'a', {get:undefined})"),
+      nxt_string("TypeError: Cannot redefine property: \"a\"") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {get:undefined});"
+                 "Object.defineProperty(o, 'a', {get:undefined}).a"),
+      nxt_string("undefined") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {get:undefined});"
+                 "Object.defineProperty(o, 'a', {set:undefined}).a"),
+      nxt_string("undefined") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {get:undefined});"
+                 "Object.defineProperty(o, 'a', {}); o.a"),
+      nxt_string("undefined") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {get:undefined});"
+                 "Object.defineProperty(o, 'a', {set:function(){}})"),
+      nxt_string("TypeError: Cannot redefine property: \"a\"") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {get:undefined});"
+                 "Object.defineProperty(o, 'a', {get:function(){}})"),
+      nxt_string("TypeError: Cannot redefine property: \"a\"") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {get:()=>1, configurable:true});"
+                 "Object.defineProperty(o, 'a', {get:()=>2}); o.a"),
+      nxt_string("2") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {set:function(v){this.aa=v;}, configurable:true});"
+                 "Object.defineProperty(o, 'a', {get:function(){return this.aa}}); o.a = 1; o.a"),
+      nxt_string("1") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {get:()=>1, configurable:true});"
+                 "Object.defineProperty(o, 'a', {value:2}).a"),
+      nxt_string("2") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {get:()=>1, configurable:true});"
+                 "Object.defineProperty(o, 'a', {value:2});"
+                 "var d = Object.getOwnPropertyDescriptor(o, 'a');"
+                 "d.get === undefined && d.set === undefined"),
+      nxt_string("true") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'a', {value:1, configurable:true});"
+                 "Object.defineProperty(o, 'a', {get:()=>2});"
+                 "var d = Object.getOwnPropertyDescriptor(o, 'a');"
+                 "d.writable === undefined && d.value === undefined"),
+      nxt_string("true") },
+
+    { nxt_string("Object.defineProperty(Date.prototype, 'year', {get: function() { return this.getFullYear();}});"
+                 "var d = new Date(0); d.year"),
+      nxt_string("1970") },
+
+    { nxt_string("var o = [];"
+                 "Object.defineProperty(o, 'fill', {get:undefined}).fill"),
+      nxt_string("undefined") },
+
+    { nxt_string("var o = [];"
+                 "Object.defineProperty(o, 'length', {get:undefined})"),
+      nxt_string("TypeError: Cannot redefine property: \"length\"") },
+
+    { nxt_string("var o = {};"
+                 "Object.defineProperty(o, 'foo', {get:()=>10});"
+                 "Object.preventExtensions(o);Object.isFrozen(o)"),
+      nxt_string("true"), },
+
+    { nxt_string("var o = {}; Object.defineProperty(o, 'r', { get: function() { return this.r_value; } }); o.r_value = 1; o.r;"),
+      nxt_string("1") },
+
+    { nxt_string("var o = {}; Object.defineProperty(o, 'rw', { get: function() { return this.rw_value; }, set: function(x) { this.rw_value = x / 2; } }); o.rw = 10; o.rw"),
+      nxt_string("5") },
+
+    { nxt_string("var o = {}; function foo() {}; Object.defineProperty(o, 'a', {get: foo});"
+                 "Object.getOwnPropertyDescriptor(o, 'a').get === foo"),
+      nxt_string("true") },
+
+    { nxt_string("var o = {}; Object.defineProperty(o, 'a', {get: undefined});"
+                "JSON.stringify(Object.getOwnPropertyDescriptor(o, 'a')).set"),
+      nxt_string("undefined") },
 
     { nxt_string("var p = { a:5 }; var o = Object.create(p);"
                  "Object.getPrototypeOf(o) === p"),

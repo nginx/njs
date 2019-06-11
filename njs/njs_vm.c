@@ -533,14 +533,21 @@ njs_ret_t
 njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *property)
 {
-    njs_ret_t  ret;
+    njs_ret_t              ret;
+    njs_value_t            *retval;
+    njs_vmcode_prop_get_t  *code;
 
-    ret = njs_value_property(vm, object, property, &vm->retval);
+    code = (njs_vmcode_prop_get_t *) vm->current;
+    retval = njs_vmcode_operand(vm, code->value);
+
+    ret = njs_value_property(vm, object, property, retval,
+                             sizeof(njs_vmcode_prop_get_t));
     if (ret == NXT_OK || ret == NXT_DECLINED) {
+        vm->retval = *retval;
         return sizeof(njs_vmcode_prop_get_t);
     }
 
-    return ret;
+    return (ret == NJS_APPLIED) ? 0 : ret;
 }
 
 
@@ -665,12 +672,13 @@ njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
     code = (njs_vmcode_prop_set_t *) vm->current;
     value = njs_vmcode_operand(vm, code->value);
 
-    ret = njs_value_property_set(vm, object, property, value);
+    ret = njs_value_property_set(vm, object, property, value,
+                                 sizeof(njs_vmcode_prop_set_t));
     if (ret == NXT_OK) {
         return sizeof(njs_vmcode_prop_set_t);
     }
 
-    return ret;
+    return (ret == NJS_APPLIED) ? 0 : ret;
 }
 
 
@@ -936,7 +944,12 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
 
     if (njs_is_object(object)) {
         value = njs_value_undefined;
-        ret = njs_value_property(vm, constructor, &prototype_string, &value);
+        ret = njs_value_property(vm, constructor, &prototype_string, &value, 0);
+
+        if (nxt_slow_path(ret == NJS_APPLIED)) {
+            njs_internal_error(vm, "getter is not supported in instanceof");
+            return NXT_ERROR;
+        }
 
         if (nxt_fast_path(ret == NXT_OK)) {
 

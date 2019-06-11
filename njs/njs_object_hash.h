@@ -271,4 +271,18 @@
         'w'), 'r'), 'i'), 't'), 'a'), 'b'), 'l'), 'e')
 
 
+#define NJS_GET_HASH                                                          \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
+        'g'), 'e'), 't')
+
+
+#define NJS_SET_HASH                                                          \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
+        's'), 'e'), 't')
+
+
 #endif /* _NJS_OBJECT_HASH_H_INCLUDED_ */
