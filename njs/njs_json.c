@@ -2354,6 +2354,7 @@ njs_vm_value_dump(njs_vm_t *vm, nxt_str_t *retval, const njs_value_t *value,
     njs_ret_t             ret;
     nxt_str_t             str;
     njs_value_t           *key, *val, ext_val;
+    njs_object_t          *object;
     njs_json_state_t      *state;
     njs_object_prop_t     *prop;
     nxt_lvlhsh_query_t    lhq;
@@ -2446,11 +2447,15 @@ njs_vm_value_dump(njs_vm_t *vm, nxt_str_t *retval, const njs_value_t *value,
                 val = &ext_val;
 
             } else {
+                object = state->value.data.u.object;
                 lhq.proto = &njs_object_hash_proto;
 
-                ret = nxt_lvlhsh_find(&state->value.data.u.object->hash, &lhq);
-                if (nxt_slow_path(ret == NXT_DECLINED)) {
-                    break;
+                ret = nxt_lvlhsh_find(&object->hash, &lhq);
+                if (ret == NXT_DECLINED) {
+                    ret = nxt_lvlhsh_find(&object->shared_hash, &lhq);
+                    if (nxt_slow_path(ret == NXT_DECLINED)) {
+                        break;
+                    }
                 }
 
                 prop = lhq.value;

@@ -1081,6 +1081,8 @@ static const njs_object_prop_t  njs_njs_object_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("version"),
         .value = njs_string(NJS_VERSION),
+        .configurable = 1,
+        .enumerable = 1,
     },
 
     {

@@ -12278,6 +12278,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("njs.dump($r.header)"),
       nxt_string("{type:\"object\",props:[\"getter\",\"foreach\",\"next\"]}") },
 
+    { nxt_string("njs.dump(njs) == `{version:'${njs.version}'}`"),
+      nxt_string("true") },
+
     /* Built-in methods name. */
 
     { nxt_string(

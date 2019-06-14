@@ -667,29 +667,27 @@ njs_object_own_enumerate_object_length(const njs_object_t *object,
         }
     }
 
-    if (nxt_slow_path(all)) {
-        nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
-        hash = &object->shared_hash;
+    nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+    hash = &object->shared_hash;
 
-        for ( ;; ) {
-            prop = nxt_lvlhsh_each(hash, &lhe);
+    for ( ;; ) {
+        prop = nxt_lvlhsh_each(hash, &lhe);
 
-            if (prop == NULL) {
-                break;
-            }
+        if (prop == NULL) {
+            break;
+        }
 
-            lhq.key_hash = lhe.key_hash;
-            njs_string_get(&prop->name, &lhq.key);
+        lhq.key_hash = lhe.key_hash;
+        njs_string_get(&prop->name, &lhq.key);
 
-            lhq.proto = &njs_object_hash_proto;
-            ret = nxt_lvlhsh_find(&object->hash, &lhq);
+        lhq.proto = &njs_object_hash_proto;
+        ret = nxt_lvlhsh_find(&object->hash, &lhq);
 
-            if (ret != NXT_OK) {
-                ext_prop = njs_object_exist_in_proto(parent, object, &lhq);
+        if (ret != NXT_OK) {
+            ext_prop = njs_object_exist_in_proto(parent, object, &lhq);
 
-                if (ext_prop == NULL) {
-                    length++;
-                }
+            if (ext_prop == NULL && (prop->enumerable || all)) {
+                length++;
             }
         }
     }
@@ -949,29 +947,27 @@ njs_object_own_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
             }
         }
 
-        if (nxt_slow_path(all)) {
-            nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
-            hash = &object->shared_hash;
+        nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+        hash = &object->shared_hash;
 
-            for ( ;; ) {
-                prop = nxt_lvlhsh_each(hash, &lhe);
+        for ( ;; ) {
+            prop = nxt_lvlhsh_each(hash, &lhe);
 
-                if (prop == NULL) {
-                    break;
-                }
+            if (prop == NULL) {
+                break;
+            }
 
-                lhq.key_hash = lhe.key_hash;
-                njs_string_get(&prop->name, &lhq.key);
+            lhq.key_hash = lhe.key_hash;
+            njs_string_get(&prop->name, &lhq.key);
 
-                lhq.proto = &njs_object_hash_proto;
-                ret = nxt_lvlhsh_find(&object->hash, &lhq);
+            lhq.proto = &njs_object_hash_proto;
+            ret = nxt_lvlhsh_find(&object->hash, &lhq);
 
-                if (ret != NXT_OK) {
-                    ext_prop = njs_object_exist_in_proto(parent, object, &lhq);
+            if (ret != NXT_OK) {
+                ext_prop = njs_object_exist_in_proto(parent, object, &lhq);
 
-                    if (ext_prop == NULL) {
-                        njs_string_copy(item++, &prop->name);
-                    }
+                if (ext_prop == NULL && (prop->enumerable || all)) {
+                    njs_string_copy(item++, &prop->name);
                 }
             }
         }
