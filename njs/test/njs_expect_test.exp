@@ -42,9 +42,11 @@ type console.help() for more information\r
     expect eof
 }
 
-proc njs_run {opts output} {
-    eval spawn  -nottycopy njs $opts
-    expect -re $output
+proc njs_run {opts expected_re} {
+    catch {exec njs {*}$opts} out
+    if {[regexp $expected_re $out match] == 0} {
+        return -code error "njs_run: unexpected output '$out' vs '$expected_re'"
+    }
 }
 
 njs_test {
@@ -625,35 +627,36 @@ njs_test {
 
 # Modules
 
-njs_run "-p njs/test/module/libs ./njs/test/module/normal.js" \
+njs_run {"-p" "njs/test/module/libs" "./njs/test/module/normal.js"} \
         "passed!"
 
-njs_run "-p njs/test/module/libs/ ./njs/test/module/normal.js" \
+njs_run {"-p" "njs/test/module/libs/" "./njs/test/module/normal.js"} \
         "passed!"
 
-njs_run "-p njs/test/module -p njs/test/module/libs ./njs/test/module/normal.js" \
+njs_run {"-p" "njs/test/module" "-p" "njs/test/module/libs" "./njs/test/module/normal.js"} \
         "passed!"
 
-njs_run "./njs/test/module/normal.js" \
+njs_run {"./njs/test/module/normal.js"} \
         "SyntaxError: Cannot find module \"hash.js\" in sub2.js:5"
 
-njs_run "-p njs/test/module/libs ./njs/test/module/exception.js" \
-        "at error \\(sub1.js:5\\)\r\n    at exception \\(lib3.js:5\\)"
+njs_run {"-p" "njs/test/module/libs" "./njs/test/module/exception.js"} \
+        "at error \\(sub1.js:5\\)"
 
-njs_run "-p njs/test/module ./njs/test/module/recursive.js" \
+njs_run {"-p" "njs/test/module" "./njs/test/module/recursive.js"} \
         "SyntaxError: Cannot import itself \"./recursive.js\" in recursive.js:3"
 
 # CLI OPTIONS
 
 # help
 
-njs_run "-h" "Interactive njs shell.\r\n\r\nOptions:"
+njs_run {"-h"} "Options"
 
 # command
 
-njs_run "-c 'console.log(\"a b c\")'" "a b c"
+njs_run {"-c" "console.log(\"a b c\")"} "a b c"
 
-njs_run "-c 'console.log('" "SyntaxError: Unexpected token \"\" in string:1"
+njs_run {"-c" "console.log("} "SyntaxError: Unexpected end of input in string:1"
+
 
 # disassemble
 
@@ -720,10 +723,10 @@ njs_test {
      "12\r\n"}
 } "-p njs/test/module/"
 
-njs_run "-q ./njs/test/module/normal.js" \
+njs_run {"-q" "./njs/test/module/normal.js"} \
         "SyntaxError: Cannot find module \"hash.js\" in 5"
 
-njs_run "-p njs/test/module/libs/ -d ./njs/test/module/normal.js" \
+njs_run {"-p" "njs/test/module/libs/" "-d" "./njs/test/module/normal.js"} \
         "passed!"
 
 # sandboxing
@@ -756,5 +759,5 @@ njs_test {
 
 # version
 
-njs_run "-v" "\\d+\.\\d+\.\\d+"
+njs_run {"-v"} "\\d+\.\\d+\.\\d+"
 

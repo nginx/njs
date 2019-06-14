@@ -327,7 +327,7 @@ njs_get_options(njs_opts_t *opts, int argc, char** argv)
         switch (*p) {
         case '?':
         case 'h':
-            (void) write(STDIN_FILENO, help, nxt_length(help));
+            (void) write(STDOUT_FILENO, help, nxt_length(help));
             return ret;
 
         case 'c':
