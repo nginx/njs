@@ -1114,7 +1114,7 @@ njs_object_define_property(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     nxt_int_t          ret;
     njs_value_t        *value;
-    const njs_value_t  *name, *descriptor;
+    const njs_value_t  *name, *desc;
 
     if (!njs_is_object(njs_arg(args, nargs, 1))) {
         njs_type_error(vm, "cannot convert %s argument to object",
@@ -1129,16 +1129,16 @@ njs_object_define_property(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    descriptor = njs_arg(args, nargs, 3);
+    desc = njs_arg(args, nargs, 3);
 
-    if (!njs_is_object(descriptor)) {
+    if (!njs_is_object(desc)) {
         njs_type_error(vm, "descriptor is not an object");
         return NXT_ERROR;
     }
 
     name = njs_arg(args, nargs, 2);
 
-    ret = njs_object_prop_define(vm, value, name, descriptor);
+    ret = njs_object_prop_define(vm, value, name, desc);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NXT_ERROR;
     }
@@ -1158,7 +1158,7 @@ njs_object_define_properties(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     nxt_lvlhsh_t       *hash;
     nxt_lvlhsh_each_t  lhe;
     njs_object_prop_t  *prop;
-    const njs_value_t  *descriptor;
+    const njs_value_t  *desc;
 
     if (!njs_is_object(njs_arg(args, nargs, 1))) {
         njs_type_error(vm, "cannot convert %s argument to object",
@@ -1173,16 +1173,16 @@ njs_object_define_properties(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    descriptor = njs_arg(args, nargs, 2);
+    desc = njs_arg(args, nargs, 2);
 
-    if (!njs_is_object(descriptor)) {
+    if (!njs_is_object(desc)) {
         njs_type_error(vm, "descriptor is not an object");
         return NXT_ERROR;
     }
 
     nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
 
-    hash = &descriptor->data.u.object->hash;
+    hash = &desc->data.u.object->hash;
 
     for ( ;; ) {
         prop = nxt_lvlhsh_each(hash, &lhe);
