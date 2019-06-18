@@ -749,7 +749,7 @@ njs_object_property(njs_vm_t *vm, const njs_object_t *object,
  */
 njs_ret_t
 njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
-    const njs_value_t *name, const njs_object_t *descriptor)
+    const njs_value_t *name, const njs_value_t *value)
 {
     nxt_int_t             ret;
     njs_object_prop_t     *desc, *current;
@@ -767,7 +767,7 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
         return ret;
     }
 
-    desc = njs_descriptor_prop(vm, name, descriptor);
+    desc = njs_descriptor_prop(vm, name, value->data.u.object);
     if (nxt_slow_path(desc == NULL)) {
         return NXT_ERROR;
     }

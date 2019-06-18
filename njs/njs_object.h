@@ -117,7 +117,7 @@ njs_object_prop_t *njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
 njs_object_prop_t *njs_object_property(njs_vm_t *vm, const njs_object_t *obj,
     nxt_lvlhsh_query_t *lhq);
 njs_ret_t njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
-    const njs_value_t *name, const njs_object_t *descriptor);
+    const njs_value_t *name, const njs_value_t *value);
 njs_ret_t njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
     const njs_value_t *value, const njs_value_t *property);
 njs_ret_t njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq);
