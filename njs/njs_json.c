@@ -2375,6 +2375,7 @@ njs_vm_value_dump(njs_vm_t *vm, nxt_str_t *retval, const njs_value_t *value,
     stringify->nodes = NULL;
     stringify->last = NULL;
     stringify->stack.items = 0;
+    stringify->replacer = njs_value_undefined;
 
     if (!njs_dump_is_object(value)) {
         ret = njs_dump_value(stringify, value, console);
