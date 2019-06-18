@@ -131,7 +131,7 @@ nxt_sha2_final(u_char result[32], nxt_sha2_t *ctx)
     result[30] = (u_char) (ctx->h >> 8);
     result[31] = (u_char)  ctx->h;
 
-    nxt_memzero(ctx, sizeof(*ctx));
+    nxt_explicit_memzero(ctx, sizeof(*ctx));
 }
 
 

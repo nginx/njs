@@ -97,7 +97,7 @@ nxt_explicit_memzero(buf, length)                                             \
     (void) explicit_memset(buf, 0, length)
 #else
 nxt_inline void
-nxt_explicit_memzero(u_char *buf, size_t length)
+nxt_explicit_memzero(void *buf, size_t length)
 {
     volatile u_char  *p = (volatile u_char *) buf;
 
