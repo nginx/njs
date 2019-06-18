@@ -143,6 +143,9 @@ typedef struct {
     njs_vm_ops_t                    *ops;
     nxt_str_t                       file;
 
+    char                            **argv;
+    nxt_uint_t                      argc;
+
     uint8_t                         trailer;         /* 1 bit */
     uint8_t                         init;            /* 1 bit */
     uint8_t                         accumulative;    /* 1 bit */

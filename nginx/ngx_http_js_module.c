@@ -2283,6 +2283,8 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     options.backtrace = 1;
     options.ops = &ngx_http_js_ops;
+    options.argv = ngx_argv;
+    options.argc = ngx_argc;
 
     file = value[1];
     options.file.start = file.data;

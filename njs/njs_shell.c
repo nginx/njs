@@ -265,6 +265,8 @@ main(int argc, char **argv)
 
     vm_options.ops = &njs_console_ops;
     vm_options.external = &njs_console;
+    vm_options.argv = argv;
+    vm_options.argc = argc;
 
     if (opts.interactive) {
         ret = njs_interactive_shell(&opts, &vm_options);

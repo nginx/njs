@@ -55,6 +55,7 @@ static const njs_keyword_t  njs_keywords[] = {
     { nxt_string("this"),          NJS_TOKEN_THIS, 0 },
     { nxt_string("arguments"),     NJS_TOKEN_ARGUMENTS, 0 },
     { nxt_string("njs"),           NJS_TOKEN_NJS, 0 },
+    { nxt_string("process"),       NJS_TOKEN_PROCESS, 0 },
     { nxt_string("Math"),          NJS_TOKEN_MATH, 0 },
     { nxt_string("JSON"),          NJS_TOKEN_JSON, 0 },
 

@@ -451,6 +451,7 @@ njs_generator(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
         /* Fall through. */
 
     case NJS_TOKEN_NJS:
+    case NJS_TOKEN_PROCESS:
     case NJS_TOKEN_MATH:
     case NJS_TOKEN_JSON:
     case NJS_TOKEN_EVAL:

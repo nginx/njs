@@ -28,17 +28,21 @@ static njs_ret_t njs_prototype_function(njs_vm_t *vm, njs_value_t *args,
 static nxt_array_t *njs_vm_expression_completions(njs_vm_t *vm,
     nxt_str_t *expression);
 static nxt_array_t *njs_object_completions(njs_vm_t *vm, njs_object_t *object);
+static nxt_int_t njs_env_hash_init(njs_vm_t *vm, nxt_lvlhsh_t *hash,
+    char **environment);
 
 
-const njs_object_init_t  njs_njs_object_init;
 const njs_object_init_t  njs_global_this_init;
+const njs_object_init_t  njs_njs_object_init;
+const njs_object_init_t  njs_process_object_init;
 
 
 const njs_object_init_t  *njs_object_init[] = {
-    &njs_global_this_init,        /* global this        */
-    &njs_njs_object_init,         /* global njs object  */
-    &njs_math_object_init,        /* Math               */
-    &njs_json_object_init,        /* JSON               */
+    &njs_global_this_init,
+    &njs_njs_object_init,
+    &njs_process_object_init,
+    &njs_math_object_init,
+    &njs_json_object_init,
     NULL
 };
 
@@ -214,6 +218,9 @@ const njs_object_prototype_t  njs_prototype_values[] = {
 };
 
 
+extern char  **environ;
+
+
 nxt_inline nxt_int_t
 njs_object_hash_init(njs_vm_t *vm, nxt_lvlhsh_t *hash,
     const njs_object_init_t *init)
@@ -229,8 +236,8 @@ njs_builtin_objects_create(njs_vm_t *vm)
     njs_module_t               *module;
     njs_object_t               *object, *string_object;
     njs_function_t             *func;
-    nxt_lvlhsh_query_t         lhq;
     njs_vm_shared_t            *shared;
+    nxt_lvlhsh_query_t         lhq;
     njs_object_prototype_t     *prototype;
     const njs_object_init_t    *obj, **p;
     const njs_function_init_t  *f;
@@ -283,6 +290,11 @@ njs_builtin_objects_create(njs_vm_t *vm)
         object->extensible = 1;
 
         object++;
+    }
+
+    ret = njs_env_hash_init(vm, &shared->env_hash, environ);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return NXT_ERROR;
     }
 
     lhq.replace = 0;
@@ -1075,6 +1087,35 @@ njs_dump_value(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
+static const njs_object_prop_t  njs_global_this_object_properties[] =
+{
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("NaN"),
+        .value = njs_value(NJS_NUMBER, 0, NAN),
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("Infinity"),
+        .value = njs_value(NJS_NUMBER, 0, INFINITY),
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("undefined"),
+        .value = njs_value(NJS_UNDEFINED, 0, NAN),
+    },
+};
+
+
+const njs_object_init_t  njs_global_this_init = {
+    nxt_string("this"),
+    njs_global_this_object_properties,
+    nxt_nitems(njs_global_this_object_properties)
+};
+
+
 static const njs_object_prop_t  njs_njs_object_properties[] =
 {
     {
@@ -1102,30 +1143,223 @@ const njs_object_init_t  njs_njs_object_init = {
 };
 
 
-static const njs_object_prop_t  njs_global_this_object_properties[] =
+static njs_ret_t
+njs_process_object_argv(njs_vm_t *vm, njs_value_t *process,
+    njs_value_t *unused, njs_value_t *retval)
+{
+    char                **arg;
+    nxt_int_t           ret;
+    nxt_uint_t          i;
+    njs_array_t         *argv;
+    njs_object_prop_t   *prop;
+    nxt_lvlhsh_query_t  lhq;
+
+    static const njs_value_t  argv_string = njs_string("argv");
+
+    if (nxt_slow_path(vm->options.argv == NULL)) {
+        njs_internal_error(vm, "argv was not provided by host environment");
+        return NXT_ERROR;
+    }
+
+    argv = njs_array_alloc(vm, vm->options.argc, 0);
+    if (nxt_slow_path(argv == NULL)) {
+        return NXT_ERROR;
+    }
+
+    i = 0;
+
+    for (arg = vm->options.argv; i < vm->options.argc; arg++) {
+        njs_string_set(vm, &argv->start[i++], (u_char *) *arg,
+                       nxt_strlen(*arg));
+    }
+
+    prop = njs_object_prop_alloc(vm, &argv_string, &njs_value_undefined, 1);
+    if (nxt_slow_path(prop == NULL)) {
+        return NJS_ERROR;
+    }
+
+    prop->value.data.u.array = argv;
+    prop->value.type = NJS_ARRAY;
+    prop->value.data.truth = 1;
+
+    lhq.value = prop;
+    lhq.key_hash = NJS_ARGV_HASH;
+    lhq.key = nxt_string_value("argv");
+    lhq.replace = 0;
+    lhq.pool = vm->mem_pool;
+    lhq.proto = &njs_object_hash_proto;
+
+    ret = nxt_lvlhsh_insert(&process->data.u.object->hash, &lhq);
+
+    if (nxt_fast_path(ret == NXT_OK)) {
+        *retval = prop->value;
+        return NXT_OK;
+    }
+
+    njs_internal_error(vm, "lvlhsh insert failed");
+
+    return NXT_ERROR;
+}
+
+
+static nxt_int_t
+njs_env_hash_init(njs_vm_t *vm, nxt_lvlhsh_t *hash, char **environment)
+{
+    char                **ep;
+    u_char              *val, *entry;
+    nxt_int_t           ret;
+    njs_object_prop_t   *prop;
+    nxt_lvlhsh_query_t  lhq;
+
+    lhq.replace = 0;
+    lhq.pool = vm->mem_pool;
+    lhq.proto = &njs_object_hash_proto;
+
+    ep = environment;
+
+    while (*ep != NULL) {
+        prop = njs_object_prop_alloc(vm, &njs_value_undefined,
+                                     &njs_value_undefined, 1);
+        if (nxt_slow_path(prop == NULL)) {
+            return NXT_ERROR;
+        }
+
+        entry = (u_char *) *ep++;
+
+        val = nxt_strchr(entry, '=');
+        if (nxt_slow_path(val == NULL)) {
+            continue;
+        }
+
+        ret = njs_string_set(vm, &prop->name, entry, val - entry);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return NXT_ERROR;
+        }
+
+        val++;
+
+        ret = njs_string_set(vm, &prop->value, val, nxt_strlen(val));
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return NXT_ERROR;
+        }
+
+        lhq.value = prop;
+        njs_string_get(&prop->name, &lhq.key);
+        lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
+
+        ret = nxt_lvlhsh_insert(hash, &lhq);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            njs_internal_error(vm, "lvlhsh insert failed");
+            return NXT_ERROR;
+        }
+    }
+
+    return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_process_object_env(njs_vm_t *vm, njs_value_t *process,
+    njs_value_t *unused, njs_value_t *retval)
+{
+    nxt_int_t           ret;
+    njs_object_t        *env;
+    njs_object_prop_t   *prop;
+    nxt_lvlhsh_query_t  lhq;
+
+    static const njs_value_t  env_string = njs_string("env");
+
+    env = njs_object_alloc(vm);
+    if (nxt_slow_path(env == NULL)) {
+        return NXT_ERROR;
+    }
+
+    env->shared_hash = vm->shared->env_hash;
+
+    prop = njs_object_prop_alloc(vm, &env_string, &njs_value_undefined, 1);
+    if (nxt_slow_path(prop == NULL)) {
+        return NXT_ERROR;
+    }
+
+    prop->value.data.u.object = env;
+    prop->value.type = NJS_OBJECT;
+    prop->value.data.truth = 1;
+
+    lhq.replace = 0;
+    lhq.pool = vm->mem_pool;
+    lhq.proto = &njs_object_hash_proto;
+    lhq.value = prop;
+    lhq.key = nxt_string_value("env");
+    lhq.key_hash = NJS_ENV_HASH;
+
+    ret = nxt_lvlhsh_insert(&process->data.u.object->hash, &lhq);
+
+    if (nxt_fast_path(ret == NXT_OK)) {
+        *retval = prop->value;
+        return NXT_OK;
+    }
+
+    njs_internal_error(vm, "lvlhsh insert failed");
+
+    return NXT_ERROR;
+}
+
+
+static njs_ret_t
+njs_process_object_pid(njs_vm_t *vm, njs_value_t *unused,
+    njs_value_t *unused2, njs_value_t *retval)
+{
+    retval->data.u.number = getpid();
+    retval->type = NJS_NUMBER;
+    retval->data.truth = njs_is_number_true(retval->data.u.number);
+
+    return NJS_OK;
+}
+
+
+static njs_ret_t
+njs_process_object_ppid(njs_vm_t *vm, njs_value_t *unused,
+    njs_value_t *unused2, njs_value_t *retval)
+{
+    retval->data.u.number = getppid();
+    retval->type = NJS_NUMBER;
+    retval->data.truth = njs_is_number_true(retval->data.u.number);
+
+    return NJS_OK;
+}
+
+
+static const njs_object_prop_t  njs_process_object_properties[] =
 {
     {
-        .type = NJS_PROPERTY,
-        .name = njs_string("NaN"),
-        .value = njs_value(NJS_NUMBER, 0, NAN),
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("argv"),
+        .value = njs_prop_handler(njs_process_object_argv),
     },
 
     {
-        .type = NJS_PROPERTY,
-        .name = njs_string("Infinity"),
-        .value = njs_value(NJS_NUMBER, 0, INFINITY),
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("env"),
+        .value = njs_prop_handler(njs_process_object_env),
     },
 
     {
-        .type = NJS_PROPERTY,
-        .name = njs_string("undefined"),
-        .value = njs_value(NJS_UNDEFINED, 0, NAN),
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("pid"),
+        .value = njs_prop_handler(njs_process_object_pid),
     },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("ppid"),
+        .value = njs_prop_handler(njs_process_object_ppid),
+    },
+
 };
 
 
-const njs_object_init_t  njs_global_this_init = {
-    nxt_string("this"),
-    njs_global_this_object_properties,
-    nxt_nitems(njs_global_this_object_properties)
+const njs_object_init_t  njs_process_object_init = {
+    nxt_string("process"),
+    njs_process_object_properties,
+    nxt_nitems(njs_process_object_properties),
 };

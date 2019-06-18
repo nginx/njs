@@ -171,6 +171,7 @@ typedef enum {
 
     NJS_TOKEN_GLOBAL_THIS,
     NJS_TOKEN_NJS,
+    NJS_TOKEN_PROCESS,
     NJS_TOKEN_MATH,
     NJS_TOKEN_JSON,
 

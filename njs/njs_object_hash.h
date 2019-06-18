@@ -8,6 +8,14 @@
 #define _NJS_OBJECT_HASH_H_INCLUDED_
 
 
+#define NJS_ARGV_HASH                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
+        'a'), 'r'), 'g'), 'v')
+
+
 #define NJS_CONFIGURABLE_HASH                                                 \
     nxt_djb_hash_add(                                                         \
     nxt_djb_hash_add(                                                         \
@@ -72,6 +80,13 @@
     nxt_djb_hash_add(                                                         \
     nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
         'e'), 'n'), 'c'), 'o'), 'd'), 'i'), 'n'), 'g')
+
+
+#define NJS_ENV_HASH                                                          \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(                                                         \
+    nxt_djb_hash_add(NXT_DJB_HASH_INIT,                                       \
+        'e'), 'n'), 'v')
 
 
 #define NJS_FLAG_HASH                                                         \

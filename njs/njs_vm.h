@@ -1154,6 +1154,8 @@ struct njs_vm_shared_s {
     nxt_lvlhsh_t             arrow_instance_hash;
     nxt_lvlhsh_t             arguments_object_instance_hash;
 
+    nxt_lvlhsh_t             env_hash;
+
     njs_object_t             string_object;
     njs_object_t             objects[NJS_OBJECT_MAX];
     njs_function_t           functions[NJS_FUNCTION_MAX];

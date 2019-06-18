@@ -270,6 +270,7 @@ njs_parser_reference(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
         /* Fall through. */
 
     case NJS_TOKEN_NJS:
+    case NJS_TOKEN_PROCESS:
     case NJS_TOKEN_MATH:
     case NJS_TOKEN_JSON:
         ret = njs_parser_builtin(vm, parser, node, NJS_OBJECT, name, hash);
