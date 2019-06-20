@@ -3652,11 +3652,15 @@ njs_string_replace_join(njs_vm_t *vm, njs_string_replace_t *r)
     n = r->parts.items;
 
     for (i = 0; i < n; i++) {
-        if (part[i].start == NULL) {
-            part[i].start = part[i].value.short_string.start;
+        if (part[i].size == 0) {
+            continue;
         }
 
         size += part[i].size;
+
+        if (part[i].start == NULL) {
+            part[i].start = part[i].value.short_string.start;
+        }
 
         len = nxt_utf8_length(part[i].start, part[i].size);
 
