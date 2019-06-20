@@ -2064,37 +2064,6 @@ njs_parser_grouping_expression(njs_vm_t *vm, njs_parser_t *parser)
 }
 
 
-njs_token_t
-njs_parser_property_token(njs_vm_t *vm, njs_parser_t *parser)
-{
-    nxt_int_t          ret;
-    njs_token_t        token;
-    njs_parser_node_t  *node;
-
-    parser->lexer->property = 1;
-
-    token = njs_parser_token(vm, parser);
-
-    parser->lexer->property = 0;
-
-    if (token == NJS_TOKEN_NAME) {
-        node = njs_parser_node_new(vm, parser, NJS_TOKEN_STRING);
-        if (nxt_slow_path(node == NULL)) {
-            return NJS_TOKEN_ERROR;
-        }
-
-        ret = njs_parser_string_create(vm, &node->u.value);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return NJS_TOKEN_ERROR;
-        }
-
-        parser->node = node;
-    }
-
-    return token;
-}
-
-
 nxt_int_t
 njs_parser_match_arrow_expression(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token)

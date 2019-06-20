@@ -191,5 +191,6 @@ njs_lexer_keyword(njs_lexer_t *lexer, njs_lexer_token_t *lt)
         keyword = lhq.value;
         lt->token = keyword->token;
         lt->number = keyword->number;
+        lexer->keyword = 1;
     }
 }

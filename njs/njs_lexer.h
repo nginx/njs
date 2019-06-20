@@ -231,12 +231,10 @@ typedef struct {
 typedef struct {
     njs_lexer_token_t               *lexer_token;
     nxt_queue_t                     preread; /*  of njs_lexer_token_t */
+    uint8_t                         keyword;
 
     u_char                          *prev_start;
     njs_token_t                     prev_token:16;
-
-    uint8_t                         property;      /* 1 bit */
-    njs_token_t                     property_token:16;
 
     uint32_t                        line;
     nxt_str_t                       file;

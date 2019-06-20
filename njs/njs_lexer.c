@@ -420,11 +420,6 @@ njs_lexer_token_name_resolve(njs_lexer_t *lexer, njs_lexer_token_t *lt)
 {
     if (lt->token == NJS_TOKEN_NAME) {
         njs_lexer_keyword(lexer, lt);
-
-        if (lexer->property) {
-            lexer->property_token = lt->token;
-            lt->token = NJS_TOKEN_NAME;
-        }
     }
 
     return lt->token;
