@@ -802,7 +802,8 @@ njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         n = njs_number_radix_parse(&p, end, radix);
 
         if (n >= 0) {
-            num = minus ? -n : n;
+            num = n;
+            num = minus ? -num : num;
         }
     }
 

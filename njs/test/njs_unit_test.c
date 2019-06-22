@@ -11744,6 +11744,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("parseInt('0', 37)"),
       nxt_string("NaN") },
 
+    { nxt_string("1/parseInt('-0')"),
+      nxt_string("-Infinity") },
+
     { nxt_string("parseFloat.name"),
       nxt_string("parseFloat") },
 
