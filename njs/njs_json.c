@@ -2166,6 +2166,14 @@ njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value,
     case NJS_OBJECT_NUMBER:
         value = &value->data.u.object_value->value;
 
+        if (nxt_slow_path(value->data.u.number == 0.0
+                          && signbit(value->data.u.number)))
+        {
+
+            njs_dump("[Number: -0]");
+            break;
+        }
+
         ret = njs_number_to_string(stringify->vm, &str_val, value);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NXT_ERROR;
@@ -2273,6 +2281,16 @@ njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value,
         return njs_json_buf_append(stringify, "]}", 2);
 
     case NJS_NUMBER:
+        if (nxt_slow_path(value->data.u.number == 0.0
+                          && signbit(value->data.u.number)))
+        {
+
+            njs_dump("-0");
+            break;
+        }
+
+        /* Fall through. */
+
     case NJS_REGEXP:
     case NJS_DATE:
     case NJS_OBJECT_ERROR:
