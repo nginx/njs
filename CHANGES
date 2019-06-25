@@ -1,4 +1,64 @@
 
+Changes with njs 0.3.3                                           25 Jun 2019
+
+    nginx modules:
+
+    *) Improvement: getting of special response headers in headersOut.
+
+    *) Improvement: working with unknown methods in subrequest().
+
+    *) Improvement: added support for null as a second argument
+       of r.subrequest().
+
+    *) Bugfix: fixed processing empty output chain in stream body filter.
+
+    Core:
+    *) Feature: added runtime support for property getter/setter.
+       Thanks to 洪志道 (Hong Zhi Dao) and Artem S. Povalyukhin.
+
+    *) Feature: added "process" global object.
+
+    *) Feature: writable most of built-in properties and methods.
+
+    *) Feature: added generic implementation of Array.prototype.fill().
+
+    *) Bugfix: fixed integer-overflow in String.prototype.concat().
+
+    *) Bugfix: fixed setting of object properties.
+
+    *) Bugfix: fixed Array.prototype.toString().
+
+    *) Bugfix: fixed Date.prototype.toJSON().
+
+    *) Bugfix: fixed overwriting "constructor" property of built-in
+       prototypes.
+
+    *) Bugfix: fixed processing of invalid surrogate pairs in strings.
+
+    *) Bugfix: fixed processing of invalid surrogate pairs in JSON
+       strings.
+
+    *) Bugfix: fixed heap-buffer-overflow in toUpperCase() and
+       toLowerCase().
+
+    *) Bugfix: fixed escaping lone closing square brackets in RegExp()
+       constructor.
+
+    *) Bugfix: fixed String.prototype.toBytes() for ASCII strings.
+
+    *) Bugfix: fixed handling zero byte characters inside RegExp
+       pattern strings.
+
+    *) Bugfix: fixed String.prototype.toBytes() for ASCII strings.
+
+    *) Bugfix: fixed truth value of JSON numbers in JSON.parse().
+
+    *) Bugfix: fixed use-of-uninitialized-value in
+       njs_string_replace_join().
+
+    *) Bugfix: fixed parseInt('-0').
+       Thanks to Artem S. Povalyukhin.
+
 Changes with njs 0.3.2                                           21 May 2019
 
     Core:
