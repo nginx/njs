@@ -107,7 +107,7 @@ static void njs_console_clear_timer(njs_external_ptr_t external,
     njs_host_event_t event);
 
 static nxt_int_t lvlhsh_key_test(nxt_lvlhsh_query_t *lhq, void *data);
-static void *lvlhsh_pool_alloc(void *pool, size_t size, nxt_uint_t nalloc);
+static void *lvlhsh_pool_alloc(void *pool, size_t size);
 static void lvlhsh_pool_free(void *pool, void *p, size_t size);
 
 
@@ -192,7 +192,6 @@ static njs_external_t  njs_externals[] = {
 
 static const nxt_lvlhsh_proto_t  lvlhsh_proto  nxt_aligned(64) = {
     NXT_LVLHSH_LARGE_SLAB,
-    0,
     lvlhsh_key_test,
     lvlhsh_pool_alloc,
     lvlhsh_pool_free,
@@ -1227,7 +1226,7 @@ lvlhsh_key_test(nxt_lvlhsh_query_t *lhq, void *data)
 
 
 static void *
-lvlhsh_pool_alloc(void *pool, size_t size, nxt_uint_t nalloc)
+lvlhsh_pool_alloc(void *pool, size_t size)
 {
     return nxt_mp_align(pool, size, size);
 }

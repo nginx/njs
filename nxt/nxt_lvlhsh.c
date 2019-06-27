@@ -285,8 +285,7 @@ nxt_lvlhsh_new_bucket(nxt_lvlhsh_query_t *lhq, void **slot)
 {
     uint32_t  *bucket;
 
-    bucket = lhq->proto->alloc(lhq->pool, nxt_lvlhsh_bucket_size(lhq->proto),
-                               lhq->proto->nalloc);
+    bucket = lhq->proto->alloc(lhq->pool, nxt_lvlhsh_bucket_size(lhq->proto));
 
     if (nxt_fast_path(bucket != NULL)) {
 
@@ -459,7 +458,7 @@ nxt_lvlhsh_convert_bucket_to_level(nxt_lvlhsh_query_t *lhq, void **slot,
     proto = lhq->proto;
     size = nxt_lvlhsh_level_size(proto, nlvl);
 
-    lvl = proto->alloc(lhq->pool, size * (sizeof(void *)), proto->nalloc);
+    lvl = proto->alloc(lhq->pool, size * (sizeof(void *)));
 
     if (nxt_slow_path(lvl == NULL)) {
         return NXT_ERROR;

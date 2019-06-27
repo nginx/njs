@@ -3672,7 +3672,7 @@ njs_debug(njs_index_t index, njs_value_t *value)
 
 
 void *
-njs_lvlhsh_alloc(void *data, size_t size, nxt_uint_t nalloc)
+njs_lvlhsh_alloc(void *data, size_t size)
 {
     return nxt_mp_align(data, size, size);
 }

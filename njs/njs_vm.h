@@ -1339,7 +1339,7 @@ nxt_int_t njs_builtin_match_native_function(njs_vm_t *vm,
 
 nxt_array_t *njs_vm_backtrace(njs_vm_t *vm);
 
-void *njs_lvlhsh_alloc(void *data, size_t size, nxt_uint_t nalloc);
+void *njs_lvlhsh_alloc(void *data, size_t size);
 void njs_lvlhsh_free(void *data, void *p, size_t size);
 
 njs_array_t * njs_value_enumerate(njs_vm_t *vm, const njs_value_t *value,

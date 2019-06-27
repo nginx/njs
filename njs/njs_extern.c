@@ -50,7 +50,6 @@ const nxt_lvlhsh_proto_t  njs_extern_hash_proto
     nxt_aligned(64) =
 {
     NXT_LVLHSH_DEFAULT,
-    NXT_LVLHSH_BATCH_ALLOC,
     njs_extern_hash_test,
     njs_lvlhsh_alloc,
     njs_lvlhsh_free,
@@ -61,7 +60,6 @@ const nxt_lvlhsh_proto_t  njs_extern_value_hash_proto
     nxt_aligned(64) =
 {
     NXT_LVLHSH_DEFAULT,
-    NXT_LVLHSH_BATCH_ALLOC,
     njs_extern_value_hash_test,
     njs_lvlhsh_alloc,
     njs_lvlhsh_free,

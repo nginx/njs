@@ -11,7 +11,7 @@
 typedef struct nxt_lvlhsh_query_s  nxt_lvlhsh_query_t;
 
 typedef nxt_int_t (*nxt_lvlhsh_test_t)(nxt_lvlhsh_query_t *lhq, void *data);
-typedef void *(*nxt_lvlhsh_alloc_t)(void *ctx, size_t size, nxt_uint_t nalloc);
+typedef void *(*nxt_lvlhsh_alloc_t)(void *ctx, size_t size);
 typedef void (*nxt_lvlhsh_free_t)(void *ctx, void *p, size_t size);
 
 
@@ -19,7 +19,6 @@ typedef void (*nxt_lvlhsh_free_t)(void *ctx, void *p, size_t size);
 
 #define NXT_LVLHSH_DEFAULT_BUCKET_SIZE  128
 #define NXT_LVLHSH_ENTRY_SIZE           3
-#define NXT_LVLHSH_BATCH_ALLOC          16
 
 /* 3 is shift of 64-bit pointer. */
 #define NXT_LVLHSH_MEMALIGN_SHIFT       (NXT_MAX_MEMALIGN_SHIFT - 3)
@@ -28,7 +27,6 @@ typedef void (*nxt_lvlhsh_free_t)(void *ctx, void *p, size_t size);
 
 #define NXT_LVLHSH_DEFAULT_BUCKET_SIZE  64
 #define NXT_LVLHSH_ENTRY_SIZE           2
-#define NXT_LVLHSH_BATCH_ALLOC          8
 
 /* 2 is shift of 32-bit pointer. */
 #define NXT_LVLHSH_MEMALIGN_SHIFT       (NXT_MAX_MEMALIGN_SHIFT - 2)
@@ -73,7 +71,6 @@ typedef struct {
     uint32_t                  bucket_size;
     uint32_t                  bucket_mask;
     uint8_t                   shift[8];
-    uint32_t                  nalloc;
 
     nxt_lvlhsh_test_t         test;
     nxt_lvlhsh_alloc_t        alloc;
@@ -88,7 +85,6 @@ typedef struct {
 
     /* The maximum allowed aligned shift. */
     uint32_t                  max_shift;
-    uint32_t                  nalloc;
 } nxt_lvlhsh_ctx_t;
 
 

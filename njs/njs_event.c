@@ -15,7 +15,6 @@ const nxt_lvlhsh_proto_t  njs_event_hash_proto
     nxt_aligned(64) =
 {
     NXT_LVLHSH_DEFAULT,
-    0,
     njs_event_hash_test,
     njs_lvlhsh_alloc,
     njs_lvlhsh_free,
