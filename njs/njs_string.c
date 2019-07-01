@@ -2463,7 +2463,10 @@ njs_string_prototype_pad(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     int32_t            length, new_length;
     uint32_t           n, pad_length;
     const u_char       *end;
+    const njs_value_t  *pad;
     njs_string_prop_t  string, pad_string;
+
+    static const njs_value_t  string_space = njs_string(" ");
 
     length = njs_string_prop(&string, &args[0]);
     new_length = nargs > 1 ? args[1].data.u.number : 0;
@@ -2484,26 +2487,27 @@ njs_string_prototype_pad(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     n = 0;
     trunc = 0;
 
-    if (nargs > 2) {
-        pad_length = njs_string_prop(&pad_string, &args[2]);
+    pad = njs_arg(args, nargs, 2);
+    pad = njs_is_undefined(pad) ? &string_space : pad;
 
-        if (pad_string.size == 0) {
-            vm->retval = args[0];
-            return NJS_OK;
-        }
+    pad_length = njs_string_prop(&pad_string, pad);
 
-        if (pad_string.size > 1) {
-            n = padding / pad_length;
-            trunc = padding % pad_length;
+    if (pad_string.size == 0) {
+        vm->retval = args[0];
+        return NJS_OK;
+    }
 
-            if (pad_string.size != (size_t) pad_length) {
-                /* UTF-8 string. */
-                end = pad_string.start + pad_string.size;
-                end = njs_string_offset(pad_string.start, end, trunc);
+    if (pad_string.size > 1) {
+        n = padding / pad_length;
+        trunc = padding % pad_length;
 
-                trunc = end - pad_string.start;
-                padding = pad_string.size * n + trunc;
-            }
+        if (pad_string.size != (size_t) pad_length) {
+            /* UTF-8 string. */
+            end = pad_string.start + pad_string.size;
+            end = njs_string_offset(pad_string.start, end, trunc);
+
+            trunc = end - pad_string.start;
+            padding = pad_string.size * n + trunc;
         }
     }
 
@@ -2525,10 +2529,7 @@ njs_string_prototype_pad(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     memcpy(start, string.start, string.size);
 
-    if (nargs == 2) {
-        nxt_memset(p, ' ', padding);
-
-    } else if (pad_string.size == 1) {
+    if (pad_string.size == 1) {
         nxt_memset(p, pad_string.start[0], padding);
 
     } else {
