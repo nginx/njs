@@ -3092,94 +3092,95 @@ njs_string_replace_regexp(njs_vm_t *vm, njs_value_t *args,
                                r->part[0].start, r->part[0].size,
                                r->match_data);
 
-        if (ret >= 0) {
-            captures = nxt_regex_captures(r->match_data);
-
-            if (r->substitutions != NULL) {
-                ret = njs_string_replace_substitute(vm, r, captures);
-                if (nxt_slow_path(ret != NXT_OK)) {
-                    return ret;
-                }
-
-                if (!pattern->global) {
-                    return njs_string_replace_regexp_join(vm, r);
-                }
-
-            } else {
-                if (r->part != r->parts.start) {
-                    r->part = nxt_array_add(&r->parts, &njs_array_mem_proto,
-                                            vm->mem_pool);
-                    if (nxt_slow_path(r->part == NULL)) {
-                        return NXT_ERROR;
-                    }
-
-                    r->part = nxt_array_add(&r->parts, &njs_array_mem_proto,
-                                            vm->mem_pool);
-                    if (nxt_slow_path(r->part == NULL)) {
-                        return NXT_ERROR;
-                    }
-
-                    r->part -= 2;
-                }
-
-                if (captures[1] == 0) {
-
-                    /* Empty match. */
-
-                    start = r->part[0].start;
-
-                    if (start < end) {
-                        p = (u_char *) nxt_utf8_next(start, end);
-
-                        r->part[1].start = start;
-                        r->part[1].size = p - start;
-
-                        r->part[2].start = p;
-                        r->part[2].size = end - p;
-
-                    } else {
-                        r->part[1].size = 0;
-                        r->part[2].size = 0;
-
-                        /* To exit the loop. */
-                        r->part[2].start = start + 1;
-                    }
-
-                    if (r->function != NULL) {
-                        return njs_string_replace_regexp_function(vm, args, r,
-                                                                 captures, ret);
-                    }
-
-                    r->part[0] = replace;
-
-                } else {
-                    r->part[2].start = r->part[0].start + captures[1];
-                    r->part[2].size = r->part[0].size - captures[1];
-                    njs_set_invalid(&r->part[2].value);
-
-                    if (r->function != NULL) {
-                        return njs_string_replace_regexp_function(vm, args, r,
-                                                                 captures, ret);
-                    }
-
-                    r->part[0].size = captures[0];
-
-                    r->part[1] = replace;
-                }
-
-                if (!pattern->global) {
-                    return njs_string_replace_regexp_join(vm, r);
-                }
-
-                r->part += 2;
+        if (ret < 0) {
+            if (nxt_slow_path(ret != NXT_REGEX_NOMATCH)) {
+                return NXT_ERROR;
             }
 
-        } else if (ret == NXT_REGEX_NOMATCH) {
             break;
+        }
+
+        captures = nxt_regex_captures(r->match_data);
+
+        if (r->substitutions != NULL) {
+            ret = njs_string_replace_substitute(vm, r, captures);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return ret;
+            }
+
+            if (!pattern->global) {
+                return njs_string_replace_regexp_join(vm, r);
+            }
+
+            continue;
+        }
+
+        if (r->part != r->parts.start) {
+            r->part = nxt_array_add(&r->parts, &njs_array_mem_proto,
+                                    vm->mem_pool);
+            if (nxt_slow_path(r->part == NULL)) {
+                return NXT_ERROR;
+            }
+
+            r->part = nxt_array_add(&r->parts, &njs_array_mem_proto,
+                                    vm->mem_pool);
+            if (nxt_slow_path(r->part == NULL)) {
+                return NXT_ERROR;
+            }
+
+            r->part -= 2;
+        }
+
+        if (captures[1] == 0) {
+
+            /* Empty match. */
+
+            start = r->part[0].start;
+
+            if (start < end) {
+                p = (u_char *) nxt_utf8_next(start, end);
+
+                r->part[1].start = start;
+                r->part[1].size = p - start;
+
+                r->part[2].start = p;
+                r->part[2].size = end - p;
+
+            } else {
+                r->part[1].size = 0;
+                r->part[2].size = 0;
+
+                /* To exit the loop. */
+                r->part[2].start = start + 1;
+            }
+
+            if (r->function != NULL) {
+                return njs_string_replace_regexp_function(vm, args, r,
+                                                          captures, ret);
+            }
+
+            r->part[0] = replace;
 
         } else {
-            return NXT_ERROR;
+            r->part[2].start = r->part[0].start + captures[1];
+            r->part[2].size = r->part[0].size - captures[1];
+            njs_set_invalid(&r->part[2].value);
+
+            if (r->function != NULL) {
+                return njs_string_replace_regexp_function(vm, args, r,
+                                                          captures, ret);
+            }
+
+            r->part[0].size = captures[0];
+
+            r->part[1] = replace;
         }
+
+        if (!pattern->global) {
+            return njs_string_replace_regexp_join(vm, r);
+        }
+
+        r->part += 2;
 
     } while (r->part[0].start <= end);
 
