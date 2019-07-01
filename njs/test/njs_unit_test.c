@@ -5560,6 +5560,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'12345'.replace(3, () => ({toString: () => 'aaaa'}))"),
       nxt_string("12aaaa45") },
 
+    { nxt_string("'abc'.replace(/(z*)/g, function v0() {return '124'})"),
+      nxt_string("124a124b124c124") },
+
+    { nxt_string("'abc'.replace(/(a*)/g, function v0() {return '124'})"),
+      nxt_string("124124b124c124") },
+
     { nxt_string("/]/"),
       nxt_string("/\\]/") },
 

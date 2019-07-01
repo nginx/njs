@@ -49,6 +49,8 @@ typedef struct {
 
     nxt_regex_match_data_t     *match_data;
 
+    nxt_bool_t                 empty;
+
     njs_utf8_t                 utf8:8;
     njs_regexp_utf8_t          type:8;
 } njs_string_replace_t;
@@ -3143,6 +3145,11 @@ njs_string_replace_regexp(njs_vm_t *vm, njs_value_t *args,
                         r->part[2].start = start + 1;
                     }
 
+                    if (r->function != NULL) {
+                        return njs_string_replace_regexp_function(vm, args, r,
+                                                                 captures, ret);
+                    }
+
                     r->part[0] = replace;
 
                 } else {
@@ -3194,11 +3201,12 @@ static njs_ret_t
 njs_string_replace_regexp_function(njs_vm_t *vm, njs_value_t *args,
     njs_string_replace_t *r, int *captures, nxt_uint_t n)
 {
-    u_char       *start;
-    size_t       size, length;
-    njs_ret_t    ret;
-    nxt_uint_t   i, k;
-    njs_value_t  *arguments;
+    u_char             *start;
+    size_t             size, length;
+    njs_ret_t          ret;
+    nxt_uint_t         i, k;
+    njs_value_t        *arguments;
+    njs_string_prop_t  string;
 
     r->u.cont.function = njs_string_replace_regexp_continuation;
     njs_set_invalid(&r->retval);
@@ -3225,14 +3233,18 @@ njs_string_replace_regexp_function(njs_vm_t *vm, njs_value_t *args,
         }
     }
 
+    r->empty = (captures[0] == captures[1]);
+
     /* The offset of the matched substring. */
     njs_value_number_set(&arguments[n + 1], captures[0]);
 
     /* The whole string being examined. */
     length = njs_string_calc_length(r->utf8, r->part[0].start, r->part[0].size);
 
-    ret = njs_string_new(vm, &arguments[n + 2], r->part[0].start,
-                         r->part[0].size, length);
+    (void) njs_string_prop(&string, &args[0]);
+
+    ret = njs_string_new(vm, &arguments[n + 2], string.start, string.size,
+                         length);
 
     if (nxt_slow_path(ret != NXT_OK)) {
         return NXT_ERROR;
@@ -3249,15 +3261,23 @@ static njs_ret_t
 njs_string_replace_regexp_continuation(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
+    njs_string_prop_t     string;
     njs_string_replace_t  *r;
 
     r = njs_vm_continuation(vm);
 
+    (void) njs_string_prop(&string, &args[0]);
+
     if (njs_is_string(&r->retval)) {
-        njs_string_replacement_copy(&r->part[1], &r->retval);
+        njs_string_replacement_copy(&r->part[r->empty ? 0 : 1], &r->retval);
 
         if (args[1].data.u.regexp->pattern->global) {
             r->part += 2;
+
+            if (r->part[0].start > (string.start + string.size)) {
+                return njs_string_replace_regexp_join(vm, r);
+            }
+
             return njs_string_replace_regexp(vm, args, r);
         }
 
