@@ -5566,6 +5566,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abc'.replace(/(a*)/g, function v0() {return '124'})"),
       nxt_string("124124b124c124") },
 
+    { nxt_string("typeof '0'.replace(/^/g, '$0')"),
+      nxt_string("string") },
+
     { nxt_string("/]/"),
       nxt_string("/\\]/") },
 
