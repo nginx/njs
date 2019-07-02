@@ -8,15 +8,11 @@
 #define _NJS_NUMBER_H_INCLUDED_
 
 
+#include <njs_string.h>
 #include <math.h>
 
 
 uint32_t njs_value_to_index(const njs_value_t *value);
-double njs_primitive_value_to_number(const njs_value_t *value);
-int32_t njs_primitive_value_to_integer(const njs_value_t *value);
-int32_t njs_primitive_value_to_int32(const njs_value_t *value);
-uint32_t njs_primitive_value_to_uint32(const njs_value_t *value);
-uint32_t njs_primitive_value_to_length(const njs_value_t *value);
 double njs_number_dec_parse(const u_char **start, const u_char *end);
 uint64_t njs_number_oct_parse(const u_char **start, const u_char *end);
 uint64_t njs_number_bin_parse(const u_char **start, const u_char *end);
@@ -35,11 +31,80 @@ njs_ret_t njs_number_parse_int(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 njs_ret_t njs_number_parse_float(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
-int64_t njs_number_to_int64(double num);
-nxt_noinline int32_t njs_number_to_integer(double num);
-nxt_noinline int32_t njs_number_to_int32(double num);
-nxt_noinline uint32_t njs_number_to_uint32(double num);
-nxt_noinline uint32_t njs_number_to_length(double num);
+
+
+nxt_inline int64_t
+njs_number_to_int64(double num)
+{
+#if (NXT_NAN_TO_UINT_CONVERSION != 0)
+    /*
+     * PPC32: NaN and Inf are converted to 0x8000000080000000
+     * and become non-zero after truncation.
+     */
+
+    if (isnan(num) || isinf(num)) {
+        return 0;
+    }
+#endif
+
+    /*
+     * ES5.1: integer must be modulo 2^32.
+     * 2^53 is the largest integer number which can be stored safely
+     * in the IEEE-754 format and numbers less than 2^53 can be just
+     * converted to int64_t eliding more expensive fmod() operation.
+     * Then the int64 integer is truncated to uint32_t.  The NaN is
+     * converted to 0x8000000000000000 and becomes 0 after truncation.
+     * fmod() of the Infinity returns NaN.
+     */
+
+    if (fabs(num) > 9007199254740992.0) {
+        return (int64_t) fmod(num, 4294967296.0);
+    }
+
+    return (int64_t) num;
+}
+
+
+nxt_inline int32_t
+njs_number_to_integer(double num)
+{
+    return (int32_t) njs_number_to_int64(num);
+}
+
+
+nxt_inline int32_t
+njs_number_to_int32(double num)
+{
+    return (int32_t) njs_number_to_int64(num);
+}
+
+
+nxt_inline uint32_t
+njs_number_to_uint32(double num)
+{
+    return (uint32_t) njs_number_to_int64(num);
+}
+
+
+nxt_inline uint32_t
+njs_number_to_length(double num)
+{
+#if (NXT_NAN_TO_UINT_CONVERSION != 0)
+    if (isnan(num)) {
+        return 0;
+    }
+#endif
+
+    if (num > UINT32_MAX) {
+        return UINT32_MAX;
+
+    } else if (num < 0.0) {
+        return 0;
+    }
+
+    return (uint32_t) (int64_t) num;
+}
+
 
 nxt_inline nxt_int_t
 njs_char_to_hex(u_char c)
@@ -61,6 +126,45 @@ njs_char_to_hex(u_char c)
     }
 
     return c;
+}
+
+
+nxt_inline double
+njs_primitive_value_to_number(const njs_value_t *value)
+{
+    if (nxt_fast_path(njs_is_numeric(value))) {
+        return value->data.u.number;
+    }
+
+    return njs_string_to_number(value, 1);
+}
+
+
+nxt_inline int32_t
+njs_primitive_value_to_integer(const njs_value_t *value)
+{
+    return njs_number_to_integer(njs_primitive_value_to_number(value));
+}
+
+
+nxt_inline int32_t
+njs_primitive_value_to_int32(const njs_value_t *value)
+{
+    return njs_number_to_int32(njs_primitive_value_to_number(value));
+}
+
+
+nxt_inline uint32_t
+njs_primitive_value_to_uint32(const njs_value_t *value)
+{
+    return njs_number_to_uint32(njs_primitive_value_to_number(value));
+}
+
+
+nxt_inline uint32_t
+njs_primitive_value_to_length(const njs_value_t *value)
+{
+    return njs_number_to_length(njs_primitive_value_to_number(value));
 }
 
 

@@ -24,7 +24,7 @@ typedef struct {
 
 static nxt_int_t njs_module_lookup(njs_vm_t *vm, const nxt_str_t *cwd,
     njs_module_info_t *info);
-static nxt_noinline nxt_int_t njs_module_relative_path(njs_vm_t *vm,
+static nxt_int_t njs_module_relative_path(njs_vm_t *vm,
     const nxt_str_t *dir, njs_module_info_t *info);
 static nxt_int_t njs_module_absolute_path(njs_vm_t *vm,
     njs_module_info_t *info);
@@ -55,9 +55,7 @@ njs_module_load(njs_vm_t *vm)
 
         if (module->function.native) {
             value = njs_vmcode_operand(vm, module->index);
-            value->data.u.object = &module->object;
-            value->type = NJS_OBJECT;
-            value->data.truth = 1;
+            njs_set_object(value, &module->object);
 
         } else {
             ret = njs_vm_invoke(vm, &module->function, NULL, 0, module->index);
@@ -285,7 +283,7 @@ njs_module_absolute_path(njs_vm_t *vm, njs_module_info_t *info)
 }
 
 
-static nxt_noinline nxt_int_t
+static nxt_int_t
 njs_module_relative_path(njs_vm_t *vm, const nxt_str_t *dir,
     njs_module_info_t *info)
 {
@@ -532,9 +530,7 @@ njs_ret_t njs_module_require(njs_vm_t *vm, njs_value_t *args,
         module = lhq.value;
         module->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_OBJECT].object;
 
-        vm->retval.data.u.object = &module->object;
-        vm->retval.type = NJS_OBJECT;
-        vm->retval.data.truth = 1;
+        njs_set_object(&vm->retval, &module->object);
 
         return NXT_OK;
     }

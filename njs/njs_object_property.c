@@ -698,7 +698,7 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *object,
     pq.lhq.value = prop;
     pq.lhq.pool = vm->mem_pool;
 
-    ret = nxt_lvlhsh_insert(&object->data.u.object->hash, &pq.lhq);
+    ret = nxt_lvlhsh_insert(njs_object_hash(object), &pq.lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
         njs_internal_error(vm, "lvlhsh insert failed");
         return NXT_ERROR;
@@ -712,7 +712,7 @@ found:
 }
 
 
-nxt_noinline njs_object_prop_t *
+njs_object_prop_t *
 njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
     const njs_value_t *value, uint8_t attributes)
 {
@@ -745,7 +745,7 @@ njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
 }
 
 
-nxt_noinline njs_object_prop_t *
+njs_object_prop_t *
 njs_object_property(njs_vm_t *vm, const njs_object_t *object,
     nxt_lvlhsh_query_t *lhq)
 {
@@ -848,7 +848,7 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
             pq.lhq.replace = 0;
             pq.lhq.pool = vm->mem_pool;
 
-            ret = nxt_lvlhsh_insert(&object->data.u.object->hash, &pq.lhq);
+            ret = nxt_lvlhsh_insert(njs_object_hash(object), &pq.lhq);
             if (nxt_slow_path(ret != NXT_OK)) {
                 njs_internal_error(vm, "lvlhsh insert failed");
                 return NXT_ERROR;
@@ -1315,9 +1315,7 @@ njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
         return NXT_ERROR;
     }
 
-    dest->data.u.object = desc;
-    dest->type = NJS_OBJECT;
-    dest->data.truth = 1;
+    njs_set_object(dest, desc);
 
     return NXT_OK;
 }

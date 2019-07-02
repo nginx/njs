@@ -15,6 +15,8 @@
 #include <nxt_djb_hash.h>
 #include <nxt_mp.h>
 
+#include <math.h>
+
 
 #define NJS_MAX_STACK_SIZE       (16 * 1024 * 1024)
 
@@ -562,6 +564,94 @@ typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
 
 #define njs_is_valid(value)                                                   \
     ((value)->type != NJS_INVALID)
+
+
+#define njs_bool(value)                                                       \
+    ((value)->data.truth)
+
+
+#define njs_number(value)                                                     \
+    ((value)->data.u.number)
+
+
+#define njs_data(value)                                                       \
+    ((value)->data.u.data)
+
+
+#define njs_function(value)                                                   \
+    ((value)->data.u.function)
+
+
+#define njs_object(value)                                                     \
+    ((value)->data.u.object)
+
+
+#define njs_object_hash(value)                                                \
+    (&(value)->data.u.object->hash)
+
+
+#define njs_array(value)                                                      \
+    ((value)->data.u.array)
+
+
+#define njs_array_len(value)                                                  \
+    ((value)->data.u.array->length)
+
+
+#define njs_array_start(value)                                                \
+    ((value)->data.u.array->start)
+
+
+#define njs_set_undefined(value)                                              \
+    *(value) = njs_value_undefined
+
+
+#define njs_set_boolean(value, yn)                                            \
+    *(value) = yn ? njs_value_true : njs_value_false
+
+
+#define njs_set_true(value)                                                   \
+    *(value) = njs_value_true
+
+
+#define njs_set_false(value)                                                  \
+    *(value) = njs_value_false
+
+
+nxt_inline void
+njs_set_number(njs_value_t *value, double num)
+{
+    value->data.u.number = num;
+    value->type = NJS_NUMBER;
+    value->data.truth = njs_is_number_true(num);
+}
+
+
+nxt_inline void
+njs_set_data(njs_value_t *value, void *data)
+{
+    value->data.u.data = data;
+    value->type = NJS_DATA;
+    value->data.truth = 1;
+}
+
+
+nxt_inline void
+njs_set_object(njs_value_t *value, njs_object_t *object)
+{
+    value->data.u.object = object;
+    value->type = NJS_OBJECT;
+    value->data.truth = 1;
+}
+
+
+nxt_inline void
+njs_set_array(njs_value_t *value, njs_array_t *array)
+{
+    value->data.u.array = array;
+    value->type = NJS_ARRAY;
+    value->data.truth = 1;
+}
 
 
 #define njs_set_invalid(value)                                                \

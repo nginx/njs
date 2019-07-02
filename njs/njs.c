@@ -663,17 +663,171 @@ njs_vm_add_path(njs_vm_t *vm, const nxt_str_t *path)
 }
 
 
-nxt_noinline njs_value_t *
+njs_value_t *
 njs_vm_retval(njs_vm_t *vm)
 {
     return &vm->retval;
 }
 
 
-nxt_noinline void
+void
 njs_vm_retval_set(njs_vm_t *vm, const njs_value_t *value)
 {
     vm->retval = *value;
+}
+
+
+void
+njs_value_undefined_set(njs_value_t *value)
+{
+    njs_set_undefined(value);
+}
+
+
+void
+njs_value_boolean_set(njs_value_t *value, int yn)
+{
+    njs_set_boolean(value, yn);
+}
+
+
+void
+njs_value_number_set(njs_value_t *value, double num)
+{
+    njs_set_number(value, num);
+}
+
+
+void
+njs_value_data_set(njs_value_t *value, void *data)
+{
+    njs_set_data(value, data);
+}
+
+
+njs_ret_t
+njs_vm_value_string_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
+    uint32_t size)
+{
+    return njs_string_set(vm, value, start, size);
+}
+
+
+u_char *
+njs_vm_value_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size)
+{
+    return njs_string_alloc(vm, value, size, 0);
+}
+
+
+nxt_noinline void
+njs_vm_value_error_set(njs_vm_t *vm, njs_value_t *value, const char *fmt, ...)
+{
+    va_list  args;
+    u_char   buf[NXT_MAX_ERROR_STR], *p;
+
+    p = buf;
+
+    if (fmt != NULL) {
+        va_start(args, fmt);
+        p = nxt_vsprintf(buf, buf + sizeof(buf), fmt, args);
+        va_end(args);
+    }
+
+    njs_error_new(vm, value, NJS_OBJECT_ERROR, buf, p - buf);
+}
+
+
+uint8_t
+njs_value_bool(const njs_value_t *value)
+{
+    return njs_bool(value);
+}
+
+
+double
+njs_value_number(const njs_value_t *value)
+{
+    return njs_number(value);
+}
+
+
+void *
+njs_value_data(const njs_value_t *value)
+{
+    return njs_data(value);
+}
+
+
+njs_function_t *
+njs_value_function(const njs_value_t *value)
+{
+    return njs_function(value);
+}
+
+
+nxt_int_t
+njs_value_is_null(const njs_value_t *value)
+{
+    return njs_is_null(value);
+}
+
+
+nxt_int_t
+njs_value_is_undefined(const njs_value_t *value)
+{
+    return njs_is_undefined(value);
+}
+
+
+nxt_int_t
+njs_value_is_null_or_undefined(const njs_value_t *value)
+{
+    return njs_is_null_or_undefined(value);
+}
+
+
+nxt_int_t
+njs_value_is_boolean(const njs_value_t *value)
+{
+    return njs_is_boolean(value);
+}
+
+
+nxt_int_t
+njs_value_is_number(const njs_value_t *value)
+{
+    return njs_is_number(value);
+}
+
+
+nxt_int_t
+njs_value_is_valid_number(const njs_value_t *value)
+{
+    return njs_is_number(value)
+           && !isnan(value->data.u.number)
+           && !isinf(value->data.u.number);
+}
+
+
+nxt_int_t
+njs_value_is_string(const njs_value_t *value)
+{
+    return njs_is_string(value);
+}
+
+
+nxt_int_t
+njs_value_is_object(const njs_value_t *value)
+{
+    return njs_is_object(value);
+}
+
+
+nxt_int_t
+njs_value_is_function(const njs_value_t *value)
+{
+    return njs_is_function(value);
 }
 
 
@@ -770,9 +924,7 @@ njs_vm_object_alloc(njs_vm_t *vm, njs_value_t *retval, ...)
 
     rc = NJS_OK;
 
-    retval->data.u.object = object;
-    retval->type = NJS_OBJECT;
-    retval->data.truth = 1;
+    njs_set_object(retval, object);
 
 done:
 
@@ -797,7 +949,7 @@ njs_vm_object_prop(njs_vm_t *vm, const njs_value_t *value, const nxt_str_t *key)
     lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
     lhq.proto = &njs_object_hash_proto;
 
-    ret = nxt_lvlhsh_find(&value->data.u.object->hash, &lhq);
+    ret = nxt_lvlhsh_find(njs_object_hash(value), &lhq);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NULL;
     }

@@ -55,7 +55,7 @@ njs_error_fmt_new(njs_vm_t *vm, njs_value_t *dst, njs_value_type_t type,
 }
 
 
-nxt_noinline njs_object_t *
+njs_object_t *
 njs_error_alloc(njs_vm_t *vm, njs_value_type_t type, const njs_value_t *name,
     const njs_value_t *message)
 {

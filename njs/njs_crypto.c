@@ -186,7 +186,7 @@ njs_crypto_create_hash(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     alg->init(&dgst->u);
 
-    njs_value_data_set(&hash->value, dgst);
+    njs_set_data(&hash->value, dgst);
 
     vm->retval.data.u.object_value = hash;
     vm->retval.type = NJS_OBJECT_VALUE;
@@ -452,7 +452,7 @@ njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NJS_ERROR;
     }
 
-    njs_value_data_set(&hmac->value, ctx);
+    njs_set_data(&hmac->value, ctx);
 
     vm->retval.data.u.object_value = hmac;
     vm->retval.type = NJS_OBJECT_VALUE;

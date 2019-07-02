@@ -21,7 +21,7 @@ njs_object_math_abs(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -49,7 +49,7 @@ njs_object_math_acos(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -68,7 +68,7 @@ njs_object_math_acosh(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -96,7 +96,7 @@ njs_object_math_asin(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -115,7 +115,7 @@ njs_object_math_asinh(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -134,7 +134,7 @@ njs_object_math_atan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -156,7 +156,7 @@ njs_object_math_atan2(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -175,7 +175,7 @@ njs_object_math_atanh(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -194,7 +194,7 @@ njs_object_math_cbrt(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -213,7 +213,7 @@ njs_object_math_ceil(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -234,7 +234,7 @@ njs_object_math_clz32(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = 32;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -253,7 +253,7 @@ njs_object_math_cos(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -272,7 +272,7 @@ njs_object_math_cosh(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -291,7 +291,7 @@ njs_object_math_exp(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -310,7 +310,7 @@ njs_object_math_expm1(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -329,7 +329,7 @@ njs_object_math_floor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -348,7 +348,7 @@ njs_object_math_fround(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -379,7 +379,7 @@ njs_object_math_hypot(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -402,7 +402,7 @@ njs_object_math_imul(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = 0;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -421,7 +421,7 @@ njs_object_math_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -440,7 +440,7 @@ njs_object_math_log10(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -459,7 +459,7 @@ njs_object_math_log1p(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -487,7 +487,7 @@ njs_object_math_log2(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -525,7 +525,7 @@ njs_object_math_max(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 done:
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -557,7 +557,7 @@ njs_object_math_min(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = INFINITY;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -590,7 +590,7 @@ njs_object_math_pow(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -604,7 +604,7 @@ njs_object_math_random(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     num = nxt_random(&vm->random) / 4294967296.0;
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -623,7 +623,7 @@ njs_object_math_round(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -646,7 +646,7 @@ njs_object_math_sign(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -665,7 +665,7 @@ njs_object_math_sin(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -684,7 +684,7 @@ njs_object_math_sinh(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -703,7 +703,7 @@ njs_object_math_sqrt(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -722,7 +722,7 @@ njs_object_math_tan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -741,7 +741,7 @@ njs_object_math_tanh(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -760,7 +760,7 @@ njs_object_math_trunc(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         num = NAN;
     }
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }

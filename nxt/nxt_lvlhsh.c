@@ -827,7 +827,7 @@ nxt_lvlhsh_level_each(nxt_lvlhsh_each_t *lhe, void **level, nxt_uint_t nlvl,
 }
 
 
-static nxt_noinline void *
+static void *
 nxt_lvlhsh_bucket_each(nxt_lvlhsh_each_t *lhe)
 {
     void      *value, **next;

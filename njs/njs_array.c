@@ -118,15 +118,15 @@ static njs_ret_t njs_array_prototype_find_index_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t njs_array_prototype_map_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
-static nxt_noinline uint32_t njs_array_prototype_map_index(njs_array_t *array,
+static uint32_t njs_array_prototype_map_index(njs_array_t *array,
     njs_array_map_t *map);
-static nxt_noinline njs_ret_t njs_array_iterator_args(njs_vm_t *vm,
+static njs_ret_t njs_array_iterator_args(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs);
-static nxt_noinline uint32_t njs_array_iterator_index(njs_array_t *array,
+static uint32_t njs_array_iterator_index(njs_array_t *array,
     njs_array_iter_t *iter);
-static nxt_noinline njs_ret_t njs_array_iterator_apply(njs_vm_t *vm,
+static njs_ret_t njs_array_iterator_apply(njs_vm_t *vm,
     njs_array_iter_t *iter, njs_value_t *args, nxt_uint_t nargs);
-static nxt_noinline njs_ret_t njs_array_prototype_find_apply(njs_vm_t *vm,
+static njs_ret_t njs_array_prototype_find_apply(njs_vm_t *vm,
     njs_array_iter_t *iter, njs_value_t *args, nxt_uint_t nargs);
 static njs_ret_t njs_array_prototype_reduce_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
@@ -138,7 +138,7 @@ static njs_ret_t njs_array_prototype_sort_continuation(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 
 
-nxt_noinline njs_array_t *
+njs_array_t *
 njs_array_alloc(njs_vm_t *vm, uint64_t length, uint32_t spare)
 {
     uint64_t     size;
@@ -308,7 +308,6 @@ njs_array_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     if (nxt_fast_path(array != NULL)) {
 
-        vm->retval.data.u.array = array;
         value = array->start;
 
         if (args == NULL) {
@@ -326,8 +325,8 @@ njs_array_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             }
         }
 
-        vm->retval.type = NJS_ARRAY;
-        vm->retval.data.truth = 1;
+
+        njs_set_array(&vm->retval, array);
 
         return NXT_OK;
     }
@@ -369,9 +368,7 @@ njs_array_of(njs_vm_t *vm, njs_value_t *args,
             return NXT_ERROR;
         }
 
-        vm->retval.data.u.array = array;
-        vm->retval.type = NJS_ARRAY;
-        vm->retval.data.truth = 1;
+        njs_set_array(&vm->retval, array);
 
         for (i = 0; i < length; i++) {
             array->start[i] = args[i + 1];
@@ -464,7 +461,7 @@ njs_array_length(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
 
         array = (njs_array_t *) proto;
 
-        njs_value_number_set(retval, array->length);
+        njs_set_number(retval, array->length);
         return NJS_OK;
     }
 
@@ -506,7 +503,7 @@ njs_array_length(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
 
     array->length = length;
 
-    njs_value_number_set(retval, length);
+    njs_set_number(retval, length);
     return NJS_OK;
 }
 
@@ -619,15 +616,13 @@ njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
         return NXT_ERROR;
     }
 
-    vm->retval.data.u.array = array;
-    vm->retval.type = NJS_ARRAY;
-    vm->retval.data.truth = 1;
+    njs_set_array(&vm->retval, array);
 
     if (length != 0) {
         n = 0;
 
         if (nxt_fast_path(njs_is_array(this))) {
-            value = this->data.u.array->start;
+            value = njs_array_start(this);
 
             do {
                 /* GC: retain long string and object in values[start]. */
@@ -704,7 +699,7 @@ njs_array_prototype_push(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_array_t  *array;
 
     if (njs_is_array(&args[0])) {
-        array = args[0].data.u.array;
+        array = njs_array(&args[0]);
 
         if (nargs != 0) {
             ret = njs_array_expand(vm, array, 0, nargs);
@@ -718,7 +713,7 @@ njs_array_prototype_push(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             }
         }
 
-        njs_value_number_set(&vm->retval, array->length);
+        njs_set_number(&vm->retval, array->length);
     }
 
     return NXT_OK;
@@ -735,7 +730,7 @@ njs_array_prototype_pop(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     retval = &njs_value_undefined;
 
     if (njs_is_array(&args[0])) {
-        array = args[0].data.u.array;
+        array = njs_array(&args[0]);
 
         if (array->length != 0) {
             array->length--;
@@ -762,7 +757,7 @@ njs_array_prototype_unshift(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_array_t  *array;
 
     if (njs_is_array(&args[0])) {
-        array = args[0].data.u.array;
+        array = njs_array(&args[0]);
         n = nargs - 1;
 
         if (n != 0) {
@@ -782,7 +777,7 @@ njs_array_prototype_unshift(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             } while (n > 1);
         }
 
-        njs_value_number_set(&vm->retval, array->length);
+        njs_set_number(&vm->retval, array->length);
     }
 
     return NXT_OK;
@@ -799,7 +794,7 @@ njs_array_prototype_shift(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     retval = &njs_value_undefined;
 
     if (njs_is_array(&args[0])) {
-        array = args[0].data.u.array;
+        array = njs_array(&args[0]);
 
         if (array->length != 0) {
             array->length--;
@@ -833,7 +828,7 @@ njs_array_prototype_splice(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     delete = 0;
 
     if (njs_is_array(&args[0])) {
-        array = args[0].data.u.array;
+        array = njs_array(&args[0]);
         length = array->length;
 
         if (nargs > 1) {
@@ -913,9 +908,7 @@ njs_array_prototype_splice(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
     }
 
-    vm->retval.data.u.array = deleted;
-    vm->retval.type = NJS_ARRAY;
-    vm->retval.data.truth = 1;
+    njs_set_array(&vm->retval, deleted);
 
     return NXT_OK;
 }
@@ -930,7 +923,7 @@ njs_array_prototype_reverse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_array_t  *array;
 
     if (njs_is_array(&args[0])) {
-        array = args[0].data.u.array;
+        array = njs_array(&args[0]);
         length = array->length;
 
         if (length > 1) {
@@ -941,9 +934,7 @@ njs_array_prototype_reverse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             }
         }
 
-        vm->retval.data.u.array = array;
-        vm->retval.type = NJS_ARRAY;
-        vm->retval.data.truth = 1;
+        njs_set_array(&vm->retval, array);
 
     } else {
         /* STUB */
@@ -991,7 +982,7 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         goto empty;
     }
 
-    array = args[0].data.u.array;
+    array = njs_array(&args[0]);
 
     if (array->length == 0) {
         goto empty;
@@ -1076,7 +1067,7 @@ njs_array_prototype_join_continuation(njs_vm_t *vm, njs_value_t *args,
     n = 0;
     mask = -1;
 
-    array = args[0].data.u.array;
+    array = njs_array(&args[0]);
 
     for (i = 0; i < array->length; i++) {
         value = &array->start[i];
@@ -1168,7 +1159,7 @@ njs_array_prototype_concat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     for (i = 0; i < nargs; i++) {
         if (njs_is_array(&args[i])) {
-            length += args[i].data.u.array->length;
+            length += njs_array_len(&args[i]);
 
         } else {
             length++;
@@ -1180,9 +1171,7 @@ njs_array_prototype_concat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    vm->retval.data.u.array = array;
-    vm->retval.type = NJS_ARRAY;
-    vm->retval.data.truth = 1;
+    njs_set_array(&vm->retval, array);
 
     value = array->start;
 
@@ -1202,8 +1191,8 @@ njs_array_copy(njs_value_t *dst, njs_value_t *src)
     n = 1;
 
     if (njs_is_array(src)) {
-        n = src->data.u.array->length;
-        src = src->data.u.array->start;
+        n = njs_array_len(src);
+        src = njs_array_start(src);
     }
 
     while (n != 0) {
@@ -1230,7 +1219,7 @@ njs_array_prototype_index_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         goto done;
     }
 
-    array = args[0].data.u.array;
+    array = njs_array(&args[0]);
     length = array->length;
 
     if (length == 0) {
@@ -1270,7 +1259,7 @@ njs_array_prototype_index_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 done:
 
-    njs_value_number_set(&vm->retval, index);
+    njs_set_number(&vm->retval, index);
 
     return NXT_OK;
 }
@@ -1290,7 +1279,7 @@ njs_array_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
         goto done;
     }
 
-    array = args[0].data.u.array;
+    array = njs_array(&args[0]);
     length = array->length;
 
     if (length == 0) {
@@ -1329,7 +1318,7 @@ njs_array_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
 
 done:
 
-    njs_value_number_set(&vm->retval, index);
+    njs_set_number(&vm->retval, index);
 
     return NXT_OK;
 }
@@ -1350,7 +1339,7 @@ njs_array_prototype_includes(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         goto done;
     }
 
-    array = args[0].data.u.array;
+    array = njs_array(&args[0]);
     length = array->length;
 
     if (length == 0) {
@@ -1480,7 +1469,7 @@ njs_array_prototype_fill_continuation(njs_vm_t *vm, njs_value_t *args,
     fill = njs_vm_continuation(vm);
 
     if (njs_is_array(this)) {
-        array = this->data.u.array;
+        array = njs_array(this);
         length = array->length;
 
     } else {
@@ -1584,7 +1573,7 @@ njs_array_prototype_for_each_continuation(njs_vm_t *vm, njs_value_t *args,
 
     iter = njs_vm_continuation(vm);
 
-    index = njs_array_iterator_index(args[0].data.u.array, iter);
+    index = njs_array_iterator_index(njs_array(&args[0]), iter);
 
     if (index == NJS_ARRAY_INVALID_INDEX) {
         vm->retval = njs_value_undefined;
@@ -1628,7 +1617,7 @@ njs_array_prototype_some_continuation(njs_vm_t *vm, njs_value_t *args,
         retval = &njs_value_true;
 
     } else {
-        index = njs_array_iterator_index(args[0].data.u.array, iter);
+        index = njs_array_iterator_index(njs_array(&args[0]), iter);
 
         if (index == NJS_ARRAY_INVALID_INDEX) {
             retval = &njs_value_false;
@@ -1678,7 +1667,7 @@ njs_array_prototype_every_continuation(njs_vm_t *vm, njs_value_t *args,
         retval = &njs_value_false;
 
     } else {
-        index = njs_array_iterator_index(args[0].data.u.array, iter);
+        index = njs_array_iterator_index(njs_array(&args[0]), iter);
 
         if (index == NJS_ARRAY_INVALID_INDEX) {
             retval = &njs_value_true;
@@ -1736,13 +1725,11 @@ njs_array_prototype_filter_continuation(njs_vm_t *vm, njs_value_t *args,
         }
     }
 
-    array = args[0].data.u.array;
+    array = njs_array(&args[0]);
     index = njs_array_iterator_index(array, &filter->iter);
 
     if (index == NJS_ARRAY_INVALID_INDEX) {
-        vm->retval.data.u.array = filter->array;
-        vm->retval.type = NJS_ARRAY;
-        vm->retval.data.truth = 1;
+        njs_set_array(&vm->retval, filter->array);
 
         return NXT_OK;
     }
@@ -1788,7 +1775,7 @@ njs_array_prototype_find_continuation(njs_vm_t *vm, njs_value_t *args,
     iter = &find->iter;
 
     if (!njs_is_true(&iter->retval)) {
-        array = args[0].data.u.array;
+        array = njs_array(&args[0]);
         iter->index++;
 
         if (iter->index < iter->length && iter->index < array->length) {
@@ -1843,7 +1830,7 @@ njs_array_prototype_find_index_continuation(njs_vm_t *vm, njs_value_t *args,
         iter->index++;
 
         if (iter->index < iter->length
-            && iter->index < args[0].data.u.array->length)
+            && iter->index < njs_array_len(&args[0]))
         {
             return njs_array_prototype_find_apply(vm, iter, args, nargs);
         }
@@ -1851,13 +1838,13 @@ njs_array_prototype_find_index_continuation(njs_vm_t *vm, njs_value_t *args,
         index = -1;
     }
 
-    njs_value_number_set(&vm->retval, index);
+    njs_set_number(&vm->retval, index);
 
     return NXT_OK;
 }
 
 
-static nxt_noinline njs_ret_t
+static njs_ret_t
 njs_array_prototype_find_apply(njs_vm_t *vm, njs_array_iter_t *iter,
     njs_value_t *args, nxt_uint_t nargs)
 {
@@ -1871,7 +1858,7 @@ njs_array_prototype_find_apply(njs_vm_t *vm, njs_array_iter_t *iter,
     arguments[0] = *value;
 
     n = iter->index;
-    value = &args[0].data.u.array->start[n];
+    value = &njs_array_start(&args[0])[n];
 
     if (!njs_is_valid(value)) {
         value = &njs_value_undefined;
@@ -1879,7 +1866,7 @@ njs_array_prototype_find_apply(njs_vm_t *vm, njs_array_iter_t *iter,
 
     arguments[1] = *value;
 
-    njs_value_number_set(&arguments[2], n);
+    njs_set_number(&arguments[2], n);
 
     arguments[3] = args[0];
 
@@ -1904,7 +1891,7 @@ njs_array_prototype_map(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     map->iter.u.cont.function = njs_array_prototype_map_continuation;
     njs_set_invalid(&map->iter.retval);
 
-    map->array = njs_array_alloc(vm, args[0].data.u.array->length, 0);
+    map->array = njs_array_alloc(vm, njs_array_len(&args[0]), 0);
     if (nxt_slow_path(map->array == NULL)) {
         return NXT_ERROR;
     }
@@ -1913,7 +1900,7 @@ njs_array_prototype_map(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
-static nxt_noinline njs_ret_t
+static njs_ret_t
 njs_array_prototype_map_continuation(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
@@ -1926,12 +1913,10 @@ njs_array_prototype_map_continuation(njs_vm_t *vm, njs_value_t *args,
         map->array->start[map->iter.index] = map->iter.retval;
     }
 
-    index = njs_array_prototype_map_index(args[0].data.u.array, map);
+    index = njs_array_prototype_map_index(njs_array(&args[0]), map);
 
     if (index == NJS_ARRAY_INVALID_INDEX) {
-        vm->retval.data.u.array = map->array;
-        vm->retval.type = NJS_ARRAY;
-        vm->retval.data.truth = 1;
+        njs_set_array(&vm->retval, map->array);
 
         return NXT_OK;
     }
@@ -1987,7 +1972,7 @@ njs_array_prototype_reduce(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         iter->retval = args[2];
 
     } else {
-        array = args[0].data.u.array;
+        array = njs_array(&args[0]);
         n = njs_array_iterator_index(array, iter);
 
         if (n == NJS_ARRAY_INVALID_INDEX) {
@@ -2012,7 +1997,7 @@ njs_array_prototype_reduce_continuation(njs_vm_t *vm, njs_value_t *args,
     njs_array_iter_t  *iter;
 
     iter = njs_vm_continuation(vm);
-    array = args[0].data.u.array;
+    array = njs_array(&args[0]);
 
     n = njs_array_iterator_index(array, iter);
 
@@ -2028,7 +2013,7 @@ njs_array_prototype_reduce_continuation(njs_vm_t *vm, njs_value_t *args,
 
     arguments[2] = array->start[n];
 
-    njs_value_number_set(&arguments[3], n);
+    njs_set_number(&arguments[3], n);
 
     arguments[4] = args[0];
 
@@ -2037,7 +2022,7 @@ njs_array_prototype_reduce_continuation(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static nxt_noinline njs_ret_t
+static njs_ret_t
 njs_array_iterator_args(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs)
 {
     njs_array_iter_t  *iter;
@@ -2045,7 +2030,7 @@ njs_array_iterator_args(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs)
     if (nargs > 1 && njs_is_array(&args[0]) && njs_is_function(&args[1])) {
 
         iter = njs_vm_continuation(vm);
-        iter->length = args[0].data.u.array->length;
+        iter->length = njs_array_len(&args[0]);
         iter->retval.data.truth = 0;
         iter->index = NJS_ARRAY_INVALID_INDEX;
 
@@ -2058,7 +2043,7 @@ njs_array_iterator_args(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs)
 }
 
 
-static nxt_noinline uint32_t
+static uint32_t
 njs_array_iterator_index(njs_array_t *array, njs_array_iter_t *iter)
 {
     uint32_t  i, length;
@@ -2076,7 +2061,7 @@ njs_array_iterator_index(njs_array_t *array, njs_array_iter_t *iter)
 }
 
 
-static nxt_noinline njs_ret_t
+static njs_ret_t
 njs_array_iterator_apply(njs_vm_t *vm, njs_array_iter_t *iter,
     njs_value_t *args, nxt_uint_t nargs)
 {
@@ -2090,9 +2075,9 @@ njs_array_iterator_apply(njs_vm_t *vm, njs_array_iter_t *iter,
     arguments[0] = *value;
 
     n = iter->index;
-    arguments[1] = args[0].data.u.array->start[n];
+    arguments[1] = njs_array_start(&args[0])[n];
 
-    njs_value_number_set(&arguments[2], n);
+    njs_set_number(&arguments[2], n);
 
     arguments[3] = args[0];
 
@@ -2122,7 +2107,7 @@ njs_array_prototype_reduce_right(njs_vm_t *vm, njs_value_t *args,
         iter->retval = args[2];
 
     } else {
-        array = args[0].data.u.array;
+        array = njs_array(&args[0]);
         n = njs_array_reduce_right_index(array, iter);
 
         if (n == NJS_ARRAY_INVALID_INDEX) {
@@ -2139,7 +2124,7 @@ njs_array_prototype_reduce_right(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static nxt_noinline njs_ret_t
+static njs_ret_t
 njs_array_prototype_reduce_right_continuation(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
@@ -2149,7 +2134,7 @@ njs_array_prototype_reduce_right_continuation(njs_vm_t *vm, njs_value_t *args,
     njs_array_iter_t  *iter;
 
     iter = njs_vm_continuation(vm);
-    array = args[0].data.u.array;
+    array = njs_array(&args[0]);
 
     n = njs_array_reduce_right_index(array, iter);
 
@@ -2165,7 +2150,7 @@ njs_array_prototype_reduce_right_continuation(njs_vm_t *vm, njs_value_t *args,
 
     arguments[2] = array->start[n];
 
-    njs_value_number_set(&arguments[3], n);
+    njs_set_number(&arguments[3], n);
 
     arguments[4] = args[0];
 
@@ -2174,7 +2159,7 @@ njs_array_prototype_reduce_right_continuation(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static nxt_noinline uint32_t
+static uint32_t
 njs_array_reduce_right_index(njs_array_t *array, njs_array_iter_t *iter)
 {
     uint32_t  n;
@@ -2212,7 +2197,7 @@ njs_array_string_sort(njs_vm_t *vm, njs_value_t *args,
 
     ret = njs_string_cmp(&args[1], &args[2]);
 
-    njs_value_number_set(&vm->retval, ret);
+    njs_set_number(&vm->retval, ret);
 
     return NXT_OK;
 }
@@ -2234,7 +2219,7 @@ njs_array_prototype_sort(njs_vm_t *vm, njs_value_t *args,
 {
     njs_array_sort_t  *sort;
 
-    if (njs_is_array(&args[0]) && args[0].data.u.array->length > 1) {
+    if (njs_is_array(&args[0]) && njs_array_len(&args[0]) > 1) {
 
         sort = njs_vm_continuation(vm);
         sort->u.cont.function = njs_array_prototype_sort_continuation;
@@ -2266,7 +2251,7 @@ njs_array_prototype_sort_continuation(njs_vm_t *vm, njs_value_t *args,
     njs_value_t       value, *start, arguments[3];
     njs_array_sort_t  *sort;
 
-    array = args[0].data.u.array;
+    array = njs_array(&args[0]);
     start = array->start;
 
     sort = njs_vm_continuation(vm);

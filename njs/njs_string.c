@@ -60,10 +60,10 @@ static void njs_encode_base64_core(nxt_str_t *dst, const nxt_str_t *src,
     const u_char *basis, nxt_uint_t padding);
 static njs_ret_t njs_decode_base64_core(njs_vm_t *vm,
     njs_value_t *value, const nxt_str_t *src, const u_char *basis);
-static nxt_noinline void njs_string_slice_prop(njs_string_prop_t *string,
+static void njs_string_slice_prop(njs_string_prop_t *string,
     njs_slice_prop_t *slice, njs_value_t *args, nxt_uint_t nargs);
-static nxt_noinline void njs_string_slice_args(njs_slice_prop_t *slice,
-    njs_value_t *args, nxt_uint_t nargs);
+static void njs_string_slice_args(njs_slice_prop_t *slice, njs_value_t *args,
+    nxt_uint_t nargs);
 static njs_ret_t njs_string_from_char_code(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t njs_string_bytes_from(njs_vm_t *vm, njs_value_t *args,
@@ -165,7 +165,7 @@ njs_string_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
 }
 
 
-nxt_noinline njs_ret_t
+njs_ret_t
 njs_string_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     uint32_t size, uint32_t length)
 {
@@ -182,7 +182,7 @@ njs_string_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,
 }
 
 
-nxt_noinline u_char *
+u_char *
 njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint64_t size,
     uint64_t length)
 {
@@ -274,7 +274,7 @@ njs_string_truncate(njs_value_t *value, uint32_t size)
 }
 
 
-nxt_noinline njs_ret_t
+njs_ret_t
 njs_string_hex(njs_vm_t *vm, njs_value_t *value, const nxt_str_t *src)
 {
     u_char        *p, c;
@@ -376,7 +376,7 @@ njs_encode_base64_core(nxt_str_t *dst, const nxt_str_t *src,
 }
 
 
-nxt_noinline njs_ret_t
+njs_ret_t
 njs_string_base64(njs_vm_t *vm, njs_value_t *value, const nxt_str_t *src)
 {
     nxt_str_t  dst;
@@ -399,7 +399,7 @@ njs_string_base64(njs_vm_t *vm, njs_value_t *value, const nxt_str_t *src)
 }
 
 
-nxt_noinline njs_ret_t
+njs_ret_t
 njs_string_base64url(njs_vm_t *vm, njs_value_t *value, const nxt_str_t *src)
 {
     size_t     padding;
@@ -444,7 +444,7 @@ njs_string_copy(njs_value_t *dst, njs_value_t *src)
  * sets njs_string_prop_t struct.
  */
 
-nxt_noinline njs_ret_t
+njs_ret_t
 njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string, njs_value_t *value)
 {
     u_char    *start;
@@ -517,7 +517,7 @@ njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string, njs_value_t *value)
 }
 
 
-nxt_noinline size_t
+size_t
 njs_string_prop(njs_string_prop_t *string, const njs_value_t *value)
 {
     size_t     size;
@@ -680,7 +680,7 @@ njs_string_instance_length(njs_vm_t *vm, njs_value_t *value,
         length = (length == 0) ? size : length;
     }
 
-    njs_value_number_set(retval, length);
+    njs_set_number(retval, length);
 
     njs_release(vm, value);
 
@@ -1089,7 +1089,7 @@ njs_string_prototype_to_bytes(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
  * JavaScript 1.2, ECMAScript 3.
  */
 
-static nxt_noinline njs_ret_t
+static njs_ret_t
 njs_string_prototype_slice(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
@@ -1243,7 +1243,7 @@ njs_string_prototype_char_at(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 }
 
 
-static nxt_noinline void
+static void
 njs_string_slice_prop(njs_string_prop_t *string, njs_slice_prop_t *slice,
     njs_value_t *args, nxt_uint_t nargs)
 {
@@ -1253,7 +1253,7 @@ njs_string_slice_prop(njs_string_prop_t *string, njs_slice_prop_t *slice,
 }
 
 
-static nxt_noinline void
+static void
 njs_string_slice_args(njs_slice_prop_t *slice, njs_value_t *args,
     nxt_uint_t nargs)
 {
@@ -1308,7 +1308,7 @@ njs_string_slice_args(njs_slice_prop_t *slice, njs_value_t *args,
 }
 
 
-nxt_noinline void
+void
 njs_string_slice_string_prop(njs_string_prop_t *dst,
     const njs_string_prop_t *string, const njs_slice_prop_t *slice)
 {
@@ -1352,7 +1352,7 @@ njs_string_slice_string_prop(njs_string_prop_t *dst,
 }
 
 
-nxt_noinline njs_ret_t
+njs_ret_t
 njs_string_slice(njs_vm_t *vm, njs_value_t *dst,
     const njs_string_prop_t *string, const njs_slice_prop_t *slice)
 {
@@ -1408,7 +1408,7 @@ njs_string_prototype_char_code_at(njs_vm_t *vm, njs_value_t *args,
 
 done:
 
-    njs_value_number_set(&vm->retval, num);
+    njs_set_number(&vm->retval, num);
 
     return NXT_OK;
 }
@@ -1453,7 +1453,7 @@ njs_string_bytes_from_array(njs_vm_t *vm, const njs_value_t *value)
     njs_array_t  *array;
     njs_value_t  *octet;
 
-    array = value->data.u.array;
+    array = njs_array(value);
     length = array->length;
 
     for (i = 0; i < length; i++) {
@@ -1514,7 +1514,7 @@ njs_string_bytes_from_string(njs_vm_t *vm, const njs_value_t *args,
 }
 
 
-nxt_noinline njs_ret_t
+njs_ret_t
 njs_string_decode_hex(njs_vm_t *vm, njs_value_t *value, const nxt_str_t *src)
 {
     u_char        *p, *dst;
@@ -1561,7 +1561,7 @@ njs_string_decode_hex(njs_vm_t *vm, njs_value_t *value, const nxt_str_t *src)
 }
 
 
-nxt_noinline njs_ret_t
+njs_ret_t
 njs_string_decode_base64(njs_vm_t *vm, njs_value_t *value, const nxt_str_t *src)
 {
     static u_char   basis64[] = {
@@ -1588,7 +1588,7 @@ njs_string_decode_base64(njs_vm_t *vm, njs_value_t *value, const nxt_str_t *src)
 }
 
 
-nxt_noinline njs_ret_t
+njs_ret_t
 njs_string_decode_base64url(njs_vm_t *vm, njs_value_t *value,
     const nxt_str_t *src)
 {
@@ -1796,7 +1796,7 @@ njs_string_prototype_index_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 done:
 
-    njs_value_number_set(&vm->retval, index);
+    njs_set_number(&vm->retval, index);
 
     return NXT_OK;
 }
@@ -1900,7 +1900,7 @@ njs_string_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
 
 done:
 
-    njs_value_number_set(&vm->retval, index);
+    njs_set_number(&vm->retval, index);
 
     return NXT_OK;
 }
@@ -2063,7 +2063,7 @@ done:
  * njs_string_offset() assumes that index is correct.
  */
 
-nxt_noinline const u_char *
+const u_char *
 njs_string_offset(const u_char *start, const u_char *end, size_t index)
 {
     uint32_t    *map;
@@ -2091,7 +2091,7 @@ njs_string_offset(const u_char *start, const u_char *end, size_t index)
  * njs_string_index() assumes that offset is correct.
  */
 
-nxt_noinline uint32_t
+uint32_t
 njs_string_index(njs_string_prop_t *string, uint32_t offset)
 {
     uint32_t      *map, last, index;
@@ -2134,7 +2134,7 @@ njs_string_index(njs_string_prop_t *string, uint32_t offset)
 }
 
 
-nxt_noinline void
+void
 njs_string_offset_map_init(const u_char *start, size_t size)
 {
     size_t        offset;
@@ -2613,7 +2613,7 @@ njs_string_prototype_search(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 done:
 
-    njs_value_number_set(&vm->retval, index);
+    njs_set_number(&vm->retval, index);
 
     return NXT_OK;
 }
@@ -2760,9 +2760,7 @@ njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
 
         } while (p <= end);
 
-        vm->retval.data.u.array = array;
-        vm->retval.type = NJS_ARRAY;
-        vm->retval.data.truth = 1;
+        njs_set_array(&vm->retval, array);
     }
 
     return NXT_OK;
@@ -2932,9 +2930,7 @@ single:
 
 done:
 
-    vm->retval.data.u.array = array;
-    vm->retval.type = NJS_ARRAY;
-    vm->retval.data.truth = 1;
+    njs_set_array(&vm->retval, array);
 
     return NXT_OK;
 }
@@ -3237,7 +3233,7 @@ njs_string_replace_regexp_function(njs_vm_t *vm, njs_value_t *args,
     r->empty = (captures[0] == captures[1]);
 
     /* The offset of the matched substring. */
-    njs_value_number_set(&arguments[n + 1], captures[0]);
+    njs_set_number(&arguments[n + 1], captures[0]);
 
     /* The whole string being examined. */
     length = njs_string_calc_length(r->utf8, r->part[0].start, r->part[0].size);
@@ -3375,7 +3371,7 @@ njs_string_replace_search_function(njs_vm_t *vm, njs_value_t *args,
     arguments[1] = args[1];
 
     /* The offset of the matched substring. */
-    njs_value_number_set(&arguments[2], r->part[0].size);
+    njs_set_number(&arguments[2], r->part[0].size);
 
     /* The whole string being examined. */
     arguments[3] = args[0];

@@ -23,32 +23,29 @@
     sizeof("Mon Sep 28 1970 12:00:00 GMT+0600 (XXXXX)")
 
 
-static nxt_noinline double njs_date_string_parse(njs_value_t *date);
+static double njs_date_string_parse(njs_value_t *date);
 static double njs_date_rfc2822_string_parse(struct tm *tm, const u_char *p,
     const u_char *end);
 static double njs_date_js_string_parse(struct tm *tm, const u_char *p,
     const u_char *end);
 static const u_char *njs_date_skip_week_day(const u_char *p, const u_char *end);
 static const u_char *njs_date_skip_spaces(const u_char *p, const u_char *end);
-static nxt_noinline nxt_int_t njs_date_month_parse(const u_char *p,
+static nxt_int_t njs_date_month_parse(const u_char *p, const u_char *end);
+static const u_char *njs_date_time_parse(struct tm *tm, const u_char *p,
     const u_char *end);
-static nxt_noinline const u_char *njs_date_time_parse(struct tm *tm,
-    const u_char *p, const u_char *end);
-static nxt_noinline nxt_int_t njs_date_gmtoff_parse(const u_char *start,
-    const u_char *end);
-static nxt_noinline const u_char *njs_date_number_parse(int *value,
-    const u_char *p, const u_char *end, size_t size);
+static nxt_int_t njs_date_gmtoff_parse(const u_char *start, const u_char *end);
+static const u_char *njs_date_number_parse(int *value, const u_char *p,
+    const u_char *end, size_t size);
 static int64_t njs_timegm(struct tm *tm);
-static nxt_noinline njs_ret_t njs_date_string(njs_vm_t *vm, const char *fmt,
-    double time);
-static nxt_noinline double njs_date_time(struct tm *tm, int64_t ms);
+static njs_ret_t njs_date_string(njs_vm_t *vm, const char *fmt, double time);
+static double njs_date_time(struct tm *tm, int64_t ms);
 static double njs_date_utc_time(struct tm *tm, double time);
 
 
 static const njs_value_t  njs_string_invalid_date = njs_string("Invalid Date");
 
 
-static nxt_noinline uint64_t
+static uint64_t
 njs_gettime(void)
 {
     struct timeval  tv;
@@ -59,7 +56,7 @@ njs_gettime(void)
 }
 
 
-static nxt_noinline double
+static double
 njs_timeclip(double time)
 {
     if (isinf(time) || isnan(time) || fabs(time) > 8.64e15) {
@@ -219,7 +216,7 @@ njs_date_utc(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
 done:
 
-    njs_value_number_set(&vm->retval, time);
+    njs_set_number(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -278,7 +275,7 @@ static njs_ret_t
 njs_date_now(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    njs_value_number_set(&vm->retval, njs_gettime());
+    njs_set_number(&vm->retval, njs_gettime());
 
     return NXT_OK;
 }
@@ -297,13 +294,13 @@ njs_date_parse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         time = NAN;
     }
 
-    njs_value_number_set(&vm->retval, time);
+    njs_set_number(&vm->retval, time);
 
     return NXT_OK;
 }
 
 
-static nxt_noinline double
+static double
 njs_date_string_parse(njs_value_t *date)
 {
     int                ext, ms, ms_length, skipped;
@@ -704,7 +701,7 @@ njs_date_skip_spaces(const u_char *p, const u_char *end)
 }
 
 
-static nxt_noinline nxt_int_t
+static nxt_int_t
 njs_date_month_parse(const u_char *p, const u_char *end)
 {
     if (p + 2 < end) {
@@ -792,7 +789,7 @@ njs_date_month_parse(const u_char *p, const u_char *end)
 }
 
 
-static nxt_noinline const u_char *
+static const u_char *
 njs_date_time_parse(struct tm *tm, const u_char *p, const u_char *end)
 {
     p = njs_date_number_parse(&tm->tm_hour, p, end, 2);
@@ -821,7 +818,7 @@ njs_date_time_parse(struct tm *tm, const u_char *p, const u_char *end)
 }
 
 
-static nxt_noinline nxt_int_t
+static nxt_int_t
 njs_date_gmtoff_parse(const u_char *start, const u_char *end)
 {
     int           gmtoff, hour, min;
@@ -852,7 +849,7 @@ njs_date_gmtoff_parse(const u_char *start, const u_char *end)
 }
 
 
-static nxt_noinline const u_char *
+static const u_char *
 njs_date_number_parse(int *value, const u_char *p, const u_char *end,
     size_t size)
 {
@@ -950,7 +947,7 @@ static njs_ret_t
 njs_date_prototype_value_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
-    njs_value_number_set(&vm->retval, args[0].data.u.date->time);
+    njs_set_number(&vm->retval, args[0].data.u.date->time);
 
     return NXT_OK;
 }
@@ -981,7 +978,7 @@ njs_date_prototype_to_time_string(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static nxt_noinline njs_ret_t
+static njs_ret_t
 njs_date_string(njs_vm_t *vm, const char *fmt, double time)
 {
     size_t     size;
@@ -1097,7 +1094,7 @@ njs_date_prototype_get_full_year(njs_vm_t *vm, njs_value_t *args,
         value = tm.tm_year + 1900;
     }
 
-    njs_value_number_set(&vm->retval, value);
+    njs_set_number(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1120,7 +1117,7 @@ njs_date_prototype_get_utc_full_year(njs_vm_t *vm, njs_value_t *args,
         value = tm.tm_year + 1900;
     }
 
-    njs_value_number_set(&vm->retval, value);
+    njs_set_number(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1143,7 +1140,7 @@ njs_date_prototype_get_month(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         value = tm.tm_mon;
     }
 
-    njs_value_number_set(&vm->retval, value);
+    njs_set_number(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1167,7 +1164,7 @@ njs_date_prototype_get_utc_month(njs_vm_t *vm, njs_value_t *args,
         value = tm.tm_mon;
     }
 
-    njs_value_number_set(&vm->retval, value);
+    njs_set_number(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1190,7 +1187,7 @@ njs_date_prototype_get_date(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         value = tm.tm_mday;
     }
 
-    njs_value_number_set(&vm->retval, value);
+    njs_set_number(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1213,7 +1210,7 @@ njs_date_prototype_get_utc_date(njs_vm_t *vm, njs_value_t *args,
         value = tm.tm_mday;
     }
 
-    njs_value_number_set(&vm->retval, value);
+    njs_set_number(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1236,7 +1233,7 @@ njs_date_prototype_get_day(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         value = tm.tm_wday;
     }
 
-    njs_value_number_set(&vm->retval, value);
+    njs_set_number(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1259,7 +1256,7 @@ njs_date_prototype_get_utc_day(njs_vm_t *vm, njs_value_t *args,
         value = tm.tm_wday;
     }
 
-    njs_value_number_set(&vm->retval, value);
+    njs_set_number(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1283,7 +1280,7 @@ njs_date_prototype_get_hours(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         value = tm.tm_hour;
     }
 
-    njs_value_number_set(&vm->retval, value);
+    njs_set_number(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1306,7 +1303,7 @@ njs_date_prototype_get_utc_hours(njs_vm_t *vm, njs_value_t *args,
         value = tm.tm_hour;
     }
 
-    njs_value_number_set(&vm->retval, value);
+    njs_set_number(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1330,7 +1327,7 @@ njs_date_prototype_get_minutes(njs_vm_t *vm, njs_value_t *args,
         value = tm.tm_min;
     }
 
-    njs_value_number_set(&vm->retval, value);
+    njs_set_number(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1353,7 +1350,7 @@ njs_date_prototype_get_utc_minutes(njs_vm_t *vm, njs_value_t *args,
         value = tm.tm_min;
     }
 
-    njs_value_number_set(&vm->retval, value);
+    njs_set_number(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1371,7 +1368,7 @@ njs_date_prototype_get_seconds(njs_vm_t *vm, njs_value_t *args,
         value = (int64_t) (value / 1000) % 60;
     }
 
-    njs_value_number_set(&vm->retval, value);
+    njs_set_number(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1389,7 +1386,7 @@ njs_date_prototype_get_milliseconds(njs_vm_t *vm, njs_value_t *args,
         value = (int64_t) value % 1000;
     }
 
-    njs_value_number_set(&vm->retval, value);
+    njs_set_number(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1412,7 +1409,7 @@ njs_date_prototype_get_timezone_offset(njs_vm_t *vm, njs_value_t *args,
         value = - nxt_timezone(&tm) / 60;
     }
 
-    njs_value_number_set(&vm->retval, value);
+    njs_set_number(&vm->retval, value);
 
     return NXT_OK;
 }
@@ -1437,7 +1434,7 @@ njs_date_prototype_set_time(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     args[0].data.u.date->time = time;
-    njs_value_number_set(&vm->retval, time);
+    njs_set_number(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1462,7 +1459,7 @@ njs_date_prototype_set_milliseconds(njs_vm_t *vm, njs_value_t *args,
     }
 
     args[0].data.u.date->time = time;
-    njs_value_number_set(&vm->retval, time);
+    njs_set_number(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1491,7 +1488,7 @@ njs_date_prototype_set_seconds(njs_vm_t *vm, njs_value_t *args,
     }
 
     args[0].data.u.date->time = time;
-    njs_value_number_set(&vm->retval, time);
+    njs_set_number(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1530,7 +1527,7 @@ njs_date_prototype_set_minutes(njs_vm_t *vm, njs_value_t *args,
     }
 
     args[0].data.u.date->time = time;
-    njs_value_number_set(&vm->retval, time);
+    njs_set_number(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1565,7 +1562,7 @@ njs_date_prototype_set_utc_minutes(njs_vm_t *vm, njs_value_t *args,
     }
 
     args[0].data.u.date->time = time;
-    njs_value_number_set(&vm->retval, time);
+    njs_set_number(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1608,7 +1605,7 @@ njs_date_prototype_set_hours(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     args[0].data.u.date->time = time;
-    njs_value_number_set(&vm->retval, time);
+    njs_set_number(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1644,7 +1641,7 @@ njs_date_prototype_set_utc_hours(njs_vm_t *vm, njs_value_t *args,
     }
 
     args[0].data.u.date->time = time;
-    njs_value_number_set(&vm->retval, time);
+    njs_set_number(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1676,7 +1673,7 @@ njs_date_prototype_set_date(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     args[0].data.u.date->time = time;
-    njs_value_number_set(&vm->retval, time);
+    njs_set_number(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1708,7 +1705,7 @@ njs_date_prototype_set_utc_date(njs_vm_t *vm, njs_value_t *args,
     }
 
     args[0].data.u.date->time = time;
-    njs_value_number_set(&vm->retval, time);
+    njs_set_number(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1744,7 +1741,7 @@ njs_date_prototype_set_month(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     args[0].data.u.date->time = time;
-    njs_value_number_set(&vm->retval, time);
+    njs_set_number(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1780,7 +1777,7 @@ njs_date_prototype_set_utc_month(njs_vm_t *vm, njs_value_t *args,
     }
 
     args[0].data.u.date->time = time;
-    njs_value_number_set(&vm->retval, time);
+    njs_set_number(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1820,7 +1817,7 @@ njs_date_prototype_set_full_year(njs_vm_t *vm, njs_value_t *args,
     }
 
     args[0].data.u.date->time = time;
-    njs_value_number_set(&vm->retval, time);
+    njs_set_number(&vm->retval, time);
 
     return NXT_OK;
 }
@@ -1860,13 +1857,13 @@ njs_date_prototype_set_utc_full_year(njs_vm_t *vm, njs_value_t *args,
     }
 
     args[0].data.u.date->time = time;
-    njs_value_number_set(&vm->retval, time);
+    njs_set_number(&vm->retval, time);
 
     return NXT_OK;
 }
 
 
-static nxt_noinline double
+static double
 njs_date_time(struct tm *tm, int64_t ms)
 {
     double  time;

@@ -120,7 +120,7 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             lhq.key = nxt_string_value("flag");
             lhq.proto = &njs_object_hash_proto;
 
-            ret = nxt_lvlhsh_find(&args[2].data.u.object->hash, &lhq);
+            ret = nxt_lvlhsh_find(njs_object_hash(&args[2]), &lhq);
             if (ret == NXT_OK) {
                 prop = lhq.value;
                 njs_string_get(&prop->value, &flag);
@@ -130,7 +130,7 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             lhq.key = nxt_string_value("encoding");
             lhq.proto = &njs_object_hash_proto;
 
-            ret = nxt_lvlhsh_find(&args[2].data.u.object->hash, &lhq);
+            ret = nxt_lvlhsh_find(njs_object_hash(&args[2]), &lhq);
             if (ret == NXT_OK) {
                 prop = lhq.value;
                 njs_string_get(&prop->value, &encoding);
@@ -339,7 +339,7 @@ njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             lhq.key = nxt_string_value("flag");
             lhq.proto = &njs_object_hash_proto;
 
-            ret = nxt_lvlhsh_find(&args[2].data.u.object->hash, &lhq);
+            ret = nxt_lvlhsh_find(njs_object_hash(&args[2]), &lhq);
             if (ret == NXT_OK) {
                 prop = lhq.value;
                 njs_string_get(&prop->value, &flag);
@@ -349,7 +349,7 @@ njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             lhq.key = nxt_string_value("encoding");
             lhq.proto = &njs_object_hash_proto;
 
-            ret = nxt_lvlhsh_find(&args[2].data.u.object->hash, &lhq);
+            ret = nxt_lvlhsh_find(njs_object_hash(&args[2]), &lhq);
             if (ret == NXT_OK) {
                 prop = lhq.value;
                 njs_string_get(&prop->value, &encoding);
@@ -573,7 +573,7 @@ static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
             lhq.key = nxt_string_value("flag");
             lhq.proto = &njs_object_hash_proto;
 
-            ret = nxt_lvlhsh_find(&args[3].data.u.object->hash, &lhq);
+            ret = nxt_lvlhsh_find(njs_object_hash(&args[3]), &lhq);
             if (ret == NXT_OK) {
                 prop = lhq.value;
                 njs_string_get(&prop->value, &flag);
@@ -583,7 +583,7 @@ static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
             lhq.key = nxt_string_value("encoding");
             lhq.proto = &njs_object_hash_proto;
 
-            ret = nxt_lvlhsh_find(&args[3].data.u.object->hash, &lhq);
+            ret = nxt_lvlhsh_find(njs_object_hash(&args[3]), &lhq);
             if (ret == NXT_OK) {
                 prop = lhq.value;
                 njs_string_get(&prop->value, &encoding);
@@ -593,7 +593,7 @@ static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
             lhq.key = nxt_string_value("mode");
             lhq.proto = &njs_object_hash_proto;
 
-            ret = nxt_lvlhsh_find(&args[3].data.u.object->hash, &lhq);
+            ret = nxt_lvlhsh_find(njs_object_hash(&args[3]), &lhq);
             if (ret == NXT_OK) {
                 prop = lhq.value;
                 mode = &prop->value;
@@ -760,7 +760,7 @@ njs_fs_write_file_sync_internal(njs_vm_t *vm, njs_value_t *args,
             lhq.key = nxt_string_value("flag");
             lhq.proto = &njs_object_hash_proto;
 
-            ret = nxt_lvlhsh_find(&args[3].data.u.object->hash, &lhq);
+            ret = nxt_lvlhsh_find(njs_object_hash(&args[3]), &lhq);
             if (ret == NXT_OK) {
                 prop = lhq.value;
                 njs_string_get(&prop->value, &flag);
@@ -770,7 +770,7 @@ njs_fs_write_file_sync_internal(njs_vm_t *vm, njs_value_t *args,
             lhq.key = nxt_string_value("encoding");
             lhq.proto = &njs_object_hash_proto;
 
-            ret = nxt_lvlhsh_find(&args[3].data.u.object->hash, &lhq);
+            ret = nxt_lvlhsh_find(njs_object_hash(&args[3]), &lhq);
             if (ret == NXT_OK) {
                 prop = lhq.value;
                 njs_string_get(&prop->value, &encoding);
@@ -780,7 +780,7 @@ njs_fs_write_file_sync_internal(njs_vm_t *vm, njs_value_t *args,
             lhq.key = nxt_string_value("mode");
             lhq.proto = &njs_object_hash_proto;
 
-            ret = nxt_lvlhsh_find(&args[3].data.u.object->hash, &lhq);
+            ret = nxt_lvlhsh_find(njs_object_hash(&args[3]), &lhq);
             if (ret == NXT_OK) {
                 prop = lhq.value;
                 mode = &prop->value;

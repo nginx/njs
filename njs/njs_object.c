@@ -29,7 +29,7 @@ static njs_ret_t njs_object_own_enumerate_object(njs_vm_t *vm,
     njs_object_enum_t kind, nxt_bool_t all);
 
 
-nxt_noinline njs_object_t *
+njs_object_t *
 njs_object_alloc(njs_vm_t *vm)
 {
     njs_object_t  *object;
@@ -79,7 +79,7 @@ njs_object_value_copy(njs_vm_t *vm, njs_value_t *value)
 }
 
 
-nxt_noinline njs_object_t *
+njs_object_t *
 njs_object_value_alloc(njs_vm_t *vm, const njs_value_t *value, nxt_uint_t type)
 {
     nxt_uint_t          index;
@@ -266,9 +266,7 @@ njs_object_create(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             object->__proto__ = NULL;
         }
 
-        vm->retval.data.u.object = object;
-        vm->retval.type = NJS_OBJECT;
-        vm->retval.data.truth = 1;
+        njs_set_object(&vm->retval, object);
 
         return NXT_OK;
     }
@@ -301,9 +299,7 @@ njs_object_keys(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    vm->retval.data.u.array = keys;
-    vm->retval.type = NJS_ARRAY;
-    vm->retval.data.truth = 1;
+    njs_set_array(&vm->retval, keys);
 
     return NXT_OK;
 }
@@ -330,9 +326,7 @@ njs_object_values(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    vm->retval.data.u.array = array;
-    vm->retval.type = NJS_ARRAY;
-    vm->retval.data.truth = 1;
+    njs_set_array(&vm->retval, array);
 
     return NXT_OK;
 }
@@ -359,9 +353,7 @@ njs_object_entries(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    vm->retval.data.u.array = array;
-    vm->retval.type = NJS_ARRAY;
-    vm->retval.data.truth = 1;
+    njs_set_array(&vm->retval, array);
 
     return NXT_OK;
 }
@@ -739,9 +731,7 @@ njs_object_enumerate_array(njs_vm_t *vm, const njs_array_t *array,
                 /* GC: retain. */
                 entry->start[1] = array->start[i];
 
-                item->data.u.array = entry;
-                item->type = NJS_ARRAY;
-                item->data.truth = 1;
+                njs_set_array(item, entry);
 
                 item++;
             }
@@ -831,9 +821,7 @@ njs_object_enumerate_string(njs_vm_t *vm, const njs_value_t *value,
 
                 njs_string_short_set(string, 1, 1);
 
-                item->data.u.array = entry;
-                item->type = NJS_ARRAY;
-                item->data.truth = 1;
+                njs_set_array(item, entry);
 
                 item++;
             }
@@ -861,9 +849,7 @@ njs_object_enumerate_string(njs_vm_t *vm, const njs_value_t *value,
 
                 njs_string_short_set(string, size, 1);
 
-                item->data.u.array = entry;
-                item->type = NJS_ARRAY;
-                item->data.truth = 1;
+                njs_set_array(item, entry);
 
                 item++;
 
@@ -1049,9 +1035,7 @@ njs_object_own_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
                 /* GC: retain. */
                 entry->start[1] = prop->value;
 
-                item->data.u.array = entry;
-                item->type = NJS_ARRAY;
-                item->data.truth = 1;
+                njs_set_array(item, entry);
 
                 item++;
             }
@@ -1088,9 +1072,7 @@ njs_object_own_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
                         /* GC: retain. */
                         entry->start[1] = prop->value;
 
-                        item->data.u.array = entry;
-                        item->type = NJS_ARRAY;
-                        item->data.truth = 1;
+                        njs_set_array(item, entry);
 
                         item++;
                     }
@@ -1181,7 +1163,7 @@ njs_object_define_properties(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
 
-    hash = &desc->data.u.object->hash;
+    hash = njs_object_hash(desc);
 
     for ( ;; ) {
         prop = nxt_lvlhsh_each(hash, &lhe);
@@ -1286,9 +1268,7 @@ njs_object_get_own_property_descriptors(njs_vm_t *vm, njs_value_t *args,
         }
     }
 
-    vm->retval.data.u.object = descriptors;
-    vm->retval.type = NJS_OBJECT;
-    vm->retval.data.truth = 1;
+    njs_set_object(&vm->retval, descriptors);
 
     return NXT_OK;
 }
@@ -1315,9 +1295,7 @@ njs_object_get_own_property_names(njs_vm_t *vm, njs_value_t *args,
         return NXT_ERROR;
     }
 
-    vm->retval.data.u.array = names;
-    vm->retval.type = NJS_ARRAY;
-    vm->retval.data.truth = 1;
+    njs_set_array(&vm->retval, names);
 
     return NXT_OK;
 }

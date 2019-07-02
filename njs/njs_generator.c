@@ -79,20 +79,20 @@ static nxt_int_t njs_generate_for_statement(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static nxt_int_t njs_generate_for_in_statement(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
-static nxt_noinline nxt_int_t njs_generate_start_block(njs_vm_t *vm,
+static nxt_int_t njs_generate_start_block(njs_vm_t *vm,
     njs_generator_t *generator, njs_generator_block_type_t type,
     const nxt_str_t *label);
 static njs_generator_block_t *njs_generate_lookup_block(
     njs_generator_block_t *block, uint32_t mask, const nxt_str_t *label);
 static njs_generator_block_t *njs_generate_find_block(
     njs_generator_block_t *block, uint32_t mask, const nxt_str_t *label);
-static nxt_noinline void njs_generate_patch_block(njs_vm_t *vm,
-    njs_generator_t *generator, njs_generator_patch_t *list);
+static void njs_generate_patch_block(njs_vm_t *vm, njs_generator_t *generator,
+    njs_generator_patch_t *list);
 static njs_generator_patch_t *njs_generate_make_continuation_patch(njs_vm_t *vm,
     njs_generator_block_t *block, const nxt_str_t *label, njs_ret_t offset);
 static njs_generator_patch_t *njs_generate_make_exit_patch(njs_vm_t *vm,
     njs_generator_block_t *block, const nxt_str_t *label, njs_ret_t offset);
-static nxt_noinline void njs_generate_patch_block_exit(njs_vm_t *vm,
+static void njs_generate_patch_block_exit(njs_vm_t *vm,
     njs_generator_t *generator);
 static const nxt_str_t *njs_generate_jump_destination(njs_vm_t *vm,
     njs_generator_block_t *block, const char *inst_type, uint32_t mask,
@@ -148,8 +148,8 @@ static nxt_int_t njs_generate_function_call(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static nxt_int_t njs_generate_method_call(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
-static nxt_noinline nxt_int_t njs_generate_call(njs_vm_t *vm,
-    njs_generator_t *generator, njs_parser_node_t *node);
+static nxt_int_t njs_generate_call(njs_vm_t *vm, njs_generator_t *generator,
+    njs_parser_node_t *node);
 static nxt_int_t njs_generate_try_statement(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static nxt_int_t njs_generate_throw_statement(njs_vm_t *vm,
@@ -158,21 +158,19 @@ static nxt_int_t njs_generate_import_statement(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static nxt_int_t njs_generate_export_statement(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
-static nxt_noinline njs_index_t njs_generate_dest_index(njs_vm_t *vm,
+static njs_index_t njs_generate_dest_index(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
-static nxt_noinline njs_index_t
-    njs_generate_object_dest_index(njs_vm_t *vm, njs_generator_t *generator,
-    njs_parser_node_t *node);
+static njs_index_t njs_generate_object_dest_index(njs_vm_t *vm,
+    njs_generator_t *generator, njs_parser_node_t *node);
 static njs_index_t njs_generate_node_temp_index_get(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
-static nxt_noinline njs_index_t njs_generate_temp_index_get(njs_vm_t *vm,
+static njs_index_t njs_generate_temp_index_get(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
-static nxt_noinline nxt_int_t
-    njs_generate_children_indexes_release(njs_vm_t *vm,
+static nxt_int_t njs_generate_children_indexes_release(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
-static nxt_noinline nxt_int_t njs_generate_node_index_release(njs_vm_t *vm,
+static nxt_int_t njs_generate_node_index_release(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
-static nxt_noinline nxt_int_t njs_generate_index_release(njs_vm_t *vm,
+static nxt_int_t njs_generate_index_release(njs_vm_t *vm,
     njs_generator_t *generator, njs_index_t index);
 static nxt_int_t njs_generate_reference_error(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
@@ -1239,7 +1237,7 @@ njs_generate_for_in_statement(njs_vm_t *vm, njs_generator_t *generator,
 }
 
 
-static nxt_noinline nxt_int_t
+static nxt_int_t
 njs_generate_start_block(njs_vm_t *vm, njs_generator_t *generator,
     njs_generator_block_type_t type, const nxt_str_t *label)
 {
@@ -1354,7 +1352,7 @@ njs_generate_make_continuation_patch(njs_vm_t *vm, njs_generator_block_t *block,
 }
 
 
-static nxt_noinline void
+static void
 njs_generate_patch_block(njs_vm_t *vm, njs_generator_t *generator,
     njs_generator_patch_t *list)
 {
@@ -1392,7 +1390,7 @@ njs_generate_make_exit_patch(njs_vm_t *vm, njs_generator_block_t *block,
 }
 
 
-static nxt_noinline void
+static void
 njs_generate_patch_block_exit(njs_vm_t *vm, njs_generator_t *generator)
 {
     njs_generator_block_t  *block;
@@ -2673,7 +2671,7 @@ njs_generate_method_call(njs_vm_t *vm, njs_generator_t *generator,
 }
 
 
-static nxt_noinline nxt_int_t
+static nxt_int_t
 njs_generate_call(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
@@ -3136,7 +3134,7 @@ njs_generate_export_statement(njs_vm_t *vm, njs_generator_t *generator,
 }
 
 
-static nxt_noinline njs_index_t
+static njs_index_t
 njs_generate_dest_index(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
@@ -3158,7 +3156,7 @@ njs_generate_dest_index(njs_vm_t *vm, njs_generator_t *generator,
 }
 
 
-static nxt_noinline njs_index_t
+static njs_index_t
 njs_generate_object_dest_index(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
@@ -3197,7 +3195,7 @@ njs_generate_node_temp_index_get(njs_vm_t *vm, njs_generator_t *generator,
 }
 
 
-static nxt_noinline njs_index_t
+static njs_index_t
 njs_generate_temp_index_get(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
@@ -3226,7 +3224,7 @@ njs_generate_temp_index_get(njs_vm_t *vm, njs_generator_t *generator,
 }
 
 
-static nxt_noinline nxt_int_t
+static nxt_int_t
 njs_generate_children_indexes_release(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
@@ -3242,7 +3240,7 @@ njs_generate_children_indexes_release(njs_vm_t *vm, njs_generator_t *generator,
 }
 
 
-static nxt_noinline nxt_int_t
+static nxt_int_t
 njs_generate_node_index_release(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
@@ -3254,7 +3252,7 @@ njs_generate_node_index_release(njs_vm_t *vm, njs_generator_t *generator,
 }
 
 
-static nxt_noinline nxt_int_t
+static nxt_int_t
 njs_generate_index_release(njs_vm_t *vm, njs_generator_t *generator,
     njs_index_t index)
 {

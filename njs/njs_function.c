@@ -171,7 +171,7 @@ njs_function_arguments_object_init(njs_vm_t *vm, njs_native_frame_t *frame)
 
     nargs = frame->nargs;
 
-    njs_value_number_set(&value, nargs);
+    njs_set_number(&value, nargs);
 
     prop = njs_object_prop_alloc(vm, &njs_string_length, &value, 1);
     if (nxt_slow_path(prop == NULL)) {
@@ -247,9 +247,7 @@ njs_function_rest_parameters_init(njs_vm_t *vm, njs_native_frame_t *frame)
     rest_arguments = &frame->arguments[frame->function->u.lambda->nargs];
 
     /* GC: retain. */
-    rest_arguments->type = NJS_ARRAY;
-    rest_arguments->data.u.array = array;
-    rest_arguments->data.truth = 1;
+    njs_set_array(rest_arguments, array);
 
     return NXT_OK;
 }
@@ -347,7 +345,7 @@ njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
 }
 
 
-nxt_noinline njs_ret_t
+njs_ret_t
 njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, const njs_value_t *args, nxt_uint_t nargs,
     nxt_bool_t ctor)
@@ -422,7 +420,7 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
 }
 
 
-nxt_noinline njs_native_frame_t *
+njs_native_frame_t *
 njs_function_frame_alloc(njs_vm_t *vm, size_t size)
 {
     size_t              spare_size, chunk_size;
@@ -474,7 +472,7 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
 }
 
 
-nxt_noinline njs_ret_t
+njs_ret_t
 njs_function_lambda_call(njs_vm_t *vm, njs_index_t retval,
     u_char *return_address)
 {
@@ -948,7 +946,7 @@ njs_function_instance_length(njs_vm_t *vm, njs_value_t *value,
         n = 0;
     }
 
-    njs_value_number_set(retval, n);
+    njs_set_number(retval, n);
 
     return NXT_OK;
 }

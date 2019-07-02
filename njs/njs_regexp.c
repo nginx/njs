@@ -600,7 +600,7 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
         } while (n != pattern->ngroups);
     }
 
-    njs_value_undefined_set(&vm->retval);
+    njs_set_undefined(&vm->retval);
 
     return pattern;
 
@@ -734,7 +734,7 @@ njs_regexp_prototype_last_index(njs_vm_t *vm, njs_value_t *value,
     (void) njs_string_prop(&string, &regexp->string);
 
     index = njs_string_index(&string, regexp->last_index);
-    njs_value_number_set(retval, index);
+    njs_set_number(retval, index);
 
     return NXT_OK;
 }
@@ -1010,7 +1010,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
 
     /* TODO: Non UTF-8 position */
 
-    njs_value_number_set(&prop->value, regexp->last_index + captures[0]);
+    njs_set_number(&prop->value, regexp->last_index + captures[0]);
 
     if (regexp->pattern->global) {
         regexp->last_index += captures[1];
@@ -1062,9 +1062,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
             goto fail;
         }
 
-        prop->value.data.u.object = groups;
-        prop->value.type = NJS_OBJECT;
-        prop->value.data.truth = 1;
+        njs_set_object(&prop->value, groups);
 
         i = 0;
 
@@ -1097,9 +1095,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
         } while (i < regexp->pattern->ngroups);
     }
 
-    vm->retval.data.u.array = array;
-    vm->retval.type = NJS_ARRAY;
-    vm->retval.data.truth = 1;
+    njs_set_array(&vm->retval, array);
 
     ret = NXT_OK;
     goto done;

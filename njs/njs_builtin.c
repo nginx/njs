@@ -840,7 +840,7 @@ njs_vm_expression_completions(njs_vm_t *vm, nxt_str_t *expression)
         lhq.key.length = p - lhq.key.start;
         lhq.key_hash = nxt_djb_hash(lhq.key.start, lhq.key.length);
 
-        ret = nxt_lvlhsh_find(&value->data.u.object->hash, &lhq);
+        ret = nxt_lvlhsh_find(njs_object_hash(value), &lhq);
         if (nxt_slow_path(ret != NXT_OK)) {
             return NULL;
         }
@@ -1178,9 +1178,7 @@ njs_process_object_argv(njs_vm_t *vm, njs_value_t *process,
         return NJS_ERROR;
     }
 
-    prop->value.data.u.array = argv;
-    prop->value.type = NJS_ARRAY;
-    prop->value.data.truth = 1;
+    njs_set_array(&prop->value, argv);
 
     lhq.value = prop;
     lhq.key_hash = NJS_ARGV_HASH;
@@ -1189,7 +1187,7 @@ njs_process_object_argv(njs_vm_t *vm, njs_value_t *process,
     lhq.pool = vm->mem_pool;
     lhq.proto = &njs_object_hash_proto;
 
-    ret = nxt_lvlhsh_insert(&process->data.u.object->hash, &lhq);
+    ret = nxt_lvlhsh_insert(njs_object_hash(process), &lhq);
 
     if (nxt_fast_path(ret == NXT_OK)) {
         *retval = prop->value;
@@ -1281,9 +1279,7 @@ njs_process_object_env(njs_vm_t *vm, njs_value_t *process,
         return NXT_ERROR;
     }
 
-    prop->value.data.u.object = env;
-    prop->value.type = NJS_OBJECT;
-    prop->value.data.truth = 1;
+    njs_set_object(&prop->value, env);
 
     lhq.replace = 0;
     lhq.pool = vm->mem_pool;
@@ -1292,7 +1288,7 @@ njs_process_object_env(njs_vm_t *vm, njs_value_t *process,
     lhq.key = nxt_string_value("env");
     lhq.key_hash = NJS_ENV_HASH;
 
-    ret = nxt_lvlhsh_insert(&process->data.u.object->hash, &lhq);
+    ret = nxt_lvlhsh_insert(njs_object_hash(process), &lhq);
 
     if (nxt_fast_path(ret == NXT_OK)) {
         *retval = prop->value;

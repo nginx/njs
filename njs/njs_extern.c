@@ -234,7 +234,7 @@ njs_vm_external_bind(njs_vm_t *vm, const nxt_str_t *var_name,
 }
 
 
-nxt_noinline njs_external_ptr_t
+njs_external_ptr_t
 njs_vm_external(njs_vm_t *vm, const njs_value_t *value)
 {
     if (nxt_fast_path(njs_is_external(value))) {
