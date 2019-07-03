@@ -30,7 +30,7 @@ struct njs_function_lambda_s {
     /* Function internal block closures levels. */
     uint8_t                        block_closures;    /* 4 bits */
 
-    uint8_t                        arrow;             /* 1 bit */
+    uint8_t                        ctor;              /* 1 bit */
     uint8_t                        rest_parameters;   /* 1 bit */
 
     /* Initial values of local scope. */
@@ -174,6 +174,21 @@ njs_ret_t njs_function_native_call(njs_vm_t *vm, njs_function_native_t native,
     njs_value_t *args, uint8_t *args_types, nxt_uint_t nargs,
     njs_index_t retval, u_char *return_address);
 void njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame);
+
+
+nxt_inline njs_function_lambda_t *
+njs_function_lambda_alloc(njs_vm_t *vm, uint8_t ctor)
+{
+    njs_function_lambda_t  *lambda;
+
+    lambda = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_function_lambda_t));
+
+    if (nxt_fast_path(lambda != NULL)) {
+        lambda->ctor = ctor;
+    }
+
+    return lambda;
+}
 
 
 nxt_inline njs_ret_t

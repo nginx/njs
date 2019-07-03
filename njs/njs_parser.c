@@ -602,7 +602,7 @@ njs_parser_function_alloc(njs_vm_t *vm, njs_parser_t *parser,
     njs_function_t         *function;
     njs_function_lambda_t  *lambda;
 
-    lambda = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_function_lambda_t));
+    lambda = njs_function_lambda_alloc(vm, 1);
     if (nxt_slow_path(lambda == NULL)) {
         njs_memory_error(vm);
         return NULL;
@@ -687,9 +687,7 @@ njs_parser_function_declaration(njs_vm_t *vm, njs_parser_t *parser)
         return NJS_TOKEN_ERROR;
     }
 
-    token = njs_parser_function_lambda(vm, parser, function->u.lambda, token);
-
-    return token;
+    return njs_parser_function_lambda(vm, parser, function->u.lambda, token);
 }
 
 
@@ -745,7 +743,7 @@ njs_parser_function_expression(njs_vm_t *vm, njs_parser_t *parser)
 
     } else {
         /* Anonymous function. */
-        lambda = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_function_lambda_t));
+        lambda = njs_function_lambda_alloc(vm, 1);
         if (nxt_slow_path(lambda == NULL)) {
             return NJS_TOKEN_ERROR;
         }
@@ -1896,7 +1894,7 @@ njs_parser_module_lambda(njs_vm_t *vm, njs_parser_t *parser)
         return token;
     }
 
-    lambda = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_function_lambda_t));
+    lambda = njs_function_lambda_alloc(vm, 1);
     if (nxt_slow_path(lambda == NULL)) {
         return NJS_TOKEN_ERROR;
     }
@@ -2156,12 +2154,10 @@ njs_parser_arrow_expression(njs_vm_t *vm, njs_parser_t *parser,
     node->token_line = njs_parser_token_line(parser);
     parser->node = node;
 
-    lambda = nxt_mp_zalloc(vm->mem_pool, sizeof(njs_function_lambda_t));
+    lambda = njs_function_lambda_alloc(vm, 0);
     if (nxt_slow_path(lambda == NULL)) {
         return NJS_TOKEN_ERROR;
     }
-
-    lambda->arrow = 1;
 
     node->u.value.data.u.lambda = lambda;
 

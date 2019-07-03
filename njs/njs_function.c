@@ -37,7 +37,7 @@ njs_function_alloc(njs_vm_t *vm, njs_function_lambda_t *lambda,
      *   function->object.__proto__ = NULL;
      */
 
-    function->ctor = !lambda->arrow;
+    function->ctor = lambda->ctor;
     function->args_offset = 1;
     function->u.lambda = lambda;
 
