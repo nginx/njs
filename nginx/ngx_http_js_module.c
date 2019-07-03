@@ -561,7 +561,7 @@ ngx_http_js_content_event_handler(ngx_http_request_t *r)
     ctx->status = NGX_HTTP_INTERNAL_SERVER_ERROR;
 
     if (njs_vm_call(ctx->vm, func, njs_value_arg(&ctx->request), 1) != NJS_OK) {
-        njs_vm_retval_to_ext_string(ctx->vm, &exception);
+        njs_vm_retval_string(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "js exception: %*s", exception.length, exception.start);
@@ -693,7 +693,7 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
     pending = njs_vm_pending(ctx->vm);
 
     if (njs_vm_call(ctx->vm, func, njs_value_arg(&ctx->request), 1) != NJS_OK) {
-        njs_vm_retval_to_ext_string(ctx->vm, &exception);
+        njs_vm_retval_string(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "js exception: %*s", exception.length, exception.start);
@@ -702,7 +702,7 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
         return NGX_OK;
     }
 
-    if (njs_vm_retval_to_ext_string(ctx->vm, &value) != NJS_OK) {
+    if (njs_vm_retval_string(ctx->vm, &value) != NJS_OK) {
         return NGX_ERROR;
     }
 
@@ -767,7 +767,7 @@ ngx_http_js_init_vm(ngx_http_request_t *r)
     cln->data = ctx;
 
     if (njs_vm_start(ctx->vm) == NJS_ERROR) {
-        njs_vm_retval_to_ext_string(ctx->vm, &exception);
+        njs_vm_retval_string(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "js exception: %*s", exception.length, exception.start);
@@ -1371,7 +1371,7 @@ ngx_http_js_ext_log_core(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     c = r->connection;
 
-    if (njs_vm_value_to_ext_string(vm, &msg, njs_arg(args, nargs, 1), 0)
+    if (njs_vm_value_to_string(vm, &msg, njs_arg(args, nargs, 1))
         == NJS_ERROR)
     {
         return NJS_ERROR;
@@ -1797,7 +1797,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     arg = njs_arg(args, nargs, 2);
 
     if (njs_value_is_string(arg)) {
-        if (njs_vm_value_to_ext_string(vm, &args_arg, arg, 0) != NJS_OK) {
+        if (njs_vm_value_to_string(vm, &args_arg, arg) != NJS_OK) {
             njs_vm_error(vm, "failed to convert args");
             return NJS_ERROR;
         }
@@ -2172,7 +2172,7 @@ ngx_http_js_handle_event(ngx_http_request_t *r, njs_vm_event_t vm_event,
     rc = njs_vm_run(ctx->vm);
 
     if (rc == NJS_ERROR) {
-        njs_vm_retval_to_ext_string(ctx->vm, &exception);
+        njs_vm_retval_string(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "js exception: %*s", exception.length, exception.start);
@@ -2190,7 +2190,7 @@ static njs_ret_t
 ngx_http_js_string(njs_vm_t *vm, const njs_value_t *value, nxt_str_t *str)
 {
     if (!njs_value_is_null_or_undefined(value)) {
-        if (njs_vm_value_to_ext_string(vm, str, value, 0) == NJS_ERROR) {
+        if (njs_vm_value_to_string(vm, str, value) == NJS_ERROR) {
             return NJS_ERROR;
         }
 
@@ -2342,7 +2342,7 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     rc = njs_vm_compile(jmcf->vm, &start, end);
 
     if (rc != NJS_OK) {
-        njs_vm_retval_to_ext_string(jmcf->vm, &text);
+        njs_vm_retval_string(jmcf->vm, &text);
 
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "%*s, included",

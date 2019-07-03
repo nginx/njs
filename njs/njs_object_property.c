@@ -437,7 +437,7 @@ njs_external_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
     pq = (njs_property_query_t *) vm->stash;
 
     if (!njs_is_null_or_undefined(setval)) {
-        ret = njs_vm_value_to_ext_string(vm, &s, setval, 0);
+        ret = njs_vm_value_to_string(vm, &s, setval);
         if (nxt_slow_path(ret != NXT_OK)) {
             return ret;
         }

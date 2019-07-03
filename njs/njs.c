@@ -838,8 +838,167 @@ njs_vm_memory_error(njs_vm_t *vm)
 }
 
 
+nxt_array_t *
+njs_vm_backtrace(njs_vm_t *vm)
+{
+    if (vm->backtrace != NULL && !nxt_array_is_empty(vm->backtrace)) {
+        return vm->backtrace;
+    }
+
+    return NULL;
+}
+
+
+static njs_ret_t
+njs_vm_backtrace_dump(njs_vm_t *vm, nxt_str_t *dst, const njs_value_t *src)
+{
+    u_char                 *p, *start, *end;
+    size_t                 len, count;
+    nxt_uint_t             i;
+    nxt_array_t            *backtrace;
+    njs_backtrace_entry_t  *be, *prev;
+
+    backtrace = njs_vm_backtrace(vm);
+
+    len = dst->length + 1;
+
+    count = 0;
+    prev = NULL;
+
+    be = backtrace->start;
+
+    for (i = 0; i < backtrace->items; i++) {
+        if (i != 0 && prev->name.start == be->name.start
+            && prev->line == be->line)
+        {
+            count++;
+
+        } else {
+
+            if (count != 0) {
+                len += nxt_length("      repeats  times\n")
+                       + NXT_INT_T_LEN;
+                count = 0;
+            }
+
+            len += be->name.length + nxt_length("    at  ()\n");
+
+            if (be->line != 0) {
+                len += be->file.length + NXT_INT_T_LEN + 1;
+
+            } else {
+                len += nxt_length("native");
+            }
+        }
+
+        prev = be;
+        be++;
+    }
+
+    p = nxt_mp_alloc(vm->mem_pool, len);
+    if (p == NULL) {
+        njs_memory_error(vm);
+        return NXT_ERROR;
+    }
+
+    start = p;
+    end = start + len;
+
+    p = nxt_cpymem(p, dst->start, dst->length);
+    *p++ = '\n';
+
+    count = 0;
+    prev = NULL;
+
+    be = backtrace->start;
+
+    for (i = 0; i < backtrace->items; i++) {
+        if (i != 0 && prev->name.start == be->name.start
+            && prev->line == be->line)
+        {
+            count++;
+
+        } else {
+            if (count != 0) {
+                p = nxt_sprintf(p, end, "      repeats %uz times\n",
+                                count);
+                count = 0;
+            }
+
+            p = nxt_sprintf(p, end, "    at %V ", &be->name);
+
+            if (be->line != 0) {
+                p = nxt_sprintf(p, end, "(%V:%uD)\n", &be->file,
+                                be->line);
+
+            } else {
+                p = nxt_sprintf(p, end, "(native)\n");
+            }
+        }
+
+        prev = be;
+        be++;
+    }
+
+    dst->start = start;
+    dst->length = p - dst->start;
+
+    return NXT_OK;
+}
+
+
 njs_ret_t
-njs_vm_retval_to_ext_string(njs_vm_t *vm, nxt_str_t *dst)
+njs_vm_value_string(njs_vm_t *vm, nxt_str_t *dst, const njs_value_t *src)
+{
+    njs_ret_t   ret;
+    nxt_uint_t  exception;
+
+    if (nxt_slow_path(src->type == NJS_NUMBER
+                      && njs_number(src) == 0
+                      && signbit(njs_number(src))))
+    {
+        njs_string_get(&njs_string_minus_zero, dst);
+        return NXT_OK;
+    }
+
+    exception = 1;
+
+again:
+
+    ret = njs_vm_value_to_string(vm, dst, src);
+
+    if (nxt_fast_path(ret == NXT_OK)) {
+
+        if (njs_vm_backtrace(vm) != NULL) {
+            ret = njs_vm_backtrace_dump(vm, dst, src);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return NXT_ERROR;
+            }
+        }
+
+        return NXT_OK;
+    }
+
+    if (exception) {
+        exception = 0;
+
+        /* value evaluation threw an exception. */
+
+        vm->top_frame->trap_tries = 0;
+
+        src = &vm->retval;
+        goto again;
+    }
+
+    dst->length = 0;
+    dst->start = NULL;
+
+    return NXT_ERROR;
+}
+
+
+njs_ret_t
+njs_vm_retval_string(njs_vm_t *vm, nxt_str_t *dst)
 {
     if (vm->top_frame == NULL) {
         /* An exception was thrown during compilation. */
@@ -847,7 +1006,7 @@ njs_vm_retval_to_ext_string(njs_vm_t *vm, nxt_str_t *dst)
         njs_vm_init(vm);
     }
 
-    return njs_vm_value_to_ext_string(vm, dst, &vm->retval, 1);
+    return njs_vm_value_string(vm, dst, &vm->retval);
 }
 
 

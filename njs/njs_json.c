@@ -2566,7 +2566,7 @@ memory_error:
 
 exception:
 
-    njs_vm_value_to_ext_string(vm, retval, &vm->retval, 1);
+    njs_vm_value_string(vm, retval, &vm->retval);
 
     return NXT_OK;
 }

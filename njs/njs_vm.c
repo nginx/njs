@@ -3086,184 +3086,58 @@ njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
 
 
 njs_ret_t
-njs_vm_value_to_ext_string(njs_vm_t *vm, nxt_str_t *dst, const njs_value_t *src,
-    nxt_uint_t handle_exception)
+njs_vm_value_to_string(njs_vm_t *vm, nxt_str_t *dst, const njs_value_t *src)
 {
-    u_char                 *p, *start, *end;
-    size_t                 len, size, count;
-    njs_ret_t              ret;
-    nxt_uint_t             i, exception;
-    nxt_array_t            *backtrace;
-    njs_value_t            value;
-    njs_backtrace_entry_t  *be, *prev;
+    u_char       *start;
+    size_t       size;
+    njs_ret_t    ret;
+    njs_value_t  value;
 
-    exception = handle_exception;
+    if (nxt_slow_path(src == NULL)) {
+        return NXT_ERROR;
+    }
 
-again:
-
-    if (nxt_fast_path(src != NULL)) {
-
-        if (nxt_slow_path(src->type == NJS_OBJECT_INTERNAL_ERROR)) {
-
-            /* MemoryError is a nonextensible internal error. */
-
-            if (!src->data.u.object->extensible) {
-                njs_string_get(&njs_string_memory_error, dst);
-                return NXT_OK;
-            }
-        }
-
-        value = *src;
-
-        if (nxt_slow_path(!njs_is_primitive(&value))) {
-
-            ret = njs_object_value_to_string(vm, &value);
-
-            if (nxt_slow_path(ret != NXT_OK)) {
-                goto fail;
-            }
-        }
-
-        if (nxt_slow_path((value.type == NJS_NUMBER
-                            && value.data.u.number == 0
-                            && signbit(value.data.u.number))))
-        {
-            value = njs_string_minus_zero;
-            ret = NXT_OK;
-
-        } else {
-            ret = njs_primitive_value_to_string(vm, &value, &value);
-        }
-
-        if (nxt_fast_path(ret == NXT_OK)) {
-            size = value.short_string.size;
-
-            if (size != NJS_STRING_LONG) {
-                start = nxt_mp_alloc(vm->mem_pool, size);
-                if (nxt_slow_path(start == NULL)) {
-                    njs_memory_error(vm);
-                    return NXT_ERROR;
-                }
-
-                memcpy(start, value.short_string.start, size);
-
-            } else {
-                size = value.long_string.size;
-                start = value.long_string.data->start;
-            }
-
-            dst->length = size;
-            dst->start = start;
-
-            if (exception && njs_vm_backtrace(vm) != NULL) {
-
-                backtrace = njs_vm_backtrace(vm);
-
-                len = dst->length + 1;
-
-                count = 0;
-                prev = NULL;
-
-                be = backtrace->start;
-
-                for (i = 0; i < backtrace->items; i++) {
-                    if (i != 0 && prev->name.start == be->name.start
-                        && prev->line == be->line)
-                    {
-                        count++;
-
-                    } else {
-
-                        if (count != 0) {
-                            len += nxt_length("      repeats  times\n")
-                                   + NXT_INT_T_LEN;
-                            count = 0;
-                        }
-
-                        len += be->name.length + nxt_length("    at  ()\n");
-
-                        if (be->line != 0) {
-                            len += be->file.length + NXT_INT_T_LEN + 1;
-
-                        } else {
-                            len += nxt_length("native");
-                        }
-                    }
-
-                    prev = be;
-                    be++;
-                }
-
-                p = nxt_mp_alloc(vm->mem_pool, len);
-                if (p == NULL) {
-                    njs_memory_error(vm);
-                    return NXT_ERROR;
-                }
-
-                start = p;
-                end = start + len;
-
-                p = nxt_cpymem(p, dst->start, dst->length);
-                *p++ = '\n';
-
-                count = 0;
-                prev = NULL;
-
-                be = backtrace->start;
-
-                for (i = 0; i < backtrace->items; i++) {
-                    if (i != 0 && prev->name.start == be->name.start
-                        && prev->line == be->line)
-                    {
-                        count++;
-
-                    } else {
-                        if (count != 0) {
-                            p = nxt_sprintf(p, end, "      repeats %uz times\n",
-                                            count);
-                            count = 0;
-                        }
-
-                        p = nxt_sprintf(p, end, "    at %V ", &be->name);
-
-                        if (be->line != 0) {
-                            p = nxt_sprintf(p, end, "(%V:%uD)\n", &be->file,
-                                            be->line);
-
-                        } else {
-                            p = nxt_sprintf(p, end, "(native)\n");
-                        }
-                    }
-
-                    prev = be;
-                    be++;
-                }
-
-                dst->start = start;
-                dst->length = p - dst->start;
-            }
-
+    if (nxt_slow_path(src->type == NJS_OBJECT_INTERNAL_ERROR)) {
+        /* MemoryError is a nonextensible internal error. */
+        if (!src->data.u.object->extensible) {
+            njs_string_get(&njs_string_memory_error, dst);
             return NXT_OK;
         }
     }
 
-fail:
+    value = *src;
 
-    if (handle_exception) {
-        handle_exception = 0;
-
-        /* value evaluation threw an exception. */
-
-        vm->top_frame->trap_tries = 0;
-
-        src = &vm->retval;
-        goto again;
+    if (nxt_slow_path(!njs_is_primitive(&value))) {
+        ret = njs_object_value_to_string(vm, &value);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return ret;
+        }
     }
 
-    dst->length = 0;
-    dst->start = NULL;
+    ret = njs_primitive_value_to_string(vm, &value, &value);
 
-    return NXT_ERROR;
+    if (nxt_fast_path(ret == NXT_OK)) {
+        size = value.short_string.size;
+
+        if (size != NJS_STRING_LONG) {
+            start = nxt_mp_alloc(vm->mem_pool, size);
+            if (nxt_slow_path(start == NULL)) {
+                njs_memory_error(vm);
+                return NXT_ERROR;
+            }
+
+            memcpy(start, value.short_string.start, size);
+
+        } else {
+            size = value.long_string.size;
+            start = value.long_string.data->start;
+        }
+
+        dst->length = size;
+        dst->start = start;
+    }
+
+    return ret;
 }
 
 
@@ -3299,7 +3173,7 @@ njs_object_value_to_string(njs_vm_t *vm, njs_value_t *value)
     /*
      * Prevent njs_vmcode_interpreter() to unwind the current frame if
      * an exception happens.  It preserves the current frame state if
-     * njs_vm_value_to_ext_string() is called from within njs_vm_run().
+     * njs_vm_value_string() is called from within njs_vm_run().
      */
     previous = vm->top_frame->previous;
     vm->top_frame->previous = NULL;
@@ -3371,7 +3245,7 @@ njs_vm_value_string_copy(njs_vm_t *vm, nxt_str_t *retval,
         return NXT_ERROR;
     }
 
-    return njs_vm_value_to_ext_string(vm, retval, value, 0);
+    return njs_vm_value_to_string(vm, retval, value);
 }
 
 
@@ -3440,17 +3314,6 @@ njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame)
     be->name = njs_entry_unknown;
 
     return NXT_OK;
-}
-
-
-nxt_array_t *
-njs_vm_backtrace(njs_vm_t *vm)
-{
-    if (vm->backtrace != NULL && !nxt_array_is_empty(vm->backtrace)) {
-        return vm->backtrace;
-    }
-
-    return NULL;
 }
 
 

@@ -56,8 +56,8 @@ njs_unit_test_benchmark(nxt_str_t *script, nxt_str_t *result, const char *msg,
 
         (void) njs_vm_start(nvm);
 
-        if (njs_vm_retval_to_ext_string(nvm, &s) != NXT_OK) {
-            nxt_printf("njs_vm_retval_to_ext_string() failed\n");
+        if (njs_vm_retval_string(nvm, &s) != NXT_OK) {
+            nxt_printf("njs_vm_retval_string() failed\n");
             goto done;
         }
 

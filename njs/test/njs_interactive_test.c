@@ -226,7 +226,7 @@ static njs_interactive_test_t  njs_test[] =
                  "      repeats 2 times\n"
                  "    at main (native)\n") },
 
-    /* Exception in njs_vm_retval_to_ext_string() */
+    /* Exception in njs_vm_retval_string() */
 
     { nxt_string("var o = { toString: function() { return [1] } }" ENTER
                  "o" ENTER),
@@ -305,8 +305,8 @@ njs_interactive_test(nxt_bool_t verbose)
             }
         }
 
-        if (njs_vm_retval_to_ext_string(vm, &s) != NXT_OK) {
-            nxt_printf("njs_vm_retval_to_ext_string() failed\n");
+        if (njs_vm_retval_string(vm, &s) != NXT_OK) {
+            nxt_printf("njs_vm_retval_string() failed\n");
             goto done;
         }
 

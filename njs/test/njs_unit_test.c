@@ -13427,7 +13427,7 @@ njs_unit_test_method_external(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NJS_ERROR;
     }
 
-    ret = njs_vm_value_to_ext_string(vm, &s, njs_arg(args, nargs, 1), 0);
+    ret = njs_vm_value_to_string(vm, &s, njs_arg(args, nargs, 1));
     if (ret == NXT_OK && s.length == 3 && memcmp(s.start, "YES", 3) == 0) {
         return njs_vm_value_string_set(vm, njs_vm_retval(vm), r->uri.start,
                                        r->uri.length);
@@ -13453,9 +13453,7 @@ njs_unit_test_create_external(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (njs_vm_value_to_ext_string(vm, &uri, njs_arg(args, nargs, 1), 0)
-        != NJS_OK)
-    {
+    if (njs_vm_value_to_string(vm, &uri, njs_arg(args, nargs, 1)) != NJS_OK) {
         return NJS_ERROR;
     }
 
@@ -13799,14 +13797,14 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, nxt_bool_t module,
 
             ret = njs_vm_start(nvm);
 
-            if (njs_vm_retval_to_ext_string(nvm, &s) != NXT_OK) {
-                nxt_printf("njs_vm_retval_to_ext_string() failed\n");
+            if (njs_vm_retval_string(nvm, &s) != NXT_OK) {
+                nxt_printf("njs_vm_retval_string() failed\n");
                 goto done;
             }
 
         } else {
-            if (njs_vm_retval_to_ext_string(vm, &s) != NXT_OK) {
-                nxt_printf("njs_vm_retval_to_ext_string() failed\n");
+            if (njs_vm_retval_string(vm, &s) != NXT_OK) {
+                nxt_printf("njs_vm_retval_string() failed\n");
                 goto done;
             }
         }
@@ -14015,8 +14013,8 @@ njs_vm_json_test(nxt_bool_t disassemble, nxt_bool_t verbose)
             goto done;
         }
 
-        if (njs_vm_retval_to_ext_string(vm, &s) != NXT_OK) {
-            nxt_printf("njs_vm_retval_to_ext_string() failed\n");
+        if (njs_vm_retval_string(vm, &s) != NXT_OK) {
+            nxt_printf("njs_vm_retval_string() failed\n");
             goto done;
         }
 
@@ -14042,8 +14040,8 @@ done:
         nxt_printf("njs_vm_json_test passed\n");
 
     } else {
-        if (njs_vm_retval_to_ext_string(vm, &s) != NXT_OK) {
-            nxt_printf("njs_vm_retval_to_ext_string() failed\n");
+        if (njs_vm_retval_string(vm, &s) != NXT_OK) {
+            nxt_printf("njs_vm_retval_string() failed\n");
 
         } else {
             nxt_printf("%V\n", &s);
