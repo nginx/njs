@@ -478,11 +478,8 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *object,
         break;
 
     case NJS_OBJECT:
-        ret = njs_primitive_value_to_string(vm, &name, property);
+        ret = njs_value_to_string(vm, &name, property);
         if (nxt_slow_path(ret != NXT_OK)) {
-            njs_internal_error(vm, "failed conversion of type \"%s\" "
-                               "to string while property initialization",
-                               njs_type_string(property->type));
             return NXT_ERROR;
         }
 

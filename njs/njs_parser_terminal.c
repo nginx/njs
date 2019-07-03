@@ -480,12 +480,13 @@ njs_parser_builtin(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node,
 static njs_token_t
 njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
 {
-    uint32_t           hash, token_line;
-    nxt_int_t          ret;
-    nxt_str_t          name;
-    njs_token_t        token, prop_token;
-    njs_lexer_t        *lexer;
-    njs_parser_node_t  *object, *property, *expression;
+    uint32_t               hash, token_line;
+    nxt_int_t              ret;
+    nxt_str_t              name;
+    njs_token_t            token, prop_token;
+    njs_lexer_t            *lexer;
+    njs_parser_node_t      *object, *property, *expression;
+    njs_function_lambda_t  *lambda;
 
     lexer = parser->lexer;
 
@@ -512,6 +513,26 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
 
         case NJS_TOKEN_CLOSE_BRACE:
             goto done;
+
+        case NJS_TOKEN_OPEN_BRACKET:
+            token = njs_parser_token(vm, parser);
+            if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                return token;
+            }
+
+            if (token == NJS_TOKEN_CLOSE_BRACKET) {
+                return NJS_TOKEN_ILLEGAL;
+            }
+
+            token = njs_parser_assignment_expression(vm, parser, token);
+            if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                return token;
+            }
+
+            property = parser->node;
+
+            token = njs_parser_match(vm, parser, token, NJS_TOKEN_CLOSE_BRACKET);
+            break;
 
         case NJS_TOKEN_NUMBER:
         case NJS_TOKEN_STRING:
@@ -574,6 +595,30 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
             }
 
             expression = parser->node;
+            break;
+
+        case NJS_TOKEN_OPEN_PARENTHESIS:
+            expression = njs_parser_node_new(vm, parser,
+                                             NJS_TOKEN_FUNCTION_EXPRESSION);
+            if (nxt_slow_path(expression == NULL)) {
+                return NJS_TOKEN_ERROR;
+            }
+
+            expression->token_line = njs_parser_token_line(parser);
+            parser->node = expression;
+
+            lambda = njs_function_lambda_alloc(vm, 0);
+            if (nxt_slow_path(lambda == NULL)) {
+                return NJS_TOKEN_ERROR;
+            }
+
+            expression->u.value.data.u.lambda = lambda;
+
+            token = njs_parser_function_lambda(vm, parser, lambda, token);
+            if (nxt_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                return token;
+            }
+
             break;
 
         default:

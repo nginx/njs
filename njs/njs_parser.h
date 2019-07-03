@@ -95,6 +95,8 @@ njs_token_t njs_parser_template_literal(njs_vm_t *vm, njs_parser_t *parser,
 njs_parser_node_t *njs_parser_argument(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *expr, njs_index_t index);
 nxt_int_t njs_parser_string_create(njs_vm_t *vm, njs_value_t *value);
+njs_token_t njs_parser_function_lambda(njs_vm_t *vm, njs_parser_t *parser,
+    njs_function_lambda_t *lambda, njs_token_t token);
 njs_token_t njs_parser_lambda_statements(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token);
 njs_variable_t *njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node);

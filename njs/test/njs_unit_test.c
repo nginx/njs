@@ -3126,7 +3126,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var x = { a: 1 }, b = delete x.a; x.a +' '+ b"),
       nxt_string("undefined true") },
 
-    /* Shorthand Object literals. */
+    /* Object shorthand property. */
 
     { nxt_string("var a = 1; njs.dump({a})"),
       nxt_string("{a:1}") },
@@ -3172,6 +3172,38 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("delete undefined"),
       nxt_string("SyntaxError: Delete of an unqualified identifier in 1") },
+
+    /* Object shorthand methods. */
+
+    { nxt_string("var o = {m(){}}; new o.m();"),
+      nxt_string("TypeError: function is not a constructor") },
+
+    { nxt_string("var o = {sum(a, b){return a + b;}}; o.sum(1, 2)"),
+      nxt_string("3") },
+
+    /* Object computed property. */
+
+    { nxt_string("var o = { [0]: 1, [-0]: 2 }; o[0];"),
+      nxt_string("2") },
+
+    { nxt_string("var k = 'abc'.split('');var o = {[k[0]]: 'baz'}; o.a"),
+      nxt_string("baz") },
+
+    { nxt_string("var k = {}; var o = {[k]() {return 'baz'}}; o[k]()"),
+      nxt_string("baz") },
+
+    { nxt_string("njs.dump({[{toString(){return 'xx'}}]:1})"),
+      nxt_string("{xx:1}") },
+
+    { nxt_string("var o = {}; Object.defineProperty(o, 'toString', {value:()=>'xx'});"
+                 "njs.dump({[o]:1})"),
+      nxt_string("{xx:1}") },
+
+    { nxt_string("({[{toString(){return {}}}]:1})"),
+      nxt_string("TypeError: Cannot convert object to primitive value") },
+
+    { nxt_string("var o = { [new Number(12345)]: 1000 }; o[12345]"),
+      nxt_string("1000") },
 
     /* ES5FIX: "SyntaxError". */
 
@@ -3248,7 +3280,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("4") },
 
     { nxt_string("({[]:1})"),
-      nxt_string("SyntaxError: Unexpected token \"[\" in 1") },
+      nxt_string("SyntaxError: Unexpected token \"]\" in 1") },
 
     { nxt_string("({'AB\\ncd':1})['AB\\ncd']"),
       nxt_string("1") },
