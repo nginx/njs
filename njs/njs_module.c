@@ -341,13 +341,12 @@ njs_module_read(njs_vm_t *vm, int fd, nxt_str_t *text)
         goto fail;
     }
 
-    text->length = nxt_length(NJS_MODULE_START);
-
-    if (S_ISREG(sb.st_mode) && sb.st_size) {
-        text->length += sb.st_size;
+    if (!S_ISREG(sb.st_mode)) {
+        goto fail;
     }
 
-    text->length += nxt_length(NJS_MODULE_END);
+    text->length = nxt_length(NJS_MODULE_START) + sb.st_size
+                   + nxt_length(NJS_MODULE_END);
 
     text->start = nxt_mp_alloc(vm->mem_pool, text->length);
     if (text->start == NULL) {
