@@ -683,6 +683,17 @@ njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
 
                 length--;
             } while (length != 0);
+
+        } else {
+
+            /* Primitive types. */
+
+            value = array->start;
+
+            do {
+                *value++ = njs_value_invalid;
+                length--;
+            } while (length != 0);
         }
     }
 
