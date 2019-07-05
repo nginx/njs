@@ -112,17 +112,19 @@ njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     pattern = njs_arg(args, nargs, 1);
 
     if (!njs_is_regexp(pattern) && !njs_is_primitive(pattern)) {
-        njs_vm_trap_value(vm, &args[1]);
-
-        return njs_trap(vm, NJS_TRAP_STRING_ARG);
+        ret = njs_value_to_string(vm, &args[1], &args[1]);
+        if (ret != NXT_OK) {
+            return ret;
+        }
     }
 
     flags = njs_arg(args, nargs, 2);
 
     if (!njs_is_primitive(flags)) {
-        njs_vm_trap_value(vm, &args[2]);
-
-        return njs_trap(vm, NJS_TRAP_STRING_ARG);
+        ret = njs_value_to_string(vm, &args[2], &args[2]);
+        if (ret != NXT_OK) {
+            return ret;
+        }
     }
 
     re_flags = 0;

@@ -359,13 +359,15 @@ njs_object_math_hypot(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
     double      num;
+    njs_ret_t   ret;
     nxt_uint_t  i;
 
     for (i = 1; i < nargs; i++) {
         if (!njs_is_numeric(&args[i])) {
-            njs_vm_trap_value(vm, &args[i]);
-
-            return njs_trap(vm, NJS_TRAP_NUMBER_ARG);
+            ret = njs_value_to_numeric(vm, &args[i], &args[i]);
+            if (ret != NXT_OK) {
+                return ret;
+            }
         }
     }
 
@@ -498,6 +500,7 @@ njs_object_math_max(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
     double      num;
+    njs_ret_t   ret;
     nxt_uint_t  i;
 
     if (nargs > 1) {
@@ -507,9 +510,10 @@ njs_object_math_max(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                 goto done;
 
             } else if (!njs_is_numeric(&args[i])) {
-                njs_vm_trap_value(vm, &args[i]);
-
-                return njs_trap(vm, NJS_TRAP_NUMBER_ARG);
+                ret = njs_value_to_numeric(vm, &args[i], &args[i]);
+                if (ret != NXT_OK) {
+                    return ret;
+                }
             }
         }
 
@@ -536,14 +540,16 @@ njs_object_math_min(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
     double      num;
+    njs_ret_t   ret;
     nxt_uint_t  i;
 
     if (nargs > 1) {
         for (i = 1; i < nargs; i++) {
             if (!njs_is_numeric(&args[i])) {
-                njs_vm_trap_value(vm, &args[i]);
-
-                return njs_trap(vm, NJS_TRAP_NUMBER_ARG);
+                ret = njs_value_to_numeric(vm, &args[i], &args[i]);
+                if (ret != NXT_OK) {
+                    return ret;
+                }
             }
         }
 

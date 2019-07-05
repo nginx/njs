@@ -984,8 +984,6 @@ again:
 
         /* value evaluation threw an exception. */
 
-        vm->top_frame->trap_tries = 0;
-
         src = &vm->retval;
         goto again;
     }

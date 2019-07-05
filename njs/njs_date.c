@@ -73,6 +73,7 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     double      num, time;
     int64_t     values[8];
+    njs_ret_t   ret;
     nxt_uint_t  i, n;
     njs_date_t  *date;
     struct tm   tm;
@@ -85,11 +86,14 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         } else if (nargs == 2) {
             if (njs_is_object(&args[1])) {
                 if (!njs_is_date(&args[1])) {
-                    njs_vm_trap_value(vm, &args[1]);
-
-                    return njs_trap(vm, NJS_TRAP_PRIMITIVE_ARG);
+                    ret = njs_value_to_primitive(vm, &args[1], &args[1], 0);
+                    if (ret != NXT_OK) {
+                        return ret;
+                    }
                 }
+            }
 
+            if (njs_is_date(&args[1])) {
                 time = njs_date(&args[1])->time;
 
             } else if (njs_is_string(&args[1])) {
@@ -108,9 +112,10 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
             for (i = 1; i < n; i++) {
                 if (!njs_is_numeric(&args[i])) {
-                    njs_vm_trap_value(vm, &args[i]);
-
-                    return njs_trap(vm, NJS_TRAP_NUMBER_ARG);
+                    ret = njs_value_to_numeric(vm, &args[i], &args[i]);
+                    if (ret != NXT_OK) {
+                        return ret;
+                    }
                 }
 
                 num = njs_number(&args[i]);
@@ -171,6 +176,7 @@ njs_date_utc(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     double      num, time;
     struct tm   tm;
+    njs_ret_t   ret;
     nxt_uint_t  i, n;
     int32_t     values[8];
 
@@ -183,9 +189,10 @@ njs_date_utc(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
         for (i = 1; i < n; i++) {
             if (!njs_is_numeric(&args[i])) {
-                njs_vm_trap_value(vm, &args[i]);
-
-                return njs_trap(vm, NJS_TRAP_NUMBER_ARG);
+                ret = njs_value_to_numeric(vm, &args[i], &args[i]);
+                if (ret != NXT_OK) {
+                    return ret;
+                }
             }
 
             num = njs_number(&args[i]);
@@ -1902,8 +1909,8 @@ njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         prop = njs_object_property(vm, njs_object(&args[0]), &lhq);
 
         if (nxt_fast_path(prop != NULL && njs_is_function(&prop->value))) {
-            return njs_function_replace(vm, njs_function(&prop->value),
-                                        args, nargs, retval);
+            return njs_function_call(vm, njs_function(&prop->value), args,
+                                     nargs, (njs_index_t) &vm->retval);
         }
     }
 

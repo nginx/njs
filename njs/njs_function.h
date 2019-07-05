@@ -74,11 +74,6 @@ typedef struct {
 #define NJS_CONTINUATION_SIZE      njs_continuation_size(njs_continuation_t)
 
 
-#define njs_vm_trap_value(vm, val)                                            \
-    (vm)->top_frame->trap_scratch.data.u.value = val
-
-
-
 typedef struct njs_exception_s     njs_exception_t;
 
 struct njs_exception_s {
@@ -92,10 +87,6 @@ struct njs_exception_s {
 
 
 struct njs_native_frame_s {
-    njs_value_t                    trap_scratch;
-    njs_value_t                    trap_values[2];
-    u_char                         *trap_restart;
-
     u_char                         *free;
 
     njs_function_t                 *function;
@@ -118,14 +109,7 @@ struct njs_native_frame_s {
     /* Skip the Function.call() and Function.apply() methods frames. */
     uint8_t                        skip;              /* 1 bit  */
 
-    /* A number of trap tries, it can be no more than three. */
-    uint8_t                        trap_tries;        /* 2 bits */
-
-    /*
-     * The first operand in trap is reference to original value,
-     * it is used to increment or decrement this value.
-     */
-    uint8_t                        trap_reference;   /* 1 bit */
+    uint8_t                        call; /* 1 bit */
 };
 
 
@@ -168,6 +152,8 @@ njs_ret_t njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
 njs_ret_t njs_function_activate(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, const njs_value_t *args, nxt_uint_t nargs,
     njs_index_t retval, size_t advance);
+njs_ret_t njs_function_call(njs_vm_t *vm, njs_function_t *function,
+    njs_value_t *args, nxt_uint_t nargs, njs_index_t retval);
 njs_ret_t njs_function_lambda_call(njs_vm_t *vm, njs_index_t retval,
     u_char *return_address);
 njs_ret_t njs_function_native_call(njs_vm_t *vm, njs_function_native_t native,
@@ -212,36 +198,6 @@ njs_function_apply(njs_vm_t *vm, njs_function_t *function,
 {
     return njs_function_activate(vm, function, &args[0], &args[1], nargs - 1,
                                  retval, 0);
-}
-
-
-/*
- * Replaces the current function with a new one.
- * Can only be used for continuation functions
- * (data.u.function.continuation_size > 0).
- */
-nxt_inline njs_ret_t
-njs_function_replace(njs_vm_t *vm, njs_function_t *function,
-    const njs_value_t *args, nxt_uint_t nargs, njs_index_t retval)
-{
-    nxt_int_t  ret;
-
-    ret = njs_function_apply(vm, function, args, nargs, retval);
-    if (nxt_slow_path(ret == NXT_ERROR)) {
-        return ret;
-    }
-
-    /*
-     * 1) njs_function_apply() allocs a new function frame,
-     *    in order to preserve the retval of a new function and ignore
-     *    retval of the current function during stack unwinding
-     *    skip flag is needed.
-     * 2) it is also needed for correct callee arguments update in
-     *    njs_function_native_call() see "Object((new Date(0)).toJSON())".
-     */
-    vm->top_frame->previous->skip = 1;
-
-    return NJS_APPLIED;
 }
 
 

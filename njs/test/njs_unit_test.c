@@ -452,6 +452,56 @@ static njs_unit_test_t  njs_test[] =
                  "var b = { toString: function() { return a+'b' } }; '0'+b"),
       nxt_string("0ab") },
 
+    { nxt_string("({valueOf:()=>'4'}) / ({valueOf:()=>2})"),
+      nxt_string("2") },
+
+    { nxt_string("({valueOf:()=>{throw 'x'}}) / ({valueOf:()=>{throw 'y'}});"
+                 "var e; try { x/y } catch(ex) {e = ex}; ex"),
+      nxt_string("x") },
+
+    { nxt_string("({valueOf:()=>{ try {throw 'x'} catch (ex) {return 6} } }) / 2"),
+      nxt_string("3") },
+
+    { nxt_string("({valueOf:()=>2}) / ({valueOf:()=>{throw 'y'}});"
+                 "var e; try { x/y } catch(ex) {e = ex}; ex"),
+      nxt_string("y") },
+
+    { nxt_string("({valueOf:()=>'4'}) % ({valueOf:()=>3})"),
+      nxt_string("1") },
+
+    { nxt_string("({valueOf:()=>9}) >>> ({valueOf:()=>2})"),
+      nxt_string("2") },
+
+    { nxt_string("({valueOf:()=>0x1f}) & ({valueOf:()=>0xf})"),
+      nxt_string("15") },
+
+    { nxt_string("({valueOf:()=>0x1f}) ^ ({valueOf:()=>0xf})"),
+      nxt_string("16") },
+
+    { nxt_string("({valueOf:()=>0xf}) == ({valueOf:()=>0xf})"),
+      nxt_string("false") },
+
+    { nxt_string("var e; try {({valueOf: String.prototype.valueOf}) == 1} "
+                 "catch (ex) { e = ex}; e"),
+      nxt_string("TypeError: unexpected value type:object") },
+
+    { nxt_string("({valueOf:()=>0xf}) == 0xf"),
+      nxt_string("true") },
+
+    { nxt_string("0xf == ({valueOf:()=>0xf})"),
+      nxt_string("true") },
+
+    { nxt_string("({valueOf:()=>'0xf'}) == 0xf"),
+      nxt_string("true") },
+
+    { nxt_string("0xf == ({valueOf:()=>'0xf'})"),
+      nxt_string("true") },
+
+    { nxt_string("({valueOf:()=>0xf}) == '0xf'"),
+      nxt_string("true") },
+
+    { nxt_string("'0xf' == ({valueOf:()=>0xf})"),
+      nxt_string("true") },
     /**/
 
     { nxt_string("1 + undefined"),
@@ -1466,6 +1516,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = { valueOf: function() { return '1' } };   null < a"),
       nxt_string("true") },
 
+    { nxt_string("1 < {valueOf: ()=>{throw 'x'}}"),
+      nxt_string("x") },
+
+    { nxt_string("({valueOf: ()=>{throw 'x'}}) <= ({valueOf:()=>{throw 'y'}})"),
+      nxt_string("x") },
+
+    { nxt_string("({valueOf:()=>{throw 'x'}}) > ({valueOf:()=>{throw 'y'}})"),
+      nxt_string("x") },
+
     /**/
 
     { nxt_string("undefined == undefined"),
@@ -1649,6 +1708,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("new 0[isNaN]"),
       nxt_string("TypeError: (intermediate value)[\"[object Function]\"] is not a function") },
+
+    { nxt_string("new 0[undefined]"),
+      nxt_string("TypeError: (intermediate value)[\"undefined\"] is not a function") },
 
     /**/
 
@@ -4876,6 +4938,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("String.prototype.substring(1, 5)"),
       nxt_string("") },
 
+    { nxt_string("String.prototype.substr.call({toString:()=>{throw new Error('Oops')}})"),
+      nxt_string("Error: Oops") },
+
     { nxt_string("String.prototype.slice(1, 5)"),
       nxt_string("") },
 
@@ -4922,6 +4987,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("'abc'.charCodeAt(3)"),
       nxt_string("NaN") },
+
+    { nxt_string("'abc'.charCodeAt(undefined)"),
+      nxt_string("97") },
 
     { nxt_string("var a = 'abcdef'; a.3"),
       nxt_string("SyntaxError: Unexpected token \".3\" in 1") },
@@ -6548,6 +6616,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("(function(){ function f() {return f}; return f()})()"),
       nxt_string("[object Function]") },
+
+    { nxt_string("function  f() {}; f.toString = ()=> 'F'; ({'F':1})[f]"),
+      nxt_string("1") },
 
     { nxt_string("var a = ''; "
                  "function f(list) {"
@@ -10470,6 +10541,9 @@ static njs_unit_test_t  njs_test[] =
 #endif
 
     { nxt_string("Date.UTC(2011, 5, 24, 6, 0)"),
+      nxt_string("1308895200000") },
+
+    { nxt_string("Date.UTC({valueOf:()=>2011}, 5, 24, 6, 0)"),
       nxt_string("1308895200000") },
 
     { nxt_string("Date.parse()"),

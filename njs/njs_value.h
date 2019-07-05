@@ -114,6 +114,9 @@ typedef struct njs_date_s             njs_date_t;
 typedef struct njs_property_next_s    njs_property_next_t;
 typedef struct njs_object_init_s      njs_object_init_t;
 
+#if (!NXT_HAVE_GCC_ATTRIBUTE_ALIGNED)
+#error "aligned attribute is required"
+#endif
 
 union njs_value_s {
     /*
@@ -560,16 +563,53 @@ typedef enum {
     *(value) = njs_value_undefined
 
 
-#define njs_set_boolean(value, yn)                                            \
-    *(value) = yn ? njs_value_true : njs_value_false
-
-
 #define njs_set_true(value)                                                   \
     *(value) = njs_value_true
 
 
 #define njs_set_false(value)                                                  \
     *(value) = njs_value_false
+
+
+extern const njs_value_t  njs_value_null;
+extern const njs_value_t  njs_value_undefined;
+extern const njs_value_t  njs_value_false;
+extern const njs_value_t  njs_value_true;
+extern const njs_value_t  njs_value_zero;
+extern const njs_value_t  njs_value_nan;
+extern const njs_value_t  njs_value_invalid;
+
+extern const njs_value_t  njs_string_empty;
+extern const njs_value_t  njs_string_comma;
+extern const njs_value_t  njs_string_null;
+extern const njs_value_t  njs_string_undefined;
+extern const njs_value_t  njs_string_boolean;
+extern const njs_value_t  njs_string_false;
+extern const njs_value_t  njs_string_true;
+extern const njs_value_t  njs_string_number;
+extern const njs_value_t  njs_string_minus_zero;
+extern const njs_value_t  njs_string_minus_infinity;
+extern const njs_value_t  njs_string_plus_infinity;
+extern const njs_value_t  njs_string_nan;
+extern const njs_value_t  njs_string_string;
+extern const njs_value_t  njs_string_data;
+extern const njs_value_t  njs_string_external;
+extern const njs_value_t  njs_string_invalid;
+extern const njs_value_t  njs_string_object;
+extern const njs_value_t  njs_string_function;
+extern const njs_value_t  njs_string_memory_error;
+
+
+nxt_inline void
+njs_set_boolean(njs_value_t *value, unsigned yn)
+{
+    const njs_value_t  *retval;
+
+    /* Using const retval generates a better code at least on i386/amd64. */
+    retval = (yn) ? &njs_value_true : &njs_value_false;
+
+    *value = *retval;
+}
 
 
 nxt_inline void
@@ -685,8 +725,8 @@ njs_set_object_value(njs_value_t *value, njs_object_value_t *object_value)
 
 void njs_value_retain(njs_value_t *value);
 void njs_value_release(njs_vm_t *vm, njs_value_t *value);
-njs_ret_t njs_value_to_primitive(njs_vm_t *vm, njs_value_t *value,
-    nxt_uint_t hint);
+njs_ret_t njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst,
+    njs_value_t *value, nxt_uint_t hint);
 njs_array_t *njs_value_enumerate(njs_vm_t *vm, const njs_value_t *value,
     njs_object_enum_t kind, nxt_bool_t all);
 njs_array_t *njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
@@ -694,7 +734,63 @@ njs_array_t *njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
 const char *njs_type_string(njs_value_type_t type);
 const char *njs_arg_type_string(uint8_t arg);
 
+njs_ret_t njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
+    const njs_value_t *src);
+double njs_string_to_number(const njs_value_t *value, nxt_bool_t parse_float);
+
 nxt_bool_t njs_string_eq(const njs_value_t *v1, const njs_value_t *v2);
+
+
+nxt_inline njs_ret_t
+njs_value_to_numeric(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
+{
+    double       num;
+    njs_ret_t    ret;
+    njs_value_t  primitive;
+
+    if (nxt_slow_path(!njs_is_primitive(value))) {
+        ret = njs_value_to_primitive(vm, &primitive, value, 0);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return ret;
+        }
+
+        value = &primitive;
+    }
+
+    if (nxt_slow_path(!njs_is_numeric(value))) {
+        num = NAN;
+
+        if (njs_is_string(value)) {
+            num = njs_string_to_number(value, 0);
+        }
+
+    } else {
+        num = njs_number(value);
+    }
+
+    njs_set_number(dst, num);
+
+    return NXT_OK;
+}
+
+
+nxt_inline njs_ret_t
+njs_value_to_string(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
+{
+    njs_ret_t    ret;
+    njs_value_t  primitive;
+
+    if (nxt_slow_path(!njs_is_primitive(value))) {
+        ret = njs_value_to_primitive(vm, &primitive, value, 1);
+        if (nxt_slow_path(ret != NXT_OK)) {
+            return ret;
+        }
+
+        value = &primitive;
+    }
+
+    return njs_primitive_value_to_string(vm, dst, value);
+}
 
 
 nxt_inline nxt_bool_t
@@ -720,35 +816,6 @@ njs_values_strict_equal(const njs_value_t *val1, const njs_value_t *val2)
 
     return (njs_object(val1) == njs_object(val2));
 }
-
-
-extern const njs_value_t  njs_value_null;
-extern const njs_value_t  njs_value_undefined;
-extern const njs_value_t  njs_value_false;
-extern const njs_value_t  njs_value_true;
-extern const njs_value_t  njs_value_zero;
-extern const njs_value_t  njs_value_nan;
-extern const njs_value_t  njs_value_invalid;
-
-extern const njs_value_t  njs_string_empty;
-extern const njs_value_t  njs_string_comma;
-extern const njs_value_t  njs_string_null;
-extern const njs_value_t  njs_string_undefined;
-extern const njs_value_t  njs_string_boolean;
-extern const njs_value_t  njs_string_false;
-extern const njs_value_t  njs_string_true;
-extern const njs_value_t  njs_string_number;
-extern const njs_value_t  njs_string_minus_zero;
-extern const njs_value_t  njs_string_minus_infinity;
-extern const njs_value_t  njs_string_plus_infinity;
-extern const njs_value_t  njs_string_nan;
-extern const njs_value_t  njs_string_string;
-extern const njs_value_t  njs_string_data;
-extern const njs_value_t  njs_string_external;
-extern const njs_value_t  njs_string_invalid;
-extern const njs_value_t  njs_string_object;
-extern const njs_value_t  njs_string_function;
-extern const njs_value_t  njs_string_memory_error;
 
 
 #endif /* _NJS_VALUE_H_INCLUDED_ */

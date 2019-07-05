@@ -101,13 +101,15 @@ njs_value_release(njs_vm_t *vm, njs_value_t *value)
  */
 
 njs_ret_t
-njs_value_to_primitive(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
+njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
+	nxt_uint_t hint)
 {
     njs_ret_t           ret;
-    njs_value_t         *retval;
-    njs_function_t      *function;
+    nxt_uint_t          tries;
     njs_object_prop_t   *prop;
     nxt_lvlhsh_query_t  lhq;
+
+    njs_value_t         retval nxt_aligned(16);
 
     static const uint32_t  hashes[] = {
         NJS_VALUE_OF_HASH,
@@ -119,76 +121,56 @@ njs_value_to_primitive(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
         nxt_string("toString"),
     };
 
-    if (!njs_is_primitive(value)) {
-        retval = &vm->top_frame->trap_scratch;
 
-        if (!njs_is_primitive(retval)) {
-
-            for ( ;; ) {
-                ret = NXT_ERROR;
-
-                if (njs_is_object(value) && vm->top_frame->trap_tries < 2) {
-                    hint ^= vm->top_frame->trap_tries++;
-
-                    lhq.key_hash = hashes[hint];
-                    lhq.key = names[hint];
-
-                    prop = njs_object_property(vm, njs_object(value), &lhq);
-
-                    if (nxt_fast_path(prop != NULL)) {
-
-                        if (!njs_is_function(&prop->value)) {
-                            /* Try the second method. */
-                            continue;
-                        }
-
-                        function = njs_function(&prop->value);
-
-                        ret = njs_function_apply(vm, function, value, 1,
-                                                 (njs_index_t) retval);
-                        /*
-                         * njs_function_apply() can return
-                         *   NXT_OK, NJS_APPLIED, NXT_ERROR, NXT_AGAIN.
-                         */
-                        if (nxt_fast_path(ret == NXT_OK)) {
-
-                            if (njs_is_primitive(&vm->retval)) {
-                                retval = &vm->retval;
-                                break;
-                            }
-
-                            /* Try the second method. */
-                            continue;
-                        }
-
-                        if (ret == NJS_APPLIED) {
-                            /*
-                             * A user-defined method or continuation have
-                             * been prepared to run.  The method will return
-                             * to the current instruction and will restart it.
-                             */
-                            ret = 0;
-                        }
-                    }
-                }
-
-                if (ret == NXT_ERROR) {
-                    njs_type_error(vm,
-                                   "Cannot convert object to primitive value");
-                }
-
-                return ret;
-            }
-        }
-
-        *value = *retval;
-
-        njs_set_invalid(retval);
+    if (njs_is_primitive(value)) {
+        /* GC */
+        *dst = *value;
+        return NXT_OK;
     }
 
-    vm->top_frame->trap_tries = 0;
+    tries = 0;
 
-    return 1;
+    for ( ;; ) {
+        ret = NXT_ERROR;
+
+        if (njs_is_object(value) && tries < 2) {
+            hint ^= tries++;
+
+            lhq.key_hash = hashes[hint];
+            lhq.key = names[hint];
+
+            prop = njs_object_property(vm, njs_object(value), &lhq);
+
+            if (prop == NULL || !njs_is_function(&prop->value)) {
+                /* Try the second method. */
+                continue;
+            }
+
+            ret = njs_function_call(vm, njs_function(&prop->value), value, 1,
+                                    (njs_index_t) &retval);
+
+            if (nxt_fast_path(ret == NXT_OK)) {
+                if (njs_is_primitive(&retval)) {
+                    break;
+                 }
+
+                /* Try the second method. */
+                continue;
+             }
+
+            /* NXT_ERROR */
+
+            return ret;
+         }
+
+        njs_type_error(vm, "Cannot convert object to primitive value");
+
+        return ret;
+    }
+
+    *dst = retval;
+
+    return NXT_OK;
 }
 
 

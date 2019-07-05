@@ -473,6 +473,48 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
 
 
 njs_ret_t
+njs_function_call(njs_vm_t *vm, njs_function_t *function, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t retval)
+{
+    u_char              *return_address;
+    njs_ret_t           ret;
+    njs_native_frame_t  *frame;
+    njs_continuation_t  *cont;
+
+    ret = njs_function_frame(vm, function, &args[0], &args[1], nargs - 1, 0, 0);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
+    frame = vm->top_frame;
+    frame->call = 1;
+
+    return_address = vm->current;
+
+    if (function->native) {
+
+        if (function->continuation_size != 0) {
+            cont = njs_vm_continuation(vm);
+            cont->return_address = return_address;
+        }
+
+        ret = njs_function_native_call(vm, function->u.native, frame->arguments,
+                                       function->args_types, frame->nargs,
+                                       (njs_index_t) retval, return_address);
+
+    } else {
+        ret = njs_function_lambda_call(vm, retval, return_address);
+
+        if (nxt_fast_path(ret == NJS_APPLIED)) {
+            ret = njs_vmcode_run(vm);
+        }
+    }
+
+    return ret;
+}
+
+
+njs_ret_t
 njs_function_lambda_call(njs_vm_t *vm, njs_index_t retval,
     u_char *return_address)
 {
@@ -594,9 +636,9 @@ njs_function_native_call(njs_vm_t *vm, njs_function_native_t native,
      * The callee arguments must be preserved
      * for NJS_APPLIED and NXT_AGAIN cases.
      */
-    if (ret == NXT_OK) {
-        frame = vm->top_frame;
+    frame = vm->top_frame;
 
+    if (ret == NXT_OK || (frame->call && ret == NXT_ERROR)) {
         vm->top_frame = njs_function_previous_frame(frame);
 
         /*
@@ -625,7 +667,7 @@ njs_function_native_call(njs_vm_t *vm, njs_function_native_t native,
 
         njs_function_frame_free(vm, frame);
 
-        return NXT_OK;
+        return ret;
     }
 
     return ret;
@@ -636,8 +678,8 @@ static njs_ret_t
 njs_normalize_args(njs_vm_t *vm, njs_value_t *args, uint8_t *args_types,
     nxt_uint_t nargs)
 {
+    njs_ret_t   ret;
     nxt_uint_t  n;
-    njs_trap_t  trap;
 
     n = nxt_min(nargs, NJS_ARGS_TYPES_MAX);
 
@@ -655,43 +697,47 @@ njs_normalize_args(njs_vm_t *vm, njs_value_t *args, uint8_t *args_types,
 
         case NJS_STRING_ARG:
 
-            if (njs_is_string(args)) {
-                break;
+            if (!njs_is_string(args)) {
+                ret = njs_value_to_string(vm, args, args);
+                if (ret != NXT_OK) {
+                    return ret;
+                }
             }
 
-            trap = NJS_TRAP_STRING_ARG;
-            goto trap;
+            break;
 
         case NJS_NUMBER_ARG:
 
-            if (njs_is_numeric(args)) {
-                break;
+            if (!njs_is_numeric(args)) {
+                ret = njs_value_to_numeric(vm, args, args);
+                if (ret != NXT_OK) {
+                    return ret;
+                }
             }
 
-            trap = NJS_TRAP_NUMBER_ARG;
-            goto trap;
+            break;
 
         case NJS_INTEGER_ARG:
 
-            if (njs_is_numeric(args)) {
+            if (!njs_is_numeric(args)) {
+                ret = njs_value_to_numeric(vm, args, args);
+                if (ret != NXT_OK) {
+                    return ret;
+                }
+            }
 
-                /* Numbers are truncated to fit in 32-bit integers. */
+            /* Numbers are truncated to fit in 32-bit integers. */
 
-                if (isnan(njs_number(args))) {
-                    njs_number(args) = 0;
-
-                } else if (njs_number(args) > 2147483647.0) {
+            if (!isnan(njs_number(args))) {
+                if (njs_number(args) > 2147483647.0) {
                     njs_number(args) = 2147483647.0;
 
                 } else if (njs_number(args) < -2147483648.0) {
                     njs_number(args) = -2147483648.0;
                 }
-
-                break;
             }
 
-            trap = NJS_TRAP_NUMBER_ARG;
-            goto trap;
+            break;
 
         case NJS_FUNCTION_ARG:
 
@@ -701,8 +747,10 @@ njs_normalize_args(njs_vm_t *vm, njs_value_t *args, uint8_t *args_types,
                 break;
 
             default:
-                trap = NJS_TRAP_STRING_ARG;
-                goto trap;
+                ret = njs_value_to_string(vm, args, args);
+                if (ret != NXT_OK) {
+                    return ret;
+                }
             }
 
             break;
@@ -716,8 +764,10 @@ njs_normalize_args(njs_vm_t *vm, njs_value_t *args, uint8_t *args_types,
                 break;
 
             default:
-                trap = NJS_TRAP_STRING_ARG;
-                goto trap;
+                ret = njs_value_to_string(vm, args, args);
+                if (ret != NXT_OK) {
+                    return ret;
+                }
             }
 
             break;
@@ -750,12 +800,6 @@ njs_normalize_args(njs_vm_t *vm, njs_value_t *args, uint8_t *args_types,
     }
 
     return NJS_OK;
-
-trap:
-
-    njs_vm_trap_value(vm, args);
-
-    return njs_trap(vm, trap);
 
 type_error:
 

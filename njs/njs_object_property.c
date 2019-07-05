@@ -38,7 +38,6 @@ static njs_object_prop_t *njs_descriptor_prop(njs_vm_t *vm,
  *   NXT_DECLINED         property was not found in object,
  *     if pq->lhq.value != NULL it contains retval of type
  *     njs_object_prop_t * where prop->type is NJS_WHITEOUT
- *   NJS_TRAP             the property trap must be called,
  *   NXT_ERROR            exception has been thrown.
  *
  *   TODO:
@@ -53,10 +52,16 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
     uint32_t        (*hash)(const void *, size_t);
     njs_ret_t       ret;
     njs_object_t    *obj;
+    njs_value_t     prop;
     njs_function_t  *function;
 
     if (nxt_slow_path(!njs_is_primitive(property))) {
-        return njs_trap(vm, NJS_TRAP_PROPERTY);
+        ret = njs_value_to_string(vm, &prop, (njs_value_t *) property);
+        if (ret != NXT_OK) {
+            return ret;
+        }
+
+        property = &prop;
     }
 
     hash = nxt_djb_hash;
@@ -473,7 +478,6 @@ njs_external_property_delete(njs_vm_t *vm, njs_value_t *value,
  *      retval will contain the property's value
  *
  *   NXT_DECLINED         property was not found in object
- *   NJS_TRAP             the property trap must be called
  *   NJS_APPLIED          the property getter was applied
  *   NXT_ERROR            exception has been thrown.
  *      retval will contain undefined
@@ -553,7 +557,6 @@ njs_value_property(njs_vm_t *vm, const njs_value_t *value,
 
         return NXT_DECLINED;
 
-    case NJS_TRAP:
     case NXT_ERROR:
     default:
 
@@ -566,7 +569,6 @@ njs_value_property(njs_vm_t *vm, const njs_value_t *value,
 
 /*
  *   NXT_OK               property has been set successfully
- *   NJS_TRAP             the property trap must be called
  *   NJS_APPLIED          the property setter was applied
  *   NXT_ERROR            exception has been thrown.
  */
@@ -669,7 +671,6 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *object,
 
         break;
 
-    case NJS_TRAP:
     case NXT_ERROR:
     default:
 
@@ -1152,7 +1153,6 @@ njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
         *dest = njs_value_undefined;
         return NXT_OK;
 
-    case NJS_TRAP:
     case NXT_ERROR:
     default:
         return ret;

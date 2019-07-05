@@ -875,6 +875,7 @@ njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 {
     u_char             *p, *start;
     uint64_t           size, length, mask;
+    njs_ret_t          ret;
     nxt_uint_t         i;
     njs_string_prop_t  string;
 
@@ -885,9 +886,10 @@ njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     for (i = 0; i < nargs; i++) {
         if (!njs_is_string(&args[i])) {
-            njs_vm_trap_value(vm, &args[i]);
-
-            return njs_trap(vm, NJS_TRAP_STRING_ARG);
+            ret = njs_value_to_string(vm, &args[i], &args[i]);
+            if (ret != NXT_OK) {
+                return ret;
+            }
         }
     }
 
@@ -1244,16 +1246,12 @@ njs_string_prototype_char_at(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     slice.string_length = njs_string_prop(&string, &args[0]);
 
-    start = 0;
+    start = njs_primitive_value_to_integer(njs_arg(args, nargs, 1));
     length = 1;
 
-    if (nargs > 1) {
-        start = njs_number(&args[1]);
-
-        if (start < 0 || start >= (ssize_t) slice.string_length) {
-            start = 0;
-            length = 0;
-        }
+    if (start < 0 || start >= (ssize_t) slice.string_length) {
+        start = 0;
+        length = 0;
     }
 
     slice.start = start;
@@ -1409,15 +1407,11 @@ njs_string_prototype_char_code_at(njs_vm_t *vm, njs_value_t *args,
 
     length = njs_string_prop(&string, &args[0]);
 
-    index = 0;
+    index = njs_primitive_value_to_integer(njs_arg(args, nargs, 1));
 
-    if (nargs > 1) {
-        index = njs_number(&args[1]);
-
-        if (nxt_slow_path(index < 0 || index >= length)) {
-            num = NAN;
-            goto done;
-        }
+    if (nxt_slow_path(index < 0 || index >= length)) {
+        num = NAN;
+        goto done;
     }
 
     if ((uint32_t) length == string.size) {
@@ -1477,6 +1471,7 @@ njs_string_bytes_from_array(njs_vm_t *vm, const njs_value_t *value)
 {
     u_char       *p;
     uint32_t     i, length;
+    njs_ret_t    ret;
     njs_array_t  *array;
     njs_value_t  *octet;
 
@@ -1485,9 +1480,10 @@ njs_string_bytes_from_array(njs_vm_t *vm, const njs_value_t *value)
 
     for (i = 0; i < length; i++) {
         if (!njs_is_numeric(&array->start[i])) {
-            njs_vm_trap_value(vm, &array->start[i]);
-
-            return njs_trap(vm, NJS_TRAP_NUMBER_ARG);
+            ret = njs_value_to_numeric(vm, &array->start[i], &array->start[i]);
+            if (ret != NXT_OK) {
+                return ret;
+            }
         }
     }
 
@@ -1713,13 +1709,15 @@ njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args,
     double      num;
     size_t      size;
     int32_t     code;
+    njs_ret_t   ret;
     nxt_uint_t  i;
 
     for (i = 1; i < nargs; i++) {
         if (!njs_is_numeric(&args[i])) {
-            njs_vm_trap_value(vm, &args[i]);
-
-            return njs_trap(vm, NJS_TRAP_NUMBER_ARG);
+            ret = njs_value_to_numeric(vm, &args[i], &args[i]);
+            if (ret != NXT_OK) {
+                return ret;
+            }
         }
     }
 
@@ -2426,20 +2424,16 @@ njs_string_prototype_repeat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     uint32_t           size, length;
     njs_string_prop_t  string;
 
-    n = 0;
+    n = njs_primitive_value_to_integer(njs_arg(args, nargs, 1));
 
     (void) njs_string_prop(&string, &args[0]);
 
-    if (nargs > 1) {
-        max = (string.size > 1) ? NJS_STRING_MAX_LENGTH / string.size
-                                : NJS_STRING_MAX_LENGTH;
+    max = (string.size > 1) ? NJS_STRING_MAX_LENGTH / string.size
+                            : NJS_STRING_MAX_LENGTH;
 
-        n = njs_number(&args[1]);
-
-        if (nxt_slow_path(n < 0 || n >= max)) {
-            njs_range_error(vm, NULL);
-            return NXT_ERROR;
-        }
+    if (nxt_slow_path(n < 0 || n >= max)) {
+        njs_range_error(vm, NULL);
+        return NXT_ERROR;
     }
 
     if (string.size == 0) {
@@ -3427,8 +3421,10 @@ njs_string_replace_search_continuation(njs_vm_t *vm, njs_value_t *args,
     r = njs_vm_continuation(vm);
 
     if (!njs_is_primitive(&r->retval)) {
-        njs_vm_trap_value(vm, &r->retval);
-        return njs_trap(vm, NJS_TRAP_STRING_ARG);
+        ret = njs_value_to_string(vm, &r->retval, &r->retval);
+        if (ret != NXT_OK) {
+            return ret;
+        }
     }
 
     ret = njs_primitive_value_to_string(vm, &string, &r->retval);

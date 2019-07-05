@@ -19,32 +19,13 @@
  *    -3:                        not used;
  *    -4 (NJS_STOP/NXT_DONE):    njs_vmcode_stop() has stopped execution,
  *                               execution has completed successfully;
- *    -5 (NJS_TRAP)              trap to convert objects to primitive values;
- *    -6 .. -11:                 not used.
+ *    -5 .. -11:                 not used.
  */
 
 #define NJS_STOP                 NXT_DONE
-#define NJS_TRAP                 (-5)
 
 /* The last return value which preempts execution. */
 #define NJS_PREEMPT              (-11)
-
-/*  Traps events. */
-typedef enum {
-    NJS_TRAP_NUMBER = 0,
-    NJS_TRAP_NUMBERS,
-    NJS_TRAP_ADDITION,
-    NJS_TRAP_COMPARISON,
-    NJS_TRAP_INCDEC,
-    NJS_TRAP_PROPERTY,
-    NJS_TRAP_NUMBER_ARG,
-    NJS_TRAP_STRING_ARG,
-    NJS_TRAP_PRIMITIVE_ARG,
-} njs_trap_t;
-
-
-#define njs_trap(vm, code)                                                    \
-    vm->trap = code, NJS_TRAP;
 
 
 /*
@@ -532,12 +513,6 @@ enum njs_function_e {
 
 
 typedef struct {
-    const njs_vmcode_1addr_t  *code;
-    nxt_bool_t                reference;
-} njs_vm_trap_t;
-
-
-typedef struct {
     uint32_t                  line;
     nxt_str_t                 file;
     nxt_str_t                 name;
@@ -548,6 +523,8 @@ typedef struct {
 struct njs_vm_s {
     /* njs_vm_t must be aligned to njs_value_t due to scratch value. */
     njs_value_t              retval;
+
+    nxt_uint_t               count;
 
     nxt_array_t              *paths;
 
@@ -613,8 +590,6 @@ struct njs_vm_s {
     nxt_array_t              *debug;
     nxt_array_t              *backtrace;
 
-    njs_trap_t               trap:8;
-
     /*
      * njs_property_query() uses it to store reference to a temporary
      * PROPERTY_HANDLERs for NJS_EXTERNAL values in NJS_PROPERTY_QUERY_SET
@@ -659,6 +634,7 @@ struct njs_vm_shared_s {
 
 
 nxt_int_t njs_vmcode_interpreter(njs_vm_t *vm);
+nxt_int_t njs_vmcode_run(njs_vm_t *vm);
 
 njs_ret_t njs_vmcode_object(njs_vm_t *vm, njs_value_t *inlvd1,
     njs_value_t *inlvd2);
