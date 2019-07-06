@@ -30,6 +30,7 @@ NXT_TEST_SRCS=" \
 
 NJS_LIB_SRCS=" \
    njs/njs.c \
+   njs/njs_value.c \
    njs/njs_vm.c \
    njs/njs_boolean.c \
    njs/njs_number.c \
