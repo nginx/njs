@@ -97,7 +97,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
     case NJS_OBJECT_TYPE_ERROR:
     case NJS_OBJECT_URI_ERROR:
     case NJS_OBJECT_VALUE:
-        obj = object->data.u.object;
+        obj = njs_object(object);
         break;
 
     case NJS_FUNCTION:
@@ -678,7 +678,7 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *object,
         return ret;
     }
 
-    if (nxt_slow_path(!object->data.u.object->extensible)) {
+    if (nxt_slow_path(!njs_object(object)->extensible)) {
         njs_type_error(vm, "Cannot add property \"%V\", "
                        "object is not extensible", &pq.lhq.key);
         return NXT_ERROR;
@@ -799,7 +799,7 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
         return ret;
     }
 
-    prop = njs_descriptor_prop(vm, name, value->data.u.object);
+    prop = njs_descriptor_prop(vm, name, njs_object(value));
     if (nxt_slow_path(prop == NULL)) {
         return NXT_ERROR;
     }

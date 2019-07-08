@@ -910,7 +910,7 @@ njs_function_instance_length(njs_vm_t *vm, njs_value_t *value,
     njs_function_t         *function;
     njs_function_lambda_t  *lambda;
 
-    proto = value->data.u.object;
+    proto = njs_object(value);
 
     do {
         if (nxt_fast_path(proto->type == NJS_FUNCTION)) {

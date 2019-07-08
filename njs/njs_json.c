@@ -1487,7 +1487,7 @@ njs_object_to_json_function(njs_vm_t *vm, njs_value_t *value)
     lhq.key_hash = NJS_TO_JSON_HASH;
     lhq.key = nxt_string_value("toJSON");
 
-    prop = njs_object_property(vm, value->data.u.object, &lhq);
+    prop = njs_object_property(vm, njs_object(value), &lhq);
 
     if (prop != NULL && njs_is_function(&prop->value)) {
         return prop->value.data.u.function;
@@ -1622,7 +1622,7 @@ njs_json_stringify_array(njs_vm_t *vm, njs_json_stringify_t  *stringify)
 
         switch (value->type) {
         case NJS_OBJECT_NUMBER:
-            value = &value->data.u.object_value->value;
+            value = njs_object_value(value);
             /* Fall through. */
 
         case NJS_NUMBER:
@@ -1635,7 +1635,7 @@ njs_json_stringify_array(njs_vm_t *vm, njs_json_stringify_t  *stringify)
             break;
 
         case NJS_OBJECT_STRING:
-            value = &value->data.u.object_value->value;
+            value = njs_object_value(value);
             break;
 
         case NJS_STRING:
@@ -1736,21 +1736,21 @@ njs_json_append_value(njs_json_stringify_t *stringify, const njs_value_t *value)
 {
     switch (value->type) {
     case NJS_OBJECT_STRING:
-        value = &value->data.u.object_value->value;
+        value = njs_object_value(value);
         /* Fall through. */
 
     case NJS_STRING:
         return njs_json_append_string(stringify, value, '\"');
 
     case NJS_OBJECT_NUMBER:
-        value = &value->data.u.object_value->value;
+        value = njs_object_value(value);
         /* Fall through. */
 
     case NJS_NUMBER:
         return njs_json_append_number(stringify, value);
 
     case NJS_OBJECT_BOOLEAN:
-        value = &value->data.u.object_value->value;
+        value = njs_object_value(value);
         /* Fall through. */
 
     case NJS_BOOLEAN:
@@ -1924,7 +1924,7 @@ njs_json_wrap_value(njs_vm_t *vm, const njs_value_t *value)
     }
 
     wrapper->data.u.object = njs_object_alloc(vm);
-    if (nxt_slow_path(wrapper->data.u.object == NULL)) {
+    if (nxt_slow_path(njs_object(wrapper) == NULL)) {
         return NULL;
     }
 
@@ -2134,7 +2134,7 @@ njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value,
 
     switch (value->type) {
     case NJS_OBJECT_STRING:
-        value = &value->data.u.object_value->value;
+        value = njs_object_value(value);
 
         njs_string_get(value, &str);
 
@@ -2155,7 +2155,7 @@ njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value,
         break;
 
     case NJS_OBJECT_NUMBER:
-        value = &value->data.u.object_value->value;
+        value = njs_object_value(value);
 
         if (nxt_slow_path(njs_number(value) == 0.0
                           && signbit(njs_number(value))))
@@ -2178,7 +2178,7 @@ njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value,
         break;
 
     case NJS_OBJECT_BOOLEAN:
-        value = &value->data.u.object_value->value;
+        value = njs_object_value(value);
 
         if (njs_is_true(value)) {
             njs_dump("[Boolean: true]");
@@ -2457,7 +2457,7 @@ njs_vm_value_dump(njs_vm_t *vm, nxt_str_t *retval, const njs_value_t *value,
                 val = &ext_val;
 
             } else {
-                object = state->value.data.u.object;
+                object = njs_object(&state->value);
                 lhq.proto = &njs_object_hash_proto;
 
                 ret = nxt_lvlhsh_find(&object->hash, &lhq);

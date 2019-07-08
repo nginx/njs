@@ -979,9 +979,7 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
         }
     }
 
-    retval->data.u.object = error;
-    retval->type = NJS_OBJECT_ERROR;
-    retval->data.truth = 1;
+    njs_set_type_object(retval, error, NJS_OBJECT_ERROR);
 
     return NJS_OK;
 }
@@ -1007,14 +1005,14 @@ njs_fs_mode(njs_value_t *value)
 {
     switch (value->type) {
     case NJS_OBJECT_NUMBER:
-        value = &value->data.u.object_value->value;
+        value = njs_object_value(value);
         /* Fall through. */
 
     case NJS_NUMBER:
         return (mode_t) njs_number(value);
 
     case NJS_OBJECT_STRING:
-    value = &value->data.u.object_value->value;
+    value = njs_object_value(value);
         /* Fall through. */
 
     case NJS_STRING:

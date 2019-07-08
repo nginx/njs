@@ -29,9 +29,7 @@ njs_error_new(njs_vm_t *vm, njs_value_t *dst, njs_value_type_t type,
     error = njs_error_alloc(vm, type, NULL, &string);
 
     if (nxt_fast_path(error != NULL)) {
-        dst->data.u.object = error;
-        dst->type = type;
-        dst->data.truth = 1;
+        njs_set_type_object(dst, error, type);
     }
 }
 
@@ -148,9 +146,7 @@ njs_error_create(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    vm->retval.data.u.object = error;
-    vm->retval.type = type;
-    vm->retval.data.truth = 1;
+    njs_set_type_object(&vm->retval, error, type);
 
     return NXT_OK;
 }
@@ -513,9 +509,7 @@ njs_memory_error_set(njs_vm_t *vm, njs_value_t *value)
      */
     object->extensible = 0;
 
-    value->data.type = NJS_OBJECT_INTERNAL_ERROR;
-    value->data.truth = 1;
-    value->data.u.object = object;
+    njs_set_type_object(value, object, NJS_OBJECT_INTERNAL_ERROR);
 }
 
 
@@ -634,7 +628,7 @@ njs_error_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *error)
     lhq.key = nxt_string_value("name");
     lhq.proto = &njs_object_hash_proto;
 
-    prop = njs_object_property(vm, error->data.u.object, &lhq);
+    prop = njs_object_property(vm, njs_object(error), &lhq);
 
     if (prop != NULL) {
         name_value = &prop->value;
@@ -648,7 +642,7 @@ njs_error_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *error)
     lhq.key_hash = NJS_MESSAGE_HASH;
     lhq.key = nxt_string_value("message");
 
-    prop = njs_object_property(vm, error->data.u.object, &lhq);
+    prop = njs_object_property(vm, njs_object(error), &lhq);
 
     if (prop != NULL) {
         message_value = &prop->value;
@@ -773,7 +767,7 @@ njs_internal_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     if (nargs >= 1 && njs_is_object(&args[0])) {
 
         /* MemoryError is a nonextensible internal error. */
-        if (!args[0].data.u.object->extensible) {
+        if (!njs_object(&args[0])->extensible) {
             static const njs_value_t name = njs_string("MemoryError");
 
             vm->retval = name;

@@ -443,7 +443,7 @@ njs_array_length(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
     njs_array_t  *array;
     njs_object_t *proto;
 
-    proto = value->data.u.object;
+    proto = njs_object(value);
 
     if (setval == NULL) {
         do {
@@ -633,7 +633,7 @@ njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
         } else if (njs_is_string(this) || this->type == NJS_OBJECT_STRING) {
 
             if (this->type == NJS_OBJECT_STRING) {
-                this = &this->data.u.object_value->value;
+                this = njs_object_value(this);
             }
 
             string_slice.start = start;
@@ -967,7 +967,7 @@ njs_array_prototype_to_string(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         lhq.key_hash = NJS_JOIN_HASH;
         lhq.key = nxt_string_value("join");
 
-        prop = njs_object_property(vm, args[0].data.u.object, &lhq);
+        prop = njs_object_property(vm, njs_object(&args[0]), &lhq);
 
         if (nxt_fast_path(prop != NULL && njs_is_function(&prop->value))) {
             return njs_function_replace(vm, prop->value.data.u.function,
@@ -1470,9 +1470,7 @@ njs_array_prototype_fill_continuation(njs_vm_t *vm, njs_value_t *args,
             return NXT_ERROR;
         }
 
-        vm->retval.data.u.object = object;
-        vm->retval.type = object->type;
-        vm->retval.data.truth = 1;
+        njs_set_type_object(&vm->retval, object, object->type);
 
         return NXT_OK;
     }

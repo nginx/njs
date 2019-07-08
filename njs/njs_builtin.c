@@ -854,7 +854,7 @@ njs_vm_expression_completions(njs_vm_t *vm, nxt_str_t *expression)
         value = &prop->value;
     }
 
-    return njs_object_completions(vm, value->data.u.object);
+    return njs_object_completions(vm, njs_object(value));
 }
 
 

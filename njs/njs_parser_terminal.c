@@ -447,7 +447,7 @@ njs_parser_builtin(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node,
     switch (type) {
     case NJS_OBJECT:
         index = node->token - NJS_TOKEN_FIRST_OBJECT;
-        var->value.data.u.object = &vm->shared->objects[index];
+        njs_set_object(&var->value, &vm->shared->objects[index]);
         break;
 
     case NJS_FUNCTION:

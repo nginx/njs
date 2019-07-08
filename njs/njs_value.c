@@ -158,7 +158,7 @@ njs_values_strict_equal(const njs_value_t *val1, const njs_value_t *val2)
         return (memcmp(start1, start2, size) == 0);
     }
 
-    return (val1->data.u.object == val2->data.u.object);
+    return (njs_object(val1) == njs_object(val2));
 }
 
 
@@ -201,7 +201,7 @@ njs_value_to_primitive(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
                     lhq.key_hash = hashes[hint];
                     lhq.key = names[hint];
 
-                    prop = njs_object_property(vm, value->data.u.object, &lhq);
+                    prop = njs_object_property(vm, njs_object(value), &lhq);
 
                     if (nxt_fast_path(prop != NULL)) {
 
@@ -267,7 +267,7 @@ njs_value_enumerate(njs_vm_t *vm, const njs_value_t *value,
     njs_object_value_t  obj_val;
 
     if (njs_is_object(value)) {
-        return njs_object_enumerate(vm, value->data.u.object, kind, all);
+        return njs_object_enumerate(vm, njs_object(value), kind, all);
     }
 
     if (value->type != NJS_STRING) {
@@ -288,7 +288,7 @@ njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
     njs_object_value_t  obj_val;
 
     if (njs_is_object(value)) {
-        return njs_object_own_enumerate(vm, value->data.u.object, kind, all);
+        return njs_object_own_enumerate(vm, njs_object(value), kind, all);
     }
 
     if (value->type != NJS_STRING) {

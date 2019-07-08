@@ -258,9 +258,7 @@ njs_number_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             return NXT_ERROR;
         }
 
-        vm->retval.data.u.object = object;
-        vm->retval.type = NJS_OBJECT_NUMBER;
-        vm->retval.data.truth = 1;
+        njs_set_type_object(&vm->retval, object, NJS_OBJECT_NUMBER);
 
     } else {
         njs_set_number(&vm->retval, njs_number(value));
@@ -490,7 +488,7 @@ njs_number_prototype_value_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (value->type != NJS_NUMBER) {
 
         if (value->type == NJS_OBJECT_NUMBER) {
-            value = &value->data.u.object_value->value;
+            value = njs_object_value(value);
 
         } else {
             njs_type_error(vm, "unexpected value type:%s",
@@ -517,7 +515,7 @@ njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     if (value->type != NJS_NUMBER) {
 
         if (value->type == NJS_OBJECT_NUMBER) {
-            value = &value->data.u.object_value->value;
+            value = njs_object_value(value);
 
         } else {
             njs_type_error(vm, "unexpected value type:%s",

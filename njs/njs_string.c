@@ -562,9 +562,7 @@ njs_string_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             return NXT_ERROR;
         }
 
-        vm->retval.data.u.object = object;
-        vm->retval.type = NJS_OBJECT_STRING;
-        vm->retval.data.truth = 1;
+        njs_set_type_object(&vm->retval, object, NJS_OBJECT_STRING);
 
     } else {
         vm->retval = *value;
@@ -652,7 +650,7 @@ njs_string_instance_length(njs_vm_t *vm, njs_value_t *value,
     length = 0;
 
     if (nxt_slow_path(njs_is_object(value))) {
-        proto = value->data.u.object;
+        proto = njs_object(value);
 
         do {
             if (nxt_fast_path(proto->type == NJS_OBJECT_STRING)) {
@@ -769,7 +767,7 @@ njs_string_prototype_value_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (value->type != NJS_STRING) {
 
         if (value->type == NJS_OBJECT_STRING) {
-            value = &value->data.u.object_value->value;
+            value = njs_object_value(value);
 
         } else {
             njs_type_error(vm, "unexpected value type:%s",

@@ -523,7 +523,7 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *object,
         lhq.proto = &njs_object_hash_proto;
         lhq.pool = vm->mem_pool;
 
-        obj = object->data.u.object;
+        obj = njs_object(object);
 
         ret = nxt_lvlhsh_find(&obj->__proto__->shared_hash, &lhq);
         if (ret == NXT_OK) {
@@ -865,8 +865,8 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
                 return NXT_ERROR;
             }
 
-            prototype = value.data.u.object;
-            proto = object->data.u.object;
+            prototype = njs_object(&value);
+            proto = njs_object(object);
 
             do {
                 proto = proto->__proto__;
@@ -1494,7 +1494,7 @@ njs_values_equal(njs_vm_t *vm, const njs_value_t *val1, const njs_value_t *val2)
             return njs_string_eq(val1, val2);
         }
 
-        return (val1->data.u.object == val2->data.u.object);
+        return (njs_object(val1) == njs_object(val2));
     }
 
     /* Sort values as: numeric < string < objects. */
@@ -1805,7 +1805,7 @@ njs_function_new_object(njs_vm_t *vm, njs_value_t *value)
         }
 
         if (nxt_fast_path(proto != NULL)) {
-            object->__proto__ = proto->data.u.object;
+            object->__proto__ = njs_object(proto);
             return object;
         }
    }
@@ -2685,7 +2685,7 @@ njs_vm_value_to_string(njs_vm_t *vm, nxt_str_t *dst, const njs_value_t *src)
 
     if (nxt_slow_path(src->type == NJS_OBJECT_INTERNAL_ERROR)) {
         /* MemoryError is a nonextensible internal error. */
-        if (!src->data.u.object->extensible) {
+        if (!njs_object(src)->extensible) {
             njs_string_get(&njs_string_memory_error, dst);
             return NXT_OK;
         }
