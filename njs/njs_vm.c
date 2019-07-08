@@ -354,9 +354,7 @@ njs_vmcode_regexp(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
     regexp = njs_regexp_alloc(vm, code->pattern);
 
     if (nxt_fast_path(regexp != NULL)) {
-        vm->retval.data.u.regexp = regexp;
-        vm->retval.type = NJS_REGEXP;
-        vm->retval.data.truth = 1;
+        njs_set_regexp(&vm->retval, regexp);
 
         return sizeof(njs_vmcode_regexp_t);
     }

@@ -544,6 +544,14 @@ typedef enum {
     ((value)->data.u.date)
 
 
+#define njs_regexp(value)                                                     \
+    ((value)->data.u.regexp)
+
+
+#define njs_regexp_pattern(value)                                             \
+    ((value)->data.u.regexp->pattern)
+
+
 #define njs_object_value(_value)                                              \
     (&(_value)->data.u.object_value->value)
 
@@ -624,6 +632,15 @@ njs_set_date(njs_value_t *value, njs_date_t *date)
 {
     value->data.u.date = date;
     value->type = NJS_DATE;
+    value->data.truth = 1;
+}
+
+
+nxt_inline void
+njs_set_regexp(njs_value_t *value, njs_regexp_t *regexp)
+{
+    value->data.u.regexp = regexp;
+    value->type = NJS_REGEXP;
     value->data.truth = 1;
 }
 

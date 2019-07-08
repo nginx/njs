@@ -2567,7 +2567,7 @@ njs_string_prototype_search(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         switch (args[1].type) {
 
         case NJS_REGEXP:
-            pattern = args[1].data.u.regexp->pattern;
+            pattern = njs_regexp_pattern(&args[1]);
             break;
 
         case NJS_STRING:
@@ -2638,7 +2638,7 @@ njs_string_prototype_match(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (nargs > 1) {
 
         if (njs_is_regexp(&args[1])) {
-            pattern = args[1].data.u.regexp->pattern;
+            pattern = njs_regexp_pattern(&args[1]);
 
             if (pattern->global) {
                 return njs_string_match_multiple(vm, args, pattern);
@@ -2867,7 +2867,7 @@ found:
             goto done;
 
         case NJS_REGEXP:
-            pattern = args[1].data.u.regexp->pattern;
+            pattern = njs_regexp_pattern(&args[1]);
 
             if (!nxt_regex_is_valid(&pattern->regex[type])) {
                 goto single;
@@ -2986,7 +2986,7 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     if (njs_is_regexp(&args[1])) {
-        regex = &args[1].data.u.regexp->pattern->regex[r->type];
+        regex = &njs_regexp_pattern(&args[1])->regex[r->type];
 
         if (!nxt_regex_is_valid(regex)) {
             goto original;
@@ -3076,7 +3076,7 @@ njs_string_replace_regexp(njs_vm_t *vm, njs_value_t *args,
     njs_regexp_pattern_t       *pattern;
     njs_string_replace_part_t  replace;
 
-    pattern = args[1].data.u.regexp->pattern;
+    pattern = njs_regexp_pattern(&args[1]);
     end = r->part[0].start + r->part[0].size;
 
     replace = r->part[1];
@@ -3266,7 +3266,7 @@ njs_string_replace_regexp_continuation(njs_vm_t *vm, njs_value_t *args,
     if (njs_is_string(&r->retval)) {
         njs_string_replacement_copy(&r->part[r->empty ? 0 : 1], &r->retval);
 
-        if (args[1].data.u.regexp->pattern->global) {
+        if (njs_regexp_pattern(&args[1])->global) {
             r->part += 2;
 
             if (r->part[0].start > (string.start + string.size)) {
