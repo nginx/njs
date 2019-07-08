@@ -536,6 +536,10 @@ typedef enum {
     ((value)->data.u.array->start)
 
 
+#define njs_date(value)                                                       \
+    ((value)->data.u.date)
+
+
 #define njs_set_undefined(value)                                              \
     *(value) = njs_value_undefined
 
@@ -584,6 +588,15 @@ njs_set_array(njs_value_t *value, njs_array_t *array)
 {
     value->data.u.array = array;
     value->type = NJS_ARRAY;
+    value->data.truth = 1;
+}
+
+
+nxt_inline void
+njs_set_date(njs_value_t *value, njs_date_t *date)
+{
+    value->data.u.date = date;
+    value->type = NJS_DATE;
     value->data.truth = 1;
 }
 
