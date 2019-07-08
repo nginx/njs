@@ -919,9 +919,7 @@ static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
         lhq.key_hash = NJS_ERRNO_HASH;
         lhq.proto = &njs_object_hash_proto;
 
-        value.data.type = NJS_NUMBER;
-        value.data.truth = 1;
-        value.data.u.number = errn;
+        njs_set_number(&value, errn);
 
         prop = njs_object_prop_alloc(vm, &njs_fs_errno_string, &value, 1);
         if (nxt_slow_path(prop == NULL)) {
@@ -1013,7 +1011,7 @@ njs_fs_mode(njs_value_t *value)
         /* Fall through. */
 
     case NJS_NUMBER:
-        return (mode_t) value->data.u.number;
+        return (mode_t) njs_number(value);
 
     case NJS_OBJECT_STRING:
     value = &value->data.u.object_value->value;

@@ -515,7 +515,6 @@ njs_memory_error_set(njs_vm_t *vm, njs_value_t *value)
 
     value->data.type = NJS_OBJECT_INTERNAL_ERROR;
     value->data.truth = 1;
-    value->data.u.number = NAN;
     value->data.u.object = object;
 }
 

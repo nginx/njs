@@ -133,7 +133,7 @@ nxt_inline double
 njs_primitive_value_to_number(const njs_value_t *value)
 {
     if (nxt_fast_path(njs_is_numeric(value))) {
-        return value->data.u.number;
+        return njs_number(value);
     }
 
     return njs_string_to_number(value, 1);

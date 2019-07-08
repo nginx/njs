@@ -580,9 +580,8 @@ njs_parser_unary_expression(njs_vm_t *vm, njs_parser_t *parser,
     if (token == NJS_TOKEN_UNARY_NEGATION && node->token == NJS_TOKEN_NUMBER) {
 
         /* Optimization of common negative number. */
-        num = -node->u.value.data.u.number;
-        node->u.value.data.u.number = num;
-        node->u.value.data.truth = njs_is_number_true(num);
+        num = -njs_number(&node->u.value);
+        njs_set_number(&node->u.value, num);
 
         return next;
     }

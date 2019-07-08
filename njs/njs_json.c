@@ -305,7 +305,7 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             stringify->space.length = nxt_min(stringify->space.length, 10);
 
         } else {
-            num = space->data.u.number;
+            num = njs_number(space);
             if (!isnan(num) && !isinf(num) && num > 0) {
                 num = nxt_min(num, 10);
 
@@ -872,10 +872,7 @@ njs_json_parse_number(njs_json_parse_ctx_t *ctx, njs_value_t *value,
     start = p;
     num = njs_number_dec_parse(&p, ctx->end);
     if (p != start) {
-        value->data.u.number = sign * num;
-        value->type = NJS_NUMBER;
-        value->data.truth = njs_is_number_true(num);
-
+        njs_set_number(value, sign * num);
         return p;
     }
 
@@ -1890,7 +1887,7 @@ njs_json_append_number(njs_json_stringify_t *stringify,
     size_t  size;
     double  num;
 
-    num = value->data.u.number;
+    num = njs_number(value);
 
     if (isnan(num) || isinf(num)) {
         return njs_json_buf_append(stringify, "null", 4);
@@ -2160,8 +2157,8 @@ njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value,
     case NJS_OBJECT_NUMBER:
         value = &value->data.u.object_value->value;
 
-        if (nxt_slow_path(value->data.u.number == 0.0
-                          && signbit(value->data.u.number)))
+        if (nxt_slow_path(njs_number(value) == 0.0
+                          && signbit(njs_number(value))))
         {
 
             njs_dump("[Number: -0]");
@@ -2275,8 +2272,8 @@ njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value,
         return njs_json_buf_append(stringify, "]}", 2);
 
     case NJS_NUMBER:
-        if (nxt_slow_path(value->data.u.number == 0.0
-                          && signbit(value->data.u.number)))
+        if (nxt_slow_path(njs_number(value) == 0.0
+                          && signbit(njs_number(value))))
         {
 
             njs_dump("-0");

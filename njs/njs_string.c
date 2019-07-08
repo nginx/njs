@@ -1121,7 +1121,7 @@ njs_string_prototype_substring(njs_vm_t *vm, njs_value_t *args,
     start = 0;
 
     if (nargs > 1) {
-        start = args[1].data.u.number;
+        start = njs_number(&args[1]);
 
         if (start < 0) {
             start = 0;
@@ -1133,7 +1133,7 @@ njs_string_prototype_substring(njs_vm_t *vm, njs_value_t *args,
         end = length;
 
         if (nargs > 2) {
-            end = args[2].data.u.number;
+            end = njs_number(&args[2]);
 
             if (end < 0) {
                 end = 0;
@@ -1177,7 +1177,7 @@ njs_string_prototype_substr(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     start = 0;
 
     if (nargs > 1) {
-        start = args[1].data.u.number;
+        start = njs_number(&args[1]);
 
         if (start < length) {
             if (start < 0) {
@@ -1191,7 +1191,7 @@ njs_string_prototype_substr(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             length -= start;
 
             if (nargs > 2) {
-                n = args[2].data.u.number;
+                n = njs_number(&args[2]);
 
                 if (n < 0) {
                     length = 0;
@@ -1228,7 +1228,7 @@ njs_string_prototype_char_at(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     length = 1;
 
     if (nargs > 1) {
-        start = args[1].data.u.number;
+        start = njs_number(&args[1]);
 
         if (start < 0 || start >= (ssize_t) slice.string_length) {
             start = 0;
@@ -1263,7 +1263,7 @@ njs_string_slice_args(njs_slice_prop_t *slice, njs_value_t *args,
     length = slice->string_length;
 
     value = njs_arg(args, nargs, 1);
-    start = value->data.u.number;
+    start = njs_number(value);
 
     if (start < 0) {
         start += length;
@@ -1280,7 +1280,7 @@ njs_string_slice_args(njs_slice_prop_t *slice, njs_value_t *args,
     } else {
         if (!njs_is_undefined(njs_arg(args, nargs, 2))) {
             value = njs_arg(args, nargs, 2);
-            end = value->data.u.number;
+            end = njs_number(value);
 
         } else {
             end = length;
@@ -1385,7 +1385,7 @@ njs_string_prototype_char_code_at(njs_vm_t *vm, njs_value_t *args,
     index = 0;
 
     if (nargs > 1) {
-        index = args[1].data.u.number;
+        index = njs_number(&args[1]);
 
         if (nxt_slow_path(index < 0 || index >= length)) {
             num = NAN;
@@ -1472,7 +1472,7 @@ njs_string_bytes_from_array(njs_vm_t *vm, const njs_value_t *value)
     octet = array->start;
 
     while (length != 0) {
-        *p++ = (u_char) njs_number_to_uint32(octet->data.u.number);
+        *p++ = (u_char) njs_number_to_uint32(njs_number(octet));
         octet++;
         length--;
     }
@@ -1699,7 +1699,7 @@ njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args,
     size = 0;
 
     for (i = 1; i < nargs; i++) {
-        num = args[i].data.u.number;
+        num = njs_number(&args[i]);
         if (isnan(num)) {
             goto range_error;
         }
@@ -1719,7 +1719,7 @@ njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args,
     }
 
     for (i = 1; i < nargs; i++) {
-        p = nxt_utf8_encode(p, args[i].data.u.number);
+        p = nxt_utf8_encode(p, njs_number(&args[i]));
     }
 
     return NXT_OK;
@@ -1747,7 +1747,7 @@ njs_string_prototype_index_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         index = 0;
 
         if (nargs > 2) {
-            index = args[2].data.u.number;
+            index = njs_number(&args[2]);
 
             if (index < 0) {
                 index = 0;
@@ -1828,7 +1828,7 @@ njs_string_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
         goto done;
     }
 
-    pos = njs_arg(args, nargs, 2)->data.u.number;
+    pos = njs_number(njs_arg(args, nargs, 2));
 
     if (isnan(pos)) {
         index = NJS_STRING_MAX_LENGTH;
@@ -1929,7 +1929,7 @@ njs_string_prototype_includes(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         index = 0;
 
         if (nargs > 2) {
-            index = args[2].data.u.number;
+            index = njs_number(&args[2]);
 
             if (index < 0) {
                 index = 0;
@@ -2006,7 +2006,7 @@ njs_string_starts_or_ends_with(njs_vm_t *vm, njs_value_t *args,
 
         length = njs_string_prop(&string, &args[0]);
 
-        index = (nargs > 2) ? args[2].data.u.number : -1;
+        index = (nargs > 2) ? njs_number(&args[2]) : -1;
 
         if (starts) {
             if (index < 0) {
@@ -2407,7 +2407,7 @@ njs_string_prototype_repeat(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         max = (string.size > 1) ? NJS_STRING_MAX_LENGTH / string.size
                                 : NJS_STRING_MAX_LENGTH;
 
-        n = args[1].data.u.number;
+        n = njs_number(&args[1]);
 
         if (nxt_slow_path(n < 0 || n >= max)) {
             njs_range_error(vm, NULL);
@@ -2471,7 +2471,7 @@ njs_string_prototype_pad(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     static const njs_value_t  string_space = njs_string(" ");
 
     length = njs_string_prop(&string, &args[0]);
-    new_length = nargs > 1 ? args[1].data.u.number : 0;
+    new_length = nargs > 1 ? njs_number(&args[1]) : 0;
 
     if (new_length <= length) {
         vm->retval = args[0];
@@ -2793,7 +2793,7 @@ njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     if (nargs > 1) {
 
         if (nargs > 2) {
-            limit = args[2].data.u.number;
+            limit = njs_number(&args[2]);
 
             if (limit == 0) {
                 goto done;

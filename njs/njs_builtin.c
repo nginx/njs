@@ -1305,9 +1305,7 @@ static njs_ret_t
 njs_process_object_pid(njs_vm_t *vm, njs_value_t *unused,
     njs_value_t *unused2, njs_value_t *retval)
 {
-    retval->data.u.number = getpid();
-    retval->type = NJS_NUMBER;
-    retval->data.truth = njs_is_number_true(retval->data.u.number);
+    njs_set_number(retval, getpid());
 
     return NJS_OK;
 }
@@ -1317,9 +1315,7 @@ static njs_ret_t
 njs_process_object_ppid(njs_vm_t *vm, njs_value_t *unused,
     njs_value_t *unused2, njs_value_t *retval)
 {
-    retval->data.u.number = getppid();
-    retval->type = NJS_NUMBER;
-    retval->data.truth = njs_is_number_true(retval->data.u.number);
+    njs_set_number(retval, getppid());
 
     return NJS_OK;
 }

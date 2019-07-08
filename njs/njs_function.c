@@ -677,14 +677,14 @@ njs_normalize_args(njs_vm_t *vm, njs_value_t *args, uint8_t *args_types,
 
                 /* Numbers are truncated to fit in 32-bit integers. */
 
-                if (isnan(args->data.u.number)) {
-                    args->data.u.number = 0;
+                if (isnan(njs_number(args))) {
+                    njs_number(args) = 0;
 
-                } else if (args->data.u.number > 2147483647.0) {
-                    args->data.u.number = 2147483647.0;
+                } else if (njs_number(args) > 2147483647.0) {
+                    njs_number(args) = 2147483647.0;
 
-                } else if (args->data.u.number < -2147483648.0) {
-                    args->data.u.number = -2147483648.0;
+                } else if (njs_number(args) < -2147483648.0) {
+                    njs_number(args) = -2147483648.0;
                 }
 
                 break;

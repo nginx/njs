@@ -15,7 +15,7 @@ njs_object_math_abs(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = fabs(args[1].data.u.number);
+        num = fabs(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -34,7 +34,7 @@ njs_object_math_acos(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = args[1].data.u.number;
+        num = njs_number(&args[1]);
 
 #if (NXT_SOLARIS)
         /* On Solaris acos(x) returns 0 for x > 1. */
@@ -62,7 +62,7 @@ njs_object_math_acosh(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = acosh(args[1].data.u.number);
+        num = acosh(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -81,7 +81,7 @@ njs_object_math_asin(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = args[1].data.u.number;
+        num = njs_number(&args[1]);
 
 #if (NXT_SOLARIS)
         /* On Solaris asin(x) returns 0 for x > 1. */
@@ -109,7 +109,7 @@ njs_object_math_asinh(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = asinh(args[1].data.u.number);
+        num = asinh(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -128,7 +128,7 @@ njs_object_math_atan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = atan(args[1].data.u.number);
+        num = atan(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -147,8 +147,8 @@ njs_object_math_atan2(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num, y, x;
 
     if (nargs > 2) {
-        y = args[1].data.u.number;
-        x = args[2].data.u.number;
+        y = njs_number(&args[1]);
+        x = njs_number(&args[2]);
 
         num = atan2(y, x);
 
@@ -169,7 +169,7 @@ njs_object_math_atanh(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = atanh(args[1].data.u.number);
+        num = atanh(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -188,7 +188,7 @@ njs_object_math_cbrt(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = cbrt(args[1].data.u.number);
+        num = cbrt(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -207,7 +207,7 @@ njs_object_math_ceil(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = ceil(args[1].data.u.number);
+        num = ceil(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -227,7 +227,7 @@ njs_object_math_clz32(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     uint32_t  ui32;
 
     if (nargs > 1) {
-        ui32 = njs_number_to_uint32(args[1].data.u.number);
+        ui32 = njs_number_to_uint32(njs_number(&args[1]));
         num = nxt_leading_zeros(ui32);
 
     } else {
@@ -247,7 +247,7 @@ njs_object_math_cos(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = cos(args[1].data.u.number);
+        num = cos(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -266,7 +266,7 @@ njs_object_math_cosh(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = cosh(args[1].data.u.number);
+        num = cosh(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -285,7 +285,7 @@ njs_object_math_exp(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = exp(args[1].data.u.number);
+        num = exp(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -304,7 +304,7 @@ njs_object_math_expm1(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = expm1(args[1].data.u.number);
+        num = expm1(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -323,7 +323,7 @@ njs_object_math_floor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = floor(args[1].data.u.number);
+        num = floor(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -342,7 +342,7 @@ njs_object_math_fround(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = (float) args[1].data.u.number;
+        num = (float) njs_number(&args[1]);
 
     } else {
         num = NAN;
@@ -369,10 +369,10 @@ njs_object_math_hypot(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
     }
 
-    num = (nargs > 1) ? fabs(args[1].data.u.number) : 0;
+    num = (nargs > 1) ? fabs(njs_number(&args[1])) : 0;
 
     for (i = 2; i < nargs; i++) {
-        num = hypot(num, args[i].data.u.number);
+        num = hypot(num, njs_number(&args[i]));
 
         if (num == INFINITY) {
             break;
@@ -393,8 +393,8 @@ njs_object_math_imul(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     uint32_t  a, b;
 
     if (nargs > 2) {
-        a = njs_number_to_uint32(args[1].data.u.number);
-        b = njs_number_to_uint32(args[2].data.u.number);
+        a = njs_number_to_uint32(njs_number(&args[1]));
+        b = njs_number_to_uint32(njs_number(&args[2]));
 
         num = (int32_t) (a * b);
 
@@ -415,7 +415,7 @@ njs_object_math_log(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = log(args[1].data.u.number);
+        num = log(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -434,7 +434,7 @@ njs_object_math_log10(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = log10(args[1].data.u.number);
+        num = log10(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -453,7 +453,7 @@ njs_object_math_log1p(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = log1p(args[1].data.u.number);
+        num = log1p(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -472,7 +472,7 @@ njs_object_math_log2(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = args[1].data.u.number;
+        num = njs_number(&args[1]);
 
 #if (NXT_SOLARIS)
         /* On Solaris 10 log(-1) returns -Infinity. */
@@ -513,10 +513,10 @@ njs_object_math_max(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             }
         }
 
-        num = args[1].data.u.number;
+        num = njs_number(&args[1]);
 
         for (i = 2; i < nargs; i++) {
-            num = fmax(num, args[i].data.u.number);
+            num = fmax(num, njs_number(&args[i]));
         }
 
     } else {
@@ -547,10 +547,10 @@ njs_object_math_min(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             }
         }
 
-        num = args[1].data.u.number;
+        num = njs_number(&args[1]);
 
         for (i = 2; i < nargs; i++) {
-            num = fmin(num, args[i].data.u.number);
+            num = fmin(num, njs_number(&args[i]));
         }
 
     } else {
@@ -570,8 +570,8 @@ njs_object_math_pow(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num, base, exponent;
 
     if (nargs > 2) {
-        base = args[1].data.u.number;
-        exponent = args[2].data.u.number;
+        base = njs_number(&args[1]);
+        exponent = njs_number(&args[2]);
 
         /*
          * According to ECMA-262:
@@ -617,7 +617,7 @@ njs_object_math_round(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = round(args[1].data.u.number);
+        num = round(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -636,7 +636,7 @@ njs_object_math_sign(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = args[1].data.u.number;
+        num = njs_number(&args[1]);
 
         if (!isnan(num) && num != 0) {
             num = signbit(num) ? -1 : 1;
@@ -659,7 +659,7 @@ njs_object_math_sin(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = sin(args[1].data.u.number);
+        num = sin(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -678,7 +678,7 @@ njs_object_math_sinh(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = sinh(args[1].data.u.number);
+        num = sinh(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -697,7 +697,7 @@ njs_object_math_sqrt(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = sqrt(args[1].data.u.number);
+        num = sqrt(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -716,7 +716,7 @@ njs_object_math_tan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = tan(args[1].data.u.number);
+        num = tan(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -735,7 +735,7 @@ njs_object_math_tanh(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = tanh(args[1].data.u.number);
+        num = tanh(njs_number(&args[1]));
 
     } else {
         num = NAN;
@@ -754,7 +754,7 @@ njs_object_math_trunc(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     double  num;
 
     if (nargs > 1) {
-        num = trunc(args[1].data.u.number);
+        num = trunc(njs_number(&args[1]));
 
     } else {
         num = NAN;

@@ -293,7 +293,7 @@ njs_array_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     size = nargs - 1;
 
     if (size == 1 && njs_is_number(&args[0])) {
-        num = args[0].data.u.number;
+        num = njs_number(&args[0]);
         size = (uint32_t) num;
 
         if ((double) size != num) {
@@ -474,7 +474,7 @@ njs_array_length(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
         return NJS_ERROR;
     }
 
-    num = setval->data.u.number;
+    num = njs_number(setval);
     length = (uint32_t) num;
 
     if ((double) length != num) {
@@ -843,7 +843,7 @@ njs_array_prototype_splice(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         length = array->length;
 
         if (nargs > 1) {
-            start = args[1].data.u.number;
+            start = njs_number(&args[1]);
 
             if (start < 0) {
                 start += length;
@@ -859,7 +859,7 @@ njs_array_prototype_splice(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             delete = length - start;
 
             if (nargs > 2) {
-                n = args[2].data.u.number;
+                n = njs_number(&args[2]);
 
                 if (n < 0) {
                     delete = 0;
@@ -1240,7 +1240,7 @@ njs_array_prototype_index_of(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     i = 0;
 
     if (nargs > 2) {
-        i = args[2].data.u.number;
+        i = njs_number(&args[2]);
 
         if (i >= length) {
             goto done;
@@ -1300,7 +1300,7 @@ njs_array_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
     i = length - 1;
 
     if (nargs > 2) {
-        n = args[2].data.u.number;
+        n = njs_number(&args[2]);
 
         if (n < 0) {
             i = n + length;
@@ -1360,7 +1360,7 @@ njs_array_prototype_includes(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     i = 0;
 
     if (nargs > 2) {
-        i = args[2].data.u.number;
+        i = njs_number(&args[2]);
 
         if (i >= length) {
             goto done;
@@ -1378,12 +1378,12 @@ njs_array_prototype_includes(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     start = array->start;
     value = &args[1];
 
-    if (njs_is_number(value) && isnan(value->data.u.number)) {
+    if (njs_is_number(value) && isnan(njs_number(value))) {
 
         do {
             value = &start[i];
 
-            if (njs_is_number(value) && isnan(value->data.u.number)) {
+            if (njs_is_number(value) && isnan(njs_number(value))) {
                 retval = &njs_value_true;
                 break;
             }
@@ -2276,7 +2276,7 @@ njs_array_prototype_sort_continuation(njs_vm_t *vm, njs_value_t *args,
          * "goto next" moves control to the appropriate step of the algorithm.
          * The first iteration also goes there because sort->retval is zero.
          */
-        if (sort->retval.data.u.number <= 0) {
+        if (njs_number(&sort->retval) <= 0) {
             goto next;
         }
 

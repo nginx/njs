@@ -157,9 +157,7 @@ njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
             return NJS_TOKEN_ERROR;
         }
 
-        node->u.value.data.u.number = num;
-        node->u.value.type = NJS_NUMBER;
-        node->u.value.data.truth = njs_is_number_true(num);
+        njs_set_number(&node->u.value, num);
 
         break;
 
@@ -710,9 +708,7 @@ njs_parser_array_item(njs_vm_t *vm, njs_parser_t *parser,
         return NXT_ERROR;
     }
 
-    number->u.value.data.u.number = array->u.length;
-    number->u.value.type = NJS_NUMBER;
-    number->u.value.data.truth = (array->u.length != 0);
+    njs_set_number(&number->u.value, array->u.length);
 
     ret = njs_parser_object_property(vm, parser, array, number, value);
     if (nxt_slow_path(ret != NXT_OK)) {

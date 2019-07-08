@@ -805,8 +805,8 @@ nxt_int_t
 njs_value_is_valid_number(const njs_value_t *value)
 {
     return njs_is_number(value)
-           && !isnan(value->data.u.number)
-           && !isinf(value->data.u.number);
+           && !isnan(njs_number(value))
+           && !isinf(njs_number(value));
 }
 
 

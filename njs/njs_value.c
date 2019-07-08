@@ -108,7 +108,7 @@ njs_values_strict_equal(const njs_value_t *val1, const njs_value_t *val2)
         }
 
         /* Infinities are handled correctly by comparision. */
-        return (val1->data.u.number == val2->data.u.number);
+        return (njs_number(val1) == njs_number(val2));
     }
 
     if (njs_is_string(val1)) {

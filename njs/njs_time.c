@@ -37,7 +37,7 @@ njs_set_timer(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     delay = 0;
 
     if (!immediate && nargs >= 3 && njs_is_number(&args[2])) {
-        delay = args[2].data.u.number;
+        delay = njs_number(&args[2]);
     }
 
     event = nxt_mp_alloc(vm->mem_pool, sizeof(njs_event_t));
@@ -110,7 +110,7 @@ njs_clear_timeout(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     }
 
     p = nxt_sprintf(buf, buf + nxt_length(buf), "%uD",
-                    (unsigned) args[1].data.u.number);
+                    (unsigned) njs_number(&args[1]));
 
     lhq.key.start = buf;
     lhq.key.length = p - buf;

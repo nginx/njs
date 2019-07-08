@@ -31,7 +31,7 @@ njs_value_to_index(const njs_value_t *value)
     num = NAN;
 
     if (nxt_fast_path(njs_is_numeric(value))) {
-        num = value->data.u.number;
+        num = njs_number(value);
 
     } else if (njs_is_string(value)) {
         num = njs_string_to_index(value);
@@ -212,7 +212,7 @@ njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
     const njs_value_t  *value;
     u_char             buf[128];
 
-    num = number->data.u.number;
+    num = njs_number(number);
 
     if (isnan(num)) {
         value = &njs_string_nan;
@@ -263,7 +263,7 @@ njs_number_constructor(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         vm->retval.data.truth = 1;
 
     } else {
-        njs_set_number(&vm->retval, value->data.u.number);
+        njs_set_number(&vm->retval, njs_number(value));
     }
 
     return NXT_OK;
@@ -280,7 +280,7 @@ njs_number_is_integer(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     value = &njs_value_false;
 
     if (nargs > 1 && njs_is_number(&args[1])) {
-        num = args[1].data.u.number;
+        num = njs_number(&args[1]);
 
         if (num == trunc(num) && !isinf(num)) {
             value = &njs_value_true;
@@ -304,7 +304,7 @@ njs_number_is_safe_integer(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     value = &njs_value_false;
 
     if (nargs > 1 && njs_is_number(&args[1])) {
-        num = args[1].data.u.number;
+        num = njs_number(&args[1]);
 
         if (num == (int64_t) num && fabs(num) <= NJS_MAX_SAFE_INTEGER) {
             value = &njs_value_true;
@@ -327,7 +327,7 @@ njs_number_is_nan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     if (nargs > 1
         && njs_is_number(&args[1])
-        && isnan(args[1].data.u.number))
+        && isnan(njs_number(&args[1])))
     {
         value = &njs_value_true;
     }
@@ -527,14 +527,14 @@ njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     }
 
     if (nargs > 1) {
-        radix = args[1].data.u.number;
+        radix = njs_number(&args[1]);
 
         if (radix < 2 || radix > 36 || radix != (int) radix) {
             njs_range_error(vm, NULL);
             return NXT_ERROR;
         }
 
-        number = value->data.u.number;
+        number = njs_number(value);
 
         if (radix != 10 && !isnan(number) && !isinf(number)) {
             return njs_number_to_string_radix(vm, &vm->retval, number, radix);
@@ -663,7 +663,7 @@ njs_number_global_is_nan(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     value = &njs_value_true;
 
-    if (nargs > 1 && !isnan(args[1].data.u.number)) {
+    if (nargs > 1 && !isnan(njs_number(&args[1]))) {
         value = &njs_value_false;
     }
 
@@ -683,7 +683,7 @@ njs_number_is_finite(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     value = &njs_value_false;
 
     if (nargs > 1 && njs_is_number(&args[1])) {
-        num = args[1].data.u.number;
+        num = njs_number(&args[1]);
 
         if (!isnan(num) && !isinf(num)) {
             value = &njs_value_true;
@@ -738,7 +738,7 @@ njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         radix = 0;
 
         if (nargs > 2) {
-            radix = args[2].data.u.number;
+            radix = njs_number(&args[2]);
 
             if (radix != 0) {
                 if (radix < 2 || radix > 36) {
