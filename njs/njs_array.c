@@ -970,7 +970,7 @@ njs_array_prototype_to_string(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         prop = njs_object_property(vm, njs_object(&args[0]), &lhq);
 
         if (nxt_fast_path(prop != NULL && njs_is_function(&prop->value))) {
-            return njs_function_replace(vm, prop->value.data.u.function,
+            return njs_function_replace(vm, njs_function(&prop->value),
                                         args, nargs, retval);
         }
     }
@@ -1879,7 +1879,7 @@ njs_array_prototype_find_apply(njs_vm_t *vm, njs_array_iter_t *iter,
 
     arguments[3] = args[0];
 
-    return njs_function_apply(vm, args[1].data.u.function, arguments, 4,
+    return njs_function_apply(vm, njs_function(&args[1]), arguments, 4,
                               (njs_index_t) &iter->retval);
 }
 
@@ -2026,7 +2026,7 @@ njs_array_prototype_reduce_continuation(njs_vm_t *vm, njs_value_t *args,
 
     arguments[4] = args[0];
 
-    return njs_function_apply(vm, args[1].data.u.function, arguments, 5,
+    return njs_function_apply(vm, njs_function(&args[1]), arguments, 5,
                               (njs_index_t) &iter->retval);
 }
 
@@ -2090,7 +2090,7 @@ njs_array_iterator_apply(njs_vm_t *vm, njs_array_iter_t *iter,
 
     arguments[3] = args[0];
 
-    return njs_function_apply(vm, args[1].data.u.function, arguments, 4,
+    return njs_function_apply(vm, njs_function(&args[1]), arguments, 4,
                               (njs_index_t) &iter->retval);
 }
 
@@ -2163,7 +2163,7 @@ njs_array_prototype_reduce_right_continuation(njs_vm_t *vm, njs_value_t *args,
 
     arguments[4] = args[0];
 
-    return njs_function_apply(vm, args[1].data.u.function, arguments, 5,
+    return njs_function_apply(vm, njs_function(&args[1]), arguments, 5,
                               (njs_index_t) &iter->retval);
 }
 
@@ -2236,7 +2236,7 @@ njs_array_prototype_sort(njs_vm_t *vm, njs_value_t *args,
         sort->retval = njs_value_zero;
 
         if (nargs > 1 && njs_is_function(&args[1])) {
-            sort->function = args[1].data.u.function;
+            sort->function = njs_function(&args[1]);
 
         } else {
             sort->function = (njs_function_t *) &njs_array_string_sort_function;

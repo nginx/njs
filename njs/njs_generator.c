@@ -2319,7 +2319,7 @@ njs_generate_function_declaration(njs_vm_t *vm, njs_generator_t *generator,
         return NXT_OK;
     }
 
-    lambda = var->value.data.u.function->u.lambda;
+    lambda = njs_function_lambda(&var->value);
 
     ret = njs_generate_function_scope(vm, lambda, node,
                                       &node->u.reference.name);

@@ -294,9 +294,7 @@ njs_vmcode_function(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
         return NXT_ERROR;
     }
 
-    vm->retval.data.u.function = function;
-    vm->retval.type = NJS_FUNCTION;
-    vm->retval.data.truth = 1;
+    njs_set_function(&vm->retval, function);
 
     return sizeof(njs_vmcode_function_t);
 }
@@ -1746,7 +1744,7 @@ njs_function_frame_create(njs_vm_t *vm, njs_value_t *value,
 
     if (nxt_fast_path(njs_is_function(value))) {
 
-        function = value->data.u.function;
+        function = njs_function(value);
 
         if (ctor) {
             if (!function->ctor) {
@@ -1792,7 +1790,7 @@ njs_function_new_object(njs_vm_t *vm, njs_value_t *value)
         lhq.key_hash = NJS_PROTOTYPE_HASH;
         lhq.key = nxt_string_value("prototype");
         lhq.proto = &njs_object_hash_proto;
-        function = value->data.u.function;
+        function = njs_function(value);
 
         ret = nxt_lvlhsh_find(&function->object.hash, &lhq);
 

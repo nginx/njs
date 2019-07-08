@@ -516,6 +516,10 @@ typedef enum {
     ((value)->data.u.function)
 
 
+#define njs_function_lambda(value)                                            \
+    ((value)->data.u.function->u.lambda)
+
+
 #define njs_object(value)                                                     \
     ((value)->data.u.object)
 
@@ -602,6 +606,15 @@ njs_set_array(njs_value_t *value, njs_array_t *array)
 {
     value->data.u.array = array;
     value->type = NJS_ARRAY;
+    value->data.truth = 1;
+}
+
+
+nxt_inline void
+njs_set_function(njs_value_t *value, njs_function_t *function)
+{
+    value->data.u.function = function;
+    value->type = NJS_FUNCTION;
     value->data.truth = 1;
 }
 

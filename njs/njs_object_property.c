@@ -414,9 +414,7 @@ njs_external_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 done:
 
     if (ext_proto->type == NJS_EXTERN_METHOD) {
-        prop->value.type = NJS_FUNCTION;
-        prop->value.data.u.function = ext_proto->function;
-        prop->value.data.truth = 1;
+        njs_set_function(&prop->value, ext_proto->function);
     }
 
     pq->lhq.value = prop;
@@ -523,7 +521,7 @@ njs_value_property(njs_vm_t *vm, const njs_value_t *value,
                 break;
             }
 
-            return njs_function_activate(vm, prop->getter.data.u.function,
+            return njs_function_activate(vm, njs_function(&prop->getter),
                                          value, NULL, 0, (njs_index_t) retval,
                                          advance);
 
@@ -631,7 +629,7 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *object,
 
                 if (njs_is_function(&prop->setter)) {
                     return njs_function_activate(vm,
-                                                 prop->setter.data.u.function,
+                                                 njs_function(&prop->setter),
                                                  object, value, 1,
                                                  (njs_index_t) &vm->retval,
                                                  advance);

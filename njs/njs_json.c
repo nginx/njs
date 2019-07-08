@@ -223,7 +223,7 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
         parse = njs_vm_continuation(vm);
         parse->u.cont.function = njs_json_parse_continuation;
-        parse->function = reviver->data.u.function;
+        parse->function = njs_function(reviver);
 
         if (nxt_array_init(&parse->stack, NULL, 4, sizeof(njs_json_state_t),
                            &njs_array_mem_proto, vm->mem_pool)
@@ -256,7 +256,7 @@ njs_vm_json_parse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs)
 {
     njs_function_t  *parse;
 
-    parse = njs_json_object_properties[0].value.data.u.function;
+    parse = njs_function(&njs_json_object_properties[0].value);
 
     return njs_vm_call(vm, parse, args, nargs);
 }
@@ -354,7 +354,7 @@ njs_vm_json_stringify(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs)
 {
     njs_function_t  *stringify;
 
-    stringify = njs_json_object_properties[1].value.data.u.function;
+    stringify = njs_function(&njs_json_object_properties[1].value);
 
     return njs_vm_call(vm, stringify, args, nargs);
 }
@@ -1490,7 +1490,7 @@ njs_object_to_json_function(njs_vm_t *vm, njs_value_t *value)
     prop = njs_object_property(vm, njs_object(value), &lhq);
 
     if (prop != NULL && njs_is_function(&prop->value)) {
-        return prop->value.data.u.function;
+        return njs_function(&prop->value);
     }
 
     return NULL;
@@ -1582,7 +1582,7 @@ njs_json_stringify_replacer(njs_vm_t *vm, njs_json_stringify_t* stringify,
 
     njs_set_invalid(&stringify->retval);
 
-    return njs_function_apply(vm, stringify->replacer.data.u.function,
+    return njs_function_apply(vm, njs_function(&stringify->replacer),
                               arguments, 3, (njs_index_t) &stringify->retval);
 }
 
@@ -2212,7 +2212,7 @@ njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value,
         break;
 
     case NJS_FUNCTION:
-        if (value->data.u.function->native) {
+        if (njs_function(value)->native) {
             njs_dump("[Function: native]");
 
         } else {

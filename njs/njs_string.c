@@ -3039,7 +3039,7 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         }
 
     } else {
-        r->function = args[2].data.u.function;
+        r->function = njs_function(&args[2]);
     }
 
     r->part[0].start = string.start;

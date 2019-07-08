@@ -542,7 +542,7 @@ njs_memory_error_prototype_create(njs_vm_t *vm, njs_value_t *value,
 
     index = NJS_PROTOTYPE_INTERNAL_ERROR;
 
-    function = value->data.u.function;
+    function = njs_function(value);
     proto = njs_property_prototype_create(vm, &function->object.hash,
                                           &vm->prototypes[index].object);
     if (proto == NULL) {

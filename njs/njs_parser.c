@@ -619,9 +619,7 @@ njs_parser_function_alloc(njs_vm_t *vm, njs_parser_t *parser,
         return NULL;
     }
 
-    var->value.data.u.function = function;
-    var->value.type = NJS_FUNCTION;
-    var->value.data.truth = 1;
+    njs_set_function(&var->value, function);
 
     if (var->index != NJS_INDEX_NONE
         && njs_scope_accumulative(vm, parser->scope))

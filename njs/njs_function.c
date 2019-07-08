@@ -80,7 +80,7 @@ njs_function_value_copy(njs_vm_t *vm, njs_value_t *value)
 {
     njs_function_t  *function, *copy;
 
-    function = value->data.u.function;
+    function = njs_function(value);
 
     if (!function->object.shared) {
         return function;
@@ -974,7 +974,7 @@ njs_function_prototype_call(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         nargs = 0;
     }
 
-    function = args[0].data.u.function;
+    function = njs_function(&args[0]);
 
     ret = njs_function_activate(vm, function, this, &args[2], nargs, retval,
                                 sizeof(njs_vmcode_function_call_t));
@@ -1018,7 +1018,7 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    func = (njs_argument(args, 0))->data.u.function;
+    func = njs_function(njs_argument(args, 0));
     this = njs_arg(args, nargs, 1);
     arr_like = njs_arg(args, nargs, 2);
 
@@ -1133,7 +1133,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         return NXT_ERROR;
     }
 
-    function = njs_function_copy(vm, args[0].data.u.function);
+    function = njs_function_copy(vm, njs_function(&args[0]));
     if (nxt_slow_path(function == NULL)) {
         njs_memory_error(vm);
         return NXT_ERROR;
@@ -1163,9 +1163,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
 
     memcpy(values, args, size);
 
-    vm->retval.data.u.function = function;
-    vm->retval.type = NJS_FUNCTION;
-    vm->retval.data.truth = 1;
+    njs_set_function(&vm->retval, function);
 
     return NXT_OK;
 }

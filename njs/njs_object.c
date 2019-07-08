@@ -1594,7 +1594,7 @@ njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value,
     const njs_value_t  *proto;
 
     proto = NULL;
-    function = value->data.u.function;
+    function = njs_function(value);
     index = function - vm->constructors;
 
     if (index >= 0 && index < NJS_PROTOTYPE_MAX) {

@@ -289,7 +289,7 @@ done:
     cont = njs_vm_continuation(vm);
     cont->u.cont.function = njs_fs_done;
 
-    return njs_function_apply(vm, callback->data.u.function,
+    return njs_function_apply(vm, njs_function(callback),
                               arguments, 3, (njs_index_t) &vm->retval);
 
 fail:
@@ -709,7 +709,7 @@ done:
     cont = njs_vm_continuation(vm);
     cont->u.cont.function = njs_fs_done;
 
-    return njs_function_apply(vm, callback->data.u.function,
+    return njs_function_apply(vm, njs_function(callback),
                               arguments, 2, (njs_index_t) &vm->retval);
 }
 

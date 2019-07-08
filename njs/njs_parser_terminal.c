@@ -452,15 +452,12 @@ njs_parser_builtin(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node,
 
     case NJS_FUNCTION:
         index = node->token - NJS_TOKEN_FIRST_FUNCTION;
-        var->value.data.u.function = &vm->shared->functions[index];
+        njs_set_function(&var->value, &vm->shared->functions[index]);
         break;
 
     default:
         return NXT_ERROR;
     }
-
-    var->value.type = type;
-    var->value.data.truth = 1;
 
     ret = njs_variable_reference(vm, scope, node, name, hash, NJS_REFERENCE);
     if (nxt_slow_path(ret != NXT_OK)) {

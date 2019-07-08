@@ -536,9 +536,7 @@ njs_builtin_objects_clone(njs_vm_t *vm)
     values = vm->scopes[NJS_SCOPE_GLOBAL];
 
     for (i = NJS_CONSTRUCTOR_OBJECT; i < NJS_CONSTRUCTOR_MAX; i++) {
-        values[i].type = NJS_FUNCTION;
-        values[i].data.truth = 1;
-        values[i].data.u.function = &vm->constructors[i];
+        njs_set_function(&values[i], &vm->constructors[i]);
         vm->constructors[i].object.__proto__ = function_prototype;
     }
 
@@ -981,7 +979,7 @@ njs_builtin_match(const njs_object_init_t **objects, njs_function_t *function,
                 continue;
             }
 
-            if (function != pr->value.data.u.function) {
+            if (function != njs_function(&pr->value)) {
                 continue;
             }
 

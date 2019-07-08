@@ -210,7 +210,7 @@ njs_value_to_primitive(njs_vm_t *vm, njs_value_t *value, nxt_uint_t hint)
                             continue;
                         }
 
-                        function = prop->value.data.u.function;
+                        function = njs_function(&prop->value);
 
                         ret = njs_function_apply(vm, function, value, 1,
                                                  (njs_index_t) retval);

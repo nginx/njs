@@ -666,7 +666,7 @@ njs_vm_function(njs_vm_t *vm, const nxt_str_t *name)
     value = njs_vm_value(vm, name);
 
     if (njs_is_function(value)) {
-        return value->data.u.function;
+        return njs_function(value);
     }
 
     return NULL;
