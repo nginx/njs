@@ -21,6 +21,10 @@
 NXT_EXPORT u_char *nxt_utf8_encode(u_char *p, uint32_t u);
 NXT_EXPORT uint32_t nxt_utf8_decode(const u_char **start, const u_char *end);
 NXT_EXPORT uint32_t nxt_utf8_decode2(const u_char **start, const u_char *end);
+NXT_EXPORT uint32_t nxt_utf8_safe_decode(const u_char **start,
+    const u_char *end);
+NXT_EXPORT uint32_t nxt_utf8_safe_decode2(const u_char **start,
+    const u_char *end);
 NXT_EXPORT nxt_int_t nxt_utf8_casecmp(const u_char *start1,
     const u_char *start2, size_t len1, size_t len2);
 NXT_EXPORT uint32_t nxt_utf8_lower_case(const u_char **start,
@@ -28,6 +32,8 @@ NXT_EXPORT uint32_t nxt_utf8_lower_case(const u_char **start,
 NXT_EXPORT uint32_t nxt_utf8_upper_case(const u_char **start,
     const u_char *end);
 NXT_EXPORT ssize_t nxt_utf8_length(const u_char *p, size_t len);
+NXT_EXPORT ssize_t nxt_utf8_safe_length(const u_char *p, size_t len,
+    ssize_t *out_size);
 NXT_EXPORT nxt_bool_t nxt_utf8_is_valid(const u_char *p, size_t len);
 
 

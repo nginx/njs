@@ -907,31 +907,35 @@ done:
 nxt_int_t
 njs_parser_string_create(njs_vm_t *vm, njs_value_t *value)
 {
-    u_char     *p;
-    ssize_t    length;
-    nxt_str_t  *src;
+    u_char        *dst;
+    ssize_t       size, length;
+    uint32_t      cp;
+    nxt_str_t     *src;
+    const u_char  *p, *end;
 
     src = njs_parser_text(vm->parser);
 
-    length = nxt_utf8_length(src->start, src->length);
+    length = nxt_utf8_safe_length(src->start, src->length, &size);
 
-    if (nxt_slow_path(length < 0)) {
-        length = 0;
+    dst = njs_string_alloc(vm, value, size, length);
+    if (nxt_slow_path(dst == NULL)) {
+        return NXT_ERROR;
     }
 
-    p = njs_string_alloc(vm, value, src->length, length);
+    p = src->start;
+    end = src->start + src->length;
 
-    if (nxt_fast_path(p != NULL)) {
-        memcpy(p, src->start, src->length);
+    while (p < end) {
+        cp = nxt_utf8_safe_decode(&p, end);
 
-        if (length > NJS_STRING_MAP_STRIDE && (size_t) length != src->length) {
-            njs_string_offset_map_init(p, src->length);
-        }
-
-        return NXT_OK;
+        dst = nxt_utf8_encode(dst, cp);
     }
 
-    return NXT_ERROR;
+    if (size > NJS_STRING_MAP_STRIDE && size != length) {
+        njs_string_offset_map_init(value->long_string.data->start, size);
+    }
+
+    return NXT_OK;
 }
 
 
@@ -1042,11 +1046,27 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
                 continue;
 
             default:
+                if (c >= 0x80) {
+                    src--;
+                    goto utf8_copy;
+                }
+
                 break;
             }
         }
 
-        *dst++ = c;
+        if (c < 0x80) {
+            *dst++ = c;
+
+            continue;
+        }
+
+    utf8_copy:
+
+        src--;
+
+        cp = nxt_utf8_safe_decode2(&src, end);
+        dst = nxt_utf8_encode(dst, cp);
 
         continue;
 
@@ -1166,13 +1186,9 @@ njs_parser_escape_string_calc_length(njs_vm_t *vm, njs_parser_t *parser,
         }
 
         if (*src >= 0x80) {
-            ptr = src;
+            cp = nxt_utf8_safe_decode2(&src, end);
 
-            if (nxt_slow_path(nxt_utf8_decode(&src, end) == 0xffffffff)) {
-                goto invalid;
-            }
-
-            size += src - ptr;
+            size += nxt_utf8_size(cp);
             length++;
 
             continue;

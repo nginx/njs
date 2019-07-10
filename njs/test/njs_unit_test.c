@@ -4367,6 +4367,48 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var a = '123'\n[2].toString();a"),
       nxt_string("3") },
 
+    { nxt_string("'\xE5\x96\x9C\xE3\x81\xB6'"),
+      nxt_string("喜ぶ") },
+
+    /* Broken UTF-8 literals.*/
+
+    { nxt_string("'\x96\xE5\x9C\xE3\x81\xB6'"),
+      nxt_string("��ぶ") },
+
+    { nxt_string("'\x96\xE5\x9C'"),
+      nxt_string("��") },
+
+    { nxt_string("'\x96\xE5'"),
+      nxt_string("��") },
+
+    { nxt_string("'\x96'"),
+      nxt_string("�") },
+
+    { nxt_string("'\xF3'"),
+      nxt_string("�") },
+
+    { nxt_string("'\xF3\xFF'"),
+      nxt_string("��") },
+
+    { nxt_string("'\x96\x96\xE5\x9C\xE3\x81\xB6'"),
+      nxt_string("���ぶ") },
+
+    { nxt_string("'\x9C\x96\xE5\xE3\x81\xB6'"),
+      nxt_string("���ぶ") },
+
+    { nxt_string("'\xE5\x9C\xE3\x81\xB6'"),
+      nxt_string("�ぶ") },
+
+    { nxt_string("'\xEF\xBF\xBD\xE3\x81\xB6'"),
+      nxt_string("�ぶ") },
+
+    { nxt_string("'\xE5\xF6\x9C\xE3\x81\xB6'"),
+      nxt_string("���ぶ") },
+
+    { nxt_string("var a = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\xF3'; "
+                 "[a.length, a[33], a[34]]"),
+      nxt_string("35,a,�") },
+
     /* Escape strings. */
 
     { nxt_string("'\\a \\' \\\" \\\\ \\0 \\b \\f \\n \\r \\t \\v'"),
@@ -4494,6 +4536,45 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("'\\u{D800}\\u{'"),
       nxt_string("SyntaxError: Invalid Unicode code point \"\\u{D800}\\u{\" in 1") },
+
+    /* Broken UTF-8 literals.*/
+
+    { nxt_string("'\\a\x96\xE5\x9C\xE3\x81\xB6'"),
+      nxt_string("a��ぶ") },
+
+    { nxt_string("'\x96\\a\xE5\x9C'"),
+      nxt_string("�a�") },
+
+    { nxt_string("'\x96\xE5\\a'"),
+      nxt_string("��a") },
+
+    { nxt_string("'\\a\x96\\a'"),
+      nxt_string("a�a") },
+
+    { nxt_string("'\xF3\\a'"),
+      nxt_string("�a") },
+
+    { nxt_string("'\xF3\\a\xFF'"),
+      nxt_string("�a�") },
+
+    { nxt_string("'\\a\x96\x96\xE5\x9C\xE3\x81\xB6'"),
+      nxt_string("a���ぶ") },
+
+    { nxt_string("'\\a\x9C\x96\xE5\xE3\x81\xB6'"),
+      nxt_string("a���ぶ") },
+
+    { nxt_string("'\\a\xE5\x9C\xE3\x81\xB6'"),
+      nxt_string("a�ぶ") },
+
+    { nxt_string("'\\a\xEF\xBF\xBD\xE3\x81\xB6'"),
+      nxt_string("a�ぶ") },
+
+    { nxt_string("'\\a\xE5\xF6\x9C\xE3\x81\xB6'"),
+      nxt_string("a���ぶ") },
+
+    { nxt_string("var a = '\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\xF3'; "
+                 "[a.length, a[34], a[35]]"),
+      nxt_string("36,a,�") },
 
     { nxt_string("''.hasOwnProperty('length')"),
       nxt_string("true") },

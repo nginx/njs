@@ -163,6 +163,103 @@ nxt_utf8_decode2(const u_char **start, const u_char *end)
 }
 
 
+uint32_t
+nxt_utf8_safe_decode(const u_char **start, const u_char *end)
+{
+    uint32_t  u;
+
+    u = (uint32_t) **start;
+
+    if (u < 0x80) {
+        (*start)++;
+        return u;
+    }
+
+    return nxt_utf8_safe_decode2(start, end);
+}
+
+
+uint32_t
+nxt_utf8_safe_decode2(const u_char **start, const u_char *end)
+{
+    u_char        c;
+    size_t        n;
+    uint32_t      u, overlong;
+    const u_char  *p;
+
+    p = *start;
+    u = (uint32_t) *p;
+
+    if (u >= 0xE0) {
+
+        if (u >= 0xF0) {
+
+            if (nxt_slow_path(u > 0xF4)) {
+                /*
+                 * The maximum valid Unicode character is 0x10FFFF
+                 * which is encoded as 0xF4 0x8F 0xBF 0xBF.
+                 */
+                goto fail_one;
+            }
+
+            u &= 0x07;
+            overlong = 0x00FFFF;
+            n = 3;
+
+        } else {
+            u &= 0x0F;
+            overlong = 0x07FF;
+            n = 2;
+        }
+
+    } else if (u >= 0xC2) {
+
+        /* 0x80 is encoded as 0xC2 0x80. */
+
+        u &= 0x1F;
+        overlong = 0x007F;
+        n = 1;
+
+    } else {
+        /* u <= 0xC2 */
+        goto fail_one;
+    }
+
+    p++;
+
+    while (p < end && n != 0) {
+        c = *p++;
+        /*
+         * The byte must in the 0x80 - 0xBF range.
+         * Values below 0x80 become >= 0x80.
+         */
+        c = c - 0x80;
+
+        if (nxt_slow_path(c > 0x3F)) {
+            *start = --p;
+            return NXT_UTF8_REPLACEMENT;
+        }
+
+        u = (u << 6) | c;
+        n--;
+    }
+
+    *start = p;
+
+    if (n == 0 && overlong < u && u < 0x110000) {
+        return u;
+    }
+
+    return NXT_UTF8_REPLACEMENT;
+
+fail_one:
+
+    (*start)++;
+
+    return NXT_UTF8_REPLACEMENT;
+}
+
+
 /*
  * nxt_utf8_casecmp() tests only up to the minimum of given lengths, but
  * requires lengths of both strings because otherwise nxt_utf8_decode2()
@@ -273,6 +370,34 @@ nxt_utf8_length(const u_char *p, size_t len)
         }
 
         length++;
+    }
+
+    return length;
+}
+
+
+ssize_t
+nxt_utf8_safe_length(const u_char *p, size_t len, ssize_t *out_size)
+{
+    ssize_t       size, length;
+    uint32_t      codepoint;
+    const u_char  *end;
+
+    size = 0;
+    length = 0;
+
+    end = p + len;
+
+    while (p < end) {
+        codepoint = nxt_utf8_safe_decode(&p, end);
+
+        size += nxt_utf8_size(codepoint);
+
+        length++;
+    }
+
+    if (out_size != NULL) {
+        *out_size = size;
     }
 
     return length;
