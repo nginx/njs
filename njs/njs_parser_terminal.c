@@ -1047,7 +1047,6 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
 
             default:
                 if (c >= 0x80) {
-                    src--;
                     goto utf8_copy;
                 }
 

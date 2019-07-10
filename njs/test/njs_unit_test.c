@@ -4537,6 +4537,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'\\u{D800}\\u{'"),
       nxt_string("SyntaxError: Invalid Unicode code point \"\\u{D800}\\u{\" in 1") },
 
+    { nxt_string("'α' !== '\\α'"),
+      nxt_string("false") },
+
+    { nxt_string("'r' !== '\\r'"),
+      nxt_string("true") },
+
     /* Broken UTF-8 literals.*/
 
     { nxt_string("'\\a\x96\xE5\x9C\xE3\x81\xB6'"),
