@@ -1280,52 +1280,56 @@ static njs_ret_t
 njs_array_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
-    nxt_int_t    i, n, index, length;
-    njs_value_t  *value, *start;
-    njs_array_t  *array;
+    nxt_int_t          k, n, index, length;
+    njs_value_t        *start;
+    njs_array_t        *array;
+    const njs_value_t  *this, *value;
 
     index = -1;
 
-    if (nargs < 2 || !njs_is_array(&args[0])) {
+    this = njs_arg(args, nargs, 0);
+
+    if (!njs_is_array(this)) {
         goto done;
     }
 
-    array = njs_array(&args[0]);
+    array = njs_array(this);
     length = array->length;
 
     if (length == 0) {
         goto done;
     }
 
-    i = length - 1;
-
     if (nargs > 2) {
-        n = njs_number(&args[2]);
+        n = njs_primitive_value_to_integer(njs_argument(args, 2));
 
-        if (n < 0) {
-            i = n + length;
+    } else {
+        n = length - 1;
+    }
 
-            if (i < 0) {
-                goto done;
-            }
+    if (n >= 0) {
+        k = nxt_min(n, length - 1);
 
-        } else if (n < length) {
-            i = n;
+    } else {
+        k = n + length;
+
+        if (k < 0) {
+            goto done;
         }
     }
 
-    value = &args[1];
+    value = njs_arg(args, nargs, 1);
     start = array->start;
 
     do {
-        if (njs_values_strict_equal(value, &start[i])) {
-            index = i;
+        if (njs_values_strict_equal(value, &start[k])) {
+            index = k;
             break;
         }
 
-        i--;
+        k--;
 
-    } while (i >= 0);
+    } while (k >= 0);
 
 done:
 

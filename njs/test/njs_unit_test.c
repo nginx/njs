@@ -3810,6 +3810,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("[].lastIndexOf(1, -1)"),
       nxt_string("-1") },
 
+    { nxt_string("[undefined].lastIndexOf()"),
+      nxt_string("0") },
+
+    { nxt_string("[undefined].lastIndexOf(undefined)"),
+      nxt_string("0") },
+
     { nxt_string("var a = [1,2,3,4]; a.lastIndexOf()"),
       nxt_string("-1") },
 
@@ -3836,6 +3842,15 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("var a = [1,2,3,4,3,4]; a.lastIndexOf(3, -10)"),
       nxt_string("-1") },
+
+    { nxt_string("[1,2,1].lastIndexOf(2,undefined)"),
+      nxt_string("-1") },
+
+    { nxt_string("[1,2,1].lastIndexOf(1,undefined)"),
+      nxt_string("0") },
+
+    { nxt_string("[1,2,1].lastIndexOf(1)"),
+      nxt_string("2") },
 
     { nxt_string("[1,2,3,4].includes()"),
       nxt_string("false") },
