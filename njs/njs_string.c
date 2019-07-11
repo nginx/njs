@@ -2734,8 +2734,14 @@ njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
             start = p + captures[0];
 
             if (captures[1] == 0) {
-                p = nxt_utf8_next(start, end);
-                string.size = end - p;
+                if (start < end) {
+                    p = nxt_utf8_next(start, end);
+                    string.size = end - p;
+
+                } else {
+                    /* To exit the loop. */
+                    p++;
+                }
 
                 size = 0;
                 length = 0;
