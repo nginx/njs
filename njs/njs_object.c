@@ -978,29 +978,27 @@ njs_object_own_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
             }
         }
 
-        if (nxt_slow_path(all)) {
-            nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
-            hash = &object->shared_hash;
+        nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+        hash = &object->shared_hash;
 
-            for ( ;; ) {
-                prop = nxt_lvlhsh_each(hash, &lhe);
+        for ( ;; ) {
+            prop = nxt_lvlhsh_each(hash, &lhe);
 
-                if (prop == NULL) {
-                    break;
-                }
+            if (prop == NULL) {
+                break;
+            }
 
-                lhq.key_hash = lhe.key_hash;
-                njs_string_get(&prop->name, &lhq.key);
+            lhq.key_hash = lhe.key_hash;
+            njs_string_get(&prop->name, &lhq.key);
 
-                lhq.proto = &njs_object_hash_proto;
-                ret = nxt_lvlhsh_find(&object->hash, &lhq);
+            lhq.proto = &njs_object_hash_proto;
+            ret = nxt_lvlhsh_find(&object->hash, &lhq);
 
-                if (ret != NXT_OK) {
-                    ext_prop = njs_object_exist_in_proto(parent, object, &lhq);
+            if (ret != NXT_OK) {
+                ext_prop = njs_object_exist_in_proto(parent, object, &lhq);
 
-                    if (ext_prop == NULL) {
-                        *item++ = prop->value;
-                    }
+                if (ext_prop == NULL && (prop->enumerable || all)) {
+                    *item++ = prop->value;
                 }
             }
         }
@@ -1039,41 +1037,39 @@ njs_object_own_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
             }
         }
 
-        if (nxt_slow_path(all)) {
-            nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
-            hash = &object->shared_hash;
+        nxt_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+        hash = &object->shared_hash;
 
-            for ( ;; ) {
-                prop = nxt_lvlhsh_each(hash, &lhe);
+        for ( ;; ) {
+            prop = nxt_lvlhsh_each(hash, &lhe);
 
-                if (prop == NULL) {
-                    break;
-                }
+            if (prop == NULL) {
+                break;
+            }
 
-                lhq.key_hash = lhe.key_hash;
-                njs_string_get(&prop->name, &lhq.key);
+            lhq.key_hash = lhe.key_hash;
+            njs_string_get(&prop->name, &lhq.key);
 
-                lhq.proto = &njs_object_hash_proto;
-                ret = nxt_lvlhsh_find(&object->hash, &lhq);
+            lhq.proto = &njs_object_hash_proto;
+            ret = nxt_lvlhsh_find(&object->hash, &lhq);
 
-                if (ret != NXT_OK) {
-                    ext_prop = njs_object_exist_in_proto(parent, object, &lhq);
+            if (ret != NXT_OK && (prop->enumerable || all)) {
+                ext_prop = njs_object_exist_in_proto(parent, object, &lhq);
 
-                    if (ext_prop == NULL) {
-                        entry = njs_array_alloc(vm, 2, 0);
-                        if (nxt_slow_path(entry == NULL)) {
-                            return NJS_ERROR;
-                        }
-
-                        njs_string_copy(&entry->start[0], &prop->name);
-
-                        /* GC: retain. */
-                        entry->start[1] = prop->value;
-
-                        njs_set_array(item, entry);
-
-                        item++;
+                if (ext_prop == NULL) {
+                    entry = njs_array_alloc(vm, 2, 0);
+                    if (nxt_slow_path(entry == NULL)) {
+                        return NJS_ERROR;
                     }
+
+                    njs_string_copy(&entry->start[0], &prop->name);
+
+                    /* GC: retain. */
+                    entry->start[1] = prop->value;
+
+                    njs_set_array(item, entry);
+
+                    item++;
                 }
             }
         }

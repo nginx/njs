@@ -9251,6 +9251,12 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Object.values(1)"),
       nxt_string("") },
 
+    { nxt_string("Object.values(njs)[0] === njs.version"),
+      nxt_string("true") },
+
+    { nxt_string("Object.values(process)"),
+      nxt_string("") },
+
     { nxt_string("Object.values()"),
       nxt_string("TypeError: cannot convert undefined argument to object") },
 
@@ -9273,6 +9279,9 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("Object.entries(true)"),
       nxt_string("") },
+
+    { nxt_string("Object.entries(njs)[0][1] === njs.version"),
+      nxt_string("true") },
 
     { nxt_string("Object.entries()"),
       nxt_string("TypeError: cannot convert undefined argument to object") },
