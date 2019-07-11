@@ -685,8 +685,6 @@ njs_set_object_value(njs_value_t *value, njs_object_value_t *object_value)
 
 void njs_value_retain(njs_value_t *value);
 void njs_value_release(njs_vm_t *vm, njs_value_t *value);
-nxt_bool_t njs_values_strict_equal(const njs_value_t *val1,
-    const njs_value_t *val2);
 njs_ret_t njs_value_to_primitive(njs_vm_t *vm, njs_value_t *value,
     nxt_uint_t hint);
 njs_array_t *njs_value_enumerate(njs_vm_t *vm, const njs_value_t *value,
@@ -695,6 +693,33 @@ njs_array_t *njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
     njs_object_enum_t kind, nxt_bool_t all);
 const char *njs_type_string(njs_value_type_t type);
 const char *njs_arg_type_string(uint8_t arg);
+
+nxt_bool_t njs_string_eq(const njs_value_t *v1, const njs_value_t *v2);
+
+
+nxt_inline nxt_bool_t
+njs_values_strict_equal(const njs_value_t *val1, const njs_value_t *val2)
+{
+    if (val1->type != val2->type) {
+        return 0;
+    }
+
+    if (njs_is_numeric(val1)) {
+
+        if (njs_is_undefined(val1)) {
+            return 1;
+        }
+
+        /* Infinities are handled correctly by comparision. */
+        return (njs_number(val1) == njs_number(val2));
+    }
+
+    if (njs_is_string(val1)) {
+        return njs_string_eq(val1, val2);
+    }
+
+    return (njs_object(val1) == njs_object(val2));
+}
 
 
 extern const njs_value_t  njs_value_null;
