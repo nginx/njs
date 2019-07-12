@@ -4998,7 +4998,7 @@ static njs_unit_test_t  njs_test[] =
     /* Externals. */
 
     { nxt_string("typeof $r"),
-      nxt_string("undefined") },
+      nxt_string("external") },
 
     { nxt_string("var a = $r.uri, s = a.fromUTF8(); s.length +' '+ s"),
       nxt_string("3 АБВ") },

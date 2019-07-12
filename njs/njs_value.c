@@ -31,6 +31,9 @@ const njs_value_t  njs_string_plus_infinity =
                                             njs_string("Infinity");
 const njs_value_t  njs_string_nan =         njs_string("NaN");
 const njs_value_t  njs_string_string =      njs_string("string");
+const njs_value_t  njs_string_data =        njs_string("data");
+const njs_value_t  njs_string_external =    njs_string("external");
+const njs_value_t  njs_string_invalid =     njs_string("invalid");
 const njs_value_t  njs_string_object =      njs_string("object");
 const njs_value_t  njs_string_function =    njs_string("function");
 const njs_value_t  njs_string_memory_error = njs_string("MemoryError");
