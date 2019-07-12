@@ -22,6 +22,7 @@ NXT_TEST_LIBS=${NXT_TEST_LIBS=}
 
 # Initialize variables with default if they are not defined.
 CC=${CC:-cc}
+AR=${AR:-ar}
 NXT_CFLAGS=${NXT_CFLAGS=}
 NXT_CC_OPT=${NXT_CC_OPT:--O}
 NXT_LD_OPT=${NXT_CC_OPT:--O}
