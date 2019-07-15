@@ -13853,9 +13853,15 @@ njs_externals_init(njs_vm_t *vm)
 }
 
 
+typedef struct {
+    nxt_bool_t  disassemble;
+    nxt_bool_t  verbose;
+    nxt_bool_t  module;
+} njs_opts_t;
+
+
 static nxt_int_t
-njs_unit_test(njs_unit_test_t tests[], size_t num, nxt_bool_t module,
-    nxt_bool_t disassemble, nxt_bool_t verbose)
+njs_unit_test(njs_unit_test_t tests[], size_t num, njs_opts_t *opts)
 {
     u_char        *start;
     njs_vm_t      *vm, *nvm;
@@ -13872,13 +13878,13 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, nxt_bool_t module,
 
     for (i = 0; i < num; i++) {
 
-        if (verbose) {
+        if (opts->verbose) {
             nxt_printf("\"%V\"\n", &tests[i].script);
         }
 
         nxt_memzero(&options, sizeof(njs_vm_opt_t));
 
-        options.module = module;
+        options.module = opts->module;
 
         vm = njs_vm_create(&options);
         if (vm == NULL) {
@@ -13896,7 +13902,7 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, nxt_bool_t module,
         ret = njs_vm_compile(vm, &start, start + tests[i].script.length);
 
         if (ret == NXT_OK) {
-            if (disassemble) {
+            if (opts->disassemble) {
                 njs_disassembler(vm);
             }
 
@@ -13957,7 +13963,7 @@ done:
 
 
 static nxt_int_t
-njs_timezone_optional_test(nxt_bool_t disassemble, nxt_bool_t verbose)
+njs_timezone_optional_test(njs_opts_t *opts)
 {
     size_t     size;
     u_char     buf[16];
@@ -13978,8 +13984,7 @@ njs_timezone_optional_test(nxt_bool_t disassemble, nxt_bool_t verbose)
     size = strftime((char *) buf, sizeof(buf), "%z", &tm);
 
     if (memcmp(buf, "+1245", size) == 0) {
-        ret = njs_unit_test(njs_tz_test, nxt_nitems(njs_tz_test), 0,
-                            disassemble, verbose);
+        ret = njs_unit_test(njs_tz_test, nxt_nitems(njs_tz_test), opts);
         if (ret != NXT_OK) {
             return ret;
         }
@@ -13995,7 +14000,7 @@ njs_timezone_optional_test(nxt_bool_t disassemble, nxt_bool_t verbose)
 
 
 static nxt_int_t
-njs_regexp_optional_test(nxt_bool_t disassemble, nxt_bool_t verbose)
+njs_regexp_optional_test(njs_opts_t *opts)
 {
     int         erroff;
     pcre        *re1, *re2;
@@ -14020,8 +14025,7 @@ njs_regexp_optional_test(nxt_bool_t disassemble, nxt_bool_t verbose)
                        &errstr, &erroff, NULL);
 
     if (re1 == NULL && re2 != NULL) {
-        ret = njs_unit_test(njs_regexp_test, nxt_nitems(njs_regexp_test), 0,
-                            disassemble, verbose);
+        ret = njs_unit_test(njs_regexp_test, nxt_nitems(njs_regexp_test), opts);
         if (ret != NXT_OK) {
             return ret;
         }
@@ -14045,7 +14049,7 @@ njs_regexp_optional_test(nxt_bool_t disassemble, nxt_bool_t verbose)
 
 
 static nxt_int_t
-njs_vm_json_test(nxt_bool_t disassemble, nxt_bool_t verbose)
+njs_vm_json_test(njs_opts_t *opts)
 {
     njs_vm_t           *vm;
     nxt_int_t          ret, rc;
@@ -14168,8 +14172,7 @@ done:
 
 
 static nxt_int_t
-njs_vm_object_alloc_test(njs_vm_t * vm, nxt_bool_t disassemble,
-    nxt_bool_t verbose)
+njs_vm_object_alloc_test(njs_vm_t * vm, njs_opts_t *opts)
 {
     njs_ret_t    ret;
     njs_value_t  args[2], obj;
@@ -14206,8 +14209,7 @@ njs_vm_object_alloc_test(njs_vm_t * vm, nxt_bool_t disassemble,
 
 
 static nxt_int_t
-nxt_file_basename_test(njs_vm_t * vm, nxt_bool_t disassemble,
-    nxt_bool_t verbose)
+nxt_file_basename_test(njs_vm_t * vm, njs_opts_t *opts)
 {
     nxt_str_t   name;
     nxt_bool_t  success;
@@ -14249,8 +14251,7 @@ nxt_file_basename_test(njs_vm_t * vm, nxt_bool_t disassemble,
 
 
 static nxt_int_t
-nxt_file_dirname_test(njs_vm_t * vm, nxt_bool_t disassemble,
-    nxt_bool_t verbose)
+nxt_file_dirname_test(njs_vm_t * vm, njs_opts_t *opts)
 {
     nxt_str_t   name;
     nxt_bool_t  success;
@@ -14293,7 +14294,7 @@ nxt_file_dirname_test(njs_vm_t * vm, nxt_bool_t disassemble,
 
 
 static nxt_int_t
-njs_api_test(nxt_bool_t disassemble, nxt_bool_t verbose)
+njs_api_test(njs_opts_t *opts)
 {
     njs_vm_t      *vm;
     nxt_int_t     ret, rc;
@@ -14301,7 +14302,7 @@ njs_api_test(nxt_bool_t disassemble, nxt_bool_t verbose)
     njs_vm_opt_t  options;
 
     static const struct {
-        nxt_int_t  (*test)(njs_vm_t *, nxt_bool_t, nxt_bool_t);
+        nxt_int_t  (*test)(njs_vm_t *, njs_opts_t *);
         nxt_str_t  name;
     } tests[] = {
         { njs_vm_object_alloc_test,
@@ -14324,7 +14325,7 @@ njs_api_test(nxt_bool_t disassemble, nxt_bool_t verbose)
             goto done;
         }
 
-        ret = tests[i].test(vm, disassemble, verbose);
+        ret = tests[i].test(vm, opts);
         if (nxt_slow_path(ret != NXT_OK)) {
             nxt_printf("njs_api_test: \"%V\" test failed\n", &tests[i].name);
             goto done;
@@ -14354,20 +14355,19 @@ int nxt_cdecl
 main(int argc, char **argv)
 {
     nxt_int_t   ret;
-    nxt_bool_t  disassemble, verbose;
+    njs_opts_t  opts;
 
-    disassemble = 0;
-    verbose = 0;
+    nxt_memzero(&opts, sizeof(njs_opts_t));
 
     if (argc > 1) {
         switch (argv[1][0]) {
 
         case 'd':
-            disassemble = 1;
+            opts.disassemble = 1;
             break;
 
         case 'v':
-            verbose = 1;
+            opts.verbose = 1;
             break;
 
         default:
@@ -14380,36 +14380,39 @@ main(int argc, char **argv)
 
     /* script tests. */
 
-    ret = njs_unit_test(njs_test, nxt_nitems(njs_test), 0, disassemble,
-                        verbose);
+    ret = njs_unit_test(njs_test, nxt_nitems(njs_test), &opts);
+    if (ret != NXT_OK) {
+        return ret;
+    }
+
+    ret = njs_timezone_optional_test(&opts);
+    if (ret != NXT_OK) {
+        return ret;
+    }
+
+    ret = njs_regexp_optional_test(&opts);
+    if (ret != NXT_OK) {
+        return ret;
+    }
+
+    ret = njs_vm_json_test(&opts);
+    if (ret != NXT_OK) {
+        return ret;
+    }
+
+    ret = njs_api_test(&opts);
     if (ret != NXT_OK) {
         return ret;
     }
 
     /* module tests. */
 
-    ret = njs_unit_test(njs_module_test, nxt_nitems(njs_module_test), 1,
-                        disassemble, verbose);
-    if (ret != NXT_OK) {
-        return ret;
-    }
+    opts.module = 1;
 
-    ret = njs_timezone_optional_test(disassemble, verbose);
-    if (ret != NXT_OK) {
-        return ret;
-    }
-
-    ret = njs_regexp_optional_test(disassemble, verbose);
+    ret = njs_unit_test(njs_module_test, nxt_nitems(njs_module_test), &opts);
     if (ret != NXT_OK) {
         return ret;
     }
 
     nxt_printf("njs unit tests passed\n");
-
-    ret = njs_vm_json_test(disassemble, verbose);
-    if (ret != NXT_OK) {
-        return ret;
-    }
-
-    return njs_api_test(disassemble, verbose);
 }
