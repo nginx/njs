@@ -13860,19 +13860,42 @@ typedef struct {
 } njs_opts_t;
 
 
+typedef struct {
+    nxt_uint_t  passed;
+    nxt_uint_t  failed;
+} njs_stat_t;
+
+
+static void
+njs_unit_test_report(const char *msg, njs_stat_t *prev, njs_stat_t *current)
+{
+    njs_stat_t  stat;
+
+    stat.failed = current->failed - prev->failed;
+    stat.passed = current->passed - prev->passed;
+
+    nxt_printf("%s: %s [%d/%d]\n", msg, stat.failed ? "FAILED" : "PASSED",
+               stat.passed, stat.passed + stat.failed);
+}
+
+
 static nxt_int_t
-njs_unit_test(njs_unit_test_t tests[], size_t num, njs_opts_t *opts)
+njs_unit_test(njs_unit_test_t tests[], size_t num, const char *name,
+    njs_opts_t *opts, njs_stat_t *stat)
 {
     u_char        *start;
     njs_vm_t      *vm, *nvm;
     nxt_int_t     ret, rc;
     nxt_str_t     s;
     nxt_uint_t    i;
+    njs_stat_t    prev;
     nxt_bool_t    success;
     njs_vm_opt_t  options;
 
     vm = NULL;
     nvm = NULL;
+
+    prev = *stat;
 
     rc = NXT_ERROR;
 
@@ -13928,22 +13951,23 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_opts_t *opts)
 
         success = nxt_strstr_eq(&tests[i].ret, &s);
 
-        if (success) {
-            if (nvm != NULL) {
-                njs_vm_destroy(nvm);
-                nvm = NULL;
-            }
+        if (!success) {
+            nxt_printf("njs(\"%V\")\nexpected: \"%V\"\n     got: \"%V\"\n",
+                       &tests[i].script, &tests[i].ret, &s);
 
-            njs_vm_destroy(vm);
-            vm = NULL;
+            stat->failed++;
 
-            continue;
+        } else {
+            stat->passed++;
         }
 
-        nxt_printf("njs(\"%V\")\nexpected: \"%V\"\n     got: \"%V\"\n",
-                   &tests[i].script, &tests[i].ret, &s);
+        if (nvm != NULL) {
+            njs_vm_destroy(nvm);
+            nvm = NULL;
+        }
 
-        goto done;
+        njs_vm_destroy(vm);
+        vm = NULL;
     }
 
     rc = NXT_OK;
@@ -13958,12 +13982,14 @@ done:
         njs_vm_destroy(vm);
     }
 
+    njs_unit_test_report(name, &prev, stat);
+
     return rc;
 }
 
 
 static nxt_int_t
-njs_timezone_optional_test(njs_opts_t *opts)
+njs_timezone_optional_test(njs_opts_t *opts, njs_stat_t *stat)
 {
     size_t     size;
     u_char     buf[16];
@@ -13984,12 +14010,11 @@ njs_timezone_optional_test(njs_opts_t *opts)
     size = strftime((char *) buf, sizeof(buf), "%z", &tm);
 
     if (memcmp(buf, "+1245", size) == 0) {
-        ret = njs_unit_test(njs_tz_test, nxt_nitems(njs_tz_test), opts);
+        ret = njs_unit_test(njs_tz_test, nxt_nitems(njs_tz_test),
+                            "timezone tests", opts, stat);
         if (ret != NXT_OK) {
             return ret;
         }
-
-        nxt_printf("njs timezone tests passed\n");
 
     } else {
         nxt_printf("njs timezone tests skipped, timezone is unavailable\n");
@@ -14000,7 +14025,7 @@ njs_timezone_optional_test(njs_opts_t *opts)
 
 
 static nxt_int_t
-njs_regexp_optional_test(njs_opts_t *opts)
+njs_regexp_optional_test(njs_opts_t *opts, njs_stat_t *stat)
 {
     int         erroff;
     pcre        *re1, *re2;
@@ -14025,12 +14050,11 @@ njs_regexp_optional_test(njs_opts_t *opts)
                        &errstr, &erroff, NULL);
 
     if (re1 == NULL && re2 != NULL) {
-        ret = njs_unit_test(njs_regexp_test, nxt_nitems(njs_regexp_test), opts);
+        ret = njs_unit_test(njs_regexp_test, nxt_nitems(njs_regexp_test),
+                            "unicode regexp tests", opts, stat);
         if (ret != NXT_OK) {
             return ret;
         }
-
-        nxt_printf("njs unicode regexp tests passed\n");
 
     } else {
         nxt_printf("njs unicode regexp tests skipped, libpcre fails\n");
@@ -14049,15 +14073,16 @@ njs_regexp_optional_test(njs_opts_t *opts)
 
 
 static nxt_int_t
-njs_vm_json_test(njs_opts_t *opts)
+njs_vm_json_test(njs_opts_t *opts, njs_stat_t *stat)
 {
-    njs_vm_t           *vm;
-    nxt_int_t          ret, rc;
-    nxt_str_t          s, *script;
-    nxt_uint_t         i;
-    nxt_bool_t         success;
-    njs_value_t        args[3];
-    njs_vm_opt_t       options;
+    njs_vm_t      *vm;
+    nxt_int_t     ret, rc;
+    nxt_str_t     s, *script;
+    nxt_uint_t    i;
+    nxt_bool_t    success;
+    njs_stat_t    prev;
+    njs_value_t   args[3];
+    njs_vm_opt_t  options;
 
     static const nxt_str_t fname = nxt_string("replacer");
     static const nxt_str_t iname = nxt_string("indent");
@@ -14080,6 +14105,8 @@ njs_vm_json_test(njs_opts_t *opts)
     };
 
     vm = NULL;
+
+    prev = *stat;
 
     rc = NXT_ERROR;
 
@@ -14140,21 +14167,22 @@ njs_vm_json_test(njs_opts_t *opts)
                        "expected: \"%V\"\n     got: \"%V\"\n", script,
                        &tests[i].ret, &s);
 
-            goto done;
+            stat->failed++;
+
+        } else {
+            stat->passed++;
         }
 
         njs_vm_destroy(vm);
         vm = NULL;
+
     }
 
     rc = NXT_OK;
 
 done:
 
-    if (rc == NXT_OK) {
-        nxt_printf("njs_vm_json_test passed\n");
-
-    } else {
+    if (rc != NXT_OK) {
         if (njs_vm_retval_string(vm, &s) != NXT_OK) {
             nxt_printf("njs_vm_retval_string() failed\n");
 
@@ -14162,6 +14190,8 @@ done:
             nxt_printf("%V\n", &s);
         }
     }
+
+    njs_unit_test_report("VM json API tests", &prev, stat);
 
     if (vm != NULL) {
         njs_vm_destroy(vm);
@@ -14172,7 +14202,7 @@ done:
 
 
 static nxt_int_t
-njs_vm_object_alloc_test(njs_vm_t * vm, njs_opts_t *opts)
+njs_vm_object_alloc_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
 {
     njs_ret_t    ret;
     njs_value_t  args[2], obj;
@@ -14201,15 +14231,18 @@ njs_vm_object_alloc_test(njs_vm_t * vm, njs_opts_t *opts)
     ret = njs_vm_object_alloc(vm, &obj, &num_key, &args[0], &bool_key,
                               &args[1], NULL);
     if (ret != NJS_OK) {
-        return NXT_ERROR;
+        stat->failed++;
+        return NXT_OK;
     }
+
+    stat->passed++;
 
     return NXT_OK;
 }
 
 
 static nxt_int_t
-nxt_file_basename_test(njs_vm_t * vm, njs_opts_t *opts)
+nxt_file_basename_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
 {
     nxt_str_t   name;
     nxt_bool_t  success;
@@ -14242,7 +14275,11 @@ nxt_file_basename_test(njs_vm_t * vm, njs_opts_t *opts)
             nxt_printf("nxt_file_basename_test(\"%V\"):\n"
                        "expected: \"%V\"\n     got: \"%V\"\n",
                        &tests[i].path, &tests[i].expected, &name);
-            return NXT_ERROR;
+
+            stat->failed++;
+
+        } else {
+            stat->passed++;
         }
     }
 
@@ -14251,7 +14288,7 @@ nxt_file_basename_test(njs_vm_t * vm, njs_opts_t *opts)
 
 
 static nxt_int_t
-nxt_file_dirname_test(njs_vm_t * vm, njs_opts_t *opts)
+nxt_file_dirname_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
 {
     nxt_str_t   name;
     nxt_bool_t  success;
@@ -14285,8 +14322,12 @@ nxt_file_dirname_test(njs_vm_t * vm, njs_opts_t *opts)
             nxt_printf("nxt_file_dirname_test(\"%V\"):\n"
                        "expected: \"%V\"\n     got: \"%V\"\n",
                        &tests[i].path, &tests[i].expected, &name);
-            return NXT_ERROR;
+
+            stat->failed++;
+        } else {
+            stat->passed++;
         }
+
     }
 
     return NXT_OK;
@@ -14294,15 +14335,16 @@ nxt_file_dirname_test(njs_vm_t * vm, njs_opts_t *opts)
 
 
 static nxt_int_t
-njs_api_test(njs_opts_t *opts)
+njs_api_test(njs_opts_t *opts, njs_stat_t *stat)
 {
     njs_vm_t      *vm;
     nxt_int_t     ret, rc;
     nxt_uint_t    i;
+    njs_stat_t    prev;
     njs_vm_opt_t  options;
 
     static const struct {
-        nxt_int_t  (*test)(njs_vm_t *, njs_opts_t *);
+        nxt_int_t  (*test)(njs_vm_t *, njs_opts_t *, njs_stat_t *stat);
         nxt_str_t  name;
     } tests[] = {
         { njs_vm_object_alloc_test,
@@ -14313,10 +14355,12 @@ njs_api_test(njs_opts_t *opts)
           nxt_string("nxt_file_dirname_test") },
     };
 
-    rc = NXT_ERROR;
-
     vm = NULL;
     nxt_memzero(&options, sizeof(njs_vm_opt_t));
+
+    prev = *stat;
+
+    rc = NXT_ERROR;
 
     for (i = 0; i < nxt_nitems(tests); i++) {
         vm = njs_vm_create(&options);
@@ -14325,7 +14369,7 @@ njs_api_test(njs_opts_t *opts)
             goto done;
         }
 
-        ret = tests[i].test(vm, opts);
+        ret = tests[i].test(vm, opts, stat);
         if (nxt_slow_path(ret != NXT_OK)) {
             nxt_printf("njs_api_test: \"%V\" test failed\n", &tests[i].name);
             goto done;
@@ -14339,9 +14383,7 @@ njs_api_test(njs_opts_t *opts)
 
 done:
 
-    if (rc == NXT_OK) {
-        nxt_printf("njs_api_test passed\n");
-    }
+    njs_unit_test_report("API tests", &prev, stat);
 
     if (vm != NULL) {
         njs_vm_destroy(vm);
@@ -14356,6 +14398,7 @@ main(int argc, char **argv)
 {
     nxt_int_t   ret;
     njs_opts_t  opts;
+    njs_stat_t  stat;
 
     nxt_memzero(&opts, sizeof(njs_opts_t));
 
@@ -14378,41 +14421,44 @@ main(int argc, char **argv)
     (void) putenv((char *) "TZ=UTC");
     tzset();
 
-    /* script tests. */
+    nxt_memzero(&stat, sizeof(njs_stat_t));
 
-    ret = njs_unit_test(njs_test, nxt_nitems(njs_test), &opts);
+    ret = njs_unit_test(njs_test, nxt_nitems(njs_test), "script tests",
+                        &opts, &stat);
     if (ret != NXT_OK) {
         return ret;
     }
 
-    ret = njs_timezone_optional_test(&opts);
+    ret = njs_timezone_optional_test(&opts, &stat);
     if (ret != NXT_OK) {
         return ret;
     }
 
-    ret = njs_regexp_optional_test(&opts);
+    ret = njs_regexp_optional_test(&opts, &stat);
     if (ret != NXT_OK) {
         return ret;
     }
 
-    ret = njs_vm_json_test(&opts);
+    ret = njs_vm_json_test(&opts, &stat);
     if (ret != NXT_OK) {
         return ret;
     }
 
-    ret = njs_api_test(&opts);
+    ret = njs_api_test(&opts, &stat);
     if (ret != NXT_OK) {
         return ret;
     }
-
-    /* module tests. */
 
     opts.module = 1;
 
-    ret = njs_unit_test(njs_module_test, nxt_nitems(njs_module_test), &opts);
+    ret = njs_unit_test(njs_module_test, nxt_nitems(njs_module_test),
+                        "module tests", &opts, &stat);
     if (ret != NXT_OK) {
         return ret;
     }
 
-    nxt_printf("njs unit tests passed\n");
+    nxt_printf("TOTAL: %s [%ui/%ui]\n", stat.failed ? "FAILED" : "PASSED",
+               stat.passed, stat.passed + stat.failed);
+
+    return stat.failed ? EXIT_FAILURE : EXIT_SUCCESS;
 }
