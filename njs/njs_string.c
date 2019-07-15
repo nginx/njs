@@ -3942,10 +3942,6 @@ njs_string_to_c_string(njs_vm_t *vm, njs_value_t *value)
     } else {
         start = value->long_string.data->start;
         size = value->long_string.size;
-
-        if (start[size] == '\0') {
-            return start;
-        }
     }
 
     data = nxt_mp_alloc(vm->mem_pool, size + 1);
