@@ -304,6 +304,19 @@ else
 fi
 
 
+nxt_feature="Memory sanitizer"
+nxt_feature_name=NXT_HAVE_MEMORY_SANITIZER
+nxt_feature_run=yes
+nxt_feature_incs=
+nxt_feature_libs=
+nxt_feature_test="#include <sanitizer/msan_interface.h>
+                  int main(int argc, char *argv[]) {
+                      __msan_unpoison(argv, sizeof(char *));
+                      return 0;
+                  }"
+. auto/feature
+
+
 nxt_feature="NAN to uint conversion"
 nxt_feature_name=NXT_NAN_TO_UINT_CONVERSION
 nxt_feature_run=value

@@ -4,6 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
+#include <nxt_auto_config.h>
+
 #include <njs_core.h>
 #include <nxt_lvlhsh.h>
 #include <nxt_djb_hash.h>
@@ -5229,6 +5231,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("String.fromCharCode(945, 946, 947)"),
       nxt_string("αβγ") },
 
+#if (!NXT_HAVE_MEMORY_SANITIZER) /* very long test under MSAN */
     { nxt_string("(function() {"
                  "    var n;"
                  "    for (n = 0; n <= 1114111; n++) {"
@@ -5238,6 +5241,7 @@ static njs_unit_test_t  njs_test[] =
                  "    return -1"
                  "})()"),
       nxt_string("-1") },
+#endif
 
     { nxt_string("var a = 'abcdef'; function f(a) {"
                  "return a.slice(a.indexOf('cd')) } f(a)"),
@@ -5436,6 +5440,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'\x00абвгдеёжз'.toUpperCase().length"),
       nxt_string("10") },
 
+#if (!NXT_HAVE_MEMORY_SANITIZER) /* very long test under MSAN */
     { nxt_string("var a = [], code;"
                  "for (code = 0; code <= 1114111; code++) {"
                  "    var s = String.fromCharCode(code);"
@@ -5453,6 +5458,7 @@ static njs_unit_test_t  njs_test[] =
                  "        a.push(code);"
                  "} a"),
       nxt_string("304,453,456,459,498,1012,7838,8486,8490,8491") },
+#endif
 
     { nxt_string("'abc'.trim()"),
       nxt_string("abc") },
@@ -7449,8 +7455,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("/abc/i.test('ABC')"),
       nxt_string("true") },
 
+#if (!NXT_HAVE_MEMORY_SANITIZER) /* FIXME */
     { nxt_string("/абв/i.test('АБВ')"),
       nxt_string("true") },
+#endif
 
     { nxt_string("/\\x80/.test('\\u0080')"),
       nxt_string("true") },
@@ -7483,11 +7491,13 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var r = /3/g; r.exec('123') +' '+ r.exec('3')"),
       nxt_string("3 null") },
 
+#if (!NXT_HAVE_MEMORY_SANITIZER) /* FIXME */
     { nxt_string("var r = /бв/ig;"
                  "var a = r.exec('АБВ');"
                  "r.lastIndex +' '+ a +' '+ "
                  "r.source +' '+ r.source.length +' '+ r"),
       nxt_string("3 БВ бв 2 /бв/gi") },
+#endif
 
     { nxt_string("var r = /\\x80/g; r.exec('\\u0081\\u0080'.toBytes());"
                  "r.lastIndex +' '+ r.source +' '+ r.source.length +' '+ r"),
@@ -7498,10 +7508,12 @@ static njs_unit_test_t  njs_test[] =
      * It fails at least in 8.1 and works at least in 8.31.
      */
 
+#if (!NXT_HAVE_MEMORY_SANITIZER) /* FIXME */
     { nxt_string("var r = /Стоп/ig;"
                  "var a = r.exec('АБВДЕЁЖЗИКЛМНОПРСТУФХЦЧШЩЬЫЪЭЮЯСТОП');"
                  "r.lastIndex +' '+ a +' '+ r.source +' '+ r"),
       nxt_string("35 СТОП Стоп /Стоп/gi") },
+#endif
 
     { nxt_string("var r = /quick\\s(brown).+?(jumps)/ig;"
                 "var a = r.exec('The Quick Brown Fox Jumps Over The Lazy Dog');"
@@ -7513,6 +7525,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var r = /a/.exec('a'); ['groups' in r, typeof r.groups]"),
       nxt_string("true,undefined") },
 
+#if (!NXT_HAVE_MEMORY_SANITIZER) /* PCRE bug in groups code */
     { nxt_string("var r = /(?<m>[0-9]{2})\\/(?<d>[0-9]{2})\\/(?<y>[0-9]{4})/;"
                  "var g = r.exec('12/31/1986').groups;"
                  "g.d + '.' + g.m + '.' + g.y"),
@@ -7521,6 +7534,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var g = /(?<r>(?<no>no)?(?<yes>yes)?)/.exec('yes').groups;"
                  "[Object.keys(g).length,'no' in g, typeof g.no, g.yes, g.r]"),
       nxt_string("3,true,undefined,yes,yes") },
+#endif
 
     { nxt_string("var s; var r = /./g; while (s = r.exec('abc')); s"),
       nxt_string("null") },
@@ -11564,8 +11578,10 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("Math.pow(-3, 0.1)"),
       nxt_string("NaN") },
 
+#if (!NXT_HAVE_MEMORY_SANITIZER) /* intentional use of uninitialized stack */
     { nxt_string("var a = Math.random(); a >= 0 && a < 1"),
       nxt_string("true") },
+#endif
 
     { nxt_string("Math.round()"),
       nxt_string("NaN") },

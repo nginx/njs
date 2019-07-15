@@ -150,4 +150,11 @@ nxt_leading_zeros64(uint64_t x)
 #endif
 
 
+#if (NXT_HAVE_MEMORY_SANITIZER)
+#include <sanitizer/msan_interface.h>
+
+#define nxt_msan_unpoison(ptr, size)  __msan_unpoison(ptr, size)
+#endif
+
+
 #endif /* _NXT_CLANG_H_INCLUDED_ */
