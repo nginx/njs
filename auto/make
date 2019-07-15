@@ -244,7 +244,7 @@ unit_test: $NXT_BUILD_DIR/nxt_auto_config.h \\
 	$NXT_BUILD_DIR/njs_unit_test
 	$NXT_BUILD_DIR/njs_interactive_test
 
-test: njs_expect_test unit_test
+test: expect_test unit_test
 
 benchmark: $NXT_BUILD_DIR/nxt_auto_config.h \\
 	$NXT_BUILD_DIR/njs_benchmark

@@ -20,7 +20,7 @@ fi
 if [ $nxt_found = yes -a $NXT_HAVE_READLINE = YES ]; then
     cat << END >> $NXT_MAKEFILE
 
-njs_expect_test:	njs njs/test/njs_expect_test.exp
+expect_test:	njs njs/test/njs_expect_test.exp
 	INPUTRC=njs/test/inputrc PATH=$NXT_BUILD_DIR:\$(PATH) \
             expect -f njs/test/njs_expect_test.exp
 END
@@ -30,7 +30,7 @@ else
 
     cat << END >> $NXT_MAKEFILE
 
-njs_expect_test:
+expect_test:
 	@echo "Skipping expect tests"
 END
 
