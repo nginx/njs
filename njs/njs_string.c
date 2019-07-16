@@ -1357,10 +1357,10 @@ njs_string_slice_string_prop(njs_string_prop_t *dst,
         p = start;
         n = length;
 
-        do {
+        while (n != 0 && p < end) {
             p = nxt_utf8_next(p, end);
             n--;
-        } while (n != 0 && p < end);
+        }
 
         size = p - start;
         length -= n;

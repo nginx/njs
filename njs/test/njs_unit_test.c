@@ -4822,6 +4822,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abcdefgh'.substring(100, 120)"),
       nxt_string("") },
 
+    { nxt_string("'α'.repeat(32).substring(32)"),
+      nxt_string("") },
+
     { nxt_string("'abcdefghijklmno'.slice(NaN, 5)"),
       nxt_string("abcde") },
 
