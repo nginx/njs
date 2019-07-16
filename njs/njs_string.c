@@ -3513,9 +3513,6 @@ skip:
 
             type *= 2;
 
-        } else if (c == '&') {
-            type = 0;
-
         } else if (c == '`') {
             type = NJS_SUBST_PRECEDING;
 
