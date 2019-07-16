@@ -278,30 +278,17 @@ nxt_feature_test="#include <stdlib.h>
 . auto/feature
 
 
-nxt_os="$NXT_SYSTEM/$NXT_SYSTEM_PLATFORM"
+nxt_feature="GCC __attribute__ aligned"
+nxt_feature_name=NXT_HAVE_GCC_ATTRIBUTE_ALIGNED
+nxt_feature_run=no
+nxt_feature_path=
+nxt_feature_libs=
+nxt_feature_test="int n __attribute__ ((aligned(64)));
 
-if [ "$nxt_os" = "Linux/ppc64le" ]; then
-
-    # Old GNU ld linker may hang on Linux ppc64le platform
-    # if some of these features are enabled.
-
-    echo "checking for GCC __attribute__ aligned is disabled for $nxt_os."
-
-else
-
-    nxt_feature="GCC __attribute__ aligned"
-    nxt_feature_name=NXT_HAVE_GCC_ATTRIBUTE_ALIGNED
-    nxt_feature_run=no
-    nxt_feature_path=
-    nxt_feature_libs=
-    nxt_feature_test="int n __attribute__ ((aligned(64)));
-
-                      int main(void) {
-                          return 0;
-                      }"
-    . auto/feature
-
-fi
+				  int main(void) {
+					  return 0;
+				  }"
+. auto/feature
 
 
 nxt_feature="Memory sanitizer"
