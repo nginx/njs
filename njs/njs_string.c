@@ -3160,7 +3160,8 @@ njs_string_replace_regexp(njs_vm_t *vm, njs_value_t *args,
             start = r->part[0].start;
 
             if (start < end) {
-                p = (u_char *) nxt_utf8_next(start, end);
+                p = (r->utf8 != NJS_STRING_BYTE)
+                    ? (u_char *) nxt_utf8_next(start, end) : start + 1;
 
                 r->part[1].start = start;
                 r->part[1].size = p - start;

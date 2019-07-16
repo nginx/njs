@@ -5681,6 +5681,9 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("typeof '0'.replace(/^/g, '$0')"),
       nxt_string("string") },
 
+    { nxt_string("typeof String.bytesFrom(Array(15).fill(0xE3)).replace(/^/g, 1)"),
+      nxt_string("string") },
+
     { nxt_string("/]/"),
       nxt_string("/\\]/") },
 
