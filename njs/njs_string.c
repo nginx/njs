@@ -2757,7 +2757,8 @@ njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
 
             if (captures[1] == 0) {
                 if (start < end) {
-                    p = nxt_utf8_next(start, end);
+                    p = (utf8 != NJS_STRING_BYTE) ? nxt_utf8_next(start, end)
+                                                  : start + 1;
                     string.size = end - p;
 
                 } else {

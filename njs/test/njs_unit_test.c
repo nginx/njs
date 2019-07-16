@@ -5832,6 +5832,9 @@ static njs_unit_test_t  njs_test[] =
                  "a +' '+ a.length"),
       nxt_string("αα 4") },
 
+    { nxt_string("typeof String.bytesFrom(Array(15).fill(0xE3)).match(/^/g)"),
+      nxt_string("object") },
+
     { nxt_string("'abc'.split()"),
       nxt_string("abc") },
 
