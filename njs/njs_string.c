@@ -3516,6 +3516,9 @@ skip:
         } else if (c == '`') {
             type = NJS_SUBST_PRECEDING;
 
+        } else if (c == '&') {
+            type = 0;
+
         } else if (c == '\'') {
             type = NJS_SUBST_FOLLOWING;
 
@@ -3540,12 +3543,13 @@ static njs_ret_t
 njs_string_replace_substitute(njs_vm_t *vm, njs_string_replace_t *r,
     int *captures)
 {
-    uint32_t                   i, n, last, index;
+    int                        *capture;
+    uint32_t                   i, n, last;
     const u_char               *end;
     njs_string_subst_t         *s;
     njs_string_replace_part_t  *part, *subject;
 
-    index = 0;
+    capture = NULL;
 
     last = r->substitutions->items;
     end = r->part[0].start + r->part[0].size;
@@ -3607,15 +3611,14 @@ njs_string_replace_substitute(njs_vm_t *vm, njs_string_replace_t *r,
             break;
 
         /*
-         * "$n" substitutions.
-         * "$&" is the same as "$0", the "$0" however is not supported.
+         * "$n" and "$&" substitutions.
          */
         default:
             if (captures[n] == captures[n + 1]) {
 
                 /* Empty match. */
 
-                if (captures[n - 1] == captures[n]) {
+                if (n > 0 && captures[n - 1] == captures[n]) {
 
                     /*
                      * Consecutive empty matches as in
@@ -3626,11 +3629,11 @@ njs_string_replace_substitute(njs_vm_t *vm, njs_string_replace_t *r,
                     break;
                 }
 
-                index = n;
+                capture = &captures[n];
                 continue;
             }
 
-            if (index != 0) {
+            if (capture != NULL) {
 
                 /*
                  * Inserting a single character after a series of
@@ -3638,14 +3641,14 @@ njs_string_replace_substitute(njs_vm_t *vm, njs_string_replace_t *r,
                  */
 
                 if (part->start < end) {
-                    part->start = r->part[0].start + captures[index];
+                    part->start = r->part[0].start + *capture;
                     part->size = nxt_utf8_next(part->start, end) - part->start;
 
                 } else {
                     part->size = 0;
                 }
 
-                index = 0;
+                capture = NULL;
                 break;
             }
 
@@ -3658,8 +3661,8 @@ njs_string_replace_substitute(njs_vm_t *vm, njs_string_replace_t *r,
         part++;
     }
 
-    if (index != 0) {
-        part->start = r->part[0].start + captures[index];
+    if (capture != NULL) {
+        part->start = r->part[0].start + *capture;
 
         if (part->start < end) {
             part->size = nxt_utf8_next(part->start, end) - part->start;

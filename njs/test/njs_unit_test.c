@@ -5681,14 +5681,22 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'abc'.replace(/(a*)/g, function v0() {return '124'})"),
       nxt_string("124124b124c124") },
 
-    { nxt_string("typeof '0'.replace(/^/g, '$0')"),
-      nxt_string("string") },
+    { nxt_string("'abc'.replace(/b/g, '$0')"),
+      nxt_string("a$0c") },
 
     { nxt_string("typeof String.bytesFrom(Array(15).fill(0xE3)).replace(/^/g, 1)"),
       nxt_string("string") },
 
-    { nxt_string("typeof '0'.replace(/^/g, '$&')"),
-      nxt_string("string") },
+#if 0 /* FIXME: PCRE limitation */
+    { nxt_string("'abc'.replace(/^/g, '|$&|')"),
+      nxt_string("||abc") },
+#endif
+
+    { nxt_string("'abc'.replace(/b/g, '|$&|')"),
+      nxt_string("a|b|c") },
+
+    { nxt_string("'ABC'.replace(/((A)B)/g, '($1|$&|$2)')"),
+      nxt_string("(AB|AB|A)C") },
 
     { nxt_string("/]/"),
       nxt_string("/\\]/") },
