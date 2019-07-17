@@ -87,7 +87,7 @@ nxt_memzero(buf, length)                                                      \
     (void) memset(buf, 0, length)
 
 
-#if (NXT_HAVE_EXPLICIT_BZERO)
+#if (NXT_HAVE_EXPLICIT_BZERO && !NXT_HAVE_MEMORY_SANITIZER)
 #define                                                                       \
 nxt_explicit_memzero(buf, length)                                             \
     explicit_bzero(buf, length)
