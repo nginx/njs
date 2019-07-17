@@ -478,13 +478,12 @@ njs_external_property_delete(njs_vm_t *vm, njs_value_t *value,
  *      retval will contain the property's value
  *
  *   NXT_DECLINED         property was not found in object
- *   NJS_APPLIED          the property getter was applied
  *   NXT_ERROR            exception has been thrown.
  *      retval will contain undefined
  */
 njs_ret_t
 njs_value_property(njs_vm_t *vm, const njs_value_t *value,
-    const njs_value_t *property, njs_value_t *retval, size_t advance)
+    const njs_value_t *property, njs_value_t *retval)
 {
     njs_ret_t             ret;
     njs_object_prop_t     *prop;
@@ -525,9 +524,8 @@ njs_value_property(njs_vm_t *vm, const njs_value_t *value,
                 break;
             }
 
-            return njs_function_activate(vm, njs_function(&prop->getter),
-                                         value, NULL, 0, (njs_index_t) retval,
-                                         advance);
+            return njs_function_apply(vm, njs_function(&prop->getter),
+                                      (njs_value_t *) value, 1, retval);
 
         case NJS_PROPERTY_HANDLER:
             pq.scratch = *prop;
@@ -569,12 +567,11 @@ njs_value_property(njs_vm_t *vm, const njs_value_t *value,
 
 /*
  *   NXT_OK               property has been set successfully
- *   NJS_APPLIED          the property setter was applied
  *   NXT_ERROR            exception has been thrown.
  */
 njs_ret_t
 njs_value_property_set(njs_vm_t *vm, njs_value_t *object,
-    const njs_value_t *property, njs_value_t *value, size_t advance)
+    const njs_value_t *property, njs_value_t *value)
 {
     njs_ret_t             ret;
     njs_object_prop_t     *prop, *shared;
@@ -630,11 +627,8 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *object,
                 }
 
                 if (njs_is_function(&prop->setter)) {
-                    return njs_function_activate(vm,
-                                                 njs_function(&prop->setter),
-                                                 object, value, 1,
-                                                 (njs_index_t) &vm->retval,
-                                                 advance);
+                    return njs_function_call(vm, njs_function(&prop->setter),
+                                             object, value, 1, &vm->retval);
                 }
 
                 goto found;

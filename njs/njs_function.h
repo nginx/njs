@@ -57,23 +57,6 @@ struct njs_function_lambda_s {
 #define NJS_FRAME_SPARE_SIZE       512
 
 
-typedef struct {
-    njs_function_native_t          function;
-    uint8_t                        *args_types;
-    u_char                         *return_address;
-    njs_index_t                    retval;
-} njs_continuation_t;
-
-
-#define njs_vm_continuation(vm)                                               \
-    (void *) ((vm)->top_frame->continuation)
-
-#define njs_continuation_size(size)                                           \
-    nxt_align_size(sizeof(size), sizeof(njs_value_t))
-
-#define NJS_CONTINUATION_SIZE      njs_continuation_size(njs_continuation_t)
-
-
 typedef struct njs_exception_s     njs_exception_t;
 
 struct njs_exception_s {
@@ -91,8 +74,6 @@ struct njs_native_frame_s {
 
     njs_function_t                 *function;
     njs_native_frame_t             *previous;
-
-    njs_continuation_t             *continuation;
 
     njs_value_t                    *arguments;
     njs_object_t                   *arguments_object;
@@ -145,20 +126,15 @@ njs_ret_t njs_function_constructor(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 njs_ret_t njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, const njs_value_t *args, nxt_uint_t nargs,
-    size_t continuation_size, nxt_bool_t ctor);
+    nxt_bool_t ctor);
 njs_ret_t njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, const njs_value_t *args, nxt_uint_t nargs,
     nxt_bool_t ctor);
-njs_ret_t njs_function_activate(njs_vm_t *vm, njs_function_t *function,
-    const njs_value_t *this, const njs_value_t *args, nxt_uint_t nargs,
-    njs_index_t retval, size_t advance);
 njs_ret_t njs_function_call(njs_vm_t *vm, njs_function_t *function,
-    njs_value_t *args, nxt_uint_t nargs, njs_index_t retval);
-njs_ret_t njs_function_lambda_call(njs_vm_t *vm, njs_index_t retval,
-    u_char *return_address);
-njs_ret_t njs_function_native_call(njs_vm_t *vm, njs_function_native_t native,
-    njs_value_t *args, uint8_t *args_types, nxt_uint_t nargs,
-    njs_index_t retval, u_char *return_address);
+    njs_value_t *this, njs_value_t *args, nxt_uint_t nargs,
+    njs_value_t *retval);
+njs_ret_t njs_function_lambda_call(njs_vm_t *vm);
+njs_ret_t njs_function_native_call(njs_vm_t *vm);
 void njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame);
 
 
@@ -180,24 +156,14 @@ njs_function_lambda_alloc(njs_vm_t *vm, uint8_t ctor)
 nxt_inline njs_ret_t
 njs_function_frame(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, const njs_value_t *args, nxt_uint_t nargs,
-    size_t continuation_size, nxt_bool_t ctor)
+    nxt_bool_t ctor)
 {
     if (function->native) {
-        return njs_function_native_frame(vm, function, this, args, nargs,
-                                         continuation_size, ctor);
+        return njs_function_native_frame(vm, function, this, args, nargs, ctor);
 
     } else {
         return njs_function_lambda_frame(vm, function, this, args, nargs, ctor);
     }
-}
-
-
-nxt_inline njs_ret_t
-njs_function_apply(njs_vm_t *vm, njs_function_t *function,
-    const njs_value_t *args, nxt_uint_t nargs, njs_index_t retval)
-{
-    return njs_function_activate(vm, function, &args[0], &args[1], nargs - 1,
-                                 retval, 0);
 }
 
 
@@ -213,6 +179,33 @@ njs_function_previous_frame(njs_native_frame_t *frame)
     } while (frame->skip);
 
     return frame;
+}
+
+
+nxt_inline njs_ret_t
+njs_function_frame_invoke(njs_vm_t *vm, njs_index_t retval)
+{
+    njs_frame_t  *frame;
+
+    frame = (njs_frame_t *) vm->top_frame;
+
+    frame->retval = retval;
+
+    if (frame->native.function->native) {
+        return njs_function_native_call(vm);
+
+    } else {
+        return njs_function_lambda_call(vm);
+    }
+}
+
+
+nxt_inline njs_ret_t
+njs_function_apply(njs_vm_t *vm, njs_function_t *function, njs_value_t *args,
+    nxt_uint_t nargs, njs_value_t *retval)
+{
+    return njs_function_call(vm, function, &args[0], &args[1], nargs - 1,
+                             retval);
 }
 
 

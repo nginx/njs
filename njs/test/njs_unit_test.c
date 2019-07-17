@@ -8449,7 +8449,11 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("Object.defineProperty(Function.prototype, \"prototype\", {get: ()=>Array.prototype});"
                  "[] instanceof Function.prototype"),
-      nxt_string("InternalError: getter is not supported in instanceof") },
+      nxt_string("true") },
+
+     { nxt_string("Object.defineProperty(Function.prototype, \"prototype\", {get: ()=>{throw Error('Oops')}});"
+                 "[] instanceof Function.prototype"),
+      nxt_string("Error: Oops") },
 
     /* global this. */
 
@@ -9085,11 +9089,8 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("var s = new String('αβ'); s[4] = 'ab'; s[4]"),
       nxt_string("ab") },
 
-
-#if 0
     { nxt_string("Object.create(new String('αβ')).length"),
       nxt_string("2") },
-#endif
 
     { nxt_string("var s = new String('αβ'); s.valueOf()[1]"),
       nxt_string("β") },

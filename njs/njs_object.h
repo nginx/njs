@@ -127,9 +127,9 @@ njs_ret_t njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
 njs_ret_t njs_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     njs_value_t *object, const njs_value_t *property);
 njs_ret_t njs_value_property(njs_vm_t *vm, const njs_value_t *value,
-    const njs_value_t *property, njs_value_t *retval, size_t advance);
+    const njs_value_t *property, njs_value_t *retval);
 njs_ret_t njs_value_property_set(njs_vm_t *vm, njs_value_t *object,
-    const njs_value_t *property, njs_value_t *value, size_t advance);
+    const njs_value_t *property, njs_value_t *value);
 njs_object_prop_t *njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
     const njs_value_t *value, uint8_t attributes);
 njs_object_prop_t *njs_object_property(njs_vm_t *vm, const njs_object_t *obj,

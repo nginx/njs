@@ -29,13 +29,6 @@
 
 
 /*
- * A user-defined function is prepared to run.  This code is never
- * returned to interpreter, so the value can be shared with NJS_STOP.
- */
-#define NJS_APPLIED              NXT_DONE
-
-
-/*
  * NJS_PROPERTY_QUERY_GET must be less to NJS_PROPERTY_QUERY_SET
  * and NJS_PROPERTY_QUERY_DELETE.
  */
@@ -635,6 +628,8 @@ struct njs_vm_shared_s {
 
 nxt_int_t njs_vmcode_interpreter(njs_vm_t *vm);
 nxt_int_t njs_vmcode_run(njs_vm_t *vm);
+void njs_vm_scopes_restore(njs_vm_t *vm, njs_frame_t *frame,
+    njs_native_frame_t *previous);
 
 njs_ret_t njs_vmcode_object(njs_vm_t *vm, njs_value_t *inlvd1,
     njs_value_t *inlvd2);
@@ -795,8 +790,6 @@ extern const nxt_str_t    njs_entry_anonymous;
 
 extern const nxt_mem_proto_t     njs_array_mem_proto;
 extern const nxt_lvlhsh_proto_t  njs_object_hash_proto;
-
-extern const njs_vmcode_generic_t  njs_continuation_nexus[];
 
 
 #endif /* _NJS_VM_H_INCLUDED_ */

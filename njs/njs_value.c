@@ -106,10 +106,9 @@ njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
 {
     njs_ret_t           ret;
     nxt_uint_t          tries;
+    njs_value_t         retval;
     njs_object_prop_t   *prop;
     nxt_lvlhsh_query_t  lhq;
-
-    njs_value_t         retval nxt_aligned(16);
 
     static const uint32_t  hashes[] = {
         NJS_VALUE_OF_HASH,
@@ -146,8 +145,8 @@ njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
                 continue;
             }
 
-            ret = njs_function_call(vm, njs_function(&prop->value), value, 1,
-                                    (njs_index_t) &retval);
+            ret = njs_function_apply(vm, njs_function(&prop->value), value, 1,
+                                     &retval);
 
             if (nxt_fast_path(ret == NXT_OK)) {
                 if (njs_is_primitive(&retval)) {

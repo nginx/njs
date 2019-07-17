@@ -13,16 +13,6 @@
 
 
 typedef struct {
-    union {
-        njs_continuation_t  cont;
-        u_char              padding[NJS_CONTINUATION_SIZE];
-    } u;
-
-    nxt_bool_t              done;
-} njs_fs_cont_t;
-
-
-typedef struct {
     nxt_str_t               name;
     int                     value;
 } njs_fs_entry_t;
@@ -44,8 +34,6 @@ static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, int default_flags);
 static njs_ret_t njs_fs_write_file_sync_internal(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, int default_flags);
-static njs_ret_t njs_fs_done(njs_vm_t *vm, njs_value_t *args,
-    nxt_uint_t nargs, njs_index_t unused);
 
 static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
     const char *description, njs_value_t *path, int errn, njs_value_t *retval);
@@ -93,7 +81,6 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     const char          *path, *syscall, *description;
     struct stat         sb;
     njs_value_t         *callback, arguments[3];
-    njs_fs_cont_t       *cont;
     njs_object_prop_t   *prop;
     nxt_lvlhsh_query_t  lhq;
 
@@ -286,11 +273,16 @@ done:
 
     arguments[0] = njs_value_undefined;
 
-    cont = njs_vm_continuation(vm);
-    cont->u.cont.function = njs_fs_done;
+    ret = njs_function_apply(vm, njs_function(callback), arguments, 3,
+                             &vm->retval);
 
-    return njs_function_apply(vm, njs_function(callback),
-                              arguments, 3, (njs_index_t) &vm->retval);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
+    vm->retval = njs_value_undefined;
+
+    return NXT_OK;
 
 fail:
 
@@ -538,7 +530,6 @@ static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
     njs_ret_t           ret;
     const char          *path, *syscall, *description;
     njs_value_t         *callback, *mode, arguments[2];
-    njs_fs_cont_t       *cont;
     njs_object_prop_t   *prop;
     nxt_lvlhsh_query_t  lhq;
 
@@ -706,11 +697,16 @@ done:
 
     arguments[0] = njs_value_undefined;
 
-    cont = njs_vm_continuation(vm);
-    cont->u.cont.function = njs_fs_done;
+    ret = njs_function_apply(vm, njs_function(callback), arguments, 2,
+                             &vm->retval);
 
-    return njs_function_apply(vm, njs_function(callback),
-                              arguments, 2, (njs_index_t) &vm->retval);
+    if (nxt_slow_path(ret != NXT_OK)) {
+        return ret;
+    }
+
+    vm->retval = njs_value_undefined;
+
+    return NXT_OK;
 }
 
 
@@ -880,15 +876,6 @@ done:
 }
 
 
-static njs_ret_t njs_fs_done(njs_vm_t *vm, njs_value_t *args,
-    nxt_uint_t nargs, njs_index_t unused)
-{
-    vm->retval = njs_value_undefined;
-
-    return NJS_OK;
-}
-
-
 static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
     const char *description, njs_value_t *path, int errn, njs_value_t *retval)
 {
@@ -1036,8 +1023,7 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
     {
         .type = NJS_METHOD,
         .name = njs_string("readFile"),
-        .value = njs_native_function(njs_fs_read_file,
-                                     njs_continuation_size(njs_fs_cont_t), 0),
+        .value = njs_native_function(njs_fs_read_file, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1045,7 +1031,7 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
     {
         .type = NJS_METHOD,
         .name = njs_string("readFileSync"),
-        .value = njs_native_function(njs_fs_read_file_sync, 0, 0),
+        .value = njs_native_function(njs_fs_read_file_sync, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1053,8 +1039,7 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
     {
         .type = NJS_METHOD,
         .name = njs_string("appendFile"),
-        .value = njs_native_function(njs_fs_append_file,
-                                     njs_continuation_size(njs_fs_cont_t), 0),
+        .value = njs_native_function(njs_fs_append_file, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1062,8 +1047,7 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
     {
         .type = NJS_METHOD,
         .name = njs_string("appendFileSync"),
-        .value = njs_native_function(njs_fs_append_file_sync,
-                                     njs_continuation_size(njs_fs_cont_t), 0),
+        .value = njs_native_function(njs_fs_append_file_sync, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1071,8 +1055,7 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
     {
         .type = NJS_METHOD,
         .name = njs_string("writeFile"),
-        .value = njs_native_function(njs_fs_write_file,
-                                     njs_continuation_size(njs_fs_cont_t), 0),
+        .value = njs_native_function(njs_fs_write_file, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1080,8 +1063,7 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
     {
         .type = NJS_METHOD,
         .name = njs_string("writeFileSync"),
-        .value = njs_native_function(njs_fs_write_file_sync,
-                                     njs_continuation_size(njs_fs_cont_t), 0),
+        .value = njs_native_function(njs_fs_write_file_sync, 0),
         .writable = 1,
         .configurable = 1,
     },

@@ -43,14 +43,6 @@ typedef struct {
 
 
 typedef struct {
-    union {
-        njs_continuation_t     cont;
-        u_char                 padding[NJS_CONTINUATION_SIZE];
-    } u;
-    /*
-     * This retval value must be aligned so the continuation is padded
-     * to aligned size.
-     */
     njs_value_t                retval;
 
     nxt_array_t                stack;
@@ -70,14 +62,6 @@ struct njs_chb_node_s {
 
 
 typedef struct {
-    union {
-        njs_continuation_t     cont;
-        u_char                 padding[NJS_CONTINUATION_SIZE];
-    } u;
-    /*
-     * This retval value must be aligned so the continuation is padded
-     * to aligned size.
-     */
     njs_value_t                retval;
     njs_value_t                key;
 
@@ -107,9 +91,8 @@ nxt_inline uint32_t njs_json_unicode(const u_char *p);
 static const u_char *njs_json_skip_space(const u_char *start,
     const u_char *end);
 
-static njs_ret_t njs_json_parse_continuation(njs_vm_t *vm,
-    njs_value_t *args, nxt_uint_t unused, njs_index_t unused2);
-static njs_ret_t njs_json_parse_continuation_apply(njs_vm_t *vm,
+static njs_ret_t njs_json_parse_iterator(njs_vm_t *vm, njs_json_parse_t *parse);
+static njs_ret_t njs_json_parse_iterator_call(njs_vm_t *vm,
     njs_json_parse_t *parse);
 static njs_json_state_t *njs_json_push_parse_state(njs_vm_t *vm,
     njs_json_parse_t *parse, njs_value_t *value);
@@ -117,8 +100,8 @@ static njs_json_state_t *njs_json_pop_parse_state(njs_json_parse_t *parse);
 static void njs_json_parse_exception(njs_json_parse_ctx_t *ctx,
     const char *msg, const u_char *pos);
 
-static njs_ret_t njs_json_stringify_continuation(njs_vm_t *vm,
-    njs_value_t *args, nxt_uint_t unused, njs_index_t unused2);
+static njs_ret_t njs_json_stringify_iterator(njs_vm_t *vm,
+    njs_json_stringify_t *stringify);
 static njs_function_t *njs_object_to_json_function(njs_vm_t *vm,
     njs_value_t *value);
 static njs_ret_t njs_json_stringify_to_json(njs_vm_t *vm,
@@ -169,9 +152,11 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_value_t           *value, *wrapper;
     const njs_value_t     *text, *reviver;
     const u_char          *p, *end;
-    njs_json_parse_t      *parse;
+    njs_json_parse_t      *parse, json_parse;
     njs_string_prop_t     string;
     njs_json_parse_ctx_t  ctx;
+
+    parse = &json_parse;
 
     value = nxt_mp_alloc(vm->mem_pool, sizeof(njs_value_t));
     if (nxt_slow_path(value == NULL)) {
@@ -221,8 +206,6 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             goto memory_error;
         }
 
-        parse = njs_vm_continuation(vm);
-        parse->u.cont.function = njs_json_parse_continuation;
         parse->function = njs_function(reviver);
 
         if (nxt_array_init(&parse->stack, NULL, 4, sizeof(njs_json_state_t),
@@ -236,7 +219,7 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             goto memory_error;
         }
 
-        return njs_json_parse_continuation(vm, args, nargs, unused);
+        return njs_json_parse_iterator(vm, parse);
     }
 
     vm->retval = *value;
@@ -271,12 +254,12 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_ret_t             ret;
     njs_value_t           *wrapper;
     const njs_value_t     *replacer, *space;
-    njs_json_stringify_t  *stringify;
+    njs_json_stringify_t  *stringify, json_stringify;
 
-    stringify = njs_vm_continuation(vm);
+    stringify = &json_stringify;
+
     stringify->vm = vm;
     stringify->pool = vm->mem_pool;
-    stringify->u.cont.function = njs_json_stringify_continuation;
     stringify->nodes = NULL;
     stringify->last = NULL;
 
@@ -339,7 +322,7 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
         goto memory_error;
     }
 
-    return njs_json_stringify_continuation(vm, args, nargs, unused);
+    return njs_json_stringify_iterator(vm, stringify);
 
 memory_error:
 
@@ -932,22 +915,21 @@ njs_json_skip_space(const u_char *start, const u_char *end)
 
 #define njs_json_is_non_empty(_value)                                         \
     (((_value)->type == NJS_OBJECT)                                           \
-      && !nxt_lvlhsh_is_empty(njs_object_hash(_value)))                              \
+      && !nxt_lvlhsh_is_empty(njs_object_hash(_value)))                       \
      || (((_value)->type == NJS_ARRAY) && njs_array_len(_value) != 0)
 
 
 static njs_ret_t
-njs_json_parse_continuation(njs_vm_t *vm, njs_value_t *args, nxt_uint_t unused,
-    njs_index_t unused2)
+njs_json_parse_iterator(njs_vm_t *vm, njs_json_parse_t *parse)
 {
     nxt_int_t           ret;
     njs_value_t         *key, *value;
     njs_json_state_t    *state;
-    njs_json_parse_t    *parse;
     njs_object_prop_t   *prop;
     nxt_lvlhsh_query_t  lhq;
 
-    parse = njs_vm_continuation(vm);
+start:
+
     state = parse->state;
 
     for ( ;; ) {
@@ -992,7 +974,12 @@ njs_json_parse_continuation(njs_vm_t *vm, njs_value_t *args, nxt_uint_t unused,
                 }
             }
 
-            return njs_json_parse_continuation_apply(vm, parse);
+            ret = njs_json_parse_iterator_call(vm, parse);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return ret;
+            }
+
+            goto start;
 
         case NJS_JSON_OBJECT_REPLACED:
             key = &state->keys->start[state->index];
@@ -1042,7 +1029,12 @@ njs_json_parse_continuation(njs_vm_t *vm, njs_value_t *args, nxt_uint_t unused,
                 (void) njs_json_pop_parse_state(parse);
             }
 
-            return njs_json_parse_continuation_apply(vm, parse);
+            ret = njs_json_parse_iterator_call(vm, parse);
+            if (nxt_slow_path(ret != NXT_OK)) {
+                return ret;
+            }
+
+            goto start;
 
         case NJS_JSON_ARRAY_REPLACED:
             value = &njs_array_start(&state->value)[state->index];
@@ -1069,7 +1061,7 @@ memory_error:
 
 
 static njs_ret_t
-njs_json_parse_continuation_apply(njs_vm_t *vm, njs_json_parse_t *parse)
+njs_json_parse_iterator_call(njs_vm_t *vm, njs_json_parse_t *parse)
 {
     njs_value_t       arguments[3];
     njs_json_state_t  *state;
@@ -1102,7 +1094,7 @@ njs_json_parse_continuation_apply(njs_vm_t *vm, njs_json_parse_t *parse)
     njs_set_invalid(&parse->retval);
 
     return njs_function_apply(vm, parse->function, arguments, 3,
-                              (njs_index_t) &parse->retval);
+                              &parse->retval);
 }
 
 
@@ -1215,23 +1207,22 @@ njs_json_parse_exception(njs_json_parse_ctx_t *ctx, const char *msg,
 
 
 static njs_ret_t
-njs_json_stringify_continuation(njs_vm_t *vm, njs_value_t *args,
-    nxt_uint_t unused, njs_index_t unused2)
+njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify)
 {
-    u_char                *start;
-    size_t                size;
-    ssize_t               length;
-    nxt_int_t             i;
-    njs_ret_t             ret;
-    nxt_str_t             str;
-    njs_value_t           *key, *value;
-    njs_function_t        *to_json;
-    njs_json_state_t      *state;
-    njs_object_prop_t     *prop;
-    nxt_lvlhsh_query_t    lhq;
-    njs_json_stringify_t  *stringify;
+    u_char              *start;
+    size_t              size;
+    ssize_t             length;
+    nxt_int_t           i;
+    njs_ret_t           ret;
+    nxt_str_t           str;
+    njs_value_t         *key, *value;
+    njs_function_t      *to_json;
+    njs_json_state_t    *state;
+    njs_object_prop_t   *prop;
+    nxt_lvlhsh_query_t  lhq;
 
-    stringify = njs_vm_continuation(vm);
+start:
+
     state = stringify->state;
 
     for ( ;; ) {
@@ -1279,15 +1270,25 @@ njs_json_stringify_continuation(njs_vm_t *vm, njs_value_t *args,
             if (njs_is_object(&prop->value)) {
                 to_json = njs_object_to_json_function(vm, &prop->value);
                 if (to_json != NULL) {
-                    return njs_json_stringify_to_json(vm, stringify, to_json,
-                                                      &prop->name,
-                                                      &prop->value);
+                    ret = njs_json_stringify_to_json(vm, stringify, to_json,
+                                                     &prop->name,
+                                                     &prop->value);
+                    if (nxt_slow_path(ret != NXT_OK)) {
+                        return ret;
+                    }
+
+                    goto start;
                 }
             }
 
             if (njs_is_function(&stringify->replacer)) {
-                return njs_json_stringify_replacer(vm, stringify, &prop->name,
-                                                   &prop->value);
+                ret = njs_json_stringify_replacer(vm, stringify, &prop->name,
+                                                  &prop->value);
+                if (nxt_slow_path(ret != NXT_OK)) {
+                    return ret;
+                }
+
+                goto start;
             }
 
             njs_json_stringify_append_key(&prop->name);
@@ -1313,9 +1314,14 @@ njs_json_stringify_continuation(njs_vm_t *vm, njs_value_t *args,
             }
 
             if (njs_is_function(&stringify->replacer)) {
-                return njs_json_stringify_replacer(vm, stringify,
-                                                   &stringify->key,
-                                                   &stringify->retval);
+                ret = njs_json_stringify_replacer(vm, stringify,
+                                                  &stringify->key,
+                                                  &stringify->retval);
+                if (nxt_slow_path(ret != NXT_OK)) {
+                    return ret;
+                }
+
+                goto start;
             }
 
             /* Fall through. */
@@ -1373,14 +1379,23 @@ njs_json_stringify_continuation(njs_vm_t *vm, njs_value_t *args,
             if (njs_is_object(value)) {
                 to_json = njs_object_to_json_function(vm, value);
                 if (to_json != NULL) {
-                    return njs_json_stringify_to_json(vm, stringify, to_json,
-                                                      NULL, value);
-                }
+                    ret = njs_json_stringify_to_json(vm, stringify, to_json,
+                                                     NULL, value);
+                    if (nxt_slow_path(ret != NXT_OK)) {
+                        return ret;
+                    }
 
+                    goto start;
+                }
             }
 
             if (njs_is_function(&stringify->replacer)) {
-                return njs_json_stringify_replacer(vm, stringify, NULL, value);
+                ret = njs_json_stringify_replacer(vm, stringify, NULL, value);
+                if (nxt_slow_path(ret != NXT_OK)) {
+                    return ret;
+                }
+
+                goto start;
             }
 
             if (njs_json_is_object(value)) {
@@ -1400,8 +1415,13 @@ njs_json_stringify_continuation(njs_vm_t *vm, njs_value_t *args,
             if (!njs_is_undefined(&stringify->retval)
                 && njs_is_function(&stringify->replacer))
             {
-                return njs_json_stringify_replacer(vm, stringify, NULL,
-                                                   &stringify->retval);
+                ret = njs_json_stringify_replacer(vm, stringify, NULL,
+                                                  &stringify->retval);
+                if (nxt_slow_path(ret != NXT_OK)) {
+                    return ret;
+                }
+
+                goto start;
             }
 
             /* Fall through. */
@@ -1538,8 +1558,7 @@ njs_json_stringify_to_json(njs_vm_t *vm, njs_json_stringify_t* stringify,
         return NXT_ERROR;
     }
 
-    return njs_function_apply(vm, function, arguments, 2,
-                              (njs_index_t) &stringify->retval);
+    return njs_function_apply(vm, function, arguments, 2, &stringify->retval);
 }
 
 
@@ -1583,7 +1602,7 @@ njs_json_stringify_replacer(njs_vm_t *vm, njs_json_stringify_t* stringify,
     njs_set_invalid(&stringify->retval);
 
     return njs_function_apply(vm, njs_function(&stringify->replacer),
-                              arguments, 3, (njs_index_t) &stringify->retval);
+                              arguments, 3, &stringify->retval);
 }
 
 
@@ -2071,9 +2090,8 @@ static const njs_object_prop_t  njs_json_object_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("parse"),
         .value = njs_native_function(njs_json_parse,
-                                    njs_continuation_size(njs_json_parse_t),
-                                    NJS_SKIP_ARG, NJS_STRING_ARG,
-                                    NJS_OBJECT_ARG),
+                                     NJS_SKIP_ARG, NJS_STRING_ARG,
+                                     NJS_OBJECT_ARG),
         .writable = 1,
         .configurable = 1,
     },
@@ -2083,9 +2101,8 @@ static const njs_object_prop_t  njs_json_object_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("stringify"),
         .value = njs_native_function(njs_json_stringify,
-                                    njs_continuation_size(njs_json_stringify_t),
-                                    NJS_SKIP_ARG, NJS_SKIP_ARG, NJS_SKIP_ARG,
-                                    NJS_SKIP_ARG),
+                                     NJS_SKIP_ARG, NJS_SKIP_ARG, NJS_SKIP_ARG,
+                                     NJS_SKIP_ARG),
         .writable = 1,
         .configurable = 1,
     },

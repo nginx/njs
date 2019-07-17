@@ -1127,7 +1127,7 @@ static const njs_object_prop_t  njs_njs_object_properties[] =
     {
         .type = NJS_METHOD,
         .name = njs_string("dump"),
-        .value = njs_native_function(njs_dump_value, 0,
+        .value = njs_native_function(njs_dump_value,
                                     NJS_SKIP_ARG, NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .configurable = 1,
     },

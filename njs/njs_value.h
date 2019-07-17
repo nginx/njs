@@ -342,13 +342,12 @@ typedef enum {
 }
 
 
-#define njs_native_function(_function, _size, ...) {                          \
+#define njs_native_function(_function, ...) {                                 \
     .data = {                                                                 \
         .type = NJS_FUNCTION,                                                 \
         .truth = 1,                                                           \
         .u.function = & (njs_function_t) {                                    \
             .native = 1,                                                      \
-            .continuation_size = _size,                                       \
             .args_types = { __VA_ARGS__ },                                    \
             .args_offset = 1,                                                 \
             .u.native = _function,                                            \
