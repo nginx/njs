@@ -931,7 +931,7 @@ njs_parser_string_create(njs_vm_t *vm, njs_value_t *value)
         dst = nxt_utf8_encode(dst, cp);
     }
 
-    if (size > NJS_STRING_MAP_STRIDE && size != length) {
+    if (length > NJS_STRING_MAP_STRIDE && size != length) {
         njs_string_offset_map_init(value->long_string.data->start, size);
     }
 
