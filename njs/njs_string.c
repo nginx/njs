@@ -1351,19 +1351,26 @@ njs_string_slice_string_prop(njs_string_prop_t *dst,
     } else {
         /* UTF-8 string. */
         end = start + string->size;
-        start = njs_string_offset(start, end, slice->start);
 
-        /* Evaluate size of the slice in bytes and ajdust length. */
-        p = start;
-        n = length;
+        if (slice->start < slice->string_length) {
+            start = njs_string_offset(start, end, slice->start);
 
-        while (n != 0 && p < end) {
-            p = nxt_utf8_next(p, end);
-            n--;
+            /* Evaluate size of the slice in bytes and adjust length. */
+            p = start;
+            n = length;
+
+            while (n != 0 && p < end) {
+                p = nxt_utf8_next(p, end);
+                n--;
+            }
+
+            size = p - start;
+            length -= n;
+
+        } else {
+            length = 0;
+            size = 0;
         }
-
-        size = p - start;
-        length -= n;
     }
 
     dst->start = (u_char *) start;
