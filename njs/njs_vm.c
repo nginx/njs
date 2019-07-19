@@ -1375,7 +1375,7 @@ njs_vmcode_left_shift(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
     num1 = njs_number_to_int32(njs_number(val1));
     num2 = njs_number_to_uint32(njs_number(val2));
-    njs_set_number(&vm->retval, num1 << (num2 & 0x1f));
+    njs_set_int32(&vm->retval, num1 << (num2 & 0x1f));
 
     return sizeof(njs_vmcode_3addr_t);
 }
@@ -1409,7 +1409,7 @@ njs_vmcode_right_shift(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
     num1 = njs_number_to_int32(njs_number(val1));
     num2 = njs_number_to_uint32(njs_number(val2));
-    njs_set_number(&vm->retval, num1 >> (num2 & 0x1f));
+    njs_set_int32(&vm->retval, num1 >> (num2 & 0x1f));
 
     return sizeof(njs_vmcode_3addr_t);
 }
@@ -1443,7 +1443,7 @@ njs_vmcode_unsigned_right_shift(njs_vm_t *vm, njs_value_t *val1,
 
     num1 = njs_number_to_uint32(njs_number(val1));
     num2 = njs_number_to_uint32(njs_number(val2));
-    njs_set_number(&vm->retval, num1 >> (num2 & 0x1f));
+    njs_set_uint32(&vm->retval, num1 >> (num2 & 0x1f));
 
     return sizeof(njs_vmcode_3addr_t);
 }
@@ -1505,7 +1505,7 @@ njs_vmcode_bitwise_not(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
         value = &numeric;
     }
 
-    njs_set_number(&vm->retval, ~njs_number_to_integer(njs_number(value)));
+    njs_set_int32(&vm->retval, ~njs_number_to_integer(njs_number(value)));
 
     return sizeof(njs_vmcode_2addr_t);
 }
@@ -1538,7 +1538,7 @@ njs_vmcode_bitwise_and(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
     num1 = njs_number_to_integer(njs_number(val1));
     num2 = njs_number_to_integer(njs_number(val2));
-    njs_set_number(&vm->retval, num1 & num2);
+    njs_set_int32(&vm->retval, num1 & num2);
 
     return sizeof(njs_vmcode_3addr_t);
 }
@@ -1571,7 +1571,7 @@ njs_vmcode_bitwise_xor(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
     num1 = njs_number_to_integer(njs_number(val1));
     num2 = njs_number_to_integer(njs_number(val2));
-    njs_set_number(&vm->retval, num1 ^ num2);
+    njs_set_int32(&vm->retval, num1 ^ num2);
 
     return sizeof(njs_vmcode_3addr_t);
 }
@@ -1604,7 +1604,7 @@ njs_vmcode_bitwise_or(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
     num1 = njs_number_to_integer(njs_number(val1));
     num2 = njs_number_to_integer(njs_number(val2));
-    njs_set_number(&vm->retval, num1 | num2);
+    njs_set_int32(&vm->retval, num1 | num2);
 
     return sizeof(njs_vmcode_3addr_t);
 }

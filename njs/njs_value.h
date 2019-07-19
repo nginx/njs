@@ -621,6 +621,24 @@ njs_set_number(njs_value_t *value, double num)
 
 
 nxt_inline void
+njs_set_int32(njs_value_t *value, int32_t num)
+{
+    value->data.u.number = num;
+    value->type = NJS_NUMBER;
+    value->data.truth = (num != 0);
+}
+
+
+nxt_inline void
+njs_set_uint32(njs_value_t *value, uint32_t num)
+{
+    value->data.u.number = num;
+    value->type = NJS_NUMBER;
+    value->data.truth = (num != 0);
+}
+
+
+nxt_inline void
 njs_set_data(njs_value_t *value, void *data)
 {
     value->data.u.data = data;
