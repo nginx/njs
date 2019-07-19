@@ -49,7 +49,6 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
     const njs_value_t *property)
 {
     uint32_t        index;
-    uint32_t        (*hash)(const void *, size_t);
     njs_ret_t       ret;
     njs_object_t    *obj;
     njs_value_t     prop;
@@ -63,8 +62,6 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
 
         property = &prop;
     }
-
-    hash = nxt_djb_hash;
 
     switch (object->type) {
 
@@ -140,7 +137,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
     if (nxt_fast_path(ret == NXT_OK)) {
 
         njs_string_get(&pq->value, &pq->lhq.key);
-        pq->lhq.key_hash = hash(pq->lhq.key.start, pq->lhq.key.length);
+        pq->lhq.key_hash = nxt_djb_hash(pq->lhq.key.start, pq->lhq.key.length);
 
         if (obj == NULL) {
             pq->own = 1;
