@@ -599,7 +599,12 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *object,
                 return NXT_ERROR;
             }
 
-        } else if (!njs_is_function(&prop->setter)) {
+        } else {
+            if (njs_is_function(&prop->setter)) {
+                return njs_function_call(vm, njs_function(&prop->setter),
+                                         object, value, 1, &vm->retval);
+            }
+
             njs_type_error(vm,
                      "Cannot set property \"%V\" of %s which has only a getter",
                            &pq.lhq.key, njs_type_string(object->type));
@@ -621,11 +626,6 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *object,
                 if (nxt_slow_path(pq.shared)) {
                     shared = prop;
                     break;
-                }
-
-                if (njs_is_function(&prop->setter)) {
-                    return njs_function_call(vm, njs_function(&prop->setter),
-                                             object, value, 1, &vm->retval);
                 }
 
                 goto found;

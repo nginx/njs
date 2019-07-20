@@ -9629,6 +9629,10 @@ static njs_unit_test_t  njs_test[] =
                  "Object.defineProperty(o, 'a', {get:()=>1}); o.a = 2"),
       nxt_string("TypeError: Cannot set property \"a\" of object which has only a getter") },
 
+    { nxt_string("var o = Object.create(Object.defineProperty({}, 'x', { set: function(v) { this.y = v; }})); "
+                 "o.x = 123; Object.getOwnPropertyDescriptor(o, 'y').value"),
+      nxt_string("123") },
+
     { nxt_string("var o = {};"
                  "Object.defineProperty(o, 'a', { configurable: true, value: 0 });"
                  "Object.defineProperty(o, 'a', { value: 1 });"
