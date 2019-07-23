@@ -329,3 +329,126 @@ njs_arg_type_string(uint8_t arg)
         return "unknown";
     }
 }
+
+
+void
+njs_value_undefined_set(njs_value_t *value)
+{
+    njs_set_undefined(value);
+}
+
+
+void
+njs_value_boolean_set(njs_value_t *value, int yn)
+{
+    njs_set_boolean(value, yn);
+}
+
+
+void
+njs_value_number_set(njs_value_t *value, double num)
+{
+    njs_set_number(value, num);
+}
+
+
+void
+njs_value_data_set(njs_value_t *value, void *data)
+{
+    njs_set_data(value, data);
+}
+
+
+uint8_t
+njs_value_bool(const njs_value_t *value)
+{
+    return njs_bool(value);
+}
+
+
+double
+njs_value_number(const njs_value_t *value)
+{
+    return njs_number(value);
+}
+
+
+void *
+njs_value_data(const njs_value_t *value)
+{
+    return njs_data(value);
+}
+
+
+njs_function_t *
+njs_value_function(const njs_value_t *value)
+{
+    return njs_function(value);
+}
+
+
+nxt_int_t
+njs_value_is_null(const njs_value_t *value)
+{
+    return njs_is_null(value);
+}
+
+
+nxt_int_t
+njs_value_is_undefined(const njs_value_t *value)
+{
+    return njs_is_undefined(value);
+}
+
+
+nxt_int_t
+njs_value_is_null_or_undefined(const njs_value_t *value)
+{
+    return njs_is_null_or_undefined(value);
+}
+
+
+nxt_int_t
+njs_value_is_boolean(const njs_value_t *value)
+{
+    return njs_is_boolean(value);
+}
+
+
+nxt_int_t
+njs_value_is_number(const njs_value_t *value)
+{
+    return njs_is_number(value);
+}
+
+
+nxt_int_t
+njs_value_is_valid_number(const njs_value_t *value)
+{
+    return njs_is_number(value)
+           && !isnan(njs_number(value))
+           && !isinf(njs_number(value));
+}
+
+
+nxt_int_t
+njs_value_is_string(const njs_value_t *value)
+{
+    return njs_is_string(value);
+}
+
+
+nxt_int_t
+njs_value_is_object(const njs_value_t *value)
+{
+    return njs_is_object(value);
+}
+
+
+nxt_int_t
+njs_value_is_function(const njs_value_t *value)
+{
+    return njs_is_function(value);
+}
+
+
