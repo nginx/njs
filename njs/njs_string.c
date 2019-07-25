@@ -3906,10 +3906,7 @@ njs_string_to_c_string(njs_vm_t *vm, njs_value_t *value)
         start = value->short_string.start;
         size = value->short_string.size;
 
-        if (start[size] == '\0') {
-            return start;
-
-        } else if (size < NJS_STRING_SHORT) {
+        if (size < NJS_STRING_SHORT) {
             start[size] = '\0';
             return start;
         }
