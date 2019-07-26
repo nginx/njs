@@ -12,31 +12,108 @@
  * Negative return values handled by nJSVM interpreter as special events.
  * The values must be in range from -1 to -11, because -12 is minimal jump
  * offset on 32-bit platforms.
+ *    0  (NJS_OK/NXT_OK)      :  njs_vmcode_stop() has stopped execution,
+ *                               execution successfully finished
  *    -1 (NJS_ERROR/NXT_ERROR):  error or exception;
- *    -2 (NJS_AGAIN/NXT_AGAIN):  postpone nJSVM execution;
- *    -3:                        not used;
- *    -4 (NJS_STOP/NXT_DONE):    njs_vmcode_stop() has stopped execution,
- *                               execution has completed successfully;
- *    -5 .. -11:                 not used.
+ *    -2 .. -11:                 not used.
  */
 
-#define NJS_STOP                 NXT_DONE
-
 /* The last return value which preempts execution. */
-#define NJS_PREEMPT              (-11)
+#define NJS_PREEMPT                     (-11)
 
 
-typedef njs_ret_t (*njs_vmcode_operation_t)(njs_vm_t *vm, njs_value_t *value1,
-    njs_value_t *value2);
+typedef uint8_t                         njs_vmcode_operation_t;
 
 
-#define NJS_VMCODE_3OPERANDS   0
-#define NJS_VMCODE_2OPERANDS   1
-#define NJS_VMCODE_1OPERAND    2
-#define NJS_VMCODE_NO_OPERAND  3
+#define NJS_VMCODE_3OPERANDS            0
+#define NJS_VMCODE_2OPERANDS            1
+#define NJS_VMCODE_1OPERAND             2
+#define NJS_VMCODE_NO_OPERAND           3
 
-#define NJS_VMCODE_NO_RETVAL   0
-#define NJS_VMCODE_RETVAL      1
+#define NJS_VMCODE_NO_RETVAL            0
+#define NJS_VMCODE_RETVAL               1
+
+#define VMCODE0(n)                      (n)
+#define VMCODE1(n)                      ((n) + 128)
+
+#define NJS_VMCODE_STOP                 VMCODE0(0)
+#define NJS_VMCODE_JUMP                 VMCODE0(1)
+#define NJS_VMCODE_PROPERTY_SET         VMCODE0(2)
+#define NJS_VMCODE_IF_TRUE_JUMP         VMCODE0(4)
+#define NJS_VMCODE_IF_FALSE_JUMP        VMCODE0(5)
+#define NJS_VMCODE_IF_EQUAL_JUMP        VMCODE0(6)
+#define NJS_VMCODE_PROPERTY_INIT        VMCODE0(7)
+#define NJS_VMCODE_RETURN               VMCODE0(8)
+#define NJS_VMCODE_FUNCTION_FRAME       VMCODE0(9)
+#define NJS_VMCODE_METHOD_FRAME         VMCODE0(10)
+#define NJS_VMCODE_FUNCTION_CALL        VMCODE0(11)
+#define NJS_VMCODE_PROPERTY_NEXT        VMCODE0(16)
+#define NJS_VMCODE_THIS                 VMCODE0(17)
+#define NJS_VMCODE_ARGUMENTS            VMCODE0(18)
+
+#define NJS_VMCODE_TRY_START            VMCODE0(32)
+#define NJS_VMCODE_THROW                VMCODE0(33)
+#define NJS_VMCODE_TRY_BREAK            VMCODE0(34)
+#define NJS_VMCODE_TRY_CONTINUE         VMCODE0(35)
+#define NJS_VMCODE_TRY_END              VMCODE0(37)
+#define NJS_VMCODE_CATCH                VMCODE0(38)
+#define NJS_VMCODE_FINALLY              VMCODE0(39)
+#define NJS_VMCODE_REFERENCE_ERROR      VMCODE0(40)
+
+#define NJS_VMCODE_MOVE                 VMCODE1(0)
+#define NJS_VMCODE_PROPERTY_GET         VMCODE1(1)
+#define NJS_VMCODE_INCREMENT            VMCODE1(2)
+#define NJS_VMCODE_POST_INCREMENT       VMCODE1(3)
+#define NJS_VMCODE_DECREMENT            VMCODE1(4)
+#define NJS_VMCODE_POST_DECREMENT       VMCODE1(5)
+#define NJS_VMCODE_TRY_RETURN           VMCODE1(6)
+
+#define NJS_VMCODE_LESS                 VMCODE1(8)
+#define NJS_VMCODE_GREATER              VMCODE1(9)
+#define NJS_VMCODE_LESS_OR_EQUAL        VMCODE1(10)
+#define NJS_VMCODE_GREATER_OR_EQUAL     VMCODE1(11)
+#define NJS_VMCODE_ADDITION             VMCODE1(12)
+#define NJS_VMCODE_EQUAL                VMCODE1(13)
+#define NJS_VMCODE_NOT_EQUAL            VMCODE1(14)
+
+#define NJS_VMCODE_SUBSTRACTION         VMCODE1(16)
+#define NJS_VMCODE_MULTIPLICATION       VMCODE1(17)
+#define NJS_VMCODE_EXPONENTIATION       VMCODE1(18)
+#define NJS_VMCODE_DIVISION             VMCODE1(19)
+#define NJS_VMCODE_REMAINDER            VMCODE1(20)
+#define NJS_VMCODE_BITWISE_AND          VMCODE1(21)
+#define NJS_VMCODE_BITWISE_OR           VMCODE1(22)
+#define NJS_VMCODE_BITWISE_XOR          VMCODE1(23)
+#define NJS_VMCODE_LEFT_SHIFT           VMCODE1(24)
+#define NJS_VMCODE_RIGHT_SHIFT          VMCODE1(25)
+#define NJS_VMCODE_UNSIGNED_RIGHT_SHIFT VMCODE1(26)
+#define NJS_VMCODE_OBJECT_COPY          VMCODE1(27)
+#define NJS_VMCODE_TEMPLATE_LITERAL     VMCODE1(28)
+#define NJS_VMCODE_PROPERTY_IN          VMCODE1(29)
+#define NJS_VMCODE_PROPERTY_DELETE      VMCODE1(30)
+#define NJS_VMCODE_PROPERTY_FOREACH     VMCODE1(31)
+
+#define NJS_VMCODE_STRICT_EQUAL         VMCODE1(32)
+#define NJS_VMCODE_STRICT_NOT_EQUAL     VMCODE1(33)
+
+#define NJS_VMCODE_TEST_IF_TRUE         VMCODE1(34)
+#define NJS_VMCODE_TEST_IF_FALSE        VMCODE1(35)
+
+#define NJS_VMCODE_UNARY_PLUS           VMCODE1(36)
+#define NJS_VMCODE_UNARY_NEGATION       VMCODE1(37)
+#define NJS_VMCODE_BITWISE_NOT          VMCODE1(38)
+#define NJS_VMCODE_LOGICAL_NOT          VMCODE1(39)
+#define NJS_VMCODE_OBJECT               VMCODE1(40)
+#define NJS_VMCODE_ARRAY                VMCODE1(41)
+#define NJS_VMCODE_FUNCTION             VMCODE1(42)
+#define NJS_VMCODE_REGEXP               VMCODE1(43)
+
+#define NJS_VMCODE_INSTANCE_OF          VMCODE1(44)
+#define NJS_VMCODE_TYPEOF               VMCODE1(45)
+#define NJS_VMCODE_VOID                 VMCODE1(46)
+#define NJS_VMCODE_DELETE               VMCODE1(47)
+
+#define NJS_VMCODE_NOP                  255
 
 
 typedef struct {
@@ -297,147 +374,6 @@ typedef struct {
 } njs_vmcode_reference_error_t;
 
 
-nxt_int_t njs_vmcode_interpreter(njs_vm_t *vm);
-nxt_int_t njs_vmcode_run(njs_vm_t *vm);
-
-njs_ret_t njs_vmcode_object(njs_vm_t *vm, njs_value_t *inlvd1,
-    njs_value_t *inlvd2);
-njs_ret_t njs_vmcode_array(njs_vm_t *vm, njs_value_t *inlvd1,
-    njs_value_t *inlvd2);
-njs_ret_t njs_vmcode_function(njs_vm_t *vm, njs_value_t *inlvd1,
-    njs_value_t *invld2);
-njs_ret_t njs_vmcode_this(njs_vm_t *vm, njs_value_t *inlvd1,
-    njs_value_t *invld2);
-njs_ret_t njs_vmcode_arguments(njs_vm_t *vm, njs_value_t *inlvd1,
-    njs_value_t *invld2);
-njs_ret_t njs_vmcode_regexp(njs_vm_t *vm, njs_value_t *inlvd1,
-    njs_value_t *invld2);
-njs_ret_t njs_vmcode_template_literal(njs_vm_t *vm, njs_value_t *inlvd1,
-    njs_value_t *inlvd2);
-njs_ret_t njs_vmcode_object_copy(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *invld);
-
-njs_ret_t njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *property);
-njs_ret_t njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *property);
-njs_ret_t njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *property);
-njs_ret_t njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *property,
-    njs_value_t *object);
-njs_ret_t njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *property);
-njs_ret_t njs_vmcode_property_foreach(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *invld);
-njs_ret_t njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *value);
-njs_ret_t njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *constructor);
-
-njs_ret_t njs_vmcode_increment(njs_vm_t *vm, njs_value_t *reference,
-    njs_value_t *value);
-njs_ret_t njs_vmcode_decrement(njs_vm_t *vm, njs_value_t *reference,
-    njs_value_t *value);
-njs_ret_t njs_vmcode_post_increment(njs_vm_t *vm, njs_value_t *reference,
-    njs_value_t *value);
-njs_ret_t njs_vmcode_post_decrement(njs_vm_t *vm, njs_value_t *reference,
-    njs_value_t *value);
-njs_ret_t njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *invld);
-njs_ret_t njs_vmcode_void(njs_vm_t *vm, njs_value_t *invld1,
-    njs_value_t *invld2);
-njs_ret_t njs_vmcode_delete(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *invld);
-njs_ret_t njs_vmcode_unary_plus(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *invld);
-njs_ret_t njs_vmcode_unary_negation(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *invld);
-njs_ret_t njs_vmcode_addition(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-njs_ret_t njs_vmcode_substraction(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-njs_ret_t njs_vmcode_multiplication(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-njs_ret_t njs_vmcode_exponentiation(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-njs_ret_t njs_vmcode_division(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-njs_ret_t njs_vmcode_remainder(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-njs_ret_t njs_vmcode_logical_not(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *inlvd);
-njs_ret_t njs_vmcode_test_if_true(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *invld);
-njs_ret_t njs_vmcode_test_if_false(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *invld);
-njs_ret_t njs_vmcode_bitwise_not(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *inlvd);
-njs_ret_t njs_vmcode_bitwise_and(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-njs_ret_t njs_vmcode_bitwise_xor(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-njs_ret_t njs_vmcode_bitwise_or(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-njs_ret_t njs_vmcode_left_shift(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-njs_ret_t njs_vmcode_right_shift(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-njs_ret_t njs_vmcode_unsigned_right_shift(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-njs_ret_t njs_vmcode_equal(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2);
-njs_ret_t njs_vmcode_not_equal(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-njs_ret_t njs_vmcode_less(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2);
-njs_ret_t njs_vmcode_greater(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-njs_ret_t njs_vmcode_less_or_equal(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-njs_ret_t njs_vmcode_greater_or_equal(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-njs_ret_t njs_vmcode_strict_equal(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-njs_ret_t njs_vmcode_strict_not_equal(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-
-njs_ret_t njs_vmcode_move(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld);
-
-njs_ret_t njs_vmcode_jump(njs_vm_t *vm, njs_value_t *invld,
-    njs_value_t *offset);
-njs_ret_t njs_vmcode_if_true_jump(njs_vm_t *vm, njs_value_t *cond,
-    njs_value_t *offset);
-njs_ret_t njs_vmcode_if_false_jump(njs_vm_t *vm, njs_value_t *cond,
-    njs_value_t *offset);
-njs_ret_t njs_vmcode_if_equal_jump(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2);
-
-njs_ret_t njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *nargs);
-njs_ret_t njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *method);
-njs_ret_t njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld,
-    njs_value_t *retval);
-njs_ret_t njs_vmcode_return(njs_vm_t *vm, njs_value_t *invld,
-    njs_value_t *retval);
-njs_ret_t njs_vmcode_stop(njs_vm_t *vm, njs_value_t *invld,
-    njs_value_t *retval);
-
-njs_ret_t njs_vmcode_try_start(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *offset);
-njs_ret_t njs_vmcode_try_break(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *offset);
-njs_ret_t njs_vmcode_try_continue(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *offset);
-njs_ret_t njs_vmcode_try_return(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *offset);
-njs_ret_t njs_vmcode_try_end(njs_vm_t *vm, njs_value_t *invld,
-    njs_value_t *offset);
-njs_ret_t njs_vmcode_throw(njs_vm_t *vm, njs_value_t *invld,
-    njs_value_t *retval);
-njs_ret_t njs_vmcode_catch(njs_vm_t *vm, njs_value_t *invld,
-    njs_value_t *exception);
-njs_ret_t njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld,
-    njs_value_t *retval);
-njs_ret_t njs_vmcode_reference_error(njs_vm_t *vm, njs_value_t *invld1,
-    njs_value_t *invld2);
+nxt_int_t njs_vmcode_interpreter(njs_vm_t *vm, u_char *code);
 
 #endif /* _NJS_VMCODE_H_INCLUDED_ */

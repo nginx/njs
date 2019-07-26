@@ -1097,7 +1097,7 @@ njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser, njs_token_t parent,
             return NJS_TOKEN_ERROR;
         }
 
-        assign->u.operation = njs_vmcode_move;
+        assign->u.operation = NJS_VMCODE_MOVE;
         assign->left = name;
         assign->right = expr;
 

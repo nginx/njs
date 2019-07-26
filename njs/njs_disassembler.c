@@ -19,116 +19,116 @@ typedef struct {
 
 static njs_code_name_t  code_names[] = {
 
-    { njs_vmcode_object, sizeof(njs_vmcode_object_t),
+    { NJS_VMCODE_OBJECT, sizeof(njs_vmcode_object_t),
           nxt_string("OBJECT          ") },
-    { njs_vmcode_function, sizeof(njs_vmcode_function_t),
+    { NJS_VMCODE_FUNCTION, sizeof(njs_vmcode_function_t),
           nxt_string("FUNCTION        ") },
-    { njs_vmcode_this, sizeof(njs_vmcode_this_t),
+    { NJS_VMCODE_THIS, sizeof(njs_vmcode_this_t),
           nxt_string("THIS            ") },
-    { njs_vmcode_arguments, sizeof(njs_vmcode_arguments_t),
+    { NJS_VMCODE_ARGUMENTS, sizeof(njs_vmcode_arguments_t),
           nxt_string("ARGUMENTS       ") },
-    { njs_vmcode_regexp, sizeof(njs_vmcode_regexp_t),
+    { NJS_VMCODE_REGEXP, sizeof(njs_vmcode_regexp_t),
           nxt_string("REGEXP          ") },
-    { njs_vmcode_template_literal, sizeof(njs_vmcode_template_literal_t),
+    { NJS_VMCODE_TEMPLATE_LITERAL, sizeof(njs_vmcode_template_literal_t),
           nxt_string("TEMPLATE LITERAL") },
-    { njs_vmcode_object_copy, sizeof(njs_vmcode_object_copy_t),
+    { NJS_VMCODE_OBJECT_COPY, sizeof(njs_vmcode_object_copy_t),
           nxt_string("OBJECT COPY     ") },
 
-    { njs_vmcode_property_get, sizeof(njs_vmcode_prop_get_t),
+    { NJS_VMCODE_PROPERTY_GET, sizeof(njs_vmcode_prop_get_t),
           nxt_string("PROPERTY GET    ") },
-    { njs_vmcode_property_init, sizeof(njs_vmcode_prop_set_t),
+    { NJS_VMCODE_PROPERTY_INIT, sizeof(njs_vmcode_prop_set_t),
           nxt_string("PROPERTY INIT   ") },
-    { njs_vmcode_property_set, sizeof(njs_vmcode_prop_set_t),
+    { NJS_VMCODE_PROPERTY_SET, sizeof(njs_vmcode_prop_set_t),
           nxt_string("PROPERTY SET    ") },
-    { njs_vmcode_property_in, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_PROPERTY_IN, sizeof(njs_vmcode_3addr_t),
           nxt_string("PROPERTY IN     ") },
-    { njs_vmcode_property_delete, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_PROPERTY_DELETE, sizeof(njs_vmcode_3addr_t),
           nxt_string("PROPERTY DELETE ") },
-    { njs_vmcode_instance_of, sizeof(njs_vmcode_instance_of_t),
+    { NJS_VMCODE_INSTANCE_OF, sizeof(njs_vmcode_instance_of_t),
           nxt_string("INSTANCE OF     ") },
 
-    { njs_vmcode_function_call, sizeof(njs_vmcode_function_call_t),
+    { NJS_VMCODE_FUNCTION_CALL, sizeof(njs_vmcode_function_call_t),
           nxt_string("FUNCTION CALL   ") },
-    { njs_vmcode_return, sizeof(njs_vmcode_return_t),
+    { NJS_VMCODE_RETURN, sizeof(njs_vmcode_return_t),
           nxt_string("RETURN          ") },
-    { njs_vmcode_stop, sizeof(njs_vmcode_stop_t),
+    { NJS_VMCODE_STOP, sizeof(njs_vmcode_stop_t),
           nxt_string("STOP            ") },
 
-    { njs_vmcode_increment, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_INCREMENT, sizeof(njs_vmcode_3addr_t),
           nxt_string("INC             ") },
-    { njs_vmcode_decrement, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_DECREMENT, sizeof(njs_vmcode_3addr_t),
           nxt_string("DEC             ") },
-    { njs_vmcode_post_increment, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_POST_INCREMENT, sizeof(njs_vmcode_3addr_t),
           nxt_string("POST INC        ") },
-    { njs_vmcode_post_decrement, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_POST_DECREMENT, sizeof(njs_vmcode_3addr_t),
           nxt_string("POST DEC        ") },
 
-    { njs_vmcode_delete, sizeof(njs_vmcode_2addr_t),
+    { NJS_VMCODE_DELETE, sizeof(njs_vmcode_2addr_t),
           nxt_string("DELETE          ") },
-    { njs_vmcode_void, sizeof(njs_vmcode_2addr_t),
+    { NJS_VMCODE_VOID, sizeof(njs_vmcode_2addr_t),
           nxt_string("VOID            ") },
-    { njs_vmcode_typeof, sizeof(njs_vmcode_2addr_t),
+    { NJS_VMCODE_TYPEOF, sizeof(njs_vmcode_2addr_t),
           nxt_string("TYPEOF          ") },
 
-    { njs_vmcode_unary_plus, sizeof(njs_vmcode_2addr_t),
+    { NJS_VMCODE_UNARY_PLUS, sizeof(njs_vmcode_2addr_t),
           nxt_string("PLUS            ") },
-    { njs_vmcode_unary_negation, sizeof(njs_vmcode_2addr_t),
+    { NJS_VMCODE_UNARY_NEGATION, sizeof(njs_vmcode_2addr_t),
           nxt_string("NEGATION        ") },
 
-    { njs_vmcode_addition, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_ADDITION, sizeof(njs_vmcode_3addr_t),
           nxt_string("ADD             ") },
-    { njs_vmcode_substraction, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_SUBSTRACTION, sizeof(njs_vmcode_3addr_t),
           nxt_string("SUBSTRACT       ") },
-    { njs_vmcode_multiplication, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_MULTIPLICATION, sizeof(njs_vmcode_3addr_t),
           nxt_string("MULTIPLY        ") },
-    { njs_vmcode_exponentiation, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_EXPONENTIATION, sizeof(njs_vmcode_3addr_t),
           nxt_string("POWER           ") },
-    { njs_vmcode_division, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_DIVISION, sizeof(njs_vmcode_3addr_t),
           nxt_string("DIVIDE          ") },
-    { njs_vmcode_remainder, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_REMAINDER, sizeof(njs_vmcode_3addr_t),
           nxt_string("REMAINDER       ") },
 
-    { njs_vmcode_left_shift, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_LEFT_SHIFT, sizeof(njs_vmcode_3addr_t),
           nxt_string("LEFT SHIFT      ") },
-    { njs_vmcode_right_shift, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_RIGHT_SHIFT, sizeof(njs_vmcode_3addr_t),
           nxt_string("RIGHT SHIFT     ") },
-    { njs_vmcode_unsigned_right_shift, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_UNSIGNED_RIGHT_SHIFT, sizeof(njs_vmcode_3addr_t),
           nxt_string("USGN RIGHT SHIFT") },
 
-    { njs_vmcode_logical_not, sizeof(njs_vmcode_2addr_t),
+    { NJS_VMCODE_LOGICAL_NOT, sizeof(njs_vmcode_2addr_t),
           nxt_string("LOGICAL NOT     ") },
 
-    { njs_vmcode_bitwise_not, sizeof(njs_vmcode_2addr_t),
+    { NJS_VMCODE_BITWISE_NOT, sizeof(njs_vmcode_2addr_t),
           nxt_string("BINARY NOT      ") },
-    { njs_vmcode_bitwise_and, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_BITWISE_AND, sizeof(njs_vmcode_3addr_t),
           nxt_string("BINARY AND      ") },
-    { njs_vmcode_bitwise_xor, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_BITWISE_XOR, sizeof(njs_vmcode_3addr_t),
           nxt_string("BINARY XOR      ") },
-    { njs_vmcode_bitwise_or, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_BITWISE_OR, sizeof(njs_vmcode_3addr_t),
           nxt_string("BINARY OR       ") },
 
-    { njs_vmcode_equal, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_EQUAL, sizeof(njs_vmcode_3addr_t),
           nxt_string("EQUAL           ") },
-    { njs_vmcode_not_equal, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_NOT_EQUAL, sizeof(njs_vmcode_3addr_t),
           nxt_string("NOT EQUAL       ") },
-    { njs_vmcode_less, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_LESS, sizeof(njs_vmcode_3addr_t),
           nxt_string("LESS            ") },
-    { njs_vmcode_less_or_equal, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_LESS_OR_EQUAL, sizeof(njs_vmcode_3addr_t),
           nxt_string("LESS OR EQUAL   ") },
-    { njs_vmcode_greater, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_GREATER, sizeof(njs_vmcode_3addr_t),
           nxt_string("GREATER         ") },
-    { njs_vmcode_greater_or_equal, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_GREATER_OR_EQUAL, sizeof(njs_vmcode_3addr_t),
           nxt_string("GREATER OR EQUAL") },
 
-    { njs_vmcode_strict_equal, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_STRICT_EQUAL, sizeof(njs_vmcode_3addr_t),
           nxt_string("STRICT EQUAL    ") },
-    { njs_vmcode_strict_not_equal, sizeof(njs_vmcode_3addr_t),
+    { NJS_VMCODE_STRICT_NOT_EQUAL, sizeof(njs_vmcode_3addr_t),
           nxt_string("STRICT NOT EQUAL") },
 
-    { njs_vmcode_move, sizeof(njs_vmcode_move_t),
+    { NJS_VMCODE_MOVE, sizeof(njs_vmcode_move_t),
           nxt_string("MOVE            ") },
 
-    { njs_vmcode_throw, sizeof(njs_vmcode_throw_t),
+    { NJS_VMCODE_THROW, sizeof(njs_vmcode_throw_t),
           nxt_string("THROW           ") },
 
 };
@@ -140,8 +140,8 @@ njs_disassembler(njs_vm_t *vm)
     nxt_uint_t     n;
     njs_vm_code_t  *code;
 
-    code = vm->code->start;
-    n = vm->code->items;
+    code = vm->codes->start;
+    n = vm->codes->items;
 
     while (n != 0) {
         nxt_printf("%V:%V\n", &code->file, &code->name);
@@ -191,7 +191,7 @@ njs_disassemble(u_char *start, u_char *end)
     while (p < end) {
         operation = *(njs_vmcode_operation_t *) p;
 
-        if (operation == njs_vmcode_array) {
+        if (operation == NJS_VMCODE_ARRAY) {
             array = (njs_vmcode_array_t *) p;
 
             nxt_printf("%05uz ARRAY             %04Xz %uz%s\n",
@@ -203,7 +203,7 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_if_true_jump) {
+        if (operation == NJS_VMCODE_IF_TRUE_JUMP) {
             cond_jump = (njs_vmcode_cond_jump_t *) p;
             sign = (cond_jump->offset >= 0) ? "+" : "";
 
@@ -216,7 +216,7 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_if_false_jump) {
+        if (operation == NJS_VMCODE_IF_FALSE_JUMP) {
             cond_jump = (njs_vmcode_cond_jump_t *) p;
             sign = (cond_jump->offset >= 0) ? "+" : "";
 
@@ -229,7 +229,7 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_jump) {
+        if (operation == NJS_VMCODE_JUMP) {
             jump = (njs_vmcode_jump_t *) p;
             sign = (jump->offset >= 0) ? "+" : "";
 
@@ -241,7 +241,7 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_if_equal_jump) {
+        if (operation == NJS_VMCODE_IF_EQUAL_JUMP) {
             equal = (njs_vmcode_equal_jump_t *) p;
 
             nxt_printf("%05uz JUMP IF EQUAL     %04Xz %04Xz +%uz\n",
@@ -253,7 +253,7 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_test_if_true) {
+        if (operation == NJS_VMCODE_TEST_IF_TRUE) {
             test_jump = (njs_vmcode_test_jump_t *) p;
 
             nxt_printf("%05uz TEST IF TRUE      %04Xz %04Xz +%uz\n",
@@ -265,7 +265,7 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_test_if_false) {
+        if (operation == NJS_VMCODE_TEST_IF_FALSE) {
             test_jump = (njs_vmcode_test_jump_t *) p;
 
             nxt_printf("%05uz TEST IF FALSE     %04Xz %04Xz +%uz\n",
@@ -277,7 +277,7 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_function_frame) {
+        if (operation == NJS_VMCODE_FUNCTION_FRAME) {
             function = (njs_vmcode_function_frame_t *) p;
 
             nxt_printf("%05uz FUNCTION FRAME    %04Xz %uz%s\n",
@@ -289,7 +289,7 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_method_frame) {
+        if (operation == NJS_VMCODE_METHOD_FRAME) {
             method = (njs_vmcode_method_frame_t *) p;
 
             nxt_printf("%05uz METHOD FRAME      %04Xz %04Xz %uz%s\n",
@@ -301,7 +301,7 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_property_foreach) {
+        if (operation == NJS_VMCODE_PROPERTY_FOREACH) {
             prop_foreach = (njs_vmcode_prop_foreach_t *) p;
 
             nxt_printf("%05uz PROPERTY FOREACH  %04Xz %04Xz +%uz\n",
@@ -313,7 +313,7 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_property_next) {
+        if (operation == NJS_VMCODE_PROPERTY_NEXT) {
             prop_next = (njs_vmcode_prop_next_t *) p;
 
             nxt_printf("%05uz PROPERTY NEXT     %04Xz %04Xz %04Xz %uz\n",
@@ -326,7 +326,7 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_try_start) {
+        if (operation == NJS_VMCODE_TRY_START) {
             try_start = (njs_vmcode_try_start_t *) p;
 
             nxt_printf("%05uz TRY START         %04Xz %04Xz +%uz\n",
@@ -339,7 +339,7 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_try_break) {
+        if (operation == NJS_VMCODE_TRY_BREAK) {
             try_tramp = (njs_vmcode_try_trampoline_t *) p;
 
             nxt_printf("%05uz TRY BREAK         %04Xz %uz\n",
@@ -351,7 +351,7 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_try_continue) {
+        if (operation == NJS_VMCODE_TRY_CONTINUE) {
             try_tramp = (njs_vmcode_try_trampoline_t *) p;
 
             nxt_printf("%05uz TRY CONTINUE      %04Xz %uz\n",
@@ -363,7 +363,7 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_try_return) {
+        if (operation == NJS_VMCODE_TRY_RETURN) {
             try_return = (njs_vmcode_try_return_t *) p;
 
             nxt_printf("%05uz TRY RETURN        %04Xz %04Xz +%uz\n",
@@ -376,7 +376,7 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_catch) {
+        if (operation == NJS_VMCODE_CATCH) {
             catch = (njs_vmcode_catch_t *) p;
 
             nxt_printf("%05uz CATCH             %04Xz +%uz\n",
@@ -388,7 +388,7 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_try_end) {
+        if (operation == NJS_VMCODE_TRY_END) {
             try_end = (njs_vmcode_try_end_t *) p;
 
             nxt_printf("%05uz TRY END           +%uz\n",
@@ -399,7 +399,7 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_finally) {
+        if (operation == NJS_VMCODE_FINALLY) {
             finally = (njs_vmcode_finally_t *) p;
 
             nxt_printf("%05uz TRY FINALLY       %04Xz %04Xz +%uz +%uz\n",
@@ -413,7 +413,7 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
-        if (operation == njs_vmcode_reference_error) {
+        if (operation == NJS_VMCODE_REFERENCE_ERROR) {
             nxt_printf("%05uz REFERENCE ERROR\n", p - start);
 
             p += sizeof(njs_vmcode_reference_error_t);

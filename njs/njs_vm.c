@@ -278,7 +278,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
      * Reset the code array to prevent it from being disassembled
      * again in the next iteration of the accumulative mode.
      */
-    vm->code = NULL;
+    vm->codes = NULL;
 
     nxt_memzero(&generator, sizeof(njs_generator_t));
 
@@ -287,7 +287,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         goto fail;
     }
 
-    vm->current = generator.code_start;
+    vm->start = generator.code_start;
     vm->global_scope = generator.local_scope;
     vm->scope_size = generator.scope_size;
 
@@ -368,7 +368,7 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
 
         nvm->options = vm->options;
 
-        nvm->current = vm->current;
+        nvm->start = vm->start;
 
         nvm->external = external;
 
@@ -638,13 +638,7 @@ njs_vm_start(njs_vm_t *vm)
         return ret;
     }
 
-    ret = njs_vmcode_interpreter(vm);
-
-    if (ret == NJS_STOP) {
-        ret = NJS_OK;
-    }
-
-    return ret;
+    return njs_vmcode_interpreter(vm, vm->start);
 }
 
 

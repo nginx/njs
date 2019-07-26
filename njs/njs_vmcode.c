@@ -14,6 +14,47 @@ struct njs_property_next_s {
     njs_array_t  *array;
 };
 
+static njs_ret_t njs_vmcode_object(njs_vm_t *vm, u_char *pc);
+static njs_ret_t njs_vmcode_array(njs_vm_t *vm, u_char *pc);
+static njs_ret_t njs_vmcode_function(njs_vm_t *vm, u_char *pc);
+static njs_ret_t njs_vmcode_arguments(njs_vm_t *vm, u_char *pc);
+static njs_ret_t njs_vmcode_regexp(njs_vm_t *vm, u_char *pc);
+static njs_ret_t njs_vmcode_template_literal(njs_vm_t *vm, njs_value_t *inlvd1,
+    njs_value_t *inlvd2);
+static njs_ret_t njs_vmcode_object_copy(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *invld);
+
+static njs_ret_t njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *object,
+    njs_value_t *property, njs_value_t *retval);
+static njs_ret_t njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *property,
+    njs_value_t *object);
+static njs_ret_t njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
+    njs_value_t *property);
+static njs_ret_t njs_vmcode_property_foreach(njs_vm_t *vm, njs_value_t *object,
+    njs_value_t *invld, u_char *pc);
+static njs_ret_t njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object,
+    njs_value_t *value, u_char *pc);
+static njs_ret_t njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
+    njs_value_t *constructor);
+static njs_ret_t njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *invld);
+
+static njs_ret_t njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object,
+    njs_value_t *method, u_char *pc);
+static njs_ret_t njs_vmcode_return(njs_vm_t *vm, njs_value_t *invld,
+    njs_value_t *retval);
+
+static njs_ret_t njs_vmcode_try_start(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *offset, u_char *pc);
+static njs_ret_t njs_vmcode_try_break(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *offset);
+static njs_ret_t njs_vmcode_try_continue(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *offset);
+static njs_ret_t njs_vmcode_try_end(njs_vm_t *vm, njs_value_t *invld,
+    njs_value_t *offset);
+static njs_ret_t njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld,
+    njs_value_t *retval, u_char *pc);
+static njs_ret_t njs_vmcode_reference_error(njs_vm_t *vm, u_char *pc);
 
 /*
  * These functions are forbidden to inline to minimize JavaScript VM
@@ -38,37 +79,60 @@ static njs_object_t *njs_function_new_object(njs_vm_t *vm, njs_value_t *value);
  */
 
 nxt_int_t
-njs_vmcode_interpreter(njs_vm_t *vm)
+njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc)
 {
-    u_char                *catch, call;
-    njs_ret_t             ret;
-    njs_value_t           *retval, *value1, *value2;
-    njs_frame_t           *frame;
-    njs_native_frame_t    *previous;
-    njs_vmcode_generic_t  *vmcode;
+    u_char                       *catch;
+    double                       num, exponent;
+    int32_t                      i32;
+    uint32_t                     u32;
+    njs_ret_t                    ret;
+    nxt_uint_t                   hint;
+    nxt_bool_t                   valid, call;
+    njs_value_t                  *retval, *value1, *value2, *src, *s1, *s2;
+    njs_value_t                  numeric1, numeric2, primitive1, primitive2,
+                                 dst;
+    njs_frame_t                  *frame;
+    njs_vmcode_this_t            *this;
+    njs_native_frame_t           *previous;
+    njs_property_next_t          *next;
+    njs_vmcode_generic_t         *vmcode;
+    njs_vmcode_prop_get_t        *get;
+    njs_vmcode_prop_set_t        *set;
+    njs_vmcode_operation_t       op;
+    njs_vmcode_prop_next_t       *pnext;
+    njs_vmcode_test_jump_t       *test_jump;
+    njs_vmcode_equal_jump_t      *equal;
+    njs_vmcode_try_return_t      *try_return;
+    njs_vmcode_function_frame_t  *function_frame;
 
-start:
+    if (nxt_slow_path(vm->count > 128)) {
+        njs_range_error(vm, "Maximum call stack size exceeded");
+        return NXT_ERROR;
+    }
+
+    vm->count++;
+
+next:
 
     for ( ;; ) {
 
-        vmcode = (njs_vmcode_generic_t *) vm->current;
+        vmcode = (njs_vmcode_generic_t *) pc;
 
         /*
          * The first operand is passed as is in value2 to
-         *   njs_vmcode_jump(),
-         *   njs_vmcode_if_true_jump(),
-         *   njs_vmcode_if_false_jump(),
-         *   njs_vmcode_validate(),
-         *   njs_vmcode_function_frame(),
-         *   njs_vmcode_function_call(),
-         *   njs_vmcode_return(),
-         *   njs_vmcode_try_start(),
-         *   njs_vmcode_try_continue(),
-         *   njs_vmcode_try_break(),
-         *   njs_vmcode_try_end(),
-         *   njs_vmcode_catch().
-         *   njs_vmcode_throw().
-         *   njs_vmcode_stop().
+         *   NJS_VMCODE_JUMP,
+         *   NJS_VMCODE_IF_TRUE_JUMP,
+         *   NJS_VMCODE_IF_FALSE_JUMP,
+         *   NJS_VMCODE_FUNCTION_FRAME,
+         *   NJS_VMCODE_FUNCTION_CALL,
+         *   NJS_VMCODE_RETURN,
+         *   NJS_VMCODE_TRY_START,
+         *   NJS_VMCODE_TRY_CONTINUE,
+         *   NJS_VMCODE_TRY_BREAK,
+         *   NJS_VMCODE_TRY_END,
+         *   NJS_VMCODE_CATCH,
+         *   NJS_VMCODE_THROW,
+         *   NJS_VMCODE_STOP.
          */
         value2 = (njs_value_t *) vmcode->operand1;
         value1 = NULL;
@@ -84,7 +148,7 @@ start:
             value1 = njs_vmcode_operand(vm, vmcode->operand2);
         }
 
-        ret = vmcode->code.operation(vm, value1, value2);
+        op = vmcode->code.operation;
 
         /*
          * On success an operation returns size of the bytecode,
@@ -94,85 +158,718 @@ start:
          * as a single unsigned comparision.
          */
 
-        if (nxt_slow_path(ret < 0 && ret >= NJS_PREEMPT)) {
-            break;
-        }
-
-        vm->current += ret;
-
         if (vmcode->code.retval) {
+            if (op == NJS_VMCODE_MOVE) {
+                retval = njs_vmcode_operand(vm, vmcode->operand1);
+                *retval = *value1;
+
+                pc += sizeof(njs_vmcode_move_t);
+                goto next;
+            }
+
+            if (op == NJS_VMCODE_PROPERTY_GET) {
+                get = (njs_vmcode_prop_get_t *) pc;
+                retval = njs_vmcode_operand(vm, get->value);
+
+                ret = njs_value_property(vm, value1, value2, retval);
+                if (nxt_slow_path(ret == NXT_ERROR)) {
+                    goto error;
+                }
+
+                pc += sizeof(njs_vmcode_prop_get_t);
+                goto next;
+            }
+
+            switch (op) {
+            case NJS_VMCODE_INCREMENT:
+            case NJS_VMCODE_POST_INCREMENT:
+            case NJS_VMCODE_DECREMENT:
+            case NJS_VMCODE_POST_DECREMENT:
+                if (nxt_slow_path(!njs_is_numeric(value2))) {
+                    ret = njs_value_to_numeric(vm, &numeric1, value2);
+                    if (nxt_slow_path(ret != NXT_OK)) {
+                        goto error;
+                    }
+
+                    num = njs_number(&numeric1);
+
+                } else {
+                    num = njs_number(value2);
+                }
+
+                njs_set_number(value1,
+                           num + (1 - 2 * ((op - NJS_VMCODE_INCREMENT) >> 1)));
+
+                retval = njs_vmcode_operand(vm, vmcode->operand1);
+
+                if (op & 1) {
+                    njs_set_number(retval, num);
+
+                } else {
+                    *retval = *value1;
+                }
+
+                pc += sizeof(njs_vmcode_3addr_t);
+                goto next;
+
+            /*
+             * njs_vmcode_try_return() saves a return value to use it later by
+             * njs_vmcode_finally(), and jumps to the nearest try_break block.
+             */
+            case NJS_VMCODE_TRY_RETURN:
+                retval = njs_vmcode_operand(vm, vmcode->operand1);
+                *retval = *value1;
+
+                try_return = (njs_vmcode_try_return_t *) pc;
+                pc += try_return->offset;
+                goto next;
+
+            case NJS_VMCODE_LESS:
+            case NJS_VMCODE_GREATER:
+            case NJS_VMCODE_LESS_OR_EQUAL:
+            case NJS_VMCODE_GREATER_OR_EQUAL:
+            case NJS_VMCODE_ADDITION:
+                if (nxt_slow_path(!njs_is_primitive(value1))) {
+                    hint = (op == NJS_VMCODE_ADDITION) && njs_is_date(value1);
+                    ret = njs_value_to_primitive(vm, &primitive1, value1, hint);
+                    if (ret != NXT_OK) {
+                        goto error;
+                    }
+
+                    value1 = &primitive1;
+                }
+
+                if (nxt_slow_path(!njs_is_primitive(value2))) {
+                    hint = (op == NJS_VMCODE_ADDITION) && njs_is_date(value2);
+                    ret = njs_value_to_primitive(vm, &primitive2, value2, hint);
+                    if (ret != NXT_OK) {
+                        goto error;
+                    }
+
+                    value2 = &primitive2;
+                }
+
+                retval = njs_vmcode_operand(vm, vmcode->operand1);
+
+                if (op == NJS_VMCODE_ADDITION) {
+                    if (nxt_fast_path(njs_is_numeric(value1)
+                                      && njs_is_numeric(value2)))
+                    {
+                        njs_set_number(retval, njs_number(value1)
+                                               + njs_number(value2));
+                        pc += sizeof(njs_vmcode_3addr_t);
+                        goto next;
+                    }
+
+                    if (njs_is_string(value1)) {
+                        s1 = value1;
+                        s2 = &dst;
+                        src = value2;
+
+                    } else {
+                        s1 = &dst;
+                        s2 = value2;
+                        src = value1;
+                    }
+
+                    ret = njs_primitive_value_to_string(vm, &dst, src);
+                    if (nxt_slow_path(ret != NXT_OK)) {
+                        goto error;
+                    }
+
+                    ret = njs_string_concat(vm, s1, s2);
+                    if (nxt_slow_path(ret == NXT_ERROR)) {
+                        goto error;
+                    }
+
+                    *retval = vm->retval;
+
+                    pc += ret;
+                    goto next;
+                }
+
+                if ((uint8_t) (op - NJS_VMCODE_GREATER) < 2) {
+                    /* NJS_VMCODE_GREATER, NJS_VMCODE_LESS_OR_EQUAL */
+                    src = value1;
+                    value1 = value2;
+                    value2 = src;
+                }
+
+                ret = njs_primitive_values_compare(vm, value1, value2);
+
+                if (op < NJS_VMCODE_LESS_OR_EQUAL) {
+                    ret = ret > 0;
+
+                } else {
+                    ret = ret == 0;
+                }
+
+                njs_set_boolean(retval, ret);
+
+                pc += sizeof(njs_vmcode_3addr_t);
+                goto next;
+
+            case NJS_VMCODE_EQUAL:
+            case NJS_VMCODE_NOT_EQUAL:
+                ret = njs_values_equal(vm, value1, value2);
+                if (nxt_slow_path(ret < 0)) {
+                    goto error;
+                }
+
+                ret ^= op - NJS_VMCODE_EQUAL;
+
+                retval = njs_vmcode_operand(vm, vmcode->operand1);
+                njs_set_boolean(retval, ret);
+
+                pc += sizeof(njs_vmcode_3addr_t);
+                goto next;
+
+            case NJS_VMCODE_SUBSTRACTION:
+            case NJS_VMCODE_MULTIPLICATION:
+            case NJS_VMCODE_EXPONENTIATION:
+            case NJS_VMCODE_DIVISION:
+            case NJS_VMCODE_REMAINDER:
+            case NJS_VMCODE_BITWISE_AND:
+            case NJS_VMCODE_BITWISE_OR:
+            case NJS_VMCODE_BITWISE_XOR:
+            case NJS_VMCODE_LEFT_SHIFT:
+            case NJS_VMCODE_RIGHT_SHIFT:
+            case NJS_VMCODE_UNSIGNED_RIGHT_SHIFT:
+                if (nxt_slow_path(!njs_is_numeric(value1))) {
+                    ret = njs_value_to_numeric(vm, &numeric1, value1);
+                    if (ret != NXT_OK) {
+                        goto error;
+                    }
+
+                    value1 = &numeric1;
+                }
+
+                if (nxt_slow_path(!njs_is_numeric(value2))) {
+                    ret = njs_value_to_numeric(vm, &numeric2, value2);
+                    if (ret != NXT_OK) {
+                        goto error;
+                    }
+
+                    value2 = &numeric2;
+                }
+
+                num = njs_number(value1);
+
+                retval = njs_vmcode_operand(vm, vmcode->operand1);
+                pc += sizeof(njs_vmcode_3addr_t);
+
+                switch (op) {
+                case NJS_VMCODE_SUBSTRACTION:
+                    num -= njs_number(value2);
+                    break;
+
+                case NJS_VMCODE_MULTIPLICATION:
+                    num *= njs_number(value2);
+                    break;
+
+                case NJS_VMCODE_EXPONENTIATION:
+                    exponent = njs_number(value2);
+
+                    /*
+                     * According to ES7:
+                     *  1. If exponent is NaN, the result should be NaN;
+                     *  2. The result of +/-1 ** +/-Infinity should be NaN.
+                     */
+                    valid = nxt_expect(1, fabs(num) != 1
+                                          || (!isnan(exponent)
+                                              && !isinf(exponent)));
+
+                    if (valid) {
+                        num = pow(num, exponent);
+
+                    } else {
+                        num = NAN;
+                    }
+
+                    break;
+
+                case NJS_VMCODE_DIVISION:
+                    num /= njs_number(value2);
+                    break;
+
+                case NJS_VMCODE_REMAINDER:
+                    num = fmod(num, njs_number(value2));
+                    break;
+
+                case NJS_VMCODE_BITWISE_AND:
+                case NJS_VMCODE_BITWISE_OR:
+                case NJS_VMCODE_BITWISE_XOR:
+                    i32 = njs_number_to_int32(num);
+
+                    switch (op) {
+                    case NJS_VMCODE_BITWISE_AND:
+                        i32 = i32 & njs_number_to_int32(njs_number(value2));
+                        break;
+
+                    case NJS_VMCODE_BITWISE_OR:
+                        i32 = i32 | njs_number_to_int32(njs_number(value2));
+                        break;
+
+                    case NJS_VMCODE_BITWISE_XOR:
+                        i32 = i32 ^ njs_number_to_int32(njs_number(value2));
+                        break;
+                    }
+
+                    njs_set_int32(retval, i32);
+                    goto next;
+
+                default:
+                    u32 = njs_number_to_uint32(njs_number(value2));
+
+                    switch (op) {
+                    case NJS_VMCODE_LEFT_SHIFT:
+                    case NJS_VMCODE_RIGHT_SHIFT:
+                        i32 = njs_number_to_int32(num);
+
+                        if (op == NJS_VMCODE_LEFT_SHIFT) {
+                            i32 <<= u32 & 0x1f;
+                        } else {
+                            i32 >>= u32 & 0x1f;
+                        }
+
+                        njs_set_int32(retval, i32);
+
+                        break;
+
+                    default: /* NJS_VMCODE_UNSIGNED_RIGHT_SHIFT */
+                        njs_set_uint32(retval,
+                                       njs_number_to_uint32(num)
+                                       >> (u32 & 0x1f));
+                    }
+
+                    goto next;
+                }
+
+                njs_set_number(retval, num);
+                goto next;
+
+            case NJS_VMCODE_OBJECT_COPY:
+                ret = njs_vmcode_object_copy(vm, value1, value2);
+                break;
+
+            case NJS_VMCODE_TEMPLATE_LITERAL:
+                ret = njs_vmcode_template_literal(vm, value1, value2);
+                break;
+
+            case NJS_VMCODE_PROPERTY_IN:
+                ret = njs_vmcode_property_in(vm, value1, value2);
+                break;
+
+            case NJS_VMCODE_PROPERTY_DELETE:
+                ret = njs_vmcode_property_delete(vm, value1, value2);
+                break;
+
+            case NJS_VMCODE_PROPERTY_FOREACH:
+                ret = njs_vmcode_property_foreach(vm, value1, value2, pc);
+                break;
+
+            case NJS_VMCODE_STRICT_EQUAL:
+            case NJS_VMCODE_STRICT_NOT_EQUAL:
+                ret = njs_values_strict_equal(value1, value2);
+
+                ret ^= op - NJS_VMCODE_STRICT_EQUAL;
+
+                retval = njs_vmcode_operand(vm, vmcode->operand1);
+                njs_set_boolean(retval, ret);
+
+                pc += sizeof(njs_vmcode_3addr_t);
+                goto next;
+
+            case NJS_VMCODE_TEST_IF_TRUE:
+            case NJS_VMCODE_TEST_IF_FALSE:
+                ret = njs_is_true(value1);
+
+                ret ^= op - NJS_VMCODE_TEST_IF_TRUE;
+
+                if (ret) {
+                    test_jump = (njs_vmcode_test_jump_t *) pc;
+                    ret = test_jump->offset;
+
+                } else {
+                    ret = sizeof(njs_vmcode_3addr_t);
+                }
+
+                retval = njs_vmcode_operand(vm, vmcode->operand1);
+                *retval = *value1;
+
+                pc += ret;
+                goto next;
+
+            case NJS_VMCODE_UNARY_PLUS:
+            case NJS_VMCODE_UNARY_NEGATION:
+            case NJS_VMCODE_BITWISE_NOT:
+                if (nxt_slow_path(!njs_is_numeric(value1))) {
+                    ret = njs_value_to_numeric(vm, &numeric1, value1);
+                    if (ret != NXT_OK) {
+                        goto error;
+                    }
+
+                    value1 = &numeric1;
+                }
+
+                num = njs_number(value1);
+                retval = njs_vmcode_operand(vm, vmcode->operand1);
+
+                switch (op) {
+                case NJS_VMCODE_UNARY_NEGATION:
+                    num = -num;
+
+                    /* Fall through. */
+                case NJS_VMCODE_UNARY_PLUS:
+                    njs_set_number(retval, num);
+                    break;
+
+                case NJS_VMCODE_BITWISE_NOT:
+                    njs_set_int32(retval, ~njs_number_to_integer(num));
+                }
+
+                pc += sizeof(njs_vmcode_2addr_t);
+                goto next;
+
+            case NJS_VMCODE_LOGICAL_NOT:
+                retval = njs_vmcode_operand(vm, vmcode->operand1);
+                njs_set_boolean(retval, !njs_is_true(value1));
+
+                pc += sizeof(njs_vmcode_2addr_t);
+                goto next;
+
+            case NJS_VMCODE_OBJECT:
+                ret = njs_vmcode_object(vm, pc);
+                break;
+
+            case NJS_VMCODE_ARRAY:
+                ret = njs_vmcode_array(vm, pc);
+                break;
+
+            case NJS_VMCODE_FUNCTION:
+                ret = njs_vmcode_function(vm, pc);
+                break;
+
+            case NJS_VMCODE_REGEXP:
+                ret = njs_vmcode_regexp(vm, pc);
+                break;
+
+            case NJS_VMCODE_INSTANCE_OF:
+                ret = njs_vmcode_instance_of(vm, value1, value2);
+                break;
+
+            case NJS_VMCODE_TYPEOF:
+                ret = njs_vmcode_typeof(vm, value1, value2);
+                break;
+
+            case NJS_VMCODE_VOID:
+                vm->retval = njs_value_undefined;
+
+                ret = sizeof(njs_vmcode_2addr_t);
+                break;
+
+            case NJS_VMCODE_DELETE:
+                njs_release(vm, value1);
+                vm->retval = njs_value_true;
+
+                ret = sizeof(njs_vmcode_2addr_t);
+                break;
+
+            default:
+                njs_internal_error(vm, "%d has retval", op);
+                goto error;
+            }
+
+            if (nxt_slow_path(ret < 0 && ret >= NJS_PREEMPT)) {
+                break;
+            }
+
             retval = njs_vmcode_operand(vm, vmcode->operand1);
             njs_release(vm, retval);
             *retval = vm->retval;
-        }
-    }
 
-    if (ret == NXT_ERROR) {
+        } else {
+            switch (op) {
+            case NJS_VMCODE_STOP:
+                value2 = njs_vmcode_operand(vm, value2);
+                vm->retval = *value2;
 
-        for ( ;; ) {
-            frame = (njs_frame_t *) vm->top_frame;
+                ret = NJS_OK;
+                goto done;
 
-            call = frame->native.call;
-            catch = frame->native.exception.catch;
+            case NJS_VMCODE_JUMP:
+                ret = (njs_ret_t) value2;
+                break;
 
-            if (catch != NULL) {
-                vm->current = catch;
+            case NJS_VMCODE_PROPERTY_SET:
+                set = (njs_vmcode_prop_set_t *) pc;
+                retval = njs_vmcode_operand(vm, set->value);
 
-                if (vm->debug != NULL) {
-                    nxt_array_reset(vm->backtrace);
+                ret = njs_value_property_set(vm, value1, value2, retval);
+                if (nxt_slow_path(ret == NXT_ERROR)) {
+                    goto error;
                 }
 
-                goto start;
+                ret = sizeof(njs_vmcode_prop_set_t);
+                break;
+
+            case NJS_VMCODE_IF_TRUE_JUMP:
+            case NJS_VMCODE_IF_FALSE_JUMP:
+                ret = njs_is_true(value1);
+
+                ret ^= op - NJS_VMCODE_IF_TRUE_JUMP;
+
+                ret = ret ? (njs_ret_t) value2
+                          : (njs_ret_t) sizeof(njs_vmcode_cond_jump_t);
+
+                break;
+
+            case NJS_VMCODE_IF_EQUAL_JUMP:
+                if (njs_values_strict_equal(value1, value2)) {
+                    equal = (njs_vmcode_equal_jump_t *) pc;
+                    ret = equal->offset;
+
+                } else {
+                    ret = sizeof(njs_vmcode_3addr_t);
+                }
+
+                break;
+
+            case NJS_VMCODE_PROPERTY_INIT:
+                set = (njs_vmcode_prop_set_t *) pc;
+                retval = njs_vmcode_operand(vm, set->value);
+                ret = njs_vmcode_property_init(vm, value1, value2, retval);
+                if (nxt_slow_path(ret == NXT_ERROR)) {
+                    goto error;
+                }
+
+                break;
+
+            case NJS_VMCODE_RETURN:
+                value2 = njs_vmcode_operand(vm, value2);
+
+                frame = (njs_frame_t *) vm->top_frame;
+
+                if (frame->native.ctor) {
+                    if (njs_is_object(value2)) {
+                        njs_release(vm, vm->scopes[NJS_SCOPE_ARGUMENTS]);
+
+                    } else {
+                        value2 = vm->scopes[NJS_SCOPE_ARGUMENTS];
+                    }
+                }
+
+                previous = njs_function_previous_frame(&frame->native);
+
+                njs_vm_scopes_restore(vm, frame, previous);
+
+                /*
+                 * If a retval is in a callee arguments scope it
+                 * must be in the previous callee arguments scope.
+                 */
+                retval = njs_vmcode_operand(vm, frame->retval);
+
+                /*
+                 * GC: value external/internal++ depending on
+                 * value and retval type
+                 */
+                *retval = *value2;
+
+                njs_function_frame_free(vm, &frame->native);
+
+                ret = NJS_OK;
+                goto done;
+
+            case NJS_VMCODE_FUNCTION_FRAME:
+                function_frame = (njs_vmcode_function_frame_t *) pc;
+
+                /* TODO: external object instead of void this. */
+
+                ret = njs_function_frame_create(vm, value1,
+                                                &njs_value_undefined,
+                                                (uintptr_t) value2,
+                                                function_frame->code.ctor);
+
+                if (nxt_slow_path(ret != NXT_OK)) {
+                    goto error;
+                }
+
+                ret = sizeof(njs_vmcode_function_frame_t);
+                break;
+
+            case NJS_VMCODE_METHOD_FRAME:
+                ret = njs_vmcode_method_frame(vm, value1, value2, pc);
+                if (nxt_slow_path(ret == NXT_ERROR)) {
+                    goto error;
+                }
+
+                break;
+
+            case NJS_VMCODE_FUNCTION_CALL:
+                ret = njs_function_frame_invoke(vm, (njs_index_t) value2);
+                if (nxt_slow_path(ret == NXT_ERROR)) {
+                    goto error;
+                }
+
+                ret = sizeof(njs_vmcode_function_call_t);
+                break;
+
+            case NJS_VMCODE_PROPERTY_NEXT:
+                if (!njs_is_external(value1)) {
+                    pnext = (njs_vmcode_prop_next_t *) pc;
+                    retval = njs_vmcode_operand(vm, pnext->retval);
+
+                    next = value2->data.u.next;
+
+                    if (next->index < next->array->length) {
+                        *retval = next->array->data[next->index++];
+
+                        ret = pnext->offset;
+                        break;
+                    }
+                }
+
+                ret = njs_vmcode_property_next(vm, value1, value2, pc);
+                if (nxt_slow_path(ret == NXT_ERROR)) {
+                    goto error;
+                }
+
+                break;
+
+            case NJS_VMCODE_THIS:
+                frame = vm->active_frame;
+                this = (njs_vmcode_this_t *) pc;
+
+                retval = njs_vmcode_operand(vm, this->dst);
+                *retval = frame->native.arguments[0];
+
+                ret = sizeof(njs_vmcode_this_t);
+                break;
+
+            case NJS_VMCODE_ARGUMENTS:
+                ret = njs_vmcode_arguments(vm, pc);
+                if (nxt_slow_path(ret == NXT_ERROR)) {
+                    goto error;
+                }
+
+                break;
+
+            case NJS_VMCODE_TRY_START:
+                ret = njs_vmcode_try_start(vm, value1, value2, pc);
+                if (nxt_slow_path(ret == NXT_ERROR)) {
+                    goto error;
+                }
+
+                break;
+
+            case NJS_VMCODE_THROW:
+                value2 = njs_vmcode_operand(vm, value2);
+                vm->retval = *value2;
+                goto error;
+
+            case NJS_VMCODE_TRY_BREAK:
+                ret = njs_vmcode_try_break(vm, value1, value2);
+                break;
+
+            case NJS_VMCODE_TRY_CONTINUE:
+                ret = njs_vmcode_try_continue(vm, value1, value2);
+                break;
+
+            case NJS_VMCODE_TRY_END:
+                ret = njs_vmcode_try_end(vm, value1, value2);
+                break;
+
+            /*
+             * njs_vmcode_catch() is set on the start of a "catch" block to
+             * store exception and to remove a "try" block if there is no
+             * "finally" block or to update a catch address to the start of
+             * a "finally" block.
+             * njs_vmcode_catch() is set on the start of a "finally" block
+             * to store uncaught exception and to remove a "try" block.
+             */
+            case NJS_VMCODE_CATCH:
+                *value1 = vm->retval;
+
+                if ((njs_ret_t) value2 == sizeof(njs_vmcode_catch_t)) {
+                    ret = njs_vmcode_try_end(vm, value1, value2);
+
+                } else {
+                    vm->top_frame->exception.catch = pc + (njs_ret_t) value2;
+                    ret = sizeof(njs_vmcode_catch_t);
+                }
+
+                break;
+
+            case NJS_VMCODE_FINALLY:
+                ret = njs_vmcode_finally(vm, value1, value2, pc);
+
+                switch (ret) {
+                case NJS_OK:
+                    goto done;
+                case NJS_ERROR:
+                    goto error;
+                }
+
+                break;
+
+            case NJS_VMCODE_REFERENCE_ERROR:
+                ret = njs_vmcode_reference_error(vm, pc);
+                goto error;
+
+            default:
+                njs_internal_error(vm, "%d has NO retval", op);
+                goto error;
+            }
+        }
+
+        pc += ret;
+    }
+
+error:
+
+    ret = NXT_ERROR;
+
+    for ( ;; ) {
+        frame = (njs_frame_t *) vm->top_frame;
+
+        catch = frame->native.exception.catch;
+
+        if (catch != NULL) {
+            pc = catch;
+
+            if (vm->debug != NULL) {
+                nxt_array_reset(vm->backtrace);
             }
 
-            if (vm->debug != NULL
-                && njs_vm_add_backtrace_entry(vm, frame) != NXT_OK)
-            {
-                return NXT_ERROR;
-            }
+            goto next;
+        }
 
-            previous = frame->native.previous;
-            if (previous == NULL) {
-                return NXT_ERROR;
-            }
+        if (vm->debug != NULL
+            && njs_vm_add_backtrace_entry(vm, frame) != NXT_OK)
+        {
+            break;
+        }
 
-            njs_vm_scopes_restore(vm, frame, previous);
+        previous = frame->native.previous;
+        if (previous == NULL) {
+            break;
+        }
 
-            if (frame->native.size != 0) {
-                vm->stack_size -= frame->native.size;
-                nxt_mp_free(vm->mem_pool, frame);
-            }
+        call = frame->native.call;
 
-            if (call) {
-                return NXT_ERROR;
-            }
+        njs_vm_scopes_restore(vm, frame, previous);
+
+        if (frame->native.size != 0) {
+            vm->stack_size -= frame->native.size;
+            nxt_mp_free(vm->mem_pool, frame);
+        }
+
+        if (call) {
+            break;
         }
     }
 
-    /* NXT_ERROR, NJS_STOP. */
-
-    return ret;
-}
-
-
-nxt_int_t
-njs_vmcode_run(njs_vm_t *vm)
-{
-    njs_ret_t  ret;
-
-    vm->top_frame->call = 1;
-
-    if (nxt_slow_path(vm->count > 128)) {
-        njs_range_error(vm, "Maximum call stack size exceeded");
-        return NXT_ERROR;
-    }
-
-    vm->count++;
-
-    ret = njs_vmcode_interpreter(vm);
-    if (ret == NJS_STOP) {
-        ret = NJS_OK;
-    }
+done:
 
     vm->count--;
 
@@ -180,8 +877,8 @@ njs_vmcode_run(njs_vm_t *vm)
 }
 
 
-njs_ret_t
-njs_vmcode_object(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
+static njs_ret_t
+njs_vmcode_object(njs_vm_t *vm, u_char *pc)
 {
     njs_object_t  *object;
 
@@ -197,15 +894,15 @@ njs_vmcode_object(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 }
 
 
-njs_ret_t
-njs_vmcode_array(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
+static njs_ret_t
+njs_vmcode_array(njs_vm_t *vm, u_char *pc)
 {
     uint32_t            length;
     njs_array_t         *array;
     njs_value_t         *value;
     njs_vmcode_array_t  *code;
 
-    code = (njs_vmcode_array_t *) vm->current;
+    code = (njs_vmcode_array_t *) pc;
 
     array = njs_array_alloc(vm, code->length, NJS_ARRAY_SPARE);
 
@@ -236,14 +933,14 @@ njs_vmcode_array(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 }
 
 
-njs_ret_t
-njs_vmcode_function(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
+static njs_ret_t
+njs_vmcode_function(njs_vm_t *vm, u_char *pc)
 {
     njs_function_t         *function;
     njs_function_lambda_t  *lambda;
     njs_vmcode_function_t  *code;
 
-    code = (njs_vmcode_function_t *) vm->current;
+    code = (njs_vmcode_function_t *) pc;
     lambda = code->lambda;
 
     function = njs_function_alloc(vm, lambda, vm->active_frame->closures, 0);
@@ -257,25 +954,8 @@ njs_vmcode_function(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 }
 
 
-njs_ret_t
-njs_vmcode_this(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
-{
-    njs_frame_t        *frame;
-    njs_value_t        *value;
-    njs_vmcode_this_t  *code;
-
-    frame = (njs_frame_t *) vm->active_frame;
-    code = (njs_vmcode_this_t *) vm->current;
-
-    value = njs_vmcode_operand(vm, code->dst);
-    *value = frame->native.arguments[0];
-
-    return sizeof(njs_vmcode_this_t);
-}
-
-
-njs_ret_t
-njs_vmcode_arguments(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
+static njs_ret_t
+njs_vmcode_arguments(njs_vm_t *vm, u_char *pc)
 {
     nxt_int_t               ret;
     njs_frame_t             *frame;
@@ -291,7 +971,7 @@ njs_vmcode_arguments(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
         }
     }
 
-    code = (njs_vmcode_arguments_t *) vm->current;
+    code = (njs_vmcode_arguments_t *) pc;
 
     value = njs_vmcode_operand(vm, code->dst);
     njs_set_object(value, frame->native.arguments_object);
@@ -300,13 +980,13 @@ njs_vmcode_arguments(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 }
 
 
-njs_ret_t
-njs_vmcode_regexp(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
+static njs_ret_t
+njs_vmcode_regexp(njs_vm_t *vm, u_char *pc)
 {
     njs_regexp_t         *regexp;
     njs_vmcode_regexp_t  *code;
 
-    code = (njs_vmcode_regexp_t *) vm->current;
+    code = (njs_vmcode_regexp_t *) pc;
 
     regexp = njs_regexp_alloc(vm, code->pattern);
 
@@ -320,7 +1000,7 @@ njs_vmcode_regexp(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
 }
 
 
-njs_ret_t
+static njs_ret_t
 njs_vmcode_template_literal(njs_vm_t *vm, njs_value_t *invld1,
     njs_value_t *retval)
 {
@@ -356,7 +1036,7 @@ njs_vmcode_template_literal(njs_vm_t *vm, njs_value_t *invld1,
 }
 
 
-njs_ret_t
+static njs_ret_t
 njs_vmcode_object_copy(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 {
     njs_object_t    *object;
@@ -392,43 +1072,17 @@ njs_vmcode_object_copy(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 }
 
 
-njs_ret_t
-njs_vmcode_property_get(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *property)
-{
-    njs_ret_t              ret;
-    njs_value_t            *retval;
-    njs_vmcode_prop_get_t  *code;
-
-    code = (njs_vmcode_prop_get_t *) vm->current;
-    retval = njs_vmcode_operand(vm, code->value);
-
-    ret = njs_value_property(vm, object, property, retval);
-    if (nxt_slow_path(ret == NXT_ERROR)) {
-        return ret;
-    }
-
-    vm->retval = *retval;
-
-    return sizeof(njs_vmcode_prop_get_t);
-}
-
-
-njs_ret_t
+static njs_ret_t
 njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *property)
+    njs_value_t *property, njs_value_t *init)
 {
-    uint32_t               index, size;
-    njs_ret_t              ret;
-    njs_array_t            *array;
-    njs_value_t            *init, *value, name;
-    njs_object_t           *obj;
-    njs_object_prop_t      *prop;
-    nxt_lvlhsh_query_t     lhq;
-    njs_vmcode_prop_set_t  *code;
-
-    code = (njs_vmcode_prop_set_t *) vm->current;
-    init = njs_vmcode_operand(vm, code->value);
+    uint32_t            index, size;
+    njs_ret_t           ret;
+    njs_array_t         *array;
+    njs_value_t         *value, name;
+    njs_object_t        *obj;
+    njs_object_prop_t   *prop;
+    nxt_lvlhsh_query_t  lhq;
 
     switch (object->type) {
     case NJS_ARRAY:
@@ -521,27 +1175,7 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *object,
 }
 
 
-njs_ret_t
-njs_vmcode_property_set(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *property)
-{
-    njs_ret_t              ret;
-    njs_value_t            *value;
-    njs_vmcode_prop_set_t  *code;
-
-    code = (njs_vmcode_prop_set_t *) vm->current;
-    value = njs_vmcode_operand(vm, code->value);
-
-    ret = njs_value_property_set(vm, object, property, value);
-    if (nxt_slow_path(ret == NXT_ERROR)) {
-        return ret;
-    }
-
-    return sizeof(njs_vmcode_prop_set_t);
-}
-
-
-njs_ret_t
+static njs_ret_t
 njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *object, njs_value_t *property)
 {
     njs_ret_t             ret;
@@ -588,7 +1222,7 @@ njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *object, njs_value_t *property)
 }
 
 
-njs_ret_t
+static njs_ret_t
 njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *property)
 {
@@ -684,9 +1318,9 @@ done:
 }
 
 
-njs_ret_t
+static njs_ret_t
 njs_vmcode_property_foreach(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *invld)
+    njs_value_t *invld, u_char *pc)
 {
     void                       *obj;
     njs_ret_t                  ret;
@@ -726,14 +1360,15 @@ njs_vmcode_property_foreach(njs_vm_t *vm, njs_value_t *object,
 
 done:
 
-    code = (njs_vmcode_prop_foreach_t *) vm->current;
+    code = (njs_vmcode_prop_foreach_t *) pc;
 
     return code->offset;
 }
 
 
-njs_ret_t
-njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
+static njs_ret_t
+njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value,
+    u_char *pc)
 {
     void                    *obj;
     njs_ret_t               ret;
@@ -742,7 +1377,7 @@ njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
     const njs_extern_t      *ext_proto;
     njs_vmcode_prop_next_t  *code;
 
-    code = (njs_vmcode_prop_next_t *) vm->current;
+    code = (njs_vmcode_prop_next_t *) pc;
     retval = njs_vmcode_operand(vm, code->retval);
 
     if (njs_is_external(object)) {
@@ -781,7 +1416,7 @@ njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value)
 }
 
 
-njs_ret_t
+static njs_ret_t
 njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *constructor)
 {
@@ -835,121 +1470,7 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
 }
 
 
-njs_ret_t
-njs_vmcode_increment(njs_vm_t *vm, njs_value_t *reference, njs_value_t *value)
-{
-    double       num;
-    njs_ret_t    ret;
-    njs_value_t  numeric;
-
-    if (nxt_slow_path(!njs_is_numeric(value))) {
-        ret = njs_value_to_numeric(vm, &numeric, value);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return ret;
-        }
-
-        num = njs_number(&numeric);
-
-    } else {
-        num = njs_number(value);
-    }
-
-    njs_release(vm, reference);
-
-    njs_set_number(reference, num + 1.0);
-    vm->retval = *reference;
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_decrement(njs_vm_t *vm, njs_value_t *reference, njs_value_t *value)
-{
-    double       num;
-    njs_ret_t    ret;
-    njs_value_t  numeric;
-
-    if (nxt_slow_path(!njs_is_numeric(value))) {
-        ret = njs_value_to_numeric(vm, &numeric, value);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return ret;
-        }
-
-        num = njs_number(&numeric);
-
-    } else {
-        num = njs_number(value);
-    }
-
-    njs_release(vm, reference);
-
-    njs_set_number(reference, num - 1.0);
-    vm->retval = *reference;
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_post_increment(njs_vm_t *vm, njs_value_t *reference,
-    njs_value_t *value)
-{
-    double  num;
-    njs_ret_t    ret;
-    njs_value_t  numeric;
-
-    if (nxt_slow_path(!njs_is_numeric(value))) {
-        ret = njs_value_to_numeric(vm, &numeric, value);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return ret;
-        }
-
-        num = njs_number(&numeric);
-
-    } else {
-        num = njs_number(value);
-    }
-
-    njs_release(vm, reference);
-
-    njs_set_number(reference, num + 1.0);
-    njs_set_number(&vm->retval, num);
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_post_decrement(njs_vm_t *vm, njs_value_t *reference,
-    njs_value_t *value)
-{
-    double       num;
-    njs_ret_t    ret;
-    njs_value_t  numeric;
-
-    if (nxt_slow_path(!njs_is_numeric(value))) {
-        ret = njs_value_to_numeric(vm, &numeric, value);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return ret;
-        }
-
-        num = njs_number(&numeric);
-
-    } else {
-        num = njs_number(value);
-    }
-
-    njs_release(vm, reference);
-
-    njs_set_number(reference, num - 1.0);
-    njs_set_number(&vm->retval, num);
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
+static njs_ret_t
 njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 {
     /* ECMAScript 5.1: null, array and regexp are objects. */
@@ -997,131 +1518,6 @@ njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 }
 
 
-njs_ret_t
-njs_vmcode_void(njs_vm_t *vm, njs_value_t *invld1, njs_value_t *invld2)
-{
-    vm->retval = njs_value_undefined;
-
-    return sizeof(njs_vmcode_2addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_delete(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
-{
-    njs_release(vm, value);
-
-    vm->retval = njs_value_true;
-
-    return sizeof(njs_vmcode_2addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_unary_plus(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
-{
-    njs_ret_t    ret;
-    njs_value_t  numeric;
-
-    if (nxt_slow_path(!njs_is_numeric(value))) {
-        ret = njs_value_to_numeric(vm, &numeric, value);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        value = &numeric;
-    }
-
-    njs_set_number(&vm->retval, njs_number(value));
-
-    return sizeof(njs_vmcode_2addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_unary_negation(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
-{
-    njs_ret_t    ret;
-    njs_value_t  numeric;
-
-    if (nxt_slow_path(!njs_is_numeric(value))) {
-        ret = njs_value_to_numeric(vm, &numeric, value);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        value = &numeric;
-    }
-
-    njs_set_number(&vm->retval, -njs_number(value));
-
-    return sizeof(njs_vmcode_2addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_addition(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    njs_ret_t    ret;
-
-    njs_value_t  primitive1, primitive2, dst, *s1, *s2, *src;
-
-    if (nxt_slow_path(!njs_is_primitive(val1))) {
-
-        /*
-         * ECMAScript 5.1:
-         *   Date should return String, other types sould return Number.
-         */
-
-        ret = njs_value_to_primitive(vm, &primitive1, val1, njs_is_date(val1));
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val1 = &primitive1;
-    }
-
-    if (nxt_slow_path(!njs_is_primitive(val2))) {
-
-        /*
-         * ECMAScript 5.1:
-         *   Date should return String, other types sould return Number.
-         */
-
-        ret = njs_value_to_primitive(vm, &primitive2, val2, njs_is_date(val2));
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val2 = &primitive2;
-    }
-
-    if (nxt_fast_path(njs_is_numeric(val1) && njs_is_numeric(val2))) {
-        njs_set_number(&vm->retval, njs_number(val1) + njs_number(val2));
-        return sizeof(njs_vmcode_3addr_t);
-    }
-
-    if (njs_is_string(val1)) {
-        s1 = val1;
-        s2 = &dst;
-        src = val2;
-
-    } else {
-        s1 = &dst;
-        s2 = val2;
-        src = val1;
-    }
-
-    ret = njs_primitive_value_to_string(vm, &dst, src);
-
-    if (nxt_fast_path(ret == NXT_OK)) {
-        return njs_string_concat(vm, s1, s2);
-    }
-
-    return ret;
-}
-
-
 static njs_ret_t
 njs_string_concat(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 {
@@ -1157,477 +1553,6 @@ njs_string_concat(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
     (void) memcpy(start + string1.size, string2.start, string2.size);
 
     return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_substraction(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    njs_ret_t    ret;
-    njs_value_t  numeric1, numeric2;
-
-    if (nxt_slow_path(!njs_is_numeric(val1))) {
-        ret = njs_value_to_numeric(vm, &numeric1, val1);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val1 = &numeric1;
-    }
-
-    if (nxt_slow_path(!njs_is_numeric(val2))) {
-        ret = njs_value_to_numeric(vm, &numeric2, val2);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val2 = &numeric2;
-    }
-
-    njs_set_number(&vm->retval, njs_number(val1) - njs_number(val2));
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_multiplication(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    njs_ret_t    ret;
-    njs_value_t  numeric1, numeric2;
-
-    if (nxt_slow_path(!njs_is_numeric(val1))) {
-        ret = njs_value_to_numeric(vm, &numeric1, val1);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val1 = &numeric1;
-    }
-
-    if (nxt_slow_path(!njs_is_numeric(val2))) {
-        ret = njs_value_to_numeric(vm, &numeric2, val2);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val2 = &numeric2;
-    }
-
-    njs_set_number(&vm->retval, njs_number(val1) * njs_number(val2));
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_exponentiation(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    double       num, base, exponent;
-    njs_ret_t    ret;
-    nxt_bool_t   valid;
-    njs_value_t  numeric1, numeric2;
-
-    if (nxt_slow_path(!njs_is_numeric(val1))) {
-        ret = njs_value_to_numeric(vm, &numeric1, val1);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val1 = &numeric1;
-    }
-
-    if (nxt_slow_path(!njs_is_numeric(val2))) {
-        ret = njs_value_to_numeric(vm, &numeric2, val2);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val2 = &numeric2;
-    }
-
-    base = njs_number(val1);
-    exponent = njs_number(val2);
-
-    /*
-     * According to ES7:
-     *  1. If exponent is NaN, the result should be NaN;
-     *  2. The result of +/-1 ** +/-Infinity should be NaN.
-     */
-    valid = nxt_expect(1, fabs(base) != 1
-                          || (!isnan(exponent) && !isinf(exponent)));
-
-    if (valid) {
-        num = pow(base, exponent);
-
-    } else {
-        num = NAN;
-    }
-
-    njs_set_number(&vm->retval, num);
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_division(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    njs_ret_t    ret;
-    njs_value_t  numeric1, numeric2;
-
-    if (nxt_slow_path(!njs_is_numeric(val1))) {
-        ret = njs_value_to_numeric(vm, &numeric1, val1);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val1 = &numeric1;
-    }
-
-    if (nxt_slow_path(!njs_is_numeric(val2))) {
-        ret = njs_value_to_numeric(vm, &numeric2, val2);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val2 = &numeric2;
-    }
-
-    njs_set_number(&vm->retval, njs_number(val1) / njs_number(val2));
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_remainder(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    double       num;
-    njs_ret_t    ret;
-    njs_value_t  numeric1, numeric2;
-
-    if (nxt_slow_path(!njs_is_numeric(val1))) {
-        ret = njs_value_to_numeric(vm, &numeric1, val1);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val1 = &numeric1;
-    }
-
-    if (nxt_slow_path(!njs_is_numeric(val2))) {
-        ret = njs_value_to_numeric(vm, &numeric2, val2);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val2 = &numeric2;
-    }
-
-    num = fmod(njs_number(val1), njs_number(val2));
-    njs_set_number(&vm->retval, num);
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_left_shift(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    int32_t      num1;
-    uint32_t     num2;
-    njs_ret_t    ret;
-    njs_value_t  numeric1, numeric2;
-
-    if (nxt_slow_path(!njs_is_numeric(val1))) {
-        ret = njs_value_to_numeric(vm, &numeric1, val1);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val1 = &numeric1;
-    }
-
-    if (nxt_slow_path(!njs_is_numeric(val2))) {
-        ret = njs_value_to_numeric(vm, &numeric2, val2);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val2 = &numeric2;
-    }
-
-    num1 = njs_number_to_int32(njs_number(val1));
-    num2 = njs_number_to_uint32(njs_number(val2));
-    njs_set_int32(&vm->retval, num1 << (num2 & 0x1f));
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_right_shift(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    int32_t      num1;
-    uint32_t     num2;
-    njs_ret_t    ret;
-    njs_value_t  numeric1, numeric2;
-
-    if (nxt_slow_path(!njs_is_numeric(val1))) {
-        ret = njs_value_to_numeric(vm, &numeric1, val1);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val1 = &numeric1;
-    }
-
-    if (nxt_slow_path(!njs_is_numeric(val2))) {
-        ret = njs_value_to_numeric(vm, &numeric2, val2);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val2 = &numeric2;
-    }
-
-    num1 = njs_number_to_int32(njs_number(val1));
-    num2 = njs_number_to_uint32(njs_number(val2));
-    njs_set_int32(&vm->retval, num1 >> (num2 & 0x1f));
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_unsigned_right_shift(njs_vm_t *vm, njs_value_t *val1,
-    njs_value_t *val2)
-{
-    uint32_t     num1, num2;
-    njs_ret_t    ret;
-    njs_value_t  numeric1, numeric2;
-
-    if (nxt_slow_path(!njs_is_numeric(val1))) {
-        ret = njs_value_to_numeric(vm, &numeric1, val1);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val1 = &numeric1;
-    }
-
-    if (nxt_slow_path(!njs_is_numeric(val2))) {
-        ret = njs_value_to_numeric(vm, &numeric2, val2);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val2 = &numeric2;
-    }
-
-    num1 = njs_number_to_uint32(njs_number(val1));
-    num2 = njs_number_to_uint32(njs_number(val2));
-    njs_set_uint32(&vm->retval, num1 >> (num2 & 0x1f));
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_logical_not(njs_vm_t *vm, njs_value_t *value, njs_value_t *inlvd)
-{
-    njs_set_boolean(&vm->retval, !njs_is_true(value));
-
-    return sizeof(njs_vmcode_2addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_test_if_true(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
-{
-    njs_vmcode_test_jump_t  *test_jump;
-
-    vm->retval = *value;
-
-    if (njs_is_true(value)) {
-        test_jump = (njs_vmcode_test_jump_t *) vm->current;
-        return test_jump->offset;
-    }
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_test_if_false(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
-{
-    njs_vmcode_test_jump_t  *test_jump;
-
-    vm->retval = *value;
-
-    if (!njs_is_true(value)) {
-        test_jump = (njs_vmcode_test_jump_t *) vm->current;
-        return test_jump->offset;
-    }
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_bitwise_not(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
-{
-    njs_ret_t    ret;
-    njs_value_t  numeric;
-
-    if (nxt_slow_path(!njs_is_numeric(value))) {
-        ret = njs_value_to_numeric(vm, &numeric, value);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        value = &numeric;
-    }
-
-    njs_set_int32(&vm->retval, ~njs_number_to_integer(njs_number(value)));
-
-    return sizeof(njs_vmcode_2addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_bitwise_and(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    int32_t      num1, num2;
-    njs_ret_t    ret;
-    njs_value_t  numeric1, numeric2;
-
-    if (nxt_slow_path(!njs_is_numeric(val1))) {
-        ret = njs_value_to_numeric(vm, &numeric1, val1);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val1 = &numeric1;
-    }
-
-    if (nxt_slow_path(!njs_is_numeric(val2))) {
-        ret = njs_value_to_numeric(vm, &numeric2, val2);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val2 = &numeric2;
-    }
-
-    num1 = njs_number_to_integer(njs_number(val1));
-    num2 = njs_number_to_integer(njs_number(val2));
-    njs_set_int32(&vm->retval, num1 & num2);
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_bitwise_xor(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    int32_t      num1, num2;
-    njs_ret_t    ret;
-    njs_value_t  numeric1, numeric2;
-
-    if (nxt_slow_path(!njs_is_numeric(val1))) {
-        ret = njs_value_to_numeric(vm, &numeric1, val1);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val1 = &numeric1;
-    }
-
-    if (nxt_slow_path(!njs_is_numeric(val2))) {
-        ret = njs_value_to_numeric(vm, &numeric2, val2);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val2 = &numeric2;
-    }
-
-    num1 = njs_number_to_integer(njs_number(val1));
-    num2 = njs_number_to_integer(njs_number(val2));
-    njs_set_int32(&vm->retval, num1 ^ num2);
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_bitwise_or(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    int32_t      num1, num2;
-    njs_ret_t    ret;
-    njs_value_t  numeric1, numeric2;
-
-    if (nxt_slow_path(!njs_is_numeric(val1))) {
-        ret = njs_value_to_numeric(vm, &numeric1, val1);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val1 = &numeric1;
-    }
-
-    if (nxt_slow_path(!njs_is_numeric(val2))) {
-        ret = njs_value_to_numeric(vm, &numeric2, val2);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        val2 = &numeric2;
-    }
-
-    num1 = njs_number_to_integer(njs_number(val1));
-    num2 = njs_number_to_integer(njs_number(val2));
-    njs_set_int32(&vm->retval, num1 | num2);
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_equal(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    njs_ret_t  ret;
-
-    ret = njs_values_equal(vm, val1, val2);
-
-    if (nxt_fast_path(ret >= 0)) {
-
-        njs_set_boolean(&vm->retval, ret != 0);
-
-        return sizeof(njs_vmcode_3addr_t);
-    }
-
-    return ret;
-}
-
-
-njs_ret_t
-njs_vmcode_not_equal(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    njs_ret_t  ret;
-
-    ret = njs_values_equal(vm, val1, val2);
-
-    if (nxt_fast_path(ret >= 0)) {
-
-        njs_set_boolean(&vm->retval, ret == 0);
-
-        return sizeof(njs_vmcode_3addr_t);
-    }
-
-    return ret;
 }
 
 
@@ -1698,110 +1623,6 @@ again:
 }
 
 
-nxt_inline njs_ret_t
-njs_values_to_primitive(njs_vm_t *vm, njs_value_t *primitive1,
-    njs_value_t **val1, njs_value_t *primitive2, njs_value_t **val2)
-{
-    njs_ret_t    ret;
-
-    if (nxt_slow_path(!njs_is_primitive(*val1))) {
-        ret = njs_value_to_primitive(vm, primitive1, *val1, 0);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        *val1 = primitive1;
-    }
-
-    if (nxt_slow_path(!njs_is_primitive(*val2))) {
-        ret = njs_value_to_primitive(vm, primitive2, *val2, 0);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-
-        *val2 = primitive2;
-    }
-
-    return NXT_OK;
-}
-
-
-njs_ret_t
-njs_vmcode_less(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    njs_ret_t    ret;
-    njs_value_t  primitive1, primitive2;
-
-    ret = njs_values_to_primitive(vm, &primitive1, &val1, &primitive2, &val2);
-    if (ret != NXT_OK) {
-        return ret;
-    }
-
-    ret = njs_primitive_values_compare(vm, val1, val2);
-
-    njs_set_boolean(&vm->retval, ret > 0);
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_greater(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    njs_ret_t    ret;
-    njs_value_t  primitive1, primitive2;
-
-    ret = njs_values_to_primitive(vm, &primitive1, &val1, &primitive2, &val2);
-    if (ret != NXT_OK) {
-        return ret;
-    }
-
-    ret = njs_primitive_values_compare(vm, val2, val1);
-
-    njs_set_boolean(&vm->retval, ret > 0);
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_less_or_equal(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    njs_ret_t    ret;
-    njs_value_t  primitive1, primitive2;
-
-    ret = njs_values_to_primitive(vm, &primitive1, &val1, &primitive2, &val2);
-    if (ret != NXT_OK) {
-        return ret;
-    }
-
-    ret = njs_primitive_values_compare(vm, val2, val1);
-
-    njs_set_boolean(&vm->retval, ret == 0);
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_greater_or_equal(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    njs_ret_t    ret;
-    njs_value_t  primitive1, primitive2;
-
-    ret = njs_values_to_primitive(vm, &primitive1, &val1, &primitive2, &val2);
-    if (ret != NXT_OK) {
-        return ret;
-    }
-
-    ret = njs_primitive_values_compare(vm, val1, val2);
-
-    njs_set_boolean(&vm->retval, ret == 0);
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
 /*
  * ECMAScript 5.1: 11.8.5
  * njs_primitive_values_compare() returns
@@ -1840,99 +1661,6 @@ njs_primitive_values_compare(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
 
     /* Infinities are handled correctly by comparision. */
     return (num1 < num2);
-}
-
-
-njs_ret_t
-njs_vmcode_strict_equal(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    njs_set_boolean(&vm->retval, njs_values_strict_equal(val1, val2));
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_strict_not_equal(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    njs_set_boolean(&vm->retval, !njs_values_strict_equal(val1, val2));
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_move(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
-{
-    vm->retval = *value;
-
-    njs_retain(value);
-
-    return sizeof(njs_vmcode_move_t);
-}
-
-
-njs_ret_t
-njs_vmcode_jump(njs_vm_t *vm, njs_value_t *invld, njs_value_t *offset)
-{
-    return (njs_ret_t) offset;
-}
-
-
-njs_ret_t
-njs_vmcode_if_true_jump(njs_vm_t *vm, njs_value_t *cond, njs_value_t *offset)
-{
-    if (njs_is_true(cond)) {
-        return (njs_ret_t) offset;
-    }
-
-    return sizeof(njs_vmcode_cond_jump_t);
-}
-
-
-njs_ret_t
-njs_vmcode_if_false_jump(njs_vm_t *vm, njs_value_t *cond, njs_value_t *offset)
-{
-    if (njs_is_true(cond)) {
-        return sizeof(njs_vmcode_cond_jump_t);
-    }
-
-    return (njs_ret_t) offset;
-}
-
-
-njs_ret_t
-njs_vmcode_if_equal_jump(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
-{
-    njs_vmcode_equal_jump_t  *jump;
-
-    if (njs_values_strict_equal(val1, val2)) {
-        jump = (njs_vmcode_equal_jump_t *) vm->current;
-        return jump->offset;
-    }
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-njs_ret_t
-njs_vmcode_function_frame(njs_vm_t *vm, njs_value_t *value, njs_value_t *nargs)
-{
-    njs_ret_t                    ret;
-    njs_vmcode_function_frame_t  *function;
-
-    function = (njs_vmcode_function_frame_t *) vm->current;
-
-    /* TODO: external object instead of void this. */
-
-    ret = njs_function_frame_create(vm, value, &njs_value_undefined,
-                                    (uintptr_t) nargs, function->code.ctor);
-
-    if (nxt_fast_path(ret == NXT_OK)) {
-        return sizeof(njs_vmcode_function_frame_t);
-    }
-
-    return ret;
 }
 
 
@@ -2014,8 +1742,9 @@ njs_function_new_object(njs_vm_t *vm, njs_value_t *value)
 }
 
 
-njs_ret_t
-njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
+static njs_ret_t
+njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name,
+    u_char *pc)
 {
     njs_ret_t                  ret;
     nxt_str_t                  string;
@@ -2025,7 +1754,7 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
     njs_vmcode_method_frame_t  *method;
 
     value = NULL;
-    method = (njs_vmcode_method_frame_t *) vm->current;
+    method = (njs_vmcode_method_frame_t *) pc;
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 0);
 
@@ -2096,21 +1825,7 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name)
 }
 
 
-njs_ret_t
-njs_vmcode_function_call(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
-{
-    njs_ret_t  ret;
-
-    ret = njs_function_frame_invoke(vm, (njs_index_t) retval);
-    if (nxt_slow_path(ret != NXT_OK)) {
-        return ret;
-    }
-
-    return sizeof(njs_vmcode_function_call_t);
-}
-
-
-njs_ret_t
+static njs_ret_t
 njs_vmcode_return(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
 {
     njs_value_t         *value;
@@ -2130,8 +1845,6 @@ njs_vmcode_return(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
         }
     }
 
-    vm->current = frame->return_address;
-
     previous = njs_function_previous_frame(&frame->native);
 
     njs_vm_scopes_restore(vm, frame, previous);
@@ -2147,20 +1860,7 @@ njs_vmcode_return(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
 
     njs_function_frame_free(vm, &frame->native);
 
-    return NJS_STOP;
-}
-
-
-njs_ret_t
-njs_vmcode_stop(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
-{
-    njs_value_t  *value;
-
-    value = njs_vmcode_operand(vm, retval);
-
-    vm->retval = *value;
-
-    return NJS_STOP;
+    return NJS_OK;
 }
 
 
@@ -2170,9 +1870,9 @@ njs_vmcode_stop(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
  * "finally" blocks and to initialize a value to track uncaught exception.
  */
 
-njs_ret_t
+static njs_ret_t
 njs_vmcode_try_start(njs_vm_t *vm, njs_value_t *exception_value,
-    njs_value_t *offset)
+    njs_value_t *offset, u_char *pc)
 {
     njs_value_t             *exit_value;
     njs_exception_t         *e;
@@ -2189,11 +1889,11 @@ njs_vmcode_try_start(njs_vm_t *vm, njs_value_t *exception_value,
         vm->top_frame->exception.next = e;
     }
 
-    vm->top_frame->exception.catch = vm->current + (njs_ret_t) offset;
+    vm->top_frame->exception.catch = pc + (njs_ret_t) offset;
 
     njs_set_invalid(exception_value);
 
-    try_start = (njs_vmcode_try_start_t *) vm->current;
+    try_start = (njs_vmcode_try_start_t *) pc;
     exit_value = njs_vmcode_operand(vm, try_start->exit_value);
 
     njs_set_invalid(exit_value);
@@ -2208,7 +1908,7 @@ njs_vmcode_try_start(njs_vm_t *vm, njs_value_t *exception_value,
  * the nearest try_end block. The exit_value is checked by njs_vmcode_finally().
  */
 
-njs_ret_t
+static njs_ret_t
 njs_vmcode_try_break(njs_vm_t *vm, njs_value_t *exit_value,
     njs_value_t *offset)
 {
@@ -2226,7 +1926,7 @@ njs_vmcode_try_break(njs_vm_t *vm, njs_value_t *exit_value,
  * the nearest try_end block. The exit_value is checked by njs_vmcode_finally().
  */
 
-njs_ret_t
+static njs_ret_t
 njs_vmcode_try_continue(njs_vm_t *vm, njs_value_t *exit_value,
     njs_value_t *offset)
 {
@@ -2235,32 +1935,13 @@ njs_vmcode_try_continue(njs_vm_t *vm, njs_value_t *exit_value,
     return (njs_ret_t) offset;
 }
 
-/*
- * njs_vmcode_try_return() saves a return value to use it later by
- * njs_vmcode_finally(), and jumps to the nearest try_break block.
- */
-
-njs_ret_t
-njs_vmcode_try_return(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
-{
-    njs_vmcode_try_return_t  *try_return;
-
-    vm->retval = *value;
-
-    njs_retain(value);
-
-    try_return = (njs_vmcode_try_return_t *) vm->current;
-
-    return try_return->offset;
-}
-
 
 /*
  * njs_vmcode_try_end() is set on the end of a "try" block to remove the block.
  * It is also set on the end of a "catch" block followed by a "finally" block.
  */
 
-njs_ret_t
+static njs_ret_t
 njs_vmcode_try_end(njs_vm_t *vm, njs_value_t *invld, njs_value_t *offset)
 {
     njs_exception_t  *e;
@@ -2279,42 +1960,6 @@ njs_vmcode_try_end(njs_vm_t *vm, njs_value_t *invld, njs_value_t *offset)
 }
 
 
-njs_ret_t
-njs_vmcode_throw(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
-{
-    njs_value_t  *value;
-
-    value = njs_vmcode_operand(vm, retval);
-
-    vm->retval = *value;
-
-    return NXT_ERROR;
-}
-
-
-/*
- * njs_vmcode_catch() is set on the start of a "catch" block to store
- * exception and to remove a "try" block if there is no "finally" block
- * or to update a catch address to the start of a "finally" block.
- * njs_vmcode_catch() is set on the start of a "finally" block to store
- * uncaught exception and to remove a "try" block.
- */
-
-njs_ret_t
-njs_vmcode_catch(njs_vm_t *vm, njs_value_t *exception, njs_value_t *offset)
-{
-    *exception = vm->retval;
-
-    if ((njs_ret_t) offset == sizeof(njs_vmcode_catch_t)) {
-        return njs_vmcode_try_end(vm, exception, offset);
-    }
-
-    vm->top_frame->exception.catch = vm->current + (njs_ret_t) offset;
-
-    return sizeof(njs_vmcode_catch_t);
-}
-
-
 /*
  * njs_vmcode_finally() is set on the end of a "finally" or a "catch" block.
  *   1) to throw uncaught exception.
@@ -2323,8 +1968,9 @@ njs_vmcode_catch(njs_vm_t *vm, njs_value_t *exception, njs_value_t *offset)
  *   3) to finalize "return" instruction from "try" block.
  */
 
-njs_ret_t
-njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
+static njs_ret_t
+njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval,
+    u_char *pc)
 {
     njs_value_t           *exception_value, *exit_value;
     njs_vmcode_finally_t  *finally;
@@ -2337,7 +1983,7 @@ njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
         return NXT_ERROR;
     }
 
-    finally = (njs_vmcode_finally_t *) vm->current;
+    finally = (njs_vmcode_finally_t *) pc;
     exit_value = njs_vmcode_operand(vm, finally->exit_value);
 
     /*
@@ -2361,14 +2007,13 @@ njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
 }
 
 
-njs_ret_t
-njs_vmcode_reference_error(njs_vm_t *vm, njs_value_t *invld1,
-    njs_value_t *invld2)
+static njs_ret_t
+njs_vmcode_reference_error(njs_vm_t *vm, u_char *pc)
 {
     nxt_str_t                     *file;
     njs_vmcode_reference_error_t  *ref_err;
 
-    ref_err = (njs_vmcode_reference_error_t *) vm->current;
+    ref_err = (njs_vmcode_reference_error_t *) pc;
 
     file = &ref_err->file;
 

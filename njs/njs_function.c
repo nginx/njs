@@ -500,10 +500,7 @@ njs_function_lambda_call(njs_vm_t *vm)
     frame = (njs_frame_t *) vm->top_frame;
     function = frame->native.function;
 
-    frame->return_address = vm->current;
-
     lambda = function->u.lambda;
-    vm->current = lambda->start;
 
 #if (NXT_DEBUG)
     vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = NULL;
@@ -571,9 +568,11 @@ njs_function_lambda_call(njs_vm_t *vm)
         }
     }
 
+    frame->native.call = 1;
+
     vm->active_frame = frame;
 
-    return njs_vmcode_run(vm);
+    return njs_vmcode_interpreter(vm, lambda->start);
 }
 
 

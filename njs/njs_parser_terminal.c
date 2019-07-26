@@ -674,7 +674,7 @@ njs_parser_object_property(njs_vm_t *vm, njs_parser_t *parser,
         return NXT_ERROR;
     }
 
-    assign->u.operation = njs_vmcode_move;
+    assign->u.operation = NJS_VMCODE_MOVE;
     assign->left = propref;
     assign->right = value;
 

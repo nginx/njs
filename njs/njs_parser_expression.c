@@ -74,9 +74,9 @@ static const njs_parser_expression_t
     njs_parser_exponential_expression,
     NULL,
     3, {
-        { NJS_TOKEN_MULTIPLICATION, njs_vmcode_multiplication },
-        { NJS_TOKEN_DIVISION, njs_vmcode_division },
-        { NJS_TOKEN_REMAINDER, njs_vmcode_remainder },
+        { NJS_TOKEN_MULTIPLICATION, NJS_VMCODE_MULTIPLICATION },
+        { NJS_TOKEN_DIVISION, NJS_VMCODE_DIVISION },
+        { NJS_TOKEN_REMAINDER, NJS_VMCODE_REMAINDER },
     }
 };
 
@@ -87,8 +87,8 @@ static const njs_parser_expression_t
     njs_parser_binary_expression,
     &njs_parser_factor_expression,
     2, {
-        { NJS_TOKEN_ADDITION, njs_vmcode_addition },
-        { NJS_TOKEN_SUBSTRACTION, njs_vmcode_substraction },
+        { NJS_TOKEN_ADDITION, NJS_VMCODE_ADDITION },
+        { NJS_TOKEN_SUBSTRACTION, NJS_VMCODE_SUBSTRACTION },
     }
 };
 
@@ -99,9 +99,9 @@ static const njs_parser_expression_t
     njs_parser_binary_expression,
     &njs_parser_addition_expression,
     3, {
-        { NJS_TOKEN_LEFT_SHIFT, njs_vmcode_left_shift },
-        { NJS_TOKEN_RIGHT_SHIFT, njs_vmcode_right_shift },
-        { NJS_TOKEN_UNSIGNED_RIGHT_SHIFT, njs_vmcode_unsigned_right_shift },
+        { NJS_TOKEN_LEFT_SHIFT, NJS_VMCODE_LEFT_SHIFT },
+        { NJS_TOKEN_RIGHT_SHIFT, NJS_VMCODE_RIGHT_SHIFT },
+        { NJS_TOKEN_UNSIGNED_RIGHT_SHIFT, NJS_VMCODE_UNSIGNED_RIGHT_SHIFT },
     }
 };
 
@@ -112,12 +112,12 @@ static const njs_parser_expression_t
     njs_parser_binary_expression,
     &njs_parser_bitwise_shift_expression,
     6, {
-        { NJS_TOKEN_LESS, njs_vmcode_less },
-        { NJS_TOKEN_LESS_OR_EQUAL, njs_vmcode_less_or_equal },
-        { NJS_TOKEN_GREATER, njs_vmcode_greater },
-        { NJS_TOKEN_GREATER_OR_EQUAL, njs_vmcode_greater_or_equal },
-        { NJS_TOKEN_IN, njs_vmcode_property_in },
-        { NJS_TOKEN_INSTANCEOF, njs_vmcode_instance_of },
+        { NJS_TOKEN_LESS, NJS_VMCODE_LESS },
+        { NJS_TOKEN_LESS_OR_EQUAL, NJS_VMCODE_LESS_OR_EQUAL },
+        { NJS_TOKEN_GREATER, NJS_VMCODE_GREATER },
+        { NJS_TOKEN_GREATER_OR_EQUAL, NJS_VMCODE_GREATER_OR_EQUAL },
+        { NJS_TOKEN_IN, NJS_VMCODE_PROPERTY_IN },
+        { NJS_TOKEN_INSTANCEOF, NJS_VMCODE_INSTANCE_OF },
     }
 };
 
@@ -128,10 +128,10 @@ static const njs_parser_expression_t
     njs_parser_binary_expression,
     &njs_parser_relational_expression,
     4, {
-        { NJS_TOKEN_EQUAL, njs_vmcode_equal },
-        { NJS_TOKEN_NOT_EQUAL, njs_vmcode_not_equal },
-        { NJS_TOKEN_STRICT_EQUAL, njs_vmcode_strict_equal },
-        { NJS_TOKEN_STRICT_NOT_EQUAL, njs_vmcode_strict_not_equal },
+        { NJS_TOKEN_EQUAL, NJS_VMCODE_EQUAL },
+        { NJS_TOKEN_NOT_EQUAL, NJS_VMCODE_NOT_EQUAL },
+        { NJS_TOKEN_STRICT_EQUAL, NJS_VMCODE_STRICT_EQUAL },
+        { NJS_TOKEN_STRICT_NOT_EQUAL, NJS_VMCODE_STRICT_NOT_EQUAL },
     }
 };
 
@@ -142,7 +142,7 @@ static const njs_parser_expression_t
     njs_parser_binary_expression,
     &njs_parser_equality_expression,
     1, {
-        { NJS_TOKEN_BITWISE_AND, njs_vmcode_bitwise_and },
+        { NJS_TOKEN_BITWISE_AND, NJS_VMCODE_BITWISE_AND },
     }
 };
 
@@ -153,7 +153,7 @@ static const njs_parser_expression_t
     njs_parser_binary_expression,
     &njs_parser_bitwise_and_expression,
     1, {
-        { NJS_TOKEN_BITWISE_XOR, njs_vmcode_bitwise_xor },
+        { NJS_TOKEN_BITWISE_XOR, NJS_VMCODE_BITWISE_XOR },
     }
 };
 
@@ -164,7 +164,7 @@ static const njs_parser_expression_t
     njs_parser_binary_expression,
     &njs_parser_bitwise_xor_expression,
     1, {
-        { NJS_TOKEN_BITWISE_OR, njs_vmcode_bitwise_or },
+        { NJS_TOKEN_BITWISE_OR, NJS_VMCODE_BITWISE_OR },
     }
 };
 
@@ -175,7 +175,7 @@ static const njs_parser_expression_t
     njs_parser_binary_expression,
     &njs_parser_bitwise_or_expression,
     1, {
-        { NJS_TOKEN_LOGICAL_AND, njs_vmcode_test_if_false },
+        { NJS_TOKEN_LOGICAL_AND, NJS_VMCODE_TEST_IF_FALSE },
     }
 };
 
@@ -186,7 +186,7 @@ static const njs_parser_expression_t
     njs_parser_binary_expression,
     &njs_parser_logical_and_expression,
     1, {
-        { NJS_TOKEN_LOGICAL_OR, njs_vmcode_test_if_true },
+        { NJS_TOKEN_LOGICAL_OR, NJS_VMCODE_TEST_IF_TRUE },
     }
 };
 
@@ -197,7 +197,7 @@ static const njs_parser_expression_t
     njs_parser_any_expression,
     NULL,
     1, {
-        { NJS_TOKEN_COMMA, NULL },
+        { NJS_TOKEN_COMMA, NJS_VMCODE_NOP },
     }
 };
 
@@ -235,67 +235,67 @@ njs_parser_assignment_expression(njs_vm_t *vm, njs_parser_t *parser,
 
         case NJS_TOKEN_ASSIGNMENT:
             nxt_thread_log_debug("JS: =");
-            operation = njs_vmcode_move;
+            operation = NJS_VMCODE_MOVE;
             break;
 
         case NJS_TOKEN_ADDITION_ASSIGNMENT:
             nxt_thread_log_debug("JS: +=");
-            operation = njs_vmcode_addition;
+            operation = NJS_VMCODE_ADDITION;
             break;
 
         case NJS_TOKEN_SUBSTRACTION_ASSIGNMENT:
             nxt_thread_log_debug("JS: -=");
-            operation = njs_vmcode_substraction;
+            operation = NJS_VMCODE_SUBSTRACTION;
             break;
 
         case NJS_TOKEN_MULTIPLICATION_ASSIGNMENT:
             nxt_thread_log_debug("JS: *=");
-            operation = njs_vmcode_multiplication;
+            operation = NJS_VMCODE_MULTIPLICATION;
             break;
 
         case NJS_TOKEN_EXPONENTIATION_ASSIGNMENT:
             nxt_thread_log_debug("JS: **=");
-            operation = njs_vmcode_exponentiation;
+            operation = NJS_VMCODE_EXPONENTIATION;
             break;
 
         case NJS_TOKEN_DIVISION_ASSIGNMENT:
             nxt_thread_log_debug("JS: /=");
-            operation = njs_vmcode_division;
+            operation = NJS_VMCODE_DIVISION;
             break;
 
         case NJS_TOKEN_REMAINDER_ASSIGNMENT:
             nxt_thread_log_debug("JS: %=");
-            operation = njs_vmcode_remainder;
+            operation = NJS_VMCODE_REMAINDER;
             break;
 
         case NJS_TOKEN_LEFT_SHIFT_ASSIGNMENT:
             nxt_thread_log_debug("JS: <<=");
-            operation = njs_vmcode_left_shift;
+            operation = NJS_VMCODE_LEFT_SHIFT;
             break;
 
         case NJS_TOKEN_RIGHT_SHIFT_ASSIGNMENT:
             nxt_thread_log_debug("JS: >>=");
-            operation = njs_vmcode_right_shift;
+            operation = NJS_VMCODE_RIGHT_SHIFT;
             break;
 
         case NJS_TOKEN_UNSIGNED_RIGHT_SHIFT_ASSIGNMENT:
             nxt_thread_log_debug("JS: >>=");
-            operation = njs_vmcode_unsigned_right_shift;
+            operation = NJS_VMCODE_UNSIGNED_RIGHT_SHIFT;
             break;
 
         case NJS_TOKEN_BITWISE_AND_ASSIGNMENT:
             nxt_thread_log_debug("JS: &=");
-            operation = njs_vmcode_bitwise_and;
+            operation = NJS_VMCODE_BITWISE_AND;
             break;
 
         case NJS_TOKEN_BITWISE_XOR_ASSIGNMENT:
             nxt_thread_log_debug("JS: ^=");
-            operation = njs_vmcode_bitwise_xor;
+            operation = NJS_VMCODE_BITWISE_XOR;
             break;
 
         case NJS_TOKEN_BITWISE_OR_ASSIGNMENT:
             nxt_thread_log_debug("JS: |=");
-            operation = njs_vmcode_bitwise_or;
+            operation = NJS_VMCODE_BITWISE_OR;
             break;
 
         default:
@@ -485,7 +485,7 @@ njs_parser_exponential_expression(njs_vm_t *vm, njs_parser_t *parser,
             return NJS_TOKEN_ERROR;
         }
 
-        node->u.operation = njs_vmcode_exponentiation;
+        node->u.operation = NJS_VMCODE_EXPONENTIATION;
         node->left = parser->node;
         node->left->dest = node;
 
@@ -521,32 +521,32 @@ njs_parser_unary_expression(njs_vm_t *vm, njs_parser_t *parser,
 
     case NJS_TOKEN_ADDITION:
         token = NJS_TOKEN_UNARY_PLUS;
-        operation = njs_vmcode_unary_plus;
+        operation = NJS_VMCODE_UNARY_PLUS;
         break;
 
     case NJS_TOKEN_SUBSTRACTION:
         token = NJS_TOKEN_UNARY_NEGATION;
-        operation = njs_vmcode_unary_negation;
+        operation = NJS_VMCODE_UNARY_NEGATION;
         break;
 
     case NJS_TOKEN_LOGICAL_NOT:
-        operation = njs_vmcode_logical_not;
+        operation = NJS_VMCODE_LOGICAL_NOT;
         break;
 
     case NJS_TOKEN_BITWISE_NOT:
-        operation = njs_vmcode_bitwise_not;
+        operation = NJS_VMCODE_BITWISE_NOT;
         break;
 
     case NJS_TOKEN_TYPEOF:
-        operation = njs_vmcode_typeof;
+        operation = NJS_VMCODE_TYPEOF;
         break;
 
     case NJS_TOKEN_VOID:
-        operation = njs_vmcode_void;
+        operation = NJS_VMCODE_VOID;
         break;
 
     case NJS_TOKEN_DELETE:
-        operation = njs_vmcode_delete;
+        operation = NJS_VMCODE_DELETE;
         break;
 
     default:
@@ -592,7 +592,7 @@ njs_parser_unary_expression(njs_vm_t *vm, njs_parser_t *parser,
 
         case NJS_TOKEN_PROPERTY:
             node->token = NJS_TOKEN_PROPERTY_DELETE;
-            node->u.operation = njs_vmcode_property_delete;
+            node->u.operation = NJS_VMCODE_PROPERTY_DELETE;
 
             return next;
 
@@ -637,11 +637,11 @@ njs_parser_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
     switch (token) {
 
     case NJS_TOKEN_INCREMENT:
-        operation = njs_vmcode_increment;
+        operation = NJS_VMCODE_INCREMENT;
         break;
 
     case NJS_TOKEN_DECREMENT:
-        operation = njs_vmcode_decrement;
+        operation = NJS_VMCODE_DECREMENT;
         break;
 
     default:
@@ -694,12 +694,12 @@ njs_parser_post_inc_dec_expression(njs_vm_t *vm, njs_parser_t *parser,
 
     case NJS_TOKEN_INCREMENT:
         token = NJS_TOKEN_POST_INCREMENT;
-        operation = njs_vmcode_post_increment;
+        operation = NJS_VMCODE_POST_INCREMENT;
         break;
 
     case NJS_TOKEN_DECREMENT:
         token = NJS_TOKEN_POST_DECREMENT;
-        operation = njs_vmcode_post_decrement;
+        operation = NJS_VMCODE_POST_DECREMENT;
         break;
 
     default:
@@ -897,7 +897,7 @@ njs_parser_property_expression(njs_vm_t *vm, njs_parser_t *parser,
             return NJS_TOKEN_ERROR;
         }
 
-        node->u.operation = njs_vmcode_property_get;
+        node->u.operation = NJS_VMCODE_PROPERTY_GET;
         node->left = parser->node;
 
         if (token == NJS_TOKEN_DOT) {

@@ -10,23 +10,6 @@
 
 #define NJS_MAX_STACK_SIZE       (16 * 1024 * 1024)
 
-/*
- * Negative return values handled by nJSVM interpreter as special events.
- * The values must be in range from -1 to -11, because -12 is minimal jump
- * offset on 32-bit platforms.
- *    -1 (NJS_ERROR/NXT_ERROR):  error or exception;
- *    -2 (NJS_AGAIN/NXT_AGAIN):  postpone nJSVM execution;
- *    -3:                        not used;
- *    -4 (NJS_STOP/NXT_DONE):    njs_vmcode_stop() has stopped execution,
- *                               execution has completed successfully;
- *    -5 .. -11:                 not used.
- */
-
-#define NJS_STOP                 NXT_DONE
-
-/* The last return value which preempts execution. */
-#define NJS_PREEMPT              (-11)
-
 
 /*
  * NJS_PROPERTY_QUERY_GET must be less to NJS_PROPERTY_QUERY_SET
@@ -250,7 +233,7 @@ struct njs_vm_s {
 
     nxt_array_t              *paths;
 
-    u_char                   *current;
+    u_char                   *start;
 
     njs_value_t              *scopes[NJS_SCOPES];
 
@@ -304,7 +287,7 @@ struct njs_vm_s {
 
     njs_object_t             string_object;
 
-    nxt_array_t              *code;  /* of njs_vm_code_t */
+    nxt_array_t              *codes;  /* of njs_vm_code_t */
 
     nxt_trace_t              trace;
     nxt_random_t             random;

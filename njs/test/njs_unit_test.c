@@ -5546,6 +5546,7 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'\x00абвгдеёжз'.toUpperCase().length"),
       nxt_string("10") },
 
+#if 0 /* FIXME */
 #if (!NXT_HAVE_MEMORY_SANITIZER) /* very long test under MSAN */
     { nxt_string("var a = [], code;"
                  "for (code = 0; code <= 1114111; code++) {"
@@ -5564,6 +5565,7 @@ static njs_unit_test_t  njs_test[] =
                  "        a.push(code);"
                  "} a"),
       nxt_string("304,453,456,459,498,1012,7838,8486,8490,8491") },
+#endif
 #endif
 
     { nxt_string("'abc'.trim()"),
@@ -8393,6 +8395,15 @@ static njs_unit_test_t  njs_test[] =
 
     { nxt_string("(function() { try { return ['a'];} finally {} } )()"),
       nxt_string("a") },
+
+    { nxt_string("function f(){}; try {f((new RegExp('a**')))} catch (e) { }"),
+      nxt_string("undefined") },
+
+    { nxt_string("function f(){}; try {f(f((new RegExp('a**'))))} catch (e) { }"),
+      nxt_string("undefined") },
+
+    { nxt_string("function f(){}; (function(){try {f(f((new RegExp('a**'))))} catch (e) { return 1}})()"),
+      nxt_string("1") },
 
     { nxt_string("var o = { valueOf: function() { return '3' } }; --o"),
       nxt_string("2") },
