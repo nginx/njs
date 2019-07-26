@@ -318,10 +318,11 @@ njs_array_length(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
     njs_value_t  *val;
     njs_array_t  *array;
     njs_object_t *proto;
+    njs_value_t  val_length;
 
     proto = njs_object(value);
 
-    if (setval == NULL) {
+    if (nxt_fast_path(setval == NULL)) {
         do {
             if (nxt_fast_path(proto->type == NJS_ARRAY)) {
                 break;
@@ -345,13 +346,19 @@ njs_array_length(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
         return NJS_DECLINED;
     }
 
-    if (!njs_is_number(setval)) {
-        njs_range_error(vm, "Invalid array length");
-        return NJS_ERROR;
+    if (nxt_slow_path(!njs_is_number(setval))) {
+        ret = njs_value_to_numeric(vm, &val_length, setval);
+        if (ret != NXT_OK) {
+            return ret;
+        }
+
+        num = njs_number(&val_length);
+
+    } else {
+        num = njs_number(setval);
     }
 
-    num = njs_number(setval);
-    length = (uint32_t) num;
+    length = njs_number_to_uint32(num);
 
     if ((double) length != num) {
         njs_range_error(vm, "Invalid array length");
@@ -379,7 +386,7 @@ njs_array_length(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
 
     array->length = length;
 
-    njs_set_number(retval, length);
+    *retval = *setval;
     return NJS_OK;
 }
 

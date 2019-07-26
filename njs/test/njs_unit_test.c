@@ -3531,6 +3531,26 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("[].length = -1"),
       nxt_string("RangeError: Invalid array length") },
 
+    { nxt_string("var a = [1];"
+                 "typeof (a.length = '') == 'string' && a.length == 0"),
+      nxt_string("true") },
+
+    { nxt_string("var a = [1]; "
+                 "typeof (a.length = Object(2)) == 'object' && a.length == 2"),
+      nxt_string("true") },
+
+    { nxt_string("var a = [1]; "
+                 "typeof (a.length = Object('2')) == 'object'"),
+      nxt_string("true") },
+
+    { nxt_string("var a = [1]; "
+                 "a.length = { valueOf: () => 2 }; a.length == 2"),
+      nxt_string("true") },
+
+    { nxt_string("var a = [1]; "
+                 "a.length = { toString: () => '2' }; a.length == 2"),
+      nxt_string("true") },
+
     { nxt_string("var a = []; a.length = 0; JSON.stringify(a)"),
       nxt_string("[]") },
 
