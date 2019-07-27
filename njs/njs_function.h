@@ -89,8 +89,6 @@ struct njs_native_frame_s {
 
     /* Skip the Function.call() and Function.apply() methods frames. */
     uint8_t                        skip;              /* 1 bit  */
-
-    uint8_t                        call;              /* 1 bit */
 };
 
 

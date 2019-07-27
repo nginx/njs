@@ -568,8 +568,6 @@ njs_function_lambda_call(njs_vm_t *vm)
         }
     }
 
-    frame->native.call = 1;
-
     vm->active_frame = frame;
 
     return njs_vmcode_interpreter(vm, lambda->start);

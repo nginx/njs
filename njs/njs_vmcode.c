@@ -87,7 +87,7 @@ njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc)
     uint32_t                     u32;
     njs_ret_t                    ret;
     nxt_uint_t                   hint;
-    nxt_bool_t                   valid, call;
+    nxt_bool_t                   valid, lambda_call;
     njs_value_t                  *retval, *value1, *value2, *src, *s1, *s2;
     njs_value_t                  numeric1, numeric2, primitive1, primitive2,
                                  dst;
@@ -855,7 +855,7 @@ error:
             break;
         }
 
-        call = frame->native.call;
+        lambda_call = (frame == vm->active_frame);
 
         njs_vm_scopes_restore(vm, frame, previous);
 
@@ -864,7 +864,7 @@ error:
             nxt_mp_free(vm->mem_pool, frame);
         }
 
-        if (call) {
+        if (lambda_call) {
             break;
         }
     }
