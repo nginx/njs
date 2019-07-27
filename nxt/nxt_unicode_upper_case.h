@@ -4,9 +4,9 @@
  * 16496 bytes on 32-bit platforms, 18576 bytes on 64-bit platforms.
  */
 
-#define NXT_UNICODE_MAX_UPPER_CASE   0x1044f
+#define NXT_UNICODE_MAX_UPPER_CASE  0x1044f
 
-#define NXT_UNICODE_BLOCK_SIZE       128
+#define NXT_UNICODE_BLOCK_SIZE      128
 
 
 static const uint32_t  nxt_unicode_upper_case_block_000[128]

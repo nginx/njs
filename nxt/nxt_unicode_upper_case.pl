@@ -48,8 +48,8 @@ printf("\n/*\n" .
        ($blocks - 1) * BLOCK_SIZE * 4 + $last_block_size + $max_block * 4,
        ($blocks - 1) * BLOCK_SIZE * 4 + $last_block_size + $max_block * 8);
 
-printf("#define NXT_UNICODE_MAX_UPPER_CASE   0x%05x\n\n", $max_upper_case);
-printf("#define NXT_UNICODE_BLOCK_SIZE       %d\n\n\n", BLOCK_SIZE);
+printf("#define NXT_UNICODE_MAX_UPPER_CASE  0x%05x\n\n", $max_upper_case);
+printf("#define NXT_UNICODE_BLOCK_SIZE      %d\n\n\n", BLOCK_SIZE);
 
 
 for my $block (sort { $a <=> $b } keys %blocks) {
