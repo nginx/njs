@@ -118,4 +118,8 @@ nxt_utf8_copy(u_char *dst, const u_char **src, const u_char *end)
     ((u < 0x80) ? 1 : ((u < 0x0800) ? 2 : ((u < 0x10000) ? 3 : 4)))
 
 
+#define nxt_utf8_size_uint16(u)                                               \
+    ((u < 0x80) ? 1 : ((u < 0x0800) ? 2 : 3))
+
+
 #endif /* _NXT_UTF8_H_INCLUDED_ */

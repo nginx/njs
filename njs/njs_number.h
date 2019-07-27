@@ -86,6 +86,13 @@ njs_number_to_uint32(double num)
 }
 
 
+nxt_inline uint16_t
+njs_number_to_uint16(double num)
+{
+    return (uint16_t) njs_number_to_int64(num);
+}
+
+
 nxt_inline uint32_t
 njs_number_to_length(double num)
 {

@@ -5345,11 +5345,17 @@ static njs_unit_test_t  njs_test[] =
                  "         .length; a"),
       nxt_string("5") },
 
-    { nxt_string("String.fromCharCode('_')"),
-      nxt_string("RangeError") },
+    { nxt_string("String.fromCharCode('_').charCodeAt(0)"),
+      nxt_string("0") },
 
-    { nxt_string("String.fromCharCode(3.14)"),
-      nxt_string("RangeError") },
+    { nxt_string("String.fromCharCode(65.14)"),
+      nxt_string("A") },
+
+    { nxt_string("String.fromCharCode(65.14 + 65536)"),
+      nxt_string("A") },
+
+    { nxt_string("String.fromCharCode(2**53 + 10)"),
+      nxt_string("\n") },
 
     { nxt_string("String.fromCharCode(65, 90)"),
       nxt_string("AZ") },
@@ -5357,17 +5363,15 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("String.fromCharCode(945, 946, 947)"),
       nxt_string("αβγ") },
 
-#if (!NXT_HAVE_MEMORY_SANITIZER) /* very long test under MSAN */
     { nxt_string("(function() {"
                  "    var n;"
-                 "    for (n = 0; n <= 1114111; n++) {"
+                 "    for (n = 0; n <= 65536; n++) {"
                  "        if (String.fromCharCode(n).charCodeAt(0) !== n)"
                  "            return n;"
                  "    }"
                  "    return -1"
                  "})()"),
-      nxt_string("-1") },
-#endif
+      nxt_string("65536") },
 
     { nxt_string("var a = 'abcdef'; function f(a) {"
                  "return a.slice(a.indexOf('cd')) } f(a)"),
@@ -5567,9 +5571,8 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("10") },
 
 #if 0 /* FIXME */
-#if (!NXT_HAVE_MEMORY_SANITIZER) /* very long test under MSAN */
     { nxt_string("var a = [], code;"
-                 "for (code = 0; code <= 1114111; code++) {"
+                 "for (code = 0; code < 65536; code++) {"
                  "    var s = String.fromCharCode(code);"
                  "    var n = s.toUpperCase();"
                  "    if (s != n && s != n.toLowerCase())"
@@ -5578,14 +5581,13 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("181,305,383,453,456,459,498,837,962,976,977,981,982,1008,1009,1013,7296,7297,7298,7299,7300,7301,7302,7303,7304,7835,8126") },
 
     { nxt_string("var a = [], code;"
-                 "for (code = 0; code <= 1114111; code++) {"
+                 "for (code = 0; code < 65536; code++) {"
                  "    var s = String.fromCharCode(code);"
                  "    var n = s.toLowerCase();"
                  "    if (s != n && s != n.toUpperCase())"
                  "        a.push(code);"
                  "} a"),
       nxt_string("304,453,456,459,498,1012,7838,8486,8490,8491") },
-#endif
 #endif
 
     { nxt_string("'abc'.trim()"),

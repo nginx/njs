@@ -149,9 +149,9 @@ static njs_interactive_test_t  njs_test[] =
                  "    at f (:1)\n"
                  "    at main (native)\n") },
 
-    { nxt_string("String.fromCharCode(3.14)" ENTER),
+    { nxt_string("''.repeat(-1)" ENTER),
       nxt_string("RangeError\n"
-                 "    at String.fromCharCode (native)\n"
+                 "    at String.prototype.repeat (native)\n"
                  "    at main (native)\n") },
 
     { nxt_string("Math.log({}.a.a)" ENTER),

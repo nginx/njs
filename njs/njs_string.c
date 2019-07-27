@@ -1694,9 +1694,8 @@ njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused)
 {
     u_char      *p;
-    double      num;
     size_t      size;
-    int32_t     code;
+    uint16_t    code;
     njs_ret_t   ret;
     nxt_uint_t  i;
 
@@ -1712,18 +1711,8 @@ njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args,
     size = 0;
 
     for (i = 1; i < nargs; i++) {
-        num = njs_number(&args[i]);
-        if (isnan(num)) {
-            goto range_error;
-        }
-
-        code = num;
-
-        if (code != num || code < 0 || code >= 0x110000) {
-            goto range_error;
-        }
-
-        size += nxt_utf8_size(code);
+        code = njs_number_to_uint16(njs_number(&args[i]));
+        size += nxt_utf8_size_uint16(code);
     }
 
     p = njs_string_alloc(vm, &vm->retval, size, nargs - 1);
@@ -1732,16 +1721,11 @@ njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args,
     }
 
     for (i = 1; i < nargs; i++) {
-        p = nxt_utf8_encode(p, njs_number(&args[i]));
+        code = njs_number_to_uint16(njs_number(&args[i]));
+        p = nxt_utf8_encode(p, code);
     }
 
     return NXT_OK;
-
-range_error:
-
-    njs_range_error(vm, NULL);
-
-    return NXT_ERROR;
 }
 
 
