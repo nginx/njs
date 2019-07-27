@@ -5561,16 +5561,24 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'АБВ'.toLowerCase()"),
       nxt_string("абв") },
 
+    { nxt_string("'Ȿ'.repeat(256).toLowerCase() === 'ȿ'.repeat(256)"),
+      nxt_string("true") },
+
     { nxt_string("'abc'.toUpperCase()"),
       nxt_string("ABC") },
 
     { nxt_string("'αβγ'.toUpperCase()"),
       nxt_string("ΑΒΓ") },
 
+    { nxt_string("'ȿ'.repeat(256).toUpperCase() === 'Ȿ'.repeat(256)"),
+      nxt_string("true") },
+
     { nxt_string("'\x00абвгдеёжз'.toUpperCase().length"),
       nxt_string("10") },
 
-#if 0 /* FIXME */
+    { nxt_string("['ȿ', 'Ȿ', 'ȿ'.toUpperCase(), 'Ȿ'.toLowerCase()].map((v)=>v.toUTF8().length)"),
+      nxt_string("2,3,3,2") },
+
     { nxt_string("var a = [], code;"
                  "for (code = 0; code < 65536; code++) {"
                  "    var s = String.fromCharCode(code);"
@@ -5588,7 +5596,6 @@ static njs_unit_test_t  njs_test[] =
                  "        a.push(code);"
                  "} a"),
       nxt_string("304,453,456,459,498,1012,7838,8486,8490,8491") },
-#endif
 
     { nxt_string("'abc'.trim()"),
       nxt_string("abc") },
