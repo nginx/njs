@@ -374,6 +374,7 @@ typedef struct {
 } njs_vmcode_reference_error_t;
 
 
-nxt_int_t njs_vmcode_interpreter(njs_vm_t *vm, u_char *code);
+nxt_int_t njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc);
+
 
 #endif /* _NJS_VMCODE_H_INCLUDED_ */

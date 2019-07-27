@@ -322,7 +322,7 @@ njs_string_property_query(njs_vm_t *vm, njs_property_query_t *pq,
         pq->lhq.value = prop;
 
         if (pq->query != NJS_PROPERTY_QUERY_GET) {
-            /* pq->lhq.key is used by njs_vmcode_property_set for TypeError */
+            /* pq->lhq.key is used by NJS_VMCODE_PROPERTY_SET for TypeError */
             njs_uint32_to_string(&pq->value, index);
             njs_string_get(&pq->value, &pq->lhq.key);
         }

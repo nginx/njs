@@ -14,7 +14,7 @@ struct njs_property_next_s {
     njs_array_t  *array;
 };
 
-static njs_ret_t njs_vmcode_object(njs_vm_t *vm, u_char *pc);
+static njs_ret_t njs_vmcode_object(njs_vm_t *vm);
 static njs_ret_t njs_vmcode_array(njs_vm_t *vm, u_char *pc);
 static njs_ret_t njs_vmcode_function(njs_vm_t *vm, u_char *pc);
 static njs_ret_t njs_vmcode_arguments(njs_vm_t *vm, u_char *pc);
@@ -532,7 +532,7 @@ next:
                 goto next;
 
             case NJS_VMCODE_OBJECT:
-                ret = njs_vmcode_object(vm, pc);
+                ret = njs_vmcode_object(vm);
                 break;
 
             case NJS_VMCODE_ARRAY:
@@ -871,7 +871,7 @@ done:
 
 
 static njs_ret_t
-njs_vmcode_object(njs_vm_t *vm, u_char *pc)
+njs_vmcode_object(njs_vm_t *vm)
 {
     njs_object_t  *object;
 
