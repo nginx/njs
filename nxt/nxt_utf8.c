@@ -11,7 +11,7 @@
 
 /*
  * The nxt_unicode_lower_case.h and nxt_unicode_upper_case.h files are
- * files auto-generated from the UnicodeData.txt file version 6.3.0
+ * files auto-generated from the UnicodeData.txt file version 12.1.0 (May 2019)
  * provided by Unicode, Inc.:
  *
  *   ./nxt_unicode_lower_case.pl UnicodeData.txt
