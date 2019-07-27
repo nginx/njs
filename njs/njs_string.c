@@ -58,6 +58,8 @@ static void njs_string_slice_args(njs_slice_prop_t *slice, njs_value_t *args,
     nxt_uint_t nargs);
 static njs_ret_t njs_string_from_char_code(njs_vm_t *vm,
     njs_value_t *args, nxt_uint_t nargs, njs_index_t unused);
+static njs_ret_t njs_string_from_code_point(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t njs_string_bytes_from(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, njs_index_t unused);
 static njs_ret_t njs_string_bytes_from_array(njs_vm_t *vm,
@@ -608,7 +610,7 @@ static const njs_object_prop_t  njs_string_constructor_properties[] =
     {
         .type = NJS_METHOD,
         .name = njs_string("fromCodePoint"),
-        .value = njs_native_function(njs_string_from_char_code, 0),
+        .value = njs_native_function(njs_string_from_code_point, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1726,6 +1728,62 @@ njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args,
     }
 
     return NXT_OK;
+}
+
+
+static njs_ret_t
+njs_string_from_code_point(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
+    njs_index_t unused)
+{
+    u_char      *p;
+    double      num;
+    size_t      size;
+    int32_t     code;
+    njs_ret_t   ret;
+    nxt_uint_t  i;
+
+    for (i = 1; i < nargs; i++) {
+        if (!njs_is_numeric(&args[i])) {
+            ret = njs_value_to_numeric(vm, &args[i], &args[i]);
+            if (ret != NXT_OK) {
+                return ret;
+            }
+        }
+    }
+
+    size = 0;
+
+    for (i = 1; i < nargs; i++) {
+        num = njs_number(&args[i]);
+        if (isnan(num)) {
+            goto range_error;
+        }
+
+        code = num;
+
+        if (code != num || code < 0 || code >= 0x110000) {
+            goto range_error;
+        }
+
+        size += nxt_utf8_size(code);
+    }
+
+    p = njs_string_alloc(vm, &vm->retval, size, nargs - 1);
+    if (nxt_slow_path(p == NULL)) {
+        return NXT_ERROR;
+    }
+
+    for (i = 1; i < nargs; i++) {
+        p = nxt_utf8_encode(p, njs_number(&args[i]));
+    }
+
+    return NXT_OK;
+
+range_error:
+
+    njs_range_error(vm, NULL);
+
+    return NXT_ERROR;
 }
 
 
