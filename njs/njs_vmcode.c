@@ -681,7 +681,7 @@ next:
                 ret = njs_function_frame_create(vm, value1,
                                                 &njs_value_undefined,
                                                 (uintptr_t) value2,
-                                                function_frame->code.ctor);
+                                                function_frame->ctor);
 
                 if (nxt_slow_path(ret != NXT_OK)) {
                     goto error;
@@ -901,7 +901,7 @@ njs_vmcode_array(njs_vm_t *vm, u_char *pc)
 
     if (nxt_fast_path(array != NULL)) {
 
-        if (code->code.ctor) {
+        if (code->ctor) {
             /* Array of the form [,,,], [1,,]. */
             value = array->start;
             length = array->length;
@@ -1808,7 +1808,7 @@ njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name,
     }
 
     ret = njs_function_frame_create(vm, value, object, method->nargs,
-                                    method->code.ctor);
+                                    method->ctor);
 
     if (nxt_fast_path(ret == NXT_OK)) {
         return sizeof(njs_vmcode_method_frame_t);

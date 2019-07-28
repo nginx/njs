@@ -1907,7 +1907,7 @@ njs_generate_array(njs_vm_t *vm, njs_generator_t *generator,
 
     njs_generate_code(generator, njs_vmcode_array_t, array,
                       NJS_VMCODE_ARRAY, 1, 1);
-    array->code.ctor = node->ctor;
+    array->ctor = node->ctor;
     array->retval = node->index;
     array->length = node->u.length;
 
@@ -2605,7 +2605,7 @@ njs_generate_function_call(njs_vm_t *vm, njs_generator_t *generator,
     njs_generate_code(generator, njs_vmcode_function_frame_t, func,
                       NJS_VMCODE_FUNCTION_FRAME, 2, 0);
     func_offset = njs_code_offset(generator, func);
-    func->code.ctor = node->ctor;
+    func->ctor = node->ctor;
     func->name = name->index;
 
     ret = njs_generate_call(vm, generator, node);
@@ -2649,7 +2649,7 @@ njs_generate_method_call(njs_vm_t *vm, njs_generator_t *generator,
     njs_generate_code(generator, njs_vmcode_method_frame_t, method,
                       NJS_VMCODE_METHOD_FRAME, 3, 0);
     method_offset = njs_code_offset(generator, method);
-    method->code.ctor = node->ctor;
+    method->ctor = node->ctor;
     method->object = prop->left->index;
     method->method = prop->right->index;
 

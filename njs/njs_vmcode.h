@@ -120,7 +120,6 @@ typedef struct {
     njs_vmcode_operation_t     operation;
     uint8_t                    operands;   /* 2 bits */
     uint8_t                    retval;     /* 1 bit  */
-    uint8_t                    ctor;       /* 1 bit  */
 } njs_vmcode_t;
 
 
@@ -182,6 +181,7 @@ typedef struct {
     njs_vmcode_t               code;
     njs_index_t                retval;
     uintptr_t                  length;
+    uint8_t                    ctor;       /* 1 bit  */
 } njs_vmcode_array_t;
 
 
@@ -286,6 +286,7 @@ typedef struct {
     njs_vmcode_t               code;
     njs_index_t                nargs;
     njs_index_t                name;
+    uint8_t                    ctor;       /* 1 bit  */
 } njs_vmcode_function_frame_t;
 
 
@@ -294,6 +295,7 @@ typedef struct {
     njs_index_t                nargs;
     njs_index_t                object;
     njs_index_t                method;
+    uint8_t                    ctor;       /* 1 bit  */
 } njs_vmcode_method_frame_t;
 
 

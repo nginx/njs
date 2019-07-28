@@ -196,7 +196,7 @@ njs_disassemble(u_char *start, u_char *end)
 
             nxt_printf("%05uz ARRAY             %04Xz %uz%s\n",
                        p - start, (size_t) array->retval,
-                       (size_t) array->length, array->code.ctor ? " INIT" : "");
+                       (size_t) array->length, array->ctor ? " INIT" : "");
 
             p += sizeof(njs_vmcode_array_t);
 
@@ -282,7 +282,7 @@ njs_disassemble(u_char *start, u_char *end)
 
             nxt_printf("%05uz FUNCTION FRAME    %04Xz %uz%s\n",
                        p - start, (size_t) function->name, function->nargs,
-                       function->code.ctor ? " CTOR" : "");
+                       function->ctor ? " CTOR" : "");
 
             p += sizeof(njs_vmcode_function_frame_t);
 
@@ -295,7 +295,7 @@ njs_disassemble(u_char *start, u_char *end)
             nxt_printf("%05uz METHOD FRAME      %04Xz %04Xz %uz%s\n",
                        p - start, (size_t) method->object,
                        (size_t) method->method, method->nargs,
-                       method->code.ctor ? " CTOR" : "");
+                       method->ctor ? " CTOR" : "");
 
             p += sizeof(njs_vmcode_method_frame_t);
             continue;
