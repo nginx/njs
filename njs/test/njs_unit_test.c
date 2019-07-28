@@ -5653,6 +5653,16 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'\\u2029abc\\uFEFF\\u2028'.trim()"),
       nxt_string("abc") },
 
+#if (!NXT_HAVE_MEMORY_SANITIZER) /* very long test under MSAN */
+    { nxt_string("var a = [], code;"
+                 "for (code = 0; code <= 1114111; code++) {"
+                 "    var ws = String.fromCodePoint(code);"
+                 "    if ((ws + '-' + ws).trim() === '-')"
+                 "        a.push(code);"
+                 "} a"),
+      nxt_string("9,10,11,12,13,32,160,5760,8192,8193,8194,8195,8196,8197,8198,8199,8200,8201,8202,8232,8233,8239,8287,12288,65279") },
+#endif
+
     { nxt_string("'abcdefgh'.search()"),
       nxt_string("0") },
 

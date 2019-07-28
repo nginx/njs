@@ -2425,8 +2425,23 @@ njs_string_prototype_trim(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
             case 0x000D:  /* <CR>   */
             case 0x0020:  /* <SP>   */
             case 0x00A0:  /* <NBSP> */
+            case 0x1680:
+            case 0x2000:
+            case 0x2001:
+            case 0x2002:
+            case 0x2003:
+            case 0x2004:
+            case 0x2005:
+            case 0x2006:
+            case 0x2007:
+            case 0x2008:
+            case 0x2009:
+            case 0x200A:
             case 0x2028:  /* <LS>   */
             case 0x2029:  /* <PS>   */
+            case 0x202F:
+            case 0x205F:
+            case 0x3000:
             case 0xFEFF:  /* <BOM>  */
                 trim++;
                 continue;
@@ -2448,8 +2463,23 @@ njs_string_prototype_trim(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
                     case 0x000D:  /* <CR>   */
                     case 0x0020:  /* <SP>   */
                     case 0x00A0:  /* <NBSP> */
+                    case 0x1680:
+                    case 0x2000:
+                    case 0x2001:
+                    case 0x2002:
+                    case 0x2003:
+                    case 0x2004:
+                    case 0x2005:
+                    case 0x2006:
+                    case 0x2007:
+                    case 0x2008:
+                    case 0x2009:
+                    case 0x200A:
                     case 0x2028:  /* <LS>   */
                     case 0x2029:  /* <PS>   */
+                    case 0x202F:
+                    case 0x205F:
+                    case 0x3000:
                     case 0xFEFF:  /* <BOM>  */
                         trim++;
                         continue;
