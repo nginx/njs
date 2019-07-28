@@ -379,13 +379,7 @@ next:
                                           || (!isnan(exponent)
                                               && !isinf(exponent)));
 
-                    if (valid) {
-                        num = pow(num, exponent);
-
-                    } else {
-                        num = NAN;
-                    }
-
+                    num = valid ? pow(num, exponent) : NAN;
                     break;
 
                 case NJS_VMCODE_DIVISION:
@@ -399,19 +393,19 @@ next:
                 case NJS_VMCODE_BITWISE_AND:
                 case NJS_VMCODE_BITWISE_OR:
                 case NJS_VMCODE_BITWISE_XOR:
-                    i32 = njs_number_to_int32(num);
+                    i32 = njs_number_to_int32(njs_number(value2));
 
                     switch (op) {
                     case NJS_VMCODE_BITWISE_AND:
-                        i32 = i32 & njs_number_to_int32(njs_number(value2));
+                        i32 &= njs_number_to_int32(num);
                         break;
 
                     case NJS_VMCODE_BITWISE_OR:
-                        i32 = i32 | njs_number_to_int32(njs_number(value2));
+                        i32 |= njs_number_to_int32(num);
                         break;
 
                     case NJS_VMCODE_BITWISE_XOR:
-                        i32 = i32 ^ njs_number_to_int32(njs_number(value2));
+                        i32 ^= njs_number_to_int32(num);
                         break;
                     }
 
@@ -419,7 +413,7 @@ next:
                     goto next;
 
                 default:
-                    u32 = njs_number_to_uint32(njs_number(value2));
+                    u32 = njs_number_to_uint32(njs_number(value2)) & 0x1f;
 
                     switch (op) {
                     case NJS_VMCODE_LEFT_SHIFT:
@@ -427,19 +421,17 @@ next:
                         i32 = njs_number_to_int32(num);
 
                         if (op == NJS_VMCODE_LEFT_SHIFT) {
-                            i32 <<= u32 & 0x1f;
+                            i32 <<= u32;
                         } else {
-                            i32 >>= u32 & 0x1f;
+                            i32 >>= u32;
                         }
 
                         njs_set_int32(retval, i32);
-
                         break;
 
                     default: /* NJS_VMCODE_UNSIGNED_RIGHT_SHIFT */
                         njs_set_uint32(retval,
-                                       njs_number_to_uint32(num)
-                                       >> (u32 & 0x1f));
+                                       njs_number_to_uint32(num) >> u32);
                     }
 
                     goto next;
