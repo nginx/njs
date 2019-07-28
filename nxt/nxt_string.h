@@ -41,6 +41,25 @@ nxt_upper_case(u_char c)
 }
 
 
+nxt_inline nxt_bool_t
+nxt_is_whitespace(u_char c)
+{
+    switch (c) {
+    case 0x09:  /* <TAB>  */
+    case 0x0A:  /* <LF>   */
+    case 0x0B:  /* <VT>   */
+    case 0x0C:  /* <FF>   */
+    case 0x0D:  /* <CR>   */
+    case 0x20:  /* <SP>   */
+    case 0xA0:  /* <NBSP> */
+        return 1;
+
+    default:
+        return 0;
+    }
+}
+
+
 nxt_inline u_char *
 nxt_strlchr(u_char *p, u_char *last, u_char c)
 {

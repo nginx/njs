@@ -5623,7 +5623,7 @@ static njs_unit_test_t  njs_test[] =
       nxt_string("304,453,456,459,498,1012,7838,8486,8490,8491") },
 #endif
 
-    { nxt_string("'abc'.trim()"),
+    { nxt_string("'abc'.trimStart().trim().trimEnd()"),
       nxt_string("abc") },
 
     { nxt_string("''.trim()"),
@@ -5632,22 +5632,22 @@ static njs_unit_test_t  njs_test[] =
     { nxt_string("'    '.trim()"),
       nxt_string("") },
 
-    { nxt_string("'abc  '.trim()"),
+    { nxt_string("'abc  '.trimEnd()"),
       nxt_string("abc") },
 
-    { nxt_string("'   abc'.trim()"),
+    { nxt_string("'   abc'.trimStart()"),
       nxt_string("abc") },
 
     { nxt_string("'   abc  '.trim()"),
       nxt_string("abc") },
 
-    { nxt_string("'абв  '.trim()"),
+    { nxt_string("'абв  '.trimEnd()"),
       nxt_string("абв") },
 
-    { nxt_string("'   абв'.trim()"),
+    { nxt_string("'   абв'.trimStart()"),
       nxt_string("абв") },
 
-    { nxt_string("'   абв  '.trim()"),
+    { nxt_string("'   абв  '.trimStart().trimEnd()"),
       nxt_string("абв") },
 
     { nxt_string("'\\u2029abc\\uFEFF\\u2028'.trim()"),

@@ -10,6 +10,10 @@
 #include <string.h>
 
 
+#define NJS_TRIM_START  1
+#define NJS_TRIM_END    2
+
+
 typedef struct {
     u_char                     *start;
     size_t                     size;
@@ -68,6 +72,8 @@ static njs_ret_t njs_string_bytes_from_string(njs_vm_t *vm,
     const njs_value_t *args, nxt_uint_t nargs);
 static njs_ret_t njs_string_starts_or_ends_with(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, nxt_bool_t starts);
+static njs_ret_t njs_string_trim(njs_vm_t *vm, njs_value_t *value,
+    nxt_uint_t mode);
 static njs_ret_t njs_string_prototype_pad(njs_vm_t *vm, njs_value_t *args,
     nxt_uint_t nargs, nxt_bool_t pad_start);
 static njs_ret_t njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
@@ -2356,158 +2362,138 @@ static njs_ret_t
 njs_string_prototype_trim(njs_vm_t *vm, njs_value_t *args, nxt_uint_t nargs,
     njs_index_t unused)
 {
+    return njs_string_trim(vm, &args[0], NJS_TRIM_START|NJS_TRIM_END);
+}
+
+
+static njs_ret_t
+njs_string_prototype_trim_start(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    return njs_string_trim(vm, &args[0], NJS_TRIM_START);
+}
+
+
+static njs_ret_t
+njs_string_prototype_trim_end(njs_vm_t *vm, njs_value_t *args,
+    nxt_uint_t nargs, njs_index_t unused)
+{
+    return njs_string_trim(vm, &args[0], NJS_TRIM_END);
+}
+
+
+static njs_ret_t
+njs_string_trim(njs_vm_t *vm, njs_value_t *value, nxt_uint_t mode)
+{
     uint32_t           u, trim, length;
     const u_char       *p, *prev, *start, *end;
     njs_string_prop_t  string;
 
     trim = 0;
 
-    njs_string_prop(&string, &args[0]);
+    njs_string_prop(&string, value);
 
-    p = string.start;
+    start = string.start;
     end = string.start + string.size;
 
     if (string.length == 0 || string.length == string.size) {
         /* Byte or ASCII string. */
 
-        while (p < end) {
-
-            switch (*p) {
-            case 0x09:  /* <TAB>  */
-            case 0x0A:  /* <LF>   */
-            case 0x0B:  /* <VT>   */
-            case 0x0C:  /* <FF>   */
-            case 0x0D:  /* <CR>   */
-            case 0x20:  /* <SP>   */
-            case 0xA0:  /* <NBSP> */
-                trim++;
-                p++;
-                continue;
-
-            default:
-                start = p;
-                p = end;
-
-                for ( ;; ) {
-                    p--;
-
-                    switch (*p) {
-                    case 0x09:  /* <TAB>  */
-                    case 0x0A:  /* <LF>   */
-                    case 0x0B:  /* <VT>   */
-                    case 0x0C:  /* <FF>   */
-                    case 0x0D:  /* <CR>   */
-                    case 0x20:  /* <SP>   */
-                    case 0xA0:  /* <NBSP> */
-                        trim++;
-                        continue;
-
-                    default:
-                        p++;
-                        goto done;
-                    }
+        if (mode & NJS_TRIM_START) {
+            for ( ;; ) {
+                if (start == end) {
+                    goto empty;
                 }
+
+                if (nxt_is_whitespace(*start)) {
+                    start++;
+                    trim++;
+                    continue;
+                }
+
+                break;
+            }
+        }
+
+        if (mode & NJS_TRIM_END) {
+            for ( ;; ) {
+                if (start == end) {
+                    goto empty;
+                }
+
+                end--;
+
+                if (nxt_is_whitespace(*end)) {
+                    trim++;
+                    continue;
+                }
+
+                end++;
+                break;
             }
         }
 
     } else {
         /* UTF-8 string. */
 
-        while (p < end) {
-            prev = p;
-            u = nxt_utf8_decode(&p, end);
-
-            switch (u) {
-            case 0x0009:  /* <TAB>  */
-            case 0x000A:  /* <LF>   */
-            case 0x000B:  /* <VT>   */
-            case 0x000C:  /* <FF>   */
-            case 0x000D:  /* <CR>   */
-            case 0x0020:  /* <SP>   */
-            case 0x00A0:  /* <NBSP> */
-            case 0x1680:
-            case 0x2000:
-            case 0x2001:
-            case 0x2002:
-            case 0x2003:
-            case 0x2004:
-            case 0x2005:
-            case 0x2006:
-            case 0x2007:
-            case 0x2008:
-            case 0x2009:
-            case 0x200A:
-            case 0x2028:  /* <LS>   */
-            case 0x2029:  /* <PS>   */
-            case 0x202F:
-            case 0x205F:
-            case 0x3000:
-            case 0xFEFF:  /* <BOM>  */
-                trim++;
-                continue;
-
-            default:
-                start = prev;
-                prev = end;
-
-                for ( ;; ) {
-                    prev = nxt_utf8_prev(prev);
-                    p = prev;
-                    u = nxt_utf8_decode(&p, end);
-
-                    switch (u) {
-                    case 0x0009:  /* <TAB>  */
-                    case 0x000A:  /* <LF>   */
-                    case 0x000B:  /* <VT>   */
-                    case 0x000C:  /* <FF>   */
-                    case 0x000D:  /* <CR>   */
-                    case 0x0020:  /* <SP>   */
-                    case 0x00A0:  /* <NBSP> */
-                    case 0x1680:
-                    case 0x2000:
-                    case 0x2001:
-                    case 0x2002:
-                    case 0x2003:
-                    case 0x2004:
-                    case 0x2005:
-                    case 0x2006:
-                    case 0x2007:
-                    case 0x2008:
-                    case 0x2009:
-                    case 0x200A:
-                    case 0x2028:  /* <LS>   */
-                    case 0x2029:  /* <PS>   */
-                    case 0x202F:
-                    case 0x205F:
-                    case 0x3000:
-                    case 0xFEFF:  /* <BOM>  */
-                        trim++;
-                        continue;
-
-                    default:
-                        goto done;
-                    }
+        if (mode & NJS_TRIM_START) {
+            for ( ;; ) {
+                if (start == end) {
+                    goto empty;
                 }
+
+                p = start;
+                u = nxt_utf8_decode(&start, end);
+
+                if (nxt_utf8_is_whitespace(u)) {
+                    trim++;
+                    continue;
+                }
+
+                start = p;
+                break;
+            }
+        }
+
+        if (mode & NJS_TRIM_END) {
+            prev = end;
+
+            for ( ;; ) {
+                if (start == prev) {
+                    goto empty;
+                }
+
+                prev = nxt_utf8_prev(prev);
+                p = prev;
+                u = nxt_utf8_decode(&p, end);
+
+                if (nxt_utf8_is_whitespace(u)) {
+                    trim++;
+                    continue;
+                }
+
+                end = p;
+                break;
             }
         }
     }
 
-    vm->retval = njs_string_empty;
-
-    return NXT_OK;
-
-done:
-
     if (trim == 0) {
         /* GC: retain. */
-        vm->retval = args[0];
+        vm->retval = *value;
 
         return NXT_OK;
     }
 
     length = (string.length != 0) ? string.length - trim : 0;
 
-    return njs_string_new(vm, &vm->retval, start, p - start, length);
+    return njs_string_new(vm, &vm->retval, start, end - start, length);
+
+empty:
+
+    vm->retval = njs_string_empty;
+
+    return NXT_OK;
 }
 
 
@@ -4245,6 +4231,26 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .type = NJS_METHOD,
         .name = njs_string("trim"),
         .value = njs_native_function(njs_string_prototype_trim,
+                                     NJS_STRING_OBJECT_ARG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    /* ES10. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("trimStart"),
+        .value = njs_native_function(njs_string_prototype_trim_start,
+                                     NJS_STRING_OBJECT_ARG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    /* ES10. */
+    {
+        .type = NJS_METHOD,
+        .name = njs_string("trimEnd"),
+        .value = njs_native_function(njs_string_prototype_trim_end,
                                      NJS_STRING_OBJECT_ARG),
         .writable = 1,
         .configurable = 1,
