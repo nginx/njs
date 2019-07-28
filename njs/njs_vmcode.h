@@ -60,6 +60,8 @@ typedef uint8_t                         njs_vmcode_operation_t;
 #define NJS_VMCODE_FINALLY              VMCODE0(39)
 #define NJS_VMCODE_REFERENCE_ERROR      VMCODE0(40)
 
+#define NJS_VMCODE_NORET                127
+
 #define NJS_VMCODE_MOVE                 VMCODE1(0)
 #define NJS_VMCODE_PROPERTY_GET         VMCODE1(1)
 #define NJS_VMCODE_INCREMENT            VMCODE1(2)
@@ -119,7 +121,6 @@ typedef uint8_t                         njs_vmcode_operation_t;
 typedef struct {
     njs_vmcode_operation_t     operation;
     uint8_t                    operands;   /* 2 bits */
-    uint8_t                    retval;     /* 1 bit  */
 } njs_vmcode_t;
 
 

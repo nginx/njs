@@ -158,7 +158,8 @@ next:
          * as a single unsigned comparision.
          */
 
-        if (vmcode->code.retval) {
+        if (op > NJS_VMCODE_NORET) {
+
             if (op == NJS_VMCODE_MOVE) {
                 retval = njs_vmcode_operand(vm, vmcode->operand1);
                 *retval = *value1;
