@@ -421,7 +421,8 @@ next:
                         i32 = njs_number_to_int32(num);
 
                         if (op == NJS_VMCODE_LEFT_SHIFT) {
-                            i32 <<= u32;
+                            /* Shifting of negative numbers is undefined. */
+                            i32 = (uint32_t) i32 << u32;
                         } else {
                             i32 >>= u32;
                         }
