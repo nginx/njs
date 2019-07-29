@@ -54,7 +54,7 @@ static njs_ret_t njs_vmcode_try_end(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *offset);
 static njs_ret_t njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *retval, u_char *pc);
-static njs_ret_t njs_vmcode_reference_error(njs_vm_t *vm, u_char *pc);
+static void njs_vmcode_reference_error(njs_vm_t *vm, u_char *pc);
 
 /*
  * These functions are forbidden to inline to minimize JavaScript VM
@@ -806,7 +806,7 @@ next:
                 break;
 
             case NJS_VMCODE_REFERENCE_ERROR:
-                ret = njs_vmcode_reference_error(vm, pc);
+                njs_vmcode_reference_error(vm, pc);
                 goto error;
 
             default:
@@ -2000,7 +2000,7 @@ njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval,
 }
 
 
-static njs_ret_t
+static void
 njs_vmcode_reference_error(njs_vm_t *vm, u_char *pc)
 {
     nxt_str_t                     *file;
@@ -2018,6 +2018,4 @@ njs_vmcode_reference_error(njs_vm_t *vm, u_char *pc)
         njs_reference_error(vm, "\"%V\" is not defined in %uD", &ref_err->name,
                             ref_err->token_line);
     }
-
-    return NJS_ERROR;
 }
