@@ -14,11 +14,11 @@ typedef struct njs_generator_patch_s   njs_generator_patch_t;
 struct njs_generator_patch_s {
     /*
      * The jump_offset field points to jump offset field which contains a small
-     * adjustment and the adjustment should be added as (njs_ret_t *) because
-     * pointer to u_char accesses only one byte so this does not work on big
-     * endian platforms.
+     * adjustment and the adjustment should be added as (njs_jump_off_t *)
+     * because pointer to u_char accesses only one byte so this does not
+     * work on big endian platforms.
      */
-    njs_ret_t                       jump_offset;
+    njs_jump_off_t                       jump_offset;
     njs_generator_patch_t           *next;
 
     njs_str_t                       label;
@@ -89,9 +89,11 @@ static njs_generator_block_t *njs_generate_find_block(
 static void njs_generate_patch_block(njs_vm_t *vm, njs_generator_t *generator,
     njs_generator_patch_t *list);
 static njs_generator_patch_t *njs_generate_make_continuation_patch(njs_vm_t *vm,
-    njs_generator_block_t *block, const njs_str_t *label, njs_ret_t offset);
+    njs_generator_block_t *block, const njs_str_t *label,
+    njs_jump_off_t offset);
 static njs_generator_patch_t *njs_generate_make_exit_patch(njs_vm_t *vm,
-    njs_generator_block_t *block, const njs_str_t *label, njs_ret_t offset);
+    njs_generator_block_t *block, const njs_str_t *label,
+    njs_jump_off_t offset);
 static void njs_generate_patch_block_exit(njs_vm_t *vm,
     njs_generator_t *generator);
 static const njs_str_t *njs_generate_jump_destination(njs_vm_t *vm,
@@ -220,7 +222,7 @@ static njs_int_t njs_generate_function_debug(njs_vm_t *vm,
 
 
 #define njs_code_jump_ptr(generator, offset)                                  \
-    (njs_ret_t *) (generator->code_start + offset)
+    (njs_jump_off_t *) (generator->code_start + offset)
 
 
 #define njs_code_offset_diff(generator, offset)                               \
@@ -666,8 +668,8 @@ static njs_int_t
 njs_generate_if_statement(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
-    njs_ret_t               jump_offset, label_offset;
     njs_int_t               ret;
+    njs_jump_off_t          jump_offset, label_offset;
     njs_vmcode_jump_t       *jump;
     njs_vmcode_cond_jump_t  *cond_jump;
 
@@ -739,8 +741,8 @@ static njs_int_t
 njs_generate_cond_expression(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
-    njs_ret_t               jump_offset, cond_jump_offset;
     njs_int_t               ret;
+    njs_jump_off_t          jump_offset, cond_jump_offset;
     njs_parser_node_t       *branch;
     njs_vmcode_move_t       *move;
     njs_vmcode_jump_t       *jump;
@@ -822,8 +824,8 @@ static njs_int_t
 njs_generate_switch_statement(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *swtch)
 {
-    njs_ret_t                jump_offset;
     njs_int_t                ret;
+    njs_jump_off_t           jump_offset;
     njs_index_t              index;
     njs_parser_node_t        *node, *expr, *branch;
     njs_vmcode_move_t        *move;
@@ -953,8 +955,8 @@ static njs_int_t
 njs_generate_while_statement(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
-    njs_ret_t               jump_offset, loop_offset;
     njs_int_t               ret;
+    njs_jump_off_t          jump_offset, loop_offset;
     njs_parser_node_t       *condition;
     njs_vmcode_jump_t       *jump;
     njs_vmcode_cond_jump_t  *cond_jump;
@@ -1011,8 +1013,8 @@ static njs_int_t
 njs_generate_do_while_statement(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
-    njs_ret_t               loop_offset;
     njs_int_t               ret;
+    njs_jump_off_t          loop_offset;
     njs_parser_node_t       *condition;
     njs_vmcode_cond_jump_t  *cond_jump;
 
@@ -1057,8 +1059,8 @@ static njs_int_t
 njs_generate_for_statement(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
-    njs_ret_t               jump_offset, loop_offset;
     njs_int_t               ret;
+    njs_jump_off_t          jump_offset, loop_offset;
     njs_parser_node_t       *condition, *update;
     njs_vmcode_jump_t       *jump;
     njs_vmcode_cond_jump_t  *cond_jump;
@@ -1159,9 +1161,9 @@ static njs_int_t
 njs_generate_for_in_statement(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
-    njs_ret_t                  loop_offset, prop_offset;
     njs_int_t                  ret;
     njs_index_t                index;
+    njs_jump_off_t             loop_offset, prop_offset;
     njs_parser_node_t          *foreach;
     njs_vmcode_prop_next_t     *prop_next;
     njs_vmcode_prop_foreach_t  *prop_foreach;
@@ -1330,7 +1332,7 @@ njs_generate_find_block(njs_generator_block_t *block, uint32_t mask,
 
 static njs_generator_patch_t *
 njs_generate_make_continuation_patch(njs_vm_t *vm, njs_generator_block_t *block,
-    const njs_str_t *label, njs_ret_t offset)
+    const njs_str_t *label, njs_jump_off_t offset)
 {
     njs_generator_patch_t  *patch;
 
@@ -1368,7 +1370,7 @@ njs_generate_patch_block(njs_vm_t *vm, njs_generator_t *generator,
 
 static njs_generator_patch_t *
 njs_generate_make_exit_patch(njs_vm_t *vm, njs_generator_block_t *block,
-    const njs_str_t *label, njs_ret_t offset)
+    const njs_str_t *label, njs_jump_off_t offset)
 {
     njs_generator_patch_t  *patch;
 
@@ -2005,8 +2007,8 @@ static njs_int_t
 njs_generate_test_jump_expression(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
-    njs_ret_t               jump_offset;
     njs_int_t               ret;
+    njs_jump_off_t          jump_offset;
     njs_vmcode_move_t       *move;
     njs_vmcode_test_jump_t  *test_jump;
 
@@ -2574,8 +2576,8 @@ static njs_int_t
 njs_generate_function_call(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
-    njs_ret_t                    func_offset;
-    njs_ret_t                    ret;
+    njs_int_t                    ret;
+    njs_jump_off_t               func_offset;
     njs_parser_node_t            *name;
     njs_vmcode_function_frame_t  *func;
 
@@ -2624,8 +2626,8 @@ static njs_int_t
 njs_generate_method_call(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
-    njs_ret_t                  method_offset;
     njs_int_t                  ret;
+    njs_jump_off_t             method_offset;
     njs_parser_node_t          *prop;
     njs_vmcode_method_frame_t  *method;
 
@@ -2738,12 +2740,12 @@ static njs_int_t
 njs_generate_try_statement(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
-    njs_ret_t                    try_offset, try_end_offset, catch_offset,
-                                 catch_end_offset;
     njs_int_t                    ret;
-    njs_index_t                  exception_index, exit_index, catch_index;
     njs_str_t                    try_cont_label, try_exit_label,
                                  catch_cont_label, catch_exit_label;
+    njs_index_t                  exception_index, exit_index, catch_index;
+    njs_jump_off_t               try_offset, try_end_offset, catch_offset,
+                                 catch_end_offset;
     const njs_str_t              *dest_label;
     njs_vmcode_catch_t           *catch;
     njs_vmcode_finally_t         *finally;
@@ -3284,9 +3286,9 @@ njs_generate_index_release(njs_vm_t *vm, njs_generator_t *generator,
 
 static njs_int_t
 njs_generate_reference_error(njs_vm_t *vm, njs_generator_t *generator,
-                             njs_parser_node_t *node)
+    njs_parser_node_t *node)
 {
-    njs_ret_t                     ret;
+    njs_jump_off_t                ret;
     njs_vmcode_reference_error_t  *ref_err;
 
     if (njs_slow_path(!node->u.reference.not_defined)) {

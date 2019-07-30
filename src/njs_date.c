@@ -37,7 +37,7 @@ static njs_int_t njs_date_gmtoff_parse(const u_char *start, const u_char *end);
 static const u_char *njs_date_number_parse(int *value, const u_char *p,
     const u_char *end, size_t size);
 static int64_t njs_timegm(struct tm *tm);
-static njs_ret_t njs_date_string(njs_vm_t *vm, const char *fmt, double time);
+static njs_int_t njs_date_string(njs_vm_t *vm, const char *fmt, double time);
 static double njs_date_time(struct tm *tm, int64_t ms);
 static double njs_date_utc_time(struct tm *tm, double time);
 
@@ -67,13 +67,13 @@ njs_timeclip(double time)
 }
 
 
-njs_ret_t
+njs_int_t
 njs_date_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     double      num, time;
     int64_t     values[8];
-    njs_ret_t   ret;
+    njs_int_t   ret;
     njs_uint_t  i, n;
     njs_date_t  *date;
     struct tm   tm;
@@ -170,13 +170,13 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_utc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     double      num, time;
     struct tm   tm;
-    njs_ret_t   ret;
+    njs_int_t   ret;
     njs_uint_t  i, n;
     int32_t     values[8];
 
@@ -276,7 +276,7 @@ njs_timegm(struct tm *tm)
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_now(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -286,7 +286,7 @@ njs_date_now(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -948,7 +948,7 @@ const njs_object_init_t  njs_date_constructor_init = {
 };
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -958,7 +958,7 @@ njs_date_prototype_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -967,7 +967,7 @@ njs_date_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_to_date_string(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -975,7 +975,7 @@ njs_date_prototype_to_date_string(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_to_time_string(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -983,7 +983,7 @@ njs_date_prototype_to_time_string(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_string(njs_vm_t *vm, const char *fmt, double time)
 {
     size_t     size;
@@ -1006,7 +1006,7 @@ njs_date_string(njs_vm_t *vm, const char *fmt, double time)
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_to_utc_string(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1041,7 +1041,7 @@ njs_date_prototype_to_utc_string(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_to_iso_string(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1049,7 +1049,7 @@ njs_date_prototype_to_iso_string(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-njs_ret_t
+njs_int_t
 njs_date_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *date)
 {
     int32_t    year;
@@ -1082,7 +1082,7 @@ njs_date_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *date)
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_get_full_year(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1105,7 +1105,7 @@ njs_date_prototype_get_full_year(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_get_utc_full_year(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1128,7 +1128,7 @@ njs_date_prototype_get_utc_full_year(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_get_month(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1151,7 +1151,7 @@ njs_date_prototype_get_month(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_get_utc_month(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1175,7 +1175,7 @@ njs_date_prototype_get_utc_month(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_get_date(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1198,7 +1198,7 @@ njs_date_prototype_get_date(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_get_utc_date(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1221,7 +1221,7 @@ njs_date_prototype_get_utc_date(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_get_day(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1244,7 +1244,7 @@ njs_date_prototype_get_day(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_get_utc_day(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1267,7 +1267,7 @@ njs_date_prototype_get_utc_day(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_get_hours(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1291,7 +1291,7 @@ njs_date_prototype_get_hours(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_get_utc_hours(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1314,7 +1314,7 @@ njs_date_prototype_get_utc_hours(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_get_minutes(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1338,7 +1338,7 @@ njs_date_prototype_get_minutes(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_get_utc_minutes(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1361,7 +1361,7 @@ njs_date_prototype_get_utc_minutes(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_get_seconds(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1379,7 +1379,7 @@ njs_date_prototype_get_seconds(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_get_milliseconds(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1397,7 +1397,7 @@ njs_date_prototype_get_milliseconds(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_get_timezone_offset(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1420,7 +1420,7 @@ njs_date_prototype_get_timezone_offset(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_set_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1445,7 +1445,7 @@ njs_date_prototype_set_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_set_milliseconds(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1470,7 +1470,7 @@ njs_date_prototype_set_milliseconds(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_set_seconds(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1499,7 +1499,7 @@ njs_date_prototype_set_seconds(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_set_minutes(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1538,7 +1538,7 @@ njs_date_prototype_set_minutes(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_set_utc_minutes(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1573,7 +1573,7 @@ njs_date_prototype_set_utc_minutes(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_set_hours(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1616,7 +1616,7 @@ njs_date_prototype_set_hours(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_set_utc_hours(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1652,7 +1652,7 @@ njs_date_prototype_set_utc_hours(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_set_date(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1684,7 +1684,7 @@ njs_date_prototype_set_date(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_set_utc_date(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1716,7 +1716,7 @@ njs_date_prototype_set_utc_date(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_set_month(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1752,7 +1752,7 @@ njs_date_prototype_set_month(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_set_utc_month(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1788,7 +1788,7 @@ njs_date_prototype_set_utc_month(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_set_full_year(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1828,7 +1828,7 @@ njs_date_prototype_set_full_year(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_set_utc_full_year(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1895,7 +1895,7 @@ njs_date_utc_time(struct tm *tm, double time)
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t retval)
 {

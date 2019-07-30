@@ -12,7 +12,7 @@
 static njs_variable_t *njs_variable_scope_add(njs_vm_t *vm,
     njs_parser_scope_t *scope, njs_lvlhsh_query_t *lhq,
     njs_variable_type_t type);
-static njs_ret_t njs_variable_reference_resolve(njs_vm_t *vm,
+static njs_int_t njs_variable_reference_resolve(njs_vm_t *vm,
     njs_variable_reference_t *vr, njs_parser_scope_t *node_scope);
 static njs_variable_t *njs_variable_alloc(njs_vm_t *vm, njs_str_t *name,
     njs_variable_type_t type);
@@ -184,7 +184,7 @@ njs_label_add(njs_vm_t *vm, njs_parser_scope_t *scope, njs_str_t *name,
 }
 
 
-njs_ret_t
+njs_int_t
 njs_label_remove(njs_vm_t *vm, njs_parser_scope_t *scope, njs_str_t *name,
     uint32_t hash)
 {
@@ -237,12 +237,12 @@ const njs_lvlhsh_proto_t  njs_references_hash_proto
 };
 
 
-njs_ret_t
+njs_int_t
 njs_variable_reference(njs_vm_t *vm, njs_parser_scope_t *scope,
     njs_parser_node_t *node, njs_str_t *name, uint32_t hash,
     njs_reference_type_t type)
 {
-    njs_ret_t                 ret;
+    njs_int_t                 ret;
     njs_lvlhsh_query_t        lhq;
     njs_variable_reference_t  *vr;
 
@@ -272,11 +272,11 @@ njs_variable_reference(njs_vm_t *vm, njs_parser_scope_t *scope,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
     njs_bool_t closure)
 {
-    njs_ret_t                 ret;
+    njs_int_t                 ret;
     njs_queue_t               *nested;
     njs_queue_link_t          *lnk;
     njs_parser_node_t         *node;
@@ -326,10 +326,10 @@ njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
 }
 
 
-njs_ret_t
+njs_int_t
 njs_variables_scope_reference(njs_vm_t *vm, njs_parser_scope_t *scope)
 {
-    njs_ret_t  ret;
+    njs_int_t  ret;
 
     /*
      * Calculating proper scope types for variables.
@@ -474,7 +474,7 @@ njs_label_find(njs_vm_t *vm, njs_parser_scope_t *scope, njs_str_t *name,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_variable_reference_resolve(njs_vm_t *vm, njs_variable_reference_t *vr,
     njs_parser_scope_t *node_scope)
 {
@@ -591,7 +591,7 @@ njs_scope_next_index(njs_vm_t *vm, njs_parser_scope_t *scope,
 static njs_variable_t *
 njs_variable_alloc(njs_vm_t *vm, njs_str_t *name, njs_variable_type_t type)
 {
-    njs_ret_t       ret;
+    njs_int_t       ret;
     njs_variable_t  *var;
 
     var = njs_mp_zalloc(vm->mem_pool, sizeof(njs_variable_t));
@@ -616,7 +616,7 @@ njs_variable_alloc(njs_vm_t *vm, njs_str_t *name, njs_variable_type_t type)
 }
 
 
-njs_ret_t
+njs_int_t
 njs_name_copy(njs_vm_t *vm, njs_str_t *dst, njs_str_t *src)
 {
     dst->length = src->length;

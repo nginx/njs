@@ -471,7 +471,7 @@ njs_int_t
 njs_vm_invoke(njs_vm_t *vm, njs_function_t *function, const njs_value_t *args,
     njs_uint_t nargs, njs_index_t retval)
 {
-    njs_ret_t    ret;
+    njs_int_t    ret;
     njs_value_t  *this;
 
     this = (njs_value_t *) &njs_value_undefined;
@@ -631,7 +631,7 @@ njs_vm_run(njs_vm_t *vm)
 njs_int_t
 njs_vm_start(njs_vm_t *vm)
 {
-    njs_ret_t  ret;
+    njs_int_t  ret;
 
     ret = njs_module_load(vm);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -718,7 +718,7 @@ njs_vm_retval_set(njs_vm_t *vm, const njs_value_t *value)
 }
 
 
-njs_ret_t
+njs_int_t
 njs_vm_value_string_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     uint32_t size)
 {
@@ -769,7 +769,7 @@ njs_vm_backtrace(njs_vm_t *vm)
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_vm_backtrace_dump(njs_vm_t *vm, njs_str_t *dst, const njs_value_t *src)
 {
     u_char                 *p, *start, *end;
@@ -867,10 +867,10 @@ njs_vm_backtrace_dump(njs_vm_t *vm, njs_str_t *dst, const njs_value_t *src)
 }
 
 
-njs_ret_t
+njs_int_t
 njs_vm_value_string(njs_vm_t *vm, njs_str_t *dst, const njs_value_t *src)
 {
-    njs_ret_t   ret;
+    njs_int_t   ret;
     njs_uint_t  exception;
 
     if (njs_slow_path(src->type == NJS_NUMBER
@@ -915,7 +915,7 @@ again:
 }
 
 
-njs_ret_t
+njs_int_t
 njs_vm_retval_string(njs_vm_t *vm, njs_str_t *dst)
 {
     if (vm->top_frame == NULL) {
@@ -928,7 +928,7 @@ njs_vm_retval_string(njs_vm_t *vm, njs_str_t *dst)
 }
 
 
-njs_ret_t
+njs_int_t
 njs_vm_retval_dump(njs_vm_t *vm, njs_str_t *dst, njs_uint_t indent)
 {
     if (vm->top_frame == NULL) {
@@ -941,12 +941,12 @@ njs_vm_retval_dump(njs_vm_t *vm, njs_str_t *dst, njs_uint_t indent)
 }
 
 
-njs_ret_t
+njs_int_t
 njs_vm_object_alloc(njs_vm_t *vm, njs_value_t *retval, ...)
 {
     va_list             args;
     njs_int_t           ret;
-    njs_ret_t           rc;
+    njs_int_t           rc;
     njs_value_t         *name, *value;
     njs_object_t        *object;
     njs_object_prop_t   *prop;
@@ -1037,12 +1037,12 @@ njs_vm_object_prop(njs_vm_t *vm, const njs_value_t *value, const njs_str_t *key)
 }
 
 
-njs_ret_t
+njs_int_t
 njs_vm_value_to_string(njs_vm_t *vm, njs_str_t *dst, const njs_value_t *src)
 {
     u_char       *start;
     size_t       size;
-    njs_ret_t    ret;
+    njs_int_t    ret;
     njs_value_t  value;
 
     if (njs_slow_path(src == NULL)) {
@@ -1127,7 +1127,7 @@ njs_vm_value_string_copy(njs_vm_t *vm, njs_str_t *retval,
 }
 
 
-njs_ret_t
+njs_int_t
 njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame)
 {
     njs_int_t              ret;

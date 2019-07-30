@@ -18,7 +18,7 @@
 #define NJS_MAX_SAFE_INTEGER  ((1LL << 53) - 1)
 
 
-static njs_ret_t njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
+static njs_int_t njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
     double number, uint32_t radix);
 
 
@@ -203,7 +203,7 @@ njs_number_radix_parse(const u_char **start, const u_char *end, uint8_t radix)
 }
 
 
-njs_ret_t
+njs_int_t
 njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
     const njs_value_t *number)
 {
@@ -238,7 +238,7 @@ njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
 }
 
 
-njs_ret_t
+njs_int_t
 njs_number_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -268,7 +268,7 @@ njs_number_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_number_is_integer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -292,7 +292,7 @@ njs_number_is_integer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 
-static njs_ret_t
+static njs_int_t
 njs_number_is_safe_integer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -315,7 +315,7 @@ njs_number_is_safe_integer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_number_is_nan(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -477,7 +477,7 @@ const njs_object_init_t  njs_number_constructor_init = {
 };
 
 
-static njs_ret_t
+static njs_int_t
 njs_number_prototype_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -503,7 +503,7 @@ njs_number_prototype_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -554,7 +554,7 @@ njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     (NJS_STRING_RADIX_INTERGRAL_LEN + NJS_STRING_RADIX_FRACTION_LEN)
 
 
-static njs_ret_t
+static njs_int_t
 njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
     double number, uint32_t radix)
 {
@@ -653,7 +653,7 @@ const njs_object_init_t  njs_number_prototype_init = {
 };
 
 
-njs_ret_t
+njs_int_t
 njs_number_global_is_nan(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -671,7 +671,7 @@ njs_number_global_is_nan(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-njs_ret_t
+njs_int_t
 njs_number_is_finite(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -694,7 +694,7 @@ njs_number_is_finite(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-njs_ret_t
+njs_int_t
 njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -774,7 +774,7 @@ done:
 }
 
 
-njs_ret_t
+njs_int_t
 njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {

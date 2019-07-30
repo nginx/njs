@@ -8,10 +8,10 @@
 #define _NJS_DATE_H_INCLUDED_
 
 
-njs_ret_t njs_date_constructor(njs_vm_t *vm, njs_value_t *args,
+njs_int_t njs_date_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 
-njs_ret_t njs_date_to_string(njs_vm_t *vm, njs_value_t *retval,
+njs_int_t njs_date_to_string(njs_vm_t *vm, njs_value_t *retval,
     const njs_value_t *date);
 
 

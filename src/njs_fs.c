@@ -18,24 +18,24 @@ typedef struct {
 } njs_fs_entry_t;
 
 
-static njs_ret_t njs_fs_read_file(njs_vm_t *vm, njs_value_t *args,
+static njs_int_t njs_fs_read_file(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
-static njs_ret_t njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args,
+static njs_int_t njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
-static njs_ret_t njs_fs_append_file(njs_vm_t *vm, njs_value_t *args,
+static njs_int_t njs_fs_append_file(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
-static njs_ret_t njs_fs_write_file(njs_vm_t *vm, njs_value_t *args,
+static njs_int_t njs_fs_write_file(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
-static njs_ret_t njs_fs_append_file_sync(njs_vm_t *vm, njs_value_t *args,
+static njs_int_t njs_fs_append_file_sync(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
-static njs_ret_t njs_fs_write_file_sync(njs_vm_t *vm, njs_value_t *args,
+static njs_int_t njs_fs_write_file_sync(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
-static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
+static njs_int_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, int default_flags);
-static njs_ret_t njs_fs_write_file_sync_internal(njs_vm_t *vm,
+static njs_int_t njs_fs_write_file_sync_internal(njs_vm_t *vm,
     njs_value_t *args, njs_uint_t nargs, int default_flags);
 
-static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
+static njs_int_t njs_fs_error(njs_vm_t *vm, const char *syscall,
     const char *description, njs_value_t *path, int errn, njs_value_t *retval);
 static int njs_fs_flags(njs_str_t *value);
 static mode_t njs_fs_mode(njs_value_t *value);
@@ -69,7 +69,7 @@ static njs_fs_entry_t njs_flags_table[] = {
 };
 
 
-static njs_ret_t
+static njs_int_t
 njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -77,7 +77,7 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     u_char              *p, *start, *end;
     ssize_t             n, length;
     njs_str_t           flag, encoding;
-    njs_ret_t           ret;
+    njs_int_t           ret;
     const char          *path, *syscall, *description;
     struct stat         sb;
     njs_value_t         *callback, arguments[3];
@@ -294,7 +294,7 @@ fail:
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -302,7 +302,7 @@ njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     u_char              *p, *start, *end;
     ssize_t             n, length;
     njs_str_t           flag, encoding;
-    njs_ret_t           ret;
+    njs_int_t           ret;
     const char          *path, *syscall, *description;
     struct stat         sb;
     njs_object_prop_t   *prop;
@@ -485,7 +485,7 @@ fail:
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_fs_append_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -494,7 +494,7 @@ njs_fs_append_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_fs_write_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -503,7 +503,7 @@ njs_fs_write_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t njs_fs_append_file_sync(njs_vm_t *vm, njs_value_t *args,
+static njs_int_t njs_fs_append_file_sync(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
     return njs_fs_write_file_sync_internal(vm, args, nargs,
@@ -511,7 +511,7 @@ static njs_ret_t njs_fs_append_file_sync(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t njs_fs_write_file_sync(njs_vm_t *vm, njs_value_t *args,
+static njs_int_t njs_fs_write_file_sync(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
     return njs_fs_write_file_sync_internal(vm, args, nargs,
@@ -519,7 +519,7 @@ static njs_ret_t njs_fs_write_file_sync(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
+static njs_int_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, int default_flags)
 {
     int                 fd, errn, flags;
@@ -527,7 +527,7 @@ static njs_ret_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
     mode_t              md;
     ssize_t             n;
     njs_str_t           data, flag, encoding;
-    njs_ret_t           ret;
+    njs_int_t           ret;
     const char          *path, *syscall, *description;
     njs_value_t         *callback, *mode, arguments[2];
     njs_object_prop_t   *prop;
@@ -710,7 +710,7 @@ done:
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_fs_write_file_sync_internal(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, int default_flags)
 {
@@ -719,7 +719,7 @@ njs_fs_write_file_sync_internal(njs_vm_t *vm, njs_value_t *args,
     mode_t              md;
     ssize_t             n;
     njs_str_t           data, flag, encoding;
-    njs_ret_t           ret;
+    njs_int_t           ret;
     const char          *path, *syscall, *description;
     njs_value_t         *mode;
     njs_object_prop_t   *prop;
@@ -876,7 +876,7 @@ done:
 }
 
 
-static njs_ret_t njs_fs_error(njs_vm_t *vm, const char *syscall,
+static njs_int_t njs_fs_error(njs_vm_t *vm, const char *syscall,
     const char *description, njs_value_t *path, int errn, njs_value_t *retval)
 {
     size_t              size;

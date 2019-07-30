@@ -9,7 +9,7 @@
 #include <string.h>
 
 
-static njs_ret_t
+static njs_int_t
 njs_set_timer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_bool_t immediate)
 {
@@ -79,7 +79,7 @@ memory_error:
 }
 
 
-njs_ret_t
+njs_int_t
 njs_set_timeout(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -87,7 +87,7 @@ njs_set_timeout(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-njs_ret_t
+njs_int_t
 njs_set_immediate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -95,12 +95,12 @@ njs_set_immediate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-njs_ret_t
+njs_int_t
 njs_clear_timeout(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     u_char              buf[16], *p;
-    njs_ret_t           ret;
+    njs_int_t           ret;
     njs_event_t         *event;
     njs_lvlhsh_query_t  lhq;
 

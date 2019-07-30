@@ -340,7 +340,7 @@ struct njs_vm_shared_s {
 
 void njs_vm_scopes_restore(njs_vm_t *vm, njs_frame_t *frame,
     njs_native_frame_t *previous);
-njs_ret_t njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame);
+njs_int_t njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame);
 
 njs_int_t njs_builtin_objects_create(njs_vm_t *vm);
 njs_int_t njs_builtin_objects_clone(njs_vm_t *vm);

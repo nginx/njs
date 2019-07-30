@@ -9,7 +9,7 @@
 #include <string.h>
 
 
-static njs_ret_t njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser,
+static njs_int_t njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser,
     njs_scope_t type);
 static void njs_parser_scope_end(njs_vm_t *vm, njs_parser_t *parser);
 static njs_token_t njs_parser_statement_chain(njs_vm_t *vm,
@@ -77,7 +77,7 @@ static njs_token_t njs_parser_grouping_expression(njs_vm_t *vm,
 njs_int_t
 njs_parser(njs_vm_t *vm, njs_parser_t *parser, njs_parser_t *prev)
 {
-    njs_ret_t           ret;
+    njs_int_t           ret;
     njs_token_t         token;
     njs_lvlhsh_t        *variables, *prev_variables;
     njs_variable_t      *var;
@@ -156,7 +156,7 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser, njs_parser_t *prev)
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser, njs_scope_t type)
 {
     njs_arr_t           *values;
@@ -443,7 +443,7 @@ njs_parser_statement(njs_vm_t *vm, njs_parser_t *parser,
 static njs_token_t
 njs_parser_block_statement(njs_vm_t *vm, njs_parser_t *parser)
 {
-    njs_ret_t          ret;
+    njs_int_t          ret;
     njs_token_t        token;
     njs_parser_node_t  *node;
 
@@ -539,7 +539,7 @@ static njs_token_t
 njs_parser_labelled_statement(njs_vm_t *vm, njs_parser_t *parser)
 {
     uint32_t        hash;
-    njs_ret_t       ret;
+    njs_int_t       ret;
     njs_str_t       name;
     njs_token_t     token;
     njs_variable_t  *label;
@@ -633,7 +633,7 @@ njs_parser_function_alloc(njs_vm_t *vm, njs_parser_t *parser,
 static njs_token_t
 njs_parser_function_declaration(njs_vm_t *vm, njs_parser_t *parser)
 {
-    njs_ret_t          ret;
+    njs_int_t          ret;
     njs_token_t        token;
     njs_variable_t     *var;
     njs_function_t     *function;
@@ -690,7 +690,7 @@ njs_parser_function_declaration(njs_vm_t *vm, njs_parser_t *parser)
 njs_token_t
 njs_parser_function_expression(njs_vm_t *vm, njs_parser_t *parser)
 {
-    njs_ret_t              ret;
+    njs_int_t              ret;
     njs_token_t            token;
     njs_variable_t         *var;
     njs_function_t         *function;
@@ -759,7 +759,7 @@ njs_token_t
 njs_parser_function_lambda(njs_vm_t *vm, njs_parser_t *parser,
     njs_function_lambda_t *lambda, njs_token_t token)
 {
-    njs_ret_t    ret;
+    njs_int_t    ret;
     njs_index_t  index;
 
     ret = njs_parser_scope_begin(vm, parser, NJS_SCOPE_FUNCTION);
@@ -842,7 +842,7 @@ static njs_token_t
 njs_parser_lambda_argument(njs_vm_t *vm, njs_parser_t *parser,
     njs_index_t index)
 {
-    njs_ret_t       ret;
+    njs_int_t       ret;
     njs_variable_t  *arg;
 
     arg = njs_parser_variable_add(vm, parser, NJS_VARIABLE_VAR);
@@ -1579,7 +1579,7 @@ njs_parser_brk_statement(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token)
 {
     uint32_t           hash;
-    njs_ret_t          ret;
+    njs_int_t          ret;
     njs_str_t          name;
     njs_parser_node_t  *node;
 
@@ -1630,7 +1630,7 @@ njs_parser_brk_statement(njs_vm_t *vm, njs_parser_t *parser,
 static njs_token_t
 njs_parser_try_statement(njs_vm_t *vm, njs_parser_t *parser)
 {
-    njs_ret_t          ret;
+    njs_int_t          ret;
     njs_token_t        token;
     njs_parser_node_t  *node, *try, *catch;
 
@@ -1806,7 +1806,7 @@ njs_parser_throw_statement(njs_vm_t *vm, njs_parser_t *parser)
 static njs_token_t
 njs_parser_import_statement(njs_vm_t *vm, njs_parser_t *parser)
 {
-    njs_ret_t          ret;
+    njs_int_t          ret;
     njs_token_t        token;
     njs_parser_node_t  *name, *import;
 
@@ -1873,7 +1873,7 @@ njs_parser_import_statement(njs_vm_t *vm, njs_parser_t *parser)
 njs_token_t
 njs_parser_module_lambda(njs_vm_t *vm, njs_parser_t *parser)
 {
-    njs_ret_t              ret;
+    njs_int_t              ret;
     njs_token_t            token;
     njs_parser_node_t      *node, *parent;
     njs_function_lambda_t  *lambda;
@@ -2137,7 +2137,7 @@ njs_token_t
 njs_parser_arrow_expression(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token)
 {
-    njs_ret_t              ret;
+    njs_int_t              ret;
     njs_index_t            index;
     njs_parser_node_t      *node, *body, *parent;
     njs_function_lambda_t  *lambda;

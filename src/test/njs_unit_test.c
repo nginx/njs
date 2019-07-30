@@ -13530,7 +13530,7 @@ lvlhsh_unit_test_add(njs_unit_test_req_t *r, njs_unit_test_prop_t *prop)
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_unit_test_r_get_uri_external(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
@@ -13544,7 +13544,7 @@ njs_unit_test_r_get_uri_external(njs_vm_t *vm, njs_value_t *value, void *obj,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_unit_test_r_set_uri_external(njs_vm_t *vm, void *obj, uintptr_t data,
     njs_str_t *value)
 {
@@ -13560,7 +13560,7 @@ njs_unit_test_r_set_uri_external(njs_vm_t *vm, void *obj, uintptr_t data,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_unit_test_r_get_a_external(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
@@ -13575,7 +13575,7 @@ njs_unit_test_r_get_a_external(njs_vm_t *vm, njs_value_t *value, void *obj,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_unit_test_r_get_b_external(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
@@ -13585,7 +13585,7 @@ njs_unit_test_r_get_b_external(njs_vm_t *vm, njs_value_t *value, void *obj,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_unit_test_host_external(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
@@ -13593,7 +13593,7 @@ njs_unit_test_host_external(njs_vm_t *vm, njs_value_t *value, void *obj,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_unit_test_r_get_vars(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
@@ -13625,7 +13625,7 @@ njs_unit_test_r_get_vars(njs_vm_t *vm, njs_value_t *value, void *obj,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_unit_test_r_set_vars(njs_vm_t *vm, void *obj, uintptr_t data,
     njs_str_t *value)
 {
@@ -13662,7 +13662,7 @@ njs_unit_test_r_set_vars(njs_vm_t *vm, void *obj, uintptr_t data,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_unit_test_r_del_vars(njs_vm_t *vm, void *obj, uintptr_t data,
     njs_bool_t delete)
 {
@@ -13696,7 +13696,7 @@ njs_unit_test_r_del_vars(njs_vm_t *vm, void *obj, uintptr_t data,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_unit_test_header_external(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
@@ -13721,7 +13721,7 @@ njs_unit_test_header_external(njs_vm_t *vm, njs_value_t *value, void *obj,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_unit_test_header_foreach_external(njs_vm_t *vm, void *obj, void *next)
 {
     u_char  *s;
@@ -13734,7 +13734,7 @@ njs_unit_test_header_foreach_external(njs_vm_t *vm, void *obj, void *next)
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_unit_test_header_next_external(njs_vm_t *vm, njs_value_t *value, void *obj,
     void *next)
 {
@@ -13751,7 +13751,7 @@ njs_unit_test_header_next_external(njs_vm_t *vm, njs_value_t *value, void *obj,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_unit_test_method_external(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -13776,7 +13776,7 @@ njs_unit_test_method_external(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_unit_test_create_external(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -14255,7 +14255,7 @@ njs_regexp_optional_test(njs_opts_t *opts, njs_stat_t *stat)
 {
     int         erroff;
     pcre        *re1, *re2;
-    njs_ret_t   ret;
+    njs_int_t   ret;
     const char  *errstr;
 
     /*
@@ -14430,7 +14430,7 @@ done:
 static njs_int_t
 njs_vm_object_alloc_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
 {
-    njs_ret_t    ret;
+    njs_int_t    ret;
     njs_value_t  args[2], obj;
 
     static const njs_value_t num_key = njs_string("num");

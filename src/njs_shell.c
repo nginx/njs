@@ -90,15 +90,15 @@ static njs_int_t njs_editline_init(void);
 static char **njs_completion_handler(const char *text, int start, int end);
 static char *njs_completion_generator(const char *text, int state);
 
-static njs_ret_t njs_ext_console_log(njs_vm_t *vm, njs_value_t *args,
+static njs_int_t njs_ext_console_log(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
-static njs_ret_t njs_ext_console_dump(njs_vm_t *vm, njs_value_t *args,
+static njs_int_t njs_ext_console_dump(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
-static njs_ret_t njs_ext_console_help(njs_vm_t *vm, njs_value_t *args,
+static njs_int_t njs_ext_console_help(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
-static njs_ret_t njs_ext_console_time(njs_vm_t *vm, njs_value_t *args,
+static njs_int_t njs_ext_console_time(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
-static njs_ret_t njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args,
+static njs_int_t njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 
 static njs_host_event_t njs_console_set_timer(njs_external_ptr_t external,
@@ -701,7 +701,7 @@ njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
 
 static void
-njs_output(njs_vm_t *vm, njs_opts_t *opts, njs_ret_t ret)
+njs_output(njs_vm_t *vm, njs_opts_t *opts, njs_int_t ret)
 {
     njs_str_t  out;
 
@@ -973,7 +973,7 @@ next:
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_ext_console_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1005,7 +1005,7 @@ njs_ext_console_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_ext_console_dump(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1037,7 +1037,7 @@ njs_ext_console_dump(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_ext_console_help(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1068,7 +1068,7 @@ njs_ext_console_help(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_ext_console_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1092,7 +1092,7 @@ njs_ext_console_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {

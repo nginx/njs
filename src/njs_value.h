@@ -97,9 +97,9 @@ typedef enum {
  *   NJS_ERROR - some error, vm->retval contains appropriate exception;
  *   NJS_DECLINED - handler was applied to inappropriate object.
  */
-typedef njs_ret_t (*njs_prop_handler_t) (njs_vm_t *vm, njs_value_t *value,
+typedef njs_int_t (*njs_prop_handler_t) (njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval);
-typedef njs_ret_t (*njs_function_native_t) (njs_vm_t *vm, njs_value_t *args,
+typedef njs_int_t (*njs_function_native_t) (njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t retval);
 
 
@@ -742,7 +742,7 @@ njs_set_object_value(njs_value_t *value, njs_object_value_t *object_value)
 
 void njs_value_retain(njs_value_t *value);
 void njs_value_release(njs_vm_t *vm, njs_value_t *value);
-njs_ret_t njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst,
+njs_int_t njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst,
     njs_value_t *value, njs_uint_t hint);
 njs_array_t *njs_value_enumerate(njs_vm_t *vm, const njs_value_t *value,
     njs_object_enum_t kind, njs_bool_t all);
@@ -751,18 +751,18 @@ njs_array_t *njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
 const char *njs_type_string(njs_value_type_t type);
 const char *njs_arg_type_string(uint8_t arg);
 
-njs_ret_t njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
+njs_int_t njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
     const njs_value_t *src);
 double njs_string_to_number(const njs_value_t *value, njs_bool_t parse_float);
 
 njs_bool_t njs_string_eq(const njs_value_t *v1, const njs_value_t *v2);
 
 
-njs_inline njs_ret_t
+njs_inline njs_int_t
 njs_value_to_numeric(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
 {
     double       num;
-    njs_ret_t    ret;
+    njs_int_t    ret;
     njs_value_t  primitive;
 
     if (njs_slow_path(!njs_is_primitive(value))) {
@@ -791,10 +791,10 @@ njs_value_to_numeric(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
 }
 
 
-njs_inline njs_ret_t
+njs_inline njs_int_t
 njs_value_to_string(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
 {
-    njs_ret_t    ret;
+    njs_int_t    ret;
     njs_value_t  primitive;
 
     if (njs_slow_path(!njs_is_primitive(value))) {

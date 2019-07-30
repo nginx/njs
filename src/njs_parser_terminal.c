@@ -28,7 +28,7 @@ static njs_int_t njs_parser_template_expression(njs_vm_t *vm,
     njs_parser_t *parser);
 static njs_int_t njs_parser_template_string(njs_vm_t *vm,
     njs_parser_t *parser);
-static njs_ret_t njs_parser_escape_string_calc_length(njs_vm_t *vm,
+static njs_int_t njs_parser_escape_string_calc_length(njs_vm_t *vm,
     njs_parser_t *parser, size_t *out_size, size_t *out_length);
 static njs_token_t njs_parser_escape_string_create(njs_vm_t *vm,
     njs_parser_t *parser, njs_value_t *value);
@@ -38,7 +38,7 @@ njs_token_t
 njs_parser_terminal(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token)
 {
     double             num;
-    njs_ret_t          ret;
+    njs_int_t          ret;
     njs_parser_node_t  *node;
 
     ret = njs_parser_match_arrow_expression(vm, parser, token);
@@ -202,7 +202,7 @@ static njs_parser_node_t *
 njs_parser_reference(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
     njs_str_t *name, uint32_t hash, uint32_t token_line)
 {
-    njs_ret_t           ret;
+    njs_int_t           ret;
     njs_value_t         *ext;
     njs_variable_t      *var;
     njs_parser_node_t   *node;
@@ -431,7 +431,7 @@ static njs_int_t
 njs_parser_builtin(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node,
     njs_value_type_t type, njs_str_t *name, uint32_t hash)
 {
-    njs_ret_t           ret;
+    njs_int_t           ret;
     njs_uint_t          index;
     njs_variable_t      *var;
     njs_parser_scope_t  *scope;
@@ -991,7 +991,7 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
     u_char        c, *start, *dst;
     size_t        size, length, hex_length;
     uint64_t      cp, cp_pair;
-    njs_ret_t     ret;
+    njs_int_t     ret;
     njs_str_t     *string;
     const u_char  *src, *end, *hex_end;
 
@@ -1169,7 +1169,7 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_parser_escape_string_calc_length(njs_vm_t *vm, njs_parser_t *parser,
     size_t *out_size, size_t *out_length)
 {

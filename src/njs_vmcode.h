@@ -22,6 +22,7 @@
 #define NJS_PREEMPT                     (-11)
 
 
+typedef intptr_t                        njs_jump_off_t;
 typedef uint8_t                         njs_vmcode_operation_t;
 
 
@@ -215,20 +216,20 @@ typedef struct {
 
 typedef struct {
     njs_vmcode_t               code;
-    njs_ret_t                  offset;
+    njs_jump_off_t             offset;
 } njs_vmcode_jump_t;
 
 
 typedef struct {
     njs_vmcode_t               code;
-    njs_ret_t                  offset;
+    njs_jump_off_t             offset;
     njs_index_t                cond;
 } njs_vmcode_cond_jump_t;
 
 
 typedef struct {
     njs_vmcode_t               code;
-    njs_ret_t                  offset;
+    njs_jump_off_t             offset;
     njs_index_t                value1;
     njs_index_t                value2;
 } njs_vmcode_equal_jump_t;
@@ -238,7 +239,7 @@ typedef struct {
     njs_vmcode_t               code;
     njs_index_t                retval;
     njs_index_t                value;
-    njs_ret_t                  offset;
+    njs_jump_off_t             offset;
 } njs_vmcode_test_jump_t;
 
 
@@ -262,7 +263,7 @@ typedef struct {
     njs_vmcode_t               code;
     njs_index_t                next;
     njs_index_t                object;
-    njs_ret_t                  offset;
+    njs_jump_off_t             offset;
 } njs_vmcode_prop_foreach_t;
 
 
@@ -271,7 +272,7 @@ typedef struct {
     njs_index_t                retval;
     njs_index_t                object;
     njs_index_t                next;
-    njs_ret_t                  offset;
+    njs_jump_off_t             offset;
 } njs_vmcode_prop_next_t;
 
 
@@ -320,7 +321,7 @@ typedef struct {
 
 typedef struct {
     njs_vmcode_t               code;
-    njs_ret_t                  offset;
+    njs_jump_off_t             offset;
     njs_index_t                exception_value;
     njs_index_t                exit_value;
 } njs_vmcode_try_start_t;
@@ -328,14 +329,14 @@ typedef struct {
 
 typedef struct {
     njs_vmcode_t               code;
-    njs_ret_t                  offset;
+    njs_jump_off_t             offset;
     njs_index_t                exit_value;
 } njs_vmcode_try_trampoline_t;
 
 
 typedef struct {
     njs_vmcode_t               code;
-    njs_ret_t                  offset;
+    njs_jump_off_t             offset;
     njs_index_t                exception;
 } njs_vmcode_catch_t;
 
@@ -348,7 +349,7 @@ typedef struct {
 
 typedef struct {
     njs_vmcode_t               code;
-    njs_ret_t                  offset;
+    njs_jump_off_t             offset;
 } njs_vmcode_try_end_t;
 
 
@@ -356,7 +357,7 @@ typedef struct {
     njs_vmcode_t               code;
     njs_index_t                save;
     njs_index_t                retval;
-    njs_ret_t                  offset;
+    njs_jump_off_t             offset;
 } njs_vmcode_try_return_t;
 
 
@@ -364,8 +365,8 @@ typedef struct {
     njs_vmcode_t               code;
     njs_index_t                retval;
     njs_index_t                exit_value;
-    njs_ret_t                  continue_offset;
-    njs_ret_t                  break_offset;
+    njs_jump_off_t             continue_offset;
+    njs_jump_off_t             break_offset;
 } njs_vmcode_finally_t;
 
 

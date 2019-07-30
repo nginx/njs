@@ -251,7 +251,7 @@ njs_array_t *
 njs_extern_keys_array(njs_vm_t *vm, const njs_extern_t *external)
 {
     uint32_t            n, keys_length;
-    njs_ret_t           ret;
+    njs_int_t           ret;
     njs_array_t         *keys;
     const njs_lvlhsh_t  *hash;
     njs_lvlhsh_each_t   lhe;

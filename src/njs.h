@@ -22,7 +22,6 @@
 #include <njs_lvlhsh.h>
 
 
-typedef intptr_t                    njs_ret_t;
 typedef uintptr_t                   njs_index_t;
 typedef struct njs_vm_s             njs_vm_t;
 typedef union  njs_value_s          njs_value_t;
@@ -60,16 +59,16 @@ extern const njs_value_t            njs_value_undefined;
     njs_vm_value_error_set(vm, njs_vm_retval(vm), fmt, ##__VA_ARGS__)
 
 
-typedef njs_ret_t (*njs_extern_get_t)(njs_vm_t *vm, njs_value_t *value,
+typedef njs_int_t (*njs_extern_get_t)(njs_vm_t *vm, njs_value_t *value,
     void *obj, uintptr_t data);
-typedef njs_ret_t (*njs_extern_set_t)(njs_vm_t *vm, void *obj, uintptr_t data,
+typedef njs_int_t (*njs_extern_set_t)(njs_vm_t *vm, void *obj, uintptr_t data,
     njs_str_t *value);
-typedef njs_ret_t (*njs_extern_find_t)(njs_vm_t *vm, void *obj, uintptr_t data,
+typedef njs_int_t (*njs_extern_find_t)(njs_vm_t *vm, void *obj, uintptr_t data,
     njs_bool_t delete);
-typedef njs_ret_t (*njs_extern_foreach_t)(njs_vm_t *vm, void *obj, void *next);
-typedef njs_ret_t (*njs_extern_next_t)(njs_vm_t *vm, njs_value_t *value,
+typedef njs_int_t (*njs_extern_foreach_t)(njs_vm_t *vm, void *obj, void *next);
+typedef njs_int_t (*njs_extern_next_t)(njs_vm_t *vm, njs_value_t *value,
     void *obj, void *next);
-typedef njs_ret_t (*njs_extern_method_t)(njs_vm_t *vm, njs_value_t *args,
+typedef njs_int_t (*njs_extern_method_t)(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 
 
@@ -236,7 +235,7 @@ NJS_EXPORT void njs_vm_retval_set(njs_vm_t *vm, const njs_value_t *value);
  * Sets a byte string value.
  *   start data is not copied and should not be freed.
  */
-NJS_EXPORT njs_ret_t njs_vm_value_string_set(njs_vm_t *vm, njs_value_t *value,
+NJS_EXPORT njs_int_t njs_vm_value_string_set(njs_vm_t *vm, njs_value_t *value,
     const u_char *start, uint32_t size);
 NJS_EXPORT u_char *njs_vm_value_string_alloc(njs_vm_t *vm, njs_value_t *value,
     uint32_t size);
@@ -246,19 +245,19 @@ NJS_EXPORT njs_int_t njs_vm_value_string_copy(njs_vm_t *vm, njs_str_t *retval,
 /*
  * Converts a value to string.
  */
-NJS_EXPORT njs_ret_t njs_vm_value_to_string(njs_vm_t *vm, njs_str_t *dst,
+NJS_EXPORT njs_int_t njs_vm_value_to_string(njs_vm_t *vm, njs_str_t *dst,
     const njs_value_t *src);
 
 /*
  * Calls njs_vm_value_to_string(), if exception was thrown adds backtrace.
  */
-NJS_EXPORT njs_ret_t njs_vm_value_string(njs_vm_t *vm, njs_str_t *dst,
+NJS_EXPORT njs_int_t njs_vm_value_string(njs_vm_t *vm, njs_str_t *dst,
     const njs_value_t *src);
-NJS_EXPORT njs_ret_t njs_vm_retval_string(njs_vm_t *vm, njs_str_t *dst);
+NJS_EXPORT njs_int_t njs_vm_retval_string(njs_vm_t *vm, njs_str_t *dst);
 
-NJS_EXPORT njs_ret_t njs_vm_value_dump(njs_vm_t *vm, njs_str_t *dst,
+NJS_EXPORT njs_int_t njs_vm_value_dump(njs_vm_t *vm, njs_str_t *dst,
     const njs_value_t *value, njs_uint_t console, njs_uint_t indent);
-NJS_EXPORT njs_ret_t njs_vm_retval_dump(njs_vm_t *vm, njs_str_t *dst,
+NJS_EXPORT njs_int_t njs_vm_retval_dump(njs_vm_t *vm, njs_str_t *dst,
     njs_uint_t indent);
 
 NJS_EXPORT void njs_vm_value_error_set(njs_vm_t *vm, njs_value_t *value,
@@ -285,14 +284,14 @@ NJS_EXPORT njs_int_t njs_value_is_string(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_object(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_function(const njs_value_t *value);
 
-NJS_EXPORT njs_ret_t njs_vm_object_alloc(njs_vm_t *vm, njs_value_t *retval,
+NJS_EXPORT njs_int_t njs_vm_object_alloc(njs_vm_t *vm, njs_value_t *retval,
     ...);
 NJS_EXPORT njs_value_t *njs_vm_object_prop(njs_vm_t *vm,
     const njs_value_t *value, const njs_str_t *key);
 
-NJS_EXPORT njs_ret_t njs_vm_json_parse(njs_vm_t *vm, njs_value_t *args,
+NJS_EXPORT njs_int_t njs_vm_json_parse(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs);
-NJS_EXPORT njs_ret_t njs_vm_json_stringify(njs_vm_t *vm, njs_value_t *args,
+NJS_EXPORT njs_int_t njs_vm_json_stringify(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs);
 
 extern const njs_mem_proto_t  njs_vm_mp_proto;

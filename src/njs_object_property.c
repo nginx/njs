@@ -8,18 +8,18 @@
 #include <string.h>
 
 
-static njs_ret_t njs_object_property_query(njs_vm_t *vm,
+static njs_int_t njs_object_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_object_t *object,
     const njs_value_t *property);
-static njs_ret_t njs_array_property_query(njs_vm_t *vm,
+static njs_int_t njs_array_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_array_t *array, uint32_t index);
-static njs_ret_t njs_string_property_query(njs_vm_t *vm,
+static njs_int_t njs_string_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_value_t *object, uint32_t index);
-static njs_ret_t njs_external_property_query(njs_vm_t *vm,
+static njs_int_t njs_external_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_value_t *object);
-static njs_ret_t njs_external_property_set(njs_vm_t *vm, njs_value_t *value,
+static njs_int_t njs_external_property_set(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval);
-static njs_ret_t njs_external_property_delete(njs_vm_t *vm, njs_value_t *value,
+static njs_int_t njs_external_property_delete(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval);
 static njs_object_prop_t *njs_descriptor_prop(njs_vm_t *vm,
     const njs_value_t *name, const njs_object_t *descriptor);
@@ -44,12 +44,12 @@ static njs_object_prop_t *njs_descriptor_prop(njs_vm_t *vm,
  *     Object.defineProperty([1,2], '1', {configurable:false})
  */
 
-njs_ret_t
+njs_int_t
 njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
     const njs_value_t *property)
 {
     uint32_t        index;
-    njs_ret_t       ret;
+    njs_int_t       ret;
     njs_object_t    *obj;
     njs_value_t     prop;
     njs_function_t  *function;
@@ -151,12 +151,12 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     njs_object_t *object, const njs_value_t *property)
 {
     uint32_t            index;
-    njs_ret_t           ret;
+    njs_int_t           ret;
     njs_bool_t          own;
     njs_array_t         *array;
     njs_object_t        *proto;
@@ -236,12 +236,12 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     njs_array_t *array, uint32_t index)
 {
     uint32_t           size;
-    njs_ret_t          ret;
+    njs_int_t          ret;
     njs_value_t        *value;
     njs_object_prop_t  *prop;
 
@@ -293,7 +293,7 @@ njs_array_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_string_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     njs_value_t *object, uint32_t index)
 {
@@ -334,12 +334,12 @@ njs_string_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_external_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     njs_value_t *object)
 {
     void                *obj;
-    njs_ret_t           ret;
+    njs_int_t           ret;
     uintptr_t           data;
     njs_object_prop_t   *prop;
     const njs_extern_t  *ext_proto;
@@ -425,12 +425,12 @@ done:
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_external_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval)
 {
     void                  *obj;
-    njs_ret_t             ret;
+    njs_int_t             ret;
     njs_str_t             s;
     njs_property_query_t  *pq;
 
@@ -454,7 +454,7 @@ njs_external_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_external_property_delete(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *unused, njs_value_t *unused2)
 {
@@ -478,11 +478,11 @@ njs_external_property_delete(njs_vm_t *vm, njs_value_t *value,
  *   NJS_ERROR            exception has been thrown.
  *      retval will contain undefined
  */
-njs_ret_t
+njs_int_t
 njs_value_property(njs_vm_t *vm, const njs_value_t *value,
     const njs_value_t *property, njs_value_t *retval)
 {
-    njs_ret_t             ret;
+    njs_int_t             ret;
     njs_object_prop_t     *prop;
     njs_property_query_t  pq;
 
@@ -566,11 +566,11 @@ njs_value_property(njs_vm_t *vm, const njs_value_t *value,
  *   NJS_OK               property has been set successfully
  *   NJS_ERROR            exception has been thrown.
  */
-njs_ret_t
+njs_int_t
 njs_value_property_set(njs_vm_t *vm, njs_value_t *object,
     const njs_value_t *property, njs_value_t *value)
 {
-    njs_ret_t             ret;
+    njs_int_t             ret;
     njs_object_prop_t     *prop, *shared;
     njs_property_query_t  pq;
 
@@ -769,7 +769,7 @@ njs_object_property(njs_vm_t *vm, const njs_object_t *object,
  *   Limited support of special descriptors like length and array index
  *   (values can be set, but without property flags support).
  */
-njs_ret_t
+njs_int_t
 njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
     const njs_value_t *name, const njs_value_t *value)
 {
@@ -1121,7 +1121,7 @@ static const njs_value_t  njs_object_configurable_string =
                                                     njs_string("configurable");
 
 
-njs_ret_t
+njs_int_t
 njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
     const njs_value_t *value, const njs_value_t *property)
 {
@@ -1310,7 +1310,7 @@ njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
 }
 
 
-njs_ret_t
+njs_int_t
 njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
 {
     njs_int_t           ret;

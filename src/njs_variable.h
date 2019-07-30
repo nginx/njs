@@ -60,16 +60,16 @@ njs_variable_t * njs_label_add(njs_vm_t *vm, njs_parser_scope_t *scope,
     njs_str_t *name, uint32_t hash);
 njs_variable_t *njs_label_find(njs_vm_t *vm, njs_parser_scope_t *scope,
     njs_str_t *name, uint32_t hash);
-njs_ret_t njs_label_remove(njs_vm_t *vm, njs_parser_scope_t *scope,
+njs_int_t njs_label_remove(njs_vm_t *vm, njs_parser_scope_t *scope,
     njs_str_t *name, uint32_t hash);
-njs_ret_t njs_variable_reference(njs_vm_t *vm, njs_parser_scope_t *scope,
+njs_int_t njs_variable_reference(njs_vm_t *vm, njs_parser_scope_t *scope,
     njs_parser_node_t *node, njs_str_t *name, uint32_t hash,
     njs_reference_type_t type);
-njs_ret_t njs_variables_scope_reference(njs_vm_t *vm,
+njs_int_t njs_variables_scope_reference(njs_vm_t *vm,
     njs_parser_scope_t *scope);
 njs_index_t njs_scope_next_index(njs_vm_t *vm, njs_parser_scope_t *scope,
     njs_uint_t scope_index, const njs_value_t *default_value);
-njs_ret_t njs_name_copy(njs_vm_t *vm, njs_str_t *dst, njs_str_t *src);
+njs_int_t njs_name_copy(njs_vm_t *vm, njs_str_t *dst, njs_str_t *src);
 
 extern const njs_lvlhsh_proto_t  njs_variables_hash_proto;
 

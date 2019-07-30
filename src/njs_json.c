@@ -91,8 +91,8 @@ njs_inline uint32_t njs_json_unicode(const u_char *p);
 static const u_char *njs_json_skip_space(const u_char *start,
     const u_char *end);
 
-static njs_ret_t njs_json_parse_iterator(njs_vm_t *vm, njs_json_parse_t *parse);
-static njs_ret_t njs_json_parse_iterator_call(njs_vm_t *vm,
+static njs_int_t njs_json_parse_iterator(njs_vm_t *vm, njs_json_parse_t *parse);
+static njs_int_t njs_json_parse_iterator_call(njs_vm_t *vm,
     njs_json_parse_t *parse);
 static njs_json_state_t *njs_json_push_parse_state(njs_vm_t *vm,
     njs_json_parse_t *parse, njs_value_t *value);
@@ -100,16 +100,16 @@ static njs_json_state_t *njs_json_pop_parse_state(njs_json_parse_t *parse);
 static void njs_json_parse_exception(njs_json_parse_ctx_t *ctx,
     const char *msg, const u_char *pos);
 
-static njs_ret_t njs_json_stringify_iterator(njs_vm_t *vm,
+static njs_int_t njs_json_stringify_iterator(njs_vm_t *vm,
     njs_json_stringify_t *stringify);
 static njs_function_t *njs_object_to_json_function(njs_vm_t *vm,
     njs_value_t *value);
-static njs_ret_t njs_json_stringify_to_json(njs_vm_t *vm,
+static njs_int_t njs_json_stringify_to_json(njs_vm_t *vm,
     njs_json_stringify_t* stringify, njs_function_t *function,
     njs_value_t *key, njs_value_t *value);
-static njs_ret_t njs_json_stringify_replacer(njs_vm_t *vm,
+static njs_int_t njs_json_stringify_replacer(njs_vm_t *vm,
     njs_json_stringify_t* stringify, njs_value_t *key, njs_value_t *value);
-static njs_ret_t njs_json_stringify_array(njs_vm_t *vm,
+static njs_int_t njs_json_stringify_array(njs_vm_t *vm,
     njs_json_stringify_t *stringify);
 static njs_json_state_t *njs_json_push_stringify_state(njs_vm_t *vm,
     njs_json_stringify_t *stringify, const njs_value_t *value);
@@ -145,7 +145,7 @@ static njs_int_t njs_json_buf_pullup(njs_json_stringify_t *stringify,
 static const njs_object_prop_t  njs_json_object_properties[];
 
 
-static njs_ret_t
+static njs_int_t
 njs_json_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -234,7 +234,7 @@ memory_error:
 }
 
 
-njs_ret_t
+njs_int_t
 njs_vm_json_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs)
 {
     njs_function_t  *parse;
@@ -245,13 +245,13 @@ njs_vm_json_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs)
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     double                num;
     njs_int_t             i;
-    njs_ret_t             ret;
+    njs_int_t             ret;
     njs_value_t           *wrapper;
     const njs_value_t     *replacer, *space;
     njs_json_stringify_t  *stringify, json_stringify;
@@ -332,7 +332,7 @@ memory_error:
 }
 
 
-njs_ret_t
+njs_int_t
 njs_vm_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs)
 {
     njs_function_t  *stringify;
@@ -621,7 +621,7 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value,
     size_t        size, surplus;
     ssize_t       length;
     uint32_t      utf, utf_low;
-    njs_ret_t     ret;
+    njs_int_t     ret;
     const u_char  *start, *last;
 
     enum {
@@ -919,7 +919,7 @@ njs_json_skip_space(const u_char *start, const u_char *end)
      || (((_value)->type == NJS_ARRAY) && njs_array_len(_value) != 0)
 
 
-static njs_ret_t
+static njs_int_t
 njs_json_parse_iterator(njs_vm_t *vm, njs_json_parse_t *parse)
 {
     njs_int_t           ret;
@@ -1060,7 +1060,7 @@ memory_error:
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_json_parse_iterator_call(njs_vm_t *vm, njs_json_parse_t *parse)
 {
     njs_value_t       arguments[3];
@@ -1206,14 +1206,14 @@ njs_json_parse_exception(njs_json_parse_ctx_t *ctx, const char *msg,
     }
 
 
-static njs_ret_t
+static njs_int_t
 njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify)
 {
     u_char              *start;
     size_t              size;
     ssize_t             length;
     njs_int_t           i;
-    njs_ret_t           ret;
+    njs_int_t           ret;
     njs_str_t           str;
     njs_value_t         *key, *value;
     njs_function_t      *to_json;
@@ -1517,7 +1517,7 @@ njs_object_to_json_function(njs_vm_t *vm, njs_value_t *value)
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_json_stringify_to_json(njs_vm_t *vm, njs_json_stringify_t* stringify,
     njs_function_t *function, njs_value_t *key, njs_value_t *value)
 {
@@ -1562,7 +1562,7 @@ njs_json_stringify_to_json(njs_vm_t *vm, njs_json_stringify_t* stringify,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_json_stringify_replacer(njs_vm_t *vm, njs_json_stringify_t* stringify,
     njs_value_t *key, njs_value_t *value)
 {
@@ -1606,10 +1606,10 @@ njs_json_stringify_replacer(njs_vm_t *vm, njs_json_stringify_t* stringify,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_json_stringify_array(njs_vm_t *vm, njs_json_stringify_t  *stringify)
 {
-    njs_ret_t    ret;
+    njs_int_t    ret;
     uint32_t     i, n, k, properties_length, array_length;
     njs_value_t  *value, num_value;
     njs_array_t  *properties, *array;
@@ -2139,14 +2139,14 @@ static njs_int_t
 njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value,
     njs_uint_t console)
 {
-    njs_ret_t           ret;
+    njs_int_t           ret;
     njs_str_t           str;
     njs_uint_t          written;
     njs_value_t         str_val;
     const njs_extern_t  *ext_proto;
     u_char              buf[32], *p;
 
-    njs_ret_t           (*to_string)(njs_vm_t *, njs_value_t *,
+    njs_int_t           (*to_string)(njs_vm_t *, njs_value_t *,
                                      const njs_value_t *);
 
     switch (value->type) {
@@ -2372,12 +2372,12 @@ memory_error:
     }
 
 
-njs_ret_t
+njs_int_t
 njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, const njs_value_t *value,
     njs_uint_t console, njs_uint_t indent)
 {
     njs_int_t             i;
-    njs_ret_t             ret;
+    njs_int_t             ret;
     njs_str_t             str;
     njs_value_t           *key, *val, ext_val;
     njs_object_t          *object;

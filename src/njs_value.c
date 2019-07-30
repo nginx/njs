@@ -100,11 +100,11 @@ njs_value_release(njs_vm_t *vm, njs_value_t *value)
  * for numbers and "toString", "valueOf" for strings.
  */
 
-njs_ret_t
+njs_int_t
 njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
 	njs_uint_t hint)
 {
-    njs_ret_t           ret;
+    njs_int_t           ret;
     njs_uint_t          tries;
     njs_value_t         retval;
     njs_object_prop_t   *prop;

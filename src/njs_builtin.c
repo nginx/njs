@@ -23,7 +23,7 @@ typedef struct {
 } njs_function_init_t;
 
 
-static njs_ret_t njs_prototype_function(njs_vm_t *vm, njs_value_t *args,
+static njs_int_t njs_prototype_function(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 static njs_arr_t *njs_vm_expression_completions(njs_vm_t *vm,
     njs_str_t *expression);
@@ -419,7 +419,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_prototype_function(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1063,7 +1063,7 @@ found:
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_dump_value(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1141,7 +1141,7 @@ const njs_object_init_t  njs_njs_object_init = {
 };
 
 
-static njs_ret_t
+static njs_int_t
 njs_process_object_argv(njs_vm_t *vm, njs_value_t *process,
     njs_value_t *unused, njs_value_t *retval)
 {
@@ -1254,7 +1254,7 @@ njs_env_hash_init(njs_vm_t *vm, njs_lvlhsh_t *hash, char **environment)
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_process_object_env(njs_vm_t *vm, njs_value_t *process,
     njs_value_t *unused, njs_value_t *retval)
 {
@@ -1299,7 +1299,7 @@ njs_process_object_env(njs_vm_t *vm, njs_value_t *process,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_process_object_pid(njs_vm_t *vm, njs_value_t *unused,
     njs_value_t *unused2, njs_value_t *retval)
 {
@@ -1309,7 +1309,7 @@ njs_process_object_pid(njs_vm_t *vm, njs_value_t *unused,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_process_object_ppid(njs_vm_t *vm, njs_value_t *unused,
     njs_value_t *unused2, njs_value_t *retval)
 {

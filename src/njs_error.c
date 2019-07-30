@@ -127,7 +127,7 @@ memory_error:
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_error_create(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_type_t type)
 {
@@ -152,7 +152,7 @@ njs_error_create(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-njs_ret_t
+njs_int_t
 njs_error_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -194,7 +194,7 @@ const njs_object_init_t  njs_error_constructor_init = {
 };
 
 
-njs_ret_t
+njs_int_t
 njs_eval_error_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -236,7 +236,7 @@ const njs_object_init_t  njs_eval_error_constructor_init = {
 };
 
 
-njs_ret_t
+njs_int_t
 njs_internal_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -278,7 +278,7 @@ const njs_object_init_t  njs_internal_error_constructor_init = {
 };
 
 
-njs_ret_t
+njs_int_t
 njs_range_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -320,7 +320,7 @@ const njs_object_init_t  njs_range_error_constructor_init = {
 };
 
 
-njs_ret_t
+njs_int_t
 njs_reference_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -362,7 +362,7 @@ const njs_object_init_t  njs_reference_error_constructor_init = {
 };
 
 
-njs_ret_t
+njs_int_t
 njs_syntax_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -404,7 +404,7 @@ const njs_object_init_t  njs_syntax_error_constructor_init = {
 };
 
 
-njs_ret_t
+njs_int_t
 njs_type_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -446,7 +446,7 @@ const njs_object_init_t  njs_type_error_constructor_init = {
 };
 
 
-njs_ret_t
+njs_int_t
 njs_uri_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -520,7 +520,7 @@ njs_memory_error(njs_vm_t *vm)
 }
 
 
-njs_ret_t
+njs_int_t
 njs_memory_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -530,7 +530,7 @@ njs_memory_error_constructor(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_memory_error_prototype_create(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
@@ -589,7 +589,7 @@ const njs_object_init_t  njs_memory_error_constructor_init = {
 };
 
 
-static njs_ret_t
+static njs_int_t
 njs_error_prototype_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -599,7 +599,7 @@ njs_error_prototype_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -612,7 +612,7 @@ njs_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-njs_ret_t
+njs_int_t
 njs_error_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *error)
 {
     size_t              size;
@@ -760,7 +760,7 @@ const njs_object_init_t  njs_eval_error_prototype_init = {
 };
 
 
-static njs_ret_t
+static njs_int_t
 njs_internal_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {

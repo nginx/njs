@@ -17,7 +17,7 @@ typedef void (*njs_hash_init)(void *ctx);
 typedef void (*njs_hash_update)(void *ctx, const void *data, size_t size);
 typedef void (*njs_hash_final)(u_char *result, void *ctx);
 
-typedef njs_ret_t (*njs_digest_encode)(njs_vm_t *vm, njs_value_t *value,
+typedef njs_int_t (*njs_digest_encode)(njs_vm_t *vm, njs_value_t *value,
     const njs_str_t *src);
 
 
@@ -150,7 +150,7 @@ njs_crypto_object_value_alloc(njs_vm_t *vm, njs_uint_t proto)
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_crypto_create_hash(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -193,7 +193,7 @@ njs_crypto_create_hash(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -232,12 +232,12 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     u_char            digest[32], *p;
-    njs_ret_t         ret;
+    njs_int_t         ret;
     njs_str_t         enc_name, str;
     njs_digest_t      *dgst;
     njs_hash_alg_t    *alg;
@@ -304,7 +304,7 @@ njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_hash_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -360,7 +360,7 @@ const njs_object_init_t  njs_hash_prototype_init = {
 };
 
 
-njs_ret_t
+njs_int_t
 njs_hash_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -375,7 +375,7 @@ const njs_object_init_t  njs_hash_constructor_init = {
 };
 
 
-static njs_ret_t
+static njs_int_t
 njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -450,7 +450,7 @@ njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_hmac_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -489,13 +489,13 @@ njs_hmac_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_hmac_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     u_char            hash1[32], digest[32], *p;
     njs_str_t         enc_name, str;
-    njs_ret_t         ret;
+    njs_int_t         ret;
     njs_hmac_t        *ctx;
     njs_hash_alg_t    *alg;
     njs_crypto_enc_t  *enc;
@@ -566,7 +566,7 @@ njs_hmac_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_hmac_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -622,7 +622,7 @@ const njs_object_init_t  njs_hmac_prototype_init = {
 };
 
 
-njs_ret_t
+njs_int_t
 njs_hmac_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {

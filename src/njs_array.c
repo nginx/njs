@@ -9,7 +9,7 @@
 #include <stdint.h>
 
 
-static njs_ret_t njs_array_prototype_slice_copy(njs_vm_t *vm,
+static njs_int_t njs_array_prototype_slice_copy(njs_vm_t *vm,
     njs_value_t *this, int64_t start, int64_t length);
 static njs_value_t *njs_array_copy(njs_value_t *dst, njs_value_t *src);
 
@@ -67,10 +67,10 @@ overflow:
 }
 
 
-njs_ret_t
+njs_int_t
 njs_array_add(njs_vm_t *vm, njs_array_t *array, njs_value_t *value)
 {
-    njs_ret_t  ret;
+    njs_int_t  ret;
 
     ret = njs_array_expand(vm, array, 0, 1);
 
@@ -83,11 +83,11 @@ njs_array_add(njs_vm_t *vm, njs_array_t *array, njs_value_t *value)
 }
 
 
-njs_ret_t
+njs_int_t
 njs_array_string_add(njs_vm_t *vm, njs_array_t *array, const u_char *start,
     size_t size, size_t length)
 {
-    njs_ret_t  ret;
+    njs_int_t  ret;
 
     ret = njs_array_expand(vm, array, 0, 1);
 
@@ -100,7 +100,7 @@ njs_array_string_add(njs_vm_t *vm, njs_array_t *array, const u_char *start,
 }
 
 
-njs_ret_t
+njs_int_t
 njs_array_expand(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
     uint32_t append)
 {
@@ -156,7 +156,7 @@ memory_error:
 }
 
 
-njs_ret_t
+njs_int_t
 njs_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -211,7 +211,7 @@ njs_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_is_array(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -230,7 +230,7 @@ njs_array_is_array(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_of(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -307,14 +307,14 @@ const njs_object_init_t  njs_array_constructor_init = {
 };
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_length(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval)
 {
     double       num;
     int64_t      size;
     uint32_t     length;
-    njs_ret_t    ret;
+    njs_int_t    ret;
     njs_value_t  *val;
     njs_array_t  *array;
     njs_object_t *proto;
@@ -396,12 +396,12 @@ njs_array_length(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
  * JavaScript 1.2, ECMAScript 3.
  */
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_slice(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     int64_t      start, end, length;
-    njs_ret_t    ret;
+    njs_int_t    ret;
     njs_value_t  prop_length;
 
     static const njs_value_t  string_length = njs_string("length");
@@ -462,14 +462,14 @@ njs_array_prototype_slice(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
     int64_t start, int64_t length)
 {
     size_t             size;
     u_char             *dst;
     uint32_t           n;
-    njs_ret_t          ret;
+    njs_int_t          ret;
     njs_array_t        *array;
     njs_value_t        *value, name;
     const u_char       *src, *end;
@@ -566,11 +566,11 @@ njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_push(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_ret_t    ret;
+    njs_int_t    ret;
     njs_uint_t   i;
     njs_array_t  *array;
 
@@ -596,7 +596,7 @@ njs_array_prototype_push(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_pop(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -624,11 +624,11 @@ njs_array_prototype_pop(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_unshift(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_ret_t    ret;
+    njs_int_t    ret;
     njs_uint_t   n;
     njs_array_t  *array;
 
@@ -660,7 +660,7 @@ njs_array_prototype_unshift(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_shift(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -690,11 +690,11 @@ njs_array_prototype_shift(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_splice(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_ret_t    ret;
+    njs_int_t    ret;
     njs_int_t    n, start, length, items, delta, delete;
     njs_uint_t   i;
     njs_array_t  *array, *deleted;
@@ -790,7 +790,7 @@ njs_array_prototype_splice(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_reverse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -821,7 +821,7 @@ njs_array_prototype_reverse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -844,14 +844,14 @@ njs_array_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     u_char             *p;
     uint32_t           max;
     size_t             size, length, mask;
-    njs_ret_t          ret;
+    njs_int_t          ret;
     njs_uint_t         i, n;
     njs_array_t        *array;
     njs_value_t        *value, *values;
@@ -989,7 +989,7 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_concat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1048,7 +1048,7 @@ njs_array_copy(njs_value_t *dst, njs_value_t *src)
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_index_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1108,7 +1108,7 @@ done:
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1171,7 +1171,7 @@ done:
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_includes(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1248,11 +1248,11 @@ done:
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_fill(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_ret_t          ret;
+    njs_int_t          ret;
     njs_int_t          i, start, end, length;
     njs_array_t        *array;
     njs_value_t        name, prop_length;
@@ -1344,7 +1344,7 @@ njs_array_prototype_fill(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-njs_inline njs_ret_t
+njs_inline njs_int_t
 njs_array_iterator_call(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this_arg, njs_value_t *value, uint32_t n,
     njs_value_t *array)
@@ -1362,7 +1362,7 @@ njs_array_iterator_call(njs_vm_t *vm, njs_function_t *function,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_for_each(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1402,7 +1402,7 @@ njs_array_prototype_for_each(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_some(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1449,7 +1449,7 @@ njs_array_prototype_some(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_every(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1496,7 +1496,7 @@ njs_array_prototype_every(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_filter(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1549,7 +1549,7 @@ njs_array_prototype_filter(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_find(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1597,7 +1597,7 @@ njs_array_prototype_find(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_find_index(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1646,7 +1646,7 @@ njs_array_prototype_find_index(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_map(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1704,7 +1704,7 @@ njs_array_prototype_map(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-njs_inline njs_ret_t
+njs_inline njs_int_t
 njs_array_iterator_reduce(njs_vm_t *vm, njs_function_t *function,
     njs_value_t *accumulator, njs_value_t *value, uint32_t n,
     njs_value_t *array)
@@ -1723,7 +1723,7 @@ njs_array_iterator_reduce(njs_vm_t *vm, njs_function_t *function,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_reduce(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1778,7 +1778,7 @@ njs_array_prototype_reduce(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_reduce_right(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1834,7 +1834,7 @@ njs_array_prototype_reduce_right(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_string_sort(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -1867,7 +1867,7 @@ static const njs_function_t  njs_array_string_sort_function = {
 };
 
 
-static njs_ret_t
+static njs_int_t
 njs_array_prototype_sort(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {

@@ -229,7 +229,7 @@ njs_parser_variable_add(njs_vm_t *vm, njs_parser_t *parser,
 }
 
 
-njs_inline njs_ret_t
+njs_inline njs_int_t
 njs_parser_variable_reference(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node, njs_reference_type_t type)
 {

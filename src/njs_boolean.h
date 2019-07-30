@@ -8,7 +8,7 @@
 #define _NJS_BOOLEAN_H_INCLUDED_
 
 
-njs_ret_t njs_boolean_constructor(njs_vm_t *vm, njs_value_t *args,
+njs_int_t njs_boolean_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 
 extern const njs_object_init_t  njs_boolean_constructor_init;
