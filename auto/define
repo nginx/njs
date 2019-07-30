@@ -3,10 +3,10 @@
 # Copyright (C) NGINX, Inc.
 
 
-cat << END >> $NXT_AUTO_CONFIG_H
+cat << END >> $NJS_AUTO_CONFIG_H
 
-#ifndef $nxt_define
-#define $nxt_define  1
+#ifndef $njs_define
+#define $njs_define  1
 #endif
 
 END

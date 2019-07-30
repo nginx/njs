@@ -2,16 +2,16 @@
 # Copyright (C) NGINX, Inc.
 
 
-NXT_READLINE_LIB=
+NJS_READLINE_LIB=
 
-nxt_found=no
+njs_found=no
 
-nxt_feature="GNU readline library"
-nxt_feature_name=NXT_HAVE_GNU_READLINE
-nxt_feature_run=no
-nxt_feature_incs=
-nxt_feature_libs="-lreadline"
-nxt_feature_test="#include <stdio.h>
+njs_feature="GNU readline library"
+njs_feature_name=NJS_HAVE_GNU_READLINE
+njs_feature_run=no
+njs_feature_incs=
+njs_feature_libs="-lreadline"
+njs_feature_test="#include <stdio.h>
                   #include <readline/readline.h>
                   #include <readline/history.h>
 
@@ -21,11 +21,11 @@ nxt_feature_test="#include <stdio.h>
                   }"
 . auto/feature
 
-if [ $nxt_found = no ]; then
-    nxt_feature="editline library in editline/readline.h"
-    nxt_feature_name=NXT_HAVE_EDITLINE
-    nxt_feature_libs="-ledit"
-    nxt_feature_test="#include <stdio.h>
+if [ $njs_found = no ]; then
+    njs_feature="editline library in editline/readline.h"
+    njs_feature_name=NJS_HAVE_EDITLINE
+    njs_feature_libs="-ledit"
+    njs_feature_test="#include <stdio.h>
                       #include <editline/readline.h>
 
                       int main(void) {
@@ -35,13 +35,13 @@ if [ $nxt_found = no ]; then
     . auto/feature
 fi
 
-if [ $nxt_found = no ]; then
+if [ $njs_found = no ]; then
 
     # FreeBSD port
 
-    nxt_feature_name=NXT_HAVE_EDIT_READLINE
-    nxt_feature="editline in edit/readline/readline.h"
-    nxt_feature_test="#include <stdio.h>
+    njs_feature_name=NJS_HAVE_EDIT_READLINE
+    njs_feature="editline in edit/readline/readline.h"
+    njs_feature_test="#include <stdio.h>
                       #include <edit/readline/readline.h>
 
                       int main(void) {
@@ -52,13 +52,13 @@ if [ $nxt_found = no ]; then
     . auto/feature
 fi
 
-if [ $nxt_found = no ]; then
+if [ $njs_found = no ]; then
 
     # NetBSD
 
-    nxt_feature_name=NXT_HAVE_NETBSD_READLINE
-    nxt_feature="editline in readline/readline.h"
-    nxt_feature_test="#include <stdio.h>
+    njs_feature_name=NJS_HAVE_NETBSD_READLINE
+    njs_feature="editline in readline/readline.h"
+    njs_feature_test="#include <stdio.h>
                       #include <readline/readline.h>
 
                       int main(void) {
@@ -68,14 +68,14 @@ if [ $nxt_found = no ]; then
     . auto/feature
 fi
 
-NXT_DEFAULT_TARGET=libnjs
+NJS_DEFAULT_TARGET=libnjs
 
-if [ $nxt_found = yes ]; then
-    NXT_HAVE_READLINE=YES
-    NXT_READLINE_LIB=$nxt_feature_libs
-    NXT_DEFAULT_TARGET="$NXT_DEFAULT_TARGET njs"
+if [ $njs_found = yes ]; then
+    NJS_HAVE_READLINE=YES
+    NJS_READLINE_LIB=$njs_feature_libs
+    NJS_DEFAULT_TARGET="$NJS_DEFAULT_TARGET njs"
 
 else
-    NXT_HAVE_READLINE=NO
+    NJS_HAVE_READLINE=NO
     $echo " - building interactive shell is not possible"
 fi

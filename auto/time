@@ -3,12 +3,12 @@
 # Copyright (C) NGINX, Inc.
 
 
-nxt_feature="clock_gettime(CLOCK_MONOTONIC)"
-nxt_feature_name=NXT_HAVE_CLOCK_MONOTONIC
-nxt_feature_run=yes
-nxt_feature_incs=
-nxt_feature_libs=
-nxt_feature_test="#include <time.h>
+njs_feature="clock_gettime(CLOCK_MONOTONIC)"
+njs_feature_name=NJS_HAVE_CLOCK_MONOTONIC
+njs_feature_run=yes
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#include <time.h>
 
                   int main() {
                       struct timespec  ts;
@@ -20,27 +20,27 @@ nxt_feature_test="#include <time.h>
 . auto/feature
 
 
-if [ $nxt_found = no ]; then
+if [ $njs_found = no ]; then
 
     # Linux and Solaris 10 clock_gettime() are in librt.
 
-    nxt_feature="clock_gettime(CLOCK_MONOTONIC) in librt"
-    nxt_feature_libs="-lrt"
+    njs_feature="clock_gettime(CLOCK_MONOTONIC) in librt"
+    njs_feature_libs="-lrt"
     . auto/feature
 
-    if [ $nxt_found = yes ]; then
-		NXT_LIBRT="-lrt"
+    if [ $njs_found = yes ]; then
+		NJS_LIBRT="-lrt"
     fi
 fi
 
 # Linux, FreeBSD, MacOSX.
 
-nxt_feature="struct tm.tm_gmtoff"
-nxt_feature_name=NXT_HAVE_TM_GMTOFF
-nxt_feature_run=no
-nxt_feature_incs=
-nxt_feature_libs=
-nxt_feature_test="#include <time.h>
+njs_feature="struct tm.tm_gmtoff"
+njs_feature_name=NJS_HAVE_TM_GMTOFF
+njs_feature_run=no
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#include <time.h>
 
                   int main(void) {
                       time_t     t;
@@ -55,12 +55,12 @@ nxt_feature_test="#include <time.h>
 
 # Solaris
 
-nxt_feature="altzone"
-nxt_feature_name=NXT_HAVE_ALTZONE
-nxt_feature_run=no
-nxt_feature_incs=
-nxt_feature_libs=
-nxt_feature_test="#include <time.h>
+njs_feature="altzone"
+njs_feature_name=NJS_HAVE_ALTZONE
+njs_feature_run=no
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#include <time.h>
 
                   int main(void) {
                       altzone = 0;

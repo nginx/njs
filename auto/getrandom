@@ -5,12 +5,12 @@
 
 # Linux 3.17 with glibc 2.25, FreeBSD 12, Solaris 11.3.
 
-nxt_feature="getrandom()"
-nxt_feature_name=NXT_HAVE_GETRANDOM
-nxt_feature_run=yes
-nxt_feature_incs=
-nxt_feature_libs=
-nxt_feature_test="#include <unistd.h>
+njs_feature="getrandom()"
+njs_feature_name=NJS_HAVE_GETRANDOM
+njs_feature_run=yes
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#include <unistd.h>
                   #include <sys/random.h>
 
                   int main(void) {
@@ -25,13 +25,13 @@ nxt_feature_test="#include <unistd.h>
 . auto/feature
 
 
-if [ $nxt_found = no ]; then
+if [ $njs_found = no ]; then
 
     # Linux 3.17 SYS_getrandom.
 
-    nxt_feature="SYS_getrandom in Linux"
-    nxt_feature_name=NXT_HAVE_LINUX_SYS_GETRANDOM
-    nxt_feature_test="#include <unistd.h>
+    njs_feature="SYS_getrandom in Linux"
+    njs_feature_name=NJS_HAVE_LINUX_SYS_GETRANDOM
+    njs_feature_test="#include <unistd.h>
                       #include <sys/syscall.h>
                       #include <linux/random.h>
 
@@ -48,13 +48,13 @@ if [ $nxt_found = no ]; then
 fi
 
 
-if [ $nxt_found = no ]; then
+if [ $njs_found = no ]; then
 
     # OpenBSD 5.6 lacks <sys/random.h>.
 
-    nxt_feature="getentropy()"
-    nxt_feature_name=NXT_HAVE_GETENTROPY
-    nxt_feature_test="#include <unistd.h>
+    njs_feature="getentropy()"
+    njs_feature_name=NJS_HAVE_GETENTROPY
+    njs_feature_test="#include <unistd.h>
 
                       int main(void) {
                           char  buf[4];
@@ -69,13 +69,13 @@ if [ $nxt_found = no ]; then
 fi
 
 
-if [ $nxt_found = no ]; then
+if [ $njs_found = no ]; then
 
     # macOS 10.12.
 
-    nxt_feature="getentropy() in sys/random.h"
-    nxt_feature_name=NXT_HAVE_GETENTROPY_SYS_RANDOM
-    nxt_feature_test="#include <unistd.h>
+    njs_feature="getentropy() in sys/random.h"
+    njs_feature_name=NJS_HAVE_GETENTROPY_SYS_RANDOM
+    njs_feature_test="#include <unistd.h>
                       #include <sys/random.h>
 
                       int main(void) {

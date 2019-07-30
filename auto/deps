@@ -3,26 +3,26 @@
 # Copyright (C) NGINX, Inc.
 
 
-case "$NXT_CC_NAME" in
+case "$NJS_CC_NAME" in
 
     SunC):
-        nxt_gen_dep_flags() {
-            $echo "-xMMD -xMF $NXT_BUILD_DIR/$1.tmp"
+        njs_gen_dep_flags() {
+            $echo "-xMMD -xMF $NJS_BUILD_DIR/$1.tmp"
         }
 
-        nxt_gen_dep_post() {
-            $echo -n "@sed -e 's#^.*:#$NXT_BUILD_DIR/$2:#' "
-            $echo -n "$NXT_BUILD_DIR/$1.tmp > $NXT_BUILD_DIR/$1"
-            $echo " && rm -f $NXT_BUILD_DIR/$1.tmp"
+        njs_gen_dep_post() {
+            $echo -n "@sed -e 's#^.*:#$NJS_BUILD_DIR/$2:#' "
+            $echo -n "$NJS_BUILD_DIR/$1.tmp > $NJS_BUILD_DIR/$1"
+            $echo " && rm -f $NJS_BUILD_DIR/$1.tmp"
         }
     ;;
 
     *)
-        nxt_gen_dep_flags() {
-            $echo "-MMD -MF $NXT_BUILD_DIR/$1 -MT $NXT_BUILD_DIR/$2"
+        njs_gen_dep_flags() {
+            $echo "-MMD -MF $NJS_BUILD_DIR/$1 -MT $NJS_BUILD_DIR/$2"
         }
 
-        nxt_gen_dep_post() {
+        njs_gen_dep_post() {
             $echo ""
         }
     ;;

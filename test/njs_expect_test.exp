@@ -1,0 +1,777 @@
+#
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+#
+
+proc njs_test {body {opts ""}} {
+
+    if {$opts eq ""} {
+        spawn  -nottycopy njs
+
+    } else {
+        eval spawn  -nottycopy njs $opts
+    }
+
+    # TODO:
+    # SIGINT handling race condition
+    #   deb9-amd64-generic-njs-try
+    #   ub1404-armv7-generic-njs-try
+    #   ub1804-arm64-generic-njs-try
+    # UTF8 terminal support issue
+    #   sol11-amd64-sunpro-njs-try
+    #   ub1604-arm64-generic-njs-try
+
+    # set timeout 30
+    # expect_before timeout { exit 1 }
+
+    expect -re "interactive njs \\d+\.\\d+\.\\d+\r\n\r"
+    expect "v.<Tab> -> the properties and prototype methods of v.\r
+type console.help() for more information\r
+\r
+>> "
+
+    set len [llength $body]
+    for {set i 0} {$i < $len} {incr i} {
+        set pair [lindex $body $i]
+        send [lindex $pair 0]
+        expect [lindex $pair 1]
+    }
+
+    # Ctrl-C
+    send \x03
+    expect eof
+}
+
+proc njs_run {opts expected_re} {
+    catch {exec njs {*}$opts} out
+    if {[regexp $expected_re $out match] == 0} {
+        return -code error "njs_run: unexpected output '$out' vs '$expected_re'"
+    }
+}
+
+njs_test {
+    {"njs.version\r\n"
+     "njs.version\r\n\*\.\*\.\*"}
+}
+
+# simple multi line interaction
+njs_test {
+    {"var a = 1\r\n"
+     "var a = 1\r\nundefined\r\n>> "}
+    {"a *= 2\r\n"
+     "a *= 2\r\n2\r\n>> "}
+}
+
+# Global completions, no
+njs_test {
+    {"\t\tn"
+     "\a\r\nDisplay all*possibilities? (y or n)*>> "}
+}
+
+# Global completions, yes
+njs_test {
+    {"\t\ty"
+     "\a\r\nDisplay all*possibilities? (y or n)*await"}
+}
+
+# Global completions, single partial match
+
+# \a* is WORKAROUND for libedit-20170329.3.1-r3
+# which inserts '\rESC[6G' after '\a'.
+njs_test {
+    {"O\t"
+     "O\a*bject"}
+}
+
+njs_test {
+    {"Ma\t"
+     "Ma\a*th"}
+}
+
+njs_test {
+    {"conso\t"
+     "conso\a*le"}
+}
+
+# Global completions, multiple partial match
+njs_test {
+    {"cons\t\t"
+     "console*const"}
+}
+
+njs_test {
+    {"O\t"
+     "O\a*bject"}
+    {".\t\t"
+     "Object.create*Object.isSealed"}
+}
+
+njs_test {
+    {"Object.\t\t"
+     "Object.create*Object.isSealed"}
+}
+
+njs_test {
+    {"Object.g\t"
+     "Object.g\a*et"}
+    {"\t\t"
+     "Object.getOwnPropertyDescriptor*Object.getPrototypeOf"}
+}
+
+njs_test {
+    {"Ma\t"
+     "Ma\a*th"}
+    {".\t\t"
+     "Math.abs*Math.atan2"}
+}
+
+# Global completions, no matches
+njs_test {
+    {"1.\t\t"
+     "1."}
+}
+
+njs_test {
+    {"1..\t\t"
+     "1.."}
+}
+
+njs_test {
+    {"'abc'.\t\t"
+     "'abc'."}
+}
+
+# Global completions, global vars
+njs_test {
+    {"var a = 1; var aa = 2\r\n"
+     "var a = 1; var aa = 2\r\nundefined\r\n>> "}
+    {"a\t\t"
+     "a*aa*arguments*await"}
+}
+
+# z*z is WORKAROUND for libedit-20170329.3.1-r3
+# which inserts bogus '\a' between 'z'
+njs_test {
+    {"var zz = 1\r\n"
+     "var zz = 1\r\nundefined\r\n>> "}
+    {"1 + z\t\r\n"
+     "1 + z*z*\r\n2"}
+}
+
+njs_test {
+    {"unknown_var\t\t"
+     "unknown_var"}
+}
+
+njs_test {
+    {"unknown_var.\t\t"
+     "unknown_var."}
+}
+
+# An object's level completions
+njs_test {
+    {"var o = {zz:1, zb:2}\r\n"
+     "var o = {zz:1, zb:2}\r\nundefined\r\n>> "}
+    {"o.z\t\t"
+     "o.zb*o.zz"}
+}
+
+njs_test {
+    {"var d = new Date()\r\n"
+     "var d = new Date()\r\nundefined\r\n>> "}
+    {"d.to\t\t"
+     "d.toDateString*d.toLocaleDateString*d.toString"}
+}
+
+njs_test {
+    {"var o = {a:new Date()}\r\n"
+     "var o = {a:new Date()}\r\nundefined\r\n>> "}
+    {"o.a.to\t\t"
+     "o.a.toDateString*o.a.toLocaleDateString*o.a.toString"}
+}
+
+# function declarations in interactive mode
+njs_test {
+    {"function a() { return 1; }\r\n"
+     "undefined\r\n>> "}
+    {"a();\r\n"
+     "1\r\n>> "}
+    {"function a() { return 2; }\r\n"
+     "undefined\r\n>> "}
+    {"a();\r\n"
+     "2\r\n>> "}
+}
+
+# console object
+njs_test {
+    {"console.log()\r\n"
+     "console.log()\r\nundefined\r\n>> "}
+    {"console.log('')\r\n"
+     "console.log('')\r\n\r\nundefined\r\n>> "}
+    {"console.log(1)\r\n"
+     "console.log(1)\r\n1\r\nundefined\r\n>> "}
+    {"console.log(1, 'a')\r\n"
+     "console.log(1, 'a')\r\n1 a\r\nundefined\r\n>> "}
+    {"console.log('\\tабв\\nгд')\r\n"
+     "console.log('\\\\tабв\\\\nгд')\r\n\tабв\r\nгд\r\nundefined\r\n>> "}
+    {"console.dump()\r\n"
+     "console.dump()\r\nundefined\r\n>> "}
+    {"console.dump(1)\r\n"
+     "console.dump(1)\r\n1\r\nundefined\r\n>> "}
+    {"console.dump(1, 'a')\r\n"
+     "console.dump(1, 'a')\r\n1 a\r\nundefined\r\n>> "}
+    {"console.help()\r\n"
+     "console.help()\r\nVM built-in objects:"}
+}
+
+# console.time* functions
+njs_test {
+    {"console.time()\r\n"
+     "console.time()\r\nundefined\r\n>> "}
+    {"console.time(undefined)\r\n"
+     "console.time(undefined)\r\nundefined\r\n>> "}
+    {"console.timeEnd()\r\n"
+     "console.timeEnd()\r\ndefault: *.*ms\r\nundefined\r\n>> "}
+    {"console.time('a')\r\n"
+     "console.time('a')\r\nError: labels not implemented"}
+    {"console.timeEnd('a')\r\n"
+     "console.timeEnd('a')\r\nError: labels not implemented"}
+    {"console.timeEnd()\r\n"
+     "console.timeEnd()\r\nTimer \"default\" doesn’t exist."}
+}
+
+njs_test {
+    {"console.ll()\r\n"
+     "console.ll()\r\nTypeError: (intermediate value)\\\[\"ll\"] is not a function"}
+}
+
+njs_test {
+    {"console.log.length\r\n"
+     "console.log.length\r\n0"}
+}
+
+njs_test {
+    {"var print = console.log.bind(console); print(1, 'a', [1, 2])\r\n"
+     "1 a \\\[1,2]\r\nundefined\r\n>> "}
+    {"var print = console.dump.bind(console); print(1, 'a', [1, 2])\r\n"
+     "1 a \\\[\r\n 1,\r\n 2\r\n]\r\nundefined\r\n>> "}
+}
+
+# Backtraces for external objects
+njs_test {
+    {"console.log(console.a.a)\r\n"
+     "console.log(console.a.a)\r\nTypeError:*at console.log (native)"}
+}
+
+# dumper
+njs_test {
+    {"var o = {toString: function(){}, log: console.log}\r\n"
+     "undefined\r\n>> "}
+    {"o\r\n"
+     "o\r\n{\r\n toString: \\\[Function],\r\n log: \\\[Function: native]\r\n}"}
+}
+
+njs_test {
+    {"[1, new Number(2), 'a', new String('αβZγ'), true, new Boolean(false)]\r\n"
+     "\\\[\r\n 1,\r\n \\\[Number: 2],\r\n 'a',\r\n \\\[String: 'αβZγ'],\r\n true,\r\n \\\[Boolean: false]\r\n]"}
+}
+
+njs_test {
+    {"[undefined,,null]\r\n"
+     "\\\[\r\n undefined,\r\n <empty>,\r\n null\r\n]"}
+}
+
+njs_test {
+    {"[InternalError(),TypeError('msg'), new RegExp(), /^undef$/m, new Date(0)]\r\n"
+     "\\\[\r\n InternalError,\r\n TypeError: msg,\r\n /(?:)/,\r\n /^undef$/m,\r\n 1970-01-01T00:00:00.000Z\r\n]"}
+}
+
+# dumper excapes special characters as JSON.stringify()
+# except '\"'
+njs_test {
+    {"\"\\r\\0\\\"\"\r\n"
+     "\\\\r\\\\u0000\""}
+}
+
+njs_test {
+    {"[{a:1}]\r\n"
+     "\r\n\\\[\r\n {\r\n  a: 1\r\n }\r\n]"}
+}
+
+# Backtraces are reset between invocations
+njs_test {
+    {"JSON.parse(Error())\r\n"
+     "JSON.parse(Error())\r\nSyntaxError: Unexpected token at position 0*at JSON.parse (native)"}
+    {"JSON.parse(Error()\r\n"
+     "JSON.parse(Error()\r\nSyntaxError: Unexpected token \"\" in shell:1"}
+}
+
+njs_test {
+    {"try { console.log({ toString: function() { throw 'test'; } }) } catch (e) {}\r\n"
+     "undefined"}
+    {"function f() { throw 't' }; try { console.log({ toString: function() { return f() } }) } catch (e) {}\r\n"
+     "undefined"}
+}
+
+njs_test {
+    {"(function() { throw 'test' })()\r\n"
+     "test\r\n    at anonymous (shell:1)"}
+}
+
+# Non-ASCII characters
+njs_test {
+    {"'絵文字'\r\n"
+     "絵文字"}
+    {"var v = 'абвгдеёжзийкл';v[10]\r\n"
+     "й"}
+}
+
+# Immediate events
+
+njs_test {
+    {"var t = setImmediate(console.log, 'a', 'aa')\r\n"
+     "undefined\r\na aa"}
+}
+
+njs_test {
+    {"var a = 1 + 1; setTimeout(function (x) {a = x}, 0, 'a'); a\r\n"
+     "2"}
+    {"a\r\n"
+     "a\r\n'a'"}
+}
+
+njs_test {
+    {"setTimeout(function () {}, 1, 'a')\r\n"
+     "njs_console_set_timer(): async timers unsupported"}
+}
+
+njs_test {
+    {"var a = 1 + 1; setTimeout(function (x) { setTimeout(function (y) {a = y}, 0, x)}, 0, 'a'); a\r\n"
+     "2"}
+    {"a\r\n"
+     "a\r\n'a'"}
+}
+
+njs_test {
+    {"var a = 1 + 1; setImmediate(function (x) { setImmediate(function (y) {a = y}, x)}, 'a'); a\r\n"
+     "2"}
+    {"a\r\n"
+     "a\r\n'a'"}
+}
+
+njs_test {
+    {"var i = 0; (function x() { if (i < 10) setImmediate(x); i++; })()\r\n"
+     "undefined"}
+    {"i\r\n"
+     "i\r\n11"}
+}
+
+njs_test {
+    {"var a = 0, t = setImmediate(function() {a = 1}); clearTimeout(t)\r\n"
+     "undefined"}
+    {"a\r\n"
+     "a\r\n0"}
+}
+
+njs_test {
+    {"var i = 0; (function x() { if (i < 3) setImmediate(x); i++; throw 'Oops';})()\r\n"
+     "Oops"}
+    {"i\r\n"
+     "i\r\n4"}
+}
+
+njs_test {
+    {"var i = 0, queue = []; (function x() { if (i < 5) setImmediate(x); queue.push(i++); })()\r\n"
+     "undefined"}
+    {"queue.toString()\r\n"
+     "queue.toString()\r\n'0,1,2,3,4,5'"}
+}
+
+# require('fs')
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.read\t"
+     "fs.read\a*File"}
+}
+
+# require('fs').readFile()
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFile('test/fs/utf8', 'utf8', function (e, data) {console.log(data[2]+data.length)})\r\n"
+     "Z4\r\nundefined\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFile('test/fs/utf8', function (e, data) {console.log(data[4]+data.length)})\r\n"
+     "Z7\r\nundefined\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFile('test/fs/utf8', {encoding:'utf8',flag:'r+'}, function (e, data) {console.log(data)})\r\n"
+     "αβZγ\r\nundefined\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFile('test/fs/ascii', function (e, data) {console.log(data[599])})\r\n"
+     "x\r\nundefined\r\n>> "}
+    {"fs.readFile('test/fs/ascii', {encoding:'utf8',flag:'r+'}, function (e, data) {console.log(data[599])})\r\n"
+     "x\r\nundefined\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs'); \r\n"
+     "undefined\r\n>> "}
+    {"fs.readFile('test/fs/nonexistent', 'utf8', function (e) {console.log(JSON.stringify(e))})\r\n"
+     "{\"errno\":2,\"path\":\"test/fs/nonexistent\",\"syscall\":\"open\"}\r\nundefined\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs'); \r\n"
+     "undefined\r\n>> "}
+    {"fs.readFile('test/fs/nonexistent', {encoding:'utf8', flag:'r+'}, function (e) {console.log(e)})\r\n"
+     "Error: No such file or directory\r\nundefined\r\n>> "}
+}
+
+# require('fs').readFileSync()
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync('test/fs/utf8').toString('base64')\r\n"
+     "'zrHOslrOsw=='\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync('test/fs/utf8', 'utf8')[2]\r\n"
+     "'Z'\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync('test/fs/utf8')[4]\r\n"
+     "'Z'\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync('test/fs/utf8', {encoding:'utf8',flag:'r+'})\r\n"
+     "'αβZγ'\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs'), fn = 'test/fs/ascii'\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync(fn)[599] + fs.readFileSync(fn, 'utf8')[599]\r\n"
+     "'xx'\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs'); \r\n"
+     "undefined\r\n>> "}
+    {"try { fs.readFileSync('test/fs/nonexistent')} catch (e) {console.log(JSON.stringify(e))}\r\n"
+     "{\"errno\":2,\"path\":\"test/fs/nonexistent\",\"syscall\":\"open\"}\r\nundefined\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync('test/fs/non_utf8').charCodeAt(1)\r\n"
+     "128"}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync('test/fs/non_utf8', 'utf8')\r\n"
+     "Error: Non-UTF8 file, convertion is not implemented"}
+}
+
+
+# require('fs').writeFile()
+
+exec rm -fr ./build/test/file2
+
+njs_test {
+    {"var fs = require('fs'), fn = './build/test/file2';\r\n"
+     "undefined\r\n>> "}
+    {"function h1(e) {if (e) {throw e}; console.log(fs.readFileSync(fn))}\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFile(fn, 'ABC', h1)\r\n"
+     "ABC\r\nundefined\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs'), fn = './build/test/file2';\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFile(fn, 'ABC', 'utf8', function (e) { if (e) {throw e}; console.log(fs.readFileSync(fn))})\r\n"
+     "ABC\r\nundefined\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs'), fn = './build/test/file2';\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFile(fn, 'ABC', {encoding:'utf8', mode:0o666}, function (e) { if (e) {throw e}; console.log(fs.readFileSync(fn))})\r\n"
+     "ABC\r\nundefined\r\n>> "}
+}
+
+exec rm -fr ./build/test/wo_file
+
+njs_test {
+    {"var fs = require('fs'), fn = './build/test/wo_file';\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFile(fn, 'ABC', {mode:0o222}, function (e) {console.log(fs.readFileSync(fn))})\r\n"
+     "Error: Permission denied"}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFile('/invalid_path', 'ABC', function (e) { console.log(JSON.stringify(e))})\r\n"
+     "{\"errno\":13,\"path\":\"/invalid_path\",\"syscall\":\"open\"}\r\nundefined\r\n>> "}
+}
+
+# require('fs').writeFileSync()
+
+exec rm -fr ./build/test/file2
+
+njs_test {
+    {"var fs = require('fs'), fn = './build/test/file2';\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFileSync(fn, 'ABC')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync(fn)\r\n"
+     "'ABC'\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs'), fn = './build/test/file2';\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFileSync(fn, 'ABC', 'utf8')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync(fn)\r\n"
+     "'ABC'\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs'), fn = './build/test/file2';\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFileSync(fn, 'ABC')\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFileSync(fn, 'ABC')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync(fn)\r\n"
+     "'ABC'\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs'), fn = './build/test/file2';\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFileSync(fn, 'ABC', {encoding:'utf8', mode:0o666})\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync(fn)\r\n"
+     "'ABC'\r\n>> "}
+}
+
+exec rm -fr ./build/test/wo_file
+
+njs_test {
+    {"var fs = require('fs'), fn = './build/test/wo_file';\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFileSync(fn, 'ABC', {mode:0o222}); fs.readFileSync(fn)\r\n"
+     "Error: Permission denied"}
+}
+
+# require('fs').appendFile()
+
+exec rm -fr ./build/test/file2
+
+njs_test {
+    {"var fs = require('fs'), fn = './build/test/file2';\r\n"
+     "undefined\r\n>> "}
+    {"function h1(e) {console.log(fs.readFileSync(fn))}\r\n"
+     "undefined\r\n>> "}
+    {"function h2(e) {fs.appendFile(fn, 'ABC', h1)}\r\n"
+     "undefined\r\n>> "}
+    {"fs.appendFile(fn, 'ABC', h2)\r\n"
+     "ABCABC\r\nundefined\r\n>> "}
+}
+
+# require('fs').appendFileSync()
+
+exec rm -fr ./build/test/file2
+
+njs_test {
+    {"var fs = require('fs'), fn = './build/test/file2';\r\n"
+     "undefined\r\n>> "}
+    {"fs.appendFileSync(fn, 'ABC')\r\n"
+     "undefined\r\n>> "}
+    {"fs.appendFileSync(fn, 'ABC')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync(fn)\r\n"
+     "'ABCABC'\r\n>> "}
+}
+
+# Modules
+
+njs_run {"-p" "test/module/libs" "./test/module/normal.js"} \
+        "passed!"
+
+njs_run {"-p" "test/module/libs/" "./test/module/normal.js"} \
+        "passed!"
+
+njs_run {"-p" "test/module" "-p" "test/module/libs" "./test/module/normal.js"} \
+        "passed!"
+
+njs_run {"./test/module/normal.js"} \
+        "SyntaxError: Cannot find module \"hash.js\" in sub2.js:5"
+
+njs_run {"-p" "test/module/libs" "./test/module/exception.js"} \
+        "at error \\(sub1.js:5\\)"
+
+njs_run {"-p" "test/module" "./test/module/recursive.js"} \
+        "SyntaxError: Cannot import itself \"./recursive.js\" in recursive.js:3"
+
+# CLI OPTIONS
+
+# help
+
+njs_run {"-h"} "Options"
+
+# command
+
+njs_run {"-c" "console.log(\"a b c\")"} "a b c"
+
+njs_run {"-c" "console.log("} "SyntaxError: Unexpected end of input in string:1"
+
+
+# process
+
+njs_run {"-c" "console.log(typeof process.argv)"} "object"
+njs_run {"-c" "console.log(process.argv[3])" "AAA"} "AAA"
+
+njs_run {"-c" "console.log(typeof process.env)"} "object"
+njs_run {"-c" "console.log(process.env.HOME != undefined)"} "true"
+njs_run {"-c" "console.log(process.env.___UNDECLARED != undefined)"} "false"
+
+njs_run {"-c" "console.log(process.pid)"} "\\d+"
+
+njs_run {"-c" "console.log(process.ppid)"} "\\d+"
+
+
+# disassemble
+
+njs_test {
+    {"1+1\r\n"
+     "00000 ADD*\r\n*2"}
+    {"for (var n in [1]) {try {break} finally{}}\r\n"
+     "00000 ARRAY*\r\n*TRY BREAK*STOP*\r\n\r\nundefined"}
+    {"(function() {try {return} finally{}})()\r\n"
+     "00000 TRY START*\r\n*TRY RETURN*STOP*\r\n\r\nundefined"}
+} "-d"
+
+# modules
+
+# FIXME:
+# During import, the variable is declared regardless of the result of the import.
+# Because of this, in the console mode, checking the variable after the import
+# error may give an incorrect result.
+#
+# For example:
+# {"import ref from 'ref_exception.js'\r\n"
+# "ReferenceError: \"undeclared\" is not defined in ref_exception.js:1"}
+# {"ref\r\n"
+# "ReferenceError: \"ref\" is not defined in shell:1\r\n"}
+
+njs_test {
+    {"import lib1 from 'lib1.js'; import lib2 from 'lib1.js'\r\n"
+     "undefined\r\n"}
+    {"lib2.inc()\r\n"
+     "undefined\r\n"}
+    {"lib1.get()\r\n"
+     "1\r\n"}
+    {"import m from 'return.js'\r\n"
+     "Illegal return statement in return.js:1\r\n"}
+    {"import m from 'empty.js'\r\n"
+     "export statement is required in empty.js:1\r\n"}
+    {"import m from 'export.js'\r\n"
+     "Identifier \"default\" has already been declared in export.js:5\r\n"}
+    {"import m from 'export_non_default.js'\r\n"
+     "Non-default export is not supported in export_non_default.js:3\r\n"}
+    {"import ref from 'ref_exception.js'\r\n"
+     "ReferenceError: \"undeclared\" is not defined in ref_exception.js:1"}
+    {"var ref\r\n"
+     "undefined\r\n"}
+    {"import ref from 'ref_exception.js'\r\n"
+     "ReferenceError: \"undeclared\" is not defined in ref_exception.js:1"}
+    {"import m from 'declaration_exception.js'\r\n"
+     "SyntaxError: \"f\" has already been declared in declaration_exception.js:6"}
+    {"import m from 'loading_exception.js'\r\n"
+     "Error: loading exception\r\n    at module \\(loading_exception.js:1\\)"}
+    {"import lib3 from 'lib1.js'\r\n"
+     "undefined\r\n"}
+    {"import m from 'export_name.js'\r\n"
+     "undefined\r\n"}
+    {"m.prod(3,4)\r\n"
+     "12\r\n"}
+    {"import m from 'export_expression.js'\r\n"
+     "undefined\r\n"}
+    {"m.sum(3,4)\r\n"
+     "7\r\n"}
+    {"import m from 'export_expression2.js'\r\n"
+     "undefined\r\n"}
+    {"m.prod(3,4)\r\n"
+     "12\r\n"}
+} "-p test/module/"
+
+njs_run {"-q" "./test/module/normal.js"} \
+        "SyntaxError: Cannot find module \"hash.js\" in 5"
+
+njs_run {"-p" "test/module/libs/" "-d" "./test/module/normal.js"} \
+        "passed!"
+
+# sandboxing
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "Error: Cannot find module \"fs\"\r\n"}
+} "-s"
+
+njs_test {
+    {"var crypto = require('crypto')\r\n"
+     "undefined\r\n"}
+} "-s"
+
+
+# source type
+
+njs_test {
+    {"this\r\n"
+     "this\r\nundefined"}
+    {"(() => this)()\r\n"
+     "(() => this)()\r\nundefined"}
+} "-t module"
+
+njs_test {
+    {"this.NaN\r\n"
+     "this.NaN\r\nNaN"}
+} "-t script"
+
+
+# version
+
+njs_run {"-v"} "\\d+\.\\d+\.\\d+"
+

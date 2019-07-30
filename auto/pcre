@@ -3,22 +3,22 @@
 # Copyright (C) NGINX, Inc.
 
 
-NXT_PCRE_CFLAGS=
-NXT_PCRE_LIB=
+NJS_PCRE_CFLAGS=
+NJS_PCRE_LIB=
 
-nxt_found=no
+njs_found=no
 
-if /bin/sh -c "(pcre-config --version)" >> $NXT_AUTOCONF_ERR 2>&1; then
+if /bin/sh -c "(pcre-config --version)" >> $NJS_AUTOCONF_ERR 2>&1; then
 
-    NXT_PCRE_CFLAGS=`pcre-config --cflags`
-    NXT_PCRE_LIB=`pcre-config --libs`
+    NJS_PCRE_CFLAGS=`pcre-config --cflags`
+    NJS_PCRE_LIB=`pcre-config --libs`
 
-    nxt_feature="PCRE library"
-    nxt_feature_name=NXT_HAVE_PCRE
-    nxt_feature_run=no
-    nxt_feature_incs=$NXT_PCRE_CFLAGS
-    nxt_feature_libs=$NXT_PCRE_LIB
-    nxt_feature_test="#include <pcre.h>
+    njs_feature="PCRE library"
+    njs_feature_name=NJS_HAVE_PCRE
+    njs_feature_run=no
+    njs_feature_incs=$NJS_PCRE_CFLAGS
+    njs_feature_libs=$NJS_PCRE_LIB
+    njs_feature_test="#include <pcre.h>
 
                      int main(void) {
                          pcre  *re;
@@ -31,7 +31,7 @@ if /bin/sh -c "(pcre-config --version)" >> $NXT_AUTOCONF_ERR 2>&1; then
     . auto/feature
 fi
 
-if [ $nxt_found = no ]; then
+if [ $njs_found = no ]; then
     $echo
     $echo $0: error: no PCRE library found.
     $echo

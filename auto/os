@@ -3,42 +3,42 @@
 # Copyright (C) NGINX, Inc.
 
 
-NXT_SYSTEM=`uname -s 2>/dev/null`
+NJS_SYSTEM=`uname -s 2>/dev/null`
 
 
-case "$NXT_SYSTEM" in
+case "$NJS_SYSTEM" in
 
     Linux)
-        nxt_define=NXT_LINUX . auto/define
-        NXT_SYSTEM_VERSION=`uname -r 2>/dev/null`
+        njs_define=NJS_LINUX . auto/define
+        NJS_SYSTEM_VERSION=`uname -r 2>/dev/null`
         # Linux uname -p can return "unknown".
-        NXT_SYSTEM_PLATFORM=`uname -m 2>/dev/null`
+        NJS_SYSTEM_PLATFORM=`uname -m 2>/dev/null`
         echo=echo
         CC=${CC:-cc}
 
         # NAN and INFINITY require _GNU_SOURCE on old Linux.
-        NXT_CFLAGS="$NXT_CFLAGS -D_GNU_SOURCE"
+        NJS_CFLAGS="$NJS_CFLAGS -D_GNU_SOURCE"
         ;;
 
     FreeBSD | NetBSD | OpenBSD)
-        NXT_SYSTEM_VERSION=`uname -r 2>/dev/null`
-        NXT_SYSTEM_PLATFORM=`uname -m 2>/dev/null`
+        NJS_SYSTEM_VERSION=`uname -r 2>/dev/null`
+        NJS_SYSTEM_PLATFORM=`uname -m 2>/dev/null`
         echo=echo
         CC=${CC:-cc}
         ;;
 
     SunOS)
-        nxt_define=NXT_SOLARIS . auto/define
-        NXT_SYSTEM_VERSION=`uname -r 2>/dev/null`
-        NXT_SYSTEM_PLATFORM=`uname -p 2>/dev/null`
+        njs_define=NJS_SOLARIS . auto/define
+        NJS_SYSTEM_VERSION=`uname -r 2>/dev/null`
+        NJS_SYSTEM_PLATFORM=`uname -p 2>/dev/null`
         # Solaris /bin/sh and /bin/echo do not support "-n" option.
         echo=auto/echo
         CC=${CC:-gcc}
         ;;
 
     Darwin)
-        NXT_SYSTEM_VERSION=`uname -r 2>/dev/null`
-        NXT_SYSTEM_PLATFORM=`uname -m 2>/dev/null`
+        NJS_SYSTEM_VERSION=`uname -r 2>/dev/null`
+        NJS_SYSTEM_PLATFORM=`uname -m 2>/dev/null`
         # MacOSX /bin/sh is bash and its embedded "echo" command
         # does not support "-n" option.
         echo=/bin/echo
@@ -46,12 +46,12 @@ case "$NXT_SYSTEM" in
         ;;
 
     *)
-        NXT_SYSTEM_VERSION=`uname -r 2>/dev/null`
-        NXT_SYSTEM_PLATFORM=`uname -p 2>/dev/null`
+        NJS_SYSTEM_VERSION=`uname -r 2>/dev/null`
+        NJS_SYSTEM_PLATFORM=`uname -p 2>/dev/null`
         echo=echo
         CC=${CC:-gcc}
         ;;
 
 esac
 
-$echo configuring for $NXT_SYSTEM $NXT_SYSTEM_VERSION $NXT_SYSTEM_PLATFORM
+$echo configuring for $NJS_SYSTEM $NJS_SYSTEM_VERSION $NJS_SYSTEM_PLATFORM

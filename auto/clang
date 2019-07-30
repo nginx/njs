@@ -4,7 +4,7 @@
 
 
 $echo checking for C compiler: $CC
-cat << END >> $NXT_AUTOCONF_ERR
+cat << END >> $NJS_AUTOCONF_ERR
 ----------------------------------------
 checking for C compiler: $CC
 END
@@ -21,37 +21,37 @@ if [ -z `which $CC` ]; then
 fi
 
 
-if `/bin/sh -c "($CC -v)" 2>&1 | grep "gcc version" >> $NXT_AUTOCONF_ERR 2>&1`
+if `/bin/sh -c "($CC -v)" 2>&1 | grep "gcc version" >> $NJS_AUTOCONF_ERR 2>&1`
 then
-    NXT_CC_NAME=gcc
+    NJS_CC_NAME=gcc
     $echo " + using GNU C compiler"
-    NXT_CC_VERSION=`/bin/sh -c "($CC -v)" 2>&1 | grep "gcc version" 2>&1`
-    $echo " + $NXT_CC_VERSION"
+    NJS_CC_VERSION=`/bin/sh -c "($CC -v)" 2>&1 | grep "gcc version" 2>&1`
+    $echo " + $NJS_CC_VERSION"
 
 else
-if `/bin/sh -c "($CC -v)" 2>&1 | grep "clang version" >> $NXT_AUTOCONF_ERR 2>&1`
+if `/bin/sh -c "($CC -v)" 2>&1 | grep "clang version" >> $NJS_AUTOCONF_ERR 2>&1`
 then
-    NXT_CC_NAME=clang
+    NJS_CC_NAME=clang
     $echo " + using Clang C compiler"
-    NXT_CC_VERSION=`/bin/sh -c "($CC -v)" 2>&1 | grep "clang version" 2>&1`
-    $echo " + $NXT_CC_VERSION"
+    NJS_CC_VERSION=`/bin/sh -c "($CC -v)" 2>&1 | grep "clang version" 2>&1`
+    $echo " + $NJS_CC_VERSION"
 
 else
 if `/bin/sh -c "($CC -v)" 2>&1 \
-                 | grep "Apple LLVM version" >> $NXT_AUTOCONF_ERR 2>&1`
+                 | grep "Apple LLVM version" >> $NJS_AUTOCONF_ERR 2>&1`
 then
-    NXT_CC_NAME=clang
+    NJS_CC_NAME=clang
     $echo " + using Clang C compiler"
-    NXT_CC_VERSION=`/bin/sh -c "($CC -v)" 2>&1 | grep "Apple LLVM version" 2>&1`
-    $echo " + $NXT_CC_VERSION"
+    NJS_CC_VERSION=`/bin/sh -c "($CC -v)" 2>&1 | grep "Apple LLVM version" 2>&1`
+    $echo " + $NJS_CC_VERSION"
 
 else
-if `/bin/sh -c "($CC -V)" 2>&1 | grep "Sun C" >> $NXT_AUTOCONF_ERR 2>&1`
+if `/bin/sh -c "($CC -V)" 2>&1 | grep "Sun C" >> $NJS_AUTOCONF_ERR 2>&1`
 then
-    NXT_CC_NAME=SunC
+    NJS_CC_NAME=SunC
     $echo " + using Sun C compiler"
-    NXT_CC_VERSION=`/bin/sh -c "($CC -V)" 2>&1 | grep "Sun C" 2>&1`
-    $echo " + $NXT_CC_VERSION"
+    NJS_CC_VERSION=`/bin/sh -c "($CC -V)" 2>&1 | grep "Sun C" 2>&1`
+    $echo " + $NJS_CC_VERSION"
 
 fi # SunC
 fi # Apple LLVM clang
@@ -59,94 +59,94 @@ fi # clang
 fi # gcc
 
 
-case $NXT_CC_NAME in
+case $NJS_CC_NAME in
 
     gcc)
-        nxt_define=NXT_GCC . auto/define
+        njs_define=NJS_GCC . auto/define
 
-        NXT_CFLAGS="$NXT_CFLAGS -pipe"
-        NXT_CFLAGS="$NXT_CFLAGS -fPIC"
+        NJS_CFLAGS="$NJS_CFLAGS -pipe"
+        NJS_CFLAGS="$NJS_CFLAGS -fPIC"
 
-        # Do not export symbols except explicitly marked with NXT_EXPORT.
-        NXT_CFLAGS="$NXT_CFLAGS -fvisibility=hidden"
+        # Do not export symbols except explicitly marked with NJS_EXPORT.
+        NJS_CFLAGS="$NJS_CFLAGS -fvisibility=hidden"
 
         # c99/gnu99 conflict with Solaris XOPEN.
-        #NXT_CFLAGS="$NXT_CFLAGS -std=gnu99"
+        #NJS_CFLAGS="$NJS_CFLAGS -std=gnu99"
 
-        NXT_CFLAGS="$NXT_CFLAGS -O"
-        #NXT_CFLAGS="$NXT_CFLAGS -O0"
-        NXT_CFLAGS="$NXT_CFLAGS -W -Wall -Wextra"
+        NJS_CFLAGS="$NJS_CFLAGS -O"
+        #NJS_CFLAGS="$NJS_CFLAGS -O0"
+        NJS_CFLAGS="$NJS_CFLAGS -W -Wall -Wextra"
 
-        #NXT_CFLAGS="$NXT_CFLAGS -Wunused-result"
-        NXT_CFLAGS="$NXT_CFLAGS -Wno-unused-parameter"
-        #NXT_CFLAGS="$NXT_CFLAGS -Wshorten-64-to-32"
-        NXT_CFLAGS="$NXT_CFLAGS -Wwrite-strings"
+        #NJS_CFLAGS="$NJS_CFLAGS -Wunused-result"
+        NJS_CFLAGS="$NJS_CFLAGS -Wno-unused-parameter"
+        #NJS_CFLAGS="$NJS_CFLAGS -Wshorten-64-to-32"
+        NJS_CFLAGS="$NJS_CFLAGS -Wwrite-strings"
 
         # -O2 enables -fstrict-aliasing and -fstrict-overflow.
-        #NXT_CFLAGS="$NXT_CFLAGS -O2"
-        #NXT_CFLAGS="$NXT_CFLAGS -Wno-strict-aliasing"
+        #NJS_CFLAGS="$NJS_CFLAGS -O2"
+        #NJS_CFLAGS="$NJS_CFLAGS -Wno-strict-aliasing"
 
-        #NXT_CFLAGS="$NXT_CFLAGS -fomit-frame-pointer"
-        #NXT_CFLAGS="$NXT_CFLAGS -momit-leaf-frame-pointer"
+        #NJS_CFLAGS="$NJS_CFLAGS -fomit-frame-pointer"
+        #NJS_CFLAGS="$NJS_CFLAGS -momit-leaf-frame-pointer"
 
         # -Wstrict-overflow is supported by GCC 4.2+.
-        #NXT_CFLAGS="$NXT_CFLAGS -Wstrict-overflow=5"
+        #NJS_CFLAGS="$NJS_CFLAGS -Wstrict-overflow=5"
 
-        NXT_CFLAGS="$NXT_CFLAGS -Wmissing-prototypes"
+        NJS_CFLAGS="$NJS_CFLAGS -Wmissing-prototypes"
 
         # Stop on warning.
-        NXT_CFLAGS="$NXT_CFLAGS -Werror"
+        NJS_CFLAGS="$NJS_CFLAGS -Werror"
 
         # Debug.
-        NXT_CFLAGS="$NXT_CFLAGS -g"
+        NJS_CFLAGS="$NJS_CFLAGS -g"
     ;;
 
     clang)
-        nxt_define=NXT_CLANG . auto/define
+        njs_define=NJS_CLANG . auto/define
 
-        NXT_CFLAGS="$NXT_CFLAGS -pipe"
-        NXT_CFLAGS="$NXT_CFLAGS -fPIC"
+        NJS_CFLAGS="$NJS_CFLAGS -pipe"
+        NJS_CFLAGS="$NJS_CFLAGS -fPIC"
 
-        # Do not export symbols except explicitly marked with NXT_EXPORT.
-        NXT_CFLAGS="$NXT_CFLAGS -fvisibility=hidden"
+        # Do not export symbols except explicitly marked with NJS_EXPORT.
+        NJS_CFLAGS="$NJS_CFLAGS -fvisibility=hidden"
 
-        NXT_CFLAGS="$NXT_CFLAGS -O"
-        #NXT_CFLAGS="$NXT_CFLAGS -O0"
-        NXT_CFLAGS="$NXT_CFLAGS -W -Wall -Wextra"
+        NJS_CFLAGS="$NJS_CFLAGS -O"
+        #NJS_CFLAGS="$NJS_CFLAGS -O0"
+        NJS_CFLAGS="$NJS_CFLAGS -W -Wall -Wextra"
 
-        #NXT_CFLAGS="$NXT_CFLAGS -Wunused-result"
-        NXT_CFLAGS="$NXT_CFLAGS -Wno-unused-parameter"
-        #NXT_CFLAGS="$NXT_CFLAGS -Wshorten-64-to-32"
-        NXT_CFLAGS="$NXT_CFLAGS -Wwrite-strings"
-        #NXT_CFLAGS="$NXT_CFLAGS -O2"
-        #NXT_CFLAGS="$NXT_CFLAGS -fomit-frame-pointer"
-        NXT_CFLAGS="$NXT_CFLAGS -fstrict-aliasing"
-        NXT_CFLAGS="$NXT_CFLAGS -Wstrict-overflow=5"
+        #NJS_CFLAGS="$NJS_CFLAGS -Wunused-result"
+        NJS_CFLAGS="$NJS_CFLAGS -Wno-unused-parameter"
+        #NJS_CFLAGS="$NJS_CFLAGS -Wshorten-64-to-32"
+        NJS_CFLAGS="$NJS_CFLAGS -Wwrite-strings"
+        #NJS_CFLAGS="$NJS_CFLAGS -O2"
+        #NJS_CFLAGS="$NJS_CFLAGS -fomit-frame-pointer"
+        NJS_CFLAGS="$NJS_CFLAGS -fstrict-aliasing"
+        NJS_CFLAGS="$NJS_CFLAGS -Wstrict-overflow=5"
 
-        NXT_CFLAGS="$NXT_CFLAGS -Wmissing-prototypes"
+        NJS_CFLAGS="$NJS_CFLAGS -Wmissing-prototypes"
 
         # Stop on warning.
-        NXT_CFLAGS="$NXT_CFLAGS -Werror"
+        NJS_CFLAGS="$NJS_CFLAGS -Werror"
 
         # Debug.
 
-        if [ "$NXT_SYSTEM_PLATFORM" != "powerpc" ]; then
+        if [ "$NJS_SYSTEM_PLATFORM" != "powerpc" ]; then
             # "-g" flag causes the "unknown pseudo-op: `.cfi_sections'"
             # error on PowerPC Clang.
-            NXT_CFLAGS="$NXT_CFLAGS -g"
+            NJS_CFLAGS="$NJS_CFLAGS -g"
         fi
     ;;
 
     SunC)
-        nxt_define=NXT_SUNC . auto/define
+        njs_define=NJS_SUNC . auto/define
 
-        NXT_CFLAGS="$NXT_CFLAGS -fPIC"
+        NJS_CFLAGS="$NJS_CFLAGS -fPIC"
         # Optimization.
-        NXT_CFLAGS="$NXT_CFLAGS -O -fast"
+        NJS_CFLAGS="$NJS_CFLAGS -O -fast"
         # Stop on warning.
-        NXT_CFLAGS="$NXT_CFLAGS -errwarn=%all"
+        NJS_CFLAGS="$NJS_CFLAGS -errwarn=%all"
         # Debug.
-        NXT_CFLAGS="$NXT_CFLAGS -g"
+        NJS_CFLAGS="$NJS_CFLAGS -g"
     ;;
 
     *)
@@ -157,33 +157,33 @@ esac
 # Stop on error exit status again.
 set -e
 
-cat << END >> $NXT_MAKEFILE
+cat << END >> $NJS_MAKEFILE
 
-NXT_CC =	${CC}
-NXT_CFLAGS =	${NXT_CFLAGS} ${CFLAGS}
+NJS_CC =	${CC}
+NJS_CFLAGS =	${NJS_CFLAGS} ${CFLAGS}
 END
 
 
 # C language features.
 
-nxt_feature="GCC unsigned __int128"
-nxt_feature_name=NXT_HAVE_UNSIGNED_INT128
-nxt_feature_run=no
-nxt_feature_incs=
-nxt_feature_libs=
-nxt_feature_test="int main(void) {
+njs_feature="GCC unsigned __int128"
+njs_feature_name=NJS_HAVE_UNSIGNED_INT128
+njs_feature_run=no
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="int main(void) {
                       unsigned __int128 p = 0;
                       return (int) p;
                   }"
 . auto/feature
 
 
-nxt_feature="GCC __builtin_expect()"
-nxt_feature_name=NXT_HAVE_BUILTIN_EXPECT
-nxt_feature_run=no
-nxt_feature_incs=
-nxt_feature_libs=
-nxt_feature_test="int main(int argc, char *const *argv) {
+njs_feature="GCC __builtin_expect()"
+njs_feature_name=NJS_HAVE_BUILTIN_EXPECT
+njs_feature_run=no
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="int main(int argc, char *const *argv) {
                       if ((__typeof__(argc == 0))
                                    __builtin_expect((argc == 0), 0))
                           return 0;
@@ -192,35 +192,35 @@ nxt_feature_test="int main(int argc, char *const *argv) {
 . auto/feature
 
 
-nxt_feature="GCC __builtin_unreachable()"
-nxt_feature_name=NXT_HAVE_BUILTIN_UNREACHABLE
-nxt_feature_run=no
-nxt_feature_incs=
-nxt_feature_libs=
-nxt_feature_test="int main(void) {
+njs_feature="GCC __builtin_unreachable()"
+njs_feature_name=NJS_HAVE_BUILTIN_UNREACHABLE
+njs_feature_run=no
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="int main(void) {
                       __builtin_unreachable();
                   }"
 . auto/feature
 
 
-nxt_feature="GCC __builtin_prefetch()"
-nxt_feature_name=NXT_HAVE_BUILTIN_PREFETCH
-nxt_feature_run=no
-nxt_feature_incs=
-nxt_feature_libs=
-nxt_feature_test="int main(void) {
+njs_feature="GCC __builtin_prefetch()"
+njs_feature_name=NJS_HAVE_BUILTIN_PREFETCH
+njs_feature_run=no
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="int main(void) {
                       __builtin_prefetch(0);
                       return 0;
                   }"
 . auto/feature
 
 
-nxt_feature="GCC __builtin_clz()"
-nxt_feature_name=NXT_HAVE_BUILTIN_CLZ
-nxt_feature_run=no
-nxt_feature_incs=
-nxt_feature_libs=
-nxt_feature_test="int main(void) {
+njs_feature="GCC __builtin_clz()"
+njs_feature_name=NJS_HAVE_BUILTIN_CLZ
+njs_feature_run=no
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="int main(void) {
                       if (__builtin_clz(1) != 31) {
                           return 1;
                       }
@@ -229,12 +229,12 @@ nxt_feature_test="int main(void) {
 . auto/feature
 
 
-nxt_feature="GCC __builtin_clzll()"
-nxt_feature_name=NXT_HAVE_BUILTIN_CLZLL
-nxt_feature_run=no
-nxt_feature_incs=
-nxt_feature_libs=
-nxt_feature_test="int main(void) {
+njs_feature="GCC __builtin_clzll()"
+njs_feature_name=NJS_HAVE_BUILTIN_CLZLL
+njs_feature_run=no
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="int main(void) {
                       if (__builtin_clzll(1ULL) != 63) {
                           return 1;
                       }
@@ -243,12 +243,12 @@ nxt_feature_test="int main(void) {
 . auto/feature
 
 
-nxt_feature="GCC __attribute__ visibility"
-nxt_feature_name=NXT_HAVE_GCC_ATTRIBUTE_VISIBILITY
-nxt_feature_run=no
-nxt_feature_path=
-nxt_feature_libs=
-nxt_feature_test="int n __attribute__ ((visibility(\"default\")));
+njs_feature="GCC __attribute__ visibility"
+njs_feature_name=NJS_HAVE_GCC_ATTRIBUTE_VISIBILITY
+njs_feature_run=no
+njs_feature_path=
+njs_feature_libs=
+njs_feature_test="int n __attribute__ ((visibility(\"default\")));
 
                   int main(void) {
                       return 0;
@@ -256,12 +256,12 @@ nxt_feature_test="int n __attribute__ ((visibility(\"default\")));
 . auto/feature
 
 
-nxt_feature="GCC __attribute__ malloc"
-nxt_feature_name=NXT_HAVE_GCC_ATTRIBUTE_MALLOC
-nxt_feature_run=no
-nxt_feature_path=
-nxt_feature_libs=
-nxt_feature_test="#include <stdlib.h>
+njs_feature="GCC __attribute__ malloc"
+njs_feature_name=NJS_HAVE_GCC_ATTRIBUTE_MALLOC
+njs_feature_run=no
+njs_feature_path=
+njs_feature_libs=
+njs_feature_test="#include <stdlib.h>
 
                   void *f(void) __attribute__ ((__malloc__));
 
@@ -278,12 +278,12 @@ nxt_feature_test="#include <stdlib.h>
 . auto/feature
 
 
-nxt_feature="GCC __attribute__ aligned"
-nxt_feature_name=NXT_HAVE_GCC_ATTRIBUTE_ALIGNED
-nxt_feature_run=no
-nxt_feature_path=
-nxt_feature_libs=
-nxt_feature_test="int n __attribute__ ((aligned(64)));
+njs_feature="GCC __attribute__ aligned"
+njs_feature_name=NJS_HAVE_GCC_ATTRIBUTE_ALIGNED
+njs_feature_run=no
+njs_feature_path=
+njs_feature_libs=
+njs_feature_test="int n __attribute__ ((aligned(64)));
 
 				  int main(void) {
 					  return 0;
@@ -291,12 +291,12 @@ nxt_feature_test="int n __attribute__ ((aligned(64)));
 . auto/feature
 
 
-nxt_feature="Memory sanitizer"
-nxt_feature_name=NXT_HAVE_MEMORY_SANITIZER
-nxt_feature_run=yes
-nxt_feature_incs=
-nxt_feature_libs=
-nxt_feature_test="#include <sanitizer/msan_interface.h>
+njs_feature="Memory sanitizer"
+njs_feature_name=NJS_HAVE_MEMORY_SANITIZER
+njs_feature_run=yes
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#include <sanitizer/msan_interface.h>
                   int main(int argc, char *argv[]) {
                       __msan_unpoison(argv, sizeof(char *));
                       return 0;
@@ -304,12 +304,12 @@ nxt_feature_test="#include <sanitizer/msan_interface.h>
 . auto/feature
 
 
-nxt_feature="NAN to uint conversion"
-nxt_feature_name=NXT_NAN_TO_UINT_CONVERSION
-nxt_feature_run=value
-nxt_feature_incs=
-nxt_feature_libs=-lm
-nxt_feature_test="#include <math.h>
+njs_feature="NAN to uint conversion"
+njs_feature_name=NJS_NAN_TO_UINT_CONVERSION
+njs_feature_run=value
+njs_feature_incs=
+njs_feature_libs=-lm
+njs_feature_test="#include <math.h>
                   #include <stdio.h>
                   #include <stdint.h>
 

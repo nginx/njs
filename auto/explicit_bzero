@@ -5,12 +5,12 @@
 
 # Linux (glibc and musl from 1.1.20), OpenBSD and FreeBSD.
 
-nxt_feature="explicit_bzero()"
-nxt_feature_name=NXT_HAVE_EXPLICIT_BZERO
-nxt_feature_run=yes
-nxt_feature_incs=
-nxt_feature_libs=
-nxt_feature_test="#include <strings.h>
+njs_feature="explicit_bzero()"
+njs_feature_name=NJS_HAVE_EXPLICIT_BZERO
+njs_feature_run=yes
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#include <strings.h>
                   #include <string.h>
 
                   int main(void) {
@@ -22,13 +22,13 @@ nxt_feature_test="#include <strings.h>
 . auto/feature
 
 
-if [ $nxt_found = no ]; then
+if [ $njs_found = no ]; then
 
     # NetBSD has explicit_memset instead.
 
-    nxt_feature="explicit_memset()"
-    nxt_feature_name=NXT_HAVE_EXPLICIT_MEMSET
-    nxt_feature_test="#include <string.h>
+    njs_feature="explicit_memset()"
+    njs_feature_name=NJS_HAVE_EXPLICIT_MEMSET
+    njs_feature_test="#include <string.h>
 
                       int main(void) {
                           int r;

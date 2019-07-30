@@ -6,12 +6,12 @@
 # Linux glibc 2.1.91, FreeBSD 7.0, Solaris 11,
 # MacOSX 10.6 (Snow Leopard), NetBSD 5.0.
 
-nxt_feature="posix_memalign()"
-nxt_feature_name=NXT_HAVE_POSIX_MEMALIGN
-nxt_feature_run=yes
-nxt_feature_incs=
-nxt_feature_libs=
-nxt_feature_test="#include <stdlib.h>
+njs_feature="posix_memalign()"
+njs_feature_name=NJS_HAVE_POSIX_MEMALIGN
+njs_feature_run=yes
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#include <stdlib.h>
 
                  int main(void) {
                      void  *p;
@@ -25,16 +25,16 @@ nxt_feature_test="#include <stdlib.h>
 . auto/feature
 
 
-if [ $nxt_found = no ]; then
+if [ $njs_found = no ]; then
 
     # Solaris, HP-UX.
 
-    nxt_feature="memalign()"
-    nxt_feature_name=NXT_HAVE_MEMALIGN
-    nxt_feature_run=yes
-    nxt_feature_incs=
-    nxt_feature_libs=
-    nxt_feature_test="#include <stdlib.h>
+    njs_feature="memalign()"
+    njs_feature_name=NJS_HAVE_MEMALIGN
+    njs_feature_run=yes
+    njs_feature_incs=
+    njs_feature_libs=
+    njs_feature_test="#include <stdlib.h>
 
                      int main(void) {
                          void  *p;

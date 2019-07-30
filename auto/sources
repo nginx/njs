@@ -1,68 +1,65 @@
-NXT_LIB_SRCS=" \
-    nxt/nxt_diyfp.c \
-    nxt/nxt_dtoa.c \
-    nxt/nxt_strtod.c \
-    nxt/nxt_murmur_hash.c \
-    nxt/nxt_djb_hash.c \
-    nxt/nxt_utf8.c \
-    nxt/nxt_array.c \
-    nxt/nxt_rbtree.c \
-    nxt/nxt_lvlhsh.c \
-    nxt/nxt_trace.c \
-    nxt/nxt_random.c \
-    nxt/nxt_md5.c \
-    nxt/nxt_sha1.c \
-    nxt/nxt_sha2.c \
-    nxt/nxt_pcre.c \
-    nxt/nxt_time.c \
-    nxt/nxt_file.c \
-    nxt/nxt_malloc.c \
-    nxt/nxt_mp.c \
-    nxt/nxt_sprintf.c \
-"
-
-NXT_TEST_SRCS=" \
-   nxt/test/lvlhsh_unit_test.c \
-   nxt/test/random_unit_test.c \
-   nxt/test/rbtree_unit_test.c \
-   nxt/test/utf8_unit_test.c \
-"
-
 NJS_LIB_SRCS=" \
-   njs/njs_value.c \
-   njs/njs_vm.c \
-   njs/njs_vmcode.c \
-   njs/njs_boolean.c \
-   njs/njs_number.c \
-   njs/njs_string.c \
-   njs/njs_object.c \
-   njs/njs_object_property.c \
-   njs/njs_array.c \
-   njs/njs_json.c \
-   njs/njs_function.c \
-   njs/njs_regexp.c \
-   njs/njs_date.c \
-   njs/njs_error.c \
-   njs/njs_math.c \
-   njs/njs_time.c \
-   njs/njs_module.c \
-   njs/njs_event.c \
-   njs/njs_fs.c \
-   njs/njs_crypto.c \
-   njs/njs_extern.c \
-   njs/njs_variable.c \
-   njs/njs_builtin.c \
-   njs/njs_lexer.c \
-   njs/njs_lexer_keyword.c \
-   njs/njs_parser.c \
-   njs/njs_parser_terminal.c \
-   njs/njs_parser_expression.c \
-   njs/njs_generator.c \
-   njs/njs_disassembler.c \
+   src/njs_diyfp.c \
+   src/njs_dtoa.c \
+   src/njs_strtod.c \
+   src/njs_murmur_hash.c \
+   src/njs_djb_hash.c \
+   src/njs_utf8.c \
+   src/njs_arr.c \
+   src/njs_rbtree.c \
+   src/njs_lvlhsh.c \
+   src/njs_trace.c \
+   src/njs_random.c \
+   src/njs_md5.c \
+   src/njs_sha1.c \
+   src/njs_sha2.c \
+   src/njs_pcre.c \
+   src/njs_time.c \
+   src/njs_file.c \
+   src/njs_malloc.c \
+   src/njs_mp.c \
+   src/njs_sprintf.c \
+   src/njs_value.c \
+   src/njs_vm.c \
+   src/njs_vmcode.c \
+   src/njs_boolean.c \
+   src/njs_number.c \
+   src/njs_string.c \
+   src/njs_object.c \
+   src/njs_object_property.c \
+   src/njs_array.c \
+   src/njs_json.c \
+   src/njs_function.c \
+   src/njs_regexp.c \
+   src/njs_date.c \
+   src/njs_error.c \
+   src/njs_math.c \
+   src/njs_timer.c \
+   src/njs_module.c \
+   src/njs_event.c \
+   src/njs_fs.c \
+   src/njs_crypto.c \
+   src/njs_extern.c \
+   src/njs_variable.c \
+   src/njs_builtin.c \
+   src/njs_lexer.c \
+   src/njs_lexer_keyword.c \
+   src/njs_parser.c \
+   src/njs_parser_terminal.c \
+   src/njs_parser_expression.c \
+   src/njs_generator.c \
+   src/njs_disassembler.c \
+"
+
+NJS_LIB_TEST_SRCS=" \
+   src/test/lvlhsh_unit_test.c \
+   src/test/random_unit_test.c \
+   src/test/rbtree_unit_test.c \
+   src/test/utf8_unit_test.c \
 "
 
 NJS_TEST_SRCS=" \
-   njs/test/njs_unit_test.c \
-   njs/test/njs_interactive_test.c \
-   njs/test/njs_benchmark.c \
+   src/test/njs_unit_test.c \
+   src/test/njs_interactive_test.c \
+   src/test/njs_benchmark.c \
 "
