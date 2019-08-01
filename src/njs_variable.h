@@ -31,11 +31,6 @@ typedef struct {
 } njs_variable_t;
 
 
-#define njs_global_variable_value(vm, var)                                    \
-    (njs_value_t *) ((u_char *) vm->global_scope                              \
-         + njs_scope_offset((var)->index) - NJS_INDEX_GLOBAL_OFFSET)
-
-
 typedef enum {
     NJS_DECLARATION = 0,
     NJS_REFERENCE,
