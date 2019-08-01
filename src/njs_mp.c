@@ -9,6 +9,8 @@
 #include <njs_clang.h>
 #include <njs_stub.h>
 #include <njs_str.h>
+#include <njs_sprintf.h>
+#include <njs_malloc.h>
 #include <njs_queue.h>
 #include <njs_rbtree.h>
 #include <njs_mp.h>
@@ -114,10 +116,6 @@ struct njs_mp_s {
     uint32_t                    page_alignment;
     uint32_t                    cluster_size;
 
-    const njs_mem_proto_t       *proto;
-    void                        *mem;
-    void                        *trace;
-
     njs_mp_slot_t               slots[];
 };
 
@@ -155,8 +153,7 @@ static const char *njs_mp_chunk_free(njs_mp_t *mp, njs_mp_block_t *cluster,
 
 
 njs_mp_t *
-njs_mp_create(const njs_mem_proto_t *proto, void *mem,
-    void *trace, size_t cluster_size, size_t page_alignment, size_t page_size,
+njs_mp_create(size_t cluster_size, size_t page_alignment, size_t page_size,
     size_t min_chunk_size)
 {
     /* Alignment and sizes must be a power of 2. */
@@ -181,14 +178,13 @@ njs_mp_create(const njs_mem_proto_t *proto, void *mem,
         return NULL;
     }
 
-    return njs_mp_fast_create(proto, mem, trace, cluster_size, page_alignment,
-                              page_size, min_chunk_size);
+    return njs_mp_fast_create(cluster_size, page_alignment, page_size,
+                              min_chunk_size);
 }
 
 
 njs_mp_t *
-njs_mp_fast_create(const njs_mem_proto_t *proto, void *mem,
-    void *trace, size_t cluster_size, size_t page_alignment, size_t page_size,
+njs_mp_fast_create(size_t cluster_size, size_t page_alignment, size_t page_size,
     size_t min_chunk_size)
 {
     njs_mp_t       *mp;
@@ -203,13 +199,9 @@ njs_mp_fast_create(const njs_mem_proto_t *proto, void *mem,
         chunk_size /= 2;
     } while (chunk_size > min_chunk_size);
 
-    mp = proto->zalloc(mem, sizeof(njs_mp_t) + slots * sizeof(njs_mp_slot_t));
+    mp = njs_zalloc(sizeof(njs_mp_t) + slots * sizeof(njs_mp_slot_t));
 
     if (njs_fast_path(mp != NULL)) {
-        mp->proto = proto;
-        mp->mem = mem;
-        mp->trace = trace;
-
         mp->page_size = page_size;
         mp->page_alignment = njs_max(page_alignment, NJS_MAX_ALIGNMENT);
         mp->cluster_size = cluster_size;
@@ -271,6 +263,8 @@ njs_mp_destroy(njs_mp_t *mp)
     njs_mp_block_t     *block;
     njs_rbtree_node_t  *node, *next;
 
+    njs_debug_alloc("mp destroy\n");
+
     next = njs_rbtree_root(&mp->blocks);
 
     while (next != njs_rbtree_sentinel(&mp->blocks)) {
@@ -281,22 +275,20 @@ njs_mp_destroy(njs_mp_t *mp)
         p = block->start;
 
         if (block->type != NJS_MP_EMBEDDED_BLOCK) {
-            mp->proto->free(mp->mem, block);
+            njs_free(block);
         }
 
-        mp->proto->free(mp->mem, p);
+        njs_free(p);
     }
 
-    mp->proto->free(mp->mem, mp);
+    njs_free(mp);
 }
 
 
 void *
 njs_mp_alloc(njs_mp_t *mp, size_t size)
 {
-    if (mp->proto->trace != NULL) {
-        mp->proto->trace(mp->trace, "mem cache alloc: %zd", size);
-    }
+    njs_debug_alloc("mp alloc: %uz\n", size);
 
 #if !(NJS_DEBUG_MEMORY)
 
@@ -328,10 +320,7 @@ njs_mp_zalloc(njs_mp_t *mp, size_t size)
 void *
 njs_mp_align(njs_mp_t *mp, size_t alignment, size_t size)
 {
-    if (mp->proto->trace != NULL) {
-        mp->proto->trace(mp->trace,
-                         "mem cache align: @%zd:%zd", alignment, size);
-    }
+    njs_debug_alloc("mp align: @%uz:%uz\n", alignment, size);
 
     /* Alignment must be a power of 2. */
 
@@ -456,9 +445,7 @@ njs_mp_alloc_small(njs_mp_t *mp, size_t size)
 #endif
     }
 
-    if (mp->proto->trace != NULL) {
-        mp->proto->trace(mp->trace, "mem cache chunk:%uz alloc: %p", size, p);
-    }
+    njs_debug_alloc("mp chunk:%uz alloc: %p\n", size, p);
 
     return p;
 }
@@ -533,9 +520,7 @@ njs_mp_alloc_cluster(njs_mp_t *mp)
 
     n = mp->cluster_size >> mp->page_size_shift;
 
-    cluster = mp->proto->zalloc(mp->mem,
-                                sizeof(njs_mp_block_t)
-                                + n * sizeof(njs_mp_page_t));
+    cluster = njs_zalloc(sizeof(njs_mp_block_t) + n * sizeof(njs_mp_page_t));
 
     if (njs_slow_path(cluster == NULL)) {
         return NULL;
@@ -545,10 +530,9 @@ njs_mp_alloc_cluster(njs_mp_t *mp)
 
     cluster->size = mp->cluster_size;
 
-    cluster->start = mp->proto->align(mp->mem, mp->page_alignment,
-                                      mp->cluster_size);
+    cluster->start = njs_memalign(mp->page_alignment, mp->cluster_size);
     if (njs_slow_path(cluster->start == NULL)) {
-        mp->proto->free(mp->mem, cluster);
+        njs_free(cluster);
         return NULL;
     }
 
@@ -585,14 +569,14 @@ njs_mp_alloc_large(njs_mp_t *mp, size_t alignment, size_t size)
     }
 
     if (njs_is_power_of_two(size)) {
-        block = mp->proto->alloc(mp->mem, sizeof(njs_mp_block_t));
+        block = njs_malloc(sizeof(njs_mp_block_t));
         if (njs_slow_path(block == NULL)) {
             return NULL;
         }
 
-        p = mp->proto->align(mp->mem, alignment, size);
+        p = njs_memalign(alignment, size);
         if (njs_slow_path(p == NULL)) {
-            mp->proto->free(mp->mem, block);
+            njs_free(block);
             return NULL;
         }
 
@@ -601,9 +585,7 @@ njs_mp_alloc_large(njs_mp_t *mp, size_t alignment, size_t size)
     } else {
         aligned_size = njs_align_size(size, sizeof(uintptr_t));
 
-        p = mp->proto->align(mp->mem, alignment,
-                             aligned_size + sizeof(njs_mp_block_t));
-
+        p = njs_memalign(alignment, aligned_size + sizeof(njs_mp_block_t));
         if (njs_slow_path(p == NULL)) {
             return NULL;
         }
@@ -640,9 +622,7 @@ njs_mp_free(njs_mp_t *mp, void *p)
     const char      *err;
     njs_mp_block_t  *block;
 
-    if (mp->proto->trace != NULL) {
-        mp->proto->trace(mp->trace, "mem cache free %p", p);
-    }
+    njs_debug_alloc("mp free: @%p\n", p);
 
     block = njs_mp_find_block(&mp->blocks, p);
 
@@ -659,24 +639,22 @@ njs_mp_free(njs_mp_t *mp, void *p)
             njs_rbtree_delete(&mp->blocks, &block->node);
 
             if (block->type == NJS_MP_DISCRETE_BLOCK) {
-                mp->proto->free(mp->mem, block);
+                njs_free(block);
             }
 
-            mp->proto->free(mp->mem, p);
+            njs_free(p);
 
             return;
 
         } else {
-            err = "freed pointer points to middle of block: %p";
+            err = "freed pointer points to middle of block: %p\n";
         }
 
     } else {
-        err = "freed pointer is out of mp: %p";
+        err = "freed pointer is out of mp: %p\n";
     }
 
-    if (mp->proto->alert != NULL) {
-        mp->proto->alert(mp->trace, err, p);
-    }
+    njs_debug_alloc(err, p);
 }
 
 
@@ -810,8 +788,8 @@ njs_mp_chunk_free(njs_mp_t *mp, njs_mp_block_t *cluster,
 
     p = cluster->start;
 
-    mp->proto->free(mp->mem, cluster);
-    mp->proto->free(mp->mem, p);
+    njs_free(cluster);
+    njs_free(p);
 
     return NULL;
 }

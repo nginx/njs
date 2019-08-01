@@ -21,53 +21,6 @@ const njs_str_t  njs_entry_anonymous =      njs_str("anonymous");
 
 
 static void *
-njs_alloc(void *mem, size_t size)
-{
-    return njs_malloc(size);
-}
-
-
-static void *
-njs_zalloc(void *mem, size_t size)
-{
-    void  *p;
-
-    p = njs_malloc(size);
-
-    if (p != NULL) {
-        njs_memzero(p, size);
-    }
-
-    return p;
-}
-
-
-static void *
-njs_align(void *mem, size_t alignment, size_t size)
-{
-    return njs_memalign(alignment, size);
-}
-
-
-static void
-njs_free2(void *mem, void *p)
-{
-    njs_free(p);
-}
-
-
-const njs_mem_proto_t  njs_vm_mp_proto = {
-    njs_alloc,
-    njs_zalloc,
-    njs_align,
-    NULL,
-    njs_free2,
-    NULL,
-    NULL,
-};
-
-
-static void *
 njs_array_mem_alloc(void *mem, size_t size)
 {
     return njs_mp_alloc(mem, size);
@@ -101,8 +54,7 @@ njs_vm_create(njs_vm_opt_t *options)
     njs_arr_t             *debug;
     njs_regexp_pattern_t  *pattern;
 
-    mp = njs_mp_create(&njs_vm_mp_proto, NULL, NULL, 2 * njs_pagesize(),
-                       128, 512, 16);
+    mp = njs_mp_fast_create(2 * njs_pagesize(), 128, 512, 16);
     if (njs_slow_path(mp == NULL)) {
         return NULL;
     }
@@ -325,8 +277,7 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
         return NULL;
     }
 
-    nmp = njs_mp_create(&njs_vm_mp_proto, NULL, NULL, 2 * njs_pagesize(),
-                        128, 512, 16);
+    nmp = njs_mp_fast_create(2 * njs_pagesize(), 128, 512, 16);
     if (njs_slow_path(nmp == NULL)) {
         return NULL;
     }

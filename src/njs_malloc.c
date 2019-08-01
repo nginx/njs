@@ -7,7 +7,25 @@
 #include <njs_auto_config.h>
 #include <njs_types.h>
 #include <njs_clang.h>
+#include <njs_str.h>
 #include <njs_malloc.h>
+
+#include <string.h>
+
+
+void *
+njs_zalloc(size_t size)
+{
+    void  *p;
+
+    p = njs_malloc(size);
+
+    if (njs_fast_path(p != NULL)) {
+        njs_memzero(p, size);
+    }
+
+    return p;
+}
 
 
 #if (NJS_HAVE_POSIX_MEMALIGN)

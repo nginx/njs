@@ -129,67 +129,6 @@ lvlhsh_unit_test_delete(njs_lvlhsh_t *lh, const njs_lvlhsh_proto_t *proto,
 }
 
 
-static void *
-lvlhsh_malloc(void *mem, size_t size)
-{
-    return njs_malloc(size);
-}
-
-
-static void *
-lvlhsh_zalloc(void *mem, size_t size)
-{
-    void  *p;
-
-    p = njs_malloc(size);
-
-    if (p != NULL) {
-        njs_memzero(p, size);
-    }
-
-    return p;
-}
-
-
-static void *
-lvlhsh_align(void *mem, size_t alignment, size_t size)
-{
-    return njs_memalign(alignment, size);
-}
-
-
-static void
-lvlhsh_free(void *mem, void *p)
-{
-    njs_free(p);
-}
-
-
-static void
-lvlhsh_alert(void *mem, const char *fmt, ...)
-{
-    u_char   buf[1024], *p;
-    va_list  args;
-
-    va_start(args, fmt);
-    p = njs_sprintf(buf, buf + sizeof(buf), fmt, args);
-    va_end(args);
-
-    (void) njs_stderror("alert: \"%*s\"\n", p - buf, buf);
-}
-
-
-static const njs_mem_proto_t  lvl_mp_proto = {
-    lvlhsh_malloc,
-    lvlhsh_zalloc,
-    lvlhsh_align,
-    NULL,
-    lvlhsh_free,
-    lvlhsh_alert,
-    NULL,
-};
-
-
 static njs_int_t
 lvlhsh_unit_test(njs_uint_t n)
 {
@@ -204,8 +143,8 @@ lvlhsh_unit_test(njs_uint_t n)
     const size_t       page_alignment = 128;
     const size_t       cluster_size = 4096;
 
-    pool = njs_mp_create(&lvl_mp_proto, NULL, NULL, cluster_size,
-                         page_alignment, page_size, min_chunk_size);
+    pool = njs_mp_create(cluster_size, page_alignment, page_size,
+                         min_chunk_size);
     if (pool == NULL) {
         return NJS_ERROR;
     }

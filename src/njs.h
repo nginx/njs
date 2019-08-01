@@ -295,6 +295,4 @@ NJS_EXPORT njs_int_t njs_vm_json_parse(njs_vm_t *vm, njs_value_t *args,
 NJS_EXPORT njs_int_t njs_vm_json_stringify(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs);
 
-extern const njs_mem_proto_t  njs_vm_mp_proto;
-
 #endif /* _NJS_H_INCLUDED_ */
