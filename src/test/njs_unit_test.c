@@ -14111,7 +14111,7 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, const char *name,
 {
     u_char        *start;
     njs_vm_t      *vm, *nvm;
-    njs_int_t     ret, rc;
+    njs_int_t     ret;
     njs_str_t     s;
     njs_uint_t    i;
     njs_stat_t    prev;
@@ -14123,7 +14123,7 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, const char *name,
 
     prev = *stat;
 
-    rc = NJS_ERROR;
+    ret = NJS_ERROR;
 
     for (i = 0; i < num; i++) {
 
@@ -14196,7 +14196,7 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, const char *name,
         vm = NULL;
     }
 
-    rc = NJS_OK;
+    ret = NJS_OK;
 
 done:
 
@@ -14210,7 +14210,7 @@ done:
 
     njs_unit_test_report(name, &prev, stat);
 
-    return rc;
+    return ret;
 }
 
 
@@ -14302,7 +14302,7 @@ static njs_int_t
 njs_vm_json_test(njs_opts_t *opts, njs_stat_t *stat)
 {
     njs_vm_t      *vm;
-    njs_int_t     ret, rc;
+    njs_int_t     ret;
     njs_str_t     s, *script;
     njs_uint_t    i;
     njs_bool_t    success;
@@ -14334,7 +14334,7 @@ njs_vm_json_test(njs_opts_t *opts, njs_stat_t *stat)
 
     prev = *stat;
 
-    rc = NJS_ERROR;
+    ret = NJS_ERROR;
 
     for (i = 0; i < njs_nitems(tests); i++) {
 
@@ -14404,11 +14404,11 @@ njs_vm_json_test(njs_opts_t *opts, njs_stat_t *stat)
 
     }
 
-    rc = NJS_OK;
+    ret = NJS_OK;
 
 done:
 
-    if (rc != NJS_OK) {
+    if (ret != NJS_OK) {
         if (njs_vm_retval_string(vm, &s) != NJS_OK) {
             njs_printf("njs_vm_retval_string() failed\n");
 
@@ -14423,7 +14423,7 @@ done:
         njs_vm_destroy(vm);
     }
 
-    return rc;
+    return ret;
 }
 
 
@@ -14564,7 +14564,7 @@ static njs_int_t
 njs_api_test(njs_opts_t *opts, njs_stat_t *stat)
 {
     njs_vm_t      *vm;
-    njs_int_t     ret, rc;
+    njs_int_t     ret;
     njs_uint_t    i;
     njs_stat_t    prev;
     njs_vm_opt_t  options;
@@ -14586,7 +14586,7 @@ njs_api_test(njs_opts_t *opts, njs_stat_t *stat)
 
     prev = *stat;
 
-    rc = NJS_ERROR;
+    ret = NJS_ERROR;
 
     for (i = 0; i < njs_nitems(tests); i++) {
         vm = njs_vm_create(&options);
@@ -14605,7 +14605,7 @@ njs_api_test(njs_opts_t *opts, njs_stat_t *stat)
         vm = NULL;
     }
 
-    rc = NJS_OK;
+    ret = NJS_OK;
 
 done:
 
@@ -14615,7 +14615,7 @@ done:
         njs_vm_destroy(vm);
     }
 
-    return rc;
+    return ret;
 }
 
 

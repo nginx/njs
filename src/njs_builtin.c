@@ -1000,29 +1000,29 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
 {
     size_t                     len;
     njs_str_t                  string, middle;
-    njs_int_t                  rc;
+    njs_int_t                  ret;
     const njs_object_init_t    *obj, **p;
     const njs_object_prop_t    *prop;
     const njs_function_init_t  *fun;
 
     middle = njs_str_value(".");
 
-    rc = njs_builtin_match(njs_object_init, function, &prop, &obj);
+    ret = njs_builtin_match(njs_object_init, function, &prop, &obj);
 
-    if (rc == NJS_OK) {
+    if (ret == NJS_OK) {
         goto found;
     }
 
-    rc = njs_builtin_match(njs_prototype_init, function, &prop, &obj);
+    ret = njs_builtin_match(njs_prototype_init, function, &prop, &obj);
 
-    if (rc == NJS_OK) {
+    if (ret == NJS_OK) {
         middle = njs_str_value(".prototype.");
         goto found;
     }
 
-    rc = njs_builtin_match(njs_constructor_init, function, &prop, &obj);
+    ret = njs_builtin_match(njs_constructor_init, function, &prop, &obj);
 
-    if (rc == NJS_OK) {
+    if (ret == NJS_OK) {
         goto found;
     }
 
@@ -1036,9 +1036,9 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
         }
     }
 
-    rc = njs_builtin_match(njs_module_init, function, &prop, &obj);
+    ret = njs_builtin_match(njs_module_init, function, &prop, &obj);
 
-    if (rc == NJS_OK) {
+    if (ret == NJS_OK) {
         goto found;
     }
 

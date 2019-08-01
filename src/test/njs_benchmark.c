@@ -19,7 +19,7 @@ njs_unit_test_benchmark(njs_str_t *script, njs_str_t *result, const char *msg,
     u_char         *start;
     njs_vm_t       *vm, *nvm;
     uint64_t       us;
-    njs_int_t      ret, rc;
+    njs_int_t      ret;
     njs_str_t      s;
     njs_uint_t     i;
     njs_bool_t     success;
@@ -30,7 +30,7 @@ njs_unit_test_benchmark(njs_str_t *script, njs_str_t *result, const char *msg,
 
     vm = NULL;
     nvm = NULL;
-    rc = NJS_ERROR;
+    ret = NJS_ERROR;
 
     vm = njs_vm_create(&options);
     if (vm == NULL) {
@@ -85,7 +85,7 @@ njs_unit_test_benchmark(njs_str_t *script, njs_str_t *result, const char *msg,
                    msg, (double) us / n, (int) ((uint64_t) n * 1000000 / us));
     }
 
-    rc = NJS_OK;
+    ret = NJS_OK;
 
 done:
 
@@ -97,7 +97,7 @@ done:
         njs_vm_destroy(vm);
     }
 
-    return rc;
+    return ret;
 }
 
 

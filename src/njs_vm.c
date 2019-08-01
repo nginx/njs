@@ -946,7 +946,6 @@ njs_vm_object_alloc(njs_vm_t *vm, njs_value_t *retval, ...)
 {
     va_list             args;
     njs_int_t           ret;
-    njs_int_t           rc;
     njs_value_t         *name, *value;
     njs_object_t        *object;
     njs_object_prop_t   *prop;
@@ -957,7 +956,7 @@ njs_vm_object_alloc(njs_vm_t *vm, njs_value_t *retval, ...)
         return NJS_ERROR;
     }
 
-    rc = NJS_ERROR;
+    ret = NJS_ERROR;
 
     va_start(args, retval);
 
@@ -999,7 +998,7 @@ njs_vm_object_alloc(njs_vm_t *vm, njs_value_t *retval, ...)
         }
     }
 
-    rc = NJS_OK;
+    ret = NJS_OK;
 
     njs_set_object(retval, object);
 
@@ -1007,7 +1006,7 @@ done:
 
     va_end(args);
 
-    return rc;
+    return ret;
 }
 
 
