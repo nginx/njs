@@ -47,7 +47,8 @@ typedef struct {
 extern const njs_value_t            njs_value_undefined;
 
 #define njs_arg(args, nargs, n)                                               \
-    ((n < nargs) ? njs_argument(args, n) : &njs_value_undefined)
+    ((n < nargs) ? njs_argument(args, n)                                      \
+                 : (njs_value_t *) &njs_value_undefined)
 
 #define njs_value_assign(dst, src)                                            \
     *((njs_opaque_value_t *) dst) = *((njs_opaque_value_t *) src);

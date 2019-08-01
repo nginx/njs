@@ -46,7 +46,7 @@ static njs_object_prop_t *njs_descriptor_prop(njs_vm_t *vm,
 
 njs_int_t
 njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
-    const njs_value_t *property)
+    njs_value_t *property)
 {
     uint32_t        index;
     njs_int_t       ret;
@@ -55,7 +55,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *object,
     njs_function_t  *function;
 
     if (njs_slow_path(!njs_is_primitive(property))) {
-        ret = njs_value_to_string(vm, &prop, (njs_value_t *) property);
+        ret = njs_value_to_string(vm, &prop, property);
         if (ret != NJS_OK) {
             return ret;
         }
@@ -479,8 +479,8 @@ njs_external_property_delete(njs_vm_t *vm, njs_value_t *value,
  *      retval will contain undefined
  */
 njs_int_t
-njs_value_property(njs_vm_t *vm, const njs_value_t *value,
-    const njs_value_t *property, njs_value_t *retval)
+njs_value_property(njs_vm_t *vm, njs_value_t *value, njs_value_t *property,
+    njs_value_t *retval)
 {
     njs_int_t             ret;
     njs_object_prop_t     *prop;
@@ -488,7 +488,7 @@ njs_value_property(njs_vm_t *vm, const njs_value_t *value,
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 0);
 
-    ret = njs_property_query(vm, &pq, (njs_value_t *) value, property);
+    ret = njs_property_query(vm, &pq, value, property);
 
     switch (ret) {
 
@@ -521,14 +521,14 @@ njs_value_property(njs_vm_t *vm, const njs_value_t *value,
                 break;
             }
 
-            return njs_function_apply(vm, njs_function(&prop->getter),
-                                      (njs_value_t *) value, 1, retval);
+            return njs_function_apply(vm, njs_function(&prop->getter), value,
+                                      1, retval);
 
         case NJS_PROPERTY_HANDLER:
             pq.scratch = *prop;
             prop = &pq.scratch;
-            ret = prop->value.data.u.prop_handler(vm, (njs_value_t *) value,
-                                                  NULL, &prop->value);
+            ret = prop->value.data.u.prop_handler(vm, value, NULL,
+                                                  &prop->value);
 
             if (njs_slow_path(ret != NJS_OK)) {
                 return ret;
@@ -568,7 +568,7 @@ njs_value_property(njs_vm_t *vm, const njs_value_t *value,
  */
 njs_int_t
 njs_value_property_set(njs_vm_t *vm, njs_value_t *object,
-    const njs_value_t *property, njs_value_t *value)
+    njs_value_t *property, njs_value_t *value)
 {
     njs_int_t             ret;
     njs_object_prop_t     *prop, *shared;
@@ -771,7 +771,7 @@ njs_object_property(njs_vm_t *vm, const njs_object_t *object,
  */
 njs_int_t
 njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
-    const njs_value_t *name, const njs_value_t *value)
+    njs_value_t *name, njs_value_t *value)
 {
     njs_int_t             ret;
     njs_object_prop_t     *prop, *prev;
@@ -1123,7 +1123,7 @@ static const njs_value_t  njs_object_configurable_string =
 
 njs_int_t
 njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
-    const njs_value_t *value, const njs_value_t *property)
+    njs_value_t *value, njs_value_t *property)
 {
     njs_int_t             ret;
     njs_object_t          *desc;
@@ -1134,7 +1134,7 @@ njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 1);
 
-    ret = njs_property_query(vm, &pq, (njs_value_t *) value, property);
+    ret = njs_property_query(vm, &pq, value, property);
 
     switch (ret) {
     case NJS_OK:
@@ -1158,8 +1158,7 @@ njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
     case NJS_PROPERTY_HANDLER:
         pq.scratch = *prop;
         prop = &pq.scratch;
-        ret = prop->value.data.u.prop_handler(vm, (njs_value_t *) value,
-                                              NULL, &prop->value);
+        ret = prop->value.data.u.prop_handler(vm, value, NULL, &prop->value);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
         }

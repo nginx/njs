@@ -252,8 +252,7 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     double                num;
     njs_int_t             i;
     njs_int_t             ret;
-    njs_value_t           *wrapper;
-    const njs_value_t     *replacer, *space;
+    njs_value_t           *wrapper, *replacer, *space;
     njs_json_stringify_t  *stringify, json_stringify;
 
     stringify = &json_stringify;
@@ -1802,7 +1801,7 @@ njs_json_append_string(njs_json_stringify_t *stringify,
     static char   hex2char[16] = { '0', '1', '2', '3', '4', '5', '6', '7',
                                    '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
-    (void) njs_string_prop(&str, (njs_value_t *) value);
+    (void) njs_string_prop(&str, value);
 
     p = str.start;
     end = p + str.size;

@@ -193,9 +193,9 @@ njs_int_t
 njs_object_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_uint_t         type;
-    njs_object_t       *object;
-    const njs_value_t  *value;
+    njs_uint_t    type;
+    njs_value_t   *value;
+    njs_object_t  *object;
 
     value = njs_arg(args, nargs, 1);
     type = value->type;
@@ -244,8 +244,8 @@ static njs_int_t
 njs_object_create(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_object_t       *object;
-    const njs_value_t  *value;
+    njs_value_t   *value;
+    njs_object_t  *object;
 
     value = njs_arg(args, nargs, 1);
 
@@ -280,8 +280,8 @@ static njs_int_t
 njs_object_keys(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_array_t        *keys;
-    const njs_value_t  *value;
+    njs_value_t  *value;
+    njs_array_t  *keys;
 
     value = njs_arg(args, nargs, 1);
 
@@ -307,8 +307,8 @@ static njs_int_t
 njs_object_values(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_array_t        *array;
-    const njs_value_t  *value;
+    njs_array_t  *array;
+    njs_value_t  *value;
 
     value = njs_arg(args, nargs, 1);
 
@@ -334,8 +334,8 @@ static njs_int_t
 njs_object_entries(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_array_t        *array;
-    const njs_value_t  *value;
+    njs_array_t  *array;
+    njs_value_t  *value;
 
     value = njs_arg(args, nargs, 1);
 
@@ -1087,9 +1087,8 @@ static njs_int_t
 njs_object_define_property(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_int_t          ret;
-    njs_value_t        *value;
-    const njs_value_t  *name, *desc;
+    njs_int_t    ret;
+    njs_value_t  *value, *name, *desc;
 
     if (!njs_is_object(njs_arg(args, nargs, 1))) {
         njs_type_error(vm, "cannot convert %s argument to object",
@@ -1129,11 +1128,10 @@ njs_object_define_properties(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     njs_int_t          ret;
-    njs_value_t        *value;
+    njs_value_t        *value, *desc;
     njs_lvlhsh_t       *hash;
     njs_lvlhsh_each_t  lhe;
     njs_object_prop_t  *prop;
-    const njs_value_t  *desc;
 
     if (!njs_is_object(njs_arg(args, nargs, 1))) {
         njs_type_error(vm, "cannot convert %s argument to object",
@@ -1185,7 +1183,7 @@ static njs_int_t
 njs_object_get_own_property_descriptor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
-    const njs_value_t  *value, *property;
+    njs_value_t  *value, *property;
 
     value = njs_arg(args, nargs, 1);
 
@@ -1208,9 +1206,8 @@ njs_object_get_own_property_descriptors(njs_vm_t *vm, njs_value_t *args,
     njs_int_t           ret;
     uint32_t            i, length;
     njs_array_t         *names;
-    njs_value_t         descriptor;
+    njs_value_t         descriptor, *value, *key;
     njs_object_t        *descriptors;
-    const njs_value_t   *value, *key;
     njs_object_prop_t   *pr;
     njs_lvlhsh_query_t  lhq;
 
@@ -1272,8 +1269,8 @@ static njs_int_t
 njs_object_get_own_property_names(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
-    njs_array_t        *names;
-    const njs_value_t  *value;
+    njs_array_t  *names;
+    njs_value_t  *value;
 
     value = njs_arg(args, nargs, 1);
 
@@ -1299,13 +1296,12 @@ static njs_int_t
 njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    const njs_value_t  *value;
+    njs_value_t  *value;
 
     value = njs_arg(args, nargs, 1);
 
     if (njs_is_object(value)) {
-        njs_object_prototype_proto(vm, (njs_value_t *) value, NULL,
-                                   &vm->retval);
+        njs_object_prototype_proto(vm, value, NULL, &vm->retval);
         return NJS_OK;
     }
 
@@ -1320,11 +1316,11 @@ static njs_int_t
 njs_object_freeze(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
+    njs_value_t        *value;
     njs_lvlhsh_t       *hash;
     njs_object_t       *object;
     njs_object_prop_t  *prop;
     njs_lvlhsh_each_t  lhe;
-    const njs_value_t  *value;
 
     value = njs_arg(args, nargs, 1);
 
@@ -1361,11 +1357,12 @@ static njs_int_t
 njs_object_is_frozen(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
+    njs_value_t        *value;
     njs_lvlhsh_t       *hash;
     njs_object_t       *object;
     njs_object_prop_t  *prop;
     njs_lvlhsh_each_t  lhe;
-    const njs_value_t  *value, *retval;
+    const njs_value_t  *retval;
 
     value = njs_arg(args, nargs, 1);
 
@@ -1415,9 +1412,9 @@ static njs_int_t
 njs_object_seal(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
+    njs_value_t        *value;
     njs_lvlhsh_t       *hash;
     njs_object_t       *object;
-    const njs_value_t  *value;
     njs_object_prop_t  *prop;
     njs_lvlhsh_each_t  lhe;
 
@@ -1455,11 +1452,12 @@ static njs_int_t
 njs_object_is_sealed(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
+    njs_value_t        *value;
     njs_lvlhsh_t       *hash;
     njs_object_t       *object;
     njs_object_prop_t  *prop;
     njs_lvlhsh_each_t  lhe;
-    const njs_value_t  *value, *retval;
+    const njs_value_t  *retval;
 
     value = njs_arg(args, nargs, 1);
 
@@ -1505,7 +1503,7 @@ static njs_int_t
 njs_object_prevent_extensions(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    const njs_value_t  *value;
+    njs_value_t  *value;
 
     value = njs_arg(args, nargs, 1);
 
@@ -1526,7 +1524,8 @@ static njs_int_t
 njs_object_is_extensible(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    const njs_value_t  *value, *retval;
+    njs_value_t        *value;
+    const njs_value_t  *retval;
 
     value = njs_arg(args, nargs, 1);
 
@@ -2114,7 +2113,7 @@ njs_object_prototype_has_own_property(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
     njs_int_t             ret;
-    const njs_value_t     *value, *property;
+    njs_value_t           *value, *property;
     njs_property_query_t  pq;
 
     value = njs_arg(args, nargs, 0);
@@ -2129,7 +2128,7 @@ njs_object_prototype_has_own_property(njs_vm_t *vm, njs_value_t *args,
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 1);
 
-    ret = njs_property_query(vm, &pq, (njs_value_t *) value, property);
+    ret = njs_property_query(vm, &pq, value, property);
 
     switch (ret) {
     case NJS_OK:
@@ -2152,7 +2151,8 @@ njs_object_prototype_prop_is_enumerable(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
     njs_int_t             ret;
-    const njs_value_t     *value, *property, *retval;
+    njs_value_t           *value, *property;
+    const njs_value_t     *retval;
     njs_object_prop_t     *prop;
     njs_property_query_t  pq;
 
@@ -2168,7 +2168,7 @@ njs_object_prototype_prop_is_enumerable(njs_vm_t *vm, njs_value_t *args,
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 1);
 
-    ret = njs_property_query(vm, &pq, (njs_value_t *) value, property);
+    ret = njs_property_query(vm, &pq, value, property);
 
     switch (ret) {
     case NJS_OK:
@@ -2195,8 +2195,9 @@ static njs_int_t
 njs_object_prototype_is_prototype_of(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
+    njs_value_t        *prototype, *value;
     njs_object_t       *object, *proto;
-    const njs_value_t  *prototype, *value, *retval;
+    const njs_value_t  *retval;
 
     retval = &njs_value_false;
     prototype = &args[0];

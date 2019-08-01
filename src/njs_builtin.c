@@ -1067,9 +1067,9 @@ static njs_int_t
 njs_dump_value(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_str_t          str;
-    njs_uint_t         n;
-    const njs_value_t  *value, *indent;
+    njs_str_t    str;
+    njs_uint_t   n;
+    njs_value_t  *value, *indent;
 
     value = njs_arg(args, nargs, 1);
     indent = njs_arg(args, nargs, 2);

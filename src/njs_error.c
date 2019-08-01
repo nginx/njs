@@ -534,9 +534,9 @@ static njs_int_t
 njs_memory_error_prototype_create(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
-    int32_t         index;
-    njs_value_t     *proto;
-    njs_function_t  *function;
+    int32_t            index;
+    njs_function_t     *function;
+    const njs_value_t  *proto;
 
     /* MemoryError has no its own prototype. */
 
@@ -546,7 +546,7 @@ njs_memory_error_prototype_create(njs_vm_t *vm, njs_value_t *value,
     proto = njs_property_prototype_create(vm, &function->object.hash,
                                           &vm->prototypes[index].object);
     if (proto == NULL) {
-        proto = (njs_value_t *) &njs_value_undefined;
+        proto = &njs_value_undefined;
     }
 
     *retval = *proto;

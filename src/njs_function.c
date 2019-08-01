@@ -464,8 +464,9 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
 
 
 njs_int_t
-njs_function_call(njs_vm_t *vm, njs_function_t *function, njs_value_t *this,
-    njs_value_t *args, njs_uint_t nargs, njs_value_t *retval)
+njs_function_call(njs_vm_t *vm, njs_function_t *function,
+    const njs_value_t *this, const njs_value_t *args,
+    njs_uint_t nargs, njs_value_t *retval)
 {
     njs_int_t    ret;
     njs_value_t  dst njs_aligned(16);
@@ -944,9 +945,9 @@ static njs_int_t
 njs_function_prototype_call(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t retval)
 {
-    njs_int_t       ret;
-    njs_value_t     *this;
-    njs_function_t  *function;
+    njs_int_t          ret;
+    njs_function_t     *function;
+    const njs_value_t  *this;
 
     if (!njs_is_function(&args[0])) {
         njs_type_error(vm, "\"this\" argument is not a function");
@@ -996,14 +997,13 @@ static njs_int_t
 njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t retval)
 {
-    uint32_t           i;
-    njs_int_t          ret;
-    njs_value_t        length, name;
-    njs_array_t        *arr;
-    njs_function_t     *func;
-    const njs_value_t  *this, *arr_like;
+    uint32_t        i;
+    njs_int_t       ret;
+    njs_value_t     length, name, *this, *arr_like;
+    njs_array_t     *arr;
+    njs_function_t  *func;
 
-    static const njs_value_t  njs_string_length = njs_string("length");
+    static const njs_value_t  string_length = njs_string("length");
 
     if (!njs_is_function(njs_arg(args, nargs, 0))) {
         njs_type_error(vm, "\"this\" argument is not a function");
@@ -1032,7 +1032,8 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    ret = njs_value_property(vm, arr_like, &njs_string_length, &length);
+    ret = njs_value_property(vm, arr_like, njs_value_arg(&string_length),
+                             &length);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
     }
@@ -1065,7 +1066,7 @@ activate:
     /* Skip the "apply" method frame. */
     vm->top_frame->skip = 1;
 
-    ret = njs_function_frame(vm, func, (njs_value_t *) this, args, nargs, 0);
+    ret = njs_function_frame(vm, func, this, args, nargs, 0);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -1099,7 +1100,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (nargs == 1) {
-        args = (njs_value_t *) &njs_value_undefined;
+        args = njs_value_arg(&njs_value_undefined);
 
     } else {
         nargs--;

@@ -1271,8 +1271,8 @@ static void
 njs_string_slice_args(njs_slice_prop_t *slice, njs_value_t *args,
     njs_uint_t nargs)
 {
-    ssize_t            start, end, length;
-    const njs_value_t  *value;
+    ssize_t      start, end, length;
+    njs_value_t  *value;
 
     length = slice->string_length;
 
@@ -1444,7 +1444,7 @@ static njs_int_t
 njs_string_bytes_from(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    const njs_value_t  *value;
+    njs_value_t  *value;
 
     value = njs_arg(args, nargs, 1);
 
@@ -1504,8 +1504,8 @@ static njs_int_t
 njs_string_bytes_from_string(njs_vm_t *vm, const njs_value_t *args,
     njs_uint_t nargs)
 {
-    njs_str_t          enc, str;
-    const njs_value_t  *enc_val;
+    njs_str_t    enc, str;
+    njs_value_t  *enc_val;
 
     enc_val = njs_arg(args, nargs, 2);
 

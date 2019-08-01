@@ -1016,8 +1016,8 @@ njs_vmcode_template_literal(njs_vm_t *vm, njs_value_t *invld1,
         array = njs_array(value);
 
         ret = njs_function_frame(vm, (njs_function_t *) &concat,
-                                 (njs_value_t *) &njs_string_empty,
-                                 array->start, array->length, 0);
+                                 &njs_string_empty, array->start,
+                                 array->length, 0);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
         }

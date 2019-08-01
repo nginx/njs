@@ -105,8 +105,7 @@ njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     u_char              *start;
     njs_int_t           ret;
     njs_str_t           string;
-    njs_value_t         source, flags_string;
-    const njs_value_t   *pattern, *flags;
+    njs_value_t         source, flags_string, *pattern, *flags;
     njs_regexp_flags_t  re_flags;
 
     pattern = njs_arg(args, nargs, 1);
@@ -130,8 +129,7 @@ njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     re_flags = 0;
 
     if (njs_is_regexp(pattern)) {
-        ret = njs_regexp_prototype_source(vm, (njs_value_t *) pattern, NULL,
-                                          &source);
+        ret = njs_regexp_prototype_source(vm, pattern, NULL, &source);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
         }
@@ -142,7 +140,7 @@ njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     } else {
         if (njs_is_undefined(pattern)) {
-            pattern = &njs_string_empty;
+            pattern = njs_value_arg(&njs_string_empty);
         }
 
         ret = njs_primitive_value_to_string(vm, &source, pattern);
