@@ -8,7 +8,7 @@
 #define _NJS_VM_H_INCLUDED_
 
 
-#define NJS_MAX_STACK_SIZE       (16 * 1024 * 1024)
+#define NJS_MAX_STACK_SIZE       (256 * 1024)
 
 
 /*
@@ -228,8 +228,6 @@ typedef struct {
 struct njs_vm_s {
     /* njs_vm_t must be aligned to njs_value_t due to scratch value. */
     njs_value_t              retval;
-
-    njs_uint_t               count;
 
     njs_arr_t                *paths;
 

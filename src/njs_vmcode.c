@@ -105,13 +105,6 @@ njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc)
     njs_vmcode_try_return_t      *try_return;
     njs_vmcode_function_frame_t  *function_frame;
 
-    if (njs_slow_path(vm->count > 128)) {
-        njs_range_error(vm, "Maximum call stack size exceeded");
-        return NJS_ERROR;
-    }
-
-    vm->count++;
-
 next:
 
     for ( ;; ) {
@@ -588,8 +581,7 @@ next:
                 value2 = njs_vmcode_operand(vm, value2);
                 vm->retval = *value2;
 
-                ret = NJS_OK;
-                goto done;
+                return NJS_OK;
 
             case NJS_VMCODE_JUMP:
                 ret = (njs_jump_off_t) value2;
@@ -671,8 +663,7 @@ next:
 
                 njs_function_frame_free(vm, &frame->native);
 
-                ret = NJS_OK;
-                goto done;
+                return NJS_OK;
 
             case NJS_VMCODE_FUNCTION_FRAME:
                 function_frame = (njs_vmcode_function_frame_t *) pc;
@@ -800,7 +791,7 @@ next:
 
                 switch (ret) {
                 case NJS_OK:
-                    goto done;
+                    return NJS_OK;
                 case NJS_ERROR:
                     goto error;
                 }
@@ -821,8 +812,6 @@ next:
     }
 
 error:
-
-    ret = NJS_ERROR;
 
     for ( ;; ) {
         frame = (njs_frame_t *) vm->top_frame;
@@ -864,11 +853,7 @@ error:
         }
     }
 
-done:
-
-    vm->count--;
-
-    return ret;
+    return NJS_ERROR;
 }
 
 
