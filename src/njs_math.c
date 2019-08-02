@@ -4,8 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
+
 #include <njs_main.h>
-#include <math.h>
 
 
 static njs_int_t

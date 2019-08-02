@@ -4,8 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
+
 #include <njs_main.h>
-#include <string.h>
 
 
 static njs_function_t *njs_function_copy(njs_vm_t *vm,

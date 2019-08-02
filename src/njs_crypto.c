@@ -4,13 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
+
 #include <njs_main.h>
-#include <njs_md5.h>
-#include <njs_sha1.h>
-#include <njs_sha2.h>
-#include <njs_crypto.h>
-#include <string.h>
-#include <math.h>
 
 
 typedef void (*njs_hash_init)(void *ctx);

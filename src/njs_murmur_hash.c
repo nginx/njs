@@ -4,10 +4,8 @@
  * released to the public domain.
  */
 
-#include <njs_auto_config.h>
-#include <njs_types.h>
-#include <njs_clang.h>
-#include <njs_murmur_hash.h>
+
+#include <njs_main.h>
 
 
 uint32_t

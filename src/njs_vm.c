@@ -4,9 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
+
 #include <njs_main.h>
-#include <njs_regexp.h>
-#include <string.h>
 
 
 static njs_int_t njs_vm_init(njs_vm_t *vm);

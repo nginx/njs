@@ -18,6 +18,7 @@
 #include <njs_dtoa.h>
 #include <njs_strtod.h>
 #include <njs_djb_hash.h>
+#include <njs_murmur_hash.h>
 #include <njs_trace.h>
 #include <njs_queue.h>
 #include <njs_lvlhsh.h>
@@ -25,27 +26,47 @@
 #include <njs_time.h>
 #include <njs_file.h>
 #include <njs_malloc.h>
+#include <njs_rbtree.h>
 #include <njs_mp.h>
 #include <njs_arr.h>
 #include <njs_sprintf.h>
 
+#include <njs_md5.h>
+#include <njs_sha1.h>
+#include <njs_sha2.h>
+
 #include <njs.h>
 #include <njs_value.h>
+
 #include <njs_vm.h>
 #include <njs_vmcode.h>
 #include <njs_variable.h>
 #include <njs_lexer.h>
 #include <njs_parser.h>
 #include <njs_generator.h>
-#include <njs_function.h>
+
 #include <njs_boolean.h>
 #include <njs_number.h>
 #include <njs_string.h>
 #include <njs_object.h>
 #include <njs_object_hash.h>
 #include <njs_array.h>
+#include <njs_function.h>
 #include <njs_error.h>
+#include <njs_regexp.h>
+#include <njs_regexp_pattern.h>
+#include <njs_date.h>
 
+#include <njs_math.h>
+#include <njs_json.h>
+
+#include <njs_timer.h>
+#include <njs_module.h>
+
+#include <njs_fs.h>
+#include <njs_crypto.h>
+
+#include <njs_builtin.h>
 #include <njs_event.h>
 #include <njs_extern.h>
 #include <njs_module.h>

@@ -4,9 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
+
 #include <njs_main.h>
-#include <njs_regexp.h>
-#include <string.h>
 
 
 static njs_parser_node_t *njs_parser_reference(njs_vm_t *vm,

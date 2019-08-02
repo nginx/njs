@@ -4,8 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
+
 #include <njs_main.h>
-#include <string.h>
 
 
 const njs_value_t  njs_value_null =         njs_value(NJS_NULL, 0, 0.0);

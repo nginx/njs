@@ -4,11 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
+
 #include <njs_main.h>
-#include <njs_date.h>
-#include <string.h>
-#include <sys/time.h>
-#include <time.h>
 
 
 /*

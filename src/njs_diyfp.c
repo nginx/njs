@@ -8,9 +8,8 @@
  * and accurately with integers." ACM Sigplan Notices 45.6 (2010): 233-243.
  */
 
-#include <njs_auto_config.h>
-#include <njs_types.h>
-#include <njs_clang.h>
+
+#include <njs_main.h>
 #include <njs_diyfp.h>
 
 

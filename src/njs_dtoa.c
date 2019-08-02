@@ -33,15 +33,10 @@
  * THE SOFTWARE.
  */
 
-#include <njs_auto_config.h>
-#include <njs_types.h>
-#include <njs_clang.h>
-#include <njs_str.h>
+
+#include <njs_main.h>
 #include <njs_diyfp.h>
 #include <njs_dtoa.h>
-
-#include <math.h>
-#include <string.h>
 
 
 njs_inline void

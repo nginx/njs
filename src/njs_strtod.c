@@ -7,11 +7,8 @@
  * that can be found in the LICENSE file.
  */
 
-#include <njs_auto_config.h>
-#include <njs_types.h>
-#include <njs_clang.h>
+#include <njs_main.h>
 #include <njs_diyfp.h>
-#include <njs_strtod.h>
 
 /*
  * Max double: 1.7976931348623157 x 10^308

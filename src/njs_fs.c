@@ -4,12 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
+
 #include <njs_main.h>
-#include <njs_fs.h>
-#include <string.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <errno.h>
 
 
 typedef struct {

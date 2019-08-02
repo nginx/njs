@@ -4,10 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
-#include <njs_auto_config.h>
-#include <njs_types.h>
-#include <njs_clang.h>
-#include <njs_utf8.h>
+
+#include <njs_main.h>
 
 /*
  * The njs_unicode_lower_case.h and njs_unicode_upper_case.h files are

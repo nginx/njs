@@ -7,12 +7,7 @@
  */
 
 
-#include <njs_auto_config.h>
-#include <njs_types.h>
-#include <njs_clang.h>
-#include <njs_sha1.h>
-#include <njs_str.h>
-#include <string.h>
+#include <njs_main.h>
 
 
 static const u_char *njs_sha1_body(njs_sha1_t *ctx, const u_char *data,

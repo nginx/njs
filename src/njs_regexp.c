@@ -4,11 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
-#include <njs_main.h>
-#include <njs_regexp.h>
-#include <njs_regexp_pattern.h>
 
-#include <string.h>
+#include <njs_main.h>
 
 
 struct njs_regexp_group_s {

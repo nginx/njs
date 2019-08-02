@@ -4,9 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
+
 #include <njs_main.h>
-#include <njs_timer.h>
-#include <string.h>
 
 
 static njs_int_t

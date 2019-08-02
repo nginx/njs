@@ -6,17 +6,7 @@
 
 
 #include <njs_main.h>
-#include <njs_builtin.h>
-#include <time.h>
-#include <errno.h>
-#include <string.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/param.h>
 #include <locale.h>
-
-#include <stdio.h>
 #if (NJS_HAVE_EDITLINE)
 #include <editline/readline.h>
 #elif (NJS_HAVE_EDIT_READLINE)

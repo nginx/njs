@@ -4,13 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
-#include <njs_auto_config.h>
-#include <njs_types.h>
-#include <njs_clang.h>
-#include <njs_mp.h>
-#include <njs_arr.h>
-#include <njs_str.h>
-#include <string.h>
+
+#include <njs_main.h>
 
 
 njs_arr_t *

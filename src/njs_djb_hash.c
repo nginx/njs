@@ -4,11 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
-#include <njs_auto_config.h>
-#include <njs_types.h>
-#include <njs_clang.h>
-#include <njs_str.h>
-#include <njs_djb_hash.h>
+
+#include <njs_main.h>
 
 
 uint32_t

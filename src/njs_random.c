@@ -5,13 +5,7 @@
  */
 
 
-#include <njs_auto_config.h>
-#include <njs_types.h>
-#include <njs_clang.h>
-#include <njs_random.h>
-#include <fcntl.h>
-#include <sys/time.h>
-#include <unistd.h>
+#include <njs_main.h>
 #if (NJS_HAVE_GETRANDOM)
 #include <sys/random.h>
 #elif (NJS_HAVE_LINUX_SYS_GETRANDOM)

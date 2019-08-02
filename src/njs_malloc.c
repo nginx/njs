@@ -4,13 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
-#include <njs_auto_config.h>
-#include <njs_types.h>
-#include <njs_clang.h>
-#include <njs_str.h>
-#include <njs_malloc.h>
 
-#include <string.h>
+#include <njs_main.h>
 
 
 void *
@@ -46,9 +41,6 @@ njs_memalign(size_t alignment, size_t size)
     if (njs_fast_path(err == 0)) {
         return p;
     }
-
-    // STUB
-    //njs_errno_set(err);
 
     return NULL;
 }

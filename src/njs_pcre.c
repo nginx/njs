@@ -4,14 +4,9 @@
  * Copyright (C) NGINX, Inc.
  */
 
-#include <njs_auto_config.h>
-#include <njs_types.h>
-#include <njs_clang.h>
-#include <njs_trace.h>
-#include <njs_str.h>
-#include <njs_regex.h>
+
+#include <njs_main.h>
 #include <njs_pcre.h>
-#include <string.h>
 
 
 static void *njs_pcre_malloc(size_t size);

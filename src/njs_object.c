@@ -4,8 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
+
 #include <njs_main.h>
-#include <string.h>
 
 
 static njs_int_t njs_object_hash_test(njs_lvlhsh_query_t *lhq, void *data);

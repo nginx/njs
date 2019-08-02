@@ -5,16 +5,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
+
 #include <njs_main.h>
-#include <njs_regexp.h>
-#include <njs_date.h>
-#include <njs_timer.h>
-#include <njs_math.h>
-#include <njs_json.h>
-#include <njs_module.h>
-#include <njs_fs.h>
-#include <njs_crypto.h>
-#include <string.h>
 
 
 typedef struct {

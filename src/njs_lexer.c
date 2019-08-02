@@ -4,8 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
+
 #include <njs_main.h>
-#include <string.h>
 
 
 typedef struct njs_lexer_multi_s  njs_lexer_multi_t;

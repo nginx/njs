@@ -5,8 +5,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
+
 #include <njs_main.h>
-#include <string.h>
 
 
 typedef struct njs_generator_patch_s   njs_generator_patch_t;

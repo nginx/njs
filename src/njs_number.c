@@ -4,10 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
+
 #include <njs_main.h>
-#include <math.h>
-#include <string.h>
-#include <float.h>
 
 
 /*

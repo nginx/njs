@@ -4,10 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
+
 #include <njs_main.h>
-#include <njs_regexp.h>
-#include <njs_regexp_pattern.h>
-#include <string.h>
 
 
 #define NJS_TRIM_START  1

@@ -4,9 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
+
 #include <njs_main.h>
-#include <string.h>
-#include <stdint.h>
 
 
 static njs_int_t njs_array_prototype_slice_copy(njs_vm_t *vm,

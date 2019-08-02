@@ -4,15 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
-#include <njs_auto_config.h>
-#include <njs_types.h>
-#include <njs_clang.h>
-#include <njs_str.h>
-#include <njs_sprintf.h>
 
-#include <math.h>
-#include <float.h>
-#include <string.h>
+#include <njs_main.h>
 
 
 /*
@@ -80,7 +73,7 @@ typedef struct {
 
 
 static u_char *njs_integer(njs_sprintf_t *spf, u_char *buf, uint64_t ui64);
-static u_char *njs_number(njs_sprintf_t *spf, u_char *buf, double n);
+static u_char *njs_float(njs_sprintf_t *spf, u_char *buf, double n);
 
 
 /* A right way of "f == 0.0". */
@@ -340,7 +333,7 @@ njs_vsprintf(u_char *buf, u_char *end, const char *fmt, va_list args)
                 }
             }
 
-            buf = njs_number(&spf, buf, i);
+            buf = njs_float(&spf, buf, i);
 
             if (spf.frac_width > 0) {
 
@@ -546,7 +539,7 @@ njs_integer(njs_sprintf_t *spf, u_char *buf, uint64_t ui64)
 
 
 static u_char *
-njs_number(njs_sprintf_t *spf, u_char *buf, double n)
+njs_float(njs_sprintf_t *spf, u_char *buf, double n)
 {
     u_char  *p, *end;
     size_t  length;

@@ -4,9 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
+
 #include <njs_main.h>
-#include <string.h>
-#include <math.h>
 
 
 static const njs_value_t  njs_error_message_string = njs_string("message");

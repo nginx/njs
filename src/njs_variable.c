@@ -5,8 +5,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
+
 #include <njs_main.h>
-#include <string.h>
 
 
 static njs_variable_t *njs_variable_scope_add(njs_vm_t *vm,
