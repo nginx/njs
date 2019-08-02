@@ -26,7 +26,7 @@ NJS_LIB_SRCS=" \
    src/njs_number.c \
    src/njs_string.c \
    src/njs_object.c \
-   src/njs_object_property.c \
+   src/njs_object_prop.c \
    src/njs_array.c \
    src/njs_json.c \
    src/njs_function.c \
