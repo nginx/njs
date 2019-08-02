@@ -5,8 +5,9 @@
  */
 
 #include <njs.h>
-#include <string.h>
 #include <njs_sprintf.h>
+
+#include <string.h>
 #include <sys/resource.h>
 #include <time.h>
 

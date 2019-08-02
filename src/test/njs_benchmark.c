@@ -5,9 +5,10 @@
  */
 
 #include <njs.h>
+#include <njs_sprintf.h>
+
 #include <string.h>
 #include <stdlib.h>
-#include <njs_sprintf.h>
 #include <sys/resource.h>
 #include <time.h>
 

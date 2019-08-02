@@ -4,13 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
-#include <njs_auto_config.h>
-#include <njs_types.h>
-#include <njs_clang.h>
-#include <njs_sprintf.h>
-#include <njs_str.h>
-#include <njs_utf8.h>
-#include <string.h>
+
+#include <njs_main.h>
 
 
 #define NJS_UTF8_START_TEST  0xC2

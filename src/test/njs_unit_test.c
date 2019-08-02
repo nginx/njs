@@ -4,16 +4,8 @@
  * Copyright (C) NGINX, Inc.
  */
 
-#include <njs_auto_config.h>
 
 #include <njs_main.h>
-#include <njs_lvlhsh.h>
-#include <njs_djb_hash.h>
-#include <njs_pcre.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/resource.h>
-#include <time.h>
 
 
 typedef struct {
