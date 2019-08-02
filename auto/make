@@ -166,7 +166,8 @@ $NJS_BUILD_DIR/njs_auto_config.h:
 	@echo
 	@exit 1
 
-all: $NJS_BUILD_DIR/njs_auto_config.h test lib_test benchmark
+all: $NJS_BUILD_DIR/njs_auto_config.h \\
+    $NJS_DEFAULT_TARGET test lib_test benchmark
 
 njs: $NJS_BUILD_DIR/njs_auto_config.h $NJS_BUILD_DIR/njs
 
