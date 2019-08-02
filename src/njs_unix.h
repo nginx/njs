@@ -8,6 +8,9 @@
 #ifndef _NJS_UNIX_H_INCLUDED_
 #define _NJS_UNIX_H_INCLUDED_
 
+#include <unistd.h>
+#define njs_pagesize()      getpagesize()
+
 #if (NJS_LINUX)
 
 #ifdef _FORTIFY_SOURCE

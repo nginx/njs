@@ -61,6 +61,12 @@ struct njs_trace_s {
     } while (0)
 
 
+#define njs_thread_log_alert(...)
+#define njs_thread_log_error(...)
+#define njs_log_error(...)
+#define njs_thread_log_debug(...)
+
+
 NJS_EXPORT void njs_trace_handler(njs_trace_t *trace, uint32_t level,
     const char *fmt, ...);
 

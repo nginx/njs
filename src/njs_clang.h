@@ -24,6 +24,12 @@
 #define njs_nitems(x)                                                         \
     (sizeof(x) / sizeof((x)[0]))
 
+#define njs_max(val1, val2)                                                   \
+    ((val1 < val2) ? (val2) : (val1))
+
+#define njs_min(val1, val2)                                                   \
+    ((val1 < val2) ? (val1) : (val2))
+
 
 #if (NJS_HAVE_BUILTIN_EXPECT)
 #define njs_expect(c, x)   __builtin_expect((long) (x), (c))

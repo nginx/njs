@@ -8,6 +8,13 @@
 #define _NJS_TYPES_H_INCLUDED_
 
 
+#define NJS_OK             0
+#define NJS_ERROR          (-1)
+#define NJS_AGAIN          (-2)
+#define NJS_DECLINED       (-3)
+#define NJS_DONE           (-4)
+
+
 /*
  * off_t is 32 bit on Linux, Solaris and HP-UX by default.
  * Must be before <sys/types.h>.

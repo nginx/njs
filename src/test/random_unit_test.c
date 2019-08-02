@@ -9,7 +9,6 @@
 #include <njs_clang.h>
 #include <njs_sprintf.h>
 #include <njs_str.h>
-#include <njs_stub.h>
 #include <njs_random.h>
 #include <stdlib.h>
 #include <string.h>

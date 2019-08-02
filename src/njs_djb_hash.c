@@ -8,7 +8,6 @@
 #include <njs_types.h>
 #include <njs_clang.h>
 #include <njs_str.h>
-#include <njs_stub.h>
 #include <njs_djb_hash.h>
 
 

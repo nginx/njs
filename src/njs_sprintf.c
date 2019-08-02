@@ -7,7 +7,6 @@
 #include <njs_auto_config.h>
 #include <njs_types.h>
 #include <njs_clang.h>
-#include <njs_stub.h>
 #include <njs_str.h>
 #include <njs_sprintf.h>
 
