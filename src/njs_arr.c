@@ -7,98 +7,99 @@
 #include <njs_auto_config.h>
 #include <njs_types.h>
 #include <njs_clang.h>
-#include <njs_stub.h>
+#include <njs_mp.h>
 #include <njs_arr.h>
 #include <njs_str.h>
 #include <string.h>
 
 
 njs_arr_t *
-njs_arr_create(uint32_t items, uint32_t item_size,
-    const njs_mem_proto_t *proto, void *pool)
+njs_arr_create(njs_mp_t *mp, njs_uint_t n, size_t size)
 {
-    njs_arr_t  *array;
+    njs_arr_t  *arr;
 
-    array = proto->alloc(pool, sizeof(njs_arr_t) + items * item_size);
-
-    if (njs_fast_path(array != NULL)) {
-        array->start = (char *) array + sizeof(njs_arr_t);
-        array->items = 0;
-        array->item_size = item_size;
-        array->avalaible = items;
-        array->pointer = 1;
-        array->separate = 1;
+    arr = njs_mp_alloc(mp, sizeof(njs_arr_t) + n * size);
+    if (njs_slow_path(arr == NULL)) {
+        return NULL;
     }
 
-    return array;
+    arr->start = (char *) arr + sizeof(njs_arr_t);
+    arr->items = 0;
+    arr->item_size = size;
+    arr->avalaible = n;
+    arr->pointer = 1;
+    arr->separate = 1;
+    arr->mem_pool = mp;
+
+    return arr;
 }
 
 
 void *
-njs_arr_init(njs_arr_t *array, void *start, uint32_t items,
-    uint32_t item_size, const njs_mem_proto_t *proto, void *pool)
+njs_arr_init(njs_mp_t *mp, njs_arr_t *arr, void *start, njs_uint_t n,
+    size_t size)
 {
-    array->start = start;
-    array->items = items;
-    array->item_size = item_size;
-    array->avalaible = items;
-    array->pointer = 0;
-    array->separate = 0;
+    arr->start = start;
+    arr->items = n;
+    arr->item_size = size;
+    arr->avalaible = n;
+    arr->pointer = 0;
+    arr->separate = 0;
+    arr->mem_pool = mp;
 
-    if (array->start == NULL) {
-        array->separate = 1;
-        array->items = 0;
+    if (arr->start == NULL) {
+        arr->separate = 1;
+        arr->items = 0;
 
-        array->start = proto->alloc(pool, items * item_size);
+        arr->start = njs_mp_alloc(mp, n * size);
     }
 
-    return array->start;
+    return arr->start;
 }
 
 
 void
-njs_arr_destroy(njs_arr_t *array, const njs_mem_proto_t *proto, void *pool)
+njs_arr_destroy(njs_arr_t *arr)
 {
-    if (array->separate) {
-        proto->free(pool, array->start);
+    if (arr->separate) {
+        njs_mp_free(arr->mem_pool, arr->start);
 #if (NJS_DEBUG)
-        array->start = NULL;
-        array->items = 0;
-        array->avalaible = 0;
+        arr->start = NULL;
+        arr->items = 0;
+        arr->avalaible = 0;
 #endif
     }
 
-    if (array->pointer) {
-        proto->free(pool, array);
+    if (arr->pointer) {
+        njs_mp_free(arr->mem_pool, arr);
     }
 }
 
 
 void *
-njs_arr_add(njs_arr_t *array, const njs_mem_proto_t *proto, void *pool)
+njs_arr_add(njs_arr_t *arr)
 {
-    return njs_arr_add_multiple(array, proto, pool, 1);
+    return njs_arr_add_multiple(arr, 1);
 }
 
 
 void *
-njs_arr_add_multiple(njs_arr_t *array, const njs_mem_proto_t *proto,
-    void *pool, uint32_t items)
+njs_arr_add_multiple(njs_arr_t *arr, njs_uint_t items)
 {
     void      *item, *start, *old;
     uint32_t  n;
 
-    n = array->avalaible;
-    items += array->items;
+    n = arr->avalaible;
+    items += arr->items;
 
     if (items >= n) {
 
         if (n < 16) {
-            /* Allocate new array twice as much as current. */
+            /* Allocate new arr twice as much as current. */
             n *= 2;
 
         } else {
-            /* Allocate new array half as much as current. */
+            /* Allocate new arr half as much as current. */
             n += n / 2;
         }
 
@@ -106,42 +107,42 @@ njs_arr_add_multiple(njs_arr_t *array, const njs_mem_proto_t *proto,
             n = items;
         }
 
-        start = proto->alloc(pool, n * array->item_size);
+        start = njs_mp_alloc(arr->mem_pool, n * arr->item_size);
         if (njs_slow_path(start == NULL)) {
             return NULL;
         }
 
-        array->avalaible = n;
-        old = array->start;
-        array->start = start;
+        arr->avalaible = n;
+        old = arr->start;
+        arr->start = start;
 
-        memcpy(start, old, (uint32_t) array->items * array->item_size);
+        memcpy(start, old, (uint32_t) arr->items * arr->item_size);
 
-        if (array->separate == 0) {
-            array->separate = 1;
+        if (arr->separate == 0) {
+            arr->separate = 1;
 
         } else {
-            proto->free(pool, old);
+            njs_mp_free(arr->mem_pool, old);
         }
     }
 
-    item = (char *) array->start + (uint32_t) array->items * array->item_size;
+    item = (char *) arr->start + (uint32_t) arr->items * arr->item_size;
 
-    array->items = items;
+    arr->items = items;
 
     return item;
 }
 
 
 void *
-njs_arr_zero_add(njs_arr_t *array, const njs_mem_proto_t *proto, void *pool)
+njs_arr_zero_add(njs_arr_t *arr)
 {
     void  *item;
 
-    item = njs_arr_add(array, proto, pool);
+    item = njs_arr_add(arr);
 
     if (njs_fast_path(item != NULL)) {
-        njs_memzero(item, array->item_size);
+        njs_memzero(item, arr->item_size);
     }
 
     return item;
@@ -149,13 +150,13 @@ njs_arr_zero_add(njs_arr_t *array, const njs_mem_proto_t *proto, void *pool)
 
 
 void
-njs_arr_remove(njs_arr_t *array, void *item)
+njs_arr_remove(njs_arr_t *arr, void *item)
 {
     u_char    *next, *last, *end;
     uint32_t  item_size;
 
-    item_size = array->item_size;
-    end = (u_char *) array->start + item_size * array->items;
+    item_size = arr->item_size;
+    end = (u_char *) arr->start + item_size * arr->items;
     last = end - item_size;
 
     if (item != last) {
@@ -164,5 +165,5 @@ njs_arr_remove(njs_arr_t *array, void *item)
         memmove(item, next, end - next);
     }
 
-    array->items--;
+    arr->items--;
 }

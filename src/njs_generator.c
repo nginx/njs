@@ -2432,14 +2432,13 @@ njs_generate_scope(njs_vm_t *vm, njs_generator_t *generator,
     }
 
     if (vm->codes == NULL) {
-        vm->codes = njs_arr_create(4, sizeof(njs_vm_code_t),
-                                   &njs_array_mem_proto, vm->mem_pool);
+        vm->codes = njs_arr_create(vm->mem_pool, 4, sizeof(njs_vm_code_t));
         if (njs_slow_path(vm->codes == NULL)) {
             return NJS_ERROR;
         }
     }
 
-    code = njs_arr_add(vm->codes, &njs_array_mem_proto, vm->mem_pool);
+    code = njs_arr_add(vm->codes);
     if (njs_slow_path(code == NULL)) {
         return NJS_ERROR;
     }
@@ -3265,8 +3264,7 @@ njs_generate_index_release(njs_vm_t *vm, njs_generator_t *generator,
     cache = generator->index_cache;
 
     if (cache == NULL) {
-        cache = njs_arr_create(4, sizeof(njs_value_t *),
-                               &njs_array_mem_proto, vm->mem_pool);
+        cache = njs_arr_create(vm->mem_pool, 4, sizeof(njs_value_t *));
         if (njs_slow_path(cache == NULL)) {
             return NJS_ERROR;
         }
@@ -3274,7 +3272,7 @@ njs_generate_index_release(njs_vm_t *vm, njs_generator_t *generator,
         generator->index_cache = cache;
     }
 
-    last = njs_arr_add(cache, &njs_array_mem_proto, vm->mem_pool);
+    last = njs_arr_add(cache);
     if (njs_fast_path(last != NULL)) {
         *last = index;
         return NJS_OK;
@@ -3317,7 +3315,7 @@ njs_generate_function_debug(njs_vm_t *vm, const njs_str_t *name,
 {
     njs_function_debug_t  *debug;
 
-    debug = njs_arr_add(vm->debug, &njs_array_mem_proto, vm->mem_pool);
+    debug = njs_arr_add(vm->debug);
     if (njs_slow_path(debug == NULL)) {
         return NJS_ERROR;
     }

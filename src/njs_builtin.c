@@ -772,9 +772,7 @@ njs_vm_completions(njs_vm_t *vm, njs_str_t *expression)
     if (expression == NULL) {
         size = njs_builtin_completions_size(vm);
 
-        completions = njs_arr_create(size, sizeof(njs_str_t),
-                                     &njs_array_mem_proto, vm->mem_pool);
-
+        completions = njs_arr_create(vm->mem_pool, size, sizeof(njs_str_t));
         if (njs_slow_path(completions == NULL)) {
             return NULL;
         }
@@ -897,9 +895,7 @@ njs_object_completions(njs_vm_t *vm, njs_object_t *object)
 
     } while (o != NULL);
 
-    completions = njs_arr_create(size, sizeof(njs_str_t),
-                                 &njs_array_mem_proto, vm->mem_pool);
-
+    completions = njs_arr_create(vm->mem_pool, size, sizeof(njs_str_t));
     if (njs_slow_path(completions == NULL)) {
         return NULL;
     }

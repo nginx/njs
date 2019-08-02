@@ -208,8 +208,8 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         parse->function = njs_function(reviver);
 
-        if (njs_arr_init(&parse->stack, NULL, 4, sizeof(njs_json_state_t),
-                         &njs_array_mem_proto, vm->mem_pool)
+        if (njs_arr_init(vm->mem_pool, &parse->stack, NULL, 4,
+                         sizeof(njs_json_state_t))
             == NULL)
         {
             goto memory_error;
@@ -305,8 +305,8 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    if (njs_arr_init(&stringify->stack, NULL, 4, sizeof(njs_json_state_t),
-                     &njs_array_mem_proto, vm->mem_pool)
+    if (njs_arr_init(vm->mem_pool, &stringify->stack, NULL, 4,
+                     sizeof(njs_json_state_t))
         == NULL)
     {
         goto memory_error;
@@ -1103,7 +1103,7 @@ njs_json_push_parse_state(njs_vm_t *vm, njs_json_parse_t *parse,
 {
     njs_json_state_t  *state;
 
-    state = njs_arr_add(&parse->stack, &njs_array_mem_proto, vm->mem_pool);
+    state = njs_arr_add(&parse->stack);
     if (state != NULL) {
         state = njs_arr_last(&parse->stack);
         state->value = *value;
@@ -1693,8 +1693,7 @@ njs_json_push_stringify_state(njs_vm_t *vm, njs_json_stringify_t *stringify,
         return NULL;
     }
 
-    state = njs_arr_add(&stringify->stack, &njs_array_mem_proto,
-                        vm->mem_pool);
+    state = njs_arr_add(&stringify->stack);
     if (njs_slow_path(state == NULL)) {
         njs_memory_error(vm);
         return NULL;
@@ -2419,8 +2418,8 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, const njs_value_t *value,
 
     njs_memset(stringify->space.start, ' ', indent);
 
-    if (njs_arr_init(&stringify->stack, NULL, 4, sizeof(njs_json_state_t),
-                     &njs_array_mem_proto, vm->mem_pool)
+    if (njs_arr_init(vm->mem_pool, &stringify->stack, NULL, 4,
+                     sizeof(njs_json_state_t))
         == NULL)
     {
         goto memory_error;

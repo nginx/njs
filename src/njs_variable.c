@@ -564,8 +564,7 @@ njs_scope_next_index(njs_vm_t *vm, njs_parser_scope_t *scope,
         values = scope->values[scope_index];
 
         if (values == NULL) {
-            values = njs_arr_create(4, sizeof(njs_value_t),
-                                    &njs_array_mem_proto, vm->mem_pool);
+            values = njs_arr_create(vm->mem_pool, 4, sizeof(njs_value_t));
             if (njs_slow_path(values == NULL)) {
                 return NJS_INDEX_ERROR;
             }
@@ -573,7 +572,7 @@ njs_scope_next_index(njs_vm_t *vm, njs_parser_scope_t *scope,
             scope->values[scope_index] = values;
         }
 
-        value = njs_arr_add(values, &njs_array_mem_proto, vm->mem_pool);
+        value = njs_arr_add(values);
         if (njs_slow_path(value == NULL)) {
             return NJS_INDEX_ERROR;
         }

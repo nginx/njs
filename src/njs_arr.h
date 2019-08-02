@@ -20,47 +20,44 @@ typedef struct {
 
     uint8_t           pointer;
     uint8_t           separate;
+    njs_mp_t          *mem_pool;
 } njs_arr_t;
 
 
-NJS_EXPORT njs_arr_t *njs_arr_create(uint32_t items, uint32_t item_size,
-    const njs_mem_proto_t *proto, void *pool);
-NJS_EXPORT void *njs_arr_init(njs_arr_t *array, void *start, uint32_t items,
-    uint32_t item_size, const njs_mem_proto_t *proto, void *pool);
-NJS_EXPORT void njs_arr_destroy(njs_arr_t *array,
-    const njs_mem_proto_t *proto, void *pool);
-NJS_EXPORT void *njs_arr_add(njs_arr_t *array, const njs_mem_proto_t *proto,
-    void *pool);
-NJS_EXPORT void *njs_arr_add_multiple(njs_arr_t *array,
-    const njs_mem_proto_t *proto, void *pool, uint32_t items);
-NJS_EXPORT void *njs_arr_zero_add(njs_arr_t *array,
-    const njs_mem_proto_t *proto, void *pool);
-NJS_EXPORT void njs_arr_remove(njs_arr_t *array, void *item);
+NJS_EXPORT njs_arr_t *njs_arr_create(njs_mp_t *mp, njs_uint_t n,
+    size_t size);
+NJS_EXPORT void *njs_arr_init(njs_mp_t *mp, njs_arr_t *arr, void *start,
+    njs_uint_t n, size_t size);
+NJS_EXPORT void njs_arr_destroy(njs_arr_t *arr);
+NJS_EXPORT void *njs_arr_add(njs_arr_t *arr);
+NJS_EXPORT void *njs_arr_add_multiple(njs_arr_t *arr, njs_uint_t n);
+NJS_EXPORT void *njs_arr_zero_add(njs_arr_t *arr);
+NJS_EXPORT void njs_arr_remove(njs_arr_t *arr, void *item);
 
 
-#define njs_arr_item(array, i)                                              \
-    ((void *) ((char *) (array)->start + (array)->item_size * (i)))
+#define njs_arr_item(arr, i)                                                \
+    ((void *) ((char *) (arr)->start + (arr)->item_size * (i)))
 
 
-#define njs_arr_last(array)                                                 \
-    ((void *)                                                                 \
-        ((char *) (array)->start                                              \
-                      + (array)->item_size * ((array)->items - 1)))
+#define njs_arr_last(arr)                                                   \
+    ((void *)                                                               \
+        ((char *) (arr)->start                                              \
+                      + (arr)->item_size * ((arr)->items - 1)))
 
 
-#define njs_arr_reset(array)                                                \
-    (array)->items = 0;
+#define njs_arr_reset(arr)                                                  \
+    (arr)->items = 0;
 
 
-#define njs_arr_is_empty(array)                                             \
-    ((array)->items == 0)
+#define njs_arr_is_empty(arr)                                               \
+    ((arr)->items == 0)
 
 
 njs_inline void *
-njs_arr_remove_last(njs_arr_t *array)
+njs_arr_remove_last(njs_arr_t *arr)
 {
-    array->items--;
-    return (char *) array->start + array->item_size * array->items;
+    arr->items--;
+    return (char *) arr->start + arr->item_size * arr->items;
 }
 
 

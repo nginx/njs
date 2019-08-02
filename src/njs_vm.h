@@ -348,6 +348,7 @@ njs_int_t njs_builtin_match_native_function(njs_vm_t *vm,
     njs_function_t *function, njs_str_t *name);
 
 njs_arr_t *njs_vm_backtrace(njs_vm_t *vm);
+njs_arr_t *njs_vm_completions(njs_vm_t *vm, njs_str_t *expression);
 
 void *njs_lvlhsh_alloc(void *data, size_t size);
 void njs_lvlhsh_free(void *data, void *p, size_t size);
@@ -359,7 +360,6 @@ extern const njs_str_t    njs_entry_native;
 extern const njs_str_t    njs_entry_unknown;
 extern const njs_str_t    njs_entry_anonymous;
 
-extern const njs_mem_proto_t     njs_array_mem_proto;
 extern const njs_lvlhsh_proto_t  njs_object_hash_proto;
 
 

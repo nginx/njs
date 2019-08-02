@@ -18,7 +18,6 @@
 #include <njs_clang.h>
 #include <njs_str.h>
 #include <njs_stub.h>
-#include <njs_arr.h>
 #include <njs_lvlhsh.h>
 
 
@@ -225,7 +224,6 @@ NJS_EXPORT njs_external_ptr_t njs_vm_external(njs_vm_t *vm,
     const njs_value_t *value);
 
 NJS_EXPORT void njs_disassembler(njs_vm_t *vm);
-NJS_EXPORT njs_arr_t *njs_vm_completions(njs_vm_t *vm, njs_str_t *expression);
 
 NJS_EXPORT const njs_value_t *njs_vm_value(njs_vm_t *vm, const njs_str_t *name);
 NJS_EXPORT njs_function_t *njs_vm_function(njs_vm_t *vm, const njs_str_t *name);

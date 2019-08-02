@@ -218,8 +218,7 @@ njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser, njs_scope_t type)
     values = NULL;
 
     if (scope->type < NJS_SCOPE_BLOCK) {
-        values = njs_arr_create(4, sizeof(njs_value_t), &njs_array_mem_proto,
-                                vm->mem_pool);
+        values = njs_arr_create(vm->mem_pool, 4, sizeof(njs_value_t));
         if (njs_slow_path(values == NULL)) {
             return NJS_ERROR;
         }

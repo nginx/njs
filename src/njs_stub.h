@@ -22,17 +22,6 @@
 #define NJS_DONE           (-4)
 
 
-typedef struct {
-    void           *(*alloc)(void *mem, size_t size);
-    void           *(*zalloc)(void *mem, size_t size);
-    void           *(*align)(void *mem, size_t alignment, size_t size);
-    void           *(*zalign)(void *mem, size_t alignment, size_t size);
-    void           (*free)(void *mem, void *p);
-    void           (*alert)(void *trace, const char *fmt, ...);
-    void njs_cdecl  (*trace)(void *trace, const char *fmt, ...);
-} njs_mem_proto_t;
-
-
 #define njs_thread_log_alert(...)
 #define njs_thread_log_error(...)
 #define njs_log_error(...)

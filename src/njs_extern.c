@@ -178,8 +178,7 @@ njs_vm_external_create(njs_vm_t *vm, njs_value_t *ext_val,
         return NJS_ERROR;
     }
 
-    obj = njs_arr_add(vm->external_objects, &njs_array_mem_proto,
-                      vm->mem_pool);
+    obj = njs_arr_add(vm->external_objects);
     if (njs_slow_path(obj == NULL)) {
         return NJS_ERROR;
     }

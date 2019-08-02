@@ -492,14 +492,13 @@ njs_module_insert(njs_vm_t *vm, njs_module_t *module)
     }
 
     if (vm->modules == NULL) {
-        vm->modules = njs_arr_create(4, sizeof(njs_module_t *),
-                                     &njs_array_mem_proto, vm->mem_pool);
+        vm->modules = njs_arr_create(vm->mem_pool, 4, sizeof(njs_module_t *));
         if (njs_slow_path(vm->modules == NULL)) {
             return NJS_ERROR;
         }
     }
 
-    value = njs_arr_add(vm->modules, &njs_array_mem_proto, vm->mem_pool);
+    value = njs_arr_add(vm->modules);
     if (njs_slow_path(value == NULL)) {
         return NJS_ERROR;
     }

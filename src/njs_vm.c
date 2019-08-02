@@ -20,31 +20,6 @@ const njs_str_t  njs_entry_unknown =        njs_str("unknown");
 const njs_str_t  njs_entry_anonymous =      njs_str("anonymous");
 
 
-static void *
-njs_array_mem_alloc(void *mem, size_t size)
-{
-    return njs_mp_alloc(mem, size);
-}
-
-
-static void
-njs_array_mem_free(void *mem, void *p)
-{
-    njs_mp_free(mem, p);
-}
-
-
-const njs_mem_proto_t  njs_array_mem_proto = {
-    njs_array_mem_alloc,
-    NULL,
-    NULL,
-    NULL,
-    njs_array_mem_free,
-    NULL,
-    NULL,
-};
-
-
 njs_vm_t *
 njs_vm_create(njs_vm_opt_t *options)
 {
@@ -111,9 +86,7 @@ njs_vm_create(njs_vm_opt_t *options)
 
         vm->external = options->external;
 
-        vm->external_objects = njs_arr_create(4, sizeof(void *),
-                                              &njs_array_mem_proto,
-                                              vm->mem_pool);
+        vm->external_objects = njs_arr_create(vm->mem_pool, 4, sizeof(void *));
         if (njs_slow_path(vm->external_objects == NULL)) {
             return NULL;
         }
@@ -127,8 +100,8 @@ njs_vm_create(njs_vm_opt_t *options)
         vm->trace.data = vm;
 
         if (options->backtrace) {
-            debug = njs_arr_create(4, sizeof(njs_function_debug_t),
-                                   &njs_array_mem_proto, vm->mem_pool);
+            debug = njs_arr_create(vm->mem_pool, 4,
+                                   sizeof(njs_function_debug_t));
             if (njs_slow_path(debug == NULL)) {
                 return NULL;
             }
@@ -302,9 +275,8 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
         nvm->external_prototypes_hash = vm->external_prototypes_hash;
 
         items = vm->external_objects->items;
-        externals = njs_arr_create(items + 4, sizeof(void *),
-                                   &njs_array_mem_proto, nvm->mem_pool);
 
+        externals = njs_arr_create(nvm->mem_pool, items + 4, sizeof(void *));
         if (njs_slow_path(externals == NULL)) {
             return NULL;
         }
@@ -393,8 +365,8 @@ njs_vm_init(njs_vm_t *vm)
     njs_queue_init(&vm->posted_events);
 
     if (vm->debug != NULL) {
-        backtrace = njs_arr_create(4, sizeof(njs_backtrace_entry_t),
-                                   &njs_array_mem_proto, vm->mem_pool);
+        backtrace = njs_arr_create(vm->mem_pool, 4,
+                                   sizeof(njs_backtrace_entry_t));
         if (njs_slow_path(backtrace == NULL)) {
             return NJS_ERROR;
         }
@@ -634,14 +606,13 @@ njs_vm_add_path(njs_vm_t *vm, const njs_str_t *path)
     njs_str_t  *item;
 
     if (vm->paths == NULL) {
-        vm->paths = njs_arr_create(4, sizeof(njs_str_t),
-                                   &njs_array_mem_proto, vm->mem_pool);
+        vm->paths = njs_arr_create(vm->mem_pool, 4, sizeof(njs_str_t));
         if (njs_slow_path(vm->paths == NULL)) {
             return NJS_ERROR;
         }
     }
 
-    item = njs_arr_add(vm->paths, &njs_array_mem_proto, vm->mem_pool);
+    item = njs_arr_add(vm->paths);
     if (njs_slow_path(item == NULL)) {
         return NJS_ERROR;
     }
@@ -1088,7 +1059,7 @@ njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame)
     native_frame = &frame->native;
     function = native_frame->function;
 
-    be = njs_arr_add(vm->backtrace, &njs_array_mem_proto, vm->mem_pool);
+    be = njs_arr_add(vm->backtrace);
     if (njs_slow_path(be == NULL)) {
         return NJS_ERROR;
     }

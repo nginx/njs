@@ -3112,9 +3112,8 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     /* This cannot fail. */
-    r->part = njs_arr_init(&r->parts, &r->array,
-                           3, sizeof(njs_string_replace_part_t),
-                           &njs_array_mem_proto, vm->mem_pool);
+    r->part = njs_arr_init(vm->mem_pool, &r->parts, &r->array,
+                           3, sizeof(njs_string_replace_part_t));
 
     r->substitutions = NULL;
     r->function = NULL;
@@ -3222,14 +3221,12 @@ njs_string_replace_regexp(njs_vm_t *vm, njs_value_t *args,
         }
 
         if (r->part != r->parts.start) {
-            r->part = njs_arr_add(&r->parts, &njs_array_mem_proto,
-                                  vm->mem_pool);
+            r->part = njs_arr_add(&r->parts);
             if (njs_slow_path(r->part == NULL)) {
                 return NJS_ERROR;
             }
 
-            r->part = njs_arr_add(&r->parts, &njs_array_mem_proto,
-                                  vm->mem_pool);
+            r->part = njs_arr_add(&r->parts);
             if (njs_slow_path(r->part == NULL)) {
                 return NJS_ERROR;
             }
@@ -3297,7 +3294,7 @@ njs_string_replace_regexp(njs_vm_t *vm, njs_value_t *args,
 
     njs_regex_match_data_free(r->match_data, vm->regex_context);
 
-    njs_arr_destroy(&r->parts, &njs_array_mem_proto, vm->mem_pool);
+    njs_arr_destroy(&r->parts);
 
     njs_string_copy(&vm->retval, &args[0]);
 
@@ -3513,8 +3510,8 @@ njs_string_replace_parse(njs_vm_t *vm, njs_string_replace_t *r, u_char *p,
     uint32_t            type;
     njs_string_subst_t  *s;
 
-    r->substitutions = njs_arr_create(4, sizeof(njs_string_subst_t),
-                                      &njs_array_mem_proto, vm->mem_pool);
+    r->substitutions = njs_arr_create(vm->mem_pool, 4,
+                                      sizeof(njs_string_subst_t));
 
     if (njs_slow_path(r->substitutions == NULL)) {
         return NJS_ERROR;
@@ -3529,7 +3526,7 @@ njs_string_replace_parse(njs_vm_t *vm, njs_string_replace_t *r, u_char *p,
 copy:
 
     if (s == NULL) {
-        s = njs_arr_add(r->substitutions, &njs_array_mem_proto, vm->mem_pool);
+        s = njs_arr_add(r->substitutions);
         if (njs_slow_path(s == NULL)) {
             return NJS_ERROR;
         }
@@ -3593,7 +3590,7 @@ skip:
             goto copy;
         }
 
-        s = njs_arr_add(r->substitutions, &njs_array_mem_proto, vm->mem_pool);
+        s = njs_arr_add(r->substitutions);
         if (njs_slow_path(s == NULL)) {
             return NJS_ERROR;
         }
@@ -3621,8 +3618,7 @@ njs_string_replace_substitute(njs_vm_t *vm, njs_string_replace_t *r,
     last = r->substitutions->items;
     end = r->part[0].start + r->part[0].size;
 
-    part = njs_arr_add_multiple(&r->parts, &njs_array_mem_proto, vm->mem_pool,
-                                last + 1);
+    part = njs_arr_add_multiple(&r->parts, last + 1);
     if (njs_slow_path(part == NULL)) {
         return NJS_ERROR;
     }
@@ -3801,7 +3797,7 @@ njs_string_replace_join(njs_vm_t *vm, njs_string_replace_t *r)
         /* GC: release valid values. */
     }
 
-    njs_arr_destroy(&r->parts, &njs_array_mem_proto, vm->mem_pool);
+    njs_arr_destroy(&r->parts);
 
     return NJS_OK;
 }
