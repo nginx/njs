@@ -38,8 +38,6 @@ static njs_jump_off_t njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
 static njs_jump_off_t njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *invld);
 
-static njs_jump_off_t njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *method, u_char *pc);
 static njs_jump_off_t njs_vmcode_return(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *retval);
 
@@ -85,6 +83,7 @@ njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc)
     double                       num, exponent;
     int32_t                      i32;
     uint32_t                     u32;
+    njs_str_t                    string;
     njs_uint_t                   hint;
     njs_bool_t                   valid, lambda_call;
     njs_value_t                  *retval, *value1, *value2, *src, *s1, *s2;
@@ -103,6 +102,7 @@ njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc)
     njs_vmcode_test_jump_t       *test_jump;
     njs_vmcode_equal_jump_t      *equal;
     njs_vmcode_try_return_t      *try_return;
+    njs_vmcode_method_frame_t    *method_frame;
     njs_vmcode_function_frame_t  *function_frame;
 
 next:
@@ -683,11 +683,35 @@ next:
                 break;
 
             case NJS_VMCODE_METHOD_FRAME:
-                ret = njs_vmcode_method_frame(vm, value1, value2, pc);
+                method_frame = (njs_vmcode_method_frame_t *) pc;
+
+                ret = njs_value_property(vm, value1, value2, &dst);
                 if (njs_slow_path(ret == NJS_ERROR)) {
                     goto error;
                 }
 
+                if (njs_slow_path(!njs_is_function(&dst))) {
+                    ret = njs_value_to_string(vm, value2, value2);
+                    if (njs_slow_path(ret != NJS_OK)) {
+                        return NJS_ERROR;
+                    }
+
+                    njs_string_get(value2, &string);
+                    njs_type_error(vm,
+                               "(intermediate value)[\"%V\"] is not a function",
+                               &string);
+                    goto error;
+                }
+
+                ret = njs_function_frame_create(vm, &dst, value1,
+                                                method_frame->nargs,
+                                                method_frame->ctor);
+
+                if (njs_slow_path(ret != NJS_OK)) {
+                    goto error;
+                }
+
+                ret = sizeof(njs_vmcode_method_frame_t);
                 break;
 
             case NJS_VMCODE_FUNCTION_CALL:
@@ -1719,89 +1743,6 @@ njs_function_new_object(njs_vm_t *vm, njs_value_t *value)
    }
 
    return NULL;
-}
-
-
-static njs_jump_off_t
-njs_vmcode_method_frame(njs_vm_t *vm, njs_value_t *object, njs_value_t *name,
-    u_char *pc)
-{
-    njs_str_t                  string;
-    njs_value_t                *value;
-    njs_jump_off_t             ret;
-    njs_object_prop_t          *prop;
-    njs_property_query_t       pq;
-    njs_vmcode_method_frame_t  *method;
-
-    value = NULL;
-    method = (njs_vmcode_method_frame_t *) pc;
-
-    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 0);
-
-    ret = njs_property_query(vm, &pq, object, name);
-
-    switch (ret) {
-
-    case NJS_OK:
-        prop = pq.lhq.value;
-
-        switch (prop->type) {
-        case NJS_PROPERTY:
-        case NJS_METHOD:
-            break;
-
-        case NJS_PROPERTY_HANDLER:
-            pq.scratch = *prop;
-            prop = &pq.scratch;
-            ret = prop->value.data.u.prop_handler(vm, object, NULL,
-                                                  &prop->value);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return ret;
-            }
-
-            break;
-
-        default:
-            njs_internal_error(vm, "unexpected property type \"%s\" "
-                               "while getting method",
-                               njs_prop_type_string(prop->type));
-
-            return NJS_ERROR;
-        }
-
-        value = &prop->value;
-
-        break;
-
-    case NJS_DECLINED:
-        break;
-
-    case NJS_ERROR:
-    default:
-
-        return ret;
-    }
-
-    if (value == NULL || !njs_is_function(value)) {
-        ret = njs_value_to_string(vm, name, name);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_ERROR;
-        }
-
-        njs_string_get(name, &string);
-        njs_type_error(vm, "(intermediate value)[\"%V\"] is not a function",
-                       &string);
-        return NJS_ERROR;
-    }
-
-    ret = njs_function_frame_create(vm, value, object, method->nargs,
-                                    method->ctor);
-
-    if (njs_fast_path(ret == NJS_OK)) {
-        return sizeof(njs_vmcode_method_frame_t);
-    }
-
-    return ret;
 }
 
 

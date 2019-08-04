@@ -165,6 +165,10 @@ static njs_interactive_test_t  njs_test[] =
                  "    at Math.max (native)\n"
                  "    at main (native)\n") },
 
+    { njs_str("Object.prototype()" ENTER),
+      njs_str("TypeError: (intermediate value)[\"prototype\"] is not a function\n"
+                 "    at main (native)\n") },
+
     { njs_str("eval()" ENTER),
       njs_str("InternalError: Not implemented\n"
                  "    at eval (native)\n"

@@ -8559,6 +8559,11 @@ static njs_unit_test_t  njs_test[] =
                  "[] instanceof Function.prototype"),
       njs_str("Error: Oops") },
 
+     { njs_str("var o = {};"
+                 "Object.defineProperty(o, 'foo', { get: function() {return () => 1} });"
+                 "o.foo()"),
+      njs_str("1") },
+
     /* global this. */
 
     { njs_str("this"),
