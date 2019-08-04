@@ -954,6 +954,7 @@ njs_builtin_match(const njs_object_init_t **objects, njs_function_t *function,
     const njs_object_prop_t **prop, const njs_object_init_t **object)
 {
     njs_uint_t               i;
+    njs_function_t           *fun;
     const njs_object_init_t  *o, **p;
     const njs_object_prop_t  *pr;
 
@@ -967,7 +968,9 @@ njs_builtin_match(const njs_object_init_t **objects, njs_function_t *function,
                 continue;
             }
 
-            if (function != njs_function(&pr->value)) {
+            fun = njs_function(&pr->value);
+
+            if (function->u.native != fun->u.native) {
                 continue;
             }
 
@@ -993,6 +996,16 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
     const njs_object_prop_t    *prop;
     const njs_function_init_t  *fun;
 
+    fun = njs_native_functions;
+
+    for (p = njs_function_init; *p != NULL; p++, fun++) {
+        if (function->u.native == fun->native) {
+            *name = (*p)->name;
+
+            return NJS_OK;
+        }
+    }
+
     middle = njs_str_value(".");
 
     ret = njs_builtin_match(njs_object_init, function, &prop, &obj);
@@ -1012,16 +1025,6 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
 
     if (ret == NJS_OK) {
         goto found;
-    }
-
-    fun = njs_native_functions;
-
-    for (p = njs_function_init; *p != NULL; p++, fun++) {
-        if (function->u.native == fun->native) {
-            *name = (*p)->name;
-
-            return NJS_OK;
-        }
     }
 
     ret = njs_builtin_match(njs_module_init, function, &prop, &obj);

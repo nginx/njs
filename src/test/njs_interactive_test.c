@@ -160,6 +160,11 @@ static njs_interactive_test_t  njs_test[] =
                  "    at Math.log (native)\n"
                  "    at main (native)\n") },
 
+    { njs_str("var bound = Math.max.bind(null, {toString(){return {}}}); bound(1)" ENTER),
+      njs_str("TypeError: Cannot convert object to primitive value\n"
+                 "    at Math.max (native)\n"
+                 "    at main (native)\n") },
+
     { njs_str("eval()" ENTER),
       njs_str("InternalError: Not implemented\n"
                  "    at eval (native)\n"
