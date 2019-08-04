@@ -133,14 +133,10 @@ njs_error_create(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_object_t       *error;
     const njs_value_t  *value;
 
-    if (nargs == 1) {
-        value = &njs_string_empty;
+    value = njs_arg(args, nargs, 1);
 
-    } else {
-        value = &args[1];
-    }
-
-    error = njs_error_alloc(vm, type, NULL, value);
+    error = njs_error_alloc(vm, type, NULL,
+                            njs_is_defined(value) ? value : NULL);
     if (njs_slow_path(error == NULL)) {
         return NJS_ERROR;
     }

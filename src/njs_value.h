@@ -425,6 +425,10 @@ typedef struct {
     ((value)->type == NJS_UNDEFINED)
 
 
+#define njs_is_defined(value)                                                 \
+    ((value)->type != NJS_UNDEFINED)
+
+
 #define njs_is_null_or_undefined(value)                                       \
     ((value)->type <= NJS_UNDEFINED)
 

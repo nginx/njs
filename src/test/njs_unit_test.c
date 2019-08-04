@@ -7865,6 +7865,11 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Error().__proto__.__proto__ == Object.prototype"),
       njs_str("true") },
 
+    { njs_str("Error.prototype.message = 'm';"
+              "Error.prototype.name = 'n';"
+              "new Error()"),
+      njs_str("n: m") },
+
     { njs_str("EvalError('e')"),
       njs_str("EvalError: e") },
 
