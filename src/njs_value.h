@@ -822,11 +822,11 @@ double njs_string_to_number(const njs_value_t *value, njs_bool_t parse_float);
 njs_bool_t njs_string_eq(const njs_value_t *v1, const njs_value_t *v2);
 
 njs_int_t njs_property_query(njs_vm_t *vm, njs_property_query_t *pq,
-    njs_value_t *object, njs_value_t *property);
+    njs_value_t *value, njs_value_t *key);
 njs_int_t njs_value_property(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *property, njs_value_t *retval);
-njs_int_t njs_value_property_set(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *property, njs_value_t *value);
+    njs_value_t *key, njs_value_t *retval);
+njs_int_t njs_value_property_set(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *key, njs_value_t *setval);
 
 
 njs_inline njs_int_t

@@ -24,11 +24,11 @@ static njs_jump_off_t njs_vmcode_object_copy(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *invld);
 
 static njs_jump_off_t njs_vmcode_property_init(njs_vm_t *vm,
-    njs_value_t *object, njs_value_t *property, njs_value_t *retval);
+    njs_value_t *value, njs_value_t *key, njs_value_t *retval);
 static njs_jump_off_t njs_vmcode_property_in(njs_vm_t *vm,
-    njs_value_t *property, njs_value_t *object);
+    njs_value_t *value, njs_value_t *key);
 static njs_jump_off_t njs_vmcode_property_delete(njs_vm_t *vm,
-    njs_value_t *object, njs_value_t *property);
+    njs_value_t *value, njs_value_t *key);
 static njs_jump_off_t njs_vmcode_property_foreach(njs_vm_t *vm,
     njs_value_t *object, njs_value_t *invld, u_char *pc);
 static njs_jump_off_t njs_vmcode_property_next(njs_vm_t *vm,
@@ -1077,27 +1077,27 @@ njs_vmcode_object_copy(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 
 
 static njs_jump_off_t
-njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *property, njs_value_t *init)
+njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
+    njs_value_t *init)
 {
     uint32_t            index, size;
     njs_array_t         *array;
-    njs_value_t         *value, name;
+    njs_value_t         *val, name;
     njs_object_t        *obj;
     njs_jump_off_t      ret;
     njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
 
-    switch (object->type) {
+    switch (value->type) {
     case NJS_ARRAY:
-        index = njs_value_to_index(property);
+        index = njs_value_to_index(key);
         if (njs_slow_path(index == NJS_ARRAY_INVALID_INDEX)) {
             njs_internal_error(vm,
                                "invalid index while property initialization");
             return NJS_ERROR;
         }
 
-        array = object->data.u.array;
+        array = value->data.u.array;
 
         if (index >= array->length) {
             size = index - array->length;
@@ -1107,11 +1107,11 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *object,
                 return ret;
             }
 
-            value = &array->start[array->length];
+            val = &array->start[array->length];
 
             while (size != 0) {
-                njs_set_invalid(value);
-                value++;
+                njs_set_invalid(val);
+                val++;
                 size--;
             }
 
@@ -1124,7 +1124,7 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *object,
         break;
 
     case NJS_OBJECT:
-        ret = njs_value_to_string(vm, &name, property);
+        ret = njs_value_to_string(vm, &name, key);
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
@@ -1134,14 +1134,14 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *object,
         lhq.proto = &njs_object_hash_proto;
         lhq.pool = vm->mem_pool;
 
-        obj = njs_object(object);
+        obj = njs_object(value);
 
         ret = njs_lvlhsh_find(&obj->__proto__->shared_hash, &lhq);
         if (ret == NJS_OK) {
             prop = lhq.value;
 
             if (prop->type == NJS_PROPERTY_HANDLER) {
-                ret = prop->value.data.u.prop_handler(vm, object, init,
+                ret = prop->value.data.u.prop_handler(vm, value, init,
                                                       &vm->retval);
                 if (njs_slow_path(ret != NJS_OK)) {
                     return ret;
@@ -1170,7 +1170,7 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *object,
     default:
         njs_internal_error(vm, "unexpected object type \"%s\" "
                            "while property initialization",
-                           njs_type_string(object->type));
+                           njs_type_string(value->type));
 
         return NJS_ERROR;
     }
@@ -1180,7 +1180,7 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *object,
 
 
 static njs_jump_off_t
-njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *object, njs_value_t *property)
+njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *value, njs_value_t *key)
 {
     njs_jump_off_t        ret;
     njs_object_prop_t     *prop;
@@ -1191,7 +1191,7 @@ njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *object, njs_value_t *property)
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 0);
 
-    ret = njs_property_query(vm, &pq, object, property);
+    ret = njs_property_query(vm, &pq, value, key);
 
     switch (ret) {
 
@@ -1206,7 +1206,7 @@ njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *object, njs_value_t *property)
         break;
 
     case NJS_DECLINED:
-        if (!njs_is_object(object) && !njs_is_external(object)) {
+        if (!njs_is_object(value) && !njs_is_external(value)) {
             njs_type_error(vm, "property in on a primitive value");
 
             return NJS_ERROR;
@@ -1227,8 +1227,7 @@ njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *object, njs_value_t *property)
 
 
 static njs_jump_off_t
-njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *property)
+njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *value, njs_value_t *key)
 {
     njs_jump_off_t        ret;
     njs_object_prop_t     *prop, *whipeout;
@@ -1236,7 +1235,7 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_DELETE, 1);
 
-    ret = njs_property_query(vm, &pq, object, property);
+    ret = njs_property_query(vm, &pq, value, key);
 
     switch (ret) {
 
@@ -1245,7 +1244,7 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
 
         if (njs_slow_path(!prop->configurable)) {
             njs_type_error(vm, "Cannot delete property \"%V\" of %s",
-                           &pq.lhq.key, njs_type_string(object->type));
+                           &pq.lhq.key, njs_type_string(value->type));
             return NJS_ERROR;
         }
 
@@ -1284,7 +1283,7 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *object,
             goto done;
 
         case NJS_PROPERTY_HANDLER:
-            ret = prop->value.data.u.prop_handler(vm, object, NULL, NULL);
+            ret = prop->value.data.u.prop_handler(vm, value, NULL, NULL);
             if (njs_slow_path(ret != NJS_OK)) {
                 return ret;
             }

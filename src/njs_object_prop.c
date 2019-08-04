@@ -433,7 +433,7 @@ static const njs_value_t  njs_object_configurable_string =
 
 njs_int_t
 njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
-    njs_value_t *value, njs_value_t *property)
+    njs_value_t *value, njs_value_t *key)
 {
     njs_int_t             ret;
     njs_object_t          *desc;
@@ -444,7 +444,7 @@ njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 1);
 
-    ret = njs_property_query(vm, &pq, value, property);
+    ret = njs_property_query(vm, &pq, value, key);
 
     switch (ret) {
     case NJS_OK:
