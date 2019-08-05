@@ -1182,45 +1182,39 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
 static njs_jump_off_t
 njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *value, njs_value_t *key)
 {
-    njs_jump_off_t        ret;
+    njs_int_t             ret;
+    njs_bool_t            found;
     njs_object_prop_t     *prop;
-    const njs_value_t     *retval;
     njs_property_query_t  pq;
 
-    retval = &njs_value_false;
+    found = 0;
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 0);
 
     ret = njs_property_query(vm, &pq, value, key);
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return ret;
+    }
 
-    switch (ret) {
-
-    case NJS_OK:
-        prop = pq.lhq.value;
-
-        if (!njs_is_valid(&prop->value)) {
-            break;
-        }
-
-        retval = &njs_value_true;
-        break;
-
-    case NJS_DECLINED:
+    if (ret == NJS_DECLINED) {
         if (!njs_is_object(value) && !njs_is_external(value)) {
             njs_type_error(vm, "property in on a primitive value");
 
             return NJS_ERROR;
         }
 
-        break;
+    } else {
+        prop = pq.lhq.value;
 
-    case NJS_ERROR:
-    default:
-
-        return ret;
+        if (/* !njs_is_data_descriptor(prop) */
+            prop->writable == NJS_ATTRIBUTE_UNSET
+            || njs_is_valid(&prop->value))
+        {
+            found = 1;
+        }
     }
 
-    vm->retval = *retval;
+    njs_set_boolean(&vm->retval, found);
 
     return sizeof(njs_vmcode_3addr_t);
 }

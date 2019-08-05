@@ -3309,6 +3309,15 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'a' in {a:1}"),
       njs_str("true") },
 
+    { njs_str("'1' in [0,,2]"),
+      njs_str("false") },
+
+    { njs_str("var o = {}; Object.defineProperty(o, 'a', {get:()=>und}); 'a' in o"),
+      njs_str("true") },
+
+    { njs_str("var o = {}; Object.defineProperty(o, 'a', {value:1}); ({toString(){return 'a'}}) in o"),
+      njs_str("true") },
+
     { njs_str("'a' in Object.create({a:1})"),
       njs_str("true") },
 
