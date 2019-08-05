@@ -16,20 +16,27 @@ void
 njs_error_new(njs_vm_t *vm, njs_value_t *dst, njs_value_type_t type,
     u_char *start, size_t size)
 {
+    ssize_t        length;
     njs_int_t     ret;
     njs_value_t   string;
     njs_object_t  *error;
 
-    ret = njs_string_new(vm, &string, start, size, size);
+    length = njs_utf8_length(start, size);
+    if (njs_slow_path(length < 0)) {
+        length = 0;
+    }
+
+    ret = njs_string_new(vm, &string, start, size, length);
     if (njs_slow_path(ret != NJS_OK)) {
         return;
     }
 
     error = njs_error_alloc(vm, type, NULL, &string);
-
-    if (njs_fast_path(error != NULL)) {
-        njs_set_type_object(dst, error, type);
+    if (njs_slow_path(error == NULL)) {
+        return;
     }
+
+    njs_set_type_object(dst, error, type);
 }
 
 
