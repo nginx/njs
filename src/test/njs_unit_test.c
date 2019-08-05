@@ -7835,7 +7835,25 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Error('e')"),
       njs_str("Error: e") },
 
-    { njs_str("var e = Error('e'); e.name = 'E'; e"),
+    { njs_str("Error(123)"),
+      njs_str("Error: 123") },
+
+    { njs_str("Error({toString(){return 'e'}})"),
+      njs_str("Error: e") },
+
+    { njs_str("Error([1,'α'])"),
+      njs_str("Error: 1,α") },
+
+    { njs_str("var e = TypeError(Error('e')); e"),
+      njs_str("TypeError: Error: e") },
+
+    { njs_str("Error('α'.repeat(33)).toString().length"),
+      njs_str("40") },
+
+    { njs_str("var e = Error('e'); e.name = {toString(){return 'E'}}; e"),
+      njs_str("E: e") },
+
+    { njs_str("var e = Error('e'); Object.defineProperty(e, 'name', {get(){return 'E'}}); e"),
       njs_str("E: e") },
 
     { njs_str("var e = Error('e'); e.name = ''; e"),
@@ -7849,6 +7867,13 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("Error('e').name + ': ' + Error('e').message"),
       njs_str("Error: e") },
+
+    { njs_str("Error(String.bytesFrom(Array(1).fill(0x9d))).toString().length"),
+      njs_str("8") },
+
+    { njs_str("var e = Error('α'); e.name = String.bytesFrom(Array(1).fill(0x9d)); "
+              "e.toString().length"),
+      njs_str("5") },
 
     { njs_str("Error(1)"),
       njs_str("Error: 1") },

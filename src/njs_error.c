@@ -617,12 +617,12 @@ njs_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 njs_int_t
 njs_error_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *error)
 {
-    size_t              size;
+    size_t              length;
     u_char              *p;
     njs_int_t           ret;
-    njs_str_t           name, message;
     njs_value_t         value1, value2;
-    const njs_value_t   *name_value, *message_value;
+    njs_value_t         *name_value, *message_value;
+    njs_string_prop_t   name, message;
     njs_lvlhsh_query_t  lhq;
 
     static const njs_value_t  default_name = njs_string("Error");
@@ -635,9 +635,18 @@ njs_error_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *error)
         return ret;
     }
 
-    name_value = (ret == NJS_OK) ? &value1 : &default_name;
+    name_value = (ret == NJS_OK) ? &value1 : njs_value_arg(&default_name);
 
-    njs_string_get(name_value, &name);
+    if (njs_slow_path(!njs_is_string(name_value))) {
+        ret = njs_value_to_string(vm, &value1, name_value);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+        name_value = &value1;
+    }
+
+    (void) njs_string_prop(&name, name_value);
 
     lhq.key_hash = NJS_MESSAGE_HASH;
     lhq.key = njs_str_value("message");
@@ -648,29 +657,44 @@ njs_error_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *error)
         return ret;
     }
 
-    message_value = (ret == NJS_OK) ? &value2 : &njs_string_empty;
+    message_value = (ret == NJS_OK) ? &value2
+                                    : njs_value_arg(&njs_string_empty);
 
-    njs_string_get(message_value, &message);
+    if (njs_slow_path(!njs_is_string(message_value))) {
+        ret = njs_value_to_string(vm, &value2, message_value);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
 
-    if (name.length == 0) {
+        message_value = &value2;
+    }
+
+    (void) njs_string_prop(&message, message_value);
+
+    if (name.size == 0) {
         *retval = *message_value;
         return NJS_OK;
     }
 
-    if (message.length == 0) {
+    if (message.size == 0) {
         *retval = *name_value;
         return NJS_OK;
     }
 
-    size = name.length + message.length + 2;
+    if (name.length != 0 && message.length != 0) {
+        length = name.length + message.length + 2;
 
-    p = njs_string_alloc(vm, retval, size, size);
+    } else {
+        length = 0;
+    }
+
+    p = njs_string_alloc(vm, retval, name.size + message.size + 2, length);
 
     if (njs_fast_path(p != NULL)) {
-        p = njs_cpymem(p, name.start, name.length);
+        p = njs_cpymem(p, name.start, name.size);
         *p++ = ':';
         *p++ = ' ';
-        memcpy(p, message.start, message.length);
+        memcpy(p, message.start, message.size);
 
         return NJS_OK;
     }
