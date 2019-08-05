@@ -7,9 +7,6 @@
 #ifndef _NJS_REGEXP_PATTERN_H_INCLUDED_
 #define _NJS_REGEXP_PATTERN_H_INCLUDED_
 
-#include <njs_pcre.h>
-#include <njs_regex.h>
-
 
 typedef enum {
     NJS_REGEXP_BYTE = 0,

@@ -6,7 +6,6 @@
 
 
 #include <njs_main.h>
-#include <njs_pcre.h>
 
 
 static void *njs_pcre_malloc(size_t size);

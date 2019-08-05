@@ -14,10 +14,12 @@
 #define NJS_VERSION                 "0.3.4"
 
 
+#include <unistd.h>                 /* STDOUT_FILENO, STDERR_FILENO */
 #include <njs_types.h>
 #include <njs_clang.h>
 #include <njs_str.h>
 #include <njs_lvlhsh.h>
+#include <njs_sprintf.h>
 
 
 typedef uintptr_t                   njs_index_t;

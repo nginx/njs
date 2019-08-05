@@ -8,16 +8,6 @@
 #define _NJS_VALUE_H_INCLUDED_
 
 
-#include <njs_trace.h>
-#include <njs_queue.h>
-#include <njs_regex.h>
-#include <njs_random.h>
-#include <njs_djb_hash.h>
-#include <njs_mp.h>
-
-#include <math.h>
-
-
 /*
  * The order of the enum is used in njs_vmcode_typeof()
  * and njs_object_prototype_to_string().

@@ -10,7 +10,6 @@
 
 #include <stdarg.h>
 #include <stddef.h>       /* offsetof(). */
-#include <unistd.h>       /* NULL. */
 
 
 #define njs_inline         static inline __attribute__((always_inline))

@@ -7,7 +7,6 @@
 #ifndef _NJS_STRING_H_INCLUDED_
 #define _NJS_STRING_H_INCLUDED_
 
-#include <njs_utf8.h>
 
 /*
  * nJSVM supports two string variants:

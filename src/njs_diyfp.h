@@ -11,9 +11,6 @@
 #ifndef _NJS_DIYFP_H_INCLUDED_
 #define _NJS_DIYFP_H_INCLUDED_
 
-#include <njs_types.h>
-#include <math.h>
-
 
 typedef struct {
     uint64_t    significand;

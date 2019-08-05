@@ -5,7 +5,6 @@
  */
 
 #include <njs.h>
-#include <njs_sprintf.h>
 
 #include <string.h>
 #include <stdlib.h>

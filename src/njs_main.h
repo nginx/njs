@@ -31,6 +31,9 @@
 #include <njs_arr.h>
 #include <njs_sprintf.h>
 
+#include <njs_pcre.h>
+#include <njs_regex.h>
+
 #include <njs_md5.h>
 #include <njs_sha1.h>
 #include <njs_sha2.h>

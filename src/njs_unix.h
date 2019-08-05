@@ -22,16 +22,23 @@
 
 #endif /* NJS_LINUX */
 
+
 #include <errno.h>
-#include <stdarg.h>
-#include <stddef.h>                 /* offsetof() */
+#include <stdlib.h>
 #include <stdio.h>
-#include <stdint.h>
 #include <string.h>
 #include <math.h>
 #include <float.h>
 #include <time.h>
 #include <fcntl.h>
+
+/*
+ * alloca() is defined in stdlib.h in Linux, FreeBSD and MacOSX
+ * and in alloca.h in Linux, Solaris and MacOSX.
+ */
+#if (NJS_SOLARIS)
+#include <alloca.h>
+#endif
 
 #include <sys/time.h>
 #include <sys/stat.h>

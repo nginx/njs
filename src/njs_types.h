@@ -23,7 +23,7 @@
 
 /* u_char, u_int, int8_t, int32_t, int64_t, size_t, off_t. */
 #include <sys/types.h>
-#include <inttypes.h>
+#include <stdint.h>
 
 
 #if (__LP64__)
