@@ -1408,7 +1408,7 @@ start:
             break;
 
         case NJS_JSON_ARRAY_TO_JSON_REPLACED:
-            if (!njs_is_undefined(&stringify->retval)
+            if (njs_is_defined(&stringify->retval)
                 && njs_is_function(&stringify->replacer))
             {
                 ret = njs_json_stringify_replacer(vm, stringify, NULL,

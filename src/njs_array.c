@@ -434,8 +434,8 @@ njs_array_prototype_slice(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         length = 0;
 
     } else {
-        if (!njs_is_undefined(njs_arg(args, nargs, 2))) {
-            end = njs_primitive_value_to_integer(&args[2]);
+        if (njs_is_defined(njs_arg(args, nargs, 2))) {
+            end = njs_primitive_value_to_integer(njs_argument(args, 2));
 
         } else {
             end = length;

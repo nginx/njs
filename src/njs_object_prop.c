@@ -348,7 +348,7 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
 
     pr = njs_object_property(vm, desc, &pq);
     if (pr != NULL) {
-        if (!njs_is_undefined(&pr->value) && !njs_is_function(&pr->value)) {
+        if (njs_is_defined(&pr->value) && !njs_is_function(&pr->value)) {
             njs_type_error(vm, "Getter must be a function");
             return NULL;
         }
@@ -365,7 +365,7 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
 
     pr = njs_object_property(vm, desc, &pq);
     if (pr != NULL) {
-        if (!njs_is_undefined(&pr->value) && !njs_is_function(&pr->value)) {
+        if (njs_is_defined(&pr->value) && !njs_is_function(&pr->value)) {
             njs_type_error(vm, "Setter must be a function");
             return NULL;
         }

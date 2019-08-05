@@ -148,7 +148,7 @@ njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         pattern = &source;
     }
 
-    if (!njs_is_undefined(flags)) {
+    if (njs_is_defined(flags)) {
         ret = njs_primitive_value_to_string(vm, &flags_string, flags);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;

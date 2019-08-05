@@ -1290,8 +1290,8 @@ njs_string_slice_args(njs_slice_prop_t *slice, njs_value_t *args,
         length = 0;
 
     } else {
-        if (!njs_is_undefined(njs_arg(args, nargs, 2))) {
-            value = njs_arg(args, nargs, 2);
+        if (njs_is_defined(njs_arg(args, nargs, 2))) {
+            value = njs_argument(args, 2);
             end = njs_number(value);
 
         } else {
