@@ -911,15 +911,6 @@ njs_external_property_delete(njs_vm_t *vm, njs_value_t *value,
 }
 
 
-/*
- * ES5.1, 8.12.3: [[Get]].
- *   NJS_OK               property has been found in object,
- *      retval will contain the property's value
- *
- *   NJS_DECLINED         property was not found in object
- *   NJS_ERROR            exception has been thrown.
- *      retval will contain undefined
- */
 njs_int_t
 njs_value_property(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     njs_value_t *retval)
@@ -1004,10 +995,6 @@ njs_value_property(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
 }
 
 
-/*
- *   NJS_OK               property has been set successfully
- *   NJS_ERROR            exception has been thrown.
- */
 njs_int_t
 njs_value_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     njs_value_t *setval)
