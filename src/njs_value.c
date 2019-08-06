@@ -560,10 +560,10 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
     case NJS_UNDEFINED:
     case NJS_NULL:
     default:
-        ret = njs_primitive_value_to_string(vm, &pq->value, key);
+        ret = njs_primitive_value_to_string(vm, &pq->key, key);
 
         if (njs_fast_path(ret == NJS_OK)) {
-            njs_string_get(&pq->value, &pq->lhq.key);
+            njs_string_get(&pq->key, &pq->lhq.key);
             njs_type_error(vm, "cannot get property \"%V\" of undefined",
                            &pq->lhq.key);
             return NJS_ERROR;
@@ -574,11 +574,11 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
         return NJS_ERROR;
     }
 
-    ret = njs_primitive_value_to_string(vm, &pq->value, key);
+    ret = njs_primitive_value_to_string(vm, &pq->key, key);
 
     if (njs_fast_path(ret == NJS_OK)) {
 
-        njs_string_get(&pq->value, &pq->lhq.key);
+        njs_string_get(&pq->key, &pq->lhq.key);
         pq->lhq.key_hash = njs_djb_hash(pq->lhq.key.start, pq->lhq.key.length);
 
         if (obj == NULL) {
@@ -765,8 +765,8 @@ njs_string_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 
         if (pq->query != NJS_PROPERTY_QUERY_GET) {
             /* pq->lhq.key is used by NJS_VMCODE_PROPERTY_SET for TypeError */
-            njs_uint32_to_string(&pq->value, index);
-            njs_string_get(&pq->value, &pq->lhq.key);
+            njs_uint32_to_string(&pq->key, index);
+            njs_string_get(&pq->key, &pq->lhq.key);
         }
 
         return NJS_OK;
@@ -1103,7 +1103,7 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
         return NJS_ERROR;
     }
 
-    prop = njs_object_prop_alloc(vm, &pq.value, &njs_value_undefined, 1);
+    prop = njs_object_prop_alloc(vm, &pq.key, &njs_value_undefined, 1);
     if (njs_slow_path(prop == NULL)) {
         return NJS_ERROR;
     }

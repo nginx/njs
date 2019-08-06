@@ -87,15 +87,11 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
     njs_object_prop_t     *prop, *prev;
     njs_property_query_t  pq;
 
-    njs_string_get(name, &pq.lhq.key);
-    pq.lhq.key_hash = njs_djb_hash(pq.lhq.key.start, pq.lhq.key.length);
-    pq.lhq.proto = &njs_object_hash_proto;
-
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_SET, 1);
 
     ret = njs_property_query(vm, &pq, object, name);
 
-    if (ret != NJS_OK && ret != NJS_DECLINED) {
+    if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
     }
 

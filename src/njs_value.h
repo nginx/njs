@@ -348,7 +348,7 @@ typedef struct {
     const njs_extern_t          *ext_proto;
     uint32_t                    ext_index;
 
-    njs_value_t                 value;
+    njs_value_t                 key;
     njs_object_t                *prototype;
     njs_object_prop_t           *own_whiteout;
     uint8_t                     query;
