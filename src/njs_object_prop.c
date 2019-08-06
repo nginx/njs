@@ -159,7 +159,6 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
     prev = pq.lhq.value;
 
     switch (prev->type) {
-    case NJS_METHOD:
     case NJS_PROPERTY:
     case NJS_PROPERTY_HANDLER:
         break;
@@ -450,7 +449,6 @@ njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
     prop = pq.lhq.value;
 
     switch (prop->type) {
-    case NJS_METHOD:
     case NJS_PROPERTY:
         break;
 
@@ -601,9 +599,6 @@ njs_prop_type_string(njs_object_prop_type_t type)
     switch (type) {
     case NJS_PROPERTY_REF:
         return "property_ref";
-
-    case NJS_METHOD:
-        return "method";
 
     case NJS_PROPERTY_HANDLER:
         return "property handler";

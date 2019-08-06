@@ -474,9 +474,9 @@ njs_value_is_function(const njs_value_t *value)
  *   NJS_OK               property has been found in object,
  *     retval of type njs_object_prop_t * is in pq->lhq.value.
  *     in NJS_PROPERTY_QUERY_GET
- *       prop->type is NJS_PROPERTY, NJS_METHOD or NJS_PROPERTY_HANDLER.
+ *       prop->type is NJS_PROPERTY or NJS_PROPERTY_HANDLER.
  *     in NJS_PROPERTY_QUERY_SET, NJS_PROPERTY_QUERY_DELETE
- *       prop->type is NJS_PROPERTY, NJS_PROPERTY_REF, NJS_METHOD or
+ *       prop->type is NJS_PROPERTY, NJS_PROPERTY_REF or
  *       NJS_PROPERTY_HANDLER.
  *   NJS_DECLINED         property was not found in object,
  *     if pq->lhq.value != NULL it contains retval of type
@@ -999,7 +999,6 @@ njs_value_property(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
 
         switch (prop->type) {
 
-        case NJS_METHOD:
         case NJS_PROPERTY:
             if (njs_is_data_descriptor(prop)) {
                 *retval = prop->value;
@@ -1108,7 +1107,6 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
         if (pq.own) {
             switch (prop->type) {
             case NJS_PROPERTY:
-            case NJS_METHOD:
                 goto found;
 
             case NJS_PROPERTY_REF:

@@ -280,7 +280,7 @@ static const njs_object_prop_t  njs_array_constructor_properties[] =
 
     /* Array.isArray(). */
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("isArray"),
         .value = njs_native_function(njs_array_is_array, 0),
         .writable = 1,
@@ -290,7 +290,7 @@ static const njs_object_prop_t  njs_array_constructor_properties[] =
     /* ES6. */
     /* Array.of(). */
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("of"),
         .value = njs_native_function(njs_array_of, 0),
         .writable = 1,
@@ -1975,7 +1975,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("slice"),
         .value = njs_native_function(njs_array_prototype_slice,
                      NJS_OBJECT_ARG, NJS_INTEGER_ARG, NJS_INTEGER_ARG),
@@ -1984,7 +1984,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("push"),
         .value = njs_native_function(njs_array_prototype_push, 0),
         .writable = 1,
@@ -1992,7 +1992,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("pop"),
         .value = njs_native_function(njs_array_prototype_pop, 0),
         .writable = 1,
@@ -2000,7 +2000,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("unshift"),
         .value = njs_native_function(njs_array_prototype_unshift, 0),
         .writable = 1,
@@ -2008,7 +2008,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("shift"),
         .value = njs_native_function(njs_array_prototype_shift, 0),
         .writable = 1,
@@ -2016,7 +2016,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("splice"),
         .value = njs_native_function(njs_array_prototype_splice,
                     NJS_OBJECT_ARG, NJS_INTEGER_ARG, NJS_INTEGER_ARG),
@@ -2025,7 +2025,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("reverse"),
         .value = njs_native_function(njs_array_prototype_reverse,
                                      NJS_OBJECT_ARG),
@@ -2034,7 +2034,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("toString"),
         .value = njs_native_function(njs_array_prototype_to_string, 0),
         .writable = 1,
@@ -2042,7 +2042,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("join"),
         .value = njs_native_function(njs_array_prototype_join,
                      NJS_OBJECT_ARG, NJS_STRING_ARG),
@@ -2051,7 +2051,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("concat"),
         .value = njs_native_function(njs_array_prototype_concat, 0),
         .writable = 1,
@@ -2059,7 +2059,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("indexOf"),
         .value = njs_native_function(njs_array_prototype_index_of,
                      NJS_OBJECT_ARG, NJS_SKIP_ARG, NJS_INTEGER_ARG),
@@ -2068,7 +2068,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("lastIndexOf"),
         .value = njs_native_function(njs_array_prototype_last_index_of,
                      NJS_OBJECT_ARG, NJS_SKIP_ARG, NJS_INTEGER_ARG),
@@ -2078,7 +2078,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
 
     /* ES7. */
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("includes"),
         .value = njs_native_function(njs_array_prototype_includes,
                      NJS_OBJECT_ARG, NJS_SKIP_ARG, NJS_INTEGER_ARG),
@@ -2087,7 +2087,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("forEach"),
         .value = njs_native_function(njs_array_prototype_for_each, 0),
         .writable = 1,
@@ -2095,7 +2095,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("some"),
         .value = njs_native_function(njs_array_prototype_some, 0),
         .writable = 1,
@@ -2103,7 +2103,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("every"),
         .value = njs_native_function(njs_array_prototype_every, 0),
         .writable = 1,
@@ -2112,7 +2112,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
 
     /* ES6. */
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("fill"),
         .value = njs_native_function(njs_array_prototype_fill,
                      NJS_OBJECT_ARG, NJS_SKIP_ARG, NJS_NUMBER_ARG,
@@ -2122,7 +2122,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("filter"),
         .value = njs_native_function(njs_array_prototype_filter, 0),
         .writable = 1,
@@ -2131,7 +2131,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
 
     /* ES6. */
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("find"),
         .value = njs_native_function(njs_array_prototype_find, 0),
         .writable = 1,
@@ -2140,7 +2140,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
 
     /* ES6. */
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("findIndex"),
         .value = njs_native_function(njs_array_prototype_find_index, 0),
         .writable = 1,
@@ -2148,7 +2148,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("map"),
         .value = njs_native_function(njs_array_prototype_map, 0),
         .writable = 1,
@@ -2156,7 +2156,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("reduce"),
         .value = njs_native_function(njs_array_prototype_reduce, 0),
         .writable = 1,
@@ -2164,7 +2164,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("reduceRight"),
         .value = njs_native_function(njs_array_prototype_reduce_right, 0),
         .writable = 1,
@@ -2172,7 +2172,7 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("sort"),
         .value = njs_native_function(njs_array_prototype_sort, 0),
         .writable = 1,

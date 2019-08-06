@@ -1256,7 +1256,6 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *value, njs_value_t *key)
             /* Fall through. */
 
         case NJS_PROPERTY:
-        case NJS_METHOD:
             break;
 
         case NJS_PROPERTY_REF:

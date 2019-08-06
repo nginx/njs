@@ -143,7 +143,7 @@ static const njs_object_prop_t  njs_boolean_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("valueOf"),
         .value = njs_native_function(njs_boolean_prototype_value_of, 0),
         .writable = 1,
@@ -151,7 +151,7 @@ static const njs_object_prop_t  njs_boolean_prototype_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("toString"),
         .value = njs_native_function(njs_boolean_prototype_to_string, 0),
         .writable = 1,

@@ -964,7 +964,7 @@ njs_builtin_match(const njs_object_init_t **objects, njs_function_t *function,
         for (i = 0; i < o->items; i++) {
             pr = &o->properties[i];
 
-            if (pr->type != NJS_METHOD) {
+            if (pr->type != NJS_PROPERTY || !njs_is_function(&pr->value)) {
                 continue;
             }
 
@@ -1116,7 +1116,7 @@ static const njs_object_prop_t  njs_njs_object_properties[] =
     },
 
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("dump"),
         .value = njs_native_function(njs_dump_value,
                                     NJS_SKIP_ARG, NJS_SKIP_ARG, NJS_NUMBER_ARG),

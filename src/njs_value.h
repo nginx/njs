@@ -301,7 +301,6 @@ typedef enum {
 typedef enum {
     NJS_PROPERTY = 0,
     NJS_PROPERTY_REF,
-    NJS_METHOD,
     NJS_PROPERTY_HANDLER,
     NJS_WHITEOUT,
 } njs_object_prop_type_t;

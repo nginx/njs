@@ -2082,7 +2082,7 @@ static const njs_object_prop_t  njs_json_object_properties[] =
 {
     /* JSON.parse(). */
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("parse"),
         .value = njs_native_function(njs_json_parse,
                                      NJS_SKIP_ARG, NJS_STRING_ARG,
@@ -2093,7 +2093,7 @@ static const njs_object_prop_t  njs_json_object_properties[] =
 
     /* JSON.stringify(). */
     {
-        .type = NJS_METHOD,
+        .type = NJS_PROPERTY,
         .name = njs_string("stringify"),
         .value = njs_native_function(njs_json_stringify,
                                      NJS_SKIP_ARG, NJS_SKIP_ARG, NJS_SKIP_ARG,
