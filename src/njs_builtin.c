@@ -1172,7 +1172,7 @@ njs_process_object_argv(njs_vm_t *vm, njs_value_t *process,
     lhq.value = prop;
     lhq.key_hash = NJS_ARGV_HASH;
     lhq.key = njs_str_value("argv");
-    lhq.replace = 0;
+    lhq.replace = 1;
     lhq.pool = vm->mem_pool;
     lhq.proto = &njs_object_hash_proto;
 
@@ -1270,7 +1270,7 @@ njs_process_object_env(njs_vm_t *vm, njs_value_t *process,
 
     njs_set_object(&prop->value, env);
 
-    lhq.replace = 0;
+    lhq.replace = 1;
     lhq.pool = vm->mem_pool;
     lhq.proto = &njs_object_hash_proto;
     lhq.value = prop;

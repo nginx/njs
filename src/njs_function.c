@@ -815,13 +815,11 @@ njs_function_property_prototype_create(njs_vm_t *vm, njs_value_t *value)
     njs_function_t  *function;
 
     prototype = njs_object_alloc(vm);
-
     if (njs_slow_path(prototype == NULL)) {
         return NULL;
     }
 
     function = njs_function_value_copy(vm, value);
-
     if (njs_slow_path(function == NULL)) {
         return NULL;
     }

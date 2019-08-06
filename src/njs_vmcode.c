@@ -1224,7 +1224,7 @@ static njs_jump_off_t
 njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *value, njs_value_t *key)
 {
     njs_jump_off_t        ret;
-    njs_object_prop_t     *prop, *whipeout;
+    njs_object_prop_t     *prop;
     njs_property_query_t  pq;
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_DELETE, 1);
@@ -1242,46 +1242,25 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *value, njs_value_t *key)
             return NJS_ERROR;
         }
 
-        if (njs_slow_path(pq.shared)) {
-            whipeout = njs_mp_align(vm->mem_pool, sizeof(njs_value_t),
-                                    sizeof(njs_object_prop_t));
-            if (njs_slow_path(whipeout == NULL)) {
-                njs_memory_error(vm);
-                return NJS_ERROR;
-            }
-
-            njs_set_invalid(&whipeout->value);
-            whipeout->name = prop->name;
-            whipeout->type = NJS_WHITEOUT;
-
-            pq.lhq.replace = 0;
-            pq.lhq.value = whipeout;
-            pq.lhq.pool = vm->mem_pool;
-
-            ret = njs_lvlhsh_insert(&pq.prototype->hash, &pq.lhq);
-            if (njs_slow_path(ret != NJS_OK)) {
-                njs_internal_error(vm, "lvlhsh insert failed");
-                return NJS_ERROR;
-            }
-
-            break;
-        }
-
         switch (prop->type) {
+        case NJS_PROPERTY_HANDLER:
+            if (njs_is_external(value)) {
+                ret = prop->value.data.u.prop_handler(vm, value, NULL, NULL);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    return ret;
+                }
+
+                goto done;
+            }
+
+            /* Fall through. */
+
         case NJS_PROPERTY:
         case NJS_METHOD:
             break;
 
         case NJS_PROPERTY_REF:
             njs_set_invalid(prop->value.data.u.value);
-            goto done;
-
-        case NJS_PROPERTY_HANDLER:
-            ret = prop->value.data.u.prop_handler(vm, value, NULL, NULL);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return ret;
-            }
-
             goto done;
 
         default:

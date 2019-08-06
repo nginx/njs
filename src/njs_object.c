@@ -1611,9 +1611,9 @@ njs_value_t *
 njs_property_prototype_create(njs_vm_t *vm, njs_lvlhsh_t *hash,
     njs_object_t *prototype)
 {
-    njs_int_t                 ret;
-    njs_object_prop_t         *prop;
-    njs_lvlhsh_query_t        lhq;
+    njs_int_t           ret;
+    njs_object_prop_t   *prop;
+    njs_lvlhsh_query_t  lhq;
 
     static const njs_value_t  proto_string = njs_string("prototype");
 
@@ -1629,7 +1629,7 @@ njs_property_prototype_create(njs_vm_t *vm, njs_lvlhsh_t *hash,
     lhq.value = prop;
     lhq.key_hash = NJS_PROTOTYPE_HASH;
     lhq.key = njs_str_value("prototype");
-    lhq.replace = 0;
+    lhq.replace = 1;
     lhq.pool = vm->mem_pool;
     lhq.proto = &njs_object_hash_proto;
 

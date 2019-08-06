@@ -62,7 +62,6 @@ njs_int_t njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *name, njs_value_t *value);
 njs_int_t njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
     njs_value_t *value, njs_value_t *setval);
-njs_int_t njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq);
 const char *njs_prop_type_string(njs_object_prop_type_t type);
 
 extern const njs_object_init_t  njs_object_constructor_init;
