@@ -1056,7 +1056,7 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     njs_value_t *setval)
 {
     njs_int_t             ret;
-    njs_object_prop_t     *prop, *shared;
+    njs_object_prop_t     *prop;
     njs_property_query_t  pq;
 
     if (njs_is_primitive(value)) {
@@ -1064,8 +1064,6 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
                        njs_type_string(value->type));
         return NJS_ERROR;
     }
-
-    shared = NULL;
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_SET, 0);
 
@@ -1156,11 +1154,6 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     prop = njs_object_prop_alloc(vm, &pq.key, &njs_value_undefined, 1);
     if (njs_slow_path(prop == NULL)) {
         return NJS_ERROR;
-    }
-
-    if (njs_slow_path(shared != NULL)) {
-        prop->enumerable = shared->enumerable;
-        prop->configurable = shared->configurable;
     }
 
     pq.lhq.replace = 0;
