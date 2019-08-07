@@ -378,7 +378,7 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
     pr = njs_object_property(vm, desc, &pq);
     if (pr != NULL) {
         data = 1;
-        prop->writable = pr->value.data.truth;
+        prop->writable = njs_is_true(&pr->value);
     }
 
     pq.key = njs_str_value("enumerable");
@@ -386,7 +386,7 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
 
     pr = njs_object_property(vm, desc, &pq);
     if (pr != NULL) {
-        prop->enumerable = pr->value.data.truth;
+        prop->enumerable = njs_is_true(&pr->value);
     }
 
     pq.key = njs_str_value("configurable");
@@ -394,7 +394,7 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
 
     pr = njs_object_property(vm, desc, &pq);
     if (pr != NULL) {
-        prop->configurable = pr->value.data.truth;
+        prop->configurable = njs_is_true(&pr->value);
     }
 
     if (accessor && data) {

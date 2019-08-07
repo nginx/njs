@@ -9545,6 +9545,11 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var o = {}; Object.defineProperty(o, 'a', Object.create({value:1})); o.a"),
       njs_str("1") },
 
+    { njs_str("var o = {}; Object.defineProperty(o, 'a', {writable:'x', enumerable:'y', configurable:'z'});"
+              "var d = Object.getOwnPropertyDescriptor(o, 'a');"
+              "d.writable && d.enumerable && d.configurable"),
+      njs_str("true") },
+
     { njs_str("var o = {a:1, c:2}; Object.defineProperty(o, 'b', {});"
                  "Object.keys(o)"),
       njs_str("a,c") },
