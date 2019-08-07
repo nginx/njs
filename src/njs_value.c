@@ -122,8 +122,7 @@ njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
 {
     njs_int_t           ret;
     njs_uint_t          tries;
-    njs_value_t         retval;
-    njs_object_prop_t   *prop;
+    njs_value_t         method, retval;
     njs_lvlhsh_query_t  lhq;
 
     static const uint32_t  hashes[] = {
@@ -144,6 +143,7 @@ njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
     }
 
     tries = 0;
+    lhq.proto = &njs_object_hash_proto;
 
     for ( ;; ) {
         ret = NJS_ERROR;
@@ -154,28 +154,27 @@ njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
             lhq.key_hash = hashes[hint];
             lhq.key = names[hint];
 
-            prop = njs_object_property(vm, njs_object(value), &lhq);
+            ret = njs_object_property(vm, value, &lhq, &method);
 
-            if (prop == NULL || !njs_is_function(&prop->value)) {
-                /* Try the second method. */
-                continue;
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                return ret;
             }
 
-            ret = njs_function_apply(vm, njs_function(&prop->value), value, 1,
-                                     &retval);
+            if (njs_is_function(&method)) {
+                ret = njs_function_apply(vm, njs_function(&method), value, 1,
+                                         &retval);
 
-            if (njs_fast_path(ret == NJS_OK)) {
+                if (njs_slow_path(ret != NJS_OK)) {
+                    return ret;
+                }
+
                 if (njs_is_primitive(&retval)) {
                     break;
-                 }
+                }
+            }
 
-                /* Try the second method. */
-                continue;
-             }
-
-            /* NJS_ERROR */
-
-            return ret;
+            /* Try the second method. */
+            continue;
          }
 
         njs_type_error(vm, "Cannot convert object to primitive value");

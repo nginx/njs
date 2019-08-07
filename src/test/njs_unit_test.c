@@ -9811,6 +9811,43 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var arr = [0, 1]; Object.defineProperty(arr, 'length', {value:3}); arr.length"),
       njs_str("3") },
 
+    { njs_str("Object.defineProperty(Array.prototype, 'toString', { get: function() {return () => 1}});"
+                 "'a' + []"),
+      njs_str("a1") },
+
+    { njs_str("Object.defineProperty(Array.prototype, 'toJSON', { get: function() {return () => 1}});"
+                 "JSON.stringify([])"),
+      njs_str("1") },
+
+    { njs_str("Object.defineProperty(Array.prototype, 'join', { get: function() {return () => 1}});"
+                 "([]).toString()"),
+      njs_str("1") },
+
+    { njs_str("var o = {}, desc = {};"
+              "Object.defineProperty(desc, 'get', { get() { return () => 1 } });"
+              "Object.defineProperty(o, 'a', desc); o.a"),
+      njs_str("1") },
+
+    { njs_str("Object.defineProperty(Error.prototype, 'message', { get() {return 'm'}});"
+                 "Object.defineProperty(Error.prototype, 'name', { get() {return 'n'}});"
+                 "Error()"),
+      njs_str("n: m") },
+
+    { njs_str("var o = {}, desc = {};"
+              "Object.defineProperty(desc, 'value', { get() { return 'x'}});"
+              "Object.defineProperty(o, 'a', desc); o.a"),
+      njs_str("x") },
+
+    { njs_str("var o = {}, desc = {};"
+              "Object.defineProperty(desc, 'value', { get() { return 'x'}});"
+              "Object.defineProperty(desc, 'enumerable', { get() { return !NaN}});"
+              "Object.defineProperty(desc, 'writable', { get() { return 'x'}});"
+              "Object.defineProperty(desc, 'configurable', { get() { return 1}});"
+              "Object.defineProperty(o, 'a', desc);"
+              "var d = Object.getOwnPropertyDescriptor(o, 'a');"
+              "d.enumerable && d.writable && d.configurable"),
+      njs_str("true") },
+
     { njs_str("Object.defineProperties()"),
       njs_str("TypeError: cannot convert undefined argument to object") },
 

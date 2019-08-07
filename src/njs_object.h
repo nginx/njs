@@ -20,6 +20,14 @@
     (!njs_is_data_descriptor(prop) && !njs_is_accessor_descriptor(prop))
 
 
+#define njs_object_property_init(lhq, _key, hash)                             \
+    do {                                                                      \
+        (lhq)->proto = &njs_object_hash_proto;                                \
+        (lhq)->key_hash = hash;                                               \
+        (lhq)->key = njs_str_value(_key);                                     \
+    } while (0)
+
+
 struct njs_object_init_s {
     njs_str_t                   name;
     const njs_object_prop_t     *properties;
@@ -56,8 +64,8 @@ njs_int_t njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
 
 njs_object_prop_t *njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
     const njs_value_t *value, uint8_t attributes);
-njs_object_prop_t *njs_object_property(njs_vm_t *vm, const njs_object_t *obj,
-    njs_lvlhsh_query_t *lhq);
+njs_int_t njs_object_property(njs_vm_t *vm, const njs_value_t *value,
+    njs_lvlhsh_query_t *lhq, njs_value_t *retval);
 njs_int_t njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *name, njs_value_t *value);
 njs_int_t njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,

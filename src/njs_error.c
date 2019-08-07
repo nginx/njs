@@ -619,39 +619,36 @@ njs_error_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *error)
 {
     size_t              size;
     u_char              *p;
+    njs_int_t           ret;
     njs_str_t           name, message;
+    njs_value_t         value1, value2;
     const njs_value_t   *name_value, *message_value;
-    njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
 
     static const njs_value_t  default_name = njs_string("Error");
 
-    lhq.key_hash = NJS_NAME_HASH;
-    lhq.key = njs_str_value("name");
-    lhq.proto = &njs_object_hash_proto;
+    njs_object_property_init(&lhq, "name", NJS_NAME_HASH);
 
-    prop = njs_object_property(vm, njs_object(error), &lhq);
+    ret = njs_object_property(vm, error, &lhq, &value1);
 
-    if (prop != NULL) {
-        name_value = &prop->value;
-
-    } else {
-        name_value = &default_name;
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return ret;
     }
+
+    name_value = (ret == NJS_OK) ? &value1 : &default_name;
 
     njs_string_get(name_value, &name);
 
     lhq.key_hash = NJS_MESSAGE_HASH;
     lhq.key = njs_str_value("message");
 
-    prop = njs_object_property(vm, njs_object(error), &lhq);
+    ret = njs_object_property(vm, error, &lhq, &value2);
 
-    if (prop != NULL) {
-        message_value = &prop->value;
-
-    } else {
-        message_value = &njs_string_empty;
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return ret;
     }
+
+    message_value = (ret == NJS_OK) ? &value2 : &njs_string_empty;
 
     njs_string_get(message_value, &message);
 

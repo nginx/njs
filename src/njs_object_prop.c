@@ -9,7 +9,7 @@
 
 
 static njs_object_prop_t *njs_descriptor_prop(njs_vm_t *vm,
-    const njs_value_t *name, const njs_object_t *descriptor);
+    const njs_value_t *name, const njs_value_t *desc);
 
 
 njs_object_prop_t *
@@ -45,32 +45,53 @@ njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
 }
 
 
-njs_object_prop_t *
-njs_object_property(njs_vm_t *vm, const njs_object_t *object,
-    njs_lvlhsh_query_t *lhq)
+njs_int_t
+njs_object_property(njs_vm_t *vm, const njs_value_t *value,
+    njs_lvlhsh_query_t *lhq, njs_value_t *retval)
 {
-    njs_int_t  ret;
+    njs_int_t          ret;
+    njs_object_t       *object;
+    njs_object_prop_t  *prop;
 
-    lhq->proto = &njs_object_hash_proto;
+    object = njs_object(value);
 
     do {
         ret = njs_lvlhsh_find(&object->hash, lhq);
 
         if (njs_fast_path(ret == NJS_OK)) {
-            return lhq->value;
+            goto found;
         }
 
         ret = njs_lvlhsh_find(&object->shared_hash, lhq);
 
         if (njs_fast_path(ret == NJS_OK)) {
-            return lhq->value;
+            goto found;
         }
 
         object = object->__proto__;
 
     } while (object != NULL);
 
-    return NULL;
+    *retval = njs_value_undefined;
+
+    return NJS_DECLINED;
+
+found:
+
+    prop = lhq->value;
+
+    if (njs_is_data_descriptor(prop)) {
+        *retval = prop->value;
+        return NJS_OK;
+    }
+
+    if (njs_is_undefined(&prop->getter)) {
+        *retval = njs_value_undefined;
+        return NJS_OK;
+    }
+
+    return njs_function_apply(vm, njs_function(&prop->getter), value,
+                              1, retval);
 }
 
 
@@ -95,7 +116,7 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
         return ret;
     }
 
-    prop = njs_descriptor_prop(vm, name, njs_object(value));
+    prop = njs_descriptor_prop(vm, name, value);
     if (njs_slow_path(prop == NULL)) {
         return NJS_ERROR;
     }
@@ -313,12 +334,13 @@ exception:
 
 static njs_object_prop_t *
 njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
-    const njs_object_t *desc)
+    const njs_value_t *desc)
 {
+    njs_int_t           ret;
     njs_bool_t          data, accessor;
-    njs_object_prop_t   *prop, *pr;
-    const njs_value_t   *setter, *getter;
-    njs_lvlhsh_query_t  pq;
+    njs_value_t         value;
+    njs_object_prop_t   *prop;
+    njs_lvlhsh_query_t  lhq;
 
     data = 0;
     accessor = 0;
@@ -329,72 +351,103 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
         return NULL;
     }
 
-    getter = &njs_value_invalid;
-    pq.key = njs_str_value("get");
-    pq.key_hash = NJS_GET_HASH;
+    njs_object_property_init(&lhq, "get", NJS_GET_HASH);
 
-    pr = njs_object_property(vm, desc, &pq);
-    if (pr != NULL) {
-        if (njs_is_defined(&pr->value) && !njs_is_function(&pr->value)) {
+    ret = njs_object_property(vm, desc, &lhq, &value);
+
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return NULL;
+    }
+
+    if (ret == NJS_OK) {
+        if (njs_is_defined(&value) && !njs_is_function(&value)) {
             njs_type_error(vm, "Getter must be a function");
             return NULL;
         }
 
         accessor = 1;
-        getter = &pr->value;
+        prop->getter = value;
+
+    } else {
+        /* NJS_DECLINED */
+        prop->getter = njs_value_invalid;
     }
 
-    prop->getter = *getter;
+    lhq.key = njs_str_value("set");
+    lhq.key_hash = NJS_SET_HASH;
 
-    setter = &njs_value_invalid;
-    pq.key = njs_str_value("set");
-    pq.key_hash = NJS_SET_HASH;
+    ret = njs_object_property(vm, desc, &lhq, &value);
 
-    pr = njs_object_property(vm, desc, &pq);
-    if (pr != NULL) {
-        if (njs_is_defined(&pr->value) && !njs_is_function(&pr->value)) {
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return NULL;
+    }
+
+    if (ret == NJS_OK) {
+        if (njs_is_defined(&value) && !njs_is_function(&value)) {
             njs_type_error(vm, "Setter must be a function");
             return NULL;
         }
 
         accessor = 1;
-        setter = &pr->value;
+        prop->setter = value;
+
+    } else {
+        /* NJS_DECLINED */
+        prop->setter = njs_value_invalid;
     }
 
-    prop->setter = *setter;
+    lhq.key = njs_str_value("value");
+    lhq.key_hash = NJS_VALUE_HASH;
 
-    pq.key = njs_str_value("value");
-    pq.key_hash = NJS_VALUE_HASH;
+    ret = njs_object_property(vm, desc, &lhq, &value);
 
-    pr = njs_object_property(vm, desc, &pq);
-    if (pr != NULL) {
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return NULL;
+    }
+
+    if (ret == NJS_OK) {
         data = 1;
-        prop->value = pr->value;
+        prop->value = value;
     }
 
-    pq.key = njs_str_value("writable");
-    pq.key_hash = NJS_WRITABABLE_HASH;
+    lhq.key = njs_str_value("writable");
+    lhq.key_hash = NJS_WRITABABLE_HASH;
 
-    pr = njs_object_property(vm, desc, &pq);
-    if (pr != NULL) {
+    ret = njs_object_property(vm, desc, &lhq, &value);
+
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return NULL;
+    }
+
+    if (ret == NJS_OK) {
         data = 1;
-        prop->writable = njs_is_true(&pr->value);
+        prop->writable = njs_is_true(&value);
     }
 
-    pq.key = njs_str_value("enumerable");
-    pq.key_hash = NJS_ENUMERABLE_HASH;
+    lhq.key = njs_str_value("enumerable");
+    lhq.key_hash = NJS_ENUMERABLE_HASH;
 
-    pr = njs_object_property(vm, desc, &pq);
-    if (pr != NULL) {
-        prop->enumerable = njs_is_true(&pr->value);
+    ret = njs_object_property(vm, desc, &lhq, &value);
+
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return NULL;
     }
 
-    pq.key = njs_str_value("configurable");
-    pq.key_hash = NJS_CONFIGURABLE_HASH;
+    if (ret == NJS_OK) {
+        prop->enumerable = njs_is_true(&value);
+    }
 
-    pr = njs_object_property(vm, desc, &pq);
-    if (pr != NULL) {
-        prop->configurable = njs_is_true(&pr->value);
+    lhq.key = njs_str_value("configurable");
+    lhq.key_hash = NJS_CONFIGURABLE_HASH;
+
+    ret = njs_object_property(vm, desc, &lhq, &value);
+
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return NULL;
+    }
+
+    if (ret == NJS_OK) {
+        prop->configurable = njs_is_true(&value);
     }
 
     if (accessor && data) {
@@ -435,6 +488,29 @@ njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
 
     switch (ret) {
     case NJS_OK:
+        prop = pq.lhq.value;
+
+        switch (prop->type) {
+        case NJS_PROPERTY:
+            break;
+
+        case NJS_PROPERTY_HANDLER:
+            pq.scratch = *prop;
+            prop = &pq.scratch;
+            ret = prop->value.data.u.prop_handler(vm, value, NULL,
+                                                  &prop->value);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+
+            break;
+
+        default:
+            njs_type_error(vm, "unexpected property type: %s",
+                           njs_prop_type_string(prop->type));
+            return NJS_ERROR;
+        }
+
         break;
 
     case NJS_DECLINED:
@@ -444,28 +520,6 @@ njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
     case NJS_ERROR:
     default:
         return ret;
-    }
-
-    prop = pq.lhq.value;
-
-    switch (prop->type) {
-    case NJS_PROPERTY:
-        break;
-
-    case NJS_PROPERTY_HANDLER:
-        pq.scratch = *prop;
-        prop = &pq.scratch;
-        ret = prop->value.data.u.prop_handler(vm, value, NULL, &prop->value);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
-
-        break;
-
-    default:
-        njs_type_error(vm, "unexpected property type: %s",
-                       njs_prop_type_string(prop->type));
-        return NJS_ERROR;
     }
 
     desc = njs_object_alloc(vm);

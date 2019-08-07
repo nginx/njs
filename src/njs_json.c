@@ -1497,19 +1497,19 @@ memory_error:
 static njs_function_t *
 njs_object_to_json_function(njs_vm_t *vm, njs_value_t *value)
 {
-    njs_object_prop_t   *prop;
+    njs_int_t           ret;
+    njs_value_t         retval;
     njs_lvlhsh_query_t  lhq;
 
-    lhq.key_hash = NJS_TO_JSON_HASH;
-    lhq.key = njs_str_value("toJSON");
+    njs_object_property_init(&lhq, "toJSON", NJS_TO_JSON_HASH);
 
-    prop = njs_object_property(vm, njs_object(value), &lhq);
+    ret = njs_object_property(vm, value, &lhq, &retval);
 
-    if (prop != NULL && njs_is_function(&prop->value)) {
-        return njs_function(&prop->value);
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return NULL;
     }
 
-    return NULL;
+    return njs_is_function(&retval) ? njs_function(&retval) : NULL;
 }
 
 

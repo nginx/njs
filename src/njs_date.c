@@ -1896,18 +1896,22 @@ static njs_int_t
 njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t retval)
 {
-    njs_object_prop_t   *prop;
+    njs_int_t           ret;
+    njs_value_t         value;
     njs_lvlhsh_query_t  lhq;
 
     if (njs_is_object(&args[0])) {
-        lhq.key_hash = NJS_TO_ISO_STRING_HASH;
-        lhq.key = njs_str_value("toISOString");
+        njs_object_property_init(&lhq, "toISOString", NJS_TO_ISO_STRING_HASH);
 
-        prop = njs_object_property(vm, njs_object(&args[0]), &lhq);
+        ret = njs_object_property(vm, &args[0], &lhq, &value);
 
-        if (njs_fast_path(prop != NULL && njs_is_function(&prop->value))) {
-            return njs_function_apply(vm, njs_function(&prop->value), args,
-                                      nargs, &vm->retval);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return ret;
+        }
+
+        if (njs_is_function(&value)) {
+            return njs_function_apply(vm, njs_function(&value), args, nargs,
+                                      &vm->retval);
         }
     }
 
