@@ -36,15 +36,15 @@ static njs_code_name_t  code_names[] = {
           njs_str("OBJECT COPY     ") },
 
     { NJS_VMCODE_PROPERTY_GET, sizeof(njs_vmcode_prop_get_t),
-          njs_str("PROPERTY GET    ") },
+          njs_str("PROP GET        ") },
     { NJS_VMCODE_PROPERTY_INIT, sizeof(njs_vmcode_prop_set_t),
-          njs_str("PROPERTY INIT   ") },
+          njs_str("PROP INIT       ") },
     { NJS_VMCODE_PROPERTY_SET, sizeof(njs_vmcode_prop_set_t),
-          njs_str("PROPERTY SET    ") },
+          njs_str("PROP SET        ") },
     { NJS_VMCODE_PROPERTY_IN, sizeof(njs_vmcode_3addr_t),
-          njs_str("PROPERTY IN     ") },
+          njs_str("PROP IN         ") },
     { NJS_VMCODE_PROPERTY_DELETE, sizeof(njs_vmcode_3addr_t),
-          njs_str("PROPERTY DELETE ") },
+          njs_str("PROP DELETE     ") },
     { NJS_VMCODE_INSTANCE_OF, sizeof(njs_vmcode_instance_of_t),
           njs_str("INSTANCE OF     ") },
 
@@ -178,6 +178,7 @@ njs_disassemble(u_char *start, u_char *end)
     njs_vmcode_equal_jump_t      *equal;
     njs_vmcode_prop_foreach_t    *prop_foreach;
     njs_vmcode_method_frame_t    *method;
+    njs_vmcode_prop_accessor_t   *prop_accessor;
     njs_vmcode_try_trampoline_t  *try_tramp;
     njs_vmcode_function_frame_t  *function;
 
@@ -305,7 +306,7 @@ njs_disassemble(u_char *start, u_char *end)
         if (operation == NJS_VMCODE_PROPERTY_FOREACH) {
             prop_foreach = (njs_vmcode_prop_foreach_t *) p;
 
-            njs_printf("%05uz PROPERTY FOREACH  %04Xz %04Xz +%uz\n",
+            njs_printf("%05uz PROP FOREACH      %04Xz %04Xz +%uz\n",
                        p - start, (size_t) prop_foreach->next,
                        (size_t) prop_foreach->object,
                        (size_t) prop_foreach->offset);
@@ -317,12 +318,28 @@ njs_disassemble(u_char *start, u_char *end)
         if (operation == NJS_VMCODE_PROPERTY_NEXT) {
             prop_next = (njs_vmcode_prop_next_t *) p;
 
-            njs_printf("%05uz PROPERTY NEXT     %04Xz %04Xz %04Xz %uz\n",
+            njs_printf("%05uz PROP NEXT         %04Xz %04Xz %04Xz %uz\n",
                        p - start, (size_t) prop_next->retval,
                        (size_t) prop_next->object, (size_t) prop_next->next,
                        (size_t) prop_next->offset);
 
             p += sizeof(njs_vmcode_prop_next_t);
+
+            continue;
+        }
+
+        if (operation == NJS_VMCODE_PROPERTY_ACCESSOR) {
+            prop_accessor = (njs_vmcode_prop_accessor_t *) p;
+
+            njs_printf("%05uz PROP %s ACCESSOR %04Xz %04Xz %04Xz\n",
+                       p - start,
+                       (prop_accessor->type == NJS_OBJECT_PROP_GETTER)
+                           ? "GET" : "SET",
+                       (size_t) prop_accessor->value,
+                       (size_t) prop_accessor->object,
+                       (size_t) prop_accessor->property);
+
+            p += sizeof(njs_vmcode_prop_accessor_t);
 
             continue;
         }

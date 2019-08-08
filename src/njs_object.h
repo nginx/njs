@@ -29,6 +29,13 @@
     } while (0)
 
 
+typedef enum {
+    NJS_OBJECT_PROP_DESCRIPTOR,
+    NJS_OBJECT_PROP_GETTER,
+    NJS_OBJECT_PROP_SETTER,
+} njs_object_prop_define_t;
+
+
 struct njs_object_init_s {
     njs_str_t                   name;
     const njs_object_prop_t     *properties;
@@ -68,7 +75,7 @@ njs_object_prop_t *njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
 njs_int_t njs_object_property(njs_vm_t *vm, const njs_value_t *value,
     njs_lvlhsh_query_t *lhq, njs_value_t *retval);
 njs_int_t njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *name, njs_value_t *value);
+    njs_value_t *name, njs_value_t *value, njs_object_prop_define_t type);
 njs_int_t njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
     njs_value_t *value, njs_value_t *setval);
 const char *njs_prop_type_string(njs_object_prop_type_t type);

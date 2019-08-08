@@ -19,6 +19,10 @@ static njs_token_t njs_parser_object(njs_vm_t *vm, njs_parser_t *parser,
 static njs_int_t njs_parser_object_property(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *parent, njs_parser_node_t *property,
     njs_parser_node_t *value);
+static njs_int_t njs_parser_property_accessor(njs_vm_t *vm,
+    njs_parser_t *parser, njs_parser_node_t *parent,
+    njs_parser_node_t *property, njs_parser_node_t *value,
+    njs_token_t accessor);
 static njs_token_t njs_parser_array(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *array);
 static njs_int_t njs_parser_array_item(njs_vm_t *vm, njs_parser_t *parser,
@@ -467,31 +471,23 @@ njs_parser_builtin(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node,
 }
 
 
-/*
- * ES6: 12.2.6 Object Initializer
- * Supported syntax:
- *   PropertyDefinition:
- *     PropertyName : AssignmentExpression
- *     IdentifierReference
- *   PropertyName:
- *    IdentifierName, StringLiteral, NumericLiteral.
- */
 static njs_token_t
 njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
 {
     uint32_t               hash, token_line;
     njs_int_t              ret;
     njs_str_t              name;
-    njs_token_t            token, prop_token;
+    njs_token_t            token, accessor;
     njs_lexer_t            *lexer;
     njs_parser_node_t      *object, *property, *expression;
     njs_function_lambda_t  *lambda;
 
     lexer = parser->lexer;
 
-    /* GCC and Clang complain about uninitialized hash. */
+    /* GCC and Clang complain about uninitialized values. */
     hash = 0;
     token_line = 0;
+    property = NULL;
 
     object = njs_parser_node_new(vm, parser, NJS_TOKEN_OBJECT_VALUE);
     if (njs_slow_path(object == NULL)) {
@@ -501,16 +497,46 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
     object->u.object = obj;
 
     for ( ;; ) {
-        prop_token = njs_parser_token(vm, parser);
-        if (njs_slow_path(prop_token <= NJS_TOKEN_ILLEGAL)) {
-            return prop_token;
+        token = njs_parser_token(vm, parser);
+        if (njs_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+            return token;
         }
 
+        accessor = 0;
         njs_memzero(&name, sizeof(njs_str_t));
 
-        switch (prop_token) {
+        if (token == NJS_TOKEN_NAME || lexer->keyword) {
+            name = *njs_parser_text(parser);
+            hash = njs_parser_key_hash(parser);
+            token_line = njs_parser_token_line(parser);
+
+            property = njs_parser_node_string(vm, parser);
+            if (njs_slow_path(property == NULL)) {
+                return NJS_TOKEN_ERROR;
+            }
+
+            if (token == NJS_TOKEN_NAME && name.length == 3
+                && (memcmp(name.start, "get", 3) == 0
+                    || memcmp(name.start, "set", 3) == 0))
+            {
+                accessor = (name.start[0] == 'g') ? NJS_TOKEN_PROPERTY_GETTER
+                                                  : NJS_TOKEN_PROPERTY_SETTER;
+
+                token = njs_parser_token(vm, parser);
+                if (njs_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                    return token;
+                }
+            }
+        }
+
+        switch (token) {
 
         case NJS_TOKEN_CLOSE_BRACE:
+            if (accessor) {
+                accessor = 0;
+                break;
+            }
+
             goto done;
 
         case NJS_TOKEN_OPEN_BRACKET:
@@ -530,13 +556,14 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
 
             property = parser->node;
 
-            token = njs_parser_match(vm, parser, token, NJS_TOKEN_CLOSE_BRACKET);
+            token = njs_parser_match(vm, parser, token,
+                                     NJS_TOKEN_CLOSE_BRACKET);
             break;
 
         case NJS_TOKEN_NUMBER:
         case NJS_TOKEN_STRING:
         case NJS_TOKEN_ESCAPE_STRING:
-            token = njs_parser_terminal(vm, parser, prop_token);
+            token = njs_parser_terminal(vm, parser, token);
             if (njs_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
                 return token;
             }
@@ -545,58 +572,27 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
             break;
 
         default:
-            if (prop_token != NJS_TOKEN_NAME && !lexer->keyword) {
-                return NJS_TOKEN_ILLEGAL;
+            if (token != NJS_TOKEN_NAME && !lexer->keyword) {
+                if (name.length == 0) {
+                    return NJS_TOKEN_ILLEGAL;
+                }
+
+                accessor = 0;
+                break;
             }
 
-            property = njs_parser_node_string(vm, parser);
-            if (njs_slow_path(property == NULL)) {
-                return NJS_TOKEN_ERROR;
+            if (accessor) {
+                property = njs_parser_node_string(vm, parser);
+                if (njs_slow_path(property == NULL)) {
+                    return NJS_TOKEN_ERROR;
+                }
             }
-
-            name = *njs_parser_text(parser);
-            hash = njs_parser_key_hash(parser);
-            token_line = njs_parser_token_line(parser);
 
             token = njs_parser_token(vm, parser);
             break;
         }
 
-        switch (token) {
-
-        case NJS_TOKEN_COMMA:
-        case NJS_TOKEN_CLOSE_BRACE:
-
-            if (name.length == 0
-                || prop_token == NJS_TOKEN_THIS
-                || prop_token == NJS_TOKEN_GLOBAL_THIS)
-            {
-                return NJS_TOKEN_ILLEGAL;
-            }
-
-            expression = njs_parser_reference(vm, parser, prop_token, &name,
-                                              hash, token_line);
-            if (njs_slow_path(expression == NULL)) {
-                return NJS_TOKEN_ERROR;
-            }
-
-            break;
-
-        case NJS_TOKEN_COLON:
-            token = njs_parser_token(vm, parser);
-            if (njs_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-                return token;
-            }
-
-            token = njs_parser_assignment_expression(vm, parser, token);
-            if (njs_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
-                return token;
-            }
-
-            expression = parser->node;
-            break;
-
-        case NJS_TOKEN_OPEN_PARENTHESIS:
+        if (accessor) {
             expression = njs_parser_node_new(vm, parser,
                                              NJS_TOKEN_FUNCTION_EXPRESSION);
             if (njs_slow_path(expression == NULL)) {
@@ -606,7 +602,7 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
             expression->token_line = njs_parser_token_line(parser);
             parser->node = expression;
 
-            lambda = njs_function_lambda_alloc(vm, 0);
+            lambda = njs_mp_zalloc(vm->mem_pool, sizeof(njs_function_lambda_t));
             if (njs_slow_path(lambda == NULL)) {
                 return NJS_TOKEN_ERROR;
             }
@@ -618,15 +614,95 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
                 return token;
             }
 
-            break;
+            if (accessor == NJS_TOKEN_PROPERTY_GETTER) {
+                if (lambda->nargs != 0) {
+                    njs_parser_syntax_error(vm, parser,
+                                  "Getter must not have any formal parameters");
+                    return NJS_TOKEN_ILLEGAL;
+                }
 
-        default:
-            return NJS_TOKEN_ILLEGAL;
-        }
+            } else {
+                if (lambda->nargs != 1) {
+                    njs_parser_syntax_error(vm, parser,
+                               "Setter must have exactly one formal parameter");
+                    return NJS_TOKEN_ILLEGAL;
+                }
+            }
 
-        ret = njs_parser_object_property(vm, parser, obj, property, expression);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_TOKEN_ERROR;
+            ret = njs_parser_property_accessor(vm, parser, obj, property,
+                                               expression, accessor);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_TOKEN_ERROR;
+            }
+
+        } else {
+            switch (token) {
+
+            case NJS_TOKEN_COMMA:
+            case NJS_TOKEN_CLOSE_BRACE:
+
+                if (name.length == 0
+                    || lexer->prev_token == NJS_TOKEN_THIS
+                    || lexer->prev_token == NJS_TOKEN_GLOBAL_THIS)
+                {
+                    return NJS_TOKEN_ILLEGAL;
+                }
+
+                expression = njs_parser_reference(vm, parser, lexer->prev_token,
+                                                  &name, hash, token_line);
+                if (njs_slow_path(expression == NULL)) {
+                    return NJS_TOKEN_ERROR;
+                }
+
+                break;
+
+            case NJS_TOKEN_COLON:
+                token = njs_parser_token(vm, parser);
+                if (njs_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                    return token;
+                }
+
+                token = njs_parser_assignment_expression(vm, parser, token);
+                if (njs_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                    return token;
+                }
+
+                expression = parser->node;
+                break;
+
+            case NJS_TOKEN_OPEN_PARENTHESIS:
+                expression = njs_parser_node_new(vm, parser,
+                                                 NJS_TOKEN_FUNCTION_EXPRESSION);
+                if (njs_slow_path(expression == NULL)) {
+                    return NJS_TOKEN_ERROR;
+                }
+
+                expression->token_line = njs_parser_token_line(parser);
+                parser->node = expression;
+
+                lambda = njs_function_lambda_alloc(vm, 0);
+                if (njs_slow_path(lambda == NULL)) {
+                    return NJS_TOKEN_ERROR;
+                }
+
+                expression->u.value.data.u.lambda = lambda;
+
+                token = njs_parser_function_lambda(vm, parser, lambda, token);
+                if (njs_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+                    return token;
+                }
+
+                break;
+
+            default:
+                return NJS_TOKEN_ILLEGAL;
+            }
+
+            ret = njs_parser_object_property(vm, parser, obj, property,
+                                             expression);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_TOKEN_ERROR;
+            }
         }
 
         if (token == NJS_TOKEN_CLOSE_BRACE) {
@@ -683,6 +759,49 @@ njs_parser_object_property(njs_vm_t *vm, njs_parser_t *parser,
     }
 
     stmt->right = assign;
+    stmt->left = parent->left;
+    parent->left = stmt;
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_parser_property_accessor(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_node_t *parent, njs_parser_node_t *property,
+    njs_parser_node_t *value, njs_token_t accessor)
+{
+    njs_parser_node_t  *node, *stmt, *object, *propref;
+
+    object = njs_parser_node_new(vm, parser, NJS_TOKEN_OBJECT_VALUE);
+    if (njs_slow_path(object == NULL)) {
+        return NJS_TOKEN_ERROR;
+    }
+
+    object->u.object = parent;
+
+    propref = njs_parser_node_new(vm, parser, 0);
+    if (njs_slow_path(propref == NULL)) {
+        return NJS_ERROR;
+    }
+
+    propref->left = object;
+    propref->right = property;
+
+    node = njs_parser_node_new(vm, parser, accessor);
+    if (njs_slow_path(node == NULL)) {
+        return NJS_ERROR;
+    }
+
+    node->left = propref;
+    node->right = value;
+
+    stmt = njs_parser_node_new(vm, parser, NJS_TOKEN_STATEMENT);
+    if (njs_slow_path(stmt == NULL)) {
+        return NJS_ERROR;
+    }
+
+    stmt->right = node;
     stmt->left = parent->left;
     parent->left = stmt;
 

@@ -86,9 +86,10 @@ njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc)
     njs_str_t                    string;
     njs_uint_t                   hint;
     njs_bool_t                   valid, lambda_call;
-    njs_value_t                  *retval, *value1, *value2, *src, *s1, *s2;
-    njs_value_t                  numeric1, numeric2, primitive1, primitive2,
-                                 dst;
+    njs_value_t                  *retval, *value1, *value2;
+    njs_value_t                  *src, *s1, *s2, dst;
+    njs_value_t                  *function, name;
+    njs_value_t                  numeric1, numeric2, primitive1, primitive2;
     njs_frame_t                  *frame;
     njs_jump_off_t               ret;
     njs_vmcode_this_t            *this;
@@ -103,6 +104,7 @@ njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc)
     njs_vmcode_equal_jump_t      *equal;
     njs_vmcode_try_return_t      *try_return;
     njs_vmcode_method_frame_t    *method_frame;
+    njs_vmcode_prop_accessor_t   *accessor;
     njs_vmcode_function_frame_t  *function_frame;
 
 next:
@@ -597,6 +599,27 @@ next:
                 }
 
                 ret = sizeof(njs_vmcode_prop_set_t);
+                break;
+
+            case NJS_VMCODE_PROPERTY_ACCESSOR:
+                accessor = (njs_vmcode_prop_accessor_t *) pc;
+                function = njs_vmcode_operand(vm, accessor->value);
+
+                ret = njs_value_to_string(vm, &name, value2);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    njs_internal_error(vm, "failed conversion of type \"%s\" "
+                                       "to string while property define",
+                                       njs_type_string(value2->type));
+                    return NJS_ERROR;
+                }
+
+                ret = njs_object_prop_define(vm, value1, &name, function,
+                                             accessor->type);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    return NJS_ERROR;
+                }
+
+                ret = sizeof(njs_vmcode_prop_accessor_t);
                 break;
 
             case NJS_VMCODE_IF_TRUE_JUMP:

@@ -186,6 +186,8 @@ njs_lexer_keyword(njs_lexer_t *lexer, njs_lexer_token_t *lt)
     lhq.key = lt->text;
     lhq.proto = &njs_keyword_hash_proto;
 
+    lexer->keyword = 0;
+
     if (njs_lvlhsh_find(&lexer->keywords_hash, &lhq) == NJS_OK) {
         keyword = lhq.value;
         lt->token = keyword->token;

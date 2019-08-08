@@ -8,8 +8,8 @@
 #include <njs_main.h>
 
 
-static njs_object_prop_t *njs_descriptor_prop(njs_vm_t *vm,
-    const njs_value_t *name, const njs_value_t *desc);
+static njs_int_t njs_descriptor_prop(njs_vm_t *vm,
+    njs_object_prop_t *prop, const njs_value_t *desc);
 
 
 njs_object_prop_t *
@@ -102,7 +102,7 @@ found:
  */
 njs_int_t
 njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *name, njs_value_t *value)
+    njs_value_t *name, njs_value_t *value, njs_object_prop_define_t type)
 {
     njs_int_t             ret;
     njs_object_prop_t     *prop, *prev;
@@ -116,9 +116,36 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
         return ret;
     }
 
-    prop = njs_descriptor_prop(vm, name, value);
+    prop = njs_object_prop_alloc(vm, name, &njs_value_invalid,
+                                 NJS_ATTRIBUTE_UNSET);
     if (njs_slow_path(prop == NULL)) {
         return NJS_ERROR;
+    }
+
+    switch (type) {
+
+    case NJS_OBJECT_PROP_DESCRIPTOR:
+        if (njs_descriptor_prop(vm, prop, value) != NJS_OK) {
+            return NJS_ERROR;
+        }
+
+        break;
+
+    case NJS_OBJECT_PROP_GETTER:
+        prop->getter = *value;
+        prop->setter = njs_value_invalid;
+        prop->enumerable = NJS_ATTRIBUTE_TRUE;
+        prop->configurable = NJS_ATTRIBUTE_TRUE;
+
+        break;
+
+    case NJS_OBJECT_PROP_SETTER:
+        prop->setter = *value;
+        prop->getter = njs_value_invalid;
+        prop->enumerable = NJS_ATTRIBUTE_TRUE;
+        prop->configurable = NJS_ATTRIBUTE_TRUE;
+
+        break;
     }
 
     if (njs_fast_path(ret == NJS_DECLINED)) {
@@ -332,37 +359,30 @@ exception:
 }
 
 
-static njs_object_prop_t *
-njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
+static njs_int_t
+njs_descriptor_prop(njs_vm_t *vm, njs_object_prop_t *prop,
     const njs_value_t *desc)
 {
     njs_int_t           ret;
     njs_bool_t          data, accessor;
     njs_value_t         value;
-    njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
 
     data = 0;
     accessor = 0;
-
-    prop = njs_object_prop_alloc(vm, name, &njs_value_invalid,
-                                 NJS_ATTRIBUTE_UNSET);
-    if (njs_slow_path(prop == NULL)) {
-        return NULL;
-    }
 
     njs_object_property_init(&lhq, "get", NJS_GET_HASH);
 
     ret = njs_object_property(vm, desc, &lhq, &value);
 
     if (njs_slow_path(ret == NJS_ERROR)) {
-        return NULL;
+        return NJS_ERROR;
     }
 
     if (ret == NJS_OK) {
         if (njs_is_defined(&value) && !njs_is_function(&value)) {
             njs_type_error(vm, "Getter must be a function");
-            return NULL;
+            return NJS_ERROR;
         }
 
         accessor = 1;
@@ -379,13 +399,13 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
     ret = njs_object_property(vm, desc, &lhq, &value);
 
     if (njs_slow_path(ret == NJS_ERROR)) {
-        return NULL;
+        return ret;
     }
 
     if (ret == NJS_OK) {
         if (njs_is_defined(&value) && !njs_is_function(&value)) {
             njs_type_error(vm, "Setter must be a function");
-            return NULL;
+            return NJS_ERROR;
         }
 
         accessor = 1;
@@ -402,7 +422,7 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
     ret = njs_object_property(vm, desc, &lhq, &value);
 
     if (njs_slow_path(ret == NJS_ERROR)) {
-        return NULL;
+        return ret;
     }
 
     if (ret == NJS_OK) {
@@ -416,7 +436,7 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
     ret = njs_object_property(vm, desc, &lhq, &value);
 
     if (njs_slow_path(ret == NJS_ERROR)) {
-        return NULL;
+        return ret;
     }
 
     if (ret == NJS_OK) {
@@ -430,7 +450,7 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
     ret = njs_object_property(vm, desc, &lhq, &value);
 
     if (njs_slow_path(ret == NJS_ERROR)) {
-        return NULL;
+        return ret;
     }
 
     if (ret == NJS_OK) {
@@ -443,7 +463,7 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
     ret = njs_object_property(vm, desc, &lhq, &value);
 
     if (njs_slow_path(ret == NJS_ERROR)) {
-        return NULL;
+        return ret;
     }
 
     if (ret == NJS_OK) {
@@ -453,10 +473,10 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
     if (accessor && data) {
         njs_type_error(vm, "Cannot both specify accessors "
                            "and a value or writable attribute");
-        return NULL;
+        return NJS_ERROR;
     }
 
-    return prop;
+    return NJS_OK;
 }
 
 

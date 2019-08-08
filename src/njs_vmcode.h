@@ -40,6 +40,7 @@ typedef uint8_t                         njs_vmcode_operation_t;
 #define NJS_VMCODE_STOP                 VMCODE0(0)
 #define NJS_VMCODE_JUMP                 VMCODE0(1)
 #define NJS_VMCODE_PROPERTY_SET         VMCODE0(2)
+#define NJS_VMCODE_PROPERTY_ACCESSOR    VMCODE0(3)
 #define NJS_VMCODE_IF_TRUE_JUMP         VMCODE0(4)
 #define NJS_VMCODE_IF_FALSE_JUMP        VMCODE0(5)
 #define NJS_VMCODE_IF_EQUAL_JUMP        VMCODE0(6)
@@ -257,6 +258,15 @@ typedef struct {
     njs_index_t                object;
     njs_index_t                property;
 } njs_vmcode_prop_set_t;
+
+
+typedef struct {
+    njs_vmcode_t               code;
+    njs_index_t                value;
+    njs_index_t                object;
+    njs_index_t                property;
+    uint8_t                    type;
+} njs_vmcode_prop_accessor_t;
 
 
 typedef struct {

@@ -119,6 +119,8 @@ static njs_int_t njs_generate_operation_assignment(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_object(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node);
+static njs_int_t njs_generate_property_accessor(njs_vm_t *vm,
+    njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_array(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node);
 static njs_int_t njs_generate_function(njs_vm_t *vm, njs_generator_t *generator,
@@ -397,6 +399,10 @@ njs_generator(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
 
     case NJS_TOKEN_OBJECT:
         return njs_generate_object(vm, generator, node);
+
+    case NJS_TOKEN_PROPERTY_GETTER:
+    case NJS_TOKEN_PROPERTY_SETTER:
+        return njs_generate_property_accessor(vm, generator, node);
 
     case NJS_TOKEN_ARRAY:
         return njs_generate_array(vm, generator, node);
@@ -1892,6 +1898,49 @@ njs_generate_object(njs_vm_t *vm, njs_generator_t *generator,
 
     /* Initialize object. */
     return njs_generator(vm, generator, node->left);
+}
+
+
+static njs_int_t
+njs_generate_property_accessor(njs_vm_t *vm, njs_generator_t *generator,
+    njs_parser_node_t *node)
+{
+    njs_int_t                   ret;
+    njs_parser_node_t           *lvalue, *function, *object, *property;
+    njs_vmcode_prop_accessor_t  *accessor;
+
+    lvalue = node->left;
+    function = node->right;
+
+    object = lvalue->left;
+
+    ret = njs_generator(vm, generator, object);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    property = lvalue->right;
+
+    ret = njs_generator(vm, generator, property);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    ret = njs_generator(vm, generator, function);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    njs_generate_code(generator, njs_vmcode_prop_accessor_t, accessor,
+                      NJS_VMCODE_PROPERTY_ACCESSOR, 3);
+
+    accessor->value = function->index;
+    accessor->object = object->index;
+    accessor->property = property->index;
+    accessor->type = (node->token == NJS_TOKEN_PROPERTY_GETTER)
+                     ? NJS_OBJECT_PROP_GETTER : NJS_OBJECT_PROP_SETTER;
+
+    return NJS_OK;
 }
 
 

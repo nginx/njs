@@ -10096,6 +10096,61 @@ static njs_unit_test_t  njs_test[] =
                 "JSON.stringify(Object.getOwnPropertyDescriptor(o, 'a')).set"),
       njs_str("undefined") },
 
+    { njs_str("var get = 'get'; var o = { get }; o.get"),
+      njs_str("get") },
+
+    { njs_str("var o = { get foo() { return 'bar'; } }; o.foo"),
+      njs_str("bar") },
+
+    { njs_str("var o = { get get() { return 'bar'; } }; o.get"),
+      njs_str("bar") },
+
+    { njs_str("var o = { get() { return 'bar'; } }; o.get()"),
+      njs_str("bar") },
+
+    { njs_str("var o = { get lazy() { delete this.lazy; return this.lazy = Math.pow(2,3)} };o.lazy"),
+      njs_str("8") },
+
+    { njs_str("var o = { get lazy() { delete this.lazy; return this.lazy = Math.pow(2,3)} }; o.lazy;"
+              "Object.getOwnPropertyDescriptor(o, 'lazy').value"),
+      njs_str("8") },
+
+    { njs_str("var expr = 'foo'; var o = { get [expr]() { return 'bar'; } }; o.foo"),
+      njs_str("bar") },
+
+    { njs_str("var o = { get [{toString(){return 'get'}}]() { return 'bar'; } }; o.get"),
+      njs_str("bar") },
+
+    { njs_str("var o = { get [{toString(){return {} }}]() { return 'bar'; } }; o.get"),
+      njs_str("InternalError: failed conversion of type \"object\" to string while property define") },
+
+    { njs_str("var o = { get foo(v1, v2) { return 'bar'; } }; o.foo"),
+      njs_str("SyntaxError: Getter must not have any formal parameters in 1") },
+
+    { njs_str("var o = { baz: 'bar', set foo(v) { this.baz = v; } }; o.foo = 'baz'; o.baz"),
+      njs_str("baz") },
+
+    { njs_str("var o = { baz: 'bar', set set(v) { this.baz = v; } }; o.set = 'baz'; o.baz"),
+      njs_str("baz") },
+
+    { njs_str("var expr = 'foo'; var o = { baz: 'bar', set [expr](v) { this.baz = v; } }; o.foo = 'baz'; o.baz"),
+      njs_str("baz") },
+
+    { njs_str("var o = { baz: 'bar', set foo(v1, v2) { this.baz = v; } }; o.foo = 'baz'; o.baz"),
+      njs_str("SyntaxError: Setter must have exactly one formal parameter in 1") },
+
+    { njs_str("var o = { get foo() { return 'bar'; }, set foo(v) { this.baz = v; } }; o.foo"),
+      njs_str("bar") },
+
+    { njs_str("var expr = 'foo'; var o = { get [expr]() { return 'bar'; }, set [expr](v) { this.baz = v; } }; o.foo"),
+      njs_str("bar") },
+
+    { njs_str("Object.getOwnPropertyDescriptor({get foo() {}}, 'foo').enumerable"),
+      njs_str("true") },
+
+    { njs_str("Object.getOwnPropertyDescriptor({get foo() {}}, 'foo').configurable"),
+      njs_str("true") },
+
     { njs_str("var p = { a:5 }; var o = Object.create(p);"
                  "Object.getPrototypeOf(o) === p"),
       njs_str("true") },
