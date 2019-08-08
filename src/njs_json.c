@@ -2381,6 +2381,10 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, const njs_value_t *value,
     njs_lvlhsh_query_t    lhq;
     njs_json_stringify_t  *stringify;
 
+    const njs_value_t  string_get = njs_string("[Getter]");
+    const njs_value_t  string_set = njs_string("[Setter]");
+    const njs_value_t  string_get_set = njs_long_string("[Getter/Setter]");
+
     if (njs_vm_backtrace(vm) != NULL) {
         goto exception;
     }
@@ -2485,6 +2489,19 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, const njs_value_t *value,
 
                 if (prop->type == NJS_WHITEOUT || !prop->enumerable) {
                     break;
+                }
+
+                if (njs_is_accessor_descriptor(prop)) {
+                    if (njs_is_defined(&prop->getter)) {
+                        if (njs_is_defined(&prop->setter)) {
+                            val = njs_value_arg(&string_get_set);
+                        } else {
+                            val = njs_value_arg(&string_get);
+                        }
+
+                    } else {
+                        val = njs_value_arg(&string_set);
+                    }
                 }
             }
 

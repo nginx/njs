@@ -12893,6 +12893,15 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("njs.dump(Array.prototype.slice.call({'1':'b', length:2}))"),
       njs_str("[<empty>,'b']") },
 
+    { njs_str("var o = Object.defineProperty({}, 'a', { get: () => 1, enumerable: true }); njs.dump(o)"),
+      njs_str("{a:'[Getter]'}") },
+
+    { njs_str("var o = Object.defineProperty({}, 'a', { get: () => 1, set(){}, enumerable: true }); njs.dump(o)"),
+      njs_str("{a:'[Getter/Setter]'}") },
+
+    { njs_str("var o = Object.defineProperty({}, 'a', { set(){}, enumerable: true }); njs.dump(o)"),
+      njs_str("{a:'[Setter]'}") },
+
     { njs_str("njs.dump($r.props)"),
       njs_str("{a:{type:\"property\",props:[\"getter\"]},b:{type:\"property\",props:[\"getter\"]}}") },
 
