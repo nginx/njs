@@ -13,7 +13,8 @@
 
 
 #define njs_is_accessor_descriptor(prop)                                      \
-    (njs_is_valid(&(prop)->getter) || njs_is_valid(&(prop)->setter))
+    (njs_is_function_or_undefined(&(prop)->getter)                            \
+     || njs_is_function_or_undefined(&(prop)->setter))
 
 
 #define njs_is_generic_descriptor(prop)                                       \
