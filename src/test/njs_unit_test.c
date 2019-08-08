@@ -12766,6 +12766,14 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("JSON.stringify([{a:1,b:{c:2}},1], undefined, new Date())"),
       njs_str("[{\"a\":1,\"b\":{\"c\":2}},1]") },
 
+    { njs_str("var o = Object.defineProperty({}, 'a', { get() { return ()=> 1}, enumerable: true });"
+              "JSON.stringify(o)"),
+      njs_str("{}") },
+
+    { njs_str("var o = Object.defineProperty({}, 'a', { get: () => ({b:1, c:2}), enumerable: true });"
+              "JSON.stringify(o)"),
+      njs_str("{\"a\":{\"b\":1,\"c\":2}}") },
+
     { njs_str("JSON.stringify({toJSON:function(k){}})"),
       njs_str("undefined") },
 

@@ -1214,7 +1214,7 @@ njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify)
     njs_value_t         *key, *value;
     njs_function_t      *to_json;
     njs_json_state_t    *state;
-    njs_object_prop_t   *prop;
+    njs_object_prop_t   *prop, scratch;
     njs_lvlhsh_query_t  lhq;
 
 start:
@@ -1255,10 +1255,27 @@ start:
 
             prop = lhq.value;
 
-            if (!prop->enumerable
-                || njs_is_undefined(&prop->value)
-                || !njs_is_valid(&prop->value)
-                || njs_is_function(&prop->value))
+            if (!prop->enumerable) {
+                break;
+            }
+
+            if (njs_is_accessor_descriptor(prop)
+                && njs_is_function(&prop->getter))
+            {
+                scratch = *prop;
+                prop = &scratch;
+
+                ret = njs_function_apply(vm, njs_function(&prop->getter),
+                                         &state->value, 1, &prop->value);
+
+                if (njs_slow_path(ret != NJS_OK)) {
+                    return ret;
+                }
+            }
+
+            if (njs_is_undefined(&prop->value)
+                || njs_is_function(&prop->value)
+                || !njs_is_valid(&prop->value))
             {
                 break;
             }
