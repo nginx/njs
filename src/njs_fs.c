@@ -156,7 +156,7 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    path = (char *) njs_string_to_c_string(vm, &args[1]);
+    path = njs_string_to_c_string(vm, &args[1]);
     if (njs_slow_path(path == NULL)) {
         return NJS_ERROR;
     }
@@ -380,7 +380,7 @@ njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    path = (char *) njs_string_to_c_string(vm, &args[1]);
+    path = njs_string_to_c_string(vm, &args[1]);
     if (njs_slow_path(path == NULL)) {
         return NJS_ERROR;
     }
@@ -660,7 +660,7 @@ static njs_int_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
         md = 0666;
     }
 
-    path = (char *) njs_string_to_c_string(vm, &args[1]);
+    path = njs_string_to_c_string(vm, &args[1]);
     if (njs_slow_path(path == NULL)) {
         return NJS_ERROR;
     }
@@ -837,7 +837,7 @@ njs_fs_write_file_sync_internal(njs_vm_t *vm, njs_value_t *args,
         md = 0666;
     }
 
-    path = (char *) njs_string_to_c_string(vm, &args[1]);
+    path = njs_string_to_c_string(vm, &args[1]);
     if (njs_slow_path(path == NULL)) {
         return NJS_ERROR;
     }
@@ -923,12 +923,12 @@ njs_fs_rename_sync(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    old_path = (const char *) njs_string_to_c_string(vm, njs_argument(args, 1));
+    old_path = njs_string_to_c_string(vm, njs_argument(args, 1));
     if (njs_slow_path(old_path == NULL)) {
         return NJS_ERROR;
     }
 
-    new_path = (const char *) njs_string_to_c_string(vm, njs_argument(args, 2));
+    new_path = njs_string_to_c_string(vm, njs_argument(args, 2));
     if (njs_slow_path(new_path == NULL)) {
         return NJS_ERROR;
     }

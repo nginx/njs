@@ -3984,7 +3984,7 @@ njs_string_to_index(const njs_value_t *value)
  * is returned as is, otherwise the new copy is allocated with
  * the terminating zero byte.
  */
-const u_char *
+const char *
 njs_string_to_c_string(njs_vm_t *vm, njs_value_t *value)
 {
     u_char  *p, *data, *start;
@@ -3996,7 +3996,7 @@ njs_string_to_c_string(njs_vm_t *vm, njs_value_t *value)
 
         if (size < NJS_STRING_SHORT) {
             start[size] = '\0';
-            return start;
+            return (const char *) start;
         }
 
     } else {
@@ -4013,7 +4013,7 @@ njs_string_to_c_string(njs_vm_t *vm, njs_value_t *value)
     p = njs_cpymem(data, start, size);
     *p++ = '\0';
 
-    return data;
+    return (const char *) data;
 }
 
 
