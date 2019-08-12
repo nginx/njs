@@ -646,6 +646,28 @@ njs_test {
      "'ABCABC'\r\n>> "}
 }
 
+# require('fs').renameSync()
+
+njs_test {
+    {"var fs = require('fs'), mktemp = ()=> `/tmp/njs_${Math.round(Math.random() * 1000000)}`\r\n"
+     "undefined\r\n>> "}
+    {"var fn1 = mktemp(), fn2 = mktemp();\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFileSync(fn1, 'ABC')\r\n"
+     "undefined\r\n>> "}
+    {"fs.renameSync(fn1, fn2)\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFileSync(fn2)\r\n"
+     "'ABC'\r\n>> "}
+}
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.renameSync('build/test/file2', 'test/fs/')\r\n"
+     "Error: Not a directory*"}
+}
+
 # Modules
 
 njs_run {"-p" "test/module/libs" "./test/module/normal.js"} \

@@ -30,6 +30,8 @@ static njs_int_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, int default_flags);
 static njs_int_t njs_fs_write_file_sync_internal(njs_vm_t *vm,
     njs_value_t *args, njs_uint_t nargs, int default_flags);
+static njs_int_t njs_fs_rename_sync(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused);
 
 static njs_int_t njs_fs_fd_read(njs_vm_t *vm, njs_value_t *path, int fd,
     njs_str_t *data);
@@ -905,6 +907,46 @@ done:
 
 
 static njs_int_t
+njs_fs_rename_sync(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    int         ret;
+    const char  *old_path, *new_path;
+
+    if (njs_slow_path(!njs_is_string(njs_arg(args, nargs, 1)))) {
+        njs_type_error(vm, "oldPath must be a string");
+        return NJS_ERROR;
+    }
+
+    if (njs_slow_path(!njs_is_string(njs_arg(args, nargs, 2)))) {
+        njs_type_error(vm, "newPath must be a string");
+        return NJS_ERROR;
+    }
+
+    old_path = (const char *) njs_string_to_c_string(vm, njs_argument(args, 1));
+    if (njs_slow_path(old_path == NULL)) {
+        return NJS_ERROR;
+    }
+
+    new_path = (const char *) njs_string_to_c_string(vm, njs_argument(args, 2));
+    if (njs_slow_path(new_path == NULL)) {
+        return NJS_ERROR;
+    }
+
+    ret = rename(old_path, new_path);
+    if (njs_slow_path(ret != 0)) {
+        ret = njs_fs_error(vm, "rename", strerror(errno), NULL, errno,
+                           &vm->retval);
+        return NJS_ERROR;
+    }
+
+    njs_set_undefined(&vm->retval);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
 njs_fs_fd_read(njs_vm_t *vm, njs_value_t *path, int fd, njs_str_t *data)
 {
     u_char   *p, *end, *start;
@@ -1155,6 +1197,15 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("writeFileSync"),
         .value = njs_native_function(njs_fs_write_file_sync, 0),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("renameSync"),
+        .value = njs_native_function(njs_fs_rename_sync, NJS_STRING_ARG,
+                                     NJS_STRING_ARG, 0),
         .writable = 1,
         .configurable = 1,
     },

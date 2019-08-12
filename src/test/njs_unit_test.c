@@ -13156,6 +13156,16 @@ static njs_unit_test_t  njs_test[] =
                  "fs.writeFileSync('/njs_unknown_path', '', true)"),
       njs_str("TypeError: Unknown options type (a string or object required)") },
 
+    /* require('fs').writeFileSync() */
+
+    { njs_str("var fs = require('fs');"
+              "fs.renameSync()"),
+      njs_str("TypeError: oldPath must be a string") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.renameSync({toString(){return '/path/1'}})"),
+      njs_str("TypeError: newPath must be a string") },
+
     /* require('crypto').createHash() */
 
     { njs_str("require('crypto').createHash('sha1')"),
