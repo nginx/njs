@@ -1136,18 +1136,21 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
 
         obj = njs_object(value);
 
-        ret = njs_lvlhsh_find(&obj->__proto__->shared_hash, &lhq);
-        if (ret == NJS_OK) {
-            prop = lhq.value;
+        if (obj->__proto__ != NULL) {
+            /* obj->__proto__ can be NULL after __proto__: null assignment */
+            ret = njs_lvlhsh_find(&obj->__proto__->shared_hash, &lhq);
+            if (ret == NJS_OK) {
+                prop = lhq.value;
 
-            if (prop->type == NJS_PROPERTY_HANDLER) {
-                ret = prop->value.data.u.prop_handler(vm, value, init,
-                                                      &vm->retval);
-                if (njs_slow_path(ret != NJS_OK)) {
-                    return ret;
+                if (prop->type == NJS_PROPERTY_HANDLER) {
+                    ret = prop->value.data.u.prop_handler(vm, value, init,
+                                                          &vm->retval);
+                    if (njs_slow_path(ret != NJS_OK)) {
+                        return ret;
+                    }
+
+                    break;
                 }
-
-                break;
             }
         }
 

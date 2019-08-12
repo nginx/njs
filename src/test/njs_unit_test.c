@@ -8776,6 +8776,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("({}).__proto__ = null"),
       njs_str("null") },
 
+    { njs_str("({__proto__:null}).__proto__"),
+      njs_str("undefined") },
+
+    { njs_str("({__proto__:null, a:1}).a"),
+      njs_str("1") },
+
     { njs_str("({__proto__: []}) instanceof Array"),
       njs_str("true") },
 
