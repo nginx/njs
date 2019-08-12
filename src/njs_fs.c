@@ -31,6 +31,8 @@ static njs_int_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
 static njs_int_t njs_fs_write_file_sync_internal(njs_vm_t *vm,
     njs_value_t *args, njs_uint_t nargs, int default_flags);
 
+static njs_int_t njs_fs_fd_read(njs_vm_t *vm, njs_value_t *path, int fd,
+    njs_str_t *data);
 static njs_int_t njs_fs_error(njs_vm_t *vm, const char *syscall,
     const char *description, njs_value_t *path, int errn, njs_value_t *retval);
 static int njs_fs_flags(njs_str_t *value);
@@ -70,9 +72,10 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     int                 fd, errn, flags;
-    u_char              *p, *start, *end;
-    ssize_t             n, length;
-    njs_str_t           flag, encoding;
+    u_char              *start;
+    size_t              size;
+    ssize_t             length;
+    njs_str_t           flag, encoding, data;
     njs_int_t           ret;
     const char          *path, *syscall, *description;
     struct stat         sb;
@@ -209,32 +212,46 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         length = 0;
     }
 
-    start = njs_string_alloc(vm, &arguments[2], sb.st_size, length);
-    if (njs_slow_path(start == NULL)) {
-        goto fail;
-    }
+    size = sb.st_size;
 
-    p = start;
-    end = p + sb.st_size;
+    if (njs_fast_path(size != 0)) {
 
-    while (p < end) {
-        n = read(fd, p, end - p);
-        if (njs_slow_path(n == -1)) {
-            if (errno == EINTR) {
-                continue;
-            }
-
-            errn = errno;
-            description = strerror(errno);
-            syscall = "read";
-            goto done;
+        start = njs_string_alloc(vm, &arguments[2], size, length);
+        if (njs_slow_path(start == NULL)) {
+            goto fail;
         }
 
-        p += n;
+        data.start = start;
+        data.length = size;
+
+        ret = njs_fs_fd_read(vm, &args[1], fd, &data);
+        if (ret != NJS_OK) {
+            goto fail;
+        }
+
+        start = data.start;
+
+    } else {
+        /* size of the file is not known in advance. */
+
+        data.length = 0;
+
+        ret = njs_fs_fd_read(vm, &args[1], fd, &data);
+        if (ret != NJS_OK) {
+            goto fail;
+        }
+
+        size = data.length;
+        start = data.start;
+
+        ret = njs_string_new(vm, &arguments[2], start, size, length);
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto fail;
+        }
     }
 
     if (encoding.length != 0) {
-        length = njs_utf8_length(start, sb.st_size);
+        length = njs_utf8_length(start, size);
 
         if (length >= 0) {
             njs_string_length_set(&arguments[2], length);
@@ -295,9 +312,10 @@ njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     int                 fd, errn, flags;
-    u_char              *p, *start, *end;
-    ssize_t             n, length;
-    njs_str_t           flag, encoding;
+    u_char              *start;
+    size_t              size;
+    ssize_t             length;
+    njs_str_t           flag, encoding, data;
     njs_int_t           ret;
     const char          *path, *syscall, *description;
     struct stat         sb;
@@ -418,32 +436,46 @@ njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         length = 0;
     }
 
-    start = njs_string_alloc(vm, &vm->retval, sb.st_size, length);
-    if (njs_slow_path(start == NULL)) {
-        goto fail;
-    }
+    size = sb.st_size;
 
-    p = start;
-    end = p + sb.st_size;
+    if (njs_fast_path(size != 0)) {
 
-    while (p < end) {
-        n = read(fd, p, end - p);
-        if (njs_slow_path(n == -1)) {
-            if (errno == EINTR) {
-                continue;
-            }
-
-            errn = errno;
-            description = strerror(errno);
-            syscall = "read";
-            goto done;
+        start = njs_string_alloc(vm, &vm->retval, size, length);
+        if (njs_slow_path(start == NULL)) {
+            goto fail;
         }
 
-        p += n;
+        data.start = start;
+        data.length = size;
+
+        ret = njs_fs_fd_read(vm, &args[1], fd, &data);
+        if (ret != NJS_OK) {
+            goto fail;
+        }
+
+        start = data.start;
+
+    } else {
+        /* size of the file is not known in advance. */
+
+        data.length = 0;
+
+        ret = njs_fs_fd_read(vm, &args[1], fd, &data);
+        if (ret != NJS_OK) {
+            goto fail;
+        }
+
+        size = data.length;
+        start = data.start;
+
+        ret = njs_string_new(vm, &vm->retval, start, size, length);
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto fail;
+        }
     }
 
     if (encoding.length != 0) {
-        length = njs_utf8_length(start, sb.st_size);
+        length = njs_utf8_length(start, size);
 
         if (length >= 0) {
             njs_string_length_set(&vm->retval, length);
@@ -872,8 +904,71 @@ done:
 }
 
 
-static njs_int_t njs_fs_error(njs_vm_t *vm, const char *syscall,
-    const char *description, njs_value_t *path, int errn, njs_value_t *retval)
+static njs_int_t
+njs_fs_fd_read(njs_vm_t *vm, njs_value_t *path, int fd, njs_str_t *data)
+{
+    u_char   *p, *end, *start;
+    size_t   size;
+    ssize_t  n;
+
+    size = data->length;
+
+    if (size == 0) {
+        size = 4096;
+
+        data->start = njs_mp_alloc(vm->mem_pool, size);
+        if (data->start == NULL) {
+            njs_memory_error(vm);
+            return NJS_ERROR;
+        }
+    }
+
+    p = data->start;
+    end = p + size;
+
+    for ( ;; ) {
+        n = read(fd, p, end - p);
+
+        if (njs_slow_path(n < 0)) {
+            (void) njs_fs_error(vm, "read", strerror(errno), path, errno,
+                                &vm->retval);
+            return NJS_ERROR;
+        }
+
+        p += n;
+
+        if (n == 0) {
+            break;
+        }
+
+        if (end - p < 2048) {
+            size *= 2;
+
+            start = njs_mp_alloc(vm->mem_pool, size);
+            if (start == NULL) {
+                njs_memory_error(vm);
+                return NJS_ERROR;
+            }
+
+            memcpy(start, data->start, p - data->start);
+
+            njs_mp_free(vm->mem_pool, data->start);
+
+            p = start + (p - data->start);
+            end = start + size;
+            data->start = start;
+        }
+    }
+
+    data->length = p - data->start;
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_fs_error(njs_vm_t *vm, const char *syscall, const char *description,
+    njs_value_t *path, int errn, njs_value_t *retval)
 {
     size_t              size;
     njs_int_t           ret;

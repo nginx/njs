@@ -442,6 +442,15 @@ njs_test {
      "Error: No such file or directory\r\nundefined\r\n>> "}
 }
 
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "undefined\r\n>> "}
+    {"fs.readFile('/proc/version', (e, data) => {console.log(e || data.slice(0,5) == 'Linux')})\r\n"
+     "true\r\nundefined\r\n>> "}
+    {"fs.readFile('/proc/cpuinfo', (e, data) => {console.log(e || data.slice(0,9) == 'processor')})\r\n"
+     "true\r\nundefined\r\n>> "}
+}
+
 # require('fs').readFileSync()
 
 njs_test {
@@ -500,6 +509,18 @@ njs_test {
      "Error: Non-UTF8 file, convertion is not implemented"}
 }
 
+njs_test {
+    {"var fs = require('fs'), file\r\n"
+     "undefined\r\n>> "}
+    {"try { file = fs.readFileSync('/proc/version')} catch (e) {}\r\n"
+     "undefined"}
+    {"(!file || file.slice(0,5) == 'Linux')\r\n"
+     "true"}
+    {"try { file = fs.readFileSync('/proc/cpuinfo')} catch (e) {}\r\n"
+     "undefined"}
+    {"(!file || file.slice(0,9) == 'processor')\r\n"
+     "true"}
+}
 
 # require('fs').writeFile()
 
