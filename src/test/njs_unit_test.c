@@ -13940,7 +13940,7 @@ njs_unit_test_method_external(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                                        r->uri.length);
     }
 
-    vm->retval = njs_value_undefined;
+    njs_set_undefined(&vm->retval);
 
     return NJS_OK;
 }

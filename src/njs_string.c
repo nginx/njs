@@ -3318,7 +3318,7 @@ njs_string_replace_regexp_function(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
-    arguments[0] = njs_value_undefined;
+    njs_set_undefined(&arguments[0]);
 
     /* Matched substring and parenthesized submatch strings. */
     for (k = 0, i = 1; i <= n; i++) {
@@ -3460,7 +3460,7 @@ njs_string_replace_search_function(njs_vm_t *vm, njs_value_t *args,
     njs_value_t  string;
     njs_value_t  arguments[4];
 
-    arguments[0] = njs_value_undefined;
+    njs_set_undefined(&arguments[0]);
 
     /* GC, args[0], args[1] */
 

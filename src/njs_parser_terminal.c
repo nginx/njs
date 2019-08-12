@@ -227,7 +227,7 @@ njs_parser_reference(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
     case NJS_TOKEN_UNDEFINED:
         njs_thread_log_debug("JS: undefined");
 
-        node->u.value = njs_value_undefined;
+        njs_set_undefined(&node->u.value);
         break;
 
     case NJS_TOKEN_THIS:
@@ -264,7 +264,7 @@ njs_parser_reference(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
         node->token = NJS_TOKEN_GLOBAL_THIS;
 
         if (vm->options.module) {
-            node->u.value = njs_value_undefined;
+            njs_set_undefined(&node->u.value);
             break;
         }
 

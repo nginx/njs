@@ -2477,7 +2477,7 @@ njs_generate_scope(njs_vm_t *vm, njs_generator_t *generator,
     value = (njs_value_t *) (p + size);
 
     for (n = scope_size - size; n != 0; n -= sizeof(njs_value_t)) {
-        *value++ = njs_value_undefined;
+        njs_set_undefined(value++);
     }
 
     if (vm->codes == NULL) {

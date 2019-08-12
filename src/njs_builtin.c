@@ -415,7 +415,7 @@ static njs_int_t
 njs_prototype_function(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    vm->retval = njs_value_undefined;
+    njs_set_undefined(&vm->retval);
 
     return NJS_OK;
 }

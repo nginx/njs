@@ -994,7 +994,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
             }
 
         } else {
-            array->start[i] = njs_value_undefined;
+            njs_set_undefined(&array->start[i]);
         }
     }
 

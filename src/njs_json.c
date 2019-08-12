@@ -271,7 +271,7 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
     } else {
-        stringify->replacer = njs_value_undefined;
+        njs_set_undefined(&stringify->replacer);
     }
 
     stringify->space.length = 0;
@@ -1470,7 +1470,7 @@ done:
      * An empty object means empty result.
      */
     if (str.length <= njs_length("{\n\n}")) {
-        vm->retval = njs_value_undefined;
+        njs_set_undefined(&vm->retval);
         goto release;
     }
 
@@ -2417,7 +2417,7 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, const njs_value_t *value,
     stringify->nodes = NULL;
     stringify->last = NULL;
     stringify->stack.items = 0;
-    stringify->replacer = njs_value_undefined;
+    njs_set_undefined(&stringify->replacer);
 
     if (!njs_dump_is_object(value)) {
         ret = njs_dump_value(stringify, value, console);

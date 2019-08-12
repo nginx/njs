@@ -989,7 +989,7 @@ njs_ext_console_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         njs_printf("\n");
     }
 
-    vm->retval = njs_value_undefined;
+    njs_set_undefined(&vm->retval);
 
     return NJS_OK;
 }
@@ -1021,7 +1021,7 @@ njs_ext_console_dump(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         njs_printf("\n");
     }
 
-    vm->retval = njs_value_undefined;
+    njs_set_undefined(&vm->retval);
 
     return NJS_OK;
 }
@@ -1052,7 +1052,7 @@ njs_ext_console_help(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     njs_printf("\n");
 
-    vm->retval = njs_value_undefined;
+    njs_set_undefined(&vm->retval);
 
     return NJS_OK;
 }
@@ -1076,7 +1076,7 @@ njs_ext_console_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     console->time = njs_time();
 
-    vm->retval = njs_value_undefined;
+    njs_set_undefined(&vm->retval);
 
     return NJS_OK;
 }
@@ -1116,7 +1116,7 @@ njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         njs_printf("Timer \"default\" doesn’t exist.\n");
     }
 
-    vm->retval = njs_value_undefined;
+    njs_set_undefined(&vm->retval);
 
     return NJS_OK;
 }

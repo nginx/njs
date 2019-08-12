@@ -543,7 +543,7 @@ njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
                 ret = njs_value_property(vm, this, &name, value);
 
                 if (ret != NJS_OK) {
-                    *value = njs_value_invalid;
+                    njs_set_invalid(value);
                 }
 
                 length--;
@@ -556,7 +556,7 @@ njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
             value = array->start;
 
             do {
-                *value++ = njs_value_invalid;
+                njs_set_invalid(value++);
                 length--;
             } while (length != 0);
         }
@@ -1398,7 +1398,7 @@ njs_array_prototype_for_each(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         length = njs_min(length, njs_array_len(array));
     }
 
-    vm->retval = njs_value_undefined;
+    njs_set_undefined(&vm->retval);
 
     return NJS_OK;
 }
@@ -1576,7 +1576,7 @@ njs_array_prototype_find(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         value = njs_array_start(array)[i];
 
         if (!njs_is_valid(&value)) {
-            value = njs_value_undefined;
+            njs_set_undefined(&value);
         }
 
         ret = njs_array_iterator_call(vm, function, this_arg, &value, i, array);
@@ -1624,7 +1624,7 @@ njs_array_prototype_find_index(njs_vm_t *vm, njs_value_t *args,
         value = njs_array_start(array)[i];
 
         if (!njs_is_valid(&value)) {
-            value = njs_value_undefined;
+            njs_set_undefined(&value);
         }
 
         ret = njs_array_iterator_call(vm, function, this_arg, &value, i, array);
@@ -1712,7 +1712,7 @@ njs_array_iterator_reduce(njs_vm_t *vm, njs_function_t *function,
 
     /* GC: array elt, array */
 
-    arguments[0] = njs_value_undefined;
+    njs_set_undefined(&arguments[0]);
     arguments[1] = *accumulator;
     arguments[2] = *value;
     njs_set_number(&arguments[3], n);
@@ -1924,7 +1924,7 @@ start:
                 if (njs_is_valid(&start[n])) {
 
                     if (njs_is_valid(&start[n - 1])) {
-                        arguments[0] = njs_value_undefined;
+                        njs_set_undefined(&arguments[0]);
 
                         /* GC: array elt, array */
                         arguments[1] = start[n - 1];

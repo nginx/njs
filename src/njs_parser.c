@@ -510,7 +510,7 @@ njs_parser_variable_node(njs_vm_t *vm, njs_parser_t *parser, njs_str_t *name,
         switch (type) {
 
         case NJS_VARIABLE_VAR:
-            var->value = njs_value_undefined;
+            njs_set_undefined(&var->value);
             break;
 
         default:

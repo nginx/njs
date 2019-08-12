@@ -1005,7 +1005,7 @@ njs_value_property(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
             }
 
             if (njs_is_undefined(&prop->getter)) {
-                *retval = njs_value_undefined;
+                njs_set_undefined(retval);
                 break;
             }
 
@@ -1036,7 +1036,7 @@ njs_value_property(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
         break;
 
     case NJS_DECLINED:
-        *retval = njs_value_undefined;
+        njs_set_undefined(retval);
 
         return NJS_DECLINED;
 

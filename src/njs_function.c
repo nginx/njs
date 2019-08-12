@@ -399,7 +399,7 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
     }
 
     while (max_args != 0) {
-        *value++ = njs_value_undefined;
+        njs_set_undefined(value++);
         max_args--;
     }
 

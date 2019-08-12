@@ -33,8 +33,8 @@ njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
         prop->enumerable = attributes;
         prop->configurable = attributes;
 
-        prop->getter = njs_value_invalid;
-        prop->setter = njs_value_invalid;
+        njs_set_invalid(&prop->getter);
+        njs_set_invalid(&prop->setter);
 
         return prop;
     }
@@ -72,7 +72,7 @@ njs_object_property(njs_vm_t *vm, const njs_value_t *value,
 
     } while (object != NULL);
 
-    *retval = njs_value_undefined;
+    njs_set_undefined(retval);
 
     return NJS_DECLINED;
 
@@ -86,7 +86,7 @@ found:
     }
 
     if (njs_is_undefined(&prop->getter)) {
-        *retval = njs_value_undefined;
+        njs_set_undefined(retval);
         return NJS_OK;
     }
 
@@ -133,7 +133,7 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
 
     case NJS_OBJECT_PROP_GETTER:
         prop->getter = *value;
-        prop->setter = njs_value_invalid;
+        njs_set_invalid(&prop->setter);
         prop->enumerable = NJS_ATTRIBUTE_TRUE;
         prop->configurable = NJS_ATTRIBUTE_TRUE;
 
@@ -141,7 +141,7 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
 
     case NJS_OBJECT_PROP_SETTER:
         prop->setter = *value;
-        prop->getter = njs_value_invalid;
+        njs_set_invalid(&prop->getter);
         prop->enumerable = NJS_ATTRIBUTE_TRUE;
         prop->configurable = NJS_ATTRIBUTE_TRUE;
 
@@ -150,15 +150,15 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
 
     if (njs_fast_path(ret == NJS_DECLINED)) {
 
-        /* 6.2.5.6 CompletePropertypropriptor */
+        /* 6.2.5.6 CompletePropertyDescriptor */
 
         if (njs_is_accessor_descriptor(prop)) {
             if (!njs_is_valid(&prop->getter)) {
-                prop->getter = njs_value_undefined;
+                njs_set_undefined(&prop->getter);
             }
 
             if (!njs_is_valid(&prop->setter)) {
-                prop->setter = njs_value_undefined;
+                njs_set_undefined(&prop->setter);
             }
 
         } else {
@@ -167,7 +167,7 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
             }
 
             if (!njs_is_valid(&prop->value)) {
-                prop->value = njs_value_undefined;
+                njs_set_undefined(&prop->value);
             }
         }
 
@@ -215,7 +215,7 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
         if (njs_is_valid(&prop->value)) {
             *prev->value.data.u.value = prop->value;
         } else {
-            *prev->value.data.u.value = njs_value_undefined;
+            njs_set_undefined(prev->value.data.u.value);
         }
 
         return NJS_OK;
@@ -259,18 +259,18 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
          */
 
         if (njs_is_data_descriptor(prev)) {
-            prev->getter = njs_value_undefined;
-            prev->setter = njs_value_undefined;
+            njs_set_undefined(&prev->getter);
+            njs_set_undefined(&prev->setter);
 
-            prev->value = njs_value_invalid;
+            njs_set_invalid(&prev->value);
             prev->writable = NJS_ATTRIBUTE_UNSET;
 
         } else {
-            prev->value = njs_value_undefined;
+            njs_set_undefined(&prev->value);
             prev->writable = NJS_ATTRIBUTE_FALSE;
 
-            prev->getter = njs_value_invalid;
-            prev->setter = njs_value_invalid;
+            njs_set_invalid(&prev->getter);
+            njs_set_invalid(&prev->setter);
         }
 
 
@@ -390,7 +390,7 @@ njs_descriptor_prop(njs_vm_t *vm, njs_object_prop_t *prop,
 
     } else {
         /* NJS_DECLINED */
-        prop->getter = njs_value_invalid;
+        njs_set_invalid(&prop->getter);
     }
 
     lhq.key = njs_str_value("set");
@@ -413,7 +413,7 @@ njs_descriptor_prop(njs_vm_t *vm, njs_object_prop_t *prop,
 
     } else {
         /* NJS_DECLINED */
-        prop->setter = njs_value_invalid;
+        njs_set_invalid(&prop->setter);
     }
 
     lhq.key = njs_str_value("value");
@@ -534,7 +534,7 @@ njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
         break;
 
     case NJS_DECLINED:
-        *dest = njs_value_undefined;
+        njs_set_undefined(dest);
         return NJS_OK;
 
     case NJS_ERROR:

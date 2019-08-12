@@ -180,7 +180,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         njs_arr_reset(vm->backtrace);
     }
 
-    vm->retval = njs_value_undefined;
+    njs_set_undefined(&vm->retval);
 
     ret = njs_parser(vm, parser, prev);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -374,7 +374,7 @@ njs_vm_init(njs_vm_t *vm)
     }
 
     if (njs_is_null(&vm->retval)) {
-        vm->retval = njs_value_undefined;
+        njs_set_undefined(&vm->retval);
     }
 
     return NJS_OK;

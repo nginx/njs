@@ -280,13 +280,13 @@ done:
             return NJS_ERROR;
         }
 
-        arguments[2] = njs_value_undefined;
+        njs_set_undefined(&arguments[2]);
 
     } else {
-        arguments[1] = njs_value_undefined;
+        njs_set_undefined(&arguments[1]);
     }
 
-    arguments[0] = njs_value_undefined;
+    njs_set_undefined(&arguments[0]);
 
     ret = njs_function_apply(vm, njs_function(callback), arguments, 3,
                              &vm->retval);
@@ -295,7 +295,7 @@ done:
         return ret;
     }
 
-    vm->retval = njs_value_undefined;
+    njs_set_undefined(&vm->retval);
 
     return NJS_OK;
 
@@ -722,10 +722,10 @@ done:
         }
 
     } else {
-        arguments[1] = njs_value_undefined;
+        njs_set_undefined(&arguments[1]);
     }
 
-    arguments[0] = njs_value_undefined;
+    njs_set_undefined(&arguments[0]);
 
     ret = njs_function_apply(vm, njs_function(callback), arguments, 2,
                              &vm->retval);
@@ -734,7 +734,7 @@ done:
         return ret;
     }
 
-    vm->retval = njs_value_undefined;
+    njs_set_undefined(&vm->retval);
 
     return NJS_OK;
 }
@@ -899,7 +899,7 @@ done:
         }
 
     } else {
-        vm->retval = njs_value_undefined;
+        njs_set_undefined(&vm->retval);
     }
 
     return NJS_OK;

@@ -1327,7 +1327,7 @@ njs_object_freeze(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     value = njs_arg(args, nargs, 1);
 
     if (!njs_is_object(value)) {
-        vm->retval = njs_value_undefined;
+        njs_set_undefined(&vm->retval);
         return NJS_OK;
     }
 
@@ -1902,7 +1902,7 @@ njs_object_prototype_proto(njs_vm_t *vm, njs_value_t *value,
             }
         }
 
-        *retval = njs_value_undefined;
+        njs_set_undefined(retval);
 
         return NJS_OK;
     }

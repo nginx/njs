@@ -552,7 +552,7 @@ next:
                 break;
 
             case NJS_VMCODE_VOID:
-                vm->retval = njs_value_undefined;
+                njs_set_undefined(&vm->retval);
 
                 ret = sizeof(njs_vmcode_2addr_t);
                 break;
@@ -1436,7 +1436,7 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     retval = &njs_value_false;
 
     if (njs_is_object(object)) {
-        value = njs_value_undefined;
+        njs_set_undefined(&value);
         ret = njs_value_property(vm, constructor, &prototype_string, &value);
 
         if (njs_slow_path(ret == NJS_ERROR)) {
