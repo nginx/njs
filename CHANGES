@@ -1,4 +1,83 @@
 
+Changes with njs 0.3.4                                           13 Aug 2019
+
+    Core:
+    *) Feature: added Object shorthand methods and computed property
+       names. Thanks to 洪志道 (Hong Zhi Dao) and Artem S. Povalyukhin.
+
+    *) Feature: added getter/setter literal support.
+       Thanks to 洪志道 (Hong Zhi Dao) and Artem S. Povalyukhin.
+
+    *) Feature: added fs.renameSync().
+
+    *) Feature: added String.prototype.trimStart() and
+       String.prototype.trimEnd().
+
+    *) Improvement: added memory-sanitizer support.
+
+    *) Improvement: Unicode case tables updated to version 12.1.
+
+    *) Improvement: added UTF8 validation for string literals.
+
+    *) Bugfix: fixed reading files with zero size in fs.readFileSync().
+
+    *) Bugfix: extended the list of space separators in
+       String.prototype.trim().
+
+    *) Bugfix: fixed using of uninitialized value in
+       String.prototype.padStart().
+
+    *) Bugfix: fixed String.prototype.replace() for '$0' and '$&'
+       replacement string.
+
+    *) Bugfix: fixed String.prototype.replace() for byte strings with
+       regex argument.
+
+    *) Bugfix: fixed global match in String.prototype.replace()
+       with regexp argument.
+
+    *) Bugfix: fixed Array.prototype.slice() for primitive types.
+
+    *) Bugfix: fixed heap-buffer-overflow while importing module.
+
+    *) Bugfix: fixed UTF-8 character escaping.
+
+    *) Bugfix: fixed Object.values() and Object.entries() for shared
+       objects.
+
+    *) Bugfix: fixed uninitialized memory access in
+       String.prototype.match().
+
+    *) Bugfix: fixed String.prototype.match() for byte strings with
+       regex argument.
+
+    *) Bugfix: fixed Array.prototype.lastIndexOf() with undefined
+       arguments.
+
+    *) Bugfix: fixed String.prototype.substring() with empty substring.
+
+    *) Bugfix: fixed invalid memory access in
+       String.prototype.substring().
+
+    *) Bugfix: fixed String.fromCharCode() for code points > 65535
+       and NaN.
+
+    *) Bugfix: fixed String.prototype.toLowerCase() and
+       String.prototype.toUpperCase().
+
+    *) Bugfix: fixed Error() constructor with no arguments.
+
+    *) Bugfix: fixed "in" operator for values with accessor descriptors.
+
+    *) Bugfix: fixed Object.defineProperty() for non-boolean descriptor
+       props.
+
+    *) Bugfix: fixed Error.prototype.toString() with UTF8 string
+       properties.
+
+    *) Bugfix: fixed Error.prototype.toString() with non-string values
+       for "name" and "message".
+
 Changes with njs 0.3.3                                           25 Jun 2019
 
     nginx modules:
