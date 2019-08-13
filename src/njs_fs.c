@@ -273,12 +273,8 @@ done:
     }
 
     if (description != 0) {
-        ret = njs_fs_error(vm, syscall, description, &args[1], errn,
-                           &arguments[1]);
-
-        if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_ERROR;
-        }
+        (void) njs_fs_error(vm, syscall, description, &args[1], errn,
+                            &arguments[1]);
 
         njs_set_undefined(&arguments[2]);
 
@@ -497,10 +493,8 @@ done:
     }
 
     if (description != 0) {
-        (void) njs_fs_error(vm, syscall, description, &args[1], errn,
+        return njs_fs_error(vm, syscall, description, &args[1], errn,
                             &vm->retval);
-
-        return NJS_ERROR;
     }
 
     return NJS_OK;
@@ -714,12 +708,8 @@ done:
     }
 
     if (description != 0) {
-        ret = njs_fs_error(vm, syscall, description, &args[1], errn,
-                           &arguments[1]);
-
-        if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_ERROR;
-        }
+        (void) njs_fs_error(vm, syscall, description, &args[1], errn,
+                            &arguments[1]);
 
     } else {
         njs_set_undefined(&arguments[1]);
@@ -891,12 +881,8 @@ done:
     }
 
     if (description != 0) {
-        ret = njs_fs_error(vm, syscall, description, &args[1], errn,
-                           &vm->retval);
-
-        if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_ERROR;
-        }
+        return njs_fs_error(vm, syscall, description, &args[1], errn,
+                            &vm->retval);
 
     } else {
         njs_set_undefined(&vm->retval);
@@ -935,9 +921,8 @@ njs_fs_rename_sync(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     ret = rename(old_path, new_path);
     if (njs_slow_path(ret != 0)) {
-        ret = njs_fs_error(vm, "rename", strerror(errno), NULL, errno,
-                           &vm->retval);
-        return NJS_ERROR;
+        return njs_fs_error(vm, "rename", strerror(errno), NULL, errno,
+                            &vm->retval);
     }
 
     njs_set_undefined(&vm->retval);
@@ -972,9 +957,8 @@ njs_fs_fd_read(njs_vm_t *vm, njs_value_t *path, int fd, njs_str_t *data)
         n = read(fd, p, end - p);
 
         if (njs_slow_path(n < 0)) {
-            (void) njs_fs_error(vm, "read", strerror(errno), path, errno,
+            return njs_fs_error(vm, "read", strerror(errno), path, errno,
                                 &vm->retval);
-            return NJS_ERROR;
         }
 
         p += n;
@@ -1101,7 +1085,7 @@ njs_fs_error(njs_vm_t *vm, const char *syscall, const char *description,
 
     njs_set_type_object(retval, error, NJS_OBJECT_ERROR);
 
-    return NJS_OK;
+    return NJS_ERROR;
 }
 
 
