@@ -4163,7 +4163,7 @@ static njs_unit_test_t  njs_test[] =
                  "Array.prototype.fill.call(o, 2).a"),
       njs_str("4") },
 
-#if (!NJS_HAVE_MEMORY_SANITIZER) /* MSAN limits stack size */
+#if (!NJS_HAVE_ADDRESS_SANITIZER && !NJS_HAVE_MEMORY_SANITIZER) /* limited stack size */
     { njs_str("var o = Object({length: 3});"
                  "Object.defineProperty(o, '0', {set: function(v){this[0] = 2 * v}});"
                  "Array.prototype.fill.call(o, 2)"),
@@ -6421,7 +6421,7 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("{ function f() {} { var f }}"),
       njs_str("SyntaxError: \"f\" has already been declared in 1") },
 
-#if (!NJS_HAVE_MEMORY_SANITIZER) /* MSAN limits stack size */
+#if (!NJS_HAVE_ADDRESS_SANITIZER && !NJS_HAVE_MEMORY_SANITIZER) /* limited stack size */
     { njs_str("function f() { return f() } f()"),
       njs_str("RangeError: Maximum call stack size exceeded") },
 #endif
