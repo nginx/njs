@@ -324,10 +324,9 @@ done:
     if (njs_is_valid(&prop->value)) {
         if (prev->type == NJS_PROPERTY_HANDLER) {
             if (njs_is_data_descriptor(prev) && prev->writable) {
-                ret = prev->value.data.u.prop_handler(vm, object,
-                                                         &prop->value,
-                                                         &vm->retval);
-                if (njs_slow_path(ret != NJS_OK)) {
+                ret = prev->value.data.u.prop_handler(vm, object, &prop->value,
+                                                      &vm->retval);
+                if (njs_slow_path(ret == NJS_ERROR)) {
                     return ret;
                 }
             }
@@ -519,7 +518,7 @@ njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
             prop = &pq.scratch;
             ret = prop->value.data.u.prop_handler(vm, value, NULL,
                                                   &prop->value);
-            if (njs_slow_path(ret != NJS_OK)) {
+            if (njs_slow_path(ret == NJS_ERROR)) {
                 return ret;
             }
 

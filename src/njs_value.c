@@ -1018,11 +1018,12 @@ njs_value_property(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
             ret = prop->value.data.u.prop_handler(vm, value, NULL,
                                                   &prop->value);
 
-            if (njs_slow_path(ret != NJS_OK)) {
+            if (njs_slow_path(ret == NJS_ERROR)) {
                 return ret;
             }
 
             *retval = prop->value;
+
             break;
 
         default:
@@ -1096,7 +1097,7 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
         if (prop->type == NJS_PROPERTY_HANDLER) {
             ret = prop->value.data.u.prop_handler(vm, value, setval,
                                                   &vm->retval);
-            if (ret != NJS_DECLINED) {
+            if (njs_slow_path(ret != NJS_DECLINED)) {
                 return ret;
             }
         }

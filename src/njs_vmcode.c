@@ -1168,11 +1168,15 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
                 if (prop->type == NJS_PROPERTY_HANDLER) {
                     ret = prop->value.data.u.prop_handler(vm, value, init,
                                                           &vm->retval);
-                    if (njs_slow_path(ret != NJS_OK)) {
+                    if (njs_slow_path(ret == NJS_ERROR)) {
                         return ret;
                     }
 
-                    break;
+                    if (ret == NJS_OK) {
+                        break;
+                    }
+
+                    /* NJS_DECLINED */
                 }
             }
         }
@@ -1273,7 +1277,7 @@ njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *value, njs_value_t *key)
             if (njs_is_external(value)) {
                 ret = prop->value.data.u.prop_handler(vm, value, NULL, NULL);
                 if (njs_slow_path(ret != NJS_OK)) {
-                    return ret;
+                    return NJS_ERROR;
                 }
 
                 goto done;

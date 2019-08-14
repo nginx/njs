@@ -8807,6 +8807,9 @@ static njs_unit_test_t  njs_test[] =
               "Object.getPrototypeOf(o) === Object.prototype"),
       njs_str("true") },
 
+    { njs_str("var o = {__proto__: Array.prototype, length:3}; o.fill('a')[2]"),
+      njs_str("a") },
+
     { njs_str("({}).__proto__.constructor === Object"),
       njs_str("true") },
 

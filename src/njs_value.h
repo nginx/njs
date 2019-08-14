@@ -85,7 +85,8 @@ typedef enum {
  * njs_prop_handler_t is expected to return:
  *   NJS_OK - handler executed successfully;
  *   NJS_ERROR - some error, vm->retval contains appropriate exception;
- *   NJS_DECLINED - handler was applied to inappropriate object.
+ *   NJS_DECLINED - handler was applied to inappropriate object, vm->retval
+ *   contains undefined value.
  */
 typedef njs_int_t (*njs_prop_handler_t) (njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval);
