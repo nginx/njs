@@ -1846,27 +1846,30 @@ const njs_object_init_t  njs_object_constructor_init = {
 /*
  * ES6, 9.1.2: [[SetPrototypeOf]].
  */
-static njs_bool_t
+static njs_int_t
 njs_object_set_prototype_of(njs_vm_t *vm, njs_object_t *object,
     const njs_value_t *value)
 {
     const njs_object_t *proto;
 
-    proto = njs_is_object(value) ? njs_object(value)->__proto__
-                                 : NULL;
+    proto = njs_object(value);
 
     if (njs_slow_path(object->__proto__ == proto)) {
-        return 1;
+        return NJS_OK;
+    }
+
+    if (!object->extensible) {
+        return NJS_DECLINED;
     }
 
     if (njs_slow_path(proto == NULL)) {
         object->__proto__ = NULL;
-        return 1;
+        return NJS_OK;
     }
 
     do {
         if (proto == object) {
-            return 0;
+            return NJS_ERROR;
         }
 
         proto = proto->__proto__;
@@ -1875,7 +1878,7 @@ njs_object_set_prototype_of(njs_vm_t *vm, njs_object_t *object,
 
     object->__proto__ = njs_object(value);
 
-    return 1;
+    return NJS_OK;
 }
 
 
@@ -1883,7 +1886,7 @@ njs_int_t
 njs_object_prototype_proto(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
-    njs_bool_t    ret;
+    njs_int_t     ret;
     njs_object_t  *proto, *object;
 
     if (!njs_is_object(value)) {
@@ -1896,7 +1899,7 @@ njs_object_prototype_proto(njs_vm_t *vm, njs_value_t *value,
     if (setval != NULL) {
         if (njs_is_object(setval) || njs_is_null(setval)) {
             ret = njs_object_set_prototype_of(vm, object, setval);
-            if (njs_slow_path(!ret)) {
+            if (njs_slow_path(ret == NJS_ERROR)) {
                 njs_type_error(vm, "Cyclic __proto__ value");
                 return NJS_ERROR;
             }

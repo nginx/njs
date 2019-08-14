@@ -8782,7 +8782,29 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("({__proto__:null, a:1}).a"),
       njs_str("1") },
 
+    { njs_str("Object.getPrototypeOf({__proto__:null})"),
+      njs_str("null") },
+
+    { njs_str("Object.getPrototypeOf({__proto__:1}) === Object.prototype"),
+      njs_str("true") },
+
+    { njs_str("Object.getPrototypeOf({__proto__:Array.prototype}) === Array.prototype"),
+      njs_str("true") },
+
     { njs_str("({__proto__: []}) instanceof Array"),
+      njs_str("true") },
+
+    { njs_str("({__proto__: Array.prototype}) instanceof Array"),
+      njs_str("true") },
+
+    { njs_str("var o = {};"
+              "o.__proto__ = Array.prototype;"
+              "Object.getPrototypeOf(o) === Array.prototype"),
+      njs_str("true") },
+
+    { njs_str("var o = Object.preventExtensions({});"
+              "o.__proto__ = Array.prototype;"
+              "Object.getPrototypeOf(o) === Object.prototype"),
       njs_str("true") },
 
     { njs_str("({}).__proto__.constructor === Object"),
