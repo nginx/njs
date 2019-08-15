@@ -1,4 +1,11 @@
 
+Changes with njs 0.3.5                                           15 Aug 2019
+    Core:
+    *) Bugfix: fixed module importing using require(). The bug was
+       introduced in 0.3.4.
+
+    *) Bugfix: fixed [[SetPrototypeOf]].
+
 Changes with njs 0.3.4                                           13 Aug 2019
 
     Core:
