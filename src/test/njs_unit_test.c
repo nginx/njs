@@ -13489,6 +13489,22 @@ static njs_unit_test_t  njs_module_test[] =
 };
 
 
+static njs_unit_test_t  njs_shared_test[] =
+{
+    { njs_str("var cr = require('crypto'); cr.createHash"),
+      njs_str("[object Function]") },
+
+    { njs_str("var cr = require('crypto'); cr.createHash('md5')"),
+      njs_str("[object Hash]") },
+
+    { njs_str("import cr from 'crypto'; cr.createHash"),
+      njs_str("[object Function]") },
+
+    { njs_str("import cr from 'crypto'; cr.createHash('md5')"),
+      njs_str("[object Hash]") },
+};
+
+
 static njs_unit_test_t  njs_tz_test[] =
 {
      { njs_str("var d = new Date(1); d = d + ''; d.slice(0, 33)"),
@@ -14278,6 +14294,7 @@ typedef struct {
     njs_bool_t  disassemble;
     njs_bool_t  verbose;
     njs_bool_t  module;
+    njs_uint_t  repeat;
 } njs_opts_t;
 
 
@@ -14308,7 +14325,7 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, const char *name,
     njs_vm_t      *vm, *nvm;
     njs_int_t     ret;
     njs_str_t     s;
-    njs_uint_t    i;
+    njs_uint_t    i, repeat;
     njs_stat_t    prev;
     njs_bool_t    success;
     njs_vm_opt_t  options;
@@ -14350,13 +14367,21 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, const char *name,
                 njs_disassembler(vm);
             }
 
-            nvm = njs_vm_clone(vm, NULL);
-            if (nvm == NULL) {
-                njs_printf("njs_vm_clone() failed\n");
-                goto done;
-            }
+            repeat = opts->repeat;
 
-            ret = njs_vm_start(nvm);
+            do {
+                if (nvm != NULL) {
+                    njs_vm_destroy(nvm);
+                }
+
+                nvm = njs_vm_clone(vm, NULL);
+                if (nvm == NULL) {
+                    njs_printf("njs_vm_clone() failed\n");
+                    goto done;
+                }
+
+                ret = njs_vm_start(nvm);
+            } while (--repeat != 0);
 
             if (njs_vm_retval_string(nvm, &s) != NJS_OK) {
                 njs_printf("njs_vm_retval_string() failed\n");
@@ -14844,6 +14869,8 @@ main(int argc, char **argv)
 
     njs_memzero(&stat, sizeof(njs_stat_t));
 
+    opts.repeat = 1;
+
     ret = njs_unit_test(njs_test, njs_nitems(njs_test), "script tests",
                         &opts, &stat);
     if (ret != NJS_OK) {
@@ -14874,6 +14901,15 @@ main(int argc, char **argv)
 
     ret = njs_unit_test(njs_module_test, njs_nitems(njs_module_test),
                         "module tests", &opts, &stat);
+    if (ret != NJS_OK) {
+        return ret;
+    }
+
+    opts.module = 0;
+    opts.repeat = 128;
+
+    ret = njs_unit_test(njs_shared_test, njs_nitems(njs_shared_test),
+                        "shared tests", &opts, &stat);
     if (ret != NJS_OK) {
         return ret;
     }

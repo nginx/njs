@@ -503,9 +503,10 @@ njs_module_insert(njs_vm_t *vm, njs_module_t *module)
 
 
 njs_int_t
-njs_module_require(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+njs_module_require(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
 {
+    njs_object_t        *object;
     njs_module_t        *module;
     njs_lvlhsh_query_t  lhq;
 
@@ -520,9 +521,18 @@ njs_module_require(njs_vm_t *vm, njs_value_t *args,
 
     if (njs_lvlhsh_find(&vm->modules_hash, &lhq) == NJS_OK) {
         module = lhq.value;
-        module->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_OBJECT].object;
 
-        njs_set_object(&vm->retval, &module->object);
+        object = njs_mp_alloc(vm->mem_pool, sizeof(njs_object_t));
+        if (njs_slow_path(object == NULL)) {
+            njs_memory_error(vm);
+            return NJS_ERROR;
+        }
+
+        *object = module->object;
+        object->__proto__ = &vm->prototypes[NJS_PROTOTYPE_OBJECT].object;
+        object->shared = 0;
+
+        njs_set_object(&vm->retval, object);
 
         return NJS_OK;
     }
