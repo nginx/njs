@@ -3,7 +3,7 @@
 # Copyright (C) NGINX, Inc.
 
 
-$echo -n "checking for $njs_feature ..."
+printf "checking for $njs_feature ..."
 
 cat << END >> $NJS_AUTOCONF_ERR
 ----------------------------------------
@@ -52,10 +52,10 @@ if [ -x $NJS_AUTOTEST ]; then
 
         value)
             if /bin/sh -c "($NJS_AUTOTEST)" >> $NJS_AUTOCONF_ERR 2>&1; then
-                $echo >> $NJS_AUTOCONF_ERR
+                echo >> $NJS_AUTOCONF_ERR
                 njs_found=yes
                 njs_feature_value=`$NJS_AUTOTEST`
-                $echo " $njs_feature_value"
+                echo " $njs_feature_value"
                 if [ -n "$njs_feature_name" ]; then
                     cat << END >> $NJS_AUTO_CONFIG_H
 
@@ -66,13 +66,13 @@ if [ -x $NJS_AUTOTEST ]; then
 END
                 fi
             else
-                $echo " not found"
+                echo " not found"
             fi
         ;;
 
         yes)
             if /bin/sh -c "($NJS_AUTOTEST)" >> $NJS_AUTOCONF_ERR 2>&1; then
-                $echo " found"
+                echo " found"
                 njs_found=yes
                 cat << END >> $NJS_AUTO_CONFIG_H
 
@@ -82,12 +82,12 @@ END
 
 END
             else
-                $echo " found but is not working"
+                echo " found but is not working"
             fi
         ;;
 
         *)
-            $echo " found"
+            echo " found"
             njs_found=yes
             cat << END >> $NJS_AUTO_CONFIG_H
 
@@ -100,13 +100,13 @@ END
     esac
 
 else
-    $echo " not found"
+    echo " not found"
 
-    $echo "----------"    >> $NJS_AUTOCONF_ERR
+    echo "----------"    >> $NJS_AUTOCONF_ERR
     cat $NJS_AUTOTEST.c       >> $NJS_AUTOCONF_ERR
-    $echo "----------"    >> $NJS_AUTOCONF_ERR
-    $echo $njs_test       >> $NJS_AUTOCONF_ERR
-    $echo "----------"    >> $NJS_AUTOCONF_ERR
+    echo "----------"    >> $NJS_AUTOCONF_ERR
+    echo $njs_test       >> $NJS_AUTOCONF_ERR
+    echo "----------"    >> $NJS_AUTOCONF_ERR
 fi
 
 rm -rf $NJS_AUTOTEST*

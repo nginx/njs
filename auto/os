@@ -13,7 +13,6 @@ case "$NJS_SYSTEM" in
         NJS_SYSTEM_VERSION=`uname -r 2>/dev/null`
         # Linux uname -p can return "unknown".
         NJS_SYSTEM_PLATFORM=`uname -m 2>/dev/null`
-        echo=echo
         CC=${CC:-cc}
 
         # NAN and INFINITY require _GNU_SOURCE on old Linux.
@@ -23,7 +22,6 @@ case "$NJS_SYSTEM" in
     FreeBSD | NetBSD | OpenBSD)
         NJS_SYSTEM_VERSION=`uname -r 2>/dev/null`
         NJS_SYSTEM_PLATFORM=`uname -m 2>/dev/null`
-        echo=echo
         CC=${CC:-cc}
         ;;
 
@@ -31,27 +29,21 @@ case "$NJS_SYSTEM" in
         njs_define=NJS_SOLARIS . auto/define
         NJS_SYSTEM_VERSION=`uname -r 2>/dev/null`
         NJS_SYSTEM_PLATFORM=`uname -p 2>/dev/null`
-        # Solaris /bin/sh and /bin/echo do not support "-n" option.
-        echo=auto/echo
         CC=${CC:-gcc}
         ;;
 
     Darwin)
         NJS_SYSTEM_VERSION=`uname -r 2>/dev/null`
         NJS_SYSTEM_PLATFORM=`uname -m 2>/dev/null`
-        # MacOSX /bin/sh is bash and its embedded "echo" command
-        # does not support "-n" option.
-        echo=/bin/echo
         CC=${CC:-cc}
         ;;
 
     *)
         NJS_SYSTEM_VERSION=`uname -r 2>/dev/null`
         NJS_SYSTEM_PLATFORM=`uname -p 2>/dev/null`
-        echo=echo
         CC=${CC:-gcc}
         ;;
 
 esac
 
-$echo configuring for $NJS_SYSTEM $NJS_SYSTEM_VERSION $NJS_SYSTEM_PLATFORM
+echo configuring for $NJS_SYSTEM $NJS_SYSTEM_VERSION $NJS_SYSTEM_PLATFORM

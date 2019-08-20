@@ -77,5 +77,5 @@ if [ $njs_found = yes ]; then
 
 else
     NJS_HAVE_READLINE=NO
-    $echo " - building interactive shell is not possible"
+    echo " - building interactive shell is not possible"
 fi

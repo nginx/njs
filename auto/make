@@ -4,7 +4,7 @@
 
 . auto/deps
 
-$echo "creating $NJS_MAKEFILE"
+echo "creating $NJS_MAKEFILE"
 
 mkdir -p $NJS_BUILD_DIR/src
 mkdir -p $NJS_BUILD_DIR/test
@@ -24,29 +24,29 @@ END
 
 # The include paths list.
 
-$echo -n "NJS_LIB_INCS =" >> $NJS_MAKEFILE
+printf "NJS_LIB_INCS =" >> $NJS_MAKEFILE
 
 for njs_inc in src $NJS_BUILD_DIR
 do
-	$echo -n " -I$njs_inc" >> $NJS_MAKEFILE
+	printf " -I$njs_inc" >> $NJS_MAKEFILE
 done
 
-$echo >> $NJS_MAKEFILE
-$echo >> $NJS_MAKEFILE
+echo >> $NJS_MAKEFILE
+echo >> $NJS_MAKEFILE
 
 
 # The njs object files list.
 
-$echo "NJS_LIB_OBJS = \\" >> $NJS_MAKEFILE
+echo "NJS_LIB_OBJS = \\" >> $NJS_MAKEFILE
 
 for njs_src in $NJS_LIB_SRCS
 do
     fname=$(basename $njs_src)
     njs_obj="src/${fname%.c}.o"
-    $echo "    $NJS_BUILD_DIR/$njs_obj \\" >> $NJS_MAKEFILE
+    echo "    $NJS_BUILD_DIR/$njs_obj \\" >> $NJS_MAKEFILE
 done
 
-$echo >> $NJS_MAKEFILE
+echo >> $NJS_MAKEFILE
 
 # The njs static library.
 

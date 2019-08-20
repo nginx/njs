@@ -32,10 +32,10 @@ if /bin/sh -c "(pcre-config --version)" >> $NJS_AUTOCONF_ERR 2>&1; then
 fi
 
 if [ $njs_found = no ]; then
-    $echo
-    $echo $0: error: no PCRE library found.
-    $echo
+    echo
+    echo $0: error: no PCRE library found.
+    echo
     exit 1;
 fi
 
-$echo " + PCRE version: `pcre-config --version`"
+echo " + PCRE version: `pcre-config --version`"

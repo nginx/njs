@@ -3,18 +3,18 @@
 # Copyright (C) NGINX, Inc.
 
 njs_found=no
-$echo -n "checking for expect ..."
+printf "checking for expect ..."
 
 if /bin/sh -c "(expect -v)" >> $NJS_AUTOCONF_ERR 2>&1; then
     njs_found=yes
 fi
 
 if [ $njs_found = yes ]; then
-    $echo " found"
-    $echo " + Expect version: `expect -v`"
+    echo " found"
+    echo " + Expect version: `expect -v`"
 
 else
-    $echo " not found"
+    echo " not found"
 fi
 
 if [ $njs_found = yes -a $NJS_HAVE_READLINE = YES ]; then
@@ -26,7 +26,7 @@ expect_test:	njs test/njs_expect_test.exp
 END
 
 else
-    $echo " - expect tests are disabled"
+    echo " - expect tests are disabled"
 
     cat << END >> $NJS_MAKEFILE
 

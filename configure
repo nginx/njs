@@ -47,6 +47,7 @@ END
 NJS_LIBRT=
 
 . auto/os
+. auto/cc
 . auto/clang
 . auto/time
 . auto/memalign
