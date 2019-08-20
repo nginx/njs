@@ -18,7 +18,7 @@ static njs_token_t njs_parser_object(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *obj);
 static njs_int_t njs_parser_object_property(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *parent, njs_parser_node_t *property,
-    njs_parser_node_t *value);
+    njs_parser_node_t *value, njs_bool_t proto_init);
 static njs_int_t njs_parser_property_accessor(njs_vm_t *vm,
     njs_parser_t *parser, njs_parser_node_t *parent,
     njs_parser_node_t *property, njs_parser_node_t *value,
@@ -475,18 +475,22 @@ static njs_token_t
 njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
 {
     uint32_t               hash, token_line;
-    njs_int_t              ret;
+    njs_int_t              ret, __proto__;
     njs_str_t              name;
+    njs_bool_t             computed, proto_init;
     njs_token_t            token, accessor;
     njs_lexer_t            *lexer;
     njs_parser_node_t      *object, *property, *expression;
     njs_function_lambda_t  *lambda;
+
+    const njs_str_t proto_string = njs_str("__proto__");
 
     lexer = parser->lexer;
 
     /* GCC and Clang complain about uninitialized values. */
     hash = 0;
     token_line = 0;
+    __proto__ = 0;
     property = NULL;
 
     object = njs_parser_node_new(vm, parser, NJS_TOKEN_OBJECT_VALUE);
@@ -503,6 +507,8 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
         }
 
         accessor = 0;
+        computed = 0;
+        proto_init = 0;
         njs_memzero(&name, sizeof(njs_str_t));
 
         if (token == NJS_TOKEN_NAME || lexer->keyword) {
@@ -558,6 +564,9 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
 
             token = njs_parser_match(vm, parser, token,
                                      NJS_TOKEN_CLOSE_BRACKET);
+
+            computed = 1;
+
             break;
 
         case NJS_TOKEN_NUMBER:
@@ -657,6 +666,23 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
                 break;
 
             case NJS_TOKEN_COLON:
+                if (!computed) {
+                    if (njs_is_string(&property->u.value)) {
+                        njs_string_get(&property->u.value, &name);
+                    }
+
+                    if (njs_slow_path(njs_strstr_eq(&name, &proto_string))) {
+                        if (++__proto__ > 1) {
+                            njs_parser_syntax_error(vm, parser,
+                                "Duplicate __proto__ fields are not allowed "
+                                "in object literals");
+                            return NJS_TOKEN_ILLEGAL;
+                        }
+
+                        proto_init = 1;
+                    }
+                }
+
                 token = njs_parser_token(vm, parser);
                 if (njs_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
                     return token;
@@ -699,7 +725,7 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
             }
 
             ret = njs_parser_object_property(vm, parser, obj, property,
-                                             expression);
+                                             expression, proto_init);
             if (njs_slow_path(ret != NJS_OK)) {
                 return NJS_TOKEN_ERROR;
             }
@@ -725,8 +751,9 @@ done:
 static njs_int_t
 njs_parser_object_property(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *parent, njs_parser_node_t *property,
-    njs_parser_node_t *value)
+    njs_parser_node_t *value, njs_bool_t proto_init)
 {
+    njs_token_t        token;
     njs_parser_node_t  *stmt, *assign, *object, *propref;
 
     object = njs_parser_node_new(vm, parser, NJS_TOKEN_OBJECT_VALUE);
@@ -736,7 +763,9 @@ njs_parser_object_property(njs_vm_t *vm, njs_parser_t *parser,
 
     object->u.object = parent;
 
-    propref = njs_parser_node_new(vm, parser, NJS_TOKEN_PROPERTY_INIT);
+    token = proto_init ? NJS_TOKEN_PROTO_INIT : NJS_TOKEN_PROPERTY_INIT;
+
+    propref = njs_parser_node_new(vm, parser, token);
     if (njs_slow_path(propref == NULL)) {
         return NJS_ERROR;
     }
@@ -870,7 +899,7 @@ njs_parser_array_item(njs_vm_t *vm, njs_parser_t *parser,
 
     njs_set_number(&number->u.value, array->u.length);
 
-    ret = njs_parser_object_property(vm, parser, array, number, value);
+    ret = njs_parser_object_property(vm, parser, array, number, value, 0);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }

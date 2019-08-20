@@ -52,6 +52,7 @@ typedef uint8_t                         njs_vmcode_operation_t;
 #define NJS_VMCODE_PROPERTY_NEXT        VMCODE0(16)
 #define NJS_VMCODE_THIS                 VMCODE0(17)
 #define NJS_VMCODE_ARGUMENTS            VMCODE0(18)
+#define NJS_VMCODE_PROTO_INIT           VMCODE0(19)
 
 #define NJS_VMCODE_TRY_START            VMCODE0(32)
 #define NJS_VMCODE_THROW                VMCODE0(33)

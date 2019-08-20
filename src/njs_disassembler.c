@@ -39,6 +39,8 @@ static njs_code_name_t  code_names[] = {
           njs_str("PROP GET        ") },
     { NJS_VMCODE_PROPERTY_INIT, sizeof(njs_vmcode_prop_set_t),
           njs_str("PROP INIT       ") },
+    { NJS_VMCODE_PROTO_INIT, sizeof(njs_vmcode_prop_set_t),
+          njs_str("PROTO INIT      ") },
     { NJS_VMCODE_PROPERTY_SET, sizeof(njs_vmcode_prop_set_t),
           njs_str("PROP SET        ") },
     { NJS_VMCODE_PROPERTY_IN, sizeof(njs_vmcode_3addr_t),

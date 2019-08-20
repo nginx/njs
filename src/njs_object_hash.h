@@ -8,6 +8,19 @@
 #define _NJS_OBJECT_HASH_H_INCLUDED_
 
 
+#define NJS___PROTO___HASH                                                    \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        '_'), '_'), 'p'), 'r'), 'o'), 't'), 'o'), '_'), '_')
+
+
 #define NJS_ARGV_HASH                                                         \
     njs_djb_hash_add(                                                         \
     njs_djb_hash_add(                                                         \

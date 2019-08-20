@@ -8810,6 +8810,33 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var o = {__proto__: Array.prototype, length:3}; o.fill('a')[2]"),
       njs_str("a") },
 
+    { njs_str("({__proto__:null, __proto__: null})"),
+      njs_str("SyntaxError: Duplicate __proto__ fields are not allowed in object literals in 1") },
+
+    { njs_str("({__proto__:null, '__proto__': null})"),
+      njs_str("SyntaxError: Duplicate __proto__ fields are not allowed in object literals in 1") },
+
+    { njs_str("({__proto__:null, '\\x5f_proto__': null})"),
+      njs_str("SyntaxError: Duplicate __proto__ fields are not allowed in object literals in 1") },
+
+    { njs_str("var __proto__ = 'a'; ({__proto__}).__proto__"),
+      njs_str("a") },
+
+    { njs_str("var __proto__ = 'a'; ({__proto__, '__proto__':'b'}).__proto__"),
+      njs_str("a") },
+
+    { njs_str("var __proto__ = 'a'; ({__proto__:null, __proto__}).__proto__"),
+      njs_str("a") },
+
+    { njs_str("({__proto__:null, ['__proto__']:'a'}).__proto__"),
+      njs_str("a") },
+
+    { njs_str("({__proto__() { return 123; }}).__proto__()"),
+      njs_str("123") },
+
+    { njs_str("({['__prot' + 'o__']: 123}).__proto__"),
+      njs_str("123") },
+
     { njs_str("({}).__proto__.constructor === Object"),
       njs_str("true") },
 

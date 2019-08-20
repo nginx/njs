@@ -23,8 +23,10 @@ static njs_jump_off_t njs_vmcode_template_literal(njs_vm_t *vm,
 static njs_jump_off_t njs_vmcode_object_copy(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *invld);
 
-static njs_jump_off_t njs_vmcode_property_init(njs_vm_t *vm,
-    njs_value_t *value, njs_value_t *key, njs_value_t *retval);
+static njs_jump_off_t njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *key, njs_value_t *retval);
+static njs_jump_off_t njs_vmcode_proto_init(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *key, njs_value_t *retval);
 static njs_jump_off_t njs_vmcode_property_in(njs_vm_t *vm,
     njs_value_t *value, njs_value_t *key);
 static njs_jump_off_t njs_vmcode_property_delete(njs_vm_t *vm,
@@ -786,6 +788,16 @@ next:
 
                 break;
 
+            case NJS_VMCODE_PROTO_INIT:
+                set = (njs_vmcode_prop_set_t *) pc;
+                retval = njs_vmcode_operand(vm, set->value);
+                ret = njs_vmcode_proto_init(vm, value1, value2, retval);
+                if (njs_slow_path(ret == NJS_ERROR)) {
+                    goto error;
+                }
+
+                break;
+
             case NJS_VMCODE_TRY_START:
                 ret = njs_vmcode_try_start(vm, value1, value2, pc);
                 if (njs_slow_path(ret == NJS_ERROR)) {
@@ -1106,7 +1118,6 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     uint32_t            index, size;
     njs_array_t         *array;
     njs_value_t         *val, name;
-    njs_object_t        *obj;
     njs_jump_off_t      ret;
     njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
@@ -1157,30 +1168,6 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
         lhq.proto = &njs_object_hash_proto;
         lhq.pool = vm->mem_pool;
 
-        obj = njs_object(value);
-
-        if (obj->__proto__ != NULL) {
-            /* obj->__proto__ can be NULL after __proto__: null assignment */
-            ret = njs_lvlhsh_find(&obj->__proto__->shared_hash, &lhq);
-            if (ret == NJS_OK) {
-                prop = lhq.value;
-
-                if (prop->type == NJS_PROPERTY_HANDLER) {
-                    ret = prop->value.data.u.prop_handler(vm, value, init,
-                                                          &vm->retval);
-                    if (njs_slow_path(ret == NJS_ERROR)) {
-                        return ret;
-                    }
-
-                    if (ret == NJS_OK) {
-                        break;
-                    }
-
-                    /* NJS_DECLINED */
-                }
-            }
-        }
-
         prop = njs_object_prop_alloc(vm, &name, init, 1);
         if (njs_slow_path(prop == NULL)) {
             return NJS_ERROR;
@@ -1189,7 +1176,7 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
         lhq.value = prop;
         lhq.replace = 1;
 
-        ret = njs_lvlhsh_insert(&obj->hash, &lhq);
+        ret = njs_lvlhsh_insert(njs_object_hash(value), &lhq);
         if (njs_slow_path(ret != NJS_OK)) {
             njs_internal_error(vm, "lvlhsh insert/replace failed");
             return NJS_ERROR;
@@ -1206,6 +1193,47 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     }
 
     return sizeof(njs_vmcode_prop_set_t);
+}
+
+
+static njs_jump_off_t
+njs_vmcode_proto_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *unused,
+    njs_value_t *init)
+{
+    njs_object_t        *obj;
+    njs_jump_off_t      ret;
+    njs_object_prop_t   *prop;
+    njs_lvlhsh_query_t  lhq;
+
+    lhq.key = njs_str_value("__proto__");
+    lhq.key_hash = NJS___PROTO___HASH;
+    lhq.proto = &njs_object_hash_proto;
+    lhq.pool = vm->mem_pool;
+
+    obj = njs_object(value);
+
+    ret = njs_lvlhsh_find(&obj->__proto__->shared_hash, &lhq);
+    if (njs_slow_path(ret != NJS_OK)) {
+        goto fail;
+    }
+
+    prop = lhq.value;
+
+    if (prop->type != NJS_PROPERTY_HANDLER) {
+        goto fail;
+    }
+
+    ret = prop->value.data.u.prop_handler(vm, value, init, &vm->retval);
+    if (njs_slow_path(ret != NJS_OK)) {
+        goto fail;
+    }
+
+    return sizeof(njs_vmcode_prop_set_t);
+
+fail:
+
+    njs_internal_error(vm, "\"__proto__\" init failed");
+    return NJS_ERROR;
 }
 
 

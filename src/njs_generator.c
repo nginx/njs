@@ -1741,10 +1741,19 @@ njs_generate_assignment(njs_vm_t *vm, njs_generator_t *generator,
         return ret;
     }
 
-    if (lvalue->token == NJS_TOKEN_PROPERTY_INIT) {
+    switch (lvalue->token) {
+    case NJS_TOKEN_PROPERTY_INIT:
         njs_generate_code(generator, njs_vmcode_prop_set_t, prop_set,
                           NJS_VMCODE_PROPERTY_INIT, 3);
-    } else {
+        break;
+
+    case NJS_TOKEN_PROTO_INIT:
+        njs_generate_code(generator, njs_vmcode_prop_set_t, prop_set,
+                          NJS_VMCODE_PROTO_INIT, 3);
+        break;
+
+    default:
+        /* NJS_VMCODE_PROPERTY_SET */
         njs_generate_code(generator, njs_vmcode_prop_set_t, prop_set,
                           NJS_VMCODE_PROPERTY_SET, 3);
     }
