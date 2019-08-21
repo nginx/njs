@@ -51,6 +51,8 @@ typedef struct {
 
 njs_variable_t *njs_variable_add(njs_vm_t *vm, njs_parser_scope_t *scope,
     njs_str_t *name, uint32_t hash, njs_variable_type_t type);
+njs_int_t njs_variables_copy(njs_vm_t *vm, njs_lvlhsh_t *variables,
+    njs_lvlhsh_t *prev_variables);
 njs_variable_t * njs_label_add(njs_vm_t *vm, njs_parser_scope_t *scope,
     njs_str_t *name, uint32_t hash);
 njs_variable_t *njs_label_find(njs_vm_t *vm, njs_parser_scope_t *scope,

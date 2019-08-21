@@ -76,13 +76,9 @@ static njs_token_t njs_parser_grouping_expression(njs_vm_t *vm,
 njs_int_t
 njs_parser(njs_vm_t *vm, njs_parser_t *parser, njs_parser_t *prev)
 {
-    njs_int_t           ret;
-    njs_token_t         token;
-    njs_lvlhsh_t        *variables, *prev_variables;
-    njs_variable_t      *var;
-    njs_parser_node_t   *node;
-    njs_lvlhsh_each_t   lhe;
-    njs_lvlhsh_query_t  lhq;
+    njs_int_t          ret;
+    njs_token_t        token;
+    njs_parser_node_t  *node;
 
     ret = njs_parser_scope_begin(vm, parser, NJS_SCOPE_GLOBAL);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -94,30 +90,10 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser, njs_parser_t *prev)
          * Copy the global scope variables from the previous
          * iteration of the accumulative mode.
          */
-        njs_lvlhsh_each_init(&lhe, &njs_variables_hash_proto);
-
-        lhq.proto = &njs_variables_hash_proto;
-        lhq.replace = 0;
-        lhq.pool = vm->mem_pool;
-
-        variables = &parser->scope->variables;
-        prev_variables = &prev->scope->variables;
-
-        for ( ;; ) {
-            var = njs_lvlhsh_each(prev_variables, &lhe);
-
-            if (var == NULL) {
-                break;
-            }
-
-            lhq.value = var;
-            lhq.key = var->name;
-            lhq.key_hash = njs_djb_hash(var->name.start, var->name.length);
-
-            ret = njs_lvlhsh_insert(variables, &lhq);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return NJS_ERROR;
-            }
+        ret = njs_variables_copy(vm, &parser->scope->variables,
+                                 &prev->scope->variables);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
     }
 

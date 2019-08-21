@@ -80,6 +80,42 @@ njs_variable_add(njs_vm_t *vm, njs_parser_scope_t *scope, njs_str_t *name,
 }
 
 
+njs_int_t
+njs_variables_copy(njs_vm_t *vm, njs_lvlhsh_t *variables,
+    njs_lvlhsh_t *prev_variables)
+{
+    njs_int_t           ret;
+    njs_variable_t      *var;
+    njs_lvlhsh_each_t   lhe;
+    njs_lvlhsh_query_t  lhq;
+
+    njs_lvlhsh_each_init(&lhe, &njs_variables_hash_proto);
+
+    lhq.proto = &njs_variables_hash_proto;
+    lhq.replace = 0;
+    lhq.pool = vm->mem_pool;
+
+    for ( ;; ) {
+        var = njs_lvlhsh_each(prev_variables, &lhe);
+
+        if (var == NULL) {
+            break;
+        }
+
+        lhq.value = var;
+        lhq.key = var->name;
+        lhq.key_hash = njs_djb_hash(var->name.start, var->name.length);
+
+        ret = njs_lvlhsh_insert(variables, &lhq);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+    }
+
+    return NJS_OK;
+}
+
+
 static njs_variable_t *
 njs_variable_scope_add(njs_vm_t *vm, njs_parser_scope_t *scope,
     njs_lvlhsh_query_t *lhq, njs_variable_type_t type)
