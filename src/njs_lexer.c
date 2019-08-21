@@ -504,7 +504,7 @@ njs_lexer_next_token(njs_lexer_t *lexer, njs_lexer_token_t *lt)
             token = njs_lexer_division(lexer, token);
 
             if (token != NJS_TOKEN_AGAIN) {
-                return token;
+                goto done;
             }
 
             continue;
@@ -557,8 +557,7 @@ njs_lexer_next_token(njs_lexer_t *lexer, njs_lexer_token_t *lt)
             /* Fall through. */
 
         default:
-            lt->text.length = lexer->start - lt->text.start;
-            return token;
+            goto done;
         }
 
     multi:
@@ -566,9 +565,13 @@ njs_lexer_next_token(njs_lexer_t *lexer, njs_lexer_token_t *lt)
         return njs_lexer_multi(lexer, lt, token, n, multi);
     }
 
+    token = NJS_TOKEN_END;
+
+done:
+
     lt->text.length = lexer->start - lt->text.start;
 
-    return NJS_TOKEN_END;
+    return token;
 }
 
 
