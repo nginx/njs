@@ -780,6 +780,42 @@ njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *native)
 }
 
 
+static njs_value_t *
+njs_function_property_prototype_create(njs_vm_t *vm, njs_lvlhsh_t *hash,
+    njs_value_t *prototype)
+{
+    njs_int_t           ret;
+    njs_object_prop_t   *prop;
+    njs_lvlhsh_query_t  lhq;
+
+    const njs_value_t  proto_string = njs_string("prototype");
+
+    prop = njs_object_prop_alloc(vm, &proto_string, prototype, 0);
+    if (njs_slow_path(prop == NULL)) {
+        return NULL;
+    }
+
+    prop->writable = 1;
+
+    lhq.value = prop;
+    lhq.key_hash = NJS_PROTOTYPE_HASH;
+    lhq.key = njs_str_value("prototype");
+    lhq.replace = 1;
+    lhq.pool = vm->mem_pool;
+    lhq.proto = &njs_object_hash_proto;
+
+    ret = njs_lvlhsh_insert(hash, &lhq);
+
+    if (njs_fast_path(ret == NJS_OK)) {
+        return &prop->value;
+    }
+
+    njs_internal_error(vm, "lvlhsh insert failed");
+
+    return NULL;
+}
+
+
 /*
  * The "prototype" property of user defined functions is created on
  * demand in private hash of the functions by the "prototype" getter.
@@ -794,49 +830,43 @@ njs_int_t
 njs_function_prototype_create(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
-    njs_value_t  *proto;
-
-    proto = njs_function_property_prototype_create(vm, value);
-
-    if (njs_fast_path(proto != NULL)) {
-        *retval = *proto;
-        return NJS_OK;
-    }
-
-    return NJS_ERROR;
-}
-
-
-njs_value_t *
-njs_function_property_prototype_create(njs_vm_t *vm, njs_value_t *value)
-{
-    njs_value_t     *proto, *cons;
+    njs_value_t     *proto, proto_value, *cons;
     njs_object_t    *prototype;
     njs_function_t  *function;
 
-    prototype = njs_object_alloc(vm);
-    if (njs_slow_path(prototype == NULL)) {
-        return NULL;
+    if (setval == NULL) {
+        prototype = njs_object_alloc(vm);
+        if (njs_slow_path(prototype == NULL)) {
+            return NJS_ERROR;
+        }
+
+        njs_set_object(&proto_value, prototype);
+
+        setval = &proto_value;
     }
 
     function = njs_function_value_copy(vm, value);
     if (njs_slow_path(function == NULL)) {
-        return NULL;
+        return NJS_ERROR;
     }
 
-    proto = njs_property_prototype_create(vm, &function->object.hash,
-                                          prototype);
+    proto = njs_function_property_prototype_create(vm, &function->object.hash,
+                                                   setval);
     if (njs_slow_path(proto == NULL)) {
-        return NULL;
+        return NJS_ERROR;
     }
 
-    cons = njs_property_constructor_create(vm, &prototype->hash, value);
-
-    if (njs_fast_path(cons != NULL)) {
-        return proto;
+    if (njs_is_object(proto)) {
+        cons = njs_property_constructor_create(vm, njs_object_hash(proto),
+                                               value);
+        if (njs_slow_path(cons == NULL)) {
+            return NJS_ERROR;
+        }
     }
 
-    return NULL;
+    *retval = *proto;
+
+    return NJS_OK;
 }
 
 
@@ -1197,6 +1227,7 @@ const njs_object_prop_t  njs_function_instance_properties[] =
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
         .value = njs_prop_handler(njs_function_prototype_create),
+        .writable = 1
     },
 };
 

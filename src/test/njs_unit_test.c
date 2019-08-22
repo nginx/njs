@@ -7233,6 +7233,41 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var F = function (){}; typeof F.prototype"),
       njs_str("object") },
 
+    { njs_str("var F = function (){}; F.prototype = NaN; ({}) instanceof F"),
+      njs_str("TypeError: Function has non-object prototype in instanceof") },
+
+    { njs_str("var F = function() {};"
+              "[F, F].map((x)=>Object.getOwnPropertyDescriptor(x, 'prototype').writable)"
+              ".every((x)=> x === true)"),
+      njs_str("true") },
+
+    { njs_str("var F = function() {}, a = {t: 1}, b = {t: 2}, x, y; "
+              "F.prototype = a; x = new F();"
+              "F.prototype = b; y = new F();"
+              "x.t == 1 && y.t == 2"),
+      njs_str("true") },
+
+    { njs_str("var x = {}, y = function() {}, z; y.prototype = x; z = new y();"
+              "(z instanceof y) && (z.__proto__ == y.prototype) && (x.isPrototypeOf(z))"),
+      njs_str("true") },
+
+    { njs_str("var x = {}, y = function() {}, z; y.prototype = x; z = new y();"
+              "(z instanceof y) && (z.__proto__ == y.prototype) && (x.isPrototypeOf(z))"),
+      njs_str("true") },
+
+    { njs_str("[undefined, null, false, NaN, '']"
+              ".map((x) => { var f = function() {}; f.prototype = x; "
+              "              return Object.getPrototypeOf(new f()); })"
+              ".every((x) => x == Object.prototype)"),
+      njs_str("true") },
+
+    { njs_str("[undefined, null, false, NaN, '']"
+              ".map((x) => { var f = function() {}; f.prototype = x; return f; })"
+              ".map((x) => { try { return ({} instanceof x) ? 1 : 2; } "
+              "              catch (e) { return (e instanceof TypeError) ? 3 : 4; } })"
+              ".every((x) => x == 3)"),
+      njs_str("true")},
+
     { njs_str("new decodeURI('%00')"),
       njs_str("TypeError: function is not a constructor")},
 
@@ -8579,7 +8614,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("true") },
 
     { njs_str("[] instanceof []"),
-      njs_str("TypeError: right argument is not a function") },
+      njs_str("TypeError: right argument is not callable") },
 
     { njs_str("[] instanceof Array"),
       njs_str("true") },
@@ -8651,7 +8686,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("TypeError: object is not a function") },
 
     { njs_str("var ex; try {({}) instanceof this} catch (e) {ex = e}; ex"),
-      njs_str("TypeError: right argument is not a function") },
+      njs_str("TypeError: right argument is not callable") },
 
     { njs_str("Function.call(this, 'var x / = 1;')"),
       njs_str("InternalError: Not implemented") },

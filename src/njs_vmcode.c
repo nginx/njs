@@ -70,7 +70,8 @@ static njs_jump_off_t njs_primitive_values_compare(njs_vm_t *vm,
 static njs_jump_off_t njs_function_frame_create(njs_vm_t *vm,
     njs_value_t *value, const njs_value_t *this, uintptr_t nargs,
     njs_bool_t ctor);
-static njs_object_t *njs_function_new_object(njs_vm_t *vm, njs_value_t *value);
+static njs_object_t *njs_function_new_object(njs_vm_t *vm,
+    njs_value_t *constructor);
 
 /*
  * The nJSVM is optimized for an ABIs where the first several arguments
@@ -1458,10 +1459,10 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     njs_jump_off_t     ret;
     const njs_value_t  *retval;
 
-    static njs_value_t prototype_string = njs_string("prototype");
+    const njs_value_t prototype_string = njs_string("prototype");
 
     if (!njs_is_function(constructor)) {
-        njs_type_error(vm, "right argument is not a function");
+        njs_type_error(vm, "right argument is not callable");
         return NJS_ERROR;
     }
 
@@ -1469,16 +1470,17 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
 
     if (njs_is_object(object)) {
         njs_set_undefined(&value);
-        ret = njs_value_property(vm, constructor, &prototype_string, &value);
+        ret = njs_value_property(vm, constructor,
+                                 njs_value_arg(&prototype_string), &value);
 
         if (njs_slow_path(ret == NJS_ERROR)) {
             return ret;
         }
 
         if (njs_fast_path(ret == NJS_OK)) {
-
             if (njs_slow_path(!njs_is_object(&value))) {
-                njs_internal_error(vm, "prototype is not an object");
+                njs_type_error(vm, "Function has non-object prototype "
+                               "in instanceof");
                 return NJS_ERROR;
             }
 
@@ -1737,41 +1739,31 @@ njs_function_frame_create(njs_vm_t *vm, njs_value_t *value,
 
 
 static njs_object_t *
-njs_function_new_object(njs_vm_t *vm, njs_value_t *value)
+njs_function_new_object(njs_vm_t *vm, njs_value_t *constructor)
 {
-    njs_value_t         *proto;
-    njs_object_t        *object;
-    njs_jump_off_t      ret;
-    njs_function_t      *function;
-    njs_object_prop_t   *prop;
-    njs_lvlhsh_query_t  lhq;
+    njs_value_t     proto;
+    njs_object_t    *object;
+    njs_jump_off_t  ret;
+
+    const njs_value_t prototype_string = njs_string("prototype");
 
     object = njs_object_alloc(vm);
+    if (njs_slow_path(object == NULL)) {
+        return NULL;
+    }
 
-    if (njs_fast_path(object != NULL)) {
+    ret = njs_value_property(vm, constructor, njs_value_arg(&prototype_string),
+                             &proto);
 
-        lhq.key_hash = NJS_PROTOTYPE_HASH;
-        lhq.key = njs_str_value("prototype");
-        lhq.proto = &njs_object_hash_proto;
-        function = njs_function(value);
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return NULL;
+    }
 
-        ret = njs_lvlhsh_find(&function->object.hash, &lhq);
+    if (njs_fast_path(njs_is_object(&proto))) {
+        object->__proto__ = njs_object(&proto);
+    }
 
-        if (ret == NJS_OK) {
-            prop = lhq.value;
-            proto = &prop->value;
-
-        } else {
-            proto = njs_function_property_prototype_create(vm, value);
-        }
-
-        if (njs_fast_path(proto != NULL)) {
-            object->__proto__ = njs_object(proto);
-            return object;
-        }
-   }
-
-   return NULL;
+    return object;
 }
 
 
