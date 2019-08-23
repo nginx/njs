@@ -257,7 +257,7 @@ static const njs_str_t  undef_label  = { 0xffffffff, (u_char *) "" };
 
 
 static njs_int_t
-njs_generator(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
+njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
 {
     if (node == NULL) {
         return NJS_OK;
@@ -505,6 +505,24 @@ njs_generator(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
 
         return NJS_ERROR;
     }
+}
+
+
+njs_inline njs_int_t
+njs_generator(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
+{
+    njs_int_t  ret;
+
+    if (njs_slow_path(generator->count++ > 1024)) {
+        njs_range_error(vm, "Maximum call stack size exceeded");
+        return NJS_ERROR;
+    }
+
+    ret = njs_generate(vm, generator, node);
+
+    generator->count--;
+
+    return ret;
 }
 
 

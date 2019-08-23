@@ -24,6 +24,8 @@ struct njs_generator_s {
 
     /* Parsing Function() or eval(). */
     uint8_t                         runtime;           /* 1 bit */
+
+    njs_uint_t                      count;
 };
 
 

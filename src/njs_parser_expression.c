@@ -744,7 +744,11 @@ njs_parser_call_expression(njs_vm_t *vm, njs_parser_t *parser,
         token = njs_parser_new_expression(vm, parser, token);
 
     } else {
+        njs_parser_enter(vm, parser);
+
         token = njs_parser_terminal(vm, parser, token);
+
+        njs_parser_leave(parser);
     }
 
     if (njs_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
@@ -761,7 +765,12 @@ njs_parser_call_expression(njs_vm_t *vm, njs_parser_t *parser,
             return token;
         }
 
+        njs_parser_enter(vm, parser);
+
         token = njs_parser_call(vm, parser, token, 0);
+
+        njs_parser_leave(parser);
+
         if (njs_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
         }
@@ -863,7 +872,12 @@ njs_parser_new_expression(njs_vm_t *vm, njs_parser_t *parser,
         token = njs_parser_new_expression(vm, parser, token);
 
     } else {
+        njs_parser_enter(vm, parser);
+
         token = njs_parser_terminal(vm, parser, token);
+
+        njs_parser_leave(parser);
+
         if (njs_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
             return token;
         }

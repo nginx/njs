@@ -73,6 +73,7 @@ struct njs_parser_s {
     njs_lexer_t                     *lexer;
     njs_parser_node_t               *node;
     njs_parser_scope_t              *scope;
+    njs_uint_t                      count;
 };
 
 
@@ -111,6 +112,18 @@ void njs_parser_lexer_error(njs_vm_t *vm, njs_parser_t *parser,
     njs_value_type_t type, const char *fmt, ...);
 void njs_parser_node_error(njs_vm_t *vm, njs_parser_node_t *node,
     njs_value_type_t type, const char *fmt, ...);
+
+
+#define njs_parser_enter(vm, parser)                                          \
+    do {                                                                      \
+        if (njs_slow_path((parser)->count++ > 1024)) {                        \
+            njs_range_error(vm, "Maximum call stack size exceeded");          \
+            return NJS_TOKEN_ERROR;                                           \
+        }                                                                     \
+    } while (0)
+
+
+#define njs_parser_leave(parser) ((parser)->count--)
 
 
 #define njs_parser_is_lvalue(node)                                            \

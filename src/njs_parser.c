@@ -127,6 +127,11 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser, njs_parser_t *prev)
 
     node->token = NJS_TOKEN_END;
 
+    if (njs_slow_path(parser->count != 0)) {
+        njs_internal_error(vm, "parser->count != 0");
+        return NJS_ERROR;
+    }
+
     return NJS_OK;
 }
 
@@ -249,7 +254,12 @@ njs_parser_statement_chain(njs_vm_t *vm, njs_parser_t *parser,
 
     last = *child;
 
+    njs_parser_enter(vm, parser);
+
     token = njs_parser_statement(vm, parser, token);
+
+    njs_parser_leave(parser);
+
     if (njs_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
         return njs_parser_unexpected_token(vm, parser, token);
     }
