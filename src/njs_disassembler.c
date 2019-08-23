@@ -8,9 +8,6 @@
 #include <njs_main.h>
 
 
-static void njs_disassemble(u_char *start, u_char *end);
-
-
 typedef struct {
     njs_vmcode_operation_t     operation;
     size_t                     size;
@@ -152,10 +149,12 @@ njs_disassembler(njs_vm_t *vm)
         code++;
         n--;
     }
+
+    njs_printf("\n");
 }
 
 
-static void
+void
 njs_disassemble(u_char *start, u_char *end)
 {
     u_char                       *p;

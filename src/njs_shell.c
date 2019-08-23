@@ -25,6 +25,7 @@ typedef struct {
     uint8_t                 module;
     uint8_t                 quiet;
     uint8_t                 sandbox;
+    uint8_t                 safe;
     uint8_t                 version;
 
     char                    *file;
@@ -74,7 +75,7 @@ static njs_int_t njs_interactive_shell(njs_opts_t *opts,
     njs_vm_opt_t *vm_options);
 static njs_vm_t *njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options);
 static njs_int_t njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options);
-static njs_int_t njs_process_script(njs_console_t *console, njs_opts_t *opts,
+static njs_int_t njs_process_script(njs_console_t *console,
     const njs_str_t *script);
 static njs_int_t njs_editline_init(void);
 static char **njs_completion_handler(const char *text, int start, int end);
@@ -247,9 +248,11 @@ main(int argc, char **argv)
 
     vm_options.init = !opts.interactive;
     vm_options.accumulative = opts.interactive;
+    vm_options.disassemble = opts.disassemble;
     vm_options.backtrace = 1;
     vm_options.quiet = opts.quiet;
     vm_options.sandbox = opts.sandbox;
+    vm_options.unsafe = !opts.safe;
     vm_options.module = opts.module;
 
     vm_options.ops = &njs_console_ops;
@@ -265,7 +268,7 @@ main(int argc, char **argv)
         if (vm != NULL) {
             command.start = (u_char *) opts.command;
             command.length = njs_strlen(opts.command);
-            ret = njs_process_script(vm_options.external, &opts, &command);
+            ret = njs_process_script(vm_options.external, &command);
         }
 
     } else {
@@ -299,6 +302,7 @@ njs_get_options(njs_opts_t *opts, int argc, char** argv)
         "  -s                sandbox mode.\n"
         "  -t script|module  source code type (script is default).\n"
         "  -v                print njs version and exit.\n"
+        "  -u                disable \"unsafe\" mode.\n"
         "  <filename> | -    run code from a file or stdin.\n";
 
     ret = NJS_DONE;
@@ -380,6 +384,10 @@ njs_get_options(njs_opts_t *opts, int argc, char** argv)
         case 'v':
         case 'V':
             opts->version = 1;
+            break;
+
+        case 'u':
+            opts->safe = 1;
             break;
 
         default:
@@ -488,7 +496,7 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
         add_history((char *) line.start);
 
-        njs_process_script(vm_options->external, opts, &line);
+        njs_process_script(vm_options->external, &line);
 
         /* editline allocs a new buffer every time. */
         free(line.start);
@@ -607,7 +615,7 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         }
     }
 
-    ret = njs_process_script(vm_options->external, opts, &script);
+    ret = njs_process_script(vm_options->external, &script);
     if (ret != NJS_OK) {
         ret = NJS_ERROR;
         goto done;
@@ -691,7 +699,7 @@ njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
 
 static void
-njs_output(njs_vm_t *vm, njs_opts_t *opts, njs_int_t ret)
+njs_output(njs_vm_t *vm, njs_int_t ret)
 {
     njs_str_t  out;
 
@@ -703,7 +711,7 @@ njs_output(njs_vm_t *vm, njs_opts_t *opts, njs_int_t ret)
     if (ret != NJS_OK) {
         njs_stderror("%V\n", &out);
 
-    } else if (opts->interactive) {
+    } else if (vm->options.accumulative) {
         njs_print(out.start, out.length);
         njs_printf("\n");
     }
@@ -711,7 +719,7 @@ njs_output(njs_vm_t *vm, njs_opts_t *opts, njs_int_t ret)
 
 
 static njs_int_t
-njs_process_events(njs_console_t *console, njs_opts_t *opts)
+njs_process_events(njs_console_t *console)
 {
     njs_ev_t          *ev;
     njs_queue_t       *events;
@@ -740,8 +748,7 @@ njs_process_events(njs_console_t *console, njs_opts_t *opts)
 
 
 static njs_int_t
-njs_process_script(njs_console_t *console, njs_opts_t *opts,
-    const njs_str_t *script)
+njs_process_script(njs_console_t *console, const njs_str_t *script)
 {
     u_char     *start;
     njs_vm_t   *vm;
@@ -753,22 +760,17 @@ njs_process_script(njs_console_t *console, njs_opts_t *opts,
     ret = njs_vm_compile(vm, &start, start + script->length);
 
     if (ret == NJS_OK) {
-        if (opts->disassemble) {
-            njs_disassembler(vm);
-            njs_printf("\n");
-        }
-
         ret = njs_vm_start(vm);
     }
 
-    njs_output(vm, opts, ret);
+    njs_output(vm, ret);
 
     for ( ;; ) {
         if (!njs_vm_pending(vm)) {
             break;
         }
 
-        ret = njs_process_events(console, opts);
+        ret = njs_process_events(console);
         if (njs_slow_path(ret != NJS_OK)) {
             njs_stderror("njs_process_events() failed\n");
             ret = NJS_ERROR;
@@ -786,7 +788,7 @@ njs_process_script(njs_console_t *console, njs_opts_t *opts,
         ret = njs_vm_run(vm);
 
         if (ret == NJS_ERROR) {
-            njs_output(vm, opts, ret);
+            njs_output(vm, ret);
         }
     }
 

@@ -8,6 +8,9 @@
 #include <njs_main.h>
 
 
+#define NJS_HAVE_LARGE_STACK (!NJS_HAVE_ADDRESS_SANITIZER && !NJS_HAVE_MEMORY_SANITIZER)
+
+
 typedef struct {
     njs_str_t  script;
     njs_str_t  ret;
@@ -4225,7 +4228,7 @@ static njs_unit_test_t  njs_test[] =
                  "Array.prototype.fill.call(o, 2).a"),
       njs_str("4") },
 
-#if (!NJS_HAVE_ADDRESS_SANITIZER && !NJS_HAVE_MEMORY_SANITIZER) /* limited stack size */
+#if NJS_HAVE_LARGE_STACK
     { njs_str("var o = Object({length: 3});"
                  "Object.defineProperty(o, '0', {set: function(v){this[0] = 2 * v}});"
                  "Array.prototype.fill.call(o, 2)"),
@@ -6558,7 +6561,7 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("{ function f() {} { var f }}"),
       njs_str("SyntaxError: \"f\" has already been declared in 1") },
 
-#if (!NJS_HAVE_ADDRESS_SANITIZER && !NJS_HAVE_MEMORY_SANITIZER) /* limited stack size */
+#if NJS_HAVE_LARGE_STACK
     { njs_str("function f() { return f() } f()"),
       njs_str("RangeError: Maximum call stack size exceeded") },
 #endif
@@ -8837,9 +8840,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var ex; try {({}) instanceof this} catch (e) {ex = e}; ex"),
       njs_str("TypeError: right argument is not callable") },
 
-    { njs_str("Function.call(this, 'var x / = 1;')"),
-      njs_str("InternalError: Not implemented") },
-
     { njs_str("njs"),
       njs_str("[object Object]") },
 
@@ -9590,7 +9590,76 @@ static njs_unit_test_t  njs_test[] =
       njs_str("true") },
 
     { njs_str("Function()"),
-      njs_str("InternalError: Not implemented") },
+      njs_str("[object Function]") },
+
+    { njs_str("new Function();"),
+      njs_str("[object Function]") },
+
+    { njs_str("(function(){}).constructor === Function"),
+      njs_str("true") },
+
+#if NJS_HAVE_LARGE_STACK
+    { njs_str("new Function(\"(\".repeat(2**13));"),
+      njs_str("RangeError: Maximum call stack size exceeded") },
+
+    { njs_str("new Function(\"{\".repeat(2**13));"),
+      njs_str("RangeError: Maximum call stack size exceeded") },
+
+    { njs_str("new Function(\"[\".repeat(2**13));"),
+      njs_str("RangeError: Maximum call stack size exceeded") },
+
+    { njs_str("new Function(\"`\".repeat(2**13));"),
+      njs_str("RangeError: Maximum call stack size exceeded") },
+
+    { njs_str("new Function(\"{[\".repeat(2**13));"),
+      njs_str("RangeError: Maximum call stack size exceeded") },
+
+    { njs_str("new Function(\"{;\".repeat(2**13));"),
+      njs_str("RangeError: Maximum call stack size exceeded") },
+
+    { njs_str("new Function(\"1;\".repeat(2**13));"),
+      njs_str("RangeError: Maximum call stack size exceeded") },
+
+    { njs_str("new Function(\"~\".repeat(2**13));"),
+      njs_str("RangeError: Maximum call stack size exceeded") },
+
+    { njs_str("new Function(\"new \".repeat(2**13));"),
+      njs_str("RangeError: Maximum call stack size exceeded") },
+
+    { njs_str("new Function(\"typeof \".repeat(2**13));"),
+      njs_str("RangeError: Maximum call stack size exceeded") },
+
+    { njs_str("new Function(\"1\" + \"** 1\".repeat(2**13));"),
+      njs_str("RangeError: Maximum call stack size exceeded") },
+
+    { njs_str("new Function(\"var a; a\" + \"= a\".repeat(2**13));"),
+      njs_str("RangeError: Maximum call stack size exceeded") },
+#endif
+
+    { njs_str("var f = new Function('return 1;'); f();"),
+      njs_str("1") },
+
+    { njs_str("var sum = new Function('a', 'b', 'return a + b');"
+                 "sum(2, 4);"),
+      njs_str("6") },
+
+    { njs_str("var sum = new Function('a, b', 'return a + b');"
+                 "sum(2, 4);"),
+      njs_str("6") },
+
+    { njs_str("var sum = new Function('a, b', 'c', 'return a + b + c');"
+                 "sum(2, 4, 4);"),
+      njs_str("10") },
+
+    { njs_str("(new Function({ toString() { return '...a'; }}, { toString() { return 'return a;' }}))(1,2,3)"),
+      njs_str("1,2,3") },
+
+    { njs_str("var x = 10; function foo() { var x = 20; return new Function('return x;'); }"
+                 "var f = foo(); f()"),
+      njs_str("10") },
+
+    { njs_str("var fn = (function() { return new Function('return this'); }).call({}), o = {}; fn.call(o) == o && fn.bind(o).call(this) == o"),
+      njs_str("true") },
 
     { njs_str("RegExp()"),
       njs_str("/(?:)/") },
@@ -14535,6 +14604,7 @@ njs_externals_init(njs_vm_t *vm)
 typedef struct {
     njs_bool_t  disassemble;
     njs_bool_t  verbose;
+    njs_bool_t  unsafe;
     njs_bool_t  module;
     njs_uint_t  repeat;
 } njs_opts_t;
@@ -14588,6 +14658,7 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, const char *name,
         njs_memzero(&options, sizeof(njs_vm_opt_t));
 
         options.module = opts->module;
+        options.unsafe = opts->unsafe;
 
         vm = njs_vm_create(&options);
         if (vm == NULL) {
@@ -15112,6 +15183,7 @@ main(int argc, char **argv)
     njs_memzero(&stat, sizeof(njs_stat_t));
 
     opts.repeat = 1;
+    opts.unsafe = 1;
 
     ret = njs_unit_test(njs_test, njs_nitems(njs_test), "script tests",
                         &opts, &stat);

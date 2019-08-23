@@ -799,6 +799,14 @@ njs_test {
 } "-s"
 
 
+# safe mode
+
+njs_test {
+    {"new Function()\r\n"
+     "TypeError: function constructor is disabled in \"safe\" mode\r\n"}
+} "-u"
+
+
 # source type
 
 njs_test {

@@ -146,13 +146,28 @@ typedef struct {
     char                            **argv;
     njs_uint_t                      argc;
 
+/*
+ * accumulative - enables "accumulative" mode to support incremental compiling.
+ *  (REPL). Allows starting parent VM without cloning.
+ * disassemble  - enables disassemble.
+ * backtrace    - enables backtraces.
+ * quiet        - removes filenames from backtraces. To produce comparable
+    test262 diffs.
+ * sandbox      - "sandbox" mode. Disables file access.
+ * unsafe       - enables unsafe language features:
+ *   - Function constructors.
+ * module       - ES6 "module" mode. Script mode is default.
+ */
+
     uint8_t                         trailer;         /* 1 bit */
     uint8_t                         init;            /* 1 bit */
     uint8_t                         accumulative;    /* 1 bit */
+    uint8_t                         disassemble;     /* 1 bit */
     uint8_t                         backtrace;       /* 1 bit */
-    uint8_t                         sandbox;         /* 1 bit */
-    uint8_t                         module;          /* 1 bit */
     uint8_t                         quiet;           /* 1 bit */
+    uint8_t                         sandbox;         /* 1 bit */
+    uint8_t                         unsafe;          /* 1 bit */
+    uint8_t                         module;          /* 1 bit */
 } njs_vm_opt_t;
 
 
@@ -225,6 +240,7 @@ NJS_EXPORT njs_external_ptr_t njs_vm_external(njs_vm_t *vm,
     const njs_value_t *value);
 
 NJS_EXPORT void njs_disassembler(njs_vm_t *vm);
+NJS_EXPORT void njs_disassemble(u_char *start, u_char *end);
 
 NJS_EXPORT const njs_value_t *njs_vm_value(njs_vm_t *vm, const njs_str_t *name);
 NJS_EXPORT njs_function_t *njs_vm_function(njs_vm_t *vm, const njs_str_t *name);

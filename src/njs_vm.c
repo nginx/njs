@@ -224,6 +224,10 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         }
     }
 
+    if (vm->options.disassemble) {
+        njs_disassembler(vm);
+    }
+
     return NJS_OK;
 
 fail:

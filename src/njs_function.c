@@ -874,9 +874,119 @@ njs_int_t
 njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_internal_error(vm, "Not implemented");
+    size_t              size;
+    u_char              *start, *end;
+    njs_int_t           ret;
+    njs_str_t           str, file;
+    njs_uint_t          i;
+    njs_lexer_t         lexer;
+    njs_parser_t        *parser;
+    njs_generator_t     generator;
+    njs_parser_scope_t  *scope;
 
-    return NJS_ERROR;
+    if (!vm->options.unsafe) {
+        njs_type_error(vm, "function constructor is disabled in \"safe\" mode");
+        return NJS_ERROR;
+    }
+
+    if (nargs < 2) {
+        start = (u_char *) "(function(){})";
+        end = start + njs_length("(function(){})");
+
+    } else {
+        size = njs_length("(function(") + nargs + njs_length("){})");
+
+        for (i = 1; i < nargs; i++) {
+            if (!njs_is_string(&args[i])) {
+                ret = njs_value_to_string(vm, &args[i], &args[i]);
+                if (ret != NJS_OK) {
+                    return ret;
+                }
+            }
+
+            njs_string_get(&args[i], &str);
+            size += str.length;
+        }
+
+        start = njs_mp_alloc(vm->mem_pool, size);
+        if (njs_slow_path(start == NULL)) {
+            return NJS_ERROR;
+        }
+
+        end = njs_cpymem(start, "(function(", njs_length("(function("));
+
+        for (i = 1; i < nargs - 1; i++) {
+            if (i != 1) {
+                *end++ = ',';
+            }
+
+            njs_string_get(&args[i], &str);
+            end = njs_cpymem(end, str.start, str.length);
+        }
+
+        *end++ = ')';
+        *end++ = '{';
+
+        njs_string_get(&args[nargs - 1], &str);
+        end = njs_cpymem(end, str.start, str.length);
+
+        *end++ = '}';
+        *end++ = ')';
+    }
+
+    vm->options.accumulative = 1;
+
+    parser = njs_mp_zalloc(vm->mem_pool, sizeof(njs_parser_t));
+    if (njs_slow_path(parser == NULL)) {
+        return NJS_ERROR;
+    }
+
+    vm->parser = parser;
+
+    file = njs_str_value("runtime");
+
+    ret = njs_lexer_init(vm, &lexer, &file, start, end);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    parser->lexer = &lexer;
+
+    ret = njs_parser(vm, parser, NULL);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    scope = parser->scope;
+
+    ret = njs_variables_copy(vm, &scope->variables, &vm->variables_hash);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    ret = njs_variables_scope_reference(vm, scope);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    njs_memzero(&generator, sizeof(njs_generator_t));
+
+    ret = njs_generate_scope(vm, &generator, scope, &njs_entry_anonymous);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    if (vm->options.disassemble) {
+        njs_printf("new Function:runtime\n");
+        njs_disassemble(generator.code_start, generator.code_end);
+    }
+
+    ret = njs_vmcode_interpreter(vm, generator.code_start);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    return NJS_OK;
 }
 
 

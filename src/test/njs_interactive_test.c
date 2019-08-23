@@ -173,6 +173,9 @@ static njs_interactive_test_t  njs_test[] =
                  "    at eval (native)\n"
                  "    at main (native)\n") },
 
+    { njs_str("new Function(\n\n@)" ENTER),
+      njs_str("SyntaxError: Unexpected token \"@\" in 3") },
+
     { njs_str("require()" ENTER),
       njs_str("TypeError: missing path\n"
                  "    at require (native)\n"
