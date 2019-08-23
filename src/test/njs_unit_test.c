@@ -6559,9 +6559,24 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("function x(a) { while (a < 2) a++; return a + 1 } x(1) "),
       njs_str("3") },
 
-    { njs_str("(function(){(function(){(function(){(function(){"
-                    "(function(){(function(){(function(){})})})})})})})"),
-      njs_str("SyntaxError: The maximum function nesting level is \"5\" in 1") },
+    { njs_str("(function(){"
+              "(function(){"
+              "(function(){"
+              "(function(){"
+              "(function(){"
+              "(function(){"
+              "(function(){"
+              "(function(){"
+              "(function(){})"
+              "})"
+              "})"
+              "})"
+              "})"
+              "})"
+              "})"
+              "})"
+              "})"),
+      njs_str("SyntaxError: The maximum function nesting level is \"8\" in 1") },
 
     { njs_str("Function.prototype.toString = function () {return 'X'};"
                  "eval"),

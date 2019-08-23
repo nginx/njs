@@ -153,7 +153,7 @@ njs_parser_scope_begin(njs_vm_t *vm, njs_parser_t *parser, njs_scope_t type)
             if (scope->type == NJS_SCOPE_FUNCTION) {
                 nesting = scope->nesting + 1;
 
-                if (nesting <= NJS_MAX_NESTING) {
+                if (nesting < NJS_MAX_NESTING) {
                     break;
                 }
 

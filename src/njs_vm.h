@@ -59,9 +59,9 @@ typedef enum {
 
 /*
  * The maximum possible function nesting level is (16 - NJS_SCOPE_CLOSURE),
- * that is 11.  The 5 is reasonable limit.
+ * that is 11.  The 8 is reasonable limit.
  */
-#define NJS_MAX_NESTING        5
+#define NJS_MAX_NESTING        8
 
 #define NJS_SCOPES             (NJS_SCOPE_CLOSURE + NJS_MAX_NESTING)
 
