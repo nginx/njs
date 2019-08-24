@@ -254,10 +254,11 @@ njs_function_rest_parameters_init(njs_vm_t *vm, njs_native_frame_t *frame)
 
 
 static njs_int_t
-njs_function_arguments_thrower(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_function_prototype_thrower(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused)
 {
-    njs_type_error(vm, "\"caller\", \"callee\" properties may not be accessed");
+    njs_type_error(vm, "\"caller\", \"callee\", \"arguments\" "
+                   "properties may not be accessed");
     return NJS_ERROR;
 }
 
@@ -265,15 +266,12 @@ njs_function_arguments_thrower(njs_vm_t *vm, njs_value_t *value,
 const njs_object_prop_t  njs_arguments_object_instance_properties[] =
 {
     {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("caller"),
-        .value = njs_prop_handler(njs_function_arguments_thrower),
-    },
-
-    {
-        .type = NJS_PROPERTY_HANDLER,
+        .type = NJS_PROPERTY,
         .name = njs_string("callee"),
-        .value = njs_prop_handler(njs_function_arguments_thrower),
+        .value = njs_value(NJS_INVALID, 1, NAN),
+        .getter = njs_native_function(njs_function_prototype_thrower, 0, 0),
+        .setter = njs_native_function(njs_function_prototype_thrower, 0, 0),
+        .writable = NJS_ATTRIBUTE_UNSET,
     },
 };
 
@@ -1277,6 +1275,26 @@ static const njs_object_prop_t  njs_function_prototype_properties[] =
         .name = njs_string("bind"),
         .value = njs_native_function(njs_function_prototype_bind, 1, 0),
         .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("caller"),
+        .value = njs_value(NJS_INVALID, 1, NAN),
+        .getter = njs_native_function(njs_function_prototype_thrower, 0, 0),
+        .setter = njs_native_function(njs_function_prototype_thrower, 0, 0),
+        .writable = NJS_ATTRIBUTE_UNSET,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("arguments"),
+        .value = njs_value(NJS_INVALID, 1, NAN),
+        .getter = njs_native_function(njs_function_prototype_thrower, 0, 0),
+        .setter = njs_native_function(njs_function_prototype_thrower, 0, 0),
+        .writable = NJS_ATTRIBUTE_UNSET,
         .configurable = 1,
     },
 };

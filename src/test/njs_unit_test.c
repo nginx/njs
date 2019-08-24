@@ -8025,12 +8025,6 @@ static njs_unit_test_t  njs_test[] =
      { njs_str("(function(){return arguments[3];}).bind(null, 0)('a','b','c')"),
        njs_str("c") },
 
-    { njs_str("(function(){return arguments.callee;})()"),
-      njs_str("TypeError: \"caller\", \"callee\" properties may not be accessed") },
-
-    { njs_str("(function(){return arguments.caller;})()"),
-      njs_str("TypeError: \"caller\", \"callee\" properties may not be accessed") },
-
     { njs_str("function sum() { var args = Array.prototype.slice.call(arguments); "
                  "return args.reduce(function(prev, curr) {return prev + curr})};"
                  "[sum(1), sum(1,2), sum(1,2,3), sum(1,2,3,4)]"),
@@ -8040,6 +8034,39 @@ static njs_unit_test_t  njs_test[] =
                  "return args.join(sep)};"
                  "[concat('.',1,2,3), concat('+',1,2,3,4)]"),
       njs_str("1.2.3,1+2+3+4") },
+
+    /* strict mode restrictions */
+
+    { njs_str("(function() {}).caller"),
+      njs_str("TypeError: \"caller\", \"callee\", \"arguments\" properties may not be accessed") },
+
+    { njs_str("(function() {}).arguments"),
+      njs_str("TypeError: \"caller\", \"callee\", \"arguments\" properties may not be accessed") },
+
+    { njs_str("var p = Object.getPrototypeOf(function() {});"
+              "var d = Object.getOwnPropertyDescriptor(p, 'caller');"
+              "typeof d.get == 'function' && typeof d.get == typeof d.set"
+              "                           && d.configurable && !d.enumerable"),
+      njs_str("true") },
+
+    { njs_str("var p = Object.getPrototypeOf(function() {});"
+              "var d = Object.getOwnPropertyDescriptor(p, 'arguments');"
+              "typeof d.get == 'function' && typeof d.get == typeof d.set"
+              "                           && d.configurable && !d.enumerable"),
+      njs_str("true") },
+
+    { njs_str("(function(){return arguments.callee;})()"),
+      njs_str("TypeError: \"caller\", \"callee\", \"arguments\" properties may not be accessed") },
+
+    { njs_str("var f = function() { return arguments; };"
+              "Object.getOwnPropertyDescriptor(f(), 'caller')"),
+      njs_str("undefined") },
+
+    { njs_str("var f = function() { return arguments; };"
+              "var d = Object.getOwnPropertyDescriptor(f(), 'callee');"
+              "typeof d.get == 'function' && typeof d.get == typeof d.set"
+              "                           && !d.configurable && !d.enumerable"),
+      njs_str("true") },
 
     /* rest parameters. */
 
@@ -11487,6 +11514,8 @@ static njs_unit_test_t  njs_test[] =
         "function isConfigurableMethods(o) {"
         "    var except = ["
         "        'prototype',"
+        "        'caller',"
+        "        'arguments',"
         "    ];"
         "    return Object.getOwnPropertyNames(o)"
         "                 .filter(v => !except.includes(v)"
@@ -11516,6 +11545,8 @@ static njs_unit_test_t  njs_test[] =
         "function isWritableMethods(o) {"
         "    var except = ["
         "        'prototype',"
+        "        'caller',"
+        "        'arguments',"
         "    ];"
         "    return Object.getOwnPropertyNames(o)"
         "                 .filter(v => !except.includes(v)"
@@ -13939,6 +13970,8 @@ static njs_unit_test_t  njs_test[] =
         "    var except = ["
         "        'prototype',"
         "        'constructor',"
+        "        'caller',"
+        "        'arguments',"
         "    ];"
         "    return Object.getOwnPropertyNames(o)"
         "                 .filter(v => !except.includes(v)"
