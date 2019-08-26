@@ -5877,8 +5877,17 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("/]/"),
       njs_str("/\\]/") },
 
+    { njs_str("/["),
+      njs_str("SyntaxError: Unterminated RegExp \"/[\" in 1") },
+
+    { njs_str("/[\\"),
+      njs_str("SyntaxError: Unterminated RegExp \"/[\\\" in 1") },
+
     { njs_str("RegExp(']')"),
       njs_str("/\\]/") },
+
+    { njs_str("RegExp('[\\\\')"),
+      njs_str("SyntaxError: pcre_compile(\"[\\\") failed: \\ at end of pattern") },
 
     { njs_str("RegExp('[\\\\\\\\]]')"),
       njs_str("/[\\\\]\\]/") },
@@ -7858,6 +7867,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("new RegExp('[')"),
       njs_str("SyntaxError: pcre_compile(\"[\") failed: missing terminating ] for character class") },
+
+    { njs_str("new RegExp('['.repeat(16))"),
+      njs_str("SyntaxError: pcre_compile(\"[[[[[[[[[[[[[[[[\") failed: missing terminating ] for character class") },
 
     { njs_str("new RegExp('\\\\')"),
       njs_str("SyntaxError: pcre_compile(\"\\\") failed: \\ at end of pattern") },

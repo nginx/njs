@@ -333,14 +333,22 @@ njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
             goto failed;
 
         case '[':
-            while (++p < lexer->end && *p != ']') {
+            while (1) {
+                if (++p >= lexer->end) {
+                    goto failed;
+                }
+
+                if (*p == ']') {
+                    break;
+                }
+
                 switch (*p) {
                 case '\n':
                 case '\r':
                     goto failed;
 
                 case '\\':
-                    if (++p < lexer->end && (*p == '\n' || *p == '\r')) {
+                    if (++p >= lexer->end || *p == '\n' || *p == '\r') {
                         goto failed;
                     }
 
@@ -351,7 +359,7 @@ njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
             break;
 
         case '\\':
-            if (++p < lexer->end && (*p == '\n' || *p == '\r')) {
+            if (++p >= lexer->end || *p == '\n' || *p == '\r') {
                 goto failed;
             }
 
