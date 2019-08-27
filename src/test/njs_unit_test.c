@@ -12366,6 +12366,21 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("parseFloat('12345abc')"),
       njs_str("12345") },
 
+    { njs_str("parseFloat('1e2147483647')"),
+      njs_str("Infinity") },
+
+    { njs_str("parseFloat('1e-2147483647')"),
+      njs_str("0") },
+
+    { njs_str("parseFloat('1e-2147483648')"),
+      njs_str("0") },
+
+    { njs_str("parseFloat('1e' + '5'.repeat(16))"),
+      njs_str("Infinity") },
+
+    { njs_str("parseFloat('1e-' + '5'.repeat(16))"),
+      njs_str("0") },
+
     { njs_str("parseFloat('0x')"),
       njs_str("0") },
 

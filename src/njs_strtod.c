@@ -251,6 +251,7 @@ njs_diyfp_strtod(const u_char *start, size_t length, int exp)
 static double
 njs_strtod_internal(const u_char *start, size_t length, int exp)
 {
+    int           shift;
     size_t        left, right;
     const u_char  *p, *e, *b;
 
@@ -291,17 +292,17 @@ njs_strtod_internal(const u_char *start, size_t length, int exp)
         return 0.0;
     }
 
-    exp += (int) (left - right);
+    shift = (int) (left - right);
 
-    if (exp + (int) length - 1 >= NJS_DECIMAL_POWER_MAX) {
+    if (exp >= NJS_DECIMAL_POWER_MAX - shift - (int) length + 1) {
         return INFINITY;
     }
 
-    if (exp + (int) length <= NJS_DECIMAL_POWER_MIN) {
+    if (exp <= NJS_DECIMAL_POWER_MIN - shift - (int) length) {
         return 0.0;
     }
 
-    return njs_diyfp_strtod(start, length, exp);
+    return njs_diyfp_strtod(start, length, exp + shift);
 }
 
 
@@ -386,7 +387,9 @@ njs_strtod(const u_char **start, const u_char *end)
                     break;
                 }
 
-                exp = exp * 10 + c;
+                if (exp < (INT_MAX - 9) / 10) {
+                    exp = exp * 10 + c;
+                }
             }
 
             exponent += minus ? -exp : exp;

@@ -29,6 +29,7 @@
 #include <string.h>
 #include <math.h>
 #include <float.h>
+#include <limits.h>
 #include <time.h>
 #include <fcntl.h>
 
