@@ -2297,3 +2297,30 @@ const njs_object_init_t  njs_object_prototype_init = {
     njs_object_prototype_properties,
     njs_nitems(njs_object_prototype_properties),
 };
+
+
+njs_int_t
+njs_object_length(njs_vm_t *vm, njs_value_t *value, uint32_t *length)
+{
+    njs_int_t    ret;
+    njs_value_t  value_length;
+
+    const njs_value_t  string_length = njs_string("length");
+
+    ret = njs_value_property(vm, value, njs_value_arg(&string_length),
+                             &value_length);
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return ret;
+    }
+
+    if (!njs_is_primitive(&value_length)) {
+        ret = njs_value_to_numeric(vm, &value_length, &value_length);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    *length = njs_primitive_value_to_length(&value_length);
+
+    return NJS_OK;
+}

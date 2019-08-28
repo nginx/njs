@@ -526,6 +526,10 @@ typedef struct {
     ((value)->type == NJS_OBJECT_VALUE)
 
 
+#define njs_is_object_string(value)                                           \
+    ((value)->type == NJS_OBJECT_STRING)
+
+
 #define njs_object_value_type(type)                                           \
     (type + NJS_OBJECT)
 
@@ -584,6 +588,10 @@ typedef struct {
 
 #define njs_object_hash(value)                                                \
     (&(value)->data.u.object->hash)
+
+
+#define njs_object_hash_is_empty(value)                                       \
+    (njs_lvlhsh_is_empty(njs_object_hash(value)))
 
 
 #define njs_array(value)                                                      \
@@ -814,6 +822,7 @@ njs_array_t *njs_value_enumerate(njs_vm_t *vm, const njs_value_t *value,
     njs_object_enum_t kind, njs_bool_t all);
 njs_array_t *njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
     njs_object_enum_t kind, njs_bool_t all);
+njs_int_t njs_value_length(njs_vm_t *vm, njs_value_t *value, uint32_t *dest);
 const char *njs_type_string(njs_value_type_t type);
 const char *njs_arg_type_string(uint8_t arg);
 

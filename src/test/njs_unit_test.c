@@ -4047,6 +4047,16 @@ static njs_unit_test_t  njs_test[] =
                  "a.forEach(function(v, i, a) { c++ }); c"),
       njs_str("0") },
 
+    { njs_str("var o = {0: 'a', 1: 'b', 2: 'c'};"
+              "Object.defineProperty(o, 'length', {get: () => 4});"
+              "Object.defineProperty(o, '3', {get: () => 'd'});"
+              "var r = ''; Array.prototype.forEach.call(o, function(v, i, a) { r += v }); r"),
+      njs_str("abcd") },
+
+    { njs_str("var s = 't'; var t = '';"
+              "Array.prototype.forEach.call(s, function (a, b, c) {t = typeof c;}); [t, typeof s];"),
+      njs_str("object,string") },
+
     { njs_str("var a = [];"
                  "a.some(function(v, i, a) { return v > 1 })"),
       njs_str("false") },
@@ -4063,6 +4073,20 @@ static njs_unit_test_t  njs_test[] =
                  "a.some(function(v, i, a) { return v > 3 })"),
       njs_str("false") },
 
+    { njs_str("var o = {0: 'a', 1: 'b', 2: 'c', 'length': { valueOf: function() { return 3 }}};"
+              "var r = Array.prototype.some.call(o, function(el, i, arr) {return el == 'c'}); r"),
+      njs_str("true") },
+
+    { njs_str("var o = {0: 'a', 1: 'b', 2: 'd', 'length': { valueOf: function() { return 3 }}};"
+              "var r = Array.prototype.some.call(o, function(el, i, arr) {return el == 'c'}); r"),
+      njs_str("false") },
+
+    { njs_str("var o = {0: 'a', 1: 'b', 2: 'c'};"
+              "Object.defineProperty(o, 'length', {get: () => 4});"
+              "Object.defineProperty(o, '3', {get: () => 'd'});"
+              "var r = Array.prototype.some.call(o, function(v, i, a) { return v === 'd' }); r"),
+      njs_str("true") },
+
     { njs_str("var a = [];"
                  "a.every(function(v, i, a) { return v > 1 })"),
       njs_str("true") },
@@ -4078,6 +4102,26 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = [3,2,1];"
                  "a.every(function(v, i, a) { return v > 0 })"),
       njs_str("true") },
+
+    { njs_str("var o = {0: 'c', 1: 'b', 2: 'c', 'length': { valueOf() { return 3 }}};"
+              "var r = Array.prototype.every.call(o, function(el, i, arr) {return el == 'c'}); r"),
+      njs_str("false") },
+
+    { njs_str("var o = {0: 'c', 1: 'c', 2: 'c', 'length': { valueOf() { return 3 }}};"
+              "var r = Array.prototype.every.call(o, function(el, i, arr) {return el == 'c'}); r"),
+      njs_str("true") },
+
+    { njs_str("var o = {0: 'x', 1: 'y', 2: 'z'};"
+              "Object.defineProperty(o, 'length', {get: () => 4});"
+              "Object.defineProperty(o, '3', {get: () => 'a'});"
+              "var r = Array.prototype.some.call(o, function(v, i, a) { return v === 'a' }); r"),
+      njs_str("true") },
+
+    { njs_str("var o = {0: 'a', 1: 'b', 2: 'c'};"
+              "Object.defineProperty(o, 'length', {get: () => 4});"
+              "Object.defineProperty(o, '3', {get: () => 'b'});"
+              "var r = Array.prototype.some.call(o, function(v, i, a) { return v === 'y' }); r"),
+      njs_str("false") },
 
     { njs_str("[].fill(1);"),
       njs_str("") },
@@ -4212,6 +4256,16 @@ static njs_unit_test_t  njs_test[] =
                  "a.filter(function(v, i, a) { a[i+1] = v+10; return true })"),
       njs_str("1,11,21,31,41,51,61") },
 
+    { njs_str("var o = {0: 'c', 1: 'b', 2: 'c', 'length': { valueOf() { return 3 }}};"
+              "var r = Array.prototype.filter.call(o, function(el, i, arr) {return el == 'c'}); r"),
+      njs_str("c,c") },
+
+    { njs_str("var o = {0: 'c', 1: 'a', 2: 'b'};"
+              "Object.defineProperty(o, 'length', {get: () => 4});"
+              "Object.defineProperty(o, '3', {get: () => 'c'});"
+              "var r = Array.prototype.filter.call(o, function(el, i, arr) { return el == 'c' }); r"),
+      njs_str("c,c") },
+
     { njs_str("var a = [];"
                  "a.find(function(v, i, a) { return v > 1 })"),
       njs_str("undefined") },
@@ -4252,8 +4306,22 @@ static njs_unit_test_t  njs_test[] =
       njs_str("3") },
 
     { njs_str("var a = [1,2,3,4,5,6];"
-                 "a.find(function(v, i, a) { a.shift(); return v == 4 })"),
+              "a.find(function(v, i, a) { a.shift(); return v == 4 })"),
       njs_str("undefined") },
+
+    { njs_str("var o = {0: 'a', 1: 'b', 2: 'c', 'length': { valueOf() { return 3 }}};"
+              "var r = Array.prototype.find.call(o, function(el, i, arr) {return el == 'b'}); r"),
+      njs_str("b") },
+
+    { njs_str("var o = {0: 'a', 1: 'b', 2: 'c', 'length': { valueOf() { return 3 }}};"
+              "var r = Array.prototype.find.call(o, function(el, i, arr) {delete o['1']; return el == 'c'}); r"),
+      njs_str("c") },
+
+    { njs_str("var o = {0: 'a', 1: 'b', 2: 'c'};"
+              "Object.defineProperty(o, 'length', {get: () => 4});"
+              "Object.defineProperty(o, '3', {get: () => 'd'});"
+              "var r = Array.prototype.find.call(o, function(el, i, arr) { return el == 'd' }); r"),
+      njs_str("d") },
 
     { njs_str("var a = [];"
                  "a.findIndex(function(v, i, a) { return v > 1 })"),
@@ -4299,6 +4367,16 @@ static njs_unit_test_t  njs_test[] =
                  "a.findIndex(function(v, i, a) { a.shift(); return v == 4 })"),
       njs_str("-1") },
 
+    { njs_str("var o = {0: 'a', 1: 'b', 2: 'c', 'length': { valueOf() { return 3 }}};"
+              "var r = Array.prototype.findIndex.call(o, function(el, i, arr) {return el == 'b'}); r"),
+      njs_str("1") },
+
+    { njs_str("var o = {0: 'a', 1: 'b', 2: 'c'};"
+              "Object.defineProperty(o, 'length', {get: () => 4});"
+              "Object.defineProperty(o, '3', {get: () => 'd'});"
+              "var r = Array.prototype.findIndex.call(o, function(el, i, arr) { return el == 'd' }); r"),
+      njs_str("3") },
+
     { njs_str("var a = [];"
                  "a.map(function(v, i, a) { return v + 1 })"),
       njs_str("") },
@@ -4322,6 +4400,21 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = [1,2,3,4,5,6];"
                  "a.map(function(v, i, a) { a.shift(); return v + 1 })"),
       njs_str("2,4,6,,,") },
+
+    { njs_str("var o = {0: 'a', 1: 'b', 2: 'c', 'length': { valueOf() { return 3 }}};"
+              "var r = Array.prototype.map.call(o, num => num + '1'); r"),
+      njs_str("a1,b1,c1") },
+
+    { njs_str("var o = {0: 'a', 1: 'b', 2: 'c'};"
+              "Object.defineProperty(o, 'length', {get: () => 4});"
+              "Object.defineProperty(o, '3', {get: () => 'd'});"
+              "var r = Array.prototype.map.call(o, function(el, i, arr) { return el + '1' }); r"),
+      njs_str("a1,b1,c1,d1") },
+
+    { njs_str("Array.prototype.map.call(new String('abc'),"
+             "                          (val, idx, obj) => {return obj instanceof String})"
+              ".every(x => x === true)"),
+      njs_str("true") },
 
     { njs_str("var a = [];"
                  "a.reduce(function(p, v, i, a) { return p + v })"),
@@ -4358,6 +4451,23 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("[[0, 1], [2, 3], [4, 5]].reduce(function(a, b)"
                  "                         { return a.concat(b) }, [])"),
       njs_str("0,1,2,3,4,5") },
+
+    { njs_str("var o = {0: 'a', 1: 'b', 2: 'c', 'length': { valueOf() { return 3 }}};"
+                 "var reducer = (a, b) => a + b;"
+                 "var a = Array.prototype.reduce.call(o, reducer); a"),
+      njs_str("abc") },
+
+    { njs_str("var o = {0: 'a', 1: 'b', 2: 'c'};"
+              "Object.defineProperty(o, 'length', {get: () => 4});"
+              "Object.defineProperty(o, '3', {get: () => 'd'});"
+              "var r = Array.prototype.reduce.call(o, (a, b) => a + b); r"),
+      njs_str("abcd") },
+
+    { njs_str("var o = {1: 'b', 2: 'c', 3: 'd'};"
+              "Object.defineProperty(o, 'length', {get: () => 4});"
+              "Object.defineProperty(o, '0', {get: () => 'a'});"
+              "var r = Array.prototype.reduce.call(o, (a, b) => a + b); r"),
+      njs_str("abcd") },
 
     { njs_str("var a = [];"
                  "a.reduceRight(function(p, v, i, a) { return p + v })"),

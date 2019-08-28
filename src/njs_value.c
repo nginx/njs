@@ -230,6 +230,28 @@ njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
 }
 
 
+njs_int_t
+njs_value_length(njs_vm_t *vm, njs_value_t *value, uint32_t *length)
+{
+    njs_string_prop_t  string_prop;
+
+    if (njs_is_string(value)) {
+        *length = (uint32_t) njs_string_prop(&string_prop, value);
+
+    } else if (njs_is_primitive(value)) {
+        *length = 0;
+
+    } else if (njs_is_array(value)) {
+        *length = njs_array_len(value);
+
+    } else {
+        return njs_object_length(vm, value, length);
+    }
+
+    return NJS_OK;
+}
+
+
 const char *
 njs_type_string(njs_value_type_t type)
 {
