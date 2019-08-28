@@ -547,6 +547,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("5 - '\t 0x2 \t'"),
       njs_str("3") },
 
+    { njs_str("5 - '\t\\u000c0x2 \t'"),
+      njs_str("3") },
+
     { njs_str("5 - '0x2 z'"),
       njs_str("NaN") },
 
@@ -4149,6 +4152,10 @@ static njs_unit_test_t  njs_test[] =
       njs_str("true") },
 
     { njs_str("var o = {}; Object.defineProperty(o, 'length', {get:()=>2}); "
+                 "Array.prototype.slice.call(Array.prototype.fill.call(o, 1))"),
+      njs_str("1,1") },
+
+    { njs_str("var o = {}; Object.defineProperty(o, 'length', {get:()=>'0x0002'}); "
                  "Array.prototype.slice.call(Array.prototype.fill.call(o, 1))"),
       njs_str("1,1") },
 
@@ -12365,6 +12372,21 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("parseFloat('12345abc')"),
       njs_str("12345") },
+
+    { njs_str("parseFloat('')"),
+      njs_str("NaN") },
+
+    { njs_str("parseFloat('     \t')"),
+      njs_str("NaN") },
+
+    { njs_str("parseFloat('\\u20281')"),
+      njs_str("1") },
+
+    { njs_str("parseFloat('e11')"),
+      njs_str("NaN") },
+
+    { njs_str("parseFloat({toString(){return '  1'}})"),
+      njs_str("1") },
 
     { njs_str("parseFloat('1e2147483647')"),
       njs_str("Infinity") },

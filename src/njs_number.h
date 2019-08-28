@@ -139,7 +139,7 @@ njs_primitive_value_to_number(const njs_value_t *value)
         return njs_number(value);
     }
 
-    return njs_string_to_number(value, 1);
+    return njs_string_to_number(value, 0);
 }
 
 

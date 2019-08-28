@@ -3866,6 +3866,7 @@ njs_string_to_number(const njs_value_t *value, njs_bool_t parse_float)
 {
     double        num;
     size_t        size;
+    uint32_t      u;
     njs_bool_t    minus;
     const u_char  *p, *start, *end;
 
@@ -3884,15 +3885,17 @@ njs_string_to_number(const njs_value_t *value, njs_bool_t parse_float)
     end = p + size;
 
     while (p < end) {
-        if (*p != ' ' && *p != '\t') {
+        start = p;
+        u = njs_utf8_decode(&p, end);
+
+        if (!njs_utf8_is_whitespace(u)) {
+            p = start;
             break;
         }
-
-        p++;
     }
 
     if (p == end) {
-        return 0.0;
+        return parse_float ? NAN : 0.0;
     }
 
     minus = 0;

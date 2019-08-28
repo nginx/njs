@@ -358,6 +358,10 @@ njs_strtod(const u_char **start, const u_char *end)
         }
     }
 
+    if (pos == data) {
+        return NAN;
+    }
+
     e = p + 1;
 
     if (e < end && (*p == 'e' || *p == 'E')) {
