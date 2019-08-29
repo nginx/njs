@@ -7143,16 +7143,13 @@ static njs_unit_test_t  njs_test[] =
                  "{length:2, 0:{toString:function() {return 'b'}}, 1:'c'})"),
       njs_str("abc") },
 
-#if 0
-    /* TODO: non-primitive length values are not supported yet. */
     { njs_str("String.prototype.concat.apply('a',"
-                 "{length:{valueOf:function() {return 2}},  0:'b', 1:'c'})"),
+                 "{length: {valueOf: () => 2}, 0:'b', 1:'c'})"),
       njs_str("abc") },
-#else
-    { njs_str("String.prototype.concat.apply('a',"
-                 "{length:{valueOf:function() {return 2}},  0:'b', 1:'c'})"),
-      njs_str("TypeError: non-primitive length values are not supported") },
-#endif
+
+    { njs_str("var o = {0:'b', 1:'c'}; Object.defineProperty(o, 'length', {get: () => 2});"
+              "String.prototype.concat.apply('a', o)"),
+      njs_str("abc") },
 
     { njs_str("var a = function() { return 1 } + ''; a"),
       njs_str("[object Function]") },

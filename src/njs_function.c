@@ -1010,28 +1010,15 @@ njs_function_prototype_call(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-/*
- * Non-primitive length values are not supported yet. To handle non-primitive
- * values a continuation is needed. Currently, only one continuation per frame
- * is supported. apply() is a special function which can add a second
- * continuation to the continuation of the underling function.
- *
- * TODO:
- *   String.prototype.concat.apply('a', { length:{ valueOf:
- *                                        function() { return 2; } },
- *                                        0:'b', 1:'c'})
- */
 static njs_int_t
 njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t retval)
 {
     uint32_t        i;
     njs_int_t       ret;
-    njs_value_t     length, name, *this, *arr_like;
+    njs_value_t     name, *this, *arr_like;
     njs_array_t     *arr;
     njs_function_t  *func;
-
-    static const njs_value_t  string_length = njs_string("length");
 
     if (!njs_is_function(njs_arg(args, nargs, 0))) {
         njs_type_error(vm, "\"this\" argument is not a function");
@@ -1060,18 +1047,10 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    ret = njs_value_property(vm, arr_like, njs_value_arg(&string_length),
-                             &length);
-    if (njs_slow_path(ret == NJS_ERROR)) {
+    ret = njs_object_length(vm, arr_like, &nargs);
+    if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
-
-    if (!njs_is_primitive(&length)) {
-        njs_type_error(vm, "non-primitive length values are not supported");
-        return NJS_ERROR;
-    }
-
-    nargs = njs_primitive_value_to_length(&length);
 
     arr = njs_array_alloc(vm, nargs, NJS_ARRAY_SPARE);
     if (njs_slow_path(arr == NULL)) {
