@@ -1014,7 +1014,7 @@ static njs_int_t
 njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t retval)
 {
-    uint32_t        i;
+    uint32_t        i, length;
     njs_int_t       ret;
     njs_value_t     name, *this, *arr_like;
     njs_array_t     *arr;
@@ -1030,7 +1030,7 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     arr_like = njs_arg(args, nargs, 2);
 
     if (njs_is_null_or_undefined(arr_like)) {
-        nargs = 0;
+        length = 0;
 
         goto activate;
 
@@ -1038,7 +1038,7 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         arr = arr_like->data.u.array;
 
         args = arr->start;
-        nargs = arr->length;
+        length = arr->length;
 
         goto activate;
 
@@ -1047,19 +1047,19 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    ret = njs_object_length(vm, arr_like, &nargs);
+    ret = njs_object_length(vm, arr_like, &length);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
 
-    arr = njs_array_alloc(vm, nargs, NJS_ARRAY_SPARE);
+    arr = njs_array_alloc(vm, length, NJS_ARRAY_SPARE);
     if (njs_slow_path(arr == NULL)) {
         return NJS_ERROR;
     }
 
     args = arr->start;
 
-    for (i = 0; i < nargs; i++) {
+    for (i = 0; i < length; i++) {
         njs_uint32_to_string(&name, i);
 
         ret = njs_value_property(vm, arr_like, &name, &args[i]);
@@ -1073,7 +1073,7 @@ activate:
     /* Skip the "apply" method frame. */
     vm->top_frame->skip = 1;
 
-    ret = njs_function_frame(vm, func, this, args, nargs, 0);
+    ret = njs_function_frame(vm, func, this, args, length, 0);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
