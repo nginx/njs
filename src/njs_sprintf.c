@@ -86,7 +86,7 @@ njs_vsprintf(u_char *buf, u_char *end, const char *fmt, va_list args)
     u_char         *p;
     int            d;
     double         f, i;
-    size_t         length;
+    size_t         size, length;
     int64_t        i64;
     uint64_t       ui64, frac;
     njs_str_t      *v;
@@ -418,7 +418,12 @@ njs_vsprintf(u_char *buf, u_char *end, const char *fmt, va_list args)
 
     copy:
 
-        buf = njs_cpymem(buf, p, njs_min((size_t) (end - buf), length));
+        size = njs_min((size_t) (end - buf), length);
+
+        if (size != 0) {
+            buf = njs_cpymem(buf, p, size);
+        }
+
         continue;
     }
 

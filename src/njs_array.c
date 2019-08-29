@@ -152,7 +152,9 @@ njs_array_expand(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
     array->data = start;
     start += prepend;
 
-    memcpy(start, array->start, array->length * sizeof(njs_value_t));
+    if (array->length != 0) {
+        memcpy(start, array->start, array->length * sizeof(njs_value_t));
+    }
 
     array->start = start;
 

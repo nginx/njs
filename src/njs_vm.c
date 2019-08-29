@@ -347,8 +347,11 @@ njs_vm_init(njs_vm_t *vm)
     frame->native.free = values + scope_size;
 
     vm->scopes[NJS_SCOPE_GLOBAL] = (njs_value_t *) values;
-    memcpy(values + NJS_INDEX_GLOBAL_OFFSET, vm->global_scope,
-           vm->scope_size);
+
+    if (vm->global_scope != 0) {
+        memcpy(values + NJS_INDEX_GLOBAL_OFFSET, vm->global_scope,
+               vm->scope_size);
+    }
 
     ret = njs_regexp_init(vm);
     if (njs_slow_path(ret != NJS_OK)) {

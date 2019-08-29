@@ -1323,7 +1323,7 @@ njs_generate_find_block(njs_generator_block_t *block, uint32_t mask,
      * loop or switch statement.
      */
     if ((mask & NJS_GENERATOR_ALL) == NJS_GENERATOR_ALL
-        && !njs_strstr_eq(label, &no_label))
+        && label->length != 0)
     {
         mask |= NJS_GENERATOR_BLOCK;
     }
@@ -3376,9 +3376,13 @@ njs_generate_reference_error(njs_vm_t *vm, njs_generator_t *generator,
 
     ref_err->token_line = node->token_line;
 
-    ret = njs_name_copy(vm, &ref_err->file, &node->scope->file);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return NJS_ERROR;
+    ref_err->file.length = node->scope->file.length;
+
+    if (ref_err->file.length != 0) {
+        ret = njs_name_copy(vm, &ref_err->file, &node->scope->file);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
     }
 
     return njs_name_copy(vm, &ref_err->name, &node->u.reference.name);

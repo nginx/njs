@@ -3789,8 +3789,11 @@ njs_string_replace_join(njs_vm_t *vm, njs_string_replace_t *r)
     p = string;
 
     for (i = 0; i < n; i++) {
-        p = memcpy(p, part[i].start, part[i].size);
-        p += part[i].size;
+        size = part[i].size;
+
+        if (size != 0) {
+            p = njs_cpymem(p, part[i].start, size);
+        }
 
         /* GC: release valid values. */
     }
