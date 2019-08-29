@@ -71,6 +71,7 @@ njs_int_t njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 njs_int_t njs_object_length(njs_vm_t *vm, njs_value_t *value, uint32_t *dest);
 
+njs_int_t njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq);
 njs_object_prop_t *njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
     const njs_value_t *value, uint8_t attributes);
 njs_int_t njs_object_property(njs_vm_t *vm, const njs_value_t *value,

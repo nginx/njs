@@ -3729,6 +3729,14 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = [1,2]; a[100] = 100; a[100] +' '+ a.length"),
       njs_str("100 101") },
 
+    { njs_str("var a = []; Object.defineProperty(a, 'length', {writable:0});"
+              "Object.getOwnPropertyDescriptor(a, 'length').writable"),
+      njs_str("false") },
+
+    { njs_str("var a = []; Object.defineProperty(a, 'length', {writable:0});"
+              "Object.defineProperty(a, 'length', {writable:true})"),
+      njs_str("TypeError: Cannot redefine property: \"length\"") },
+
     { njs_str("Array.prototype.slice(1)"),
       njs_str("") },
 

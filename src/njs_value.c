@@ -11,7 +11,6 @@
 static njs_int_t njs_object_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_object_t *object,
     const njs_value_t *key);
-static njs_int_t njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq);
 static njs_int_t njs_array_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_array_t *array, uint32_t index);
 static njs_int_t njs_string_property_query(njs_vm_t *vm,
@@ -681,6 +680,16 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
             ret = njs_lvlhsh_find(&proto->shared_hash, &pq->lhq);
 
             if (ret == NJS_OK) {
+                prop = pq->lhq.value;
+
+                if (!prop->configurable
+                    && prop->type == NJS_PROPERTY_HANDLER)
+                {
+                    /* Postpone making a mutable NJS_PROPERTY_HANDLER copy. */
+                    pq->shared = 1;
+                    return ret;
+                }
+
                 return njs_prop_private_copy(vm, pq);
             }
         }
@@ -695,76 +704,6 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     } while (proto != NULL);
 
     return NJS_DECLINED;
-}
-
-
-static njs_int_t
-njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
-{
-    njs_int_t           ret;
-    njs_function_t      *function;
-    njs_object_prop_t   *prop, *shared, *name;
-    njs_lvlhsh_query_t  lhq;
-
-    static const njs_value_t  name_string = njs_string("name");
-
-    prop = njs_mp_align(vm->mem_pool, sizeof(njs_value_t),
-                        sizeof(njs_object_prop_t));
-    if (njs_slow_path(prop == NULL)) {
-        njs_memory_error(vm);
-        return NJS_ERROR;
-    }
-
-    shared = pq->lhq.value;
-    *prop = *shared;
-
-    pq->lhq.replace = 0;
-    pq->lhq.value = prop;
-    pq->lhq.pool = vm->mem_pool;
-
-    ret = njs_lvlhsh_insert(&pq->prototype->hash, &pq->lhq);
-    if (njs_slow_path(ret != NJS_OK)) {
-        njs_internal_error(vm, "lvlhsh insert failed");
-        return NJS_ERROR;
-    }
-
-    if (!njs_is_function(&prop->value)) {
-        return NJS_OK;
-    }
-
-    function = njs_function_value_copy(vm, &prop->value);
-    if (njs_slow_path(function == NULL)) {
-        return NJS_ERROR;
-    }
-
-    if (function->ctor) {
-        function->object.shared_hash = vm->shared->function_instance_hash;
-
-    } else {
-        function->object.shared_hash = vm->shared->arrow_instance_hash;
-    }
-
-    name = njs_object_prop_alloc(vm, &name_string, &prop->name, 0);
-    if (njs_slow_path(name == NULL)) {
-        return NJS_ERROR;
-    }
-
-    name->configurable = 1;
-
-    lhq.key_hash = NJS_NAME_HASH;
-    lhq.key = njs_str_value("name");
-    lhq.replace = 0;
-    lhq.value = name;
-    lhq.proto = &njs_object_hash_proto;
-    lhq.pool = vm->mem_pool;
-
-    ret = njs_lvlhsh_insert(&function->object.hash, &lhq);
-    if (njs_slow_path(ret != NJS_OK)) {
-        njs_internal_error(vm, "lvlhsh insert failed");
-        return NJS_ERROR;
-    }
-
-    return NJS_OK;
 }
 
 
