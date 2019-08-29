@@ -105,6 +105,8 @@ njs_random_stir(njs_random_t *r, njs_pid_t pid)
         key.value[2] ^= getpid();
     }
 
+    njs_msan_unpoison(&key, NJS_RANDOM_KEY_SIZE);
+
     njs_random_add(r, key.bytes, NJS_RANDOM_KEY_SIZE);
 
     /* Drop the first 3072 bytes. */

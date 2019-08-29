@@ -12165,10 +12165,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Math.pow(-3, 0.1)"),
       njs_str("NaN") },
 
-#if (!NJS_HAVE_MEMORY_SANITIZER) /* intentional use of uninitialized stack */
     { njs_str("var a = Math.random(); a >= 0 && a < 1"),
       njs_str("true") },
-#endif
 
     { njs_str("Math.round()"),
       njs_str("NaN") },

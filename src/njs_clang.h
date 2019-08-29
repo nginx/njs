@@ -159,6 +159,9 @@ njs_leading_zeros64(uint64_t x)
 #include <sanitizer/msan_interface.h>
 
 #define njs_msan_unpoison(ptr, size)  __msan_unpoison(ptr, size)
+#else
+
+#define njs_msan_unpoison(ptr, size)
 #endif
 
 
