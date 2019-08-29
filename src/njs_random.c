@@ -166,10 +166,10 @@ njs_random(njs_random_t *r)
         njs_random_stir(r, pid);
     }
 
-    val  = njs_random_byte(r) << 24;
-    val |= njs_random_byte(r) << 16;
-    val |= njs_random_byte(r) << 8;
-    val |= njs_random_byte(r);
+    val  = (uint32_t) njs_random_byte(r) << 24;
+    val |= (uint32_t) njs_random_byte(r) << 16;
+    val |= (uint32_t) njs_random_byte(r) << 8;
+    val |= (uint32_t) njs_random_byte(r);
 
     return val;
 }
