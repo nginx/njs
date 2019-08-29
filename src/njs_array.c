@@ -14,11 +14,11 @@ typedef struct {
     njs_value_t      *value;
 
     njs_array_t      *array;
-} njs_array_interator_args_t;
+} njs_array_iterator_args_t;
 
 
 typedef njs_int_t (*njs_array_iterator_handler_t)(njs_vm_t *vm,
-    njs_array_interator_args_t *args, njs_value_t *entry, uint32_t n);
+    njs_array_iterator_args_t *args, njs_value_t *entry, uint32_t n);
 
 
 static njs_int_t njs_array_prototype_slice_copy(njs_vm_t *vm,
@@ -1362,7 +1362,7 @@ njs_array_prototype_fill(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 njs_inline njs_int_t
-njs_array_iterator_call(njs_vm_t *vm, njs_array_interator_args_t *args,
+njs_array_iterator_call(njs_vm_t *vm, njs_array_iterator_args_t *args,
     const njs_value_t *entry, uint32_t n)
 {
     njs_value_t  arguments[3];
@@ -1379,7 +1379,7 @@ njs_array_iterator_call(njs_vm_t *vm, njs_array_interator_args_t *args,
 
 
 njs_inline njs_int_t
-njs_array_iterator(njs_vm_t *vm, njs_array_interator_args_t *args,
+njs_array_iterator(njs_vm_t *vm, njs_array_iterator_args_t *args,
     njs_array_iterator_handler_t handler, uint32_t length)
 {
     uint32_t           i;
@@ -1517,7 +1517,7 @@ process_object:
 
 
 static njs_int_t
-njs_array_handler_for_each(njs_vm_t *vm, njs_array_interator_args_t *args,
+njs_array_handler_for_each(njs_vm_t *vm, njs_array_iterator_args_t *args,
     njs_value_t *entry, uint32_t n)
 {
     if (njs_is_valid(entry)) {
@@ -1532,8 +1532,8 @@ static njs_int_t
 njs_array_prototype_for_each(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_int_t                   ret;
-    njs_array_interator_args_t  iargs;
+    njs_int_t                  ret;
+    njs_array_iterator_args_t  iargs;
 
     if (njs_is_null_or_undefined(njs_arg(args, nargs, 0))
         || !njs_is_function(njs_arg(args, nargs, 1)))
@@ -1559,7 +1559,7 @@ njs_array_prototype_for_each(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
-njs_array_handler_some(njs_vm_t *vm, njs_array_interator_args_t *args,
+njs_array_handler_some(njs_vm_t *vm, njs_array_iterator_args_t *args,
     njs_value_t *entry, uint32_t n)
 {
     njs_int_t  ret;
@@ -1585,8 +1585,8 @@ static njs_int_t
 njs_array_prototype_some(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_int_t                   ret;
-    njs_array_interator_args_t  iargs;
+    njs_int_t                  ret;
+    njs_array_iterator_args_t  iargs;
 
     if (njs_is_null_or_undefined(njs_arg(args, nargs, 0))
         || !njs_is_function(njs_arg(args, nargs, 1)))
@@ -1614,7 +1614,7 @@ njs_array_prototype_some(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
-njs_array_handler_every(njs_vm_t *vm, njs_array_interator_args_t *args,
+njs_array_handler_every(njs_vm_t *vm, njs_array_iterator_args_t *args,
     njs_value_t *entry, uint32_t n)
 {
     njs_int_t  ret;
@@ -1640,8 +1640,8 @@ static njs_int_t
 njs_array_prototype_every(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_int_t                   ret;
-    njs_array_interator_args_t  iargs;
+    njs_int_t                  ret;
+    njs_array_iterator_args_t  iargs;
 
     if (njs_is_null_or_undefined(njs_arg(args, nargs, 0))
         || !njs_is_function(njs_arg(args, nargs, 1)))
@@ -1669,7 +1669,7 @@ njs_array_prototype_every(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
-njs_array_handler_filter(njs_vm_t *vm, njs_array_interator_args_t *args,
+njs_array_handler_filter(njs_vm_t *vm, njs_array_iterator_args_t *args,
     njs_value_t *entry, uint32_t n)
 {
     njs_int_t    ret;
@@ -1700,8 +1700,8 @@ static njs_int_t
 njs_array_prototype_filter(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_int_t                   ret;
-    njs_array_interator_args_t  iargs;
+    njs_int_t                  ret;
+    njs_array_iterator_args_t  iargs;
 
     if (njs_is_null_or_undefined(njs_arg(args, nargs, 0))
         || !njs_is_function(njs_arg(args, nargs, 1)))
@@ -1732,7 +1732,7 @@ njs_array_prototype_filter(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
-njs_array_handler_find(njs_vm_t *vm, njs_array_interator_args_t *args,
+njs_array_handler_find(njs_vm_t *vm, njs_array_iterator_args_t *args,
     njs_value_t *entry, uint32_t n)
 {
     njs_int_t    ret;
@@ -1764,8 +1764,8 @@ static njs_int_t
 njs_array_prototype_find(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_int_t                   ret;
-    njs_array_interator_args_t  iargs;
+    njs_int_t                  ret;
+    njs_array_iterator_args_t  iargs;
 
     if (njs_is_null_or_undefined(njs_arg(args, nargs, 0))
         || !njs_is_function(njs_arg(args, nargs, 1)))
@@ -1793,7 +1793,7 @@ njs_array_prototype_find(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
-njs_array_handler_find_index(njs_vm_t *vm, njs_array_interator_args_t *args,
+njs_array_handler_find_index(njs_vm_t *vm, njs_array_iterator_args_t *args,
     njs_value_t *entry, uint32_t n)
 {
     njs_int_t    ret;
@@ -1825,8 +1825,8 @@ static njs_int_t
 njs_array_prototype_find_index(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
-    njs_int_t                   ret;
-    njs_array_interator_args_t  iargs;
+    njs_int_t                  ret;
+    njs_array_iterator_args_t  iargs;
 
     if (njs_is_null_or_undefined(njs_arg(args, nargs, 0))
         || !njs_is_function(njs_arg(args, nargs, 1)))
@@ -1854,7 +1854,7 @@ njs_array_prototype_find_index(njs_vm_t *vm, njs_value_t *args,
 
 
 static njs_int_t
-njs_array_handler_map(njs_vm_t *vm, njs_array_interator_args_t *args,
+njs_array_handler_map(njs_vm_t *vm, njs_array_iterator_args_t *args,
     njs_value_t *entry, uint32_t n)
 {
     njs_int_t    ret;
@@ -1883,10 +1883,10 @@ static njs_int_t
 njs_array_prototype_map(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    uint32_t                    length, i;
-    njs_int_t                   ret;
-    njs_array_t                 *array;
-    njs_array_interator_args_t  iargs;
+    uint32_t                   length, i;
+    njs_int_t                  ret;
+    njs_array_t                *array;
+    njs_array_iterator_args_t  iargs;
 
     if (njs_is_null_or_undefined(njs_arg(args, nargs, 0))
         || !njs_is_function(njs_arg(args, nargs, 1)))
@@ -1933,7 +1933,7 @@ njs_array_prototype_map(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 njs_inline njs_int_t
-njs_array_iterator_reduce(njs_vm_t *vm, njs_array_interator_args_t *args,
+njs_array_iterator_reduce(njs_vm_t *vm, njs_array_iterator_args_t *args,
     njs_value_t *entry, uint32_t n)
 {
     njs_value_t  arguments[5];
@@ -1951,7 +1951,7 @@ njs_array_iterator_reduce(njs_vm_t *vm, njs_array_interator_args_t *args,
 
 
 static njs_int_t
-njs_array_handler_reduce(njs_vm_t *vm, njs_array_interator_args_t *args,
+njs_array_handler_reduce(njs_vm_t *vm, njs_array_iterator_args_t *args,
     njs_value_t *entry, uint32_t n)
 {
     njs_int_t  ret;
@@ -1977,9 +1977,9 @@ static njs_int_t
 njs_array_prototype_reduce(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_int_t                   ret;
-    njs_value_t                 accumulator;
-    njs_array_interator_args_t  iargs;
+    njs_int_t                  ret;
+    njs_value_t                accumulator;
+    njs_array_iterator_args_t  iargs;
 
     if (njs_is_null_or_undefined(njs_arg(args, nargs, 0))
         || !njs_is_function(njs_arg(args, nargs, 1)))
@@ -2019,11 +2019,11 @@ static njs_int_t
 njs_array_prototype_reduce_right(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
-    int32_t                     i;
-    uint32_t                    length;
-    njs_int_t                   ret;
-    njs_value_t                 accumulator, *value, *entry;
-    njs_array_interator_args_t  iter;
+    int32_t                    i;
+    uint32_t                   length;
+    njs_int_t                  ret;
+    njs_value_t                accumulator, *value, *entry;
+    njs_array_iterator_args_t  iter;
 
     if (nargs < 2 || !njs_is_array(&args[0]) || !njs_is_function(&args[1])) {
         njs_type_error(vm, "unexpected iterator arguments");
