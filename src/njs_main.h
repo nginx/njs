@@ -16,6 +16,7 @@
 #include <njs_str.h>
 #include <njs_utf8.h>
 #include <njs_dtoa.h>
+#include <njs_dtoa_fixed.h>
 #include <njs_strtod.h>
 #include <njs_djb_hash.h>
 #include <njs_murmur_hash.h>

@@ -541,6 +541,101 @@ njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
 }
 
 
+static njs_int_t
+njs_number_prototype_to_fixed(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused)
+{
+    u_char       *p;
+    int32_t      frac;
+    double       number;
+    size_t       length, size;
+    njs_int_t    point, prefix, postfix;
+    njs_value_t  *value;
+    u_char       buf[128], buf2[128];
+
+    /* 128 > 100 + 21 + njs_length(".-\0"). */
+
+    value = &args[0];
+
+    if (value->type != NJS_NUMBER) {
+        if (value->type == NJS_OBJECT_NUMBER) {
+            value = njs_object_value(value);
+
+        } else {
+            njs_type_error(vm, "unexpected value type:%s",
+                           njs_type_string(value->type));
+            return NJS_ERROR;
+        }
+    }
+
+    frac = njs_primitive_value_to_integer(njs_arg(args, nargs, 1));
+    if (njs_slow_path(frac < 0 || frac > 100)) {
+        njs_range_error(vm, "digits argument must be between 0 and 100");
+        return NJS_ERROR;
+    }
+
+    number = njs_number(value);
+
+    if (njs_slow_path(isnan(number) || fabs(number) >= 1e21)) {
+        return njs_number_to_string(vm, &vm->retval, value);
+    }
+
+    point = 0;
+    length = njs_fixed_dtoa(number, frac, (char *) buf, &point);
+
+    prefix = 0;
+    postfix = 0;
+
+    if (point <= 0) {
+        prefix = -point + 1;
+        point = 1;
+    }
+
+    if (prefix + (njs_int_t) length < point + frac) {
+        postfix = point + frac - length - prefix;
+    }
+
+    size = prefix + length + postfix + !!(number < 0);
+
+    if (frac > 0) {
+        size += njs_length(".");
+    }
+
+    p = buf2;
+
+    while (--prefix >= 0) {
+        *p++ = '0';
+    }
+
+    if (length != 0) {
+        p = njs_cpymem(p, buf, length);
+    }
+
+    while (--postfix >= 0) {
+        *p++ = '0';
+    }
+
+    p = njs_string_alloc(vm, &vm->retval, size, size);
+    if (njs_slow_path(p == NULL)) {
+        return NJS_ERROR;
+    }
+
+    if (number < 0) {
+        *p++ = '-';
+    }
+
+    p = njs_cpymem(p, buf2, point);
+
+    if (frac > 0) {
+        *p++ = '.';
+
+        p = njs_cpymem(p, &buf2[point], frac);
+    }
+
+    return NJS_OK;
+}
+
+
 /*
  * The radix equal to 2 produces the longest intergral value of a number
  * and the maximum value consists of 1024 digits and minus sign.
@@ -638,6 +733,15 @@ static const njs_object_prop_t  njs_number_prototype_properties[] =
         .name = njs_string("toString"),
         .value = njs_native_function(njs_number_prototype_to_string,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("toFixed"),
+        .value = njs_native_function(njs_number_prototype_to_fixed,
+                                     NJS_SKIP_ARG, NJS_INTEGER_ARG),
         .writable = 1,
         .configurable = 1,
     },

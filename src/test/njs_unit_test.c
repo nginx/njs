@@ -427,6 +427,85 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("NaN.toString(NaN)"),
       njs_str("RangeError") },
 
+    /* Number.prototype.toFixed(frac) method. */
+
+    { njs_str("(900.1).toFixed(1)"),
+      njs_str("900.1") },
+
+    { njs_str("(0).toFixed(0)"),
+      njs_str("0") },
+
+    { njs_str("(0).toFixed(3)"),
+      njs_str("0.000") },
+
+    { njs_str("(7).toFixed()"),
+      njs_str("7") },
+
+    { njs_str("(7).toFixed(0)"),
+      njs_str("7") },
+
+    { njs_str("(7).toFixed(2)"),
+      njs_str("7.00") },
+
+    { njs_str("(-900.1).toFixed(3.3)"),
+      njs_str("-900.100") },
+
+    { njs_str("(900.123).toFixed(5)"),
+      njs_str("900.12300") },
+
+    { njs_str("(1/3).toFixed(5)"),
+      njs_str("0.33333") },
+
+    { njs_str("(new Number(1/3)).toFixed(5)"),
+      njs_str("0.33333") },
+
+    { njs_str("(new Number(1/3)).toFixed(5)"),
+      njs_str("0.33333") },
+
+    { njs_str("(1/3).toFixed({toString(){return '5'}})"),
+      njs_str("0.33333") },
+
+    { njs_str("(1/3).toFixed(100)"),
+      njs_str("0.3333333333333333148296162562473909929394721984863281250000000000000000000000000000000000000000000000") },
+
+    { njs_str("(1.23e+20).toFixed(2)"),
+      njs_str("123000000000000000000.00") },
+
+    { njs_str("(1.23e-10).toFixed(2)"),
+      njs_str("0.00") },
+
+    { njs_str("(1.23e-10).toFixed(15)"),
+      njs_str("0.000000000123000") },
+
+    { njs_str("(1.23e-10).toFixed(100)"),
+      njs_str("0.0000000001229999999999999888422768137255427361997917046210204716771841049194335937500000000000000000") },
+
+    { njs_str("NaN.toFixed(1)"),
+      njs_str("NaN") },
+
+#if 0  /* FIXME: bignum support is requred to support frac >= 20 */
+    { njs_str("(2 ** -100).toFixed(100)"),
+      njs_str("0.0000000000000000000000000000007888609052210118054117285652827862296732064351090230047702789306640625") },
+#endif
+
+    { njs_str("(1000000000000000128).toString()"),
+      njs_str("1000000000000000100") },
+
+    { njs_str("(1000000000000000128).toFixed(0)"),
+      njs_str("1000000000000000128") },
+
+    { njs_str("(1e21).toFixed(1)"),
+      njs_str("1e+21") },
+
+    { njs_str("Number.prototype.toFixed.call({})"),
+      njs_str("TypeError: unexpected value type:object") },
+
+    { njs_str("(0).toFixed(-1)"),
+      njs_str("RangeError: digits argument must be between 0 and 100") },
+
+    { njs_str("(0).toFixed(101)"),
+      njs_str("RangeError: digits argument must be between 0 and 100") },
+
     /* An object "valueOf/toString" methods. */
 
     { njs_str("var a = { valueOf: function() { return 1 } };    +a"),
