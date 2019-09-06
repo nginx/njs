@@ -134,9 +134,9 @@ njs_diyu128_bit_at(njs_diyu128_t v, njs_uint_t pos)
 static size_t
 njs_fill_digits32(uint32_t number, char *start, size_t length)
 {
-    char        c;
-    size_t      i, j, n;
-    njs_int_t   digit;
+    char       c;
+    size_t     i, j, n;
+    njs_int_t  digit;
 
     n = 0;
 
@@ -268,7 +268,7 @@ njs_fill_fractionals(uint64_t fractionals, int exponent, njs_uint_t frac,
     njs_diyu128_t  fractionals128;
 
     /*
-     * 128 <= exponent <= 0.
+     * -128 <= exponent <= 0.
      * 0 <= fractionals * 2^exponent < 1.
      */
 

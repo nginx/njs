@@ -236,7 +236,7 @@ njs_grisu2(double value, char *start, int *dec_exp)
 
 
 njs_inline size_t
-njs_write_exponent(int exp, char* start)
+njs_write_exponent(int exp, char *start)
 {
     char      *p;
     size_t    len;
@@ -297,7 +297,7 @@ njs_prettify(char *start, size_t len, int dec_exp)
         memmove(&start[kk + 1], &start[kk], length - kk);
         start[kk] = '.';
 
-        return (length + 1);
+        return length + 1;
 
     } else if (-6 < kk && kk <= 0) {
 
@@ -313,7 +313,7 @@ njs_prettify(char *start, size_t len, int dec_exp)
             njs_memset(&start[2], '0', offset - 2);
         }
 
-        return (length + offset);
+        return length + offset;
 
     } else if (length == 1) {
 
@@ -323,7 +323,7 @@ njs_prettify(char *start, size_t len, int dec_exp)
 
         size =  njs_write_exponent(kk - 1, &start[2]);
 
-        return (size + 2);
+        return size + 2;
 
     }
 
@@ -335,7 +335,7 @@ njs_prettify(char *start, size_t len, int dec_exp)
 
     size = njs_write_exponent(kk - 1, &start[length + 2]);
 
-    return (size + length + 2);
+    return size + length + 2;
 }
 
 
@@ -354,7 +354,7 @@ njs_dtoa(double value, char *start)
     if (value == 0) {
         *p++ = '0';
 
-        return (p - start);
+        return p - start;
     }
 
     if (signbit(value)) {
@@ -367,5 +367,5 @@ njs_dtoa(double value, char *start)
 
     length = njs_prettify(p, length, dec_exp);
 
-    return (minus + length);
+    return minus + length;
 }

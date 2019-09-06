@@ -286,9 +286,9 @@ done:
 
 
 static njs_int_t
-njs_get_options(njs_opts_t *opts, int argc, char** argv)
+njs_get_options(njs_opts_t *opts, int argc, char **argv)
 {
-    char     *p, **paths;
+    char       *p, **paths;
     njs_int_t  i, ret;
 
     static const char  help[] =
@@ -511,13 +511,14 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 {
     int          fd;
     char         *file;
-    u_char       buf[4096], *p, *end, *start;
+    u_char       *p, *end, *start;
     size_t       size;
     ssize_t      n;
     njs_vm_t     *vm;
     njs_int_t    ret;
     njs_str_t    source, script;
     struct stat  sb;
+    u_char       buf[4096];
 
     file = opts->file;
 
