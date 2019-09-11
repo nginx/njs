@@ -1345,7 +1345,10 @@ njs_object_freeze(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             break;
         }
 
-        prop->writable = 0;
+        if (!njs_is_accessor_descriptor(prop)) {
+            prop->writable = 0;
+        }
+
         prop->configurable = 0;
     }
 

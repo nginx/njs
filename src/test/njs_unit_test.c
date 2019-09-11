@@ -10849,6 +10849,17 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var r = Object.freeze(new RegExp('')); r.a = 1"),
       njs_str("TypeError: Cannot add property \"a\", object is not extensible") },
 
+    { njs_str("var o = Object.freeze({ get x() { return 10; } }); o.x"),
+      njs_str("10") },
+
+    { njs_str("var o = Object.freeze({ get x() { return 10; } });"
+              "Object.getOwnPropertyDescriptors(o).x.get"),
+      njs_str("[object Function]") },
+
+    { njs_str("var o = Object.freeze({ get x() { return 10; } });"
+              "Object.getOwnPropertyDescriptor(o, 'x').writable"),
+      njs_str("undefined") },
+
     { njs_str("Object.isFrozen({a:1})"),
       njs_str("false") },
 
