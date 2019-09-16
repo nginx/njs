@@ -6081,6 +6081,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'ABC'.replace(/((A)B)/g, '($1|$&|$2)')"),
       njs_str("(AB|AB|A)C") },
 
+    { njs_str("'undefined'.replace(void 0, 'x')"),
+      njs_str("x") },
+
     { njs_str("/]/"),
       njs_str("/\\]/") },
 
