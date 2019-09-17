@@ -9593,6 +9593,22 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("String.length"),
       njs_str("1") },
 
+    /* values_hash long vs long string collision. */
+    { njs_str("'XXXXXXXXXXXXXXXQWEEAB' + 'XXXXXXXXXXXXXXXZHGP'"),
+      njs_str("XXXXXXXXXXXXXXXQWEEABXXXXXXXXXXXXXXXZHGP") },
+
+    /* values_hash short vs long string collision. */
+    { njs_str("'SHAAAB' + 'XXXXXXXXXXXXXXXUETBF'"),
+      njs_str("SHAAABXXXXXXXXXXXXXXXUETBF") },
+
+    /* values_hash long vs short string collision. */
+    { njs_str("'XXXXXXXXXXXXXXXUETBF' + 'SHAAAB'"),
+      njs_str("XXXXXXXXXXXXXXXUETBFSHAAAB") },
+
+    /* values_hash short vs short string collision. */
+    { njs_str("'XUBAAAB' + 'XGYXKY'"),
+      njs_str("XUBAAABXGYXKY") },
+
     { njs_str("String.__proto__ === Function.prototype"),
       njs_str("true") },
 

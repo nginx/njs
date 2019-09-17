@@ -4723,23 +4723,22 @@ uri_error:
 static njs_int_t
 njs_values_hash_test(njs_lvlhsh_query_t *lhq, void *data)
 {
-    u_char       *start;
+    njs_str_t    string;
     njs_value_t  *value;
 
     value = data;
 
-    if (lhq->key.length == sizeof(njs_value_t)) {
-        start = (u_char *) value;
+    if (njs_is_string(value)) {
+        njs_string_get(value, &string);
 
     } else {
-        /*
-         * Only primitive values are added into values_hash.
-         * If size != sizeof(njs_value_t) it is a long string.
-         */
-        start = value->long_string.data->start;
+        string.start = (u_char *) value;
+        string.length = sizeof(njs_value_t);
     }
 
-    if (memcmp(lhq->key.start, start, lhq->key.length) == 0) {
+    if (lhq->key.length == string.length
+        && memcmp(lhq->key.start, string.start, string.length) == 0)
+    {
         return NJS_OK;
     }
 
@@ -4768,21 +4767,28 @@ njs_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime)
     u_char              *start;
     uint32_t            value_size, size, length;
     njs_int_t           ret;
+    njs_str_t           str;
     njs_bool_t          long_string;
     njs_value_t         *value;
     njs_string_t        *string;
     njs_lvlhsh_t        *values_hash;
     njs_lvlhsh_query_t  lhq;
 
-    long_string = src->type == NJS_STRING
-                  && src->short_string.size == NJS_STRING_LONG;
+    long_string = 0;
+    value_size = sizeof(njs_value_t);
 
-    if (long_string) {
-        size = src->long_string.size;
-        start = src->long_string.data->start;
+    if (njs_is_string(src)) {
+        njs_string_get(src, &str);
+
+        size = (uint32_t) str.length;
+        start = str.start;
+
+        if (src->short_string.size == NJS_STRING_LONG) {
+            long_string = 1;
+        }
 
     } else {
-        size = sizeof(njs_value_t);
+        size = value_size;
         start = (u_char *) src;
     }
 
@@ -4798,22 +4804,18 @@ njs_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime)
         value = lhq.value;
 
     } else {
-        value_size = 0;
-
         if (long_string) {
-            /* Long string value is allocated together with string. */
-            value_size = sizeof(njs_value_t) + sizeof(njs_string_t);
-
             length = src->long_string.data->length;
 
             if (size != length && length > NJS_STRING_MAP_STRIDE) {
                 size = njs_string_map_offset(size)
                        + njs_string_map_size(length);
             }
+
+            value_size += sizeof(njs_string_t) + size;
         }
 
-        value = njs_mp_align(vm->mem_pool, sizeof(njs_value_t),
-                             value_size + size);
+        value = njs_mp_align(vm->mem_pool, sizeof(njs_value_t), value_size);
         if (njs_slow_path(value == NULL)) {
             return NJS_INDEX_NONE;
         }
