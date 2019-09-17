@@ -1917,12 +1917,12 @@ njs_array_prototype_map(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return ret;
         }
 
-        if (njs_is_array(iargs.value)
-            && njs_object_hash_is_empty(iargs.value))
+        if (njs_is_array(&args[0])
+            && njs_object_hash_is_empty(&args[0]))
         {
             array = iargs.array;
 
-            for (i = njs_array_len(iargs.value); i < length; i++) {
+            for (i = njs_array_len(&args[0]); i < length; i++) {
                 njs_set_invalid(&array->start[i]);
             }
         }

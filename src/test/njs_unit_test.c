@@ -4506,6 +4506,9 @@ static njs_unit_test_t  njs_test[] =
               ".every(x => x === true)"),
       njs_str("true") },
 
+    { njs_str("Array.prototype.map.call('abcdef', (val, idx, obj) => {return val === 100})"),
+      njs_str("false,false,false,false,false,false") },
+
     { njs_str("var a = [];"
                  "a.reduce(function(p, v, i, a) { return p + v })"),
       njs_str("TypeError: invalid index") },
