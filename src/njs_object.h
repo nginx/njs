@@ -86,4 +86,18 @@ extern const njs_object_init_t  njs_object_constructor_init;
 extern const njs_object_init_t  njs_object_prototype_init;
 
 
+njs_inline njs_int_t
+njs_object_length_set(njs_vm_t *vm, njs_value_t *value, uint32_t length)
+{
+    njs_value_t  index;
+
+    static const njs_value_t  string_length = njs_string("length");
+
+    njs_value_number_set(&index, length);
+
+    return njs_value_property_set(vm, value, njs_value_arg(&string_length),
+                                  &index);
+}
+
+
 #endif /* _NJS_OBJECT_H_INCLUDED_ */
