@@ -1133,3 +1133,68 @@ found:
 
     return NJS_OK;
 }
+
+
+njs_int_t
+njs_value_property_delete(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
+    njs_value_t *removed)
+{
+    njs_int_t             ret;
+    njs_object_prop_t     *prop;
+    njs_property_query_t  pq;
+
+    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_DELETE, 1);
+
+    ret = njs_property_query(vm, &pq, value, key);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    prop = pq.lhq.value;
+
+    if (njs_slow_path(!prop->configurable)) {
+        njs_type_error(vm, "Cannot delete property \"%V\" of %s",
+                       &pq.lhq.key, njs_type_string(value->type));
+        return NJS_ERROR;
+    }
+
+    switch (prop->type) {
+    case NJS_PROPERTY_HANDLER:
+        if (njs_is_external(value)) {
+            ret = prop->value.data.u.prop_handler(vm, value, NULL, NULL);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_ERROR;
+            }
+
+            return NJS_OK;
+        }
+
+        /* Fall through. */
+
+    case NJS_PROPERTY:
+        break;
+
+    case NJS_PROPERTY_REF:
+        if (removed != NULL) {
+            *removed = *prop->value.data.u.value;
+        }
+
+        njs_set_invalid(prop->value.data.u.value);
+        return NJS_OK;
+
+    default:
+        njs_internal_error(vm, "unexpected property type \"%s\" "
+                           "while deleting", njs_prop_type_string(prop->type));
+        return NJS_ERROR;
+    }
+
+    /* GC: release value. */
+    if (removed != NULL) {
+        *removed = prop->value;
+    }
+
+    prop->type = NJS_WHITEOUT;
+    njs_set_invalid(&prop->value);
+
+    return NJS_OK;
+}

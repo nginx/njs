@@ -840,6 +840,8 @@ njs_int_t njs_value_property(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *key, njs_value_t *retval);
 njs_int_t njs_value_property_set(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *key, njs_value_t *setval);
+njs_int_t njs_value_property_delete(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *key, njs_value_t *removed);
 
 
 njs_inline njs_int_t

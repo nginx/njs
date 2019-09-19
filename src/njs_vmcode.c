@@ -29,8 +29,6 @@ static njs_jump_off_t njs_vmcode_proto_init(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *key, njs_value_t *retval);
 static njs_jump_off_t njs_vmcode_property_in(njs_vm_t *vm,
     njs_value_t *value, njs_value_t *key);
-static njs_jump_off_t njs_vmcode_property_delete(njs_vm_t *vm,
-    njs_value_t *value, njs_value_t *key);
 static njs_jump_off_t njs_vmcode_property_foreach(njs_vm_t *vm,
     njs_value_t *object, njs_value_t *invld, u_char *pc);
 static njs_jump_off_t njs_vmcode_property_next(njs_vm_t *vm,
@@ -453,7 +451,13 @@ next:
                 break;
 
             case NJS_VMCODE_PROPERTY_DELETE:
-                ret = njs_vmcode_property_delete(vm, value1, value2);
+                ret = njs_value_property_delete(vm, value1, value2, NULL);
+                if (njs_fast_path(ret != NJS_ERROR)) {
+                    vm->retval = njs_value_true;
+
+                    ret = sizeof(njs_vmcode_3addr_t);
+                }
+
                 break;
 
             case NJS_VMCODE_PROPERTY_FOREACH:
@@ -1274,79 +1278,6 @@ njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *value, njs_value_t *key)
     }
 
     njs_set_boolean(&vm->retval, found);
-
-    return sizeof(njs_vmcode_3addr_t);
-}
-
-
-static njs_jump_off_t
-njs_vmcode_property_delete(njs_vm_t *vm, njs_value_t *value, njs_value_t *key)
-{
-    njs_jump_off_t        ret;
-    njs_object_prop_t     *prop;
-    njs_property_query_t  pq;
-
-    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_DELETE, 1);
-
-    ret = njs_property_query(vm, &pq, value, key);
-
-    switch (ret) {
-
-    case NJS_OK:
-        prop = pq.lhq.value;
-
-        if (njs_slow_path(!prop->configurable)) {
-            njs_type_error(vm, "Cannot delete property \"%V\" of %s",
-                           &pq.lhq.key, njs_type_string(value->type));
-            return NJS_ERROR;
-        }
-
-        switch (prop->type) {
-        case NJS_PROPERTY_HANDLER:
-            if (njs_is_external(value)) {
-                ret = prop->value.data.u.prop_handler(vm, value, NULL, NULL);
-                if (njs_slow_path(ret != NJS_OK)) {
-                    return NJS_ERROR;
-                }
-
-                goto done;
-            }
-
-            /* Fall through. */
-
-        case NJS_PROPERTY:
-            break;
-
-        case NJS_PROPERTY_REF:
-            njs_set_invalid(prop->value.data.u.value);
-            goto done;
-
-        default:
-            njs_internal_error(vm, "unexpected property type \"%s\" "
-                               "while deleting",
-                               njs_prop_type_string(prop->type));
-
-            return NJS_ERROR;
-        }
-
-        /* GC: release value. */
-        prop->type = NJS_WHITEOUT;
-        njs_set_invalid(&prop->value);
-
-        break;
-
-    case NJS_DECLINED:
-        break;
-
-    case NJS_ERROR:
-    default:
-
-        return ret;
-    }
-
-done:
-
-    vm->retval = njs_value_true;
 
     return sizeof(njs_vmcode_3addr_t);
 }
