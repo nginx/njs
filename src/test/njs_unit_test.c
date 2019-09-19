@@ -4020,6 +4020,16 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("[].indexOf.bind(0)(0, 0)"),
       njs_str("-1") },
 
+    { njs_str("var o = 'abcd';"
+              "Array.prototype.indexOf.call(o, 'c')"),
+      njs_str("2") },
+
+    { njs_str("var o = {0: 'a', 1: 'b', 2: 'c'};"
+              "Object.defineProperty(o, 'length', {get: () => 4});"
+              "Object.defineProperty(o, '3', {get: () => 'd'});"
+              "Array.prototype.indexOf.call(o, 'd')"),
+      njs_str("3") },
+
     { njs_str("[].lastIndexOf(1, -1)"),
       njs_str("-1") },
 
@@ -4065,6 +4075,36 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("[1,2,1].lastIndexOf(1)"),
       njs_str("2") },
 
+    { njs_str("var o = 'addc';"
+              "Array.prototype.lastIndexOf.call(o, 'd')"),
+      njs_str("2") },
+
+    { njs_str("var o = 'dddd';"
+              "Array.prototype.lastIndexOf.call(o, 'd')"),
+      njs_str("3") },
+
+    { njs_str("var o = 'dabc';"
+              "Array.prototype.lastIndexOf.call(o, 'd')"),
+      njs_str("0") },
+
+    { njs_str("var o = 'АБВГ';"
+              "Array.prototype.lastIndexOf.call(o, 'Г')"),
+      njs_str("3") },
+
+    { njs_str("var o = 'ГВБА';"
+              "Array.prototype.lastIndexOf.call(o, 'Г')"),
+      njs_str("0") },
+
+    { njs_str("var o = 'ВГБА';"
+              "Array.prototype.lastIndexOf.call(o, 'Г')"),
+      njs_str("1") },
+
+    { njs_str("var o = {0: 'a', 1: 'd', 2: 'd'};"
+              "Object.defineProperty(o, 'length', {get: () => 4});"
+              "Object.defineProperty(o, '3', {get: () => 'd'});"
+              "Array.prototype.lastIndexOf.call(o, 'd')"),
+      njs_str("3") },
+
     { njs_str("[1,2,3,4].includes()"),
       njs_str("false") },
 
@@ -4094,6 +4134,12 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("[].includes.bind(0)(0, 0)"),
       njs_str("false") },
+
+    { njs_str("var o = {0: 'a', 1: 'b', 2: 'c'};"
+              "Object.defineProperty(o, 'length', {get: () => 4});"
+              "Object.defineProperty(o, '3', {get: () => 'd'});"
+              "Array.prototype.includes.call(o, 'd')"),
+      njs_str("true") },
 
     { njs_str("var a = []; var s = { sum: 0 };"
                  "a.forEach(function(v, i, a) { this.sum += v }, s); s.sum"),
@@ -4511,7 +4557,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var a = [];"
                  "a.reduce(function(p, v, i, a) { return p + v })"),
-      njs_str("TypeError: invalid index") },
+      njs_str("TypeError: Reduce of empty object with no initial value") },
 
     { njs_str("var a = [];"
                  "a.reduce(function(p, v, i, a) { return p + v }, 10)"),
@@ -4519,7 +4565,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var a = [,,];"
                  "a.reduce(function(p, v, i, a) { return p + v })"),
-      njs_str("TypeError: invalid index") },
+      njs_str("TypeError: Reduce of empty object with no initial value") },
 
     { njs_str("var a = [,,];"
                  "a.reduce(function(p, v, i, a) { return p + v }, 10)"),
@@ -4564,7 +4610,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var a = [];"
                  "a.reduceRight(function(p, v, i, a) { return p + v })"),
-      njs_str("TypeError: invalid index") },
+      njs_str("TypeError: Reduce of empty object with no initial value") },
 
     { njs_str("var a = [];"
                  "a.reduceRight(function(p, v, i, a) { return p + v }, 10)"),
@@ -4572,7 +4618,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var a = [,,];"
                  "a.reduceRight(function(p, v, i, a) { return p + v })"),
-      njs_str("TypeError: invalid index") },
+      njs_str("TypeError: Reduce of empty object with no initial value") },
 
     { njs_str("var a = [,,];"
                  "a.reduceRight(function(p, v, i, a) { return p + v }, 10)"),
@@ -4603,6 +4649,12 @@ static njs_unit_test_t  njs_test[] =
                  "a.reduceRight(function(p, v, i, a)"
                  "              { a.shift(); return p + v }, 10)"),
       njs_str("19") },
+
+    { njs_str("var o = {0: 'a', 1: 'b', 2: 'c'};"
+              "Object.defineProperty(o, 'length', {get: () => 4});"
+              "Object.defineProperty(o, '3', {get: () => 'd'});"
+              "Array.prototype.reduceRight.call(o, (p, v) => p + v)"),
+      njs_str("dcba") },
 
     { njs_str("var a = ['1','2','3','4','5','6']; a.sort()"),
       njs_str("1,2,3,4,5,6") },
