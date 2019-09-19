@@ -8,6 +8,9 @@
 #include <njs_main.h>
 
 
+#define NJS_ARRAY_LARGE_OBJECT_LENGTH  4096
+
+
 typedef struct {
     njs_function_t  *function;
     njs_value_t     *argument;
@@ -27,6 +30,7 @@ typedef njs_int_t (*njs_array_iterator_handler_t)(njs_vm_t *vm,
 static njs_int_t njs_array_prototype_slice_copy(njs_vm_t *vm,
     njs_value_t *this, int64_t start, int64_t length);
 static njs_value_t *njs_array_copy(njs_value_t *dst, njs_value_t *src);
+static njs_array_t *njs_object_indexes(njs_vm_t *vm, njs_value_t *object);
 
 
 njs_array_t *
@@ -708,10 +712,11 @@ static njs_int_t
 njs_array_prototype_unshift(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
+    double       idx;
     uint32_t     from, to, length;
     njs_int_t    ret;
     njs_uint_t   n;
-    njs_array_t  *array;
+    njs_array_t  *array, *keys;
     njs_value_t  *value, entry, index;
 
     value = njs_arg(args, nargs, 0);
@@ -767,6 +772,38 @@ njs_array_prototype_unshift(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
+    if (length > NJS_ARRAY_LARGE_OBJECT_LENGTH) {
+        keys = njs_object_indexes(vm, value);
+        if (njs_slow_path(keys == NULL)) {
+            return NJS_ERROR;
+        }
+
+        from = keys->length;
+
+        while (from > 0) {
+            ret = njs_value_property_delete(vm, value, &keys->start[--from],
+                                            &entry);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                return ret;
+            }
+
+            if (ret == NJS_OK) {
+                idx = njs_string_to_index(&keys->start[from]);
+
+                njs_uint32_to_string(&index, (uint32_t) idx + nargs - 1);
+
+                ret = njs_value_property_set(vm, value, &index, &entry);
+                if (njs_slow_path(ret == NJS_ERROR)) {
+                    return ret;
+                }
+            }
+        }
+
+        length += nargs - 1;
+
+        goto copy;
+    }
+
     from = length;
     length += n;
     to = length;
@@ -790,6 +827,8 @@ njs_array_prototype_unshift(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             }
         }
     }
+
+copy:
 
     for (n = 1; n < nargs; n++) {
         njs_uint32_to_string(&index, n - 1);
@@ -1199,12 +1238,75 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+static int
+njs_object_indexes_handler(const void *first, const void *second)
+{
+    double             num1, num2;
+    njs_str_t          str1, str2;
+    const njs_value_t  *val1, *val2;
+
+    val1 = first;
+    val2 = second;
+
+    num1 = njs_string_to_index(val1);
+    num2 = njs_string_to_index(val2);
+
+    if (!isnan(num1) || !isnan(num2)) {
+        if (isnan(num1)) {
+            return 1;
+        }
+
+        if (isnan(num2)) {
+            return -1;
+        }
+
+        return (int) (num1 - num2);
+    }
+
+    njs_string_get(val1, &str1);
+    njs_string_get(val2, &str2);
+
+    return strncmp((const char *) str1.start, (const char *) str2.start,
+                   njs_min(str1.length, str2.length));
+}
+
+
+static njs_array_t *
+njs_object_indexes(njs_vm_t *vm, njs_value_t *object)
+{
+    double       idx;
+    uint32_t     i;
+    njs_array_t  *keys;
+
+    keys = njs_value_own_enumerate(vm, object, NJS_ENUM_KEYS, 0);
+    if (njs_slow_path(keys == NULL)) {
+        return NULL;
+    }
+
+    qsort(keys->start, keys->length, sizeof(njs_value_t),
+          njs_object_indexes_handler);
+
+    for (i = 0; i < keys->length; i++) {
+        idx = njs_string_to_index(&keys->start[i]);
+
+        if (isnan(idx)) {
+            keys->length = i;
+            break;
+        }
+    }
+
+    return keys;
+}
+
+
 njs_inline njs_int_t
 njs_array_iterator(njs_vm_t *vm, njs_array_iterator_args_t *args,
     njs_array_iterator_handler_t handler)
 {
+    double             idx;
     uint32_t           length, i, from, to;
     njs_int_t          ret;
+    njs_array_t        *keys;
     njs_value_t        *entry, *value, character, index, string_obj, prop;
     njs_object_t       *object;
     const u_char       *p, *end, *pos;
@@ -1306,6 +1408,39 @@ njs_array_iterator(njs_vm_t *vm, njs_array_iterator_args_t *args,
 
 process_object:
 
+    if ((to - from) > NJS_ARRAY_LARGE_OBJECT_LENGTH) {
+        keys = njs_object_indexes(vm, value);
+        if (njs_slow_path(keys == NULL)) {
+            return NJS_ERROR;
+        }
+
+        for (i = 0; i < keys->length; i++) {
+            idx = njs_string_to_index(&keys->start[i]);
+
+            if (idx < from || idx > to) {
+                continue;
+            }
+
+            ret = njs_value_property(vm, value, &keys->start[i], &prop);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                return ret;
+            }
+
+            if (ret != NJS_DECLINED) {
+                ret = handler(vm, args, &prop, i);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    if (ret > 0) {
+                        return NJS_DECLINED;
+                    }
+
+                    return NJS_ERROR;
+                }
+            }
+        }
+
+        return NJS_OK;
+    }
+
     for (i = from; i < to; i++) {
         njs_uint32_to_string(&index, i);
 
@@ -1334,8 +1469,10 @@ njs_inline njs_int_t
 njs_array_reverse_iterator(njs_vm_t *vm, njs_array_iterator_args_t *args,
     njs_array_iterator_handler_t handler)
 {
+    double             idx;
     uint32_t           i, from, to, length;
     njs_int_t          ret;
+    njs_array_t        *keys;
     njs_value_t        *entry, *value, character, index, string_obj, prop;
     njs_object_t       *object;
     const u_char       *p, *end, *pos;
@@ -1444,6 +1581,41 @@ njs_array_reverse_iterator(njs_vm_t *vm, njs_array_iterator_args_t *args,
     }
 
 process_object:
+
+    if ((from - to) > NJS_ARRAY_LARGE_OBJECT_LENGTH) {
+        keys = njs_object_indexes(vm, value);
+        if (njs_slow_path(keys == NULL)) {
+            return NJS_ERROR;
+        }
+
+        i = keys->length;
+
+        while (i > 0) {
+            idx = njs_string_to_index(&keys->start[--i]);
+
+            if (idx < to || idx > from) {
+                continue;
+            }
+
+            ret = njs_value_property(vm, value, &keys->start[i], &prop);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                return ret;
+            }
+
+            if (ret != NJS_DECLINED) {
+                ret = handler(vm, args, &prop, idx);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    if (ret > 0) {
+                        return NJS_DECLINED;
+                    }
+
+                    return NJS_ERROR;
+                }
+            }
+        }
+
+        return NJS_OK;
+    }
 
     i = from + 1;
 

@@ -4001,6 +4001,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var x = {0: 0}; Array.prototype.unshift.call(x); x.length"),
       njs_str("0") },
 
+    { njs_str("var obj = {'10000000': 'x', '10000001': 'y', '10000002': 'z'}; var a = [];"
+              "obj.length = 90000000;"
+              "Array.prototype.unshift.call(obj, 'a', 'b', 'c');"
+              "Array.prototype.forEach.call(obj, (v) => a.push(v)); a"),
+      njs_str("a,b,c,x,y,z")},
+
     { njs_str("var a=[0], n = 64; while(--n) {a.push(n); a.shift()}; a"),
       njs_str("1") },
 
@@ -4156,6 +4162,11 @@ static njs_unit_test_t  njs_test[] =
               "Array.prototype.lastIndexOf.call(o, 'd')"),
       njs_str("3") },
 
+    { njs_str("var obj = {'10000000': 'x', '10000001': 'y', '10000002': 'z'}; var a = [];"
+              "obj.length = 90000000;"
+              "Array.prototype.lastIndexOf.call(obj, 'y');"),
+      njs_str("10000001")},
+
     { njs_str("[1,2,3,4].includes()"),
       njs_str("false") },
 
@@ -4191,6 +4202,18 @@ static njs_unit_test_t  njs_test[] =
               "Object.defineProperty(o, '3', {get: () => 'd'});"
               "Array.prototype.includes.call(o, 'd')"),
       njs_str("true") },
+
+    { njs_str("var obj = {'0': 'a', '1': 'b', '10000000': 'c', '10000001': 'd', '10000002': 'e'};"
+              "var fromIndex = 1;"
+              "obj.length = 90000000;"
+              "Array.prototype.includes.call(obj, 'c', fromIndex);"),
+      njs_str("true") },
+
+    { njs_str("var obj = {'0': 'a', '1': 'b', '10000000': 'c', '10000001': 'd', '10000002': 'e'};"
+              "var fromIndex = 1;"
+              "obj.length = 90000000;"
+              "Array.prototype.includes.call(obj, 'a', fromIndex);"),
+      njs_str("false") },
 
     { njs_str("var a = []; var s = { sum: 0 };"
                  "a.forEach(function(v, i, a) { this.sum += v }, s); s.sum"),
