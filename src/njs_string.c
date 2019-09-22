@@ -4365,6 +4365,57 @@ njs_string_to_index(const njs_value_t *value)
 
 
 /*
+ * timing attack safe version of string comparison
+ * could be useful with hashes comparison for instance.
+ * unlike memcmp, we go through the whole length
+ * and using volatile pointer to avoid potential
+ * compiler optimisations.
+ */
+static njs_int_t
+njs_string_prototype_safe_equals(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused)
+{
+    const volatile u_char       *sa, *sb;
+    const njs_value_t           *string;
+    ssize_t                     lengtha, lengthb;
+    njs_string_prop_t           stra, strb;
+    njs_uint_t                  index;
+    njs_int_t                   delta;
+
+    lengtha = njs_string_prop(&stra, njs_arg(args, nargs, 0));
+
+    string = njs_arg(args, nargs, 1);
+    njs_set_number(&vm->retval, -1);
+
+    if (njs_is_undefined(string)) {
+        return NJS_OK;
+    }
+
+    lengthb = njs_string_prop(&strb, string);
+
+    if (lengtha != lengthb) {
+        return NJS_OK;
+    }
+
+    sa = (const volatile u_char *)stra.start;
+    sb = (const volatile u_char *)strb.start;
+    index = 0;
+    delta = 0;
+
+    for ( ;; ) {
+       if (index == stra.size) {
+           break;
+       }
+       delta |= sa[index] ^ sb[index];
+       index++;
+    }
+
+    njs_set_number(&vm->retval, delta);
+
+    return NJS_OK;
+}
+
+/*
  * If string value is null-terminated the corresponding C string
  * is returned as is, otherwise the new copy is allocated with
  * the terminating zero byte.
@@ -4521,6 +4572,16 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .configurable = 1,
     },
 
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("safeEquals"),
+        .value = njs_native_function(njs_string_prototype_safe_equals, 
+                     NJS_STRING_OBJECT_ARG, NJS_STRING_ARG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    /* String.codePointAt(), ECMAScript 6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("codePointAt"),

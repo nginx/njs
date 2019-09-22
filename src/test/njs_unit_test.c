@@ -7157,6 +7157,18 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("''.lastIndexOf(undefined)"),
       njs_str("-1") },
 
+    { njs_str("'abc'.safeEquals('abc')"),
+      njs_str("0") },
+
+    { njs_str("'cba'.safeEquals('abc')"),
+      njs_str("2") },
+
+    { njs_str("'abcdef'.safeEquals('abc')"),
+      njs_str("-1") },
+
+    { njs_str("'abcdef'.safeEquals('')"),
+      njs_str("-1") },
+
     { njs_str("'β'.repeat(32).lastIndexOf('β')"),
       njs_str("31") },
 
