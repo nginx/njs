@@ -11323,7 +11323,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("18:45:00 GMT+0000") },
 
     { njs_str("var d = new Date(2011, 5, 24, 18, 45); d.toUTCString()"),
-      njs_str("Fri Jun 24 2011 18:45:00 GMT") },
+      njs_str("Fri, 24 Jun 2011 18:45:00 GMT") },
 
     { njs_str("var d = new Date(2011, 5, 24, 18, 45, 12, 625);"
                  "d.toISOString()"),
@@ -14074,7 +14074,7 @@ static njs_unit_test_t  njs_tz_test[] =
        njs_str("18:45:00 GMT+1245") },
 
      { njs_str("var d = new Date(2011, 5, 24, 18, 45); d.toUTCString()"),
-       njs_str("Fri Jun 24 2011 06:00:00 GMT") },
+       njs_str("Fri, 24 Jun 2011 06:00:00 GMT") },
 
      { njs_str("var d = new Date(2011, 5, 24, 18, 45, 12, 625);"
                   "d.toISOString()"),

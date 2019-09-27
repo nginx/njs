@@ -14,7 +14,9 @@
  *   FreeBSD and MacOSX timegm() cannot handle years before 1900.
  */
 
-#define NJS_ISO_DATE_TIME_LEN  sizeof("+001970-09-28T12:00:00.000Z")
+#define NJS_ISO_DATE_TIME_LEN   sizeof("+001970-09-28T12:00:00.000Z")
+
+#define NJS_HTTP_DATE_TIME_LEN  sizeof("Mon, 28 Sep 1970 12:00:00 GMT")
 
 #define NJS_DATE_TIME_LEN                                                     \
     sizeof("Mon Sep 28 1970 12:00:00 GMT+0600 (XXXXX)")
@@ -1009,7 +1011,7 @@ njs_date_prototype_to_utc_string(njs_vm_t *vm, njs_value_t *args,
 {
     double             time;
     time_t             clock;
-    u_char             buf[NJS_DATE_TIME_LEN], *p;
+    u_char             buf[NJS_HTTP_DATE_TIME_LEN], *p;
     struct tm          tm;
 
     static const char  *week[] = { "Sun", "Mon", "Tue", "Wed",
@@ -1024,9 +1026,9 @@ njs_date_prototype_to_utc_string(njs_vm_t *vm, njs_value_t *args,
         clock = time / 1000;
         gmtime_r(&clock, &tm);
 
-        p = njs_sprintf(buf, buf + NJS_DATE_TIME_LEN,
-                        "%s %s %02d %4d %02d:%02d:%02d GMT",
-                        week[tm.tm_wday], month[tm.tm_mon], tm.tm_mday,
+        p = njs_sprintf(buf, buf + NJS_HTTP_DATE_TIME_LEN,
+                        "%s, %02d %s %4d %02d:%02d:%02d GMT",
+                        week[tm.tm_wday], tm.tm_mday, month[tm.tm_mon],
                         tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
         return njs_string_new(vm, &vm->retval, buf, p - buf, p - buf);
