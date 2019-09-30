@@ -4799,6 +4799,16 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Array.prototype.map.call('abcdef', (val, idx, obj) => {return val === 100})"),
       njs_str("false,false,false,false,false,false") },
 
+    { njs_str("function callbackfn(val, idx, obj) {return idx === 1 && typeof val === 'undefined';}"
+              "var obj = {2: 2, length: 10};"
+              "var res = Array.prototype.map.call(obj, callbackfn); typeof res[7]"),
+      njs_str("undefined") },
+
+    { njs_str("function callbackfn(val, idx, obj) {return idx === 1 && typeof val === 'undefined';}"
+              "var obj = {2: 2, length: 9000};"
+              "var res = Array.prototype.map.call(obj, callbackfn); typeof res[8000]"),
+      njs_str("undefined") },
+
     { njs_str("var a = [];"
                  "a.reduce(function(p, v, i, a) { return p + v })"),
       njs_str("TypeError: Reduce of empty object with no initial value") },
