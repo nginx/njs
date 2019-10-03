@@ -53,6 +53,40 @@ njs_round(char *start, size_t length, uint64_t delta, uint64_t rest,
 }
 
 
+njs_inline void
+njs_round_prec(char *start, size_t length, uint64_t rest, uint64_t ten_kappa,
+    uint64_t unit, int *kappa)
+{
+    njs_int_t  i;
+
+    if (unit >= ten_kappa || ten_kappa - unit <= unit) {
+        return;
+    }
+
+    if ((ten_kappa - rest > rest) && (ten_kappa - 2 * rest >= 2 * unit)) {
+        return;
+    }
+
+    if ((rest > unit) && (ten_kappa - (rest - unit) <= (rest - unit))) {
+        start[length - 1]++;
+
+        for (i = length - 1; i > 0; --i) {
+            if (start[i] != '0' + 10) {
+                break;
+            }
+
+            start[i] = '0';
+            start[i - 1]++;
+        }
+
+        if (start[0] == '0' + 10) {
+            start[0] = '1';
+            *kappa += 1;
+        }
+    }
+}
+
+
 njs_inline int
 njs_dec_count(uint32_t n)
 {
@@ -170,6 +204,79 @@ njs_digit_gen(njs_diyfp_t v, njs_diyfp_t high, uint64_t delta, char *start,
 }
 
 
+njs_inline size_t
+njs_digit_gen_prec(njs_diyfp_t v, size_t prec, char *start, int *dec_exp)
+{
+    int          kappa;
+    char         *p;
+    uint32_t     integer, divisor;
+    uint64_t     fraction, rest, error;
+    njs_diyfp_t  one;
+
+    static const uint64_t pow10[] = {
+        1,
+        10,
+        100,
+        1000,
+        10000,
+        100000,
+        1000000,
+        10000000,
+        100000000,
+        1000000000
+    };
+
+    one = njs_diyfp((uint64_t) 1 << -v.exp, v.exp);
+    integer = (uint32_t) (v.significand >> -one.exp);
+    fraction = v.significand & (one.significand - 1);
+
+    error = 1;
+
+    p = start;
+
+    kappa = njs_dec_count(integer);
+
+    while (kappa > 0) {
+        divisor = pow10[kappa - 1];
+
+        *p++ = '0' + integer / divisor;
+
+        integer %= divisor;
+
+        kappa--;
+        prec--;
+
+        if (prec == 0) {
+            rest = ((uint64_t) integer << -one.exp) + fraction;
+            njs_round_prec(start, p - start, rest, pow10[kappa] << -one.exp,
+                           error, &kappa);
+
+            *dec_exp += kappa;
+            return p - start;
+        }
+    }
+
+    /* kappa = 0. */
+
+    while (prec > 0 && fraction > error) {
+        fraction *= 10;
+        error *= 10;
+
+        *p++ = '0' + (fraction >> -one.exp);
+
+        fraction &= one.significand - 1;
+        kappa--;
+        prec--;
+    }
+
+    njs_round_prec(start, p - start, fraction, one.significand, error, &kappa);
+
+    *dec_exp += kappa;
+
+    return p - start;
+}
+
+
 njs_inline njs_diyfp_t
 njs_diyfp_normalize_boundary(njs_diyfp_t v)
 {
@@ -231,6 +338,27 @@ njs_grisu2(double value, char *start, int *dec_exp)
     return njs_digit_gen(scaled_v, scaled_high,
                          scaled_high.significand - scaled_low.significand,
                          start, dec_exp);
+}
+
+
+njs_inline size_t
+njs_grisu2_prec(double value, char *start, size_t prec, int *point)
+{
+    int          dec_exp;
+    size_t       length;
+    njs_diyfp_t  v, ten_mk, scaled_v;
+
+    v = njs_diyfp_normalize(njs_d2diyfp(value));
+
+    ten_mk = njs_cached_power_bin(v.exp, &dec_exp);
+
+    scaled_v = njs_diyfp_mul(v, ten_mk);
+
+    length = njs_digit_gen_prec(scaled_v, prec, start, &dec_exp);
+
+    *point = length + dec_exp;
+
+    return length;
 }
 
 
@@ -338,6 +466,78 @@ njs_dtoa_format(char *start, size_t len, int dec_exp)
 }
 
 
+njs_inline size_t
+njs_dtoa_prec_format(char *start, size_t prec, size_t len, int point)
+{
+    int     exponent;
+    char    *p;
+    size_t  m, rest, size;
+
+    exponent = point - 1;
+
+    if (exponent < -6 || exponent >= (int) prec) {
+        p = &start[len];
+        if (prec != 1) {
+            memmove(&start[2], &start[1], len - 1);
+            start[1] = '.';
+            p++;
+        }
+
+        njs_memset(p, '0', prec - len);
+        p += prec - len;
+
+        *p++ = 'e';
+
+        size = njs_write_exponent(exponent, p);
+
+        return prec + 1 + (prec != 1) + size;
+    }
+
+    /* Fixed notation. */
+
+    if (point <= 0) {
+        /* 1234e-2 => 0.001234000 */
+
+        memmove(&start[2 + (-point)], start, len);
+        start[0] = '0';
+        start[1] = '.';
+
+        njs_memset(&start[2], '0', -point);
+
+        if (prec > len) {
+            njs_memset(&start[2 + (-point) + len], '0', prec - len);
+        }
+
+        return prec + 2 + (-point);
+    }
+
+    if (point >= (int) len) {
+        /* TODO: (2**96).toPrecision(45) not enough precision, BigInt needed. */
+
+        njs_memset(&start[len], '0', point - len);
+
+        if (point < (int) prec) {
+            start[point] = '.';
+
+            njs_memset(&start[point + 1], '0', prec - len);
+        }
+
+    } else if (point < (int) prec) {
+        /* 123456 -> 123.45600 */
+
+        m = njs_min((int) len, point);
+        rest = njs_min(len, prec) - m;
+        memmove(&start[m + 1], &start[m], rest);
+
+        start[m] = '.';
+
+        njs_memset(&start[m + rest + 1], '0', prec - m - rest);
+    }
+
+    return prec + (point < (int) prec);
+}
+
+
 size_t
 njs_dtoa(double value, char *start)
 {
@@ -365,4 +565,39 @@ njs_dtoa(double value, char *start)
     length = njs_grisu2(value, p, &dec_exp);
 
     return njs_dtoa_format(p, length, dec_exp) + minus;
+}
+
+
+/*
+ * TODO: For prec > 16 result maybe rounded. To support prec > 16 Bignum
+ * support is requred.
+ */
+size_t
+njs_dtoa_precision(double value, char *start, size_t prec)
+{
+    int     point, minus;
+    char    *p;
+    size_t  length;
+
+    /* Not handling NaN and inf. */
+
+    p = start;
+    minus = 0;
+
+    if (value != 0) {
+        if (value < 0) {
+            *p++ = '-';
+            value = -value;
+            minus = 1;
+        }
+
+        length = njs_grisu2_prec(value, p, prec, &point);
+
+    } else {
+        start[0] = '0';
+        length = 1;
+        point = 1;
+    }
+
+    return njs_dtoa_prec_format(p, prec, length, point) + minus;
 }

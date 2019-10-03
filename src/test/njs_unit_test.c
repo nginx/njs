@@ -525,6 +525,91 @@ static njs_unit_test_t  njs_test[] =
       njs_str("0.0000000000000000000000000000007888609052210118054117285652827862296732064351090230047702789306640625") },
 #endif
 
+    /* Number.prototype.toPrecision(prec) method. */
+
+    { njs_str("Array(4).fill().map((n, i) => i+1).map((v)=>(1/7).toPrecision(v))"),
+      njs_str("0.1,0.14,0.143,0.1429") },
+
+    { njs_str("Array(4).fill().map((n, i) => i+1).map((v)=>(0).toPrecision(v))"),
+      njs_str("0,0.0,0.00,0.000") },
+
+    { njs_str("Array(4).fill().map((n, i) => i+1).map((v)=>(1/2).toPrecision(v))"),
+      njs_str("0.5,0.50,0.500,0.5000") },
+
+    { njs_str("Array(6).fill().map((n, i) => i+2).map((v)=>(1/v).toPrecision(5))"),
+      njs_str("0.50000,0.33333,0.25000,0.20000,0.16667,0.14286") },
+
+    { njs_str("Array(6).fill().map((n, i) => i+2).map((v)=>(1/(v*100)).toPrecision(5))"),
+      njs_str("0.0050000,0.0033333,0.0025000,0.0020000,0.0016667,0.0014286") },
+
+    { njs_str("Array(6).fill().map((n, i) => i+1).map((v)=>(10*v/7).toPrecision(5))"),
+      njs_str("1.4286,2.8571,4.2857,5.7143,7.1429,8.5714") },
+
+    { njs_str("Array(6).fill().map((n, i) => i+1).map((v)=>(v/3).toPrecision(5))"),
+      njs_str("0.33333,0.66667,1.0000,1.3333,1.6667,2.0000") },
+
+    { njs_str("Array(6).fill().map((n, i) => i+1).map((v)=>((Math.pow(-1,v))*(2*v)/3).toPrecision(5))"),
+      njs_str("-0.66667,1.3333,-2.0000,2.6667,-3.3333,4.0000") },
+
+    { njs_str("Array(12).fill().map((n, i) => i-3).map((v)=>(2**v).toPrecision(6))"),
+      njs_str("0.125000,0.250000,0.500000,1.00000,2.00000,4.00000,8.00000,16.0000,32.0000,64.0000,128.000,256.000") },
+
+    { njs_str("Array(5).fill().map((n, i) => i+16).map((v)=>(4.1).toPrecision(v))"),
+      njs_str("4.100000000000000,4.0999999999999996,4.09999999999999964,4.099999999999999644,4.0999999999999996447") },
+
+    { njs_str("Array(3).fill().map((n, i) => i + 19).map((v)=>(2**(-v)).toPrecision(20))"),
+      njs_str("0.0000019073486328125000000,9.5367431640625000000e-7,4.7683715820312500000e-7") },
+
+    { njs_str("Array(3).fill().map((n, i) => i + 32).map((v)=>(2**(v)+0.1).toPrecision(10))"),
+      njs_str("4294967296,8589934592,1.717986918e+10") },
+
+#if 0  /* FIXME: bignum support is requred to support prec >= 20 */
+    { njs_str("(1/7).toPrecision(100)"),
+      njs_str("0.1428571428571428492126926812488818541169166564941406250000000000000000000000000000000000000000000000") },
+
+    { njs_str("(2**128).toPrecision(40)"),
+      njs_str("340282366920938463463374607431768211456.0") },
+#endif
+
+    { njs_str("(2**128).toPrecision(1)"),
+      njs_str("3e+38") },
+
+    { njs_str("(2**128).toPrecision(2)"),
+      njs_str("3.4e+38") },
+
+    { njs_str("(2**128).toPrecision(40)"),
+      njs_str("340282366920938463490000000000000000000.0") },
+
+    { njs_str("(123).toPrecision(0)"),
+      njs_str("RangeError: precision argument must be between 1 and 100") },
+
+    { njs_str("(123).toPrecision(2.4)"),
+      njs_str("1.2e+2") },
+
+    { njs_str("(123).toPrecision(101)"),
+      njs_str("RangeError: precision argument must be between 1 and 100") },
+
+    { njs_str("(2**10000).toPrecision()"),
+      njs_str("Infinity") },
+
+    { njs_str("(-(2**10000)).toPrecision()"),
+      njs_str("-Infinity") },
+
+    { njs_str("(-0).toPrecision(2)"),
+      njs_str("0.0") },
+
+    { njs_str("NaN.toPrecision()"),
+      njs_str("NaN") },
+
+    { njs_str("NaN.toPrecision(0)"),
+      njs_str("NaN") },
+
+    { njs_str("(10**22).toPrecision()"),
+      njs_str("1e+22") },
+
+    { njs_str("Number.prototype.toPrecision.call('12')"),
+      njs_str("TypeError: unexpected value type:string") },
+
     { njs_str("(1000000000000000128).toString()"),
       njs_str("1000000000000000100") },
 

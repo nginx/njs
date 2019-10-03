@@ -637,6 +637,53 @@ njs_number_prototype_to_fixed(njs_vm_t *vm, njs_value_t *args,
 }
 
 
+static njs_int_t
+njs_number_prototype_to_precision(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused)
+{
+    double       number;
+    size_t       size;
+    int32_t      precision;
+    njs_value_t  *value;
+    u_char       buf[128];
+
+    /* 128 > 100 + 21 + njs_length(".-\0"). */
+
+    value = &args[0];
+
+    if (value->type != NJS_NUMBER) {
+        if (value->type == NJS_OBJECT_NUMBER) {
+            value = njs_object_value(value);
+
+        } else {
+            njs_type_error(vm, "unexpected value type:%s",
+                           njs_type_string(value->type));
+            return NJS_ERROR;
+        }
+    }
+
+    if (njs_is_undefined(njs_arg(args, nargs, 1))) {
+        return njs_number_to_string(vm, &vm->retval, value);
+    }
+
+    number = njs_number(value);
+
+    if (njs_slow_path(isnan(number) || isinf(number))) {
+        return njs_number_to_string(vm, &vm->retval, value);
+    }
+
+    precision = njs_primitive_value_to_integer(njs_argument(args, 1));
+    if (njs_slow_path(precision < 1 || precision > 100)) {
+        njs_range_error(vm, "precision argument must be between 1 and 100");
+        return NJS_ERROR;
+    }
+
+    size = njs_dtoa_precision(number, (char *) buf, precision);
+
+    return njs_string_new(vm, &vm->retval, buf, size, size);
+}
+
+
 /*
  * The radix equal to 2 produces the longest  value for a number.
  */
@@ -798,6 +845,15 @@ static const njs_object_prop_t  njs_number_prototype_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("toFixed"),
         .value = njs_native_function(njs_number_prototype_to_fixed,
+                                     NJS_SKIP_ARG, NJS_INTEGER_ARG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("toPrecision"),
+        .value = njs_native_function(njs_number_prototype_to_precision,
                                      NJS_SKIP_ARG, NJS_INTEGER_ARG),
         .writable = 1,
         .configurable = 1,
