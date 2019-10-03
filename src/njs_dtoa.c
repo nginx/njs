@@ -40,14 +40,14 @@
 
 
 njs_inline void
-njs_grisu2_round(char *start, size_t len, uint64_t delta, uint64_t rest,
-    uint64_t ten_kappa, uint64_t wp_w)
+njs_round(char *start, size_t length, uint64_t delta, uint64_t rest,
+    uint64_t ten_kappa, uint64_t margin)
 {
-    while (rest < wp_w && delta - rest >= ten_kappa
-           && (rest + ten_kappa < wp_w ||  /* closer */
-               wp_w - rest > rest + ten_kappa - wp_w))
+    while (rest < margin && delta - rest >= ten_kappa
+           && (rest + ten_kappa < margin ||  /* closer */
+               margin - rest > rest + ten_kappa - margin))
     {
-        start[len - 1]--;
+        start[length - 1]--;
         rest += ten_kappa;
     }
 }
@@ -81,14 +81,14 @@ njs_dec_count(uint32_t n)
 
 
 njs_inline size_t
-njs_grisu2_gen(njs_diyfp_t W, njs_diyfp_t Mp, uint64_t delta, char *start,
+njs_digit_gen(njs_diyfp_t v, njs_diyfp_t high, uint64_t delta, char *start,
     int *dec_exp)
 {
     int          kappa;
-    char         c, *p;
-    uint32_t     p1, d;
-    uint64_t     p2, tmp;
-    njs_diyfp_t  one, wp_w;
+    char         *p;
+    uint32_t     integer, d;
+    uint64_t     fraction, rest, margin;
+    njs_diyfp_t  one;
 
     static const uint64_t pow10[] = {
         1,
@@ -103,34 +103,29 @@ njs_grisu2_gen(njs_diyfp_t W, njs_diyfp_t Mp, uint64_t delta, char *start,
         1000000000
     };
 
-    wp_w = njs_diyfp_sub(Mp, W);
+    one = njs_diyfp((uint64_t) 1 << -high.exp, high.exp);
+    integer = (uint32_t) (high.significand >> -one.exp);
+    fraction = high.significand & (one.significand - 1);
 
-    one = njs_diyfp((uint64_t) 1 << -Mp.exp, Mp.exp);
-    p1 = (uint32_t) (Mp.significand >> -one.exp);
-    p2 = Mp.significand & (one.significand - 1);
+    margin = njs_diyfp_sub(high, v).significand;
 
     p = start;
 
-    /* GCC 4.2 complains about uninitialized d. */
-    d = 0;
-
-    kappa = njs_dec_count(p1);
+    kappa = njs_dec_count(integer);
 
     while (kappa > 0) {
 
         switch (kappa) {
-            case 10: d = p1 / 1000000000; p1 %= 1000000000; break;
-            case  9: d = p1 /  100000000; p1 %=  100000000; break;
-            case  8: d = p1 /   10000000; p1 %=   10000000; break;
-            case  7: d = p1 /    1000000; p1 %=    1000000; break;
-            case  6: d = p1 /     100000; p1 %=     100000; break;
-            case  5: d = p1 /      10000; p1 %=      10000; break;
-            case  4: d = p1 /       1000; p1 %=       1000; break;
-            case  3: d = p1 /        100; p1 %=        100; break;
-            case  2: d = p1 /         10; p1 %=         10; break;
-            case  1: d = p1;              p1 =           0; break;
-            default:
-                njs_unreachable();
+        case 10: d = integer / 1000000000; integer %= 1000000000; break;
+        case  9: d = integer /  100000000; integer %=  100000000; break;
+        case  8: d = integer /   10000000; integer %=   10000000; break;
+        case  7: d = integer /    1000000; integer %=    1000000; break;
+        case  6: d = integer /     100000; integer %=     100000; break;
+        case  5: d = integer /      10000; integer %=      10000; break;
+        case  4: d = integer /       1000; integer %=       1000; break;
+        case  3: d = integer /        100; integer %=        100; break;
+        case  2: d = integer /         10; integer %=         10; break;
+        default: d = integer;              integer =           0; break;
         }
 
         if (d != 0 || p != start) {
@@ -139,12 +134,12 @@ njs_grisu2_gen(njs_diyfp_t W, njs_diyfp_t Mp, uint64_t delta, char *start,
 
         kappa--;
 
-        tmp = ((uint64_t) p1 << -one.exp) + p2;
+        rest = ((uint64_t) integer << -one.exp) + fraction;
 
-        if (tmp <= delta) {
+        if (rest < delta) {
             *dec_exp += kappa;
-            njs_grisu2_round(start, p - start, delta, tmp,
-                             pow10[kappa] << -one.exp, wp_w.significand);
+            njs_round(start, p - start, delta, rest, pow10[kappa] << -one.exp,
+                      margin);
             return p - start;
         }
     }
@@ -152,27 +147,26 @@ njs_grisu2_gen(njs_diyfp_t W, njs_diyfp_t Mp, uint64_t delta, char *start,
     /* kappa = 0. */
 
     for ( ;; ) {
-        p2 *= 10;
+        fraction *= 10;
         delta *= 10;
-        c = (char) (p2 >> -one.exp);
 
-        if (c != 0 || p != start) {
-            *p++ = '0' + c;
+        d = (uint32_t) (fraction >> -one.exp);
+
+        if (d != 0 || p != start) {
+            *p++ = '0' + d;
         }
 
-        p2 &= one.significand - 1;
+        fraction &= one.significand - 1;
         kappa--;
 
-        if (p2 < delta) {
+        if (fraction < delta) {
             *dec_exp += kappa;
-            tmp = (-kappa < 10) ? pow10[-kappa] : 0;
-            njs_grisu2_round(start, p - start, delta, p2, one.significand,
-                             wp_w.significand * tmp);
-            break;
+            margin *= (-kappa < 10) ? pow10[-kappa] : 0;
+            njs_round(start, p - start, delta, fraction, one.significand,
+                      margin);
+            return p - start;
         }
     }
-
-    return p - start;
 }
 
 
@@ -212,26 +206,31 @@ njs_diyfp_normalize_boundaries(njs_diyfp_t v, njs_diyfp_t* minus,
 }
 
 
+/*
+ * Grisu2 produces optimal (shortest) decimal representation for 99.8%
+ * of IEEE doubles. For remaining 0.2% bignum algorithm like Dragon4 is requred.
+ */
 njs_inline size_t
 njs_grisu2(double value, char *start, int *dec_exp)
 {
-    njs_diyfp_t  v, w_m, w_p, c_mk, W, Wp, Wm;
+    njs_diyfp_t  v, low, high, ten_mk, scaled_v, scaled_low, scaled_high;
 
     v = njs_d2diyfp(value);
 
-    njs_diyfp_normalize_boundaries(v, &w_m, &w_p);
+    njs_diyfp_normalize_boundaries(v, &low, &high);
 
-    c_mk = njs_cached_power_bin(w_p.exp, dec_exp);
-    W = njs_diyfp_mul(njs_diyfp_normalize(v), c_mk);
+    ten_mk = njs_cached_power_bin(high.exp, dec_exp);
 
-    Wp = njs_diyfp_mul(w_p, c_mk);
-    Wm = njs_diyfp_mul(w_m, c_mk);
+    scaled_v = njs_diyfp_mul(njs_diyfp_normalize(v), ten_mk);
+    scaled_low = njs_diyfp_mul(low, ten_mk);
+    scaled_high = njs_diyfp_mul(high, ten_mk);
 
-    Wm.significand++;
-    Wp.significand--;
+    scaled_low.significand++;
+    scaled_high.significand--;
 
-   return njs_grisu2_gen(W, Wp, Wp.significand - Wm.significand, start,
-                         dec_exp);
+    return njs_digit_gen(scaled_v, scaled_high,
+                         scaled_high.significand - scaled_low.significand,
+                         start, dec_exp);
 }
 
 
@@ -239,7 +238,7 @@ njs_inline size_t
 njs_write_exponent(int exp, char *start)
 {
     char      *p;
-    size_t    len;
+    size_t    length;
     uint32_t  u32;
     char      buf[4];
 
@@ -261,16 +260,16 @@ njs_write_exponent(int exp, char *start)
         u32 /= 10;
     } while (u32 != 0);
 
-    len = buf + njs_length(buf) - p;
+    length = buf + njs_length(buf) - p;
 
-    memcpy(start, p, len);
+    memcpy(start, p, length);
 
-    return len + 1;
+    return length + 1;
 }
 
 
 njs_inline size_t
-njs_prettify(char *start, size_t len, int dec_exp)
+njs_dtoa_format(char *start, size_t len, int dec_exp)
 {
     int     kk, offset, length;
     size_t  size;
@@ -365,7 +364,5 @@ njs_dtoa(double value, char *start)
 
     length = njs_grisu2(value, p, &dec_exp);
 
-    length = njs_prettify(p, length, dec_exp);
-
-    return minus + length;
+    return njs_dtoa_format(p, length, dec_exp) + minus;
 }
