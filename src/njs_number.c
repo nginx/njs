@@ -6,6 +6,7 @@
 
 
 #include <njs_main.h>
+#include <njs_diyfp.h>
 
 
 /*
@@ -637,30 +638,52 @@ njs_number_prototype_to_fixed(njs_vm_t *vm, njs_value_t *args,
 
 
 /*
- * The radix equal to 2 produces the longest intergral value of a number
- * and the maximum value consists of 1024 digits and minus sign.
+ * The radix equal to 2 produces the longest  value for a number.
  */
 
 #define NJS_STRING_RADIX_INTERGRAL_LEN  (1 + 1024)
-#define NJS_STRING_RADIX_FRACTION_LEN   (1 + 54)
+#define NJS_STRING_RADIX_FRACTION_LEN   (1 + 1075)
 #define NJS_STRING_RADIX_LEN                                                  \
     (NJS_STRING_RADIX_INTERGRAL_LEN + NJS_STRING_RADIX_FRACTION_LEN)
+
+
+njs_inline double
+njs_number_next_double(double n)
+{
+    njs_diyfp_t  v;
+
+    v = njs_d2diyfp(n);
+
+    if (signbit(n)) {
+        if (v.significand == 0) {
+            return 0.0;
+        }
+
+        v.significand--;
+
+    } else {
+        v.significand++;
+    }
+
+    return njs_diyfp2d(v);
+}
 
 
 static njs_int_t
 njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
     double number, uint32_t radix)
 {
-    u_char   *p, *f, *end;
-    double   n, next;
-    size_t   size;
-    uint8_t  reminder;
-    u_char   buf[NJS_STRING_RADIX_LEN];
+    int       digit;
+    char      ch;
+    double    n, remainder, integer, fraction, delta;
+    u_char    *p, *end;
+    uint32_t  size;
+    u_char    buf[NJS_STRING_RADIX_LEN];
 
     static const char  *digits = "0123456789abcdefghijklmnopqrstuvwxyz";
 
-    end = buf + NJS_STRING_RADIX_LEN;
     p = buf + NJS_STRING_RADIX_INTERGRAL_LEN;
+    end = p;
 
     n = number;
 
@@ -668,35 +691,69 @@ njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
         n = -n;
     }
 
+    integer = floor(n);
+    fraction = n - integer;
+
+    delta = 0.5 * (njs_number_next_double(n) - n);
+    delta = njs_max(njs_number_next_double(0.0), delta);
+
+    if (fraction >= delta) {
+        *p++ = '.';
+
+        do {
+            fraction *= radix;
+            delta *= radix;
+
+            digit = (int) fraction;
+            *p++ = digits[digit];
+
+            fraction -= digit;
+
+            if ((fraction > 0.5 || (fraction == 0.5 && (digit & 1)))
+                && (fraction + delta > 1))
+            {
+                while (p-- != buf) {
+                    if (p == buf + NJS_STRING_RADIX_INTERGRAL_LEN) {
+                        integer += 1;
+                        break;
+                    }
+
+                    ch = *p;
+                    digit = (ch > '9') ? ch - 'a' + 10 : ch - '0';
+
+                    if ((uint32_t) (digit + 1) < radix) {
+                        *p++ = digits[digit + 1];
+                        break;
+                    }
+                }
+
+                break;
+            }
+
+        } while (fraction >= delta);
+
+        end = p;
+    }
+
+    p = buf + NJS_STRING_RADIX_INTERGRAL_LEN;
+
+    while (njs_d2diyfp(integer / radix).exp > 0) {
+        integer /= radix;
+        *(--p) = '0';
+    }
+
     do {
-        next = trunc(n / radix);
-        reminder = n - next * radix;
-        *(--p) = digits[reminder];
-        n = next;
-    } while (n != 0);
+        remainder = fmod(integer, radix);
+        *(--p) = digits[(int) remainder];
+        integer = (integer - remainder) / radix;
 
-    n = number;
+    } while (integer > 0);
 
-    if (n < 0) {
+    if (number < 0) {
         *(--p) = '-';
     }
 
-    f = buf + NJS_STRING_RADIX_INTERGRAL_LEN;
-
-    n = n - trunc(n);
-
-    if (n != 0) {
-        *f++ = '.';
-
-        do {
-            n = n * radix;
-            reminder = trunc(n);
-            *f++ = digits[reminder];
-            n = n - reminder;
-        } while (n != 0 && f < end);
-    }
-
-    size = f - p;
+    size = (uint32_t) (end - p);
 
     return njs_string_new(vm, string, p, size, size);
 }

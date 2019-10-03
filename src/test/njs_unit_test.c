@@ -361,8 +361,10 @@ static njs_unit_test_t  njs_test[] =
 
     /* Number.toString(radix) method. */
 
+#ifndef NJS_SUNC
     { njs_str("0..toString(2)"),
       njs_str("0") },
+#endif
 
     { njs_str("240..toString(2)"),
       njs_str("11110000") },
@@ -426,6 +428,41 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("NaN.toString(NaN)"),
       njs_str("RangeError") },
+
+    { njs_str("1.2312313132.toString(14)"),
+      njs_str("1.3346da6d5d455c") },
+
+    { njs_str("7.799999999999999.toString(14)"),
+      njs_str("7.b2b2b2b2b2b2a5") },
+
+#ifndef NJS_SUNC
+    { njs_str("1e20.toString(14)"),
+      njs_str("33cb3bb449c2a92000") },
+
+    /* Smallest positive double (next_double(0)). */
+    { njs_str("4.94065645841246544176568792868E-324.toString(36) == ('0.' + '0'.repeat(207) +'3')"),
+      njs_str("true") },
+
+    { njs_str("1.7976931348623157E+308.toString(36) == ('1a1e4vngaiqo' + '0'.repeat(187))"),
+      njs_str("true") },
+
+    /* Largest positive double (prev_double(INFINITY)). */
+    { njs_str("1.7976931348623157E+308.toString(2) == ('1'.repeat(53) + '0'.repeat(971))"),
+      njs_str("true") },
+
+    /* Maximum fraction length. */
+    { njs_str("2.2250738585072014E-323.toString(2) == ('0.' + '0'.repeat(1071) + '101')"),
+      njs_str("true") },
+
+    { njs_str("2.2250738585072014E-308.toString(2) == ('0.' + '0'.repeat(1021) + '1')"),
+      njs_str("true") },
+
+    { njs_str("Array(5).fill().map((n, i) => i + 10).map((v)=>(1.2312313132).toString(v))"),
+      njs_str("1.2312313132,1.25a850416057383,1.293699002749414,1.3010274cab0288,1.3346da6d5d455c") },
+
+    { njs_str("Array(5).fill().map((n, i) => 36 - i).map((v)=>(1e23).toString(v))"),
+      njs_str("ga894a06abs0000,o5hlsorok4y0000,128fpsprqld20000,1m1s0ajv6cmo0000,2kmg5hv19br00000") },
+#endif
 
     /* Number.prototype.toFixed(frac) method. */
 
