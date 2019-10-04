@@ -21,7 +21,7 @@ njs_arr_create(njs_mp_t *mp, njs_uint_t n, size_t size)
     arr->start = (char *) arr + sizeof(njs_arr_t);
     arr->items = 0;
     arr->item_size = size;
-    arr->avalaible = n;
+    arr->available = n;
     arr->pointer = 1;
     arr->separate = 1;
     arr->mem_pool = mp;
@@ -37,7 +37,7 @@ njs_arr_init(njs_mp_t *mp, njs_arr_t *arr, void *start, njs_uint_t n,
     arr->start = start;
     arr->items = n;
     arr->item_size = size;
-    arr->avalaible = n;
+    arr->available = n;
     arr->pointer = 0;
     arr->separate = 0;
     arr->mem_pool = mp;
@@ -61,7 +61,7 @@ njs_arr_destroy(njs_arr_t *arr)
 #if (NJS_DEBUG)
         arr->start = NULL;
         arr->items = 0;
-        arr->avalaible = 0;
+        arr->available = 0;
 #endif
     }
 
@@ -84,7 +84,7 @@ njs_arr_add_multiple(njs_arr_t *arr, njs_uint_t items)
     void      *item, *start, *old;
     uint32_t  n;
 
-    n = arr->avalaible;
+    n = arr->available;
     items += arr->items;
 
     if (items >= n) {
@@ -107,7 +107,7 @@ njs_arr_add_multiple(njs_arr_t *arr, njs_uint_t items)
             return NULL;
         }
 
-        arr->avalaible = n;
+        arr->available = n;
         old = arr->start;
         arr->start = start;
 

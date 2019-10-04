@@ -15,7 +15,7 @@ typedef struct {
      * The item size is no more than 64K.
      */
     uint16_t          items;
-    uint16_t          avalaible;
+    uint16_t          available;
     uint16_t          item_size;
 
     uint8_t           pointer;
