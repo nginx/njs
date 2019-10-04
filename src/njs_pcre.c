@@ -111,6 +111,17 @@ njs_regex_compile(njs_regex_t *regex, u_char *source, size_t len,
         goto done;
     }
 
+    err = pcre_fullinfo(regex->code, NULL, PCRE_INFO_BACKREFMAX,
+                        &regex->backrefmax);
+
+    if (njs_slow_path(err < 0)) {
+        njs_alert(ctx->trace, NJS_LEVEL_ERROR,
+                  "pcre_fullinfo(\"%s\", PCRE_INFO_BACKREFMAX) failed: %d",
+                  pattern, err);
+
+        goto done;
+    }
+
     /* Reserve additional elements for the first "$0" capture. */
     regex->ncaptures++;
 
@@ -172,6 +183,13 @@ njs_uint_t
 njs_regex_ncaptures(njs_regex_t *regex)
 {
     return regex->ncaptures;
+}
+
+
+njs_uint_t
+njs_regex_backrefs(njs_regex_t *regex)
+{
+    return regex->backrefmax;
 }
 
 

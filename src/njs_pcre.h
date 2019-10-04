@@ -18,6 +18,7 @@ struct njs_regex_s {
     pcre        *code;
     pcre_extra  *extra;
     int         ncaptures;
+    int         backrefmax;
     int         nentries;
     int         entry_size;
     char        *entries;

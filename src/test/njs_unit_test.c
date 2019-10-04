@@ -8178,6 +8178,10 @@ static njs_unit_test_t  njs_test[] =
       njs_str("true") },
 #endif
 
+    { njs_str("var re = /<(?<key>[\\w\\-\\.\\:]+)>(?<body>.*?)<\\/\\1>/g;"
+              "['<A>XXX</A>', '<A>XX</B>'].map(s=>re.test(s))"),
+      njs_str("true,false") },
+
     { njs_str("/\\x80/.test('\\u0080')"),
       njs_str("true") },
 
