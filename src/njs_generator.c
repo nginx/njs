@@ -513,7 +513,7 @@ njs_generator(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
 {
     njs_int_t  ret;
 
-    if (njs_slow_path(generator->count++ > 1024)) {
+    if (njs_slow_path(generator->count++ > 4096)) {
         njs_range_error(vm, "Maximum call stack size exceeded");
         return NJS_ERROR;
     }

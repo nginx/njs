@@ -116,7 +116,7 @@ void njs_parser_node_error(njs_vm_t *vm, njs_parser_node_t *node,
 
 #define njs_parser_enter(vm, parser)                                          \
     do {                                                                      \
-        if (njs_slow_path((parser)->count++ > 1024)) {                        \
+        if (njs_slow_path((parser)->count++ > 4096)) {                        \
             njs_range_error(vm, "Maximum call stack size exceeded");          \
             return NJS_TOKEN_ERROR;                                           \
         }                                                                     \
