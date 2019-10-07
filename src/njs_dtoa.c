@@ -318,15 +318,17 @@ njs_diyfp_normalize_boundaries(njs_diyfp_t v, njs_diyfp_t* minus,
  * of IEEE doubles. For remaining 0.2% bignum algorithm like Dragon4 is requred.
  */
 njs_inline size_t
-njs_grisu2(double value, char *start, int *dec_exp)
+njs_grisu2(double value, char *start, int *point)
 {
+    int          dec_exp;
+    size_t       length;
     njs_diyfp_t  v, low, high, ten_mk, scaled_v, scaled_low, scaled_high;
 
     v = njs_d2diyfp(value);
 
     njs_diyfp_normalize_boundaries(v, &low, &high);
 
-    ten_mk = njs_cached_power_bin(high.exp, dec_exp);
+    ten_mk = njs_cached_power_bin(high.exp, &dec_exp);
 
     scaled_v = njs_diyfp_mul(njs_diyfp_normalize(v), ten_mk);
     scaled_low = njs_diyfp_mul(low, ten_mk);
@@ -335,9 +337,13 @@ njs_grisu2(double value, char *start, int *dec_exp)
     scaled_low.significand++;
     scaled_high.significand--;
 
-    return njs_digit_gen(scaled_v, scaled_high,
+    length = njs_digit_gen(scaled_v, scaled_high,
                          scaled_high.significand - scaled_low.significand,
-                         start, dec_exp);
+                         start, &dec_exp);
+
+    *point = length + dec_exp;
+
+    return length;
 }
 
 
@@ -397,40 +403,39 @@ njs_write_exponent(int exp, char *start)
 
 
 njs_inline size_t
-njs_dtoa_format(char *start, size_t len, int dec_exp)
+njs_dtoa_format(char *start, size_t len, int point)
 {
-    int     kk, offset, length;
+    int     offset, length;
     size_t  size;
 
-    /* 10^(kk-1) <= v < 10^kk */
-
     length = (int) len;
-    kk = length + dec_exp;
 
-    if (length <= kk && kk <= 21) {
+    if (length <= point && point <= 21) {
 
         /* 1234e7 -> 12340000000 */
 
-        if (kk - length > 0) {
-            njs_memset(&start[length], '0', kk - length);
+        if (point - length > 0) {
+            njs_memset(&start[length], '0', point - length);
         }
 
-        return kk;
+        return point;
+    }
 
-    } else if (0 < kk && kk <= 21) {
+    if (0 < point && point <= 21) {
 
         /* 1234e-2 -> 12.34 */
 
-        memmove(&start[kk + 1], &start[kk], length - kk);
-        start[kk] = '.';
+        memmove(&start[point + 1], &start[point], length - point);
+        start[point] = '.';
 
         return length + 1;
+    }
 
-    } else if (-6 < kk && kk <= 0) {
+    if (-6 < point && point <= 0) {
 
         /* 1234e-6 -> 0.001234 */
 
-        offset = 2 - kk;
+        offset = 2 - point;
         memmove(&start[offset], start, length);
 
         start[0] = '0';
@@ -441,26 +446,26 @@ njs_dtoa_format(char *start, size_t len, int dec_exp)
         }
 
         return length + offset;
+    }
 
-    } else if (length == 1) {
+    /* 1234e30 -> 1.234e33 */
+
+    if (length == 1) {
 
         /* 1e30 */
 
         start[1] = 'e';
 
-        size =  njs_write_exponent(kk - 1, &start[2]);
+        size =  njs_write_exponent(point - 1, &start[2]);
 
         return size + 2;
-
     }
-
-    /* 1234e30 -> 1.234e33 */
 
     memmove(&start[2], &start[1], length - 1);
     start[1] = '.';
     start[length + 1] = 'e';
 
-    size = njs_write_exponent(kk - 1, &start[length + 2]);
+    size = njs_write_exponent(point - 1, &start[length + 2]);
 
     return size + length + 2;
 }
@@ -496,6 +501,7 @@ njs_dtoa_prec_format(char *start, size_t prec, size_t len, int point)
     /* Fixed notation. */
 
     if (point <= 0) {
+
         /* 1234e-2 => 0.001234000 */
 
         memmove(&start[2 + (-point)], start, len);
@@ -512,6 +518,7 @@ njs_dtoa_prec_format(char *start, size_t prec, size_t len, int point)
     }
 
     if (point >= (int) len) {
+
         /* TODO: (2**96).toPrecision(45) not enough precision, BigInt needed. */
 
         njs_memset(&start[len], '0', point - len);
@@ -523,6 +530,7 @@ njs_dtoa_prec_format(char *start, size_t prec, size_t len, int point)
         }
 
     } else if (point < (int) prec) {
+
         /* 123456 -> 123.45600 */
 
         m = njs_min((int) len, point);
@@ -541,7 +549,7 @@ njs_dtoa_prec_format(char *start, size_t prec, size_t len, int point)
 size_t
 njs_dtoa(double value, char *start)
 {
-    int     dec_exp, minus;
+    int     point, minus;
     char    *p;
     size_t  length;
 
@@ -562,9 +570,9 @@ njs_dtoa(double value, char *start)
         minus = 1;
     }
 
-    length = njs_grisu2(value, p, &dec_exp);
+    length = njs_grisu2(value, p, &point);
 
-    return njs_dtoa_format(p, length, dec_exp) + minus;
+    return njs_dtoa_format(p, length, point) + minus;
 }
 
 
