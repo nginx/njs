@@ -684,6 +684,52 @@ njs_number_prototype_to_precision(njs_vm_t *vm, njs_value_t *args,
 }
 
 
+static njs_int_t
+njs_number_prototype_to_exponential(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused)
+{
+    double       number;
+    size_t       size;
+    int32_t      frac;
+    njs_value_t  *value;
+    u_char       buf[128];
+
+    value = &args[0];
+
+    if (value->type != NJS_NUMBER) {
+        if (value->type == NJS_OBJECT_NUMBER) {
+            value = njs_object_value(value);
+
+        } else {
+            njs_type_error(vm, "unexpected value type:%s",
+                           njs_type_string(value->type));
+            return NJS_ERROR;
+        }
+    }
+
+    number = njs_number(value);
+
+    if (njs_slow_path(isnan(number) || isinf(number))) {
+        return njs_number_to_string(vm, &vm->retval, value);
+    }
+
+    if (njs_is_defined(njs_arg(args, nargs, 1))) {
+        frac = njs_primitive_value_to_integer(njs_argument(args, 1));
+        if (njs_slow_path(frac < 0 || frac > 100)) {
+            njs_range_error(vm, "digits argument must be between 0 and 100");
+            return NJS_ERROR;
+        }
+
+    } else {
+        frac = -1;
+    }
+
+    size = njs_dtoa_exponential(number, (char *) buf, frac);
+
+    return njs_string_new(vm, &vm->retval, buf, size, size);
+}
+
+
 /*
  * The radix equal to 2 produces the longest  value for a number.
  */
@@ -854,6 +900,15 @@ static const njs_object_prop_t  njs_number_prototype_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("toPrecision"),
         .value = njs_native_function(njs_number_prototype_to_precision,
+                                     NJS_SKIP_ARG, NJS_INTEGER_ARG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("toExponential"),
+        .value = njs_native_function(njs_number_prototype_to_exponential,
                                      NJS_SKIP_ARG, NJS_INTEGER_ARG),
         .writable = 1,
         .configurable = 1,

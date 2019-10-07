@@ -628,6 +628,54 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("(0).toFixed(101)"),
       njs_str("RangeError: digits argument must be between 0 and 100") },
 
+    /* Number.prototype.toExponential(frac) method. */
+
+    { njs_str("Array(3).fill().map((n, i) => i + 1).map((v)=>(0).toExponential(v))"),
+      njs_str("0.0e+0,0.00e+0,0.000e+0") },
+
+    { njs_str("Array(6).fill().map((n, i) => i + 1).map((v)=>((Math.pow(-1,v))*(2*v)/3).toExponential(5))"),
+      njs_str("-6.66667e-1,1.33333e+0,-2.00000e+0,2.66667e+0,-3.33333e+0,4.00000e+0") },
+
+    { njs_str("Array(5).fill().map((n, i) => i + 1).map((v)=>((Math.pow(-1,v))*(2*v)/3).toExponential())"),
+      njs_str("-6.666666666666666e-1,1.3333333333333333e+0,-2e+0,2.6666666666666667e+0,-3.3333333333333337e+0") },
+
+#ifndef NJS_SUNC
+    { njs_str("4.94065645841246544176568792868e-324.toExponential()"),
+      njs_str("5e-324") },
+
+    { njs_str("4.94065645841246544176568792868e-324.toExponential(10)"),
+      njs_str("4.9406564584e-324") },
+#endif
+
+    { njs_str("1.7976931348623157e+308.toExponential()"),
+      njs_str("1.7976931348623157e+308") },
+
+#if 0  /* FIXME: bignum support is requred to support prec >= 20 */
+    { njs_str("(1/7).toExponential(100)"),
+      njs_str("1.4285714285714284921269268124888185411691665649414062500000000000000000000000000000000000000000000000e-1") },
+#endif
+
+    { njs_str("var v = 1.7976931348623157e+308; Number(v.toExponential()) == v"),
+      njs_str("true") },
+
+    { njs_str("(123).toExponential(-1)"),
+      njs_str("RangeError: digits argument must be between 0 and 100") },
+
+    { njs_str("(123).toExponential(2.4)"),
+      njs_str("1.23e+2") },
+
+    { njs_str("(123).toExponential(101)"),
+      njs_str("RangeError: digits argument must be between 0 and 100") },
+
+    { njs_str("[2**10000,-(2**10000),NaN].map((v)=>v.toExponential())"),
+      njs_str("Infinity,-Infinity,NaN") },
+
+    { njs_str("[2**10000,-(2**10000),NaN].map((v)=>v.toExponential(1000))"),
+      njs_str("Infinity,-Infinity,NaN") },
+
+    { njs_str("Number.prototype.toExponential.call('12')"),
+      njs_str("TypeError: unexpected value type:string") },
+
     /* An object "valueOf/toString" methods. */
 
     { njs_str("var a = { valueOf: function() { return 1 } };    +a"),

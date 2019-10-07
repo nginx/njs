@@ -472,30 +472,36 @@ njs_dtoa_format(char *start, size_t len, int point)
 
 
 njs_inline size_t
+njs_dtoa_exp_format(char *start, int exponent, size_t prec, size_t len)
+{
+    char  *p;
+
+    p = &start[len];
+    if (prec != 1) {
+        memmove(&start[2], &start[1], len - 1);
+        start[1] = '.';
+        p++;
+    }
+
+    njs_memset(p, '0', prec - len);
+    p += prec - len;
+
+    *p++ = 'e';
+
+    return prec + 1 + (prec != 1) + njs_write_exponent(exponent, p);
+}
+
+
+njs_inline size_t
 njs_dtoa_prec_format(char *start, size_t prec, size_t len, int point)
 {
     int     exponent;
-    char    *p;
-    size_t  m, rest, size;
+    size_t  m, rest;
 
     exponent = point - 1;
 
     if (exponent < -6 || exponent >= (int) prec) {
-        p = &start[len];
-        if (prec != 1) {
-            memmove(&start[2], &start[1], len - 1);
-            start[1] = '.';
-            p++;
-        }
-
-        njs_memset(p, '0', prec - len);
-        p += prec - len;
-
-        *p++ = 'e';
-
-        size = njs_write_exponent(exponent, p);
-
-        return prec + 1 + (prec != 1) + size;
+        return njs_dtoa_exp_format(start, exponent, prec, len);
     }
 
     /* Fixed notation. */
@@ -608,4 +614,44 @@ njs_dtoa_precision(double value, char *start, size_t prec)
     }
 
     return njs_dtoa_prec_format(p, prec, length, point) + minus;
+}
+
+
+size_t
+njs_dtoa_exponential(double value, char *start, njs_int_t frac)
+{
+    int     point, minus;
+    char    *p;
+    size_t  length;
+
+    /* Not handling NaN and inf. */
+
+    p = start;
+    minus = 0;
+
+    if (value != 0) {
+        if (value < 0) {
+            *p++ = '-';
+            value = -value;
+            minus = 1;
+        }
+
+        if (frac == -1) {
+            length = njs_grisu2(value, p, &point);
+
+        } else {
+            length = njs_grisu2_prec(value, p, frac + 1, &point);
+        }
+
+    } else {
+        start[0] = '0';
+        length = 1;
+        point = 1;
+    }
+
+    if (frac == -1) {
+        frac = length - 1;
+    }
+
+    return njs_dtoa_exp_format(p, point - 1, frac + 1, length) + minus;
 }
