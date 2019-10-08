@@ -633,7 +633,7 @@ done:
 close_fd:
 
     if (fd != STDIN_FILENO) {
-        close(fd);
+        (void) close(fd);
     }
 
     return ret;

@@ -139,7 +139,7 @@ njs_parser_module(njs_vm_t *vm, njs_parser_t *parser)
 
     ret = njs_module_read(vm, info.fd, &text);
 
-    close(info.fd);
+    (void) close(info.fd);
 
     if (njs_slow_path(ret != NJS_OK)) {
         njs_internal_error(vm, "while reading \"%V\" module", &name);
