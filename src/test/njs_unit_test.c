@@ -4093,6 +4093,12 @@ static njs_unit_test_t  njs_test[] =
               "catch (e) {i += '; ' + e} i"),
       njs_str("1; TypeError: Cannot set property \"length\" of object which has only a getter") },
 
+    { njs_str("Array.prototype.pop.call({ length: 3 })"),
+      njs_str("undefined") },
+
+    { njs_str("var o = { length: 3 }; Array.prototype.pop.call(o); o.length"),
+      njs_str("2") },
+
     { njs_str("Array.prototype.shift()"),
       njs_str("undefined") },
 
@@ -4199,6 +4205,12 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var a=[0], n = 64; while(--n) {a.push(n); a.shift()}; a"),
       njs_str("1") },
+
+    { njs_str("Array.prototype.shift.call({ length: 3 })"),
+      njs_str("undefined") },
+
+    { njs_str("var o = { length: 3 }; Array.prototype.shift.call(o); o.length"),
+      njs_str("2") },
 
     { njs_str("var a = []; a.splice()"),
       njs_str("") },

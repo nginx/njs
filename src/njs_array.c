@@ -694,7 +694,7 @@ njs_array_prototype_pop(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         njs_uint32_to_string(&index, --length);
 
         ret = njs_value_property_delete(vm, value, &index, &vm->retval);
-        if (njs_slow_path(ret != NJS_OK)) {
+        if (njs_slow_path(ret == NJS_ERROR)) {
             return ret;
         }
     }
@@ -900,7 +900,7 @@ njs_array_prototype_shift(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_uint32_to_string(&index, 0);
 
     ret = njs_value_property_delete(vm, value, &index, &vm->retval);
-    if (njs_slow_path(ret != NJS_OK)) {
+    if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
     }
 
