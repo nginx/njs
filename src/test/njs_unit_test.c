@@ -11625,6 +11625,48 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Date.UTC({valueOf:()=>2011}, 5, 24, 6, 0)"),
       njs_str("1308895200000") },
 
+    { njs_str("Date.UTC()"),
+      njs_str("NaN") },
+
+    { njs_str("Date.UTC(Infinity)"),
+      njs_str("NaN") },
+
+    { njs_str("Date.UTC(Infinity, 0)"),
+      njs_str("NaN") },
+
+    { njs_str("Date.UTC(1970)"),
+      njs_str("0") },
+
+    { njs_str("Date.UTC(1968, 24)"),
+      njs_str("0") },
+
+    { njs_str("[-1,0,1,99,100].map(yr => Date.UTC(yr))"),
+      njs_str("-62198755200000,-2208988800000,-2177452800000,915148800000,-59011459200000") },
+
+    { njs_str("Date.UTC(1970.9, 0.9, 1.9, 0.9, 0.9, 0.9, 0.9)"),
+      njs_str("0") },
+
+    { njs_str("Date.UTC(-1970.9, -0.9, -0.9, -0.9, -0.9, -0.9, -0.9)"),
+      njs_str("-124334438400000") },
+
+    { njs_str("Date.UTC(275760, 8, 13, 0, 0, 0, 0)"),
+      njs_str("8640000000000000") },
+
+    { njs_str("Date.UTC(275760, 8, 13, 0, 0, 0, 1)"),
+      njs_str("NaN") },
+
+    { njs_str("Date.UTC(-271821, 3, 20, 0, 0, 0, 0)"),
+      njs_str("-8640000000000000") },
+
+    { njs_str("Date.UTC(-271821, 3, 20, 0, 0, 0, -1)"),
+      njs_str("NaN") },
+
+    { njs_str("Date.UTC(1970, 0)"),
+      njs_str("0") },
+
+    { njs_str("Date.UTC(1970, 0, 0)"),
+      njs_str("-86400000") },
+
     { njs_str("Date.parse()"),
       njs_str("NaN") },
 
@@ -11942,6 +11984,14 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("new Date(NaN)"),
       njs_str("Invalid Date") },
+
+#ifndef NJS_SUNC
+    { njs_str("new Date(-0).getTime()"),
+      njs_str("0") },
+#endif
+
+    { njs_str("new Date(6.54321).valueOf()"),
+      njs_str("6") },
 
     { njs_str("[0].map(new Date().getDate)"),
       njs_str("TypeError: cannot convert undefined to date") },

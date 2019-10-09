@@ -44,7 +44,29 @@ static double njs_date_utc_time(struct tm *tm, double time);
 static const njs_value_t  njs_string_invalid_date = njs_string("Invalid Date");
 
 
-static uint64_t
+njs_inline int64_t
+njs_mod(int64_t a, int64_t b)
+{
+    int64_t  m;
+
+    m = a % b;
+
+    return m + (m < 0) * b;
+}
+
+
+njs_inline int64_t
+njs_floor_div(int64_t a, int64_t b)
+{
+    int64_t  m;
+
+    m = a % b;
+
+    return (a - (m + (m < 0) * b)) / b;
+}
+
+
+njs_inline uint64_t
 njs_gettime(void)
 {
     struct timeval  tv;
@@ -55,14 +77,71 @@ njs_gettime(void)
 }
 
 
-static double
+njs_inline double
 njs_timeclip(double time)
 {
-    if (isinf(time) || isnan(time) || fabs(time) > 8.64e15) {
+    if (time < -8.64e15 || time > 8.64e15) {
         return NAN;
     }
 
-    return njs_number_to_int64(time);
+    return trunc(time) + 0.0;
+}
+
+
+njs_inline int64_t
+njs_make_time(int64_t h, int64_t min, int64_t s, int64_t milli)
+{
+    return ((h * 60 + min) * 60 + s) * 1000 + milli;
+}
+
+
+njs_inline int64_t
+njs_days_in_year(int64_t y)
+{
+    return 365 + !(y % 4) - !(y % 100) + !(y % 400);
+}
+
+
+njs_inline int64_t
+njs_days_from_year(int64_t y)
+{
+    return 365 * (y - 1970) + njs_floor_div(y - 1969, 4)
+           - njs_floor_div(y - 1901, 100) + njs_floor_div(y - 1601, 400);
+}
+
+
+njs_inline int64_t
+njs_make_day(int64_t yr, int64_t month, int64_t date)
+{
+    int64_t  i, ym, mn, md, days;
+
+    static const int month_days[] = { 31, 28, 31, 30, 31, 30,
+                                      31, 31, 30, 31, 30, 31 };
+
+    mn = njs_mod(month, 12);
+    ym = yr + (month - mn) / 12;
+
+    days = njs_days_from_year(ym);
+
+    for (i = 0; i < mn; i++) {
+        md = month_days[i];
+
+        if (i == 1) {
+            /* Leap day. */
+            md += njs_days_in_year(ym) - 365;
+        }
+
+        days += md;
+    }
+
+    return days + date - 1;
+}
+
+
+njs_inline int64_t
+njs_make_date(int64_t days, int64_t time)
+{
+    return days * 86400000 + time;
 }
 
 
@@ -173,16 +252,19 @@ static njs_int_t
 njs_date_utc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
+    int64_t     day, tm;
     double      num, time;
-    struct tm   tm;
     njs_int_t   ret;
     njs_uint_t  i, n;
-    int32_t     values[8];
+    int64_t     values[8];
 
     time = NAN;
 
-    if (nargs > 2) {
-        njs_memzero(values, 8 * sizeof(int32_t));
+    if (nargs > 1) {
+        njs_memzero(values, 8 * sizeof(int64_t));
+
+        /* Day. */
+        values[3] = 1;
 
         n = njs_min(8, nargs);
 
@@ -196,7 +278,7 @@ njs_date_utc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
             num = njs_number(&args[i]);
 
-            if (isnan(num)) {
+            if (isnan(num) || isinf(num)) {
                 goto done;
             }
 
@@ -204,18 +286,14 @@ njs_date_utc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
         /* Year. */
-        if (values[1] > 99) {
-            values[1] -= 1900;
+        if (values[1] >= 0 && values[1] < 100) {
+            values[1] += 1900;
         }
 
-        tm.tm_year = values[1];
-        tm.tm_mon = values[2];
-        tm.tm_mday = values[3];
-        tm.tm_hour = values[4];
-        tm.tm_min = values[5];
-        tm.tm_sec = values[6];
+        day = njs_make_day(values[1], values[2], values[3]);
+        tm = njs_make_time(values[4], values[5], values[6], values[7]);
 
-        time = njs_timegm(&tm) * 1000 + values[7];
+        time = njs_timeclip(njs_make_date(day, tm));
     }
 
 done:
