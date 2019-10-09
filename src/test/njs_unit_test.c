@@ -4088,6 +4088,11 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var o = Object.freeze({0: 0, 1: 1, length: 2}); Array.prototype.pop.call(o)"),
       njs_str("TypeError: Cannot delete property \"1\" of object") },
 
+    { njs_str("var i = 0; var o = {get length() {i++}};"
+              "try {Array.prototype.pop.call(o);}"
+              "catch (e) {i += '; ' + e} i"),
+      njs_str("1; TypeError: Cannot set property \"length\" of object which has only a getter") },
+
     { njs_str("Array.prototype.shift()"),
       njs_str("undefined") },
 
@@ -4129,12 +4134,22 @@ static njs_unit_test_t  njs_test[] =
               "Array.prototype.forEach.call(x, (v) => a.push(v)); a"),
       njs_str("a,b,c,x,y,z,123") },
 
+    { njs_str("var i = 0; var o = {get length() {i++}};"
+              "try {Array.prototype.push.call(o);}"
+              "catch (e) {i += '; ' + e} i"),
+      njs_str("1; TypeError: Cannot set property \"length\" of object which has only a getter") },
+
     { njs_str("var a = [1,2,3]; a.shift() +' '+ a[0] +' '+ a.length"),
       njs_str("1 2 2") },
 
     { njs_str("var x = {'0': 'x', '1': 'y', '2': 'z', 'length': 3};"
               "Array.prototype.shift.call(x) +' '+ x[0] +' '+ x.length"),
       njs_str("x y 2") },
+
+    { njs_str("var i = 0; var o = {get length() {i++}};"
+              "try {Array.prototype.shift.call(o);}"
+              "catch (e) {i += '; ' + e} i"),
+      njs_str("1; TypeError: Cannot set property \"length\" of object which has only a getter") },
 
     { njs_str("var a = [1,2], len = a.unshift(3);"
                  "len +' '+ a +' '+ a.shift()"),
@@ -4176,6 +4191,11 @@ static njs_unit_test_t  njs_test[] =
               "Array.prototype.unshift.call(obj, 'a', 'b', 'c');"
               "Array.prototype.forEach.call(obj, (v) => a.push(v)); a"),
       njs_str("a,b,c,x,y,z")},
+
+    { njs_str("var i = 0; var o = {get length() {i++}};"
+              "try {Array.prototype.unshift.call(o);}"
+              "catch (e) {i += '; ' + e} i"),
+      njs_str("1; TypeError: Cannot set property \"length\" of object which has only a getter") },
 
     { njs_str("var a=[0], n = 64; while(--n) {a.push(n); a.shift()}; a"),
       njs_str("1") },
@@ -4257,6 +4277,10 @@ static njs_unit_test_t  njs_test[] =
               "Array.prototype.indexOf.call(o, 'd')"),
       njs_str("3") },
 
+    { njs_str("var i = 0; var o = {get length() {i++}};"
+              "Array.prototype.indexOf.call(o); i"),
+      njs_str("1") },
+
     { njs_str("[].lastIndexOf(1, -1)"),
       njs_str("-1") },
 
@@ -4336,6 +4360,10 @@ static njs_unit_test_t  njs_test[] =
               "obj.length = 90000000;"
               "Array.prototype.lastIndexOf.call(obj, 'y');"),
       njs_str("10000001")},
+
+    { njs_str("var i = 0; var o = {get length() {i++}};"
+              "Array.prototype.lastIndexOf.call(o); i"),
+      njs_str("1") },
 
     { njs_str("[1,2,3,4].includes()"),
       njs_str("false") },
@@ -4437,6 +4465,11 @@ static njs_unit_test_t  njs_test[] =
               "Array.prototype.forEach.call(s, function (a, b, c) {t = typeof c;}); [t, typeof s];"),
       njs_str("object,string") },
 
+    { njs_str("var i = 0; var o = {get length() {i++}};"
+              "try {Array.prototype.forEach.call(o);}"
+              "catch (e) {i += '; ' + e} i"),
+      njs_str("1; TypeError: unexpected iterator arguments") },
+
     { njs_str("var a = [];"
                  "a.some(function(v, i, a) { return v > 1 })"),
       njs_str("false") },
@@ -4467,6 +4500,11 @@ static njs_unit_test_t  njs_test[] =
               "var r = Array.prototype.some.call(o, function(v, i, a) { return v === 'd' }); r"),
       njs_str("true") },
 
+    { njs_str("var i = 0; var o = {get length() {i++}};"
+              "try {Array.prototype.some.call(o);}"
+              "catch (e) {i += '; ' + e} i"),
+      njs_str("1; TypeError: unexpected iterator arguments") },
+
     { njs_str("var a = [];"
                  "a.every(function(v, i, a) { return v > 1 })"),
       njs_str("true") },
@@ -4490,6 +4528,11 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var o = {0: 'c', 1: 'c', 2: 'c', 'length': { valueOf() { return 3 }}};"
               "var r = Array.prototype.every.call(o, function(el, i, arr) {return el == 'c'}); r"),
       njs_str("true") },
+
+    { njs_str("var i = 0; var o = {get length() {i++}};"
+              "try {Array.prototype.every.call(o);}"
+              "catch (e) {i += '; ' + e} i"),
+      njs_str("1; TypeError: unexpected iterator arguments") },
 
     { njs_str("var o = {0: 'x', 1: 'y', 2: 'z'};"
               "Object.defineProperty(o, 'length', {get: () => 4});"
@@ -4604,6 +4647,10 @@ static njs_unit_test_t  njs_test[] =
       njs_str("RangeError: Maximum call stack size exceeded") },
 #endif
 
+    { njs_str("var i = 0; var o = {get length() {i++}};"
+              "Array.prototype.fill.call(o); i"),
+      njs_str("1") },
+
     { njs_str("var a = [];"
                  "a.filter(function(v, i, a) { return v > 1 })"),
       njs_str("") },
@@ -4645,6 +4692,11 @@ static njs_unit_test_t  njs_test[] =
               "Object.defineProperty(o, '3', {get: () => 'c'});"
               "var r = Array.prototype.filter.call(o, function(el, i, arr) { return el == 'c' }); r"),
       njs_str("c,c") },
+
+    { njs_str("var i = 0; var o = {get length() {i++}};"
+              "try {Array.prototype.filter.call(o);}"
+              "catch (e) {i += '; ' + e} i"),
+      njs_str("1; TypeError: unexpected iterator arguments") },
 
     { njs_str("var a = [];"
                  "a.find(function(v, i, a) { return v > 1 })"),
@@ -4703,6 +4755,11 @@ static njs_unit_test_t  njs_test[] =
               "var r = Array.prototype.find.call(o, function(el, i, arr) { return el == 'd' }); r"),
       njs_str("d") },
 
+    { njs_str("var i = 0; var o = {get length() {i++}};"
+              "try {Array.prototype.find.call(o);}"
+              "catch (e) {i += '; ' + e} i"),
+      njs_str("1; TypeError: unexpected iterator arguments") },
+
     { njs_str("var a = [];"
                  "a.findIndex(function(v, i, a) { return v > 1 })"),
       njs_str("-1") },
@@ -4757,6 +4814,11 @@ static njs_unit_test_t  njs_test[] =
               "var r = Array.prototype.findIndex.call(o, function(el, i, arr) { return el == 'd' }); r"),
       njs_str("3") },
 
+    { njs_str("var i = 0; var o = {get length() {i++}};"
+              "try {Array.prototype.findIndex.call(o);}"
+              "catch (e) {i += '; ' + e} i"),
+      njs_str("1; TypeError: unexpected iterator arguments") },
+
     { njs_str("var a = [];"
                  "a.map(function(v, i, a) { return v + 1 })"),
       njs_str("") },
@@ -4808,6 +4870,11 @@ static njs_unit_test_t  njs_test[] =
               "var obj = {2: 2, length: 9000};"
               "var res = Array.prototype.map.call(obj, callbackfn); typeof res[8000]"),
       njs_str("undefined") },
+
+    { njs_str("var i = 0; var o = {get length() {i++}};"
+              "try {Array.prototype.map.call(o);}"
+              "catch (e) {i += '; ' + e} i"),
+      njs_str("1; TypeError: unexpected iterator arguments") },
 
     { njs_str("var a = [];"
                  "a.reduce(function(p, v, i, a) { return p + v })"),
@@ -4862,6 +4929,11 @@ static njs_unit_test_t  njs_test[] =
               "var r = Array.prototype.reduce.call(o, (a, b) => a + b); r"),
       njs_str("abcd") },
 
+    { njs_str("var i = 0; var o = {get length() {i++}};"
+              "try {Array.prototype.reduce.call(o);}"
+              "catch (e) {i += '; ' + e} i"),
+      njs_str("1; TypeError: unexpected iterator arguments") },
+
     { njs_str("var a = [];"
                  "a.reduceRight(function(p, v, i, a) { return p + v })"),
       njs_str("TypeError: Reduce of empty object with no initial value") },
@@ -4909,6 +4981,11 @@ static njs_unit_test_t  njs_test[] =
               "Object.defineProperty(o, '3', {get: () => 'd'});"
               "Array.prototype.reduceRight.call(o, (p, v) => p + v)"),
       njs_str("dcba") },
+
+    { njs_str("var i = 0; var o = {get length() {i++}};"
+              "try {Array.prototype.reduceRight.call(o);}"
+              "catch (e) {i += '; ' + e} i"),
+      njs_str("1; TypeError: unexpected iterator arguments") },
 
     { njs_str("var a = ['1','2','3','4','5','6']; a.sort()"),
       njs_str("1,2,3,4,5,6") },
@@ -6052,6 +6129,10 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("'абв абв абвгдежз'.includes('абвгд', 9)"),
       njs_str("false") },
+
+    { njs_str("var i = 0; var o = {get length() {i++}};"
+              "Array.prototype.includes.call(o); i"),
+      njs_str("1") },
 
     { njs_str("''.startsWith('')"),
       njs_str("true") },
