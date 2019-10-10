@@ -11606,6 +11606,11 @@ static njs_unit_test_t  njs_test[] =
                  "d.toISOString()"),
       njs_str("2011-06-24T18:45:12.625Z") },
 
+    { njs_str("var d = new Date(1999, 9, 10, 10, 10, 10, 10);"
+              "var local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);"
+              "local.toISOString()"),
+      njs_str("1999-10-10T10:10:10.010Z") },
+
 #if 0
     /* These tests fail on Solaris: gmtime_r() returns off by one day. */
 
@@ -11790,11 +11795,35 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var n = Date.now(); n == new Date(n)"),
       njs_str("true") },
 
+    { njs_str("var d = new Date(2011,0); d.getFullYear()"),
+      njs_str("2011") },
+
+    { njs_str("var d = new Date(2011, 0, 1, 0, 0, 0, -1); d.getFullYear()"),
+      njs_str("2010") },
+
+    { njs_str("var d = new Date(2011, 11, 31, 23, 59, 59, 999); d.getFullYear()"),
+      njs_str("2011") },
+
+    { njs_str("var d = new Date(2011, 11, 31, 23, 59, 59, 1000); d.getFullYear()"),
+      njs_str("2012") },
+
     { njs_str("var d = new Date(2011, 5, 24, 18, 45); d.getFullYear()"),
       njs_str("2011") },
 
     { njs_str("var d = new Date(2011, 5, 24, 18, 45); d.getUTCFullYear()"),
       njs_str("2011") },
+
+    { njs_str("var d = new Date(2011, 5); d.getMonth()"),
+      njs_str("5") },
+
+    { njs_str("var d = new Date(2011, 6, 0, 0, 0, 0, -1); d.getMonth()"),
+      njs_str("5") },
+
+    { njs_str("var d = new Date(2011, 6, 31, 23, 59, 59, 999); d.getMonth()"),
+      njs_str("6") },
+
+    { njs_str("var d = new Date(2011, 6, 31, 23, 59, 59, 1000); d.getMonth()"),
+      njs_str("7") },
 
     { njs_str("var d = new Date(2011, 5, 24, 18, 45); d.getMonth()"),
       njs_str("5") },

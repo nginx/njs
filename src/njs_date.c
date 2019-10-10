@@ -139,9 +139,32 @@ njs_make_day(int64_t yr, int64_t month, int64_t date)
 
 
 njs_inline int64_t
-njs_make_date(int64_t days, int64_t time)
+njs_tz_offset(int64_t time)
 {
-    return days * 86400000 + time;
+    time_t     ti;
+    struct tm  tm;
+
+    time /= 1000;
+
+    ti = time;
+    localtime_r(&ti, &tm);
+
+    return -njs_timezone(&tm) / 60;
+}
+
+
+njs_inline int64_t
+njs_make_date(int64_t days, int64_t time, njs_bool_t local)
+{
+    int64_t  date;
+
+    date = days * 86400000 + time;
+
+    if (local) {
+        date += njs_tz_offset(date) * 60000;
+    }
+
+    return date;
 }
 
 
@@ -150,11 +173,11 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     double      num, time;
-    int64_t     values[8];
+    int64_t     day, tm;
     njs_int_t   ret;
     njs_uint_t  i, n;
     njs_date_t  *date;
-    struct tm   tm;
+    int64_t     values[8];
 
     if (vm->top_frame->ctor) {
 
@@ -182,9 +205,13 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             }
 
         } else {
+
+            time = NAN;
+
             njs_memzero(values, 8 * sizeof(int64_t));
-            /* Month. */
-            values[2] = 1;
+
+            /* Day. */
+            values[3] = 1;
 
             n = njs_min(8, nargs);
 
@@ -198,8 +225,7 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
                 num = njs_number(&args[i]);
 
-                if (isnan(num)) {
-                    time = num;
+                if (isnan(num) || isinf(num)) {
                     goto done;
                 }
 
@@ -207,19 +233,15 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             }
 
             /* Year. */
-            if (values[1] > 99) {
-                values[1] -= 1900;
+            if (values[1] >= 0 && values[1] < 100) {
+                values[1] += 1900;
             }
 
-            tm.tm_year = values[1];
-            tm.tm_mon = values[2];
-            tm.tm_mday = values[3];
-            tm.tm_hour = values[4];
-            tm.tm_min = values[5];
-            tm.tm_sec = values[6];
-            tm.tm_isdst = -1;
+            day = njs_make_day(values[1], values[2], values[3]);
 
-            time = (int64_t) mktime(&tm) * 1000 + values[7];
+            tm = njs_make_time(values[4], values[5], values[6], values[7]);
+
+            time = njs_make_date(day, tm, 1);
         }
 
     done:
@@ -293,7 +315,7 @@ njs_date_utc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         day = njs_make_day(values[1], values[2], values[3]);
         tm = njs_make_time(values[4], values[5], values[6], values[7]);
 
-        time = njs_timeclip(njs_make_date(day, tm));
+        time = njs_timeclip(njs_make_date(day, tm, 0));
     }
 
 done:
@@ -1478,17 +1500,12 @@ static njs_int_t
 njs_date_prototype_get_timezone_offset(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
-    double     value;
-    time_t     clock;
-    struct tm  tm;
+    double  value;
 
     value = njs_date(&args[0])->time;
 
     if (njs_fast_path(!isnan(value))) {
-        clock = value / 1000;
-        localtime_r(&clock, &tm);
-
-        value = - njs_timezone(&tm) / 60;
+        value = njs_tz_offset(value);
     }
 
     njs_set_number(&vm->retval, value);
