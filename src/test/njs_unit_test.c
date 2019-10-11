@@ -12002,12 +12002,6 @@ static njs_unit_test_t  njs_test[] =
                  "Date.prototype.toJSON.call(o, 1)"),
       njs_str("OK") },
 
-    { njs_str("var d = new Date; d.__proto__"),
-      njs_str("Invalid Date") },
-
-    { njs_str("var d = new Date(); d.__proto__"),
-      njs_str("Invalid Date") },
-
     { njs_str("var d = new Date(); d.__proto__ === Date.prototype"),
       njs_str("true") },
 
@@ -12049,11 +12043,11 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Date.prototype.__proto__ === Object.prototype"),
       njs_str("true") },
 
-    { njs_str("Date.prototype"),
-      njs_str("Invalid Date") },
+    { njs_str("njs.dump(Date.prototype)"),
+      njs_str("{}") },
 
     { njs_str("Date.prototype.valueOf()"),
-      njs_str("NaN") },
+      njs_str("TypeError: cannot convert object to date") },
 
     { njs_str("Date.constructor === Function"),
       njs_str("true") },

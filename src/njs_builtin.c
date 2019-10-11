@@ -190,8 +190,7 @@ const njs_object_prototype_t  njs_prototype_values[] = {
 
     { .object =       { .type = NJS_REGEXP } },
 
-    { .date =         { .time = NAN,
-                        .object = { .type = NJS_DATE } } },
+    { .object =       { .type = NJS_OBJECT } },
 
     { .object_value = { .value = njs_value(NJS_DATA, 0, 0.0),
                         .object = { .type = NJS_OBJECT } } },
