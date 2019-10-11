@@ -1232,7 +1232,7 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toString"),
-        .value = njs_native_function(njs_regexp_prototype_to_string, 0),
+        .value = njs_native_function(njs_regexp_prototype_to_string, 0, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1240,7 +1240,7 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("test"),
-        .value = njs_native_function(njs_regexp_prototype_test,
+        .value = njs_native_function(njs_regexp_prototype_test, 1,
                                      NJS_OBJECT_ARG, NJS_STRING_ARG),
         .writable = 1,
         .configurable = 1,
@@ -1249,7 +1249,7 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("exec"),
-        .value = njs_native_function(njs_regexp_prototype_exec,
+        .value = njs_native_function(njs_regexp_prototype_exec, 1,
                                      NJS_OBJECT_ARG, NJS_STRING_ARG),
         .writable = 1,
         .configurable = 1,

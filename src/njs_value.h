@@ -242,7 +242,7 @@ struct njs_function_s {
 
     uint8_t                           args_types[NJS_ARGS_TYPES_MAX];
     uint8_t                           args_offset;
-    uint8_t                           continuation_size;
+    uint8_t                           args_count;
 
     /* Function is a closure. */
     uint8_t                           closure:1;
@@ -391,12 +391,13 @@ typedef struct {
 }
 
 
-#define njs_native_function(_function, ...) {                                 \
+#define njs_native_function(_function, _args_count, ...) {                    \
     .data = {                                                                 \
         .type = NJS_FUNCTION,                                                 \
         .truth = 1,                                                           \
         .u.function = & (njs_function_t) {                                    \
             .native = 1,                                                      \
+            .args_count = _args_count,                                        \
             .args_types = { __VA_ARGS__ },                                    \
             .args_offset = 1,                                                 \
             .u.native = _function,                                            \

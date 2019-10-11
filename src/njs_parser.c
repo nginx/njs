@@ -667,7 +667,12 @@ njs_parser_function_declaration(njs_vm_t *vm, njs_parser_t *parser)
         return NJS_TOKEN_ERROR;
     }
 
-    return njs_parser_function_lambda(vm, parser, function->u.lambda, token);
+    token = njs_parser_function_lambda(vm, parser, function->u.lambda, token);
+
+    function->args_count = function->u.lambda->nargs
+                           - function->u.lambda->rest_parameters;
+
+    return token;
 }
 
 

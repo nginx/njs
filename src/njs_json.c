@@ -2101,7 +2101,7 @@ static const njs_object_prop_t  njs_json_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("parse"),
-        .value = njs_native_function(njs_json_parse,
+        .value = njs_native_function(njs_json_parse, 2,
                                      NJS_SKIP_ARG, NJS_STRING_ARG,
                                      NJS_OBJECT_ARG),
         .writable = 1,
@@ -2112,7 +2112,7 @@ static const njs_object_prop_t  njs_json_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("stringify"),
-        .value = njs_native_function(njs_json_stringify,
+        .value = njs_native_function(njs_json_stringify, 3,
                                      NJS_SKIP_ARG, NJS_SKIP_ARG, NJS_SKIP_ARG,
                                      NJS_SKIP_ARG),
         .writable = 1,

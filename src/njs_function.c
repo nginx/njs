@@ -1032,10 +1032,8 @@ static njs_int_t
 njs_function_instance_length(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
-    njs_uint_t             n;
-    njs_object_t           *proto;
-    njs_function_t         *function;
-    njs_function_lambda_t  *lambda;
+    njs_object_t    *proto;
+    njs_function_t  *function;
 
     proto = njs_object(value);
 
@@ -1054,26 +1052,7 @@ njs_function_instance_length(njs_vm_t *vm, njs_value_t *value,
 
     function = (njs_function_t *) proto;
 
-    if (function->native) {
-        for (n = function->args_offset; n < NJS_ARGS_TYPES_MAX; n++) {
-            if (function->args_types[n] == 0) {
-                break;
-            }
-        }
-
-    } else {
-        lambda = function->u.lambda;
-        n = lambda->nargs + 1 - lambda->rest_parameters;
-    }
-
-    if (n >= function->args_offset) {
-        n -= function->args_offset;
-
-    } else {
-        n = 0;
-    }
-
-    njs_set_number(retval, n);
+    njs_set_number(retval, function->args_count);
 
     return NJS_OK;
 }
@@ -1224,6 +1203,13 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         args++;
     }
 
+    if (nargs > function->args_count) {
+        function->args_count = 0;
+
+    } else {
+        function->args_count -= nargs - 1;
+    }
+
     function->args_offset = nargs;
     size = nargs * sizeof(njs_value_t);
 
@@ -1273,7 +1259,7 @@ static const njs_object_prop_t  njs_function_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("call"),
-        .value = njs_native_function(njs_function_prototype_call, 0),
+        .value = njs_native_function(njs_function_prototype_call, 1, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1281,7 +1267,7 @@ static const njs_object_prop_t  njs_function_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("apply"),
-        .value = njs_native_function(njs_function_prototype_apply, 0),
+        .value = njs_native_function(njs_function_prototype_apply, 2, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1289,7 +1275,7 @@ static const njs_object_prop_t  njs_function_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("bind"),
-        .value = njs_native_function(njs_function_prototype_bind, 0),
+        .value = njs_native_function(njs_function_prototype_bind, 1, 0),
         .writable = 1,
         .configurable = 1,
     },

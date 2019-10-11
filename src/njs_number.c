@@ -415,7 +415,7 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isFinite"),
-        .value = njs_native_function(njs_number_is_finite, 0),
+        .value = njs_native_function(njs_number_is_finite, 1, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -424,7 +424,7 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isInteger"),
-        .value = njs_native_function(njs_number_is_integer, 0),
+        .value = njs_native_function(njs_number_is_integer, 1, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -433,7 +433,7 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isSafeInteger"),
-        .value = njs_native_function(njs_number_is_safe_integer, 0),
+        .value = njs_native_function(njs_number_is_safe_integer, 1, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -442,7 +442,7 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isNaN"),
-        .value = njs_native_function(njs_number_is_nan, 0),
+        .value = njs_native_function(njs_number_is_nan, 1, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -451,7 +451,7 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("parseFloat"),
-        .value = njs_native_function(njs_number_parse_float,
+        .value = njs_native_function(njs_number_parse_float, 1,
                                      NJS_SKIP_ARG, NJS_STRING_ARG),
         .writable = 1,
         .configurable = 1,
@@ -461,7 +461,7 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("parseInt"),
-        .value = njs_native_function(njs_number_parse_int,
+        .value = njs_native_function(njs_number_parse_int, 2,
                      NJS_SKIP_ARG, NJS_STRING_ARG, NJS_INTEGER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -873,7 +873,7 @@ static const njs_object_prop_t  njs_number_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("valueOf"),
-        .value = njs_native_function(njs_number_prototype_value_of, 0),
+        .value = njs_native_function(njs_number_prototype_value_of, 0, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -881,7 +881,7 @@ static const njs_object_prop_t  njs_number_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toString"),
-        .value = njs_native_function(njs_number_prototype_to_string,
+        .value = njs_native_function(njs_number_prototype_to_string, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -890,7 +890,7 @@ static const njs_object_prop_t  njs_number_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toFixed"),
-        .value = njs_native_function(njs_number_prototype_to_fixed,
+        .value = njs_native_function(njs_number_prototype_to_fixed, 1,
                                      NJS_SKIP_ARG, NJS_INTEGER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -899,7 +899,7 @@ static const njs_object_prop_t  njs_number_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toPrecision"),
-        .value = njs_native_function(njs_number_prototype_to_precision,
+        .value = njs_native_function(njs_number_prototype_to_precision, 1,
                                      NJS_SKIP_ARG, NJS_INTEGER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -908,7 +908,7 @@ static const njs_object_prop_t  njs_number_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toExponential"),
-        .value = njs_native_function(njs_number_prototype_to_exponential,
+        .value = njs_native_function(njs_number_prototype_to_exponential, 1,
                                      NJS_SKIP_ARG, NJS_INTEGER_ARG),
         .writable = 1,
         .configurable = 1,

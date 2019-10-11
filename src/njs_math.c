@@ -833,7 +833,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("abs"),
-        .value = njs_native_function(njs_object_math_abs,
+        .value = njs_native_function(njs_object_math_abs, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -842,7 +842,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("acos"),
-        .value = njs_native_function(njs_object_math_acos,
+        .value = njs_native_function(njs_object_math_acos, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -852,7 +852,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("acosh"),
-        .value = njs_native_function(njs_object_math_acosh,
+        .value = njs_native_function(njs_object_math_acosh, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -861,7 +861,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("asin"),
-        .value = njs_native_function(njs_object_math_asin,
+        .value = njs_native_function(njs_object_math_asin, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -871,7 +871,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("asinh"),
-        .value = njs_native_function(njs_object_math_asinh,
+        .value = njs_native_function(njs_object_math_asinh, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -880,7 +880,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("atan"),
-        .value = njs_native_function(njs_object_math_atan,
+        .value = njs_native_function(njs_object_math_atan, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -889,7 +889,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("atan2"),
-        .value = njs_native_function(njs_object_math_atan2,
+        .value = njs_native_function(njs_object_math_atan2, 2,
                      NJS_SKIP_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -899,7 +899,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("atanh"),
-        .value = njs_native_function(njs_object_math_atanh,
+        .value = njs_native_function(njs_object_math_atanh, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -909,7 +909,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("cbrt"),
-        .value = njs_native_function(njs_object_math_cbrt,
+        .value = njs_native_function(njs_object_math_cbrt, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -918,7 +918,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("ceil"),
-        .value = njs_native_function(njs_object_math_ceil,
+        .value = njs_native_function(njs_object_math_ceil, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -928,7 +928,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("clz32"),
-        .value = njs_native_function(njs_object_math_clz32,
+        .value = njs_native_function(njs_object_math_clz32, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -937,7 +937,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("cos"),
-        .value = njs_native_function(njs_object_math_cos,
+        .value = njs_native_function(njs_object_math_cos, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -947,7 +947,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("cosh"),
-        .value = njs_native_function(njs_object_math_cosh,
+        .value = njs_native_function(njs_object_math_cosh, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -956,7 +956,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("exp"),
-        .value = njs_native_function(njs_object_math_exp,
+        .value = njs_native_function(njs_object_math_exp, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -966,7 +966,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("expm1"),
-        .value = njs_native_function(njs_object_math_expm1,
+        .value = njs_native_function(njs_object_math_expm1, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -975,7 +975,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("floor"),
-        .value = njs_native_function(njs_object_math_floor,
+        .value = njs_native_function(njs_object_math_floor, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -985,7 +985,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("fround"),
-        .value = njs_native_function(njs_object_math_fround,
+        .value = njs_native_function(njs_object_math_fround, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -995,7 +995,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("hypot"),
-        .value = njs_native_function(njs_object_math_hypot, 0),
+        .value = njs_native_function(njs_object_math_hypot, 2, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1004,7 +1004,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("imul"),
-        .value = njs_native_function(njs_object_math_imul,
+        .value = njs_native_function(njs_object_math_imul, 2,
                      NJS_SKIP_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -1013,7 +1013,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("log"),
-        .value = njs_native_function(njs_object_math_log,
+        .value = njs_native_function(njs_object_math_log, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -1023,7 +1023,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("log10"),
-        .value = njs_native_function(njs_object_math_log10,
+        .value = njs_native_function(njs_object_math_log10, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -1033,7 +1033,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("log1p"),
-        .value = njs_native_function(njs_object_math_log1p,
+        .value = njs_native_function(njs_object_math_log1p, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -1043,7 +1043,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("log2"),
-        .value = njs_native_function(njs_object_math_log2,
+        .value = njs_native_function(njs_object_math_log2, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -1052,7 +1052,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("max"),
-        .value = njs_native_function(njs_object_math_max, 0),
+        .value = njs_native_function(njs_object_math_max, 2, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1060,7 +1060,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("min"),
-        .value = njs_native_function(njs_object_math_min, 0),
+        .value = njs_native_function(njs_object_math_min, 2, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1068,7 +1068,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("pow"),
-        .value = njs_native_function(njs_object_math_pow,
+        .value = njs_native_function(njs_object_math_pow, 2,
                      NJS_SKIP_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -1077,7 +1077,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("random"),
-        .value = njs_native_function(njs_object_math_random, 0),
+        .value = njs_native_function(njs_object_math_random, 0, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1085,7 +1085,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("round"),
-        .value = njs_native_function(njs_object_math_round,
+        .value = njs_native_function(njs_object_math_round, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -1095,7 +1095,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("sign"),
-        .value = njs_native_function(njs_object_math_sign,
+        .value = njs_native_function(njs_object_math_sign, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -1104,7 +1104,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("sin"),
-        .value = njs_native_function(njs_object_math_sin,
+        .value = njs_native_function(njs_object_math_sin, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -1114,7 +1114,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("sinh"),
-        .value = njs_native_function(njs_object_math_sinh,
+        .value = njs_native_function(njs_object_math_sinh, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -1123,7 +1123,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("sqrt"),
-        .value = njs_native_function(njs_object_math_sqrt,
+        .value = njs_native_function(njs_object_math_sqrt, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -1132,7 +1132,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("tan"),
-        .value = njs_native_function(njs_object_math_tan,
+        .value = njs_native_function(njs_object_math_tan, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -1142,7 +1142,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("tanh"),
-        .value = njs_native_function(njs_object_math_tanh,
+        .value = njs_native_function(njs_object_math_tanh, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,
@@ -1152,7 +1152,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("trunc"),
-        .value = njs_native_function(njs_object_math_trunc,
+        .value = njs_native_function(njs_object_math_trunc, 1,
                                      NJS_SKIP_ARG, NJS_NUMBER_ARG),
         .writable = 1,
         .configurable = 1,

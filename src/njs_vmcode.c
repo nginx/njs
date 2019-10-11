@@ -992,6 +992,8 @@ njs_vmcode_function(njs_vm_t *vm, u_char *pc)
         return NJS_ERROR;
     }
 
+    function->args_count = lambda->nargs - lambda->rest_parameters;
+
     njs_set_function(&vm->retval, function);
 
     return sizeof(njs_vmcode_function_t);
