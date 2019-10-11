@@ -1520,16 +1520,11 @@ njs_date_prototype_set_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     double  time;
 
-    time = njs_date(&args[0])->time;
+    if (nargs > 1) {
+        time = njs_timeclip(njs_number(&args[1]));
 
-    if (njs_fast_path(!isnan(time))) {
-
-        if (nargs > 1) {
-            time = njs_number(&args[1]);
-
-        } else {
-            time = NAN;
-        }
+    } else {
+        time = NAN;
     }
 
     njs_date(&args[0])->time = time;

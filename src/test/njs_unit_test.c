@@ -11878,6 +11878,21 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var d = new Date(); d.setTime(1308895200000); d.getTime()"),
       njs_str("1308895200000") },
 
+    { njs_str("var d = new Date(); d.setTime(); d.getTime()"),
+      njs_str("NaN") },
+
+    { njs_str("var d = new Date(); d.setTime(Infinity); d.getTime()"),
+      njs_str("NaN") },
+
+    { njs_str("var d = new Date(); d.setTime(8.64e15 +1); d.getTime()"),
+      njs_str("NaN") },
+
+    { njs_str("var d = new Date(NaN); d.setTime(0); d.getTime()"),
+      njs_str("0") },
+
+    { njs_str("var d = new Date(); d.setTime(8.64e15); d.getTime()"),
+      njs_str("8640000000000000") },
+
     { njs_str("var d = new Date(1308895201625); d.setMilliseconds(5003);"
                  "d.getTime()"),
       njs_str("1308895206003") },
