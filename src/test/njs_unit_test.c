@@ -69,6 +69,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var \n a, \n b; b"),
       njs_str("undefined") },
 
+    { njs_str("var from = 2; from + 2"),
+      njs_str("4") },
+
     { njs_str("var a / ="),
       njs_str("SyntaxError: Unexpected token \"/\" in 1") },
 

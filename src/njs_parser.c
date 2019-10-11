@@ -1825,7 +1825,7 @@ njs_parser_import_statement(njs_vm_t *vm, njs_parser_t *parser)
         return token;
     }
 
-    token = njs_parser_match(vm, parser, token, NJS_TOKEN_FROM);
+    token = njs_parser_match_name(vm, parser, token, "from");
     if (njs_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
         return token;
     }

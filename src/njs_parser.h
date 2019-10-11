@@ -233,6 +233,27 @@ njs_parser_match(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
 }
 
 
+njs_inline njs_token_t
+njs_parser_match_name(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
+    const char *name)
+{
+    size_t     len;
+    njs_str_t  *text;
+
+    len = njs_strlen(name);
+    text = njs_parser_text(parser);
+
+    if (njs_fast_path(token == NJS_TOKEN_NAME
+                      && text->length == len
+                      && memcmp(text->start, name, len) == 0))
+    {
+        return njs_parser_token(vm, parser);
+    }
+
+    return njs_parser_unexpected_token(vm, parser, token);
+}
+
+
 njs_inline njs_variable_t *
 njs_parser_variable_add(njs_vm_t *vm, njs_parser_t *parser,
     njs_variable_type_t type)

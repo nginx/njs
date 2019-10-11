@@ -96,7 +96,6 @@ static const njs_keyword_t  njs_keywords[] = {
 
     /* Module. */
     { njs_str("import"),        NJS_TOKEN_IMPORT, 0 },
-    { njs_str("from"),          NJS_TOKEN_FROM, 0 },
     { njs_str("export"),        NJS_TOKEN_EXPORT, 0 },
 
     /* Reserved words. */
