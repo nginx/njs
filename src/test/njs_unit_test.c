@@ -14531,6 +14531,71 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("export"),
       njs_str("SyntaxError: Illegal export statement in 1") },
 
+    { njs_str("Object.assign(undefined)"),
+      njs_str("TypeError: cannot convert null or undefined to object") },
+
+    { njs_str("Object.assign(null)"),
+      njs_str("TypeError: cannot convert null or undefined to object") },
+
+    { njs_str("Object.assign({x:123}).toString()"),
+      njs_str("[object Object]") },
+
+    { njs_str("Object.assign({x:123}).x"),
+      njs_str("123") },
+
+    { njs_str("Object.assign(true)"),
+      njs_str("true") },
+
+    { njs_str("Object.assign(123)"),
+      njs_str("123") },
+
+    { njs_str("var o1 = {a:1, b:1, c:1}; var o2 = {b:2, c:2}; "
+                 "var o3 = {c:3}; var obj = Object.assign({}, o1, o2, o3); "
+                 "Object.values(obj);"),
+      njs_str("1,2,3") },
+
+    { njs_str("var v1 = 'abc'; var v2 = true; var v3 = 10; "
+                 "var obj = Object.assign({}, v1, null, v2, undefined, v3); "
+                 "Object.values(obj);"),
+      njs_str("a,b,c") },
+
+    { njs_str("Object.assign(true, {a:123})"),
+      njs_str("true") },
+
+    { njs_str("Object.assign(true, {a:123}).a"),
+      njs_str("123") },
+
+    { njs_str("var y = Object.create({s:123}); y.z = 456;"
+                 "Object.assign({}, y).s;"),
+      njs_str("undefined") },
+
+    { njs_str("var obj = {s:123}; Object.defineProperty(obj,"
+                 "'p1', {value:12, enumerable:false});"
+                 "Object.assign({}, obj).p1"),
+      njs_str("undefined") },
+
+    { njs_str("var obj = {s:123}; Object.defineProperty(obj,"
+                 "'x', {value:12, writable:false});"
+                 "Object.assign(obj, {x:4})"),
+      njs_str("TypeError: Cannot assign to read-only property \"x\" of object") },
+
+    { njs_str("var obj = {foo:1, get bar() {return 2;}};"
+                 "var copy = Object.assign({}, obj);"
+                 "Object.getOwnPropertyDescriptor(copy, 'bar').get"),
+      njs_str("undefined") },
+
+    { njs_str("try{var x = Object.defineProperty({}, 'foo',"
+                 "{value:1, writable:false});"
+                 "Object.assign(x, {bar:2}, {foo:2});}catch(error){};"
+                 "x.bar"),
+      njs_str("2") },
+
+    { njs_str("var a = Object.defineProperty({}, 'a',"
+                 "{get(){Object.defineProperty(this, 'b',"
+                 "{value:2,enumerable:false});"
+                 "return 1}, enumerable:1}); a.b =1;"
+                 "var x = Object.assign({}, a);x.b;"),
+      njs_str("undefined") },
 };
 
 

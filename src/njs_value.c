@@ -1186,9 +1186,8 @@ njs_value_to_object(njs_vm_t *vm, njs_value_t *value)
         return NJS_ERROR;
     }
 
-    if (njs_is_object(value)) {
+    if (njs_fast_path(njs_is_object(value))) {
         return NJS_OK;
-
     }
 
     if (njs_is_primitive(value)) {

@@ -1637,6 +1637,67 @@ njs_object_is_extensible(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+static njs_int_t
+njs_object_assign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    uint32_t              i, j, length;
+    njs_int_t             ret;
+    njs_array_t           *names;
+    njs_value_t           *key, *source, *value, setval;
+    njs_object_prop_t     *prop;
+    njs_property_query_t  pq;
+
+    value = njs_arg(args, nargs, 1);
+
+    ret = njs_value_to_object(vm, value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    for (i = 2; i < nargs; i++) {
+        source = &args[i];
+
+        names = njs_value_own_enumerate(vm, source, NJS_ENUM_KEYS, 1);
+        if (njs_slow_path(names == NULL)) {
+            return NJS_ERROR;
+        }
+
+        length = names->length;
+
+        for (j = 0; j < length; j++) {
+            key = &names->start[j];
+
+            njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 1);
+
+            ret = njs_property_query(vm, &pq, source, key);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_ERROR;
+            }
+
+            prop = pq.lhq.value;
+            if (!prop->enumerable) {
+                continue;
+            }
+
+            ret = njs_value_property(vm, source, key, &setval);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_ERROR;
+            }
+
+            ret = njs_value_property_set(vm, value, key, &setval);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_ERROR;
+            }
+        }
+    }
+
+    vm->retval = *value;
+
+    return NJS_OK;
+}
+
+
 /*
  * The __proto__ property of booleans, numbers and strings primitives,
  * of objects created by Boolean(), Number(), and String() constructors,
@@ -1905,6 +1966,15 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("isExtensible"),
         .value = njs_native_function(njs_object_is_extensible, 1),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    /* Object.assign(). */
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("assign"),
+        .value = njs_native_function(njs_object_assign, 2),
         .writable = 1,
         .configurable = 1,
     },
