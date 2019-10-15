@@ -1514,12 +1514,36 @@ static njs_int_t
 ngx_http_js_ext_get_header_in(njs_vm_t *vm, njs_value_t *value, void *obj,
     uintptr_t data)
 {
+    u_char              *p, *end, sep;
+    size_t               len;
     njs_str_t           *v;
-    ngx_table_elt_t     *h;
+    ngx_uint_t           i, n;
+    ngx_array_t         *a;
+    ngx_table_elt_t     *h, **hh;
     ngx_http_request_t  *r;
 
     r = (ngx_http_request_t *) obj;
     v = (njs_str_t *) data;
+
+    if (v->length == njs_length("Cookie")
+        && ngx_strncasecmp(v->start, (u_char *) "Cookie",
+                           v->length) == 0)
+    {
+        sep = ';';
+        a = &r->headers_in.cookies;
+        goto multi;
+    }
+
+#if (NGX_HTTP_X_FORWARDED_FOR)
+    if (v->length == njs_length("X-Forwarded-For")
+        && ngx_strncasecmp(v->start, (u_char *) "X-Forwarded-For",
+                           v->length) == 0)
+    {
+        sep = ',';
+        a = &r->headers_in.x_forwarded_for;
+        goto multi;
+    }
+#endif
 
     h = ngx_http_js_get_header(&r->headers_in.headers.part, v->start,
                                v->length);
@@ -1529,6 +1553,53 @@ ngx_http_js_ext_get_header_in(njs_vm_t *vm, njs_value_t *value, void *obj,
     }
 
     return njs_vm_value_string_set(vm, value, h->value.data, h->value.len);
+
+multi:
+
+    /* Cookie, X-Forwarded-For */
+
+    n = a->nelts;
+    hh = a->elts;
+
+    len = 0;
+
+    for (i = 0; i < n; i++) {
+        len += hh[i]->value.len + 2;
+    }
+
+    if (len == 0) {
+        njs_value_undefined_set(value);
+        return NJS_OK;
+    }
+
+    len -= 2;
+
+    if (n == 1) {
+        return njs_vm_value_string_set(vm, value, (*hh)->value.data,
+                                       (*hh)->value.len);
+    }
+
+    p = njs_vm_value_string_alloc(vm, value, len);
+    if (p == NULL) {
+        return NJS_ERROR;
+    }
+
+    end = p + len;
+
+
+    for (i = 0; /* void */ ; i++) {
+
+        p = ngx_copy(p, hh[i]->value.data, hh[i]->value.len);
+
+        if (p == end) {
+            break;
+        }
+
+        *p++ = sep;
+        *p++ = ' ';
+    }
+
+    return NJS_OK;
 }
 
 
