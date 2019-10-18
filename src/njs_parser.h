@@ -126,6 +126,10 @@ void njs_parser_node_error(njs_vm_t *vm, njs_parser_node_t *node,
 #define njs_parser_leave(parser) ((parser)->count--)
 
 
+#define njs_parser_restricted_identifier(token)                               \
+    (token == NJS_TOKEN_ARGUMENTS || token == NJS_TOKEN_EVAL)
+
+
 #define njs_parser_is_lvalue(node)                                            \
     ((node)->token == NJS_TOKEN_NAME || (node)->token == NJS_TOKEN_PROPERTY)
 

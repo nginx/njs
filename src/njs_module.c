@@ -541,10 +541,3 @@ njs_module_require(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     return NJS_ERROR;
 }
-
-
-const njs_object_init_t  njs_require_function_init = {
-    njs_str("require"),
-    NULL,
-    0,
-};

@@ -127,23 +127,3 @@ njs_clear_timeout(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     return NJS_OK;
 }
-
-
-const njs_object_init_t  njs_set_timeout_function_init = {
-    njs_str("setTimeout"),
-    NULL,
-    0,
-};
-
-const njs_object_init_t  njs_set_immediate_function_init = {
-    njs_str("setImmediate"),
-    NULL,
-    0,
-};
-
-
-const njs_object_init_t  njs_clear_timeout_function_init = {
-    njs_str("clearTimeout"),
-    NULL,
-    0,
-};

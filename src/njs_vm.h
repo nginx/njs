@@ -144,28 +144,10 @@ enum njs_constructor_e {
 enum njs_object_e {
     NJS_OBJECT_THIS = 0,
     NJS_OBJECT_NJS,
+    NJS_OBJECT_PROCESS,
     NJS_OBJECT_MATH,
     NJS_OBJECT_JSON,
 #define NJS_OBJECT_MAX         (NJS_OBJECT_JSON + 1)
-};
-
-
-enum njs_function_e {
-    NJS_FUNCTION_EVAL = 0,
-    NJS_FUNCTION_TO_STRING,
-    NJS_FUNCTION_IS_NAN,
-    NJS_FUNCTION_IS_FINITE,
-    NJS_FUNCTION_PARSE_INT,
-    NJS_FUNCTION_PARSE_FLOAT,
-    NJS_FUNCTION_STRING_ENCODE_URI,
-    NJS_FUNCTION_STRING_ENCODE_URI_COMPONENT,
-    NJS_FUNCTION_STRING_DECODE_URI,
-    NJS_FUNCTION_STRING_DECODE_URI_COMPONENT,
-    NJS_FUNCTION_REQUIRE,
-    NJS_FUNCTION_SET_TIMEOUT,
-    NJS_FUNCTION_SET_IMMEDIATE,
-    NJS_FUNCTION_CLEAR_TIMEOUT,
-#define NJS_FUNCTION_MAX       (NJS_FUNCTION_CLEAR_TIMEOUT + 1)
 };
 
 
@@ -329,7 +311,6 @@ struct njs_vm_shared_s {
 
     njs_object_t             string_object;
     njs_object_t             objects[NJS_OBJECT_MAX];
-    njs_function_t           functions[NJS_FUNCTION_MAX];
 
     /*
      * The prototypes and constructors arrays must be togther because they are

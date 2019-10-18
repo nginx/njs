@@ -12137,6 +12137,13 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("eval()"),
       njs_str("InternalError: Not implemented") },
 
+    { njs_str("delete this.eval; eval"),
+      njs_str("ReferenceError: \"eval\" is not defined in 1") },
+
+    { njs_str("var d = Object.getOwnPropertyDescriptor(this, 'eval');"
+              "d.writable && !d.enumerable && d.configurable"),
+      njs_str("true") },
+
     /* Math. */
 
     { njs_str("Math.PI"),
@@ -14025,6 +14032,18 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("require()"),
       njs_str("TypeError: missing path") },
 
+    { njs_str("require.length"),
+      njs_str("1") },
+
+    { njs_str("require.name"),
+      njs_str("require") },
+
+    { njs_str("typeof require"),
+      njs_str("function") },
+
+    { njs_str("require.hasOwnProperty('length')"),
+      njs_str("true") },
+
     { njs_str("var fs = require('fs'); typeof fs"),
       njs_str("object") },
 
@@ -14474,6 +14493,18 @@ static njs_unit_test_t  njs_shared_test[] =
 
     { njs_str("import cr from 'crypto'; cr.createHash('md5')"),
       njs_str("[object Hash]") },
+
+    { njs_str("isFinite()"),
+      njs_str("false") },
+
+    { njs_str("Number.isFinite(function(){})"),
+      njs_str("false") },
+
+    { njs_str("isFin()"),
+      njs_str("ReferenceError: \"isFin\" is not defined in 1") },
+
+    { njs_str("isNaN(function(){})"),
+      njs_str("true") },
 };
 
 

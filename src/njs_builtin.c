@@ -93,47 +93,6 @@ const njs_object_init_t  *njs_constructor_init[] = {
 };
 
 
-const njs_object_init_t  *njs_function_init[] = {
-    &njs_eval_function_init,
-    &njs_to_string_function_init,
-    &njs_is_nan_function_init,
-    &njs_is_finite_function_init,
-    &njs_parse_int_function_init,
-    &njs_parse_float_function_init,
-    &njs_encode_uri_function_init,
-    &njs_encode_uri_component_function_init,
-    &njs_decode_uri_function_init,
-    &njs_decode_uri_component_function_init,
-    &njs_require_function_init,
-    &njs_set_timeout_function_init,
-    &njs_set_immediate_function_init,
-    &njs_clear_timeout_function_init,
-    NULL
-};
-
-
-const njs_function_init_t  njs_native_functions[] = {
-    /* SunC does not allow empty array initialization. */
-    { njs_eval_function,               { 0 } },
-    { njs_object_prototype_to_string,  { 0 } },
-    { njs_number_global_is_nan,        { NJS_SKIP_ARG, NJS_NUMBER_ARG } },
-    { njs_number_is_finite,            { NJS_SKIP_ARG, NJS_NUMBER_ARG } },
-    { njs_number_parse_int,
-      { NJS_SKIP_ARG, NJS_STRING_ARG, NJS_INTEGER_ARG } },
-    { njs_number_parse_float,          { NJS_SKIP_ARG, NJS_STRING_ARG } },
-    { njs_string_encode_uri,           { NJS_SKIP_ARG, NJS_STRING_ARG } },
-    { njs_string_encode_uri_component, { NJS_SKIP_ARG, NJS_STRING_ARG } },
-    { njs_string_decode_uri,           { NJS_SKIP_ARG, NJS_STRING_ARG } },
-    { njs_string_decode_uri_component, { NJS_SKIP_ARG, NJS_STRING_ARG } },
-    { njs_module_require,              { NJS_SKIP_ARG, NJS_STRING_ARG } },
-    { njs_set_timeout,
-      { NJS_SKIP_ARG, NJS_FUNCTION_ARG, NJS_NUMBER_ARG } },
-    { njs_set_immediate,
-      { NJS_SKIP_ARG, NJS_FUNCTION_ARG } },
-    { njs_clear_timeout,               { NJS_SKIP_ARG, NJS_NUMBER_ARG } },
-};
-
-
 const njs_function_init_t  njs_native_constructors[] = {
     /* SunC does not allow empty array initialization. */
     { njs_object_constructor,     { 0 } },
@@ -329,29 +288,6 @@ njs_builtin_objects_create(njs_vm_t *vm)
         if (njs_fast_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
-    }
-
-    f = njs_native_functions;
-    func = shared->functions;
-
-    for (p = njs_function_init; *p != NULL; p++) {
-        obj = *p;
-
-        ret = njs_object_hash_init(vm, &func->object.shared_hash, obj);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_ERROR;
-        }
-
-        func->object.shared = 1;
-        func->object.extensible = 1;
-        func->native = 1;
-        func->args_offset = 1;
-
-        func->u.native = f->native;
-        memcpy(func->args_types, f->args_types, NJS_ARGS_TYPES_MAX);
-
-        f++;
-        func++;
     }
 
     prototype = shared->prototypes;
@@ -994,28 +930,21 @@ njs_int_t
 njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
     njs_str_t *name)
 {
-    size_t                     len;
-    njs_str_t                  string, middle;
-    njs_int_t                  ret;
-    const njs_object_init_t    *obj, **p;
-    const njs_object_prop_t    *prop;
-    const njs_function_init_t  *fun;
-
-    fun = njs_native_functions;
-
-    for (p = njs_function_init; *p != NULL; p++, fun++) {
-        if (function->u.native == fun->native) {
-            *name = (*p)->name;
-
-            return NJS_OK;
-        }
-    }
+    size_t                   len;
+    njs_str_t                string, middle;
+    njs_int_t                ret;
+    const njs_object_init_t  *obj;
+    const njs_object_prop_t  *prop;
 
     middle = njs_str_value(".");
 
     ret = njs_builtin_match(njs_object_init, function, &prop, &obj);
 
     if (ret == NJS_OK) {
+        if (!obj->name.length) {
+            middle = njs_str_value("");
+        }
+
         goto found;
     }
 
@@ -1100,11 +1029,137 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
         .name = njs_string("undefined"),
         .value = njs_value(NJS_UNDEFINED, 0, NAN),
     },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("isFinite"),
+        .value = njs_native_function(njs_number_is_finite, 1,
+                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("isNaN"),
+        .value = njs_native_function(njs_number_global_is_nan, 1,
+                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("parseFloat"),
+        .value = njs_native_function(njs_number_parse_float, 1,
+                                     NJS_SKIP_ARG, NJS_STRING_ARG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("parseInt"),
+        .value = njs_native_function(njs_number_parse_int, 2,
+                     NJS_SKIP_ARG, NJS_STRING_ARG, NJS_INTEGER_ARG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("toString"),
+        .value = njs_native_function(njs_object_prototype_to_string, 0, 0),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("encodeURI"),
+        .value = njs_native_function(njs_string_encode_uri, 1,
+                                     NJS_SKIP_ARG, NJS_STRING_ARG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_long_string("encodeURIComponent"),
+        .value = njs_native_function(njs_string_encode_uri_component, 1,
+                                     NJS_SKIP_ARG, NJS_STRING_ARG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("decodeURI"),
+        .value = njs_native_function(njs_string_decode_uri, 1,
+                                     NJS_SKIP_ARG, NJS_STRING_ARG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_long_string("decodeURIComponent"),
+        .value = njs_native_function(njs_string_decode_uri_component, 1,
+                                     NJS_SKIP_ARG, NJS_STRING_ARG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("eval"),
+        .value = njs_native_function(njs_eval_function, 1, 0),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("setTimeout"),
+        .value = njs_native_function(njs_set_timeout, 2,
+                                     NJS_SKIP_ARG, NJS_FUNCTION_ARG,
+                                     NJS_NUMBER_ARG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("setImmediate"),
+        .value = njs_native_function(njs_set_immediate, 4,
+                                     NJS_SKIP_ARG, NJS_FUNCTION_ARG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("clearTimeout"),
+        .value = njs_native_function(njs_clear_timeout, 1,
+                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("require"),
+        .value = njs_native_function(njs_module_require, 1,
+                                     NJS_SKIP_ARG, NJS_STRING_ARG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
 };
 
 
 const njs_object_init_t  njs_global_this_init = {
-    njs_str("this"),
+    njs_str(""),
     njs_global_this_object_properties,
     njs_nitems(njs_global_this_object_properties)
 };

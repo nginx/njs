@@ -636,7 +636,7 @@ njs_parser_function_declaration(njs_vm_t *vm, njs_parser_t *parser)
     }
 
     if (token != NJS_TOKEN_NAME) {
-        if (token == NJS_TOKEN_ARGUMENTS || token == NJS_TOKEN_EVAL) {
+        if (njs_parser_restricted_identifier(token)) {
             njs_parser_syntax_error(vm, parser, "Identifier \"%V\" "
                                     "is forbidden in function declaration",
                                     njs_parser_text(parser));
@@ -1034,7 +1034,7 @@ njs_parser_var_statement(njs_vm_t *vm, njs_parser_t *parser, njs_token_t parent,
         }
 
         if (token != NJS_TOKEN_NAME) {
-            if (token == NJS_TOKEN_ARGUMENTS || token == NJS_TOKEN_EVAL) {
+            if (njs_parser_restricted_identifier(token)) {
                 njs_parser_syntax_error(vm, parser, "Identifier \"%V\" "
                                         "is forbidden in var declaration",
                                         njs_parser_text(parser));

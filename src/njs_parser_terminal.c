@@ -344,27 +344,6 @@ njs_parser_reference(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
         node->index = NJS_INDEX_OBJECT_MEMORY_ERROR;
         break;
 
-    case NJS_TOKEN_EVAL:
-    case NJS_TOKEN_TO_STRING:
-    case NJS_TOKEN_IS_NAN:
-    case NJS_TOKEN_IS_FINITE:
-    case NJS_TOKEN_PARSE_INT:
-    case NJS_TOKEN_PARSE_FLOAT:
-    case NJS_TOKEN_ENCODE_URI:
-    case NJS_TOKEN_ENCODE_URI_COMPONENT:
-    case NJS_TOKEN_DECODE_URI:
-    case NJS_TOKEN_DECODE_URI_COMPONENT:
-    case NJS_TOKEN_REQUIRE:
-    case NJS_TOKEN_SET_TIMEOUT:
-    case NJS_TOKEN_SET_IMMEDIATE:
-    case NJS_TOKEN_CLEAR_TIMEOUT:
-        ret = njs_parser_builtin(vm, parser, node, NJS_FUNCTION, name, hash);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return NULL;
-        }
-
-        break;
-
     case NJS_TOKEN_ARGUMENTS:
         njs_thread_log_debug("JS: arguments");
 
@@ -395,6 +374,7 @@ njs_parser_reference(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
         break;
 
     case NJS_TOKEN_NAME:
+    case NJS_TOKEN_EVAL:
         njs_thread_log_debug("JS: %V", name);
 
         node->token_line = token_line;
@@ -446,11 +426,6 @@ njs_parser_builtin(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node,
     case NJS_OBJECT:
         index = node->token - NJS_TOKEN_FIRST_OBJECT;
         njs_set_object(&var->value, &vm->shared->objects[index]);
-        break;
-
-    case NJS_FUNCTION:
-        index = node->token - NJS_TOKEN_FIRST_FUNCTION;
-        njs_set_function(&var->value, &vm->shared->functions[index]);
         break;
 
     default:

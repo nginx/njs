@@ -1062,33 +1062,6 @@ njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static const njs_object_prop_t  njs_is_nan_function_properties[] =
-{
-    /* isNaN.name == "isNaN". */
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("isNaN"),
-        .configurable = 1,
-    },
-
-    /* isNaN.length == 1. */
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 1.0),
-        .configurable = 1,
-    },
-};
-
-
-const njs_object_init_t  njs_is_nan_function_init = {
-    njs_str("isNaN"),
-    njs_is_nan_function_properties,
-    njs_nitems(njs_is_nan_function_properties),
-};
-
-
 static const njs_object_prop_t  njs_is_finite_function_properties[] =
 {
     /* isFinite.name == "isFinite". */
@@ -1115,56 +1088,3 @@ const njs_object_init_t  njs_is_finite_function_init = {
     njs_nitems(njs_is_finite_function_properties),
 };
 
-
-static const njs_object_prop_t  njs_parse_int_function_properties[] =
-{
-    /* parseInt.name == "parseInt". */
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("parseInt"),
-        .configurable = 1,
-    },
-
-    /* parseInt.length == 2. */
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 2.0),
-        .configurable = 1,
-    },
-};
-
-
-const njs_object_init_t  njs_parse_int_function_init = {
-    njs_str("parseInt"),
-    njs_parse_int_function_properties,
-    njs_nitems(njs_parse_int_function_properties),
-};
-
-
-static const njs_object_prop_t  njs_parse_float_function_properties[] =
-{
-    /* parseFloat.name == "parseFloat". */
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("parseFloat"),
-        .configurable = 1,
-    },
-
-    /* parseFloat.length == 1. */
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 1.0),
-        .configurable = 1,
-    },
-};
-
-
-const njs_object_init_t  njs_parse_float_function_init = {
-    njs_str("parseFloat"),
-    njs_parse_float_function_properties,
-    njs_nitems(njs_parse_float_function_properties),
-};

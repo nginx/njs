@@ -441,6 +441,7 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
 
     case NJS_TOKEN_NAME:
     case NJS_TOKEN_ARGUMENTS:
+    case NJS_TOKEN_EVAL:
     case NJS_TOKEN_NON_LOCAL_THIS:
         return njs_generate_name(vm, generator, node);
 
@@ -463,20 +464,6 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
     case NJS_TOKEN_PROCESS:
     case NJS_TOKEN_MATH:
     case NJS_TOKEN_JSON:
-    case NJS_TOKEN_EVAL:
-    case NJS_TOKEN_TO_STRING:
-    case NJS_TOKEN_IS_NAN:
-    case NJS_TOKEN_IS_FINITE:
-    case NJS_TOKEN_PARSE_INT:
-    case NJS_TOKEN_PARSE_FLOAT:
-    case NJS_TOKEN_ENCODE_URI:
-    case NJS_TOKEN_ENCODE_URI_COMPONENT:
-    case NJS_TOKEN_DECODE_URI:
-    case NJS_TOKEN_DECODE_URI_COMPONENT:
-    case NJS_TOKEN_REQUIRE:
-    case NJS_TOKEN_SET_TIMEOUT:
-    case NJS_TOKEN_SET_IMMEDIATE:
-    case NJS_TOKEN_CLEAR_TIMEOUT:
         return njs_generate_builtin_object(vm, generator, node);
 
     case NJS_TOKEN_FUNCTION:

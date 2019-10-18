@@ -53,7 +53,6 @@ static const njs_keyword_t  njs_keywords[] = {
     /* Builtin objects. */
 
     { njs_str("this"),          NJS_TOKEN_THIS, 0 },
-    { njs_str("arguments"),     NJS_TOKEN_ARGUMENTS, 0 },
     { njs_str("njs"),           NJS_TOKEN_NJS, 0 },
     { njs_str("process"),       NJS_TOKEN_PROCESS, 0 },
     { njs_str("Math"),          NJS_TOKEN_MATH, 0 },
@@ -79,26 +78,14 @@ static const njs_keyword_t  njs_keywords[] = {
     { njs_str("URIError"),      NJS_TOKEN_URI_ERROR_CONSTRUCTOR, 0 },
     { njs_str("MemoryError"),   NJS_TOKEN_MEMORY_ERROR_CONSTRUCTOR, 0 },
 
-    { njs_str("eval"),          NJS_TOKEN_EVAL, 0 },
-    { njs_str("toString"),      NJS_TOKEN_TO_STRING, 0 },
-    { njs_str("isNaN"),         NJS_TOKEN_IS_NAN, 0 },
-    { njs_str("isFinite"),      NJS_TOKEN_IS_FINITE, 0 },
-    { njs_str("parseInt"),      NJS_TOKEN_PARSE_INT, 0 },
-    { njs_str("parseFloat"),    NJS_TOKEN_PARSE_FLOAT, 0 },
-    { njs_str("encodeURI"),     NJS_TOKEN_ENCODE_URI, 0 },
-    { njs_str("encodeURIComponent"),  NJS_TOKEN_ENCODE_URI_COMPONENT, 0 },
-    { njs_str("decodeURI"),     NJS_TOKEN_DECODE_URI, 0 },
-    { njs_str("decodeURIComponent"),  NJS_TOKEN_DECODE_URI_COMPONENT, 0 },
-    { njs_str("require"),       NJS_TOKEN_REQUIRE, 0 },
-    { njs_str("setTimeout"),    NJS_TOKEN_SET_TIMEOUT, 0 },
-    { njs_str("setImmediate"),  NJS_TOKEN_SET_IMMEDIATE, 0 },
-    { njs_str("clearTimeout"),  NJS_TOKEN_CLEAR_TIMEOUT, 0 },
-
     /* Module. */
     { njs_str("import"),        NJS_TOKEN_IMPORT, 0 },
     { njs_str("export"),        NJS_TOKEN_EXPORT, 0 },
 
     /* Reserved words. */
+
+    { njs_str("arguments"),     NJS_TOKEN_ARGUMENTS, 0 },
+    { njs_str("eval"),          NJS_TOKEN_EVAL, 0 },
 
     { njs_str("await"),         NJS_TOKEN_RESERVED, 0 },
     { njs_str("class"),         NJS_TOKEN_RESERVED, 0 },
