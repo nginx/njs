@@ -209,6 +209,23 @@ next:
                 pc += sizeof(njs_vmcode_3addr_t);
                 goto next;
 
+            case NJS_VMCODE_GLOBAL_GET:
+                get = (njs_vmcode_prop_get_t *) pc;
+                retval = njs_vmcode_operand(vm, get->value);
+
+                ret = njs_value_property(vm, value1, value2, retval);
+                if (njs_slow_path(ret == NJS_ERROR)) {
+                    goto error;
+                }
+
+                pc += sizeof(njs_vmcode_prop_get_t);
+
+                if (ret == NJS_OK) {
+                    pc += sizeof(njs_vmcode_reference_error_t);
+                }
+
+                goto next;
+
             /*
              * njs_vmcode_try_return() saves a return value to use it later by
              * njs_vmcode_finally(), and jumps to the nearest try_break block.

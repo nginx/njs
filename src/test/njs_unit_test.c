@@ -2694,6 +2694,10 @@ static njs_unit_test_t  njs_test[] =
                  "}; t"),
       njs_str("A") },
 
+    { njs_str("[isNaN, undefined, isFinite]."
+              "map((v)=>{switch(v) { case isNaN: return 1; default: return 0;}})"),
+      njs_str("1,0,0") },
+
     /* continue. */
 
     { njs_str("continue"),
@@ -9319,6 +9323,18 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("this.a = 1; this.a"),
       njs_str("1") },
 
+    { njs_str("this.a = 1; a"),
+      njs_str("1") },
+
+    { njs_str("this.a = 2; this.b = 3; a * b - a"),
+      njs_str("4") },
+
+    { njs_str("this.a = 1; a()"),
+      njs_str("TypeError: number is not a function") },
+
+    { njs_str("this.a = ()=>1; a()"),
+      njs_str("1") },
+
     { njs_str("this.undefined = 42"),
       njs_str("TypeError: Cannot assign to read-only property \"undefined\" of object") },
 
@@ -13083,6 +13099,12 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("isNaN.length"),
       njs_str("1") },
+
+    { njs_str("typeof isNaN"),
+      njs_str("function") },
+
+    { njs_str("typeof isNaN.length"),
+      njs_str("number") },
 
     { njs_str("isNaN()"),
       njs_str("true") },

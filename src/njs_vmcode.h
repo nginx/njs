@@ -72,6 +72,7 @@ typedef uint8_t                         njs_vmcode_operation_t;
 #define NJS_VMCODE_DECREMENT            VMCODE1(4)
 #define NJS_VMCODE_POST_DECREMENT       VMCODE1(5)
 #define NJS_VMCODE_TRY_RETURN           VMCODE1(6)
+#define NJS_VMCODE_GLOBAL_GET           VMCODE1(7)
 
 #define NJS_VMCODE_LESS                 VMCODE1(8)
 #define NJS_VMCODE_GREATER              VMCODE1(9)
