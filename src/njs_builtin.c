@@ -495,7 +495,7 @@ njs_prototype_function(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
  */
 
 njs_int_t
-njs_builtin_objects_clone(njs_vm_t *vm)
+njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global)
 {
     size_t        size;
     njs_uint_t    i;
@@ -530,6 +530,12 @@ njs_builtin_objects_clone(njs_vm_t *vm)
         njs_set_function(&values[i], &vm->constructors[i]);
         vm->constructors[i].object.__proto__ = function_prototype;
     }
+
+    vm->global_object = vm->shared->objects[0];
+    vm->global_object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_OBJECT].object;
+    vm->global_object.shared = 0;
+
+    njs_set_object(global, &vm->global_object);
 
     vm->string_object = vm->shared->string_object;
     vm->string_object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_STRING].object;

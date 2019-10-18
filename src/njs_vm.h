@@ -203,7 +203,12 @@ enum njs_function_e {
 #define NJS_INDEX_OBJECT_MEMORY_ERROR                                         \
     njs_global_scope_index(NJS_CONSTRUCTOR_MEMORY_ERROR)
 
-#define NJS_INDEX_GLOBAL_RETVAL  njs_global_scope_index(NJS_CONSTRUCTOR_MAX)
+#define NJS_INDEX_GLOBAL_OBJECT  njs_global_scope_index(NJS_CONSTRUCTOR_MAX)
+#define NJS_INDEX_GLOBAL_OBJECT_OFFSET                                        \
+    njs_scope_index(NJS_CONSTRUCTOR_MAX, 0)
+
+#define NJS_INDEX_GLOBAL_RETVAL                                               \
+    njs_global_scope_index(NJS_CONSTRUCTOR_MAX + 1)
 #define NJS_INDEX_GLOBAL_OFFSET  njs_scope_index(NJS_CONSTRUCTOR_MAX + 1, 0)
 
 
@@ -284,6 +289,7 @@ struct njs_vm_s {
     njs_object_t             memory_error_object;
 
     njs_object_t             string_object;
+    njs_object_t             global_object;
 
     njs_arr_t                *codes;  /* of njs_vm_code_t */
 
@@ -341,7 +347,7 @@ void njs_vm_scopes_restore(njs_vm_t *vm, njs_frame_t *frame,
 njs_int_t njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame);
 
 njs_int_t njs_builtin_objects_create(njs_vm_t *vm);
-njs_int_t njs_builtin_objects_clone(njs_vm_t *vm);
+njs_int_t njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global);
 njs_int_t njs_builtin_match_native_function(njs_vm_t *vm,
     njs_function_t *function, njs_str_t *name);
 

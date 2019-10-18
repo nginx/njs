@@ -326,6 +326,7 @@ njs_vm_init(njs_vm_t *vm)
     u_char       *values;
     njs_int_t    ret;
     njs_arr_t    *backtrace;
+    njs_value_t  *global;
     njs_frame_t  *frame;
 
     scope_size = vm->scope_size + NJS_INDEX_GLOBAL_OFFSET;
@@ -362,7 +363,9 @@ njs_vm_init(njs_vm_t *vm)
         return NJS_ERROR;
     }
 
-    ret = njs_builtin_objects_clone(vm);
+    global = (njs_value_t *) (values + NJS_INDEX_GLOBAL_OBJECT_OFFSET);
+
+    ret = njs_builtin_objects_clone(vm, global);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }

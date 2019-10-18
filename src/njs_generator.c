@@ -442,9 +442,9 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
     case NJS_TOKEN_NON_LOCAL_THIS:
         return njs_generate_name(vm, generator, node);
 
-    case NJS_TOKEN_GLOBAL_THIS:
+    case NJS_TOKEN_GLOBAL_OBJECT:
         if (vm->options.module) {
-            node->index = njs_value_index(vm, &node->u.value,
+            node->index = njs_value_index(vm, &njs_value_undefined,
                                           generator->runtime);
             if (njs_fast_path(node->index != NJS_INDEX_NONE)) {
                 return NJS_OK;
@@ -453,7 +453,9 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
             return NJS_ERROR;
         }
 
-        /* Fall through. */
+        node->index = NJS_INDEX_GLOBAL_OBJECT;
+
+        return NJS_OK;
 
     case NJS_TOKEN_NJS:
     case NJS_TOKEN_PROCESS:

@@ -261,14 +261,9 @@ njs_parser_reference(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
             break;
         }
 
-        node->token = NJS_TOKEN_GLOBAL_THIS;
+        node->token = NJS_TOKEN_GLOBAL_OBJECT;
 
-        if (vm->options.module) {
-            njs_set_undefined(&node->u.value);
-            break;
-        }
-
-        /* Fall through. */
+        break;
 
     case NJS_TOKEN_NJS:
     case NJS_TOKEN_PROCESS:
@@ -652,7 +647,7 @@ njs_parser_object(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *obj)
 
                 if (name.length == 0
                     || lexer->prev_token == NJS_TOKEN_THIS
-                    || lexer->prev_token == NJS_TOKEN_GLOBAL_THIS)
+                    || lexer->prev_token == NJS_TOKEN_GLOBAL_OBJECT)
                 {
                     return NJS_TOKEN_ILLEGAL;
                 }
