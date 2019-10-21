@@ -383,7 +383,6 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
     case NJS_TOKEN_POST_DECREMENT:
         return njs_generate_inc_dec_operation(vm, generator, node, 1);
 
-    case NJS_TOKEN_UNDEFINED:
     case NJS_TOKEN_NULL:
     case NJS_TOKEN_BOOLEAN:
     case NJS_TOKEN_NUMBER:

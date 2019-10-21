@@ -12,12 +12,9 @@ static const njs_keyword_t  njs_keywords[] = {
 
     /* Values. */
 
-    { njs_str("undefined"),     NJS_TOKEN_UNDEFINED, 0 },
     { njs_str("null"),          NJS_TOKEN_NULL, 0 },
     { njs_str("false"),         NJS_TOKEN_BOOLEAN, 0 },
     { njs_str("true"),          NJS_TOKEN_BOOLEAN, 1 },
-    { njs_str("NaN"),           NJS_TOKEN_NUMBER, NAN },
-    { njs_str("Infinity"),      NJS_TOKEN_NUMBER, INFINITY },
 
     /* Operators. */
 
@@ -79,6 +76,7 @@ static const njs_keyword_t  njs_keywords[] = {
     { njs_str("MemoryError"),   NJS_TOKEN_MEMORY_ERROR_CONSTRUCTOR, 0 },
 
     /* Module. */
+
     { njs_str("import"),        NJS_TOKEN_IMPORT, 0 },
     { njs_str("export"),        NJS_TOKEN_EXPORT, 0 },
 

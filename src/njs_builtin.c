@@ -1021,7 +1021,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("Infinity"),
-        .value = njs_value(NJS_NUMBER, 0, INFINITY),
+        .value = njs_value(NJS_NUMBER, 1, INFINITY),
     },
 
     {

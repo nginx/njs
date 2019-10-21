@@ -108,9 +108,6 @@ static njs_unit_test_t  njs_test[] =
 #if 0 /* TODO */
     { njs_str("var a; Object.getOwnPropertyDescriptor(this, 'a').value"),
       njs_str("undefined") },
-
-    { njs_str("this.a = 1; a"),
-      njs_str("1") },
 #endif
 
     { njs_str("f() = 1"),
@@ -765,6 +762,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("undefined + undefined"),
       njs_str("NaN") },
+
+    { njs_str("var undefined"),
+      njs_str("undefined") },
 
     { njs_str("1.2 + 5.7"),
       njs_str("6.9") },
@@ -1705,6 +1705,20 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("-Infinity >= Infinity"),
       njs_str("false") },
 
+    { njs_str("Boolean(Infinity)"),
+      njs_str("true") },
+
+    { njs_str("!Infinity === false"),
+      njs_str("true") },
+
+    { njs_str("var Infinity"),
+      njs_str("undefined") },
+
+#if 0 /* ES5FIX */
+    { njs_str("Infinity = 1"),
+      njs_str("TypeError: Cannot assign to read-only property "Infinity" of object") },
+#endif
+
     /**/
 
     { njs_str("NaN === NaN"),
@@ -1730,6 +1744,14 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("NaN <= NaN"),
       njs_str("false") },
+
+    { njs_str("var NaN"),
+      njs_str("undefined") },
+
+#if 0 /* ES5FIX */
+    { njs_str("NaN = 1"),
+      njs_str("TypeError: Cannot assign to read-only property "NaN" of object") },
+#endif
 
     /**/
 
@@ -3215,8 +3237,10 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("null = 1"),
       njs_str("ReferenceError: Invalid left-hand side in assignment in 1") },
 
+#if 0 /* ES5FIX */
     { njs_str("undefined = 1"),
-      njs_str("ReferenceError: Invalid left-hand side in assignment in 1") },
+      njs_str("TypeError: Cannot assign to read-only property "undefined" of object") },
+#endif
 
     { njs_str("null++"),
       njs_str("ReferenceError: Invalid left-hand side in postfix operation in 1") },
@@ -3462,15 +3486,11 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var o = { [new Number(12345)]: 1000 }; o[12345]"),
       njs_str("1000") },
 
-    /* ES5FIX: "SyntaxError". */
-
     { njs_str("delete NaN"),
-      njs_str("true") },
-
-    /* ES5FIX: "SyntaxError". */
+      njs_str("SyntaxError: Delete of an unqualified identifier in 1") },
 
     { njs_str("delete Infinity"),
-      njs_str("true") },
+      njs_str("SyntaxError: Delete of an unqualified identifier in 1") },
 
     { njs_str("delete -Infinity"),
       njs_str("true") },
@@ -7255,6 +7275,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("[0].some(function(){return Array.call.bind(isNaN)}())"),
       njs_str("false") },
 
+    { njs_str("(function (undefined, NaN, Infinity){ return undefined + NaN + Infinity})('x', 'y', 'z')"),
+      njs_str("xyz") },
+
+    { njs_str("function f(undefined,NaN, Infinity){ return undefined + NaN + Infinity}; f('x', 'y', 'z')"),
+      njs_str("xyz") },
+
     /* Recursive factorial. */
 
     { njs_str("function f(a) {"
@@ -9334,6 +9360,14 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("this.a = ()=>1; a()"),
       njs_str("1") },
+
+    { njs_str("var global = this;"
+              "function isImmutableConstant(v) {"
+              "    var d = Object.getOwnPropertyDescriptor(global, v);"
+              "    return !d.writable && !d.enumerable && !d.configurable;"
+              "};"
+              "['undefined', 'NaN', 'Infinity'].every((v)=>isImmutableConstant(v))"),
+      njs_str("true") },
 
     { njs_str("this.undefined = 42"),
       njs_str("TypeError: Cannot assign to read-only property \"undefined\" of object") },
