@@ -992,14 +992,19 @@ static njs_int_t
 njs_dump_value(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
+    uint32_t     n;
+    njs_int_t    ret;
     njs_str_t    str;
-    njs_uint_t   n;
     njs_value_t  *value, *indent;
 
     value = njs_arg(args, nargs, 1);
     indent = njs_arg(args, nargs, 2);
 
-    n = njs_primitive_value_to_integer(indent);
+    ret = njs_value_to_uint32(vm, indent, &n);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
     n = njs_min(n, 5);
 
     if (njs_vm_value_dump(vm, &str, value, 1, n) != NJS_OK) {

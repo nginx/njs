@@ -61,10 +61,21 @@ njs_number_to_int64(double num)
 }
 
 
-njs_inline int32_t
+njs_inline int64_t
 njs_number_to_integer(double num)
 {
-    return (int32_t) njs_number_to_int64(num);
+    if (njs_slow_path(isinf(num))) {
+        if (num < 0) {
+            return INT64_MIN;
+        }
+
+        return INT64_MAX;
+
+    } else if (njs_slow_path(isnan(num))) {
+        return 0;
+    }
+
+    return njs_number_to_int64(num);
 }
 
 
@@ -130,46 +141,6 @@ njs_char_to_hex(u_char c)
 
     return c;
 }
-
-
-njs_inline double
-njs_primitive_value_to_number(const njs_value_t *value)
-{
-    if (njs_fast_path(njs_is_numeric(value))) {
-        return njs_number(value);
-    }
-
-    return njs_string_to_number(value, 0);
-}
-
-
-njs_inline int32_t
-njs_primitive_value_to_integer(const njs_value_t *value)
-{
-    return njs_number_to_integer(njs_primitive_value_to_number(value));
-}
-
-
-njs_inline int32_t
-njs_primitive_value_to_int32(const njs_value_t *value)
-{
-    return njs_number_to_int32(njs_primitive_value_to_number(value));
-}
-
-
-njs_inline uint32_t
-njs_primitive_value_to_uint32(const njs_value_t *value)
-{
-    return njs_number_to_uint32(njs_primitive_value_to_number(value));
-}
-
-
-njs_inline uint32_t
-njs_primitive_value_to_length(const njs_value_t *value)
-{
-    return njs_number_to_length(njs_primitive_value_to_number(value));
-}
-
 
 njs_inline void
 njs_uint32_to_string(njs_value_t *value, uint32_t u32)

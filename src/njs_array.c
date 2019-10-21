@@ -332,14 +332,13 @@ static njs_int_t
 njs_array_length(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval)
 {
-    double       num;
-    int64_t      size;
-    uint32_t     length;
-    njs_int_t    ret;
-    njs_value_t  *val;
-    njs_array_t  *array;
-    njs_object_t *proto;
-    njs_value_t  val_length;
+    double        num;
+    int64_t       size;
+    uint32_t      length;
+    njs_int_t     ret;
+    njs_value_t   *val;
+    njs_array_t   *array;
+    njs_object_t  *proto;
 
     proto = njs_object(value);
 
@@ -369,18 +368,16 @@ njs_array_length(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
     }
 
     if (njs_slow_path(!njs_is_number(setval))) {
-        ret = njs_value_to_numeric(vm, &val_length, setval);
-        if (ret != NJS_OK) {
+        ret = njs_value_to_number(vm, setval, &num);
+        if (njs_slow_path(ret != NJS_OK)) {
             return ret;
         }
-
-        num = njs_number(&val_length);
 
     } else {
         num = njs_number(setval);
     }
 
-    length = njs_number_to_uint32(num);
+    length = njs_number_to_length(num);
 
     if ((double) length != num) {
         njs_range_error(vm, "Invalid array length");
@@ -422,27 +419,21 @@ static njs_int_t
 njs_array_prototype_slice(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    int64_t      start, end, length;
-    njs_int_t    ret;
-    njs_value_t  prop_length;
+    int64_t    start, end, length;
+    uint32_t   object_length;
+    njs_int_t  ret;
 
-    static const njs_value_t  string_length = njs_string("length");
-
-    ret = njs_value_property(vm, &args[0], njs_value_arg(&string_length),
-                             &prop_length);
+    ret = njs_object_length(vm, njs_arg(args, nargs, 0), &object_length);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
     }
 
-    if (njs_slow_path(!njs_is_primitive(&prop_length))) {
-        ret = njs_value_to_numeric(vm, &prop_length, &prop_length);
-        if (ret != NJS_OK) {
-            return ret;
-        }
-    }
+    length = object_length;
 
-    start = njs_primitive_value_to_integer(njs_arg(args, nargs, 1));
-    length = njs_primitive_value_to_length(&prop_length);
+    ret = njs_value_to_integer(vm, njs_arg(args, nargs, 1), &start);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
 
     if (start < 0) {
         start += length;
@@ -458,7 +449,10 @@ njs_array_prototype_slice(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     } else {
         if (njs_is_defined(njs_arg(args, nargs, 2))) {
-            end = njs_primitive_value_to_integer(njs_argument(args, 2));
+            ret = njs_value_to_integer(vm, njs_argument(args, 2), &end);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
 
         } else {
             end = length;
@@ -1724,7 +1718,10 @@ njs_array_prototype_index_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    from = njs_primitive_value_to_integer(njs_arg(args, nargs, 2));
+    ret = njs_value_to_integer(vm, njs_arg(args, nargs, 2), &from);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
 
     if (length == 0 || from >= (int64_t) length) {
         goto not_found;
@@ -1781,7 +1778,10 @@ njs_array_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
     }
 
     if (nargs > 2) {
-        from = njs_primitive_value_to_integer(njs_arg(args, nargs, 2));
+        ret = njs_value_to_integer(vm, njs_arg(args, nargs, 2), &from);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
 
     } else {
         from = length - 1;
@@ -1868,7 +1868,10 @@ njs_array_prototype_includes(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         goto not_found;
     }
 
-    from = njs_primitive_value_to_integer(njs_arg(args, nargs, 2));
+    ret = njs_value_to_integer(vm, njs_arg(args, nargs, 2), &from);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
 
     if (from < 0) {
         from += length;
@@ -1906,13 +1909,12 @@ static njs_int_t
 njs_array_prototype_fill(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_int_t     ret;
-    njs_int_t     i, start, end, length;
+    int64_t       start, end;
+    uint32_t      length;
+    njs_int_t     i, ret;
     njs_array_t   *array;
-    njs_value_t   name, prop_length, *this, *value;
+    njs_value_t   name, *this, *value;
     njs_object_t  *object;
-
-    static const njs_value_t  string_length = njs_string("length");
 
     this = njs_arg(args, nargs, 0);
 
@@ -1940,30 +1942,27 @@ njs_array_prototype_fill(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         length = array->length;
 
     } else {
-        ret = njs_value_property(vm, this, njs_value_arg(&string_length),
-                                 &prop_length);
+        ret = njs_object_length(vm, this, &length);
         if (njs_slow_path(ret == NJS_ERROR)) {
             return ret;
         }
-
-        if (njs_slow_path(!njs_is_primitive(&prop_length))) {
-            ret = njs_value_to_numeric(vm, &prop_length, &prop_length);
-            if (ret != NJS_OK) {
-                return ret;
-            }
-        }
-
-        length = njs_primitive_value_to_length(&prop_length);
     }
 
-    start = njs_primitive_value_to_integer(njs_arg(args, nargs, 2));
+    ret = njs_value_to_integer(vm, njs_arg(args, nargs, 2), &start);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
     start = (start < 0) ? njs_max(length + start, 0) : njs_min(start, length);
 
     if (njs_is_undefined(njs_arg(args, nargs, 3))) {
         end = length;
 
     } else {
-        end = njs_primitive_value_to_integer(njs_arg(args, nargs, 3));
+        ret = njs_value_to_integer(vm, njs_arg(args, nargs, 3), &end);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
     }
 
     end = (end < 0) ? njs_max(length + end, 0) : njs_min(end, length);

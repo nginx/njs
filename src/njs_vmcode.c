@@ -183,7 +183,7 @@ next:
             case NJS_VMCODE_DECREMENT:
             case NJS_VMCODE_POST_DECREMENT:
                 if (njs_slow_path(!njs_is_numeric(value2))) {
-                    ret = njs_value_to_numeric(vm, &numeric1, value2);
+                    ret = njs_value_to_numeric(vm, value2, &numeric1);
                     if (njs_slow_path(ret != NJS_OK)) {
                         goto error;
                     }
@@ -350,8 +350,8 @@ next:
             case NJS_VMCODE_RIGHT_SHIFT:
             case NJS_VMCODE_UNSIGNED_RIGHT_SHIFT:
                 if (njs_slow_path(!njs_is_numeric(value1))) {
-                    ret = njs_value_to_numeric(vm, &numeric1, value1);
-                    if (ret != NJS_OK) {
+                    ret = njs_value_to_numeric(vm, value1, &numeric1);
+                    if (njs_slow_path(ret != NJS_OK)) {
                         goto error;
                     }
 
@@ -359,8 +359,8 @@ next:
                 }
 
                 if (njs_slow_path(!njs_is_numeric(value2))) {
-                    ret = njs_value_to_numeric(vm, &numeric2, value2);
-                    if (ret != NJS_OK) {
+                    ret = njs_value_to_numeric(vm, value2, &numeric2);
+                    if (njs_slow_path(ret != NJS_OK)) {
                         goto error;
                     }
 
@@ -517,8 +517,8 @@ next:
             case NJS_VMCODE_UNARY_NEGATION:
             case NJS_VMCODE_BITWISE_NOT:
                 if (njs_slow_path(!njs_is_numeric(value1))) {
-                    ret = njs_value_to_numeric(vm, &numeric1, value1);
-                    if (ret != NJS_OK) {
+                    ret = njs_value_to_numeric(vm, value1, &numeric1);
+                    if (njs_slow_path(ret != NJS_OK)) {
                         goto error;
                     }
 
@@ -538,7 +538,7 @@ next:
                     break;
 
                 case NJS_VMCODE_BITWISE_NOT:
-                    njs_set_int32(retval, ~njs_number_to_integer(num));
+                    njs_set_int32(retval, ~njs_number_to_uint32(num));
                 }
 
                 pc += sizeof(njs_vmcode_2addr_t);

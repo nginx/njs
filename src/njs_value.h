@@ -845,10 +845,12 @@ njs_int_t njs_value_property_delete(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *key, njs_value_t *removed);
 
 
+#include "njs_number.h"
+
+
 njs_inline njs_int_t
-njs_value_to_numeric(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
+njs_value_to_number(njs_vm_t *vm, njs_value_t *value, double *dst)
 {
-    double       num;
     njs_int_t    ret;
     njs_value_t  primitive;
 
@@ -862,17 +864,118 @@ njs_value_to_numeric(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
     }
 
     if (njs_slow_path(!njs_is_numeric(value))) {
-        num = NAN;
+        *dst = NAN;
 
         if (njs_is_string(value)) {
-            num = njs_string_to_number(value, 0);
+            *dst = njs_string_to_number(value, 0);
         }
 
-    } else {
-        num = njs_number(value);
+        return NJS_OK;
+    }
+
+    *dst = njs_number(value);
+
+    return NJS_OK;
+}
+
+
+njs_inline njs_int_t
+njs_value_to_numeric(njs_vm_t *vm, njs_value_t *value, njs_value_t *dst)
+{
+    double     num;
+    njs_int_t  ret;
+
+    ret = njs_value_to_number(vm, value, &num);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
     njs_set_number(dst, num);
+
+    return NJS_OK;
+}
+
+
+njs_inline njs_int_t
+njs_value_to_integer(njs_vm_t *vm, njs_value_t *value, int64_t *dst)
+{
+    double     num;
+    njs_int_t  ret;
+
+    ret = njs_value_to_number(vm, value, &num);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    *dst = njs_number_to_integer(num);
+
+    return NJS_OK;
+}
+
+
+njs_inline njs_int_t
+njs_value_to_length(njs_vm_t *vm, njs_value_t *value, uint32_t *dst)
+{
+    double     num;
+    njs_int_t  ret;
+
+    ret = njs_value_to_number(vm, value, &num);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    *dst = njs_number_to_length(num);
+
+    return NJS_OK;
+}
+
+
+njs_inline njs_int_t
+njs_value_to_int32(njs_vm_t *vm, njs_value_t *value, int32_t *dst)
+{
+    double     num;
+    njs_int_t  ret;
+
+    ret = njs_value_to_number(vm, value, &num);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    *dst = njs_number_to_int32(num);
+
+    return NJS_OK;
+}
+
+
+njs_inline njs_int_t
+njs_value_to_uint32(njs_vm_t *vm, njs_value_t *value, uint32_t *dst)
+{
+    double     num;
+    njs_int_t  ret;
+
+    ret = njs_value_to_number(vm, value, &num);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    *dst = njs_number_to_uint32(num);
+
+    return NJS_OK;
+}
+
+
+njs_inline njs_int_t
+njs_value_to_uint16(njs_vm_t *vm, njs_value_t *value, uint16_t *dst)
+{
+    double     num;
+    njs_int_t  ret;
+
+    ret = njs_value_to_number(vm, value, &num);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    *dst = njs_number_to_uint16(num);
 
     return NJS_OK;
 }

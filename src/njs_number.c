@@ -547,10 +547,10 @@ njs_number_prototype_to_fixed(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
     u_char       *p;
-    int32_t      frac;
+    int64_t      frac;
     double       number;
     size_t       length, size;
-    njs_int_t    point, prefix, postfix;
+    njs_int_t    ret, point, prefix, postfix;
     njs_value_t  *value;
     u_char       buf[128], buf2[128];
 
@@ -569,7 +569,11 @@ njs_number_prototype_to_fixed(njs_vm_t *vm, njs_value_t *args,
         }
     }
 
-    frac = njs_primitive_value_to_integer(njs_arg(args, nargs, 1));
+    ret = njs_value_to_integer(vm, njs_arg(args, nargs, 1), &frac);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
     if (njs_slow_path(frac < 0 || frac > 100)) {
         njs_range_error(vm, "digits argument must be between 0 and 100");
         return NJS_ERROR;
@@ -582,7 +586,7 @@ njs_number_prototype_to_fixed(njs_vm_t *vm, njs_value_t *args,
     }
 
     point = 0;
-    length = njs_fixed_dtoa(number, frac, (char *) buf, &point);
+    length = njs_fixed_dtoa(number, (njs_int_t) frac, (char *) buf, &point);
 
     prefix = 0;
     postfix = 0;
@@ -643,7 +647,8 @@ njs_number_prototype_to_precision(njs_vm_t *vm, njs_value_t *args,
 {
     double       number;
     size_t       size;
-    int32_t      precision;
+    int64_t      precision;
+    njs_int_t    ret;
     njs_value_t  *value;
     u_char       buf[128];
 
@@ -672,13 +677,17 @@ njs_number_prototype_to_precision(njs_vm_t *vm, njs_value_t *args,
         return njs_number_to_string(vm, &vm->retval, value);
     }
 
-    precision = njs_primitive_value_to_integer(njs_argument(args, 1));
+    ret = njs_value_to_integer(vm, njs_argument(args, 1), &precision);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
     if (njs_slow_path(precision < 1 || precision > 100)) {
         njs_range_error(vm, "precision argument must be between 1 and 100");
         return NJS_ERROR;
     }
 
-    size = njs_dtoa_precision(number, (char *) buf, precision);
+    size = njs_dtoa_precision(number, (char *) buf, (size_t) precision);
 
     return njs_string_new(vm, &vm->retval, buf, size, size);
 }
@@ -690,7 +699,8 @@ njs_number_prototype_to_exponential(njs_vm_t *vm, njs_value_t *args,
 {
     double       number;
     size_t       size;
-    int32_t      frac;
+    int64_t      frac;
+    njs_int_t    ret;
     njs_value_t  *value;
     u_char       buf[128];
 
@@ -714,7 +724,11 @@ njs_number_prototype_to_exponential(njs_vm_t *vm, njs_value_t *args,
     }
 
     if (njs_is_defined(njs_arg(args, nargs, 1))) {
-        frac = njs_primitive_value_to_integer(njs_argument(args, 1));
+        ret = njs_value_to_integer(vm, njs_argument(args, 1), &frac);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
         if (njs_slow_path(frac < 0 || frac > 100)) {
             njs_range_error(vm, "digits argument must be between 0 and 100");
             return NJS_ERROR;
@@ -724,7 +738,7 @@ njs_number_prototype_to_exponential(njs_vm_t *vm, njs_value_t *args,
         frac = -1;
     }
 
-    size = njs_dtoa_exponential(number, (char *) buf, frac);
+    size = njs_dtoa_exponential(number, (char *) buf, (njs_int_t) frac);
 
     return njs_string_new(vm, &vm->retval, buf, size, size);
 }

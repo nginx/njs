@@ -2316,14 +2316,5 @@ njs_object_length(njs_vm_t *vm, njs_value_t *value, uint32_t *length)
         return ret;
     }
 
-    if (!njs_is_primitive(&value_length)) {
-        ret = njs_value_to_numeric(vm, &value_length, &value_length);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
-    }
-
-    *length = njs_primitive_value_to_length(&value_length);
-
-    return NJS_OK;
+    return njs_value_to_length(vm, &value_length, length);
 }

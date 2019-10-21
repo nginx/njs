@@ -1235,16 +1235,22 @@ static njs_int_t
 njs_string_prototype_char_at(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    ssize_t            start, length;
+    size_t             length;
+    int64_t            start;
+    njs_int_t          ret;
     njs_slice_prop_t   slice;
     njs_string_prop_t  string;
 
     slice.string_length = njs_string_prop(&string, &args[0]);
 
-    start = njs_primitive_value_to_integer(njs_arg(args, nargs, 1));
+    ret = njs_value_to_integer(vm, njs_arg(args, nargs, 1), &start);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
     length = 1;
 
-    if (start < 0 || start >= (ssize_t) slice.string_length) {
+    if (start < 0 || start >= (int64_t) slice.string_length) {
         start = 0;
         length = 0;
     }
@@ -1395,21 +1401,26 @@ njs_string_prototype_char_code_at(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
     double             num;
-    ssize_t            index, length;
+    size_t             length;
+    int64_t            index;
     uint32_t           code;
+    njs_int_t          ret;
     const u_char       *start, *end;
     njs_string_prop_t  string;
 
     length = njs_string_prop(&string, &args[0]);
 
-    index = njs_primitive_value_to_integer(njs_arg(args, nargs, 1));
+    ret = njs_value_to_integer(vm, njs_arg(args, nargs, 1), &index);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
 
-    if (njs_slow_path(index < 0 || index >= length)) {
+    if (njs_slow_path(index < 0 || index >= (int64_t) length)) {
         num = NAN;
         goto done;
     }
 
-    if ((uint32_t) length == string.size) {
+    if (length == string.size) {
         /* Byte or ASCII string. */
         code = string.start[index];
 
@@ -2501,11 +2512,15 @@ njs_string_prototype_repeat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     u_char             *p, *start;
-    int32_t            n, max;
-    uint32_t           size, length;
+    int64_t            n, max;
+    uint64_t           size, length;
+    njs_int_t          ret;
     njs_string_prop_t  string;
 
-    n = njs_primitive_value_to_integer(njs_arg(args, nargs, 1));
+    ret = njs_value_to_integer(vm, njs_arg(args, nargs, 1), &n);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
 
     (void) njs_string_prop(&string, &args[0]);
 
