@@ -1,6 +1,77 @@
 
-Changes with njs 0.3.5                                           15 Aug 2019
+Changes with njs 0.3.6                                           22 Oct 2019
+
+    nginx modules:
+
+    *) Improvement: getting special headers from r.headersIn.
+
     Core:
+
+    *) Feature: added new Function() support.
+
+    *) Feature: added Number.prototype.toFixed().
+
+    *) Feature: added Number.prototype.toPrecision().
+
+    *) Feature: added Number.prototype.toExponential().
+
+    *) Improvement: making "prototype" property of function
+       instances writable.
+
+    *) Improvement: limiting recursion depth while compiling.
+
+    *) Improvement: moving global functions to the global object.
+
+    *) Bugfix: fixed prototype mutation for object literals.
+
+    *) Bugfix: fixed heap-buffer-overflow while parsing regexp literals.
+
+    *) Bugfix: fixed integer-overflow while parsing exponent
+       of number literals.
+
+    *) Bugfix: fixed parseFloat().
+
+    *) Bugfix: fixed Array.prototype functions according to the specification.
+       The following functions were fixed: every, includes, indexOf, filter,
+       find, findIndex, forEach, lastIndexOf, map, pop, push, reduce,
+       reduceRight, shift, some, unshift.
+
+    *) Bugfix: fixed handing of accessor descriptors in Object.freeze().
+
+    *) Bugfix: fixed String.prototype.replace() when first argument
+       is not a string.
+
+    *) Bugfix: fixed stack-use-after-scope in Array.prototype.map().
+
+    *) Bugfix: Date.prototype.toUTCString() format was aligned to ES9.
+
+    *) Bugfix: fixed buffer overflow in Number.prototype.toString(radix).
+
+    *) Bugfix: fixed Regexp.prototype.test() for regexps with backreferences.
+
+    *) Bugfix: fixed Array.prototype.map() for objects with nonexistent values.
+
+    *) Bugfix: fixed Array.prototype.pop() and shift() for sparse objects.
+
+    *) Bugfix: fixed Date.UTC() according to the specification.
+
+    *) Bugfix: fixed Date() constructor according to the specification.
+
+    *) Bugfix: fixed type of Date.prototype.
+       Thanks to Artem S. Povalyukhin.
+
+    *) Bugfix: fixed Date.prototype.setTime().
+       Thanks to Artem S. Povalyukhin.
+
+    *) Bugfix: fixed default number of arguments expected by built-in functions.
+
+    *) Bugfix: fixed "caller" and "arguments" properties of a function instance.
+       Thanks to Artem S. Povalyukhin.
+
+Changes with njs 0.3.5                                           15 Aug 2019
+
+    Core:
+
     *) Bugfix: fixed module importing using require(). The bug was
        introduced in 0.3.4.
 
@@ -9,6 +80,7 @@ Changes with njs 0.3.5                                           15 Aug 2019
 Changes with njs 0.3.4                                           13 Aug 2019
 
     Core:
+
     *) Feature: added Object shorthand methods and computed property
        names. Thanks to 洪志道 (Hong Zhi Dao) and Artem S. Povalyukhin.
 
@@ -99,6 +171,7 @@ Changes with njs 0.3.3                                           25 Jun 2019
     *) Bugfix: fixed processing empty output chain in stream body filter.
 
     Core:
+
     *) Feature: added runtime support for property getter/setter.
        Thanks to 洪志道 (Hong Zhi Dao) and Artem S. Povalyukhin.
 
