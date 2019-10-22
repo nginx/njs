@@ -323,7 +323,7 @@ static const njs_object_prop_t  njs_hash_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toString"),
-        .value = njs_native_function(njs_hash_prototype_to_string, 0, 0),
+        .value = njs_native_function(njs_hash_prototype_to_string, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -331,8 +331,7 @@ static const njs_object_prop_t  njs_hash_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("update"),
-        .value = njs_native_function(njs_hash_prototype_update, 0,
-                                     NJS_OBJECT_ARG, NJS_SKIP_ARG),
+        .value = njs_native_function(njs_hash_prototype_update, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -340,8 +339,7 @@ static const njs_object_prop_t  njs_hash_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("digest"),
-        .value = njs_native_function(njs_hash_prototype_digest, 0,
-                                     NJS_OBJECT_ARG, NJS_SKIP_ARG),
+        .value = njs_native_function(njs_hash_prototype_digest, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -585,7 +583,7 @@ static const njs_object_prop_t  njs_hmac_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toString"),
-        .value = njs_native_function(njs_hmac_prototype_to_string, 0, 0),
+        .value = njs_native_function(njs_hmac_prototype_to_string, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -593,8 +591,7 @@ static const njs_object_prop_t  njs_hmac_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("update"),
-        .value = njs_native_function(njs_hmac_prototype_update, 0,
-                                     NJS_OBJECT_ARG, NJS_SKIP_ARG),
+        .value = njs_native_function(njs_hmac_prototype_update, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -602,8 +599,7 @@ static const njs_object_prop_t  njs_hmac_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("digest"),
-        .value = njs_native_function(njs_hmac_prototype_digest, 0,
-                                     NJS_OBJECT_ARG, NJS_SKIP_ARG),
+        .value = njs_native_function(njs_hmac_prototype_digest, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -650,8 +646,7 @@ static const njs_object_prop_t  njs_crypto_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("createHash"),
-        .value = njs_native_function(njs_crypto_create_hash, 0,
-                                     NJS_SKIP_ARG),
+        .value = njs_native_function(njs_crypto_create_hash, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -659,8 +654,7 @@ static const njs_object_prop_t  njs_crypto_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("createHmac"),
-        .value = njs_native_function(njs_crypto_create_hmac, 0,
-                                     NJS_SKIP_ARG),
+        .value = njs_native_function(njs_crypto_create_hmac, 0),
         .writable = 1,
         .configurable = 1,
     },

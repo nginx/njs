@@ -896,25 +896,43 @@ static njs_int_t
 njs_fs_rename_sync(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    int         ret;
-    const char  *old_path, *new_path;
+    int          ret;
+    const char   *old_path, *new_path;
+    njs_value_t  *old, *new;
 
-    if (njs_slow_path(!njs_is_string(njs_arg(args, nargs, 1)))) {
-        njs_type_error(vm, "oldPath must be a string");
-        return NJS_ERROR;
-    }
+    if (njs_slow_path(nargs < 3)) {
+        if (nargs < 2) {
+            njs_type_error(vm, "oldPath must be a string");
+            return NJS_ERROR;
+        }
 
-    if (njs_slow_path(!njs_is_string(njs_arg(args, nargs, 2)))) {
         njs_type_error(vm, "newPath must be a string");
         return NJS_ERROR;
     }
 
-    old_path = njs_string_to_c_string(vm, njs_argument(args, 1));
+    old = njs_argument(args, 1);
+    new = njs_argument(args, 2);
+
+    if (njs_slow_path(!njs_is_string(old))) {
+        ret = njs_value_to_string(vm, old, old);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    if (njs_slow_path(!njs_is_string(new))) {
+        ret = njs_value_to_string(vm, new, new);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    old_path = njs_string_to_c_string(vm, old);
     if (njs_slow_path(old_path == NULL)) {
         return NJS_ERROR;
     }
 
-    new_path = njs_string_to_c_string(vm, njs_argument(args, 2));
+    new_path = njs_string_to_c_string(vm, new);
     if (njs_slow_path(new_path == NULL)) {
         return NJS_ERROR;
     }
@@ -1140,7 +1158,7 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("readFile"),
-        .value = njs_native_function(njs_fs_read_file, 0, 0),
+        .value = njs_native_function(njs_fs_read_file, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1148,7 +1166,7 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("readFileSync"),
-        .value = njs_native_function(njs_fs_read_file_sync, 0, 0),
+        .value = njs_native_function(njs_fs_read_file_sync, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1156,7 +1174,7 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("appendFile"),
-        .value = njs_native_function(njs_fs_append_file, 0, 0),
+        .value = njs_native_function(njs_fs_append_file, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1164,7 +1182,7 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("appendFileSync"),
-        .value = njs_native_function(njs_fs_append_file_sync, 0, 0),
+        .value = njs_native_function(njs_fs_append_file_sync, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1172,7 +1190,7 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("writeFile"),
-        .value = njs_native_function(njs_fs_write_file, 0, 0),
+        .value = njs_native_function(njs_fs_write_file, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1180,7 +1198,7 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("writeFileSync"),
-        .value = njs_native_function(njs_fs_write_file_sync, 0, 0),
+        .value = njs_native_function(njs_fs_write_file_sync, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1188,8 +1206,7 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("renameSync"),
-        .value = njs_native_function(njs_fs_rename_sync, 0, NJS_STRING_ARG,
-                                     NJS_STRING_ARG, 0),
+        .value = njs_native_function(njs_fs_rename_sync, 0),
         .writable = 1,
         .configurable = 1,
     },

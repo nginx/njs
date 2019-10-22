@@ -506,6 +506,7 @@ njs_int_t
 njs_module_require(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
+    njs_int_t           ret;
     njs_object_t        *object;
     njs_module_t        *module;
     njs_lvlhsh_query_t  lhq;
@@ -513,6 +514,13 @@ njs_module_require(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     if (nargs < 2) {
         njs_type_error(vm, "missing path");
         return NJS_ERROR;
+    }
+
+    if (njs_slow_path(!njs_is_string(&args[1]))) {
+        ret = njs_value_to_string(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
     }
 
     njs_string_get(&args[1], &lhq.key);

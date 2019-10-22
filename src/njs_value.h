@@ -235,12 +235,9 @@ typedef struct {
 } njs_closure_t;
 
 
-#define NJS_ARGS_TYPES_MAX            5
-
 struct njs_function_s {
     njs_object_t                      object;
 
-    uint8_t                           args_types[NJS_ARGS_TYPES_MAX];
     uint8_t                           args_offset;
     uint8_t                           args_count;
 
@@ -391,14 +388,13 @@ typedef struct {
 }
 
 
-#define njs_native_function(_function, _args_count, ...) {                    \
+#define njs_native_function(_function, _args_count) {                         \
     .data = {                                                                 \
         .type = NJS_FUNCTION,                                                 \
         .truth = 1,                                                           \
         .u.function = & (njs_function_t) {                                    \
             .native = 1,                                                      \
             .args_count = _args_count,                                        \
-            .args_types = { __VA_ARGS__ },                                    \
             .args_offset = 1,                                                 \
             .u.native = _function,                                            \
             .object = { .type = NJS_FUNCTION,                                 \
@@ -827,7 +823,6 @@ njs_array_t *njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
     njs_object_enum_t kind, njs_bool_t all);
 njs_int_t njs_value_length(njs_vm_t *vm, njs_value_t *value, uint32_t *dest);
 const char *njs_type_string(njs_value_type_t type);
-const char *njs_arg_type_string(uint8_t arg);
 
 njs_int_t njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
     const njs_value_t *src);

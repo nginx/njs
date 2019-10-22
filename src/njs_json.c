@@ -146,10 +146,11 @@ static njs_int_t
 njs_json_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_value_t           *value, *wrapper;
-    const njs_value_t     *text, *reviver;
+    njs_int_t             ret;
+    njs_value_t           *text, *value, *wrapper;
     const u_char          *p, *end;
     njs_json_parse_t      *parse, json_parse;
+    const njs_value_t     *reviver;
     njs_string_prop_t     string;
     njs_json_parse_ctx_t  ctx;
 
@@ -163,8 +164,16 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     text = njs_arg(args, nargs, 1);
 
-    if (njs_is_undefined(text)) {
-        text = &njs_string_undefined;
+    if (njs_slow_path(!njs_is_string(text))) {
+        if (njs_is_undefined(text)) {
+            text = njs_value_arg(&njs_string_undefined);
+
+        } else {
+            ret = njs_value_to_string(vm, text, text);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+        }
     }
 
     (void) njs_string_prop(&string, text);
@@ -2101,9 +2110,7 @@ static const njs_object_prop_t  njs_json_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("parse"),
-        .value = njs_native_function(njs_json_parse, 2,
-                                     NJS_SKIP_ARG, NJS_STRING_ARG,
-                                     NJS_OBJECT_ARG),
+        .value = njs_native_function(njs_json_parse, 2),
         .writable = 1,
         .configurable = 1,
     },
@@ -2112,9 +2119,7 @@ static const njs_object_prop_t  njs_json_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("stringify"),
-        .value = njs_native_function(njs_json_stringify, 3,
-                                     NJS_SKIP_ARG, NJS_SKIP_ARG, NJS_SKIP_ARG,
-                                     NJS_SKIP_ARG),
+        .value = njs_native_function(njs_json_stringify, 3),
         .writable = 1,
         .configurable = 1,
     },

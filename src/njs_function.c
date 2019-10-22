@@ -11,8 +11,6 @@
 static njs_function_t *njs_function_copy(njs_vm_t *vm,
     njs_function_t *function);
 static njs_native_frame_t *njs_function_frame_alloc(njs_vm_t *vm, size_t size);
-static njs_int_t njs_normalize_args(njs_vm_t *vm, njs_value_t *args,
-    uint8_t *args_types, njs_uint_t nargs);
 
 
 njs_function_t *
@@ -269,8 +267,8 @@ const njs_object_prop_t  njs_arguments_object_instance_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("callee"),
         .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function(njs_function_prototype_thrower, 0, 0),
-        .setter = njs_native_function(njs_function_prototype_thrower, 0, 0),
+        .getter = njs_native_function(njs_function_prototype_thrower, 0),
+        .setter = njs_native_function(njs_function_prototype_thrower, 0),
         .writable = NJS_ATTRIBUTE_UNSET,
     },
 };
@@ -586,12 +584,6 @@ njs_function_native_call(njs_vm_t *vm)
     frame = (njs_frame_t *) native;
     function = native->function;
 
-    ret = njs_normalize_args(vm, native->arguments, function->args_types,
-                             native->nargs);
-    if (ret != NJS_OK) {
-        return ret;
-    }
-
     ret = function->u.native(vm, native->arguments, native->nargs,
                              frame->retval);
 
@@ -619,142 +611,6 @@ njs_function_native_call(njs_vm_t *vm)
     njs_function_frame_free(vm, native);
 
     return NJS_OK;
-}
-
-
-static njs_int_t
-njs_normalize_args(njs_vm_t *vm, njs_value_t *args, uint8_t *args_types,
-    njs_uint_t nargs)
-{
-    njs_int_t   ret;
-    njs_uint_t  n;
-
-    n = njs_min(nargs, NJS_ARGS_TYPES_MAX);
-
-    while (n != 0) {
-
-        switch (*args_types) {
-
-        case NJS_STRING_OBJECT_ARG:
-
-            if (njs_is_null_or_undefined(args)) {
-                goto type_error;
-            }
-
-            /* Fall through. */
-
-        case NJS_STRING_ARG:
-
-            if (!njs_is_string(args)) {
-                ret = njs_value_to_string(vm, args, args);
-                if (ret != NJS_OK) {
-                    return ret;
-                }
-            }
-
-            break;
-
-        case NJS_NUMBER_ARG:
-
-            if (!njs_is_numeric(args)) {
-                ret = njs_value_to_numeric(vm, args, args);
-                if (ret != NJS_OK) {
-                    return ret;
-                }
-            }
-
-            break;
-
-        case NJS_INTEGER_ARG:
-
-            if (!njs_is_numeric(args)) {
-                ret = njs_value_to_numeric(vm, args, args);
-                if (ret != NJS_OK) {
-                    return ret;
-                }
-            }
-
-            /* Numbers are truncated to fit in 32-bit integers. */
-
-            if (!isnan(njs_number(args))) {
-                if (njs_number(args) > 2147483647.0) {
-                    njs_number(args) = 2147483647.0;
-
-                } else if (njs_number(args) < -2147483648.0) {
-                    njs_number(args) = -2147483648.0;
-                }
-            }
-
-            break;
-
-        case NJS_FUNCTION_ARG:
-
-            switch (args->type) {
-            case NJS_STRING:
-            case NJS_FUNCTION:
-                break;
-
-            default:
-                ret = njs_value_to_string(vm, args, args);
-                if (ret != NJS_OK) {
-                    return ret;
-                }
-            }
-
-            break;
-
-        case NJS_REGEXP_ARG:
-
-            switch (args->type) {
-            case NJS_UNDEFINED:
-            case NJS_STRING:
-            case NJS_REGEXP:
-                break;
-
-            default:
-                ret = njs_value_to_string(vm, args, args);
-                if (ret != NJS_OK) {
-                    return ret;
-                }
-            }
-
-            break;
-
-        case NJS_DATE_ARG:
-            if (!njs_is_date(args)) {
-                goto type_error;
-            }
-
-            break;
-
-        case NJS_OBJECT_ARG:
-
-            if (njs_is_null_or_undefined(args)) {
-                goto type_error;
-            }
-
-            break;
-
-        case NJS_SKIP_ARG:
-            break;
-
-        case 0:
-            return NJS_OK;
-        }
-
-        args++;
-        args_types++;
-        n--;
-    }
-
-    return NJS_OK;
-
-type_error:
-
-    njs_type_error(vm, "cannot convert %s to %s", njs_type_string(args->type),
-                   njs_arg_type_string(*args_types));
-
-    return NJS_ERROR;
 }
 
 
@@ -1257,7 +1113,7 @@ static const njs_object_prop_t  njs_function_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("call"),
-        .value = njs_native_function(njs_function_prototype_call, 1, 0),
+        .value = njs_native_function(njs_function_prototype_call, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1265,7 +1121,7 @@ static const njs_object_prop_t  njs_function_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("apply"),
-        .value = njs_native_function(njs_function_prototype_apply, 2, 0),
+        .value = njs_native_function(njs_function_prototype_apply, 2),
         .writable = 1,
         .configurable = 1,
     },
@@ -1273,7 +1129,7 @@ static const njs_object_prop_t  njs_function_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("bind"),
-        .value = njs_native_function(njs_function_prototype_bind, 1, 0),
+        .value = njs_native_function(njs_function_prototype_bind, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1282,8 +1138,8 @@ static const njs_object_prop_t  njs_function_prototype_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("caller"),
         .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function(njs_function_prototype_thrower, 0, 0),
-        .setter = njs_native_function(njs_function_prototype_thrower, 0, 0),
+        .getter = njs_native_function(njs_function_prototype_thrower, 0),
+        .setter = njs_native_function(njs_function_prototype_thrower, 0),
         .writable = NJS_ATTRIBUTE_UNSET,
         .configurable = 1,
     },
@@ -1292,8 +1148,8 @@ static const njs_object_prop_t  njs_function_prototype_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("arguments"),
         .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function(njs_function_prototype_thrower, 0, 0),
-        .setter = njs_native_function(njs_function_prototype_thrower, 0, 0),
+        .getter = njs_native_function(njs_function_prototype_thrower, 0),
+        .setter = njs_native_function(njs_function_prototype_thrower, 0),
         .writable = NJS_ATTRIBUTE_UNSET,
         .configurable = 1,
     },

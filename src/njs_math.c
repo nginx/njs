@@ -12,16 +12,21 @@ static njs_int_t
 njs_object_math_abs(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = fabs(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, fabs(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -31,25 +36,31 @@ static njs_int_t
 njs_object_math_acos(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    double     num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = njs_number(&args[1]);
-
-#if (NJS_SOLARIS)
-        /* On Solaris acos(x) returns 0 for x > 1. */
-        if (fabs(num) > 1.0) {
-            num = NAN;
-        }
-#endif
-
-        num = acos(num);
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    num = njs_number(&args[1]);
+
+#if (NJS_SOLARIS)
+    /* On Solaris acos(x) returns 0 for x > 1. */
+    if (fabs(num) > 1.0) {
+        num = NAN;
+    }
+#endif
+
+    njs_set_number(&vm->retval, acos(num));
 
     return NJS_OK;
 }
@@ -59,16 +70,21 @@ static njs_int_t
 njs_object_math_acosh(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = acosh(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, acosh(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -78,25 +94,31 @@ static njs_int_t
 njs_object_math_asin(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    double     num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = njs_number(&args[1]);
-
-#if (NJS_SOLARIS)
-        /* On Solaris asin(x) returns 0 for x > 1. */
-        if (fabs(num) > 1.0) {
-            num = NAN;
-        }
-#endif
-
-        num = asin(num);
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    num = njs_number(&args[1]);
+
+#if (NJS_SOLARIS)
+    /* On Solaris asin(x) returns 0 for x > 1. */
+    if (fabs(num) > 1.0) {
+        num = NAN;
+    }
+#endif
+
+    njs_set_number(&vm->retval, asin(num));
 
     return NJS_OK;
 }
@@ -106,16 +128,21 @@ static njs_int_t
 njs_object_math_asinh(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = asinh(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, asinh(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -125,16 +152,21 @@ static njs_int_t
 njs_object_math_atan(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = atan(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, atan(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -144,19 +176,32 @@ static njs_int_t
 njs_object_math_atan2(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num, y, x;
+    double     y, x;
+    njs_int_t  ret;
 
-    if (nargs > 2) {
-        y = njs_number(&args[1]);
-        x = njs_number(&args[2]);
-
-        num = atan2(y, x);
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 3)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    if (njs_slow_path(!njs_is_number(&args[2]))) {
+        ret = njs_value_to_numeric(vm, &args[2], &args[2]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    y = njs_number(&args[1]);
+    x = njs_number(&args[2]);
+
+    njs_set_number(&vm->retval, atan2(y, x));
 
     return NJS_OK;
 }
@@ -166,16 +211,21 @@ static njs_int_t
 njs_object_math_atanh(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = atanh(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, atanh(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -185,16 +235,21 @@ static njs_int_t
 njs_object_math_cbrt(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = cbrt(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, cbrt(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -204,16 +259,21 @@ static njs_int_t
 njs_object_math_ceil(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = ceil(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, ceil(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -223,18 +283,25 @@ static njs_int_t
 njs_object_math_clz32(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double    num;
-    uint32_t  ui32;
+    uint32_t   ui32;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        ui32 = njs_number_to_uint32(njs_number(&args[1]));
-        num = njs_leading_zeros(ui32);
-
-    } else {
-        num = 32;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, 32);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_uint32(vm, &args[1], &ui32);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+    } else {
+        ui32 = njs_number_to_uint32(njs_number(&args[1]));
+    }
+
+    njs_set_number(&vm->retval, njs_leading_zeros(ui32));
 
     return NJS_OK;
 }
@@ -244,16 +311,21 @@ static njs_int_t
 njs_object_math_cos(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = cos(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, cos(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -263,16 +335,21 @@ static njs_int_t
 njs_object_math_cosh(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = cosh(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, cosh(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -282,16 +359,21 @@ static njs_int_t
 njs_object_math_exp(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = exp(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, exp(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -301,16 +383,21 @@ static njs_int_t
 njs_object_math_expm1(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = expm1(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, expm1(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -320,16 +407,21 @@ static njs_int_t
 njs_object_math_floor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = floor(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, floor(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -339,16 +431,21 @@ static njs_int_t
 njs_object_math_fround(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = (float) njs_number(&args[1]);
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, (float) njs_number(&args[1]));
 
     return NJS_OK;
 }
@@ -391,20 +488,35 @@ static njs_int_t
 njs_object_math_imul(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double    num;
-    uint32_t  a, b;
+    uint32_t   a, b;
+    njs_int_t  ret;
 
-    if (nargs > 2) {
-        a = njs_number_to_uint32(njs_number(&args[1]));
-        b = njs_number_to_uint32(njs_number(&args[2]));
-
-        num = (int32_t) (a * b);
-
-    } else {
-        num = 0;
+    if (njs_slow_path(nargs < 3)) {
+        njs_set_number(&vm->retval, 0);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_uint32(vm, &args[1], &a);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+    } else {
+        a = njs_number_to_uint32(njs_number(&args[1]));
+    }
+
+    if (njs_slow_path(!njs_is_number(&args[2]))) {
+        ret = njs_value_to_uint32(vm, &args[2], &b);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+    } else {
+        b = njs_number_to_uint32(njs_number(&args[2]));
+    }
+
+    njs_set_number(&vm->retval, (int32_t) (a * b));
 
     return NJS_OK;
 }
@@ -414,16 +526,21 @@ static njs_int_t
 njs_object_math_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = log(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, log(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -433,16 +550,21 @@ static njs_int_t
 njs_object_math_log10(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = log10(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, log10(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -452,16 +574,21 @@ static njs_int_t
 njs_object_math_log1p(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = log1p(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, log1p(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -471,25 +598,31 @@ static njs_int_t
 njs_object_math_log2(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    double     num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = njs_number(&args[1]);
-
-#if (NJS_SOLARIS)
-        /* On Solaris 10 log(-1) returns -Infinity. */
-        if (num < 0) {
-            num = NAN;
-        }
-#endif
-
-        num = log2(num);
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    num = njs_number(&args[1]);
+
+#if (NJS_SOLARIS)
+    /* On Solaris 10 log(-1) returns -Infinity. */
+    if (num < 0) {
+        num = NAN;
+    }
+#endif
+
+    njs_set_number(&vm->retval, log2(num));
 
     return NJS_OK;
 }
@@ -573,24 +706,39 @@ static njs_int_t
 njs_object_math_pow(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num, base, exponent;
+    double     num, base, exponent;
+    njs_int_t  ret;
 
-    if (nargs > 2) {
-        base = njs_number(&args[1]);
-        exponent = njs_number(&args[2]);
+    if (njs_slow_path(nargs < 3)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
+    }
 
-        /*
-         * According to ECMA-262:
-         *  1. If exponent is NaN, the result should be NaN;
-         *  2. The result of Math.pow(+/-1, +/-Infinity) should be NaN.
-         */
-
-        if (fabs(base) != 1 || (!isnan(exponent) && !isinf(exponent))) {
-            num = pow(base, exponent);
-
-        } else {
-            num = NAN;
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
+    }
+
+    if (njs_slow_path(!njs_is_number(&args[2]))) {
+        ret = njs_value_to_numeric(vm, &args[2], &args[2]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    base = njs_number(&args[1]);
+    exponent = njs_number(&args[2]);
+
+    /*
+     * According to ECMA-262:
+     *  1. If exponent is NaN, the result should be NaN;
+     *  2. The result of Math.pow(+/-1, +/-Infinity) should be NaN.
+     */
+
+    if (fabs(base) != 1 || (!isnan(exponent) && !isinf(exponent))) {
+        num = pow(base, exponent);
 
     } else {
         num = NAN;
@@ -620,16 +768,21 @@ static njs_int_t
 njs_object_math_round(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = round(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, round(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -639,17 +792,25 @@ static njs_int_t
 njs_object_math_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    double     num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = njs_number(&args[1]);
+    if (njs_slow_path(nargs < 2)) {
+         njs_set_number(&vm->retval, NAN);
+         return NJS_OK;
+    }
 
-        if (!isnan(num) && num != 0) {
-            num = signbit(num) ? -1 : 1;
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
+    }
 
-    } else {
-        num = NAN;
+    num = njs_number(&args[1]);
+
+    if (!isnan(num) && num != 0) {
+        num = signbit(num) ? -1 : 1;
     }
 
     njs_set_number(&vm->retval, num);
@@ -662,16 +823,21 @@ static njs_int_t
 njs_object_math_sin(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = sin(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, sin(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -681,16 +847,21 @@ static njs_int_t
 njs_object_math_sinh(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = sinh(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, sinh(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -700,16 +871,21 @@ static njs_int_t
 njs_object_math_sqrt(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = sqrt(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, sqrt(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -719,16 +895,21 @@ static njs_int_t
 njs_object_math_tan(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = tan(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, tan(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -738,16 +919,21 @@ static njs_int_t
 njs_object_math_tanh(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = tanh(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, tanh(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -757,16 +943,21 @@ static njs_int_t
 njs_object_math_trunc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    njs_int_t  ret;
 
-    if (nargs > 1) {
-        num = trunc(njs_number(&args[1]));
-
-    } else {
-        num = NAN;
+    if (njs_slow_path(nargs < 2)) {
+        njs_set_number(&vm->retval, NAN);
+        return NJS_OK;
     }
 
-    njs_set_number(&vm->retval, num);
+    if (njs_slow_path(!njs_is_number(&args[1]))) {
+        ret = njs_value_to_numeric(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    njs_set_number(&vm->retval, trunc(njs_number(&args[1])));
 
     return NJS_OK;
 }
@@ -833,8 +1024,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("abs"),
-        .value = njs_native_function(njs_object_math_abs, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_abs, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -842,8 +1032,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("acos"),
-        .value = njs_native_function(njs_object_math_acos, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_acos, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -852,8 +1041,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("acosh"),
-        .value = njs_native_function(njs_object_math_acosh, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_acosh, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -861,8 +1049,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("asin"),
-        .value = njs_native_function(njs_object_math_asin, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_asin, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -871,8 +1058,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("asinh"),
-        .value = njs_native_function(njs_object_math_asinh, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_asinh, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -880,8 +1066,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("atan"),
-        .value = njs_native_function(njs_object_math_atan, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_atan, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -889,8 +1074,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("atan2"),
-        .value = njs_native_function(njs_object_math_atan2, 2,
-                     NJS_SKIP_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_atan2, 2),
         .writable = 1,
         .configurable = 1,
     },
@@ -899,8 +1083,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("atanh"),
-        .value = njs_native_function(njs_object_math_atanh, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_atanh, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -909,8 +1092,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("cbrt"),
-        .value = njs_native_function(njs_object_math_cbrt, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_cbrt, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -918,8 +1100,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("ceil"),
-        .value = njs_native_function(njs_object_math_ceil, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_ceil, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -928,8 +1109,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("clz32"),
-        .value = njs_native_function(njs_object_math_clz32, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_clz32, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -937,8 +1117,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("cos"),
-        .value = njs_native_function(njs_object_math_cos, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_cos, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -947,8 +1126,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("cosh"),
-        .value = njs_native_function(njs_object_math_cosh, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_cosh, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -956,8 +1134,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("exp"),
-        .value = njs_native_function(njs_object_math_exp, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_exp, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -966,8 +1143,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("expm1"),
-        .value = njs_native_function(njs_object_math_expm1, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_expm1, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -975,8 +1151,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("floor"),
-        .value = njs_native_function(njs_object_math_floor, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_floor, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -985,8 +1160,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("fround"),
-        .value = njs_native_function(njs_object_math_fround, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_fround, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -995,7 +1169,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("hypot"),
-        .value = njs_native_function(njs_object_math_hypot, 2, 0),
+        .value = njs_native_function(njs_object_math_hypot, 2),
         .writable = 1,
         .configurable = 1,
     },
@@ -1004,8 +1178,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("imul"),
-        .value = njs_native_function(njs_object_math_imul, 2,
-                     NJS_SKIP_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_imul, 2),
         .writable = 1,
         .configurable = 1,
     },
@@ -1013,8 +1186,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("log"),
-        .value = njs_native_function(njs_object_math_log, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_log, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1023,8 +1195,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("log10"),
-        .value = njs_native_function(njs_object_math_log10, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_log10, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1033,8 +1204,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("log1p"),
-        .value = njs_native_function(njs_object_math_log1p, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_log1p, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1043,8 +1213,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("log2"),
-        .value = njs_native_function(njs_object_math_log2, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_log2, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1052,7 +1221,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("max"),
-        .value = njs_native_function(njs_object_math_max, 2, 0),
+        .value = njs_native_function(njs_object_math_max, 2),
         .writable = 1,
         .configurable = 1,
     },
@@ -1060,7 +1229,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("min"),
-        .value = njs_native_function(njs_object_math_min, 2, 0),
+        .value = njs_native_function(njs_object_math_min, 2),
         .writable = 1,
         .configurable = 1,
     },
@@ -1068,8 +1237,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("pow"),
-        .value = njs_native_function(njs_object_math_pow, 2,
-                     NJS_SKIP_ARG, NJS_NUMBER_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_pow, 2),
         .writable = 1,
         .configurable = 1,
     },
@@ -1077,7 +1245,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("random"),
-        .value = njs_native_function(njs_object_math_random, 0, 0),
+        .value = njs_native_function(njs_object_math_random, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1085,8 +1253,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("round"),
-        .value = njs_native_function(njs_object_math_round, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_round, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1095,8 +1262,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("sign"),
-        .value = njs_native_function(njs_object_math_sign, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_sign, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1104,8 +1270,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("sin"),
-        .value = njs_native_function(njs_object_math_sin, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_sin, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1114,8 +1279,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("sinh"),
-        .value = njs_native_function(njs_object_math_sinh, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_sinh, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1123,8 +1287,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("sqrt"),
-        .value = njs_native_function(njs_object_math_sqrt, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_sqrt, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1132,8 +1295,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("tan"),
-        .value = njs_native_function(njs_object_math_tan, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_tan, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1142,8 +1304,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("tanh"),
-        .value = njs_native_function(njs_object_math_tanh, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_tanh, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1152,8 +1313,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("trunc"),
-        .value = njs_native_function(njs_object_math_trunc, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_object_math_trunc, 1),
         .writable = 1,
         .configurable = 1,
     },

@@ -137,10 +137,20 @@ static njs_int_t
 njs_error_create(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_type_t type)
 {
-    njs_object_t       *error;
-    const njs_value_t  *value;
+    njs_int_t     ret;
+    njs_value_t   *value;
+    njs_object_t  *error;
 
     value = njs_arg(args, nargs, 1);
+
+    if (njs_slow_path(!njs_is_string(value))) {
+        if (!njs_is_undefined(value)) {
+            ret = njs_value_to_string(vm, value, value);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+        }
+    }
 
     error = njs_error_alloc(vm, type, NULL,
                             njs_is_defined(value) ? value : NULL);
@@ -734,7 +744,7 @@ static const njs_object_prop_t  njs_error_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("valueOf"),
-        .value = njs_native_function(njs_error_prototype_value_of, 0, 0),
+        .value = njs_native_function(njs_error_prototype_value_of, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -742,7 +752,7 @@ static const njs_object_prop_t  njs_error_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toString"),
-        .value = njs_native_function(njs_error_prototype_to_string, 0, 0),
+        .value = njs_native_function(njs_error_prototype_to_string, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -816,8 +826,7 @@ static const njs_object_prop_t  njs_internal_error_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toString"),
-        .value = njs_native_function(njs_internal_error_prototype_to_string,
-                                     0, 0),
+        .value = njs_native_function(njs_internal_error_prototype_to_string, 0),
         .writable = 1,
         .configurable = 1,
     },

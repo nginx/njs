@@ -11,7 +11,6 @@
 
 typedef struct {
     njs_function_native_t  native;
-    uint8_t                args_types[NJS_ARGS_TYPES_MAX];
 } njs_function_init_t;
 
 
@@ -95,29 +94,25 @@ const njs_object_init_t  *njs_constructor_init[] = {
 
 const njs_function_init_t  njs_native_constructors[] = {
     /* SunC does not allow empty array initialization. */
-    { njs_object_constructor,     { 0 } },
-    { njs_array_constructor,      { 0 } },
-    { njs_boolean_constructor,    { 0 } },
-    { njs_number_constructor,     { NJS_SKIP_ARG, NJS_NUMBER_ARG } },
-    { njs_string_constructor,     { NJS_SKIP_ARG, NJS_STRING_ARG } },
-    { njs_function_constructor,   { 0 } },
-    { njs_regexp_constructor,     { 0 } },
-    { njs_date_constructor,       { 0 } },
-    { njs_hash_constructor,       { NJS_SKIP_ARG, NJS_STRING_ARG } },
-    { njs_hmac_constructor,       { NJS_SKIP_ARG, NJS_STRING_ARG,
-                                    NJS_STRING_ARG } },
-    { njs_error_constructor,      { NJS_SKIP_ARG, NJS_STRING_ARG } },
-    { njs_eval_error_constructor, { NJS_SKIP_ARG, NJS_STRING_ARG } },
-    { njs_internal_error_constructor,
-      { NJS_SKIP_ARG, NJS_STRING_ARG } },
-    { njs_range_error_constructor,
-      { NJS_SKIP_ARG, NJS_STRING_ARG } },
-    { njs_reference_error_constructor,  { NJS_SKIP_ARG, NJS_STRING_ARG } },
-    { njs_syntax_error_constructor,
-      { NJS_SKIP_ARG, NJS_STRING_ARG } },
-    { njs_type_error_constructor, { NJS_SKIP_ARG, NJS_STRING_ARG } },
-    { njs_uri_error_constructor,  { NJS_SKIP_ARG, NJS_STRING_ARG } },
-    { njs_memory_error_constructor,  { NJS_SKIP_ARG, NJS_STRING_ARG } },
+    { njs_object_constructor },
+    { njs_array_constructor },
+    { njs_boolean_constructor },
+    { njs_number_constructor },
+    { njs_string_constructor },
+    { njs_function_constructor},
+    { njs_regexp_constructor },
+    { njs_date_constructor },
+    { njs_hash_constructor },
+    { njs_hmac_constructor },
+    { njs_error_constructor },
+    { njs_eval_error_constructor },
+    { njs_internal_error_constructor },
+    { njs_range_error_constructor },
+    { njs_reference_error_constructor },
+    { njs_syntax_error_constructor },
+    { njs_type_error_constructor },
+    { njs_uri_error_constructor },
+    { njs_memory_error_constructor },
 };
 
 
@@ -330,8 +325,6 @@ njs_builtin_objects_create(njs_vm_t *vm)
         func->args_offset = 1;
 
         func->u.native = f->native;
-
-        memcpy(func->args_types, f->args_types, NJS_ARGS_TYPES_MAX);
 
         ret = njs_object_hash_init(vm, &func->object.shared_hash, obj);
         if (njs_slow_path(ret != NJS_OK)) {
@@ -1038,8 +1031,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isFinite"),
-        .value = njs_native_function(njs_number_is_finite, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_number_global_is_finite, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1047,8 +1039,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isNaN"),
-        .value = njs_native_function(njs_number_global_is_nan, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_number_global_is_nan, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1056,8 +1047,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("parseFloat"),
-        .value = njs_native_function(njs_number_parse_float, 1,
-                                     NJS_SKIP_ARG, NJS_STRING_ARG),
+        .value = njs_native_function(njs_number_parse_float, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1065,8 +1055,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("parseInt"),
-        .value = njs_native_function(njs_number_parse_int, 2,
-                     NJS_SKIP_ARG, NJS_STRING_ARG, NJS_INTEGER_ARG),
+        .value = njs_native_function(njs_number_parse_int, 2),
         .writable = 1,
         .configurable = 1,
     },
@@ -1074,7 +1063,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toString"),
-        .value = njs_native_function(njs_object_prototype_to_string, 0, 0),
+        .value = njs_native_function(njs_object_prototype_to_string, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1082,8 +1071,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("encodeURI"),
-        .value = njs_native_function(njs_string_encode_uri, 1,
-                                     NJS_SKIP_ARG, NJS_STRING_ARG),
+        .value = njs_native_function(njs_string_encode_uri, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1091,8 +1079,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_long_string("encodeURIComponent"),
-        .value = njs_native_function(njs_string_encode_uri_component, 1,
-                                     NJS_SKIP_ARG, NJS_STRING_ARG),
+        .value = njs_native_function(njs_string_encode_uri_component, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1100,8 +1087,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("decodeURI"),
-        .value = njs_native_function(njs_string_decode_uri, 1,
-                                     NJS_SKIP_ARG, NJS_STRING_ARG),
+        .value = njs_native_function(njs_string_decode_uri, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1109,8 +1095,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_long_string("decodeURIComponent"),
-        .value = njs_native_function(njs_string_decode_uri_component, 1,
-                                     NJS_SKIP_ARG, NJS_STRING_ARG),
+        .value = njs_native_function(njs_string_decode_uri_component, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1118,7 +1103,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("eval"),
-        .value = njs_native_function(njs_eval_function, 1, 0),
+        .value = njs_native_function(njs_eval_function, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1126,9 +1111,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("setTimeout"),
-        .value = njs_native_function(njs_set_timeout, 2,
-                                     NJS_SKIP_ARG, NJS_FUNCTION_ARG,
-                                     NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_set_timeout, 2),
         .writable = 1,
         .configurable = 1,
     },
@@ -1136,8 +1119,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("setImmediate"),
-        .value = njs_native_function(njs_set_immediate, 4,
-                                     NJS_SKIP_ARG, NJS_FUNCTION_ARG),
+        .value = njs_native_function(njs_set_immediate, 4),
         .writable = 1,
         .configurable = 1,
     },
@@ -1145,8 +1127,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("clearTimeout"),
-        .value = njs_native_function(njs_clear_timeout, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_clear_timeout, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1154,8 +1135,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("require"),
-        .value = njs_native_function(njs_module_require, 1,
-                                     NJS_SKIP_ARG, NJS_STRING_ARG),
+        .value = njs_native_function(njs_module_require, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1183,8 +1163,7 @@ static const njs_object_prop_t  njs_njs_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("dump"),
-        .value = njs_native_function(njs_dump_value, 0,
-                                    NJS_SKIP_ARG, NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_dump_value, 0),
         .configurable = 1,
     },
 };

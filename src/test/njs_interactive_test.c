@@ -144,7 +144,7 @@ static njs_interactive_test_t  njs_test[] =
 
     { njs_str("function f(o) {return Object.keys(o)}" ENTER
                  "f()" ENTER),
-      njs_str("TypeError: cannot convert undefined to object\n"
+      njs_str("TypeError: cannot convert undefined argument to object\n"
                  "    at Object.keys (native)\n"
                  "    at f (:1)\n"
                  "    at main (native)\n") },

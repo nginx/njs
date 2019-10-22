@@ -241,14 +241,22 @@ njs_int_t
 njs_number_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_object_t       *object;
-    const njs_value_t  *value;
+    njs_int_t     ret;
+    njs_value_t   *value;
+    njs_object_t  *object;
 
     if (nargs == 1) {
-        value = &njs_value_zero;
+        value = njs_value_arg(&njs_value_zero);
 
     } else {
         value = &args[1];
+
+        if (njs_slow_path(!njs_is_number(value))) {
+            ret = njs_value_to_numeric(vm, value, value);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_ERROR;
+            }
+        }
     }
 
     if (vm->top_frame->ctor) {
@@ -327,6 +335,29 @@ njs_number_is_nan(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         && isnan(njs_number(&args[1])))
     {
         value = &njs_value_true;
+    }
+
+    vm->retval = *value;
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_number_is_finite(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    double             num;
+    const njs_value_t  *value;
+
+    value = &njs_value_false;
+
+    if (nargs > 1 && njs_is_number(&args[1])) {
+        num = njs_number(&args[1]);
+
+        if (!isnan(num) && !isinf(num)) {
+            value = &njs_value_true;
+        }
     }
 
     vm->retval = *value;
@@ -415,7 +446,7 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isFinite"),
-        .value = njs_native_function(njs_number_is_finite, 1, 0),
+        .value = njs_native_function(njs_number_is_finite, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -424,7 +455,7 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isInteger"),
-        .value = njs_native_function(njs_number_is_integer, 1, 0),
+        .value = njs_native_function(njs_number_is_integer, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -433,7 +464,7 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isSafeInteger"),
-        .value = njs_native_function(njs_number_is_safe_integer, 1, 0),
+        .value = njs_native_function(njs_number_is_safe_integer, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -442,7 +473,7 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isNaN"),
-        .value = njs_native_function(njs_number_is_nan, 1, 0),
+        .value = njs_native_function(njs_number_is_nan, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -451,8 +482,7 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("parseFloat"),
-        .value = njs_native_function(njs_number_parse_float, 1,
-                                     NJS_SKIP_ARG, NJS_STRING_ARG),
+        .value = njs_native_function(njs_number_parse_float, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -461,8 +491,7 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("parseInt"),
-        .value = njs_native_function(njs_number_parse_int, 2,
-                     NJS_SKIP_ARG, NJS_STRING_ARG, NJS_INTEGER_ARG),
+        .value = njs_native_function(njs_number_parse_int, 2),
         .writable = 1,
         .configurable = 1,
     },
@@ -506,7 +535,9 @@ static njs_int_t
 njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
-    double       number, radix;
+    double       number;
+    int32_t      radix;
+    njs_int_t    ret;
     njs_value_t  *value;
 
     value = &args[0];
@@ -524,7 +555,10 @@ njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     }
 
     if (nargs > 1) {
-        radix = njs_number(&args[1]);
+        ret = njs_value_to_int32(vm, &args[1], &radix);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
 
         if (radix < 2 || radix > 36 || radix != (int) radix) {
             njs_range_error(vm, NULL);
@@ -671,15 +705,15 @@ njs_number_prototype_to_precision(njs_vm_t *vm, njs_value_t *args,
         return njs_number_to_string(vm, &vm->retval, value);
     }
 
+    ret = njs_value_to_integer(vm, njs_argument(args, 1), &precision);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
     number = njs_number(value);
 
     if (njs_slow_path(isnan(number) || isinf(number))) {
         return njs_number_to_string(vm, &vm->retval, value);
-    }
-
-    ret = njs_value_to_integer(vm, njs_argument(args, 1), &precision);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
     }
 
     if (njs_slow_path(precision < 1 || precision > 100)) {
@@ -701,7 +735,7 @@ njs_number_prototype_to_exponential(njs_vm_t *vm, njs_value_t *args,
     size_t       size;
     int64_t      frac;
     njs_int_t    ret;
-    njs_value_t  *value;
+    njs_value_t  *value, *value_frac;
     u_char       buf[128];
 
     value = &args[0];
@@ -717,18 +751,20 @@ njs_number_prototype_to_exponential(njs_vm_t *vm, njs_value_t *args,
         }
     }
 
+    value_frac = njs_arg(args, nargs, 1);
+
+    ret = njs_value_to_integer(vm, value_frac, &frac);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
     number = njs_number(value);
 
     if (njs_slow_path(isnan(number) || isinf(number))) {
         return njs_number_to_string(vm, &vm->retval, value);
     }
 
-    if (njs_is_defined(njs_arg(args, nargs, 1))) {
-        ret = njs_value_to_integer(vm, njs_argument(args, 1), &frac);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
-
+    if (njs_is_defined(value_frac)) {
         if (njs_slow_path(frac < 0 || frac > 100)) {
             njs_range_error(vm, "digits argument must be between 0 and 100");
             return NJS_ERROR;
@@ -887,7 +923,7 @@ static const njs_object_prop_t  njs_number_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("valueOf"),
-        .value = njs_native_function(njs_number_prototype_value_of, 0, 0),
+        .value = njs_native_function(njs_number_prototype_value_of, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -895,8 +931,7 @@ static const njs_object_prop_t  njs_number_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toString"),
-        .value = njs_native_function(njs_number_prototype_to_string, 1,
-                                     NJS_SKIP_ARG, NJS_NUMBER_ARG),
+        .value = njs_native_function(njs_number_prototype_to_string, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -904,8 +939,7 @@ static const njs_object_prop_t  njs_number_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toFixed"),
-        .value = njs_native_function(njs_number_prototype_to_fixed, 1,
-                                     NJS_SKIP_ARG, NJS_INTEGER_ARG),
+        .value = njs_native_function(njs_number_prototype_to_fixed, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -913,8 +947,7 @@ static const njs_object_prop_t  njs_number_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toPrecision"),
-        .value = njs_native_function(njs_number_prototype_to_precision, 1,
-                                     NJS_SKIP_ARG, NJS_INTEGER_ARG),
+        .value = njs_native_function(njs_number_prototype_to_precision, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -922,8 +955,7 @@ static const njs_object_prop_t  njs_number_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toExponential"),
-        .value = njs_native_function(njs_number_prototype_to_exponential, 1,
-                                     NJS_SKIP_ARG, NJS_INTEGER_ARG),
+        .value = njs_native_function(njs_number_prototype_to_exponential, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -941,38 +973,33 @@ njs_int_t
 njs_number_global_is_nan(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    const njs_value_t  *value;
+    double     num;
+    njs_int_t  ret;
 
-    value = &njs_value_true;
-
-    if (nargs > 1 && !isnan(njs_number(&args[1]))) {
-        value = &njs_value_false;
+    ret = njs_value_to_number(vm, njs_arg(args, nargs, 1), &num);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
-    vm->retval = *value;
+    njs_set_boolean(&vm->retval, isnan(num));
 
     return NJS_OK;
 }
 
 
 njs_int_t
-njs_number_is_finite(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+njs_number_global_is_finite(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double             num;
-    const njs_value_t  *value;
+    double     num;
+    njs_int_t  ret;
 
-    value = &njs_value_false;
-
-    if (nargs > 1 && njs_is_number(&args[1])) {
-        num = njs_number(&args[1]);
-
-        if (!isnan(num) && !isinf(num)) {
-            value = &njs_value_true;
-        }
+    ret = njs_value_to_number(vm, njs_arg(args, nargs, 1), &num);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
-    vm->retval = *value;
+    njs_set_boolean(&vm->retval, !(isnan(num) || isinf(num)));
 
     return NJS_OK;
 }
@@ -982,72 +1009,88 @@ njs_int_t
 njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double             num;
-    int64_t            n;
-    uint8_t            radix;
-    njs_str_t          string;
-    njs_bool_t         minus, test_prefix;
-    const u_char       *p, *end;
+    double        num;
+    int64_t       n;
+    int32_t       radix;
+    njs_int_t     ret;
+    njs_str_t     string;
+    njs_bool_t    minus, test_prefix;
+    njs_value_t   *value;
+    const u_char  *p, *end;
 
     num = NAN;
 
-    if (nargs > 1) {
-        njs_string_get(&args[1], &string);
-
-        end = string.start + string.length;
-
-        for (p = string.start; p < end; p++) {
-            if (*p != ' ') {
-                goto found;
-            }
-        }
-
+    if (nargs < 2) {
         goto done;
+    }
 
-    found:
+    value = njs_argument(args, 1);
 
-        minus = 0;
+    if (!njs_is_string(value)) {
+        ret = njs_value_to_string(vm, value, value);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
 
-        if (p[0] == '-') {
-            p++;
-            minus = 1;
+    njs_string_get(value, &string);
 
-        } else if (p[0] == '+') {
-            p++;
+    end = string.start + string.length;
+
+    for (p = string.start; p < end; p++) {
+        if (*p != ' ') {
+            goto found;
+        }
+    }
+
+    goto done;
+
+found:
+
+    minus = 0;
+
+    if (p[0] == '-') {
+        p++;
+        minus = 1;
+
+    } else if (p[0] == '+') {
+        p++;
+    }
+
+    test_prefix = (end - p > 1);
+    radix = 0;
+
+    if (nargs > 2) {
+        ret = njs_value_to_int32(vm, njs_argument(args, 2), &radix);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
 
-        test_prefix = (end - p > 1);
-        radix = 0;
+        if (radix != 0) {
+            if (radix < 2 || radix > 36) {
+                goto done;
+            }
 
-        if (nargs > 2) {
-            radix = njs_number(&args[2]);
-
-            if (radix != 0) {
-                if (radix < 2 || radix > 36) {
-                    goto done;
-                }
-
-                if (radix != 16) {
-                    test_prefix = 0;
-                }
+            if (radix != 16) {
+                test_prefix = 0;
             }
         }
+    }
 
-        if (radix == 0) {
-            radix = 10;
-        }
+    if (radix == 0) {
+        radix = 10;
+    }
 
-        if (test_prefix && p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
-            p += 2;
-            radix = 16;
-        }
+    if (test_prefix && p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
+        p += 2;
+        radix = 16;
+    }
 
-        n = njs_number_radix_parse(&p, end, radix);
+    n = njs_number_radix_parse(&p, end, radix);
 
-        if (n >= 0) {
-            num = n;
-            num = minus ? -num : num;
-        }
+    if (n >= 0) {
+        num = n;
+        num = minus ? -num : num;
     }
 
 done:
@@ -1062,11 +1105,17 @@ njs_int_t
 njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double  num;
+    double     num;
+    njs_int_t  ret;
 
     num = NAN;
 
     if (nargs > 1) {
+        ret = njs_value_to_string(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
         num = njs_string_to_number(&args[1], 1);
     }
 

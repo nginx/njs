@@ -330,43 +330,6 @@ njs_type_string(njs_value_type_t type)
 }
 
 
-const char *
-njs_arg_type_string(uint8_t arg)
-{
-    switch (arg) {
-    case NJS_SKIP_ARG:
-        return "skip";
-
-    case NJS_NUMBER_ARG:
-        return "number";
-
-    case NJS_INTEGER_ARG:
-        return "integer";
-
-    case NJS_STRING_ARG:
-        return "string";
-
-    case NJS_OBJECT_ARG:
-        return "object";
-
-    case NJS_STRING_OBJECT_ARG:
-        return "string object";
-
-    case NJS_FUNCTION_ARG:
-        return "function";
-
-    case NJS_REGEXP_ARG:
-        return "regexp";
-
-    case NJS_DATE_ARG:
-        return "date";
-
-    default:
-        return "unknown";
-    }
-}
-
-
 void
 njs_value_undefined_set(njs_value_t *value)
 {

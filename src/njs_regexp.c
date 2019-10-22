@@ -845,7 +845,8 @@ njs_regexp_prototype_test(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_int_t               ret;
     njs_uint_t              n;
     njs_regex_t             *regex;
-    const njs_value_t       *value, *retval;
+    njs_value_t             *value;
+    const njs_value_t       *retval;
     njs_string_prop_t       string;
     njs_regexp_pattern_t    *pattern;
     njs_regex_match_data_t  *match_data;
@@ -858,8 +859,17 @@ njs_regexp_prototype_test(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     retval = &njs_value_false;
 
     value = njs_arg(args, nargs, 1);
-    if (njs_is_undefined(value)) {
-        value = &njs_string_undefined;
+
+    if (!njs_is_string(value)) {
+        if (njs_is_undefined(value)) {
+            value = njs_value_arg(&njs_string_undefined);
+
+        } else {
+            ret = njs_value_to_string(vm, value, value);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+        }
     }
 
     (void) njs_string_prop(&string, value);
@@ -911,10 +921,10 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     njs_int_t               ret;
     njs_utf8_t              utf8;
+    njs_value_t             *value;
     njs_regexp_t            *regexp;
     njs_string_prop_t       string;
     njs_regexp_utf8_t       type;
-    const njs_value_t       *value;
     njs_regexp_pattern_t    *pattern;
     njs_regex_match_data_t  *match_data;
 
@@ -924,8 +934,17 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     value = njs_arg(args, nargs, 1);
-    if (njs_is_undefined(value)) {
-        value = &njs_string_undefined;
+
+    if (!njs_is_string(value)) {
+        if (njs_is_undefined(value)) {
+            value = njs_value_arg(&njs_string_undefined);
+
+        } else {
+            ret = njs_value_to_string(vm, value, value);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+        }
     }
 
     regexp = njs_regexp(&args[0]);
@@ -1232,7 +1251,7 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toString"),
-        .value = njs_native_function(njs_regexp_prototype_to_string, 0, 0),
+        .value = njs_native_function(njs_regexp_prototype_to_string, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1240,8 +1259,7 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("test"),
-        .value = njs_native_function(njs_regexp_prototype_test, 1,
-                                     NJS_OBJECT_ARG, NJS_STRING_ARG),
+        .value = njs_native_function(njs_regexp_prototype_test, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1249,8 +1267,7 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("exec"),
-        .value = njs_native_function(njs_regexp_prototype_exec, 1,
-                                     NJS_OBJECT_ARG, NJS_STRING_ARG),
+        .value = njs_native_function(njs_regexp_prototype_exec, 1),
         .writable = 1,
         .configurable = 1,
     },

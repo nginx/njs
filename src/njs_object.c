@@ -1112,6 +1112,18 @@ njs_object_define_property(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     name = njs_arg(args, nargs, 2);
 
+    if (njs_slow_path(!njs_is_string(name))) {
+        if (njs_is_undefined(name)) {
+            name = njs_value_arg(&njs_string_undefined);
+
+        } else {
+            ret = njs_value_to_string(vm, name, name);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+        }
+    }
+
     ret = njs_object_prop_define(vm, value, name, desc,
                                  NJS_OBJECT_PROP_DESCRIPTOR);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -1679,7 +1691,7 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("create"),
-        .value = njs_native_function(njs_object_create, 2, 0),
+        .value = njs_native_function(njs_object_create, 2),
         .writable = 1,
         .configurable = 1,
     },
@@ -1688,8 +1700,7 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("keys"),
-        .value = njs_native_function(njs_object_keys, 1,
-                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
+        .value = njs_native_function(njs_object_keys, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1698,8 +1709,7 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("values"),
-        .value = njs_native_function(njs_object_values, 1,
-                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
+        .value = njs_native_function(njs_object_values, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1708,8 +1718,7 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("entries"),
-        .value = njs_native_function(njs_object_entries, 1,
-                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
+        .value = njs_native_function(njs_object_entries, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1718,9 +1727,7 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("defineProperty"),
-        .value = njs_native_function(njs_object_define_property, 3,
-                                     NJS_SKIP_ARG, NJS_OBJECT_ARG,
-                                     NJS_STRING_ARG, NJS_OBJECT_ARG),
+        .value = njs_native_function(njs_object_define_property, 3),
         .writable = 1,
         .configurable = 1,
     },
@@ -1729,9 +1736,7 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_long_string("defineProperties"),
-        .value = njs_native_function(njs_object_define_properties, 2,
-                                     NJS_SKIP_ARG, NJS_OBJECT_ARG,
-                                     NJS_OBJECT_ARG),
+        .value = njs_native_function(njs_object_define_properties, 2),
         .writable = 1,
         .configurable = 1,
     },
@@ -1740,9 +1745,7 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_long_string("getOwnPropertyDescriptor"),
-        .value = njs_native_function(njs_object_get_own_property_descriptor, 2,
-                                     NJS_SKIP_ARG, NJS_SKIP_ARG,
-                                     NJS_STRING_ARG),
+        .value = njs_native_function(njs_object_get_own_property_descriptor, 2),
         .writable = 1,
         .configurable = 1,
     },
@@ -1751,8 +1754,8 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_long_string("getOwnPropertyDescriptors"),
-        .value = njs_native_function(njs_object_get_own_property_descriptors, 1,
-                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
+        .value = njs_native_function(njs_object_get_own_property_descriptors,
+                                     1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1761,8 +1764,7 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_long_string("getOwnPropertyNames"),
-        .value = njs_native_function(njs_object_get_own_property_names, 1,
-                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
+        .value = njs_native_function(njs_object_get_own_property_names, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1771,8 +1773,7 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("getPrototypeOf"),
-        .value = njs_native_function(njs_object_get_prototype_of, 1,
-                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
+        .value = njs_native_function(njs_object_get_prototype_of, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1781,8 +1782,7 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("freeze"),
-        .value = njs_native_function(njs_object_freeze, 1,
-                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
+        .value = njs_native_function(njs_object_freeze, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1791,8 +1791,7 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isFrozen"),
-        .value = njs_native_function(njs_object_is_frozen, 1,
-                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
+        .value = njs_native_function(njs_object_is_frozen, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1801,8 +1800,7 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("seal"),
-        .value = njs_native_function(njs_object_seal, 1,
-                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
+        .value = njs_native_function(njs_object_seal, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1811,8 +1809,7 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isSealed"),
-        .value = njs_native_function(njs_object_is_sealed, 1,
-                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
+        .value = njs_native_function(njs_object_is_sealed, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1821,8 +1818,7 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_long_string("preventExtensions"),
-        .value = njs_native_function(njs_object_prevent_extensions, 1,
-                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
+        .value = njs_native_function(njs_object_prevent_extensions, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1831,8 +1827,7 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isExtensible"),
-        .value = njs_native_function(njs_object_is_extensible, 1,
-                                     NJS_SKIP_ARG, NJS_OBJECT_ARG),
+        .value = njs_native_function(njs_object_is_extensible, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -2207,6 +2202,11 @@ njs_object_prototype_is_prototype_of(njs_vm_t *vm, njs_value_t *args,
     njs_object_t       *object, *proto;
     const njs_value_t  *retval;
 
+    if (njs_slow_path(njs_is_null_or_undefined(njs_arg(args, nargs, 0)))) {
+        njs_type_error(vm, "cannot convert undefined to object");
+        return NJS_ERROR;
+    }
+
     retval = &njs_value_false;
     prototype = &args[0];
     value = njs_arg(args, nargs, 1);
@@ -2253,7 +2253,7 @@ static const njs_object_prop_t  njs_object_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("valueOf"),
-        .value = njs_native_function(njs_object_prototype_value_of, 0, 0),
+        .value = njs_native_function(njs_object_prototype_value_of, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -2261,7 +2261,7 @@ static const njs_object_prop_t  njs_object_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toString"),
-        .value = njs_native_function(njs_object_prototype_to_string, 0, 0),
+        .value = njs_native_function(njs_object_prototype_to_string, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -2269,8 +2269,7 @@ static const njs_object_prop_t  njs_object_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("hasOwnProperty"),
-        .value = njs_native_function(njs_object_prototype_has_own_property, 1,
-                                     NJS_OBJECT_ARG, NJS_STRING_ARG),
+        .value = njs_native_function(njs_object_prototype_has_own_property, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -2278,8 +2277,8 @@ static const njs_object_prop_t  njs_object_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_long_string("propertyIsEnumerable"),
-        .value = njs_native_function(njs_object_prototype_prop_is_enumerable, 1,
-                                     NJS_OBJECT_ARG, NJS_STRING_ARG),
+        .value = njs_native_function(njs_object_prototype_prop_is_enumerable,
+                                     1),
         .writable = 1,
         .configurable = 1,
     },
@@ -2287,8 +2286,7 @@ static const njs_object_prop_t  njs_object_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isPrototypeOf"),
-        .value = njs_native_function(njs_object_prototype_is_prototype_of, 1,
-                                     NJS_OBJECT_ARG, NJS_OBJECT_ARG),
+        .value = njs_native_function(njs_object_prototype_is_prototype_of, 1),
         .writable = 1,
         .configurable = 1,
     },

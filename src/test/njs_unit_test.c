@@ -1492,6 +1492,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'1' == new Number(1)"),
       njs_str("true") },
 
+    { njs_str("new Number(null) + ''"),
+      njs_str("0") },
+
     { njs_str("new String('abc') == 'abc'"),
       njs_str("true") },
 
@@ -11419,6 +11422,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var o = Object.freeze({a:1}); Object.isFrozen(o)"),
       njs_str("true") },
 
+    { njs_str("Object.isFrozen(undefined)"),
+      njs_str("true") },
+
     { njs_str("var o = Object.seal({a:1}); o.a = 2; o.a"),
       njs_str("2") },
 
@@ -11442,6 +11448,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("Object.seal('')"),
       njs_str("") },
+
+    { njs_str("Object.seal(undefined)"),
+      njs_str("undefined") },
 
     { njs_str("Object.isSealed({a:1})"),
       njs_str("false") },
@@ -11557,6 +11566,9 @@ static njs_unit_test_t  njs_test[] =
       njs_str("false") },
 
     { njs_str("Object.isExtensible(Object.freeze([]))"),
+      njs_str("false") },
+
+    { njs_str("Object.isExtensible(undefined)"),
       njs_str("false") },
 
     { njs_str(
@@ -13245,6 +13257,12 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("1/parseInt('-0')"),
       njs_str("-Infinity") },
+
+    { njs_str("parseInt('11', new Number(Infinity)) === parseInt('11', Infinity)"),
+      njs_str("true") },
+
+    { njs_str("parseInt('11', Number.POSITIVE_INFINITY)"),
+      njs_str("11") },
 
     { njs_str("parseFloat.name"),
       njs_str("parseFloat") },
