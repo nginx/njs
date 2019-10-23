@@ -305,6 +305,10 @@ NJS_EXPORT njs_int_t njs_vm_object_alloc(njs_vm_t *vm, njs_value_t *retval,
 NJS_EXPORT njs_value_t *njs_vm_object_prop(njs_vm_t *vm,
     const njs_value_t *value, const njs_str_t *key);
 
+NJS_EXPORT njs_int_t njs_vm_array_alloc(njs_vm_t *vm, njs_value_t *retval,
+    uint32_t spare);
+NJS_EXPORT njs_value_t *njs_vm_array_push(njs_vm_t *vm, njs_value_t *value);
+
 NJS_EXPORT njs_int_t njs_vm_json_parse(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs);
 NJS_EXPORT njs_int_t njs_vm_json_stringify(njs_vm_t *vm, njs_value_t *args,
