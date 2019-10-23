@@ -14029,7 +14029,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("{a:{type:\"property\",props:[\"getter\"]},b:{type:\"property\",props:[\"getter\"]}}") },
 
     { njs_str("njs.dump($r.header)"),
-      njs_str("{type:\"object\",props:[\"getter\",\"foreach\",\"next\"]}") },
+      njs_str("{type:\"object\",props:[\"getter\",\"keys\"]}") },
 
     { njs_str("njs.dump(njs) == `{version:'${njs.version}'}`"),
       njs_str("true") },
@@ -14988,32 +14988,32 @@ njs_unit_test_header_external(njs_vm_t *vm, njs_value_t *value, void *obj,
 
 
 static njs_int_t
-njs_unit_test_header_foreach_external(njs_vm_t *vm, void *obj, void *next)
+njs_unit_test_header_keys_external(njs_vm_t *vm, void *obj, njs_value_t *keys)
 {
-    u_char  *s;
+    njs_int_t    rc, i;
+    njs_value_t  *value;
+    u_char       k[2];
 
-    s = next;
-    s[0] = '0';
-    s[1] = '0';
-
-    return NJS_OK;
-}
-
-
-static njs_int_t
-njs_unit_test_header_next_external(njs_vm_t *vm, njs_value_t *value, void *obj,
-    void *next)
-{
-    u_char  *s;
-
-    s = next;
-    s[1]++;
-
-    if (s[1] == '4') {
-        return NJS_DONE;
+    rc = njs_vm_array_alloc(vm, keys, 4);
+    if (rc != NJS_OK) {
+        return NJS_ERROR;
     }
 
-    return njs_vm_value_string_set(vm, value, s, 2);
+    k[0] = '0';
+    k[1] = '1';
+
+    for (i = 0; i < 3; i++) {
+        value = njs_vm_array_push(vm, keys);
+        if (value == NULL) {
+            return NJS_ERROR;
+        }
+
+        (void) njs_vm_value_string_set(vm, value, k, 2);
+
+        k[1]++;
+    }
+
+    return NJS_OK;
 }
 
 
@@ -15102,7 +15102,6 @@ static njs_external_t  njs_unit_test_r_props[] = {
       NULL,
       NULL,
       NULL,
-      NULL,
       0 },
 
     { njs_str("b"),
@@ -15110,7 +15109,6 @@ static njs_external_t  njs_unit_test_r_props[] = {
       NULL,
       0,
       njs_unit_test_r_get_b_external,
-      NULL,
       NULL,
       NULL,
       NULL,
@@ -15130,7 +15128,6 @@ static njs_external_t  njs_unit_test_r_external[] = {
       NULL,
       NULL,
       NULL,
-      NULL,
       offsetof(njs_unit_test_req_t, uri) },
 
     { njs_str("host"),
@@ -15142,14 +15139,12 @@ static njs_external_t  njs_unit_test_r_external[] = {
       NULL,
       NULL,
       NULL,
-      NULL,
       0 },
 
     { njs_str("props"),
       NJS_EXTERN_OBJECT,
       njs_unit_test_r_props,
       njs_nitems(njs_unit_test_r_props),
-      NULL,
       NULL,
       NULL,
       NULL,
@@ -15166,7 +15161,6 @@ static njs_external_t  njs_unit_test_r_external[] = {
       njs_unit_test_r_del_vars,
       NULL,
       NULL,
-      NULL,
       0 },
 
     { njs_str("consts"),
@@ -15174,7 +15168,6 @@ static njs_external_t  njs_unit_test_r_external[] = {
       NULL,
       0,
       njs_unit_test_r_get_vars,
-      NULL,
       NULL,
       NULL,
       NULL,
@@ -15188,8 +15181,7 @@ static njs_external_t  njs_unit_test_r_external[] = {
       njs_unit_test_header_external,
       NULL,
       NULL,
-      njs_unit_test_header_foreach_external,
-      njs_unit_test_header_next_external,
+      njs_unit_test_header_keys_external,
       NULL,
       0 },
 
@@ -15201,7 +15193,6 @@ static njs_external_t  njs_unit_test_r_external[] = {
       NULL,
       NULL,
       NULL,
-      NULL,
       njs_unit_test_method_external,
       0 },
 
@@ -15209,7 +15200,6 @@ static njs_external_t  njs_unit_test_r_external[] = {
       NJS_EXTERN_METHOD,
       NULL,
       0,
-      NULL,
       NULL,
       NULL,
       NULL,
@@ -15226,7 +15216,6 @@ static njs_external_t  njs_test_external[] = {
       NJS_EXTERN_OBJECT,
       njs_unit_test_r_external,
       njs_nitems(njs_unit_test_r_external),
-      NULL,
       NULL,
       NULL,
       NULL,

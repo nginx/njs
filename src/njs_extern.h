@@ -26,8 +26,7 @@ struct njs_extern_s {
     njs_extern_set_t             set;
     njs_extern_find_t            find;
 
-    njs_extern_foreach_t         foreach;
-    njs_extern_next_t            next;
+    njs_extern_keys_t            keys;
 
     njs_function_t               *function;
 

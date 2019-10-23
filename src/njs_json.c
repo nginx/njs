@@ -2295,12 +2295,8 @@ njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value,
             njs_dump_item("\"find\"");
         }
 
-        if (ext_proto->foreach != NULL) {
-            njs_dump_item("\"foreach\"");
-        }
-
-        if (ext_proto->next != NULL) {
-            njs_dump_item("\"next\"");
+        if (ext_proto->keys != NULL) {
+            njs_dump_item("\"keys\"");
         }
 
         return njs_json_buf_append(stringify, "]}", 2);

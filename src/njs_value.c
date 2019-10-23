@@ -191,13 +191,34 @@ njs_array_t *
 njs_value_enumerate(njs_vm_t *vm, const njs_value_t *value,
     njs_object_enum_t kind, njs_bool_t all)
 {
+    void                *obj;
+    njs_int_t           ret;
+    njs_value_t         keys;
     njs_object_value_t  obj_val;
+    const njs_extern_t  *ext_proto;
 
     if (njs_is_object(value)) {
         return njs_object_enumerate(vm, njs_object(value), kind, all);
     }
 
     if (value->type != NJS_STRING) {
+        if (kind == NJS_ENUM_KEYS && njs_is_external(value)) {
+            ext_proto = value->external.proto;
+
+            if (ext_proto->keys != NULL) {
+                obj = njs_extern_object(vm, value);
+
+                ret = ext_proto->keys(vm, obj, &keys);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    return NULL;
+                }
+
+                return njs_array(&keys);
+            }
+
+            return njs_extern_keys_array(vm, ext_proto);
+        }
+
         return njs_array_alloc(vm, 0, NJS_ARRAY_SPARE);
     }
 
@@ -212,13 +233,34 @@ njs_array_t *
 njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
     njs_object_enum_t kind, njs_bool_t all)
 {
+    void                *obj;
+    njs_int_t           ret;
+    njs_value_t         keys;
     njs_object_value_t  obj_val;
+    const njs_extern_t  *ext_proto;
 
     if (njs_is_object(value)) {
         return njs_object_own_enumerate(vm, njs_object(value), kind, all);
     }
 
     if (value->type != NJS_STRING) {
+        if (kind == NJS_ENUM_KEYS && njs_is_external(value)) {
+            ext_proto = value->external.proto;
+
+            if (ext_proto->keys != NULL) {
+                obj = njs_extern_object(vm, value);
+
+                ret = ext_proto->keys(vm, obj, &keys);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    return NULL;
+                }
+
+                return njs_array(&keys);
+            }
+
+            return njs_extern_keys_array(vm, ext_proto);
+        }
+
         return njs_array_alloc(vm, 0, NJS_ARRAY_SPARE);
     }
 

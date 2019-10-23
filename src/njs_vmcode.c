@@ -31,8 +31,6 @@ static njs_jump_off_t njs_vmcode_property_in(njs_vm_t *vm,
     njs_value_t *value, njs_value_t *key);
 static njs_jump_off_t njs_vmcode_property_foreach(njs_vm_t *vm,
     njs_value_t *object, njs_value_t *invld, u_char *pc);
-static njs_jump_off_t njs_vmcode_property_next(njs_vm_t *vm,
-    njs_value_t *object, njs_value_t *value, u_char *pc);
 static njs_jump_off_t njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *constructor);
 static njs_jump_off_t njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value,
@@ -771,25 +769,21 @@ next:
                 break;
 
             case NJS_VMCODE_PROPERTY_NEXT:
-                if (!njs_is_external(value1)) {
-                    pnext = (njs_vmcode_prop_next_t *) pc;
-                    retval = njs_vmcode_operand(vm, pnext->retval);
+                pnext = (njs_vmcode_prop_next_t *) pc;
+                retval = njs_vmcode_operand(vm, pnext->retval);
 
-                    next = value2->data.u.next;
+                next = value2->data.u.next;
 
-                    if (next->index < next->array->length) {
-                        *retval = next->array->data[next->index++];
+                if (next->index < next->array->length) {
+                    *retval = next->array->data[next->index++];
 
-                        ret = pnext->offset;
-                        break;
-                    }
+                    ret = pnext->offset;
+                    break;
                 }
 
-                ret = njs_vmcode_property_next(vm, value1, value2, pc);
-                if (njs_slow_path(ret == NJS_ERROR)) {
-                    goto error;
-                }
+                njs_mp_free(vm->mem_pool, next);
 
+                ret = sizeof(njs_vmcode_prop_next_t);
                 break;
 
             case NJS_VMCODE_THIS:
@@ -1306,26 +1300,8 @@ static njs_jump_off_t
 njs_vmcode_property_foreach(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *invld, u_char *pc)
 {
-    void                       *obj;
-    njs_jump_off_t             ret;
-    const njs_extern_t         *ext_proto;
     njs_property_next_t        *next;
     njs_vmcode_prop_foreach_t  *code;
-
-    if (njs_is_external(object)) {
-        ext_proto = object->external.proto;
-
-        if (ext_proto->foreach != NULL) {
-            obj = njs_extern_object(vm, object);
-
-            ret = ext_proto->foreach(vm, obj, &vm->retval);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return ret;
-            }
-        }
-
-        goto done;
-    }
 
     next = njs_mp_alloc(vm->mem_pool, sizeof(njs_property_next_t));
     if (njs_slow_path(next == NULL)) {
@@ -1342,61 +1318,9 @@ njs_vmcode_property_foreach(njs_vm_t *vm, njs_value_t *object,
 
     vm->retval.data.u.next = next;
 
-done:
-
     code = (njs_vmcode_prop_foreach_t *) pc;
 
     return code->offset;
-}
-
-
-static njs_jump_off_t
-njs_vmcode_property_next(njs_vm_t *vm, njs_value_t *object, njs_value_t *value,
-    u_char *pc)
-{
-    void                    *obj;
-    njs_value_t             *retval;
-    njs_jump_off_t          ret;
-    njs_property_next_t     *next;
-    const njs_extern_t      *ext_proto;
-    njs_vmcode_prop_next_t  *code;
-
-    code = (njs_vmcode_prop_next_t *) pc;
-    retval = njs_vmcode_operand(vm, code->retval);
-
-    if (njs_is_external(object)) {
-        ext_proto = object->external.proto;
-
-        if (ext_proto->next != NULL) {
-            obj = njs_extern_object(vm, object);
-
-            ret = ext_proto->next(vm, retval, obj, value);
-
-            if (ret == NJS_OK) {
-                return code->offset;
-            }
-
-            if (njs_slow_path(ret == NJS_ERROR)) {
-                return ret;
-            }
-
-            /* ret == NJS_DONE. */
-        }
-
-        return sizeof(njs_vmcode_prop_next_t);
-    }
-
-    next = value->data.u.next;
-
-    if (next->index < next->array->length) {
-        *retval = next->array->data[next->index++];
-
-        return code->offset;
-    }
-
-    njs_mp_free(vm->mem_pool, next);
-
-    return sizeof(njs_vmcode_prop_next_t);
 }
 
 

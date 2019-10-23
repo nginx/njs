@@ -66,9 +66,8 @@ typedef njs_int_t (*njs_extern_set_t)(njs_vm_t *vm, void *obj, uintptr_t data,
     njs_str_t *value);
 typedef njs_int_t (*njs_extern_find_t)(njs_vm_t *vm, void *obj, uintptr_t data,
     njs_bool_t delete);
-typedef njs_int_t (*njs_extern_foreach_t)(njs_vm_t *vm, void *obj, void *next);
-typedef njs_int_t (*njs_extern_next_t)(njs_vm_t *vm, njs_value_t *value,
-    void *obj, void *next);
+typedef njs_int_t (*njs_extern_keys_t)(njs_vm_t *vm, void *obj,
+    njs_value_t *keys);
 typedef njs_int_t (*njs_extern_method_t)(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 
@@ -92,8 +91,7 @@ struct njs_external_s {
     njs_extern_set_t                set;
     njs_extern_find_t               find;
 
-    njs_extern_foreach_t            foreach;
-    njs_extern_next_t               next;
+    njs_extern_keys_t               keys;
 
     njs_extern_method_t             method;
 

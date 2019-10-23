@@ -89,8 +89,7 @@ njs_vm_external_add(njs_vm_t *vm, njs_lvlhsh_t *hash, njs_external_t *external,
         ext->get = external->get;
         ext->set = external->set;
         ext->find = external->find;
-        ext->foreach = external->foreach;
-        ext->next = external->next;
+        ext->keys = external->keys;
         ext->data = external->data;
 
         if (external->method != NULL) {

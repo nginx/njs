@@ -112,7 +112,6 @@ static njs_external_t  njs_ext_console[] = {
       NULL,
       NULL,
       NULL,
-      NULL,
       njs_ext_console_log,
       0 },
 
@@ -120,7 +119,6 @@ static njs_external_t  njs_ext_console[] = {
       NJS_EXTERN_METHOD,
       NULL,
       0,
-      NULL,
       NULL,
       NULL,
       NULL,
@@ -136,7 +134,6 @@ static njs_external_t  njs_ext_console[] = {
       NULL,
       NULL,
       NULL,
-      NULL,
       njs_ext_console_help,
       0 },
 
@@ -144,7 +141,6 @@ static njs_external_t  njs_ext_console[] = {
       NJS_EXTERN_METHOD,
       NULL,
       0,
-      NULL,
       NULL,
       NULL,
       NULL,
@@ -160,7 +156,6 @@ static njs_external_t  njs_ext_console[] = {
       NULL,
       NULL,
       NULL,
-      NULL,
       njs_ext_console_time_end,
       0 },
 };
@@ -171,7 +166,6 @@ static njs_external_t  njs_externals[] = {
       NJS_EXTERN_OBJECT,
       njs_ext_console,
       njs_nitems(njs_ext_console),
-      NULL,
       NULL,
       NULL,
       NULL,
