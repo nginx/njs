@@ -152,14 +152,14 @@ const njs_object_prototype_t  njs_prototype_values[] = {
     { .object_value = { .value = njs_value(NJS_DATA, 0, 0.0),
                         .object = { .type = NJS_OBJECT } } },
 
-    { .object =       { .type = NJS_OBJECT_ERROR } },
-    { .object =       { .type = NJS_OBJECT_EVAL_ERROR } },
-    { .object =       { .type = NJS_OBJECT_INTERNAL_ERROR } },
-    { .object =       { .type = NJS_OBJECT_RANGE_ERROR } },
-    { .object =       { .type = NJS_OBJECT_REF_ERROR } },
-    { .object =       { .type = NJS_OBJECT_SYNTAX_ERROR } },
-    { .object =       { .type = NJS_OBJECT_TYPE_ERROR } },
-    { .object =       { .type = NJS_OBJECT_URI_ERROR } },
+    { .object =       { .type = NJS_OBJECT } },
+    { .object =       { .type = NJS_OBJECT } },
+    { .object =       { .type = NJS_OBJECT } },
+    { .object =       { .type = NJS_OBJECT } },
+    { .object =       { .type = NJS_OBJECT } },
+    { .object =       { .type = NJS_OBJECT } },
+    { .object =       { .type = NJS_OBJECT } },
+    { .object =       { .type = NJS_OBJECT } },
 };
 
 

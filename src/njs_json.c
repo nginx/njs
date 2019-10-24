@@ -2312,16 +2312,9 @@ njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value,
 
         /* Fall through. */
 
+    case NJS_OBJECT:
     case NJS_REGEXP:
     case NJS_DATE:
-    case NJS_OBJECT_ERROR:
-    case NJS_OBJECT_EVAL_ERROR:
-    case NJS_OBJECT_INTERNAL_ERROR:
-    case NJS_OBJECT_RANGE_ERROR:
-    case NJS_OBJECT_REF_ERROR:
-    case NJS_OBJECT_SYNTAX_ERROR:
-    case NJS_OBJECT_TYPE_ERROR:
-    case NJS_OBJECT_URI_ERROR:
 
         switch (value->type) {
         case NJS_NUMBER:
@@ -2366,7 +2359,7 @@ memory_error:
 
 
 #define njs_dump_is_object(value)                                             \
-    (((value)->type == NJS_OBJECT)                                            \
+    (((value)->type == NJS_OBJECT && !njs_object(value)->error_data)          \
      || ((value)->type == NJS_ARRAY)                                          \
      || ((value)->type == NJS_OBJECT_VALUE)                                   \
      || ((value)->type == NJS_EXTERNAL                                        \

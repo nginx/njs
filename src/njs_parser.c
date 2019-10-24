@@ -2300,7 +2300,7 @@ njs_parser_trace_handler(njs_trace_t *trace, njs_trace_data_t *td,
 
 static void
 njs_parser_scope_error(njs_vm_t *vm, njs_parser_scope_t *scope,
-    njs_value_type_t type, uint32_t line, const char *fmt, va_list args)
+    njs_prototype_t type, uint32_t line, const char *fmt, va_list args)
 {
     size_t     width;
     u_char     msg[NJS_MAX_ERROR_STR];
@@ -2333,7 +2333,7 @@ njs_parser_scope_error(njs_vm_t *vm, njs_parser_scope_t *scope,
 
 void
 njs_parser_lexer_error(njs_vm_t *vm, njs_parser_t *parser,
-    njs_value_type_t type, const char *fmt, ...)
+    njs_prototype_t type, const char *fmt, ...)
 {
     va_list  args;
 
@@ -2350,7 +2350,7 @@ njs_parser_lexer_error(njs_vm_t *vm, njs_parser_t *parser,
 
 void
 njs_parser_node_error(njs_vm_t *vm, njs_parser_node_t *node,
-    njs_value_type_t type, const char *fmt, ...)
+    njs_prototype_t type, const char *fmt, ...)
 {
     va_list  args;
 

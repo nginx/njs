@@ -109,9 +109,9 @@ njs_token_t njs_parser_unexpected_token(njs_vm_t *vm, njs_parser_t *parser,
 u_char *njs_parser_trace_handler(njs_trace_t *trace, njs_trace_data_t *td,
     u_char *start);
 void njs_parser_lexer_error(njs_vm_t *vm, njs_parser_t *parser,
-    njs_value_type_t type, const char *fmt, ...);
+    njs_prototype_t type, const char *fmt, ...);
 void njs_parser_node_error(njs_vm_t *vm, njs_parser_node_t *node,
-    njs_value_type_t type, const char *fmt, ...);
+    njs_prototype_t type, const char *fmt, ...);
 
 
 #define njs_parser_enter(vm, parser)                                          \
@@ -155,12 +155,13 @@ void njs_parser_node_error(njs_vm_t *vm, njs_parser_node_t *node,
 
 
 #define njs_parser_syntax_error(vm, parser, fmt, ...)                         \
-    njs_parser_lexer_error(vm, parser, NJS_OBJECT_SYNTAX_ERROR, fmt,          \
+    njs_parser_lexer_error(vm, parser, NJS_PROTOTYPE_SYNTAX_ERROR, fmt,       \
                            ##__VA_ARGS__)
 
 
 #define njs_parser_ref_error(vm, parser, fmt, ...)                            \
-    njs_parser_lexer_error(vm, parser, NJS_OBJECT_REF_ERROR, fmt, ##__VA_ARGS__)
+    njs_parser_lexer_error(vm, parser, NJS_PROTOTYPE_REF_ERROR, fmt,          \
+                           ##__VA_ARGS__)
 
 
 njs_inline njs_token_t

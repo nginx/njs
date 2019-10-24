@@ -64,16 +64,8 @@ typedef enum {
     NJS_FUNCTION              = 0x15,
     NJS_REGEXP                = 0x16,
     NJS_DATE                  = 0x17,
-    NJS_OBJECT_ERROR          = 0x18,
-    NJS_OBJECT_EVAL_ERROR     = 0x19,
-    NJS_OBJECT_INTERNAL_ERROR = 0x1a,
-    NJS_OBJECT_RANGE_ERROR    = 0x1b,
-    NJS_OBJECT_REF_ERROR      = 0x1c,
-    NJS_OBJECT_SYNTAX_ERROR   = 0x1d,
-    NJS_OBJECT_TYPE_ERROR     = 0x1e,
-    NJS_OBJECT_URI_ERROR      = 0x1f,
-    NJS_OBJECT_VALUE          = 0x20,
-#define NJS_TYPE_MAX         (NJS_OBJECT_VALUE + 1)
+    NJS_OBJECT_VALUE          = 0x18,
+#define NJS_VALUE_TYPE_MAX    (NJS_OBJECT_VALUE + 1)
 } njs_value_type_t;
 
 
@@ -205,7 +197,9 @@ struct njs_object_s {
     /* The type is used in constructor prototypes. */
     njs_value_type_t                  type:8;
     uint8_t                           shared;     /* 1 bit */
-    uint8_t                           extensible; /* 1 bit */
+
+    uint8_t                           extensible:1;
+    uint8_t                           error_data:1;
 };
 
 
@@ -459,10 +453,6 @@ typedef struct {
 #define njs_is_string(value)                                                  \
     ((value)->type == NJS_STRING)
 
-#define njs_is_error(value)                                                   \
-    ((value)->type >= NJS_OBJECT_ERROR                                        \
-     && (value)->type <= NJS_OBJECT_URI_ERROR)
-
 
 /*
  * The truth field coincides with short_string.size and short_string.length
@@ -520,6 +510,11 @@ typedef struct {
     ((value)->type >= NJS_OBJECT)
 
 
+#define njs_has_prototype(vm, value, proto)                                   \
+    (((njs_object_prototype_t *)                                              \
+        njs_object(value)->__proto__ - (vm)->prototypes) == proto)
+
+
 #define njs_is_object_value(value)                                            \
     ((value)->type == NJS_OBJECT_VALUE)
 
@@ -550,6 +545,10 @@ typedef struct {
 
 #define njs_is_date(value)                                                    \
     ((value)->type == NJS_DATE)
+
+
+#define njs_is_error(value)                                                   \
+    ((value)->type == NJS_OBJECT && njs_object(value)->error_data)
 
 
 #define njs_is_external(value)                                                \

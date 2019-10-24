@@ -1384,7 +1384,7 @@ njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 {
     /* ECMAScript 5.1: null, array and regexp are objects. */
 
-    static const njs_value_t  *types[NJS_TYPE_MAX] = {
+    static const njs_value_t  *types[NJS_VALUE_TYPE_MAX] = {
         &njs_string_object,
         &njs_string_undefined,
         &njs_string_boolean,
@@ -1408,14 +1408,6 @@ njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
         &njs_string_object,
         &njs_string_object,
         &njs_string_function,
-        &njs_string_object,
-        &njs_string_object,
-        &njs_string_object,
-        &njs_string_object,
-        &njs_string_object,
-        &njs_string_object,
-        &njs_string_object,
-        &njs_string_object,
         &njs_string_object,
         &njs_string_object,
         &njs_string_object,

@@ -249,7 +249,8 @@ static njs_int_t njs_generate_function_debug(njs_vm_t *vm,
 
 
 #define njs_generate_syntax_error(vm, node, fmt, ...)                         \
-    njs_parser_node_error(vm, node, NJS_OBJECT_SYNTAX_ERROR, fmt, ##__VA_ARGS__)
+    njs_parser_node_error(vm, node, NJS_PROTOTYPE_SYNTAX_ERROR, fmt,          \
+                          ##__VA_ARGS__)
 
 
 static const njs_str_t  no_label     = njs_str("");

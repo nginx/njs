@@ -43,6 +43,7 @@ njs_object_alloc(njs_vm_t *vm)
         object->type = NJS_OBJECT;
         object->shared = 0;
         object->extensible = 1;
+        object->error_data = 0;
         return object;
     }
 
@@ -2057,7 +2058,7 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
 {
     const njs_value_t  *name;
 
-    static const njs_value_t  *class_name[NJS_TYPE_MAX] = {
+    static const njs_value_t  *class_name[NJS_VALUE_TYPE_MAX] = {
         /* Primitives. */
         &njs_object_null_string,
         &njs_object_undefined_string,
@@ -2086,18 +2087,14 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         &njs_object_function_string,
         &njs_object_regexp_string,
         &njs_object_date_string,
-        &njs_object_error_string,
-        &njs_object_error_string,
-        &njs_object_error_string,
-        &njs_object_error_string,
-        &njs_object_error_string,
-        &njs_object_error_string,
-        &njs_object_error_string,
-        &njs_object_error_string,
         &njs_object_object_string,
     };
 
     name = class_name[args[0].type];
+
+    if (njs_is_error(&args[0])) {
+        name = &njs_object_error_string;
+    }
 
     if (njs_fast_path(name != NULL)) {
         vm->retval = *name;

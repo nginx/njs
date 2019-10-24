@@ -342,30 +342,6 @@ njs_type_string(njs_value_type_t type)
     case NJS_DATE:
         return "date";
 
-    case NJS_OBJECT_ERROR:
-        return "error";
-
-    case NJS_OBJECT_EVAL_ERROR:
-        return "eval error";
-
-    case NJS_OBJECT_INTERNAL_ERROR:
-        return "internal error";
-
-    case NJS_OBJECT_RANGE_ERROR:
-        return "range error";
-
-    case NJS_OBJECT_REF_ERROR:
-        return "reference error";
-
-    case NJS_OBJECT_SYNTAX_ERROR:
-        return "syntax error";
-
-    case NJS_OBJECT_TYPE_ERROR:
-        return "type error";
-
-    case NJS_OBJECT_URI_ERROR:
-        return "uri error";
-
     default:
         return NULL;
     }
@@ -558,14 +534,6 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
     case NJS_OBJECT_STRING:
     case NJS_REGEXP:
     case NJS_DATE:
-    case NJS_OBJECT_ERROR:
-    case NJS_OBJECT_EVAL_ERROR:
-    case NJS_OBJECT_INTERNAL_ERROR:
-    case NJS_OBJECT_RANGE_ERROR:
-    case NJS_OBJECT_REF_ERROR:
-    case NJS_OBJECT_SYNTAX_ERROR:
-    case NJS_OBJECT_TYPE_ERROR:
-    case NJS_OBJECT_URI_ERROR:
     case NJS_OBJECT_VALUE:
         obj = njs_object(value);
         break;

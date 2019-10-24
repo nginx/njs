@@ -8670,6 +8670,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("RangeError('e')"),
       njs_str("RangeError: e") },
 
+    { njs_str("var e = RangeError('e'); Object.preventExtensions(e);e"),
+      njs_str("RangeError: e") },
+
     { njs_str("ReferenceError('e')"),
       njs_str("ReferenceError: e") },
 
@@ -9532,6 +9535,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Object.prototype.toString.call(new URIError)"),
       njs_str("[object Error]") },
 
+    { njs_str("Object.prototype.toString.call(URIError.prototype)"),
+      njs_str("[object Object]") },
+
     { njs_str("Object.prototype"),
       njs_str("[object Object]") },
 
@@ -10263,6 +10269,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var fn = (function() { return new Function('return this'); }).call({}), o = {}; fn.call(o) == o && fn.bind(o).call(this) == o"),
       njs_str("true") },
+
+    { njs_str("this.NN = {}; var f = Function('eval = 42;'); f()"),
+      njs_str("SyntaxError: Identifier \"eval\" is forbidden as left-hand in assignment in runtime:1") },
 
     { njs_str("RegExp()"),
       njs_str("/(?:)/") },
@@ -14028,6 +14037,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("njs.dump({a:1, b:[1,,2,{c:new Boolean(1)}]})"),
       njs_str("{a:1,b:[1,<empty>,2,{c:[Boolean: true]}]}") },
+
+    { njs_str("njs.dump([InternalError(),TypeError('msg'), new RegExp(), /^undef$/m, new Date(0)])"),
+      njs_str("[InternalError,TypeError: msg,/(?:)/,/^undef$/m,1970-01-01T00:00:00.000Z]") },
 
     { njs_str("njs.dump(Array.prototype.slice.call({'1':'b', length:2}))"),
       njs_str("[<empty>,'b']") },

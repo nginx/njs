@@ -81,7 +81,7 @@ typedef enum {
     (((index) & NJS_SCOPE_CALLEE_ARGUMENTS) == NJS_SCOPE_CALLEE_ARGUMENTS)
 
 
-enum njs_prototypes_e {
+typedef enum {
     NJS_PROTOTYPE_OBJECT = 0,
     NJS_PROTOTYPE_ARRAY,
     NJS_PROTOTYPE_BOOLEAN,
@@ -101,7 +101,7 @@ enum njs_prototypes_e {
     NJS_PROTOTYPE_TYPE_ERROR,
     NJS_PROTOTYPE_URI_ERROR,
 #define NJS_PROTOTYPE_MAX      (NJS_PROTOTYPE_URI_ERROR + 1)
-};
+} njs_prototype_t;
 
 
 #define njs_primitive_prototype_index(type)                                   \
@@ -266,7 +266,7 @@ struct njs_vm_s {
 
     /*
      * MemoryError is statically allocated immutable Error object
-     * with the generic type NJS_OBJECT_INTERNAL_ERROR.
+     * with the InternalError prototype.
      */
     njs_object_t             memory_error_object;
 
