@@ -766,6 +766,9 @@ njs_test {
      "Error: loading exception\r\n    at module \\(loading_exception.js:1\\)"}
     {"import lib3 from 'lib1.js'\r\n"
      "undefined\r\n"}
+} "-p test/module/"
+
+njs_test {
     {"import m from 'export_name.js'\r\n"
      "undefined\r\n"}
     {"m.prod(3,4)\r\n"
