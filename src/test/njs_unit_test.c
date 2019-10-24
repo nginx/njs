@@ -8661,74 +8661,8 @@ static njs_unit_test_t  njs_test[] =
               "new Error()"),
       njs_str("n: m") },
 
-    { njs_str("EvalError('e')"),
-      njs_str("EvalError: e") },
-
-    { njs_str("InternalError('e')"),
-      njs_str("InternalError: e") },
-
-    { njs_str("RangeError('e')"),
-      njs_str("RangeError: e") },
-
     { njs_str("var e = RangeError('e'); Object.preventExtensions(e);e"),
       njs_str("RangeError: e") },
-
-    { njs_str("ReferenceError('e')"),
-      njs_str("ReferenceError: e") },
-
-    { njs_str("SyntaxError('e')"),
-      njs_str("SyntaxError: e") },
-
-    { njs_str("TypeError('e')"),
-      njs_str("TypeError: e") },
-
-    { njs_str("URIError('e')"),
-      njs_str("URIError: e") },
-
-    { njs_str("MemoryError('e')"),
-      njs_str("MemoryError") },
-
-    { njs_str("EvalError('e').name + ': ' + EvalError('e').message"),
-      njs_str("EvalError: e") },
-
-    { njs_str("InternalError('e').name + ': ' + InternalError('e').message"),
-      njs_str("InternalError: e") },
-
-    { njs_str("RangeError('e').name + ': ' + RangeError('e').message"),
-      njs_str("RangeError: e") },
-
-    { njs_str("ReferenceError('e').name + ': ' + ReferenceError('e').message"),
-      njs_str("ReferenceError: e") },
-
-    { njs_str("SyntaxError('e').name + ': ' + SyntaxError('e').message"),
-      njs_str("SyntaxError: e") },
-
-    { njs_str("TypeError('e').name + ': ' + TypeError('e').message"),
-      njs_str("TypeError: e") },
-
-    { njs_str("URIError('e').name + ': ' + URIError('e').message"),
-      njs_str("URIError: e") },
-
-    { njs_str("var e = EvalError('e'); e.name = 'E'; e"),
-      njs_str("E: e") },
-
-    { njs_str("var e = InternalError('e'); e.name = 'E'; e"),
-      njs_str("E: e") },
-
-    { njs_str("var e = RangeError('e'); e.name = 'E'; e"),
-      njs_str("E: e") },
-
-    { njs_str("var e = ReferenceError('e'); e.name = 'E'; e"),
-      njs_str("E: e") },
-
-    { njs_str("var e = SyntaxError('e'); e.name = 'E'; e"),
-      njs_str("E: e") },
-
-    { njs_str("var e = TypeError('e'); e.name = 'E'; e"),
-      njs_str("E: e") },
-
-    { njs_str("var e = URIError('e'); e.name = 'E'; e"),
-      njs_str("E: e") },
 
     /* Memory object is immutable. */
 
@@ -8759,134 +8693,39 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("MemoryError.prototype.name"),
       njs_str("InternalError") },
 
-    { njs_str("EvalError.prototype.message"),
-      njs_str("") },
 
-    { njs_str("InternalError.prototype.message"),
-      njs_str("") },
+    /* NativeErrors. */
 
-    { njs_str("RangeError.prototype.message"),
-      njs_str("") },
-
-    { njs_str("ReferenceError.prototype.message"),
-      njs_str("") },
-
-    { njs_str("SyntaxError.prototype.message"),
-      njs_str("") },
-
-    { njs_str("TypeError.prototype.message"),
-      njs_str("") },
-
-    { njs_str("URIError.prototype.message"),
-      njs_str("") },
-
-    { njs_str("MemoryError.prototype.message"),
-      njs_str("") },
-
-    { njs_str("EvalError.prototype.constructor == EvalError"),
+    { njs_str(
+        "function isValidNativeError(e) {"
+        "   var inst;"
+        "   var proto = Object.getPrototypeOf(e) === Error;"
+        "   var proto2 = e.__proto__ === Error;"
+        "   var iproto = e().__proto__ === e.prototype;"
+        "   var iproto2 = e().__proto__.__proto__ === Error.prototype;"
+        "   var tpof = typeof e() === 'object';"
+        "   var ctor = e.prototype.constructor === e;"
+        "   var msg = e.prototype.message === '';"
+        "   var name = e('e').toString() === `${e.prototype.name}: e`;"
+        "   var name2 = (inst = e('e'), inst.name = 'E', inst.toString() === 'E: e');"
+        "   var name3 = (inst = e('e'), inst.name = '', inst.toString() === 'e');"
+        "   var name4 = e().toString() === `${e.prototype.name}`;"
+        "   var own_proto_ctor = e.prototype.hasOwnProperty('constructor');"
+        ""
+        "   return proto && proto2 && iproto && iproto2 "
+        "          && tpof && ctor && msg && name && name2 && name3 && name4 "
+        "          && own_proto_ctor;"
+        "};"
+        "["
+        "  EvalError,"
+        "  InternalError,"
+        "  RangeError,"
+        "  ReferenceError,"
+        "  SyntaxError,"
+        "  TypeError,"
+        "  URIError,"
+        "].every(e => isValidNativeError(e))"),
       njs_str("true") },
-
-    { njs_str("RangeError.prototype.constructor == RangeError"),
-      njs_str("true") },
-
-    { njs_str("ReferenceError.prototype.constructor == ReferenceError"),
-      njs_str("true") },
-
-    { njs_str("SyntaxError.prototype.constructor == SyntaxError"),
-      njs_str("true") },
-
-    { njs_str("TypeError.prototype.constructor == TypeError"),
-      njs_str("true") },
-
-    { njs_str("URIError.prototype.constructor == URIError"),
-      njs_str("true") },
-
-    { njs_str("EvalError.prototype.hasOwnProperty('constructor')"),
-      njs_str("true") },
-
-    { njs_str("RangeError.prototype.hasOwnProperty('constructor')"),
-      njs_str("true") },
-
-    { njs_str("ReferenceError.prototype.hasOwnProperty('constructor')"),
-      njs_str("true") },
-
-    { njs_str("SyntaxError.prototype.hasOwnProperty('constructor')"),
-      njs_str("true") },
-
-    { njs_str("TypeError.prototype.hasOwnProperty('constructor')"),
-      njs_str("true") },
-
-    { njs_str("URIError.prototype.hasOwnProperty('constructor')"),
-      njs_str("true") },
-
-    { njs_str("EvalError().__proto__ == EvalError.prototype"),
-      njs_str("true") },
-
-    { njs_str("RangeError().__proto__ == RangeError.prototype"),
-      njs_str("true") },
-
-    { njs_str("ReferenceError().__proto__ == ReferenceError.prototype"),
-      njs_str("true") },
-
-    { njs_str("SyntaxError().__proto__ == SyntaxError.prototype"),
-      njs_str("true") },
-
-    { njs_str("TypeError().__proto__ == TypeError.prototype"),
-      njs_str("true") },
-
-    { njs_str("URIError().__proto__ == URIError.prototype"),
-      njs_str("true") },
-
-    { njs_str("EvalError().__proto__.__proto__ == Error.prototype"),
-      njs_str("true") },
-
-    { njs_str("RangeError().__proto__.__proto__ == Error.prototype"),
-      njs_str("true") },
-
-    { njs_str("ReferenceError().__proto__.__proto__ == Error.prototype"),
-      njs_str("true") },
-
-    { njs_str("SyntaxError().__proto__.__proto__ == Error.prototype"),
-      njs_str("true") },
-
-    { njs_str("TypeError().__proto__.__proto__ == Error.prototype"),
-      njs_str("true") },
-
-    { njs_str("URIError().__proto__.__proto__ == Error.prototype"),
-      njs_str("true") },
-
-    { njs_str("MemoryError().__proto__ == MemoryError.prototype"),
-      njs_str("true") },
-
-    { njs_str("MemoryError().__proto__.__proto__ == Error.prototype"),
-      njs_str("true") },
-
-    { njs_str("typeof Error()"),
-      njs_str("object") },
-
-    { njs_str("typeof EvalError()"),
-      njs_str("object") },
-
-    { njs_str("typeof InternalError()"),
-      njs_str("object") },
-
-    { njs_str("typeof RangeError()"),
-      njs_str("object") },
-
-    { njs_str("typeof ReferenceError()"),
-      njs_str("object") },
-
-    { njs_str("typeof SyntaxError()"),
-      njs_str("object") },
-
-    { njs_str("typeof TypeError()"),
-      njs_str("object") },
-
-    { njs_str("typeof URIError()"),
-      njs_str("object") },
-
-    { njs_str("typeof MemoryError()"),
-      njs_str("object") },
 
     /* Exceptions. */
 

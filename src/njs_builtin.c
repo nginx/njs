@@ -318,6 +318,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
     for (p = njs_constructor_init; *p != NULL; p++) {
         obj = *p;
 
+        func->object.type = NJS_FUNCTION;
         func->object.shared = 0;
         func->object.extensible = 1;
         func->native = 1;
@@ -351,76 +352,76 @@ njs_prototype_function(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 /*
  * Object(),
- * Object.__proto__             -> Function_Prototype,
- * Object_Prototype.__proto__   -> null,
+ * Object.__proto__             -> Function.prototype,
+ * Object.prototype.__proto__   -> null,
  *   the null value is handled by njs_object_prototype_proto(),
  *
  * Array(),
- * Array.__proto__              -> Function_Prototype,
- * Array_Prototype.__proto__    -> Object_Prototype,
+ * Array.__proto__              -> Function.prototype,
+ * Array.prototype.__proto__    -> Object.prototype,
  *
  * Boolean(),
- * Boolean.__proto__            -> Function_Prototype,
- * Boolean_Prototype.__proto__  -> Object_Prototype,
+ * Boolean.__proto__            -> Function.prototype,
+ * Boolean.prototype.__proto__  -> Object.prototype,
  *
  * Number(),
- * Number.__proto__             -> Function_Prototype,
- * Number_Prototype.__proto__   -> Object_Prototype,
+ * Number.__proto__             -> Function.prototype,
+ * Number.prototype.__proto__   -> Object.prototype,
  *
  * String(),
- * String.__proto__             -> Function_Prototype,
- * String_Prototype.__proto__   -> Object_Prototype,
+ * String.__proto__             -> Function.prototype,
+ * String.prototype.__proto__   -> Object.prototype,
  *
  * Function(),
- * Function.__proto__           -> Function_Prototype,
- * Function_Prototype.__proto__ -> Object_Prototype,
+ * Function.__proto__           -> Function.prototype,
+ * Function.prototype.__proto__ -> Object.prototype,
  *
  * RegExp(),
- * RegExp.__proto__             -> Function_Prototype,
- * RegExp_Prototype.__proto__   -> Object_Prototype,
+ * RegExp.__proto__             -> Function.prototype,
+ * RegExp.prototype.__proto__   -> Object.prototype,
  *
  * Date(),
- * Date.__proto__               -> Function_Prototype,
- * Date_Prototype.__proto__     -> Object_Prototype,
+ * Date.__proto__               -> Function.prototype,
+ * Date.prototype.__proto__     -> Object.prototype,
  *
  * Error(),
- * Error.__proto__               -> Function_Prototype,
- * Error_Prototype.__proto__     -> Object_Prototype,
+ * Error.__proto__               -> Function.prototype,
+ * Error.prototype.__proto__     -> Object.prototype,
  *
  * EvalError(),
- * EvalError.__proto__           -> Function_Prototype,
- * EvalError_Prototype.__proto__ -> Error_Prototype,
+ * EvalError.__proto__           -> Error,
+ * EvalError.prototype.__proto__ -> Error.prototype,
  *
  * InternalError(),
- * InternalError.__proto__           -> Function_Prototype,
- * InternalError_Prototype.__proto__ -> Error_Prototype,
+ * InternalError.__proto__           -> Error,
+ * InternalError.prototype.__proto__ -> Error.prototype,
  *
  * RangeError(),
- * RangeError.__proto__           -> Function_Prototype,
- * RangeError_Prototype.__proto__ -> Error_Prototype,
+ * RangeError.__proto__           -> Error,
+ * RangeError.prototype.__proto__ -> Error.prototype,
  *
  * ReferenceError(),
- * ReferenceError.__proto__           -> Function_Prototype,
- * ReferenceError_Prototype.__proto__ -> Error_Prototype,
+ * ReferenceError.__proto__           -> Error,
+ * ReferenceError.prototype.__proto__ -> Error.prototype,
  *
  * SyntaxError(),
- * SyntaxError.__proto__           -> Function_Prototype,
- * SyntaxError_Prototype.__proto__ -> Error_Prototype,
+ * SyntaxError.__proto__           -> Error,
+ * SyntaxError.prototype.__proto__ -> Error.prototype,
  *
  * TypeError(),
- * TypeError.__proto__           -> Function_Prototype,
- * TypeError_Prototype.__proto__ -> Error_Prototype,
+ * TypeError.__proto__           -> Error,
+ * TypeError.prototype.__proto__ -> Error.prototype,
  *
  * URIError(),
- * URIError.__proto__           -> Function_Prototype,
- * URIError_Prototype.__proto__ -> Error_Prototype,
+ * URIError.__proto__           -> Error,
+ * URIError.prototype.__proto__ -> Error.prototype,
  *
  * MemoryError(),
- * MemoryError.__proto__           -> Function_Prototype,
- * MemoryError_Prototype.__proto__ -> Error_Prototype,
+ * MemoryError.__proto__           -> Error,
+ * MemoryError.prototype.__proto__ -> Error.prototype,
  *
  * eval(),
- * eval.__proto__               -> Function_Prototype.
+ * eval.__proto__               -> Function.prototype.
  */
 
 njs_int_t
@@ -429,7 +430,8 @@ njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global)
     size_t        size;
     njs_uint_t    i;
     njs_value_t   *values;
-    njs_object_t  *object_prototype, *function_prototype, *error_prototype;
+    njs_object_t  *object_prototype, *function_prototype, *error_prototype,
+                  *error_constructor;
 
     /*
      * Copy both prototypes and constructors arrays by one memcpy()
@@ -452,12 +454,20 @@ njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global)
         vm->prototypes[i].object.__proto__ = error_prototype;
     }
 
-    function_prototype = &vm->prototypes[NJS_CONSTRUCTOR_FUNCTION].object;
     values = vm->scopes[NJS_SCOPE_GLOBAL];
 
-    for (i = NJS_CONSTRUCTOR_OBJECT; i < NJS_CONSTRUCTOR_MAX; i++) {
+    function_prototype = &vm->prototypes[NJS_PROTOTYPE_FUNCTION].object;
+
+    for (i = NJS_CONSTRUCTOR_OBJECT; i < NJS_CONSTRUCTOR_EVAL_ERROR; i++) {
         njs_set_function(&values[i], &vm->constructors[i]);
         vm->constructors[i].object.__proto__ = function_prototype;
+    }
+
+    error_constructor = &vm->constructors[NJS_CONSTRUCTOR_ERROR].object;
+
+    for (i = NJS_CONSTRUCTOR_EVAL_ERROR; i < NJS_CONSTRUCTOR_MAX; i++) {
+        njs_set_function(&values[i], &vm->constructors[i]);
+        vm->constructors[i].object.__proto__ = error_constructor;
     }
 
     vm->global_object = vm->shared->objects[0];
