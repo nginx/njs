@@ -4407,6 +4407,17 @@ static njs_unit_test_t  njs_test[] =
               "Array.prototype.lastIndexOf.call(o); i"),
       njs_str("1") },
 
+    { njs_str("[''].lastIndexOf.call('00000000000000000000000000000а00')"),
+      njs_str("-1") },
+
+    { njs_str("var o = 'ГВБА';"
+              "Array.prototype.lastIndexOf.call(o, 'Г', 0)"),
+      njs_str("0") },
+
+    { njs_str("var o = 'ГВБА';"
+              "Array.prototype.lastIndexOf.call(o, 'Г', 4)"),
+      njs_str("0") },
+
     { njs_str("[1,2,3,4].includes()"),
       njs_str("false") },
 
@@ -5028,6 +5039,11 @@ static njs_unit_test_t  njs_test[] =
               "try {Array.prototype.reduceRight.call(o);}"
               "catch (e) {i += '; ' + e} i"),
       njs_str("1; TypeError: unexpected iterator arguments") },
+
+    { njs_str("var m = [];"
+              "[''].reduceRight.call('00000000000000000000000000000а00', (p, v, i, a) => {m.push(v)});"
+              "m.join('')"),
+      njs_str("0а00000000000000000000000000000") },
 
     { njs_str("var a = ['1','2','3','4','5','6']; a.sort()"),
       njs_str("1,2,3,4,5,6") },

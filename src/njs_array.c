@@ -1594,7 +1594,8 @@ njs_array_reverse_iterator(njs_vm_t *vm, njs_array_iterator_args_t *args,
         } else {
             /* UTF-8 string. */
 
-            p = njs_string_offset(string_prop.start, end, from + 1);
+            p = njs_string_offset(string_prop.start, end, from);
+            p = njs_utf8_next(p, end);
 
             i = from + 1;
 
