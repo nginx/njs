@@ -896,7 +896,7 @@ error:
         if (catch != NULL) {
             pc = catch;
 
-            if (vm->debug != NULL) {
+            if (vm->backtrace != NULL) {
                 njs_arr_reset(vm->backtrace);
             }
 

@@ -183,13 +183,34 @@ njs_builtin_objects_create(njs_vm_t *vm)
     njs_function_t             *func;
     njs_vm_shared_t            *shared;
     njs_lvlhsh_query_t         lhq;
+    njs_regexp_pattern_t       *pattern;
     njs_object_prototype_t     *prototype;
     const njs_object_init_t    *obj, **p;
     const njs_function_init_t  *f;
 
     static const njs_str_t  sandbox_key = njs_str("sandbox");
 
-    shared = vm->shared;
+    shared = njs_mp_zalloc(vm->mem_pool, sizeof(njs_vm_shared_t));
+    if (njs_slow_path(shared == NULL)) {
+        return NJS_ERROR;
+    }
+
+    njs_lvlhsh_init(&shared->keywords_hash);
+
+    ret = njs_lexer_keywords_init(vm->mem_pool, &shared->keywords_hash);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    njs_lvlhsh_init(&shared->values_hash);
+
+    pattern = njs_regexp_pattern_create(vm, (u_char *) "(?:)",
+                                        njs_length("(?:)"), 0);
+    if (njs_slow_path(pattern == NULL)) {
+        return NJS_ERROR;
+    }
+
+    shared->empty_regexp_pattern = pattern;
 
     ret = njs_object_hash_init(vm, &shared->array_instance_hash,
                                &njs_array_instance_init);
@@ -241,6 +262,8 @@ njs_builtin_objects_create(njs_vm_t *vm)
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
+
+    njs_lvlhsh_init(&vm->modules_hash);
 
     lhq.replace = 0;
     lhq.pool = vm->mem_pool;
@@ -302,15 +325,14 @@ njs_builtin_objects_create(njs_vm_t *vm)
     }
 
     shared->prototypes[NJS_PROTOTYPE_REGEXP].regexp.pattern =
-                                              vm->shared->empty_regexp_pattern;
+                                              shared->empty_regexp_pattern;
 
     string_object = &shared->string_object;
     njs_lvlhsh_init(&string_object->hash);
-    string_object->shared_hash = vm->shared->string_instance_hash;
+    string_object->shared_hash = shared->string_instance_hash;
     string_object->type = NJS_OBJECT_STRING;
     string_object->shared = 1;
     string_object->extensible = 0;
-    string_object->__proto__ = &vm->prototypes[NJS_PROTOTYPE_STRING].object;
 
     f = njs_native_constructors;
     func = shared->constructors;
@@ -335,6 +357,8 @@ njs_builtin_objects_create(njs_vm_t *vm)
         f++;
         func++;
     }
+
+    vm->shared = shared;
 
     return NJS_OK;
 }
@@ -471,7 +495,7 @@ njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global)
     }
 
     vm->global_object = vm->shared->objects[0];
-    vm->global_object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_OBJECT].object;
+    vm->global_object.__proto__ = object_prototype;
     vm->global_object.shared = 0;
 
     njs_set_object(global, &vm->global_object);

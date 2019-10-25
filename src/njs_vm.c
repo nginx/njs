@@ -22,11 +22,10 @@ const njs_str_t  njs_entry_anonymous =      njs_str("anonymous");
 njs_vm_t *
 njs_vm_create(njs_vm_opt_t *options)
 {
-    njs_mp_t              *mp;
-    njs_vm_t              *vm;
-    njs_int_t             ret;
-    njs_arr_t             *debug;
-    njs_regexp_pattern_t  *pattern;
+    njs_mp_t   *mp;
+    njs_vm_t   *vm;
+    njs_int_t  ret;
+    njs_arr_t  *debug;
 
     mp = njs_mp_fast_create(2 * njs_pagesize(), 128, 512, 16);
     if (njs_slow_path(mp == NULL)) {
@@ -34,85 +33,62 @@ njs_vm_create(njs_vm_opt_t *options)
     }
 
     vm = njs_mp_zalign(mp, sizeof(njs_value_t), sizeof(njs_vm_t));
+    if (njs_slow_path(vm == NULL)) {
+        return NULL;
+    }
 
-    if (njs_fast_path(vm != NULL)) {
-        vm->mem_pool = mp;
+    vm->mem_pool = mp;
 
-        ret = njs_regexp_init(vm);
+    ret = njs_regexp_init(vm);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NULL;
+    }
+
+    vm->options = *options;
+
+    if (options->shared != NULL) {
+        vm->shared = options->shared;
+
+    } else {
+        ret = njs_builtin_objects_create(vm);
         if (njs_slow_path(ret != NJS_OK)) {
             return NULL;
         }
+    }
 
-        vm->options = *options;
+    njs_lvlhsh_init(&vm->values_hash);
 
-        if (options->shared != NULL) {
-            vm->shared = options->shared;
+    vm->external = options->external;
 
-        } else {
-            vm->shared = njs_mp_zalloc(mp, sizeof(njs_vm_shared_t));
-            if (njs_slow_path(vm->shared == NULL)) {
-                return NULL;
-            }
+    vm->external_objects = njs_arr_create(vm->mem_pool, 4, sizeof(void *));
+    if (njs_slow_path(vm->external_objects == NULL)) {
+        return NULL;
+    }
 
-            options->shared = vm->shared;
+    njs_lvlhsh_init(&vm->externals_hash);
+    njs_lvlhsh_init(&vm->external_prototypes_hash);
 
-            njs_lvlhsh_init(&vm->shared->keywords_hash);
+    vm->trace.level = NJS_LEVEL_TRACE;
+    vm->trace.size = 2048;
+    vm->trace.handler = njs_parser_trace_handler;
+    vm->trace.data = vm;
 
-            ret = njs_lexer_keywords_init(mp, &vm->shared->keywords_hash);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return NULL;
-            }
+    njs_set_undefined(&vm->retval);
 
-            njs_lvlhsh_init(&vm->shared->values_hash);
-
-            pattern = njs_regexp_pattern_create(vm, (u_char *) "(?:)",
-                                                njs_length("(?:)"), 0);
-            if (njs_slow_path(pattern == NULL)) {
-                return NULL;
-            }
-
-            vm->shared->empty_regexp_pattern = pattern;
-
-            njs_lvlhsh_init(&vm->modules_hash);
-
-            ret = njs_builtin_objects_create(vm);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return NULL;
-            }
-        }
-
-        njs_lvlhsh_init(&vm->values_hash);
-
-        vm->external = options->external;
-
-        vm->external_objects = njs_arr_create(vm->mem_pool, 4, sizeof(void *));
-        if (njs_slow_path(vm->external_objects == NULL)) {
+    if (options->backtrace) {
+        debug = njs_arr_create(vm->mem_pool, 4,
+                               sizeof(njs_function_debug_t));
+        if (njs_slow_path(debug == NULL)) {
             return NULL;
         }
 
-        njs_lvlhsh_init(&vm->externals_hash);
-        njs_lvlhsh_init(&vm->external_prototypes_hash);
+        vm->debug = debug;
+    }
 
-        vm->trace.level = NJS_LEVEL_TRACE;
-        vm->trace.size = 2048;
-        vm->trace.handler = njs_parser_trace_handler;
-        vm->trace.data = vm;
-
-        if (options->backtrace) {
-            debug = njs_arr_create(vm->mem_pool, 4,
-                                   sizeof(njs_function_debug_t));
-            if (njs_slow_path(debug == NULL)) {
-                return NULL;
-            }
-
-            vm->debug = debug;
-        }
-
-        if (options->accumulative) {
-            ret = njs_vm_init(vm);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return NULL;
-            }
+    if (options->accumulative) {
+        ret = njs_vm_init(vm);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NULL;
         }
     }
 
@@ -243,9 +219,7 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
 {
     njs_mp_t   *nmp;
     njs_vm_t   *nvm;
-    uint32_t   items;
     njs_int_t  ret;
-    njs_arr_t  *externals;
 
     njs_thread_log_debug("CLONE:");
 
@@ -258,58 +232,23 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
         return NULL;
     }
 
-    nvm = njs_mp_zalign(nmp, sizeof(njs_value_t), sizeof(njs_vm_t));
-
-    if (njs_fast_path(nvm != NULL)) {
-        nvm->mem_pool = nmp;
-
-        nvm->shared = vm->shared;
-
-        nvm->trace = vm->trace;
-        nvm->trace.data = nvm;
-
-        nvm->variables_hash = vm->variables_hash;
-        nvm->values_hash = vm->values_hash;
-
-        nvm->modules = vm->modules;
-        nvm->modules_hash = vm->modules_hash;
-
-        nvm->externals_hash = vm->externals_hash;
-        nvm->external_prototypes_hash = vm->external_prototypes_hash;
-
-        items = vm->external_objects->items;
-
-        externals = njs_arr_create(nvm->mem_pool, items + 4, sizeof(void *));
-        if (njs_slow_path(externals == NULL)) {
-            return NULL;
-        }
-
-        if (items > 0) {
-            memcpy(externals->start, vm->external_objects->start,
-                   items * sizeof(void *));
-            externals->items = items;
-        }
-
-        nvm->external_objects = externals;
-
-        nvm->options = vm->options;
-
-        nvm->start = vm->start;
-
-        nvm->external = external;
-
-        nvm->global_scope = vm->global_scope;
-        nvm->scope_size = vm->scope_size;
-
-        nvm->debug = vm->debug;
-
-        ret = njs_vm_init(nvm);
-        if (njs_slow_path(ret != NJS_OK)) {
-            goto fail;
-        }
-
-        return nvm;
+    nvm = njs_mp_align(nmp, sizeof(njs_value_t), sizeof(njs_vm_t));
+    if (njs_slow_path(nvm == NULL)) {
+        goto fail;
     }
+
+    *nvm = *vm;
+
+    nvm->mem_pool = nmp;
+    nvm->trace.data = nvm;
+    nvm->external = external;
+
+    ret = njs_vm_init(nvm);
+    if (njs_slow_path(ret != NJS_OK)) {
+        goto fail;
+    }
+
+    return nvm;
 
 fail:
 
@@ -325,7 +264,6 @@ njs_vm_init(njs_vm_t *vm)
     size_t       size, scope_size;
     u_char       *values;
     njs_int_t    ret;
-    njs_arr_t    *backtrace;
     njs_value_t  *global;
     njs_frame_t  *frame;
 
@@ -353,10 +291,7 @@ njs_vm_init(njs_vm_t *vm)
 
     vm->scopes[NJS_SCOPE_GLOBAL] = (njs_value_t *) values;
 
-    if (vm->global_scope != 0) {
-        memcpy(values + NJS_INDEX_GLOBAL_OFFSET, vm->global_scope,
-               vm->scope_size);
-    }
+    memcpy(values + NJS_INDEX_GLOBAL_OFFSET, vm->global_scope, vm->scope_size);
 
     ret = njs_regexp_init(vm);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -372,20 +307,6 @@ njs_vm_init(njs_vm_t *vm)
 
     njs_lvlhsh_init(&vm->events_hash);
     njs_queue_init(&vm->posted_events);
-
-    if (vm->debug != NULL) {
-        backtrace = njs_arr_create(vm->mem_pool, 4,
-                                   sizeof(njs_backtrace_entry_t));
-        if (njs_slow_path(backtrace == NULL)) {
-            return NJS_ERROR;
-        }
-
-        vm->backtrace = backtrace;
-    }
-
-    if (njs_is_null(&vm->retval)) {
-        njs_set_undefined(&vm->retval);
-    }
 
     return NJS_OK;
 }
@@ -1101,12 +1022,23 @@ njs_int_t
 njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame)
 {
     njs_int_t              ret;
+    njs_arr_t              *backtrace;
     njs_uint_t             i;
     njs_function_t         *function;
     njs_native_frame_t     *native_frame;
     njs_function_debug_t   *debug_entry;
     njs_function_lambda_t  *lambda;
     njs_backtrace_entry_t  *be;
+
+    if (njs_slow_path(vm->backtrace == NULL)) {
+        backtrace = njs_arr_create(vm->mem_pool, 4,
+                                   sizeof(njs_backtrace_entry_t));
+        if (njs_slow_path(backtrace == NULL)) {
+            return NJS_ERROR;
+        }
+
+        vm->backtrace = backtrace;
+    }
 
     native_frame = &frame->native;
     function = native_frame->function;

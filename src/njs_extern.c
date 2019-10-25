@@ -171,11 +171,22 @@ njs_int_t
 njs_vm_external_create(njs_vm_t *vm, njs_value_t *ext_val,
     const njs_extern_t *proto, njs_external_ptr_t object)
 {
-    void  *obj;
+    void       *obj;
+    njs_arr_t  *externals;
 
     if (njs_slow_path(proto == NULL)) {
         return NJS_ERROR;
     }
+
+    if (njs_slow_path(vm->external_objects == NULL)) {
+        externals = njs_arr_create(vm->mem_pool, 4, sizeof(void *));
+        if (njs_slow_path(externals == NULL)) {
+            return NJS_ERROR;
+        }
+
+        vm->external_objects = externals;
+    }
+
 
     obj = njs_arr_add(vm->external_objects);
     if (njs_slow_path(obj == NULL)) {
