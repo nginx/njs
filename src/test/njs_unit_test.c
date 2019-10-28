@@ -4026,7 +4026,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("") },
 
     { njs_str("Array.prototype.slice.call(undefined)"),
-      njs_str("TypeError: cannot convert undefined to object") },
+      njs_str("TypeError: cannot convert null or undefined to object") },
 
     { njs_str("Array.prototype.slice.call(1)"),
       njs_str("") },
@@ -7741,10 +7741,10 @@ static njs_unit_test_t  njs_test[] =
       njs_str("1552553") },
 
     { njs_str("[].join.call()"),
-      njs_str("TypeError: cannot convert undefined to object") },
+      njs_str("TypeError: cannot convert null or undefined to object") },
 
     { njs_str("[].slice.call()"),
-      njs_str("TypeError: cannot convert undefined to object") },
+      njs_str("TypeError: cannot convert null or undefined to object") },
 
     { njs_str("function f(a) {} ; var a = f; var b = f; a === b"),
       njs_str("true") },

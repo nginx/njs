@@ -419,16 +419,19 @@ static njs_int_t
 njs_array_prototype_slice(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    int64_t    start, end, length;
-    uint32_t   object_length;
-    njs_int_t  ret;
+    int64_t      start, end, length;
+    uint32_t     object_length;
+    njs_int_t    ret;
+    njs_value_t  *value;
 
-    if (njs_slow_path(njs_is_null_or_undefined(njs_arg(args, nargs, 0)))) {
-        njs_type_error(vm, "cannot convert undefined to object");
-        return NJS_ERROR;
+    value = njs_arg(args, nargs, 0);
+
+    ret = njs_value_to_object(vm, value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
-    ret = njs_object_length(vm, njs_arg(args, nargs, 0), &object_length);
+    ret = njs_object_length(vm, value, &object_length);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
     }
@@ -480,7 +483,7 @@ njs_array_prototype_slice(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    return njs_array_prototype_slice_copy(vm, &args[0], start, length);
+    return njs_array_prototype_slice_copy(vm, value, start, length);
 }
 
 
@@ -601,9 +604,9 @@ njs_array_prototype_push(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     value = njs_arg(args, nargs, 0);
     length = 0;
 
-    if (njs_slow_path(njs_is_null_or_undefined(value))) {
-        njs_type_error(vm, "Cannot convert undefined or null to object");
-        return NJS_ERROR;
+    ret = njs_value_to_object(vm, value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
     if (njs_is_array(&args[0])) {
@@ -662,9 +665,9 @@ njs_array_prototype_pop(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     value = njs_arg(args, nargs, 0);
 
-    if (njs_slow_path(njs_is_null_or_undefined(value))) {
-        njs_type_error(vm, "Cannot convert undefined or null to object");
-        return NJS_ERROR;
+    ret = njs_value_to_object(vm, value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
     njs_set_undefined(&vm->retval);
@@ -722,9 +725,9 @@ njs_array_prototype_unshift(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     length = 0;
     n = nargs - 1;
 
-    if (njs_slow_path(njs_is_null_or_undefined(value))) {
-        njs_type_error(vm, "Cannot convert undefined or null to object");
-        return NJS_ERROR;
+    ret = njs_value_to_object(vm, value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
     if (njs_is_array(value)) {
@@ -863,9 +866,9 @@ njs_array_prototype_shift(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     value = njs_arg(args, nargs, 0);
     length = 0;
 
-    if (njs_slow_path(njs_is_null_or_undefined(value))) {
-        njs_type_error(vm, "Cannot convert undefined or null to object");
-        return NJS_ERROR;
+    ret = njs_value_to_object(vm, value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
     njs_set_undefined(&vm->retval);
@@ -944,17 +947,19 @@ njs_array_prototype_splice(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_t  *value;
     njs_array_t  *array, *deleted;
 
-    if (njs_slow_path(njs_is_null_or_undefined(njs_arg(args, nargs, 0)))) {
-        njs_type_error(vm, "cannot convert undefined to object");
-        return NJS_ERROR;
+    value = njs_arg(args, nargs, 0);
+
+    ret = njs_value_to_object(vm, value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
     array = NULL;
     start = 0;
     delete = 0;
 
-    if (njs_is_array(&args[0])) {
-        array = njs_array(&args[0]);
+    if (njs_is_array(value)) {
+        array = njs_array(value);
         length = array->length;
 
         if (nargs > 1) {
@@ -1059,17 +1064,20 @@ static njs_int_t
 njs_array_prototype_reverse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
+    njs_int_t    ret;
     njs_uint_t   i, n, length;
-    njs_value_t  value;
+    njs_value_t  value, *this;
     njs_array_t  *array;
 
-    if (njs_slow_path(njs_is_null_or_undefined(njs_arg(args, nargs, 0)))) {
-        njs_type_error(vm, "cannot convert undefined to object");
-        return NJS_ERROR;
+    this = njs_arg(args, nargs, 0);
+
+    ret = njs_value_to_object(vm, this);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
-    if (njs_is_array(&args[0])) {
-        array = njs_array(&args[0]);
+    if (njs_is_array(this)) {
+        array = njs_array(this);
         length = array->length;
 
         if (length > 1) {
@@ -1084,7 +1092,7 @@ njs_array_prototype_reverse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     } else {
         /* STUB */
-        vm->retval = args[0];
+        vm->retval = *this;
     }
 
     return NJS_OK;
@@ -1131,9 +1139,9 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_t        *value, *values;
     njs_string_prop_t  separator, string;
 
-    if (njs_slow_path(njs_is_null_or_undefined(njs_arg(args, nargs, 0)))) {
-        njs_type_error(vm, "cannot convert undefined to object");
-        return NJS_ERROR;
+    ret = njs_value_to_object(vm, &args[0]);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
     if (nargs > 1 && !njs_is_string(&args[1])) {
@@ -1672,9 +1680,15 @@ njs_array_prototype_concat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     uint64_t     length;
+    njs_int_t    ret;
     njs_uint_t   i;
     njs_value_t  *value;
     njs_array_t  *array;
+
+    ret = njs_value_to_object(vm, &args[0]);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
 
     length = 0;
 
@@ -1749,12 +1763,13 @@ njs_array_prototype_index_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_int_t                  ret;
     njs_array_iterator_args_t  iargs;
 
-    if (njs_slow_path(njs_is_null_or_undefined(njs_arg(args, nargs, 0)))) {
-        njs_type_error(vm, "unexpected iterator arguments");
-        return NJS_ERROR;
+    iargs.value = njs_arg(args, nargs, 0);
+
+    ret = njs_value_to_object(vm, iargs.value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
-    iargs.value = njs_argument(args, 0);
     iargs.argument = njs_arg(args, nargs, 1);
 
     ret = njs_value_length(vm, iargs.value, &length);
@@ -1804,12 +1819,13 @@ njs_array_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
     njs_int_t                  ret;
     njs_array_iterator_args_t  iargs;
 
-    if (njs_slow_path(njs_is_null_or_undefined(njs_arg(args, nargs, 0)))) {
-        njs_type_error(vm, "unexpected iterator arguments");
-        return NJS_ERROR;
+    iargs.value = njs_arg(args, nargs, 0);
+
+    ret = njs_value_to_object(vm, iargs.value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
-    iargs.value = njs_argument(args, 0);
     iargs.argument = njs_arg(args, nargs, 1);
 
     ret = njs_value_length(vm, iargs.value, &length);
@@ -1895,12 +1911,13 @@ njs_array_prototype_includes(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_int_t                  ret;
     njs_array_iterator_args_t  iargs;
 
-    if (njs_slow_path(njs_is_null_or_undefined(njs_arg(args, nargs, 0)))) {
-        njs_type_error(vm, "unexpected iterator arguments");
-        return NJS_ERROR;
+    iargs.value = njs_arg(args, nargs, 0);
+
+    ret = njs_value_to_object(vm, iargs.value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
-    iargs.value = njs_argument(args, 0);
     iargs.argument = njs_arg(args, nargs, 1);
 
     ret = njs_value_length(vm, iargs.value, &length);
@@ -1958,25 +1975,12 @@ njs_array_prototype_fill(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_int_t     i, ret;
     njs_array_t   *array;
     njs_value_t   name, *this, *value;
-    njs_object_t  *object;
 
     this = njs_arg(args, nargs, 0);
 
-    if (njs_is_primitive(this)) {
-        if (njs_is_null_or_undefined(this)) {
-            njs_type_error(vm, "\"this\" argument cannot be "
-                               "undefined or null value");
-            return NJS_ERROR;
-        }
-
-        object = njs_object_value_alloc(vm, this, this->type);
-        if (njs_slow_path(object == NULL)) {
-            return NJS_ERROR;
-        }
-
-        njs_set_type_object(&vm->retval, object, object->type);
-
-        return NJS_OK;
+    ret = njs_value_to_object(vm, this);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
     array = NULL;
@@ -2063,11 +2067,12 @@ njs_array_validate_args(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     njs_int_t  ret;
 
-    if (njs_is_null_or_undefined(njs_arg(args, nargs, 0))) {
-        goto failed;
-    }
+    iargs->value = njs_arg(args, nargs, 0);
 
-    iargs->value = njs_argument(args, 0);
+    ret = njs_value_to_object(vm, iargs->value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
 
     ret = njs_value_length(vm, iargs->value, &iargs->to);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -2422,11 +2427,12 @@ njs_array_prototype_map(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_array_t                *array;
     njs_array_iterator_args_t  iargs;
 
-    if (njs_is_null_or_undefined(njs_arg(args, nargs, 0))) {
-        goto unexpected_args;
-    }
+    iargs.value = njs_arg(args, nargs, 0);
 
-    iargs.value = njs_argument(args, 0);
+    ret = njs_value_to_object(vm, iargs.value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
 
     ret = njs_value_length(vm, iargs.value, &length);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -2567,11 +2573,12 @@ njs_array_prototype_reduce_right(njs_vm_t *vm, njs_value_t *args,
     njs_value_t                accumulator;
     njs_array_iterator_args_t  iargs;
 
-    if (njs_is_null_or_undefined(njs_arg(args, nargs, 0))) {
-        goto unexpected_args;
-    }
+    iargs.value = njs_arg(args, nargs, 0);
 
-    iargs.value = njs_argument(args, 0);
+    ret = njs_value_to_object(vm, iargs.value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
 
     ret = njs_value_length(vm, iargs.value, &iargs.from);
     if (njs_slow_path(ret != NJS_OK)) {

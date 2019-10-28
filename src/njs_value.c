@@ -1171,3 +1171,36 @@ njs_value_property_delete(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
 
     return NJS_OK;
 }
+
+
+njs_int_t
+njs_value_to_object(njs_vm_t *vm, njs_value_t *value)
+{
+    njs_object_t  *object;
+
+    if (njs_slow_path(njs_is_null_or_undefined(value))) {
+        njs_type_error(vm, "cannot convert null or undefined to object");
+        return NJS_ERROR;
+    }
+
+    if (njs_is_object(value)) {
+        return NJS_OK;
+
+    }
+
+    if (njs_is_primitive(value)) {
+        object = njs_object_value_alloc(vm, value, value->type);
+        if (njs_slow_path(object == NULL)) {
+            return NJS_ERROR;
+        }
+
+        njs_set_type_object(value, object, njs_object_value_type(value->type));
+
+        return NJS_OK;
+    }
+
+    njs_type_error(vm, "cannot convert %s to object",
+                   njs_type_string(value->type));
+
+    return NJS_ERROR;
+}
