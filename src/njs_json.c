@@ -147,7 +147,7 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     njs_int_t             ret;
-    njs_value_t           *text, *value, *wrapper;
+    njs_value_t           *text, *value, *wrapper, lvalue;
     const u_char          *p, *end;
     njs_json_parse_t      *parse, json_parse;
     const njs_value_t     *reviver;
@@ -162,17 +162,12 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    text = njs_arg(args, nargs, 1);
+    text = njs_lvalue_arg(&lvalue, args, nargs, 1);
 
     if (njs_slow_path(!njs_is_string(text))) {
-        if (njs_is_undefined(text)) {
-            text = njs_value_arg(&njs_string_undefined);
-
-        } else {
-            ret = njs_value_to_string(vm, text, text);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return ret;
-            }
+        ret = njs_value_to_string(vm, text, text);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
     }
 

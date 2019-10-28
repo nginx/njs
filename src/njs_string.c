@@ -2065,9 +2065,8 @@ njs_string_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
     double             pos;
     ssize_t            index, start, length, search_length;
     njs_int_t          ret;
-    njs_value_t        *value;
+    njs_value_t        *value, *search_string, lvalue;
     const u_char       *p, *end;
-    const njs_value_t  *search_string;
     njs_string_prop_t  string, search;
 
     ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
@@ -2079,18 +2078,12 @@ njs_string_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
 
     length = njs_string_prop(&string, njs_argument(args, 0));
 
-    search_string = njs_arg(args, nargs, 1);
+    search_string = njs_lvalue_arg(&lvalue, args, nargs, 1);
 
     if (njs_slow_path(!njs_is_string(search_string))) {
-        if (njs_is_undefined(search_string)) {
-            search_string = &njs_string_undefined;
-
-        } else {
-            ret = njs_value_to_string(vm, njs_value_arg(search_string),
-                                      njs_value_arg(search_string));
-            if (njs_slow_path(ret != NJS_OK)) {
-                return ret;
-            }
+        ret = njs_value_to_string(vm, search_string, search_string);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
     }
 
@@ -2301,7 +2294,7 @@ njs_string_starts_or_ends_with(njs_vm_t *vm, njs_value_t *args,
 {
     int64_t            index, length, search_length;
     njs_int_t          ret;
-    njs_value_t        *value;
+    njs_value_t        *value, lvalue;
     const u_char       *p, *end;
     const njs_value_t  *retval;
     njs_string_prop_t  string, search;
@@ -2313,17 +2306,12 @@ njs_string_starts_or_ends_with(njs_vm_t *vm, njs_value_t *args,
         return ret;
     }
 
-    value = njs_arg(args, nargs, 1);
+    value = njs_lvalue_arg(&lvalue, args, nargs, 1);
 
     if (njs_slow_path(!njs_is_string(value))) {
-        if (njs_is_undefined(value)) {
-            value = njs_value_arg(&njs_string_undefined);
-
-        } else {
-            ret = njs_value_to_string(vm, value, value);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return ret;
-            }
+        ret = njs_value_to_string(vm, value, value);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
     }
 
@@ -3478,6 +3466,7 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_int_t             ret;
     njs_uint_t            ncaptures;
     njs_value_t           *this, *search, *replace;
+    njs_value_t           search_lvalue, replace_lvalue;
     njs_regex_t           *regex;
     njs_string_prop_t     string;
     njs_string_replace_t  *r, string_replace;
@@ -3493,8 +3482,8 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         goto original;
     }
 
-    search = njs_arg(args, nargs, 1);
-    replace = njs_arg(args, nargs, 2);
+    search = njs_lvalue_arg(&search_lvalue, args, nargs, 1);
+    replace = njs_lvalue_arg(&replace_lvalue, args, nargs, 2);
 
     (void) njs_string_prop(&string, this);
 
@@ -3530,14 +3519,9 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         ncaptures = 1;
 
         if (!njs_is_string(search)) {
-            if (njs_is_undefined(search)) {
-                search = njs_value_arg(&njs_string_undefined);
-
-            } else {
-                ret = njs_value_to_string(vm, search, search);
-                if (njs_slow_path(ret != NJS_OK)) {
-                    return ret;
-                }
+            ret = njs_value_to_string(vm, search, search);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
             }
         }
     }
@@ -3559,14 +3543,9 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     } else {
         if (njs_slow_path(!njs_is_string(replace))) {
-            if (njs_is_undefined(replace)) {
-                replace = njs_value_arg(&njs_string_undefined);
-
-            } else {
-                ret = njs_value_to_string(vm, replace, replace);
-                if (njs_slow_path(ret != NJS_OK)) {
-                    return ret;
-                }
+            ret = njs_value_to_string(vm, replace, replace);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
             }
         }
 

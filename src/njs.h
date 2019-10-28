@@ -51,10 +51,13 @@ extern const njs_value_t            njs_value_undefined;
                  : (njs_value_t *) &njs_value_undefined)
 
 #define njs_value_assign(dst, src)                                            \
-    *((njs_opaque_value_t *) dst) = *((njs_opaque_value_t *) src);
+    *((njs_opaque_value_t *) dst) = *((njs_opaque_value_t *) src)
 
 #define njs_value_arg(val) ((njs_value_t *) val)
 
+#define njs_lvalue_arg(lvalue, args, nargs, n)                                \
+    ((n < nargs) ? njs_argument(args, n)                                      \
+                 : (njs_value_assign(lvalue, &njs_value_undefined), lvalue))
 
 #define njs_vm_error(vm, fmt, ...)                                            \
     njs_vm_value_error_set(vm, njs_vm_retval(vm), fmt, ##__VA_ARGS__)

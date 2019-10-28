@@ -845,7 +845,7 @@ njs_regexp_prototype_test(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_int_t               ret;
     njs_uint_t              n;
     njs_regex_t             *regex;
-    njs_value_t             *value;
+    njs_value_t             *value, lvalue;
     const njs_value_t       *retval;
     njs_string_prop_t       string;
     njs_regexp_pattern_t    *pattern;
@@ -858,17 +858,12 @@ njs_regexp_prototype_test(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     retval = &njs_value_false;
 
-    value = njs_arg(args, nargs, 1);
+    value = njs_lvalue_arg(&lvalue, args, nargs, 1);
 
     if (!njs_is_string(value)) {
-        if (njs_is_undefined(value)) {
-            value = njs_value_arg(&njs_string_undefined);
-
-        } else {
-            ret = njs_value_to_string(vm, value, value);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return ret;
-            }
+        ret = njs_value_to_string(vm, value, value);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
     }
 
@@ -921,7 +916,7 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     njs_int_t               ret;
     njs_utf8_t              utf8;
-    njs_value_t             *value;
+    njs_value_t             *value, lvalue;
     njs_regexp_t            *regexp;
     njs_string_prop_t       string;
     njs_regexp_utf8_t       type;
@@ -933,17 +928,12 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    value = njs_arg(args, nargs, 1);
+    value = njs_lvalue_arg(&lvalue, args, nargs, 1);
 
     if (!njs_is_string(value)) {
-        if (njs_is_undefined(value)) {
-            value = njs_value_arg(&njs_string_undefined);
-
-        } else {
-            ret = njs_value_to_string(vm, value, value);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return ret;
-            }
+        ret = njs_value_to_string(vm, value, value);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
     }
 

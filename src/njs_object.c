@@ -1089,7 +1089,7 @@ njs_object_define_property(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     njs_int_t    ret;
-    njs_value_t  *value, *name, *desc;
+    njs_value_t  *value, *name, *desc, lvalue;
 
     if (!njs_is_object(njs_arg(args, nargs, 1))) {
         njs_type_error(vm, "cannot convert %s argument to object",
@@ -1111,17 +1111,12 @@ njs_object_define_property(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    name = njs_arg(args, nargs, 2);
+    name = njs_lvalue_arg(&lvalue, args, nargs, 2);
 
     if (njs_slow_path(!njs_is_string(name))) {
-        if (njs_is_undefined(name)) {
-            name = njs_value_arg(&njs_string_undefined);
-
-        } else {
-            ret = njs_value_to_string(vm, name, name);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return ret;
-            }
+        ret = njs_value_to_string(vm, name, name);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
     }
 
