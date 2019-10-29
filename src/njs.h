@@ -51,7 +51,7 @@ extern const njs_value_t            njs_value_undefined;
                  : (njs_value_t *) &njs_value_undefined)
 
 #define njs_value_assign(dst, src)                                            \
-    *((njs_opaque_value_t *) dst) = *((njs_opaque_value_t *) src)
+    memcpy(dst, src, sizeof(njs_opaque_value_t))
 
 #define njs_value_arg(val) ((njs_value_t *) val)
 
