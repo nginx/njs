@@ -1880,6 +1880,10 @@ static njs_int_t
 njs_array_handler_includes(njs_vm_t *vm, njs_array_iterator_args_t *args,
     njs_value_t *entry, uint32_t n)
 {
+    if (!njs_is_valid(entry)) {
+        entry = njs_value_arg(&njs_value_undefined);
+    }
+
     if (njs_values_strict_equal(args->argument, entry)) {
         njs_set_true(&vm->retval);
 
@@ -1947,7 +1951,7 @@ njs_array_prototype_includes(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     iargs.from = (uint32_t) from;
     iargs.to = length;
 
-    if (njs_is_numeric(iargs.argument) && isnan(njs_number(iargs.argument))) {
+    if (njs_is_number(iargs.argument) && isnan(njs_number(iargs.argument))) {
         ret = njs_array_iterator(vm, &iargs, njs_array_handler_includes_nan);
         if (njs_fast_path(ret == NJS_DECLINED)) {
             return NJS_OK;

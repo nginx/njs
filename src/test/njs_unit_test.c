@@ -6202,6 +6202,9 @@ static njs_unit_test_t  njs_test[] =
               "Array.prototype.includes.call(o); i"),
       njs_str("1") },
 
+    { njs_str("[,,,].includes(undefined)"),
+      njs_str("true") },
+
     { njs_str("''.startsWith('')"),
       njs_str("true") },
 
