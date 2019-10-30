@@ -7756,6 +7756,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("[].join.call()"),
       njs_str("TypeError: cannot convert null or undefined to object") },
 
+    { njs_str("[1,2,3].join(undefined)"),
+      njs_str("1,2,3") },
+
     { njs_str("[].slice.call()"),
       njs_str("TypeError: cannot convert null or undefined to object") },
 

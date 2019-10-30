@@ -1144,12 +1144,21 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    if (nargs > 1 && !njs_is_string(&args[1])) {
-        ret = njs_value_to_string(vm, &args[1], &args[1]);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
+    value = njs_arg(args, nargs, 1);
+
+    if (njs_slow_path(!njs_is_string(value))) {
+        if (njs_is_undefined(value)) {
+            value = njs_value_arg(&njs_string_comma);
+
+        } else {
+            ret = njs_value_to_string(vm, value, value);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
         }
     }
+
+    (void) njs_string_prop(&separator, value);
 
     if (!njs_is_array(&args[0]) || njs_array_len(&args[0]) == 0) {
         vm->retval = njs_string_empty;
@@ -1231,15 +1240,6 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             }
         }
     }
-
-    if (nargs > 1) {
-        value = &args[1];
-
-    } else {
-        value = njs_value_arg(&njs_string_comma);
-    }
-
-    (void) njs_string_prop(&separator, value);
 
     size += separator.size * (array->length - 1);
     length += separator.length * (array->length - 1);
