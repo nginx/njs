@@ -1380,7 +1380,7 @@ njs_array_iterator(njs_vm_t *vm, njs_array_iterator_args_t *args,
     uint32_t           length, i, from, to;
     njs_int_t          ret;
     njs_array_t        *keys;
-    njs_value_t        *entry, *value, character, index, string_obj;
+    njs_value_t        *value, character, index, string_obj;
     njs_object_t       *object;
     const u_char       *p, *end, *pos;
     njs_string_prop_t  string_prop;
@@ -1395,9 +1395,13 @@ njs_array_iterator(njs_vm_t *vm, njs_array_iterator_args_t *args,
         }
 
         for (i = from; i < to; i++) {
-            entry = &njs_array_start(value)[i];
+            if (i < njs_array_len(value)) {
+                ret = handler(vm, args, &njs_array_start(value)[i], i);
 
-            ret = handler(vm, args, entry, i);
+            } else {
+                ret = handler(vm, args, njs_value_arg(&njs_value_invalid), i);
+            }
+
             if (njs_slow_path(ret != NJS_OK)) {
                 if (ret > 0) {
                     return NJS_DECLINED;
@@ -1405,8 +1409,6 @@ njs_array_iterator(njs_vm_t *vm, njs_array_iterator_args_t *args,
 
                 return NJS_ERROR;
             }
-
-            to = njs_min(to, njs_array_len(value));
         }
 
         return NJS_OK;

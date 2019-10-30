@@ -4813,6 +4813,11 @@ static njs_unit_test_t  njs_test[] =
               "catch (e) {i += '; ' + e} i"),
       njs_str("1; TypeError: unexpected iterator arguments") },
 
+    { njs_str("var callz = 0, res = [], arr = 'abc'.split('');"
+              "void arr.find((k) => { if (0 == callz++) { arr.splice(1,1); } res.push(k) });"
+              "res.join(',')"),
+      njs_str("a,c,") },
+
     { njs_str("var a = [];"
                  "a.findIndex(function(v, i, a) { return v > 1 })"),
       njs_str("-1") },
@@ -4871,6 +4876,11 @@ static njs_unit_test_t  njs_test[] =
               "try {Array.prototype.findIndex.call(o);}"
               "catch (e) {i += '; ' + e} i"),
       njs_str("1; TypeError: unexpected iterator arguments") },
+
+    { njs_str("var callz = 0, res = [], arr = 'abc'.split('');"
+              "void arr.findIndex((k) => { if (0 == callz++) { arr.splice(1,1); } res.push(k) });"
+              "res.join(',')"),
+      njs_str("a,c,") },
 
     { njs_str("var a = [];"
                  "a.map(function(v, i, a) { return v + 1 })"),
