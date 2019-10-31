@@ -21,12 +21,10 @@ njs_int_t njs_array_string_add(njs_vm_t *vm, njs_array_t *array,
     const u_char *start, size_t size, size_t length);
 njs_int_t njs_array_expand(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
     uint32_t append);
-njs_int_t njs_array_constructor(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
 
-extern const njs_object_init_t  njs_array_constructor_init;
-extern const njs_object_init_t  njs_array_prototype_init;
+
 extern const njs_object_init_t  njs_array_instance_init;
+extern const njs_object_type_init_t  njs_array_type_init;
 
 
 #endif /* _NJS_ARRAY_H_INCLUDED_ */

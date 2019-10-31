@@ -96,7 +96,7 @@ njs_regexp_value_flags(njs_vm_t *vm, const njs_value_t *regexp)
 }
 
 
-njs_int_t
+static njs_int_t
 njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1267,4 +1267,12 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
 const njs_object_init_t  njs_regexp_prototype_init = {
     njs_regexp_prototype_properties,
     njs_nitems(njs_regexp_prototype_properties),
+};
+
+
+const njs_object_type_init_t  njs_regexp_type_init = {
+   .constructor = njs_regexp_constructor,
+   .prototype_props = &njs_regexp_prototype_init,
+   .constructor_props = &njs_regexp_constructor_init,
+   .value = { .object = { .type = NJS_REGEXP } },
 };

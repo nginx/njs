@@ -237,7 +237,7 @@ njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
 }
 
 
-njs_int_t
+static njs_int_t
 njs_number_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1123,28 +1123,10 @@ njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static const njs_object_prop_t  njs_is_finite_function_properties[] =
-{
-    /* isFinite.name == "isFinite". */
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("isFinite"),
-        .configurable = 1,
-    },
-
-    /* isFinite.length == 1. */
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 1.0),
-        .configurable = 1,
-    },
+const njs_object_type_init_t  njs_number_type_init = {
+   .constructor = njs_number_constructor,
+   .prototype_props = &njs_number_prototype_init,
+   .constructor_props = &njs_number_constructor_init,
+   .value = { .object_value = { .value = njs_value(NJS_NUMBER, 0, 0.0),
+                                .object = { .type = NJS_OBJECT_NUMBER } } },
 };
-
-
-const njs_object_init_t  njs_is_finite_function_init = {
-    njs_is_finite_function_properties,
-    njs_nitems(njs_is_finite_function_properties),
-};
-

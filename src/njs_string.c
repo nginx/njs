@@ -537,7 +537,7 @@ njs_string_prop(njs_string_prop_t *string, const njs_value_t *value)
 }
 
 
-njs_int_t
+static njs_int_t
 njs_string_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -5265,3 +5265,12 @@ njs_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime)
 
     return (njs_index_t) value;
 }
+
+
+const njs_object_type_init_t  njs_string_type_init = {
+    .constructor = njs_string_constructor,
+    .prototype_props = &njs_string_prototype_init,
+    .constructor_props = &njs_string_constructor_init,
+    .value = { .object_value = { .value = njs_string(""),
+                                 .object = { .type = NJS_OBJECT_STRING } } },
+};

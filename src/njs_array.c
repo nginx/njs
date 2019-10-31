@@ -177,7 +177,7 @@ memory_error:
 }
 
 
-njs_int_t
+static njs_int_t
 njs_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -3005,4 +3005,12 @@ const njs_object_prop_t  njs_array_instance_properties[] =
 const njs_object_init_t  njs_array_instance_init = {
     njs_array_instance_properties,
     njs_nitems(njs_array_instance_properties),
+};
+
+
+const njs_object_type_init_t  njs_array_type_init = {
+    .constructor = njs_array_constructor,
+    .prototype_props = &njs_array_prototype_init,
+    .constructor_props = &njs_array_constructor_init,
+    .value = { .object = { .type = NJS_ARRAY } },
 };

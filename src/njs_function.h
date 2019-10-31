@@ -107,8 +107,8 @@ njs_int_t njs_function_rest_parameters_init(njs_vm_t *vm,
     njs_native_frame_t *frame);
 njs_int_t njs_function_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
-njs_int_t njs_function_constructor(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+njs_int_t njs_eval_function(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused);
 njs_int_t njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, const njs_value_t *args, njs_uint_t nargs,
     njs_bool_t ctor);
@@ -194,16 +194,9 @@ njs_function_apply(njs_vm_t *vm, njs_function_t *function,
 }
 
 
-extern const njs_object_init_t  njs_function_constructor_init;
-extern const njs_object_init_t  njs_function_prototype_init;
+extern const njs_object_type_init_t  njs_function_type_init;
 extern const njs_object_init_t  njs_function_instance_init;
 extern const njs_object_init_t  njs_arrow_instance_init;
 extern const njs_object_init_t  njs_arguments_object_instance_init;
-
-njs_int_t njs_eval_function(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused);
-
-extern const njs_object_init_t  njs_eval_function_init;
-
 
 #endif /* _NJS_FUNCTION_H_INCLUDED_ */

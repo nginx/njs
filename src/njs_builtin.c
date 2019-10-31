@@ -10,11 +10,6 @@
 
 
 typedef struct {
-    njs_function_native_t  native;
-} njs_function_init_t;
-
-
-typedef struct {
     enum {
        NJS_BUILTIN_TRAVERSE_KEYS,
        NJS_BUILTIN_TRAVERSE_MATCH,
@@ -27,8 +22,6 @@ typedef struct {
 } njs_builtin_traverse_t;
 
 
-static njs_int_t njs_prototype_function(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
 static njs_arr_t *njs_vm_expression_completions(njs_vm_t *vm,
     njs_str_t *expression);
 static njs_arr_t *njs_object_completions(njs_vm_t *vm, njs_object_t *object);
@@ -36,12 +29,12 @@ static njs_int_t njs_env_hash_init(njs_vm_t *vm, njs_lvlhsh_t *hash,
     char **environment);
 
 
-const njs_object_init_t  njs_global_this_init;
-const njs_object_init_t  njs_njs_object_init;
-const njs_object_init_t  njs_process_object_init;
+static const njs_object_init_t  njs_global_this_init;
+static const njs_object_init_t  njs_njs_object_init;
+static const njs_object_init_t  njs_process_object_init;
 
 
-const njs_object_init_t  *njs_object_init[] = {
+static const njs_object_init_t  *njs_object_init[] = {
     &njs_global_this_init,
     &njs_njs_object_init,
     &njs_process_object_init,
@@ -51,129 +44,43 @@ const njs_object_init_t  *njs_object_init[] = {
 };
 
 
-const njs_object_init_t  *njs_module_init[] = {
+static const njs_object_init_t  *njs_module_init[] = {
     &njs_fs_object_init,
     &njs_crypto_object_init,
     NULL
 };
 
 
-const njs_object_init_t  *njs_prototype_init[] = {
-    &njs_object_prototype_init,
-    &njs_array_prototype_init,
-    &njs_boolean_prototype_init,
-    &njs_number_prototype_init,
-    &njs_string_prototype_init,
-    &njs_function_prototype_init,
-    &njs_regexp_prototype_init,
-    &njs_date_prototype_init,
-    &njs_hash_prototype_init,
-    &njs_hmac_prototype_init,
-    &njs_error_prototype_init,
-    &njs_eval_error_prototype_init,
-    &njs_internal_error_prototype_init,
-    &njs_range_error_prototype_init,
-    &njs_reference_error_prototype_init,
-    &njs_syntax_error_prototype_init,
-    &njs_type_error_prototype_init,
-    &njs_uri_error_prototype_init,
-    &njs_internal_error_prototype_init,
-    NULL
-};
+static const njs_object_type_init_t *const
+    njs_object_type_init[NJS_OBJ_TYPE_MAX] =
+{
+    /* Global types. */
 
+    &njs_obj_type_init,
+    &njs_array_type_init,
+    &njs_boolean_type_init,
+    &njs_number_type_init,
+    &njs_string_type_init,
+    &njs_function_type_init,
+    &njs_regexp_type_init,
+    &njs_date_type_init,
 
-const njs_object_init_t  *njs_constructor_init[] = {
-    &njs_object_constructor_init,
-    &njs_array_constructor_init,
-    &njs_boolean_constructor_init,
-    &njs_number_constructor_init,
-    &njs_string_constructor_init,
-    &njs_function_constructor_init,
-    &njs_regexp_constructor_init,
-    &njs_date_constructor_init,
-    &njs_hash_constructor_init,
-    &njs_hmac_constructor_init,
-    &njs_error_constructor_init,
-    &njs_eval_error_constructor_init,
-    &njs_internal_error_constructor_init,
-    &njs_range_error_constructor_init,
-    &njs_reference_error_constructor_init,
-    &njs_syntax_error_constructor_init,
-    &njs_type_error_constructor_init,
-    &njs_uri_error_constructor_init,
-    &njs_memory_error_constructor_init,
-    NULL
-};
+    /* Hidden types. */
 
+    &njs_hash_type_init,
+    &njs_hmac_type_init,
 
-const njs_function_init_t  njs_native_constructors[] = {
-    /* SunC does not allow empty array initialization. */
-    { njs_object_constructor },
-    { njs_array_constructor },
-    { njs_boolean_constructor },
-    { njs_number_constructor },
-    { njs_string_constructor },
-    { njs_function_constructor},
-    { njs_regexp_constructor },
-    { njs_date_constructor },
-    { njs_hash_constructor },
-    { njs_hmac_constructor },
-    { njs_error_constructor },
-    { njs_eval_error_constructor },
-    { njs_internal_error_constructor },
-    { njs_range_error_constructor },
-    { njs_reference_error_constructor },
-    { njs_syntax_error_constructor },
-    { njs_type_error_constructor },
-    { njs_uri_error_constructor },
-    { njs_memory_error_constructor },
-};
+    /* Error types. */
 
-
-const njs_object_prototype_t  njs_prototype_values[] = {
-    /*
-     * GCC 4 complains about uninitialized .shared field,
-     * if the .type field is initialized as .object.type.
-     */
-    { .object =       { .type = NJS_OBJECT } },
-    { .object =       { .type = NJS_ARRAY } },
-
-    /*
-     * The .object.type field must be initialzed after the .value field,
-     * otherwise SunC 5.9 treats the .value as .object.value or so.
-     */
-    { .object_value = { .value = njs_value(NJS_BOOLEAN, 0, 0.0),
-                        .object = { .type = NJS_OBJECT_BOOLEAN } } },
-
-    { .object_value = { .value = njs_value(NJS_NUMBER, 0, 0.0),
-                        .object = { .type = NJS_OBJECT_NUMBER } } },
-
-    { .object_value = { .value = njs_string(""),
-                        .object = { .type = NJS_OBJECT_STRING } } },
-
-    { .function =     { .native = 1,
-                        .args_offset = 1,
-                        .u.native = njs_prototype_function,
-                        .object = { .type = NJS_FUNCTION } } },
-
-    { .object =       { .type = NJS_REGEXP } },
-
-    { .object =       { .type = NJS_OBJECT } },
-
-    { .object_value = { .value = njs_value(NJS_DATA, 0, 0.0),
-                        .object = { .type = NJS_OBJECT } } },
-
-    { .object_value = { .value = njs_value(NJS_DATA, 0, 0.0),
-                        .object = { .type = NJS_OBJECT } } },
-
-    { .object =       { .type = NJS_OBJECT } },
-    { .object =       { .type = NJS_OBJECT } },
-    { .object =       { .type = NJS_OBJECT } },
-    { .object =       { .type = NJS_OBJECT } },
-    { .object =       { .type = NJS_OBJECT } },
-    { .object =       { .type = NJS_OBJECT } },
-    { .object =       { .type = NJS_OBJECT } },
-    { .object =       { .type = NJS_OBJECT } },
+    &njs_error_type_init,
+    &njs_eval_error_type_init,
+    &njs_internal_error_type_init,
+    &njs_range_error_type_init,
+    &njs_reference_error_type_init,
+    &njs_syntax_error_type_init,
+    &njs_type_error_type_init,
+    &njs_uri_error_type_init,
+    &njs_memory_error_type_init,
 };
 
 
@@ -192,16 +99,16 @@ njs_int_t
 njs_builtin_objects_create(njs_vm_t *vm)
 {
     njs_int_t                  ret;
+    njs_uint_t                 i;
     njs_module_t               *module;
     njs_object_t               *object, *string_object;
-    njs_function_t             *func;
+    njs_function_t             *constructor;
     njs_vm_shared_t            *shared;
     njs_lvlhsh_query_t         lhq;
     njs_regexp_pattern_t       *pattern;
     njs_object_prototype_t     *prototype;
     const njs_object_prop_t    *prop;
     const njs_object_init_t    *obj, **p;
-    const njs_function_init_t  *f;
 
     static const njs_str_t  sandbox_key = njs_str("sandbox");
     static const njs_str_t  name_key = njs_str("name");
@@ -336,19 +243,17 @@ njs_builtin_objects_create(njs_vm_t *vm)
     }
 
     prototype = shared->prototypes;
-    memcpy(prototype, njs_prototype_values, sizeof(njs_prototype_values));
 
-    for (p = njs_prototype_init; *p != NULL; p++) {
-        obj = *p;
+    for (i = NJS_OBJ_TYPE_OBJECT; i < NJS_OBJ_TYPE_MAX; i++) {
+        prototype[i] = njs_object_type_init[i]->value;
 
-        ret = njs_object_hash_init(vm, &prototype->object.shared_hash, obj);
+        ret = njs_object_hash_init(vm, &prototype[i].object.shared_hash,
+                                   njs_object_type_init[i]->prototype_props);
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
 
-        prototype->object.extensible = 1;
-
-        prototype++;
+        prototype[i].object.extensible = 1;
     }
 
     shared->prototypes[NJS_OBJ_TYPE_REGEXP].regexp.pattern =
@@ -361,28 +266,23 @@ njs_builtin_objects_create(njs_vm_t *vm)
     string_object->shared = 1;
     string_object->extensible = 0;
 
-    f = njs_native_constructors;
-    func = shared->constructors;
+    constructor = shared->constructors;
 
-    for (p = njs_constructor_init; *p != NULL; p++) {
-        obj = *p;
+    for (i = NJS_OBJ_TYPE_OBJECT; i < NJS_OBJ_TYPE_MAX; i++) {
+        constructor[i].object.type = NJS_FUNCTION;
+        constructor[i].object.shared = 0;
+        constructor[i].object.extensible = 1;
+        constructor[i].native = 1;
+        constructor[i].ctor = 1;
+        constructor[i].args_offset = 1;
 
-        func->object.type = NJS_FUNCTION;
-        func->object.shared = 0;
-        func->object.extensible = 1;
-        func->native = 1;
-        func->ctor = 1;
-        func->args_offset = 1;
+        constructor[i].u.native = njs_object_type_init[i]->constructor;
 
-        func->u.native = f->native;
-
-        ret = njs_object_hash_init(vm, &func->object.shared_hash, obj);
+        ret = njs_object_hash_init(vm, &constructor[i].object.shared_hash,
+                                   njs_object_type_init[i]->constructor_props);
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
-
-        f++;
-        func++;
     }
 
     vm->shared = shared;
@@ -390,90 +290,6 @@ njs_builtin_objects_create(njs_vm_t *vm)
     return NJS_OK;
 }
 
-
-static njs_int_t
-njs_prototype_function(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
-{
-    njs_set_undefined(&vm->retval);
-
-    return NJS_OK;
-}
-
-
-/*
- * Object(),
- * Object.__proto__             -> Function.prototype,
- * Object.prototype.__proto__   -> null,
- *   the null value is handled by njs_object_prototype_proto(),
- *
- * Array(),
- * Array.__proto__              -> Function.prototype,
- * Array.prototype.__proto__    -> Object.prototype,
- *
- * Boolean(),
- * Boolean.__proto__            -> Function.prototype,
- * Boolean.prototype.__proto__  -> Object.prototype,
- *
- * Number(),
- * Number.__proto__             -> Function.prototype,
- * Number.prototype.__proto__   -> Object.prototype,
- *
- * String(),
- * String.__proto__             -> Function.prototype,
- * String.prototype.__proto__   -> Object.prototype,
- *
- * Function(),
- * Function.__proto__           -> Function.prototype,
- * Function.prototype.__proto__ -> Object.prototype,
- *
- * RegExp(),
- * RegExp.__proto__             -> Function.prototype,
- * RegExp.prototype.__proto__   -> Object.prototype,
- *
- * Date(),
- * Date.__proto__               -> Function.prototype,
- * Date.prototype.__proto__     -> Object.prototype,
- *
- * Error(),
- * Error.__proto__               -> Function.prototype,
- * Error.prototype.__proto__     -> Object.prototype,
- *
- * EvalError(),
- * EvalError.__proto__           -> Error,
- * EvalError.prototype.__proto__ -> Error.prototype,
- *
- * InternalError(),
- * InternalError.__proto__           -> Error,
- * InternalError.prototype.__proto__ -> Error.prototype,
- *
- * RangeError(),
- * RangeError.__proto__           -> Error,
- * RangeError.prototype.__proto__ -> Error.prototype,
- *
- * ReferenceError(),
- * ReferenceError.__proto__           -> Error,
- * ReferenceError.prototype.__proto__ -> Error.prototype,
- *
- * SyntaxError(),
- * SyntaxError.__proto__           -> Error,
- * SyntaxError.prototype.__proto__ -> Error.prototype,
- *
- * TypeError(),
- * TypeError.__proto__           -> Error,
- * TypeError.prototype.__proto__ -> Error.prototype,
- *
- * URIError(),
- * URIError.__proto__           -> Error,
- * URIError.prototype.__proto__ -> Error.prototype,
- *
- * MemoryError(),
- * MemoryError.__proto__           -> Error,
- * MemoryError.prototype.__proto__ -> Error.prototype,
- *
- * eval(),
- * eval.__proto__               -> Function.prototype.
- */
 
 njs_int_t
 njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global)
@@ -972,7 +788,7 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
 
     /* Constructor from built-in modules (not-mapped to global object). */
 
-    for (i = NJS_OBJ_TYPE_CRYPTO_HASH; i < NJS_OBJ_TYPE_ERROR; i++) {
+    for (i = NJS_OBJ_TYPE_HIDDEN_MIN; i < NJS_OBJ_TYPE_HIDDEN_MAX; i++) {
         njs_set_object(&value, &vm->constructors[i].object);
 
         ret = njs_value_property(vm, &value, njs_value_arg(&njs_string_name),
@@ -1475,7 +1291,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
 };
 
 
-const njs_object_init_t  njs_global_this_init = {
+static const njs_object_init_t  njs_global_this_init = {
     njs_global_this_object_properties,
     njs_nitems(njs_global_this_object_properties)
 };
@@ -1500,7 +1316,7 @@ static const njs_object_prop_t  njs_njs_object_properties[] =
 };
 
 
-const njs_object_init_t  njs_njs_object_init = {
+static const njs_object_init_t  njs_njs_object_init = {
     njs_njs_object_properties,
     njs_nitems(njs_njs_object_properties),
 };
@@ -1708,7 +1524,7 @@ static const njs_object_prop_t  njs_process_object_properties[] =
 };
 
 
-const njs_object_init_t  njs_process_object_init = {
+static const njs_object_init_t  njs_process_object_init = {
     njs_process_object_properties,
     njs_nitems(njs_process_object_properties),
 };

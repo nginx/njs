@@ -72,8 +72,6 @@ njs_int_t njs_object_traverse(njs_vm_t *vm, njs_object_t *object, void *ctx,
     njs_object_traverse_cb_t cb);
 njs_int_t njs_object_hash_create(njs_vm_t *vm, njs_lvlhsh_t *hash,
     const njs_object_prop_t *prop, njs_uint_t n);
-njs_int_t njs_object_constructor(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
 njs_int_t njs_primitive_prototype_get_proto(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
@@ -103,8 +101,7 @@ njs_int_t njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
     njs_value_t *value, njs_value_t *setval);
 const char *njs_prop_type_string(njs_object_prop_type_t type);
 
-extern const njs_object_init_t  njs_object_constructor_init;
-extern const njs_object_init_t  njs_object_prototype_init;
+extern const njs_object_type_init_t  njs_obj_type_init;
 
 
 njs_inline njs_int_t

@@ -168,7 +168,7 @@ njs_make_date(int64_t days, int64_t time, njs_bool_t local)
 }
 
 
-njs_int_t
+static njs_int_t
 njs_date_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -2889,4 +2889,12 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
 const njs_object_init_t  njs_date_prototype_init = {
     njs_date_prototype_properties,
     njs_nitems(njs_date_prototype_properties),
+};
+
+
+const njs_object_type_init_t  njs_date_type_init = {
+   .constructor = njs_date_constructor,
+   .prototype_props = &njs_date_prototype_init,
+   .constructor_props = &njs_date_constructor_init,
+   .value = { .object = { .type = NJS_OBJECT } },
 };

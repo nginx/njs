@@ -165,7 +165,7 @@ njs_error_create(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-njs_int_t
+static njs_int_t
 njs_error_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -206,7 +206,7 @@ const njs_object_init_t  njs_error_constructor_init = {
 };
 
 
-njs_int_t
+static njs_int_t
 njs_eval_error_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -247,7 +247,7 @@ const njs_object_init_t  njs_eval_error_constructor_init = {
 };
 
 
-njs_int_t
+static njs_int_t
 njs_internal_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -288,7 +288,7 @@ const njs_object_init_t  njs_internal_error_constructor_init = {
 };
 
 
-njs_int_t
+static njs_int_t
 njs_range_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -329,7 +329,7 @@ const njs_object_init_t  njs_range_error_constructor_init = {
 };
 
 
-njs_int_t
+static njs_int_t
 njs_reference_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -370,7 +370,7 @@ const njs_object_init_t  njs_reference_error_constructor_init = {
 };
 
 
-njs_int_t
+static njs_int_t
 njs_syntax_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -411,7 +411,7 @@ const njs_object_init_t  njs_syntax_error_constructor_init = {
 };
 
 
-njs_int_t
+static njs_int_t
 njs_type_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -452,7 +452,7 @@ const njs_object_init_t  njs_type_error_constructor_init = {
 };
 
 
-njs_int_t
+static njs_int_t
 njs_uri_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -526,7 +526,7 @@ njs_memory_error(njs_vm_t *vm)
 }
 
 
-njs_int_t
+static njs_int_t
 njs_memory_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -758,6 +758,14 @@ const njs_object_init_t  njs_error_prototype_init = {
 };
 
 
+const njs_object_type_init_t  njs_error_type_init = {
+    .constructor = njs_error_constructor,
+    .prototype_props = &njs_error_prototype_init,
+    .constructor_props = &njs_error_constructor_init,
+    .value = { .object = { .type = NJS_OBJECT } },
+};
+
+
 static const njs_object_prop_t  njs_eval_error_prototype_properties[] =
 {
     {
@@ -789,6 +797,14 @@ static const njs_object_prop_t  njs_eval_error_prototype_properties[] =
 const njs_object_init_t  njs_eval_error_prototype_init = {
     njs_eval_error_prototype_properties,
     njs_nitems(njs_eval_error_prototype_properties),
+};
+
+
+const njs_object_type_init_t  njs_eval_error_type_init = {
+    .constructor = njs_eval_error_constructor,
+    .prototype_props = &njs_eval_error_prototype_init,
+    .constructor_props = &njs_eval_error_constructor_init,
+    .value = { .object = { .type = NJS_OBJECT } },
 };
 
 
@@ -846,6 +862,22 @@ const njs_object_init_t  njs_internal_error_prototype_init = {
 };
 
 
+const njs_object_type_init_t  njs_internal_error_type_init = {
+    .constructor = njs_internal_error_constructor,
+    .prototype_props = &njs_internal_error_prototype_init,
+    .constructor_props = &njs_internal_error_constructor_init,
+    .value = { .object = { .type = NJS_OBJECT } },
+};
+
+
+const njs_object_type_init_t  njs_memory_error_type_init = {
+    .constructor = njs_memory_error_constructor,
+    .prototype_props = &njs_internal_error_prototype_init,
+    .constructor_props = &njs_memory_error_constructor_init,
+    .value = { .object = { .type = NJS_OBJECT } },
+};
+
+
 static const njs_object_prop_t  njs_range_error_prototype_properties[] =
 {
     {
@@ -877,6 +909,14 @@ static const njs_object_prop_t  njs_range_error_prototype_properties[] =
 const njs_object_init_t  njs_range_error_prototype_init = {
     njs_range_error_prototype_properties,
     njs_nitems(njs_range_error_prototype_properties),
+};
+
+
+const njs_object_type_init_t  njs_range_error_type_init = {
+    .constructor = njs_range_error_constructor,
+    .prototype_props = &njs_range_error_prototype_init,
+    .constructor_props = &njs_range_error_constructor_init,
+    .value = { .object = { .type = NJS_OBJECT } },
 };
 
 
@@ -914,6 +954,14 @@ const njs_object_init_t  njs_reference_error_prototype_init = {
 };
 
 
+const njs_object_type_init_t  njs_reference_error_type_init = {
+    .constructor = njs_reference_error_constructor,
+    .prototype_props = &njs_reference_error_prototype_init,
+    .constructor_props = &njs_reference_error_constructor_init,
+    .value = { .object = { .type = NJS_OBJECT } },
+};
+
+
 static const njs_object_prop_t  njs_syntax_error_prototype_properties[] =
 {
     {
@@ -945,6 +993,14 @@ static const njs_object_prop_t  njs_syntax_error_prototype_properties[] =
 const njs_object_init_t  njs_syntax_error_prototype_init = {
     njs_syntax_error_prototype_properties,
     njs_nitems(njs_syntax_error_prototype_properties),
+};
+
+
+const njs_object_type_init_t  njs_syntax_error_type_init = {
+    .constructor = njs_syntax_error_constructor,
+    .prototype_props = &njs_syntax_error_prototype_init,
+    .constructor_props = &njs_syntax_error_constructor_init,
+    .value = { .object = { .type = NJS_OBJECT } },
 };
 
 
@@ -982,6 +1038,14 @@ const njs_object_init_t  njs_type_error_prototype_init = {
 };
 
 
+const njs_object_type_init_t  njs_type_error_type_init = {
+    .constructor = njs_type_error_constructor,
+    .prototype_props = &njs_type_error_prototype_init,
+    .constructor_props = &njs_type_error_constructor_init,
+    .value = { .object = { .type = NJS_OBJECT } },
+};
+
+
 static const njs_object_prop_t  njs_uri_error_prototype_properties[] =
 {
     {
@@ -1013,4 +1077,12 @@ static const njs_object_prop_t  njs_uri_error_prototype_properties[] =
 const njs_object_init_t  njs_uri_error_prototype_init = {
     njs_uri_error_prototype_properties,
     njs_nitems(njs_uri_error_prototype_properties),
+};
+
+
+const njs_object_type_init_t  njs_uri_error_type_init = {
+    .constructor = njs_uri_error_constructor,
+    .prototype_props = &njs_uri_error_prototype_init,
+    .constructor_props = &njs_uri_error_constructor_init,
+    .value = { .object = { .type = NJS_OBJECT } },
 };

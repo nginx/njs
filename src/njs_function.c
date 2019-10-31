@@ -723,7 +723,7 @@ njs_function_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
 }
 
 
-njs_int_t
+static njs_int_t
 njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1211,27 +1211,22 @@ njs_eval_function(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static const njs_object_prop_t  njs_eval_function_properties[] =
+static njs_int_t
+njs_prototype_function(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
 {
-    /* eval.name == "eval". */
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("eval"),
-        .configurable = 1,
-    },
+    njs_set_undefined(&vm->retval);
 
-    /* eval.length == 1. */
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 1.0),
-        .configurable = 1,
-    },
-};
+    return NJS_OK;
+}
 
 
-const njs_object_init_t  njs_eval_function_init = {
-    njs_eval_function_properties,
-    njs_nitems(njs_eval_function_properties),
+const njs_object_type_init_t  njs_function_type_init = {
+   .constructor = njs_function_constructor,
+   .prototype_props = &njs_function_prototype_init,
+   .constructor_props = &njs_function_constructor_init,
+   .value = { .function = { .native = 1,
+                            .args_offset = 1,
+                            .u.native = njs_prototype_function,
+                            .object = { .type = NJS_FUNCTION } } },
 };

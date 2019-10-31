@@ -284,6 +284,14 @@ typedef union {
 } njs_object_prototype_t;
 
 
+typedef struct {
+    njs_function_native_t     constructor;
+    const njs_object_init_t   *prototype_props;
+    const njs_object_init_t   *constructor_props;
+    njs_object_prototype_t    value;
+} njs_object_type_init_t;
+
+
 typedef enum {
     NJS_ENUM_KEYS,
     NJS_ENUM_VALUES,

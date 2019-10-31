@@ -165,8 +165,6 @@ void njs_string_copy(njs_value_t *dst, njs_value_t *src);
 njs_int_t njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string,
     njs_value_t *value);
 size_t njs_string_prop(njs_string_prop_t *string, const njs_value_t *value);
-njs_int_t njs_string_constructor(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
 njs_int_t njs_string_cmp(const njs_value_t *val1, const njs_value_t *val2);
 void njs_string_slice_string_prop(njs_string_prop_t *dst,
     const njs_string_prop_t *string, const njs_slice_prop_t *slice);
@@ -194,9 +192,8 @@ njs_int_t njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 
 
-extern const njs_object_init_t  njs_string_constructor_init;
-extern const njs_object_init_t  njs_string_prototype_init;
 extern const njs_object_init_t  njs_string_instance_init;
+extern const njs_object_type_init_t  njs_string_type_init;
 
 
 #endif /* _NJS_STRING_H_INCLUDED_ */
