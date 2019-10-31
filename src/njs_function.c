@@ -681,8 +681,8 @@ njs_function_property_prototype_create(njs_vm_t *vm, njs_lvlhsh_t *hash,
  */
 
 njs_int_t
-njs_function_prototype_create(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_function_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_value_t     *proto, proto_value, *cons;
     njs_object_t    *prototype;
@@ -883,8 +883,8 @@ const njs_object_init_t  njs_function_constructor_init = {
  *      the typical number of arguments expected by the function.
  */
 static njs_int_t
-njs_function_instance_length(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_function_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_object_t    *proto;
     njs_function_t  *function;

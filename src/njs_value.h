@@ -69,6 +69,19 @@ typedef enum {
 } njs_value_type_t;
 
 
+typedef struct njs_object_prop_s      njs_object_prop_t;
+typedef struct njs_string_s           njs_string_t;
+typedef struct njs_object_s           njs_object_t;
+typedef struct njs_object_value_s     njs_object_value_t;
+typedef struct njs_function_lambda_s  njs_function_lambda_t;
+typedef struct njs_regexp_pattern_s   njs_regexp_pattern_t;
+typedef struct njs_array_s            njs_array_t;
+typedef struct njs_regexp_s           njs_regexp_t;
+typedef struct njs_date_s             njs_date_t;
+typedef struct njs_property_next_s    njs_property_next_t;
+typedef struct njs_object_init_s      njs_object_init_t;
+
+
 /*
  * njs_prop_handler_t operates as a property getter and/or setter.
  * The handler receives NULL setval if it is invoked in GET context and
@@ -80,22 +93,10 @@ typedef enum {
  *   NJS_DECLINED - handler was applied to inappropriate object, vm->retval
  *   contains undefined value.
  */
-typedef njs_int_t (*njs_prop_handler_t) (njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval);
+typedef njs_int_t (*njs_prop_handler_t) (njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 typedef njs_int_t (*njs_function_native_t) (njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t retval);
-
-
-typedef struct njs_string_s           njs_string_t;
-typedef struct njs_object_s           njs_object_t;
-typedef struct njs_object_value_s     njs_object_value_t;
-typedef struct njs_function_lambda_s  njs_function_lambda_t;
-typedef struct njs_regexp_pattern_s   njs_regexp_pattern_t;
-typedef struct njs_array_s            njs_array_t;
-typedef struct njs_regexp_s           njs_regexp_t;
-typedef struct njs_date_s             njs_date_t;
-typedef struct njs_property_next_s    njs_property_next_t;
-typedef struct njs_object_init_s      njs_object_init_t;
 
 #if (!NJS_HAVE_GCC_ATTRIBUTE_ALIGNED)
 #error "aligned attribute is required"
@@ -312,7 +313,7 @@ typedef enum {
 } njs_object_attribute_t;
 
 
-typedef struct {
+struct njs_object_prop_s {
     /* Must be aligned to njs_value_t. */
     njs_value_t                 value;
     njs_value_t                 name;
@@ -325,7 +326,7 @@ typedef struct {
     njs_object_attribute_t      writable:8;      /* 2 bits */
     njs_object_attribute_t      enumerable:8;    /* 2 bits */
     njs_object_attribute_t      configurable:8;  /* 2 bits */
-} njs_object_prop_t;
+};
 
 
 typedef struct {

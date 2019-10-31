@@ -1311,7 +1311,7 @@ njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     value = njs_arg(args, nargs, 1);
 
     if (njs_is_object(value)) {
-        njs_object_prototype_proto(vm, value, NULL, &vm->retval);
+        njs_object_prototype_proto(vm, NULL, value, NULL, &vm->retval);
         return NJS_OK;
     }
 
@@ -1563,8 +1563,8 @@ njs_object_is_extensible(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
  */
 
 njs_int_t
-njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_uint_t    index;
     njs_object_t  *proto;
@@ -1594,8 +1594,8 @@ njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_value_t *value,
  */
 
 njs_int_t
-njs_object_prototype_create(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_object_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     int32_t            index;
     njs_function_t     *function;
@@ -1877,8 +1877,8 @@ njs_object_set_prototype_of(njs_vm_t *vm, njs_object_t *object,
 
 
 njs_int_t
-njs_object_prototype_proto(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_object_prototype_proto(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_int_t     ret;
     njs_object_t  *proto, *object;
@@ -1924,8 +1924,8 @@ njs_object_prototype_proto(njs_vm_t *vm, njs_value_t *value,
  */
 
 njs_int_t
-njs_object_prototype_create_constructor(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_object_prototype_create_constructor(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     int32_t                 index;
     njs_value_t             *cons;

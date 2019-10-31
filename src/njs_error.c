@@ -545,8 +545,8 @@ njs_memory_error_constructor(njs_vm_t *vm, njs_value_t *args,
 
 
 static njs_int_t
-njs_memory_error_prototype_create(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_memory_error_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     int32_t            index;
     njs_function_t     *function;

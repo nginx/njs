@@ -637,8 +637,8 @@ const njs_object_init_t  njs_string_constructor_init = {
 
 
 static njs_int_t
-njs_string_instance_length(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_string_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     size_t              size;
     uintptr_t           length;

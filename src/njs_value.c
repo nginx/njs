@@ -17,10 +17,12 @@ static njs_int_t njs_string_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_value_t *object, uint32_t index);
 static njs_int_t njs_external_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_value_t *object);
-static njs_int_t njs_external_property_set(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval);
-static njs_int_t njs_external_property_delete(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval);
+static njs_int_t njs_external_property_set(njs_vm_t *vm,
+    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
+static njs_int_t njs_external_property_delete(njs_vm_t *vm,
+    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 
 
 const njs_value_t  njs_value_null =         njs_value(NJS_NULL, 0, 0.0);
@@ -870,8 +872,8 @@ done:
 
 
 static njs_int_t
-njs_external_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval)
+njs_external_property_set(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     void                  *obj;
     njs_int_t             ret;
@@ -899,8 +901,8 @@ njs_external_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *setval,
 
 
 static njs_int_t
-njs_external_property_delete(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *unused, njs_value_t *unused2)
+njs_external_property_delete(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *unused, njs_value_t *unused2)
 {
     void                  *obj;
     njs_property_query_t  *pq;
@@ -949,7 +951,7 @@ njs_value_property(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
         case NJS_PROPERTY_HANDLER:
             pq.scratch = *prop;
             prop = &pq.scratch;
-            ret = prop->value.data.u.prop_handler(vm, value, NULL,
+            ret = prop->value.data.u.prop_handler(vm, prop, value, NULL,
                                                   &prop->value);
 
             if (njs_slow_path(ret == NJS_ERROR)) {
@@ -1029,7 +1031,7 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
         }
 
         if (prop->type == NJS_PROPERTY_HANDLER) {
-            ret = prop->value.data.u.prop_handler(vm, value, setval,
+            ret = prop->value.data.u.prop_handler(vm, prop, value, setval,
                                                   &vm->retval);
             if (njs_slow_path(ret != NJS_DECLINED)) {
                 return ret;
@@ -1134,7 +1136,7 @@ njs_value_property_delete(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     switch (prop->type) {
     case NJS_PROPERTY_HANDLER:
         if (njs_is_external(value)) {
-            ret = prop->value.data.u.prop_handler(vm, value, NULL, NULL);
+            ret = prop->value.data.u.prop_handler(vm, prop, value, NULL, NULL);
             if (njs_slow_path(ret != NJS_OK)) {
                 return NJS_ERROR;
             }

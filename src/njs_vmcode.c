@@ -1241,7 +1241,7 @@ njs_vmcode_proto_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *unused,
         goto fail;
     }
 
-    ret = prop->value.data.u.prop_handler(vm, value, init, &vm->retval);
+    ret = prop->value.data.u.prop_handler(vm, prop, value, init, &vm->retval);
     if (njs_slow_path(ret != NJS_OK)) {
         goto fail;
     }

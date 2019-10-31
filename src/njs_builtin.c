@@ -1211,8 +1211,8 @@ const njs_object_init_t  njs_njs_object_init = {
 
 
 static njs_int_t
-njs_process_object_argv(njs_vm_t *vm, njs_value_t *process,
-    njs_value_t *unused, njs_value_t *retval)
+njs_process_object_argv(njs_vm_t *vm, njs_object_prop_t *pr,
+    njs_value_t *process, njs_value_t *unused, njs_value_t *retval)
 {
     char                **arg;
     njs_int_t           ret;
@@ -1324,8 +1324,8 @@ njs_env_hash_init(njs_vm_t *vm, njs_lvlhsh_t *hash, char **environment)
 
 
 static njs_int_t
-njs_process_object_env(njs_vm_t *vm, njs_value_t *process,
-    njs_value_t *unused, njs_value_t *retval)
+njs_process_object_env(njs_vm_t *vm, njs_object_prop_t *pr,
+    njs_value_t *process, njs_value_t *unused, njs_value_t *retval)
 {
     njs_int_t           ret;
     njs_object_t        *env;
@@ -1369,8 +1369,8 @@ njs_process_object_env(njs_vm_t *vm, njs_value_t *process,
 
 
 static njs_int_t
-njs_process_object_pid(njs_vm_t *vm, njs_value_t *unused,
-    njs_value_t *unused2, njs_value_t *retval)
+njs_process_object_pid(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *unused, njs_value_t *unused2, njs_value_t *retval)
 {
     njs_set_number(retval, getpid());
 
@@ -1379,8 +1379,8 @@ njs_process_object_pid(njs_vm_t *vm, njs_value_t *unused,
 
 
 static njs_int_t
-njs_process_object_ppid(njs_vm_t *vm, njs_value_t *unused,
-    njs_value_t *unused2, njs_value_t *retval)
+njs_process_object_ppid(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *unused, njs_value_t *unused2, njs_value_t *retval)
 {
     njs_set_number(retval, getppid());
 

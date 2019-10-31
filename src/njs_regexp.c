@@ -19,8 +19,9 @@ static void *njs_regexp_malloc(size_t size, void *memory_data);
 static void njs_regexp_free(void *p, void *memory_data);
 static njs_regexp_flags_t njs_regexp_flags(u_char **start, u_char *end,
     njs_bool_t bound);
-static njs_int_t njs_regexp_prototype_source(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval);
+static njs_int_t njs_regexp_prototype_source(njs_vm_t *vm,
+    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 static int njs_regexp_pattern_compile(njs_vm_t *vm, njs_regex_t *regex,
     u_char *source, int options);
 static u_char *njs_regexp_compile_trace_handler(njs_trace_t *trace,
@@ -126,7 +127,7 @@ njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     re_flags = 0;
 
     if (njs_is_regexp(pattern)) {
-        ret = njs_regexp_prototype_source(vm, pattern, NULL, &source);
+        ret = njs_regexp_prototype_source(vm, NULL, pattern, NULL, &source);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
         }
@@ -723,8 +724,8 @@ njs_regexp_alloc(njs_vm_t *vm, njs_regexp_pattern_t *pattern)
 
 
 static njs_int_t
-njs_regexp_prototype_last_index(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_regexp_prototype_last_index(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     uint32_t           index;
     njs_regexp_t       *regexp;
@@ -744,8 +745,8 @@ njs_regexp_prototype_last_index(njs_vm_t *vm, njs_value_t *value,
 
 
 static njs_int_t
-njs_regexp_prototype_global(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_regexp_prototype_global(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_regexp_pattern_t  *pattern;
 
@@ -758,8 +759,8 @@ njs_regexp_prototype_global(njs_vm_t *vm, njs_value_t *value,
 
 
 static njs_int_t
-njs_regexp_prototype_ignore_case(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_regexp_prototype_ignore_case(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_regexp_pattern_t  *pattern;
 
@@ -772,8 +773,8 @@ njs_regexp_prototype_ignore_case(njs_vm_t *vm, njs_value_t *value,
 
 
 static njs_int_t
-njs_regexp_prototype_multiline(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_regexp_prototype_multiline(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_regexp_pattern_t  *pattern;
 
@@ -786,8 +787,8 @@ njs_regexp_prototype_multiline(njs_vm_t *vm, njs_value_t *value,
 
 
 static njs_int_t
-njs_regexp_prototype_source(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_regexp_prototype_source(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     u_char                *source;
     int32_t               length;
