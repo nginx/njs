@@ -14191,6 +14191,15 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Object.prototype.toString.call(require('crypto').createHash('sha1'))"),
       njs_str("[object Object]") },
 
+    { njs_str("var h = require('crypto').createHash('sha1');"
+              "var Hash = h.constructor; "
+              "Hash('sha1').update('AB').digest('hex')"),
+      njs_str("06d945942aa26a61be18c3e22bf19bbca8dd2b5d") },
+
+    { njs_str("var h = require('crypto').createHash('sha1');"
+              "h.constructor.name"),
+      njs_str("Hash") },
+
     { njs_str("var h = require('crypto').createHash('md5');"
                  "h.update('AB').digest('hex')"),
       njs_str("b86fc6b051f63d73de262d4c34e3a0a9") },
@@ -14283,6 +14292,15 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var h = require('crypto').createHmac('sha1', '');"
                  "h.digest().toString('hex')"),
       njs_str("fbdb1d1b18aa6c08324b7d64b71fb76370690e1d") },
+
+    { njs_str("var h = require('crypto').createHmac('sha1', '');"
+              "var Hmac = h.constructor; "
+              "Hmac('sha1', '').digest('hex')"),
+      njs_str("fbdb1d1b18aa6c08324b7d64b71fb76370690e1d") },
+
+    { njs_str("var h = require('crypto').createHmac('sha1', '');"
+              "h.constructor.name"),
+      njs_str("Hmac") },
 
     { njs_str("var h = require('crypto').createHmac('md5', 'secret key');"
                  "h.update('AB').digest('hex')"),

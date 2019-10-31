@@ -343,6 +343,14 @@ static const njs_object_prop_t  njs_hash_prototype_properties[] =
         .writable = 1,
         .configurable = 1,
     },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("constructor"),
+        .value = njs_prop_handler(njs_object_prototype_create_constructor),
+        .writable = 1,
+        .configurable = 1,
+    },
 };
 
 
@@ -631,6 +639,14 @@ static const njs_object_prop_t  njs_hmac_prototype_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("digest"),
         .value = njs_native_function(njs_hmac_prototype_digest, 0),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("constructor"),
+        .value = njs_prop_handler(njs_object_prototype_create_constructor),
         .writable = 1,
         .configurable = 1,
     },
