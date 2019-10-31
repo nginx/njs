@@ -381,8 +381,6 @@ njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
     njs_object_prop_t   *prop, *shared, *name;
     njs_lvlhsh_query_t  lhq;
 
-    static const njs_value_t  name_string = njs_string("name");
-
     prop = njs_mp_align(vm->mem_pool, sizeof(njs_value_t),
                         sizeof(njs_object_prop_t));
     if (njs_slow_path(prop == NULL)) {
@@ -403,6 +401,32 @@ njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
         return NJS_ERROR;
     }
 
+    if (njs_is_accessor_descriptor(prop)) {
+        if (njs_is_function(&prop->getter)) {
+            function = njs_function_value_copy(vm, &prop->getter);
+            if (njs_slow_path(function == NULL)) {
+                return NJS_ERROR;
+            }
+
+            if (njs_is_function(&prop->setter)
+                && function->native && njs_function(&prop->setter)->native
+                && function->u.native == njs_function(&prop->setter)->u.native)
+            {
+                prop->setter = prop->getter;
+                return NJS_OK;
+            }
+        }
+
+        if (njs_is_function(&prop->setter)) {
+            function = njs_function_value_copy(vm, &prop->setter);
+            if (njs_slow_path(function == NULL)) {
+                return NJS_ERROR;
+            }
+        }
+
+        return NJS_OK;
+    }
+
     if (!njs_is_function(&prop->value)) {
         return NJS_OK;
     }
@@ -412,14 +436,7 @@ njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
         return NJS_ERROR;
     }
 
-    if (function->ctor) {
-        function->object.shared_hash = vm->shared->function_instance_hash;
-
-    } else {
-        function->object.shared_hash = vm->shared->arrow_instance_hash;
-    }
-
-    name = njs_object_prop_alloc(vm, &name_string, &prop->name, 0);
+    name = njs_object_prop_alloc(vm, &njs_string_name, &prop->name, 0);
     if (njs_slow_path(name == NULL)) {
         return NJS_ERROR;
     }

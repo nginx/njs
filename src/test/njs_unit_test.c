@@ -8111,6 +8111,14 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("(function() {}).arguments"),
       njs_str("TypeError: \"caller\", \"callee\", \"arguments\" properties may not be accessed") },
 
+    { njs_str("var desc = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Math.min), 'caller');"
+              "desc.get === desc.set"),
+      njs_str("true") },
+
+    { njs_str("var desc = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Math.min), 'caller');"
+              "1/desc.get"),
+      njs_str("NaN") },
+
     { njs_str("var p = Object.getPrototypeOf(function() {});"
               "var d = Object.getOwnPropertyDescriptor(p, 'caller');"
               "typeof d.get == 'function' && typeof d.get == typeof d.set"
