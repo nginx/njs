@@ -128,8 +128,8 @@ union njs_value_s {
          */
         uint8_t                       truth;
 
-        uint16_t                      _spare1;
-        uint32_t                      _spare2;
+        uint16_t                      magic16;
+        uint32_t                      magic32;
 
         union {
             double                    number;
@@ -404,6 +404,17 @@ typedef struct {
     .data = {                                                                 \
         .type = NJS_INVALID,                                                  \
         .truth = 1,                                                           \
+        .u = { .prop_handler = _handler }                                     \
+    }                                                                         \
+}
+
+
+#define njs_prop_handler2(_handler, _magic16, _magic32) {                     \
+    .data = {                                                                 \
+        .type = NJS_INVALID,                                                  \
+        .truth = 1,                                                           \
+        .magic16 = _magic16,                                                  \
+        .magic32 = _magic32,                                                  \
         .u = { .prop_handler = _handler }                                     \
     }                                                                         \
 }

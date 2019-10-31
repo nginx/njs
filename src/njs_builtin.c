@@ -1042,8 +1042,58 @@ njs_dump_value(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+static njs_int_t
+njs_top_level_object(njs_vm_t *vm, njs_object_prop_t *self,
+    njs_value_t *global, njs_value_t *setval, njs_value_t *retval)
+{
+    njs_int_t           ret;
+    njs_object_t        *object;
+    njs_object_prop_t   *prop;
+    njs_lvlhsh_query_t  lhq;
+
+    if (njs_slow_path(setval != NULL)) {
+        *retval = *setval;
+
+    } else {
+        njs_set_object(retval, &vm->shared->objects[self->value.data.magic16]);
+
+        object = njs_object_value_copy(vm, retval);
+        if (njs_slow_path(object == NULL)) {
+            return NJS_ERROR;
+        }
+    }
+
+    prop = njs_object_prop_alloc(vm, &self->name, retval, 1);
+    if (njs_slow_path(prop == NULL)) {
+        return NJS_ERROR;
+    }
+
+    /* GC */
+
+    prop->value = *retval;
+    prop->enumerable = 0;
+
+    lhq.value = prop;
+    njs_string_get(&self->name, &lhq.key);
+    lhq.key_hash = self->value.data.magic32;
+    lhq.replace = 1;
+    lhq.pool = vm->mem_pool;
+    lhq.proto = &njs_object_hash_proto;
+
+    ret = njs_lvlhsh_insert(njs_object_hash(global), &lhq);
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_internal_error(vm, "lvlhsh insert/replace failed");
+        return NJS_ERROR;
+    }
+
+    return NJS_OK;
+}
+
+
 static const njs_object_prop_t  njs_global_this_object_properties[] =
 {
+    /* Global constants. */
+
     {
         .type = NJS_PROPERTY,
         .name = njs_string("NaN"),
@@ -1061,6 +1111,8 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
         .name = njs_string("undefined"),
         .value = njs_value(NJS_UNDEFINED, 0, NAN),
     },
+
+    /* Global functions. */
 
     {
         .type = NJS_PROPERTY,
@@ -1170,6 +1222,44 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("require"),
         .value = njs_native_function(njs_module_require, 1),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    /* Global objects. */
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("njs"),
+        .value = njs_prop_handler2(njs_top_level_object, NJS_OBJECT_NJS,
+                                   NJS_NJS_HASH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("process"),
+        .value = njs_prop_handler2(njs_top_level_object, NJS_OBJECT_PROCESS,
+                                   NJS_PROCESS_HASH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("Math"),
+        .value = njs_prop_handler2(njs_top_level_object, NJS_OBJECT_MATH,
+                                   NJS_MATH_HASH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("JSON"),
+        .value = njs_prop_handler2(njs_top_level_object, NJS_OBJECT_JSON,
+                                   NJS_JSON_HASH),
         .writable = 1,
         .configurable = 1,
     },

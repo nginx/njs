@@ -13227,6 +13227,43 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("parseFloat('-5.7e+abc')"),
       njs_str("-5.7") },
 
+    /* Top-level objects. */
+
+    { njs_str("var global = this;"
+              "function isMutableObject(v) {"
+              "    var d = Object.getOwnPropertyDescriptor(global, v);"
+              "    return d.writable && !d.enumerable && d.configurable;"
+              "};"
+              "['njs', 'process', 'Math', 'JSON'].every((v)=>isMutableObject(v))"),
+      njs_str("true") },
+
+    { njs_str("njs === njs"),
+      njs_str("true") },
+
+    { njs_str("this.njs = 1; njs"),
+      njs_str("1") },
+
+    { njs_str("process === process"),
+      njs_str("true") },
+
+    { njs_str("this.process = 1; process"),
+      njs_str("1") },
+
+    { njs_str("Math === Math"),
+      njs_str("true") },
+
+    { njs_str("this.Math = 1; Math"),
+      njs_str("1") },
+
+    { njs_str("JSON === JSON"),
+      njs_str("true") },
+
+    { njs_str("this.JSON = 1; JSON"),
+      njs_str("1") },
+
+    { njs_str("delete this.JSON; JSON"),
+      njs_str("ReferenceError: \"JSON\" is not defined in 1") },
+
     /* JSON.parse() */
 
     { njs_str("JSON.parse('null')"),

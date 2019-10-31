@@ -146,6 +146,14 @@
         'j'), 'o'), 'i'), 'n')
 
 
+#define NJS_JSON_HASH                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'J'), 'S'), 'O'), 'N')
+
+
 #define NJS_LENGTH_HASH                                                       \
     njs_djb_hash_add(                                                         \
     njs_djb_hash_add(                                                         \
@@ -162,6 +170,21 @@
     njs_djb_hash_add(                                                         \
     njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
         'n'), 'a'), 'm'), 'e')
+
+
+#define NJS_NJS_HASH                                                          \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'n'), 'j'), 's')
+
+
+#define NJS_MATH_HASH                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'M'), 'a'), 't'), 'h')
 
 
 #define NJS_MESSAGE_HASH                                                      \
@@ -200,6 +223,17 @@
     njs_djb_hash_add(                                                         \
     njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
         'p'), 'a'), 't'), 'h')
+
+
+#define NJS_PROCESS_HASH                                                      \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'p'), 'r'), 'o'), 'c'), 'e'), 's'), 's')
 
 
 #define NJS_PROTOTYPE_HASH                                                    \

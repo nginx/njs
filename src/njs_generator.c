@@ -59,8 +59,6 @@ static u_char *njs_generate_reserve(njs_vm_t *vm, njs_generator_t *generator,
     size_t size);
 static njs_int_t njs_generate_name(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node);
-static njs_int_t njs_generate_builtin_object(njs_vm_t *vm,
-    njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_variable(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node, njs_reference_type_t type);
 static njs_int_t njs_generate_var_statement(njs_vm_t *vm,
@@ -460,12 +458,6 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
 
         return NJS_OK;
 
-    case NJS_TOKEN_NJS:
-    case NJS_TOKEN_PROCESS:
-    case NJS_TOKEN_MATH:
-    case NJS_TOKEN_JSON:
-        return njs_generate_builtin_object(vm, generator, node);
-
     case NJS_TOKEN_FUNCTION:
         return njs_generate_function_declaration(vm, generator, node);
 
@@ -583,32 +575,6 @@ njs_generate_name(njs_vm_t *vm, njs_generator_t *generator,
     }
 
     return njs_generate_variable(vm, generator, node, NJS_REFERENCE);
-}
-
-
-static njs_int_t
-njs_generate_builtin_object(njs_vm_t *vm, njs_generator_t *generator,
-    njs_parser_node_t *node)
-{
-    njs_index_t               index;
-    njs_vmcode_object_copy_t  *copy;
-
-    index = njs_variable_index(vm, node);
-    if (njs_slow_path(index == NJS_INDEX_NONE)) {
-        return NJS_ERROR;
-    }
-
-    node->index = njs_generate_dest_index(vm, generator, node);
-    if (njs_slow_path(node->index == NJS_INDEX_ERROR)) {
-        return NJS_ERROR;
-    }
-
-    njs_generate_code(generator, njs_vmcode_object_copy_t, copy,
-                      NJS_VMCODE_OBJECT_COPY, 2);
-    copy->retval = node->index;
-    copy->object = index;
-
-    return NJS_OK;
 }
 
 

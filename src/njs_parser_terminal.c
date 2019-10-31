@@ -11,9 +11,6 @@
 static njs_parser_node_t *njs_parser_reference(njs_vm_t *vm,
     njs_parser_t *parser, njs_token_t token, njs_str_t *name, uint32_t hash,
     uint32_t token_line);
-static njs_int_t njs_parser_builtin(njs_vm_t *vm, njs_parser_t *parser,
-    njs_parser_node_t *node, njs_value_type_t type, njs_str_t *name,
-    uint32_t hash);
 static njs_token_t njs_parser_object(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *obj);
 static njs_int_t njs_parser_object_property(njs_vm_t *vm, njs_parser_t *parser,
@@ -259,17 +256,6 @@ njs_parser_reference(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
 
         break;
 
-    case NJS_TOKEN_NJS:
-    case NJS_TOKEN_PROCESS:
-    case NJS_TOKEN_MATH:
-    case NJS_TOKEN_JSON:
-        ret = njs_parser_builtin(vm, parser, node, NJS_OBJECT, name, hash);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return NULL;
-        }
-
-        break;
-
     case NJS_TOKEN_OBJECT_CONSTRUCTOR:
         node->index = NJS_INDEX_OBJECT;
         break;
@@ -396,42 +382,6 @@ njs_parser_reference(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
     }
 
     return node;
-}
-
-
-static njs_int_t
-njs_parser_builtin(njs_vm_t *vm, njs_parser_t *parser, njs_parser_node_t *node,
-    njs_value_type_t type, njs_str_t *name, uint32_t hash)
-{
-    njs_int_t           ret;
-    njs_uint_t          index;
-    njs_variable_t      *var;
-    njs_parser_scope_t  *scope;
-
-    scope = njs_parser_global_scope(vm);
-
-    var = njs_variable_add(vm, scope, name, hash, NJS_VARIABLE_VAR);
-    if (njs_slow_path(var == NULL)) {
-        return NJS_ERROR;
-    }
-
-    /* TODO: once */
-    switch (type) {
-    case NJS_OBJECT:
-        index = node->token - NJS_TOKEN_FIRST_OBJECT;
-        njs_set_object(&var->value, &vm->shared->objects[index]);
-        break;
-
-    default:
-        return NJS_ERROR;
-    }
-
-    ret = njs_variable_reference(vm, scope, node, name, hash, NJS_REFERENCE);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return NJS_ERROR;
-    }
-
-    return NJS_OK;
 }
 
 

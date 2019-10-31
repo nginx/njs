@@ -120,8 +120,8 @@ njs_test {
 
 njs_test {
     {"Ma\t"
-     "Ma\a*th"}
-    {".\t\t"
+     "Ma\a*th."}
+    {"\t\t"
      "Math.abs*Math.atan2"}
 }
 

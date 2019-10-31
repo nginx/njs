@@ -47,14 +47,6 @@ static const njs_keyword_t  njs_keywords[] = {
     { njs_str("finally"),       NJS_TOKEN_FINALLY, 0 },
     { njs_str("throw"),         NJS_TOKEN_THROW, 0 },
 
-    /* Builtin objects. */
-
-    { njs_str("this"),          NJS_TOKEN_THIS, 0 },
-    { njs_str("njs"),           NJS_TOKEN_NJS, 0 },
-    { njs_str("process"),       NJS_TOKEN_PROCESS, 0 },
-    { njs_str("Math"),          NJS_TOKEN_MATH, 0 },
-    { njs_str("JSON"),          NJS_TOKEN_JSON, 0 },
-
     /* Builtin functions. */
 
     { njs_str("Object"),        NJS_TOKEN_OBJECT_CONSTRUCTOR, 0 },
@@ -82,6 +74,7 @@ static const njs_keyword_t  njs_keywords[] = {
 
     /* Reserved words. */
 
+    { njs_str("this"),          NJS_TOKEN_THIS, 0 },
     { njs_str("arguments"),     NJS_TOKEN_ARGUMENTS, 0 },
     { njs_str("eval"),          NJS_TOKEN_EVAL, 0 },
 
