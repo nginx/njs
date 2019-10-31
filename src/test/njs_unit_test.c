@@ -12828,10 +12828,22 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Math.max()"),
       njs_str("-Infinity") },
 
+    { njs_str("Math.max(0, -0)"),
+      njs_str("0") },
+
+    { njs_str("Math.max(-0, 0)"),
+      njs_str("0") },
+
     { njs_str("Math.max(null)"),
       njs_str("0") },
 
     { njs_str("Math.max(undefined)"),
+      njs_str("NaN") },
+
+    { njs_str("Math.max(1, 2, 3, undefined)"),
+      njs_str("NaN") },
+
+    { njs_str("Math.max(1, 2, 3, NaN)"),
       njs_str("NaN") },
 
     { njs_str("Math.max('1', '2', '5')"),
@@ -12852,10 +12864,22 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Math.min()"),
       njs_str("Infinity") },
 
+    { njs_str("Math.min(0, -0)"),
+      njs_str("-0") },
+
+    { njs_str("Math.min(-0, 0)"),
+      njs_str("-0") },
+
     { njs_str("Math.min(null)"),
       njs_str("0") },
 
     { njs_str("Math.min(undefined)"),
+      njs_str("NaN") },
+
+    { njs_str("Math.min(1, 2, 3, undefined)"),
+      njs_str("NaN") },
+
+    { njs_str("Math.min(1, 2, 3, NaN)"),
       njs_str("NaN") },
 
     { njs_str("Math.min('1', '2', '5')"),

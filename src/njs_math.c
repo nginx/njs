@@ -628,75 +628,53 @@ njs_object_math_log2(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_int_t
-njs_object_math_max(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+njs_inline double
+njs_fmax(double x, double y)
 {
-    double      num;
-    njs_int_t   ret;
-    njs_uint_t  i;
-
-    if (nargs > 1) {
-        for (i = 1; i < nargs; i++) {
-            if (njs_is_undefined(&args[i])) {
-                num = NAN;
-                goto done;
-
-            } else if (!njs_is_numeric(&args[i])) {
-                ret = njs_value_to_numeric(vm, &args[i], &args[i]);
-                if (ret != NJS_OK) {
-                    return ret;
-                }
-            }
-        }
-
-        num = njs_number(&args[1]);
-
-        for (i = 2; i < nargs; i++) {
-            num = fmax(num, njs_number(&args[i]));
-        }
-
-    } else {
-        num = -INFINITY;
+    if (x == 0 && y == 0) {
+        return signbit(x) ? y : x;
     }
 
-done:
+    return fmax(x, y);
+}
 
-    njs_set_number(&vm->retval, num);
 
-    return NJS_OK;
+njs_inline double
+njs_fmin(double x, double y)
+{
+    if (x == 0 && y == 0) {
+        return signbit(x) ? x : y;
+    }
+
+    return fmin(x, y);
 }
 
 
 static njs_int_t
-njs_object_math_min(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+njs_object_math_min_max(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t max)
 {
-    double      num;
+    double      num, value;
     njs_int_t   ret;
     njs_uint_t  i;
 
-    if (nargs > 1) {
-        for (i = 1; i < nargs; i++) {
-            if (!njs_is_numeric(&args[i])) {
-                ret = njs_value_to_numeric(vm, &args[i], &args[i]);
-                if (ret != NJS_OK) {
-                    return ret;
-                }
-            }
+    value = max ? -INFINITY : INFINITY;
+
+    for (i = 1; i < nargs; i++) {
+        ret = njs_value_to_number(vm, &args[i], &num);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
 
-        num = njs_number(&args[1]);
-
-        for (i = 2; i < nargs; i++) {
-            num = fmin(num, njs_number(&args[i]));
+        if (njs_slow_path(isnan(num))) {
+            value = num;
+            break;
         }
 
-    } else {
-        num = INFINITY;
+        value = max ? njs_fmax(value, num) : njs_fmin(value, num);
     }
 
-    njs_set_number(&vm->retval, num);
+    njs_set_number(&vm->retval, value);
 
     return NJS_OK;
 }
@@ -1221,7 +1199,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("max"),
-        .value = njs_native_function(njs_object_math_max, 2),
+        .value = njs_native_function2(njs_object_math_min_max, 2, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1229,7 +1207,7 @@ static const njs_object_prop_t  njs_math_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("min"),
-        .value = njs_native_function(njs_object_math_min, 2),
+        .value = njs_native_function2(njs_object_math_min_max, 2, 0),
         .writable = 1,
         .configurable = 1,
     },
