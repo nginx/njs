@@ -48,6 +48,7 @@ const njs_value_t  njs_string_plus_infinity =
                                             njs_string("Infinity");
 const njs_value_t  njs_string_nan =         njs_string("NaN");
 const njs_value_t  njs_string_string =      njs_string("string");
+const njs_value_t  njs_string_name =        njs_string("name");
 const njs_value_t  njs_string_data =        njs_string("data");
 const njs_value_t  njs_string_external =    njs_string("external");
 const njs_value_t  njs_string_invalid =     njs_string("invalid");

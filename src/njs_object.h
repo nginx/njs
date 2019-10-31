@@ -43,6 +43,24 @@ struct njs_object_init_s {
 };
 
 
+typedef struct njs_traverse_s  njs_traverse_t;
+
+struct njs_traverse_s {
+    struct njs_traverse_s      *parent;
+    njs_object_prop_t          *prop;
+
+    njs_object_t               *object;
+    njs_lvlhsh_t               *hash;
+    njs_lvlhsh_each_t          lhe;
+
+#define NJS_TRAVERSE_MAX_DEPTH 32
+};
+
+
+typedef njs_int_t (*njs_object_traverse_cb_t)(njs_vm_t *vm,
+    njs_traverse_t *traverse, void *ctx);
+
+
 njs_object_t *njs_object_alloc(njs_vm_t *vm);
 njs_object_t *njs_object_value_copy(njs_vm_t *vm, njs_value_t *value);
 njs_object_t *njs_object_value_alloc(njs_vm_t *vm, const njs_value_t *value,
@@ -51,6 +69,8 @@ njs_array_t *njs_object_enumerate(njs_vm_t *vm, const njs_object_t *object,
     njs_object_enum_t kind, njs_bool_t all);
 njs_array_t *njs_object_own_enumerate(njs_vm_t *vm, const njs_object_t *object,
     njs_object_enum_t kind, njs_bool_t all);
+njs_int_t njs_object_traverse(njs_vm_t *vm, njs_object_t *object, void *ctx,
+    njs_object_traverse_cb_t cb);
 njs_int_t njs_object_hash_create(njs_vm_t *vm, njs_lvlhsh_t *hash,
     const njs_object_prop_t *prop, njs_uint_t n);
 njs_int_t njs_object_constructor(njs_vm_t *vm, njs_value_t *args,

@@ -361,10 +361,34 @@ njs_hash_constructor(njs_vm_t *vm, njs_value_t *args,
 }
 
 
+static const njs_object_prop_t  njs_hash_constructor_properties[] =
+{
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("Hash"),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 1, 2.0),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("prototype"),
+        .value = njs_prop_handler(njs_object_prototype_create),
+    },
+};
+
+
 const njs_object_init_t  njs_hash_constructor_init = {
     njs_str("Hash"),
-    NULL,
-    0,
+    njs_hash_constructor_properties,
+    njs_nitems(njs_hash_constructor_properties),
 };
 
 
@@ -621,10 +645,34 @@ njs_hmac_constructor(njs_vm_t *vm, njs_value_t *args,
 }
 
 
+static const njs_object_prop_t  njs_hmac_constructor_properties[] =
+{
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("Hmac"),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 1, 3.0),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("prototype"),
+        .value = njs_prop_handler(njs_object_prototype_create),
+    },
+};
+
+
 const njs_object_init_t  njs_hmac_constructor_init = {
     njs_str("Hmac"),
-    NULL,
-    0,
+    njs_hmac_constructor_properties,
+    njs_nitems(njs_hmac_constructor_properties),
 };
 
 

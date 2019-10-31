@@ -1084,6 +1084,87 @@ njs_object_own_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
 }
 
 
+njs_int_t
+njs_object_traverse(njs_vm_t *vm, njs_object_t *object, void *ctx,
+    njs_object_traverse_cb_t cb)
+{
+    njs_int_t          depth, ret;
+    njs_str_t          name;
+    njs_value_t        value, obj;
+    njs_object_prop_t  *prop;
+    njs_traverse_t     state[NJS_TRAVERSE_MAX_DEPTH];
+
+    static const njs_str_t  constructor_key = njs_str("constructor");
+
+    depth = 0;
+
+    state[depth].prop = NULL;
+    state[depth].parent = NULL;
+    state[depth].object = object;
+    state[depth].hash = &object->shared_hash;
+    njs_lvlhsh_each_init(&state[depth].lhe, &njs_object_hash_proto);
+
+    for ( ;; ) {
+        prop = njs_lvlhsh_each(state[depth].hash, &state[depth].lhe);
+
+        if (prop == NULL) {
+            if (state[depth].hash == &state[depth].object->shared_hash) {
+                state[depth].hash = &state[depth].object->hash;
+                njs_lvlhsh_each_init(&state[depth].lhe, &njs_object_hash_proto);
+                continue;
+            }
+
+            if (depth == 0) {
+                return NJS_OK;
+            }
+
+            depth--;
+            continue;
+        }
+
+        state[depth].prop = prop;
+
+        ret = cb(vm, &state[depth], ctx);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+        value = prop->value;
+
+        if (prop->type == NJS_PROPERTY_HANDLER) {
+            njs_set_object(&obj, state[depth].object);
+            ret = prop->value.data.u.prop_handler(vm, prop, &obj, NULL, &value);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                return ret;
+
+            }
+        }
+
+        njs_string_get(&prop->name, &name);
+
+        /*
+         * "constructor" properties make loops in object hierarchies.
+         * Object.prototype.constructor -> Object.
+         */
+
+        if (njs_is_object(&value) && !njs_strstr_eq(&name, &constructor_key)) {
+            if (++depth > (NJS_TRAVERSE_MAX_DEPTH - 1)) {
+                njs_type_error(vm, "njs_object_traverse() recursion limit:%d",
+                               depth);
+                return NJS_ERROR;
+            }
+
+            state[depth].prop = NULL;
+            state[depth].parent = &state[depth - 1];
+            state[depth].object = njs_object(&value);
+            state[depth].hash = &njs_object(&value)->shared_hash;
+            njs_lvlhsh_each_init(&state[depth].lhe, &njs_object_hash_proto);
+        }
+
+    }
+}
+
+
 static njs_int_t
 njs_object_define_property(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
