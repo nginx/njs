@@ -26,7 +26,6 @@ proc njs_test {body {opts ""}} {
 
     expect -re "interactive njs \\d+\.\\d+\.\\d+\r\n\r"
     expect "v.<Tab> -> the properties and prototype methods of v.\r
-type console.help() for more information\r
 \r
 >> "
 
@@ -220,8 +219,6 @@ njs_test {
      "console.dump(1)\r\n1\r\nundefined\r\n>> "}
     {"console.dump(1, 'a')\r\n"
      "console.dump(1, 'a')\r\n1 a\r\nundefined\r\n>> "}
-    {"console.help()\r\n"
-     "console.help()\r\nVM built-in objects:"}
 }
 
 # console.time* functions

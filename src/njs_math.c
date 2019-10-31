@@ -1321,7 +1321,6 @@ static const njs_object_prop_t  njs_math_object_properties[] =
 
 
 const njs_object_init_t  njs_math_object_init = {
-    njs_str("Math"),
     njs_math_object_properties,
     njs_nitems(njs_math_object_properties),
 };

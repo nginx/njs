@@ -1189,7 +1189,6 @@ static const njs_object_prop_t  njs_regexp_constructor_properties[] =
 
 
 const njs_object_init_t  njs_regexp_constructor_init = {
-    njs_str("RegExp"),
     njs_regexp_constructor_properties,
     njs_nitems(njs_regexp_constructor_properties),
 };
@@ -1266,7 +1265,6 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
 
 
 const njs_object_init_t  njs_regexp_prototype_init = {
-    njs_str("RegExp"),
     njs_regexp_prototype_properties,
     njs_nitems(njs_regexp_prototype_properties),
 };

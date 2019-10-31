@@ -275,7 +275,6 @@ const njs_object_prop_t  njs_arguments_object_instance_properties[] =
 
 
 const njs_object_init_t  njs_arguments_object_instance_init = {
-    njs_str("Argument object instance"),
     njs_arguments_object_instance_properties,
     njs_nitems(njs_arguments_object_instance_properties),
 };
@@ -872,7 +871,6 @@ static const njs_object_prop_t  njs_function_constructor_properties[] =
 
 
 const njs_object_init_t  njs_function_constructor_init = {
-    njs_str("Function"),
     njs_function_constructor_properties,
     njs_nitems(njs_function_constructor_properties),
 };
@@ -1157,7 +1155,6 @@ static const njs_object_prop_t  njs_function_prototype_properties[] =
 
 
 const njs_object_init_t  njs_function_prototype_init = {
-    njs_str("Function"),
     njs_function_prototype_properties,
     njs_nitems(njs_function_prototype_properties),
 };
@@ -1182,7 +1179,6 @@ const njs_object_prop_t  njs_function_instance_properties[] =
 
 
 const njs_object_init_t  njs_function_instance_init = {
-    njs_str("Function instance"),
     njs_function_instance_properties,
     njs_nitems(njs_function_instance_properties),
 };
@@ -1200,7 +1196,6 @@ const njs_object_prop_t  njs_arrow_instance_properties[] =
 
 
 const njs_object_init_t  njs_arrow_instance_init = {
-    njs_str("Arrow instance"),
     njs_arrow_instance_properties,
     njs_nitems(njs_arrow_instance_properties),
 };
@@ -1237,7 +1232,6 @@ static const njs_object_prop_t  njs_eval_function_properties[] =
 
 
 const njs_object_init_t  njs_eval_function_init = {
-    njs_str("eval"),
     njs_eval_function_properties,
     njs_nitems(njs_eval_function_properties),
 };

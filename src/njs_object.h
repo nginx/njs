@@ -37,7 +37,6 @@ typedef enum {
 
 
 struct njs_object_init_s {
-    njs_str_t                   name;
     const njs_object_prop_t     *properties;
     njs_uint_t                  items;
 };

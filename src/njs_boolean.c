@@ -66,7 +66,6 @@ static const njs_object_prop_t  njs_boolean_constructor_properties[] =
 
 
 const njs_object_init_t  njs_boolean_constructor_init = {
-    njs_str("Boolean"),
     njs_boolean_constructor_properties,
     njs_nitems(njs_boolean_constructor_properties),
 };
@@ -161,7 +160,6 @@ static const njs_object_prop_t  njs_boolean_prototype_properties[] =
 
 
 const njs_object_init_t  njs_boolean_prototype_init = {
-    njs_str("Boolean"),
     njs_boolean_prototype_properties,
     njs_nitems(njs_boolean_prototype_properties),
 };

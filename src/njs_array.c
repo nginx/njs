@@ -322,7 +322,6 @@ static const njs_object_prop_t  njs_array_constructor_properties[] =
 
 
 const njs_object_init_t  njs_array_constructor_init = {
-    njs_str("Array"),
     njs_array_constructor_properties,
     njs_nitems(njs_array_constructor_properties),
 };
@@ -2987,7 +2986,6 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
 
 
 const njs_object_init_t  njs_array_prototype_init = {
-    njs_str("Array"),
     njs_array_prototype_properties,
     njs_nitems(njs_array_prototype_properties),
 };
@@ -3005,7 +3003,6 @@ const njs_object_prop_t  njs_array_instance_properties[] =
 
 
 const njs_object_init_t  njs_array_instance_init = {
-    njs_str("Array instance"),
     njs_array_instance_properties,
     njs_nitems(njs_array_instance_properties),
 };

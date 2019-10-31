@@ -2122,7 +2122,6 @@ static const njs_object_prop_t  njs_json_object_properties[] =
 
 
 const njs_object_init_t  njs_json_object_init = {
-    njs_str("JSON"),
     njs_json_object_properties,
     njs_nitems(njs_json_object_properties),
 };

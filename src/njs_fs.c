@@ -1215,7 +1215,6 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
 
 
 const njs_object_init_t  njs_fs_object_init = {
-    njs_str("fs"),
     njs_fs_object_properties,
     njs_nitems(njs_fs_object_properties),
 };

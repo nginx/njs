@@ -199,10 +199,12 @@ njs_builtin_objects_create(njs_vm_t *vm)
     njs_lvlhsh_query_t         lhq;
     njs_regexp_pattern_t       *pattern;
     njs_object_prototype_t     *prototype;
+    const njs_object_prop_t    *prop;
     const njs_object_init_t    *obj, **p;
     const njs_function_init_t  *f;
 
     static const njs_str_t  sandbox_key = njs_str("sandbox");
+    static const njs_str_t  name_key = njs_str("name");
 
     shared = njs_mp_zalloc(vm->mem_pool, sizeof(njs_vm_shared_t));
     if (njs_slow_path(shared == NULL)) {
@@ -308,7 +310,18 @@ njs_builtin_objects_create(njs_vm_t *vm)
             }
         }
 
-        module->name = obj->name;
+        lhq.key = name_key;
+        lhq.key_hash = njs_djb_hash(name_key.start, name_key.length);
+        lhq.proto = &njs_object_hash_proto;
+
+        ret = njs_lvlhsh_find(&module->object.shared_hash, &lhq);
+        if (njs_fast_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
+        prop = lhq.value;
+
+        njs_string_get(&prop->value, &module->name);
         module->object.shared = 1;
 
         lhq.key = module->name;
@@ -1463,7 +1476,6 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
 
 
 const njs_object_init_t  njs_global_this_init = {
-    njs_str(""),
     njs_global_this_object_properties,
     njs_nitems(njs_global_this_object_properties)
 };
@@ -1489,7 +1501,6 @@ static const njs_object_prop_t  njs_njs_object_properties[] =
 
 
 const njs_object_init_t  njs_njs_object_init = {
-    njs_str("njs"),
     njs_njs_object_properties,
     njs_nitems(njs_njs_object_properties),
 };
@@ -1698,7 +1709,6 @@ static const njs_object_prop_t  njs_process_object_properties[] =
 
 
 const njs_object_init_t  njs_process_object_init = {
-    njs_str("process"),
     njs_process_object_properties,
     njs_nitems(njs_process_object_properties),
 };

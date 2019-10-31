@@ -630,7 +630,6 @@ static const njs_object_prop_t  njs_string_constructor_properties[] =
 
 
 const njs_object_init_t  njs_string_constructor_init = {
-    njs_str("String"),
     njs_string_constructor_properties,
     njs_nitems(njs_string_constructor_properties),
 };
@@ -4723,7 +4722,6 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
 
 
 const njs_object_init_t  njs_string_prototype_init = {
-    njs_str("String"),
     njs_string_prototype_properties,
     njs_nitems(njs_string_prototype_properties),
 };
@@ -4740,7 +4738,6 @@ const njs_object_prop_t  njs_string_instance_properties[] =
 
 
 const njs_object_init_t  njs_string_instance_init = {
-    njs_str("String instance"),
     njs_string_instance_properties,
     njs_nitems(njs_string_instance_properties),
 };

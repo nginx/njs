@@ -1048,7 +1048,6 @@ static const njs_object_prop_t  njs_date_constructor_properties[] =
 
 
 const njs_object_init_t  njs_date_constructor_init = {
-    njs_str("Date"),
     njs_date_constructor_properties,
     njs_nitems(njs_date_constructor_properties),
 };
@@ -2888,7 +2887,6 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
 
 
 const njs_object_init_t  njs_date_prototype_init = {
-    njs_str("Date"),
     njs_date_prototype_properties,
     njs_nitems(njs_date_prototype_properties),
 };
