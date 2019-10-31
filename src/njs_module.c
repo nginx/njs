@@ -537,7 +537,7 @@ njs_module_require(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
         *object = module->object;
-        object->__proto__ = &vm->prototypes[NJS_PROTOTYPE_OBJECT].object;
+        object->__proto__ = &vm->prototypes[NJS_OBJ_TYPE_OBJECT].object;
         object->shared = 0;
         object->error_data = 0;
 

@@ -257,7 +257,7 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         date->object.type = NJS_DATE;
         date->object.shared = 0;
         date->object.extensible = 1;
-        date->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_DATE].object;
+        date->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_DATE].object;
 
         date->time = njs_timeclip(time);
 

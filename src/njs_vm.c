@@ -596,7 +596,7 @@ njs_vm_value_error_set(njs_vm_t *vm, njs_value_t *value, const char *fmt, ...)
         va_end(args);
     }
 
-    njs_error_new(vm, value, NJS_PROTOTYPE_ERROR, buf, p - buf);
+    njs_error_new(vm, value, NJS_OBJ_TYPE_ERROR, buf, p - buf);
 }
 
 
@@ -940,7 +940,7 @@ njs_vm_value_to_string(njs_vm_t *vm, njs_str_t *dst, const njs_value_t *src)
 
         /* MemoryError is a nonextensible internal error. */
 
-        if (njs_has_prototype(vm, src, NJS_PROTOTYPE_INTERNAL_ERROR)
+        if (njs_has_prototype(vm, src, NJS_OBJ_TYPE_INTERNAL_ERROR)
             && !njs_object(src)->extensible)
         {
             njs_string_get(&njs_string_memory_error, dst);

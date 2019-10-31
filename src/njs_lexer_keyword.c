@@ -47,26 +47,6 @@ static const njs_keyword_t  njs_keywords[] = {
     { njs_str("finally"),       NJS_TOKEN_FINALLY, 0 },
     { njs_str("throw"),         NJS_TOKEN_THROW, 0 },
 
-    /* Builtin functions. */
-
-    { njs_str("Object"),        NJS_TOKEN_OBJECT_CONSTRUCTOR, 0 },
-    { njs_str("Array"),         NJS_TOKEN_ARRAY_CONSTRUCTOR, 0 },
-    { njs_str("Boolean"),       NJS_TOKEN_BOOLEAN_CONSTRUCTOR, 0 },
-    { njs_str("Number"),        NJS_TOKEN_NUMBER_CONSTRUCTOR, 0 },
-    { njs_str("String"),        NJS_TOKEN_STRING_CONSTRUCTOR, 0 },
-    { njs_str("Function"),      NJS_TOKEN_FUNCTION_CONSTRUCTOR, 0 },
-    { njs_str("RegExp"),        NJS_TOKEN_REGEXP_CONSTRUCTOR, 0 },
-    { njs_str("Date"),          NJS_TOKEN_DATE_CONSTRUCTOR, 0 },
-    { njs_str("Error"),         NJS_TOKEN_ERROR_CONSTRUCTOR, 0 },
-    { njs_str("EvalError"),     NJS_TOKEN_EVAL_ERROR_CONSTRUCTOR, 0 },
-    { njs_str("InternalError"), NJS_TOKEN_INTERNAL_ERROR_CONSTRUCTOR, 0 },
-    { njs_str("RangeError"),    NJS_TOKEN_RANGE_ERROR_CONSTRUCTOR, 0 },
-    { njs_str("ReferenceError"), NJS_TOKEN_REF_ERROR_CONSTRUCTOR, 0 },
-    { njs_str("SyntaxError"),   NJS_TOKEN_SYNTAX_ERROR_CONSTRUCTOR, 0 },
-    { njs_str("TypeError"),     NJS_TOKEN_TYPE_ERROR_CONSTRUCTOR, 0 },
-    { njs_str("URIError"),      NJS_TOKEN_URI_ERROR_CONSTRUCTOR, 0 },
-    { njs_str("MemoryError"),   NJS_TOKEN_MEMORY_ERROR_CONSTRUCTOR, 0 },
-
     /* Module. */
 
     { njs_str("import"),        NJS_TOKEN_IMPORT, 0 },

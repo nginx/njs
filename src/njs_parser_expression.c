@@ -829,13 +829,6 @@ njs_parser_call(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
          * NJS_TOKEN_FUNCTION_CALL,
          * NJS_TOKEN_FUNCTION_EXPRESSION,
          * NJS_TOKEN_OPEN_PARENTHESIS,
-         * NJS_TOKEN_OBJECT_CONSTRUCTOR,
-         * NJS_TOKEN_ARRAY_CONSTRUCTOR,
-         * NJS_TOKEN_BOOLEAN_CONSTRUCTOR,
-         * NJS_TOKEN_NUMBER_CONSTRUCTOR,
-         * NJS_TOKEN_STRING_CONSTRUCTOR,
-         * NJS_TOKEN_FUNCTION_CONSTRUCTOR,
-         * NJS_TOKEN_REGEXP_CONSTRUCTOR,
          * NJS_TOKEN_EVAL.
          */
         func = njs_parser_node_new(vm, parser, NJS_TOKEN_FUNCTION_CALL);

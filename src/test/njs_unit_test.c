@@ -7313,6 +7313,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("function f(undefined,NaN, Infinity){ return undefined + NaN + Infinity}; f('x', 'y', 'z')"),
       njs_str("xyz") },
 
+    { njs_str("(function (Object, Array, Boolean){ return Object + Array + Boolean})('x', 'y', 'z')"),
+      njs_str("xyz") },
+
     /* Recursive factorial. */
 
     { njs_str("function f(a) {"
@@ -8713,6 +8716,7 @@ static njs_unit_test_t  njs_test[] =
     /* NativeErrors. */
 
     { njs_str(
+        "var global = this;"
         "function isValidNativeError(e) {"
         "   var inst;"
         "   var proto = Object.getPrototypeOf(e) === Error;"
@@ -8729,10 +8733,13 @@ static njs_unit_test_t  njs_test[] =
         "   var name_prop = Object.getOwnPropertyDescriptor(e.prototype, 'message');"
         "   name_prop = name_prop.writable && !name_prop.enumerable && name_prop.configurable;"
         "   var own_proto_ctor = e.prototype.hasOwnProperty('constructor');"
+        "   var props = Object.getOwnPropertyDescriptor(global, e.prototype.name);"
+        "   props = props.writable && !props.enumerable && props.configurable;"
+        "   var same = e === global[e.prototype.name];"
         ""
         "   return proto && proto2 && iproto && iproto2 "
         "          && tpof && ctor && msg && name && name2 && name3 && name4 "
-        "          && name_prop && own_proto_ctor;"
+        "          && name_prop && own_proto_ctor && props && same;"
         "};"
         "["
         "  EvalError,"
@@ -9537,6 +9544,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("Array.length"),
       njs_str("1") },
+
+    { njs_str("delete this.Array; Array"),
+      njs_str("ReferenceError: \"Array\" is not defined in 1") },
 
     { njs_str("Array.__proto__ === Function.prototype"),
       njs_str("true") },
@@ -13263,6 +13273,23 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("delete this.JSON; JSON"),
       njs_str("ReferenceError: \"JSON\" is not defined in 1") },
+
+    /* Top-level constructors. */
+
+    { njs_str(
+        "var global = this;"
+        "function isValidConstructor(c) {"
+        "   var props = Object.getOwnPropertyDescriptor(global, c.name);"
+        "   props = props.writable && !props.enumerable && props.configurable;"
+        "   var same = c === global[c.name];"
+        ""
+        "   return props && same;"
+        "};"
+        "Object.getOwnPropertyNames(global)"
+        ".filter((k)=>(global[k] && global[k].prototype && global[k].prototype.constructor))"
+        ".map(k=>global[k])"
+        ".every(c => isValidConstructor(c))"),
+      njs_str("true") },
 
     /* JSON.parse() */
 

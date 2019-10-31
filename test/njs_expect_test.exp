@@ -101,8 +101,8 @@ njs_test {
 
 njs_test {
     {"O\t"
-     "O\a*bject"}
-    {".\t\t"
+     "O\a*bject."}
+    {"\t\t"
      "Object.create*Object.isSealed"}
 }
 

@@ -46,7 +46,7 @@ njs_function_alloc(njs_vm_t *vm, njs_function_lambda_t *lambda,
         function->object.shared_hash = vm->shared->arrow_instance_hash;
     }
 
-    function->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION].object;
+    function->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_FUNCTION].object;
     function->object.type = NJS_FUNCTION;
     function->object.shared = shared;
     function->object.extensible = 1;
@@ -122,7 +122,7 @@ njs_function_copy(njs_vm_t *vm, njs_function_t *function)
     }
 
     *copy = *function;
-    copy->object.__proto__ = &vm->prototypes[NJS_PROTOTYPE_FUNCTION].object;
+    copy->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_FUNCTION].object;
     copy->object.shared = 0;
 
     if (nesting == 0) {

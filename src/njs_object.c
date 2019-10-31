@@ -39,7 +39,7 @@ njs_object_alloc(njs_vm_t *vm)
     if (njs_fast_path(object != NULL)) {
         njs_lvlhsh_init(&object->hash);
         njs_lvlhsh_init(&object->shared_hash);
-        object->__proto__ = &vm->prototypes[NJS_PROTOTYPE_OBJECT].object;
+        object->__proto__ = &vm->prototypes[NJS_OBJ_TYPE_OBJECT].object;
         object->type = NJS_OBJECT;
         object->shared = 0;
         object->extensible = 1;
@@ -68,7 +68,7 @@ njs_object_value_copy(njs_vm_t *vm, njs_value_t *value)
 
     if (njs_fast_path(object != NULL)) {
         *object = *njs_object(value);
-        object->__proto__ = &vm->prototypes[NJS_PROTOTYPE_OBJECT].object;
+        object->__proto__ = &vm->prototypes[NJS_OBJ_TYPE_OBJECT].object;
         object->shared = 0;
         value->data.u.object = object;
         return object;
@@ -1605,7 +1605,7 @@ njs_object_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
     function = njs_function(value);
     index = function - vm->constructors;
 
-    if (index >= 0 && index < NJS_PROTOTYPE_MAX) {
+    if (index >= 0 && index < NJS_OBJ_TYPE_MAX) {
         proto = njs_property_prototype_create(vm, &function->object.hash,
                                               &vm->prototypes[index].object);
     }
@@ -1928,7 +1928,7 @@ njs_object_prototype_create_constructor(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     int32_t                 index;
-    njs_value_t             *cons;
+    njs_value_t             *cons, constructor;
     njs_object_t            *object;
     njs_object_prototype_t  *prototype;
 
@@ -1939,7 +1939,7 @@ njs_object_prototype_create_constructor(njs_vm_t *vm, njs_object_prop_t *prop,
             prototype = (njs_object_prototype_t *) object;
             index = prototype - vm->prototypes;
 
-            if (index >= 0 && index < NJS_PROTOTYPE_MAX) {
+            if (index >= 0 && index < NJS_OBJ_TYPE_MAX) {
                 goto found;
             }
 
@@ -1959,7 +1959,8 @@ njs_object_prototype_create_constructor(njs_vm_t *vm, njs_object_prop_t *prop,
 found:
 
     if (setval == NULL) {
-        setval = &vm->scopes[NJS_SCOPE_GLOBAL][index];
+        njs_set_function(&constructor, &vm->constructors[index]);
+        setval = &constructor;
     }
 
     cons = njs_property_constructor_create(vm, &prototype->object.hash, setval);

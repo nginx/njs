@@ -1028,7 +1028,7 @@ njs_fs_error(njs_vm_t *vm, const char *syscall, const char *description,
         return NJS_ERROR;
     }
 
-    error = njs_error_alloc(vm, NJS_PROTOTYPE_ERROR, NULL, &string);
+    error = njs_error_alloc(vm, NJS_OBJ_TYPE_ERROR, NULL, &string);
     if (njs_slow_path(error == NULL)) {
         return NJS_ERROR;
     }

@@ -140,7 +140,18 @@ main(int argc, char **argv)
         "}"
         "fibo(32).length");
 
+    static njs_str_t  json = njs_str(
+        "JSON.parse('{\"a\":123, \"XXX\":[3,4,null]}').a");
+
+    static njs_str_t  for_loop = njs_str(
+        "var i; for (i = 0; i < 100000000; i++); i");
+
+    static njs_str_t while_loop = njs_str(
+        "var i = 0; while (i < 100000000) { i++ }; i");
+
     static njs_str_t  fibo_result = njs_str("3524578");
+    static njs_str_t  json_result = njs_str("123");
+    static njs_str_t  loop_result = njs_str("100000000");
 
 
     if (argc > 1) {
@@ -149,6 +160,18 @@ main(int argc, char **argv)
         case 'v':
             return njs_unit_test_benchmark(&script, &result,
                                            "nJSVM clone/destroy", 1000000);
+
+        case 'j':
+            return njs_unit_test_benchmark(&json, &json_result,
+                                           "JSON.parse", 1000000);
+
+        case 'f':
+            return njs_unit_test_benchmark(&for_loop, &loop_result,
+                                           "for loop 100M", 1);
+
+        case 'w':
+            return njs_unit_test_benchmark(&while_loop, &loop_result,
+                                           "while loop 100M", 1);
 
         case 'n':
             return njs_unit_test_benchmark(&fibo_number, &fibo_result,

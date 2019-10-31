@@ -247,7 +247,7 @@ static njs_int_t njs_generate_function_debug(njs_vm_t *vm,
 
 
 #define njs_generate_syntax_error(vm, node, fmt, ...)                         \
-    njs_parser_node_error(vm, node, NJS_PROTOTYPE_SYNTAX_ERROR, fmt,          \
+    njs_parser_node_error(vm, node, NJS_OBJ_TYPE_SYNTAX_ERROR, fmt,           \
                           ##__VA_ARGS__)
 
 
@@ -417,23 +417,6 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
         return njs_generate_template_literal(vm, generator, node);
 
     case NJS_TOKEN_THIS:
-    case NJS_TOKEN_OBJECT_CONSTRUCTOR:
-    case NJS_TOKEN_ARRAY_CONSTRUCTOR:
-    case NJS_TOKEN_NUMBER_CONSTRUCTOR:
-    case NJS_TOKEN_BOOLEAN_CONSTRUCTOR:
-    case NJS_TOKEN_STRING_CONSTRUCTOR:
-    case NJS_TOKEN_FUNCTION_CONSTRUCTOR:
-    case NJS_TOKEN_REGEXP_CONSTRUCTOR:
-    case NJS_TOKEN_DATE_CONSTRUCTOR:
-    case NJS_TOKEN_ERROR_CONSTRUCTOR:
-    case NJS_TOKEN_EVAL_ERROR_CONSTRUCTOR:
-    case NJS_TOKEN_INTERNAL_ERROR_CONSTRUCTOR:
-    case NJS_TOKEN_RANGE_ERROR_CONSTRUCTOR:
-    case NJS_TOKEN_REF_ERROR_CONSTRUCTOR:
-    case NJS_TOKEN_SYNTAX_ERROR_CONSTRUCTOR:
-    case NJS_TOKEN_TYPE_ERROR_CONSTRUCTOR:
-    case NJS_TOKEN_URI_ERROR_CONSTRUCTOR:
-    case NJS_TOKEN_MEMORY_ERROR_CONSTRUCTOR:
     case NJS_TOKEN_EXTERNAL:
         return NJS_OK;
 

@@ -106,7 +106,7 @@ njs_vm_external_add(njs_vm_t *vm, njs_lvlhsh_t *hash, njs_external_t *external,
              */
 
             function->object.__proto__ =
-                              &vm->prototypes[NJS_CONSTRUCTOR_FUNCTION].object;
+                              &vm->prototypes[NJS_OBJ_TYPE_FUNCTION].object;
             function->object.shared_hash = vm->shared->arrow_instance_hash;
             function->object.type = NJS_FUNCTION;
             function->object.shared = 1;

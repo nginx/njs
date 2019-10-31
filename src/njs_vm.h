@@ -68,8 +68,6 @@ typedef enum {
 #define NJS_SCOPE_SHIFT        4
 #define NJS_SCOPE_MASK         ((uintptr_t) ((1 << NJS_SCOPE_SHIFT) - 1))
 
-#define NJS_INDEX_CACHE        NJS_SCOPE_GLOBAL
-
 #define NJS_INDEX_NONE         ((njs_index_t) 0)
 #define NJS_INDEX_ERROR        ((njs_index_t) -1)
 #define NJS_INDEX_THIS         ((njs_index_t) (0 | NJS_SCOPE_ARGUMENTS))
@@ -82,63 +80,35 @@ typedef enum {
 
 
 typedef enum {
-    NJS_PROTOTYPE_OBJECT = 0,
-    NJS_PROTOTYPE_ARRAY,
-    NJS_PROTOTYPE_BOOLEAN,
-    NJS_PROTOTYPE_NUMBER,
-    NJS_PROTOTYPE_STRING,
-    NJS_PROTOTYPE_FUNCTION,
-    NJS_PROTOTYPE_REGEXP,
-    NJS_PROTOTYPE_DATE,
-    NJS_PROTOTYPE_CRYPTO_HASH,
-    NJS_PROTOTYPE_CRYPTO_HMAC,
-    NJS_PROTOTYPE_ERROR,
-    NJS_PROTOTYPE_EVAL_ERROR,
-    NJS_PROTOTYPE_INTERNAL_ERROR,
-    NJS_PROTOTYPE_RANGE_ERROR,
-    NJS_PROTOTYPE_REF_ERROR,
-    NJS_PROTOTYPE_SYNTAX_ERROR,
-    NJS_PROTOTYPE_TYPE_ERROR,
-    NJS_PROTOTYPE_URI_ERROR,
-#define NJS_PROTOTYPE_MAX      (NJS_PROTOTYPE_URI_ERROR + 1)
-} njs_prototype_t;
+    NJS_OBJ_TYPE_OBJECT = 0,
+    NJS_OBJ_TYPE_ARRAY,
+    NJS_OBJ_TYPE_BOOLEAN,
+    NJS_OBJ_TYPE_NUMBER,
+    NJS_OBJ_TYPE_STRING,
+    NJS_OBJ_TYPE_FUNCTION,
+    NJS_OBJ_TYPE_REGEXP,
+    NJS_OBJ_TYPE_DATE,
+    NJS_OBJ_TYPE_CRYPTO_HASH,
+    NJS_OBJ_TYPE_CRYPTO_HMAC,
+    NJS_OBJ_TYPE_ERROR,
+    NJS_OBJ_TYPE_EVAL_ERROR,
+    NJS_OBJ_TYPE_INTERNAL_ERROR,
+    NJS_OBJ_TYPE_RANGE_ERROR,
+    NJS_OBJ_TYPE_REF_ERROR,
+    NJS_OBJ_TYPE_SYNTAX_ERROR,
+    NJS_OBJ_TYPE_TYPE_ERROR,
+    NJS_OBJ_TYPE_URI_ERROR,
+    NJS_OBJ_TYPE_MEMORY_ERROR,
+#define NJS_OBJ_TYPE_MAX      (NJS_OBJ_TYPE_MEMORY_ERROR + 1)
+} njs_object_type_t;
 
 
 #define njs_primitive_prototype_index(type)                                   \
-    (NJS_PROTOTYPE_BOOLEAN + ((type) - NJS_BOOLEAN))
-
-
-#define njs_error_prototype_index(type)                                       \
-    (NJS_PROTOTYPE_ERROR + ((type) - NJS_OBJECT_ERROR))
+    (NJS_OBJ_TYPE_BOOLEAN + ((type) - NJS_BOOLEAN))
 
 
 #define njs_prototype_type(index)                                             \
     (index + NJS_OBJECT)
-
-
-enum njs_constructor_e {
-    NJS_CONSTRUCTOR_OBJECT =         NJS_PROTOTYPE_OBJECT,
-    NJS_CONSTRUCTOR_ARRAY =          NJS_PROTOTYPE_ARRAY,
-    NJS_CONSTRUCTOR_BOOLEAN =        NJS_PROTOTYPE_BOOLEAN,
-    NJS_CONSTRUCTOR_NUMBER =         NJS_PROTOTYPE_NUMBER,
-    NJS_CONSTRUCTOR_STRING =         NJS_PROTOTYPE_STRING,
-    NJS_CONSTRUCTOR_FUNCTION =       NJS_PROTOTYPE_FUNCTION,
-    NJS_CONSTRUCTOR_REGEXP =         NJS_PROTOTYPE_REGEXP,
-    NJS_CONSTRUCTOR_DATE =           NJS_PROTOTYPE_DATE,
-    NJS_CONSTRUCTOR_CRYPTO_HASH =    NJS_PROTOTYPE_CRYPTO_HASH,
-    NJS_CONSTRUCTOR_CRYPTO_HMAC =    NJS_PROTOTYPE_CRYPTO_HMAC,
-    NJS_CONSTRUCTOR_ERROR =          NJS_PROTOTYPE_ERROR,
-    NJS_CONSTRUCTOR_EVAL_ERROR =     NJS_PROTOTYPE_EVAL_ERROR,
-    NJS_CONSTRUCTOR_INTERNAL_ERROR = NJS_PROTOTYPE_INTERNAL_ERROR,
-    NJS_CONSTRUCTOR_RANGE_ERROR =    NJS_PROTOTYPE_RANGE_ERROR,
-    NJS_CONSTRUCTOR_REF_ERROR =      NJS_PROTOTYPE_REF_ERROR,
-    NJS_CONSTRUCTOR_SYNTAX_ERROR =   NJS_PROTOTYPE_SYNTAX_ERROR,
-    NJS_CONSTRUCTOR_TYPE_ERROR =     NJS_PROTOTYPE_TYPE_ERROR,
-    NJS_CONSTRUCTOR_URI_ERROR =      NJS_PROTOTYPE_URI_ERROR,
-    /* MemoryError has no its own prototype. */
-    NJS_CONSTRUCTOR_MEMORY_ERROR,
-#define NJS_CONSTRUCTOR_MAX    (NJS_CONSTRUCTOR_MEMORY_ERROR + 1)
-};
 
 
 enum njs_object_e {
@@ -154,44 +124,17 @@ enum njs_object_e {
 #define njs_scope_index(value, type)                                          \
     ((njs_index_t) (((value) << NJS_SCOPE_SHIFT) | (type)))
 
+
 #define njs_global_scope_index(value)                                         \
-    ((njs_index_t) (((value) << NJS_SCOPE_SHIFT) | NJS_SCOPE_GLOBAL))
+    (njs_scope_index(value, NJS_SCOPE_GLOBAL))
 
 
-#define NJS_INDEX_OBJECT         njs_global_scope_index(NJS_CONSTRUCTOR_OBJECT)
-#define NJS_INDEX_ARRAY          njs_global_scope_index(NJS_CONSTRUCTOR_ARRAY)
-#define NJS_INDEX_BOOLEAN        njs_global_scope_index(NJS_CONSTRUCTOR_BOOLEAN)
-#define NJS_INDEX_NUMBER         njs_global_scope_index(NJS_CONSTRUCTOR_NUMBER)
-#define NJS_INDEX_STRING         njs_global_scope_index(NJS_CONSTRUCTOR_STRING)
-#define NJS_INDEX_FUNCTION                                                    \
-    njs_global_scope_index(NJS_CONSTRUCTOR_FUNCTION)
-#define NJS_INDEX_REGEXP         njs_global_scope_index(NJS_CONSTRUCTOR_REGEXP)
-#define NJS_INDEX_DATE           njs_global_scope_index(NJS_CONSTRUCTOR_DATE)
-#define NJS_INDEX_OBJECT_ERROR   njs_global_scope_index(NJS_CONSTRUCTOR_ERROR)
-#define NJS_INDEX_OBJECT_EVAL_ERROR                                           \
-    njs_global_scope_index(NJS_CONSTRUCTOR_EVAL_ERROR)
-#define NJS_INDEX_OBJECT_INTERNAL_ERROR                                       \
-    njs_global_scope_index(NJS_CONSTRUCTOR_INTERNAL_ERROR)
-#define NJS_INDEX_OBJECT_RANGE_ERROR                                          \
-    njs_global_scope_index(NJS_CONSTRUCTOR_RANGE_ERROR)
-#define NJS_INDEX_OBJECT_REF_ERROR                                            \
-    njs_global_scope_index(NJS_CONSTRUCTOR_REF_ERROR)
-#define NJS_INDEX_OBJECT_SYNTAX_ERROR                                         \
-    njs_global_scope_index(NJS_CONSTRUCTOR_SYNTAX_ERROR)
-#define NJS_INDEX_OBJECT_TYPE_ERROR                                           \
-    njs_global_scope_index(NJS_CONSTRUCTOR_TYPE_ERROR)
-#define NJS_INDEX_OBJECT_URI_ERROR                                            \
-    njs_global_scope_index(NJS_CONSTRUCTOR_URI_ERROR)
-#define NJS_INDEX_OBJECT_MEMORY_ERROR                                         \
-    njs_global_scope_index(NJS_CONSTRUCTOR_MEMORY_ERROR)
+#define NJS_INDEX_GLOBAL_OBJECT  njs_global_scope_index(0)
+#define NJS_INDEX_GLOBAL_OBJECT_OFFSET  njs_scope_index(0, 0)
 
-#define NJS_INDEX_GLOBAL_OBJECT  njs_global_scope_index(NJS_CONSTRUCTOR_MAX)
-#define NJS_INDEX_GLOBAL_OBJECT_OFFSET                                        \
-    njs_scope_index(NJS_CONSTRUCTOR_MAX, 0)
 
-#define NJS_INDEX_GLOBAL_RETVAL                                               \
-    njs_global_scope_index(NJS_CONSTRUCTOR_MAX + 1)
-#define NJS_INDEX_GLOBAL_OFFSET  njs_scope_index(NJS_CONSTRUCTOR_MAX + 1, 0)
+#define NJS_INDEX_GLOBAL_RETVAL  njs_global_scope_index(1)
+#define NJS_INDEX_GLOBAL_OFFSET  njs_scope_index(1, 0)
 
 
 #define njs_scope_offset(index)                                               \
@@ -249,8 +192,8 @@ struct njs_vm_s {
      * they are copied from njs_vm_shared_t by single memcpy()
      * in njs_builtin_objects_clone().
      */
-    njs_object_prototype_t   prototypes[NJS_PROTOTYPE_MAX];
-    njs_function_t           constructors[NJS_CONSTRUCTOR_MAX];
+    njs_object_prototype_t   prototypes[NJS_OBJ_TYPE_MAX];
+    njs_function_t           constructors[NJS_OBJ_TYPE_MAX];
 
     njs_mp_t                 *mem_pool;
 
@@ -316,8 +259,8 @@ struct njs_vm_shared_s {
      * The prototypes and constructors arrays must be togther because they are
      * copied to njs_vm_t by single memcpy() in njs_builtin_objects_clone().
      */
-    njs_object_prototype_t   prototypes[NJS_PROTOTYPE_MAX];
-    njs_function_t           constructors[NJS_CONSTRUCTOR_MAX];
+    njs_object_prototype_t   prototypes[NJS_OBJ_TYPE_MAX];
+    njs_function_t           constructors[NJS_OBJ_TYPE_MAX];
 
     njs_regexp_pattern_t     *empty_regexp_pattern;
 };

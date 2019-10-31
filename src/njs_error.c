@@ -13,7 +13,7 @@ static const njs_value_t  njs_error_name_string = njs_string("name");
 
 
 void
-njs_error_new(njs_vm_t *vm, njs_value_t *dst, njs_prototype_t type,
+njs_error_new(njs_vm_t *vm, njs_value_t *dst, njs_object_type_t type,
     u_char *start, size_t size)
 {
     ssize_t        length;
@@ -41,7 +41,7 @@ njs_error_new(njs_vm_t *vm, njs_value_t *dst, njs_prototype_t type,
 
 
 void
-njs_error_fmt_new(njs_vm_t *vm, njs_value_t *dst, njs_prototype_t type,
+njs_error_fmt_new(njs_vm_t *vm, njs_value_t *dst, njs_object_type_t type,
     const char *fmt, ...)
 {
     va_list  args;
@@ -60,7 +60,7 @@ njs_error_fmt_new(njs_vm_t *vm, njs_value_t *dst, njs_prototype_t type,
 
 
 njs_object_t *
-njs_error_alloc(njs_vm_t *vm, njs_prototype_t type, const njs_value_t *name,
+njs_error_alloc(njs_vm_t *vm, njs_object_type_t type, const njs_value_t *name,
     const njs_value_t *message)
 {
     njs_int_t           ret;
@@ -136,7 +136,7 @@ memory_error:
 
 static njs_int_t
 njs_error_create(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_prototype_t type)
+    njs_object_type_t type)
 {
     njs_int_t     ret;
     njs_value_t   *value;
@@ -169,7 +169,7 @@ njs_int_t
 njs_error_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    return njs_error_create(vm, args, nargs, NJS_PROTOTYPE_ERROR);
+    return njs_error_create(vm, args, nargs, NJS_OBJ_TYPE_ERROR);
 }
 
 
@@ -211,7 +211,7 @@ njs_int_t
 njs_eval_error_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    return njs_error_create(vm, args, nargs, NJS_PROTOTYPE_EVAL_ERROR);
+    return njs_error_create(vm, args, nargs, NJS_OBJ_TYPE_EVAL_ERROR);
 }
 
 
@@ -253,7 +253,7 @@ njs_int_t
 njs_internal_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
-    return njs_error_create(vm, args, nargs, NJS_PROTOTYPE_INTERNAL_ERROR);
+    return njs_error_create(vm, args, nargs, NJS_OBJ_TYPE_INTERNAL_ERROR);
 }
 
 
@@ -295,7 +295,7 @@ njs_int_t
 njs_range_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
-    return njs_error_create(vm, args, nargs, NJS_PROTOTYPE_RANGE_ERROR);
+    return njs_error_create(vm, args, nargs, NJS_OBJ_TYPE_RANGE_ERROR);
 }
 
 
@@ -337,7 +337,7 @@ njs_int_t
 njs_reference_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
-    return njs_error_create(vm, args, nargs, NJS_PROTOTYPE_REF_ERROR);
+    return njs_error_create(vm, args, nargs, NJS_OBJ_TYPE_REF_ERROR);
 }
 
 
@@ -379,7 +379,7 @@ njs_int_t
 njs_syntax_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
-    return njs_error_create(vm, args, nargs, NJS_PROTOTYPE_SYNTAX_ERROR);
+    return njs_error_create(vm, args, nargs, NJS_OBJ_TYPE_SYNTAX_ERROR);
 }
 
 
@@ -421,7 +421,7 @@ njs_int_t
 njs_type_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
-    return njs_error_create(vm, args, nargs, NJS_PROTOTYPE_TYPE_ERROR);
+    return njs_error_create(vm, args, nargs, NJS_OBJ_TYPE_TYPE_ERROR);
 }
 
 
@@ -463,7 +463,7 @@ njs_int_t
 njs_uri_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
-    return njs_error_create(vm, args, nargs, NJS_PROTOTYPE_URI_ERROR);
+    return njs_error_create(vm, args, nargs, NJS_OBJ_TYPE_URI_ERROR);
 }
 
 
@@ -512,7 +512,7 @@ njs_memory_error_set(njs_vm_t *vm, njs_value_t *value)
 
     njs_lvlhsh_init(&object->hash);
     njs_lvlhsh_init(&object->shared_hash);
-    object->__proto__ = &prototypes[NJS_PROTOTYPE_INTERNAL_ERROR].object;
+    object->__proto__ = &prototypes[NJS_OBJ_TYPE_INTERNAL_ERROR].object;
     object->type = NJS_OBJECT;
     object->shared = 1;
 
@@ -554,7 +554,7 @@ njs_memory_error_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
 
     /* MemoryError has no its own prototype. */
 
-    index = NJS_PROTOTYPE_INTERNAL_ERROR;
+    index = NJS_OBJ_TYPE_INTERNAL_ERROR;
 
     function = njs_function(value);
     proto = njs_property_prototype_create(vm, &function->object.hash,
