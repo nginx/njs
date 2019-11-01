@@ -14,12 +14,17 @@
  *   FreeBSD and MacOSX timegm() cannot handle years before 1900.
  */
 
-#define NJS_ISO_DATE_TIME_LEN   sizeof("+001970-09-28T12:00:00.000Z")
-
-#define NJS_HTTP_DATE_TIME_LEN  sizeof("Mon, 28 Sep 1970 12:00:00 GMT")
-
 #define NJS_DATE_TIME_LEN                                                     \
     sizeof("Mon Sep 28 1970 12:00:00 GMT+0600 (XXXXX)")
+
+
+typedef enum {
+    NJS_DATE_FMT_TO_TIME_STRING,
+    NJS_DATE_FMT_TO_DATE_STRING,
+    NJS_DATE_FMT_TO_STRING,
+    NJS_DATE_FMT_TO_UTC_STRING,
+    NJS_DATE_FMT_TO_ISO_STRING,
+} njs_date_fmt_t;
 
 
 static double njs_date_string_parse(njs_value_t *date);
@@ -36,7 +41,8 @@ static njs_int_t njs_date_gmtoff_parse(const u_char *start, const u_char *end);
 static const u_char *njs_date_number_parse(int *value, const u_char *p,
     const u_char *end, size_t size);
 static int64_t njs_timegm(struct tm *tm);
-static njs_int_t njs_date_string(njs_vm_t *vm, const char *fmt, double time);
+static njs_int_t njs_date_string(njs_vm_t *vm, njs_value_t *retval,
+    njs_date_fmt_t fmt, double time);
 static double njs_date_time(struct tm *tm, int64_t ms);
 static double njs_date_utc_time(struct tm *tm, double time);
 
@@ -179,94 +185,94 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_date_t  *date;
     int64_t     values[8];
 
-    if (vm->top_frame->ctor) {
-
-        if (nargs == 1) {
-            time = njs_gettime();
-
-        } else if (nargs == 2) {
-            if (njs_is_object(&args[1])) {
-                if (!njs_is_date(&args[1])) {
-                    ret = njs_value_to_primitive(vm, &args[1], &args[1], 0);
-                    if (ret != NJS_OK) {
-                        return ret;
-                    }
-                }
-            }
-
-            if (njs_is_date(&args[1])) {
-                time = njs_date(&args[1])->time;
-
-            } else if (njs_is_string(&args[1])) {
-                time = njs_date_string_parse(&args[1]);
-
-            } else {
-                time = njs_number(&args[1]);
-            }
-
-        } else {
-
-            time = NAN;
-
-            njs_memzero(values, 8 * sizeof(int64_t));
-
-            /* Day. */
-            values[3] = 1;
-
-            n = njs_min(8, nargs);
-
-            for (i = 1; i < n; i++) {
-                if (!njs_is_numeric(&args[i])) {
-                    ret = njs_value_to_numeric(vm, &args[i], &args[i]);
-                    if (ret != NJS_OK) {
-                        return ret;
-                    }
-                }
-
-                num = njs_number(&args[i]);
-
-                if (isnan(num) || isinf(num)) {
-                    goto done;
-                }
-
-                values[i] = num;
-            }
-
-            /* Year. */
-            if (values[1] >= 0 && values[1] < 100) {
-                values[1] += 1900;
-            }
-
-            day = njs_make_day(values[1], values[2], values[3]);
-
-            tm = njs_make_time(values[4], values[5], values[6], values[7]);
-
-            time = njs_make_date(day, tm, 1);
-        }
-
-    done:
-
-        date = njs_mp_alloc(vm->mem_pool, sizeof(njs_date_t));
-        if (njs_slow_path(date == NULL)) {
-            njs_memory_error(vm);
-            return NJS_ERROR;
-        }
-
-        njs_lvlhsh_init(&date->object.hash);
-        njs_lvlhsh_init(&date->object.shared_hash);
-        date->object.type = NJS_DATE;
-        date->object.shared = 0;
-        date->object.extensible = 1;
-        date->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_DATE].object;
-
-        date->time = njs_timeclip(time);
-
-        njs_set_date(&vm->retval, date);
-
-        return NJS_OK;
+    if (!vm->top_frame->ctor) {
+        return njs_date_string(vm, &vm->retval, NJS_DATE_FMT_TO_STRING,
+                               njs_gettime());
     }
 
-    return njs_date_string(vm, "%a %b %d %Y %T GMT%z (%Z)", njs_gettime());
+    if (nargs == 1) {
+        time = njs_gettime();
+
+    } else if (nargs == 2) {
+        if (njs_is_object(&args[1])) {
+            if (!njs_is_date(&args[1])) {
+                ret = njs_value_to_primitive(vm, &args[1], &args[1], 0);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    return ret;
+                }
+            }
+        }
+
+        if (njs_is_date(&args[1])) {
+            time = njs_date(&args[1])->time;
+
+        } else if (njs_is_string(&args[1])) {
+            time = njs_date_string_parse(&args[1]);
+
+        } else {
+            time = njs_number(&args[1]);
+        }
+
+    } else {
+
+        time = NAN;
+
+        njs_memzero(values, 8 * sizeof(int64_t));
+
+        /* Day. */
+        values[3] = 1;
+
+        n = njs_min(8, nargs);
+
+        for (i = 1; i < n; i++) {
+            if (!njs_is_numeric(&args[i])) {
+                ret = njs_value_to_numeric(vm, &args[i], &args[i]);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    return ret;
+                }
+            }
+
+            num = njs_number(&args[i]);
+
+            if (isnan(num) || isinf(num)) {
+                goto done;
+            }
+
+            values[i] = num;
+        }
+
+        /* Year. */
+        if (values[1] >= 0 && values[1] < 100) {
+            values[1] += 1900;
+        }
+
+        day = njs_make_day(values[1], values[2], values[3]);
+
+        tm = njs_make_time(values[4], values[5], values[6], values[7]);
+
+        time = njs_make_date(day, tm, 1);
+    }
+
+done:
+
+    date = njs_mp_alloc(vm->mem_pool, sizeof(njs_date_t));
+    if (njs_slow_path(date == NULL)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    njs_lvlhsh_init(&date->object.hash);
+    njs_lvlhsh_init(&date->object.shared_hash);
+    date->object.type = NJS_DATE;
+    date->object.shared = 0;
+    date->object.extensible = 1;
+    date->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_DATE].object;
+
+    date->time = njs_timeclip(time);
+
+    njs_set_date(&vm->retval, date);
+
+    return NJS_OK;
 }
 
 
@@ -1081,7 +1087,7 @@ njs_date_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    return njs_date_string(vm, "%a %b %d %Y %T GMT%z (%Z)",
+    return njs_date_string(vm, &vm->retval, NJS_DATE_FMT_TO_STRING,
                            njs_date(&args[0])->time);
 }
 
@@ -1097,7 +1103,8 @@ njs_date_prototype_to_date_string(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
-    return njs_date_string(vm, "%a %b %d %Y", njs_date(&args[0])->time);
+    return njs_date_string(vm, &vm->retval, NJS_DATE_FMT_TO_DATE_STRING,
+                           njs_date(&args[0])->time);
 }
 
 
@@ -1112,41 +1119,20 @@ njs_date_prototype_to_time_string(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
-    return njs_date_string(vm, "%T GMT%z (%Z)", njs_date(&args[0])->time);
+    return njs_date_string(vm, &vm->retval, NJS_DATE_FMT_TO_TIME_STRING,
+                           njs_date(&args[0])->time);
 }
 
 
 static njs_int_t
-njs_date_string(njs_vm_t *vm, const char *fmt, double time)
+njs_date_string(njs_vm_t *vm, njs_value_t *retval, njs_date_fmt_t fmt,
+    double time)
 {
-    size_t     size;
+    u_char     *p, sign;
+    int32_t    year, tz;
     time_t     clock;
     u_char     buf[NJS_DATE_TIME_LEN];
     struct tm  tm;
-
-    if (!isnan(time)) {
-        clock = time / 1000;
-        localtime_r(&clock, &tm);
-
-        size = strftime((char *) buf, NJS_DATE_TIME_LEN, fmt, &tm);
-
-        return njs_string_new(vm, &vm->retval, buf, size, size);
-    }
-
-    vm->retval = njs_string_invalid_date;
-
-    return NJS_OK;
-}
-
-
-static njs_int_t
-njs_date_prototype_to_utc_string(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
-{
-    double             time;
-    time_t             clock;
-    u_char             buf[NJS_HTTP_DATE_TIME_LEN], *p;
-    struct tm          tm;
 
     static const char  *week[] = { "Sun", "Mon", "Tue", "Wed",
                                    "Thu", "Fri", "Sat" };
@@ -1154,35 +1140,87 @@ njs_date_prototype_to_utc_string(njs_vm_t *vm, njs_value_t *args,
     static const char  *month[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
                                     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 
-    if (njs_slow_path(!njs_is_date(&args[0]))) {
-        njs_type_error(vm, "cannot convert %s to date",
-                       njs_type_string(args[0].type));
-
-        return NJS_ERROR;
+    if (njs_slow_path(isnan(time))) {
+        vm->retval = njs_string_invalid_date;
+        return NJS_OK;
     }
 
-    time = njs_date(&args[0])->time;
+    p = buf;
 
-    if (!isnan(time)) {
+    switch (fmt) {
+    case NJS_DATE_FMT_TO_ISO_STRING:
+    case NJS_DATE_FMT_TO_UTC_STRING:
         clock = time / 1000;
         gmtime_r(&clock, &tm);
+        year = tm.tm_year + 1900;
 
-        p = njs_sprintf(buf, buf + NJS_HTTP_DATE_TIME_LEN,
-                        "%s, %02d %s %4d %02d:%02d:%02d GMT",
-                        week[tm.tm_wday], tm.tm_mday, month[tm.tm_mon],
-                        tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
+        if (fmt == NJS_DATE_FMT_TO_UTC_STRING) {
+            p = njs_sprintf(p, buf + NJS_DATE_TIME_LEN,
+                            "%s, %02d %s %04d %02d:%02d:%02d GMT",
+                            week[tm.tm_wday], tm.tm_mday, month[tm.tm_mon],
+                            year, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
-        return njs_string_new(vm, &vm->retval, buf, p - buf, p - buf);
+            break;
+        }
+
+        if (year >= 0 && year <= 9999) {
+            p = njs_sprintf(p, buf + NJS_DATE_TIME_LEN, "%04d", year);
+
+        } else {
+            if (year > 0) {
+                *p++ = '+';
+            }
+
+            p = njs_sprintf(p, buf + NJS_DATE_TIME_LEN, "%06d", year);
+        }
+
+        p = njs_sprintf(p, buf + NJS_DATE_TIME_LEN,
+                        "-%02d-%02dT%02d:%02d:%02d.%03dZ",
+                        tm.tm_mon + 1, tm.tm_mday, tm.tm_hour,
+                        tm.tm_min, tm.tm_sec,
+                        (int) ((int64_t) time % 1000));
+
+        break;
+
+    case NJS_DATE_FMT_TO_TIME_STRING:
+    case NJS_DATE_FMT_TO_DATE_STRING:
+    case NJS_DATE_FMT_TO_STRING:
+    default:
+        clock = time / 1000;
+        localtime_r(&clock, &tm);
+
+        if (fmt != NJS_DATE_FMT_TO_TIME_STRING) {
+            p = njs_sprintf(p, buf + NJS_DATE_TIME_LEN,
+                            "%s %s %02d %04d",
+                            week[tm.tm_wday], month[tm.tm_mon], tm.tm_mday,
+                            tm.tm_year + 1900);
+        }
+
+        if (fmt != NJS_DATE_FMT_TO_DATE_STRING) {
+            tz = -njs_tz_offset(time);
+            sign = (tz < 0) ? '-' : '+';
+
+            if (tz < 0) {
+                tz = -tz;
+            }
+
+            if (p != buf) {
+                *p++ = ' ';
+            }
+
+            p = njs_sprintf(p, buf + NJS_DATE_TIME_LEN,
+                            "%02d:%02d:%02d GMT%c%02d%02d",
+                            tm.tm_hour, tm.tm_min, tm.tm_sec,
+                            sign, tz / 60, tz % 60);
+        }
     }
 
-    vm->retval = njs_string_invalid_date;
-
-    return NJS_OK;
+    return njs_string_new(vm, retval, buf, p - buf, p - buf);
 }
 
 
 static njs_int_t
-njs_date_prototype_to_iso_string(njs_vm_t *vm, njs_value_t *args,
+njs_date_prototype_to_utc_string(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
     if (njs_slow_path(!njs_is_date(&args[0]))) {
@@ -1192,6 +1230,15 @@ njs_date_prototype_to_iso_string(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
+    return njs_date_string(vm, &vm->retval, NJS_DATE_FMT_TO_UTC_STRING,
+                           njs_date(&args[0])->time);
+}
+
+
+static njs_int_t
+njs_date_prototype_to_iso_string(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused)
+{
     return njs_date_to_string(vm, &vm->retval, &args[0]);
 }
 
@@ -1199,33 +1246,15 @@ njs_date_prototype_to_iso_string(njs_vm_t *vm, njs_value_t *args,
 njs_int_t
 njs_date_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *date)
 {
-    int32_t    year;
-    double     time;
-    time_t     clock;
-    u_char     buf[NJS_ISO_DATE_TIME_LEN], *p;
-    struct tm  tm;
+    if (njs_slow_path(!njs_is_date(date))) {
+        njs_type_error(vm, "cannot convert %s to date",
+                       njs_type_string(date->type));
 
-    time = njs_date(date)->time;
-
-    if (!isnan(time)) {
-        clock = time / 1000;
-
-        gmtime_r(&clock, &tm);
-
-        year = tm.tm_year + 1900;
-
-        p = njs_sprintf(buf, buf + NJS_ISO_DATE_TIME_LEN,
-                        (year < 0) ? "%07d-%02d-%02dT%02d:%02d:%02d.%03dZ"
-                                   : "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ",
-                        year, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min,
-                        tm.tm_sec, (int) ((int64_t) time % 1000));
-
-        return njs_string_new(vm, retval, buf, p - buf, p - buf);
+        return NJS_ERROR;
     }
 
-    *retval = njs_string_invalid_date;
-
-    return NJS_OK;
+    return njs_date_string(vm, retval, NJS_DATE_FMT_TO_ISO_STRING,
+                           njs_date(date)->time);
 }
 
 

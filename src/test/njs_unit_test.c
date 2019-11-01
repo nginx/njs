@@ -11572,6 +11572,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("(new Date(86400)).getTime()"),
       njs_str("86400") },
 
+    { njs_str("Date().split(' ')[0] in {'Mon':1, 'Tue':1, 'Wed':1, 'Thu':1, 'Fri':1, 'Sat':1, 'Sun':1}"),
+      njs_str("true") },
+
     { njs_str("var d = new Date(''); d +' '+ d.getTime()"),
       njs_str("Invalid Date NaN") },
 
@@ -11619,8 +11622,37 @@ static njs_unit_test_t  njs_test[] =
               "local.toISOString()"),
       njs_str("1999-10-10T10:10:10.010Z") },
 
-#if 0
+#if 0 /* FIXME: implement own gmtime_r(). */
     /* These tests fail on Solaris: gmtime_r() returns off by one day. */
+
+    { njs_str("["
+              "'-010000-01-01T00:00:00.000Z',"
+              "'+010000-01-01T00:00:00.000Z',"
+              "'0002-01-01T00:00:00.000Z',"
+              "'0123-01-01T00:00:00.000Z',"
+              "].every((iso)=> (new Date(iso)).toISOString() === iso)"),
+      njs_str("true") },
+
+    { njs_str("new Date('0020-01-01T00:00:00Z').toUTCString()"),
+      njs_str("Wed, 01 Jan 0020 00:00:00 GMT") },
+
+    { njs_str("new Date('0020-01-01T00:00:00Z').toString().slice(0, 15)"),
+      njs_str("Wed Jan 01 0020") },
+
+    { njs_str("(new Date('-000001-07-01T00:00Z')).toUTCString()"),
+      njs_str("Thu, 01 Jul -0001 00:00:00 GMT") },
+
+    { njs_str("(new Date('-000012-07-01T00:00Z')).toUTCString()"),
+      njs_str("Fri, 01 Jul -0012 00:00:00 GMT") },
+
+    { njs_str("(new Date('-000123-07-01T00:00Z')).toUTCString()"),
+      njs_str("Sun, 01 Jul -0123 00:00:00 GMT") },
+
+    { njs_str("(new Date('-001234-07-01T00:00Z')).toUTCString()"),
+      njs_str("Fri, 01 Jul -1234 00:00:00 GMT") },
+
+    { njs_str("(new Date('-012345-07-01T00:00Z')).toUTCString()"),
+      njs_str("Thu, 01 Jul -12345 00:00:00 GMT") },
 
     { njs_str("var d = new Date(-62167219200000); d.toISOString()"),
       njs_str("0000-01-01T00:00:00.000Z") },
