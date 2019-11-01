@@ -889,7 +889,7 @@ njs_top_level_object(njs_vm_t *vm, njs_object_prop_t *self,
     /* GC */
 
     prop->value = *retval;
-    prop->enumerable = 0;
+    prop->enumerable = self->enumerable;
 
     lhq.value = prop;
     njs_string_get(&self->name, &lhq.key);
@@ -1097,6 +1097,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
         .value = njs_prop_handler2(njs_top_level_object, NJS_OBJECT_NJS,
                                    NJS_NJS_HASH),
         .writable = 1,
+        .enumerable = 1,
         .configurable = 1,
     },
 
@@ -1106,6 +1107,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
         .value = njs_prop_handler2(njs_top_level_object, NJS_OBJECT_PROCESS,
                                    NJS_PROCESS_HASH),
         .writable = 1,
+        .enumerable = 1,
         .configurable = 1,
     },
 

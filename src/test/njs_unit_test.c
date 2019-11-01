@@ -9249,6 +9249,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Object.getOwnPropertyNames(this).includes('NaN')"),
       njs_str("true") },
 
+    { njs_str("Object.keys(this)"),
+      njs_str("njs,process") },
+
     { njs_str("this.a = 1; this.a"),
       njs_str("1") },
 
@@ -13259,7 +13262,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var global = this;"
               "function isMutableObject(v) {"
               "    var d = Object.getOwnPropertyDescriptor(global, v);"
-              "    return d.writable && !d.enumerable && d.configurable;"
+              "    /* Custom top-level objects are enumerable. */"
+              "    var enumerable = (v in {'njs':1, 'process':1}) ^ !d.enumerable;"
+              "    return d.writable && enumerable && d.configurable;"
               "};"
               "['njs', 'process', 'Math', 'JSON'].every((v)=>isMutableObject(v))"),
       njs_str("true") },
