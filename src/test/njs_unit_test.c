@@ -9240,6 +9240,15 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("this"),
       njs_str("[object Object]") },
 
+    { njs_str("Object.getOwnPropertyDescriptor(this, 'NaN').value"),
+      njs_str("NaN") },
+
+    { njs_str("Object.getOwnPropertyDescriptors(this).NaN.value"),
+      njs_str("NaN") },
+
+    { njs_str("Object.getOwnPropertyNames(this).includes('NaN')"),
+      njs_str("true") },
+
     { njs_str("this.a = 1; this.a"),
       njs_str("1") },
 

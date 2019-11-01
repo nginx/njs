@@ -538,9 +538,8 @@
     njs_djb_hash_add(                                                         \
     njs_djb_hash_add(                                                         \
     njs_djb_hash_add(                                                         \
-    njs_djb_hash_add(                                                         \
     njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
-        'U'), 'R'), 'I'), 'e'), 'E'), 'r'), 'r'), 'o'), 'r')
+        'U'), 'R'), 'I'), 'E'), 'r'), 'r'), 'o'), 'r')
 
 
 #endif /* _NJS_OBJECT_HASH_H_INCLUDED_ */
