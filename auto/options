@@ -1,0 +1,41 @@
+
+# Copyright (C) Igor Sysoev
+# Copyright (C) NGINX, Inc.
+
+
+NJS_CONFIGURE_OPTIONS=
+NJS_CC_OPT=${NJS_CC_OPT:--O}
+NJS_LD_OPT=${NJS_CC_OPT:--O}
+
+for njs_option
+do
+    case "$njs_option" in
+        -*=*) value=`echo "$njs_option" | sed -e 's/[-_a-zA-Z0-9]*=//'`      ;;
+           *) value="" ;;
+    esac
+
+    case "$njs_option" in
+        --cc=*)                          CC="$value"                         ;;
+        --cc-opt=*)                      NJS_CC_OPT="$value"                 ;;
+        --ld-opt=*)                      NJS_LD_OPT="$value"                 ;;
+        --ar=*)                          AR="$value"                         ;;
+
+        --help)
+            . auto/help
+            exit 0
+        ;;
+
+        *)
+            echo
+            echo $0: error: invalid option \"$njs_option\".
+            echo Run \"$0 --help\" to see available options.
+            echo
+            exit 1
+        ;;
+    esac
+
+    njs_opt=`echo $njs_option | sed -e "s/\(--[^=]*=\)\(.* .*\)/\1'\2'/"`
+
+    NJS_CONFIGURE_OPTIONS="$NJS_CONFIGURE_OPTIONS $njs_opt"
+
+done

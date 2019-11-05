@@ -1,0 +1,15 @@
+
+# Copyright (C) Igor Sysoev
+# Copyright (C) NGINX, Inc.
+
+
+cat << END
+
+./configure options:
+
+  --cc=FILE            set C compiler filename, default: "$CC"
+  --cc-opt=OPTIONS     set additional C compiler options
+  --ld-opt=OPTIONS     set additional linker options
+  --ar=FILE            set static linking program, default: "$AR"
+
+END

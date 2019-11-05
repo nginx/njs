@@ -24,8 +24,6 @@ NJS_TEST_LIBS=${NJS_TEST_LIBS=}
 CC=${CC:-cc}
 AR=${AR:-ar}
 NJS_CFLAGS=${NJS_CFLAGS=}
-NJS_CC_OPT=${NJS_CC_OPT:--O}
-NJS_LD_OPT=${NJS_CC_OPT:--O}
 
 NJS_BUILD_DIR=${NJS_BUILD_DIR:-build}
 
@@ -47,6 +45,7 @@ END
 NJS_LIBRT=
 
 . auto/os
+. auto/options
 . auto/cc
 . auto/clang
 . auto/time
@@ -65,3 +64,5 @@ NJS_LIB_AUX_LIBS="$NJS_PCRE_LIB"
 . auto/make
 
 . auto/expect
+
+. auto/summary
