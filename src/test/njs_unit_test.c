@@ -4019,6 +4019,40 @@ static njs_unit_test_t  njs_test[] =
               "Object.defineProperty(a, 'length', {writable:true})"),
       njs_str("TypeError: Cannot redefine property: \"length\"") },
 
+    { njs_str("[1, 2, 3, 4, 5].copyWithin(0, 3)"),
+      njs_str("4,5,3,4,5") },
+
+    { njs_str("[1, 2, 3, 4, 5].copyWithin(0, 3, 4)"),
+      njs_str("4,2,3,4,5") },
+
+    { njs_str("[1, 2, 3, 4, 5].copyWithin(0, -2, -1)"),
+      njs_str("4,2,3,4,5") },
+
+    { njs_str("[1, 2, 3, 4, 5].copyWithin(100, 200, 500)"),
+      njs_str("1,2,3,4,5") },
+
+    { njs_str("[0, 1, , , 1].copyWithin(0, 1, 4)"),
+      njs_str("1,,,,1") },
+
+    { njs_str("var o = [0, 1, , , 1].copyWithin(0, 1, 4); typeof o"),
+      njs_str("object") },
+
+    { njs_str("[].copyWithin.call({length: 5, 3: 1}, 0, 3)"),
+      njs_str("[object Object]") },
+
+    { njs_str("var o = [1, 2, 3, 4]; Object.defineProperties(o, { 5: {value: 'abc'}});"
+              "[].copyWithin.call(o, 0, 3, 4);"),
+      njs_str("4,2,3,4,,abc") },
+
+    { njs_str("var obj = {length: 5, 3: 1}; [].copyWithin.call(obj, 0, 3);"
+              "Object.keys(obj)"),
+      njs_str("length,3,0") },
+
+    { njs_str("var obj = {length: 5, 1: 'a', 2: 'b', 3: 'c', 4: 'd', 5: 'e'};"
+              "[].copyWithin.call(obj, 0, -2, -1);"
+              "Object.keys(obj) + '|' + Object.values(obj)"),
+      njs_str("length,1,2,3,4,5,0|5,a,b,c,d,e,c") },
+
     { njs_str("Array.prototype.slice(1)"),
       njs_str("") },
 

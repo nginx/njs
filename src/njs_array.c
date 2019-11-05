@@ -2770,6 +2770,120 @@ start:
 }
 
 
+static njs_int_t
+njs_array_prototype_copy_within(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused)
+{
+    int8_t       direction;
+    int64_t      count, to, from, end;
+    uint32_t     length;
+    njs_int_t    ret;
+    njs_array_t  *array;
+    njs_value_t  *this, *value, from_key, to_key, prop;
+
+    this = njs_arg(args, nargs, 0);
+
+    ret = njs_value_to_object(vm, this);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    ret = njs_value_length(vm, this, &length);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    ret = njs_value_to_integer(vm, njs_arg(args, nargs, 1), &to);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    to = (to < 0) ? njs_max(length + to, 0) : njs_min(to, length);
+
+    ret = njs_value_to_integer(vm, njs_arg(args, nargs, 2), &from);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    from = (from < 0) ? njs_max(length + from, 0) : njs_min(from, length);
+
+    value = njs_arg(args, nargs, 3);
+
+    if (njs_is_undefined(value)) {
+        end = length;
+
+    } else {
+        ret = njs_value_to_integer(vm, value, &end);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    end = (end < 0) ? njs_max(length + end, 0) : njs_min(end, length);
+
+    count = njs_min(end - from, length - to);
+
+    if (from < to && from + count) {
+        direction = -1;
+        from = from + count - 1;
+        to = to + count - 1;
+
+    } else {
+        direction = 1;
+    }
+
+    njs_vm_retval_set(vm, this);
+
+    if (njs_is_array(this)) {
+        if (njs_slow_path(!njs_object_hash_is_empty(this))) {
+            goto process_object;
+        }
+
+        array = njs_array(this);
+
+        while (count-- > 0) {
+            array->start[to] = array->start[from];
+
+            from = from + direction;
+            to = to + direction;
+        }
+
+        return NJS_OK;
+    }
+
+process_object:
+
+    while (count-- > 0) {
+        /* FIXME: largest index is 2**53-1. */
+
+        njs_uint32_to_string(&from_key, (uint32_t) from);
+        njs_uint32_to_string(&to_key, (uint32_t) to);
+
+        ret = njs_value_property(vm, this, &from_key, &prop);
+
+        if (ret == NJS_OK) {
+            ret = njs_value_property_set(vm, this, &to_key, &prop);
+
+        } else {
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                return ret;
+            }
+
+            ret = njs_value_property_delete(vm, this, &to_key, NULL);
+        }
+
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return ret;
+        }
+
+        from = from + direction;
+        to = to + direction;
+    }
+
+    return NJS_OK;
+}
+
+
 static const njs_object_prop_t  njs_array_prototype_properties[] =
 {
     {
@@ -2979,6 +3093,14 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("sort"),
         .value = njs_native_function(njs_array_prototype_sort, 1),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("copyWithin"),
+        .value = njs_native_function(njs_array_prototype_copy_within, 2),
         .writable = 1,
         .configurable = 1,
     },
