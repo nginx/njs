@@ -156,9 +156,3 @@ esac
 
 # Stop on error exit status again.
 set -e
-
-cat << END >> $NJS_MAKEFILE
-
-NJS_CC =	${CC}
-NJS_CFLAGS =	${NJS_CFLAGS} ${CFLAGS}
-END
