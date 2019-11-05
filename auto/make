@@ -91,6 +91,8 @@ done
 
 # njs cli.
 
+if [ $NJS_HAVE_READLINE = YES ]; then
+
 cat << END >> $NJS_MAKEFILE
 
 $NJS_BUILD_DIR/njs: \\
@@ -104,6 +106,19 @@ $NJS_BUILD_DIR/njs: \\
 
 END
 
+else
+
+cat << END >> $NJS_MAKEFILE
+
+$NJS_BUILD_DIR/njs:
+	@echo
+	@echo " error: to make njs CLI \"readline\" library is required."
+	@echo
+	@exit 1
+
+END
+
+fi
 
 # lib tests.
 
