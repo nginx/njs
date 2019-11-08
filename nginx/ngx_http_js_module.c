@@ -329,7 +329,7 @@ static njs_external_t  ngx_http_js_ext_request[] = {
       NULL,
       NULL,
       NULL,
-      offsetof(ngx_http_request_t, headers_out.status) },
+      0 },
 
     { njs_str("headersOut"),
       NJS_EXTERN_OBJECT,

@@ -585,9 +585,9 @@ static const njs_value_t  njs_object_value_string = njs_string("value");
 static const njs_value_t  njs_object_get_string = njs_string("get");
 static const njs_value_t  njs_object_set_string = njs_string("set");
 static const njs_value_t  njs_object_writable_string =
-												    njs_string("writable");
+                                                    njs_string("writable");
 static const njs_value_t  njs_object_enumerable_string =
-													njs_string("enumerable");
+                                                    njs_string("enumerable");
 static const njs_value_t  njs_object_configurable_string =
                                                     njs_string("configurable");
 

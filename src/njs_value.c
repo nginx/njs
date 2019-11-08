@@ -120,7 +120,7 @@ njs_value_release(njs_vm_t *vm, njs_value_t *value)
 
 njs_int_t
 njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
-	njs_uint_t hint)
+    njs_uint_t hint)
 {
     njs_int_t           ret;
     njs_uint_t          tries;
