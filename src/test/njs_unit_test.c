@@ -11656,9 +11656,7 @@ static njs_unit_test_t  njs_test[] =
               "local.toISOString()"),
       njs_str("1999-10-10T10:10:10.010Z") },
 
-#if 0 /* FIXME: implement own gmtime_r(). */
-    /* These tests fail on Solaris: gmtime_r() returns off by one day. */
-
+#if (NJS_TIME_T_SIZE == 8)
     { njs_str("["
               "'-010000-01-01T00:00:00.000Z',"
               "'+010000-01-01T00:00:00.000Z',"
@@ -11995,6 +11993,10 @@ static njs_unit_test_t  njs_test[] =
                  "d.getTime()"),
       njs_str("1308895387003") },
 
+    { njs_str("var d = new Date(1308895323625); d.setUTCMinutes(3, 2, 5003, 111111);"
+                 "d.getTime()"),
+      njs_str("1308895387003") },
+
     { njs_str("var d = new Date(1308895323625); d.setUTCMinutes(3, 2);"
                  "d.getTime()"),
       njs_str("1308895382625") },
@@ -12055,6 +12057,13 @@ static njs_unit_test_t  njs_test[] =
                  "d.getTime()"),
       njs_str("1300946523625") },
 
+    { njs_str("var d = new Date(1308895323625); d.setMonth(2, undefined);"
+                 "d.getTime()"),
+      njs_str("NaN") },
+
+    { njs_str("var d = new Date(1308895323625); d.setMonth(2, undefined)"),
+      njs_str("NaN") },
+
     { njs_str("var d = new Date(1308895323625); d.setUTCMonth(2);"
                  "d.getTime()"),
       njs_str("1300946523625") },
@@ -12062,6 +12071,10 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var d = new Date(1308895323625); d.setFullYear(2010, 2, 10);"
                  "d.getTime()"),
       njs_str("1268200923625") },
+
+    { njs_str("var d = new Date(NaN); d.setFullYear(2010);"
+                 "d.getTime() === (new Date(2010,0)).getTime()"),
+      njs_str("true") },
 
     { njs_str("var d = new Date(1308895323625);"
                  "d.setUTCFullYear(2010, 2, 10); d.getTime()"),
@@ -12078,6 +12091,10 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var d = new Date(1308895323625); d.setFullYear(2010);"
                  "d.getTime()"),
       njs_str("1277359323625") },
+
+    { njs_str("var date = new Date(2016, 6, 7, 11, 36, 23, 2); "
+              "date.setFullYear(null) === new Date(-1, 18, 7, 11, 36, 23, 2).getTime()"),
+      njs_str("true") },
 
     { njs_str("var d = new Date(1308895323625); d.setUTCFullYear(2010);"
                  "d.getTime()"),
@@ -14744,6 +14761,10 @@ static njs_unit_test_t  njs_tz_test[] =
                   "d.getTime()"),
        njs_str("1308902523625") },
 
+     { njs_str("var d = new Date(NaN); d.setHours(20);"
+                  "d.getTime()"),
+       njs_str("NaN") },
+
      { njs_str("var d = new Date(1308895323625); d.setMonth(2, 10);"
                   "d.getTime()"),
        njs_str("1299733323625") },
@@ -14763,6 +14784,28 @@ static njs_unit_test_t  njs_tz_test[] =
      { njs_str("var d = new Date(2011, 5, 24, 18, 45, 12, 625);"
                   "d.toJSON(1)"),
        njs_str("2011-06-24T06:00:12.625Z") },
+
+     { njs_str("Date.parse('1970-09-28T06:00:00.000')"),
+       njs_str("23303700000") },
+
+#if (NJS_TIME_T_SIZE == 8)
+
+     { njs_str("var d = new Date(-1, 0);"
+                  "d.toISOString()"),
+       njs_str("-000002-12-31T11:47:00.000Z") },
+
+     { njs_str("var d = new Date(-1, 0);"
+                  "d.getTime()"),
+       njs_str("-62198799180000") },
+
+     { njs_str("var d = new Date(-1, 0);"
+                  "d.getTimezoneOffset()"),
+       njs_str("-733") },
+#endif
+
+     { njs_str("var d = new Date(1970, 6);"
+                  "d.getTimezoneOffset()"),
+       njs_str("-765") },
 };
 
 

@@ -33,6 +33,22 @@ if [ $njs_found = no ]; then
     fi
 fi
 
+
+njs_feature="sizeof(time_t)"
+njs_feature_name=NJS_TIME_T_SIZE
+njs_feature_run=value
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#include <time.h>
+                  #include <stdio.h>
+
+                  int main(void) {
+                      printf(\"%zu\", sizeof(time_t));
+                      return 0;
+                  }"
+. auto/feature
+
+
 # Linux, FreeBSD, MacOSX.
 
 njs_feature="struct tm.tm_gmtoff"
