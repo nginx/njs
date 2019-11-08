@@ -234,13 +234,13 @@ struct njs_function_s {
     njs_object_t                      object;
 
     uint8_t                           args_offset;
-    uint8_t                           args_count;
 
-    /* Function is a closure. */
+    uint8_t                           args_count:5;
     uint8_t                           closure:1;
-
     uint8_t                           native:1;
     uint8_t                           ctor:1;
+
+    uint8_t                           magic;
 
     union {
         njs_function_lambda_t         *lambda;
@@ -391,12 +391,13 @@ typedef struct {
 }
 
 
-#define njs_native_function(_function, _args_count) {                         \
+#define _njs_native_function(_function, _args_count, _magic) {                \
     .data = {                                                                 \
         .type = NJS_FUNCTION,                                                 \
         .truth = 1,                                                           \
         .u.function = & (njs_function_t) {                                    \
             .native = 1,                                                      \
+            .magic = _magic,                                                  \
             .args_count = _args_count,                                        \
             .args_offset = 1,                                                 \
             .u.native = _function,                                            \
@@ -406,6 +407,14 @@ typedef struct {
         }                                                                     \
     }                                                                         \
 }
+
+
+#define njs_native_function(_function, _args_count)                           \
+    _njs_native_function(_function, _args_count, 0)
+
+
+#define njs_native_function2(_function, _args_count, _magic)                  \
+    _njs_native_function(_function, _args_count, _magic)
 
 
 #define njs_prop_handler(_handler) {                                          \

@@ -591,8 +591,7 @@ njs_function_native_call(njs_vm_t *vm)
     function = native->function;
 
     ret = function->u.native(vm, native->arguments, native->nargs,
-                             frame->retval);
-
+                             function->magic);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
     }
@@ -919,9 +918,10 @@ njs_function_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
 
 static njs_int_t
 njs_function_prototype_call(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t retval)
+    njs_index_t unused)
 {
     njs_int_t          ret;
+    njs_frame_t        *frame;
     njs_function_t     *function;
     const njs_value_t  *this;
 
@@ -939,6 +939,8 @@ njs_function_prototype_call(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         nargs = 0;
     }
 
+    frame = (njs_frame_t *) vm->top_frame;
+
     function = njs_function(&args[0]);
 
     /* Skip the "call" method frame. */
@@ -949,7 +951,7 @@ njs_function_prototype_call(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    ret = njs_function_frame_invoke(vm, retval);
+    ret = njs_function_frame_invoke(vm, frame->retval);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -960,10 +962,11 @@ njs_function_prototype_call(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t retval)
+    njs_index_t unused)
 {
     uint32_t        i, length;
     njs_int_t       ret;
+    njs_frame_t     *frame;
     njs_value_t     name, *this, *arr_like;
     njs_array_t     *arr;
     njs_function_t  *func;
@@ -1021,12 +1024,14 @@ activate:
     /* Skip the "apply" method frame. */
     vm->top_frame->skip = 1;
 
+    frame = (njs_frame_t *) vm->top_frame;
+
     ret = njs_function_frame(vm, func, this, args, length, 0);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
 
-    ret = njs_function_frame_invoke(vm, retval);
+    ret = njs_function_frame_invoke(vm, frame->retval);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
