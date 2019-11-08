@@ -1131,7 +1131,7 @@ njs_date_prototype_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_date_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t fmt)
 {
     if (njs_slow_path(!njs_is_date(&args[0]))) {
         njs_type_error(vm, "cannot convert %s to date",
@@ -1140,40 +1140,7 @@ njs_date_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    return njs_date_string(vm, &vm->retval, NJS_DATE_FMT_TO_STRING,
-                           njs_date(&args[0])->time);
-}
-
-
-static njs_int_t
-njs_date_prototype_to_date_string(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
-{
-    if (njs_slow_path(!njs_is_date(&args[0]))) {
-        njs_type_error(vm, "cannot convert %s to date",
-                       njs_type_string(args[0].type));
-
-        return NJS_ERROR;
-    }
-
-    return njs_date_string(vm, &vm->retval, NJS_DATE_FMT_TO_DATE_STRING,
-                           njs_date(&args[0])->time);
-}
-
-
-static njs_int_t
-njs_date_prototype_to_time_string(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
-{
-    if (njs_slow_path(!njs_is_date(&args[0]))) {
-        njs_type_error(vm, "cannot convert %s to date",
-                       njs_type_string(args[0].type));
-
-        return NJS_ERROR;
-    }
-
-    return njs_date_string(vm, &vm->retval, NJS_DATE_FMT_TO_TIME_STRING,
-                           njs_date(&args[0])->time);
+    return njs_date_string(vm, &vm->retval, fmt, njs_date(&args[0])->time);
 }
 
 
@@ -1266,30 +1233,6 @@ njs_date_string(njs_vm_t *vm, njs_value_t *retval, njs_date_fmt_t fmt,
     }
 
     return njs_string_new(vm, retval, buf, p - buf, p - buf);
-}
-
-
-static njs_int_t
-njs_date_prototype_to_utc_string(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
-{
-    if (njs_slow_path(!njs_is_date(&args[0]))) {
-        njs_type_error(vm, "cannot convert %s to date",
-                       njs_type_string(args[0].type));
-
-        return NJS_ERROR;
-    }
-
-    return njs_date_string(vm, &vm->retval, NJS_DATE_FMT_TO_UTC_STRING,
-                           njs_date(&args[0])->time);
-}
-
-
-static njs_int_t
-njs_date_prototype_to_iso_string(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
-{
-    return njs_date_to_string(vm, &vm->retval, &args[0]);
 }
 
 
@@ -1512,7 +1455,8 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toString"),
-        .value = njs_native_function(njs_date_prototype_to_string, 0),
+        .value = njs_native_function2(njs_date_prototype_to_string, 0,
+                                      NJS_DATE_FMT_TO_STRING),
         .writable = 1,
         .configurable = 1,
     },
@@ -1520,7 +1464,8 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toDateString"),
-        .value = njs_native_function(njs_date_prototype_to_date_string, 0),
+        .value = njs_native_function2(njs_date_prototype_to_string, 0,
+                                      NJS_DATE_FMT_TO_DATE_STRING),
         .writable = 1,
         .configurable = 1,
     },
@@ -1528,7 +1473,8 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toTimeString"),
-        .value = njs_native_function(njs_date_prototype_to_time_string, 0),
+        .value = njs_native_function2(njs_date_prototype_to_string, 0,
+                                      NJS_DATE_FMT_TO_TIME_STRING),
         .writable = 1,
         .configurable = 1,
     },
@@ -1536,7 +1482,8 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toLocaleString"),
-        .value = njs_native_function(njs_date_prototype_to_string, 0),
+        .value = njs_native_function2(njs_date_prototype_to_string, 0,
+                                      NJS_DATE_FMT_TO_STRING),
         .writable = 1,
         .configurable = 1,
     },
@@ -1544,7 +1491,8 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_long_string("toLocaleDateString"),
-        .value = njs_native_function(njs_date_prototype_to_date_string, 0),
+        .value = njs_native_function2(njs_date_prototype_to_string, 0,
+                                      NJS_DATE_FMT_TO_DATE_STRING),
         .writable = 1,
         .configurable = 1,
     },
@@ -1552,7 +1500,8 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_long_string("toLocaleTimeString"),
-        .value = njs_native_function(njs_date_prototype_to_time_string, 0),
+        .value = njs_native_function2(njs_date_prototype_to_string, 0,
+                                      NJS_DATE_FMT_TO_TIME_STRING),
         .writable = 1,
         .configurable = 1,
     },
@@ -1560,7 +1509,8 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toUTCString"),
-        .value = njs_native_function(njs_date_prototype_to_utc_string, 0),
+        .value = njs_native_function2(njs_date_prototype_to_string, 0,
+                                      NJS_DATE_FMT_TO_UTC_STRING),
         .writable = 1,
         .configurable = 1,
     },
@@ -1568,7 +1518,8 @@ static const njs_object_prop_t  njs_date_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toISOString"),
-        .value = njs_native_function(njs_date_prototype_to_iso_string, 0),
+        .value = njs_native_function2(njs_date_prototype_to_string, 0,
+                                      NJS_DATE_FMT_TO_ISO_STRING),
         .writable = 1,
         .configurable = 1,
     },
