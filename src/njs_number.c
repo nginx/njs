@@ -6,7 +6,6 @@
 
 
 #include <njs_main.h>
-#include <njs_diyfp.h>
 
 
 /*

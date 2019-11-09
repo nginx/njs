@@ -18,25 +18,34 @@ typedef struct {
 } njs_diyfp_t;
 
 
+typedef union {
+	double      d;
+	uint64_t    u64;
+} njs_diyfp_conv_t;
+
+
 #define njs_diyfp(_s, _e)           (njs_diyfp_t) \
                                     { .significand = (_s), .exp = (_e) }
 #define njs_uint64(h, l)            (((uint64_t) (h) << 32) + (l))
 
 
 #define NJS_DBL_SIGNIFICAND_SIZE    52
-#define NJS_DBL_EXPONENT_BIAS       (0x3FF + NJS_DBL_SIGNIFICAND_SIZE)
+#define NJS_DBL_EXPONENT_OFFSET     ((int64_t) 0x3ff)
+#define NJS_DBL_EXPONENT_BIAS       (NJS_DBL_EXPONENT_OFFSET                  \
+                                     + NJS_DBL_SIGNIFICAND_SIZE)
 #define NJS_DBL_EXPONENT_MIN        (-NJS_DBL_EXPONENT_BIAS)
-#define NJS_DBL_EXPONENT_MAX        (0x7FF - NJS_DBL_EXPONENT_BIAS)
+#define NJS_DBL_EXPONENT_MAX        (0x7ff - NJS_DBL_EXPONENT_BIAS)
 #define NJS_DBL_EXPONENT_DENORMAL   (-NJS_DBL_EXPONENT_BIAS + 1)
 
 #define NJS_DBL_SIGNIFICAND_MASK    njs_uint64(0x000FFFFF, 0xFFFFFFFF)
 #define NJS_DBL_HIDDEN_BIT          njs_uint64(0x00100000, 0x00000000)
 #define NJS_DBL_EXPONENT_MASK       njs_uint64(0x7FF00000, 0x00000000)
+#define NJS_DBL_SIGN_MASK           njs_uint64(0x80000000, 0x00000000)
 
 #define NJS_DIYFP_SIGNIFICAND_SIZE  64
 
 #define NJS_SIGNIFICAND_SIZE        53
-#define NJS_SIGNIFICAND_SHIFT       (NJS_DIYFP_SIGNIFICAND_SIZE     \
+#define NJS_SIGNIFICAND_SHIFT       (NJS_DIYFP_SIGNIFICAND_SIZE               \
                                      - NJS_DBL_SIGNIFICAND_SIZE)
 
 #define NJS_DECIMAL_EXPONENT_OFF    348
@@ -78,13 +87,9 @@ njs_d2diyfp(double d)
 njs_inline double
 njs_diyfp2d(njs_diyfp_t v)
 {
-    int           exp;
-    uint64_t      significand, biased_exp;
-
-    union {
-        double    d;
-        uint64_t  u64;
-    } u;
+    int               exp;
+    uint64_t          significand, biased_exp;
+    njs_diyfp_conv_t  conv;
 
     exp = v.exp;
     significand = v.significand;
@@ -118,10 +123,10 @@ njs_diyfp2d(njs_diyfp_t v)
         biased_exp = (uint64_t) (exp + NJS_DBL_EXPONENT_BIAS);
     }
 
-    u.u64 = (significand & NJS_DBL_SIGNIFICAND_MASK)
-            | (biased_exp << NJS_DBL_SIGNIFICAND_SIZE);
+    conv.u64 = (significand & NJS_DBL_SIGNIFICAND_MASK)
+                | (biased_exp << NJS_DBL_SIGNIFICAND_SIZE);
 
-    return u.d;
+    return conv.d;
 }
 
 

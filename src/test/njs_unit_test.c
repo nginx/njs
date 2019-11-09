@@ -12995,7 +12995,25 @@ static njs_unit_test_t  njs_test[] =
       njs_str("-0") },
 
     { njs_str("Math.round(-0.5)"),
+      njs_str("-0") },
+
+    { njs_str("Math.round(-0.50000000000000001)"),
+      njs_str("-0") },
+
+    { njs_str("Math.round(-0.5000000000000001)"),
       njs_str("-1") },
+
+    { njs_str("[0.500001, 0.5000001,0.50000001].map((v)=>Math.round((2**32) + v) - 2**32)"),
+      njs_str("1,1,1") },
+
+    { njs_str("[0.500001, 0.5000001,0.50000001].map((v)=>Math.round(-(2**32) + v) + 2**32)"),
+      njs_str("1,1,1") },
+
+    { njs_str("[0.500001, 0.5000001,0.50000001].map((v)=>Math.round((2**32) - v) - 2**32)"),
+      njs_str("-1,0,0") },
+
+    { njs_str("[0.500001, 0.5000001,0.50000001].map((v)=>Math.round(-(2**32) - v) + 2**32)"),
+      njs_str("-1,0,0") },
 
     { njs_str("Math.sign(5)"),
       njs_str("1") },

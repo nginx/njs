@@ -746,21 +746,62 @@ static njs_int_t
 njs_object_math_round(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_int_t  ret;
+    uint8_t           sign;
+    uint64_t          one, fraction_mask;
+    njs_int_t         ret, biased_exp;
+    njs_diyfp_conv_t  conv;
 
     if (njs_slow_path(nargs < 2)) {
         njs_set_number(&vm->retval, NAN);
         return NJS_OK;
     }
 
-    if (njs_slow_path(!njs_is_number(&args[1]))) {
+    if (njs_slow_path(!njs_is_numeric(&args[1]))) {
         ret = njs_value_to_numeric(vm, &args[1], &args[1]);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
         }
     }
 
-    njs_set_number(&vm->retval, round(njs_number(&args[1])));
+    conv.d = njs_number(&args[1]);
+    biased_exp = (conv.u64 & NJS_DBL_EXPONENT_MASK) >> NJS_DBL_SIGNIFICAND_SIZE;
+
+    if (biased_exp < NJS_DBL_EXPONENT_OFFSET) {
+
+        /* |v| < 1. */
+
+        if (biased_exp == (NJS_DBL_EXPONENT_OFFSET - 1)
+            && conv.u64 != njs_uint64(0xbfe00000, 0x00000000))
+        {
+            /* (|v| > 0.5 || v == 0.5) => +-1.0 */
+
+            conv.u64 = (conv.u64 & NJS_DBL_SIGN_MASK)
+                       | (NJS_DBL_EXPONENT_OFFSET << NJS_DBL_SIGNIFICAND_SIZE);
+
+        } else {
+
+            /* (|v| < 0.5 || v == -0.5) => +-0. */
+
+            conv.u64 &= ((uint64_t) 1) << 63;
+        }
+
+    } else if (biased_exp < NJS_DBL_EXPONENT_BIAS) {
+
+        /* |v| <= 2^52 - 1 (largest safe integer). */
+
+        one = ((uint64_t) 1) << (NJS_DBL_EXPONENT_BIAS - biased_exp);
+        fraction_mask = one - 1;
+
+        /* truncation. */
+
+        sign = conv.u64 >> 63;
+        conv.u64 += (one >> 1) - sign;
+        conv.u64 &= ~fraction_mask;
+    }
+
+    /* |v| >= 2^52, Infinity and NaNs => v. */
+
+    njs_set_number(&vm->retval, conv.d);
 
     return NJS_OK;
 }

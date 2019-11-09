@@ -15,6 +15,7 @@
 #include <njs_clang.h>
 #include <njs_str.h>
 #include <njs_utf8.h>
+#include <njs_diyfp.h>
 #include <njs_dtoa.h>
 #include <njs_dtoa_fixed.h>
 #include <njs_strtod.h>
