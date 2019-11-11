@@ -207,7 +207,6 @@ njs_year_from_days(int64_t *days)
 
         if (d1 < 0) {
             y--;
-            d1 += njs_days_in_year(y);
 
         } else {
             nd = njs_days_in_year(y);
@@ -216,7 +215,6 @@ njs_year_from_days(int64_t *days)
                 break;
             }
 
-            d1 -= nd;
             y++;
         }
     }
