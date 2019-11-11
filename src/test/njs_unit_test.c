@@ -14694,6 +14694,9 @@ static njs_unit_test_t  njs_shared_test[] =
 
     { njs_str("isNaN(function(){})"),
       njs_str("true") },
+
+    { njs_str("var r; for (var i = 0; i < 2**10; i++) {r = $r.create('XXX').uri;}"),
+      njs_str("undefined") },
 };
 
 
