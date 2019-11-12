@@ -57,12 +57,18 @@ typedef struct {
 
 
 typedef struct {
+    njs_value_t             name;
+    uint64_t                time;
+} njs_timelabel_t;
+
+
+typedef struct {
     njs_vm_t                *vm;
 
     njs_lvlhsh_t            events;  /* njs_ev_t * */
     njs_queue_t             posted_events;
 
-    uint64_t                time;
+    njs_lvlhsh_t            labels;  /* njs_timelabel_t */
 
     njs_completion_t        completion;
 } njs_console_t;
@@ -94,6 +100,8 @@ static njs_host_event_t njs_console_set_timer(njs_external_ptr_t external,
     uint64_t delay, njs_vm_event_t vm_event);
 static void njs_console_clear_timer(njs_external_ptr_t external,
     njs_host_event_t event);
+
+static njs_int_t njs_timelabel_hash_test(njs_lvlhsh_query_t *lhq, void *data);
 
 static njs_int_t lvlhsh_key_test(njs_lvlhsh_query_t *lhq, void *data);
 static void *lvlhsh_pool_alloc(void *pool, size_t size);
@@ -165,6 +173,14 @@ static njs_external_t  njs_externals[] = {
 static const njs_lvlhsh_proto_t  lvlhsh_proto  njs_aligned(64) = {
     NJS_LVLHSH_LARGE_SLAB,
     lvlhsh_key_test,
+    lvlhsh_pool_alloc,
+    lvlhsh_pool_free,
+};
+
+
+static const njs_lvlhsh_proto_t  njs_timelabel_hash_proto njs_aligned(64) = {
+    NJS_LVLHSH_DEFAULT,
+    njs_timelabel_hash_test,
     lvlhsh_pool_alloc,
     lvlhsh_pool_free,
 };
@@ -391,7 +407,7 @@ njs_console_init(njs_vm_t *vm, njs_console_t *console)
     njs_lvlhsh_init(&console->events);
     njs_queue_init(&console->posted_events);
 
-    console->time = UINT64_MAX;
+    njs_lvlhsh_init(&console->labels);
 
     console->completion.completions = njs_vm_completions(vm, NULL);
     if (console->completion.completions == NULL) {
@@ -1010,23 +1026,75 @@ njs_ext_console_dump(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+static const njs_value_t  njs_default_label = njs_string("default");
+
+
 static njs_int_t
 njs_ext_console_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_console_t  *console;
-
-    if (!njs_value_is_undefined(njs_arg(args, nargs, 1))) {
-        njs_vm_error(vm, "labels not implemented");
-        return NJS_ERROR;
-    }
+    njs_int_t           ret;
+    njs_console_t       *console;
+    njs_value_t         *value;
+    njs_timelabel_t     *label;
+    njs_str_t           name;
+    njs_lvlhsh_query_t  lhq;
 
     console = njs_vm_external(vm, njs_arg(args, nargs, 0));
     if (njs_slow_path(console == NULL)) {
         return NJS_ERROR;
     }
 
-    console->time = njs_time();
+    value = njs_arg(args, nargs, 1);
+
+    if (njs_slow_path(!njs_is_string(value))) {
+        if (njs_is_undefined(value)) {
+            value = njs_value_arg(&njs_default_label);
+
+        } else {
+            ret = njs_value_to_string(vm, value, value);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+        }
+    }
+
+    njs_string_get(value, &name);
+
+    label = njs_mp_alloc(vm->mem_pool, sizeof(njs_timelabel_t));
+    if (njs_slow_path(label == NULL)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    lhq.replace = 0;
+    lhq.key = name;
+    lhq.key_hash = njs_djb_hash(name.start, name.length);
+    lhq.value = label;
+    lhq.pool = vm->mem_pool;
+    lhq.proto = &njs_timelabel_hash_proto;
+
+    ret = njs_lvlhsh_insert(&console->labels, &lhq);
+
+    if (njs_fast_path(ret == NJS_OK)) {
+        /* GC: retain. */
+        label->name = *value;
+
+    } else {
+        njs_mp_free(vm->mem_pool, label);
+
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            njs_internal_error(vm, "lvlhsh insert failed");
+
+            return NJS_ERROR;
+        }
+
+        njs_printf("Timer \"%V\" already exists.\n", &name);
+
+        label = lhq.value;
+    }
+
+    label->time = njs_time();
 
     njs_set_undefined(&vm->retval);
 
@@ -1038,34 +1106,66 @@ static njs_int_t
 njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    uint64_t       ns, ms;
-    njs_console_t  *console;
+    uint64_t            ns, ms;
+    njs_int_t           ret;
+    njs_console_t       *console;
+    njs_value_t         *value;
+    njs_timelabel_t     *label;
+    njs_str_t           name;
+    njs_lvlhsh_query_t  lhq;
 
     ns = njs_time();
-
-    if (!njs_value_is_undefined(njs_arg(args, nargs, 1))) {
-        njs_vm_error(vm, "labels not implemented");
-        return NJS_ERROR;
-    }
 
     console = njs_vm_external(vm, njs_arg(args, nargs, 0));
     if (njs_slow_path(console == NULL)) {
         return NJS_ERROR;
     }
 
-    if (njs_fast_path(console->time != UINT64_MAX)) {
+    value = njs_arg(args, nargs, 1);
 
-        ns = ns - console->time;
+    if (njs_slow_path(!njs_is_string(value))) {
+        if (njs_is_undefined(value)) {
+            value = njs_value_arg(&njs_default_label);
+
+        } else {
+            ret = njs_value_to_string(vm, value, value);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+        }
+    }
+
+    njs_string_get(value, &name);
+
+    lhq.key = name;
+    lhq.key_hash = njs_djb_hash(name.start, name.length);
+    lhq.pool = vm->mem_pool;
+    lhq.proto = &njs_timelabel_hash_proto;
+
+    ret = njs_lvlhsh_delete(&console->labels, &lhq);
+
+    if (njs_fast_path(ret == NJS_OK)) {
+
+        label = lhq.value;
+
+        ns = ns - label->time;
 
         ms = ns / 1000000;
         ns = ns % 1000000;
 
-        njs_printf("default: %uL.%06uLms\n", ms, ns);
+        njs_printf("%V: %uL.%06uLms\n", &name, ms, ns);
 
-        console->time = UINT64_MAX;
+        /* GC: release. */
+        njs_mp_free(vm->mem_pool, label);
 
     } else {
-        njs_printf("Timer \"default\" doesn’t exist.\n");
+        if (ret == NJS_ERROR) {
+            njs_internal_error(vm, "lvlhsh delete failed");
+
+            return NJS_ERROR;
+        }
+
+        njs_printf("Timer \"%V\" doesn’t exist.\n", &name);
     }
 
     njs_set_undefined(&vm->retval);
@@ -1149,6 +1249,23 @@ njs_console_clear_timer(njs_external_ptr_t external, njs_host_event_t event)
     }
 
     njs_mp_free(vm->mem_pool, ev);
+}
+
+
+static njs_int_t
+njs_timelabel_hash_test(njs_lvlhsh_query_t *lhq, void *data)
+{
+    njs_timelabel_t  *label;
+    njs_str_t        str;
+
+    label = data;
+    njs_string_get(&label->name, &str);
+
+    if (njs_strstr_eq(&lhq->key, &str)) {
+        return NJS_OK;
+    }
+
+    return NJS_DECLINED;
 }
 
 
