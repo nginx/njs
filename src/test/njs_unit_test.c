@@ -13863,6 +13863,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("JSON.stringify([$r])"),
       njs_str("[null]") },
 
+    { njs_str("JSON.stringify({get key() {throw new Error('Oops')}})"),
+      njs_str("Error: Oops") },
+
+    { njs_str("JSON.stringify({toJSON() {throw new Error('Oops')}})"),
+      njs_str("Error: Oops") },
+
     /* Ignoring named properties of an array. */
 
     { njs_str("var a = [1,2]; a.a = 1;"
@@ -13981,6 +13987,10 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var o = Object.defineProperty({}, 'a', { get: () => ({b:1, c:2}), enumerable: true });"
               "JSON.stringify(o)"),
       njs_str("{\"a\":{\"b\":1,\"c\":2}}") },
+
+    { njs_str("var o = Object.defineProperty({}, 'a', { get: () => ({})});"
+              "JSON.stringify(o)"),
+      njs_str("{}") },
 
     { njs_str("JSON.stringify({toJSON:function(k){}})"),
       njs_str("undefined") },
