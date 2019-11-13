@@ -3,9 +3,13 @@
 # Copyright (C) NGINX, Inc.
 
 
-NJS_CONFIGURE_OPTIONS=
 NJS_CC_OPT=${NJS_CC_OPT:--O}
 NJS_LD_OPT=${NJS_CC_OPT:--O}
+
+NJS_DEBUG=NO
+NJS_ADDRESS_SANITIZER=NO
+
+NJS_CONFIGURE_OPTIONS=
 
 for njs_option
 do
@@ -19,6 +23,9 @@ do
         --cc-opt=*)                      NJS_CC_OPT="$value"                 ;;
         --ld-opt=*)                      NJS_LD_OPT="$value"                 ;;
         --ar=*)                          AR="$value"                         ;;
+
+        --debug=*)                       NJS_DEBUG="$value"                  ;;
+        --address-sanitizer=*)           NJS_ADDRESS_SANITIZER="$value"      ;;
 
         --help)
             . auto/help

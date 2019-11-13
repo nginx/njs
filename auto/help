@@ -7,9 +7,15 @@ cat << END
 
 ./configure options:
 
-  --cc=FILE            set C compiler filename, default: "$CC"
-  --cc-opt=OPTIONS     set additional C compiler options
-  --ld-opt=OPTIONS     set additional linker options
-  --ar=FILE            set static linking program, default: "$AR"
+  --cc=FILE                 set C compiler filename, default: "$CC"
+  --cc-opt=OPTIONS          set additional C compiler options, \
+default: "$NJS_CC_OPT"
+  --ld-opt=OPTIONS          set additional linker options, \
+default: "$NJS_LD_OPT"
+  --ar=FILE                 set static linking program, default: "$AR"
 
+  --debug=YES               enables additional runtime checks, \
+default: "$NJS_DEBUG"
+  --address-sanitizer=YES   enables build with address sanitizer, \
+default: "$NJS_ADDRESS_SANITIZER"
 END

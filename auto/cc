@@ -99,6 +99,11 @@ case $NJS_CC_NAME in
 
         # Debug.
         NJS_CFLAGS="$NJS_CFLAGS -g"
+
+        if [ "$NJS_ADDRESS_SANITIZER" = "YES" ]; then
+            NJS_CFLAGS="$NJS_CFLAGS -fsanitize=address"
+            NJS_CFLAGS="$NJS_CFLAGS -fno-omit-frame-pointer"
+        fi
     ;;
 
     clang)
@@ -135,6 +140,12 @@ case $NJS_CC_NAME in
             # error on PowerPC Clang.
             NJS_CFLAGS="$NJS_CFLAGS -g"
         fi
+
+        if [ "$NJS_ADDRESS_SANITIZER" = "YES" ]; then
+            NJS_CFLAGS="$NJS_CFLAGS -fsanitize=address"
+            NJS_CFLAGS="$NJS_CFLAGS -fno-omit-frame-pointer"
+            NJS_CFLAGS="$NJS_CFLAGS -fsanitize-address-use-after-scope"
+        fi
     ;;
 
     SunC)
@@ -147,12 +158,21 @@ case $NJS_CC_NAME in
         NJS_CFLAGS="$NJS_CFLAGS -errwarn=%all"
         # Debug.
         NJS_CFLAGS="$NJS_CFLAGS -g"
+
+        if [ "$NJS_ADDRESS_SANITIZER" = "YES" ]; then
+            echo " - Address sanitizer is not supported by $NJS_CC_NAME"
+        fi
     ;;
 
     *)
     ;;
 
 esac
+
+if [ "$NJS_DEBUG" = "YES" ]; then
+        njs_define=NJS_DEBUG . auto/define
+        njs_define=NJS_DEBUG_MEMORY . auto/define
+fi
 
 # Stop on error exit status again.
 set -e
