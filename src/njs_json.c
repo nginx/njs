@@ -2169,6 +2169,9 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, const njs_value_t *value,
     njs_memset(stringify->space.start, ' ', indent);
 
     state = njs_json_push_stringify_state(vm, stringify, value);
+    if (njs_slow_path(state == NULL)) {
+        goto memory_error;
+    }
 
     for ( ;; ) {
         switch (state->type) {
