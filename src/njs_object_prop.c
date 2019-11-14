@@ -376,10 +376,9 @@ exception:
 njs_int_t
 njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
 {
-    njs_int_t           ret;
-    njs_function_t      *function;
-    njs_object_prop_t   *prop, *shared, *name;
-    njs_lvlhsh_query_t  lhq;
+    njs_int_t          ret;
+    njs_function_t     *function;
+    njs_object_prop_t  *prop, *shared;
 
     prop = njs_mp_align(vm->mem_pool, sizeof(njs_value_t),
                         sizeof(njs_object_prop_t));
@@ -436,27 +435,7 @@ njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
         return NJS_ERROR;
     }
 
-    name = njs_object_prop_alloc(vm, &njs_string_name, &prop->name, 0);
-    if (njs_slow_path(name == NULL)) {
-        return NJS_ERROR;
-    }
-
-    name->configurable = 1;
-
-    lhq.key_hash = NJS_NAME_HASH;
-    lhq.key = njs_str_value("name");
-    lhq.replace = 0;
-    lhq.value = name;
-    lhq.proto = &njs_object_hash_proto;
-    lhq.pool = vm->mem_pool;
-
-    ret = njs_lvlhsh_insert(&function->object.hash, &lhq);
-    if (njs_slow_path(ret != NJS_OK)) {
-        njs_internal_error(vm, "lvlhsh insert failed");
-        return NJS_ERROR;
-    }
-
-    return NJS_OK;
+    return njs_function_name_set(vm, function, &prop->name, 0);
 }
 
 

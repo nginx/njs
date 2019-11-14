@@ -266,6 +266,8 @@ njs_test {
      "1 a \\\[1,2]\r\nundefined\r\n>> "}
     {"var print = console.dump.bind(console); print(1, 'a', [1, 2])\r\n"
      "1 a \\\[\r\n 1,\r\n 2\r\n]\r\nundefined\r\n>> "}
+    {"var print = console.log.bind(console); print(console.a.a)\r\n"
+     "TypeError: cannot get property \"a\" of undefined*at console.log"}
 }
 
 # Backtraces for external objects

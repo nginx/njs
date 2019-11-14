@@ -111,6 +111,53 @@ njs_function_closures(njs_vm_t *vm, njs_function_t *function)
 }
 
 
+njs_int_t
+njs_function_name_set(njs_vm_t *vm, njs_function_t *function,
+    njs_value_t *name, njs_bool_t bound)
+{
+    u_char              *start;
+    njs_int_t           ret;
+    njs_string_prop_t   string;
+    njs_object_prop_t   *prop;
+    njs_lvlhsh_query_t  lhq;
+
+    prop = njs_object_prop_alloc(vm, &njs_string_name, name, 0);
+    if (njs_slow_path(name == NULL)) {
+        return NJS_ERROR;
+    }
+
+    if (bound) {
+        (void) njs_string_prop(&string, name);
+
+        start = njs_string_alloc(vm, &prop->value, string.size + 6,
+                                 string.length + 6);
+        if (njs_slow_path(start == NULL)) {
+            return NJS_ERROR;
+        }
+
+        start = njs_cpymem(start, "bound ", 6);
+        memcpy(start, string.start, string.size);
+    }
+
+    prop->configurable = 1;
+
+    lhq.key_hash = NJS_NAME_HASH;
+    lhq.key = njs_str_value("name");
+    lhq.replace = 0;
+    lhq.value = prop;
+    lhq.proto = &njs_object_hash_proto;
+    lhq.pool = vm->mem_pool;
+
+    ret = njs_lvlhsh_insert(&function->object.hash, &lhq);
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_internal_error(vm, "lvlhsh insert failed");
+        return NJS_ERROR;
+    }
+
+    return NJS_OK;
+}
+
+
 static njs_function_t *
 njs_function_copy(njs_vm_t *vm, njs_function_t *function)
 {
@@ -347,10 +394,32 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
     njs_uint_t             n, max_args, closures;
     njs_value_t            *value, *bound;
     njs_frame_t            *frame;
+    njs_function_t         *target;
     njs_native_frame_t     *native_frame;
     njs_function_lambda_t  *lambda;
 
-    lambda = function->u.lambda;
+    bound = function->bound;
+
+    if (njs_fast_path(bound == NULL)) {
+        lambda = function->u.lambda;
+        target = function;
+
+    } else {
+        target = function->u.bound_target;
+
+        if (njs_slow_path(target->bound != NULL)) {
+
+            /*
+             * FIXME: bound functions should call target function with
+             * bound "this" and bound args.
+             */
+
+            njs_internal_error(vm, "chain of bound function are not supported");
+            return NJS_ERROR;
+        }
+
+        lambda = target->u.lambda;
+    }
 
     max_args = njs_max(nargs, lambda->nargs);
 
@@ -365,7 +434,7 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
         return NJS_ERROR;
     }
 
-    native_frame->function = function;
+    native_frame->function = target;
     native_frame->nargs = nargs;
     native_frame->ctor = ctor;
 
@@ -375,8 +444,6 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
                              njs_frame_size(closures));
     native_frame->arguments = value;
 
-    bound = function->bound;
-
     if (bound == NULL) {
         *value++ = *this;
 
@@ -384,10 +451,16 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
         n = function->args_offset;
         native_frame->nargs += n - 1;
 
-        do {
+        if (ctor) {
+            *value++ = *this;
+            bound++;
+            n--;
+        }
+
+        while (n != 0) {
             *value++ = *bound++;
             n--;
-        } while (n != 0);
+        };
     }
 
     vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = value;
@@ -580,18 +653,32 @@ njs_function_lambda_call(njs_vm_t *vm)
 njs_int_t
 njs_function_native_call(njs_vm_t *vm)
 {
-    njs_int_t           ret;
-    njs_value_t         *value;
-    njs_frame_t         *frame;
-    njs_function_t      *function;
-    njs_native_frame_t  *native, *previous;
+    njs_int_t              ret;
+    njs_value_t            *value;
+    njs_frame_t            *frame;
+    njs_function_t         *function, *target;
+    njs_native_frame_t     *native, *previous;
+    njs_function_native_t  call;
 
     native = vm->top_frame;
     frame = (njs_frame_t *) native;
     function = native->function;
 
-    ret = function->u.native(vm, native->arguments, native->nargs,
-                             function->magic);
+    if (njs_fast_path(function->bound == NULL)) {
+        call = function->u.native;
+
+    } else {
+        target = function->u.bound_target;
+
+        if (njs_slow_path(target->bound != NULL)) {
+            njs_internal_error(vm, "chain of bound function are not supported");
+            return NJS_ERROR;
+        }
+
+        call = target->u.native;
+    }
+
+    ret = call(vm, native->arguments, native->nargs, function->magic);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
     }
@@ -1044,19 +1131,49 @@ static njs_int_t
 njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    size_t          size;
-    njs_value_t     *values;
-    njs_function_t  *function;
+    size_t              size;
+    njs_int_t           ret;
+    njs_value_t         *values, name;
+    njs_function_t      *function;
+    njs_lvlhsh_query_t  lhq;
 
     if (!njs_is_function(&args[0])) {
         njs_type_error(vm, "\"this\" argument is not a function");
         return NJS_ERROR;
     }
 
-    function = njs_function_copy(vm, njs_function(&args[0]));
+    function = njs_mp_alloc(vm->mem_pool, sizeof(njs_function_t));
     if (njs_slow_path(function == NULL)) {
         njs_memory_error(vm);
         return NJS_ERROR;
+    }
+
+    *function = *njs_function(&args[0]);
+
+    njs_lvlhsh_init(&function->object.hash);
+
+    /* Bound functions have no "prototype" property. */
+    function->object.shared_hash = vm->shared->arrow_instance_hash;
+
+    function->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_FUNCTION].object;
+    function->object.shared = 0;
+
+    function->u.bound_target = njs_function(&args[0]);
+
+    njs_object_property_init(&lhq, "name", NJS_NAME_HASH);
+
+    ret = njs_object_property(vm, &args[0], &lhq, &name);
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return ret;
+    }
+
+    if (!njs_is_string(&name)) {
+        name = njs_string_empty;
+    }
+
+    ret = njs_function_name_set(vm, function, &name, 1);
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return ret;
     }
 
     if (nargs == 1) {

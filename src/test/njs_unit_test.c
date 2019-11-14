@@ -5528,6 +5528,62 @@ static njs_unit_test_t  njs_test[] =
                  "var o = { toString: f }; o"),
       njs_str("0,1,2") },
 
+    { njs_str("var f = Object.defineProperty(function() {}, 'name', {value: 'F'});"
+              "[f.name, f.bind().name, f.bind().bind().name]"),
+      njs_str("F,bound F,bound bound F") },
+
+    { njs_str("var f = Object.defineProperty(function() {}, 'name', {value: undefined});"
+              "[f.name, f.bind().name, f.bind().bind().name]"),
+      njs_str(",bound ,bound bound ") },
+
+    { njs_str("var f = Object.defineProperty(function() {}, 'name', {get:()=>'F'});"
+              "[f.name, f.bind().name]"),
+      njs_str("F,bound F") },
+
+    { njs_str("var f = Object.defineProperty(function() {}, 'name', {get:()=>{throw Error('Oops')}});"
+              "f.bind().name"),
+      njs_str("Error: Oops") },
+
+    { njs_str("var f = function() {}; f.a = 'a'; [f.bind().a, f.a]"),
+      njs_str(",a") },
+
+    { njs_str("var f = function() {}; var bf = f.bind(); bf.b = 'b'; "
+              "[f.b, bf.b]"),
+      njs_str(",b") },
+
+    { njs_str("function f(x,y) {return {args:arguments,length:arguments.length}};"
+              "var nf = Function.prototype.bind.call(f, {}, 'a', 'b');"
+              "var o = new nf();[o.length, o.args[0]]"),
+      njs_str("2,a") },
+
+    { njs_str("function f(x,y) {return {args:arguments,length:arguments.length}};"
+              "var nf = Function.prototype.bind.call(f, {});"
+              "var o = new nf('a', 'b');[o.length, o.args[0]]"),
+      njs_str("2,a") },
+
+    { njs_str("var f = function(a,b) { this.a = a; this.b = b; };"
+              "f.prototype.X = 'X';"
+              "var bf = f.bind(null, 1,2);"
+              "var o = new bf(); "
+              "[Object.keys(o), o.X,(o instanceof f) && (o instanceof bf),bf.prototype]"),
+      njs_str("a,b,X,true,") },
+
+    { njs_str("var bArray = Array.bind(null, 10,16); bArray()"),
+      njs_str("10,16") },
+
+    { njs_str("var bArray = Array.bind(null, 10,16); new bArray()"),
+      njs_str("10,16") },
+
+    { njs_str("var bArray = Array.bind(null, 10); new bArray(16)"),
+      njs_str("10,16") },
+
+#if 0 /* FIXME: refactor Bound calls (9.4.1.1[[Call]]). */
+    { njs_str("function f(x,y) {return {args:arguments,length:arguments.length}};"
+              "var bf = f.bind({}, 'a'); var bbf = bf.bind({},'b'); var o = bbf('c');"),
+              "[o.args[0], o.args[2], o.length]"
+      njs_str("a,c,3") },
+#endif
+
     { njs_str("var s = { toString: function() { return '123' } };"
                  "var a = 'abc'; a.concat('абв', s)"),
       njs_str("abcабв123") },
@@ -7906,6 +7962,10 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("(function(){ var a = 1; return (function() { return a; })})().bind()()"),
       njs_str("1") },
+
+    { njs_str("var r = (function(){ var a = 1; return (function() { return {a,args:arguments}; })})().bind()('b');"
+              "njs.dump(r)"),
+      njs_str("{a:1,args:{0:'b'}}") },
 
     { njs_str("function f() { var a = 1; function baz() { return a; } return baz; } f().bind()()"),
       njs_str("1") },

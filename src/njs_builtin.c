@@ -761,7 +761,7 @@ njs_object_completions(njs_vm_t *vm, njs_object_t *object)
 
 
 njs_int_t
-njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
+njs_builtin_match_native_function(njs_vm_t *vm, njs_function_native_t func,
     njs_str_t *name)
 {
     njs_int_t               ret;
@@ -772,7 +772,7 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
     njs_builtin_traverse_t  ctx;
 
     ctx.type = NJS_BUILTIN_TRAVERSE_MATCH;
-    ctx.native = function->u.native;
+    ctx.native = func;
 
     /* Global object. */
 

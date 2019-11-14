@@ -245,6 +245,7 @@ struct njs_function_s {
     union {
         njs_function_lambda_t         *lambda;
         njs_function_native_t         native;
+        njs_function_t                *bound_target;
     } u;
 
     njs_value_t                       *bound;

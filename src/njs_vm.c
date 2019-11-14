@@ -1056,7 +1056,12 @@ njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame)
     }
 
     if (function->native) {
-        ret = njs_builtin_match_native_function(vm, function, &be->name);
+        while (function->bound != NULL) {
+            function = function->u.bound_target;
+        }
+
+        ret = njs_builtin_match_native_function(vm, function->u.native,
+                                                &be->name);
         if (ret == NJS_OK) {
             return NJS_OK;
         }
