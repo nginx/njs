@@ -170,6 +170,7 @@ case $NJS_CC_NAME in
 esac
 
 if [ "$NJS_DEBUG" = "YES" ]; then
+        NJS_CC_OPT="$NJS_CC_OPT -O0"
         njs_define=NJS_DEBUG . auto/define
         njs_define=NJS_DEBUG_MEMORY . auto/define
 fi
