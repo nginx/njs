@@ -11,7 +11,7 @@
 
 #include <njs_auto_config.h>
 
-#define NJS_VERSION                 "0.3.7"
+#define NJS_VERSION                 "0.3.8"
 
 
 #include <unistd.h>                 /* STDOUT_FILENO, STDERR_FILENO */
