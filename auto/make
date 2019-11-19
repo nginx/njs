@@ -121,6 +121,31 @@ END
 
 fi
 
+
+# njs fuzzer.
+
+cat << END >> $NJS_MAKEFILE
+
+$NJS_BUILD_DIR/njs_process_script_fuzzer.o: \\
+	src/njs_shell.c
+	\$(NJS_CC) -c \$(CFLAGS) $NJS_LIB_AUX_CFLAGS \\
+		\$(NJS_LIB_INCS) -Injs \\
+		-DNJS_FUZZER_TARGET \\
+		-o $NJS_BUILD_DIR/njs_process_script_fuzzer.o \\
+		src/njs_shell.c
+
+$NJS_BUILD_DIR/njs_process_script_fuzzer: \\
+	$NJS_BUILD_DIR/libnjs.a \\
+	$NJS_BUILD_DIR/njs_process_script_fuzzer.o
+	\$(CXX) \$(CXXFLAGS) -o $NJS_BUILD_DIR/njs_process_script_fuzzer \\
+		$NJS_LIB_AUX_CFLAGS \$(NJS_LIB_INCS) -Injs \\
+		\$(LIB_FUZZING_ENGINE) \\
+		$NJS_BUILD_DIR/njs_process_script_fuzzer.o \\
+		$NJS_BUILD_DIR/libnjs.a \\
+		-lm $NJS_LIBS $NJS_LIB_AUX_LIBS
+
+END
+
 # lib tests.
 
 for njs_src in $NJS_LIB_TEST_SRCS
@@ -186,6 +211,8 @@ all: $NJS_BUILD_DIR/njs_auto_config.h \\
     $NJS_DEFAULT_TARGET test lib_test benchmark
 
 njs: $NJS_BUILD_DIR/njs_auto_config.h $NJS_BUILD_DIR/njs
+njs_fuzzer: $NJS_BUILD_DIR/njs_auto_config.h \\
+	$NJS_BUILD_DIR/njs_process_script_fuzzer
 
 lib_test: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/random_unit_test \\

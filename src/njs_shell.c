@@ -6,6 +6,9 @@
 
 
 #include <njs_main.h>
+
+#ifndef NJS_FUZZER_TARGET
+
 #include <locale.h>
 #if (NJS_HAVE_EDITLINE)
 #include <editline/readline.h>
@@ -18,12 +21,15 @@
 #endif
 #endif
 
+#endif
+
 
 typedef struct {
     uint8_t                 disassemble;
     uint8_t                 interactive;
     uint8_t                 module;
     uint8_t                 quiet;
+    uint8_t                 silent;
     uint8_t                 sandbox;
     uint8_t                 safe;
     uint8_t                 version;
@@ -74,18 +80,22 @@ typedef struct {
 } njs_console_t;
 
 
-static njs_int_t njs_get_options(njs_opts_t *opts, int argc, char **argv);
 static njs_int_t njs_console_init(njs_vm_t *vm, njs_console_t *console);
 static njs_int_t njs_externals_init(njs_vm_t *vm, njs_console_t *console);
+static njs_vm_t *njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options);
+static njs_int_t njs_process_script(njs_opts_t *opts,
+    njs_console_t *console, const njs_str_t *script);
+
+#ifndef NJS_FUZZER_TARGET
+
+static njs_int_t njs_get_options(njs_opts_t *opts, int argc, char **argv);
+static njs_int_t njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options);
 static njs_int_t njs_interactive_shell(njs_opts_t *opts,
     njs_vm_opt_t *vm_options);
-static njs_vm_t *njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options);
-static njs_int_t njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options);
-static njs_int_t njs_process_script(njs_console_t *console,
-    const njs_str_t *script);
 static njs_int_t njs_editline_init(void);
-static char **njs_completion_handler(const char *text, int start, int end);
 static char *njs_completion_generator(const char *text, int state);
+
+#endif
 
 static njs_int_t njs_ext_console_log(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
@@ -195,6 +205,8 @@ static njs_vm_ops_t njs_console_ops = {
 static njs_console_t  njs_console;
 
 
+#ifndef NJS_FUZZER_TARGET
+
 int
 main(int argc, char **argv)
 {
@@ -265,7 +277,7 @@ main(int argc, char **argv)
         if (vm != NULL) {
             command.start = (u_char *) opts.command;
             command.length = njs_strlen(opts.command);
-            ret = njs_process_script(vm_options.external, &command);
+            ret = njs_process_script(&opts, vm_options.external, &command);
         }
 
     } else {
@@ -400,109 +412,6 @@ njs_get_options(njs_opts_t *opts, int argc, char **argv)
 
 
 static njs_int_t
-njs_console_init(njs_vm_t *vm, njs_console_t *console)
-{
-    console->vm = vm;
-
-    njs_lvlhsh_init(&console->events);
-    njs_queue_init(&console->posted_events);
-
-    njs_lvlhsh_init(&console->labels);
-
-    console->completion.completions = njs_vm_completions(vm, NULL);
-    if (console->completion.completions == NULL) {
-        return NJS_ERROR;
-    }
-
-    return NJS_OK;
-}
-
-
-static njs_int_t
-njs_externals_init(njs_vm_t *vm, njs_console_t *console)
-{
-    njs_uint_t          ret;
-    njs_value_t         *value;
-    const njs_extern_t  *proto;
-
-    static const njs_str_t name = njs_str("console");
-
-    proto = njs_vm_external_prototype(vm, &njs_externals[0]);
-    if (proto == NULL) {
-        njs_stderror("failed to add console proto\n");
-        return NJS_ERROR;
-    }
-
-    value = njs_mp_zalloc(vm->mem_pool, sizeof(njs_opaque_value_t));
-    if (value == NULL) {
-        return NJS_ERROR;
-    }
-
-    ret = njs_vm_external_create(vm, value, proto, console);
-    if (ret != NJS_OK) {
-        return NJS_ERROR;
-    }
-
-    ret = njs_vm_external_bind(vm, &name, value);
-    if (ret != NJS_OK) {
-        return NJS_ERROR;
-    }
-
-    ret = njs_console_init(vm, console);
-    if (ret != NJS_OK) {
-        return NJS_ERROR;
-    }
-
-    return NJS_OK;
-}
-
-
-static njs_int_t
-njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
-{
-    njs_vm_t   *vm;
-    njs_str_t  line;
-
-    if (njs_editline_init() != NJS_OK) {
-        njs_stderror("failed to init completions\n");
-        return NJS_ERROR;
-    }
-
-    vm = njs_create_vm(opts, vm_options);
-    if (vm == NULL) {
-        return NJS_ERROR;
-    }
-
-    if (!opts->quiet) {
-        njs_printf("interactive njs %s\n\n", NJS_VERSION);
-
-        njs_printf("v.<Tab> -> the properties and prototype methods of v.\n\n");
-    }
-
-    for ( ;; ) {
-        line.start = (u_char *) readline(">> ");
-        if (line.start == NULL) {
-            break;
-        }
-
-        line.length = njs_strlen(line.start);
-        if (line.length == 0) {
-            continue;
-        }
-
-        add_history((char *) line.start);
-
-        njs_process_script(vm_options->external, &line);
-
-        /* editline allocs a new buffer every time. */
-        free(line.start);
-    }
-
-    return NJS_OK;
-}
-
-
-static njs_int_t
 njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 {
     int          fd;
@@ -612,7 +521,7 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         }
     }
 
-    ret = njs_process_script(vm_options->external, &script);
+    ret = njs_process_script(opts, vm_options->external, &script);
     if (ret != NJS_OK) {
         ret = NJS_ERROR;
         goto done;
@@ -633,6 +542,103 @@ close_fd:
     }
 
     return ret;
+}
+
+#else
+
+int
+LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
+{
+    njs_vm_t      *vm;
+    njs_opts_t    opts;
+    njs_str_t     script;
+    njs_vm_opt_t  vm_options;
+
+    if (size == 0) {
+        return 0;
+    }
+
+    njs_memzero(&opts, sizeof(njs_opts_t));
+
+    opts.silent = 1;
+
+    njs_memzero(&vm_options, sizeof(njs_vm_opt_t));
+
+    vm_options.init = 1;
+    vm_options.backtrace = 0;
+    vm_options.ops = &njs_console_ops;
+    vm_options.external = &njs_console;
+
+    vm = njs_create_vm(&opts, &vm_options);
+
+    if (njs_fast_path(vm != NULL)) {
+        script.length = size;
+        script.start = (u_char *) data;
+
+        (void) njs_process_script(&opts, vm_options.external, &script);
+        njs_vm_destroy(vm);
+    }
+
+    return 0;
+}
+
+#endif
+
+static njs_int_t
+njs_console_init(njs_vm_t *vm, njs_console_t *console)
+{
+    console->vm = vm;
+
+    njs_lvlhsh_init(&console->events);
+    njs_queue_init(&console->posted_events);
+
+    njs_lvlhsh_init(&console->labels);
+
+    console->completion.completions = njs_vm_completions(vm, NULL);
+    if (console->completion.completions == NULL) {
+        return NJS_ERROR;
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_externals_init(njs_vm_t *vm, njs_console_t *console)
+{
+    njs_uint_t          ret;
+    njs_value_t         *value;
+    const njs_extern_t  *proto;
+
+    static const njs_str_t name = njs_str("console");
+
+    proto = njs_vm_external_prototype(vm, &njs_externals[0]);
+    if (proto == NULL) {
+        njs_stderror("failed to add console proto\n");
+        return NJS_ERROR;
+    }
+
+    value = njs_mp_zalloc(vm->mem_pool, sizeof(njs_opaque_value_t));
+    if (value == NULL) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_vm_external_create(vm, value, proto, console);
+    if (ret != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_vm_external_bind(vm, &name, value);
+    if (ret != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_console_init(vm, console);
+    if (ret != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    return NJS_OK;
 }
 
 
@@ -696,21 +702,23 @@ njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
 
 static void
-njs_output(njs_vm_t *vm, njs_int_t ret)
+njs_output(njs_opts_t *opts, njs_vm_t *vm, njs_int_t ret)
 {
     njs_str_t  out;
 
-    if (njs_vm_retval_dump(vm, &out, 1) != NJS_OK) {
-        out = njs_str_value("failed to get retval from VM");
-        ret = NJS_ERROR;
-    }
+    if (!opts->silent) {
+        if (njs_vm_retval_dump(vm, &out, 1) != NJS_OK) {
+            out = njs_str_value("failed to get retval from VM");
+            ret = NJS_ERROR;
+        }
 
-    if (ret != NJS_OK) {
-        njs_stderror("%V\n", &out);
+        if (ret != NJS_OK) {
+            njs_stderror("%V\n", &out);
 
-    } else if (vm->options.accumulative) {
-        njs_print(out.start, out.length);
-        njs_printf("\n");
+        } else if (vm->options.accumulative) {
+            njs_print(out.start, out.length);
+            njs_printf("\n");
+        }
     }
 }
 
@@ -745,7 +753,8 @@ njs_process_events(njs_console_t *console)
 
 
 static njs_int_t
-njs_process_script(njs_console_t *console, const njs_str_t *script)
+njs_process_script(njs_opts_t *opts, njs_console_t *console,
+    const njs_str_t *script)
 {
     u_char     *start;
     njs_vm_t   *vm;
@@ -760,7 +769,7 @@ njs_process_script(njs_console_t *console, const njs_str_t *script)
         ret = njs_vm_start(vm);
     }
 
-    njs_output(vm, ret);
+    njs_output(opts, vm, ret);
 
     for ( ;; ) {
         if (!njs_vm_pending(vm)) {
@@ -785,11 +794,67 @@ njs_process_script(njs_console_t *console, const njs_str_t *script)
         ret = njs_vm_run(vm);
 
         if (ret == NJS_ERROR) {
-            njs_output(vm, ret);
+            njs_output(opts, vm, ret);
         }
     }
 
     return ret;
+}
+
+
+#ifndef NJS_FUZZER_TARGET
+
+static njs_int_t
+njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
+{
+    njs_vm_t   *vm;
+    njs_str_t  line;
+
+    if (njs_editline_init() != NJS_OK) {
+        njs_stderror("failed to init completions\n");
+        return NJS_ERROR;
+    }
+
+    vm = njs_create_vm(opts, vm_options);
+    if (vm == NULL) {
+        return NJS_ERROR;
+    }
+
+    if (!opts->quiet) {
+        njs_printf("interactive njs %s\n\n", NJS_VERSION);
+
+        njs_printf("v.<Tab> -> the properties and prototype methods of v.\n\n");
+    }
+
+    for ( ;; ) {
+        line.start = (u_char *) readline(">> ");
+        if (line.start == NULL) {
+            break;
+        }
+
+        line.length = njs_strlen(line.start);
+        if (line.length == 0) {
+            continue;
+        }
+
+        add_history((char *) line.start);
+
+        njs_process_script(opts, vm_options->external, &line);
+
+        /* editline allocs a new buffer every time. */
+        free(line.start);
+    }
+
+    return NJS_OK;
+}
+
+
+static char **
+njs_completion_handler(const char *text, int start, int end)
+{
+    rl_attempted_completion_over = 1;
+
+    return rl_completion_matches(text, njs_completion_generator);
 }
 
 
@@ -803,15 +868,6 @@ njs_editline_init(void)
     setlocale(LC_ALL, "");
 
     return NJS_OK;
-}
-
-
-static char **
-njs_completion_handler(const char *text, int start, int end)
-{
-    rl_attempted_completion_over = 1;
-
-    return rl_completion_matches(text, njs_completion_generator);
 }
 
 
@@ -960,6 +1016,8 @@ next:
 
     return NULL;
 }
+
+#endif
 
 
 static njs_int_t
