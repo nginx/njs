@@ -1,4 +1,59 @@
 
+Changes with njs 0.3.7                                           19 Nov 2019
+
+    nginx modules:
+
+    *) Improvement: refactored iteration over external objects.
+
+    Core:
+
+    *) Feature: added Object.assign().
+
+    *) Feature: added Array.prototype.copyWithin().
+
+    *) Feature: added support for labels in console.time().
+
+    *) Change: removed console.help() from CLI.
+
+    *) Improvement: moved constructors and top-level objects to
+       global object.
+
+    *) Improvement: arguments validation for configure script.
+
+    *) Improvement: refactored JSON methods.
+
+    *) Bugfix: fixed heap-buffer-overflow in njs_array_reverse_iterator()
+       function. The following functions were affected:
+       Array.prototype.lastIndexOf(), Array.prototype.reduceRight().
+
+    *) Bugfix: fixed [[Prototype]] slot of NativeErrors.
+
+    *) Bugfix: fixed NativeError.prototype.message properties.
+
+    *) Bugfix: added conversion of "this" value to object in
+       Array.prototype functions.
+
+    *) Bugfix: fixed iterator for Array.prototype.find() and
+       Array.prototype.findIndex() functions.
+
+    *) Bugfix: fixed Array.prototype.includes() and
+       Array.prototype.join() with "undefined" argument.
+
+    *) Bugfix: fixed "constructor" property of "Hash" and "Hmac"
+       objects.
+
+    *) Bugfix: fixed "__proto__" property of getters and setters.
+
+    *) Bugfix: fixed "Date" object string formatting.
+
+    *) Bugfix: fixed handling of NaN and -0 arguments in Math.min()
+       and Math.max().
+
+    *) Bugfix: fixed Math.round() according to the specification.
+
+    *) Bugfix: reimplemented "bound" functions according to
+       the specification.
+
 Changes with njs 0.3.6                                           22 Oct 2019
 
     nginx modules:
