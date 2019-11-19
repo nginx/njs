@@ -11064,11 +11064,9 @@ static njs_unit_test_t  njs_test[] =
                  "Object.getPrototypeOf(o) === Object.prototype"),
       njs_str("true") },
 
-    { njs_str("Object.getPrototypeOf(1)"),
-      njs_str("TypeError: cannot convert number argument to object") },
-
-    { njs_str("Object.getPrototypeOf('a')"),
-      njs_str("TypeError: cannot convert string argument to object") },
+    { njs_str("[true, 42, '' /*, Symbol()*/]"
+              ".every((x) => Object.getPrototypeOf(x) == Object.getPrototypeOf(Object(x)))"),
+      njs_str("true") },
 
     { njs_str("var p = {}; var o = Object.create(p);"
                  "p.isPrototypeOf(o)"),

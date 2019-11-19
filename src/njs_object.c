@@ -1387,12 +1387,22 @@ static njs_int_t
 njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
+    uint32_t     index;
     njs_value_t  *value;
 
     value = njs_arg(args, nargs, 1);
 
     if (njs_is_object(value)) {
         njs_object_prototype_proto(vm, NULL, value, NULL, &vm->retval);
+        return NJS_OK;
+    }
+
+    if (!njs_is_null_or_undefined(value)) {
+        index = njs_primitive_prototype_index(value->type);
+
+        njs_set_type_object(&vm->retval, &vm->prototypes[index].object,
+                            njs_object_value_type(value->type));
+
         return NJS_OK;
     }
 
