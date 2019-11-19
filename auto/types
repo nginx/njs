@@ -1,0 +1,120 @@
+
+# Copyright (C) Igor Sysoev
+# Copyright (C) NGINX, Inc.
+
+
+# Sizes of C types.
+
+# "-Wall -Werror" or similar constraints in default CFLAGS may require
+# to use "%zu" format to printf() result of sizeof().  But "%zu" may
+# be unavailable, so the "(int)" cast is a simple and portable solution:
+#     printf("%d", (int) sizeof(TYPE));
+
+
+njs_feature="sizeof(int)"
+njs_feature_name=NJS_INT_SIZE
+njs_feature_run=value
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#include <stdio.h>
+
+                  int main() {
+                      printf(\"%d\", (int) sizeof(int));
+                      return 0;
+                  }"
+. auto/feature
+
+
+njs_feature="sizeof(u_int)"
+njs_feature_name=NJS_UINT_SIZE
+njs_feature_run=value
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#include <sys/types.h>
+                  #include <stdio.h>
+
+                  int main() {
+                      printf(\"%d\", (int) sizeof(u_int));
+                      return 0;
+                  }"
+. auto/feature
+
+
+njs_feature="sizeof(void *)"
+njs_feature_name=NJS_PTR_SIZE
+njs_feature_run=value
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#include <stdio.h>
+
+                  int main() {
+                      printf(\"%d\", (int) sizeof(void *));
+                      return 0;
+                  }"
+. auto/feature
+
+
+njs_feature="sizeof(uintptr_t)"
+njs_feature_name=NJS_UINTPTR_T_SIZE
+njs_feature_run=value
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#include <stdint.h>
+                  #include <stdio.h>
+
+                  int main() {
+                      printf(\"%d\", (int) sizeof(uintptr_t));
+                      return 0;
+                  }"
+. auto/feature
+
+
+case "$njs_feature_value" in
+    8) NJS_64BIT=1 ;;
+    *) NJS_64BIT=0 ;;
+esac
+
+
+njs_feature="sizeof(size_t)"
+njs_feature_name=NJS_SIZE_T_SIZE
+njs_feature_run=value
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#include <stdio.h>
+
+                  int main() {
+                      printf(\"%d\", (int) sizeof(size_t));
+                      return 0;
+                  }"
+. auto/feature
+
+
+njs_feature="sizeof(off_t)"
+njs_feature_name=NJS_OFF_T_SIZE
+njs_feature_run=value
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#define _FILE_OFFSET_BITS  64
+                  #include <unistd.h>
+                  #include <stdio.h>
+
+                  int main() {
+                      printf(\"%d\", (int) sizeof(off_t));
+                      return 0;
+                  }"
+. auto/feature
+
+
+njs_feature="sizeof(time_t)"
+njs_feature_name=NJS_TIME_T_SIZE
+njs_feature_run=value
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#include <time.h>
+                  #include <stdio.h>
+
+                  int main(void) {
+                      printf(\"%d\", (int) sizeof(time_t));
+                      return 0;
+                  }"
+. auto/feature
