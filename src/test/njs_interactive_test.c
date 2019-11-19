@@ -289,6 +289,7 @@ njs_interactive_test(njs_bool_t verbose)
 
         njs_memzero(&options, sizeof(njs_vm_opt_t));
 
+        options.init = 1;
         options.accumulative = 1;
         options.backtrace = 1;
 

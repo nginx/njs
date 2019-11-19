@@ -85,7 +85,7 @@ njs_vm_create(njs_vm_opt_t *options)
         vm->debug = debug;
     }
 
-    if (options->accumulative) {
+    if (options->init) {
         ret = njs_vm_init(vm);
         if (njs_slow_path(ret != NJS_OK)) {
             return NULL;

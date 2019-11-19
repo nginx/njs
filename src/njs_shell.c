@@ -243,7 +243,7 @@ main(int argc, char **argv)
     vm_options.file.start = (u_char *) opts.file;
     vm_options.file.length = njs_strlen(opts.file);
 
-    vm_options.init = !opts.interactive;
+    vm_options.init = 1;
     vm_options.accumulative = opts.interactive;
     vm_options.disassemble = opts.disassemble;
     vm_options.backtrace = 1;
