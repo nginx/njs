@@ -1387,7 +1387,7 @@ static njs_int_t
 njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    uint32_t     index;
+    uint32_t     index, type;
     njs_value_t  *value;
 
     value = njs_arg(args, nargs, 1);
@@ -1399,9 +1399,10 @@ njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     if (!njs_is_null_or_undefined(value)) {
         index = njs_primitive_prototype_index(value->type);
+        type = njs_is_symbol(value) ? NJS_OBJECT
+                                    : njs_object_value_type(value->type);
 
-        njs_set_type_object(&vm->retval, &vm->prototypes[index].object,
-                            njs_object_value_type(value->type));
+        njs_set_type_object(&vm->retval, &vm->prototypes[index].object, type);
 
         return NJS_OK;
     }
@@ -2189,6 +2190,8 @@ static const njs_value_t  njs_object_boolean_string =
                                      njs_long_string("[object Boolean]");
 static const njs_value_t  njs_object_number_string =
                                      njs_long_string("[object Number]");
+static const njs_value_t  njs_object_symbol_string =
+                                     njs_long_string("[object Symbol]");
 static const njs_value_t  njs_object_string_string =
                                      njs_long_string("[object String]");
 static const njs_value_t  njs_object_data_string =
@@ -2220,11 +2223,11 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         &njs_object_undefined_string,
         &njs_object_boolean_string,
         &njs_object_number_string,
+        &njs_object_symbol_string,
         &njs_object_string_string,
 
         &njs_object_data_string,
         &njs_object_exernal_string,
-        NULL,
         NULL,
         NULL,
         NULL,
@@ -2239,6 +2242,7 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         &njs_object_array_string,
         &njs_object_boolean_string,
         &njs_object_number_string,
+        &njs_object_symbol_string,
         &njs_object_string_string,
         &njs_object_function_string,
         &njs_object_regexp_string,

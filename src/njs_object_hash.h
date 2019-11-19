@@ -421,6 +421,16 @@
         'S'), 't'), 'r'), 'i'), 'n'), 'g')
 
 
+#define NJS_SYMBOL_HASH                                                       \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'S'), 'y'), 'm'), 'b'), 'o'), 'l')
+
+
 #define NJS_SYNTAX_ERROR_HASH                                                 \
     njs_djb_hash_add(                                                         \
     njs_djb_hash_add(                                                         \

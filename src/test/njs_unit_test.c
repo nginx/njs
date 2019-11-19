@@ -9996,6 +9996,265 @@ static njs_unit_test_t  njs_test[] =
       njs_str("true") },
 #endif
 
+    /* Symbol */
+
+    { njs_str("typeof Symbol"),
+      njs_str("function") },
+
+    { njs_str("this.Symbol === Symbol"),
+      njs_str("true") },
+
+    { njs_str("Symbol.name"),
+      njs_str("Symbol") },
+
+    { njs_str("Object.getOwnPropertyDescriptor(Symbol, 'name').configurable"),
+      njs_str("true") },
+
+    { njs_str("Symbol.length"),
+      njs_str("0") },
+
+    { njs_str("Object.getOwnPropertyDescriptor(Symbol, 'length').configurable"),
+      njs_str("true") },
+
+    { njs_str("typeof Symbol.for"),
+      njs_str("function") },
+
+    { njs_str("Symbol.for.length"),
+      njs_str("1") },
+
+    { njs_str("typeof Symbol.keyFor"),
+      njs_str("function") },
+
+    { njs_str("Symbol.keyFor.length"),
+      njs_str("1") },
+
+    { njs_str("Symbol.prototype.constructor === Symbol"),
+      njs_str("true") },
+
+    { njs_str("Symbol.prototype.__proto__ === Object.prototype"),
+      njs_str("true") },
+
+    { njs_str("Object.prototype.toString.call(Symbol.prototype)"),
+      njs_str("[object Object]") },
+
+    { njs_str("Symbol.prototype.toString()"),
+      njs_str("TypeError: unexpected value type:object") },
+
+    { njs_str("new Symbol()"),
+      njs_str("TypeError: Symbol is not a constructor") },
+
+    { njs_str("typeof Symbol()"),
+      njs_str("symbol") },
+
+    { njs_str("typeof Symbol('desc')"),
+      njs_str("symbol") },
+
+    { njs_str("Symbol() === Symbol()"),
+      njs_str("false") },
+
+    { njs_str("Symbol('desc') === Symbol('desc')"),
+      njs_str("false") },
+
+    { njs_str("Symbol() == Symbol()"),
+      njs_str("false") },
+
+    { njs_str("Symbol('desc') == Symbol('desc')"),
+      njs_str("false") },
+
+    { njs_str("Symbol() == true"),
+      njs_str("false") },
+
+    { njs_str("Symbol() == false"),
+      njs_str("false") },
+
+    { njs_str("Symbol() != true"),
+      njs_str("true") },
+
+    { njs_str("Symbol() != 0"),
+      njs_str("true") },
+
+    { njs_str("Symbol() != ''"),
+      njs_str("true") },
+
+    { njs_str("Symbol() != undefined"),
+      njs_str("true") },
+
+    { njs_str("typeof Object(Symbol())"),
+      njs_str("object") },
+
+    { njs_str("typeof Object(Symbol('desc'))"),
+      njs_str("object") },
+
+    { njs_str("var x = Symbol(), o = Object(x); x == o"),
+      njs_str("true") },
+
+    { njs_str("var x = Symbol(), o = Object(x); o == x"),
+      njs_str("true") },
+
+    { njs_str("var x = Symbol(), o = Object(x); x !== o"),
+      njs_str("true") },
+
+    { njs_str("var x = Symbol(), o = Object(x); x === o.valueOf()"),
+      njs_str("true") },
+
+    { njs_str("var x = Symbol(); Object(x) == Object(x)"),
+      njs_str("false") },
+
+    { njs_str("!Symbol()"),
+      njs_str("false") },
+
+    { njs_str("!!Symbol()"),
+      njs_str("true") },
+
+    { njs_str("(Symbol('a') && Symbol('b')).toString()"),
+      njs_str("Symbol(b)") },
+
+    { njs_str("(Symbol('a') || Symbol('b')).toString()"),
+      njs_str("Symbol(a)") },
+
+    { njs_str("+Symbol()"),
+      njs_str("TypeError: Cannot convert a Symbol value to a number") },
+
+    { njs_str("-Symbol()"),
+      njs_str("TypeError: Cannot convert a Symbol value to a number") },
+
+    { njs_str("~Symbol()"),
+      njs_str("TypeError: Cannot convert a Symbol value to a number") },
+
+    { njs_str("var x = Symbol(); ++x"),
+      njs_str("TypeError: Cannot convert a Symbol value to a number") },
+
+    { njs_str("var x = Symbol(); x++"),
+      njs_str("TypeError: Cannot convert a Symbol value to a number") },
+
+    { njs_str("var x = Symbol(); --x"),
+      njs_str("TypeError: Cannot convert a Symbol value to a number") },
+
+    { njs_str("var x = Symbol(); x--"),
+      njs_str("TypeError: Cannot convert a Symbol value to a number") },
+
+    { njs_str("var msg = 'Cannot convert a Symbol value to a number',"
+              "    ops = ['+', '-', '*', '**', '/', '%', '>>>', '>>', '<<',"
+              "           '&', '|', '^', '<', '<=', '>', '>='],"
+              "    test = (lhs, rhs, cls, msg, stop, op) => {"
+              "        if (stop) {"
+              "            return stop;"
+              "        }"
+              "        var op = `${lhs} ${op} ${rhs}`;"
+              "        try {"
+              "            (new Function(op))();"
+              "        } catch (e) {"
+              "            if (e instanceof cls && msg == e.message) {"
+              "                return '';"
+              "            }"
+              "        }"
+              "        return `'${op}' - failed`;"
+              "   };"
+              "ops.reduce(test.bind({}, 'Symbol()', '42', TypeError, msg), '') ||"
+              "ops.reduce(test.bind({}, '42', 'Symbol()', TypeError, msg), '');"),
+      njs_str("") },
+
+    { njs_str("Symbol() > 'abc'"),
+      njs_str("TypeError: Cannot convert a Symbol value to a number") },
+
+    { njs_str("'abc' > Symbol()"),
+      njs_str("TypeError: Cannot convert a Symbol value to a number") },
+
+    { njs_str("'abc' + Symbol()"),
+      njs_str("TypeError: Cannot convert a Symbol value to a string") },
+
+    { njs_str("Symbol() + 'abc'"),
+      njs_str("TypeError: Cannot convert a Symbol value to a string") },
+
+    { njs_str("Math.min(Symbol())"),
+      njs_str("TypeError: Cannot convert a Symbol value to a number") },
+
+    { njs_str("[Symbol(), Symbol()].join()"),
+      njs_str("TypeError: Cannot convert a Symbol value to a string") },
+
+    { njs_str("Symbol().toString()"),
+      njs_str("Symbol()") },
+
+    { njs_str("Symbol('desc').toString()"),
+      njs_str("Symbol(desc)") },
+
+    { njs_str("Symbol('α'.repeat(16)).toString()"),
+      njs_str("Symbol(αααααααααααααααα)") },
+
+    { njs_str("Symbol(undefined).toString()"),
+      njs_str("Symbol()") },
+
+    { njs_str("Symbol(null).toString()"),
+      njs_str("Symbol(null)") },
+
+    { njs_str("Symbol(123).toString()"),
+      njs_str("Symbol(123)") },
+
+    { njs_str("Symbol(false).toString()"),
+      njs_str("Symbol(false)") },
+
+    { njs_str("Symbol(Symbol()).toString()"),
+      njs_str("TypeError: Cannot convert a Symbol value to a string") },
+
+    { njs_str("var all = [ 'asyncIterator',"
+              "            'hasInstance',"
+              "            'isConcatSpreadable',"
+              "            'iterator',"
+              "            'match',"
+              "            'matchAll',"
+              "            'replace',"
+              "            'search',"
+              "            'species',"
+              "            'split',"
+              "            'toPrimitive',"
+              "            'toStringTag',"
+              "            'unscopables' ]; "
+              "Object.getOwnPropertyNames(Symbol)"
+              ".filter((x) => typeof Symbol[x] == 'symbol')"
+              ".length == all.length"),
+      njs_str("true") },
+
+    { njs_str("var all = [ 'asyncIterator',"
+              "            'hasInstance',"
+              "            'isConcatSpreadable',"
+              "            'iterator',"
+              "            'match',"
+              "            'matchAll',"
+              "            'replace',"
+              "            'search',"
+              "            'species',"
+              "            'split',"
+              "            'toPrimitive',"
+              "            'toStringTag',"
+              "            'unscopables' ]; "
+              "Object.getOwnPropertyNames(Symbol)"
+              ".filter((x) => typeof Symbol[x] == 'symbol')"
+              ".filter((x, i) => !all.includes(x))"),
+      njs_str("") },
+
+    { njs_str("Object.getOwnPropertyNames(Symbol)"
+              ".filter((x) => typeof Symbol[x] == 'symbol')"
+              ".map(x => ({ k: x, v: Symbol[x] }))"
+              ".every((x) => 'Symbol(Symbol.' + x.k + ')' == String(x.v))"),
+      njs_str("true") },
+
+    { njs_str("typeof Symbol.prototype.description"),
+      njs_str("TypeError: unexpected value type:object") },
+
+    { njs_str("Symbol.prototype.description = 1"),
+      njs_str("TypeError: Cannot set property \"description\" of object which has only a getter") },
+
+    { njs_str("typeof Symbol().description"),
+      njs_str("undefined") },
+
+    { njs_str("Symbol('desc').description"),
+      njs_str("desc") },
+
+    { njs_str("Symbol.iterator.description"),
+      njs_str("Symbol.iterator") },
+
+    /* String */
+
     { njs_str("String()"),
       njs_str("") },
 
@@ -10010,6 +10269,18 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("new String(123)"),
       njs_str("123") },
+
+    { njs_str("String(Symbol())"),
+      njs_str("Symbol()") },
+
+    { njs_str("String(Symbol('desc'))"),
+      njs_str("Symbol(desc)") },
+
+    { njs_str("new String(Symbol())"),
+      njs_str("TypeError: Cannot convert a Symbol value to a string") },
+
+    { njs_str("String(Object(Symbol()))"),
+      njs_str("TypeError: Cannot convert a Symbol value to a string") },
 
     { njs_str("Object('123').length"),
       njs_str("3") },
@@ -10339,6 +10610,12 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("Object.prototype.toString.call(new Object(1))"),
       njs_str("[object Number]") },
+
+    { njs_str("Object.prototype.toString.call(new Object(Symbol()))"),
+      njs_str("[object Symbol]") },
+
+    { njs_str("Object.prototype.toString.call(new Object(Symbol('desc')))"),
+      njs_str("[object Symbol]") },
 
     { njs_str("Object.prototype.toString.call(new Object(''))"),
       njs_str("[object String]") },
@@ -11064,7 +11341,7 @@ static njs_unit_test_t  njs_test[] =
                  "Object.getPrototypeOf(o) === Object.prototype"),
       njs_str("true") },
 
-    { njs_str("[true, 42, '' /*, Symbol()*/]"
+    { njs_str("[true, 42, '', Symbol()]"
               ".every((x) => Object.getPrototypeOf(x) == Object.getPrototypeOf(Object(x)))"),
       njs_str("true") },
 
@@ -11582,6 +11859,7 @@ static njs_unit_test_t  njs_test[] =
         "        'prototype',"
         "        'caller',"
         "        'arguments',"
+        "        'description',"
         "    ];"
         "    return Object.getOwnPropertyNames(o)"
         "                 .filter(v => !except.includes(v)"
@@ -11593,6 +11871,7 @@ static njs_unit_test_t  njs_test[] =
         "["
         "    Boolean, Boolean.prototype,"
         "    Number, Number.prototype,"
+        "    Symbol, Symbol.prototype,"
         "    String, String.prototype,"
         "    Object, Object.prototype,"
         "    Array, Array.prototype,"
@@ -11613,6 +11892,7 @@ static njs_unit_test_t  njs_test[] =
         "        'prototype',"
         "        'caller',"
         "        'arguments',"
+        "        'description',"
         "    ];"
         "    return Object.getOwnPropertyNames(o)"
         "                 .filter(v => !except.includes(v)"
@@ -11624,6 +11904,7 @@ static njs_unit_test_t  njs_test[] =
         "["
         "    Boolean, Boolean.prototype,"
         "    Number, Number.prototype,"
+        "    Symbol, Symbol.prototype,"
         "    String, String.prototype,"
         "    Object, Object.prototype,"
         "    Array, Array.prototype,"
@@ -14207,6 +14488,24 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("njs.dump([0, -0])"),
       njs_str("[0,-0]") },
 
+    { njs_str("njs.dump(Symbol())"),
+      njs_str("Symbol()") },
+
+    { njs_str("njs.dump(Object(Symbol()))"),
+      njs_str("[Symbol: Symbol()]") },
+
+    { njs_str("njs.dump(Symbol('desc'))"),
+      njs_str("Symbol(desc)") },
+
+    { njs_str("njs.dump(Object(Symbol('desc')))"),
+      njs_str("[Symbol: Symbol(desc)]") },
+
+    { njs_str("njs.dump(Symbol.iterator)"),
+      njs_str("Symbol(Symbol.iterator)") },
+
+    { njs_str("njs.dump(Object(Symbol.iterator))"),
+      njs_str("[Symbol: Symbol(Symbol.iterator)]") },
+
     /* Built-in methods name. */
 
     { njs_str(
@@ -14217,6 +14516,7 @@ static njs_unit_test_t  njs_test[] =
         "        'constructor',"
         "        'caller',"
         "        'arguments',"
+        "        'description',"
         "    ];"
         "    return Object.getOwnPropertyNames(o)"
         "                 .filter(v => !except.includes(v)"
@@ -14227,6 +14527,7 @@ static njs_unit_test_t  njs_test[] =
         "["
         "    Boolean, Boolean.prototype,"
         "    Number, Number.prototype,"
+        "    Symbol, Symbol.prototype,"
         "    String, String.prototype,"
         "    Object, Object.prototype,"
         "    Array, Array.prototype,"

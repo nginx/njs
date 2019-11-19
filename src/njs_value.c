@@ -47,6 +47,7 @@ const njs_value_t  njs_string_minus_infinity =
 const njs_value_t  njs_string_plus_infinity =
                                             njs_string("Infinity");
 const njs_value_t  njs_string_nan =         njs_string("NaN");
+const njs_value_t  njs_string_symbol =      njs_string("symbol");
 const njs_value_t  njs_string_string =      njs_string("string");
 const njs_value_t  njs_string_name =        njs_string("name");
 const njs_value_t  njs_string_data =        njs_string("data");
@@ -312,6 +313,9 @@ njs_type_string(njs_value_type_t type)
     case NJS_NUMBER:
         return "number";
 
+    case NJS_SYMBOL:
+        return "symbol";
+
     case NJS_STRING:
         return "string";
 
@@ -332,6 +336,9 @@ njs_type_string(njs_value_type_t type)
 
     case NJS_OBJECT_NUMBER:
         return "object number";
+
+    case NJS_OBJECT_SYMBOL:
+        return "object symbol";
 
     case NJS_OBJECT_STRING:
         return "object string";
@@ -514,6 +521,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
 
     case NJS_BOOLEAN:
     case NJS_NUMBER:
+    case NJS_SYMBOL:
         index = njs_primitive_prototype_index(value->type);
         obj = &vm->prototypes[index].object;
         break;
@@ -534,6 +542,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
     case NJS_ARRAY:
     case NJS_OBJECT_BOOLEAN:
     case NJS_OBJECT_NUMBER:
+    case NJS_OBJECT_SYMBOL:
     case NJS_OBJECT_STRING:
     case NJS_REGEXP:
     case NJS_DATE:
@@ -1205,4 +1214,12 @@ njs_value_to_object(njs_vm_t *vm, njs_value_t *value)
                    njs_type_string(value->type));
 
     return NJS_ERROR;
+}
+
+void
+njs_symbol_conversion_failed(njs_vm_t *vm, njs_bool_t to_string)
+{
+    njs_type_error(vm, to_string
+        ? "Cannot convert a Symbol value to a string"
+        : "Cannot convert a Symbol value to a number");
 }

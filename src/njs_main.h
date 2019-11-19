@@ -52,6 +52,7 @@
 
 #include <njs_boolean.h>
 #include <njs_number.h>
+#include <njs_symbol.h>
 #include <njs_string.h>
 #include <njs_object.h>
 #include <njs_object_hash.h>

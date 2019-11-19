@@ -84,6 +84,7 @@ typedef enum {
     NJS_OBJ_TYPE_ARRAY,
     NJS_OBJ_TYPE_BOOLEAN,
     NJS_OBJ_TYPE_NUMBER,
+    NJS_OBJ_TYPE_SYMBOL,
     NJS_OBJ_TYPE_STRING,
     NJS_OBJ_TYPE_FUNCTION,
     NJS_OBJ_TYPE_REGEXP,
@@ -232,6 +233,8 @@ struct njs_vm_s {
      * and NJS_PROPERTY_QUERY_DELETE modes.
      */
     uintptr_t                stash; /* njs_property_query_t * */
+
+    uint64_t                 symbol_generator;
 };
 
 

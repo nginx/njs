@@ -552,6 +552,10 @@ njs_string_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         value = &args[1];
 
         if (njs_slow_path(!njs_is_string(value))) {
+            if (!vm->top_frame->ctor && njs_is_symbol(value)) {
+                return njs_symbol_to_string(vm, &vm->retval, value);
+            }
+
             ret = njs_value_to_string(vm, value, value);
             if (njs_slow_path(ret != NJS_OK)) {
                 return ret;
@@ -4272,6 +4276,10 @@ njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
 
     case NJS_NUMBER:
         return njs_number_to_string(vm, dst, src);
+
+    case NJS_SYMBOL:
+        njs_symbol_conversion_failed(vm, 1);
+        return NJS_ERROR;
 
     case NJS_STRING:
         /* GC: njs_retain(src); */

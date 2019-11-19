@@ -92,6 +92,8 @@ njs_vm_create(njs_vm_opt_t *options)
         }
     }
 
+    vm->symbol_generator = NJS_SYMBOL_KNOWN_MAX;
+
     return vm;
 }
 

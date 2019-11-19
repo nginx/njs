@@ -261,6 +261,16 @@ next:
                     value2 = &primitive2;
                 }
 
+                if (njs_slow_path(njs_is_symbol(value1)
+                                  || njs_is_symbol(value2)))
+                {
+                    njs_symbol_conversion_failed(vm,
+                        (op == NJS_VMCODE_ADDITION) &&
+                        (njs_is_string(value1) || njs_is_string(value2)));
+
+                    goto error;
+                }
+
                 retval = njs_vmcode_operand(vm, vmcode->operand1);
 
                 if (op == NJS_VMCODE_ADDITION) {
@@ -1397,6 +1407,7 @@ njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
         &njs_string_undefined,
         &njs_string_boolean,
         &njs_string_number,
+        &njs_string_symbol,
         &njs_string_string,
         &njs_string_data,
         &njs_string_external,
@@ -1408,8 +1419,8 @@ njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
         &njs_string_undefined,
         &njs_string_undefined,
         &njs_string_undefined,
-        &njs_string_undefined,
 
+        &njs_string_object,
         &njs_string_object,
         &njs_string_object,
         &njs_string_object,
@@ -1494,10 +1505,14 @@ again:
             return njs_string_eq(val1, val2);
         }
 
+        if (njs_is_symbol(val1)) {
+            return njs_symbol_eq(val1, val2);
+        }
+
         return (njs_object(val1) == njs_object(val2));
     }
 
-    /* Sort values as: numeric < string < objects. */
+    /* Sort values as: numeric < symbol < string < objects. */
 
     if (val1->type > val2->type) {
         hv = val1;
@@ -1513,12 +1528,18 @@ again:
         return 0;
     }
 
-    /* If "hv" is a string then "lv" can only be a numeric. */
-    if (njs_is_string(hv)) {
-        return (njs_number(lv) == njs_string_to_number(hv, 0));
+    /* If "hv" is a symbol then "lv" can only be a numeric. */
+    if (njs_is_symbol(hv)) {
+        return 0;
     }
 
-    /* "hv" is an object and "lv" is either a string or a numeric. */
+    /* If "hv" is a string then "lv" can be a numeric or symbol. */
+    if (njs_is_string(hv)) {
+        return !njs_is_symbol(lv)
+            && (njs_number(lv) == njs_string_to_number(hv, 0));
+    }
+
+    /* "hv" is an object and "lv" is either a string or a symbol or a numeric. */
 
     ret = njs_value_to_primitive(vm, &primitive, hv, 0);
     if (ret != NJS_OK) {

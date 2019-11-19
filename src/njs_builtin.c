@@ -60,6 +60,7 @@ static const njs_object_type_init_t *const
     &njs_array_type_init,
     &njs_boolean_type_init,
     &njs_number_type_init,
+    &njs_symbol_type_init,
     &njs_string_type_init,
     &njs_function_type_init,
     &njs_regexp_type_init,
@@ -1163,6 +1164,15 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
         .name = njs_string("Number"),
         .value = njs_prop_handler2(njs_top_level_constructor,
                                    NJS_OBJ_TYPE_NUMBER, NJS_NUMBER_HASH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("Symbol"),
+        .value = njs_prop_handler2(njs_top_level_constructor,
+                                   NJS_OBJ_TYPE_SYMBOL, NJS_SYMBOL_HASH),
         .writable = 1,
         .configurable = 1,
     },

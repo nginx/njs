@@ -1933,6 +1933,33 @@ njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value,
 
         break;
 
+    case NJS_OBJECT_SYMBOL:
+        value = njs_object_value(value);
+
+        ret = njs_symbol_to_string(stringify->vm, &str_val, value);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
+        njs_string_get(&str_val, &str);
+
+        njs_dump("[Symbol: ");
+        njs_json_buf_append(stringify, (char *) str.start, str.length);
+        njs_dump("]");
+
+        break;
+
+    case NJS_SYMBOL:
+        ret = njs_symbol_to_string(stringify->vm, &str_val, value);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
+        njs_string_get(&str_val, &str);
+        njs_json_buf_append(stringify, (char *) str.start, str.length);
+
+        break;
+
     case NJS_OBJECT_NUMBER:
         value = njs_object_value(value);
 

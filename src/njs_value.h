@@ -32,14 +32,16 @@ typedef enum {
      *   a numeric value of the null and false values is zero,
      *   a numeric value of the void value is NaN.
      */
-    NJS_STRING                = 0x04,
+    NJS_SYMBOL                = 0x04,
+
+    NJS_STRING                = 0x05,
 
     /* The order of the above type is used in njs_is_primitive(). */
 
-    NJS_DATA                  = 0x05,
+    NJS_DATA                  = 0x06,
 
     /* The type is external code. */
-    NJS_EXTERNAL              = 0x06,
+    NJS_EXTERNAL              = 0x07,
 
     /*
      * The invalid value type is used:
@@ -47,7 +49,7 @@ typedef enum {
      *   to detect non-declared explicitly or implicitly variables,
      *   for native property getters.
      */
-    NJS_INVALID               = 0x07,
+    NJS_INVALID               = 0x08,
 
     /*
      * The object types are >= NJS_OBJECT, this is used in njs_is_object().
@@ -60,12 +62,13 @@ typedef enum {
     NJS_ARRAY                 = 0x11,
     NJS_OBJECT_BOOLEAN        = 0x12,
     NJS_OBJECT_NUMBER         = 0x13,
-    NJS_OBJECT_STRING         = 0x14,
-    NJS_FUNCTION              = 0x15,
-    NJS_REGEXP                = 0x16,
-    NJS_DATE                  = 0x17,
-    NJS_OBJECT_VALUE          = 0x18,
-#define NJS_VALUE_TYPE_MAX    (NJS_OBJECT_VALUE + 1)
+    NJS_OBJECT_SYMBOL         = 0x14,
+    NJS_OBJECT_STRING         = 0x15,
+    NJS_FUNCTION              = 0x16,
+    NJS_REGEXP                = 0x17,
+    NJS_DATE                  = 0x18,
+    NJS_OBJECT_VALUE          = 0x19,
+    NJS_VALUE_TYPE_MAX
 } njs_value_type_t;
 
 
@@ -367,6 +370,16 @@ typedef struct {
 }
 
 
+#define njs_wellknown_symbol(key) {                                           \
+    .data = {                                                                 \
+        .type = NJS_SYMBOL,                                                   \
+        .truth = 1,                                                           \
+        .magic32 = key,                                                       \
+        .u = { .value = NULL }                                                \
+    }                                                                         \
+}
+
+
 #define njs_string(s) {                                                       \
     .short_string = {                                                         \
         .type = NJS_STRING,                                                   \
@@ -478,6 +491,10 @@ typedef struct {
 
 #define njs_is_numeric(value)                                                 \
     ((value)->type <= NJS_NUMBER)
+
+
+#define njs_is_symbol(value)                                                  \
+    ((value)->type == NJS_SYMBOL)
 
 
 #define njs_is_string(value)                                                  \
@@ -661,6 +678,14 @@ typedef struct {
     *(value) = njs_value_false
 
 
+#define njs_symbol_key(value)                                                 \
+    ((value)->data.magic32)
+
+
+#define njs_symbol_eq(value1, value2)                                         \
+    (njs_symbol_key(value1) == njs_symbol_key(value2))
+
+
 extern const njs_value_t  njs_value_null;
 extern const njs_value_t  njs_value_undefined;
 extern const njs_value_t  njs_value_false;
@@ -681,6 +706,7 @@ extern const njs_value_t  njs_string_minus_zero;
 extern const njs_value_t  njs_string_minus_infinity;
 extern const njs_value_t  njs_string_plus_infinity;
 extern const njs_value_t  njs_string_nan;
+extern const njs_value_t  njs_string_symbol;
 extern const njs_value_t  njs_string_string;
 extern const njs_value_t  njs_string_data;
 extern const njs_value_t  njs_string_name;
@@ -874,6 +900,10 @@ njs_int_t njs_value_to_object(njs_vm_t *vm, njs_value_t *value);
 #include "njs_number.h"
 
 
+void
+njs_symbol_conversion_failed(njs_vm_t *vm, njs_bool_t to_string);
+
+
 njs_inline njs_int_t
 njs_value_to_number(njs_vm_t *vm, njs_value_t *value, double *dst)
 {
@@ -890,6 +920,12 @@ njs_value_to_number(njs_vm_t *vm, njs_value_t *value, double *dst)
     }
 
     if (njs_slow_path(!njs_is_numeric(value))) {
+
+        if (njs_slow_path(njs_is_symbol(value))) {
+            njs_symbol_conversion_failed(vm, 0);
+            return NJS_ERROR;
+        }
+
         *dst = NAN;
 
         if (njs_is_string(value)) {
@@ -1014,12 +1050,18 @@ njs_value_to_string(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
     njs_value_t  primitive;
 
     if (njs_slow_path(!njs_is_primitive(value))) {
-        ret = njs_value_to_primitive(vm, &primitive, value, 1);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
+        if (njs_slow_path(value->type == NJS_OBJECT_SYMBOL)) {
+            /* should fail */
+            value = njs_object_value(value);
 
-        value = &primitive;
+        } else {
+            ret = njs_value_to_primitive(vm, &primitive, value, 1);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+
+            value = &primitive;
+        }
     }
 
     return njs_primitive_value_to_string(vm, dst, value);
@@ -1045,6 +1087,10 @@ njs_values_strict_equal(const njs_value_t *val1, const njs_value_t *val2)
 
     if (njs_is_string(val1)) {
         return njs_string_eq(val1, val2);
+    }
+
+    if (njs_is_symbol(val1)) {
+        return njs_symbol_eq(val1, val2);
     }
 
     return (njs_object(val1) == njs_object(val2));
