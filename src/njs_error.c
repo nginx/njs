@@ -630,7 +630,7 @@ njs_error_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *error)
 
     static const njs_value_t  default_name = njs_string("Error");
 
-    njs_object_property_init(&lhq, "name", NJS_NAME_HASH);
+    njs_object_property_init(&lhq, &njs_string_name, NJS_NAME_HASH);
 
     ret = njs_object_property(vm, error, &lhq, &value1);
 

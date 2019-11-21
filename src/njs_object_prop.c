@@ -110,6 +110,13 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_SET, 1);
 
+    if (njs_slow_path(!njs_is_key(name))) {
+        ret = njs_value_to_key(vm, name, name);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
     ret = njs_property_query(vm, &pq, object, name);
 
     if (njs_slow_path(ret == NJS_ERROR)) {
@@ -367,6 +374,7 @@ done:
 
 exception:
 
+    njs_key_string_get(vm, &pq.key,  &pq.lhq.key);
     njs_type_error(vm, "Cannot redefine property: \"%V\"", &pq.lhq.key);
 
     return NJS_ERROR;
@@ -448,10 +456,12 @@ njs_descriptor_prop(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t         value;
     njs_lvlhsh_query_t  lhq;
 
+    static const njs_value_t  get_string = njs_string("get");
+
     data = 0;
     accessor = 0;
 
-    njs_object_property_init(&lhq, "get", NJS_GET_HASH);
+    njs_object_property_init(&lhq, &get_string, NJS_GET_HASH);
 
     ret = njs_object_property(vm, desc, &lhq, &value);
 
@@ -583,6 +593,13 @@ njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
     njs_property_query_t  pq;
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 1);
+
+    if (njs_slow_path(!njs_is_key(key))) {
+        ret = njs_value_to_key(vm, key, key);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
 
     ret = njs_property_query(vm, &pq, value, key);
 

@@ -10253,6 +10253,55 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Symbol.iterator.description"),
       njs_str("Symbol.iterator") },
 
+    { njs_str("var o = {}; o[Symbol.isConcatSpreadable] = true; "
+              "o[Symbol.isConcatSpreadable]"),
+      njs_str("true") },
+
+    { njs_str("var o = {[Symbol.isConcatSpreadable]:true}; "
+              "o[Symbol.isConcatSpreadable]"),
+      njs_str("true") },
+
+    { njs_str("var o = {[Symbol.isConcatSpreadable]:true}; "
+              "delete o[Symbol.isConcatSpreadable];"
+              "o[Symbol.isConcatSpreadable]"),
+      njs_str("undefined") },
+
+    { njs_str("var o = {get [Symbol.isConcatSpreadable](){return true}}; "
+              "o[Symbol.isConcatSpreadable]"),
+      njs_str("true") },
+
+    { njs_str("({[Symbol.isConcatSpreadable]:()=>true})[Symbol.isConcatSpreadable]()"),
+      njs_str("true") },
+
+    { njs_str("var o = {a:1, [Symbol.isConcatSpreadable]:true}; "
+              "["
+              " 'getOwnPropertyNames',"
+              " 'keys', "
+              " 'getOwnPropertySymbols',"
+              " 'getOwnPropertyDescriptors',"
+               "]"
+              ".map(v=>Object[v](o)).map(v=>njs.dump(v))"),
+      njs_str("['a'],['a'],[Symbol(Symbol.isConcatSpreadable)],"
+              "{a:{value:1,writable:true,enumerable:true,configurable:true},"
+              "Symbol(Symbol.isConcatSpreadable):{value:true,writable:true,enumerable:true,configurable:true}}") },
+
+    { njs_str("var o = {}; o[Symbol.isConcatSpreadable] = true; "
+              "Object.getOwnPropertyDescriptors(o)[Symbol.isConcatSpreadable].value"),
+      njs_str("true") },
+
+    { njs_str("var o = Object.defineProperties({}, {[Symbol.isConcatSpreadable]:{value:true}}); "
+              "o[Symbol.isConcatSpreadable]"),
+      njs_str("true") },
+
+    { njs_str("var o = Object.defineProperty({}, Symbol.isConcatSpreadable, "
+              "{configurable:false, writable:false, value:true}); "
+              "o[Symbol.isConcatSpreadable]"),
+      njs_str("true") },
+
+    { njs_str("var o = {}; o[Symbol.isConcatSpreadable] = true; "
+              "Object.getOwnPropertyDescriptor(o, Symbol.isConcatSpreadable).value"),
+      njs_str("true") },
+
     /* String */
 
     { njs_str("String()"),

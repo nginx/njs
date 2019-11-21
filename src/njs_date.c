@@ -1403,8 +1403,10 @@ njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_t         value;
     njs_lvlhsh_query_t  lhq;
 
+    static const njs_value_t  to_iso_string = njs_string("toISOString");
+
     if (njs_is_object(&args[0])) {
-        njs_object_property_init(&lhq, "toISOString", NJS_TO_ISO_STRING_HASH);
+        njs_object_property_init(&lhq, &to_iso_string, NJS_TO_ISO_STRING_HASH);
 
         ret = njs_object_property(vm, &args[0], &lhq, &value);
 

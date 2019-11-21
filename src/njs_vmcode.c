@@ -637,7 +637,7 @@ next:
                 accessor = (njs_vmcode_prop_accessor_t *) pc;
                 function = njs_vmcode_operand(vm, accessor->value);
 
-                ret = njs_value_to_string(vm, &name, value2);
+                ret = njs_value_to_key(vm, &name, value2);
                 if (njs_slow_path(ret != NJS_OK)) {
                     njs_internal_error(vm, "failed conversion of type \"%s\" "
                                        "to string while property define",
@@ -746,12 +746,12 @@ next:
                 }
 
                 if (njs_slow_path(!njs_is_function(&dst))) {
-                    ret = njs_value_to_string(vm, value2, value2);
+                    ret = njs_value_to_key(vm, value2, value2);
                     if (njs_slow_path(ret != NJS_OK)) {
                         return NJS_ERROR;
                     }
 
-                    njs_string_get(value2, &string);
+                    njs_key_string_get(vm, value2, &string);
                     njs_type_error(vm,
                                "(intermediate value)[\"%V\"] is not a function",
                                &string);
@@ -1186,13 +1186,12 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
         break;
 
     case NJS_OBJECT:
-        ret = njs_value_to_string(vm, &name, key);
+        ret = njs_value_to_key(vm, &name, key);
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
 
-        njs_string_get(&name, &lhq.key);
-        lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
+        njs_object_property_key_set(&lhq, &name, 0);
         lhq.proto = &njs_object_hash_proto;
         lhq.pool = vm->mem_pool;
 
@@ -1320,7 +1319,8 @@ njs_vmcode_property_foreach(njs_vm_t *vm, njs_value_t *object,
     }
 
     next->index = 0;
-    next->array = njs_value_enumerate(vm, object, NJS_ENUM_KEYS, 0);
+    next->array = njs_value_enumerate(vm, object, NJS_ENUM_KEYS,
+                                      NJS_ENUM_STRING, 0);
     if (njs_slow_path(next->array == NULL)) {
         njs_memory_error(vm);
         return NJS_ERROR;

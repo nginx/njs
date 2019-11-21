@@ -1160,7 +1160,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     function->u.bound_target = njs_function(&args[0]);
 
-    njs_object_property_init(&lhq, "name", NJS_NAME_HASH);
+    njs_object_property_init(&lhq, &njs_string_name, NJS_NAME_HASH);
 
     ret = njs_object_property(vm, &args[0], &lhq, &name);
     if (njs_slow_path(ret == NJS_ERROR)) {

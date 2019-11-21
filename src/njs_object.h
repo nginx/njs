@@ -8,27 +8,6 @@
 #define _NJS_OBJECT_H_INCLUDED_
 
 
-#define njs_is_data_descriptor(prop)                                          \
-    ((prop)->writable != NJS_ATTRIBUTE_UNSET || njs_is_valid(&(prop)->value))
-
-
-#define njs_is_accessor_descriptor(prop)                                      \
-    (njs_is_function_or_undefined(&(prop)->getter)                            \
-     || njs_is_function_or_undefined(&(prop)->setter))
-
-
-#define njs_is_generic_descriptor(prop)                                       \
-    (!njs_is_data_descriptor(prop) && !njs_is_accessor_descriptor(prop))
-
-
-#define njs_object_property_init(lhq, _key, hash)                             \
-    do {                                                                      \
-        (lhq)->proto = &njs_object_hash_proto;                                \
-        (lhq)->key_hash = hash;                                               \
-        (lhq)->key = njs_str_value(_key);                                     \
-    } while (0)
-
-
 typedef enum {
     NJS_OBJECT_PROP_DESCRIPTOR,
     NJS_OBJECT_PROP_GETTER,
@@ -65,9 +44,9 @@ njs_object_t *njs_object_value_copy(njs_vm_t *vm, njs_value_t *value);
 njs_object_t *njs_object_value_alloc(njs_vm_t *vm, const njs_value_t *value,
     njs_uint_t type);
 njs_array_t *njs_object_enumerate(njs_vm_t *vm, const njs_object_t *object,
-    njs_object_enum_t kind, njs_bool_t all);
+    njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all);
 njs_array_t *njs_object_own_enumerate(njs_vm_t *vm, const njs_object_t *object,
-    njs_object_enum_t kind, njs_bool_t all);
+    njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all);
 njs_int_t njs_object_traverse(njs_vm_t *vm, njs_object_t *object, void *ctx,
     njs_object_traverse_cb_t cb);
 njs_int_t njs_object_hash_create(njs_vm_t *vm, njs_lvlhsh_t *hash,
@@ -101,7 +80,147 @@ njs_int_t njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
     njs_value_t *value, njs_value_t *setval);
 const char *njs_prop_type_string(njs_object_prop_type_t type);
 
-extern const njs_object_type_init_t  njs_obj_type_init;
+
+njs_inline njs_bool_t
+njs_is_data_descriptor(njs_object_prop_t *prop)
+{
+    return prop->writable != NJS_ATTRIBUTE_UNSET || njs_is_valid(&prop->value);
+}
+
+
+njs_inline njs_bool_t
+njs_is_accessor_descriptor(njs_object_prop_t *prop)
+{
+    return njs_is_function_or_undefined(&prop->getter)
+           || njs_is_function_or_undefined(&prop->setter);
+}
+
+
+njs_inline njs_bool_t
+njs_is_generic_descriptor(njs_object_prop_t *prop)
+{
+    return !njs_is_data_descriptor(prop) && !njs_is_accessor_descriptor(prop);
+}
+
+
+njs_inline void
+njs_object_property_key_set(njs_lvlhsh_query_t *lhq, const njs_value_t *key,
+    uint32_t hash)
+{
+    if (njs_is_symbol(key)) {
+
+        lhq->key.length = 0;
+        lhq->key_hash = njs_symbol_key(key);
+
+    } else {
+
+        /* string. */
+
+        njs_string_get(key, &lhq->key);
+
+        if (hash == 0) {
+            lhq->key_hash = njs_djb_hash(lhq->key.start, lhq->key.length);
+
+        } else {
+            lhq->key_hash = hash;
+        }
+    }
+}
+
+
+njs_inline void
+njs_object_property_init(njs_lvlhsh_query_t *lhq, const njs_value_t *key,
+    uint32_t hash)
+{
+    lhq->proto = &njs_object_hash_proto;
+
+    njs_object_property_key_set(lhq, key, hash);
+}
+
+
+njs_inline njs_int_t
+njs_primitive_value_to_key(njs_vm_t *vm, njs_value_t *dst,
+    const njs_value_t *src)
+{
+    const njs_value_t  *value;
+
+    switch (src->type) {
+
+    case NJS_NULL:
+        value = &njs_string_null;
+        break;
+
+    case NJS_UNDEFINED:
+        value = &njs_string_undefined;
+        break;
+
+    case NJS_BOOLEAN:
+        value = njs_is_true(src) ? &njs_string_true : &njs_string_false;
+        break;
+
+    case NJS_NUMBER:
+        return njs_number_to_string(vm, dst, src);
+
+    case NJS_SYMBOL:
+    case NJS_STRING:
+        /* GC: njs_retain(src); */
+        value = src;
+        break;
+
+    default:
+        return NJS_ERROR;
+    }
+
+    *dst = *value;
+
+    return NJS_OK;
+}
+
+
+njs_inline njs_int_t
+njs_value_to_key(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
+{
+    njs_int_t    ret;
+    njs_value_t  primitive;
+
+    if (njs_slow_path(!njs_is_primitive(value))) {
+        if (njs_slow_path(value->type == NJS_OBJECT_SYMBOL)) {
+            /* should fail */
+            value = njs_object_value(value);
+
+        } else {
+            ret = njs_value_to_primitive(vm, &primitive, value, 1);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+
+            value = &primitive;
+        }
+    }
+
+    return njs_primitive_value_to_key(vm, dst, value);
+}
+
+
+njs_inline njs_int_t
+njs_key_string_get(njs_vm_t *vm, const njs_value_t *key, njs_str_t *str)
+{
+    njs_int_t    ret;
+    njs_value_t  dst;
+
+    if (njs_slow_path(njs_is_symbol(key))) {
+        ret = njs_symbol_to_string(vm, &dst, key);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+        key = &dst;
+    }
+
+    njs_string_get(key, str);
+
+    return NJS_OK;
+}
 
 
 njs_inline njs_int_t
@@ -116,6 +235,9 @@ njs_object_length_set(njs_vm_t *vm, njs_value_t *value, uint32_t length)
     return njs_value_property_set(vm, value, njs_value_arg(&string_length),
                                   &index);
 }
+
+
+extern const njs_object_type_init_t  njs_obj_type_init;
 
 
 #endif /* _NJS_OBJECT_H_INCLUDED_ */

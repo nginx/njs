@@ -1106,8 +1106,10 @@ njs_array_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_t         value;
     njs_lvlhsh_query_t  lhq;
 
+    static const njs_value_t  join_string = njs_string("join");
+
     if (njs_is_object(&args[0])) {
-        njs_object_property_init(&lhq, "join", NJS_JOIN_HASH);
+        njs_object_property_init(&lhq, &join_string, NJS_JOIN_HASH);
 
         ret = njs_object_property(vm, &args[0], &lhq, &value);
 
@@ -1322,7 +1324,8 @@ njs_object_indexes(njs_vm_t *vm, njs_value_t *object)
     uint32_t     i;
     njs_array_t  *keys;
 
-    keys = njs_value_own_enumerate(vm, object, NJS_ENUM_KEYS, 0);
+    keys = njs_value_own_enumerate(vm, object, NJS_ENUM_KEYS, NJS_ENUM_STRING,
+                                   0);
     if (njs_slow_path(keys == NULL)) {
         return NULL;
     }

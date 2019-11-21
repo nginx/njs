@@ -193,7 +193,7 @@ njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
 
 njs_array_t *
 njs_value_enumerate(njs_vm_t *vm, const njs_value_t *value,
-    njs_object_enum_t kind, njs_bool_t all)
+    njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all)
 {
     void                *obj;
     njs_int_t           ret;
@@ -202,11 +202,14 @@ njs_value_enumerate(njs_vm_t *vm, const njs_value_t *value,
     const njs_extern_t  *ext_proto;
 
     if (njs_is_object(value)) {
-        return njs_object_enumerate(vm, njs_object(value), kind, all);
+        return njs_object_enumerate(vm, njs_object(value), kind, type, all);
     }
 
     if (value->type != NJS_STRING) {
-        if (kind == NJS_ENUM_KEYS && njs_is_external(value)) {
+        if (kind == NJS_ENUM_KEYS
+            && (type & NJS_ENUM_STRING)
+            && njs_is_external(value))
+        {
             ext_proto = value->external.proto;
 
             if (ext_proto->keys != NULL) {
@@ -229,13 +232,13 @@ njs_value_enumerate(njs_vm_t *vm, const njs_value_t *value,
     obj_val.object = vm->string_object;
     obj_val.value = *value;
 
-    return njs_object_enumerate(vm, (njs_object_t *) &obj_val, kind, all);
+    return njs_object_enumerate(vm, (njs_object_t *) &obj_val, kind, type, all);
 }
 
 
 njs_array_t *
 njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
-    njs_object_enum_t kind, njs_bool_t all)
+    njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all)
 {
     void                *obj;
     njs_int_t           ret;
@@ -244,11 +247,14 @@ njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
     const njs_extern_t  *ext_proto;
 
     if (njs_is_object(value)) {
-        return njs_object_own_enumerate(vm, njs_object(value), kind, all);
+        return njs_object_own_enumerate(vm, njs_object(value), kind, type, all);
     }
 
     if (value->type != NJS_STRING) {
-        if (kind == NJS_ENUM_KEYS && njs_is_external(value)) {
+        if (kind == NJS_ENUM_KEYS
+            && (type & NJS_ENUM_STRING)
+            && njs_is_external(value))
+        {
             ext_proto = value->external.proto;
 
             if (ext_proto->keys != NULL) {
@@ -271,7 +277,8 @@ njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
     obj_val.object = vm->string_object;
     obj_val.value = *value;
 
-    return njs_object_own_enumerate(vm, (njs_object_t *) &obj_val, kind, all);
+    return njs_object_own_enumerate(vm, (njs_object_t *) &obj_val, kind,
+                                    type, all);
 }
 
 
@@ -580,12 +587,18 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
         return NJS_ERROR;
     }
 
-    ret = njs_primitive_value_to_string(vm, &pq->key, key);
+    ret = njs_primitive_value_to_key(vm, &pq->key, key);
 
     if (njs_fast_path(ret == NJS_OK)) {
 
-        njs_string_get(&pq->key, &pq->lhq.key);
-        pq->lhq.key_hash = njs_djb_hash(pq->lhq.key.start, pq->lhq.key.length);
+        if (njs_is_symbol(key)) {
+            pq->lhq.key_hash = njs_symbol_key(key);
+
+        } else {
+            njs_string_get(&pq->key, &pq->lhq.key);
+            pq->lhq.key_hash = njs_djb_hash(pq->lhq.key.start,
+                                            pq->lhq.key.length);
+        }
 
         if (obj == NULL) {
             pq->own = 1;
@@ -1022,6 +1035,7 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
 
         if (njs_is_data_descriptor(prop)) {
             if (!prop->writable) {
+                njs_key_string_get(vm, &pq.key,  &pq.lhq.key);
                 njs_type_error(vm,
                              "Cannot assign to read-only property \"%V\" of %s",
                                &pq.lhq.key, njs_type_string(value->type));
@@ -1034,6 +1048,7 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
                                          value, setval, 1, &vm->retval);
             }
 
+            njs_key_string_get(vm, &pq.key,  &pq.lhq.key);
             njs_type_error(vm,
                      "Cannot set property \"%V\" of %s which has only a getter",
                            &pq.lhq.key, njs_type_string(value->type));
@@ -1138,6 +1153,7 @@ njs_value_property_delete(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     prop = pq.lhq.value;
 
     if (njs_slow_path(!prop->configurable)) {
+        njs_key_string_get(vm, &pq.key,  &pq.lhq.key);
         njs_type_error(vm, "Cannot delete property \"%V\" of %s",
                        &pq.lhq.key, njs_type_string(value->type));
         return NJS_ERROR;

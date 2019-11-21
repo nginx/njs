@@ -68,6 +68,7 @@ typedef struct {
     njs_value_t                replacer;
     njs_str_t                  space;
     u_char                     space_buf[16];
+    njs_object_enum_type_t     keys_type;
 } njs_json_stringify_t;
 
 
@@ -227,6 +228,7 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     stringify->depth = 0;
     stringify->nodes = NULL;
     stringify->last = NULL;
+    stringify->keys_type = NJS_ENUM_STRING;
 
     replacer = njs_arg(args, nargs, 2);
 
@@ -867,7 +869,8 @@ njs_json_push_parse_state(njs_vm_t *vm, njs_json_parse_t *parse,
     } else {
         state->type = NJS_JSON_OBJECT;
         state->prop = NULL;
-        state->keys = njs_value_own_enumerate(vm, value, NJS_ENUM_KEYS, 0);
+        state->keys = njs_value_own_enumerate(vm, value, NJS_ENUM_KEYS,
+                                              NJS_ENUM_STRING, 0);
         if (state->keys == NULL) {
             return NULL;
         }
@@ -1094,7 +1097,7 @@ njs_json_push_stringify_state(njs_vm_t *vm, njs_json_stringify_t *stringify,
 
             } else {
                 state->keys = njs_value_own_enumerate(vm, value, NJS_ENUM_KEYS,
-                                                      0);
+                                                      stringify->keys_type, 0);
             }
 
             if (njs_slow_path(state->keys == NULL)) {
@@ -1362,7 +1365,9 @@ njs_object_to_json_function(njs_vm_t *vm, njs_value_t *value)
     njs_value_t         retval;
     njs_lvlhsh_query_t  lhq;
 
-    njs_object_property_init(&lhq, "toJSON", NJS_TO_JSON_HASH);
+    static const njs_value_t  to_json_string = njs_string("toJSON");
+
+    njs_object_property_init(&lhq, &to_json_string, NJS_TO_JSON_HASH);
 
     ret = njs_object_property(vm, value, &lhq, &retval);
 
@@ -2179,6 +2184,7 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, const njs_value_t *value,
     stringify->nodes = NULL;
     stringify->last = NULL;
     njs_set_undefined(&stringify->replacer);
+    stringify->keys_type = NJS_ENUM_STRING | NJS_ENUM_SYMBOL;
 
     if (!njs_dump_is_object(value)) {
         ret = njs_dump_value(stringify, value, console);
@@ -2221,8 +2227,7 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, const njs_value_t *value,
             }
 
             key = &state->keys->start[state->index++];
-            njs_string_get(key, &lhq.key);
-            lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
+            njs_object_property_key_set(&lhq, key, 0);
 
             if (njs_is_external(&state->value)) {
                 lhq.proto = &njs_extern_hash_proto;
@@ -2277,6 +2282,7 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, const njs_value_t *value,
             }
 
             state->written = 1;
+            njs_key_string_get(vm, key, &lhq.key);
             njs_json_stringify_append((char *) lhq.key.start, lhq.key.length);
             njs_json_stringify_append(":", 1);
             if (stringify->space.length != 0) {
