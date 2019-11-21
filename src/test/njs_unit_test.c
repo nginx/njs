@@ -10302,6 +10302,10 @@ static njs_unit_test_t  njs_test[] =
               "Object.getOwnPropertyDescriptor(o, Symbol.isConcatSpreadable).value"),
       njs_str("true") },
 
+    { njs_str("var o = {}, n = 5381 /* NJS_DJB_HASH_INIT */;"
+              "while(n--) o[Symbol()] = 'test'; o[''];"),
+      njs_str("undefined") },
+
     /* String */
 
     { njs_str("String()"),

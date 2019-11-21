@@ -171,7 +171,7 @@ njs_object_hash_test(njs_lvlhsh_query_t *lhq, void *data)
 
     if (njs_slow_path(njs_is_symbol(name))) {
         return ((njs_symbol_key(name) == lhq->key_hash)
-                && lhq->key.length == 0) ? NJS_OK : NJS_DECLINED;
+                && lhq->key.start == NULL) ? NJS_OK : NJS_DECLINED;
     }
 
     /* string. */

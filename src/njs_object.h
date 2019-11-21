@@ -110,6 +110,7 @@ njs_object_property_key_set(njs_lvlhsh_query_t *lhq, const njs_value_t *key,
     if (njs_is_symbol(key)) {
 
         lhq->key.length = 0;
+        lhq->key.start = NULL;
         lhq->key_hash = njs_symbol_key(key);
 
     } else {

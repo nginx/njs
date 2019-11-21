@@ -871,6 +871,7 @@ njs_set_object_value(njs_value_t *value, njs_object_value_t *object_value)
 #define njs_property_query_init(pq, _query, _own)                             \
     do {                                                                      \
         (pq)->lhq.key.length = 0;                                             \
+        (pq)->lhq.key.start = NULL;                                           \
         (pq)->lhq.value = NULL;                                               \
         (pq)->own_whiteout = NULL;                                            \
         (pq)->query = _query;                                                 \
