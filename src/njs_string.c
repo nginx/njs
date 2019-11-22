@@ -2939,7 +2939,7 @@ njs_string_prototype_pad(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         } else {
             ret = njs_value_to_string(vm, pad, pad);
             if (njs_slow_path(ret != NJS_OK)) {
-                return NJS_OK;
+                return NJS_ERROR;
             }
         }
     }

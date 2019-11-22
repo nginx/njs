@@ -6964,6 +6964,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'абв'.padStart(10, 'эю')"),
       njs_str("эюэюэюэабв") },
 
+    { njs_str("'abc'.padStart(10, Symbol())"),
+      njs_str("TypeError: Cannot convert a Symbol value to a string") },
+
     { njs_str("'1234'.padEnd(4)"),
       njs_str("1234") },
 
@@ -7011,6 +7014,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("'абвг'.padEnd(10, 'ДЕЖЗ')"),
       njs_str("абвгДЕЖЗДЕ") },
+
+    { njs_str("'abc'.padEnd(10, Symbol())"),
+      njs_str("TypeError: Cannot convert a Symbol value to a string") },
 
     { njs_str("String.bytesFrom({})"),
       njs_str("TypeError: value must be a string or array") },
