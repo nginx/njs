@@ -14264,6 +14264,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("JSON.stringify(undefined)"),
       njs_str("undefined") },
 
+    { njs_str("JSON.stringify(Symbol())"),
+      njs_str("undefined") },
+
     { njs_str("JSON.stringify({})"),
       njs_str("{}") },
 
@@ -14279,6 +14282,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("JSON.stringify({a:1, b:undefined})"),
       njs_str("{\"a\":1}") },
 
+    { njs_str("JSON.stringify({a:1, b:Symbol()})"),
+      njs_str("{\"a\":1}") },
+
     { njs_str("var o = {a:1, c:2};"
                  "Object.defineProperty(o, 'b', {enumerable:false, value:3});"
                  "JSON.stringify(o)"),
@@ -14289,6 +14295,12 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("JSON.stringify(RegExp())"),
       njs_str("{}") },
+
+    { njs_str("JSON.stringify(Object(Symbol()))"),
+      njs_str("{}") },
+
+    { njs_str("var s = Object(Symbol()); s.test = 'test'; JSON.stringify(s)"),
+      njs_str("{\"test\":\"test\"}") },
 
     { njs_str("JSON.stringify(SyntaxError('e'))"),
       njs_str("{}") },

@@ -1128,6 +1128,7 @@ njs_json_pop_stringify_state(njs_json_stringify_t *stringify)
 
 #define njs_json_is_object(value)                                             \
     (((value)->type == NJS_OBJECT)                                            \
+     || ((value)->type == NJS_OBJECT_SYMBOL)                                  \
      || ((value)->type == NJS_ARRAY)                                          \
      || ((value)->type >= NJS_REGEXP))
 
@@ -1211,6 +1212,7 @@ njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify,
             }
 
             if (njs_is_undefined(value)
+                || njs_is_symbol(value)
                 || njs_is_function(value)
                 || !njs_is_valid(value))
             {
@@ -1559,6 +1561,7 @@ njs_json_append_value(njs_json_stringify_t *stringify, const njs_value_t *value)
 
     case NJS_UNDEFINED:
     case NJS_NULL:
+    case NJS_SYMBOL:
     case NJS_INVALID:
     case NJS_FUNCTION:
     default:
