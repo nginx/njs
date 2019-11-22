@@ -2274,12 +2274,18 @@ static const njs_value_t  njs_object_regexp_string =
 static const njs_value_t  njs_object_date_string = njs_string("[object Date]");
 static const njs_value_t  njs_object_error_string =
                                      njs_string("[object Error]");
+static const njs_value_t  njs_object_arguments_string =
+                                     njs_long_string("[object Arguments]");
 
 
 njs_int_t
 njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
+    u_char             *p;
+    njs_int_t          ret;
+    njs_value_t        tag, *value;
+    njs_string_prop_t  string;
     const njs_value_t  *name;
 
     static const njs_value_t  *class_name[NJS_VALUE_TYPE_MAX] = {
@@ -2315,21 +2321,56 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         &njs_object_object_string,
     };
 
-    name = class_name[args[0].type];
+    value = njs_argument(args, 0);
+    name = class_name[value->type];
 
-    if (njs_is_error(&args[0])) {
-        name = &njs_object_error_string;
-    }
-
-    if (njs_fast_path(name != NULL)) {
+    if (njs_is_null_or_undefined(value)) {
         vm->retval = *name;
 
         return NJS_OK;
     }
 
-    njs_internal_error(vm, "Unknown value type");
+    if (njs_is_error(value)) {
+        name = &njs_object_error_string;
+    }
 
-    return NJS_ERROR;
+    if (njs_is_object(value)
+        && njs_lvlhsh_eq(&njs_object(value)->shared_hash,
+                         &vm->shared->arguments_object_instance_hash))
+    {
+        name = &njs_object_arguments_string;
+    }
+
+    ret = njs_object_string_tag(vm, value, &tag);
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return ret;
+    }
+
+    if (ret == NJS_DECLINED) {
+        if (njs_slow_path(name == NULL)) {
+            njs_internal_error(vm, "Unknown value type");
+
+            return NJS_ERROR;
+        }
+
+        vm->retval = *name;
+
+        return NJS_OK;
+    }
+
+    (void) njs_string_prop(&string, &tag);
+
+    p = njs_string_alloc(vm, &vm->retval, string.size + njs_length("[object ]"),
+                         string.length + njs_length("[object ]"));
+    if (njs_slow_path(p == NULL)) {
+        return NJS_ERROR;
+    }
+
+    p = njs_cpymem(p, "[object ", 8);
+    p = njs_cpymem(p, string.start, string.size);
+    *p = ']';
+
+    return NJS_OK;
 }
 
 

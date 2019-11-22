@@ -8152,6 +8152,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("(function () {arguments = [];})"),
       njs_str("SyntaxError: Identifier \"arguments\" is forbidden as left-hand in assignment in 1") },
 
+    { njs_str("(function(){return arguments;})()"),
+      njs_str("[object Arguments]") },
+
     { njs_str("(function(){return arguments[0];})(1,2,3)"),
       njs_str("1") },
 
@@ -8368,16 +8371,16 @@ static njs_unit_test_t  njs_test[] =
     /* arrow functions + global this. */
 
     { njs_str("(() => this)()"),
-      njs_str("[object Object]") },
+      njs_str("[object global]") },
 
     { njs_str("(() => this).call('abc')"),
-      njs_str("[object Object]") },
+      njs_str("[object global]") },
 
     { njs_str("(() => this).apply('abc')"),
-      njs_str("[object Object]") },
+      njs_str("[object global]") },
 
     { njs_str("(() => this).bind('abc')()"),
-      njs_str("[object Object]") },
+      njs_str("[object global]") },
 
     { njs_str("(function() { return (() => this); })()()"),
       njs_str("undefined") },
@@ -9338,7 +9341,7 @@ static njs_unit_test_t  njs_test[] =
     /* global this. */
 
     { njs_str("this"),
-      njs_str("[object Object]") },
+      njs_str("[object global]") },
 
     { njs_str("Object.getOwnPropertyDescriptor(this, 'NaN').value"),
       njs_str("NaN") },
@@ -9415,7 +9418,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("TypeError: right argument is not callable") },
 
     { njs_str("njs"),
-      njs_str("[object Object]") },
+      njs_str("[object njs]") },
 
     { njs_str("var o = Object(); o"),
       njs_str("[object Object]") },
@@ -10041,7 +10044,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("true") },
 
     { njs_str("Object.prototype.toString.call(Symbol.prototype)"),
-      njs_str("[object Object]") },
+      njs_str("[object Symbol]") },
 
     { njs_str("Symbol.prototype.toString()"),
       njs_str("TypeError: unexpected value type:object") },
@@ -10311,6 +10314,20 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var o = {}, n = 5381 /* NJS_DJB_HASH_INIT */;"
               "while(n--) o[Symbol()] = 'test'; o[''];"),
       njs_str("undefined") },
+
+    { njs_str("["
+              " Object.prototype,"
+              " Symbol.prototype,"
+              " Math,"
+              " JSON,"
+              " process,"
+              " njs,"
+              " this,"
+               "]"
+              ".map(v=>Object.getOwnPropertyDescriptor(v, Symbol.toStringTag))"
+              ".map(d=>{if (d && !d.writable && !d.enumerable && d.configurable) return d.value})"
+              ".map(v=>njs.dump(v))"),
+      njs_str("undefined,Symbol,Math,JSON,process,njs,global") },
 
     /* String */
 
@@ -10649,6 +10666,10 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Object.prototype.toString.call(true)"),
       njs_str("[object Boolean]") },
 
+    { njs_str("Boolean.prototype[Symbol.toStringTag] = 'XXX';"
+              "Object.prototype.toString.call(true)"),
+      njs_str("[object XXX]") },
+
     { njs_str("Object.prototype.toString.call(1)"),
       njs_str("[object Number]") },
 
@@ -10660,6 +10681,10 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("Object.prototype.toString.call([])"),
       njs_str("[object Array]") },
+
+    { njs_str("var a = []; a[Symbol.toStringTag] = 'XXX';"
+              "Object.prototype.toString.call(a)"),
+      njs_str("[object XXX]") },
 
     { njs_str("Object.prototype.toString.call(new Object(true))"),
       njs_str("[object Boolean]") },
@@ -10682,8 +10707,18 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Object.prototype.toString.call(function(){})"),
       njs_str("[object Function]") },
 
+    { njs_str("var f = ()=>1; f[Symbol.toStringTag] = 'α'.repeat(32);"
+              "var toStr = Object.prototype.toString.call(f); [toStr, toStr.length]"),
+      njs_str("[object αααααααααααααααααααααααααααααααα],41") },
+
     { njs_str("Object.prototype.toString.call(/./)"),
       njs_str("[object RegExp]") },
+
+    { njs_str("Object.prototype.toString.call(Math)"),
+      njs_str("[object Math]") },
+
+    { njs_str("Object.prototype.toString.call(JSON)"),
+      njs_str("[object JSON]") },
 
     { njs_str("var p = { a:5 }; var o = Object.create(p); o.a"),
       njs_str("5") },
@@ -13571,10 +13606,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Math.trunc()"),
       njs_str("NaN") },
 
-    /* ES5FIX: "[object Math]". */
-
     { njs_str("Math"),
-      njs_str("[object Object]") },
+      njs_str("[object Math]") },
 
     { njs_str("Math.x = function (x) {return 2*x;}; Math.x(3)"),
       njs_str("6") },
@@ -13809,6 +13842,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("this.Math = 1; Math"),
       njs_str("1") },
+
+    { njs_str("JSON"),
+      njs_str("[object JSON]") },
 
     { njs_str("JSON === JSON"),
       njs_str("true") },
@@ -14535,7 +14571,7 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("njs.dump($r.header)"),
       njs_str("{type:\"object\",props:[\"getter\",\"keys\"]}") },
 
-    { njs_str("njs.dump(njs) == `{version:'${njs.version}'}`"),
+    { njs_str("njs.dump(njs) == `njs {version:'${njs.version}'}`"),
       njs_str("true") },
 
     { njs_str("njs.dump(-0)"),
@@ -14760,11 +14796,9 @@ static njs_unit_test_t  njs_test[] =
 
     /* require('crypto').createHash() */
 
-    { njs_str("require('crypto').createHash('sha1')"),
-      njs_str("[object Hash]") },
-
-    { njs_str("Object.prototype.toString.call(require('crypto').createHash('sha1'))"),
-      njs_str("[object Object]") },
+    { njs_str("var h = require('crypto').createHash('sha1');"
+              "[Object.prototype.toString.call(h), njs.dump(h),h]"),
+      njs_str("[object Hash],Hash {},[object Hash]") },
 
     { njs_str("var h = require('crypto').createHash('sha1');"
               "var Hash = h.constructor; "
@@ -14853,8 +14887,9 @@ static njs_unit_test_t  njs_test[] =
 
     /* require('crypto').createHmac() */
 
-    { njs_str("require('crypto').createHmac('sha1', '')"),
-      njs_str("[object Hmac]") },
+    { njs_str("var h = require('crypto').createHmac('sha1', '');"
+              "[Object.prototype.toString.call(h), njs.dump(h),h]"),
+      njs_str("[object Hmac],Hmac {},[object Hmac]") },
 
     { njs_str("var h = require('crypto').createHmac('md5', '');"
                  "h.digest('hex')"),

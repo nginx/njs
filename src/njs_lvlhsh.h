@@ -105,6 +105,10 @@ struct njs_lvlhsh_query_s {
 #define njs_lvlhsh_init(lh)                                                   \
     (lh)->slot = NULL
 
+
+#define njs_lvlhsh_eq(lhl, lhr)                                               \
+    ((lhl)->slot == (lhr)->slot)
+
 /*
  * njs_lvlhsh_find() finds a hash element.  If the element has been
  * found then it is stored in the lhq->value and njs_lvlhsh_find()

@@ -238,6 +238,27 @@ njs_object_length_set(njs_vm_t *vm, njs_value_t *value, uint32_t length)
 }
 
 
+njs_inline njs_int_t
+njs_object_string_tag(njs_vm_t *vm, njs_value_t *value, njs_value_t *tag)
+{
+    njs_int_t  ret;
+
+    static const njs_value_t  to_string_tag =
+                                njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG);
+
+    ret = njs_value_property(vm, value, njs_value_arg(&to_string_tag), tag);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    if (!njs_is_string(tag)) {
+        return NJS_DECLINED;
+    }
+
+    return NJS_OK;
+}
+
+
 extern const njs_object_type_init_t  njs_obj_type_init;
 
 

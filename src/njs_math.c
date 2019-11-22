@@ -986,6 +986,13 @@ static const njs_object_prop_t  njs_math_object_properties[] =
 {
     {
         .type = NJS_PROPERTY,
+        .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
+        .value = njs_string("Math"),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
         .name = njs_string("E"),
         .value = njs_value(NJS_NUMBER, 1, M_E),
     },

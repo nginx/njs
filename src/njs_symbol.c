@@ -384,6 +384,13 @@ njs_symbol_prototype_description(njs_vm_t *vm, njs_value_t *args,
 static const njs_object_prop_t  njs_symbol_prototype_properties[] =
 {
     {
+        .type = NJS_PROPERTY,
+        .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
+        .value = njs_string("Symbol"),
+        .configurable = 1,
+    },
+
+    {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("__proto__"),
         .value = njs_prop_handler(njs_primitive_prototype_get_proto),

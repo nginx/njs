@@ -956,6 +956,13 @@ njs_top_level_constructor(njs_vm_t *vm, njs_object_prop_t *self,
 
 static const njs_object_prop_t  njs_global_this_object_properties[] =
 {
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
+        .value = njs_string("global"),
+        .configurable = 1,
+    },
+
     /* Global constants. */
 
     {
@@ -1313,6 +1320,13 @@ static const njs_object_prop_t  njs_njs_object_properties[] =
 {
     {
         .type = NJS_PROPERTY,
+        .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
+        .value = njs_string("njs"),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
         .name = njs_string("version"),
         .value = njs_string(NJS_VERSION),
         .configurable = 1,
@@ -1509,6 +1523,13 @@ njs_process_object_ppid(njs_vm_t *vm, njs_object_prop_t *prop,
 
 static const njs_object_prop_t  njs_process_object_properties[] =
 {
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
+        .value = njs_string("process"),
+        .configurable = 1,
+    },
+
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("argv"),

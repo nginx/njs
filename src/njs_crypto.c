@@ -299,18 +299,6 @@ njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_int_t
-njs_hash_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
-{
-    static const njs_value_t  string = njs_string("[object Hash]");
-
-    vm->retval = string;
-
-    return NJS_OK;
-}
-
-
 static const njs_object_prop_t  njs_hash_prototype_properties[] =
 {
     {
@@ -322,9 +310,8 @@ static const njs_object_prop_t  njs_hash_prototype_properties[] =
 
     {
         .type = NJS_PROPERTY,
-        .name = njs_string("toString"),
-        .value = njs_native_function(njs_hash_prototype_to_string, 0),
-        .writable = 1,
+        .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
+        .value = njs_string("Hash"),
         .configurable = 1,
     },
 
@@ -598,18 +585,6 @@ njs_hmac_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_int_t
-njs_hmac_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
-{
-    static const njs_value_t  string = njs_string("[object Hmac]");
-
-    vm->retval = string;
-
-    return NJS_OK;
-}
-
-
 static const njs_object_prop_t  njs_hmac_prototype_properties[] =
 {
     {
@@ -621,9 +596,8 @@ static const njs_object_prop_t  njs_hmac_prototype_properties[] =
 
     {
         .type = NJS_PROPERTY,
-        .name = njs_string("toString"),
-        .value = njs_native_function(njs_hmac_prototype_to_string, 0),
-        .writable = 1,
+        .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
+        .value = njs_string("Hmac"),
         .configurable = 1,
     },
 

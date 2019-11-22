@@ -205,7 +205,7 @@ njs_vm_json_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs)
 {
     njs_function_t  *parse;
 
-    parse = njs_function(&njs_json_object_properties[0].value);
+    parse = njs_function(&njs_json_object_properties[1].value);
 
     return njs_vm_call(vm, parse, args, nargs);
 }
@@ -285,7 +285,7 @@ njs_vm_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs)
 {
     njs_function_t  *stringify;
 
-    stringify = njs_function(&njs_json_object_properties[1].value);
+    stringify = njs_function(&njs_json_object_properties[2].value);
 
     return njs_vm_call(vm, stringify, args, nargs);
 }
@@ -1133,7 +1133,7 @@ njs_json_pop_stringify_state(njs_json_stringify_t *stringify)
 
 
 #define njs_json_stringify_append(str, len)                                   \
-    ret = njs_json_buf_append(stringify, str, len);                           \
+    ret = njs_json_buf_append(stringify, (char *) str, len);                  \
     if (ret != NJS_OK) {                                                      \
         goto memory_error;                                                    \
     }
@@ -1143,7 +1143,7 @@ njs_json_pop_stringify_state(njs_json_stringify_t *stringify)
     if (stringify->space.length != 0) {                                       \
         njs_json_stringify_append("\n", 1);                                   \
         for (i = 0; i < (njs_int_t) (times) - 1; i++) {                       \
-            njs_json_stringify_append((char *) stringify->space.start,        \
+            njs_json_stringify_append(stringify->space.start,                 \
                                       stringify->space.length);               \
         }                                                                     \
     }
@@ -1857,7 +1857,13 @@ njs_json_buf_pullup(njs_json_stringify_t *stringify, njs_str_t *str)
 
 static const njs_object_prop_t  njs_json_object_properties[] =
 {
-    /* JSON.parse(). */
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
+        .value = njs_string("JSON"),
+        .configurable = 1,
+    },
+
     {
         .type = NJS_PROPERTY,
         .name = njs_string("parse"),
@@ -1866,7 +1872,6 @@ static const njs_object_prop_t  njs_json_object_properties[] =
         .configurable = 1,
     },
 
-    /* JSON.stringify(). */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("stringify"),
@@ -2161,9 +2166,10 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, const njs_value_t *value,
     njs_int_t             i;
     njs_int_t             ret;
     njs_str_t             str;
-    njs_value_t           *key, *val, ext_val;
+    njs_value_t           *key, *val, tag, ext_val;
     njs_object_t          *object;
     njs_json_state_t      *state;
+    njs_string_prop_t     string;
     njs_object_prop_t     *prop;
     njs_lvlhsh_query_t    lhq;
     njs_json_stringify_t  *stringify, dump_stringify;
@@ -2210,6 +2216,17 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, const njs_value_t *value,
         switch (state->type) {
         case NJS_JSON_OBJECT:
             if (state->index == 0) {
+                ret = njs_object_string_tag(vm, &state->value, &tag);
+                if (njs_slow_path(ret == NJS_ERROR)) {
+                    return ret;
+                }
+
+                if (ret == NJS_OK) {
+                    (void) njs_string_prop(&string, &tag);
+                    njs_json_stringify_append(string.start, string.size)
+                    njs_json_stringify_append(" ", 1);
+                }
+
                 njs_json_stringify_append("{", 1);
                 njs_json_stringify_indent(stringify->depth + 1);
             }
@@ -2283,7 +2300,7 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, const njs_value_t *value,
 
             state->written = 1;
             njs_key_string_get(vm, key, &lhq.key);
-            njs_json_stringify_append((char *) lhq.key.start, lhq.key.length);
+            njs_json_stringify_append(lhq.key.start, lhq.key.length);
             njs_json_stringify_append(":", 1);
             if (stringify->space.length != 0) {
                 njs_json_stringify_append(" ", 1);
