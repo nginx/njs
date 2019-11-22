@@ -2242,7 +2242,11 @@ static njs_int_t
 njs_object_prototype_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    vm->retval = args[0];
+    vm->retval = *njs_argument(args, 0);
+
+    if (!njs_is_object(&vm->retval)) {
+        return njs_value_to_object(vm, &vm->retval);
+    }
 
     return NJS_OK;
 }

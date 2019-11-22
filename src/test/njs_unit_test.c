@@ -9531,6 +9531,17 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Object.prototype.valueOf.prototype"),
       njs_str("undefined") },
 
+    { njs_str("Object.prototype.valueOf.call()"),
+      njs_str("TypeError: cannot convert null or undefined to object") },
+
+    { njs_str("Object.prototype.valueOf.call(null)"),
+      njs_str("TypeError: cannot convert null or undefined to object") },
+
+    { njs_str("[false, NaN, Symbol(), '']"
+              ".map((x) => Object.prototype.valueOf.call(x))"
+              ".map((x) => Object.prototype.toString.call(x))"),
+      njs_str("[object Boolean],[object Number],[object Symbol],[object String]") },
+
     { njs_str("Object.constructor === Function"),
       njs_str("true") },
 
