@@ -1211,14 +1211,6 @@ njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify,
                 return ret;
             }
 
-            if (njs_is_undefined(value)
-                || njs_is_symbol(value)
-                || njs_is_function(value)
-                || !njs_is_valid(value))
-            {
-                break;
-            }
-
             ret = njs_json_stringify_to_json(stringify, state, key, value);
             if (njs_slow_path(ret != NJS_OK)) {
                 return ret;
@@ -1229,7 +1221,11 @@ njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify,
                 return ret;
             }
 
-            if (njs_is_undefined(value)) {
+            if (njs_is_undefined(value)
+                || njs_is_symbol(value)
+                || njs_is_function(value)
+                || !njs_is_valid(value))
+            {
                 break;
             }
 

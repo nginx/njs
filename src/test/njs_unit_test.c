@@ -14562,6 +14562,10 @@ static njs_unit_test_t  njs_test[] =
                  "JSON.stringify(objs)"),
       njs_str("[{\"\":{\"a\":1}},{\"a\":1}]") },
 
+    { njs_str("JSON.stringify({a: () => 1, b: Symbol(), c: undefined},"
+                             "(k, v) => k.length ? String(v) : v)"),
+      njs_str("{\"a\":\"[object Function]\",\"b\":\"Symbol()\",\"c\":\"undefined\"}") },
+
     { njs_str("var a = []; a[0] = a; JSON.stringify(a)"),
       njs_str("TypeError: Nested too deep or a cyclic structure") },
 
