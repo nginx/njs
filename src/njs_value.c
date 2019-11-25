@@ -815,10 +815,18 @@ njs_external_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 
     prop = &pq->scratch;
 
-    prop->type = NJS_PROPERTY;
-    prop->writable = 0;
+    njs_memzero(prop, sizeof(njs_object_prop_t));
+
+    /*
+     * njs_memzero() does also:
+     *   prop->type = NJS_PROPERTY;
+     *   prop->writable = 0;
+     *   prop->configurable = 0;
+     *   njs_set_null(&prop->getter);
+     *   njs_set_null(&prop->setter);
+     */
+
     prop->enumerable = 1;
-    prop->configurable = 0;
 
     ext_proto = object->external.proto;
 
@@ -840,6 +848,12 @@ njs_external_property_query(njs_vm_t *vm, njs_property_query_t *pq,
         data = ext_proto->data;
 
     } else {
+
+        if (pq->lhq.key.start == NULL) {
+            /* Symbol.toStringTag is not supported yet. */
+            goto done;
+        }
+
         data = (uintptr_t) &pq->lhq.key;
     }
 

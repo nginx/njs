@@ -13842,6 +13842,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("this.njs = 1; njs"),
       njs_str("1") },
 
+    { njs_str("njs.dump(this) === `global {njs:njs {version:'${njs.version}'},process:process {}}`"),
+      njs_str("true") },
+
     { njs_str("process === process"),
       njs_str("true") },
 
@@ -14594,10 +14597,10 @@ static njs_unit_test_t  njs_test[] =
       njs_str("{a:'[Setter]'}") },
 
     { njs_str("njs.dump($r.props)"),
-      njs_str("{a:{type:\"property\",props:[\"getter\"]},b:{type:\"property\",props:[\"getter\"]}}") },
+      njs_str("{a:'1',b:42}") },
 
     { njs_str("njs.dump($r.header)"),
-      njs_str("{type:\"object\",props:[\"getter\",\"keys\"]}") },
+      njs_str("{01:'01|АБВ',02:'02|АБВ',03:'03|АБВ'}") },
 
     { njs_str("njs.dump(njs) == `njs {version:'${njs.version}'}`"),
       njs_str("true") },

@@ -1906,15 +1906,12 @@ static njs_int_t
 njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value,
     njs_uint_t console)
 {
-    njs_int_t           ret;
-    njs_str_t           str;
-    njs_uint_t          written;
-    njs_value_t         str_val;
-    const njs_extern_t  *ext_proto;
-    u_char              buf[32], *p;
+    njs_int_t    ret;
+    njs_str_t    str;
+    njs_value_t  str_val;
+    u_char       buf[32], *p;
 
-    njs_int_t           (*to_string)(njs_vm_t *, njs_value_t *,
-                                     const njs_value_t *);
+    njs_int_t   (*to_string)(njs_vm_t *, njs_value_t *, const njs_value_t *);
 
     switch (value->type) {
     case NJS_OBJECT_STRING:
@@ -2032,52 +2029,6 @@ njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value,
 
         break;
 
-    case NJS_EXTERNAL:
-        ext_proto = value->external.proto;
-
-        written = 0;
-        njs_dump_item("{type:");
-
-        switch (ext_proto->type) {
-        case NJS_EXTERN_PROPERTY:
-            njs_dump("\"property\"");
-            break;
-        case NJS_EXTERN_METHOD:
-            njs_dump("\"method\"");
-            break;
-        case NJS_EXTERN_OBJECT:
-            njs_dump("\"object\"");
-            break;
-        case NJS_EXTERN_CASELESS_OBJECT:
-            njs_dump("\"caseless_object\"");
-            break;
-        }
-
-        njs_dump_item("props:[");
-        written = 0;
-
-        if (ext_proto->get != NULL) {
-            njs_dump_item("\"getter\"");
-        }
-
-        if (ext_proto->set != NULL) {
-            njs_dump_item("\"setter\"");
-        }
-
-        if (ext_proto->function != NULL) {
-            njs_dump_item("\"method\"");
-        }
-
-        if (ext_proto->find != NULL) {
-            njs_dump_item("\"find\"");
-        }
-
-        if (ext_proto->keys != NULL) {
-            njs_dump_item("\"keys\"");
-        }
-
-        return njs_json_buf_append(stringify, "]}", 2);
-
     case NJS_NUMBER:
         if (njs_slow_path(njs_number(value) == 0.0
                           && signbit(njs_number(value))))
@@ -2135,12 +2086,25 @@ memory_error:
 }
 
 
-#define njs_dump_is_object(value)                                             \
-    (((value)->type == NJS_OBJECT && !njs_object(value)->error_data)          \
-     || ((value)->type == NJS_ARRAY)                                          \
-     || ((value)->type == NJS_OBJECT_VALUE)                                   \
-     || ((value)->type == NJS_EXTERNAL                                        \
-         && !njs_lvlhsh_is_empty(&(value)->external.proto->hash)))
+njs_inline njs_bool_t
+njs_dump_is_external_object(const njs_value_t *value)
+{
+    if (!njs_is_external(value)) {
+        return 0;
+    }
+
+    return value->external.proto->type == NJS_EXTERN_OBJECT;
+}
+
+
+njs_inline njs_bool_t
+njs_dump_is_object(const njs_value_t *value)
+{
+    return (value->type == NJS_OBJECT && !njs_object(value)->error_data)
+           || (value->type == NJS_ARRAY)
+           || (value->type == NJS_OBJECT_VALUE)
+           || njs_dump_is_external_object(value);
+}
 
 
 #define njs_dump_append_value(value)                                          \
@@ -2154,6 +2118,11 @@ memory_error:
     }
 
 
+static const njs_value_t  string_get = njs_string("[Getter]");
+static const njs_value_t  string_set = njs_string("[Setter]");
+static const njs_value_t  string_get_set = njs_long_string("[Getter/Setter]");
+
+
 njs_int_t
 njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, const njs_value_t *value,
     njs_uint_t console, njs_uint_t indent)
@@ -2161,17 +2130,12 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, const njs_value_t *value,
     njs_int_t             i;
     njs_int_t             ret;
     njs_str_t             str;
-    njs_value_t           *key, *val, tag, ext_val;
-    njs_object_t          *object;
+    njs_value_t           *key, *val, tag;
     njs_json_state_t      *state;
     njs_string_prop_t     string;
     njs_object_prop_t     *prop;
-    njs_lvlhsh_query_t    lhq;
+    njs_property_query_t  pq;
     njs_json_stringify_t  *stringify, dump_stringify;
-
-    const njs_value_t  string_get = njs_string("[Getter]");
-    const njs_value_t  string_set = njs_string("[Setter]");
-    const njs_value_t  string_get_set = njs_long_string("[Getter/Setter]");
 
     if (njs_vm_backtrace(vm) != NULL) {
         goto exception;
@@ -2238,53 +2202,50 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, const njs_value_t *value,
                 break;
             }
 
+            njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 0);
+
             key = &state->keys->start[state->index++];
-            njs_object_property_key_set(&lhq, key, 0);
 
-            if (njs_is_external(&state->value)) {
-                lhq.proto = &njs_extern_hash_proto;
-
-                ret = njs_lvlhsh_find(&state->value.external.proto->hash, &lhq);
-                if (njs_slow_path(ret == NJS_DECLINED)) {
-                    break;
-                }
-
-                ext_val.type = NJS_EXTERNAL;
-                ext_val.data.truth = 1;
-                ext_val.external.proto = lhq.value;
-
-                val = &ext_val;
-
-            } else {
-                object = njs_object(&state->value);
-                lhq.proto = &njs_object_hash_proto;
-
-                ret = njs_lvlhsh_find(&object->hash, &lhq);
+            ret = njs_property_query(vm, &pq, &state->value, key);
+            if (njs_slow_path(ret != NJS_OK)) {
                 if (ret == NJS_DECLINED) {
-                    ret = njs_lvlhsh_find(&object->shared_hash, &lhq);
-                    if (njs_slow_path(ret == NJS_DECLINED)) {
-                        break;
-                    }
-                }
-
-                prop = lhq.value;
-                val = &prop->value;
-
-                if (prop->type == NJS_WHITEOUT || !prop->enumerable) {
                     break;
                 }
 
-                if (njs_is_accessor_descriptor(prop)) {
-                    if (njs_is_defined(&prop->getter)) {
-                        if (njs_is_defined(&prop->setter)) {
-                            val = njs_value_arg(&string_get_set);
-                        } else {
-                            val = njs_value_arg(&string_get);
-                        }
+                goto exception;
+            }
 
+            prop = pq.lhq.value;
+
+            if (prop->type == NJS_WHITEOUT || !prop->enumerable) {
+                break;
+            }
+
+            val = &prop->value;
+
+            if (prop->type == NJS_PROPERTY_HANDLER) {
+                pq.scratch = *prop;
+                prop = &pq.scratch;
+                ret = prop->value.data.u.prop_handler(vm, prop, &state->value,
+                                                      NULL, &prop->value);
+
+                if (njs_slow_path(ret == NJS_ERROR)) {
+                    return ret;
+                }
+
+                val = &prop->value;
+            }
+
+            if (njs_is_accessor_descriptor(prop)) {
+                if (njs_is_defined(&prop->getter)) {
+                    if (njs_is_defined(&prop->setter)) {
+                        val = njs_value_arg(&string_get_set);
                     } else {
-                        val = njs_value_arg(&string_set);
+                        val = njs_value_arg(&string_get);
                     }
+
+                } else {
+                    val = njs_value_arg(&string_set);
                 }
             }
 
@@ -2294,8 +2255,8 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, const njs_value_t *value,
             }
 
             state->written = 1;
-            njs_key_string_get(vm, key, &lhq.key);
-            njs_json_stringify_append(lhq.key.start, lhq.key.length);
+            njs_key_string_get(vm, key, &pq.lhq.key);
+            njs_json_stringify_append(pq.lhq.key.start, pq.lhq.key.length);
             njs_json_stringify_append(":", 1);
             if (stringify->space.length != 0) {
                 njs_json_stringify_append(" ", 1);
