@@ -2091,8 +2091,8 @@ ngx_http_js_ext_get_parent(njs_vm_t *vm, njs_value_t *value, void *obj,
                     : NULL;
 
     if (ctx == NULL || ctx->vm != vm) {
-        njs_vm_error(vm, "parent can only be returned for a subrequest");
-        return NJS_ERROR;
+        njs_value_undefined_set(value);
+        return NJS_OK;
     }
 
     njs_value_assign(value, njs_value_arg(&ctx->request));
