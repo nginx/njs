@@ -1092,13 +1092,8 @@ njs_json_push_stringify_state(njs_vm_t *vm, njs_json_stringify_t *stringify,
             state->keys = njs_array(&stringify->replacer);
 
         } else {
-            if (njs_is_external(value)) {
-                state->keys = njs_extern_keys_array(vm, value->external.proto);
-
-            } else {
-                state->keys = njs_value_own_enumerate(vm, value, NJS_ENUM_KEYS,
-                                                      stringify->keys_type, 0);
-            }
+            state->keys = njs_value_own_enumerate(vm, value, NJS_ENUM_KEYS,
+                                                  stringify->keys_type, 0);
 
             if (njs_slow_path(state->keys == NULL)) {
                 return NULL;
@@ -1129,6 +1124,7 @@ njs_json_pop_stringify_state(njs_json_stringify_t *stringify)
 #define njs_json_is_object(value)                                             \
     (((value)->type == NJS_OBJECT)                                            \
      || ((value)->type == NJS_OBJECT_SYMBOL)                                  \
+     || ((value)->type == NJS_EXTERNAL)                                       \
      || ((value)->type == NJS_ARRAY)                                          \
      || ((value)->type >= NJS_REGEXP))
 

@@ -14317,8 +14317,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var e = URIError('e'); e.foo = 'E'; JSON.stringify(e)"),
       njs_str("{\"foo\":\"E\"}") },
 
-    { njs_str("JSON.stringify([$r])"),
-      njs_str("[null]") },
+    { njs_str("var r = JSON.parse(JSON.stringify($r));"
+              "[r.uri, r.host, r.props.a, njs.dump(r.vars), njs.dump(r.consts), r.header['02']]"),
+      njs_str("АБВ,АБВГДЕЁЖЗИЙ,1,{},{},02|АБВ") },
 
     { njs_str("JSON.stringify({get key() {throw new Error('Oops')}})"),
       njs_str("Error: Oops") },
