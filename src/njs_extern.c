@@ -181,10 +181,15 @@ njs_vm_external_create(njs_vm_t *vm, njs_value_t *ext_val,
 
     memcpy(obj, &object, sizeof(void *));
 
-    ext_val->type = NJS_EXTERNAL;
-    ext_val->data.truth = 1;
-    ext_val->external.proto = proto;
-    ext_val->external.index = vm->external_objects->items - 1;
+    if (proto->type != NJS_EXTERN_METHOD) {
+        ext_val->type = NJS_EXTERNAL;
+        ext_val->data.truth = 1;
+        ext_val->external.proto = proto;
+        ext_val->external.index = vm->external_objects->items - 1;
+
+    } else {
+        njs_set_function(ext_val, proto->function);
+    }
 
     return NJS_OK;
 }

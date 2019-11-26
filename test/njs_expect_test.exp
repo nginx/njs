@@ -214,6 +214,8 @@ njs_test {
      "console.log(1)\r\n1\r\nundefined\r\n>> "}
     {"console.log(1, 'a')\r\n"
      "console.log(1, 'a')\r\n1 a\r\nundefined\r\n>> "}
+    {"print(1, 'a')\r\n"
+     "print(1, 'a')\r\n1 a\r\nundefined\r\n>> "}
     {"console.log('\\tабв\\nгд')\r\n"
      "console.log('\\\\tабв\\\\nгд')\r\n\tабв\r\nгд\r\nundefined\r\n>> "}
     {"console.dump()\r\n"
@@ -270,13 +272,15 @@ njs_test {
     {"var print = console.dump.bind(console); print(1, 'a', [1, 2])\r\n"
      "1 a \\\[\r\n 1,\r\n 2\r\n]\r\nundefined\r\n>> "}
     {"var print = console.log.bind(console); print(console.a.a)\r\n"
-     "TypeError: cannot get property \"a\" of undefined*at console.log"}
+     "TypeError: cannot get property \"a\" of undefined*at print"}
+    {"print(console.a.a)\r\n"
+     "TypeError: cannot get property \"a\" of undefined*at print"}
 }
 
 # Backtraces for external objects
 njs_test {
     {"console.log(console.a.a)\r\n"
-     "console.log(console.a.a)\r\nTypeError:*at console.log (native)"}
+     "console.log(console.a.a)\r\nTypeError:*at print (native)"}
 }
 
 # dumper

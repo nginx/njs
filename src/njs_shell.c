@@ -604,17 +604,16 @@ njs_console_init(njs_vm_t *vm, njs_console_t *console)
 
 
 static njs_int_t
-njs_externals_init(njs_vm_t *vm, njs_console_t *console)
+njs_externals_add(njs_vm_t *vm, njs_external_t *definition,
+    const njs_str_t *name, njs_external_ptr_t object)
 {
-    njs_uint_t          ret;
+    njs_int_t           ret;
     njs_value_t         *value;
     const njs_extern_t  *proto;
 
-    static const njs_str_t name = njs_str("console");
-
-    proto = njs_vm_external_prototype(vm, &njs_externals[0]);
+    proto = njs_vm_external_prototype(vm, definition);
     if (njs_slow_path(proto == NULL)) {
-        njs_stderror("failed to add console proto\n");
+        njs_stderror("failed to add \"%V\" proto\n", name);
         return NJS_ERROR;
     }
 
@@ -623,12 +622,29 @@ njs_externals_init(njs_vm_t *vm, njs_console_t *console)
         return NJS_ERROR;
     }
 
-    ret = njs_vm_external_create(vm, value, proto, console);
+    ret = njs_vm_external_create(vm, value, proto, object);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
 
-    ret = njs_vm_bind(vm, &name, value, 1);
+    return njs_vm_bind(vm, name, value, 1);
+}
+
+
+static njs_int_t
+njs_externals_init(njs_vm_t *vm, njs_console_t *console)
+{
+    njs_int_t  ret;
+
+    static const njs_str_t  console_name = njs_str("console");
+    static const njs_str_t  print_name = njs_str("print");
+
+    ret = njs_externals_add(vm, &njs_externals[0], &console_name, console);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_externals_add(vm, &njs_ext_console[0], &print_name, console);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
