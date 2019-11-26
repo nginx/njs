@@ -31,36 +31,11 @@ njs_extern_hash_test(njs_lvlhsh_query_t *lhq, void *data)
 }
 
 
-static njs_int_t
-njs_extern_value_hash_test(njs_lvlhsh_query_t *lhq, void *data)
-{
-    njs_extern_value_t  *ev;
-
-    ev = (njs_extern_value_t *) data;
-
-    if (njs_strstr_eq(&lhq->key, &ev->name)) {
-        return NJS_OK;
-    }
-
-    return NJS_DECLINED;
-}
-
-
 const njs_lvlhsh_proto_t  njs_extern_hash_proto
     njs_aligned(64) =
 {
     NJS_LVLHSH_DEFAULT,
     njs_extern_hash_test,
-    njs_lvlhsh_alloc,
-    njs_lvlhsh_free,
-};
-
-
-const njs_lvlhsh_proto_t  njs_extern_value_hash_proto
-    njs_aligned(64) =
-{
-    NJS_LVLHSH_DEFAULT,
-    njs_extern_value_hash_test,
     njs_lvlhsh_alloc,
     njs_lvlhsh_free,
 };
@@ -215,45 +190,6 @@ njs_vm_external_create(njs_vm_t *vm, njs_value_t *ext_val,
 }
 
 
-njs_int_t
-njs_vm_external_bind(njs_vm_t *vm, const njs_str_t *var_name,
-    const njs_value_t *value)
-{
-    njs_int_t           ret;
-    njs_extern_value_t  *ev;
-    njs_lvlhsh_query_t  lhq;
-
-    if (njs_slow_path(!njs_is_external(value))) {
-        return NJS_ERROR;
-    }
-
-    ev = njs_mp_align(vm->mem_pool, sizeof(njs_value_t),
-                      sizeof(njs_extern_value_t));
-    if (njs_slow_path(ev == NULL)) {
-        njs_memory_error(vm);
-        return NJS_ERROR;
-    }
-
-    ev->value = *value;
-    ev->name = *var_name;
-
-    lhq.key = *var_name;
-    lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
-    lhq.proto = &njs_extern_value_hash_proto;
-    lhq.value = ev;
-    lhq.replace = 0;
-    lhq.pool = vm->mem_pool;
-
-    ret = njs_lvlhsh_insert(&vm->externals_hash, &lhq);
-    if (njs_slow_path(ret != NJS_OK)) {
-        njs_internal_error(vm, "lvlhsh insert failed");
-        return ret;
-    }
-
-    return NJS_OK;
-}
-
-
 njs_external_ptr_t
 njs_vm_external(njs_vm_t *vm, const njs_value_t *value)
 {
@@ -318,25 +254,6 @@ njs_extern_keys_array(njs_vm_t *vm, const njs_extern_t *external)
     }
 
     return keys;
-}
-
-
-njs_value_t *
-njs_external_lookup(njs_vm_t *vm, njs_str_t *name, uint32_t hash)
-{
-    njs_lvlhsh_query_t  lhq;
-    njs_extern_value_t  *ev;
-
-    lhq.key_hash = hash;
-    lhq.key = *name;
-    lhq.proto = &njs_extern_value_hash_proto;
-
-    if (njs_lvlhsh_find(&vm->externals_hash, &lhq) == NJS_OK) {
-        ev = (njs_extern_value_t *) lhq.value;
-        return &ev->value;
-    }
-
-    return NULL;
 }
 
 

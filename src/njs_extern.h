@@ -41,13 +41,11 @@ typedef struct {
 
 
 njs_array_t *njs_extern_keys_array(njs_vm_t *vm, const njs_extern_t *external);
-njs_value_t *njs_external_lookup(njs_vm_t *vm, njs_str_t *name, uint32_t hash);
 njs_int_t njs_external_match_native_function(njs_vm_t *vm,
     njs_function_native_t func, njs_str_t *name);
 
 
 extern const njs_lvlhsh_proto_t  njs_extern_hash_proto;
-extern const njs_lvlhsh_proto_t  njs_extern_value_hash_proto;
 
 
 #endif /* _NJS_EXTERN_H_INCLUDED_ */

@@ -203,7 +203,6 @@ njs_parser_reference(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
     njs_str_t *name, uint32_t hash, uint32_t token_line)
 {
     njs_int_t           ret;
-    njs_value_t         *ext;
     njs_variable_t      *var;
     njs_parser_node_t   *node;
     njs_parser_scope_t  *scope;
@@ -290,15 +289,6 @@ njs_parser_reference(njs_vm_t *vm, njs_parser_t *parser, njs_token_t token,
         njs_thread_log_debug("JS: %V", name);
 
         node->token_line = token_line;
-
-        ext = njs_external_lookup(vm, name, hash);
-
-        if (ext != NULL) {
-            node->token = NJS_TOKEN_EXTERNAL;
-            node->u.value = *ext;
-            node->index = (njs_index_t) ext;
-            break;
-        }
 
         ret = njs_variable_reference(vm, parser->scope, node, name, hash,
                                      NJS_REFERENCE);

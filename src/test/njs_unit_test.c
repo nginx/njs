@@ -9352,8 +9352,17 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Object.getOwnPropertyNames(this).includes('NaN')"),
       njs_str("true") },
 
-    { njs_str("Object.keys(this)"),
-      njs_str("njs,process") },
+    { njs_str("Object.keys(this).sort()"),
+      njs_str("$r,$r2,$r3,njs,process") },
+
+    { njs_str("var r = njs.dump(this); "
+              "['$r', 'global', njs.version].every(v=>r.includes(v))"),
+      njs_str("true") },
+
+    { njs_str("var r = JSON.stringify(this); "
+              "['$r', njs.version].every(v=>r.includes(v))"),
+      njs_str("true") },
+
 
     { njs_str("this.a = 1; this.a"),
       njs_str("1") },
@@ -13842,9 +13851,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("this.njs = 1; njs"),
       njs_str("1") },
 
-    { njs_str("njs.dump(this) === `global {njs:njs {version:'${njs.version}'},process:process {}}`"),
-      njs_str("true") },
-
     { njs_str("process === process"),
       njs_str("true") },
 
@@ -15233,6 +15239,15 @@ static njs_unit_test_t  njs_shared_test[] =
 
     { njs_str("var r; for (var i = 0; i < 2**10; i++) {r = $r.create('XXX').uri;}"),
       njs_str("undefined") },
+
+    { njs_str("delete $r3.vars.p; $r3.vars.p"),
+      njs_str("undefined") },
+
+    { njs_str("var sr = $r.create('XXX'); sr.vars.p = 'a'; sr.vars.p"),
+      njs_str("a") },
+
+    { njs_str("$r.bind('XXX', 37); XXX"),
+      njs_str("37") },
 };
 
 
@@ -15793,6 +15808,26 @@ memory_error:
 }
 
 
+static njs_int_t
+njs_unit_test_bind_external(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    njs_str_t            name;
+    njs_unit_test_req_t  *r;
+
+    r = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    if (njs_slow_path(r == NULL)) {
+        return NJS_ERROR;
+    }
+
+    if (njs_vm_value_to_string(vm, &name, njs_arg(args, nargs, 1)) != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    return njs_vm_bind(vm, &name, njs_arg(args, nargs, 2), 0);
+}
+
+
 static njs_external_t  njs_unit_test_r_props[] = {
 
     { njs_str("a"),
@@ -15909,6 +15944,17 @@ static njs_external_t  njs_unit_test_r_external[] = {
       njs_unit_test_create_external,
       0 },
 
+    { njs_str("bind"),
+      NJS_EXTERN_METHOD,
+      NULL,
+      0,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      njs_unit_test_bind_external,
+      0 },
+
 };
 
 
@@ -15982,15 +16028,14 @@ njs_externals_init(njs_vm_t *vm)
     njs_unit_test_prop_t  *prop;
 
     proto = njs_vm_external_prototype(vm, &njs_test_external[0]);
-    if (proto == NULL) {
+    if (njs_slow_path(proto == NULL)) {
         njs_printf("njs_vm_external_prototype() failed\n");
         return NJS_ERROR;
     }
 
-    requests = njs_mp_zalloc(vm->mem_pool,
-                             njs_nitems(njs_test_requests)
+    requests = njs_mp_zalloc(vm->mem_pool, njs_nitems(njs_test_requests)
                              * sizeof(njs_unit_test_req_t));
-    if (requests == NULL) {
+    if (njs_slow_path(requests == NULL)) {
         return NJS_ERROR;
     }
 
@@ -16002,15 +16047,15 @@ njs_externals_init(njs_vm_t *vm)
 
         ret = njs_vm_external_create(vm, njs_value_arg(&requests[i].value),
                                      proto, &requests[i]);
-        if (ret != NJS_OK) {
+        if (njs_slow_path(ret != NJS_OK)) {
             njs_printf("njs_vm_external_create() failed\n");
             return NJS_ERROR;
         }
 
-        ret = njs_vm_external_bind(vm, &njs_test_requests[i].name,
-                                   njs_value_arg(&requests[i].value));
-        if (ret != NJS_OK) {
-            njs_printf("njs_vm_external_bind() failed\n");
+        ret = njs_vm_bind(vm, &njs_test_requests[i].name,
+                          njs_value_arg(&requests[i].value), 1);
+        if (njs_slow_path(ret != NJS_OK)) {
+            njs_printf("njs_vm_bind() failed\n");
             return NJS_ERROR;
         }
 
@@ -16019,13 +16064,13 @@ njs_externals_init(njs_vm_t *vm)
                                           &njs_test_requests[i].props[j].name,
                                           &njs_test_requests[i].props[j].value);
 
-            if (prop == NULL) {
+            if (njs_slow_path(prop == NULL)) {
                 njs_printf("lvlhsh_unit_test_alloc() failed\n");
                 return NJS_ERROR;
             }
 
             ret = lvlhsh_unit_test_add(&requests[i], prop);
-            if (ret != NJS_OK) {
+            if (njs_slow_path(ret != NJS_OK)) {
                 njs_printf("lvlhsh_unit_test_add() failed\n");
                 return NJS_ERROR;
             }

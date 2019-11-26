@@ -175,7 +175,6 @@ struct njs_vm_s {
 
     njs_arr_t                *external_objects; /* of njs_external_ptr_t */
 
-    njs_lvlhsh_t             externals_hash;
     njs_lvlhsh_t             external_prototypes_hash;
 
     njs_lvlhsh_t             variables_hash;

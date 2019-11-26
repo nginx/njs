@@ -87,10 +87,13 @@ njs_test {
      "Ma\a*th"}
 }
 
-njs_test {
-    {"conso\t"
-     "conso\a*le"}
-}
+# FIXME: completions for external objects
+# are not supported
+
+# njs_test {
+#     {"conso\t"
+#     "conso\a*le"}
+# }
 
 # Global completions, multiple partial match
 njs_test {

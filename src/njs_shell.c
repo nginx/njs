@@ -613,28 +613,28 @@ njs_externals_init(njs_vm_t *vm, njs_console_t *console)
     static const njs_str_t name = njs_str("console");
 
     proto = njs_vm_external_prototype(vm, &njs_externals[0]);
-    if (proto == NULL) {
+    if (njs_slow_path(proto == NULL)) {
         njs_stderror("failed to add console proto\n");
         return NJS_ERROR;
     }
 
     value = njs_mp_zalloc(vm->mem_pool, sizeof(njs_opaque_value_t));
-    if (value == NULL) {
+    if (njs_slow_path(value == NULL)) {
         return NJS_ERROR;
     }
 
     ret = njs_vm_external_create(vm, value, proto, console);
-    if (ret != NJS_OK) {
+    if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
 
-    ret = njs_vm_external_bind(vm, &name, value);
-    if (ret != NJS_OK) {
+    ret = njs_vm_bind(vm, &name, value, 1);
+    if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
 
     ret = njs_console_init(vm, console);
-    if (ret != NJS_OK) {
+    if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
 

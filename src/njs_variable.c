@@ -683,12 +683,6 @@ njs_vm_value(njs_vm_t *vm, const njs_str_t *name)
         return njs_vmcode_operand(vm, ((njs_variable_t *) lhq.value)->index);
     }
 
-    lhq.proto = &njs_extern_value_hash_proto;
-
-    if (njs_lvlhsh_find(&vm->externals_hash, &lhq) == NJS_OK) {
-        return &((njs_extern_value_t *) lhq.value)->value;
-    }
-
     return &njs_value_undefined;
 }
 

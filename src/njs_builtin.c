@@ -176,6 +176,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
             return NJS_ERROR;
         }
 
+        object->type = NJS_OBJECT;
         object->shared = 1;
         object->extensible = 1;
 
@@ -260,13 +261,6 @@ njs_builtin_objects_create(njs_vm_t *vm)
     shared->prototypes[NJS_OBJ_TYPE_REGEXP].regexp.pattern =
                                               shared->empty_regexp_pattern;
 
-    string_object = &shared->string_object;
-    njs_lvlhsh_init(&string_object->hash);
-    string_object->shared_hash = shared->string_instance_hash;
-    string_object->type = NJS_OBJECT_STRING;
-    string_object->shared = 1;
-    string_object->extensible = 0;
-
     constructor = shared->constructors;
 
     for (i = NJS_OBJ_TYPE_OBJECT; i < NJS_OBJ_TYPE_MAX; i++) {
@@ -285,6 +279,16 @@ njs_builtin_objects_create(njs_vm_t *vm)
             return NJS_ERROR;
         }
     }
+
+    vm->global_object = shared->objects[0];
+    vm->global_object.shared = 0;
+
+    string_object = &shared->string_object;
+    njs_lvlhsh_init(&string_object->hash);
+    string_object->shared_hash = shared->string_instance_hash;
+    string_object->type = NJS_OBJECT_STRING;
+    string_object->shared = 1;
+    string_object->extensible = 0;
 
     vm->shared = shared;
 
@@ -333,10 +337,7 @@ njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global)
         vm->constructors[i].object.__proto__ = error_constructor;
     }
 
-    vm->global_object = vm->shared->objects[0];
     vm->global_object.__proto__ = object_prototype;
-    vm->global_object.shared = 0;
-
     njs_set_object(global, &vm->global_object);
 
     vm->string_object = vm->shared->string_object;
@@ -452,15 +453,11 @@ njs_builtin_traverse(njs_vm_t *vm, njs_traverse_t *traverse, void *data)
 static njs_arr_t *
 njs_builtin_completions(njs_vm_t *vm)
 {
-    u_char                   *compl;
-    size_t                   len;
     njs_arr_t                *array;
     njs_str_t                *completion;
     njs_int_t                ret;
     njs_keyword_t            *keyword;
-    njs_lvlhsh_each_t        lhe, lhe_prop;
-    njs_extern_value_t       *ev;
-    const njs_extern_t       *ext_proto, *ext_prop;
+    njs_lvlhsh_each_t        lhe;
     njs_builtin_traverse_t   ctx;
     const njs_object_prop_t  *prop;
 
@@ -514,63 +511,6 @@ njs_builtin_completions(njs_vm_t *vm)
         }
 
         njs_string_get(&prop->name, completion);
-    }
-
-    /* Externals completions. */
-
-    njs_lvlhsh_each_init(&lhe, &njs_extern_value_hash_proto);
-
-    for ( ;; ) {
-        ev = njs_lvlhsh_each(&vm->externals_hash, &lhe);
-
-        if (ev == NULL) {
-            break;
-        }
-
-        ext_proto = ev->value.external.proto;
-
-        njs_lvlhsh_each_init(&lhe_prop, &njs_extern_hash_proto);
-
-        len = ev->name.length + 1;
-        compl = njs_mp_zalloc(vm->mem_pool, len);
-        if (compl == NULL) {
-            return NULL;
-        }
-
-        njs_sprintf(compl, compl + len, "%V%Z", &ev->name);
-
-        completion = njs_arr_add(array);
-        if (njs_slow_path(completion == NULL)) {
-            return NULL;
-        }
-
-        completion->length = len;
-        completion->start = (u_char *) compl;
-
-        for ( ;; ) {
-            ext_prop = njs_lvlhsh_each(&ext_proto->hash, &lhe_prop);
-
-            if (ext_prop == NULL) {
-                break;
-            }
-
-            len = ev->name.length + ev->name.length + 2;
-            compl = njs_mp_zalloc(vm->mem_pool, len);
-            if (compl == NULL) {
-                return NULL;
-            }
-
-            njs_sprintf(compl, compl + len, "%V.%V%Z", &ev->name,
-                        &ext_prop->name);
-
-            completion = njs_arr_add(array);
-            if (njs_slow_path(completion == NULL)) {
-                return NULL;
-            }
-
-            completion->length = len;
-            completion->start = (u_char *) compl;
-        }
     }
 
     return array;
