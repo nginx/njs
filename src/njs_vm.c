@@ -195,7 +195,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 
     vm->variables_hash = scope->variables;
 
-    if (vm->options.init) {
+    if (vm->options.init && !vm->options.accumulative) {
         ret = njs_vm_init(vm);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;

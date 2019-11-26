@@ -75,6 +75,16 @@ static njs_interactive_test_t  njs_test[] =
     { njs_str("/abc/i.test('ABC')" ENTER),
       njs_str("true") },
 
+    /* Accumulative mode. */
+
+    { njs_str("var a = 1" ENTER
+              "a" ENTER),
+      njs_str("1") },
+
+    { njs_str("Number.prototype.test = 'test'" ENTER
+              "Number.prototype.test" ENTER),
+      njs_str("test") },
+
     /* Error handling */
 
     { njs_str("var a = ;" ENTER
