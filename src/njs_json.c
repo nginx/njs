@@ -1664,9 +1664,7 @@ njs_json_append_string(njs_json_stringify_t *stringify,
 
     njs_json_buf_written(stringify, dst - stringify->last->pos);
 
-    njs_json_buf_append(stringify, &quote, 1);
-
-    return NJS_OK;
+    return njs_json_buf_append(stringify, &quote, 1);
 }
 
 
@@ -1890,26 +1888,15 @@ const njs_object_init_t  njs_json_object_init = {
     }
 
 
-#define njs_dump_item(str)                                                    \
-    if (written) {                                                            \
-        njs_json_buf_append(stringify, ",", 1);                               \
-    }                                                                         \
-                                                                              \
-    written = 1;                                                              \
-    ret = njs_json_buf_append(stringify, str, njs_length(str));               \
-    if (njs_slow_path(ret != NJS_OK)) {                                       \
-        goto memory_error;                                                    \
-    }
-
-
 static njs_int_t
 njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value,
     njs_uint_t console)
 {
+    u_char       *p;
     njs_int_t    ret;
     njs_str_t    str;
     njs_value_t  str_val;
-    u_char       buf[32], *p;
+    u_char       buf[32];
 
     njs_int_t   (*to_string)(njs_vm_t *, njs_value_t *, const njs_value_t *);
 
@@ -1920,8 +1907,13 @@ njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value,
         njs_string_get(value, &str);
 
         njs_dump("[String: ");
-        njs_json_append_string(stringify, value, '\'');
-        njs_dump("]")
+
+        ret = njs_json_append_string(stringify, value, '\'');
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto memory_error;
+        }
+
+        njs_dump("]");
         break;
 
     case NJS_STRING:
@@ -1946,7 +1938,12 @@ njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value,
         njs_string_get(&str_val, &str);
 
         njs_dump("[Symbol: ");
-        njs_json_buf_append(stringify, (char *) str.start, str.length);
+
+        ret = njs_json_buf_append(stringify, (char *) str.start, str.length);
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto memory_error;
+        }
+
         njs_dump("]");
 
         break;
@@ -1958,7 +1955,11 @@ njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value,
         }
 
         njs_string_get(&str_val, &str);
-        njs_json_buf_append(stringify, (char *) str.start, str.length);
+
+        ret = njs_json_buf_append(stringify, (char *) str.start, str.length);
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto memory_error;
+        }
 
         break;
 
@@ -1981,8 +1982,14 @@ njs_dump_value(njs_json_stringify_t *stringify, const njs_value_t *value,
         njs_string_get(&str_val, &str);
 
         njs_dump("[Number: ");
-        njs_json_buf_append(stringify, (char *) str.start, str.length);
-        njs_dump("]")
+
+        ret = njs_json_buf_append(stringify, (char *) str.start, str.length);
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto memory_error;
+        }
+
+        njs_dump("]");
+
         break;
 
     case NJS_OBJECT_BOOLEAN:
