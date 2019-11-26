@@ -3583,6 +3583,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Math.E = 1"),
       njs_str("TypeError: Cannot assign to read-only property \"E\" of object") },
 
+    /* "in" operation. */
+
     { njs_str("var o = { 'a': 1, 'b': 2 }; var i; "
                  "for (i in o) { delete o.a; delete o.b; }; njs.dump(o)"),
       njs_str("{}") },
@@ -3597,6 +3599,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'a' in {a:1}"),
       njs_str("true") },
 
+    { njs_str("Symbol.unscopables in { [Symbol.unscopables]: 1 }"),
+      njs_str("true") },
+
+    { njs_str("Object(Symbol.toStringTag) in Math"),
+      njs_str("true") },
+
     { njs_str("'1' in [0,,2]"),
       njs_str("false") },
 
@@ -3609,11 +3617,18 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'a' in Object.create({a:1})"),
       njs_str("true") },
 
-    { njs_str("var a = 1; 1 in a"),
-      njs_str("TypeError: property in on a primitive value") },
+    { njs_str("[false, NaN, '', Symbol()]"
+              ".map((x) => { "
+              "    try { 'toString' in x; } "
+              "    catch (e) { return e instanceof TypeError ? e.message : ''; } "
+              "})"
+              ".every((x) => x.startsWith('property \"in\" on primitive'))"),
+      njs_str("true") },
 
-    { njs_str("var a = true; 1 in a"),
-      njs_str("TypeError: property in on a primitive value") },
+    { njs_str("var p = new String('test');"
+              "p.toString = () => { throw new Error('failed') };"
+              "p in 1"),
+      njs_str("TypeError: property \"in\" on primitive number type") },
 
     { njs_str("var n = { toString: function() { return 'a' } };"
                  "var o = { a: 5 }; o[n]"),
