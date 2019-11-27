@@ -1080,6 +1080,21 @@ njs_value_to_string(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
 
 
 njs_inline njs_bool_t
+njs_values_same_non_numeric(const njs_value_t *val1, const njs_value_t *val2)
+{
+    if (njs_is_string(val1)) {
+        return njs_string_eq(val1, val2);
+    }
+
+    if (njs_is_symbol(val1)) {
+        return njs_symbol_eq(val1, val2);
+    }
+
+    return (njs_object(val1) == njs_object(val2));
+}
+
+
+njs_inline njs_bool_t
 njs_values_strict_equal(const njs_value_t *val1, const njs_value_t *val2)
 {
     if (val1->type != val2->type) {
@@ -1096,15 +1111,73 @@ njs_values_strict_equal(const njs_value_t *val1, const njs_value_t *val2)
         return (njs_number(val1) == njs_number(val2));
     }
 
-    if (njs_is_string(val1)) {
-        return njs_string_eq(val1, val2);
+    return njs_values_same_non_numeric(val1, val2);
+}
+
+
+njs_inline njs_bool_t
+njs_values_same(const njs_value_t *val1, const njs_value_t *val2)
+{
+    double  num1, num2;
+
+    if (val1->type != val2->type) {
+        return 0;
     }
 
-    if (njs_is_symbol(val1)) {
-        return njs_symbol_eq(val1, val2);
+    if (njs_is_numeric(val1)) {
+
+        if (njs_is_undefined(val1)) {
+            return 1;
+        }
+
+        num1 = njs_number(val1);
+        num2 = njs_number(val2);
+
+        if (njs_slow_path(isnan(num1) && isnan(num2))) {
+            return 1;
+        }
+
+        if (njs_slow_path(num1 == 0 && num2 == 0
+                          && (signbit(num1) ^ signbit(num2))))
+        {
+            return 0;
+        }
+
+        /* Infinities are handled correctly by comparision. */
+        return num1 == num2;
     }
 
-    return (njs_object(val1) == njs_object(val2));
+    return njs_values_same_non_numeric(val1, val2);
+}
+
+
+njs_inline njs_bool_t
+njs_values_same_zero(const njs_value_t *val1, const njs_value_t *val2)
+{
+    double  num1, num2;
+
+    if (val1->type != val2->type) {
+        return 0;
+    }
+
+    if (njs_is_numeric(val1)) {
+
+        if (njs_is_undefined(val1)) {
+            return 1;
+        }
+
+        num1 = njs_number(val1);
+        num2 = njs_number(val2);
+
+        if (njs_slow_path(isnan(num1) && isnan(num2))) {
+            return 1;
+        }
+
+        /* Infinities are handled correctly by comparision. */
+        return num1 == num2;
+    }
+
+    return njs_values_same_non_numeric(val1, val2);
 }
 
 
