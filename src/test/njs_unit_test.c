@@ -4733,6 +4733,55 @@ static njs_unit_test_t  njs_test[] =
                  "Array.prototype.fill.call(o, 2).a"),
       njs_str("4") },
 
+    { njs_str("ArrayBuffer()"),
+      njs_str("TypeError: Constructor ArrayBuffer requires 'new'") },
+
+    { njs_str("new ArrayBuffer()"),
+      njs_str("[object ArrayBuffer]") },
+
+    { njs_str("ArrayBuffer.prototype.constructor.name === 'ArrayBuffer'"),
+      njs_str("true") },
+
+    { njs_str("ArrayBuffer.prototype.constructor()"),
+      njs_str("TypeError: Constructor ArrayBuffer requires 'new'") },
+
+    { njs_str("ArrayBuffer.name"),
+      njs_str("ArrayBuffer") },
+
+    { njs_str("ArrayBuffer[Symbol.species]"),
+      njs_str("[object Function]") },
+
+    { njs_str("ArrayBuffer.prototype[Symbol.toStringTag]"),
+      njs_str("ArrayBuffer") },
+
+    { njs_str("var desc = Object.getOwnPropertyDescriptor(ArrayBuffer,"
+              "Symbol.species); desc.get"),
+      njs_str("[object Function]") },
+
+    { njs_str("var ctor = ArrayBuffer[Symbol.species]; var a = new ctor(100);"
+              "a.byteLength;"),
+      njs_str("100") },
+
+    { njs_str("var a = new ArrayBuffer(); a.byteLength"),
+      njs_str("0") },
+
+    { njs_str("var a = new ArrayBuffer.prototype.constructor(10); a.byteLength"),
+      njs_str("10") },
+
+    { njs_str("var get = Object.getOwnPropertyDescriptor(ArrayBuffer.prototype, 'byteLength').get;"
+              "get.call([])"),
+      njs_str("TypeError: Method ArrayBuffer.prototype.byteLength called on incompatible receiver") },
+
+    { njs_str("[undefined, 1, 10, 1000, null, NaN, false, {}, [1,2,3], Object(1),'10',"
+              " -1, -Infinity, Infinity, 2**50]"
+              ".map(v=>{ var a; try { a = new ArrayBuffer(v) } catch (e) {return e.name} return a.byteLength})"),
+      njs_str("0,1,10,1000,0,0,0,0,0,1,10,RangeError,RangeError,RangeError,RangeError") },
+
+    { njs_str("var buffer = new ArrayBuffer(16);"
+              "[[4,12], [-1,-1], [-1,10], [0, -1], [0, -16], [0,-17]]"
+              ".map(pr=>buffer.slice(pr[0], pr[1]).byteLength)"),
+      njs_str("8,0,0,15,0,0") },
+
 #if NJS_HAVE_LARGE_STACK
     { njs_str("var o = Object({length: 3});"
                  "Object.defineProperty(o, '0', {set: function(v){this[0] = 2 * v}});"

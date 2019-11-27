@@ -51,6 +51,7 @@ NJS_LIB_SRCS=" \
    src/njs_parser_expression.c \
    src/njs_generator.c \
    src/njs_disassembler.c \
+   src/njs_array_buffer.c \
 "
 
 NJS_LIB_TEST_SRCS=" \

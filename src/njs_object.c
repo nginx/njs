@@ -2356,6 +2356,8 @@ static const njs_value_t  njs_object_object_string =
                                      njs_long_string("[object Object]");
 static const njs_value_t  njs_object_array_string =
                                      njs_string("[object Array]");
+static const njs_value_t  njs_object_array_buffer_string =
+                                     njs_long_string("[object ArrayBuffer]");
 static const njs_value_t  njs_object_function_string =
                                      njs_long_string("[object Function]");
 static const njs_value_t  njs_object_regexp_string =
@@ -2408,6 +2410,7 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         &njs_object_regexp_string,
         &njs_object_date_string,
         &njs_object_object_string,
+        &njs_object_array_buffer_string,
     };
 
     value = njs_argument(args, 0);

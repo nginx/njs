@@ -2109,6 +2109,7 @@ njs_dump_is_object(const njs_value_t *value)
 {
     return (value->type == NJS_OBJECT && !njs_object(value)->error_data)
            || (value->type == NJS_ARRAY)
+           || (value->type == NJS_ARRAY_BUFFER)
            || (value->type == NJS_OBJECT_VALUE)
            || njs_dump_is_external_object(value);
 }

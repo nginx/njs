@@ -68,6 +68,7 @@ typedef enum {
     NJS_REGEXP                = 0x17,
     NJS_DATE                  = 0x18,
     NJS_OBJECT_VALUE          = 0x19,
+    NJS_ARRAY_BUFFER          = 0x1A,
     NJS_VALUE_TYPE_MAX
 } njs_value_type_t;
 
@@ -79,6 +80,7 @@ typedef struct njs_object_value_s     njs_object_value_t;
 typedef struct njs_function_lambda_s  njs_function_lambda_t;
 typedef struct njs_regexp_pattern_s   njs_regexp_pattern_t;
 typedef struct njs_array_s            njs_array_t;
+typedef struct njs_array_buffer_s     njs_array_buffer_t;
 typedef struct njs_regexp_s           njs_regexp_t;
 typedef struct njs_date_s             njs_date_t;
 typedef struct njs_property_next_s    njs_property_next_t;
@@ -138,6 +140,7 @@ union njs_value_s {
             double                    number;
             njs_object_t              *object;
             njs_array_t               *array;
+            njs_array_buffer_t        *array_buffer;
             njs_object_value_t        *object_value;
             njs_function_t            *function;
             njs_function_lambda_t     *lambda;
@@ -220,6 +223,26 @@ struct njs_array_s {
     uint32_t                          length;
     njs_value_t                       *start;
     njs_value_t                       *data;
+};
+
+
+struct njs_array_buffer_s {
+    njs_object_t                      object;
+    size_t                            size;
+    union {
+        uint8_t                       *u8;
+        uint16_t                      *u16;
+        uint32_t                      *u32;
+        uint64_t                      *u64;
+        int8_t                        *i8;
+        int16_t                       *i16;
+        int32_t                       *i32;
+        int64_t                       *i64;
+        float                         *f32;
+        double                        *f64;
+
+        void                          *data;
+    } u;
 };
 
 
@@ -601,6 +624,10 @@ typedef struct {
     ((value)->type == NJS_ARRAY)
 
 
+#define njs_is_array_buffer(value)                                            \
+    ((value)->type == NJS_ARRAY_BUFFER)
+
+
 #define njs_is_function(value)                                                \
     ((value)->type == NJS_FUNCTION)
 
@@ -667,6 +694,10 @@ typedef struct {
 
 #define njs_array_len(value)                                                  \
     ((value)->data.u.array->length)
+
+
+#define njs_array_buffer(value)                                               \
+    ((value)->data.u.array_buffer)
 
 
 #define njs_array_start(value)                                                \
@@ -812,6 +843,15 @@ njs_set_array(njs_value_t *value, njs_array_t *array)
 {
     value->data.u.array = array;
     value->type = NJS_ARRAY;
+    value->data.truth = 1;
+}
+
+
+njs_inline void
+njs_set_array_buffer(njs_value_t *value, njs_array_buffer_t *array)
+{
+    value->data.u.array_buffer = array;
+    value->type = NJS_ARRAY_BUFFER;
     value->data.truth = 1;
 }
 

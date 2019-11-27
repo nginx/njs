@@ -58,6 +58,7 @@ static const njs_object_type_init_t *const
 
     &njs_obj_type_init,
     &njs_array_type_init,
+    &njs_array_buffer_type_init,
     &njs_boolean_type_init,
     &njs_number_type_init,
     &njs_symbol_type_init,
@@ -1093,6 +1094,16 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
         .name = njs_string("Array"),
         .value = njs_prop_handler2(njs_top_level_constructor,
                                    NJS_OBJ_TYPE_ARRAY, NJS_ARRAY_HASH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("ArrayBuffer"),
+        .value = njs_prop_handler2(njs_top_level_constructor,
+                                   NJS_OBJ_TYPE_ARRAY_BUFFER,
+                                   NJS_ARRAY_BUFFER_HASH),
         .writable = 1,
         .configurable = 1,
     },
