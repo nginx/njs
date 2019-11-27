@@ -11962,6 +11962,10 @@ static njs_unit_test_t  njs_test[] =
                  "Object.defineProperty(o, 'b', {value:1})"),
       njs_str("TypeError: Cannot add property \"b\", object is not extensible") },
 
+    { njs_str("var o = Object.preventExtensions({});"
+                 "Object.defineProperty(o, Symbol.unscopables, {})"),
+      njs_str("TypeError: Cannot add property \"Symbol(Symbol.unscopables)\", object is not extensible") },
+
     { njs_str("var o = Object.preventExtensions({a:1});"
                  "Object.defineProperties(o, {b:{value:1}})"),
       njs_str("TypeError: Cannot add property \"b\", object is not extensible") },
@@ -11974,6 +11978,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var o = Object.preventExtensions({a:1}); o.b = 1; o.b"),
       njs_str("TypeError: Cannot add property \"b\", object is not extensible") },
+
+    { njs_str("var o = Object.preventExtensions({a:1}); o[Symbol.unscopables] = 1"),
+      njs_str("TypeError: Cannot add property \"Symbol(Symbol.unscopables)\", object is not extensible") },
 
     { njs_str("Object.preventExtensions()"),
       njs_str("undefined") },
