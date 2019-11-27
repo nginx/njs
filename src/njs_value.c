@@ -719,6 +719,10 @@ njs_array_property_query(njs_vm_t *vm, njs_property_query_t *pq,
             return NJS_DECLINED;
         }
 
+        if (!array->object.extensible) {
+            return NJS_DECLINED;
+        }
+
         size = index - array->length;
 
         ret = njs_array_expand(vm, array, 0, size + 1);

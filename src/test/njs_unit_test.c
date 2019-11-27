@@ -11074,7 +11074,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("2") },
 
     { njs_str("var o = {}; Object.defineProperty()"),
-      njs_str("TypeError: cannot convert undefined argument to object") },
+      njs_str("TypeError: Object.defineProperty is called on non-object") },
 
     { njs_str("var o = {}; Object.defineProperty(o)"),
       njs_str("TypeError: descriptor is not an object") },
@@ -11187,13 +11187,22 @@ static njs_unit_test_t  njs_test[] =
       njs_str("true") },
 
     { njs_str("Object.defineProperties()"),
-      njs_str("TypeError: cannot convert undefined argument to object") },
+      njs_str("TypeError: Object.defineProperties is called on non-object") },
 
     { njs_str("Object.defineProperties(1, {})"),
-      njs_str("TypeError: cannot convert number argument to object") },
+      njs_str("TypeError: Object.defineProperties is called on non-object") },
 
     { njs_str("Object.defineProperties({}, 1)"),
       njs_str("TypeError: descriptor is not an object") },
+
+    { njs_str("Object.defineProperties(Object.freeze({b:1}), {b:{value:1}}).b"),
+      njs_str("1") },
+
+    { njs_str("Object.defineProperties(Object.freeze({b:1}), {b:{value:2}})"),
+      njs_str("TypeError: Cannot redefine property: \"b\"") },
+
+    { njs_str("Object.defineProperties(Object.freeze({b:1}), {c:{value:1}})"),
+      njs_str("TypeError: Cannot add property \"c\", object is not extensible") },
 
     { njs_str("var o = {a:1}; o.hasOwnProperty('a')"),
       njs_str("true") },
@@ -11679,10 +11688,10 @@ static njs_unit_test_t  njs_test[] =
       njs_str("name,length") },
 
     { njs_str("Object.defineProperty(Object.freeze({}), 'b', {})"),
-      njs_str("TypeError: object is not extensible") },
+      njs_str("TypeError: Cannot add property \"b\", object is not extensible") },
 
     { njs_str("Object.defineProperties(Object.freeze({}), {b:{}})"),
-      njs_str("TypeError: object is not extensible") },
+      njs_str("TypeError: Cannot add property \"b\", object is not extensible") },
 
     { njs_str("Object.freeze()"),
       njs_str("undefined") },
@@ -11707,7 +11716,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var a = Object.freeze([1,2]);"
                  "Object.defineProperty(a, 'a', {value:1}).a"),
-      njs_str("TypeError: object is not extensible") },
+      njs_str("TypeError: Cannot add property \"a\", object is not extensible") },
 
     { njs_str("var a = [1,2]; a.a = 1; Object.freeze(a); delete a.a"),
       njs_str("TypeError: Cannot delete property \"a\" of array") },
@@ -11723,7 +11732,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var f = Object.freeze(function() {});"
                  "Object.defineProperty(f, 'a', {value:1}).a"),
-      njs_str("TypeError: object is not extensible") },
+      njs_str("TypeError: Cannot add property \"a\", object is not extensible") },
 
     { njs_str("var f = function() {}; f.a = 1; Object.freeze(f); delete f.a"),
       njs_str("TypeError: Cannot delete property \"a\" of function") },
@@ -11739,7 +11748,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var d = Object.freeze(new Date(''));"
                  "Object.defineProperty(d, 'a', {value:1}).a"),
-      njs_str("TypeError: object is not extensible") },
+      njs_str("TypeError: Cannot add property \"a\", object is not extensible") },
 
     { njs_str("var d = new Date(''); d.a = 1; Object.freeze(d);"
                  "delete d.a"),
@@ -11756,7 +11765,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var r = Object.freeze(new RegExp(''));"
                  "Object.defineProperty(r, 'a', {value:1}).a"),
-      njs_str("TypeError: object is not extensible") },
+      njs_str("TypeError: Cannot add property \"a\", object is not extensible") },
 
     { njs_str("var r = new RegExp(''); r.a = 1; Object.freeze(r); delete r.a"),
       njs_str("TypeError: Cannot delete property \"a\" of regexp") },
@@ -11918,11 +11927,11 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var o = Object.preventExtensions({a:1});"
                  "Object.defineProperty(o, 'b', {value:1})"),
-      njs_str("TypeError: object is not extensible") },
+      njs_str("TypeError: Cannot add property \"b\", object is not extensible") },
 
     { njs_str("var o = Object.preventExtensions({a:1});"
                  "Object.defineProperties(o, {b:{value:1}})"),
-      njs_str("TypeError: object is not extensible") },
+      njs_str("TypeError: Cannot add property \"b\", object is not extensible") },
 
     { njs_str("var o = Object.preventExtensions({a:1}); o.a = 2; o.a"),
       njs_str("2") },
@@ -11947,6 +11956,12 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("Object.isExtensible([])"),
       njs_str("true") },
+
+    { njs_str("var arrObj = [];Object.preventExtensions(arrObj); arrObj[1] = 1"),
+      njs_str("TypeError: Cannot add property \"1\", object is not extensible") },
+
+    { njs_str("var arrObj = [1,2];Object.preventExtensions(arrObj); arrObj[1] = 1"),
+      njs_str("1") },
 
     { njs_str("Object.isExtensible(function() {})"),
       njs_str("true") },

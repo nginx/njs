@@ -157,6 +157,12 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
 
     if (njs_fast_path(ret == NJS_DECLINED)) {
 
+        if (!njs_object(object)->extensible) {
+            njs_type_error(vm, "Cannot add property \"%V\", "
+                           "object is not extensible", &pq.lhq.key);
+            return NJS_ERROR;
+        }
+
         /* 6.2.5.6 CompletePropertyDescriptor */
 
         if (njs_is_accessor_descriptor(prop)) {

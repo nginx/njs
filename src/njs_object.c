@@ -1232,15 +1232,7 @@ njs_object_define_property(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_t  *value, *name, *desc, lvalue;
 
     if (!njs_is_object(njs_arg(args, nargs, 1))) {
-        njs_type_error(vm, "cannot convert %s argument to object",
-                       njs_type_string(njs_arg(args, nargs, 1)->type));
-        return NJS_ERROR;
-    }
-
-    value = njs_argument(args, 1);
-
-    if (!njs_object(value)->extensible) {
-        njs_type_error(vm, "object is not extensible");
+        njs_type_error(vm, "Object.defineProperty is called on non-object");
         return NJS_ERROR;
     }
 
@@ -1251,6 +1243,7 @@ njs_object_define_property(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
+    value = njs_argument(args, 1);
     name = njs_lvalue_arg(&lvalue, args, nargs, 2);
 
     ret = njs_object_prop_define(vm, value, name, desc,
@@ -1276,17 +1269,11 @@ njs_object_define_properties(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_object_prop_t  *prop;
 
     if (!njs_is_object(njs_arg(args, nargs, 1))) {
-        njs_type_error(vm, "cannot convert %s argument to object",
-                       njs_type_string(njs_arg(args, nargs, 1)->type));
+        njs_type_error(vm, "Object.defineProperties is called on non-object");
         return NJS_ERROR;
     }
 
     value = njs_argument(args, 1);
-
-    if (!njs_object(value)->extensible) {
-        njs_type_error(vm, "object is not extensible");
-        return NJS_ERROR;
-    }
 
     desc = njs_arg(args, nargs, 2);
 
