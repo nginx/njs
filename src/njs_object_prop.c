@@ -311,7 +311,7 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
 
             if (njs_is_valid(&prop->value)
                 && prev->type != NJS_PROPERTY_HANDLER
-                && !njs_values_strict_equal(&prop->value, &prev->value))
+                && !njs_values_same(&prop->value, &prev->value))
             {
                 goto exception;
             }
@@ -463,6 +463,11 @@ njs_descriptor_prop(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_lvlhsh_query_t  lhq;
 
     static const njs_value_t  get_string = njs_string("get");
+
+    if (!njs_is_object(desc)) {
+        njs_type_error(vm, "property descriptor must be an object");
+        return NJS_ERROR;
+    }
 
     data = 0;
     accessor = 0;

@@ -11103,6 +11103,39 @@ static njs_unit_test_t  njs_test[] =
                  "Object.keys(o)"),
       njs_str("b") },
 
+    { njs_str("var o = Object.defineProperties({}, { get x() { return { value: 1 }; } });"
+              "Object.getOwnPropertyDescriptor(o, 'x').value"),
+      njs_str("1") },
+
+    { njs_str("Object.defineProperties({}, { get x() { return  1; } })"),
+      njs_str("TypeError: property descriptor must be an object") },
+
+    { njs_str("var obj = {}; var desc = {value:NaN}; Object.defineProperty(obj, 'foo', desc); "
+              "Object.defineProperties(obj, { foo: desc } ).foo"),
+      njs_str("NaN") },
+
+    { njs_str("var obj = {}; var desc = {value:-0}; Object.defineProperty(obj, 'foo', desc); "
+              "Object.defineProperties(obj, { foo: desc } ).foo"),
+      njs_str("-0") },
+
+    { njs_str("var obj = {}; var desc = {value:-0}; Object.defineProperty(obj, 'foo', {value:0}); "
+              "Object.defineProperties(obj, { foo: desc } ).foo"),
+      njs_str("TypeError: Cannot redefine property: \"foo\"") },
+
+    { njs_str("var obj = {}; var desc = {value:0}; Object.defineProperty(obj, 'foo', {value:-0}); "
+              "Object.defineProperties(obj, { foo: desc } ).foo"),
+      njs_str("TypeError: Cannot redefine property: \"foo\"") },
+
+    { njs_str("var descs = {a:{value:1}}; Object.defineProperty(descs, 'b', {value:{value:2}});"
+              "var o = Object.defineProperties({}, descs);"
+              "njs.dump([o.a, o.b])"),
+      njs_str("[1,undefined]") },
+
+    { njs_str("var descs = {a:{value:1}}; Object.defineProperty(descs, 'b', {value:{value:2}, enumerable:true});"
+              "var o = Object.defineProperties({}, descs);"
+              "njs.dump([o.a, o.b])"),
+      njs_str("[1,2]") },
+
     { njs_str("var o = {a:1}; delete o.a;"
                  "Object.defineProperty(o, 'a', { value: 1 }); o.a"),
       njs_str("1") },
@@ -11192,8 +11225,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Object.defineProperties(1, {})"),
       njs_str("TypeError: Object.defineProperties is called on non-object") },
 
-    { njs_str("Object.defineProperties({}, 1)"),
-      njs_str("TypeError: descriptor is not an object") },
+    { njs_str("njs.dump(Object.defineProperties({}, 1))"),
+      njs_str("{}") },
 
     { njs_str("Object.defineProperties(Object.freeze({b:1}), {b:{value:1}}).b"),
       njs_str("1") },

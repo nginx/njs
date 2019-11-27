@@ -1262,44 +1262,55 @@ static njs_int_t
 njs_object_define_properties(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_int_t          ret;
-    njs_value_t        *value, *desc;
-    njs_lvlhsh_t       *hash;
-    njs_lvlhsh_each_t  lhe;
-    njs_object_prop_t  *prop;
+    uint32_t              i, length;
+    njs_int_t             ret;
+    njs_array_t           *keys;
+    njs_value_t           desc, *value, *descs;
+    njs_object_prop_t     *prop;
+    njs_property_query_t  pq;
 
     if (!njs_is_object(njs_arg(args, nargs, 1))) {
         njs_type_error(vm, "Object.defineProperties is called on non-object");
         return NJS_ERROR;
     }
 
-    value = njs_argument(args, 1);
+    descs = njs_arg(args, nargs, 2);
+    ret = njs_value_to_object(vm, descs);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
 
-    desc = njs_arg(args, nargs, 2);
-
-    if (!njs_is_object(desc)) {
-        njs_type_error(vm, "descriptor is not an object");
+    keys = njs_value_own_enumerate(vm, descs, NJS_ENUM_KEYS,
+                                   NJS_ENUM_STRING | NJS_ENUM_SYMBOL, 0);
+    if (njs_slow_path(keys == NULL)) {
         return NJS_ERROR;
     }
 
-    njs_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+    length = keys->length;
+    value = njs_argument(args, 1);
+    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 0);
 
-    hash = njs_object_hash(desc);
-
-    for ( ;; ) {
-        prop = njs_lvlhsh_each(hash, &lhe);
-
-        if (prop == NULL) {
-            break;
+    for (i = 0; i < length; i++) {
+        ret = njs_property_query(vm, &pq, descs, &keys->start[i]);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return ret;
         }
 
-        if (prop->enumerable && njs_is_object(&prop->value)) {
-            ret = njs_object_prop_define(vm, value, &prop->name, &prop->value,
-                                         NJS_OBJECT_PROP_DESCRIPTOR);
+        prop = pq.lhq.value;
 
-            if (njs_slow_path(ret != NJS_OK)) {
-                return NJS_ERROR;
-            }
+        if (ret == NJS_DECLINED || !prop->enumerable) {
+            continue;
+        }
+
+        ret = njs_value_property(vm, descs, &keys->start[i], &desc);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return ret;
+        }
+
+        ret = njs_object_prop_define(vm, value, &keys->start[i], &desc,
+                                     NJS_OBJECT_PROP_DESCRIPTOR);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
         }
     }
 
