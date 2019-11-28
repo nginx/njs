@@ -12036,6 +12036,41 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Object.isExtensible(undefined)"),
       njs_str("false") },
 
+    /* Object.is() */
+
+    { njs_str("typeof Object.is"),
+      njs_str("function") },
+
+    { njs_str("Object.is.length == 2"),
+      njs_str("true") },
+
+    { njs_str("Object.is()"),
+      njs_str("true") },
+
+    { njs_str("[undefined, null, false, NaN, '', Symbol(), {}]"
+              ".map((x) => Object.is(x, x))"
+              ".every((x) => x === true)"),
+      njs_str("true") },
+
+    { njs_str("[null, false, NaN, '', Symbol(), {}]"
+              ".map((x) => Object.is(x) || Object.is(void 0, x))"
+              ".every((x) => x === false)"),
+      njs_str("true") },
+
+    { njs_str("[false, NaN, '', Symbol()]"
+              ".map((x) => Object.is(Object(x), Object(x)))"
+              ".every((x) => x === false)"),
+      njs_str("true") },
+
+    { njs_str("Object.is(0, -0)"),
+      njs_str("false") },
+
+    { njs_str("Object.is(0, null)"),
+      njs_str("false") },
+
+    { njs_str("Object.is(42, '42')"),
+      njs_str("false") },
+
     { njs_str(
         "var fail;"
         "function isConfigurableMethods(o) {"

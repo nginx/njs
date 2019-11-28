@@ -1761,6 +1761,17 @@ njs_object_assign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+static njs_int_t
+njs_object_is(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    njs_set_boolean(&vm->retval, njs_values_same(njs_arg(args, nargs, 1),
+                                                 njs_arg(args, nargs, 2)));
+
+    return NJS_OK;
+}
+
+
 /*
  * The __proto__ property of booleans, numbers and strings primitives,
  * of objects created by Boolean(), Number(), and String() constructors,
@@ -2049,6 +2060,15 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("assign"),
         .value = njs_native_function(njs_object_assign, 2),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    /* Object.is(). */
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("is"),
+        .value = njs_native_function(njs_object_is, 2),
         .writable = 1,
         .configurable = 1,
     },
