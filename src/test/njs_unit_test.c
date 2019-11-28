@@ -10762,6 +10762,8 @@ static njs_unit_test_t  njs_test[] =
                  "o.__proto__ === p"),
       njs_str("true") },
 
+    /* Object.create() */
+
     { njs_str("var o = Object.create(Object.prototype);"
                  "o.__proto__ === Object.prototype"),
       njs_str("true") },
@@ -10774,6 +10776,15 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("Object.create(1)"),
       njs_str("TypeError: prototype may only be an object or null: number") },
+
+    { njs_str("var o = Object.create(null, { a: { value: 1 } }); o.a"),
+      njs_str("1") },
+
+    { njs_str("var o = Object.create({ a: 0 }, { a: { value: 1 } }); o.a"),
+      njs_str("1") },
+
+    { njs_str("var o = Object.create({ get a() { return this.b; } }, { b: { value: 1 } }); o.a"),
+      njs_str("1") },
 
     { njs_str("var o = {a:1, b:2, c:3};"
                  "Object.keys(o)"),

@@ -28,6 +28,8 @@ static njs_int_t njs_object_enumerate_object(njs_vm_t *vm,
 static njs_int_t njs_object_own_enumerate_object(njs_vm_t *vm,
     const njs_object_t *object, const njs_object_t *parent, njs_array_t *items,
     njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all);
+static njs_int_t njs_object_define_properties(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused);
 
 
 njs_object_t *
@@ -250,13 +252,11 @@ njs_object_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-/* TODO: properties with attributes. */
-
 static njs_int_t
 njs_object_create(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_value_t   *value;
+    njs_value_t   *value, *descs, arguments[3];
     njs_object_t  *object;
 
     value = njs_arg(args, nargs, 1);
@@ -277,6 +277,16 @@ njs_object_create(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
         njs_set_object(&vm->retval, object);
+
+        descs = njs_arg(args, nargs, 2);
+
+        if (njs_slow_path(!njs_is_undefined(descs))) {
+            arguments[0] = args[0];
+            arguments[1] = vm->retval;
+            arguments[2] = *descs;
+
+            return njs_object_define_properties(vm, arguments, 3, unused);
+        }
 
         return NJS_OK;
     }
