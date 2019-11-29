@@ -10,6 +10,7 @@
 
 static const njs_value_t  njs_error_message_string = njs_string("message");
 static const njs_value_t  njs_error_name_string = njs_string("name");
+static const njs_value_t  njs_error_stack_string = njs_string("stack");
 
 
 void
@@ -59,6 +60,127 @@ njs_error_fmt_new(njs_vm_t *vm, njs_value_t *dst, njs_object_type_t type,
 }
 
 
+static njs_int_t
+njs_error_stack_new(njs_vm_t *vm, njs_object_t *error, njs_value_t *retval)
+{
+    njs_int_t           ret;
+    njs_str_t           string;
+    njs_arr_t           *stack;
+    njs_value_t         value;
+    njs_native_frame_t  *frame;
+
+    njs_set_object(&value, error);
+
+    ret = njs_error_to_string(vm, retval, &value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    stack = njs_arr_create(vm->mem_pool, 4, sizeof(njs_backtrace_entry_t));
+    if (njs_slow_path(stack == NULL)) {
+        return NJS_ERROR;
+    }
+
+    frame = vm->top_frame;
+
+    for ( ;; ) {
+        if (njs_vm_add_backtrace_entry(vm, stack, frame) != NJS_OK) {
+            break;
+        }
+
+        frame = frame->previous;
+
+        if (frame == NULL) {
+            break;
+        }
+    }
+
+    njs_string_get(retval, &string);
+
+    ret = njs_vm_backtrace_to_string(vm, stack, &string);
+
+    njs_arr_destroy(stack);
+
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    return njs_string_set(vm, retval, string.start, string.length);
+}
+
+
+njs_int_t
+njs_error_stack_attach(njs_vm_t *vm, njs_value_t *value)
+{
+    njs_int_t           ret;
+    njs_object_t        *error;
+    njs_object_prop_t   *prop;
+    njs_lvlhsh_query_t  lhq;
+
+    if (njs_slow_path(!njs_is_error(value))) {
+        return NJS_DECLINED;
+    }
+
+    if (vm->debug == NULL || vm->start == NULL) {
+        return NJS_OK;
+    }
+
+    error = njs_object(value);
+
+    lhq.replace = 0;
+    lhq.pool = vm->mem_pool;
+    lhq.proto = &njs_object_hash_proto;
+
+    lhq.key = njs_str_value("stack");
+    lhq.key_hash = NJS_STACK_HASH;
+
+    prop = njs_object_prop_alloc(vm, &njs_error_stack_string,
+                                 &njs_value_undefined, 1);
+    if (njs_slow_path(prop == NULL)) {
+        return NJS_ERROR;
+    }
+
+    prop->enumerable = 0;
+
+    ret = njs_error_stack_new(vm, error, &prop->value);
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        njs_internal_error(vm, "njs_error_stack_new() failed");
+        return NJS_ERROR;
+    }
+
+    if (ret == NJS_OK) {
+        lhq.value = prop;
+
+        ret = njs_lvlhsh_insert(&error->hash, &lhq);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            njs_internal_error(vm, "lvlhsh insert failed");
+            return NJS_ERROR;
+        }
+    }
+
+    return NJS_OK;
+}
+
+
+njs_int_t
+njs_error_stack(njs_vm_t *vm, njs_value_t *value, njs_value_t *stack)
+{
+    njs_int_t  ret;
+
+    ret = njs_value_property(vm, value, njs_value_arg(&njs_error_stack_string),
+                             stack);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    if (!njs_is_string(stack)) {
+        return NJS_DECLINED;
+    }
+
+    return NJS_OK;
+}
+
+
 njs_object_t *
 njs_error_alloc(njs_vm_t *vm, njs_object_type_t type, const njs_value_t *name,
     const njs_value_t *message)
@@ -83,11 +205,11 @@ njs_error_alloc(njs_vm_t *vm, njs_object_type_t type, const njs_value_t *name,
 
     lhq.replace = 0;
     lhq.pool = vm->mem_pool;
+    lhq.proto = &njs_object_hash_proto;
 
     if (name != NULL) {
         lhq.key = njs_str_value("name");
         lhq.key_hash = NJS_NAME_HASH;
-        lhq.proto = &njs_object_hash_proto;
 
         prop = njs_object_prop_alloc(vm, &njs_error_name_string, name, 1);
         if (njs_slow_path(prop == NULL)) {
@@ -106,7 +228,6 @@ njs_error_alloc(njs_vm_t *vm, njs_object_type_t type, const njs_value_t *name,
     if (message!= NULL) {
         lhq.key = njs_str_value("message");
         lhq.key_hash = NJS_MESSAGE_HASH;
-        lhq.proto = &njs_object_hash_proto;
 
         prop = njs_object_prop_alloc(vm, &njs_error_message_string, message, 1);
         if (njs_slow_path(prop == NULL)) {
@@ -605,20 +726,8 @@ njs_error_prototype_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
-njs_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
-{
-    if (nargs < 1 || !njs_is_object(&args[0])) {
-        njs_type_error(vm, "\"this\" argument is not an object");
-        return NJS_ERROR;
-    }
-
-    return njs_error_to_string(vm, &vm->retval, &args[0]);
-}
-
-
-njs_int_t
-njs_error_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *error)
+njs_error_to_string2(njs_vm_t *vm, njs_value_t *retval,
+    const njs_value_t *error, njs_bool_t want_stack)
 {
     size_t              length;
     u_char              *p;
@@ -629,6 +738,17 @@ njs_error_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *error)
     njs_lvlhsh_query_t  lhq;
 
     static const njs_value_t  default_name = njs_string("Error");
+
+    if (want_stack) {
+        ret = njs_error_stack(vm, njs_value_arg(error), retval);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return ret;
+        }
+
+        if (ret == NJS_OK) {
+            return NJS_OK;
+        }
+    }
 
     njs_object_property_init(&lhq, &njs_string_name, NJS_NAME_HASH);
 
@@ -705,6 +825,26 @@ njs_error_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *error)
     njs_memory_error(vm);
 
     return NJS_ERROR;
+}
+
+
+static njs_int_t
+njs_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    if (nargs < 1 || !njs_is_object(&args[0])) {
+        njs_type_error(vm, "\"this\" argument is not an object");
+        return NJS_ERROR;
+    }
+
+    return njs_error_to_string2(vm, &vm->retval, &args[0], 0);
+}
+
+
+njs_int_t
+njs_error_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *error)
+{
+    return njs_error_to_string2(vm, retval, error, 1);
 }
 
 

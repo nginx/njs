@@ -258,19 +258,19 @@ NJS_EXPORT njs_int_t njs_vm_value_string_set(njs_vm_t *vm, njs_value_t *value,
 NJS_EXPORT u_char *njs_vm_value_string_alloc(njs_vm_t *vm, njs_value_t *value,
     uint32_t size);
 NJS_EXPORT njs_int_t njs_vm_value_string_copy(njs_vm_t *vm, njs_str_t *retval,
-    const njs_value_t *value, uintptr_t *next);
+    njs_value_t *value, uintptr_t *next);
 
 /*
  * Converts a value to string.
  */
 NJS_EXPORT njs_int_t njs_vm_value_to_string(njs_vm_t *vm, njs_str_t *dst,
-    const njs_value_t *src);
+    njs_value_t *src);
 
 /*
  * Calls njs_vm_value_to_string(), if exception was thrown adds backtrace.
  */
 NJS_EXPORT njs_int_t njs_vm_value_string(njs_vm_t *vm, njs_str_t *dst,
-    const njs_value_t *src);
+    njs_value_t *src);
 NJS_EXPORT njs_int_t njs_vm_retval_string(njs_vm_t *vm, njs_str_t *dst);
 
 NJS_EXPORT njs_int_t njs_vm_value_dump(njs_vm_t *vm, njs_str_t *dst,

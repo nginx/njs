@@ -722,19 +722,23 @@ njs_output(njs_opts_t *opts, njs_vm_t *vm, njs_int_t ret)
 {
     njs_str_t  out;
 
-    if (!opts->silent) {
+    if (opts->silent) {
+        return;
+    }
+
+    if (ret == NJS_OK) {
         if (njs_vm_retval_dump(vm, &out, 1) != NJS_OK) {
-            out = njs_str_value("failed to get retval from VM");
-            ret = NJS_ERROR;
+            njs_stderror("Shell:failed to get retval from VM\n");
+            return;
         }
 
-        if (ret != NJS_OK) {
-            njs_stderror("%V\n", &out);
-
-        } else if (vm->options.accumulative) {
-            njs_print(out.start, out.length);
-            njs_printf("\n");
+        if (vm->options.accumulative) {
+            njs_printf("%V\n", &out);
         }
+
+    } else {
+        njs_vm_retval_string(vm, &out);
+        njs_stderror("Thrown:\n%V\n", &out);
     }
 }
 

@@ -224,7 +224,6 @@ struct njs_vm_s {
     njs_random_t             random;
 
     njs_arr_t                *debug;
-    njs_arr_t                *backtrace;
 
     /*
      * njs_property_query() uses it to store reference to a temporary
@@ -272,14 +271,16 @@ struct njs_vm_shared_s {
 
 void njs_vm_scopes_restore(njs_vm_t *vm, njs_frame_t *frame,
     njs_native_frame_t *previous);
-njs_int_t njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame);
+njs_int_t njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_arr_t *stack,
+    njs_native_frame_t *native_frame);
+njs_int_t njs_vm_backtrace_to_string(njs_vm_t *vm, njs_arr_t *stack,
+    njs_str_t *dst);
 
 njs_int_t njs_builtin_objects_create(njs_vm_t *vm);
 njs_int_t njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global);
 njs_int_t njs_builtin_match_native_function(njs_vm_t *vm,
     njs_function_native_t func, njs_str_t *name);
 
-njs_arr_t *njs_vm_backtrace(njs_vm_t *vm);
 njs_arr_t *njs_vm_completions(njs_vm_t *vm, njs_str_t *expression);
 
 void *njs_lvlhsh_alloc(void *data, size_t size);

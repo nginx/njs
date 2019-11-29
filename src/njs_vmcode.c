@@ -898,6 +898,10 @@ next:
 
 error:
 
+    if (njs_is_error(&vm->retval)) {
+        (void) njs_error_stack_attach(vm, &vm->retval);
+    }
+
     for ( ;; ) {
         frame = (njs_frame_t *) vm->top_frame;
 
@@ -906,17 +910,7 @@ error:
         if (catch != NULL) {
             pc = catch;
 
-            if (vm->backtrace != NULL) {
-                njs_arr_reset(vm->backtrace);
-            }
-
             goto next;
-        }
-
-        if (vm->debug != NULL
-            && njs_vm_add_backtrace_entry(vm, frame) != NJS_OK)
-        {
-            break;
         }
 
         previous = frame->native.previous;

@@ -2144,10 +2144,6 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, const njs_value_t *value,
     njs_property_query_t  pq;
     njs_json_stringify_t  *stringify, dump_stringify;
 
-    if (njs_vm_backtrace(vm) != NULL) {
-        goto exception;
-    }
-
     stringify = &dump_stringify;
 
     stringify->vm = vm;

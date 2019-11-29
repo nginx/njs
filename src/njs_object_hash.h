@@ -411,6 +411,15 @@
         's'), 'e'), 't')
 
 
+#define NJS_STACK_HASH                                                        \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        's'), 't'), 'a'), 'c'), 'k')
+
+
 #define NJS_STRING_HASH                                                       \
     njs_djb_hash_add(                                                         \
     njs_djb_hash_add(                                                         \

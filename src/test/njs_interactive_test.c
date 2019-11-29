@@ -243,10 +243,7 @@ static njs_interactive_test_t  njs_test[] =
                  "    at main (native)\n") },
 
     { njs_str("function f(n) { if (n == 0) { throw 'a'; } return f(n-1); }; f(2)" ENTER),
-      njs_str("a\n"
-                 "    at f (:1)\n"
-                 "      repeats 2 times\n"
-                 "    at main (native)\n") },
+      njs_str("a") },
 
     /* Exception in njs_vm_retval_string() */
 

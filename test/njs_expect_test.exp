@@ -258,7 +258,7 @@ njs_test {
 
 njs_test {
     {"console.ll()\r\n"
-     "console.ll()\r\nTypeError: (intermediate value)\\\[\"ll\"] is not a function"}
+     "console.ll()\r\nThrown:\r\nTypeError: (intermediate value)\\\[\"ll\"] is not a function"}
 }
 
 njs_test {
@@ -280,7 +280,7 @@ njs_test {
 # Backtraces for external objects
 njs_test {
     {"console.log(console.a.a)\r\n"
-     "console.log(console.a.a)\r\nTypeError:*at print (native)"}
+     "console.log(console.a.a)\r\nThrown:\r\nTypeError:*at print (native)"}
 }
 
 # dumper
@@ -321,9 +321,9 @@ njs_test {
 # Backtraces are reset between invocations
 njs_test {
     {"JSON.parse(Error())\r\n"
-     "JSON.parse(Error())\r\nSyntaxError: Unexpected token at position 0*at JSON.parse (native)"}
+     "JSON.parse(Error())\r\nThrown:\r\nSyntaxError: Unexpected token at position 0*at JSON.parse (native)"}
     {"JSON.parse(Error()\r\n"
-     "JSON.parse(Error()\r\nSyntaxError: Unexpected token \"\" in shell:1"}
+     "JSON.parse(Error()\r\nThrown:\r\nSyntaxError: Unexpected token \"\" in shell:1"}
 }
 
 njs_test {
@@ -335,7 +335,18 @@ njs_test {
 
 njs_test {
     {"(function() { throw 'test' })()\r\n"
-     "test\r\n    at anonymous (shell:1)"}
+     "Thrown:\r\ntest"}
+}
+
+njs_test {
+    {"function f() { return ({}.a.a); }\r\n"
+     "undefined"}
+    {"var e; try {f()} catch (ee) {e = ee}\r\n"
+     "undefined"}
+    {"Object.keys(null)\r\n"
+     "Thrown:\r\nTypeError: cannot convert null argument to object"}
+    {"e\r\n"
+     "TypeError: cannot get property \"a\" of undefined*at f (shell:1)"}
 }
 
 # Non-ASCII characters

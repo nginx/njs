@@ -153,10 +153,6 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 
     parser->lexer = &lexer;
 
-    if (vm->backtrace != NULL) {
-        njs_arr_reset(vm->backtrace);
-    }
-
     njs_set_undefined(&vm->retval);
 
     ret = njs_parser(vm, parser, prev);
@@ -471,10 +467,6 @@ njs_vm_post_event(njs_vm_t *vm, njs_vm_event_t vm_event,
 njs_int_t
 njs_vm_run(njs_vm_t *vm)
 {
-    if (njs_slow_path(vm->backtrace != NULL)) {
-        njs_arr_reset(vm->backtrace);
-    }
-
     return njs_vm_handle_events(vm);
 }
 
@@ -648,120 +640,11 @@ njs_vm_memory_error(njs_vm_t *vm)
 }
 
 
-njs_arr_t *
-njs_vm_backtrace(njs_vm_t *vm)
-{
-    if (vm->backtrace != NULL && !njs_arr_is_empty(vm->backtrace)) {
-        return vm->backtrace;
-    }
-
-    return NULL;
-}
-
-
-static njs_int_t
-njs_vm_backtrace_dump(njs_vm_t *vm, njs_str_t *dst, const njs_value_t *src)
-{
-    u_char                 *p, *start, *end;
-    size_t                 len, count;
-    njs_uint_t             i;
-    njs_arr_t              *backtrace;
-    njs_backtrace_entry_t  *be, *prev;
-
-    backtrace = njs_vm_backtrace(vm);
-
-    len = dst->length + 1;
-
-    count = 0;
-    prev = NULL;
-
-    be = backtrace->start;
-
-    for (i = 0; i < backtrace->items; i++) {
-        if (i != 0 && prev->name.start == be->name.start
-            && prev->line == be->line)
-        {
-            count++;
-
-        } else {
-
-            if (count != 0) {
-                len += njs_length("      repeats  times\n")
-                       + NJS_INT_T_LEN;
-                count = 0;
-            }
-
-            len += be->name.length + njs_length("    at  ()\n");
-
-            if (be->line != 0) {
-                len += be->file.length + NJS_INT_T_LEN + 1;
-
-            } else {
-                len += njs_length("native");
-            }
-        }
-
-        prev = be;
-        be++;
-    }
-
-    p = njs_mp_alloc(vm->mem_pool, len);
-    if (p == NULL) {
-        njs_memory_error(vm);
-        return NJS_ERROR;
-    }
-
-    start = p;
-    end = start + len;
-
-    p = njs_cpymem(p, dst->start, dst->length);
-    *p++ = '\n';
-
-    count = 0;
-    prev = NULL;
-
-    be = backtrace->start;
-
-    for (i = 0; i < backtrace->items; i++) {
-        if (i != 0 && prev->name.start == be->name.start
-            && prev->line == be->line)
-        {
-            count++;
-
-        } else {
-            if (count != 0) {
-                p = njs_sprintf(p, end, "      repeats %uz times\n",
-                                count);
-                count = 0;
-            }
-
-            p = njs_sprintf(p, end, "    at %V ", &be->name);
-
-            if (be->line != 0) {
-                p = njs_sprintf(p, end, "(%V:%uD)\n", &be->file,
-                                be->line);
-
-            } else {
-                p = njs_sprintf(p, end, "(native)\n");
-            }
-        }
-
-        prev = be;
-        be++;
-    }
-
-    dst->start = start;
-    dst->length = p - dst->start;
-
-    return NJS_OK;
-}
-
-
 njs_int_t
-njs_vm_value_string(njs_vm_t *vm, njs_str_t *dst, const njs_value_t *src)
+njs_vm_value_string(njs_vm_t *vm, njs_str_t *dst, njs_value_t *src)
 {
-    njs_int_t   ret;
-    njs_uint_t  exception;
+    njs_int_t    ret;
+    njs_uint_t   exception;
 
     if (njs_slow_path(src->type == NJS_NUMBER
                       && njs_number(src) == 0
@@ -771,26 +654,17 @@ njs_vm_value_string(njs_vm_t *vm, njs_str_t *dst, const njs_value_t *src)
         return NJS_OK;
     }
 
-    exception = 1;
+    exception = 0;
 
 again:
 
     ret = njs_vm_value_to_string(vm, dst, src);
-
     if (njs_fast_path(ret == NJS_OK)) {
-
-        if (njs_vm_backtrace(vm) != NULL) {
-            ret = njs_vm_backtrace_dump(vm, dst, src);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return NJS_ERROR;
-            }
-        }
-
         return NJS_OK;
     }
 
-    if (exception) {
-        exception = 0;
+    if (!exception) {
+        exception = 1;
 
         /* value evaluation threw an exception. */
 
@@ -966,18 +840,18 @@ njs_vm_object_prop(njs_vm_t *vm, const njs_value_t *value, const njs_str_t *key)
 
 
 njs_int_t
-njs_vm_value_to_string(njs_vm_t *vm, njs_str_t *dst, const njs_value_t *src)
+njs_vm_value_to_string(njs_vm_t *vm, njs_str_t *dst, njs_value_t *src)
 {
     u_char       *start;
     size_t       size;
     njs_int_t    ret;
-    njs_value_t  value;
+    njs_value_t  value, stack;
 
     if (njs_slow_path(src == NULL)) {
         return NJS_ERROR;
     }
 
-    if (njs_slow_path(njs_is_error(src))) {
+    if (njs_is_error(src)) {
 
         /* MemoryError is a nonextensible internal error. */
 
@@ -986,6 +860,15 @@ njs_vm_value_to_string(njs_vm_t *vm, njs_str_t *dst, const njs_value_t *src)
         {
             njs_string_get(&njs_string_memory_error, dst);
             return NJS_OK;
+        }
+
+        ret = njs_error_stack(vm, src, &stack);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return ret;
+        }
+
+        if (ret == NJS_OK) {
+            src = &stack;
         }
     }
 
@@ -1020,7 +903,7 @@ njs_vm_value_to_string(njs_vm_t *vm, njs_str_t *dst, const njs_value_t *src)
 
 njs_int_t
 njs_vm_value_string_copy(njs_vm_t *vm, njs_str_t *retval,
-    const njs_value_t *value, uintptr_t *next)
+    njs_value_t *value, uintptr_t *next)
 {
     uintptr_t    n;
     njs_array_t  *array;
@@ -1060,31 +943,19 @@ njs_vm_value_string_copy(njs_vm_t *vm, njs_str_t *retval,
 
 
 njs_int_t
-njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame)
+njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_arr_t *stack,
+    njs_native_frame_t *native_frame)
 {
     njs_int_t              ret;
-    njs_arr_t              *backtrace;
     njs_uint_t             i;
     njs_function_t         *function;
-    njs_native_frame_t     *native_frame;
     njs_function_debug_t   *debug_entry;
     njs_function_lambda_t  *lambda;
     njs_backtrace_entry_t  *be;
 
-    if (njs_slow_path(vm->backtrace == NULL)) {
-        backtrace = njs_arr_create(vm->mem_pool, 4,
-                                   sizeof(njs_backtrace_entry_t));
-        if (njs_slow_path(backtrace == NULL)) {
-            return NJS_ERROR;
-        }
-
-        vm->backtrace = backtrace;
-    }
-
-    native_frame = &frame->native;
     function = native_frame->function;
 
-    be = njs_arr_add(vm->backtrace);
+    be = njs_arr_add(stack);
     if (njs_slow_path(be == NULL)) {
         return NJS_ERROR;
     }
@@ -1141,6 +1012,107 @@ njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_frame_t *frame)
 
     return NJS_OK;
 }
+
+
+njs_int_t
+njs_vm_backtrace_to_string(njs_vm_t *vm, njs_arr_t *backtrace, njs_str_t *dst)
+{
+    u_char                 *p, *start, *end;
+    size_t                 len, count;
+    njs_uint_t             i;
+    njs_backtrace_entry_t  *be, *prev;
+
+    if (backtrace->items == 0) {
+        return NJS_OK;
+    }
+
+    len = dst->length + 1;
+
+    count = 0;
+    prev = NULL;
+
+    be = backtrace->start;
+
+    for (i = 0; i < backtrace->items; i++) {
+        if (i != 0 && prev->name.start == be->name.start
+            && prev->line == be->line)
+        {
+            count++;
+
+        } else {
+
+            if (count != 0) {
+                len += njs_length("      repeats  times\n")
+                       + NJS_INT_T_LEN;
+                count = 0;
+            }
+
+            len += be->name.length + njs_length("    at  ()\n");
+
+            if (be->line != 0) {
+                len += be->file.length + NJS_INT_T_LEN + 1;
+
+            } else {
+                len += njs_length("native");
+            }
+        }
+
+        prev = be;
+        be++;
+    }
+
+    p = njs_mp_alloc(vm->mem_pool, len);
+    if (p == NULL) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    start = p;
+    end = start + len;
+
+    p = njs_cpymem(p, dst->start, dst->length);
+    *p++ = '\n';
+
+    count = 0;
+    prev = NULL;
+
+    be = backtrace->start;
+
+    for (i = 0; i < backtrace->items; i++) {
+        if (i != 0 && prev->name.start == be->name.start
+            && prev->line == be->line)
+        {
+            count++;
+
+        } else {
+            if (count != 0) {
+                p = njs_sprintf(p, end, "      repeats %uz times\n",
+                                count);
+                count = 0;
+            }
+
+            p = njs_sprintf(p, end, "    at %V ", &be->name);
+
+            if (be->line != 0) {
+                p = njs_sprintf(p, end, "(%V:%uD)\n", &be->file,
+                                be->line);
+
+            } else {
+                p = njs_sprintf(p, end, "(native)\n");
+            }
+        }
+
+        prev = be;
+        be++;
+    }
+
+    dst->start = start;
+    dst->length = p - dst->start;
+
+    return NJS_OK;
+}
+
+
 
 
 void *
