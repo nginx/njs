@@ -30,6 +30,8 @@ static njs_int_t njs_object_own_enumerate_object(njs_vm_t *vm,
     njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all);
 static njs_int_t njs_object_define_properties(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
+static njs_int_t njs_object_set_prototype(njs_vm_t *vm, njs_object_t *object,
+    const njs_value_t *value);
 
 
 njs_object_t *
@@ -1476,6 +1478,52 @@ njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
+njs_object_set_prototype_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    njs_int_t    ret;
+    njs_value_t  *value, *proto;
+
+    value = njs_arg(args, nargs, 1);
+    if (njs_slow_path(njs_is_null_or_undefined(value))) {
+        njs_type_error(vm, "cannot convert %s argument to object",
+                       njs_type_string(value->type));
+        return NJS_ERROR;
+    }
+
+    proto = njs_arg(args, nargs, 2);
+    if (njs_slow_path(!njs_is_object(proto) && !njs_is_null(proto))) {
+        njs_type_error(vm, "prototype may only be an object or null: %s",
+                       njs_type_string(proto->type));
+        return NJS_ERROR;
+    }
+
+    if (njs_slow_path(!njs_is_object(value))) {
+        vm->retval = *value;
+
+        return NJS_OK;
+    }
+
+    ret = njs_object_set_prototype(vm, njs_object(value), proto);
+    if (njs_fast_path(ret == NJS_OK)) {
+        vm->retval = *value;
+
+        return NJS_OK;
+    }
+
+    if (ret == NJS_DECLINED) {
+        njs_type_error(vm, "Cannot set property \"prototype\", "
+                       "object is not extensible");
+
+    } else {
+        njs_type_error(vm, "Cyclic __proto__ value");
+    }
+
+    return NJS_ERROR;
+}
+
+
+static njs_int_t
 njs_object_freeze(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -2011,6 +2059,15 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
         .configurable = 1,
     },
 
+    /* Object.setPrototypeOf(). */
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("setPrototypeOf"),
+        .value = njs_native_function(njs_object_set_prototype_of, 2),
+        .writable = 1,
+        .configurable = 1,
+    },
+
     /* Object.freeze(). */
     {
         .type = NJS_PROPERTY,
@@ -2095,7 +2152,7 @@ const njs_object_init_t  njs_object_constructor_init = {
  * ES6, 9.1.2: [[SetPrototypeOf]].
  */
 static njs_int_t
-njs_object_set_prototype_of(njs_vm_t *vm, njs_object_t *object,
+njs_object_set_prototype(njs_vm_t *vm, njs_object_t *object,
     const njs_value_t *value)
 {
     const njs_object_t *proto;
@@ -2146,7 +2203,7 @@ njs_object_prototype_proto(njs_vm_t *vm, njs_object_prop_t *prop,
 
     if (setval != NULL) {
         if (njs_is_object(setval) || njs_is_null(setval)) {
-            ret = njs_object_set_prototype_of(vm, object, setval);
+            ret = njs_object_set_prototype(vm, object, setval);
             if (njs_slow_path(ret == NJS_ERROR)) {
                 njs_type_error(vm, "Cyclic __proto__ value");
                 return NJS_ERROR;

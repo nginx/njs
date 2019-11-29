@@ -11527,6 +11527,41 @@ static njs_unit_test_t  njs_test[] =
               ".every((x) => Object.getPrototypeOf(x) == Object.getPrototypeOf(Object(x)))"),
       njs_str("true") },
 
+    /* Object.setPrototypeOf() */
+
+    { njs_str("Object.setPrototypeOf()"),
+      njs_str("TypeError: cannot convert undefined argument to object") },
+
+    { njs_str("Object.setPrototypeOf(null)"),
+      njs_str("TypeError: cannot convert null argument to object") },
+
+    { njs_str("Object.setPrototypeOf({})"),
+      njs_str("TypeError: prototype may only be an object or null: undefined") },
+
+    { njs_str("Object.setPrototypeOf(Object.preventExtensions({}))"),
+      njs_str("TypeError: prototype may only be an object or null: undefined") },
+
+    { njs_str("[true, 42, '', Symbol()]"
+              ".every((x) => Object.setPrototypeOf(x, {}) === x)"),
+      njs_str("true") },
+
+    { njs_str("Object.setPrototypeOf(Object.preventExtensions({}), {})"),
+      njs_str("TypeError: Cannot set property \"prototype\", object is not extensible") },
+
+    { njs_str("var p = {}, o = Object.create(p); Object.setPrototypeOf(p, o)"),
+      njs_str("TypeError: Cyclic __proto__ value") },
+
+    { njs_str("var p = {}, o = {}; Object.setPrototypeOf(o, p);"
+              "p.isPrototypeOf(o)"),
+      njs_str("true") },
+
+    { njs_str("var p = {}, o = Object.create(p); Object.setPrototypeOf(o, null);"
+              "Object.getPrototypeOf(o)"),
+      njs_str("null") },
+
+    { njs_str("typeof Object.setPrototypeOf({}, null)"),
+      njs_str("object") },
+
     { njs_str("var p = {}; var o = Object.create(p);"
                  "p.isPrototypeOf(o)"),
       njs_str("true") },
