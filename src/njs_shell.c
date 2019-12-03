@@ -869,13 +869,12 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         }
 
         line.length = njs_strlen(line.start);
-        if (line.length == 0) {
-            continue;
+
+        if (line.length != 0) {
+            add_history((char *) line.start);
+
+            njs_process_script(opts, vm_options->external, &line);
         }
-
-        add_history((char *) line.start);
-
-        njs_process_script(opts, vm_options->external, &line);
 
         /* editline allocs a new buffer every time. */
         free(line.start);
