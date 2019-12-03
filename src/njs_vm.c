@@ -852,12 +852,7 @@ njs_vm_value_to_string(njs_vm_t *vm, njs_str_t *dst, njs_value_t *src)
     }
 
     if (njs_is_error(src)) {
-
-        /* MemoryError is a nonextensible internal error. */
-
-        if (njs_has_prototype(vm, src, NJS_OBJ_TYPE_INTERNAL_ERROR)
-            && !njs_object(src)->extensible)
-        {
+        if (njs_is_memory_error(vm, src)) {
             njs_string_get(&njs_string_memory_error, dst);
             return NJS_OK;
         }

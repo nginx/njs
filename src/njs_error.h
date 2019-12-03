@@ -59,4 +59,18 @@ extern const njs_object_type_init_t  njs_uri_error_type_init;
 extern const njs_object_type_init_t  njs_memory_error_type_init;
 
 
+njs_inline njs_int_t
+njs_is_memory_error(njs_vm_t *vm, njs_value_t *value)
+{
+    if (njs_is_error(value)
+        && njs_has_prototype(vm, value, NJS_OBJ_TYPE_INTERNAL_ERROR)
+        && !njs_object(value)->extensible)
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
+
 #endif /* _NJS_BOOLEAN_H_INCLUDED_ */
