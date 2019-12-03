@@ -907,12 +907,10 @@ njs_int_t njs_value_property_delete(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *key, njs_value_t *removed);
 njs_int_t njs_value_to_object(njs_vm_t *vm, njs_value_t *value);
 
+void njs_symbol_conversion_failed(njs_vm_t *vm, njs_bool_t to_string);
+
 
 #include "njs_number.h"
-
-
-void
-njs_symbol_conversion_failed(njs_vm_t *vm, njs_bool_t to_string);
 
 
 njs_inline njs_int_t

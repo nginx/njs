@@ -19,8 +19,8 @@ typedef struct {
 
 
 typedef union {
-	double      d;
-	uint64_t    u64;
+    double      d;
+    uint64_t    u64;
 } njs_diyfp_conv_t;
 
 

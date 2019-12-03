@@ -1251,6 +1251,7 @@ njs_value_to_object(njs_vm_t *vm, njs_value_t *value)
     return NJS_ERROR;
 }
 
+
 void
 njs_symbol_conversion_failed(njs_vm_t *vm, njs_bool_t to_string)
 {
