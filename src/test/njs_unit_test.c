@@ -361,13 +361,23 @@ static njs_unit_test_t  njs_test[] =
 
     /* Number.toString(radix) method. */
 
-#ifndef NJS_SUNC
     { njs_str("0..toString(2)"),
       njs_str("0") },
-#endif
 
-    { njs_str("240..toString(2)"),
-      njs_str("11110000") },
+    { njs_str("(1234.567).toString(3)"),
+      njs_str("1200201.120022100021001021021002202") },
+
+    { njs_str("(1234.567).toString(5)"),
+      njs_str("14414.240414141414141414") },
+
+    { njs_str("(1234.567).toString(17)"),
+      njs_str("44a.9aeb6faa0da") },
+
+    { njs_str("(1234.567).toString(36)"),
+      njs_str("ya.kety9sifl") },
+
+    { njs_str("Number(-1.1).toString(36)"),
+      njs_str("-1.3llllllllm") },
 
     { njs_str("Math.pow(-2, 1023).toString(2).length"),
       njs_str("1025") },
@@ -439,22 +449,11 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("1e20.toString(14)"),
       njs_str("33cb3bb449c2a92000") },
 
-    /* Smallest positive double (next_double(0)). */
-    { njs_str("4.94065645841246544176568792868E-324.toString(36) == ('0.' + '0'.repeat(207) +'3')"),
-      njs_str("true") },
-
     { njs_str("1.7976931348623157E+308.toString(36) == ('1a1e4vngaiqo' + '0'.repeat(187))"),
       njs_str("true") },
 
     /* Largest positive double (prev_double(INFINITY)). */
     { njs_str("1.7976931348623157E+308.toString(2) == ('1'.repeat(53) + '0'.repeat(971))"),
-      njs_str("true") },
-
-    /* Maximum fraction length. */
-    { njs_str("2.2250738585072014E-323.toString(2) == ('0.' + '0'.repeat(1071) + '101')"),
-      njs_str("true") },
-
-    { njs_str("2.2250738585072014E-308.toString(2) == ('0.' + '0'.repeat(1021) + '1')"),
       njs_str("true") },
 
     { njs_str("Array(5).fill().map((n, i) => i + 10).map((v)=>(1.2312313132).toString(v))"),
@@ -638,14 +637,6 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("Array(5).fill().map((n, i) => i + 1).map((v)=>((Math.pow(-1,v))*(2*v)/3).toExponential())"),
       njs_str("-6.666666666666666e-1,1.3333333333333333e+0,-2e+0,2.6666666666666667e+0,-3.3333333333333337e+0") },
-
-#ifndef NJS_SUNC
-    { njs_str("4.94065645841246544176568792868e-324.toExponential()"),
-      njs_str("5e-324") },
-
-    { njs_str("4.94065645841246544176568792868e-324.toExponential(10)"),
-      njs_str("4.9406564584e-324") },
-#endif
 
     { njs_str("1.7976931348623157e+308.toExponential()"),
       njs_str("1.7976931348623157e+308") },
@@ -15343,6 +15334,84 @@ static njs_unit_test_t  njs_test[] =
 };
 
 
+static njs_unit_test_t  njs_denormals_test[] =
+{
+    { njs_str("2.2250738585072014e-308"),
+      njs_str("2.2250738585072014e-308") },
+
+#ifndef NJS_SUNC
+    { njs_str("2.2250738585072014E-308.toString(2) == ('0.' + '0'.repeat(1021) + '1')"),
+      njs_str("true") },
+
+    { njs_str("Number('2.2250738585072014E-323')"),
+      njs_str("2.5e-323") },
+
+    { njs_str("Number('2.2250738585072014E-323') + 0"),
+      njs_str("2.5e-323") },
+
+    /* Smallest positive double (next_double(0)). */
+    { njs_str("5E-324.toString(36) === '0.' + '0'.repeat(207) + '3'"),
+      njs_str("true") },
+
+    /* Maximum fraction length. */
+    { njs_str("2.2250738585072014E-323.toString(2) == ('0.' + '0'.repeat(1071) + '101')"),
+      njs_str("true") },
+
+    /* Denormals. */
+    { njs_str("var zeros = count => '0'.repeat(count);"
+              "["
+              "  [1.8858070859709815e-308, `0.${zeros(1022)}1101100011110111011100000100011001111101110001010111`],"
+              // FIXME: "  [Number.MIN_VALUE, `0.${zeros(1073)}1`]"
+              "  [-5.06631661953108e-309, `-0.${zeros(1024)}11101001001010000001101111010101011111111011010111`],"
+              "  [6.22574126804e-313, `0.${zeros(1037)}11101010101101100111000110100111001`],"
+              "  [-4e-323, `-0.${zeros(1070)}1`],"
+              "].every(t=>t[0].toString(2) === t[1])"),
+      njs_str("true") },
+
+    { njs_str("4.94065645841246544176568792868e-324.toExponential()"),
+      njs_str("5e-324") },
+
+    { njs_str("4.94065645841246544176568792868e-324.toExponential(10)"),
+      njs_str("4.9406564584e-324") },
+#endif
+
+};
+
+
+static njs_unit_test_t  njs_disabled_denormals_test[] =
+{
+    { njs_str("Number('2.2250738585072014E-323')"),
+      njs_str("0") },
+
+    { njs_str("Number('2.2250738585072014E-323') + 0"),
+      njs_str("0") },
+
+    /* Smallest positive double (next_double(0)). */
+    { njs_str("5E-324.toString(36)"),
+      njs_str("0") },
+
+    { njs_str("2.2250738585072014E-323.toString(2)"),
+      njs_str("0") },
+
+    /* Smallest normal double. */
+
+    { njs_str("2.2250738585072014e-308"),
+      njs_str("2.2250738585072014e-308") },
+
+    { njs_str("2.2250738585072014e-308/2"),
+      njs_str("0") },
+
+    /* Denormals. */
+    { njs_str("["
+              "1.8858070859709815e-308,"
+              "-5.06631661953108e-309,"
+              "6.22574126804e-313,"
+              "-4e-323,"
+              "].map(v=>v.toString(2))"),
+      njs_str("0,0,0,0") },
+};
+
+
 static njs_unit_test_t  njs_module_test[] =
 {
     { njs_str("function f(){return 2}; var f; f()"),
@@ -16816,11 +16885,44 @@ main(int argc, char **argv)
     opts.repeat = 1;
     opts.unsafe = 1;
 
+    njs_mm_denormals(1);
+
     ret = njs_unit_test(njs_test, njs_nitems(njs_test), "script tests",
                         &opts, &stat);
     if (ret != NJS_OK) {
         return ret;
     }
+
+    ret = njs_unit_test(njs_denormals_test, njs_nitems(njs_denormals_test),
+                        "denormals tests", &opts, &stat);
+    if (ret != NJS_OK) {
+        return ret;
+    }
+
+#if (NJS_HAVE_DENORMALS_CONTROL)
+
+    njs_mm_denormals(0);
+
+    ret = njs_unit_test(njs_test, njs_nitems(njs_test),
+                        "script tests (disabled denormals)", &opts, &stat);
+    if (ret != NJS_OK) {
+        return ret;
+    }
+
+    ret = njs_unit_test(njs_disabled_denormals_test,
+                        njs_nitems(njs_disabled_denormals_test),
+                        "disabled denormals tests", &opts, &stat);
+    if (ret != NJS_OK) {
+        return ret;
+    }
+
+    njs_mm_denormals(1);
+
+#else
+
+    (void) njs_disabled_denormals_test;
+
+#endif
 
     ret = njs_timezone_optional_test(&opts, &stat);
     if (ret != NJS_OK) {

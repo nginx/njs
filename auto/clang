@@ -177,3 +177,16 @@ njs_feature_test="#include <math.h>
                       return 0;
                   }"
 . auto/feature
+
+
+njs_feature="_mm_setcsr()"
+njs_feature_name=NJS_HAVE_DENORMALS_CONTROL
+njs_feature_run=no
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#include <xmmintrin.h>
+                  int main(void) {
+                      _mm_setcsr(_mm_getcsr());
+                      return 0;
+                  }"
+. auto/feature

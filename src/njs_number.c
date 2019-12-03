@@ -565,7 +565,7 @@ njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
 
         number = njs_number(value);
 
-        if (radix != 10 && !isnan(number) && !isinf(number)) {
+        if (radix != 10 && !isnan(number) && !isinf(number) && number != 0) {
             return njs_number_to_string_radix(vm, &vm->retval, number, radix);
         }
     }
@@ -838,7 +838,7 @@ njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
     delta = 0.5 * (njs_number_next_double(n) - n);
     delta = njs_max(njs_number_next_double(0.0), delta);
 
-    if (fraction >= delta) {
+    if (fraction >= delta && delta != 0) {
         *p++ = '.';
 
         do {

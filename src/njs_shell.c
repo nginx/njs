@@ -26,6 +26,7 @@
 
 typedef struct {
     uint8_t                 disassemble;
+    uint8_t                 denormals;
     uint8_t                 interactive;
     uint8_t                 module;
     uint8_t                 quiet;
@@ -232,6 +233,8 @@ main(int argc, char **argv)
         goto done;
     }
 
+    njs_mm_denormals(opts.denormals);
+
     njs_memzero(&vm_options, sizeof(njs_vm_opt_t));
 
     if (opts.file == NULL) {
@@ -306,6 +309,7 @@ njs_get_options(njs_opts_t *opts, int argc, char **argv)
         "Options:\n"
         "  -c                specify the command to execute.\n"
         "  -d                print disassembled code.\n"
+        "  -f                disabled denormals mode.\n"
         "  -p                set path prefix for modules.\n"
         "  -q                disable interactive introduction prompt.\n"
         "  -s                sandbox mode.\n"
@@ -315,6 +319,8 @@ njs_get_options(njs_opts_t *opts, int argc, char **argv)
         "  <filename> | -    run code from a file or stdin.\n";
 
     ret = NJS_DONE;
+
+    opts->denormals = 1;
 
     for (i = 1; i < argc; i++) {
 
@@ -347,6 +353,16 @@ njs_get_options(njs_opts_t *opts, int argc, char **argv)
 
         case 'd':
             opts->disassemble = 1;
+            break;
+
+        case 'f':
+
+#if !(NJS_HAVE_DENORMALS_CONTROL)
+            njs_stderror("option \"-f\" is not supported\n");
+            return NJS_ERROR;
+#endif
+
+            opts->denormals = 0;
             break;
 
         case 'p':
