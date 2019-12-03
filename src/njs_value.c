@@ -1259,3 +1259,56 @@ njs_symbol_conversion_failed(njs_vm_t *vm, njs_bool_t to_string)
         ? "Cannot convert a Symbol value to a string"
         : "Cannot convert a Symbol value to a number");
 }
+
+
+njs_int_t
+njs_value_species_constructor(njs_vm_t *vm, njs_value_t *object,
+    njs_value_t *default_constructor, njs_value_t *dst)
+{
+    njs_int_t    ret;
+    njs_value_t  constructor, retval;
+
+    static const njs_value_t  string_constructor = njs_string("constructor");
+    static const njs_value_t  string_species =
+                                njs_wellknown_symbol(NJS_SYMBOL_SPECIES);
+
+    ret = njs_value_property(vm, object, njs_value_arg(&string_constructor),
+                             &constructor);
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return NJS_ERROR;
+    }
+
+    if (njs_is_undefined(&constructor)) {
+        goto default_сonstructor;
+    }
+
+    if (njs_slow_path(!njs_is_object(&constructor))) {
+        njs_type_error(vm, "constructor is not object");
+        return NJS_ERROR;
+    }
+
+    ret = njs_value_property(vm, &constructor, njs_value_arg(&string_species),
+                             &retval);
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return NJS_ERROR;
+    }
+
+    if (njs_value_is_null_or_undefined(&retval)) {
+        goto default_сonstructor;
+    }
+
+    if (!njs_is_function(&retval)) {
+        njs_type_error(vm, "object does not contain a constructor");
+        return NJS_ERROR;
+    }
+
+    *dst = retval;
+
+    return NJS_OK;
+
+default_сonstructor:
+
+    *dst = *default_constructor;
+
+    return NJS_OK;
+}

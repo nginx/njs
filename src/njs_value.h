@@ -909,6 +909,9 @@ njs_int_t njs_value_to_object(njs_vm_t *vm, njs_value_t *value);
 
 void njs_symbol_conversion_failed(njs_vm_t *vm, njs_bool_t to_string);
 
+njs_int_t njs_value_species_constructor(njs_vm_t *vm, njs_value_t *object,
+    njs_value_t *default_constructor, njs_value_t *dst);
+
 
 #include "njs_number.h"
 
