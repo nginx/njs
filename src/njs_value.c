@@ -1279,7 +1279,7 @@ njs_value_species_constructor(njs_vm_t *vm, njs_value_t *object,
     }
 
     if (njs_is_undefined(&constructor)) {
-        goto default_сonstructor;
+        goto default_constructor;
     }
 
     if (njs_slow_path(!njs_is_object(&constructor))) {
@@ -1294,7 +1294,7 @@ njs_value_species_constructor(njs_vm_t *vm, njs_value_t *object,
     }
 
     if (njs_value_is_null_or_undefined(&retval)) {
-        goto default_сonstructor;
+        goto default_constructor;
     }
 
     if (!njs_is_function(&retval)) {
@@ -1306,7 +1306,7 @@ njs_value_species_constructor(njs_vm_t *vm, njs_value_t *object,
 
     return NJS_OK;
 
-default_сonstructor:
+default_constructor:
 
     *dst = *default_constructor;
 
