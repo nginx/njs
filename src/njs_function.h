@@ -90,11 +90,9 @@ struct njs_frame_s {
     njs_frame_t                    *previous_active_frame;
 
     njs_value_t                    *local;
-#if (NJS_SUNC)
-    njs_closure_t                  *closures[1];
-#else
-    njs_closure_t                  *closures[];
-#endif
+
+#define njs_frame_closures(frame)                                             \
+    ((njs_closure_t **) ((u_char *) frame + sizeof(njs_frame_t)))
 };
 
 

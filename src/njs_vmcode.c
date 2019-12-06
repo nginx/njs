@@ -1002,7 +1002,8 @@ njs_vmcode_function(njs_vm_t *vm, u_char *pc)
     code = (njs_vmcode_function_t *) pc;
     lambda = code->lambda;
 
-    function = njs_function_alloc(vm, lambda, vm->active_frame->closures, 0);
+    function = njs_function_alloc(vm, lambda,
+                                  njs_frame_closures(vm->active_frame), 0);
     if (njs_slow_path(function == NULL)) {
         return NJS_ERROR;
     }

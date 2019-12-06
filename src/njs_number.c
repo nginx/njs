@@ -1123,9 +1123,11 @@ njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 const njs_object_type_init_t  njs_number_type_init = {
-   .constructor = njs_number_constructor,
-   .prototype_props = &njs_number_prototype_init,
+   .constructor = njs_native_ctor(njs_number_constructor, 1, 0),
    .constructor_props = &njs_number_constructor_init,
-   .value = { .object_value = { .value = njs_value(NJS_NUMBER, 0, 0.0),
-                                .object = { .type = NJS_OBJECT_NUMBER } } },
+   .prototype_props = &njs_number_prototype_init,
+   .prototype_value = { .object_value = {
+                            .value = njs_value(NJS_NUMBER, 0, 0.0),
+                            .object = { .type = NJS_OBJECT_NUMBER } }
+                      },
 };

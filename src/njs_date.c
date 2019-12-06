@@ -1835,8 +1835,8 @@ const njs_object_init_t  njs_date_prototype_init = {
 
 
 const njs_object_type_init_t  njs_date_type_init = {
-   .constructor = njs_date_constructor,
-   .prototype_props = &njs_date_prototype_init,
+   .constructor = njs_native_ctor(njs_date_constructor, 7, 0),
    .constructor_props = &njs_date_constructor_init,
-   .value = { .object = { .type = NJS_OBJECT } },
+   .prototype_props = &njs_date_prototype_init,
+   .prototype_value = { .object = { .type = NJS_OBJECT } },
 };

@@ -253,7 +253,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
     prototype = shared->prototypes;
 
     for (i = NJS_OBJ_TYPE_OBJECT; i < NJS_OBJ_TYPE_MAX; i++) {
-        prototype[i] = njs_object_type_init[i]->value;
+        prototype[i] = njs_object_type_init[i]->prototype_value;
 
         ret = njs_object_hash_init(vm, &prototype[i].object.shared_hash,
                                    njs_object_type_init[i]->prototype_props);
@@ -270,14 +270,8 @@ njs_builtin_objects_create(njs_vm_t *vm)
     constructor = shared->constructors;
 
     for (i = NJS_OBJ_TYPE_OBJECT; i < NJS_OBJ_TYPE_MAX; i++) {
-        constructor[i].object.type = NJS_FUNCTION;
+        constructor[i] = njs_object_type_init[i]->constructor;
         constructor[i].object.shared = 0;
-        constructor[i].object.extensible = 1;
-        constructor[i].native = 1;
-        constructor[i].ctor = 1;
-        constructor[i].args_offset = 1;
-
-        constructor[i].u.native = njs_object_type_init[i]->constructor;
 
         ret = njs_object_hash_init(vm, &constructor[i].object.shared_hash,
                                    njs_object_type_init[i]->constructor_props);

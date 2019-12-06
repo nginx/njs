@@ -58,7 +58,7 @@ njs_function_alloc(njs_vm_t *vm, njs_function_lambda_t *lambda,
 
         do {
             /* GC: retain closure. */
-            function->closures[n] = closures[n];
+            njs_function_closures(function)[n] = closures[n];
             n++;
         } while (n < nesting);
     }
@@ -104,10 +104,10 @@ njs_function_value_copy(njs_vm_t *vm, njs_value_t *value)
 
 
 njs_inline njs_closure_t **
-njs_function_closures(njs_vm_t *vm, njs_function_t *function)
+njs_function_active_closures(njs_vm_t *vm, njs_function_t *function)
 {
-    return (function->closure) ? function->closures
-                               : vm->active_frame->closures;
+    return (function->closure) ? njs_function_closures(function)
+                               : njs_frame_closures(vm->active_frame);
 }
 
 
@@ -185,13 +185,13 @@ njs_function_copy(njs_vm_t *vm, njs_function_t *function)
 
     copy->closure = 1;
 
-    closures = njs_function_closures(vm, function);
+    closures = njs_function_active_closures(vm, function);
 
     n = 0;
 
     do {
         /* GC: retain closure. */
-        copy->closures[n] = closures[n];
+        njs_function_closures(copy)[n] = closures[n];
         n++;
     } while (n < nesting);
 
@@ -596,11 +596,11 @@ njs_function_lambda_call(njs_vm_t *vm)
     nesting = lambda->nesting;
 
     if (nesting != 0) {
-        closures = njs_function_closures(vm, function);
+        closures = njs_function_active_closures(vm, function);
         do {
             closure = *closures++;
 
-            frame->closures[n] = closure;
+            njs_frame_closures(frame)[n] = closure;
             vm->scopes[NJS_SCOPE_CLOSURE + n] = &closure->u.values;
 
             n++;
@@ -633,7 +633,7 @@ njs_function_lambda_call(njs_vm_t *vm)
             } while (size != 0);
         }
 
-        frame->closures[n] = closure;
+        njs_frame_closures(frame)[n] = closure;
         vm->scopes[NJS_SCOPE_CLOSURE + n] = &closure->u.values;
     }
 
@@ -1351,11 +1351,11 @@ njs_prototype_function(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 const njs_object_type_init_t  njs_function_type_init = {
-   .constructor = njs_function_constructor,
-   .prototype_props = &njs_function_prototype_init,
+   .constructor = njs_native_ctor(njs_function_constructor, 1, 0),
    .constructor_props = &njs_function_constructor_init,
-   .value = { .function = { .native = 1,
-                            .args_offset = 1,
-                            .u.native = njs_prototype_function,
-                            .object = { .type = NJS_FUNCTION } } },
+   .prototype_props = &njs_function_prototype_init,
+   .prototype_value = { .function = { .native = 1,
+                                      .args_offset = 1,
+                                      .u.native = njs_prototype_function,
+                                      .object = { .type = NJS_FUNCTION } } },
 };

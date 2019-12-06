@@ -5276,9 +5276,11 @@ njs_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime)
 
 
 const njs_object_type_init_t  njs_string_type_init = {
-    .constructor = njs_string_constructor,
-    .prototype_props = &njs_string_prototype_init,
+    .constructor = njs_native_ctor(njs_string_constructor, 1, 0),
     .constructor_props = &njs_string_constructor_init,
-    .value = { .object_value = { .value = njs_string(""),
-                                 .object = { .type = NJS_OBJECT_STRING } } },
+    .prototype_props = &njs_string_prototype_init,
+    .prototype_value = { .object_value = {
+                            .value = njs_string(""),
+                            .object = { .type = NJS_OBJECT_STRING } }
+                       },
 };

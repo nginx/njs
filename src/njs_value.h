@@ -239,6 +239,15 @@ struct njs_function_s {
     uint8_t                           args_offset;
 
     uint8_t                           args_count:5;
+
+    /*
+     * If "closure" is true njs_closure_t[] is available right after the
+     * njs_function_t and njs_function_closures() may be used to access it.
+     */
+
+#define njs_function_closures(function)                                      \
+    ((njs_closure_t **) ((u_char *) function + sizeof(njs_function_t)))
+
     uint8_t                           closure:1;
     uint8_t                           native:1;
     uint8_t                           ctor:1;
@@ -252,11 +261,6 @@ struct njs_function_s {
     } u;
 
     njs_value_t                       *bound;
-#if (NJS_SUNC)
-    njs_closure_t                     *closures[1];
-#else
-    njs_closure_t                     *closures[];
-#endif
 };
 
 
@@ -289,10 +293,10 @@ typedef union {
 
 
 typedef struct {
-    njs_function_native_t     constructor;
-    const njs_object_init_t   *prototype_props;
+    njs_function_t            constructor;
     const njs_object_init_t   *constructor_props;
-    njs_object_prototype_t    value;
+    const njs_object_init_t   *prototype_props;
+    njs_object_prototype_t    prototype_value;
 } njs_object_type_init_t;
 
 
@@ -411,30 +415,39 @@ typedef struct {
 }
 
 
-#define _njs_native_function(_function, _args_count, _magic) {                \
+#define _njs_function(_function, _args_count, _ctor, _magic) {                \
+    .native = 1,                                                              \
+    .magic = _magic,                                                          \
+    .args_count = _args_count,                                                \
+    .ctor = _ctor,                                                            \
+    .args_offset = 1,                                                         \
+    .u.native = _function,                                                    \
+    .object = { .type = NJS_FUNCTION,                                         \
+                .shared = 1,                                                  \
+                .extensible = 1 },                                            \
+}
+
+
+#define _njs_native_function(_func, _args, _ctor, _magic) {                   \
     .data = {                                                                 \
         .type = NJS_FUNCTION,                                                 \
         .truth = 1,                                                           \
-        .u.function = & (njs_function_t) {                                    \
-            .native = 1,                                                      \
-            .magic = _magic,                                                  \
-            .args_count = _args_count,                                        \
-            .args_offset = 1,                                                 \
-            .u.native = _function,                                            \
-            .object = { .type = NJS_FUNCTION,                                 \
-                        .shared = 1,                                          \
-                        .extensible = 1 },                                    \
-        }                                                                     \
+        .u.function = & (njs_function_t) _njs_function(_func, _args,          \
+                                                       _ctor, _magic)         \
     }                                                                         \
 }
 
 
 #define njs_native_function(_function, _args_count)                           \
-    _njs_native_function(_function, _args_count, 0)
+    _njs_native_function(_function, _args_count, 0, 0)
 
 
 #define njs_native_function2(_function, _args_count, _magic)                  \
-    _njs_native_function(_function, _args_count, _magic)
+    _njs_native_function(_function, _args_count, 0, _magic)
+
+
+#define njs_native_ctor(_function, _args_count, _magic)                       \
+    _njs_function(_function, _args_count, 1, _magic)
 
 
 #define njs_prop_handler(_handler) {                                          \

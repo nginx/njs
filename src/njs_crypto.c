@@ -386,11 +386,11 @@ const njs_object_init_t  njs_hash_constructor_init = {
 
 
 const njs_object_type_init_t  njs_hash_type_init = {
-    .constructor = njs_hash_constructor,
-    .prototype_props = &njs_hash_prototype_init,
+    .constructor = njs_native_ctor(njs_hash_constructor, 2, 0),
     .constructor_props = &njs_hash_constructor_init,
-    .value = { .object_value = { .value = njs_value(NJS_DATA, 0, 0.0),
-                                 .object = { .type = NJS_OBJECT } } },
+    .prototype_props = &njs_hash_prototype_init,
+    .prototype_value = { .object_value = { .value = njs_value(NJS_DATA, 0, 0.0),
+                                           .object = { .type = NJS_OBJECT } } },
 };
 
 
@@ -712,11 +712,11 @@ const njs_object_init_t  njs_crypto_object_init = {
 
 
 const njs_object_type_init_t  njs_hmac_type_init = {
-    .constructor = njs_hmac_constructor,
-    .prototype_props = &njs_hmac_prototype_init,
+    .constructor = njs_native_ctor(njs_hmac_constructor, 3, 0),
     .constructor_props = &njs_hmac_constructor_init,
-    .value = { .object_value = { .value = njs_value(NJS_DATA, 0, 0.0),
-                                 .object = { .type = NJS_OBJECT } } },
+    .prototype_props = &njs_hmac_prototype_init,
+    .prototype_value = { .object_value = { .value = njs_value(NJS_DATA, 0, 0.0),
+                                           .object = { .type = NJS_OBJECT } } },
 };
 
 

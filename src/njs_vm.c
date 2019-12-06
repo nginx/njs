@@ -339,6 +339,7 @@ njs_vm_scopes_restore(njs_vm_t *vm, njs_frame_t *frame,
 {
     njs_uint_t      n, nesting;
     njs_value_t     *args;
+    njs_closure_t   **closures;
     njs_function_t  *function;
 
     vm->top_frame = previous;
@@ -373,9 +374,10 @@ njs_vm_scopes_restore(njs_vm_t *vm, njs_frame_t *frame,
     function = frame->native.function;
 
     nesting = (function != NULL) ? function->u.lambda->nesting : 0;
+    closures = njs_frame_closures(frame);
 
     for (n = 0; n <= nesting; n++) {
-        vm->scopes[NJS_SCOPE_CLOSURE + n] = &frame->closures[n]->u.values;
+        vm->scopes[NJS_SCOPE_CLOSURE + n] = &closures[n]->u.values;
     }
 
     while (n < NJS_MAX_NESTING) {

@@ -3103,8 +3103,8 @@ const njs_object_init_t  njs_array_instance_init = {
 
 
 const njs_object_type_init_t  njs_array_type_init = {
-    .constructor = njs_array_constructor,
-    .prototype_props = &njs_array_prototype_init,
+    .constructor = njs_native_ctor(njs_array_constructor, 1, 0),
     .constructor_props = &njs_array_constructor_init,
-    .value = { .object = { .type = NJS_ARRAY } },
+    .prototype_props = &njs_array_prototype_init,
+    .prototype_value = { .object = { .type = NJS_ARRAY } },
 };

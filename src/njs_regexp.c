@@ -1341,8 +1341,8 @@ const njs_object_init_t  njs_regexp_prototype_init = {
 
 
 const njs_object_type_init_t  njs_regexp_type_init = {
-   .constructor = njs_regexp_constructor,
-   .prototype_props = &njs_regexp_prototype_init,
+   .constructor = njs_native_ctor(njs_regexp_constructor, 2, 0),
    .constructor_props = &njs_regexp_constructor_init,
-   .value = { .object = { .type = NJS_REGEXP } },
+   .prototype_props = &njs_regexp_prototype_init,
+   .prototype_value = { .object = { .type = NJS_REGEXP } },
 };

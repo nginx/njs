@@ -166,9 +166,11 @@ const njs_object_init_t  njs_boolean_prototype_init = {
 
 
 const njs_object_type_init_t  njs_boolean_type_init = {
-   .constructor = njs_boolean_constructor,
-   .prototype_props = &njs_boolean_prototype_init,
+   .constructor = njs_native_ctor(njs_boolean_constructor, 1, 0),
    .constructor_props = &njs_boolean_constructor_init,
-   .value = { .object_value = { .value = njs_value(NJS_BOOLEAN, 0, 0.0),
-                                .object = { .type = NJS_OBJECT_BOOLEAN } } },
+   .prototype_props = &njs_boolean_prototype_init,
+   .prototype_value = { .object_value = {
+                            .value = njs_value(NJS_BOOLEAN, 0, 0.0),
+                            .object = { .type = NJS_OBJECT_BOOLEAN } }
+                      },
 };

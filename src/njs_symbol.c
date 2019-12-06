@@ -441,8 +441,8 @@ const njs_object_init_t  njs_symbol_prototype_init = {
 
 
 const njs_object_type_init_t  njs_symbol_type_init = {
-   .constructor = njs_symbol_constructor,
-   .prototype_props = &njs_symbol_prototype_init,
+   .constructor = njs_native_ctor(njs_symbol_constructor, 0, 0),
    .constructor_props = &njs_symbol_constructor_init,
-   .value = { .object = { .type = NJS_OBJECT } },
+   .prototype_props = &njs_symbol_prototype_init,
+   .prototype_value = { .object = { .type = NJS_OBJECT } },
 };

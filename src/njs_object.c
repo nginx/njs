@@ -2670,8 +2670,8 @@ njs_object_length(njs_vm_t *vm, njs_value_t *value, uint32_t *length)
 
 
 const njs_object_type_init_t  njs_obj_type_init = {
-    .constructor = njs_object_constructor,
-    .prototype_props = &njs_object_prototype_init,
+    .constructor = njs_native_ctor(njs_object_constructor, 1, 0),
     .constructor_props = &njs_object_constructor_init,
-    .value = { .object = { .type = NJS_OBJECT } },
+    .prototype_props = &njs_object_prototype_init,
+    .prototype_value = { .object = { .type = NJS_OBJECT } },
 };
