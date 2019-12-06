@@ -3166,7 +3166,7 @@ njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
     njs_regexp_utf8_t  type;
     njs_string_prop_t  string;
 
-    args[1].data.u.regexp->last_index = 0;
+    njs_set_number(&args[1].data.u.regexp->last_index, 0);
     vm->retval = njs_value_null;
 
     (void) njs_string_prop(&string, &args[0]);

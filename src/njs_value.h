@@ -262,7 +262,7 @@ struct njs_function_s {
 
 struct njs_regexp_s {
     njs_object_t                      object;
-    uint32_t                          last_index;
+    njs_value_t                       last_index;
     njs_regexp_pattern_t              *pattern;
     /*
      * This string value can be unaligned since

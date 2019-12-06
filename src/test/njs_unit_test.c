@@ -8591,6 +8591,48 @@ static njs_unit_test_t  njs_test[] =
                  "r.lastIndex +' '+ r.source +' '+ r.source.length +' '+ r"),
       njs_str("1 \\x80 4 /\\x80/g") },
 
+    { njs_str("var descs = Object.getOwnPropertyDescriptors(RegExp('a'));"
+              "Object.keys(descs)"),
+      njs_str("lastIndex") },
+
+    { njs_str("var props = Object.getOwnPropertyDescriptor(RegExp('a'), 'lastIndex');"
+              "props.writable && !props.enumerable && !props.configurable"),
+      njs_str("true") },
+
+    { njs_str("var re = /a/; re.lastIndex"),
+      njs_str("0") },
+
+    { njs_str("var re = /aα/g; re.exec('aα'.repeat(32)); re.lastIndex"),
+      njs_str("2") },
+
+    { njs_str("var re = new RegExp('α'.repeat(33), 'g'); re.exec('α'.repeat(33)); re.lastIndex"),
+      njs_str("33") },
+
+    { njs_str("var re = new RegExp('α'.repeat(33), 'g'); re.exec('α'.repeat(33)); "
+              "re.lastIndex = 67; re.lastIndex"),
+      njs_str("67") },
+
+    { njs_str("var re = /a/; re.lastIndex = 4; Object.create(re).lastIndex"),
+      njs_str("4") },
+
+    { njs_str("var re = /a/g; re.lastIndex = {valueOf(){throw 'Oops'}}; typeof re.lastIndex"),
+      njs_str("object") },
+
+    { njs_str("var re = /a/g; re.lastIndex = {valueOf(){throw 'Oops'}}; re.exec('a')"),
+      njs_str("Oops") },
+
+    { njs_str("var re = /a/; Object.defineProperty(re, 'lastIndex', {value:'qq'}); re.lastIndex"),
+      njs_str("qq") },
+
+    { njs_str("var re = /a/; re.lastIndex = 'qq'; Object.create(re).lastIndex"),
+      njs_str("qq") },
+
+    { njs_str("var re = /(?:ab|cd)\\d?/g; re.lastIndex=-1; re.test('aacd22 '); re.lastIndex"),
+      njs_str("5") },
+
+    { njs_str("var re = /(?:ab|cd)\\d?/g; re.lastIndex=-1; re.test('@@'); re.lastIndex"),
+      njs_str("0") },
+
     /*
      * It seems that "/стоп/ig" fails on early PCRE versions.
      * It fails at least in 8.1 and works at least in 8.31.

@@ -259,6 +259,25 @@ njs_object_string_tag(njs_vm_t *vm, njs_value_t *value, njs_value_t *tag)
 }
 
 
+njs_inline njs_object_t *
+_njs_object_proto_lookup(njs_object_t *proto, njs_value_type_t type)
+{
+    do {
+        if (njs_fast_path(proto->type == type)) {
+            break;
+        }
+
+        proto = proto->__proto__;
+    } while (proto != NULL);
+
+    return proto;
+}
+
+
+#define njs_object_proto_lookup(proto, vtype, ctype)                         \
+    (ctype *) _njs_object_proto_lookup(proto, vtype)
+
+
 extern const njs_object_type_init_t  njs_obj_type_init;
 
 

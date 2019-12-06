@@ -247,11 +247,13 @@ typedef struct {
 struct njs_vm_shared_s {
     njs_lvlhsh_t             keywords_hash;
     njs_lvlhsh_t             values_hash;
+
     njs_lvlhsh_t             array_instance_hash;
     njs_lvlhsh_t             string_instance_hash;
     njs_lvlhsh_t             function_instance_hash;
     njs_lvlhsh_t             arrow_instance_hash;
     njs_lvlhsh_t             arguments_object_instance_hash;
+    njs_lvlhsh_t             regexp_instance_hash;
 
     njs_lvlhsh_t             env_hash;
 

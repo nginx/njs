@@ -342,20 +342,11 @@ njs_array_length(njs_vm_t *vm,njs_object_prop_t *prop, njs_value_t *value,
     proto = njs_object(value);
 
     if (njs_fast_path(setval == NULL)) {
-        do {
-            if (njs_fast_path(proto->type == NJS_ARRAY)) {
-                break;
-            }
-
-            proto = proto->__proto__;
-        } while (proto != NULL);
-
-        if (njs_slow_path(proto == NULL)) {
+        array = njs_object_proto_lookup(proto, NJS_ARRAY, njs_array_t);
+        if (njs_slow_path(array == NULL)) {
             njs_set_undefined(retval);
             return NJS_DECLINED;
         }
-
-        array = (njs_array_t *) proto;
 
         njs_set_number(retval, array->length);
         return NJS_OK;

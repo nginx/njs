@@ -166,6 +166,12 @@ njs_builtin_objects_create(njs_vm_t *vm)
         return NJS_ERROR;
     }
 
+    ret = njs_object_hash_init(vm, &shared->regexp_instance_hash,
+                               &njs_regexp_instance_init);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
     object = shared->objects;
 
     for (p = njs_object_init; *p != NULL; p++) {

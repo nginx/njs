@@ -33,6 +33,7 @@ njs_int_t njs_regexp_to_string(njs_vm_t *vm, njs_value_t *retval,
     const njs_value_t *regexp);
 
 
+extern const njs_object_init_t  njs_regexp_instance_init;
 extern const njs_object_type_init_t  njs_regexp_type_init;
 
 
