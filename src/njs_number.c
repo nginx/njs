@@ -21,7 +21,7 @@ static njs_int_t njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
 
 
 uint32_t
-njs_value_to_index(const njs_value_t *value)
+njs_key_to_index(const njs_value_t *value)
 {
     double       num;
     njs_array_t  *array;
@@ -47,7 +47,7 @@ njs_value_to_index(const njs_value_t *value)
 
             if (array->length == 1 && njs_is_valid(&array->start[0])) {
                 /* A single value array is the zeroth array value. */
-                return njs_value_to_index(&array->start[0]);
+                return njs_key_to_index(&array->start[0]);
             }
         }
     }

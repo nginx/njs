@@ -535,7 +535,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
 
     case NJS_STRING:
         if (njs_fast_path(!njs_is_null_or_undefined_or_boolean(key))) {
-            index = njs_value_to_index(key);
+            index = njs_key_to_index(key);
 
             if (njs_fast_path(index < NJS_STRING_MAX_LENGTH)) {
                 return njs_string_property_query(vm, pq, value, index);
@@ -637,7 +637,7 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
         if (!njs_is_null_or_undefined_or_boolean(key)) {
             switch (proto->type) {
             case NJS_ARRAY:
-                index = njs_value_to_index(key);
+                index = njs_key_to_index(key);
                 if (njs_fast_path(index < NJS_ARRAY_MAX_INDEX)) {
                     array = (njs_array_t *) proto;
                     return njs_array_property_query(vm, pq, array, index);
@@ -646,7 +646,7 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
                 break;
 
             case NJS_OBJECT_STRING:
-                index = njs_value_to_index(key);
+                index = njs_key_to_index(key);
                 if (njs_fast_path(index < NJS_STRING_MAX_LENGTH)) {
                     ov = (njs_object_value_t *) proto;
                     ret = njs_string_property_query(vm, pq, &ov->value, index);

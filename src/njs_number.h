@@ -8,7 +8,7 @@
 #define _NJS_NUMBER_H_INCLUDED_
 
 
-uint32_t njs_value_to_index(const njs_value_t *value);
+uint32_t njs_key_to_index(const njs_value_t *value);
 double njs_number_dec_parse(const u_char **start, const u_char *end);
 uint64_t njs_number_oct_parse(const u_char **start, const u_char *end);
 uint64_t njs_number_bin_parse(const u_char **start, const u_char *end);

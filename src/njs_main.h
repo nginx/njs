@@ -44,6 +44,9 @@
 #include <njs_value.h>
 
 #include <njs_vm.h>
+#include <njs_error.h>
+#include <njs_number.h>
+#include <njs_value_conversion.h>
 #include <njs_vmcode.h>
 #include <njs_variable.h>
 #include <njs_lexer.h>
@@ -51,14 +54,12 @@
 #include <njs_generator.h>
 
 #include <njs_boolean.h>
-#include <njs_number.h>
 #include <njs_symbol.h>
 #include <njs_string.h>
 #include <njs_object.h>
 #include <njs_object_hash.h>
 #include <njs_array.h>
 #include <njs_function.h>
-#include <njs_error.h>
 #include <njs_regexp.h>
 #include <njs_regexp_pattern.h>
 #include <njs_date.h>
