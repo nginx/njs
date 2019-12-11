@@ -1014,8 +1014,8 @@ njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_arr_t *stack,
 njs_int_t
 njs_vm_backtrace_to_string(njs_vm_t *vm, njs_arr_t *backtrace, njs_str_t *dst)
 {
-    u_char                 *p, *start, *end;
-    size_t                 len, count;
+    size_t                 count;
+    njs_chb_t              chain;
     njs_uint_t             i;
     njs_backtrace_entry_t  *be, *prev;
 
@@ -1023,52 +1023,10 @@ njs_vm_backtrace_to_string(njs_vm_t *vm, njs_arr_t *backtrace, njs_str_t *dst)
         return NJS_OK;
     }
 
-    len = dst->length + 1;
+    njs_chb_init(&chain, vm->mem_pool);
 
-    count = 0;
-    prev = NULL;
-
-    be = backtrace->start;
-
-    for (i = 0; i < backtrace->items; i++) {
-        if (i != 0 && prev->name.start == be->name.start
-            && prev->line == be->line)
-        {
-            count++;
-
-        } else {
-
-            if (count != 0) {
-                len += njs_length("      repeats  times\n")
-                       + NJS_INT_T_LEN;
-                count = 0;
-            }
-
-            len += be->name.length + njs_length("    at  ()\n");
-
-            if (be->line != 0) {
-                len += be->file.length + NJS_INT_T_LEN + 1;
-
-            } else {
-                len += njs_length("native");
-            }
-        }
-
-        prev = be;
-        be++;
-    }
-
-    p = njs_mp_alloc(vm->mem_pool, len);
-    if (p == NULL) {
-        njs_memory_error(vm);
-        return NJS_ERROR;
-    }
-
-    start = p;
-    end = start + len;
-
-    p = njs_cpymem(p, dst->start, dst->length);
-    *p++ = '\n';
+    njs_chb_append_str(&chain, dst);
+    njs_chb_append(&chain, "\n", 1);
 
     count = 0;
     prev = NULL;
@@ -1083,19 +1041,19 @@ njs_vm_backtrace_to_string(njs_vm_t *vm, njs_arr_t *backtrace, njs_str_t *dst)
 
         } else {
             if (count != 0) {
-                p = njs_sprintf(p, end, "      repeats %uz times\n",
-                                count);
+                njs_chb_sprintf(&chain, 64, "      repeats %uz times\n", count);
                 count = 0;
             }
 
-            p = njs_sprintf(p, end, "    at %V ", &be->name);
+            njs_chb_sprintf(&chain, 10 + be->name.length, "    at %V ",
+                            &be->name);
 
             if (be->line != 0) {
-                p = njs_sprintf(p, end, "(%V:%uD)\n", &be->file,
-                                be->line);
+                njs_chb_sprintf(&chain, 12 + be->file.length,
+                                "(%V:%uD)\n", &be->file, be->line);
 
             } else {
-                p = njs_sprintf(p, end, "(native)\n");
+                njs_chb_append(&chain, "(native)\n", 9);
             }
         }
 
@@ -1103,8 +1061,8 @@ njs_vm_backtrace_to_string(njs_vm_t *vm, njs_arr_t *backtrace, njs_str_t *dst)
         be++;
     }
 
-    dst->start = start;
-    dst->length = p - dst->start;
+    njs_chb_join(&chain, dst);
+    njs_chb_destroy(&chain);
 
     return NJS_OK;
 }

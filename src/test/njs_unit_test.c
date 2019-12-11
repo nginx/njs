@@ -16885,6 +16885,150 @@ njs_file_dirname_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
 
 
 static njs_int_t
+njs_chb_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
+{
+    u_char     *p;
+    njs_int_t  ret, i;
+    njs_chb_t  chain;
+    njs_str_t  string, arg;
+
+    static const njs_str_t  expected = njs_str("arg: \"XYZ\" -5");
+
+    njs_chb_init(&chain, vm->mem_pool);
+
+    p = njs_chb_reserve(&chain, 513);
+    if (p == NULL) {
+        ret = NJS_ERROR;
+        njs_printf("njs_chb_reserve() failed\n");
+        goto done;
+    }
+
+    njs_memset(p, 'Z', 256);
+
+    njs_chb_written(&chain, 256);
+
+    for (i = 0; i < 768; i++) {
+        njs_chb_append(&chain, "X", 1);
+    }
+
+    ret = njs_chb_join(&chain, &string);
+    if (ret != NJS_OK) {
+        njs_printf("njs_chb_join() failed\n");
+        goto done;
+    }
+
+    if (string.length != 1024 || njs_chb_size(&chain) != 1024) {
+        ret = NJS_ERROR;
+        njs_printf("njs_chb_join() corrupts "
+                   "string.length:%z njs_chb_size(&chain):%z != 1024\n",
+                   string.length, njs_chb_size(&chain));
+        goto done;
+    }
+
+    for (i = 0; i < 1024; i++) {
+        if (string.start[i] != ((i < 256) ? 'Z' : 'X')) {
+            ret = NJS_ERROR;
+            njs_printf("njs_chb_join() corrupts string[%i]:%c != '%c'\n",
+                       i, string.start[i], (i < 256) ? 'Z' : 'X');
+            goto done;
+        }
+    }
+
+    njs_mp_free(vm->mem_pool, string.start);
+
+    for (i = 0; i < 222; i++) {;
+        njs_chb_drain(&chain, 3);
+    }
+
+    ret = njs_chb_join(&chain, &string);
+    if (ret != NJS_OK) {
+        njs_printf("njs_chb_join() failed\n");
+        goto done;
+    }
+
+    if (string.length != 358 || njs_chb_size(&chain) != 358) {
+        ret = NJS_ERROR;
+        njs_printf("njs_chb_join() corrupts "
+                   "string.length:%z njs_chb_size(&chain):%z != 358\n",
+                   string.length, njs_chb_size(&chain));
+        goto done;
+    }
+
+    for (i = 0; i < 358; i++) {
+        if (string.start[i] != 'X') {
+            ret = NJS_ERROR;
+            njs_printf("njs_chb_join() corrupts string[%i]:%c != 'X'\n",
+                       i, string.start[i]);
+            goto done;
+        }
+    }
+
+    for (i = 0; i < 512; i++) {
+        njs_chb_append(&chain, "ABC", 3);
+    }
+
+    for (i = 0; i < 447; i++) {
+        njs_chb_drop(&chain, 2);
+    }
+
+    ret = njs_chb_join(&chain, &string);
+    if (ret != NJS_OK) {
+        njs_printf("njs_chb_join() failed\n");
+        goto done;
+    }
+
+    if (string.length != 1000 || njs_chb_size(&chain) != 1000) {
+        ret = NJS_ERROR;
+        njs_printf("njs_chb_join() corrupts "
+                   "string.length:%z njs_chb_size(&chain):%z != 1000\n",
+                   string.length, njs_chb_size(&chain));
+        goto done;
+    }
+
+    njs_chb_drop(&chain, 500);
+    njs_chb_drain(&chain, 501);
+
+    if (njs_chb_size(&chain) != 0) {
+        ret = NJS_ERROR;
+        njs_printf("njs_chb_drop() corrupts "
+                   "njs_chb_size(&chain):%z != 0\n", njs_chb_size(&chain));
+        goto done;
+    }
+
+    arg = njs_str_value("XYZ");
+
+    njs_chb_sprintf(&chain, 32, "arg: \"%V\" %d", &arg, -5);
+
+    ret = njs_chb_join(&chain, &string);
+    if (ret != NJS_OK) {
+        njs_printf("njs_chb_join() failed\n");
+        goto done;
+    }
+
+    if (!njs_strstr_eq(&string, &expected)) {
+        ret = NJS_ERROR;
+        njs_printf("njs_chb_sprintf() corrupts \"%V\" != \"%V\"\n", &string,
+                   &expected);
+        goto done;
+    }
+
+    njs_chb_destroy(&chain);
+    njs_mp_free(vm->mem_pool, string.start);
+
+done:
+
+    if (ret != NJS_OK) {
+        stat->failed++;
+        return NJS_OK;
+    }
+
+    stat->passed++;
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
 njs_api_test(njs_opts_t *opts, njs_stat_t *stat)
 {
     njs_vm_t      *vm;
@@ -16903,6 +17047,8 @@ njs_api_test(njs_opts_t *opts, njs_stat_t *stat)
           njs_str("njs_file_basename_test") },
         { njs_file_dirname_test,
           njs_str("njs_file_dirname_test") },
+        { njs_chb_test,
+          njs_str("njs_chb_test") },
     };
 
     vm = NULL;
