@@ -3876,6 +3876,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = [1,2,3]; a.join(':')"),
       njs_str("1:2:3") },
 
+    { njs_str("var a = ['#', '@']; var out= a.join('α'.repeat(33)); [out, out.length]"),
+      njs_str("#ααααααααααααααααααααααααααααααααα@,35") },
+
+    { njs_str("var a = ['β', 'γ']; var out= a.join('α'); [out, out.length]"),
+      njs_str("βαγ,3") },
+
     { njs_str("var a = []; a[5] = 5; a.join()"),
       njs_str(",,,,,5") },
 

@@ -1123,12 +1123,13 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     u_char             *p;
-    uint32_t           max;
-    size_t             size, length, mask;
+    size_t             size;
+    ssize_t            length;
     njs_int_t          ret;
-    njs_uint_t         i, n;
+    njs_chb_t          chain;
+    njs_uint_t         i;
     njs_array_t        *array;
-    njs_value_t        *value, *values;
+    njs_value_t        *value;
     njs_string_prop_t  separator, string;
 
     ret = njs_value_to_object(vm, &args[0]);
@@ -1159,117 +1160,46 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     array = njs_array(&args[0]);
 
-    max = 0;
-    values = NULL;
+    njs_chb_init(&chain, vm->mem_pool);
 
-    for (i = 0; i < array->length; i++) {
-        value = &array->start[i];
-
-        if (!njs_is_string(value)
-            && njs_is_valid(value)
-            && !njs_is_null_or_undefined(value))
-        {
-            max++;
-        }
-    }
-
-    if (max != 0) {
-        values = njs_mp_align(vm->mem_pool, sizeof(njs_value_t),
-                              sizeof(njs_value_t) * max);
-        if (njs_slow_path(values == NULL)) {
-            njs_memory_error(vm);
-            return NJS_ERROR;
-        }
-
-        n = 0;
-
-        for (i = 0; i < array->length; i++) {
-            value = &array->start[i];
-
-            if (!njs_is_string(value)
-                && njs_is_valid(value)
-                && !njs_is_null_or_undefined(value))
-            {
-                values[n++] = *value;
-
-                if (n >= max) {
-                    break;
-                }
-            }
-        }
-    }
-
-    size = 0;
     length = 0;
-    n = 0;
-    mask = -1;
-
-    array = njs_array(&args[0]);
 
     for (i = 0; i < array->length; i++) {
         value = &array->start[i];
-
         if (njs_is_valid(value) && !njs_is_null_or_undefined(value)) {
-
             if (!njs_is_string(value)) {
-                value = &values[n++];
-
-                if (!njs_is_string(value)) {
-                    ret = njs_value_to_string(vm, value, value);
-                    if (ret != NJS_OK) {
-                        return ret;
-                    }
+                ret = njs_value_to_chain(vm, &chain, value);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    return ret;
                 }
-            }
 
-            (void) njs_string_prop(&string, value);
+            } else {
+                (void) njs_string_prop(&string, value);
+                length += string.length;
 
-            size += string.size;
-            length += string.length;
-
-            if (string.length == 0 && string.size != 0) {
-                mask = 0;
+                njs_chb_append(&chain, string.start, string.size);
             }
         }
+
+        length += separator.length;
+        njs_chb_append(&chain, separator.start, separator.size);
     }
 
-    size += separator.size * (array->length - 1);
-    length += separator.length * (array->length - 1);
+    njs_chb_drop(&chain, separator.size);
 
-    length &= mask;
+    size = njs_chb_size(&chain);
+
+    if (length != 0) {
+        length -= separator.length;
+    }
 
     p = njs_string_alloc(vm, &vm->retval, size, length);
     if (njs_slow_path(p == NULL)) {
         return NJS_ERROR;
     }
 
-    n = 0;
-
-    for (i = 0; i < array->length; i++) {
-        value = &array->start[i];
-
-        if (njs_is_valid(value) && !njs_is_null_or_undefined(value)) {
-            if (!njs_is_string(value)) {
-                value = &values[n++];
-            }
-
-            (void) njs_string_prop(&string, value);
-
-            p = memcpy(p, string.start, string.size);
-            p += string.size;
-        }
-
-        if (i < array->length - 1) {
-            p = memcpy(p, separator.start, separator.size);
-            p += separator.size;
-        }
-    }
-
-    for (i = 0; i < max; i++) {
-        njs_release(vm, &values[i]);
-    }
-
-    njs_mp_free(vm->mem_pool, values);
+    njs_chb_join_to(&chain, p);
+    njs_chb_destroy(&chain);
 
     return NJS_OK;
 }

@@ -1225,6 +1225,95 @@ njs_value_property_delete(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
 
 
 njs_int_t
+njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
+    const njs_value_t *src)
+{
+    const njs_value_t  *value;
+
+    switch (src->type) {
+
+    case NJS_NULL:
+        value = &njs_string_null;
+        break;
+
+    case NJS_UNDEFINED:
+        value = &njs_string_undefined;
+        break;
+
+    case NJS_BOOLEAN:
+        value = njs_is_true(src) ? &njs_string_true : &njs_string_false;
+        break;
+
+    case NJS_NUMBER:
+        return njs_number_to_string(vm, dst, src);
+
+    case NJS_SYMBOL:
+        njs_symbol_conversion_failed(vm, 1);
+        return NJS_ERROR;
+
+    case NJS_STRING:
+        /* GC: njs_retain(src); */
+        value = src;
+        break;
+
+    default:
+        return NJS_ERROR;
+    }
+
+    *dst = *value;
+
+    return NJS_OK;
+}
+
+
+njs_int_t
+njs_primitive_value_to_chain(njs_vm_t *vm, njs_chb_t *chain,
+    const njs_value_t *src)
+{
+    njs_str_t  string;
+
+    switch (src->type) {
+
+    case NJS_NULL:
+        njs_chb_append_literal(chain, "null");
+        break;
+
+    case NJS_UNDEFINED:
+        njs_chb_append_literal(chain, "undefined");
+        break;
+
+    case NJS_BOOLEAN:
+        if (njs_is_true(src)) {
+            njs_chb_append_literal(chain, "true");
+
+        } else {
+            njs_chb_append_literal(chain, "false");
+        }
+
+        break;
+
+    case NJS_NUMBER:
+        njs_number_to_chain(vm, chain, src);
+        break;
+
+    case NJS_SYMBOL:
+        njs_symbol_conversion_failed(vm, 1);
+        return NJS_ERROR;
+
+    case NJS_STRING:
+        njs_string_get(src, &string);
+        njs_chb_append_str(chain, &string);
+        break;
+
+    default:
+        return NJS_ERROR;
+    }
+
+    return NJS_OK;
+}
+
+
+njs_int_t
 njs_value_to_object(njs_vm_t *vm, njs_value_t *value)
 {
     njs_object_t  *object;

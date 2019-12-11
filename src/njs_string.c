@@ -4254,48 +4254,6 @@ njs_string_replacement_copy(njs_string_replace_part_t *string,
 }
 
 
-njs_int_t
-njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
-    const njs_value_t *src)
-{
-    const njs_value_t  *value;
-
-    switch (src->type) {
-
-    case NJS_NULL:
-        value = &njs_string_null;
-        break;
-
-    case NJS_UNDEFINED:
-        value = &njs_string_undefined;
-        break;
-
-    case NJS_BOOLEAN:
-        value = njs_is_true(src) ? &njs_string_true : &njs_string_false;
-        break;
-
-    case NJS_NUMBER:
-        return njs_number_to_string(vm, dst, src);
-
-    case NJS_SYMBOL:
-        njs_symbol_conversion_failed(vm, 1);
-        return NJS_ERROR;
-
-    case NJS_STRING:
-        /* GC: njs_retain(src); */
-        value = src;
-        break;
-
-    default:
-        return NJS_ERROR;
-    }
-
-    *dst = *value;
-
-    return NJS_OK;
-}
-
-
 double
 njs_string_to_number(const njs_value_t *value, njs_bool_t parse_float)
 {

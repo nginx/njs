@@ -17,6 +17,8 @@ int64_t njs_number_radix_parse(const u_char **start, const u_char *end,
     uint8_t radix);
 njs_int_t njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
     const njs_value_t *number);
+void njs_number_to_chain(njs_vm_t *vm, njs_chb_t *chain,
+    const njs_value_t *number);
 njs_int_t njs_number_global_is_nan(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 njs_int_t njs_number_global_is_finite(njs_vm_t *vm, njs_value_t *args,
