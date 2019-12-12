@@ -276,6 +276,11 @@ static const njs_lexer_multi_t  njs_greater_token[] = {
 };
 
 
+static const njs_lexer_multi_t  njs_conditional_token[] = {
+    { '?', NJS_TOKEN_COALESCE, 0, NULL },
+};
+
+
 static const njs_lexer_multi_t  njs_assignment_token[] = {
     { '=', NJS_TOKEN_EQUAL, 1, njs_strict_equal_token },
     { '>', NJS_TOKEN_ARROW, 0, NULL },
@@ -548,6 +553,12 @@ njs_lexer_next_token(njs_lexer_t *lexer, njs_lexer_token_t *lt)
         case NJS_TOKEN_GREATER:
             n = njs_nitems(njs_greater_token),
             multi = njs_greater_token;
+
+            goto multi;
+
+        case NJS_TOKEN_CONDITIONAL:
+            n = njs_nitems(njs_conditional_token),
+            multi = njs_conditional_token;
 
             goto multi;
 

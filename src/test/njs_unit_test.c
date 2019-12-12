@@ -1295,6 +1295,23 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("false && (true || true)"),
       njs_str("false") },
 
+    { njs_str("true && (null ?? true)"),
+      njs_str("true") },
+
+    { njs_str("(null || undefined) ?? (true && true)"),
+      njs_str("true") },
+
+    { njs_str("undefined ?? null ?? false ?? true"),
+      njs_str("false") },
+
+    { njs_str("1 && 1 ?? true"),
+      njs_str("SyntaxError: Either \"??\" or \"&&\" expression "
+              "must be parenthesized in 1") },
+
+    { njs_str("null ?? 0 || 1"),
+      njs_str("SyntaxError: Either \"??\" or \"||\" expression "
+              "must be parenthesized in 1") },
+
     { njs_str("var a = true; a = -~!a"),
       njs_str("1") },
 

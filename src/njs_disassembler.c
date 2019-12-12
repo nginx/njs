@@ -282,6 +282,18 @@ njs_disassemble(u_char *start, u_char *end)
             continue;
         }
 
+        if (operation == NJS_VMCODE_COALESCE) {
+            test_jump = (njs_vmcode_test_jump_t *) p;
+
+            njs_printf("%05uz COALESCE          %04Xz %04Xz +%uz\n",
+                       p - start, (size_t) test_jump->retval,
+                       (size_t) test_jump->value, (size_t) test_jump->offset);
+
+            p += sizeof(njs_vmcode_test_jump_t);
+
+            continue;
+        }
+
         if (operation == NJS_VMCODE_FUNCTION_FRAME) {
             function = (njs_vmcode_function_frame_t *) p;
 

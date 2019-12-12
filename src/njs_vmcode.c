@@ -503,9 +503,14 @@ next:
 
             case NJS_VMCODE_TEST_IF_TRUE:
             case NJS_VMCODE_TEST_IF_FALSE:
-                ret = njs_is_true(value1);
+            case NJS_VMCODE_COALESCE:
+                if (op == NJS_VMCODE_COALESCE) {
+                    ret = !njs_is_null_or_undefined(value1);
 
-                ret ^= op - NJS_VMCODE_TEST_IF_TRUE;
+                } else {
+                    ret = njs_is_true(value1);
+                    ret ^= op - NJS_VMCODE_TEST_IF_TRUE;
+                }
 
                 if (ret) {
                     test_jump = (njs_vmcode_test_jump_t *) pc;

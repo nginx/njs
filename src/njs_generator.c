@@ -361,6 +361,7 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
 
     case NJS_TOKEN_LOGICAL_AND:
     case NJS_TOKEN_LOGICAL_OR:
+    case NJS_TOKEN_COALESCE:
         return njs_generate_test_jump_expression(vm, generator, node);
 
     case NJS_TOKEN_DELETE:

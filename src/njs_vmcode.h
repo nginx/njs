@@ -105,19 +105,21 @@ typedef uint8_t                         njs_vmcode_operation_t;
 #define NJS_VMCODE_TEST_IF_TRUE         VMCODE1(34)
 #define NJS_VMCODE_TEST_IF_FALSE        VMCODE1(35)
 
-#define NJS_VMCODE_UNARY_PLUS           VMCODE1(36)
-#define NJS_VMCODE_UNARY_NEGATION       VMCODE1(37)
-#define NJS_VMCODE_BITWISE_NOT          VMCODE1(38)
-#define NJS_VMCODE_LOGICAL_NOT          VMCODE1(39)
-#define NJS_VMCODE_OBJECT               VMCODE1(40)
-#define NJS_VMCODE_ARRAY                VMCODE1(41)
-#define NJS_VMCODE_FUNCTION             VMCODE1(42)
-#define NJS_VMCODE_REGEXP               VMCODE1(43)
+#define NJS_VMCODE_COALESCE             VMCODE1(36)
 
-#define NJS_VMCODE_INSTANCE_OF          VMCODE1(44)
-#define NJS_VMCODE_TYPEOF               VMCODE1(45)
-#define NJS_VMCODE_VOID                 VMCODE1(46)
-#define NJS_VMCODE_DELETE               VMCODE1(47)
+#define NJS_VMCODE_UNARY_PLUS           VMCODE1(37)
+#define NJS_VMCODE_UNARY_NEGATION       VMCODE1(38)
+#define NJS_VMCODE_BITWISE_NOT          VMCODE1(39)
+#define NJS_VMCODE_LOGICAL_NOT          VMCODE1(40)
+#define NJS_VMCODE_OBJECT               VMCODE1(41)
+#define NJS_VMCODE_ARRAY                VMCODE1(42)
+#define NJS_VMCODE_FUNCTION             VMCODE1(43)
+#define NJS_VMCODE_REGEXP               VMCODE1(44)
+
+#define NJS_VMCODE_INSTANCE_OF          VMCODE1(45)
+#define NJS_VMCODE_TYPEOF               VMCODE1(46)
+#define NJS_VMCODE_VOID                 VMCODE1(47)
+#define NJS_VMCODE_DELETE               VMCODE1(48)
 
 #define NJS_VMCODE_NOP                  255
 
