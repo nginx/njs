@@ -1,3 +1,9 @@
+var foo = (function(){
+    return (function f() {})
+});
+
+foo()({1:[]})
+
 function hash() {
     var h = crypto.createHash('md5');
     var v = h.update('AB').digest('hex');

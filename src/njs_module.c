@@ -175,6 +175,7 @@ njs_parser_module(njs_vm_t *vm, njs_parser_t *parser)
         goto fail;
     }
 
+    module->function.args_offset = 1;
     module->function.u.lambda = parser->node->u.value.data.u.lambda;
 
     njs_mp_free(vm->mem_pool, text.start);
