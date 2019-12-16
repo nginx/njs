@@ -204,18 +204,15 @@ njs_value_to_key(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
 
 
 njs_inline njs_int_t
-njs_key_string_get(njs_vm_t *vm, const njs_value_t *key, njs_str_t *str)
+njs_key_string_get(njs_vm_t *vm, njs_value_t *key, njs_str_t *str)
 {
-    njs_int_t    ret;
-    njs_value_t  dst;
+    njs_int_t  ret;
 
     if (njs_slow_path(njs_is_symbol(key))) {
-        ret = njs_symbol_to_string(vm, &dst, key);
+        ret = njs_symbol_to_string(vm, key, key);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
         }
-
-        key = &dst;
     }
 
     njs_string_get(key, str);

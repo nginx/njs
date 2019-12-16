@@ -10475,6 +10475,14 @@ static njs_unit_test_t  njs_test[] =
               "while(n--) o[Symbol()] = 'test'; o[''];"),
       njs_str("undefined") },
 
+    { njs_str("var symA = Symbol('A'); var obj = {[symA]:1}; Object.freeze(obj); "
+              "obj[symA] = 2"),
+      njs_str("TypeError: Cannot assign to read-only property \"Symbol(A)\" of object") },
+
+    { njs_str("var symA = Symbol('A'); var obj = {[symA]:1}; Object.freeze(obj); "
+              "delete obj[symA]"),
+      njs_str("TypeError: Cannot delete property \"Symbol(A)\" of object") },
+
     { njs_str("["
               " Object.prototype,"
               " Symbol.prototype,"
