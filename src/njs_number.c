@@ -236,37 +236,39 @@ njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
 }
 
 
-void
-njs_number_to_chain(njs_vm_t *vm, njs_chb_t *chain, const njs_value_t *number)
+njs_int_t
+njs_number_to_chain(njs_vm_t *vm, njs_chb_t *chain, double num)
 {
-    double             num;
-    size_t             size;
-    u_char   *p;
-
-    num = njs_number(number);
+    size_t  size;
+    u_char  *p;
 
     if (isnan(num)) {
         njs_chb_append_literal(chain, "NaN");
+        return njs_length("NaN");
 
-    } else if (isinf(num)) {
+    }
 
+    if (isinf(num)) {
         if (num < 0) {
             njs_chb_append_literal(chain, "-Infinity");
+            return njs_length("-Infinity");
 
         } else {
             njs_chb_append_literal(chain, "Infinity");
+            return njs_length("Infinity");
         }
-
-    } else {
-        p = njs_chb_reserve(chain, 64);
-        if (njs_slow_path(p == NULL)) {
-            return;
-        }
-
-        size = njs_dtoa(num, (char *) p);
-
-        njs_chb_written(chain, size);
     }
+
+    p = njs_chb_reserve(chain, 64);
+    if (njs_slow_path(p == NULL)) {
+        return NJS_ERROR;
+    }
+
+    size = njs_dtoa(num, (char *) p);
+
+    njs_chb_written(chain, size);
+
+    return size;
 }
 
 

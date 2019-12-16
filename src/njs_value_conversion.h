@@ -199,6 +199,9 @@ njs_value_to_string(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
 }
 
 
+/*
+ * retval >= 0 is length (UTF8 characters) value of appended string.
+ */
 njs_inline njs_int_t
 njs_value_to_chain(njs_vm_t *vm, njs_chb_t *chain, njs_value_t *value)
 {

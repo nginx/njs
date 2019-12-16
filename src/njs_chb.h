@@ -104,6 +104,13 @@ njs_chb_utf8_length(njs_chb_t *chain)
 }
 
 
+njs_inline u_char *
+njs_chb_current(njs_chb_t *chain)
+{
+    return (chain->last != NULL) ? chain->last->pos : NULL;
+}
+
+
 njs_inline void
 njs_chb_written(njs_chb_t *chain, size_t bytes)
 {

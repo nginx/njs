@@ -1122,11 +1122,12 @@ static njs_int_t
 njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    u_char             *p;
+    u_char             *p, *last;
     size_t             size;
     ssize_t            length;
     njs_int_t          ret;
     njs_chb_t          chain;
+    njs_utf8_t         utf8;
     njs_uint_t         i;
     njs_array_t        *array;
     njs_value_t        *value;
@@ -1163,20 +1164,37 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_chb_init(&chain, vm->mem_pool);
 
     length = 0;
+    utf8 = njs_is_byte_string(&separator) ? NJS_STRING_BYTE : NJS_STRING_UTF8;
 
     for (i = 0; i < array->length; i++) {
         value = &array->start[i];
+
         if (njs_is_valid(value) && !njs_is_null_or_undefined(value)) {
             if (!njs_is_string(value)) {
+                last = njs_chb_current(&chain);
+
                 ret = njs_value_to_chain(vm, &chain, value);
-                if (njs_slow_path(ret != NJS_OK)) {
+                if (njs_slow_path(ret < NJS_OK)) {
                     return ret;
                 }
 
+                if (last != njs_chb_current(&chain) && ret == 0) {
+                    /*
+                     * Appended values was a byte string.
+                     */
+                    utf8 = NJS_STRING_BYTE;
+                }
+
+                length += ret;
+
             } else {
                 (void) njs_string_prop(&string, value);
-                length += string.length;
 
+                if (njs_is_byte_string(&string)) {
+                    utf8 = NJS_STRING_BYTE;
+                }
+
+                length += string.length;
                 njs_chb_append(&chain, string.start, string.size);
             }
         }
@@ -1188,12 +1206,9 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_chb_drop(&chain, separator.size);
 
     size = njs_chb_size(&chain);
+    length -= separator.length;
 
-    if (length != 0) {
-        length -= separator.length;
-    }
-
-    p = njs_string_alloc(vm, &vm->retval, size, length);
+    p = njs_string_alloc(vm, &vm->retval, size, utf8 ? length : 0);
     if (njs_slow_path(p == NULL)) {
         return NJS_ERROR;
     }

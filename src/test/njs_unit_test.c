@@ -3893,11 +3893,31 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = [1,2,3]; a.join(':')"),
       njs_str("1:2:3") },
 
-    { njs_str("var a = ['#', '@']; var out= a.join('α'.repeat(33)); [out, out.length]"),
-      njs_str("#ααααααααααααααααααααααααααααααααα@,35") },
+    { njs_str("["
+              "  'α'.repeat(33),"
+              "  String.bytesFrom(Array(16).fill(0x9d)),"
+              "]"
+              ".map(v=>{var out = ['β', 'γ'].join(v); return out.length})"),
+      njs_str("35,20") },
 
-    { njs_str("var a = ['β', 'γ']; var out= a.join('α'); [out, out.length]"),
-      njs_str("βαγ,3") },
+    { njs_str("["
+              "  [],"
+              "  ['β', 'γ'],"
+              "  [NaN, Math.pow(2,123.2), Infinity, -1],"
+              "  [new String('β'),{toString(){return 'γ'}}],"
+              "]"
+              ".map(v=>{var out = v.join('α'); return [out, out[out.length - 1],out.length]})"
+              ".map(v=>njs.dump(v))"),
+      njs_str("['',undefined,0],"
+              "['βαγ','γ',3],"
+              "['NaNα1.2215056097393134e+37αInfinityα-1','1',38],"
+              "['βαγ','γ',3]") },
+
+    { njs_str("var a = ['β','γ']; a.join('').length"),
+      njs_str("2") },
+
+    { njs_str("var a = ['β', String.bytesFrom([0x9d]),'γ']; a.join('').length"),
+      njs_str("5") },
 
     { njs_str("var a = []; a[5] = 5; a.join()"),
       njs_str(",,,,,5") },

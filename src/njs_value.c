@@ -1270,46 +1270,43 @@ njs_int_t
 njs_primitive_value_to_chain(njs_vm_t *vm, njs_chb_t *chain,
     const njs_value_t *src)
 {
-    njs_str_t  string;
+    njs_string_prop_t  string;
 
     switch (src->type) {
 
     case NJS_NULL:
         njs_chb_append_literal(chain, "null");
-        break;
+        return njs_length("null");
 
     case NJS_UNDEFINED:
         njs_chb_append_literal(chain, "undefined");
-        break;
+        return njs_length("undefined");
 
     case NJS_BOOLEAN:
         if (njs_is_true(src)) {
             njs_chb_append_literal(chain, "true");
+            return njs_length("true");
 
         } else {
             njs_chb_append_literal(chain, "false");
+            return njs_length("false");
         }
 
-        break;
-
     case NJS_NUMBER:
-        njs_number_to_chain(vm, chain, src);
-        break;
+        return njs_number_to_chain(vm, chain, njs_number(src));
 
     case NJS_SYMBOL:
         njs_symbol_conversion_failed(vm, 1);
         return NJS_ERROR;
 
     case NJS_STRING:
-        njs_string_get(src, &string);
-        njs_chb_append_str(chain, &string);
-        break;
+        (void) njs_string_prop(&string, src);
+        njs_chb_append(chain, string.start, string.size);
+        return string.length;
 
     default:
         return NJS_ERROR;
     }
-
-    return NJS_OK;
 }
 
 

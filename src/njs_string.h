@@ -102,6 +102,13 @@ typedef enum {
 } njs_utf8_t;
 
 
+njs_inline njs_bool_t
+njs_is_byte_string(njs_string_prop_t *string)
+{
+    return (string->length == 0 && string->size != 0);
+}
+
+
 njs_inline uint32_t
 njs_string_calc_length(njs_utf8_t utf8, const u_char *start, size_t size)
 {
