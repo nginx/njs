@@ -304,6 +304,7 @@ njs_vm_init(njs_vm_t *vm)
 
     njs_lvlhsh_init(&vm->events_hash);
     njs_queue_init(&vm->posted_events);
+    njs_queue_init(&vm->promise_events);
 
     return NJS_OK;
 }
@@ -435,7 +436,7 @@ njs_vm_waiting(njs_vm_t *vm)
 njs_int_t
 njs_vm_posted(njs_vm_t *vm)
 {
-    return njs_posted_events(vm);
+    return njs_posted_events(vm) || njs_promise_events(vm);
 }
 
 
@@ -495,31 +496,53 @@ njs_vm_handle_events(njs_vm_t *vm)
     njs_queue_t       *events;
     njs_queue_link_t  *link;
 
-    events = &vm->posted_events;
+    do {
+        events = &vm->promise_events;
 
-    for ( ;; ) {
-        link = njs_queue_first(events);
+        for ( ;; ) {
+            link = njs_queue_first(events);
 
-        if (link == njs_queue_tail(events)) {
-            break;
-        }
+            if (link == njs_queue_tail(events)) {
+                break;
+            }
 
-        ev = njs_queue_link_data(link, njs_event_t, link);
+            ev = njs_queue_link_data(link, njs_event_t, link);
 
-        if (ev->once) {
-            njs_del_event(vm, ev, NJS_EVENT_RELEASE | NJS_EVENT_DELETE);
-
-        } else {
-            ev->posted = 0;
             njs_queue_remove(&ev->link);
+
+            ret = njs_vm_call(vm, ev->function, ev->args, ev->nargs);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                return ret;
+            }
         }
 
-        ret = njs_vm_call(vm, ev->function, ev->args, ev->nargs);
+        events = &vm->posted_events;
 
-        if (ret == NJS_ERROR) {
-            return ret;
+        for ( ;; ) {
+            link = njs_queue_first(events);
+
+            if (link == njs_queue_tail(events)) {
+                break;
+            }
+
+            ev = njs_queue_link_data(link, njs_event_t, link);
+
+            if (ev->once) {
+                njs_del_event(vm, ev, NJS_EVENT_RELEASE | NJS_EVENT_DELETE);
+
+            } else {
+                ev->posted = 0;
+                njs_queue_remove(&ev->link);
+            }
+
+            ret = njs_vm_call(vm, ev->function, ev->args, ev->nargs);
+
+            if (ret == NJS_ERROR) {
+                return ret;
+            }
         }
-    }
+
+    } while (!njs_queue_is_empty(events));
 
     return njs_posted_events(vm) ? NJS_AGAIN : NJS_OK;
 }

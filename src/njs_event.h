@@ -16,6 +16,8 @@
 
 #define njs_posted_events(vm) (!njs_queue_is_empty(&(vm)->posted_events))
 
+#define njs_promise_events(vm) (!njs_queue_is_empty(&(vm)->promise_events))
+
 
 typedef struct {
     njs_function_t          *function;

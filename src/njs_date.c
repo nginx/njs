@@ -1840,3 +1840,4 @@ const njs_object_type_init_t  njs_date_type_init = {
    .prototype_props = &njs_date_prototype_init,
    .prototype_value = { .object = { .type = NJS_OBJECT } },
 };
+

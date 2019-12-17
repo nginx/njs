@@ -394,5 +394,7 @@ typedef struct {
 
 njs_int_t njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc);
 
+njs_object_t *njs_function_new_object(njs_vm_t *vm, njs_value_t *constructor);
+
 
 #endif /* _NJS_VMCODE_H_INCLUDED_ */

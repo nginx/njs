@@ -362,6 +362,9 @@ njs_type_string(njs_value_type_t type)
     case NJS_DATE:
         return "date";
 
+    case NJS_PROMISE:
+        return "promise";
+
     default:
         return NULL;
     }
@@ -557,6 +560,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
     case NJS_OBJECT_STRING:
     case NJS_REGEXP:
     case NJS_DATE:
+    case NJS_PROMISE:
     case NJS_OBJECT_VALUE:
         obj = njs_object(value);
         break;

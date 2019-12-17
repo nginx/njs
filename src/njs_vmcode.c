@@ -66,8 +66,6 @@ static njs_jump_off_t njs_primitive_values_compare(njs_vm_t *vm,
 static njs_jump_off_t njs_function_frame_create(njs_vm_t *vm,
     njs_value_t *value, const njs_value_t *this, uintptr_t nargs,
     njs_bool_t ctor);
-static njs_object_t *njs_function_new_object(njs_vm_t *vm,
-    njs_value_t *constructor);
 
 /*
  * The nJSVM is optimized for an ABIs where the first several arguments
@@ -1421,6 +1419,7 @@ njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
         &njs_string_object,
         &njs_string_object,
         &njs_string_object,
+        &njs_string_object,
     };
 
     vm->retval = *types[value->type];
@@ -1624,7 +1623,7 @@ njs_function_frame_create(njs_vm_t *vm, njs_value_t *value,
 }
 
 
-static njs_object_t *
+njs_object_t *
 njs_function_new_object(njs_vm_t *vm, njs_value_t *constructor)
 {
     njs_value_t     proto, bound;

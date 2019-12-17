@@ -88,6 +88,17 @@
         'D'), 'a'), 't'), 'e')
 
 
+#define NJS_PROMISE_HASH                                                      \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'P'), 'r'), 'o'), 'm'), 'i'), 's'), 'e')
+
+
 #define NJS_ENUMERABLE_HASH                                                   \
     njs_djb_hash_add(                                                         \
     njs_djb_hash_add(                                                         \

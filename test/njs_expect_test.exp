@@ -860,3 +860,173 @@ njs_test {
 
 njs_run {"-v"} "\\d+\.\\d+\.\\d+"
 
+
+# Promise
+
+njs_run {"./test/js/promise_set_timeout.js"} \
+"One,Two,Three
+One,Two,Three,Four,Five,Six,Seven,Eight"
+
+njs_run {"./test/js/promise_s1.js"} \
+"One
+Two
+Three
+123
+Four
+Five
+Six
+Seven
+Eight"
+
+njs_run {"./test/js/promise_s2.js"} \
+"One
+Two
+Three"
+
+njs_run {"./test/js/promise_s3.js"} \
+"One
+Two
+Three
+Rejected: Error: Blah"
+
+njs_run {"./test/js/promise_s4.js"} \
+"Error: Oh my"
+
+njs_run {"./test/js/promise_s5.js"} \
+"Success"
+
+njs_run {"./test/js/promise_s6.js"} \
+"1"
+
+njs_run {"./test/js/promise_s7.js"} \
+"true
+fulfilled!"
+
+njs_run {"./test/js/promise_s8.js"} \
+"Ok"
+
+njs_run {"./test/js/promise_s9.js"} \
+"S
+true"
+
+njs_run {"./test/js/promise_s10.js"} \
+"One
+Two
+Three
+Oh no"
+
+njs_run {"./test/js/promise_s11.js"} \
+"end
+S: all
+R: all"
+
+njs_run {"./test/js/promise_s12.js"} \
+"Done"
+
+njs_run {"./test/js/promise_s13.js"} \
+"Done"
+
+njs_run {"./test/js/promise_s14.js"} \
+"TypeError: oops
+    at anonymous \\\(promise_s14.js:4\\\)
+    at native \\\(native\\\)
+    at main \\\(native\\\)
+
+Done"
+
+njs_run {"./test/js/promise_s15.js"} \
+"Done"
+
+njs_run {"./test/js/promise_s16.js"} \
+"Done"
+
+njs_run {"./test/js/promise_s17.js"} \
+"Done"
+
+njs_run {"./test/js/promise_s18.js"} \
+"State 1
+State 2
+State 3
+State 4
+State 5
+Done"
+
+njs_run {"./test/js/promise_s19.js"} \
+"Throw!
+undefined
+Reject!
+Done"
+
+njs_run {"./test/js/promise_s20.js"} \
+"true
+Done"
+
+njs_run {"./test/js/promise_s21.js"} \
+"Done"
+
+njs_run {"./test/js/promise_s22.js"} \
+"true
+Done"
+
+njs_run {"./test/js/promise_s23.js"} \
+"true
+Done"
+
+njs_run {"./test/js/promise_s24.js"} \
+"true"
+
+njs_run {"./test/js/promise_s25.js"} \
+"Done"
+
+njs_run {"./test/js/promise_s26.js"} \
+"BoxedPromise.constructor
+BoxedPromise.prototype.then
+BoxedPromise resolve OK
+BoxedPromise.constructor
+BoxedPromise.prototype.then
+BoxedPromise reject OK
+BoxedPromise.constructor
+BoxedPromise.prototype.then
+BoxedPromise.prototype.then
+BoxedPromise chain OK
+BoxedPromise.prototype.then
+BoxedPromise finally OK
+BoxedPromise sync done
+
+BoxedPromise.prototype.then
+BoxedPromise.prototype.then
+resolved BoxedPromise
+rejected BoxedPromise
+then BoxedPromise
+then BoxedPromise
+finally BoxedPromise
+BoxedPromise.constructor
+BoxedPromise.prototype.then
+BoxedPromise.prototype.then
+BoxedPromise async done
+
+PatchedPromise.constructor
+PatchedPromise.constructor
+PatchedPromise resolve OK
+PatchedPromise.constructor
+PatchedPromise.constructor
+PatchedPromise reject OK
+PatchedPromise.constructor
+PatchedPromise.constructor
+PatchedPromise.constructor
+PatchedPromise chain OK
+PatchedPromise.constructor
+PatchedPromise finally OK
+PatchedPromise sync done
+
+PatchedPromise.constructor
+PatchedPromise.constructor
+resolved PatchedPromise
+rejected PatchedPromise
+then PatchedPromise
+then PatchedPromise
+finally PatchedPromise
+PatchedPromise.constructor
+PatchedPromise.constructor
+PatchedPromise.constructor
+PatchedPromise async done"

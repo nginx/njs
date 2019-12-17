@@ -2410,6 +2410,7 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         &njs_object_regexp_string,
         &njs_object_date_string,
         &njs_object_object_string,
+        &njs_object_object_string,
         &njs_object_array_buffer_string,
     };
 

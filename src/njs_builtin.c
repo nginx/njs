@@ -66,6 +66,7 @@ static const njs_object_type_init_t *const
     &njs_function_type_init,
     &njs_regexp_type_init,
     &njs_date_type_init,
+    &njs_promise_type_init,
 
     /* Hidden types. */
 
@@ -1167,6 +1168,15 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
         .name = njs_string("Date"),
         .value = njs_prop_handler2(njs_top_level_constructor,
                                    NJS_OBJ_TYPE_DATE, NJS_DATE_HASH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("Promise"),
+        .value = njs_prop_handler2(njs_top_level_constructor,
+                                   NJS_OBJ_TYPE_PROMISE, NJS_PROMISE_HASH),
         .writable = 1,
         .configurable = 1,
     },

@@ -65,6 +65,7 @@
 #include <njs_regexp.h>
 #include <njs_regexp_pattern.h>
 #include <njs_date.h>
+#include <njs_promise.h>
 
 #include <njs_math.h>
 #include <njs_json.h>

@@ -90,6 +90,7 @@ typedef enum {
     NJS_OBJ_TYPE_FUNCTION,
     NJS_OBJ_TYPE_REGEXP,
     NJS_OBJ_TYPE_DATE,
+    NJS_OBJ_TYPE_PROMISE,
     NJS_OBJ_TYPE_CRYPTO_HASH,
 #define NJS_OBJ_TYPE_HIDDEN_MIN    (NJS_OBJ_TYPE_CRYPTO_HASH)
     NJS_OBJ_TYPE_CRYPTO_HMAC,
@@ -187,6 +188,7 @@ struct njs_vm_s {
     uint32_t                 event_id;
     njs_lvlhsh_t             events_hash;
     njs_queue_t              posted_events;
+    njs_queue_t              promise_events;
 
     njs_vm_opt_t             options;
 

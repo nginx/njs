@@ -67,8 +67,9 @@ typedef enum {
     NJS_FUNCTION              = 0x16,
     NJS_REGEXP                = 0x17,
     NJS_DATE                  = 0x18,
-    NJS_OBJECT_VALUE          = 0x19,
-    NJS_ARRAY_BUFFER          = 0x1A,
+    NJS_PROMISE               = 0x19,
+    NJS_OBJECT_VALUE          = 0x1A,
+    NJS_ARRAY_BUFFER          = 0x1B,
     NJS_VALUE_TYPE_MAX
 } njs_value_type_t;
 
@@ -83,6 +84,7 @@ typedef struct njs_array_s            njs_array_t;
 typedef struct njs_array_buffer_s     njs_array_buffer_t;
 typedef struct njs_regexp_s           njs_regexp_t;
 typedef struct njs_date_s             njs_date_t;
+typedef struct njs_object_value_s     njs_promise_t;
 typedef struct njs_property_next_s    njs_property_next_t;
 typedef struct njs_object_init_s      njs_object_init_t;
 
@@ -146,6 +148,7 @@ union njs_value_s {
             njs_function_lambda_t     *lambda;
             njs_regexp_t              *regexp;
             njs_date_t                *date;
+            njs_promise_t             *promise;
             njs_prop_handler_t        prop_handler;
             njs_value_t               *value;
             njs_property_next_t       *next;
@@ -283,6 +286,8 @@ struct njs_function_s {
         njs_function_t                *bound_target;
     } u;
 
+    void                              *context;
+
     njs_value_t                       *bound;
 };
 
@@ -312,6 +317,7 @@ typedef union {
     njs_function_t                    function;
     njs_regexp_t                      regexp;
     njs_date_t                        date;
+    njs_promise_t                     promise;
 } njs_object_prototype_t;
 
 
@@ -644,6 +650,10 @@ typedef struct {
     ((value)->type == NJS_DATE)
 
 
+#define njs_is_promise(value)                                                 \
+    ((value)->type == NJS_PROMISE)
+
+
 #define njs_is_error(value)                                                   \
     ((value)->type == NJS_OBJECT && njs_object(value)->error_data)
 
@@ -706,6 +716,10 @@ typedef struct {
 
 #define njs_date(value)                                                       \
     ((value)->data.u.date)
+
+
+#define njs_promise(value)                                                    \
+    ((value)->data.u.promise)
 
 
 #define njs_regexp(value)                                                     \
@@ -870,6 +884,15 @@ njs_set_date(njs_value_t *value, njs_date_t *date)
 {
     value->data.u.date = date;
     value->type = NJS_DATE;
+    value->data.truth = 1;
+}
+
+
+njs_inline void
+njs_set_promise(njs_value_t *value, njs_promise_t *promise)
+{
+    value->data.u.promise = promise;
+    value->type = NJS_PROMISE;
     value->data.truth = 1;
 }
 

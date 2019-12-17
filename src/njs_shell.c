@@ -109,6 +109,7 @@ static njs_int_t njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args,
 
 static njs_host_event_t njs_console_set_timer(njs_external_ptr_t external,
     uint64_t delay, njs_vm_event_t vm_event);
+
 static void njs_console_clear_timer(njs_external_ptr_t external,
     njs_host_event_t event);
 
