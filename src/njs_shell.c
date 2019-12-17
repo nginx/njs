@@ -750,7 +750,8 @@ njs_output(njs_opts_t *opts, njs_vm_t *vm, njs_int_t ret)
         }
 
         if (vm->options.accumulative) {
-            njs_printf("%V\n", &out);
+            njs_print(out.start, out.length);
+            njs_print("\n", 1);
         }
 
     } else {
