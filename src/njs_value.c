@@ -13,6 +13,8 @@ static njs_int_t njs_object_property_query(njs_vm_t *vm,
     const njs_value_t *key);
 static njs_int_t njs_array_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_array_t *array, uint32_t index);
+static njs_int_t njs_typed_array_property_query(njs_vm_t *vm,
+    njs_property_query_t *pq, njs_typed_array_t *array, uint32_t index);
 static njs_int_t njs_string_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_value_t *object, uint32_t index);
 static njs_int_t njs_external_property_query(njs_vm_t *vm,
@@ -339,7 +341,10 @@ njs_type_string(njs_value_type_t type)
         return "array";
 
     case NJS_ARRAY_BUFFER:
-        return "object arraybuffer";
+        return "array buffer";
+
+    case NJS_TYPED_ARRAY:
+        return "typed array";
 
     case NJS_OBJECT_BOOLEAN:
         return "object boolean";
@@ -500,7 +505,8 @@ njs_value_is_function(const njs_value_t *value)
  *     in NJS_PROPERTY_QUERY_GET
  *       prop->type is NJS_PROPERTY or NJS_PROPERTY_HANDLER.
  *     in NJS_PROPERTY_QUERY_SET, NJS_PROPERTY_QUERY_DELETE
- *       prop->type is NJS_PROPERTY, NJS_PROPERTY_REF or
+ *       prop->type is NJS_PROPERTY, NJS_PROPERTY_REF,
+ *       NJS_PROPERTY_TYPED_ARRAY_REF or
  *       NJS_PROPERTY_HANDLER.
  *   NJS_DECLINED         property was not found in object,
  *     if pq->lhq.value != NULL it contains retval of type
@@ -515,6 +521,7 @@ njs_int_t
 njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
     njs_value_t *key)
 {
+    double          num;
     uint32_t        index;
     njs_int_t       ret;
     njs_object_t    *obj;
@@ -541,10 +548,9 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
 
     case NJS_STRING:
         if (njs_fast_path(!njs_is_null_or_undefined_or_boolean(key))) {
-            index = njs_key_to_index(key);
-
-            if (njs_fast_path(index < NJS_STRING_MAX_LENGTH)) {
-                return njs_string_property_query(vm, pq, value, index);
+            num = njs_key_to_index(key);
+            if (njs_fast_path(njs_number_is_integer_index(num, key))) {
+                return njs_string_property_query(vm, pq, value, num);
             }
         }
 
@@ -554,6 +560,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
     case NJS_OBJECT:
     case NJS_ARRAY:
     case NJS_ARRAY_BUFFER:
+    case NJS_TYPED_ARRAY:
     case NJS_OBJECT_BOOLEAN:
     case NJS_OBJECT_NUMBER:
     case NJS_OBJECT_SYMBOL:
@@ -624,12 +631,13 @@ static njs_int_t
 njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     njs_object_t *object, const njs_value_t *key)
 {
-    uint32_t            index;
+    double              num;
     njs_int_t           ret;
     njs_bool_t          own;
     njs_array_t         *array;
     njs_object_t        *proto;
     njs_object_prop_t   *prop;
+    njs_typed_array_t   *tarray;
     njs_object_value_t  *ov;
 
     pq->lhq.proto = &njs_object_hash_proto;
@@ -645,19 +653,32 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
         if (!njs_is_null_or_undefined_or_boolean(key)) {
             switch (proto->type) {
             case NJS_ARRAY:
-                index = njs_key_to_index(key);
-                if (njs_fast_path(index < NJS_ARRAY_MAX_INDEX)) {
+                num = njs_key_to_index(key);
+                if (njs_fast_path(njs_number_is_integer_index(num, key))) {
                     array = (njs_array_t *) proto;
-                    return njs_array_property_query(vm, pq, array, index);
+                    return njs_array_property_query(vm, pq, array, num);
+                }
+
+                break;
+
+            case NJS_TYPED_ARRAY:
+                num = njs_key_to_index(key);
+                if (njs_fast_path(njs_number_is_integer_index(num, key))) {
+                    tarray = (njs_typed_array_t *) proto;
+                    return njs_typed_array_property_query(vm, pq, tarray, num);
+                }
+
+                if (!isnan(num)) {
+                    return NJS_DECLINED;
                 }
 
                 break;
 
             case NJS_OBJECT_STRING:
-                index = njs_key_to_index(key);
-                if (njs_fast_path(index < NJS_STRING_MAX_LENGTH)) {
+                num = njs_key_to_index(key);
+                if (njs_fast_path(njs_number_is_integer_index(num, key))) {
                     ov = (njs_object_value_t *) proto;
-                    ret = njs_string_property_query(vm, pq, &ov->value, index);
+                    ret = njs_string_property_query(vm, pq, &ov->value, num);
 
                     if (njs_fast_path(ret != NJS_DECLINED)) {
                         return ret;
@@ -767,6 +788,38 @@ njs_array_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     prop->writable = 1;
     prop->enumerable = 1;
     prop->configurable = 1;
+
+    pq->lhq.value = prop;
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_typed_array_property_query(njs_vm_t *vm, njs_property_query_t *pq,
+    njs_typed_array_t *array, uint32_t index)
+{
+    njs_object_prop_t  *prop;
+
+    if (index >= njs_typed_array_length(array)) {
+        return NJS_DECLINED;
+    }
+
+    prop = &pq->scratch;
+
+    if (pq->query == NJS_PROPERTY_QUERY_GET) {
+        njs_set_number(&prop->value, njs_typed_array_get(array, index));
+        prop->type = NJS_PROPERTY;
+
+    } else {
+        prop->value.data.u.typed_array = array;
+        prop->value.data.magic32 = index;
+        prop->type = NJS_PROPERTY_TYPED_ARRAY_REF;
+    }
+
+    prop->writable = 1;
+    prop->enumerable = 1;
+    prop->configurable = 0;
 
     pq->lhq.value = prop;
 
@@ -1098,6 +1151,12 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
                 *prop->value.data.u.value = *setval;
                 return NJS_OK;
 
+            case NJS_PROPERTY_TYPED_ARRAY_REF:
+                return njs_typed_array_set_value(vm,
+                                                 njs_typed_array(&prop->value),
+                                                 prop->value.data.magic32,
+                                                 setval);
+
             default:
                 njs_internal_error(vm, "unexpected property type \"%s\" "
                                    "while setting",
@@ -1122,6 +1181,15 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
             prop->writable = 1;
 
             goto found;
+        }
+
+        if (njs_slow_path(pq.own && njs_is_typed_array(value)
+                          && njs_is_string(key)))
+        {
+            /* Integer-Indexed Exotic Objects [[DefineOwnProperty]]. */
+            if (!isnan(njs_string_to_index(key))) {
+                return NJS_OK;
+            }
         }
 
         break;

@@ -59,7 +59,7 @@ static njs_int_t
 njs_array_buffer_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    uint32_t            size;
+    uint64_t            size;
     njs_int_t           ret;
     njs_value_t         *value;
     njs_array_buffer_t  *array;
@@ -93,6 +93,16 @@ njs_array_buffer_get_this(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
     vm->retval = args[0];
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_array_buffer_is_view(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    njs_set_boolean(&vm->retval, njs_is_typed_array(njs_arg(args, nargs, 1)));
 
     return NJS_OK;
 }
@@ -133,6 +143,15 @@ static const njs_object_prop_t  njs_array_buffer_constructor_properties[] =
         .writable = NJS_ATTRIBUTE_UNSET,
         .configurable = 1,
         .enumerable = 0,
+    },
+
+    /* ArrayBuffer.isView(new Uint8Array()) === true */
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("isView"),
+        .value = njs_native_function(njs_array_buffer_is_view, 1),
+        .writable = 1,
+        .configurable = 1,
     },
 };
 

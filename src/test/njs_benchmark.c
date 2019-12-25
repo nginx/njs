@@ -149,9 +149,20 @@ main(int argc, char **argv)
     static njs_str_t while_loop = njs_str(
         "var i = 0; while (i < 100000000) { i++ }; i");
 
+    static njs_str_t  typed_array_10M = njs_str(
+        "var arr = new Uint8Array(10000000); var count = 0, length = arr.length;"
+        "arr.fill(2);"
+        "for (var i = 0; i < length; i++) { count += arr[i]; } count");
+
+    static njs_str_t  array_10M = njs_str(
+        "var arr = new Array(10000000); var count = 0, length = arr.length;"
+        "arr.fill(2);"
+        "for (var i = 0; i < length; i++) { count += arr[i]; } count");
+
     static njs_str_t  fibo_result = njs_str("3524578");
     static njs_str_t  json_result = njs_str("123");
     static njs_str_t  loop_result = njs_str("100000000");
+    static njs_str_t  sum_result  = njs_str("20000000");
 
 
     if (argc > 1) {
@@ -188,9 +199,18 @@ main(int argc, char **argv)
         case 'u':
             return njs_unit_test_benchmark(&fibo_utf8, &fibo_result,
                                            "fibobench utf8 strings", 1);
+
+        case 't':
+            return njs_unit_test_benchmark(&typed_array_10M, &sum_result,
+                                           "typed_array_10M", 1);
+
+        case 'A':
+            return njs_unit_test_benchmark(&array_10M, &sum_result,
+                                           "array_10M", 1);
         }
     }
 
     njs_printf("unknown agrument\n");
+
     return EXIT_FAILURE;
 }

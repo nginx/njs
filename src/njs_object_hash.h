@@ -587,4 +587,143 @@
         'A'), 'r'), 'r'), 'a'), 'y'), 'B'), 'u'), 'f'), 'f'), 'e'), 'r')
 
 
+#define NJS_UINT8ARRAY_HASH                                                   \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'U'), 'i'), 'n'), 't'), '8'), 'A'), 'r'), 'r'), 'a'), 'y')
+
+
+#define NJS_UINT16ARRAY_HASH                                                  \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'U'), 'i'), 'n'), 't'), '1'), '6'), 'A'), 'r'), 'r'), 'a'), 'y')
+
+
+#define NJS_UINT32ARRAY_HASH                                                  \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'U'), 'i'), 'n'), 't'), '3'), '2'), 'A'), 'r'), 'r'), 'a'), 'y')
+
+
+#define NJS_INT8ARRAY_HASH                                                    \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'I'), 'n'), 't'), '8'), 'A'), 'r'), 'r'), 'a'), 'y')
+
+
+#define NJS_INT16ARRAY_HASH                                                   \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'I'), 'n'), 't'), '1'), '6'), 'A'), 'r'), 'r'), 'a'), 'y')
+
+
+#define NJS_INT32ARRAY_HASH                                                   \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'I'), 'n'), 't'), '3'), '2'), 'A'), 'r'), 'r'), 'a'), 'y')
+
+
+#define NJS_FLOAT32ARRAY_HASH                                                 \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'F'), 'l'), 'o'), 'a'), 't'), '3'), '2'), 'A'), 'r'), 'r'), 'a'), 'y')
+
+
+#define NJS_FLOAT64ARRAY_HASH                                                 \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'F'), 'l'), 'o'), 'a'), 't'), '6'), '4'), 'A'), 'r'), 'r'), 'a'), 'y')
+
+
+#define NJS_UINT8CLAMPEDARRAY_HASH                                            \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'U'), 'i'), 'n'), 't'), '8'), 'C'), 'l'), 'a'), 'm'), 'p'), 'e'),     \
+        'd'), 'A'), 'r'), 'r'), 'a'), 'y')
+
+
 #endif /* _NJS_OBJECT_HASH_H_INCLUDED_ */

@@ -1141,22 +1141,24 @@ static njs_jump_off_t
 njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     njs_value_t *init)
 {
+    double              num;
     uint32_t            index, size;
+    njs_int_t           ret;
     njs_array_t         *array;
     njs_value_t         *val, name;
-    njs_jump_off_t      ret;
     njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
 
     switch (value->type) {
     case NJS_ARRAY:
-        index = njs_key_to_index(key);
-        if (njs_slow_path(index == NJS_ARRAY_INVALID_INDEX)) {
+        num = njs_key_to_index(key);
+        if (njs_slow_path(!njs_number_is_integer_index(num, key))) {
             njs_internal_error(vm,
                                "invalid index while property initialization");
             return NJS_ERROR;
         }
 
+        index = (uint32_t) num;
         array = value->data.u.array;
 
         if (index >= array->length) {
@@ -1416,6 +1418,8 @@ njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
         &njs_string_object,
         &njs_string_object,
         &njs_string_function,
+        &njs_string_object,
+        &njs_string_object,
         &njs_string_object,
         &njs_string_object,
         &njs_string_object,

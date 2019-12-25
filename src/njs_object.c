@@ -20,6 +20,8 @@ static uint32_t njs_object_own_enumerate_object_length(
     njs_object_enum_type_t type, njs_bool_t all);
 static njs_int_t njs_object_enumerate_array(njs_vm_t *vm,
     const njs_array_t *array, njs_array_t *items, njs_object_enum_t kind);
+static njs_int_t njs_object_enumerate_typed_array(njs_vm_t *vm,
+    const njs_typed_array_t *array, njs_array_t *items, njs_object_enum_t kind);
 static njs_int_t njs_object_enumerate_string(njs_vm_t *vm,
     const njs_value_t *value, njs_array_t *items, njs_object_enum_t kind);
 static njs_int_t njs_object_enumerate_object(njs_vm_t *vm,
@@ -462,6 +464,10 @@ njs_object_own_enumerate_length(const njs_object_t *object,
             length += njs_object_enumerate_array_length(object);
             break;
 
+        case NJS_TYPED_ARRAY:
+            length += njs_typed_array_length((njs_typed_array_t *) object);
+            break;
+
         case NJS_OBJECT_STRING:
             length += njs_object_enumerate_string_length(object);
             break;
@@ -529,6 +535,12 @@ njs_object_own_enumerate_value(njs_vm_t *vm, const njs_object_t *object,
         case NJS_ARRAY:
             ret = njs_object_enumerate_array(vm, (njs_array_t *) object, items,
                                              kind);
+            break;
+
+        case NJS_TYPED_ARRAY:
+            ret = njs_object_enumerate_typed_array(vm,
+                                                   (njs_typed_array_t *) object,
+                                                   items, kind);
             break;
 
         case NJS_OBJECT_STRING:
@@ -786,6 +798,54 @@ njs_object_enumerate_array(njs_vm_t *vm, const njs_array_t *array,
 
                 item++;
             }
+        }
+
+        break;
+    }
+
+    items->start = item;
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_object_enumerate_typed_array(njs_vm_t *vm, const njs_typed_array_t *array,
+    njs_array_t *items, njs_object_enum_t kind)
+{
+    uint32_t     i, length;
+    njs_value_t  *item;
+    njs_array_t  *entry;
+
+    item = items->start;
+    length = njs_typed_array_length(array);
+
+    switch (kind) {
+    case NJS_ENUM_KEYS:
+        for (i = 0; i < length; i++) {
+            njs_uint32_to_string(item++, i);
+        }
+
+        break;
+
+    case NJS_ENUM_VALUES:
+        for (i = 0; i < length; i++) {
+            njs_set_number(item++, njs_typed_array_get(array, i));
+        }
+
+        break;
+
+    case NJS_ENUM_BOTH:
+        for (i = 0; i < length; i++) {
+            entry = njs_array_alloc(vm, 2, 0);
+            if (njs_slow_path(entry == NULL)) {
+                return NJS_ERROR;
+            }
+
+            njs_uint32_to_string(&entry->start[0], i);
+            njs_set_number(&entry->start[1], njs_typed_array_get(array, i));
+
+            njs_set_array(item++, entry);
         }
 
         break;
@@ -2356,8 +2416,6 @@ static const njs_value_t  njs_object_object_string =
                                      njs_long_string("[object Object]");
 static const njs_value_t  njs_object_array_string =
                                      njs_string("[object Array]");
-static const njs_value_t  njs_object_array_buffer_string =
-                                     njs_long_string("[object ArrayBuffer]");
 static const njs_value_t  njs_object_function_string =
                                      njs_long_string("[object Function]");
 static const njs_value_t  njs_object_regexp_string =
@@ -2411,7 +2469,8 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         &njs_object_date_string,
         &njs_object_object_string,
         &njs_object_object_string,
-        &njs_object_array_buffer_string,
+        &njs_object_object_string,
+        &njs_object_object_string,
     };
 
     value = njs_argument(args, 0);

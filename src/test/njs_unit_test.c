@@ -348,7 +348,7 @@ static njs_unit_test_t  njs_test[] =
                  "(1).X()"),
       njs_str("123") },
 
-    /* Indexes. */
+    /* Indices. */
 
     { njs_str("var a = []; a[-1] = 2; a[-1] == a['-1']"),
       njs_str("true") },
@@ -357,6 +357,19 @@ static njs_unit_test_t  njs_test[] =
       njs_str("true") },
 
     { njs_str("var a = []; a[NaN] = 2; a[NaN] == a['NaN']"),
+      njs_str("true") },
+
+#define NJS_NOT_CANONICAL_INDICES "['+0', '-0', '1.', '0.', '0.0', '4294967295', " \
+                                  " '4294967296', '-1', '1.1', '9223372036854775808']"
+
+    { njs_str("var a = [1,2]; "
+              NJS_NOT_CANONICAL_INDICES
+               ".every(v=>(a[v] === undefined))"),
+      njs_str("true") },
+
+    { njs_str("var a = [1,2]; "
+              NJS_NOT_CANONICAL_INDICES
+               ".every(v=>{a[v] = 'a'; return a[v] === 'a'})"),
       njs_str("true") },
 
     /* Number.toString(radix) method. */
@@ -4824,6 +4837,512 @@ static njs_unit_test_t  njs_test[] =
               "[[4,12], [-1,-1], [-1,10], [0, -1], [0, -16], [0,-17]]"
               ".map(pr=>buffer.slice(pr[0], pr[1]).byteLength)"),
       njs_str("8,0,0,15,0,0") },
+
+    { njs_str("[false,NaN,1]"
+              ".map(v=>(new Uint8Array(v)).length)"),
+      njs_str("0,0,1") },
+
+#define NJS_TYPED_ARRAY_LIST "[Uint8Array,Uint8ClampedArray,Int8Array,"     \
+                             " Uint16Array,Int16Array,Uint32Array,"         \
+                             " Int32Array, Float32Array,Float64Array]"
+
+#define NJS_INT_TYPED_ARRAY_LIST   "[Uint8Array,Uint8ClampedArray,Int8Array," \
+                                   " Uint16Array,Int16Array,Uint32Array,"     \
+                                   " Int32Array]"
+
+#define NJS_FLOAT_TYPED_ARRAY_LIST "[Float32Array,Float64Array]"
+
+    { njs_str("var TypedArray = Object.getPrototypeOf(Uint8Array);"
+              "[TypedArray.name, TypedArray.length]"),
+      njs_str("TypedArray,0") },
+
+    { njs_str("Object.getPrototypeOf(Uint8Array)()"),
+      njs_str("TypeError: Abstract class TypedArray not directly constructable") },
+
+    { njs_str("var TypedArray = Object.getPrototypeOf(Uint8Array);"
+              NJS_TYPED_ARRAY_LIST
+              ".every(v=>Object.getPrototypeOf(v) === TypedArray)"),
+      njs_str("true") },
+
+    { njs_str("var TypedArray = Object.getPrototypeOf(Uint8Array);"
+              NJS_TYPED_ARRAY_LIST
+              ".every(v=>Object.getPrototypeOf(v.prototype) === TypedArray.prototype)"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v.prototype.constructor(0); "
+              "           return njs.dump(a) === `${v.name} []`})"),
+      njs_str("true") },
+
+    { njs_str("var global = this;"
+              NJS_TYPED_ARRAY_LIST
+              ".every(v=>ArrayBuffer.isView(new global[v.name]))"),
+      njs_str("true") },
+
+    { njs_str("var global = this;"
+              NJS_TYPED_ARRAY_LIST
+              ".every(v=>global[v.name][Symbol.species].name === v.name)"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v({length:2, '0':1, '1':2}); "
+              "           return a[0] == 1 && a[1] == 2 && a.length == 2})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{try{ new v({length:Math.pow(2,53)}) } "
+              "           catch(e) {return e.name == 'InternalError' || e.name == 'RangeError'}})"),
+      njs_str("true") },
+
+    { njs_str(NJS_FLOAT_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v({length:5, 0: null, 2:42, 3:'7', 4:NaN, 5:Symbol('1')}); "
+              "           return njs.dump(a) === `${v.name} [0,NaN,42,7,NaN]`})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var o = {length:2, '0':1}; Object.defineProperty(o, '1', {get(){throw 'Oops'}});"
+              "           try {new v(o)} catch (e) { return e == 'Oops'}})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v(3); Object.defineProperty(a, '1', {value:1});"
+              "           return njs.dump(a) === `${v.name} [0,1,0]`})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([1,1,1]); Object.defineProperty(a, '1', {});"
+              "           return njs.dump(a) === `${v.name} [1,1,1]`})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{try {var a = new v([1,1]); Object.defineProperty(a, '1', {configurable:true})} "
+              "           catch (e) { return e.message == 'Cannot redefine property: \"1\"'}})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{try {var a = new v([1,1]); Object.defineProperty(a, '1', {enumerable:false})} "
+              "           catch (e) { return e.message == 'Cannot redefine property: \"1\"'}})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{try {var a = new v([1,1]); Object.defineProperty(a, '1', {writable:false})} "
+              "           catch (e) { return e.message == 'Cannot redefine property: \"1\"'}})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{try {var a = new v([1,1]); Object.defineProperty(a, '1', {get(){return 22}})} "
+              "           catch (e) { return e.message == 'Cannot redefine property: \"1\"'}})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v(3);"
+              "           return [a.hasOwnProperty('1'), a.hasOwnProperty('4')].toString() === 'true,false'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var descs = Object.getOwnPropertyNames(v).sort().toString(); "
+              "           return descs === 'BYTES_PER_ELEMENT,length,name,prototype'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".map(v=>{var a = new ArrayBuffer(8); return (new v(a).length)})"),
+      njs_str("8,8,8,4,4,2,2,2,1") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".map(v=>{var a = new v(1); a[0]--; return a[0]})"),
+      njs_str("255,0,-1,65535,-1,4294967295,-1,-1,-1") },
+
+    { njs_str(NJS_NOT_CANONICAL_INDICES
+              ".every(v=>{var a = new Uint8Array([1,2]); return a[v] === undefined})"),
+      njs_str("true") },
+
+    { njs_str(NJS_NOT_CANONICAL_INDICES
+              ".map(v=>{var a = new Uint8Array([1,2]); a[v] = 'a'; return a[v]})"),
+      njs_str("a,,a,a,a,,,,,a") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{v.prototype[10] = 'foo'; return (new v(16))[10] === 0})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{v.prototype[20] = 'foo'; return (new v(16))[20] === undefined})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{v.prototype.foo = 'bar'; return (new v(16)).foo === 'bar'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{v.prototype[-1] = 'foo'; return (new v(8))[-1] === undefined})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".map(v=>v.BYTES_PER_ELEMENT)"),
+      njs_str("1,1,1,2,2,4,4,4,8") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>v.length === 3)"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v(1); return --a[0] == -1})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v(4); a.fill(42); return (a[0] === 42 && a.length == 4)})"),
+      njs_str("true") },
+
+    { njs_str(NJS_INT_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v(1); a.fill({}); return a[0] === 0})"),
+      njs_str("true") },
+
+    { njs_str(NJS_FLOAT_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v(1); a.fill({}); return isNaN(a[0])})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([1,2,3]); a.fill({valueOf(){return 12}}, 1,2); "
+              "       return (a[0] === 1 && a[1] === 12 && a[2] === 3 && a.length == 3)})"),
+      njs_str("true") },
+
+    { njs_str(NJS_INT_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([1,2,3]); a.fill('qq', 1, 2); "
+              "       return (a[0] === 1 && a[1] === 0 && a[2] === 3 && a.length == 3)})"),
+      njs_str("true") },
+
+    { njs_str(NJS_FLOAT_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([1,2,3]); a.fill('qq', 1, 2); "
+              "       return (a[0] === 1 && isNaN(a[1]) && a[2] === 3 && a.length == 3)})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([1,2,3]); var d = Object.getOwnPropertyDescriptors(a)[1];"
+              "       return (d.value === 2 && d.writable && d.enumerable && !d.configurable)})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([1,2,3]); return Object.keys(a).toString() === '0,1,2'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([1,2,3]); return Object.values(a).toString() === '1,2,3'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([1,2,3]); return Object.entries(a).toString() === '0,1,1,2,2,3'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{try {delete (new v(1))[0]} catch (e) { return e.name == 'TypeError'}})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return delete (new v(1))[-1]; })"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v(8), b = new v(a.buffer); a[0] = 42; return b[0] === 42})"),
+      njs_str("true") },
+
+    { njs_str(NJS_INT_TYPED_ARRAY_LIST
+              ".map(v=>{var init = new Uint8Array([1,2,3]);"
+              "     try { return new v(init.buffer, 0, 2)} catch (e) {return e.name}})"),
+      njs_str("1,2,1,2,1,2,RangeError,RangeError,RangeError,RangeError") },
+
+    { njs_str(NJS_INT_TYPED_ARRAY_LIST
+              ".map(v=>{var init = new Uint8Array([1,2,3]);"
+              "     try { return new v(init.buffer, 1)} catch (e) {return e.name}})"),
+      njs_str("2,3,2,3,2,3,RangeError,RangeError,RangeError,RangeError") },
+
+    { njs_str(NJS_INT_TYPED_ARRAY_LIST
+              ".map(v=>{var init = new Uint32Array([0xaabbccdd]);"
+              "     try { return new v(init.buffer, 0, 2)} catch (e) {return e.name}})"),
+      njs_str("221,204,221,204,-35,-52,52445,43707,-13091,-21829,RangeError,RangeError") },
+
+    { njs_str(NJS_INT_TYPED_ARRAY_LIST
+              ".map(v=>{var init = new Uint32Array([0xaabbccdd]);"
+              "     try { return new v(init.buffer, 1, 2)} catch (e) {return e.name}})"),
+      njs_str("204,187,204,187,-52,-69,RangeError,RangeError,RangeError,RangeError") },
+
+    { njs_str(NJS_INT_TYPED_ARRAY_LIST
+              ".map(v=>{var init = new Uint32Array([0xaabbccdd,0xdeadbeef]);"
+              "     try { return new v(init.buffer, 0, 2)} catch (e) {return e.name}})"),
+      njs_str("221,204,221,204,-35,-52,52445,43707,-13091,-21829,2864434397,3735928559,-1430532899,-559038737") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var buffer1 = new ArrayBuffer(8 * v.BYTES_PER_ELEMENT);"
+              "           var ta1 = new v(buffer1);"
+              "           var ta2 = new v(ta1.buffer, 4 * v.BYTES_PER_ELEMENT); "
+              "           ta1[5] = 100; ta1[7] = 101;"
+              "           return ta2.toString() === '0,100,0,101'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([42,11]); return a.toString() === '42,11'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v(3); a[1] = 42; return a.toString() === '0,42,0'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v(0); return a.toString() === ''})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([42,11]); return a.join('|') === '42|11'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([42,11]); return a.join('α').length === 5})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return njs.dump(new v()) === `${v.name} []`})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return njs.dump(new v([42,11])) === `${v.name} [42,11]`})"),
+      njs_str("true") },
+
+    { njs_str("var a = new Uint8Array(8); var b = new Uint32Array(a.buffer);"
+              "a[0] = 0xff; a[1] = 0xff; a[2] = 0xff; a[3] = 0xff; b[0];"),
+      njs_str("4294967295") },
+
+    { njs_str("[1,300,-100]"
+              ".map(v=>{var a = new Uint8Array(1); a[0] = v; return a[0];})"),
+      njs_str("1,44,156") },
+
+    { njs_str("[1,300,-100]"
+              ".map(v=>{var a = new Uint8ClampedArray(1); a[0] = v; return a[0];})"),
+      njs_str("1,255,0") },
+
+    { njs_str("[1,300,-100]"
+              ".map(v=>{var a = new Uint8ClampedArray(1); a.set([v], 0); return a[0];})"),
+      njs_str("1,255,0") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var init = [1,2,3,4]; var a = new v(4);"
+              "           a.set(init); return a.toString() === '1,2,3,4'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var init = {length:4, 0:1,1:2,2:3,3:4}; var a = new v(4);"
+              "           a.set(init); return a.toString() === '1,2,3,4'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var init = new v([1,2,3,4]); var a = new v(init);"
+              "           return a.toString() === '1,2,3,4'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var init = new v([1,2,3,4]); var a = new v(4);"
+              "           a.set(init); return a.toString() === '1,2,3,4'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var init = {length:2, 0:1,1:2}; var a = new v(4);"
+              "           a.set(init,2); return a.toString() === '0,0,1,2'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_INT_TYPED_ARRAY_LIST
+              ".every(v=>{var init = {length:4, 0:1,1:2,3:4}; var a = new v(4);"
+              "           a.set(init); return a.toString() === '1,2,0,4'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_FLOAT_TYPED_ARRAY_LIST
+              ".every(v=>{var init = {length:4, 0:1,1:2,3:4}; var a = new v(4);"
+              "           a.set(init); return a.toString() === '1,2,NaN,4'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var init = [1,2,3]; var a = new v(4);"
+              "           a.set(init); return a.toString() === '1,2,3,0'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var init = new v([1,2,3]); var a = new v(4);"
+              "           a.set(init); return a.toString() === '1,2,3,0'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var init = [1,2,3,4]; var a = new v(4);"
+              "           a.set(init, 0); return a.toString() === '1,2,3,4'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var init = [1,2]; var a = new v(4);"
+              "           a.set(init, 2); return a.toString() === '0,0,1,2'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var init = new v([1,2]); var a = new v(4);"
+              "           a.set(init,2); return a.toString() === '0,0,1,2'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var init = [1,2,3,4]; var a = new v(4);"
+              "           try {a.set(init,2)} catch (e) {return e.name == 'RangeError'};})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var init = [1,2,3,4]; var a = new v(4);"
+              "           try {a.set(init,Infinity)} catch (e) {return e.name == 'RangeError'};})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var init = [1,2,3,4,5]; var a = new v(4);"
+              "           try {a.set(init)} catch (e) {return e.name == 'RangeError'};})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var init = {length:5}; var a = new v(4);"
+              "           try {a.set(init)} catch (e) {return e.name == 'RangeError'};})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var init = {length:3}; var a = new v(4);"
+              "           try {a.set(init,2)} catch (e) {return e.name == 'RangeError'};})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var init = {length:3}; var a = new v(4);"
+              "           try {a.set(init,Infinity)} catch (e) {return e.name == 'RangeError'};})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var init = new v([1,2,3,4,5]); var a = new v(4);"
+              "           try {a.set(init)} catch (e) {return e.name == 'RangeError'};})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var init = new v([1,2,3]); var a = new v(4);"
+              "           try {a.set(init,2)} catch (e) {return e.name == 'RangeError'};})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var init = new v([1,2,3]); var a = new v(4);"
+              "           try {a.set(init,Infinity)} catch (e) {return e.name == 'RangeError'};})"),
+      njs_str("true") },
+
+    { njs_str("[-1,-1.00001,-Infinity]"
+              ".every(v=>{ try {(new Uint8Array(10)).set([], v)} catch (ee) {return ee.name === 'RangeError'}})"),
+      njs_str("true") },
+
+    { njs_str("[0.1,2.5,{},{'1': '10'},[1000]]"
+              ".map(v=>{var a = new Uint8Array(1); a.set([v], 0); return a[0]})"),
+      njs_str("0,2,0,0,232") },
+
+    { njs_str("[1.0, -1234.0]"
+              ".map(v=>{var a = new Float32Array(1); a[0] = v; var b = new Uint8Array(a.buffer);"
+              "         return (b[0] << 24 | b[1] << 16| b[2] <<8 | b[3]).toString(16).padStart(8, '0');})"),
+      njs_str("0000803f,00409ac4") },
+
+    { njs_str("var a = new ArrayBuffer(0); a.slice(0, 0).byteLength"),
+      njs_str("0") },
+
+    { njs_str("var a = new ArrayBuffer(10); a.slice(1).byteLength"),
+      njs_str("9") },
+
+    { njs_str("var a = new ArrayBuffer(10); a.slice(1,2).byteLength"),
+      njs_str("1") },
+
+    { njs_str("var a = new ArrayBuffer(10); a.slice(0,-1).byteLength"),
+      njs_str("9") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".map(v=>{var buffer = new ArrayBuffer(8); var view = new v(buffer);"
+              "         view[0] = 511; return new Uint8Array(buffer.slice(0,4))})"),
+      njs_str("255,0,0,0,255,0,0,0,255,0,0,0,255,1,0,0,255,1,0,0,255,1,0,0,255,1,0,0,0,128,255,67,0,0,0,0") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".map(v=>{var buffer = new ArrayBuffer(8); var view = new v(buffer);"
+              "         view[view.length - 1] = 511; return new Uint8Array(buffer.slice(4))})"),
+      njs_str("0,0,0,255,0,0,0,255,0,0,0,255,0,0,255,1,0,0,255,1,255,1,0,0,255,1,0,0,0,128,255,67,0,240,127,64") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".map(v=>{var buffer = new ArrayBuffer(8); var view = new v(buffer);"
+              "         view[0] = 511; return new Uint8Array(buffer.slice(0,-4))})"),
+      njs_str("255,0,0,0,255,0,0,0,255,0,0,0,255,1,0,0,255,1,0,0,255,1,0,0,255,1,0,0,0,128,255,67,0,0,0,0") },
+
+    { njs_str("var a = new Uint8Array(10); var b = a.slice(1); b.length"),
+      njs_str("9") },
+
+    { njs_str("var a = new Uint8Array(10); var b = a.slice(0,9); b.length"),
+      njs_str("9") },
+
+    { njs_str("var a = new Uint8Array(10); var b = a.slice(9,10); b.length"),
+      njs_str("1") },
+
+    { njs_str("var a = new Uint8Array(10); var b = a.slice(); b.length"),
+      njs_str("10") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([42]); "
+              "           var r = a.slice();"
+              "           return  njs.dump(r) === `${v.name} [42]`;})"),
+      njs_str("true") },
+
+    { njs_str(NJS_INT_TYPED_ARRAY_LIST
+              ".map(v=>{var init = new Uint8Array([1,2,3,4,5,6,7,8]); var view = new v(init.buffer);"
+              "         return view.slice(0,2)})"),
+      njs_str("1,2,1,2,1,2,513,1027,513,1027,67305985,134678021,67305985,134678021") },
+
+    { njs_str(NJS_INT_TYPED_ARRAY_LIST
+              ".map(v=>{var init = new Uint8Array([1,2,3,4,5,6,7,8]); var view = new v(init.buffer);"
+              "         return view.slice(0,-2)})"),
+      njs_str("1,2,3,4,5,6,1,2,3,4,5,6,1,2,3,4,5,6,513,1027,513,1027,,") },
+
+    { njs_str("var other = new Uint8Array([0xff,0xff,0xff,0xff]);"
+              NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([42]); "
+              "           a.constructor = {[Symbol.species]: function () {return other;}}; "
+              "           var r = a.slice(0,0);"
+              "           return r == other && r.length == 4 && r[0] == 0xff;})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([1,2,3]); "
+              "           a.constructor = {[Symbol.species]: function () {return new v([0xff,0xee]);}}; "
+              "           try {a.slice(0)} catch(e) {return e.name == 'TypeError'}})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([1,2,3]); "
+              "           a.constructor = {[Symbol.species]: function () {return new Date();}}; "
+              "           try {a.slice(0)} catch(e) {return e.name == 'TypeError'}})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([1,2,3,4]); a.copyWithin(2); "
+              "           return a.toString() === '1,2,1,2'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([1,2,3,4]); a.copyWithin(2,1); "
+              "           return a.toString() === '1,2,2,3'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([1,2,3,4]); a.copyWithin(2,1,2); "
+              "           return a.toString() === '1,2,2,4'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([1,2,3,4]); a.copyWithin(-1,1,2); "
+              "           return a.toString() === '1,2,3,2'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([1,2,3,4]); a.copyWithin(-1,-4,2); "
+              "           return a.toString() === '1,2,3,1'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([1,2,3,4]); a.copyWithin(-1,-2); "
+              "           return a.toString() === '1,2,3,3'})"),
+      njs_str("true") },
 
 #if NJS_HAVE_LARGE_STACK
     { njs_str("var o = Object({length: 3});"
@@ -17080,6 +17599,88 @@ done:
 
 
 static njs_int_t
+njs_string_to_index_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
+{
+    njs_str_t   s, string;
+    njs_int_t   ret;
+    njs_bool_t  success, is_integer_index;
+    njs_uint_t  i;
+
+    static const struct {
+        njs_value_t  value;
+        njs_str_t    expected;
+        njs_bool_t   is_integer_index;
+    } tests[] = {
+        { njs_string(" 1"), njs_str("NaN"), 0 },
+        { njs_string(""), njs_str("NaN"), 0 },
+        { njs_string("+0"), njs_str("NaN"), 0 },
+        { njs_string("-"), njs_str("NaN"), 0 },
+
+        { njs_string("-0"), njs_str("-0"), 0 },
+        { njs_value(NJS_NUMBER, 0, -0.0), njs_str("-0"), 1 },
+
+        { njs_string("-1"), njs_str("-1"), 0 },
+        { njs_string("0"), njs_str("0"), 1 },
+        { njs_string("0."), njs_str("NaN"), 0 },
+        { njs_string("0.0"), njs_str("NaN"), 0 },
+        { njs_string("0x1"), njs_str("NaN"), 0 },
+        { njs_string("1 "), njs_str("NaN"), 0 },
+        { njs_string("1"), njs_str("1"), 1 },
+        { njs_string("1."), njs_str("NaN"), 0 },
+        { njs_string("1.1"), njs_str("1.1"), 0 },
+        { njs_string("100"), njs_str("100"), 1 },
+        { njs_string("1a"), njs_str("NaN"), 0 },
+        { njs_string("1e+19"), njs_str("NaN"), 0 },
+        { njs_string("1e+22"), njs_str("1e+22"), 0 },
+        { njs_string("1e22"), njs_str("NaN"), 0 },
+        { njs_string("4294967296"), njs_str("4294967296"), 0 },
+    };
+
+    for (i = 0; i < njs_nitems(tests); i++) {
+        if (njs_is_string(&tests[i].value)) {
+            njs_set_number(&vm->retval, njs_string_to_index(&tests[i].value));
+
+            ret = njs_vm_retval_dump(vm, &s, 0);
+            if (ret != NJS_OK) {
+                njs_printf("njs_string_to_index_test: "
+                           "njs_vm_retval_dump() failed\n");
+                return NJS_ERROR;
+            }
+
+            success = njs_strstr_eq(&tests[i].expected, &s);
+
+            if (!success) {
+                njs_string_get(&tests[i].value, &string);
+                njs_printf("njs_string_to_index_test(\"%V\"):\n"
+                           "expected: \"%V\"\n     got: \"%V\"\n",
+                           &string, &tests[i].expected, &s);
+
+                stat->failed++;
+                continue;
+            }
+        }
+
+        is_integer_index = njs_number_is_integer_index(njs_number(&vm->retval),
+                                                       &tests[i].value);
+
+        if (tests[i].is_integer_index != is_integer_index) {
+            njs_string_get(&tests[i].value, &string);
+            njs_printf("njs_string_to_index_test2(\"%V\"):\n"
+                       "expected: %b\n     got: %b\n",
+                       &string, tests[i].is_integer_index, is_integer_index);
+
+            stat->failed++;
+            continue;
+        }
+
+        stat->passed++;
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
 njs_api_test(njs_opts_t *opts, njs_stat_t *stat)
 {
     njs_vm_t      *vm;
@@ -17100,6 +17701,8 @@ njs_api_test(njs_opts_t *opts, njs_stat_t *stat)
           njs_str("njs_file_dirname_test") },
         { njs_chb_test,
           njs_str("njs_chb_test") },
+        { njs_string_to_index_test,
+          njs_str("njs_string_to_index_test") },
     };
 
     vm = NULL;

@@ -14,17 +14,17 @@
  */
 
 typedef enum {
-    NJS_NULL                  = 0x00,
-    NJS_UNDEFINED             = 0x01,
+    NJS_NULL,
+    NJS_UNDEFINED,
 
     /* The order of the above type is used in njs_is_null_or_undefined(). */
 
-    NJS_BOOLEAN               = 0x02,
+    NJS_BOOLEAN,
     /*
      * The order of the above type is used in
      * njs_is_null_or_undefined_or_boolean().
      */
-    NJS_NUMBER                = 0x03,
+    NJS_NUMBER,
     /*
      * The order of the above type is used in njs_is_numeric().
      * Booleans, null and void values can be used in mathematical operations:
@@ -32,16 +32,16 @@ typedef enum {
      *   a numeric value of the null and false values is zero,
      *   a numeric value of the void value is NaN.
      */
-    NJS_SYMBOL                = 0x04,
+    NJS_SYMBOL,
 
-    NJS_STRING                = 0x05,
+    NJS_STRING,
 
     /* The order of the above type is used in njs_is_primitive(). */
 
-    NJS_DATA                  = 0x06,
+    NJS_DATA,
 
     /* The type is external code. */
-    NJS_EXTERNAL              = 0x07,
+    NJS_EXTERNAL,
 
     /*
      * The invalid value type is used:
@@ -49,7 +49,7 @@ typedef enum {
      *   to detect non-declared explicitly or implicitly variables,
      *   for native property getters.
      */
-    NJS_INVALID               = 0x08,
+    NJS_INVALID,
 
     /*
      * The object types are >= NJS_OBJECT, this is used in njs_is_object().
@@ -59,17 +59,22 @@ typedef enum {
      * is used in vm->prototypes and vm->constructors arrays.
      */
     NJS_OBJECT                = 0x10,
-    NJS_ARRAY                 = 0x11,
-    NJS_OBJECT_BOOLEAN        = 0x12,
-    NJS_OBJECT_NUMBER         = 0x13,
-    NJS_OBJECT_SYMBOL         = 0x14,
-    NJS_OBJECT_STRING         = 0x15,
-    NJS_FUNCTION              = 0x16,
-    NJS_REGEXP                = 0x17,
-    NJS_DATE                  = 0x18,
-    NJS_PROMISE               = 0x19,
-    NJS_OBJECT_VALUE          = 0x1A,
-    NJS_ARRAY_BUFFER          = 0x1B,
+    NJS_ARRAY,
+#define NJS_OBJECT_WRAPPER_MIN  (NJS_OBJECT_BOOLEAN)
+    NJS_OBJECT_BOOLEAN,
+    NJS_OBJECT_NUMBER,
+    NJS_OBJECT_SYMBOL,
+    NJS_OBJECT_STRING,
+#define NJS_OBJECT_WRAPPER_MAX  (NJS_OBJECT_STRING + 1)
+#define NJS_OBJECT_SPECIAL_MIN  (NJS_FUNCTION)
+    NJS_FUNCTION,
+    NJS_REGEXP,
+    NJS_DATE,
+    NJS_TYPED_ARRAY,
+#define NJS_OBJECT_SPECIAL_MAX  (NJS_TYPED_ARRAY + 1)
+    NJS_PROMISE,
+    NJS_OBJECT_VALUE,
+    NJS_ARRAY_BUFFER,
     NJS_VALUE_TYPE_MAX
 } njs_value_type_t;
 
@@ -82,6 +87,7 @@ typedef struct njs_function_lambda_s  njs_function_lambda_t;
 typedef struct njs_regexp_pattern_s   njs_regexp_pattern_t;
 typedef struct njs_array_s            njs_array_t;
 typedef struct njs_array_buffer_s     njs_array_buffer_t;
+typedef struct njs_typed_array_s      njs_typed_array_t;
 typedef struct njs_regexp_s           njs_regexp_t;
 typedef struct njs_date_s             njs_date_t;
 typedef struct njs_object_value_s     njs_promise_t;
@@ -143,6 +149,7 @@ union njs_value_s {
             njs_object_t              *object;
             njs_array_t               *array;
             njs_array_buffer_t        *array_buffer;
+            njs_typed_array_t         *typed_array;
             njs_object_value_t        *object_value;
             njs_function_t            *function;
             njs_function_lambda_t     *lambda;
@@ -249,6 +256,15 @@ struct njs_array_buffer_s {
 };
 
 
+struct njs_typed_array_s {
+    njs_object_t                      object;
+    njs_array_buffer_t                *buffer;
+    size_t                            offset; // byte_offset / element_size
+    size_t                            byte_length;
+    uint8_t                           type;
+};
+
+
 typedef struct {
     union {
         uint32_t                      count;
@@ -345,6 +361,7 @@ typedef enum {
 typedef enum {
     NJS_PROPERTY = 0,
     NJS_PROPERTY_REF,
+    NJS_PROPERTY_TYPED_ARRAY_REF,
     NJS_PROPERTY_HANDLER,
     NJS_WHITEOUT,
 } njs_object_prop_type_t;
@@ -634,6 +651,10 @@ typedef struct {
     ((value)->type == NJS_ARRAY_BUFFER)
 
 
+#define njs_is_typed_array(value)                                             \
+    ((value)->type == NJS_TYPED_ARRAY)
+
+
 #define njs_is_function(value)                                                \
     ((value)->type == NJS_FUNCTION)
 
@@ -708,6 +729,14 @@ typedef struct {
 
 #define njs_array_buffer(value)                                               \
     ((value)->data.u.array_buffer)
+
+
+#define njs_typed_array(value)                                                \
+    ((value)->data.u.typed_array)
+
+
+#define njs_typed_array_buffer(value)                                         \
+    ((value)->buffer)
 
 
 #define njs_array_start(value)                                                \
@@ -866,6 +895,15 @@ njs_set_array_buffer(njs_value_t *value, njs_array_buffer_t *array)
 {
     value->data.u.array_buffer = array;
     value->type = NJS_ARRAY_BUFFER;
+    value->data.truth = 1;
+}
+
+
+njs_inline void
+njs_set_typed_array(njs_value_t *value, njs_typed_array_t *array)
+{
+    value->data.u.typed_array = array;
+    value->type = NJS_TYPED_ARRAY;
     value->data.truth = 1;
 }
 

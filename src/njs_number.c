@@ -20,19 +20,16 @@ static njs_int_t njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
     double number, uint32_t radix);
 
 
-uint32_t
+double
 njs_key_to_index(const njs_value_t *value)
 {
-    double       num;
     njs_array_t  *array;
 
-    num = NAN;
-
     if (njs_fast_path(njs_is_numeric(value))) {
-        num = njs_number(value);
+        return njs_number(value);
 
     } else if (njs_is_string(value)) {
-        num = njs_string_to_index(value);
+        return njs_string_to_index(value);
 
     } else if (njs_is_array(value)) {
 
@@ -52,11 +49,7 @@ njs_key_to_index(const njs_value_t *value)
         }
     }
 
-    if ((uint32_t) num == num) {
-        return (uint32_t) num;
-    }
-
-    return NJS_ARRAY_INVALID_INDEX;
+    return NAN;
 }
 
 

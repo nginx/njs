@@ -97,7 +97,7 @@ njs_value_to_length(njs_vm_t *vm, njs_value_t *value, uint32_t *dst)
 
 
 njs_inline njs_int_t
-njs_value_to_index(njs_vm_t *vm, njs_value_t *value, uint32_t *dst)
+njs_value_to_index(njs_vm_t *vm, njs_value_t *value, uint64_t *dst)
 {
     int64_t    integer_index;
     njs_int_t  ret;
@@ -116,7 +116,7 @@ njs_value_to_index(njs_vm_t *vm, njs_value_t *value, uint32_t *dst)
             return NJS_ERROR;
         }
 
-        *dst = (uint32_t) integer_index;
+        *dst = integer_index;
     }
 
     return NJS_OK;

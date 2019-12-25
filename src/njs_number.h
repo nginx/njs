@@ -8,7 +8,7 @@
 #define _NJS_NUMBER_H_INCLUDED_
 
 
-uint32_t njs_key_to_index(const njs_value_t *value);
+double njs_key_to_index(const njs_value_t *value);
 double njs_number_dec_parse(const u_char **start, const u_char *end);
 uint64_t njs_number_oct_parse(const u_char **start, const u_char *end);
 uint64_t njs_number_bin_parse(const u_char **start, const u_char *end);
@@ -28,6 +28,17 @@ njs_int_t njs_number_parse_int(njs_vm_t *vm, njs_value_t *args,
 njs_int_t njs_number_parse_float(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 
+
+njs_inline njs_bool_t
+njs_number_is_integer_index(double num, const njs_value_t *value)
+{
+    uint32_t  u32;
+
+    u32 = num;
+
+    return (u32 == num && u32 != 0xffffffff)
+            && !(njs_is_string(value) && num == 0 && signbit(num));
+}
 
 njs_inline int64_t
 njs_number_to_int64(double num)

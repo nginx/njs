@@ -274,7 +274,7 @@ NJS_EXPORT njs_int_t njs_vm_value_string(njs_vm_t *vm, njs_str_t *dst,
 NJS_EXPORT njs_int_t njs_vm_retval_string(njs_vm_t *vm, njs_str_t *dst);
 
 NJS_EXPORT njs_int_t njs_vm_value_dump(njs_vm_t *vm, njs_str_t *dst,
-    const njs_value_t *value, njs_uint_t console, njs_uint_t indent);
+    njs_value_t *value, njs_uint_t console, njs_uint_t indent);
 NJS_EXPORT njs_int_t njs_vm_retval_dump(njs_vm_t *vm, njs_str_t *dst,
     njs_uint_t indent);
 

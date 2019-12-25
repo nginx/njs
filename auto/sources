@@ -53,6 +53,7 @@ NJS_LIB_SRCS=" \
    src/njs_generator.c \
    src/njs_disassembler.c \
    src/njs_array_buffer.c \
+   src/njs_typed_array.c \
    src/njs_promise.c \
 "
 

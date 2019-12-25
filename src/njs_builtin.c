@@ -58,7 +58,6 @@ static const njs_object_type_init_t *const
 
     &njs_obj_type_init,
     &njs_array_type_init,
-    &njs_array_buffer_type_init,
     &njs_boolean_type_init,
     &njs_number_type_init,
     &njs_symbol_type_init,
@@ -67,14 +66,27 @@ static const njs_object_type_init_t *const
     &njs_regexp_type_init,
     &njs_date_type_init,
     &njs_promise_type_init,
+    &njs_array_buffer_type_init,
 
     /* Hidden types. */
 
     &njs_hash_type_init,
     &njs_hmac_type_init,
+    &njs_typed_array_type_init,
+
+    /* TypedArray types. */
+
+    &njs_typed_array_u8_type_init,
+    &njs_typed_array_u8clamped_type_init,
+    &njs_typed_array_i8_type_init,
+    &njs_typed_array_u16_type_init,
+    &njs_typed_array_i16_type_init,
+    &njs_typed_array_u32_type_init,
+    &njs_typed_array_i32_type_init,
+    &njs_typed_array_f32_type_init,
+    &njs_typed_array_f64_type_init,
 
     /* Error types. */
-
     &njs_error_type_init,
     &njs_eval_error_type_init,
     &njs_internal_error_type_init,
@@ -303,8 +315,9 @@ njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global)
 {
     size_t        size;
     njs_uint_t    i;
-    njs_object_t  *object_prototype, *function_prototype, *error_prototype,
-                  *error_constructor;
+    njs_object_t  *object_prototype, *function_prototype,
+                  *typed_array_prototype, *error_prototype,
+                  *typed_array_ctor, *error_ctor;
 
     /*
      * Copy both prototypes and constructors arrays by one memcpy()
@@ -317,11 +330,21 @@ njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global)
 
     object_prototype = &vm->prototypes[NJS_OBJ_TYPE_OBJECT].object;
 
-    for (i = NJS_OBJ_TYPE_ARRAY; i < NJS_OBJ_TYPE_EVAL_ERROR; i++) {
+    for (i = NJS_OBJ_TYPE_ARRAY; i < NJS_OBJ_TYPE_NORMAL_MAX; i++) {
         vm->prototypes[i].object.__proto__ = object_prototype;
     }
 
+    typed_array_prototype = &vm->prototypes[NJS_OBJ_TYPE_TYPED_ARRAY].object;
+
+    for (i = NJS_OBJ_TYPE_TYPED_ARRAY_MIN;
+         i < NJS_OBJ_TYPE_TYPED_ARRAY_MAX;
+         i++)
+    {
+        vm->prototypes[i].object.__proto__ = typed_array_prototype;
+    }
+
     error_prototype = &vm->prototypes[NJS_OBJ_TYPE_ERROR].object;
+    error_prototype->__proto__ = object_prototype;
 
     for (i = NJS_OBJ_TYPE_EVAL_ERROR; i < NJS_OBJ_TYPE_MAX; i++) {
         vm->prototypes[i].object.__proto__ = error_prototype;
@@ -329,14 +352,24 @@ njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global)
 
     function_prototype = &vm->prototypes[NJS_OBJ_TYPE_FUNCTION].object;
 
-    for (i = NJS_OBJ_TYPE_OBJECT; i < NJS_OBJ_TYPE_EVAL_ERROR; i++) {
+    for (i = NJS_OBJ_TYPE_OBJECT; i < NJS_OBJ_TYPE_NORMAL_MAX; i++) {
         vm->constructors[i].object.__proto__ = function_prototype;
     }
 
-    error_constructor = &vm->constructors[NJS_OBJ_TYPE_ERROR].object;
+    typed_array_ctor = &vm->constructors[NJS_OBJ_TYPE_TYPED_ARRAY].object;
+
+    for (i = NJS_OBJ_TYPE_TYPED_ARRAY_MIN;
+         i < NJS_OBJ_TYPE_TYPED_ARRAY_MAX;
+         i++)
+    {
+        vm->constructors[i].object.__proto__ = typed_array_ctor;
+    }
+
+    error_ctor = &vm->constructors[NJS_OBJ_TYPE_ERROR].object;
+    error_ctor->__proto__ = function_prototype;
 
     for (i = NJS_OBJ_TYPE_EVAL_ERROR; i < NJS_OBJ_TYPE_MAX; i++) {
-        vm->constructors[i].object.__proto__ = error_constructor;
+        vm->constructors[i].object.__proto__ = error_ctor;
     }
 
     vm->global_object.__proto__ = object_prototype;
@@ -1105,6 +1138,96 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
         .value = njs_prop_handler2(njs_top_level_constructor,
                                    NJS_OBJ_TYPE_ARRAY_BUFFER,
                                    NJS_ARRAY_BUFFER_HASH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("Uint8Array"),
+        .value = njs_prop_handler2(njs_top_level_constructor,
+                                   NJS_OBJ_TYPE_UINT8_ARRAY,
+                                   NJS_UINT8ARRAY_HASH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("Uint16Array"),
+        .value = njs_prop_handler2(njs_top_level_constructor,
+                                   NJS_OBJ_TYPE_UINT16_ARRAY,
+                                   NJS_UINT16ARRAY_HASH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("Uint32Array"),
+        .value = njs_prop_handler2(njs_top_level_constructor,
+                                   NJS_OBJ_TYPE_UINT32_ARRAY,
+                                   NJS_UINT32ARRAY_HASH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("Int8Array"),
+        .value = njs_prop_handler2(njs_top_level_constructor,
+                                   NJS_OBJ_TYPE_INT8_ARRAY,
+                                   NJS_INT8ARRAY_HASH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("Int16Array"),
+        .value = njs_prop_handler2(njs_top_level_constructor,
+                                   NJS_OBJ_TYPE_INT16_ARRAY,
+                                   NJS_INT16ARRAY_HASH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("Int32Array"),
+        .value = njs_prop_handler2(njs_top_level_constructor,
+                                   NJS_OBJ_TYPE_INT32_ARRAY,
+                                   NJS_INT32ARRAY_HASH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("Float32Array"),
+        .value = njs_prop_handler2(njs_top_level_constructor,
+                                   NJS_OBJ_TYPE_FLOAT32_ARRAY,
+                                   NJS_FLOAT32ARRAY_HASH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("Float64Array"),
+        .value = njs_prop_handler2(njs_top_level_constructor,
+                                   NJS_OBJ_TYPE_FLOAT64_ARRAY,
+                                   NJS_FLOAT64ARRAY_HASH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_long_string("Uint8ClampedArray"),
+        .value = njs_prop_handler2(njs_top_level_constructor,
+                                   NJS_OBJ_TYPE_UINT8_CLAMPED_ARRAY,
+                                   NJS_UINT8CLAMPEDARRAY_HASH),
         .writable = 1,
         .configurable = 1,
     },

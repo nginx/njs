@@ -164,6 +164,16 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
             return NJS_ERROR;
         }
 
+        if (njs_slow_path(njs_is_typed_array(object)
+                          && njs_is_string(name)))
+        {
+            /* Integer-Indexed Exotic Objects [[DefineOwnProperty]]. */
+            if (!isnan(njs_string_to_index(name))) {
+                njs_type_error(vm, "Invalid typed array index");
+                return NJS_ERROR;
+            }
+        }
+
         /* 6.2.5.6 CompletePropertyDescriptor */
 
         if (njs_is_accessor_descriptor(prop)) {
@@ -230,6 +240,26 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
             *prev->value.data.u.value = prop->value;
         } else {
             njs_set_undefined(prev->value.data.u.value);
+        }
+
+        return NJS_OK;
+
+    case NJS_PROPERTY_TYPED_ARRAY_REF:
+        if (njs_is_accessor_descriptor(prop)) {
+            goto exception;
+        }
+
+        if (prop->configurable == NJS_ATTRIBUTE_TRUE ||
+            prop->enumerable == NJS_ATTRIBUTE_FALSE ||
+            prop->writable == NJS_ATTRIBUTE_FALSE)
+        {
+            goto exception;
+        }
+
+        if (njs_is_valid(&prop->value)) {
+            return njs_typed_array_set_value(vm, njs_typed_array(&prev->value),
+                                             prev->value.data.magic32,
+                                             &prop->value);
         }
 
         return NJS_OK;
