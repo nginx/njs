@@ -699,6 +699,17 @@ njs_test {
      "Error: Not a directory*"}
 }
 
+njs_run {"-c" "setTimeout(() => {console.log('A'.repeat(1024))}, 0); ref"} \
+"^Thrown:
+ReferenceError: \"ref\" is not defined in string:1
+    at main \\\(native\\\)\n$"
+
+njs_run {"-c" "setTimeout(() => {ref}, 0); setTimeout(() => {console.log('A'.repeat(1024))}, 0)"} \
+"^Thrown:
+ReferenceError: \"ref\" is not defined in string:1
+    at anonymous \\\(native\\\)
+    at main \\\(native\\\)\n$"
+
 # Modules
 
 njs_run {"-p" "test/module/libs" "./test/module/normal.js"} \

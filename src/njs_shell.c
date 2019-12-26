@@ -809,6 +809,10 @@ njs_process_script(njs_opts_t *opts, njs_console_t *console,
 
     njs_output(opts, vm, ret);
 
+    if (!opts->interactive && ret == NJS_ERROR) {
+        return NJS_ERROR;
+    }
+
     for ( ;; ) {
         if (!njs_vm_pending(vm)) {
             break;
@@ -833,6 +837,10 @@ njs_process_script(njs_opts_t *opts, njs_console_t *console,
 
         if (ret == NJS_ERROR) {
             njs_output(opts, vm, ret);
+
+            if (!opts->interactive) {
+                return NJS_ERROR;
+            }
         }
     }
 
