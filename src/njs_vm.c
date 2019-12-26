@@ -493,16 +493,17 @@ njs_vm_handle_events(njs_vm_t *vm)
 {
     njs_int_t         ret;
     njs_event_t       *ev;
-    njs_queue_t       *events;
+    njs_queue_t       *promise_events, *posted_events;
     njs_queue_link_t  *link;
 
+    promise_events = &vm->promise_events;
+    posted_events = &vm->posted_events;
+
     do {
-        events = &vm->promise_events;
-
         for ( ;; ) {
-            link = njs_queue_first(events);
+            link = njs_queue_first(promise_events);
 
-            if (link == njs_queue_tail(events)) {
+            if (link == njs_queue_tail(promise_events)) {
                 break;
             }
 
@@ -516,12 +517,10 @@ njs_vm_handle_events(njs_vm_t *vm)
             }
         }
 
-        events = &vm->posted_events;
-
         for ( ;; ) {
-            link = njs_queue_first(events);
+            link = njs_queue_first(posted_events);
 
-            if (link == njs_queue_tail(events)) {
+            if (link == njs_queue_tail(posted_events)) {
                 break;
             }
 
@@ -542,7 +541,7 @@ njs_vm_handle_events(njs_vm_t *vm)
             }
         }
 
-    } while (!njs_queue_is_empty(events));
+    } while (!njs_queue_is_empty(promise_events));
 
     return njs_posted_events(vm) ? NJS_AGAIN : NJS_OK;
 }
