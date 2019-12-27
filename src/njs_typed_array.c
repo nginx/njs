@@ -23,6 +23,7 @@ njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_array_buffer_t  *buffer;
 
     size = 0;
+    length = 0;
     offset = 0;
 
     buffer = NULL;
