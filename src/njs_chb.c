@@ -203,7 +203,6 @@ njs_chb_join(njs_chb_t *chain, njs_str_t *str)
         return NJS_ERROR;
     }
 
-    n = chain->nodes;
     str->length = size;
     str->start = start;
 

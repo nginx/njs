@@ -695,7 +695,7 @@ njs_number_prototype_to_fixed(njs_vm_t *vm, njs_value_t *args,
     if (frac > 0) {
         *p++ = '.';
 
-        p = njs_cpymem(p, &buf2[point], frac);
+        memcpy(p, &buf2[point], frac);
     }
 
     return NJS_OK;
