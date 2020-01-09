@@ -836,7 +836,7 @@ njs_promise_perform_then(njs_vm_t *vm, njs_value_t *value,
 
     rejected_reaction = njs_mp_alloc(vm->mem_pool,
                                      sizeof(njs_promise_reaction_t));
-    if (njs_slow_path(fulfilled_reaction == NULL)) {
+    if (njs_slow_path(rejected_reaction == NULL)) {
         njs_memory_error(vm);
         return NJS_ERROR;
     }
