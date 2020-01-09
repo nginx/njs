@@ -85,7 +85,7 @@ njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     } else if (njs_is_typed_array(value)) {
         src_tarray = njs_typed_array(value);
-        size = njs_typed_array_length(src_tarray) * element_size;
+        size = (uint64_t) njs_typed_array_length(src_tarray) * element_size;
 
     } else if (njs_is_object(value)) {
         if (njs_is_array(value) && njs_object_hash_is_empty(value)) {
