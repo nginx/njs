@@ -86,8 +86,6 @@ njs_typed_array_get(const njs_typed_array_t *array, uint32_t index)
 
         return buffer->u.f64[index];
     }
-
-    return NAN;
 }
 
 
