@@ -4,7 +4,7 @@
  * Copyright (C) NGINX, Inc.
  */
 
-#include <njs.h>
+#include <njs_main.h>
 
 #include <string.h>
 #include <stdlib.h>
@@ -12,19 +12,38 @@
 #include <time.h>
 
 
+typedef struct {
+    const char  *name;
+    njs_str_t   script;
+    njs_str_t   result;
+    njs_uint_t  repeat;
+} njs_benchmark_test_t;
+
+
+typedef struct {
+    uint8_t     dump_report;
+    const char  *prefix;
+    const char  *previous;
+} njs_opts_t;
+
+
 static njs_int_t
-njs_unit_test_benchmark(njs_str_t *script, njs_str_t *result, const char *msg,
-    njs_uint_t n)
+njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
+    njs_benchmark_test_t *test)
 {
-    u_char         *start;
-    njs_vm_t       *vm, *nvm;
-    uint64_t       us;
-    njs_int_t      ret;
-    njs_str_t      s;
-    njs_uint_t     i;
-    njs_bool_t     success;
-    njs_vm_opt_t   options;
-    struct rusage  usage;
+    u_char        *start;
+    njs_vm_t      *vm, *nvm;
+    uint64_t      us;
+    njs_int_t     ret;
+    njs_str_t     s, *expected;
+    njs_uint_t    i, n;
+    njs_bool_t    success;
+    njs_value_t   *result, name, usec, times;
+    njs_vm_opt_t  options;
+
+    static const njs_value_t  name_key = njs_string("name");
+    static const njs_value_t  usec_key = njs_string("usec");
+    static const njs_value_t  times_key = njs_string("times");
 
     njs_memzero(&options, sizeof(njs_vm_opt_t));
 
@@ -38,13 +57,18 @@ njs_unit_test_benchmark(njs_str_t *script, njs_str_t *result, const char *msg,
         goto done;
     }
 
-    start = script->start;
+    start = test->script.start;
 
-    ret = njs_vm_compile(vm, &start, start + script->length);
+    ret = njs_vm_compile(vm, &start, start + test->script.length);
     if (ret != NJS_OK) {
         njs_printf("njs_vm_compile() failed\n");
         goto done;
     }
+
+    n = test->repeat;
+    expected = &test->result;
+
+    us = njs_time() / 1000;
 
     for (i = 0; i < n; i++) {
 
@@ -61,10 +85,10 @@ njs_unit_test_benchmark(njs_str_t *script, njs_str_t *result, const char *msg,
             goto done;
         }
 
-        success = njs_strstr_eq(result, &s);
+        success = njs_strstr_eq(expected, &s);
 
         if (!success) {
-            njs_printf("failed: \"%V\" vs \"%V\"\n", result, &s);
+            njs_printf("failed: \"%V\" vs \"%V\"\n", expected, &s);
             goto done;
         }
 
@@ -72,17 +96,42 @@ njs_unit_test_benchmark(njs_str_t *script, njs_str_t *result, const char *msg,
         nvm = NULL;
     }
 
-    getrusage(RUSAGE_SELF, &usage);
+    us = njs_time() / 1000 - us;
 
-    us = usage.ru_utime.tv_sec * 1000000 + usage.ru_utime.tv_usec
-         + usage.ru_stime.tv_sec * 1000000 + usage.ru_stime.tv_usec;
+    if (!opts->dump_report) {
+        if (n == 1) {
+            njs_printf("%s%s: %.3fs\n", opts->previous ? "    " : "",
+                       test->name, (double) us / 1000000);
 
-    if (n == 1) {
-        njs_printf("%s: %.3fs\n", msg, (double) us / 1000000);
+        } else {
+            njs_printf("%s%s: %.3fµs, %d times/s\n",
+                       opts->previous ? "    " : "",
+                       test->name, (double) us / n,
+                       (int) ((uint64_t) n * 1000000 / us));
+        }
+    }
 
-    } else {
-        njs_printf("%s: %.3fµs, %d times/s\n",
-                   msg, (double) us / n, (int) ((uint64_t) n * 1000000 / us));
+    result = njs_vm_array_push(parent, report);
+    if (result == NULL) {
+        njs_printf("njs_vm_array_push() failed\n");
+        goto done;
+    }
+
+    ret = njs_vm_value_string_set(parent, &name, (u_char *) test->name,
+                                  njs_strlen(test->name));
+    if (ret != NJS_OK) {
+        njs_printf("njs_vm_value_string_set() failed\n");
+        goto done;
+    }
+
+    njs_value_number_set(&usec, us);
+    njs_value_number_set(&times, n);
+
+    ret = njs_vm_object_alloc(parent, result, &name_key, &name,
+                              &usec_key, &usec, &times_key, &times, NULL);
+    if (ret != NJS_OK) {
+        njs_printf("njs_vm_object_alloc() failed\n");
+        goto done;
     }
 
     ret = NJS_OK;
@@ -100,117 +149,281 @@ done:
     return ret;
 }
 
+static njs_benchmark_test_t  njs_test[] =
+{
+    { "nJSVM clone/destroy",
+      njs_str("null"),
+      njs_str("null"),
+      1000000 },
+
+    { "JSON.parse",
+      njs_str("JSON.parse('{\"a\":123, \"XXX\":[3,4,null]}').a"),
+      njs_str("123"),
+      1000000 },
+
+    { "for loop 100M",
+      njs_str("var i; for (i = 0; i < 100000000; i++); i"),
+      njs_str("100000000"),
+      1 },
+
+    { "while loop 100M",
+      njs_str("var i = 0; while (i < 100000000) { i++ }; i"),
+      njs_str("100000000"),
+      1 },
+
+    { "fibobench numbers",
+      njs_str("function fibo(n) {"
+              "    if (n > 1)"
+              "        return fibo(n - 1) + fibo(n - 2);"
+              "    return 1"
+              "}"
+              "fibo(32)"),
+      njs_str("3524578"),
+      1 },
+
+    { "fibobench ascii strings",
+      njs_str("function fibo(n) {"
+              "    if (n > 1)"
+              "        return fibo(n - 1) + fibo(n - 2);"
+              "    return '.'"
+              "}"
+              "fibo(32).length"),
+      njs_str("3524578"),
+      1 },
+
+    { "fibobench byte strings",
+      njs_str("var a = '\\x80'.toBytes();"
+              "function fibo(n) {"
+              "    if (n > 1)"
+              "        return fibo(n - 1) + fibo(n - 2);"
+              "    return 'a'"
+              "}"
+              "fibo(32).length"),
+      njs_str("3524578"),
+      1 },
+
+    { "fibobench utf8 strings",
+      njs_str("function fibo(n) {"
+              "    if (n > 1)"
+              "        return fibo(n - 1) + fibo(n - 2);"
+              "    return 'α'"
+              "}"
+              "fibo(32).length"),
+      njs_str("3524578"),
+      1 },
+
+    { "array 10M",
+      njs_str("var arr = new Array(10000000);"
+              "var count = 0, length = arr.length;"
+              "arr.fill(2);"
+              "for (var i = 0; i < length; i++) { count += arr[i]; }"
+              "count"),
+      njs_str("20000000"),
+      1 },
+
+    { "typed array 10M",
+      njs_str("var arr = new Uint8Array(10000000);"
+              "var count = 0, length = arr.length;"
+              "arr.fill(2);"
+              "for (var i = 0; i < length; i++) { count += arr[i]; }"
+              "count"),
+      njs_str("20000000"),
+      1 },
+};
+
+
+static njs_str_t  code = njs_str(
+    "import fs from 'fs';"
+    ""
+    "function compare(prev_fn, current) {"
+    "  var prev_report = JSON.parse(fs.readFileSync(prev_fn));"
+    "  var test, prev, diff, result = [`Diff with ${prev_fn}:`];"
+    "  for (var t in current) {"
+    "    test = current[t];"
+    "    prev = find(prev_report, test.name);"
+    "    diff = (test.usec - prev.usec) / prev.usec * 100;"
+    "    result.push(`    ${test.name}: ${diff.toFixed(2)}%`);"
+    "  }"
+    "  return result.join('\\n') + '\\n';"
+    "}"
+    ""
+    "function find(report, name) {"
+    "  for (var t in report) {"
+    "     if (report[t].name == name) { return report[t];}"
+    "  }"
+    "}");
+
 
 int njs_cdecl
 main(int argc, char **argv)
 {
-    static njs_str_t  script = njs_str("null");
-    static njs_str_t  result = njs_str("null");
+    char                  *p;
+    u_char                *start;
+    njs_vm_t              *vm;
+    njs_int_t             ret, k;
+    njs_str_t             out;
+    njs_uint_t            i;
+    njs_opts_t            opts;
+    njs_value_t           args[2], report;
+    njs_vm_opt_t          options;
+    njs_benchmark_test_t  *test;
 
-    static njs_str_t  fibo_number = njs_str(
-        "function fibo(n) {"
-        "    if (n > 1)"
-        "        return fibo(n - 1) + fibo(n - 2);"
-        "    return 1"
-        "}"
-        "fibo(32)");
+    static const char  help[] =
+        "njs benchmark.\n"
+        "\n"
+        "njs_benchmark [OPTIONS]"
+        "\n"
+        "Options:\n"
+        "  -b <name_prefix>  specify the benchmarks to execute.\n"
+        "  -d                dump report as a JSON file.\n"
+        "  -c <report file>  compare with previous report.\n"
+        "  -h                this help.\n";
 
-    static njs_str_t  fibo_ascii = njs_str(
-        "function fibo(n) {"
-        "    if (n > 1)"
-        "        return fibo(n - 1) + fibo(n - 2);"
-        "    return '.'"
-        "}"
-        "fibo(32).length");
+    static const njs_str_t  compare = njs_str("compare");
 
-    static njs_str_t  fibo_bytes = njs_str(
-        "var a = '\\x80'.toBytes();"
-        "function fibo(n) {"
-        "    if (n > 1)"
-        "        return fibo(n - 1) + fibo(n - 2);"
-        "    return a"
-        "}"
-        "fibo(32).length");
+    njs_memzero(&opts, sizeof(njs_opts_t));
+    opts.prefix = "";
 
-    static njs_str_t  fibo_utf8 = njs_str(
-        "function fibo(n) {"
-        "    if (n > 1)"
-        "        return fibo(n - 1) + fibo(n - 2);"
-        "    return 'α'"
-        "}"
-        "fibo(32).length");
+    for (k = 1; k < argc; k++) {
+        p = argv[k];
 
-    static njs_str_t  json = njs_str(
-        "JSON.parse('{\"a\":123, \"XXX\":[3,4,null]}').a");
+        if (p[0] != '-') {
+            goto invalid_options;
+        }
 
-    static njs_str_t  for_loop = njs_str(
-        "var i; for (i = 0; i < 100000000; i++); i");
+        p++;
 
-    static njs_str_t while_loop = njs_str(
-        "var i = 0; while (i < 100000000) { i++ }; i");
-
-    static njs_str_t  typed_array_10M = njs_str(
-        "var arr = new Uint8Array(10000000); var count = 0, length = arr.length;"
-        "arr.fill(2);"
-        "for (var i = 0; i < length; i++) { count += arr[i]; } count");
-
-    static njs_str_t  array_10M = njs_str(
-        "var arr = new Array(10000000); var count = 0, length = arr.length;"
-        "arr.fill(2);"
-        "for (var i = 0; i < length; i++) { count += arr[i]; } count");
-
-    static njs_str_t  fibo_result = njs_str("3524578");
-    static njs_str_t  json_result = njs_str("123");
-    static njs_str_t  loop_result = njs_str("100000000");
-    static njs_str_t  sum_result  = njs_str("20000000");
-
-
-    if (argc > 1) {
-        switch (argv[1][0]) {
-
-        case 'v':
-            return njs_unit_test_benchmark(&script, &result,
-                                           "nJSVM clone/destroy", 1000000);
-
-        case 'j':
-            return njs_unit_test_benchmark(&json, &json_result,
-                                           "JSON.parse", 1000000);
-
-        case 'f':
-            return njs_unit_test_benchmark(&for_loop, &loop_result,
-                                           "for loop 100M", 1);
-
-        case 'w':
-            return njs_unit_test_benchmark(&while_loop, &loop_result,
-                                           "while loop 100M", 1);
-
-        case 'n':
-            return njs_unit_test_benchmark(&fibo_number, &fibo_result,
-                                           "fibobench numbers", 1);
-
-        case 'a':
-            return njs_unit_test_benchmark(&fibo_ascii, &fibo_result,
-                                           "fibobench ascii strings", 1);
+        switch (*p) {
+        case '?':
+        case 'h':
+            njs_print(help, njs_length(help));
+            return EXIT_SUCCESS;
 
         case 'b':
-            return njs_unit_test_benchmark(&fibo_bytes, &fibo_result,
-                                           "fibobench byte strings", 1);
+            if (++k < argc) {
+                opts.prefix = argv[k];
+                break;
+            }
 
-        case 'u':
-            return njs_unit_test_benchmark(&fibo_utf8, &fibo_result,
-                                           "fibobench utf8 strings", 1);
+            njs_stderror("option \"-b\" requires argument\n");
+            return EXIT_FAILURE;
 
-        case 't':
-            return njs_unit_test_benchmark(&typed_array_10M, &sum_result,
-                                           "typed_array_10M", 1);
+        case 'c':
+            if (++k < argc) {
+                opts.previous = argv[k];
+                break;
+            }
 
-        case 'A':
-            return njs_unit_test_benchmark(&array_10M, &sum_result,
-                                           "array_10M", 1);
+            njs_stderror("option \"-c\" requires argument\n");
+            return EXIT_FAILURE;
+
+        case 'd':
+            opts.dump_report = 1;
+            break;
+
+        default:
+            goto invalid_options;
         }
     }
 
-    njs_printf("unknown agrument\n");
+    njs_memzero(&options, sizeof(njs_vm_opt_t));
+    options.init = 1;
+    options.argv = argv;
+    options.argc = argc;
+
+    vm = njs_vm_create(&options);
+    if (vm == NULL) {
+        njs_printf("njs_vm_create() failed\n");
+        return EXIT_FAILURE;
+    }
+
+    start = code.start;
+    ret = njs_vm_compile(vm, &start, start + code.length);
+    if (ret != NJS_OK) {
+        njs_printf("njs_vm_compile() failed\n");
+        goto done;
+    }
+
+    njs_vm_start(vm);
+
+    ret = EXIT_FAILURE;
+
+    ret = njs_vm_array_alloc(vm, &report, 8);
+    if (ret != NJS_OK) {
+        njs_printf("njs_vm_array_alloc() failed\n");
+        goto done;
+    }
+
+    if (opts.previous) {
+        njs_printf("Current:\n");
+    }
+
+    for (i = 0; i < njs_nitems(njs_test); i++) {
+        test = &njs_test[i];
+
+        if (strncmp(test->name, opts.prefix,
+                    njs_min(strlen(test->name), strlen(opts.prefix))) == 0)
+        {
+            ret = njs_benchmark_test(vm, &opts, &report, test);
+
+            if (ret != NJS_OK) {
+                goto done;
+            }
+        }
+    }
+
+    if (opts.previous) {
+        ret = njs_vm_value_string_set(vm, &args[0], (u_char *) opts.previous,
+                                      njs_strlen(opts.previous));
+        if (ret != NJS_OK) {
+            njs_printf("njs_vm_value_string_set() failed\n");
+            goto done;
+        }
+
+        args[1] = report;
+
+        njs_vm_call(vm, njs_vm_function(vm, &compare), njs_value_arg(&args), 2);
+
+        ret = njs_vm_value_dump(vm, &out, njs_vm_retval(vm), 1, 1);
+        if (ret != NJS_OK) {
+            njs_printf("njs_vm_retval_dump() failed\n");
+            goto done;
+        }
+
+        njs_print(out.start, out.length);
+
+        return EXIT_SUCCESS;
+    }
+
+    if (opts.dump_report) {
+        ret = njs_vm_json_stringify(vm, &report, 1);
+        if (ret != NJS_OK) {
+            njs_printf("njs_vm_json_stringify() failed\n");
+            goto done;
+        }
+
+        ret = njs_vm_value_dump(vm, &out, njs_vm_retval(vm), 1, 1);
+        if (ret != NJS_OK) {
+            njs_printf("njs_vm_retval_dump() failed\n");
+            goto done;
+        }
+
+        njs_print(out.start, out.length);
+    }
+
+    ret = EXIT_SUCCESS;
+
+done:
+
+    njs_vm_destroy(vm);
+
+    return ret;
+
+invalid_options:
+
+    njs_stderror("Unknown argument: \"%s\" "
+                 "try \"%s -h\" for available options\n", argv[k],
+                 argv[0]);
 
     return EXIT_FAILURE;
 }

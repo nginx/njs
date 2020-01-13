@@ -237,7 +237,7 @@ test: expect_test unit_test
 benchmark: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/njs_benchmark
 
-	$NJS_BUILD_DIR/njs_benchmark v
+	$NJS_BUILD_DIR/njs_benchmark
 
 dist:
 	NJS_VER=`grep NJS_VERSION src/njs.h | sed -e 's/.*"\(.*\)".*/\1/'`; \\
