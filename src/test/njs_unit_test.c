@@ -10012,16 +10012,11 @@ static njs_unit_test_t  njs_test[] =
       njs_str("true") },
 
     { njs_str("Object.keys(this).sort()"),
-      njs_str("$r,$r2,$r3,njs,process") },
+      njs_str("$r,$r2,$r3,global,njs,process") },
 
-    { njs_str("var r = njs.dump(this); "
-              "['$r', 'global', njs.version].every(v=>r.includes(v))"),
+    { njs_str("[this, global, globalThis]"
+              ".every(v=> { var r = njs.dump(v); return ['$r', 'global', njs.version].every(v=>r.includes(v))})"),
       njs_str("true") },
-
-    { njs_str("var r = JSON.stringify(this); "
-              "['$r', njs.version].every(v=>r.includes(v))"),
-      njs_str("true") },
-
 
     { njs_str("this.a = 1; this.a"),
       njs_str("1") },
@@ -15413,6 +15408,12 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("njs.dump(njs) == `njs {version:'${njs.version}'}`"),
       njs_str("true") },
+
+    { njs_str("var a = []; a[0] = a; njs.dump(a)"),
+      njs_str("[[Circular]]") },
+
+    { njs_str("var a = [], b = [a];  a[0] = b; njs.dump(a)"),
+      njs_str("[[[Circular]]]") },
 
     { njs_str("njs.dump(-0)"),
       njs_str("-0") },

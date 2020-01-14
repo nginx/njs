@@ -178,6 +178,30 @@
         'g'), 'e'), 't')
 
 
+#define NJS_GLOBAL_HASH                                                       \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'g'), 'l'), 'o'), 'b'), 'a'), 'l')
+
+
+#define NJS_GLOBAL_THIS_HASH                                                  \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'g'), 'l'), 'o'), 'b'), 'a'), 'l'), 'T'), 'h'), 'i'), 's')
+
+
 #define NJS_FUNCTION_HASH                                                     \
     njs_djb_hash_add(                                                         \
     njs_djb_hash_add(                                                         \

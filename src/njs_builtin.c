@@ -837,6 +837,47 @@ njs_dump_value(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
+njs_global_this_object(njs_vm_t *vm, njs_object_prop_t *self,
+    njs_value_t *global, njs_value_t *setval, njs_value_t *retval)
+{
+    njs_int_t           ret;
+    njs_object_prop_t   *prop;
+    njs_lvlhsh_query_t  lhq;
+
+    *retval = *global;
+
+    if (njs_slow_path(setval != NULL)) {
+        *retval = *setval;
+    }
+
+    prop = njs_object_prop_alloc(vm, &self->name, retval, 1);
+    if (njs_slow_path(prop == NULL)) {
+        return NJS_ERROR;
+    }
+
+    /* GC */
+
+    prop->value = *retval;
+    prop->enumerable = self->enumerable;
+
+    lhq.value = prop;
+    njs_string_get(&self->name, &lhq.key);
+    lhq.key_hash = self->value.data.magic32;
+    lhq.replace = 1;
+    lhq.pool = vm->mem_pool;
+    lhq.proto = &njs_object_hash_proto;
+
+    ret = njs_lvlhsh_insert(njs_object_hash(global), &lhq);
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_internal_error(vm, "lvlhsh insert/replace failed");
+        return NJS_ERROR;
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
 njs_top_level_object(njs_vm_t *vm, njs_object_prop_t *self,
     njs_value_t *global, njs_value_t *setval, njs_value_t *retval)
 {
@@ -935,6 +976,27 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
         .value = njs_string("global"),
+        .configurable = 1,
+    },
+
+    /* Global aliases. */
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("global"),
+        .value = njs_prop_handler2(njs_global_this_object, 0, NJS_GLOBAL_HASH),
+        .writable = 1,
+        .enumerable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("globalThis"),
+        .value = njs_prop_handler2(njs_global_this_object, 0,
+                                   NJS_GLOBAL_THIS_HASH),
+        .writable = 1,
+        .enumerable = 0,
         .configurable = 1,
     },
 

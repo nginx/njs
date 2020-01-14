@@ -1215,17 +1215,60 @@ njs_object_own_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
 }
 
 
+njs_inline njs_int_t
+njs_traverse_visit(njs_arr_t *list, const njs_value_t *value)
+{
+    njs_object_t  **p;
+
+    if (njs_is_object(value)) {
+        p = njs_arr_add(list);
+        if (njs_slow_path(p == NULL)) {
+            return NJS_ERROR;
+        }
+
+        *p = njs_object(value);
+    }
+
+    return NJS_OK;
+}
+
+
+njs_inline njs_int_t
+njs_traverse_visited(njs_arr_t *list, const njs_value_t *value)
+{
+    njs_uint_t    items, n;
+    njs_object_t  **start, *obj;
+
+    if (!njs_is_object(value)) {
+        /* External. */
+        return 0;
+    }
+
+    start = list->start;
+    items = list->items;
+    obj = njs_object(value);
+
+    for (n = 0; n < items; n++) {
+        if (start[n] == obj) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+
 njs_int_t
 njs_object_traverse(njs_vm_t *vm, njs_object_t *object, void *ctx,
     njs_object_traverse_cb_t cb)
 {
     njs_int_t          depth, ret;
     njs_str_t          name;
+    njs_arr_t          visited;
+    njs_object_t       **start;
     njs_value_t        value, obj;
     njs_object_prop_t  *prop;
     njs_traverse_t     state[NJS_TRAVERSE_MAX_DEPTH];
-
-    static const njs_str_t  constructor_key = njs_str("constructor");
 
     depth = 0;
 
@@ -1234,6 +1277,14 @@ njs_object_traverse(njs_vm_t *vm, njs_object_t *object, void *ctx,
     state[depth].object = object;
     state[depth].hash = &object->shared_hash;
     njs_lvlhsh_each_init(&state[depth].lhe, &njs_object_hash_proto);
+
+    start = njs_arr_init(vm->mem_pool, &visited, NULL, 8, sizeof(void *));
+    if (njs_slow_path(start == NULL)) {
+        return NJS_ERROR;
+    }
+
+    njs_set_object(&value, object);
+    (void) njs_traverse_visit(&visited, &value);
 
     for ( ;; ) {
         prop = njs_lvlhsh_each(state[depth].hash, &state[depth].lhe);
@@ -1246,7 +1297,7 @@ njs_object_traverse(njs_vm_t *vm, njs_object_t *object, void *ctx,
             }
 
             if (depth == 0) {
-                return NJS_OK;
+                goto done;
             }
 
             depth--;
@@ -1273,12 +1324,12 @@ njs_object_traverse(njs_vm_t *vm, njs_object_t *object, void *ctx,
 
         njs_string_get(&prop->name, &name);
 
-        /*
-         * "constructor" properties make loops in object hierarchies.
-         * Object.prototype.constructor -> Object.
-         */
+        if (njs_is_object(&value) && !njs_traverse_visited(&visited, &value)) {
+            ret = njs_traverse_visit(&visited, &value);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_ERROR;
+            }
 
-        if (njs_is_object(&value) && !njs_strstr_eq(&name, &constructor_key)) {
             if (++depth > (NJS_TRAVERSE_MAX_DEPTH - 1)) {
                 njs_type_error(vm, "njs_object_traverse() recursion limit:%d",
                                depth);
@@ -1293,6 +1344,12 @@ njs_object_traverse(njs_vm_t *vm, njs_object_t *object, void *ctx,
         }
 
     }
+
+done:
+
+    njs_arr_destroy(&visited);
+
+    return NJS_OK;
 }
 
 
