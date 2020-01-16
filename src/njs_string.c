@@ -64,10 +64,10 @@ static njs_int_t njs_string_from_code_point(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 static njs_int_t njs_string_bytes_from(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
-static njs_int_t njs_string_bytes_from_array(njs_vm_t *vm,
-    const njs_value_t *value);
+static njs_int_t njs_string_bytes_from_array_like(njs_vm_t *vm,
+    njs_value_t *value);
 static njs_int_t njs_string_bytes_from_string(njs_vm_t *vm,
-    const njs_value_t *args, njs_uint_t nargs);
+    const njs_value_t *string, const njs_value_t *encoding);
 static njs_int_t njs_string_starts_or_ends_with(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_bool_t starts);
 static njs_int_t njs_string_trim(njs_vm_t *vm, njs_value_t *value,
@@ -1603,8 +1603,8 @@ done:
 
 
 /*
- * String.bytesFrom(array).
- * Converts an array containing octets into a byte string.
+ * String.bytesFrom(array-like).
+ * Converts an array-like object containing octets into a byte string.
  *
  * String.bytesFrom(string[, encoding]).
  * Converts a string using provided encoding: hex, base64, base64url to
@@ -1619,38 +1619,63 @@ njs_string_bytes_from(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     value = njs_arg(args, nargs, 1);
 
-    if (njs_is_string(value)) {
-        return njs_string_bytes_from_string(vm, args, nargs);
+    switch (value->type) {
+    case NJS_OBJECT_STRING:
+        value = njs_object_value(value);
+
+        /* Fall through. */
+
+    case NJS_STRING:
+        return njs_string_bytes_from_string(vm, value, njs_arg(args, nargs, 2));
+
+    default:
+        if (njs_is_object(value)) {
+            return njs_string_bytes_from_array_like(vm, value);
+        }
     }
 
-    if (njs_is_array(value)) {
-        return njs_string_bytes_from_array(vm, njs_arg(args, nargs, 1));
-    }
-
-    njs_type_error(vm, "value must be a string or array");
+    njs_type_error(vm, "value must be a string or array-like object");
 
     return NJS_ERROR;
 }
 
 
 static njs_int_t
-njs_string_bytes_from_array(njs_vm_t *vm, const njs_value_t *value)
+njs_string_bytes_from_array_like(njs_vm_t *vm, njs_value_t *value)
 {
-    u_char       *p;
-    uint32_t     i, length;
-    njs_int_t    ret;
-    njs_array_t  *array;
-    njs_value_t  *octet;
+    u_char              *p;
+    uint32_t            u32, length;
+    njs_int_t           ret;
+    njs_array_t         *array;
+    njs_value_t         *octet, index, prop;
+    njs_array_buffer_t  *buffer;
 
-    array = njs_array(value);
-    length = array->length;
+    array = NULL;
+    buffer = NULL;
 
-    for (i = 0; i < length; i++) {
-        if (!njs_is_numeric(&array->start[i])) {
-            ret = njs_value_to_numeric(vm, &array->start[i], &array->start[i]);
-            if (ret != NJS_OK) {
-                return ret;
-            }
+    switch (value->type) {
+    case NJS_ARRAY:
+        array = njs_array(value);
+        length = array->length;
+        break;
+
+    case NJS_ARRAY_BUFFER:
+    case NJS_TYPED_ARRAY:
+
+        if (njs_is_typed_array(value)) {
+            buffer = njs_typed_array(value)->buffer;
+
+        } else {
+            buffer = njs_array_buffer(value);
+        }
+
+        length = buffer->size;
+        break;
+
+    default:
+        ret = njs_object_length(vm, value, &length);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return ret;
         }
     }
 
@@ -1659,12 +1684,42 @@ njs_string_bytes_from_array(njs_vm_t *vm, const njs_value_t *value)
         return NJS_ERROR;
     }
 
-    octet = array->start;
+    if (array != NULL) {
+        octet = array->start;
 
-    while (length != 0) {
-        *p++ = (u_char) njs_number_to_uint32(njs_number(octet));
-        octet++;
-        length--;
+        while (length != 0) {
+            ret = njs_value_to_uint32(vm, octet, &u32);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+
+            *p++ = (u_char) u32;
+            octet++;
+            length--;
+        }
+
+    } else if (buffer != NULL) {
+        memcpy(p, buffer->u.u8, length);
+
+    } else {
+        p += length - 1;
+
+        while (length != 0) {
+            njs_uint32_to_string(&index, length - 1);
+
+            ret = njs_value_property(vm, value, &index, &prop);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                return ret;
+            }
+
+            ret = njs_value_to_uint32(vm, &prop, &u32);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+
+            *p-- = (u_char) u32;
+            length--;
+        }
     }
 
     return NJS_OK;
@@ -1672,21 +1727,18 @@ njs_string_bytes_from_array(njs_vm_t *vm, const njs_value_t *value)
 
 
 static njs_int_t
-njs_string_bytes_from_string(njs_vm_t *vm, const njs_value_t *args,
-    njs_uint_t nargs)
+njs_string_bytes_from_string(njs_vm_t *vm, const njs_value_t *string,
+    const njs_value_t *encoding)
 {
-    njs_str_t    enc, str;
-    njs_value_t  *enc_val;
+    njs_str_t  enc, str;
 
-    enc_val = njs_arg(args, nargs, 2);
-
-    if (njs_slow_path(nargs > 1 && !njs_is_string(enc_val))) {
-        njs_type_error(vm, "encoding must be a string");
+    if (!njs_is_string(encoding)) {
+        njs_type_error(vm, "\"encoding\" must be a string");
         return NJS_ERROR;
     }
 
-    njs_string_get(enc_val, &enc);
-    njs_string_get(&args[1], &str);
+    njs_string_get(encoding, &enc);
+    njs_string_get(string, &str);
 
     if (enc.length == 3 && memcmp(enc.start, "hex", 3) == 0) {
         return njs_string_decode_hex(vm, &vm->retval, &str);

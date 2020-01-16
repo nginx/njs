@@ -7635,8 +7635,15 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'abc'.padEnd(10, Symbol())"),
       njs_str("TypeError: Cannot convert a Symbol value to a string") },
 
-    { njs_str("String.bytesFrom({})"),
-      njs_str("TypeError: value must be a string or array") },
+    { njs_str("[undefined, null, Symbol()]"
+              ".every(v=> { try {String.bytesFrom(v);} catch(e) {return e.name == 'TypeError'} })"),
+      njs_str("true") },
+
+    { njs_str("String.bytesFrom({}).length"),
+      njs_str("0") },
+
+    { njs_str("String.bytesFrom({length:5, 0:'A'.charCodeAt(0), 2:'X', 3:NaN,4:0xfd}).toString('hex')"),
+      njs_str("41000000fd") },
 
     { njs_str("String.bytesFrom([1, 2, 0.23, '5', 'A']).toString('hex')"),
       njs_str("0102000500") },
@@ -7644,10 +7651,19 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("String.bytesFrom([NaN, Infinity]).toString('hex')"),
       njs_str("0000") },
 
+    { njs_str("String.bytesFrom(new Uint8Array([0xff,0xde,0xba])).toString('hex')"),
+      njs_str("ffdeba") },
+
+    { njs_str("String.bytesFrom((new Uint8Array([0xff,0xde,0xba])).buffer).toString('hex')"),
+      njs_str("ffdeba") },
+
     { njs_str("String.bytesFrom('', 'hex')"),
       njs_str("") },
 
     { njs_str("String.bytesFrom('00aabbcc', 'hex').toString('hex')"),
+      njs_str("00aabbcc") },
+
+    { njs_str("String.bytesFrom(new String('00aabbcc'), 'hex').toString('hex')"),
       njs_str("00aabbcc") },
 
     { njs_str("String.bytesFrom('deadBEEF##', 'hex').toString('hex')"),
