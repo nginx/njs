@@ -373,6 +373,8 @@ njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global)
     }
 
     vm->global_object.__proto__ = object_prototype;
+
+    njs_set_undefined(global);
     njs_set_object(global, &vm->global_object);
 
     vm->string_object = vm->shared->string_object;
