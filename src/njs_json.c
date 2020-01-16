@@ -2011,6 +2011,9 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
             goto memory_error;
         }
 
+        visited.separate = 0;
+        visited.pointer = 0;
+
         goto done;
     }
 
@@ -2226,9 +2229,9 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
         }
     }
 
-    njs_arr_destroy(&visited);
-
 done:
+
+    njs_arr_destroy(&visited);
 
     ret = njs_chb_join(&chain, &str);
     if (njs_slow_path(ret != NJS_OK)) {
