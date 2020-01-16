@@ -63,7 +63,7 @@ njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             size *= element_size;
 
             if (njs_slow_path((offset + size) > buffer->size)) {
-                njs_range_error(vm, "Invalid typed array length: %uD", size);
+                njs_range_error(vm, "Invalid typed array length: %uL", size);
                 return NJS_ERROR;
             }
 
