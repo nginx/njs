@@ -74,6 +74,24 @@ fail:
 
 
 njs_function_t *
+njs_vm_function_alloc(njs_vm_t *vm, njs_function_native_t native)
+{
+    njs_function_t  *function;
+
+    function = njs_mp_zalloc(vm->mem_pool, sizeof(njs_function_t));
+    if (njs_slow_path(function == NULL)) {
+        return NULL;
+    }
+
+    function->native = 1;
+    function->args_offset = 1;
+    function->u.native = native;
+
+    return function;
+}
+
+
+njs_function_t *
 njs_function_value_copy(njs_vm_t *vm, njs_value_t *value)
 {
     njs_function_t  *function, *copy;

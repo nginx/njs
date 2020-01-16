@@ -32,6 +32,7 @@ typedef struct {
     njs_opaque_value_t   request;
     njs_opaque_value_t   request_body;
     ngx_str_t            redirect_uri;
+    njs_opaque_value_t   promise_callbacks[2];
 } ngx_http_js_ctx_t;
 
 
@@ -1760,10 +1761,30 @@ ngx_http_js_ext_set_variable(njs_vm_t *vm, void *obj, uintptr_t data,
 
 
 static njs_int_t
+ngx_http_js_promise_trampoline(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused)
+{
+    njs_function_t      *callback;
+    ngx_http_js_ctx_t   *ctx;
+    ngx_http_request_t  *r;
+
+    r = njs_vm_external(vm, njs_argument(args, 1));
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "js subrequest promise trampoline ctx: %p", ctx);
+
+    callback = njs_value_function(njs_value_arg(&ctx->promise_callbacks[0]));
+
+    return njs_vm_call(vm, callback, njs_argument(args, 1), 1);
+}
+
+
+static njs_int_t
 ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    ngx_int_t                 rc;
+    ngx_int_t                 rc, promise;
     njs_str_t                 uri_arg, args_arg, method_name, body_arg;
     ngx_uint_t                method, methods_max, has_body;
     njs_value_t              *value, *arg, *options;
@@ -1799,6 +1820,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     r = njs_vm_external(vm, njs_arg(args, nargs, 0));
     if (njs_slow_path(r == NULL)) {
+        njs_vm_error(vm, "this is not an external");
         return NJS_ERROR;
     }
 
@@ -1829,6 +1851,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     args_arg.length = 0;
     args_arg.start = NULL;
     has_body = 0;
+    promise = 0;
 
     arg = njs_arg(args, nargs, 2);
 
@@ -1901,6 +1924,15 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
+    if (callback == NULL) {
+        callback = njs_vm_function_alloc(vm, ngx_http_js_promise_trampoline);
+        if (callback == NULL) {
+            goto memory_error;
+        }
+
+        promise = 1;
+    }
+
     rc  = ngx_http_js_subrequest(r, &uri_arg, &args_arg, callback, &sr);
     if (rc != NGX_OK) {
         return NJS_ERROR;
@@ -1916,7 +1948,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         sr->method_name.data = method_name.start;
     }
 
-    sr->header_only = (sr->method == NGX_HTTP_HEAD) || (callback == NULL);
+    sr->header_only = (sr->method == NGX_HTTP_HEAD);
 
     if (has_body) {
         rb = ngx_pcalloc(r->pool, sizeof(ngx_http_request_body_t));
@@ -1949,6 +1981,18 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         sr->headers_in.chunked = 0;
     }
 
+    if (promise) {
+        ctx = ngx_pcalloc(sr->pool, sizeof(ngx_http_js_ctx_t));
+        if (ctx == NULL) {
+            return NGX_ERROR;
+        }
+
+        ngx_http_set_ctx(sr, ctx, ngx_http_js_module);
+
+        return njs_vm_promise_create(vm, njs_vm_retval(vm),
+                                     njs_value_arg(&ctx->promise_callbacks));
+    }
+
     return NJS_OK;
 
 memory_error:
@@ -1971,30 +2015,22 @@ ngx_http_js_subrequest(ngx_http_request_t *r, njs_str_t *uri_arg,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    flags = NGX_HTTP_SUBREQUEST_BACKGROUND;
+    flags = NGX_HTTP_SUBREQUEST_BACKGROUND | NGX_HTTP_SUBREQUEST_IN_MEMORY;
 
-    if (callback != NULL) {
-        ps = ngx_palloc(r->pool, sizeof(ngx_http_post_subrequest_t));
-        if (ps == NULL) {
-            njs_vm_error(ctx->vm, "internal error");
-            return NJS_ERROR;
-        }
-
-        vm_event = njs_vm_add_event(ctx->vm, callback, 1, NULL, NULL);
-        if (vm_event == NULL) {
-            njs_vm_error(ctx->vm, "internal error");
-            return NJS_ERROR;
-        }
-
-        ps->handler = ngx_http_js_subrequest_done;
-        ps->data = vm_event;
-
-        flags |= NGX_HTTP_SUBREQUEST_IN_MEMORY;
-
-    } else {
-        ps = NULL;
-        vm_event = NULL;
+    ps = ngx_palloc(r->pool, sizeof(ngx_http_post_subrequest_t));
+    if (ps == NULL) {
+        njs_vm_error(ctx->vm, "internal error");
+        return NJS_ERROR;
     }
+
+    vm_event = njs_vm_add_event(ctx->vm, callback, 1, NULL, NULL);
+    if (vm_event == NULL) {
+        njs_vm_error(ctx->vm, "internal error");
+        return NJS_ERROR;
+    }
+
+    ps->handler = ngx_http_js_subrequest_done;
+    ps->data = vm_event;
 
     uri.len = uri_arg->length;
     uri.data = uri_arg->start;

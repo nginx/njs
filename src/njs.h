@@ -102,6 +102,9 @@ struct njs_external_s {
 };
 
 
+typedef njs_int_t (*njs_function_native_t) (njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t retval);
+
 /*
  * NJS and event loops.
  *
@@ -238,6 +241,9 @@ NJS_EXPORT njs_int_t njs_vm_external_create(njs_vm_t *vm,
 NJS_EXPORT njs_external_ptr_t njs_vm_external(njs_vm_t *vm,
     const njs_value_t *value);
 
+NJS_EXPORT njs_function_t *njs_vm_function_alloc(njs_vm_t *vm,
+    njs_function_native_t native);
+
 NJS_EXPORT void njs_disassembler(njs_vm_t *vm);
 NJS_EXPORT void njs_disassemble(u_char *start, u_char *end);
 
@@ -315,5 +321,9 @@ NJS_EXPORT njs_int_t njs_vm_json_parse(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs);
 NJS_EXPORT njs_int_t njs_vm_json_stringify(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs);
+
+NJS_EXPORT njs_int_t njs_vm_promise_create(njs_vm_t *vm, njs_value_t *retval,
+    njs_value_t *callbacks);
+
 
 #endif /* _NJS_H_INCLUDED_ */

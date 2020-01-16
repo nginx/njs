@@ -140,6 +140,28 @@ njs_promise_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+njs_int_t
+njs_vm_promise_create(njs_vm_t *vm, njs_value_t *retval, njs_value_t *callbacks)
+{
+    njs_int_t      ret;
+    njs_promise_t  *promise;
+
+    promise = njs_promise_alloc(vm);
+    if (njs_slow_path(promise == NULL)) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_promise_create_resolving_functions(vm, promise, callbacks);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    njs_set_promise(retval, promise);
+
+    return NJS_OK;
+}
+
+
 static njs_promise_t *
 njs_promise_constructor_call(njs_vm_t *vm, njs_function_t *function)
 {

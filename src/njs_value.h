@@ -108,8 +108,6 @@ typedef struct njs_object_init_s      njs_object_init_t;
  */
 typedef njs_int_t (*njs_prop_handler_t) (njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
-typedef njs_int_t (*njs_function_native_t) (njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t retval);
 
 #if (!NJS_HAVE_GCC_ATTRIBUTE_ALIGNED)
 #error "aligned attribute is required"
