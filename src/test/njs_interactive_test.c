@@ -233,7 +233,7 @@ static njs_interactive_test_t  njs_test[] =
                  "    at main (native)\n") },
 
     { njs_str("var fs = require('fs'); fs.readFile()" ENTER),
-      njs_str("TypeError: too few arguments\n"
+      njs_str("TypeError: \"path\" must be a string\n"
                  "    at fs.readFile (native)\n"
                  "    at main (native)\n") },
 

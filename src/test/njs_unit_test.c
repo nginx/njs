@@ -15520,7 +15520,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var fs = require('fs');"
                  "fs.readFile()"),
-      njs_str("TypeError: too few arguments") },
+      njs_str("TypeError: \"path\" must be a string") },
 
     { njs_str("var fs = require('fs');"
                  "fs.readFile('/njs_unknown_path')"),
@@ -15550,11 +15550,11 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var fs = require('fs');"
                  "fs.readFileSync()"),
-      njs_str("TypeError: too few arguments") },
+      njs_str("TypeError: \"path\" must be a string") },
 
     { njs_str("var fs = require('fs');"
                  "fs.readFileSync({})"),
-      njs_str("TypeError: path must be a string") },
+      njs_str("TypeError: \"path\" must be a string") },
 
     { njs_str("var fs = require('fs');"
                  "fs.readFileSync('/njs_unknown_path', {flag:'xx'})"),
@@ -15577,7 +15577,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var fs = require('fs');"
                  "fs.writeFile()"),
-      njs_str("TypeError: too few arguments") },
+      njs_str("TypeError: \"path\" must be a string") },
 
     { njs_str("var fs = require('fs');"
                  "fs.writeFile('/njs_unknown_path')"),
@@ -15589,7 +15589,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var fs = require('fs');"
                  "fs.writeFile({}, '', function () {})"),
-      njs_str("TypeError: path must be a string") },
+      njs_str("TypeError: \"path\" must be a string") },
 
     { njs_str("var fs = require('fs');"
                  "fs.writeFile('/njs_unknown_path', '', 'utf8')"),
@@ -15615,7 +15615,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var fs = require('fs');"
                  "fs.writeFileSync()"),
-      njs_str("TypeError: too few arguments") },
+      njs_str("TypeError: \"path\" must be a string") },
 
     { njs_str("var fs = require('fs');"
                  "fs.writeFileSync('/njs_unknown_path')"),
@@ -15623,7 +15623,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var fs = require('fs');"
                  "fs.writeFileSync({}, '')"),
-      njs_str("TypeError: path must be a string") },
+      njs_str("TypeError: \"path\" must be a string") },
 
     { njs_str("var fs = require('fs');"
                  "fs.writeFileSync('/njs_unknown_path', '', {flag:'xx'})"),
@@ -15641,15 +15641,47 @@ static njs_unit_test_t  njs_test[] =
                  "fs.writeFileSync('/njs_unknown_path', '', true)"),
       njs_str("TypeError: Unknown options type (a string or object required)") },
 
-    /* require('fs').writeFileSync() */
+    /* require('fs').renameSync() */
 
     { njs_str("var fs = require('fs');"
               "fs.renameSync()"),
-      njs_str("TypeError: oldPath must be a string") },
+      njs_str("TypeError: \"oldPath\" must be a string") },
 
     { njs_str("var fs = require('fs');"
-              "fs.renameSync({toString(){return '/path/1'}})"),
-      njs_str("TypeError: newPath must be a string") },
+              "fs.renameSync('/njs_unknown_path')"),
+      njs_str("TypeError: \"newPath\" must be a string") },
+
+    { njs_str("var fs = require('fs');"
+              "[undefined, null, false, NaN, Symbol(), {}, Object('/njs_unknown_path')]"
+              ".map((x) => { try { fs.renameSync(x, '/njs_unknown_path'); } "
+              "              catch (e) { return (e instanceof TypeError); } })"
+              ".every((x) => x === true)"),
+      njs_str("true")},
+
+    { njs_str("var fs = require('fs');"
+              "[undefined, null, false, NaN, Symbol(), {}, Object('/njs_unknown_path')]"
+              ".map((x) => { try { fs.renameSync('/njs_unknown_path', x); } "
+              "              catch (e) { return (e instanceof TypeError); } })"
+              ".every((x) => x === true)"),
+      njs_str("true")},
+
+    { njs_str("var "
+              "fs = require('fs'),"
+              "func = ["
+                "'readFile',"
+                "'readFileSync',"
+                "'writeFile',"
+                "'writeFileSync',"
+                "'appendFile',"
+                "'appendFileSync',"
+              "],"
+              "test = (fname) =>"
+                "[undefined, null, false, NaN, Symbol(), {}, Object('/njs_unknown_path')]"
+                ".map((x) => { try { fs[fname](x); } "
+                "              catch (e) { return (e instanceof TypeError); } })"
+                ".every((x) => x === true);"
+              "func.map(test).every((x) => x)"),
+      njs_str("true")},
 
     /* require('crypto').createHash() */
 

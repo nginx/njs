@@ -69,6 +69,24 @@ static njs_fs_entry_t njs_flags_table[] = {
 };
 
 
+njs_inline njs_int_t
+njs_fs_path_arg(njs_vm_t *vm, const char **dst,
+    const njs_value_t* src, const njs_str_t *prop_name)
+{
+    if (njs_slow_path(!njs_is_string(src))) {
+        njs_type_error(vm, "\"%V\" must be a string", prop_name);
+        return NJS_ERROR;
+    }
+
+    *dst = njs_string_to_c_string(vm, njs_value_arg(src));
+    if (njs_slow_path(*dst == NULL)) {
+        return NJS_ERROR;
+    }
+
+    return NJS_OK;
+}
+
+
 static njs_int_t
 njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
@@ -85,13 +103,14 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
 
-    if (njs_slow_path(nargs < 3)) {
-        njs_type_error(vm, "too few arguments");
-        return NJS_ERROR;
+    ret = njs_fs_path_arg(vm, &path, njs_arg(args, nargs, 1),
+                          &njs_str_value("path"));
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
-    if (njs_slow_path(!njs_is_string(&args[1]))) {
-        njs_type_error(vm, "path must be a string");
+    if (njs_slow_path(nargs < 3)) {
+        njs_type_error(vm, "too few arguments");
         return NJS_ERROR;
     }
 
@@ -153,11 +172,6 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     flags = njs_fs_flags(&flag);
     if (njs_slow_path(flags == -1)) {
         njs_type_error(vm, "Unknown file open flags: \"%V\"", &flag);
-        return NJS_ERROR;
-    }
-
-    path = njs_string_to_c_string(vm, &args[1]);
-    if (njs_slow_path(path == NULL)) {
         return NJS_ERROR;
     }
 
@@ -320,13 +334,14 @@ njs_fs_read_file_sync(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
 
-    if (njs_slow_path(nargs < 2)) {
-        njs_type_error(vm, "too few arguments");
-        return NJS_ERROR;
+    ret = njs_fs_path_arg(vm, &path, njs_arg(args, nargs, 1),
+                          &njs_str_value("path"));
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
-    if (njs_slow_path(!njs_is_string(&args[1]))) {
-        njs_type_error(vm, "path must be a string");
+    if (njs_slow_path(nargs < 2)) {
+        njs_type_error(vm, "too few arguments");
         return NJS_ERROR;
     }
 
@@ -557,13 +572,14 @@ static njs_int_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
     njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
 
-    if (njs_slow_path(nargs < 4)) {
-        njs_type_error(vm, "too few arguments");
-        return NJS_ERROR;
+    ret = njs_fs_path_arg(vm, &path, njs_arg(args, nargs, 1),
+                          &njs_str_value("path"));
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
-    if (njs_slow_path(!njs_is_string(&args[1]))) {
-        njs_type_error(vm, "path must be a string");
+    if (njs_slow_path(nargs < 4)) {
+        njs_type_error(vm, "too few arguments");
         return NJS_ERROR;
     }
 
@@ -654,11 +670,6 @@ static njs_int_t njs_fs_write_file_internal(njs_vm_t *vm, njs_value_t *args,
         md = 0666;
     }
 
-    path = njs_string_to_c_string(vm, &args[1]);
-    if (njs_slow_path(path == NULL)) {
-        return NJS_ERROR;
-    }
-
     if (encoding.length != 0
         && (encoding.length != 4 || memcmp(encoding.start, "utf8", 4) != 0))
     {
@@ -745,13 +756,14 @@ njs_fs_write_file_sync_internal(njs_vm_t *vm, njs_value_t *args,
     njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
 
-    if (njs_slow_path(nargs < 3)) {
-        njs_type_error(vm, "too few arguments");
-        return NJS_ERROR;
+    ret = njs_fs_path_arg(vm, &path, njs_arg(args, nargs, 1),
+                          &njs_str_value("path"));
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
-    if (njs_slow_path(!njs_is_string(&args[1]))) {
-        njs_type_error(vm, "path must be a string");
+    if (njs_slow_path(nargs < 3)) {
+        njs_type_error(vm, "too few arguments");
         return NJS_ERROR;
     }
 
@@ -827,11 +839,6 @@ njs_fs_write_file_sync_internal(njs_vm_t *vm, njs_value_t *args,
         md = 0666;
     }
 
-    path = njs_string_to_c_string(vm, &args[1]);
-    if (njs_slow_path(path == NULL)) {
-        return NJS_ERROR;
-    }
-
     if (encoding.length != 0
         && (encoding.length != 4 || memcmp(encoding.start, "utf8", 4) != 0))
     {
@@ -896,45 +903,19 @@ static njs_int_t
 njs_fs_rename_sync(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    int          ret;
-    const char   *old_path, *new_path;
-    njs_value_t  *old, *new;
+    njs_int_t   ret;
+    const char  *old_path, *new_path;
 
-    if (njs_slow_path(nargs < 3)) {
-        if (nargs < 2) {
-            njs_type_error(vm, "oldPath must be a string");
-            return NJS_ERROR;
-        }
-
-        njs_type_error(vm, "newPath must be a string");
-        return NJS_ERROR;
+    ret = njs_fs_path_arg(vm, &old_path, njs_arg(args, nargs, 1),
+                          &njs_str_value("oldPath"));
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
-    old = njs_argument(args, 1);
-    new = njs_argument(args, 2);
-
-    if (njs_slow_path(!njs_is_string(old))) {
-        ret = njs_value_to_string(vm, old, old);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
-    }
-
-    if (njs_slow_path(!njs_is_string(new))) {
-        ret = njs_value_to_string(vm, new, new);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
-    }
-
-    old_path = njs_string_to_c_string(vm, old);
-    if (njs_slow_path(old_path == NULL)) {
-        return NJS_ERROR;
-    }
-
-    new_path = njs_string_to_c_string(vm, new);
-    if (njs_slow_path(new_path == NULL)) {
-        return NJS_ERROR;
+    ret = njs_fs_path_arg(vm, &new_path, njs_arg(args, nargs, 2),
+                          &njs_str_value("newPath"));
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
     ret = rename(old_path, new_path);
