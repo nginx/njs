@@ -15579,15 +15579,19 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var fs = require('fs');"
                  "fs.readFile('/njs_unknown_path')"),
-      njs_str("TypeError: too few arguments") },
+      njs_str("TypeError: \"callback\" must be a function") },
+
+    { njs_str("var fs = require('fs');"
+                 "fs.readFile('/njs_unknown_path', 'utf8')"),
+      njs_str("TypeError: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
                  "fs.readFile('/njs_unknown_path', {flag:'xx'})"),
-      njs_str("TypeError: callback must be a function") },
+      njs_str("TypeError: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
                  "fs.readFile('/njs_unknown_path', {flag:'xx'}, 1)"),
-      njs_str("TypeError: callback must be a function") },
+      njs_str("TypeError: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
                  "fs.readFile('/njs_unknown_path', {flag:'xx'}, function () {})"),
@@ -15635,20 +15639,24 @@ static njs_unit_test_t  njs_test[] =
       njs_str("TypeError: \"path\" must be a string") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.writeFile('/njs_unknown_path')"),
-      njs_str("TypeError: too few arguments") },
-
-    { njs_str("var fs = require('fs');"
-                 "fs.writeFile('/njs_unknown_path', '')"),
-      njs_str("TypeError: too few arguments") },
-
-    { njs_str("var fs = require('fs');"
                  "fs.writeFile({}, '', function () {})"),
       njs_str("TypeError: \"path\" must be a string") },
 
     { njs_str("var fs = require('fs');"
+                 "fs.writeFile('/njs_unknown_path')"),
+      njs_str("TypeError: \"data\" must be a string") },
+
+    { njs_str("var fs = require('fs');"
+                 "fs.writeFile('/njs_unknown_path', '')"),
+      njs_str("TypeError: \"callback\" must be a function") },
+
+    { njs_str("var fs = require('fs');"
+                 "fs.writeFile('/njs_unknown_path', '', undefined)"),
+      njs_str("TypeError: \"callback\" must be a function") },
+
+    { njs_str("var fs = require('fs');"
                  "fs.writeFile('/njs_unknown_path', '', 'utf8')"),
-      njs_str("TypeError: callback must be a function") },
+      njs_str("TypeError: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
                  "fs.writeFile('/njs_unknown_path', '', {flag:'xx'}, function () {})"),
@@ -15674,7 +15682,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var fs = require('fs');"
                  "fs.writeFileSync('/njs_unknown_path')"),
-      njs_str("TypeError: too few arguments") },
+      njs_str("TypeError: \"data\" must be a string") },
 
     { njs_str("var fs = require('fs');"
                  "fs.writeFileSync({}, '')"),
