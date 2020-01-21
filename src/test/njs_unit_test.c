@@ -11296,6 +11296,18 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var fn = (function() { return new Function('return this'); }).call({}), o = {}; fn.call(o) == o && fn.bind(o).call(this) == o"),
       njs_str("true") },
 
+    { njs_str("(new Function('return this'))() === globalThis"),
+      njs_str("true") },
+
+    { njs_str("(new Function('a', 'return a')).length"),
+      njs_str("1") },
+
+    { njs_str("(new Function('a','b', 'return a + b')).length"),
+      njs_str("2") },
+
+    { njs_str("var o = {}; (new Function('return this')).call(o) === o"),
+      njs_str("true") },
+
     { njs_str("this.NN = {}; var f = Function('eval = 42;'); f()"),
       njs_str("SyntaxError: Identifier \"eval\" is forbidden as left-hand in assignment in runtime:1") },
 

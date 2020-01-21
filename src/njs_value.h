@@ -278,7 +278,7 @@ struct njs_function_s {
 
     uint8_t                           args_offset;
 
-    uint8_t                           args_count:5;
+    uint8_t                           args_count:4;
 
     /*
      * If "closure" is true njs_closure_t[] is available right after the
@@ -291,6 +291,7 @@ struct njs_function_s {
     uint8_t                           closure:1;
     uint8_t                           native:1;
     uint8_t                           ctor:1;
+    uint8_t                           global_this:1;
 
     uint8_t                           magic;
 

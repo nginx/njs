@@ -463,7 +463,14 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
     native_frame->arguments = value;
 
     if (bound == NULL) {
-        *value++ = *this;
+        *value = *this;
+
+        if (njs_slow_path(function->global_this
+                          && njs_is_null_or_undefined(this))) {
+            njs_set_object(value, &vm->global_object);
+        }
+
+        value++;
 
     } else {
         n = function->args_offset;
@@ -838,64 +845,69 @@ static njs_int_t
 njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    size_t              size;
-    u_char              *start, *end;
-    njs_int_t           ret;
-    njs_str_t           str, file;
-    njs_uint_t          i;
-    njs_lexer_t         lexer;
-    njs_parser_t        *parser;
-    njs_generator_t     generator;
-    njs_parser_scope_t  *scope;
+    njs_chb_t              chain;
+    njs_int_t              ret;
+    njs_str_t              str, file;
+    njs_uint_t             i;
+    njs_value_t            *body;
+    njs_lexer_t            lexer;
+    njs_parser_t           *parser;
+    njs_function_t         *function;
+    njs_generator_t        generator;
+    njs_parser_scope_t     *scope;
+    njs_function_lambda_t  *lambda;
+    njs_vmcode_function_t  *code;
 
     if (!vm->options.unsafe) {
-        njs_type_error(vm, "function constructor is disabled in \"safe\" mode");
-        return NJS_ERROR;
-    }
-
-    if (nargs < 2) {
-        start = (u_char *) "(function(){})";
-        end = start + njs_length("(function(){})");
-
-    } else {
-        size = njs_length("(function(") + nargs + njs_length("){})");
-
-        for (i = 1; i < nargs; i++) {
-            if (!njs_is_string(&args[i])) {
-                ret = njs_value_to_string(vm, &args[i], &args[i]);
-                if (ret != NJS_OK) {
-                    return ret;
-                }
-            }
-
-            njs_string_get(&args[i], &str);
-            size += str.length;
+        body = njs_argument(args, nargs - 1);
+        ret = njs_value_to_string(vm, body, body);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
 
-        start = njs_mp_alloc(vm->mem_pool, size);
-        if (njs_slow_path(start == NULL)) {
+        njs_string_get(body, &str);
+
+        /*
+         * Safe mode exception:
+         * "(new Function('return this'))" is often used to get
+         * the global object in a portable way.
+         */
+
+        if (str.length != njs_length("return this")
+            || memcmp(str.start, "return this", 11) != 0)
+        {
+            njs_type_error(vm, "function constructor is disabled"
+                           " in \"safe\" mode");
             return NJS_ERROR;
         }
+    }
 
-        end = njs_cpymem(start, "(function(", njs_length("(function("));
+    njs_chb_init(&chain, vm->mem_pool);
 
-        for (i = 1; i < nargs - 1; i++) {
-            if (i != 1) {
-                *end++ = ',';
-            }
+    njs_chb_append_literal(&chain, "(function(");
 
-            njs_string_get(&args[i], &str);
-            end = njs_cpymem(end, str.start, str.length);
+    for (i = 1; i < nargs - 1; i++) {
+        ret = njs_value_to_chain(vm, &chain, njs_argument(args, i));
+        if (njs_slow_path(ret < NJS_OK)) {
+            return ret;
         }
 
-        *end++ = ')';
-        *end++ = '{';
+        njs_chb_append_literal(&chain, ",");
+    }
 
-        njs_string_get(&args[nargs - 1], &str);
-        end = njs_cpymem(end, str.start, str.length);
+    njs_chb_append_literal(&chain, "){");
 
-        *end++ = '}';
-        *end++ = ')';
+    ret = njs_value_to_chain(vm, &chain, njs_argument(args, nargs - 1));
+    if (njs_slow_path(ret < NJS_OK)) {
+        return ret;
+    }
+
+    njs_chb_append_literal(&chain, "})");
+
+    ret = njs_chb_join(&chain, &str);
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
     }
 
     vm->options.accumulative = 1;
@@ -909,7 +921,7 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     file = njs_str_value("runtime");
 
-    ret = njs_lexer_init(vm, &lexer, &file, start, end);
+    ret = njs_lexer_init(vm, &lexer, &file, str.start, str.start + str.length);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -940,15 +952,20 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    if (vm->options.disassemble) {
-        njs_printf("new Function:runtime\n");
-        njs_disassemble(generator.code_start, generator.code_end);
+    njs_chb_destroy(&chain);
+
+    code = (njs_vmcode_function_t *) generator.code_start;
+    lambda = code->lambda;
+
+    function = njs_function_alloc(vm, lambda, NULL, 0);
+    if (njs_slow_path(function == NULL)) {
+        return NJS_ERROR;
     }
 
-    ret = njs_vmcode_interpreter(vm, generator.code_start);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
-    }
+    function->global_this = 1;
+    function->args_count = lambda->nargs - lambda->rest_parameters;
+
+    njs_set_function(&vm->retval, function);
 
     return NJS_OK;
 }

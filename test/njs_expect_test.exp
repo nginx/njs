@@ -849,6 +849,12 @@ njs_test {
 njs_test {
     {"new Function()\r\n"
      "TypeError: function constructor is disabled in \"safe\" mode\r\n"}
+    {"(new Function('return this'))() === globalThis\r\n"
+     "true\r\n"}
+    {"new Function('return this;')\r\n"
+     "TypeError: function constructor is disabled in \"safe\" mode\r\n"}
+    {"new Function('return thi')\r\n"
+     "TypeError: function constructor is disabled in \"safe\" mode\r\n"}
 } "-u"
 
 

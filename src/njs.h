@@ -41,7 +41,7 @@ typedef struct {
 
 /* sizeof(njs_value_t) is 16 bytes. */
 #define njs_argument(args, n)                                                 \
-    (njs_value_t *) ((u_char *) args + n * 16)
+    (njs_value_t *) ((u_char *) args + (n) * 16)
 
 
 extern const njs_value_t            njs_value_undefined;
