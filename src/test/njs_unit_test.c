@@ -5005,6 +5005,11 @@ static njs_unit_test_t  njs_test[] =
               "       return (a[0] === 1 && a[1] === 12 && a[2] === 3 && a.length == 3)})"),
       njs_str("true") },
 
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([0,0,0,0,0]).fill(8, -1, -3); "
+              "       return njs.dump(a) === `${v.name} [0,0,0,0,0]`;})"),
+      njs_str("true") },
+
     { njs_str(NJS_INT_TYPED_ARRAY_LIST
               ".every(v=>{var a = new v([1,2,3]); a.fill('qq', 1, 2); "
               "       return (a[0] === 1 && a[1] === 0 && a[2] === 3 && a.length == 3)})"),
@@ -5338,6 +5343,12 @@ static njs_unit_test_t  njs_test[] =
               ".every(v=>{var a = new v([1,2,3,4]); "
               "           a.subarray(1,3).fill(0);"
               "           return  njs.dump(a) === `${v.name} [1,0,0,4]`;})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([1,2,3,4]); "
+              "           a.subarray(1,10).fill(0);"
+              "           return  njs.dump(a) === `${v.name} [1,0,0,0]`;})"),
       njs_str("true") },
 
     { njs_str(NJS_TYPED_ARRAY_LIST

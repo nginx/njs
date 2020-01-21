@@ -103,11 +103,9 @@ njs_typed_array_set(njs_typed_array_t *array, uint32_t index, double v)
 
     switch (array->type) {
     case NJS_OBJ_TYPE_UINT8_CLAMPED_ARRAY:
-        if (v < 0) {
+        if (isnan(v) || v < 0) {
             v = 0;
-        }
-
-        if (v > 255) {
+        } else if (v > 255) {
             v = 255;
         }
 

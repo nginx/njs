@@ -491,7 +491,7 @@ njs_typed_array_prototype_fill(njs_vm_t *vm, njs_value_t *args,
     int16_t             i16;
     int32_t             i32;
     uint8_t             u8;
-    int64_t             start, end;
+    int64_t             start, end, offset;
     uint32_t            i, length;
     njs_int_t           ret;
     njs_value_t         *this, *setval, lvalue;
@@ -535,20 +535,22 @@ njs_typed_array_prototype_fill(njs_vm_t *vm, njs_value_t *args,
     njs_set_typed_array(&vm->retval, array);
 
     buffer = array->buffer;
+    offset = array->offset;
 
     switch (array->type) {
     case NJS_OBJ_TYPE_UINT8_CLAMPED_ARRAY:
-        if (num < 0) {
-            num = 0;
+        if (isnan(num) || num < 0) {
+            u8 = 0;
 
         } else if (num > 255) {
-            num = 255;
+            u8 = 255;
+
+        } else {
+            u8 = lrint(num);
         }
 
-        u8 = lrint(num);
-
-        for (i = start; i < end; i++) {
-            buffer->u.u8[i] = u8;
+        if (start < end) {
+            memset(&buffer->u.u8[start + offset], u8, end - start);
         }
 
         break;
@@ -557,8 +559,8 @@ njs_typed_array_prototype_fill(njs_vm_t *vm, njs_value_t *args,
     case NJS_OBJ_TYPE_INT8_ARRAY:
         i8 = njs_number_to_int32(num);
 
-        for (i = start; i < end; i++) {
-            buffer->u.u8[i] = i8;
+        if (start < end) {
+            memset(&buffer->u.u8[start + offset], i8, end - start);
         }
 
         break;
@@ -568,7 +570,7 @@ njs_typed_array_prototype_fill(njs_vm_t *vm, njs_value_t *args,
         i16 = njs_number_to_int32(num);
 
         for (i = start; i < end; i++) {
-            buffer->u.u16[i] = i16;
+            buffer->u.u16[i + offset] = i16;
         }
 
         break;
@@ -578,7 +580,7 @@ njs_typed_array_prototype_fill(njs_vm_t *vm, njs_value_t *args,
         i32 = njs_number_to_int32(num);
 
         for (i = start; i < end; i++) {
-            buffer->u.u32[i] = i32;
+            buffer->u.u32[i + offset] = i32;
         }
 
         break;
@@ -587,7 +589,7 @@ njs_typed_array_prototype_fill(njs_vm_t *vm, njs_value_t *args,
         f32 = num;
 
         for (i = start; i < end; i++) {
-            buffer->u.f32[i] = f32;
+            buffer->u.f32[i + offset] = f32;
         }
 
         break;
@@ -597,7 +599,7 @@ njs_typed_array_prototype_fill(njs_vm_t *vm, njs_value_t *args,
         /* NJS_OBJ_TYPE_FLOAT64_ARRAY. */
 
         for (i = start; i < end; i++) {
-            buffer->u.f64[i] = num;
+            buffer->u.f64[i + offset] = num;
         }
 	}
 
