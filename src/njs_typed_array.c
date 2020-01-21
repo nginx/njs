@@ -607,10 +607,10 @@ njs_typed_array_prototype_fill(njs_vm_t *vm, njs_value_t *args,
 
 static njs_int_t
 njs_typed_array_species_create(njs_vm_t *vm, njs_value_t *exemplar,
-    int64_t count, njs_value_t *retval)
+    njs_value_t *args, njs_uint_t nargs, njs_value_t *retval)
 {
     njs_int_t          ret;
-    njs_value_t        this, constructor, argument;
+    njs_value_t        this, constructor;
     njs_object_t       *object;
     njs_typed_array_t  *array;
 
@@ -630,10 +630,9 @@ njs_typed_array_species_create(njs_vm_t *vm, njs_value_t *exemplar,
     }
 
     njs_set_object(&this, object);
-    njs_set_number(&argument, count);
 
     ret = njs_function_call2(vm, njs_function(&constructor), &this,
-                             &argument, 1, retval, 1);
+                             args, nargs, retval, 1);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
@@ -644,24 +643,18 @@ njs_typed_array_species_create(njs_vm_t *vm, njs_value_t *exemplar,
         return NJS_ERROR;
     }
 
-    array = njs_typed_array(retval);
-    if (njs_typed_array_length(array) < count) {
-        njs_type_error(vm, "Derived TypedArray constructor too small array");
-        return NJS_ERROR;
-    }
-
     return NJS_OK;
 }
 
 
 static njs_int_t
 njs_typed_array_prototype_slice(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+    njs_uint_t nargs, njs_index_t copy)
 {
-    int64_t             start, end, count;
+    int64_t             start, end, count, offset;
     uint32_t            i, element_size, length;
     njs_int_t           ret;
-    njs_value_t         *this, *value;
+    njs_value_t         arguments[3], *this, *value;
     njs_typed_array_t   *array, *new_array;
     njs_array_buffer_t  *buffer, *new_buffer;
 
@@ -698,32 +691,54 @@ njs_typed_array_prototype_slice(njs_vm_t *vm, njs_value_t *args,
 
     end = (end < 0) ? njs_max(length + end, 0) : njs_min(end, length);
 
-    count = njs_max(end - start, 0);
-
-    ret = njs_typed_array_species_create(vm, this, count, &vm->retval);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
-    }
-
-    new_array = njs_typed_array(&vm->retval);
-    new_buffer = njs_typed_array_buffer(new_array);
     element_size = njs_typed_array_element_size(array->type);
 
-    if (njs_fast_path(array->type == new_array->type)) {
-        start = start * element_size;
-        count = count * element_size;
+    if (copy) {
+        count = njs_max(end - start, 0);
+        njs_set_number(&arguments[0], count);
 
-        memcpy(&new_buffer->u.u8[0], &buffer->u.u8[start], count);
-
-    } else {
-        for (i = 0; i < count; i++) {
-            njs_typed_array_set(new_array, i,
-                                njs_typed_array_get(array, i + start));
+        ret = njs_typed_array_species_create(vm, this,
+                                             njs_value_arg(arguments), 1,
+                                             &vm->retval);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
+
+        new_array = njs_typed_array(&vm->retval);
+        if (njs_typed_array_length(new_array) < count) {
+            njs_type_error(vm, "Derived TypedArray constructor is "
+                           "too small array");
+            return NJS_ERROR;
+        }
+
+        new_buffer = njs_typed_array_buffer(new_array);
+        element_size = njs_typed_array_element_size(array->type);
+
+        if (njs_fast_path(array->type == new_array->type)) {
+            start = start * element_size;
+            count = count * element_size;
+
+            memcpy(&new_buffer->u.u8[0], &buffer->u.u8[start], count);
+
+        } else {
+            for (i = 0; i < count; i++) {
+                njs_typed_array_set(new_array, i,
+                                    njs_typed_array_get(array, i + start));
+            }
+        }
+
+        return NJS_OK;
     }
 
+    offset = array->offset * element_size;
+    offset += start * element_size;
 
-    return NJS_OK;
+    njs_set_array_buffer(&arguments[0], buffer);
+    njs_set_number(&arguments[1], offset);
+    njs_set_number(&arguments[2], njs_max(end - start, 0));
+
+    return njs_typed_array_species_create(vm, this, njs_value_arg(arguments), 3,
+                                          &vm->retval);
 }
 
 
@@ -1024,7 +1039,15 @@ static const njs_object_prop_t  njs_typed_array_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("slice"),
-        .value = njs_native_function(njs_typed_array_prototype_slice, 2),
+        .value = njs_native_function2(njs_typed_array_prototype_slice, 2, 1),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("subarray"),
+        .value = njs_native_function2(njs_typed_array_prototype_slice, 2, 0),
         .writable = 1,
         .configurable = 1,
     },
