@@ -302,7 +302,7 @@ njs_int_t njs_vm_backtrace_to_string(njs_vm_t *vm, njs_arr_t *stack,
 njs_int_t njs_builtin_objects_create(njs_vm_t *vm);
 njs_int_t njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global);
 njs_int_t njs_builtin_match_native_function(njs_vm_t *vm,
-    njs_function_native_t func, njs_str_t *name);
+    njs_function_t *function, njs_str_t *name);
 
 njs_arr_t *njs_vm_completions(njs_vm_t *vm, njs_str_t *expression);
 

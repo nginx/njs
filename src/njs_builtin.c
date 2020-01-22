@@ -15,7 +15,7 @@ typedef struct {
        NJS_BUILTIN_TRAVERSE_MATCH,
     }                          type;
 
-    njs_function_native_t      native;
+    njs_function_t             *func;
 
     njs_lvlhsh_t               keys;
     njs_str_t                  match;
@@ -391,6 +391,7 @@ njs_builtin_traverse(njs_vm_t *vm, njs_traverse_t *traverse, void *data)
     u_char                  *p, *start, *end;
     njs_int_t               ret, n;
     njs_str_t               name;
+    njs_function_t          *func;
     njs_object_prop_t       *prop;
     njs_lvlhsh_query_t      lhq;
     njs_builtin_traverse_t  *ctx;
@@ -401,10 +402,11 @@ njs_builtin_traverse(njs_vm_t *vm, njs_traverse_t *traverse, void *data)
 
     if (ctx->type == NJS_BUILTIN_TRAVERSE_MATCH) {
         prop = traverse->prop;
+        func = ctx->func;
 
         if (!(njs_is_function(&prop->value)
               && njs_function(&prop->value)->native
-              && njs_function(&prop->value)->u.native == ctx->native))
+              && njs_native_function_same(njs_function(&prop->value), func)))
         {
             return NJS_OK;
         }
@@ -739,7 +741,7 @@ njs_object_completions(njs_vm_t *vm, njs_object_t *object)
 
 
 njs_int_t
-njs_builtin_match_native_function(njs_vm_t *vm, njs_function_native_t func,
+njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
     njs_str_t *name)
 {
     njs_int_t               ret;
@@ -750,7 +752,7 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_native_t func,
     njs_builtin_traverse_t  ctx;
 
     ctx.type = NJS_BUILTIN_TRAVERSE_MATCH;
-    ctx.native = func;
+    ctx.func = function;
 
     /* Global object. */
 

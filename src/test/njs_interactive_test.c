@@ -232,10 +232,15 @@ static njs_interactive_test_t  njs_test[] =
                  "    at f (:1)\n"
                  "    at main (native)\n") },
 
-    { njs_str("var fs = require('fs'); fs.readFile()" ENTER),
-      njs_str("TypeError: \"path\" must be a string\n"
-                 "    at fs.readFile (native)\n"
-                 "    at main (native)\n") },
+    { njs_str("var fs = require('fs');"
+              "['readFile',"
+              " 'readFileSync',"
+              " 'writeFile',"
+              " 'writeFileSync',"
+              " 'appendFile',"
+              " 'appendFileSync']"
+              ".every(v=>{ try {fs[v]();} catch (e) { return e.stack.search(`fs.${v} `) >= 0}})" ENTER),
+      njs_str("true") },
 
     { njs_str("parseInt({ toString: function() { return [1] } })" ENTER),
       njs_str("TypeError: Cannot convert object to primitive value\n"

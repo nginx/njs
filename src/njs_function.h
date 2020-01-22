@@ -203,6 +203,13 @@ njs_function_apply(njs_vm_t *vm, njs_function_t *function,
 }
 
 
+njs_inline njs_bool_t
+njs_native_function_same(const njs_function_t *f1, const njs_function_t *f2)
+{
+    return f1->u.native == f2->u.native && f1->magic == f2->magic;
+}
+
+
 extern const njs_object_type_init_t  njs_function_type_init;
 extern const njs_object_init_t  njs_function_instance_init;
 extern const njs_object_init_t  njs_arrow_instance_init;
