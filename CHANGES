@@ -25,7 +25,7 @@ Changes with njs 0.3.8                                           21 Jan 2020
     *) Feature: added initial Symbol support.
        Thanks to Artem S. Povalyukhin.
 
-    *) Feature: added externals supopor for JSON.stringify().
+    *) Feature: added externals support for JSON.stringify().
 
     *) Feature: added Object.is().
        Thanks to Artem S. Povalyukhin.
