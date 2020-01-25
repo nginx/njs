@@ -81,6 +81,8 @@ njs_int_t njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
 njs_int_t njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
     njs_value_t *value, njs_value_t *setval);
 const char *njs_prop_type_string(njs_object_prop_type_t type);
+njs_int_t njs_object_prop_init(njs_vm_t *vm, const njs_object_init_t* init,
+    const njs_object_prop_t *base, njs_value_t *value, njs_value_t *retval);
 
 
 njs_inline njs_bool_t

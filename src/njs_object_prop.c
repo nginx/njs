@@ -881,3 +881,54 @@ njs_prop_type_string(njs_object_prop_type_t type)
         return "unknown";
     }
 }
+
+
+njs_int_t
+njs_object_prop_init(njs_vm_t *vm, const njs_object_init_t* init,
+    const njs_object_prop_t *base, njs_value_t *value, njs_value_t *retval)
+{
+    njs_int_t           ret;
+    njs_object_t        *object;
+    njs_object_prop_t   *prop;
+    njs_lvlhsh_query_t  lhq;
+
+    object = njs_object_alloc(vm);
+    if (object == NULL) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_object_hash_create(vm, &object->hash, init->properties,
+                                 init->items);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    prop = njs_mp_align(vm->mem_pool, sizeof(njs_value_t),
+                        sizeof(njs_object_prop_t));
+    if (njs_slow_path(prop == NULL)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    *prop = *base;
+
+    prop->type = NJS_PROPERTY;
+    njs_set_object(&prop->value, object);
+
+    lhq.proto = &njs_object_hash_proto;
+    njs_string_get(&prop->name, &lhq.key);
+    lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
+    lhq.value = prop;
+    lhq.replace = 1;
+    lhq.pool = vm->mem_pool;
+
+    ret = njs_lvlhsh_insert(njs_object_hash(value), &lhq);
+    if (njs_fast_path(ret == NJS_OK)) {
+        *retval = prop->value;
+        return NJS_OK;
+    }
+
+    njs_internal_error(vm, "lvlhsh insert failed");
+
+    return NJS_ERROR;
+}

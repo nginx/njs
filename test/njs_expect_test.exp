@@ -1061,3 +1061,12 @@ PatchedPromise.constructor
 PatchedPromise.constructor
 PatchedPromise.constructor
 PatchedPromise async done"
+
+njs_run {"./test/js/fs_promises_001.js"} \
+"init ok true
+short citcut ok true
+chain ok true
+error 1 ok true
+error 2 ok true
+error 3 ok true
+errors ok"

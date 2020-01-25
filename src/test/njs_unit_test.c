@@ -15892,7 +15892,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var fs = require('fs');"
                  "fs.readFileSync('/njs_unknown_path', true)"),
-      njs_str("TypeError: Unknown options type (a string or object required)") },
+      njs_str("TypeError: Unknown options type: \"boolean\" (a string or object required)") },
 
 
     /* require('fs').writeFile() */
@@ -15935,7 +15935,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var fs = require('fs');"
                  "fs.writeFile('/njs_unknown_path', '', true, function () {})"),
-      njs_str("TypeError: Unknown options type (a string or object required)") },
+      njs_str("TypeError: Unknown options type: \"boolean\" (a string or object required)") },
 
     /* require('fs').writeFileSync() */
 
@@ -15965,7 +15965,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var fs = require('fs');"
                  "fs.writeFileSync('/njs_unknown_path', '', true)"),
-      njs_str("TypeError: Unknown options type (a string or object required)") },
+      njs_str("TypeError: Unknown options type: \"boolean\" (a string or object required)") },
 
     /* require('fs').renameSync() */
 
@@ -16007,6 +16007,22 @@ static njs_unit_test_t  njs_test[] =
                 "              catch (e) { return (e instanceof TypeError); } })"
                 ".every((x) => x === true);"
               "func.map(test).every((x) => x)"),
+      njs_str("true")},
+
+    /* require('fs').promises */
+
+    { njs_str("var fs = require('fs');"
+              "typeof fs.promises"),
+      njs_str("object") },
+
+    { njs_str("var "
+              "fs = require('fs').promises,"
+              "func = ["
+                "'readFile',"
+                "'writeFile',"
+                "'appendFile',"
+              "];"
+              "func.every((x) => typeof fs[x] == 'function')"),
       njs_str("true")},
 
     /* require('crypto').createHash() */
@@ -16483,6 +16499,9 @@ static njs_unit_test_t  njs_shared_test[] =
 
     { njs_str("var fs = require('fs'); fs.a = 1; fs.a"),
       njs_str("1") },
+
+    { njs_str("require('fs').promises === require('fs').promises"),
+      njs_str("true") },
 
     { njs_str("isFinite()"),
       njs_str("false") },
