@@ -1064,9 +1064,14 @@ PatchedPromise async done"
 
 njs_run {"./test/js/fs_promises_001.js"} \
 "init ok true
-short citcut ok true
+short circut ok true
 chain ok true
 error 1 ok true
 error 2 ok true
 error 3 ok true
 errors ok"
+
+njs_run {"./test/js/fs_promises_002.js"} \
+"testSync ok true
+testCallback ok true
+testPromise ok true"

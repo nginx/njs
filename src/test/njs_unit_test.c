@@ -15991,9 +15991,39 @@ static njs_unit_test_t  njs_test[] =
               ".every((x) => x === true)"),
       njs_str("true")},
 
+    /* require('fs').access() */
+
+    { njs_str("var fs = require('fs');"
+              "fs.access()"),
+      njs_str("TypeError: \"path\" must be a string") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.access('/njs_unknown_path')"),
+      njs_str("TypeError: \"callback\" must be a function") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.access('/njs_unknown_path', fs.constants.F_OK)"),
+      njs_str("TypeError: \"callback\" must be a function") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.access('/njs_unknown_path', 'fail', function () {})"),
+      njs_str("TypeError: \"mode\" must be a number") },
+
+    /* require('fs').accessSync() */
+
+    { njs_str("var fs = require('fs');"
+              "fs.accessSync()"),
+      njs_str("TypeError: \"path\" must be a string") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.accessSync('/njs_unknown_path', 'fail')"),
+      njs_str("TypeError: \"mode\" must be a number") },
+
     { njs_str("var "
               "fs = require('fs'),"
               "func = ["
+                "'access',"
+                "'accessSync',"
                 "'readFile',"
                 "'readFileSync',"
                 "'writeFile',"
@@ -16018,11 +16048,29 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var "
               "fs = require('fs').promises,"
               "func = ["
+                "'access',"
                 "'readFile',"
                 "'writeFile',"
                 "'appendFile',"
               "];"
               "func.every((x) => typeof fs[x] == 'function')"),
+      njs_str("true")},
+
+    /* require('fs').constants */
+
+    { njs_str("var fs = require('fs');"
+              "typeof fs.constants"),
+      njs_str("object") },
+
+    { njs_str("var "
+              "fsc = require('fs').constants,"
+              "items = ["
+                "'F_OK',"
+                "'R_OK',"
+                "'W_OK',"
+                "'X_OK',"
+              "];"
+              "items.every((x) => typeof fsc[x] == 'number')"),
       njs_str("true")},
 
     /* require('crypto').createHash() */

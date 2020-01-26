@@ -233,7 +233,10 @@ static njs_interactive_test_t  njs_test[] =
                  "    at main (native)\n") },
 
     { njs_str("var fs = require('fs');"
-              "['readFile',"
+              "["
+              " 'access',"
+              " 'accessSync',"
+              " 'readFile',"
               " 'readFileSync',"
               " 'writeFile',"
               " 'writeFileSync',"

@@ -466,6 +466,68 @@ njs_fs_rename_sync(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
+njs_fs_access(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t calltype)
+{
+    int          md;
+    njs_int_t    ret;
+    const char  *file_path;
+    njs_value_t  retval, *path, *callback, *mode;
+
+    path = njs_arg(args, nargs, 1);
+    ret = njs_fs_path_arg(vm, &file_path, path, &njs_str_value("path"));
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    callback = NULL;
+    mode = njs_arg(args, nargs, 2);
+
+    if (calltype == NJS_FS_CALLBACK) {
+        callback = njs_arg(args, nargs, njs_min(nargs - 1, 3));
+        if (!njs_is_function(callback)) {
+            njs_type_error(vm, "\"callback\" must be a function");
+            return NJS_ERROR;
+        }
+
+        if (mode == callback) {
+            mode = njs_value_arg(&njs_value_undefined);
+        }
+    }
+
+    switch (mode->type) {
+    case NJS_UNDEFINED:
+        md = F_OK;
+        break;
+
+    case NJS_NUMBER:
+        md = njs_number(mode);
+        break;
+
+    default:
+        njs_type_error(vm, "\"mode\" must be a number");
+        return NJS_ERROR;
+    }
+
+    ret = access(file_path, md);
+    if (njs_slow_path(ret != 0)) {
+        ret = njs_fs_error(vm, "access", strerror(errno), path, errno, &retval);
+        goto done;
+    }
+
+    njs_set_undefined(&retval);
+
+done:
+
+    if (ret == NJS_OK) {
+        return njs_fs_result(vm, &retval, calltype, callback, 1);
+    }
+
+    return NJS_ERROR;
+}
+
+
+static njs_int_t
 njs_fs_fd_read(njs_vm_t *vm, int fd, njs_str_t *data)
 {
     u_char   *p, *end, *start;
@@ -810,6 +872,14 @@ static const njs_object_prop_t  njs_fs_promises_properties[] =
         .writable = 1,
         .configurable = 1,
     },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("access"),
+        .value = njs_native_function2(njs_fs_access, 0, NJS_FS_PROMISE),
+        .writable = 1,
+        .configurable = 1,
+    },
 };
 
 
@@ -827,6 +897,50 @@ njs_fs_promises(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
 }
 
 
+static const njs_object_prop_t  njs_fs_constants_properties[] =
+{
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("F_OK"),
+        .value = njs_value(NJS_NUMBER, 0, F_OK),
+        .enumerable = 1,
+    },
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("R_OK"),
+        .value = njs_value(NJS_NUMBER, 1, R_OK),
+        .enumerable = 1,
+    },
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("W_OK"),
+        .value = njs_value(NJS_NUMBER, 1, W_OK),
+        .enumerable = 1,
+    },
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("X_OK"),
+        .value = njs_value(NJS_NUMBER, 1, X_OK),
+        .enumerable = 1,
+    },
+};
+
+
+static const njs_object_init_t  njs_fs_constants_init = {
+    njs_fs_constants_properties,
+    njs_nitems(njs_fs_constants_properties),
+};
+
+
+static njs_int_t
+njs_fs_constants(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
+    njs_value_t *unused, njs_value_t *retval)
+{
+    return njs_object_prop_init(vm, &njs_fs_constants_init, prop, value,
+                                retval);
+}
+
+
 static const njs_object_prop_t  njs_fs_object_properties[] =
 {
     {
@@ -838,8 +952,31 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
 
     {
         .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("constants"),
+        .value = njs_prop_handler(njs_fs_constants),
+        .enumerable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("promises"),
         .value = njs_prop_handler(njs_fs_promises),
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("access"),
+        .value = njs_native_function2(njs_fs_access, 0, NJS_FS_CALLBACK),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("accessSync"),
+        .value = njs_native_function2(njs_fs_access, 0, NJS_FS_DIRECT),
+        .writable = 1,
+        .configurable = 1,
     },
 
     {

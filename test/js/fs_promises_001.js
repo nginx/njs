@@ -15,10 +15,10 @@ Promise.resolve()
     return fs.readFile(fname).then(fs.readFile);
 })
 .then((data) => {
-    console.log('short citcut ok', data == fname);
+    console.log('short circut ok', data == fname);
 })
 .catch((e) => {
-    console.log('short citcut failed', e);
+    console.log('short circut failed', e);
 })
 .then(() => {
     var read = fs.readFile.bind(fs, fname, 'utf8');
