@@ -10,6 +10,7 @@ function hash() {
     return v;
 }
 
+import hashlib from 'hash.js';
 import crypto from 'crypto';
 
 var state = {count:0}
@@ -22,4 +23,4 @@ function get() {
     return state.count;
 }
 
-export default {hash, inc, get};
+export default {hash, inc, get, name: hashlib.name}

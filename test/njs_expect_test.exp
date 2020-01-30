@@ -757,13 +757,13 @@ njs_run {"-p" "test/module" "-p" "test/module/libs" "./test/module/normal.js"} \
         "passed!"
 
 njs_run {"./test/module/normal.js"} \
-        "SyntaxError: Cannot find module \"hash.js\" in sub2.js:5"
+        "SyntaxError: Cannot find module \"hash.js\" in lib1.js:13"
 
 njs_run {"-p" "test/module/libs" "./test/module/exception.js"} \
         "at error \\(sub1.js:5\\)"
 
 njs_run {"-p" "test/module" "./test/module/recursive.js"} \
-        "SyntaxError: Cannot import itself \"./recursive.js\" in recursive.js:3"
+        "SyntaxError: Cannot import itself \"./test/module/recursive.js\" in recursive.js:1"
 
 # CLI OPTIONS
 
@@ -843,7 +843,7 @@ njs_test {
      "Error: loading exception\r\n    at module \\(loading_exception.js:1\\)"}
     {"import lib3 from 'lib1.js'\r\n"
      "undefined\r\n"}
-} "-p test/module/"
+} "-p test/module/ -p test/module/libs/"
 
 njs_test {
     {"import m from 'export_name.js'\r\n"
@@ -861,7 +861,7 @@ njs_test {
 } "-p test/module/"
 
 njs_run {"-q" "./test/module/normal.js"} \
-        "SyntaxError: Cannot find module \"hash.js\" in 5"
+        "SyntaxError: Cannot find module \"hash.js\" in 13"
 
 njs_run {"-p" "test/module/libs/" "-d" "./test/module/normal.js"} \
         "passed!"

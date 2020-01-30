@@ -4,6 +4,7 @@ function hash() {
     return v;
 }
 
+import name from 'name.js';
 import crypto from 'crypto';
 
-export default {hash};
+export default {hash, name};

@@ -113,7 +113,7 @@ njs_parser_module(njs_vm_t *vm, njs_parser_t *parser)
     parser->node = NULL;
 
     module = njs_module_find(vm, &name, 0);
-    if (module != NULL) {
+    if (module != NULL && module->function.native) {
         goto found;
     }
 
@@ -138,18 +138,24 @@ njs_parser_module(njs_vm_t *vm, njs_parser_t *parser)
         goto fail;
     }
 
+    module = njs_module_find(vm, &info.file, 0);
+    if (module != NULL) {
+        (void) close(info.fd);
+        goto found;
+    }
+
     ret = njs_module_read(vm, info.fd, &text);
 
     (void) close(info.fd);
 
     if (njs_slow_path(ret != NJS_OK)) {
-        njs_internal_error(vm, "while reading \"%V\" module", &name);
+        njs_internal_error(vm, "while reading \"%V\" module", &info.file);
         goto fail;
     }
 
     if (njs_module_realpath_equal(&prev->file, &info.file)) {
         njs_parser_syntax_error(vm, parser, "Cannot import itself \"%V\"",
-                                &name);
+                                &info.file);
         goto fail;
     }
 
@@ -171,7 +177,7 @@ njs_parser_module(njs_vm_t *vm, njs_parser_t *parser)
         goto fail;
     }
 
-    module = njs_module_add(vm, &name);
+    module = njs_module_add(vm, &info.file);
     if (njs_slow_path(module == NULL)) {
         goto fail;
     }
@@ -229,7 +235,8 @@ njs_module_lookup(njs_vm_t *vm, const njs_str_t *cwd, njs_module_info_t *info)
     }
 
     ret = njs_module_relative_path(vm, cwd, info);
-    if (ret == NJS_OK) {
+
+    if (ret != NJS_DECLINED) {
         return ret;
     }
 
@@ -241,7 +248,8 @@ njs_module_lookup(njs_vm_t *vm, const njs_str_t *cwd, njs_module_info_t *info)
 
     for (i = 0; i < vm->paths->items; i++) {
         ret = njs_module_relative_path(vm, path, info);
-        if (ret == NJS_OK) {
+
+        if (ret != NJS_DECLINED) {
             return ret;
         }
 

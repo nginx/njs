@@ -1,3 +1,4 @@
+import name   from 'name.js';
 import lib1   from 'lib1.js';
 import lib2   from 'lib2.js';
 import lib1_2 from 'lib1.js';
@@ -7,6 +8,15 @@ var h = crypto.createHash('md5');
 var hash = h.update('AB').digest('hex');
 
 var fails = 0;
+
+if (name != 'name') {
+    fails++;
+}
+
+if (lib1.name != 'libs.name') {
+    fails++;
+}
+
 if (lib1.hash() != hash) {
     fails++;
 }
