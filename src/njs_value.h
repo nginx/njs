@@ -647,6 +647,10 @@ typedef struct {
     ((value)->type == NJS_ARRAY)
 
 
+#define njs_is_fast_array(value)                                              \
+    (njs_is_array(value) && njs_array(value)->object.fast_array)
+
+
 #define njs_is_array_buffer(value)                                            \
     ((value)->type == NJS_ARRAY_BUFFER)
 
@@ -765,6 +769,10 @@ typedef struct {
 
 #define njs_set_undefined(value)                                              \
     *(value) = njs_value_undefined
+
+
+#define njs_set_null(value)                                                   \
+    *(value) = njs_value_null
 
 
 #define njs_set_true(value)                                                   \

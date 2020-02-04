@@ -110,6 +110,7 @@ njs_object_value_alloc(njs_vm_t *vm, const njs_value_t *value, njs_uint_t type)
         ov->object.type = njs_object_value_type(type);
         ov->object.shared = 0;
         ov->object.extensible = 1;
+        ov->object.error_data = 0;
         ov->object.fast_array = 0;
 
         index = njs_primitive_prototype_index(type);
@@ -588,6 +589,11 @@ njs_object_enumerate(njs_vm_t *vm, const njs_object_t *object,
         return NULL;
     }
 
+    if (njs_slow_path(!items->object.fast_array)) {
+        njs_internal_error(vm, "njs_object_enumerate() too many keys");
+        return NULL;
+    }
+
     ret = njs_object_enumerate_value(vm, object, items, kind, type, all);
     if (njs_slow_path(ret != NJS_OK)) {
         return NULL;
@@ -614,6 +620,11 @@ njs_object_own_enumerate(njs_vm_t *vm, const njs_object_t *object,
         return NULL;
     }
 
+    if (njs_slow_path(!items->object.fast_array)) {
+        njs_internal_error(vm, "njs_object_own_enumerate() too many keys");
+        return NULL;
+    }
+
     ret = njs_object_own_enumerate_value(vm, object, object, items, kind, type,
                                          all);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -635,9 +646,11 @@ njs_object_enumerate_array_length(const njs_object_t *object)
     length = 0;
     array = (njs_array_t *) object;
 
-    for (i = 0; i < array->length; i++) {
-        if (njs_is_valid(&array->start[i])) {
-            length++;
+    if (object->fast_array) {
+        for (i = 0; i < array->length; i++) {
+            if (njs_is_valid(&array->start[i])) {
+                length++;
+            }
         }
     }
 
@@ -760,6 +773,10 @@ njs_object_enumerate_array(njs_vm_t *vm, const njs_array_t *array,
     uint32_t     i;
     njs_value_t  *item;
     njs_array_t  *entry;
+
+    if (!array->object.fast_array) {
+        return NJS_OK;
+    }
 
     item = items->start;
 

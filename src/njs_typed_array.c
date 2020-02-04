@@ -177,7 +177,6 @@ njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_lvlhsh_init(&array->object.shared_hash);
     array->object.__proto__ = &vm->prototypes[type].object;
     array->object.type = NJS_TYPED_ARRAY;
-    array->object.shared = 0;
     array->object.extensible = 1;
     array->object.fast_array = 1;
 

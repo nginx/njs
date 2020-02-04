@@ -38,7 +38,7 @@ void njs_chb_destroy(njs_chb_t *chain);
 
 
 #define njs_chb_append(chain, msg, len)                                      \
-    njs_chb_append0(chain, (const char *) msg, len)
+    njs_chb_append0(chain, (const char *) (msg), len)
 
 #define njs_chb_append_literal(chain, literal)                               \
     njs_chb_append0(chain, literal, njs_length(literal))

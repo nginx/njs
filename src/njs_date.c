@@ -385,6 +385,8 @@ done:
     date->object.type = NJS_DATE;
     date->object.shared = 0;
     date->object.extensible = 1;
+    date->object.error_data = 0;
+    date->object.fast_array = 0;
     date->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_DATE].object;
 
     date->time = time;

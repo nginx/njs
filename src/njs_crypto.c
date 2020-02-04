@@ -134,6 +134,8 @@ njs_crypto_object_value_alloc(njs_vm_t *vm, njs_object_type_t type)
         ov->object.type = NJS_OBJECT_VALUE;
         ov->object.shared = 0;
         ov->object.extensible = 1;
+        ov->object.error_data = 0;
+        ov->object.fast_array = 0;
 
         ov->object.__proto__ = &vm->prototypes[type].object;
         return ov;

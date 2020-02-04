@@ -37,6 +37,8 @@ njs_array_buffer_alloc(njs_vm_t *vm, uint64_t size)
     array->object.type = NJS_ARRAY_BUFFER;
     array->object.shared = 0;
     array->object.extensible = 1;
+    array->object.error_data = 0;
+    array->object.fast_array = 0;
     array->size = size;
 
     return array;

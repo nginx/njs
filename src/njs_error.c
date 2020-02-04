@@ -200,6 +200,7 @@ njs_error_alloc(njs_vm_t *vm, njs_object_type_t type, const njs_value_t *name,
     error->type = NJS_OBJECT;
     error->shared = 0;
     error->extensible = 1;
+    error->fast_array = 0;
     error->error_data = 1;
     error->__proto__ = &vm->prototypes[type].object;
 
@@ -634,6 +635,7 @@ njs_memory_error_set(njs_vm_t *vm, njs_value_t *value)
      * it from ordinary internal errors.
      */
     object->extensible = 0;
+    object->fast_array = 0;
     object->error_data = 1;
 
     njs_set_object(value, object);

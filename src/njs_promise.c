@@ -87,6 +87,8 @@ njs_promise_alloc(njs_vm_t *vm)
     promise->object.type = NJS_PROMISE;
     promise->object.shared = 0;
     promise->object.extensible = 1;
+    promise->object.error_data = 0;
+    promise->object.fast_array = 0;
     promise->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_PROMISE].object;
 
     data = (njs_promise_data_t *) ((uint8_t *) promise + sizeof(njs_promise_t));
@@ -217,7 +219,6 @@ njs_promise_create_function(njs_vm_t *vm)
     function->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_FUNCTION].object;
     function->object.shared_hash = vm->shared->arrow_instance_hash;
     function->object.type = NJS_FUNCTION;
-    function->object.shared = 0;
     function->object.extensible = 1;
     function->args_offset = 1;
     function->native = 1;

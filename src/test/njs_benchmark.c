@@ -212,13 +212,13 @@ static njs_benchmark_test_t  njs_test[] =
       njs_str("3524578"),
       1 },
 
-    { "array 10M",
-      njs_str("var arr = new Array(10000000);"
+    { "array 1M",
+      njs_str("var arr = new Array(1000000);"
               "var count = 0, length = arr.length;"
               "arr.fill(2);"
               "for (var i = 0; i < length; i++) { count += arr[i]; }"
               "count"),
-      njs_str("20000000"),
+      njs_str("2000000"),
       1 },
 
     { "typed array 10M",

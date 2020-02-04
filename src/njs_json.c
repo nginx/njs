@@ -21,6 +21,7 @@ typedef struct {
     njs_value_t                value;
 
     uint8_t                    written;       /* 1 bit */
+    uint8_t                    array;         /* 1 bit */
 
     enum {
        NJS_JSON_OBJECT,
@@ -28,6 +29,7 @@ typedef struct {
     }                          type:8;
 
     uint32_t                   index;
+    uint32_t                   length;
     njs_array_t                *keys;
     njs_object_prop_t          *prop;
 } njs_json_state_t;
@@ -156,7 +158,7 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     reviver = njs_arg(args, nargs, 2);
 
-    if (njs_is_function(reviver) && njs_is_object(&value)) {
+    if (njs_slow_path(njs_is_function(reviver) && njs_is_object(&value))) {
         parse->function = njs_function(reviver);
         parse->depth = 0;
 
@@ -828,18 +830,11 @@ njs_json_push_parse_state(njs_vm_t *vm, njs_json_parse_t *parse,
     state = &parse->states[parse->depth++];
     state->value = *value;
     state->index = 0;
-
-    if (njs_is_array(value)) {
-        state->type = NJS_JSON_ARRAY;
-
-    } else {
-        state->type = NJS_JSON_OBJECT;
-        state->prop = NULL;
-        state->keys = njs_value_own_enumerate(vm, value, NJS_ENUM_KEYS,
-                                              NJS_ENUM_STRING, 0);
-        if (state->keys == NULL) {
-            return NULL;
-        }
+    state->prop = NULL;
+    state->keys = njs_value_own_enumerate(vm, value, NJS_ENUM_KEYS,
+                                          NJS_ENUM_STRING, 0);
+    if (state->keys == NULL) {
+        return NULL;
     }
 
     return state;
@@ -858,111 +853,88 @@ njs_json_pop_parse_state(njs_json_parse_t *parse)
 }
 
 
-#define njs_json_is_non_empty(_value)                                         \
-    ((njs_is_object(_value) && !njs_object_hash_is_empty(_value))             \
-     || (njs_is_array(_value) && njs_array_len(_value) != 0))
-
-
 static njs_int_t
 njs_json_parse_iterator(njs_vm_t *vm, njs_json_parse_t *parse,
     njs_value_t *object)
 {
-    njs_int_t           ret;
-    njs_value_t         *key, *value, wrapper;
-    njs_object_t        *obj;
-    njs_json_state_t    *state;
-    njs_object_prop_t   *prop;
-    njs_lvlhsh_query_t  lhq;
+    njs_int_t             ret;
+    njs_value_t           *key, wrapper;
+    njs_object_t          *obj;
+    njs_json_state_t      *state;
+    njs_object_prop_t     *prop;
+    njs_property_query_t  pq;
 
     obj = njs_json_wrap_value(vm, &wrapper, object);
     if (njs_slow_path(obj == NULL)) {
-        goto memory_error;
+        return NJS_ERROR;
     }
 
     state = njs_json_push_parse_state(vm, parse, &wrapper);
     if (njs_slow_path(state == NULL)) {
-        goto memory_error;
+        return NJS_ERROR;
     }
 
-    lhq.proto = &njs_object_hash_proto;
-
     for ( ;; ) {
+        if (state->index < state->keys->length) {
+            njs_property_query_init(&pq, NJS_PROPERTY_QUERY_SET, 0);
 
-        switch (state->type) {
-        case NJS_JSON_OBJECT:
-            if (state->index < state->keys->length) {
-                key = &state->keys->start[state->index];
-                njs_string_get(key, &lhq.key);
-                lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
+            key = &state->keys->start[state->index];
 
-                ret = njs_lvlhsh_find(njs_object_hash(&state->value), &lhq);
-                if (njs_slow_path(ret == NJS_DECLINED)) {
+            ret = njs_property_query(vm, &pq, &state->value, key);
+            if (njs_slow_path(ret != NJS_OK)) {
+                if (ret == NJS_DECLINED) {
                     state->index++;
-                    break;
+                    continue;
                 }
 
-                prop = lhq.value;
+                return NJS_ERROR;
+            }
 
-                if (prop->type == NJS_WHITEOUT) {
-                    state->index++;
-                    break;
-                }
+            prop = pq.lhq.value;
 
-                state->prop = prop;
+            if (prop->type == NJS_WHITEOUT) {
+                state->index++;
+                continue;
+            }
 
-                if (njs_json_is_non_empty(&prop->value)) {
-                    state = njs_json_push_parse_state(vm, parse, &prop->value);
-                    if (state == NULL) {
-                        goto memory_error;
-                    }
+            state->prop = prop;
 
-                    break;
-                }
-
-            } else {
-                state = njs_json_pop_parse_state(parse);
+            if (prop->type == NJS_PROPERTY && njs_is_object(&prop->value)) {
+                state = njs_json_push_parse_state(vm, parse, &prop->value);
                 if (state == NULL) {
-                    vm->retval = parse->retval;
-                    return NJS_OK;
-                }
-            }
-
-            ret = njs_json_parse_iterator_call(vm, parse, state);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return ret;
-            }
-
-            break;
-
-        case NJS_JSON_ARRAY:
-            if (state->index < njs_array_len(&state->value)) {
-                value = &njs_array_start(&state->value)[state->index];
-
-                if (njs_json_is_non_empty(value)) {
-                    state = njs_json_push_parse_state(vm, parse, value);
-                    if (state == NULL) {
-                        goto memory_error;
-                    }
-
-                    break;
+                    return NJS_ERROR;
                 }
 
-            } else {
-                state = njs_json_pop_parse_state(parse);
+                continue;
             }
 
-            ret = njs_json_parse_iterator_call(vm, parse, state);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return ret;
+            if (prop->type == NJS_PROPERTY_REF
+                && njs_is_object(prop->value.data.u.value))
+            {
+                state = njs_json_push_parse_state(vm, parse,
+                                                  prop->value.data.u.value);
+                if (state == NULL) {
+                    return NJS_ERROR;
+                }
+
+                continue;
             }
 
-            break;
+        } else {
+            state = njs_json_pop_parse_state(parse);
+            if (state == NULL) {
+                vm->retval = parse->retval;
+                return NJS_OK;
+            }
+        }
+
+        ret = njs_json_parse_iterator_call(vm, parse, state);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
     }
 
-memory_error:
-
-    njs_memory_error(vm);
+    njs_internal_error(vm, "njs_json_parse_iterator() unexpected exit");
 
     return NJS_ERROR;
 }
@@ -972,15 +944,18 @@ static njs_int_t
 njs_json_parse_iterator_call(njs_vm_t *vm, njs_json_parse_t *parse,
     njs_json_state_t *state)
 {
-    njs_int_t    ret;
-    njs_value_t  arguments[3], *value;
+    njs_int_t          ret;
+    njs_value_t        arguments[3], *value;
+    njs_object_prop_t  *prop;
+
+    prop = state->prop;
 
     arguments[0] = state->value;
+    arguments[1] = state->keys->start[state->index++];
 
-    switch (state->type) {
-    case NJS_JSON_OBJECT:
-        arguments[1] = state->keys->start[state->index++];
-        arguments[2] = state->prop->value;
+    switch (prop->type) {
+    case NJS_PROPERTY:
+        arguments[2] = prop->value;
 
         ret = njs_function_apply(vm, parse->function, arguments, 3,
                                  &parse->retval);
@@ -989,17 +964,16 @@ njs_json_parse_iterator_call(njs_vm_t *vm, njs_json_parse_t *parse,
         }
 
         if (njs_is_undefined(&parse->retval)) {
-            state->prop->type = NJS_WHITEOUT;
+            prop->type = NJS_WHITEOUT;
 
         } else {
-            state->prop->value = parse->retval;
+            prop->value = parse->retval;
         }
 
         break;
 
-    case NJS_JSON_ARRAY:
-        njs_uint32_to_string(&arguments[1], state->index);
-        value = &njs_array_start(&state->value)[state->index++];
+    case NJS_PROPERTY_REF:
+        value = prop->value.data.u.value;
         arguments[2] = *value;
 
         ret = njs_function_apply(vm, parse->function, arguments, 3,
@@ -1008,9 +982,18 @@ njs_json_parse_iterator_call(njs_vm_t *vm, njs_json_parse_t *parse,
             return ret;
         }
 
-        *value = parse->retval;
+        if (njs_is_undefined(&parse->retval)) {
+            njs_set_invalid(value);
+
+        } else {
+            *value = parse->retval;
+        }
 
         break;
+
+    default:
+        njs_internal_error(vm, "njs_json_parse_iterator_call() unexpected "
+                         "property type:%s", njs_prop_type_string(prop->type));
     }
 
     return NJS_OK;
@@ -1036,6 +1019,7 @@ static njs_json_state_t *
 njs_json_push_stringify_state(njs_vm_t *vm, njs_json_stringify_t *stringify,
     const njs_value_t *value)
 {
+    njs_int_t         ret;
     njs_json_state_t  *state;
 
     if (njs_slow_path(stringify->depth >= NJS_JSON_MAX_DEPTH)) {
@@ -1048,14 +1032,27 @@ njs_json_push_stringify_state(njs_vm_t *vm, njs_json_stringify_t *stringify,
     state->index = 0;
     state->written = 0;
 
-    if (njs_is_array(value)) {
+    if (njs_is_fast_array(value)) {
         state->type = NJS_JSON_ARRAY;
+        state->array = 1;
 
     } else {
         state->type = NJS_JSON_OBJECT;
+        state->array = njs_is_array(value);
 
         if (njs_is_array(&stringify->replacer)) {
             state->keys = njs_array(&stringify->replacer);
+
+        } else if (njs_is_array(value)) {
+            state->keys = njs_array_keys(vm, value, 0);
+            if (njs_slow_path(state->keys == NULL)) {
+                return NULL;
+            }
+
+            ret = njs_object_length(vm, &state->value, &state->length);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                return NULL;
+            }
 
         } else {
             state->keys = njs_value_own_enumerate(vm, value, NJS_ENUM_KEYS,
@@ -1098,13 +1095,20 @@ njs_json_is_object(const njs_value_t *value)
 }
 
 
-#define njs_json_stringify_indent(times)                                      \
-    if (stringify->space.length != 0) {                                       \
-        njs_chb_append(&chain,"\n", 1);                                       \
-        for (i = 0; i < (njs_int_t) (times) - 1; i++) {                       \
-            njs_chb_append_str(&chain, &stringify->space);                    \
-        }                                                                     \
+njs_inline void
+njs_json_stringify_indent(njs_json_stringify_t *stringify, njs_chb_t *chain,
+    njs_int_t times)
+{
+    njs_int_t  i;
+
+    if (stringify->space.length != 0) {
+        times += stringify->depth;
+        njs_chb_append(chain,"\n", 1);
+        for (i = 0; i < (times - 1); i++) {
+            njs_chb_append_str(chain, &stringify->space);
+        }
     }
+}
 
 static njs_int_t
 njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify,
@@ -1112,11 +1116,10 @@ njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify,
 {
     u_char            *p;
     size_t            size;
-    njs_chb_t         chain;
     ssize_t           length;
-    njs_int_t         i;
     njs_int_t         ret;
-    njs_value_t       *key, *value, wrapper;
+    njs_chb_t         chain;
+    njs_value_t       *key, *value, index, wrapper;
     njs_object_t      *obj;
     njs_json_state_t  *state;
 
@@ -1136,13 +1139,15 @@ njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify,
         switch (state->type) {
         case NJS_JSON_OBJECT:
             if (state->index == 0) {
-                njs_chb_append_literal(&chain,"{");
-                njs_json_stringify_indent(stringify->depth);
+                njs_chb_append(&chain, state->array ? "[" : "{", 1);
+                njs_json_stringify_indent(stringify, &chain, 0);
             }
 
-            if (state->index >= state->keys->length) {
-                njs_json_stringify_indent(stringify->depth - 1);
-                njs_chb_append_literal(&chain,"}");
+            if ((state->array && state->index >= state->length)
+                || (!state->array && state->index >= state->keys->length))
+            {
+                njs_json_stringify_indent(stringify, &chain, -1);
+                njs_chb_append(&chain, state->array ? "]" : "}", 1);
 
                 state = njs_json_pop_stringify_state(stringify);
                 if (state == NULL) {
@@ -1153,10 +1158,22 @@ njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify,
             }
 
             value = &stringify->retval;
-            key = &state->keys->start[state->index++];
+
+            if (state->array) {
+                njs_uint32_to_string(&index, state->index++);
+                key = &index;
+
+            } else {
+                key = &state->keys->start[state->index++];
+            }
+
             ret = njs_value_property(vm, &state->value, key, value);
             if (njs_slow_path(ret == NJS_ERROR)) {
                 return ret;
+            }
+
+            if (state->array && ret == NJS_DECLINED) {
+                njs_set_null(value);
             }
 
             ret = njs_json_stringify_to_json(stringify, state, key, value);
@@ -1179,14 +1196,17 @@ njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify,
 
             if (state->written) {
                 njs_chb_append_literal(&chain,",");
-                njs_json_stringify_indent(stringify->depth);
+                njs_json_stringify_indent(stringify, &chain, 0);
             }
 
             state->written = 1;
-            njs_json_append_string(&chain, key, '\"');
-            njs_chb_append_literal(&chain,":");
-            if (stringify->space.length != 0) {
-                njs_chb_append_literal(&chain," ");
+
+            if (!state->array) {
+                njs_json_append_string(&chain, key, '\"');
+                njs_chb_append_literal(&chain,":");
+                if (stringify->space.length != 0) {
+                    njs_chb_append_literal(&chain," ");
+                }
             }
 
             if (njs_json_is_object(value)) {
@@ -1205,11 +1225,11 @@ njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify,
         case NJS_JSON_ARRAY:
             if (state->index == 0) {
                 njs_chb_append_literal(&chain,"[");
-                njs_json_stringify_indent(stringify->depth);
+                njs_json_stringify_indent(stringify, &chain, 0);
             }
 
             if (state->index >= njs_array_len(&state->value)) {
-                njs_json_stringify_indent(stringify->depth - 1);
+                njs_json_stringify_indent(stringify, &chain, -1);
                 njs_chb_append_literal(&chain,"]");
 
                 state = njs_json_pop_stringify_state(stringify);
@@ -1222,7 +1242,7 @@ njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify,
 
             if (state->written) {
                 njs_chb_append_literal(&chain,",");
-                njs_json_stringify_indent(stringify->depth);
+                njs_json_stringify_indent(stringify, &chain, 0);
             }
 
             stringify->retval = njs_array_start(&state->value)[state->index++];
@@ -1977,6 +1997,41 @@ njs_dump_visited(njs_arr_t *list, const njs_value_t *value)
 }
 
 
+njs_inline njs_bool_t
+njs_dump_empty(njs_json_stringify_t *stringify, njs_json_state_t *state,
+    njs_chb_t *chain, double key, double prev, njs_bool_t sep_position)
+{
+    int64_t  diff;
+
+    if (!state->array || isnan(prev)) {
+        return 0;
+    }
+
+    if (isnan(key)) {
+        key = state->length;
+    }
+
+    diff = key - prev;
+
+    if (diff > 1) {
+        if (sep_position == 0 && state->keys->length) {
+            njs_chb_append_literal(chain, ",");
+            njs_json_stringify_indent(stringify, chain, 1);
+        }
+
+        njs_chb_sprintf(chain, 64, "<%L empty items>", diff - 1);
+        state->written = 1;
+
+        if (sep_position == 1 && state->keys->length) {
+            njs_chb_append_literal(chain, ",");
+            njs_json_stringify_indent(stringify, chain, 1);
+        }
+    }
+
+    return 1;
+}
+
+
 static const njs_value_t  string_get = njs_string("[Getter]");
 static const njs_value_t  string_set = njs_string("[Setter]");
 static const njs_value_t  string_get_set = njs_long_string("[Getter/Setter]");
@@ -1986,7 +2041,7 @@ njs_int_t
 njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
     njs_uint_t console, njs_uint_t indent)
 {
-    njs_int_t             i, ret;
+    njs_int_t             ret;
     njs_chb_t             chain;
     njs_str_t             str;
     njs_arr_t             visited;
@@ -2035,6 +2090,7 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
         goto memory_error;
     }
 
+    key = NULL;
     (void) njs_dump_visit(&visited, value);
 
     for ( ;; ) {
@@ -2052,13 +2108,17 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
                     njs_chb_append_literal(&chain, " ");
                 }
 
-                njs_chb_append_literal(&chain, "{");
-                njs_json_stringify_indent(stringify->depth + 1);
+                njs_chb_append(&chain, state->array ? "[" : "{", 1);
+                njs_json_stringify_indent(stringify, &chain, 1);
+
             }
 
             if (state->index >= state->keys->length) {
-                njs_json_stringify_indent(stringify->depth);
-                njs_chb_append_literal(&chain, "}");
+                njs_dump_empty(stringify, state, &chain, state->length,
+                     (state->index > 0) ? njs_key_to_index(key) : -1, 0);
+
+                njs_json_stringify_indent(stringify, &chain, 0);
+                njs_chb_append(&chain, state->array ? "]" : "}", 1);
 
                 state = njs_json_pop_stringify_state(stringify);
                 if (state == NULL) {
@@ -2085,6 +2145,25 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
 
             if (prop->type == NJS_WHITEOUT || !prop->enumerable) {
                 break;
+            }
+
+            if (state->written) {
+                njs_chb_append_literal(&chain, ",");
+                njs_json_stringify_indent(stringify, &chain, 1);
+            }
+
+            state->written = 1;
+
+            njs_dump_empty(stringify, state, &chain, njs_key_to_index(key),
+                      (state->index > 1) ? njs_key_to_index(&key[-1]) : -1, 1);
+
+            if (!state->array || isnan(njs_key_to_index(key))) {
+                njs_key_string_get(vm, key, &pq.lhq.key);
+                njs_chb_append(&chain, pq.lhq.key.start, pq.lhq.key.length);
+                njs_chb_append_literal(&chain, ":");
+                if (stringify->space.length != 0) {
+                    njs_chb_append_literal(&chain, " ");
+                }
             }
 
             val = &prop->value;
@@ -2114,19 +2193,6 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
                 } else {
                     val = njs_value_arg(&string_set);
                 }
-            }
-
-            if (state->written) {
-                njs_chb_append_literal(&chain, ",");
-                njs_json_stringify_indent(stringify->depth + 1);
-            }
-
-            state->written = 1;
-            njs_key_string_get(vm, key, &pq.lhq.key);
-            njs_chb_append(&chain, pq.lhq.key.start, pq.lhq.key.length);
-            njs_chb_append_literal(&chain, ":");
-            if (stringify->space.length != 0) {
-                njs_chb_append_literal(&chain, " ");
             }
 
             if (njs_dump_is_recursive(val)) {
@@ -2173,11 +2239,11 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
                 }
 
                 njs_chb_append_literal(&chain, "[");
-                njs_json_stringify_indent(stringify->depth + 1);
+                njs_json_stringify_indent(stringify, &chain, 1);
             }
 
             if (state->index >= njs_array_len(&state->value)) {
-                njs_json_stringify_indent(stringify->depth);
+                njs_json_stringify_indent(stringify, &chain, 0);
                 njs_chb_append_literal(&chain, "]");
 
                 state = njs_json_pop_stringify_state(stringify);
@@ -2190,7 +2256,7 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
 
             if (state->written) {
                 njs_chb_append_literal(&chain, ",");
-                njs_json_stringify_indent(stringify->depth + 1);
+                njs_json_stringify_indent(stringify, &chain, 1);
             }
 
             val = &njs_array_start(&state->value)[state->index++];

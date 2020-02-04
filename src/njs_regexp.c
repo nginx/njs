@@ -713,6 +713,8 @@ njs_regexp_alloc(njs_vm_t *vm, njs_regexp_pattern_t *pattern)
         regexp->object.type = NJS_REGEXP;
         regexp->object.shared = 0;
         regexp->object.extensible = 1;
+        regexp->object.fast_array = 0;
+        regexp->object.error_data = 0;
         njs_set_number(&regexp->last_index, 0);
         regexp->pattern = pattern;
         njs_string_short_set(&regexp->string, 0, 0);

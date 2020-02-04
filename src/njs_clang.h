@@ -155,6 +155,9 @@ njs_leading_zeros64(uint64_t x)
 #endif
 
 
+#define njs_stringify(v)    #v
+
+
 #if (NJS_HAVE_MEMORY_SANITIZER)
 #include <sanitizer/msan_interface.h>
 

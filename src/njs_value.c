@@ -295,7 +295,7 @@ njs_value_length(njs_vm_t *vm, njs_value_t *value, uint32_t *length)
     } else if (njs_is_primitive(value)) {
         *length = 0;
 
-    } else if (njs_is_array(value)) {
+    } else if (njs_is_fast_array(value)) {
         *length = njs_array_len(value);
 
     } else {
@@ -653,10 +653,14 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
         if (!njs_is_null_or_undefined_or_boolean(key)) {
             switch (proto->type) {
             case NJS_ARRAY:
+                array = (njs_array_t *) proto;
                 num = njs_key_to_index(key);
+
                 if (njs_fast_path(njs_key_is_integer_index(num, key))) {
-                    array = (njs_array_t *) proto;
-                    return njs_array_property_query(vm, pq, array, num);
+                    ret = njs_array_property_query(vm, pq, array, num);
+                    if (njs_fast_path(ret != NJS_DECLINED)) {
+                        return (ret == NJS_DONE) ? NJS_DECLINED : ret;
+                    }
                 }
 
                 break;
@@ -679,7 +683,6 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
                 if (njs_fast_path(njs_key_is_integer_index(num, key))) {
                     ov = (njs_object_value_t *) proto;
                     ret = njs_string_property_query(vm, pq, &ov->value, num);
-
                     if (njs_fast_path(ret != NJS_DECLINED)) {
                         return ret;
                     }
@@ -709,14 +712,6 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
             if (ret == NJS_OK) {
                 prop = pq->lhq.value;
 
-                if (!prop->configurable
-                    && prop->type == NJS_PROPERTY_HANDLER)
-                {
-                    /* Postpone making a mutable NJS_PROPERTY_HANDLER copy. */
-                    pq->shared = 1;
-                    return ret;
-                }
-
                 return njs_prop_private_copy(vm, pq);
             }
         }
@@ -738,37 +733,87 @@ static njs_int_t
 njs_array_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     njs_array_t *array, uint32_t index)
 {
-    uint32_t           size;
+    uint32_t           size, length;
     njs_int_t          ret;
-    njs_value_t        *value;
+    njs_value_t        *setval, value;
     njs_object_prop_t  *prop;
 
-    if (index >= array->length) {
-        if (pq->query != NJS_PROPERTY_QUERY_SET) {
-            return NJS_DECLINED;
-        }
-
+    if (pq->query == NJS_PROPERTY_QUERY_SET) {
         if (!array->object.extensible) {
             return NJS_DECLINED;
         }
 
-        size = index - array->length;
+        if (njs_fast_path(array->object.fast_array)) {
+            if (njs_fast_path(index < NJS_ARRAY_LARGE_OBJECT_LENGTH)) {
+                if (index >= array->length) {
+                    size = index - array->length + 1;
 
-        ret = njs_array_expand(vm, array, 0, size + 1);
+                    ret = njs_array_expand(vm, array, 0, size);
+                    if (njs_slow_path(ret != NJS_OK)) {
+                        return ret;
+                    }
+
+                    setval = &array->start[array->length];
+
+                    while (size != 0) {
+                        njs_set_invalid(setval);
+                        setval++;
+                        size--;
+                    }
+
+                    array->length = index + 1;
+                }
+
+                goto prop;
+            }
+
+            ret = njs_array_convert_to_slow_array(vm, array);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+        }
+
+        njs_set_array(&value, array);
+
+        ret = njs_object_length(vm, &value, &length);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
         }
 
-        value = &array->start[array->length];
-
-        while (size != 0) {
-            njs_set_invalid(value);
-            value++;
-            size--;
+        if ((index + 1) > length) {
+            ret = njs_array_length_redefine(vm, &value, index + 1);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
         }
 
-        array->length = index + 1;
+        ret = njs_lvlhsh_find(&array->object.hash, &pq->lhq);
+        if (ret == NJS_OK) {
+            prop = pq->lhq.value;
+
+            if (prop->type != NJS_WHITEOUT) {
+                return NJS_OK;
+            }
+
+            if (pq->own) {
+                pq->own_whiteout = prop;
+            }
+
+            return NJS_DECLINED;
+        }
+
+        return NJS_DONE;
     }
+
+    if (njs_slow_path(!array->object.fast_array)) {
+        return NJS_DECLINED;
+    }
+
+    if (index >= array->length) {
+        return NJS_DECLINED;
+    }
+
+prop:
 
     prop = &pq->scratch;
 
@@ -1056,19 +1101,17 @@ njs_value_property(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
             goto slow_path;
         }
 
-        /* NJS_ARRAY */
+        /* njs_is_fast_array() */
 
         array = njs_array(value);
 
-        if (njs_slow_path(index >= array->length)) {
+        if (njs_slow_path(index >= array->length
+                          || !njs_is_valid(&array->start[index])))
+        {
             goto slow_path;
         }
 
         *retval = array->start[index];
-
-        if (njs_slow_path(!njs_is_valid(retval))) {
-            njs_set_undefined(retval);
-        }
 
         return NJS_OK;
     }
@@ -1151,6 +1194,8 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     njs_typed_array_t     *tarray;
     njs_property_query_t  pq;
 
+    static const njs_str_t  length_key = njs_str("length");
+
     if (njs_fast_path(njs_is_number(key))) {
         num = njs_number(key);
 
@@ -1202,7 +1247,6 @@ slow_path:
         return NJS_ERROR;
     }
 
-
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_SET, 0);
 
     ret = njs_property_query(vm, &pq, value, key);
@@ -1245,6 +1289,17 @@ slow_path:
         if (pq.own) {
             switch (prop->type) {
             case NJS_PROPERTY:
+                if (njs_slow_path(pq.lhq.key_hash == NJS_LENGTH_HASH)) {
+                    njs_key_string_get(vm, &pq.key, &pq.lhq.key);
+
+                    if (njs_strstr_eq(&pq.lhq.key, &length_key)) {
+                        ret = njs_array_length_set(vm, value, prop, setval);
+                        if (ret != NJS_DECLINED) {
+                            return ret;
+                        }
+                    }
+                }
+
                 goto found;
 
             case NJS_PROPERTY_REF:

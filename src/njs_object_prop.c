@@ -95,20 +95,50 @@ found:
 }
 
 
+njs_object_prop_t *
+njs_object_property_add(njs_vm_t *vm, njs_value_t *object, njs_value_t *key,
+    njs_bool_t replace)
+{
+    njs_int_t           ret;
+    njs_object_prop_t   *prop;
+    njs_lvlhsh_query_t  lhq;
+
+    prop = njs_object_prop_alloc(vm, key, &njs_value_invalid, 1);
+    if (njs_slow_path(prop == NULL)) {
+        return NULL;
+    }
+
+    lhq.proto = &njs_object_hash_proto;
+    njs_key_string_get(vm, key, &lhq.key);
+    lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
+    lhq.value = prop;
+    lhq.replace = replace;
+    lhq.pool = vm->mem_pool;
+
+    ret = njs_lvlhsh_insert(njs_object_hash(object), &lhq);
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_internal_error(vm, "lvlhsh insert failed");
+        return NULL;
+    }
+
+    return prop;
+}
+
+
 /*
  * ES5.1, 8.12.9: [[DefineOwnProperty]]
- *   Limited support of special descriptors like length and array index
- *   (values can be set, but without property flags support).
  */
 njs_int_t
 njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *name, njs_value_t *value, njs_object_prop_define_t type)
 {
+    uint32_t              length;
     njs_int_t             ret;
+    njs_array_t           *array;
     njs_object_prop_t     *prop, *prev;
     njs_property_query_t  pq;
 
-    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_SET, 1);
+    static const njs_str_t  length_key = njs_str("length");
 
     if (njs_slow_path(!njs_is_key(name))) {
         ret = njs_value_to_key(vm, name, name);
@@ -117,8 +147,11 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
         }
     }
 
-    ret = njs_property_query(vm, &pq, object, name);
+again:
 
+    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_SET, 1);
+
+    ret = njs_property_query(vm, &pq, object, name);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
     }
@@ -236,6 +269,27 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
         break;
 
     case NJS_PROPERTY_REF:
+        if (njs_is_accessor_descriptor(prop)
+            || prop->configurable == NJS_ATTRIBUTE_FALSE
+            || prop->enumerable == NJS_ATTRIBUTE_FALSE
+            || prop->writable == NJS_ATTRIBUTE_FALSE)
+        {
+            array = njs_array(object);
+            length = array->length;
+
+            ret = njs_array_convert_to_slow_array(vm, array);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+
+            ret = njs_array_length_redefine(vm, object, length);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+
+            goto again;
+        }
+
         if (njs_is_valid(&prop->value)) {
             *prev->value.data.u.value = prop->value;
         } else {
@@ -284,20 +338,6 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
             && prev->enumerable != prop->enumerable)
         {
             goto exception;
-        }
-
-        if (pq.shared) {
-            /*
-             * shared non-configurable NJS_PROPERTY_HANDLER are not copied
-             * by njs_object_property_query().
-             */
-
-            ret = njs_prop_private_copy(vm, &pq);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return ret;
-            }
-
-            prev = pq.lhq.value;
         }
     }
 
@@ -391,6 +431,17 @@ done:
             }
 
         } else {
+            if (njs_slow_path(pq.lhq.key_hash == NJS_LENGTH_HASH)) {
+                njs_key_string_get(vm, &pq.key, &pq.lhq.key);
+
+                if (njs_strstr_eq(&pq.lhq.key, &length_key)) {
+                    ret = njs_array_length_set(vm, object, prev, &prop->value);
+                    if (ret != NJS_DECLINED) {
+                        return ret;
+                    }
+                }
+            }
+
             prev->value = prop->value;
         }
     }
