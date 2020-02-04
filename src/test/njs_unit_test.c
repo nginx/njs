@@ -17772,8 +17772,8 @@ njs_string_to_index_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
             }
         }
 
-        is_integer_index = njs_number_is_integer_index(njs_number(&vm->retval),
-                                                       &tests[i].value);
+        is_integer_index = njs_key_is_integer_index(njs_number(&vm->retval),
+                                                    &tests[i].value);
 
         if (tests[i].is_integer_index != is_integer_index) {
             njs_string_get(&tests[i].value, &string);

@@ -30,15 +30,23 @@ njs_int_t njs_number_parse_float(njs_vm_t *vm, njs_value_t *args,
 
 
 njs_inline njs_bool_t
-njs_number_is_integer_index(double num, const njs_value_t *value)
+njs_number_is_integer_index(double num)
 {
     uint32_t  u32;
 
     u32 = num;
 
-    return (u32 == num && u32 != 0xffffffff)
+    return (u32 == num && u32 != 0xffffffff);
+}
+
+
+njs_inline njs_bool_t
+njs_key_is_integer_index(double num, const njs_value_t *value)
+{
+    return (njs_number_is_integer_index(num))
             && !(njs_is_string(value) && num == 0 && signbit(num));
 }
+
 
 njs_inline int64_t
 njs_number_to_int64(double num)

@@ -215,6 +215,7 @@ struct njs_object_s {
 
     uint8_t                           extensible:1;
     uint8_t                           error_data:1;
+    uint8_t                           fast_array:1;
 };
 
 

@@ -549,7 +549,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
     case NJS_STRING:
         if (njs_fast_path(!njs_is_null_or_undefined_or_boolean(key))) {
             num = njs_key_to_index(key);
-            if (njs_fast_path(njs_number_is_integer_index(num, key))) {
+            if (njs_fast_path(njs_key_is_integer_index(num, key))) {
                 return njs_string_property_query(vm, pq, value, num);
             }
         }
@@ -654,7 +654,7 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
             switch (proto->type) {
             case NJS_ARRAY:
                 num = njs_key_to_index(key);
-                if (njs_fast_path(njs_number_is_integer_index(num, key))) {
+                if (njs_fast_path(njs_key_is_integer_index(num, key))) {
                     array = (njs_array_t *) proto;
                     return njs_array_property_query(vm, pq, array, num);
                 }
@@ -663,7 +663,7 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 
             case NJS_TYPED_ARRAY:
                 num = njs_key_to_index(key);
-                if (njs_fast_path(njs_number_is_integer_index(num, key))) {
+                if (njs_fast_path(njs_key_is_integer_index(num, key))) {
                     tarray = (njs_typed_array_t *) proto;
                     return njs_typed_array_property_query(vm, pq, tarray, num);
                 }
@@ -676,7 +676,7 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 
             case NJS_OBJECT_STRING:
                 num = njs_key_to_index(key);
-                if (njs_fast_path(njs_number_is_integer_index(num, key))) {
+                if (njs_fast_path(njs_key_is_integer_index(num, key))) {
                     ov = (njs_object_value_t *) proto;
                     ret = njs_string_property_query(vm, pq, &ov->value, num);
 
@@ -1021,9 +1021,59 @@ njs_int_t
 njs_value_property(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     njs_value_t *retval)
 {
+    double                num;
+    uint32_t              index;
     njs_int_t             ret;
+    njs_array_t          *array;
     njs_object_prop_t     *prop;
+    njs_typed_array_t     *tarray;
     njs_property_query_t  pq;
+
+    if (njs_fast_path(njs_is_number(key))) {
+        num = njs_number(key);
+
+        if (njs_slow_path(!njs_number_is_integer_index(num))) {
+            goto slow_path;
+        }
+
+        index = (uint32_t) num;
+
+        if (njs_is_typed_array(value)) {
+            tarray = njs_typed_array(value);
+
+            if (njs_slow_path(index >= njs_typed_array_length(tarray))) {
+                goto slow_path;
+            }
+
+            njs_set_number(retval, njs_typed_array_get(tarray, index));
+
+            return NJS_OK;
+        }
+
+        if (njs_slow_path(!(njs_is_object(value)
+                            && njs_object(value)->fast_array)))
+        {
+            goto slow_path;
+        }
+
+        /* NJS_ARRAY */
+
+        array = njs_array(value);
+
+        if (njs_slow_path(index >= array->length)) {
+            goto slow_path;
+        }
+
+        *retval = array->start[index];
+
+        if (njs_slow_path(!njs_is_valid(retval))) {
+            njs_set_undefined(retval);
+        }
+
+        return NJS_OK;
+    }
+
+slow_path:
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 0);
 
@@ -1093,15 +1143,65 @@ njs_int_t
 njs_value_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     njs_value_t *setval)
 {
+    double                num;
+    uint32_t              index;
     njs_int_t             ret;
+    njs_array_t           *array;
     njs_object_prop_t     *prop;
+    njs_typed_array_t     *tarray;
     njs_property_query_t  pq;
+
+    if (njs_fast_path(njs_is_number(key))) {
+        num = njs_number(key);
+
+        if (njs_slow_path(!njs_number_is_integer_index(num))) {
+            goto slow_path;
+        }
+
+        index = (uint32_t) num;
+
+        if (njs_is_typed_array(value)) {
+            tarray = njs_typed_array(value);
+
+            if (njs_fast_path(index < njs_typed_array_length(tarray))) {
+                ret = njs_value_to_number(vm, setval, &num);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    return ret;
+                }
+
+                njs_typed_array_set(tarray, index, num);
+            }
+
+            return NJS_OK;
+        }
+
+        if (njs_slow_path(!(njs_is_object(value)
+                            && njs_object(value)->fast_array)))
+        {
+            goto slow_path;
+        }
+
+        /* NJS_ARRAY */
+
+        array = njs_array(value);
+
+        if (njs_slow_path(index >= array->length)) {
+            goto slow_path;
+        }
+
+        array->start[index] = *setval;
+
+        return NJS_OK;
+    }
+
+slow_path:
 
     if (njs_is_primitive(value)) {
         njs_type_error(vm, "property set on primitive %s type",
                        njs_type_string(value->type));
         return NJS_ERROR;
     }
+
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_SET, 0);
 

@@ -67,6 +67,7 @@ njs_array_alloc(njs_vm_t *vm, uint64_t length, uint32_t spare)
     array->object.type = NJS_ARRAY;
     array->object.shared = 0;
     array->object.extensible = 1;
+    array->object.fast_array = 1;
     array->size = size;
     array->length = length;
 

@@ -51,6 +51,8 @@ njs_object_alloc(njs_vm_t *vm)
         object->shared = 0;
         object->extensible = 1;
         object->error_data = 0;
+        object->fast_array = 0;
+
         return object;
     }
 
@@ -108,6 +110,7 @@ njs_object_value_alloc(njs_vm_t *vm, const njs_value_t *value, njs_uint_t type)
         ov->object.type = njs_object_value_type(type);
         ov->object.shared = 0;
         ov->object.extensible = 1;
+        ov->object.fast_array = 0;
 
         index = njs_primitive_prototype_index(type);
         ov->object.__proto__ = &vm->prototypes[index].object;

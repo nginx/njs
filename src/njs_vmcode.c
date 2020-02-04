@@ -1152,7 +1152,7 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     switch (value->type) {
     case NJS_ARRAY:
         num = njs_key_to_index(key);
-        if (njs_slow_path(!njs_number_is_integer_index(num, key))) {
+        if (njs_slow_path(!njs_key_is_integer_index(num, key))) {
             njs_internal_error(vm,
                                "invalid index while property initialization");
             return NJS_ERROR;
