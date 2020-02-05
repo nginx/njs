@@ -933,10 +933,6 @@ njs_json_parse_iterator(njs_vm_t *vm, njs_json_parse_t *parse,
             return ret;
         }
     }
-
-    njs_internal_error(vm, "njs_json_parse_iterator() unexpected exit");
-
-    return NJS_ERROR;
 }
 
 
