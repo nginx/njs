@@ -710,8 +710,6 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
             ret = njs_lvlhsh_find(&proto->shared_hash, &pq->lhq);
 
             if (ret == NJS_OK) {
-                prop = pq->lhq.value;
-
                 return njs_prop_private_copy(vm, pq);
             }
         }
