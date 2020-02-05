@@ -100,6 +100,7 @@ njs_object_property_add(njs_vm_t *vm, njs_value_t *object, njs_value_t *key,
     njs_bool_t replace)
 {
     njs_int_t           ret;
+    njs_value_t         key_value;
     njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
 
@@ -108,8 +109,13 @@ njs_object_property_add(njs_vm_t *vm, njs_value_t *object, njs_value_t *key,
         return NULL;
     }
 
+    ret = njs_value_to_key(vm, &key_value, key);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NULL;
+    }
+
     lhq.proto = &njs_object_hash_proto;
-    njs_key_string_get(vm, key, &lhq.key);
+    njs_string_get(&key_value, &lhq.key);
     lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
     lhq.value = prop;
     lhq.replace = replace;
@@ -432,8 +438,6 @@ done:
 
         } else {
             if (njs_slow_path(pq.lhq.key_hash == NJS_LENGTH_HASH)) {
-                njs_key_string_get(vm, &pq.key, &pq.lhq.key);
-
                 if (njs_strstr_eq(&pq.lhq.key, &length_key)) {
                     ret = njs_array_length_set(vm, object, prev, &prop->value);
                     if (ret != NJS_DECLINED) {

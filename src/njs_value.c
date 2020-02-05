@@ -1288,8 +1288,6 @@ slow_path:
             switch (prop->type) {
             case NJS_PROPERTY:
                 if (njs_slow_path(pq.lhq.key_hash == NJS_LENGTH_HASH)) {
-                    njs_key_string_get(vm, &pq.key, &pq.lhq.key);
-
                     if (njs_strstr_eq(&pq.lhq.key, &length_key)) {
                         ret = njs_array_length_set(vm, value, prop, setval);
                         if (ret != NJS_DECLINED) {
