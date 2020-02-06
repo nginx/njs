@@ -15825,6 +15825,15 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var fs = require('fs'); typeof fs"),
       njs_str("object") },
 
+    { njs_str("var fs = require('fs'); Object.isExtensible(fs)"),
+      njs_str("true") },
+
+    { njs_str("require('fs') === require('fs')"),
+      njs_str("true") },
+
+    { njs_str("require('fs').a = 1; require('fs').a"),
+      njs_str("1") },
+
     /* require('fs').readFile() */
 
     { njs_str("var fs = require('fs');"
@@ -16471,6 +16480,9 @@ static njs_unit_test_t  njs_shared_test[] =
 
     { njs_str("import cr from 'crypto'; cr.createHash('md5')"),
       njs_str("[object Hash]") },
+
+    { njs_str("var fs = require('fs'); fs.a = 1; fs.a"),
+      njs_str("1") },
 
     { njs_str("isFinite()"),
       njs_str("false") },

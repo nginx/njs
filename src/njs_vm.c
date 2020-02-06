@@ -44,6 +44,8 @@ njs_vm_create(njs_vm_opt_t *options)
         return NULL;
     }
 
+    njs_lvlhsh_init(&vm->values_hash);
+
     vm->options = *options;
 
     if (options->shared != NULL) {
@@ -55,8 +57,6 @@ njs_vm_create(njs_vm_opt_t *options)
             return NULL;
         }
     }
-
-    njs_lvlhsh_init(&vm->values_hash);
 
     vm->external = options->external;
 
@@ -301,6 +301,8 @@ njs_vm_init(njs_vm_t *vm)
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
+
+    njs_lvlhsh_init(&vm->modules_hash);
 
     njs_lvlhsh_init(&vm->events_hash);
     njs_queue_init(&vm->posted_events);

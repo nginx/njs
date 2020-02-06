@@ -24,7 +24,8 @@ static njs_int_t njs_module_absolute_path(njs_vm_t *vm,
 static njs_bool_t njs_module_realpath_equal(const njs_str_t *path1,
     const njs_str_t *path2);
 static njs_int_t njs_module_read(njs_vm_t *vm, int fd, njs_str_t *body);
-static njs_module_t *njs_module_find(njs_vm_t *vm, njs_str_t *name);
+static njs_module_t *njs_module_find(njs_vm_t *vm, njs_str_t *name,
+    njs_bool_t local);
 static njs_module_t *njs_module_add(njs_vm_t *vm, njs_str_t *name);
 static njs_int_t njs_module_insert(njs_vm_t *vm, njs_module_t *module);
 
@@ -111,7 +112,7 @@ njs_parser_module(njs_vm_t *vm, njs_parser_t *parser)
 
     parser->node = NULL;
 
-    module = njs_module_find(vm, &name);
+    module = njs_module_find(vm, &name, 0);
     if (module != NULL) {
         goto found;
     }
@@ -413,8 +414,11 @@ const njs_lvlhsh_proto_t  njs_modules_hash_proto
 
 
 static njs_module_t *
-njs_module_find(njs_vm_t *vm, njs_str_t *name)
+njs_module_find(njs_vm_t *vm, njs_str_t *name, njs_bool_t local)
 {
+    njs_int_t           ret;
+    njs_module_t        *module, *shared;
+    njs_object_t        *object;
     njs_lvlhsh_query_t  lhq;
 
     lhq.key = *name;
@@ -423,6 +427,38 @@ njs_module_find(njs_vm_t *vm, njs_str_t *name)
 
     if (njs_lvlhsh_find(&vm->modules_hash, &lhq) == NJS_OK) {
         return lhq.value;
+    }
+
+    if (njs_lvlhsh_find(&vm->shared->modules_hash, &lhq) == NJS_OK) {
+        shared = lhq.value;
+
+        if (!local) {
+            return shared;
+        }
+
+        module = njs_mp_alloc(vm->mem_pool, sizeof(njs_module_t));
+        if (njs_slow_path(module == NULL)) {
+            njs_memory_error(vm);
+            return NULL;
+        }
+
+        memcpy(module, shared, sizeof(njs_module_t));
+        object = &module->object;
+
+        object->__proto__ = &vm->prototypes[NJS_OBJ_TYPE_OBJECT].object;
+        object->shared = 0;
+        object->extensible = 1;
+        object->error_data = 0;
+        object->fast_array = 0;
+
+        lhq.replace = 0;
+        lhq.value = module;
+        lhq.pool = vm->mem_pool;
+
+        ret = njs_lvlhsh_insert(&vm->modules_hash, &lhq);
+        if (njs_fast_path(ret == NJS_OK)) {
+            return module;
+        }
     }
 
     return NULL;
@@ -444,7 +480,6 @@ njs_module_add(njs_vm_t *vm, njs_str_t *name)
 
     ret = njs_name_copy(vm, &module->name, name);
     if (njs_slow_path(ret != NJS_OK)) {
-        njs_mp_free(vm->mem_pool, module);
         njs_memory_error(vm);
         return NULL;
     }
@@ -457,7 +492,6 @@ njs_module_add(njs_vm_t *vm, njs_str_t *name)
     lhq.proto = &njs_modules_hash_proto;
 
     ret = njs_lvlhsh_insert(&vm->modules_hash, &lhq);
-
     if (njs_fast_path(ret == NJS_OK)) {
         return module;
     }
@@ -507,49 +541,31 @@ njs_int_t
 njs_module_require(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_int_t           ret;
-    njs_object_t        *object;
-    njs_module_t        *module;
-    njs_lvlhsh_query_t  lhq;
+    njs_int_t     ret;
+    njs_str_t     name;
+    njs_value_t   *path;
+    njs_module_t  *module;
 
     if (nargs < 2) {
         njs_type_error(vm, "missing path");
         return NJS_ERROR;
     }
 
-    if (njs_slow_path(!njs_is_string(&args[1]))) {
-        ret = njs_value_to_string(vm, &args[1], &args[1]);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
+    path = njs_argument(args, 1);
+    ret = njs_value_to_string(vm, path, path);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
-    njs_string_get(&args[1], &lhq.key);
-    lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
-    lhq.proto = &njs_modules_hash_proto;
+    njs_string_get(path, &name);
 
-    if (njs_lvlhsh_find(&vm->modules_hash, &lhq) == NJS_OK) {
-        module = lhq.value;
+    module = njs_module_find(vm, &name, 1);
+    if (njs_slow_path(module == NULL)) {
+        njs_error(vm, "Cannot find module \"%V\"", &name);
 
-        object = njs_mp_alloc(vm->mem_pool, sizeof(njs_object_t));
-        if (njs_slow_path(object == NULL)) {
-            njs_memory_error(vm);
-            return NJS_ERROR;
-        }
-
-        *object = module->object;
-        object->__proto__ = &vm->prototypes[NJS_OBJ_TYPE_OBJECT].object;
-        object->shared = 0;
-        object->extensible = 0;
-        object->error_data = 0;
-        object->fast_array = 0;
-
-        njs_set_object(&vm->retval, object);
-
-        return NJS_OK;
+        return NJS_ERROR;
     }
 
-    njs_error(vm, "Cannot find module \"%V\"", &lhq.key);
-
-    return NJS_ERROR;
+    njs_set_object(&vm->retval, &module->object);
+    return NJS_OK;
 }

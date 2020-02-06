@@ -208,7 +208,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
         return NJS_ERROR;
     }
 
-    njs_lvlhsh_init(&vm->modules_hash);
+    njs_lvlhsh_init(&shared->modules_hash);
 
     lhq.replace = 0;
     lhq.pool = vm->mem_pool;
@@ -258,7 +258,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
         lhq.proto = &njs_modules_hash_proto;
         lhq.value = module;
 
-        ret = njs_lvlhsh_insert(&vm->modules_hash, &lhq);
+        ret = njs_lvlhsh_insert(&shared->modules_hash, &lhq);
         if (njs_fast_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
