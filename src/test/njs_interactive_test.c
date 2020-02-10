@@ -241,7 +241,14 @@ static njs_interactive_test_t  njs_test[] =
               " 'writeFile',"
               " 'writeFileSync',"
               " 'appendFile',"
-              " 'appendFileSync']"
+              " 'appendFileSync',"
+              " 'symlink',"
+              " 'symlinkSync',"
+              " 'unlink',"
+              " 'unlinkSync',"
+              " 'realpath',"
+              " 'realpathSync',"
+              "]"
               ".every(v=>{ try {fs[v]();} catch (e) { return e.stack.search(`fs.${v} `) >= 0}})" ENTER),
       njs_str("true") },
 

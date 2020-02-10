@@ -1,6 +1,6 @@
 var fs = require('fs');
 var fsp  = fs.promises;
-var fname = '/tmp/njs_fs_promises_002';
+var fname = './build/test/fs_promises_002';
 
 var testSync = new Promise((resolve, reject) => {
     var failed = false;

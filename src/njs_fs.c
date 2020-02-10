@@ -528,6 +528,201 @@ done:
 
 
 static njs_int_t
+njs_fs_symlink(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t calltype)
+{
+    njs_int_t    ret;
+    const char  *target_path, *file_path;
+    njs_value_t  retval, *target, *path, *callback, *type;
+
+    target = njs_arg(args, nargs, 1);
+    ret = njs_fs_path_arg(vm, &target_path, target, &njs_str_value("target"));
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    path = njs_arg(args, nargs, 2);
+    ret = njs_fs_path_arg(vm, &file_path, path, &njs_str_value("path"));
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    callback = NULL;
+    type = njs_arg(args, nargs, 3);
+
+    if (calltype == NJS_FS_CALLBACK) {
+        callback = njs_arg(args, nargs, njs_min(nargs - 1, 4));
+        if (!njs_is_function(callback)) {
+            njs_type_error(vm, "\"callback\" must be a function");
+            return NJS_ERROR;
+        }
+
+        if (type == callback) {
+            type = njs_value_arg(&njs_value_undefined);
+        }
+    }
+
+    if (njs_slow_path(!njs_is_undefined(type) && !njs_is_string(type))) {
+        njs_type_error(vm, "\"type\" must be a string");
+        return NJS_ERROR;
+    }
+
+    ret = symlink(target_path, file_path);
+    if (njs_slow_path(ret != 0)) {
+        ret = njs_fs_error(vm, "symlink", strerror(errno), path, errno,
+                           &retval);
+        goto done;
+    }
+
+    njs_set_undefined(&retval);
+
+done:
+
+    if (ret == NJS_OK) {
+        return njs_fs_result(vm, &retval, calltype, callback, 1);
+    }
+
+    return NJS_ERROR;
+}
+
+
+static njs_int_t
+njs_fs_unlink(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t calltype)
+{
+    njs_int_t    ret;
+    const char   *file_path;
+    njs_value_t  retval, *path, *callback;
+
+    path = njs_arg(args, nargs, 1);
+    ret = njs_fs_path_arg(vm, &file_path, path, &njs_str_value("path"));
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    callback = NULL;
+
+    if (calltype == NJS_FS_CALLBACK) {
+        callback = njs_arg(args, nargs, 2);
+        if (!njs_is_function(callback)) {
+            njs_type_error(vm, "\"callback\" must be a function");
+            return NJS_ERROR;
+        }
+    }
+
+    ret = unlink(file_path);
+    if (njs_slow_path(ret != 0)) {
+        ret = njs_fs_error(vm, "unlink", strerror(errno), path, errno, &retval);
+        goto done;
+    }
+
+    njs_set_undefined(&retval);
+
+done:
+
+    if (ret == NJS_OK) {
+        return njs_fs_result(vm, &retval, calltype, callback, 1);
+    }
+
+    return NJS_ERROR;
+}
+
+
+static njs_int_t
+njs_fs_realpath(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t calltype)
+{
+    u_char             *resolved_path;
+    size_t             size;
+    ssize_t            length;
+    njs_int_t          ret;
+    const char         *file_path;
+    njs_value_t        encoding, retval, *path, *callback, *options;
+    njs_fs_encoding_t  enc;
+    char               path_buf[MAXPATHLEN];
+
+    static const njs_value_t  string_encoding = njs_string("encoding");
+
+    path = njs_arg(args, nargs, 1);
+    ret = njs_fs_path_arg(vm, &file_path, path, &njs_str_value("path"));
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    callback = NULL;
+    options = njs_arg(args, nargs, 2);
+
+    if (calltype == NJS_FS_CALLBACK) {
+        callback = njs_arg(args, nargs, njs_min(nargs - 1, 3));
+        if (!njs_is_function(callback)) {
+            njs_type_error(vm, "\"callback\" must be a function");
+            return NJS_ERROR;
+        }
+
+        if (options == callback) {
+            options = njs_value_arg(&njs_value_undefined);
+        }
+    }
+
+    njs_set_undefined(&encoding);
+
+    switch (options->type) {
+    case NJS_STRING:
+        encoding = *options;
+        break;
+
+    case NJS_UNDEFINED:
+        break;
+
+    default:
+        if (!njs_is_object(options)) {
+            njs_type_error(vm, "Unknown options type: \"%s\" "
+                           "(a string or object required)",
+                           njs_type_string(options->type));
+            return NJS_ERROR;
+        }
+
+        ret = njs_value_property(vm, options, njs_value_arg(&string_encoding),
+                                 &encoding);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return ret;
+        }
+    }
+
+    enc = njs_fs_encoding(vm, &encoding);
+    if (njs_slow_path(enc == NJS_FS_ENC_INVALID)) {
+        return NJS_ERROR;
+    }
+
+    resolved_path = (u_char *) realpath(file_path, path_buf);
+    if (njs_slow_path(resolved_path == NULL)) {
+        ret = njs_fs_error(vm, "realpath", strerror(errno), path, errno,
+                           &retval);
+        goto done;
+    }
+
+    size = njs_strlen(resolved_path);
+    length = njs_utf8_length(resolved_path, size);
+    if (njs_slow_path(length < 0)) {
+        length = 0;
+    }
+
+    ret = njs_string_new(vm, &retval, resolved_path, size, length);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+done:
+
+    if (ret == NJS_OK) {
+        return njs_fs_result(vm, &retval, calltype, callback, 2);
+    }
+
+    return NJS_ERROR;
+}
+
+
+static njs_int_t
 njs_fs_fd_read(njs_vm_t *vm, int fd, njs_str_t *data)
 {
     u_char   *p, *end, *start;
@@ -880,6 +1075,30 @@ static const njs_object_prop_t  njs_fs_promises_properties[] =
         .writable = 1,
         .configurable = 1,
     },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("symlink"),
+        .value = njs_native_function2(njs_fs_symlink, 0, NJS_FS_PROMISE),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("unlink"),
+        .value = njs_native_function2(njs_fs_unlink, 0, NJS_FS_PROMISE),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("realpath"),
+        .value = njs_native_function2(njs_fs_realpath, 0, NJS_FS_PROMISE),
+        .writable = 1,
+        .configurable = 1,
+    },
 };
 
 
@@ -1039,6 +1258,53 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
         .configurable = 1,
     },
 
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("symlink"),
+        .value = njs_native_function2(njs_fs_symlink, 0, NJS_FS_CALLBACK),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("symlinkSync"),
+        .value = njs_native_function2(njs_fs_symlink, 0, NJS_FS_DIRECT),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("unlink"),
+        .value = njs_native_function2(njs_fs_unlink, 0, NJS_FS_CALLBACK),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("unlinkSync"),
+        .value = njs_native_function2(njs_fs_unlink, 0, NJS_FS_DIRECT),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("realpath"),
+        .value = njs_native_function2(njs_fs_realpath, 0, NJS_FS_CALLBACK),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("realpathSync"),
+        .value = njs_native_function2(njs_fs_realpath, 0, NJS_FS_DIRECT),
+        .writable = 1,
+        .configurable = 1,
+    },
 };
 
 

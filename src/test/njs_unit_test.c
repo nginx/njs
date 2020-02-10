@@ -16159,6 +16159,12 @@ static njs_unit_test_t  njs_test[] =
                 "'writeFileSync',"
                 "'appendFile',"
                 "'appendFileSync',"
+                "'symlink',"
+                "'symlinkSync',"
+                "'unlink',"
+                "'unlinkSync',"
+                "'realpath',"
+                "'realpathSync',"
               "],"
               "test = (fname) =>"
                 "[undefined, null, false, NaN, Symbol(), {}, Object('/njs_unknown_path')]"
@@ -16181,6 +16187,9 @@ static njs_unit_test_t  njs_test[] =
                 "'readFile',"
                 "'writeFile',"
                 "'appendFile',"
+                "'symlink',"
+                "'unlink',"
+                "'realpath',"
               "];"
               "func.every((x) => typeof fs[x] == 'function')"),
       njs_str("true")},

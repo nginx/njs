@@ -1096,3 +1096,13 @@ njs_run {"./test/js/fs_promises_002.js"} \
 "testSync ok true
 testCallback ok true
 testPromise ok true"
+
+njs_run {"./test/js/fs_promises_003.js"} \
+"test fs.unlinkSync
+test fs.unlink
+test fsp.unlink"
+
+njs_run {"./test/js/fs_promises_004.js"} \
+"test fs.symlinkSync
+test fs.symlink
+test fsp.symlink"
