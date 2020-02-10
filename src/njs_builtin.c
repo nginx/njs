@@ -24,7 +24,7 @@ typedef struct {
 
 static njs_arr_t *njs_vm_expression_completions(njs_vm_t *vm,
     njs_str_t *expression);
-static njs_arr_t *njs_object_completions(njs_vm_t *vm, njs_object_t *object);
+static njs_arr_t *njs_object_completions(njs_vm_t *vm, njs_value_t *object);
 static njs_int_t njs_env_hash_init(njs_vm_t *vm, njs_lvlhsh_t *hash,
     char **environment);
 
@@ -633,110 +633,59 @@ njs_vm_expression_completions(njs_vm_t *vm, njs_str_t *expression)
         value = &prop->value;
     }
 
-    return njs_object_completions(vm, njs_object(value));
+    return njs_object_completions(vm, value);
 }
 
 
 static njs_arr_t *
-njs_object_completions(njs_vm_t *vm, njs_object_t *object)
+njs_object_completions(njs_vm_t *vm, njs_value_t *object)
 {
-    size_t             size;
-    njs_str_t          *compl;
-    njs_arr_t          *completions;
-    njs_uint_t         n, k;
-    njs_object_t       *o;
-    njs_object_prop_t  *prop;
-    njs_lvlhsh_each_t  lhe;
+    double            num;
+    njs_arr_t         *array;
+    njs_str_t         *completion;
+    njs_uint_t        n;
+    njs_array_t       *keys;
+    njs_value_type_t  type;
 
-    size = 0;
-    o = object;
+    array = NULL;
+    type = object->type;
 
-    do {
-        njs_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
-
-        for ( ;; ) {
-            prop = njs_lvlhsh_each(&o->hash, &lhe);
-            if (prop == NULL) {
-                break;
-            }
-
-            size++;
-        }
-
-        njs_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
-
-        for ( ;; ) {
-            prop = njs_lvlhsh_each(&o->shared_hash, &lhe);
-            if (prop == NULL) {
-                break;
-            }
-
-            size++;
-        }
-
-        o = o->__proto__;
-
-    } while (o != NULL);
-
-    completions = njs_arr_create(vm->mem_pool, size, sizeof(njs_str_t));
-    if (njs_slow_path(completions == NULL)) {
-        return NULL;
+    if (type == NJS_ARRAY || type == NJS_TYPED_ARRAY) {
+        object->type = NJS_OBJECT;
     }
 
-    n = 0;
-    o = object;
-    compl = completions->start;
+    keys = njs_value_enumerate(vm, object, NJS_ENUM_KEYS, NJS_ENUM_STRING, 1);
+    if (njs_slow_path(keys == NULL)) {
+        goto done;
+    }
 
-    do {
-        njs_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+    array = njs_arr_create(vm->mem_pool, 8, sizeof(njs_str_t));
+    if (njs_slow_path(array == NULL)) {
+        goto done;
+    }
 
-        for ( ;; ) {
-            prop = njs_lvlhsh_each(&o->hash, &lhe);
-            if (prop == NULL) {
-                break;
+    for (n = 0; n < keys->length; n++) {
+        num = njs_key_to_index(&keys->start[n]);
+
+        if (!njs_key_is_integer_index(num, &keys->start[n])) {
+            completion = njs_arr_add(array);
+            if (njs_slow_path(completion == NULL)) {
+                njs_arr_destroy(array);
+                array = NULL;
+                goto done;
             }
 
-            njs_string_get(&prop->name, &compl[n]);
-
-            for (k = 0; k < n; k++) {
-                if (njs_strstr_eq(&compl[k], &compl[n])) {
-                    break;
-                }
-            }
-
-            if (k == n) {
-                n++;
-            }
+            njs_string_get(&keys->start[n], completion);
         }
+    }
 
-        njs_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+done:
 
-        for ( ;; ) {
-            prop = njs_lvlhsh_each(&o->shared_hash, &lhe);
-            if (prop == NULL) {
-                break;
-            }
+    if (type == NJS_ARRAY || type == NJS_TYPED_ARRAY) {
+        object->type = type;
+    }
 
-            njs_string_get(&prop->name, &compl[n]);
-
-            for (k = 0; k < n; k++) {
-                if (njs_strstr_eq(&compl[k], &compl[n])) {
-                    break;
-                }
-            }
-
-            if (k == n) {
-                n++;
-            }
-        }
-
-        o = o->__proto__;
-
-    } while (o != NULL);
-
-    completions->items = n;
-
-    return completions;
+    return array;
 }
 
 
