@@ -1511,7 +1511,7 @@ njs_process_object_argv(njs_vm_t *vm, njs_object_prop_t *pr,
 
     static const njs_value_t  argv_string = njs_string("argv");
 
-    argv = njs_array_alloc(vm, vm->options.argc, 0);
+    argv = njs_array_alloc(vm, 1, vm->options.argc, 0);
     if (njs_slow_path(argv == NULL)) {
         return NJS_ERROR;
     }

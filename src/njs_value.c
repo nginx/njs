@@ -228,7 +228,7 @@ njs_value_enumerate(njs_vm_t *vm, const njs_value_t *value,
             return njs_extern_keys_array(vm, ext_proto);
         }
 
-        return njs_array_alloc(vm, 0, NJS_ARRAY_SPARE);
+        return njs_array_alloc(vm, 1, 0, NJS_ARRAY_SPARE);
     }
 
     obj_val.object = vm->string_object;
@@ -273,7 +273,7 @@ njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
             return njs_extern_keys_array(vm, ext_proto);
         }
 
-        return njs_array_alloc(vm, 0, NJS_ARRAY_SPARE);
+        return njs_array_alloc(vm, 1, 0, NJS_ARRAY_SPARE);
     }
 
     obj_val.object = vm->string_object;

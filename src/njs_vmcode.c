@@ -966,7 +966,7 @@ njs_vmcode_array(njs_vm_t *vm, u_char *pc)
 
     code = (njs_vmcode_array_t *) pc;
 
-    array = njs_array_alloc(vm, code->length, NJS_ARRAY_SPARE);
+    array = njs_array_alloc(vm, 0, code->length, NJS_ARRAY_SPARE);
 
     if (njs_fast_path(array != NULL)) {
 

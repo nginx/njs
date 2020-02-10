@@ -3237,7 +3237,7 @@ njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
 
     if (njs_regex_is_valid(&pattern->regex[type])) {
 
-        array = njs_array_alloc(vm, 0, NJS_ARRAY_SPARE);
+        array = njs_array_alloc(vm, 0, 0, NJS_ARRAY_SPARE);
         if (njs_slow_path(array == NULL)) {
             return NJS_ERROR;
         }
@@ -3330,7 +3330,7 @@ njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    array = njs_array_alloc(vm, 0, NJS_ARRAY_SPARE);
+    array = njs_array_alloc(vm, 0, 0, NJS_ARRAY_SPARE);
     if (njs_slow_path(array == NULL)) {
         return NJS_ERROR;
     }

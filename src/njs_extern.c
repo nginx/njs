@@ -234,7 +234,7 @@ njs_extern_keys_array(njs_vm_t *vm, const njs_extern_t *external)
         keys_length++;
     }
 
-    keys = njs_array_alloc(vm, keys_length, NJS_ARRAY_SPARE);
+    keys = njs_array_alloc(vm, 1, keys_length, NJS_ARRAY_SPARE);
     if (njs_slow_path(keys == NULL)) {
         return NULL;
     }

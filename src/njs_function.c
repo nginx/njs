@@ -301,7 +301,7 @@ njs_function_rest_parameters_init(njs_vm_t *vm, njs_native_frame_t *frame)
     n = frame->function->u.lambda->nargs;
     length = (nargs >= n) ? (nargs - n + 1) : 0;
 
-    array = njs_array_alloc(vm, length, 0);
+    array = njs_array_alloc(vm, 1, length, 0);
     if (njs_slow_path(array == NULL)) {
         return NJS_ERROR;
     }
@@ -1125,7 +1125,7 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    arr = njs_array_alloc(vm, length, NJS_ARRAY_SPARE);
+    arr = njs_array_alloc(vm, 1, length, NJS_ARRAY_SPARE);
     if (njs_slow_path(arr == NULL)) {
         return NJS_ERROR;
     }

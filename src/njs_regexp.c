@@ -1072,7 +1072,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
     static const njs_value_t  string_input = njs_string("input");
     static const njs_value_t  string_groups = njs_string("groups");
 
-    array = njs_array_alloc(vm, regexp->pattern->ncaptures, 0);
+    array = njs_array_alloc(vm, 0, regexp->pattern->ncaptures, 0);
     if (njs_slow_path(array == NULL)) {
         goto fail;
     }

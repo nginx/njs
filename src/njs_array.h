@@ -16,8 +16,11 @@
 #define NJS_ARRAY_MAX_LENGTH53         (0x1fffffffffffff)
 #define NJS_ARRAY_FAST_OBJECT_LENGTH   (128)
 #define NJS_ARRAY_LARGE_OBJECT_LENGTH  (32768)
+#define NJS_ARRAY_FLAT_MAX_LENGTH      (1048576)
 
-njs_array_t *njs_array_alloc(njs_vm_t *vm, uint64_t length, uint32_t spare);
+njs_array_t *njs_array_alloc(njs_vm_t *vm, njs_bool_t flat, uint64_t length,
+    uint32_t spare);
+void njs_array_destroy(njs_vm_t *vm, njs_array_t *array);
 njs_int_t njs_array_add(njs_vm_t *vm, njs_array_t *array, njs_value_t *value);
 njs_int_t njs_array_convert_to_slow_array(njs_vm_t *vm, njs_array_t *array);
 njs_int_t njs_array_length_redefine(njs_vm_t *vm, njs_value_t *value,
