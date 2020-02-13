@@ -397,8 +397,6 @@ njs_object_exist_in_proto(const njs_object_t *object, const njs_object_t *end,
     njs_int_t          ret;
     njs_object_prop_t  *prop;
 
-    lhq->proto = &njs_object_hash_proto;
-
     while (object != end) {
         ret = njs_lvlhsh_find(&object->hash, lhq);
 
@@ -700,6 +698,8 @@ njs_object_own_enumerate_object_length(const njs_object_t *object,
 
     njs_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
     hash = &object->hash;
+
+    lhq.proto = &njs_object_hash_proto;
 
     length = 0;
 

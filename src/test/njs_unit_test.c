@@ -11206,6 +11206,9 @@ static njs_unit_test_t  njs_test[] =
               "delete obj[symA]"),
       njs_str("TypeError: Cannot delete property \"Symbol(A)\" of object") },
 
+    { njs_str("typeof Object.getOwnPropertySymbols(globalThis);"),
+      njs_str("object") },
+
     { njs_str("["
               " Object.prototype,"
               " Symbol.prototype,"
