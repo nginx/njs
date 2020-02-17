@@ -1086,10 +1086,10 @@ static njs_int_t
 njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    uint32_t        i, length;
+    uint64_t        i, length;
     njs_int_t       ret;
     njs_frame_t     *frame;
-    njs_value_t     name, *this, *arr_like;
+    njs_value_t     *this, *arr_like;
     njs_array_t     *arr;
     njs_function_t  *func;
 
@@ -1133,9 +1133,7 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     args = arr->start;
 
     for (i = 0; i < length; i++) {
-        njs_uint32_to_string(&name, i);
-
-        ret = njs_value_property(vm, arr_like, &name, &args[i]);
+        ret = njs_value_property_i64(vm, arr_like, i, &args[i]);
         if (njs_slow_path(ret == NJS_ERROR)) {
             return ret;
         }

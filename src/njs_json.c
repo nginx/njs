@@ -28,8 +28,8 @@ typedef struct {
        NJS_JSON_ARRAY,
     }                          type:8;
 
-    uint32_t                   index;
-    uint32_t                   length;
+    uint64_t                   index;
+    uint64_t                   length;
     njs_array_t                *keys;
     njs_value_t                *key;
     njs_object_prop_t          *prop;
@@ -1120,8 +1120,8 @@ njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify,
     njs_value_t *object)
 {
     u_char            *p;
-    size_t            size;
-    ssize_t           length;
+    int64_t           length;
+    uint64_t          size;
     njs_int_t         ret;
     njs_chb_t         chain;
     njs_value_t       *key, *value, index, wrapper;
@@ -1165,7 +1165,7 @@ njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify,
             value = &stringify->retval;
 
             if (state->array) {
-                njs_uint32_to_string(&index, state->index++);
+                njs_set_number(&index, state->index++);
                 key = &index;
 
             } else {

@@ -12,9 +12,7 @@
 #define NJS_ARRAY_INVALID_INDEX        NJS_ARRAY_MAX_INDEX
 
 #define NJS_ARRAY_SPARE                8
-#define NJS_ARRAY_MAX_LENGTH           (UINT32_MAX/ sizeof(njs_value_t))
-#define NJS_ARRAY_MAX_LENGTH53         (0x1fffffffffffff)
-#define NJS_ARRAY_FAST_OBJECT_LENGTH   (128)
+#define NJS_ARRAY_FAST_OBJECT_LENGTH   (1024)
 #define NJS_ARRAY_LARGE_OBJECT_LENGTH  (32768)
 #define NJS_ARRAY_FLAT_MAX_LENGTH      (1048576)
 

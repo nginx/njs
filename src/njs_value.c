@@ -285,12 +285,12 @@ njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
 
 
 njs_int_t
-njs_value_length(njs_vm_t *vm, njs_value_t *value, uint32_t *length)
+njs_value_length(njs_vm_t *vm, njs_value_t *value, uint64_t *length)
 {
     njs_string_prop_t  string_prop;
 
     if (njs_is_string(value)) {
-        *length = (uint32_t) njs_string_prop(&string_prop, value);
+        *length = njs_string_prop(&string_prop, value);
 
     } else if (njs_is_primitive(value)) {
         *length = 0;
@@ -731,7 +731,7 @@ static njs_int_t
 njs_array_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     njs_array_t *array, uint32_t index)
 {
-    uint32_t           size, length;
+    uint64_t           size, length;
     njs_int_t          ret;
     njs_value_t        *setval, value;
     njs_object_prop_t  *prop;
@@ -1419,7 +1419,17 @@ njs_value_property_delete(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
         /* Fall through. */
 
     case NJS_PROPERTY:
-        break;
+        if (njs_is_data_descriptor(prop) || removed == NULL) {
+            break;
+        }
+
+        if (njs_is_undefined(&prop->getter)) {
+            njs_set_undefined(removed);
+            break;
+        }
+
+        return njs_function_apply(vm, njs_function(&prop->getter), value,
+                                  1, removed);
 
     case NJS_PROPERTY_REF:
         if (removed != NULL) {

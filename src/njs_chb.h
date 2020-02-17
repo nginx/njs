@@ -61,10 +61,10 @@ njs_chb_init(njs_chb_t *chain, njs_mp_t *pool)
 }
 
 
-njs_inline size_t
+njs_inline uint64_t
 njs_chb_size(njs_chb_t *chain)
 {
-    size_t          size;
+    uint64_t        size;
     njs_chb_node_t  *n;
 
     n = chain->nodes;
@@ -80,10 +80,10 @@ njs_chb_size(njs_chb_t *chain)
 }
 
 
-njs_inline ssize_t
+njs_inline int64_t
 njs_chb_utf8_length(njs_chb_t *chain)
 {
-    ssize_t         len, length;
+    int64_t         len, length;
     njs_chb_node_t  *n;
 
     n = chain->nodes;

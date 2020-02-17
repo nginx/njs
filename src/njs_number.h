@@ -8,6 +8,9 @@
 #define _NJS_NUMBER_H_INCLUDED_
 
 
+#define NJS_MAX_LENGTH           (0x1fffffffffffff)
+
+
 double njs_key_to_index(const njs_value_t *value);
 double njs_number_dec_parse(const u_char **start, const u_char *end);
 uint64_t njs_number_oct_parse(const u_char **start, const u_char *end);
@@ -119,23 +122,21 @@ njs_number_to_uint16(double num)
 }
 
 
-njs_inline uint32_t
+njs_inline uint64_t
 njs_number_to_length(double num)
 {
-#if (NJS_NAN_TO_UINT_CONVERSION != 0)
     if (isnan(num)) {
         return 0;
     }
-#endif
 
-    if (num > UINT32_MAX) {
-        return UINT32_MAX;
+    if (num > NJS_MAX_LENGTH) {
+        return NJS_MAX_LENGTH;
 
     } else if (num < 0.0) {
         return 0;
     }
 
-    return (uint32_t) (int64_t) num;
+    return (uint64_t) num;
 }
 
 
@@ -160,6 +161,7 @@ njs_char_to_hex(u_char c)
 
     return c;
 }
+
 
 njs_inline void
 njs_uint32_to_string(njs_value_t *value, uint32_t u32)

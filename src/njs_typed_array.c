@@ -13,10 +13,10 @@ njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t magic)
 {
     double              num;
-    uint32_t            i, length, element_size;
-    uint64_t            size, offset;
+    uint32_t            element_size;
+    uint64_t            i, length, size, offset;
     njs_int_t           ret;
-    njs_value_t         *value, index, prop;
+    njs_value_t         *value, prop;
     njs_array_t         *src_array;
     njs_object_type_t   type;
     njs_typed_array_t   *array, *src_tarray;
@@ -99,7 +99,7 @@ njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             }
         }
 
-        size = (uint64_t) length * element_size;
+        size = length * element_size;
 
     } else {
         ret = njs_value_to_index(vm, value, &size);
@@ -153,9 +153,7 @@ njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     } else if (!njs_is_array_buffer(value) && njs_is_object(value)) {
         for (i = 0; i < length; i++) {
-            njs_uint32_to_string(&index, i);
-
-            ret = njs_value_property(vm, value, &index, &prop);
+            ret = njs_value_property_i64(vm, value, i, &prop);
             if (njs_slow_path(ret == NJS_ERROR)) {
                 return NJS_ERROR;
             }
@@ -362,10 +360,10 @@ njs_typed_array_prototype_set(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
     double             num;
-    uint32_t           i, length, src_length;
-    int64_t            offset;
+    uint32_t           i;
+    int64_t            length, src_length, offset;
     njs_int_t          ret;
-    njs_value_t        *this, *src, *value, index, prop;
+    njs_value_t        *this, *src, *value, prop;
     njs_array_t        *array;
     njs_typed_array_t  *self, *src_tarray;
 
@@ -438,7 +436,7 @@ njs_typed_array_prototype_set(njs_vm_t *vm, njs_value_t *args,
             return ret;
         }
 
-        ret = njs_object_length(vm, src, &src_length);
+        ret = njs_object_length(vm, src, (uint64_t *) &src_length);
         if (njs_slow_path(ret == NJS_ERROR)) {
             return ret;
         }
@@ -453,9 +451,7 @@ njs_typed_array_prototype_set(njs_vm_t *vm, njs_value_t *args,
         length = njs_min(src_length, length - offset);
 
         for (i = 0; i < length; i++) {
-            njs_uint32_to_string(&index, i);
-
-            ret = njs_value_property(vm, src, &index, &prop);
+            ret = njs_value_property_i64(vm, src, i, &prop);
             if (njs_slow_path(ret == NJS_ERROR)) {
                 return NJS_ERROR;
             }

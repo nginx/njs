@@ -1644,7 +1644,8 @@ static njs_int_t
 njs_string_bytes_from_array_like(njs_vm_t *vm, njs_value_t *value)
 {
     u_char              *p;
-    uint32_t            u32, length;
+    uint32_t            u32;
+    uint64_t            length;
     njs_int_t           ret;
     njs_array_t         *array;
     njs_value_t         *octet, index, prop;
@@ -1705,7 +1706,7 @@ njs_string_bytes_from_array_like(njs_vm_t *vm, njs_value_t *value)
         p += length - 1;
 
         while (length != 0) {
-            njs_uint32_to_string(&index, length - 1);
+            njs_set_number(&index, length - 1);
 
             ret = njs_value_property(vm, value, &index, &prop);
             if (njs_slow_path(ret == NJS_ERROR)) {

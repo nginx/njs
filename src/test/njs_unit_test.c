@@ -4269,6 +4269,15 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var obj = {}; obj.pop = Array.prototype.pop; obj.pop(); obj.length === 0"),
       njs_str("true") },
 
+    { njs_str("Array.prototype[1] = 1; [0,,].pop()"),
+      njs_str("1") },
+
+    { njs_str("Array.prototype[1] = 1; var a = [0,,]; a.pop(); a.length"),
+      njs_str("1") },
+
+    { njs_str("Object.prototype[1] = 1; Object.prototype.length = 2; Array.prototype.pop.call({0:0})"),
+      njs_str("1") },
+
     { njs_str("var o = Object.freeze({0: 0, 1: 1, length: 2}); Array.prototype.pop.call(o)"),
       njs_str("TypeError: Cannot delete property \"1\" of object") },
 
@@ -4286,9 +4295,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = " NJS_LARGE_ARRAY "; a[a.length - 1] = 'z'; a[a.length -2] = 'y';"
               "Array.prototype.pop.call(a); [a.length, a[a.length - 1]]"),
       njs_str("32768,y") },
-
-    { njs_str("Array.prototype.shift()"),
-      njs_str("undefined") },
 
     { njs_str("[0,1].slice()"),
       njs_str("0,1") },
@@ -4333,8 +4339,39 @@ static njs_unit_test_t  njs_test[] =
               "catch (e) {i += '; ' + e} i"),
       njs_str("1; TypeError: Cannot set property \"length\" of object which has only a getter") },
 
+    { njs_str("var x = []; x.length = 4294967295; var push = x.push(); push === 4294967295"),
+      njs_str("true") },
+
+    { njs_str("var x = []; x.length = 4294967295; x.push(); x.push(1)"),
+      njs_str("RangeError: Invalid array length") },
+
+    { njs_str("var x = []; x.length = 4294967295; x.push(); "
+              "try {x.push('x')} catch (e) {}; x[4294967295]"),
+      njs_str("x") },
+
+    { njs_str("var x = []; x.length = 4294967295; x.push(); "
+              "try {x.push('x')} catch (e) {}; x.length"),
+      njs_str("4294967295") },
+
+    { njs_str("["
+              " [2**53-2, [1]],"
+              " [2**53-2, [1,2]],"
+              " [2**53-1, [1]],"
+              " [2**53, []],"
+              " [Number.POSITIVE_INFINITY, []],"
+              "]"
+              ".map(args=>{ try {return Array.prototype.push.apply({length:args[0]}, args[1])}"
+              "             catch (e) {return e.name} })"),
+      njs_str("9007199254740991,TypeError,TypeError,9007199254740991,9007199254740991") },
+
+    { njs_str("Array.prototype.shift()"),
+      njs_str("undefined") },
+
     { njs_str("var a = [1,2,3]; a.shift() +' '+ a[0] +' '+ a.length"),
       njs_str("1 2 2") },
+
+    { njs_str("Array.prototype[0] = 1; var x = [,2]; x.length = 2; x.shift()"),
+      njs_str("1") },
 
     { njs_str("var x = {'0': 'x', '1': 'y', '2': 'z', 'length': 3};"
               "Array.prototype.shift.call(x) +' '+ x[0] +' '+ x.length"),
@@ -4373,9 +4410,13 @@ static njs_unit_test_t  njs_test[] =
               "Array.prototype.forEach.call(x, (v, k) => a.push(k + ':' + v)); a + ', ' + x.length"),
       njs_str("0:0,1:1,7:2,12:3,13:4,14:5,22:6, 23") },
 
-    { njs_str("var x = {0: 0, length: 4294967294};"
-              "Array.prototype.unshift.call(x, '0', '1');"),
-      njs_str("TypeError: Invalid length") },
+    { njs_str("var x = {0: 0, length: 2**32-2};"
+              "Array.prototype.unshift.call(x, '0', '1'); Object.keys(x).sort()"),
+      njs_str("0,1,2,length") },
+
+    { njs_str("var x = {0: 0, length: 2**53-3};"
+              "Array.prototype.unshift.call(x, '0', '1'); x.length"),
+      njs_str("9007199254740991") },
 
     { njs_str("var x = {0: 0}; Array.prototype.unshift.call(x); x.length"),
       njs_str("0") },
@@ -4489,12 +4530,10 @@ static njs_unit_test_t  njs_test[] =
               "Array.prototype.indexOf.call(o); i"),
       njs_str("1") },
 
-#if (!NJS_HAVE_MEMORY_SANITIZER) /* False-positive in MSAN? */
     { njs_str("var a = new Array(); a[100] =1; a[99999] = ''; a[10] = new Object(); "
               "a[5555] = 5.5; a[123456] = 'str'; a[5] = 1E+309; "
               "[1, '', 'str', 1E+309, 5.5, true, 5, 'str1', null, new Object()].map(v=>a.indexOf(v))"),
       njs_str("100,99999,123456,5,5555,-1,-1,-1,-1,-1") },
-#endif
 
     { njs_str("Array.prototype.indexOf.call({199:true, 200:'200.59', length:200}, '200.59')"),
       njs_str("-1") },
@@ -4507,6 +4546,14 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("Array.prototype.indexOf.call({1:true, 2:'200.59', length:3}, '200.59')"),
       njs_str("2") },
+
+    { njs_str("var stopped = 0;"
+              "var o = {length:3}; "
+              "Object.defineProperty(o, '1',{get:()=>{throw 'Oops'}});"
+              "Object.defineProperty(o, '2', {get:()=>stopped++});"
+              "try { Array.prototype.indexOf.call(o, 7)} catch (e) {};"
+              "stopped"),
+      njs_str("0") },
 
     { njs_str("[].lastIndexOf(1, -1)"),
       njs_str("-1") },
@@ -4553,6 +4600,14 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("[1,2,1].lastIndexOf(1)"),
       njs_str("2") },
 
+    { njs_str("var stopped = 0;"
+              "var o = {length:3}; "
+              "Object.defineProperty(o, '1', {get:()=>stopped++});"
+              "Object.defineProperty(o, '2',{get:()=>{throw 'Oops'}});"
+              "try { Array.prototype.lastIndexOf.call(o)} catch (e) {};"
+              "stopped"),
+      njs_str("0") },
+
     { njs_str("var o = 'addc';"
               "Array.prototype.lastIndexOf.call(o, 'd')"),
       njs_str("2") },
@@ -4583,12 +4638,10 @@ static njs_unit_test_t  njs_test[] =
               "Array.prototype.lastIndexOf.call(o, 'd')"),
       njs_str("3") },
 
-#if (!NJS_HAVE_MEMORY_SANITIZER) /* False-positive in MSAN? */
     { njs_str("var a = new Array(); a[100] =1; a[99999] = ''; a[10] = new Object(); "
               "a[5555] = 5.5; a[123456] = 'str'; a[5] = 1E+309; "
               "[1,'', 'str', 1E+309, 5.5, true, 5, 'str1', null, new Object()].map(v=>a.lastIndexOf(v))"),
       njs_str("100,99999,123456,5,5555,-1,-1,-1,-1,-1") },
-#endif
 
     { njs_str("var obj = {'10000000': 'x', '10000001': 'y', '10000002': 'z'}; var a = [];"
               "obj.length = 90000000;"
@@ -4660,6 +4713,14 @@ static njs_unit_test_t  njs_test[] =
               "obj.length = 90000000;"
               "Array.prototype.includes.call(obj, 'a', fromIndex);"),
       njs_str("false") },
+
+    { njs_str("var stopped = 0;"
+              "var o = {length:3}; "
+              "Object.defineProperty(o, '1',{get:()=>{throw 'Oops'}});"
+              "Object.defineProperty(o, '2', {get:()=>stopped++});"
+              "try { Array.prototype.includes.call(o, 7)} catch (e) {};"
+              "stopped"),
+      njs_str("0") },
 
     { njs_str("var a = []; var s = { sum: 0 };"
                  "a.forEach(function(v, i, a) { this.sum += v }, s); s.sum"),
@@ -4786,6 +4847,9 @@ static njs_unit_test_t  njs_test[] =
               "Array.prototype.every.call(obj, (val,idx,obj)=>!(obj instanceof Date))"),
       njs_str("false") },
 
+    { njs_str("Array.prototype.every.call({0:11,1:9,length:2**32+1}, val=>val>10)"),
+      njs_str("false") },
+
     { njs_str("var vis = false; var a = []; "
               "Object.defineProperty(a, '0', {get:()=>{vis = true; return 11;}, configurable:true});"
               "Object.defineProperty(a, '1', {get:()=>{if (vis) {return 9;} else {return 11}}, configurable:true});"
@@ -4883,6 +4947,18 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var o = {}; Object.defineProperty(o, 'length', {get:()=>'0x0002'}); "
                  "Array.prototype.slice.call(Array.prototype.fill.call(o, 1))"),
       njs_str("1,1") },
+
+    { njs_str("Array.prototype.slice.call({length:2**32})"),
+      njs_str("RangeError: Invalid array length") },
+
+    { njs_str("Array.prototype.slice.call({0:'x', [2**32-1]:'y',length:2**32}, 0, 2**32)"),
+      njs_str("RangeError: Invalid array length") },
+
+    { njs_str("Array.prototype.slice.call({length:2**32+2, [2**32]:'x', [2**32+1]:'y'}, 2**32)"),
+      njs_str("x,y") },
+
+    { njs_str("Array.prototype.slice.call({length:2**53+2, [2**53-3]:'x', [2**53-2]:'y', [2**53-1]:'z'}, 2**53-3)"),
+      njs_str("x,y") },
 
     { njs_str("var o = {}; Object.defineProperty(o, 'length', {get:()=> {throw TypeError('Boom')}}); "
                  "Array.prototype.fill.call(o, 1)"),
@@ -5790,6 +5866,13 @@ static njs_unit_test_t  njs_test[] =
                  "var a = Array.prototype.reduce.call(o, reducer); a"),
       njs_str("abc") },
 
+    { njs_str("function reducer(a, b, i, arr) {"
+              "   if (i == 2) Object.defineProperty(arr, i, {enumerable:false}); "
+              "   return a + b;"
+              "};"
+              "Array.prototype.reduce.call([1,2,3,4], reducer)"),
+      njs_str("10") },
+
     { njs_str("var o = {0: 'a', 1: 'b', 2: 'c'};"
               "Object.defineProperty(o, 'length', {get: () => 4});"
               "Object.defineProperty(o, '3', {get: () => 'd'});"
@@ -5864,6 +5947,17 @@ static njs_unit_test_t  njs_test[] =
               "[''].reduceRight.call('00000000000000000000000000000а00', (p, v, i, a) => {m.push(v)});"
               "m.join('')"),
       njs_str("0а00000000000000000000000000000") },
+
+    { njs_str("function reducer(a, b, i, arr) {"
+              "   if (i == 2) Object.defineProperty(arr, i, {enumerable:false}); "
+              "   return a + b;"
+              "};"
+              "Array.prototype.reduceRight.call([1,2,3,4], reducer)"),
+      njs_str("10") },
+
+    { njs_str("Array.prototype[0] = 1; Array.prototype[1] = 2; Array.prototype[2] = 3;"
+              "[,,].reduceRight((a,b)=>a+b)"),
+      njs_str("3") },
 
     { njs_str("var a = ['1','2','3','4','5','6']; a.sort()"),
       njs_str("1,2,3,4,5,6") },
@@ -8655,6 +8749,18 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("[1,2,3].join(undefined)"),
       njs_str("1,2,3") },
+
+    { njs_str("Array.prototype[1] = 1; var x = [0]; x.length = 2; x.join()"),
+      njs_str("0,1") },
+
+    { njs_str("Object.prototype[1] = 1; Object.prototype.length = 2; Array.prototype.join.call({0:0})"),
+      njs_str("0,1") },
+
+    { njs_str("var x = [0,,4]; x.length = 3; "
+              "Object.defineProperty(Array.prototype, 1, "
+                "{get:()=>{Object.defineProperty(x, 2, {value:'x', enumerable:false}); return 1}});"
+              "x.join()"),
+      njs_str("0,1,x") },
 
     { njs_str("[].slice.call()"),
       njs_str("TypeError: cannot convert null or undefined to object") },

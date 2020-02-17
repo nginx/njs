@@ -995,6 +995,8 @@ njs_set_object_value(njs_value_t *value, njs_object_value_t *object_value)
         (pq)->lhq.key.length = 0;                                             \
         (pq)->lhq.key.start = NULL;                                           \
         (pq)->lhq.value = NULL;                                               \
+        /* FIXME: False-positive in MSAN?. */                                 \
+        njs_msan_unpoison(&(pq)->key, sizeof(njs_value_t));                   \
         (pq)->own_whiteout = NULL;                                            \
         (pq)->query = _query;                                                 \
         (pq)->shared = 0;                                                     \
@@ -1010,7 +1012,7 @@ njs_array_t *njs_value_enumerate(njs_vm_t *vm, const njs_value_t *value,
     njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all);
 njs_array_t *njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
     njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all);
-njs_int_t njs_value_length(njs_vm_t *vm, njs_value_t *value, uint32_t *dest);
+njs_int_t njs_value_length(njs_vm_t *vm, njs_value_t *value, uint64_t *dst);
 const char *njs_type_string(njs_value_type_t type);
 
 njs_int_t njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
@@ -1018,11 +1020,13 @@ njs_int_t njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
 njs_int_t njs_primitive_value_to_chain(njs_vm_t *vm, njs_chb_t *chain,
     const njs_value_t *src);
 double njs_string_to_number(const njs_value_t *value, njs_bool_t parse_float);
+njs_int_t njs_uint64_to_string(njs_vm_t *vm, njs_value_t *value, uint64_t u64);
 
 njs_bool_t njs_string_eq(const njs_value_t *v1, const njs_value_t *v2);
 
 njs_int_t njs_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     njs_value_t *value, njs_value_t *key);
+
 njs_int_t njs_value_property(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *key, njs_value_t *retval);
 njs_int_t njs_value_property_set(njs_vm_t *vm, njs_value_t *value,
@@ -1035,6 +1039,63 @@ void njs_symbol_conversion_failed(njs_vm_t *vm, njs_bool_t to_string);
 
 njs_int_t njs_value_species_constructor(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *default_constructor, njs_value_t *dst);
+
+
+njs_inline njs_int_t
+njs_value_property_i64(njs_vm_t *vm, njs_value_t *value, int64_t index,
+    njs_value_t *retval)
+{
+    njs_int_t    ret;
+    njs_value_t  key;
+
+    /* FIXME: False-positive in MSAN?. */
+    njs_msan_unpoison(&key, sizeof(njs_value_t));
+
+    ret = njs_uint64_to_string(vm, &key, index);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    return njs_value_property(vm, value, &key, retval);
+}
+
+
+njs_inline njs_int_t
+njs_value_property_i64_set(njs_vm_t *vm, njs_value_t *value, int64_t index,
+    njs_value_t *setval)
+{
+    njs_int_t    ret;
+    njs_value_t  key;
+
+    /* FIXME: False-positive in MSAN?. */
+    njs_msan_unpoison(&key, sizeof(njs_value_t));
+
+    ret = njs_uint64_to_string(vm, &key, index);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    return njs_value_property_set(vm, value, &key, setval);
+}
+
+
+njs_inline njs_int_t
+njs_value_property_i64_delete(njs_vm_t *vm, njs_value_t *value, int64_t index,
+    njs_value_t *removed)
+{
+    njs_int_t    ret;
+    njs_value_t  key;
+
+    /* FIXME: False-positive in MSAN?. */
+    njs_msan_unpoison(&key, sizeof(njs_value_t));
+
+    ret = njs_uint64_to_string(vm, &key, index);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    return njs_value_property_delete(vm, value, &key, removed);
+}
 
 
 njs_inline njs_bool_t
