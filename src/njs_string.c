@@ -3672,10 +3672,16 @@ njs_string_replace_regexp_function(njs_vm_t *vm, njs_value_t *this,
     njs_value_t        *arguments;
     njs_string_prop_t  string;
 
+    if (njs_slow_path((n + 3) >= UINT32_MAX / sizeof(njs_value_t))) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
     njs_set_invalid(&r->retval);
 
     arguments = njs_mp_alloc(vm->mem_pool, (n + 3) * sizeof(njs_value_t));
     if (njs_slow_path(arguments == NULL)) {
+        njs_memory_error(vm);
         return NJS_ERROR;
     }
 
