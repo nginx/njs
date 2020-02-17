@@ -68,12 +68,6 @@ static njs_int_t njs_string_bytes_from_array_like(njs_vm_t *vm,
     njs_value_t *value);
 static njs_int_t njs_string_bytes_from_string(njs_vm_t *vm,
     const njs_value_t *string, const njs_value_t *encoding);
-static njs_int_t njs_string_starts_or_ends_with(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_bool_t starts);
-static njs_int_t njs_string_trim(njs_vm_t *vm, njs_value_t *value,
-    njs_uint_t mode);
-static njs_int_t njs_string_prototype_pad(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_bool_t pad_start);
 static njs_int_t njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
     njs_regexp_pattern_t *pattern);
 static njs_int_t njs_string_split_part_add(njs_vm_t *vm, njs_array_t *array,
@@ -2303,24 +2297,8 @@ done:
 
 
 static njs_int_t
-njs_string_prototype_starts_with(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
-{
-    return njs_string_starts_or_ends_with(vm, args, nargs, 1);
-}
-
-
-static njs_int_t
-njs_string_prototype_ends_with(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
-{
-    return njs_string_starts_or_ends_with(vm, args, nargs, 0);
-}
-
-
-static njs_int_t
-njs_string_starts_or_ends_with(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_bool_t starts)
+njs_string_prototype_starts_or_ends_with(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t starts)
 {
     int64_t            index, length, search_length;
     njs_int_t          ret;
@@ -2671,56 +2649,19 @@ njs_string_prototype_to_upper_case(njs_vm_t *vm, njs_value_t *args,
 
 static njs_int_t
 njs_string_prototype_trim(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
-{
-    njs_int_t  ret;
-
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
-    }
-
-    return njs_string_trim(vm, njs_argument(args, 0),
-                           NJS_TRIM_START|NJS_TRIM_END);
-}
-
-
-static njs_int_t
-njs_string_prototype_trim_start(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
-{
-    njs_int_t  ret;
-
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
-    }
-
-    return njs_string_trim(vm, njs_argument(args, 0), NJS_TRIM_START);
-}
-
-
-static njs_int_t
-njs_string_prototype_trim_end(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
-{
-    njs_int_t  ret;
-
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
-    }
-
-    return njs_string_trim(vm, njs_argument(args, 0), NJS_TRIM_END);
-}
-
-
-static njs_int_t
-njs_string_trim(njs_vm_t *vm, njs_value_t *value, njs_uint_t mode)
+    njs_index_t mode)
 {
     uint32_t           u, trim, length;
+    njs_int_t          ret;
+    njs_value_t        *value;
     const u_char       *p, *prev, *start, *end;
     njs_string_prop_t  string;
+
+    value = njs_argument(args, 0);
+    ret = njs_string_object_validate(vm, value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
 
     trim = 0;
 
@@ -2886,24 +2827,8 @@ njs_string_prototype_repeat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
-njs_string_prototype_pad_start(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
-{
-    return njs_string_prototype_pad(vm, args, nargs, 1);
-}
-
-
-static njs_int_t
-njs_string_prototype_pad_end(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
-{
-    return njs_string_prototype_pad(vm, args, nargs, 0);
-}
-
-
-static njs_int_t
 njs_string_prototype_pad(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_bool_t pad_start)
+    njs_index_t pad_start)
 {
     u_char             *p, *start;
     size_t             padding, trunc, new_size;
@@ -4629,7 +4554,8 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("startsWith"),
-        .value = njs_native_function(njs_string_prototype_starts_with, 1),
+        .value = njs_native_function2(njs_string_prototype_starts_or_ends_with,
+                                      1, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -4637,7 +4563,8 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("endsWith"),
-        .value = njs_native_function(njs_string_prototype_ends_with, 1),
+        .value = njs_native_function2(njs_string_prototype_starts_or_ends_with,
+                                      1, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -4661,7 +4588,8 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("trim"),
-        .value = njs_native_function(njs_string_prototype_trim, 0),
+        .value = njs_native_function2(njs_string_prototype_trim, 0,
+                                      NJS_TRIM_START | NJS_TRIM_END),
         .writable = 1,
         .configurable = 1,
     },
@@ -4669,7 +4597,8 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("trimStart"),
-        .value = njs_native_function(njs_string_prototype_trim_start, 0),
+        .value = njs_native_function2(njs_string_prototype_trim, 0,
+                                      NJS_TRIM_START),
         .writable = 1,
         .configurable = 1,
     },
@@ -4677,7 +4606,8 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("trimEnd"),
-        .value = njs_native_function(njs_string_prototype_trim_end, 0),
+        .value = njs_native_function2(njs_string_prototype_trim, 0,
+                                      NJS_TRIM_END),
         .writable = 1,
         .configurable = 1,
     },
@@ -4693,7 +4623,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("padStart"),
-        .value = njs_native_function(njs_string_prototype_pad_start, 1),
+        .value = njs_native_function2(njs_string_prototype_pad, 1, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -4701,7 +4631,7 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("padEnd"),
-        .value = njs_native_function(njs_string_prototype_pad_end, 1),
+        .value = njs_native_function2(njs_string_prototype_pad, 1, 0),
         .writable = 1,
         .configurable = 1,
     },
