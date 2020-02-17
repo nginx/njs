@@ -167,7 +167,6 @@ njs_symbol_key_for(njs_vm_t *vm, njs_value_t *args,
 
 static const njs_object_prop_t  njs_symbol_constructor_properties[] =
 {
-    /* Symbol.name == "Symbol". */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
@@ -175,7 +174,6 @@ static const njs_object_prop_t  njs_symbol_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* Symbol.length == 0. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
@@ -183,14 +181,12 @@ static const njs_object_prop_t  njs_symbol_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* Symbol.prototype. */
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
         .value = njs_prop_handler(njs_object_prototype_create),
     },
 
-    /* Symbol.for(). */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("for"),
@@ -199,7 +195,6 @@ static const njs_object_prop_t  njs_symbol_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* Symbol.keyFor(). */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("keyFor"),
@@ -208,91 +203,78 @@ static const njs_object_prop_t  njs_symbol_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* Symbol.asyncIterator. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("asyncIterator"),
         .value = njs_wellknown_symbol(NJS_SYMBOL_ASYNC_ITERATOR),
     },
 
-    /* Symbol.hasInstance. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("hasInstance"),
         .value = njs_wellknown_symbol(NJS_SYMBOL_HAS_INSTANCE),
     },
 
-    /* Symbol.isConcatSpreadable. */
     {
         .type = NJS_PROPERTY,
         .name = njs_long_string("isConcatSpreadable"),
         .value = njs_wellknown_symbol(NJS_SYMBOL_IS_CONCAT_SPREADABLE),
     },
 
-    /* Symbol.iterator. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("iterator"),
         .value = njs_wellknown_symbol(NJS_SYMBOL_ITERATOR),
     },
 
-    /* Symbol.match. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("match"),
         .value = njs_wellknown_symbol(NJS_SYMBOL_MATCH),
     },
 
-    /* Symbol.matchAll. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("matchAll"),
         .value = njs_wellknown_symbol(NJS_SYMBOL_MATCH_ALL),
     },
 
-    /* Symbol.replace. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("replace"),
         .value = njs_wellknown_symbol(NJS_SYMBOL_REPLACE),
     },
 
-    /* Symbol.search. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("search"),
         .value = njs_wellknown_symbol(NJS_SYMBOL_SEARCH),
     },
 
-    /* Symbol.species. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("species"),
         .value = njs_wellknown_symbol(NJS_SYMBOL_SPECIES),
     },
 
-    /* Symbol.split. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("split"),
         .value = njs_wellknown_symbol(NJS_SYMBOL_SPLIT),
     },
 
-    /* Symbol.toPrimitive. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toPrimitive"),
         .value = njs_wellknown_symbol(NJS_SYMBOL_TO_PRIMITIVE),
     },
 
-    /* Symbol.toStringTag. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("toStringTag"),
         .value = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
     },
 
-    /* Symbol.unscopables. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("unscopables"),

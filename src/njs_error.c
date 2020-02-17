@@ -297,7 +297,6 @@ njs_error_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static const njs_object_prop_t  njs_error_constructor_properties[] =
 {
-    /* Error.name == "Error". */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
@@ -305,7 +304,6 @@ static const njs_object_prop_t  njs_error_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* Error.length == 1. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
@@ -313,7 +311,6 @@ static const njs_object_prop_t  njs_error_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* Error.prototype. */
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
@@ -338,7 +335,6 @@ njs_eval_error_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static const njs_object_prop_t  njs_eval_error_constructor_properties[] =
 {
-    /* EvalError.name == "EvalError". */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
@@ -346,7 +342,6 @@ static const njs_object_prop_t  njs_eval_error_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* EvalError.length == 1. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
@@ -354,7 +349,6 @@ static const njs_object_prop_t  njs_eval_error_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* EvalError.prototype. */
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
@@ -379,7 +373,6 @@ njs_internal_error_constructor(njs_vm_t *vm, njs_value_t *args,
 
 static const njs_object_prop_t  njs_internal_error_constructor_properties[] =
 {
-    /* InternalError.name == "InternalError". */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
@@ -387,7 +380,6 @@ static const njs_object_prop_t  njs_internal_error_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* InternalError.length == 1. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
@@ -395,7 +387,6 @@ static const njs_object_prop_t  njs_internal_error_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* InternalError.prototype. */
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
@@ -420,7 +411,6 @@ njs_range_error_constructor(njs_vm_t *vm, njs_value_t *args,
 
 static const njs_object_prop_t  njs_range_error_constructor_properties[] =
 {
-    /* RangeError.name == "RangeError". */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
@@ -428,7 +418,6 @@ static const njs_object_prop_t  njs_range_error_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* RangeError.length == 1. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
@@ -436,7 +425,6 @@ static const njs_object_prop_t  njs_range_error_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* RangeError.prototype. */
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
@@ -461,7 +449,6 @@ njs_reference_error_constructor(njs_vm_t *vm, njs_value_t *args,
 
 static const njs_object_prop_t  njs_reference_error_constructor_properties[] =
 {
-    /* ReferenceError.name == "ReferenceError". */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
@@ -469,7 +456,6 @@ static const njs_object_prop_t  njs_reference_error_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* ReferenceError.length == 1. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
@@ -477,7 +463,6 @@ static const njs_object_prop_t  njs_reference_error_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* ReferenceError.prototype. */
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
@@ -502,7 +487,6 @@ njs_syntax_error_constructor(njs_vm_t *vm, njs_value_t *args,
 
 static const njs_object_prop_t  njs_syntax_error_constructor_properties[] =
 {
-    /* SyntaxError.name == "SyntaxError". */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
@@ -510,7 +494,6 @@ static const njs_object_prop_t  njs_syntax_error_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* SyntaxError.length == 1. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
@@ -518,7 +501,6 @@ static const njs_object_prop_t  njs_syntax_error_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* SyntaxError.prototype. */
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
@@ -543,7 +525,6 @@ njs_type_error_constructor(njs_vm_t *vm, njs_value_t *args,
 
 static const njs_object_prop_t  njs_type_error_constructor_properties[] =
 {
-    /* TypeError.name == "TypeError". */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
@@ -551,7 +532,6 @@ static const njs_object_prop_t  njs_type_error_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* TypeError.length == 1. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
@@ -559,7 +539,6 @@ static const njs_object_prop_t  njs_type_error_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* TypeError.prototype. */
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
@@ -584,7 +563,6 @@ njs_uri_error_constructor(njs_vm_t *vm, njs_value_t *args,
 
 static const njs_object_prop_t  njs_uri_error_constructor_properties[] =
 {
-    /* URIError.name == "URIError". */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
@@ -592,7 +570,6 @@ static const njs_object_prop_t  njs_uri_error_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* URIError.length == 1. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
@@ -600,7 +577,6 @@ static const njs_object_prop_t  njs_uri_error_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* URIError.prototype. */
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
@@ -686,7 +662,6 @@ njs_memory_error_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
 
 static const njs_object_prop_t  njs_memory_error_constructor_properties[] =
 {
-    /* MemoryError.name == "MemoryError". */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
@@ -694,7 +669,6 @@ static const njs_object_prop_t  njs_memory_error_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* MemoryError.length == 1. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
@@ -702,7 +676,6 @@ static const njs_object_prop_t  njs_memory_error_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* MemoryError.prototype. */
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),

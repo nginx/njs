@@ -1063,7 +1063,6 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("acosh"),
@@ -1080,7 +1079,6 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("asinh"),
@@ -1105,7 +1103,6 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("atanh"),
@@ -1114,7 +1111,6 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("cbrt"),
@@ -1131,7 +1127,6 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("clz32"),
@@ -1148,7 +1143,6 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("cosh"),
@@ -1165,7 +1159,6 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("expm1"),
@@ -1182,7 +1175,6 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("fround"),
@@ -1191,7 +1183,6 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("hypot"),
@@ -1200,7 +1191,6 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("imul"),
@@ -1217,7 +1207,6 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("log10"),
@@ -1226,7 +1215,6 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("log1p"),
@@ -1235,7 +1223,6 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("log2"),
@@ -1284,7 +1271,6 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("sign"),
@@ -1301,7 +1287,6 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("sinh"),
@@ -1326,7 +1311,6 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("tanh"),
@@ -1335,7 +1319,6 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("trunc"),

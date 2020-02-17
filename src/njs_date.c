@@ -1057,7 +1057,6 @@ njs_date_number_parse(int64_t *value, const u_char *p, const u_char *end,
 
 static const njs_object_prop_t  njs_date_constructor_properties[] =
 {
-    /* Date.name == "Date". */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
@@ -1065,7 +1064,6 @@ static const njs_object_prop_t  njs_date_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* Date.length == 7. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
@@ -1073,7 +1071,6 @@ static const njs_object_prop_t  njs_date_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* Date.prototype. */
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),

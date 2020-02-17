@@ -217,9 +217,6 @@ njs_function_copy(njs_vm_t *vm, njs_function_t *function)
 }
 
 
-/*
- * ES5.1, 10.6: CreateArgumentsObject.
- */
 njs_int_t
 njs_function_arguments_object_init(njs_vm_t *vm, njs_native_frame_t *frame)
 {
@@ -973,7 +970,6 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static const njs_object_prop_t  njs_function_constructor_properties[] =
 {
-    /* Function.name == "Function". */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
@@ -981,7 +977,6 @@ static const njs_object_prop_t  njs_function_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* Function.length == 1. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
@@ -989,7 +984,6 @@ static const njs_object_prop_t  njs_function_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* Function.prototype. */
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
@@ -1004,10 +998,6 @@ const njs_object_init_t  njs_function_constructor_init = {
 };
 
 
-/*
- * ES5.1, 15.3.5.1 length
- *      the typical number of arguments expected by the function.
- */
 static njs_int_t
 njs_function_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)

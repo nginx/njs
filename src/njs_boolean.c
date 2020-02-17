@@ -40,7 +40,6 @@ njs_boolean_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static const njs_object_prop_t  njs_boolean_constructor_properties[] =
 {
-    /* Boolean.name == "Boolean". */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
@@ -48,7 +47,6 @@ static const njs_object_prop_t  njs_boolean_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* Boolean.length == 1. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
@@ -56,7 +54,6 @@ static const njs_object_prop_t  njs_boolean_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* Boolean.prototype. */
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),

@@ -444,7 +444,6 @@ njs_array_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static const njs_object_prop_t  njs_array_constructor_properties[] =
 {
-    /* Array.name == "Array". */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
@@ -452,7 +451,6 @@ static const njs_object_prop_t  njs_array_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* Array.length == 1. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
@@ -460,14 +458,12 @@ static const njs_object_prop_t  njs_array_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* Array.prototype. */
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
         .value = njs_prop_handler(njs_object_prototype_create),
     },
 
-    /* Array.isArray(). */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isArray"),
@@ -476,8 +472,6 @@ static const njs_object_prop_t  njs_array_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
-    /* Array.of(). */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("of"),
@@ -3403,7 +3397,6 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .configurable = 1,
     },
 
-    /* ES7. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("includes"),
@@ -3436,7 +3429,6 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("fill"),
@@ -3453,7 +3445,6 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("find"),
@@ -3462,7 +3453,6 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("findIndex"),

@@ -420,7 +420,6 @@ njs_number_is_finite(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static const njs_object_prop_t  njs_number_constructor_properties[] =
 {
-    /* Number.name == "Number". */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
@@ -428,7 +427,6 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* Number.length == 1. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
@@ -436,28 +434,24 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* Number.prototype. */
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
         .value = njs_prop_handler(njs_object_prototype_create),
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("EPSILON"),
         .value = njs_value(NJS_NUMBER, 1, DBL_EPSILON),
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_long_string("MAX_SAFE_INTEGER"),
         .value = njs_value(NJS_NUMBER, 1, NJS_MAX_SAFE_INTEGER),
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_long_string("MIN_SAFE_INTEGER"),
@@ -494,7 +488,6 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
         .value = njs_value(NJS_NUMBER, 1, -INFINITY),
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isFinite"),
@@ -503,7 +496,6 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isInteger"),
@@ -512,7 +504,6 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isSafeInteger"),
@@ -521,7 +512,6 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isNaN"),
@@ -530,7 +520,6 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("parseFloat"),
@@ -539,7 +528,6 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* ES6. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("parseInt"),

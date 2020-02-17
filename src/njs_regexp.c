@@ -1224,7 +1224,6 @@ njs_regexp_string_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
 
 static const njs_object_prop_t  njs_regexp_constructor_properties[] =
 {
-    /* RegExp.name == "RegExp". */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
@@ -1232,7 +1231,6 @@ static const njs_object_prop_t  njs_regexp_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* RegExp.length == 2. */
     {
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
@@ -1240,7 +1238,6 @@ static const njs_object_prop_t  njs_regexp_constructor_properties[] =
         .configurable = 1,
     },
 
-    /* RegExp.prototype. */
     {
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),

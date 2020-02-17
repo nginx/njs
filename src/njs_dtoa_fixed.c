@@ -378,16 +378,6 @@ njs_fixed_dtoa(double value, njs_uint_t frac, char *start, njs_int_t *point)
 
         dividend = significand;
 
-        /*
-         * Let v = f * 2^e with f == significand and e == exponent.
-         * Then need q (quotient) and r (remainder) as follows:
-         *   f * 2^e      = q * 5^17 * 2^17 + r
-         * If e > 17 then
-         *   f * 2^(e-17) = q * 5^17        + r/2^17
-         * else
-         *   f  = q * 5^17 * 2^(17-e) + r/2^e
-         */
-
         if (exponent > 17) {
             /* (e - 17) <= 3. */
             dividend <<= exponent - 17;
