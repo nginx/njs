@@ -1545,37 +1545,50 @@ njs_json_append_value(njs_chb_t *chain, const njs_value_t *value)
 static void
 njs_json_append_string(njs_chb_t *chain, const njs_value_t *value, char quote)
 {
+    size_t             size;
     u_char             c, *dst, *dst_end;
-    size_t             length;
+    njs_bool_t         utf8;
     const u_char       *p, *end;
-    njs_string_prop_t  str;
+    njs_string_prop_t  string;
 
-    static char   hex2char[16] = { '0', '1', '2', '3', '4', '5', '6', '7',
-                                   '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+    static char  hex2char[16] = { '0', '1', '2', '3', '4', '5', '6', '7',
+                                  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
-    (void) njs_string_prop(&str, value);
+    (void) njs_string_prop(&string, value);
 
-    p = str.start;
-    end = p + str.size;
-    length = str.length;
+    p = string.start;
+    end = p + string.size;
+    utf8 = (string.length != 0 && string.length != string.size);
 
-    dst = njs_chb_reserve(chain, length + 2);
+    size = njs_max(string.size + 2, 7);
+    dst = njs_chb_reserve(chain, string.size + 2);
     if (njs_slow_path(dst == NULL)) {
         return;
     }
 
-    dst_end = dst + length + 2;
+    dst_end = dst + size;
 
     *dst++ = quote;
+    njs_chb_written(chain, 1);
 
     while (p < end) {
+        if (njs_slow_path(dst_end <= dst + njs_length("\\uXXXX"))) {
+            size = njs_max(end - p + 1, 6);
+            dst = njs_chb_reserve(chain, size);
+            if (njs_slow_path(dst == NULL)) {
+                return;
+            }
 
-        if (*p < ' '
-            || *p == '\\'
-            || (*p == '\"' && quote == '\"'))
+            dst_end = dst + size;
+        }
+
+        if (njs_slow_path(*p < ' '
+                          || *p == '\\'
+                          || (*p == '\"' && quote == '\"')))
         {
             c = (u_char) *p++;
             *dst++ = '\\';
+            njs_chb_written(chain, 2);
 
             switch (c) {
             case '\\':
@@ -1605,43 +1618,23 @@ njs_json_append_string(njs_chb_t *chain, const njs_value_t *value, char quote)
                 *dst++ = '0';
                 *dst++ = hex2char[(c & 0xf0) >> 4];
                 *dst++ = hex2char[c & 0x0f];
+                njs_chb_written(chain, 4);
             }
+
+            continue;
         }
 
-        /*
-         * Control characters less than space are encoded using 6 bytes
-         * "\uXXXX".  Checking there is at least 6 bytes of destination storage
-         * space.
-         */
+        if (utf8) {
+            /* UTF-8 string. */
+            dst = njs_utf8_copy(dst, &p, end);
 
-        while (p < end && (dst_end - dst) > 6) {
-            if (*p < ' ' || (*p == '\"' && quote == '\"') || *p == '\\') {
-                break;
-            }
-
-            if (length != 0) {
-                /* UTF-8 or ASCII string. */
-                dst = njs_utf8_copy(dst, &p, end);
-
-            } else {
-                /* Byte string. */
-                *dst++ = *p++;
-            }
+        } else {
+            /* Byte or ASCII string. */
+            *dst++ = *p++;
         }
 
-        if (dst_end - dst <= 6) {
-            njs_chb_written(chain, dst - chain->last->pos);
-
-            dst = njs_chb_reserve(chain, 64);
-            if (njs_slow_path(dst == NULL)) {
-                return;
-            }
-
-            dst_end = dst + 64;
-        }
+        njs_chb_written(chain, dst - chain->last->pos);
     }
-
-    njs_chb_written(chain, dst - chain->last->pos);
 
     njs_chb_append(chain, &quote, 1);
 }
