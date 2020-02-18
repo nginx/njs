@@ -7979,11 +7979,19 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("encodeURI.length"),
       njs_str("1")},
 
-    { njs_str("encodeURI()"),
-      njs_str("undefined")},
-
     { njs_str("encodeURI('012абв')"),
       njs_str("012%D0%B0%D0%B1%D0%B2")},
+
+    { njs_str("["
+              " String.fromCharCode(0xD800),"
+              " String.fromCharCode(0xD800) + 'a',"
+              " String.fromCharCode(0xDC00),"
+              " String.fromCharCode(0xDC00) + 'a',"
+              "].every(v=>{try { encodeURI(v)} catch(e) {return e.name == 'URIError'}})"),
+      njs_str("true")},
+
+    { njs_str("encodeURI(String.fromCharCode(0xD800)+String.fromCharCode(0xDC00))"),
+      njs_str("%F0%90%80%80")},
 
     { njs_str("encodeURI('~}|{`_^]\\\\[@?>=<;:/.-,+*)(\\\'&%$#\"! ')"),
       njs_str("~%7D%7C%7B%60_%5E%5D%5C%5B@?%3E=%3C;:/.-,+*)('&%25$#%22!%20")},
@@ -8002,18 +8010,6 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("decodeURI.length"),
       njs_str("1")},
-
-    { njs_str("decodeURI()"),
-      njs_str("undefined")},
-
-    { njs_str("decodeURI('%QQ')"),
-      njs_str("URIError")},
-
-    { njs_str("decodeURI('%')"),
-      njs_str("URIError")},
-
-    { njs_str("decodeURI('%0')"),
-      njs_str("URIError")},
 
     { njs_str("decodeURI('%00')"),
       njs_str("\0")},
@@ -8039,8 +8035,32 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("decodeURI('%D0%B0%D0%B1%D0%B2').length"),
       njs_str("3")},
 
-    { njs_str("decodeURI('%80%81%82').length"),
-      njs_str("3")},
+    { njs_str("["
+              " '%',"
+              " '%0',"
+              " '%QQ',"
+              " '%C0%10',"
+              " '%DC%C7',"
+              " '%80%81%82',"
+              " '%EF%5C%A0',"
+              " '%EF%A0%5E',"
+              " '%E0%EF%A0',"
+              " '%E0%A0%EF',"
+              " '%FF%A2%95%BB',"
+              "].every(v=>{try { decodeURI(v)} catch(e) {return e.name == 'URIError'}})"),
+      njs_str("true")},
+
+    { njs_str("["
+              " 'abc',"
+              " 'αβγ',"
+              " '𝟘𝟙𝟚𝟛',"
+              " String.fromCodePoint(0x20000),"
+              "].every(v=>decodeURI(encodeURI(v)) === v)"),
+      njs_str("true")},
+
+    { njs_str("[encodeURI, encodeURIComponent, decodeURI, decodeURIComponent]"
+              ".every(v=>{var r = v(); return (typeof r === 'string') && r === 'undefined';})"),
+      njs_str("true")},
 
     /* Functions. */
 

@@ -684,9 +684,7 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value,
             utf = njs_json_unicode(p);
             p += 4;
 
-            if (utf >= 0xd800 && utf <= 0xdfff) {
-
-                /* Surrogate pair. */
+            if (njs_surrogate_any(utf)) {
 
                 if (utf > 0xdbff || p[0] != '\\' || p[1] != 'u') {
                     s = njs_utf8_encode(s, NJS_UTF8_REPLACEMENT);
@@ -698,10 +696,10 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value,
                 utf_low = njs_json_unicode(p);
                 p += 4;
 
-                if (njs_fast_path(utf_low >= 0xdc00 && utf_low <= 0xdfff)) {
+                if (njs_fast_path(njs_surrogate_trailing(utf_low))) {
                     utf = njs_string_surrogate_pair(utf, utf_low);
 
-                } else if (utf_low >= 0xd800 && utf_low <= 0xdbff) {
+                } else if (njs_surrogate_leading(utf_low)) {
                     utf = NJS_UTF8_REPLACEMENT;
                     s = njs_utf8_encode(s, NJS_UTF8_REPLACEMENT);
 

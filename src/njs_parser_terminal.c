@@ -1111,10 +1111,10 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
         }
 
         if (cp_pair != 0) {
-            if (njs_fast_path(cp >= 0xdc00 && cp <= 0xdfff)) {
+            if (njs_fast_path(njs_surrogate_trailing(cp))) {
                 cp = njs_string_surrogate_pair(cp_pair, cp);
 
-            } else if (njs_slow_path(cp >= 0xd800 && cp <= 0xdbff)) {
+            } else if (njs_slow_path(njs_surrogate_leading(cp))) {
                 cp = NJS_UTF8_REPLACEMENT;
 
                 dst = njs_utf8_encode(dst, (uint32_t) cp);
@@ -1125,7 +1125,7 @@ njs_parser_escape_string_create(njs_vm_t *vm, njs_parser_t *parser,
 
             cp_pair = 0;
 
-        } else if (cp >= 0xd800 && cp <= 0xdfff) {
+        } else if (njs_surrogate_any(cp)) {
             if (cp <= 0xdbff && src[0] == '\\' && src[1] == 'u') {
                 cp_pair = cp;
                 continue;
@@ -1256,10 +1256,10 @@ njs_parser_escape_string_calc_length(njs_vm_t *vm, njs_parser_t *parser,
         }
 
         if (cp_pair != 0) {
-            if (njs_fast_path(cp >= 0xdc00 && cp <= 0xdfff)) {
+            if (njs_fast_path(njs_surrogate_trailing(cp))) {
                 cp = njs_string_surrogate_pair(cp_pair, cp);
 
-            } else if (njs_slow_path(cp >= 0xd800 && cp <= 0xdbff)) {
+            } else if (njs_slow_path(njs_surrogate_leading(cp))) {
                 cp = NJS_UTF8_REPLACEMENT;
 
                 size += njs_utf8_size(cp);
@@ -1272,7 +1272,7 @@ njs_parser_escape_string_calc_length(njs_vm_t *vm, njs_parser_t *parser,
 
             cp_pair = 0;
 
-        } else if (cp >= 0xd800 && cp <= 0xdfff) {
+        } else if (njs_surrogate_any(cp)) {
             if (cp <= 0xdbff && src[0] == '\\' && src[1] == 'u') {
                 cp_pair = cp;
                 continue;

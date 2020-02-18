@@ -1018,7 +1018,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("encodeURI"),
-        .value = njs_native_function(njs_string_encode_uri, 1),
+        .value = njs_native_function2(njs_string_encode_uri, 1, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1026,7 +1026,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_long_string("encodeURIComponent"),
-        .value = njs_native_function(njs_string_encode_uri_component, 1),
+        .value = njs_native_function2(njs_string_encode_uri, 1, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1034,7 +1034,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("decodeURI"),
-        .value = njs_native_function(njs_string_decode_uri, 1),
+        .value = njs_native_function2(njs_string_decode_uri, 1, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -1042,7 +1042,7 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_long_string("decodeURIComponent"),
-        .value = njs_native_function(njs_string_decode_uri_component, 1),
+        .value = njs_native_function2(njs_string_decode_uri, 1, 1),
         .writable = 1,
         .configurable = 1,
     },

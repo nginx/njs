@@ -26,6 +26,12 @@
 /* The maximum signed int32_t. */
 #define NJS_STRING_MAX_LENGTH  0x7fffffff
 
+#define njs_surrogate_leading(cp)    ((cp) >= 0xd800 && (cp) <= 0xdbff)
+
+#define njs_surrogate_trailing(cp)   ((cp) >= 0xdc00 && (cp) <= 0xdfff)
+
+#define njs_surrogate_any(cp)        ((cp) >= 0xd800 && (cp) <= 0xdfff)
+
 /* Converting surrogate pair to code point.  */
 #define njs_string_surrogate_pair(high, low)                                  \
     (0x10000 + ((high - 0xd800) << 10) + (low - 0xdc00))
@@ -184,13 +190,9 @@ void njs_string_offset_map_init(const u_char *start, size_t size);
 double njs_string_to_index(const njs_value_t *value);
 const char *njs_string_to_c_string(njs_vm_t *vm, njs_value_t *value);
 njs_int_t njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
-njs_int_t njs_string_encode_uri_component(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t component);
 njs_int_t njs_string_decode_uri(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
-njs_int_t njs_string_decode_uri_component(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t component);
 
 njs_index_t njs_value_index(njs_vm_t *vm, const njs_value_t *src,
     njs_uint_t runtime);
