@@ -134,8 +134,12 @@ njs_chb_drain(njs_chb_t *chain, size_t drain)
 void
 njs_chb_drop(njs_chb_t *chain, size_t drop)
 {
-    size_t          size;
+    uint64_t        size;
     njs_chb_node_t  *n, *next;
+
+    if (njs_slow_path(chain->error)) {
+        return;
+    }
 
     n = chain->last;
 
@@ -145,7 +149,7 @@ njs_chb_drop(njs_chb_t *chain, size_t drop)
     }
 
     n = chain->nodes;
-    size = njs_chb_size(chain);
+    size = (uint64_t) njs_chb_size(chain);
 
     if (drop >= size) {
         njs_chb_destroy(chain);
@@ -181,10 +185,10 @@ njs_int_t
 njs_chb_join(njs_chb_t *chain, njs_str_t *str)
 {
     u_char          *start;
-    size_t          size;
+    uint64_t        size;
     njs_chb_node_t  *n;
 
-    if (chain->error) {
+    if (njs_slow_path(chain->error)) {
         return NJS_DECLINED;
     }
 
@@ -196,7 +200,10 @@ njs_chb_join(njs_chb_t *chain, njs_str_t *str)
         return NJS_OK;
     }
 
-    size = njs_chb_size(chain);
+    size = (uint64_t) njs_chb_size(chain);
+    if (njs_slow_path(size >= UINT32_MAX)) {
+        return NJS_ERROR;
+    }
 
     start = njs_mp_alloc(chain->pool, size);
     if (njs_slow_path(start == NULL)) {

@@ -1381,8 +1381,8 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     u_char             *p, *last;
-    int64_t            length;
-    uint64_t           i, len, size;
+    int64_t            size, length;
+    uint64_t           i, len;
     njs_int_t          ret;
     njs_chb_t          chain;
     njs_utf8_t         utf8;
@@ -1497,6 +1497,11 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_chb_drop(&chain, separator.size);
 
     size = njs_chb_size(&chain);
+    if (njs_slow_path(size < 0)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
     length -= separator.length;
 
     p = njs_string_alloc(vm, &vm->retval, size, utf8 ? length : 0);

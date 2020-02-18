@@ -61,11 +61,15 @@ njs_chb_init(njs_chb_t *chain, njs_mp_t *pool)
 }
 
 
-njs_inline uint64_t
+njs_inline int64_t
 njs_chb_size(njs_chb_t *chain)
 {
     uint64_t        size;
     njs_chb_node_t  *n;
+
+    if (njs_slow_path(chain->error)) {
+        return -1;
+    }
 
     n = chain->nodes;
 
@@ -86,6 +90,10 @@ njs_chb_utf8_length(njs_chb_t *chain)
     int64_t         len, length;
     njs_chb_node_t  *n;
 
+    if (njs_slow_path(chain->error)) {
+        return -1;
+    }
+
     n = chain->nodes;
 
     length = 0;
@@ -93,7 +101,7 @@ njs_chb_utf8_length(njs_chb_t *chain)
     while (n != NULL) {
         len = njs_utf8_length(n->start, njs_chb_node_size(n));
         if (njs_slow_path(len < 0)) {
-            return len;
+            return 0;
         }
 
         length += len;
