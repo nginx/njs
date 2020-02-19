@@ -532,7 +532,7 @@ njs_dtoa_prec_format(char *start, size_t prec, size_t len, int point)
         if (point < (int) prec) {
             start[point] = '.';
 
-            njs_memset(&start[point + 1], '0', prec - len);
+            njs_memset(&start[point + 1], '0', prec - point);
         }
 
     } else if (point < (int) prec) {

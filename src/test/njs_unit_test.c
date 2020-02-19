@@ -609,6 +609,10 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("(-(2**10000)).toPrecision()"),
       njs_str("-Infinity") },
 
+    { njs_str("var v = parseFloat('9'.repeat(98));"
+              "[98,100].map(p=>v.toPrecision(p).length)"),
+      njs_str("98,101") },
+
     { njs_str("(-0).toPrecision(2)"),
       njs_str("0.0") },
 
