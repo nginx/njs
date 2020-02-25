@@ -94,7 +94,8 @@ static njs_int_t njs_json_stringify_replacer(njs_json_stringify_t* stringify,
 static njs_int_t njs_json_stringify_array(njs_vm_t *vm,
     njs_json_stringify_t *stringify);
 
-static void njs_json_append_value(njs_chb_t *chain, const njs_value_t *value);
+static njs_int_t njs_json_append_value(njs_vm_t *vm, njs_chb_t *chain,
+    njs_value_t *value);
 static void njs_json_append_string(njs_chb_t *chain, const njs_value_t *value,
     char quote);
 static void njs_json_append_number(njs_chb_t *chain, const njs_value_t *value);
@@ -188,7 +189,7 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     size_t                length;
-    double                num;
+    int64_t               i64;
     njs_int_t             i;
     njs_int_t             ret;
     njs_value_t           *replacer, *space;
@@ -217,45 +218,67 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         njs_set_undefined(&stringify->replacer);
     }
 
-    stringify->space.length = 0;
-
     space = njs_arg(args, nargs, 3);
 
-    if (njs_is_string(space) || njs_is_number(space)) {
-        if (njs_is_string(space)) {
-            length = njs_string_prop(&prop, space);
+    switch (space->type) {
+    case NJS_OBJECT_STRING:
+        ret = njs_value_to_string(vm, space, space);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
 
-            if (njs_is_byte_string(&prop)) {
-                njs_internal_error(vm, "space argument cannot be"
-                                   " a byte string");
-                return NJS_ERROR;
-            }
+        /* Fall through. */
 
-            if (length > 10) {
-                p = njs_string_offset(prop.start, prop.start + prop.size, 10);
+    case NJS_STRING:
+        length = njs_string_prop(&prop, space);
 
-            } else {
-                p = prop.start + prop.size;
-            }
+        if (njs_is_byte_string(&prop)) {
+            njs_internal_error(vm, "space argument cannot be"
+                               " a byte string");
+            return NJS_ERROR;
+        }
 
-            stringify->space.start = prop.start;
-            stringify->space.length = p - prop.start;
+        if (length > 10) {
+            p = njs_string_offset(prop.start, prop.start + prop.size, 10);
 
         } else {
-            num = njs_number(space);
-
-            if (!isnan(num) && !isinf(num) && num > 0) {
-                num = njs_min(num, 10);
-
-                stringify->space.length = (size_t) num;
-                stringify->space.start = stringify->space_buf;
-
-                for (i = 0; i < (int) num; i++) {
-                    stringify->space.start[i] = ' ';
-                }
-            }
+            p = prop.start + prop.size;
         }
-    }
+
+        stringify->space.start = prop.start;
+        stringify->space.length = p - prop.start;
+
+        break;
+
+    case NJS_OBJECT_NUMBER:
+        ret = njs_value_to_numeric(vm, space, space);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+        /* Fall through. */
+
+    case NJS_NUMBER:
+        i64 = njs_min(njs_number_to_integer(njs_number(space)), 10);
+
+        if (i64 > 0) {
+            stringify->space.length = i64;
+            stringify->space.start = stringify->space_buf;
+
+            for (i = 0; i < i64; i++) {
+                stringify->space.start[i] = ' ';
+            }
+
+            break;
+        }
+
+        /* Fall through. */
+
+    default:
+        stringify->space.length = 0;
+
+        break;
+     }
 
     return njs_json_stringify_iterator(vm, stringify, njs_arg(args, nargs, 1));
 
@@ -1238,7 +1261,10 @@ njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify,
                 break;
             }
 
-            njs_json_append_value(&chain, value);
+            ret = njs_json_append_value(vm, &chain, value);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
 
             break;
 
@@ -1288,7 +1314,10 @@ njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify,
             }
 
             state->written = 1;
-            njs_json_append_value(&chain, value);
+            ret = njs_json_append_value(vm, &chain, value);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
 
             break;
         }
@@ -1471,10 +1500,6 @@ njs_json_stringify_array(njs_vm_t *vm, njs_json_stringify_t *stringify)
         }
 
         switch (value->type) {
-        case NJS_OBJECT_NUMBER:
-            value = njs_object_value(value);
-            /* Fall through. */
-
         case NJS_NUMBER:
             ret = njs_number_to_string(vm, &num_value, value);
             if (njs_slow_path(ret != NJS_OK)) {
@@ -1484,9 +1509,14 @@ njs_json_stringify_array(njs_vm_t *vm, njs_json_stringify_t *stringify)
             value = &num_value;
             break;
 
+        case NJS_OBJECT_NUMBER:
         case NJS_OBJECT_STRING:
-            value = njs_object_value(value);
-            break;
+            ret = njs_value_to_string(vm, value, value);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_ERROR;
+            }
+
+            /* Fall through. */
 
         case NJS_STRING:
             break;
@@ -1513,12 +1543,18 @@ njs_json_stringify_array(njs_vm_t *vm, njs_json_stringify_t *stringify)
 }
 
 
-static void
-njs_json_append_value(njs_chb_t *chain, const njs_value_t *value)
+static njs_int_t
+njs_json_append_value(njs_vm_t *vm, njs_chb_t *chain, njs_value_t *value)
 {
+    njs_int_t  ret;
+
     switch (value->type) {
     case NJS_OBJECT_STRING:
-        value = njs_object_value(value);
+         ret = njs_value_to_string(vm, value, value);
+         if (njs_slow_path(ret != NJS_OK)) {
+             return ret;
+         }
+
         /* Fall through. */
 
     case NJS_STRING:
@@ -1526,7 +1562,11 @@ njs_json_append_value(njs_chb_t *chain, const njs_value_t *value)
         break;
 
     case NJS_OBJECT_NUMBER:
-        value = njs_object_value(value);
+         ret = njs_value_to_numeric(vm, value, value);
+         if (njs_slow_path(ret != NJS_OK)) {
+             return ret;
+         }
+
         /* Fall through. */
 
     case NJS_NUMBER:
@@ -1555,6 +1595,8 @@ njs_json_append_value(njs_chb_t *chain, const njs_value_t *value)
     default:
         njs_chb_append_literal(chain, "null");
     }
+
+    return NJS_OK;
 }
 
 

@@ -15454,6 +15454,10 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("JSON.stringify(new String('abc'))"),
       njs_str("\"abc\"") },
 
+    { njs_str("var s = new String('abc'); s.toString = () => 'xxx'; "
+              "JSON.stringify(s)"),
+      njs_str("\"xxx\"") },
+
     { njs_str("JSON.stringify(123)"),
       njs_str("123") },
 
@@ -15465,6 +15469,10 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("JSON.stringify(new Number(123))"),
       njs_str("123") },
+
+    { njs_str("var n = new Number(8.5); n.valueOf = () => 42;"
+              "JSON.stringify(n)"),
+      njs_str("42") },
 
     { njs_str("JSON.stringify(true)"),
       njs_str("true") },
@@ -15662,29 +15670,43 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("JSON.stringify([{a:1,b:{c:2}},1], undefined, '#')"),
       njs_str("[\n#{\n##\"a\": 1,\n##\"b\": {\n###\"c\": 2\n##}\n#},\n#1\n]") },
 
-    { njs_str("JSON.stringify([1], undefined, 'AAAAABBBBBC')"),
+    { njs_str("JSON.stringify([1], null, 'AAAAABBBBBC')"),
       njs_str("[\nAAAAABBBBB1\n]") },
 
-    { njs_str("JSON.stringify([1], undefined, 11)"),
+    { njs_str("var s = new String('A'); s.toString = () => 'AAAAABBBBBC';"
+              "JSON.stringify([1], null, s)"),
+      njs_str("[\nAAAAABBBBB1\n]") },
+
+    { njs_str("JSON.stringify([1], null, '!βββββ').length"),
+      njs_str("11") },
+
+    { njs_str("JSON.stringify([1], null, 'ABC') === JSON.stringify([1], null, new String('ABC'))"),
+      njs_str("true") },
+
+    { njs_str("JSON.stringify([1], null, '!!βββββββββββββββββ').length"),
+      njs_str("15") },
+
+    { njs_str("JSON.stringify([1], null, String.bytesFrom([0x9d])).length"),
+      njs_str("InternalError: space argument cannot be a byte string") },
+
+    { njs_str("JSON.stringify([1], null, 11)"),
       njs_str("[\n          1\n]") },
+
+    { njs_str("JSON.stringify([1], null, 5) === JSON.stringify([1], null, 5.9)"),
+      njs_str("true") },
+
+    { njs_str("JSON.stringify([1], null, 5) === JSON.stringify([1], null, new Number(5))"),
+      njs_str("true") },
+
+    { njs_str("var s = new Number(23); s.valueOf = () => 5;"
+              "JSON.stringify([1], null, s)"),
+      njs_str("[\n     1\n]") },
 
     { njs_str("JSON.stringify([{a:1,b:{c:2}},1], undefined, -1)"),
       njs_str("[{\"a\":1,\"b\":{\"c\":2}},1]") },
 
     { njs_str("JSON.stringify([{a:1,b:{c:2}},1], undefined, new Date())"),
       njs_str("[{\"a\":1,\"b\":{\"c\":2}},1]") },
-
-    { njs_str("JSON.stringify([], null, '!βββββ').length"),
-      njs_str("10") },
-
-    { njs_str("JSON.stringify([], null, '!!βββββββββββββββββ').length"),
-      njs_str("14") },
-
-    { njs_str("JSON.stringify([], null, '!βββββββββββββββββ').length"),
-      njs_str("14") },
-
-    { njs_str("JSON.stringify([], null, String.bytesFrom([0x9d])).length"),
-      njs_str("InternalError: space argument cannot be a byte string") },
 
     { njs_str("var o = Object.defineProperty({}, 'a', { get() { return ()=> 1}, enumerable: true });"
               "JSON.stringify(o)"),
@@ -15805,6 +15827,14 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("JSON.stringify({'1':1,'2':2,'3':3}, [1, new Number(2)])"),
       njs_str("{\"1\":1,\"2\":2}") },
+
+    { njs_str("var s = new String('str'); s.toString = () => 'xxx';"
+              "JSON.stringify({str:1,xxx:2}, [s])"),
+      njs_str("{\"xxx\":2}") },
+
+    { njs_str("var n = new String(123); n.toString = () => '42';"
+              "JSON.stringify({123:1,42:2}, [n])"),
+      njs_str("{\"42\":2}") },
 
     { njs_str("var objs = []; var o = JSON.stringify({a:1},"
                  "   function(k, v) {objs.push(this); return v});"
