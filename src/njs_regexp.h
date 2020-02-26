@@ -19,7 +19,7 @@ typedef enum {
 njs_int_t njs_regexp_init(njs_vm_t *vm);
 njs_int_t njs_regexp_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
     size_t length, njs_regexp_flags_t flags);
-njs_token_t njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser,
+njs_token_type_t njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser,
     njs_value_t *value);
 njs_regexp_pattern_t *njs_regexp_pattern_create(njs_vm_t *vm,
     u_char *string, size_t length, njs_regexp_flags_t flags);

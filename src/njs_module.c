@@ -104,7 +104,7 @@ njs_parser_module(njs_vm_t *vm, njs_parser_t *parser)
     njs_str_t          name, text;
     njs_lexer_t        *prev, lexer;
     njs_module_t       *module;
-    njs_token_t        token;
+    njs_token_type_t   type;
     njs_parser_node_t  *node;
     njs_module_info_t  info;
 
@@ -161,13 +161,13 @@ njs_parser_module(njs_vm_t *vm, njs_parser_t *parser)
 
     parser->lexer = &lexer;
 
-    token = njs_parser_token(vm, parser);
-    if (njs_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+    type = njs_parser_token(vm, parser);
+    if (njs_slow_path(type <= NJS_TOKEN_ILLEGAL)) {
         goto fail;
     }
 
-    token = njs_parser_module_lambda(vm, parser);
-    if (njs_slow_path(token <= NJS_TOKEN_ILLEGAL)) {
+    type = njs_parser_module_lambda(vm, parser);
+    if (njs_slow_path(type <= NJS_TOKEN_ILLEGAL)) {
         goto fail;
     }
 

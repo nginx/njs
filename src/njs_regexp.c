@@ -316,7 +316,7 @@ done:
 }
 
 
-njs_token_t
+njs_token_type_t
 njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
 {
     u_char                *p;

@@ -311,7 +311,7 @@ njs_lexer_init(njs_vm_t *vm, njs_lexer_t *lexer, njs_str_t *file,
 }
 
 
-njs_token_t
+njs_token_type_t
 njs_lexer_token(njs_vm_t *vm, njs_lexer_t *lexer)
 {
     njs_lexer_token_t  *lt;
@@ -319,7 +319,7 @@ njs_lexer_token(njs_vm_t *vm, njs_lexer_t *lexer)
     lexer->prev_start = lexer->start;
 
     if (lexer->token != NULL) {
-        lexer->prev_token = lexer->token->type;
+        lexer->prev_type = lexer->token->type;
         njs_mp_free(vm->mem_pool, lexer->token);
     }
 
@@ -336,7 +336,7 @@ njs_lexer_token(njs_vm_t *vm, njs_lexer_t *lexer)
 }
 
 
-njs_token_t
+njs_token_type_t
 njs_lexer_peek_token(njs_vm_t *vm, njs_lexer_t *lexer, size_t offset)
 {
     size_t             i;

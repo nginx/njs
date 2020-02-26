@@ -264,7 +264,7 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
         return NJS_OK;
     }
 
-    switch (node->token) {
+    switch (node->token_type) {
 
     case NJS_TOKEN_VAR:
         return njs_generate_var_statement(vm, generator, node);
@@ -664,7 +664,7 @@ njs_generate_if_statement(njs_vm_t *vm, njs_generator_t *generator,
     jump_offset = njs_code_offset(generator, cond_jump);
     label_offset = jump_offset + offsetof(njs_vmcode_cond_jump_t, offset);
 
-    if (node->right != NULL && node->right->token == NJS_TOKEN_BRANCHING) {
+    if (node->right != NULL && node->right->token_type == NJS_TOKEN_BRANCHING) {
 
         /* The "then" branch in a case of "if/then/else" statement. */
 
@@ -836,7 +836,7 @@ njs_generate_switch_statement(njs_vm_t *vm, njs_generator_t *generator,
 
     for (branch = swtch->right; branch != NULL; branch = branch->left) {
 
-        if (branch->token != NJS_TOKEN_DEFAULT) {
+        if (branch->token_type != NJS_TOKEN_DEFAULT) {
 
             /* The "case" expression. */
 
@@ -887,7 +887,7 @@ njs_generate_switch_statement(njs_vm_t *vm, njs_generator_t *generator,
 
     for (branch = swtch->right; branch != NULL; branch = branch->left) {
 
-        if (branch->token == NJS_TOKEN_DEFAULT) {
+        if (branch->token_type == NJS_TOKEN_DEFAULT) {
             njs_code_set_jump_offset(generator, njs_vmcode_jump_t, jump_offset);
             jump = NULL;
             node = branch;
@@ -1580,7 +1580,7 @@ njs_generate_stop_statement(njs_vm_t *vm, njs_generator_t *generator,
         index = NJS_INDEX_NONE;
         node = node->right;
 
-        if (node != NULL && node->token != NJS_TOKEN_FUNCTION) {
+        if (node != NULL && node->token_type != NJS_TOKEN_FUNCTION) {
             index = node->index;
         }
 
@@ -1626,7 +1626,7 @@ njs_generate_assignment(njs_vm_t *vm, njs_generator_t *generator,
     expr = node->right;
     expr->dest = NULL;
 
-    if (lvalue->token == NJS_TOKEN_NAME) {
+    if (lvalue->token_type == NJS_TOKEN_NAME) {
 
         ret = njs_generate_variable(vm, generator, lvalue, NJS_DECLARATION);
         if (njs_slow_path(ret != NJS_OK)) {
@@ -1679,7 +1679,7 @@ njs_generate_assignment(njs_vm_t *vm, njs_generator_t *generator,
          * Preserve object and property values stored in variables in a case
          * if the variables can be changed by side effects in expression.
          */
-        if (object->token == NJS_TOKEN_NAME) {
+        if (object->token_type == NJS_TOKEN_NAME) {
             src = object->index;
 
             index = njs_generate_node_temp_index_get(vm, generator, object);
@@ -1690,7 +1690,7 @@ njs_generate_assignment(njs_vm_t *vm, njs_generator_t *generator,
             njs_generate_code_move(generator, move, index, src);
         }
 
-        if (property->token == NJS_TOKEN_NAME) {
+        if (property->token_type == NJS_TOKEN_NAME) {
             src = property->index;
 
             index = njs_generate_node_temp_index_get(vm, generator, property);
@@ -1707,7 +1707,7 @@ njs_generate_assignment(njs_vm_t *vm, njs_generator_t *generator,
         return ret;
     }
 
-    switch (lvalue->token) {
+    switch (lvalue->token_type) {
     case NJS_TOKEN_PROPERTY_INIT:
         njs_generate_code(generator, njs_vmcode_prop_set_t, prop_set,
                           NJS_VMCODE_PROPERTY_INIT, 3);
@@ -1749,7 +1749,7 @@ njs_generate_operation_assignment(njs_vm_t *vm, njs_generator_t *generator,
 
     lvalue = node->left;
 
-    if (lvalue->token == NJS_TOKEN_NAME) {
+    if (lvalue->token_type == NJS_TOKEN_NAME) {
 
         ret = njs_generate_variable(vm, generator, lvalue, NJS_DECLARATION);
         if (njs_slow_path(ret != NJS_OK)) {
@@ -1912,7 +1912,7 @@ njs_generate_property_accessor(njs_vm_t *vm, njs_generator_t *generator,
     accessor->value = function->index;
     accessor->object = object->index;
     accessor->property = property->index;
-    accessor->type = (node->token == NJS_TOKEN_PROPERTY_GETTER)
+    accessor->type = (node->token_type == NJS_TOKEN_PROPERTY_GETTER)
                      ? NJS_OBJECT_PROP_GETTER : NJS_OBJECT_PROP_SETTER;
 
     return NJS_OK;
@@ -2094,7 +2094,7 @@ njs_generate_3addr_operation(njs_vm_t *vm, njs_generator_t *generator,
 
     right = node->right;
 
-    if (left->token == NJS_TOKEN_NAME) {
+    if (left->token_type == NJS_TOKEN_NAME) {
 
         if (njs_slow_path(njs_parser_has_side_effect(right))) {
             njs_generate_code(generator, njs_vmcode_move_t, move,
@@ -2184,7 +2184,7 @@ njs_generate_typeof_operation(njs_vm_t *vm, njs_generator_t *generator,
 
     expr = node->left;
 
-    if (expr->token == NJS_TOKEN_NAME) {
+    if (expr->token_type == NJS_TOKEN_NAME) {
         ret = njs_generate_variable(vm, generator, expr, NJS_TYPEOF);
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
@@ -2227,7 +2227,7 @@ njs_generate_inc_dec_operation(njs_vm_t *vm, njs_generator_t *generator,
 
     lvalue = node->left;
 
-    if (lvalue->token == NJS_TOKEN_NAME) {
+    if (lvalue->token_type == NJS_TOKEN_NAME) {
 
         ret = njs_generate_variable(vm, generator, lvalue, NJS_DECLARATION);
         if (njs_slow_path(ret != NJS_OK)) {
@@ -2860,7 +2860,7 @@ njs_generate_try_statement(njs_vm_t *vm, njs_generator_t *generator,
     catch_exit_label = undef_label;
     catch_cont_label = undef_label;
 
-    if (node->token == NJS_TOKEN_CATCH) {
+    if (node->token_type == NJS_TOKEN_CATCH) {
         /* A "try/catch" case. */
 
         catch_index = njs_variable_index(vm, node->left);

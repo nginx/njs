@@ -195,7 +195,7 @@ typedef enum {
     NJS_TOKEN_SUPER,
 
     NJS_TOKEN_RESERVED,
-} njs_token_t;
+} njs_token_type_t;
 
 
 typedef struct {
@@ -205,7 +205,7 @@ typedef struct {
 
 typedef struct {
     njs_lexer_entry_t               entry;
-    njs_token_t                     type;
+    njs_token_type_t                type;
 } njs_keyword_t;
 
 
@@ -219,7 +219,7 @@ typedef struct {
 
 
 typedef struct {
-    njs_token_t                     type:16;
+    njs_token_type_t                type:16;
     uint32_t                        line;
     uintptr_t                       unique_id;
     njs_str_t                       text;
@@ -234,7 +234,7 @@ typedef struct {
     uint8_t                         keyword;
 
     u_char                          *prev_start;
-    njs_token_t                     prev_token:16;
+    njs_token_type_t                prev_type:16;
 
     uint32_t                        line;
     njs_str_t                       file;
@@ -251,8 +251,8 @@ typedef struct {
 njs_int_t njs_lexer_init(njs_vm_t *vm, njs_lexer_t *lexer, njs_str_t *file,
     u_char *start, u_char *end);
 
-njs_token_t njs_lexer_token(njs_vm_t *vm, njs_lexer_t *lexer);
-njs_token_t njs_lexer_peek_token(njs_vm_t *vm, njs_lexer_t *lexer,
+njs_token_type_t njs_lexer_token(njs_vm_t *vm, njs_lexer_t *lexer);
+njs_token_type_t njs_lexer_peek_token(njs_vm_t *vm, njs_lexer_t *lexer,
     size_t offset);
 njs_int_t njs_lexer_rollback(njs_vm_t *vm, njs_lexer_t *lexer);
 
