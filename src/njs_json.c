@@ -187,10 +187,13 @@ static njs_int_t
 njs_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
+    size_t                length;
     double                num;
     njs_int_t             i;
     njs_int_t             ret;
     njs_value_t           *replacer, *space;
+    const u_char          *p;
+    njs_string_prop_t     prop;
     njs_json_stringify_t  *stringify, json_stringify;
 
     stringify = &json_stringify;
@@ -220,8 +223,23 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     if (njs_is_string(space) || njs_is_number(space)) {
         if (njs_is_string(space)) {
-            njs_string_get(space, &stringify->space);
-            stringify->space.length = njs_min(stringify->space.length, 10);
+            length = njs_string_prop(&prop, space);
+
+            if (njs_is_byte_string(&prop)) {
+                njs_internal_error(vm, "space argument cannot be"
+                                   " a byte string");
+                return NJS_ERROR;
+            }
+
+            if (length > 10) {
+                p = njs_string_offset(prop.start, prop.start + prop.size, 10);
+
+            } else {
+                p = prop.start + prop.size;
+            }
+
+            stringify->space.start = prop.start;
+            stringify->space.length = p - prop.start;
 
         } else {
             num = njs_number(space);

@@ -15674,6 +15674,18 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("JSON.stringify([{a:1,b:{c:2}},1], undefined, new Date())"),
       njs_str("[{\"a\":1,\"b\":{\"c\":2}},1]") },
 
+    { njs_str("JSON.stringify([], null, '!βββββ').length"),
+      njs_str("10") },
+
+    { njs_str("JSON.stringify([], null, '!!βββββββββββββββββ').length"),
+      njs_str("14") },
+
+    { njs_str("JSON.stringify([], null, '!βββββββββββββββββ').length"),
+      njs_str("14") },
+
+    { njs_str("JSON.stringify([], null, String.bytesFrom([0x9d])).length"),
+      njs_str("InternalError: space argument cannot be a byte string") },
+
     { njs_str("var o = Object.defineProperty({}, 'a', { get() { return ()=> 1}, enumerable: true });"
               "JSON.stringify(o)"),
       njs_str("{}") },
