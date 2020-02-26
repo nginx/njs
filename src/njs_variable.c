@@ -10,51 +10,20 @@
 
 
 static njs_variable_t *njs_variable_scope_add(njs_vm_t *vm,
-    njs_parser_scope_t *scope, njs_lvlhsh_query_t *lhq,
-    njs_variable_type_t type);
+    njs_parser_scope_t *scope, uintptr_t unique_id, njs_variable_type_t type);
 static njs_int_t njs_variable_reference_resolve(njs_vm_t *vm,
     njs_variable_reference_t *vr, njs_parser_scope_t *node_scope);
-static njs_variable_t *njs_variable_alloc(njs_vm_t *vm, njs_str_t *name,
+static njs_variable_t *njs_variable_alloc(njs_vm_t *vm, uintptr_t unique_id,
     njs_variable_type_t type);
-
-
-static njs_int_t
-njs_variables_hash_test(njs_lvlhsh_query_t *lhq, void *data)
-{
-    njs_variable_t  *var;
-
-    var = data;
-
-    if (njs_strstr_eq(&lhq->key, &var->name)) {
-        return NJS_OK;
-    }
-
-    return NJS_DECLINED;
-}
-
-
-const njs_lvlhsh_proto_t  njs_variables_hash_proto
-    njs_aligned(64) =
-{
-    NJS_LVLHSH_DEFAULT,
-    njs_variables_hash_test,
-    njs_lvlhsh_alloc,
-    njs_lvlhsh_free,
-};
 
 
 njs_variable_t *
-njs_variable_add(njs_vm_t *vm, njs_parser_scope_t *scope, njs_str_t *name,
-    uint32_t hash, njs_variable_type_t type)
+njs_variable_add(njs_vm_t *vm, njs_parser_scope_t *scope, uintptr_t unique_id,
+    njs_variable_type_t type)
 {
-    njs_variable_t      *var;
-    njs_lvlhsh_query_t  lhq;
+    njs_variable_t  *var;
 
-    lhq.key_hash = hash;
-    lhq.key = *name;
-    lhq.proto = &njs_variables_hash_proto;
-
-    var = njs_variable_scope_add(vm, scope, &lhq, type);
+    var = njs_variable_scope_add(vm, scope, unique_id, type);
     if (njs_slow_path(var == NULL)) {
         return NULL;
     }
@@ -64,7 +33,7 @@ njs_variable_add(njs_vm_t *vm, njs_parser_scope_t *scope, njs_str_t *name,
         do {
             scope = scope->parent;
 
-            var = njs_variable_scope_add(vm, scope, &lhq, type);
+            var = njs_variable_scope_add(vm, scope, unique_id, type);
             if (njs_slow_path(var == NULL)) {
                 return NULL;
             }
@@ -81,35 +50,27 @@ njs_variable_add(njs_vm_t *vm, njs_parser_scope_t *scope, njs_str_t *name,
 
 
 njs_int_t
-njs_variables_copy(njs_vm_t *vm, njs_lvlhsh_t *variables,
-    njs_lvlhsh_t *prev_variables)
+njs_variables_copy(njs_vm_t *vm, njs_rbtree_t *variables,
+    njs_rbtree_t *prev_variables)
 {
-    njs_int_t           ret;
-    njs_variable_t      *var;
-    njs_lvlhsh_each_t   lhe;
-    njs_lvlhsh_query_t  lhq;
+    njs_rbtree_node_t    *node;
+    njs_variable_node_t  *var_node;
 
-    njs_lvlhsh_each_init(&lhe, &njs_variables_hash_proto);
+    node = njs_rbtree_min(prev_variables);
 
-    lhq.proto = &njs_variables_hash_proto;
-    lhq.replace = 0;
-    lhq.pool = vm->mem_pool;
+    while (njs_rbtree_is_there_successor(prev_variables, node)) {
+        var_node = (njs_variable_node_t *) node;
 
-    for ( ;; ) {
-        var = njs_lvlhsh_each(prev_variables, &lhe);
-
-        if (var == NULL) {
-            break;
-        }
-
-        lhq.value = var;
-        lhq.key = var->name;
-        lhq.key_hash = njs_djb_hash(var->name.start, var->name.length);
-
-        ret = njs_lvlhsh_insert(variables, &lhq);
-        if (njs_slow_path(ret != NJS_OK)) {
+        var_node = njs_variable_node_alloc(vm, var_node->variable,
+                                           var_node->key);
+        if (njs_slow_path(var_node == NULL)) {
+            njs_memory_error(vm);
             return NJS_ERROR;
         }
+
+        njs_rbtree_insert(variables, &var_node->node);
+
+        node = njs_rbtree_node_successor(prev_variables, node);
     }
 
     return NJS_OK;
@@ -118,13 +79,19 @@ njs_variables_copy(njs_vm_t *vm, njs_lvlhsh_t *variables,
 
 static njs_variable_t *
 njs_variable_scope_add(njs_vm_t *vm, njs_parser_scope_t *scope,
-    njs_lvlhsh_query_t *lhq, njs_variable_type_t type)
+    uintptr_t unique_id, njs_variable_type_t type)
 {
-    njs_int_t       ret;
-    njs_variable_t  *var;
+    njs_variable_t           *var;
+    njs_rbtree_node_t        *node;
+    njs_variable_node_t      var_node, *var_node_new;
+    const njs_lexer_entry_t  *entry;
 
-    if (njs_lvlhsh_find(&scope->variables, lhq) == NJS_OK) {
-        var = lhq->value;
+    var_node.key = unique_id;
+
+    node = njs_rbtree_find(&scope->variables, &var_node.node);
+
+    if (node != NULL) {
+        var = ((njs_variable_node_t *) node)->variable;
 
         if (scope->module || scope->type == NJS_SCOPE_BLOCK) {
 
@@ -149,162 +116,118 @@ njs_variable_scope_add(njs_vm_t *vm, njs_parser_scope_t *scope,
         return var;
     }
 
-    var = njs_variable_alloc(vm, &lhq->key, type);
+    var = njs_variable_alloc(vm, unique_id, type);
     if (njs_slow_path(var == NULL)) {
-        return NULL;
+        goto memory_error;
     }
 
-    lhq->replace = 0;
-    lhq->value = var;
-    lhq->pool = vm->mem_pool;
-
-    ret = njs_lvlhsh_insert(&scope->variables, lhq);
-
-    if (njs_fast_path(ret == NJS_OK)) {
-        return var;
+    var_node_new = njs_variable_node_alloc(vm, var, unique_id);
+    if (njs_slow_path(var_node_new == NULL)) {
+        goto memory_error;
     }
 
-    njs_mp_free(vm->mem_pool, var->name.start);
-    njs_mp_free(vm->mem_pool, var);
+    njs_rbtree_insert(&scope->variables, &var_node_new->node);
 
-    njs_type_error(vm, "lvlhsh insert failed");
+    return var;
+
+memory_error:
+
+    njs_memory_error(vm);
 
     return NULL;
 
 fail:
 
+    entry = njs_lexer_entry(unique_id);
+
     njs_parser_syntax_error(vm, vm->parser,
                             "\"%V\" has already been declared",
-                            &lhq->key);
+                            &entry->name);
     return NULL;
 }
 
 
 njs_variable_t *
-njs_label_add(njs_vm_t *vm, njs_parser_scope_t *scope, njs_str_t *name,
-    uint32_t hash)
+njs_label_add(njs_vm_t *vm, njs_parser_scope_t *scope, uintptr_t unique_id)
 {
-    njs_int_t           ret;
-    njs_variable_t      *label;
-    njs_lvlhsh_query_t  lhq;
+    njs_variable_t       *label;
+    njs_rbtree_node_t    *node;
+    njs_variable_node_t  var_node, *var_node_new;
 
-    lhq.key_hash = hash;
-    lhq.key = *name;
-    lhq.proto = &njs_variables_hash_proto;
+    var_node.key = unique_id;
 
-    if (njs_lvlhsh_find(&scope->labels, &lhq) == NJS_OK) {
-        return lhq.value;
+    node = njs_rbtree_find(&scope->labels, &var_node.node);
+
+    if (node != NULL) {
+        return ((njs_variable_node_t *) node)->variable;
     }
 
-    label = njs_variable_alloc(vm, &lhq.key, NJS_VARIABLE_CONST);
+    label = njs_variable_alloc(vm, unique_id, NJS_VARIABLE_CONST);
     if (njs_slow_path(label == NULL)) {
-        return label;
+        goto memory_error;
     }
 
-    lhq.replace = 0;
-    lhq.value = label;
-    lhq.pool = vm->mem_pool;
-
-    ret = njs_lvlhsh_insert(&scope->labels, &lhq);
-
-    if (njs_fast_path(ret == NJS_OK)) {
-        return label;
+    var_node_new = njs_variable_node_alloc(vm, label, unique_id);
+    if (njs_slow_path(var_node_new == NULL)) {
+        goto memory_error;
     }
 
-    njs_mp_free(vm->mem_pool, label->name.start);
-    njs_mp_free(vm->mem_pool, label);
+    njs_rbtree_insert(&scope->labels, &var_node_new->node);
 
-    njs_internal_error(vm, "lvlhsh insert failed");
+    return label;
+
+memory_error:
+
+    njs_memory_error(vm);
 
     return NULL;
 }
 
 
 njs_int_t
-njs_label_remove(njs_vm_t *vm, njs_parser_scope_t *scope, njs_str_t *name,
-    uint32_t hash)
+njs_label_remove(njs_vm_t *vm, njs_parser_scope_t *scope, uintptr_t unique_id)
 {
-    njs_int_t           ret;
-    njs_variable_t      *label;
-    njs_lvlhsh_query_t  lhq;
+    njs_rbtree_node_t    *node;
+    njs_variable_node_t  var_node;
 
-    lhq.key_hash = hash;
-    lhq.key = *name;
-    lhq.proto = &njs_variables_hash_proto;
-    lhq.pool = vm->mem_pool;
+    var_node.key = unique_id;
 
-    ret = njs_lvlhsh_delete(&scope->labels, &lhq);
-
-    if (njs_fast_path(ret == NJS_OK)) {
-        label = lhq.value;
-        njs_mp_free(vm->mem_pool, label->name.start);
-        njs_mp_free(vm->mem_pool, label);
-
-    } else {
-        njs_internal_error(vm, "lvlhsh delete failed");
+    node = njs_rbtree_find(&scope->labels, &var_node.node);
+    if (njs_slow_path(node == NULL)) {
+        njs_internal_error(vm, "failed to find label while removing");
+        return NJS_ERROR;
     }
 
-    return ret;
+    njs_rbtree_delete(&scope->labels, (njs_rbtree_part_t *) node);
+    njs_variable_node_free(vm, (njs_variable_node_t *) node);
+
+    return NJS_OK;
 }
-
-
-static njs_int_t
-njs_reference_hash_test(njs_lvlhsh_query_t *lhq, void *data)
-{
-    njs_parser_node_t  *node;
-
-    node = data;
-
-    if (njs_strstr_eq(&lhq->key, &node->u.reference.name)) {
-        return NJS_OK;
-    }
-
-    return NJS_DECLINED;
-}
-
-
-const njs_lvlhsh_proto_t  njs_references_hash_proto
-    njs_aligned(64) =
-{
-    NJS_LVLHSH_DEFAULT,
-    njs_reference_hash_test,
-    njs_lvlhsh_alloc,
-    njs_lvlhsh_free,
-};
 
 
 njs_int_t
 njs_variable_reference(njs_vm_t *vm, njs_parser_scope_t *scope,
-    njs_parser_node_t *node, njs_str_t *name, uint32_t hash,
-    njs_reference_type_t type)
+    njs_parser_node_t *node, uintptr_t unique_id, njs_reference_type_t type)
 {
-    njs_int_t                 ret;
-    njs_lvlhsh_query_t        lhq;
     njs_variable_reference_t  *vr;
+    njs_parser_rbtree_node_t  *rb_node;
 
     vr = &node->u.reference;
 
-    ret = njs_name_copy(vm, &vr->name, name);
+    vr->unique_id = unique_id;
+    vr->type = type;
 
-    if (njs_fast_path(ret == NJS_OK)) {
-        vr->hash = hash;
-        vr->type = type;
-
-        lhq.key_hash = hash;
-        lhq.key = vr->name;
-        lhq.proto = &njs_references_hash_proto;
-        lhq.replace = 0;
-        lhq.value = node;
-        lhq.pool = vm->mem_pool;
-
-        ret = njs_lvlhsh_insert(&scope->references, &lhq);
-
-        if (njs_fast_path(ret != NJS_ERROR)) {
-            ret = NJS_OK;
-        }
+    rb_node = njs_mp_alloc(vm->mem_pool, sizeof(njs_parser_rbtree_node_t));
+    if (njs_slow_path(rb_node == NULL)) {
+        return NJS_ERROR;
     }
 
-    return ret;
+    rb_node->key = unique_id;
+    rb_node->parser_node = node;
+
+    njs_rbtree_insert(&scope->references, &rb_node->node);
+
+    return NJS_OK;
 }
 
 
@@ -315,8 +238,9 @@ njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
     njs_int_t                 ret;
     njs_queue_t               *nested;
     njs_queue_link_t          *lnk;
+    njs_rbtree_node_t         *rb_node;
     njs_parser_node_t         *node;
-    njs_lvlhsh_each_t         lhe;
+    njs_parser_rbtree_node_t  *parser_rb_node;
     njs_variable_reference_t  *vr;
 
     nested = &scope->nested;
@@ -332,10 +256,11 @@ njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
             return NJS_ERROR;
         }
 
-        njs_lvlhsh_each_init(&lhe, &njs_variables_hash_proto);
+        rb_node = njs_rbtree_min(&scope->references);
 
-        for ( ;; ) {
-            node = njs_lvlhsh_each(&scope->references, &lhe);
+        while (njs_rbtree_is_there_successor(&scope->references, rb_node)) {
+            parser_rb_node = (njs_parser_rbtree_node_t *) rb_node;
+            node = parser_rb_node->parser_node;
 
             if (node == NULL) {
                 break;
@@ -346,15 +271,19 @@ njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
             if (closure) {
                 ret = njs_variable_reference_resolve(vm, vr, node->scope);
                 if (njs_slow_path(ret != NJS_OK)) {
-                    continue;
+                    goto next;
                 }
 
                 if (vr->scope_index == NJS_SCOPE_INDEX_LOCAL) {
-                    continue;
+                    goto next;
                 }
             }
 
             (void) njs_variable_resolve(vm, node);
+
+        next:
+
+            rb_node = njs_rbtree_node_successor(&scope->references, rb_node);
         }
     }
 
@@ -487,26 +416,25 @@ njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node)
 
 
 njs_variable_t *
-njs_label_find(njs_vm_t *vm, njs_parser_scope_t *scope, njs_str_t *name,
-    uint32_t hash)
+njs_label_find(njs_vm_t *vm, njs_parser_scope_t *scope, uintptr_t unique_id)
 {
-    njs_lvlhsh_query_t  lhq;
+    njs_rbtree_node_t    *node;
+    njs_variable_node_t  var_node;
 
-    lhq.key_hash = hash;
-    lhq.key = *name;
-    lhq.proto = &njs_variables_hash_proto;
+    var_node.key = unique_id;
 
-    for ( ;; ) {
-        if (njs_lvlhsh_find(&scope->labels, &lhq) == NJS_OK) {
-            return lhq.value;
+    do {
+        node = njs_rbtree_find(&scope->labels, &var_node.node);
+
+        if (node != NULL) {
+            return ((njs_variable_node_t *) node)->variable;
         }
 
         scope = scope->parent;
 
-        if (scope == NULL) {
-            return NULL;
-        }
-    }
+    } while (scope != NULL);
+
+    return NULL;
 }
 
 
@@ -514,19 +442,20 @@ static njs_int_t
 njs_variable_reference_resolve(njs_vm_t *vm, njs_variable_reference_t *vr,
     njs_parser_scope_t *node_scope)
 {
-    njs_lvlhsh_query_t  lhq;
-    njs_parser_scope_t  *scope, *previous;
+    njs_rbtree_node_t    *node;
+    njs_parser_scope_t   *scope, *previous;
+    njs_variable_node_t  var_node;
 
-    lhq.key_hash = vr->hash;
-    lhq.key = vr->name;
-    lhq.proto = &njs_variables_hash_proto;
+    var_node.key = vr->unique_id;
 
     scope = node_scope;
     previous = NULL;
 
     for ( ;; ) {
-        if (njs_lvlhsh_find(&scope->variables, &lhq) == NJS_OK) {
-            vr->variable = lhq.value;
+        node = njs_rbtree_find(&scope->variables, &var_node.node);
+
+        if (node != NULL) {
+            vr->variable = ((njs_variable_node_t *) node)->variable;
 
             if (scope->type == NJS_SCOPE_BLOCK
                 && vr->variable->type == NJS_VARIABLE_VAR)
@@ -624,9 +553,8 @@ njs_scope_next_index(njs_vm_t *vm, njs_parser_scope_t *scope,
 
 
 static njs_variable_t *
-njs_variable_alloc(njs_vm_t *vm, njs_str_t *name, njs_variable_type_t type)
+njs_variable_alloc(njs_vm_t *vm, uintptr_t unique_id, njs_variable_type_t type)
 {
-    njs_int_t       ret;
     njs_variable_t  *var;
 
     var = njs_mp_zalloc(vm->mem_pool, sizeof(njs_variable_t));
@@ -635,24 +563,15 @@ njs_variable_alloc(njs_vm_t *vm, njs_str_t *name, njs_variable_type_t type)
         return NULL;
     }
 
+    var->unique_id = unique_id;
     var->type = type;
 
-    ret = njs_name_copy(vm, &var->name, name);
-
-    if (njs_fast_path(ret == NJS_OK)) {
-        return var;
-    }
-
-    njs_mp_free(vm->mem_pool, var);
-
-    njs_memory_error(vm);
-
-    return NULL;
+    return var;
 }
 
 
 njs_int_t
-njs_name_copy(njs_vm_t *vm, njs_str_t *dst, njs_str_t *src)
+njs_name_copy(njs_vm_t *vm, njs_str_t *dst, const njs_str_t *src)
 {
     dst->length = src->length;
 
@@ -673,14 +592,29 @@ njs_name_copy(njs_vm_t *vm, njs_str_t *dst, njs_str_t *src)
 const njs_value_t *
 njs_vm_value(njs_vm_t *vm, const njs_str_t *name)
 {
-    njs_lvlhsh_query_t  lhq;
+    njs_int_t            ret;
+    njs_rbtree_node_t    *rb_node;
+    njs_lvlhsh_query_t   lhq;
+    njs_variable_node_t  *node, var_node;
 
-    lhq.key_hash = njs_djb_hash(name->start, name->length);
     lhq.key = *name;
-    lhq.proto = &njs_variables_hash_proto;
+    lhq.key_hash = njs_djb_hash(name->start, name->length);
+    lhq.proto = &njs_lexer_hash_proto;
 
-    if (njs_lvlhsh_find(&vm->variables_hash, &lhq) == NJS_OK) {
-        return njs_vmcode_operand(vm, ((njs_variable_t *) lhq.value)->index);
+    ret = njs_lvlhsh_find(&vm->shared->keywords_hash, &lhq);
+
+    if (njs_slow_path(ret != NJS_OK || lhq.value == NULL)) {
+        return &njs_value_undefined;
+    }
+
+    var_node.key = (uintptr_t) lhq.value;
+
+    rb_node = njs_rbtree_find(vm->variables_hash, &var_node.node);
+
+    if (rb_node != NULL) {
+        node = (njs_variable_node_t *) rb_node;
+
+        return njs_vmcode_operand(vm, node->variable->index);
     }
 
     return &njs_value_undefined;

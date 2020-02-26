@@ -134,12 +134,6 @@ njs_builtin_objects_create(njs_vm_t *vm)
     }
 
     njs_lvlhsh_init(&shared->keywords_hash);
-
-    ret = njs_lexer_keywords_init(vm->mem_pool, &shared->keywords_hash);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return NJS_ERROR;
-    }
-
     njs_lvlhsh_init(&shared->values_hash);
 
     pattern = njs_regexp_pattern_create(vm, (u_char *) "(?:)",
@@ -495,7 +489,6 @@ njs_builtin_completions(njs_vm_t *vm)
     njs_arr_t                *array;
     njs_str_t                *completion;
     njs_int_t                ret;
-    njs_keyword_t            *keyword;
     njs_lvlhsh_each_t        lhe;
     njs_builtin_traverse_t   ctx;
     const njs_object_prop_t  *prop;
@@ -505,23 +498,9 @@ njs_builtin_completions(njs_vm_t *vm)
         return NULL;
     }
 
-    /* Keywords completions. */
-
-    njs_lvlhsh_each_init(&lhe, &njs_keyword_hash_proto);
-
-    for ( ;; ) {
-        keyword = njs_lvlhsh_each(&vm->shared->keywords_hash, &lhe);
-
-        if (keyword == NULL) {
-            break;
-        }
-
-        completion = njs_arr_add(array);
-        if (njs_slow_path(completion == NULL)) {
-            return NULL;
-        }
-
-        *completion = keyword->name;
+    ret = njs_lexer_keywords(array);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NULL;
     }
 
     /* Global object completions. */
@@ -570,12 +549,14 @@ njs_vm_completions(njs_vm_t *vm, njs_str_t *expression)
 static njs_arr_t *
 njs_vm_expression_completions(njs_vm_t *vm, njs_str_t *expression)
 {
-    u_char              *p, *end;
-    njs_int_t           ret;
-    njs_value_t         *value;
-    njs_variable_t      *var;
-    njs_object_prop_t   *prop;
-    njs_lvlhsh_query_t  lhq;
+    u_char               *p, *end;
+    njs_int_t            ret;
+    njs_value_t          *value;
+    njs_variable_t       *var;
+    njs_rbtree_node_t    *node;
+    njs_object_prop_t    *prop;
+    njs_lvlhsh_query_t   lhq;
+    njs_variable_node_t  var_node;
 
     if (njs_slow_path(vm->parser == NULL)) {
         return NULL;
@@ -588,16 +569,23 @@ njs_vm_expression_completions(njs_vm_t *vm, njs_str_t *expression)
 
     while (p < end && *p != '.') { p++; }
 
-    lhq.proto = &njs_variables_hash_proto;
+    lhq.proto = &njs_lexer_hash_proto;
     lhq.key.length = p - lhq.key.start;
     lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
 
-    ret = njs_lvlhsh_find(&vm->parser->scope->variables, &lhq);
+    ret = njs_lvlhsh_find(&vm->shared->keywords_hash, &lhq);
     if (njs_slow_path(ret != NJS_OK)) {
         return NULL;
     }
 
-    var = lhq.value;
+    var_node.key = (uintptr_t) lhq.value;
+
+    node = njs_rbtree_find(&vm->parser->scope->variables, &var_node.node);
+    if (njs_slow_path(node == NULL)) {
+        return NULL;
+    }
+
+    var = ((njs_variable_node_t *) node)->variable;
     value = njs_vmcode_operand(vm, var->index);
 
     if (!njs_is_object(value)) {

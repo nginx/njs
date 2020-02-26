@@ -19,7 +19,7 @@ typedef enum {
 
 
 typedef struct {
-    njs_str_t             name;
+    uintptr_t             unique_id;
 
     njs_variable_type_t   type:8;    /* 3 bits */
     uint8_t               argument;
@@ -40,8 +40,7 @@ typedef enum {
 
 typedef struct {
     njs_reference_type_t  type;
-    uint32_t              hash;
-    njs_str_t             name;
+    uintptr_t             unique_id;
     njs_variable_t        *variable;
     njs_parser_scope_t    *scope;
     njs_uint_t            scope_index;  /* NJS_SCOPE_INDEX_... */
@@ -49,26 +48,53 @@ typedef struct {
 } njs_variable_reference_t;
 
 
+typedef struct {
+    NJS_RBTREE_NODE       (node);
+    uintptr_t             key;
+    njs_variable_t        *variable;
+} njs_variable_node_t;
+
+
 njs_variable_t *njs_variable_add(njs_vm_t *vm, njs_parser_scope_t *scope,
-    njs_str_t *name, uint32_t hash, njs_variable_type_t type);
-njs_int_t njs_variables_copy(njs_vm_t *vm, njs_lvlhsh_t *variables,
-    njs_lvlhsh_t *prev_variables);
+    uintptr_t unique_id, njs_variable_type_t type);
+njs_int_t njs_variables_copy(njs_vm_t *vm, njs_rbtree_t *variables,
+    njs_rbtree_t *prev_variables);
 njs_variable_t * njs_label_add(njs_vm_t *vm, njs_parser_scope_t *scope,
-    njs_str_t *name, uint32_t hash);
+    uintptr_t unique_id);
 njs_variable_t *njs_label_find(njs_vm_t *vm, njs_parser_scope_t *scope,
-    njs_str_t *name, uint32_t hash);
+    uintptr_t unique_id);
 njs_int_t njs_label_remove(njs_vm_t *vm, njs_parser_scope_t *scope,
-    njs_str_t *name, uint32_t hash);
+    uintptr_t unique_id);
 njs_int_t njs_variable_reference(njs_vm_t *vm, njs_parser_scope_t *scope,
-    njs_parser_node_t *node, njs_str_t *name, uint32_t hash,
-    njs_reference_type_t type);
+    njs_parser_node_t *node, uintptr_t unique_id, njs_reference_type_t type);
 njs_int_t njs_variables_scope_reference(njs_vm_t *vm,
     njs_parser_scope_t *scope);
 njs_index_t njs_scope_next_index(njs_vm_t *vm, njs_parser_scope_t *scope,
     njs_uint_t scope_index, const njs_value_t *default_value);
-njs_int_t njs_name_copy(njs_vm_t *vm, njs_str_t *dst, njs_str_t *src);
+njs_int_t njs_name_copy(njs_vm_t *vm, njs_str_t *dst, const njs_str_t *src);
 
-extern const njs_lvlhsh_proto_t  njs_variables_hash_proto;
+
+njs_inline njs_variable_node_t *
+njs_variable_node_alloc(njs_vm_t *vm, njs_variable_t *var, uintptr_t key)
+{
+    njs_variable_node_t  *node;
+
+    node = njs_mp_zalloc(vm->mem_pool, sizeof(njs_variable_node_t));
+
+    if (njs_fast_path(node != NULL)) {
+        node->key = key;
+        node->variable = var;
+    }
+
+    return node;
+}
+
+
+njs_inline void
+njs_variable_node_free(njs_vm_t *vm, njs_variable_node_t *node)
+{
+    njs_mp_free(vm->mem_pool, node);
+}
 
 
 #endif /* _NJS_VARIABLE_H_INCLUDED_ */

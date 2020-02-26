@@ -47,7 +47,7 @@ typedef struct {
     size_t                  length;
     njs_arr_t               *completions;
     njs_arr_t               *suffix_completions;
-    njs_lvlhsh_each_t       lhe;
+    njs_rbtree_node_t       *node;
 
     enum {
        NJS_COMPLETION_VAR = 0,
@@ -929,13 +929,15 @@ njs_editline_init(void)
 static char *
 njs_completion_generator(const char *text, int state)
 {
-    char              *completion;
-    size_t            len;
-    njs_str_t         expression, *suffix;
-    const char        *p;
-    njs_vm_t          *vm;
-    njs_variable_t    *var;
-    njs_completion_t  *cmpl;
+    char                     *completion;
+    size_t                   len;
+    njs_str_t                expression, *suffix;
+    njs_vm_t                 *vm;
+    const char               *p;
+    njs_rbtree_t             *variables;
+    njs_completion_t         *cmpl;
+    njs_variable_node_t      *var_node;
+    const njs_lexer_entry_t  *lex_entry;
 
     vm = njs_console.vm;
     cmpl = &njs_console.completion;
@@ -946,7 +948,9 @@ njs_completion_generator(const char *text, int state)
         cmpl->length = njs_strlen(text);
         cmpl->suffix_completions = NULL;
 
-        njs_lvlhsh_each_init(&cmpl->lhe, &njs_variables_hash_proto);
+        if (vm->parser != NULL) {
+            cmpl->node = njs_rbtree_min(&vm->parser->scope->variables);
+        }
     }
 
 next:
@@ -957,21 +961,24 @@ next:
             njs_next_phase(cmpl);
         }
 
-        for ( ;; ) {
-            var = njs_lvlhsh_each(&vm->parser->scope->variables,
-                                  &cmpl->lhe);
+        variables = &vm->parser->scope->variables;
 
-            if (var == NULL) {
+        while (njs_rbtree_is_there_successor(variables, cmpl->node)) {
+            var_node = (njs_variable_node_t *) cmpl->node;
+
+            lex_entry = njs_lexer_entry(var_node->key);
+            if (lex_entry == NULL) {
                 break;
             }
 
-            if (var->name.length < cmpl->length) {
-                continue;
+            cmpl->node = njs_rbtree_node_successor(variables, cmpl->node);
+
+            if (lex_entry->name.length >= cmpl->length
+                && njs_strncmp(text, lex_entry->name.start, cmpl->length) == 0)
+            {
+                return njs_editline(&lex_entry->name);
             }
 
-            if (njs_strncmp(text, var->name.start, cmpl->length) == 0) {
-                return njs_editline(&var->name);
-            }
         }
 
         njs_next_phase(cmpl);

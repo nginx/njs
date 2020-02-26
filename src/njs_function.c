@@ -932,7 +932,7 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     scope = parser->scope;
 
-    ret = njs_variables_copy(vm, &scope->variables, &vm->variables_hash);
+    ret = njs_variables_copy(vm, &scope->variables, vm->variables_hash);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }

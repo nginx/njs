@@ -197,7 +197,7 @@ struct njs_vm_s {
 
     njs_lvlhsh_t             external_prototypes_hash;
 
-    njs_lvlhsh_t             variables_hash;
+    njs_rbtree_t             *variables_hash;
     njs_lvlhsh_t             values_hash;
 
     njs_arr_t                *modules;

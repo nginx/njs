@@ -15,9 +15,9 @@ struct njs_parser_scope_s {
     njs_queue_t                     nested;
 
     njs_parser_scope_t              *parent;
-    njs_lvlhsh_t                    labels;
-    njs_lvlhsh_t                    variables;
-    njs_lvlhsh_t                    references;
+    njs_rbtree_t                    variables;
+    njs_rbtree_t                    labels;
+    njs_rbtree_t                    references;
 
 #define NJS_SCOPE_INDEX_LOCAL       0
 #define NJS_SCOPE_INDEX_CLOSURE     1
@@ -77,12 +77,21 @@ struct njs_parser_s {
 };
 
 
+typedef struct {
+    NJS_RBTREE_NODE                 (node);
+    uintptr_t                       key;
+    njs_parser_node_t               *parser_node;
+} njs_parser_rbtree_node_t;
+
+
+intptr_t njs_parser_scope_rbtree_compare(njs_rbtree_node_t *node1,
+    njs_rbtree_node_t *node2);
 njs_int_t njs_parser(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_t *prev);
 njs_token_t njs_parser_expression(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token);
-njs_token_t njs_parser_assignment_expression(njs_vm_t *vm,
-    njs_parser_t *parser, njs_token_t token);
+njs_token_t njs_parser_assignment_expression(njs_vm_t *vm, njs_parser_t *parser,
+    njs_token_t token);
 njs_token_t njs_parser_function_expression(njs_vm_t *vm, njs_parser_t *parser);
 njs_int_t njs_parser_match_arrow_expression(njs_vm_t *vm, njs_parser_t *parser,
     njs_token_t token);
@@ -139,19 +148,19 @@ void njs_parser_node_error(njs_vm_t *vm, njs_parser_node_t *node,
 
 
 #define njs_parser_text(parser)                                               \
-    &(parser)->lexer->lexer_token->text
+    &(parser)->lexer->token->text
 
 
 #define njs_parser_key_hash(parser)                                           \
-    (parser)->lexer->lexer_token->key_hash
+    (parser)->lexer->token->unique_id
 
 
 #define njs_parser_number(parser)                                             \
-    (parser)->lexer->lexer_token->number
+    (parser)->lexer->token->number
 
 
 #define njs_parser_token_line(parser)                                         \
-    (parser)->lexer->lexer_token->token_line
+    (parser)->lexer->token->line
 
 
 #define njs_parser_syntax_error(vm, parser, fmt, ...)                         \
@@ -263,7 +272,7 @@ njs_inline njs_variable_t *
 njs_parser_variable_add(njs_vm_t *vm, njs_parser_t *parser,
     njs_variable_type_t type)
 {
-    return njs_variable_add(vm, parser->scope, njs_parser_text(parser),
+    return njs_variable_add(vm, parser->scope,
                             njs_parser_key_hash(parser), type);
 }
 
@@ -273,7 +282,6 @@ njs_parser_variable_reference(njs_vm_t *vm, njs_parser_t *parser,
     njs_parser_node_t *node, njs_reference_type_t type)
 {
     return njs_variable_reference(vm, parser->scope, node,
-                                  njs_parser_text(parser),
                                   njs_parser_key_hash(parser), type);
 }
 
@@ -308,9 +316,6 @@ njs_function_scope(njs_parser_scope_t *scope, njs_bool_t any)
 
     return NULL;
 }
-
-
-extern const njs_lvlhsh_proto_t  njs_keyword_hash_proto;
 
 
 #endif /* _NJS_PARSER_H_INCLUDED_ */

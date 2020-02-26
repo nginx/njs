@@ -188,7 +188,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     vm->global_scope = generator.local_scope;
     vm->scope_size = generator.scope_size;
 
-    vm->variables_hash = scope->variables;
+    vm->variables_hash = &scope->variables;
 
     if (vm->options.init && !vm->options.accumulative) {
         ret = njs_vm_init(vm);

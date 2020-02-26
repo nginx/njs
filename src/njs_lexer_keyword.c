@@ -1,154 +1,76 @@
 
 /*
- * Copyright (C) Igor Sysoev
  * Copyright (C) NGINX, Inc.
  */
 
 
 #include <njs_main.h>
+#include <njs_lexer_tables.h>
 
 
-static const njs_keyword_t  njs_keywords[] = {
-
-    /* Values. */
-
-    { njs_str("null"),          NJS_TOKEN_NULL, 0 },
-    { njs_str("false"),         NJS_TOKEN_BOOLEAN, 0 },
-    { njs_str("true"),          NJS_TOKEN_BOOLEAN, 1 },
-
-    /* Operators. */
-
-    { njs_str("in"),            NJS_TOKEN_IN, 0 },
-    { njs_str("typeof"),        NJS_TOKEN_TYPEOF, 0 },
-    { njs_str("instanceof"),    NJS_TOKEN_INSTANCEOF, 0 },
-    { njs_str("void"),          NJS_TOKEN_VOID, 0 },
-    { njs_str("new"),           NJS_TOKEN_NEW, 0 },
-    { njs_str("delete"),        NJS_TOKEN_DELETE, 0 },
-    { njs_str("yield"),         NJS_TOKEN_YIELD, 0 },
-
-    /* Statements. */
-
-    { njs_str("var"),           NJS_TOKEN_VAR, 0 },
-    { njs_str("if"),            NJS_TOKEN_IF, 0 },
-    { njs_str("else"),          NJS_TOKEN_ELSE, 0 },
-    { njs_str("while"),         NJS_TOKEN_WHILE, 0 },
-    { njs_str("do"),            NJS_TOKEN_DO, 0 },
-    { njs_str("for"),           NJS_TOKEN_FOR, 0 },
-    { njs_str("break"),         NJS_TOKEN_BREAK, 0 },
-    { njs_str("continue"),      NJS_TOKEN_CONTINUE, 0 },
-    { njs_str("switch"),        NJS_TOKEN_SWITCH, 0 },
-    { njs_str("case"),          NJS_TOKEN_CASE, 0 },
-    { njs_str("default"),       NJS_TOKEN_DEFAULT, 0 },
-    { njs_str("function"),      NJS_TOKEN_FUNCTION, 0 },
-    { njs_str("return"),        NJS_TOKEN_RETURN, 0 },
-    { njs_str("with"),          NJS_TOKEN_WITH, 0 },
-    { njs_str("try"),           NJS_TOKEN_TRY, 0 },
-    { njs_str("catch"),         NJS_TOKEN_CATCH, 0 },
-    { njs_str("finally"),       NJS_TOKEN_FINALLY, 0 },
-    { njs_str("throw"),         NJS_TOKEN_THROW, 0 },
-
-    /* Module. */
-
-    { njs_str("import"),        NJS_TOKEN_IMPORT, 0 },
-    { njs_str("export"),        NJS_TOKEN_EXPORT, 0 },
-
-    /* Reserved words. */
-
-    { njs_str("this"),          NJS_TOKEN_THIS, 0 },
-    { njs_str("arguments"),     NJS_TOKEN_ARGUMENTS, 0 },
-    { njs_str("eval"),          NJS_TOKEN_EVAL, 0 },
-
-    { njs_str("await"),         NJS_TOKEN_RESERVED, 0 },
-    { njs_str("class"),         NJS_TOKEN_RESERVED, 0 },
-    { njs_str("const"),         NJS_TOKEN_RESERVED, 0 },
-    { njs_str("debugger"),      NJS_TOKEN_RESERVED, 0 },
-    { njs_str("enum"),          NJS_TOKEN_RESERVED, 0 },
-    { njs_str("extends"),       NJS_TOKEN_RESERVED, 0 },
-    { njs_str("implements"),    NJS_TOKEN_RESERVED, 0 },
-    { njs_str("interface"),     NJS_TOKEN_RESERVED, 0 },
-    { njs_str("let"),           NJS_TOKEN_RESERVED, 0 },
-    { njs_str("package"),       NJS_TOKEN_RESERVED, 0 },
-    { njs_str("private"),       NJS_TOKEN_RESERVED, 0 },
-    { njs_str("protected"),     NJS_TOKEN_RESERVED, 0 },
-    { njs_str("public"),        NJS_TOKEN_RESERVED, 0 },
-    { njs_str("static"),        NJS_TOKEN_RESERVED, 0 },
-    { njs_str("super"),         NJS_TOKEN_RESERVED, 0 },
-};
-
-
-static njs_int_t
-njs_keyword_hash_test(njs_lvlhsh_query_t *lhq, void *data)
+njs_inline int
+njs_lexer_keyword_hash(const u_char *key, size_t size, size_t table_size)
 {
-    njs_keyword_t  *keyword;
-
-    keyword = data;
-
-    if (njs_strstr_eq(&lhq->key, &keyword->name)) {
-        return NJS_OK;
-    }
-
-    return NJS_DECLINED;
+    return ((((key[0] * key[size - 1]) + size) % table_size) + 0x01);
 }
 
 
-const njs_lvlhsh_proto_t  njs_keyword_hash_proto
-    njs_aligned(64) =
+njs_inline const njs_lexer_keyword_entry_t *
+njs_lexer_keyword_entry(const njs_lexer_keyword_entry_t *root,
+    const u_char *key, size_t length)
 {
-    NJS_LVLHSH_DEFAULT,
-    njs_keyword_hash_test,
-    njs_lvlhsh_alloc,
-    njs_lvlhsh_free,
-};
+    const njs_lexer_keyword_entry_t  *entry;
+
+    entry = root + njs_lexer_keyword_hash(key, length, root->length);
+
+    while (entry->key != NULL) {
+        if (entry->length == length) {
+            if (strncmp(entry->key, (char *) key, length) == 0) {
+                return entry;
+            }
+
+            entry = &root[entry->next];
+
+        } else if (entry->length > length) {
+            return NULL;
+
+        } else {
+            entry = &root[entry->next];
+        }
+    }
+
+    return NULL;
+}
+
+
+const njs_lexer_keyword_entry_t *
+njs_lexer_keyword(const u_char *key, size_t length)
+{
+    const njs_lexer_keyword_entry_t  *entry;
+
+    entry = njs_lexer_keyword_entry(njs_lexer_keyword_entries, key, length);
+    if (njs_slow_path(entry == NULL)) {
+        return NULL;
+    }
+
+    return entry;
+}
 
 
 njs_int_t
-njs_lexer_keywords_init(njs_mp_t *mp, njs_lvlhsh_t *hash)
+njs_lexer_keywords(njs_arr_t *list)
 {
-    njs_uint_t           n;
-    njs_lvlhsh_query_t   lhq;
-    const njs_keyword_t  *keyword;
+    njs_str_t   *kw;
+    njs_uint_t  i;
 
-    keyword = njs_keywords;
-    n = njs_nitems(njs_keywords);
-
-    lhq.replace = 0;
-    lhq.proto = &njs_keyword_hash_proto;
-    lhq.pool = mp;
-
-    do {
-        lhq.key_hash = njs_djb_hash(keyword->name.start, keyword->name.length);
-        lhq.key = keyword->name;
-        lhq.value = (void *) keyword;
-
-        if (njs_slow_path(njs_lvlhsh_insert(hash, &lhq) != NJS_OK)) {
+    for (i = 0; i < sizeof(njs_lexer_kws) / sizeof(njs_keyword_t); i++) {
+        kw = njs_arr_add(list);
+        if (njs_slow_path(kw == NULL)) {
             return NJS_ERROR;
         }
 
-        keyword++;
-        n--;
-
-    } while (n != 0);
+        *kw = njs_lexer_kws[i].entry.name;
+    }
 
     return NJS_OK;
-}
-
-
-void
-njs_lexer_keyword(njs_lexer_t *lexer, njs_lexer_token_t *lt)
-{
-    njs_keyword_t       *keyword;
-    njs_lvlhsh_query_t  lhq;
-
-    lhq.key_hash = lt->key_hash;
-    lhq.key = lt->text;
-    lhq.proto = &njs_keyword_hash_proto;
-
-    lexer->keyword = 0;
-
-    if (njs_lvlhsh_find(&lexer->keywords_hash, &lhq) == NJS_OK) {
-        keyword = lhq.value;
-        lt->token = keyword->token;
-        lt->number = keyword->number;
-        lexer->keyword = 1;
-    }
 }

@@ -103,8 +103,8 @@ njs_parser_module(njs_vm_t *vm, njs_parser_t *parser)
     njs_int_t          ret;
     njs_str_t          name, text;
     njs_lexer_t        *prev, lexer;
-    njs_token_t        token;
     njs_module_t       *module;
+    njs_token_t        token;
     njs_parser_node_t  *node;
     njs_module_info_t  info;
 
