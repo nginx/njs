@@ -1610,7 +1610,7 @@ njs_json_append_string(njs_chb_t *chain, const njs_value_t *value, char quote)
     njs_string_prop_t  string;
 
     static char  hex2char[16] = { '0', '1', '2', '3', '4', '5', '6', '7',
-                                  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+                                  '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 
     (void) njs_string_prop(&string, value);
 
@@ -1619,7 +1619,7 @@ njs_json_append_string(njs_chb_t *chain, const njs_value_t *value, char quote)
     utf8 = (string.length != 0 && string.length != string.size);
 
     size = njs_max(string.size + 2, 7);
-    dst = njs_chb_reserve(chain, string.size + 2);
+    dst = njs_chb_reserve(chain, size);
     if (njs_slow_path(dst == NULL)) {
         return;
     }

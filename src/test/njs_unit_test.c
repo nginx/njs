@@ -15612,7 +15612,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("\"\\n\\t\\r\\\"\\f\\b\"") },
 
     { njs_str("JSON.stringify('\x00\x01\x02\x1f')"),
-      njs_str("\"\\u0000\\u0001\\u0002\\u001F\"") },
+      njs_str("\"\\u0000\\u0001\\u0002\\u001f\"") },
 
     { njs_str("JSON.stringify('abc\x00')"),
       njs_str("\"abc\\u0000\"") },
