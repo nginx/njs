@@ -864,7 +864,7 @@ njs_lexer_multi(njs_lexer_t *lexer, njs_lexer_token_t *token,
 
     token->text.start = lexer->start - 1;
 
-    while (length != 0 && multi != NULL) {
+    while (length != 0 && multi != NULL && lexer->start < lexer->end) {
         c = lexer->start[0];
 
         if (c == multi->symbol) {

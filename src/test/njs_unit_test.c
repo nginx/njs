@@ -33,6 +33,21 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("/***/1/*\n**/"),
       njs_str("1") },
 
+    { njs_str(">"),
+      njs_str("SyntaxError: Unexpected token \">\" in 1") },
+
+    { njs_str(">>"),
+      njs_str("SyntaxError: Unexpected token \">>\" in 1") },
+
+    { njs_str(">>>"),
+      njs_str("SyntaxError: Unexpected token \">>>\" in 1") },
+
+    { njs_str("=="),
+      njs_str("SyntaxError: Unexpected token \"==\" in 1") },
+
+    { njs_str("?"),
+      njs_str("SyntaxError: Unexpected token \"?\" in 1") },
+
     /* Variable declarations. */
 
     { njs_str("var x"),
