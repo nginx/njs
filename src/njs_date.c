@@ -1157,7 +1157,7 @@ njs_date_string(njs_vm_t *vm, njs_value_t *retval, njs_date_fmt_t fmt,
                                     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 
     if (njs_slow_path(isnan(time))) {
-        vm->retval = njs_string_invalid_date;
+        *retval = njs_string_invalid_date;
         return NJS_OK;
     }
 

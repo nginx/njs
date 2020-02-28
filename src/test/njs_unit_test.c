@@ -13270,6 +13270,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("new Date(8.65e15)"),
       njs_str("Invalid Date") },
 
+    { njs_str("njs.dump([new Date(8.65e15)])"),
+      njs_str("[Invalid Date]") },
+
     { njs_str("new Date(0e0.o0)"),
       njs_str("Invalid Date") },
 
