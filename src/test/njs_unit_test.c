@@ -13270,6 +13270,24 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("new Date(8.65e15)"),
       njs_str("Invalid Date") },
 
+    { njs_str("var d = new Date(1308895200000); new Date(d.getTime(), d.getTime())"),
+      njs_str("Invalid Date") },
+
+    { njs_str("new Date(275760, 1, 2**61)"),
+      njs_str("Invalid Date") },
+
+    { njs_str("new Date(275760, 1, 1, 2**61)"),
+      njs_str("Invalid Date") },
+
+    { njs_str("new Date(275760, 1, 1, 1, 2**61)"),
+      njs_str("Invalid Date") },
+
+    { njs_str("new Date(275760, 1, 1, 1, 1, 2**61)"),
+      njs_str("Invalid Date") },
+
+    { njs_str("new Date(275760, 1, 1, 1, 1, 1, 2**61)"),
+      njs_str("Invalid Date") },
+
     { njs_str("njs.dump([new Date(8.65e15)])"),
       njs_str("[Invalid Date]") },
 

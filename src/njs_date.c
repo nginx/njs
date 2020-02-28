@@ -118,13 +118,18 @@ njs_days_from_year(int64_t y)
 }
 
 
-njs_inline int64_t
+njs_inline double
 njs_make_day(int64_t yr, int64_t month, int64_t date)
 {
-    int64_t  i, ym, mn, md, days;
+    double   days;
+    int64_t  i, ym, mn, md;
 
     static const int month_days[] = { 31, 28, 31, 30, 31, 30,
                                       31, 31, 30, 31, 30, 31 };
+
+    if (yr < -271822 || yr > 275761) {
+        return NAN;
+    }
 
     mn = njs_mod(month, 12);
     ym = yr + (month - mn) / 12;
@@ -228,15 +233,15 @@ njs_year_from_days(int64_t *days)
 njs_inline double
 njs_make_date(int64_t tm[], njs_bool_t local)
 {
-    int64_t  days, time;
+    double  time, days;
 
     days = njs_make_day(tm[NJS_DATE_YR], tm[NJS_DATE_MON],
                         tm[NJS_DATE_DAY]);
 
-    time = ((tm[NJS_DATE_HR] * 60 + tm[NJS_DATE_MIN]) * 60
-            + tm[NJS_DATE_SEC]) * 1000 + tm[NJS_DATE_MSEC];
+    time = ((tm[NJS_DATE_HR] * 60.0 + tm[NJS_DATE_MIN]) * 60.0
+            + tm[NJS_DATE_SEC]) * 1000.0 + tm[NJS_DATE_MSEC];
 
-    time += days * 86400000;
+    time += days * 86400000.0;
 
     if (local) {
         time += njs_tz_offset(time) * 60000;
