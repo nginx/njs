@@ -818,6 +818,9 @@ njs_fs_mode(njs_vm_t *vm, njs_value_t *value, mode_t default_mode)
     uint32_t   u32;
     njs_int_t  ret;
 
+    /* GCC complains about uninitialized u32. */
+    u32 = 0;
+
     if (njs_is_undefined(value)) {
         return default_mode;
     }
