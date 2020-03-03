@@ -236,7 +236,7 @@ njs_uint64_to_string(njs_vm_t *vm, njs_value_t *value, uint64_t u64)
     u_char  *dst, *p;
     u_char  buf[128];
 
-    if (njs_fast_path(u64 < 0x3fffffffffff)) {
+    if (njs_fast_path(u64 < 0x3fffffffffffULL)) {
         /* Fits to short_string. */
         dst = njs_string_short_start(value);
 
