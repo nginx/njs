@@ -1,4 +1,51 @@
 
+Changes with njs 0.3.9                                           03 Mar 2020
+
+    nginx modules:
+
+    *) Feature: added detached mode for r.subrequest(). Responses to
+       detached subrequests are ignored. Unlike ordinary subrequests,
+       a detached subrequest can be created inside a variable handler.
+
+    Core:
+
+    *) Feature: added promises API for "fs" module.
+       Thanks to Artem S. Povalyukhin.
+
+    *) Feature: extended "fs" module. Added access(), symlink(), unlink(),
+       realpath() and friends.
+       Thanks to Artem S. Povalyukhin.
+
+    *) Improvement: introduced memory-efficient ordinary arrays.
+
+    *) Improvement: lexer refactoring.
+
+    *) Bugfix: fixed matching of native functions in backtraces.
+
+    *) Bugfix: fixed callback invocations in "fs" module.
+       Thanks to Artem S. Povalyukhin.
+
+    *) Bugfix: fixed Object.getOwnPropertySymbols().
+
+    *) Bugfix: fixed heap-buffer-overflow in njs_json_append_string().
+
+    *) Bugfix: fixed encodeURI() and decodeURI() according to
+       the specification.
+
+    *) Bugfix: fixed Number.prototype.toPrecision().
+
+    *) Bugfix: fixed handling of space argument in JSON.stringify().
+
+    *) Bugfix: fixed JSON.stringify() with Number() and String() objects.
+
+    *) Bugfix: fixed Unicode Escaping in JSON.stringify() according
+       to specification.
+
+    *) Bugfix: fixed non-native module importing.
+       Thanks to 洪志道 (Hong Zhi Dao).
+
+    *) Bugfix: fixed njs.dump() with the Date() instance in a container.
+
 Changes with njs 0.3.8                                           21 Jan 2020
 
     nginx modules:
