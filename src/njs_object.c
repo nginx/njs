@@ -2005,7 +2005,12 @@ njs_primitive_prototype_get_proto(njs_vm_t *vm, njs_object_prop_t *prop,
         proto = &vm->prototypes[index].object;
     }
 
-    njs_set_type_object(retval, proto, proto->type);
+    if (proto != NULL) {
+        njs_set_type_object(retval, proto, proto->type);
+
+    } else {
+        njs_set_undefined(retval);
+    }
 
     return NJS_OK;
 }

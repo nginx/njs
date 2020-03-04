@@ -12637,6 +12637,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("typeof Object.setPrototypeOf({}, null)"),
       njs_str("object") },
 
+    { njs_str("Object.setPrototypeOf(Object.getPrototypeOf(''), null).__proto__"),
+      njs_str("undefined") },
+
     { njs_str("var p = {}; var o = Object.create(p);"
                  "p.isPrototypeOf(o)"),
       njs_str("true") },
