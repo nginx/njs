@@ -185,6 +185,11 @@ static njs_interactive_test_t  njs_test[] =
                  "    at eval (native)\n"
                  "    at main (native)\n") },
 
+    { njs_str("$r.some_method({}.a.a)" ENTER),
+      njs_str("TypeError: cannot get property \"a\" of undefined\n"
+                 "    at request.proto.some_method (native)\n"
+                 "    at main (native)\n") },
+
     { njs_str("new Function(\n\n@)" ENTER),
       njs_str("SyntaxError: Unexpected token \"@\" in 3") },
 
