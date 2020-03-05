@@ -34,12 +34,6 @@ struct njs_extern_s {
 };
 
 
-typedef struct {
-    njs_value_t             value;
-    njs_str_t               name;
-} njs_extern_value_t;
-
-
 njs_array_t *njs_extern_keys_array(njs_vm_t *vm, const njs_extern_t *external);
 njs_int_t njs_external_match_native_function(njs_vm_t *vm,
     njs_function_native_t func, njs_str_t *name);
