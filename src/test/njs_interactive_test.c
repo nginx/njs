@@ -10,6 +10,8 @@
 #include <sys/resource.h>
 #include <time.h>
 
+#include "njs_externals_test.h"
+
 
 typedef struct {
     njs_str_t  script;
@@ -318,6 +320,11 @@ njs_interactive_test(njs_bool_t verbose)
         vm = njs_vm_create(&options);
         if (vm == NULL) {
             njs_printf("njs_vm_create() failed\n");
+            goto done;
+        }
+
+        ret = njs_externals_init(vm);
+        if (ret != NJS_OK) {
             goto done;
         }
 

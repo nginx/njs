@@ -173,6 +173,27 @@ done
 
 # njs tests.
 
+njs_src="src/test/njs_externals_test.c"
+fname=$(basename $njs_src)
+njs_externals_obj="test/${fname%.c}.o"
+njs_dep="test/${fname%.c}.dep"
+njs_dep_flags=`njs_gen_dep_flags $njs_dep $fname`
+njs_dep_post=`njs_gen_dep_post $njs_dep $fname`
+
+cat << END >> $NJS_MAKEFILE
+
+$NJS_BUILD_DIR/$njs_externals_obj: $njs_src
+	\$(NJS_CC) -c \$(NJS_CFLAGS) $NJS_LIB_AUX_CFLAGS \\
+		\$(NJS_LIB_INCS) -Injs \\
+		-o $NJS_BUILD_DIR/$njs_externals_obj \\
+		$njs_dep_flags \\
+		$njs_src
+		$njs_dep_post
+
+-include $NJS_BUILD_DIR/$njs_dep
+
+END
+
 for njs_src in $NJS_TEST_SRCS
 do
     fname=$(basename $njs_src)
@@ -183,11 +204,13 @@ do
     cat << END >> $NJS_MAKEFILE
 
 $NJS_BUILD_DIR/$njs_bin: $njs_src \\
-	$NJS_BUILD_DIR/libnjs.a
+	$NJS_BUILD_DIR/libnjs.a \\
+	$NJS_BUILD_DIR/$njs_externals_obj
 	\$(NJS_CC) -o $NJS_BUILD_DIR/$njs_bin \$(NJS_CFLAGS) \\
 		$NJS_LIB_AUX_CFLAGS \$(NJS_LIB_INCS) \\
 		$njs_dep_flags \\
 		-Injs $njs_src $NJS_BUILD_DIR/libnjs.a \\
+		$NJS_BUILD_DIR/$njs_externals_obj \\
 		-lm $NJS_LIBS $NJS_LIB_AUX_LIBS
 		$njs_dep_post
 
