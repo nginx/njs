@@ -177,8 +177,8 @@ njs_src="src/test/njs_externals_test.c"
 fname=$(basename $njs_src)
 njs_externals_obj="test/${fname%.c}.o"
 njs_dep="test/${fname%.c}.dep"
-njs_dep_flags=`njs_gen_dep_flags $njs_dep $fname`
-njs_dep_post=`njs_gen_dep_post $njs_dep $fname`
+njs_dep_flags=`njs_gen_dep_flags $njs_dep $njs_externals_obj`
+njs_dep_post=`njs_gen_dep_post $njs_dep $njs_externals_obj`
 
 cat << END >> $NJS_MAKEFILE
 
@@ -209,8 +209,8 @@ $NJS_BUILD_DIR/$njs_bin: $njs_src \\
 	\$(NJS_CC) -o $NJS_BUILD_DIR/$njs_bin \$(NJS_CFLAGS) \\
 		$NJS_LIB_AUX_CFLAGS \$(NJS_LIB_INCS) \\
 		$njs_dep_flags \\
-		-Injs $njs_src $NJS_BUILD_DIR/libnjs.a \\
 		$NJS_BUILD_DIR/$njs_externals_obj \\
+		-Injs $njs_src $NJS_BUILD_DIR/libnjs.a \\
 		-lm $NJS_LIBS $NJS_LIB_AUX_LIBS
 		$njs_dep_post
 
