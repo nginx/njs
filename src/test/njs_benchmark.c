@@ -6,6 +6,8 @@
 
 #include <njs_main.h>
 
+#include "njs_externals_test.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <sys/resource.h>
@@ -62,6 +64,11 @@ njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
     ret = njs_vm_compile(vm, &start, start + test->script.length);
     if (ret != NJS_OK) {
         njs_printf("njs_vm_compile() failed\n");
+        goto done;
+    }
+
+    ret = njs_externals_init(vm);
+    if (ret != NJS_OK) {
         goto done;
     }
 
@@ -212,6 +219,27 @@ static njs_benchmark_test_t  njs_test[] =
       njs_str("3524578"),
       1 },
 
+    { "array 64k keys",
+      njs_str("var arr = new Array(2**16);"
+              "arr.fill(1);"
+              "Object.keys(arr)[0]"),
+      njs_str("0"),
+      10 },
+
+    { "array 64k values",
+      njs_str("var arr = new Array(2**16);"
+              "arr.fill(1);"
+              "Object.values(arr)[0]"),
+      njs_str("1"),
+      10 },
+
+    { "array 64k entries",
+      njs_str("var arr = new Array(2**16);"
+              "arr.fill(1);"
+              "Object.entries(arr)[0][0]"),
+      njs_str("0"),
+      10 },
+
     { "array 1M",
       njs_str("var arr = new Array(1000000);"
               "var count = 0, length = arr.length;"
@@ -229,6 +257,26 @@ static njs_benchmark_test_t  njs_test[] =
               "count"),
       njs_str("20000000"),
       1 },
+
+    { "external property ($r.uri)",
+      njs_str("$r.uri"),
+      njs_str("АБВ"),
+      1000 },
+
+    { "external object property ($r.props.a)",
+      njs_str("$r.props.a"),
+      njs_str("1"),
+      1000 },
+
+    { "external dump (JSON.stringify($r.header))",
+      njs_str("JSON.stringify($r.header)"),
+      njs_str("{\"01\":\"01|АБВ\",\"02\":\"02|АБВ\",\"03\":\"03|АБВ\"}"),
+      1000 },
+
+    { "external method ($r.some_method('YES'))",
+      njs_str("$r.some_method('YES')"),
+      njs_str("АБВ"),
+      1000 },
 };
 
 
