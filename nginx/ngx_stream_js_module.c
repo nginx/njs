@@ -411,7 +411,7 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
     c = s->connection;
 
     ngx_log_debug1(NGX_LOG_DEBUG_STREAM, c->log, 0,
-                   "http js phase call \"%V\"", name);
+                   "stream js phase call \"%V\"", name);
 
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
