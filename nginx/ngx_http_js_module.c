@@ -2196,7 +2196,12 @@ ngx_http_js_ext_get_response_body(njs_vm_t *vm, njs_object_prop_t *prop,
 
     b = r->out ? r->out->buf : NULL;
 
-    len = b ? b->last - b->pos : 0;
+    if (b == NULL) {
+        njs_value_undefined_set(retval);
+        return NJS_OK;
+    }
+
+    len = b->last - b->pos;
 
     p = njs_vm_value_string_alloc(vm, retval, len);
     if (p == NULL) {
