@@ -486,9 +486,6 @@ njs_value_is_function(const njs_value_t *value)
  *     if pq->lhq.value != NULL it contains retval of type
  *     njs_object_prop_t * where prop->type is NJS_WHITEOUT
  *   NJS_ERROR            exception has been thrown.
- *
- *   TODO:
- *     Object.defineProperty([1,2], '1', {configurable:false})
  */
 
 njs_int_t
