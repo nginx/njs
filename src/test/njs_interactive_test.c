@@ -185,9 +185,9 @@ static njs_interactive_test_t  njs_test[] =
                  "    at eval (native)\n"
                  "    at main (native)\n") },
 
-    { njs_str("$r.some_method({}.a.a)" ENTER),
+    { njs_str("$r.method({}.a.a)" ENTER),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
-                 "    at request.proto.some_method (native)\n"
+                 "    at $r3.method (native)\n"
                  "    at main (native)\n") },
 
     { njs_str("new Function(\n\n@)" ENTER),
@@ -328,7 +328,7 @@ njs_interactive_test(njs_bool_t verbose)
             goto done;
         }
 
-        ret = njs_externals_init(vm);
+        ret = njs_externals_init(vm, NULL);
         if (ret != NJS_OK) {
             goto done;
         }

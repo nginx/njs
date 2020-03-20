@@ -1053,7 +1053,7 @@ njs_json_parse_exception(njs_json_parse_ctx_t *ctx, const char *msg,
 
 static njs_json_state_t *
 njs_json_push_stringify_state(njs_vm_t *vm, njs_json_stringify_t *stringify,
-    const njs_value_t *value)
+    njs_value_t *value)
 {
     njs_int_t         ret;
     njs_json_state_t  *state;
@@ -1134,7 +1134,6 @@ njs_json_is_object(const njs_value_t *value)
     return (((value)->type == NJS_OBJECT)
              || ((value)->type == NJS_ARRAY)
              || ((value)->type == NJS_OBJECT_SYMBOL)
-             || ((value)->type == NJS_EXTERNAL)
              || ((value)->type >= NJS_REGEXP));
 }
 
@@ -1992,23 +1991,11 @@ njs_dump_terminal(njs_json_stringify_t *stringify, njs_chb_t *chain,
 
 
 njs_inline njs_bool_t
-njs_dump_is_external_object(const njs_value_t *value)
-{
-    if (!njs_is_external(value)) {
-        return 0;
-    }
-
-    return value->external.proto->type == NJS_EXTERN_OBJECT;
-}
-
-
-njs_inline njs_bool_t
 njs_dump_is_recursive(const njs_value_t *value)
 {
     return (value->type == NJS_OBJECT && !njs_object(value)->error_data)
            || (value->type == NJS_ARRAY)
-           || (value->type >= NJS_OBJECT_SPECIAL_MAX)
-           || njs_dump_is_external_object(value);
+           || (value->type >= NJS_OBJECT_SPECIAL_MAX);
 }
 
 

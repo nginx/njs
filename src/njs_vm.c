@@ -60,13 +60,6 @@ njs_vm_create(njs_vm_opt_t *options)
 
     vm->external = options->external;
 
-    vm->external_objects = njs_arr_create(vm->mem_pool, 4, sizeof(void *));
-    if (njs_slow_path(vm->external_objects == NULL)) {
-        return NULL;
-    }
-
-    njs_lvlhsh_init(&vm->external_prototypes_hash);
-
     vm->trace.level = NJS_LEVEL_TRACE;
     vm->trace.size = 2048;
     vm->trace.handler = njs_parser_trace_handler;
@@ -641,6 +634,34 @@ njs_vm_value_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size)
 }
 
 
+uint16_t
+njs_vm_prop_magic16(njs_object_prop_t *prop)
+{
+    return prop->value.data.magic16;
+}
+
+
+uint32_t
+njs_vm_prop_magic32(njs_object_prop_t *prop)
+{
+    return prop->value.data.magic32;
+}
+
+
+njs_int_t
+njs_vm_prop_name(njs_vm_t *vm, njs_object_prop_t *prop, njs_str_t *dst)
+{
+    if (njs_slow_path(!njs_is_string(&prop->name))) {
+        njs_type_error(vm, "property name is not a string");
+        return NJS_ERROR;
+    }
+
+    njs_string_get(&prop->name, dst);
+
+    return NJS_OK;
+}
+
+
 njs_noinline void
 njs_vm_value_error_set(njs_vm_t *vm, njs_value_t *value, const char *fmt, ...)
 {
@@ -994,12 +1015,6 @@ njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_arr_t *stack,
         }
 
         ret = njs_builtin_match_native_function(vm, function, &be->name);
-        if (ret == NJS_OK) {
-            return NJS_OK;
-        }
-
-        ret = njs_external_match_native_function(vm, function->u.native,
-                                                 &be->name);
         if (ret == NJS_OK) {
             return NJS_OK;
         }

@@ -2753,16 +2753,6 @@ static njs_unit_test_t  njs_test[] =
                  "} a"),
       njs_str("A123DT") },
 
-    { njs_str("var t; "
-                 "switch ($r3.uri) {"
-                 "case 'abc': "
-                 "  t='A'; "
-                 "  break; "
-                 "default: "
-                 "  t='F'; "
-                 "}; t"),
-      njs_str("A") },
-
     { njs_str("[isNaN, undefined, isFinite]."
               "map((v)=>{switch(v) { case isNaN: return 1; default: return 0;}})"),
       njs_str("1,0,0") },
@@ -6777,173 +6767,6 @@ static njs_unit_test_t  njs_test[] =
                           " valueOf:  function() { return 0 } };   '12'[n]"),
       njs_str("2") },
 
-    /* Externals. */
-
-    { njs_str("typeof $r"),
-      njs_str("external") },
-
-    { njs_str("var a = $r.uri, s = a.fromUTF8(); s.length +' '+ s"),
-      njs_str("3 АБВ") },
-
-    { njs_str("var a = $r.uri, b = $r2.uri, c = $r3.uri; a+b+c"),
-      njs_str("АБВαβγabc") },
-
-    { njs_str("var a = $r.uri; $r.uri = $r2.uri; $r2.uri = a; $r2.uri+$r.uri"),
-      njs_str("АБВαβγ") },
-
-    { njs_str("var a = $r.uri, s = a.fromUTF8(2); s.length +' '+ s"),
-      njs_str("2 БВ") },
-
-    { njs_str("var a = $r.uri, s = a.fromUTF8(2, 4); s.length +' '+ s"),
-      njs_str("1 Б") },
-
-    { njs_str("var a = $r.uri; a +' '+ a.length +' '+ a"),
-      njs_str("АБВ 6 АБВ") },
-
-    { njs_str("$r.uri = 'αβγ'; var a = $r.uri; a.length +' '+ a"),
-      njs_str("6 αβγ") },
-
-    { njs_str("$r.uri.length +' '+ $r.uri"),
-      njs_str("6 АБВ") },
-
-    { njs_str("$r.uri = $r.uri.substr(2); $r.uri.length +' '+ $r.uri"),
-      njs_str("4 БВ") },
-
-    { njs_str("'' + $r.props.a + $r2.props.a + $r.props.a"),
-      njs_str("121") },
-
-    { njs_str("var p1 = $r.props, p2 = $r2.props; '' + p2.a + p1.a"),
-      njs_str("21") },
-
-    { njs_str("var p1 = $r.props, p2 = $r2.props; '' + p1.a + p2.a"),
-      njs_str("12") },
-
-    { njs_str("var p = $r3.props; p.a = 1"),
-      njs_str("TypeError: Cannot assign to read-only property \"a\" of external") },
-    { njs_str("var p = $r3.props; delete p.a"),
-      njs_str("TypeError: Cannot delete property \"a\" of external") },
-
-    { njs_str("$r.vars.p + $r2.vars.q + $r3.vars.k"),
-      njs_str("pvalqvalkval") },
-
-    { njs_str("$r.vars.unset"),
-      njs_str("undefined") },
-
-    { njs_str("var v = $r3.vars; v.k"),
-      njs_str("kval") },
-
-    { njs_str("var v = $r3.vars; v.unset = 1; v.unset"),
-      njs_str("1") },
-
-    { njs_str("$r.vars.unset = 'a'; $r2.vars.unset = 'b';"
-                 "$r.vars.unset + $r2.vars.unset"),
-      njs_str("ab") },
-
-    { njs_str("$r.vars.unset = 1; $r2.vars.unset = 2;"
-                 "$r.vars.unset + $r2.vars.unset"),
-      njs_str("12") },
-
-    { njs_str("$r3.vars.p = 'a'; $r3.vars.p2 = 'b';"
-                 "$r3.vars.p + $r3.vars.p2"),
-      njs_str("ab") },
-
-    { njs_str("$r3.vars.p = 'a'; delete $r3.vars.p; $r3.vars.p"),
-      njs_str("undefined") },
-
-    { njs_str("$r3.vars.p = 'a'; delete $r3.vars.p; $r3.vars.p = 'b'; $r3.vars.p"),
-      njs_str("b") },
-
-    { njs_str("$r3.vars.error = 1"),
-      njs_str("Error: cannot set \"error\" prop") },
-
-    { njs_str("delete $r3.vars.error"),
-      njs_str("Error: cannot delete \"error\" prop") },
-
-    { njs_str("delete $r3.vars.e"),
-      njs_str("true") },
-
-    { njs_str("$r3.consts.k"),
-      njs_str("kval") },
-
-    { njs_str("$r3.consts.k = 1"),
-      njs_str("TypeError: Cannot assign to read-only property \"k\" of external") },
-
-    { njs_str("delete $r3.consts.k"),
-      njs_str("TypeError: Cannot delete property \"k\" of external") },
-
-    { njs_str("delete $r3.vars.p; $r3.vars.p"),
-      njs_str("undefined") },
-
-    { njs_str("var a = $r.host; a +' '+ a.length +' '+ a"),
-      njs_str("АБВГДЕЁЖЗИЙ 22 АБВГДЕЁЖЗИЙ") },
-
-    { njs_str("var a = $r.host; a.substr(2, 2)"),
-      njs_str("Б") },
-
-    { njs_str("var a = $r.header['User-Agent']; a +' '+ a.length +' '+ a"),
-      njs_str("User-Agent|АБВ 17 User-Agent|АБВ") },
-
-    { njs_str("var a='', p;"
-                 "for (p in $r.header) { a += p +':'+ $r.header[p] +',' }"
-                 "a"),
-      njs_str("01:01|АБВ,02:02|АБВ,03:03|АБВ,") },
-
-    { njs_str("$r.some_method('YES')"),
-      njs_str("АБВ") },
-
-    { njs_str("$r.create('XXX').uri"),
-      njs_str("XXX") },
-
-    { njs_str("var sr = $r.create('XXX'); sr.uri = 'YYY'; sr.uri"),
-      njs_str("YYY") },
-
-    { njs_str("var sr = $r.create('XXX'), sr2 = $r.create('YYY');"
-                 "sr.uri = 'ZZZ'; "
-                 "sr.uri + sr2.uri"),
-      njs_str("ZZZYYY") },
-
-    { njs_str("var sr = $r.create('XXX'); sr.vars.p = 'a'; sr.vars.p"),
-      njs_str("a") },
-
-    { njs_str("var p; for (p in $r.some_method);"),
-      njs_str("undefined") },
-
-    { njs_str("'uri' in $r"),
-      njs_str("true") },
-
-    { njs_str("'one' in $r"),
-      njs_str("false") },
-
-    { njs_str("'a' in $r.props"),
-      njs_str("true") },
-
-    { njs_str("delete $r.uri"),
-      njs_str("TypeError: Cannot delete property \"uri\" of external") },
-
-    { njs_str("delete $r.one"),
-      njs_str("TypeError: Cannot delete property \"one\" of external") },
-
-    { njs_str("$r.some_method.call($r, 'YES')"),
-      njs_str("АБВ") },
-
-    { njs_str("var f = $r.some_method.bind($r); f('YES')"),
-      njs_str("АБВ") },
-
-    { njs_str("function f(fn, arg) {return fn(arg);}; f($r.some_method.bind($r), 'YES')"),
-      njs_str("АБВ") },
-
-    { njs_str("$r.some_method.apply($r, ['YES'])"),
-      njs_str("АБВ") },
-
-    { njs_str("$r.some_method.call([], 'YES')"),
-      njs_str("TypeError: external value is expected") },
-
-    { njs_str("$r.nonexistent"),
-      njs_str("undefined") },
-
-    { njs_str("$r.error = 'OK'"),
-      njs_str("TypeError: Cannot assign to read-only property \"error\" of external") },
-
     { njs_str("var a = { toString: function() { return 1 } }; a"),
       njs_str("1") },
 
@@ -6965,12 +6788,6 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("({})[{}] = 'test'"),
       njs_str("test") },
-
-    { njs_str("var o = {b:$r.props.b}; o.b"),
-      njs_str("42") },
-
-    { njs_str("$r2.uri == 'αβγ' && $r2.uri === 'αβγ'"),
-      njs_str("true") },
 
     /**/
 
@@ -10337,13 +10154,6 @@ static njs_unit_test_t  njs_test[] =
       njs_str("NaN") },
 
     { njs_str("Object.getOwnPropertyNames(this).includes('NaN')"),
-      njs_str("true") },
-
-    { njs_str("Object.keys(this).sort()"),
-      njs_str("$r,$r2,$r3,global,njs,process") },
-
-    { njs_str("[this, global, globalThis]"
-              ".every(v=> { var r = njs.dump(v); return ['$r', 'global', njs.version].every(v=>r.includes(v))})"),
       njs_str("true") },
 
     { njs_str("this.a = 1; this.a"),
@@ -15602,10 +15412,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var e = URIError('e'); e.foo = 'E'; JSON.stringify(e)"),
       njs_str("{\"foo\":\"E\"}") },
 
-    { njs_str("var r = JSON.parse(JSON.stringify($r));"
-              "[r.uri, r.host, r.props.a, njs.dump(r.vars), njs.dump(r.consts), r.header['02']]"),
-      njs_str("АБВ,АБВГДЕЁЖЗИЙ,1,{},{},02|АБВ") },
-
     { njs_str("JSON.stringify({get key() {throw new Error('Oops')}})"),
       njs_str("Error: Oops") },
 
@@ -15911,12 +15717,6 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var o = Object.defineProperty({}, 'a', { set(){}, enumerable: true }); njs.dump(o)"),
       njs_str("{a:'[Setter]'}") },
-
-    { njs_str("njs.dump($r.props)"),
-      njs_str("{a:'1',b:42}") },
-
-    { njs_str("njs.dump($r.header)"),
-      njs_str("{01:'01|АБВ',02:'02|АБВ',03:'03|АБВ'}") },
 
     { njs_str("njs.dump(njs) == `njs {version:'${njs.version}'}`"),
       njs_str("true") },
@@ -16756,6 +16556,253 @@ static njs_unit_test_t  njs_module_test[] =
 };
 
 
+static njs_unit_test_t  njs_externals_test[] =
+{
+    { njs_str("typeof $r"),
+      njs_str("object") },
+
+    { njs_str("var a = $r.uri, s = a.fromUTF8(); s.length +' '+ s"),
+      njs_str("3 АБВ") },
+
+    { njs_str("var a = $r.uri, b = $r2.uri, c = $r3.uri; a+b+c"),
+      njs_str("АБВαβγabc") },
+
+    { njs_str("var a = $r.uri; $r.uri = $r2.uri; $r2.uri = a; $r2.uri+$r.uri"),
+      njs_str("АБВαβγ") },
+
+    { njs_str("var a = $r.uri, s = a.fromUTF8(2); s.length +' '+ s"),
+      njs_str("2 БВ") },
+
+    { njs_str("var a = $r.uri, s = a.fromUTF8(2, 4); s.length +' '+ s"),
+      njs_str("1 Б") },
+
+    { njs_str("var a = $r.uri; a +' '+ a.length +' '+ a"),
+      njs_str("АБВ 6 АБВ") },
+
+    { njs_str("$r.uri = 'αβγ'; var a = $r.uri; a.length +' '+ a"),
+      njs_str("6 αβγ") },
+
+    { njs_str("$r.uri.length +' '+ $r.uri"),
+      njs_str("6 АБВ") },
+
+    { njs_str("var t; "
+              "switch ($r3.uri) {"
+              "case 'abc': "
+              "  t='A'; "
+              "  break; "
+              "default: "
+              "  t='F'; "
+              "}; t"),
+      njs_str("A") },
+
+    { njs_str("$r.uri = $r.uri.substr(2); $r.uri.length +' '+ $r.uri"),
+      njs_str("4 БВ") },
+
+    { njs_str("'' + $r.props.a + $r2.props.a + $r.props.a"),
+      njs_str("121") },
+
+    { njs_str("var p1 = $r.props, p2 = $r2.props; '' + p2.a + p1.a"),
+      njs_str("21") },
+
+    { njs_str("$r.props = $r2.props; $r.props.a"),
+      njs_str("2") },
+
+    { njs_str("var p1 = $r.props, p2 = $r2.props; '' + p1.a + p2.a"),
+      njs_str("12") },
+
+    { njs_str("var p = $r3.props; p.a = 1"),
+      njs_str("TypeError: Cannot assign to read-only property \"a\" of object") },
+
+    { njs_str("var p = $r3.props; delete p.a"),
+      njs_str("TypeError: Cannot delete property \"a\" of object") },
+
+    { njs_str("$r.vars.p + $r2.vars.q + $r3.vars.k"),
+      njs_str("pvalqvalkval") },
+
+    { njs_str("$r.vars.unset"),
+      njs_str("undefined") },
+
+    { njs_str("['k', 'unknown'].map(v=>v in $r3.consts)"),
+      njs_str("true,false") },
+
+    { njs_str("['a', 'unknown'].map(v=>v in $r3.props)"),
+      njs_str("true,false") },
+
+    { njs_str("var v = $r3.vars; v.k"),
+      njs_str("kval") },
+
+    { njs_str("var v = $r3.vars; v.unset = 1; v.unset"),
+      njs_str("1") },
+
+    { njs_str("$r3.a = 1; Object.getOwnPropertyDescriptors($r3).a.value"),
+      njs_str("1") },
+
+    { njs_str("Object.defineProperty($r3.vars, 'a', {value:1}); $r3.vars.a"),
+      njs_str("1") },
+
+    { njs_str("$r3.vars.p = 'a'; delete $r3.vars.p; $r3.vars.p"),
+      njs_str("undefined") },
+
+    { njs_str("$r3.vars.p = 'a'; delete $r3.vars.p; $r3.vars.p = 'b'; $r3.vars.p"),
+      njs_str("b") },
+
+    { njs_str("$r3.vars.error = 1"),
+      njs_str("Error: cannot set \"error\" prop") },
+
+    { njs_str("delete $r3.vars.error"),
+      njs_str("Error: cannot delete \"error\" prop") },
+
+    { njs_str("delete $r3.vars.e"),
+      njs_str("true") },
+
+    { njs_str("delete $r.consts"),
+      njs_str("true") },
+
+    { njs_str("$r3.consts.k"),
+      njs_str("kval") },
+
+    { njs_str("$r3.consts.k = 1"),
+      njs_str("TypeError: Cannot assign to read-only property \"k\" of object") },
+
+    { njs_str("delete $r3.consts.k"),
+      njs_str("TypeError: Cannot delete property \"k\" of object") },
+
+    { njs_str("delete $r3.vars.p; $r3.vars.p"),
+      njs_str("undefined") },
+
+    { njs_str("var a = $r.host; a +' '+ a.length +' '+ a"),
+      njs_str("АБВГДЕЁЖЗИЙ 22 АБВГДЕЁЖЗИЙ") },
+
+    { njs_str("var a = $r.host; a.substr(2, 2)"),
+      njs_str("Б") },
+
+    { njs_str("var a = $r.header['User-Agent']; a +' '+ a.length +' '+ a"),
+      njs_str("User-Agent|АБВ 17 User-Agent|АБВ") },
+
+    { njs_str("var a='', p;"
+                 "for (p in $r.header) { a += p +':'+ $r.header[p] +',' }"
+                 "a"),
+      njs_str("01:01|АБВ,02:02|АБВ,03:03|АБВ,") },
+
+    { njs_str("$r.method('YES')"),
+      njs_str("АБВ") },
+
+    { njs_str("$r.create('XXX').uri"),
+      njs_str("XXX") },
+
+    { njs_str("var sr = $r.create('XXX'); sr.uri = 'YYY'; sr.uri"),
+      njs_str("YYY") },
+
+    { njs_str("var sr = $r.create('XXX'), sr2 = $r.create('YYY');"
+                 "sr.uri = 'ZZZ'; "
+                 "sr.uri + sr2.uri"),
+      njs_str("ZZZYYY") },
+
+    { njs_str("var sr = $r.create('XXX'); sr.vars.p = 'a'; sr.vars.p"),
+      njs_str("a") },
+
+    { njs_str("var p; for (p in $r.method);"),
+      njs_str("undefined") },
+
+    { njs_str("'uri' in $r"),
+      njs_str("true") },
+
+    { njs_str("'one' in $r"),
+      njs_str("false") },
+
+    { njs_str("'a' in $r.props"),
+      njs_str("true") },
+
+    { njs_str("delete $r.uri"),
+      njs_str("TypeError: Cannot delete property \"uri\" of object") },
+
+    { njs_str("delete $shared.uri"),
+      njs_str("TypeError: Cannot delete property \"uri\" of object") },
+
+    { njs_str("delete $r.one"),
+      njs_str("true") },
+
+    { njs_str("delete $r.vars"),
+      njs_str("TypeError: Cannot delete property \"vars\" of object") },
+
+    { njs_str("delete $r.header; $r.header"),
+      njs_str("undefined") },
+
+    { njs_str("$r.header = 1; $r.header"),
+      njs_str("1") },
+
+    { njs_str("$r.method.call($r, 'YES')"),
+      njs_str("АБВ") },
+
+    { njs_str("var f = $r.method.bind($r); f('YES')"),
+      njs_str("АБВ") },
+
+    { njs_str("function f(fn, arg) {return fn(arg);}; f($r.method.bind($r), 'YES')"),
+      njs_str("АБВ") },
+
+    { njs_str("$r.method.apply($r, ['YES'])"),
+      njs_str("АБВ") },
+
+    { njs_str("$shared.method.apply($r, ['YES'])"),
+      njs_str("АБВ") },
+
+    { njs_str("$r.method.call([], 'YES')"),
+      njs_str("TypeError: \"this\" is not an external") },
+
+    { njs_str("$r.nonexistent"),
+      njs_str("undefined") },
+
+    { njs_str("$shared.nonexistent"),
+      njs_str("undefined") },
+
+    { njs_str("njs.dump($r).startsWith('External')"),
+      njs_str("true") },
+
+    { njs_str("njs.dump($r.header)"),
+      njs_str("Header {01:'01|АБВ',02:'02|АБВ',03:'03|АБВ'}") },
+
+    { njs_str("var o = {b:$r.props.b}; o.b"),
+      njs_str("42") },
+
+    { njs_str("$r2.uri == 'αβγ' && $r2.uri === 'αβγ'"),
+      njs_str("true") },
+
+    { njs_str("Object.keys(this).sort()"),
+      njs_str("$r,$r2,$r3,$shared,global,njs,process") },
+
+    { njs_str("Object.getOwnPropertySymbols($r2)[0] == Symbol.toStringTag"),
+      njs_str("true") },
+
+    { njs_str("Object.getOwnPropertyDescriptors($r2)[Symbol.toStringTag].value"),
+      njs_str("External") },
+
+    { njs_str("Object.getPrototypeOf($r3) === Object.prototype"),
+      njs_str("true") },
+
+    { njs_str("Object.isExtensible($r3)"),
+      njs_str("true") },
+
+    { njs_str("$r3[0] = 0; $r3[1] = 1; $r3.length = 2;"
+              "Array.prototype.join.call($r3, '|')"),
+      njs_str("0|1") },
+
+    { njs_str("$r3.toJSON = ()=> 'R3';"
+              "JSON.stringify($r3)"),
+      njs_str("\"R3\"") },
+
+    { njs_str("$r3[0] = 0; $r3[1] = 1; $r3.length = 2;"
+              "$r3.__proto__ = Array.prototype; $r3.join('|')"),
+      njs_str("0|1") },
+
+    { njs_str("[this, global, globalThis]"
+              ".every(v=> { var r = njs.dump(v); return ['$r', 'global', njs.version].every(v=>r.includes(v))})"),
+      njs_str("true") },
+
+    { njs_str("var r = JSON.parse(JSON.stringify($r));"
+              "[r.uri, r.host, r.props.a, njs.dump(r.vars), njs.dump(r.consts), r.header['02']]"),
+      njs_str("АБВ,АБВГДЕЁЖЗИЙ,1,{},{},02|АБВ") },
+};
+
 static njs_unit_test_t  njs_shared_test[] =
 {
     { njs_str("var cr = require('crypto'); cr.createHash"),
@@ -16788,8 +16835,48 @@ static njs_unit_test_t  njs_shared_test[] =
     { njs_str("isNaN(function(){})"),
       njs_str("true") },
 
+    { njs_str("var a = $r.uri; $r.uri = $r2.uri; $r2.uri = a; $r2.uri + $r.uri"),
+      njs_str("АБВαβγ") },
+
+    { njs_str("njs.dump($r.props)"),
+      njs_str("{a:'1',b:42,c:{d:1024}}") },
+
+    { njs_str("njs.dump($shared.props)"),
+      njs_str("{a:'4294967295',b:42,c:{d:4294967294}}") },
+
+    { njs_str("var r = JSON.parse(JSON.stringify($shared));"
+              "[r.uri, r.host, r.props.a, njs.dump(r.vars), njs.dump(r.consts), r.header['02']]"),
+      njs_str("shared,АБВГДЕЁЖЗИЙ,4294967295,{},{},02|АБВ") },
+
+    { njs_str("$shared.toString()"),
+      njs_str("[object External]") },
+
+    { njs_str("$shared.toString().length"),
+      njs_str("17") },
+
+    { njs_str("delete $shared.method; $shared.method"),
+      njs_str("undefined") },
+
+    { njs_str("$shared.method = () => 1; $shared.method()"),
+      njs_str("1") },
+
+    { njs_str("$shared.method = function() {return this.props.a;}; $shared.method()"),
+      njs_str("4294967295") },
+
     { njs_str("var r; for (var i = 0; i < 2**10; i++) {r = $r.create('XXX').uri;}"),
       njs_str("undefined") },
+
+    { njs_str("$r.vars.unset = 'a'; $r2.vars.unset = 'b';"
+              "$r.vars.unset + $r2.vars.unset"),
+      njs_str("ab") },
+
+    { njs_str("$r.vars.unset = 1; $r2.vars.unset = 2;"
+              "$r.vars.unset + $r2.vars.unset"),
+      njs_str("3") },
+
+    { njs_str("$r3.vars.p = 'a'; $r3.vars.p2 = 'b';"
+              "$r3.vars.p + $r3.vars.p2"),
+      njs_str("ab") },
 
     { njs_str("delete $r3.vars.p; $r3.vars.p"),
       njs_str("undefined") },
@@ -16966,6 +17053,7 @@ typedef struct {
     njs_bool_t  unsafe;
     njs_bool_t  module;
     njs_uint_t  repeat;
+    njs_uint_t  externals;
 } njs_opts_t;
 
 
@@ -16992,17 +17080,19 @@ static njs_int_t
 njs_unit_test(njs_unit_test_t tests[], size_t num, const char *name,
     njs_opts_t *opts, njs_stat_t *stat)
 {
-    u_char        *start;
-    njs_vm_t      *vm, *nvm;
-    njs_int_t     ret;
-    njs_str_t     s;
-    njs_uint_t    i, repeat;
-    njs_stat_t    prev;
-    njs_bool_t    success;
-    njs_vm_opt_t  options;
+    u_char                *start;
+    njs_vm_t              *vm, *nvm;
+    njs_int_t             ret;
+    njs_str_t             s;
+    njs_uint_t            i, repeat;
+    njs_stat_t            prev;
+    njs_bool_t            success;
+    njs_vm_opt_t          options;
+    njs_external_proto_t  proto;
 
     vm = NULL;
     nvm = NULL;
+    proto = NULL;
 
     prev = *stat;
 
@@ -17025,9 +17115,11 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, const char *name,
             goto done;
         }
 
-        ret = njs_externals_init(vm);
-        if (ret != NJS_OK) {
-            goto done;
+        if (opts->externals) {
+            proto = njs_externals_shared_init(vm);
+            if (proto == NULL) {
+                goto done;
+            }
         }
 
         start = tests[i].script.start;
@@ -17050,6 +17142,13 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, const char *name,
                 if (nvm == NULL) {
                     njs_printf("njs_vm_clone() failed\n");
                     goto done;
+                }
+
+                if (opts->externals) {
+                    ret = njs_externals_init(nvm, proto);
+                    if (ret != NJS_OK) {
+                        goto done;
+                    }
                 }
 
                 ret = njs_vm_start(nvm);
@@ -17792,12 +17891,6 @@ main(int argc, char **argv)
 
     njs_mm_denormals(0);
 
-    ret = njs_unit_test(njs_test, njs_nitems(njs_test),
-                        "script tests (disabled denormals)", &opts, &stat);
-    if (ret != NJS_OK) {
-        return ret;
-    }
-
     ret = njs_unit_test(njs_disabled_denormals_test,
                         njs_nitems(njs_disabled_denormals_test),
                         "disabled denormals tests", &opts, &stat);
@@ -17842,6 +17935,14 @@ main(int argc, char **argv)
     }
 
     opts.module = 0;
+    opts.externals = 1;
+
+    ret = njs_unit_test(njs_externals_test, njs_nitems(njs_externals_test),
+                        "externals tests", &opts, &stat);
+    if (ret != NJS_OK) {
+        return ret;
+    }
+
     opts.repeat = 128;
 
     ret = njs_unit_test(njs_shared_test, njs_nitems(njs_shared_test),

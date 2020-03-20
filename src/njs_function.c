@@ -700,7 +700,7 @@ njs_function_native_call(njs_vm_t *vm)
         call = target->u.native;
     }
 
-    ret = call(vm, native->arguments, native->nargs, function->magic);
+    ret = call(vm, native->arguments, native->nargs, function->magic8);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
     }

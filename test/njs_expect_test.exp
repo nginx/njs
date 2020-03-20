@@ -227,6 +227,26 @@ njs_test {
 
 # console object
 njs_test {
+    {"console[Symbol.toStringTag]\r\n"
+     "console\\\[Symbol.toStringTag]\r\n'Console'\r\n>> "}
+    {"Object.prototype.toString.call(console)\r\n"
+     "Object.prototype.toString.call(console)\r\n'\\\[object Console]'\r\n>> "}
+    {"console.toString()\r\n"
+     "console.toString()\r\n'\\\[object Console]'\r\n>> "}
+    {"console\r\n"
+     "console\r\nConsole *>> "}
+    {"delete console.log\r\n"
+     "delete console.log\r\ntrue\r\n>>"}
+    {"console\r\n"
+     "console\r\nConsole *>> "}
+}
+
+# console log functions
+njs_test {
+    {"console[Symbol.toStringTag]\r\n"
+     "console\\\[Symbol.toStringTag]\r\n'Console'\r\n>> "}
+    {"console\r\n"
+     "console\r\nConsole *>> "}
     {"console.log()\r\n"
      "console.log()\r\nundefined\r\n>> "}
     {"console.log('')\r\n"
@@ -293,15 +313,15 @@ njs_test {
     {"var print = console.dump.bind(console); print(1, 'a', [1, 2])\r\n"
      "1 a \\\[\r\n 1,\r\n 2\r\n]\r\nundefined\r\n>> "}
     {"var print = console.log.bind(console); print(console.a.a)\r\n"
-     "TypeError: cannot get property \"a\" of undefined*at print"}
+     "TypeError: cannot get property \"a\" of undefined*at console.log"}
     {"print(console.a.a)\r\n"
-     "TypeError: cannot get property \"a\" of undefined*at print"}
+     "TypeError: cannot get property \"a\" of undefined*at console.log"}
 }
 
 # Backtraces for external objects
 njs_test {
     {"console.log(console.a.a)\r\n"
-     "console.log(console.a.a)\r\nThrown:\r\nTypeError:*at print (native)"}
+     "console.log(console.a.a)\r\nThrown:\r\nTypeError:*at console.log (native)"}
 }
 
 # dumper

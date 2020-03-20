@@ -18,13 +18,7 @@ static njs_int_t njs_typed_array_property_query(njs_vm_t *vm,
 static njs_int_t njs_string_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_value_t *object, uint32_t index);
 static njs_int_t njs_external_property_query(njs_vm_t *vm,
-    njs_property_query_t *pq, njs_value_t *object);
-static njs_int_t njs_external_property_set(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
-static njs_int_t njs_external_property_delete(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_property_query_t *pq, njs_value_t *value);
 
 
 const njs_value_t  njs_value_null =         njs_value(NJS_NULL, 0, 0.0);
@@ -194,40 +188,31 @@ njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
 
 
 njs_array_t *
-njs_value_enumerate(njs_vm_t *vm, const njs_value_t *value,
+njs_value_enumerate(njs_vm_t *vm, njs_value_t *value,
     njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all)
 {
-    void                *obj;
     njs_int_t           ret;
     njs_value_t         keys;
     njs_object_value_t  obj_val;
-    const njs_extern_t  *ext_proto;
+    njs_exotic_slots_t  *slots;
 
     if (njs_is_object(value)) {
-        return njs_object_enumerate(vm, njs_object(value), kind, type, all);
-    }
-
-    if (value->type != NJS_STRING) {
-        if (kind == NJS_ENUM_KEYS
-            && (type & NJS_ENUM_STRING)
-            && njs_is_external(value))
-        {
-            ext_proto = value->external.proto;
-
-            if (ext_proto->keys != NULL) {
-                obj = njs_extern_object(vm, value);
-
-                ret = ext_proto->keys(vm, obj, &keys);
+        if (kind == NJS_ENUM_KEYS && (type & NJS_ENUM_STRING)) {
+            slots = njs_object_slots(value);
+            if (slots != NULL && slots->keys != NULL) {
+                ret = slots->keys(vm, value, &keys);
                 if (njs_slow_path(ret != NJS_OK)) {
                     return NULL;
                 }
 
                 return njs_array(&keys);
             }
-
-            return njs_extern_keys_array(vm, ext_proto);
         }
 
+        return njs_object_enumerate(vm, njs_object(value), kind, type, all);
+    }
+
+    if (value->type != NJS_STRING) {
         return njs_array_alloc(vm, 1, 0, NJS_ARRAY_SPARE);
     }
 
@@ -239,40 +224,31 @@ njs_value_enumerate(njs_vm_t *vm, const njs_value_t *value,
 
 
 njs_array_t *
-njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
+njs_value_own_enumerate(njs_vm_t *vm, njs_value_t *value,
     njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all)
 {
-    void                *obj;
     njs_int_t           ret;
     njs_value_t         keys;
     njs_object_value_t  obj_val;
-    const njs_extern_t  *ext_proto;
+    njs_exotic_slots_t  *slots;
 
     if (njs_is_object(value)) {
-        return njs_object_own_enumerate(vm, njs_object(value), kind, type, all);
-    }
-
-    if (value->type != NJS_STRING) {
-        if (kind == NJS_ENUM_KEYS
-            && (type & NJS_ENUM_STRING)
-            && njs_is_external(value))
-        {
-            ext_proto = value->external.proto;
-
-            if (ext_proto->keys != NULL) {
-                obj = njs_extern_object(vm, value);
-
-                ret = ext_proto->keys(vm, obj, &keys);
+        if (kind == NJS_ENUM_KEYS && (type & NJS_ENUM_STRING)) {
+            slots = njs_object_slots(value);
+            if (slots != NULL && slots->keys != NULL) {
+                ret = slots->keys(vm, value, &keys);
                 if (njs_slow_path(ret != NJS_OK)) {
                     return NULL;
                 }
 
                 return njs_array(&keys);
             }
-
-            return njs_extern_keys_array(vm, ext_proto);
         }
 
+        return njs_object_own_enumerate(vm, njs_object(value), kind, type, all);
+    }
+
+    if (value->type != NJS_STRING) {
         return njs_array_alloc(vm, 1, 0, NJS_ARRAY_SPARE);
     }
 
@@ -328,13 +304,11 @@ njs_type_string(njs_value_type_t type)
     case NJS_STRING:
         return "string";
 
-    case NJS_EXTERNAL:
-        return "external";
-
     case NJS_INVALID:
         return "invalid";
 
     case NJS_OBJECT:
+    case NJS_OBJECT_VALUE:
         return "object";
 
     case NJS_ARRAY:
@@ -581,10 +555,6 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
         obj = &function->object;
         break;
 
-    case NJS_EXTERNAL:
-        obj = NULL;
-        break;
-
     case NJS_UNDEFINED:
     case NJS_NULL:
     default:
@@ -615,12 +585,11 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
                                             pq->lhq.key.length);
         }
 
-        if (obj == NULL) {
-            pq->own = 1;
+        ret = njs_object_property_query(vm, pq, obj, key);
+
+        if (njs_slow_path(ret == NJS_DECLINED && obj->slots != NULL)) {
             return njs_external_property_query(vm, pq, value);
         }
-
-        return njs_object_property_query(vm, pq, obj, key);
     }
 
     return ret;
@@ -913,13 +882,16 @@ njs_string_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 
 static njs_int_t
 njs_external_property_query(njs_vm_t *vm, njs_property_query_t *pq,
-    njs_value_t *object)
+    njs_value_t *value)
 {
-    void                *obj;
-    njs_int_t           ret;
-    uintptr_t           data;
     njs_object_prop_t   *prop;
-    const njs_extern_t  *ext_proto;
+    njs_exotic_slots_t  *slots;
+
+    slots = njs_object_slots(value);
+
+    if (njs_slow_path(slots->prop_handler == NULL)) {
+        return NJS_DECLINED;
+    }
 
     prop = &pq->scratch;
 
@@ -934,129 +906,38 @@ njs_external_property_query(njs_vm_t *vm, njs_property_query_t *pq,
      *   njs_set_null(&prop->setter);
      */
 
-    prop->enumerable = 1;
+    prop->name = pq->key;
 
-    ext_proto = object->external.proto;
+    pq->lhq.value = prop;
 
-    pq->lhq.proto = &njs_extern_hash_proto;
-    ret = njs_lvlhsh_find(&ext_proto->hash, &pq->lhq);
-
-    if (ret == NJS_OK) {
-        ext_proto = pq->lhq.value;
-
-        prop->value.type = NJS_EXTERNAL;
-        prop->value.data.truth = 1;
-        prop->value.external.proto = ext_proto;
-        prop->value.external.index = object->external.index;
-
-        if ((ext_proto->type & NJS_EXTERN_OBJECT) != 0) {
-            goto done;
-        }
-
-        data = ext_proto->data;
-
-    } else {
-
-        if (pq->lhq.key.start == NULL) {
-            /* Symbol.toStringTag is not supported yet. */
-            goto done;
-        }
-
-        data = (uintptr_t) &pq->lhq.key;
-    }
+    prop->writable = slots->writable;
+    prop->configurable = slots->configurable;
+    prop->enumerable = slots->enumerable;
 
     switch (pq->query) {
 
     case NJS_PROPERTY_QUERY_GET:
-        if (ext_proto->get != NULL) {
-            obj = njs_extern_object(vm, object);
-            ret = ext_proto->get(vm, &prop->value, obj, data);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return ret;
-            }
+        return slots->prop_handler(vm, prop, value, NULL, &prop->value);
+
+    case NJS_PROPERTY_QUERY_SET:
+        if (slots->writable == 0) {
+            return NJS_OK;
         }
 
         break;
 
-    case NJS_PROPERTY_QUERY_SET:
     case NJS_PROPERTY_QUERY_DELETE:
-
-        prop->type = NJS_PROPERTY_HANDLER;
-        prop->name = *object;
-
-        if (pq->query == NJS_PROPERTY_QUERY_SET) {
-            prop->writable = (ext_proto->set != NULL);
-            prop->value.data.u.prop_handler = njs_external_property_set;
-
-        } else {
-            prop->configurable = (ext_proto->find != NULL);
-            prop->value.data.u.prop_handler = njs_external_property_delete;
+        if (slots->configurable == 0) {
+            return NJS_OK;
         }
 
-        pq->ext_data = data;
-        pq->ext_proto = ext_proto;
-        pq->ext_index = object->external.index;
-
-        pq->lhq.value = prop;
-
-        vm->stash = (uintptr_t) pq;
-
-        return NJS_OK;
+        break;
     }
 
-done:
+    prop->type = NJS_PROPERTY_HANDLER;
+    prop->value.data.u.prop_handler = slots->prop_handler;
 
-    if (ext_proto->type == NJS_EXTERN_METHOD) {
-        njs_set_function(&prop->value, ext_proto->function);
-    }
-
-    pq->lhq.value = prop;
-
-    return ret;
-}
-
-
-static njs_int_t
-njs_external_property_set(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
-{
-    void                  *obj;
-    njs_int_t             ret;
-    njs_str_t             s;
-    njs_property_query_t  *pq;
-
-    pq = (njs_property_query_t *) vm->stash;
-
-    if (!njs_is_null_or_undefined(setval)) {
-        ret = njs_vm_value_to_string(vm, &s, setval);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
-
-    } else {
-        s = njs_str_value("");
-    }
-
-    *retval = *setval;
-
-    obj = njs_extern_index(vm, pq->ext_index);
-
-    return pq->ext_proto->set(vm, obj, pq->ext_data, &s);
-}
-
-
-static njs_int_t
-njs_external_property_delete(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *unused, njs_value_t *unused2)
-{
-    void                  *obj;
-    njs_property_query_t  *pq;
-
-    pq = (njs_property_query_t *) vm->stash;
-
-    obj = njs_extern_index(vm, pq->ext_index);
-
-    return pq->ext_proto->find(vm, obj, pq->ext_data, 1);
+    return NJS_OK;
 }
 
 
@@ -1407,13 +1288,11 @@ njs_value_property_delete(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
 
     switch (prop->type) {
     case NJS_PROPERTY_HANDLER:
-        if (njs_is_external(value)) {
+        if (njs_is_object(value) && njs_object_slots(value) != NULL) {
             ret = prop->value.data.u.prop_handler(vm, prop, value, NULL, NULL);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return NJS_ERROR;
+            if (njs_slow_path(ret != NJS_DECLINED)) {
+                return ret;
             }
-
-            return NJS_OK;
         }
 
         /* Fall through. */

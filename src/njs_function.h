@@ -206,7 +206,7 @@ njs_function_apply(njs_vm_t *vm, njs_function_t *function,
 njs_inline njs_bool_t
 njs_native_function_same(const njs_function_t *f1, const njs_function_t *f2)
 {
-    return f1->u.native == f2->u.native && f1->magic == f2->magic;
+    return f1->u.native == f2->u.native && f1->magic8 == f2->magic8;
 }
 
 

@@ -25,9 +25,8 @@ njs_int_t njs_array_length_redefine(njs_vm_t *vm, njs_value_t *value,
     uint32_t length);
 njs_int_t njs_array_length_set(njs_vm_t *vm, njs_value_t *value,
     njs_object_prop_t *prev, njs_value_t *setval);
-njs_array_t *njs_array_keys(njs_vm_t *vm, const njs_value_t *array,
-    njs_bool_t all);
-njs_array_t *njs_array_indices(njs_vm_t *vm, const njs_value_t *object);
+njs_array_t *njs_array_keys(njs_vm_t *vm, njs_value_t *array, njs_bool_t all);
+njs_array_t *njs_array_indices(njs_vm_t *vm, njs_value_t *object);
 njs_int_t njs_array_string_add(njs_vm_t *vm, njs_array_t *array,
     const u_char *start, size_t size, size_t length);
 njs_int_t njs_array_expand(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,

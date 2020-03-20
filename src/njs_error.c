@@ -203,6 +203,7 @@ njs_error_alloc(njs_vm_t *vm, njs_object_type_t type, const njs_value_t *name,
     error->fast_array = 0;
     error->error_data = 1;
     error->__proto__ = &vm->prototypes[type].object;
+    error->slots = NULL;
 
     lhq.replace = 0;
     lhq.pool = vm->mem_pool;
@@ -539,6 +540,7 @@ njs_memory_error_set(njs_vm_t *vm, njs_value_t *value)
     njs_lvlhsh_init(&object->hash);
     njs_lvlhsh_init(&object->shared_hash);
     object->__proto__ = &prototypes[NJS_OBJ_TYPE_INTERNAL_ERROR].object;
+    object->slots = NULL;
     object->type = NJS_OBJECT;
     object->shared = 1;
 

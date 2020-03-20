@@ -193,10 +193,6 @@ struct njs_vm_s {
     njs_native_frame_t       *top_frame;
     njs_frame_t              *active_frame;
 
-    njs_arr_t                *external_objects; /* of njs_external_ptr_t */
-
-    njs_lvlhsh_t             external_prototypes_hash;
-
     njs_rbtree_t             *variables_hash;
     njs_lvlhsh_t             values_hash;
 
@@ -245,13 +241,6 @@ struct njs_vm_s {
     njs_random_t             random;
 
     njs_arr_t                *debug;
-
-    /*
-     * njs_property_query() uses it to store reference to a temporary
-     * PROPERTY_HANDLERs for NJS_EXTERNAL values in NJS_PROPERTY_QUERY_SET
-     * and NJS_PROPERTY_QUERY_DELETE modes.
-     */
-    uintptr_t                stash; /* njs_property_query_t * */
 
     uint64_t                 symbol_generator;
 };

@@ -40,9 +40,6 @@ typedef enum {
 
     NJS_DATA,
 
-    /* The type is external code. */
-    NJS_EXTERNAL,
-
     /*
      * The invalid value type is used:
      *   for uninitialized array members,
@@ -79,7 +76,6 @@ typedef enum {
 } njs_value_type_t;
 
 
-typedef struct njs_object_prop_s      njs_object_prop_t;
 typedef struct njs_string_s           njs_string_t;
 typedef struct njs_object_s           njs_object_t;
 typedef struct njs_object_value_s     njs_object_value_t;
@@ -94,20 +90,6 @@ typedef struct njs_object_value_s     njs_promise_t;
 typedef struct njs_property_next_s    njs_property_next_t;
 typedef struct njs_object_init_s      njs_object_init_t;
 
-
-/*
- * njs_prop_handler_t operates as a property getter and/or setter.
- * The handler receives NULL setval if it is invoked in GET context and
- * non-null otherwise.
- *
- * njs_prop_handler_t is expected to return:
- *   NJS_OK - handler executed successfully;
- *   NJS_ERROR - some error, vm->retval contains appropriate exception;
- *   NJS_DECLINED - handler was applied to inappropriate object, vm->retval
- *   contains undefined value.
- */
-typedef njs_int_t (*njs_prop_handler_t) (njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 
 #if (!NJS_HAVE_GCC_ATTRIBUTE_ALIGNED)
 #error "aligned attribute is required"
@@ -185,18 +167,22 @@ union njs_value_s {
         njs_string_t                  *data;
     } long_string;
 
-    struct {
-        njs_value_type_t              type:8;  /* 6 bits */
-        uint8_t                       truth;
-
-        uint16_t                      _spare;
-
-        uint32_t                      index;
-        const njs_extern_t            *proto;
-    } external;
-
     njs_value_type_t                  type:8;  /* 6 bits */
 };
+
+
+typedef struct {
+    /* Get, also Set if writable, also Delete if configurable. */
+    njs_prop_handler_t  prop_handler;
+    unsigned            writable:1;
+    unsigned            configurable:1;
+    unsigned            enumerable:1;
+
+    njs_exotic_keys_t   keys;
+
+    /* A shared hash of njs_object_prop_t for externals. */
+    njs_lvlhsh_t        external_shared_hash;
+} njs_exotic_slots_t;
 
 
 struct njs_object_s {
@@ -206,8 +192,8 @@ struct njs_object_s {
     /* A shared hash of njs_object_prop_t. */
     njs_lvlhsh_t                      shared_hash;
 
-    /* An object __proto__. */
     njs_object_t                      *__proto__;
+    njs_exotic_slots_t                *slots;
 
     /* The type is used in constructor prototypes. */
     njs_value_type_t                  type:8;
@@ -294,7 +280,7 @@ struct njs_function_s {
     uint8_t                           ctor:1;
     uint8_t                           global_this:1;
 
-    uint8_t                           magic;
+    uint8_t                           magic8;
 
     union {
         njs_function_lambda_t         *lambda;
@@ -403,11 +389,6 @@ typedef struct {
     /* scratch is used to get the value of an NJS_PROPERTY_HANDLER property. */
     njs_object_prop_t           scratch;
 
-    /* These three fields are used for NJS_EXTERNAL setters. */
-    uintptr_t                   ext_data;
-    const njs_extern_t          *ext_proto;
-    uint32_t                    ext_index;
-
     njs_value_t                 key;
     njs_object_t                *prototype;
     njs_object_prop_t           *own_whiteout;
@@ -463,7 +444,7 @@ typedef struct {
 
 #define _njs_function(_function, _args_count, _ctor, _magic) {                \
     .native = 1,                                                              \
-    .magic = _magic,                                                          \
+    .magic8 = _magic,                                                         \
     .args_count = _args_count,                                                \
     .ctor = _ctor,                                                            \
     .args_offset = 1,                                                         \
@@ -683,10 +664,6 @@ typedef struct {
     ((value)->type == NJS_OBJECT && njs_object(value)->error_data)
 
 
-#define njs_is_external(value)                                                \
-    ((value)->type == NJS_EXTERNAL)
-
-
 #define njs_is_valid(value)                                                   \
     ((value)->type != NJS_INVALID)
 
@@ -717,6 +694,10 @@ typedef struct {
 
 #define njs_object_hash(value)                                                \
     (&(value)->data.u.object->hash)
+
+
+#define njs_object_slots(value)                                               \
+    ((value)->data.u.object->slots)
 
 
 #define njs_object_hash_is_empty(value)                                       \
@@ -858,6 +839,15 @@ njs_set_uint32(njs_value_t *value, uint32_t num)
     value->data.u.number = num;
     value->type = NJS_NUMBER;
     value->data.truth = (num != 0);
+}
+
+
+njs_inline void
+njs_set_symbol(njs_value_t *value, uint32_t symbol)
+{
+    value->data.magic32 = symbol;
+    value->type = NJS_SYMBOL;
+    value->data.truth = 1;
 }
 
 
@@ -1008,9 +998,9 @@ void njs_value_retain(njs_value_t *value);
 void njs_value_release(njs_vm_t *vm, njs_value_t *value);
 njs_int_t njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst,
     njs_value_t *value, njs_uint_t hint);
-njs_array_t *njs_value_enumerate(njs_vm_t *vm, const njs_value_t *value,
+njs_array_t *njs_value_enumerate(njs_vm_t *vm, njs_value_t *value,
     njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all);
-njs_array_t *njs_value_own_enumerate(njs_vm_t *vm, const njs_value_t *value,
+njs_array_t *njs_value_own_enumerate(njs_vm_t *vm, njs_value_t *value,
     njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all);
 njs_int_t njs_value_length(njs_vm_t *vm, njs_value_t *value, uint64_t *dst);
 const char *njs_type_string(njs_value_type_t type);

@@ -393,6 +393,7 @@ done:
     date->object.error_data = 0;
     date->object.fast_array = 0;
     date->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_DATE].object;
+    date->object.slots = NULL;
 
     date->time = time;
 

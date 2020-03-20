@@ -710,6 +710,7 @@ njs_regexp_alloc(njs_vm_t *vm, njs_regexp_pattern_t *pattern)
         njs_lvlhsh_init(&regexp->object.hash);
         regexp->object.shared_hash = vm->shared->regexp_instance_hash;
         regexp->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_REGEXP].object;
+        regexp->object.slots = NULL;
         regexp->object.type = NJS_REGEXP;
         regexp->object.shared = 0;
         regexp->object.extensible = 1;

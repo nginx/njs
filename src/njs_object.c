@@ -40,6 +40,7 @@ njs_object_alloc(njs_vm_t *vm)
         njs_lvlhsh_init(&object->hash);
         njs_lvlhsh_init(&object->shared_hash);
         object->__proto__ = &vm->prototypes[NJS_OBJ_TYPE_OBJECT].object;
+        object->slots = NULL;
         object->type = NJS_OBJECT;
         object->shared = 0;
         object->extensible = 1;
@@ -58,6 +59,7 @@ njs_object_alloc(njs_vm_t *vm)
 njs_object_t *
 njs_object_value_copy(njs_vm_t *vm, njs_value_t *value)
 {
+    size_t        size;
     njs_object_t  *object;
 
     object = njs_object(value);
@@ -66,10 +68,12 @@ njs_object_value_copy(njs_vm_t *vm, njs_value_t *value)
         return object;
     }
 
-    object = njs_mp_alloc(vm->mem_pool, sizeof(njs_object_t));
+    size = njs_is_object_value(value) ? sizeof(njs_object_value_t)
+                                      : sizeof(njs_object_t);
+    object = njs_mp_alloc(vm->mem_pool, size);
 
     if (njs_fast_path(object != NULL)) {
-        *object = *njs_object(value);
+        memcpy(object, njs_object(value), size);
         object->__proto__ = &vm->prototypes[NJS_OBJ_TYPE_OBJECT].object;
         object->shared = 0;
         value->data.u.object = object;
@@ -108,6 +112,7 @@ njs_object_value_alloc(njs_vm_t *vm, const njs_value_t *value, njs_uint_t type)
 
         index = njs_primitive_prototype_index(type);
         ov->object.__proto__ = &vm->prototypes[index].object;
+        ov->object.slots = NULL;
 
         ov->value = *value;
 

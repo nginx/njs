@@ -454,6 +454,7 @@ njs_module_find(njs_vm_t *vm, njs_str_t *name, njs_bool_t local)
         object = &module->object;
 
         object->__proto__ = &vm->prototypes[NJS_OBJ_TYPE_OBJECT].object;
+        object->slots = NULL;
         object->shared = 0;
         object->extensible = 1;
         object->error_data = 0;

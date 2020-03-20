@@ -477,6 +477,8 @@ njs_int_t
 njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
 {
     njs_int_t          ret;
+    njs_value_t        *value;
+    njs_object_t       *object;
     njs_function_t     *function;
     njs_object_prop_t  *prop, *shared;
 
@@ -526,16 +528,32 @@ njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
         return NJS_OK;
     }
 
-    if (!njs_is_function(&prop->value)) {
+    value = &prop->value;
+
+    switch (value->type) {
+    case NJS_OBJECT:
+    case NJS_OBJECT_VALUE:
+        object = njs_object_value_copy(vm, value);
+        if (njs_slow_path(object == NULL)) {
+            return NJS_ERROR;
+        }
+
+        value->data.u.object = object;
         return NJS_OK;
+
+    case NJS_FUNCTION:
+        function = njs_function_value_copy(vm, &prop->value);
+        if (njs_slow_path(function == NULL)) {
+            return NJS_ERROR;
+        }
+
+        return njs_function_name_set(vm, function, &prop->name, 0);
+
+    default:
+        break;
     }
 
-    function = njs_function_value_copy(vm, &prop->value);
-    if (njs_slow_path(function == NULL)) {
-        return NJS_ERROR;
-    }
-
-    return njs_function_name_set(vm, function, &prop->name, 0);
+    return NJS_OK;
 }
 
 

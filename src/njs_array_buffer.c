@@ -34,6 +34,7 @@ njs_array_buffer_alloc(njs_vm_t *vm, uint64_t size)
     njs_lvlhsh_init(&array->object.hash);
     njs_lvlhsh_init(&array->object.shared_hash);
     array->object.__proto__ = proto;
+    array->object.slots = NULL;
     array->object.type = NJS_ARRAY_BUFFER;
     array->object.shared = 0;
     array->object.extensible = 1;

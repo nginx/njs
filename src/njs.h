@@ -11,7 +11,7 @@
 
 #include <njs_auto_config.h>
 
-#define NJS_VERSION                 "0.3.10"
+#define NJS_VERSION                 "0.4.0"
 
 
 #include <unistd.h>                 /* STDOUT_FILENO, STDERR_FILENO */
@@ -25,9 +25,11 @@
 typedef uintptr_t                   njs_index_t;
 typedef struct njs_vm_s             njs_vm_t;
 typedef union  njs_value_s          njs_value_t;
-typedef struct njs_extern_s         njs_extern_t;
 typedef struct njs_function_s       njs_function_t;
 typedef struct njs_vm_shared_s      njs_vm_shared_t;
+typedef struct njs_object_prop_s    njs_object_prop_t;
+typedef struct njs_external_s       njs_external_t;
+typedef void *                      njs_external_proto_t;
 
 /*
  * njs_opaque_value_t is the external storage type for native njs_value_t type.
@@ -63,47 +65,90 @@ extern const njs_value_t            njs_value_undefined;
     njs_vm_value_error_set(vm, njs_vm_retval(vm), fmt, ##__VA_ARGS__)
 
 
-typedef njs_int_t (*njs_extern_get_t)(njs_vm_t *vm, njs_value_t *value,
-    void *obj, uintptr_t data);
-typedef njs_int_t (*njs_extern_set_t)(njs_vm_t *vm, void *obj, uintptr_t data,
-    njs_str_t *value);
-typedef njs_int_t (*njs_extern_find_t)(njs_vm_t *vm, void *obj, uintptr_t data,
-    njs_bool_t delete);
-typedef njs_int_t (*njs_extern_keys_t)(njs_vm_t *vm, void *obj,
-    njs_value_t *keys);
-typedef njs_int_t (*njs_extern_method_t)(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+/*
+ * njs_prop_handler_t operates as a property getter/setter or delete handler.
+ * - retval != NULL && setval == NULL - GET context.
+ * - retval != NULL && setval != NULL - SET context.
+ * - retval == NULL - DELETE context.
+ *
+ * njs_prop_handler_t is expected to return:
+ *   NJS_OK - handler executed successfully;
+ *   NJS_ERROR - some error, vm->retval contains appropriate exception;
+ *   NJS_DECLINED - handler was applied to inappropriate object, vm->retval
+ *   contains undefined value.
+ */
+typedef njs_int_t (*njs_prop_handler_t) (njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+typedef njs_int_t (*njs_exotic_keys_t)(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *retval);
+typedef njs_int_t (*njs_function_native_t) (njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t magic8);
 
 
-typedef struct njs_external_s       njs_external_t;
+typedef enum {
+    NJS_SYMBOL_INVALID,
+    NJS_SYMBOL_ASYNC_ITERATOR,
+    NJS_SYMBOL_HAS_INSTANCE,
+    NJS_SYMBOL_IS_CONCAT_SPREADABLE,
+    NJS_SYMBOL_ITERATOR,
+    NJS_SYMBOL_MATCH,
+    NJS_SYMBOL_MATCH_ALL,
+    NJS_SYMBOL_REPLACE,
+    NJS_SYMBOL_SEARCH,
+    NJS_SYMBOL_SPECIES,
+    NJS_SYMBOL_SPLIT,
+    NJS_SYMBOL_TO_PRIMITIVE,
+    NJS_SYMBOL_TO_STRING_TAG,
+    NJS_SYMBOL_UNSCOPABLES,
+    NJS_SYMBOL_KNOWN_MAX,
+} njs_wellknown_symbol_t;
+
+
+typedef enum {
+    NJS_EXTERN_PROPERTY = 0,
+    NJS_EXTERN_METHOD = 1,
+    NJS_EXTERN_OBJECT = 2,
+    NJS_EXTERN_SYMBOL = 4,
+} njs_extern_flag_t;
+
 
 struct njs_external_s {
-    njs_str_t                       name;
+    njs_extern_flag_t               flags;
 
-#define NJS_EXTERN_PROPERTY         0x00
-#define NJS_EXTERN_METHOD           0x01
-#define NJS_EXTERN_OBJECT           0x80
-#define NJS_EXTERN_CASELESS_OBJECT  0x81
+    union {
+        njs_str_t                   string;
+        uint32_t                    symbol;
+    } name;
 
-    uintptr_t                       type;
+    unsigned                        writable;
+    unsigned                        configurable;
+    unsigned                        enumerable;
 
-    njs_external_t                  *properties;
-    njs_uint_t                      nproperties;
+    union {
+        struct {
+            const char              value[15]; /* NJS_STRING_SHORT + 1. */
+            njs_prop_handler_t      handler;
+            uint32_t                magic32;
+        } property;
 
-    njs_extern_get_t                get;
-    njs_extern_set_t                set;
-    njs_extern_find_t               find;
+        struct {
+            njs_function_native_t   native;
+            uint8_t                 magic8;
+        } method;
 
-    njs_extern_keys_t               keys;
+        struct {
+            njs_external_t          *properties;
+            njs_uint_t              nproperties;
 
-    njs_extern_method_t             method;
-
-    uintptr_t                       data;
+            unsigned                writable;
+            unsigned                configurable;
+            unsigned                enumerable;
+            njs_prop_handler_t      prop_handler;
+            njs_exotic_keys_t       keys;
+        } object;
+    } u;
 };
 
-
-typedef njs_int_t (*njs_function_native_t) (njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t retval);
 
 /*
  * NJS and event loops.
@@ -234,10 +279,10 @@ NJS_EXPORT njs_int_t njs_vm_start(njs_vm_t *vm);
 
 NJS_EXPORT njs_int_t njs_vm_add_path(njs_vm_t *vm, const njs_str_t *path);
 
-NJS_EXPORT const njs_extern_t *njs_vm_external_prototype(njs_vm_t *vm,
-    njs_external_t *external);
-NJS_EXPORT njs_int_t njs_vm_external_create(njs_vm_t *vm,
-    njs_value_t *value, const njs_extern_t *proto, njs_external_ptr_t object);
+NJS_EXPORT njs_external_proto_t njs_vm_external_prototype(njs_vm_t *vm,
+    const njs_external_t *definition, njs_uint_t n);
+NJS_EXPORT njs_int_t njs_vm_external_create(njs_vm_t *vm, njs_value_t *value,
+    njs_external_proto_t proto, njs_external_ptr_t external, njs_bool_t shared);
 NJS_EXPORT njs_external_ptr_t njs_vm_external(njs_vm_t *vm,
     const njs_value_t *value);
 
@@ -297,6 +342,11 @@ NJS_EXPORT uint8_t njs_value_bool(const njs_value_t *value);
 NJS_EXPORT double njs_value_number(const njs_value_t *value);
 NJS_EXPORT void *njs_value_data(const njs_value_t *value);
 NJS_EXPORT njs_function_t *njs_value_function(const njs_value_t *value);
+
+NJS_EXPORT uint16_t njs_vm_prop_magic16(njs_object_prop_t *prop);
+NJS_EXPORT uint32_t njs_vm_prop_magic32(njs_object_prop_t *prop);
+NJS_EXPORT njs_int_t njs_vm_prop_name(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_str_t *dst);
 
 NJS_EXPORT njs_int_t njs_value_is_null(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_undefined(const njs_value_t *value);

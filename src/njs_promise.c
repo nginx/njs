@@ -90,6 +90,7 @@ njs_promise_alloc(njs_vm_t *vm)
     promise->object.error_data = 0;
     promise->object.fast_array = 0;
     promise->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_PROMISE].object;
+    promise->object.slots = NULL;
 
     data = (njs_promise_data_t *) ((uint8_t *) promise + sizeof(njs_promise_t));
 

@@ -65,6 +65,7 @@ njs_array_alloc(njs_vm_t *vm, njs_bool_t flat, uint64_t length, uint32_t spare)
     njs_lvlhsh_init(&array->object.hash);
     array->object.shared_hash = vm->shared->array_instance_hash;
     array->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_ARRAY].object;
+    array->object.slots = NULL;
     array->object.type = NJS_ARRAY;
     array->object.shared = 0;
     array->object.extensible = 1;
@@ -1557,7 +1558,7 @@ njs_array_indices_handler(const void *first, const void *second)
 
 
 njs_array_t *
-njs_array_keys(njs_vm_t *vm, const njs_value_t *object, njs_bool_t all)
+njs_array_keys(njs_vm_t *vm, njs_value_t *object, njs_bool_t all)
 {
     njs_array_t  *keys;
 
@@ -1575,7 +1576,7 @@ njs_array_keys(njs_vm_t *vm, const njs_value_t *object, njs_bool_t all)
 
 
 njs_array_t *
-njs_array_indices(njs_vm_t *vm, const njs_value_t *object)
+njs_array_indices(njs_vm_t *vm, njs_value_t *object)
 {
     double       idx;
     uint32_t     i;
