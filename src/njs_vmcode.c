@@ -788,7 +788,7 @@ next:
                 next = value2->data.u.next;
 
                 if (next->index < next->array->length) {
-                    *retval = next->array->data[next->index++];
+                    *retval = next->array->start[next->index++];
 
                     ret = pnext->offset;
                     break;
