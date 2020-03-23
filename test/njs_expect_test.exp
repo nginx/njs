@@ -818,7 +818,7 @@ njs_test {
     {"1+1\r\n"
      "00000 ADD*\r\n*2"}
     {"for (var n in [1]) {try {break} finally{}}\r\n"
-     "00000 ARRAY*\r\n*TRY BREAK*STOP*\r\n\r\nundefined"}
+     "00000 ARRAY*\r\n*TRY BREAK*PROP NEXT*-*\r\n\r\nundefined"}
     {"(function() {try {return} finally{}})()\r\n"
      "00000 TRY START*\r\n*TRY RETURN*STOP*\r\n\r\nundefined"}
 } "-d"
