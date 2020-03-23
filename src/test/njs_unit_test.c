@@ -35,6 +35,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("/***/1/*\n**/"),
       njs_str("1") },
 
+    { njs_str("/***/1//  "),
+      njs_str("1") },
+
     { njs_str(">"),
       njs_str("SyntaxError: Unexpected token \">\" in 1") },
 
@@ -17080,7 +17083,7 @@ static njs_int_t
 njs_unit_test(njs_unit_test_t tests[], size_t num, const char *name,
     njs_opts_t *opts, njs_stat_t *stat)
 {
-    u_char                *start;
+    u_char                *start, *end;
     njs_vm_t              *vm, *nvm;
     njs_int_t             ret;
     njs_str_t             s;
@@ -17123,10 +17126,11 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, const char *name,
         }
 
         start = tests[i].script.start;
+        end = start + tests[i].script.length;
 
-        ret = njs_vm_compile(vm, &start, start + tests[i].script.length);
+        ret = njs_vm_compile(vm, &start, end);
 
-        if (ret == NJS_OK) {
+        if (ret == NJS_OK && start == end) {
             if (opts->disassemble) {
                 njs_disassembler(vm);
             }
@@ -17160,9 +17164,15 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, const char *name,
             }
 
         } else {
-            if (njs_vm_retval_string(vm, &s) != NJS_OK) {
-                njs_printf("njs_vm_retval_string() failed\n");
-                goto done;
+            if (ret != NJS_OK) {
+                if (njs_vm_retval_string(vm, &s) != NJS_OK) {
+                    njs_printf("njs_vm_retval_string() failed\n");
+                    goto done;
+                }
+
+            } else {
+                s = njs_str_value("Error: "
+                                  "Extra characters at the end of the script");
             }
         }
 

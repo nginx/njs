@@ -801,17 +801,24 @@ static njs_int_t
 njs_process_script(njs_opts_t *opts, njs_console_t *console,
     const njs_str_t *script)
 {
-    u_char     *start;
+    u_char     *start, *end;
     njs_vm_t   *vm;
     njs_int_t  ret;
 
     vm = console->vm;
     start = script->start;
+    end = start + script->length;
 
-    ret = njs_vm_compile(vm, &start, start + script->length);
+    ret = njs_vm_compile(vm, &start, end);
 
     if (ret == NJS_OK) {
-        ret = njs_vm_start(vm);
+        if (start == end) {
+            ret = njs_vm_start(vm);
+
+        } else {
+            njs_vm_error(vm, "Extra characters at the end of the script");
+            ret = NJS_ERROR;
+        }
     }
 
     njs_output(opts, vm, ret);

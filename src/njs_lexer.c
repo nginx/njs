@@ -903,13 +903,11 @@ njs_lexer_division(njs_lexer_t *lexer, njs_lexer_token_t *token)
     c = lexer->start[0];
 
     if (c == '/') {
-        token->type = NJS_TOKEN_END;
-
         lexer->start++;
 
         for (p = lexer->start; p < lexer->end; p++) {
 
-            if (*p == '\n') {
+            if (*p == '\n' || (p + 1) == lexer->end) {
                 lexer->start = p + 1;
                 lexer->line++;
 
