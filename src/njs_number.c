@@ -230,24 +230,24 @@ njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
 
 
 njs_int_t
-njs_uint64_to_string(njs_vm_t *vm, njs_value_t *value, uint64_t u64)
+njs_int64_to_string(njs_vm_t *vm, njs_value_t *value, int64_t i64)
 {
     size_t  size;
     u_char  *dst, *p;
     u_char  buf[128];
 
-    if (njs_fast_path(u64 < 0x3fffffffffffULL)) {
+    if (njs_fast_path(i64 >= 0 && i64 < 0x3fffffffffffLL)) {
         /* Fits to short_string. */
         dst = njs_string_short_start(value);
 
-        p = njs_sprintf(dst, dst + NJS_STRING_SHORT, "%uL", u64);
+        p = njs_sprintf(dst, dst + NJS_STRING_SHORT, "%L", i64);
 
         njs_string_short_set(value, p - dst, p - dst);
 
         return NJS_OK;
     }
 
-    size = njs_dtoa(u64, (char *) buf);
+    size = njs_dtoa(i64, (char *) buf);
 
     return njs_string_new(vm, value, buf, size, size);
 }

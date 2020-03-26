@@ -871,7 +871,7 @@ njs_regexp_prototype_test(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     int                     *captures;
-    uint64_t                last_index;
+    int64_t                 last_index;
     njs_int_t               ret, match;
     njs_uint_t              n;
     njs_regex_t             *regex;
@@ -963,7 +963,7 @@ njs_int_t
 njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    uint64_t                last_index;
+    int64_t                 last_index;
     njs_int_t               ret;
     njs_utf8_t              utf8;
     njs_value_t             *value, lvalue;
@@ -1002,7 +1002,7 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     (void) njs_string_prop(&string, value);
 
-    if (string.size >= last_index) {
+    if (string.size >= (size_t) last_index) {
         utf8 = NJS_STRING_BYTE;
         type = NJS_REGEXP_BYTE;
 

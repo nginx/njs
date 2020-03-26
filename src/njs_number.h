@@ -8,7 +8,7 @@
 #define _NJS_NUMBER_H_INCLUDED_
 
 
-#define NJS_MAX_LENGTH           (0x1fffffffffffffULL)
+#define NJS_MAX_LENGTH           (0x1fffffffffffffLL)
 
 
 double njs_key_to_index(const njs_value_t *value);

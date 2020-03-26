@@ -1002,7 +1002,7 @@ njs_array_t *njs_value_enumerate(njs_vm_t *vm, njs_value_t *value,
     njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all);
 njs_array_t *njs_value_own_enumerate(njs_vm_t *vm, njs_value_t *value,
     njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all);
-njs_int_t njs_value_length(njs_vm_t *vm, njs_value_t *value, uint64_t *dst);
+njs_int_t njs_value_length(njs_vm_t *vm, njs_value_t *value, int64_t *dst);
 const char *njs_type_string(njs_value_type_t type);
 
 njs_int_t njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
@@ -1010,7 +1010,7 @@ njs_int_t njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
 njs_int_t njs_primitive_value_to_chain(njs_vm_t *vm, njs_chb_t *chain,
     const njs_value_t *src);
 double njs_string_to_number(const njs_value_t *value, njs_bool_t parse_float);
-njs_int_t njs_uint64_to_string(njs_vm_t *vm, njs_value_t *value, uint64_t u64);
+njs_int_t njs_int64_to_string(njs_vm_t *vm, njs_value_t *value, int64_t i64);
 
 njs_bool_t njs_string_eq(const njs_value_t *v1, const njs_value_t *v2);
 
@@ -1041,7 +1041,7 @@ njs_value_property_i64(njs_vm_t *vm, njs_value_t *value, int64_t index,
     /* FIXME: False-positive in MSAN?. */
     njs_msan_unpoison(&key, sizeof(njs_value_t));
 
-    ret = njs_uint64_to_string(vm, &key, index);
+    ret = njs_int64_to_string(vm, &key, index);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -1060,7 +1060,7 @@ njs_value_property_i64_set(njs_vm_t *vm, njs_value_t *value, int64_t index,
     /* FIXME: False-positive in MSAN?. */
     njs_msan_unpoison(&key, sizeof(njs_value_t));
 
-    ret = njs_uint64_to_string(vm, &key, index);
+    ret = njs_int64_to_string(vm, &key, index);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -1079,7 +1079,7 @@ njs_value_property_i64_delete(njs_vm_t *vm, njs_value_t *value, int64_t index,
     /* FIXME: False-positive in MSAN?. */
     njs_msan_unpoison(&key, sizeof(njs_value_t));
 
-    ret = njs_uint64_to_string(vm, &key, index);
+    ret = njs_int64_to_string(vm, &key, index);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }

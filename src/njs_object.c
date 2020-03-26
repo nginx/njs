@@ -2628,7 +2628,7 @@ const njs_object_init_t  njs_object_prototype_init = {
 
 
 njs_int_t
-njs_object_length(njs_vm_t *vm, njs_value_t *value, uint64_t *length)
+njs_object_length(njs_vm_t *vm, njs_value_t *value, int64_t *length)
 {
     njs_int_t    ret;
     njs_value_t  value_length;

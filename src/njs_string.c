@@ -1608,8 +1608,8 @@ static njs_int_t
 njs_string_bytes_from_array_like(njs_vm_t *vm, njs_value_t *value)
 {
     u_char              *p;
+    int64_t             length;
     uint32_t            u32;
-    uint64_t            length;
     njs_int_t           ret;
     njs_array_t         *array;
     njs_value_t         *octet, index, prop;

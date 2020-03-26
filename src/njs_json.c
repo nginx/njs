@@ -28,8 +28,8 @@ typedef struct {
        NJS_JSON_ARRAY,
     }                          type:8;
 
-    uint64_t                   index;
-    uint64_t                   length;
+    int64_t                    index;
+    int64_t                    length;
     njs_array_t                *keys;
     njs_value_t                *key;
     njs_object_prop_t          *prop;

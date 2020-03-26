@@ -80,7 +80,7 @@ njs_value_to_integer(njs_vm_t *vm, njs_value_t *value, int64_t *dst)
 
 
 njs_inline njs_int_t
-njs_value_to_length(njs_vm_t *vm, njs_value_t *value, uint64_t *dst)
+njs_value_to_length(njs_vm_t *vm, njs_value_t *value, int64_t *dst)
 {
     double     num;
     njs_int_t  ret;

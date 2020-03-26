@@ -261,7 +261,7 @@ njs_value_own_enumerate(njs_vm_t *vm, njs_value_t *value,
 
 
 njs_int_t
-njs_value_length(njs_vm_t *vm, njs_value_t *value, uint64_t *length)
+njs_value_length(njs_vm_t *vm, njs_value_t *value, int64_t *length)
 {
     njs_string_prop_t  string_prop;
 
@@ -697,7 +697,8 @@ static njs_int_t
 njs_array_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     njs_array_t *array, uint32_t index)
 {
-    uint64_t           size, length;
+    int64_t            length;
+    uint64_t           size;
     njs_int_t          ret;
     njs_value_t        *setval, value;
     njs_object_prop_t  *prop;

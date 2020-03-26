@@ -1076,7 +1076,7 @@ static njs_int_t
 njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    uint64_t        i, length;
+    int64_t         i, length;
     njs_int_t       ret;
     njs_frame_t     *frame;
     njs_value_t     *this, *arr_like;
