@@ -1806,6 +1806,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_t              *value, *arg, *options;
     njs_function_t           *callback;
     ngx_http_js_ctx_t        *ctx;
+    njs_opaque_value_t        lvalue;
     ngx_http_request_t       *r, *sr;
     ngx_http_request_body_t  *rb;
 
@@ -1891,7 +1892,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (options != NULL) {
-        value = njs_vm_object_prop(vm, options, &args_key);
+        value = njs_vm_object_prop(vm, options, &args_key, &lvalue);
         if (value != NULL) {
             if (ngx_http_js_string(vm, value, &args_arg) != NJS_OK) {
                 njs_vm_error(vm, "failed to convert options.args");
@@ -1899,12 +1900,12 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             }
         }
 
-        value = njs_vm_object_prop(vm, options, &detached_key);
+        value = njs_vm_object_prop(vm, options, &detached_key, &lvalue);
         if (value != NULL) {
             detached = njs_value_bool(value);
         }
 
-        value = njs_vm_object_prop(vm, options, &method_key);
+        value = njs_vm_object_prop(vm, options, &method_key, &lvalue);
         if (value != NULL) {
             if (ngx_http_js_string(vm, value, &method_name) != NJS_OK) {
                 njs_vm_error(vm, "failed to convert options.method");
@@ -1924,7 +1925,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             }
         }
 
-        value = njs_vm_object_prop(vm, options, &body_key);
+        value = njs_vm_object_prop(vm, options, &body_key, &lvalue);
         if (value != NULL) {
             if (ngx_http_js_string(vm, value, &body_arg) != NJS_OK) {
                 njs_vm_error(vm, "failed to convert options.body");

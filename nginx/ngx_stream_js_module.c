@@ -1064,6 +1064,7 @@ ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_t           *flags, *value;
     ngx_chain_t           *cl;
     ngx_connection_t      *c;
+    njs_opaque_value_t     lvalue;
     ngx_stream_js_ctx_t   *ctx;
     ngx_stream_session_t  *s;
 
@@ -1096,12 +1097,12 @@ ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     flags = njs_arg(args, nargs, 2);
 
     if (njs_value_is_object(flags)) {
-        value = njs_vm_object_prop(vm, flags, &flush_key);
+        value = njs_vm_object_prop(vm, flags, &flush_key, &lvalue);
         if (value != NULL) {
             flush = njs_value_bool(value);
         }
 
-        value = njs_vm_object_prop(vm, flags, &last_key);
+        value = njs_vm_object_prop(vm, flags, &last_key, &lvalue);
         if (value != NULL) {
             last_buf = njs_value_bool(value);
         }

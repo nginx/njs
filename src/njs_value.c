@@ -465,6 +465,13 @@ njs_value_is_object(const njs_value_t *value)
 
 
 njs_int_t
+njs_value_is_array(const njs_value_t *value)
+{
+    return njs_is_array(value);
+}
+
+
+njs_int_t
 njs_value_is_function(const njs_value_t *value)
 {
     return njs_is_function(value);
