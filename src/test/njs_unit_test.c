@@ -16845,11 +16845,11 @@ static njs_unit_test_t  njs_shared_test[] =
       njs_str("{a:'1',b:42,c:{d:1024}}") },
 
     { njs_str("njs.dump($shared.props)"),
-      njs_str("{a:'4294967295',b:42,c:{d:4294967294}}") },
+      njs_str("{a:'11',b:42,c:{d:13}}") },
 
     { njs_str("var r = JSON.parse(JSON.stringify($shared));"
               "[r.uri, r.host, r.props.a, njs.dump(r.vars), njs.dump(r.consts), r.header['02']]"),
-      njs_str("shared,АБВГДЕЁЖЗИЙ,4294967295,{},{},02|АБВ") },
+      njs_str("shared,АБВГДЕЁЖЗИЙ,11,{},{},02|АБВ") },
 
     { njs_str("$shared.toString()"),
       njs_str("[object External]") },
@@ -16864,7 +16864,7 @@ static njs_unit_test_t  njs_shared_test[] =
       njs_str("1") },
 
     { njs_str("$shared.method = function() {return this.props.a;}; $shared.method()"),
-      njs_str("4294967295") },
+      njs_str("11") },
 
     { njs_str("var r; for (var i = 0; i < 2**10; i++) {r = $r.create('XXX').uri;}"),
       njs_str("undefined") },

@@ -614,8 +614,8 @@ static njs_unit_test_req_init_t njs_test_requests[] = {
     { njs_str("$shared"),
         {
             .uri = njs_str("shared"),
-            .a = -1,
-            .d = -2,
+            .a = 11,
+            .d = 13,
         },
         {
             { njs_string("r"), njs_string("rval") },
