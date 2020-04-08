@@ -272,6 +272,8 @@ struct njs_vm_shared_s {
     njs_object_t             string_object;
     njs_object_t             objects[NJS_OBJECT_MAX];
 
+    njs_exotic_slots_t       global_slots;
+
     /*
      * The prototypes and constructors arrays must be togther because they are
      * copied to njs_vm_t by single memcpy() in njs_builtin_objects_clone().

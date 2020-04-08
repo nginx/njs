@@ -519,6 +519,10 @@ njs_array_length(njs_vm_t *vm,njs_object_prop_t *prop, njs_value_t *value,
         return NJS_DECLINED;
     }
 
+    if (njs_slow_path(!njs_is_valid(setval))) {
+        return NJS_DECLINED;
+    }
+
     ret = njs_value_to_number(vm, setval, &num);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;

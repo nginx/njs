@@ -580,6 +580,50 @@ njs_vm_retval_set(njs_vm_t *vm, const njs_value_t *value)
 
 
 njs_int_t
+njs_vm_value(njs_vm_t *vm, const njs_str_t *path, njs_value_t *retval)
+{
+    u_char       *start, *p, *end;
+    size_t       size;
+    njs_int_t    ret;
+    njs_value_t  value, key;
+
+    start = path->start;
+    end = start + path->length;
+
+    njs_set_object(&value, &vm->global_object);
+
+    for ( ;; ) {
+        p = njs_strchr(start, '.');
+
+        size = ((p != NULL) ? p : end) - start;
+        if (njs_slow_path(size == 0)) {
+            njs_type_error(vm, "empty path element");
+            return NJS_ERROR;
+        }
+
+        ret = njs_string_set(vm, &key, start, size);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
+        ret = njs_value_property(vm, &value, &key, njs_value_arg(retval));
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return NJS_ERROR;
+        }
+
+        if (p == NULL) {
+            break;
+        }
+
+        start = p + 1;
+        value = *retval;
+    }
+
+    return NJS_OK;
+}
+
+
+njs_int_t
 njs_vm_bind(njs_vm_t *vm, const njs_str_t *var_name, const njs_value_t *value,
     njs_bool_t shared)
 {
@@ -631,6 +675,21 @@ u_char *
 njs_vm_value_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size)
 {
     return njs_string_alloc(vm, value, size, 0);
+}
+
+
+njs_function_t *
+njs_vm_function(njs_vm_t *vm, const njs_str_t *path)
+{
+    njs_int_t    ret;
+    njs_value_t  retval;
+
+    ret = njs_vm_value(vm, path, &retval);
+    if (njs_slow_path(ret != NJS_OK || !njs_is_function(&retval))) {
+        return NULL;
+    }
+
+    return njs_function(&retval);
 }
 
 

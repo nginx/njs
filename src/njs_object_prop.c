@@ -196,6 +196,8 @@ again:
 
     if (njs_fast_path(ret == NJS_DECLINED)) {
 
+set_prop:
+
         if (!njs_object(object)->extensible) {
             njs_key_string_get(vm, &pq.key,  &pq.lhq.key);
             njs_type_error(vm, "Cannot add property \"%V\", "
@@ -412,27 +414,19 @@ again:
 
 done:
 
-    /*
-     * 9. For each field of Desc that is present, set the corresponding
-     * attribute of the property named P of object O to the value of the field.
-     */
-
-    if (njs_is_valid(&prop->getter)) {
-        prev->getter = prop->getter;
-    }
-
-    if (njs_is_valid(&prop->setter)) {
-        prev->setter = prop->setter;
-    }
-
-    if (njs_is_valid(&prop->value)) {
+    if (njs_is_valid(&prop->value) || njs_is_accessor_descriptor(prop)) {
         if (prev->type == NJS_PROPERTY_HANDLER) {
-            if (njs_is_data_descriptor(prev) && prev->writable) {
+            if (prev->writable) {
                 ret = prev->value.data.u.prop_handler(vm, prev, object,
                                                       &prop->value,
                                                       &vm->retval);
                 if (njs_slow_path(ret == NJS_ERROR)) {
                     return ret;
+                }
+
+                if (ret == NJS_DECLINED) {
+                    pq.lhq.value = NULL;
+                    goto set_prop;
                 }
             }
 
@@ -448,6 +442,19 @@ done:
 
             prev->value = prop->value;
         }
+    }
+
+    /*
+     * 9. For each field of Desc that is present, set the corresponding
+     * attribute of the property named P of object O to the value of the field.
+     */
+
+    if (njs_is_valid(&prop->getter)) {
+        prev->getter = prop->getter;
+    }
+
+    if (njs_is_valid(&prop->setter)) {
+        prev->setter = prop->setter;
     }
 
     if (prop->writable != NJS_ATTRIBUTE_UNSET) {

@@ -10174,6 +10174,41 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("this.a = ()=>1; a()"),
       njs_str("1") },
 
+    { njs_str("var a = 1; this.a = 42; a"),
+      njs_str("42") },
+
+    { njs_str("var a = 1; global.a = 42; a"),
+      njs_str("42") },
+
+    { njs_str("var a = 1; globalThis.a = 42; a"),
+      njs_str("42") },
+
+    { njs_str("global.a = 1; globalThis.a"),
+      njs_str("1") },
+
+    { njs_str("var a = {}; globalThis.a === a"),
+      njs_str("true") },
+
+    { njs_str("globalThis.a = 1; var a; a"),
+      njs_str("1") },
+
+    { njs_str("var count = 0; function f() {return ++count}; [f(), global.f()]"),
+      njs_str("1,2") },
+
+    { njs_str("Object.defineProperty(global, 'a', {value:1}); a"),
+      njs_str("1") },
+
+    { njs_str("Object.defineProperty(global, 'a', {get:()=>123}); a"),
+      njs_str("123") },
+
+    { njs_str("Object.defineProperties(global, {a:{value:1}, b:{value:2}}); [a,b]"),
+      njs_str("1,2") },
+
+#if 0 /* FIXME: for scope. */
+    { njs_str("var r1 = global.a; for (var a = 1; false;) {}; [r1, global.a]"),
+      njs_str(",") },
+#endif
+
     { njs_str("var global = this;"
               "function isImmutableConstant(v) {"
               "    var d = Object.getOwnPropertyDescriptor(global, v);"
@@ -11454,6 +11489,10 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("(new Function('return this'))() === globalThis"),
       njs_str("true") },
+
+    { njs_str("var f = Function.call(this, 'return this.a');"
+              "var r1 = f(); var a = 1; var r2 = f(); [r1,r2]"),
+      njs_str(",1") },
 
     { njs_str("(new Function('a', 'return a')).length"),
       njs_str("1") },
@@ -17373,8 +17412,8 @@ njs_vm_json_test(njs_opts_t *opts, njs_stat_t *stat)
         }
 
         args[0] = vm->retval;
-        args[1] = *njs_vm_value(vm, &fname);
-        args[2] = *njs_vm_value(vm, &iname);
+        njs_vm_value(vm, &fname, &args[1]);
+        njs_vm_value(vm, &iname, &args[2]);
 
         ret = njs_vm_json_stringify(vm, args, 3);
         if (ret != NJS_OK) {
@@ -17419,6 +17458,151 @@ done:
     }
 
     njs_unit_test_report("VM json API tests", &prev, stat);
+
+    if (vm != NULL) {
+        njs_vm_destroy(vm);
+    }
+
+    return ret;
+}
+
+
+static njs_int_t
+njs_vm_value_test(njs_opts_t *opts, njs_stat_t *stat)
+{
+    njs_vm_t      *vm;
+    njs_int_t     ret;
+    njs_str_t     s, *script;
+    njs_uint_t    i;
+    njs_bool_t    success;
+    njs_stat_t    prev;
+    njs_vm_opt_t  options;
+
+    static struct {
+        njs_str_t   script;
+        njs_str_t   path;
+        njs_str_t   ret;
+    } tests[] = {
+        {
+          .script = njs_str("var o = {a:1}"),
+          .path = njs_str("o.a"),
+          .ret = njs_str("1"),
+        },
+
+        {
+          .script = njs_str("var aaaaabbbbbcccccddddd = {e:2}"),
+          .path = njs_str("aaaaabbbbbcccccddddd.e"),
+          .ret = njs_str("2"),
+        },
+
+        {
+          .script = njs_str("var o = {a:{b:3}}"),
+          .path = njs_str("o.a.b"),
+          .ret = njs_str("3"),
+        },
+
+        {
+          .script = njs_str("var o = 1"),
+          .path = njs_str("o.a"),
+          .ret = njs_str("undefined"),
+        },
+
+        {
+          .script = njs_str(""),
+          .path = njs_str("o"),
+          .ret = njs_str("undefined"),
+        },
+
+        {
+          .script = njs_str("var o = {'':1}"),
+          .path = njs_str("."),
+          .ret = njs_str("TypeError: empty path element"),
+        },
+
+        {
+          .script = njs_str("var o = {'':1}"),
+          .path = njs_str("o."),
+          .ret = njs_str("TypeError: empty path element"),
+        },
+        {
+          .script = njs_str("var o = {'':1}"),
+          .path = njs_str("o.."),
+          .ret = njs_str("TypeError: empty path element"),
+        },
+    };
+
+    vm = NULL;
+
+    prev = *stat;
+
+    ret = NJS_ERROR;
+
+    for (i = 0; i < njs_nitems(tests); i++) {
+
+        memset(&options, 0, sizeof(njs_vm_opt_t));
+        options.init = 1;
+
+        vm = njs_vm_create(&options);
+        if (vm == NULL) {
+            njs_printf("njs_vm_create() failed\n");
+            goto done;
+        }
+
+        script = &tests[i].script;
+
+        ret = njs_vm_compile(vm, &script->start,
+                             script->start + script->length);
+
+        if (ret != NJS_OK) {
+            njs_printf("njs_vm_compile() failed\n");
+            goto done;
+        }
+
+        ret = njs_vm_start(vm);
+        if (ret != NJS_OK) {
+            njs_printf("njs_vm_run() failed\n");
+            goto done;
+        }
+
+        ret = njs_vm_value(vm, &tests[i].path, &vm->retval);
+
+        if (njs_vm_retval_string(vm, &s) != NJS_OK) {
+            njs_printf("njs_vm_retval_string() failed\n");
+            goto done;
+        }
+
+        success = njs_strstr_eq(&tests[i].ret, &s);
+
+        if (!success) {
+            njs_printf("njs_vm_value_test(\"%V\")\n"
+                       "expected: \"%V\"\n     got: \"%V\"\n", script,
+                       &tests[i].ret, &s);
+
+            stat->failed++;
+
+        } else {
+            stat->passed++;
+        }
+
+        njs_vm_destroy(vm);
+        vm = NULL;
+
+    }
+
+    ret = NJS_OK;
+
+done:
+
+    if (ret != NJS_OK) {
+        if (njs_vm_retval_string(vm, &s) != NJS_OK) {
+            njs_printf("njs_vm_retval_string() failed\n");
+
+        } else {
+            njs_printf("%V\n", &s);
+        }
+    }
+
+    njs_unit_test_report("njs_vm_value() tests", &prev, stat);
 
     if (vm != NULL) {
         njs_vm_destroy(vm);
@@ -17927,6 +18111,11 @@ main(int argc, char **argv)
     }
 
     ret = njs_vm_json_test(&opts, &stat);
+    if (ret != NJS_OK) {
+        return ret;
+    }
+
+    ret = njs_vm_value_test(&opts, &stat);
     if (ret != NJS_OK) {
         return ret;
     }

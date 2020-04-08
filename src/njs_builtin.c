@@ -22,6 +22,9 @@ typedef struct {
 } njs_builtin_traverse_t;
 
 
+static njs_int_t njs_global_this_prop_handler(njs_vm_t *vm,
+    njs_object_prop_t *self, njs_value_t *global, njs_value_t *setval,
+    njs_value_t *retval);
 static njs_arr_t *njs_vm_expression_completions(njs_vm_t *vm,
     njs_str_t *expression);
 static njs_arr_t *njs_object_completions(njs_vm_t *vm, njs_value_t *object);
@@ -287,6 +290,13 @@ njs_builtin_objects_create(njs_vm_t *vm)
             return NJS_ERROR;
         }
     }
+
+    shared->global_slots.prop_handler = njs_global_this_prop_handler;
+    shared->global_slots.writable = 1;
+    shared->global_slots.configurable = 1;
+    shared->global_slots.enumerable = 1;
+
+    shared->objects[0].slots = &shared->global_slots;
 
     vm->global_object = shared->objects[0];
     vm->global_object.shared = 0;
@@ -778,6 +788,50 @@ njs_dump_value(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
+njs_global_this_prop_handler(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *global, njs_value_t *setval, njs_value_t *retval)
+{
+    njs_int_t            ret;
+    njs_value_t          *value;
+    njs_rbtree_node_t    *rb_node;
+    njs_lvlhsh_query_t   lhq;
+    njs_variable_node_t  *node, var_node;
+
+    if (retval == NULL) {
+        return NJS_DECLINED;
+    }
+
+    njs_string_get(&prop->name, &lhq.key);
+    lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
+    lhq.proto = &njs_lexer_hash_proto;
+
+    ret = njs_lvlhsh_find(&vm->shared->keywords_hash, &lhq);
+
+    if (njs_slow_path(ret != NJS_OK || lhq.value == NULL)) {
+        return NJS_DECLINED;
+    }
+
+    var_node.key = (uintptr_t) lhq.value;
+
+    rb_node = njs_rbtree_find(vm->variables_hash, &var_node.node);
+    if (rb_node == NULL) {
+        return NJS_DECLINED;
+    }
+
+    node = (njs_variable_node_t *) rb_node;
+    value = njs_vmcode_operand(vm, node->variable->index);
+
+    if (setval != NULL) {
+        *value = *setval;
+    }
+
+    *retval = *value;
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
 njs_global_this_object(njs_vm_t *vm, njs_object_prop_t *self,
     njs_value_t *global, njs_value_t *setval, njs_value_t *retval)
 {
@@ -789,6 +843,9 @@ njs_global_this_object(njs_vm_t *vm, njs_object_prop_t *self,
 
     if (njs_slow_path(setval != NULL)) {
         *retval = *setval;
+
+    } else if (njs_slow_path(retval == NULL)) {
+        return NJS_DECLINED;
     }
 
     prop = njs_object_prop_alloc(vm, &self->name, retval, 1);
@@ -831,6 +888,10 @@ njs_top_level_object(njs_vm_t *vm, njs_object_prop_t *self,
         *retval = *setval;
 
     } else {
+        if (njs_slow_path(retval == NULL)) {
+            return NJS_DECLINED;
+        }
+
         njs_set_object(retval, &vm->shared->objects[self->value.data.magic16]);
 
         object = njs_object_value_copy(vm, retval);
@@ -879,6 +940,10 @@ njs_top_level_constructor(njs_vm_t *vm, njs_object_prop_t *self,
         *retval = *setval;
 
     } else {
+        if (njs_slow_path(retval == NULL)) {
+            return NJS_DECLINED;
+        }
+
         ctor = &vm->constructors[self->value.data.magic16];
 
         njs_set_function(retval, ctor);
