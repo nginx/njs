@@ -593,7 +593,7 @@ njs_vm_value(njs_vm_t *vm, const njs_str_t *path, njs_value_t *retval)
     njs_set_object(&value, &vm->global_object);
 
     for ( ;; ) {
-        p = njs_strchr(start, '.');
+        p = njs_strlchr(start, end, '.');
 
         size = ((p != NULL) ? p : end) - start;
         if (njs_slow_path(size == 0)) {

@@ -17472,7 +17472,7 @@ njs_vm_value_test(njs_opts_t *opts, njs_stat_t *stat)
 {
     njs_vm_t      *vm;
     njs_int_t     ret;
-    njs_str_t     s, *script;
+    njs_str_t     s, *script, path;
     njs_uint_t    i;
     njs_bool_t    success;
     njs_stat_t    prev;
@@ -17564,7 +17564,17 @@ njs_vm_value_test(njs_opts_t *opts, njs_stat_t *stat)
             goto done;
         }
 
-        ret = njs_vm_value(vm, &tests[i].path, &vm->retval);
+        path = tests[i].path;
+
+        path.start = njs_mp_alloc(vm->mem_pool, path.length);
+        if (path.start == NULL) {
+            njs_printf("njs_mp_alloc() failed\n");
+            goto done;
+        }
+
+        memcpy(path.start, tests[i].path.start, path.length);
+
+        ret = njs_vm_value(vm, &path, &vm->retval);
 
         if (njs_vm_retval_string(vm, &s) != NJS_OK) {
             njs_printf("njs_vm_retval_string() failed\n");
