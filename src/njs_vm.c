@@ -19,6 +19,13 @@ const njs_str_t  njs_entry_unknown =        njs_str("unknown");
 const njs_str_t  njs_entry_anonymous =      njs_str("anonymous");
 
 
+void
+njs_vm_opt_init(njs_vm_opt_t *options)
+{
+    njs_memzero(options, sizeof(njs_vm_opt_t));
+}
+
+
 njs_vm_t *
 njs_vm_create(njs_vm_opt_t *options)
 {

@@ -17146,7 +17146,7 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, const char *name,
             njs_printf("\"%V\"\n", &tests[i].script);
         }
 
-        njs_memzero(&options, sizeof(njs_vm_opt_t));
+        njs_vm_opt_init(&options);
 
         options.module = opts->module;
         options.unsafe = opts->unsafe;
@@ -17378,7 +17378,7 @@ njs_vm_json_test(njs_opts_t *opts, njs_stat_t *stat)
 
     for (i = 0; i < njs_nitems(tests); i++) {
 
-        memset(&options, 0, sizeof(njs_vm_opt_t));
+        njs_vm_opt_init(&options);
         options.init = 1;
 
         vm = njs_vm_create(&options);
@@ -18007,7 +18007,7 @@ njs_api_test(njs_opts_t *opts, njs_stat_t *stat)
     };
 
     vm = NULL;
-    njs_memzero(&options, sizeof(njs_vm_opt_t));
+    njs_vm_opt_init(&options);
 
     prev = *stat;
 

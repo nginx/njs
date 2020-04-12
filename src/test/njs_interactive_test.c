@@ -316,7 +316,7 @@ njs_interactive_test(njs_bool_t verbose)
             njs_printf("\"%V\"\n", &test->script);
         }
 
-        njs_memzero(&options, sizeof(njs_vm_opt_t));
+        njs_vm_opt_init(&options);
 
         options.init = 1;
         options.accumulative = 1;

@@ -48,7 +48,7 @@ njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
     static const njs_value_t  usec_key = njs_string("usec");
     static const njs_value_t  times_key = njs_string("times");
 
-    njs_memzero(&options, sizeof(njs_vm_opt_t));
+    njs_vm_opt_init(&options);
 
     vm = NULL;
     nvm = NULL;
@@ -375,7 +375,7 @@ main(int argc, char **argv)
         }
     }
 
-    njs_memzero(&options, sizeof(njs_vm_opt_t));
+    njs_vm_opt_init(&options);
     options.init = 1;
     options.argv = argv;
     options.argc = argc;

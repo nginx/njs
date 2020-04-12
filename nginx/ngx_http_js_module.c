@@ -2404,7 +2404,7 @@ ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     end = start + size;
 
-    ngx_memzero(&options, sizeof(njs_vm_opt_t));
+    njs_vm_opt_init(&options);
 
     options.backtrace = 1;
     options.ops = &ngx_http_js_ops;

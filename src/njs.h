@@ -220,6 +220,7 @@ typedef struct {
 } njs_vm_opt_t;
 
 
+NJS_EXPORT void njs_vm_opt_init(njs_vm_opt_t *options);
 NJS_EXPORT njs_vm_t *njs_vm_create(njs_vm_opt_t *options);
 NJS_EXPORT void njs_vm_destroy(njs_vm_t *vm);
 

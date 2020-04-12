@@ -230,7 +230,7 @@ main(int argc, char **argv)
 
     njs_mm_denormals(opts.denormals);
 
-    njs_memzero(&vm_options, sizeof(njs_vm_opt_t));
+    njs_vm_opt_init(&vm_options);
 
     if (opts.file == NULL) {
         p = getcwd(path, sizeof(path));
@@ -573,7 +573,7 @@ LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 
     opts.silent = 1;
 
-    njs_memzero(&vm_options, sizeof(njs_vm_opt_t));
+    njs_vm_opt_init(&vm_options);
 
     vm_options.init = 1;
     vm_options.backtrace = 0;
