@@ -2320,10 +2320,15 @@ static void
 njs_parser_scope_error(njs_vm_t *vm, njs_parser_scope_t *scope,
     njs_object_type_t type, uint32_t line, const char *fmt, va_list args)
 {
-    size_t     width;
-    u_char     msg[NJS_MAX_ERROR_STR];
-    u_char     *p, *end;
-    njs_str_t  *file;
+    size_t       width;
+    u_char       msg[NJS_MAX_ERROR_STR];
+    u_char       *p, *end;
+    njs_str_t    *file;
+    njs_int_t    ret;
+    njs_value_t  value;
+
+    static const njs_value_t  file_name = njs_string("fileName");
+    static const njs_value_t  line_number = njs_string("lineNumber");
 
     file = &scope->file;
 
@@ -2346,6 +2351,18 @@ njs_parser_scope_error(njs_vm_t *vm, njs_parser_scope_t *scope,
     }
 
     njs_error_new(vm, &vm->retval, type, msg, p - msg);
+
+    njs_set_number(&value, line);
+    njs_value_property_set(vm, &vm->retval, njs_value_arg(&line_number),
+                           &value);
+
+    if (file->length != 0) {
+        ret = njs_string_set(vm, &value, file->start, file->length);
+        if (ret == NJS_OK) {
+            njs_value_property_set(vm, &vm->retval, njs_value_arg(&file_name),
+                                   &value);
+        }
+    }
 }
 
 
