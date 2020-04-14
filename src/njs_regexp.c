@@ -104,28 +104,10 @@ njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     u_char              *start;
     njs_int_t           ret;
     njs_str_t           string;
-    njs_value_t         source, flags_string, *pattern, *flags;
+    njs_value_t         source, *pattern, *flags;
     njs_regexp_flags_t  re_flags;
 
     pattern = njs_arg(args, nargs, 1);
-
-    if (!njs_is_regexp(pattern) && !njs_is_primitive(pattern)) {
-        ret = njs_value_to_string(vm, &args[1], &args[1]);
-        if (ret != NJS_OK) {
-            return ret;
-        }
-    }
-
-    flags = njs_arg(args, nargs, 2);
-
-    if (!njs_is_primitive(flags)) {
-        ret = njs_value_to_string(vm, &args[2], &args[2]);
-        if (ret != NJS_OK) {
-            return ret;
-        }
-    }
-
-    re_flags = 0;
 
     if (njs_is_regexp(pattern)) {
         ret = njs_regexp_prototype_source(vm, NULL, pattern, NULL, &source);
@@ -138,25 +120,28 @@ njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         pattern = &source;
 
     } else {
-        if (njs_is_undefined(pattern)) {
+        if (njs_is_defined(pattern)) {
+            ret = njs_value_to_string(vm, pattern, pattern);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+
+        } else {
             pattern = njs_value_arg(&njs_string_empty);
         }
 
-        ret = njs_primitive_value_to_string(vm, &source, pattern);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
-
-        pattern = &source;
+        re_flags = 0;
     }
 
+    flags = njs_arg(args, nargs, 2);
+
     if (njs_is_defined(flags)) {
-        ret = njs_primitive_value_to_string(vm, &flags_string, flags);
+        ret = njs_value_to_string(vm, flags, flags);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
         }
 
-        njs_string_get(&flags_string, &string);
+        njs_string_get(flags, &string);
 
         start = string.start;
 
@@ -181,7 +166,12 @@ njs_regexp_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
     njs_regexp_t          *regexp;
     njs_regexp_pattern_t  *pattern;
 
-    if (length != 0) {
+    if (length != 0 || flags != 0) {
+        if (length == 0) {
+            start = (u_char *) "(?:)";
+            length = njs_length("(?:)");
+        }
+
         pattern = njs_regexp_pattern_create(vm, start, length, flags);
         if (njs_slow_path(pattern == NULL)) {
             return NJS_ERROR;

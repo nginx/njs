@@ -7391,6 +7391,15 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("RegExp('\\\\0').source[1]"),
       njs_str("0") },
 
+    { njs_str("RegExp(undefined, 'g').global"),
+      njs_str("true") },
+
+    { njs_str("RegExp('', 'g').global"),
+      njs_str("true") },
+
+    { njs_str("var x; RegExp(x, 'g')"),
+      njs_str("/(?:)/g") },
+
     { njs_str("']'.match(/]/)"),
       njs_str("]") },
 
