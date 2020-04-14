@@ -3718,33 +3718,34 @@ njs_string_replace_regexp_function(njs_vm_t *vm, njs_value_t *this,
     r->part[0].size = captures[0];
 
     ret = njs_function_apply(vm, r->function, arguments, n + 3, &r->retval);
-
     if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
+        goto exception;
     }
 
-    (void) njs_string_prop(&string, this);
+    if (njs_slow_path(!njs_is_string(&r->retval))) {
+        ret = njs_value_to_string(vm, &r->retval, &r->retval);
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto exception;
+        }
+    }
 
-    if (njs_is_string(&r->retval)) {
-        njs_string_replacement_copy(&r->part[r->empty ? 0 : 1], &r->retval);
+    njs_string_replacement_copy(&r->part[r->empty ? 0 : 1], &r->retval);
 
-        if (njs_regexp_pattern(regex)->global) {
-            r->part += 2;
+    if (njs_regexp_pattern(regex)->global) {
+        r->part += 2;
 
-            if (r->part[0].start > (string.start + string.size)) {
-                return njs_string_replace_regexp_join(vm, r);
-            }
-
-            return njs_string_replace_regexp(vm, this, regex, r);
+        if (r->part[0].start > (string.start + string.size)) {
+            return njs_string_replace_regexp_join(vm, r);
         }
 
-        return njs_string_replace_regexp_join(vm, r);
+        return njs_string_replace_regexp(vm, this, regex, r);
     }
 
-    njs_regex_match_data_free(r->match_data, vm->regex_context);
+    return njs_string_replace_regexp_join(vm, r);
 
-    njs_internal_error(vm, "unexpected retval type:%s",
-                       njs_type_string(r->retval.type));
+exception:
+
+    njs_regex_match_data_free(r->match_data, vm->regex_context);
 
     return NJS_ERROR;
 }

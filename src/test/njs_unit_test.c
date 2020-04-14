@@ -7231,6 +7231,12 @@ static njs_unit_test_t  njs_test[] =
                        "{ return '|'+s+'|'+o+'|'+m+'|'+p+'|' })"),
       njs_str("abc|abcdefghdijklm|3|d|d|efghdijklm") },
 
+    { njs_str("'abc'.replace(/b/, ()=>1)"),
+      njs_str("a1c") },
+
+    { njs_str("var n = 0; 'abbbc'.replace(/b/g, function() {return ++n;})"),
+      njs_str("a123c") },
+
     { njs_str("'abcdefghdijklm'.replace(/x/, 'X')"),
       njs_str("abcdefghdijklm") },
 
