@@ -233,6 +233,12 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             goto done;
         }
 
+        if (njs_slow_path(data.length < size)) {
+            /* Pseudo-files may return less data than declared by st_size. */
+            njs_string_truncate(&retval, data.length);
+        }
+
+        size = data.length;
         start = data.start;
 
     } else {
