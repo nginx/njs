@@ -39,6 +39,8 @@ typedef struct {
     char                    *command;
     size_t                  n_paths;
     char                    **paths;
+    char                    **argv;
+    njs_uint_t              argc;
 } njs_opts_t;
 
 
@@ -264,8 +266,8 @@ main(int argc, char **argv)
 
     vm_options.ops = &njs_console_ops;
     vm_options.external = &njs_console;
-    vm_options.argv = argv;
-    vm_options.argc = argc;
+    vm_options.argv = opts.argv;
+    vm_options.argc = opts.argc;
 
     if (opts.interactive) {
         ret = njs_interactive_shell(&opts, &vm_options);
@@ -295,11 +297,14 @@ done:
 static njs_int_t
 njs_get_options(njs_opts_t *opts, int argc, char **argv)
 {
-    char       *p, **paths;
-    njs_int_t  i, ret;
+    char        *p, **paths;
+    njs_int_t   i, ret;
+    njs_uint_t  n;
 
     static const char  help[] =
         "Interactive njs shell.\n"
+        "\n"
+        "njs [options] [-c string | script.js | -] [script args]"
         "\n"
         "Options:\n"
         "  -c                specify the command to execute.\n"
@@ -311,7 +316,7 @@ njs_get_options(njs_opts_t *opts, int argc, char **argv)
         "  -t script|module  source code type (script is default).\n"
         "  -v                print njs version and exit.\n"
         "  -u                disable \"unsafe\" mode.\n"
-        "  <filename> | -    run code from a file or stdin.\n";
+        "  script.js | -     run code from a file or stdin.\n";
 
     ret = NJS_DONE;
 
@@ -324,7 +329,7 @@ njs_get_options(njs_opts_t *opts, int argc, char **argv)
         if (p[0] != '-' || (p[0] == '-' && p[1] == '\0')) {
             opts->interactive = 0;
             opts->file = argv[i];
-            continue;
+            goto done;
         }
 
         p++;
@@ -340,7 +345,7 @@ njs_get_options(njs_opts_t *opts, int argc, char **argv)
 
             if (++i < argc) {
                 opts->command = argv[i];
-                break;
+                goto done;
             }
 
             njs_stderror("option \"-c\" requires argument\n");
@@ -416,6 +421,21 @@ njs_get_options(njs_opts_t *opts, int argc, char **argv)
                          argv[0]);
             return NJS_ERROR;
         }
+    }
+
+done:
+
+    opts->argc = njs_max(argc - i + 1, 2);
+    opts->argv = malloc(sizeof(char*) * opts->argc);
+    if (opts->argv == NULL) {
+        njs_stderror("failed to alloc argv\n");
+        return NJS_ERROR;
+    }
+
+    opts->argv[0] = argv[0];
+    opts->argv[1] = (opts->file != NULL) ? opts->file : (char *) "";
+    for (n = 2; n < opts->argc; n++) {
+        opts->argv[n] = argv[i + n - 1];
     }
 
     return NJS_OK;

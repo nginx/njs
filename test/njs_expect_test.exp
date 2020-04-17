@@ -801,7 +801,7 @@ njs_run {"-c" "console.log("} "SyntaxError: Unexpected end of input in string:1"
 # process
 
 njs_run {"-c" "console.log(typeof process.argv)"} "object"
-njs_run {"-c" "console.log(process.argv[3])" "AAA"} "AAA"
+njs_run {"-c" "console.log(process.argv.slice(2))" "AAA"} "AAA"
 
 njs_run {"-c" "console.log(typeof process.env)"} "object"
 njs_run {"-c" "console.log(process.env.HOME != undefined)"} "true"
@@ -811,6 +811,10 @@ njs_run {"-c" "console.log(process.pid)"} "\\d+"
 
 njs_run {"-c" "console.log(process.ppid)"} "\\d+"
 
+
+# script args
+
+njs_run {"test/script_args.js" "A" "B"} "AB"
 
 # disassemble
 
