@@ -614,8 +614,8 @@ njs_vm_value(njs_vm_t *vm, const njs_str_t *path, njs_value_t *retval)
         }
 
         ret = njs_value_property(vm, &value, &key, njs_value_arg(retval));
-        if (njs_slow_path(ret == NJS_ERROR)) {
-            return NJS_ERROR;
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
 
         if (p == NULL) {
