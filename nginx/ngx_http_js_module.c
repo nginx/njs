@@ -72,7 +72,7 @@ static njs_int_t ngx_http_js_ext_get_string(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
 static njs_int_t ngx_http_js_ext_keys_header(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *keys, uintptr_t data);
+    njs_value_t *keys, ngx_list_t *headers);
 static ngx_table_elt_t *ngx_http_js_get_header(ngx_list_part_t *part,
     u_char *data, size_t len);
 static njs_int_t ngx_http_js_ext_header_out(njs_vm_t *vm,
@@ -799,26 +799,13 @@ ngx_http_js_ext_get_string(njs_vm_t *vm, njs_object_prop_t *prop,
 
 static njs_int_t
 ngx_http_js_ext_keys_header(njs_vm_t *vm, njs_value_t *value, njs_value_t *keys,
-    uintptr_t data)
+    ngx_list_t *headers)
 {
-    char             *p;
     njs_int_t         rc, cookie, x_for;
     ngx_uint_t        item;
-    ngx_list_t       *headers;
     ngx_list_part_t  *part;
     ngx_table_elt_t  *header, *h;
 
-    rc = njs_vm_array_alloc(vm, keys, 8);
-    if (rc != NJS_OK) {
-        return NJS_ERROR;
-    }
-
-    p = njs_vm_external(vm, value);
-    if (p == NULL) {
-        return NJS_OK;
-    }
-
-    headers = (ngx_list_t *) (p + data);
     part = &headers->part;
     item = 0;
 
@@ -1081,8 +1068,49 @@ static njs_int_t
 ngx_http_js_ext_keys_header_out(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *keys)
 {
+    njs_int_t           rc;
+    ngx_http_request_t  *r;
+
+    rc = njs_vm_array_alloc(vm, keys, 8);
+    if (rc != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    r = njs_vm_external(vm, value);
+    if (r == NULL) {
+        return NJS_OK;
+    }
+
+    if (r->headers_out.content_type.len) {
+        value = njs_vm_array_push(vm, keys);
+        if (value == NULL) {
+            return NJS_ERROR;
+        }
+
+        rc = njs_vm_value_string_set(vm, value, (u_char *) "Content-Type",
+                                     njs_length("Content-Type"));
+        if (rc != NJS_OK) {
+            return NJS_ERROR;
+        }
+    }
+
+    if (r->headers_out.content_length == NULL
+        && r->headers_out.content_length_n >= 0)
+    {
+        value = njs_vm_array_push(vm, keys);
+        if (value == NULL) {
+            return NJS_ERROR;
+        }
+
+        rc = njs_vm_value_string_set(vm, value, (u_char *) "Content-Length",
+                                     njs_length("Content-Length"));
+        if (rc != NJS_OK) {
+            return NJS_ERROR;
+        }
+    }
+
     return ngx_http_js_ext_keys_header(vm, value, keys,
-                             offsetof(ngx_http_request_t, headers_out.headers));
+                                       &r->headers_out.headers);
 }
 
 
@@ -1616,8 +1644,20 @@ static njs_int_t
 ngx_http_js_ext_keys_header_in(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *keys)
 {
-    return ngx_http_js_ext_keys_header(vm, value, keys,
-                              offsetof(ngx_http_request_t, headers_in.headers));
+    njs_int_t           rc;
+    ngx_http_request_t  *r;
+
+    rc = njs_vm_array_alloc(vm, keys, 8);
+    if (rc != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    r = njs_vm_external(vm, value);
+    if (r == NULL) {
+        return NJS_OK;
+    }
+
+    return ngx_http_js_ext_keys_header(vm, value, keys, &r->headers_in.headers);
 }
 
 static njs_int_t
