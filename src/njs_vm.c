@@ -670,6 +670,13 @@ njs_vm_bind(njs_vm_t *vm, const njs_str_t *var_name, const njs_value_t *value,
 }
 
 
+void
+njs_value_string_get(njs_value_t *value, njs_str_t *dst)
+{
+    njs_string_get(value, dst);
+}
+
+
 njs_int_t
 njs_vm_value_string_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     uint32_t size)

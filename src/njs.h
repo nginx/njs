@@ -302,6 +302,8 @@ NJS_EXPORT njs_function_t *njs_vm_function(njs_vm_t *vm, const njs_str_t *name);
 NJS_EXPORT njs_value_t *njs_vm_retval(njs_vm_t *vm);
 NJS_EXPORT void njs_vm_retval_set(njs_vm_t *vm, const njs_value_t *value);
 
+/*  Gets string value, no copy. */
+NJS_EXPORT void njs_value_string_get(njs_value_t *value, njs_str_t *dst);
 /*
  * Sets a byte string value.
  *   start data is not copied and should not be freed.

@@ -801,19 +801,19 @@ static njs_int_t
 ngx_http_js_ext_keys_header(njs_vm_t *vm, njs_value_t *value, njs_value_t *keys,
     ngx_list_t *headers)
 {
-    njs_int_t         rc, cookie, x_for;
+    int64_t           i, length;
+    njs_int_t         rc;
+    njs_str_t         hdr;
     ngx_uint_t        item;
+    njs_value_t      *start;
     ngx_list_part_t  *part;
     ngx_table_elt_t  *header, *h;
 
     part = &headers->part;
     item = 0;
-
-    cookie = 0;
-    x_for = 0;
+    length = 0;
 
     while (part) {
-
         if (item >= part->nelts) {
             part = part->next;
             item = 0;
@@ -827,36 +827,30 @@ ngx_http_js_ext_keys_header(njs_vm_t *vm, njs_value_t *value, njs_value_t *keys,
             continue;
         }
 
-        if (h->key.len == njs_length("Cookie")
-            && ngx_strncasecmp(h->key.data, (u_char *) "Cookie",
-                               h->key.len) == 0)
-        {
-            if (cookie) {
-                continue;
+        start = njs_vm_array_start(vm, keys);
+
+        for (i = 0; i < length; i++) {
+            njs_value_string_get(njs_argument(start, i), &hdr);
+
+            if (h->key.len == hdr.length
+                && ngx_strncasecmp(h->key.data, hdr.start, hdr.length) == 0)
+            {
+                break;
+            }
+        }
+
+        if (i == length) {
+            value = njs_vm_array_push(vm, keys);
+            if (value == NULL) {
+                return NJS_ERROR;
             }
 
-            cookie = 1;
-        }
-
-        if (h->key.len == njs_length("X-Forwarded-For")
-            && ngx_strncasecmp(h->key.data, (u_char *) "X-Forwarded-For",
-                               h->key.len) == 0)
-        {
-            if (x_for) {
-                continue;
+            rc = njs_vm_value_string_set(vm, value, h->key.data, h->key.len);
+            if (rc != NJS_OK) {
+                return NJS_ERROR;
             }
 
-            x_for = 1;
-        }
-
-        value = njs_vm_array_push(vm, keys);
-        if (value == NULL) {
-            return NJS_ERROR;
-        }
-
-        rc = njs_vm_value_string_set(vm, value, h->key.data, h->key.len);
-        if (rc != NJS_OK) {
-            return NJS_ERROR;
+            length++;
         }
     }
 
