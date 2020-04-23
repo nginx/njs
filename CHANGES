@@ -1,4 +1,38 @@
 
+Changes with njs 0.4.0                                           23 Apr 2020
+
+    nginx modules:
+
+    *) Feature: added js_import directive.
+
+    *) Feature: added support for multi-value headers in r.headersOut.
+
+    *) Improvement: iteration over r.headersOut with special headers.
+
+    *) Improvement: iteration over r.headersOut with duplicates.
+
+    *) Change: r.responseBody property handler now returns "undefined"
+       instead of throwing an exception if response body is not available.
+
+    Core:
+
+    *) Feature: added script arguments support in CLI.
+
+    *) Feature: converting externals values to native js objects.
+
+    *) Bugfix: fixed NULL-pointer dereference in "__proto__" property
+       handler.
+
+    *) Bugfix: fixed handling of no-newline at the end of the script.
+
+    *) Bugfix: fixed RegExp() constructor with empty pattern and
+       non-empty flags.
+
+    *) Bugfix: fixed String.prototype.replace() when function
+       returns non-string.
+
+    *) Bugfix: fixed reading of pseudofiles in "fs".
+
 Changes with njs 0.3.9                                           03 Mar 2020
 
     nginx modules:
