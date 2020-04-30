@@ -956,6 +956,8 @@ ngx_stream_js_ext_done(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         ctx->download_event = NULL;
     }
 
+    njs_value_undefined_set(njs_vm_retval(vm));
+
     return NJS_OK;
 }
 
@@ -989,6 +991,8 @@ ngx_stream_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ngx_log_error(level, c->log, 0, "js: %*s", msg.length, msg.start);
 
     c->log->handler = handler;
+
+    njs_value_undefined_set(njs_vm_retval(vm));
 
     return NJS_OK;
 }
@@ -1038,6 +1042,8 @@ ngx_stream_js_ext_on(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
+    njs_value_undefined_set(njs_vm_retval(vm));
+
     return NJS_OK;
 }
 
@@ -1071,6 +1077,8 @@ ngx_stream_js_ext_off(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_vm_del_event(vm, *event);
 
     *event = NULL;
+
+    njs_value_undefined_set(njs_vm_retval(vm));
 
     return NJS_OK;
 }
@@ -1152,6 +1160,8 @@ ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     *ctx->last_out = cl;
     ctx->last_out = &cl->next;
+
+    njs_value_undefined_set(njs_vm_retval(vm));
 
     return NJS_OK;
 }
