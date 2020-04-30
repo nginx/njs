@@ -60,8 +60,8 @@ typedef struct {
 typedef struct {
     njs_str_t              name;
     njs_int_t            (*handler)(njs_vm_t *vm, ngx_http_request_t *r,
-                                    njs_str_t *name, njs_value_t *setval,
-                                    njs_value_t *retval);
+                                    ngx_list_t *headers, njs_str_t *name,
+                                    njs_value_t *setval, njs_value_t *retval);
 
 }  ngx_http_js_header_t;
 
@@ -87,25 +87,27 @@ static ngx_table_elt_t *ngx_http_js_get_header(ngx_list_part_t *part,
 static njs_int_t ngx_http_js_ext_header_out(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
-static njs_int_t ngx_http_js_header_out_single(njs_vm_t *vm,
-    ngx_http_request_t *r, njs_str_t *v, njs_value_t *setval,
-    njs_value_t *retval);
+static njs_int_t ngx_http_js_header_single(njs_vm_t *vm,
+    ngx_http_request_t *r, ngx_list_t *headers, njs_str_t *name,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_http_js_header_out_special(njs_vm_t *vm,
     ngx_http_request_t *r, njs_str_t *v, njs_value_t *setval,
     njs_value_t *retval, ngx_table_elt_t **hh);
-static njs_int_t ngx_http_js_header_out_array(njs_vm_t *vm,
-    ngx_http_request_t *r, njs_str_t *v, njs_value_t *setval,
-    njs_value_t *retval);
-static njs_int_t ngx_http_js_header_out_generic(njs_vm_t *vm,
-    ngx_http_request_t *r, njs_str_t *v, njs_value_t *setval,
-    njs_value_t *retval);
+static njs_int_t ngx_http_js_header_array(njs_vm_t *vm,
+    ngx_http_request_t *r, ngx_list_t *headers, njs_str_t *name,
+    njs_value_t *setval, njs_value_t *retval);
+static njs_int_t ngx_http_js_header_generic(njs_vm_t *vm,
+    ngx_http_request_t *r, ngx_list_t *headers, njs_str_t *name,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_http_js_content_length(njs_vm_t *vm, ngx_http_request_t *r,
-    njs_str_t *name, njs_value_t *setval, njs_value_t *retval);
-static njs_int_t ngx_http_js_content_encoding(njs_vm_t *vm,
-    ngx_http_request_t *r, njs_str_t *name, njs_value_t *setval,
+    ngx_list_t *headers, njs_str_t *name, njs_value_t *setval,
     njs_value_t *retval);
+static njs_int_t ngx_http_js_content_encoding(njs_vm_t *vm,
+    ngx_http_request_t *r, ngx_list_t *headers, njs_str_t *name,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_http_js_content_type(njs_vm_t *vm, ngx_http_request_t *r,
-    njs_str_t *name, njs_value_t *setval, njs_value_t *retval);
+    ngx_list_t *headers, njs_str_t *name, njs_value_t *setval,
+    njs_value_t *retval);
 static njs_int_t ngx_http_js_ext_keys_header_out(njs_vm_t *vm,
     njs_value_t *value, njs_value_t *keys);
 static njs_int_t ngx_http_js_ext_status(njs_vm_t *vm, njs_object_prop_t *prop,
@@ -133,25 +135,19 @@ static njs_int_t ngx_http_js_ext_get_remote_address(njs_vm_t *vm,
 static njs_int_t ngx_http_js_ext_get_request_body(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
-static njs_int_t ngx_http_js_ext_get_header_in(njs_vm_t *vm,
+static njs_int_t ngx_http_js_ext_header_in(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
-static njs_int_t ngx_http_js_header_in_cookie(njs_vm_t *vm,
-    ngx_http_request_t *r, njs_str_t *name, njs_value_t *setval,
-    njs_value_t *retval);
+static njs_int_t ngx_http_js_header_cookie(njs_vm_t *vm,
+    ngx_http_request_t *r, ngx_list_t *headers, njs_str_t *name,
+    njs_value_t *setval, njs_value_t *retval);
 #if (NGX_HTTP_X_FORWARDED_FOR)
-static njs_int_t ngx_http_js_header_in_x_forwarded_for(njs_vm_t *vm,
-    ngx_http_request_t *r, njs_str_t *name, njs_value_t *setval,
-    njs_value_t *retval);
+static njs_int_t ngx_http_js_header_x_forwarded_for(njs_vm_t *vm,
+    ngx_http_request_t *r, ngx_list_t *headers, njs_str_t *name,
+    njs_value_t *setval, njs_value_t *retval);
 #endif
 static njs_int_t ngx_http_js_header_in_array(njs_vm_t *vm,
     ngx_http_request_t *r, ngx_array_t *array, u_char sep, njs_value_t *retval);
-static njs_int_t ngx_http_js_header_in_single(njs_vm_t *vm,
-    ngx_http_request_t *r, njs_str_t *name, njs_value_t *setval,
-    njs_value_t *retval);
-static njs_int_t ngx_http_js_header_in_generic(njs_vm_t *vm,
-    ngx_http_request_t *r, njs_str_t *name, njs_value_t *setval,
-    njs_value_t *retval);
 static njs_int_t ngx_http_js_ext_keys_header_in(njs_vm_t *vm,
     njs_value_t *value, njs_value_t *keys);
 static njs_int_t ngx_http_js_ext_get_arg(njs_vm_t *vm,
@@ -352,7 +348,7 @@ static njs_external_t  ngx_http_js_ext_request[] = {
         .enumerable = 1,
         .u.object = {
             .enumerable = 1,
-            .prop_handler = ngx_http_js_ext_get_header_in,
+            .prop_handler = ngx_http_js_ext_header_in,
             .keys = ngx_http_js_ext_keys_header_in,
         }
     },
@@ -938,75 +934,6 @@ ngx_http_js_get_header(ngx_list_part_t *part, u_char *data, size_t len)
 
 
 static njs_int_t
-ngx_http_js_return_header(njs_vm_t *vm, ngx_http_request_t *r,
-    ngx_list_part_t *part, njs_str_t *name, njs_value_t *retval)
-{
-    size_t            len;
-    u_char           *data, *p, *start, *end;
-    ngx_uint_t        i;
-    ngx_table_elt_t  *header, *h;
-
-    header = part->elts;
-
-    p = NULL;
-    start = NULL;
-    end  = NULL;
-
-    for (i = 0; /* void */ ; i++) {
-
-        if (i >= part->nelts) {
-            if (part->next == NULL) {
-                break;
-            }
-
-            part = part->next;
-            header = part->elts;
-            i = 0;
-        }
-
-        h = &header[i];
-
-        if (h->hash == 0
-            || h->key.len != name->length
-            || ngx_strncasecmp(h->key.data, name->start, name->length) != 0)
-        {
-            continue;
-        }
-
-        if (p == NULL) {
-            start = h->value.data;
-            end = h->value.data + h->value.len;
-            p = end;
-            continue;
-        }
-
-        if (p + h->value.len + 1 > end) {
-            len = njs_max(p + h->value.len + 1 - start, 2 * (end - start));
-
-            data = ngx_pnalloc(r->pool, len);
-            if (data == NULL) {
-                return NJS_ERROR;
-            }
-
-            p = ngx_cpymem(data, start, p - start);
-            start = data;
-            end = data + len;
-        }
-
-        *p++ = ',';
-        p = ngx_cpymem(p, h->value.data, h->value.len);
-    }
-
-    if (p == NULL) {
-        njs_value_undefined_set(retval);
-        return NJS_DECLINED;
-    }
-
-    return njs_vm_value_string_set(vm, retval, start, p - start);
-}
-
-
-static njs_int_t
 ngx_http_js_ext_header_out(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
@@ -1016,17 +943,17 @@ ngx_http_js_ext_header_out(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_http_js_header_t  *h;
 
     static ngx_http_js_header_t headers_out[] = {
-        { njs_str("Age"), ngx_http_js_header_out_single },
+        { njs_str("Age"), ngx_http_js_header_single },
         { njs_str("Content-Type"), ngx_http_js_content_type },
         { njs_str("Content-Length"), ngx_http_js_content_length },
         { njs_str("Content-Encoding"), ngx_http_js_content_encoding },
-        { njs_str("Etag"), ngx_http_js_header_out_single },
-        { njs_str("Expires"), ngx_http_js_header_out_single },
-        { njs_str("Last-Modified"), ngx_http_js_header_out_single },
-        { njs_str("Location"), ngx_http_js_header_out_single },
-        { njs_str("Set-Cookie"), ngx_http_js_header_out_array },
-        { njs_str("Retry-After"), ngx_http_js_header_out_single },
-        { njs_str(""), ngx_http_js_header_out_generic },
+        { njs_str("Etag"), ngx_http_js_header_single },
+        { njs_str("Expires"), ngx_http_js_header_single },
+        { njs_str("Last-Modified"), ngx_http_js_header_single },
+        { njs_str("Location"), ngx_http_js_header_single },
+        { njs_str("Set-Cookie"), ngx_http_js_header_array },
+        { njs_str("Retry-After"), ngx_http_js_header_single },
+        { njs_str(""), ngx_http_js_header_generic },
     };
 
     r = njs_vm_external(vm, value);
@@ -1055,20 +982,34 @@ ngx_http_js_ext_header_out(njs_vm_t *vm, njs_object_prop_t *prop,
         }
     }
 
-    return h->handler(vm, r, &name, setval, retval);
+    return h->handler(vm, r, &r->headers_out.headers, &name, setval, retval);
 }
 
 
 static njs_int_t
-ngx_http_js_header_out_single(njs_vm_t *vm, ngx_http_request_t *r,
-    njs_str_t *name, njs_value_t *setval, njs_value_t *retval)
+ngx_http_js_header_single(njs_vm_t *vm, ngx_http_request_t *r,
+    ngx_list_t *headers, njs_str_t *name, njs_value_t *setval,
+    njs_value_t *retval)
 {
+    njs_int_t         rc;
+    ngx_table_elt_t  *h;
+
     if (retval != NULL && setval == NULL) {
-        return ngx_http_js_header_out_special(vm, r, name, setval, retval,
-                                              NULL);
+        h = ngx_http_js_get_header(&headers->part, name->start, name->length);
+        if (h == NULL) {
+            njs_value_undefined_set(retval);
+            return NJS_DECLINED;
+        }
+
+        rc = njs_vm_value_string_set(vm, retval, h->value.data, h->value.len);
+        if (rc != NJS_OK) {
+            return NJS_ERROR;
+        }
+
+        return NJS_OK;
     }
 
-    return ngx_http_js_header_out_generic(vm, r, name, setval, retval);
+    return ngx_http_js_header_generic(vm, r, headers, name, setval, retval);
 }
 
 
@@ -1088,18 +1029,7 @@ ngx_http_js_header_out_special(njs_vm_t *vm, ngx_http_request_t *r,
     headers = &r->headers_out.headers;
 
     if (retval != NULL && setval == NULL) {
-        h = ngx_http_js_get_header(&headers->part, v->start, v->length);
-        if (h == NULL) {
-            njs_value_undefined_set(retval);
-            return NJS_DECLINED;
-        }
-
-        rc = njs_vm_value_string_set(vm, retval, h->value.data, h->value.len);
-        if (rc != NJS_OK) {
-            return NJS_ERROR;
-        }
-
-        return NJS_OK;
+        return ngx_http_js_header_single(vm, r, headers, v, setval, retval);
     }
 
     if (setval != NULL && njs_value_is_array(setval)) {
@@ -1162,19 +1092,17 @@ ngx_http_js_header_out_special(njs_vm_t *vm, ngx_http_request_t *r,
 
 
 static njs_int_t
-ngx_http_js_header_out_array(njs_vm_t *vm, ngx_http_request_t *r,
-    njs_str_t *name, njs_value_t *setval, njs_value_t *retval)
+ngx_http_js_header_array(njs_vm_t *vm, ngx_http_request_t *r,
+    ngx_list_t *headers, njs_str_t *name, njs_value_t *setval,
+    njs_value_t *retval)
 {
     size_t            len;
     u_char           *data;
     njs_int_t         rc;
     ngx_uint_t        i;
-    ngx_list_t       *headers;
     njs_value_t      *value;
     ngx_list_part_t  *part;
     ngx_table_elt_t  *header, *h;
-
-    headers = &r->headers_out.headers;
 
     if (retval != NULL && setval == NULL) {
         rc = njs_vm_array_alloc(vm, retval, 4);
@@ -1224,30 +1152,86 @@ ngx_http_js_header_out_array(njs_vm_t *vm, ngx_http_request_t *r,
         return NJS_OK;
     }
 
-    return ngx_http_js_header_out_generic(vm, r, name, setval, retval);
+    return ngx_http_js_header_generic(vm, r, headers, name, setval, retval);
 }
 
 
 static njs_int_t
-ngx_http_js_header_out_generic(njs_vm_t *vm, ngx_http_request_t *r,
-    njs_str_t *name, njs_value_t *setval, njs_value_t *retval)
+ngx_http_js_header_generic(njs_vm_t *vm, ngx_http_request_t *r,
+    ngx_list_t *headers, njs_str_t *name, njs_value_t *setval,
+    njs_value_t *retval)
 {
-    u_char              *p;
+    u_char              *data, *p, *start, *end;
+    size_t               len;
     int64_t              length;
     njs_value_t         *array;
     njs_int_t            rc;
     njs_str_t            s;
-    ngx_list_t          *headers;
     ngx_uint_t           i;
     ngx_list_part_t     *part;
     ngx_table_elt_t     *header, *h;
     njs_opaque_value_t   lvalue;
 
-    headers = &r->headers_out.headers;
     part = &headers->part;
 
     if (retval != NULL && setval == NULL) {
-        return ngx_http_js_return_header(vm, r, part, name, retval);
+        header = part->elts;
+
+        p = NULL;
+        start = NULL;
+        end  = NULL;
+
+        for (i = 0; /* void */ ; i++) {
+
+            if (i >= part->nelts) {
+                if (part->next == NULL) {
+                    break;
+                }
+
+                part = part->next;
+                header = part->elts;
+                i = 0;
+            }
+
+            h = &header[i];
+
+            if (h->hash == 0
+                || h->key.len != name->length
+                || ngx_strncasecmp(h->key.data, name->start, name->length) != 0)
+            {
+                continue;
+            }
+
+            if (p == NULL) {
+                start = h->value.data;
+                end = h->value.data + h->value.len;
+                p = end;
+                continue;
+            }
+
+            if (p + h->value.len + 1 > end) {
+                len = njs_max(p + h->value.len + 1 - start, 2 * (end - start));
+
+                data = ngx_pnalloc(r->pool, len);
+                if (data == NULL) {
+                    return NJS_ERROR;
+                }
+
+                p = ngx_cpymem(data, start, p - start);
+                start = data;
+                end = data + len;
+            }
+
+            *p++ = ',';
+            p = ngx_cpymem(p, h->value.data, h->value.len);
+        }
+
+        if (p == NULL) {
+            njs_value_undefined_set(retval);
+            return NJS_DECLINED;
+        }
+
+        return njs_vm_value_string_set(vm, retval, start, p - start);
     }
 
     header = part->elts;
@@ -1345,8 +1329,8 @@ ngx_http_js_header_out_generic(njs_vm_t *vm, ngx_http_request_t *r,
 
 
 static njs_int_t
-ngx_http_js_content_encoding(njs_vm_t *vm, ngx_http_request_t *r, njs_str_t *v,
-    njs_value_t *setval, njs_value_t *retval)
+ngx_http_js_content_encoding(njs_vm_t *vm, ngx_http_request_t *r,
+    ngx_list_t *headers, njs_str_t *v, njs_value_t *setval, njs_value_t *retval)
 {
     njs_int_t         rc;
     ngx_table_elt_t  *h;
@@ -1365,8 +1349,8 @@ ngx_http_js_content_encoding(njs_vm_t *vm, ngx_http_request_t *r, njs_str_t *v,
 
 
 static njs_int_t
-ngx_http_js_content_length(njs_vm_t *vm, ngx_http_request_t *r, njs_str_t *v,
-    njs_value_t *setval, njs_value_t *retval)
+ngx_http_js_content_length(njs_vm_t *vm, ngx_http_request_t *r,
+    ngx_list_t *headers, njs_str_t *v, njs_value_t *setval, njs_value_t *retval)
 {
     u_char           *p, *start;
     njs_int_t         rc;
@@ -1419,8 +1403,8 @@ ngx_http_js_content_length(njs_vm_t *vm, ngx_http_request_t *r, njs_str_t *v,
 
 
 static njs_int_t
-ngx_http_js_content_type(njs_vm_t *vm, ngx_http_request_t *r, njs_str_t *v,
-    njs_value_t *setval, njs_value_t *retval)
+ngx_http_js_content_type(njs_vm_t *vm, ngx_http_request_t *r,
+    ngx_list_t *headers, njs_str_t *v, njs_value_t *setval, njs_value_t *retval)
 {
     int64_t              length;
     njs_int_t            rc;
@@ -1928,7 +1912,7 @@ done:
 
 
 static njs_int_t
-ngx_http_js_ext_get_header_in(njs_vm_t *vm, njs_object_prop_t *prop,
+ngx_http_js_ext_header_in(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_int_t              rc;
@@ -1937,18 +1921,18 @@ ngx_http_js_ext_get_header_in(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_http_js_header_t  *h;
 
     static ngx_http_js_header_t headers_in[] = {
-        { njs_str("Content-Type"), ngx_http_js_header_in_single },
-        { njs_str("Cookie"), ngx_http_js_header_in_cookie },
-        { njs_str("ETag"), ngx_http_js_header_in_single },
-        { njs_str("From"), ngx_http_js_header_in_single },
-        { njs_str("Max-Forwards"), ngx_http_js_header_in_single },
-        { njs_str("Referer"), ngx_http_js_header_in_single },
-        { njs_str("Proxy-Authorization"), ngx_http_js_header_in_single },
-        { njs_str("User-Agent"), ngx_http_js_header_in_single },
+        { njs_str("Content-Type"), ngx_http_js_header_single },
+        { njs_str("Cookie"), ngx_http_js_header_cookie },
+        { njs_str("ETag"), ngx_http_js_header_single },
+        { njs_str("From"), ngx_http_js_header_single },
+        { njs_str("Max-Forwards"), ngx_http_js_header_single },
+        { njs_str("Referer"), ngx_http_js_header_single },
+        { njs_str("Proxy-Authorization"), ngx_http_js_header_single },
+        { njs_str("User-Agent"), ngx_http_js_header_single },
 #if (NGX_HTTP_X_FORWARDED_FOR)
-        { njs_str("X-Forwarded-For"), ngx_http_js_header_in_x_forwarded_for },
+        { njs_str("X-Forwarded-For"), ngx_http_js_header_x_forwarded_for },
 #endif
-        { njs_str(""), ngx_http_js_header_in_generic },
+        { njs_str(""), ngx_http_js_header_generic },
     };
 
     r = njs_vm_external(vm, value);
@@ -1977,13 +1961,14 @@ ngx_http_js_ext_get_header_in(njs_vm_t *vm, njs_object_prop_t *prop,
         }
     }
 
-    return h->handler(vm, r, &name, setval, retval);
+    return h->handler(vm, r, &r->headers_in.headers, &name, setval, retval);
 }
 
 
 static njs_int_t
-ngx_http_js_header_in_cookie(njs_vm_t *vm, ngx_http_request_t *r,
-    njs_str_t *name, njs_value_t *setval, njs_value_t *retval)
+ngx_http_js_header_cookie(njs_vm_t *vm, ngx_http_request_t *r,
+    ngx_list_t *headers, njs_str_t *name, njs_value_t *setval,
+    njs_value_t *retval)
 {
     return ngx_http_js_header_in_array(vm, r, &r->headers_in.cookies,
                                        ';', retval);
@@ -1992,8 +1977,9 @@ ngx_http_js_header_in_cookie(njs_vm_t *vm, ngx_http_request_t *r,
 
 #if (NGX_HTTP_X_FORWARDED_FOR)
 static njs_int_t
-ngx_http_js_header_in_x_forwarded_for(njs_vm_t *vm, ngx_http_request_t *r,
-    njs_str_t *name, njs_value_t *setval, njs_value_t *retval)
+ngx_http_js_header_x_forwarded_for(njs_vm_t *vm, ngx_http_request_t *r,
+    ngx_list_t *headers, njs_str_t *name, njs_value_t *setval,
+    njs_value_t *retval)
 {
     return ngx_http_js_header_in_array(vm, r, &r->headers_in.x_forwarded_for,
                                        ',', retval);
@@ -2051,32 +2037,6 @@ ngx_http_js_header_in_array(njs_vm_t *vm, ngx_http_request_t *r,
     }
 
     return NJS_OK;
-}
-
-
-static njs_int_t
-ngx_http_js_header_in_single(njs_vm_t *vm, ngx_http_request_t *r,
-    njs_str_t *name, njs_value_t *setval, njs_value_t *retval)
-{
-    ngx_table_elt_t  *h;
-
-    h = ngx_http_js_get_header(&r->headers_in.headers.part, name->start,
-                               name->length);
-    if (h == NULL) {
-        njs_value_undefined_set(retval);
-        return NJS_DECLINED;
-    }
-
-    return njs_vm_value_string_set(vm, retval, h->value.data, h->value.len);
-}
-
-
-static njs_int_t
-ngx_http_js_header_in_generic(njs_vm_t *vm, ngx_http_request_t *r,
-    njs_str_t *name, njs_value_t *setval, njs_value_t *retval)
-{
-    return ngx_http_js_return_header(vm, r, &r->headers_in.headers.part, name,
-                                     retval);
 }
 
 
