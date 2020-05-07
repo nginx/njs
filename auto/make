@@ -231,7 +231,7 @@ $NJS_BUILD_DIR/njs_auto_config.h:
 	@exit 1
 
 all: $NJS_BUILD_DIR/njs_auto_config.h \\
-    $NJS_DEFAULT_TARGET test lib_test benchmark
+	$NJS_DEFAULT_TARGET ts test lib_test benchmark
 
 njs: $NJS_BUILD_DIR/njs_auto_config.h $NJS_BUILD_DIR/njs
 njs_fuzzer: $NJS_BUILD_DIR/njs_auto_config.h \\
@@ -261,6 +261,11 @@ benchmark: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/njs_benchmark
 
 	$NJS_BUILD_DIR/njs_benchmark
+
+ts:
+	mkdir -p $NJS_BUILD_DIR/ts
+	cp nginx/ts/*.ts $NJS_BUILD_DIR/ts/
+	cp src/ts/*.ts $NJS_BUILD_DIR/ts/
 
 dist:
 	NJS_VER=`grep NJS_VERSION src/njs.h | sed -e 's/.*"\(.*\)".*/\1/'`; \\
