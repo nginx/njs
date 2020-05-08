@@ -233,48 +233,135 @@ interface NginxVariables {
 }
 
 interface NginxSubrequestOptions {
+    /**
+     * Arguments string, by default an empty string is used.
+     */
+    args?: NjsStringLike,
+    /**
+     * Request body, by default the request body of the parent request object is used.
+     */
+    body?: NjsStringLike,
+    /**
+     * HTTP method, by default the GET method is used.
+     */
     method?: "GET" | "POST" | "OPTIONS" | "HEAD" | "PROPFIND" | "PUT"
         | "MKCOL" | "DELETE" | "COPY" | "MOVE" | "PROPPATCH"
         | "LOCK" | "PATCH" | "TRACE",
-    args?: NjsStringLike,
-    body?: NjsStringLike,
+    /**
+     * if true, the created subrequest is a detached subrequest.
+     * Responses to detached subrequests are ignored.
+     */
     detached?: boolean
 }
 
 interface NginxHTTPRequest {
-    // properties
+    /**
+     * Request arguments object.
+     */
     readonly args: NginxHTTPArgs;
-    readonly headersIn: NginxHeadersIn;
-    readonly headersOut: NginxHeadersOut;
-    readonly httpVersion: NjsByteString;
-    readonly method: NjsByteString;
-    readonly parent?: NginxHTTPRequest;
-    readonly remoteAddress: NjsByteString;
-    readonly requestBody?: NjsByteString;
-    readonly responseBody?: NjsByteString;
-    readonly uri: NjsByteString;
-    readonly variables: NginxVariables;
-
-    // control
-    status: number;
-    sendHeader(): void;
-    send(part: NjsStringLike): void;
-    return(status: number, body?: NjsStringLike): void;
-    internalRedirect(location: NjsStringLike): void;
+    /**
+     * Writes a string to the error log on the error level of logging.
+     * @param message Message to log.
+     */
+    error(message: NjsStringLike): void;
+    /**
+     * Finishes sending a response to the client.
+     */
     finish(): void;
-
-    // Promise version
+    /**
+     * Incoming headers object.
+     */
+    readonly headersIn: NginxHeadersIn;
+    /**
+     * Outgoing headers object.
+     */
+    readonly headersOut: NginxHeadersOut;
+    /**
+     * HTTP protocol version.
+     */
+    readonly httpVersion: NjsByteString;
+    /**
+     * Performs an internal redirect to the specified uri.
+     * If the uri starts with the “@” prefix, it is considered a named location.
+     * The actual redirect happens after the handler execution is completed.
+     * @param uri Location to redirect to.
+     */
+    internalRedirect(uri: NjsStringLike): void;
+    /**
+     * Writes a string to the error log on the info level of logging.
+     * @param message Message to log.
+     */
+    log(message: NjsStringLike): void;
+    /**
+     * HTTP method.
+     */
+    readonly method: NjsByteString;
+    /**
+     * Parent for subrequest object.
+     */
+    readonly parent?: NginxHTTPRequest;
+    /**
+     * Client address.
+     */
+    readonly remoteAddress: NjsByteString;
+    /**
+     * Client request body if it has not been written to a temporary file.
+     * To ensure that the client request body is in memory, its size should be
+     * limited by client_max_body_size, and a sufficient buffer size should be set
+     * using client_body_buffer_size. The property is available only in the js_content directive.
+     */
+    readonly requestBody?: NjsByteString;
+    /**
+     * Subrequest response body. The size of response body is limited by
+     * the subrequest_output_buffer_size directive.
+     */
+    readonly responseBody?: NjsByteString;
+    /**
+     * Sends the entire response with the specified status to the client.
+     * It is possible to specify either a redirect URL (for codes 301, 302, 303, 307, and 308)
+     * or the response body text (for other codes) as the second argument.
+     * @param status Respose status code.
+     * @param body Respose body.
+     */
+    return(status: number, body?: NjsStringLike): void;
+    /**
+     * Sends the HTTP headers to the client.
+     */
+    send(part: NjsStringLike): void;
+    /**
+     * Sends the HTTP headers to the client.
+     */
+    sendHeader(): void;
+    /**
+     * Respose status code.
+     */
+    status: number;
+    /**
+     * Creates a subrequest with the given uri and options.
+     * A subrequest shares its input headers with the client request.
+     * To send headers different from original headers to a proxied server,
+     * the proxy_set_header directive can be used. To send a completely new
+     * set of headers to a proxied server, the proxy_pass_request_headers directive can be used.
+     * @param uri Subrequest location.
+     * @param options Subrequest options.
+     * @param callback Completion callback.
+     */
     subrequest(uri: NjsStringLike, options?: NginxSubrequestOptions | string): Promise<NginxHTTPRequest>;
-    // Long callback version
     subrequest(uri: NjsStringLike, options: NginxSubrequestOptions | string,
                callback:(reply:NginxHTTPRequest) => void): void;
-    // Short callback version
     subrequest(uri: NjsStringLike, callback:(reply:NginxHTTPRequest) => void): void;
-    // Detached version
     subrequest(uri: NjsStringLike, options: NginxSubrequestOptions): void;
-
-    // logging
-    error(message: NjsStringLike): void;
+    /**
+     * Current URI in request, normalized.
+     */
+    readonly uri: NjsByteString;
+    /**
+     * nginx variables object.
+     */
+    readonly variables: NginxVariables;
+    /**
+     * Writes a string to the error log on the warn level of logging.
+     * @param message Message to log.
+     */
     warn(message: NjsStringLike): void;
-    log(message: NjsStringLike): void;
 }

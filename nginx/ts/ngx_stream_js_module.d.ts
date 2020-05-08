@@ -70,33 +70,79 @@ interface NginxStreamVariables {
 }
 
 interface NginxStreamCallbackFlags {
+    /**
+     * True if data is a last buffer.
+     */
     last: boolean
 }
 
 interface NginxStreamSendOptions {
+    /**
+     * True if data is a last buffer.
+     */
     last?: boolean
+    /**
+     * True if the buffer should have the flush flag.
+     */
     flush?: boolean
 }
 
 interface NginxStreamRequest {
-    // properties
-    readonly remoteAddress: NjsByteString;
-    readonly variables: NginxStreamVariables;
-
-    // control
+    /**
+     * Successfully finalizes the phase handler.
+     */
     allow(): void;
+    /**
+     * Finalizes the phase handler and passes control to the next handler.
+     */
     decline(): void;
+    /**
+     * Finalizes the phase handler with the access error code.
+     */
     deny(): void;
+    /**
+     * Successfully finalizes the current phase handler
+     * or finalizes it with the specified numeric code.
+     * @param code Finalization code.
+     */
     done(code?: number): void;
-
+    /**
+     * Writes a string to the error log on the error level of logging.
+     * @param message Message to log.
+     */
+    error(message: NjsStringLike): void;
+    /**
+     * Writes a string to the error log on the info level of logging.
+     * @param message Message to log.
+     */
+    log(message: NjsStringLike): void;
+    /**
+     * Unregisters the callback set by on() method.
+     */
+    off(event: "upload" | "download"): void;
+    /**
+     * Registers a callback for the specified event.
+     */
     on(event: "upload" | "download",
        callback:(data:NjsByteString,  flags: NginxStreamCallbackFlags) => void): void;
-    off(event: "upload" | "download"): void;
-
+    /**
+     * Client address.
+     */
+    readonly remoteAddress: NjsByteString;
+    /**
+     * Sends the data to the client.
+     * @param data Data to send.
+     * @param options Object used to override nginx buffer flags derived from
+     * an incoming data chunk buffer.
+     */
     send(data: NjsStringLike, options?: NginxStreamSendOptions): void;
-
-    // logging
-    error(message: NjsStringLike): void;
+    /**
+     * nginx variables object.
+     */
+    readonly variables: NginxStreamVariables;
+    /**
+     * Writes a string to the error log on the warn level of logging.
+     * @param message Message to log.
+     */
     warn(message: NjsStringLike): void;
-    log(message: NjsStringLike): void;
 }
