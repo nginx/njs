@@ -84,6 +84,9 @@ static njs_int_t ngx_http_js_ext_keys_header(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *keys, ngx_list_t *headers);
 static ngx_table_elt_t *ngx_http_js_get_header(ngx_list_part_t *part,
     u_char *data, size_t len);
+static njs_int_t ngx_http_js_ext_raw_header(njs_vm_t *vm,
+    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 static njs_int_t ngx_http_js_ext_header_out(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
@@ -354,6 +357,15 @@ static njs_external_t  ngx_http_js_ext_request[] = {
     },
 
     {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("rawHeadersIn"),
+        .u.property = {
+            .handler = ngx_http_js_ext_raw_header,
+            .magic32 = 0,
+        }
+    },
+
+    {
         .flags = NJS_EXTERN_OBJECT,
         .name.string = njs_str("args"),
         .enumerable = 1,
@@ -393,6 +405,15 @@ static njs_external_t  ngx_http_js_ext_request[] = {
             .enumerable = 1,
             .prop_handler = ngx_http_js_ext_header_out,
             .keys = ngx_http_js_ext_keys_header_out,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("rawHeadersOut"),
+        .u.property = {
+            .handler = ngx_http_js_ext_raw_header,
+            .magic32 = 1,
         }
     },
 
@@ -930,6 +951,88 @@ ngx_http_js_get_header(ngx_list_part_t *part, u_char *data, size_t len)
     }
 
     return NULL;
+}
+
+
+static njs_int_t
+ngx_http_js_ext_raw_header(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    njs_int_t            rc;
+    ngx_uint_t           i;
+    njs_value_t         *array, *elem;
+    ngx_list_part_t     *part;
+    ngx_list_t          *headers;
+    ngx_table_elt_t     *header, *h;
+    ngx_http_request_t  *r;
+
+    r = njs_vm_external(vm, value);
+    if (r == NULL) {
+        njs_value_undefined_set(retval);
+        return NJS_DECLINED;
+    }
+
+    headers = (njs_vm_prop_magic32(prop) == 1) ? &r->headers_out.headers
+                                               : &r->headers_in.headers;
+
+    rc = njs_vm_array_alloc(vm, retval, 8);
+    if (rc != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    part = &headers->part;
+    header = part->elts;
+
+    for (i = 0; /* void */ ; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            header = part->elts;
+            i = 0;
+        }
+
+        h = &header[i];
+
+        if (h->hash == 0) {
+            continue;
+        }
+
+        array = njs_vm_array_push(vm, retval);
+        if (array == NULL) {
+            return NJS_ERROR;
+        }
+
+        rc = njs_vm_array_alloc(vm, array, 2);
+        if (rc != NJS_OK) {
+            return NJS_ERROR;
+        }
+
+        elem = njs_vm_array_push(vm, array);
+        if (elem == NULL) {
+            return NJS_ERROR;
+        }
+
+        rc = njs_vm_value_string_set(vm, elem, h->key.data, h->key.len);
+        if (rc != NJS_OK) {
+            return NJS_ERROR;
+        }
+
+        elem = njs_vm_array_push(vm, array);
+        if (elem == NULL) {
+            return NJS_ERROR;
+        }
+
+        rc = njs_vm_value_string_set(vm, elem, h->value.data, h->value.len);
+        if (rc != NJS_OK) {
+            return NJS_ERROR;
+        }
+    }
+
+    return NJS_OK;
 }
 
 
