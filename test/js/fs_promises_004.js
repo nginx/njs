@@ -23,7 +23,7 @@ var testSync = () => new Promise((resolve, reject) => {
             fs.realpathSync(fname);
             throw new Error('fs.realpathSync error 1');
         } catch (e) {
-            if (e.syscall != 'realpath') { // e.code
+            if (e.syscall != 'realpath' || e.code != 'ENOENT') {
                 throw e;
             }
         }
@@ -79,7 +79,7 @@ var testCallback = () => new Promise((resolve, reject) => {
                 reject(new Error('fs.realpath error 1'));
                 return;
             }
-            if (err.syscall != 'realpath') {
+            if (err.syscall != 'realpath' || err.code != 'ENOENT') {
                 reject(err);
                 return;
             }
@@ -165,7 +165,7 @@ Promise.resolve()
 .then(() => fsp.realpath(fname)
             .then(() => { throw new Error('fsp.realpath error 1') }))
 .catch((e) => {
-    if (e.syscall != 'realpath') {
+    if (e.syscall != 'realpath' || e.code != 'ENOENT') {
         throw e;
     }
 })

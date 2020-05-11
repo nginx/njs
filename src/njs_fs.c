@@ -873,9 +873,11 @@ njs_fs_error(njs_vm_t *vm, const char *syscall, const char *description,
     size_t        size;
     njs_int_t     ret;
     njs_value_t   value;
+    const char    *code;
     njs_object_t  *error;
 
     static const njs_value_t  string_errno = njs_string("errno");
+    static const njs_value_t  string_code = njs_string("code");
     static const njs_value_t  string_path = njs_string("path");
     static const njs_value_t  string_syscall = njs_string("syscall");
 
@@ -896,6 +898,20 @@ njs_fs_error(njs_vm_t *vm, const char *syscall, const char *description,
     if (errn != 0) {
         njs_set_number(&value, errn);
         ret = njs_value_property_set(vm, retval, njs_value_arg(&string_errno),
+                                     &value);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
+        code = njs_errno_string(errn);
+        size = njs_strlen(code);
+
+        ret = njs_string_new(vm, &value, (u_char *) code, size, size);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
+        ret = njs_value_property_set(vm, retval, njs_value_arg(&string_code),
                                      &value);
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;

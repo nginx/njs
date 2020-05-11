@@ -511,7 +511,7 @@ njs_test {
     {"var fs = require('fs'); \r\n"
      "undefined\r\n>> "}
     {"fs.readFile('test/fs/nonexistent', 'utf8', function (e) {console.log(JSON.stringify(e))})\r\n"
-     "undefined\r\n{\"errno\":2,\"path\":\"test/fs/nonexistent\",\"syscall\":\"open\"}\r\n>> "}
+     "undefined\r\n{\"errno\":2,\"code\":\"ENOENT\",\"path\":\"test/fs/nonexistent\",\"syscall\":\"open\"}\r\n>> "}
 }
 
 njs_test {
@@ -571,7 +571,7 @@ njs_test {
     {"var fs = require('fs'); \r\n"
      "undefined\r\n>> "}
     {"try { fs.readFileSync('test/fs/nonexistent')} catch (e) {console.log(JSON.stringify(e))}\r\n"
-     "{\"errno\":2,\"path\":\"test/fs/nonexistent\",\"syscall\":\"open\"}\r\nundefined\r\n>> "}
+     "{\"errno\":2,\"code\":\"ENOENT\",\"path\":\"test/fs/nonexistent\",\"syscall\":\"open\"}\r\nundefined\r\n>> "}
 }
 
 njs_test {
@@ -648,7 +648,7 @@ njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
     {"fs.writeFile('/invalid_path', 'ABC', function (e) { console.log(JSON.stringify(e))})\r\n"
-     "undefined\r\n{\"errno\":13,\"path\":\"/invalid_path\",\"syscall\":\"open\"}\r\n>> "}
+     "undefined\r\n{\"errno\":13,\"code\":\"EACCES\",\"path\":\"/invalid_path\",\"syscall\":\"open\"}\r\n>> "}
 }
 
 # require('fs').writeFileSync()

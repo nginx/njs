@@ -14,8 +14,7 @@ var testSync = new Promise((resolve, reject) => {
             fs.accessSync(fname + '___');
             failed = true;
         } catch(e) {
-            failed = (e.syscall != 'access');
-            // TODO: e.code != 'ENOENT'
+            failed = (e.syscall != 'access') || e.code != 'ENOENT';
         }
         resolve(failed);
     } catch (e) {
@@ -33,7 +32,8 @@ var testCallback = new Promise((resolve, reject) => {
         fs.access(fname, fs.constants.R_OK | fs.constants.W_OK, (err) => {
             failed |= (err !== undefined);
             fs.access(fname + '___', (err) => {
-                failed |= ((err === undefined) || (err.syscall != 'access'));
+                failed |= ((err === undefined) || (err.syscall != 'access')
+                                               || err.code != 'ENOENT');
                 resolve(failed);
             });
         });
@@ -66,6 +66,7 @@ Promise.resolve()
     console.log('testPromise failed');
 })
 .catch((e) => {
-    console.log('testPromise ok', (e.syscall == 'access') && (e.path == fname + '___'));
+    console.log('testPromise ok', (e.syscall == 'access') && (e.path == fname + '___')
+                                                          && e.code == 'ENOENT');
 })
 ;
