@@ -328,3 +328,340 @@ njs_qsort(void *arr, size_t n, size_t esize, njs_sort_cmp_t cmp, void *ctx)
         }
     }
 }
+
+
+#define njs_errno_case(e)                                                   \
+    case e:                                                                 \
+        return #e;
+
+
+const char*
+njs_errno_string(int errnum)
+{
+    switch (errnum) {
+#ifdef EACCES
+    njs_errno_case(EACCES);
+#endif
+
+#ifdef EADDRINUSE
+    njs_errno_case(EADDRINUSE);
+#endif
+
+#ifdef EADDRNOTAVAIL
+    njs_errno_case(EADDRNOTAVAIL);
+#endif
+
+#ifdef EAFNOSUPPORT
+    njs_errno_case(EAFNOSUPPORT);
+#endif
+
+#ifdef EAGAIN
+    njs_errno_case(EAGAIN);
+#endif
+
+#ifdef EWOULDBLOCK
+#if EAGAIN != EWOULDBLOCK
+    njs_errno_case(EWOULDBLOCK);
+#endif
+#endif
+
+#ifdef EALREADY
+    njs_errno_case(EALREADY);
+#endif
+
+#ifdef EBADF
+    njs_errno_case(EBADF);
+#endif
+
+#ifdef EBADMSG
+    njs_errno_case(EBADMSG);
+#endif
+
+#ifdef EBUSY
+    njs_errno_case(EBUSY);
+#endif
+
+#ifdef ECANCELED
+    njs_errno_case(ECANCELED);
+#endif
+
+#ifdef ECHILD
+    njs_errno_case(ECHILD);
+#endif
+
+#ifdef ECONNABORTED
+    njs_errno_case(ECONNABORTED);
+#endif
+
+#ifdef ECONNREFUSED
+    njs_errno_case(ECONNREFUSED);
+#endif
+
+#ifdef ECONNRESET
+    njs_errno_case(ECONNRESET);
+#endif
+
+#ifdef EDEADLK
+    njs_errno_case(EDEADLK);
+#endif
+
+#ifdef EDESTADDRREQ
+    njs_errno_case(EDESTADDRREQ);
+#endif
+
+#ifdef EDOM
+    njs_errno_case(EDOM);
+#endif
+
+#ifdef EDQUOT
+    njs_errno_case(EDQUOT);
+#endif
+
+#ifdef EEXIST
+    njs_errno_case(EEXIST);
+#endif
+
+#ifdef EFAULT
+    njs_errno_case(EFAULT);
+#endif
+
+#ifdef EFBIG
+    njs_errno_case(EFBIG);
+#endif
+
+#ifdef EHOSTUNREACH
+    njs_errno_case(EHOSTUNREACH);
+#endif
+
+#ifdef EIDRM
+    njs_errno_case(EIDRM);
+#endif
+
+#ifdef EILSEQ
+    njs_errno_case(EILSEQ);
+#endif
+
+#ifdef EINPROGRESS
+    njs_errno_case(EINPROGRESS);
+#endif
+
+#ifdef EINTR
+    njs_errno_case(EINTR);
+#endif
+
+#ifdef EINVAL
+    njs_errno_case(EINVAL);
+#endif
+
+#ifdef EIO
+    njs_errno_case(EIO);
+#endif
+
+#ifdef EISCONN
+    njs_errno_case(EISCONN);
+#endif
+
+#ifdef EISDIR
+    njs_errno_case(EISDIR);
+#endif
+
+#ifdef ELOOP
+    njs_errno_case(ELOOP);
+#endif
+
+#ifdef EMFILE
+    njs_errno_case(EMFILE);
+#endif
+
+#ifdef EMLINK
+    njs_errno_case(EMLINK);
+#endif
+
+#ifdef EMSGSIZE
+    njs_errno_case(EMSGSIZE);
+#endif
+
+#ifdef EMULTIHOP
+    njs_errno_case(EMULTIHOP);
+#endif
+
+#ifdef ENAMETOOLONG
+    njs_errno_case(ENAMETOOLONG);
+#endif
+
+#ifdef ENETDOWN
+    njs_errno_case(ENETDOWN);
+#endif
+
+#ifdef ENETRESET
+    njs_errno_case(ENETRESET);
+#endif
+
+#ifdef ENETUNREACH
+    njs_errno_case(ENETUNREACH);
+#endif
+
+#ifdef ENFILE
+    njs_errno_case(ENFILE);
+#endif
+
+#ifdef ENOBUFS
+    njs_errno_case(ENOBUFS);
+#endif
+
+#ifdef ENODATA
+    njs_errno_case(ENODATA);
+#endif
+
+#ifdef ENODEV
+    njs_errno_case(ENODEV);
+#endif
+
+#ifdef ENOENT
+    njs_errno_case(ENOENT);
+#endif
+
+#ifdef ENOEXEC
+    njs_errno_case(ENOEXEC);
+#endif
+
+#ifdef ENOLINK
+    njs_errno_case(ENOLINK);
+#endif
+
+#ifdef ENOLCK
+#if ENOLINK != ENOLCK
+    njs_errno_case(ENOLCK);
+#endif
+#endif
+
+#ifdef ENOMEM
+    njs_errno_case(ENOMEM);
+#endif
+
+#ifdef ENOMSG
+    njs_errno_case(ENOMSG);
+#endif
+
+#ifdef ENOPROTOOPT
+    njs_errno_case(ENOPROTOOPT);
+#endif
+
+#ifdef ENOSPC
+    njs_errno_case(ENOSPC);
+#endif
+
+#ifdef ENOSR
+    njs_errno_case(ENOSR);
+#endif
+
+#ifdef ENOSTR
+    njs_errno_case(ENOSTR);
+#endif
+
+#ifdef ENOSYS
+    njs_errno_case(ENOSYS);
+#endif
+
+#ifdef ENOTCONN
+    njs_errno_case(ENOTCONN);
+#endif
+
+#ifdef ENOTDIR
+    njs_errno_case(ENOTDIR);
+#endif
+
+#ifdef ENOTEMPTY
+#if ENOTEMPTY != EEXIST
+    njs_errno_case(ENOTEMPTY);
+#endif
+#endif
+
+#ifdef ENOTSOCK
+    njs_errno_case(ENOTSOCK);
+#endif
+
+#ifdef ENOTSUP
+    njs_errno_case(ENOTSUP);
+#else
+#ifdef EOPNOTSUPP
+    njs_errno_case(EOPNOTSUPP);
+#endif
+#endif
+
+#ifdef ENOTTY
+    njs_errno_case(ENOTTY);
+#endif
+
+#ifdef ENXIO
+    njs_errno_case(ENXIO);
+#endif
+
+#ifdef EOVERFLOW
+    njs_errno_case(EOVERFLOW);
+#endif
+
+#ifdef EPERM
+    njs_errno_case(EPERM);
+#endif
+
+#ifdef EPIPE
+    njs_errno_case(EPIPE);
+#endif
+
+#ifdef EPROTO
+    njs_errno_case(EPROTO);
+#endif
+
+#ifdef EPROTONOSUPPORT
+    njs_errno_case(EPROTONOSUPPORT);
+#endif
+
+#ifdef EPROTOTYPE
+    njs_errno_case(EPROTOTYPE);
+#endif
+
+#ifdef ERANGE
+    njs_errno_case(ERANGE);
+#endif
+
+#ifdef EROFS
+    njs_errno_case(EROFS);
+#endif
+
+#ifdef ESPIPE
+    njs_errno_case(ESPIPE);
+#endif
+
+#ifdef ESRCH
+    njs_errno_case(ESRCH);
+#endif
+
+#ifdef ESTALE
+    njs_errno_case(ESTALE);
+#endif
+
+#ifdef ETIME
+    njs_errno_case(ETIME);
+#endif
+
+#ifdef ETIMEDOUT
+    njs_errno_case(ETIMEDOUT);
+#endif
+
+#ifdef ETXTBSY
+    njs_errno_case(ETXTBSY);
+#endif
+
+#ifdef EXDEV
+    njs_errno_case(EXDEV);
+#endif
+
+    default:
+        break;
+    }
+
+    return "UNKNOWN CODE";
+}
+
+
