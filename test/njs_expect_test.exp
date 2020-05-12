@@ -1130,3 +1130,8 @@ njs_run {"./test/js/fs_promises_004.js"} \
 "test fs.symlinkSync
 test fs.symlink
 test fsp.symlink"
+
+njs_run {"./test/js/fs_promises_005.js"} \
+"test fs.mkdirSync
+test fs.mkdir
+test fsp.mkdir"
