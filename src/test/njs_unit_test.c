@@ -4313,6 +4313,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("[0,1].slice()"),
       njs_str("0,1") },
 
+    { njs_str("[1,2,3,,,4].slice()"),
+      njs_str("1,2,3,,,4") },
+
     { njs_str("[0,1].slice(undefined)"),
       njs_str("0,1") },
 
@@ -4326,7 +4329,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("") },
 
     { njs_str("var a = [1,2,3,4,5], b = a.slice(3);"
-                 "b[0] +' '+ b[1] +' '+ b[2]"),
+              "b[0] +' '+ b[1] +' '+ b[2]"),
       njs_str("4 5 undefined") },
 
     { njs_str("var a = [1,2]; a.pop() +' '+ a.length +' '+ a"),
@@ -4336,7 +4339,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("3 3 1,2") },
 
     { njs_str("var a = [1,2], len = a.push(3,4,5);"
-                 "len +' '+ a.pop() +' '+ a"),
+              "len +' '+ a.pop() +' '+ a"),
       njs_str("5 5 1,2,3,4") },
 
     { njs_str("var x = {'0': 'a', '1': 'b', '2': 'c', 'length': 3};"

@@ -686,15 +686,17 @@ njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
 
                     /* src value may be in Array.prototype object. */
 
-                    value = &array->start[n++];
-                    ret = njs_value_property_i64(vm, this, start++, value);
+                    ret = njs_value_property_i64(vm, this, start++,
+                                                 &array->start[n]);
                     if (njs_slow_path(ret == NJS_ERROR)) {
                         return NJS_ERROR;
                     }
 
                     if (ret != NJS_OK) {
-                        njs_set_invalid(value);
+                        njs_set_invalid(&array->start[n]);
                     }
+
+                    n++;
                 }
 
                 length--;
