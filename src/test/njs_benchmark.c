@@ -76,6 +76,7 @@ njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
     n = test->repeat;
     expected = &test->result;
 
+    ret = NJS_ERROR;
     us = njs_time() / 1000;
 
     for (i = 0; i < n; i++) {
@@ -96,7 +97,8 @@ njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
         success = njs_strstr_eq(expected, &s);
 
         if (!success) {
-            njs_printf("failed: \"%V\" vs \"%V\"\n", expected, &s);
+            njs_printf("%s failed: \"%V\" vs \"%V\"\n", test->name, expected,
+                       &s);
             goto done;
         }
 
@@ -266,7 +268,7 @@ static njs_benchmark_test_t  njs_test[] =
 
     { "external object property ($shared.props.a)",
       njs_str("$shared.props.a"),
-      njs_str("4294967295"),
+      njs_str("11"),
       1000 },
 
     { "external dump (JSON.stringify($shared.header))",
@@ -394,8 +396,6 @@ main(int argc, char **argv)
     }
 
     njs_vm_start(vm);
-
-    ret = EXIT_FAILURE;
 
     ret = njs_vm_array_alloc(vm, &report, 8);
     if (ret != NJS_OK) {
