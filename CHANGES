@@ -1,4 +1,16 @@
 
+Changes with njs 0.4.1                                           19 May 2020
+
+    *) Feature: added support for multi-value headers in r.headersIn.
+
+    *) Feature: introduced raw headers API.
+
+    *) Feature: added TypedScript API description.
+
+    Core:
+
+    *) Bugfix: fixed Array.prototype.slice() for sparse arrays.
+
 Changes with njs 0.4.0                                           23 Apr 2020
 
     nginx modules:
