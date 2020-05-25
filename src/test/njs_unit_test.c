@@ -17917,6 +17917,134 @@ done:
 }
 
 
+typedef struct {
+    size_t      size;
+    uint32_t    array[32];
+    size_t      esize;
+    uint32_t    expected[32];
+} njs_sort_test_t;
+
+
+static int
+njs_sort_cmp(const void *a, const void *b, void *ctx)
+{
+    njs_sort_test_t  *c;
+
+    c = ctx;
+
+    switch (c->esize) {
+    case 1:
+        return *((uint8_t *) a) - *((uint8_t *) b);
+    case 2:
+        return *((uint16_t *) a) - *((uint16_t *) b);
+    case 4:
+    default:
+        return *((uint32_t *) a) - *((uint32_t *) b);
+    }
+}
+
+
+static njs_int_t
+njs_sort_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
+{
+    u_char           *p;
+    njs_uint_t        i, j, k;
+    njs_sort_test_t  *t;
+    u_char           array[sizeof(t->array)];
+    uint32_t         sorted[sizeof(t->array) / sizeof(t->array[0])];
+
+    static const njs_sort_test_t tests[] = {
+        { 1, { 5 }, 1, { 5 } },
+        { 3, { 3, 2, 1 }, 1, { 1, 2, 3 } },
+        { 4, { 4, 3, 2, 1 }, 1, { 1, 2, 3, 4 } },
+        { 5, { 5, 4, 3, 2, 1 }, 1, { 1, 2, 3, 4, 5 } },
+        { 5, { 1, 0, 9, 1, 8 }, 1, { 0, 1, 1, 8, 9 } },
+        { 8, { 0, 0, 0, 0, 0, 0, 0, 0 }, 1, { 0, 0, 0, 0, 0, 0, 0, 0 } },
+        { 8, { 4, 5, 1, 4, 2, 5, 5, 6 }, 1, { 1, 2, 4, 4, 5, 5, 5, 6 } },
+        { 4, { 512, 100, 65535, 0 }, 2, { 0, 100, 512, 65535 } },
+        { 3, { 65536, 3, 262141 }, 4, { 3, 65536, 262141 } },
+    };
+
+    for (i = 0; i < njs_nitems(tests); i++) {
+        t = (njs_sort_test_t *) &tests[i];
+
+        p = array;
+        for (k = 0; k < t->size; k++) {
+            switch (t->esize) {
+            case 1:
+                *p = (uint8_t) t->array[k];
+                break;
+            case 2:
+                *(uint16_t *) p = (uint16_t) t->array[k];
+                break;
+            case 4:
+            default:
+                *(uint32_t *) p = (uint32_t) t->array[k];
+                break;
+            }
+
+            p += t->esize;
+        }
+
+        njs_qsort(array, t->size, t->esize, njs_sort_cmp, t);
+
+        p = array;
+        for (k = 0; k < t->size; k++) {
+            switch (t->esize) {
+            case 1:
+                sorted[k] = *p;
+                break;
+            case 2:
+                sorted[k] = *(uint16_t *) p;
+                break;
+            case 4:
+            default:
+                sorted[k] = *(uint32_t *) p;
+                break;
+            }
+
+            p += t->esize;
+        }
+
+
+        for (k = 0; k < t->size; k++) {
+            if (sorted[k] != t->expected[k]) {
+                goto failed;
+            }
+        }
+
+        stat->passed++;
+        continue;
+
+failed:
+
+        njs_printf("njs_sort_test([");
+        for (j = 0; j < t->size; j++) {
+            njs_printf("%uD%s", t->array[j],
+                       (j < t->size - 1) ? "," : "");
+        }
+
+        njs_printf("]):\nexpected: [");
+        for (j = 0; j < t->size; j++) {
+            njs_printf("%uD%s", t->expected[j],
+                       (j < t->size - 1) ? "," : "");
+        }
+
+        njs_printf("]\n     got: [");
+        for (j = 0; j < t->size; j++) {
+            njs_printf("%uD%s", sorted[j],
+                       (j < t->size - 1) ? "," : "");
+        }
+
+        njs_printf("]\n");
+
+        stat->failed++;
+    }
+
+    return NJS_OK;
+}
+
+
 static njs_int_t
 njs_string_to_index_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
 {
@@ -18020,6 +18148,8 @@ njs_api_test(njs_opts_t *opts, njs_stat_t *stat)
           njs_str("njs_file_dirname_test") },
         { njs_chb_test,
           njs_str("njs_chb_test") },
+        { njs_sort_test,
+          njs_str("njs_sort_test") },
         { njs_string_to_index_test,
           njs_str("njs_string_to_index_test") },
     };

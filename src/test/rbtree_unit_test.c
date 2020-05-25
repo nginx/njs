@@ -18,7 +18,7 @@ static intptr_t rbtree_unit_test_comparison(njs_rbtree_node_t *node1,
     njs_rbtree_node_t *node2);
 static njs_int_t rbtree_unit_test_compare(uint32_t key1, uint32_t key2);
 static int njs_cdecl rbtree_unit_test_sort_cmp(const void *one,
-    const void *two);
+    const void *two, void *ctx);
 
 
 static njs_int_t
@@ -56,7 +56,7 @@ rbtree_unit_test(njs_uint_t n)
         items[i].key = key;
     }
 
-    qsort(keys, n, sizeof(uint32_t), rbtree_unit_test_sort_cmp);
+    njs_qsort(keys, n, sizeof(uint32_t), rbtree_unit_test_sort_cmp, NULL);
 
     for (i = 0; i < n; i++) {
         njs_rbtree_insert(&tree, &items[i].node);
@@ -161,7 +161,7 @@ rbtree_unit_test_compare(uint32_t key1, uint32_t key2)
 
 
 static int njs_cdecl
-rbtree_unit_test_sort_cmp(const void *one, const void *two)
+rbtree_unit_test_sort_cmp(const void *one, const void *two, void *ctx)
 {
     const uint32_t  *first, *second;
 

@@ -32,6 +32,7 @@
 #include <njs_mp.h>
 #include <njs_arr.h>
 #include <njs_chb.h>
+#include <njs_utils.h>
 #include <njs_sprintf.h>
 
 #include <njs_pcre.h>

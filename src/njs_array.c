@@ -1522,7 +1522,7 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static int
-njs_array_indices_handler(const void *first, const void *second)
+njs_array_indices_handler(const void *first, const void *second, void *ctx)
 {
     double             num1, num2;
     int64_t            diff;
@@ -1572,8 +1572,8 @@ njs_array_keys(njs_vm_t *vm, njs_value_t *object, njs_bool_t all)
         return NULL;
     }
 
-    qsort(keys->start, keys->length, sizeof(njs_value_t),
-          njs_array_indices_handler);
+    njs_qsort(keys->start, keys->length, sizeof(njs_value_t),
+              njs_array_indices_handler, NULL);
 
     return keys;
 }
