@@ -5979,8 +5979,55 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = ['1','2','3','4','5','6']; a.sort()"),
       njs_str("1,2,3,4,5,6") },
 
+    { njs_str("var a = ['a', 'ab', '', 'aa']; a.sort()"),
+      njs_str(",a,aa,ab") },
+
+    { njs_str("var a = ['a', 'ab', '', 'aa']; a.sort()"),
+      njs_str(",a,aa,ab") },
+
+    { njs_str("var a = [23,1,8,5]; Object.defineProperty(a, '0', {enumerable:false});"
+              "a.sort((x,y)=>x-y)"),
+      njs_str("1,5,8,23") },
+
+    { njs_str("var a = {0:23,1:1,2:8,3:5,length:4};"
+              "Array.prototype.sort.call(a, (x,y)=>x-y);"
+              "Array.prototype.join.call(a)"),
+      njs_str("1,5,8,23") },
+
+    { njs_str("var a = " NJS_LARGE_ARRAY "; "
+              "a[100] = 1; a[512] = -1; a[5] = undefined;"
+              "a.sort();"
+              "a[0] == -1 && a[1] == 1 && a[2] == undefined"),
+      njs_str("true") },
+
+    { njs_str("var a = " NJS_LARGE_ARRAY "; "
+              "a.fill(1, 256, 512); a.fill(undefined, 1000, 1010);"
+              "Object.defineProperty(a, '256', {value: a[256], enumerable:false});"
+              "a.sort();"
+              "a[0] == 1 && a[255] == 1 && Object.getOwnPropertyDescriptor(a, '256').value == undefined"),
+      njs_str("true") },
+
+    { njs_str("var a = [23,1,,undefined,8,,5]; Object.defineProperty(a, '0', {enumerable:false});"
+              "a.sort((x,y)=>x-y)"),
+      njs_str("1,5,8,23,,,") },
+
     { njs_str("var o = { toString: function() { return 5 } };"
-                 "var a = [6,o,4,3,2,1]; a.sort()"),
+              "var a = [6,o,4,3,2,1]; a.sort(undefined)"),
+      njs_str("1,2,3,4,5,6") },
+
+    { njs_str("var a = [undefined,1]; a.sort()"),
+      njs_str("1,") },
+
+    { njs_str("var a = [,1]; a.sort()"),
+      njs_str("1,") },
+
+    { njs_str("var a = [,1,undefined]; a.sort()"),
+      njs_str("1,,") },
+
+    { njs_str("var a = ['1','2','3','4','5','6']; a.sort()"),
+      njs_str("1,2,3,4,5,6") },
+
+    { njs_str("var a = [1,2,3,4,5,6]; a.sort()"),
       njs_str("1,2,3,4,5,6") },
 
     { njs_str("var a = {0:3,1:2,2:1}; Array.prototype.sort.call(a) === a"),
@@ -5990,28 +6037,52 @@ static njs_unit_test_t  njs_test[] =
       njs_str("true") },
 
     { njs_str("var a = [1,2,3,4,5,6];"
-                 "a.sort(function(x, y) { return x - y })"),
+              "a.sort(function(x, y) { return x - y })"),
       njs_str("1,2,3,4,5,6") },
 
-    { njs_str("var a = [6,5,4,3,2,1];"
-                 "a.sort(function(x, y) { return x - y })"),
-      njs_str("1,2,3,4,5,6") },
+    { njs_str("var a = Array(128).fill().map((v,i,a)=>a.length-i);"
+              "a.sort((a,b)=>a-b);"
+              "a.every((v,i,a)=> (i < 1 || v >= a[i-1]))"),
+      njs_str("true") },
 
     { njs_str("var a = [2,2,2,1,1,1];"
-                 "a.sort(function(x, y) { return x - y })"),
+              "a.sort(function(x, y) { return x - y })"),
       njs_str("1,1,1,2,2,2") },
 
     { njs_str("var a = [,,,2,2,2,1,1,1];"
-                 "a.sort(function(x, y) { return x - y })"),
+              "a.sort(function(x, y) { return x - y })"),
       njs_str("1,1,1,2,2,2,,,") },
 
     { njs_str("var a = [,,,,];"
-                 "a.sort(function(x, y) { return x - y })"),
+              "a.sort(function(x, y) { return x - y })"),
       njs_str(",,,") },
 
+    { njs_str("var a = [,,undefined,undefined,,undefined];"
+              "a.sort(function(x, y) { return x - y }); njs.dump(a)"),
+      njs_str("[undefined,undefined,undefined,<empty>,<empty>,<empty>]") },
+
+    { njs_str("var a = [1,,undefined,8,undefined,,undefined,,2];"
+              "a.sort(function(x, y) { return x - y }); njs.dump(a)"),
+      njs_str("[1,2,8,undefined,undefined,undefined,<empty>,<empty>,<empty>]") },
+
     { njs_str("var a = [1,,];"
-                 "a.sort(function(x, y) { return x - y })"),
+              "a.sort(function(x, y) { return x - y })"),
       njs_str("1,") },
+
+    { njs_str("var a = [{ n: 'A', r: 2 },"
+              "         { n: 'B', r: 3 },"
+              "         { n: 'C', r: 2 },"
+              "         { n: 'D', r: 3 },"
+              "         { n: 'E', r: 3 }];"
+              "a.sort((a, b) => b.r - a.r).map(v=>v.n).join('')"),
+      njs_str("BDEAC") },
+
+    { njs_str("var count = 0;"
+              "[4,3,2,1].sort(function(x, y) { if (count++ == 2) {throw Error('Oops'); }; return x - y })"),
+      njs_str("Error: Oops") },
+
+    { njs_str("[1,2].sort(1)"),
+      njs_str("TypeError: comparefn must be callable or undefined") },
 
     /* Template literal. */
 

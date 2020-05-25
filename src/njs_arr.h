@@ -11,11 +11,11 @@
 typedef struct {
     void              *start;
     /*
-     * A array can hold no more than 65536 items.
-     * The item size is no more than 64K.
+     * A array can hold no more than 2**32 items.
+     * the item size is no more than 64K.
      */
-    uint16_t          items;
-    uint16_t          available;
+    uint32_t          items;
+    uint32_t          available;
     uint16_t          item_size;
 
     uint8_t           pointer;

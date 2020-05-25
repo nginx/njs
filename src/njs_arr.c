@@ -111,7 +111,7 @@ njs_arr_add_multiple(njs_arr_t *arr, njs_uint_t items)
         old = arr->start;
         arr->start = start;
 
-        memcpy(start, old, (uint32_t) arr->items * arr->item_size);
+        memcpy(start, old, arr->items * arr->item_size);
 
         if (arr->separate == 0) {
             arr->separate = 1;
@@ -121,7 +121,7 @@ njs_arr_add_multiple(njs_arr_t *arr, njs_uint_t items)
         }
     }
 
-    item = (char *) arr->start + (uint32_t) arr->items * arr->item_size;
+    item = (char *) arr->start + arr->items * arr->item_size;
 
     arr->items = items;
 
