@@ -458,16 +458,15 @@ njs_fs_rename_sync(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    ret = rename(old_path, new_path);
-    if (njs_slow_path(ret != 0)) {
-        (void) njs_fs_error(vm, "rename", strerror(errno), NULL, errno,
-                            &vm->retval);
-        return NJS_ERROR;
-    }
-
     njs_set_undefined(&vm->retval);
 
-    return NJS_OK;
+    ret = rename(old_path, new_path);
+    if (njs_slow_path(ret != 0)) {
+        ret = njs_fs_error(vm, "rename", strerror(errno), NULL, errno,
+                            &vm->retval);
+    }
+
+    return ret;
 }
 
 
@@ -515,15 +514,12 @@ njs_fs_access(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
+    njs_set_undefined(&retval);
+
     ret = access(file_path, md);
     if (njs_slow_path(ret != 0)) {
         ret = njs_fs_error(vm, "access", strerror(errno), path, errno, &retval);
-        goto done;
     }
-
-    njs_set_undefined(&retval);
-
-done:
 
     if (ret == NJS_OK) {
         return njs_fs_result(vm, &retval, calltype, callback, 1);
@@ -573,16 +569,13 @@ njs_fs_symlink(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
+    njs_set_undefined(&retval);
+
     ret = symlink(target_path, file_path);
     if (njs_slow_path(ret != 0)) {
         ret = njs_fs_error(vm, "symlink", strerror(errno), path, errno,
                            &retval);
-        goto done;
     }
-
-    njs_set_undefined(&retval);
-
-done:
 
     if (ret == NJS_OK) {
         return njs_fs_result(vm, &retval, calltype, callback, 1);
@@ -616,15 +609,12 @@ njs_fs_unlink(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
+    njs_set_undefined(&retval);
+
     ret = unlink(file_path);
     if (njs_slow_path(ret != 0)) {
         ret = njs_fs_error(vm, "unlink", strerror(errno), path, errno, &retval);
-        goto done;
     }
-
-    njs_set_undefined(&retval);
-
-done:
 
     if (ret == NJS_OK) {
         return njs_fs_result(vm, &retval, calltype, callback, 1);
