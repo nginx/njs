@@ -4509,6 +4509,23 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var o = {1:true, 2:'', length:-2}; Array.prototype.reverse.call(o) === o"),
       njs_str("true") },
 
+    { njs_str("["
+              " ['a','b','c'],"
+              " ['a','b','c','d'],"
+              " [,'b','c','d'],"
+              " ['a','b','c',],"
+              " [,'b','c',],"
+              "]"
+              ".map(v=>Object.defineProperty(v, 1, {value:v[1], enumerable:false}))"
+              ".map(v=>v.reverse().join(''))"),
+      njs_str("cba,dcba,dcb,cba,cb") },
+
+    { njs_str("Array.prototype[1] = 1; var x = [0]; x.length = 2; x.reverse(); x"),
+      njs_str("1,0") },
+
+    { njs_str("Array.prototype[0] = 0; var x = [,1]; x.reverse(); x"),
+      njs_str("1,0") },
+
     { njs_str("var a = [1,2,3,4]; a.indexOf()"),
       njs_str("-1") },
 
