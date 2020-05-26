@@ -3318,11 +3318,13 @@ njs_array_prototype_sort(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                     return NJS_ERROR;
                 }
 
-                p = (void *) njs_cpymem(nslots, slots,
-                                   sizeof(njs_array_sort_slot_t) * (p - slots));
-
                 if (slots != NULL) {
+                    p = (void *) njs_cpymem(nslots, slots,
+                                  sizeof(njs_array_sort_slot_t) * (p - slots));
                     njs_mp_free(vm->mem_pool, slots);
+
+                } else {
+                    p = nslots;
                 }
 
                 slots = nslots;
