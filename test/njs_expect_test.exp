@@ -1135,3 +1135,8 @@ njs_run {"./test/js/fs_promises_005.js"} \
 "test fs.mkdirSync
 test fs.mkdir
 test fsp.mkdir"
+
+njs_run {"./test/js/fs_promises_006.js"} \
+"test fs.renameSync
+test fs.rename
+test fsp.rename"

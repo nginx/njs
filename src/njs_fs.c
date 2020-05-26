@@ -440,11 +440,22 @@ done:
 
 
 static njs_int_t
-njs_fs_rename_sync(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+njs_fs_rename(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t calltype)
 {
-    njs_int_t   ret;
-    const char  *old_path, *new_path;
+    njs_int_t    ret;
+    const char   *old_path, *new_path;
+    njs_value_t  retval, *callback;
+
+    callback = NULL;
+
+    if (calltype == NJS_FS_CALLBACK) {
+        callback = njs_arg(args, nargs, 3);
+        if (!njs_is_function(callback)) {
+            njs_type_error(vm, "\"callback\" must be a function");
+            return NJS_ERROR;
+        }
+    }
 
     ret = njs_fs_path_arg(vm, &old_path, njs_arg(args, nargs, 1),
                           &njs_str_value("oldPath"));
@@ -458,15 +469,18 @@ njs_fs_rename_sync(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    njs_set_undefined(&vm->retval);
+    njs_set_undefined(&retval);
 
     ret = rename(old_path, new_path);
     if (njs_slow_path(ret != 0)) {
-        ret = njs_fs_error(vm, "rename", strerror(errno), NULL, errno,
-                            &vm->retval);
+        ret = njs_fs_error(vm, "rename", strerror(errno), NULL, errno, &retval);
     }
 
-    return ret;
+    if (ret == NJS_OK) {
+        return njs_fs_result(vm, &retval, calltype, callback, 1);
+    }
+
+    return NJS_ERROR;
 }
 
 
@@ -1263,6 +1277,14 @@ static const njs_object_prop_t  njs_fs_promises_properties[] =
 
     {
         .type = NJS_PROPERTY,
+        .name = njs_string("rename"),
+        .value = njs_native_function2(njs_fs_rename, 0, NJS_FS_PROMISE),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
         .name = njs_string("rmdir"),
         .value = njs_native_function2(njs_fs_rmdir, 0, NJS_FS_PROMISE),
         .writable = 1,
@@ -1445,8 +1467,16 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
 
     {
         .type = NJS_PROPERTY,
+        .name = njs_string("rename"),
+        .value = njs_native_function2(njs_fs_rename, 0, NJS_FS_CALLBACK),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
         .name = njs_string("renameSync"),
-        .value = njs_native_function(njs_fs_rename_sync, 0),
+        .value = njs_native_function2(njs_fs_rename, 0, NJS_FS_DIRECT),
         .writable = 1,
         .configurable = 1,
     },
