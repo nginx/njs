@@ -3219,7 +3219,7 @@ njs_array_prototype_sort(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     int64_t                i, und, inv, len, nlen, length;
     njs_int_t              ret;
     njs_array_t            *array;
-    njs_value_t            *this, *comparefn, *start, *strings, value;
+    njs_value_t            *this, *comparefn, *start, *strings;
     njs_array_sort_ctx_t   ctx;
     njs_array_sort_slot_t  *p, *end, *slots, *nslots;
 
@@ -3271,15 +3271,13 @@ njs_array_prototype_sort(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         for (i = length - 1; i >= 0; i--) {
             if (njs_is_undefined(&start[i])) {
-                value = start[i];
                 start[i] = start[inv - und - 1];
-                start[inv - und - 1] = value;
+                start[inv - und - 1] = njs_value_undefined;
                 und++;
                 continue;
             }
 
             if (!njs_is_valid(&start[i])) {
-                value = start[i];
                 start[i] = start[inv - und - 1];
                 start[inv - und - 1] = njs_value_undefined;
                 start[inv - 1] = njs_value_invalid;
