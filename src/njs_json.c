@@ -1018,11 +1018,31 @@ njs_json_parse_iterator_call(njs_vm_t *vm, njs_json_parse_t *parse,
             return ret;
         }
 
+        /*
+         * The njs_function_apply() function can convert fast array to object.
+         * After this conversion, there will be garbage in the value.
+         */
+
+        if (njs_fast_path(njs_is_fast_array(&state->value)
+            && (state->index - 1) < njs_array(&state->value)->length))
+        {
+            if (njs_is_undefined(&parse->retval)) {
+                njs_set_invalid(value);
+
+            } else {
+                *value = parse->retval;
+            }
+
+            break;
+        }
+
         if (njs_is_undefined(&parse->retval)) {
-            njs_set_invalid(value);
+            njs_value_property_i64_delete(vm, &state->value, state->index - 1,
+                                          NULL);
 
         } else {
-            *value = parse->retval;
+            njs_value_property_i64_set(vm, &state->value, state->index - 1,
+                                       &parse->retval);
         }
 
         break;

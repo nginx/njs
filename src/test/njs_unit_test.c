@@ -15309,6 +15309,23 @@ static njs_unit_test_t  njs_test[] =
                  "args.join('|')"),
       njs_str("0:2|a:3|1:[object Object]|:2,[object Object]") },
 
+    { njs_str("JSON.parse('[0,1,2]', function(k, v) {"
+              "    if (v == 2) {"
+              "        return undefined;"
+              "    }"
+              "    return v;"
+              "});"),
+      njs_str("0,1,") },
+
+    { njs_str("JSON.parse('[0,1,2]', function(k, v) {"
+              "    if (v == 0) {"
+              "        Object.defineProperty(this, '0', {value: undefined, enumerable: false});"
+              "        return undefined;"
+              "    }"
+              "    return v;"
+              "});"),
+      njs_str(",1,2") },
+
     { njs_str("JSON.parse()"),
       njs_str("SyntaxError: Unexpected token at position 0") },
 
