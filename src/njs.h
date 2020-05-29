@@ -206,6 +206,7 @@ typedef struct {
  * unsafe       - enables unsafe language features:
  *   - Function constructors.
  * module       - ES6 "module" mode. Script mode is default.
+ * ast          - print AST.
  */
 
     uint8_t                         trailer;         /* 1 bit */
@@ -217,6 +218,7 @@ typedef struct {
     uint8_t                         sandbox;         /* 1 bit */
     uint8_t                         unsafe;          /* 1 bit */
     uint8_t                         module;          /* 1 bit */
+    uint8_t                         ast;             /* 1 bit */
 } njs_vm_opt_t;
 
 

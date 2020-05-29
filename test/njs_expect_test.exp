@@ -791,6 +791,10 @@ njs_run {"-p" "test/module" "./test/module/recursive.js"} \
 
 njs_run {"-h"} "Options"
 
+# ast
+
+njs_run {"-a" "-c" "console.log(1*2)"} "{\"name\": \"END\""
+
 # command
 
 njs_run {"-c" "console.log(\"a b c\")"} "a b c"

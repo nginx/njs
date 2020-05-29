@@ -128,6 +128,8 @@ void njs_parser_lexer_error(njs_parser_t *parser,
 void njs_parser_node_error(njs_vm_t *vm, njs_parser_node_t *node,
     njs_object_type_t type, const char *fmt, ...);
 
+njs_int_t njs_parser_serialize_ast(njs_parser_node_t *node, njs_chb_t *chain);
+
 
 #define njs_parser_restricted_identifier(token)                               \
     (token == NJS_TOKEN_ARGUMENTS || token == NJS_TOKEN_EVAL)

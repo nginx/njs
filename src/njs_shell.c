@@ -34,6 +34,7 @@ typedef struct {
     uint8_t                 sandbox;
     uint8_t                 safe;
     uint8_t                 version;
+    uint8_t                 ast;
 
     char                    *file;
     char                    *command;
@@ -268,6 +269,7 @@ main(int argc, char **argv)
     vm_options.external = &njs_console;
     vm_options.argv = opts.argv;
     vm_options.argc = opts.argc;
+    vm_options.ast = opts.ast;
 
     if (opts.interactive) {
         ret = njs_interactive_shell(&opts, &vm_options);
@@ -307,6 +309,7 @@ njs_get_options(njs_opts_t *opts, int argc, char **argv)
         "njs [options] [-c string | script.js | -] [script args]"
         "\n"
         "Options:\n"
+        "  -a                print AST.\n"
         "  -c                specify the command to execute.\n"
         "  -d                print disassembled code.\n"
         "  -f                disabled denormals mode.\n"
@@ -339,6 +342,10 @@ njs_get_options(njs_opts_t *opts, int argc, char **argv)
         case 'h':
             (void) write(STDOUT_FILENO, help, njs_length(help));
             return ret;
+
+        case 'a':
+            opts->ast = 1;
+            break;
 
         case 'c':
             opts->interactive = 0;

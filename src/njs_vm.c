@@ -125,6 +125,8 @@ njs_int_t
 njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 {
     njs_int_t           ret;
+    njs_str_t           ast;
+    njs_chb_t           chain;
     njs_lexer_t         lexer;
     njs_parser_t        *parser, *prev;
     njs_generator_t     generator;
@@ -202,7 +204,24 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         njs_disassembler(vm);
     }
 
-    return NJS_OK;
+    if (njs_slow_path(vm->options.ast)) {
+        njs_chb_init(&chain, vm->mem_pool);
+        ret = njs_parser_serialize_ast(parser->node, &chain);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return ret;
+        }
+
+        if (njs_slow_path(njs_chb_join(&chain, &ast) != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
+        njs_print(ast.start, ast.length);
+
+        njs_chb_destroy(&chain);
+        njs_mp_free(vm->mem_pool, ast.start);
+    }
+
+    return ret;
 
 fail:
 

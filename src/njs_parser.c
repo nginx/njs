@@ -449,6 +449,11 @@ static njs_token_type_t njs_parser_escape_string_create(njs_parser_t *parser,
 static njs_int_t njs_parser_escape_string_calc_length(njs_parser_t *parser,
     njs_lexer_token_t *token, size_t *out_size, size_t *out_length);
 
+static void njs_parser_serialize_tree(njs_chb_t *chain,
+    njs_parser_node_t *node, njs_int_t *ret, size_t indent);
+static njs_int_t njs_parser_serialize_node(njs_chb_t *chain,
+    njs_parser_node_t *node);
+
 
 #define njs_parser_chain_top(parser)                                          \
     ((parser)->scope->top)
@@ -8268,4 +8273,255 @@ njs_parser_node_error(njs_vm_t *vm, njs_parser_node_t *node,
     va_start(args, fmt);
     njs_parser_scope_error(vm, node->scope, type, node->token_line, fmt, args);
     va_end(args);
+}
+
+
+njs_int_t
+njs_parser_serialize_ast(njs_parser_node_t *node, njs_chb_t *chain)
+{
+    njs_int_t  ret;
+
+    ret = NJS_OK;
+
+    njs_parser_serialize_tree(chain, node, &ret, 0);
+    njs_chb_append_literal(chain, "\n");
+
+    return ret;
+}
+
+
+njs_inline void
+njs_parser_serialize_indent(njs_chb_t *chain, size_t indent)
+{
+    size_t  i;
+
+    for (i = 0; i < indent; i++) {
+        njs_chb_append_literal(chain, "  ");
+    }
+}
+
+
+static void
+njs_parser_serialize_tree(njs_chb_t *chain, njs_parser_node_t *node,
+    njs_int_t *ret, size_t indent)
+{
+    njs_str_t  str;
+
+    njs_chb_append_literal(chain, "{\"name\": \"");
+
+    *ret |= njs_parser_serialize_node(chain, node);
+
+    njs_chb_append_literal(chain, "\"");
+
+    switch (node->token_type) {
+    case NJS_TOKEN_NUMBER:
+    case NJS_TOKEN_STRING:
+    case NJS_TOKEN_NAME:
+    case NJS_TOKEN_FUNCTION_CALL:
+        njs_chb_append_literal(chain, ",\n");
+        njs_parser_serialize_indent(chain, indent);
+        njs_chb_sprintf(chain, 32, " \"index\": \"%p\"", node->index);
+
+        switch (node->token_type) {
+        case NJS_TOKEN_NUMBER:
+        case NJS_TOKEN_STRING:
+            njs_chb_append_literal(chain, ",\n");
+            njs_parser_serialize_indent(chain, indent);
+
+            if (node->token_type == NJS_TOKEN_NUMBER) {
+                njs_chb_sprintf(chain, 32, " \"value\": %f\n",
+                                njs_number(&node->u.value));
+
+            } else {
+                njs_string_get(&node->u.value, &str);
+                njs_chb_sprintf(chain, 32, " \"value\": \"%V\"\n", &str);
+            }
+
+            break;
+
+        default:
+            break;
+        }
+
+        break;
+
+    default:
+        break;
+    }
+
+    if (node->left != NULL) {
+        njs_chb_append_literal(chain, ",\n");
+        njs_parser_serialize_indent(chain, indent);
+        njs_chb_append_literal(chain, " \"left\": ");
+
+        njs_parser_serialize_tree(chain, node->left, ret, indent + 1);
+    }
+
+    if (node->right != NULL) {
+        njs_chb_append_literal(chain, ",\n");
+        njs_parser_serialize_indent(chain, indent);
+        njs_chb_append_literal(chain, " \"right\": ");
+
+        njs_parser_serialize_tree(chain, node->right, ret, indent + 1);
+    }
+
+    njs_chb_append_literal(chain, "}");
+}
+
+
+static njs_int_t
+njs_parser_serialize_node(njs_chb_t *chain, njs_parser_node_t *node)
+{
+    const char  *name;
+
+#define njs_token_serialize(token)                                          \
+    case token:                                                             \
+        name = &njs_stringify(token)[njs_length("NJS_TOKEN_")];             \
+        njs_chb_append(chain, name, njs_strlen(name));                      \
+        break
+
+    switch (node->token_type) {
+    njs_token_serialize(NJS_TOKEN_END);
+    /* FIXME: NJS_TOKEN_ILLEGAL should not be present in AST */
+    njs_token_serialize(NJS_TOKEN_ILLEGAL);
+    njs_token_serialize(NJS_TOKEN_COMMA);
+    njs_token_serialize(NJS_TOKEN_CONDITIONAL);
+    njs_token_serialize(NJS_TOKEN_ASSIGNMENT);
+    njs_token_serialize(NJS_TOKEN_ADDITION_ASSIGNMENT);
+    njs_token_serialize(NJS_TOKEN_SUBSTRACTION_ASSIGNMENT);
+    njs_token_serialize(NJS_TOKEN_MULTIPLICATION_ASSIGNMENT);
+    njs_token_serialize(NJS_TOKEN_EXPONENTIATION_ASSIGNMENT);
+    njs_token_serialize(NJS_TOKEN_DIVISION_ASSIGNMENT);
+    njs_token_serialize(NJS_TOKEN_REMAINDER_ASSIGNMENT);
+    njs_token_serialize(NJS_TOKEN_LEFT_SHIFT_ASSIGNMENT);
+    njs_token_serialize(NJS_TOKEN_RIGHT_SHIFT_ASSIGNMENT);
+    njs_token_serialize(NJS_TOKEN_UNSIGNED_RIGHT_SHIFT_ASSIGNMENT);
+    njs_token_serialize(NJS_TOKEN_BITWISE_OR_ASSIGNMENT);
+    njs_token_serialize(NJS_TOKEN_BITWISE_XOR_ASSIGNMENT);
+    njs_token_serialize(NJS_TOKEN_BITWISE_AND_ASSIGNMENT);
+    njs_token_serialize(NJS_TOKEN_EQUAL);
+    njs_token_serialize(NJS_TOKEN_NOT_EQUAL);
+    njs_token_serialize(NJS_TOKEN_STRICT_EQUAL);
+    njs_token_serialize(NJS_TOKEN_STRICT_NOT_EQUAL);
+    njs_token_serialize(NJS_TOKEN_ADDITION);
+    njs_token_serialize(NJS_TOKEN_UNARY_PLUS);
+    njs_token_serialize(NJS_TOKEN_INCREMENT);
+    njs_token_serialize(NJS_TOKEN_POST_INCREMENT);
+    njs_token_serialize(NJS_TOKEN_SUBSTRACTION);
+    njs_token_serialize(NJS_TOKEN_UNARY_NEGATION);
+    njs_token_serialize(NJS_TOKEN_DECREMENT);
+    njs_token_serialize(NJS_TOKEN_POST_DECREMENT);
+    njs_token_serialize(NJS_TOKEN_MULTIPLICATION);
+    njs_token_serialize(NJS_TOKEN_EXPONENTIATION);
+    njs_token_serialize(NJS_TOKEN_DIVISION);
+    njs_token_serialize(NJS_TOKEN_REMAINDER);
+    njs_token_serialize(NJS_TOKEN_LESS);
+    njs_token_serialize(NJS_TOKEN_LESS_OR_EQUAL);
+    njs_token_serialize(NJS_TOKEN_LEFT_SHIFT);
+    njs_token_serialize(NJS_TOKEN_GREATER);
+    njs_token_serialize(NJS_TOKEN_GREATER_OR_EQUAL);
+    njs_token_serialize(NJS_TOKEN_RIGHT_SHIFT);
+    njs_token_serialize(NJS_TOKEN_UNSIGNED_RIGHT_SHIFT);
+    njs_token_serialize(NJS_TOKEN_BITWISE_OR);
+    njs_token_serialize(NJS_TOKEN_LOGICAL_OR);
+    njs_token_serialize(NJS_TOKEN_BITWISE_XOR);
+    njs_token_serialize(NJS_TOKEN_BITWISE_AND);
+    njs_token_serialize(NJS_TOKEN_LOGICAL_AND);
+    njs_token_serialize(NJS_TOKEN_BITWISE_NOT);
+    njs_token_serialize(NJS_TOKEN_LOGICAL_NOT);
+    njs_token_serialize(NJS_TOKEN_COALESCE);
+    njs_token_serialize(NJS_TOKEN_IN);
+    njs_token_serialize(NJS_TOKEN_OF);
+    njs_token_serialize(NJS_TOKEN_INSTANCEOF);
+    njs_token_serialize(NJS_TOKEN_TYPEOF);
+    njs_token_serialize(NJS_TOKEN_VOID);
+    njs_token_serialize(NJS_TOKEN_NEW);
+    njs_token_serialize(NJS_TOKEN_DELETE);
+    njs_token_serialize(NJS_TOKEN_YIELD);
+
+    njs_token_serialize(NJS_TOKEN_NULL);
+    njs_token_serialize(NJS_TOKEN_NUMBER);
+    njs_token_serialize(NJS_TOKEN_TRUE);
+    njs_token_serialize(NJS_TOKEN_FALSE);
+    njs_token_serialize(NJS_TOKEN_STRING);
+    njs_token_serialize(NJS_TOKEN_TEMPLATE_LITERAL);
+    njs_token_serialize(NJS_TOKEN_NAME);
+    njs_token_serialize(NJS_TOKEN_OBJECT);
+    njs_token_serialize(NJS_TOKEN_OBJECT_VALUE);
+    njs_token_serialize(NJS_TOKEN_ARRAY);
+    njs_token_serialize(NJS_TOKEN_REGEXP);
+
+    njs_token_serialize(NJS_TOKEN_PROPERTY);
+    njs_token_serialize(NJS_TOKEN_PROPERTY_INIT);
+    njs_token_serialize(NJS_TOKEN_PROPERTY_DELETE);
+    njs_token_serialize(NJS_TOKEN_PROPERTY_GETTER);
+    njs_token_serialize(NJS_TOKEN_PROPERTY_SETTER);
+
+    njs_token_serialize(NJS_TOKEN_PROTO_INIT);
+
+    njs_token_serialize(NJS_TOKEN_FUNCTION);
+    njs_token_serialize(NJS_TOKEN_FUNCTION_EXPRESSION);
+    njs_token_serialize(NJS_TOKEN_FUNCTION_CALL);
+    njs_token_serialize(NJS_TOKEN_METHOD_CALL);
+
+    njs_token_serialize(NJS_TOKEN_ARGUMENT);
+    njs_token_serialize(NJS_TOKEN_RETURN);
+    njs_token_serialize(NJS_TOKEN_STATEMENT);
+    njs_token_serialize(NJS_TOKEN_BLOCK);
+    njs_token_serialize(NJS_TOKEN_VAR);
+    njs_token_serialize(NJS_TOKEN_LET);
+    njs_token_serialize(NJS_TOKEN_IF);
+    njs_token_serialize(NJS_TOKEN_ELSE);
+    njs_token_serialize(NJS_TOKEN_BRANCHING);
+    njs_token_serialize(NJS_TOKEN_WHILE);
+    njs_token_serialize(NJS_TOKEN_DO);
+    njs_token_serialize(NJS_TOKEN_FOR);
+    njs_token_serialize(NJS_TOKEN_FOR_IN);
+    njs_token_serialize(NJS_TOKEN_BREAK);
+    njs_token_serialize(NJS_TOKEN_CONTINUE);
+    njs_token_serialize(NJS_TOKEN_SWITCH);
+    njs_token_serialize(NJS_TOKEN_CASE);
+    njs_token_serialize(NJS_TOKEN_DEFAULT);
+    njs_token_serialize(NJS_TOKEN_WITH);
+    njs_token_serialize(NJS_TOKEN_TRY);
+    njs_token_serialize(NJS_TOKEN_CATCH);
+    njs_token_serialize(NJS_TOKEN_FINALLY);
+    njs_token_serialize(NJS_TOKEN_THROW);
+    njs_token_serialize(NJS_TOKEN_THIS);
+    njs_token_serialize(NJS_TOKEN_GLOBAL_OBJECT);
+    njs_token_serialize(NJS_TOKEN_NON_LOCAL_THIS);
+    njs_token_serialize(NJS_TOKEN_ARGUMENTS);
+    njs_token_serialize(NJS_TOKEN_EVAL);
+    njs_token_serialize(NJS_TOKEN_IMPORT);
+    njs_token_serialize(NJS_TOKEN_EXPORT);
+
+#if 0
+
+    njs_token_serialize(NJS_TOKEN_TARGET);
+    njs_token_serialize(NJS_TOKEN_META);
+    njs_token_serialize(NJS_TOKEN_ASYNC);
+    njs_token_serialize(NJS_TOKEN_AWAIT);
+    njs_token_serialize(NJS_TOKEN_CONST);
+    njs_token_serialize(NJS_TOKEN_DEBUGGER);
+    njs_token_serialize(NJS_TOKEN_ENUM);
+
+    njs_token_serialize(NJS_TOKEN_CLASS);
+    njs_token_serialize(NJS_TOKEN_EXTENDS);
+    njs_token_serialize(NJS_TOKEN_IMPLEMENTS);
+    njs_token_serialize(NJS_TOKEN_INTERFACE);
+    njs_token_serialize(NJS_TOKEN_PACKAGE);
+    njs_token_serialize(NJS_TOKEN_PRIVATE);
+    njs_token_serialize(NJS_TOKEN_PROTECTED);
+    njs_token_serialize(NJS_TOKEN_PUBLIC);
+    njs_token_serialize(NJS_TOKEN_STATIC);
+    njs_token_serialize(NJS_TOKEN_SUPER);
+
+#endif
+
+    default:
+        njs_chb_sprintf(chain, 32, "#UNDEF(%d)", (int) node->token_type);
+        return NJS_DECLINED;
+    }
+
+    return NJS_OK;
 }
