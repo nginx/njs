@@ -889,7 +889,9 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return ret;
         }
 
-        njs_chb_append_literal(&chain, ",");
+        if (i != (nargs - 2)) {
+            njs_chb_append_literal(&chain, ",");
+        }
     }
 
     njs_chb_append_literal(&chain, "){");
@@ -923,9 +925,10 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
+    parser->vm = vm;
     parser->lexer = &lexer;
 
-    ret = njs_parser(vm, parser, NULL);
+    ret = njs_parser(parser, NULL);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }

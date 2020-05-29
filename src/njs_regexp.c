@@ -17,8 +17,6 @@ struct njs_regexp_group_s {
 
 static void *njs_regexp_malloc(size_t size, void *memory_data);
 static void njs_regexp_free(void *p, void *memory_data);
-static njs_regexp_flags_t njs_regexp_flags(u_char **start, u_char *end,
-    njs_bool_t bound);
 static njs_int_t njs_regexp_prototype_source(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
@@ -306,98 +304,7 @@ done:
 }
 
 
-njs_token_type_t
-njs_regexp_literal(njs_vm_t *vm, njs_parser_t *parser, njs_value_t *value)
-{
-    u_char                *p;
-    njs_str_t             text;
-    njs_lexer_t           *lexer;
-    njs_regexp_flags_t    flags;
-    njs_regexp_pattern_t  *pattern;
-
-    lexer = parser->lexer;
-
-    for (p = lexer->start; p < lexer->end; p++) {
-
-        switch (*p) {
-        case '\n':
-        case '\r':
-            goto failed;
-
-        case '[':
-            while (1) {
-                if (++p >= lexer->end) {
-                    goto failed;
-                }
-
-                if (*p == ']') {
-                    break;
-                }
-
-                switch (*p) {
-                case '\n':
-                case '\r':
-                    goto failed;
-
-                case '\\':
-                    if (++p >= lexer->end || *p == '\n' || *p == '\r') {
-                        goto failed;
-                    }
-
-                    break;
-                }
-            }
-
-            break;
-
-        case '\\':
-            if (++p >= lexer->end || *p == '\n' || *p == '\r') {
-                goto failed;
-            }
-
-            break;
-
-        case '/':
-            text.start = lexer->start;
-            text.length = p - text.start;
-            p++;
-            lexer->start = p;
-
-            flags = njs_regexp_flags(&p, lexer->end, 0);
-
-            if (njs_slow_path(flags < 0)) {
-                njs_parser_syntax_error(vm, parser,
-                                        "Invalid RegExp flags \"%*s\"",
-                                        p - lexer->start, lexer->start);
-
-                return NJS_TOKEN_ILLEGAL;
-            }
-
-            lexer->start = p;
-
-            pattern = njs_regexp_pattern_create(vm, text.start, text.length,
-                                                flags);
-
-            if (njs_slow_path(pattern == NULL)) {
-                return NJS_TOKEN_ILLEGAL;
-            }
-
-            value->data.u.data = pattern;
-
-            return NJS_TOKEN_REGEXP;
-        }
-    }
-
-failed:
-
-    njs_parser_syntax_error(vm, parser, "Unterminated RegExp \"%*s\"",
-                            p - (lexer->start - 1), lexer->start - 1);
-
-    return NJS_TOKEN_ILLEGAL;
-}
-
-
-static njs_regexp_flags_t
+njs_regexp_flags_t
 njs_regexp_flags(u_char **start, u_char *end, njs_bool_t bound)
 {
     u_char              *p;

@@ -27,10 +27,6 @@ static void njs_lexer_multi(njs_lexer_t *lexer, njs_lexer_token_t *token,
     const njs_lexer_multi_t *multi, size_t length);
 static void njs_lexer_division(njs_lexer_t *lexer, njs_lexer_token_t *token);
 
-static njs_lexer_token_t *njs_lexer_token_push(njs_vm_t *vm,
-    njs_lexer_t *lexer);
-static njs_lexer_token_t *njs_lexer_token_pop(njs_lexer_t *lexer);
-
 
 const njs_lvlhsh_proto_t  njs_lexer_hash_proto
     njs_aligned(64) =
@@ -311,102 +307,19 @@ njs_lexer_init(njs_vm_t *vm, njs_lexer_t *lexer, njs_str_t *file,
 }
 
 
-njs_token_type_t
-njs_lexer_token(njs_vm_t *vm, njs_lexer_t *lexer)
-{
-    njs_lexer_token_t  *lt;
-
-    lexer->prev_start = lexer->start;
-
-    if (lexer->token != NULL) {
-        lexer->prev_type = lexer->token->type;
-        njs_mp_free(vm->mem_pool, lexer->token);
-    }
-
-    if (njs_queue_is_empty(&lexer->preread)) {
-        lt = njs_lexer_token_push(vm, lexer);
-        if (njs_slow_path(lt == NULL)) {
-            return NJS_TOKEN_ERROR;
-        }
-    }
-
-    lexer->token = njs_lexer_token_pop(lexer);
-
-    return lexer->token->type;
-}
-
-
-njs_token_type_t
-njs_lexer_peek_token(njs_vm_t *vm, njs_lexer_t *lexer, size_t offset)
-{
-    size_t             i;
-    njs_queue_link_t   *link;
-    njs_lexer_token_t  *lt;
-
-    /* GCC and Clang complain about uninitialized lt. */
-    lt = NULL;
-
-    link = njs_queue_first(&lexer->preread);
-
-    for (i = 0; i <= offset; i++) {
-
-        if (link != njs_queue_tail(&lexer->preread)) {
-
-            lt = njs_queue_link_data(link, njs_lexer_token_t, link);
-
-            /* NJS_TOKEN_DIVISION stands for regexp literal. */
-
-            if (lt->type == NJS_TOKEN_DIVISION || lt->type == NJS_TOKEN_END) {
-                break;
-            }
-
-            link = njs_queue_next(link);
-
-        } else {
-
-            lt = njs_lexer_token_push(vm, lexer);
-
-            if (njs_slow_path(lt == NULL)) {
-                return NJS_TOKEN_ERROR;
-            }
-        }
-    }
-
-    return lt->type;
-}
-
-
-njs_int_t
-njs_lexer_rollback(njs_vm_t *vm, njs_lexer_t *lexer)
-{
-    njs_lexer_token_t  *lt;
-
-    lt = njs_mp_zalloc(vm->mem_pool, sizeof(njs_lexer_token_t));
-    if (njs_slow_path(lt == NULL)) {
-        return NJS_ERROR;
-    }
-
-    *lt = *lexer->token;
-
-    njs_queue_insert_head(&lexer->preread, &lt->link);
-
-    return NJS_OK;
-}
-
-
-static njs_lexer_token_t *
-njs_lexer_token_push(njs_vm_t *vm, njs_lexer_t *lexer)
+njs_inline njs_lexer_token_t *
+njs_lexer_next_token(njs_lexer_t *lexer)
 {
     njs_int_t          ret;
     njs_lexer_token_t  *token;
 
-    token = njs_mp_zalloc(vm->mem_pool, sizeof(njs_lexer_token_t));
+    token = njs_mp_zalloc(lexer->mem_pool, sizeof(njs_lexer_token_t));
     if (njs_slow_path(token == NULL)) {
         return NULL;
     }
 
     do {
-        ret = njs_lexer_next_token(lexer, token);
+        ret = njs_lexer_make_token(lexer, token);
         if (njs_slow_path(ret != NJS_OK)) {
             return NULL;
         }
@@ -419,20 +332,109 @@ njs_lexer_token_push(njs_vm_t *vm, njs_lexer_t *lexer)
 }
 
 
-static njs_lexer_token_t *
-njs_lexer_token_pop(njs_lexer_t *lexer)
+njs_lexer_token_t *
+njs_lexer_token(njs_lexer_t *lexer, njs_bool_t with_end_line)
 {
-    njs_queue_link_t  *lnk;
+    njs_queue_link_t   *lnk;
+    njs_lexer_token_t  *token;
 
     lnk = njs_queue_first(&lexer->preread);
-    njs_queue_remove(lnk);
 
-    return njs_queue_link_data(lnk, njs_lexer_token_t, link);
+    while (lnk != njs_queue_head(&lexer->preread)) {
+        token = njs_queue_link_data(lnk, njs_lexer_token_t, link);
+
+        if (!with_end_line && token->type == NJS_TOKEN_LINE_END) {
+            lexer->prev_type = token->type;
+
+            lnk = njs_queue_next(&token->link);
+            continue;
+        }
+
+        return token;
+    }
+
+    do {
+        token = njs_lexer_next_token(lexer);
+        if (token == NULL) {
+            return NULL;
+        }
+
+        if (!with_end_line && token->type == NJS_TOKEN_LINE_END) {
+            lexer->prev_type = token->type;
+            continue;
+        }
+
+        break;
+
+    } while (1);
+
+    return token;
+}
+
+
+njs_lexer_token_t *
+njs_lexer_peek_token(njs_lexer_t *lexer, njs_lexer_token_t *current,
+    njs_bool_t with_end_line)
+{
+    njs_queue_link_t   *lnk;
+    njs_lexer_token_t  *token;
+
+    lnk = njs_queue_next(&current->link);
+
+    while (lnk != njs_queue_head(&lexer->preread)) {
+        token = njs_queue_link_data(lnk, njs_lexer_token_t, link);
+
+        if (!with_end_line && token->type == NJS_TOKEN_LINE_END) {
+            lnk = njs_queue_next(&token->link);
+            continue;
+        }
+
+        return token;
+    }
+
+    do {
+        token = njs_lexer_next_token(lexer);
+        if (token == NULL) {
+            return NULL;
+        }
+
+        if (!with_end_line && token->type == NJS_TOKEN_LINE_END) {
+            continue;
+        }
+
+        break;
+
+    } while (1);
+
+    return token;
+}
+
+
+void
+njs_lexer_consume_token(njs_lexer_t *lexer, unsigned length)
+{
+    njs_queue_link_t   *lnk;
+    njs_lexer_token_t  *token;
+
+    while (length > 0) {
+        lnk = njs_queue_first(&lexer->preread);
+        token = njs_queue_link_data(lnk, njs_lexer_token_t, link);
+
+        lexer->prev_type = token->type;
+
+        if (token->type != NJS_TOKEN_LINE_END) {
+            length--;
+        }
+
+        njs_queue_remove(lnk);
+
+        njs_mp_free(lexer->mem_pool, token);
+    }
 }
 
 
 njs_int_t
-njs_lexer_next_token(njs_lexer_t *lexer, njs_lexer_token_t *token)
+njs_lexer_make_token(njs_lexer_t *lexer, njs_lexer_token_t *token)
 {
     u_char  c, *p;
 
@@ -446,7 +448,6 @@ njs_lexer_next_token(njs_lexer_t *lexer, njs_lexer_token_t *token)
         }
     }
 
-    lexer->keyword = 0;
     token->type = njs_tokens[c];
 
     switch (token->type) {
@@ -565,6 +566,7 @@ njs_lexer_next_token(njs_lexer_t *lexer, njs_lexer_token_t *token)
         /* Fall through. */
 
     default:
+        token->line = lexer->line;
         token->text.start = lexer->start - 1;
         token->text.length = lexer->start - token->text.start;
 
@@ -694,12 +696,14 @@ njs_lexer_word(njs_lexer_t *lexer, njs_lexer_token_t *token)
         }
 
         token->type = NJS_TOKEN_NAME;
+        token->keyword_type = NJS_KEYWORD_TYPE_UNDEF;
 
     } else {
         entry = &key_entry->value->entry;
         token->type = key_entry->value->type;
 
-        lexer->keyword = 1;
+        token->keyword_type = NJS_KEYWORD_TYPE_KEYWORD;
+        token->keyword_type |= key_entry->value->reserved;
     }
 
     token->unique_id = (uintptr_t) entry;

@@ -140,7 +140,7 @@ fail:
 
     entry = njs_lexer_entry(unique_id);
 
-    njs_parser_syntax_error(vm, vm->parser,
+    njs_parser_syntax_error(vm->parser,
                             "\"%V\" has already been declared",
                             &entry->name);
     return NULL;
@@ -313,28 +313,6 @@ njs_variables_scope_reference(njs_vm_t *vm, njs_parser_scope_t *scope)
     }
 
     return NJS_OK;
-}
-
-
-njs_index_t
-njs_variable_typeof(njs_vm_t *vm, njs_parser_node_t *node)
-{
-    njs_int_t                 ret;
-    njs_variable_reference_t  *vr;
-
-    if (node->index != NJS_INDEX_NONE) {
-        return node->index;
-    }
-
-    vr = &node->u.reference;
-
-    ret = njs_variable_reference_resolve(vm, vr, node->scope);
-
-    if (njs_fast_path(ret == NJS_OK)) {
-        return vr->variable->index;
-    }
-
-    return NJS_INDEX_NONE;
 }
 
 

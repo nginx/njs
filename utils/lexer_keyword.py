@@ -1,70 +1,78 @@
 import re, os
 
-global_keywords = [
+global_keywords = {
     # Values.
 
-    "null",
-    "false",
-    "true",
+    "null": 1,
+    "false": 1,
+    "true": 1,
 
     # Operators.
 
-    "in",
-    "typeof",
-    "instanceof",
-    "void",
-    "new",
-    "delete",
-    "yield",
+    "in": 1,
+    "of": 0,
+    "typeof": 1,
+    "instanceof": 1,
+    "void": 1,
+    "new": 1,
+    "delete": 1,
+    "yield": 1,
 
     # Statements.
 
-    "var",
-    "if",
-    "else",
-    "while",
-    "do",
-    "for",
-    "break",
-    "continue",
-    "switch",
-    "case",
-    "default",
-    "function",
-    "return",
-    "with",
-    "try",
-    "catch",
-    "finally",
-    "throw",
+    "var": 1,
+    "if": 1,
+    "else": 1,
+    "while": 1,
+    "do": 1,
+    "for": 1,
+    "break": 1,
+    "continue": 1,
+    "switch": 1,
+    "case": 1,
+    "default": 1,
+    "function": 1,
+    "return": 1,
+    "with": 1,
+    "try": 1,
+    "catch": 1,
+    "finally": 1,
+    "throw": 1,
 
     # Module.
 
-    "import",
-    "export",
+    "import": 1,
+    "export": 1,
 
     # Reserved words.
 
-    "this",
-    "arguments",
-    "eval",
+    "meta": 0,
 
-    "await",
-    "class",
-    "const",
-    "debugger",
-    "enum",
-    "extends",
-    "implements",
-    "interface",
-    "let",
-    "package",
-    "private",
-    "protected",
-    "public",
-    "static",
-    "super"
-]
+    "from": 0,
+
+    "this": 1,
+    "arguments": 0,
+    "eval": 0,
+
+    "target": 0,
+
+    "await": 1,
+    "async": 0,
+    "class": 1,
+    "const": 1,
+    "debugger": 1,
+    "enum": 1,
+    "extends": 1,
+    "implements": 0,
+    "interface": 0,
+    "let": 0,
+    "package": 0,
+    "private": 0,
+    "protected": 0,
+    "public": 0,
+    "static": 0,
+    "super": 1
+}
 
 
 class Table:
@@ -75,15 +83,18 @@ class Table:
     def add(self, data):
         self.buffer.append(data)
 
-    def create(self):
+    def create(self, newlines = False):
         result = []
         data = self.buffer
 
         result.append("static const {}[{}] =\n{{\n".format(self.header,
                                                            len(data)))
 
+        last = len(data) - 1
+
         for idx in range(len(data)):
-            result.append("    {},\n".format(data[idx]))
+            result.append("    {},\n{}".format(data[idx],
+                                    ("\n" if newlines and idx != last else "")))
 
         result.append("};")
 
@@ -191,16 +202,20 @@ if __name__ == "__main__":
     def kw_create():
         t = Table("njs_keyword_t " + data_name)
 
-        for kw in global_keywords:
-            t.add("{{ .entry = {{ njs_str(\"{}\") }}, .type = {} }}"
-                    .format(kw, enum(kw)))
+        for k, v in sorted(global_keywords.items()):
+            t.add("{{\n"
+                  "        .entry = {{ njs_str(\"{}\") }},\n"
+                  "        .type = {},\n"
+                  "        .reserved = {}\n"
+                  "    }}"
+                  .format(k, enum(k), v))
 
-        return t.create()
+        return t.create(True)
 
     def entries_create():
         shs = SHS([{ "key": kw,
                      "value": "&{}[{}]".format(data_name, i) }
-                   for i, kw in enumerate(global_keywords)])
+                   for i, kw in enumerate(sorted(global_keywords.keys()))])
 
         best_size = shs.test(5, 128)
         shs.make(best_size)

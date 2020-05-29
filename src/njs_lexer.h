@@ -99,6 +99,7 @@ typedef enum {
     NJS_TOKEN_COALESCE,
 
     NJS_TOKEN_IN,
+    NJS_TOKEN_OF,
     NJS_TOKEN_INSTANCEOF,
     NJS_TOKEN_TYPEOF,
     NJS_TOKEN_VOID,
@@ -178,7 +179,14 @@ typedef enum {
     NJS_TOKEN_IMPORT,
     NJS_TOKEN_EXPORT,
 
+    NJS_TOKEN_TARGET,
+
+    NJS_TOKEN_FROM,
+
+    NJS_TOKEN_META,
+
     NJS_TOKEN_AWAIT,
+    NJS_TOKEN_ASYNC,
     NJS_TOKEN_CLASS,
     NJS_TOKEN_CONST,
     NJS_TOKEN_DEBUGGER,
@@ -198,6 +206,13 @@ typedef enum {
 } njs_token_type_t;
 
 
+typedef enum {
+    NJS_KEYWORD_TYPE_UNDEF    = 0,
+    NJS_KEYWORD_TYPE_RESERVED = 1,
+    NJS_KEYWORD_TYPE_KEYWORD  = 2
+} njs_keyword_type_t;
+
+
 typedef struct {
     njs_str_t                       name;
 } njs_lexer_entry_t;
@@ -206,6 +221,7 @@ typedef struct {
 typedef struct {
     njs_lexer_entry_t               entry;
     njs_token_type_t                type;
+    njs_bool_t                      reserved;
 } njs_keyword_t;
 
 
@@ -220,6 +236,7 @@ typedef struct {
 
 typedef struct {
     njs_token_type_t                type:16;
+    njs_keyword_type_t              keyword_type;
     uint32_t                        line;
     uintptr_t                       unique_id;
     njs_str_t                       text;
@@ -231,10 +248,10 @@ typedef struct {
 typedef struct {
     njs_lexer_token_t               *token;
     njs_queue_t                     preread; /*  of njs_lexer_token_t */
-    uint8_t                         keyword;
 
     u_char                          *prev_start;
     njs_token_type_t                prev_type:16;
+    njs_token_type_t                last_type:16;
 
     uint32_t                        line;
     njs_str_t                       file;
@@ -251,12 +268,12 @@ typedef struct {
 njs_int_t njs_lexer_init(njs_vm_t *vm, njs_lexer_t *lexer, njs_str_t *file,
     u_char *start, u_char *end);
 
-njs_token_type_t njs_lexer_token(njs_vm_t *vm, njs_lexer_t *lexer);
-njs_token_type_t njs_lexer_peek_token(njs_vm_t *vm, njs_lexer_t *lexer,
-    size_t offset);
-njs_int_t njs_lexer_rollback(njs_vm_t *vm, njs_lexer_t *lexer);
-
-njs_int_t njs_lexer_next_token(njs_lexer_t *lexer, njs_lexer_token_t *token);
+njs_lexer_token_t *njs_lexer_token(njs_lexer_t *lexer,
+    njs_bool_t with_end_line);
+njs_lexer_token_t *njs_lexer_peek_token(njs_lexer_t *lexer,
+    njs_lexer_token_t *current, njs_bool_t with_end_line);
+void njs_lexer_consume_token(njs_lexer_t *lexer, unsigned length);
+njs_int_t njs_lexer_make_token(njs_lexer_t *lexer, njs_lexer_token_t *token);
 
 const njs_lexer_keyword_entry_t *njs_lexer_keyword(const u_char *key,
     size_t length);
@@ -267,6 +284,66 @@ njs_inline const njs_lexer_entry_t *
 njs_lexer_entry(uintptr_t unique_id)
 {
     return (const njs_lexer_entry_t *) unique_id;
+}
+
+
+njs_inline njs_bool_t
+njs_lexer_token_is_keyword(njs_lexer_token_t *token)
+{
+    return token->keyword_type & NJS_KEYWORD_TYPE_KEYWORD;
+}
+
+
+njs_inline njs_bool_t
+njs_lexer_token_is_reserved(njs_lexer_token_t *token)
+{
+    return token->keyword_type & NJS_KEYWORD_TYPE_RESERVED;
+}
+
+
+njs_inline njs_bool_t
+njs_lexer_token_is_name(njs_lexer_token_t *token)
+{
+    return token->type == NJS_TOKEN_NAME
+           || (!njs_lexer_token_is_reserved(token)
+               && njs_lexer_token_is_keyword(token));
+}
+
+
+njs_inline njs_bool_t
+njs_lexer_token_is_identifier_name(njs_lexer_token_t *token)
+{
+    return token->type == NJS_TOKEN_NAME || njs_lexer_token_is_keyword(token);
+}
+
+
+njs_inline njs_bool_t
+njs_lexer_token_is_binding_identifier(njs_lexer_token_t *token)
+{
+    switch (token->type) {
+    case NJS_TOKEN_NAME:
+    case NJS_TOKEN_YIELD:
+    case NJS_TOKEN_AWAIT:
+        return 1;
+
+    default:
+        return (!njs_lexer_token_is_reserved(token)
+                && njs_lexer_token_is_keyword(token));
+    };
+}
+
+
+njs_inline njs_bool_t
+njs_lexer_token_is_label_identifier(njs_lexer_token_t *token)
+{
+    return njs_lexer_token_is_binding_identifier(token);
+}
+
+
+njs_inline njs_bool_t
+njs_lexer_token_is_identifier_reference(njs_lexer_token_t *token)
+{
+    return njs_lexer_token_is_binding_identifier(token);
 }
 
 

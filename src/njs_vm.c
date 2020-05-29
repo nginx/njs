@@ -151,11 +151,12 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         return NJS_ERROR;
     }
 
+    parser->vm = vm;
     parser->lexer = &lexer;
 
     njs_set_undefined(&vm->retval);
 
-    ret = njs_parser(vm, parser, prev);
+    ret = njs_parser(parser, prev);
     if (njs_slow_path(ret != NJS_OK)) {
         goto fail;
     }

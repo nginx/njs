@@ -364,7 +364,7 @@ njs_test {
     {"JSON.parse(Error())\r\n"
      "JSON.parse(Error())\r\nThrown:\r\nSyntaxError: Unexpected token at position 0*at JSON.parse (native)"}
     {"JSON.parse(Error()\r\n"
-     "JSON.parse(Error()\r\nThrown:\r\nSyntaxError: Unexpected token \"\" in shell:1"}
+     "JSON.parse(Error()\r\nThrown:\r\nSyntaxError: Unexpected end of input in shell:1"}
 }
 
 njs_test {
@@ -762,7 +762,7 @@ ReferenceError: \"ref\" is not defined in string:1
 njs_run {"-c" "setTimeout(() => {ref}, 0); setTimeout(() => {console.log('A'.repeat(1024))}, 0)"} \
 "^Thrown:
 ReferenceError: \"ref\" is not defined in string:1
-    at anonymous \\\(native\\\)
+    at anonymous \\\(string:1\\\)
     at main \\\(native\\\)\n$"
 
 # Modules

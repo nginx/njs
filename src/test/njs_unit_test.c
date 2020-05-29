@@ -275,7 +275,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("SyntaxError: Unexpected token \"0x\" in 1") },
 
     { njs_str("0xffff."),
-      njs_str("SyntaxError: Unexpected token \"\" in 1") },
+      njs_str("SyntaxError: Unexpected end of input in 1") },
 
     { njs_str("0x12g"),
       njs_str("SyntaxError: Unexpected token \"g\" in 1") },
@@ -1348,8 +1348,7 @@ static njs_unit_test_t  njs_test[] =
               "must be parenthesized in 1") },
 
     { njs_str("null ?? 0 || 1"),
-      njs_str("SyntaxError: Either \"??\" or \"||\" expression "
-              "must be parenthesized in 1") },
+      njs_str("SyntaxError: Unexpected token \"||\" in 1") },
 
     { njs_str("var a = true; a = -~!a"),
       njs_str("1") },
@@ -9125,7 +9124,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("3,4,5") },
 
     { njs_str("function myFoo(a,b,...other, c) { return other };"),
-      njs_str("SyntaxError: Unexpected token \"c\" in 1") },
+      njs_str("SyntaxError: Rest parameter must be last formal parameter in 1") },
 
     { njs_str("function sum(a, b, c, ...other) { return a+b+c+other[2] };"
                  "sum(\"one \",2,\" three \",\"four \",\"five \",\"the long enough sixth argument \");"),
@@ -11532,34 +11531,34 @@ static njs_unit_test_t  njs_test[] =
 
 #if NJS_HAVE_LARGE_STACK
     { njs_str("new Function(\"(\".repeat(2**13));"),
-      njs_str("RangeError: Maximum call stack size exceeded") },
+      njs_str("SyntaxError: Unexpected token \"}\" in runtime:1") },
 
     { njs_str("new Function(\"{\".repeat(2**13));"),
-      njs_str("RangeError: Maximum call stack size exceeded") },
+      njs_str("SyntaxError: Unexpected token \")\" in runtime:1") },
 
     { njs_str("new Function(\"[\".repeat(2**13));"),
-      njs_str("RangeError: Maximum call stack size exceeded") },
+      njs_str("SyntaxError: Unexpected token \"}\" in runtime:1") },
 
     { njs_str("new Function(\"`\".repeat(2**13));"),
       njs_str("RangeError: Maximum call stack size exceeded") },
 
     { njs_str("new Function(\"{[\".repeat(2**13));"),
-      njs_str("RangeError: Maximum call stack size exceeded") },
+      njs_str("SyntaxError: Unexpected token \")\" in runtime:1") },
 
     { njs_str("new Function(\"{;\".repeat(2**13));"),
-      njs_str("RangeError: Maximum call stack size exceeded") },
+      njs_str("SyntaxError: Unexpected token \")\" in runtime:1") },
 
     { njs_str("new Function(\"1;\".repeat(2**13));"),
       njs_str("RangeError: Maximum call stack size exceeded") },
 
     { njs_str("new Function(\"~\".repeat(2**13));"),
-      njs_str("RangeError: Maximum call stack size exceeded") },
+      njs_str("SyntaxError: Unexpected token \"}\" in runtime:1") },
 
     { njs_str("new Function(\"new \".repeat(2**13));"),
-      njs_str("RangeError: Maximum call stack size exceeded") },
+      njs_str("SyntaxError: Unexpected token \"}\" in runtime:1") },
 
     { njs_str("new Function(\"typeof \".repeat(2**13));"),
-      njs_str("RangeError: Maximum call stack size exceeded") },
+      njs_str("SyntaxError: Unexpected token \"}\" in runtime:1") },
 
     { njs_str("new Function(\"1\" + \"** 1\".repeat(2**13));"),
       njs_str("RangeError: Maximum call stack size exceeded") },
@@ -16621,6 +16620,40 @@ static njs_unit_test_t  njs_test[] =
                  "return 1}, enumerable:1}); a.b =1;"
                  "var x = Object.assign({}, a);x.b;"),
       njs_str("undefined") },
+
+    /* let and const */
+
+    { njs_str("var let = 123;"
+              "let"),
+      njs_str("123") },
+
+    { njs_str("var const = 123"),
+      njs_str("SyntaxError: Unexpected token \"const\" in 1") },
+
+    /* Async */
+
+    { njs_str("var async;"
+              "function f() {"
+              "    async\n"
+              "    function foo() {}"
+              "}"
+              "f()"),
+      njs_str("undefined") },
+
+    { njs_str("var async;"
+              "function f() {"
+              "    async;"
+              "    function foo() {}"
+              "}"
+              "f()"),
+      njs_str("undefined") },
+
+    { njs_str("var async;"
+              "async\n"
+              "function foo() {}"),
+      njs_str("undefined") },
+
+
 };
 
 

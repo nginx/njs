@@ -18,7 +18,8 @@ typedef struct {
 
 njs_int_t njs_module_load(njs_vm_t *vm);
 void njs_module_reset(njs_vm_t *vm);
-njs_int_t njs_parser_module(njs_vm_t *vm, njs_parser_t *parser);
+njs_int_t njs_parser_module(njs_parser_t *parser, njs_lexer_token_t *token,
+    njs_queue_link_t *current);
 njs_int_t njs_module_require(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 
