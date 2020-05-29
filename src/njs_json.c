@@ -1037,12 +1037,16 @@ njs_json_parse_iterator_call(njs_vm_t *vm, njs_json_parse_t *parse,
         }
 
         if (njs_is_undefined(&parse->retval)) {
-            njs_value_property_i64_delete(vm, &state->value, state->index - 1,
-                                          NULL);
+            ret = njs_value_property_i64_delete(vm, &state->value,
+                                                state->index - 1, NULL);
 
         } else {
-            njs_value_property_i64_set(vm, &state->value, state->index - 1,
-                                       &parse->retval);
+            ret = njs_value_property_i64_set(vm, &state->value,
+                                             state->index - 1, &parse->retval);
+        }
+
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return NJS_ERROR;
         }
 
         break;
