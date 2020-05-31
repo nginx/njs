@@ -73,6 +73,7 @@ static const njs_object_type_init_t *const
 
     /* Hidden types. */
 
+    &njs_dirent_type_init,
     &njs_hash_type_init,
     &njs_hmac_type_init,
     &njs_typed_array_type_init,

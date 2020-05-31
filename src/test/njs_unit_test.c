@@ -16371,12 +16371,20 @@ static njs_unit_test_t  njs_test[] =
                 "'writeFileSync',"
                 "'appendFile',"
                 "'appendFileSync',"
+                "'rename',"
+                "'renameSync',"
                 "'symlink',"
                 "'symlinkSync',"
                 "'unlink',"
                 "'unlinkSync',"
                 "'realpath',"
                 "'realpathSync',"
+                "'mkdir',"
+                "'mkdirSync',"
+                "'rmdir',"
+                "'rmdirSync',"
+                "'readdir',"
+                "'readdirSync',"
               "],"
               "test = (fname) =>"
                 "[undefined, null, false, NaN, Symbol(), {}, Object('/njs_unknown_path')]"
@@ -16399,9 +16407,13 @@ static njs_unit_test_t  njs_test[] =
                 "'readFile',"
                 "'writeFile',"
                 "'appendFile',"
+                "'rename',"
                 "'symlink',"
                 "'unlink',"
                 "'realpath',"
+                "'mkdir',"
+                "'rmdir',"
+                "'readdir',"
               "];"
               "func.every((x) => typeof fs[x] == 'function')"),
       njs_str("true")},
@@ -16421,6 +16433,35 @@ static njs_unit_test_t  njs_test[] =
                 "'X_OK',"
               "];"
               "items.every((x) => typeof fsc[x] == 'number')"),
+      njs_str("true")},
+
+    /* require('fs').Dirent */
+
+    { njs_str("var fs = require('fs');"
+              "typeof fs.Dirent"),
+      njs_str("function") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.Dirent('file', 123)"),
+      njs_str("TypeError: the Dirent constructor must be called with new") },
+
+    { njs_str("var fs = require('fs');"
+              "var e = new fs.Dirent('file', 123); [e.name, e.type]"),
+      njs_str("file,123") },
+
+    { njs_str("var "
+              "fs = require('fs'),"
+              "e = new fs.Dirent('file', 0),"
+              "func = ["
+                "'isDirectory',"
+                "'isFile',"
+                "'isBlockDevice',"
+                "'isCharacterDevice',"
+                "'isSymbolicLink',"
+                "'isFIFO',"
+                "'isSocket',"
+              "];"
+              "func.every((x) => typeof e[x] == 'function')"),
       njs_str("true")},
 
     /* require('crypto').createHash() */

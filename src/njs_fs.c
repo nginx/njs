@@ -7,6 +7,31 @@
 
 #include <njs_main.h>
 
+#include <dirent.h>
+
+#if (NJS_SOLARIS)
+
+#define DT_DIR         0
+#define DT_REG         0
+#define DT_CHR         0
+#define DT_LNK         0
+#define DT_BLK         0
+#define DT_FIFO        0
+#define DT_SOCK        0
+#define NJS_DT_INVALID 0xffffffff
+
+#define njs_dentry_type(_dentry)                                             \
+    (NJS_DT_INVALID)
+
+#else
+
+#define NJS_DT_INVALID 0xffffffff
+
+#define njs_dentry_type(_dentry)                                             \
+    ((_dentry)->d_type)
+
+#endif
+
 
 #define njs_fs_magic(calltype, mode)                                         \
     (((mode) << 2) | calltype)
@@ -53,6 +78,8 @@ static njs_fs_encoding_t njs_fs_encoding(njs_vm_t *vm, njs_value_t *value);
 static njs_int_t njs_fs_add_event(njs_vm_t *vm, const njs_value_t *callback,
     const njs_value_t *args, njs_uint_t nargs);
 
+static njs_int_t njs_fs_dirent_create(njs_vm_t *vm, njs_value_t *name,
+    njs_value_t *type, njs_value_t *retval);
 
 static njs_fs_entry_t njs_flags_table[] = {
     { njs_str("r"),   O_RDONLY },
@@ -895,6 +922,163 @@ njs_fs_rmdir(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
+njs_fs_readdir(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t calltype)
+{
+    DIR                *dir;
+    u_char             *d_name;
+    size_t             size;
+    ssize_t            length;
+    njs_int_t          ret;
+    const char         *dir_path;
+    njs_value_t        encoding, types, ename, etype, retval, *path, *callback,
+                       *options, *value;
+    njs_array_t        *results;
+    struct dirent      *entry;
+    njs_fs_encoding_t  enc;
+
+    static const njs_value_t  string_encoding = njs_string("encoding");
+    static const njs_value_t  string_types = njs_string("withFileTypes");
+
+    path = njs_arg(args, nargs, 1);
+    ret = njs_fs_path_arg(vm, &dir_path, path, &njs_str_value("path"));
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    callback = NULL;
+    options = njs_arg(args, nargs, 2);
+
+    if (njs_slow_path(calltype == NJS_FS_CALLBACK)) {
+        callback = njs_arg(args, nargs, njs_min(nargs - 1, 3));
+        if (!njs_is_function(callback)) {
+            njs_type_error(vm, "\"callback\" must be a function");
+            return NJS_ERROR;
+        }
+        if (options == callback) {
+            options = njs_value_arg(&njs_value_undefined);
+        }
+    }
+
+    njs_set_false(&types);
+    njs_set_undefined(&encoding);
+
+    switch (options->type) {
+    case NJS_STRING:
+        encoding = *options;
+        break;
+
+    case NJS_UNDEFINED:
+        break;
+
+    default:
+        if (!njs_is_object(options)) {
+            njs_type_error(vm, "Unknown options type: \"%s\" "
+                           "(a string or object required)",
+                           njs_type_string(options->type));
+            return NJS_ERROR;
+        }
+
+        ret = njs_value_property(vm, options, njs_value_arg(&string_encoding),
+                                 &encoding);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return ret;
+        }
+
+        ret = njs_value_property(vm, options, njs_value_arg(&string_types),
+                                 &types);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return ret;
+        }
+    }
+
+    enc = njs_fs_encoding(vm, &encoding);
+    if (njs_slow_path(enc == NJS_FS_ENC_INVALID)) {
+        return NJS_ERROR;
+    }
+
+    results = njs_array_alloc(vm, 1, 0, NJS_ARRAY_SPARE);
+    if (njs_slow_path(results == NULL)) {
+        return NJS_ERROR;
+    }
+
+    njs_set_array(&retval, results);
+
+    dir = opendir(dir_path);
+    if (njs_slow_path(dir == NULL)) {
+        ret = njs_fs_error(vm, "opendir", strerror(errno), path, errno,
+                           &retval);
+        goto done;
+    }
+
+    for ( ;; ) {
+        errno = 0;
+        entry = readdir(dir);
+        if (njs_slow_path(entry == NULL)) {
+            if (errno != 0) {
+                ret = njs_fs_error(vm, "readdir", strerror(errno), path, errno,
+                                   &retval);
+            }
+
+            goto done;
+        }
+
+        d_name = (u_char *) entry->d_name;
+
+        size = njs_strlen(d_name);
+        length = njs_utf8_length(d_name, size);
+        if (njs_slow_path(length < 0)) {
+            length = 0;
+        }
+
+        if ((length == 1 && d_name[0] == '.')
+            || (length == 2 && (d_name[0] == '.' && d_name[1] == '.')))
+        {
+            continue;
+        }
+
+        if (njs_fast_path(!njs_is_true(&types))) {
+            ret = njs_array_string_add(vm, results, d_name, size, length);
+            if (njs_slow_path(ret != NJS_OK)) {
+                goto done;
+            }
+
+            continue;
+        }
+
+        ret = njs_string_new(vm, &ename, d_name, size, length);
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto done;
+        }
+
+        njs_set_number(&etype, njs_dentry_type(entry));
+
+        value = njs_array_push(vm, results);
+        if (njs_slow_path(value == NULL)) {
+            goto done;
+        }
+
+        ret = njs_fs_dirent_create(vm, &ename, &etype, value);
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto done;
+        }
+    }
+
+done:
+
+    if (dir != NULL) {
+        (void) closedir(dir);
+    }
+
+    if (ret == NJS_OK) {
+        return njs_fs_result(vm, &retval, calltype, callback, 2);
+    }
+
+    return NJS_ERROR;
+}
+
+
+static njs_int_t
 njs_fs_fd_read(njs_vm_t *vm, int fd, njs_str_t *data)
 {
     u_char   *p, *end, *start;
@@ -1231,6 +1415,205 @@ memory_error:
 }
 
 
+static njs_int_t
+njs_fs_dirent_create(njs_vm_t *vm, njs_value_t *name, njs_value_t *type,
+    njs_value_t *retval)
+{
+    njs_int_t     ret;
+    njs_object_t  *object;
+
+    static const njs_value_t  string_name = njs_string("name");
+    static const njs_value_t  string_type = njs_string("type");
+
+    object = njs_object_alloc(vm);
+    if (njs_slow_path(object == NULL)) {
+        return NJS_ERROR;
+    }
+
+    object->__proto__ = &vm->prototypes[NJS_OBJ_TYPE_FS_DIRENT].object;
+
+    njs_set_object(retval, object);
+
+    ret = njs_value_property_set(vm, retval, njs_value_arg(&string_name),
+                                 name);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    /* TODO: use a private symbol as a key. */
+    ret = njs_value_property_set(vm, retval, njs_value_arg(&string_type),
+                                 type);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_dirent_constructor(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused)
+{
+    if (njs_slow_path(!vm->top_frame->ctor)) {
+        njs_type_error(vm, "the Dirent constructor must be called with new");
+        return NJS_ERROR;
+    }
+
+    return njs_fs_dirent_create(vm, njs_arg(args, nargs, 1),
+                                njs_arg(args, nargs, 2), &vm->retval);
+}
+
+
+static const njs_object_prop_t  njs_dirent_constructor_properties[] =
+{
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("Dirent"),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 1, 2.0),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("prototype"),
+        .value = njs_prop_handler(njs_object_prototype_create),
+    },
+};
+
+
+const njs_object_init_t  njs_dirent_constructor_init = {
+    njs_dirent_constructor_properties,
+    njs_nitems(njs_dirent_constructor_properties),
+};
+
+
+static njs_int_t
+njs_fs_dirent_test(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t testtype)
+{
+    njs_int_t    ret;
+    njs_value_t  type, *this;
+
+    static const njs_value_t  string_type = njs_string("type");
+
+    this = njs_argument(args, 0);
+
+    ret = njs_value_property(vm, this, njs_value_arg(&string_type), &type);
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return ret;
+    }
+
+    if (njs_slow_path(njs_is_number(&type)
+                      && (njs_number(&type) == NJS_DT_INVALID)))
+    {
+        njs_internal_error(vm, "dentry type is not supported on this platform");
+        return NJS_ERROR;
+    }
+
+    njs_set_boolean(&vm->retval,
+                    njs_is_number(&type) && testtype == njs_number(&type));
+
+    return NJS_OK;
+}
+
+
+static const njs_object_prop_t  njs_dirent_prototype_properties[] =
+{
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
+        .value = njs_string("Dirent"),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("constructor"),
+        .value = njs_prop_handler(njs_object_prototype_create_constructor),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("isDirectory"),
+        .value = njs_native_function2(njs_fs_dirent_test, 0, DT_DIR),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("isFile"),
+        .value = njs_native_function2(njs_fs_dirent_test, 0, DT_REG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("isBlockDevice"),
+        .value = njs_native_function2(njs_fs_dirent_test, 0, DT_BLK),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_long_string("isCharacterDevice"),
+        .value = njs_native_function2(njs_fs_dirent_test, 0, DT_CHR),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("isSymbolicLink"),
+        .value = njs_native_function2(njs_fs_dirent_test, 0, DT_LNK),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("isFIFO"),
+        .value = njs_native_function2(njs_fs_dirent_test, 0, DT_FIFO),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("isSocket"),
+        .value = njs_native_function2(njs_fs_dirent_test, 0, DT_SOCK),
+        .writable = 1,
+        .configurable = 1,
+    },
+};
+
+
+const njs_object_init_t  njs_dirent_prototype_init = {
+    njs_dirent_prototype_properties,
+    njs_nitems(njs_dirent_prototype_properties),
+};
+
+
+const njs_object_type_init_t  njs_dirent_type_init = {
+    .constructor = njs_native_ctor(njs_dirent_constructor, 2, 0),
+    .prototype_props = &njs_dirent_prototype_init,
+    .constructor_props = &njs_dirent_constructor_init,
+    .prototype_value = { .object = { .type = NJS_OBJECT } },
+};
+
+
 static const njs_object_prop_t  njs_fs_promises_properties[] =
 {
     {
@@ -1287,6 +1670,14 @@ static const njs_object_prop_t  njs_fs_promises_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("rmdir"),
         .value = njs_native_function2(njs_fs_rmdir, 0, NJS_FS_PROMISE),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("readdir"),
+        .value = njs_native_function2(njs_fs_readdir, 0, NJS_FS_PROMISE),
         .writable = 1,
         .configurable = 1,
     },
@@ -1395,6 +1786,14 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("promises"),
         .value = njs_prop_handler(njs_fs_promises),
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("Dirent"),
+        .value = _njs_native_function(njs_dirent_constructor, 2, 1, 0),
+        .writable = 1,
+        .configurable = 1,
     },
 
     {
@@ -1557,6 +1956,22 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("rmdirSync"),
         .value = njs_native_function2(njs_fs_rmdir, 0, NJS_FS_DIRECT),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("readdir"),
+        .value = njs_native_function2(njs_fs_readdir, 0, NJS_FS_CALLBACK),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("readdirSync"),
+        .value = njs_native_function2(njs_fs_readdir, 0, NJS_FS_DIRECT),
         .writable = 1,
         .configurable = 1,
     },

@@ -459,15 +459,6 @@ njs_test {
      "queue.toString()\r\n'0,1,2,3,4,5'"}
 }
 
-# require('fs')
-
-njs_test {
-    {"var fs = require('fs')\r\n"
-     "undefined\r\n>> "}
-    {"fs.read\t"
-     "fs.read\a*File"}
-}
-
 # require('fs').readFile()
 
 njs_test {
@@ -1144,3 +1135,8 @@ njs_run {"./test/js/fs_promises_006.js"} \
 "test fs.renameSync
 test fs.rename
 test fsp.rename"
+
+njs_run {"./test/js/fs_promises_007.js"} \
+"test fs.readdirSync
+test fs.readdir
+test fsp.readdir"
