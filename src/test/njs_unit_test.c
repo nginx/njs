@@ -1344,8 +1344,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("false") },
 
     { njs_str("1 && 1 ?? true"),
-      njs_str("SyntaxError: Either \"??\" or \"&&\" expression "
-              "must be parenthesized in 1") },
+      njs_str("SyntaxError: Unexpected token \"??\" in 1") },
 
     { njs_str("null ?? 0 || 1"),
       njs_str("SyntaxError: Unexpected token \"||\" in 1") },

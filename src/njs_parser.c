@@ -1929,7 +1929,7 @@ njs_parser_property_definition_after(njs_parser_t *parser,
 
     proto_init = 0;
 
-    if (property != NULL && property->index != NJS_TOKEN_OPEN_BRACKET
+    if (property->index != NJS_TOKEN_OPEN_BRACKET
         && njs_is_string(&property->u.value))
     {
         njs_string_get(&property->u.value, &name);
@@ -3891,18 +3891,12 @@ njs_parser_coalesce_expression(njs_parser_t *parser, njs_lexer_token_t *token,
         return njs_parser_stack_pop(parser);
     }
 
-    if (node != NULL) {
-        type = node->token_type;
+    type = node->token_type;
 
-        if (parser->lexer->prev_type != NJS_TOKEN_CLOSE_PARENTHESIS
-            && (type == NJS_TOKEN_LOGICAL_OR || type == NJS_TOKEN_LOGICAL_AND))
-        {
-            njs_parser_syntax_error(parser, "Either \"??\" or \"%s\" "
-                                    "expression must be parenthesized",
-                                    (type == NJS_TOKEN_LOGICAL_OR) ? "||"
-                                                                   : "&&");
-            return NJS_DONE;
-        }
+    if (parser->lexer->prev_type != NJS_TOKEN_CLOSE_PARENTHESIS
+        && (type == NJS_TOKEN_LOGICAL_OR || type == NJS_TOKEN_LOGICAL_AND))
+    {
+        return njs_parser_failed(parser);
     }
 
     njs_lexer_consume_token(parser->lexer, 1);
