@@ -6804,7 +6804,7 @@ njs_parser_get_set(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_parser_node_t  *property, *expression, *temp;
 
     temp = parser->target;
-    accessor = (njs_token_type_t) temp->right;
+    accessor = (njs_token_type_t) (uintptr_t) temp->right;
 
     name = token;
 
@@ -6906,7 +6906,7 @@ njs_parser_get_set_after(njs_parser_t *parser, njs_lexer_token_t *token,
 
     temp = parser->target;
 
-    accessor = (njs_token_type_t) temp->right;
+    accessor = (njs_token_type_t) (uintptr_t) temp->right;
     temp->right = parser->node;
 
     parser->node = expression;
