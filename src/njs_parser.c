@@ -467,10 +467,10 @@ njs_inline njs_int_t
 njs_parser_not_supported(njs_parser_t *parser, njs_lexer_token_t *token)
 {
     if (token->type != NJS_TOKEN_END) {
-        njs_parser_syntax_error(parser, "Token \"%V\" not support "
+        njs_parser_syntax_error(parser, "Token \"%V\" not supported "
                                 "in this version", &token->text);
     } else {
-        njs_parser_syntax_error(parser, "Not support in this version");
+        njs_parser_syntax_error(parser, "Not supported in this version");
     }
 
     return NJS_DONE;
