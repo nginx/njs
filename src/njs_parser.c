@@ -5383,7 +5383,7 @@ njs_parser_for_in_statement(njs_parser_t *parser, njs_lexer_token_t *token,
     }
 
     forin = njs_parser_node_new(parser, NJS_TOKEN_FOR_IN);
-    if (node == NULL) {
+    if (forin == NULL) {
         return NJS_ERROR;
     }
 
