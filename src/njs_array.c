@@ -1361,7 +1361,7 @@ njs_array_prototype_reverse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                     array->start[l] = hvalue;
 
                 } else {
-                    array->start[h] = njs_value_invalid;
+                    array->start[l] = njs_value_invalid;
                 }
 
             } else if (hret == NJS_OK) {

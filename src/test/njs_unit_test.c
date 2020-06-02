@@ -4504,6 +4504,15 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = [1,2,3,4]; a.reverse()"),
       njs_str("4,3,2,1") },
 
+    { njs_str("[1,2,3,,,].reverse()"),
+      njs_str(",,3,2,1") },
+
+    { njs_str("[,2,3,,,].reverse()"),
+      njs_str(",,3,2,") },
+
+    { njs_str("[,,,3,2,1].reverse()"),
+      njs_str("1,2,3,,,") },
+
     { njs_str("var o = {1:true, 2:'', length:-2}; Array.prototype.reverse.call(o) === o"),
       njs_str("true") },
 
