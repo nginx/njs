@@ -3216,8 +3216,8 @@ static njs_int_t
 njs_array_prototype_sort(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    int64_t                i, und, inv, len, nlen, length;
-    njs_int_t              ret;
+    int64_t                i, und, len, nlen, length;
+    njs_int_t              ret, fast_path;
     njs_array_t            *array;
     njs_value_t            *this, *comparefn, *start, *strings;
     njs_array_sort_ctx_t   ctx;
@@ -3260,50 +3260,46 @@ njs_array_prototype_sort(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ctx.strings.pointer = 0;
     ctx.exception = 0;
 
-    if (njs_fast_path(njs_is_fast_array(this))) {
+    fast_path = njs_is_fast_array(this);
+
+    if (njs_fast_path(fast_path)) {
         array = njs_array(this);
         start = array->start;
 
-        /**
-         * Moving undefined and invalid elements to the end.
-         * x x x | undefineds | invalids
-         */
-
-        und = 0;
-        inv = length;
-
-        for (i = length - 1; i >= 0; i--) {
-            if (njs_is_undefined(&start[i])) {
-                start[i] = start[inv - und - 1];
-                start[inv - und - 1] = njs_value_undefined;
-                und++;
-                continue;
-            }
-
-            if (!njs_is_valid(&start[i])) {
-                start[i] = start[inv - und - 1];
-                start[inv - und - 1] = njs_value_undefined;
-                start[inv - 1] = njs_value_invalid;
-                inv--;
-                continue;
-            }
-        }
-
-        len = inv - und;
-
         slots = njs_mp_alloc(vm->mem_pool,
-                             sizeof(njs_array_sort_slot_t) * len);
+                             sizeof(njs_array_sort_slot_t) * length);
         if (njs_slow_path(slots == NULL)) {
                 return NJS_ERROR;
         }
 
-        for (i = 0; i < len; i++) {
-            slots[i].value = start[i];
-            slots[i].pos = i;
-            slots[i].str = NULL;
+        und = 0;
+        p = slots;
+
+        for (i = 0; i < length; i++) {
+            if (njs_slow_path(!njs_is_valid(&start[i]))) {
+                fast_path = 0;
+                njs_mp_free(vm->mem_pool, slots);
+                slots = NULL;
+                goto slow_path;
+            }
+
+            if (njs_slow_path(njs_is_undefined(&start[i]))) {
+                und++;
+                continue;
+            }
+
+            p->value = start[i];
+            p->pos = i;
+            p->str = NULL;
+            p++;
         }
 
+        len = p - slots;
+
     } else {
+
+slow_path:
+
         und = 0;
         p = NULL;
         end = NULL;
@@ -3369,11 +3365,16 @@ njs_array_prototype_sort(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         goto exception;
     }
 
-    if (njs_fast_path(njs_is_fast_array(this))) {
+    if (njs_fast_path(fast_path)) {
         array = njs_array(this);
         start = array->start;
+
         for (i = 0; i < len; i++) {
             start[i] = slots[i].value;
+        }
+
+        for (i = len; und-- > 0; i++) {
+            start[i] = njs_value_undefined;
         }
 
     } else {

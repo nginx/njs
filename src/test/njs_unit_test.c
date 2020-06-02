@@ -6104,6 +6104,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("[1,2,3].sort(()=>-1)"),
       njs_str("3,2,1") },
 
+    { njs_str("njs.dump([undefined,1,2,3].sort(()=>0))"),
+      njs_str("[1,2,3,undefined]") },
+
+    { njs_str("njs.dump([1,,2,3].sort(()=>0))"),
+      njs_str("[1,2,3,<empty>]") },
+
     { njs_str("var count = 0;"
               "[4,3,2,1].sort(function(x, y) { if (count++ == 2) {throw Error('Oops'); }; return x - y })"),
       njs_str("Error: Oops") },
