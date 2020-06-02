@@ -16652,7 +16652,14 @@ static njs_unit_test_t  njs_test[] =
               "function foo() {}"),
       njs_str("undefined") },
 
+    { njs_str("new\""),
+      njs_str("SyntaxError: Unterminated string \"\"\" in 1") },
 
+    { njs_str("new\"\\UFFFF"),
+      njs_str("SyntaxError: Unterminated string \"\"\\UFFFF\" in 1") },
+
+    { njs_str("new/la"),
+      njs_str("SyntaxError: Unterminated RegExp \"/la\" in 1") },
 };
 
 

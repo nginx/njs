@@ -994,7 +994,7 @@ njs_parser_primary_expression_test(njs_parser_t *parser,
 
         ret = njs_parser_escape_string_create(parser, token, &node->u.value);
         if (ret != NJS_TOKEN_STRING) {
-            return NJS_DONE;
+            return NJS_ERROR;
         }
 
         parser->node = node;
@@ -1005,7 +1005,7 @@ njs_parser_primary_expression_test(njs_parser_t *parser,
 
         njs_parser_syntax_error(parser, "Unterminated string \"%V\"",
                                 &token->text);
-        return NJS_DONE;
+        return NJS_ERROR;
 
     /* ArrayLiteral */
     case NJS_TOKEN_OPEN_BRACKET:
@@ -1086,7 +1086,7 @@ njs_parser_primary_expression_test(njs_parser_t *parser,
 
         ret = njs_parser_regexp_literal(parser, token, current);
         if (ret != NJS_OK) {
-            return NJS_DONE;
+            return NJS_ERROR;
         }
 
         goto done;
@@ -2208,6 +2208,10 @@ njs_parser_member_expression(njs_parser_t *parser, njs_lexer_token_t *token,
             if (ret == NJS_DONE) {
                 njs_parser_next(parser, njs_parser_member_expression_next);
                 return NJS_OK;
+            }
+
+            if (njs_is_error(&parser->vm->retval)) {
+                return NJS_DONE;
             }
 
             return ret;
