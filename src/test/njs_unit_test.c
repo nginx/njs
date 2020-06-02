@@ -16660,6 +16660,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("new/la"),
       njs_str("SyntaxError: Unterminated RegExp \"/la\" in 1") },
+
+    { njs_str("{name; {/ / /}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
 };
 
 

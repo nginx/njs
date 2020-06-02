@@ -3086,6 +3086,10 @@ njs_parser_expression_node(njs_parser_t *parser, njs_lexer_token_t *token,
 {
     njs_parser_node_t  *node;
 
+    if (parser->ret != NJS_OK) {
+        return njs_parser_failed(parser);
+    }
+
     if (parser->target != NULL) {
         parser->target->right = parser->node;
         parser->target->right->dest = parser->target;
@@ -3107,7 +3111,7 @@ njs_parser_expression_node(njs_parser_t *parser, njs_lexer_token_t *token,
     node->left = parser->node;
     node->left->dest = node;
 
-    return njs_parser_after(parser, current, node, 1, after);
+    return njs_parser_after(parser, current, node, 0, after);
 }
 
 
@@ -3398,6 +3402,10 @@ njs_parser_exponentiation_expression_match(njs_parser_t *parser,
 {
     njs_parser_node_t  *node;
 
+    if (parser->ret != NJS_OK) {
+        return njs_parser_failed(parser);
+    }
+
     if (parser->target != NULL) {
         parser->target->right = parser->node;
         parser->target->right->dest = parser->target;
@@ -3423,7 +3431,7 @@ njs_parser_exponentiation_expression_match(njs_parser_t *parser,
 
     njs_parser_next(parser, njs_parser_exponentiation_expression);
 
-    return njs_parser_after(parser, current, node, 1,
+    return njs_parser_after(parser, current, node, 0,
                             njs_parser_exponentiation_expression_match);
 }
 
@@ -3448,6 +3456,10 @@ njs_parser_multiplicative_expression_match(njs_parser_t *parser,
 {
     njs_parser_node_t       *node;
     njs_vmcode_operation_t  operation;
+
+    if (parser->ret != NJS_OK) {
+        return njs_parser_failed(parser);
+    }
 
     if (parser->target != NULL) {
         parser->target->right = parser->node;
@@ -3485,7 +3497,7 @@ njs_parser_multiplicative_expression_match(njs_parser_t *parser,
 
     njs_parser_next(parser, njs_parser_exponentiation_expression);
 
-    return njs_parser_after(parser, current, node, 1,
+    return njs_parser_after(parser, current, node, 0,
                             njs_parser_multiplicative_expression_match);
 }
 
@@ -3510,6 +3522,10 @@ njs_parser_additive_expression_match(njs_parser_t *parser,
 {
     njs_parser_node_t       *node;
     njs_vmcode_operation_t  operation;
+
+    if (parser->ret != NJS_OK) {
+        return njs_parser_failed(parser);
+    }
 
     if (parser->target != NULL) {
         parser->target->right = parser->node;
@@ -3543,7 +3559,7 @@ njs_parser_additive_expression_match(njs_parser_t *parser,
 
     njs_parser_next(parser, njs_parser_multiplicative_expression);
 
-    return njs_parser_after(parser, current, node, 1,
+    return njs_parser_after(parser, current, node, 0,
                             njs_parser_additive_expression_match);
 }
 
@@ -3568,6 +3584,10 @@ njs_parser_shift_expression_match(njs_parser_t *parser,
 {
     njs_parser_node_t       *node;
     njs_vmcode_operation_t  operation;
+
+    if (parser->ret != NJS_OK) {
+        return njs_parser_failed(parser);
+    }
 
     if (parser->target != NULL) {
         parser->target->right = parser->node;
@@ -3605,7 +3625,7 @@ njs_parser_shift_expression_match(njs_parser_t *parser,
 
     njs_parser_next(parser, njs_parser_additive_expression);
 
-    return njs_parser_after(parser, current, node, 1,
+    return njs_parser_after(parser, current, node, 0,
                             njs_parser_shift_expression_match);
 }
 
@@ -3630,6 +3650,10 @@ njs_parser_relational_expression_match(njs_parser_t *parser,
 {
     njs_parser_node_t       *node;
     njs_vmcode_operation_t  operation;
+
+    if (parser->ret != NJS_OK) {
+        return njs_parser_failed(parser);
+    }
 
     if (parser->target != NULL) {
         parser->target->right = parser->node;
@@ -3679,7 +3703,7 @@ njs_parser_relational_expression_match(njs_parser_t *parser,
 
     njs_parser_next(parser, njs_parser_shift_expression);
 
-    return njs_parser_after(parser, current, node, 1,
+    return njs_parser_after(parser, current, node, 0,
                             njs_parser_relational_expression_match);
 }
 
@@ -3704,6 +3728,10 @@ njs_parser_equality_expression_match(njs_parser_t *parser,
 {
     njs_parser_node_t       *node;
     njs_vmcode_operation_t  operation;
+
+    if (parser->ret != NJS_OK) {
+        return njs_parser_failed(parser);
+    }
 
     if (parser->target != NULL) {
         parser->target->right = parser->node;
@@ -3745,7 +3773,7 @@ njs_parser_equality_expression_match(njs_parser_t *parser,
 
     njs_parser_next(parser, njs_parser_relational_expression);
 
-    return njs_parser_after(parser, current, node, 1,
+    return njs_parser_after(parser, current, node, 0,
                             njs_parser_equality_expression_match);
 }
 
@@ -3883,6 +3911,10 @@ njs_parser_coalesce_expression(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_token_type_t   type;
     njs_parser_node_t  *node;
 
+    if (parser->ret != NJS_OK) {
+        return njs_parser_failed(parser);
+    }
+
     node = parser->node;
 
     if (parser->target != NULL) {
@@ -3916,7 +3948,7 @@ njs_parser_coalesce_expression(njs_parser_t *parser, njs_lexer_token_t *token,
 
     njs_parser_next(parser, njs_parser_bitwise_OR_expression);
 
-    return njs_parser_after(parser, current, node, 1,
+    return njs_parser_after(parser, current, node, 0,
                             njs_parser_coalesce_expression);
 }
 
