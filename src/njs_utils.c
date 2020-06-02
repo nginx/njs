@@ -241,7 +241,7 @@ void
 njs_qsort(void *arr, size_t n, size_t esize, njs_sort_cmp_t cmp, void *ctx)
 {
     int                r;
-    u_char             *base, *lt, *gt, *p, *end;
+    u_char             *base, *lt, *gt, *c, *p, *end;
     njs_uint_t         m4;
     njs_swap_t         swap;
     njs_qsort_state_t  stack[NJS_MAX_DEPTH], *sp;
@@ -321,9 +321,8 @@ njs_qsort(void *arr, size_t n, size_t esize, njs_sort_cmp_t cmp, void *ctx)
         /* Insertion sort. */
 
         for (p = base + esize; p < end; p += esize) {
-            while (p > base && cmp(p, p - esize, ctx) < 0) {
-                swap(p, p - esize, esize);
-                p -= esize;
+            for (c = p; c > base && cmp(c, c - esize, ctx) < 0; c -= esize) {
+                swap(c, c - esize, esize);
             }
         }
     }

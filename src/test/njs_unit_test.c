@@ -6101,6 +6101,9 @@ static njs_unit_test_t  njs_test[] =
               "a.sort((a, b) => b.r - a.r).map(v=>v.n).join('')"),
       njs_str("BDEAC") },
 
+    { njs_str("[1,2,3].sort(()=>-1)"),
+      njs_str("3,2,1") },
+
     { njs_str("var count = 0;"
               "[4,3,2,1].sort(function(x, y) { if (count++ == 2) {throw Error('Oops'); }; return x - y })"),
       njs_str("Error: Oops") },
