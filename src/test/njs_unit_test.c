@@ -4499,6 +4499,102 @@ static njs_unit_test_t  njs_test[] =
                  "a.splice(3, 2, 8, 9, 10, 11 ).join(':') + '|' + a"),
       njs_str("3:4|0,1,2,8,9,10,11,5,6,7") },
 
+    { njs_str("["
+              " [],"
+              " [1],"
+              " [1, 2],"
+              " [1, 2, 'a'],"
+              " [1, 2, 'a', 'b'],"
+              " [1, 2, 'a', 'b', 'c'],"
+              "]"
+              ".map(args=>{var a = [0,1,3,4,5]; a.splice.apply(a, args); return a})"
+              ".map(v=>v.join(''))"),
+      njs_str("01345,0,045,0a45,0ab45,0abc45") },
+
+    { njs_str("["
+              " [],"
+              " [1],"
+              " [1, 1, 'a'],"
+              " [1, 2, 'a'],"
+              " [1, 2, 'a', 'b'],"
+              " [1, 2, 'a', 'b', 'c'],"
+              "]"
+              ".map(args=>{var a = [0,1,3,4,5]; return a.splice.apply(a, args);})"
+              ".map(v=>v.join(''))"),
+      njs_str(",1345,1,13,13,13") },
+
+    { njs_str("Object.prototype.splice = Array.prototype.splice;"
+              "Object.prototype.join = Array.prototype.join;"
+              "["
+              " [],"
+              " [1],"
+              " [1, 2],"
+              " [1, 1, 'a'],"
+              " [1, 2, 'a'],"
+              " [1, 2, 'a', 'b'],"
+              " [1, 2, 'a', 'b', 'c'],"
+              "]"
+              ".map(args=>{var a = {0:0, 1:1, 2:3, 3:4, 4:5, length:5};"
+              "            a.splice.apply(a, args); return a})"
+              ".map(v=>v.join(''))"),
+      njs_str("01345,0,045,0a345,0a45,0ab45,0abc45") },
+
+    { njs_str("Object.prototype.splice = Array.prototype.splice;"
+              "Object.prototype.join = Array.prototype.join;"
+              "["
+              " [],"
+              " [1],"
+              " [1, 0, 'a'],"
+              " [1, 1, 'a'],"
+              " [1, 2, 'a'],"
+              " [1, 2, 'a', 'b'],"
+              " [1, 2, 'a', 'b', 'c'],"
+              "]"
+              ".map(args=>{var a = {0:0, 1:1, 2:3, 3:4, 4:5, length:5};"
+              "            return a.splice.apply(a, args);})"
+              ".map(v=>v.join(''))"),
+      njs_str(",1345,,1,13,13,13") },
+
+    { njs_str("Array.prototype.splice.call({0:0,1:1,2:2,3:3,length:4},0,3,4,5)"),
+      njs_str("0,1,2") },
+
+    { njs_str("var obj = {0:0,1:1,2:2,3:3,length:4};"
+              "Array.prototype.splice.call(obj,0,3,4,5); obj[3]"),
+      njs_str("undefined") },
+
+    { njs_str("var obj = {4294967294: 'x', length:-1};"
+              "Array.prototype.splice.call(obj, 4294967294, 1); obj.length"),
+      njs_str("0") },
+
+    { njs_str("var obj = {0:0, 1:1, 2:2};"
+              "Object.defineProperty(obj, 'length', {value:3, writable:false});"
+              "Array.prototype.splice.call(obj, 1, 2, 4)"),
+      njs_str("TypeError: Cannot assign to read-only property \"length\" of object") },
+
+    { njs_str("var obj = {'9007199254740988': 'A', '9007199254740989': 'B',"
+              "           '9007199254740990': 'C', '9007199254740991': 'D', "
+              "           length: 2 ** 53 + 2};"
+              "Array.prototype.splice.call(obj, 2**53-3, 2 ** 53 + 4)"),
+      njs_str("B,C") },
+
+    { njs_str("var obj = {'9007199254740988': 'A', '9007199254740989': 'B',"
+              "           '9007199254740990': 'C', '9007199254740991': 'D', "
+              "           length: 2 ** 53 + 2};"
+              "Array.prototype.splice.call(obj, 2**53-3, 2 ** 53 + 4);"
+              "obj['9007199254740988'] == 'A' && obj['9007199254740991'] == 'D'"),
+      njs_str("true") },
+
+    { njs_str("var obj = {'9007199254740990': 'A', '9007199254740991': 'B',"
+              "           length: 2 ** 53 - 1};"
+              "Array.prototype.splice.call(obj, 2**53-2, 1, 'C');"
+              "obj['9007199254740990'] == 'C' && obj['9007199254740991'] == 'B'"),
+      njs_str("true") },
+
+    { njs_str("var obj = {'9007199254740990': 'A', '9007199254740991': 'B',"
+              "           length: 2 ** 53 - 1};"
+              "Array.prototype.splice.call(obj, 2**53-2, 0, 'C');"),
+      njs_str("TypeError: Invalid length") },
+
     { njs_str("var a = []; a.reverse()"),
       njs_str("") },
 
