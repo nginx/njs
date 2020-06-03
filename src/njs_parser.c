@@ -5976,7 +5976,6 @@ njs_parser_labelled_statement(njs_parser_t *parser, njs_lexer_token_t *token,
 {
     uintptr_t          unique_id;
     njs_variable_t     *label;
-    njs_parser_node_t  *node;
 
     unique_id = token->unique_id;
 
@@ -6002,15 +6001,9 @@ njs_parser_labelled_statement(njs_parser_t *parser, njs_lexer_token_t *token,
     parser->node = NULL;
 
     if (token->type == NJS_TOKEN_FUNCTION) {
-        node = njs_parser_node_new(parser, NJS_TOKEN_FUNCTION);
-        if (node == NULL) {
-            return NJS_ERROR;
-        }
-
-        node->token_line = token->line;
-
-        njs_lexer_consume_token(parser->lexer, 1);
-        njs_parser_next(parser, njs_parser_function_declaration);
+        njs_syntax_error(parser->vm, "In strict mode code, functions can only "
+                                "be declared at top level or inside a block.");
+        return NJS_DONE;
 
     } else {
         njs_parser_next(parser, njs_parser_statement_wo_node);

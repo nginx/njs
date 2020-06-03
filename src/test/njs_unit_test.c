@@ -2934,6 +2934,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("a:{continue b}"),
       njs_str("SyntaxError: Undefined label \"b\" in 1") },
 
+    { njs_str("a:function name() {}"),
+      njs_str("SyntaxError: In strict mode code, functions can only be declared at top level or inside a block.") },
+
 #if 0 /* TODO */
     { njs_str("a:{1; break a}"),
       njs_str("1") },
