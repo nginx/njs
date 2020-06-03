@@ -16696,6 +16696,30 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("switch ([(]) {}"),
       njs_str("SyntaxError: Unexpected token \"]\" in 1") },
+
+    { njs_str("{{}{-}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}{+}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}{delete}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}{++}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}{++1}"),
+      njs_str("ReferenceError: Invalid left-hand side in prefix operation in 1") },
+
+    { njs_str("{{}{1++}"),
+      njs_str("ReferenceError: Invalid left-hand side in postfix operation in 1") },
+
+    { njs_str("{{}{1/}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}{1>>}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
 };
 
 

@@ -3304,7 +3304,7 @@ njs_parser_unary_expression(njs_parser_t *parser, njs_lexer_token_t *token,
 
     parser->target = node;
 
-    return njs_parser_after(parser, current, node, 1,
+    return njs_parser_after(parser, current, node, 0,
                             njs_parser_unary_expression_next);
 }
 
@@ -3331,6 +3331,10 @@ njs_parser_unary_expression_next(njs_parser_t *parser,
     double             num;
     njs_token_type_t   type;
     njs_parser_node_t  *node;
+
+    if (parser->ret != NJS_OK) {
+        return njs_parser_failed(parser);
+    }
 
     type = parser->target->token_type;
     node = parser->node;
