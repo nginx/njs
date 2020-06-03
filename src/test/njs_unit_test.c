@@ -4165,6 +4165,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("[0, 1, , , 1].copyWithin(0, 1, 4)"),
       njs_str("1,,,,1") },
 
+    { njs_str("[0, 1, 2, 3].copyWithin(0, 1, -10)"),
+      njs_str("0,1,2,3") },
+
     { njs_str("var o = [0, 1, , , 1].copyWithin(0, 1, 4); typeof o"),
       njs_str("object") },
 
@@ -4183,6 +4186,10 @@ static njs_unit_test_t  njs_test[] =
               "[].copyWithin.call(obj, 0, -2, -1);"
               "Object.keys(obj) + '|' + Object.values(obj)"),
       njs_str("length,1,2,3,4,5,0|5,a,b,c,d,e,c") },
+
+    { njs_str("var o = {length:1}; Object.defineProperty(o, '0', {get:()=>{throw Error('Oops')}});"
+              "Array.prototype.copyWithin.call(o, 0, 0)"),
+      njs_str("Error: Oops") },
 
     { njs_str("Array.prototype.slice(1)"),
       njs_str("") },
