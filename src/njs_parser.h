@@ -194,6 +194,8 @@ njs_parser_node_string(njs_vm_t *vm, njs_lexer_token_t *token,
         return NULL;
     }
 
+    node->token_line = token->line;
+
     return node;
 }
 

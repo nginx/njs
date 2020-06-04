@@ -563,6 +563,7 @@ njs_parser(njs_parser_t *parser, njs_parser_t *prev)
     }
 
     parser->node->token_type = NJS_TOKEN_END;
+    parser->node->token_line = parser->lexer->line;
 
     njs_parser_chain_top_set(parser, parser->node);
 
@@ -921,6 +922,17 @@ njs_parser_expression_parenthesis(njs_parser_t *parser,
 }
 
 
+static njs_int_t
+njs_parser_set_line_state(njs_parser_t *parser,
+    njs_lexer_token_t *token, njs_queue_link_t *current)
+{
+    parser->node->token_line = (uint32_t) (uintptr_t) parser->target;
+    parser->target = NULL;
+
+    return njs_parser_stack_pop(parser);
+}
+
+
 /*
  * 12.2 Primary Expression.
  */
@@ -948,6 +960,7 @@ njs_parser_primary_expression_test(njs_parser_t *parser,
         }
 
         node->u.value = njs_value_true;
+        node->token_line = token->line;
 
         parser->node = node;
         goto done;
@@ -959,6 +972,7 @@ njs_parser_primary_expression_test(njs_parser_t *parser,
         }
 
         node->u.value = njs_value_false;
+        node->token_line = token->line;
 
         parser->node = node;
         goto done;
@@ -970,6 +984,7 @@ njs_parser_primary_expression_test(njs_parser_t *parser,
         }
 
         njs_set_number(&node->u.value, token->number);
+        node->token_line = token->line;
 
         parser->node = node;
         goto done;
@@ -979,6 +994,8 @@ njs_parser_primary_expression_test(njs_parser_t *parser,
         if (node == NULL) {
             return NJS_ERROR;
         }
+
+        node->token_line = token->line;
 
         ret = njs_parser_string_create(parser->vm, token, &node->u.value);
         if (ret != NJS_OK) {
@@ -995,6 +1012,8 @@ njs_parser_primary_expression_test(njs_parser_t *parser,
         if (node == NULL) {
             return NJS_ERROR;
         }
+
+        node->token_line = token->line;
 
         ret = njs_parser_escape_string_create(parser, token, &node->u.value);
         if (ret != NJS_TOKEN_STRING) {
@@ -1013,11 +1032,27 @@ njs_parser_primary_expression_test(njs_parser_t *parser,
 
     /* ArrayLiteral */
     case NJS_TOKEN_OPEN_BRACKET:
+        node = njs_parser_node_new(parser, NJS_TOKEN_ARRAY);
+        if (node == NULL) {
+            return NJS_ERROR;
+        }
+
+        node->token_line = token->line;
+        parser->node = node;
+
         njs_parser_next(parser, njs_parser_array_literal);
         break;
 
     /* ObjectLiteral */
     case NJS_TOKEN_OPEN_BRACE:
+        node = njs_parser_node_new(parser, NJS_TOKEN_OBJECT);
+        if (node == NULL) {
+            return NJS_ERROR;
+        }
+
+        node->token_line = token->line;
+        parser->node = node;
+
         njs_parser_next(parser, njs_parser_object_literal);
         break;
 
@@ -1039,7 +1074,6 @@ njs_parser_primary_expression_test(njs_parser_t *parser,
             }
 
             node->token_line = token->line;
-
             parser->node = node;
 
             njs_parser_next(parser, njs_parser_function_expression);
@@ -1086,6 +1120,7 @@ njs_parser_primary_expression_test(njs_parser_t *parser,
             return NJS_ERROR;
         }
 
+        node->token_line = token->line;
         parser->node = node;
 
         ret = njs_parser_regexp_literal(parser, token, current);
@@ -1102,6 +1137,7 @@ njs_parser_primary_expression_test(njs_parser_t *parser,
             return NJS_ERROR;
         }
 
+        node->token_line = token->line;
         parser->node = node;
 
         njs_parser_next(parser, njs_parser_template_literal);
@@ -1140,6 +1176,7 @@ reference:
         return NJS_ERROR;
     }
 
+    node->token_line = token->line;
     parser->node = node;
 
 done:
@@ -1258,6 +1295,8 @@ njs_parser_template_literal(njs_parser_t *parser, njs_lexer_token_t *token,
     if (array == NULL) {
         return NJS_ERROR;
     }
+
+    array->token_line = token->line;
 
     template = parser->node;
     index = NJS_SCOPE_CALLEE_ARGUMENTS;
@@ -1532,14 +1571,8 @@ static njs_int_t
 njs_parser_array_literal(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
-    njs_parser_node_t  *array;
-
-    array = njs_parser_node_new(parser, NJS_TOKEN_ARRAY);
-    if (array == NULL) {
-        return NJS_ERROR;
-    }
-
-    parser->target = array;
+    parser->target = parser->node;
+    parser->node = NULL;
 
     njs_parser_next(parser, njs_parser_array_element_list);
 
@@ -1644,20 +1677,16 @@ static njs_int_t
 njs_parser_object_literal(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
-    njs_parser_node_t  *object, *node;
-
-    object = njs_parser_node_new(parser, NJS_TOKEN_OBJECT);
-    if (object == NULL) {
-        return NJS_ERROR;
-    }
+    njs_parser_node_t *node;
 
     node = njs_parser_node_new(parser, 0);
     if (node == NULL) {
         return NJS_ERROR;
     }
 
-    node->left = object;
+    node->left = parser->node;
 
+    parser->node = NULL;
     parser->target = node;
 
     njs_parser_next(parser, njs_parser_property_definition_list);
@@ -1748,6 +1777,10 @@ njs_parser_property_name_node(njs_parser_t *parser, njs_lexer_token_t *token)
 
     } else {
         property = njs_parser_node_string(parser->vm, token, parser);
+    }
+
+    if (property != NULL) {
+        property->token_line = token->line;
     }
 
     return property;
@@ -2103,8 +2136,6 @@ njs_parser_property(njs_parser_t *parser, njs_lexer_token_t *token,
 
     switch (token->type) {
     case NJS_TOKEN_OPEN_BRACKET:
-        njs_lexer_consume_token(parser->lexer, 1);
-
         node = njs_parser_node_new(parser, NJS_TOKEN_PROPERTY);
         if (node == NULL) {
             return NJS_ERROR;
@@ -2112,8 +2143,11 @@ njs_parser_property(njs_parser_t *parser, njs_lexer_token_t *token,
 
         node->u.operation = NJS_VMCODE_PROPERTY_GET;
         node->left = parser->node;
+        node->token_line = token->line;
 
         parser->node = NULL;
+
+        njs_lexer_consume_token(parser->lexer, 1);
 
         njs_parser_next(parser, njs_parser_expression);
 
@@ -2133,11 +2167,14 @@ njs_parser_property(njs_parser_t *parser, njs_lexer_token_t *token,
             }
 
             node->u.operation = NJS_VMCODE_PROPERTY_GET;
+            node->token_line = token->line;
 
             prop_node = njs_parser_node_string(parser->vm, token, parser);
             if (prop_node == NULL) {
                 return NJS_ERROR;
             }
+
+            prop_node->token_line = token->line;
 
             node->left = parser->node;
             node->right = prop_node;
@@ -2153,14 +2190,16 @@ njs_parser_property(njs_parser_t *parser, njs_lexer_token_t *token,
         return NJS_DECLINED;
 
     case NJS_TOKEN_GRAVE:
-        njs_lexer_consume_token(parser->lexer, 1);
-
         node = njs_parser_create_call(parser, parser->node, 0);
         if (node == NULL) {
             return NJS_ERROR;
         }
 
+        node->token_line = token->line;
+
         parser->node = node;
+
+        njs_lexer_consume_token(parser->lexer, 1);
 
         njs_parser_next(parser, njs_parser_template_literal);
 
@@ -2437,18 +2476,20 @@ njs_parser_member_expression_new_after(njs_parser_t *parser,
             return NJS_ERROR;
         }
 
+        parser->node->token_line = token->line;
+
         return njs_parser_stack_pop(parser);
     }
-
-    njs_lexer_consume_token(parser->lexer, 1);
 
     func = njs_parser_create_call(parser, parser->node, 1);
     if (func == NULL) {
         return NJS_ERROR;
     }
 
+    func->token_line = token->line;
     parser->node = func;
 
+    njs_lexer_consume_token(parser->lexer, 1);
     njs_parser_next(parser, njs_parser_arguments);
 
     return njs_parser_after(parser, current, func, 1,
@@ -2562,15 +2603,15 @@ njs_parser_call_expression_args(njs_parser_t *parser, njs_lexer_token_t *token,
         return njs_parser_failed(parser);
     }
 
-    njs_lexer_consume_token(parser->lexer, 1);
-
     func = njs_parser_create_call(parser, parser->node, 0);
     if (func == NULL) {
         return NJS_ERROR;
     }
 
+    func->token_line = token->line;
     parser->node = func;
 
+    njs_lexer_consume_token(parser->lexer, 1);
     njs_parser_next(parser, njs_parser_arguments);
 
     return njs_parser_after(parser, current, func, 1,
@@ -2594,15 +2635,15 @@ njs_parser_call_expression_after(njs_parser_t *parser,
 
     switch (token->type) {
     case NJS_TOKEN_OPEN_PARENTHESIS:
-        njs_lexer_consume_token(parser->lexer, 1);
-
         func = njs_parser_create_call(parser, parser->node, 0);
         if (func == NULL) {
             return NJS_ERROR;
         }
 
+        func->token_line = token->line;
         parser->node = func;
 
+        njs_lexer_consume_token(parser->lexer, 1);
         njs_parser_next(parser, njs_parser_arguments);
 
         ret = njs_parser_after(parser, current, func, 1,
@@ -2730,9 +2771,10 @@ njs_parser_argument_list_after(njs_parser_t *parser, njs_lexer_token_t *token,
         node->index = parser->target->index + sizeof(njs_value_t);
     }
 
+    node->token_line = token->line;
     node->left = parser->node;
-    parser->node->dest = node;
 
+    parser->node->dest = node;
     parser->target->right = node;
     parser->node = node;
 
@@ -2819,15 +2861,15 @@ njs_parser_optional_chain(njs_parser_t *parser, njs_lexer_token_t *token,
 
     switch (token->type) {
     case NJS_TOKEN_OPEN_PARENTHESIS:
-        njs_lexer_consume_token(parser->lexer, 2);
-
         func = njs_parser_create_call(parser, parser->node, 0);
         if (func == NULL) {
             return NJS_ERROR;
         }
 
+        func->token_line = token->line;
         parser->node = func;
 
+        njs_lexer_consume_token(parser->lexer, 2);
         njs_parser_next(parser, njs_parser_arguments);
 
         ret = njs_parser_after(parser, current, func, 1,
@@ -2878,15 +2920,15 @@ njs_parser_optional_chain_after(njs_parser_t *parser, njs_lexer_token_t *token,
 
     switch (token->type) {
     case NJS_TOKEN_OPEN_PARENTHESIS:
-        njs_lexer_consume_token(parser->lexer, 1);
-
         func = njs_parser_create_call(parser, parser->node, 0);
         if (func == NULL) {
             return NJS_ERROR;
         }
 
+        func->token_line = token->line;
         parser->node = func;
 
+        njs_lexer_consume_token(parser->lexer, 1);
         njs_parser_next(parser, njs_parser_arguments);
 
         ret = njs_parser_after(parser, current, func, 1,
@@ -2957,6 +2999,7 @@ njs_parser_new_expression_after(njs_parser_t *parser, njs_lexer_token_t *token,
         return NJS_ERROR;
     }
 
+    func->token_line = token->line;
     parser->node = func;
 
     return njs_parser_stack_pop(parser);
@@ -3028,15 +3071,15 @@ njs_parser_left_hand_side_expression_after(njs_parser_t *parser,
     switch (token->type) {
     /* CallExpression */
     case NJS_TOKEN_OPEN_PARENTHESIS:
-        njs_lexer_consume_token(parser->lexer, 1);
-
         func = njs_parser_create_call(parser, parser->node, 0);
         if (func == NULL) {
             return NJS_ERROR;
         }
 
+        func->token_line = token->line;
         parser->node = func;
 
+        njs_lexer_consume_token(parser->lexer, 1);
         njs_parser_next(parser, njs_parser_arguments);
 
         ret = njs_parser_after(parser, current, func, 1,
@@ -3108,16 +3151,17 @@ njs_parser_expression_node(njs_parser_t *parser, njs_lexer_token_t *token,
         return njs_parser_stack_pop(parser);
     }
 
-    njs_lexer_consume_token(parser->lexer, 1);
-
     node = njs_parser_node_new(parser, type);
     if (node == NULL) {
         return NJS_ERROR;
     }
 
+    node->token_line = token->line;
     node->u.operation = operation;
     node->left = parser->node;
     node->left->dest = node;
+
+    njs_lexer_consume_token(parser->lexer, 1);
 
     return njs_parser_after(parser, current, node, 0, after);
 }
@@ -3154,6 +3198,7 @@ njs_parser_update_expression(njs_parser_t *parser, njs_lexer_token_t *token,
         return NJS_ERROR;
     }
 
+    node->token_line = token->line;
     node->u.operation = operation;
 
     njs_lexer_consume_token(parser->lexer, 1);
@@ -3193,9 +3238,9 @@ njs_parser_update_expression_post(njs_parser_t *parser,
         return njs_parser_stack_pop(parser);
     }
 
-    njs_lexer_consume_token(parser->lexer, 1);
-
     if (!njs_parser_is_lvalue(parser->node)) {
+        njs_lexer_consume_token(parser->lexer, 1);
+
         njs_parser_ref_error(parser,
                              "Invalid left-hand side in postfix operation");
         return NJS_DONE;
@@ -3206,9 +3251,13 @@ njs_parser_update_expression_post(njs_parser_t *parser,
         return NJS_ERROR;
     }
 
+    node->token_line = token->line;
     node->u.operation = operation;
     node->left = parser->node;
+
     parser->node = node;
+
+    njs_lexer_consume_token(parser->lexer, 1);
 
     return njs_parser_stack_pop(parser);
 }
@@ -3293,16 +3342,17 @@ njs_parser_unary_expression(njs_parser_t *parser, njs_lexer_token_t *token,
                                 njs_parser_unary_expression_after);
     }
 
-    njs_lexer_consume_token(parser->lexer, 1);
-
     node = njs_parser_node_new(parser, type);
     if (node == NULL) {
         return NJS_ERROR;
     }
 
+    node->token_line = token->line;
     node->u.operation = operation;
 
     parser->target = node;
+
+    njs_lexer_consume_token(parser->lexer, 1);
 
     return njs_parser_after(parser, current, node, 0,
                             njs_parser_unary_expression_next);
@@ -3435,6 +3485,7 @@ njs_parser_exponentiation_expression_match(njs_parser_t *parser,
         return NJS_ERROR;
     }
 
+    node->token_line = token->line;
     node->u.operation = NJS_VMCODE_EXPONENTIATION;
     node->left = parser->node;
     node->left->dest = node;
@@ -3501,6 +3552,7 @@ njs_parser_multiplicative_expression_match(njs_parser_t *parser,
         return NJS_ERROR;
     }
 
+    node->token_line = token->line;
     node->u.operation = operation;
     node->left = parser->node;
     node->left->dest = node;
@@ -3563,6 +3615,7 @@ njs_parser_additive_expression_match(njs_parser_t *parser,
         return NJS_ERROR;
     }
 
+    node->token_line = token->line;
     node->u.operation = operation;
     node->left = parser->node;
     node->left->dest = node;
@@ -3629,6 +3682,7 @@ njs_parser_shift_expression_match(njs_parser_t *parser,
         return NJS_ERROR;
     }
 
+    node->token_line = token->line;
     node->u.operation = operation;
     node->left = parser->node;
     node->left->dest = node;
@@ -3707,6 +3761,7 @@ njs_parser_relational_expression_match(njs_parser_t *parser,
         return NJS_ERROR;
     }
 
+    node->token_line = token->line;
     node->u.operation = operation;
     node->left = parser->node;
     node->left->dest = node;
@@ -3777,6 +3832,7 @@ njs_parser_equality_expression_match(njs_parser_t *parser,
         return NJS_ERROR;
     }
 
+    node->token_line = token->line;
     node->u.operation = operation;
     node->left = parser->node;
     node->left->dest = node;
@@ -3947,17 +4003,17 @@ njs_parser_coalesce_expression(njs_parser_t *parser, njs_lexer_token_t *token,
         return njs_parser_failed(parser);
     }
 
-    njs_lexer_consume_token(parser->lexer, 1);
-
     node = njs_parser_node_new(parser, NJS_TOKEN_COALESCE);
     if (node == NULL) {
         return NJS_ERROR;
     }
 
+    node->token_line = token->line;
     node->u.operation = NJS_VMCODE_COALESCE;
     node->left = parser->node;
     node->left->dest = node;
 
+    njs_lexer_consume_token(parser->lexer, 1);
     njs_parser_next(parser, njs_parser_bitwise_OR_expression);
 
     return njs_parser_after(parser, current, node, 0,
@@ -4000,13 +4056,12 @@ njs_parser_conditional_question_mark(njs_parser_t *parser,
         return njs_parser_stack_pop(parser);
     }
 
-    njs_lexer_consume_token(parser->lexer, 1);
-
     cond = njs_parser_node_new(parser, NJS_TOKEN_CONDITIONAL);
     if (cond == NULL) {
         return NJS_ERROR;
     }
 
+    cond->token_line = token->line;
     cond->left = parser->node;
 
     node = njs_parser_node_new(parser, NJS_TOKEN_BRANCHING);
@@ -4014,8 +4069,10 @@ njs_parser_conditional_question_mark(njs_parser_t *parser,
         return NJS_ERROR;
     }
 
+    node->token_line = token->line;
     cond->right = node;
 
+    njs_lexer_consume_token(parser->lexer, 1);
     njs_parser_next(parser, njs_parser_assignment_expression);
 
     return njs_parser_after(parser, current, cond, 1,
@@ -4277,6 +4334,7 @@ njs_parser_assignment_operator(njs_parser_t *parser, njs_lexer_token_t *token,
         return NJS_ERROR;
     }
 
+    node->token_line = token->line;
     node->u.operation = operation;
     node->left = parser->node;
 
@@ -4358,16 +4416,18 @@ njs_parser_statement(njs_parser_t *parser, njs_lexer_token_t *token,
         return njs_parser_stack_pop(parser);
 
     case NJS_TOKEN_EXPORT:
-        njs_lexer_consume_token(parser->lexer, 1);
+        parser->line = token->line;
 
+        njs_lexer_consume_token(parser->lexer, 1);
         njs_parser_next(parser, njs_parser_export);
 
         return njs_parser_after(parser, current, parser->node, 1,
                                 njs_parser_statement_after);
 
     case NJS_TOKEN_IMPORT:
-        njs_lexer_consume_token(parser->lexer, 1);
+        parser->line = token->line;
 
+        njs_lexer_consume_token(parser->lexer, 1);
         njs_parser_next(parser, njs_parser_import);
 
         return njs_parser_after(parser, current, parser->node, 1,
@@ -4425,12 +4485,10 @@ njs_parser_statement_wo_node(njs_parser_t *parser, njs_lexer_token_t *token,
         break;
 
     case NJS_TOKEN_CONTINUE:
-        parser->line = token->line;
         njs_parser_next(parser, njs_parser_continue_statement);
         break;
 
     case NJS_TOKEN_BREAK:
-        parser->line = token->line;
         njs_parser_next(parser, njs_parser_break_statement);
         break;
 
@@ -4473,6 +4531,8 @@ njs_parser_statement_wo_node(njs_parser_t *parser, njs_lexer_token_t *token,
         njs_parser_next(parser, njs_parser_expression_statement);
         return NJS_OK;
     }
+
+    parser->line = token->line;
 
     njs_lexer_consume_token(parser->lexer, 1);
 
@@ -4577,6 +4637,7 @@ static njs_int_t
 njs_parser_block_statement(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
+    void       *target;
     njs_int_t  ret;
 
     ret = njs_parser_scope_begin(parser, NJS_SCOPE_BLOCK);
@@ -4584,16 +4645,19 @@ njs_parser_block_statement(njs_parser_t *parser, njs_lexer_token_t *token,
         return NJS_ERROR;
     }
 
+    target = (void *) (uintptr_t) parser->line;
     parser->node = NULL;
 
     if (token->type == NJS_TOKEN_CLOSE_BRACE) {
+        parser->target = target;
+
         njs_parser_next(parser, njs_parser_block_statement_close_brace);
         return NJS_OK;
     }
 
     njs_parser_next(parser, njs_parser_statement_list);
 
-    return njs_parser_after(parser, current, NULL, 1,
+    return njs_parser_after(parser, current, target, 1,
                             njs_parser_block_statement_close_brace);
 }
 
@@ -4605,6 +4669,8 @@ njs_parser_block_statement_open_brace(njs_parser_t *parser,
     if (token->type != NJS_TOKEN_OPEN_BRACE) {
         return njs_parser_failed(parser);
     }
+
+    parser->line = token->line;
 
     njs_lexer_consume_token(parser->lexer, 1);
 
@@ -4632,8 +4698,11 @@ njs_parser_block_statement_close_brace(njs_parser_t *parser,
         return NJS_ERROR;
     }
 
+    node->token_line = (uint32_t) (uintptr_t) parser->target;
     node->left = parser->node;
     node->right = NULL;
+
+    parser->target = NULL;
     parser->node = node;
 
     njs_parser_scope_end(parser);
@@ -4766,6 +4835,8 @@ njs_parser_variable_declaration(njs_parser_t *parser,
         return NJS_ERROR;
     }
 
+    name->token_line = token->line;
+
     parser->node = name;
 
     njs_lexer_consume_token(parser->lexer, 1);
@@ -4776,11 +4847,16 @@ njs_parser_variable_declaration(njs_parser_t *parser,
     }
 
     ret = njs_parser_initializer_assign(parser, NJS_TOKEN_VAR);
+    if (ret != NJS_OK) {
+        return ret;
+    }
+
+    parser->node->token_line = token->line;
 
     if (token->type == NJS_TOKEN_ASSIGNMENT) {
         njs_parser_next(parser, njs_parser_initializer);
 
-        return ret;
+        return NJS_OK;
     }
 
     parser->target = parser->node;
@@ -4788,7 +4864,7 @@ njs_parser_variable_declaration(njs_parser_t *parser,
 
     njs_parser_next(parser, njs_parser_initializer_after);
 
-    return ret;
+    return NJS_OK;
 }
 
 
@@ -4923,6 +4999,8 @@ njs_parser_if_statement(njs_parser_t *parser, njs_lexer_token_t *token,
         return NJS_ERROR;
     }
 
+    node->token_line = parser->line;
+
     parser->node = NULL;
 
     njs_parser_next(parser, njs_parser_expression);
@@ -4965,12 +5043,23 @@ static njs_int_t
 njs_parser_else_statement(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
+    njs_parser_node_t  *node;
+
     parser->target->right = parser->node;
     parser->node = NULL;
 
     if (token->type == NJS_TOKEN_ELSE) {
-        njs_lexer_consume_token(parser->lexer, 1);
+        node = njs_parser_node_new(parser, NJS_TOKEN_BRANCHING);
+        if (node == NULL) {
+            return NJS_ERROR;
+        }
 
+        node->token_line = token->line;
+        node->left = parser->target->right;
+
+        parser->target->right = node;
+
+        njs_lexer_consume_token(parser->lexer, 1);
         njs_parser_next(parser, njs_parser_statement_wo_node);
 
         return njs_parser_after(parser, current, parser->target, 1,
@@ -4987,17 +5076,7 @@ static njs_int_t
 njs_parser_else_statement_after(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
-    njs_parser_node_t  *node;
-
-    node = njs_parser_node_new(parser, NJS_TOKEN_BRANCHING);
-    if (node == NULL) {
-        return NJS_ERROR;
-    }
-
-    node->left = parser->target->right;
-    node->right = parser->node;
-
-    parser->target->right = node;
+    parser->target->right->right = parser->node;
 
     parser->node = parser->target;
 
@@ -5009,11 +5088,20 @@ static njs_int_t
 njs_parser_iteration_statement_do(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current)
 {
+    njs_parser_node_t  *node;
+
+    node = njs_parser_node_new(parser, NJS_TOKEN_DO);
+    if (node == NULL) {
+        return NJS_ERROR;
+    }
+
+    node->token_line = parser->line;
+
     parser->node = NULL;
 
     njs_parser_next(parser, njs_parser_statement_wo_node);
 
-    return njs_parser_after(parser, current, NULL, 1,
+    return njs_parser_after(parser, current, node, 1,
                             njs_parser_iteration_statement_do_while);
 }
 
@@ -5026,11 +5114,13 @@ njs_parser_iteration_statement_do_while(njs_parser_t *parser,
         return njs_parser_failed(parser);
     }
 
+    parser->target->left = parser->node;
+
     njs_lexer_consume_token(parser->lexer, 1);
 
     njs_parser_next(parser, njs_parser_expression_parenthesis);
 
-    return njs_parser_after(parser, current, parser->node, 1,
+    return njs_parser_after(parser, current, parser->target, 1,
                             njs_parser_do_while_semicolon);
 }
 
@@ -5039,20 +5129,12 @@ static njs_int_t
 njs_parser_do_while_semicolon(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
-    njs_parser_node_t  *node;
-
     if (parser->strict_semicolon) {
         return njs_parser_failed(parser);
     }
 
-    node = njs_parser_node_new(parser, NJS_TOKEN_DO);
-    if (node == NULL) {
-        return NJS_ERROR;
-    }
-
-    node->left = parser->target;
-    node->right = parser->node;
-    parser->node = node;
+    parser->target->right = parser->node;
+    parser->node = parser->target;
 
     return njs_parser_stack_pop(parser);
 }
@@ -5062,9 +5144,18 @@ static njs_int_t
 njs_parser_iteration_statement_while(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current)
 {
+    njs_parser_node_t  *node;
+
+    node = njs_parser_node_new(parser, NJS_TOKEN_WHILE);
+    if (node == NULL) {
+        return NJS_ERROR;
+    }
+
+    node->token_line = token->line;
+
     njs_parser_next(parser, njs_parser_expression_parenthesis);
 
-    return njs_parser_after(parser, current, NULL, 1,
+    return njs_parser_after(parser, current, node, 1,
                             njs_parser_while_statement);
 }
 
@@ -5073,15 +5164,13 @@ static njs_int_t
 njs_parser_while_statement(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
-    njs_parser_node_t  *node;
-
-    node = parser->node;
-
+    parser->target->right = parser->node;
     parser->node = NULL;
 
     njs_parser_next(parser, njs_parser_statement_wo_node);
 
-    return njs_parser_after(parser, current, node, 1, njs_parser_while_after);
+    return njs_parser_after(parser, current, parser->target, 1,
+                            njs_parser_while_after);
 }
 
 
@@ -5089,16 +5178,8 @@ static njs_int_t
 njs_parser_while_after(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
-    njs_parser_node_t  *node;
-
-    node = njs_parser_node_new(parser, NJS_TOKEN_WHILE);
-    if (node == NULL) {
-        return NJS_ERROR;
-    }
-
-    node->left = parser->node;
-    node->right = parser->target;
-    parser->node = node;
+    parser->target->left = parser->node;
+    parser->node = parser->target;
 
     return njs_parser_stack_pop(parser);
 }
@@ -5113,7 +5194,9 @@ njs_parser_iteration_statement_for(njs_parser_t *parser,
 
         njs_parser_next(parser, njs_parser_iteration_statement_for_map);
 
-        return NJS_OK;
+        return njs_parser_after(parser, current,
+                                (void *) (uintptr_t) parser->line, 1,
+                                njs_parser_set_line_state);
     }
 
     if (token->type == NJS_TOKEN_AWAIT) {
@@ -5226,7 +5309,7 @@ njs_parser_for_var_binding_or_var_list(njs_parser_t *parser,
 {
     njs_int_t          ret;
     njs_lexer_token_t  *next;
-    njs_parser_node_t  *node;
+    njs_parser_node_t  *node, *var;
 
     switch (token->type) {
     /* BindingPattern */
@@ -5256,13 +5339,23 @@ njs_parser_for_var_binding_or_var_list(njs_parser_t *parser,
                 return NJS_OK;
             }
 
-            node = njs_parser_variable_node(parser, token->unique_id,
+            var = njs_parser_variable_node(parser, token->unique_id,
                                             NJS_VARIABLE_VAR);
+            if (var == NULL) {
+                return NJS_ERROR;
+            }
+
+            var->token_line = token->line;
+
+            parser->node = NULL;
+
+            node = njs_parser_node_new(parser, NJS_TOKEN_IN);
             if (node == NULL) {
                 return NJS_ERROR;
             }
 
-            parser->node = NULL;
+            node->token_line = next->line;
+            node->left = var;
 
             njs_parser_next(parser, njs_parser_expression);
 
@@ -5289,27 +5382,18 @@ static njs_int_t
 njs_parser_for_var_in_statement(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
-    njs_parser_node_t  *node;
-
     if (token->type != NJS_TOKEN_CLOSE_PARENTHESIS) {
         return njs_parser_failed(parser);
     }
 
     njs_lexer_consume_token(parser->lexer, 1);
 
-    node = njs_parser_node_new(parser, NJS_TOKEN_IN);
-    if (node == NULL) {
-        return NJS_ERROR;
-    }
-
-    node->left = parser->target;
-    node->right = parser->node;
-
+    parser->target->right = parser->node;
     parser->node = NULL;
 
     njs_parser_next(parser, njs_parser_statement_wo_node);
 
-    return njs_parser_after(parser, current, node, 1,
+    return njs_parser_after(parser, current, parser->target, 1,
                             njs_parser_for_var_in_statement_after);
 }
 
@@ -5658,6 +5742,8 @@ njs_parser_return_statement(njs_parser_t *parser, njs_lexer_token_t *token,
         return NJS_ERROR;
     }
 
+    node->token_line = parser->line;
+
     switch (token->type) {
     case NJS_TOKEN_SEMICOLON:
         break;
@@ -5733,6 +5819,8 @@ njs_parser_switch_statement(njs_parser_t *parser, njs_lexer_token_t *token,
     if (swtch == NULL) {
         return NJS_ERROR;
     }
+
+    swtch->token_line = parser->line;
 
     njs_parser_next(parser, njs_parser_expression_parenthesis);
 
@@ -5811,6 +5899,7 @@ njs_parser_switch_case_def(njs_parser_t *parser, njs_lexer_token_t *token,
             return NJS_ERROR;
         }
 
+        branch->token_line = token->line;
         branch->right = node;
 
         njs_parser_next(parser, njs_parser_expression);
@@ -5840,8 +5929,6 @@ njs_parser_switch_case_def(njs_parser_t *parser, njs_lexer_token_t *token,
             return NJS_DONE;
         }
 
-        njs_lexer_consume_token(parser->lexer, 1);
-
         if (parser->target->token_type == NJS_TOKEN_SWITCH) {
             parser->target->right = node;
 
@@ -5849,10 +5936,12 @@ njs_parser_switch_case_def(njs_parser_t *parser, njs_lexer_token_t *token,
             parser->target->left = node;
         }
 
+        node->token_line = token->line;
         node->token_type = NJS_TOKEN_DEFAULT;
 
         parser->target = node;
 
+        njs_lexer_consume_token(parser->lexer, 1);
         njs_parser_next(parser, njs_parser_switch_case_after_wo_def);
 
         break;
@@ -6061,6 +6150,8 @@ njs_parser_throw_statement(njs_parser_t *parser, njs_lexer_token_t *token,
         return NJS_ERROR;
     }
 
+    node->token_line = parser->line;
+
     if (parser->lexer->prev_type == NJS_TOKEN_LINE_END) {
         njs_parser_syntax_error(parser, "Illegal newline after throw");
         return NJS_DONE;
@@ -6109,6 +6200,8 @@ njs_parser_try_statement(njs_parser_t *parser, njs_lexer_token_t *token,
         return NJS_ERROR;
     }
 
+    try->token_line = parser->line;
+
     parser->node = NULL;
 
     njs_parser_next(parser, njs_parser_block_statement_open_brace);
@@ -6130,10 +6223,21 @@ njs_parser_catch_or_finally(njs_parser_t *parser, njs_lexer_token_t *token,
     try->left = parser->node;
 
     if (token->type == NJS_TOKEN_FINALLY) {
-        njs_lexer_consume_token(parser->lexer, 1);
+        node = njs_parser_node_new(parser, NJS_TOKEN_FINALLY);
+        if (node == NULL) {
+            return NJS_ERROR;
+        }
 
+        node->token_line = token->line;
+
+        if (try->right != NULL) {
+            node->left = try->right;
+        }
+
+        try->right = node;
         parser->node = NULL;
 
+        njs_lexer_consume_token(parser->lexer, 1);
         njs_parser_next(parser, njs_parser_block_statement_open_brace);
 
         return njs_parser_after(parser, current, try, 0,
@@ -6144,12 +6248,14 @@ njs_parser_catch_or_finally(njs_parser_t *parser, njs_lexer_token_t *token,
         return NJS_DONE;
     }
 
-    njs_lexer_consume_token(parser->lexer, 1);
-
     catch = njs_parser_node_new(parser, NJS_TOKEN_CATCH);
     if (catch == NULL) {
         return NJS_ERROR;
     }
+
+    catch->token_line = token->line;
+
+    njs_lexer_consume_token(parser->lexer, 1);
 
     token = njs_lexer_token(parser->lexer, 0);
     if (token == NULL) {
@@ -6194,6 +6300,8 @@ njs_parser_catch_or_finally(njs_parser_t *parser, njs_lexer_token_t *token,
             return NJS_ERROR;
         }
 
+        node->token_line = token->line;
+
         catch->left = node;
 
         njs_lexer_consume_token(parser->lexer, 1);
@@ -6220,15 +6328,28 @@ static njs_int_t
 njs_parser_catch_after(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
+    njs_parser_node_t  *node;
+
     njs_parser_scope_end(parser);
 
     parser->target->right->right = parser->node;
 
     if (token->type == NJS_TOKEN_FINALLY) {
-        njs_lexer_consume_token(parser->lexer, 1);
+        node = njs_parser_node_new(parser, NJS_TOKEN_FINALLY);
+        if (node == NULL) {
+            return NJS_ERROR;
+        }
 
+        node->token_line = token->line;
+
+        if (parser->target->right != NULL) {
+            node->left = parser->target->right;
+        }
+
+        parser->target->right = node;
         parser->node = NULL;
 
+        njs_lexer_consume_token(parser->lexer, 1);
         njs_parser_next(parser, njs_parser_block_statement_open_brace);
 
         return njs_parser_after(parser, current, parser->target, 1,
@@ -6265,24 +6386,11 @@ static njs_int_t
 njs_parser_catch_finally(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
-    njs_parser_node_t  *node;
-
     if (parser->ret != NJS_OK) {
         return njs_parser_failed(parser);
     }
 
-    node = njs_parser_node_new(parser, NJS_TOKEN_FINALLY);
-    if (node == NULL) {
-        return NJS_ERROR;
-    }
-
-    node->right = parser->node;
-
-    if (parser->target->right != NULL) {
-        node->left = parser->target->right;
-    }
-
-    parser->target->right = node;
+    parser->target->right->right = parser->node;
     parser->node = parser->target;
 
     return njs_parser_stack_pop(parser);
@@ -7115,8 +7223,6 @@ njs_parser_function_lambda_body_after(njs_parser_t *parser,
         return njs_parser_failed(parser);
     }
 
-    njs_lexer_consume_token(parser->lexer, 1);
-
     parent = parser->target;
 
     last = NULL;
@@ -7144,12 +7250,16 @@ njs_parser_function_lambda_body_after(njs_parser_t *parser,
         if (body == NULL) {
             return NJS_ERROR;
         }
+
+        body->right->token_line = token->line;
     }
 
     parent->right = body;
     parser->node = parent;
 
     njs_parser_scope_end(parser);
+
+    njs_lexer_consume_token(parser->lexer, 1);
 
     return njs_parser_stack_pop(parser);
 }
@@ -7178,6 +7288,7 @@ njs_parser_export(njs_parser_t *parser, njs_lexer_token_t *token,
         return NJS_ERROR;
     }
 
+    node->token_line = parser->line;
     parser->node = node;
 
     njs_parser_next(parser, njs_parser_expression);
@@ -7201,7 +7312,7 @@ static njs_int_t
 njs_parser_import(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
-    njs_parser_node_t  *name;
+    njs_parser_node_t  *name, *import;
 
     if (parser->scope->type != NJS_SCOPE_GLOBAL && !parser->scope->module) {
         njs_parser_syntax_error(parser, "Illegal import statement");
@@ -7217,6 +7328,8 @@ njs_parser_import(njs_parser_t *parser, njs_lexer_token_t *token,
     if (name == NULL) {
         return NJS_ERROR;
     }
+
+    name->token_line = token->line;
 
     njs_lexer_consume_token(parser->lexer, 1);
 
@@ -7240,9 +7353,18 @@ njs_parser_import(njs_parser_t *parser, njs_lexer_token_t *token,
         return njs_parser_failed(parser);
     }
 
+    import = njs_parser_node_new(parser, NJS_TOKEN_IMPORT);
+    if (import == NULL) {
+        return NJS_ERROR;
+    }
+
+    import->token_line = parser->line;
+    import->left = name;
+
     njs_parser_next(parser, njs_parser_module);
 
-    return njs_parser_after(parser, current, name, 1, njs_parser_import_after);
+    return njs_parser_after(parser, current, import, 1,
+                            njs_parser_import_after);
 }
 
 
@@ -7250,21 +7372,13 @@ static njs_int_t
 njs_parser_import_after(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
-    njs_parser_node_t  *import;
-
     if (njs_parser_expect_semicolon(parser, token) != NJS_OK) {
         return njs_parser_failed(parser);
     }
 
-    import = njs_parser_node_new(parser, NJS_TOKEN_IMPORT);
-    if (import == NULL) {
-        return NJS_ERROR;
-    }
+    parser->target->right = parser->node;
 
-    import->left = parser->target;
-    import->right = parser->node;
-
-    parser->node = import;
+    parser->node = parser->target;
     parser->node->hoist = 1;
 
     return njs_parser_stack_pop(parser);
@@ -7284,14 +7398,14 @@ njs_parser_module_lambda(njs_parser_t *parser, njs_lexer_token_t *token,
         return NJS_ERROR;
     }
 
-    node->token_line = token->line;
-
     lambda = njs_function_lambda_alloc(parser->vm, 1);
     if (lambda == NULL) {
         return NJS_ERROR;
     }
 
+    node->token_line = token->line;
     node->u.value.data.u.lambda = lambda;
+
     parser->node = node;
 
     ret = njs_parser_scope_begin(parser, NJS_SCOPE_FUNCTION);
@@ -7323,7 +7437,6 @@ njs_parser_module_lambda_after(njs_parser_t *parser, njs_lexer_token_t *token,
     }
 
     parser->target->right = njs_parser_chain_top(parser);
-    parser->target->right->token_line = 1;
 
     parser->node = parser->target;
 
@@ -7395,6 +7508,10 @@ njs_parser_return_set(njs_parser_t *parser, njs_parser_node_t *expr)
     node = njs_parser_node_new(parser, NJS_TOKEN_RETURN);
     if (njs_slow_path(node == NULL)) {
         return NULL;
+    }
+
+    if (expr != NULL) {
+        node->token_line = expr->token_line;
     }
 
     node->right = expr;
@@ -7486,7 +7603,6 @@ njs_parser_reference(njs_parser_t *parser, njs_lexer_token_t *token)
 
             } else {
                 node->token_type = NJS_TOKEN_NON_LOCAL_THIS;
-
                 node->token_line = token->line;
 
                 ret = njs_variable_reference(parser->vm, scope, node,
@@ -7581,6 +7697,7 @@ njs_parser_argument(njs_parser_t *parser, njs_parser_node_t *expr,
         return NULL;
     }
 
+    node->token_line = expr->token_line;
     node->index = index;
 
     node->left = expr;
@@ -7603,6 +7720,7 @@ njs_parser_object_property(njs_parser_t *parser, njs_parser_node_t *parent,
         return NJS_TOKEN_ERROR;
     }
 
+    object->token_line = value->token_line;
     object->u.object = parent;
 
     type = proto_init ? NJS_TOKEN_PROTO_INIT : NJS_TOKEN_PROPERTY_INIT;
@@ -7612,6 +7730,7 @@ njs_parser_object_property(njs_parser_t *parser, njs_parser_node_t *parent,
         return NJS_ERROR;
     }
 
+    propref->token_line = value->token_line;
     propref->left = object;
     propref->right = property;
 
@@ -7620,6 +7739,7 @@ njs_parser_object_property(njs_parser_t *parser, njs_parser_node_t *parent,
         return NJS_ERROR;
     }
 
+    assign->token_line = value->token_line;
     assign->u.operation = NJS_VMCODE_MOVE;
     assign->left = propref;
     assign->right = value;
@@ -7649,6 +7769,7 @@ njs_parser_property_accessor(njs_parser_t *parser, njs_parser_node_t *parent,
         return NJS_TOKEN_ERROR;
     }
 
+    object->token_line = value->token_line;
     object->u.object = parent;
 
     propref = njs_parser_node_new(parser, 0);
@@ -7664,6 +7785,7 @@ njs_parser_property_accessor(njs_parser_t *parser, njs_parser_node_t *parent,
         return NJS_ERROR;
     }
 
+    node->token_line = value->token_line;
     node->left = propref;
     node->right = value;
 
@@ -7693,6 +7815,8 @@ njs_parser_array_item(njs_parser_t *parser, njs_parser_node_t *array,
     }
 
     njs_set_number(&number->u.value, array->u.length);
+
+    number->token_line = value->token_line;
 
     ret = njs_parser_object_property(parser, array, number, value, 0);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -7763,6 +7887,8 @@ done:
     if (njs_slow_path(node == NULL)) {
         return NJS_ERROR;
     }
+
+    node->token_line = token->line;
 
     if (escape) {
         ret = njs_parser_escape_string_create(parser, token, &node->u.value);
@@ -8350,7 +8476,9 @@ njs_parser_serialize_tree(njs_chb_t *chain, njs_parser_node_t *node,
 
     *ret |= njs_parser_serialize_node(chain, node);
 
-    njs_chb_append_literal(chain, "\"");
+    njs_chb_append_literal(chain, "\",\n");
+    njs_parser_serialize_indent(chain, indent);
+    njs_chb_sprintf(chain, 32, " \"line\": %d", node->token_line);
 
     switch (node->token_type) {
     case NJS_TOKEN_NUMBER:

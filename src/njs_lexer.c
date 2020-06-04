@@ -449,6 +449,7 @@ njs_lexer_make_token(njs_lexer_t *lexer, njs_lexer_token_t *token)
     }
 
     token->type = njs_tokens[c];
+    token->line = lexer->line;
 
     switch (token->type) {
 
@@ -566,7 +567,6 @@ njs_lexer_make_token(njs_lexer_t *lexer, njs_lexer_token_t *token)
         /* Fall through. */
 
     default:
-        token->line = lexer->line;
         token->text.start = lexer->start - 1;
         token->text.length = lexer->start - token->text.start;
 
@@ -668,7 +668,6 @@ njs_lexer_word(njs_lexer_t *lexer, njs_lexer_token_t *token)
         0x00, 0x00, 0x00, 0x00, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
     };
 
-    token->line = lexer->line;
     token->text.start = lexer->start - 1;
 
     hash_id = njs_djb_hash_add(NJS_DJB_HASH_INIT, *token->text.start);
@@ -866,6 +865,7 @@ njs_lexer_multi(njs_lexer_t *lexer, njs_lexer_token_t *token,
 {
     u_char  c;
 
+    token->line = lexer->line;
     token->text.start = lexer->start - 1;
 
     while (length != 0 && multi != NULL && lexer->start < lexer->end) {
