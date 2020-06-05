@@ -813,6 +813,332 @@ njs_typed_array_prototype_copy_within(njs_vm_t *vm, njs_value_t *args,
 }
 
 
+static int
+njs_typed_array_compare_i8(const void *a, const void *b, void *c)
+{
+    return *((const int8_t *) a) - *((const int8_t *) b);
+}
+
+
+static int
+njs_typed_array_compare_u8(const void *a, const void *b, void *c)
+{
+    return *((const uint8_t *) a) - *((const uint8_t *) b);
+}
+
+
+static int
+njs_typed_array_compare_i16(const void *a, const void *b, void *c)
+{
+    return *((const int16_t *) a) - *((const int16_t *) b);
+}
+
+
+static int
+njs_typed_array_compare_u16(const void *a, const void *b, void *c)
+{
+    return *((const uint16_t *) a) - *((const uint16_t *) b);
+}
+
+
+static int
+njs_typed_array_compare_i32(const void *a, const void *b, void *c)
+{
+    int32_t  ai, bi;
+
+    ai = *(const int32_t *) a;
+    bi = *(const int32_t *) b;
+
+    return (ai > bi) - (ai < bi);
+}
+
+
+static int
+njs_typed_array_compare_u32(const void *a, const void *b, void *c)
+{
+    uint32_t  au, bu;
+
+    au = *(const uint32_t *) a;
+    bu = *(const uint32_t *) b;
+
+    return (au > bu) - (au < bu);
+}
+
+
+njs_inline int
+njs_typed_array_compare(double a, double b)
+{
+    if (njs_slow_path(isnan(a))) {
+        if (isnan(b)) {
+            return 0;
+        }
+
+        return 1;
+    }
+
+    if (njs_slow_path(isnan(b))) {
+        return -1;
+    }
+
+    if (a < b) {
+        return -1;
+    }
+
+    if (a > b) {
+        return 1;
+    }
+
+    return signbit(b) - signbit(a);
+}
+
+
+static int
+njs_typed_array_compare_f32(const void *a, const void *b, void *c)
+{
+    return njs_typed_array_compare(*(const float *) a, *(const float *) b);
+}
+
+
+static int
+njs_typed_array_compare_f64(const void *a, const void *b, void *c)
+{
+    return njs_typed_array_compare(*(const double *) a, *(const double *) b);
+}
+
+
+static double
+njs_typed_array_get_u8(const void *a)
+{
+    return *(const uint8_t *) a;
+}
+
+
+static double
+njs_typed_array_get_i8(const void *a)
+{
+    return *(const int8_t *) a;
+}
+
+
+static double
+njs_typed_array_get_u16(const void *a)
+{
+    return *(const uint16_t *) a;
+}
+
+
+static double
+njs_typed_array_get_i16(const void *a)
+{
+    return *(const int16_t *) a;
+}
+
+
+static double
+njs_typed_array_get_u32(const void *a)
+{
+    return *(const uint32_t *) a;
+}
+
+
+static double
+njs_typed_array_get_i32(const void *a)
+{
+    return *(const int32_t *) a;
+}
+
+
+static double
+njs_typed_array_get_f32(const void *a)
+{
+    return *(const float *) a;
+}
+
+
+static double
+njs_typed_array_get_f64(const void *a)
+{
+    return *(const double *) a;
+}
+
+
+typedef struct {
+    njs_vm_t               *vm;
+    njs_function_t         *function;
+    njs_bool_t             exception;
+    double                 (*get)(const void *v);
+} njs_typed_array_sort_ctx_t;
+
+typedef int (*njs_typed_array_cmp_t)(const void *, const void *, void *ctx);
+
+
+static int
+njs_typed_array_generic_compare(const void *a, const void *b, void *c)
+{
+    double                      num;
+    njs_int_t                   ret;
+    njs_value_t                 arguments[3], retval;
+    njs_typed_array_sort_ctx_t  *ctx;
+
+    ctx = c;
+
+    if (njs_slow_path(ctx->exception)) {
+        return 0;
+    }
+
+    njs_set_undefined(&arguments[0]);
+    njs_set_number(&arguments[1], ctx->get(a));
+    njs_set_number(&arguments[2], ctx->get(b));
+
+    ret = njs_function_apply(ctx->vm, ctx->function, arguments, 3, &retval);
+    if (njs_slow_path(ret != NJS_OK)) {
+        goto exception;
+    }
+
+    ret = njs_value_to_number(ctx->vm, &retval, &num);
+    if (njs_slow_path(ret != NJS_OK)) {
+        goto exception;
+    }
+
+    if (njs_slow_path(isnan(num))) {
+        return 0;
+    }
+
+    if (num != 0) {
+        return (num > 0) - (num < 0);
+    }
+
+    return 0;
+
+exception:
+
+    ctx->exception = 1;
+
+    return 0;
+}
+
+
+static njs_int_t
+njs_typed_array_prototype_sort(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused)
+{
+    u_char                      *base, *orig;
+    int64_t                     length;
+    uint32_t                    element_size;
+    njs_value_t                 *this, *comparefn;
+    njs_typed_array_t           *array;
+    njs_array_buffer_t          *buffer;
+    njs_typed_array_cmp_t       cmp;
+    njs_typed_array_sort_ctx_t  ctx;
+
+    this = njs_argument(args, 0);
+    if (njs_slow_path(!njs_is_typed_array(this))) {
+        njs_type_error(vm, "this is not a typed array");
+        return NJS_ERROR;
+    }
+
+    ctx.vm = vm;
+    ctx.exception = 0;
+
+    comparefn = njs_arg(args, nargs, 1);
+
+    if (njs_is_defined(comparefn)) {
+        if (njs_slow_path(!njs_is_function(comparefn))) {
+            njs_type_error(vm, "comparefn must be callable or undefined");
+            return NJS_ERROR;
+        }
+
+        ctx.function = njs_function(comparefn);
+
+    } else {
+        ctx.function = NULL;
+    }
+
+    array = njs_typed_array(this);
+
+    switch (array->type) {
+    case NJS_OBJ_TYPE_UINT8_ARRAY:
+    case NJS_OBJ_TYPE_UINT8_CLAMPED_ARRAY:
+        cmp = njs_typed_array_compare_u8;
+        ctx.get = njs_typed_array_get_u8;
+        break;
+
+    case NJS_OBJ_TYPE_INT8_ARRAY:
+        cmp = njs_typed_array_compare_i8;
+        ctx.get = njs_typed_array_get_i8;
+        break;
+
+    case NJS_OBJ_TYPE_UINT16_ARRAY:
+        cmp = njs_typed_array_compare_u16;
+        ctx.get = njs_typed_array_get_u16;
+        break;
+
+    case NJS_OBJ_TYPE_INT16_ARRAY:
+        cmp = njs_typed_array_compare_i16;
+        ctx.get = njs_typed_array_get_i16;
+        break;
+
+    case NJS_OBJ_TYPE_UINT32_ARRAY:
+        cmp = njs_typed_array_compare_u32;
+        ctx.get = njs_typed_array_get_u32;
+        break;
+
+    case NJS_OBJ_TYPE_INT32_ARRAY:
+        cmp = njs_typed_array_compare_i32;
+        ctx.get = njs_typed_array_get_i32;
+        break;
+
+    case NJS_OBJ_TYPE_FLOAT32_ARRAY:
+        cmp = njs_typed_array_compare_f32;
+        ctx.get = njs_typed_array_get_f32;
+        break;
+
+    default:
+
+        /* NJS_OBJ_TYPE_FLOAT64_ARRAY. */
+
+        cmp = njs_typed_array_compare_f64;
+        ctx.get = njs_typed_array_get_f64;
+        break;
+    }
+
+    length = njs_typed_array_length(array);
+    buffer = njs_typed_array_buffer(array);
+    element_size = njs_typed_array_element_size(array->type);
+    base = &buffer->u.u8[array->offset * element_size];
+    orig = base;
+
+    if (ctx.function != NULL) {
+        cmp = njs_typed_array_generic_compare;
+        base = njs_mp_alloc(vm->mem_pool, length * element_size);
+        if (njs_slow_path(base == NULL)) {
+            njs_memory_error(vm);
+            return NJS_ERROR;
+        }
+
+        memcpy(base, &buffer->u.u8[array->offset * element_size],
+               length * element_size);
+    }
+
+    njs_qsort(base, length, element_size, cmp, &ctx);
+    if (ctx.function != NULL) {
+        if (&buffer->u.u8[array->offset * element_size] == orig) {
+            memcpy(orig, base, length * element_size);
+        }
+
+        njs_mp_free(vm->mem_pool, base);
+    }
+
+    if (njs_slow_path(ctx.exception)) {
+        return NJS_ERROR;
+    }
+
+    njs_set_typed_array(&vm->retval, array);
+
+    return NJS_OK;
+}
+
+
 njs_int_t
 njs_typed_array_to_chain(njs_vm_t *vm, njs_chb_t *chain,
     njs_typed_array_t *array, njs_value_t *sep)
@@ -1046,6 +1372,14 @@ static const njs_object_prop_t  njs_typed_array_prototype_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("subarray"),
         .value = njs_native_function2(njs_typed_array_prototype_slice, 2, 0),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("sort"),
+        .value = njs_native_function(njs_typed_array_prototype_sort, 1),
         .writable = 1,
         .configurable = 1,
     },

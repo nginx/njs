@@ -5719,6 +5719,37 @@ static njs_unit_test_t  njs_test[] =
               "           return a.toString() === '1,2,3,3'})"),
       njs_str("true") },
 
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([]); a.sort(); "
+              "           return a.toString() === ''})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([5]); a.sort(); "
+              "           return a.toString() === '5'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([3,3,2,1]); a.sort(); "
+              "           return a.toString() === '1,2,3,3'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([3,3,2,1]); a.sort((x,y)=>x-y); "
+              "           return a.toString() === '1,2,3,3'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = (new v([255,255,3,3,2,1])).slice(2); a.sort(); "
+              "           return a.toString() === '1,2,3,3'})"),
+      njs_str("true") },
+
+    { njs_str("(new Float32Array([255,255,NaN,3,NaN,Infinity,3,-Infinity,0,-0,2,1,-5])).slice(2).sort()"),
+      njs_str("-Infinity,-5,0,0,1,2,3,3,Infinity,NaN,NaN") },
+
+    { njs_str("(new Float64Array([255,255,NaN,3,NaN,Infinity,3,-Infinity,0,-0,2,1,-5])).slice(2).sort()"),
+      njs_str("-Infinity,-5,0,0,1,2,3,3,Infinity,NaN,NaN") },
+
 #if NJS_HAVE_LARGE_STACK
     { njs_str("var o = Object({length: 3});"
                  "Object.defineProperty(o, '0', {set: function(v){this[0] = 2 * v}});"
