@@ -803,8 +803,8 @@ njs_typed_array_prototype_copy_within(njs_vm_t *vm, njs_value_t *args,
     buffer = njs_typed_array_buffer(array);
     element_size = njs_typed_array_element_size(array->type);
 
-    to = to * element_size;
-    from = from * element_size;
+    to = (to + array->offset) * element_size;
+    from = (from + array->offset) * element_size;
     count = count * element_size;
 
     memmove(&buffer->u.u8[to], &buffer->u.u8[from], count);

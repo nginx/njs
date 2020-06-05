@@ -5720,6 +5720,13 @@ static njs_unit_test_t  njs_test[] =
       njs_str("true") },
 
     { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var orig = new v([255,255,1,2,3,4,5]);"
+              "           var a = new v(orig.buffer, 2* v.BYTES_PER_ELEMENT);"
+              "           a.copyWithin(0,3);"
+              "           return a.toString() === '4,5,3,4,5'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
               ".every(v=>{var a = new v([]); a.sort(); "
               "           return a.toString() === ''})"),
       njs_str("true") },
