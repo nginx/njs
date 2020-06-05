@@ -8368,12 +8368,14 @@ njs_parser_serialize_tree(njs_chb_t *chain, njs_parser_node_t *node,
             njs_parser_serialize_indent(chain, indent);
 
             if (node->token_type == NJS_TOKEN_NUMBER) {
-                njs_chb_sprintf(chain, 32, " \"value\": %f\n",
+                njs_chb_sprintf(chain, 32, " \"value\": %f",
                                 njs_number(&node->u.value));
 
             } else {
                 njs_string_get(&node->u.value, &str);
-                njs_chb_sprintf(chain, 32, " \"value\": \"%V\"\n", &str);
+                njs_chb_append_literal(chain, " \"value\": \"");
+                njs_chb_append_str(chain, &str);
+                njs_chb_append_literal(chain, "\"");
             }
 
             break;
