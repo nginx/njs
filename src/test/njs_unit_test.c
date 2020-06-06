@@ -16861,6 +16861,114 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("{{}{1>>}"),
       njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}{r=}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}{var a = }"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}T=>}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a = b +}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a = b -}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a = b *}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a = b /}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a = b %}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a = b++}"),
+      njs_str("ReferenceError: \"a\" is not defined in 1") },
+
+    { njs_str("{{}a = b--}"),
+      njs_str("ReferenceError: \"a\" is not defined in 1") },
+
+    { njs_str("{{}a =}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a +=}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a -=}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a *=}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a /=}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a %=}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a ===}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a ==}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a !=}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a !==}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a >}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a <}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a <=}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a &&}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a ||}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a ??}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a &}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a |}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a ^}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a <<}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}a >>}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}new}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}delete}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}void}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{}typeof}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("{{} ({a: 1, b: {}\n}\n})\n}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 3") },
 };
 
 
