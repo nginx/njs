@@ -35,6 +35,20 @@ njs_int_t njs_array_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 
 
+njs_inline njs_value_t *
+njs_array_push(njs_vm_t *vm, njs_array_t *array)
+{
+    njs_int_t  ret;
+
+    ret = njs_array_expand(vm, array, 0, 1);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NULL;
+    }
+
+    return &array->start[array->length++];
+}
+
+
 extern const njs_object_init_t  njs_array_instance_init;
 extern const njs_object_type_init_t  njs_array_type_init;
 

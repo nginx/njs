@@ -934,22 +934,12 @@ njs_vm_array_alloc(njs_vm_t *vm, njs_value_t *retval, uint32_t spare)
 njs_value_t *
 njs_vm_array_push(njs_vm_t *vm, njs_value_t *value)
 {
-    njs_int_t    ret;
-    njs_array_t  *array;
-
     if (njs_slow_path(!njs_is_array(value))) {
         njs_type_error(vm, "njs_vm_array_push() argument is not array");
         return NULL;
     }
 
-    array = njs_array(value);
-
-    ret = njs_array_expand(vm, array, 0, 1);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return NULL;
-    }
-
-    return &array->start[array->length++];
+    return njs_array_push(vm, njs_array(value));
 }
 
 
