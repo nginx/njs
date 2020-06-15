@@ -5645,13 +5645,11 @@ njs_parser_break_continue(njs_parser_t *parser, njs_lexer_token_t *token,
         return njs_parser_failed(parser);
 
     default:
-        if (!parser->strict_semicolon
-            && parser->lexer->prev_type == NJS_TOKEN_LINE_END)
-        {
-            break;
-        }
-
         if (njs_lexer_token_is_label_identifier(token)) {
+            if (parser->lexer->prev_type == NJS_TOKEN_LINE_END) {
+                return njs_parser_stack_pop(parser);
+            }
+
             if (njs_label_find(parser->vm, parser->scope,
                                token->unique_id) == NULL)
             {

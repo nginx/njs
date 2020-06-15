@@ -2828,6 +2828,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var i; for (i in [1,2,3]) {Object.seal({});}"),
       njs_str("undefined") },
 
+    { njs_str("while (0) {continue\n}"),
+      njs_str("undefined") },
+
     /* break. */
 
     { njs_str("break"),
@@ -2895,6 +2898,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = [1,2,3,4,5]; var s = 0, i;"
                  "for (i in a) if (a[i] > 4) break; s += a[i]; s"),
       njs_str("5") },
+
+    { njs_str("while (0) {break\n}"),
+      njs_str("undefined") },
 
     /* Labels. */
 
