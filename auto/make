@@ -249,11 +249,9 @@ lib_test: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/utf8_unit_test
 
 unit_test: $NJS_BUILD_DIR/njs_auto_config.h \\
-	$NJS_BUILD_DIR/njs_unit_test \\
-	$NJS_BUILD_DIR/njs_interactive_test
+	$NJS_BUILD_DIR/njs_unit_test
 
 	$NJS_BUILD_DIR/njs_unit_test
-	$NJS_BUILD_DIR/njs_interactive_test
 
 test: expect_test unit_test
 

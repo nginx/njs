@@ -65,6 +65,5 @@ NJS_LIB_TEST_SRCS=" \
 
 NJS_TEST_SRCS=" \
    src/test/njs_unit_test.c \
-   src/test/njs_interactive_test.c \
    src/test/njs_benchmark.c \
 "
