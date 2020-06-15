@@ -559,16 +559,16 @@ njs_promise_resolve_function(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     njs_int_t              ret;
-    njs_frame_t            *active_frame;
     njs_value_t            *resolution, error, then, arguments[3];
     njs_promise_t          *promise;
     njs_function_t         *function;
+    njs_native_frame_t     *active_frame;
     njs_promise_context_t  *context;
 
     static const njs_value_t  string_then = njs_string("then");
 
-    active_frame = (njs_frame_t *) vm->top_frame;
-    context = active_frame->native.function->context;
+    active_frame = vm->top_frame;
+    context = active_frame->function->context;
     promise = njs_promise(&context->promise);
 
     if (*context->resolved_ref) {
@@ -715,12 +715,12 @@ static njs_int_t
 njs_promise_reject_function(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_frame_t            *active_frame;
     njs_value_t            *value;
+    njs_native_frame_t     *active_frame;
     njs_promise_context_t  *context;
 
-    active_frame = (njs_frame_t *) vm->top_frame;
-    context = active_frame->native.function->context;
+    active_frame = vm->top_frame;
+    context = active_frame->function->context;
 
     if (*context->resolved_ref) {
         njs_vm_retval_set(vm, &njs_value_undefined);
@@ -995,12 +995,12 @@ njs_promise_then_finally_function(njs_vm_t *vm, njs_value_t *args,
 {
     njs_int_t              ret;
     njs_value_t            value, retval;
-    njs_frame_t            *frame;
     njs_promise_t          *promise;
+    njs_native_frame_t     *frame;
     njs_promise_context_t  *context;
 
-    frame = (njs_frame_t *) vm->top_frame;
-    context = frame->native.function->context;
+    frame = vm->top_frame;
+    context = frame->function->context;
 
     ret = njs_function_call(vm, njs_function(&context->finally),
                             &njs_value_undefined, args, 0, &retval);

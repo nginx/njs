@@ -39,10 +39,6 @@ struct njs_function_lambda_s {
     njs_align_size(sizeof(njs_frame_t) + closures * sizeof(njs_closure_t *),  \
                    sizeof(njs_value_t))
 
-/* The retval field is not used in the global frame. */
-#define NJS_GLOBAL_FRAME_SIZE                                                 \
-    njs_align_size(offsetof(njs_frame_t, retval), sizeof(njs_value_t))
-
 #define NJS_FRAME_SPARE_SIZE       512
 
 
@@ -68,6 +64,7 @@ struct njs_native_frame_s {
     njs_object_t                   *arguments_object;
 
     njs_exception_t                exception;
+    njs_index_t                    retval;
 
     uint32_t                       size;
     uint32_t                       free_size;
@@ -84,9 +81,6 @@ struct njs_native_frame_s {
 struct njs_frame_s {
     njs_native_frame_t             native;
 
-    njs_index_t                    retval;
-
-    u_char                         *return_address;
     njs_frame_t                    *previous_active_frame;
 
     njs_value_t                    *local;
@@ -170,13 +164,12 @@ njs_function_previous_frame(njs_native_frame_t *frame)
 njs_inline njs_int_t
 njs_function_frame_invoke(njs_vm_t *vm, njs_index_t retval)
 {
-    njs_frame_t  *frame;
+    njs_native_frame_t  *frame;
 
-    frame = (njs_frame_t *) vm->top_frame;
-
+    frame = vm->top_frame;
     frame->retval = retval;
 
-    if (frame->native.function->native) {
+    if (frame->function->native) {
         return njs_function_native_call(vm);
 
     } else {

@@ -286,7 +286,7 @@ njs_vm_init(njs_vm_t *vm)
 
     scope_size = vm->scope_size + NJS_INDEX_GLOBAL_OFFSET;
 
-    size = NJS_GLOBAL_FRAME_SIZE + scope_size + NJS_FRAME_SPARE_SIZE;
+    size = njs_frame_size(0) + scope_size + NJS_FRAME_SPARE_SIZE;
     size = njs_align_size(size, NJS_FRAME_SPARE_SIZE);
 
     frame = njs_mp_align(vm->mem_pool, sizeof(njs_value_t), size);
@@ -294,15 +294,15 @@ njs_vm_init(njs_vm_t *vm)
         return NJS_ERROR;
     }
 
-    njs_memzero(frame, NJS_GLOBAL_FRAME_SIZE);
+    njs_memzero(frame, njs_frame_size(0));
 
     vm->top_frame = &frame->native;
     vm->active_frame = frame;
 
     frame->native.size = size;
-    frame->native.free_size = size - (NJS_GLOBAL_FRAME_SIZE + scope_size);
+    frame->native.free_size = size - (njs_frame_size(0) + scope_size);
 
-    values = (u_char *) frame + NJS_GLOBAL_FRAME_SIZE;
+    values = (u_char *) frame + njs_frame_size(0);
 
     frame->native.free = values + scope_size;
 
@@ -357,11 +357,12 @@ njs_vm_invoke(njs_vm_t *vm, njs_function_t *function, const njs_value_t *args,
 
 
 void
-njs_vm_scopes_restore(njs_vm_t *vm, njs_frame_t *frame,
+njs_vm_scopes_restore(njs_vm_t *vm, njs_native_frame_t *native,
     njs_native_frame_t *previous)
 {
     njs_uint_t      n, nesting;
     njs_value_t     *args;
+    njs_frame_t     *frame;
     njs_closure_t   **closures;
     njs_function_t  *function;
 
@@ -376,7 +377,7 @@ njs_vm_scopes_restore(njs_vm_t *vm, njs_frame_t *frame,
 
     vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = args;
 
-    function = frame->native.function;
+    function = native->function;
 
     if (function->native) {
         return;
@@ -386,6 +387,7 @@ njs_vm_scopes_restore(njs_vm_t *vm, njs_frame_t *frame,
         /* GC: release function closures. */
     }
 
+    frame = (njs_frame_t *) native;
     frame = frame->previous_active_frame;
     vm->active_frame = frame;
 

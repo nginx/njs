@@ -286,7 +286,7 @@ struct njs_vm_shared_s {
 };
 
 
-void njs_vm_scopes_restore(njs_vm_t *vm, njs_frame_t *frame,
+void njs_vm_scopes_restore(njs_vm_t *vm, njs_native_frame_t *frame,
     njs_native_frame_t *previous);
 njs_int_t njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_arr_t *stack,
     njs_native_frame_t *native_frame);

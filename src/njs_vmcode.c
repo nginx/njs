@@ -705,13 +705,13 @@ next:
 
                 previous = njs_function_previous_frame(&frame->native);
 
-                njs_vm_scopes_restore(vm, frame, previous);
+                njs_vm_scopes_restore(vm, &frame->native, previous);
 
                 /*
                  * If a retval is in a callee arguments scope it
                  * must be in the previous callee arguments scope.
                  */
-                retval = njs_vmcode_operand(vm, frame->retval);
+                retval = njs_vmcode_operand(vm, frame->native.retval);
 
                 /*
                  * GC: value external/internal++ depending on
@@ -923,7 +923,7 @@ error:
 
         lambda_call = (frame == vm->active_frame);
 
-        njs_vm_scopes_restore(vm, frame, previous);
+        njs_vm_scopes_restore(vm, &frame->native, previous);
 
         if (frame->native.size != 0) {
             vm->stack_size -= frame->native.size;
@@ -1687,13 +1687,13 @@ njs_vmcode_return(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
 
     previous = njs_function_previous_frame(&frame->native);
 
-    njs_vm_scopes_restore(vm, frame, previous);
+    njs_vm_scopes_restore(vm, &frame->native, previous);
 
     /*
      * If a retval is in a callee arguments scope it
      * must be in the previous callee arguments scope.
      */
-    retval = njs_vmcode_operand(vm, frame->retval);
+    retval = njs_vmcode_operand(vm, frame->native.retval);
 
     /* GC: value external/internal++ depending on value and retval type */
     *retval = *value;
