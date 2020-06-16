@@ -42,18 +42,6 @@ struct njs_function_lambda_s {
 #define NJS_FRAME_SPARE_SIZE       512
 
 
-typedef struct njs_exception_s     njs_exception_t;
-
-struct njs_exception_s {
-    /*
-     * The next field must be the first to alias it with restart address
-     * because it is not used to detect catch block existance in the frame.
-     */
-    njs_exception_t                *next;
-    u_char                         *catch;
-};
-
-
 struct njs_native_frame_s {
     u_char                         *free;
 
@@ -63,13 +51,13 @@ struct njs_native_frame_s {
     njs_value_t                    *arguments;
     njs_object_t                   *arguments_object;
 
-    njs_exception_t                exception;
     njs_index_t                    retval;
 
     uint32_t                       size;
     uint32_t                       free_size;
     uint32_t                       nargs;
 
+    uint8_t                        native;            /* 1 bit  */
     /* Function is called as constructor with "new" keyword. */
     uint8_t                        ctor;              /* 1 bit  */
 
@@ -78,8 +66,18 @@ struct njs_native_frame_s {
 };
 
 
+typedef struct njs_exception_s     njs_exception_t;
+
+struct njs_exception_s {
+    njs_exception_t                *next;
+    u_char                         *catch;
+};
+
+
 struct njs_frame_s {
     njs_native_frame_t             native;
+
+    njs_exception_t                exception;
 
     njs_frame_t                    *previous_active_frame;
 
@@ -169,7 +167,7 @@ njs_function_frame_invoke(njs_vm_t *vm, njs_index_t retval)
     frame = vm->top_frame;
     frame->retval = retval;
 
-    if (frame->function->native) {
+    if (frame->native) {
         return njs_function_native_call(vm);
 
     } else {

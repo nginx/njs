@@ -370,6 +370,7 @@ njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     frame->function = function;
     frame->nargs = function->args_offset + nargs;
     frame->ctor = ctor;
+    frame->native = 1;
 
     value = (njs_value_t *) ((u_char *) frame + NJS_NATIVE_FRAME_SIZE);
     frame->arguments = value;
@@ -452,6 +453,7 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
     native_frame->function = target;
     native_frame->nargs = nargs;
     native_frame->ctor = ctor;
+    native_frame->native = 0;
 
     /* Function arguments. */
 
@@ -501,6 +503,8 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
     }
 
     frame = (njs_frame_t *) native_frame;
+    frame->exception.catch = NULL;
+    frame->exception.next = NULL;
     frame->local = value;
     frame->previous_active_frame = vm->active_frame;
 
