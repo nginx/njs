@@ -17883,11 +17883,13 @@ static njs_unit_test_t  njs_shell_test[] =
 
 typedef struct {
     njs_bool_t  disassemble;
+    njs_str_t   filter;
     njs_bool_t  verbose;
-    njs_bool_t  unsafe;
+
+    njs_uint_t  externals;
     njs_bool_t  module;
     njs_uint_t  repeat;
-    njs_uint_t  externals;
+    njs_bool_t  unsafe;
 } njs_opts_t;
 
 
@@ -17898,20 +17900,21 @@ typedef struct {
 
 
 static void
-njs_unit_test_report(const char *msg, njs_stat_t *prev, njs_stat_t *current)
+njs_unit_test_report(njs_str_t *name, njs_stat_t *prev, njs_stat_t *current)
 {
     njs_stat_t  stat;
 
     stat.failed = current->failed - prev->failed;
     stat.passed = current->passed - prev->passed;
 
-    njs_printf("%s: %s [%d/%d]\n", msg, stat.failed ? "FAILED" : "PASSED",
-               stat.passed, stat.passed + stat.failed);
+    njs_printf("%V tests: %s [%d/%d]\n", name,
+               stat.failed ? "FAILED" : "PASSED", stat.passed,
+               stat.passed + stat.failed);
 }
 
 
 static njs_int_t
-njs_unit_test(njs_unit_test_t tests[], size_t num, const char *name,
+njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
     njs_opts_t *opts, njs_stat_t *stat)
 {
     u_char                *start, *end;
@@ -18047,7 +18050,7 @@ done:
 
 
 static njs_int_t
-njs_interactive_test(njs_unit_test_t tests[], size_t num, const char *name,
+njs_interactive_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
     njs_opts_t *opts, njs_stat_t *stat)
 {
     u_char        *start, *last, *end;
@@ -18091,7 +18094,7 @@ njs_interactive_test(njs_unit_test_t tests[], size_t num, const char *name,
         }
 
         start = tests[i].script.start;
-        last = start +  tests[i].script.length;
+        last = start + tests[i].script.length;
         end = NULL;
 
         for ( ;; ) {
@@ -18104,6 +18107,10 @@ njs_interactive_test(njs_unit_test_t tests[], size_t num, const char *name,
 
             ret = njs_vm_compile(vm, &start, end);
             if (ret == NJS_OK) {
+                if (opts->disassemble) {
+                    njs_disassembler(vm);
+                }
+
                 ret = njs_vm_start(vm);
             }
         }
@@ -18144,7 +18151,8 @@ done:
 
 
 static njs_int_t
-njs_timezone_optional_test(njs_opts_t *opts, njs_stat_t *stat)
+njs_timezone_optional_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
+    njs_opts_t *opts, njs_stat_t *stat)
 {
     size_t     size;
     u_char     buf[16];
@@ -18165,8 +18173,7 @@ njs_timezone_optional_test(njs_opts_t *opts, njs_stat_t *stat)
     size = strftime((char *) buf, sizeof(buf), "%z", &tm);
 
     if (memcmp(buf, "+1245", size) == 0) {
-        ret = njs_unit_test(njs_tz_test, njs_nitems(njs_tz_test),
-                            "timezone tests", opts, stat);
+        ret = njs_unit_test(tests, num, name, opts, stat);
         if (ret != NJS_OK) {
             return ret;
         }
@@ -18180,7 +18187,8 @@ njs_timezone_optional_test(njs_opts_t *opts, njs_stat_t *stat)
 
 
 static njs_int_t
-njs_regexp_optional_test(njs_opts_t *opts, njs_stat_t *stat)
+njs_regexp_optional_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
+    njs_opts_t *opts, njs_stat_t *stat)
 {
     int         erroff;
     pcre        *re1, *re2;
@@ -18205,8 +18213,7 @@ njs_regexp_optional_test(njs_opts_t *opts, njs_stat_t *stat)
                        &errstr, &erroff, NULL);
 
     if (re1 == NULL && re2 != NULL) {
-        ret = njs_unit_test(njs_regexp_test, njs_nitems(njs_regexp_test),
-                            "unicode regexp tests", opts, stat);
+        ret = njs_unit_test(tests, num, name, opts, stat);
         if (ret != NJS_OK) {
             return ret;
         }
@@ -18228,7 +18235,8 @@ njs_regexp_optional_test(njs_opts_t *opts, njs_stat_t *stat)
 
 
 static njs_int_t
-njs_vm_json_test(njs_opts_t *opts, njs_stat_t *stat)
+njs_vm_json_test(njs_unit_test_t unused[], size_t num, njs_str_t *name,
+    njs_opts_t *opts, njs_stat_t *stat)
 {
     njs_vm_t      *vm;
     njs_int_t     ret;
@@ -18346,7 +18354,7 @@ done:
         }
     }
 
-    njs_unit_test_report("VM json API tests", &prev, stat);
+    njs_unit_test_report(name, &prev, stat);
 
     if (vm != NULL) {
         njs_vm_destroy(vm);
@@ -18357,7 +18365,8 @@ done:
 
 
 static njs_int_t
-njs_vm_value_test(njs_opts_t *opts, njs_stat_t *stat)
+njs_vm_value_test(njs_unit_test_t unused[], size_t num, njs_str_t *name,
+    njs_opts_t *opts, njs_stat_t *stat)
 {
     njs_vm_t      *vm;
     njs_int_t     ret;
@@ -18501,7 +18510,7 @@ done:
         }
     }
 
-    njs_unit_test_report("njs_vm_value() tests", &prev, stat);
+    njs_unit_test_report(name, &prev, stat);
 
     if (vm != NULL) {
         njs_vm_destroy(vm);
@@ -18999,7 +19008,8 @@ njs_string_to_index_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
 
 
 static njs_int_t
-njs_api_test(njs_opts_t *opts, njs_stat_t *stat)
+njs_vm_internal_api_test(njs_unit_test_t unused[], size_t num, njs_str_t *name,
+    njs_opts_t *opts, njs_stat_t *stat)
 {
     njs_vm_t      *vm;
     njs_int_t     ret;
@@ -19053,7 +19063,7 @@ njs_api_test(njs_opts_t *opts, njs_stat_t *stat)
 
 done:
 
-    njs_unit_test_report("API tests", &prev, stat);
+    njs_unit_test_report(name, &prev, stat);
 
     if (vm != NULL) {
         njs_vm_destroy(vm);
@@ -19063,126 +19073,257 @@ done:
 }
 
 
-int njs_cdecl
-main(int argc, char **argv)
+static njs_int_t
+njs_get_options(njs_opts_t *opts, int argc, char **argv)
 {
-    njs_int_t   ret;
-    njs_opts_t  opts;
-    njs_stat_t  stat;
+    char       *p;
+    njs_int_t  i;
 
-    njs_memzero(&opts, sizeof(njs_opts_t));
+    static const char  help[] =
+        "njs unit tests.\n"
+        "\n"
+        "njs_unit_test [options]"
+        "\n"
+        "Options:\n"
+        "  -d                           print disassembled code.\n"
+        "  -f PATTERN1[|PATTERN2..]     filter test suites to run.\n"
+        "  -v                           verbose mode.\n";
 
-    if (argc > 1) {
-        switch (argv[1][0]) {
+    for (i = 1; i < argc; i++) {
+
+        p = argv[i];
+
+        if (p[0] != '-') {
+            goto help;
+        }
+
+        p++;
+
+        switch (*p) {
+        case '?':
+        case 'h':
+            (void) write(STDOUT_FILENO, help, njs_length(help));
+            return NJS_DONE;
 
         case 'd':
-            opts.disassemble = 1;
+            opts->disassemble = 1;
             break;
 
+        case 'f':
+            if (++i < argc) {
+                opts->filter.start = (u_char *) argv[i];
+                opts->filter.length = njs_strlen(argv[i]);
+                break;
+            }
+
+            njs_stderror("option \"-f\" requires argument\n");
+            return NJS_ERROR;
+
         case 'v':
-            opts.verbose = 1;
+            opts->verbose = 1;
             break;
 
         default:
+            goto help;
+        }
+    }
+
+    return NJS_OK;
+
+help:
+
+    njs_stderror("Unknown argument: \"%s\" "
+                 "try \"%s -h\" for available options\n", argv[i],
+                 argv[0]);
+
+    return NJS_ERROR;
+}
+
+
+static njs_int_t
+njs_match_test(njs_opts_t *opts, njs_str_t *name)
+{
+    u_char  *p, *start, *end;
+    size_t  len;
+
+    if (name->length == 0) {
+        return 0;
+    }
+
+    if (opts->filter.length == 0) {
+        return 1;
+    }
+
+    start = opts->filter.start;
+    end = start + opts->filter.length;
+
+    for ( ;; ) {
+        p = njs_strlchr(start, end, '|');
+        len = ((p != NULL) ? p : end) - start;
+        len = njs_min(name->length, len);
+
+        if (len != 0 && njs_strncmp(name->start, start, len) == 0) {
+            return 1;
+        }
+
+        if (p == NULL) {
             break;
         }
+
+        start = p + 1;
+    }
+
+    return 0;
+}
+
+
+typedef struct {
+    njs_str_t        name;
+    njs_opts_t       opts;
+    njs_unit_test_t  *tests;
+    size_t           n;
+    njs_int_t        (*run)(njs_unit_test_t tests[], size_t num,
+                            njs_str_t *name, njs_opts_t *opts,
+                            njs_stat_t *stat);
+} njs_test_suite_t;
+
+
+static njs_int_t
+njs_disabled_denormals_tests(njs_unit_test_t tests[], size_t num,
+    njs_str_t *name, njs_opts_t *opts, njs_stat_t *stat)
+{
+    njs_int_t  ret;
+
+    njs_mm_denormals(0);
+
+    ret = njs_unit_test(tests, num, name, opts, stat);
+
+    njs_mm_denormals(1);
+
+    return ret;
+}
+
+
+static njs_test_suite_t  njs_suites[] =
+{
+    { njs_str("script"),
+      { .repeat = 1, .unsafe = 1 },
+      njs_test,
+      njs_nitems(njs_test),
+      njs_unit_test },
+
+    { njs_str("denormals"),
+      { .repeat = 1, .unsafe = 1 },
+      njs_denormals_test,
+      njs_nitems(njs_denormals_test),
+      njs_unit_test },
+
+    {
+#if (NJS_HAVE_DENORMALS_CONTROL)
+        njs_str("disabled denormals"),
+#else
+        njs_str(""),
+#endif
+      { .repeat = 1, .unsafe = 1 },
+      njs_disabled_denormals_test,
+      njs_nitems(njs_disabled_denormals_test),
+      njs_disabled_denormals_tests },
+
+    { njs_str("module"),
+      { .repeat = 1, .module = 1, .unsafe = 1 },
+      njs_module_test,
+      njs_nitems(njs_module_test),
+      njs_unit_test },
+
+    { njs_str("externals"),
+      { .externals = 1, .repeat = 1, .unsafe = 1 },
+      njs_externals_test,
+      njs_nitems(njs_externals_test),
+      njs_unit_test },
+
+    { njs_str("shared"),
+      { .externals = 1, .repeat = 128, .unsafe = 1 },
+      njs_shared_test,
+      njs_nitems(njs_shared_test),
+      njs_unit_test },
+
+    { njs_str("interactive"),
+      { .externals = 1, .repeat = 1, .unsafe = 1 },
+      njs_shell_test,
+      njs_nitems(njs_shell_test),
+      njs_interactive_test },
+
+    { njs_str("timezone"),
+      { .repeat = 1, .unsafe = 1 },
+      njs_tz_test,
+      njs_nitems(njs_tz_test),
+      njs_timezone_optional_test },
+
+    { njs_str("regexp"),
+      { .repeat = 1, .unsafe = 1 },
+      njs_regexp_test,
+      njs_nitems(njs_regexp_test),
+      njs_regexp_optional_test },
+
+    { njs_str("vm_json"),
+      { .repeat = 1, .unsafe = 1 },
+      NULL,
+      0,
+      njs_vm_json_test },
+
+    { njs_str("vm_value"),
+      { .repeat = 1, .unsafe = 1 },
+      NULL,
+      0,
+      njs_vm_value_test },
+
+    { njs_str("vm_internal_api"),
+      { .repeat = 1, .unsafe = 1 },
+      NULL,
+      0,
+      njs_vm_internal_api_test },
+};
+
+
+int njs_cdecl
+main(int argc, char **argv)
+{
+    njs_int_t         ret;
+    njs_uint_t        i;
+    njs_opts_t        opts, op;
+    njs_stat_t        stat;
+    njs_test_suite_t  *suite;
+
+    njs_memzero(&opts, sizeof(njs_opts_t));
+
+    ret = njs_get_options(&opts, argc, argv);
+    if (ret != NJS_OK) {
+        return (ret == NJS_DONE) ? EXIT_SUCCESS: EXIT_FAILURE;
     }
 
     (void) putenv((char *) "TZ=UTC");
     tzset();
 
+    njs_mm_denormals(1);
+
     njs_memzero(&stat, sizeof(njs_stat_t));
 
-    opts.repeat = 1;
-    opts.unsafe = 1;
+    for (i = 0; i < njs_nitems(njs_suites); i++) {
+        suite = &njs_suites[i];
 
-    njs_mm_denormals(1);
+        if (!njs_match_test(&opts, &suite->name)) {
+            continue;
+        }
 
-    ret = njs_unit_test(njs_test, njs_nitems(njs_test), "script tests",
-                        &opts, &stat);
-    if (ret != NJS_OK) {
-        return ret;
-    }
+        op = suite->opts;
 
-    ret = njs_unit_test(njs_denormals_test, njs_nitems(njs_denormals_test),
-                        "denormals tests", &opts, &stat);
-    if (ret != NJS_OK) {
-        return ret;
-    }
+        op.verbose = opts.verbose;
+        op.disassemble = opts.disassemble;
 
-#if (NJS_HAVE_DENORMALS_CONTROL)
-
-    njs_mm_denormals(0);
-
-    ret = njs_unit_test(njs_disabled_denormals_test,
-                        njs_nitems(njs_disabled_denormals_test),
-                        "disabled denormals tests", &opts, &stat);
-    if (ret != NJS_OK) {
-        return ret;
-    }
-
-    njs_mm_denormals(1);
-
-#else
-
-    (void) njs_disabled_denormals_test;
-
-#endif
-
-    ret = njs_timezone_optional_test(&opts, &stat);
-    if (ret != NJS_OK) {
-        return ret;
-    }
-
-    ret = njs_regexp_optional_test(&opts, &stat);
-    if (ret != NJS_OK) {
-        return ret;
-    }
-
-    ret = njs_vm_json_test(&opts, &stat);
-    if (ret != NJS_OK) {
-        return ret;
-    }
-
-    ret = njs_vm_value_test(&opts, &stat);
-    if (ret != NJS_OK) {
-        return ret;
-    }
-
-    ret = njs_api_test(&opts, &stat);
-    if (ret != NJS_OK) {
-        return ret;
-    }
-
-    opts.module = 1;
-
-    ret = njs_unit_test(njs_module_test, njs_nitems(njs_module_test),
-                        "module tests", &opts, &stat);
-    if (ret != NJS_OK) {
-        return ret;
-    }
-
-    opts.module = 0;
-    opts.externals = 1;
-
-    ret = njs_unit_test(njs_externals_test, njs_nitems(njs_externals_test),
-                        "externals tests", &opts, &stat);
-    if (ret != NJS_OK) {
-        return ret;
-    }
-
-    ret = njs_interactive_test(njs_shell_test, njs_nitems(njs_shell_test),
-                               "interactive tests", &opts, &stat);
-    if (ret != NJS_OK) {
-        return ret;
-    }
-
-    opts.repeat = 128;
-
-    ret = njs_unit_test(njs_shared_test, njs_nitems(njs_shared_test),
-                        "shared tests", &opts, &stat);
-    if (ret != NJS_OK) {
-        return ret;
+        ret = suite->run(suite->tests, suite->n, &suite->name, &op, &stat);
+        if (ret != NJS_OK) {
+            return ret;
+        }
     }
 
     njs_printf("TOTAL: %s [%ui/%ui]\n", stat.failed ? "FAILED" : "PASSED",
