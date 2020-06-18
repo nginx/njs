@@ -371,6 +371,7 @@ njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     frame->nargs = function->args_offset + nargs;
     frame->ctor = ctor;
     frame->native = 1;
+    frame->pc = NULL;
 
     value = (njs_value_t *) ((u_char *) frame + NJS_NATIVE_FRAME_SIZE);
     frame->arguments = value;
@@ -454,6 +455,7 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
     native_frame->nargs = nargs;
     native_frame->ctor = ctor;
     native_frame->native = 0;
+    native_frame->pc = NULL;
 
     /* Function arguments. */
 
@@ -851,11 +853,11 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_t            *body;
     njs_lexer_t            lexer;
     njs_parser_t           *parser;
+    njs_vm_code_t          *code;
     njs_function_t         *function;
     njs_generator_t        generator;
     njs_parser_scope_t     *scope;
     njs_function_lambda_t  *lambda;
-    njs_vmcode_function_t  *code;
 
     if (!vm->options.unsafe) {
         body = njs_argument(args, nargs - 1);
@@ -949,15 +951,18 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     njs_memzero(&generator, sizeof(njs_generator_t));
 
-    ret = njs_generate_scope(vm, &generator, scope, &njs_entry_anonymous);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
+    code = njs_generate_scope(vm, &generator, scope, &njs_entry_anonymous);
+    if (njs_slow_path(code == NULL)) {
+        if (!njs_is_error(&vm->retval)) {
+            njs_internal_error(vm, "njs_generate_scope() failed");
+        }
+
+        return NJS_ERROR;
     }
 
     njs_chb_destroy(&chain);
 
-    code = (njs_vmcode_function_t *) generator.code_start;
-    lambda = code->lambda;
+    lambda = ((njs_vmcode_function_t *) generator.code_start)->lambda;
 
     function = njs_function_alloc(vm, lambda, NULL, 0);
     if (njs_slow_path(function == NULL)) {

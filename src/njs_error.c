@@ -8,6 +8,19 @@
 #include <njs_main.h>
 
 
+typedef struct {
+    njs_str_t                         name;
+    njs_str_t                         file;
+    uint32_t                          line;
+} njs_backtrace_entry_t;
+
+
+static njs_int_t njs_add_backtrace_entry(njs_vm_t *vm, njs_arr_t *stack,
+    njs_native_frame_t *native_frame);
+static njs_int_t njs_backtrace_to_string(njs_vm_t *vm, njs_arr_t *backtrace,
+    njs_str_t *dst);
+
+
 static const njs_value_t  njs_error_message_string = njs_string("message");
 static const njs_value_t  njs_error_name_string = njs_string("name");
 static const njs_value_t  njs_error_stack_string = njs_string("stack");
@@ -84,7 +97,9 @@ njs_error_stack_new(njs_vm_t *vm, njs_object_t *error, njs_value_t *retval)
     frame = vm->top_frame;
 
     for ( ;; ) {
-        if (njs_vm_add_backtrace_entry(vm, stack, frame) != NJS_OK) {
+        if ((frame->native || frame->pc != NULL)
+            && njs_add_backtrace_entry(vm, stack, frame) != NJS_OK)
+        {
             break;
         }
 
@@ -97,7 +112,7 @@ njs_error_stack_new(njs_vm_t *vm, njs_object_t *error, njs_value_t *retval)
 
     njs_string_get(retval, &string);
 
-    ret = njs_vm_backtrace_to_string(vm, stack, &string);
+    ret = njs_backtrace_to_string(vm, stack, &string);
 
     njs_arr_destroy(stack);
 
@@ -121,7 +136,7 @@ njs_error_stack_attach(njs_vm_t *vm, njs_value_t *value)
         return NJS_DECLINED;
     }
 
-    if (vm->debug == NULL || vm->start == NULL) {
+    if (njs_slow_path(!vm->options.backtrace || vm->start == NULL)) {
         return NJS_OK;
     }
 
@@ -1147,3 +1162,117 @@ const njs_object_type_init_t  njs_uri_error_type_init = {
     .prototype_props = &njs_uri_error_prototype_init,
     .prototype_value = { .object = { .type = NJS_OBJECT } },
 };
+
+
+static njs_int_t
+njs_add_backtrace_entry(njs_vm_t *vm, njs_arr_t *stack,
+    njs_native_frame_t *native_frame)
+{
+    njs_int_t              ret;
+    njs_uint_t             i;
+    njs_vm_code_t          *code;
+    njs_function_t         *function;
+    njs_backtrace_entry_t  *be;
+
+    function = native_frame->function;
+
+    be = njs_arr_add(stack);
+    if (njs_slow_path(be == NULL)) {
+        return NJS_ERROR;
+    }
+
+    be->line = 0;
+    be->file = njs_str_value("");
+
+    if (function != NULL && function->native) {
+        while (function->bound != NULL) {
+            function = function->u.bound_target;
+        }
+
+        ret = njs_builtin_match_native_function(vm, function, &be->name);
+        if (ret == NJS_OK) {
+            return NJS_OK;
+        }
+
+        be->name = njs_entry_native;
+
+        return NJS_OK;
+    }
+
+    code = vm->codes->start;
+
+    for (i = 0; i < vm->codes->items; i++, code++) {
+        if (code->start <= native_frame->pc
+            && native_frame->pc < code->end)
+        {
+            be->name = code->name;
+            be->line = njs_lookup_line(code, native_frame->pc - code->start);
+            if (!vm->options.quiet) {
+                be->file = code->file;
+            }
+
+            return NJS_OK;
+        }
+    }
+
+    be->name = njs_entry_unknown;
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_backtrace_to_string(njs_vm_t *vm, njs_arr_t *backtrace, njs_str_t *dst)
+{
+    size_t                 count;
+    njs_chb_t              chain;
+    njs_uint_t             i;
+    njs_backtrace_entry_t  *be, *prev;
+
+    if (backtrace->items == 0) {
+        return NJS_OK;
+    }
+
+    njs_chb_init(&chain, vm->mem_pool);
+
+    njs_chb_append_str(&chain, dst);
+    njs_chb_append(&chain, "\n", 1);
+
+    count = 0;
+    prev = NULL;
+
+    be = backtrace->start;
+
+    for (i = 0; i < backtrace->items; i++) {
+        if (i != 0 && prev->name.start == be->name.start
+            && prev->line == be->line)
+        {
+            count++;
+
+        } else {
+            if (count != 0) {
+                njs_chb_sprintf(&chain, 64, "      repeats %uz times\n", count);
+                count = 0;
+            }
+
+            njs_chb_sprintf(&chain, 10 + be->name.length, "    at %V ",
+                            &be->name);
+
+            if (be->line != 0) {
+                njs_chb_sprintf(&chain, 12 + be->file.length,
+                                "(%V:%uD)\n", &be->file, be->line);
+
+            } else {
+                njs_chb_append(&chain, "(native)\n", 9);
+            }
+        }
+
+        prev = be;
+        be++;
+    }
+
+    njs_chb_join(&chain, dst);
+    njs_chb_destroy(&chain);
+
+    return NJS_OK;
+}

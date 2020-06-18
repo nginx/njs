@@ -32,7 +32,6 @@ njs_vm_create(njs_vm_opt_t *options)
     njs_mp_t   *mp;
     njs_vm_t   *vm;
     njs_int_t  ret;
-    njs_arr_t  *debug;
 
     mp = njs_mp_fast_create(2 * njs_pagesize(), 128, 512, 16);
     if (njs_slow_path(mp == NULL)) {
@@ -73,16 +72,6 @@ njs_vm_create(njs_vm_opt_t *options)
     vm->trace.data = vm;
 
     njs_set_undefined(&vm->retval);
-
-    if (options->backtrace) {
-        debug = njs_arr_create(vm->mem_pool, 4,
-                               sizeof(njs_function_debug_t));
-        if (njs_slow_path(debug == NULL)) {
-            return NULL;
-        }
-
-        vm->debug = debug;
-    }
 
     if (options->init) {
         ret = njs_vm_init(vm);
@@ -129,6 +118,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     njs_chb_t           chain;
     njs_lexer_t         lexer;
     njs_parser_t        *parser, *prev;
+    njs_vm_code_t       *code;
     njs_generator_t     generator;
     njs_parser_scope_t  *scope;
 
@@ -174,19 +164,18 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 
     *start = lexer.start;
 
-    /*
-     * Reset the code array to prevent it from being disassembled
-     * again in the next iteration of the accumulative mode.
-     */
-    vm->codes = NULL;
-
     njs_memzero(&generator, sizeof(njs_generator_t));
 
-    ret = njs_generate_scope(vm, &generator, scope, &njs_entry_main);
-    if (njs_slow_path(ret != NJS_OK)) {
+    code = njs_generate_scope(vm, &generator, scope, &njs_entry_main);
+    if (njs_slow_path(code == NULL)) {
+        if (!njs_is_error(&vm->retval)) {
+            njs_internal_error(vm, "njs_generate_scope() failed");
+        }
+
         goto fail;
     }
 
+    vm->main_index = code - (njs_vm_code_t *) vm->codes->start;
     vm->start = generator.code_start;
     vm->global_scope = generator.local_scope;
     vm->scope_size = generator.scope_size;
@@ -1121,130 +1110,6 @@ njs_vm_value_string_copy(njs_vm_t *vm, njs_str_t *retval,
 
     return njs_vm_value_to_string(vm, retval, value);
 }
-
-
-njs_int_t
-njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_arr_t *stack,
-    njs_native_frame_t *native_frame)
-{
-    njs_int_t              ret;
-    njs_uint_t             i;
-    njs_function_t         *function;
-    njs_function_debug_t   *debug_entry;
-    njs_function_lambda_t  *lambda;
-    njs_backtrace_entry_t  *be;
-
-    function = native_frame->function;
-
-    be = njs_arr_add(stack);
-    if (njs_slow_path(be == NULL)) {
-        return NJS_ERROR;
-    }
-
-    be->line = 0;
-
-    if (function == NULL) {
-        be->name = njs_entry_main;
-        return NJS_OK;
-    }
-
-    if (function->native) {
-        while (function->bound != NULL) {
-            function = function->u.bound_target;
-        }
-
-        ret = njs_builtin_match_native_function(vm, function, &be->name);
-        if (ret == NJS_OK) {
-            return NJS_OK;
-        }
-
-        be->name = njs_entry_native;
-
-        return NJS_OK;
-    }
-
-    lambda = function->u.lambda;
-    debug_entry = vm->debug->start;
-
-    for (i = 0; i < vm->debug->items; i++) {
-        if (lambda == debug_entry[i].lambda) {
-            if (debug_entry[i].name.length != 0) {
-                be->name = debug_entry[i].name;
-
-            } else {
-                be->name = njs_entry_anonymous;
-            }
-
-            be->file = debug_entry[i].file;
-            be->line = debug_entry[i].line;
-
-            return NJS_OK;
-        }
-    }
-
-    be->name = njs_entry_unknown;
-
-    return NJS_OK;
-}
-
-
-njs_int_t
-njs_vm_backtrace_to_string(njs_vm_t *vm, njs_arr_t *backtrace, njs_str_t *dst)
-{
-    size_t                 count;
-    njs_chb_t              chain;
-    njs_uint_t             i;
-    njs_backtrace_entry_t  *be, *prev;
-
-    if (backtrace->items == 0) {
-        return NJS_OK;
-    }
-
-    njs_chb_init(&chain, vm->mem_pool);
-
-    njs_chb_append_str(&chain, dst);
-    njs_chb_append(&chain, "\n", 1);
-
-    count = 0;
-    prev = NULL;
-
-    be = backtrace->start;
-
-    for (i = 0; i < backtrace->items; i++) {
-        if (i != 0 && prev->name.start == be->name.start
-            && prev->line == be->line)
-        {
-            count++;
-
-        } else {
-            if (count != 0) {
-                njs_chb_sprintf(&chain, 64, "      repeats %uz times\n", count);
-                count = 0;
-            }
-
-            njs_chb_sprintf(&chain, 10 + be->name.length, "    at %V ",
-                            &be->name);
-
-            if (be->line != 0) {
-                njs_chb_sprintf(&chain, 12 + be->file.length,
-                                "(%V:%uD)\n", &be->file, be->line);
-
-            } else {
-                njs_chb_append(&chain, "(native)\n", 9);
-            }
-        }
-
-        prev = be;
-        be++;
-    }
-
-    njs_chb_join(&chain, dst);
-    njs_chb_destroy(&chain);
-
-    return NJS_OK;
-}
-
-
 
 
 void *

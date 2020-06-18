@@ -18,6 +18,8 @@ struct njs_generator_s {
     njs_generator_block_t           *block;
     njs_arr_t                       *index_cache;
 
+    njs_arr_t                       *lines;
+
     size_t                          code_size;
     u_char                          *code_start;
     u_char                          *code_end;
@@ -29,8 +31,9 @@ struct njs_generator_s {
 };
 
 
-njs_int_t njs_generate_scope(njs_vm_t *vm, njs_generator_t *generator,
+njs_vm_code_t *njs_generate_scope(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_scope_t *scope, const njs_str_t *name);
+uint32_t njs_lookup_line(njs_vm_code_t *code, uint32_t offset);
 
 
 #endif /* _NJS_GENERATOR_H_INCLUDED_ */

@@ -748,13 +748,13 @@ njs_test {
 njs_run {"-c" "setTimeout(() => {console.log('A'.repeat(1024))}, 0); ref"} \
 "^Thrown:
 ReferenceError: \"ref\" is not defined in string:1
-    at main \\\(native\\\)\n$"
+    at main \\\(string:1\\\)\n$"
 
 njs_run {"-c" "setTimeout(() => {ref}, 0); setTimeout(() => {console.log('A'.repeat(1024))}, 0)"} \
 "^Thrown:
 ReferenceError: \"ref\" is not defined in string:1
     at anonymous \\\(string:1\\\)
-    at main \\\(native\\\)\n$"
+    at main \\\(string:1\\\)\n$"
 
 # Modules
 
@@ -771,7 +771,7 @@ njs_run {"./test/module/normal.js"} \
         "SyntaxError: Cannot find module \"hash.js\" in lib1.js:13"
 
 njs_run {"-p" "test/module/libs" "./test/module/exception.js"} \
-        "at error \\(sub1.js:5\\)"
+        "at error \\(sub1.js:6\\)"
 
 njs_run {"-p" "test/module" "./test/module/recursive.js"} \
         "SyntaxError: Cannot import itself \"./test/module/recursive.js\" in recursive.js:1"
@@ -815,11 +815,11 @@ njs_run {"test/script_args.js" "A" "B"} "AB"
 
 njs_test {
     {"1+1\r\n"
-     "00000 ADD*\r\n*2"}
+     "    1 | 00000 ADD*\r\n*2"}
     {"for (var n in [1]) {try {break} finally{}}\r\n"
-     "00000 ARRAY*\r\n*TRY BREAK*PROP NEXT*-*\r\n\r\nundefined"}
+     "    1 | 00000 ARRAY*\r\n*TRY BREAK*PROP NEXT*-*\r\n\r\nundefined"}
     {"(function() {try {return} finally{}})()\r\n"
-     "00000 TRY START*\r\n*TRY RETURN*STOP*\r\n\r\nundefined"}
+     "    1 | 00000 TRY START*\r\n*TRY RETURN*\r\n\r\nundefined"}
 } "-d"
 
 # modules
@@ -999,9 +999,9 @@ njs_run {"./test/js/promise_s13.js"} \
 
 njs_run {"./test/js/promise_s14.js"} \
 "TypeError: oops
-    at anonymous \\\(promise_s14.js:4\\\)
+    at anonymous \\\(promise_s14.js:5\\\)
     at native \\\(native\\\)
-    at main \\\(native\\\)
+    at main \\\(promise_s14.js:9\\\)
 
 Done"
 

@@ -645,7 +645,7 @@ next:
                     njs_internal_error(vm, "failed conversion of type \"%s\" "
                                        "to string while property define",
                                        njs_type_string(value2->type));
-                    return NJS_ERROR;
+                    goto error;
                 }
 
                 ret = njs_object_prop_define(vm, value1, &name, function,
@@ -773,6 +773,8 @@ next:
                 break;
 
             case NJS_VMCODE_FUNCTION_CALL:
+                vm->active_frame->native.pc = pc;
+
                 ret = njs_function_frame_invoke(vm, (njs_index_t) value2);
                 if (njs_slow_path(ret == NJS_ERROR)) {
                     goto error;
@@ -902,6 +904,7 @@ next:
 error:
 
     if (njs_is_error(&vm->retval)) {
+        vm->active_frame->native.pc = pc;
         (void) njs_error_stack_attach(vm, &vm->retval);
     }
 

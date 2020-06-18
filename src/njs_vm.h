@@ -28,13 +28,6 @@ typedef struct njs_parser_node_s      njs_parser_node_t;
 typedef struct njs_generator_s        njs_generator_t;
 
 
-typedef struct {
-    njs_str_t                         name;
-    njs_str_t                         file;
-    uint32_t                          line;
-} njs_backtrace_entry_t;
-
-
 typedef enum {
     NJS_SCOPE_ABSOLUTE = 0,
     NJS_SCOPE_GLOBAL = 1,
@@ -171,21 +164,11 @@ enum njs_object_e {
       + njs_scope_offset(index)))
 
 
-typedef struct {
-    uint32_t                  line;
-    njs_str_t                 file;
-    njs_str_t                 name;
-    njs_function_lambda_t     *lambda;
-} njs_function_debug_t;
-
-
 struct njs_vm_s {
     /* njs_vm_t must be aligned to njs_value_t due to scratch value. */
     njs_value_t              retval;
 
     njs_arr_t                *paths;
-
-    u_char                   *start;
 
     njs_value_t              *scopes[NJS_SCOPES];
 
@@ -217,6 +200,7 @@ struct njs_vm_s {
 
     njs_mp_t                 *mem_pool;
 
+    u_char                   *start;
     njs_value_t              *global_scope;
     size_t                   scope_size;
     size_t                   stack_size;
@@ -236,15 +220,20 @@ struct njs_vm_s {
     njs_object_t             string_object;
     njs_object_t             global_object;
 
+    njs_uint_t               main_index;
     njs_arr_t                *codes;  /* of njs_vm_code_t */
 
     njs_trace_t              trace;
     njs_random_t             random;
 
-    njs_arr_t                *debug;
-
     uint64_t                 symbol_generator;
 };
+
+
+typedef struct {
+    uint32_t                 offset;
+    uint32_t                 line;
+} njs_vm_line_num_t;
 
 
 typedef struct {
@@ -252,6 +241,7 @@ typedef struct {
     u_char                   *end;
     njs_str_t                file;
     njs_str_t                name;
+    njs_arr_t                *lines;  /* of njs_vm_line_num_t */
 } njs_vm_code_t;
 
 
@@ -288,10 +278,6 @@ struct njs_vm_shared_s {
 
 void njs_vm_scopes_restore(njs_vm_t *vm, njs_native_frame_t *frame,
     njs_native_frame_t *previous);
-njs_int_t njs_vm_add_backtrace_entry(njs_vm_t *vm, njs_arr_t *stack,
-    njs_native_frame_t *native_frame);
-njs_int_t njs_vm_backtrace_to_string(njs_vm_t *vm, njs_arr_t *stack,
-    njs_str_t *dst);
 
 njs_int_t njs_builtin_objects_create(njs_vm_t *vm);
 njs_int_t njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global);

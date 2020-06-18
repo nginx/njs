@@ -44,6 +44,7 @@ struct njs_function_lambda_s {
 
 struct njs_native_frame_s {
     u_char                         *free;
+    u_char                         *pc;
 
     njs_function_t                 *function;
     njs_native_frame_t             *previous;

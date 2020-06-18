@@ -293,7 +293,6 @@ NJS_EXPORT njs_function_t *njs_vm_function_alloc(njs_vm_t *vm,
     njs_function_native_t native);
 
 NJS_EXPORT void njs_disassembler(njs_vm_t *vm);
-NJS_EXPORT void njs_disassemble(u_char *start, u_char *end);
 
 NJS_EXPORT njs_int_t njs_vm_bind(njs_vm_t *vm, const njs_str_t *var_name,
     const njs_value_t *value, njs_bool_t shared);
