@@ -688,16 +688,44 @@ done:
 }
 
 
+typedef struct {
+    njs_str_t               name;
+    njs_function_native_t   native;
+    uint8_t                 magic8;
+} njs_function_name_t;
+
+
 njs_int_t
 njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
     njs_str_t *name)
 {
+    uint8_t                 magic8;
     njs_int_t               ret;
-    njs_uint_t              i;
+    njs_uint_t              i, n;
     njs_value_t             value;
     njs_module_t            *module;
     njs_lvlhsh_each_t       lhe;
+    njs_function_name_t     *fn;
+    njs_function_native_t   native;
     njs_builtin_traverse_t  ctx;
+
+    if (vm->functions_name_cache != NULL) {
+        n = vm->functions_name_cache->items;
+        fn = vm->functions_name_cache->start;
+
+        magic8 = function->magic8;
+        native = function->u.native;
+
+        while (n != 0) {
+            if (fn->native == native && fn->magic8 == magic8) {
+                *name = fn->name;
+                return NJS_OK;
+            }
+
+            fn++;
+            n--;
+        }
+    }
 
     ctx.type = NJS_BUILTIN_TRAVERSE_MATCH;
     ctx.func = function;
@@ -710,8 +738,7 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
                               njs_builtin_traverse);
 
     if (ret == NJS_DONE) {
-        *name = ctx.match;
-        return NJS_OK;
+        goto found;
     }
 
     /* Constructor from built-in modules (not-mapped to global object). */
@@ -730,8 +757,7 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
                                   njs_builtin_traverse);
 
         if (ret == NJS_DONE) {
-            *name = ctx.match;
-            return NJS_OK;
+            goto found;
         }
     }
 
@@ -752,12 +778,35 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
                                   njs_builtin_traverse);
 
         if (ret == NJS_DONE) {
-            *name = ctx.match;
-            return NJS_OK;
+            goto found;
         }
     }
 
     return NJS_DECLINED;
+
+found:
+
+    if (vm->functions_name_cache == NULL) {
+        vm->functions_name_cache = njs_arr_create(vm->mem_pool, 4,
+                                                  sizeof(njs_function_name_t));
+        if (njs_slow_path(vm->functions_name_cache == NULL)) {
+            return NJS_ERROR;
+        }
+    }
+
+    fn = njs_arr_add(vm->functions_name_cache);
+    if (njs_slow_path(fn == NULL)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    fn->name = ctx.match;
+    fn->native = function->u.native;
+    fn->magic8 = function->magic8;
+
+    *name = fn->name;
+
+    return NJS_OK;
 }
 
 
