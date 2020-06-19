@@ -17016,6 +17016,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("{{} ({a: 1, b: {}\n}\n})\n}"),
       njs_str("SyntaxError: Unexpected token \"}\" in 3") },
+
+    { njs_str("object?."),
+      njs_str("SyntaxError: Unexpected end of input in 1") },
 };
 
 

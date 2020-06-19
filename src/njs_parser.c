@@ -2881,10 +2881,6 @@ njs_parser_optional_chain(njs_parser_t *parser, njs_lexer_token_t *token,
         break;
 
     default:
-        if (!njs_lexer_token_is_identifier_name(token)) {
-            njs_lexer_consume_token(parser->lexer, 1);
-        }
-
         ret = njs_parser_property(parser, token, current);
 
         switch (ret) {
