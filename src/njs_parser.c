@@ -1141,7 +1141,7 @@ njs_parser_primary_expression_test(njs_parser_t *parser,
         parser->node = node;
 
         njs_parser_next(parser, njs_parser_template_literal);
-        break;
+        return NJS_OK;
 
     /* CoverParenthesizedExpressionAndArrowParameterList */
     case NJS_TOKEN_OPEN_PARENTHESIS:
@@ -1321,6 +1321,9 @@ njs_parser_template_literal(njs_parser_t *parser, njs_lexer_token_t *token,
     temp->index = index;
 
     parser->target = temp;
+
+    token->text.start++;
+    token->text.length = 0;
 
     njs_parser_next(parser, njs_parser_template_literal_string);
 
@@ -2198,8 +2201,6 @@ njs_parser_property(njs_parser_t *parser, njs_lexer_token_t *token,
         node->token_line = token->line;
 
         parser->node = node;
-
-        njs_lexer_consume_token(parser->lexer, 1);
 
         njs_parser_next(parser, njs_parser_template_literal);
 
@@ -7820,28 +7821,33 @@ njs_parser_template_string(njs_parser_t *parser, njs_lexer_token_t *token)
 
         c = *p++;
 
-        if (c == '\\') {
+        switch (c) {
+        case '\\':
             if (p == lexer->end) {
-                break;
+                return NJS_ERROR;
             }
 
             p++;
             escape = 1;
 
             continue;
-        }
 
-        if (c == '`') {
+        case '`':
             text->length = p - text->start - 1;
             goto done;
-        }
 
-        if (c == '$') {
+        case '$':
             if (p < lexer->end && *p == '{') {
                 p++;
                 text->length = p - text->start - 2;
                 goto done;
             }
+
+            break;
+
+        case '\n':
+            parser->lexer->line++;
+            break;
         }
     }
 

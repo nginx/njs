@@ -6330,6 +6330,9 @@ static njs_unit_test_t  njs_test[] =
                  "foo`That ${person} is a ${age}`;"),
       njs_str("That  is a Mike21") },
 
+    { njs_str("`\n`.length"),
+      njs_str("1") },
+
     /* Strings. */
 
     { njs_str("var a = '0123456789' + '012345';"
@@ -17888,6 +17891,10 @@ static njs_unit_test_t  njs_shell_test[] =
     { njs_str("1\n+a" ENTER),
       njs_str("ReferenceError: \"a\" is not defined in 2\n"
               "    at main (:2)\n") },
+
+    { njs_str("\n`\n${Object}\n${a}`" ENTER),
+      njs_str("ReferenceError: \"a\" is not defined in 4\n"
+              "    at main (:4)\n") },
 
     { njs_str("function log(v) {}\nlog({}\n.a\n.a)" ENTER),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
