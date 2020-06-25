@@ -17040,6 +17040,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("`${{f(){-} - {}}`"),
       njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("for (;1-;) {}"),
+      njs_str("SyntaxError: Unexpected token \";\" in 1") },
 };
 
 

@@ -5218,7 +5218,7 @@ njs_parser_iteration_statement_for_map(njs_parser_t *parser,
 
             njs_parser_next(parser, njs_parser_expression);
 
-            return njs_parser_after(parser, current, NULL, 0,
+            return njs_parser_after(parser, current, NULL, 1,
                                     njs_parser_for_expression);
         }
 
