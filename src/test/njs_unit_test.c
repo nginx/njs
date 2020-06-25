@@ -11713,7 +11713,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("RangeError: Maximum call stack size exceeded") },
 
     { njs_str("new Function(\"{[\".repeat(2**13));"),
-      njs_str("SyntaxError: Unexpected token \")\" in runtime:1") },
+      njs_str("SyntaxError: Unexpected token \"}\" in runtime:1") },
 
     { njs_str("new Function(\"{;\".repeat(2**13));"),
       njs_str("SyntaxError: Unexpected token \")\" in runtime:1") },
@@ -17022,6 +17022,24 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("object?."),
       njs_str("SyntaxError: Unexpected end of input in 1") },
+
+    { njs_str("`${{a: 1, b}}`"),
+      njs_str("ReferenceError: \"b\" is not defined in 1") },
+
+    { njs_str("`${{a: 1, b:}}`"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("`${{a: 1, b:,}}`"),
+      njs_str("SyntaxError: Unexpected token \",\" in 1") },
+
+    { njs_str("`${{a: 1, b: 2,}}`"),
+      njs_str("[object Object]") },
+
+    { njs_str("`${{a: 1,, b: 2}}`"),
+      njs_str("SyntaxError: Unexpected token \",\" in 1") },
+
+    { njs_str("`${{f(){-} - {}}`"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
 };
 
 

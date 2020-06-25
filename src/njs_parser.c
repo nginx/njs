@@ -1694,7 +1694,7 @@ njs_parser_object_literal(njs_parser_t *parser, njs_lexer_token_t *token,
 
     njs_parser_next(parser, njs_parser_property_definition_list);
 
-    return njs_parser_after(parser, current, node, 0,
+    return njs_parser_after(parser, current, node, 1,
                             njs_parser_object_literal_after);
 }
 
@@ -1733,7 +1733,7 @@ njs_parser_property_definition_list(njs_parser_t *parser,
 {
     njs_parser_next(parser, njs_parser_property_definition);
 
-    return njs_parser_after(parser, current, parser->target, 0,
+    return njs_parser_after(parser, current, parser->target, 1,
                             njs_parser_property_definition_list_after);
 }
 
@@ -1750,7 +1750,7 @@ njs_parser_property_definition_list_after(njs_parser_t *parser,
 
     njs_parser_next(parser, njs_parser_property_definition);
 
-    return njs_parser_after(parser, current, parser->target, 0,
+    return njs_parser_after(parser, current, parser->target, 1,
                             njs_parser_property_definition_list_after);
 }
 
@@ -1866,6 +1866,9 @@ njs_parser_property_definition(njs_parser_t *parser, njs_lexer_token_t *token,
     temp = parser->target;
 
     switch (token->type) {
+    case NJS_TOKEN_CLOSE_BRACE:
+        return njs_parser_stack_pop(parser);
+
     /* PropertyName */
     case NJS_TOKEN_STRING:
     case NJS_TOKEN_ESCAPE_STRING:
