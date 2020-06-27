@@ -350,7 +350,7 @@ interface NginxHTTPRequest {
     subrequest(uri: NjsStringLike, options: NginxSubrequestOptions | string,
                callback:(reply:NginxHTTPRequest) => void): void;
     subrequest(uri: NjsStringLike, callback:(reply:NginxHTTPRequest) => void): void;
-    subrequest(uri: NjsStringLike, options: NginxSubrequestOptions): void;
+    subrequest(uri: NjsStringLike, options: NginxSubrequestOptions & { detached: true }): void;
     /**
      * Current URI in request, normalized.
      */
