@@ -14,14 +14,14 @@ interface String {
      * Serializes a Unicode string with code points up to 255
      * into a byte string, otherwise, null is returned.
      */
-    toBytes(start?: number, end?: number): NjsByteString;
+    toBytes(start?: number, end?: number): NjsByteString | null;
     /**
      * Serializes a Unicode string to a byte string using UTF8 encoding.
      */
     toUTF8(start?: number, end?: number): NjsByteString;
 }
 
-interface NjsByteString extends String {
+type NjsByteString = string & {
     /**
      * Returns a new Unicode string from a byte string where each byte is replaced
      * with a corresponding Unicode code point.
@@ -31,12 +31,12 @@ interface NjsByteString extends String {
      * Converts a byte string containing a valid UTF8 string into a Unicode string,
      * otherwise null is returned.
      */
-    fromUTF8(start?: number, end?: number): string;
+    fromUTF8(start?: number, end?: number): string | null;
     /**
      * Encodes a byte string to hex, base64, or base64url.
      */
-    toString(encoding?: "hex" | "base64" | "base64url"): string;
-}
+    toString(encoding: "hex" | "base64" | "base64url"): string;
+};
 
 type NjsStringLike = string | NjsByteString;
 
