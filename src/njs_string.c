@@ -1981,98 +1981,99 @@ range_error:
 }
 
 
+static int64_t
+njs_string_index_of(njs_string_prop_t *string, njs_string_prop_t *search,
+    size_t from)
+{
+    size_t        index, length, search_length;
+    const u_char  *p, *end;
+
+    length = (string->length == 0) ? string->size : string->length;
+
+    if (njs_slow_path(search->size == 0)) {
+        return (from < length) ? from : length;
+    }
+
+    index = from;
+    search_length = (search->length == 0) ? search->size : search->length;
+
+    if (length - index >= search_length) {
+        end = string->start + string->size;
+
+        if (string->size == length) {
+            /* Byte or ASCII string. */
+
+            end -= (search->size - 1);
+
+            for (p = string->start + index; p < end; p++) {
+                if (memcmp(p, search->start, search->size) == 0) {
+                    return index;
+                }
+
+                index++;
+            }
+
+        } else {
+            /* UTF-8 string. */
+
+            p = njs_string_offset(string->start, end, index);
+            end -= search->size - 1;
+
+            while (p < end) {
+                if (memcmp(p, search->start, search->size) == 0) {
+                    return index;
+                }
+
+                index++;
+                p = njs_utf8_next(p, end);
+            }
+        }
+    }
+
+    return -1;
+}
+
+
 static njs_int_t
 njs_string_prototype_index_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    int64_t            index, length, search_length;
+    int64_t            from;
     njs_int_t          ret;
-    njs_value_t        *value;
-    const u_char       *p, *end;
-    njs_string_prop_t  string, search;
+    njs_value_t        *this, *search, *pos, search_lvalue, pos_lvalue;
+    njs_string_prop_t  string, s;
 
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
+    this = njs_argument(args, 0);
+
+    if (njs_slow_path(njs_is_null_or_undefined(this))) {
+        njs_type_error(vm, "cannot convert \"%s\"to object",
+                       njs_type_string(this->type));
+        return NJS_ERROR;
+    }
+
+    ret = njs_value_to_string(vm, this, this);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    search = njs_lvalue_arg(&search_lvalue, args, nargs, 1);
+    ret = njs_value_to_string(vm, search, search);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
 
-    if (nargs > 1) {
-        length = njs_string_prop(&string, njs_argument(args, 0));
-
-        value = njs_argument(args, 1);
-
-        if (njs_slow_path(!njs_is_string(value))) {
-            ret = njs_value_to_string(vm, value, value);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return ret;
-            }
-        }
-
-        search_length = njs_string_prop(&search, value);
-
-        index = 0;
-
-        if (nargs > 2) {
-            value = njs_argument(args, 2);
-
-            if (njs_slow_path(!njs_is_number(value))) {
-                ret = njs_value_to_integer(vm, value, &index);
-                if (njs_slow_path(ret != NJS_OK)) {
-                    return ret;
-                }
-
-            } else {
-                index = njs_number_to_integer(njs_number(value));
-            }
-
-            if (index < 0) {
-                index = 0;
-            }
-        }
-
-        if (length - index >= search_length) {
-            end = string.start + string.size;
-
-            if (string.size == (size_t) length) {
-                /* Byte or ASCII string. */
-
-                end -= (search.size - 1);
-
-                for (p = string.start + index; p < end; p++) {
-                    if (memcmp(p, search.start, search.size) == 0) {
-                        goto done;
-                    }
-
-                    index++;
-                }
-
-            } else {
-                /* UTF-8 string. */
-
-                p = njs_string_offset(string.start, end, index);
-                end -= search.size - 1;
-
-                while (p < end) {
-                    if (memcmp(p, search.start, search.size) == 0) {
-                        goto done;
-                    }
-
-                    index++;
-                    p = njs_utf8_next(p, end);
-                }
-            }
-
-        } else if (search.size == 0) {
-            index = length;
-            goto done;
-        }
+    pos = njs_lvalue_arg(&pos_lvalue, args, nargs, 2);
+    ret = njs_value_to_integer(vm, pos, &from);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
-    index = -1;
+    (void) njs_string_prop(&string, this);
+    (void) njs_string_prop(&s, search);
 
-done:
+    from = njs_min(njs_max(from, 0), (int64_t) string.length);
 
-    njs_set_number(&vm->retval, index);
+    njs_set_number(&vm->retval, njs_string_index_of(&string, &s, from));
 
     return NJS_OK;
 }
