@@ -17043,6 +17043,12 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("for (;1-;) {}"),
       njs_str("SyntaxError: Unexpected token \";\" in 1") },
+
+    { njs_str("var str = String(str); str"),
+      njs_str("undefined") },
+
+    { njs_str("var t = \"123\"; t = parseInt(t); t"),
+      njs_str("123") },
 };
 
 

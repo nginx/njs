@@ -3384,7 +3384,7 @@ njs_generate_global_reference(njs_vm_t *vm, njs_generator_t *generator,
     njs_vmcode_prop_get_t    *prop_get;
     const njs_lexer_entry_t  *lex_entry;
 
-    index = njs_generate_dest_index(vm, generator, node);
+    index = njs_generate_temp_index_get(vm, generator, node);
     if (njs_slow_path(index == NJS_INDEX_ERROR)) {
         return NJS_ERROR;
     }
