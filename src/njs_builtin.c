@@ -396,6 +396,7 @@ njs_builtin_traverse(njs_vm_t *vm, njs_traverse_t *traverse, void *data)
     u_char                  *p, *start, *end;
     njs_int_t               ret, n;
     njs_str_t               name;
+    njs_value_t             key;
     njs_function_t          *func;
     njs_object_prop_t       *prop;
     njs_lvlhsh_query_t      lhq;
@@ -430,7 +431,21 @@ njs_builtin_traverse(njs_vm_t *vm, njs_traverse_t *traverse, void *data)
     end = buf + sizeof(buf);
 
     do {
-        njs_string_get(&path[n]->prop->name, &name);
+        key = path[n]->prop->name;
+
+        if (njs_slow_path(njs_is_symbol(&key))) {
+            ret = njs_symbol_to_string(vm, &key, &key, 1);
+            if (njs_slow_path(ret != NJS_OK)) {
+                name = njs_str_value("#BROKEN_KEY");
+            }
+
+        } else {
+            if (p != buf) {
+                *p++ = '.';
+            }
+        }
+
+        njs_string_get(&key, &name);
 
         if (njs_slow_path((p + name.length + 1) > end)) {
             njs_type_error(vm, "njs_builtin_traverse() key is too long");
@@ -438,10 +453,6 @@ njs_builtin_traverse(njs_vm_t *vm, njs_traverse_t *traverse, void *data)
         }
 
         p = njs_cpymem(p, name.start, name.length);
-
-        if (n != 0) {
-            *p++ = '.';
-        }
 
     } while (n-- > 0);
 

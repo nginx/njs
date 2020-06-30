@@ -55,7 +55,8 @@ static const njs_value_t  *njs_symbol_names[NJS_SYMBOL_KNOWN_MAX] = {
 
 
 njs_int_t
-njs_symbol_to_string(njs_vm_t *vm, njs_value_t *dst, const njs_value_t *value)
+njs_symbol_to_string(njs_vm_t *vm, njs_value_t *dst, const njs_value_t *value,
+    njs_bool_t as_name)
 {
     u_char             *start;
     const njs_value_t  *name;
@@ -78,16 +79,31 @@ njs_symbol_to_string(njs_vm_t *vm, njs_value_t *dst, const njs_value_t *value)
     }
 
     (void) njs_string_prop(&string, name);
-    string.length += njs_length("Symbol()");
 
-    start = njs_string_alloc(vm, dst, string.size + 8, string.length);
-    if (njs_slow_path(start == NULL)) {
-        return NJS_ERROR;
+    if (as_name) {
+        string.length += njs_length("[]");
+
+        start = njs_string_alloc(vm, dst, string.size + 2, string.length);
+        if (njs_slow_path(start == NULL)) {
+            return NJS_ERROR;
+        }
+
+        start = njs_cpymem(start, "[", 1);
+        start = njs_cpymem(start, string.start, string.size);
+        *start = ']';
+
+    } else {
+        string.length += njs_length("Symbol()");
+
+        start = njs_string_alloc(vm, dst, string.size + 8, string.length);
+        if (njs_slow_path(start == NULL)) {
+            return NJS_ERROR;
+        }
+
+        start = njs_cpymem(start, "Symbol(", 7);
+        start = njs_cpymem(start, string.start, string.size);
+        *start = ')';
     }
-
-    start = njs_cpymem(start, "Symbol(", 7);
-    start = njs_cpymem(start, string.start, string.size);
-    *start = ')';
 
     return NJS_OK;
 }
@@ -328,7 +344,7 @@ njs_symbol_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         return ret;
     }
 
-    return njs_symbol_to_string(vm, &vm->retval, &vm->retval);
+    return njs_symbol_to_string(vm, &vm->retval, &vm->retval, 0);
 }
 
 

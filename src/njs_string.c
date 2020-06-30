@@ -543,7 +543,7 @@ njs_string_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         if (njs_slow_path(!njs_is_string(value))) {
             if (!vm->top_frame->ctor && njs_is_symbol(value)) {
-                return njs_symbol_to_string(vm, &vm->retval, value);
+                return njs_symbol_to_string(vm, &vm->retval, value, 0);
             }
 
             ret = njs_value_to_string(vm, value, value);

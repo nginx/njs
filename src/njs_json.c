@@ -1856,7 +1856,7 @@ njs_dump_terminal(njs_json_stringify_t *stringify, njs_chb_t *chain,
     case NJS_OBJECT_SYMBOL:
         value = njs_object_value(value);
 
-        ret = njs_symbol_to_string(stringify->vm, &str_val, value);
+        ret = njs_symbol_to_string(stringify->vm, &str_val, value, 0);
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
@@ -1867,7 +1867,7 @@ njs_dump_terminal(njs_json_stringify_t *stringify, njs_chb_t *chain,
         break;
 
     case NJS_SYMBOL:
-        ret = njs_symbol_to_string(stringify->vm, &str_val, value);
+        ret = njs_symbol_to_string(stringify->vm, &str_val, value, 0);
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
