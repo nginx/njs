@@ -3022,7 +3022,7 @@ njs_string_prototype_search(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         if (njs_regex_is_valid(&pattern->regex[n])) {
             ret = njs_regexp_match(vm, &pattern->regex[n], string.start,
-                                   string.size, vm->single_match_data);
+                                   0, string.size, vm->single_match_data);
             if (ret >= 0) {
                 captures = njs_regex_captures(vm->single_match_data);
                 index = njs_string_index(&string, captures[0]);
@@ -3147,7 +3147,7 @@ njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
         end = p + string.size;
 
         do {
-            ret = njs_regexp_match(vm, &pattern->regex[type], p, string.size,
+            ret = njs_regexp_match(vm, &pattern->regex[type], p, 0, string.size,
                                    vm->single_match_data);
             if (ret < 0) {
                 if (njs_fast_path(ret == NJS_REGEX_NOMATCH)) {
@@ -3286,7 +3286,7 @@ njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             end = string.start + string.size;
 
             do {
-                ret = njs_regexp_match(vm, &pattern->regex[type], start,
+                ret = njs_regexp_match(vm, &pattern->regex[type], start, 0,
                                        end - start, vm->single_match_data);
                 if (ret >= 0) {
                     captures = njs_regex_captures(vm->single_match_data);
@@ -3564,7 +3564,7 @@ njs_string_replace_regexp(njs_vm_t *vm, njs_value_t *this, njs_value_t *regex,
 
     do {
         ret = njs_regexp_match(vm, &pattern->regex[r->type],
-                               r->part[0].start, r->part[0].size,
+                               r->part[0].start, 0, r->part[0].size,
                                r->match_data);
 
         if (ret < 0) {

@@ -26,9 +26,9 @@ static u_char *njs_regexp_compile_trace_handler(njs_trace_t *trace,
     njs_trace_data_t *td, u_char *start);
 static u_char *njs_regexp_match_trace_handler(njs_trace_t *trace,
     njs_trace_data_t *td, u_char *start);
-static njs_int_t njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp,
-    njs_utf8_t utf8, u_char *string, njs_regex_match_data_t *match_data,
-    uint32_t last_index);
+static njs_array_t *njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp,
+    njs_regexp_utf8_t type, njs_string_prop_t *string,
+    njs_regex_match_data_t *data);
 static njs_int_t njs_regexp_string_create(njs_vm_t *vm, njs_value_t *value,
     u_char *start, uint32_t size, int32_t length);
 
@@ -550,7 +550,7 @@ njs_regexp_compile_trace_handler(njs_trace_t *trace, njs_trace_data_t *td,
 
 njs_int_t
 njs_regexp_match(njs_vm_t *vm, njs_regex_t *regex, const u_char *subject,
-    size_t len, njs_regex_match_data_t *match_data)
+    size_t off, size_t len, njs_regex_match_data_t *match_data)
 {
     njs_int_t            ret;
     njs_trace_handler_t  handler;
@@ -558,7 +558,8 @@ njs_regexp_match(njs_vm_t *vm, njs_regex_t *regex, const u_char *subject,
     handler = vm->trace.handler;
     vm->trace.handler = njs_regexp_match_trace_handler;
 
-    ret = njs_regex_match(regex, subject, len, match_data, vm->regex_context);
+    ret = njs_regex_match(regex, subject, off, len, match_data,
+                          vm->regex_context);
 
     vm->trace.handler = handler;
 
@@ -617,9 +618,7 @@ static njs_int_t
 njs_regexp_prototype_last_index(njs_vm_t *vm, njs_object_prop_t *unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
-    uint32_t           index, last_index;
-    njs_regexp_t       *regexp;
-    njs_string_prop_t  string;
+    njs_regexp_t  *regexp;
 
     regexp = njs_object_proto_lookup(njs_object(value), NJS_REGEXP,
                                      njs_regexp_t);
@@ -635,23 +634,7 @@ njs_regexp_prototype_last_index(njs_vm_t *vm, njs_object_prop_t *unused,
         return NJS_OK;
     }
 
-    if (njs_slow_path(!njs_is_number(&regexp->last_index))) {
-        *retval = regexp->last_index;
-        return NJS_OK;
-    }
-
-    (void) njs_string_prop(&string, &regexp->string);
-
-    last_index = njs_number(&regexp->last_index);
-
-    if (njs_slow_path(string.size < last_index)) {
-        *retval = regexp->last_index;
-        return NJS_OK;
-    }
-
-    index = njs_string_index(&string, last_index);
-    njs_set_number(retval, index);
-
+    *retval = regexp->last_index;
     return NJS_OK;
 }
 
@@ -802,8 +785,8 @@ njs_regexp_prototype_test(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             }
         }
 
-        match = njs_regexp_match(vm, regex, string.start, string.size,
-                               match_data);
+        match = njs_regexp_match(vm, regex, string.start, 0, string.size,
+                                 match_data);
         if (match >= 0) {
             retval = &njs_value_true;
 
@@ -844,36 +827,25 @@ done:
 }
 
 
-njs_int_t
-njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+/**
+ * TODO: sticky, unicode flags.
+ */
+static njs_int_t
+njs_regexp_builtin_exec(njs_vm_t *vm, njs_value_t *r, njs_value_t *s,
+    njs_value_t *retval)
 {
+    size_t                  length, offset;
     int64_t                 last_index;
     njs_int_t               ret;
-    njs_utf8_t              utf8;
-    njs_value_t             *value, lvalue;
+    njs_array_t             *result;
     njs_regexp_t            *regexp;
     njs_string_prop_t       string;
     njs_regexp_utf8_t       type;
     njs_regexp_pattern_t    *pattern;
     njs_regex_match_data_t  *match_data;
 
-    if (!njs_is_regexp(njs_arg(args, nargs, 0))) {
-        njs_type_error(vm, "\"this\" argument is not a regexp");
-        return NJS_ERROR;
-    }
-
-    value = njs_lvalue_arg(&lvalue, args, nargs, 1);
-
-    if (!njs_is_string(value)) {
-        ret = njs_value_to_string(vm, value, value);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
-    }
-
-    regexp = njs_regexp(&args[0]);
-    regexp->string = *value;
+    regexp = njs_regexp(r);
+    regexp->string = *s;
     pattern = regexp->pattern;
 
     ret = njs_value_to_length(vm, &regexp->last_index, &last_index);
@@ -885,94 +857,113 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         last_index = 0;
     }
 
-    (void) njs_string_prop(&string, value);
+    length = njs_string_prop(&string, s);
 
-    if (string.size >= (size_t) last_index) {
-        utf8 = NJS_STRING_BYTE;
-        type = NJS_REGEXP_BYTE;
-
-        if (string.length != 0) {
-            utf8 = NJS_STRING_ASCII;
-            type = NJS_REGEXP_UTF8;
-
-            if (string.length != string.size) {
-                utf8 = NJS_STRING_UTF8;
-            }
-        }
-
-        pattern = regexp->pattern;
-
-        if (njs_regex_is_valid(&pattern->regex[type])) {
-            string.start += last_index;
-            string.size -= last_index;
-
-            match_data = njs_regex_match_data(&pattern->regex[type],
-                                              vm->regex_context);
-            if (njs_slow_path(match_data == NULL)) {
-                njs_memory_error(vm);
-                return NJS_ERROR;
-            }
-
-            ret = njs_regexp_match(vm, &pattern->regex[type], string.start,
-                                   string.size, match_data);
-            if (ret >= 0) {
-                return njs_regexp_exec_result(vm, regexp, utf8, string.start,
-                                              match_data, last_index);
-            }
-
-            if (njs_slow_path(ret != NJS_REGEX_NOMATCH)) {
-                njs_regex_match_data_free(match_data, vm->regex_context);
-
-                return NJS_ERROR;
-            }
-        }
+    if (njs_slow_path((size_t) last_index > length)) {
+        goto not_found;
     }
+
+    type = NJS_REGEXP_BYTE;
+
+    if (length != string.size) {
+        /* UTF-8 string. */
+        type = NJS_REGEXP_UTF8;
+    }
+
+    pattern = regexp->pattern;
+
+    if (njs_slow_path(!njs_regex_is_valid(&pattern->regex[type]))) {
+        goto not_found;
+    }
+
+    match_data = njs_regex_match_data(&pattern->regex[type], vm->regex_context);
+    if (njs_slow_path(match_data == NULL)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    if (type != NJS_REGEXP_UTF8) {
+        offset = last_index;
+
+    } else {
+        /* UTF-8 string. */
+        offset = njs_string_offset(string.start, string.start + string.size,
+                                   last_index) - string.start;
+    }
+
+    ret = njs_regexp_match(vm, &pattern->regex[type], string.start, offset,
+                           string.size, match_data);
+    if (ret >= 0) {
+        result = njs_regexp_exec_result(vm, regexp, type, &string, match_data);
+        if (njs_slow_path(result == NULL)) {
+            return NJS_ERROR;
+        }
+
+        njs_set_array(retval, result);
+        return NJS_OK;
+    }
+
+    if (njs_slow_path(ret != NJS_REGEX_NOMATCH)) {
+        njs_regex_match_data_free(match_data, vm->regex_context);
+
+        return NJS_ERROR;
+    }
+
+not_found:
 
     if (pattern->global) {
         njs_set_number(&regexp->last_index, 0);
     }
 
-    vm->retval = njs_value_null;
+    njs_set_null(retval);
 
     return NJS_OK;
 }
 
 
-static njs_int_t
-njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
-    u_char *string, njs_regex_match_data_t *match_data, uint32_t last_index)
+static njs_array_t *
+njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp,
+    njs_regexp_utf8_t type, njs_string_prop_t *string,
+    njs_regex_match_data_t *match_data)
 {
-    int                 *captures;
-    u_char              *start;
-    int32_t             size, length;
-    njs_int_t           ret;
-    njs_uint_t          i, n;
-    njs_array_t         *array;
-    njs_value_t         name;
-    njs_object_t        *groups;
-    njs_object_prop_t   *prop;
-    njs_regexp_group_t  *group;
-    njs_lvlhsh_query_t  lhq;
+    int                   *captures;
+    u_char                *start;
+    int32_t               size, length;
+    njs_int_t             ret;
+    njs_uint_t            i, n;
+    njs_array_t           *array;
+    njs_value_t           name;
+    njs_object_t          *groups;
+    njs_object_prop_t     *prop;
+    njs_regexp_group_t    *group;
+    njs_lvlhsh_query_t    lhq;
+    njs_regexp_pattern_t  *pattern;
 
     static const njs_value_t  string_index = njs_string("index");
     static const njs_value_t  string_input = njs_string("input");
     static const njs_value_t  string_groups = njs_string("groups");
 
-    array = njs_array_alloc(vm, 0, regexp->pattern->ncaptures, 0);
+    pattern = regexp->pattern;
+    array = njs_array_alloc(vm, 0, pattern->ncaptures, 0);
     if (njs_slow_path(array == NULL)) {
         goto fail;
     }
 
     captures = njs_regex_captures(match_data);
 
-    for (i = 0; i < regexp->pattern->ncaptures; i++) {
+    for (i = 0; i < pattern->ncaptures; i++) {
         n = 2 * i;
 
         if (captures[n] != -1) {
-            start = &string[captures[n]];
+            start = &string->start[captures[n]];
             size = captures[n + 1] - captures[n];
 
-            length = njs_string_calc_length(utf8, start, size);
+            if (type == NJS_REGEXP_UTF8) {
+                length = njs_max(njs_utf8_length(start, size), 0);
+
+            } else {
+                length = size;
+            }
 
             ret = njs_regexp_string_create(vm, &array->start[i], start, size,
                                            length);
@@ -985,17 +976,17 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
         }
     }
 
+    /* FIXME: implement fast CreateDataPropertyOrThrow(). */
     prop = njs_object_prop_alloc(vm, &string_index, &njs_value_undefined, 1);
     if (njs_slow_path(prop == NULL)) {
         goto fail;
     }
 
-    /* TODO: Non UTF-8 position */
+    njs_set_number(&prop->value, njs_string_index(string, captures[0]));
 
-    njs_set_number(&prop->value, last_index + captures[0]);
-
-    if (regexp->pattern->global) {
-        njs_set_number(&regexp->last_index, last_index + captures[1]);
+    if (pattern->global) {
+        njs_set_number(&regexp->last_index,
+                       njs_string_index(string, captures[1]));
     }
 
     lhq.key_hash = NJS_INDEX_HASH;
@@ -1038,7 +1029,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
         goto insert_fail;
     }
 
-    if (regexp->pattern->ngroups != 0) {
+    if (pattern->ngroups != 0) {
         groups = njs_object_alloc(vm);
         if (njs_slow_path(groups == NULL)) {
             goto fail;
@@ -1049,7 +1040,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
         i = 0;
 
         do {
-            group = &regexp->pattern->groups[i];
+            group = &pattern->groups[i];
 
             ret = njs_string_set(vm, &name, group->name.start,
                                  group->name.length);
@@ -1074,10 +1065,8 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp, njs_utf8_t utf8,
 
             i++;
 
-        } while (i < regexp->pattern->ngroups);
+        } while (i < pattern->ngroups);
     }
-
-    njs_set_array(&vm->retval, array);
 
     ret = NJS_OK;
     goto done;
@@ -1094,7 +1083,71 @@ done:
 
     njs_regex_match_data_free(match_data, vm->regex_context);
 
-    return ret;
+    return (ret == NJS_OK) ? array : NULL;
+}
+
+
+njs_int_t
+njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    njs_int_t    ret;
+    njs_value_t  *r, *s;
+    njs_value_t  string_lvalue;
+
+    r = njs_argument(args, 0);
+
+    if (njs_slow_path(!njs_is_regexp(r))) {
+        njs_type_error(vm, "\"this\" argument is not a regexp");
+        return NJS_ERROR;
+    }
+
+    s = njs_lvalue_arg(&string_lvalue, args, nargs, 1);
+
+    ret = njs_value_to_string(vm, s, s);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    return njs_regexp_builtin_exec(vm, r, s, &vm->retval);
+}
+
+
+njs_int_t
+njs_regexp_exec(njs_vm_t *vm, njs_value_t *r, njs_value_t *s,
+    njs_value_t *retval)
+{
+    njs_int_t    ret;
+    njs_value_t  exec;
+
+    static const njs_value_t  string_exec = njs_string("exec");
+
+    ret = njs_value_property(vm, r, njs_value_arg(&string_exec), &exec);
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return NJS_ERROR;
+    }
+
+    if (njs_is_function(&exec)) {
+        ret = njs_function_call(vm, njs_function(&exec), r, s, 1, retval);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return NJS_ERROR;
+        }
+
+        if (njs_slow_path(!njs_is_object(retval) && !njs_is_null(retval))) {
+            njs_type_error(vm, "unexpected \"%s\" retval in njs_regexp_exec()",
+                           njs_type_string(retval->type));
+            return NJS_ERROR;
+        }
+
+        return NJS_OK;
+    }
+
+    if (njs_slow_path(!njs_is_regexp(r))) {
+        njs_type_error(vm, "receiver argument is not a regexp");
+        return NJS_ERROR;
+    }
+
+    return njs_regexp_builtin_exec(vm, r, s, retval);
 }
 
 

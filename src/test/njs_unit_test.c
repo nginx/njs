@@ -9711,6 +9711,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var s; var r = /./g; while (s = r.exec('abc')); s"),
       njs_str("null") },
 
+    { njs_str("(/α/).exec('γαβγ').index"),
+      njs_str("1") },
+
     { njs_str("var r = /LS/i.exec(false); r[0]"),
       njs_str("ls") },
 

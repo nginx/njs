@@ -39,7 +39,8 @@ NJS_EXPORT njs_regex_match_data_t *njs_regex_match_data(njs_regex_t *regex,
 NJS_EXPORT void njs_regex_match_data_free(njs_regex_match_data_t *match_data,
     njs_regex_context_t *ctx);
 NJS_EXPORT njs_int_t njs_regex_match(njs_regex_t *regex, const u_char *subject,
-    size_t len, njs_regex_match_data_t *match_data, njs_regex_context_t *ctx);
+    size_t off, size_t len, njs_regex_match_data_t *match_data,
+    njs_regex_context_t *ctx);
 NJS_EXPORT int *njs_regex_captures(njs_regex_match_data_t *match_data);
 
 

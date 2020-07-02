@@ -280,13 +280,13 @@ njs_pcre_default_free(void *p, void *memory_data)
 
 
 njs_int_t
-njs_regex_match(njs_regex_t *regex, const u_char *subject, size_t len,
-    njs_regex_match_data_t *match_data, njs_regex_context_t *ctx)
+njs_regex_match(njs_regex_t *regex, const u_char *subject, size_t off,
+    size_t len, njs_regex_match_data_t *match_data, njs_regex_context_t *ctx)
 {
     int  ret;
 
     ret = pcre_exec(regex->code, regex->extra, (const char *) subject, len,
-                    0, 0, match_data->captures, match_data->ncaptures);
+                    off, 0, match_data->captures, match_data->ncaptures);
 
     /* PCRE_ERROR_NOMATCH is -1. */
 
