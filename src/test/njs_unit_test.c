@@ -9487,9 +9487,6 @@ static njs_unit_test_t  njs_test[] =
 
     /* RegExp. */
 
-    { njs_str("/./x"),
-      njs_str("SyntaxError: Invalid RegExp flags \"x\" in 1") },
-
     { njs_str("/"),
       njs_str("SyntaxError: Unterminated RegExp \"/\" in 1") },
 
@@ -9525,6 +9522,15 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("/\\\n/"),
       njs_str("SyntaxError: Unterminated RegExp \"/\\\" in 1") },
+
+    { njs_str("/./x"),
+      njs_str("SyntaxError: Invalid RegExp flags \"x\" in 1") },
+
+    { njs_str("/./.exec === RegExp.prototype.exec"),
+      njs_str("true") },
+
+    { njs_str("/./['exec'] === RegExp.prototype.exec"),
+      njs_str("true") },
 
     { njs_str("/^[A-Za-z0-9+/]{4}$/.test('////')"),
       njs_str("true") },
@@ -9735,6 +9741,15 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("new RegExp('', 'x')"),
       njs_str("SyntaxError: Invalid RegExp flags \"x\"") },
+
+    { njs_str("new RegExp('', 'g ')"),
+      njs_str("SyntaxError: Invalid RegExp flags \"g \"") },
+
+    { njs_str("new RegExp('', '')"),
+      njs_str("/(?:)/") },
+
+    { njs_str("new RegExp('', {toString:()=>'g'})"),
+      njs_str("/(?:)/g") },
 
     { njs_str("RegExp({})"),
       njs_str("/[object Object]/") },

@@ -143,8 +143,10 @@ njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         start = string.start;
 
-        re_flags = njs_regexp_flags(&start, start + string.length, 1);
-        if (njs_slow_path(re_flags < 0)) {
+        re_flags = njs_regexp_flags(&start, start + string.length);
+        if (njs_slow_path(re_flags < 0
+                          || (size_t) (start - string.start) != string.length))
+        {
             njs_syntax_error(vm, "Invalid RegExp flags \"%V\"", &string);
             return NJS_ERROR;
         }
@@ -305,17 +307,15 @@ done:
 
 
 njs_regexp_flags_t
-njs_regexp_flags(u_char **start, u_char *end, njs_bool_t bound)
+njs_regexp_flags(u_char **start, u_char *end)
 {
     u_char              *p;
     njs_regexp_flags_t  flags, flag;
 
-    flags = 0;
+    flags = NJS_REGEXP_NO_FLAGS;
 
     for (p = *start; p < end; p++) {
-
         switch (*p) {
-
         case 'g':
             flag = NJS_REGEXP_GLOBAL;
             break;
@@ -328,24 +328,12 @@ njs_regexp_flags(u_char **start, u_char *end, njs_bool_t bound)
             flag = NJS_REGEXP_MULTILINE;
             break;
 
-        case ';':
-        case ' ':
-        case '\t':
-        case '\r':
-        case '\n':
-        case ',':
-        case ')':
-        case ']':
-        case '}':
-        case '.':
-            if (!bound) {
-                goto done;
+        default:
+            if (*p >= 'a' && *p <= 'z') {
+                goto invalid;
             }
 
-            /* Fall through. */
-
-        default:
-            goto invalid;
+            goto done;
         }
 
         if (njs_slow_path((flags & flag) != 0)) {

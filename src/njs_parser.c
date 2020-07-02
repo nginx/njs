@@ -1247,7 +1247,7 @@ njs_parser_regexp_literal(njs_parser_t *parser, njs_lexer_token_t *token,
             p++;
             lexer->start = p;
 
-            flags = njs_regexp_flags(&p, lexer->end, 0);
+            flags = njs_regexp_flags(&p, lexer->end);
 
             if (njs_slow_path(flags < 0)) {
                 njs_parser_syntax_error(parser, "Invalid RegExp flags \"%*s\"",
