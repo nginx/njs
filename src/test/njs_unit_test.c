@@ -7892,18 +7892,20 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("''.repeat(2147483646)"),
       njs_str("") },
 
-    /* ES6: "". */
     { njs_str("''.repeat(2147483647)"),
-      njs_str("RangeError") },
+      njs_str("") },
 
     { njs_str("''.repeat(2147483648)"),
-      njs_str("RangeError") },
+      njs_str("") },
 
     { njs_str("''.repeat(Infinity)"),
       njs_str("RangeError") },
 
     { njs_str("''.repeat(NaN)"),
       njs_str("") },
+
+    { njs_str("String.prototype.repeat.call({},2)"),
+      njs_str("[object Object][object Object]") },
 
     { njs_str("'abc'.padStart(7)"),
       njs_str("    abc") },
