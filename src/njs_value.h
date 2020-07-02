@@ -1030,6 +1030,9 @@ void njs_symbol_conversion_failed(njs_vm_t *vm, njs_bool_t to_string);
 njs_int_t njs_value_species_constructor(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *default_constructor, njs_value_t *dst);
 
+njs_int_t njs_value_method(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
+    njs_value_t *retval);
+
 
 njs_inline njs_int_t
 njs_value_property_i64(njs_vm_t *vm, njs_value_t *value, int64_t index,

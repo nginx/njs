@@ -199,6 +199,9 @@ njs_index_t njs_value_index(njs_vm_t *vm, const njs_value_t *src,
 
 njs_int_t njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
+njs_int_t njs_string_get_substitution(njs_vm_t *vm, njs_value_t *matched,
+    njs_value_t *string, int64_t pos, njs_value_t *captures, int64_t ncaptures,
+    njs_value_t *groups, njs_value_t *replacement, njs_value_t *retval);
 
 
 extern const njs_object_init_t  njs_string_instance_init;

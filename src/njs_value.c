@@ -1519,3 +1519,28 @@ default_constructor:
 
     return NJS_OK;
 }
+
+
+njs_int_t
+njs_value_method(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
+    njs_value_t *retval)
+{
+    njs_int_t  ret;
+
+    ret = njs_value_to_object(vm, value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    ret = njs_value_property(vm, value, key, retval);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return (ret == NJS_DECLINED) ? NJS_OK : ret;
+    }
+
+    if (njs_slow_path(!njs_is_function(retval))) {
+        njs_type_error(vm, "method is not callable");
+        return NJS_ERROR;
+    }
+
+    return NJS_OK;
+}

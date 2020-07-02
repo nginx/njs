@@ -7171,6 +7171,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("''.indexOf.call(12345, 45, '0')"),
       njs_str("3") },
 
+    { njs_str("var r = new String('undefined').indexOf(x); var x; r"),
+      njs_str("0") },
+
     { njs_str("'abc'.lastIndexOf('abcdef')"),
       njs_str("-1") },
 
@@ -7448,143 +7451,65 @@ static njs_unit_test_t  njs_test[] =
                  "'123456'.search(r)"),
       njs_str("3") },
 
-    { njs_str("'abcdefgh'.replace()"),
-      njs_str("abcdefgh") },
+    { njs_str("'abc'.replace()"),
+      njs_str("abc") },
 
-    { njs_str("'abcdefgh'.replace('d')"),
-      njs_str("abcundefinedefgh") },
+    { njs_str("'ABC'.replace('B')"),
+      njs_str("AundefinedC") },
 
-    { njs_str("'abcdefgh'.replace('d', undefined)"),
-      njs_str("abcundefinedefgh") },
+    { njs_str("'ABC'.replace('B', undefined)"),
+      njs_str("AundefinedC") },
 
     { njs_str("'a'.repeat(16).replace('a'.repeat(17)) === 'a'.repeat(16)"),
       njs_str("true") },
 
-    { njs_str("'abcdefgh'.replace('d', null)"),
-      njs_str("abcnullefgh") },
+    { njs_str("'α'.repeat(16).replace('α'.repeat(17)) === 'α'.repeat(16)"),
+      njs_str("true") },
 
-    { njs_str("'abcdefgh'.replace('d', 1)"),
-      njs_str("abc1efgh") },
+    { njs_str("'ABC'.replace('B', null)"),
+      njs_str("AnullC") },
 
-    { njs_str("'abcdefghdijklm'.replace('d', 'X')"),
-      njs_str("abcXefghdijklm") },
+    { njs_str("'abc'.replace('c', 1)"),
+      njs_str("ab1") },
 
-    { njs_str("'абвгдежгийклм'.replace('г', 'Г')"),
-      njs_str("абвГдежгийклм") },
+    { njs_str("'abc'.replace('a', 'X')"),
+      njs_str("Xbc") },
 
-    { njs_str("'abcdefghdijklm'.replace('d',"
-                 "   function(m, o, s) { return '|'+s+'|'+o+'|'+m+'|' })"),
-      njs_str("abc|abcdefghdijklm|3|d|efghdijklm") },
+    { njs_str("'abc'.replace('b', 'X')"),
+      njs_str("aXc") },
 
-    { njs_str("'abcdefgh'.replace('', 'X')"),
-      njs_str("Xabcdefgh") },
+    { njs_str("('a'.repeat(33) + 'bb').replace('bb', 'CC').slice(31)"),
+      njs_str("aaCC") },
 
-    { njs_str("'abcdefghdijklm'.replace(/d/, 'X')"),
-      njs_str("abcXefghdijklm") },
+    { njs_str("var r = 'abc'.replace('c', 'X'); [r, r.length]"),
+      njs_str("abX,3") },
 
-    { njs_str("'abcdefghdijklm'.replace(/d/,"
-                 "   function(m, o, s) { return '|'+s+'|'+o+'|'+m+'|' })"),
-      njs_str("abc|abcdefghdijklm|3|d|efghdijklm") },
+    { njs_str("var r = 'αβγ'.replace('α', 'X'); [r, r.length]"),
+      njs_str("Xβγ,3") },
 
-    { njs_str("'abcdefghdijklm'.replace(/(d)/,"
-                 "   function(m, p, o, s)"
-                       "{ return '|'+s+'|'+o+'|'+m+'|'+p+'|' })"),
-      njs_str("abc|abcdefghdijklm|3|d|d|efghdijklm") },
+    { njs_str("var r = 'αβγ'.replace('β', 'X'); [r, r.length]"),
+      njs_str("αXγ,3") },
 
-    { njs_str("'abc'.replace(/b/, ()=>1)"),
-      njs_str("a1c") },
+    { njs_str("var r = 'αβγ'.replace('γ', 'X'); [r, r.length]"),
+      njs_str("αβX,3") },
 
-    { njs_str("var n = 0; 'abbbc'.replace(/b/g, function() {return ++n;})"),
-      njs_str("a123c") },
+    { njs_str("var r = 'αβγ'.replace('', 'X'); [r, r.length]"),
+      njs_str("Xαβγ,4") },
 
-    { njs_str("'abcdefghdijklm'.replace(/x/, 'X')"),
-      njs_str("abcdefghdijklm") },
-
-    { njs_str("'abcdefghdijklm'.replace(/x/,"
-                 "   function(m, o, s) { return '|'+s+'|'+o+'|'+m+'|' })"),
-      njs_str("abcdefghdijklm") },
-
-    { njs_str("'абвгдежгийклм'.replace(/г/, 'Г')"),
-      njs_str("абвГдежгийклм") },
-
-    { njs_str("'abcdefghdijklm'.replace(/d/g, 'X')"),
-      njs_str("abcXefghXijklm") },
-
-    { njs_str("'абвгдежгийклм'.replace(/г/g, 'Г')"),
-      njs_str("абвГдежГийклм") },
-
-    { njs_str("'abc12345#$*%'.replace(/([^\\d]*)(\\d*)([^\\w]*)/,"
-                 "   function(match, p1, p2, p3) {"
-                 "     return [p1, p2, p3].join('-')})"),
-      njs_str("abc-12345-#$*%") },
-
-    { njs_str("'ABCDEFGHDIJKLM'.replace(/[A-Z]/g,"
-                 "   function(match) { return '-' + match.toLowerCase() })"),
-      njs_str("-a-b-c-d-e-f-g-h-d-i-j-k-l-m") },
-
-    { njs_str("'abcdbe'.replace(/(b)/g, '$')"),
-      njs_str("a$cd$e") },
-
-    { njs_str("'abcdbe'.replace(/(b)/g, '$2$23')"),
-      njs_str("a$2$23cd$2$23e") },
-
-    { njs_str("'abcdbe'.replace(/(b)/g, '$2$23X$$Y')"),
-      njs_str("a$2$23X$Ycd$2$23X$Ye") },
+    { njs_str("'abc'.replace('b', (m, o, s) => `|${s}|${o}|${m}|`)"),
+      njs_str("a|abc|1|b|c") },
 
     { njs_str("'abcdbe'.replace('b', '|$`X$\\'|')"),
       njs_str("a|aXcdbe|cdbe") },
 
-    { njs_str("'abcdbe'.replace(/b/, '|$`X$\\'|')"),
-      njs_str("a|aXcdbe|cdbe") },
-
-    { njs_str("'abcdbefbgh'.replace(/b/g, '|$`X$\\'|')"),
-      njs_str("a|aXcdbefbgh|cd|abcdXefbgh|ef|abcdbefXgh|gh") },
-
-    { njs_str("'abc12345#$*%'.replace(/([^\\d]*)(\\d*)([^\\w]*)/,"
-                 "                       '$1-$2-$3')"),
-      njs_str("abc-12345-#$*%") },
-
-    { njs_str("'$1,$2'.replace(/(\\$(\\d))/g, '$$1-$1$2')"),
-      njs_str("$1-$11,$1-$22") },
-
-    { njs_str("('β' + 'α'.repeat(33)+'β').replace(/(α+)(β+)/, function(m, p1) { return p1[32]; })"),
-      njs_str("βα") },
-
-    { njs_str("'abc'.replace(/(h*)(z*)(g*)/g, '$1nn$2zz$3')"),
-      njs_str("nnzzannzzbnnzzcnnzz") },
-
-    { njs_str("'abc'.replace(/(h*)(z*)/g, '$1nn$2zz$3yy')"),
-      njs_str("nnzz$3yyannzz$3yybnnzz$3yycnnzz$3yy") },
-
-    { njs_str("'ъ'.replace(/(h*)/g, '$1ЮЙ')"),
-      njs_str("ЮЙъЮЙ") },
-
-    { njs_str("'ъg'.replace(/(h*)/g, '$1ЮЙ')"),
-      njs_str("ЮЙъЮЙgЮЙ") },
-
-    { njs_str("'ъg'.replace(/(ъ*)/g, '$1ЮЙ')"),
-      njs_str("ъЮЙЮЙgЮЙ") },
-
-    { njs_str("'ъg'.replace(/(h*)/g, 'fg$1ЮЙ')"),
-      njs_str("fgЮЙъfgЮЙgfgЮЙ") },
-
-    { njs_str("'юgёfя'.replace(/(gё)/g, 'n$1i')"),
-      njs_str("юngёifя") },
-
-    { njs_str("'aabbccaa'.replace(/a*/g, '')"),
-      njs_str("bbcc") },
-
-    { njs_str("'aabbccaab'.replace(/z*/g, '')"),
-      njs_str("aabbccaab") },
-
-    { njs_str("'αβγ'.replace(/z*/g, '|')"),
-      njs_str("|α|β|γ|") },
-
-    { njs_str("''.replace(/a*/g, '')"),
-      njs_str("") },
+    { njs_str("'undefined'.replace(void 0, 'x')"),
+      njs_str("x") },
 
     { njs_str("'12345'.replace(3, () => 0)"),
       njs_str("12045") },
+
+    { njs_str("var r = new String('undefined').replace(x, Function('return arguments[1]+42;')); var x; r"),
+      njs_str("42") },
 
     { njs_str("'123'.replace(3, function() { return {toString: ()=>({})}; })"),
       njs_str("TypeError: Cannot convert object to primitive value") },
@@ -7592,22 +7517,138 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'12345'.replace(3, () => ({toString: () => 'aaaa'}))"),
       njs_str("12aaaa45") },
 
-    { njs_str("'abc'.replace(/(z*)/g, function v0() {return '124'})"),
-      njs_str("124a124b124c124") },
+    { njs_str("'abc'.replace(/a/, 'X')"),
+      njs_str("Xbc") },
 
-    { njs_str("'abc'.replace(/(a*)/g, function v0() {return '124'})"),
-      njs_str("124124b124c124") },
+    { njs_str("'abccd'.replace(/c/, 'X')"),
+      njs_str("abXcd") },
 
-    { njs_str("'abc'.replace(/b/g, '$0')"),
-      njs_str("a$0c") },
+    { njs_str("'abc'.replace(/c/, 'X')"),
+      njs_str("abX") },
 
-    { njs_str("typeof String.bytesFrom(Array(15).fill(0xE3)).replace(/^/g, 1)"),
-      njs_str("string") },
+    { njs_str("'abccd'.replace(/c+/, 'X')"),
+      njs_str("abXd") },
 
-#if 0 /* FIXME: PCRE limitation */
-    { njs_str("'abc'.replace(/^/g, '|$&|')"),
-      njs_str("||abc") },
-#endif
+    { njs_str("'abc'.replace(/f/, 'X')"),
+      njs_str("abc") },
+
+    { njs_str("('a'.repeat(33) + 'bb').replace(/bb/, 'CC').slice(31)"),
+      njs_str("aaCC") },
+
+    { njs_str("'abccd'.replace(/c/g, 'X')"),
+      njs_str("abXXd") },
+
+    { njs_str("('a'.repeat(33) + 'bb').replace(/bb/g, 'CC').slice(31)"),
+      njs_str("aaCC") },
+
+    { njs_str("'abccd'.replace(/[ac]/g, 'X')"),
+      njs_str("XbXXd") },
+
+    { njs_str("'ab'.replace(/q*/g, 'X')"),
+      njs_str("XaXbX") },
+
+    { njs_str("'αβ'.replace(/q*/g, 'X')"),
+      njs_str("XαXβX") },
+
+    { njs_str("'αβ'.replace(/(q)*/g, 'X')"),
+      njs_str("XαXβX") },
+
+    { njs_str("'αβ'.replace(/q*/g, 'γ')"),
+      njs_str("γαγβγ") },
+
+    { njs_str("':α:β:γ:'.replace(/:/g, '')"),
+      njs_str("αβγ") },
+
+    { njs_str("':α:β:γ:'.replace(/[αβγ]/g, '')"),
+      njs_str("::::") },
+
+    { njs_str("'aabbccaa'.replace(/a*/g, '')"),
+      njs_str("bbcc") },
+
+    { njs_str("'aabbccaab'.replace(/z*/g, '')"),
+      njs_str("aabbccaab") },
+
+    { njs_str("''.replace(/a*/g, '')"),
+      njs_str("") },
+
+    { njs_str("'abcde'.replace(/d/, (m, o, s) => `|${s}|${o}|${m}|`)"),
+      njs_str("abc|abcde|3|d|e") },
+
+    { njs_str("'abcde'.replace(/(d)/, (m, p, o, s) => `|${s}|${o}|${m}|${p}|`)"),
+      njs_str("abc|abcde|3|d|d|e") },
+
+    { njs_str("'abc'.replace(/b/, () => 1)"),
+      njs_str("a1c") },
+
+    { njs_str("var n = 0; 'abbbc'.replace(/b/g, () => ++n)"),
+      njs_str("a123c") },
+
+    { njs_str("'abc'.replace(/x/, (m, o, s) => `|${s}|${o}|${m}|`)"),
+      njs_str("abc") },
+
+    { njs_str("'abc12345#$*%'.replace(/([^\\d]*)(\\d*)([^\\w]*)/,"
+              "                       (_, p1, p2, p3) => [p1, p2, p3].join('-'))"),
+      njs_str("abc-12345-#$*%") },
+
+    { njs_str("'abc'.replace(/(?<named>b)/, (m, p, o, s, gr) => `|${gr.named}|`)"),
+      njs_str("a|b|c") },
+
+    { njs_str("'ABC'.replace(/[A-Z]/g, m => '-' + m.toLowerCase())"),
+      njs_str("-a-b-c") },
+
+    { njs_str("'abc'.replace(/(b)c/g, '|$01|')"),
+      njs_str("a|b|") },
+
+    { njs_str("'abc'.replace(/(b)c/g, '@$0|$01|$00@')"),
+      njs_str("a@$0|b|$00@") },
+
+    { njs_str("'abcdeFGHIJ'.replace(/(a)(b)(c)(d)(e)(F)(G)(H)(I)(J)/, '$9|$10|$11|$01')"),
+      njs_str("I|J|a1|a") },
+
+    { njs_str("'abcdbe'.replace(/(b)/g, '$2$23')"),
+      njs_str("a$2$23cd$2$23e") },
+
+    { njs_str("'abcdbe'.replace(/(b)/g, '$2$23X$$Y')"),
+      njs_str("a$2$23X$Ycd$2$23X$Ye") },
+
+    { njs_str("'abcdbe'.replace(/b/, '|$`X$\\'|')"),
+      njs_str("a|aXcdbe|cdbe") },
+
+    { njs_str("'abcdbefbgh'.replace(/b/g, '|$`X$\\'|')"),
+      njs_str("a|aXcdbefbgh|cd|abcdXefbgh|ef|abcdbefXgh|gh") },
+
+    { njs_str("'abc12345#$*%'.replace(/([^\\d]*)(\\d*)([^\\w]*)/, '$1-$2-$3')"),
+      njs_str("abc-12345-#$*%") },
+
+    { njs_str("'$1,$2'.replace(/(\\$(\\d))/g, '$$1-$1$2')"),
+      njs_str("$1-$11,$1-$22") },
+
+    { njs_str("'ABC'.replace(/(h*)(z*)(g*)/g, '$1@$2α$3')"),
+      njs_str("@αA@αB@αC@α") },
+
+    { njs_str("'abc'.replace(/(h*)(z*)/g, '$1@$2#$3:')"),
+      njs_str("@#$3:a@#$3:b@#$3:c@#$3:") },
+
+    { njs_str("/b(c)(z)?(.)/[Symbol.replace]('abcde', '[$1$2$3]')"),
+      njs_str("a[cd]e") },
+
+    { njs_str("/b(c)(z)?(.)/[Symbol.replace]('abcde', '[$01$02$03$04$00]')"),
+      njs_str("a[cd$04$00]e") },
+
+    { njs_str("'α'.replace(/(h*)/g, '$1βγ')"),
+      njs_str("βγαβγ") },
+
+    { njs_str("'αg'.replace(/(h*)/g, '$1βγ')"),
+      njs_str("βγαβγgβγ") },
+
+    { njs_str("'αg'.replace(/(α*)/g, '$1βγ')"),
+      njs_str("αβγβγgβγ") },
+
+    { njs_str("'αg'.replace(/(h*)/g, 'fg$1βγ')"),
+      njs_str("fgβγαfgβγgfgβγ") },
+
+    { njs_str("'αgβfγ'.replace(/(gβ)/g, 'n$1i')"),
+      njs_str("αngβifγ") },
 
     { njs_str("'abc'.replace(/b/g, '|$&|')"),
       njs_str("a|b|c") },
@@ -7615,8 +7656,57 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'ABC'.replace(/((A)B)/g, '($1|$&|$2)')"),
       njs_str("(AB|AB|A)C") },
 
-    { njs_str("'undefined'.replace(void 0, 'x')"),
-      njs_str("x") },
+    { njs_str("'abc'.replace(/b/g, '$0')"),
+      njs_str("a$0c") },
+
+    { njs_str("typeof String.bytesFrom(Array(15).fill(0xE3)).replace(/^/g, 1)"),
+      njs_str("string") },
+
+    { njs_str("'abc'.replace(/^/g, '|$&|')"),
+      njs_str("||abc") },
+
+    { njs_str("var uri ='/u/v1/Aa/bB?type=m3u8&mt=42';"
+              "uri.replace(/^\\/u\\/v1\\/[^/]*\\/([^\?]*)\\?.*(mt=[^&]*).*$/, '$1|$2')"),
+      njs_str("bB|mt=42") },
+
+    { njs_str("'ABC'.replace(/(?<b>B)/, '|$<b>|@$<a>@')"),
+      njs_str("A|B|@@C") },
+
+    { njs_str("'ABC'.replace(/(?<b>B)/, '|$<BB|')"),
+      njs_str("A|$<BB|C") },
+
+    { njs_str("'ABC'.replace(/(?<b>B)/, '|$<BB$$|>@')"),
+      njs_str("A|@C") },
+
+    { njs_str("('β' + 'α'.repeat(33)+'β').replace(/(α+)(β+)/, (m, p1) => p1[32])"),
+      njs_str("βα") },
+
+    { njs_str("'abc'.replace(/(z*)/g, () => '@')"),
+      njs_str("@a@b@c@") },
+
+    { njs_str("'abc'.replace(/(a*)/g, () => '@')"),
+      njs_str("@@b@c@") },
+
+    { njs_str("var O = RegExp.prototype[Symbol.replace];"
+              "RegExp.prototype[Symbol.replace] = function (s, rep) { return O.call(this, s, `|${rep}|`); };"
+              "'ABC'.replace(/B/, '+')"),
+      njs_str("A|+|C") },
+
+    { njs_str("var O = RegExp.prototype.exec;"
+              "function mangled(s) { var r = O.call(this, s); Object.defineProperty(r, '0', {enumerable:false}); "
+              "                      return r; };"
+              "RegExp.prototype.exec = mangled;"
+              "'ABC'.replace(/(B)/, (m, p1, off, s) => `@${m}|${p1}|${off}|${s}@`)"),
+      njs_str("A@B|B|1|ABC@C") },
+
+    { njs_str("RegExp.prototype[Symbol.replace].call()"),
+      njs_str("TypeError: \"this\" is not object") },
+
+    { njs_str("RegExp.prototype[Symbol.replace].call(1)"),
+      njs_str("TypeError: \"this\" is not object") },
+
+    { njs_str("RegExp.prototype[Symbol.replace].call(/b/, 'abc','B')"),
+      njs_str("aBc") },
 
     { njs_str("/]/"),
       njs_str("/\\]/") },
@@ -9534,6 +9624,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("/./['exec'] === RegExp.prototype.exec"),
       njs_str("true") },
 
+    { njs_str("/./[Symbol.replace] === RegExp.prototype[Symbol.replace]"),
+      njs_str("true") },
+
     { njs_str("/^[A-Za-z0-9+/]{4}$/.test('////')"),
       njs_str("true") },
 
@@ -9697,14 +9790,15 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var r = /a/.exec('a'); ['groups' in r, typeof r.groups]"),
       njs_str("true,undefined") },
 
-#if (!NJS_HAVE_MEMORY_SANITIZER) /* PCRE bug in groups code */
     { njs_str("var r = /(?<m>[0-9]{2})\\/(?<d>[0-9]{2})\\/(?<y>[0-9]{4})/;"
-                 "var g = r.exec('12/31/1986').groups;"
-                 "g.d + '.' + g.m + '.' + g.y"),
+              "var g = r.exec('12/31/1986').groups;"
+              "g.d + '.' + g.m + '.' + g.y"),
       njs_str("31.12.1986") },
 
+#if (!NJS_HAVE_MEMORY_SANITIZER) /* PCRE bug in groups code */
+
     { njs_str("var g = /(?<r>(?<no>no)?(?<yes>yes)?)/.exec('yes').groups;"
-                 "[Object.keys(g).length,'no' in g, typeof g.no, g.yes, g.r]"),
+              "[Object.keys(g).length,'no' in g, typeof g.no, g.yes, g.r]"),
       njs_str("3,true,undefined,yes,yes") },
 #endif
 
@@ -17792,6 +17886,7 @@ static njs_unit_test_t  njs_shell_test[] =
               "              function(m) {return m.a.a})" ENTER),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
               "    at anonymous (:1)\n"
+              "    at RegExp.prototype[Symbol.replace] (native)\n"
               "    at String.prototype.replace (native)\n"
               "    at main (:1)\n") },
 
