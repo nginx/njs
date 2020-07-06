@@ -265,6 +265,9 @@ ts:
 	cp nginx/ts/*.ts $NJS_BUILD_DIR/ts/
 	cp src/ts/*.ts $NJS_BUILD_DIR/ts/
 
+ts_test: ts
+	tsc ./test/ts/test.ts
+
 dist:
 	NJS_VER=`grep NJS_VERSION src/njs.h | sed -e 's/.*"\(.*\)".*/\1/'`; \\
 	rm -rf njs-\$\${NJS_VER} \\
