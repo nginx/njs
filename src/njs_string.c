@@ -3601,6 +3601,10 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                                 njs_value_arg(&njs_value_undefined),
                                 arguments, 3, &retval);
 
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
         ret = njs_value_to_string(vm, &retval, &retval);
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;

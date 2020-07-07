@@ -7523,6 +7523,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'12345'.replace(3, () => ({toString: () => 'aaaa'}))"),
       njs_str("12aaaa45") },
 
+    { njs_str("'ABC'.replace('B', () => {throw 'OOps'})"),
+      njs_str("OOps") },
+
     { njs_str("'abc'.replace(/a/, 'X')"),
       njs_str("Xbc") },
 
