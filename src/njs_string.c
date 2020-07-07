@@ -3414,17 +3414,13 @@ njs_string_get_substitution(njs_vm_t *vm, njs_value_t *matched,
 
         case '<':
             r = njs_strlchr(p, end, '>');
-            if (r == NULL) {
+            if (groups == NULL || njs_is_undefined(groups) || r == NULL) {
                 njs_chb_append(&chain, p, 2);
                 p += 2;
                 break;
             }
 
             p += 2;
-
-            if (groups == NULL) {
-                break;
-            }
 
             ret = njs_vm_value_string_set(vm, &name, p, r - p);
             if (njs_slow_path(ret != NJS_OK)) {
@@ -3512,7 +3508,7 @@ exception:
 
     njs_chb_destroy(&chain);
 
-    return NJS_OK;
+    return ret;
 }
 
 

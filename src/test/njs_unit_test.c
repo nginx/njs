@@ -7502,6 +7502,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'abcdbe'.replace('b', '|$`X$\\'|')"),
       njs_str("a|aXcdbe|cdbe") },
 
+    { njs_str("'ABC'.replace('B', '$<g>')"),
+      njs_str("A$<g>C") },
+
+    { njs_str("'ABC'.replace('B', '$23')"),
+      njs_str("A$23C") },
+
     { njs_str("'undefined'.replace(void 0, 'x')"),
       njs_str("x") },
 
@@ -7669,6 +7675,9 @@ static njs_unit_test_t  njs_test[] =
               "uri.replace(/^\\/u\\/v1\\/[^/]*\\/([^\?]*)\\?.*(mt=[^&]*).*$/, '$1|$2')"),
       njs_str("bB|mt=42") },
 
+    { njs_str("'ABC'.replace(/B/, '$<g>')"),
+      njs_str("A$<g>C") },
+
     { njs_str("'ABC'.replace(/(?<b>B)/, '|$<b>|@$<a>@')"),
       njs_str("A|B|@@C") },
 
@@ -7693,11 +7702,28 @@ static njs_unit_test_t  njs_test[] =
       njs_str("A|+|C") },
 
     { njs_str("var O = RegExp.prototype.exec;"
-              "function mangled(s) { var r = O.call(this, s); Object.defineProperty(r, '0', {enumerable:false}); "
+              "function mangled(s) { var r = O.call(this, s);"
+              "                      Object.defineProperty(r, '0', {enumerable:false}); "
               "                      return r; };"
               "RegExp.prototype.exec = mangled;"
               "'ABC'.replace(/(B)/, (m, p1, off, s) => `@${m}|${p1}|${off}|${s}@`)"),
       njs_str("A@B|B|1|ABC@C") },
+
+    { njs_str("var O = RegExp.prototype.exec;"
+              "function mangled(s) { var r = O.call(this, s);"
+              "                      Object.defineProperty(r, 'groups', {value: {g:1}}); "
+              "                      return r; };"
+              "RegExp.prototype.exec = mangled;"
+              "'ABC'.replace(/(B)/, '$<g>')"),
+      njs_str("A1C") },
+
+    { njs_str("var O = RegExp.prototype.exec;"
+              "function mangled(s) { var r = O.call(this, s);"
+              "                      Object.defineProperty(r, 'groups', {value: {get g() {throw 'OOps'}}}); "
+              "                      return r; };"
+              "RegExp.prototype.exec = mangled;"
+              "'ABC'.replace(/(B)/, '$<g>')"),
+      njs_str("OOps") },
 
     { njs_str("RegExp.prototype[Symbol.replace].call()"),
       njs_str("TypeError: \"this\" is not object") },
