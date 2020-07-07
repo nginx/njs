@@ -1799,6 +1799,9 @@ njs_parser_property_name(njs_parser_t *parser, njs_queue_link_t *current,
 
     if (consume > 1) {
         token = njs_lexer_token(parser->lexer, 0);
+        if (token == NULL) {
+            return NJS_ERROR;
+        }
 
         property = njs_parser_property_name_node(parser, token);
         if (property == NULL) {
