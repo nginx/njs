@@ -571,8 +571,13 @@ njs_lookup_line(njs_vm_code_t *code, uint32_t offset)
     njs_uint_t         n;
     njs_vm_line_num_t  *map;
 
-    n = (code->lines != NULL) ? code->lines->items : 0;
-    map = (njs_vm_line_num_t *) code->lines->start;
+    n = 0;
+    map = NULL;
+
+    if (code->lines != NULL) {
+        n = code->lines->items;
+        map = (njs_vm_line_num_t *) code->lines->start;
+    }
 
     while (n != 0) {
         if (offset >= map->offset && (n == 1 || offset < map[1].offset)) {
