@@ -3631,7 +3631,7 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     r = njs_cpymem(r, string.start, p - string.start);
     r = njs_cpymem(r, ret_string.start, ret_string.size);
-    r = njs_cpymem(r, p + s.size, string.size - s.size - (p - string.start));
+    memcpy(r, p + s.size, string.size - s.size - (p - string.start));
 
     return NJS_OK;
 }
