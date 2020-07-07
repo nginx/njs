@@ -1,4 +1,43 @@
 
+Changes with njs 0.4.2                                           07 Jul 2020
+
+    Core:
+
+    *) Feature: added RegExp.prototype[Symbol.replace].
+
+    *) Feature: introduced line level backtrace.
+
+    *) Feature: added %TypedArray%.prototype.sort().
+
+    *) Feature: extended "fs" module. Added mkdir(), readdir(), rmdir()
+       and friends.
+       Thanks to Artem S. Povalyukhin.
+
+    *) Improvement: parser refactoring.
+
+    *) Bugfix: fixed TypedScript API description for HTTP headers.
+
+    *) Bugfix: fixed TypedScript API description for NjsByteString type.
+
+    *) Bugfix: fixed String.prototype.repeat() according to the
+       specification.
+
+    *) Bugfix: fixed parsing of flags for regexp literals.
+
+    *) Bugfix: fixed index generation for global objects in generator.
+
+    *) Bugfix: fixed String.prototype.replace() according to the
+       specification.
+
+    *) Bugfix: fixed %TypedArray%.prototype.copyWithin() with nonzero
+       byte offset.
+
+    *) Bugfix: fixed Array.prototype.splice() for sparse arrays.
+
+    *) Bugfix: fixed Array.prototype.reverse() for sparse arrays.
+
+    *) Bugfix: fixed Array.prototype.sort() for sparse arrays.
+
 Changes with njs 0.4.1                                           19 May 2020
 
     *) Feature: added support for multi-value headers in r.headersIn.
