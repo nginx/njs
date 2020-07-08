@@ -3973,12 +3973,20 @@ static njs_unit_test_t  njs_test[] =
       njs_str(",,,false,true,0,1") },
 
     { njs_str("var o = { toString: function() { return null } };"
-                 "[o].join()"),
+              "[o].join()"),
       njs_str("null") },
 
     { njs_str("var o = { toString: function() { return undefined } };"
-                 "[o].join()"),
+              "[o].join()"),
       njs_str("undefined") },
+
+    { njs_str("var a = [0,,2,3];"
+              "Object.defineProperty(Array.prototype, 1, {get: ()=> {a[32] = 32; return 1}, configurable:true});"
+              "a.join()"),
+    njs_str("0,1,2,3") },
+
+    { njs_str("Array.prototype.join.call(new Uint8Array([0,1,2]))"),
+      njs_str("0,1,2") },
 
     { njs_str("var a = []; a[5] = 5; a"),
       njs_str(",,,,,5") },

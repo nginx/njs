@@ -1609,7 +1609,8 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_chb_init(&chain, vm->mem_pool);
 
     for (i = 0; i < len; i++) {
-        if (njs_fast_path(njs_object(this)->fast_array
+        if (njs_fast_path(array != NULL
+                          && array->object.fast_array
                           && njs_is_valid(&array->start[i])))
         {
             value = &array->start[i];
