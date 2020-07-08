@@ -1384,8 +1384,6 @@ ngx_http_js_header_generic(njs_vm_t *vm, ngx_http_request_t *r,
         length = 1;
     }
 
-    i = 0;
-
     for (i = 0; i < (ngx_uint_t) length; i++) {
         if (array != NULL) {
             setval = njs_vm_array_prop(vm, array, i, &lvalue);
