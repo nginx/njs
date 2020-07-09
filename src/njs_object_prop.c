@@ -554,7 +554,7 @@ njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq)
             return NJS_ERROR;
         }
 
-        return njs_function_name_set(vm, function, &prop->name, 0);
+        return njs_function_name_set(vm, function, &prop->name, NULL);
 
     default:
         break;

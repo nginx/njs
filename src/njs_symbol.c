@@ -54,56 +54,52 @@ static const njs_value_t  *njs_symbol_names[NJS_SYMBOL_KNOWN_MAX] = {
 };
 
 
-njs_int_t
-njs_symbol_to_string(njs_vm_t *vm, njs_value_t *dst, const njs_value_t *value,
-    njs_bool_t as_name)
+const njs_value_t *
+njs_symbol_description(const njs_value_t *value)
 {
-    u_char             *start;
     const njs_value_t  *name;
-    njs_string_prop_t  string;
 
-    static const njs_value_t  string_symbol = njs_string("Symbol()");
-
-    name = value->data.u.value;
-
-    if (name == NULL) {
-        if (njs_fast_path(njs_symbol_key(value) < NJS_SYMBOL_KNOWN_MAX)) {
-
-            name = njs_symbol_names[njs_symbol_key(value)];
-
-        } else {
-            *dst = string_symbol;
-
-            return NJS_OK;
-        }
-    }
-
-    (void) njs_string_prop(&string, name);
-
-    if (as_name) {
-        string.length += njs_length("[]");
-
-        start = njs_string_alloc(vm, dst, string.size + 2, string.length);
-        if (njs_slow_path(start == NULL)) {
-            return NJS_ERROR;
-        }
-
-        start = njs_cpymem(start, "[", 1);
-        start = njs_cpymem(start, string.start, string.size);
-        *start = ']';
+    if (njs_symbol_key(value) < NJS_SYMBOL_KNOWN_MAX) {
+        name = njs_symbol_names[njs_symbol_key(value)];
 
     } else {
-        string.length += njs_length("Symbol()");
+        name = value->data.u.value;
 
-        start = njs_string_alloc(vm, dst, string.size + 8, string.length);
-        if (njs_slow_path(start == NULL)) {
-            return NJS_ERROR;
+        if (name == NULL) {
+            return  &njs_value_undefined;
         }
-
-        start = njs_cpymem(start, "Symbol(", 7);
-        start = njs_cpymem(start, string.start, string.size);
-        *start = ')';
     }
+
+    return name;
+}
+
+
+njs_int_t
+njs_symbol_descriptive_string(njs_vm_t *vm, njs_value_t *dst,
+    const njs_value_t *value)
+{
+    u_char             *start;
+    const njs_value_t  *description;
+    njs_string_prop_t  string;
+
+    description = njs_symbol_description(value);
+
+    if (njs_is_undefined(description)) {
+        description = &njs_string_empty;
+    }
+
+    (void) njs_string_prop(&string, description);
+
+    string.length += njs_length("Symbol()");
+
+    start = njs_string_alloc(vm, dst, string.size + 8, string.length);
+    if (njs_slow_path(start == NULL)) {
+        return NJS_ERROR;
+    }
+
+    start = njs_cpymem(start, "Symbol(", 7);
+    start = njs_cpymem(start, string.start, string.size);
+    *start = ')';
 
     return NJS_OK;
 }
@@ -344,7 +340,7 @@ njs_symbol_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         return ret;
     }
 
-    return njs_symbol_to_string(vm, &vm->retval, &vm->retval, 0);
+    return njs_symbol_descriptive_string(vm, &vm->retval, &vm->retval);
 }
 
 
@@ -352,28 +348,14 @@ static njs_int_t
 njs_symbol_prototype_description(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
-    njs_int_t          ret;
-    const njs_value_t  *value, *name;
+    njs_int_t  ret;
 
     ret = njs_symbol_prototype_value_of(vm, args, nargs, unused);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
 
-    value = &vm->retval;
-
-    name = value->data.u.value;
-
-    if (name == NULL) {
-        if (njs_fast_path(njs_symbol_key(value) < NJS_SYMBOL_KNOWN_MAX)) {
-            name = njs_symbol_names[njs_symbol_key(value)];
-
-        } else {
-            name = &njs_value_undefined;
-        }
-    }
-
-    vm->retval = *name;
+    vm->retval = *njs_symbol_description(&vm->retval);
 
     return NJS_OK;
 }

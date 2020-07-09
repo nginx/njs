@@ -6698,6 +6698,13 @@ static njs_unit_test_t  njs_test[] =
               "[f.name, f.bind().name]"),
       njs_str("F,bound F") },
 
+    { njs_str("var s = Symbol('F'); var f = Object.defineProperty(function() {}, 'name', {get:()=>s});"
+              "[f.name.description, f.bind().name]"),
+      njs_str("F,bound ") },
+
+    { njs_str("/a/[Symbol.replace].bind().name"),
+      njs_str("bound [Symbol.replace]") },
+
     { njs_str("var f = Object.defineProperty(function() {}, 'name', {get:()=>{throw Error('Oops')}});"
               "f.bind().name"),
       njs_str("Error: Oops") },
@@ -7735,6 +7742,9 @@ static njs_unit_test_t  njs_test[] =
               "RegExp.prototype.exec = mangled;"
               "'ABC'.replace(/(B)/, '$<g>')"),
       njs_str("OOps") },
+
+    { njs_str("var name = /a/g[Symbol.replace].name; [name, typeof name]"),
+      njs_str("[Symbol.replace],string") },
 
     { njs_str("RegExp.prototype[Symbol.replace].call()"),
       njs_str("TypeError: \"this\" is not object") },

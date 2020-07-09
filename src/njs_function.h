@@ -93,7 +93,7 @@ njs_function_t *njs_function_alloc(njs_vm_t *vm, njs_function_lambda_t *lambda,
     njs_closure_t *closures[], njs_bool_t shared);
 njs_function_t *njs_function_value_copy(njs_vm_t *vm, njs_value_t *value);
 njs_int_t njs_function_name_set(njs_vm_t *vm, njs_function_t *function,
-    njs_value_t *name, njs_bool_t bound);
+    njs_value_t *name, const char *prefix);
 njs_int_t njs_function_arguments_object_init(njs_vm_t *vm,
     njs_native_frame_t *frame);
 njs_int_t njs_function_rest_parameters_init(njs_vm_t *vm,
