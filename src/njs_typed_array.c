@@ -597,7 +597,7 @@ njs_typed_array_prototype_fill(njs_vm_t *vm, njs_value_t *args,
         for (i = start; i < end; i++) {
             buffer->u.f64[i + offset] = num;
         }
-	}
+    }
 
     return NJS_OK;
 }

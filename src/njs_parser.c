@@ -3140,7 +3140,7 @@ njs_parser_left_hand_side_expression_optional(njs_parser_t *parser,
 
 static njs_int_t
 njs_parser_expression_node(njs_parser_t *parser, njs_lexer_token_t *token,
-	njs_queue_link_t *current, njs_token_type_t type,
+    njs_queue_link_t *current, njs_token_type_t type,
     njs_vmcode_operation_t operation, njs_parser_state_func_t after)
 {
     njs_parser_node_t  *node;
