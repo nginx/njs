@@ -7582,6 +7582,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'abc'.replace(/f/, 'X')"),
       njs_str("abc") },
 
+    { njs_str("'AB=C==='.replace(/=*$/, '')"),
+      njs_str("AB=C") },
+
     { njs_str("('a'.repeat(33) + 'bb').replace(/bb/, 'CC').slice(31)"),
       njs_str("aaCC") },
 
@@ -7783,6 +7786,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("/]/"),
       njs_str("/\\]/") },
+
+    { njs_str("/=/"),
+      njs_str("/=/") },
 
     { njs_str("/["),
       njs_str("SyntaxError: Unterminated RegExp \"/[\" in 1") },

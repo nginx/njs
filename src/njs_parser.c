@@ -1115,6 +1115,7 @@ njs_parser_primary_expression_test(njs_parser_t *parser,
 
     /* RegularExpressionLiteral */
     case NJS_TOKEN_DIVISION:
+    case NJS_TOKEN_DIVISION_ASSIGNMENT:
         node = njs_parser_node_new(parser, NJS_TOKEN_REGEXP);
         if (node == NULL) {
             return NJS_ERROR;
@@ -1200,6 +1201,10 @@ njs_parser_regexp_literal(njs_parser_t *parser, njs_lexer_token_t *token,
 
     value = &parser->node->u.value;
     lexer = parser->lexer;
+
+    if (token->type == NJS_TOKEN_DIVISION_ASSIGNMENT) {
+        lexer->start--;
+    }
 
     for (p = lexer->start; p < lexer->end; p++) {
 
