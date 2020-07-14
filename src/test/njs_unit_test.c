@@ -10,15 +10,19 @@
 
 
 #define NJS_HAVE_LARGE_STACK (!NJS_HAVE_ADDRESS_SANITIZER && !NJS_HAVE_MEMORY_SANITIZER)
-#define _NJS_ARRAY(sz)       "Array(" njs_stringify(sz) ")"
-#define NJS_LARGE_ARRAY      _NJS_ARRAY(NJS_ARRAY_LARGE_OBJECT_LENGTH + 1)
-#define NJS_LARGE_ARRAY_LEN  "32769"
 
 #ifdef NJS_HAVE_LITTLE_ENDIAN
 #define njs_evar(little, big) (little)
 #else
 #define njs_evar(little, big) (big)
 #endif
+
+
+#define njs_declare_sparse_array(nm, sz)                                      \
+    "var " nm " = Array(" njs_stringify(sz) "); "                             \
+    "Object.defineProperty(" nm ", '0',"                                      \
+    "{writable:true, enumerable:false, configurable:true});"                  \
+    "delete " nm "[0];"
 
 
 typedef struct {
@@ -4021,15 +4025,15 @@ static njs_unit_test_t  njs_test[] =
               "x.concat().hasOwnProperty('1') === true"),
       njs_str("true") },
 
-    { njs_str("var a = " NJS_LARGE_ARRAY ";"
+    { njs_str(njs_declare_sparse_array("a", 64)
               "a[32] = 1; a = a.concat([1]);"
               "njs.dump([a[0], a[32],a.length])"),
-      njs_str("[undefined,1,32770]") },
+      njs_str("[undefined,1,65]") },
 
-    { njs_str("var a = " NJS_LARGE_ARRAY ";"
+    { njs_str(njs_declare_sparse_array("a", 64)
               "a[32] = 1; a = [1].concat(a);"
               "njs.dump([a[0], a[33],a.length])"),
-      njs_str("[1,1,32770]") },
+      njs_str("[1,1,65]") },
 
     { njs_str("var re = /abc/; re[Symbol.isConcatSpreadable] = true;"
               "re[0] = 1, re[1] = 2, re[2] = 3, re.length = 3;"
@@ -4064,8 +4068,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Array.prototype.toString.call('abc')"),
       njs_str("[object String]") },
 
-    { njs_str("var a = " NJS_LARGE_ARRAY "; var s = a.toString();"
-              "[s.length]"),
+    { njs_str(njs_declare_sparse_array("a", 32769)
+              "var s = a.toString(); [s.length]"),
       njs_str("32768") },
 
     /* Empty array elements. */
@@ -4337,9 +4341,10 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var o = { length: 3 }; Array.prototype.pop.call(o); o.length"),
       njs_str("2") },
 
-    { njs_str("var a = " NJS_LARGE_ARRAY "; a[a.length - 1] = 'z'; a[a.length -2] = 'y';"
+    { njs_str(njs_declare_sparse_array("a", 16)
+              "a[a.length - 1] = 'z'; a[a.length -2] = 'y';"
               "Array.prototype.pop.call(a); [a.length, a[a.length - 1]]"),
-      njs_str("32768,y") },
+      njs_str("15,y") },
 
     { njs_str("[0,1].slice()"),
       njs_str("0,1") },
@@ -6202,13 +6207,13 @@ static njs_unit_test_t  njs_test[] =
               "Array.prototype.join.call(a)"),
       njs_str("1,5,8,23") },
 
-    { njs_str("var a = " NJS_LARGE_ARRAY "; "
+    { njs_str(njs_declare_sparse_array("a", 1024)
               "a[100] = 1; a[512] = -1; a[5] = undefined;"
               "a.sort();"
               "a[0] == -1 && a[1] == 1 && a[2] == undefined"),
       njs_str("true") },
 
-    { njs_str("var a = " NJS_LARGE_ARRAY "; "
+    { njs_str(njs_declare_sparse_array("a", 1024)
               "a.fill(1, 256, 512); a.fill(undefined, 1000, 1010);"
               "Object.defineProperty(a, '256', {value: a[256], enumerable:false});"
               "a.sort();"
@@ -10963,9 +10968,6 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var a = Array(Infinity)"),
       njs_str("RangeError: Invalid array length") },
-
-    { njs_str(NJS_LARGE_ARRAY ".length"),
-      njs_str(NJS_LARGE_ARRAY_LEN) },
 
     { njs_str("var a = Array(1111111111); a[1111111112] = 1; a.length"),
       njs_str("1111111113") },
@@ -15882,13 +15884,13 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = [1]; a[2] = 'x'; JSON.stringify(a)"),
       njs_str("[1,null,\"x\"]") },
 
-    { njs_str("var a = " NJS_LARGE_ARRAY ";"
+    { njs_str(njs_declare_sparse_array("a", 32769)
               "a[32] = 'a'; a[64] = 'b';"
               "var s = JSON.stringify(a); "
               "[s.length,s.substring(162,163),s.match(/null/g).length]"),
       njs_str("163844,a,32767") },
 
-    { njs_str("var a = " NJS_LARGE_ARRAY ";"
+    { njs_str(njs_declare_sparse_array("a", 8)
               "a[2] = 'a'; a[4] = 'b'; a.length = 3;"
               "JSON.stringify(a)"),
       njs_str("[null,null,\"a\"]") },
