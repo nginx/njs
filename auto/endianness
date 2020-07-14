@@ -1,0 +1,36 @@
+
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+
+njs_found=no
+NJS_BYTE_ORDER=little
+
+njs_feature="system byte ordering"
+njs_feature_name=NJS_BYTE_ORDER
+njs_feature_run=value
+njs_feature_incs=
+njs_feature_libs=-lm
+njs_feature_test="#include <stdio.h>
+                  #include <stdint.h>
+
+                  int main(void) {
+                      uint16_t x = 1; /* 0x0001 */
+                      printf(\"%s\n\", (*((uint8_t *) &x) == 0) ? \"big\" : \"little\");
+                      return 0;
+                  }"
+. auto/feature
+
+if [ $njs_found = no ]; then
+    echo
+    echo "$0: error: cannot detect system byte ordering"
+    echo
+    exit 1;
+fi
+
+if [ $NJS_BYTE_ORDER = big ]; then
+    njs_define=NJS_HAVE_BIG_ENDIAN . auto/define
+
+else
+    njs_define=NJS_HAVE_LITTLE_ENDIAN . auto/define
+
+fi

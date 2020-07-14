@@ -48,6 +48,7 @@ NJS_LIBRT=
 . auto/options
 . auto/cc
 . auto/types
+. auto/endianness
 . auto/clang
 . auto/time
 . auto/memalign

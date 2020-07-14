@@ -14,6 +14,12 @@
 #define NJS_LARGE_ARRAY      _NJS_ARRAY(NJS_ARRAY_LARGE_OBJECT_LENGTH + 1)
 #define NJS_LARGE_ARRAY_LEN  "32769"
 
+#ifdef NJS_HAVE_LITTLE_ENDIAN
+#define njs_evar(little, big) (little)
+#else
+#define njs_evar(little, big) (big)
+#endif
+
 
 typedef struct {
     njs_str_t  script;
@@ -5411,17 +5417,22 @@ static njs_unit_test_t  njs_test[] =
     { njs_str(NJS_INT_TYPED_ARRAY_LIST
               ".map(v=>{var init = new Uint32Array([0xaabbccdd]);"
               "     try { return new v(init.buffer, 0, 2)} catch (e) {return e.name}})"),
-      njs_str("221,204,221,204,-35,-52,52445,43707,-13091,-21829,RangeError,RangeError") },
+      njs_str(njs_evar("221,204,221,204,-35,-52,52445,43707,-13091,-21829,RangeError,RangeError",
+                       "170,187,170,187,-86,-69,43707,52445,-21829,-13091,RangeError,RangeError")) },
 
     { njs_str(NJS_INT_TYPED_ARRAY_LIST
               ".map(v=>{var init = new Uint32Array([0xaabbccdd]);"
               "     try { return new v(init.buffer, 1, 2)} catch (e) {return e.name}})"),
-      njs_str("204,187,204,187,-52,-69,RangeError,RangeError,RangeError,RangeError") },
+      njs_str(njs_evar("204,187,204,187,-52,-69,RangeError,RangeError,RangeError,RangeError",
+                       "187,204,187,204,-69,-52,RangeError,RangeError,RangeError,RangeError")) },
 
     { njs_str(NJS_INT_TYPED_ARRAY_LIST
               ".map(v=>{var init = new Uint32Array([0xaabbccdd,0xdeadbeef]);"
               "     try { return new v(init.buffer, 0, 2)} catch (e) {return e.name}})"),
-      njs_str("221,204,221,204,-35,-52,52445,43707,-13091,-21829,2864434397,3735928559,-1430532899,-559038737") },
+      njs_str(njs_evar("221,204,221,204,-35,-52,52445,43707,-13091,-21829,"
+                       "2864434397,3735928559,-1430532899,-559038737",
+                       "170,187,170,187,-86,-69,43707,52445,-21829,-13091,"
+                       "2864434397,3735928559,-1430532899,-559038737")) },
 
     { njs_str(NJS_TYPED_ARRAY_LIST
               ".every(v=>{var buffer1 = new ArrayBuffer(8 * v.BYTES_PER_ELEMENT);"
@@ -5591,7 +5602,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("[1.0, -1234.0]"
               ".map(v=>{var a = new Float32Array(1); a[0] = v; var b = new Uint8Array(a.buffer);"
               "         return (b[0] << 24 | b[1] << 16| b[2] <<8 | b[3]).toString(16).padStart(8, '0');})"),
-      njs_str("0000803f,00409ac4") },
+      njs_str(njs_evar("0000803f,00409ac4",
+                       "3f800000,-3b65c000")) },
 
     { njs_str("var a = new ArrayBuffer(0); a.slice(0, 0).byteLength"),
       njs_str("0") },
@@ -5608,17 +5620,26 @@ static njs_unit_test_t  njs_test[] =
     { njs_str(NJS_TYPED_ARRAY_LIST
               ".map(v=>{var buffer = new ArrayBuffer(8); var view = new v(buffer);"
               "         view[0] = 511; return new Uint8Array(buffer.slice(0,4))})"),
-      njs_str("255,0,0,0,255,0,0,0,255,0,0,0,255,1,0,0,255,1,0,0,255,1,0,0,255,1,0,0,0,128,255,67,0,0,0,0") },
+      njs_str(njs_evar("255,0,0,0,255,0,0,0,255,0,0,0,255,1,0,0,255,1,"
+                       "0,0,255,1,0,0,255,1,0,0,0,128,255,67,0,0,0,0",
+                       "255,0,0,0,255,0,0,0,255,0,0,0,1,255,0,0,1,255,0,0,"
+                       "0,0,1,255,0,0,1,255,67,255,128,0,64,127,240,0")) },
 
     { njs_str(NJS_TYPED_ARRAY_LIST
               ".map(v=>{var buffer = new ArrayBuffer(8); var view = new v(buffer);"
               "         view[view.length - 1] = 511; return new Uint8Array(buffer.slice(4))})"),
-      njs_str("0,0,0,255,0,0,0,255,0,0,0,255,0,0,255,1,0,0,255,1,255,1,0,0,255,1,0,0,0,128,255,67,0,240,127,64") },
+      njs_str(njs_evar("0,0,0,255,0,0,0,255,0,0,0,255,0,0,255,1,0,0,255,1,"
+                       "255,1,0,0,255,1,0,0,0,128,255,67,0,240,127,64",
+                       "0,0,0,255,0,0,0,255,0,0,0,255,0,0,1,255,0,0,1,255,"
+                       "0,0,1,255,0,0,1,255,67,255,128,0,0,0,0,0")) },
 
     { njs_str(NJS_TYPED_ARRAY_LIST
               ".map(v=>{var buffer = new ArrayBuffer(8); var view = new v(buffer);"
               "         view[0] = 511; return new Uint8Array(buffer.slice(0,-4))})"),
-      njs_str("255,0,0,0,255,0,0,0,255,0,0,0,255,1,0,0,255,1,0,0,255,1,0,0,255,1,0,0,0,128,255,67,0,0,0,0") },
+      njs_str(njs_evar("255,0,0,0,255,0,0,0,255,0,0,0,255,1,0,0,255,1,0,0,"
+                       "255,1,0,0,255,1,0,0,0,128,255,67,0,0,0,0",
+                       "255,0,0,0,255,0,0,0,255,0,0,0,1,255,0,0,1,255,0,0,"
+                       "0,0,1,255,0,0,1,255,67,255,128,0,64,127,240,0")) },
 
     { njs_str("var a = new Uint8Array(10); var b = a.slice(1); b.length"),
       njs_str("9") },
@@ -5641,12 +5662,14 @@ static njs_unit_test_t  njs_test[] =
     { njs_str(NJS_INT_TYPED_ARRAY_LIST
               ".map(v=>{var init = new Uint8Array([1,2,3,4,5,6,7,8]); var view = new v(init.buffer);"
               "         return view.slice(0,2)})"),
-      njs_str("1,2,1,2,1,2,513,1027,513,1027,67305985,134678021,67305985,134678021") },
+      njs_str(njs_evar("1,2,1,2,1,2,513,1027,513,1027,67305985,134678021,67305985,134678021",
+                       "1,2,1,2,1,2,258,772,258,772,16909060,84281096,16909060,84281096")) },
 
     { njs_str(NJS_INT_TYPED_ARRAY_LIST
               ".map(v=>{var init = new Uint8Array([1,2,3,4,5,6,7,8]); var view = new v(init.buffer);"
               "         return view.slice(0,-2)})"),
-      njs_str("1,2,3,4,5,6,1,2,3,4,5,6,1,2,3,4,5,6,513,1027,513,1027,,") },
+      njs_str(njs_evar("1,2,3,4,5,6,1,2,3,4,5,6,1,2,3,4,5,6,513,1027,513,1027,,",
+                       "1,2,3,4,5,6,1,2,3,4,5,6,1,2,3,4,5,6,258,772,258,772,,")) },
 
     { njs_str("var other = new Uint8Array([0xff,0xff,0xff,0xff]);"
               NJS_TYPED_ARRAY_LIST
