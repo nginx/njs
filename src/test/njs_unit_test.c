@@ -2553,6 +2553,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var x = 0, y = 2; x\n--\ny; [x,y]"),
       njs_str("0,1") },
 
+    { njs_str("function f() {return\n}"),
+      njs_str("undefined") },
+
     /* if. */
 
     { njs_str("if (0);"),

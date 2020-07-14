@@ -5719,6 +5719,7 @@ njs_parser_return_statement(njs_parser_t *parser, njs_lexer_token_t *token,
 
     switch (token->type) {
     case NJS_TOKEN_SEMICOLON:
+        njs_lexer_consume_token(parser->lexer, 1);
         break;
 
     case NJS_TOKEN_LINE_END:
@@ -5740,8 +5741,6 @@ njs_parser_return_statement(njs_parser_t *parser, njs_lexer_token_t *token,
     }
 
     parser->node = node;
-
-    njs_lexer_consume_token(parser->lexer, 1);
 
     return njs_parser_stack_pop(parser);
 }
