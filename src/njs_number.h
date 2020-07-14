@@ -52,38 +52,6 @@ njs_key_is_integer_index(double num, const njs_value_t *value)
 
 
 njs_inline int64_t
-njs_number_to_int64(double num)
-{
-#if (NJS_NAN_TO_UINT_CONVERSION != 0)
-    /*
-     * PPC32: NaN and Inf are converted to 0x8000000080000000
-     * and become non-zero after truncation.
-     */
-
-    if (isnan(num) || isinf(num)) {
-        return 0;
-    }
-#endif
-
-    /*
-     * ES5.1: integer must be modulo 2^32.
-     * 2^53 is the largest integer number which can be stored safely
-     * in the IEEE-754 format and numbers less than 2^53 can be just
-     * converted to int64_t eliding more expensive fmod() operation.
-     * Then the int64 integer is truncated to uint32_t.  The NaN is
-     * converted to 0x8000000000000000 and becomes 0 after truncation.
-     * fmod() of the Infinity returns NaN.
-     */
-
-    if (fabs(num) > 9007199254740992.0) {
-        return (int64_t) fmod(num, 4294967296.0);
-    }
-
-    return (int64_t) num;
-}
-
-
-njs_inline int64_t
 njs_number_to_integer(double num)
 {
     if (njs_slow_path(isinf(num))) {
@@ -97,28 +65,61 @@ njs_number_to_integer(double num)
         return 0;
     }
 
-    return njs_number_to_int64(num);
+    return trunc(num) + 0.0;
 }
 
 
 njs_inline int32_t
 njs_number_to_int32(double num)
 {
-    return (int32_t) njs_number_to_int64(num);
+    int32_t           r;
+    uint64_t          v;
+    njs_int_t         exp;
+    njs_diyfp_conv_t  conv;
+
+    conv.d = num;
+
+    exp = (conv.u64 & NJS_DBL_EXPONENT_MASK) >> NJS_DBL_SIGNIFICAND_SIZE;
+
+    if (njs_fast_path(exp < (NJS_DBL_EXPONENT_OFFSET + 30))) {
+        /* |num| < 2**31. */
+        return num;
+    }
+
+    if (exp < (NJS_DBL_EXPONENT_OFFSET + 30 + 53)) {
+        v = (conv.u64 & NJS_DBL_SIGNIFICAND_MASK) | NJS_DBL_HIDDEN_BIT;
+        v <<= (exp - NJS_DBL_EXPONENT_BIAS + 32);
+        r = v >> 32;
+
+        if (conv.u64 & NJS_DBL_SIGN_MASK) {
+            r = -r;
+        }
+
+        return r;
+    }
+
+    /*
+     * ES5.1: integer must be modulo 2^32.
+     * The distance between larger doubles
+     * (exp >= NJS_DBL_EXPONENT_OFFSET + 30 + 53) is a multiple of 2**32 => 0.
+     * This also handles NaN and Inf.
+     */
+
+    return 0;
 }
 
 
 njs_inline uint32_t
 njs_number_to_uint32(double num)
 {
-    return (uint32_t) njs_number_to_int64(num);
+    return (uint32_t) njs_number_to_int32(num);
 }
 
 
 njs_inline uint16_t
 njs_number_to_uint16(double num)
 {
-    return (uint16_t) njs_number_to_int64(num);
+    return (uint16_t) njs_number_to_int32(num);
 }
 
 

@@ -162,23 +162,6 @@ njs_feature_test="#include <sanitizer/msan_interface.h>
 . auto/feature
 
 
-njs_feature="NAN to uint conversion"
-njs_feature_name=NJS_NAN_TO_UINT_CONVERSION
-njs_feature_run=value
-njs_feature_incs=
-njs_feature_libs=-lm
-njs_feature_test="#include <math.h>
-                  #include <stdio.h>
-                  #include <stdint.h>
-
-                  int main(void) {
-                      int64_t  i64 = acosh(0);
-                      printf(\"%x\", (uint32_t) i64);
-                      return 0;
-                  }"
-. auto/feature
-
-
 njs_feature="_mm_setcsr()"
 njs_feature_name=NJS_HAVE_DENORMALS_CONTROL
 njs_feature_run=no
