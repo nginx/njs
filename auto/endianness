@@ -3,7 +3,6 @@
 # Copyright (C) NGINX, Inc.
 
 njs_found=no
-NJS_BYTE_ORDER=little
 
 njs_feature="system byte ordering"
 njs_feature_name=NJS_BYTE_ORDER
@@ -27,7 +26,7 @@ if [ $njs_found = no ]; then
     exit 1;
 fi
 
-if [ $NJS_BYTE_ORDER = big ]; then
+if [ $njs_feature_value = big ]; then
     njs_define=NJS_HAVE_BIG_ENDIAN . auto/define
 
 else
