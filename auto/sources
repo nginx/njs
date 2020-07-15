@@ -6,6 +6,7 @@ NJS_LIB_SRCS=" \
    src/njs_murmur_hash.c \
    src/njs_djb_hash.c \
    src/njs_utf8.c \
+   src/njs_utf16.c \
    src/njs_arr.c \
    src/njs_rbtree.c \
    src/njs_lvlhsh.c \
@@ -60,7 +61,7 @@ NJS_LIB_TEST_SRCS=" \
    src/test/lvlhsh_unit_test.c \
    src/test/random_unit_test.c \
    src/test/rbtree_unit_test.c \
-   src/test/utf8_unit_test.c \
+   src/test/unicode_unit_test.c \
 "
 
 NJS_TEST_SRCS=" \

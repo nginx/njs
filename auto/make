@@ -241,12 +241,12 @@ lib_test: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/random_unit_test \\
 	$NJS_BUILD_DIR/rbtree_unit_test \\
 	$NJS_BUILD_DIR/lvlhsh_unit_test \\
-	$NJS_BUILD_DIR/utf8_unit_test
+	$NJS_BUILD_DIR/unicode_unit_test
 
 	$NJS_BUILD_DIR/random_unit_test
 	$NJS_BUILD_DIR/rbtree_unit_test
 	$NJS_BUILD_DIR/lvlhsh_unit_test
-	$NJS_BUILD_DIR/utf8_unit_test
+	$NJS_BUILD_DIR/unicode_unit_test
 
 unit_test: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/njs_unit_test

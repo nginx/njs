@@ -9,7 +9,6 @@
 
 
 #define NJS_UTF8_START_TEST  0xC2
-//#define NJS_UTF8_START_TEST  0
 
 
 static u_char  invalid[] = {
@@ -87,7 +86,7 @@ utf8_unit_test(njs_uint_t start)
     njs_uint_t    i, k, l, m;
     const u_char  *pp;
 
-    njs_printf("utf8 unit test started\n");
+    njs_printf("utf8 test started\n");
 
     /* Test valid UTF-8. */
 
@@ -181,7 +180,103 @@ utf8_unit_test(njs_uint_t start)
         return NJS_ERROR;
     }
 
-    njs_printf("utf8 unit test passed\n");
+    njs_printf("utf8 test passed\n");
+    return NJS_OK;
+}
+
+
+static njs_int_t
+utf16_unit_test()
+{
+    int8_t                length, length_to;
+    u_char                *start, *end, *end_to;
+    uint32_t              cp, i;
+    njs_unicode_decode_t  ctx;
+    u_char                buf[8], to[4];
+
+    njs_printf("utf16 test started\n");
+
+    end = buf + sizeof(buf);
+    end_to = to + sizeof(to);
+
+    for (i = 0; i <= NJS_UNICODE_MAX_CODEPOINT; i++) {
+
+        /* Skip surrogate pair. */
+
+        if (i >= 0xD800 && i <= 0xDFFF) {
+            continue;
+        }
+
+        start = buf;
+
+        length = njs_utf16_encode(i, &start, end);
+        if (length < NJS_OK) {
+            njs_printf("utf16 test encode failed\n");
+            return NJS_ERROR;
+        }
+
+        njs_utf16_decode_init(&ctx);
+
+        start = buf;
+
+        cp = njs_utf16_decode(&ctx, (const u_char **) &start, start + length);
+        if (cp > NJS_UNICODE_MAX_CODEPOINT) {
+            njs_printf("utf16 test decode failed\n");
+            return NJS_ERROR;
+        }
+
+        if (cp != i) {
+            njs_printf("utf16 test decode code point does not match\n");
+            return NJS_ERROR;
+        }
+
+        start = to;
+
+        length_to = njs_utf16_encode(cp, &start, end_to);
+        if (length_to < NJS_OK) {
+            njs_printf("utf16 test encode failed\n");
+            return NJS_ERROR;
+        }
+
+        if (length_to != length || njs_strncmp(buf, to, length) != 0) {
+            njs_printf("utf16 test decode-encode failed\n");
+            return NJS_ERROR;
+        }
+    }
+
+    /* Surrogate pair. */
+
+    for (i = 0xD800; i <= 0xDFFF; i++) {
+        start = buf;
+
+        length = njs_utf16_encode(i, &start, end);
+        if (length < NJS_OK) {
+            njs_printf("utf16 test surrogate pair encode lead failed\n");
+            return NJS_ERROR;
+        }
+
+        length_to = njs_utf16_encode(i - 0xD800 + 0xDC00, &start, end);
+        if (length_to < NJS_OK) {
+            njs_printf("utf16 test surrogate pair encode failed\n");
+            return NJS_ERROR;
+        }
+
+        njs_utf16_decode_init(&ctx);
+
+        start = buf;
+
+        cp = njs_utf16_decode(&ctx, (const u_char **) &start,
+                              start + length + length_to);
+        if (cp > NJS_UNICODE_MAX_CODEPOINT) {
+            if (i < 0xDC00) {
+                njs_printf("utf16 test surrogate pair decode failed\n");
+                return NJS_ERROR;
+            }
+        }
+    }
+
+    njs_printf("utf16 test passed\n");
+
     return NJS_OK;
 }
 
@@ -189,7 +284,10 @@ utf8_unit_test(njs_uint_t start)
 int
 main(int argc, char **argv)
 {
+    njs_int_t   ret;
     njs_uint_t  start;
+
+    njs_printf("unicode unit test started\n");
 
     if (argc > 1 && argv[1][0] == 'a') {
         start = NJS_UTF8_START_TEST;
@@ -198,5 +296,17 @@ main(int argc, char **argv)
         start = 256;
     }
 
-    return utf8_unit_test(start);
+    ret = utf8_unit_test(start);
+    if (ret != NJS_OK) {
+        return ret;
+    }
+
+    ret = utf16_unit_test();
+    if (ret != NJS_OK) {
+        return ret;
+    }
+
+    njs_printf("unicode unit test passed\n");
+
+    return 0;
 }
