@@ -41,15 +41,18 @@ static u_char  invalid[] = {
 static njs_int_t
 utf8_overlong(u_char *overlong, size_t len)
 {
-    u_char        *p, utf8[4];
-    size_t        size;
-    uint32_t      u, d;
-    njs_uint_t    i;
-    const u_char  *pp;
+    u_char                *p, utf8[4];
+    size_t                size;
+    uint32_t              u, d;
+    njs_uint_t            i;
+    const u_char          *pp;
+    njs_unicode_decode_t  ctx;
+
+    njs_utf8_decode_init(&ctx);
 
     pp = overlong;
 
-    d = njs_utf8_decode(&pp, overlong + len);
+    d = njs_utf8_decode(&ctx, &pp, overlong + len);
 
     len = pp - overlong;
 
@@ -79,18 +82,19 @@ utf8_overlong(u_char *overlong, size_t len)
 static njs_int_t
 utf8_unit_test(njs_uint_t start)
 {
-    u_char        *p, utf8[4];
-    size_t        len;
-    int32_t       n;
-    uint32_t      u, d;
-    njs_uint_t    i, k, l, m;
-    const u_char  *pp;
+    u_char                *p, utf8[4];
+    size_t                len;
+    int32_t               n;
+    uint32_t              u, d;
+    njs_uint_t            i, k, l, m;
+    const u_char          *pp;
+    njs_unicode_decode_t  ctx;
 
     njs_printf("utf8 test started\n");
 
     /* Test valid UTF-8. */
 
-    for (u = 0; u < 0x110000; u++) {
+    for (u = 0; u <= NJS_UNICODE_MAX_CODEPOINT; u++) {
 
         p = njs_utf8_encode(utf8, u);
 
@@ -101,7 +105,22 @@ utf8_unit_test(njs_uint_t start)
 
         pp = utf8;
 
-        d = njs_utf8_decode(&pp, p);
+        njs_utf8_decode_init(&ctx);
+
+        d = njs_utf8_decode(&ctx, &pp, p);
+
+        /* In UTF-8 not allowed UTF-16 surrogate pair sequences. */
+
+        if (u >= 0xD800 && u <= 0xDFFF) {
+            if (d != NJS_UNICODE_ERROR) {
+                njs_printf("njs_utf8_decode(%05uXD) failed for "
+                           "surrogate pair: %05uxD\n", u, d);
+
+                return NJS_ERROR;
+            }
+
+            continue;
+        }
 
         if (u != d) {
             njs_printf("njs_utf8_decode(%05uXD) failed: %05uxD\n", u, d);
@@ -121,9 +140,11 @@ utf8_unit_test(njs_uint_t start)
 
         pp = utf8;
 
-        d = njs_utf8_decode(&pp, utf8 + len);
+        njs_utf8_decode_init(&ctx);
 
-        if (d != 0xFFFFFFFF) {
+        d = njs_utf8_decode(&ctx, &pp, utf8 + len);
+
+        if (d <= NJS_UNICODE_MAX_CODEPOINT) {
 
             u = 0;
             for (i = 0; i < len; i++) {

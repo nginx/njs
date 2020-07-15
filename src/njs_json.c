@@ -728,7 +728,7 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value,
             if (njs_surrogate_any(utf)) {
 
                 if (utf > 0xdbff || p[0] != '\\' || p[1] != 'u') {
-                    s = njs_utf8_encode(s, NJS_UTF8_REPLACEMENT);
+                    s = njs_utf8_encode(s, NJS_UNICODE_REPLACEMENT);
                     continue;
                 }
 
@@ -741,12 +741,12 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value,
                     utf = njs_string_surrogate_pair(utf, utf_low);
 
                 } else if (njs_surrogate_leading(utf_low)) {
-                    utf = NJS_UTF8_REPLACEMENT;
-                    s = njs_utf8_encode(s, NJS_UTF8_REPLACEMENT);
+                    utf = NJS_UNICODE_REPLACEMENT;
+                    s = njs_utf8_encode(s, NJS_UNICODE_REPLACEMENT);
 
                 } else {
                     utf = utf_low;
-                    s = njs_utf8_encode(s, NJS_UTF8_REPLACEMENT);
+                    s = njs_utf8_encode(s, NJS_UNICODE_REPLACEMENT);
                 }
             }
 

@@ -20,10 +20,8 @@ static njs_int_t njs_string_slice_prop(njs_vm_t *vm, njs_string_prop_t *string,
     njs_slice_prop_t *slice, njs_value_t *args, njs_uint_t nargs);
 static njs_int_t njs_string_slice_args(njs_vm_t *vm, njs_slice_prop_t *slice,
     njs_value_t *args, njs_uint_t nargs);
-static njs_int_t njs_string_from_char_code(njs_vm_t *vm,
-    njs_value_t *args, njs_uint_t nargs, njs_index_t unused);
-static njs_int_t njs_string_from_code_point(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+static njs_int_t njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t is_point);
 static njs_int_t njs_string_bytes_from(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 static njs_int_t njs_string_bytes_from_array_like(njs_vm_t *vm,
@@ -545,7 +543,7 @@ static const njs_object_prop_t  njs_string_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("fromCharCode"),
-        .value = njs_native_function(njs_string_from_char_code, 1),
+        .value = njs_native_function2(njs_string_from_char_code, 1, 0),
         .writable = 1,
         .configurable = 1,
     },
@@ -553,7 +551,7 @@ static const njs_object_prop_t  njs_string_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("fromCodePoint"),
-        .value = njs_native_function(njs_string_from_code_point, 1),
+        .value = njs_native_function2(njs_string_from_char_code, 1, 1),
         .writable = 1,
         .configurable = 1,
     },
@@ -1029,13 +1027,14 @@ static njs_int_t
 njs_string_prototype_to_bytes(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    u_char             *p;
-    size_t             length;
-    uint32_t           byte;
-    njs_int_t          ret;
-    const u_char       *s, *end;
-    njs_slice_prop_t   slice;
-    njs_string_prop_t  string;
+    u_char                *p;
+    size_t                length;
+    uint32_t              byte;
+    njs_int_t             ret;
+    const u_char          *s, *end;
+    njs_slice_prop_t      slice;
+    njs_string_prop_t     string;
+    njs_unicode_decode_t  ctx;
 
     ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
     if (njs_slow_path(ret != NJS_OK)) {
@@ -1064,8 +1063,10 @@ njs_string_prototype_to_bytes(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
             length = slice.length;
 
+            njs_utf8_decode_init(&ctx);
+
             while (length != 0 && s < end) {
-                byte = njs_utf8_decode(&s, end);
+                byte = njs_utf8_decode(&ctx, &s, end);
 
                 if (njs_slow_path(byte > 0xFF)) {
                     njs_release(vm, &vm->retval);
@@ -1463,13 +1464,14 @@ static njs_int_t
 njs_string_prototype_char_code_at(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
-    double             num;
-    size_t             length;
-    int64_t            index;
-    uint32_t           code;
-    njs_int_t          ret;
-    const u_char       *start, *end;
-    njs_string_prop_t  string;
+    double                num;
+    size_t                length;
+    int64_t               index;
+    uint32_t              code;
+    njs_int_t             ret;
+    const u_char          *start, *end;
+    njs_string_prop_t     string;
+    njs_unicode_decode_t  ctx;
 
     ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
     if (njs_slow_path(ret != NJS_OK)) {
@@ -1493,10 +1495,12 @@ njs_string_prototype_char_code_at(njs_vm_t *vm, njs_value_t *args,
         code = string.start[index];
 
     } else {
+        njs_utf8_decode_init(&ctx);
+
         /* UTF-8 string. */
         end = string.start + string.size;
         start = njs_string_offset(string.start, end, index);
-        code = njs_utf8_decode(&start, end);
+        code = njs_utf8_decode(&ctx, &start, end);
     }
 
     num = code;
@@ -1829,14 +1833,27 @@ njs_decode_base64_core(njs_vm_t *vm, njs_value_t *value, const njs_str_t *src,
 
 
 static njs_int_t
-njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t is_point)
 {
-    u_char      *p;
-    size_t      size;
-    uint16_t    code;
-    njs_int_t   ret;
-    njs_uint_t  i;
+    double                num;
+    u_char                *p, *start, *end;
+    ssize_t               len;
+    int32_t               code;
+    uint32_t              cp;
+    uint64_t              length, size;
+    njs_int_t             ret;
+    njs_uint_t            i;
+    njs_unicode_decode_t  ctx;
+    u_char                buf[4];
+
+    size = 0;
+    length = 0;
+
+    cp = 0x00;
+    end = buf + sizeof(buf);
+
+    njs_utf16_decode_init(&ctx);
 
     for (i = 1; i < nargs; i++) {
         if (!njs_is_numeric(&args[i])) {
@@ -1845,73 +1862,76 @@ njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args,
                 return ret;
             }
         }
-    }
 
-    size = 0;
-
-    for (i = 1; i < nargs; i++) {
-        code = njs_number_to_uint16(njs_number(&args[i]));
-        size += njs_utf8_size_uint16(code);
-    }
-
-    p = njs_string_alloc(vm, &vm->retval, size, nargs - 1);
-    if (njs_slow_path(p == NULL)) {
-        return NJS_ERROR;
-    }
-
-    for (i = 1; i < nargs; i++) {
-        code = njs_number_to_uint16(njs_number(&args[i]));
-        p = njs_utf8_encode(p, code);
-    }
-
-    return NJS_OK;
-}
-
-
-static njs_int_t
-njs_string_from_code_point(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
-{
-    u_char      *p;
-    double      num;
-    size_t      size;
-    int32_t     code;
-    njs_int_t   ret;
-    njs_uint_t  i;
-
-    for (i = 1; i < nargs; i++) {
-        if (!njs_is_numeric(&args[i])) {
-            ret = njs_value_to_numeric(vm, &args[i], &args[i]);
-            if (ret != NJS_OK) {
-                return ret;
+        if (is_point) {
+            num = njs_number(&args[i]);
+            if (isnan(num)) {
+                goto range_error;
             }
+
+            code = num;
+
+            if (code != num || code < 0 || code > 0x10FFFF) {
+                goto range_error;
+            }
+
+        } else {
+            code = njs_number_to_uint16(njs_number(&args[i]));
         }
+
+        start = buf;
+        len = njs_utf16_encode(code, &start, end);
+
+        start = buf;
+        cp = njs_utf16_decode(&ctx, (const u_char **) &start, start + len);
+
+        if (cp > NJS_UNICODE_MAX_CODEPOINT) {
+            if (cp == NJS_UNICODE_CONTINUE) {
+                continue;
+            }
+
+            cp = NJS_UNICODE_REPLACEMENT;
+        }
+
+        size += njs_utf8_size(cp);
+        length++;
     }
 
-    size = 0;
-
-    for (i = 1; i < nargs; i++) {
-        num = njs_number(&args[i]);
-        if (isnan(num)) {
-            goto range_error;
-        }
-
-        code = num;
-
-        if (code != num || code < 0 || code >= 0x110000) {
-            goto range_error;
-        }
-
-        size += njs_utf8_size(code);
+    if (cp == NJS_UNICODE_CONTINUE) {
+        size += njs_utf8_size(NJS_UNICODE_REPLACEMENT);
+        length++;
     }
 
-    p = njs_string_alloc(vm, &vm->retval, size, nargs - 1);
+    p = njs_string_alloc(vm, &vm->retval, size, length);
     if (njs_slow_path(p == NULL)) {
         return NJS_ERROR;
     }
 
+    njs_utf16_decode_init(&ctx);
+
     for (i = 1; i < nargs; i++) {
-        p = njs_utf8_encode(p, njs_number(&args[i]));
+        if (is_point) {
+            code = njs_number(&args[i]);
+
+        } else {
+            code = njs_number_to_uint16(njs_number(&args[i]));
+        }
+
+        start = buf;
+        len = njs_utf16_encode(code, &start, end);
+
+        start = buf;
+        cp = njs_utf16_decode(&ctx, (const u_char **) &start, start + len);
+
+        if (cp > NJS_UNICODE_MAX_CODEPOINT) {
+            if (cp == NJS_UNICODE_CONTINUE && i + 1 != nargs) {
+                continue;
+            }
+
+            cp = NJS_UNICODE_REPLACEMENT;
+        }
+
+        p = njs_utf8_encode(p, cp);
     }
 
     return NJS_OK;
@@ -2591,11 +2611,12 @@ static njs_int_t
 njs_string_prototype_trim(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t mode)
 {
-    uint32_t           u, trim, length;
-    njs_int_t          ret;
-    njs_value_t        *value;
-    const u_char       *p, *prev, *start, *end;
-    njs_string_prop_t  string;
+    uint32_t              u, trim, length;
+    njs_int_t             ret;
+    njs_value_t           *value;
+    const u_char          *p, *prev, *start, *end;
+    njs_string_prop_t     string;
+    njs_unicode_decode_t  ctx;
 
     value = njs_argument(args, 0);
     ret = njs_string_object_validate(vm, value);
@@ -2651,13 +2672,15 @@ njs_string_prototype_trim(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         /* UTF-8 string. */
 
         if (mode & NJS_TRIM_START) {
+            njs_utf8_decode_init(&ctx);
+
             for ( ;; ) {
                 if (start == end) {
                     goto empty;
                 }
 
                 p = start;
-                u = njs_utf8_decode(&start, end);
+                u = njs_utf8_decode(&ctx, &start, end);
 
                 if (njs_utf8_is_whitespace(u)) {
                     trim++;
@@ -2672,6 +2695,8 @@ njs_string_prototype_trim(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         if (mode & NJS_TRIM_END) {
             prev = end;
 
+            njs_utf8_decode_init(&ctx);
+
             for ( ;; ) {
                 if (start == prev) {
                     goto empty;
@@ -2679,7 +2704,7 @@ njs_string_prototype_trim(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
                 prev = njs_utf8_prev(prev);
                 p = prev;
-                u = njs_utf8_decode(&p, end);
+                u = njs_utf8_decode(&ctx, &p, end);
 
                 if (njs_utf8_is_whitespace(u)) {
                     trim++;
@@ -3640,11 +3665,12 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 double
 njs_string_to_number(const njs_value_t *value, njs_bool_t parse_float)
 {
-    double        num;
-    size_t        size;
-    uint32_t      u;
-    njs_bool_t    minus;
-    const u_char  *p, *start, *end;
+    double                num;
+    size_t                size;
+    uint32_t              u;
+    njs_bool_t            minus;
+    const u_char          *p, *start, *end;
+    njs_unicode_decode_t  ctx;
 
     const size_t  infinity = njs_length("Infinity");
 
@@ -3660,9 +3686,11 @@ njs_string_to_number(const njs_value_t *value, njs_bool_t parse_float)
 
     end = p + size;
 
+    njs_utf8_decode_init(&ctx);
+
     while (p < end) {
         start = p;
-        u = njs_utf8_decode(&p, end);
+        u = njs_utf8_decode(&ctx, &p, end);
 
         if (!njs_utf8_is_whitespace(u)) {
             p = start;
@@ -4179,15 +4207,16 @@ njs_int_t
 njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t component)
 {
-    u_char             byte, *dst;
-    uint64_t           size;
-    uint32_t           cp, cp_low;
-    njs_int_t          ret;
-    njs_value_t        *value;
-    const u_char       *src, *end;
-    const uint32_t     *escape;
-    njs_string_prop_t  string;
-    u_char             encode[4];
+    u_char                byte, *dst;
+    uint64_t              size;
+    uint32_t              cp, cp_low;
+    njs_int_t             ret;
+    njs_value_t           *value;
+    const u_char          *src, *end;
+    const uint32_t        *escape;
+    njs_string_prop_t     string;
+    njs_unicode_decode_t  ctx;
+    u_char                encode[4];
 
     static const uint32_t  escape_uri[] = {
         0xffffffff,  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
@@ -4257,8 +4286,10 @@ njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     } else {
         /* UTF-8 string. */
 
+        njs_utf8_decode_init(&ctx);
+
         while (src < end) {
-            cp = njs_utf8_decode(&src, end);
+            cp = njs_utf8_decode(&ctx, &src, end);
 
             if (cp < 0x80 && !njs_need_escape(escape, cp)) {
                 size++;
@@ -4271,7 +4302,7 @@ njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                 }
 
                 if (njs_surrogate_leading(cp)) {
-                    cp_low = njs_utf8_decode(&src, end);
+                    cp_low = njs_utf8_decode(&ctx, &src, end);
 
                     if (njs_slow_path(!njs_surrogate_trailing(cp_low))) {
                         goto uri_error;
@@ -4310,11 +4341,13 @@ njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     /* UTF-8 string. */
 
+    njs_utf8_decode_init(&ctx);
+
     while (src < end) {
-        cp = njs_utf8_decode(&src, end);
+        cp = njs_utf8_decode(&ctx, &src, end);
 
         if (njs_slow_path(njs_surrogate_leading(cp))) {
-            cp_low = njs_utf8_decode(&src, end);
+            cp_low = njs_utf8_decode(&ctx, &src, end);
             cp = njs_string_surrogate_pair(cp, cp_low);
         }
 
@@ -4337,11 +4370,14 @@ njs_inline uint32_t
 njs_string_decode_uri_cp(const int8_t *hex, const u_char **start,
     const u_char *end, njs_bool_t expect_percent)
 {
-    int8_t        d0, d1;
-    uint32_t      cp;
-    const u_char  *p;
+    int8_t                d0, d1;
+    uint32_t              cp;
+    const u_char          *p;
+    njs_unicode_decode_t  ctx;
 
-    cp = njs_utf8_decode(start, end);
+    njs_utf8_decode_init(&ctx);
+
+    cp = njs_utf8_decode(&ctx, start, end);
     if (njs_fast_path(cp != '%')) {
         return expect_percent ? 0xFFFFFFFF: cp;
     }
@@ -4378,18 +4414,19 @@ njs_int_t
 njs_string_decode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t component)
 {
-    u_char             *dst;
-    int64_t            size, length;
-    uint32_t           cp;
-    njs_int_t          ret;
-    njs_chb_t          chain;
-    njs_uint_t         i, n;
-    njs_bool_t         percent;
-    njs_value_t        *value;
-    const u_char       *src, *p, *end;
-    const uint32_t     *reserve;
-    njs_string_prop_t  string;
-    u_char             encode[4];
+    u_char                *dst;
+    int64_t               size, length;
+    uint32_t              cp;
+    njs_int_t             ret;
+    njs_chb_t             chain;
+    njs_uint_t            i, n;
+    njs_bool_t            percent;
+    njs_value_t           *value;
+    const u_char          *src, *p, *end;
+    const uint32_t        *reserve;
+    njs_string_prop_t     string;
+    njs_unicode_decode_t  ctx;
+    u_char                encode[4];
 
     static const uint32_t  reserve_uri[] = {
         0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
@@ -4472,6 +4509,8 @@ njs_string_decode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     njs_chb_init(&chain, vm->mem_pool);
 
+    njs_utf8_decode_init(&ctx);
+
     while (src < end) {
         percent = (src[0] == '%');
         cp = njs_string_decode_uri_cp(hex, &src, end, 0);
@@ -4529,8 +4568,8 @@ njs_string_decode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
         p = encode;
-        cp = njs_utf8_decode(&p, p + n);
-        if (njs_slow_path(cp == 0xFFFFFFFF)) {
+        cp = njs_utf8_decode(&ctx, &p, p + n);
+        if (njs_slow_path(cp > NJS_UNICODE_MAX_CODEPOINT)) {
             goto uri_error;
         }
 

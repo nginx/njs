@@ -7140,8 +7140,35 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("String.fromCharCode(65.14 + 65536)"),
       njs_str("A") },
 
+    { njs_str("String.fromCharCode(0xD83D, 0xDCA9)"),
+      njs_str("💩") },
+
+    { njs_str("String.fromCharCode(0xD83D, 0xDCA9).length"),
+      njs_str("1") },
+
+    { njs_str("String.fromCharCode(0xD83D)"),
+      njs_str("�") },
+
+    { njs_str("String.fromCharCode(0xD83D).length"),
+      njs_str("1") },
+
+    { njs_str("String.fromCharCode(0xD83D) + String.fromCharCode(0xDCA9)"),
+      njs_str("��") },
+
     { njs_str("String.fromCodePoint(65 + 65536)"),
       njs_str("𐁁") },
+
+    { njs_str("String.fromCodePoint(0xD83D, 0xDCA9)"),
+      njs_str("💩") },
+
+    { njs_str("String.fromCodePoint(0xD83D, 0xDCA9).length"),
+      njs_str("1") },
+
+    { njs_str("String.fromCodePoint(0xD83D)"),
+      njs_str("�") },
+
+    { njs_str("String.fromCodePoint(0xD83D).length"),
+      njs_str("1") },
 
     { njs_str("String.fromCharCode(2**53 + 10)"),
       njs_str("\n") },
@@ -7158,7 +7185,10 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("(function() {"
                  "    var n;"
                  "    for (n = 0; n <= 65536; n++) {"
-                 "        if (String.fromCharCode(n).charCodeAt(0) !== n)"
+
+                 /* From U+D800 to U+DFFF is surrogate pair. Not valid in UTF-8. */
+
+                 "        if ((n < 0xD800 || n > 0xDFFF) && String.fromCharCode(n).charCodeAt(0) !== n)"
                  "            return n;"
                  "    }"
                  "    return -1"
@@ -7169,7 +7199,7 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("(function() {"
                  "    var n;"
                  "    for (n = 0; n <= 1114111; n++) {"
-                 "        if (String.fromCodePoint(n).codePointAt(0) !== n)"
+                 "        if ((n < 0xD800 || n > 0xDFFF) && String.fromCodePoint(n).codePointAt(0) !== n)"
                  "            return n;"
                  "    }"
                  "    return -1"
@@ -8274,16 +8304,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("encodeURI('012абв')"),
       njs_str("012%D0%B0%D0%B1%D0%B2")},
 
-    { njs_str("["
-              " String.fromCharCode(0xD800),"
-              " String.fromCharCode(0xD800) + 'a',"
-              " String.fromCharCode(0xDC00),"
-              " String.fromCharCode(0xDC00) + 'a',"
-              "].every(v=>{try { encodeURI(v)} catch(e) {return e.name == 'URIError'}})"),
-      njs_str("true")},
-
     { njs_str("encodeURI(String.fromCharCode(0xD800)+String.fromCharCode(0xDC00))"),
-      njs_str("%F0%90%80%80")},
+      njs_str("%EF%BF%BD%EF%BF%BD")},
 
     { njs_str("encodeURI('~}|{`_^]\\\\[@?>=<;:/.-,+*)(\\\'&%$#\"! ')"),
       njs_str("~%7D%7C%7B%60_%5E%5D%5C%5B@?%3E=%3C;:/.-,+*)('&%25$#%22!%20")},

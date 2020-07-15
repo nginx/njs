@@ -8,23 +8,9 @@
 #define _NJS_UTF8_H_INCLUDED_
 
 
-/*
- * Since the maximum valid Unicode character is 0x0010FFFF, the maximum
- * difference between Unicode characters is lesser 0x0010FFFF and
- * 0x0EEE0EEE can be used as value to indicate UTF-8 encoding error.
- */
-#define NJS_UTF8_SORT_INVALID  0x0EEE0EEE
-
-#define NJS_UTF8_REPLACEMENT   0xFFFD
-
-
 NJS_EXPORT u_char *njs_utf8_encode(u_char *p, uint32_t u);
-NJS_EXPORT uint32_t njs_utf8_decode(const u_char **start, const u_char *end);
-NJS_EXPORT uint32_t njs_utf8_decode2(const u_char **start, const u_char *end);
-NJS_EXPORT uint32_t njs_utf8_safe_decode(const u_char **start,
-    const u_char *end);
-NJS_EXPORT uint32_t njs_utf8_safe_decode2(const u_char **start,
-    const u_char *end);
+NJS_EXPORT uint32_t njs_utf8_decode(njs_unicode_decode_t *ctx,
+    const u_char **data, const u_char *end);
 NJS_EXPORT njs_int_t njs_utf8_casecmp(const u_char *start1,
     const u_char *start2, size_t len1, size_t len2);
 NJS_EXPORT uint32_t njs_utf8_lower_case(const u_char **start,
@@ -35,7 +21,6 @@ NJS_EXPORT ssize_t njs_utf8_length(const u_char *p, size_t len);
 NJS_EXPORT ssize_t njs_utf8_safe_length(const u_char *p, size_t len,
     ssize_t *out_size);
 NJS_EXPORT njs_bool_t njs_utf8_is_valid(const u_char *p, size_t len);
-
 
 /*
  * njs_utf8_next() and njs_utf8_prev() expect a valid UTF-8 string.
@@ -114,12 +99,25 @@ njs_utf8_copy(u_char *dst, const u_char **src, const u_char *end)
 }
 
 
-#define njs_utf8_size(u)                                                      \
-    ((u < 0x80) ? 1 : ((u < 0x0800) ? 2 : ((u < 0x10000) ? 3 : 4)))
+njs_inline void
+njs_utf8_decode_init(njs_unicode_decode_t *ctx)
+{
+    ctx->need = 0x00;
+}
 
 
-#define njs_utf8_size_uint16(u)                                               \
-    ((u < 0x80) ? 1 : ((u < 0x0800) ? 2 : 3))
+njs_inline size_t
+njs_utf8_size(uint32_t cp)
+{
+    return (cp < 0x80) ? 1 : ((cp < 0x0800) ? 2 : ((cp < 0x10000) ? 3 : 4));
+}
+
+
+njs_inline size_t
+njs_utf8_size_uint16(uint32_t cp)
+{
+    return ((cp < 0x80) ? 1 : ((cp < 0x0800) ? 2 : 3));
+}
 
 
 njs_inline njs_bool_t

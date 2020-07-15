@@ -56,211 +56,166 @@ njs_utf8_encode(u_char *p, uint32_t u)
 }
 
 
-/*
- * njs_utf8_decode() decodes UTF-8 sequences and returns a valid
- * character 0x00 - 0x10FFFF, or 0xFFFFFFFF for invalid or overlong
- * UTF-8 sequence.
- */
-
-uint32_t
-njs_utf8_decode(const u_char **start, const u_char *end)
+njs_inline njs_int_t
+njs_utf8_boundary(njs_unicode_decode_t *ctx, const u_char **data,
+    unsigned *need, u_char lower, u_char upper)
 {
-    uint32_t  u;
+    u_char  ch;
 
-    u = (uint32_t) **start;
+    ch = **data;
 
-    if (u < 0x80) {
-        (*start)++;
-        return u;
+    if (ch < lower || ch > upper) {
+        return NJS_ERROR;
     }
 
-    return njs_utf8_decode2(start, end);
+    (*data)++;
+    (*need)--;
+    ctx->codepoint = (ctx->codepoint << 6) | (ch & 0x3F);
+
+    return NJS_OK;
 }
 
 
-/*
- * njs_utf8_decode2() decodes two and more bytes UTF-8 sequences only
- * and returns a valid character 0x80 - 0x10FFFF, OR 0xFFFFFFFF for
- * invalid or overlong UTF-8 sequence.
- */
+njs_inline void
+njs_utf8_boundary_set(njs_unicode_decode_t *ctx, const u_char ch,
+    u_char first, u_char second, u_char lower, u_char upper)
+{
+    if (ch == first) {
+        ctx->lower = lower;
+        ctx->upper = 0xBF;
+
+    } else if (ch == second) {
+        ctx->lower = 0x80;
+        ctx->upper = upper;
+    }
+}
+
 
 uint32_t
-njs_utf8_decode2(const u_char **start, const u_char *end)
+njs_utf8_decode(njs_unicode_decode_t *ctx, const u_char **start,
+    const u_char *end)
 {
     u_char        c;
-    size_t        n;
-    uint32_t      u, overlong;
+    unsigned      need;
+    njs_int_t     ret;
     const u_char  *p;
 
-    p = *start;
-    u = (uint32_t) *p;
+    if (ctx->need != 0) {
+        need = ctx->need;
+        ctx->need = 0;
 
-    if (u >= 0xE0) {
-
-        if (u >= 0xF0) {
-
-            if (njs_slow_path(u > 0xF4)) {
-                /*
-                 * The maximum valid Unicode character is 0x10FFFF
-                 * which is encoded as 0xF4 0x8F 0xBF 0xBF.
-                 */
-                return 0xFFFFFFFF;
+        if (ctx->lower != 0x00) {
+            ret = njs_utf8_boundary(ctx, start, &need, ctx->lower, ctx->upper);
+            if (njs_slow_path(ret != NJS_OK)) {
+                goto failed;
             }
 
-            u &= 0x07;
-            overlong = 0x00FFFF;
-            n = 3;
-
-        } else {
-            u &= 0x0F;
-            overlong = 0x07FF;
-            n = 2;
+            ctx->lower = 0x00;
         }
 
-    } else if (u >= 0xC2) {
-
-        /* 0x80 is encoded as 0xC2 0x80. */
-
-        u &= 0x1F;
-        overlong = 0x007F;
-        n = 1;
-
-    } else {
-        /* u <= 0xC2 */
-        return 0xFFFFFFFF;
+        goto decode;
     }
 
-    p++;
+    c = *(*start)++;
 
-    if (njs_fast_path(p + n <= end)) {
+    if (c < 0x80) {
+        return c;
 
-        do {
-            c = *p++;
-            /*
-             * The byte must in the 0x80 - 0xBF range.
-             * Values below 0x80 become >= 0x80.
-             */
-            c = c - 0x80;
+    } else if (c <= 0xDF) {
+        if (c < 0xC2) {
+            return NJS_UNICODE_ERROR;
+        }
 
-            if (njs_slow_path(c > 0x3F)) {
-                return 0xFFFFFFFF;
-            }
+        need = 1;
+        ctx->codepoint = c & 0x1F;
 
-            u = (u << 6) | c;
-            n--;
+    } else if (c < 0xF0) {
+        need = 2;
+        ctx->codepoint = c & 0x0F;
 
-        } while (n != 0);
+        if (*start == end) {
+            njs_utf8_boundary_set(ctx, c, 0xE0, 0xED, 0xA0, 0x9F);
+            goto next;
+        }
 
-        if (overlong < u && u < 0x110000) {
+        ret = NJS_OK;
+
+        if (c == 0xE0) {
+            ret = njs_utf8_boundary(ctx, start, &need, 0xA0, 0xBF);
+
+        } else if (c == 0xED) {
+            ret = njs_utf8_boundary(ctx, start, &need, 0x80, 0x9F);
+        }
+
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto failed;
+        }
+
+    } else if (c < 0xF5) {
+        need = 3;
+        ctx->codepoint = c & 0x07;
+
+        if (*start == end) {
+            njs_utf8_boundary_set(ctx, c, 0xF0, 0xF4, 0x90, 0x8F);
+            goto next;
+        }
+
+        ret = NJS_OK;
+
+        if (c == 0xF0) {
+            ret = njs_utf8_boundary(ctx, start, &need, 0x90, 0xBF);
+
+        } else if (c == 0xF4) {
+            ret = njs_utf8_boundary(ctx, start, &need, 0x80, 0x8F);
+        }
+
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto failed;
+        }
+
+    } else {
+        return NJS_UNICODE_ERROR;
+    }
+
+decode:
+
+    for (p = *start; p < end; p++) {
+        c = *p;
+
+        if (c < 0x80 || c > 0xBF) {
             *start = p;
-            return u;
-        }
-    }
 
-    return 0xFFFFFFFF;
-}
-
-
-uint32_t
-njs_utf8_safe_decode(const u_char **start, const u_char *end)
-{
-    uint32_t  u;
-
-    u = (uint32_t) **start;
-
-    if (u < 0x80) {
-        (*start)++;
-        return u;
-    }
-
-    return njs_utf8_safe_decode2(start, end);
-}
-
-
-uint32_t
-njs_utf8_safe_decode2(const u_char **start, const u_char *end)
-{
-    u_char        c;
-    size_t        n;
-    uint32_t      u, overlong;
-    const u_char  *p;
-
-    p = *start;
-    u = (uint32_t) *p;
-
-    if (u >= 0xE0) {
-
-        if (u >= 0xF0) {
-
-            if (njs_slow_path(u > 0xF4)) {
-                /*
-                 * The maximum valid Unicode character is 0x10FFFF
-                 * which is encoded as 0xF4 0x8F 0xBF 0xBF.
-                 */
-                goto fail_one;
-            }
-
-            u &= 0x07;
-            overlong = 0x00FFFF;
-            n = 3;
-
-        } else {
-            u &= 0x0F;
-            overlong = 0x07FF;
-            n = 2;
+            goto failed;
         }
 
-    } else if (u >= 0xC2) {
+        ctx->codepoint = (ctx->codepoint << 6) | (c & 0x3F);
 
-        /* 0x80 is encoded as 0xC2 0x80. */
+        if (--need == 0) {
+            *start = p + 1;
 
-        u &= 0x1F;
-        overlong = 0x007F;
-        n = 1;
-
-    } else {
-        /* u <= 0xC2 */
-        goto fail_one;
-    }
-
-    p++;
-
-    while (p < end && n != 0) {
-        c = *p++;
-        /*
-         * The byte must in the 0x80 - 0xBF range.
-         * Values below 0x80 become >= 0x80.
-         */
-        c = c - 0x80;
-
-        if (njs_slow_path(c > 0x3F)) {
-            *start = --p;
-            return NJS_UTF8_REPLACEMENT;
+            return ctx->codepoint;
         }
-
-        u = (u << 6) | c;
-        n--;
     }
 
     *start = p;
 
-    if (n == 0 && overlong < u && u < 0x110000) {
-        return u;
-    }
+next:
 
-    return NJS_UTF8_REPLACEMENT;
+    ctx->need = need;
 
-fail_one:
+    return NJS_UNICODE_CONTINUE;
 
-    (*start)++;
+failed:
 
-    return NJS_UTF8_REPLACEMENT;
+    ctx->lower = 0x00;
+    ctx->need = 0;
+
+    return NJS_UNICODE_ERROR;
 }
-
 
 /*
  * njs_utf8_casecmp() tests only up to the minimum of given lengths, but
- * requires lengths of both strings because otherwise njs_utf8_decode2()
+ * requires lengths of both strings because otherwise njs_utf8_decode()
  * may fail due to incomplete sequence.
  */
 
@@ -282,7 +237,7 @@ njs_utf8_casecmp(const u_char *start1, const u_char *start2, size_t len1,
         u2 = njs_utf8_lower_case(&start2, end2);
 
         if (njs_slow_path((u1 | u2) == 0xFFFFFFFF)) {
-            return NJS_UTF8_SORT_INVALID;
+            return NJS_UNICODE_ERROR;
         }
 
         n = u1 - u2;
@@ -299,8 +254,9 @@ njs_utf8_casecmp(const u_char *start1, const u_char *start2, size_t len1,
 uint32_t
 njs_utf8_lower_case(const u_char **start, const u_char *end)
 {
-    uint32_t        u;
-    const uint32_t  *block;
+    uint32_t              u;
+    const uint32_t        *block;
+    njs_unicode_decode_t  ctx;
 
     u = (uint32_t) **start;
 
@@ -310,7 +266,9 @@ njs_utf8_lower_case(const u_char **start, const u_char *end)
         return njs_unicode_lower_case_block_000[u];
     }
 
-    u = njs_utf8_decode2(start, end);
+    njs_utf8_decode_init(&ctx);
+
+    u = njs_utf8_decode(&ctx, start, end);
 
     if (u <= NJS_UNICODE_MAX_LOWER_CASE) {
         block = njs_unicode_lower_case_blocks[u / NJS_UNICODE_BLOCK_SIZE];
@@ -327,8 +285,9 @@ njs_utf8_lower_case(const u_char **start, const u_char *end)
 uint32_t
 njs_utf8_upper_case(const u_char **start, const u_char *end)
 {
-    uint32_t        u;
-    const uint32_t  *block;
+    uint32_t              u;
+    const uint32_t        *block;
+    njs_unicode_decode_t  ctx;
 
     u = (uint32_t) **start;
 
@@ -338,7 +297,9 @@ njs_utf8_upper_case(const u_char **start, const u_char *end)
         return njs_unicode_upper_case_block_000[u];
     }
 
-    u = njs_utf8_decode2(start, end);
+    njs_utf8_decode_init(&ctx);
+
+    u = njs_utf8_decode(&ctx, start, end);
 
     if (u <= NJS_UNICODE_MAX_UPPER_CASE) {
         block = njs_unicode_upper_case_blocks[u / NJS_UNICODE_BLOCK_SIZE];
@@ -355,15 +316,20 @@ njs_utf8_upper_case(const u_char **start, const u_char *end)
 ssize_t
 njs_utf8_length(const u_char *p, size_t len)
 {
-    ssize_t       length;
-    const u_char  *end;
+    ssize_t               length;
+    const u_char          *end;
+    njs_unicode_decode_t  ctx;
 
     length = 0;
 
     end = p + len;
 
+    njs_utf8_decode_init(&ctx);
+
     while (p < end) {
-        if (njs_slow_path(njs_utf8_decode(&p, end) == 0xffffffff)) {
+        if (njs_slow_path(njs_utf8_decode(&ctx, &p, end)
+                          > NJS_UNICODE_MAX_CODEPOINT))
+        {
             return -1;
         }
 
@@ -377,19 +343,27 @@ njs_utf8_length(const u_char *p, size_t len)
 ssize_t
 njs_utf8_safe_length(const u_char *p, size_t len, ssize_t *out_size)
 {
-    ssize_t       size, length;
-    uint32_t      codepoint;
-    const u_char  *end;
+    ssize_t               size, length;
+    uint32_t              codepoint;
+    const u_char          *end;
+    njs_unicode_decode_t  ctx;
 
     size = 0;
     length = 0;
 
     end = p + len;
 
-    while (p < end) {
-        codepoint = njs_utf8_safe_decode(&p, end);
+    njs_utf8_decode_init(&ctx);
 
-        size += njs_utf8_size(codepoint);
+    while (p < end) {
+        codepoint = njs_utf8_decode(&ctx, &p, end);
+
+        if (codepoint <= NJS_UNICODE_MAX_CODEPOINT) {
+            size += njs_utf8_size(codepoint);
+
+        } else {
+            size += njs_utf8_size(NJS_UNICODE_REPLACEMENT);
+        }
 
         length++;
     }
@@ -405,12 +379,17 @@ njs_utf8_safe_length(const u_char *p, size_t len, ssize_t *out_size)
 njs_bool_t
 njs_utf8_is_valid(const u_char *p, size_t len)
 {
-    const u_char  *end;
+    const u_char          *end;
+    njs_unicode_decode_t  ctx;
 
     end = p + len;
 
+    njs_utf8_decode_init(&ctx);
+
     while (p < end) {
-        if (njs_slow_path(njs_utf8_decode(&p, end) == 0xffffffff)) {
+        if (njs_slow_path(njs_utf8_decode(&ctx, &p, end)
+                          > NJS_UNICODE_MAX_CODEPOINT))
+        {
             return 0;
         }
     }
