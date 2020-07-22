@@ -173,7 +173,7 @@ njs_int_t njs_string_decode_base64(njs_vm_t *vm, njs_value_t *value,
     const njs_str_t *src);
 njs_int_t njs_string_decode_base64url(njs_vm_t *vm, njs_value_t *value,
     const njs_str_t *src);
-void njs_string_truncate(njs_value_t *value, uint32_t size);
+void njs_string_truncate(njs_value_t *value, uint32_t size, uint32_t length);
 void njs_string_copy(njs_value_t *dst, njs_value_t *src);
 njs_int_t njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string,
     njs_value_t *value);

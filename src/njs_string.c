@@ -172,30 +172,33 @@ njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint64_t size,
 
 
 void
-njs_string_truncate(njs_value_t *value, uint32_t size)
+njs_string_truncate(njs_value_t *value, uint32_t size, uint32_t length)
 {
-    u_char  *dst, *src;
+    u_char    *dst, *src;
+    uint32_t  n;
 
     if (size <= NJS_STRING_SHORT) {
-        if (value->short_string.size != NJS_STRING_LONG) {
-            value->short_string.size = size;
-
-        } else {
-            value->short_string.size = size;
+        if (value->short_string.size == NJS_STRING_LONG) {
             dst = value->short_string.start;
             src = value->long_string.data->start;
 
-            while (size != 0) {
+            n = size;
+
+            while (n != 0) {
                 /* The maximum size is just 14 bytes. */
                 njs_pragma_loop_disable_vectorization;
 
                 *dst++ = *src++;
-                size--;
+                n--;
             }
         }
 
+        value->short_string.size = size;
+        value->short_string.length = length;
+
     } else {
         value->long_string.size = size;
+        value->long_string.data->length = length;
     }
 }
 
@@ -1708,7 +1711,7 @@ njs_string_decode_hex(njs_vm_t *vm, njs_value_t *value, const njs_str_t *src)
     }
 
     if (njs_slow_path((size_t) (p - dst) != (len / 2))) {
-        njs_string_truncate(value, p - dst);
+        njs_string_truncate(value, p - dst, 0);
     }
 
     return NJS_OK;
@@ -1825,7 +1828,7 @@ njs_decode_base64_core(njs_vm_t *vm, njs_value_t *value, const njs_str_t *src,
     }
 
     if (njs_slow_path((size_t) (d - dst) != dst_len)) {
-        njs_string_truncate(value, d - dst);
+        njs_string_truncate(value, d - dst, 0);
     }
 
     return NJS_OK;
