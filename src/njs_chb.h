@@ -43,9 +43,6 @@ void njs_chb_destroy(njs_chb_t *chain);
 #define njs_chb_append_literal(chain, literal)                               \
     njs_chb_append0(chain, literal, njs_length(literal))
 
-#define njs_chb_append_str(chain, str)                                       \
-    njs_chb_append0(chain, (const char *) (str)->start, (str)->length)
-
 
 #define njs_chb_node_size(n) (size_t) ((n)->pos - (n)->start)
 #define njs_chb_node_room(n) (size_t) ((n)->end - (n)->pos)
@@ -58,6 +55,13 @@ njs_chb_init(njs_chb_t *chain, njs_mp_t *pool)
     chain->pool = pool;
     chain->nodes = NULL;
     chain->last = NULL;
+}
+
+
+njs_inline void
+njs_chb_append_str(njs_chb_t *chain, njs_str_t *str)
+{
+    njs_chb_append0(chain, (const char *) str->start, str->length);
 }
 
 
