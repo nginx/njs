@@ -50,6 +50,7 @@ static const njs_object_init_t  *njs_object_init[] = {
 static const njs_object_init_t  *njs_module_init[] = {
     &njs_fs_object_init,
     &njs_crypto_object_init,
+    &njs_query_string_object_init,
     NULL
 };
 

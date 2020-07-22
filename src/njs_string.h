@@ -155,6 +155,40 @@ njs_string_length(njs_value_t *string)
 }
 
 
+njs_inline njs_bool_t
+njs_need_escape(const uint32_t *escape, uint32_t byte)
+{
+    return ((escape[byte >> 5] & ((uint32_t) 1 << (byte & 0x1f))) != 0);
+}
+
+
+njs_inline u_char *
+njs_string_encode(const uint32_t *escape, size_t size, const u_char *src,
+    u_char *dst)
+{
+    uint8_t              byte;
+    static const u_char  hex[16] = "0123456789ABCDEF";
+
+    do {
+        byte = *src++;
+
+        if (njs_need_escape(escape, byte)) {
+            *dst++ = '%';
+            *dst++ = hex[byte >> 4];
+            *dst++ = hex[byte & 0xf];
+
+        } else {
+            *dst++ = byte;
+        }
+
+        size--;
+
+    } while (size != 0);
+
+    return dst;
+}
+
+
 njs_int_t njs_string_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     uint32_t size);
 u_char *njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint64_t size,

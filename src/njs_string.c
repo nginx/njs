@@ -4172,40 +4172,6 @@ const njs_object_init_t  njs_string_instance_init = {
 };
 
 
-njs_inline njs_bool_t
-njs_need_escape(const uint32_t *escape, uint32_t byte)
-{
-    return ((escape[byte >> 5] & ((uint32_t) 1 << (byte & 0x1f))) != 0);
-}
-
-
-njs_inline u_char *
-njs_string_encode(const uint32_t *escape, size_t size, const u_char *src,
-    u_char *dst)
-{
-    uint8_t              byte;
-    static const u_char  hex[16] = "0123456789ABCDEF";
-
-    do {
-        byte = *src++;
-
-        if (njs_need_escape(escape, byte)) {
-            *dst++ = '%';
-            *dst++ = hex[byte >> 4];
-            *dst++ = hex[byte & 0xf];
-
-        } else {
-            *dst++ = byte;
-        }
-
-        size--;
-
-    } while (size != 0);
-
-    return dst;
-}
-
-
 njs_int_t
 njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t component)

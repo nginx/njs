@@ -22,6 +22,18 @@ NJS_EXPORT ssize_t njs_utf8_safe_length(const u_char *p, size_t len,
     ssize_t *out_size);
 NJS_EXPORT njs_bool_t njs_utf8_is_valid(const u_char *p, size_t len);
 
+
+njs_inline uint32_t
+njs_utf8_consume(njs_unicode_decode_t *ctx, u_char byte)
+{
+    const u_char  *p;
+
+    p = &byte;
+
+    return njs_utf8_decode(ctx, &p, p + 1);
+}
+
+
 /*
  * njs_utf8_next() and njs_utf8_prev() expect a valid UTF-8 string.
  *
