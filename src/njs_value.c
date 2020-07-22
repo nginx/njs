@@ -1033,8 +1033,12 @@ slow_path:
             ret = prop->value.data.u.prop_handler(vm, prop, value, NULL,
                                                   &prop->value);
 
-            if (njs_slow_path(ret == NJS_ERROR)) {
-                return ret;
+            if (njs_slow_path(ret != NJS_OK)) {
+                if (ret == NJS_ERROR) {
+                    return ret;
+                }
+
+                njs_set_undefined(&prop->value);
             }
 
             *retval = prop->value;
