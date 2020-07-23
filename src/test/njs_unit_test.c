@@ -2183,6 +2183,20 @@ static njs_unit_test_t  njs_test[] =
                  "var b = ++a; a +' '+ b"),
       njs_str("NaN NaN") },
 
+    { njs_str("var a = 0; a = a + ++a; a"),
+      njs_str("1") },
+
+    { njs_str("var a = 0; a += a + ++a; a"),
+      njs_str("1") },
+
+    { njs_str("var i = 0, arr = ['a', 'b'];"
+              "arr[i] = arr[i] + arr[++i]; arr"),
+      njs_str("ab,b") },
+
+    { njs_str("var i = 0, arr = ['a', 'b'];"
+              "arr[i] += arr[i] + arr[++i]; arr"),
+      njs_str("aab,b") },
+
     /* Post increment. */
 
     { njs_str("var a = 1;   a++"),
@@ -2264,6 +2278,20 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = { valueOf: function() { return {} } };"
                  "var b = a++; a +' '+ b"),
       njs_str("NaN NaN") },
+
+    { njs_str("var a = 0; a = a + a++; a"),
+      njs_str("0") },
+
+    { njs_str("var a = 0; a += a + a++; a"),
+      njs_str("0") },
+
+    { njs_str("var i = 1, arr = ['a', 'b'];"
+              "arr[i] = arr[i] + arr[i++]; arr"),
+      njs_str("a,bb") },
+
+    { njs_str("var i = 1, arr = ['a', 'b'];"
+              "arr[i] += arr[i] + arr[i++]; arr"),
+      njs_str("a,bbb") },
 
     /* Decrement. */
 
@@ -2347,6 +2375,20 @@ static njs_unit_test_t  njs_test[] =
                  "var b = --a; a +' '+ b"),
       njs_str("NaN NaN") },
 
+    { njs_str("var a = 0; a = a + --a; a"),
+      njs_str("-1") },
+
+    { njs_str("var a = 0; a -= a + --a; a"),
+      njs_str("1") },
+
+    { njs_str("var i = 1, arr = ['a', 'b'];"
+              "arr[i] = arr[i] + arr[--i]; arr"),
+      njs_str("a,ba") },
+
+    { njs_str("var i = 1, arr = ['a', 'b'];"
+              "arr[i] += arr[i] + arr[--i]; arr"),
+      njs_str("a,bba") },
+
     /* Post decrement. */
 
     { njs_str("var a = 1;   a--"),
@@ -2428,6 +2470,20 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = { valueOf: function() { return {} } };"
                  "var b = a--; a +' '+ b"),
       njs_str("NaN NaN") },
+
+    { njs_str("var a = 0; a = a + a--; a"),
+      njs_str("0") },
+
+    { njs_str("var a = 0; a += a + a--; a"),
+      njs_str("0") },
+
+    { njs_str("var i = 1, arr = ['a', 'b'];"
+              "arr[i] = arr[i] + arr[i--]; arr"),
+      njs_str("a,bb") },
+
+    { njs_str("var i = 1, arr = ['a', 'b'];"
+              "arr[i] += arr[i] + arr[i--]; arr"),
+      njs_str("a,bbb") },
 
     /**/
 

@@ -1799,7 +1799,7 @@ njs_generate_operation_assignment(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
     njs_int_t              ret;
-    njs_index_t            index;
+    njs_index_t            index, src;
     njs_parser_node_t      *lvalue, *expr, *object, *property;
     njs_vmcode_move_t      *move;
     njs_vmcode_3addr_t     *code;
@@ -1874,6 +1874,34 @@ njs_generate_operation_assignment(njs_vm_t *vm, njs_generator_t *generator,
     ret = njs_generator(vm, generator, property);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
+    }
+
+    if (njs_slow_path(njs_parser_has_side_effect(node->right))) {
+        /*
+         * Preserve object and property values stored in variables in a case
+         * if the variables can be changed by side effects in expression.
+         */
+        if (object->token_type == NJS_TOKEN_NAME) {
+            src = object->index;
+
+            index = njs_generate_node_temp_index_get(vm, generator, object);
+            if (njs_slow_path(index == NJS_INDEX_ERROR)) {
+                return NJS_ERROR;
+            }
+
+            njs_generate_code_move(generator, move, index, src, object);
+        }
+
+        if (property->token_type == NJS_TOKEN_NAME) {
+            src = property->index;
+
+            index = njs_generate_node_temp_index_get(vm, generator, property);
+            if (njs_slow_path(index == NJS_INDEX_ERROR)) {
+                return NJS_ERROR;
+            }
+
+            njs_generate_code_move(generator, move, index, src, property);
+        }
     }
 
     index = njs_generate_node_temp_index_get(vm, generator, node);
