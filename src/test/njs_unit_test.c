@@ -895,9 +895,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'A'.toString()"),
       njs_str("A") },
 
-    { njs_str("'A'.toString('hex')"),
-      njs_str("TypeError: argument must be a byte string") },
-
     { njs_str("'A'.toBytes().toString('latin1')"),
       njs_str("TypeError: Unknown encoding: \"latin1\"") },
 

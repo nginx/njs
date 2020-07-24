@@ -738,9 +738,9 @@ njs_string_prototype_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 /*
- * String.toString([encoding]).
+ * String.prototype.toString([encoding]).
  * Returns the string as is if no additional argument is provided,
- * otherwise converts a byte string into an encoded string: hex, base64,
+ * otherwise converts a string into an encoded string: hex, base64,
  * base64url.
  */
 
@@ -770,11 +770,6 @@ njs_string_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     value = vm->retval;
 
     (void) njs_string_prop(&string, &value);
-
-    if (njs_slow_path(string.length != 0)) {
-        njs_type_error(vm, "argument must be a byte string");
-        return NJS_ERROR;
-    }
 
     njs_string_get(&args[1], &enc);
 
