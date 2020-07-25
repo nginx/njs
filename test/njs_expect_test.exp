@@ -1143,3 +1143,6 @@ test fsp.readdir"
 
 njs_run {"./test/js/fs_promises_008.js"} \
 "test recursive fs.mkdirSync"
+
+njs_run {"./test/js/fs_promises_009.js"} \
+"test recursive fs.rmdirSync"
