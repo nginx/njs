@@ -1135,37 +1135,26 @@ static njs_int_t
 njs_fs_make_path(njs_vm_t *vm, const char *path, mode_t md,
     njs_bool_t recursive, njs_value_t *retval)
 {
-    size_t       size;
+    int          err;
     ssize_t      length;
     njs_int_t    ret;
-    const char   *p, *prev;
+    const char   *p, *prev, *end;
     njs_value_t  value;
     struct stat  sb;
     char         path_buf[MAXPATHLEN];
 
     njs_set_undefined(retval);
 
+    end = path + njs_strlen(path);
+
     if (!recursive) {
         ret = mkdir(path, md);
         if (ret != 0) {
+            err = errno;
             goto failed;
         }
 
         return NJS_OK;
-    }
-
-    ret = stat(path, &sb);
-    if (ret == 0) {
-        if (!S_ISDIR(sb.st_mode)) {
-            errno = ENOTDIR;
-            goto failed;
-        }
-
-        return NJS_OK;
-    }
-
-    if (errno != ENOENT) {
-        goto failed;
     }
 
     p = path;
@@ -1174,57 +1163,67 @@ njs_fs_make_path(njs_vm_t *vm, const char *path, mode_t md,
     for ( ;; ) {
         p = strchr(prev + 1, '/');
         if (p == NULL) {
-            break;
+            p = end;
         }
 
         if (njs_slow_path((p - path) > MAXPATHLEN)) {
             njs_internal_error(vm, "too large path");
-            return NJS_OK;
+            return NJS_ERROR;
         }
 
         memcpy(&path_buf[prev - path], &path[prev - path], p - prev);
         path_buf[p - path] = '\0';
 
-        ret = stat(path_buf, &sb);
-        if (ret == 0) {
-            if (!S_ISDIR(sb.st_mode)) {
-                errno = ENOTDIR;
-                goto failed;
+        ret = mkdir(path_buf, md);
+        err = errno;
+
+        switch (ret) {
+        case 0:
+            break;
+
+        case EACCES:
+        case ENOTDIR:
+        case EPERM:
+            goto failed;
+
+        case EEXIST:
+        default:
+            ret = stat(path_buf, &sb);
+            if (ret == 0) {
+                if (!S_ISDIR(sb.st_mode)) {
+                    err = ENOTDIR;
+                    goto failed;
+                }
+
+                break;
             }
 
-        } else {
-            ret = mkdir(path_buf, md);
-            if (ret != 0) {
-                goto failed;
-            }
+            goto failed;
+        }
+
+        if (p == end) {
+            break;
         }
 
         path_buf[p - path] = '/';
         prev = p;
     }
 
-    ret = mkdir(path, md);
-    if (ret != 0 && errno != EEXIST) {
-        goto failed;
-    }
-
     return NJS_OK;
 
 failed:
 
-    size = njs_strlen(path);
-    length = njs_utf8_length((u_char *) path, size);
+    length = njs_utf8_length((u_char *) path, end - path);
     if (njs_slow_path(length < 0)) {
         length = 0;
     }
 
-    ret = njs_string_new(vm, &value, (u_char *) path, size, length);
+    ret = njs_string_new(vm, &value, (u_char *) path, end - path, length);
     if (ret != NJS_OK) {
         return NJS_ERROR;
     }
 
-    return njs_fs_error(vm, "mkdir", strerror(errno), &value, errno,
-                        retval);
+    return njs_fs_error(vm, "mkdir", strerror(err), &value, err, retval);
 }
 
 
