@@ -26,16 +26,6 @@
 /* The maximum signed int32_t. */
 #define NJS_STRING_MAX_LENGTH  0x7fffffff
 
-#define njs_surrogate_leading(cp)    ((cp) >= 0xd800 && (cp) <= 0xdbff)
-
-#define njs_surrogate_trailing(cp)   ((cp) >= 0xdc00 && (cp) <= 0xdfff)
-
-#define njs_surrogate_any(cp)        ((cp) >= 0xd800 && (cp) <= 0xdfff)
-
-/* Converting surrogate pair to code point.  */
-#define njs_string_surrogate_pair(high, low)                                  \
-    (0x10000 + ((high - 0xd800) << 10) + (low - 0xdc00))
-
 /*
  * NJS_STRING_MAP_STRIDE should be power of two to use shift and binary
  * AND operations instead of division and remainder operations but no

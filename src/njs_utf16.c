@@ -79,9 +79,8 @@ lead_state:
 #endif
 
     if (ctx->codepoint != 0x00) {
-        if ((unsigned) (unit - 0xDC00) <= (0xDFFF - 0xDC00)) {
-            unit = 0x10000 + ((ctx->codepoint - 0xD800) << 10)
-                   + (unit - 0xDC00);
+        if (njs_surrogate_trailing(unit)) {
+            unit = njs_surrogate_pair(ctx->codepoint, unit);
 
             ctx->codepoint = 0x00;
 
@@ -96,10 +95,8 @@ lead_state:
         return NJS_UNICODE_ERROR;
     }
 
-    /* Surrogate pair. */
-
-    if ((unsigned) (unit - 0xD800) <= (0xDFFF - 0xD800)) {
-        if ((unsigned) (unit - 0xDC00) <= (0xDFFF - 0xDC00)) {
+    if (njs_surrogate_any(unit)) {
+        if (njs_surrogate_trailing(unit)) {
             return NJS_UNICODE_ERROR;
         }
 

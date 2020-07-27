@@ -8088,7 +8088,7 @@ njs_parser_escape_string_create(njs_parser_t *parser, njs_lexer_token_t *token,
 
         if (cp_pair != 0) {
             if (njs_fast_path(njs_surrogate_trailing(cp))) {
-                cp = njs_string_surrogate_pair(cp_pair, cp);
+                cp = njs_surrogate_pair(cp_pair, cp);
 
             } else if (njs_slow_path(njs_surrogate_leading(cp))) {
                 cp = NJS_UNICODE_REPLACEMENT;
@@ -8238,7 +8238,7 @@ njs_parser_escape_string_calc_length(njs_parser_t *parser,
 
         if (cp_pair != 0) {
             if (njs_fast_path(njs_surrogate_trailing(cp))) {
-                cp = njs_string_surrogate_pair(cp_pair, cp);
+                cp = njs_surrogate_pair(cp_pair, cp);
 
             } else if (njs_slow_path(njs_surrogate_leading(cp))) {
                 cp = NJS_UNICODE_REPLACEMENT;

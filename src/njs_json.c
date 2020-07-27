@@ -738,7 +738,7 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value,
                 p += 4;
 
                 if (njs_fast_path(njs_surrogate_trailing(utf_low))) {
-                    utf = njs_string_surrogate_pair(utf, utf_low);
+                    utf = njs_surrogate_pair(utf, utf_low);
 
                 } else if (njs_surrogate_leading(utf_low)) {
                     utf = NJS_UNICODE_REPLACEMENT;

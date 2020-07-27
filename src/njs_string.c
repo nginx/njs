@@ -4272,7 +4272,7 @@ njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                         goto uri_error;
                     }
 
-                    cp = njs_string_surrogate_pair(cp, cp_low);
+                    cp = njs_surrogate_pair(cp, cp_low);
                     size += njs_utf8_size(cp) * 3;
                     continue;
                 }
@@ -4312,7 +4312,7 @@ njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         if (njs_slow_path(njs_surrogate_leading(cp))) {
             cp_low = njs_utf8_decode(&ctx, &src, end);
-            cp = njs_string_surrogate_pair(cp, cp_low);
+            cp = njs_surrogate_pair(cp, cp_low);
         }
 
         njs_utf8_encode(encode, cp);
