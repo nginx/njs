@@ -17637,6 +17637,149 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var qs = require('querystring');"
               "qs.unescape('abc%CE%B1%CE%B1%CE%B1%CE%B1def')"),
       njs_str("abcααααdef") },
+
+    /* TextEncoder. */
+
+    { njs_str("var en = new TextEncoder(); typeof en.encode()"),
+      njs_str("object") },
+
+    { njs_str("var en = new TextEncoder(); en.encode()"),
+      njs_str("") },
+
+    { njs_str("var en = new TextEncoder(); var res = en.encode('α'); res"),
+      njs_str("206,177") },
+
+    { njs_str("var en = new TextEncoder(); var res = en.encode('α1α'); res[2]"),
+      njs_str("49") },
+
+    { njs_str("var en = new TextEncoder(); en.encode(String.bytesFrom([0xCE]))"),
+      njs_str("239,191,189") },
+
+    { njs_str("var en = new TextEncoder();"
+              "en.encode(String.bytesFrom([0xCE, 0xB1, 0xCE]))"),
+      njs_str("206,177,239,191,189") },
+
+    { njs_str("var en = new TextEncoder();"
+              "en.encode(String.bytesFrom([0xCE, 0xCE, 0xB1]))"),
+      njs_str("239,191,189,206,177") },
+
+    { njs_str("var en = new TextEncoder(); en.encoding"),
+      njs_str("utf-8") },
+
+    { njs_str("TextEncoder.prototype.encode.apply({}, [])"),
+      njs_str("TypeError: \"this\" is not a TextEncoder") },
+
+    { njs_str("var en = new TextEncoder();"
+              "var utf8 = new Uint8Array(5);"
+              "var res = en.encodeInto('ααααα', utf8); njs.dump(res)"),
+      njs_str("{read:2,written:4}") },
+
+    { njs_str("var en = new TextEncoder();"
+              "var utf8 = new Uint8Array(10);"
+              "var res = en.encodeInto('ααααα', utf8); njs.dump(res)"),
+      njs_str("{read:5,written:10}") },
+
+    { njs_str("var str = String.bytesFrom([0xCE]);"
+              "var en = new TextEncoder();"
+              "var utf8 = new Uint8Array(3);"
+              "var res = en.encodeInto(str, utf8); "
+              "[njs.dump(res), utf8]"),
+      njs_str("{read:1,written:3},239,191,189") },
+
+    { njs_str("var str = String.bytesFrom([0xCE]);"
+              "var en = new TextEncoder();"
+              "var utf8 = new Uint8Array(5);"
+              "en.encodeInto(str, utf8); utf8"),
+      njs_str("239,191,189,0,0") },
+
+    { njs_str("var str = String.bytesFrom([0xCE, 0xB1, 0xCE]);"
+              "var en = new TextEncoder();"
+              "var utf8 = new Uint8Array(5);"
+              "var res = en.encodeInto(str, utf8);"
+              "[njs.dump(res), utf8]"),
+      njs_str("{read:2,written:5},206,177,239,191,189") },
+
+    { njs_str("var str = String.bytesFrom([0xCE, 0xCE, 0xB1]);"
+              "var en = new TextEncoder();"
+              "var utf8 = new Uint8Array(5);"
+              "var res = en.encodeInto(str, utf8);"
+              "[njs.dump(res), utf8]"),
+      njs_str("{read:2,written:5},239,191,189,206,177") },
+
+    { njs_str("TextEncoder.prototype.encodeInto.apply({}, [])"),
+      njs_str("TypeError: \"this\" is not a TextEncoder") },
+
+    { njs_str("(new TextEncoder()).encodeInto('', 0.12) "),
+      njs_str("TypeError: The \"destination\" argument must be an instance of Uint8Array") },
+
+    /* TextDecoder. */
+
+    { njs_str("var de = new TextDecoder();"
+              "var u8arr = new Uint8Array([240, 160, 174, 183]);"
+              "var u16arr = new Uint16Array([41200, 47022]);"
+              "var u32arr = new Uint32Array([3081674992]);"
+              "[u8arr, u16arr, u32arr].map(v=>de.decode(v)).join(',')"),
+      njs_str("𠮷,𠮷,𠮷") },
+
+    { njs_str("var de = new TextDecoder();"
+              "[new Uint8Array([240, 160]), "
+              " new Uint8Array([174]), "
+              " new Uint8Array([183])].map(v=>de.decode(v, {stream: 1}))[2]"),
+      njs_str("𠮷") },
+
+    { njs_str("var de = new TextDecoder();"
+              "de.decode(new Uint8Array([240, 160]), {stream: 1});"
+              "de.decode(new Uint8Array([174]), {stream: 1});"
+              "de.decode(new Uint8Array([183]))"),
+      njs_str("𠮷") },
+
+    { njs_str("var de = new TextDecoder();"
+              "de.decode(new Uint8Array([240, 160]), {stream: 1});"
+              "de.decode()"),
+      njs_str("�") },
+
+    { njs_str("var de = new TextDecoder('utf-8', {fatal: true});"
+              "de.decode(new Uint8Array([240, 160]))"),
+      njs_str("TypeError: The encoded data was not valid") },
+
+    { njs_str("var de = new TextDecoder('utf-8', {fatal: false});"
+              "de.decode(new Uint8Array([240, 160]))"),
+      njs_str("�") },
+
+    { njs_str("var en = new TextEncoder();"
+              "var de = new TextDecoder('utf-8', {ignoreBOM: true});"
+              "en.encode(de.decode(new Uint8Array([239, 187, 191, 50])))"),
+      njs_str("239,187,191,50") },
+
+    { njs_str("var en = new TextEncoder();"
+              "var de = new TextDecoder('utf-8', {ignoreBOM: false});"
+              "en.encode(de.decode(new Uint8Array([239, 187, 191, 50])))"),
+      njs_str("50") },
+
+    { njs_str("var en = new TextEncoder(); var de = new TextDecoder();"
+              "en.encode(de.decode(new Uint8Array([239, 187, 191, 50])))"),
+      njs_str("50") },
+
+    { njs_str("var de = new TextDecoder(); de.decode('')"),
+      njs_str("TypeError: The \"input\" argument must be an instance of TypedArray") },
+
+    { njs_str("var de = new TextDecoder({})"),
+      njs_str("RangeError: The \"[object Object]\" encoding is not supported") },
+
+    { njs_str("var de = new TextDecoder('foo')"),
+      njs_str("RangeError: The \"foo\" encoding is not supported") },
+
+    { njs_str("var de = new TextDecoder(); de.encoding"),
+      njs_str("utf-8") },
+
+    { njs_str("var de = new TextDecoder(); de.fatal"),
+      njs_str("false") },
+
+    { njs_str("var de = new TextDecoder(); de.ignoreBOM"),
+      njs_str("false") },
+
+    { njs_str("TextDecoder.prototype.decode.apply({}, new Uint8Array([1]))"),
+      njs_str("TypeError: \"this\" is not a TextDecoder") },
 };
 
 

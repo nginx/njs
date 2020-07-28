@@ -8,9 +8,9 @@
 #include <njs_main.h>
 
 
-static njs_int_t
-njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t magic)
+njs_typed_array_t *
+njs_typed_array_alloc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_object_type_t type)
 {
     double              num;
     int64_t             i, length;
@@ -19,7 +19,6 @@ njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_int_t           ret;
     njs_value_t         *value, prop;
     njs_array_t         *src_array;
-    njs_object_type_t   type;
     njs_typed_array_t   *array, *src_tarray;
     njs_array_buffer_t  *buffer;
 
@@ -31,54 +30,48 @@ njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     src_array = NULL;
     src_tarray = NULL;
 
-    type = magic;
     element_size = njs_typed_array_element_size(type);
 
-    if (!vm->top_frame->ctor) {
-        njs_type_error(vm, "Constructor of TypedArray requires 'new'");
-        return NJS_ERROR;
-    }
-
-    value = njs_arg(args, nargs, 1);
+    value = njs_arg(args, nargs, 0);
 
     if (njs_is_array_buffer(value)) {
         buffer = njs_array_buffer(value);
 
-        ret = njs_value_to_index(vm, njs_arg(args, nargs, 2), &offset);
+        ret = njs_value_to_index(vm, njs_arg(args, nargs, 1), &offset);
         if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_ERROR;
+            return NULL;
         }
 
         if (njs_slow_path((offset % element_size) != 0)) {
             njs_range_error(vm, "start offset must be multiple of %uD",
                             element_size);
-            return NJS_ERROR;
+            return NULL;
         }
 
-        if (!njs_is_undefined(njs_arg(args, nargs, 3))) {
-            ret = njs_value_to_index(vm, njs_argument(args, 3), &size);
+        if (!njs_is_undefined(njs_arg(args, nargs, 2))) {
+            ret = njs_value_to_index(vm, njs_argument(args, 2), &size);
             if (njs_slow_path(ret != NJS_OK)) {
-                return NJS_ERROR;
+                return NULL;
             }
 
             size *= element_size;
 
             if (njs_slow_path((offset + size) > buffer->size)) {
                 njs_range_error(vm, "Invalid typed array length: %uL", size);
-                return NJS_ERROR;
+                return NULL;
             }
 
         } else {
             if (njs_slow_path((buffer->size % element_size) != 0)) {
                 njs_range_error(vm, "byteLength of buffer must be "
                                 "multiple of %uD", element_size);
-                return NJS_ERROR;
+                return NULL;
             }
 
             if (offset > buffer->size) {
                 njs_range_error(vm, "byteOffset %uL is outside the bound of "
                                 "the buffer", offset);
-                return NJS_ERROR;
+                return NULL;
             }
 
             size = buffer->size - offset;
@@ -96,7 +89,7 @@ njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         } else {
             ret = njs_object_length(vm, value, &length);
             if (njs_slow_path(ret == NJS_ERROR)) {
-                return ret;
+                return NULL;
             }
         }
 
@@ -105,7 +98,7 @@ njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     } else {
         ret = njs_value_to_index(vm, value, &size);
         if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_ERROR;
+            return NULL;
         }
 
         size *= element_size;
@@ -114,7 +107,7 @@ njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     if (buffer == NULL) {
         buffer = njs_array_buffer_alloc(vm, size);
         if (njs_slow_path(buffer == NULL)) {
-            return NJS_ERROR;
+            return NULL;
         }
     }
 
@@ -144,7 +137,7 @@ njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         for (i = 0; i < length; i++) {
             ret = njs_value_to_number(vm, &src_array->start[i], &num);
             if (njs_slow_path(ret == NJS_ERROR)) {
-                return NJS_ERROR;
+                return NULL;
             }
 
             if (ret == NJS_OK) {
@@ -156,7 +149,7 @@ njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         for (i = 0; i < length; i++) {
             ret = njs_value_property_i64(vm, value, i, &prop);
             if (njs_slow_path(ret == NJS_ERROR)) {
-                return NJS_ERROR;
+                return NULL;
             }
 
             num = NAN;
@@ -164,7 +157,7 @@ njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             if (ret == NJS_OK) {
                 ret = njs_value_to_number(vm, &prop, &num);
                 if (njs_slow_path(ret == NJS_ERROR)) {
-                    return NJS_ERROR;
+                    return NULL;
                 }
             }
 
@@ -179,15 +172,35 @@ njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     array->object.extensible = 1;
     array->object.fast_array = 1;
 
-    njs_set_typed_array(&vm->retval, array);
-
-    return NJS_OK;
+    return array;
 
 memory_error:
 
     njs_memory_error(vm);
 
-    return NJS_ERROR;
+    return NULL;
+}
+
+
+static njs_int_t
+njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t magic)
+{
+    njs_typed_array_t  *array;
+
+    if (!vm->top_frame->ctor) {
+        njs_type_error(vm, "Constructor of TypedArray requires 'new'");
+        return NJS_ERROR;
+    }
+
+    array = njs_typed_array_alloc(vm, &args[1], nargs - 1, magic);
+    if (njs_slow_path(array == NULL)) {
+        return NJS_ERROR;
+    }
+
+    njs_set_typed_array(&vm->retval, array);
+
+    return NJS_OK;
 }
 
 

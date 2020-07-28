@@ -81,6 +81,8 @@ typedef enum {
     NJS_DATA_TAG_EXTERNAL,
     NJS_DATA_TAG_CRYPTO_HASH,
     NJS_DATA_TAG_CRYPTO_HMAC,
+    NJS_DATA_TAG_TEXT_ENCODER,
+    NJS_DATA_TAG_TEXT_DECODER,
     NJS_DATA_TAG_MAX
 } njs_data_tag_t;
 
@@ -652,6 +654,11 @@ typedef struct {
 
 #define njs_is_typed_array(value)                                             \
     ((value)->type == NJS_TYPED_ARRAY)
+
+
+#define njs_is_typed_array_uint8(value)                                       \
+    (njs_is_typed_array(value)                                                \
+     && njs_typed_array(value)->type == NJS_OBJ_TYPE_UINT8_ARRAY)
 
 
 #define njs_is_function(value)                                                \

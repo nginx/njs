@@ -8,6 +8,8 @@
 #define _NJS_TYPED_ARRAY_H_INCLUDED_
 
 
+njs_typed_array_t *njs_typed_array_alloc(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_object_type_t type);
 njs_int_t njs_typed_array_set_value(njs_vm_t *vm, njs_typed_array_t *array,
     uint32_t index, njs_value_t *setval);
 njs_int_t njs_typed_array_to_chain(njs_vm_t *vm, njs_chb_t *chain,

@@ -750,4 +750,34 @@
         'd'), 'A'), 'r'), 'r'), 'a'), 'y')
 
 
+#define NJS_TEXT_DECODER_HASH                                                 \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'T'), 'e'), 'x'), 't'), 'D'), 'e'), 'c'), 'o'), 'd'), 'e'), 'r')
+
+
+#define NJS_TEXT_ENCODER_HASH                                                 \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'T'), 'e'), 'x'), 't'), 'E'), 'n'), 'c'), 'o'), 'd'), 'e'), 'r')
+
+
 #endif /* _NJS_OBJECT_HASH_H_INCLUDED_ */
