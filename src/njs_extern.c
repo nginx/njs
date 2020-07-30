@@ -202,7 +202,7 @@ njs_external_prop_handler(njs_vm_t *vm, njs_object_prop_t *self,
         ov->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_OBJECT].object;
         ov->object.slots = slots;
 
-        njs_set_data(&ov->value, external);
+        njs_set_data(&ov->value, external, NJS_DATA_TAG_EXTERNAL);
         njs_set_object_value(retval, ov);
     }
 
@@ -313,7 +313,7 @@ njs_vm_external_create(njs_vm_t *vm, njs_value_t *value,
     ov->object.slots = slots;
 
     njs_set_object_value(value, ov);
-    njs_set_data(&ov->value, external);
+    njs_set_data(&ov->value, external, NJS_DATA_TAG_EXTERNAL);
 
     return NJS_OK;
 }
@@ -322,11 +322,8 @@ njs_vm_external_create(njs_vm_t *vm, njs_value_t *value,
 njs_external_ptr_t
 njs_vm_external(njs_vm_t *vm, const njs_value_t *value)
 {
-    if (njs_fast_path(njs_is_object_value(value))) {
-        value = njs_object_value(value);
-        if (njs_fast_path(njs_is_data(value))) {
-            return njs_value_data(value);
-        }
+    if (njs_fast_path(njs_is_object_data(value, NJS_DATA_TAG_EXTERNAL))) {
+        return njs_object_data(value);
     }
 
     return NULL;

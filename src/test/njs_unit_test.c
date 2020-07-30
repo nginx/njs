@@ -16956,6 +16956,10 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("typeof require('crypto').createHmac('md5', 'a')"),
       njs_str("object") },
 
+    { njs_str("var cr = require('crypto'); var h = cr.createHash('sha1');"
+              "h.update.call(cr.createHmac('sha1', 's'), '')"),
+      njs_str("TypeError: \"this\" is not a hash object") },
+
     /* setTimeout(). */
 
     { njs_str("setTimeout()"),

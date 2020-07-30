@@ -184,7 +184,7 @@ njs_crypto_create_hash(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     alg->init(&dgst->u);
 
-    njs_set_data(&hash->value, dgst);
+    njs_set_data(&hash->value, dgst, NJS_DATA_TAG_CRYPTO_HASH);
     njs_set_object_value(&vm->retval, hash);
 
     return NJS_OK;
@@ -196,6 +196,7 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     njs_str_t     data;
+    njs_value_t   *this;
     njs_digest_t  *dgst;
 
     if (njs_slow_path(nargs < 2 || !njs_is_string(&args[1]))) {
@@ -203,19 +204,16 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (njs_slow_path(!njs_is_object_value(&args[0]))) {
-        njs_type_error(vm, "\"this\" is not an object_value");
-        return NJS_ERROR;
-    }
+    this = njs_argument(args, 0);
 
-    if (njs_slow_path(!njs_is_data(njs_object_value(&args[0])))) {
-        njs_type_error(vm, "value of \"this\" is not a data type");
+    if (njs_slow_path(!njs_is_object_data(this, NJS_DATA_TAG_CRYPTO_HASH))) {
+        njs_type_error(vm, "\"this\" is not a hash object");
         return NJS_ERROR;
     }
 
     njs_string_get(&args[1], &data);
 
-    dgst = njs_value_data(njs_object_value(&args[0]));
+    dgst = njs_object_data(this);
 
     if (njs_slow_path(dgst->alg == NULL)) {
         njs_error(vm, "Digest already called");
@@ -224,7 +222,7 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     dgst->alg->update(&dgst->u, data.start, data.length);
 
-    vm->retval = args[0];
+    vm->retval = *this;
 
     return NJS_OK;
 }
@@ -237,6 +235,7 @@ njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     u_char            digest[32], *p;
     njs_int_t         ret;
     njs_str_t         enc_name, str;
+    njs_value_t       *this;
     njs_digest_t      *dgst;
     njs_hash_alg_t    *alg;
     njs_crypto_enc_t  *enc;
@@ -246,13 +245,10 @@ njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (njs_slow_path(!njs_is_object_value(&args[0]))) {
-        njs_type_error(vm, "\"this\" is not an object_value");
-        return NJS_ERROR;
-    }
+    this = njs_argument(args, 0);
 
-    if (njs_slow_path(!njs_is_data(njs_object_value(&args[0])))) {
-        njs_type_error(vm, "value of \"this\" is not a data type");
+    if (njs_slow_path(!njs_is_object_data(this, NJS_DATA_TAG_CRYPTO_HASH))) {
+        njs_type_error(vm, "\"this\" is not a hash object");
         return NJS_ERROR;
     }
 
@@ -267,7 +263,7 @@ njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    dgst = njs_value_data(njs_object_value(&args[0]));
+    dgst = njs_object_data(this);
 
     if (njs_slow_path(dgst->alg == NULL)) {
         njs_error(vm, "Digest already called");
@@ -465,7 +461,7 @@ njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    njs_set_data(&hmac->value, ctx);
+    njs_set_data(&hmac->value, ctx, NJS_DATA_TAG_CRYPTO_HMAC);
     njs_set_object_value(&vm->retval, hmac);
 
     return NJS_OK;
@@ -476,27 +472,25 @@ static njs_int_t
 njs_hmac_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_str_t   data;
-    njs_hmac_t  *ctx;
+    njs_str_t    data;
+    njs_hmac_t   *ctx;
+    njs_value_t  *this;
 
     if (njs_slow_path(nargs < 2 || !njs_is_string(&args[1]))) {
         njs_type_error(vm, "data must be a string");
         return NJS_ERROR;
     }
 
-    if (njs_slow_path(!njs_is_object_value(&args[0]))) {
-        njs_type_error(vm, "\"this\" is not an object_value");
-        return NJS_ERROR;
-    }
+    this = njs_argument(args, 0);
 
-    if (njs_slow_path(!njs_is_data(njs_object_value(&args[0])))) {
-        njs_type_error(vm, "value of \"this\" is not a data type");
+    if (njs_slow_path(!njs_is_object_data(this, NJS_DATA_TAG_CRYPTO_HMAC))) {
+        njs_type_error(vm, "\"this\" is not a hash object");
         return NJS_ERROR;
     }
 
     njs_string_get(&args[1], &data);
 
-    ctx = njs_value_data(njs_object_value(&args[0]));
+    ctx = njs_object_data(this);
 
     if (njs_slow_path(ctx->alg == NULL)) {
         njs_error(vm, "Digest already called");
@@ -505,7 +499,7 @@ njs_hmac_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     ctx->alg->update(&ctx->u, data.start, data.length);
 
-    vm->retval = args[0];
+    vm->retval = *this;
 
     return NJS_OK;
 }
@@ -519,6 +513,7 @@ njs_hmac_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_str_t         enc_name, str;
     njs_int_t         ret;
     njs_hmac_t        *ctx;
+    njs_value_t       *this;
     njs_hash_alg_t    *alg;
     njs_crypto_enc_t  *enc;
 
@@ -527,13 +522,10 @@ njs_hmac_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (njs_slow_path(!njs_is_object_value(&args[0]))) {
-        njs_type_error(vm, "\"this\" is not an object_value");
-        return NJS_ERROR;
-    }
+    this = njs_argument(args, 0);
 
-    if (njs_slow_path(!njs_is_data(njs_object_value(&args[0])))) {
-        njs_type_error(vm, "value of \"this\" is not a data type");
+    if (njs_slow_path(!njs_is_object_data(this, NJS_DATA_TAG_CRYPTO_HMAC))) {
+        njs_type_error(vm, "\"this\" is not a hash object");
         return NJS_ERROR;
     }
 
@@ -548,7 +540,7 @@ njs_hmac_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    ctx = njs_value_data(njs_object_value(&args[0]));
+    ctx = njs_object_data(this);
 
     if (njs_slow_path(ctx->alg == NULL)) {
         njs_error(vm, "Digest already called");

@@ -101,7 +101,7 @@ njs_promise_alloc(njs_vm_t *vm)
     njs_queue_init(&data->reject_queue);
 
     njs_set_promise(&vm->retval, promise);
-    njs_value_data_set(&promise->value, data);
+    njs_set_data(&promise->value, data, 0);
 
     return promise;
 
@@ -453,7 +453,7 @@ njs_promise_trigger_reactions(njs_vm_t *vm, njs_value_t *value,
         function = njs_promise_create_function(vm);
         function->u.native = njs_promise_reaction_job;
 
-        njs_set_data(&arguments[0], reaction);
+        njs_set_data(&arguments[0], reaction, 0);
         arguments[1] = *value;
 
         ret = njs_promise_add_event(vm, function, arguments, 2);
@@ -472,7 +472,7 @@ njs_promise_fulfill(njs_vm_t *vm, njs_promise_t *promise, njs_value_t *value)
     njs_queue_t         queue;
     njs_promise_data_t  *data;
 
-    data = njs_value_data(&promise->value);
+    data = njs_data(&promise->value);
 
     data->result = *value;
     data->state = NJS_PROMISE_FULFILL;
@@ -500,7 +500,7 @@ njs_promise_reject(njs_vm_t *vm, njs_promise_t *promise, njs_value_t *reason)
     njs_queue_t         queue;
     njs_promise_data_t  *data;
 
-    data = njs_value_data(&promise->value);
+    data = njs_data(&promise->value);
 
     data->result = *reason;
     data->state = NJS_PROMISE_REJECTED;
@@ -845,7 +845,7 @@ njs_promise_perform_then(njs_vm_t *vm, njs_value_t *value,
     }
 
     promise = njs_promise(value);
-    data = njs_value_data(&promise->value);
+    data = njs_data(&promise->value);
 
     fulfilled_reaction = njs_mp_alloc(vm->mem_pool,
                                       sizeof(njs_promise_reaction_t));
@@ -878,12 +878,12 @@ njs_promise_perform_then(njs_vm_t *vm, njs_value_t *value,
         function->u.native = njs_promise_reaction_job;
 
         if (data->state == NJS_PROMISE_REJECTED) {
-            njs_set_data(&arguments[0], rejected_reaction);
+            njs_set_data(&arguments[0], rejected_reaction, 0);
 
             /* TODO: HostPromiseRejectionTracker */
 
         } else {
-            njs_set_data(&arguments[0], fulfilled_reaction);
+            njs_set_data(&arguments[0], fulfilled_reaction, 0);
         }
 
         arguments[1] = data->result;

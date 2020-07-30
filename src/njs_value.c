@@ -371,13 +371,6 @@ njs_value_number_set(njs_value_t *value, double num)
 }
 
 
-void
-njs_value_data_set(njs_value_t *value, void *data)
-{
-    njs_set_data(value, data);
-}
-
-
 uint8_t
 njs_value_bool(const njs_value_t *value)
 {
@@ -389,13 +382,6 @@ double
 njs_value_number(const njs_value_t *value)
 {
     return njs_number(value);
-}
-
-
-void *
-njs_value_data(const njs_value_t *value)
-{
-    return njs_data(value);
 }
 
 

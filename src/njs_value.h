@@ -76,6 +76,15 @@ typedef enum {
 } njs_value_type_t;
 
 
+typedef enum {
+    NJS_DATA_TAG_ANY = 0,
+    NJS_DATA_TAG_EXTERNAL,
+    NJS_DATA_TAG_CRYPTO_HASH,
+    NJS_DATA_TAG_CRYPTO_HMAC,
+    NJS_DATA_TAG_MAX
+} njs_data_tag_t;
+
+
 typedef struct njs_string_s           njs_string_t;
 typedef struct njs_object_s           njs_object_t;
 typedef struct njs_object_value_s     njs_object_value_t;
@@ -599,8 +608,8 @@ typedef struct {
     ((value)->type <= NJS_STRING)
 
 
-#define njs_is_data(value)                                                    \
-    ((value)->type == NJS_DATA)
+#define njs_is_data(value, tag)                                               \
+    ((value)->type == NJS_DATA && value->data.magic32 == (tag))
 
 
 #define njs_is_object(value)                                                  \
@@ -614,6 +623,11 @@ typedef struct {
 
 #define njs_is_object_value(value)                                            \
     ((value)->type == NJS_OBJECT_VALUE)
+
+
+#define njs_is_object_data(_value, tag)                                       \
+    (((_value)->type == NJS_OBJECT_VALUE)                                     \
+     && njs_is_data(njs_object_value(_value), tag))
 
 
 #define njs_is_object_string(value)                                           \
@@ -748,6 +762,10 @@ typedef struct {
     (&(_value)->data.u.object_value->value)
 
 
+#define njs_object_data(_value)                                               \
+    njs_data(njs_object_value(_value))
+
+
 #define njs_set_undefined(value)                                              \
     *(value) = njs_value_undefined
 
@@ -852,8 +870,9 @@ njs_set_symbol(njs_value_t *value, uint32_t symbol)
 
 
 njs_inline void
-njs_set_data(njs_value_t *value, void *data)
+njs_set_data(njs_value_t *value, void *data, njs_data_tag_t tag)
 {
+    value->data.magic32 = tag;
     value->data.u.data = data;
     value->type = NJS_DATA;
     value->data.truth = 1;
