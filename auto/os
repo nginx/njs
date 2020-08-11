@@ -14,9 +14,6 @@ case "$NJS_SYSTEM" in
         # Linux uname -p can return "unknown".
         NJS_SYSTEM_PLATFORM=`uname -m 2>/dev/null`
         CC=${CC:-cc}
-
-        # NAN and INFINITY require _GNU_SOURCE on old Linux.
-        NJS_CFLAGS="$NJS_CFLAGS -D_GNU_SOURCE"
         ;;
 
     FreeBSD | NetBSD | OpenBSD)
