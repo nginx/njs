@@ -1,4 +1,30 @@
 
+Changes with njs 0.4.3                                           11 Aug 2020
+
+    Core:
+
+    *) Feature: added Query String module.
+
+    *) Feature: improved fs.mkdir() to support recursive directory creation.
+       Thanks to Artem S. Povalyukhin.
+
+    *) Feature: improved fs.rmdir() to support recursive directory removal.
+       Thanks to Artem S. Povalyukhin.
+
+    *) Feature: introduced UTF-8 decoder according to WHATWG encoding spec.
+
+    *) Feature: added TextEncoder/TextDecoder implementation.
+
+    *) Bugfix: fixed parsing return statement without semicolon.
+
+    *) Bugfix: fixed njs_number_to_int32() for big-endian platforms.
+
+    *) Bugfix: fixed unit test on big-endian platforms.
+
+    *) Bugfix: fixed regexp-literals parsing with '=' characters.
+
+    *) Bugfix: fixed pre/post increment/decrement in assignment operations.
+
 Changes with njs 0.4.2                                           07 Jul 2020
 
     Core:
