@@ -1292,6 +1292,12 @@ njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
         return 0;
     }
 
+    for (h = parent; h != NULL; h = h->chain) {
+        if (h->dev == st.st_dev && h->ino == st.st_ino) {
+            return 0;
+        }
+    }
+
     len = njs_strlen(path);
     base = len && (path[len - 1] == '/') ? len - 1 : len;
 
@@ -1305,25 +1311,24 @@ njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
     if (type == NJS_FTW_D || type == NJS_FTW_DP) {
         dfd = open(path, O_RDONLY);
         err = errno;
-        if (dfd < 0 && err == EACCES) {
-            type = NJS_FTW_DNR;
-        }
+        if (dfd < 0) {
+            if (err == EACCES) {
+                type = NJS_FTW_DNR;
+            }
 
-        if (fd_limit == 0) {
-            close(dfd);
+        } else if (fd_limit == 0) {
+            (void) close(dfd);
         }
     }
 
     if (!(flags & NJS_FTW_DEPTH)) {
         ret = cb(path, &st, type);
         if (njs_slow_path(ret != 0)) {
-            return ret;
-        }
-    }
+            if (dfd >= 0) {
+                (void) close(dfd);
+            }
 
-    for (h = parent; h != NULL; h = h->chain) {
-        if (h->dev == st.st_dev && h->ino == st.st_ino) {
-            return 0;
+            return ret;
         }
     }
 
@@ -1335,7 +1340,7 @@ njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
 
         d = fdopendir(dfd);
         if (njs_slow_path(d == NULL)) {
-            close(dfd);
+            (void) close(dfd);
             return -1;
         }
 
