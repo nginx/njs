@@ -81,7 +81,7 @@ typedef enum {
 } njs_ftw_type_t;
 
 
-typedef int (*njs_file_tree_walk_cb_t)(const char *, const struct stat *,
+typedef njs_int_t (*njs_file_tree_walk_cb_t)(const char *, const struct stat *,
      njs_ftw_type_t);
 
 
@@ -1257,7 +1257,7 @@ static int
 njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
     njs_ftw_flags_t flags, njs_ftw_trace_t *parent)
 {
-    int              type, ret, dfd, err;
+    int              type, ret, dfd;
     DIR              *d;
     size_t           base, len, length;
     const char       *d_name;
@@ -1272,7 +1272,7 @@ njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
             type = NJS_FTW_SLN;
 
         } else if (errno != EACCES) {
-            return -1;
+            return NJS_ERROR;
 
         } else {
             type = NJS_FTW_NS;
@@ -1289,12 +1289,12 @@ njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
     }
 
     if ((flags & NJS_FTW_MOUNT) && parent != NULL && st.st_dev != parent->dev) {
-        return 0;
+        return NJS_OK;
     }
 
     for (h = parent; h != NULL; h = h->chain) {
         if (h->dev == st.st_dev && h->ino == st.st_ino) {
-            return 0;
+            return NJS_OK;
         }
     }
 
@@ -1305,43 +1305,32 @@ njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
     trace.dev = st.st_dev;
     trace.ino = st.st_ino;
 
-    dfd = 0;
-    err = 0;
+    d = NULL;
+    dfd = -1;
 
     if (type == NJS_FTW_D || type == NJS_FTW_DP) {
         dfd = open(path, O_RDONLY);
-        err = errno;
         if (dfd < 0) {
-            if (err == EACCES) {
-                type = NJS_FTW_DNR;
+            if (errno != EACCES) {
+                return NJS_ERROR;
             }
 
-        } else if (fd_limit == 0) {
-            (void) close(dfd);
+            type = NJS_FTW_DNR;
         }
     }
 
     if (!(flags & NJS_FTW_DEPTH)) {
         ret = cb(path, &st, type);
         if (njs_slow_path(ret != 0)) {
-            if (dfd >= 0) {
-                (void) close(dfd);
-            }
-
-            return ret;
+            goto done;
         }
     }
 
-    if ((type == NJS_FTW_D || type == NJS_FTW_DP) && fd_limit != 0) {
-        if (dfd < 0) {
-            errno = err;
-            return -1;
-        }
-
+    if (type == NJS_FTW_D || type == NJS_FTW_DP) {
         d = fdopendir(dfd);
         if (njs_slow_path(d == NULL)) {
-            (void) close(dfd);
-            return -1;
+            ret = NJS_ERROR;
+            goto done;
         }
 
         for ( ;; ) {
@@ -1362,21 +1351,23 @@ njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
 
             if (njs_slow_path(length >= (PATH_MAX - len))) {
                 errno = ENAMETOOLONG;
-                closedir(d);
-                return -1;
+                ret = NJS_ERROR;
+                goto done;
             }
 
             path[base] = '/';
             strcpy(path + base + 1, d_name);
 
-            ret = njs_ftw(path, cb, fd_limit - 1, flags, &trace);
-            if (njs_slow_path(ret != 0)) {
-                closedir(d);
-                return ret;
+            if (fd_limit != 0) {
+                ret = njs_ftw(path, cb, fd_limit - 1, flags, &trace);
+                if (njs_slow_path(ret != 0)) {
+                    goto done;
+                }
             }
         }
 
         closedir(d);
+        d = NULL;
     }
 
     path[len] = '\0';
@@ -1388,7 +1379,19 @@ njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
         }
     }
 
-    return 0;
+    ret = NJS_OK;
+
+done:
+
+    if (d != NULL) {
+        /* closedir() also closes underlying dfd. */
+        (void) closedir(d);
+
+    } else if (dfd >= 0) {
+        (void) close(dfd);
+    }
+
+    return ret;
 }
 
 
@@ -1411,17 +1414,17 @@ njs_file_tree_walk(const char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
 }
 
 
-static int
+static njs_int_t
 njs_fs_rmtree_cb(const char *path, const struct stat *sb, njs_ftw_type_t type)
 {
     njs_int_t  ret;
 
     ret = remove(path);
     if (ret != 0) {
-        return -1;
+        return NJS_ERROR;
     }
 
-    return 0;
+    return NJS_OK;
 }
 
 
@@ -1448,7 +1451,7 @@ njs_fs_rmtree(njs_vm_t *vm, const char *path, njs_bool_t recursive,
         ret = njs_file_tree_walk(path, njs_fs_rmtree_cb, 16,
                                  NJS_FTW_PHYS | NJS_FTW_MOUNT | NJS_FTW_DEPTH);
 
-        if (ret == 0) {
+        if (ret == NJS_OK) {
             return NJS_OK;
         }
 
