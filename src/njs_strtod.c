@@ -307,12 +307,12 @@ njs_strtod_internal(const u_char *start, size_t length, int exp)
 
 
 double
-njs_strtod(const u_char **start, const u_char *end)
+njs_strtod(const u_char **start, const u_char *end, njs_bool_t literal)
 {
     int           exponent, exp, insignf;
     u_char        c, *pos;
     njs_bool_t    minus;
-    const u_char  *e, *p, *last;
+    const u_char  *e, *p, *last, *_;
     u_char        data[128];
 
     exponent = 0;
@@ -321,11 +321,25 @@ njs_strtod(const u_char **start, const u_char *end)
     pos = data;
     last = data + sizeof(data);
 
-    for (p = *start; p < end; p++) {
+    p = *start;
+    _ = p - 2;
+
+    for (; p < end; p++) {
         /* Values less than '0' become >= 208. */
         c = *p - '0';
 
         if (njs_slow_path(c > 9)) {
+            if (literal) {
+                if ((p - _) == 1) {
+                    goto done;
+                }
+
+                if (*p == '_') {
+                    _ = p;
+                    continue;
+                }
+            }
+
             break;
         }
 
@@ -339,12 +353,18 @@ njs_strtod(const u_char **start, const u_char *end)
 
     /* Do not emit a '.', but adjust the exponent instead. */
     if (p < end && *p == '.') {
+        _ = p;
 
         for (p++; p < end; p++) {
             /* Values less than '0' become >= 208. */
             c = *p - '0';
 
             if (njs_slow_path(c > 9)) {
+                if (literal && *p == '_' && (p - _) > 1) {
+                    _ = p;
+                    continue;
+                }
+
                 break;
             }
 
@@ -388,6 +408,11 @@ njs_strtod(const u_char **start, const u_char *end)
                 c = *p - '0';
 
                 if (njs_slow_path(c > 9)) {
+                    if (literal && *p == '_' && (p - _) > 1) {
+                        _ = p;
+                        continue;
+                    }
+
                     break;
                 }
 
@@ -397,8 +422,13 @@ njs_strtod(const u_char **start, const u_char *end)
             }
 
             exponent += minus ? -exp : exp;
+
+        } else if (literal && *e == '_') {
+            p = e;
         }
     }
+
+done:
 
     *start = p;
 

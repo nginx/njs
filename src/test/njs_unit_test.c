@@ -171,13 +171,13 @@ static njs_unit_test_t  njs_test[] =
     { njs_str(".9"),
       njs_str("0.9") },
 
-    { njs_str("-.01"),
+    { njs_str("-.0_1"),
       njs_str("-0.01") },
 
-    { njs_str("0.000001"),
+    { njs_str("0.000_001"),
       njs_str("0.000001") },
 
-    { njs_str("0.00000123456"),
+    { njs_str("0.00000_123456"),
       njs_str("0.00000123456") },
 
     { njs_str("0.0000001"),
@@ -186,10 +186,13 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("1.1000000"),
       njs_str("1.1") },
 
-    { njs_str("99999999999999999999"),
+    { njs_str("1_0"),
+      njs_str("10") },
+
+    { njs_str("99_999_999_999_999_999_999"),
       njs_str("100000000000000000000") },
 
-    { njs_str("99999999999999999999.111"),
+    { njs_str("9999999999999999999_9.1_1_1"),
       njs_str("100000000000000000000") },
 
     { njs_str("999999999999999999999"),
@@ -201,7 +204,7 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("18446744073709551616"),
       njs_str("18446744073709552000") },
 
-    { njs_str("1.7976931348623157E+308"),
+    { njs_str("1.79769313_48623157E+3_0_8"),
       njs_str("1.7976931348623157e+308") },
 
     { njs_str("+1"),
@@ -212,6 +215,48 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("."),
       njs_str("SyntaxError: Unexpected token \".\" in 1") },
+
+    { njs_str("0_1"),
+      njs_str("SyntaxError: Unexpected token \"0_\" in 1") },
+
+    { njs_str("1_"),
+      njs_str("SyntaxError: Unexpected token \"_\" in 1") },
+
+    { njs_str("1__0"),
+      njs_str("SyntaxError: Unexpected token \"__0\" in 1") },
+
+    { njs_str("._1"),
+      njs_str("SyntaxError: Unexpected token \".\" in 1") },
+
+    { njs_str(".1_"),
+      njs_str("SyntaxError: Unexpected token \"_\" in 1") },
+
+    { njs_str("1_.1"),
+      njs_str("SyntaxError: Unexpected token \"_\" in 1") },
+
+    { njs_str(".0__1"),
+      njs_str("SyntaxError: Unexpected token \"__1\" in 1") },
+
+    { njs_str("1e_1"),
+      njs_str("SyntaxError: Unexpected token \"_1\" in 1") },
+
+    { njs_str("1e-_1"),
+      njs_str("SyntaxError: Unexpected token \"_1\" in 1") },
+
+    { njs_str("1E1__0"),
+      njs_str("SyntaxError: Unexpected token \"__0\" in 1") },
+
+    { njs_str("1_e1"),
+      njs_str("SyntaxError: Unexpected token \"_e1\" in 1") },
+
+    { njs_str("1e1_"),
+      njs_str("SyntaxError: Unexpected token \"_\" in 1") },
+
+    { njs_str("-_1"),
+      njs_str("ReferenceError: \"_1\" is not defined in 1") },
+
+    { njs_str("_1"),
+      njs_str("ReferenceError: \"_1\" is not defined in 1") },
 
     /* Octal Numbers. */
 
@@ -224,7 +269,7 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("0o011"),
       njs_str("9") },
 
-    { njs_str("-0O777"),
+    { njs_str("-0O7_7_7"),
       njs_str("-511") },
 
     { njs_str("0o"),
@@ -232,6 +277,15 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("0O778"),
       njs_str("SyntaxError: Unexpected token \"0O778\" in 1") },
+
+    { njs_str("0O_7"),
+      njs_str("SyntaxError: Unexpected token \"_7\" in 1") },
+
+    { njs_str("0o7_"),
+      njs_str("SyntaxError: Unexpected token \"_\" in 1") },
+
+    { njs_str("0o7__7"),
+      njs_str("SyntaxError: Unexpected token \"__7\" in 1") },
 
     /* Legacy Octal Numbers are deprecated. */
 
@@ -247,6 +301,15 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("0011"),
       njs_str("SyntaxError: Unexpected token \"00\" in 1") },
 
+    { njs_str("0_"),
+      njs_str("SyntaxError: Unexpected token \"0_\" in 1") },
+
+    { njs_str("0_1"),
+      njs_str("SyntaxError: Unexpected token \"0_\" in 1") },
+
+    { njs_str("00_1"),
+      njs_str("SyntaxError: Unexpected token \"00\" in 1") },
+
     /* Binary Numbers. */
 
     { njs_str("0b0"),
@@ -255,10 +318,10 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("0B10"),
       njs_str("2") },
 
-    { njs_str("0b0101"),
+    { njs_str("0b0_1_0_1"),
       njs_str("5") },
 
-    { njs_str("-0B11111111"),
+    { njs_str("-0B1111_1111"),
       njs_str("-255") },
 
     { njs_str("0b"),
@@ -266,6 +329,15 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("0B12"),
       njs_str("SyntaxError: Unexpected token \"0B12\" in 1") },
+
+    { njs_str("0b_11"),
+      njs_str("SyntaxError: Unexpected token \"_11\" in 1") },
+
+    { njs_str("0B1__1"),
+      njs_str("SyntaxError: Unexpected token \"__1\" in 1") },
+
+    { njs_str("0b11_"),
+      njs_str("SyntaxError: Unexpected token \"_\" in 1") },
 
     /* Hex Numbers. */
 
@@ -278,7 +350,7 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("0xffFF"),
       njs_str("65535") },
 
-    { njs_str("0X0000BEEF"),
+    { njs_str("0X00_00_BE_EF"),
       njs_str("48879") },
 
     { njs_str("0x"),
@@ -289,6 +361,15 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("0x12g"),
       njs_str("SyntaxError: Unexpected token \"g\" in 1") },
+
+    { njs_str("0X_ff"),
+      njs_str("SyntaxError: Unexpected token \"_ff\" in 1") },
+
+    { njs_str("0xff_"),
+      njs_str("SyntaxError: Unexpected token \"_\" in 1") },
+
+    { njs_str("0Xf__f"),
+      njs_str("SyntaxError: Unexpected token \"__f\" in 1") },
 
     { njs_str(""),
       njs_str("undefined") },

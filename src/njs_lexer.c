@@ -787,7 +787,7 @@ njs_lexer_number(njs_lexer_t *lexer, njs_lexer_token_t *token)
                 goto illegal_token;
             }
 
-            token->number = njs_number_hex_parse(&p, lexer->end);
+            token->number = njs_number_hex_parse(&p, lexer->end, 1);
 
             goto done;
         }
@@ -830,15 +830,19 @@ njs_lexer_number(njs_lexer_t *lexer, njs_lexer_token_t *token)
 
         /* Legacy Octal literals are deprecated. */
 
-        if (*p >= '0' && *p <= '9') {
+        if ((*p >= '0' && *p <= '9') || *p == '_') {
             goto illegal_trailer;
         }
     }
 
     p--;
-    token->number = njs_number_dec_parse(&p, lexer->end);
+    token->number = njs_number_dec_parse(&p, lexer->end, 1);
 
 done:
+
+    if (p[-1] == '_') {
+        p--;
+    }
 
     lexer->start = (u_char *) p;
     token->text.length = p - token->text.start;

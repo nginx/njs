@@ -3718,11 +3718,11 @@ njs_string_to_number(const njs_value_t *value, njs_bool_t parse_float)
         && p + 2 < end && p[0] == '0' && (p[1] == 'x' || p[1] == 'X'))
     {
         p += 2;
-        num = njs_number_hex_parse(&p, end);
+        num = njs_number_hex_parse(&p, end, 0);
 
     } else {
         start = p;
-        num = njs_number_dec_parse(&p, end);
+        num = njs_number_dec_parse(&p, end, 0);
 
         if (p == start) {
             if (p + infinity > end || memcmp(p, "Infinity", infinity) != 0) {
@@ -3821,7 +3821,7 @@ njs_string_to_index(const njs_value_t *value)
         }
     }
 
-    num = njs_strtod(&p, end);
+    num = njs_strtod(&p, end, 0);
     if (p != end) {
         return NAN;
     }

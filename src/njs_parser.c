@@ -8078,7 +8078,7 @@ njs_parser_escape_string_create(njs_parser_t *parser, njs_lexer_token_t *token,
         hex_end = src + hex_length;
 
     hex:
-        cp = njs_number_hex_parse(&src, hex_end);
+        cp = njs_number_hex_parse(&src, hex_end, 0);
 
         /* Skip '}' character. */
 
@@ -8219,7 +8219,7 @@ njs_parser_escape_string_calc_length(njs_parser_t *parser,
     hex:
 
         ptr = src;
-        cp = njs_number_hex_parse(&src, hex_end);
+        cp = njs_number_hex_parse(&src, hex_end, 0);
 
         if (hex_length != 0) {
             if (src != hex_end) {

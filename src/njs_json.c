@@ -796,7 +796,7 @@ njs_json_parse_number(njs_json_parse_ctx_t *ctx, njs_value_t *value,
     }
 
     start = p;
-    num = njs_number_dec_parse(&p, ctx->end);
+    num = njs_number_dec_parse(&p, ctx->end, 0);
     if (p != start) {
         njs_set_number(value, sign * num);
         return p;

@@ -54,9 +54,10 @@ njs_key_to_index(const njs_value_t *value)
 
 
 double
-njs_number_dec_parse(const u_char **start, const u_char *end)
+njs_number_dec_parse(const u_char **start, const u_char *end,
+    njs_bool_t literal)
 {
-    return njs_strtod(start, end);
+    return njs_strtod(start, end, literal);
 }
 
 
@@ -65,22 +66,27 @@ njs_number_oct_parse(const u_char **start, const u_char *end)
 {
     u_char        c;
     uint64_t      num;
-    const u_char  *p;
+    const u_char  *p, *_;
 
     p = *start;
 
     num = 0;
+    _ = p - 1;
 
-    while (p < end) {
+    for (; p < end; p++) {
         /* Values less than '0' become >= 208. */
         c = *p - '0';
 
         if (njs_slow_path(c > 7)) {
+            if (*p == '_' && (p - _) > 1) {
+                _ = p;
+                continue;
+            }
+
             break;
         }
 
         num = num * 8 + c;
-        p++;
     }
 
     *start = p;
@@ -94,22 +100,27 @@ njs_number_bin_parse(const u_char **start, const u_char *end)
 {
     u_char        c;
     uint64_t      num;
-    const u_char  *p;
+    const u_char  *p, *_;
 
     p = *start;
 
     num = 0;
+    _ = p - 1;
 
-    while (p < end) {
+    for (; p < end; p++) {
         /* Values less than '0' become >= 208. */
         c = *p - '0';
 
         if (njs_slow_path(c > 1)) {
+            if (*p == '_' && (p - _) > 1) {
+                _ = p;
+                continue;
+            }
+
             break;
         }
 
         num = num * 2 + c;
-        p++;
     }
 
     *start = p;
@@ -119,24 +130,31 @@ njs_number_bin_parse(const u_char **start, const u_char *end)
 
 
 uint64_t
-njs_number_hex_parse(const u_char **start, const u_char *end)
+njs_number_hex_parse(const u_char **start, const u_char *end,
+    njs_bool_t literal)
 {
     uint64_t      num;
     njs_int_t     n;
-    const u_char  *p;
+    const u_char  *p, *_;
 
     p = *start;
 
     num = 0;
+    _ = p - 1;
 
-    while (p < end) {
+    for (; p < end; p++) {
         n = njs_char_to_hex(*p);
+
         if (njs_slow_path(n < 0)) {
+            if (literal && *p == '_' && (p - _) > 1) {
+                _ = p;
+                continue;
+            }
+
             break;
         }
 
         num = num * 16 + n;
-        p++;
     }
 
     *start = p;
