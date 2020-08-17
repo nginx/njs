@@ -9,7 +9,7 @@
 
 /*
  * The njs_unicode_lower_case.h and njs_unicode_upper_case.h files are
- * files auto-generated from the UnicodeData.txt file version 12.1.0 (May 2019)
+ * auto-generated from the UnicodeData.txt file version 13.0.0 (March 2020)
  * provided by Unicode, Inc.:
  *
  *   ./njs_unicode_lower_case.pl UnicodeData.txt
