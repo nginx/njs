@@ -3363,5 +3363,10 @@ ngx_http_js_create_loc_conf(ngx_conf_t *cf)
 static char *
 ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 {
+    ngx_http_js_loc_conf_t *prev = parent;
+    ngx_http_js_loc_conf_t *conf = child;
+
+    ngx_conf_merge_str_value(conf->content, prev->content, "");
+
     return NGX_CONF_OK;
 }
