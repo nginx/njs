@@ -4900,6 +4900,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = [1,2,3,4,3,4]; a.lastIndexOf(3, -10)"),
       njs_str("-1") },
 
+    { njs_str("[1,2,3].lastIndexOf(1, -5.3)"),
+      njs_str("-1") },
+
     { njs_str("[1,2,1].lastIndexOf(2,undefined)"),
       njs_str("-1") },
 
@@ -4962,6 +4965,9 @@ static njs_unit_test_t  njs_test[] =
       njs_str("1") },
 
     { njs_str("Array.prototype.lastIndexOf.call({199:true, 200:'200.59', length:200}, '200.59')"),
+      njs_str("-1") },
+
+    { njs_str("Array.prototype.lastIndexOf.call({0:'undefined', length:0}, 'undefined')"),
       njs_str("-1") },
 
     { njs_str("[''].lastIndexOf.call('00000000000000000000000000000а00')"),
@@ -5083,25 +5089,19 @@ static njs_unit_test_t  njs_test[] =
               "Array.prototype.forEach.call(s, function (a, b, c) {t = typeof c;}); [t, typeof s];"),
       njs_str("object,string") },
 
-    { njs_str("var i = 0; var o = {get length() {i++}};"
-              "try {Array.prototype.forEach.call(o);}"
-              "catch (e) {i += '; ' + e} i"),
-      njs_str("1; TypeError: unexpected iterator arguments") },
-
-    { njs_str("var a = [];"
-                 "a.some(function(v, i, a) { return v > 1 })"),
+    { njs_str("[].some(function(v) { return v > 1 })"),
       njs_str("false") },
 
-    { njs_str("var a = [1,2,3];"
-                 "a.some(function(v, i, a) { return v > 1 })"),
+    { njs_str("[11].some(function(v) { return 5 })"),
       njs_str("true") },
 
-    { njs_str("var a = [1,2,3];"
-                 "a.some(function(v, i, a) { return v > 2 })"),
+    { njs_str("[1,2,3].some(function(v) { return v > 1 })"),
       njs_str("true") },
 
-    { njs_str("var a = [1,2,3];"
-                 "a.some(function(v, i, a) { return v > 3 })"),
+    { njs_str("[1,2,3].some(function(v) { return v > 2 })"),
+      njs_str("true") },
+
+    { njs_str("[1,2,3].some(function(v) { return v > 3 })"),
       njs_str("false") },
 
     { njs_str("var o = {0: 'a', 1: 'b', 2: 'c', 'length': { valueOf: function() { return 3 }}};"
@@ -5118,25 +5118,20 @@ static njs_unit_test_t  njs_test[] =
               "var r = Array.prototype.some.call(o, function(v, i, a) { return v === 'd' }); r"),
       njs_str("true") },
 
-    { njs_str("var i = 0; var o = {get length() {i++}};"
-              "try {Array.prototype.some.call(o);}"
-              "catch (e) {i += '; ' + e} i"),
-      njs_str("1; TypeError: unexpected iterator arguments") },
-
-    { njs_str("var a = [];"
-                 "a.every(function(v, i, a) { return v > 1 })"),
+    { njs_str("[].every(function(v) { return v > 1 })"),
       njs_str("true") },
 
-    { njs_str("var a = [3,2,1];"
-                 "a.every(function(v, i, a) { return v > 3 })"),
+    { njs_str("var accessed = false;"
+              "[1].every((v) => {accessed = true; return 0; }) === false && accessed === true"),
+      njs_str("true") },
+
+    { njs_str("[3,2,1].every(function(v) { return v > 3 })"),
       njs_str("false") },
 
-    { njs_str("var a = [3,2,1];"
-                 "a.every(function(v, i, a) { return v > 2 })"),
+    { njs_str("[3,2,1].every(function(v) { return v > 2 })"),
       njs_str("false") },
 
-    { njs_str("var a = [3,2,1];"
-                 "a.every(function(v, i, a) { return v > 0 })"),
+    { njs_str("[3,2,1].every(function(v) { return v > 0 })"),
       njs_str("true") },
 
     { njs_str("var o = {0: 'c', 1: 'b', 2: 'c', 'length': { valueOf() { return 3 }}};"
@@ -5146,11 +5141,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var o = {0: 'c', 1: 'c', 2: 'c', 'length': { valueOf() { return 3 }}};"
               "var r = Array.prototype.every.call(o, function(el, i, arr) {return el == 'c'}); r"),
       njs_str("true") },
-
-    { njs_str("var i = 0; var o = {get length() {i++}};"
-              "try {Array.prototype.every.call(o);}"
-              "catch (e) {i += '; ' + e} i"),
-      njs_str("1; TypeError: unexpected iterator arguments") },
 
     { njs_str("var obj = new Date(); obj.length = 1; obj[0] = 1;"
               "Array.prototype.every.call(obj, (val,idx,obj)=>!(obj instanceof Date))"),
@@ -5989,11 +5979,6 @@ static njs_unit_test_t  njs_test[] =
               "var r = Array.prototype.filter.call(o, function(el, i, arr) { return el == 'c' }); r"),
       njs_str("c,c") },
 
-    { njs_str("var i = 0; var o = {get length() {i++}};"
-              "try {Array.prototype.filter.call(o);}"
-              "catch (e) {i += '; ' + e} i"),
-      njs_str("1; TypeError: unexpected iterator arguments") },
-
     { njs_str("var a = [];"
                  "a.find(function(v, i, a) { return v > 1 })"),
       njs_str("undefined") },
@@ -6052,9 +6037,9 @@ static njs_unit_test_t  njs_test[] =
       njs_str("d") },
 
     { njs_str("var i = 0; var o = {get length() {i++}};"
-              "try {Array.prototype.find.call(o);}"
-              "catch (e) {i += '; ' + e} i"),
-      njs_str("1; TypeError: unexpected iterator arguments") },
+              "try {Array.prototype.filter.call(o);}"
+              "catch (e) {i += '; ' + e}; i"),
+      njs_str("1; TypeError: callback argument is not callable") },
 
     { njs_str("var callz = 0, res = [], arr = 'abc'.split('');"
               "void arr.find((k) => { if (0 == callz++) { arr.splice(1,1); } res.push(k) });"
@@ -6115,11 +6100,6 @@ static njs_unit_test_t  njs_test[] =
               "var r = Array.prototype.findIndex.call(o, function(el, i, arr) { return el == 'd' }); r"),
       njs_str("3") },
 
-    { njs_str("var i = 0; var o = {get length() {i++}};"
-              "try {Array.prototype.findIndex.call(o);}"
-              "catch (e) {i += '; ' + e} i"),
-      njs_str("1; TypeError: unexpected iterator arguments") },
-
     { njs_str("var callz = 0, res = [], arr = 'abc'.split('');"
               "void arr.findIndex((k) => { if (0 == callz++) { arr.splice(1,1); } res.push(k) });"
               "res.join(',')"),
@@ -6176,11 +6156,6 @@ static njs_unit_test_t  njs_test[] =
               "var obj = {2: 2, length: 9000};"
               "var res = Array.prototype.map.call(obj, callbackfn); typeof res[8000]"),
       njs_str("undefined") },
-
-    { njs_str("var i = 0; var o = {get length() {i++}};"
-              "try {Array.prototype.map.call(o);}"
-              "catch (e) {i += '; ' + e} i"),
-      njs_str("1; TypeError: unexpected iterator arguments") },
 
     { njs_str("var a = [1,2,3]; Object.defineProperty(a, '1', {enumerable:false});"
               "a.map(v=>v)"),
@@ -6249,11 +6224,6 @@ static njs_unit_test_t  njs_test[] =
               "var r = Array.prototype.reduce.call(o, (a, b) => a + b); r"),
       njs_str("abcd") },
 
-    { njs_str("var i = 0; var o = {get length() {i++}};"
-              "try {Array.prototype.reduce.call(o);}"
-              "catch (e) {i += '; ' + e} i"),
-      njs_str("1; TypeError: unexpected iterator arguments") },
-
     { njs_str("var a = [];"
                  "a.reduceRight(function(p, v, i, a) { return p + v })"),
       njs_str("TypeError: Reduce of empty object with no initial value") },
@@ -6305,7 +6275,7 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var i = 0; var o = {get length() {i++}};"
               "try {Array.prototype.reduceRight.call(o);}"
               "catch (e) {i += '; ' + e} i"),
-      njs_str("1; TypeError: unexpected iterator arguments") },
+      njs_str("1; TypeError: callback argument is not callable") },
 
     { njs_str("var m = [];"
               "[''].reduceRight.call('00000000000000000000000000000а00', (p, v, i, a) => {m.push(v)});"
