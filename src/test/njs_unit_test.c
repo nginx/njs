@@ -9393,6 +9393,16 @@ static njs_unit_test_t  njs_test[] =
               "x.t == 1 && y.t == 2"),
       njs_str("true") },
 
+    { njs_str("function A(){}; A.tag = 'A'; var a = new A();"
+              "(function B(){}).prototype = A.prototype;"
+              "a.constructor.tag"),
+      njs_str("A") },
+
+    { njs_str("function A(){}; A.tag = 'A'; var a = new A();"
+              "(function B(){}).prototype = a.constructor.prototype;"
+              "a.constructor.tag"),
+      njs_str("A") },
+
     { njs_str("var x = {}, y = function() {}, z; y.prototype = x; z = new y();"
               "(z instanceof y) && (z.__proto__ == y.prototype) && (x.isPrototypeOf(z))"),
       njs_str("true") },

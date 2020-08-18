@@ -776,7 +776,7 @@ njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *native)
 
 
 static njs_value_t *
-njs_function_property_prototype_create(njs_vm_t *vm, njs_lvlhsh_t *hash,
+njs_function_property_prototype_set(njs_vm_t *vm, njs_lvlhsh_t *hash,
     njs_value_t *prototype)
 {
     njs_int_t           ret;
@@ -845,13 +845,14 @@ njs_function_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
         return NJS_ERROR;
     }
 
-    proto = njs_function_property_prototype_create(vm, &function->object.hash,
-                                                   setval);
+    proto = njs_function_property_prototype_set(vm, njs_object_hash(value),
+                                                setval);
     if (njs_slow_path(proto == NULL)) {
         return NJS_ERROR;
     }
 
-    if (njs_is_object(proto)) {
+    if (setval == &proto_value && njs_is_object(proto)) {
+        /* Only in getter context. */
         cons = njs_property_constructor_create(vm, njs_object_hash(proto),
                                                value);
         if (njs_slow_path(cons == NULL)) {
