@@ -568,6 +568,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
 
         if (njs_is_symbol(key)) {
             pq->lhq.key_hash = njs_symbol_key(key);
+            pq->lhq.key.start = NULL;
 
         } else {
             njs_string_get(&pq->key, &pq->lhq.key);

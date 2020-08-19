@@ -13151,6 +13151,10 @@ static njs_unit_test_t  njs_test[] =
                  "[m.hasOwnProperty('abs'), delete m.abs, m.abs(-1)]"),
       njs_str("true,true,1") },
 
+    { njs_str("var Q = Object.create({}, {a: {value: 'AAA'}, [Symbol.toStringTag]:{value: 'TAG'}});"
+              "Q[Symbol.toStringTag]"),
+      njs_str("TAG") },
+
     { njs_str("Object.getOwnPropertyDescriptor({a:1}, 'a').value"),
       njs_str("1") },
 
