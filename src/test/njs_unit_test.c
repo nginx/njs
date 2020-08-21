@@ -16747,6 +16747,20 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("njs.dump(Object(Symbol.iterator))"),
       njs_str("[Symbol: Symbol(Symbol.iterator)]") },
 
+    { njs_str("njs.dump(decodeURI)"),
+      njs_str("[Function: decodeURI]") },
+
+    { njs_str("delete decodeURI.name; njs.dump(decodeURI)"),
+      njs_str("[Function]") },
+
+    { njs_str("delete decodeURI.name; delete Function.prototype.name; "
+              "decodeURI.name = 1; njs.dump(decodeURI)"),
+      njs_str("[Function: native]") },
+
+    { njs_str("delete decodeURI.name; delete Function.prototype.name; "
+              "decodeURI.name = 'XXX'; njs.dump(decodeURI)"),
+      njs_str("[Function: XXX]") },
+
     /* Built-in methods name. */
 
     { njs_str(

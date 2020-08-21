@@ -1830,6 +1830,8 @@ njs_dump_terminal(njs_json_stringify_t *stringify, njs_chb_t *chain,
     njs_typed_array_t  *array;
     njs_string_prop_t  string;
 
+    static const njs_value_t  name_string = njs_string("name");
+
     njs_int_t   (*to_string)(njs_vm_t *, njs_value_t *, const njs_value_t *);
 
     switch (value->type) {
@@ -1933,8 +1935,24 @@ njs_dump_terminal(njs_json_stringify_t *stringify, njs_chb_t *chain,
         break;
 
     case NJS_FUNCTION:
-        if (njs_function(value)->native) {
-            njs_chb_append_literal(chain, "[Function: native]");
+        ret = njs_value_property(stringify->vm, value,
+                                 njs_value_arg(&name_string), &tag);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return ret;
+        }
+
+        if (njs_is_string(&tag)) {
+            njs_string_get(&tag, &str);
+
+        } else if (njs_function(value)->native) {
+            str = njs_str_value("native");
+
+        } else {
+            str = njs_str_value("");
+        }
+
+        if (str.length != 0) {
+            njs_chb_sprintf(chain, 32 + str.length, "[Function: %V]", &str);
 
         } else {
             njs_chb_append_literal(chain, "[Function]");
