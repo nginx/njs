@@ -8,6 +8,17 @@
 #include <njs_main.h>
 
 
+typedef enum {
+    NJS_ARRAY_EVERY = 0,
+    NJS_ARRAY_FOR_EACH,
+    NJS_ARRAY_SOME,
+    NJS_ARRAY_FIND,
+    NJS_ARRAY_FIND_INDEX,
+    NJS_ARRAY_FILTER,
+    NJS_ARRAY_MAP,
+} njs_array_iterator_fun_t;
+
+
 njs_typed_array_t *
 njs_typed_array_alloc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_object_type_t type)
@@ -826,6 +837,558 @@ njs_typed_array_prototype_copy_within(njs_vm_t *vm, njs_value_t *args,
 }
 
 
+static njs_int_t
+njs_typed_array_prototype_iterator(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t type)
+{
+    double             val;
+    int64_t            i, length;
+    njs_int_t          ret;
+    njs_arr_t          results;
+    njs_value_t        *this, *this_arg, *r;
+    njs_value_t        arguments[4], retval;
+    njs_function_t     *function;
+    njs_typed_array_t  *array, *dst;
+
+    this = njs_argument(args, 0);
+    if (njs_slow_path(!njs_is_typed_array(this))) {
+        njs_type_error(vm, "this is not a typed array");
+        return NJS_ERROR;
+    }
+
+    dst = NULL;
+    array = njs_typed_array(this);
+    length = njs_typed_array_length(array);
+
+    if (njs_slow_path(!njs_is_function(njs_arg(args, nargs, 1)))) {
+        njs_type_error(vm, "callback argument is not callable");
+        return NJS_ERROR;
+    }
+
+    function = njs_function(njs_argument(args, 1));
+    this_arg = njs_arg(args, nargs, 2);
+
+    results.separate = 0;
+    results.pointer = 0;
+
+    switch (type) {
+    case NJS_ARRAY_MAP:
+        njs_set_number(&arguments[0], length);
+        ret = njs_typed_array_species_create(vm, this, njs_value_arg(arguments),
+                                             1, &retval);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
+        dst = njs_typed_array(&retval);
+        break;
+
+    case NJS_ARRAY_FILTER:
+        r = njs_arr_init(vm->mem_pool, &results, NULL, 4, sizeof(njs_value_t));
+        if (njs_slow_path(r == NULL)) {
+            return NJS_ERROR;
+        }
+
+    default:
+        break;
+    }
+
+    for (i = 0; i < length; i++) {
+        val = njs_typed_array_get(array, i);
+
+        arguments[0] = *this_arg;
+        njs_set_number(&arguments[1], val);
+        njs_set_number(&arguments[2], i);
+        njs_set_typed_array(&arguments[3], array);
+
+        ret = njs_function_apply(vm, function, arguments, 4, &vm->retval);
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto exception;
+        }
+
+        switch (type) {
+        case NJS_ARRAY_EVERY:
+            if (!njs_is_true(&vm->retval)) {
+                vm->retval = njs_value_false;
+                goto done;
+            }
+
+            break;
+
+        case NJS_ARRAY_FOR_EACH:
+            break;
+
+        case NJS_ARRAY_SOME:
+        case NJS_ARRAY_FIND:
+        case NJS_ARRAY_FIND_INDEX:
+            if (!njs_is_true(&vm->retval)) {
+                continue;
+            }
+
+            switch (type) {
+            case NJS_ARRAY_SOME:
+                vm->retval = njs_value_true;
+                break;
+
+            case NJS_ARRAY_FIND:
+                njs_set_number(&vm->retval, val);
+                break;
+
+            default:
+                njs_set_number(&vm->retval, i);
+                break;
+            }
+
+            goto done;
+
+        case NJS_ARRAY_MAP:
+            ret = njs_typed_array_set_value(vm, dst, i, &vm->retval);
+            if (njs_slow_path(ret != NJS_OK)) {
+                goto exception;
+            }
+
+            break;
+
+        default:
+            /* NJS_ARRAY_FILTER. */
+
+            if (!njs_is_true(&vm->retval)) {
+                continue;
+            }
+
+            r = njs_arr_add(&results);
+            if (njs_slow_path(r == NULL)) {
+                goto exception;
+            }
+
+            njs_set_number(r, val);
+        }
+    }
+
+    /* Default values. */
+
+    switch (type) {
+    case NJS_ARRAY_EVERY:
+        vm->retval = njs_value_true;
+        break;
+
+    case NJS_ARRAY_SOME:
+        vm->retval = njs_value_false;
+        break;
+
+    case NJS_ARRAY_FOR_EACH:
+    case NJS_ARRAY_FIND:
+        njs_set_undefined(&vm->retval);
+        break;
+
+    case NJS_ARRAY_FIND_INDEX:
+        njs_set_number(&vm->retval, -1);
+        break;
+
+    case NJS_ARRAY_MAP:
+    case NJS_ARRAY_FILTER:
+    default:
+        if (type == NJS_ARRAY_FILTER) {
+            njs_set_number(&arguments[0], results.items);
+            ret = njs_typed_array_species_create(vm, this,
+                                                 njs_value_arg(arguments),
+                                                 1, &retval);
+            if (njs_slow_path(ret != NJS_OK)) {
+                goto exception;
+            }
+
+            dst = njs_typed_array(&retval);
+
+            i = 0;
+
+            while (i < results.items) {
+                r = njs_arr_item(&results, i);
+                ret = njs_typed_array_set_value(vm, dst, i++, r);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    goto exception;
+                }
+            }
+        }
+
+        njs_set_typed_array(&vm->retval, dst);
+        break;
+    }
+
+done:
+
+    ret = NJS_OK;
+
+exception:
+
+    njs_arr_destroy(&results);
+
+    return ret;
+}
+
+
+static njs_int_t
+njs_typed_array_prototype_index_of(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t type)
+{
+    double              v;
+    int64_t             i, i64, from, to, index, increment, offset, length;
+    njs_int_t           ret, integer;
+    njs_value_t         *this;
+    const float         *f32;
+    const double        *f64;
+    const uint8_t       *u8;
+    const uint16_t      *u16;
+    const uint32_t      *u32;
+    njs_typed_array_t   *array;
+    njs_array_buffer_t  *buffer;
+
+    this = njs_argument(args, 0);
+    if (njs_slow_path(!njs_is_typed_array(this))) {
+        njs_type_error(vm, "this is not a typed array");
+        return NJS_ERROR;
+    }
+
+    index = -1;
+    array = njs_typed_array(this);
+    length = njs_typed_array_length(array);
+
+    if (!njs_is_number(njs_arg(args, nargs, 1)) || length == 0) {
+        goto done;
+    }
+
+    if (type & 2) {
+        /* lastIndexOf(). */
+
+        if (nargs > 2) {
+            ret = njs_value_to_integer(vm, njs_arg(args, nargs, 2), &from);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+
+        } else {
+            from = length - 1;
+        }
+
+        if (from >= 0) {
+            from = njs_min(from, length - 1);
+
+        } else if (from < 0) {
+            from += length;
+        }
+
+        to = -1;
+        increment = -1;
+
+        if (from <= to) {
+            goto done;
+        }
+
+    } else {
+        /* indexOf(), includes(). */
+
+        ret = njs_value_to_integer(vm, njs_arg(args, nargs, 2), &from);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+        if (from < 0) {
+            from += length;
+
+            if (from < 0) {
+                from = 0;
+            }
+        }
+
+        to = length;
+        increment = 1;
+
+        if (from >= to) {
+            goto done;
+        }
+    }
+
+    v = njs_number(njs_argument(args, 1));
+
+    i64 = v;
+    integer = (v == i64);
+
+    buffer = array->buffer;
+    offset = array->offset;
+
+    switch (array->type) {
+    case NJS_OBJ_TYPE_INT8_ARRAY:
+        if (integer && ((int8_t) i64 == i64)) {
+            goto search8;
+        }
+
+        break;
+
+    case NJS_OBJ_TYPE_UINT8_CLAMPED_ARRAY:
+    case NJS_OBJ_TYPE_UINT8_ARRAY:
+        if (integer && ((uint8_t) i64 == i64)) {
+search8:
+            u8 = &buffer->u.u8[0];
+            for (i = from; i != to; i += increment) {
+                if (u8[offset + i] == (uint8_t) i64) {
+                    index = i;
+                    break;
+                }
+            }
+        }
+
+        break;
+
+    case NJS_OBJ_TYPE_INT16_ARRAY:
+        if (integer && ((int16_t) i64 == i64)) {
+            goto search16;
+        }
+
+        break;
+
+    case NJS_OBJ_TYPE_UINT16_ARRAY:
+        if (integer && ((uint16_t) i64 == i64)) {
+search16:
+            u16 = &buffer->u.u16[0];
+            for (i = from; i != to; i += increment) {
+                if (u16[offset + i] == (uint16_t) i64) {
+                    index = i;
+                    break;
+                }
+            }
+        }
+
+        break;
+
+    case NJS_OBJ_TYPE_INT32_ARRAY:
+        if (integer && ((int32_t) i64 == i64)) {
+            goto search32;
+        }
+
+        break;
+
+    case NJS_OBJ_TYPE_UINT32_ARRAY:
+        if (integer && ((uint32_t) i64 == i64)) {
+search32:
+            u32 = &buffer->u.u32[0];
+            for (i = from; i != to; i += increment) {
+                if (u32[offset + i] == (uint32_t) i64) {
+                    index = i;
+                    break;
+                }
+            }
+        }
+
+        break;
+
+    case NJS_OBJ_TYPE_FLOAT32_ARRAY:
+        f32 = &buffer->u.f32[0];
+
+        if (((float) v == v)) {
+            for (i = from; i != to; i += increment) {
+                if (f32[offset + i] == (float) v) {
+                    index = i;
+                    break;
+                }
+            }
+
+        } else if ((type & 1) && isnan(v)) {
+            /* includes() handles NaN. */
+
+            for (i = from; i != to; i += increment) {
+                if (isnan(f32[offset + i])) {
+                    index = i;
+                    break;
+                }
+            }
+        }
+
+        break;
+
+    default:
+
+        /* NJS_OBJ_TYPE_FLOAT64_ARRAY. */
+
+        f64 = &buffer->u.f64[0];
+
+        if ((type & 1) && isnan(v)) {
+            /* includes() handles NaN. */
+
+            for (i = from; i != to; i += increment) {
+                if (isnan(f64[offset + i])) {
+                    index = i;
+                    break;
+                }
+            }
+
+        } else {
+            for (i = from; i != to; i += increment) {
+                if (f64[offset + i] == v) {
+                    index = i;
+                    break;
+                }
+            }
+        }
+    }
+
+done:
+
+    /* Default values. */
+
+    if (type & 1) {
+        njs_set_boolean(&vm->retval, index != -1);
+
+    } else {
+        njs_set_number(&vm->retval, index);
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_typed_array_prototype_reduce(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t right)
+{
+    int64_t            i, from, to, increment, length;
+    njs_int_t          ret;
+    njs_value_t        *this, accumulator;
+    njs_value_t        arguments[5];
+    njs_function_t     *function;
+    njs_typed_array_t  *array;
+
+    this = njs_argument(args, 0);
+    if (njs_slow_path(!njs_is_typed_array(this))) {
+        njs_type_error(vm, "this is not a typed array");
+        return NJS_ERROR;
+    }
+
+    array = njs_typed_array(this);
+    length = njs_typed_array_length(array);
+
+    if (njs_slow_path(!njs_is_function(njs_arg(args, nargs, 1)))) {
+        njs_type_error(vm, "callback argument is not callable");
+        return NJS_ERROR;
+    }
+
+    function = njs_function(njs_argument(args, 1));
+
+    if (length == 0 && nargs <= 2) {
+        njs_type_error(vm, "Reduce of empty object with no initial value");
+        return NJS_ERROR;
+    }
+
+    if (right) {
+        from = length - 1;
+        to = -1;
+        increment = -1;
+
+    } else {
+        from = 0;
+        to = length;
+        increment = 1;
+    }
+
+    if (nargs > 2) {
+        accumulator = *njs_argument(args, 2);
+
+    } else {
+        njs_set_number(&accumulator, njs_typed_array_get(array, from));
+        from += increment;
+    }
+
+    for (i = from; i != to; i += increment) {
+        njs_set_undefined(&arguments[0]);
+        arguments[1] = accumulator;
+        njs_set_number(&arguments[2], njs_typed_array_get(array, i));
+        njs_set_number(&arguments[3], i);
+        njs_set_typed_array(&arguments[4], array);
+
+        ret =  njs_function_apply(vm, function, arguments, 5, &accumulator);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    vm->retval = accumulator;
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_typed_array_prototype_reverse(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused)
+{
+    double              *f64;
+    uint8_t             *u8;
+    int64_t             i, length;
+    uint16_t            *u16;
+    uint32_t            *u32;
+    njs_value_t         *this;
+    njs_typed_array_t   *array;
+    njs_array_buffer_t  *buffer;
+
+    this = njs_argument(args, 0);
+    if (njs_slow_path(!njs_is_typed_array(this))) {
+        njs_type_error(vm, "this is not a typed array");
+        return NJS_ERROR;
+    }
+
+    array = njs_typed_array(this);
+    length = njs_typed_array_length(array);
+
+    buffer = array->buffer;
+
+    switch (array->type) {
+    case NJS_OBJ_TYPE_UINT8_ARRAY:
+    case NJS_OBJ_TYPE_UINT8_CLAMPED_ARRAY:
+    case NJS_OBJ_TYPE_INT8_ARRAY:
+        u8 = &buffer->u.u8[array->offset];
+
+        for (i = 0; i < length / 2; i++) {
+            njs_swap_u8(&u8[i], &u8[length - i - 1], 0);
+        }
+
+        break;
+
+    case NJS_OBJ_TYPE_INT16_ARRAY:
+    case NJS_OBJ_TYPE_UINT16_ARRAY:
+        u16 = &buffer->u.u16[array->offset];
+
+        for (i = 0; i < length / 2; i++) {
+            njs_swap_u16(&u16[i], &u16[length - i - 1], 0);
+        }
+
+        break;
+
+    case NJS_OBJ_TYPE_INT32_ARRAY:
+    case NJS_OBJ_TYPE_UINT32_ARRAY:
+    case NJS_OBJ_TYPE_FLOAT32_ARRAY:
+        u32 = &buffer->u.u32[array->offset];
+
+        for (i = 0; i < length / 2; i++) {
+            njs_swap_u32(&u32[i], &u32[length - i - 1], 0);
+        }
+
+        break;
+
+    default:
+
+        /* NJS_OBJ_TYPE_FLOAT64_ARRAY. */
+
+        f64 = &buffer->u.f64[array->offset];
+
+        for (i = 0; i < length / 2; i++) {
+            njs_swap_u64(&f64[i], &f64[length - i - 1], 0);
+        }
+    }
+
+    njs_set_typed_array(&vm->retval, array);
+
+    return NJS_OK;
+}
+
+
 static int
 njs_typed_array_compare_i8(const void *a, const void *b, void *c)
 {
@@ -1367,6 +1930,132 @@ static const njs_object_prop_t  njs_typed_array_prototype_properties[] =
 
     {
         .type = NJS_PROPERTY,
+        .name = njs_string("copyWithin"),
+        .value = njs_native_function(njs_typed_array_prototype_copy_within, 2),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("every"),
+        .value = njs_native_function2(njs_typed_array_prototype_iterator, 1,
+                                      NJS_ARRAY_EVERY),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("filter"),
+        .value = njs_native_function2(njs_typed_array_prototype_iterator, 1,
+                                      NJS_ARRAY_FILTER),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("find"),
+        .value = njs_native_function2(njs_typed_array_prototype_iterator, 1,
+                                      NJS_ARRAY_FIND),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("findIndex"),
+        .value = njs_native_function2(njs_typed_array_prototype_iterator, 1,
+                                      NJS_ARRAY_FIND_INDEX),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("forEach"),
+        .value = njs_native_function2(njs_typed_array_prototype_iterator, 1,
+                                      NJS_ARRAY_FOR_EACH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("includes"),
+        .value = njs_native_function2(njs_typed_array_prototype_index_of, 1, 1),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("indexOf"),
+        .value = njs_native_function2(njs_typed_array_prototype_index_of, 1, 0),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("join"),
+        .value = njs_native_function(njs_typed_array_prototype_join, 1),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("fill"),
+        .value = njs_native_function(njs_typed_array_prototype_fill, 1),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("lastIndexOf"),
+        .value = njs_native_function2(njs_typed_array_prototype_index_of, 1, 2),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("map"),
+        .value = njs_native_function2(njs_typed_array_prototype_iterator, 1,
+                                      NJS_ARRAY_MAP),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("reduce"),
+        .value = njs_native_function2(njs_typed_array_prototype_reduce, 1, 0),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("reduceRight"),
+        .value = njs_native_function2(njs_typed_array_prototype_reduce, 1, 1),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("reverse"),
+        .value = njs_native_function(njs_typed_array_prototype_reverse, 0),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
         .name = njs_string("set"),
         .value = njs_native_function(njs_typed_array_prototype_set, 2),
         .writable = 1,
@@ -1383,8 +2072,9 @@ static const njs_object_prop_t  njs_typed_array_prototype_properties[] =
 
     {
         .type = NJS_PROPERTY,
-        .name = njs_string("subarray"),
-        .value = njs_native_function2(njs_typed_array_prototype_slice, 2, 0),
+        .name = njs_string("some"),
+        .value = njs_native_function2(njs_typed_array_prototype_iterator, 1,
+                                      NJS_ARRAY_SOME),
         .writable = 1,
         .configurable = 1,
     },
@@ -1399,24 +2089,8 @@ static const njs_object_prop_t  njs_typed_array_prototype_properties[] =
 
     {
         .type = NJS_PROPERTY,
-        .name = njs_string("copyWithin"),
-        .value = njs_native_function(njs_typed_array_prototype_copy_within, 2),
-        .writable = 1,
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("fill"),
-        .value = njs_native_function(njs_typed_array_prototype_fill, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("join"),
-        .value = njs_native_function(njs_typed_array_prototype_join, 1),
+        .name = njs_string("subarray"),
+        .value = njs_native_function2(njs_typed_array_prototype_slice, 2, 0),
         .writable = 1,
         .configurable = 1,
     },

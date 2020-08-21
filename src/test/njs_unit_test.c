@@ -5895,6 +5895,312 @@ static njs_unit_test_t  njs_test[] =
               "           return a.toString() === '4,5,3,4,5'})"),
       njs_str("true") },
 
+    { njs_str("Uint8Array.prototype.every.call(1)"),
+      njs_str("TypeError: this is not a typed array") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([1,2,3])).every(e=>e>0) === true})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([1,2,3])).every(function(e) {"
+              "              if (this != undefined) {throw 'Oops';}"
+              "              return e > 0}) === true})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([1,2,3])).every(function(e) {"
+              "              if (this != 'QQ') {throw 'Oops';}"
+              "              return e > 0}, 'QQ') === true})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([1,2,3])).every(e=>e>1) === false})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var orig = new v([255,255,1,2,3,255]);"
+              "           var a = new v(orig.buffer, 2 * v.BYTES_PER_ELEMENT, 3);"
+              "           return a.every(e=>e<4)})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var collect = []; (new v([42,43])).forEach(e=>collect.push(e)); "
+              "           return collect.join('|') === '42|43'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([7,10,3,8,5])).filter(q=>q%2).join('|') === '7|3|5'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var orig = new v([255,255,7,10,3,8,5,255]);"
+              "           var a = new v(orig.buffer, 2 * v.BYTES_PER_ELEMENT, 5);"
+              "           return a.filter(q=>q%2).join('|') === '7|3|5'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var orig = new v([255,255,1,2,3,255]);"
+              "           var a = new v(orig.buffer, 2 * v.BYTES_PER_ELEMENT, 3);"
+              "           return a.find(e=>e>2) === 3})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var orig = new v([255,255,1,2,3,255]);"
+              "           var a = new v(orig.buffer, 2 * v.BYTES_PER_ELEMENT, 3);"
+              "           return a.find(e=>e===255) === undefined})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var orig = new v([255,255,1,2,3,255]);"
+              "           var a = new v(orig.buffer, 2 * v.BYTES_PER_ELEMENT, 3);"
+              "           return a.findIndex(e=>e>2) === 2})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var orig = new v([255,255,1,2,3,255]);"
+              "           var a = new v(orig.buffer, 2 * v.BYTES_PER_ELEMENT, 3);"
+              "           return a.findIndex(e=>e===255) === -1})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([1,2,3])).some(e=>e==2)})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var orig = new v([255,255,1,2,3,255]);"
+              "           var a = new v(orig.buffer, 2 * v.BYTES_PER_ELEMENT, 3);"
+              "           return a.some(e=>e==255)})"),
+      njs_str("false") },
+
+    { njs_str("Uint8Array.prototype.includes.call(1)"),
+      njs_str("TypeError: this is not a typed array") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v()).includes(0, {valueOf(){throw 'Oops'}}) === false})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([0,1,2,3])).includes(2) === true})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([0,1,2,3])).includes(2,3) === false})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v(5);"
+              "           return a.includes(0, 4) === true "
+              "                  && a.includes(0, 5) === false;})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([0,1,2,3])).includes(-0) === true})"),
+      njs_str("true") },
+
+    { njs_str(NJS_FLOAT_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([42, 43, NaN, 41])).includes(NaN) === true})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var orig = new v([255,255,0,2,3,255]);"
+              "           var a = new v(orig.buffer, 2 * v.BYTES_PER_ELEMENT, 3);"
+              "           return a.includes(255) === false})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v()).indexOf(0, {valueOf(){throw 'Oops'}}) === -1})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([3,2,1])).indexOf(2) === 1})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([3,2,1])).indexOf(2,2) === -1})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([3,2,1])).indexOf(2,Infinity) === -1})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([3,2,1])).indexOf(2,-Infinity) === 1})"),
+      njs_str("true") },
+
+    { njs_str(NJS_FLOAT_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([42, 43, NaN, 41])).indexOf(NaN) === -1})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([3,2,1])).indexOf(257) === -1})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([3,2,1])).indexOf(2.00001) === -1})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([3,2,1,0])).indexOf(-0) === 3})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v(5);"
+              "           return a.indexOf(0, 4) === 4"
+              "                  && a.indexOf(0, 5) === -1;})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var orig = new v([255,255,0,2,3,255]);"
+              "           var a = new v(orig.buffer, 2 * v.BYTES_PER_ELEMENT, 3);"
+              "           return a.indexOf(255) === -1})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([3,2,1,2])).lastIndexOf(2) === 3})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([3,2,1,2])).lastIndexOf(4) === -1})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([42, 43])).lastIndexOf(42,0) === 0})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([42, 43, 43, 41])).lastIndexOf(43,Infinity) === 2})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([42, 43, 43, 41])).lastIndexOf(43,-Infinity) === -1})"),
+      njs_str("true") },
+
+    { njs_str(NJS_FLOAT_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([42, 43, NaN, 41])).lastIndexOf(NaN) === -1})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var orig = new v([255,255,0,2,3,255]);"
+              "           var a = new v(orig.buffer, 2 * v.BYTES_PER_ELEMENT, 3);"
+              "           return a.lastIndexOf(255) === -1})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{return (new v([3,2,1])).map(q=>2*q).join('|') === '6|4|2'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var orig = new v([255,255,6,4,2,255]);"
+              "           var a = new v(orig.buffer, 2 * v.BYTES_PER_ELEMENT, 3);"
+              "           return a.map(q=>q/2).join('|') === '3|2|1'})"),
+      njs_str("true") },
+
+    { njs_str("Uint8Array.prototype.reduce.call(1)"),
+      njs_str("TypeError: this is not a typed array") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ try { (new v([])).reduce((p, q) => p + q) } "
+              "            catch (e) { return e.name == 'TypeError'} })"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ return (new v([])).reduce((p, q) => p + q, 10) == 10})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ return (new v([7])).reduce((p, q) => p + q) == 7})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ return (new v([7])).reduce((p, q) => p + q, 10) == 17})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ return (new v([1,2,3])).reduce((p, q) => p + q) == 6})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ return (new v([1,2,3])).reduce((p, q) => p + q, 10) == 16})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ return (new v([1,2,3])).reduce((p, q) => p + q, '') == '123'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ return (new v([3,2,1])).reduce((p, q, i) => { "
+              "             if (q + i != 3) {throw 'Oops'}; "
+              "             return p + q;}) == 6})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ var a = new v([3,2,1]); "
+              "            return a.reduce((p, q, _, o) => { "
+              "                 if (a != o) {throw 'Oops'};  "
+              "                 return p + q;}) == 6})"),
+      njs_str("true") },
+
+    { njs_str("var a = [3,2,1]; a.reduce((p, v, _, o) => { if (a != o) {throw 'Oops'};return p + v})"),
+      njs_str("6") },
+
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ try { (new v([])).reduceRight((p, q) => p + q) } "
+              "            catch (e) { return e.name == 'TypeError'} })"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ return (new v([])).reduceRight((p, q) => p + q, 10) == 10})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ return (new v([7])).reduceRight((p, q) => p + q) == 7})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ return (new v([7])).reduceRight((p, q) => p + q, 10) == 17})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ return (new v([1,2,3])).reduceRight((p, q) => p + q) == 6})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ return (new v([1,2,3])).reduceRight((p, q) => p + q, 10) == 16})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ return (new v([1,2,3])).reduceRight((p, q) => p + q, '') == '321'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ return (new v([3,2,1])).reduceRight((p, q, i) => { "
+              "             if (q + i != 3) {throw 'Oops'}; "
+              "             return p + q;}) == 6})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ var a = new v([3,2,1]); "
+              "            return a.reduceRight((p, q, _, o) => { "
+              "                 if (a != o) {throw 'Oops'};  "
+              "                 return p + q;}) == 6})"),
+      njs_str("true") },
+
+    { njs_str("var a = [3,2,1]; a.reduceRight((p, v, _, o) => { if (a != o) {throw 'Oops'};return p + v})"),
+      njs_str("6") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ return (new v([1,2,3])).reverse().join('|') == '3|2|1'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ return (new v([1,2,3,4])).reverse().join('|') == '4|3|2|1'})"),
+      njs_str("true") },
+
+    { njs_str("Uint8Array.prototype.sort.call(1)"),
+      njs_str("TypeError: this is not a typed array") },
+
     { njs_str(NJS_TYPED_ARRAY_LIST
               ".every(v=>{var a = new v([]); a.sort(); "
               "           return a.toString() === ''})"),
@@ -6164,45 +6470,42 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Array.prototype.map.call({0:9, length:2**16}, val=>val<10).length"),
       njs_str("65536") },
 
-    { njs_str("var a = [];"
-                 "a.reduce(function(p, v, i, a) { return p + v })"),
+    { njs_str("[].reduce((p, v) => p + v)"),
       njs_str("TypeError: Reduce of empty object with no initial value") },
 
-    { njs_str("var a = [];"
-                 "a.reduce(function(p, v, i, a) { return p + v }, 10)"),
+    { njs_str("[].reduce((p, v) => p + v, 10)"),
       njs_str("10") },
 
-    { njs_str("var a = [,,];"
-                 "a.reduce(function(p, v, i, a) { return p + v })"),
+    { njs_str("[,,].reduce((p, v) => p + v)"),
       njs_str("TypeError: Reduce of empty object with no initial value") },
 
-    { njs_str("var a = [,,];"
-                 "a.reduce(function(p, v, i, a) { return p + v }, 10)"),
+    { njs_str("[,,].reduce((p, v) => p + v, 10)"),
       njs_str("10") },
 
-    { njs_str("var a = [1];"
-                 "a.reduce(function(p, v, i, a) { return p + v })"),
+    { njs_str("[1].reduce((p, v) => p + v)"),
       njs_str("1") },
 
-    { njs_str("var a = [1];"
-                 "a.reduce(function(p, v, i, a) { return p + v }, 10)"),
+    { njs_str("[1].reduce((p, v) => p + v, 10)"),
       njs_str("11") },
 
-    { njs_str("var a = [1,2,3];"
-                 "a.reduce(function(p, v, i, a) { return p + v })"),
+    { njs_str("[1,2,3].reduce((p, v) => p + v)"),
       njs_str("6") },
 
-    { njs_str("var a = [1,2,3];"
-                 "a.reduce(function(p, v, i, a) { return p + v }, 10)"),
+    { njs_str("[1,2,3].reduce((p, v) => p + v, 10)"),
       njs_str("16") },
 
-    { njs_str("[[0, 1], [2, 3], [4, 5]].reduce(function(a, b)"
-                 "                         { return a.concat(b) }, [])"),
+    { njs_str("[3,2,1].reduce((p, v, i) => { if (v + i != 3) {throw 'Oops'};return p + v})"),
+      njs_str("6") },
+
+    { njs_str("var a = [3,2,1]; a.reduce((p, v, _, o) => { if (a != o) {throw 'Oops'};return p + v})"),
+      njs_str("6") },
+
+    { njs_str("[[0, 1], [2, 3], [4, 5]].reduce((a, b) => a.concat(b), [])"),
       njs_str("0,1,2,3,4,5") },
 
     { njs_str("var o = {0: 'a', 1: 'b', 2: 'c', 'length': { valueOf() { return 3 }}};"
-                 "var reducer = (a, b) => a + b;"
-                 "var a = Array.prototype.reduce.call(o, reducer); a"),
+              "var reducer = (a, b) => a + b;"
+              "var a = Array.prototype.reduce.call(o, reducer); a"),
       njs_str("abc") },
 
     { njs_str("function reducer(a, b, i, arr) {"
@@ -6224,46 +6527,38 @@ static njs_unit_test_t  njs_test[] =
               "var r = Array.prototype.reduce.call(o, (a, b) => a + b); r"),
       njs_str("abcd") },
 
-    { njs_str("var a = [];"
-                 "a.reduceRight(function(p, v, i, a) { return p + v })"),
+    { njs_str("[].reduceRight((p, v) => p + v)"),
       njs_str("TypeError: Reduce of empty object with no initial value") },
 
-    { njs_str("var a = [];"
-                 "a.reduceRight(function(p, v, i, a) { return p + v }, 10)"),
+    { njs_str("[].reduceRight((p, v) => p + v, 10)"),
       njs_str("10") },
 
-    { njs_str("var a = [,,];"
-                 "a.reduceRight(function(p, v, i, a) { return p + v })"),
+    { njs_str("[,,].reduceRight((p, v) => p + v)"),
       njs_str("TypeError: Reduce of empty object with no initial value") },
 
-    { njs_str("var a = [,,];"
-                 "a.reduceRight(function(p, v, i, a) { return p + v }, 10)"),
+    { njs_str("[,,].reduceRight((p, v) => p + v, 10)"),
       njs_str("10") },
 
-    { njs_str("var a = [1];"
-                 "a.reduceRight(function(p, v, i, a) { return p + v })"),
+    { njs_str("[1].reduceRight((p, v) => p + v)"),
       njs_str("1") },
 
-    { njs_str("var a = [1];"
-                 "a.reduceRight(function(p, v, i, a) { return p + v }, 10)"),
+    { njs_str("[1].reduceRight((p, v) => p + v, 10)"),
       njs_str("11") },
 
-    { njs_str("var a = [1,2,3];"
-                 "a.reduceRight(function(p, v, i, a) { return p + v })"),
+    { njs_str("[1,2,3].reduceRight((p, v) => p + v)"),
+      njs_str("6") },
+
+    { njs_str("[1,2,3].reduceRight((p, v) => p + v, 10)"),
+      njs_str("16") },
+
+    { njs_str("[3,2,1].reduceRight((p, v, i) => { if (v + i != 3) {throw 'Oops'};return p + v})"),
       njs_str("6") },
 
     { njs_str("var a = [1,2,3];"
-                 "a.reduceRight(function(p, v, i, a) { return p + v }, 10)"),
-      njs_str("16") },
-
-    { njs_str("var a = [1,2,3];"
-                 "a.reduceRight(function(p, v, i, a)"
-                 "              { a.shift(); return p + v })"),
+              "a.reduceRight(function(p, v, _, a) { a.shift(); return p + v })"),
       njs_str("7") },
-
     { njs_str("var a = [1,2,3];"
-                 "a.reduceRight(function(p, v, i, a)"
-                 "              { a.shift(); return p + v }, 10)"),
+              "a.reduceRight(function(p, v, _, a) { a.shift(); return p + v }, 10)"),
       njs_str("19") },
 
     { njs_str("var o = {0: 'a', 1: 'b', 2: 'c'};"
