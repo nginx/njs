@@ -2216,6 +2216,22 @@ njs_object_prototype_create_constructor(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_object_t            *object;
     njs_object_prototype_t  *prototype;
 
+    if (setval != NULL) {
+        if (!njs_is_object(value)) {
+            njs_type_error(vm, "Cannot create propery \"constructor\" on %s",
+                           njs_type_string(value->type));
+            return NJS_ERROR;
+        }
+
+        cons = njs_property_constructor_set(vm, njs_object_hash(value), setval);
+        if (njs_slow_path(cons == NULL)) {
+            return NJS_ERROR;
+        }
+
+        *retval = *cons;
+        return NJS_OK;
+    }
+
     if (njs_is_object(value)) {
         object = njs_object(value);
 
@@ -2231,8 +2247,6 @@ njs_object_prototype_create_constructor(njs_vm_t *vm, njs_object_prop_t *prop,
 
         } while (object != NULL);
 
-        njs_thread_log_alert("prototype not found");
-
         return NJS_ERROR;
 
     } else {
@@ -2242,23 +2256,21 @@ njs_object_prototype_create_constructor(njs_vm_t *vm, njs_object_prop_t *prop,
 
 found:
 
-    if (setval == NULL) {
-        njs_set_function(&constructor, &vm->constructors[index]);
-        setval = &constructor;
+    njs_set_function(&constructor, &vm->constructors[index]);
+    setval = &constructor;
+
+    cons = njs_property_constructor_set(vm, &prototype->object.hash, setval);
+    if (njs_slow_path(cons == NULL)) {
+        return NJS_ERROR;
     }
 
-    cons = njs_property_constructor_create(vm, &prototype->object.hash, setval);
-    if (njs_fast_path(cons != NULL)) {
-        *retval = *cons;
-        return NJS_OK;
-    }
-
-    return NJS_ERROR;
+    *retval = *cons;
+    return NJS_OK;
 }
 
 
 njs_value_t *
-njs_property_constructor_create(njs_vm_t *vm, njs_lvlhsh_t *hash,
+njs_property_constructor_set(njs_vm_t *vm, njs_lvlhsh_t *hash,
     njs_value_t *constructor)
 {
     njs_int_t                 ret;

@@ -63,7 +63,7 @@ njs_int_t njs_object_prototype_proto(njs_vm_t *vm, njs_object_prop_t *prop,
 njs_int_t njs_object_prototype_create_constructor(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
-njs_value_t *njs_property_constructor_create(njs_vm_t *vm, njs_lvlhsh_t *hash,
+njs_value_t *njs_property_constructor_set(njs_vm_t *vm, njs_lvlhsh_t *hash,
     njs_value_t *constructor);
 njs_int_t njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);

@@ -853,8 +853,7 @@ njs_function_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
 
     if (setval == &proto_value && njs_is_object(proto)) {
         /* Only in getter context. */
-        cons = njs_property_constructor_create(vm, njs_object_hash(proto),
-                                               value);
+        cons = njs_property_constructor_set(vm, njs_object_hash(proto), value);
         if (njs_slow_path(cons == NULL)) {
             return NJS_ERROR;
         }
