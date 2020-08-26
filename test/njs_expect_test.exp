@@ -329,7 +329,7 @@ njs_test {
     {"var o = {toString: function(){}, log: console.log}\r\n"
      "undefined\r\n>> "}
     {"o\r\n"
-     "o\r\n{\r\n toString: \\\[Function],\r\n log: \\\[Function: native]\r\n}"}
+     "o\r\n{\r\n toString: \\\[Function],\r\n log: \\\[Function: log]\r\n}"}
 }
 
 njs_test {
