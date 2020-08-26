@@ -7649,6 +7649,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var r = new String('undefined').indexOf(x); var x; r"),
       njs_str("0") },
 
+    { njs_str("'a a'.toUTF8().indexOf('a', 1)"),
+      njs_str("2") },
+
     { njs_str("'abc'.lastIndexOf('abcdef')"),
       njs_str("-1") },
 
