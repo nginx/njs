@@ -747,12 +747,12 @@ njs_test {
 
 njs_run {"-c" "setTimeout(() => {console.log('A'.repeat(1024))}, 0); ref"} \
 "^Thrown:
-ReferenceError: \"ref\" is not defined in string:1
+ReferenceError: \"ref\" is not defined
     at main \\\(string:1\\\)\n$"
 
 njs_run {"-c" "setTimeout(() => {ref}, 0); setTimeout(() => {console.log('A'.repeat(1024))}, 0)"} \
 "^Thrown:
-ReferenceError: \"ref\" is not defined in string:1
+ReferenceError: \"ref\" is not defined
     at anonymous \\\(string:1\\\)
     at main \\\(string:1\\\)\n$"
 
@@ -816,6 +816,8 @@ njs_run {"test/script_args.js" "A" "B"} "AB"
 njs_test {
     {"1+1\r\n"
      "    1 | 00000 ADD*\r\n*2"}
+    {"__unknown\r\n"
+     "    1 | 00000 GLOBAL GET*\r\n*REFERENCE ERROR*"}
     {"for (var n in [1]) {try {break} finally{}}\r\n"
      "    1 | 00000 ARRAY*\r\n*TRY BREAK*PROP NEXT*-*\r\n\r\nundefined"}
     {"(function() {try {return} finally{}})()\r\n"
@@ -831,9 +833,9 @@ njs_test {
 #
 # For example:
 # {"import ref from 'ref_exception.js'\r\n"
-# "ReferenceError: \"undeclared\" is not defined in ref_exception.js:1"}
+# "ReferenceError: \"undeclared\" is not defined"}
 # {"ref\r\n"
-# "ReferenceError: \"ref\" is not defined in shell:1\r\n"}
+# "ReferenceError: \"ref\" is not defined\r\n"}
 
 njs_test {
     {"import lib1 from 'lib1.js'; import lib2 from 'lib1.js'\r\n"
@@ -851,11 +853,11 @@ njs_test {
     {"import m from 'export_non_default.js'\r\n"
      "Non-default export is not supported in export_non_default.js:3\r\n"}
     {"import ref from 'ref_exception.js'\r\n"
-     "ReferenceError: \"undeclared\" is not defined in ref_exception.js:1"}
+     "ReferenceError: \"undeclared\" is not defined"}
     {"var ref\r\n"
      "undefined\r\n"}
     {"import ref from 'ref_exception.js'\r\n"
-     "ReferenceError: \"undeclared\" is not defined in ref_exception.js:1"}
+     "ReferenceError: \"undeclared\" is not defined"}
     {"import m from 'declaration_exception.js'\r\n"
      "SyntaxError: \"f\" has already been declared in declaration_exception.js:6"}
     {"import m from 'loading_exception.js'\r\n"

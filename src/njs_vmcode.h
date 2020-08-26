@@ -61,7 +61,7 @@ typedef uint8_t                         njs_vmcode_operation_t;
 #define NJS_VMCODE_TRY_END              VMCODE0(37)
 #define NJS_VMCODE_CATCH                VMCODE0(38)
 #define NJS_VMCODE_FINALLY              VMCODE0(39)
-#define NJS_VMCODE_REFERENCE_ERROR      VMCODE0(40)
+#define NJS_VMCODE_ERROR                VMCODE0(40)
 
 #define NJS_VMCODE_NORET                127
 
@@ -386,10 +386,12 @@ typedef struct {
 
 typedef struct {
     njs_vmcode_t               code;
-    njs_str_t                  name;
-    njs_str_t                  file;
-    uint32_t                   token_line;
-} njs_vmcode_reference_error_t;
+    njs_object_type_t          type;
+    union {
+        njs_str_t              name;
+        njs_str_t              message;
+    } u;
+} njs_vmcode_error_t;
 
 
 njs_int_t njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc);

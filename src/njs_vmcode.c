@@ -49,7 +49,7 @@ static njs_jump_off_t njs_vmcode_try_end(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *offset);
 static njs_jump_off_t njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *retval, u_char *pc);
-static void njs_vmcode_reference_error(njs_vm_t *vm, u_char *pc);
+static void njs_vmcode_error(njs_vm_t *vm, u_char *pc);
 
 /*
  * These functions are forbidden to inline to minimize JavaScript VM
@@ -217,7 +217,7 @@ next:
                 pc += sizeof(njs_vmcode_prop_get_t);
 
                 if (ret == NJS_OK) {
-                    pc += sizeof(njs_vmcode_reference_error_t);
+                    pc += sizeof(njs_vmcode_error_t);
                 }
 
                 goto next;
@@ -888,8 +888,8 @@ next:
 
                 break;
 
-            case NJS_VMCODE_REFERENCE_ERROR:
-                njs_vmcode_reference_error(vm, pc);
+            case NJS_VMCODE_ERROR:
+                njs_vmcode_error(vm, pc);
                 goto error;
 
             default:
@@ -1859,21 +1859,16 @@ njs_vmcode_finally(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval,
 
 
 static void
-njs_vmcode_reference_error(njs_vm_t *vm, u_char *pc)
+njs_vmcode_error(njs_vm_t *vm, u_char *pc)
 {
-    njs_str_t                     *file;
-    njs_vmcode_reference_error_t  *ref_err;
+    njs_vmcode_error_t  *err;
 
-    ref_err = (njs_vmcode_reference_error_t *) pc;
+    err = (njs_vmcode_error_t *) pc;
 
-    file = &ref_err->file;
-
-    if (file->length != 0 && !vm->options.quiet) {
-        njs_reference_error(vm, "\"%V\" is not defined in %V:%uD",
-                            &ref_err->name, file, ref_err->token_line);
+    if (err->type == NJS_OBJ_TYPE_REF_ERROR) {
+        njs_reference_error(vm, "\"%V\" is not defined", &err->u.name);
 
     } else {
-        njs_reference_error(vm, "\"%V\" is not defined in %uD", &ref_err->name,
-                            ref_err->token_line);
+        njs_error_fmt_new(vm, &vm->retval, err->type, "%V", &err->u.message);
     }
 }

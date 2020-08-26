@@ -167,8 +167,10 @@ njs_disassemble(njs_vm_code_t *code)
     uint32_t                     line;
     njs_str_t                    *name;
     njs_uint_t                   n;
+    const char                   *type;
     njs_code_name_t              *code_name;
     njs_vmcode_jump_t            *jump;
+    njs_vmcode_error_t           *error;
     njs_vmcode_1addr_t           *code1;
     njs_vmcode_2addr_t           *code2;
     njs_vmcode_3addr_t           *code3;
@@ -451,10 +453,26 @@ njs_disassemble(njs_vm_code_t *code)
             continue;
         }
 
-        if (operation == NJS_VMCODE_REFERENCE_ERROR) {
-            njs_printf("%5uD | %05uz REFERENCE ERROR\n", line, p - start);
+        if (operation == NJS_VMCODE_ERROR) {
+            error = (njs_vmcode_error_t *) p;
 
-            p += sizeof(njs_vmcode_reference_error_t);
+            switch (error->type) {
+            case NJS_OBJ_TYPE_REF_ERROR:
+                type = "REFERENCE";
+                break;
+
+            case NJS_OBJ_TYPE_TYPE_ERROR:
+                type = "TYPE";
+                break;
+
+            case NJS_OBJ_TYPE_ERROR:
+            default:
+                type = "";
+            }
+
+            njs_printf("%5uD | %05uz %s ERROR\n", line, p - start, type);
+
+            p += sizeof(njs_vmcode_error_t);
 
             continue;
         }

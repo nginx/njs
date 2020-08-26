@@ -3459,9 +3459,8 @@ static njs_int_t
 njs_generate_reference_error(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
-    njs_jump_off_t                ret;
-    const njs_lexer_entry_t       *lex_entry;
-    njs_vmcode_reference_error_t  *ref_err;
+    njs_vmcode_error_t       *ref_err;
+    const njs_lexer_entry_t  *lex_entry;
 
     if (njs_slow_path(!node->u.reference.not_defined)) {
         njs_internal_error(vm, "variable is not defined but not_defined "
@@ -3469,24 +3468,14 @@ njs_generate_reference_error(njs_vm_t *vm, njs_generator_t *generator,
         return NJS_ERROR;
     }
 
-    njs_generate_code(generator, njs_vmcode_reference_error_t, ref_err,
-                      NJS_VMCODE_REFERENCE_ERROR, 0, NULL);
+    njs_generate_code(generator, njs_vmcode_error_t, ref_err, NJS_VMCODE_ERROR,
+                      0, NULL);
 
-    ref_err->token_line = node->token_line;
-
-    ref_err->file.length = node->scope->file.length;
-
-    if (ref_err->file.length != 0) {
-        ret = njs_name_copy(vm, &ref_err->file, &node->scope->file);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_ERROR;
-        }
-    }
-
+    ref_err->type = NJS_OBJ_TYPE_REF_ERROR;
     lex_entry = njs_lexer_entry(node->u.reference.unique_id);
     if (njs_slow_path(lex_entry == NULL)) {
         return NJS_ERROR;
     }
 
-    return njs_name_copy(vm, &ref_err->name, &lex_entry->name);
+    return njs_name_copy(vm, &ref_err->u.name, &lex_entry->name);
 }

@@ -253,10 +253,10 @@ static njs_unit_test_t  njs_test[] =
       njs_str("SyntaxError: Unexpected token \"_\" in 1") },
 
     { njs_str("-_1"),
-      njs_str("ReferenceError: \"_1\" is not defined in 1") },
+      njs_str("ReferenceError: \"_1\" is not defined") },
 
     { njs_str("_1"),
-      njs_str("ReferenceError: \"_1\" is not defined in 1") },
+      njs_str("ReferenceError: \"_1\" is not defined") },
 
     /* Octal Numbers. */
 
@@ -2645,25 +2645,25 @@ static njs_unit_test_t  njs_test[] =
       njs_str("1") },
 
     { njs_str("a"),
-      njs_str("ReferenceError: \"a\" is not defined in 1") },
+      njs_str("ReferenceError: \"a\" is not defined") },
 
     { njs_str("\na"),
-      njs_str("ReferenceError: \"a\" is not defined in 2") },
+      njs_str("ReferenceError: \"a\" is not defined") },
 
     { njs_str("\n\na"),
-      njs_str("ReferenceError: \"a\" is not defined in 3") },
+      njs_str("ReferenceError: \"a\" is not defined") },
 
     { njs_str("a + a"),
-      njs_str("ReferenceError: \"a\" is not defined in 1") },
+      njs_str("ReferenceError: \"a\" is not defined") },
 
     { njs_str("a = b + 1"),
-      njs_str("ReferenceError: \"a\" is not defined in 1") },
+      njs_str("ReferenceError: \"a\" is not defined") },
 
     { njs_str("a = a + 1"),
-      njs_str("ReferenceError: \"a\" is not defined in 1") },
+      njs_str("ReferenceError: \"a\" is not defined") },
 
     { njs_str("a += 1"),
-      njs_str("ReferenceError: \"a\" is not defined in 1") },
+      njs_str("ReferenceError: \"a\" is not defined") },
 
     { njs_str("a += 1; var a = 2"),
       njs_str("undefined") },
@@ -3418,10 +3418,10 @@ static njs_unit_test_t  njs_test[] =
       njs_str("undefined") },
 
     { njs_str("typeof a; a"),
-      njs_str("ReferenceError: \"a\" is not defined in 1") },
+      njs_str("ReferenceError: \"a\" is not defined") },
 
     { njs_str("typeof a; a = 1"),
-      njs_str("ReferenceError: \"a\" is not defined in 1") },
+      njs_str("ReferenceError: \"a\" is not defined") },
 
     /**/
 
@@ -3446,7 +3446,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("1 undefined") },
 
     { njs_str("a = 1"),
-      njs_str("ReferenceError: \"a\" is not defined in 1") },
+      njs_str("ReferenceError: \"a\" is not defined") },
 
     { njs_str("var a; a = 1; a"),
       njs_str("1") },
@@ -3610,7 +3610,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("{a:1,b:undefined}") },
 
     { njs_str("var a = 1, b = 2; ({a,b,c})"),
-      njs_str("ReferenceError: \"c\" is not defined in 1") },
+      njs_str("ReferenceError: \"c\" is not defined") },
 
     { njs_str("var a = 1, b = 2; njs.dump({a,b,c:3})"),
       njs_str("{a:1,b:2,c:3}") },
@@ -9123,7 +9123,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("undefined") },
 
     { njs_str("function f() { var a = f2(); } f();"),
-      njs_str("ReferenceError: \"f2\" is not defined in 1") },
+      njs_str("ReferenceError: \"f2\" is not defined") },
 
     { njs_str("typeof Buffer !== 'undefined' ? Buffer : function Buffer(){}"),
       njs_str("[object Function]") },
@@ -9132,19 +9132,19 @@ static njs_unit_test_t  njs_test[] =
       njs_str("123") },
 
     { njs_str("1 == 1 ? func() : '123'"),
-      njs_str("ReferenceError: \"func\" is not defined in 1") },
+      njs_str("ReferenceError: \"func\" is not defined") },
 
     { njs_str("function f(){ if (1 == 1) { 1 == 2 ? some_var : '123' } }; f()"),
       njs_str("undefined") },
 
     { njs_str("function f(){ if (1 == 1) { 1 == 1 ? some_var : '123' } }; f()"),
-      njs_str("ReferenceError: \"some_var\" is not defined in 1") },
+      njs_str("ReferenceError: \"some_var\" is not defined") },
 
     { njs_str("function f(){ if (1 == 1) { 1 == 2 ? some_func() : '123' } }; f()"),
       njs_str("undefined") },
 
     { njs_str("function f(){ if (1 == 1) { 1 == 1 ? some_func() : '123' } }; f()"),
-      njs_str("ReferenceError: \"some_func\" is not defined in 1") },
+      njs_str("ReferenceError: \"some_func\" is not defined") },
 
     { njs_str("(function(){ function f() {return f}; return f()})()"),
       njs_str("[object Function]") },
@@ -9269,7 +9269,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("20") },
 
     { njs_str("var f = function b(a) { a *= 2; return a }; b(10)"),
-      njs_str("ReferenceError: \"b\" is not defined in 1") },
+      njs_str("ReferenceError: \"b\" is not defined") },
 
     { njs_str("var f; f = function(a) { a *= 2; return a }; f(10)"),
       njs_str("20") },
@@ -9342,7 +9342,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var a = +function f(a) { return a + 1 }(2);"
                  "var b = f(5); a"),
-      njs_str("ReferenceError: \"f\" is not defined in 1") },
+      njs_str("ReferenceError: \"f\" is not defined") },
 
     { njs_str("var o = { f: function(a) { return a * 2 } }; o.f(5)"),
       njs_str("10") },
@@ -11448,7 +11448,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("1") },
 
     { njs_str("delete this.Array; Array"),
-      njs_str("ReferenceError: \"Array\" is not defined in 1") },
+      njs_str("ReferenceError: \"Array\" is not defined") },
 
     { njs_str("Array.__proto__ === Function.prototype"),
       njs_str("true") },
@@ -14641,7 +14641,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("InternalError: Not implemented") },
 
     { njs_str("delete this.eval; eval"),
-      njs_str("ReferenceError: \"eval\" is not defined in 1") },
+      njs_str("ReferenceError: \"eval\" is not defined") },
 
     { njs_str("var d = Object.getOwnPropertyDescriptor(this, 'eval');"
               "d.writable && !d.enumerable && d.configurable"),
@@ -15882,7 +15882,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("1") },
 
     { njs_str("delete this.JSON; JSON"),
-      njs_str("ReferenceError: \"JSON\" is not defined in 1") },
+      njs_str("ReferenceError: \"JSON\" is not defined") },
 
     /* Top-level constructors. */
 
@@ -17585,10 +17585,10 @@ static njs_unit_test_t  njs_test[] =
       njs_str("SyntaxError: Unexpected token \"}\" in 1") },
 
     { njs_str("{{}a = b++}"),
-      njs_str("ReferenceError: \"a\" is not defined in 1") },
+      njs_str("ReferenceError: \"a\" is not defined") },
 
     { njs_str("{{}a = b--}"),
-      njs_str("ReferenceError: \"a\" is not defined in 1") },
+      njs_str("ReferenceError: \"a\" is not defined") },
 
     { njs_str("{{}a =}"),
       njs_str("SyntaxError: Unexpected token \"}\" in 1") },
@@ -17672,7 +17672,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("SyntaxError: Unexpected end of input in 1") },
 
     { njs_str("`${{a: 1, b}}`"),
-      njs_str("ReferenceError: \"b\" is not defined in 1") },
+      njs_str("ReferenceError: \"b\" is not defined") },
 
     { njs_str("`${{a: 1, b:}}`"),
       njs_str("SyntaxError: Unexpected token \"}\" in 1") },
@@ -18528,7 +18528,7 @@ static njs_unit_test_t  njs_shared_test[] =
       njs_str("false") },
 
     { njs_str("isFin()"),
-      njs_str("ReferenceError: \"isFin\" is not defined in 1") },
+      njs_str("ReferenceError: \"isFin\" is not defined") },
 
     { njs_str("isNaN(function(){})"),
       njs_str("true") },
@@ -19022,11 +19022,11 @@ static njs_unit_test_t  njs_shell_test[] =
               "    at main (:3)\n") },
 
     { njs_str("1\n+a" ENTER),
-      njs_str("ReferenceError: \"a\" is not defined in 2\n"
+      njs_str("ReferenceError: \"a\" is not defined\n"
               "    at main (:2)\n") },
 
     { njs_str("\n`\n${Object}\n${a}`" ENTER),
-      njs_str("ReferenceError: \"a\" is not defined in 4\n"
+      njs_str("ReferenceError: \"a\" is not defined\n"
               "    at main (:4)\n") },
 
     { njs_str("function log(v) {}\nlog({}\n.a\n.a)" ENTER),
@@ -19034,15 +19034,15 @@ static njs_unit_test_t  njs_shell_test[] =
               "    at main (:4)\n") },
 
     { njs_str("\nfor (var i = 0;\n i < a;\n i++) { }\n" ENTER),
-      njs_str("ReferenceError: \"a\" is not defined in 3\n"
+      njs_str("ReferenceError: \"a\" is not defined\n"
               "    at main (:3)\n") },
 
     { njs_str("\nfor (var i = 0;\n i < 5;\n a) {\n }" ENTER),
-      njs_str("ReferenceError: \"a\" is not defined in 4\n"
+      njs_str("ReferenceError: \"a\" is not defined\n"
               "    at main (:4)\n") },
 
     { njs_str("Math\n.min(1,\na)" ENTER),
-      njs_str("ReferenceError: \"a\" is not defined in 3\n"
+      njs_str("ReferenceError: \"a\" is not defined\n"
               "    at Math.min (native)\n"
               "    at main (:3)\n") },
 };
