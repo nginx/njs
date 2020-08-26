@@ -7897,15 +7897,16 @@ njs_parser_string_create(njs_vm_t *vm, njs_lexer_token_t *token,
     njs_value_t *value)
 {
     u_char                *dst;
-    ssize_t               size, length;
-    uint32_t              cp;
+    size_t                size, length;
     njs_str_t             *src;
     const u_char          *p, *end;
     njs_unicode_decode_t  ctx;
 
     src = &token->text;
 
-    length = njs_utf8_safe_length(src->start, src->length, &size);
+    njs_utf8_decode_init(&ctx);
+
+    length = njs_utf8_stream_length(&ctx, src->start, src->length, 1, 0, &size);
 
     dst = njs_string_alloc(vm, value, size, length);
     if (njs_slow_path(dst == NULL)) {
@@ -7917,16 +7918,7 @@ njs_parser_string_create(njs_vm_t *vm, njs_lexer_token_t *token,
 
     njs_utf8_decode_init(&ctx);
 
-    while (p < end) {
-        cp = njs_utf8_decode(&ctx, &p, end);
-
-        if (cp <= NJS_UNICODE_MAX_CODEPOINT) {
-            dst = njs_utf8_encode(dst, cp);
-
-        } else {
-            dst = njs_utf8_encode(dst, NJS_UNICODE_REPLACEMENT);
-        }
-    }
+    (void) njs_utf8_stream_encode(&ctx, p, end, dst, 1, 0);
 
     if (length > NJS_STRING_MAP_STRIDE && size != length) {
         njs_string_offset_map_init(value->long_string.data->start, size);

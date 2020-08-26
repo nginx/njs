@@ -213,6 +213,43 @@ failed:
     return NJS_UNICODE_ERROR;
 }
 
+
+u_char *
+njs_utf8_stream_encode(njs_unicode_decode_t *ctx, const u_char *start,
+    const u_char *end, u_char *dst, njs_bool_t last, njs_bool_t fatal)
+{
+    uint32_t  cp;
+
+    while (start < end) {
+        cp = njs_utf8_decode(ctx, &start, end);
+
+        if (cp > NJS_UNICODE_MAX_CODEPOINT) {
+            if (cp == NJS_UNICODE_CONTINUE) {
+                break;
+            }
+
+            if (fatal) {
+                return NULL;
+            }
+
+            cp = NJS_UNICODE_REPLACEMENT;
+        }
+
+        dst = njs_utf8_encode(dst, cp);
+    }
+
+    if (last && ctx->need != 0x00) {
+        if (fatal) {
+            return NULL;
+        }
+
+        dst = njs_utf8_encode(dst, NJS_UNICODE_REPLACEMENT);
+    }
+
+    return dst;
+}
+
+
 /*
  * njs_utf8_casecmp() tests only up to the minimum of given lengths, but
  * requires lengths of both strings because otherwise njs_utf8_decode()
@@ -314,57 +351,43 @@ njs_utf8_upper_case(const u_char **start, const u_char *end)
 
 
 ssize_t
-njs_utf8_length(const u_char *p, size_t len)
+njs_utf8_stream_length(njs_unicode_decode_t *ctx, const u_char *p, size_t len,
+    njs_bool_t last, njs_bool_t fatal, size_t *out_size)
 {
-    ssize_t               length;
-    const u_char          *end;
-    njs_unicode_decode_t  ctx;
-
-    length = 0;
-
-    end = p + len;
-
-    njs_utf8_decode_init(&ctx);
-
-    while (p < end) {
-        if (njs_slow_path(njs_utf8_decode(&ctx, &p, end)
-                          > NJS_UNICODE_MAX_CODEPOINT))
-        {
-            return -1;
-        }
-
-        length++;
-    }
-
-    return length;
-}
-
-
-ssize_t
-njs_utf8_safe_length(const u_char *p, size_t len, ssize_t *out_size)
-{
-    ssize_t               size, length;
-    uint32_t              codepoint;
-    const u_char          *end;
-    njs_unicode_decode_t  ctx;
+    size_t        size, length;
+    uint32_t      codepoint;
+    const u_char  *end;
 
     size = 0;
     length = 0;
 
     end = p + len;
 
-    njs_utf8_decode_init(&ctx);
-
     while (p < end) {
-        codepoint = njs_utf8_decode(&ctx, &p, end);
+        codepoint = njs_utf8_decode(ctx, &p, end);
 
-        if (codepoint <= NJS_UNICODE_MAX_CODEPOINT) {
-            size += njs_utf8_size(codepoint);
+        if (codepoint > NJS_UNICODE_MAX_CODEPOINT) {
+            if (codepoint == NJS_UNICODE_CONTINUE) {
+                break;
+            }
 
-        } else {
-            size += njs_utf8_size(NJS_UNICODE_REPLACEMENT);
+            if (fatal) {
+                return -1;
+            }
+
+            codepoint = NJS_UNICODE_REPLACEMENT;
         }
 
+        size += njs_utf8_size(codepoint);
+        length++;
+    }
+
+    if (last && ctx->need != 0x00) {
+        if (fatal) {
+            return -1;
+        }
+
+        size += njs_utf8_size(NJS_UNICODE_REPLACEMENT);
         length++;
     }
 

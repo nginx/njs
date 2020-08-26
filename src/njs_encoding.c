@@ -18,7 +18,6 @@ typedef struct {
     njs_bool_t            fatal;
     njs_bool_t            ignore_bom;
 
-    uint32_t              codepoint;
     njs_unicode_decode_t  ctx;
 } njs_encoding_decode_t;
 
@@ -87,11 +86,10 @@ njs_text_encoder_encode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     u_char                *dst;
-    int64_t               size;
-    uint32_t              cp;
+    size_t                size;
     njs_int_t             ret;
     njs_value_t           *this, *input, value;
-    const u_char          *p, *start, *end;
+    const u_char          *start, *end;
     njs_string_prop_t     prop;
     njs_typed_array_t     *array;
     njs_unicode_decode_t  ctx;
@@ -126,30 +124,9 @@ njs_text_encoder_encode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         end = start + prop.size;
     }
 
-    p = start;
-
-    cp = 0;
-    size = 0;
-
     njs_utf8_decode_init(&ctx);
 
-    while (p < end) {
-        cp = njs_utf8_decode(&ctx, &p, end);
-
-        if (cp > NJS_UNICODE_MAX_CODEPOINT) {
-            if (cp == NJS_UNICODE_CONTINUE) {
-                continue;
-            }
-
-            cp = NJS_UNICODE_REPLACEMENT;
-        }
-
-        size += njs_utf8_size(cp);
-    }
-
-    if (cp == NJS_UNICODE_CONTINUE) {
-        size += njs_utf8_size(NJS_UNICODE_REPLACEMENT);
-    }
+    (void) njs_utf8_stream_length(&ctx, start, end - start, 1, 0, &size);
 
     njs_set_number(&value, size);
 
@@ -161,23 +138,7 @@ njs_text_encoder_encode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     dst = njs_typed_array_buffer(array)->u.u8;
     njs_utf8_decode_init(&ctx);
 
-    while (start < end) {
-        cp = njs_utf8_decode(&ctx, &start, end);
-
-        if (cp > NJS_UNICODE_MAX_CODEPOINT) {
-            if (cp == NJS_UNICODE_CONTINUE) {
-                continue;
-            }
-
-            cp = NJS_UNICODE_REPLACEMENT;
-        }
-
-        dst = njs_utf8_encode(dst, cp);
-    }
-
-    if (cp == NJS_UNICODE_CONTINUE) {
-        (void) njs_utf8_encode(dst, NJS_UNICODE_REPLACEMENT);
-    }
+    (void) njs_utf8_stream_encode(&ctx, start, end, dst, 1, 0);
 
     njs_set_typed_array(&vm->retval, array);
 
@@ -410,7 +371,6 @@ njs_text_decoder_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    data->codepoint = 0;
     njs_utf8_decode_init(&data->ctx);
 
     njs_set_data(&ov->value, data, NJS_DATA_TAG_TEXT_DECODER);
@@ -573,12 +533,12 @@ njs_text_decoder_decode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     u_char                   *dst;
-    uint32_t                 length, cp;
-    uint64_t                 size;
+    size_t                   size;
+    ssize_t                  length;
     njs_int_t                ret;
     njs_bool_t               stream;
     njs_value_t              retval, *this, *typed_array, *options;
-    const u_char             *start, *end, *p;
+    const u_char             *start, *end;
     njs_unicode_decode_t     ctx;
     njs_encoding_decode_t    *data;
     const njs_typed_array_t  *array;
@@ -632,52 +592,18 @@ njs_text_decoder_decode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     data = njs_object_data(this);
 
     ctx = data->ctx;
-    cp = data->codepoint;
-
-    size = 0;
-    length = 0;
-
-    p = start;
 
     /* Looking for BOM. */
 
-    if (!data->ignore_bom && p + 3 <= end) {
-        cp = njs_utf8_decode(&ctx, &p, end);
-
-        if (cp == NJS_UNICODE_BOM) {
-            start = p;
-
-        } else {
-            p = start;
-        }
+    if (!data->ignore_bom) {
+        start += njs_utf8_bom(start, end);
     }
 
-    while (p < end) {
-        cp = njs_utf8_decode(&ctx, &p, end);
-
-        if (njs_slow_path(cp > NJS_UNICODE_MAX_CODEPOINT)) {
-            if (cp == NJS_UNICODE_CONTINUE) {
-                break;
-            }
-
-            if (data->fatal) {
-                goto fatal;
-            }
-
-            cp = NJS_UNICODE_REPLACEMENT;
-        }
-
-        size += njs_utf8_size(cp);
-        length++;
-    }
-
-    if (cp == NJS_UNICODE_CONTINUE && !stream) {
-        if (data->fatal) {
-            goto fatal;
-        }
-
-        size += njs_utf8_size(NJS_UNICODE_REPLACEMENT);
-        length++;
+    length = njs_utf8_stream_length(&ctx, start, end - start, !stream,
+                                    data->fatal, &size);
+    if (length == -1) {
+        njs_type_error(vm, "The encoded data was not valid");
+        return NJS_ERROR;
     }
 
     dst = njs_string_alloc(vm, &vm->retval, size, length);
@@ -685,40 +611,13 @@ njs_text_decoder_decode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    while (start < end) {
-        cp = njs_utf8_decode(&data->ctx, &start, end);
+    (void) njs_utf8_stream_encode(&data->ctx, start, end, dst, !stream, 0);
 
-        if (cp > NJS_UNICODE_MAX_CODEPOINT) {
-            if (cp == NJS_UNICODE_CONTINUE) {
-                break;
-            }
-
-            cp = NJS_UNICODE_REPLACEMENT;
-        }
-
-        dst = njs_utf8_encode(dst, cp);
+    if (!stream) {
+        njs_utf8_decode_init(&data->ctx);
     }
-
-    if (stream) {
-        data->codepoint = cp;
-        return NJS_OK;
-    }
-
-    if (cp == NJS_UNICODE_CONTINUE) {
-        (void) njs_utf8_encode(dst, NJS_UNICODE_REPLACEMENT);
-    }
-
-    data->codepoint = 0;
-
-    njs_utf8_decode_init(&data->ctx);
 
     return NJS_OK;
-
-fatal:
-
-    njs_type_error(vm, "The encoded data was not valid");
-
-    return NJS_ERROR;
 }
 
 
