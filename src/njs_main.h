@@ -36,6 +36,7 @@
 #include <njs_chb.h>
 #include <njs_utils.h>
 #include <njs_sprintf.h>
+#include <njs_assert.h>
 
 #include <njs_pcre.h>
 #include <njs_regex.h>
