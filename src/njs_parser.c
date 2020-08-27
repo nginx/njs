@@ -480,13 +480,15 @@ njs_parser_not_supported(njs_parser_t *parser, njs_lexer_token_t *token)
 njs_inline njs_int_t
 njs_parser_reject(njs_parser_t *parser)
 {
+    njs_queue_link_t          *link;
     njs_parser_stack_entry_t  *entry;
 
     while (!njs_queue_is_empty(&parser->stack)) {
         entry = njs_queue_link_data(njs_queue_first(&parser->stack),
                                     njs_parser_stack_entry_t, link);
 
-        njs_queue_remove(njs_queue_first(&parser->stack));
+        link = njs_queue_first(&parser->stack);
+        njs_queue_remove(link);
 
         if (!entry->optional) {
             njs_parser_next(parser, entry->state);

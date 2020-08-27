@@ -280,13 +280,14 @@ njs_parser_height(njs_parser_t *parser, njs_queue_link_t *link)
 njs_inline njs_int_t
 njs_parser_stack_pop(njs_parser_t *parser)
 {
+    njs_queue_link_t          *link;
     njs_parser_stack_entry_t  *entry;
-
 
     entry = njs_queue_link_data(njs_queue_first(&parser->stack),
                                 njs_parser_stack_entry_t, link);
 
-    njs_queue_remove(njs_queue_first(&parser->stack));
+    link = njs_queue_first(&parser->stack);
+    njs_queue_remove(link);
 
 #ifdef NJS_PARSER_DEBUG
     njs_printf("  stack_pop(%d)\n",
