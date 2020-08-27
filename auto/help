@@ -16,6 +16,8 @@ default: "$NJS_LD_OPT"
 
   --debug=YES               enables additional runtime checks, \
 default: "$NJS_DEBUG"
+  --debug-memory=YES        enables memory alloc debug, \
+default: "$NJS_DEBUG_MEMORY"
   --address-sanitizer=YES   enables build with address sanitizer, \
 default: "$NJS_ADDRESS_SANITIZER"
 END

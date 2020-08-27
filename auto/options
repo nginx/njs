@@ -7,6 +7,7 @@ NJS_CC_OPT=${NJS_CC_OPT:--O}
 NJS_LD_OPT=${NJS_CC_OPT:--O}
 
 NJS_DEBUG=NO
+NJS_DEBUG_MEMORY=NO
 NJS_ADDRESS_SANITIZER=NO
 
 NJS_CONFIGURE_OPTIONS=
@@ -25,6 +26,7 @@ do
         --ar=*)                          AR="$value"                         ;;
 
         --debug=*)                       NJS_DEBUG="$value"                  ;;
+        --debug-memory=*)                NJS_DEBUG_MEMORY="$value"           ;;
         --address-sanitizer=*)           NJS_ADDRESS_SANITIZER="$value"      ;;
 
         --help)
