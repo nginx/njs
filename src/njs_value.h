@@ -721,10 +721,6 @@ typedef struct {
     ((value)->data.u.object->slots)
 
 
-#define njs_object_hash_is_empty(value)                                       \
-    (njs_lvlhsh_is_empty(njs_object_hash(value)))
-
-
 #define njs_array(value)                                                      \
     ((value)->data.u.array)
 

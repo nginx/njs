@@ -253,12 +253,19 @@ static njs_benchmark_test_t  njs_test[] =
       1 },
 
     { "typed array 10M",
-      njs_str("var arr = new Uint8Array(10000000);"
+      njs_str("var arr = new Uint8Array(10**7);"
               "var count = 0, length = arr.length;"
               "arr.fill(2);"
               "for (var i = 0; i < length; i++) { count += arr[i]; }"
               "count"),
       njs_str("20000000"),
+      1 },
+
+    { "typed array 10M set",
+      njs_str("var arr = new Uint32Array(10**7);"
+              "var length = arr.length;"
+              "for (var i = 0; i < length; i++) { arr[i] = i; }"),
+      njs_str("undefined"),
       1 },
 
     { "external property ($shared.uri)",

@@ -668,7 +668,7 @@ njs_object_enumerate_typed_array(njs_vm_t *vm, const njs_typed_array_t *array,
 
     case NJS_ENUM_VALUES:
         for (i = 0; i < length; i++) {
-            njs_set_number(item++, njs_typed_array_get(array, i));
+            njs_set_number(item++, njs_typed_array_prop(array, i));
         }
 
         break;
@@ -681,7 +681,7 @@ njs_object_enumerate_typed_array(njs_vm_t *vm, const njs_typed_array_t *array,
             }
 
             njs_uint32_to_string(&entry->start[0], i);
-            njs_set_number(&entry->start[1], njs_typed_array_get(array, i));
+            njs_set_number(&entry->start[1], njs_typed_array_prop(array, i));
 
             njs_set_array(item++, entry);
         }

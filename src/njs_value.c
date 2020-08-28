@@ -812,7 +812,7 @@ njs_typed_array_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     prop = &pq->scratch;
 
     if (pq->query == NJS_PROPERTY_QUERY_GET) {
-        njs_set_number(&prop->value, njs_typed_array_get(array, index));
+        njs_set_number(&prop->value, njs_typed_array_prop(array, index));
         prop->type = NJS_PROPERTY;
 
     } else {
@@ -961,7 +961,7 @@ njs_value_property(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
                 goto slow_path;
             }
 
-            njs_set_number(retval, njs_typed_array_get(tarray, index));
+            njs_set_number(retval, njs_typed_array_prop(tarray, index));
 
             return NJS_OK;
         }
@@ -1084,12 +1084,7 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
             tarray = njs_typed_array(value);
 
             if (njs_fast_path(index < njs_typed_array_length(tarray))) {
-                ret = njs_value_to_number(vm, setval, &num);
-                if (njs_slow_path(ret != NJS_OK)) {
-                    return ret;
-                }
-
-                njs_typed_array_set(tarray, index, num);
+                return njs_typed_array_set_value(vm, tarray, index, setval);
             }
 
             return NJS_OK;

@@ -696,6 +696,14 @@ njs_vm_value_string_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
 }
 
 
+njs_int_t
+njs_vm_value_typed_array_uint8_set(njs_vm_t *vm, njs_value_t *value,
+    const u_char *start, uint32_t size)
+{
+    return njs_typed_array_uint8_set(vm, value, start, size);
+}
+
+
 u_char *
 njs_vm_value_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size)
 {

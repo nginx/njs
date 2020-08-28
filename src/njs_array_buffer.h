@@ -13,7 +13,7 @@
 
 
 njs_array_buffer_t *njs_array_buffer_alloc(njs_vm_t *vm, uint64_t size);
-
+njs_int_t njs_array_buffer_writable(njs_vm_t *vm, njs_array_buffer_t *buffer);
 
 njs_inline njs_array_buffer_t *
 njs_array_buffer_slice(njs_vm_t *vm, njs_array_buffer_t *this, int64_t start,

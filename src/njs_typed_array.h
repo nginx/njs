@@ -10,6 +10,10 @@
 
 njs_typed_array_t *njs_typed_array_alloc(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_object_type_t type);
+njs_int_t njs_typed_array_uint8_set(njs_vm_t *vm, njs_value_t *value,
+	const u_char *start, uint32_t size);
+njs_array_buffer_t *njs_typed_array_writable(njs_vm_t *vm,
+    njs_typed_array_t *array);
 njs_int_t njs_typed_array_set_value(njs_vm_t *vm, njs_typed_array_t *array,
     uint32_t index, njs_value_t *setval);
 njs_int_t njs_typed_array_to_chain(njs_vm_t *vm, njs_chb_t *chain,
@@ -51,7 +55,7 @@ njs_typed_array_length(const njs_typed_array_t *array)
 
 
 njs_inline double
-njs_typed_array_get(const njs_typed_array_t *array, uint32_t index)
+njs_typed_array_prop(const njs_typed_array_t *array, uint32_t index)
 {
     njs_array_buffer_t  *buffer;
 
@@ -87,61 +91,6 @@ njs_typed_array_get(const njs_typed_array_t *array, uint32_t index)
         /* NJS_OBJ_TYPE_FLOAT64_ARRAY. */
 
         return buffer->u.f64[index];
-    }
-}
-
-
-njs_inline void
-njs_typed_array_set(njs_typed_array_t *array, uint32_t index, double v)
-{
-    int8_t              i8;
-    int16_t             i16;
-    int32_t             i32;
-    njs_array_buffer_t  *buffer;
-
-    index += array->offset;
-
-    buffer = array->buffer;
-
-    switch (array->type) {
-    case NJS_OBJ_TYPE_UINT8_CLAMPED_ARRAY:
-        if (isnan(v) || v < 0) {
-            v = 0;
-        } else if (v > 255) {
-            v = 255;
-        }
-
-        buffer->u.u8[index] = lrint(v);
-
-        break;
-
-    case NJS_OBJ_TYPE_UINT8_ARRAY:
-    case NJS_OBJ_TYPE_INT8_ARRAY:
-        i8 = njs_number_to_int32(v);
-        buffer->u.u8[index] = i8;
-        break;
-
-    case NJS_OBJ_TYPE_UINT16_ARRAY:
-    case NJS_OBJ_TYPE_INT16_ARRAY:
-        i16 = njs_number_to_int32(v);
-        buffer->u.u16[index] = i16;
-        break;
-
-    case NJS_OBJ_TYPE_UINT32_ARRAY:
-    case NJS_OBJ_TYPE_INT32_ARRAY:
-        i32 = njs_number_to_int32(v);
-        buffer->u.u32[index] = i32;
-        break;
-
-    case NJS_OBJ_TYPE_FLOAT32_ARRAY:
-        buffer->u.f32[index] = v;
-        break;
-
-    default:
-
-        /* NJS_OBJ_TYPE_FLOAT64_ARRAY. */
-
-        buffer->u.f64[index] = v;
     }
 }
 

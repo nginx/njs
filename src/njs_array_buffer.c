@@ -111,6 +111,30 @@ njs_array_buffer_is_view(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+njs_int_t
+njs_array_buffer_writable(njs_vm_t *vm, njs_array_buffer_t *buffer)
+{
+    void  *dst;
+
+    if (!buffer->object.shared) {
+        return NJS_OK;
+    }
+
+    dst = njs_mp_alloc(vm->mem_pool, buffer->size);
+    if (njs_slow_path(dst == NULL)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    memcpy(dst, buffer->u.data, buffer->size);
+
+    buffer->object.shared = 0;
+    buffer->u.data = dst;
+
+    return NJS_OK;
+}
+
+
 static const njs_object_prop_t  njs_array_buffer_constructor_properties[] =
 {
     {

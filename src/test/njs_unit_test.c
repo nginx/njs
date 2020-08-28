@@ -18502,6 +18502,37 @@ static njs_unit_test_t  njs_externals_test[] =
     { njs_str("var r = JSON.parse(JSON.stringify($r));"
               "[r.uri, r.host, r.props.a, njs.dump(r.vars), njs.dump(r.consts), r.header['02']]"),
       njs_str("АБВ,АБВГДЕЁЖЗИЙ,1,{},{},02|АБВ") },
+
+    { njs_str("var s = (new TextDecoder()).decode($r.u8buffer); [s, s.length]"),
+      njs_str("АБВГДЕЁЖЗИЙ,11") },
+
+    { njs_str("var b = $r.u8buffer; "
+              "b[4] = '@'.codePointAt(0); b[5] = '#'.codePointAt(0);"
+              "var s = (new TextDecoder()).decode(b); [s, s.length]"),
+      njs_str("АБ@#ГДЕЁЖЗИЙ,12") },
+
+    { njs_str("var b = $r.u8buffer; "
+              "b.copyWithin(16,0,6);"
+              "var s = (new TextDecoder()).decode(b); [s, s.length]"),
+      njs_str("АБВГДЕЁЖАБВ,11") },
+
+    { njs_str("var b = $r.u8buffer; "
+              "b.fill('#'.codePointAt(0));"
+              "var s = (new TextDecoder()).decode(b); [s, s.length]"),
+      njs_str("######################,22") },
+
+    { njs_str("var b = $r.u8buffer; "
+              "b.set(['@'.codePointAt(0), '#'.codePointAt(0)], 4);"
+              "var s = (new TextDecoder()).decode(b); [s, s.length]"),
+      njs_str("АБ@#ГДЕЁЖЗИЙ,12") },
+
+    { njs_str("var b = $r.u8buffer; "
+              "var u16 = new Uint16Array(b.buffer); u16.reverse();"
+              "var s = (new TextDecoder()).decode(u16); [s, s.length]"),
+      njs_str("ЙИЗЖЁЕДГВБА,11") },
+
+    { njs_str("$r.u8buffer.sort().slice(0,3)"),
+      njs_str("129,144,145") },
 };
 
 static njs_unit_test_t  njs_shared_test[] =
