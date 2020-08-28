@@ -884,13 +884,11 @@ njs_typed_array_prototype_iterator(njs_vm_t *vm, njs_value_t *args,
         break;
 
     case NJS_ARRAY_FILTER:
+    default:
         r = njs_arr_init(vm->mem_pool, &results, NULL, 4, sizeof(njs_value_t));
         if (njs_slow_path(r == NULL)) {
             return NJS_ERROR;
         }
-
-    default:
-        break;
     }
 
     for (i = 0; i < length; i++) {
