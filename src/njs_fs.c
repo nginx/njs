@@ -1366,8 +1366,9 @@ njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
             }
         }
 
-        closedir(d);
+        (void) closedir(d);
         d = NULL;
+        dfd = -1;
     }
 
     path[len] = '\0';
