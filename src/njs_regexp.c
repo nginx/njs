@@ -929,6 +929,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp,
     int                   *captures;
     u_char                *start;
     int32_t               size, length;
+    uint32_t              index;
     njs_int_t             ret;
     njs_uint_t            i, n;
     njs_array_t           *array;
@@ -982,11 +983,24 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_regexp_t *regexp,
         goto fail;
     }
 
-    njs_set_number(&prop->value, njs_string_index(string, captures[0]));
+    if (type == NJS_REGEXP_UTF8) {
+        index = njs_string_index(string, captures[0]);
+
+    } else {
+        index = captures[0];
+    }
+
+    njs_set_number(&prop->value, index);
 
     if (pattern->global) {
-        njs_set_number(&regexp->last_index,
-                       njs_string_index(string, captures[1]));
+        if (type == NJS_REGEXP_UTF8) {
+            index = njs_string_index(string, captures[1]);
+
+        } else {
+            index = captures[1];
+        }
+
+        njs_set_number(&regexp->last_index, index);
     }
 
     lhq.key_hash = NJS_INDEX_HASH;

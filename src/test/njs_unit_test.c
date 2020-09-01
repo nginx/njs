@@ -8307,6 +8307,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("RegExp.prototype[Symbol.replace].call(/b/, 'abc','B')"),
       njs_str("aBc") },
 
+    { njs_str("String.bytesFrom([253,242,141,10]).replace(/\\s/g, 'X')[3]"),
+      njs_str("X") },
+
+    { njs_str("String.bytesFrom([255,149,15,97,95]).replace(/_/g, 'X')[4]"),
+      njs_str("X") },
+
     { njs_str("/]/"),
       njs_str("/\\]/") },
 
@@ -10327,8 +10333,12 @@ static njs_unit_test_t  njs_test[] =
 #endif
 
     { njs_str("var r = /\\x80/g; r.exec('\\u0081\\u0080'.toBytes());"
-                 "r.lastIndex +' '+ r.source +' '+ r.source.length +' '+ r"),
-      njs_str("1 \\x80 4 /\\x80/g") },
+              "r.lastIndex +' '+ r.source +' '+ r.source.length +' '+ r"),
+      njs_str("2 \\x80 4 /\\x80/g") },
+
+    { njs_str("var r = /_/g; var index = r.exec(String.bytesFrom([255,149,15,97,95])).index;"
+              "[index, r.lastIndex]"),
+      njs_str("4,5") },
 
     { njs_str("var descs = Object.getOwnPropertyDescriptors(RegExp('a'));"
               "Object.keys(descs)"),
