@@ -1,6 +1,7 @@
 
 /*
  * Copyright (C) Igor Sysoev
+ * Copyright (C) Dmitry Volyntsev
  * Copyright (C) NGINX, Inc.
  */
 
@@ -369,7 +370,7 @@ njs_typed_array_prototype_buffer(njs_vm_t *vm, njs_value_t *args,
     njs_typed_array_t  *array;
 
     this = njs_argument(args, 0);
-    if (!njs_is_typed_array(this)) {
+    if (!njs_is_typed_array(this) && !njs_is_data_view(this)) {
         njs_type_error(vm, "Method TypedArray.prototype.buffer called "
                        "on incompatible receiver");
         return NJS_ERROR;
@@ -391,7 +392,7 @@ njs_typed_array_prototype_byte_length(njs_vm_t *vm, njs_value_t *args,
     njs_typed_array_t  *array;
 
     this = njs_argument(args, 0);
-    if (!njs_is_typed_array(this)) {
+    if (!njs_is_typed_array(this) && !njs_is_data_view(this)) {
         njs_type_error(vm, "Method TypedArray.prototype.byteLength called "
                        "on incompatible receiver");
         return NJS_ERROR;
@@ -413,7 +414,7 @@ njs_typed_array_prototype_byte_offset(njs_vm_t *vm, njs_value_t *args,
     njs_typed_array_t  *array;
 
     this = njs_argument(args, 0);
-    if (!njs_is_typed_array(this)) {
+    if (!njs_is_typed_array(this) && !njs_is_data_view(this)) {
         njs_type_error(vm, "Method TypedArray.prototype.byteOffset called "
                        "on incompatible receiver");
         return NJS_ERROR;
@@ -2265,6 +2266,557 @@ const njs_object_type_init_t  njs_typed_array_type_init = {
     .constructor = njs_native_ctor(njs_typed_array_constructor_intrinsic, 0, 0),
     .prototype_props = &njs_typed_array_prototype_init,
     .constructor_props = &njs_typed_array_constructor_init,
+    .prototype_value = { .object = { .type = NJS_OBJECT } },
+};
+
+
+static njs_int_t
+njs_data_view_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    uint64_t            size, offset;
+    njs_int_t           ret;
+    njs_data_view_t     *view;
+    njs_array_buffer_t  *buffer;
+
+    if (!vm->top_frame->ctor) {
+        njs_type_error(vm, "Constructor of DataView requires 'new'");
+        return NJS_ERROR;
+    }
+
+    if (!njs_is_array_buffer(njs_arg(args, nargs, 1))) {
+        njs_type_error(vm, "buffer is not an ArrayBuffer");
+        return NJS_ERROR;
+    }
+
+    size = 0;
+    offset = 0;
+
+    buffer = njs_array_buffer(njs_argument(args, 1));
+
+    ret = njs_value_to_index(vm, njs_arg(args, nargs, 2), &offset);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    if (!njs_is_undefined(njs_arg(args, nargs, 3))) {
+        ret = njs_value_to_index(vm, njs_argument(args, 3), &size);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
+        if (njs_slow_path((offset + size) > buffer->size)) {
+            njs_range_error(vm, "Invalid DataView length: %uL", size);
+            return NJS_ERROR;
+        }
+
+    } else {
+        if (offset > buffer->size) {
+            njs_range_error(vm, "byteOffset %uL is outside the bound of "
+                            "the buffer", offset);
+            return NJS_ERROR;
+        }
+
+        size = buffer->size - offset;
+    }
+
+    view = njs_mp_zalloc(vm->mem_pool, sizeof(njs_data_view_t));
+    if (njs_slow_path(view == NULL)) {
+        goto memory_error;
+    }
+
+    view->buffer = buffer;
+    view->offset = offset;
+    view->byte_length = size;
+    view->type = NJS_OBJ_TYPE_DATA_VIEW;
+
+    njs_lvlhsh_init(&view->object.hash);
+    njs_lvlhsh_init(&view->object.shared_hash);
+    view->object.__proto__ = &vm->prototypes[view->type].object;
+    view->object.type = NJS_DATA_VIEW;
+    view->object.extensible = 1;
+
+    njs_set_data_view(&vm->retval, view);
+
+    return NJS_OK;
+
+memory_error:
+
+    njs_memory_error(vm);
+
+    return NJS_ERROR;
+}
+
+
+static const njs_object_prop_t  njs_data_view_constructor_props[] =
+{
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("DataView"),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 1, 1.0),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("prototype"),
+        .value = njs_prop_handler(njs_object_prototype_create),
+    },
+};
+
+
+static const njs_object_init_t  njs_data_view_constructor_init = {
+    njs_data_view_constructor_props,
+    njs_nitems(njs_data_view_constructor_props),
+};
+
+
+typedef union {
+    float       f;
+    uint32_t    u;
+} njs_conv_f32_t;
+
+
+typedef union {
+    double      f;
+    uint64_t    u;
+} njs_conv_f64_t;
+
+
+static njs_int_t
+njs_data_view_prototype_get(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t type)
+{
+    double              v;
+    uint32_t            u32;
+    uint64_t            index;
+    njs_int_t           ret;
+    njs_bool_t          swap;
+    njs_value_t         *this;
+    const uint8_t       *u8;
+    njs_conv_f32_t      conv_f32;
+    njs_conv_f64_t      conv_f64;
+    njs_data_view_t     *view;
+    njs_array_buffer_t  *buffer;
+
+    this = njs_argument(args, 0);
+    if (njs_slow_path(!njs_is_data_view(this))) {
+        njs_type_error(vm, "this is not a DataView");
+        return NJS_ERROR;
+    }
+
+    ret = njs_value_to_index(vm, njs_arg(args, nargs, 1), &index);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    swap = njs_bool(njs_arg(args, nargs, 2));
+
+#if NJS_HAVE_LITTLE_ENDIAN
+    swap = !swap;
+#endif
+
+    view = njs_data_view(this);
+
+    if (njs_typed_array_element_size(type) + index > view->byte_length) {
+        njs_range_error(vm, "index %uL is outside the bound of the buffer",
+                        index);
+        return NJS_ERROR;
+    }
+
+    buffer = view->buffer;
+    u8 = &buffer->u.u8[index + view->offset];
+
+    switch (type) {
+    case NJS_OBJ_TYPE_UINT8_ARRAY:
+        v = *u8;
+        break;
+
+    case NJS_OBJ_TYPE_INT8_ARRAY:
+        v = (int8_t) *u8;
+        break;
+
+    case NJS_OBJ_TYPE_UINT16_ARRAY:
+        u32 = *((uint16_t *) u8);
+
+        if (swap) {
+            u32 = njs_bswap_u16(u32);
+        }
+
+        v = u32;
+        break;
+
+    case NJS_OBJ_TYPE_INT16_ARRAY:
+        u32 = *((uint16_t *) u8);
+
+        if (swap) {
+            u32 = njs_bswap_u16(u32);
+        }
+
+        v = (int16_t) u32;
+        break;
+
+    case NJS_OBJ_TYPE_UINT32_ARRAY:
+    case NJS_OBJ_TYPE_INT32_ARRAY:
+    case NJS_OBJ_TYPE_FLOAT32_ARRAY:
+        u32 = *((uint32_t *) u8);
+
+        if (swap) {
+            u32 = njs_bswap_u32(u32);
+        }
+
+        switch (type) {
+        case NJS_OBJ_TYPE_UINT32_ARRAY:
+            v = u32;
+            break;
+
+        case NJS_OBJ_TYPE_INT32_ARRAY:
+            v = (int32_t) u32;
+            break;
+
+        default:
+            conv_f32.u = u32;
+            v = conv_f32.f;
+        }
+
+        break;
+
+    default:
+        /* NJS_OBJ_TYPE_FLOAT64_ARRAY. */
+
+        conv_f64.u = *((uint64_t *) u8);
+
+        if (swap) {
+            conv_f64.u = njs_bswap_u64(conv_f64.u);
+        }
+
+        v = conv_f64.f;
+    }
+
+    njs_set_number(&vm->retval, v);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_data_view_prototype_set(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t type)
+{
+    double              v;
+    uint8_t             *u8;
+    uint32_t            u32;
+    uint64_t            index;
+    njs_int_t           ret;
+    njs_bool_t          swap;
+    njs_value_t         *this;
+    njs_conv_f32_t      conv_f32;
+    njs_conv_f64_t      conv_f64;
+    njs_data_view_t     *view;
+    njs_array_buffer_t  *buffer;
+
+    this = njs_argument(args, 0);
+    if (njs_slow_path(!njs_is_data_view(this))) {
+        njs_type_error(vm, "this is not a DataView");
+        return NJS_ERROR;
+    }
+
+    ret = njs_value_to_index(vm, njs_arg(args, nargs, 1), &index);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_value_to_number(vm, njs_arg(args, nargs, 2), &v);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    swap = njs_bool(njs_arg(args, nargs, 3));
+
+#if NJS_HAVE_LITTLE_ENDIAN
+    swap = !swap;
+#endif
+
+    view = njs_data_view(this);
+
+    if (njs_typed_array_element_size(type) + index > view->byte_length) {
+        njs_range_error(vm, "index %uL is outside the bound of the buffer",
+                        index);
+        return NJS_ERROR;
+    }
+
+    buffer = view->buffer;
+    u8 = &buffer->u.u8[index + view->offset];
+
+    switch (type) {
+    case NJS_OBJ_TYPE_UINT8_ARRAY:
+    case NJS_OBJ_TYPE_INT8_ARRAY:
+        *u8 = njs_number_to_int32(v);
+        break;
+
+    case NJS_OBJ_TYPE_UINT16_ARRAY:
+    case NJS_OBJ_TYPE_INT16_ARRAY:
+        u32 = (uint16_t) njs_number_to_int32(v);
+
+        if (swap) {
+            u32 = njs_bswap_u16(u32);
+        }
+
+        *((uint16_t *) u8) = u32;
+        break;
+
+    case NJS_OBJ_TYPE_UINT32_ARRAY:
+    case NJS_OBJ_TYPE_INT32_ARRAY:
+        u32 = njs_number_to_int32(v);
+
+        if (swap) {
+            u32 = njs_bswap_u32(u32);
+        }
+
+        *((uint32_t *) u8) = u32;
+        break;
+
+    case NJS_OBJ_TYPE_FLOAT32_ARRAY:
+        conv_f32.f = (float) v;
+
+        if (swap) {
+            conv_f32.u = njs_bswap_u32(conv_f32.u);
+        }
+
+        *((uint32_t *) u8) = conv_f32.u;
+        break;
+
+    default:
+        /* NJS_OBJ_TYPE_FLOAT64_ARRAY. */
+
+        conv_f64.f = v;
+
+        if (swap) {
+            conv_f64.u = njs_bswap_u64(conv_f64.u);
+        }
+
+        *((uint64_t *) u8) = conv_f64.u;
+    }
+
+    njs_set_undefined(&vm->retval);
+
+    return NJS_OK;
+}
+
+
+static const njs_object_prop_t  njs_data_view_prototype_properties[] =
+{
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
+        .value = njs_string("DataView"),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("constructor"),
+        .value = njs_prop_handler(njs_object_prototype_create_constructor),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("buffer"),
+        .value = njs_value(NJS_INVALID, 1, NAN),
+        .getter = njs_native_function(njs_typed_array_prototype_buffer, 0),
+        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
+        .writable = NJS_ATTRIBUTE_UNSET,
+        .configurable = 1,
+        .enumerable = 0,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("byteLength"),
+        .value = njs_value(NJS_INVALID, 1, NAN),
+        .getter = njs_native_function(njs_typed_array_prototype_byte_length, 0),
+        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
+        .writable = NJS_ATTRIBUTE_UNSET,
+        .configurable = 1,
+        .enumerable = 0,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("byteOffset"),
+        .value = njs_value(NJS_INVALID, 1, NAN),
+        .getter = njs_native_function(njs_typed_array_prototype_byte_offset, 0),
+        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
+        .writable = NJS_ATTRIBUTE_UNSET,
+        .configurable = 1,
+        .enumerable = 0,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("getUint8"),
+        .value = njs_native_function2(njs_data_view_prototype_get, 1,
+                                      NJS_OBJ_TYPE_UINT8_ARRAY),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("getInt8"),
+        .value = njs_native_function2(njs_data_view_prototype_get, 1,
+                                      NJS_OBJ_TYPE_INT8_ARRAY),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("getUint16"),
+        .value = njs_native_function2(njs_data_view_prototype_get, 1,
+                                      NJS_OBJ_TYPE_UINT16_ARRAY),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("getInt16"),
+        .value = njs_native_function2(njs_data_view_prototype_get, 1,
+                                      NJS_OBJ_TYPE_INT16_ARRAY),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("getUint32"),
+        .value = njs_native_function2(njs_data_view_prototype_get, 1,
+                                      NJS_OBJ_TYPE_UINT32_ARRAY),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("getInt32"),
+        .value = njs_native_function2(njs_data_view_prototype_get, 1,
+                                      NJS_OBJ_TYPE_INT32_ARRAY),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("getFloat32"),
+        .value = njs_native_function2(njs_data_view_prototype_get, 1,
+                                      NJS_OBJ_TYPE_FLOAT32_ARRAY),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("getFloat64"),
+        .value = njs_native_function2(njs_data_view_prototype_get, 1,
+                                      NJS_OBJ_TYPE_FLOAT64_ARRAY),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("setUint8"),
+        .value = njs_native_function2(njs_data_view_prototype_set, 2,
+                                      NJS_OBJ_TYPE_UINT8_ARRAY),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("setInt8"),
+        .value = njs_native_function2(njs_data_view_prototype_set, 2,
+                                      NJS_OBJ_TYPE_INT8_ARRAY),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("setUint16"),
+        .value = njs_native_function2(njs_data_view_prototype_set, 2,
+                                      NJS_OBJ_TYPE_UINT16_ARRAY),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("setInt16"),
+        .value = njs_native_function2(njs_data_view_prototype_set, 2,
+                                      NJS_OBJ_TYPE_INT16_ARRAY),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("setUint32"),
+        .value = njs_native_function2(njs_data_view_prototype_set, 2,
+                                      NJS_OBJ_TYPE_UINT32_ARRAY),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("setInt32"),
+        .value = njs_native_function2(njs_data_view_prototype_set, 2,
+                                      NJS_OBJ_TYPE_INT32_ARRAY),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("setFloat32"),
+        .value = njs_native_function2(njs_data_view_prototype_set, 2,
+                                      NJS_OBJ_TYPE_FLOAT32_ARRAY),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("setFloat64"),
+        .value = njs_native_function2(njs_data_view_prototype_set, 2,
+                                      NJS_OBJ_TYPE_FLOAT64_ARRAY),
+        .writable = 1,
+        .configurable = 1,
+    },
+};
+
+
+static const njs_object_init_t  njs_data_view_prototype_init = {
+    njs_data_view_prototype_properties,
+    njs_nitems(njs_data_view_prototype_properties),
+};
+
+
+const njs_object_type_init_t  njs_data_view_type_init = {
+    .constructor = njs_native_ctor(njs_data_view_constructor, 1, 0),
+    .prototype_props = &njs_data_view_prototype_init,
+    .constructor_props = &njs_data_view_constructor_init,
     .prototype_value = { .object = { .type = NJS_OBJECT } },
 };
 

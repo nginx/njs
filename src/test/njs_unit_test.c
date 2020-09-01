@@ -6232,6 +6232,92 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("(new Float64Array([255,255,NaN,3,NaN,Infinity,3,-Infinity,0,-0,2,1,-5])).slice(2).sort()"),
       njs_str("-Infinity,-5,0,0,1,2,3,3,Infinity,NaN,NaN") },
 
+    { njs_str("(new DataView(new ArrayBuffer(3)))"),
+      njs_str("[object DataView]") },
+
+    { njs_str("(new DataView(new ArrayBuffer(3))).buffer"),
+      njs_str("[object ArrayBuffer]") },
+
+    { njs_str("(new DataView(new ArrayBuffer(3))).byteLength"),
+      njs_str("3") },
+
+    { njs_str("(new DataView(new ArrayBuffer(3), 1)).byteLength"),
+      njs_str("2") },
+
+    { njs_str("(new DataView(new ArrayBuffer(3), 3)).byteLength"),
+      njs_str("0") },
+
+    { njs_str("(new DataView(new ArrayBuffer(3), 1)).byteOffset"),
+      njs_str("1") },
+
+    { njs_str("(new DataView(new ArrayBuffer(3), 1, 1)).byteLength"),
+      njs_str("1") },
+
+    { njs_str("(new DataView(new ArrayBuffer(3), 4))"),
+      njs_str("RangeError: byteOffset 4 is outside the bound of the buffer") },
+
+    { njs_str("(new DataView(new ArrayBuffer(3), 1,3))"),
+      njs_str("RangeError: Invalid DataView length: 3") },
+
+    { njs_str("var u8 = new Uint8Array([255, 129, 130, 131, 4, 5, 6, 7, 8, 9, 255]); "
+              "var dv = new DataView(u8.buffer, 1); "
+              "['getUint8', 'getInt8',"
+              " 'getUint16', 'getInt16',"
+              " 'getUint32', 'getInt32',"
+              " 'getFloat32','getFloat64'"
+              "]"
+              ".map(fn => [dv[fn](0), dv[fn](0,1), dv[fn](1), dv[fn](1,1)])"),
+      njs_str("129,129,130,130,"
+              "-127,-127,-126,-126,"
+              "33154,33409,33411,33666,"
+              "-32382,-32127,-32125,-31870,"
+              "2172814084,75727489,2189624325,84181890,"
+              "-2122153212,75727489,-2105342971,84181890,"
+              "-4.794245620412925e-38,3.091780090135418e-36,-1.9251027092506622e-37,6.230764342760857e-36,"
+              "-2.159546358334202e-301,5.447603729090798e-270,-1.4538065947240604e-296,3.72581468952343e-265") },
+
+    { njs_str("var u8 = new Uint8Array(10);"
+              "var dv = new DataView(u8.buffer, 1);"
+              "var u8view = new Uint8Array(u8.buffer, 1);"
+              "function run(test) {"
+              "     var fn = test[0];"
+              "     var val = test[1];"
+              "     var size = parseInt(fn.match(/\\d+/)) / 8;"
+              "     "
+              "     return  [[0], [0,1],[1], [1,1]].map(args => {"
+              "           var offset = args[0];"
+              "           var le = args[1];"
+              "           u8.fill(0); "
+              "           dv[fn].apply(dv, [offset, val, le]);"
+              "           return `[${u8view.subarray(0, offset + size)}]`;"
+              "     })"
+              "};"
+              "["
+              " ['setUint8',    129],"
+              " ['setInt8',    -127],"
+              " ['setUint16', 33154],"
+              " ['setInt16', -32382],"
+              " ['setUint32', 2172814084],"
+              " ['setInt32', -2122153212],"
+              " ['setFloat32', -4.794245620412925e-38],"
+              " ['setFloat64', -2.159546358334202e-301],"
+              "]"
+              ".map(t => run(t))"),
+      njs_str("[129],[129],[0,129],[0,129],"
+              "[129],[129],[0,129],[0,129],"
+              "[129,130],[130,129],[0,129,130],[0,130,129],"
+              "[129,130],[130,129],[0,129,130],[0,130,129],"
+              "[129,130,131,4],[4,131,130,129],[0,129,130,131,4],[0,4,131,130,129],"
+              "[129,130,131,4],[4,131,130,129],[0,129,130,131,4],[0,4,131,130,129],"
+              "[129,130,131,4],[4,131,130,129],[0,129,130,131,4],[0,4,131,130,129],"
+              "[129,130,131,4,5,6,7,8],[8,7,6,5,4,131,130,129],[0,129,130,131,4,5,6,7,8],[0,8,7,6,5,4,131,130,129]"
+              ) },
+
+    { njs_str("var u8 = new Uint8Array([1,2,3]); "
+              "var dv = new DataView(u8.buffer); "
+              "dv.getUint16(2)"),
+      njs_str("RangeError: index 2 is outside the bound of the buffer") },
+
 #if NJS_HAVE_LARGE_STACK
     { njs_str("var o = Object({length: 3});"
                  "Object.defineProperty(o, '0', {set: function(v){this[0] = 2 * v}});"

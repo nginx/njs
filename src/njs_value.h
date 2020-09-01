@@ -72,6 +72,7 @@ typedef enum {
     NJS_PROMISE,
     NJS_OBJECT_VALUE,
     NJS_ARRAY_BUFFER,
+    NJS_DATA_VIEW,
     NJS_VALUE_TYPE_MAX
 } njs_value_type_t;
 
@@ -95,6 +96,7 @@ typedef struct njs_regexp_pattern_s   njs_regexp_pattern_t;
 typedef struct njs_array_s            njs_array_t;
 typedef struct njs_array_buffer_s     njs_array_buffer_t;
 typedef struct njs_typed_array_s      njs_typed_array_t;
+typedef struct njs_typed_array_s      njs_data_view_t;
 typedef struct njs_regexp_s           njs_regexp_t;
 typedef struct njs_date_s             njs_date_t;
 typedef struct njs_object_value_s     njs_promise_t;
@@ -141,6 +143,7 @@ union njs_value_s {
             njs_array_t               *array;
             njs_array_buffer_t        *array_buffer;
             njs_typed_array_t         *typed_array;
+            njs_data_view_t           *data_view;
             njs_object_value_t        *object_value;
             njs_function_t            *function;
             njs_function_lambda_t     *lambda;
@@ -656,6 +659,10 @@ typedef struct {
     ((value)->type == NJS_TYPED_ARRAY)
 
 
+#define njs_is_data_view(value)                                               \
+    ((value)->type == NJS_DATA_VIEW)
+
+
 #define njs_is_typed_array_uint8(value)                                       \
     (njs_is_typed_array(value)                                                \
      && njs_typed_array(value)->type == NJS_OBJ_TYPE_UINT8_ARRAY)
@@ -731,6 +738,10 @@ typedef struct {
 
 #define njs_array_buffer(value)                                               \
     ((value)->data.u.array_buffer)
+
+
+#define njs_data_view(value)                                                  \
+    ((value)->data.u.data_view)
 
 
 #define njs_typed_array(value)                                                \
@@ -924,6 +935,15 @@ njs_set_typed_array(njs_value_t *value, njs_typed_array_t *array)
 {
     value->data.u.typed_array = array;
     value->type = NJS_TYPED_ARRAY;
+    value->data.truth = 1;
+}
+
+
+njs_inline void
+njs_set_data_view(njs_value_t *value, njs_data_view_t *array)
+{
+    value->data.u.data_view = array;
+    value->type = NJS_DATA_VIEW;
     value->data.truth = 1;
 }
 

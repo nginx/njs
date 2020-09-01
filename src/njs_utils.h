@@ -72,4 +72,36 @@ njs_swap_u64(void *a, void *b, size_t size)
 }
 
 
+njs_inline uint16_t
+njs_bswap_u16(uint16_t u16)
+{
+    return (u16 >> 8)
+           | (u16 << 8);
+}
+
+
+njs_inline uint32_t
+njs_bswap_u32(uint32_t u32)
+{
+    return ((u32 & 0xff000000) >> 24)
+           | ((u32 & 0x00ff0000) >> 8)
+           | ((u32 & 0x0000ff00) << 8)
+           | ((u32 & 0x000000ff) << 24);
+}
+
+
+njs_inline uint64_t
+njs_bswap_u64(uint64_t u64)
+{
+    return ((u64 & 0xff00000000000000ULL) >> 56)
+           | ((u64 & 0x00ff000000000000ULL) >> 40)
+           | ((u64 & 0x0000ff0000000000ULL) >> 24)
+           | ((u64 & 0x000000ff00000000ULL) >> 8)
+           | ((u64 & 0x00000000ff000000ULL) << 8)
+           | ((u64 & 0x0000000000ff0000ULL) << 24)
+           | ((u64 & 0x000000000000ff00ULL) << 40)
+           | ((u64 & 0x00000000000000ffULL) << 56);
+}
+
+
 #endif /* _NJS_UTILS_H_INCLUDED_ */

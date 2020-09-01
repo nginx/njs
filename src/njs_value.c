@@ -524,6 +524,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
     case NJS_OBJECT:
     case NJS_ARRAY:
     case NJS_ARRAY_BUFFER:
+    case NJS_DATA_VIEW:
     case NJS_TYPED_ARRAY:
     case NJS_OBJECT_BOOLEAN:
     case NJS_OBJECT_NUMBER:

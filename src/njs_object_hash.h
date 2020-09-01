@@ -611,6 +611,18 @@
         'A'), 'r'), 'r'), 'a'), 'y'), 'B'), 'u'), 'f'), 'f'), 'e'), 'r')
 
 
+#define NJS_DATA_VIEW_HASH                                                    \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'D'), 'a'), 't'), 'a'), 'V'), 'i'), 'e'), 'w')
+
+
 #define NJS_UINT8ARRAY_HASH                                                   \
     njs_djb_hash_add(                                                         \
     njs_djb_hash_add(                                                         \

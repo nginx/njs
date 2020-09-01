@@ -24,6 +24,7 @@ njs_inline unsigned
 njs_typed_array_element_size(njs_object_type_t type)
 {
     switch (type) {
+    case NJS_OBJ_TYPE_DATA_VIEW:
     case NJS_OBJ_TYPE_UINT8_ARRAY:
     case NJS_OBJ_TYPE_UINT8_CLAMPED_ARRAY:
     case NJS_OBJ_TYPE_INT8_ARRAY:
@@ -96,6 +97,7 @@ njs_typed_array_prop(const njs_typed_array_t *array, uint32_t index)
 
 
 extern const njs_object_type_init_t  njs_typed_array_type_init;
+extern const njs_object_type_init_t  njs_data_view_type_init;
 extern const njs_object_type_init_t  njs_typed_array_u8_type_init;
 extern const njs_object_type_init_t  njs_typed_array_u8clamped_type_init;
 extern const njs_object_type_init_t  njs_typed_array_i8_type_init;

@@ -71,6 +71,7 @@ static const njs_object_type_init_t *const
     &njs_date_type_init,
     &njs_promise_type_init,
     &njs_array_buffer_type_init,
+    &njs_data_view_type_init,
     &njs_text_decoder_type_init,
     &njs_text_encoder_type_init,
 
@@ -1279,6 +1280,16 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
         .value = njs_prop_handler2(njs_top_level_constructor,
                                    NJS_OBJ_TYPE_ARRAY_BUFFER,
                                    NJS_ARRAY_BUFFER_HASH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("DataView"),
+        .value = njs_prop_handler2(njs_top_level_constructor,
+                                   NJS_OBJ_TYPE_DATA_VIEW,
+                                   NJS_DATA_VIEW_HASH),
         .writable = 1,
         .configurable = 1,
     },
