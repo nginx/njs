@@ -18205,8 +18205,8 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var de = new TextDecoder();"
               "var u8arr = new Uint8Array([240, 160, 174, 183]);"
-              "var u16arr = new Uint16Array([41200, 47022]);"
-              "var u32arr = new Uint32Array([3081674992]);"
+              "var u16arr = new Uint16Array(u8arr.buffer);"
+              "var u32arr = new Uint32Array(u8arr.buffer);"
               "[u8arr, u16arr, u32arr].map(v=>de.decode(v)).join(',')"),
       njs_str("𠮷,𠮷,𠮷") },
 
