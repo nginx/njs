@@ -5821,6 +5821,13 @@ static njs_unit_test_t  njs_test[] =
       njs_str("true") },
 
     { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v(2); "
+              "           a.constructor = {}; "
+              "           a.constructor[Symbol.species] = function() { return new v()};"
+              "           try {a.filter(v=>true)} catch(e) {return e.name == 'TypeError'}})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
               ".every(v=>{var a = new v([1,2,3]); "
               "           var r = a.slice(1,3);"
               "           return  a.buffer !== r.buffer;})"),
@@ -5856,6 +5863,11 @@ static njs_unit_test_t  njs_test[] =
               ".every(v=>{var a = new v([1,2,3]); "
               "           var r = a.subarray(1,3);"
               "           return  a.buffer === r.buffer;})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([1,2,3]); "
+              "           return  a.subarray(3).length === 0;})"),
       njs_str("true") },
 
     { njs_str(NJS_TYPED_ARRAY_LIST

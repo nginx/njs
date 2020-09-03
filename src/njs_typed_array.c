@@ -801,9 +801,18 @@ njs_typed_array_species_create(njs_vm_t *vm, njs_value_t *exemplar,
         return NJS_ERROR;
     }
 
-    if (!njs_is_typed_array(retval)) {
+    if (njs_slow_path(!njs_is_typed_array(retval))) {
         njs_type_error(vm, "Derived TypedArray constructor "
                        "returned not a typed array");
+        return NJS_ERROR;
+    }
+
+    if (njs_slow_path(nargs == 1 && njs_is_number(&args[0])
+                      && njs_typed_array_length(njs_typed_array(retval))
+                         < njs_number(&args[0])))
+    {
+        njs_type_error(vm, "Derived TypedArray constructor "
+                       "returned too short array");
         return NJS_ERROR;
     }
 
