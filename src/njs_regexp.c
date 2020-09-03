@@ -1347,6 +1347,7 @@ njs_regexp_prototype_symbol_replace(njs_vm_t *vm, njs_value_t *args,
             array = njs_array(r);
 
             arguments = array->start;
+            arguments[0] = matched;
             ncaptures = array->length;
 
             for (n = 1; n < ncaptures; n++) {

@@ -8307,6 +8307,10 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("RegExp.prototype[Symbol.replace].call(/b/, 'abc','B')"),
       njs_str("aBc") },
 
+    { njs_str("var m; var r = /./; r.exec = function() { return []; };"
+              "r[Symbol.replace]('foo', function() {m = arguments[0]}); [m, typeof m]"),
+      njs_str("undefined,string") },
+
     { njs_str("String.bytesFrom([253,242,141,10]).replace(/\\s/g, 'X')[3]"),
       njs_str("X") },
 
