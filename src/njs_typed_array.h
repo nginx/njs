@@ -55,6 +55,20 @@ njs_typed_array_length(const njs_typed_array_t *array)
 }
 
 
+njs_inline uint32_t
+njs_typed_array_offset(const njs_typed_array_t *array)
+{
+    return array->offset * njs_typed_array_element_size(array->type);
+}
+
+
+njs_inline u_char *
+njs_typed_array_start(const njs_typed_array_t *array)
+{
+    return &array->buffer->u.u8[njs_typed_array_offset(array)];
+}
+
+
 njs_inline double
 njs_typed_array_prop(const njs_typed_array_t *array, uint32_t index)
 {

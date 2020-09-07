@@ -610,8 +610,7 @@ njs_typed_array_prototype_byte_offset(njs_vm_t *vm, njs_value_t *args,
 
     array = njs_typed_array(this);
 
-    njs_set_number(&vm->retval, array->offset
-                                * njs_typed_array_element_size(array->type));
+    njs_set_number(&vm->retval, njs_typed_array_offset(array));
 
     return NJS_OK;
 }

@@ -214,7 +214,7 @@ njs_text_encoder_encode_into(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     end = start + str.length;
 
     array = njs_typed_array(dest);
-    to = njs_typed_array_buffer(array)->u.u8;
+    to = njs_typed_array_start(array);
     to_end = to + array->byte_length;
 
     cp = 0;
@@ -564,7 +564,7 @@ njs_text_decoder_decode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         if (njs_is_typed_array(value)) {
             array = njs_typed_array(value);
 
-            start = array->buffer->u.u8;
+            start = njs_typed_array_start(array);
             end = start + array->byte_length;
 
         } else if (njs_is_array_buffer(value)) {

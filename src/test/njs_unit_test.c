@@ -18226,6 +18226,11 @@ static njs_unit_test_t  njs_test[] =
               "var res = en.encodeInto('ααααα', utf8); njs.dump(res)"),
       njs_str("{read:5,written:10}") },
 
+    { njs_str("var en = new TextEncoder();"
+              "var utf8 = new Uint8Array(10);"
+              "en.encodeInto('ααααα', utf8.subarray(2)); utf8[0]"),
+      njs_str("0") },
+
     { njs_str("var str = String.bytesFrom([0xCE]);"
               "var en = new TextEncoder();"
               "var utf8 = new Uint8Array(3);"
@@ -18333,6 +18338,12 @@ static njs_unit_test_t  njs_test[] =
               "var en = new TextEncoder();"
               "njs.dump(en.encode(de.decode(buf)))"),
       njs_str("Uint8Array [1,0,0,0,2,0,0,0,3,0,0,0]") },
+
+    { njs_str("var de = new TextDecoder();"
+              "var buf = new Uint32Array([1,2,3]).subarray(1,2);"
+              "var en = new TextEncoder();"
+              "njs.dump(en.encode(de.decode(buf)))"),
+      njs_str("Uint8Array [2,0,0,0]") },
 };
 
 
