@@ -532,16 +532,17 @@ static njs_int_t
 njs_text_decoder_decode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    u_char                   *dst;
-    size_t                   size;
-    ssize_t                  length;
-    njs_int_t                ret;
-    njs_bool_t               stream;
-    njs_value_t              retval, *this, *typed_array, *options;
-    const u_char             *start, *end;
-    njs_unicode_decode_t     ctx;
-    njs_encoding_decode_t    *data;
-    const njs_typed_array_t  *array;
+    u_char                    *dst;
+    size_t                    size;
+    ssize_t                   length;
+    njs_int_t                 ret;
+    njs_bool_t                stream;
+    njs_value_t               retval, *this, *value, *options;
+    const u_char              *start, *end;
+    njs_unicode_decode_t      ctx;
+    njs_encoding_decode_t     *data;
+    const njs_typed_array_t   *array;
+    const njs_array_buffer_t  *buffer;
 
     static const njs_value_t  stream_str = njs_string("stream");
 
@@ -558,17 +559,25 @@ njs_text_decoder_decode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (njs_fast_path(nargs > 1)) {
-        typed_array = njs_argument(args, 1);
-        if (njs_slow_path(!njs_is_typed_array(typed_array))) {
+        value = njs_argument(args, 1);
+
+        if (njs_is_typed_array(value)) {
+            array = njs_typed_array(value);
+
+            start = array->buffer->u.u8;
+            end = start + array->byte_length;
+
+        } else if (njs_is_array_buffer(value)) {
+            buffer = njs_array_buffer(value);
+
+            start = buffer->u.u8;
+            end = start + buffer->size;
+
+        } else {
             njs_type_error(vm, "The \"input\" argument must be an instance "
                            "of TypedArray");
             return NJS_ERROR;
         }
-
-        array = njs_typed_array(typed_array);
-
-        start = array->buffer->u.u8;
-        end = start + array->byte_length;
     }
 
     if (nargs > 2) {

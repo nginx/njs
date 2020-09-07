@@ -18327,6 +18327,12 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("TextDecoder.prototype.decode.apply({}, new Uint8Array([1]))"),
       njs_str("TypeError: \"this\" is not a TextDecoder") },
+
+    { njs_str("var de = new TextDecoder();"
+              "var buf = new Uint32Array([1,2,3]).buffer;"
+              "var en = new TextEncoder();"
+              "njs.dump(en.encode(de.decode(buf)))"),
+      njs_str("Uint8Array [1,0,0,0,2,0,0,0,3,0,0,0]") },
 };
 
 
