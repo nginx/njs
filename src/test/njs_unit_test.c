@@ -8824,8 +8824,14 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("String.bytesFrom('QQ==', 'base64')"),
       njs_str("A") },
 
+    { njs_str("String.bytesFrom('QQ=', 'base64')"),
+      njs_str("A") },
+
     { njs_str("String.bytesFrom('QQ', 'base64')"),
       njs_str("A") },
+
+    { njs_str("String.bytesFrom('Q', 'base64')"),
+      njs_str("") },
 
     { njs_str("String.bytesFrom('QUI=', 'base64')"),
       njs_str("AB") },
