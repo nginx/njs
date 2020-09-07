@@ -5473,6 +5473,58 @@ static njs_unit_test_t  njs_test[] =
       njs_str("true") },
 
     { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = v.of(); return njs.dump(a) === `${v.name} []`})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = v.of(1); return njs.dump(a) === `${v.name} [1]`})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = v.of(1,2,3,4,5); return njs.dump(a) === `${v.name} [1,2,3,4,5]`})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ try{ v.of(Symbol()); } catch (e) { return e.name === 'TypeError'}})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ try{ v.of.call(()=>1); } catch (e) { return e.name === 'TypeError'}})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ try{ v.of.call(function(){}); } catch (e) { return e.name === 'TypeError'}})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = v.from([1,2]); return njs.dump(a) === `${v.name} [1,2]`})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = v.from([1,2], v=>2*v); return njs.dump(a) === `${v.name} [2,4]`})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = v.from([1,2], function(v){return v * this.m}, {m:3}); "
+              "           return njs.dump(a) === `${v.name} [3,6]`})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = v.from([1,2], function(v){return v * this.m}, {m:3}); "
+              "           return njs.dump(a) === `${v.name} [3,6]`})"),
+      njs_str("true") },
+
+    { njs_str(NJS_INT_TYPED_ARRAY_LIST
+              ".every(v=>{var a = v.from({length:3, 0:1, 2:'a'});"
+              "           return njs.dump(a) === `${v.name} [1,0,0]`})"),
+      njs_str("true") },
+
+    { njs_str(NJS_FLOAT_TYPED_ARRAY_LIST
+              ".every(v=>{var a = v.from({length:3, 0:1, 2:'a'});"
+              "           return njs.dump(a) === `${v.name} [1,NaN,NaN]`})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
               ".every(v=>{var a = new v(4); a.fill(42); return (a[0] === 42 && a.length == 4)})"),
       njs_str("true") },
 

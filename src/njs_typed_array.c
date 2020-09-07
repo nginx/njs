@@ -268,6 +268,194 @@ njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
+njs_typed_array_create(njs_vm_t *vm, njs_value_t *constructor,
+    njs_value_t *args, njs_uint_t nargs, njs_value_t *retval)
+{
+    njs_int_t     ret;
+    njs_value_t   this;
+    njs_object_t  *object;
+
+    object = njs_function_new_object(vm, constructor);
+    if (njs_slow_path(object == NULL)) {
+        return NJS_ERROR;
+    }
+
+    njs_set_object(&this, object);
+
+    ret = njs_function_call2(vm, njs_function(constructor), &this, args,
+                             nargs, retval, 1);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    if (njs_slow_path(!njs_is_typed_array(retval))) {
+        njs_type_error(vm, "Derived TypedArray constructor "
+                       "returned not a typed array");
+        return NJS_ERROR;
+    }
+
+    if (njs_slow_path(nargs == 1 && njs_is_number(&args[0])
+                      && njs_typed_array_length(njs_typed_array(retval))
+                         < njs_number(&args[0])))
+    {
+        njs_type_error(vm, "Derived TypedArray constructor "
+                       "returned too short array");
+        return NJS_ERROR;
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_typed_array_species_create(njs_vm_t *vm, njs_value_t *exemplar,
+    njs_value_t *args, njs_uint_t nargs, njs_value_t *retval)
+{
+    njs_int_t          ret;
+    njs_value_t        constructor;
+    njs_typed_array_t  *array;
+
+    array = njs_typed_array(exemplar);
+
+    njs_set_function(&constructor, &vm->constructors[array->type]);
+
+    ret = njs_value_species_constructor(vm, exemplar, &constructor,
+                                        &constructor);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    return njs_typed_array_create(vm, &constructor, args, nargs, retval);
+}
+
+
+static njs_int_t
+njs_typed_array_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    double             num;
+    uint32_t           length, i;
+    njs_int_t          ret;
+    njs_value_t        *this;
+    njs_value_t        argument;
+    njs_typed_array_t  *array;
+
+    this = njs_argument(args, 0);
+
+    if (njs_slow_path(!njs_is_constructor(this))) {
+        njs_type_error(vm, "%s is not a constructor",
+                       njs_type_string(this->type));
+        return NJS_ERROR;
+    }
+
+    length = nargs - 1;
+
+    njs_set_number(&argument, length);
+    ret = njs_typed_array_create(vm, this, &argument, 1, &vm->retval);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    array = njs_typed_array(&vm->retval);
+
+    for (i = 0; i < length; i++) {
+        ret = njs_value_to_number(vm, njs_argument(args, i + 1), &num);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
+        njs_typed_array_prop_set(vm, array, i, num);
+    }
+
+    njs_set_typed_array(&vm->retval, array);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_typed_array_from(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    double             num;
+    int64_t            length, i;
+    njs_int_t          ret;
+    njs_value_t        *this, *source, *mapfn;
+    njs_value_t        arguments[3], retval;
+    njs_function_t     *function;
+    njs_typed_array_t  *array;
+
+    this = njs_argument(args, 0);
+
+    if (njs_slow_path(!njs_is_constructor(this))) {
+        njs_type_error(vm, "%s is not a constructor",
+                       njs_type_string(this->type));
+        return NJS_ERROR;
+    }
+
+    mapfn = njs_arg(args, nargs, 2);
+
+    if (njs_slow_path(!njs_is_function_or_undefined(mapfn))) {
+        njs_type_error(vm, "\"mapfn\" argument is not callable");
+        return NJS_ERROR;
+    }
+
+    function = NULL;
+    if (njs_is_function(mapfn)) {
+        function = njs_function(mapfn);
+    }
+
+    source = njs_arg(args, nargs, 1);
+
+    ret = njs_value_to_object(vm, source);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    ret = njs_object_length(vm, source, &length);
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return ret;
+    }
+
+    njs_set_number(&arguments[0], length);
+    ret = njs_typed_array_create(vm, this, arguments, 1, &vm->retval);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    array = njs_typed_array(&vm->retval);
+    arguments[0] = *njs_arg(args, nargs, 3);
+
+    for (i = 0; i < length; i++) {
+        ret = njs_value_property_i64(vm, source, i, &retval);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return NJS_ERROR;
+        }
+
+        if (function != NULL) {
+            arguments[1] = retval;
+            njs_set_number(&arguments[2], i);
+            ret = njs_function_apply(vm, function, arguments, 3, &retval);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_ERROR;
+            }
+        }
+
+        ret = njs_value_to_number(vm, &retval, &num);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
+        njs_typed_array_prop_set(vm, array, i, num);
+    }
+
+    njs_set_typed_array(&vm->retval, array);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
 njs_typed_array_get_this(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -763,57 +951,6 @@ njs_typed_array_prototype_fill(njs_vm_t *vm, njs_value_t *args,
         for (i = start; i < end; i++) {
             buffer->u.f64[i + offset] = num;
         }
-    }
-
-    return NJS_OK;
-}
-
-
-static njs_int_t
-njs_typed_array_species_create(njs_vm_t *vm, njs_value_t *exemplar,
-    njs_value_t *args, njs_uint_t nargs, njs_value_t *retval)
-{
-    njs_int_t          ret;
-    njs_value_t        this, constructor;
-    njs_object_t       *object;
-    njs_typed_array_t  *array;
-
-    array = njs_typed_array(exemplar);
-
-    njs_set_function(&constructor, &vm->constructors[array->type]);
-
-    ret = njs_value_species_constructor(vm, exemplar, &constructor,
-                                        &constructor);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
-    }
-
-    object = njs_function_new_object(vm, &constructor);
-    if (njs_slow_path(object == NULL)) {
-        return NJS_ERROR;
-    }
-
-    njs_set_object(&this, object);
-
-    ret = njs_function_call2(vm, njs_function(&constructor), &this,
-                             args, nargs, retval, 1);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return NJS_ERROR;
-    }
-
-    if (njs_slow_path(!njs_is_typed_array(retval))) {
-        njs_type_error(vm, "Derived TypedArray constructor "
-                       "returned not a typed array");
-        return NJS_ERROR;
-    }
-
-    if (njs_slow_path(nargs == 1 && njs_is_number(&args[0])
-                      && njs_typed_array_length(njs_typed_array(retval))
-                         < njs_number(&args[0])))
-    {
-        njs_type_error(vm, "Derived TypedArray constructor "
-                       "returned too short array");
-        return NJS_ERROR;
     }
 
     return NJS_OK;
@@ -2012,6 +2149,22 @@ static const njs_object_prop_t  njs_typed_array_constructor_props[] =
         .writable = NJS_ATTRIBUTE_UNSET,
         .configurable = 1,
         .enumerable = 0,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("of"),
+        .value = njs_native_function(njs_typed_array_of, 0),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("from"),
+        .value = njs_native_function(njs_typed_array_from, 1),
+        .writable = 1,
+        .configurable = 1,
     },
 };
 

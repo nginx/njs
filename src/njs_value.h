@@ -676,6 +676,10 @@ typedef struct {
     ((value)->type == NJS_FUNCTION || (value)->type == NJS_UNDEFINED)
 
 
+#define njs_is_constructor(value)                                             \
+    (njs_is_function(value) && njs_function(value)->ctor)
+
+
 #define njs_is_regexp(value)                                                  \
     ((value)->type == NJS_REGEXP)
 
