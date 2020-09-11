@@ -1912,8 +1912,22 @@ ngx_http_js_ext_get_http_version(njs_vm_t *vm, njs_object_prop_t *prop,
         ngx_str_set(&v, "1.0");
         break;
 
-    default: /* NGX_HTTP_VERSION_11 */
+    case NGX_HTTP_VERSION_11:
         ngx_str_set(&v, "1.1");
+        break;
+
+    case NGX_HTTP_VERSION_20:
+        ngx_str_set(&v, "2.0");
+        break;
+
+#if (NGX_HTTP_VERSION_30)
+    case NGX_HTTP_VERSION_30:
+        ngx_str_set(&v, "3.0");
+        break;
+#endif
+
+    default:
+        ngx_str_set(&v, "");
         break;
     }
 
