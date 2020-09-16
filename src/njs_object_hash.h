@@ -792,4 +792,14 @@
         'T'), 'e'), 'x'), 't'), 'E'), 'n'), 'c'), 'o'), 'd'), 'e'), 'r')
 
 
+#define NJS_BUFFER_HASH                                                       \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        'B'), 'u'), 'f'), 'f'), 'e'), 'r')
+
+
 #endif /* _NJS_OBJECT_HASH_H_INCLUDED_ */

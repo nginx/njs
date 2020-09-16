@@ -194,11 +194,10 @@ njs_unit_test_r_host(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 static njs_int_t
-njs_unit_test_r_u8buffer(njs_vm_t *vm, njs_object_prop_t *prop,
+njs_unit_test_r_buffer(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
-    return njs_vm_value_typed_array_uint8_set(vm, retval,
-                                              (u_char *) "АБВГДЕЁЖЗИЙ", 22);
+    return njs_vm_value_buffer_set(vm, retval, (u_char *) "АБВГДЕЁЖЗИЙ", 22);
 }
 
 
@@ -564,10 +563,10 @@ static njs_external_t  njs_unit_test_r_external[] = {
 
     {
         .flags = NJS_EXTERN_PROPERTY,
-        .name.string = njs_str("u8buffer"),
+        .name.string = njs_str("buffer"),
         .enumerable = 1,
         .u.property = {
-            .handler = njs_unit_test_r_u8buffer,
+            .handler = njs_unit_test_r_buffer,
         }
     },
 

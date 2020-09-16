@@ -8,6 +8,18 @@
 #define _NJS_UTILS_H_INCLUDED_
 
 
+typedef union {
+    float       f;
+    uint32_t    u;
+} njs_conv_f32_t;
+
+
+typedef union {
+    double      f;
+    uint64_t    u;
+} njs_conv_f64_t;
+
+
 typedef int (*njs_sort_cmp_t)(const void *, const void *, void *ctx);
 
 void njs_qsort(void *base, size_t n, size_t size, njs_sort_cmp_t cmp,

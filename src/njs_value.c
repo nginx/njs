@@ -47,6 +47,7 @@ const njs_value_t  njs_string_symbol =      njs_string("symbol");
 const njs_value_t  njs_string_string =      njs_string("string");
 const njs_value_t  njs_string_name =        njs_string("name");
 const njs_value_t  njs_string_data =        njs_string("data");
+const njs_value_t  njs_string_type =        njs_string("type");
 const njs_value_t  njs_string_external =    njs_string("external");
 const njs_value_t  njs_string_invalid =     njs_string("invalid");
 const njs_value_t  njs_string_object =      njs_string("object");

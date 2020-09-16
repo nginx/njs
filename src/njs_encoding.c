@@ -130,7 +130,7 @@ njs_text_encoder_encode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     njs_set_number(&value, size);
 
-    array = njs_typed_array_alloc(vm, &value, 1, NJS_OBJ_TYPE_UINT8_ARRAY);
+    array = njs_typed_array_alloc(vm, &value, 1, 0, NJS_OBJ_TYPE_UINT8_ARRAY);
     if (njs_slow_path(array == NULL)) {
         return NJS_ERROR;
     }
@@ -154,7 +154,7 @@ njs_text_encoder_encode_utf8(njs_vm_t *vm, njs_string_prop_t *prop)
 
     njs_set_number(&value, prop->size);
 
-    array = njs_typed_array_alloc(vm, &value, 1, NJS_OBJ_TYPE_UINT8_ARRAY);
+    array = njs_typed_array_alloc(vm, &value, 1, 0, NJS_OBJ_TYPE_UINT8_ARRAY);
     if (njs_slow_path(array == NULL)) {
         return NJS_ERROR;
     }

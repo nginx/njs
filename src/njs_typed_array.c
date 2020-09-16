@@ -26,7 +26,7 @@ static void njs_typed_array_prop_set(njs_vm_t *vm, njs_typed_array_t *array,
 
 njs_typed_array_t *
 njs_typed_array_alloc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_object_type_t type)
+    njs_bool_t zeroing, njs_object_type_t type)
 {
     double              num;
     int64_t             i, length;
@@ -121,7 +121,7 @@ njs_typed_array_alloc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (buffer == NULL) {
-        buffer = njs_array_buffer_alloc(vm, size);
+        buffer = njs_array_buffer_alloc(vm, size, zeroing);
         if (njs_slow_path(buffer == NULL)) {
             return NULL;
         }
@@ -198,53 +198,6 @@ memory_error:
 }
 
 
-njs_int_t
-njs_typed_array_uint8_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
-    uint32_t size)
-{
-    njs_object_t        *proto;
-    njs_typed_array_t   *array;
-    njs_array_buffer_t  *buffer;
-
-    array = njs_mp_zalloc(vm->mem_pool, sizeof(njs_typed_array_t)
-                                        + sizeof(njs_array_buffer_t));
-    if (njs_slow_path(array == NULL)) {
-        njs_memory_error(vm);
-        return NJS_ERROR;
-    }
-
-    buffer = (njs_array_buffer_t *) &array[1];
-
-    proto = &vm->prototypes[NJS_OBJ_TYPE_ARRAY_BUFFER].object;
-
-    njs_lvlhsh_init(&buffer->object.hash);
-    njs_lvlhsh_init(&buffer->object.shared_hash);
-    buffer->object.__proto__ = proto;
-    buffer->object.slots = NULL;
-    buffer->object.type = NJS_ARRAY_BUFFER;
-    buffer->object.shared = 1;
-    buffer->object.extensible = 1;
-    buffer->object.error_data = 0;
-    buffer->object.fast_array = 0;
-    buffer->u.data = (void *) start;
-    buffer->size = size;
-
-    array->buffer = buffer;
-    array->byte_length = size;
-    array->type = NJS_OBJ_TYPE_UINT8_ARRAY;
-    njs_lvlhsh_init(&array->object.hash);
-    njs_lvlhsh_init(&array->object.shared_hash);
-    array->object.__proto__ = &vm->prototypes[array->type].object;
-    array->object.type = NJS_TYPED_ARRAY;
-    array->object.extensible = 1;
-    array->object.fast_array = 1;
-
-    njs_set_typed_array(value, array);
-
-    return NJS_OK;
-}
-
-
 static njs_int_t
 njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t magic)
@@ -256,7 +209,7 @@ njs_typed_array_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    array = njs_typed_array_alloc(vm, &args[1], nargs - 1, magic);
+    array = njs_typed_array_alloc(vm, &args[1], nargs - 1, 1, magic);
     if (njs_slow_path(array == NULL)) {
         return NJS_ERROR;
     }
@@ -956,7 +909,7 @@ njs_typed_array_prototype_fill(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_int_t
+njs_int_t
 njs_typed_array_prototype_slice(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t copy)
 {
@@ -2537,18 +2490,6 @@ static const njs_object_init_t  njs_data_view_constructor_init = {
     njs_data_view_constructor_props,
     njs_nitems(njs_data_view_constructor_props),
 };
-
-
-typedef union {
-    float       f;
-    uint32_t    u;
-} njs_conv_f32_t;
-
-
-typedef union {
-    double      f;
-    uint64_t    u;
-} njs_conv_f64_t;
 
 
 static njs_int_t

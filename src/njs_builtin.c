@@ -51,6 +51,7 @@ static const njs_object_init_t  *njs_module_init[] = {
     &njs_fs_object_init,
     &njs_crypto_object_init,
     &njs_query_string_object_init,
+    &njs_buffer_object_init,
     NULL
 };
 
@@ -74,6 +75,7 @@ static const njs_object_type_init_t *const
     &njs_data_view_type_init,
     &njs_text_decoder_type_init,
     &njs_text_encoder_type_init,
+    &njs_buffer_type_init,
 
     /* Hidden types. */
 
@@ -351,6 +353,9 @@ njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global)
     {
         vm->prototypes[i].object.__proto__ = typed_array_prototype;
     }
+
+    vm->prototypes[NJS_OBJ_TYPE_BUFFER].object.__proto__ =
+                              &vm->prototypes[NJS_OBJ_TYPE_UINT8_ARRAY].object;
 
     error_prototype = &vm->prototypes[NJS_OBJ_TYPE_ERROR].object;
     error_prototype->__proto__ = object_prototype;
@@ -1310,6 +1315,15 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
         .value = njs_prop_handler2(njs_top_level_constructor,
                                    NJS_OBJ_TYPE_TEXT_ENCODER,
                                    NJS_TEXT_ENCODER_HASH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("Buffer"),
+        .value = njs_prop_handler2(njs_top_level_constructor,
+                                   NJS_OBJ_TYPE_BUFFER, NJS_BUFFER_HASH),
         .writable = 1,
         .configurable = 1,
     },

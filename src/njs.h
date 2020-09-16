@@ -317,11 +317,11 @@ NJS_EXPORT njs_int_t njs_vm_value_string_copy(njs_vm_t *vm, njs_str_t *retval,
     njs_value_t *value, uintptr_t *next);
 
 /*
- * Sets a Uint8Array value.
+ * Sets a Buffer value.
  *   start data is not copied and should not be freed.
  */
-NJS_EXPORT njs_int_t njs_vm_value_typed_array_uint8_set(njs_vm_t *vm,
-    njs_value_t *value, const u_char *start, uint32_t size);
+NJS_EXPORT njs_int_t njs_vm_value_buffer_set(njs_vm_t *vm, njs_value_t *value,
+    const u_char *start, uint32_t size);
 
 /*
  * Converts a value to string.

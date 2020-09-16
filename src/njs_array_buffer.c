@@ -8,7 +8,7 @@
 
 
 njs_array_buffer_t *
-njs_array_buffer_alloc(njs_vm_t *vm, uint64_t size)
+njs_array_buffer_alloc(njs_vm_t *vm, uint64_t size, njs_bool_t zeroing)
 {
     njs_object_t        *proto;
     njs_array_buffer_t  *array;
@@ -22,11 +22,15 @@ njs_array_buffer_alloc(njs_vm_t *vm, uint64_t size)
         goto memory_error;
     }
 
-    if (size > 0) {
+    if (zeroing) {
         array->u.data = njs_mp_zalloc(vm->mem_pool, size);
-        if (njs_slow_path(array->u.data == NULL)) {
-            goto memory_error;
-        }
+
+    } else {
+        array->u.data = njs_mp_alloc(vm->mem_pool, size);
+    }
+
+    if (njs_slow_path(array->u.data == NULL)) {
+        goto memory_error;
     }
 
     proto = &vm->prototypes[NJS_OBJ_TYPE_ARRAY_BUFFER].object;
@@ -80,7 +84,7 @@ njs_array_buffer_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    array = njs_array_buffer_alloc(vm, size);
+    array = njs_array_buffer_alloc(vm, size, 1);
     if (njs_slow_path(array == NULL)) {
         return NJS_ERROR;
     }

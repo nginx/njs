@@ -831,6 +831,7 @@ extern const njs_value_t  njs_string_nan;
 extern const njs_value_t  njs_string_symbol;
 extern const njs_value_t  njs_string_string;
 extern const njs_value_t  njs_string_data;
+extern const njs_value_t  njs_string_type;
 extern const njs_value_t  njs_string_name;
 extern const njs_value_t  njs_string_external;
 extern const njs_value_t  njs_string_invalid;

@@ -1794,6 +1794,48 @@ njs_decode_hex(njs_str_t *dst, const njs_str_t *src)
 }
 
 
+void
+njs_decode_utf8(njs_str_t *dst, const njs_str_t *src)
+{
+    njs_unicode_decode_t  ctx;
+
+    njs_utf8_decode_init(&ctx);
+
+    (void) njs_utf8_stream_encode(&ctx, src->start, src->start + src->length,
+                                  dst->start, 1, 0);
+}
+
+
+size_t
+njs_decode_utf8_length(const njs_str_t *src, size_t *out_size)
+{
+    njs_unicode_decode_t  ctx;
+
+    njs_utf8_decode_init(&ctx);
+
+    return njs_utf8_stream_length(&ctx, src->start, src->length, 1, 0,
+                                  out_size);
+}
+
+
+njs_int_t
+njs_string_decode_utf8(njs_vm_t *vm, njs_value_t *value, const njs_str_t *src)
+{
+    size_t     length;
+    njs_str_t  dst;
+
+    length = njs_decode_utf8_length(src, &dst.length);
+    dst.start = njs_string_alloc(vm, value, dst.length, length);
+
+    if (njs_fast_path(dst.start != NULL)) {
+        njs_decode_utf8(&dst, src);
+        return NJS_OK;
+    }
+
+    return NJS_ERROR;
+}
+
+
 njs_int_t
 njs_string_decode_hex(njs_vm_t *vm, njs_value_t *value, const njs_str_t *src)
 {

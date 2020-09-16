@@ -12,7 +12,8 @@
     ((buffer)->size)
 
 
-njs_array_buffer_t *njs_array_buffer_alloc(njs_vm_t *vm, uint64_t size);
+njs_array_buffer_t *njs_array_buffer_alloc(njs_vm_t *vm, uint64_t size,
+    njs_bool_t zeroing);
 njs_int_t njs_array_buffer_writable(njs_vm_t *vm, njs_array_buffer_t *buffer);
 
 njs_inline njs_array_buffer_t *
@@ -29,7 +30,7 @@ njs_array_buffer_slice(njs_vm_t *vm, njs_array_buffer_t *this, int64_t start,
 
     new_len = njs_max(final - first, 0);
 
-    new_buffer = njs_array_buffer_alloc(vm, new_len);
+    new_buffer = njs_array_buffer_alloc(vm, new_len, 1);
     if (new_buffer == NULL) {
         return NULL;
     }
