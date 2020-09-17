@@ -2133,6 +2133,8 @@ njs_buffer_prototype_swap(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             *((uint32_t *) p) = njs_bswap_u32(*((uint32_t *) p));
         }
 
+        break;
+
     case 8:
     default:
         for (; p < end; p += 8) {
