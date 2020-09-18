@@ -659,6 +659,10 @@ typedef struct {
     ((value)->type == NJS_TYPED_ARRAY)
 
 
+#define njs_is_detached_buffer(buffer)                                        \
+    ((buffer)->u.data == NULL)
+
+
 #define njs_is_data_view(value)                                               \
     ((value)->type == NJS_DATA_VIEW)
 

@@ -35,6 +35,9 @@ static njs_int_t njs_env_hash_init(njs_vm_t *vm, njs_lvlhsh_t *hash,
 static const njs_object_init_t  njs_global_this_init;
 static const njs_object_init_t  njs_njs_object_init;
 static const njs_object_init_t  njs_process_object_init;
+#ifdef NJS_TEST262
+static const njs_object_init_t  njs_262_object_init;
+#endif
 
 
 static const njs_object_init_t  *njs_object_init[] = {
@@ -43,6 +46,9 @@ static const njs_object_init_t  *njs_object_init[] = {
     &njs_process_object_init,
     &njs_math_object_init,
     &njs_json_object_init,
+#ifdef NJS_TEST262
+    &njs_262_object_init,
+#endif
     NULL
 };
 
@@ -1259,6 +1265,18 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
         .configurable = 1,
     },
 
+#ifdef NJS_TEST262
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("$262"),
+        .value = njs_prop_handler2(njs_top_level_object, NJS_OBJECT_262,
+                                  NJS_262_HASH),
+        .writable = 1,
+        .enumerable = 1,
+        .configurable = 1,
+    },
+#endif
+
     /* Global constructors. */
 
     {
@@ -1831,3 +1849,54 @@ static const njs_object_init_t  njs_process_object_init = {
     njs_process_object_properties,
     njs_nitems(njs_process_object_properties),
 };
+
+
+#if (NJS_TEST262)
+
+static njs_int_t
+njs_262_detach_array_buffer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    njs_value_t         *value;
+    njs_array_buffer_t  *buffer;
+
+    value = njs_arg(args, nargs, 1);
+    if (njs_slow_path(!njs_is_array_buffer(value))) {
+        njs_type_error(vm, "\"this\" is not an ArrayBuffer");
+        return NJS_ERROR;
+    }
+
+    buffer = njs_array_buffer(value);
+    buffer->u.data = NULL;
+    buffer->size = 0;
+
+    njs_set_null(&vm->retval);
+
+    return NJS_OK;
+}
+
+static const njs_object_prop_t  njs_262_object_properties[] =
+{
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
+        .value = njs_string("$262"),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_long_string("detachArrayBuffer"),
+        .value = njs_native_function(njs_262_detach_array_buffer, 2),
+        .writable = 1,
+        .configurable = 1,
+    },
+};
+
+
+static const njs_object_init_t  njs_262_object_init = {
+    njs_262_object_properties,
+    njs_nitems(njs_262_object_properties),
+};
+
+#endif

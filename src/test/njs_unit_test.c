@@ -19578,7 +19578,11 @@ static njs_unit_test_t  njs_externals_test[] =
       njs_str("true") },
 
     { njs_str("Object.keys(this).sort()"),
+#if (NJS_TEST262)
+      njs_str("$262,$r,$r2,$r3,$shared,global,njs,process") },
+#else
       njs_str("$r,$r2,$r3,$shared,global,njs,process") },
+#endif
 
     { njs_str("Object.getOwnPropertySymbols($r2)[0] == Symbol.toStringTag"),
       njs_str("true") },

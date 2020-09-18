@@ -64,7 +64,19 @@ njs_typed_array_alloc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NULL;
         }
 
-        if (!njs_is_undefined(njs_arg(args, nargs, 2))) {
+        if (njs_is_defined(njs_arg(args, nargs, 2))) {
+            ret = njs_value_to_index(vm, njs_argument(args, 2), &size);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NULL;
+            }
+        }
+
+        if (njs_slow_path(njs_is_detached_buffer(buffer))) {
+            njs_type_error(vm, "detached buffer");
+            return NULL;
+        }
+
+        if (njs_is_defined(njs_arg(args, nargs, 2))) {
             ret = njs_value_to_index(vm, njs_argument(args, 2), &size);
             if (njs_slow_path(ret != NJS_OK)) {
                 return NULL;
@@ -95,6 +107,11 @@ njs_typed_array_alloc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     } else if (njs_is_typed_array(value)) {
         src_tarray = njs_typed_array(value);
+        if (njs_slow_path(njs_is_detached_buffer(src_tarray->buffer))) {
+            njs_type_error(vm, "detached buffer");
+            return NULL;
+        }
+
         size = (uint64_t) njs_typed_array_length(src_tarray) * element_size;
 
     } else if (njs_is_object(value)) {
@@ -224,9 +241,10 @@ static njs_int_t
 njs_typed_array_create(njs_vm_t *vm, njs_value_t *constructor,
     njs_value_t *args, njs_uint_t nargs, njs_value_t *retval)
 {
-    njs_int_t     ret;
-    njs_value_t   this;
-    njs_object_t  *object;
+    njs_int_t          ret;
+    njs_value_t        this;
+    njs_object_t       *object;
+    njs_typed_array_t  *array;
 
     object = njs_function_new_object(vm, constructor);
     if (njs_slow_path(object == NULL)) {
@@ -247,8 +265,14 @@ njs_typed_array_create(njs_vm_t *vm, njs_value_t *constructor,
         return NJS_ERROR;
     }
 
+    array = njs_typed_array(retval);
+    if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
     if (njs_slow_path(nargs == 1 && njs_is_number(&args[0])
-                      && njs_typed_array_length(njs_typed_array(retval))
+                      && njs_typed_array_length(array)
                          < njs_number(&args[0])))
     {
         njs_type_error(vm, "Derived TypedArray constructor "
@@ -425,6 +449,10 @@ njs_typed_array_writable(njs_vm_t *vm, njs_typed_array_t *array)
     njs_array_buffer_t  *buffer;
 
     buffer = array->buffer;
+    if (njs_slow_path(njs_is_detached_buffer(buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NULL;
+    }
 
     ret = njs_array_buffer_writable(vm, buffer);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -485,6 +513,7 @@ static njs_int_t
 njs_typed_array_prototype_length(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
+    uint32_t           length;
     njs_value_t        *this;
     njs_typed_array_t  *array;
 
@@ -496,8 +525,13 @@ njs_typed_array_prototype_length(njs_vm_t *vm, njs_value_t *args,
     }
 
     array = njs_typed_array(this);
+    length = njs_typed_array_length(array);
 
-    njs_set_number(&vm->retval, njs_typed_array_length(array));
+    if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
+        length = 0;
+    }
+
+    njs_set_number(&vm->retval, length);
 
     return NJS_OK;
 }
@@ -529,6 +563,7 @@ static njs_int_t
 njs_typed_array_prototype_byte_length(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
+    size_t             byte_length;
     njs_value_t        *this;
     njs_typed_array_t  *array;
 
@@ -540,8 +575,18 @@ njs_typed_array_prototype_byte_length(njs_vm_t *vm, njs_value_t *args,
     }
 
     array = njs_typed_array(this);
+    byte_length = array->byte_length;
 
-    njs_set_number(&vm->retval, array->byte_length);
+    if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
+        if (njs_is_data_view(this)) {
+            njs_type_error(vm, "detached buffer");
+            return NJS_ERROR;
+        }
+
+        byte_length = 0;
+    }
+
+    njs_set_number(&vm->retval, byte_length);
 
     return NJS_OK;
 }
@@ -551,6 +596,7 @@ static njs_int_t
 njs_typed_array_prototype_byte_offset(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
+    size_t             byte_offset;
     njs_value_t        *this;
     njs_typed_array_t  *array;
 
@@ -562,8 +608,18 @@ njs_typed_array_prototype_byte_offset(njs_vm_t *vm, njs_value_t *args,
     }
 
     array = njs_typed_array(this);
+    byte_offset = njs_typed_array_offset(array);
 
-    njs_set_number(&vm->retval, njs_typed_array_offset(array));
+    if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
+        if (njs_is_data_view(this)) {
+            njs_type_error(vm, "detached buffer");
+            return NJS_ERROR;
+        }
+
+        byte_offset = 0;
+    }
+
+    njs_set_number(&vm->retval, byte_offset);
 
     return NJS_OK;
 }
@@ -693,6 +749,11 @@ njs_typed_array_prototype_set(njs_vm_t *vm, njs_value_t *args,
 
     if (njs_is_typed_array(src)) {
         src_tarray = njs_typed_array(src);
+        if (njs_slow_path(njs_is_detached_buffer(src_tarray->buffer))) {
+            njs_type_error(vm, "detached buffer");
+            return NJS_ERROR;
+        }
+
         src_length = njs_typed_array_length(src_tarray);
 
         if (njs_slow_path((src_length > length)
@@ -767,6 +828,11 @@ njs_typed_array_prototype_set(njs_vm_t *vm, njs_value_t *args,
                 }
             }
 
+            if (njs_slow_path(njs_is_detached_buffer(buffer))) {
+                njs_type_error(vm, "detached buffer");
+                return NJS_ERROR;
+            }
+
             njs_typed_array_prop_set(vm, self, offset + i, num);
         }
     }
@@ -803,6 +869,11 @@ njs_typed_array_prototype_fill(njs_vm_t *vm, njs_value_t *args,
     }
 
     array = njs_typed_array(this);
+    if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
     length = njs_typed_array_length(array);
 
     setval = njs_lvalue_arg(&lvalue, args, nargs, 1);
@@ -929,6 +1000,10 @@ njs_typed_array_prototype_slice(njs_vm_t *vm, njs_value_t *args,
     array = njs_typed_array(this);
     length = njs_typed_array_length(array);
     buffer = njs_typed_array_buffer(array);
+    if (njs_slow_path(copy && njs_is_detached_buffer(buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
 
     ret = njs_value_to_integer(vm, njs_arg(args, nargs, 1), &start);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -966,13 +1041,16 @@ njs_typed_array_prototype_slice(njs_vm_t *vm, njs_value_t *args,
             return ret;
         }
 
-        new_array = njs_typed_array(&vm->retval);
-        if (njs_typed_array_length(new_array) < count) {
-            njs_type_error(vm, "Derived TypedArray constructor is "
-                           "too small array");
+        if (count == 0) {
+            return NJS_OK;
+        }
+
+        if (njs_slow_path(njs_is_detached_buffer(buffer))) {
+            njs_type_error(vm, "detached buffer");
             return NJS_ERROR;
         }
 
+        new_array = njs_typed_array(&vm->retval);
         new_buffer = njs_typed_array_buffer(new_array);
         element_size = njs_typed_array_element_size(array->type);
 
@@ -1022,6 +1100,11 @@ njs_typed_array_prototype_copy_within(njs_vm_t *vm, njs_value_t *args,
     }
 
     array = njs_typed_array(this);
+    if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
     length = njs_typed_array_length(array);
 
     value = njs_arg(args, nargs, 1);
@@ -1044,10 +1127,9 @@ njs_typed_array_prototype_copy_within(njs_vm_t *vm, njs_value_t *args,
 
     value = njs_arg(args, nargs, 3);
 
-    if (njs_is_undefined(value)) {
-        final = length;
+    final = length;
 
-    } else {
+    if (njs_is_defined(value)) {
         ret = njs_value_to_integer(vm, value, &final);
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
@@ -1085,14 +1167,15 @@ static njs_int_t
 njs_typed_array_prototype_iterator(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t type)
 {
-    double             val;
-    int64_t            i, length;
-    njs_int_t          ret;
-    njs_arr_t          results;
-    njs_value_t        *this, *this_arg, *r;
-    njs_value_t        arguments[4], retval;
-    njs_function_t     *function;
-    njs_typed_array_t  *array, *dst;
+    double              val;
+    int64_t             i, length;
+    njs_int_t           ret;
+    njs_arr_t           results;
+    njs_value_t         *this, *this_arg, *r;
+    njs_value_t         arguments[4], retval;
+    njs_function_t      *function;
+    njs_typed_array_t   *array, *dst;
+    njs_array_buffer_t  *buffer;
 
     this = njs_argument(args, 0);
     if (njs_slow_path(!njs_is_typed_array(this))) {
@@ -1112,6 +1195,7 @@ njs_typed_array_prototype_iterator(njs_vm_t *vm, njs_value_t *args,
     function = njs_function(njs_argument(args, 1));
     this_arg = njs_arg(args, nargs, 2);
 
+    buffer = array->buffer;
     results.separate = 0;
     results.pointer = 0;
 
@@ -1136,6 +1220,11 @@ njs_typed_array_prototype_iterator(njs_vm_t *vm, njs_value_t *args,
     }
 
     for (i = 0; i < length; i++) {
+        if (njs_slow_path(njs_is_detached_buffer(buffer))) {
+            njs_type_error(vm, "detached buffer");
+            return NJS_ERROR;
+        }
+
         val = njs_typed_array_prop(array, i);
 
         arguments[0] = *this_arg;
@@ -1349,6 +1438,11 @@ njs_typed_array_prototype_index_of(njs_vm_t *vm, njs_value_t *args,
         }
     }
 
+    if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
     v = njs_number(njs_argument(args, 1));
 
     i64 = v;
@@ -1491,12 +1585,13 @@ static njs_int_t
 njs_typed_array_prototype_reduce(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t right)
 {
-    int64_t            i, from, to, increment, length;
-    njs_int_t          ret;
-    njs_value_t        *this, accumulator;
-    njs_value_t        arguments[5];
-    njs_function_t     *function;
-    njs_typed_array_t  *array;
+    int64_t             i, from, to, increment, length;
+    njs_int_t           ret;
+    njs_value_t         *this, accumulator;
+    njs_value_t         arguments[5];
+    njs_function_t      *function;
+    njs_typed_array_t   *array;
+    njs_array_buffer_t  *buffer;
 
     this = njs_argument(args, 0);
     if (njs_slow_path(!njs_is_typed_array(this))) {
@@ -1530,15 +1625,27 @@ njs_typed_array_prototype_reduce(njs_vm_t *vm, njs_value_t *args,
         increment = 1;
     }
 
+    buffer = array->buffer;
+
     if (nargs > 2) {
         accumulator = *njs_argument(args, 2);
 
     } else {
+        if (njs_slow_path(njs_is_detached_buffer(buffer))) {
+            njs_type_error(vm, "detached buffer");
+            return NJS_ERROR;
+        }
+
         njs_set_number(&accumulator, njs_typed_array_prop(array, from));
         from += increment;
     }
 
     for (i = from; i != to; i += increment) {
+        if (njs_slow_path(njs_is_detached_buffer(buffer))) {
+            njs_type_error(vm, "detached buffer");
+            return NJS_ERROR;
+        }
+
         njs_set_undefined(&arguments[0]);
         arguments[1] = accumulator;
         njs_set_number(&arguments[2], njs_typed_array_prop(array, i));
@@ -1785,6 +1892,7 @@ njs_typed_array_get_f64(const void *a)
 
 typedef struct {
     njs_vm_t               *vm;
+    njs_array_buffer_t     *buffer;
     njs_function_t         *function;
     njs_bool_t             exception;
     double                 (*get)(const void *v);
@@ -1818,6 +1926,11 @@ njs_typed_array_generic_compare(const void *a, const void *b, void *c)
 
     ret = njs_value_to_number(ctx->vm, &retval, &num);
     if (njs_slow_path(ret != NJS_OK)) {
+        goto exception;
+    }
+
+    if (njs_slow_path(njs_is_detached_buffer(ctx->buffer))) {
+        njs_type_error(ctx->vm, "detached buffer");
         goto exception;
     }
 
@@ -1858,7 +1971,14 @@ njs_typed_array_prototype_sort(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
+    array = njs_typed_array(this);
+    if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
     ctx.vm = vm;
+    ctx.buffer = array->buffer;
     ctx.exception = 0;
 
     comparefn = njs_arg(args, nargs, 1);
@@ -1874,8 +1994,6 @@ njs_typed_array_prototype_sort(njs_vm_t *vm, njs_value_t *args,
     } else {
         ctx.function = NULL;
     }
-
-    array = njs_typed_array(this);
 
     switch (array->type) {
     case NJS_OBJ_TYPE_UINT8_ARRAY:
@@ -2022,6 +2140,11 @@ njs_typed_array_prototype_join(njs_vm_t *vm, njs_value_t *args,
     }
 
     array = njs_typed_array(this);
+    if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
     arr_length = njs_typed_array_length(array);
 
     separator = njs_arg(args, nargs, 1);
@@ -2406,10 +2529,14 @@ njs_data_view_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     size = 0;
     offset = 0;
 
-    buffer = njs_array_buffer(njs_argument(args, 1));
-
     ret = njs_value_to_index(vm, njs_arg(args, nargs, 2), &offset);
     if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    buffer = njs_array_buffer(njs_argument(args, 1));
+    if (njs_slow_path(njs_is_detached_buffer(buffer))) {
+        njs_type_error(vm, "detached buffer");
         return NJS_ERROR;
     }
 
@@ -2526,6 +2653,10 @@ njs_data_view_prototype_get(njs_vm_t *vm, njs_value_t *args,
 #endif
 
     view = njs_data_view(this);
+    if (njs_slow_path(njs_is_detached_buffer(view->buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
 
     if (njs_typed_array_element_size(type) + index > view->byte_length) {
         njs_range_error(vm, "index %uL is outside the bound of the buffer",
@@ -2647,6 +2778,10 @@ njs_data_view_prototype_set(njs_vm_t *vm, njs_value_t *args,
 #endif
 
     view = njs_data_view(this);
+    if (njs_slow_path(njs_is_detached_buffer(view->buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
 
     if (njs_typed_array_element_size(type) + index > view->byte_length) {
         njs_range_error(vm, "index %uL is outside the bound of the buffer",

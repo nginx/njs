@@ -807,6 +807,11 @@ njs_typed_array_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 {
     njs_object_prop_t  *prop;
 
+    if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
     if (index >= njs_typed_array_length(array)) {
         return NJS_DECLINED;
     }
@@ -958,6 +963,11 @@ njs_value_property(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
 
         if (njs_is_typed_array(value)) {
             tarray = njs_typed_array(value);
+
+            if (njs_slow_path(njs_is_detached_buffer(tarray->buffer))) {
+                njs_type_error(vm, "detached buffer");
+                return NJS_ERROR;
+            }
 
             if (njs_slow_path(index >= njs_typed_array_length(tarray))) {
                 goto slow_path;

@@ -14,10 +14,12 @@ default: "$NJS_CC_OPT"
 default: "$NJS_LD_OPT"
   --ar=FILE                 set static linking program, default: "$AR"
 
+  --address-sanitizer=YES   enables build with address sanitizer, \
+default: "$NJS_ADDRESS_SANITIZER"
   --debug=YES               enables additional runtime checks, \
 default: "$NJS_DEBUG"
   --debug-memory=YES        enables memory alloc debug, \
 default: "$NJS_DEBUG_MEMORY"
-  --address-sanitizer=YES   enables build with address sanitizer, \
-default: "$NJS_ADDRESS_SANITIZER"
+  --test262=YES             enables test262 extentions, \
+default: "$NJS_TEST262"
 END

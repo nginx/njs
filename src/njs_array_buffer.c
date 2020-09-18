@@ -204,6 +204,10 @@ njs_array_buffer_prototype_byte_length(njs_vm_t *vm, njs_value_t *args,
     }
 
     array = njs_array_buffer(value);
+    if (njs_slow_path(njs_is_detached_buffer(array))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
 
     njs_set_number(&vm->retval, array->size);
 

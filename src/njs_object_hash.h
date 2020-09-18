@@ -301,6 +301,14 @@
         'n'), 'j'), 's')
 
 
+#define NJS_262_HASH                                                          \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(                                                         \
+    njs_djb_hash_add(NJS_DJB_HASH_INIT,                                       \
+        '$'), '2'), '6'), '2')
+
+
 #define NJS_NUMBER_HASH                                                       \
     njs_djb_hash_add(                                                         \
     njs_djb_hash_add(                                                         \

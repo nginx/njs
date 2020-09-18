@@ -441,6 +441,11 @@ njs_buffer_from_typed_array(njs_vm_t *vm, njs_value_t *value)
     njs_typed_array_t  *buffer, *array;
 
     array = njs_typed_array(value);
+    if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
     length = njs_typed_array_length(array);
 
     buffer = njs_buffer_alloc_array(vm, length, 0);
@@ -597,9 +602,9 @@ njs_buffer_array_range(njs_vm_t *vm, njs_typed_array_t *array,
     const njs_value_t *start, const njs_value_t *end, const char *name,
     uint8_t **out_start, uint8_t **out_end)
 {
-    uint8_t    *u8;
-    uint64_t   num_start, num_end;
-    njs_int_t  ret;
+    uint64_t            num_start, num_end;
+    njs_int_t           ret;
+    njs_array_buffer_t  *buffer;
 
     num_start = 0;
 
@@ -633,9 +638,14 @@ njs_buffer_array_range(njs_vm_t *vm, njs_typed_array_t *array,
         num_end = num_start;
     }
 
-    u8 = njs_typed_array_buffer(array)->u.u8;
-    *out_start = &u8[array->offset + num_start];
-    *out_end = &u8[array->offset + num_end];
+    buffer = njs_typed_array_buffer(array);
+    if (njs_slow_path(njs_is_detached_buffer(buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
+    *out_start = &buffer->u.u8[array->offset + num_start];
+    *out_end = &buffer->u.u8[array->offset + num_end];
 
     return NJS_OK;
 }
@@ -746,6 +756,10 @@ njs_buffer_concat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             }
 
             arr = njs_typed_array(value);
+            if (njs_slow_path(njs_is_detached_buffer(arr->buffer))) {
+                njs_type_error(vm, "detached buffer");
+                return NJS_ERROR;
+            }
 
             if (njs_slow_path((SIZE_MAX - len) < arr->byte_length)) {
                 njs_type_error(vm, "Invalid length");
@@ -770,6 +784,10 @@ njs_buffer_concat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             }
 
             arr = njs_typed_array(&retval);
+            if (njs_slow_path(njs_is_detached_buffer(arr->buffer))) {
+                njs_type_error(vm, "detached buffer");
+                return NJS_ERROR;
+            }
 
             if (njs_slow_path((SIZE_MAX - len) < arr->byte_length)) {
                 njs_type_error(vm, "Invalid length");
@@ -947,6 +965,11 @@ njs_buffer_prototype_read_int(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 #endif
 
     buffer = array->buffer;
+    if (njs_slow_path(njs_is_detached_buffer(buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
     u8 = &buffer->u.u8[index + array->offset];
 
     switch (size) {
@@ -1127,6 +1150,11 @@ njs_buffer_prototype_read_float(njs_vm_t *vm, njs_value_t *args,
 #endif
 
     buffer = array->buffer;
+    if (njs_slow_path(njs_is_detached_buffer(buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
     u8 = &buffer->u.u8[index + array->offset];
 
     switch (size) {
@@ -1657,6 +1685,11 @@ njs_buffer_fill(njs_vm_t *vm, njs_typed_array_t *array, njs_value_t *value,
             return ret;
         }
 
+        if (njs_slow_path(njs_is_detached_buffer(buffer))) {
+            njs_type_error(vm, "detached buffer");
+            return NJS_ERROR;
+        }
+
         memset(start, njs_number_to_uint32(num) & 0xff, end - offset);
     }
 
@@ -1783,6 +1816,11 @@ njs_buffer_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         end = njs_min(end, array->byte_length);
     }
 
+    if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
     str.start = &njs_typed_array_buffer(array)->u.u8[array->offset + start];
     str.length = end - start;
 
@@ -1890,12 +1928,14 @@ static njs_int_t
 njs_buffer_prototype_index_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t last)
 {
-    uint8_t                      *u8, byte;
+    uint8_t                      byte;
     int64_t                      from, to, increment, length, offset, index, i;
     njs_int_t                    ret;
     njs_str_t                    str;
     njs_value_t                  *this, *value, *value_from, *enc, dst;
+    const uint8_t                *u8;
     njs_typed_array_t            *array, *src;
+    njs_array_buffer_t           *buffer;
     const njs_buffer_encoding_t  *encoding;
 
     encoding = njs_buffer_utf8_encoding();
@@ -1977,7 +2017,13 @@ njs_buffer_prototype_index_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    u8 = &njs_typed_array_buffer(array)->u.u8[0];
+    buffer = njs_typed_array_buffer(array);
+    if (njs_slow_path(njs_is_detached_buffer(buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
+    u8 = &buffer->u.u8[0];
     offset = array->offset;
 
     switch (value->type) {
@@ -1995,6 +2041,11 @@ njs_buffer_prototype_index_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             src = njs_typed_array(value);
             if (njs_slow_path(src->type != NJS_OBJ_TYPE_UINT8_ARRAY)) {
                 goto fail;
+            }
+
+            if (njs_slow_path(njs_is_detached_buffer(src->buffer))) {
+                njs_type_error(vm, "detached buffer");
+                return NJS_ERROR;
             }
 
             str.start = &src->buffer->u.u8[src->offset];
@@ -2152,13 +2203,14 @@ static njs_int_t
 njs_buffer_prototype_to_json(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    u_char             *p, *end;
-    njs_int_t          ret;
-    njs_value_t        *value;
-    njs_value_t        object, array;
-    njs_array_t        *arr;
-    njs_object_t       *obj;
-    njs_typed_array_t  *ta;
+    u_char              *p, *end;
+    njs_int_t           ret;
+    njs_value_t         *value;
+    njs_value_t         object, array;
+    njs_array_t         *arr;
+    njs_object_t        *obj;
+    njs_typed_array_t   *ta;
+    njs_array_buffer_t  *buffer;
 
     static const njs_value_t  string_buffer = njs_string("Buffer");
 
@@ -2185,7 +2237,13 @@ njs_buffer_prototype_to_json(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    p = &njs_typed_array_buffer(ta)->u.u8[ta->offset];
+    buffer = njs_typed_array_buffer(ta);
+    if (njs_slow_path(njs_is_detached_buffer(buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
+    p = &buffer->u.u8[ta->offset];
     end = p + ta->byte_length;
     value = arr->start;
 
