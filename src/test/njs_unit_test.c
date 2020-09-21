@@ -12,9 +12,9 @@
 #define NJS_HAVE_LARGE_STACK (!NJS_HAVE_ADDRESS_SANITIZER && !NJS_HAVE_MEMORY_SANITIZER)
 
 #ifdef NJS_HAVE_LITTLE_ENDIAN
-#define njs_evar(little, big) (little)
+#define njs_evar(little, big) little
 #else
-#define njs_evar(little, big) (big)
+#define njs_evar(little, big) big
 #endif
 
 
@@ -18345,14 +18345,14 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var de = new TextDecoder();"
               "var buf = new Uint32Array([1,2,3]).buffer;"
               "var en = new TextEncoder();"
-              "njs.dump(en.encode(de.decode(buf)))"),
-      njs_str("Uint8Array [1,0,0,0,2,0,0,0,3,0,0,0]") },
+              "njs.dump(new Uint32Array(en.encode(de.decode(buf)).buffer))"),
+      njs_str("Uint32Array [1,2,3]") },
 
     { njs_str("var de = new TextDecoder();"
               "var buf = new Uint32Array([1,2,3]).subarray(1,2);"
               "var en = new TextEncoder();"
-              "njs.dump(en.encode(de.decode(buf)))"),
-      njs_str("Uint8Array [2,0,0,0]") },
+              "njs.dump(new Uint32Array(en.encode(de.decode(buf)).buffer))"),
+      njs_str("Uint32Array [2]") },
 
     /* Buffer */
 
@@ -18408,21 +18408,12 @@ static njs_unit_test_t  njs_test[] =
               "var buf = Buffer.alloc(8, foo); buf"),
       njs_str("XXXXXXXX") },
 
-    { njs_str("var foo = new Uint16Array(10).fill(0xB1CE);"
-              "var buf = Buffer.alloc(10, foo); buf"),
-      njs_str("ααααα") },
-
-    { njs_str("var foo = new Uint16Array(20).fill(0xB1CE);"
-              "var buf = Buffer.alloc(10, foo); buf"),
-      njs_str("ααααα") },
-
-    { njs_str("var foo = new Uint16Array(2).fill(0xB1CE);"
-              "var buf = Buffer.alloc(10, foo); buf"),
-      njs_str("ααααα") },
-
-    { njs_str("var foo = new Uint16Array(2).fill(0xB1CE);"
-              "var buf = Buffer.alloc(10, foo); buf"),
-      njs_str("ααααα") },
+    { njs_str("[1,2,10,20].every(v => {"
+              "     var src = new Uint16Array(v).fill(0xB1CE);"
+              "     var buf = Buffer.alloc(10, src);"
+              "     return buf.toString() === " njs_evar("'ααααα'", "'�αααα�'")
+              "})"),
+      njs_str("true") },
 
     { njs_str("var foo = Buffer.alloc(10, 'α');"
               "var buf = Buffer.alloc(4, foo); buf"),
@@ -18482,11 +18473,11 @@ static njs_unit_test_t  njs_test[] =
               "var buf = Buffer.from(foo.buffer);"
               "foo[1] = 6000;"
               "njs.dump(buf)"),
-      njs_str("Buffer [136,19,112,23]") },
+      njs_str("Buffer [" njs_evar("136,19,112,23", "19,136,23,112") "]") },
 
     { njs_str("var foo = new Uint16Array(2).fill(950);"
               "var buf = Buffer.from(foo.buffer, 1); njs.dump(buf)"),
-      njs_str("Buffer [3,182,3]") },
+      njs_str("Buffer [" njs_evar("3,182,3", "182,3,182") "]") },
 
     { njs_str("var foo = new Uint16Array(2).fill(950);"
               "var buf = Buffer.from(foo.buffer, -1); njs.dump(buf)"),
@@ -18498,7 +18489,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var foo = new Uint16Array(2).fill(950);"
               "var buf = Buffer.from(foo.buffer, 2, 1); njs.dump(buf)"),
-      njs_str("Buffer [182]") },
+      njs_str("Buffer [" njs_evar("182", "3") "]") },
 
     { njs_str("var foo = new Uint16Array(2).fill(950);"
               "var buf = Buffer.from(foo.buffer, 2, -1); njs.dump(buf)"),
@@ -18514,11 +18505,11 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var foo = new Uint16Array(2).fill(950);"
               "var buf = Buffer.from(foo.buffer, 2, 2); njs.dump(buf)"),
-      njs_str("Buffer [182,3]") },
+      njs_str("Buffer [" njs_evar("182,3", "3,182") "]") },
 
     { njs_str("var foo = new Uint16Array(2).fill(950);"
               "var buf = Buffer.from(foo.buffer, '2', '2'); njs.dump(buf)"),
-      njs_str("Buffer [182,3]") },
+      njs_str("Buffer [" njs_evar("182,3", "3,182") "]") },
 
     { njs_str("var foo = new Uint32Array(1).fill(0xF1F2F3F4);"
               "var buf = Buffer.from(foo); njs.dump(buf)"),
