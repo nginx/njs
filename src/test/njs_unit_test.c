@@ -17314,49 +17314,77 @@ static njs_unit_test_t  njs_test[] =
               "h.constructor.name"),
       njs_str("Hash") },
 
-    { njs_str("var h = require('crypto').createHash('md5');"
-                 "h.update('AB').digest('hex')"),
-      njs_str("b86fc6b051f63d73de262d4c34e3a0a9") },
+    { njs_str("var hash = require('crypto').createHash.bind(undefined, 'md5');"
+              "['hex', 'base64', 'base64url'].map(e => {"
+              "   var h = hash().update('AB').digest().toString(e);"
+              "   var h2 = hash().update(Buffer.from('XABX').subarray(1,3)).digest(e);"
+              "   var h3 = hash().update('A').update('B').digest(e);"
+              "   if (h !== h2) {throw new Error(`digest().toString($e):$h != digest($e):$h2`)};"
+              "   if (h !== h3) {throw new Error(`digest().toString($e):$h != update('A').update('B').digest($e):$h3`)};"
+              "   return h;"
+              "})"),
+      njs_str("b86fc6b051f63d73de262d4c34e3a0a9,"
+              "uG/GsFH2PXPeJi1MNOOgqQ==,"
+              "uG_GsFH2PXPeJi1MNOOgqQ") },
 
-    { njs_str("var h = require('crypto').createHash('sha1');"
-                 "h.update('A').update('B').digest('hex')"),
-      njs_str("06d945942aa26a61be18c3e22bf19bbca8dd2b5d") },
+    { njs_str("var hash = require('crypto').createHash.bind(undefined, 'sha1');"
+              "['hex', 'base64', 'base64url'].map(e => {"
+              "   var h = hash().update('4142', 'hex').digest().toString(e);"
+              "   var h2 = hash().update(Buffer.from('XABX').subarray(1,3)).digest(e);"
+              "   var h3 = hash().update('A').update('B').digest(e);"
+              "   if (h !== h2) {throw new Error(`digest().toString($e):$h != digest($e):$h2`)};"
+              "   if (h !== h3) {throw new Error(`digest().toString($e):$h != update('A').update('B').digest($e):$h3`)};"
+              "   return h;"
+              "})"),
+      njs_str("06d945942aa26a61be18c3e22bf19bbca8dd2b5d,"
+              "BtlFlCqiamG+GMPiK/GbvKjdK10=,"
+              "BtlFlCqiamG-GMPiK_GbvKjdK10") },
 
-    { njs_str("var h = require('crypto').createHash('sha1');"
-                 "h.update('AB').digest('hex')"),
-      njs_str("06d945942aa26a61be18c3e22bf19bbca8dd2b5d") },
+    { njs_str("var hash = require('crypto').createHash.bind(undefined, 'sha1');"
+              "['hex', 'base64', 'base64url'].every(e => {"
+              "   var h = hash().digest(e);"
+              "   var h2 = hash().update('').digest(e);"
+              "   if (h !== h2) {throw new Error(`digest($e):$h != update('').digest($e):$h2`)};"
+              "   return true;"
+              "})"),
+      njs_str("true") },
 
-    { njs_str("var h = require('crypto').createHash('sha1');"
-                 "h.update('AB').digest().toString('hex')"),
-      njs_str("06d945942aa26a61be18c3e22bf19bbca8dd2b5d") },
+    { njs_str("var hash = require('crypto').createHash.bind(undefined, 'sha1');"
+              "["
+              " ['AB'],"
+              " ['4142', 'hex'],"
+              " ['QUI=', 'base64'],"
+              " ['QUI', 'base64url']"
+              "].every(args => {"
+              "        return hash().update(args[0], args[1]).digest('hex') === '06d945942aa26a61be18c3e22bf19bbca8dd2b5d';"
+              "})"),
+      njs_str("true") },
 
-    { njs_str("var h = require('crypto').createHash('sha1');"
-                 "h.update('AB').digest('base64')"),
-      njs_str("BtlFlCqiamG+GMPiK/GbvKjdK10=") },
+    { njs_str("var hash = require('crypto').createHash.bind(undefined, 'sha256');"
+              "['hex', 'base64', 'base64url'].map(e => {"
+              "   var h = hash().update('AB').digest().toString(e);"
+              "   var h2 = hash().update(Buffer.from('XABX').subarray(1,3)).digest(e);"
+              "   var h3 = hash().update('A').update('B').digest(e);"
+              "   if (h !== h2) {throw new Error(`digest().toString($e):$h != digest($e):$h2`)};"
+              "   if (h !== h3) {throw new Error(`digest().toString($e):$h != update('A').update('B').digest($e):$h3`)};"
+              "   return h;"
+              "})"),
+      njs_str("38164fbd17603d73f696b8b4d72664d735bb6a7c88577687fd2ae33fd6964153,"
+              "OBZPvRdgPXP2lri01yZk1zW7anyIV3aH/SrjP9aWQVM=,"
+              "OBZPvRdgPXP2lri01yZk1zW7anyIV3aH_SrjP9aWQVM") },
 
-    { njs_str("var h = require('crypto').createHash('sha1');"
-                 "h.update('AB').digest('base64url')"),
-      njs_str("BtlFlCqiamG-GMPiK_GbvKjdK10") },
-
-    { njs_str("var h = require('crypto').createHash('sha1');"
-                 "h.update('AB').digest().toString('base64')"),
-      njs_str("BtlFlCqiamG+GMPiK/GbvKjdK10=") },
-
-    { njs_str("var h = require('crypto').createHash('sha1');"
-                 "h.update('abc'.repeat(100)).digest('hex')"),
-      njs_str("c95466320eaae6d19ee314ae4f135b12d45ced9a") },
-
-    { njs_str("var h = require('crypto').createHash('sha256');"
-                 "h.update('A').update('B').digest('hex')"),
-      njs_str("38164fbd17603d73f696b8b4d72664d735bb6a7c88577687fd2ae33fd6964153") },
-
-    { njs_str("var h = require('crypto').createHash('sha256');"
-                 "h.update('AB').digest('hex')"),
-      njs_str("38164fbd17603d73f696b8b4d72664d735bb6a7c88577687fd2ae33fd6964153") },
-
-    { njs_str("var h = require('crypto').createHash('sha256');"
-                 "h.update('abc'.repeat(100)).digest('hex')"),
-      njs_str("d9f5aeb06abebb3be3f38adec9a2e3b94228d52193be923eb4e24c9b56ee0930") },
+    { njs_str("var hash = require('crypto').createHash;"
+              "njs.dump(['', 'abc'.repeat(100)].map(v => {"
+              "    return ['md5', 'sha1', 'sha256'].map(h => {"
+              "        return hash(h).update(v).digest('hex');"
+              "     })"
+              "}))"),
+      njs_str("[['d41d8cd98f00b204e9800998ecf8427e',"
+              "'da39a3ee5e6b4b0d3255bfef95601890afd80709',"
+              "'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'],"
+              "['f571117acbd8153c8dc3c81b8817773a',"
+              "'c95466320eaae6d19ee314ae4f135b12d45ced9a',"
+              "'d9f5aeb06abebb3be3f38adec9a2e3b94228d52193be923eb4e24c9b56ee0930']]") },
 
     { njs_str("var h = require('crypto').createHash()"),
       njs_str("TypeError: algorithm must be a string") },
@@ -17368,23 +17396,26 @@ static njs_unit_test_t  njs_test[] =
       njs_str("TypeError: not supported algorithm: \"sha512\"") },
 
     { njs_str("var h = require('crypto').createHash('sha1');"
-                 "h.update()"),
-      njs_str("TypeError: data must be a string") },
+              "h.update()"),
+      njs_str("TypeError: data argument \"undefined\" is not a string or Buffer-like object") },
 
     { njs_str("var h = require('crypto').createHash('sha1');"
-                 "h.update({})"),
-      njs_str("TypeError: data must be a string") },
+              "h.update({})"),
+      njs_str("TypeError: data argument \"object\" is not a string or Buffer-like object") },
 
     { njs_str("var h = require('crypto').createHash('sha1');"
-                 "h.update('A').digest('latin1')"),
+              "h.update('A').digest('latin1')"),
       njs_str("TypeError: Unknown digest encoding: \"latin1\"") },
 
+    { njs_str("require('crypto').createHash('sha1').digest() instanceof Buffer"),
+      njs_str("true") },
+
     { njs_str("var h = require('crypto').createHash('sha1');"
-                 "h.update('A').digest('hex'); h.digest('hex')"),
+              "h.update('A').digest('hex'); h.digest('hex')"),
       njs_str("Error: Digest already called") },
 
     { njs_str("var h = require('crypto').createHash('sha1');"
-                 "h.update('A').digest('hex'); h.update('B')"),
+              "h.update('A').digest('hex'); h.update('B')"),
       njs_str("Error: Digest already called") },
 
     { njs_str("typeof require('crypto').createHash('md5')"),
@@ -17396,17 +17427,68 @@ static njs_unit_test_t  njs_test[] =
               "[Object.prototype.toString.call(h), njs.dump(h),h]"),
       njs_str("[object Hmac],Hmac {},[object Hmac]") },
 
-    { njs_str("var h = require('crypto').createHmac('md5', '');"
-                 "h.digest('hex')"),
-      njs_str("74e6f7298a9c2d168935f58c001bad88") },
+    { njs_str("var hmac = require('crypto').createHmac.bind(undefined, 'md5', '');"
+              "['hex', 'base64', 'base64url'].map(e => {"
+              "   var h = hmac().update('AB').digest().toString(e);"
+              "   var h2 = hmac().update(Buffer.from('XABX').subarray(1,3)).digest(e);"
+              "   var h3 = hmac().update('A').update('B').digest(e);"
+              "   if (h !== h2) {throw new Error(`digest().toString($e):$h != digest($e):$h2`)};"
+              "   if (h !== h3) {throw new Error(`digest().toString($e):$h != update('A').update('B').digest($e):$h3`)};"
+              "   return h;"
+              "})"),
+      njs_str("9e0e9e545ef63d41dfb653daecf8ebc7,"
+              "ng6eVF72PUHftlPa7Pjrxw==,"
+              "ng6eVF72PUHftlPa7Pjrxw") },
 
-    { njs_str("var h = require('crypto').createHmac('sha1', '');"
-                 "h.digest('hex')"),
-      njs_str("fbdb1d1b18aa6c08324b7d64b71fb76370690e1d") },
+    { njs_str("var hmac = require('crypto').createHmac.bind(undefined, 'sha1', '');"
+              "['hex', 'base64', 'base64url'].map(e => {"
+              "   var h = hmac().update('AB').digest().toString(e);"
+              "   var h2 = hmac().update(Buffer.from('XABX').subarray(1,3)).digest(e);"
+              "   var h3 = hmac().update('A').update('B').digest(e);"
+              "   if (h !== h2) {throw new Error(`digest().toString($e):$h != digest($e):$h2`)};"
+              "   if (h !== h3) {throw new Error(`digest().toString($e):$h != update('A').update('B').digest($e):$h3`)};"
+              "   return h;"
+              "})"),
+      njs_str("d32c0b6637cc2dfe4670f3fe48ef4434123c4810,"
+              "0ywLZjfMLf5GcPP+SO9ENBI8SBA=,"
+              "0ywLZjfMLf5GcPP-SO9ENBI8SBA") },
 
-    { njs_str("var h = require('crypto').createHmac('sha1', '');"
-                 "h.digest().toString('hex')"),
-      njs_str("fbdb1d1b18aa6c08324b7d64b71fb76370690e1d") },
+    { njs_str("var hash = require('crypto').createHmac.bind(undefined, 'sha1', '');"
+              "["
+              " ['AB'],"
+              " ['4142', 'hex'],"
+              " ['QUI=', 'base64'],"
+              " ['QUI', 'base64url']"
+              "].every(args => {"
+              "        return hash().update(args[0], args[1]).digest('hex') === 'd32c0b6637cc2dfe4670f3fe48ef4434123c4810';"
+              "})"),
+      njs_str("true") },
+
+    { njs_str("var hmac = require('crypto').createHmac.bind(undefined, 'sha256', '');"
+              "['hex', 'base64', 'base64url'].map(e => {"
+              "   var h = hmac().update('AB').digest().toString(e);"
+              "   var h2 = hmac().update(Buffer.from('AB')).digest(e);"
+              "   var h3 = hmac().update('A').update('B').digest(e);"
+              "   if (h !== h2) {throw new Error(`digest().toString($e):$h != digest($e):$h2`)};"
+              "   if (h !== h3) {throw new Error(`digest().toString($e):$h != update('A').update('B').digest($e):$h3`)};"
+              "   return h;"
+              "})"),
+      njs_str("d53400095496267cf02e5dbd4b0bf9fbfb5f36f311ea7d9809af5487421743e3,"
+              "1TQACVSWJnzwLl29Swv5+/tfNvMR6n2YCa9Uh0IXQ+M=,"
+              "1TQACVSWJnzwLl29Swv5-_tfNvMR6n2YCa9Uh0IXQ-M") },
+
+    { njs_str("var hmac = require('crypto').createHmac;"
+              "njs.dump(['', 'abc'.repeat(100)].map(v => {"
+              "    return ['md5', 'sha1', 'sha256'].map(h => {"
+              "        return hmac(h, Buffer.from('secret')).update(v).digest('hex');"
+              "     })"
+              "}))"),
+      njs_str("[['5c8db03f04cec0f43bcb060023914190',"
+              "'25af6174a0fcecc4d346680a72b7ce644b9a88e8',"
+              "'f9e66e179b6747ae54108f82f8ade8b3c25d76fd30afde6c395822c530196169'],"
+              "['91eb74a225cdd3bbfccc34396c6e3ac5',"
+              "'0aac71e3a813a7acc4a809cfdedb2ecba04ffc5e',"
+              "'8660d2d51d6f20f61d5aadfb6c43df7fd05fc2fc4967d8aec1846f3d9ec03987']]") },
 
     { njs_str("var h = require('crypto').createHmac('sha1', '');"
               "var Hmac = h.constructor; "
@@ -17417,77 +17499,16 @@ static njs_unit_test_t  njs_test[] =
               "h.constructor.name"),
       njs_str("Hmac") },
 
-    { njs_str("var h = require('crypto').createHmac('md5', 'secret key');"
-                 "h.update('AB').digest('hex')"),
-      njs_str("9c72728915eb26620a5caeafd0063b29") },
-
-    { njs_str("var h = require('crypto').createHmac('sha1', 'secret key');"
-                 "h.update('A').update('B').digest('hex')"),
-      njs_str("adc60e03459c4bae7cf4eb6d9730003e9490b22f") },
-
-    { njs_str("var h = require('crypto').createHmac('sha1', 'secret key');"
-                 "h.update('AB').digest('hex')"),
-      njs_str("adc60e03459c4bae7cf4eb6d9730003e9490b22f") },
-
-    { njs_str("var h = require('crypto').createHmac('sha1', 'secret key');"
-                 "h.update('AB').digest('base64')"),
-      njs_str("rcYOA0WcS6589OttlzAAPpSQsi8=") },
-
-    { njs_str("var h = require('crypto').createHmac('sha1', 'secret key');"
-                 "h.update('AB').digest('base64url')"),
-      njs_str("rcYOA0WcS6589OttlzAAPpSQsi8") },
-
-    { njs_str("var h = require('crypto').createHmac('sha1', 'secret key');"
-                 "h.update('AB').digest().toString('base64')"),
-      njs_str("rcYOA0WcS6589OttlzAAPpSQsi8=") },
-
-    { njs_str("var h = require('crypto').createHmac('sha1', 'secret key');"
-                 "h.update('abc'.repeat(100)).digest('hex')"),
-      njs_str("b105ad6921e4c54d3fa0a9ec3f7f0ee9bd2c659d") },
-
-    { njs_str("var h = require('crypto').createHmac('sha1', 'A'.repeat(40));"
-                 "h.update('AB').digest('hex')"),
-      njs_str("0b84f78ca5275d76d4b7dafb5845ee2b6a79c4c2") },
-
-    { njs_str("var h = require('crypto').createHmac('sha1', 'A'.repeat(64));"
-                 "h.update('AB').digest('hex')"),
-      njs_str("400ce530816c6b3247e2959f3982a12aaf58c0c9") },
-
-    { njs_str("var h = require('crypto').createHmac('sha1', 'A'.repeat(100));"
-                 "h.update('AB').digest('hex')"),
-      njs_str("670e7cdebae6392797e000e79e51d3b6589d8fad") },
-
-    { njs_str("var h = require('crypto').createHmac('sha256', '');"
-                 "h.digest('hex')"),
-      njs_str("b613679a0814d9ec772f95d778c35fc5ff1697c493715653c6c712144292c5ad") },
-
-    { njs_str("var h = require('crypto').createHmac('sha256', 'secret key');"
-                 "h.update('A').update('B').digest('hex')"),
-      njs_str("46085184b3b45a13d838bf71a0ce03675dab30931e0f1f68fa636ea65fdb286d") },
-
-    { njs_str("var h = require('crypto').createHmac('sha256', 'secret key');"
-                 "h.update('AB').digest('hex')"),
-      njs_str("46085184b3b45a13d838bf71a0ce03675dab30931e0f1f68fa636ea65fdb286d") },
+    { njs_str("require('crypto').createHmac('sha1', '').digest() instanceof Buffer"),
+      njs_str("true") },
 
     { njs_str("var h = require('crypto').createHmac('sha256', 'A'.repeat(64));"
-                 "h.update('AB').digest('hex')"),
+              "h.update('AB').digest('hex')"),
       njs_str("ee9dce43b12eb3e865614ad9c1a8d4fad4b6eac2b64647bd24cd192888d3f367") },
 
     { njs_str("var h = require('crypto').createHmac('sha256', 'A'.repeat(100));"
-                 "h.update('AB').digest('hex')"),
+              "h.update('AB').digest('hex')"),
       njs_str("5647b6c429701ff512f0f18232b4507065d2376ca8899a816a0a6e721bf8ddcc") },
-
-    { njs_str("var h = require('crypto').createHmac('md5', 'secret key');"
-                 "h.update('abc'.repeat(100)).digest('hex')"),
-      njs_str("5dd706af43536f8c9c83e7ea55b1a5a2") },
-
-    { njs_str("var h = require('crypto').createHmac('sha1', 'secret key');"
-                 "h.update('abc'.repeat(100)).digest('hex')"),
-      njs_str("b105ad6921e4c54d3fa0a9ec3f7f0ee9bd2c659d") },
-
-    { njs_str("var h = require('crypto').createHmac('sha256', 'secret key');"
-                 "h.update('abc'.repeat(100)).digest('hex')"),
-      njs_str("f6550d398ce350ee8d94a0f44f2cf6b9bc8d316ae4625fb4434f22980a276bac") },
 
     { njs_str("var h = require('crypto').createHmac()"),
       njs_str("TypeError: algorithm must be a string") },
@@ -17499,14 +17520,14 @@ static njs_unit_test_t  njs_test[] =
       njs_str("TypeError: not supported algorithm: \"sha512\"") },
 
     { njs_str("var h = require('crypto').createHmac('sha1', [])"),
-      njs_str("TypeError: key must be a string") },
+      njs_str("TypeError: key argument \"array\" is not a string or Buffer-like object") },
 
     { njs_str("var h = require('crypto').createHmac('sha1', 'secret key');"
-                 "h.update('A').digest('hex'); h.digest('hex')"),
+              "h.update('A').digest('hex'); h.digest('hex')"),
       njs_str("Error: Digest already called") },
 
     { njs_str("var h = require('crypto').createHmac('sha1', 'secret key');"
-                 "h.update('A').digest('hex'); h.update('B')"),
+              "h.update('A').digest('hex'); h.update('B')"),
       njs_str("Error: Digest already called") },
 
     { njs_str("typeof require('crypto').createHmac('md5', 'a')"),
@@ -20075,18 +20096,18 @@ static njs_unit_test_t  njs_shell_test[] =
 
     { njs_str("var h = require('crypto').createHash('sha1')" ENTER
               "h.update([])" ENTER),
-      njs_str("TypeError: data must be a string\n"
+      njs_str("TypeError: data argument \"array\" is not a string or Buffer-like object\n"
               "    at Hash.prototype.update (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("require('crypto').createHmac('sha1', [])" ENTER),
-      njs_str("TypeError: key must be a string\n"
+      njs_str("TypeError: key argument \"array\" is not a string or Buffer-like object\n"
               "    at crypto.createHmac (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("var h = require('crypto').createHmac('sha1', 'secret')" ENTER
               "h.update([])" ENTER),
-      njs_str("TypeError: data must be a string\n"
+      njs_str("TypeError: data argument \"array\" is not a string or Buffer-like object\n"
               "    at Hmac.prototype.update (native)\n"
               "    at main (:1)\n") },
 
