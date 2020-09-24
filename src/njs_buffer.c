@@ -55,8 +55,6 @@ static njs_buffer_encoding_t  njs_buffer_encodings[] =
     },
 
     { njs_null_str, 0, 0, 0 }
-
-#define njs_buffer_utf8_encoding()  &njs_buffer_encodings[0]
 };
 
 
@@ -517,7 +515,7 @@ njs_buffer_byte_length(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     size_t                       size;
-    njs_value_t                  *value, *enc;
+    njs_value_t                  *value;
     const njs_buffer_encoding_t  *encoding;
 
     value = njs_arg(args, nargs, 1);
@@ -536,14 +534,9 @@ njs_buffer_byte_length(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_OK;
 
     case NJS_STRING:
-        enc = njs_arg(args, nargs, 2);
-        encoding = njs_buffer_utf8_encoding();
-
-        if (njs_is_defined(enc)) {
-            encoding = njs_buffer_encoding(vm, enc);
-            if (njs_slow_path(encoding == NULL)) {
-                return NJS_ERROR;
-            }
+        encoding = njs_buffer_encoding(vm, njs_arg(args, nargs, 2));
+        if (njs_slow_path(encoding == NULL)) {
+            return NJS_ERROR;
         }
 
         size = njs_buffer_decode_string_length(value, encoding);
@@ -1452,7 +1445,6 @@ njs_buffer_prototype_write(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     offset = 0;
     length = array->byte_length;
-    encoding = njs_buffer_utf8_encoding();
 
     if (njs_slow_path(!njs_is_string(value))) {
         njs_type_error(vm, "first argument must be a string");
@@ -1483,18 +1475,11 @@ njs_buffer_prototype_write(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    if (njs_is_defined(enc)) {
-        if (njs_slow_path(!njs_is_string(enc))) {
-            njs_type_error(vm, "\"encoding\" argument must be of type string");
-            return NJS_ERROR;
-        }
+encoding:
 
-    encoding:
-
-        encoding = njs_buffer_encoding(vm, enc);
-        if (njs_slow_path(encoding == NULL)) {
-            return NJS_ERROR;
-        }
+    encoding = njs_buffer_encoding(vm, enc);
+    if (njs_slow_path(encoding == NULL)) {
+        return NJS_ERROR;
     }
 
     buffer = njs_typed_array_writable(vm, array);
@@ -1774,7 +1759,6 @@ njs_buffer_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
 
     start = 0;
     end = array->byte_length;
-    encoding = njs_buffer_utf8_encoding();
 
     encoding = njs_buffer_encoding(vm,  njs_arg(args, nargs, 1));
     if (njs_slow_path(encoding == NULL)) {
@@ -1921,8 +1905,6 @@ njs_buffer_prototype_index_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_array_buffer_t           *buffer;
     const njs_buffer_encoding_t  *encoding;
 
-    encoding = njs_buffer_utf8_encoding();
-
     this = njs_argument(args, 0);
     value = njs_arg(args, nargs, 1);
     value_from = njs_arg(args, nargs, 2);
@@ -1990,14 +1972,11 @@ njs_buffer_prototype_index_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    if (njs_is_defined(enc)) {
+encoding:
 
-    encoding:
-
-        encoding = njs_buffer_encoding(vm, enc);
-        if (njs_slow_path(encoding == NULL)) {
-            return NJS_ERROR;
-        }
+    encoding = njs_buffer_encoding(vm, enc);
+    if (njs_slow_path(encoding == NULL)) {
+        return NJS_ERROR;
     }
 
     buffer = njs_typed_array_buffer(array);
