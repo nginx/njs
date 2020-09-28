@@ -19656,8 +19656,11 @@ static njs_unit_test_t  njs_externals_test[] =
               "var s = (new TextDecoder()).decode(u16); [s, s.length]"),
       njs_str("ЙИЗЖЁЕДГВБА,11") },
 
-    { njs_str("$r.buffer.sort().slice(0,3)"),
+    { njs_str("new Uint8Array($r.buffer.sort().slice(0,3))"),
       njs_str("129,144,145") },
+
+    { njs_str("$r.buffer instanceof Buffer"),
+      njs_str("true") },
 };
 
 static njs_unit_test_t  njs_shared_test[] =

@@ -97,7 +97,7 @@ njs_buffer_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
 
     buffer = (njs_array_buffer_t *) &array[1];
 
-    proto = &vm->prototypes[NJS_OBJ_TYPE_BUFFER].object;
+    proto = &vm->prototypes[NJS_OBJ_TYPE_ARRAY_BUFFER].object;
 
     njs_lvlhsh_init(&buffer->object.hash);
     njs_lvlhsh_init(&buffer->object.shared_hash);
@@ -111,10 +111,12 @@ njs_buffer_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     buffer->u.data = (void *) start;
     buffer->size = size;
 
+    proto = &vm->prototypes[NJS_OBJ_TYPE_BUFFER].object;
+
     array->type = NJS_OBJ_TYPE_UINT8_ARRAY;
     njs_lvlhsh_init(&array->object.hash);
     njs_lvlhsh_init(&array->object.shared_hash);
-    array->object.__proto__ = &vm->prototypes[array->type].object;
+    array->object.__proto__ = proto;
     array->object.slots = NULL;
     array->object.type = NJS_TYPED_ARRAY;
     array->object.shared = 0;
