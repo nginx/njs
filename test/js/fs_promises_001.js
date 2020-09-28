@@ -45,11 +45,6 @@ Promise.resolve()
     } catch (e) {
         console.log('error 2 ok', e instanceof TypeError)
     }
-    try {
-        return fs.writeFile(fname);
-    } catch (e) {
-        console.log('error 3 ok', e instanceof TypeError)
-    }
 })
 .then((data) => {
     console.log('errors ok');

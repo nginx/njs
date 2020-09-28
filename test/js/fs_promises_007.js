@@ -96,6 +96,16 @@ var testSync = () => new Promise((resolve, reject) => {
             throw new Error('fs.readdirSync - error 6');
         }
 
+        var dir_buffer = fs.readdirSync(dname, {encoding:'buffer'});
+        if (dir_buffer.length != 3 || !(dir_buffer[0] instanceof Buffer)) {
+            throw new Error('fs.readdirSync - error 7');
+        }
+
+        var dir_buffer_types = fs.readdirSync(dname, {encoding:'buffer', withFileTypes: true});
+        if (dir_buffer_types.length != 3 || !(dir_buffer_types[0].name instanceof Buffer)) {
+            throw new Error('fs.readdirSync - error 8');
+        }
+
         resolve();
 
     } catch (e) {
@@ -171,7 +181,7 @@ Promise.resolve()
     console.log('test fs.readdirSync');
 })
 .catch((e) => {
-    console.log('test fs.readdirSync failed', JSON.stringify(e));
+    console.log('test fs.readdirSync failed', e, JSON.stringify(e));
 })
 
 .then(testCallback)
@@ -179,7 +189,7 @@ Promise.resolve()
     console.log('test fs.readdir');
 })
 .catch((e) => {
-    console.log('test fs.readdir failed', JSON.stringify(e));
+    console.log('test fs.readdir failed', e, JSON.stringify(e));
 })
 
 .then(() => {
@@ -227,5 +237,5 @@ Promise.resolve()
     console.log('test fsp.readdir');
 })
 .catch((e) => {
-    console.log('test fsp.readdir failed', JSON.stringify(e));
+    console.log('test fsp.readdir failed', e, JSON.stringify(e));
 });

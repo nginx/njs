@@ -17013,145 +17013,146 @@ static njs_unit_test_t  njs_test[] =
     /* require('fs').readFile() */
 
     { njs_str("var fs = require('fs');"
-                 "fs.readFile()"),
-      njs_str("TypeError: \"path\" must be a string") },
+              "fs.readFile()"),
+      njs_str("TypeError: \"path\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.readFile('/njs_unknown_path')"),
+              "var path = Buffer.from('/broken'); path[3] = 0;"
+              "fs.readFile(path)"),
+      njs_str("TypeError: \"path\" must be a Buffer without null bytes") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.readFile('/njs_unknown_path')"),
       njs_str("TypeError: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.readFile('/njs_unknown_path', 'utf8')"),
+              "fs.readFile('/njs_unknown_path', 'utf8')"),
       njs_str("TypeError: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.readFile('/njs_unknown_path', {flag:'xx'})"),
+              "fs.readFile('/njs_unknown_path', {flag:'xx'})"),
       njs_str("TypeError: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.readFile('/njs_unknown_path', {flag:'xx'}, 1)"),
+              "fs.readFile('/njs_unknown_path', {flag:'xx'}, 1)"),
       njs_str("TypeError: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.readFile('/njs_unknown_path', {flag:'xx'}, function () {})"),
+              "fs.readFile('/njs_unknown_path', {flag:'xx'}, function () {})"),
       njs_str("TypeError: Unknown file open flags: \"xx\"") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.readFile('/njs_unknown_path', {encoding:'ascii'}, function () {})"),
-      njs_str("TypeError: Unknown encoding: \"ascii\"") },
+              "fs.readFile('/njs_unknown_path', {encoding:'ascii'}, function () {})"),
+      njs_str("TypeError: \"ascii\" encoding is not supported") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.readFile('/njs_unknown_path', 'ascii', function () {})"),
-      njs_str("TypeError: Unknown encoding: \"ascii\"") },
+              "fs.readFile('/njs_unknown_path', 'ascii', function () {})"),
+      njs_str("TypeError: \"ascii\" encoding is not supported") },
 
     /* require('fs').readFileSync() */
 
     { njs_str("var fs = require('fs');"
-                 "fs.readFileSync()"),
-      njs_str("TypeError: \"path\" must be a string") },
+              "fs.readFileSync()"),
+      njs_str("TypeError: \"path\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.readFileSync({})"),
-      njs_str("TypeError: \"path\" must be a string") },
+              "fs.readFileSync({})"),
+      njs_str("TypeError: \"path\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.readFileSync('/njs_unknown_path', {flag:'xx'})"),
+              "fs.readFileSync('/njs_unknown_path', {flag:'xx'})"),
       njs_str("TypeError: Unknown file open flags: \"xx\"") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.readFileSync('/njs_unknown_path', {encoding:'ascii'})"),
-      njs_str("TypeError: Unknown encoding: \"ascii\"") },
+              "fs.readFileSync(Buffer.from('/njs_unknown_path'), {encoding:'ascii'})"),
+      njs_str("TypeError: \"ascii\" encoding is not supported") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.readFileSync('/njs_unknown_path', 'ascii')"),
-      njs_str("TypeError: Unknown encoding: \"ascii\"") },
+              "fs.readFileSync('/njs_unknown_path', 'ascii')"),
+      njs_str("TypeError: \"ascii\" encoding is not supported") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.readFileSync('/njs_unknown_path', true)"),
+              "fs.readFileSync('/njs_unknown_path', true)"),
       njs_str("TypeError: Unknown options type: \"boolean\" (a string or object required)") },
 
 
     /* require('fs').writeFile() */
 
     { njs_str("var fs = require('fs');"
-                 "fs.writeFile()"),
-      njs_str("TypeError: \"path\" must be a string") },
+              "fs.writeFile()"),
+      njs_str("TypeError: \"path\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.writeFile({}, '', function () {})"),
-      njs_str("TypeError: \"path\" must be a string") },
+              "fs.writeFile({}, '', function () {})"),
+      njs_str("TypeError: \"path\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.writeFile('/njs_unknown_path')"),
-      njs_str("TypeError: \"data\" must be a string") },
-
-    { njs_str("var fs = require('fs');"
-                 "fs.writeFile('/njs_unknown_path', '')"),
+              "fs.writeFile('/njs_unknown_path')"),
       njs_str("TypeError: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.writeFile('/njs_unknown_path', '', undefined)"),
+              "fs.writeFile('/njs_unknown_path', '')"),
       njs_str("TypeError: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.writeFile('/njs_unknown_path', '', 'utf8')"),
+              "fs.writeFile('/njs_unknown_path', '', undefined)"),
       njs_str("TypeError: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.writeFile('/njs_unknown_path', '', {flag:'xx'}, function () {})"),
+              "fs.writeFile('/njs_unknown_path', '', 'utf8')"),
+      njs_str("TypeError: \"callback\" must be a function") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.writeFile('/njs_unknown_path', '', {flag:'xx'}, function () {})"),
       njs_str("TypeError: Unknown file open flags: \"xx\"") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.writeFile('/njs_unknown_path', '', {encoding:'ascii'}, function () {})"),
-      njs_str("TypeError: Unknown encoding: \"ascii\"") },
+              "fs.writeFile('/njs_unknown_path', '', {encoding:'ascii'}, function () {})"),
+      njs_str("TypeError: \"ascii\" encoding is not supported") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.writeFile('/njs_unknown_path', '', 'ascii', function () {})"),
-      njs_str("TypeError: Unknown encoding: \"ascii\"") },
+              "fs.writeFile('/njs_unknown_path', '', 'ascii', function () {})"),
+      njs_str("TypeError: \"ascii\" encoding is not supported") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.writeFile('/njs_unknown_path', '', true, function () {})"),
+              "fs.writeFile('/njs_unknown_path', '', true, function () {})"),
       njs_str("TypeError: Unknown options type: \"boolean\" (a string or object required)") },
 
     /* require('fs').writeFileSync() */
 
     { njs_str("var fs = require('fs');"
-                 "fs.writeFileSync()"),
-      njs_str("TypeError: \"path\" must be a string") },
+              "fs.writeFileSync()"),
+      njs_str("TypeError: \"path\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.writeFileSync('/njs_unknown_path')"),
-      njs_str("TypeError: \"data\" must be a string") },
+              "fs.writeFileSync({}, '')"),
+      njs_str("TypeError: \"path\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.writeFileSync({}, '')"),
-      njs_str("TypeError: \"path\" must be a string") },
-
-    { njs_str("var fs = require('fs');"
-                 "fs.writeFileSync('/njs_unknown_path', '', {flag:'xx'})"),
+              "fs.writeFileSync('/njs_unknown_path', '', {flag:'xx'})"),
       njs_str("TypeError: Unknown file open flags: \"xx\"") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.writeFileSync('/njs_unknown_path', '', {encoding:'ascii'})"),
-      njs_str("TypeError: Unknown encoding: \"ascii\"") },
+              "fs.writeFileSync('/njs_unknown_path', '', {encoding:'ascii'})"),
+      njs_str("TypeError: \"ascii\" encoding is not supported") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.writeFileSync('/njs_unknown_path', '', 'ascii')"),
-      njs_str("TypeError: Unknown encoding: \"ascii\"") },
+              "fs.writeFileSync('/njs_unknown_path', '', 'ascii')"),
+      njs_str("TypeError: \"ascii\" encoding is not supported") },
 
     { njs_str("var fs = require('fs');"
-                 "fs.writeFileSync('/njs_unknown_path', '', true)"),
+              "fs.writeFileSync('/njs_unknown_path', '', true)"),
       njs_str("TypeError: Unknown options type: \"boolean\" (a string or object required)") },
 
     /* require('fs').renameSync() */
 
     { njs_str("var fs = require('fs');"
               "fs.renameSync()"),
-      njs_str("TypeError: \"oldPath\" must be a string") },
+      njs_str("TypeError: \"oldPath\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
               "fs.renameSync('/njs_unknown_path')"),
-      njs_str("TypeError: \"newPath\" must be a string") },
+      njs_str("TypeError: \"newPath\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
               "[undefined, null, false, NaN, Symbol(), {}, Object('/njs_unknown_path')]"
@@ -17171,7 +17172,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var fs = require('fs');"
               "fs.access()"),
-      njs_str("TypeError: \"path\" must be a string") },
+      njs_str("TypeError: \"path\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
               "fs.access('/njs_unknown_path')"),
@@ -17189,7 +17190,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var fs = require('fs');"
               "fs.accessSync()"),
-      njs_str("TypeError: \"path\" must be a string") },
+      njs_str("TypeError: \"path\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
               "fs.accessSync('/njs_unknown_path', 'fail')"),

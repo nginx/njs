@@ -461,55 +461,22 @@ njs_test {
 
 # require('fs').readFile()
 
-njs_test {
-    {"var fs = require('fs')\r\n"
-     "undefined\r\n>> "}
-    {"fs.readFile('test/fs/utf8', 'utf8', (...args) => void console.log(args.length))\r\n"
-     "undefined\r\n2\r\n>> "}
-}
+njs_run {"./test/js/fs_readFile.js" "test/fs/utf8"} "αβZγ Buffer 7"
+njs_run {"./test/js/fs_readFile.js" "test/fs/utf8" "utf8"} "αβZγ string 4"
+njs_run {"./test/js/fs_readFile.js" "test/fs/utf8" "utf8" "r+"} "αβZγ string 4"
+njs_run {"./test/js/fs_readFile.js" "test/fs/nonexistent"} \
+    "{\"errno\":2,\"code\":\"ENOENT\",\"path\":\"test/fs/nonexistent\",\"syscall\":\"open\"}"
+njs_run {"./test/js/fs_readFile.js" "test/fs/non_utf8" "utf8"} "�� string 2"
+njs_run {"./test/js/fs_readFile.js" "test/fs/non_utf8" "hex"} "8080 string 4"
+njs_run {"./test/js/fs_readFile.js" "test/fs/non_utf8" "base64"} "gIA= string 4"
 
 njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
-    {"fs.readFile('test/fs/utf8', 'utf8', function (e, data) {console.log(data[2]+data.length)})\r\n"
-     "undefined\r\nZ4\r\n>> "}
-}
-
-njs_test {
-    {"var fs = require('fs')\r\n"
-     "undefined\r\n>> "}
-    {"fs.readFile('test/fs/utf8', function (e, data) {console.log(data[4]+data.length)})\r\n"
-     "undefined\r\nZ7\r\n>> "}
-}
-
-njs_test {
-    {"var fs = require('fs')\r\n"
-     "undefined\r\n>> "}
-    {"fs.readFile('test/fs/utf8', {encoding:'utf8',flag:'r+'}, function (e, data) {console.log(data)})\r\n"
-     "undefined\r\nαβZγ\r\n>> "}
-}
-
-njs_test {
-    {"var fs = require('fs')\r\n"
-     "undefined\r\n>> "}
-    {"fs.readFile('test/fs/ascii', function (e, data) {console.log(data[599])})\r\n"
-     "undefined\r\nx\r\n>> "}
-    {"fs.readFile('test/fs/ascii', {encoding:'utf8',flag:'r+'}, function (e, data) {console.log(data[599])})\r\n"
-     "undefined\r\nx\r\n>> "}
-}
-
-njs_test {
-    {"var fs = require('fs'); \r\n"
-     "undefined\r\n>> "}
-    {"fs.readFile('test/fs/nonexistent', 'utf8', function (e) {console.log(JSON.stringify(e))})\r\n"
-     "undefined\r\n{\"errno\":2,\"code\":\"ENOENT\",\"path\":\"test/fs/nonexistent\",\"syscall\":\"open\"}\r\n>> "}
-}
-
-njs_test {
-    {"var fs = require('fs'); \r\n"
-     "undefined\r\n>> "}
-    {"fs.readFile('test/fs/nonexistent', {encoding:'utf8', flag:'r+'}, function (e) {console.log(e)})\r\n"
-     "undefined\r\nError: No such file or directory\r\n>> "}
+    {"fs.readFile('test/fs/ascii', 'utf8', function (e, data) {console.log(data[599], data[600])})\r\n"
+     "undefined\r\nx undefined\r\n>> "}
+    {"fs.readFile('test/fs/ascii', {encoding:'utf8',flag:'r+'}, function (e, data) {console.log(data[599], data[600])})\r\n"
+     "undefined\r\nx undefined\r\n>> "}
 }
 
 njs_test {
@@ -523,60 +490,20 @@ njs_test {
 
 # require('fs').readFileSync()
 
-njs_test {
-    {"var fs = require('fs')\r\n"
-     "undefined\r\n>> "}
-    {"fs.readFileSync('test/fs/utf8').toString('base64')\r\n"
-     "'zrHOslrOsw=='\r\n>> "}
-}
+njs_run {"./test/js/fs_readFileSync.js" "test/fs/utf8"} "αβZγ Buffer 7"
+njs_run {"./test/js/fs_readFileSync.js" "test/fs/utf8" "utf8"} "αβZγ string 4"
+njs_run {"./test/js/fs_readFileSync.js" "test/fs/utf8" "utf8" "r+"} "αβZγ string 4"
+njs_run {"./test/js/fs_readFileSync.js" "test/fs/nonexistent"} \
+    "{\"errno\":2,\"code\":\"ENOENT\",\"path\":\"test/fs/nonexistent\",\"syscall\":\"open\"}"
+njs_run {"./test/js/fs_readFileSync.js" "test/fs/non_utf8" "utf8"} "�� string 2"
+njs_run {"./test/js/fs_readFileSync.js" "test/fs/non_utf8" "hex"} "8080 string 4"
+njs_run {"./test/js/fs_readFileSync.js" "test/fs/non_utf8" "base64"} "gIA= string 4"
 
 njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
-    {"fs.readFileSync('test/fs/utf8', 'utf8')[2]\r\n"
-     "'Z'\r\n>> "}
-}
-
-njs_test {
-    {"var fs = require('fs')\r\n"
-     "undefined\r\n>> "}
-    {"fs.readFileSync('test/fs/utf8')[4]\r\n"
-     "'Z'\r\n>> "}
-}
-
-njs_test {
-    {"var fs = require('fs')\r\n"
-     "undefined\r\n>> "}
-    {"fs.readFileSync('test/fs/utf8', {encoding:'utf8',flag:'r+'})\r\n"
-     "'αβZγ'\r\n>> "}
-}
-
-njs_test {
-    {"var fs = require('fs'), fn = 'test/fs/ascii'\r\n"
-     "undefined\r\n>> "}
-    {"fs.readFileSync(fn)[599] + fs.readFileSync(fn, 'utf8')[599]\r\n"
-     "'xx'\r\n>> "}
-}
-
-njs_test {
-    {"var fs = require('fs'); \r\n"
-     "undefined\r\n>> "}
-    {"try { fs.readFileSync('test/fs/nonexistent')} catch (e) {console.log(JSON.stringify(e))}\r\n"
-     "{\"errno\":2,\"code\":\"ENOENT\",\"path\":\"test/fs/nonexistent\",\"syscall\":\"open\"}\r\nundefined\r\n>> "}
-}
-
-njs_test {
-    {"var fs = require('fs')\r\n"
-     "undefined\r\n>> "}
-    {"fs.readFileSync('test/fs/non_utf8').charCodeAt(1)\r\n"
-     "128"}
-}
-
-njs_test {
-    {"var fs = require('fs')\r\n"
-     "undefined\r\n>> "}
-    {"fs.readFileSync('test/fs/non_utf8', 'utf8')\r\n"
-     "Error: Non-UTF8 file, convertion is not implemented"}
+    {"fs.readFileSync('test/fs/non_utf8', 'utf8').charCodeAt(1)\r\n"
+     "65533"}
 }
 
 njs_test {
@@ -594,46 +521,19 @@ njs_test {
 
 # require('fs').writeFile()
 
-exec rm -fr ./build/test/file2
+njs_run {"./test/js/fs_writeFile.js" "ABCD" "Buffer" "1"} "BCD"
+njs_run {"./test/js/fs_writeFile.js" "ABC" "DataView"} "ABC"
+njs_run {"./test/js/fs_writeFile.js" "414243" "Object" "hex"} "ABC"
+njs_run {"./test/js/fs_writeFile.js" "ABC" "String"} "ABC"
+njs_run {"./test/js/fs_writeFile.js" "ABC" "Symbol"} "TypeError: Cannot convert a Symbol value to a string*"
+njs_run {"./test/js/fs_writeFile.js" "ABC" "Uint8Array"} "ABC"
 
-njs_test {
-    {"var fs = require('fs'), fn = './build/test/file2';\r\n"
-     "undefined\r\n>> "}
-    {"function h1(e) {if (e) {throw e}; console.log(fs.readFileSync(fn))}\r\n"
-     "undefined\r\n>> "}
-    {"fs.writeFile(fn, 'ABC', h1)\r\n"
-     "undefined\r\nABC\r\n>> "}
-}
-
-njs_test {
-    {"var fs = require('fs'), fn = './build/test/file2';\r\n"
-     "undefined\r\n>> "}
-    {"fs.writeFile(fn, 'ABC', (...args) => void console.log(args.length))\r\n"
-     "undefined\r\n1\r\n>> "}
-}
-
-njs_test {
-    {"var fs = require('fs'), fn = './build/test/file2';\r\n"
-     "undefined\r\n>> "}
-    {"fs.writeFile(fn, 'ABC', 'utf8', function (e) { if (e) {throw e}; console.log(fs.readFileSync(fn))})\r\n"
-     "undefined\r\nABC\r\n>> "}
-}
-
-njs_test {
-    {"var fs = require('fs'), fn = './build/test/file2';\r\n"
-     "undefined\r\n>> "}
-    {"fs.writeFile(fn, 'ABC', {encoding:'utf8', mode:0o666}, function (e) { if (e) {throw e}; console.log(fs.readFileSync(fn))})\r\n"
-     "undefined\r\nABC\r\n>> "}
-}
-
-exec rm -fr ./build/test/wo_file
-
-njs_test {
-    {"var fs = require('fs'), fn = './build/test/wo_file';\r\n"
-     "undefined\r\n>> "}
-    {"fs.writeFile(fn, 'ABC', {mode:0o222}, function (e) {console.log(fs.readFileSync(fn))})\r\n"
-     "Error: Permission denied"}
-}
+njs_run {"./test/js/fs_writeFile.js" "ABC" "String" "utf8"} "ABC"
+njs_run {"./test/js/fs_writeFile.js" "ABC" "String" "utf8" "0o666"} "ABC"
+njs_run {"./test/js/fs_writeFile.js" "ABC" "String" "utf8" "0o222"} "Error: Permission denied*"
+njs_run {"./test/js/fs_writeFile.js" "414243" "String" "hex"} "ABC"
+njs_run {"./test/js/fs_writeFile.js" "QUJD" "String" "base64"} "ABC"
+njs_run {"./test/js/fs_writeFile.js" "QUJD" "String" "base64url"} "ABC"
 
 njs_test {
     {"var fs = require('fs')\r\n"
@@ -644,25 +544,19 @@ njs_test {
 
 # require('fs').writeFileSync()
 
-exec rm -fr ./build/test/file2
+njs_run {"./test/js/fs_writeFileSync.js" "ABCD" "Buffer" "1"} "BCD"
+njs_run {"./test/js/fs_writeFileSync.js" "ABC" "DataView"} "ABC"
+njs_run {"./test/js/fs_writeFileSync.js" "414243" "Object" "hex"} "ABC"
+njs_run {"./test/js/fs_writeFileSync.js" "ABC" "String"} "ABC"
+njs_run {"./test/js/fs_writeFileSync.js" "ABC" "Symbol"} "TypeError: Cannot convert a Symbol value to a string*"
+njs_run {"./test/js/fs_writeFileSync.js" "ABC" "Uint8Array"} "ABC"
 
-njs_test {
-    {"var fs = require('fs'), fn = './build/test/file2';\r\n"
-     "undefined\r\n>> "}
-    {"fs.writeFileSync(fn, 'ABC')\r\n"
-     "undefined\r\n>> "}
-    {"fs.readFileSync(fn)\r\n"
-     "'ABC'\r\n>> "}
-}
-
-njs_test {
-    {"var fs = require('fs'), fn = './build/test/file2';\r\n"
-     "undefined\r\n>> "}
-    {"fs.writeFileSync(fn, 'ABC', 'utf8')\r\n"
-     "undefined\r\n>> "}
-    {"fs.readFileSync(fn)\r\n"
-     "'ABC'\r\n>> "}
-}
+njs_run {"./test/js/fs_writeFileSync.js" "ABC" "String" "utf8"} "ABC"
+njs_run {"./test/js/fs_writeFileSync.js" "ABC" "String" "utf8" "0o666"} "ABC"
+njs_run {"./test/js/fs_writeFileSync.js" "ABC" "String" "utf8" "0o222"} "Error: Permission denied*"
+njs_run {"./test/js/fs_writeFileSync.js" "78797a" "String" "hex"} "xyz"
+njs_run {"./test/js/fs_writeFileSync.js" "eHl6" "String" "base64"} "xyz"
+njs_run {"./test/js/fs_writeFileSync.js" "eHl6" "String" "base64url"} "xyz"
 
 njs_test {
     {"var fs = require('fs'), fn = './build/test/file2';\r\n"
@@ -671,57 +565,41 @@ njs_test {
      "undefined\r\n>> "}
     {"fs.writeFileSync(fn, 'ABC')\r\n"
      "undefined\r\n>> "}
-    {"fs.readFileSync(fn)\r\n"
+    {"fs.readFileSync(fn, 'utf8')\r\n"
      "'ABC'\r\n>> "}
-}
-
-njs_test {
-    {"var fs = require('fs'), fn = './build/test/file2';\r\n"
-     "undefined\r\n>> "}
-    {"fs.writeFileSync(fn, 'ABC', {encoding:'utf8', mode:0o666})\r\n"
-     "undefined\r\n>> "}
-    {"fs.readFileSync(fn)\r\n"
-     "'ABC'\r\n>> "}
-}
-
-exec rm -fr ./build/test/wo_file
-
-njs_test {
-    {"var fs = require('fs'), fn = './build/test/wo_file';\r\n"
-     "undefined\r\n>> "}
-    {"fs.writeFileSync(fn, 'ABC', {mode:0o222}); fs.readFileSync(fn)\r\n"
-     "Error: Permission denied"}
 }
 
 # require('fs').appendFile()
 
-exec rm -fr ./build/test/file2
+njs_run {"./test/js/fs_appendFile.js" "ABCD" "Buffer" "1"} "BCDBCD"
+njs_run {"./test/js/fs_appendFile.js" "ABC" "DataView"} "ABCABC"
+njs_run {"./test/js/fs_appendFile.js" "414243" "Object" "hex"} "ABCABC"
+njs_run {"./test/js/fs_appendFile.js" "ABC" "String"} "ABCABC"
+njs_run {"./test/js/fs_appendFile.js" "ABC" "Symbol"} "TypeError: Cannot convert a Symbol value to a string*"
+njs_run {"./test/js/fs_appendFile.js" "ABC" "Uint8Array"} "ABCABC"
 
-njs_test {
-    {"var fs = require('fs'), fn = './build/test/file2';\r\n"
-     "undefined\r\n>> "}
-    {"function h1(e) {console.log(fs.readFileSync(fn))}\r\n"
-     "undefined\r\n>> "}
-    {"function h2(e) {fs.appendFile(fn, 'ABC', h1)}\r\n"
-     "undefined\r\n>> "}
-    {"fs.appendFile(fn, 'ABC', h2)\r\n"
-     "undefined\r\nABCABC\r\n>> "}
-}
+njs_run {"./test/js/fs_appendFile.js" "ABC" "String" "utf8"} "ABC"
+njs_run {"./test/js/fs_appendFile.js" "ABC" "String" "utf8" "0o666"} "ABC"
+njs_run {"./test/js/fs_appendFile.js" "ABC" "String" "utf8" "0o222"} "Error: Permission denied*"
+njs_run {"./test/js/fs_appendFile.js" "414243" "String" "hex"} "ABC"
+njs_run {"./test/js/fs_appendFile.js" "QUJD" "String" "base64"} "ABC"
+njs_run {"./test/js/fs_appendFile.js" "QUJD" "String" "base64url"} "ABC"
 
 # require('fs').appendFileSync()
 
-exec rm -fr ./build/test/file2
+njs_run {"./test/js/fs_appendFileSync.js" "ABCD" "Buffer" "1"} "BCDBCD"
+njs_run {"./test/js/fs_appendFileSync.js" "ABC" "DataView"} "ABCABC"
+njs_run {"./test/js/fs_appendFileSync.js" "414243" "Object" "hex"} "ABCABC"
+njs_run {"./test/js/fs_appendFileSync.js" "ABC" "String"} "ABCABC"
+njs_run {"./test/js/fs_appendFileSync.js" "ABC" "Symbol"} "TypeError: Cannot convert a Symbol value to a string*"
+njs_run {"./test/js/fs_appendFileSync.js" "ABC" "Uint8Array"} "ABCABC"
 
-njs_test {
-    {"var fs = require('fs'), fn = './build/test/file2';\r\n"
-     "undefined\r\n>> "}
-    {"fs.appendFileSync(fn, 'ABC')\r\n"
-     "undefined\r\n>> "}
-    {"fs.appendFileSync(fn, 'ABC')\r\n"
-     "undefined\r\n>> "}
-    {"fs.readFileSync(fn)\r\n"
-     "'ABCABC'\r\n>> "}
-}
+njs_run {"./test/js/fs_appendFileSync.js" "ABC" "String" "utf8"} "ABC"
+njs_run {"./test/js/fs_appendFileSync.js" "ABC" "String" "utf8" "0o666"} "ABC"
+njs_run {"./test/js/fs_appendFileSync.js" "ABC" "String" "utf8" "0o222"} "Error: Permission denied*"
+njs_run {"./test/js/fs_appendFileSync.js" "414243" "String" "hex"} "ABC"
+njs_run {"./test/js/fs_appendFileSync.js" "QUJD" "String" "base64"} "ABC"
+njs_run {"./test/js/fs_appendFileSync.js" "QUJD" "String" "base64url"} "ABC"
 
 # require('fs').renameSync()
 
@@ -734,15 +612,28 @@ njs_test {
      "undefined\r\n>> "}
     {"fs.renameSync(fn1, fn2)\r\n"
      "undefined\r\n>> "}
-    {"fs.readFileSync(fn2)\r\n"
+    {"String(fs.readFileSync(fn2))\r\n"
      "'ABC'\r\n>> "}
 }
 
 njs_test {
+    {"var fs = require('fs'), fn = './build/test/file2'\r\n"
+     "undefined\r\n>> "}
+    {"fs.writeFileSync(fn, 'ABC')\r\n"
+     "undefined\r\n>> "}
+    {"fs.renameSync(fn, 'test/fs/')\r\n"
+     "Error: Not a directory*"}
+}
+
+# require('fs').realpathSync()
+
+njs_test {
     {"var fs = require('fs')\r\n"
      "undefined\r\n>> "}
-    {"fs.renameSync('build/test/file2', 'test/fs/')\r\n"
-     "Error: Not a directory*"}
+    {"fs.realpathSync('./build/test/..').endsWith('build')\r\n"
+     "true\r\n>> "}
+    {"fs.realpathSync('./build/test/..', {encoding:'buffer'}) instanceof Buffer\r\n"
+     "true\r\n>> "}
 }
 
 njs_run {"-c" "setTimeout(() => {console.log('A'.repeat(1024))}, 0); ref"} \
@@ -1110,7 +1001,6 @@ short circut ok true
 chain ok true
 error 1 ok true
 error 2 ok true
-error 3 ok true
 errors ok"
 
 njs_run {"./test/js/fs_promises_002.js"} \
