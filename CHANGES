@@ -1,4 +1,59 @@
 
+Changes with njs 0.4.4                                           29 Sep 2020
+
+    nginx modules:
+
+    *) Bugfix: fixed location merge.
+
+    *) Bugfix: fixed r.httpVersion for HTTP/2.
+
+    Core:
+
+    *) Feature: added support for numeric separators (ES12).
+
+    *) Feature: added remaining methods for %TypedArray%.prototype.
+       The following methods were added: every(), filter(), find(),
+       findIndex(), forEach(), includes(), indexOf(), lastIndexOf(),
+       map(), reduce(), reduceRight(), reverse(), some().
+
+    *) Feature: added %TypedArray% remaining methods.
+       The following methods were added: from(), of().
+
+    *) Feature: added DataView object.
+
+    *) Feature: added Buffer object implementation.
+
+    *) Feature: added support for ArrayBuffer in
+       TextDecoder.prototype.decode().
+
+    *) Feature: added support for Buffer object in "crypto" methods.
+
+    *) Feature: added support for Buffer object in "fs" methods.
+
+    *) Change: Hash.prototype.digest() and Hmac.prototype.digest()
+       now return a Buffer instance instead of a byte string when
+       encoding is not provided.
+
+    *) Change: fs.readFile() and friends now return a Buffer instance
+       instead of a byte string when encoding is not provided.
+
+    *) Bugfix: fixed function "prototype" property handler while
+       setting.
+
+    *) Bugfix: fixed function "constructor" property handler while
+       setting.
+
+    *) Bugfix: fixed String.prototype.indexOf() for byte strings.
+
+    *) Bugfix: fixed RegExpBuiltinExec() with a global flag and
+       byte strings.
+
+    *) Bugfix: fixed RegExp.prototype[Symbol.replace] when the
+       replacement value is a function.
+
+    *) Bugfix: fixed TextDecoder.prototype.decode() with non-zero
+       TypedArray offset.
+
 Changes with njs 0.4.3                                           11 Aug 2020
 
     Core:
