@@ -134,6 +134,19 @@ njs_string_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
 
 
 njs_int_t
+njs_string_create(njs_vm_t *vm, njs_value_t *value, const char *src,
+    size_t size)
+{
+    njs_str_t  str;
+
+    str.start = (u_char *) src;
+    str.length = size;
+
+    return njs_string_decode_utf8(vm, value, &str);
+}
+
+
+njs_int_t
 njs_string_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     uint32_t size, uint32_t length)
 {

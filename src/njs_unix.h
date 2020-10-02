@@ -47,4 +47,10 @@
 
 #include <unistd.h>
 
+#if defined(PATH_MAX)
+#define NJS_MAX_PATH             PATH_MAX
+#else
+#define NJS_MAX_PATH             4096
+#endif
+
 #endif /* _NJS_UNIX_H_INCLUDED_ */

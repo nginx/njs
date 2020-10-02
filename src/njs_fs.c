@@ -81,20 +81,20 @@ typedef njs_int_t (*njs_file_tree_walk_cb_t)(const char *, const struct stat *,
 static njs_int_t njs_fs_fd_read(njs_vm_t *vm, int fd, njs_str_t *data);
 
 static njs_int_t njs_fs_error(njs_vm_t *vm, const char *syscall,
-    const char *desc, njs_value_t *path, int errn, njs_value_t *retval);
+    const char *desc, const char *path, int errn, njs_value_t *retval);
 static njs_int_t njs_fs_result(njs_vm_t *vm, njs_value_t *result,
     njs_index_t calltype, const njs_value_t* callback, njs_uint_t nargs);
 
 static njs_int_t njs_file_tree_walk(const char *path,
     njs_file_tree_walk_cb_t cb, int fd_limit, njs_ftw_flags_t flags);
 
-static njs_int_t njs_fs_make_path(njs_vm_t *vm, const char *path, mode_t md,
+static njs_int_t njs_fs_make_path(njs_vm_t *vm, char *path, mode_t md,
     njs_bool_t recursive, njs_value_t *retval);
 static njs_int_t njs_fs_rmtree(njs_vm_t *vm, const char *path,
     njs_bool_t recursive, njs_value_t *retval);
 
-static njs_int_t njs_fs_path(njs_vm_t *vm, const char **dst,
-    const njs_value_t* src, const njs_str_t *prop_name);
+static const char *njs_fs_path(njs_vm_t *vm, char storage[NJS_MAX_PATH + 1],
+    const njs_value_t *src, const char *prop_name);
 static int njs_fs_flags(njs_vm_t *vm, njs_value_t *value, int default_flags);
 static mode_t njs_fs_mode(njs_vm_t *vm, njs_value_t *value,
     mode_t default_mode);
@@ -142,16 +142,15 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     int                          fd, flags;
     njs_str_t                    data;
     njs_int_t                    ret;
-    const char                   *file_path;
-    njs_value_t                  flag, encode, retval, *callback, *options,
-                                 *path;
+    const char                   *path;
+    njs_value_t                  flag, encode, retval, *callback, *options;
     struct stat                  sb;
     const njs_buffer_encoding_t  *encoding;
+    char                         path_buf[NJS_MAX_PATH + 1];
 
-    path = njs_arg(args, nargs, 1);
-    ret = njs_fs_path(vm, &file_path, path, &njs_str_value("path"));
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
+    path = njs_fs_path(vm, path_buf, njs_arg(args, nargs, 1), "path");
+    if (njs_slow_path(path == NULL)) {
+        return NJS_ERROR;
     }
 
     callback = NULL;
@@ -215,7 +214,7 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    fd = open(file_path, flags);
+    fd = open(path, flags);
     if (njs_slow_path(fd < 0)) {
         ret = njs_fs_error(vm, "open", strerror(errno), path, errno, &retval);
         goto done;
@@ -277,18 +276,18 @@ njs_fs_write_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ssize_t                      n;
     njs_str_t                    content;
     njs_int_t                    ret;
-    const char                   *file_path;
-    njs_value_t                  flag, mode, encode, retval, *path, *data,
-                                 *callback, *options;
+    const char                   *path;
+    njs_value_t                  flag, mode, encode, retval, *data, *callback,
+                                 *options;
     njs_typed_array_t            *array;
     njs_fs_calltype_t            calltype;
     njs_array_buffer_t           *buffer;
     const njs_buffer_encoding_t  *encoding;
+    char                         path_buf[NJS_MAX_PATH + 1];
 
-    path = njs_arg(args, nargs, 1);
-    ret = njs_fs_path(vm, &file_path, path, &njs_str_value("path"));
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
+    path = njs_fs_path(vm, path_buf, njs_arg(args, nargs, 1), "path");
+    if (njs_slow_path(path == NULL)) {
+        return NJS_ERROR;
     }
 
     callback = NULL;
@@ -395,7 +394,7 @@ njs_fs_write_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    fd = open(file_path, flags, md);
+    fd = open(path, flags, md);
     if (njs_slow_path(fd < 0)) {
         ret = njs_fs_error(vm, "open", strerror(errno), path, errno, &retval);
         goto done;
@@ -441,8 +440,9 @@ njs_fs_rename(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t calltype)
 {
     njs_int_t    ret;
-    const char   *old_path, *new_path;
+    const char   *path, *newpath;
     njs_value_t  retval, *callback;
+    char         path_buf[NJS_MAX_PATH + 1], newpath_buf[NJS_MAX_PATH + 1];
 
     callback = NULL;
 
@@ -454,21 +454,19 @@ njs_fs_rename(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    ret = njs_fs_path(vm, &old_path, njs_arg(args, nargs, 1),
-                          &njs_str_value("oldPath"));
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
+    path = njs_fs_path(vm, path_buf, njs_arg(args, nargs, 1), "oldPath");
+    if (njs_slow_path(path == NULL)) {
+        return NJS_ERROR;
     }
 
-    ret = njs_fs_path(vm, &new_path, njs_arg(args, nargs, 2),
-                          &njs_str_value("newPath"));
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
+    newpath = njs_fs_path(vm, newpath_buf, njs_arg(args, nargs, 2), "newPath");
+    if (njs_slow_path(newpath == NULL)) {
+        return NJS_ERROR;
     }
 
     njs_set_undefined(&retval);
 
-    ret = rename(old_path, new_path);
+    ret = rename(path, newpath);
     if (njs_slow_path(ret != 0)) {
         ret = njs_fs_error(vm, "rename", strerror(errno), NULL, errno, &retval);
     }
@@ -487,13 +485,13 @@ njs_fs_access(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     int          md;
     njs_int_t    ret;
-    const char  *file_path;
-    njs_value_t  retval, *path, *callback, *mode;
+    const char  *path;
+    njs_value_t  retval, *callback, *mode;
+    char         path_buf[NJS_MAX_PATH + 1];
 
-    path = njs_arg(args, nargs, 1);
-    ret = njs_fs_path(vm, &file_path, path, &njs_str_value("path"));
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
+    path = njs_fs_path(vm, path_buf, njs_arg(args, nargs, 1), "path");
+    if (njs_slow_path(path == NULL)) {
+        return NJS_ERROR;
     }
 
     callback = NULL;
@@ -527,7 +525,7 @@ njs_fs_access(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     njs_set_undefined(&retval);
 
-    ret = access(file_path, md);
+    ret = access(path, md);
     if (njs_slow_path(ret != 0)) {
         ret = njs_fs_error(vm, "access", strerror(errno), path, errno, &retval);
     }
@@ -545,19 +543,18 @@ njs_fs_symlink(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t calltype)
 {
     njs_int_t    ret;
-    const char  *target_path, *file_path;
-    njs_value_t  retval, *target, *path, *callback, *type;
+    const char  *target, *path;
+    njs_value_t  retval, *callback, *type;
+    char         target_buf[NJS_MAX_PATH + 1], path_buf[NJS_MAX_PATH + 1];
 
-    target = njs_arg(args, nargs, 1);
-    ret = njs_fs_path(vm, &target_path, target, &njs_str_value("target"));
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
+    target = njs_fs_path(vm, target_buf, njs_arg(args, nargs, 1), "target");
+    if (njs_slow_path(target == NULL)) {
+        return NJS_ERROR;
     }
 
-    path = njs_arg(args, nargs, 2);
-    ret = njs_fs_path(vm, &file_path, path, &njs_str_value("path"));
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
+    path = njs_fs_path(vm, path_buf, njs_arg(args, nargs, 2), "path");
+    if (njs_slow_path(path == NULL)) {
+        return NJS_ERROR;
     }
 
     callback = NULL;
@@ -582,7 +579,7 @@ njs_fs_symlink(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     njs_set_undefined(&retval);
 
-    ret = symlink(target_path, file_path);
+    ret = symlink(target, path);
     if (njs_slow_path(ret != 0)) {
         ret = njs_fs_error(vm, "symlink", strerror(errno), path, errno,
                            &retval);
@@ -601,13 +598,13 @@ njs_fs_unlink(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t calltype)
 {
     njs_int_t    ret;
-    const char   *file_path;
-    njs_value_t  retval, *path, *callback;
+    const char   *path;
+    njs_value_t  retval, *callback;
+    char         path_buf[NJS_MAX_PATH + 1];
 
-    path = njs_arg(args, nargs, 1);
-    ret = njs_fs_path(vm, &file_path, path, &njs_str_value("path"));
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
+    path = njs_fs_path(vm, path_buf, njs_arg(args, nargs, 1), "path");
+    if (njs_slow_path(path == NULL)) {
+        return NJS_ERROR;
     }
 
     callback = NULL;
@@ -622,7 +619,7 @@ njs_fs_unlink(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     njs_set_undefined(&retval);
 
-    ret = unlink(file_path);
+    ret = unlink(path);
     if (njs_slow_path(ret != 0)) {
         ret = njs_fs_error(vm, "unlink", strerror(errno), path, errno, &retval);
     }
@@ -641,15 +638,15 @@ njs_fs_realpath(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     njs_int_t                    ret;
     njs_str_t                    s;
-    const char                   *file_path;
-    njs_value_t                  encode, retval, *path, *callback, *options;
+    const char                   *path;
+    njs_value_t                  encode, retval, *callback, *options;
     const njs_buffer_encoding_t  *encoding;
-    char                         path_buf[MAXPATHLEN];
+    char                         path_buf[NJS_MAX_PATH + 1],
+                                 dst_buf[NJS_MAX_PATH + 1];
 
-    path = njs_arg(args, nargs, 1);
-    ret = njs_fs_path(vm, &file_path, path, &njs_str_value("path"));
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
+    path = njs_fs_path(vm, path_buf, njs_arg(args, nargs, 1), "path");
+    if (njs_slow_path(path == NULL)) {
+        return NJS_ERROR;
     }
 
     callback = NULL;
@@ -700,7 +697,7 @@ njs_fs_realpath(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    s.start = (u_char *) realpath(file_path, path_buf);
+    s.start = (u_char *) realpath(path, dst_buf);
     if (njs_slow_path(s.start == NULL)) {
         ret = njs_fs_error(vm, "realpath", strerror(errno), path, errno,
                            &retval);
@@ -730,15 +727,15 @@ static njs_int_t
 njs_fs_mkdir(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t calltype)
 {
+    char         *path;
     mode_t       md;
     njs_int_t    ret;
-    const char   *file_path;
-    njs_value_t  mode, recursive, retval, *path, *callback, *options;
+    njs_value_t  mode, recursive, retval, *callback, *options;
+    char         path_buf[NJS_MAX_PATH + 1];
 
-    path = njs_arg(args, nargs, 1);
-    ret = njs_fs_path(vm, &file_path, path, &njs_str_value("path"));
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
+    path = (char *) njs_fs_path(vm, path_buf, njs_arg(args, nargs, 1), "path");
+    if (njs_slow_path(path == NULL)) {
+        return NJS_ERROR;
     }
 
     callback = NULL;
@@ -792,8 +789,7 @@ njs_fs_mkdir(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    ret = njs_fs_make_path(vm, file_path, md, njs_is_true(&recursive),
-                           &retval);
+    ret = njs_fs_make_path(vm, path, md, njs_is_true(&recursive), &retval);
 
     if (ret == NJS_OK) {
         return njs_fs_result(vm, &retval, calltype, callback, 1);
@@ -808,13 +804,13 @@ njs_fs_rmdir(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t calltype)
 {
     njs_int_t    ret;
-    const char   *file_path;
-    njs_value_t  recursive, retval, *path, *callback, *options;
+    const char   *path;
+    njs_value_t  recursive, retval, *callback, *options;
+    char         path_buf[NJS_MAX_PATH + 1];
 
-    path = njs_arg(args, nargs, 1);
-    ret = njs_fs_path(vm, &file_path, path, &njs_str_value("path"));
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
+    path = njs_fs_path(vm, path_buf, njs_arg(args, nargs, 1), "path");
+    if (njs_slow_path(path == NULL)) {
+        return NJS_ERROR;
     }
 
     callback = NULL;
@@ -852,7 +848,7 @@ njs_fs_rmdir(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    ret = njs_fs_rmtree(vm, file_path, njs_is_true(&recursive), &retval);
+    ret = njs_fs_rmtree(vm, path, njs_is_true(&recursive), &retval);
 
     if (ret == NJS_OK) {
         return njs_fs_result(vm, &retval, calltype, callback, 1);
@@ -869,19 +865,19 @@ njs_fs_readdir(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     DIR                          *dir;
     njs_str_t                    s;
     njs_int_t                    ret;
-    const char                   *dir_path;
-    njs_value_t                  encode, types, ename, etype, retval, *path,
+    const char                   *path;
+    njs_value_t                  encode, types, ename, etype, retval,
                                  *callback, *options, *value;
     njs_array_t                  *results;
     struct dirent                *entry;
     const njs_buffer_encoding_t  *encoding;
+    char                         path_buf[NJS_MAX_PATH + 1];
 
     static const njs_value_t  string_types = njs_string("withFileTypes");
 
-    path = njs_arg(args, nargs, 1);
-    ret = njs_fs_path(vm, &dir_path, path, &njs_str_value("path"));
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
+    path = njs_fs_path(vm, path_buf, njs_arg(args, nargs, 1), "path");
+    if (njs_slow_path(path == NULL)) {
+        return NJS_ERROR;
     }
 
     callback = NULL;
@@ -945,12 +941,14 @@ njs_fs_readdir(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     njs_set_array(&retval, results);
 
-    dir = opendir(dir_path);
+    dir = opendir(path);
     if (njs_slow_path(dir == NULL)) {
         ret = njs_fs_error(vm, "opendir", strerror(errno), path, errno,
                            &retval);
         goto done;
     }
+
+    ret = NJS_OK;
 
     for ( ;; ) {
         errno = 0;
@@ -1077,16 +1075,13 @@ njs_fs_fd_read(njs_vm_t *vm, int fd, njs_str_t *data)
 
 
 static njs_int_t
-njs_fs_make_path(njs_vm_t *vm, const char *path, mode_t md,
-    njs_bool_t recursive, njs_value_t *retval)
+njs_fs_make_path(njs_vm_t *vm, char *path, mode_t md, njs_bool_t recursive,
+    njs_value_t *retval)
 {
     int          err;
-    ssize_t      length;
     njs_int_t    ret;
     const char   *p, *prev, *end;
-    njs_value_t  value;
     struct stat  sb;
-    char         path_buf[MAXPATHLEN];
 
     njs_set_undefined(retval);
 
@@ -1111,15 +1106,14 @@ njs_fs_make_path(njs_vm_t *vm, const char *path, mode_t md,
             p = end;
         }
 
-        if (njs_slow_path((p - path) > MAXPATHLEN)) {
+        if (njs_slow_path((p - path) > NJS_MAX_PATH)) {
             njs_internal_error(vm, "too large path");
             return NJS_ERROR;
         }
 
-        memcpy(&path_buf[prev - path], &path[prev - path], p - prev);
-        path_buf[p - path] = '\0';
+        path[p - path] = '\0';
 
-        ret = mkdir(path_buf, md);
+        ret = mkdir(path, md);
         err = errno;
 
         switch (ret) {
@@ -1133,7 +1127,7 @@ njs_fs_make_path(njs_vm_t *vm, const char *path, mode_t md,
 
         case EEXIST:
         default:
-            ret = stat(path_buf, &sb);
+            ret = stat(path, &sb);
             if (ret == 0) {
                 if (!S_ISDIR(sb.st_mode)) {
                     err = ENOTDIR;
@@ -1150,7 +1144,7 @@ njs_fs_make_path(njs_vm_t *vm, const char *path, mode_t md,
             break;
         }
 
-        path_buf[p - path] = '/';
+        path[p - path] = '/';
         prev = p;
     }
 
@@ -1158,17 +1152,7 @@ njs_fs_make_path(njs_vm_t *vm, const char *path, mode_t md,
 
 failed:
 
-    length = njs_utf8_length((u_char *) path, end - path);
-    if (njs_slow_path(length < 0)) {
-        length = 0;
-    }
-
-    ret = njs_string_new(vm, &value, (u_char *) path, end - path, length);
-    if (ret != NJS_OK) {
-        return NJS_ERROR;
-    }
-
-    return njs_fs_error(vm, "mkdir", strerror(err), &value, err, retval);
+    return njs_fs_error(vm, "mkdir", strerror(err), path, err, retval);
 }
 
 
@@ -1277,7 +1261,7 @@ njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
                 continue;
             }
 
-            if (njs_slow_path(length >= (PATH_MAX - len))) {
+            if (njs_slow_path(length >= (NJS_MAX_PATH - len))) {
                 errno = ENAMETOOLONG;
                 ret = NJS_ERROR;
                 goto done;
@@ -1329,10 +1313,10 @@ njs_file_tree_walk(const char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
     njs_ftw_flags_t flags)
 {
     size_t  len;
-    char    pathbuf[PATH_MAX + 1];
+    char    pathbuf[NJS_MAX_PATH + 1];
 
     len = njs_strlen(path);
-    if (njs_slow_path(len > PATH_MAX)) {
+    if (njs_slow_path(len > NJS_MAX_PATH)) {
         errno = ENAMETOOLONG;
         return -1;
     }
@@ -1361,11 +1345,8 @@ static njs_int_t
 njs_fs_rmtree(njs_vm_t *vm, const char *path, njs_bool_t recursive,
     njs_value_t *retval)
 {
-    size_t       size;
-    ssize_t      length;
-    njs_int_t    ret;
-    const char   *description;
-    njs_value_t  value;
+    njs_int_t   ret;
+    const char  *description;
 
     njs_set_undefined(retval);
 
@@ -1387,36 +1368,22 @@ njs_fs_rmtree(njs_vm_t *vm, const char *path, njs_bool_t recursive,
         description = strerror(errno);
     }
 
-    size = njs_strlen(path);
-    length = njs_utf8_length((u_char *) path, size);
-    if (njs_slow_path(length < 0)) {
-        length = 0;
-    }
-
-    ret = njs_string_new(vm, &value, (u_char *) path, size, length);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return NJS_ERROR;
-    }
-
-    return njs_fs_error(vm, "rmdir", description, &value, errno, retval);
+    return njs_fs_error(vm, "rmdir", description, path, errno, retval);
 }
 
 
-static njs_int_t
-njs_fs_path(njs_vm_t *vm, const char **dst, const njs_value_t* src,
-    const njs_str_t *prop_name)
+static const char *
+njs_fs_path(njs_vm_t *vm, char *storage, const njs_value_t *src,
+    const char *prop_name)
 {
-    u_char              *data, *p, *start;
+    u_char              *p;
+    njs_str_t           str;
     njs_typed_array_t   *array;
     njs_array_buffer_t  *buffer;
 
     switch (src->type) {
     case NJS_STRING:
-        *dst = njs_string_to_c_string(vm, njs_value_arg(src));
-        if (njs_slow_path(*dst == NULL)) {
-            return NJS_ERROR;
-        }
-
+        njs_string_get(src, &str);
         break;
 
     case NJS_TYPED_ARRAY:
@@ -1425,35 +1392,33 @@ njs_fs_path(njs_vm_t *vm, const char **dst, const njs_value_t* src,
         buffer = array->buffer;
         if (njs_slow_path(njs_is_detached_buffer(buffer))) {
             njs_type_error(vm, "detached buffer");
-            return NJS_ERROR;
+            return NULL;
         }
 
-        start = &buffer->u.u8[array->offset];
-
-        if (njs_slow_path(memchr(start, '\0', array->byte_length) != 0)) {
-            njs_type_error(vm, "\"%V\" must be a Buffer without null bytes",
-                           prop_name);
-            return NJS_ERROR;
-        }
-
-        data = njs_mp_alloc(vm->mem_pool, array->byte_length + 1);
-        if (njs_slow_path(data == NULL)) {
-            njs_memory_error(vm);
-            return NJS_ERROR;
-        }
-
-        p = njs_cpymem(data, start, array->byte_length);
-        *p++ = '\0';
-
-        *dst = (char *) data;
+        str.start = &buffer->u.u8[array->offset];
+        str.length = array->byte_length;
         break;
 
     default:
-        njs_type_error(vm, "\"%V\" must be a string or Buffer", prop_name);
-        return NJS_ERROR;
+        njs_type_error(vm, "\"%s\" must be a string or Buffer", prop_name);
+        return NULL;
     }
 
-    return NJS_OK;
+    if (njs_slow_path(str.length > NJS_MAX_PATH - 1)) {
+        njs_type_error(vm, "\"%s\" is too long >= %d", prop_name, NJS_MAX_PATH);
+        return NULL;
+    }
+
+    if (njs_slow_path(memchr(str.start, '\0', str.length) != 0)) {
+        njs_type_error(vm, "\"%s\" must be a Buffer without null bytes",
+                       prop_name);
+        return NULL;
+    }
+
+    p = njs_cpymem(storage, str.start, str.length);
+    *p++ = '\0';
+
+    return storage;
 }
 
 
@@ -1511,7 +1476,7 @@ njs_fs_mode(njs_vm_t *vm, njs_value_t *value, mode_t default_mode)
 
 static njs_int_t
 njs_fs_error(njs_vm_t *vm, const char *syscall, const char *description,
-    njs_value_t *path, int errn, njs_value_t *retval)
+    const char *path, int errn, njs_value_t *retval)
 {
     size_t        size;
     njs_int_t     ret;
@@ -1526,7 +1491,7 @@ njs_fs_error(njs_vm_t *vm, const char *syscall, const char *description,
 
     size = description != NULL ? njs_strlen(description) : 0;
 
-    ret = njs_string_new(vm, &value, (u_char *) description, size, size);
+    ret = njs_string_create(vm, &value, description, size);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
@@ -1547,9 +1512,8 @@ njs_fs_error(njs_vm_t *vm, const char *syscall, const char *description,
         }
 
         code = njs_errno_string(errn);
-        size = njs_strlen(code);
 
-        ret = njs_string_new(vm, &value, (u_char *) code, size, size);
+        ret = njs_string_create(vm, &value, code, njs_strlen(code));
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
@@ -1562,16 +1526,20 @@ njs_fs_error(njs_vm_t *vm, const char *syscall, const char *description,
     }
 
     if (path != NULL) {
+        ret = njs_string_create(vm, &value, path, njs_strlen(path));
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
         ret = njs_value_property_set(vm, retval, njs_value_arg(&string_path),
-                                     path);
+                                     &value);
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
     }
 
     if (syscall != NULL) {
-        size = njs_strlen(syscall);
-        ret = njs_string_new(vm, &value, (u_char *) syscall, size, size);
+        ret = njs_string_create(vm, &value, syscall, njs_strlen(syscall));
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
