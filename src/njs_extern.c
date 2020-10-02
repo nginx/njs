@@ -322,8 +322,15 @@ njs_vm_external_create(njs_vm_t *vm, njs_value_t *value,
 njs_external_ptr_t
 njs_vm_external(njs_vm_t *vm, const njs_value_t *value)
 {
+    njs_external_ptr_t  external;
+
     if (njs_fast_path(njs_is_object_data(value, NJS_DATA_TAG_EXTERNAL))) {
-        return njs_object_data(value);
+        external = njs_object_data(value);
+        if (external == NULL) {
+            external = vm->external;
+        }
+
+        return external;
     }
 
     return NULL;

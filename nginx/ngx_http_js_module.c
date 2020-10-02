@@ -122,9 +122,6 @@ static njs_int_t ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args,
 static njs_int_t ngx_http_js_ext_internal_redirect(njs_vm_t *vm,
     njs_value_t *args, njs_uint_t nargs, njs_index_t unused);
 
-static njs_int_t ngx_http_js_ext_log(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t level);
-
 static njs_int_t ngx_http_js_ext_get_http_version(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
@@ -429,7 +426,7 @@ static njs_external_t  ngx_http_js_ext_request[] = {
         .configurable = 1,
         .enumerable = 1,
         .u.method = {
-            .native = ngx_http_js_ext_log,
+            .native = ngx_js_ext_log,
             .magic8 = NGX_LOG_INFO,
         }
     },
@@ -441,7 +438,7 @@ static njs_external_t  ngx_http_js_ext_request[] = {
         .configurable = 1,
         .enumerable = 1,
         .u.method = {
-            .native = ngx_http_js_ext_log,
+            .native = ngx_js_ext_log,
             .magic8 = NGX_LOG_WARN,
         }
     },
@@ -453,7 +450,7 @@ static njs_external_t  ngx_http_js_ext_request[] = {
         .configurable = 1,
         .enumerable = 1,
         .u.method = {
-            .native = ngx_http_js_ext_log,
+            .native = ngx_js_ext_log,
             .magic8 = NGX_LOG_ERR,
         }
     },
@@ -519,6 +516,17 @@ static njs_external_t  ngx_http_js_ext_request[] = {
 static njs_vm_ops_t ngx_http_js_ops = {
     ngx_http_js_set_timer,
     ngx_http_js_clear_timer
+};
+
+
+static uintptr_t ngx_http_js_uptr[] = {
+    offsetof(ngx_http_request_t, connection),
+};
+
+
+static njs_vm_meta_t ngx_http_js_metas = {
+    .size = 1,
+    .values = ngx_http_js_uptr
 };
 
 
@@ -1789,41 +1797,6 @@ ngx_http_js_ext_internal_redirect(njs_vm_t *vm, njs_value_t *args,
 
 
 static njs_int_t
-ngx_http_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t level)
-{
-    njs_str_t            msg;
-    ngx_connection_t    *c;
-    ngx_log_handler_pt   handler;
-    ngx_http_request_t  *r;
-
-    r = njs_vm_external(vm, njs_arg(args, nargs, 0));
-    if (r == NULL) {
-        return NJS_ERROR;
-    }
-
-    c = r->connection;
-
-    if (njs_vm_value_to_string(vm, &msg, njs_arg(args, nargs, 1))
-        == NJS_ERROR)
-    {
-        return NJS_ERROR;
-    }
-
-    handler = c->log->handler;
-    c->log->handler = NULL;
-
-    ngx_log_error(level, c->log, 0, "js: %*s", msg.length, msg.start);
-
-    c->log->handler = handler;
-
-    njs_value_undefined_set(njs_vm_retval(vm));
-
-    return NJS_OK;
-}
-
-
-static njs_int_t
 ngx_http_js_ext_get_http_version(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
@@ -2946,6 +2919,7 @@ ngx_http_js_init_main_conf(ngx_conf_t *cf, void *conf)
     options.backtrace = 1;
     options.unhandled_rejection = NJS_VM_OPT_UNHANDLED_REJECTION_THROW;
     options.ops = &ngx_http_js_ops;
+    options.metas = &ngx_http_js_metas;
     options.argv = ngx_argv;
     options.argc = ngx_argc;
 
@@ -3011,6 +2985,12 @@ ngx_http_js_init_main_conf(ngx_conf_t *cf, void *conf)
     }
 
     jmcf->req_proto = proto;
+
+    rc = ngx_js_core_init(jmcf->vm, cf->log);
+    if (njs_slow_path(rc != NJS_OK)) {
+        return NGX_CONF_ERROR;
+    }
+
     end = start + size;
 
     rc = njs_vm_compile(jmcf->vm, &start, end);

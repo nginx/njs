@@ -89,8 +89,6 @@ static njs_int_t ngx_stream_js_ext_get_remote_address(njs_vm_t *vm,
 static njs_int_t ngx_stream_js_ext_done(njs_vm_t *vm, njs_value_t *args,
      njs_uint_t nargs, njs_index_t unused);
 
-static njs_int_t ngx_stream_js_ext_log(njs_vm_t *vm, njs_value_t *args,
-     njs_uint_t nargs, njs_index_t unused);
 static njs_int_t ngx_stream_js_ext_on(njs_vm_t *vm, njs_value_t *args,
      njs_uint_t nargs, njs_index_t unused);
 static njs_int_t ngx_stream_js_ext_off(njs_vm_t *vm, njs_value_t *args,
@@ -291,7 +289,7 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
         .configurable = 1,
         .enumerable = 1,
         .u.method = {
-            .native = ngx_stream_js_ext_log,
+            .native = ngx_js_ext_log,
             .magic8 = NGX_LOG_INFO,
         }
     },
@@ -303,7 +301,7 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
         .configurable = 1,
         .enumerable = 1,
         .u.method = {
-            .native = ngx_stream_js_ext_log,
+            .native = ngx_js_ext_log,
             .magic8 = NGX_LOG_WARN,
         }
     },
@@ -315,7 +313,7 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
         .configurable = 1,
         .enumerable = 1,
         .u.method = {
-            .native = ngx_stream_js_ext_log,
+            .native = ngx_js_ext_log,
             .magic8 = NGX_LOG_ERR,
         }
     },
@@ -359,6 +357,17 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
 static njs_vm_ops_t ngx_stream_js_ops = {
     ngx_stream_js_set_timer,
     ngx_stream_js_clear_timer
+};
+
+
+static uintptr_t ngx_stream_js_uptr[] = {
+    offsetof(ngx_stream_session_t, connection),
+};
+
+
+static njs_vm_meta_t ngx_stream_js_metas = {
+    .size = 1,
+    .values = ngx_stream_js_uptr
 };
 
 
@@ -919,42 +928,6 @@ ngx_stream_js_ext_done(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
-ngx_stream_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t level)
-{
-    njs_str_t              msg;
-    ngx_connection_t      *c;
-    ngx_log_handler_pt     handler;
-    ngx_stream_session_t  *s;
-
-    s = njs_vm_external(vm, njs_arg(args, nargs, 0));
-    if (s == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
-        return NJS_ERROR;
-    }
-
-    c = s->connection;
-
-    if (njs_vm_value_to_string(vm, &msg, njs_arg(args, nargs, 1))
-        == NJS_ERROR)
-    {
-        return NJS_ERROR;
-    }
-
-    handler = c->log->handler;
-    c->log->handler = NULL;
-
-    ngx_log_error(level, c->log, 0, "js: %*s", msg.length, msg.start);
-
-    c->log->handler = handler;
-
-    njs_value_undefined_set(njs_vm_retval(vm));
-
-    return NJS_OK;
-}
-
-
-static njs_int_t
 ngx_stream_js_ext_on(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -1418,6 +1391,7 @@ ngx_stream_js_init_main_conf(ngx_conf_t *cf, void *conf)
     options.backtrace = 1;
     options.unhandled_rejection = NJS_VM_OPT_UNHANDLED_REJECTION_THROW;
     options.ops = &ngx_stream_js_ops;
+    options.metas = &ngx_stream_js_metas;
     options.argv = ngx_argv;
     options.argc = ngx_argc;
 

@@ -187,9 +187,16 @@ typedef struct {
 
 
 typedef struct {
+    size_t                          size;
+    uintptr_t                       *values;
+} njs_vm_meta_t;
+
+
+typedef struct {
     njs_external_ptr_t              external;
     njs_vm_shared_t                 *shared;
     njs_vm_ops_t                    *ops;
+    njs_vm_meta_t                   *metas;
     njs_str_t                       file;
 
     char                            **argv;
@@ -295,6 +302,7 @@ NJS_EXPORT njs_int_t njs_vm_external_create(njs_vm_t *vm, njs_value_t *value,
     njs_external_proto_t proto, njs_external_ptr_t external, njs_bool_t shared);
 NJS_EXPORT njs_external_ptr_t njs_vm_external(njs_vm_t *vm,
     const njs_value_t *value);
+NJS_EXPORT uintptr_t njs_vm_meta(njs_vm_t *vm, njs_uint_t index);
 
 NJS_EXPORT njs_function_t *njs_vm_function_alloc(njs_vm_t *vm,
     njs_function_native_t native);

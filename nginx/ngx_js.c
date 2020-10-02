@@ -11,6 +11,48 @@
 #include "ngx_js.h"
 
 
+static njs_external_t  ngx_js_ext_core[] = {
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("log"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_js_ext_log,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("INFO"),
+        .u.property = {
+            .handler = ngx_js_ext_constant,
+            .magic32 = NGX_LOG_INFO,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("WARN"),
+        .u.property = {
+            .handler = ngx_js_ext_constant,
+            .magic32 = NGX_LOG_WARN,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("ERR"),
+        .u.property = {
+            .handler = ngx_js_ext_constant,
+            .magic32 = NGX_LOG_ERR,
+        }
+    },
+};
+
+
 ngx_int_t
 ngx_js_call(njs_vm_t *vm, ngx_str_t *fname, njs_opaque_value_t *value,
     ngx_log_t *log)
@@ -45,25 +87,6 @@ ngx_js_call(njs_vm_t *vm, ngx_str_t *fname, njs_opaque_value_t *value,
 }
 
 
-njs_int_t
-ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
-{
-    char       *p;
-    ngx_str_t  *field;
-
-    p = njs_vm_external(vm, value);
-    if (p == NULL) {
-        njs_value_undefined_set(retval);
-        return NJS_DECLINED;
-    }
-
-    field = (ngx_str_t *) (p + njs_vm_prop_magic32(prop));
-
-    return njs_vm_value_string_set(vm, retval, field->data, field->len);
-}
-
-
 ngx_int_t
 ngx_js_integer(njs_vm_t *vm, njs_value_t *value, ngx_int_t *n)
 {
@@ -93,3 +116,114 @@ ngx_js_string(njs_vm_t *vm, njs_value_t *value, njs_str_t *str)
 
     return NGX_OK;
 }
+
+
+ngx_int_t
+ngx_js_core_init(njs_vm_t *vm, ngx_log_t *log)
+{
+    njs_int_t             ret;
+    njs_str_t             name;
+    njs_opaque_value_t    value;
+    njs_external_proto_t  proto;
+
+    proto = njs_vm_external_prototype(vm, ngx_js_ext_core,
+                                      njs_nitems(ngx_js_ext_core));
+    if (proto == NULL) {
+        ngx_log_error(NGX_LOG_EMERG, log, 0, "failed to add js core proto");
+        return NGX_ERROR;
+    }
+
+    ret = njs_vm_external_create(vm, njs_value_arg(&value), proto, NULL, 1);
+    if (njs_slow_path(ret != NJS_OK)) {
+        ngx_log_error(NGX_LOG_EMERG, log, 0,
+                      "njs_vm_external_create() failed\n");
+        return NGX_ERROR;
+    }
+
+    name.length = 3;
+    name.start = (u_char *) "ngx";
+
+    ret = njs_vm_bind(vm, &name, njs_value_arg(&value), 1);
+    if (njs_slow_path(ret != NJS_OK)) {
+        ngx_log_error(NGX_LOG_EMERG, log, 0, "njs_vm_bind() failed\n");
+        return NGX_ERROR;
+    }
+
+    return NGX_OK;
+}
+
+
+njs_int_t
+ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval)
+{
+    char       *p;
+    ngx_str_t  *field;
+
+    p = njs_vm_external(vm, value);
+    if (p == NULL) {
+        njs_value_undefined_set(retval);
+        return NJS_DECLINED;
+    }
+
+    field = (ngx_str_t *) (p + njs_vm_prop_magic32(prop));
+
+    return njs_vm_value_string_set(vm, retval, field->data, field->len);
+}
+
+
+njs_int_t
+ngx_js_ext_constant(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    njs_value_number_set(retval, njs_vm_prop_magic32(prop));
+
+    return NJS_OK;
+}
+
+
+njs_int_t
+ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t level)
+{
+    char                *p;
+    ngx_int_t            lvl;
+    njs_str_t            msg;
+    njs_value_t         *value;
+    ngx_connection_t    *c;
+    ngx_log_handler_pt   handler;
+
+    p = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    if (p == NULL) {
+        njs_vm_error(vm, "\"this\" is not an external");
+        return NJS_ERROR;
+    }
+
+    value =  njs_arg(args, nargs, (level != 0) ? 1 : 2);
+
+    if (level == 0) {
+        if (ngx_js_integer(vm, njs_arg(args, nargs, 1), &lvl) != NGX_OK) {
+            return NJS_ERROR;
+        }
+
+        level = lvl;
+    }
+
+    if (ngx_js_string(vm, value, &msg) != NGX_OK) {
+        return NJS_ERROR;
+    }
+
+    c = ngx_external_connection(vm, p);
+    handler = c->log->handler;
+    c->log->handler = NULL;
+
+    ngx_log_error(level, c->log, 0, "js: %*s", msg.length, msg.start);
+
+    c->log->handler = handler;
+
+    njs_value_undefined_set(njs_vm_retval(vm));
+
+    return NJS_OK;
+}
+
+
