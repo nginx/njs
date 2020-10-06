@@ -16848,6 +16848,13 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = {}; a.a = a; JSON.stringify(a)"),
       njs_str("TypeError: Nested too deep or a cyclic structure") },
 
+    { njs_str("var array = [1,2,3];"
+              "array[1] = {get value() {"
+              "    Object.defineProperty(array, '2', {get: () => 10}) }"
+              "};"
+              "JSON.stringify(array)"),
+      njs_str("[1,{},10]") },
+
     /* njs.dump(). */
 
     { njs_str("njs.dump({a:1, b:[1,,2,{c:new Boolean(1)}]})"),

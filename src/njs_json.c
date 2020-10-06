@@ -1296,7 +1296,18 @@ njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify,
                 njs_json_stringify_indent(stringify, &chain, 0);
             }
 
-            stringify->retval = njs_array_start(&state->value)[state->index++];
+            if (njs_is_fast_array(&state->value)) {
+                value = njs_array_start(&state->value);
+                stringify->retval = value[state->index++];
+
+            } else {
+                ret = njs_value_property_i64(vm, &state->value, state->index++,
+                                             &stringify->retval);
+                if (njs_slow_path(ret == NJS_ERROR)) {
+                    return ret;
+                }
+            }
+
             value = &stringify->retval;
 
             ret = njs_json_stringify_to_json(stringify, state, NULL, value);
