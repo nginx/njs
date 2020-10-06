@@ -1077,6 +1077,7 @@ njs_json_push_stringify_state(njs_vm_t *vm, njs_json_stringify_t *stringify,
     state->key = NULL;
 
     if (njs_is_fast_array(value)) {
+        state->length = njs_array_len(value);
         state->type = NJS_JSON_ARRAY;
         state->array = 1;
 
@@ -1279,7 +1280,7 @@ njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify,
                 njs_json_stringify_indent(stringify, &chain, 0);
             }
 
-            if (state->index >= njs_array_len(&state->value)) {
+            if (state->index >= state->length) {
                 njs_json_stringify_indent(stringify, &chain, -1);
                 njs_chb_append_literal(&chain,"]");
 
