@@ -16437,6 +16437,10 @@ static njs_unit_test_t  njs_test[] =
                  "                   function(k, v) {return v.a.a;}); o"),
       njs_str("TypeError: cannot get property \"a\" of undefined") },
 
+    { njs_str("function func() {this[8] = 1; return new Int8Array(func)}"
+              "JSON.parse('[1]', func);"),
+      njs_str("") },
+
     /* JSON.stringify() */
 
     { njs_str("JSON.stringify()"),
