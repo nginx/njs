@@ -1831,6 +1831,11 @@ ngx_http_js_ext_internal_redirect(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
+    if (r->parent != NULL) {
+        njs_vm_error(vm, "internalRedirect cannot be called from a subrequest");
+        return NJS_ERROR;
+    }
+
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
     if (ngx_http_js_string(vm, njs_arg(args, nargs, 1), &uri) != NJS_OK) {
