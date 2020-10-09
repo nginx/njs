@@ -1,9 +1,11 @@
 /// <reference path="../../build/ts/ngx_http_js_module.d.ts" />
 /// <reference path="../../build/ts/fs.d.ts" />
 /// <reference path="../../build/ts/querystring.d.ts" />
+/// <reference path="../../build/ts/crypto.d.ts" />
 
 import fs from 'fs';
 import qs from 'querystring';
+import crypto from 'crypto';
 
 function http_module(r: NginxHTTPRequest) {
     var bs: NjsByteString;
@@ -79,6 +81,18 @@ function qs_module(str: NjsByteString) {
 
     o = qs.parse(str);
     s = qs.stringify(o);
+}
+
+function crypto_module(str: NjsByteString) {
+    var h;
+    var b:Buffer;
+    var s:string;
+
+    h = crypto.createHash("sha1");
+    h = h.update(str).update(Buffer.from([0]));
+    b = h.digest();
+
+    s = crypto.createHash("sha256").digest("hex");
 }
 
 function buffer(b: Buffer) {
