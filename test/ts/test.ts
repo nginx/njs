@@ -1,7 +1,9 @@
 /// <reference path="../../build/ts/ngx_http_js_module.d.ts" />
 /// <reference path="../../build/ts/fs.d.ts" />
+/// <reference path="../../build/ts/querystring.d.ts" />
 
 import fs from 'fs';
+import qs from 'querystring';
 
 function http_module(r: NginxHTTPRequest) {
     var bs: NjsByteString;
@@ -69,6 +71,14 @@ function fs_module() {
 
     s = fs.readFileSync('/path', 'utf8');
     s = fs.readFileSync(Buffer.from('/path'), {encoding:'hex'});
+}
+
+function qs_module(str: NjsByteString) {
+    var o;
+    var s:string;
+
+    o = qs.parse(str);
+    s = qs.stringify(o);
 }
 
 function buffer(b: Buffer) {
