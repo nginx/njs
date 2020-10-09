@@ -1,4 +1,7 @@
 /// <reference path="../../build/ts/ngx_http_js_module.d.ts" />
+/// <reference path="../../build/ts/fs.d.ts" />
+
+import fs from 'fs';
 
 function http_module(r: NginxHTTPRequest) {
     var bs: NjsByteString;
@@ -59,6 +62,13 @@ function http_module(r: NginxHTTPRequest) {
     r.subrequest('/p/sub4', 'a=1&b=2').then(reply => r.return(reply.status,
                                         JSON.stringify(JSON.parse(reply.responseBody))));
 
+}
+
+function fs_module() {
+    var s:string;
+
+    s = fs.readFileSync('/path', 'utf8');
+    s = fs.readFileSync(Buffer.from('/path'), {encoding:'hex'});
 }
 
 function buffer(b: Buffer) {
