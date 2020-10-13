@@ -8284,6 +8284,18 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("/b(c)(z)?(.)/[Symbol.replace]('abcde', '[$01$02$03$04$00]')"),
       njs_str("a[cd$04$00]e") },
 
+    { njs_str("var r = /./; r.exec = () => {return {}};"
+              "r[Symbol.replace]('ABCD', 'b')"),
+      njs_str("b") },
+
+    { njs_str("var r = /./; r.exec = () => {return {}};"
+              "r[Symbol.replace]('ABCD', (m,p,o) => `${m}|${p}|${o}`)"),
+      njs_str("undefined|0|ABCD") },
+
+    { njs_str("var r = /./; r.exec = () => Buffer.from([]).toJSON().data;"
+              "r[Symbol.replace]('ABCD', 'b')"),
+      njs_str("b") },
+
     { njs_str("'α'.replace(/(h*)/g, '$1βγ')"),
       njs_str("βγαβγ") },
 

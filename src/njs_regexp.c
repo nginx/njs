@@ -1343,14 +1343,14 @@ njs_regexp_prototype_symbol_replace(njs_vm_t *vm, njs_value_t *args,
 
         pos = njs_max(njs_min(pos, (int64_t) s.size), 0);
 
-        if (njs_fast_path(njs_is_fast_array(r))) {
+        if (njs_fast_path(njs_is_fast_array(r) && njs_array_len(r) != 0)) {
             array = njs_array(r);
 
             arguments = array->start;
             arguments[0] = matched;
-            ncaptures = array->length;
+            ncaptures = njs_max((int64_t) array->length - 1, 0);
 
-            for (n = 1; n < ncaptures; n++) {
+            for (n = 1; n <= ncaptures; n++) {
                 if (njs_is_undefined(&arguments[n])) {
                     continue;
                 }
@@ -1367,7 +1367,9 @@ njs_regexp_prototype_symbol_replace(njs_vm_t *vm, njs_value_t *args,
                 goto exception;
             }
 
-            array = njs_array_alloc(vm, 0, ncaptures, 0);
+            ncaptures = njs_max(ncaptures - 1, 0);
+
+            array = njs_array_alloc(vm, 0, ncaptures + 1, 0);
             if (njs_slow_path(array == NULL)) {
                 goto exception;
             }
@@ -1375,7 +1377,7 @@ njs_regexp_prototype_symbol_replace(njs_vm_t *vm, njs_value_t *args,
             arguments = array->start;
             arguments[0] = matched;
 
-            for (n = 1; n < ncaptures; n++) {
+            for (n = 1; n <= ncaptures; n++) {
                 ret = njs_value_property_i64(vm, r, n, &arguments[n]);
                 if (njs_slow_path(ret == NJS_ERROR)) {
                     goto exception;
@@ -1406,7 +1408,7 @@ njs_regexp_prototype_symbol_replace(njs_vm_t *vm, njs_value_t *args,
             }
 
             ret = njs_string_get_substitution(vm, &matched, string, pos,
-                                              arguments, ncaptures - 1, &groups,
+                                              arguments, ncaptures, &groups,
                                               replace, &retval);
 
         } else {
