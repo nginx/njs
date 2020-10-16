@@ -1,6 +1,6 @@
 /// <reference path="../../build/ts/ngx_http_js_module.d.ts" />
 
-function handler(r: NginxHTTPRequest) {
+function http_module(r: NginxHTTPRequest) {
     var bs: NjsByteString;
     var s: string;
 
@@ -59,8 +59,18 @@ function handler(r: NginxHTTPRequest) {
     r.subrequest('/p/sub4', 'a=1&b=2').then(reply => r.return(reply.status,
                                         JSON.stringify(JSON.parse(reply.responseBody))));
 
-    // builtin objects
+}
 
+function buffer(b: Buffer) {
+    var s:string;
+
+    s = b.toString() +  b.toString('utf8') + b.toString('hex');
+    b = Buffer.concat([b, Buffer.from([0,1,2])]);
+
+    b.equals(b);
+}
+
+function builtins() {
     njs.dump('asdf');
     njs.version != process.argv[1];
 }
