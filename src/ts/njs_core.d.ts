@@ -3,10 +3,14 @@ type BufferEncoding = "utf8" | "hex" | "base64" | "base64url";
 interface StringConstructor {
     /**
      * Creates a byte string from an encoded string.
+     *
+     * @deprecated will be removed in the future.
      */
     bytesFrom(bytes: string, encoding: Exclude<BufferEncoding, "utf8">): NjsByteString;
     /**
      * Creates a byte string from an array that contains octets.
+     *
+     * @deprecated will be removed in the future.
      */
     bytesFrom(bytes: Array<number>): NjsByteString;
 }
