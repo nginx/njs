@@ -234,10 +234,11 @@ benchmark: $NJS_BUILD_DIR/njs_auto_config.h \\
 
 	$NJS_BUILD_DIR/njs_benchmark
 
+.PHONY: ts
 ts:
-	mkdir -p $NJS_BUILD_DIR/ts
-	cp nginx/ts/*.ts $NJS_BUILD_DIR/ts/
-	cp src/ts/*.ts $NJS_BUILD_DIR/ts/
+	mkdir -p $NJS_BUILD_DIR/ts/njs_modules
+	cp ts/*.d.ts $NJS_BUILD_DIR/ts/
+	cp ts/njs_modules/* $NJS_BUILD_DIR/ts/njs_modules/
 
 ts_test: ts
 	tsc ./test/ts/test.ts
