@@ -1,4 +1,4 @@
-/// <reference path="njs_core.d.ts" />
+/// <reference path="../njs_core.d.ts" />
 
 declare module "fs" {
 
