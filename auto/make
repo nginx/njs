@@ -264,10 +264,21 @@ benchmark: $NJS_BUILD_DIR/njs_auto_config.h \\
 ts:
 	mkdir -p $NJS_BUILD_DIR/ts/njs_modules
 	cp ts/*.d.ts $NJS_BUILD_DIR/ts/
+	cp ts/*.json $NJS_BUILD_DIR/ts/
 	cp ts/njs_modules/* $NJS_BUILD_DIR/ts/njs_modules/
+	cp LICENSE $NJS_BUILD_DIR/ts/
+	NJS_VER=`grep NJS_VERSION src/njs.h | sed -e 's/.*"\(.*\)".*/\1/'`; \\
+	sed 's/\("version":\s*\)"\([^"]\+\)"/\1"'\$\${NJS_VER}'"/' \\
+		ts/package.json > $NJS_BUILD_DIR/ts/package.json
+
+ts_lint:
+	tsc -p ./ts
 
 ts_test: ts
 	tsc ./test/ts/test.ts
+
+ts_publish: ts
+	npm publish $NJS_BUILD_DIR/ts
 
 dist:
 	NJS_VER=`grep NJS_VERSION src/njs.h | sed -e 's/.*"\(.*\)".*/\1/'`; \\
