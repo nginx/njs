@@ -66,7 +66,7 @@ interface NginxStreamVariables {
     readonly 'time_iso8601'?: NjsByteString;
     readonly 'time_local'?: NjsByteString;
 
-    [prop: string]: NjsByteString;
+    [prop: string]: NjsByteString | undefined;
 }
 
 interface NginxStreamCallbackFlags {

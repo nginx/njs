@@ -39,7 +39,7 @@ interface NginxHeadersIn {
     readonly 'Warning'?: NjsByteString;
     readonly 'X-Forwarded-For'?: NjsByteString;
 
-    readonly [prop: string]: NjsByteString;
+    readonly [prop: string]: NjsByteString | undefined;
 }
 
 interface NginxHeadersOut {
@@ -76,7 +76,7 @@ interface NginxHeadersOut {
 
     'Set-Cookie'?: NjsStringLike[];
 
-    [prop: string]: NjsStringLike | NjsStringLike[];
+    [prop: string]: NjsStringLike | NjsStringLike[] | undefined;
 }
 
 interface NginxVariables {
@@ -229,7 +229,7 @@ interface NginxVariables {
     readonly 'upstream_trailer_'?: NjsByteString;
     readonly 'uri'?: NjsByteString;
 
-    [prop: string]: NjsStringLike;
+    [prop: string]: NjsStringLike | undefined;
 }
 
 interface NginxSubrequestOptions {
