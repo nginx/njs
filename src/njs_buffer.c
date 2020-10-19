@@ -1331,7 +1331,7 @@ njs_buffer_prototype_write_int(njs_vm_t *vm, njs_value_t *args,
         break;
     }
 
-    njs_set_undefined(&vm->retval);
+    njs_set_number(&vm->retval, index + size);
 
     return NJS_OK;
 }
