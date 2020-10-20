@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "target": "ES5",
+        "module": "es2015",
+        "lib": [
+            "ES2015"
+        ],
+        "noEmit": true,
+        "downlevelIteration": true,
+        "strict": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "strictBindCallApply": true,
+        "strictPropertyInitialization": true,
+        "noImplicitThis": true,
+        "alwaysStrict": true,
+
+        "moduleResolution": "node",
+        "forceConsistentCasingInFileNames": true
+    }
+}

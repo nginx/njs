@@ -1,4 +1,4 @@
-/// <reference path="njs_core.d.ts" />
+/// <reference path="index.d.ts" />
 
 interface Console {
     log(...args: any[]): void;
