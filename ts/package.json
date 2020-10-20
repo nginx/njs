@@ -1,0 +1,30 @@
+{
+  "name": "njs-types",
+  "version": "0.0.0-dev",
+  "description": "TypeScript definitions for njs scripting language and nginx js modules.",
+  "scripts": {
+    "lint": "tsc"
+  },
+  "files": [
+    "**/*.d.ts"
+  ],
+  "types": "index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nginx/njs.git"
+  },
+  "keywords": [
+    "nginx",
+    "njs",
+    "types"
+  ],
+  "author": "NGINX, Inc.",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/nginx/njs/issues"
+  },
+  "homepage": "https://nginx.org/en/docs/njs/",
+  "devDependencies": {
+    "typescript": "^4.0.3"
+  }
+}

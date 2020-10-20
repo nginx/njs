@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "module": "es2015",
+        "lib": [
+            "ES2015",
+            "ES2016.Array.Include",
+            "ES2017.Object",
+            "ES2017.String"
+        ],
+        "noEmit": true,
+        "strict": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "strictBindCallApply": true,
+        "strictPropertyInitialization": true,
+        "noImplicitThis": true,
+        "alwaysStrict": true,
+
+        "moduleResolution": "node",
+        "forceConsistentCasingInFileNames": true
+    }
+}
