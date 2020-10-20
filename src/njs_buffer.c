@@ -228,10 +228,12 @@ njs_buffer_from(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     njs_int_t                    ret;
-    njs_value_t                  *value;
+    njs_value_t                  *value, retval;
     const njs_buffer_encoding_t  *encoding;
 
     value = njs_arg(args, nargs, 1);
+
+next:
 
     switch (value->type) {
     case NJS_TYPED_ARRAY:
@@ -251,6 +253,19 @@ njs_buffer_from(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     default:
         if (njs_is_object(value)) {
+            ret = njs_value_of(vm, value, &retval);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                return ret;
+            }
+
+            if (ret == NJS_OK && !njs_is_null(&retval)
+                && !(njs_is_object(&retval)
+                     && njs_object(&retval) == njs_object(value)))
+            {
+                *value = retval;
+                goto next;
+            }
+
             ret = njs_buffer_from_object(vm, value);
             if (njs_slow_path(ret != NJS_DECLINED)) {
                 return ret;

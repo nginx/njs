@@ -1053,6 +1053,7 @@ njs_array_t *njs_value_enumerate(njs_vm_t *vm, njs_value_t *value,
     njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all);
 njs_array_t *njs_value_own_enumerate(njs_vm_t *vm, njs_value_t *value,
     njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all);
+njs_int_t njs_value_of(njs_vm_t *vm, njs_value_t *value, njs_value_t *retval);
 njs_int_t njs_value_length(njs_vm_t *vm, njs_value_t *value, int64_t *dst);
 const char *njs_type_string(njs_value_type_t type);
 

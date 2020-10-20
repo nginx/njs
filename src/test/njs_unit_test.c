@@ -18580,6 +18580,29 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var buf = Buffer.from('α'); njs.dump(buf)"),
       njs_str("Buffer [206,177]") },
 
+    { njs_str("var arr = new Array(1,2,3); arr.valueOf = () => arr;"
+              "njs.dump(Buffer.from(arr))"),
+      njs_str("Buffer [1,2,3]") },
+
+    { njs_str("var obj = new Object(); obj.valueOf = () => obj;"
+              "Buffer.from(obj)"),
+      njs_str("TypeError: first argument object is not a string or Buffer-like object") },
+
+    { njs_str("var obj = new Object(); obj.valueOf = () => undefined;"
+              "njs.dump(Buffer.from(obj))"),
+      njs_str("TypeError: first argument undefined is not a string or Buffer-like object") },
+
+    { njs_str("var arr = new Array(1,2,3); arr.valueOf = () => null;"
+              "njs.dump(Buffer.from(arr))"),
+      njs_str("Buffer [1,2,3]") },
+
+    { njs_str("var obj = new Object(); obj.valueOf = () => new Array(1,2,3);"
+              "njs.dump(Buffer.from(obj))"),
+      njs_str("Buffer [1,2,3]") },
+
+    { njs_str("njs.dump(Buffer.from(new String('test')))"),
+      njs_str("Buffer [116,101,115,116]") },
+
     { njs_str("["
              " ['6576696c', 'hex'],"
              " ['ZXZpbA==', 'base64'],"

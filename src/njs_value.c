@@ -262,6 +262,33 @@ njs_value_own_enumerate(njs_vm_t *vm, njs_value_t *value,
 
 
 njs_int_t
+njs_value_of(njs_vm_t *vm, njs_value_t *value, njs_value_t *retval)
+{
+
+    njs_int_t  ret;
+
+    static const njs_value_t  value_of = njs_string("valueOf");
+
+    if (njs_slow_path(!njs_is_object(value))) {
+        return NJS_DECLINED;
+    }
+
+    ret = njs_value_property(vm, value, njs_value_arg(&value_of),
+                             retval);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    if (!njs_is_function(retval)) {
+        njs_type_error(vm, "object.valueOf is not a function");
+        return NJS_ERROR;
+    }
+
+    return njs_function_apply(vm, njs_function(retval), value, 1, retval);
+}
+
+
+njs_int_t
 njs_value_length(njs_vm_t *vm, njs_value_t *value, int64_t *length)
 {
     njs_string_prop_t  string_prop;
