@@ -1,8 +1,3 @@
-/// <reference path="../../build/ts/ngx_http_js_module.d.ts" />
-/// <reference path="../../build/ts/fs.d.ts" />
-/// <reference path="../../build/ts/querystring.d.ts" />
-/// <reference path="../../build/ts/crypto.d.ts" />
-
 import fs from 'fs';
 import qs from 'querystring';
 import crypto from 'crypto';
