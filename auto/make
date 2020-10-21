@@ -21,6 +21,8 @@ NJS_STATIC_LINK = ${AR} -r -c
 NJS_LINK = ${CC} ${NJS_LD_OPT}
 NJS_CFLAGS = ${NJS_CFLAGS} ${NJS_CC_OPT} ${CFLAGS}
 
+NJS_VER = $(grep NJS_VERSION src/njs.h | sed -e 's/.*"\(.*\)".*/\1/')
+
 default: $NJS_DEFAULT_TARGET
 
 NJS_LIB_INCS = -Isrc -I$NJS_BUILD_DIR
@@ -241,12 +243,11 @@ ts_test: ts
 	tsc ./test/ts/test.ts
 
 dist:
-	NJS_VER=`grep NJS_VERSION src/njs.h | sed -e 's/.*"\(.*\)".*/\1/'`; \\
-	rm -rf njs-\$\${NJS_VER} \\
-	&& hg archive njs-\$\${NJS_VER}.tar.gz \\
-		-p njs-\$\${NJS_VER} \\
+	rm -rf njs-\$(NJS_VER) \\
+	&& hg archive njs-\$(NJS_VER).tar.gz \\
+		-p njs-\$(NJS_VER) \\
 		-X ".hg*" \\
-	&& echo njs-\$\${NJS_VER}.tar.gz done
+	&& echo njs-\$(NJS_VER).tar.gz done
 END
 
 
