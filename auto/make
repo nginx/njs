@@ -19,6 +19,9 @@ NJS_STATIC_LINK = ${AR} -r -c
 NJS_LINK = ${CC} ${NJS_LD_OPT}
 NJS_CFLAGS = ${NJS_CFLAGS} ${NJS_CC_OPT} ${CFLAGS}
 
+NJS_VER = $(grep NJS_VERSION src/njs.h | sed -e 's/.*"\(.*\)".*/\1/')
+NJS_TYPES_VER ?= \$(NJS_VER)
+
 default: $NJS_DEFAULT_TARGET
 END
 
@@ -267,8 +270,7 @@ ts:
 	cp ts/*.json $NJS_BUILD_DIR/ts/
 	cp ts/njs_modules/* $NJS_BUILD_DIR/ts/njs_modules/
 	cp LICENSE $NJS_BUILD_DIR/ts/
-	NJS_VER=`grep NJS_VERSION src/njs.h | sed -e 's/.*"\(.*\)".*/\1/'`; \\
-	sed 's/\("version":\s*\)"\([^"]\+\)"/\1"'\$\${NJS_VER}'"/' \\
+	sed 's/\("version":\s*\)"\([^"]\+\)"/\1"\$(NJS_TYPES_VER)"/' \\
 		ts/package.json > $NJS_BUILD_DIR/ts/package.json
 
 ts_lint:
@@ -281,12 +283,11 @@ ts_publish: ts
 	npm publish $NJS_BUILD_DIR/ts
 
 dist:
-	NJS_VER=`grep NJS_VERSION src/njs.h | sed -e 's/.*"\(.*\)".*/\1/'`; \\
-	rm -rf njs-\$\${NJS_VER} \\
-	&& hg archive njs-\$\${NJS_VER}.tar.gz \\
-		-p njs-\$\${NJS_VER} \\
+	rm -rf njs-\$(NJS_VER) \\
+	&& hg archive njs-\$(NJS_VER).tar.gz \\
+		-p njs-\$(NJS_VER) \\
 		-X ".hg*" \\
-	&& echo njs-\$\${NJS_VER}.tar.gz done
+	&& echo njs-\$(NJS_VER).tar.gz done
 END
 
 
