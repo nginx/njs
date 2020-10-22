@@ -10,9 +10,9 @@ function http_module(r: NginxHTTPRequest) {
 
     s = 'ordinary string';
     bs = String.bytesFrom('000000', 'hex');
-    bs = s.toBytes();
+    var bs2: NjsByteString | null = s.toBytes();
     bs = s.toUTF8();
-    bs.fromBytes(null, null);
+    bs.fromBytes(undefined, undefined);
 
     s = bs + '';
 
@@ -25,29 +25,30 @@ function http_module(r: NginxHTTPRequest) {
 
     bs = r.args.x;
     bs = r.args[1];
-    s = r.args.x.fromUTF8();
+    var s2: string | null = r.args.x.fromUTF8();
     s = r.args.x + '';
 
     // r.headersIn
 
-    r.headersIn['Accept'].fromBytes() == 'dddd';
+    r.headersIn['Accept']?.fromBytes() == 'dddd';
 
     // r.headersOut
 
     r.headersOut['Content-Type'] = 'text/plain';
     // Warning: r.headersOut['Content-Type'] = ['a', 'b'];
     r.headersOut['Connection'] = undefined;
-    r.headersOut['Connection'] = null;
+
+    delete r.headersOut['Bar'];
 
     r.headersOut['Set-Cookie'] = ['aaa', 'bbb'];
     r.headersOut['Foo'] = ['aaa', 'bbb'];
 
-    r.subrequest('/uri', reply => r.return(200, reply.headersOut["Location"]));
+    r.subrequest('/uri', reply => r.return(200, reply.headersOut["Location"] ?? ''));
 
     // r.log
 
     r.log(bs);
-    r.log(r.headersOut['Connection']);
+    r.log(r.headersOut['Connection'] ?? '');
 
     // r.variables
 
@@ -59,7 +60,7 @@ function http_module(r: NginxHTTPRequest) {
     r.subrequest('/p/sub2', reply => r.return(reply.status));
     r.subrequest('/p/sub3', {detached:true});
     r.subrequest('/p/sub4', 'a=1&b=2').then(reply => r.return(reply.status,
-                                        JSON.stringify(JSON.parse(reply.responseBody))));
+                                        JSON.stringify(JSON.parse(reply.responseBody ?? ''))));
 
 }
 
