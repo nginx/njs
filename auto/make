@@ -276,6 +276,7 @@ $NJS_BUILD_DIR/ts/node_modules: $NJS_BUILD_DIR/ts/package.json
 	touch $NJS_BUILD_DIR/ts/node_modules
 
 $NJS_BUILD_DIR/njs-types-\$(NJS_TYPES_VER).tgz: $NJS_BUILD_DIR/ts/package.json
+	hg id -i > $NJS_BUILD_DIR/ts/COMMITHASH || true
 	cd $NJS_BUILD_DIR && \$(NPM) pack ./ts
 
 $NJS_BUILD_DIR/test/ts/package.json: test/ts/*.json test/ts/*.ts
