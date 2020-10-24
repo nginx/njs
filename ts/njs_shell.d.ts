@@ -7,3 +7,5 @@ interface Console {
     time(label?: NjsStringLike): void;
     timeEnd(label?: NjsStringLike): void;
 }
+
+declare const console: Console;
