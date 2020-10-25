@@ -85,6 +85,8 @@ static const njs_object_type_init_t *const
 
     /* Hidden types. */
 
+    &njs_iterator_type_init,
+    &njs_array_iterator_type_init,
     &njs_dirent_type_init,
     &njs_hash_type_init,
     &njs_hmac_type_init,
@@ -294,6 +296,10 @@ njs_builtin_objects_create(njs_vm_t *vm)
     constructor = shared->constructors;
 
     for (i = NJS_OBJ_TYPE_OBJECT; i < NJS_OBJ_TYPE_MAX; i++) {
+        if (njs_object_type_init[i]->constructor_props == NULL) {
+            continue;
+        }
+
         constructor[i] = njs_object_type_init[i]->constructor;
         constructor[i].object.shared = 0;
 
@@ -359,6 +365,9 @@ njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global)
     {
         vm->prototypes[i].object.__proto__ = typed_array_prototype;
     }
+
+    vm->prototypes[NJS_OBJ_TYPE_ARRAY_ITERATOR].object.__proto__ =
+                              &vm->prototypes[NJS_OBJ_TYPE_ITERATOR].object;
 
     vm->prototypes[NJS_OBJ_TYPE_BUFFER].object.__proto__ =
                               &vm->prototypes[NJS_OBJ_TYPE_UINT8_ARRAY].object;

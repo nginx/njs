@@ -3351,6 +3351,24 @@ njs_array_prototype_copy_within(njs_vm_t *vm, njs_value_t *args,
 }
 
 
+static njs_int_t
+njs_array_prototype_iterator_obj(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t kind)
+{
+    njs_int_t    ret;
+    njs_value_t  *this;
+
+    this = njs_argument(args, 0);
+
+    ret = njs_value_to_object(vm, this);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    return njs_array_iterator_create(vm, this, &vm->retval, kind);
+}
+
+
 static const njs_object_prop_t  njs_array_prototype_properties[] =
 {
     {
@@ -3380,6 +3398,15 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("copyWithin"),
         .value = njs_native_function(njs_array_prototype_copy_within, 2),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("entries"),
+        .value = njs_native_function2(njs_array_prototype_iterator_obj, 0,
+                                      NJS_ENUM_BOTH),
         .writable = 1,
         .configurable = 1,
     },
@@ -3459,6 +3486,15 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("join"),
         .value = njs_native_function(njs_array_prototype_join, 1),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("keys"),
+        .value = njs_native_function2(njs_array_prototype_iterator_obj, 0,
+                                      NJS_ENUM_KEYS),
         .writable = 1,
         .configurable = 1,
     },
@@ -3576,6 +3612,24 @@ static const njs_object_prop_t  njs_array_prototype_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("unshift"),
         .value = njs_native_function(njs_array_prototype_unshift, 1),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("values"),
+        .value = njs_native_function2(njs_array_prototype_iterator_obj, 0,
+                                      NJS_ENUM_VALUES),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_wellknown_symbol(NJS_SYMBOL_ITERATOR),
+        .value = njs_native_function2(njs_array_prototype_iterator_obj, 0,
+                                      NJS_ENUM_VALUES),
         .writable = 1,
         .configurable = 1,
     },

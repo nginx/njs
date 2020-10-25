@@ -2184,6 +2184,29 @@ njs_typed_array_prototype_join(njs_vm_t *vm, njs_value_t *args,
 
 
 static njs_int_t
+njs_typed_array_prototype_iterator_obj(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t kind)
+{
+    njs_value_t        *this;
+    njs_typed_array_t  *array;
+
+    this = njs_argument(args, 0);
+    if (njs_slow_path(!njs_is_typed_array(this))) {
+        njs_type_error(vm, "this is not a typed array");
+        return NJS_ERROR;
+    }
+
+    array = njs_typed_array(this);
+    if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
+    return njs_array_iterator_create(vm, this, &vm->retval, kind);
+}
+
+
+static njs_int_t
 njs_typed_array_constructor_intrinsic(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
@@ -2326,6 +2349,15 @@ static const njs_object_prop_t  njs_typed_array_prototype_properties[] =
 
     {
         .type = NJS_PROPERTY,
+        .name = njs_string("entries"),
+        .value = njs_native_function2(njs_typed_array_prototype_iterator_obj, 0,
+                                      NJS_ENUM_BOTH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
         .name = njs_string("every"),
         .value = njs_native_function2(njs_typed_array_prototype_iterator, 1,
                                       NJS_ARRAY_EVERY),
@@ -2397,6 +2429,15 @@ static const njs_object_prop_t  njs_typed_array_prototype_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("fill"),
         .value = njs_native_function(njs_typed_array_prototype_fill, 1),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("keys"),
+        .value = njs_native_function2(njs_typed_array_prototype_iterator_obj, 0,
+                                      NJS_ENUM_KEYS),
         .writable = 1,
         .configurable = 1,
     },
@@ -2487,6 +2528,24 @@ static const njs_object_prop_t  njs_typed_array_prototype_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("toString"),
         .value = njs_native_function(njs_array_prototype_to_string, 0),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("values"),
+        .value = njs_native_function2(njs_typed_array_prototype_iterator_obj, 0,
+                                      NJS_ENUM_VALUES),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_wellknown_symbol(NJS_SYMBOL_ITERATOR),
+        .value = njs_native_function2(njs_typed_array_prototype_iterator_obj, 0,
+                                      NJS_ENUM_VALUES),
         .writable = 1,
         .configurable = 1,
     },

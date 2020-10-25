@@ -6864,6 +6864,138 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("[1,2].sort(1)"),
       njs_str("TypeError: comparefn must be callable or undefined") },
 
+    /*
+      Array.prototype.keys()
+      Array.prototype.values()
+      Array.prototype.entries()
+    */
+
+    { njs_str("['keys', 'values', 'entries', Symbol.iterator]"
+              ".every((x) => typeof Array.prototype[x] == 'function')"),
+      njs_str("true") },
+
+    { njs_str("['keys', 'values', 'entries', Symbol.iterator]"
+              ".every((x) => Array.prototype[x].length === 0)"),
+      njs_str("true") },
+
+#if 0
+    { njs_str("Array.prototype[Symbol.iterator] === Array.prototype.values"),
+      njs_str("true") },
+#endif
+
+    { njs_str("['keys', 'values', 'entries', Symbol.iterator]"
+              ".every((x) => typeof [][x]() == 'object')"),
+      njs_str("true") },
+
+    { njs_str("['keys', 'values', 'entries', Symbol.iterator]"
+              ".every((x) => typeof [][x]().next == 'function')"),
+      njs_str("true") },
+
+    { njs_str("var i = [1,2,3].keys();"
+              "[i.next(), i.next(), i.next(), i.next()].map((x) => x.value)"),
+      njs_str("0,1,2,") },
+
+    { njs_str("var i = [1,2,3].values();"
+              "[i.next(), i.next(), i.next(), i.next()].map((x) => x.value)"),
+      njs_str("1,2,3,") },
+
+    { njs_str("var a = [], i = a.values();"
+              "a.push(1); a.push(2); a.push(3);"
+              "[i.next(), i.next(), i.next(), i.next()].map((x) => x.value)"),
+      njs_str("1,2,3,") },
+
+    { njs_str("var a = [], i = a.values(); i.next();"
+              "a.push(1); a.push(2); a.push(3);"
+              "[i.next(), i.next(), i.next(), i.next()].map((x) => x.value)"),
+      njs_str(",,,") },
+
+    { njs_str("var i = [1,2,3].entries();"
+              "[i.next(), i.next(), i.next(), i.next()].map((x) => x.value)"),
+      njs_str("0,1,1,2,2,3,") },
+
+    { njs_str("var i = Array.prototype.keys.call('abc');"
+              "[i.next(), i.next(), i.next(), i.next()].map((x) => x.done)"),
+      njs_str("false,false,false,true") },
+
+    { njs_str("var i = Array.prototype.values.call('abc');"
+              "[i.next(), i.next(), i.next(), i.next()].map((x) => x.value)"),
+      njs_str("a,b,c,") },
+
+    { njs_str("var x = [true, 1, Symbol()];"
+              "x.map((x) => Array.prototype.keys.call(x).next()).every((x) => x.done)"),
+      njs_str("true") },
+
+    { njs_str("var x = [true, 1, Symbol()];"
+              "x.forEach((x) => Object.getPrototypeOf(Object(x)).length = 1);"
+              "x.map((x) => Array.prototype.keys.call(x).next()).every((x) => !x.done)"),
+      njs_str("true") },
+
+    /*
+      TypedArray.prototype.keys()
+      TypedArray.prototype.values()
+      TypedArray.prototype.entries()
+    */
+
+    { njs_str("['keys', 'values', 'entries', Symbol.iterator]"
+              ".every((x) => typeof Buffer.prototype[x] == 'function')"),
+      njs_str("true") },
+
+    { njs_str("var i = Buffer.from([1,2,3]).keys();"
+              "[i.next(), i.next(), i.next(), i.next()].map((x) => x.value)"),
+      njs_str("0,1,2,") },
+
+    { njs_str("var i = Buffer.from([1,2,3]).values();"
+              "[i.next(), i.next(), i.next(), i.next()].map((x) => x.value)"),
+      njs_str("1,2,3,") },
+
+    { njs_str("var i = Buffer.from([1,2,3]).entries();"
+              "[i.next(), i.next(), i.next(), i.next()].map((x) => x.value)"),
+      njs_str("0,1,1,2,2,3,") },
+
+    { njs_str("[true, 1, Symbol(), 'test', [], { length: 1 }]"
+              ".map((x) => { try { Buffer.prototype.keys.call(x); return x; } catch (e) { return e; } })"
+              ".every((x) => x instanceof TypeError)"),
+      njs_str("true") },
+
+    /* %IteratorPrototype% */
+
+    { njs_str("var x = Object.getPrototypeOf(Object.getPrototypeOf([].keys()));"
+              "typeof x[Symbol.iterator] == 'function'"),
+      njs_str("true") },
+
+    { njs_str("var x = Object.getPrototypeOf(Object.getPrototypeOf([].keys()));"
+              "x[Symbol.iterator]() === x"),
+      njs_str("true") },
+
+    /* %ArrayIteratorPrototype% */
+
+    { njs_str("var x = Object.getPrototypeOf([].keys());"
+              "typeof x.next == 'function'"),
+      njs_str("true") },
+
+    { njs_str("var x = Object.getPrototypeOf([].keys());"
+              "x[Symbol.toStringTag] == 'Array Iterator'"),
+      njs_str("true") },
+
+    /* %StringIteratorPrototype% */
+
+    { njs_str("typeof String.prototype[Symbol.iterator] == 'function'"),
+      njs_str("true") },
+
+    { njs_str("var x = Object.getPrototypeOf(''[Symbol.iterator]());"
+              "typeof x.next == 'function'"),
+      njs_str("true") },
+
+#if 0
+    { njs_str("var x = Object.getPrototypeOf(''[Symbol.iterator]());"
+              "x[Symbol.toStringTag] == 'String Iterator'"),
+      njs_str("true") },
+#else
+    { njs_str("var x = Object.getPrototypeOf(''[Symbol.iterator]());"
+              "x[Symbol.toStringTag] == 'Array Iterator'"),
+      njs_str("true") },
+#endif
+
     /* Template literal. */
 
     { njs_str("`"),

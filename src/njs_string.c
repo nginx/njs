@@ -3845,6 +3845,24 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+static njs_int_t
+njs_string_prototype_iterator_obj(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t kind)
+{
+    njs_int_t    ret;
+    njs_value_t  *this;
+
+    this = njs_argument(args, 0);
+
+    ret = njs_string_object_validate(vm, this);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    return njs_array_iterator_create(vm, this, &vm->retval, kind);
+}
+
+
 double
 njs_string_to_number(const njs_value_t *value, njs_bool_t parse_float)
 {
@@ -4324,6 +4342,15 @@ static const njs_object_prop_t  njs_string_prototype_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("replace"),
         .value = njs_native_function(njs_string_prototype_replace, 2),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_wellknown_symbol(NJS_SYMBOL_ITERATOR),
+        .value = njs_native_function2(njs_string_prototype_iterator_obj, 0,
+                                      NJS_ENUM_VALUES),
         .writable = 1,
         .configurable = 1,
     },
