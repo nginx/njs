@@ -71,3 +71,7 @@ NJS_TEST_SRCS=" \
    src/test/njs_unit_test.c \
    src/test/njs_benchmark.c \
 "
+
+NJS_TS_SRCS=$(find ts/ -name "*.d.ts" -o -name "*.json" | xargs)
+
+NJS_TS_TEST_SRCS=$(find test/ts/ -name "*.ts" -o -name "*.json" | xargs)

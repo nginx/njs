@@ -265,7 +265,7 @@ benchmark: $NJS_BUILD_DIR/njs_auto_config.h \\
 
 	$NJS_BUILD_DIR/njs_benchmark
 
-$NJS_BUILD_DIR/ts/package.json: ts/*.json ts/*.d.ts ts/**/*.d.ts
+$NJS_BUILD_DIR/ts/package.json: $NJS_TS_SRCS
 	cp -fr ts $NJS_BUILD_DIR/
 	cp LICENSE $NJS_BUILD_DIR/ts/
 	sed 's/\("version":\s*\)"\([^"]\+\)"/\1"\$(NJS_TYPES_VER)"/' \\
@@ -279,7 +279,7 @@ $NJS_BUILD_DIR/njs-types-\$(NJS_TYPES_VER).tgz: $NJS_BUILD_DIR/ts/package.json
 	hg id -i > $NJS_BUILD_DIR/ts/COMMITHASH || true
 	cd $NJS_BUILD_DIR && \$(NPM) pack ./ts
 
-$NJS_BUILD_DIR/test/ts/package.json: test/ts/*.json test/ts/*.ts
+$NJS_BUILD_DIR/test/ts/package.json: $NJS_TS_TEST_SRCS
 	mkdir -p $NJS_BUILD_DIR/test
 	cp -fr test/ts $NJS_BUILD_DIR/test/
 
