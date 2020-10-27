@@ -297,8 +297,11 @@ ts_lint: $NJS_BUILD_DIR/ts/node_modules
 ts_test: $NJS_BUILD_DIR/test/ts/node_modules
 	cd $NJS_BUILD_DIR/test/ts && \$(NPM) test
 
-ts_publish: $NJS_BUILD_DIR/njs-types-\$(NJS_TYPES_VER).tgz
+ts_publish: ts_clean $NJS_BUILD_DIR/njs-types-\$(NJS_TYPES_VER).tgz
 	\$(NPM) publish $<
+
+ts_clean:
+	rm -rf $NJS_BUILD_DIR/ts $NJS_BUILD_DIR/test/ts
 
 dist:
 	rm -rf njs-\$(NJS_VER) \\
