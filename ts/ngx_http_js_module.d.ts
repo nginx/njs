@@ -1,4 +1,4 @@
-/// <reference path="njs_core.d.ts" />
+/// <reference path="index.d.ts" />
 
 interface NginxHTTPArgs {
     readonly [prop: string]: NjsByteString;

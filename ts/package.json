@@ -6,7 +6,8 @@
     "lint": "tsc"
   },
   "files": [
-    "**/*.d.ts"
+    "**/*.d.ts",
+    "COMMITHASH"
   ],
   "types": "index.d.ts",
   "repository": {

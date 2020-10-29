@@ -22,6 +22,9 @@ NJS_LINK = ${CC} ${NJS_LD_OPT}
 NJS_CFLAGS = ${NJS_CFLAGS} ${NJS_CC_OPT} ${CFLAGS}
 
 NJS_VER = $(grep NJS_VERSION src/njs.h | sed -e 's/.*"\(.*\)".*/\1/')
+NJS_TYPES_VER = \$(NJS_VER)
+
+NPM = npm
 
 default: $NJS_DEFAULT_TARGET
 
@@ -234,21 +237,47 @@ benchmark: $NJS_BUILD_DIR/njs_auto_config.h \\
 
 	$NJS_BUILD_DIR/njs_benchmark
 
-.PHONY: ts
-ts:
-	mkdir -p $NJS_BUILD_DIR/ts/njs_modules
-	cp ts/*.d.ts $NJS_BUILD_DIR/ts/
-	cp ts/njs_modules/* $NJS_BUILD_DIR/ts/njs_modules/
-
-ts_test: ts
-	tsc ./test/ts/test.ts
-
 dist:
 	rm -rf njs-\$(NJS_VER) \\
 	&& hg archive njs-\$(NJS_VER).tar.gz \\
 		-p njs-\$(NJS_VER) \\
 		-X ".hg*" \\
 	&& echo njs-\$(NJS_VER).tar.gz done
+END
+
+njs_ts_deps=`echo $NJS_TS_SRCS \
+        | sed -e "s# *\([^ ][^ ]*\)#\1$njs_regex_cont#g"`
+
+cat << END >> $NJS_MAKEFILE
+
+$NJS_BUILD_DIR/ts/package.json: $njs_ts_deps
+	cp -fr ts $NJS_BUILD_DIR/
+	cp LICENSE $NJS_BUILD_DIR/ts/
+	sed 's/\("version":\s*\)"\([^"]\+\)"/\1"\$(NJS_TYPES_VER)"/' \\
+		ts/package.json > $NJS_BUILD_DIR/ts/package.json
+
+$NJS_BUILD_DIR/ts/node_modules: $NJS_BUILD_DIR/ts/package.json
+	cd $NJS_BUILD_DIR/ts && \$(NPM) install
+	touch $NJS_BUILD_DIR/ts/node_modules
+
+$NJS_BUILD_DIR/njs-types-\$(NJS_TYPES_VER).tgz: $NJS_BUILD_DIR/ts/package.json
+	hg id -i > $NJS_BUILD_DIR/ts/COMMITHASH || true
+	cd $NJS_BUILD_DIR && \$(NPM) pack ./ts
+
+.PHONY: ts
+ts: $NJS_BUILD_DIR/ts/package.json
+
+ts_lint: $NJS_BUILD_DIR/ts/node_modules
+	cd $NJS_BUILD_DIR/ts && \$(NPM) run lint
+
+ts_test: ts
+	tsc ./test/ts/test.ts
+
+ts_publish: ts_clean $NJS_BUILD_DIR/njs-types-\$(NJS_TYPES_VER).tgz
+	cd $NJS_BUILD_DIR/ && \$(NPM) publish njs-types-\$(NJS_TYPES_VER).tgz
+
+ts_clean:
+	rm -rf $NJS_BUILD_DIR/ts
 END
 
 
