@@ -9,6 +9,8 @@ echo "creating $NJS_MAKEFILE"
 mkdir -p $NJS_BUILD_DIR/src
 mkdir -p $NJS_BUILD_DIR/test
 
+njs_objs=`echo $NJS_LIB_SRCS \
+        | sed -e "s# *\([^ ]*\.\)c#$NJS_BUILD_DIR/\1o$njs_regex_cont#g"`
 
 cat << END > $NJS_MAKEFILE
 
@@ -20,38 +22,10 @@ NJS_LINK = ${CC} ${NJS_LD_OPT}
 NJS_CFLAGS = ${NJS_CFLAGS} ${NJS_CC_OPT} ${CFLAGS}
 
 default: $NJS_DEFAULT_TARGET
-END
 
+NJS_LIB_INCS = -Isrc -I$NJS_BUILD_DIR
 
-# The include paths list.
-
-printf "NJS_LIB_INCS =" >> $NJS_MAKEFILE
-
-for njs_inc in src $NJS_BUILD_DIR
-do
-	printf " -I$njs_inc" >> $NJS_MAKEFILE
-done
-
-echo >> $NJS_MAKEFILE
-echo >> $NJS_MAKEFILE
-
-
-# The njs object files list.
-
-echo "NJS_LIB_OBJS = \\" >> $NJS_MAKEFILE
-
-for njs_src in $NJS_LIB_SRCS
-do
-    fname=$(basename $njs_src)
-    njs_obj="src/${fname%.c}.o"
-    echo "    $NJS_BUILD_DIR/$njs_obj \\" >> $NJS_MAKEFILE
-done
-
-echo >> $NJS_MAKEFILE
-
-# The njs static library.
-
-cat << END >> $NJS_MAKEFILE
+NJS_LIB_OBJS = $njs_objs
 
 libnjs: $NJS_BUILD_DIR/libnjs.a
 
@@ -61,9 +35,7 @@ $NJS_BUILD_DIR/libnjs.a:   \\
 
 	\$(NJS_STATIC_LINK) $NJS_BUILD_DIR/libnjs.a \\
 		\$(NJS_LIB_OBJS)
-
 END
-
 
 # object files.
 
