@@ -35,6 +35,9 @@ or include them using the [files](https://www.typescriptlang.org/tsconfig#files)
     "module": "es2015",
     "lib": [
       "ES2015",
+      "ES2016.Array.Include",
+      "ES2017.Object",
+      "ES2017.String",
     ],
     "outDir": "./lib",
     "downlevelIteration": true,
