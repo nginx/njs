@@ -73,3 +73,5 @@ NJS_TEST_SRCS=" \
 "
 
 NJS_TS_SRCS=$(find ts/ -name "*.d.ts" -o -name "*.json")
+
+NJS_TEST_TS_SRCS=$(find test/ts/ -name "*.ts" -o -name "*.json")

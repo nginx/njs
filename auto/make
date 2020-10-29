@@ -248,6 +248,9 @@ END
 njs_ts_deps=`echo $NJS_TS_SRCS \
         | sed -e "s# *\([^ ][^ ]*\)#\1$njs_regex_cont#g"`
 
+njs_test_ts_deps=`echo $NJS_TEST_TS_SRCS \
+        | sed -e "s# *\([^ ][^ ]*\)#\1$njs_regex_cont#g"`
+
 cat << END >> $NJS_MAKEFILE
 
 $NJS_BUILD_DIR/ts/package.json: $njs_ts_deps
@@ -270,8 +273,20 @@ ts: $NJS_BUILD_DIR/ts/package.json
 ts_lint: $NJS_BUILD_DIR/ts/node_modules
 	cd $NJS_BUILD_DIR/ts && \$(NPM) run lint
 
-ts_test: ts
-	tsc ./test/ts/test.ts
+$NJS_BUILD_DIR/test/ts/package.json: $njs_test_ts_deps
+	mkdir -p $NJS_BUILD_DIR/test
+	cp -fr test/ts $NJS_BUILD_DIR/test/
+
+$NJS_BUILD_DIR/test/ts/node_modules: \\
+	$NJS_BUILD_DIR/njs-types-\$(NJS_TYPES_VER).tgz \\
+	$NJS_BUILD_DIR/test/ts/package.json
+	cd $NJS_BUILD_DIR/test/ts && \$(NPM) install \\
+		--save-dev file:../../njs-types-\$(NJS_TYPES_VER).tgz
+	cd $NJS_BUILD_DIR/test/ts && \$(NPM) install
+	touch $NJS_BUILD_DIR/test/ts/node_modules
+
+ts_test: $NJS_BUILD_DIR/test/ts/node_modules
+	cd $NJS_BUILD_DIR/test/ts && \$(NPM) test
 
 ts_publish: ts_clean $NJS_BUILD_DIR/njs-types-\$(NJS_TYPES_VER).tgz
 	cd $NJS_BUILD_DIR/ && \$(NPM) publish njs-types-\$(NJS_TYPES_VER).tgz

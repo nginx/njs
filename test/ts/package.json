@@ -1,0 +1,15 @@
+{
+  "private": true,
+  "name": "njs-types-test",
+  "version": "0.0.0",
+  "description": "Tests for njs TypeScript type definitions.",
+  "scripts": {
+    "test": "tsc"
+  },
+  "author": "NGINX, Inc.",
+  "license": "BSD-2-Clause",
+  "devDependencies": {
+    "njs-types": "file:../../ts",
+    "typescript": "~4.0.3"
+  }
+}
