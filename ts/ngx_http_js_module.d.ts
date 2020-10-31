@@ -346,11 +346,11 @@ interface NginxHTTPRequest {
      * @param options Subrequest options.
      * @param callback Completion callback.
      */
+    subrequest(uri: NjsStringLike, options: NginxSubrequestOptions & { detached: true }): void;
     subrequest(uri: NjsStringLike, options?: NginxSubrequestOptions | string): Promise<NginxHTTPRequest>;
-    subrequest(uri: NjsStringLike, options: NginxSubrequestOptions | string,
+    subrequest(uri: NjsStringLike, options: NginxSubrequestOptions & { detached?: false } | string,
                callback:(reply:NginxHTTPRequest) => void): void;
     subrequest(uri: NjsStringLike, callback:(reply:NginxHTTPRequest) => void): void;
-    subrequest(uri: NjsStringLike, options: NginxSubrequestOptions & { detached: true }): void;
     /**
      * Current URI in request, normalized.
      */
