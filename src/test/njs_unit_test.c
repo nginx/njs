@@ -18233,7 +18233,49 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var qs = require('querystring');"
               "qs.stringify({X:{toString(){return 3}}})"),
-      njs_str("X=3") },
+      njs_str("X=") },
+
+    { njs_str("var qs = require('querystring');"
+              "qs.stringify({ name: undefined, age: 12 })"),
+      njs_str("name=&age=12") },
+
+    { njs_str("var qs = require('querystring');"
+              "qs.stringify(Object.create({ name: undefined, age: 12 }))"),
+      njs_str("") },
+
+    { njs_str("var qs = require('querystring');"
+              "qs.stringify([])"),
+      njs_str("") },
+
+    { njs_str("var qs = require('querystring');"
+              "qs.stringify(['','',''])"),
+      njs_str("0=&1=&2=") },
+
+    { njs_str("var qs = require('querystring');"
+              "qs.stringify([undefined, null, Symbol(), Object(0), Object('test'), Object(false),,,])"),
+      njs_str("0=&1=&2=&3=&4=&5=") },
+
+#if 0
+    { njs_str("var qs = require('querystring');"
+              "qs.stringify([NaN, Infinity, -Infinity, 2**69, 2**70])"),
+      njs_str("0=&1=&2=&3=590295810358705700000&4=1.1805916207174113e%2B21") },
+#else
+    { njs_str("var qs = require('querystring');"
+              "qs.stringify([NaN, Infinity, -Infinity, 2**69, 2**70])"),
+      njs_str("0=&1=&2=&3=590295810358705700000&4=1.1805916207174114e%2B21") },
+#endif
+
+    { njs_str("var qs = require('querystring');"
+              "qs.stringify([[1,2,3],[4,5,6]])"),
+      njs_str("0=1&0=2&0=3&1=4&1=5&1=6") },
+
+    { njs_str("var qs = require('querystring');"
+              "qs.stringify([['a',,,],['b',,,]])"),
+      njs_str("0=a&0=&0=&1=b&1=&1=") },
+
+    { njs_str("var qs = require('querystring');"
+              "qs.stringify([[,'a','b',,]])"),
+      njs_str("0=&0=a&0=b&0=") },
 
     { njs_str("var qs = require('querystring');"
               "qs.escape('abcααααdef')"),

@@ -549,8 +549,8 @@ njs_inline njs_int_t
 njs_query_string_push(njs_vm_t *vm, njs_chb_t *chain, njs_value_t *key,
     njs_value_t *value, njs_string_prop_t *eq, njs_function_t *encoder)
 {
+    double     num;
     njs_int_t  ret, length;
-    njs_str_t  str;
 
     length = 0;
 
@@ -561,25 +561,37 @@ njs_query_string_push(njs_vm_t *vm, njs_chb_t *chain, njs_value_t *key,
 
     length += ret;
 
-    if (!njs_is_string(value)) {
-        ret = njs_value_to_string(vm, value, value);
+    njs_chb_append(chain, eq->start, eq->size);
+    length += eq->length;
+
+    switch (value->type) {
+    case NJS_NUMBER:
+        num = njs_number(value);
+        if (njs_slow_path(isnan(num) || isinf(num))) {
+            break;
+        }
+
+        /* Fall through. */
+
+    case NJS_BOOLEAN:
+        ret = njs_primitive_value_to_string(vm, value, value);
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
-    }
 
-    njs_string_get(value, &str);
+        /* Fall through. */
 
-    if (str.length > 0) {
-        njs_chb_append(chain, eq->start, eq->size);
-        length += eq->length;
-
+    case NJS_STRING:
         ret = njs_query_string_encoder_call(vm, chain, encoder, value);
         if (njs_slow_path(ret < 0)) {
             return NJS_ERROR;
         }
 
         length += ret;
+        break;
+
+    default:
+        break;
     }
 
     return length;
@@ -673,7 +685,7 @@ njs_query_string_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_chb_init(&chain, vm->mem_pool);
 
     keys = njs_value_own_enumerate(vm, object, NJS_ENUM_KEYS, NJS_ENUM_STRING,
-                                   1);
+                                   0);
     if (njs_slow_path(keys == NULL)) {
         return NJS_ERROR;
     }
@@ -692,7 +704,7 @@ njs_query_string_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                 array = njs_array(&value);
 
                 for (i = 0; i < array->length; i++) {
-                    if (i != 0) {
+                    if (chain.last != NULL) {
                         njs_chb_append(&chain, sep.start, sep.size);
                         length += sep.length;
                     }
@@ -721,7 +733,7 @@ njs_query_string_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                     goto failed;
                 }
 
-                if (i != 0) {
+                if (chain.last != NULL) {
                     njs_chb_append(&chain, sep.start, sep.size);
                     length += sep.length;
                 }
