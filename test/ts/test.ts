@@ -5,6 +5,7 @@ import crypto from 'crypto';
 function http_module(r: NginxHTTPRequest) {
     var bs: NjsByteString;
     var s: string;
+    var vod: void;
 
     // builtin string vs NjsByteString
 
@@ -57,9 +58,12 @@ function http_module(r: NginxHTTPRequest) {
 
     // r.subrequest
     r.subrequest('/p/sub1').then(reply => r.return(reply.status));
-    r.subrequest('/p/sub2', reply => r.return(reply.status));
-    r.subrequest('/p/sub3', {detached:true});
-    r.subrequest('/p/sub4', 'a=1&b=2').then(reply => r.return(reply.status,
+    r.subrequest('/p/sub2', {method:'POST'}).then(reply => r.return(reply.status));
+    vod = r.subrequest('/p/sub3', reply => r.return(reply.status));
+    vod = r.subrequest('/p/sub4', {method:'POST'}, reply => r.return(reply.status));
+    vod = r.subrequest('/p/sub5', {detached:true});
+    // Warning: vod = r.subrequest('/p/sub9', {detached:true}, reply => r.return(reply.status));
+    r.subrequest('/p/sub6', 'a=1&b=2').then(reply => r.return(reply.status,
                                         JSON.stringify(JSON.parse(reply.responseBody ?? ''))));
 
 }
