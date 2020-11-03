@@ -35,6 +35,7 @@ typedef struct {
     uint8_t                 safe;
     uint8_t                 version;
     uint8_t                 ast;
+    uint8_t                 unhandled_rejection;
 
     char                    *file;
     char                    *command;
@@ -270,6 +271,7 @@ main(int argc, char **argv)
     vm_options.argv = opts.argv;
     vm_options.argc = opts.argc;
     vm_options.ast = opts.ast;
+    vm_options.unhandled_rejection = opts.unhandled_rejection;
 
     if (opts.interactive) {
         ret = njs_interactive_shell(&opts, &vm_options);
@@ -315,6 +317,7 @@ njs_get_options(njs_opts_t *opts, int argc, char **argv)
         "  -f                disabled denormals mode.\n"
         "  -p                set path prefix for modules.\n"
         "  -q                disable interactive introduction prompt.\n"
+        "  -r                ignore unhandled promise rejection.\n"
         "  -s                sandbox mode.\n"
         "  -t script|module  source code type (script is default).\n"
         "  -v                print njs version and exit.\n"
@@ -324,6 +327,7 @@ njs_get_options(njs_opts_t *opts, int argc, char **argv)
     ret = NJS_DONE;
 
     opts->denormals = 1;
+    opts->unhandled_rejection = NJS_VM_OPT_UNHANDLED_REJECTION_THROW;
 
     for (i = 1; i < argc; i++) {
 
@@ -391,6 +395,10 @@ njs_get_options(njs_opts_t *opts, int argc, char **argv)
 
         case 'q':
             opts->quiet = 1;
+            break;
+
+        case 'r':
+            opts->unhandled_rejection = NJS_VM_OPT_UNHANDLED_REJECTION_IGNORE;
             break;
 
         case 's':

@@ -1047,3 +1047,33 @@ njs_run {"./test/js/fs_promises_009.js"} \
 
 njs_run {"./test/js/promise_then_throw_finally_catch.js"} \
 "Done"
+
+njs_run {"./test/js/promise_catch_throw.js"} \
+"Error: unhandled promise rejection: ReferenceError: \"nonExsistingInCatch\" is not defined"
+
+njs_run {"./test/js/promise_then_throw.js"} \
+"Error: unhandled promise rejection: ReferenceError: \"nonExsisting\" is not defined"
+
+njs_run {"./test/js/promise_then_throw_catch.js"} \
+"Done"
+
+njs_run {"./test/js/promise_catch_then_throw_catch.js"} \
+"Done"
+
+njs_run {"./test/js/promise_finally_throw.js"} \
+"Error: unhandled promise rejection: ReferenceError: \"nonExsistingInFinally\" is not defined"
+
+njs_run {"./test/js/promise_finally_throw_catch.js"} \
+"Done"
+
+njs_run {"./test/js/promise_two_then_throw.js"} \
+"Error: unhandled promise rejection: ReferenceError: \"nonExsistingOne\" is not defined"
+
+njs_run {"./test/js/promise_two_first_then_throw.js"} \
+"Error: unhandled promise rejection: ReferenceError: \"nonExsistingOne\" is not defined"
+
+njs_run {"./test/js/promise_reject_catch.js"} \
+"rejected test"
+
+njs_run {"./test/js/promise_reject_post_catch.js"} \
+"Error: unhandled promise rejection: undefined"

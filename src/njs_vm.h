@@ -220,6 +220,8 @@ struct njs_vm_s {
     njs_regex_context_t      *regex_context;
     njs_regex_match_data_t   *single_match_data;
 
+    njs_array_t              *promise_reason;
+
     /*
      * MemoryError is statically allocated immutable Error object
      * with the InternalError prototype.

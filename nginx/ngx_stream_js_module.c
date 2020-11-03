@@ -1478,6 +1478,7 @@ ngx_stream_js_init_main_conf(ngx_conf_t *cf, void *conf)
     njs_vm_opt_init(&options);
 
     options.backtrace = 1;
+    options.unhandled_rejection = NJS_VM_OPT_UNHANDLED_REJECTION_THROW;
     options.ops = &ngx_stream_js_ops;
     options.argv = ngx_argv;
     options.argc = ngx_argc;

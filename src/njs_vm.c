@@ -505,6 +505,8 @@ static njs_int_t
 njs_vm_handle_events(njs_vm_t *vm)
 {
     njs_int_t         ret;
+    njs_str_t         str;
+    njs_value_t       string;
     njs_event_t       *ev;
     njs_queue_t       *promise_events, *posted_events;
     njs_queue_link_t  *link;
@@ -527,6 +529,26 @@ njs_vm_handle_events(njs_vm_t *vm)
             ret = njs_vm_call(vm, ev->function, ev->args, ev->nargs);
             if (njs_slow_path(ret == NJS_ERROR)) {
                 return ret;
+            }
+        }
+
+        if (vm->options.unhandled_rejection
+            == NJS_VM_OPT_UNHANDLED_REJECTION_THROW)
+        {
+            if (vm->promise_reason != NULL && vm->promise_reason->length != 0) {
+                ret = njs_value_to_string(vm, &string,
+                                          &vm->promise_reason->start[0]);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    return ret;
+                }
+
+                njs_string_get(&string, &str);
+                njs_vm_error(vm, "unhandled promise rejection: %V", &str);
+
+                njs_mp_free(vm->mem_pool, vm->promise_reason);
+                vm->promise_reason = NULL;
+
+                return NJS_ERROR;
             }
         }
 

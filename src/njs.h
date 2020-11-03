@@ -195,18 +195,24 @@ typedef struct {
     char                            **argv;
     njs_uint_t                      argc;
 
+#define NJS_VM_OPT_UNHANDLED_REJECTION_IGNORE   0
+#define NJS_VM_OPT_UNHANDLED_REJECTION_THROW    1
+
 /*
- * accumulative - enables "accumulative" mode to support incremental compiling.
+ * accumulative  - enables "accumulative" mode to support incremental compiling.
  *  (REPL). Allows starting parent VM without cloning.
- * disassemble  - enables disassemble.
- * backtrace    - enables backtraces.
- * quiet        - removes filenames from backtraces. To produce comparable
+ * disassemble   - enables disassemble.
+ * backtrace     - enables backtraces.
+ * quiet         - removes filenames from backtraces. To produce comparable
     test262 diffs.
- * sandbox      - "sandbox" mode. Disables file access.
- * unsafe       - enables unsafe language features:
+ * sandbox       - "sandbox" mode. Disables file access.
+ * unsafe        - enables unsafe language features:
  *   - Function constructors.
- * module       - ES6 "module" mode. Script mode is default.
- * ast          - print AST.
+ * module        - ES6 "module" mode. Script mode is default.
+ * ast           - print AST.
+ * unhandled_rejection IGNORE | THROW - tracks unhandled promise rejections:
+ *   - throwing inside a Promise without a catch block.
+ *   - throwing inside in a finally or catch block.
  */
 
     uint8_t                         trailer;         /* 1 bit */
@@ -219,6 +225,7 @@ typedef struct {
     uint8_t                         unsafe;          /* 1 bit */
     uint8_t                         module;          /* 1 bit */
     uint8_t                         ast;             /* 1 bit */
+    uint8_t                         unhandled_rejection;
 } njs_vm_opt_t;
 
 
