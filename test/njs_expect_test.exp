@@ -1044,3 +1044,6 @@ njs_run {"./test/js/fs_promises_008.js"} \
 
 njs_run {"./test/js/fs_promises_009.js"} \
 "test recursive fs.rmdirSync"
+
+njs_run {"./test/js/promise_then_throw_finally_catch.js"} \
+"Done"

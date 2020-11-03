@@ -1023,7 +1023,11 @@ static njs_int_t
 njs_promise_catch_finally_function(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
-    return njs_promise_then_finally_function(vm, args, nargs, unused);
+    (void) njs_promise_then_finally_function(vm, args, nargs, unused);
+
+    njs_vm_retval_set(vm, njs_arg(args, nargs, 1));
+
+    return NJS_ERROR;
 }
 
 
