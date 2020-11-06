@@ -17987,6 +17987,11 @@ static njs_unit_test_t  njs_test[] =
       njs_str("{freespace:''}") },
 
     { njs_str("var qs = require('querystring');"
+              "var obj = qs.parse('name&value=12');"
+              "njs.dump(obj)"),
+      njs_str("{name:'',value:'12'}") },
+
+    { njs_str("var qs = require('querystring');"
               "var obj = qs.parse('baz=fuz&muz=tax', 'fuz');"
               "njs.dump(obj)"),
       njs_str("{baz:'',&muz:'tax'}") },

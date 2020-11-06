@@ -269,7 +269,7 @@ njs_query_string_match(u_char *p, u_char *end, njs_str_t *v)
         return p;
     }
 
-    while (p < (end - length)) {
+    while (p <= (end - length)) {
         if (memcmp(p, v->start, length) == 0) {
             return p;
         }
@@ -402,7 +402,7 @@ njs_query_string_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             goto next;
         }
 
-        val = njs_query_string_match(key, end, &eq);
+        val = njs_query_string_match(key, part, &eq);
 
         size = val - key;
 
