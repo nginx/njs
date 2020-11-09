@@ -36,7 +36,6 @@ typedef struct {
 } njs_digest_t;
 
 typedef struct {
-    njs_str_t           key;
     u_char              opad[64];
 
     union {
