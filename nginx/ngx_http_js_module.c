@@ -9,8 +9,7 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
-
-#include <njs.h>
+#include "ngx_js.h"
 
 
 typedef struct {
@@ -77,9 +76,6 @@ static ngx_int_t ngx_http_js_init_vm(ngx_http_request_t *r);
 static void ngx_http_js_cleanup_ctx(void *data);
 static void ngx_http_js_cleanup_vm(void *data);
 
-static njs_int_t ngx_http_js_ext_get_string(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
 static njs_int_t ngx_http_js_ext_keys_header(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *keys, ngx_list_t *headers);
 static ngx_table_elt_t *ngx_http_js_get_header(ngx_list_part_t *part,
@@ -182,8 +178,6 @@ static void ngx_http_js_clear_timer(njs_external_ptr_t external,
 static void ngx_http_js_timer_handler(ngx_event_t *ev);
 static void ngx_http_js_handle_event(ngx_http_request_t *r,
     njs_vm_event_t vm_event, njs_value_t *args, njs_uint_t nargs);
-static njs_int_t ngx_http_js_string(njs_vm_t *vm, njs_value_t *value,
-    njs_str_t *str);
 
 static char *ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
@@ -286,7 +280,7 @@ static njs_external_t  ngx_http_js_ext_request[] = {
         .name.string = njs_str("uri"),
         .enumerable = 1,
         .u.property = {
-            .handler = ngx_http_js_ext_get_string,
+            .handler = ngx_js_ext_string,
             .magic32 = offsetof(ngx_http_request_t, uri),
         }
     },
@@ -296,7 +290,7 @@ static njs_external_t  ngx_http_js_ext_request[] = {
         .name.string = njs_str("method"),
         .enumerable = 1,
         .u.property = {
-            .handler = ngx_http_js_ext_get_string,
+            .handler = ngx_js_ext_string,
             .magic32 = offsetof(ngx_http_request_t, method_name),
         }
     },
@@ -551,8 +545,6 @@ static void
 ngx_http_js_content_event_handler(ngx_http_request_t *r)
 {
     ngx_int_t                rc;
-    njs_str_t                name, exception;
-    njs_function_t          *func;
     ngx_http_js_ctx_t       *ctx;
     ngx_http_js_loc_conf_t  *jlcf;
 
@@ -573,17 +565,6 @@ ngx_http_js_content_event_handler(ngx_http_request_t *r)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    name.start = jlcf->content.data;
-    name.length = jlcf->content.len;
-
-    func = njs_vm_function(ctx->vm, &name);
-    if (func == NULL) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "js function \"%V\" not found", &jlcf->content);
-        ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
-        return;
-    }
-
     /*
      * status is expected to be overriden by finish(), return() or
      * internalRedirect() methods, otherwise the content handler is
@@ -592,17 +573,15 @@ ngx_http_js_content_event_handler(ngx_http_request_t *r)
 
     ctx->status = NGX_HTTP_INTERNAL_SERVER_ERROR;
 
-    if (njs_vm_call(ctx->vm, func, njs_value_arg(&ctx->request), 1) != NJS_OK) {
-        njs_vm_retval_string(ctx->vm, &exception);
+    rc = ngx_js_call(ctx->vm, &jlcf->content, &ctx->request,
+                     r->connection->log);
 
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "js exception: %*s", exception.length, exception.start);
-
+    if (rc == NGX_ERROR) {
         ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
         return;
     }
 
-    if (njs_vm_pending(ctx->vm)) {
+    if (rc == NGX_AGAIN) {
         r->write_event_handler = ngx_http_js_content_write_event_handler;
         return;
     }
@@ -691,8 +670,7 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
 
     ngx_int_t           rc;
     njs_int_t           pending;
-    njs_str_t           name, value, exception;
-    njs_function_t     *func;
+    njs_str_t           value;
     ngx_http_js_ctx_t  *ctx;
 
     rc = ngx_http_js_init_vm(r);
@@ -711,36 +689,22 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    name.start = fname->data;
-    name.length = fname->len;
-
-    func = njs_vm_function(ctx->vm, &name);
-    if (func == NULL) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "js function \"%V\" not found", fname);
-        v->not_found = 1;
-        return NGX_OK;
-    }
-
     pending = njs_vm_pending(ctx->vm);
 
-    if (njs_vm_call(ctx->vm, func, njs_value_arg(&ctx->request), 1) != NJS_OK) {
-        njs_vm_retval_string(ctx->vm, &exception);
+    rc = ngx_js_call(ctx->vm, fname, &ctx->request, r->connection->log);
 
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "js exception: %*s", exception.length, exception.start);
-
+    if (rc == NGX_ERROR) {
         v->not_found = 1;
         return NGX_OK;
     }
 
-    if (njs_vm_retval_string(ctx->vm, &value) != NJS_OK) {
+    if (!pending && rc == NGX_AGAIN) {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "async operation inside \"%V\" variable handler", fname);
         return NGX_ERROR;
     }
 
-    if (!pending && njs_vm_pending(ctx->vm)) {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                      "async operation inside \"%V\" variable handler", fname);
+    if (njs_vm_retval_string(ctx->vm, &value) != NJS_OK) {
         return NGX_ERROR;
     }
 
@@ -836,25 +800,6 @@ ngx_http_js_cleanup_vm(void *data)
     njs_vm_t *vm = data;
 
     njs_vm_destroy(vm);
-}
-
-
-static njs_int_t
-ngx_http_js_ext_get_string(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
-{
-    char       *p;
-    ngx_str_t  *field;
-
-    p = njs_vm_external(vm, value);
-    if (p == NULL) {
-        njs_value_undefined_set(retval);
-        return NJS_DECLINED;
-    }
-
-    field = (ngx_str_t *) (p + njs_vm_prop_magic32(prop));
-
-    return njs_vm_value_string_set(vm, retval, field->data, field->len);
 }
 
 
@@ -1144,8 +1089,7 @@ ngx_http_js_header_out_special(njs_vm_t *vm, ngx_http_request_t *r,
         setval = njs_vm_array_prop(vm, setval, length - 1, &lvalue);
     }
 
-    rc = ngx_http_js_string(vm, setval, &s);
-    if (rc != NJS_OK) {
+    if (ngx_js_string(vm, setval, &s) != NGX_OK) {
         return NJS_ERROR;
     }
 
@@ -1389,8 +1333,7 @@ ngx_http_js_header_generic(njs_vm_t *vm, ngx_http_request_t *r,
             setval = njs_vm_array_prop(vm, array, i, &lvalue);
         }
 
-        rc = ngx_http_js_string(vm, setval, &s);
-        if (rc != NJS_OK) {
+        if (ngx_js_string(vm, setval, &s) != NGX_OK) {
             return NJS_ERROR;
         }
 
@@ -1527,8 +1470,7 @@ ngx_http_js_content_type(njs_vm_t *vm, ngx_http_request_t *r,
         setval = njs_vm_array_prop(vm, setval, length - 1, &lvalue);
     }
 
-    rc = ngx_http_js_string(vm, setval, &s);
-    if (rc != NJS_OK) {
+    if (ngx_js_string(vm, setval, &s) != NGX_OK) {
         return NJS_ERROR;
     }
 
@@ -1595,9 +1537,7 @@ static njs_int_t
 ngx_http_js_ext_status(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
-    njs_int_t            rc;
     ngx_int_t            n;
-    njs_str_t            s;
     ngx_http_request_t  *r;
 
     r = njs_vm_external(vm, value);
@@ -1611,13 +1551,7 @@ ngx_http_js_ext_status(njs_vm_t *vm, njs_object_prop_t *prop,
         return NJS_OK;
     }
 
-    rc = ngx_http_js_string(vm, setval, &s);
-    if (rc != NJS_OK) {
-        return NJS_ERROR;
-    }
-
-    n = ngx_atoi(s.start, s.length);
-    if (n == NGX_ERROR) {
+    if (ngx_js_integer(vm, setval, &n) != NGX_OK) {
         return NJS_ERROR;
     }
 
@@ -1763,7 +1697,6 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     njs_str_t                  text;
     ngx_int_t                  status;
-    njs_value_t               *value;
     ngx_http_js_ctx_t         *ctx;
     ngx_http_request_t        *r;
     ngx_http_complex_value_t   cv;
@@ -1774,20 +1707,16 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    value = njs_arg(args, nargs, 1);
-    if (!njs_value_is_valid_number(value)) {
-        njs_vm_error(vm, "code is not a number");
+    if (ngx_js_integer(vm, njs_arg(args, nargs, 1), &status) != NGX_OK) {
         return NJS_ERROR;
     }
-
-    status = njs_value_number(value);
 
     if (status < 0 || status > 999) {
         njs_vm_error(vm, "code is out of range");
         return NJS_ERROR;
     }
 
-    if (ngx_http_js_string(vm, njs_arg(args, nargs, 2), &text) != NJS_OK) {
+    if (ngx_js_string(vm, njs_arg(args, nargs, 2), &text) != NGX_OK) {
         njs_vm_error(vm, "failed to convert text");
         return NJS_ERROR;
     }
@@ -1838,7 +1767,7 @@ ngx_http_js_ext_internal_redirect(njs_vm_t *vm, njs_value_t *args,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    if (ngx_http_js_string(vm, njs_arg(args, nargs, 1), &uri) != NJS_OK) {
+    if (ngx_js_string(vm, njs_arg(args, nargs, 1), &uri) != NGX_OK) {
         njs_vm_error(vm, "failed to convert uri arg");
         return NJS_ERROR;
     }
@@ -2326,8 +2255,7 @@ ngx_http_js_ext_variables(njs_vm_t *vm, njs_object_prop_t *prop,
         return NJS_ERROR;
     }
 
-    rc = ngx_http_js_string(vm, setval, &s);
-    if (rc != NJS_OK) {
+    if (ngx_js_string(vm, setval, &s) != NGX_OK) {
         return NJS_ERROR;
     }
 
@@ -2445,7 +2373,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (ngx_http_js_string(vm, njs_arg(args, nargs, 1), &uri_arg) != NJS_OK) {
+    if (ngx_js_string(vm, njs_arg(args, nargs, 1), &uri_arg) != NGX_OK) {
         njs_vm_error(vm, "failed to convert uri arg");
         return NJS_ERROR;
     }
@@ -2489,7 +2417,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     if (options != NULL) {
         value = njs_vm_object_prop(vm, options, &args_key, &lvalue);
         if (value != NULL) {
-            if (ngx_http_js_string(vm, value, &args_arg) != NJS_OK) {
+            if (ngx_js_string(vm, value, &args_arg) != NGX_OK) {
                 njs_vm_error(vm, "failed to convert options.args");
                 return NJS_ERROR;
             }
@@ -2502,7 +2430,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         value = njs_vm_object_prop(vm, options, &method_key, &lvalue);
         if (value != NULL) {
-            if (ngx_http_js_string(vm, value, &method_name) != NJS_OK) {
+            if (ngx_js_string(vm, value, &method_name) != NGX_OK) {
                 njs_vm_error(vm, "failed to convert options.method");
                 return NJS_ERROR;
             }
@@ -2522,7 +2450,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         value = njs_vm_object_prop(vm, options, &body_key, &lvalue);
         if (value != NULL) {
-            if (ngx_http_js_string(vm, value, &body_arg) != NJS_OK) {
+            if (ngx_js_string(vm, value, &body_arg) != NGX_OK) {
                 njs_vm_error(vm, "failed to convert options.body");
                 return NJS_ERROR;
             }
@@ -2902,23 +2830,6 @@ ngx_http_js_handle_event(ngx_http_request_t *r, njs_vm_event_t vm_event,
     if (rc == NJS_OK) {
         ngx_http_post_request(r, NULL);
     }
-}
-
-
-static njs_int_t
-ngx_http_js_string(njs_vm_t *vm, njs_value_t *value, njs_str_t *str)
-{
-    if (value != NULL && !njs_value_is_null_or_undefined(value)) {
-        if (njs_vm_value_to_string(vm, str, value) == NJS_ERROR) {
-            return NJS_ERROR;
-        }
-
-    } else {
-        str->start = NULL;
-        str->length = 0;
-    }
-
-    return NJS_OK;
 }
 
 

@@ -9,8 +9,7 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_stream.h>
-
-#include <njs.h>
+#include "ngx_js.h"
 
 
 typedef struct {
@@ -110,8 +109,6 @@ static void ngx_stream_js_clear_timer(njs_external_ptr_t external,
 static void ngx_stream_js_timer_handler(ngx_event_t *ev);
 static void ngx_stream_js_handle_event(ngx_stream_session_t *s,
     njs_vm_event_t vm_event, njs_value_t *args, njs_uint_t nargs);
-static njs_int_t ngx_stream_js_string(njs_vm_t *vm, njs_value_t *value,
-    njs_str_t *str);
 
 static char *ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
@@ -399,10 +396,9 @@ ngx_stream_js_preread_handler(ngx_stream_session_t *s)
 static ngx_int_t
 ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
 {
-    njs_str_t             fname, exception;
+    njs_str_t             exception;
     njs_int_t             ret;
     ngx_int_t             rc;
-    njs_function_t       *func;
     ngx_connection_t     *c;
     ngx_stream_js_ctx_t  *ctx;
 
@@ -423,17 +419,6 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
     if (!ctx->in_progress) {
-        fname.start = name->data;
-        fname.length = name->len;
-
-        func = njs_vm_function(ctx->vm, &fname);
-
-        if (func == NULL) {
-            ngx_log_error(NGX_LOG_ERR, c->log, 0,
-                          "js function \"%V\" not found", name);
-            return NGX_ERROR;
-        }
-
         /*
          * status is expected to be overriden by allow(), deny(), decline() or
          * done() methods.
@@ -441,9 +426,9 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
 
         ctx->status = NGX_ERROR;
 
-        ret = njs_vm_call(ctx->vm, func, njs_value_arg(&ctx->args), 1);
-        if (ret != NJS_OK) {
-            goto exception;
+        rc = ngx_js_call(ctx->vm, name, &ctx->args[0], c->log);
+        if (rc == NGX_ERROR) {
+            return rc;
         }
     }
 
@@ -500,11 +485,10 @@ static ngx_int_t
 ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
     ngx_uint_t from_upstream)
 {
-    njs_str_t                  name, exception;
+    njs_str_t                  exception;
     njs_int_t                  ret;
     ngx_int_t                  rc;
     ngx_chain_t               *out, *cl;
-    njs_function_t            *func;
     ngx_connection_t          *c;
     ngx_stream_js_ctx_t       *ctx;
     ngx_stream_js_srv_conf_t  *jscf;
@@ -532,20 +516,9 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
     if (!ctx->filter) {
-        name.start = jscf->filter.data;
-        name.length = jscf->filter.len;
-
-        func = njs_vm_function(ctx->vm, &name);
-
-        if (func == NULL) {
-            ngx_log_error(NGX_LOG_ERR, c->log, 0,
-                          "js function \"%V\" not found", &jscf->filter);
-            return NGX_ERROR;
-        }
-
-        ret = njs_vm_call(ctx->vm, func, njs_value_arg(&ctx->args), 1);
-        if (ret != NJS_OK) {
-            goto exception;
+        rc = ngx_js_call(ctx->vm, &jscf->filter, &ctx->args[0], c->log);
+        if (rc == NGX_ERROR) {
+            return rc;
         }
     }
 
@@ -626,8 +599,7 @@ ngx_stream_js_variable(ngx_stream_session_t *s, ngx_stream_variable_value_t *v,
 
     ngx_int_t             rc;
     njs_int_t             pending;
-    njs_str_t             name, value, exception;
-    njs_function_t       *func;
+    njs_str_t             value;
     ngx_stream_js_ctx_t  *ctx;
 
     rc = ngx_stream_js_init_vm(s);
@@ -646,36 +618,22 @@ ngx_stream_js_variable(ngx_stream_session_t *s, ngx_stream_variable_value_t *v,
 
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
-    name.start = fname->data;
-    name.length = fname->len;
-
-    func = njs_vm_function(ctx->vm, &name);
-    if (func == NULL) {
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
-                      "js function \"%V\" not found", fname);
-        v->not_found = 1;
-        return NGX_OK;
-    }
-
     pending = njs_vm_pending(ctx->vm);
 
-    if (njs_vm_call(ctx->vm, func, njs_value_arg(&ctx->args), 1) != NJS_OK) {
-        njs_vm_retval_string(ctx->vm, &exception);
+    rc = ngx_js_call(ctx->vm, fname, &ctx->args[0], s->connection->log);
 
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
-                      "js exception: %*s", exception.length, exception.start);
-
+    if (rc == NGX_ERROR) {
         v->not_found = 1;
         return NGX_OK;
     }
 
-    if (njs_vm_retval_string(ctx->vm, &value) != NJS_OK) {
+    if (!pending && rc == NGX_AGAIN) {
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+                      "async operation inside \"%V\" variable handler", fname);
         return NGX_ERROR;
     }
 
-    if (!pending && njs_vm_pending(ctx->vm)) {
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
-                      "async operation inside \"%V\" variable handler", fname);
+    if (njs_vm_retval_string(ctx->vm, &value) != NJS_OK) {
         return NGX_ERROR;
     }
 
@@ -926,12 +884,10 @@ ngx_stream_js_ext_done(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     code = njs_arg(args, nargs, 1);
 
     if (!njs_value_is_undefined(code)) {
-        if (!njs_value_is_valid_number(code)) {
-            njs_vm_error(vm, "code is not a number");
+        if (ngx_js_integer(vm, code, &status) != NGX_OK) {
             return NJS_ERROR;
         }
 
-        status = njs_value_number(code);
         if (status < NGX_ABORT || status > NGX_STREAM_SERVICE_UNAVAILABLE) {
             njs_vm_error(vm, "code is out of range");
             return NJS_ERROR;
@@ -1116,7 +1072,7 @@ ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (ngx_stream_js_string(vm, njs_arg(args, nargs, 1), &buffer) != NJS_OK) {
+    if (ngx_js_string(vm, njs_arg(args, nargs, 1), &buffer) != NGX_OK) {
         njs_vm_error(vm, "failed to get buffer arg");
         return NJS_ERROR;
     }
@@ -1218,8 +1174,7 @@ ngx_stream_js_ext_variables(njs_vm_t *vm, njs_object_prop_t *prop,
         return NJS_ERROR;
     }
 
-    rc = ngx_stream_js_string(vm, setval, &val);
-    if (rc != NJS_OK) {
+    if (ngx_js_string(vm, setval, &val) != NGX_OK) {
         return NJS_ERROR;
     }
 
@@ -1347,23 +1302,6 @@ ngx_stream_js_handle_event(ngx_stream_session_t *s, njs_vm_event_t vm_event,
     if (rc == NJS_OK) {
         ngx_post_event(s->connection->read, &ngx_posted_events);
     }
-}
-
-
-static njs_int_t
-ngx_stream_js_string(njs_vm_t *vm, njs_value_t *value, njs_str_t *str)
-{
-    if (!njs_value_is_null_or_undefined(value)) {
-        if (njs_vm_value_to_string(vm, str, value) == NJS_ERROR) {
-            return NJS_ERROR;
-        }
-
-    } else {
-        str->start = NULL;
-        str->length = 0;
-    }
-
-    return NJS_OK;
 }
 
 
