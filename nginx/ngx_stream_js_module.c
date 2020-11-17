@@ -1457,6 +1457,12 @@ ngx_stream_js_init_main_conf(ngx_conf_t *cf, void *conf)
     }
 
     jmcf->proto = proto;
+
+    rc = ngx_js_core_init(jmcf->vm, cf->log);
+    if (njs_slow_path(rc != NJS_OK)) {
+        return NGX_CONF_ERROR;
+    }
+
     end = start + size;
 
     rc = njs_vm_compile(jmcf->vm, &start, end);
