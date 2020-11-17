@@ -942,9 +942,7 @@ ngx_stream_js_ext_on(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (njs_vm_value_to_string(vm, &name, njs_arg(args, nargs, 1))
-        == NJS_ERROR)
-    {
+    if (ngx_js_string(vm, njs_arg(args, nargs, 1), &name) == NJS_ERROR) {
         njs_vm_error(vm, "failed to convert event arg");
         return NJS_ERROR;
     }
@@ -991,9 +989,7 @@ ngx_stream_js_ext_off(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (njs_vm_value_to_string(vm, &name, njs_arg(args, nargs, 1))
-        == NJS_ERROR)
-    {
+    if (ngx_js_string(vm, njs_arg(args, nargs, 1), &name) == NJS_ERROR) {
         njs_vm_error(vm, "failed to convert event arg");
         return NJS_ERROR;
     }

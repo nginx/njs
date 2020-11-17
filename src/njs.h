@@ -339,6 +339,12 @@ NJS_EXPORT njs_int_t njs_vm_value_buffer_set(njs_vm_t *vm, njs_value_t *value,
     const u_char *start, uint32_t size);
 
 /*
+ * Converts a value to bytes.
+ */
+NJS_EXPORT njs_int_t njs_vm_value_to_bytes(njs_vm_t *vm, njs_str_t *dst,
+    njs_value_t *src);
+
+/*
  * Converts a value to string.
  */
 NJS_EXPORT njs_int_t njs_vm_value_to_string(njs_vm_t *vm, njs_str_t *dst,

@@ -2371,7 +2371,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     arg = njs_arg(args, nargs, 2);
 
     if (njs_value_is_string(arg)) {
-        if (njs_vm_value_to_string(vm, &args_arg, arg) != NJS_OK) {
+        if (ngx_js_string(vm, arg, &args_arg) != NJS_OK) {
             njs_vm_error(vm, "failed to convert args");
             return NJS_ERROR;
         }

@@ -130,7 +130,7 @@ njs_unit_test_r_uri(njs_vm_t *vm, njs_object_prop_t *prop,
     field = (njs_str_t *) (p + njs_vm_prop_magic32(prop));
 
     if (setval != NULL) {
-        return njs_vm_value_to_string(vm, field, setval);
+        return njs_vm_value_to_bytes(vm, field, setval);
     }
 
     return njs_vm_value_string_set(vm, retval, field->start, field->length);
@@ -358,7 +358,7 @@ njs_unit_test_r_method(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    ret = njs_vm_value_to_string(vm, &s, njs_arg(args, nargs, 1));
+    ret = njs_vm_value_to_bytes(vm, &s, njs_arg(args, nargs, 1));
     if (ret == NJS_OK && s.length == 3 && memcmp(s.start, "YES", 3) == 0) {
         return njs_vm_value_string_set(vm, njs_vm_retval(vm), r->uri.start,
                                        r->uri.length);
@@ -388,7 +388,7 @@ njs_unit_test_r_create(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         goto memory_error;
     }
 
-    if (njs_vm_value_to_string(vm, &sr->uri, njs_arg(args, nargs, 1))
+    if (njs_vm_value_to_bytes(vm, &sr->uri, njs_arg(args, nargs, 1))
         != NJS_OK)
     {
         return NJS_ERROR;
@@ -424,7 +424,7 @@ njs_unit_test_r_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (njs_vm_value_to_string(vm, &name, njs_arg(args, nargs, 1)) != NJS_OK) {
+    if (njs_vm_value_to_bytes(vm, &name, njs_arg(args, nargs, 1)) != NJS_OK) {
         return NJS_ERROR;
     }
 

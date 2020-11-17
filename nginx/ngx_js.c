@@ -105,7 +105,7 @@ ngx_int_t
 ngx_js_string(njs_vm_t *vm, njs_value_t *value, njs_str_t *str)
 {
     if (value != NULL && !njs_value_is_null_or_undefined(value)) {
-        if (njs_vm_value_to_string(vm, str, value) == NJS_ERROR) {
+        if (njs_vm_value_to_bytes(vm, str, value) == NJS_ERROR) {
             return NGX_ERROR;
         }
 
