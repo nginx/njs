@@ -44,8 +44,14 @@ typedef struct {
     njs_opaque_value_t     request;
     njs_opaque_value_t     request_body;
     ngx_str_t              redirect_uri;
-    njs_opaque_value_t     promise_callbacks[2];
+    ngx_array_t            promise_callbacks;
 } ngx_http_js_ctx_t;
+
+
+typedef struct {
+    ngx_http_request_t    *request;
+    njs_opaque_value_t     callbacks[2];
+} ngx_http_js_cb_t;
 
 
 typedef struct {
@@ -2276,19 +2282,52 @@ static njs_int_t
 ngx_http_js_promise_trampoline(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
+    ngx_uint_t           i;
     njs_function_t      *callback;
+    ngx_http_js_cb_t    *cb, *cbs;
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
     r = njs_vm_external(vm, njs_argument(args, 1));
-    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+    ctx = ngx_http_get_module_ctx(r->parent, ngx_http_js_module);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "js subrequest promise trampoline ctx: %p", ctx);
+                   "js subrequest promise trampoline parent ctx: %p", ctx);
 
-    callback = njs_value_function(njs_value_arg(&ctx->promise_callbacks[0]));
+    if (ctx == NULL) {
+        njs_vm_error(vm, "js subrequest: failed to get the parent context");
+        return NJS_ERROR;
+    }
+
+    cbs = ctx->promise_callbacks.elts;
+
+    if (cbs == NULL) {
+        goto fail;
+    }
+
+    cb = NULL;
+
+    for (i = 0; i < ctx->promise_callbacks.nelts; i++) {
+        if (cbs[i].request == r) {
+            cb = &cbs[i];
+            cb->request = NULL;
+            break;
+        }
+    }
+
+    if (cb == NULL) {
+        goto fail;
+    }
+
+    callback = njs_value_function(njs_value_arg(&cb->callbacks[0]));
 
     return njs_vm_call(vm, callback, njs_argument(args, 1), 1);
+
+fail:
+
+    njs_vm_error(vm, "js subrequest: promise callback not found");
+
+    return NJS_ERROR;
 }
 
 
@@ -2298,9 +2337,10 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     ngx_int_t                 rc, promise;
     njs_str_t                 uri_arg, args_arg, method_name, body_arg;
-    ngx_uint_t                method, methods_max, has_body, detached;
+    ngx_uint_t                i, method, methods_max, has_body, detached;
     njs_value_t              *value, *arg, *options;
     njs_function_t           *callback;
+    ngx_http_js_cb_t         *cb, *cbs;
     ngx_http_js_ctx_t        *ctx;
     njs_opaque_value_t        lvalue;
     ngx_http_request_t       *r, *sr;
@@ -2507,15 +2547,36 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (promise) {
-        ctx = ngx_pcalloc(sr->pool, sizeof(ngx_http_js_ctx_t));
-        if (ctx == NULL) {
-            return NGX_ERROR;
+        cbs = ctx->promise_callbacks.elts;
+
+        if (cbs == NULL) {
+            if (ngx_array_init(&ctx->promise_callbacks, r->pool, 4,
+                               sizeof(ngx_http_js_cb_t)) != NGX_OK)
+            {
+                goto memory_error;
+            }
         }
 
-        ngx_http_set_ctx(sr, ctx, ngx_http_js_module);
+        cb = NULL;
+
+        for (i = 0; i < ctx->promise_callbacks.nelts; i++) {
+            if (cbs[i].request == NULL) {
+                cb = &cbs[i];
+                break;
+            }
+        }
+
+        if (i == ctx->promise_callbacks.nelts) {
+            cb = ngx_array_push(&ctx->promise_callbacks);
+            if (cb == NULL) {
+                goto memory_error;
+            }
+        }
+
+        cb->request = sr;
 
         return njs_vm_promise_create(vm, njs_vm_retval(vm),
-                                     njs_value_arg(&ctx->promise_callbacks));
+                                     njs_value_arg(&cb->callbacks));
     }
 
     njs_value_undefined_set(njs_vm_retval(vm));
