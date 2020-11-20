@@ -94,10 +94,8 @@ njs_regex_compile(njs_regex_t *regex, u_char *source, size_t len,
     regex->extra = pcre_study(regex->code, 0, &errstr);
 
     if (njs_slow_path(errstr != NULL)) {
-        njs_alert(ctx->trace, NJS_LEVEL_ERROR,
+        njs_alert(ctx->trace, NJS_LEVEL_WARN,
                   "pcre_study(\"%s\") failed: %s", pattern, errstr);
-
-        goto done;
     }
 
     err = pcre_fullinfo(regex->code, NULL, PCRE_INFO_CAPTURECOUNT,
