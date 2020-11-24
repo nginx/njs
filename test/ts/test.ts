@@ -106,6 +106,20 @@ function buffer(b: Buffer) {
     b.equals(b);
 }
 
+function timers() {
+    var handle:TimerHandle;
+
+    handle = setTimeout(() => {});
+    handle = setTimeout(() => {}, 100);
+    handle = setTimeout((a:string, b:number) => {}, 100, 'foo', 42);
+
+    handle = setImmediate(() => {});
+    handle = setImmediate((a:string, b:number) => {}, 'foo', 42);
+
+    clearTimeout(handle);
+    // Warning: clearTimeout(123);
+}
+
 function njs_object() {
     njs.dump('asdf');
     njs.version != process.argv[1];
