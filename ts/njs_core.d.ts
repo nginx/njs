@@ -607,3 +607,45 @@ interface NjsProcess {
 }
 
 declare const process: NjsProcess;
+
+/**
+ * A value returned by `setTimeout()` and `setImmediate()` functions. It's an positive integer now,
+ * but this may be changed in future, so it should be treated as an opaque value.
+ */
+type TimerHandle = number & { readonly '': unique symbol };
+
+/**
+ * Schedules the "immediate" execution of the given function after I/O events' callbacks.
+ *
+ * @param callback The function to call.
+ * @param args Optional arguments to pass to the `callback` function.
+ * @returns A value which identifies the timer created by the call.
+ *
+ * @throws {TypeError} if `callback` is not a function.
+ * @throws {InternalError} if timers are not supported by host environment.
+ */
+declare function setImmediate<TArgs extends any[]>(callback: (...args: TArgs) => void, ...args: TArgs): TimerHandle;
+
+/**
+ * Schedules a timer which executes the given function after the specified delay.
+ *
+ * @param callback The function to call when the timer elapses.
+ * @param delay The number of milliseconds to wait before calling the `callback`. Defaults to `0`,
+ *   meaning execute "immediately", or more accurately, the next event cycle.
+ * @param args Optional arguments to pass to the `callback` function.
+ * @returns A value which identifies the timer created by the call; it can be passed to
+ *   `clearTimeout()` to cancel the timeout.
+ *
+ * @throws {TypeError} if `callback` is not a function.
+ * @throws {InternalError} if timers are not supported by host environment.
+ */
+declare function setTimeout<TArgs extends any[]>(callback: (...args: TArgs) => void, delay?: number, ...args: TArgs): TimerHandle;
+
+/**
+ * Cancels a timer previously established by calling `setTimeout()`.
+ *
+ * Note: Passing an invalid handle silently does nothing; no exception is thrown.
+ *
+ * @param handle A value returned by `setTimeout()`.
+ */
+declare function clearTimeout(handle?: TimerHandle): void;
