@@ -48,8 +48,10 @@ typedef struct {
     ngx_chain_t            *busy;
     ngx_stream_session_t   *session;
     ngx_int_t               status;
-    njs_vm_event_t          upload_event;
-    njs_vm_event_t          download_event;
+#define NGX_JS_EVENT_UPLOAD   0
+#define NGX_JS_EVENT_DOWNLOAD 1
+#define NGX_JS_EVENT_MAX      2
+    njs_vm_event_t          events[2];
     unsigned                from_upstream:1;
     unsigned                filter:1;
     unsigned                in_progress:1;
@@ -73,6 +75,7 @@ static ngx_int_t ngx_stream_js_body_filter(ngx_stream_session_t *s,
 static ngx_int_t ngx_stream_js_variable(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, uintptr_t data);
 static ngx_int_t ngx_stream_js_init_vm(ngx_stream_session_t *s);
+static void ngx_stream_js_drop_events(ngx_stream_js_ctx_t *ctx);
 static void ngx_stream_js_cleanup_ctx(void *data);
 static void ngx_stream_js_cleanup_vm(void *data);
 static njs_int_t ngx_stream_js_buffer_arg(ngx_stream_session_t *s,
@@ -441,7 +444,7 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
         }
     }
 
-    if (ctx->upload_event != NULL) {
+    if (ctx->events[NGX_JS_EVENT_UPLOAD] != NULL) {
         ret = ngx_stream_js_buffer_arg(s, njs_value_arg(&ctx->args[1]));
         if (ret != NJS_OK) {
             goto exception;
@@ -452,7 +455,7 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
             goto exception;
         }
 
-        njs_vm_post_event(ctx->vm, ctx->upload_event,
+        njs_vm_post_event(ctx->vm, ctx->events[NGX_JS_EVENT_UPLOAD],
                           njs_value_arg(&ctx->args[1]), 2);
 
         rc = njs_vm_run(ctx->vm);
@@ -463,7 +466,7 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
 
     if (njs_vm_pending(ctx->vm)) {
         ctx->in_progress = 1;
-        rc = ctx->upload_event ? NGX_AGAIN : NGX_DONE;
+        rc = ctx->events[NGX_JS_EVENT_UPLOAD] ? NGX_AGAIN : NGX_DONE;
 
     } else {
         ctx->in_progress = 0;
@@ -487,7 +490,8 @@ exception:
 
 
 #define ngx_stream_event(from_upstream)                                 \
-    (from_upstream ? ctx->download_event : ctx->upload_event)
+    (from_upstream ? ctx->events[NGX_JS_EVENT_DOWNLOAD]                 \
+                   : ctx->events[NGX_JS_EVENT_UPLOAD])
 
 
 static ngx_int_t
@@ -720,19 +724,25 @@ ngx_stream_js_init_vm(ngx_stream_session_t *s)
 
 
 static void
+ngx_stream_js_drop_events(ngx_stream_js_ctx_t *ctx)
+{
+    ngx_uint_t  i;
+
+    for (i = 0; i < NGX_JS_EVENT_MAX; i++) {
+        if (ctx->events[i] != NULL) {
+            njs_vm_del_event(ctx->vm, ctx->events[i]);
+            ctx->events[i] = NULL;
+        }
+    }
+}
+
+
+static void
 ngx_stream_js_cleanup_ctx(void *data)
 {
     ngx_stream_js_ctx_t *ctx = data;
 
-    if (ctx->upload_event != NULL) {
-        njs_vm_del_event(ctx->vm, ctx->upload_event);
-        ctx->upload_event = NULL;
-    }
-
-    if (ctx->download_event != NULL) {
-        njs_vm_del_event(ctx->vm, ctx->download_event);
-        ctx->download_event = NULL;
-    }
+    ngx_stream_js_drop_events(ctx);
 
     if (njs_vm_pending(ctx->vm)) {
         ngx_log_error(NGX_LOG_ERR, ctx->log, 0, "pending events");
@@ -840,10 +850,10 @@ ngx_stream_js_event(ngx_stream_session_t *s, njs_str_t *event)
     }
 
     if (i == 0) {
-        return &ctx->upload_event;
+        return &ctx->events[NGX_JS_EVENT_UPLOAD];
     }
 
-    return &ctx->download_event;
+    return &ctx->events[NGX_JS_EVENT_DOWNLOAD];
 }
 
 
@@ -911,15 +921,7 @@ ngx_stream_js_ext_done(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     ctx->status = status;
 
-    if (ctx->upload_event != NULL) {
-        njs_vm_del_event(ctx->vm, ctx->upload_event);
-        ctx->upload_event = NULL;
-    }
-
-    if (ctx->download_event != NULL) {
-        njs_vm_del_event(ctx->vm, ctx->download_event);
-        ctx->download_event = NULL;
-    }
+    ngx_stream_js_drop_events(ctx);
 
     njs_value_undefined_set(njs_vm_retval(vm));
 
