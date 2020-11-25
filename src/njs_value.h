@@ -189,6 +189,7 @@ union njs_value_s {
 typedef struct {
     /* Get, also Set if writable, also Delete if configurable. */
     njs_prop_handler_t  prop_handler;
+    uint32_t            magic32;
     unsigned            writable:1;
     unsigned            configurable:1;
     unsigned            enumerable:1;

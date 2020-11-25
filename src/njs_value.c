@@ -492,6 +492,13 @@ njs_value_is_function(const njs_value_t *value)
 }
 
 
+njs_int_t
+njs_value_is_buffer(const njs_value_t *value)
+{
+    return njs_is_typed_array(value);
+}
+
+
 /*
  * ES5.1, 8.12.1: [[GetOwnProperty]], [[GetProperty]].
  * The njs_property_query() returns values
@@ -932,6 +939,7 @@ njs_external_property_query(njs_vm_t *vm, njs_property_query_t *pq,
      *   njs_set_null(&prop->setter);
      */
 
+    prop->value.data.magic32 = slots->magic32;
     prop->name = pq->key;
 
     pq->lhq.value = prop;

@@ -15,8 +15,18 @@
 #include <njs.h>
 
 
+#define NGX_JS_UNSET   0
+#define NGX_JS_STRING  1
+#define NGX_JS_BUFFER  2
+
+
 #define ngx_external_connection(vm, ext)                                    \
     (*((ngx_connection_t **) ((u_char *) ext + njs_vm_meta(vm, 0))))
+
+
+#define ngx_js_prop(vm, type, value, start, len)                              \
+    ((type == NGX_JS_STRING) ? njs_vm_value_string_set(vm, value, start, len) \
+                             : njs_vm_value_buffer_set(vm, value, start, len))
 
 
 ngx_int_t ngx_js_call(njs_vm_t *vm, ngx_str_t *s, njs_opaque_value_t *value,

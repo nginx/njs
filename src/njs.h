@@ -144,6 +144,7 @@ struct njs_external_s {
             unsigned                configurable;
             unsigned                enumerable;
             njs_prop_handler_t      prop_handler;
+            uint32_t                magic32;
             njs_exotic_keys_t       keys;
         } object;
     } u;
@@ -389,6 +390,7 @@ NJS_EXPORT njs_int_t njs_value_is_string(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_object(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_array(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_function(const njs_value_t *value);
+NJS_EXPORT njs_int_t njs_value_is_buffer(const njs_value_t *value);
 
 NJS_EXPORT njs_int_t njs_vm_object_alloc(njs_vm_t *vm, njs_value_t *retval,
     ...);

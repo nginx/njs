@@ -39,6 +39,12 @@ typedef struct {
 
 
 typedef struct {
+    njs_vm_event_t          ev;
+    ngx_uint_t              data_type;
+} ngx_stream_js_ev_t;
+
+
+typedef struct {
     njs_vm_t               *vm;
     ngx_log_t              *log;
     njs_opaque_value_t      args[3];
@@ -51,7 +57,7 @@ typedef struct {
 #define NGX_JS_EVENT_UPLOAD   0
 #define NGX_JS_EVENT_DOWNLOAD 1
 #define NGX_JS_EVENT_MAX      2
-    njs_vm_event_t          events[2];
+    ngx_stream_js_ev_t      events[2];
     unsigned                from_upstream:1;
     unsigned                filter:1;
     unsigned                in_progress:1;
@@ -79,7 +85,7 @@ static void ngx_stream_js_drop_events(ngx_stream_js_ctx_t *ctx);
 static void ngx_stream_js_cleanup_ctx(void *data);
 static void ngx_stream_js_cleanup_vm(void *data);
 static njs_int_t ngx_stream_js_buffer_arg(ngx_stream_session_t *s,
-    njs_value_t *buffer);
+    njs_value_t *buffer, ngx_uint_t data_type);
 static njs_int_t ngx_stream_js_flags_arg(ngx_stream_session_t *s,
     njs_value_t *flags);
 static njs_vm_event_t *ngx_stream_js_event(ngx_stream_session_t *s,
@@ -233,6 +239,17 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
         .u.object = {
             .writable = 1,
             .prop_handler = ngx_stream_js_ext_variables,
+            .magic32 = NGX_JS_STRING,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("vars"),
+        .u.object = {
+            .writable = 1,
+            .prop_handler = ngx_stream_js_ext_variables,
+            .magic32 = NGX_JS_BUFFER,
         }
     },
 
@@ -412,6 +429,7 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
     njs_int_t             ret;
     ngx_int_t             rc;
     ngx_connection_t     *c;
+    ngx_stream_js_ev_t   *event;
     ngx_stream_js_ctx_t  *ctx;
 
     if (name->len == 0) {
@@ -444,8 +462,11 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
         }
     }
 
-    if (ctx->events[NGX_JS_EVENT_UPLOAD] != NULL) {
-        ret = ngx_stream_js_buffer_arg(s, njs_value_arg(&ctx->args[1]));
+    event = &ctx->events[NGX_JS_EVENT_UPLOAD];
+
+    if (event->ev != NULL) {
+        ret = ngx_stream_js_buffer_arg(s, njs_value_arg(&ctx->args[1]),
+                                       event->data_type);
         if (ret != NJS_OK) {
             goto exception;
         }
@@ -455,8 +476,7 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
             goto exception;
         }
 
-        njs_vm_post_event(ctx->vm, ctx->events[NGX_JS_EVENT_UPLOAD],
-                          njs_value_arg(&ctx->args[1]), 2);
+        njs_vm_post_event(ctx->vm, event->ev, njs_value_arg(&ctx->args[1]), 2);
 
         rc = njs_vm_run(ctx->vm);
         if (rc == NJS_ERROR) {
@@ -466,7 +486,7 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
 
     if (njs_vm_pending(ctx->vm)) {
         ctx->in_progress = 1;
-        rc = ctx->events[NGX_JS_EVENT_UPLOAD] ? NGX_AGAIN : NGX_DONE;
+        rc = ctx->events[NGX_JS_EVENT_UPLOAD].ev ? NGX_AGAIN : NGX_DONE;
 
     } else {
         ctx->in_progress = 0;
@@ -490,8 +510,8 @@ exception:
 
 
 #define ngx_stream_event(from_upstream)                                 \
-    (from_upstream ? ctx->events[NGX_JS_EVENT_DOWNLOAD]                 \
-                   : ctx->events[NGX_JS_EVENT_UPLOAD])
+    (from_upstream ? &ctx->events[NGX_JS_EVENT_DOWNLOAD]                \
+                   : &ctx->events[NGX_JS_EVENT_UPLOAD])
 
 
 static ngx_int_t
@@ -503,6 +523,7 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
     ngx_int_t                  rc;
     ngx_chain_t               *out, *cl;
     ngx_connection_t          *c;
+    ngx_stream_js_ev_t        *event;
     ngx_stream_js_ctx_t       *ctx;
     ngx_stream_js_srv_conf_t  *jscf;
 
@@ -543,8 +564,11 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
     while (in) {
         ctx->buf = in->buf;
 
-        if (ngx_stream_event(from_upstream) != NULL) {
-            ret = ngx_stream_js_buffer_arg(s, njs_value_arg(&ctx->args[1]));
+        event = ngx_stream_event(from_upstream);
+
+        if (event->ev != NULL) {
+            ret = ngx_stream_js_buffer_arg(s, njs_value_arg(&ctx->args[1]),
+                                           event->data_type);
             if (ret != NJS_OK) {
                 goto exception;
             }
@@ -554,7 +578,7 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
                 goto exception;
             }
 
-            njs_vm_post_event(ctx->vm, ngx_stream_event(from_upstream),
+            njs_vm_post_event(ctx->vm, event->ev,
                               njs_value_arg(&ctx->args[1]), 2);
 
             rc = njs_vm_run(ctx->vm);
@@ -729,9 +753,9 @@ ngx_stream_js_drop_events(ngx_stream_js_ctx_t *ctx)
     ngx_uint_t  i;
 
     for (i = 0; i < NGX_JS_EVENT_MAX; i++) {
-        if (ctx->events[i] != NULL) {
-            njs_vm_del_event(ctx->vm, ctx->events[i]);
-            ctx->events[i] = NULL;
+        if (ctx->events[i].ev != NULL) {
+            njs_vm_del_event(ctx->vm, ctx->events[i].ev);
+            ctx->events[i].ev = NULL;
         }
     }
 }
@@ -762,7 +786,8 @@ ngx_stream_js_cleanup_vm(void *data)
 
 
 static njs_int_t
-ngx_stream_js_buffer_arg(ngx_stream_session_t *s, njs_value_t *buffer)
+ngx_stream_js_buffer_arg(ngx_stream_session_t *s, njs_value_t *buffer,
+    ngx_uint_t data_type)
 {
     size_t                 len;
     u_char                *p;
@@ -777,8 +802,9 @@ ngx_stream_js_buffer_arg(ngx_stream_session_t *s, njs_value_t *buffer)
 
     len = b ? b->last - b->pos : 0;
 
-    p = njs_vm_value_string_alloc(ctx->vm, buffer, len);
+    p = ngx_pnalloc(c->pool, len);
     if (p == NULL) {
+        njs_vm_memory_error(ctx->vm);
         return NJS_ERROR;
     }
 
@@ -786,9 +812,8 @@ ngx_stream_js_buffer_arg(ngx_stream_session_t *s, njs_value_t *buffer)
         ngx_memcpy(p, b->pos, len);
     }
 
-    return NJS_OK;
+    return ngx_js_prop(ctx->vm, data_type, buffer, p, len);
 }
-
 
 
 static njs_int_t
@@ -821,12 +846,37 @@ ngx_stream_js_flags_arg(ngx_stream_session_t *s, njs_value_t *flags)
 static njs_vm_event_t *
 ngx_stream_js_event(ngx_stream_session_t *s, njs_str_t *event)
 {
-    ngx_uint_t             i, n;
+    ngx_uint_t            i, n, type;
     ngx_stream_js_ctx_t  *ctx;
 
-    static const njs_str_t events[] = {
-        njs_str("upload"),
-        njs_str("download")
+    static const struct {
+        ngx_str_t   name;
+        ngx_uint_t  data_type;
+        ngx_uint_t  id;
+    } events[] = {
+        {
+            ngx_string("upload"),
+            NGX_JS_STRING,
+            NGX_JS_EVENT_UPLOAD,
+        },
+
+        {
+            ngx_string("download"),
+            NGX_JS_STRING,
+            NGX_JS_EVENT_DOWNLOAD,
+        },
+
+        {
+            ngx_string("upstream"),
+            NGX_JS_BUFFER,
+            NGX_JS_EVENT_UPLOAD,
+        },
+
+        {
+            ngx_string("downstream"),
+            NGX_JS_BUFFER,
+            NGX_JS_EVENT_DOWNLOAD,
+        },
     };
 
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
@@ -835,8 +885,9 @@ ngx_stream_js_event(ngx_stream_session_t *s, njs_str_t *event)
     n = sizeof(events) / sizeof(events[0]);
 
     while (i < n) {
-        if (event->length == events[i].length
-            && ngx_memcmp(event->start, events[i].start, event->length) == 0)
+        if (event->length == events[i].name.len
+            && ngx_memcmp(event->start, events[i].name.data, event->length)
+               == 0)
         {
             break;
         }
@@ -849,11 +900,18 @@ ngx_stream_js_event(ngx_stream_session_t *s, njs_str_t *event)
         return NULL;
     }
 
-    if (i == 0) {
-        return &ctx->events[NGX_JS_EVENT_UPLOAD];
+    ctx->events[events[i].id].data_type = events[i].data_type;
+
+    for (n = 0; n < NGX_JS_EVENT_MAX; n++) {
+        type = ctx->events[n].data_type;
+        if (type != NGX_JS_UNSET && type != events[i].data_type) {
+            njs_vm_error(ctx->vm, "mixing string and buffer events"
+                         " is not allowed");
+            return NULL;
+        }
     }
 
-    return &ctx->events[NGX_JS_EVENT_DOWNLOAD];
+    return &ctx->events[events[i].id].ev;
 }
 
 
@@ -1131,7 +1189,8 @@ ngx_stream_js_ext_variables(njs_vm_t *vm, njs_object_prop_t *prop,
             return NJS_DECLINED;
         }
 
-        return njs_vm_value_string_set(vm, retval, vv->data, vv->len);
+        return ngx_js_prop(vm, njs_vm_prop_magic32(prop), retval, vv->data,
+                           vv->len);
     }
 
     cmcf = ngx_stream_get_module_main_conf(s, ngx_stream_core_module);

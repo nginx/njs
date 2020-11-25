@@ -132,6 +132,7 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
             next->configurable = external->u.object.configurable;
             next->enumerable = external->u.object.enumerable;
             next->prop_handler = external->u.object.prop_handler;
+            next->magic32 = external->u.object.magic32;
             next->keys = external->u.object.keys;
 
             break;

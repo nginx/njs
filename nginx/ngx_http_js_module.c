@@ -43,6 +43,7 @@ typedef struct {
     ngx_int_t              status;
     njs_opaque_value_t     request;
     njs_opaque_value_t     request_body;
+    njs_opaque_value_t     response_body;
     ngx_str_t              redirect_uri;
     ngx_array_t            promise_callbacks;
 } ngx_http_js_ctx_t;
@@ -319,9 +320,19 @@ static njs_external_t  ngx_http_js_ext_request[] = {
     {
         .flags = NJS_EXTERN_PROPERTY,
         .name.string = njs_str("requestBody"),
+        .u.property = {
+            .handler = ngx_http_js_ext_get_request_body,
+            .magic32 = NGX_JS_STRING,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("reqBody"),
         .enumerable = 1,
         .u.property = {
             .handler = ngx_http_js_ext_get_request_body,
+            .magic32 = NGX_JS_BUFFER,
         }
     },
 
@@ -336,9 +347,19 @@ static njs_external_t  ngx_http_js_ext_request[] = {
     {
         .flags = NJS_EXTERN_PROPERTY,
         .name.string = njs_str("responseBody"),
+        .u.property = {
+            .handler = ngx_http_js_ext_get_response_body,
+            .magic32 = NGX_JS_STRING,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("resBody"),
         .enumerable = 1,
         .u.property = {
             .handler = ngx_http_js_ext_get_response_body,
+            .magic32 = NGX_JS_BUFFER,
         }
     },
 
@@ -379,6 +400,17 @@ static njs_external_t  ngx_http_js_ext_request[] = {
         .u.object = {
             .writable = 1,
             .prop_handler = ngx_http_js_ext_variables,
+            .magic32 = NGX_JS_STRING,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("vars"),
+        .u.object = {
+            .writable = 1,
+            .prop_handler = ngx_http_js_ext_variables,
+            .magic32 = NGX_JS_BUFFER,
         }
     },
 
@@ -1891,8 +1923,12 @@ ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_object_prop_t *prop,
     request_body = (njs_value_t *) &ctx->request_body;
 
     if (!njs_value_is_null(request_body)) {
-        njs_value_assign(retval, request_body);
-        return NJS_OK;
+        if ((njs_vm_prop_magic32(prop) == NGX_JS_BUFFER)
+            == (uint32_t) njs_value_is_buffer(request_body))
+        {
+            njs_value_assign(retval, request_body);
+            return NJS_OK;
+        }
     }
 
     if (r->request_body == NULL || r->request_body->bufs == NULL) {
@@ -1939,8 +1975,7 @@ ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_object_prop_t *prop,
 
 done:
 
-    ret = njs_vm_value_string_set(vm, request_body, body, len);
-
+    ret = ngx_js_prop(vm, njs_vm_prop_magic32(prop), request_body, body, len);
     if (ret != NJS_OK) {
         return NJS_ERROR;
     }
@@ -2220,7 +2255,8 @@ ngx_http_js_ext_variables(njs_vm_t *vm, njs_object_prop_t *prop,
             return NJS_DECLINED;
         }
 
-        return njs_vm_value_string_set(vm, retval, vv->data, vv->len);
+        return ngx_js_prop(vm, njs_vm_prop_magic32(prop), retval, vv->data,
+                           vv->len);
     }
 
     cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
@@ -2743,13 +2779,28 @@ ngx_http_js_ext_get_response_body(njs_vm_t *vm, njs_object_prop_t *prop,
 {
     size_t               len;
     u_char              *p;
+    njs_int_t            ret;
     ngx_buf_t           *b;
+    njs_value_t         *response_body;
+    ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
     r = njs_vm_external(vm, value);
     if (r == NULL) {
         njs_value_undefined_set(retval);
         return NJS_DECLINED;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+    response_body = (njs_value_t *) &ctx->response_body;
+
+    if (!njs_value_is_null(response_body)) {
+        if ((njs_vm_prop_magic32(prop) == NGX_JS_BUFFER)
+            == (uint32_t) njs_value_is_buffer(response_body))
+        {
+            njs_value_assign(retval, response_body);
+            return NJS_OK;
+        }
     }
 
     b = r->out ? r->out->buf : NULL;
@@ -2761,14 +2812,22 @@ ngx_http_js_ext_get_response_body(njs_vm_t *vm, njs_object_prop_t *prop,
 
     len = b->last - b->pos;
 
-    p = njs_vm_value_string_alloc(vm, retval, len);
+    p = ngx_pnalloc(r->pool, len);
     if (p == NULL) {
+        njs_vm_memory_error(vm);
         return NJS_ERROR;
     }
 
     if (len) {
         ngx_memcpy(p, b->pos, len);
     }
+
+    ret = ngx_js_prop(vm, njs_vm_prop_magic32(prop), response_body, p, len);
+    if (ret != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    njs_value_assign(retval, response_body);
 
     return NJS_OK;
 }
