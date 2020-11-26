@@ -110,12 +110,12 @@ interface NginxStreamRequest {
      * Writes a string to the error log on the error level of logging.
      * @param message Message to log.
      */
-    error(message: NjsStringLike): void;
+    error(message: NjsStringOrBuffer): void;
     /**
      * Writes a string to the error log on the info level of logging.
      * @param message Message to log.
      */
-    log(message: NjsStringLike): void;
+    log(message: NjsStringOrBuffer): void;
     /**
      * Unregisters the callback set by on() method.
      */
@@ -135,7 +135,7 @@ interface NginxStreamRequest {
      * @param options Object used to override nginx buffer flags derived from
      * an incoming data chunk buffer.
      */
-    send(data: NjsStringLike, options?: NginxStreamSendOptions): void;
+    send(data: NjsStringOrBuffer, options?: NginxStreamSendOptions): void;
     /**
      * nginx variables object.
      */
@@ -144,5 +144,5 @@ interface NginxStreamRequest {
      * Writes a string to the error log on the warn level of logging.
      * @param message Message to log.
      */
-    warn(message: NjsStringLike): void;
+    warn(message: NjsStringOrBuffer): void;
 }

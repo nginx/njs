@@ -49,6 +49,7 @@ function http_module(r: NginxHTTPRequest) {
     // r.log
 
     r.log(bs);
+    r.log(Buffer.from("abc"));
     r.log(r.headersOut['Connection'] ?? '');
 
     // r.variables
@@ -61,7 +62,7 @@ function http_module(r: NginxHTTPRequest) {
     r.subrequest('/p/sub2', {method:'POST'}).then(reply => r.return(reply.status));
     vod = r.subrequest('/p/sub3', reply => r.return(reply.status));
     vod = r.subrequest('/p/sub4', {method:'POST'}, reply => r.return(reply.status));
-    vod = r.subrequest('/p/sub5', {detached:true});
+    vod = r.subrequest(Buffer.from('/p/sub5'), {detached:true});
     // Warning: vod = r.subrequest('/p/sub9', {detached:true}, reply => r.return(reply.status));
     r.subrequest('/p/sub6', 'a=1&b=2').then(reply => r.return(reply.status,
                                         JSON.stringify(JSON.parse(reply.responseBody ?? ''))));
@@ -73,6 +74,8 @@ function fs_module() {
 
     s = fs.readFileSync('/path', 'utf8');
     s = fs.readFileSync(Buffer.from('/path'), {encoding:'hex'});
+
+    fs.writeFileSync('/path', Buffer.from('abc'));
 }
 
 function qs_module(str: NjsByteString) {

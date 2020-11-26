@@ -263,7 +263,7 @@ interface NginxHTTPRequest {
      * Writes a string to the error log on the error level of logging.
      * @param message Message to log.
      */
-    error(message: NjsStringLike): void;
+    error(message: NjsStringOrBuffer): void;
     /**
      * Finishes sending a response to the client.
      */
@@ -286,12 +286,12 @@ interface NginxHTTPRequest {
      * The actual redirect happens after the handler execution is completed.
      * @param uri Location to redirect to.
      */
-    internalRedirect(uri: NjsStringLike): void;
+    internalRedirect(uri: NjsStringOrBuffer): void;
     /**
      * Writes a string to the error log on the info level of logging.
      * @param message Message to log.
      */
-    log(message: NjsStringLike): void;
+    log(message: NjsStringOrBuffer): void;
     /**
      * HTTP method.
      */
@@ -323,11 +323,11 @@ interface NginxHTTPRequest {
      * @param status Respose status code.
      * @param body Respose body.
      */
-    return(status: number, body?: NjsStringLike): void;
+    return(status: number, body?: NjsStringOrBuffer): void;
     /**
      * Sends the HTTP headers to the client.
      */
-    send(part: NjsStringLike): void;
+    send(part: NjsStringOrBuffer): void;
     /**
      * Sends the HTTP headers to the client.
      */
@@ -346,11 +346,11 @@ interface NginxHTTPRequest {
      * @param options Subrequest options.
      * @param callback Completion callback.
      */
-    subrequest(uri: NjsStringLike, options: NginxSubrequestOptions & { detached: true }): void;
-    subrequest(uri: NjsStringLike, options?: NginxSubrequestOptions | string): Promise<NginxHTTPRequest>;
-    subrequest(uri: NjsStringLike, options: NginxSubrequestOptions & { detached?: false } | string,
+    subrequest(uri: NjsStringOrBuffer, options: NginxSubrequestOptions & { detached: true }): void;
+    subrequest(uri: NjsStringOrBuffer, options?: NginxSubrequestOptions | string): Promise<NginxHTTPRequest>;
+    subrequest(uri: NjsStringOrBuffer, options: NginxSubrequestOptions & { detached?: false } | string,
                callback:(reply:NginxHTTPRequest) => void): void;
-    subrequest(uri: NjsStringLike, callback:(reply:NginxHTTPRequest) => void): void;
+    subrequest(uri: NjsStringOrBuffer, callback:(reply:NginxHTTPRequest) => void): void;
     /**
      * Current URI in request, normalized.
      */
@@ -363,5 +363,5 @@ interface NginxHTTPRequest {
      * Writes a string to the error log on the warn level of logging.
      * @param message Message to log.
      */
-    warn(message: NjsStringLike): void;
+    warn(message: NjsStringOrBuffer): void;
 }

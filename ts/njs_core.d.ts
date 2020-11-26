@@ -584,6 +584,7 @@ declare class Buffer extends Uint8Array {
     writeFloatLE(value: number, offset?: number): number;
 }
 
+type NjsStringOrBuffer = NjsStringLike | Buffer | DataView | TypedArray;
 
 // Global objects
 

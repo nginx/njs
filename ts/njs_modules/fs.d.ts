@@ -124,7 +124,7 @@ declare module "fs" {
          *   If `mode` is not supplied, the default of `0o666` is used.
          *   If `flag` is not supplied, the default of `'a'` is used.
          */
-        appendFile(path: PathLike, data: NjsStringLike | Buffer, options?: WriteFileOptions): Promise<void>;
+        appendFile(path: PathLike, data: NjsStringOrBuffer, options?: WriteFileOptions): Promise<void>;
 
         /**
          * Asynchronously creates a directory at the specified `path`.
@@ -219,7 +219,7 @@ declare module "fs" {
          *   If `mode` is not supplied, the default of `0o666` is used.
          *   If `flag` is not supplied, the default of `'w'` is used.
          */
-        writeFile(path: PathLike, data: NjsStringLike | Buffer, options?: WriteFileOptions): Promise<void>;
+        writeFile(path: PathLike, data: NjsStringOrBuffer, options?: WriteFileOptions): Promise<void>;
     }
 
     interface NjsFS {
@@ -264,7 +264,7 @@ declare module "fs" {
          *   If `mode` is not supplied, the default of `0o666` is used.
          *   If `flag` is not supplied, the default of `'a'` is used.
          */
-        appendFileSync(path: PathLike, data: NjsStringLike | Buffer, options?: WriteFileOptions): void;
+        appendFileSync(path: PathLike, data: NjsStringOrBuffer, options?: WriteFileOptions): void;
 
         /**
          * Synchronously creates a directory at the specified `path`.
@@ -373,7 +373,7 @@ declare module "fs" {
          *   If `mode` is not supplied, the default of `0o666` is used.
          *   If `flag` is not supplied, the default of `'w'` is used.
          */
-        writeFileSync(path: PathLike, data: NjsStringLike | Buffer, options?: WriteFileOptions): void;
+        writeFileSync(path: PathLike, data: NjsStringOrBuffer, options?: WriteFileOptions): void;
     }
 
     const fs: NjsFS;

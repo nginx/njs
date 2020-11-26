@@ -10,7 +10,7 @@ declare module "crypto" {
         /**
          * Updates the hash content with the given `data` and returns self.
          */
-        update(data: NjsStringLike | Buffer | DataView | TypedArray): Hash;
+        update(data: NjsStringOrBuffer): Hash;
 
         /**
          * Calculates the digest of all of the data passed using `hash.update()`.
@@ -31,7 +31,7 @@ declare module "crypto" {
         /**
          * Updates the HMAC content with the given `data` and returns self.
          */
-        update(data: NjsStringLike | Buffer | DataView | TypedArray): Hmac;
+        update(data: NjsStringOrBuffer): Hmac;
 
         /**
          * Calculates the HMAC digest of all of the data passed using `hmac.update()`.
@@ -65,7 +65,7 @@ declare module "crypto" {
          * @param key The secret key.
          * @returns An `HMAC` object.
          */
-        createHmac(algorithm: Algorithm, key: NjsStringLike): Hmac;
+        createHmac(algorithm: Algorithm, key: NjsStringOrBuffer): Hmac;
     }
 
     const crypto: Crypto;
