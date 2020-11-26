@@ -245,7 +245,7 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
 
     {
         .flags = NJS_EXTERN_OBJECT,
-        .name.string = njs_str("vars"),
+        .name.string = njs_str("rawVariables"),
         .u.object = {
             .writable = 1,
             .prop_handler = ngx_stream_js_ext_variables,

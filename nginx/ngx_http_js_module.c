@@ -406,7 +406,7 @@ static njs_external_t  ngx_http_js_ext_request[] = {
 
     {
         .flags = NJS_EXTERN_OBJECT,
-        .name.string = njs_str("vars"),
+        .name.string = njs_str("rawVariables"),
         .u.object = {
             .writable = 1,
             .prop_handler = ngx_http_js_ext_variables,
