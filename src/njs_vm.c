@@ -578,7 +578,7 @@ njs_vm_handle_events(njs_vm_t *vm)
 
     } while (!njs_queue_is_empty(promise_events));
 
-    return njs_posted_events(vm) ? NJS_AGAIN : NJS_OK;
+    return njs_vm_pending(vm) ? NJS_AGAIN : NJS_OK;
 }
 
 

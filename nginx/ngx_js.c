@@ -79,11 +79,7 @@ ngx_js_call(njs_vm_t *vm, ngx_str_t *fname, njs_opaque_value_t *value,
         return NGX_ERROR;
     }
 
-    if (njs_vm_pending(vm)) {
-        return NGX_AGAIN;
-    }
-
-    return NGX_OK;
+    return njs_vm_run(vm);
 }
 
 
