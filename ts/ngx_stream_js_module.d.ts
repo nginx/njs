@@ -1,4 +1,5 @@
 /// <reference path="index.d.ts" />
+/// <reference path="ngx_core.d.ts" />
 
 interface NginxStreamVariables {
     readonly 'binary_remote_addr'?: NjsByteString;

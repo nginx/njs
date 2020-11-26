@@ -66,7 +66,6 @@ function http_module(r: NginxHTTPRequest) {
     // Warning: vod = r.subrequest('/p/sub9', {detached:true}, reply => r.return(reply.status));
     r.subrequest('/p/sub6', 'a=1&b=2').then(reply => r.return(reply.status,
                                         JSON.stringify(JSON.parse(reply.responseBody ?? ''))));
-
 }
 
 function fs_module() {
@@ -107,7 +106,13 @@ function buffer(b: Buffer) {
     b.equals(b);
 }
 
-function builtins() {
+function njs_object() {
     njs.dump('asdf');
     njs.version != process.argv[1];
+}
+
+function ngx_object() {
+    ngx.log(ngx.INFO, 'asdf');
+    ngx.log(ngx.WARN, Buffer.from('asdf'));
+    ngx.log(ngx.ERR, 'asdf');
 }
