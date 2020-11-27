@@ -328,8 +328,17 @@ static njs_external_t  ngx_http_js_ext_request[] = {
 
     {
         .flags = NJS_EXTERN_PROPERTY,
-        .name.string = njs_str("reqBody"),
+        .name.string = njs_str("requestText"),
         .enumerable = 1,
+        .u.property = {
+            .handler = ngx_http_js_ext_get_request_body,
+            .magic32 = NGX_JS_STRING,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("requestBuffer"),
         .u.property = {
             .handler = ngx_http_js_ext_get_request_body,
             .magic32 = NGX_JS_BUFFER,
@@ -355,8 +364,17 @@ static njs_external_t  ngx_http_js_ext_request[] = {
 
     {
         .flags = NJS_EXTERN_PROPERTY,
-        .name.string = njs_str("resBody"),
+        .name.string = njs_str("responseText"),
         .enumerable = 1,
+        .u.property = {
+            .handler = ngx_http_js_ext_get_response_body,
+            .magic32 = NGX_JS_STRING,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("responseBuffer"),
         .u.property = {
             .handler = ngx_http_js_ext_get_response_body,
             .magic32 = NGX_JS_BUFFER,
