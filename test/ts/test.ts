@@ -44,8 +44,6 @@ function http_module(r: NginxHTTPRequest) {
     r.headersOut['Set-Cookie'] = ['aaa', 'bbb'];
     r.headersOut['Foo'] = ['aaa', 'bbb'];
 
-    r.subrequest('/uri', reply => r.return(200, reply.headersOut["Location"] ?? ''));
-
     // r.log
 
     r.log(bs);
@@ -57,7 +55,11 @@ function http_module(r: NginxHTTPRequest) {
     r.variables.a == 'a';
     r.variables.cookie_a = 'b';
 
+    // r.rawVariables
+    r.rawVariables.a?.equals(Buffer.from([1]));
+
     // r.subrequest
+    r.subrequest('/uri', reply => r.return(200, reply.headersOut["Location"] ?? ''));
     r.subrequest('/p/sub1').then(reply => r.return(reply.status));
     r.subrequest('/p/sub2', {method:'POST'}).then(reply => r.return(reply.status));
     vod = r.subrequest('/p/sub3', reply => r.return(reply.status));
@@ -66,6 +68,20 @@ function http_module(r: NginxHTTPRequest) {
     // Warning: vod = r.subrequest('/p/sub9', {detached:true}, reply => r.return(reply.status));
     r.subrequest('/p/sub6', 'a=1&b=2').then(reply => r.return(reply.status,
                                         JSON.stringify(JSON.parse(reply.responseBody ?? ''))));
+
+    // r.requestText
+    r.requestText == 'a';
+    r.requestText?.startsWith('a');
+
+    // r.requestBuffer
+    r.requestBuffer?.equals(Buffer.from([1]));
+
+    // r.responseText
+    r.responseText == 'a';
+    r.responseText?.startsWith('a');
+
+    // r.responseBuffer
+    r.responseBuffer?.equals(Buffer.from([1]));
 }
 
 function fs_module() {

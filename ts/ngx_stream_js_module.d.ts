@@ -70,6 +70,13 @@ interface NginxStreamVariables {
     [prop: string]: NjsByteString | undefined;
 }
 
+/**
+ * @since 0.5.0
+ */
+type NginxStreamRawVariables = {
+    [K in keyof NginxStreamVariables]: Buffer | undefined;
+};
+
 interface NginxStreamCallbackFlags {
     /**
      * True if data is a last buffer.
@@ -119,13 +126,23 @@ interface NginxStreamRequest {
     log(message: NjsStringOrBuffer): void;
     /**
      * Unregisters the callback set by on() method.
+     * @param event Event type to unregister.
      */
-    off(event: "upload" | "download"): void;
+    off(event: "upload" | "download" | "upstream" | "downstream"): void;
     /**
      * Registers a callback for the specified event.
+     * @param event Event type to register. The callback data value type
+     * depends on the event type. For "upload" | "download" the data type is string.
+     * For "upstream" | "downstream" the data type is Buffer.
+     * String and buffer events cannot be mixed for a single session.
+     *
+     * **Warning:** For string data type bytes invalid in UTF-8 encoding may be
+     * converted into the replacement character.
      */
     on(event: "upload" | "download",
-       callback:(data:NjsByteString,  flags: NginxStreamCallbackFlags) => void): void;
+       callback: (data: NjsByteString, flags: NginxStreamCallbackFlags) => void): void;
+    on(event: "upstream" | "downstream",
+       callback: (data: Buffer, flags: NginxStreamCallbackFlags) => void): void;
     /**
      * Client address.
      */
@@ -138,7 +155,18 @@ interface NginxStreamRequest {
      */
     send(data: NjsStringOrBuffer, options?: NginxStreamSendOptions): void;
     /**
-     * nginx variables object.
+     * nginx variables as Buffers.
+     *
+     * @since 0.5.0
+     * @see variables
+     */
+    readonly rawVariables: NginxStreamRawVariables;
+    /**
+     * nginx variables as strings.
+     *
+     * **Warning:** Bytes invalid in UTF-8 encoding may be converted into the replacement character.
+     *
+     * @see rawVariables
      */
     readonly variables: NginxStreamVariables;
     /**

@@ -233,6 +233,13 @@ interface NginxVariables {
     [prop: string]: NjsStringLike | undefined;
 }
 
+/**
+ * @since 0.5.0
+ */
+type NginxRawVariables = {
+    [K in keyof NginxVariables]: Buffer | undefined;
+};
+
 interface NginxSubrequestOptions {
     /**
      * Arguments string, by default an empty string is used.
@@ -310,11 +317,52 @@ interface NginxHTTPRequest {
      * To ensure that the client request body is in memory, its size should be
      * limited by client_max_body_size, and a sufficient buffer size should be set
      * using client_body_buffer_size. The property is available only in the js_content directive.
+     *
+     * @since 0.5.0
+     */
+    readonly requestBuffer?: Buffer;
+    /**
+     * The same as `requestBuffer`, but returns a string.
+     *
+     * **Warning:** It may convert bytes invalid in UTF-8 encoding into the replacement character.
+     *
+     * @see requestBuffer
+     * @since 0.5.0
+     */
+    readonly requestText?: NjsByteString;
+    /**
+     * The same as `requestBuffer`, but returns a string.
+     *
+     * **Warning:** It may convert bytes invalid in UTF-8 encoding into the replacement character.
+     *
+     * @see requestBuffer
+     * @see requestText
+     * @deprecated Use `requestText` or `requestBuffer` instead.
      */
     readonly requestBody?: NjsByteString;
     /**
      * Subrequest response body. The size of response body is limited by
      * the subrequest_output_buffer_size directive.
+     *
+     * @since 0.5.0
+     */
+    readonly responseBuffer?: Buffer;
+    /**
+     * The same as `responseBuffer`, but returns a string.
+     *
+     * **Warning:** It may convert bytes invalid in UTF-8 encoding into the replacement character.
+     *
+     * @see responseBuffer
+     */
+    readonly responseText?: NjsByteString;
+    /**
+     * The same as `responseBuffer`, but returns a string.
+     *
+     * **Warning:** It may convert bytes invalid in UTF-8 encoding into the replacement character.
+     *
+     * @see responseBuffer
+     * @see responseText
+     * @deprecated Use `responseText` or `responseBuffer` instead.
      */
     readonly responseBody?: NjsByteString;
     /**
@@ -357,7 +405,18 @@ interface NginxHTTPRequest {
      */
     readonly uri: NjsByteString;
     /**
-     * nginx variables object.
+     * nginx variables as Buffers.
+     *
+     * @since 0.5.0
+     * @see variables
+     */
+    readonly rawVariables: NginxRawVariables;
+    /**
+     * nginx variables as strings.
+     *
+     * **Warning:** Bytes invalid in UTF-8 encoding may be converted into the replacement character.
+     *
+     * @see rawVariables
      */
     readonly variables: NginxVariables;
     /**
