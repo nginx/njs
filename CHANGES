@@ -1,4 +1,81 @@
 
+Changes with njs 0.5.0                                         01 Dec 2020
+
+    nginx modules:
+
+    *) Feature: introduced global "ngx" object.
+       The following methods were added:
+         ngx.log(level, msg)
+
+       The following properties were added:
+         ngx.INFO,
+         ngx.WARN,
+         ngx.ERR.
+
+    *) Feature: added support for Buffer object where string
+       is expected.
+
+    *) Feature: added Buffer version of existing properties.
+       The following properties were added:
+       r.requestBuffer (r.requestBody),
+       r.responseBuffer (r.responseBody),
+       r.rawVariables (r.variables),
+       s.rawVariables (s.variables).
+
+       The following events were added in stream module:
+       upstream (upload),
+       downstream (download).
+
+    *) Improvement: added aliases to existing properties.
+       The following properties were added:
+       r.requestText (r.requestBody),
+       r.responseText (r.responseBody).
+
+    *) Improvement: throwing an exception in r.internalRedirect()
+       for a subrequest.
+
+    *) Bugfix: fixed promise r.subrequest() with error_page redirect.
+
+    *) Bugfix: fixed promise events handling.
+
+    Core:
+
+    *) Feature: added TypeScript definitions for built-in
+       modules.
+       Thanks to Jakub Jirutka.
+
+    *) Feature: tracking unhandled promise rejection.
+
+    *) Feature: added initial iterator support.
+       Thanks to Artem S. Povalyukhin.
+
+    *) Improvement: TypeScript definitions are refactored.
+       Thanks to Jakub Jirutka.
+
+    *) Improvement: added forgotten support for
+       Object.prototype.valueOf() in Buffer.from().
+
+    *) Bugfix: fixed heap-use-after-free in JSON.parse().
+
+    *) Bugfix: fixed heap-use-after-free in JSON.stringify().
+
+    *) Bugfix: fixed JSON.stringify() for arrays resizable via
+       getters.
+
+    *) Bugfix: fixed heap-buffer-overflow for
+       RegExp.prototype[Symbol.replace].
+
+    *) Bugfix: fixed returned value for Buffer.prototype.write*
+       functions.
+
+    *) Bugfix: fixed querystring.stringify().
+       Thanks to Artem S. Povalyukhin.
+
+    *) Bugfix: fixed the catch handler for
+       Promise.prototype.finally().
+
+    *) Bugfix: fixed querystring.parse().
+
 Changes with njs 0.4.4                                           29 Sep 2020
 
     nginx modules:
