@@ -62,8 +62,6 @@ njs_add_event(njs_vm_t *vm, njs_event_t *event)
         return NJS_ERROR;
     }
 
-    njs_set_number(&vm->retval, vm->event_id - 1);
-
     return NJS_OK;
 }
 

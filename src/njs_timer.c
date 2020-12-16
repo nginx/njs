@@ -68,7 +68,11 @@ njs_set_timer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    return njs_add_event(vm, event);
+    if (njs_add_event(vm, event) == NJS_OK) {
+        njs_set_number(&vm->retval, vm->event_id - 1);
+    }
+
+    return NJS_OK;
 
 memory_error:
 
