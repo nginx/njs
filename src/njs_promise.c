@@ -107,7 +107,6 @@ njs_promise_alloc(njs_vm_t *vm)
     njs_queue_init(&data->fulfill_queue);
     njs_queue_init(&data->reject_queue);
 
-    njs_set_promise(&vm->retval, promise);
     njs_set_data(&promise->value, data, 0);
 
     return promise;
