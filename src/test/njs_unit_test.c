@@ -9016,6 +9016,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("String.bytesFrom('QUJDRA#', 'base64url')"),
       njs_str("ABCD") },
 
+    { njs_str("String.bytesFrom('QUJDRA#', 'base64lol')"),
+      njs_str("TypeError: Unknown encoding: \"base64lol\"") },
+
     { njs_str("encodeURI.name"),
       njs_str("encodeURI")},
 

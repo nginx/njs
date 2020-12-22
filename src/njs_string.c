@@ -1753,7 +1753,7 @@ njs_string_bytes_from_string(njs_vm_t *vm, const njs_value_t *string,
     } else if (enc.length == 6 && memcmp(enc.start, "base64", 6) == 0) {
         return njs_string_decode_base64(vm, &vm->retval, &str);
 
-    } else if (enc.length == 9 && memcmp(enc.start, "base64url", 6) == 0) {
+    } else if (enc.length == 9 && memcmp(enc.start, "base64url", 9) == 0) {
         return njs_string_decode_base64url(vm, &vm->retval, &str);
     }
 
