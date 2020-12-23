@@ -84,10 +84,8 @@ static ngx_int_t ngx_stream_js_init_vm(ngx_stream_session_t *s);
 static void ngx_stream_js_drop_events(ngx_stream_js_ctx_t *ctx);
 static void ngx_stream_js_cleanup_ctx(void *data);
 static void ngx_stream_js_cleanup_vm(void *data);
-static njs_int_t ngx_stream_js_buffer_arg(ngx_stream_session_t *s,
-    njs_value_t *buffer, ngx_uint_t data_type);
-static njs_int_t ngx_stream_js_flags_arg(ngx_stream_session_t *s,
-    njs_value_t *flags);
+static njs_int_t ngx_stream_js_run_event(ngx_stream_session_t *s,
+    ngx_stream_js_ctx_t *ctx, ngx_stream_js_ev_t *event);
 static njs_vm_event_t *ngx_stream_js_event(ngx_stream_session_t *s,
     njs_str_t *event);
 
@@ -429,7 +427,6 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
     njs_int_t             ret;
     ngx_int_t             rc;
     ngx_connection_t     *c;
-    ngx_stream_js_ev_t   *event;
     ngx_stream_js_ctx_t  *ctx;
 
     if (name->len == 0) {
@@ -462,26 +459,14 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
         }
     }
 
-    event = &ctx->events[NGX_JS_EVENT_UPLOAD];
+    ret = ngx_stream_js_run_event(s, ctx, &ctx->events[NGX_JS_EVENT_UPLOAD]);
+    if (ret != NJS_OK) {
+        njs_vm_retval_string(ctx->vm, &exception);
 
-    if (event->ev != NULL) {
-        ret = ngx_stream_js_buffer_arg(s, njs_value_arg(&ctx->args[1]),
-                                       event->data_type);
-        if (ret != NJS_OK) {
-            goto exception;
-        }
+        ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %*s",
+                      exception.length, exception.start);
 
-        ret = ngx_stream_js_flags_arg(s, njs_value_arg(&ctx->args[2]));
-        if (ret != NJS_OK) {
-            goto exception;
-        }
-
-        njs_vm_post_event(ctx->vm, event->ev, njs_value_arg(&ctx->args[1]), 2);
-
-        rc = njs_vm_run(ctx->vm);
-        if (rc == NJS_ERROR) {
-            goto exception;
-        }
+        return NGX_ERROR;
     }
 
     if (njs_vm_pending(ctx->vm)) {
@@ -497,15 +482,6 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
                    rc);
 
     return rc;
-
-exception:
-
-    njs_vm_retval_string(ctx->vm, &exception);
-
-    ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %*s",
-                  exception.length, exception.start);
-
-    return NGX_ERROR;
 }
 
 
@@ -567,23 +543,14 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
         event = ngx_stream_event(from_upstream);
 
         if (event->ev != NULL) {
-            ret = ngx_stream_js_buffer_arg(s, njs_value_arg(&ctx->args[1]),
-                                           event->data_type);
+            ret = ngx_stream_js_run_event(s, ctx, event);
             if (ret != NJS_OK) {
-                goto exception;
-            }
+                njs_vm_retval_string(ctx->vm, &exception);
 
-            ret = ngx_stream_js_flags_arg(s, njs_value_arg(&ctx->args[2]));
-            if (ret != NJS_OK) {
-                goto exception;
-            }
+                ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %*s",
+                              exception.length, exception.start);
 
-            njs_vm_post_event(ctx->vm, event->ev,
-                              njs_value_arg(&ctx->args[1]), 2);
-
-            rc = njs_vm_run(ctx->vm);
-            if (rc == NJS_ERROR) {
-                goto exception;
+                return NGX_ERROR;
             }
 
             ctx->buf->pos = ctx->buf->last;
@@ -616,15 +583,6 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
     }
 
     return rc;
-
-exception:
-
-    njs_vm_retval_string(ctx->vm, &exception);
-
-    ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %*s",
-                  exception.length, exception.start);
-
-    return NGX_ERROR;
 }
 
 
@@ -786,18 +744,23 @@ ngx_stream_js_cleanup_vm(void *data)
 
 
 static njs_int_t
-ngx_stream_js_buffer_arg(ngx_stream_session_t *s, njs_value_t *buffer,
-    ngx_uint_t data_type)
+ngx_stream_js_run_event(ngx_stream_session_t *s, ngx_stream_js_ctx_t *ctx,
+    ngx_stream_js_ev_t *event)
 {
-    size_t                 len;
-    u_char                *p;
-    ngx_buf_t             *b;
-    ngx_connection_t      *c;
-    ngx_stream_js_ctx_t   *ctx;
+    size_t               len;
+    u_char              *p;
+    njs_int_t            ret;
+    ngx_buf_t           *b;
+    ngx_connection_t    *c;
+    njs_opaque_value_t   last_key, last;
+
+    static const njs_str_t last_str = njs_str("last");
+
+    if (event->ev == NULL) {
+        return NJS_OK;
+    }
 
     c = s->connection;
-    ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
-
     b = ctx->filter ? ctx->buf : c->buffer;
 
     len = b ? b->last - b->pos : 0;
@@ -812,34 +775,32 @@ ngx_stream_js_buffer_arg(ngx_stream_session_t *s, njs_value_t *buffer,
         ngx_memcpy(p, b->pos, len);
     }
 
-    return ngx_js_prop(ctx->vm, data_type, buffer, p, len);
-}
-
-
-static njs_int_t
-ngx_stream_js_flags_arg(ngx_stream_session_t *s, njs_value_t *flags)
-{
-    ngx_buf_t             *b;
-    ngx_connection_t      *c;
-    njs_opaque_value_t    last_key;
-    njs_opaque_value_t    values[1];
-    ngx_stream_js_ctx_t  *ctx;
-
-    static const njs_str_t last_str = njs_str("last");
-
-    ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
+    ret = ngx_js_prop(ctx->vm, event->data_type, njs_value_arg(&ctx->args[1]),
+                      p, len);
+    if (ret != NJS_OK) {
+        return ret;
+    }
 
     njs_vm_value_string_set(ctx->vm, njs_value_arg(&last_key), last_str.start,
                             last_str.length);
 
-    c = s->connection;
+    njs_value_boolean_set(njs_value_arg(&last), b && b->last_buf);
 
-    b = ctx->filter ? ctx->buf : c->buffer;
-    njs_value_boolean_set(njs_value_arg(&values[0]), b && b->last_buf);
-
-    return njs_vm_object_alloc(ctx->vm, flags,
+    ret = njs_vm_object_alloc(ctx->vm, njs_value_arg(&ctx->args[2]),
                                njs_value_arg(&last_key),
-                               njs_value_arg(&values[0]), NULL);
+                               njs_value_arg(&last), NULL);
+    if (ret != NJS_OK) {
+        return ret;
+    }
+
+    njs_vm_post_event(ctx->vm, event->ev, njs_value_arg(&ctx->args[1]), 2);
+
+    ret = njs_vm_run(ctx->vm);
+    if (ret == NJS_ERROR) {
+        return ret;
+    }
+
+    return NJS_OK;
 }
 
 
