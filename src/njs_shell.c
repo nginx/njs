@@ -653,12 +653,11 @@ static njs_value_t *
 njs_external_add(njs_vm_t *vm, njs_external_t *definition,
     njs_uint_t n, const njs_str_t *name, njs_external_ptr_t external)
 {
-    njs_int_t             ret;
-    njs_value_t           *value;
-    njs_external_proto_t  proto;
+    njs_int_t    ret, proto_id;
+    njs_value_t  *value;
 
-    proto = njs_vm_external_prototype(vm, definition, n);
-    if (njs_slow_path(proto == NULL)) {
+    proto_id = njs_vm_external_prototype(vm, definition, n);
+    if (njs_slow_path(proto_id < 0)) {
         njs_stderror("failed to add \"%V\" proto\n", name);
         return NULL;
     }
@@ -668,7 +667,7 @@ njs_external_add(njs_vm_t *vm, njs_external_t *definition,
         return NULL;
     }
 
-    ret = njs_vm_external_create(vm, value, proto, external, 0);
+    ret = njs_vm_external_create(vm, value, proto_id, external, 0);
     if (njs_slow_path(ret != NJS_OK)) {
         return NULL;
     }

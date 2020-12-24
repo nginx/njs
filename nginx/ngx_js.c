@@ -117,19 +117,18 @@ ngx_js_string(njs_vm_t *vm, njs_value_t *value, njs_str_t *str)
 ngx_int_t
 ngx_js_core_init(njs_vm_t *vm, ngx_log_t *log)
 {
-    njs_int_t             ret;
-    njs_str_t             name;
-    njs_opaque_value_t    value;
-    njs_external_proto_t  proto;
+    njs_int_t           ret, proto_id;
+    njs_str_t           name;
+    njs_opaque_value_t  value;
 
-    proto = njs_vm_external_prototype(vm, ngx_js_ext_core,
-                                      njs_nitems(ngx_js_ext_core));
-    if (proto == NULL) {
+    proto_id = njs_vm_external_prototype(vm, ngx_js_ext_core,
+                                         njs_nitems(ngx_js_ext_core));
+    if (proto_id < 0) {
         ngx_log_error(NGX_LOG_EMERG, log, 0, "failed to add js core proto");
         return NGX_ERROR;
     }
 
-    ret = njs_vm_external_create(vm, njs_value_arg(&value), proto, NULL, 1);
+    ret = njs_vm_external_create(vm, njs_value_arg(&value), proto_id, NULL, 1);
     if (njs_slow_path(ret != NJS_OK)) {
         ngx_log_error(NGX_LOG_EMERG, log, 0,
                       "njs_vm_external_create() failed\n");

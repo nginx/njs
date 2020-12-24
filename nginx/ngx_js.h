@@ -19,6 +19,8 @@
 #define NGX_JS_STRING  1
 #define NGX_JS_BUFFER  2
 
+#define NGX_JS_PROTO_MAIN      0
+
 
 #define ngx_external_connection(vm, ext)                                    \
     (*((ngx_connection_t **) ((u_char *) ext + njs_vm_meta(vm, 0))))

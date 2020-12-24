@@ -180,6 +180,7 @@ struct njs_vm_s {
     njs_value_t              retval;
 
     njs_arr_t                *paths;
+    njs_arr_t                *protos;
 
     njs_value_t              *scopes[NJS_SCOPES];
 

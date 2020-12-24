@@ -20483,19 +20483,18 @@ static njs_int_t
 njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
     njs_opts_t *opts, njs_stat_t *stat)
 {
-    u_char                *start, *end;
-    njs_vm_t              *vm, *nvm;
-    njs_int_t             ret;
-    njs_str_t             s;
-    njs_uint_t            i, repeat;
-    njs_stat_t            prev;
-    njs_bool_t            success;
-    njs_vm_opt_t          options;
-    njs_external_proto_t  proto;
+    u_char        *start, *end;
+    njs_vm_t      *vm, *nvm;
+    njs_int_t     ret, proto_id;
+    njs_str_t     s;
+    njs_uint_t    i, repeat;
+    njs_stat_t    prev;
+    njs_bool_t    success;
+    njs_vm_opt_t  options;
 
     vm = NULL;
     nvm = NULL;
-    proto = NULL;
+    proto_id = -1;
 
     prev = *stat;
 
@@ -20519,8 +20518,8 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
         }
 
         if (opts->externals) {
-            proto = njs_externals_shared_init(vm);
-            if (proto == NULL) {
+            proto_id = njs_externals_shared_init(vm);
+            if (proto_id < 0) {
                 goto done;
             }
         }
@@ -20549,7 +20548,7 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
                 }
 
                 if (opts->externals) {
-                    ret = njs_externals_init(nvm, proto);
+                    ret = njs_externals_init(nvm, proto_id);
                     if (ret != NJS_OK) {
                         goto done;
                     }
@@ -20653,7 +20652,7 @@ njs_interactive_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
         }
 
         if (opts->externals) {
-            ret = njs_externals_init(vm, NULL);
+            ret = njs_externals_init(vm, -1);
             if (ret != NJS_OK) {
                 goto done;
             }

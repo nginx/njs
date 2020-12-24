@@ -256,12 +256,13 @@ njs_external_protos(const njs_external_t *external, njs_uint_t size)
 }
 
 
-njs_external_proto_t
+njs_int_t
 njs_vm_external_prototype(njs_vm_t *vm, const njs_external_t *definition,
     njs_uint_t n)
 {
     njs_arr_t   *protos;
     njs_int_t   ret;
+    uintptr_t   *pr;
     njs_uint_t  size;
 
     size = njs_external_protos(definition, n) + 1;
@@ -269,30 +270,47 @@ njs_vm_external_prototype(njs_vm_t *vm, const njs_external_t *definition,
     protos = njs_arr_create(vm->mem_pool, size, sizeof(njs_exotic_slots_t));
     if (njs_slow_path(protos == NULL)) {
         njs_memory_error(vm);
-        return NULL;
+        return -1;
     }
 
     ret = njs_external_add(vm, protos, definition, n);
     if (njs_slow_path(ret != NJS_OK)) {
         njs_internal_error(vm, "njs_vm_external_add() failed");
-        return NULL;
+        return -1;
     }
 
-    return protos;
+    if (vm->protos == NULL) {
+        vm->protos = njs_arr_create(vm->mem_pool, 4, sizeof(uintptr_t));
+        if (njs_slow_path(vm->protos == NULL)) {
+            return -1;
+        }
+    }
+
+    pr = njs_arr_add(vm->protos);
+    if (njs_slow_path(pr == NULL)) {
+        return -1;
+    }
+
+    *pr = (uintptr_t) protos;
+
+    return vm->protos->items - 1;
 }
 
 
 njs_int_t
-njs_vm_external_create(njs_vm_t *vm, njs_value_t *value,
-    njs_external_proto_t proto, njs_external_ptr_t external, njs_bool_t shared)
+njs_vm_external_create(njs_vm_t *vm, njs_value_t *value, njs_int_t proto_id,
+    njs_external_ptr_t external, njs_bool_t shared)
 {
     njs_arr_t           *protos;
+    uintptr_t           proto;
     njs_object_value_t  *ov;
     njs_exotic_slots_t  *slots;
 
-    if (njs_slow_path(proto == NULL)) {
+    if (vm->protos == NULL || (njs_int_t) vm->protos->items <= proto_id) {
         return NJS_ERROR;
     }
+
+    proto = ((uintptr_t *) vm->protos->start)[proto_id];
 
     ov = njs_mp_alloc(vm->mem_pool, sizeof(njs_object_value_t));
     if (njs_slow_path(ov == NULL)) {
@@ -300,7 +318,7 @@ njs_vm_external_create(njs_vm_t *vm, njs_value_t *value,
         return NJS_ERROR;
     }
 
-    protos = proto;
+    protos = (njs_arr_t *) proto;
     slots = protos->start;
 
     njs_lvlhsh_init(&ov->object.hash);

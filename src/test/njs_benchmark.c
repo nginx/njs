@@ -36,13 +36,12 @@ njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
     u_char                *start;
     njs_vm_t              *vm, *nvm;
     uint64_t              us;
-    njs_int_t             ret;
+    njs_int_t             ret, proto_id;
     njs_str_t             s, *expected;
     njs_uint_t            i, n;
     njs_bool_t            success;
     njs_value_t           *result, name, usec, times;
     njs_vm_opt_t          options;
-    njs_external_proto_t  proto;
 
     static const njs_value_t  name_key = njs_string("name");
     static const njs_value_t  usec_key = njs_string("usec");
@@ -68,8 +67,8 @@ njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
         goto done;
     }
 
-    proto = njs_externals_shared_init(vm);
-    if (proto == NULL) {
+    proto_id = njs_externals_shared_init(vm);
+    if (proto_id < 0) {
         goto done;
     }
 

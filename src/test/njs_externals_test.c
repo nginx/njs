@@ -11,7 +11,7 @@
 
 typedef struct {
     njs_lvlhsh_t          hash;
-    njs_external_proto_t  proto;
+    njs_int_t             proto_id;
 
     uint32_t              a;
     uint32_t              d;
@@ -394,9 +394,9 @@ njs_unit_test_r_create(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    sr->proto = r->proto;
+    sr->proto_id = r->proto_id;
 
-    ret = njs_vm_external_create(vm, &vm->retval, sr->proto, sr, 0);
+    ret = njs_vm_external_create(vm, &vm->retval, sr->proto_id, sr, 0);
     if (ret != NJS_OK) {
         return NJS_ERROR;
     }
@@ -678,8 +678,8 @@ static njs_unit_test_req_init_t njs_test_requests[] = {
 };
 
 
-static njs_external_proto_t
-njs_externals_init_internal(njs_vm_t *vm, njs_external_proto_t proto,
+static njs_int_t
+njs_externals_init_internal(njs_vm_t *vm, njs_int_t proto_id,
     njs_unit_test_req_init_t *init, njs_uint_t n, njs_bool_t shared)
 {
     njs_int_t             ret;
@@ -687,37 +687,37 @@ njs_externals_init_internal(njs_vm_t *vm, njs_external_proto_t proto,
     njs_unit_test_req_t   *requests;
     njs_unit_test_prop_t  *prop;
 
-    if (proto == NULL) {
-        proto = njs_vm_external_prototype(vm, njs_unit_test_r_external,
-                                          njs_nitems(njs_unit_test_r_external));
-        if (njs_slow_path(proto == NULL)) {
+    if (proto_id == -1) {
+        proto_id = njs_vm_external_prototype(vm, njs_unit_test_r_external,
+                                         njs_nitems(njs_unit_test_r_external));
+        if (njs_slow_path(proto_id < 0)) {
             njs_printf("njs_vm_external_prototype() failed\n");
-            return NULL;
+            return -1;
         }
     }
 
     requests = njs_mp_zalloc(vm->mem_pool, n * sizeof(njs_unit_test_req_t));
     if (njs_slow_path(requests == NULL)) {
-        return NULL;
+        return -1;
     }
 
     for (i = 0; i < n; i++) {
 
         requests[i] = init[i].request;
-        requests[i].proto = proto;
+        requests[i].proto_id = proto_id;
 
         ret = njs_vm_external_create(vm, njs_value_arg(&requests[i].value),
-                                     proto, &requests[i], shared);
+                                     proto_id, &requests[i], shared);
         if (njs_slow_path(ret != NJS_OK)) {
             njs_printf("njs_vm_external_create() failed\n");
-            return NULL;
+            return -1;
         }
 
         ret = njs_vm_bind(vm, &init[i].name, njs_value_arg(&requests[i].value),
                           shared);
         if (njs_slow_path(ret != NJS_OK)) {
             njs_printf("njs_vm_bind() failed\n");
-            return NULL;
+            return -1;
         }
 
         for (j = 0; j < njs_nitems(init[i].props); j++) {
@@ -726,33 +726,34 @@ njs_externals_init_internal(njs_vm_t *vm, njs_external_proto_t proto,
 
             if (njs_slow_path(prop == NULL)) {
                 njs_printf("lvlhsh_unit_test_alloc() failed\n");
-                return NULL;
+                return -1;
             }
 
             ret = lvlhsh_unit_test_add(vm->mem_pool, &requests[i], prop);
             if (njs_slow_path(ret != NJS_OK)) {
                 njs_printf("lvlhsh_unit_test_add() failed\n");
-                return NULL;
+                return -1;
             }
         }
     }
 
-    return proto;
-}
-
-
-njs_external_proto_t
-njs_externals_shared_init(njs_vm_t *vm)
-{
-    return njs_externals_init_internal(vm, NULL, njs_test_requests, 1, 1);
+    return proto_id;
 }
 
 
 njs_int_t
-njs_externals_init(njs_vm_t *vm, njs_external_proto_t proto)
+njs_externals_shared_init(njs_vm_t *vm)
 {
-    proto = njs_externals_init_internal(vm, proto, &njs_test_requests[1], 3, 0);
-    if (proto == NULL) {
+    return njs_externals_init_internal(vm, -1, njs_test_requests, 1, 1);
+}
+
+
+njs_int_t
+njs_externals_init(njs_vm_t *vm, njs_int_t proto_id)
+{
+    proto_id = njs_externals_init_internal(vm, proto_id, &njs_test_requests[1],
+                                        3, 0);
+    if (proto_id < 0) {
         return NJS_ERROR;
     }
 

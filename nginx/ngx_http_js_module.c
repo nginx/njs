@@ -19,7 +19,6 @@ typedef struct {
     ngx_uint_t             line;
     ngx_array_t           *imports;
     ngx_array_t           *paths;
-    njs_external_proto_t   req_proto;
 } ngx_http_js_main_conf_t;
 
 
@@ -836,7 +835,7 @@ ngx_http_js_init_vm(ngx_http_request_t *r)
     }
 
     rc = njs_vm_external_create(ctx->vm, njs_value_arg(&ctx->request),
-                                jmcf->req_proto, r, 0);
+                                NGX_JS_PROTO_MAIN, r, 0);
     if (rc != NJS_OK) {
         return NGX_ERROR;
     }
@@ -2708,10 +2707,9 @@ ngx_http_js_subrequest_done(ngx_http_request_t *r, void *data, ngx_int_t rc)
 {
     njs_vm_event_t  vm_event = data;
 
-    njs_int_t                 ret;
-    ngx_http_js_ctx_t        *ctx;
-    njs_opaque_value_t        reply;
-    ngx_http_js_main_conf_t  *jmcf;
+    njs_int_t            ret;
+    ngx_http_js_ctx_t   *ctx;
+    njs_opaque_value_t   reply;
 
     if (rc != NGX_OK || r->connection->error || r->buffered) {
         return rc;
@@ -2734,8 +2732,6 @@ ngx_http_js_subrequest_done(ngx_http_request_t *r, void *data, ngx_int_t rc)
 
     ctx->done = 1;
 
-    jmcf = ngx_http_get_module_main_conf(r, ngx_http_js_module);
-
     ctx = ngx_http_get_module_ctx(r->parent, ngx_http_js_module);
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -2750,7 +2746,7 @@ ngx_http_js_subrequest_done(ngx_http_request_t *r, void *data, ngx_int_t rc)
     }
 
     ret = njs_vm_external_create(ctx->vm, njs_value_arg(&reply),
-                                 jmcf->req_proto, r, 0);
+                                 NGX_JS_PROTO_MAIN, r, 0);
     if (ret != NJS_OK) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "js subrequest reply creation failed");
@@ -2954,7 +2950,7 @@ ngx_http_js_init_main_conf(ngx_conf_t *cf, void *conf)
     ssize_t                n;
     ngx_fd_t               fd;
     ngx_str_t             *m, file;
-    njs_int_t              rc;
+    njs_int_t              rc, proto_id;
     njs_str_t              text, path;
     ngx_uint_t             i;
     njs_value_t           *value;
@@ -2962,7 +2958,6 @@ ngx_http_js_init_main_conf(ngx_conf_t *cf, void *conf)
     ngx_file_info_t        fi;
     ngx_pool_cleanup_t    *cln;
     njs_opaque_value_t     lvalue, exception;
-    njs_external_proto_t   proto;
     ngx_http_js_import_t  *import;
 
     static const njs_str_t line_number_key = njs_str("lineNumber");
@@ -3114,15 +3109,13 @@ ngx_http_js_init_main_conf(ngx_conf_t *cf, void *conf)
         }
     }
 
-    proto = njs_vm_external_prototype(jmcf->vm, ngx_http_js_ext_request,
-                                      njs_nitems(ngx_http_js_ext_request));
-    if (proto == NULL) {
+    proto_id = njs_vm_external_prototype(jmcf->vm, ngx_http_js_ext_request,
+                                         njs_nitems(ngx_http_js_ext_request));
+    if (proto_id < 0) {
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
                       "failed to add js request proto");
         return NGX_CONF_ERROR;
     }
-
-    jmcf->req_proto = proto;
 
     rc = ngx_js_core_init(jmcf->vm, cf->log);
     if (njs_slow_path(rc != NJS_OK)) {
@@ -3379,7 +3372,6 @@ ngx_http_js_create_main_conf(ngx_conf_t *cf)
      *     conf->include = { 0, NULL };
      *     conf->file = NULL;
      *     conf->line = 0;
-     *     conf->req_proto = NULL;
      */
 
     conf->paths = NGX_CONF_UNSET_PTR;

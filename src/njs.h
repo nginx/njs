@@ -29,7 +29,6 @@ typedef struct njs_function_s       njs_function_t;
 typedef struct njs_vm_shared_s      njs_vm_shared_t;
 typedef struct njs_object_prop_s    njs_object_prop_t;
 typedef struct njs_external_s       njs_external_t;
-typedef void *                      njs_external_proto_t;
 
 /*
  * njs_opaque_value_t is the external storage type for native njs_value_t type.
@@ -297,10 +296,10 @@ NJS_EXPORT njs_int_t njs_vm_start(njs_vm_t *vm);
 
 NJS_EXPORT njs_int_t njs_vm_add_path(njs_vm_t *vm, const njs_str_t *path);
 
-NJS_EXPORT njs_external_proto_t njs_vm_external_prototype(njs_vm_t *vm,
+NJS_EXPORT njs_int_t njs_vm_external_prototype(njs_vm_t *vm,
     const njs_external_t *definition, njs_uint_t n);
 NJS_EXPORT njs_int_t njs_vm_external_create(njs_vm_t *vm, njs_value_t *value,
-    njs_external_proto_t proto, njs_external_ptr_t external, njs_bool_t shared);
+    njs_int_t proto_id, njs_external_ptr_t external, njs_bool_t shared);
 NJS_EXPORT njs_external_ptr_t njs_vm_external(njs_vm_t *vm,
     const njs_value_t *value);
 NJS_EXPORT uintptr_t njs_vm_meta(njs_vm_t *vm, njs_uint_t index);
