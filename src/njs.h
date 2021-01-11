@@ -331,6 +331,9 @@ NJS_EXPORT u_char *njs_vm_value_string_alloc(njs_vm_t *vm, njs_value_t *value,
 NJS_EXPORT njs_int_t njs_vm_value_string_copy(njs_vm_t *vm, njs_str_t *retval,
     njs_value_t *value, uintptr_t *next);
 
+NJS_EXPORT njs_int_t njs_vm_value_array_buffer_set(njs_vm_t *vm,
+    njs_value_t *value, const u_char *start, uint32_t size);
+
 /*
  * Sets a Buffer value.
  *   start data is not copied and should not be freed.
