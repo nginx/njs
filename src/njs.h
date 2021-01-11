@@ -375,6 +375,7 @@ NJS_EXPORT void njs_vm_value_error_set(njs_vm_t *vm, njs_value_t *value,
 NJS_EXPORT void njs_vm_memory_error(njs_vm_t *vm);
 
 NJS_EXPORT void njs_value_undefined_set(njs_value_t *value);
+NJS_EXPORT void njs_value_null_set(njs_value_t *value);
 NJS_EXPORT void njs_value_boolean_set(njs_value_t *value, int yn);
 NJS_EXPORT void njs_value_number_set(njs_value_t *value, double num);
 

@@ -386,6 +386,13 @@ njs_value_undefined_set(njs_value_t *value)
 
 
 void
+njs_value_null_set(njs_value_t *value)
+{
+    njs_set_null(value);
+}
+
+
+void
 njs_value_boolean_set(njs_value_t *value, int yn)
 {
     njs_set_boolean(value, yn);
