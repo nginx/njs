@@ -34,10 +34,6 @@ njs_chb_reserve(njs_chb_t *chain, size_t size)
 {
     njs_chb_node_t  *n;
 
-    if (njs_slow_path(size == 0)) {
-        return NULL;
-    }
-
     n = chain->last;
 
     if (njs_fast_path(n != NULL && njs_chb_node_room(n) >= size)) {
