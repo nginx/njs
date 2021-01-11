@@ -612,6 +612,13 @@ njs_vm_retval(njs_vm_t *vm)
 }
 
 
+njs_mp_t *
+njs_vm_memory_pool(njs_vm_t *vm)
+{
+    return vm->mem_pool;
+}
+
+
 uintptr_t
 njs_vm_meta(njs_vm_t *vm, njs_uint_t index)
 {

@@ -18,6 +18,10 @@
 #include <njs_types.h>
 #include <njs_clang.h>
 #include <njs_str.h>
+#include <njs_unicode.h>
+#include <njs_utf8.h>
+#include <njs_mp.h>
+#include <njs_chb.h>
 #include <njs_lvlhsh.h>
 #include <njs_sprintf.h>
 
@@ -317,6 +321,7 @@ NJS_EXPORT njs_function_t *njs_vm_function(njs_vm_t *vm, const njs_str_t *name);
 
 NJS_EXPORT njs_value_t *njs_vm_retval(njs_vm_t *vm);
 NJS_EXPORT void njs_vm_retval_set(njs_vm_t *vm, const njs_value_t *value);
+NJS_EXPORT njs_mp_t *njs_vm_memory_pool(njs_vm_t *vm);
 
 /*  Gets string value, no copy. */
 NJS_EXPORT void njs_value_string_get(njs_value_t *value, njs_str_t *dst);
