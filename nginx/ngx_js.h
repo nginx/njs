@@ -20,10 +20,28 @@
 #define NGX_JS_BUFFER  2
 
 #define NGX_JS_PROTO_MAIN      0
+#define NGX_JS_PROTO_RESPONSE  1
 
 
-#define ngx_external_connection(vm, ext)                                    \
-    (*((ngx_connection_t **) ((u_char *) ext + njs_vm_meta(vm, 0))))
+typedef ngx_pool_t *(*ngx_external_pool_pt)(njs_vm_t *vm, njs_external_ptr_t e);
+typedef void (*ngx_js_event_handler_pt)(njs_external_ptr_t e,
+	njs_vm_event_t vm_event, njs_value_t *args, njs_uint_t nargs);
+typedef ngx_resolver_t *(*ngx_external_resolver_pt)(njs_vm_t *vm,
+    njs_external_ptr_t e);
+typedef ngx_msec_t (*ngx_external_resolver_timeout_pt)(njs_vm_t *vm,
+    njs_external_ptr_t e);
+
+
+#define ngx_external_connection(vm, e)                                        \
+    (*((ngx_connection_t **) ((u_char *) (e) + njs_vm_meta(vm, 0))))
+#define ngx_external_pool(vm, e)                                              \
+	((ngx_external_pool_pt) njs_vm_meta(vm, 1))(vm, e)
+#define ngx_external_resolver(vm, e)                                          \
+	((ngx_external_resolver_pt) njs_vm_meta(vm, 2))(vm, e)
+#define ngx_external_resolver_timeout(vm, e)                                  \
+	((ngx_external_resolver_timeout_pt) njs_vm_meta(vm, 3))(vm, e)
+#define ngx_external_event_handler(vm, e)                                     \
+    ((ngx_js_event_handler_pt) njs_vm_meta(vm, 4))
 
 
 #define ngx_js_prop(vm, type, value, start, len)                              \
@@ -40,6 +58,8 @@ njs_int_t ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 njs_int_t ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 njs_int_t ngx_js_ext_constant(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+njs_int_t ngx_js_ext_boolean(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 
 ngx_int_t ngx_js_core_init(njs_vm_t *vm, ngx_log_t *log);

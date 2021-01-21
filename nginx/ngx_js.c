@@ -9,6 +9,7 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include "ngx_js.h"
+#include "ngx_js_fetch.h"
 
 
 static njs_external_t  ngx_js_ext_core[] = {
@@ -48,6 +49,17 @@ static njs_external_t  ngx_js_ext_core[] = {
         .u.property = {
             .handler = ngx_js_ext_constant,
             .magic32 = NGX_LOG_ERR,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("fetch"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_js_ext_fetch,
         }
     },
 };
@@ -117,9 +129,15 @@ ngx_js_string(njs_vm_t *vm, njs_value_t *value, njs_str_t *str)
 ngx_int_t
 ngx_js_core_init(njs_vm_t *vm, ngx_log_t *log)
 {
+    ngx_int_t           rc;
     njs_int_t           ret, proto_id;
     njs_str_t           name;
     njs_opaque_value_t  value;
+
+    rc = ngx_js_fetch_init(vm, log);
+    if (rc != NGX_OK) {
+        return NGX_ERROR;
+    }
 
     proto_id = njs_vm_external_prototype(vm, ngx_js_ext_core,
                                          njs_nitems(ngx_js_ext_core));
@@ -172,6 +190,16 @@ ngx_js_ext_constant(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_value_number_set(retval, njs_vm_prop_magic32(prop));
+
+    return NJS_OK;
+}
+
+
+njs_int_t
+ngx_js_ext_boolean(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    njs_value_boolean_set(retval, njs_vm_prop_magic32(prop));
 
     return NJS_OK;
 }

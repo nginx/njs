@@ -111,6 +111,11 @@ static njs_host_event_t ngx_stream_js_set_timer(njs_external_ptr_t external,
 static void ngx_stream_js_clear_timer(njs_external_ptr_t external,
     njs_host_event_t event);
 static void ngx_stream_js_timer_handler(ngx_event_t *ev);
+static ngx_pool_t *ngx_stream_js_pool(njs_vm_t *vm, ngx_stream_session_t *s);
+static ngx_resolver_t *ngx_stream_js_resolver(njs_vm_t *vm,
+    ngx_stream_session_t *s);
+static ngx_msec_t ngx_stream_js_resolver_timeout(njs_vm_t *vm,
+    ngx_stream_session_t *s);
 static void ngx_stream_js_handle_event(ngx_stream_session_t *s,
     njs_vm_event_t vm_event, njs_value_t *args, njs_uint_t nargs);
 
@@ -379,11 +384,15 @@ static njs_vm_ops_t ngx_stream_js_ops = {
 
 static uintptr_t ngx_stream_js_uptr[] = {
     offsetof(ngx_stream_session_t, connection),
+    (uintptr_t) ngx_stream_js_pool,
+    (uintptr_t) ngx_stream_js_resolver,
+    (uintptr_t) ngx_stream_js_resolver_timeout,
+    (uintptr_t) ngx_stream_js_handle_event,
 };
 
 
 static njs_vm_meta_t ngx_stream_js_metas = {
-    .size = 1,
+    .size = 5,
     .values = ngx_stream_js_uptr
 };
 
@@ -1263,6 +1272,35 @@ ngx_stream_js_timer_handler(ngx_event_t *ev)
     s = js_event->session;
 
     ngx_stream_js_handle_event(s, js_event->vm_event, NULL, 0);
+}
+
+
+static ngx_pool_t *
+ngx_stream_js_pool(njs_vm_t *vm, ngx_stream_session_t *s)
+{
+    return s->connection->pool;
+}
+
+
+static ngx_resolver_t *
+ngx_stream_js_resolver(njs_vm_t *vm, ngx_stream_session_t *s)
+{
+    ngx_stream_core_srv_conf_t  *cscf;
+
+    cscf = ngx_stream_get_module_srv_conf(s, ngx_stream_core_module);
+
+    return cscf->resolver;
+}
+
+
+static ngx_msec_t
+ngx_stream_js_resolver_timeout(njs_vm_t *vm, ngx_stream_session_t *s)
+{
+    ngx_stream_core_srv_conf_t  *cscf;
+
+    cscf = ngx_stream_get_module_srv_conf(s, ngx_stream_core_module);
+
+    return cscf->resolver_timeout;
 }
 
 
