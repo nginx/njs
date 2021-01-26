@@ -2035,6 +2035,20 @@ ngx_response_js_ext_keys(njs_vm_t *vm, njs_value_t *value, njs_value_t *keys)
                 break;
             }
         }
+
+        if (k == length) {
+            value = njs_vm_array_push(vm, keys);
+            if (value == NULL) {
+                return NJS_ERROR;
+            }
+
+            rc = njs_vm_value_string_set(vm, value, h->key.data, h->key.len);
+            if (rc != NJS_OK) {
+                return NJS_ERROR;
+            }
+
+            length++;
+        }
     }
 
     return NJS_OK;
