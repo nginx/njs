@@ -1226,6 +1226,7 @@ njs_backtrace_to_string(njs_vm_t *vm, njs_arr_t *backtrace, njs_str_t *dst)
 {
     size_t                 count;
     njs_chb_t              chain;
+    njs_int_t              ret;
     njs_uint_t             i;
     njs_backtrace_entry_t  *be, *prev;
 
@@ -1271,8 +1272,8 @@ njs_backtrace_to_string(njs_vm_t *vm, njs_arr_t *backtrace, njs_str_t *dst)
         be++;
     }
 
-    njs_chb_join(&chain, dst);
+    ret = njs_chb_join(&chain, dst);
     njs_chb_destroy(&chain);
 
-    return NJS_OK;
+    return ret;
 }
