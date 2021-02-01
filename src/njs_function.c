@@ -898,6 +898,7 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
          */
 
         if (str.length != njs_length("return this")
+            || nargs != 1
             || memcmp(str.start, "return this", 11) != 0)
         {
             njs_type_error(vm, "function constructor is disabled"
