@@ -808,6 +808,8 @@ njs_test {
      "TypeError: function constructor is disabled in \"safe\" mode\r\n"}
     {"new Function('return thi')\r\n"
      "TypeError: function constructor is disabled in \"safe\" mode\r\n"}
+    {"new Function('foo','return this')\r\n"
+     "TypeError: function constructor is disabled in \"safe\" mode\r\n"}
 } "-u"
 
 
