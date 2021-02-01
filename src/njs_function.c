@@ -869,41 +869,31 @@ static njs_int_t
 njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_chb_t              chain;
-    njs_int_t              ret;
-    njs_str_t              str, file;
-    njs_uint_t             i;
-    njs_value_t            *body;
-    njs_lexer_t            lexer;
-    njs_parser_t           *parser;
-    njs_vm_code_t          *code;
-    njs_function_t         *function;
-    njs_generator_t        generator;
-    njs_parser_scope_t     *scope;
-    njs_function_lambda_t  *lambda;
+    njs_chb_t               chain;
+    njs_int_t               ret;
+    njs_str_t               str, file;
+    njs_uint_t              i;
+    njs_lexer_t             lexer;
+    njs_parser_t            *parser;
+    njs_vm_code_t           *code;
+    njs_function_t          *function;
+    njs_generator_t         generator;
+    njs_parser_node_t       *node;
+    njs_parser_scope_t      *scope;
+    njs_function_lambda_t   *lambda;
+    const njs_token_type_t  *type;
 
-    if (!vm->options.unsafe) {
-        body = njs_argument(args, nargs - 1);
-        ret = njs_value_to_string(vm, body, body);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
+    static const njs_token_type_t  safe_ast[] = {
+        NJS_TOKEN_END,
+        NJS_TOKEN_FUNCTION_EXPRESSION,
+        NJS_TOKEN_STATEMENT,
+        NJS_TOKEN_RETURN,
+        NJS_TOKEN_THIS,
+        NJS_TOKEN_ILLEGAL
+    };
 
-        njs_string_get(body, &str);
-
-        /*
-         * Safe mode exception:
-         * "(new Function('return this'))" is often used to get
-         * the global object in a portable way.
-         */
-
-        if (str.length != njs_length("return this")
-            || memcmp(str.start, "return this", 11) != 0)
-        {
-            njs_type_error(vm, "function constructor is disabled"
-                           " in \"safe\" mode");
-            return NJS_ERROR;
-        }
+    if (!vm->options.unsafe && nargs != 2) {
+        goto fail;
     }
 
     njs_chb_init(&chain, vm->mem_pool);
@@ -960,6 +950,27 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
+    if (!vm->options.unsafe) {
+        /*
+         * Safe mode exception:
+         * "(new Function('return this'))" is often used to get
+         * the global object in a portable way.
+         */
+
+        node = parser->node;
+        type = &safe_ast[0];
+
+        for (; *type != NJS_TOKEN_ILLEGAL; type++, node = node->right) {
+            if (node == NULL || node->left != NULL) {
+                goto fail;
+            }
+
+            if (node->token_type != *type) {
+                goto fail;
+            }
+        }
+    }
+
     scope = parser->scope;
 
     ret = njs_variables_copy(vm, &scope->variables, vm->variables_hash);
@@ -998,6 +1009,11 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_set_function(&vm->retval, function);
 
     return NJS_OK;
+
+fail:
+
+    njs_type_error(vm, "function constructor is disabled in \"safe\" mode");
+    return NJS_ERROR;
 }
 
 

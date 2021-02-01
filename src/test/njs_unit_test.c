@@ -19518,6 +19518,25 @@ static njs_unit_test_t  njs_test[] =
 };
 
 
+static njs_unit_test_t  njs_safe_test[] =
+{
+    { njs_str("(new Function('return this'))() === globalThis"),
+      njs_str("true") },
+
+    { njs_str("(new Function('return this;'))() === globalThis"),
+      njs_str("true") },
+
+    { njs_str("(new Function('return    this  '))() === globalThis"),
+      njs_str("true") },
+
+    { njs_str("(new Function('return thi'))()"),
+      njs_str("TypeError: function constructor is disabled in \"safe\" mode") },
+
+    { njs_str("(new Function('){return 1337})//', 'return this'))()"),
+      njs_str("TypeError: function constructor is disabled in \"safe\" mode") },
+};
+
+
 static njs_unit_test_t  njs_denormals_test[] =
 {
     { njs_str("2.2250738585072014e-308"),
@@ -21775,6 +21794,12 @@ static njs_test_suite_t  njs_suites[] =
       { .repeat = 1, .unsafe = 1 },
       njs_test,
       njs_nitems(njs_test),
+      njs_unit_test },
+
+    { njs_str("safe script"),
+      { .repeat = 1},
+      njs_safe_test,
+      njs_nitems(njs_safe_test),
       njs_unit_test },
 
     { njs_str("denormals"),
