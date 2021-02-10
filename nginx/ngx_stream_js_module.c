@@ -506,7 +506,7 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
     njs_int_t                  ret;
     ngx_int_t                  rc;
     ngx_chain_t               *out, *cl;
-    ngx_connection_t          *c;
+    ngx_connection_t          *c, *dst;
     ngx_stream_js_ev_t        *event;
     ngx_stream_js_ctx_t       *ctx;
     ngx_stream_js_srv_conf_t  *jscf;
@@ -580,7 +580,14 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
 
     *ctx->last_out = NULL;
 
-    if (out != NULL || c->buffered) {
+    if (from_upstream) {
+        dst = c;
+
+    } else {
+        dst = s->upstream ? s->upstream->peer.connection : NULL;
+    }
+
+    if (out != NULL || dst == NULL || dst->buffered) {
         rc = ngx_stream_next_filter(s, out, from_upstream);
 
         ngx_chain_update_chains(c->pool, &ctx->free, &ctx->busy, &out,
