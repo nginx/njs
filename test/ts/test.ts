@@ -82,6 +82,17 @@ function http_module(r: NginxHTTPRequest) {
 
     // r.responseBuffer
     r.responseBuffer?.equals(Buffer.from([1]));
+
+    ngx.fetch('http://nginx.org/', {method:'POST', headers:{Foo:'bar'}})
+    .then(reply => {
+        if (reply.headers.get('foo')) {
+            throw 'oops'
+        };
+
+        return reply.text()
+    })
+    .then(body => r.return(200, body))
+    .catch(e => r.return(501, e.message))
 }
 
 function fs_module() {
