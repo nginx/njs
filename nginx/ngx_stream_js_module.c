@@ -461,7 +461,8 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
 
         ctx->status = NGX_ERROR;
 
-        rc = ngx_js_call(ctx->vm, name, &ctx->args[0], c->log);
+        rc = ngx_js_call(ctx->vm, name, c->log, &ctx->args[0], 1);
+
         if (rc == NGX_ERROR) {
             return rc;
         }
@@ -534,7 +535,8 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
     if (!ctx->filter) {
-        rc = ngx_js_call(ctx->vm, &jscf->filter, &ctx->args[0], c->log);
+        rc = ngx_js_call(ctx->vm, &jscf->filter, c->log, &ctx->args[0], 1);
+
         if (rc == NGX_ERROR) {
             return rc;
         }
@@ -630,7 +632,7 @@ ngx_stream_js_variable(ngx_stream_session_t *s, ngx_stream_variable_value_t *v,
 
     pending = njs_vm_pending(ctx->vm);
 
-    rc = ngx_js_call(ctx->vm, fname, &ctx->args[0], s->connection->log);
+    rc = ngx_js_call(ctx->vm, fname, s->connection->log, &ctx->args[0], 1);
 
     if (rc == NGX_ERROR) {
         v->not_found = 1;

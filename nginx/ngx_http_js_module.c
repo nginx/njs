@@ -660,8 +660,8 @@ ngx_http_js_content_event_handler(ngx_http_request_t *r)
 
     ctx->status = NGX_HTTP_INTERNAL_SERVER_ERROR;
 
-    rc = ngx_js_call(ctx->vm, &jlcf->content, &ctx->request,
-                     r->connection->log);
+    rc = ngx_js_call(ctx->vm, &jlcf->content, r->connection->log,
+                     &ctx->request, 1);
 
     if (rc == NGX_ERROR) {
         ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -773,8 +773,8 @@ ngx_http_js_header_filter(ngx_http_request_t *r)
 
     pending = njs_vm_pending(ctx->vm);
 
-    rc = ngx_js_call(ctx->vm, &jlcf->header_filter, &ctx->request,
-                     r->connection->log);
+    rc = ngx_js_call(ctx->vm, &jlcf->header_filter, r->connection->log,
+                     &ctx->request, 1);
 
     if (rc == NGX_ERROR) {
         return NGX_ERROR;
@@ -820,7 +820,7 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
 
     pending = njs_vm_pending(ctx->vm);
 
-    rc = ngx_js_call(ctx->vm, fname, &ctx->request, r->connection->log);
+    rc = ngx_js_call(ctx->vm, fname, r->connection->log, &ctx->request, 1);
 
     if (rc == NGX_ERROR) {
         v->not_found = 1;

@@ -49,8 +49,8 @@ typedef ngx_msec_t (*ngx_external_resolver_timeout_pt)(njs_vm_t *vm,
                              : njs_vm_value_buffer_set(vm, value, start, len))
 
 
-ngx_int_t ngx_js_call(njs_vm_t *vm, ngx_str_t *s, njs_opaque_value_t *value,
-    ngx_log_t *log);
+ngx_int_t ngx_js_call(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
+    njs_opaque_value_t *args, njs_uint_t nargs);
 
 njs_int_t ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t level);

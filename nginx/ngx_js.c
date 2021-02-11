@@ -66,8 +66,8 @@ static njs_external_t  ngx_js_ext_core[] = {
 
 
 ngx_int_t
-ngx_js_call(njs_vm_t *vm, ngx_str_t *fname, njs_opaque_value_t *value,
-    ngx_log_t *log)
+ngx_js_call(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
+    njs_opaque_value_t *args, njs_uint_t nargs)
 {
     njs_str_t        name, exception;
     njs_function_t  *func;
@@ -82,7 +82,7 @@ ngx_js_call(njs_vm_t *vm, ngx_str_t *fname, njs_opaque_value_t *value,
         return NGX_ERROR;
     }
 
-    if (njs_vm_call(vm, func, njs_value_arg(value), 1) != NJS_OK) {
+    if (njs_vm_call(vm, func, njs_value_arg(args), nargs) != NJS_OK) {
         njs_vm_retval_string(vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, log, 0,
