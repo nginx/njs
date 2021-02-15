@@ -1136,6 +1136,8 @@ static njs_int_t
 njs_date_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t fmt)
 {
+    double  time;
+
     if (njs_slow_path(!njs_is_date(&args[0]))) {
         njs_type_error(vm, "cannot convert %s to date",
                        njs_type_string(args[0].type));
@@ -1143,7 +1145,14 @@ njs_date_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    return njs_date_string(vm, &vm->retval, fmt, njs_date(&args[0])->time);
+    time = njs_date(&args[0])->time;
+
+    if (fmt == NJS_DATE_FMT_TO_ISO_STRING && isnan(time)) {
+        njs_range_error(vm, "Invalid time value");
+        return NJS_ERROR;
+    }
+
+    return njs_date_string(vm, &vm->retval, fmt, time);
 }
 
 

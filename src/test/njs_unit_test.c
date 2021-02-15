@@ -14431,6 +14431,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var d = new Date(2011, 5, 24, 18, 45); d.toDateString()"),
       njs_str("Fri Jun 24 2011") },
 
+    { njs_str("new Date(NaN).toDateString()"),
+      njs_str("Invalid Date") },
+
     { njs_str("var d = new Date(2011, 5, 24, 18, 45);"
                  "d.toTimeString().slice(0, 17)"),
       njs_str("18:45:00 GMT+0000") },
@@ -14477,6 +14480,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("(new Date('-012345-07-01T00:00Z')).toUTCString()"),
       njs_str("Thu, 01 Jul -12345 00:00:00 GMT") },
 
+    { njs_str("new Date(NaN).toUTCString()"),
+      njs_str("Invalid Date") },
+
     { njs_str("var d = new Date(-62167219200000); d.toISOString()"),
       njs_str("0000-01-01T00:00:00.000Z") },
 
@@ -14485,6 +14491,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var d = new Date(-62198755200000); d.toISOString()"),
       njs_str("-000001-01-01T00:00:00.000Z") },
+
+    { njs_str("new Date(NaN).toISOString()"),
+      njs_str("RangeError: Invalid time value") },
 #endif
 
     { njs_str("Date.UTC(2011, 5, 24, 6, 0)"),
