@@ -1,4 +1,37 @@
 
+Changes with njs 0.5.1                                        16 Feb 2021
+
+    nginx modules:
+
+    *) Feature: introduced ngx.fetch() method implementing Fetch API.
+       The following init options are supported:
+       body, headers, buffer_size (nginx specific),
+       max_response_body_size (nginx specific), method.
+
+       The following properties and methods of Response object are
+       implemented: arrayBuffer(), bodyUsed, json(), headers, ok,
+       redirect, status, statusText, text(), type, url.
+
+       The following properties and methods of Header object are
+       implemented: get(), getAll(), has().
+
+       Notable limitations: only the http:// scheme is supported,
+       redirects are not handled.
+
+       In collaboration with 洪志道 (Hong Zhi Dao).
+
+    *) Feature: added the "js_header_filter" directive.
+
+    *) Bugfix: fixed processing buffered data in body filter
+       in stream module.
+
+    Core:
+
+    *) Bugfix: fixed safe mode bypass in Function constructor.
+
+    *) Bugfix: fixed Date.prototype.toISOString() with invalid date
+       values.
+
 Changes with njs 0.5.0                                         01 Dec 2020
 
     nginx modules:
