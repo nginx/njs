@@ -1250,6 +1250,10 @@ slow_path:
     case NJS_DECLINED:
         if (njs_slow_path(pq.own_whiteout != NULL)) {
             /* Previously deleted property. */
+            if (!njs_object(value)->extensible) {
+                goto fail;
+            }
+
             prop = pq.own_whiteout;
 
             prop->type = NJS_PROPERTY;
@@ -1278,10 +1282,7 @@ slow_path:
     }
 
     if (njs_slow_path(!njs_object(value)->extensible)) {
-        njs_key_string_get(vm, &pq.key,  &pq.lhq.key);
-        njs_type_error(vm, "Cannot add property \"%V\", "
-                       "object is not extensible", &pq.lhq.key);
-        return NJS_ERROR;
+        goto fail;
     }
 
     prop = njs_object_prop_alloc(vm, &pq.key, &njs_value_undefined, 1);
@@ -1304,6 +1305,14 @@ found:
     prop->value = *setval;
 
     return NJS_OK;
+
+fail:
+
+    njs_key_string_get(vm, &pq.key, &pq.lhq.key);
+    njs_type_error(vm, "Cannot add property \"%V\", object is not extensible",
+                   &pq.lhq.key);
+
+    return NJS_ERROR;
 }
 
 

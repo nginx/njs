@@ -14144,42 +14144,44 @@ static njs_unit_test_t  njs_test[] =
       njs_str("false") },
 
     { njs_str("var o = Object.defineProperties({}, {a:{}, b:{}});"
-                 "o = Object.preventExtensions(o);"
-                 "Object.isSealed(o)"),
+              "o = Object.preventExtensions(o);"
+              "Object.isSealed(o)"),
       njs_str("true") },
 
     { njs_str("var o = Object.defineProperties({}, {a:{}, b:{writable:1}});"
-                 "o = Object.preventExtensions(o);"
-                 "Object.isSealed(o)"),
+              "o = Object.preventExtensions(o);"
+              "Object.isSealed(o)"),
       njs_str("true") },
 
     { njs_str("var o = Object.defineProperties({}, {a:{writable:1}});"
-                 "o = Object.preventExtensions(o);"
-                 "Object.isSealed(o)"),
+              "o = Object.preventExtensions(o);"
+              "Object.isSealed(o)"),
       njs_str("true") },
 
     { njs_str("var o = Object.defineProperties({}, {a:{configurable:1}});"
-                 "o = Object.preventExtensions(o);"
-                 "Object.isSealed(o)"),
+              "o = Object.preventExtensions(o);"
+              "Object.isSealed(o)"),
       njs_str("false") },
 
     { njs_str("var o = Object.preventExtensions({a:1});"
-                 "Object.isFrozen(o)"),
+              "Object.isFrozen(o)"),
       njs_str("false") },
 
     { njs_str("var o = Object.freeze({a:1}); Object.isFrozen(o)"),
       njs_str("true") },
 
+    /* Object.preventExtensions() */
+
     { njs_str("var o = Object.preventExtensions({a:1});"
-                 "Object.defineProperty(o, 'b', {value:1})"),
+              "Object.defineProperty(o, 'b', {value:1})"),
       njs_str("TypeError: Cannot add property \"b\", object is not extensible") },
 
     { njs_str("var o = Object.preventExtensions({});"
-                 "Object.defineProperty(o, Symbol.unscopables, {})"),
+              "Object.defineProperty(o, Symbol.unscopables, {})"),
       njs_str("TypeError: Cannot add property \"Symbol(Symbol.unscopables)\", object is not extensible") },
 
     { njs_str("var o = Object.preventExtensions({a:1});"
-                 "Object.defineProperties(o, {b:{value:1}})"),
+              "Object.defineProperties(o, {b:{value:1}})"),
       njs_str("TypeError: Cannot add property \"b\", object is not extensible") },
 
     { njs_str("var o = Object.preventExtensions({a:1}); o.a = 2; o.a"),
@@ -14193,6 +14195,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var o = Object.preventExtensions({a:1}); o[Symbol.unscopables] = 1"),
       njs_str("TypeError: Cannot add property \"Symbol(Symbol.unscopables)\", object is not extensible") },
+
+    { njs_str("var o = { a: 1 }; delete o.a; Object.preventExtensions(o).a = 1"),
+      njs_str("TypeError: Cannot add property \"a\", object is not extensible") },
 
     { njs_str("Object.preventExtensions()"),
       njs_str("undefined") },
