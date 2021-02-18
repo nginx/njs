@@ -25,6 +25,8 @@ typedef struct {
 typedef struct {
     ngx_str_t              content;
     ngx_str_t              header_filter;
+    ngx_str_t              body_filter;
+    ngx_uint_t             buffer_type;
 } ngx_http_js_loc_conf_t;
 
 
@@ -46,6 +48,12 @@ typedef struct {
     njs_opaque_value_t     response_body;
     ngx_str_t              redirect_uri;
     ngx_array_t            promise_callbacks;
+
+    ngx_int_t              filter;
+    ngx_buf_t             *buf;
+    ngx_chain_t          **last_out;
+    ngx_chain_t           *free;
+    ngx_chain_t           *busy;
 } ngx_http_js_ctx_t;
 
 
@@ -123,6 +131,10 @@ static njs_int_t ngx_http_js_ext_send_header(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 static njs_int_t ngx_http_js_ext_send(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
+static njs_int_t ngx_http_js_ext_send_buffer(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused);
+static njs_int_t ngx_http_js_ext_done(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused);
 static njs_int_t ngx_http_js_ext_finish(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 static njs_int_t ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args,
@@ -199,6 +211,8 @@ static char *ngx_http_js_import(ngx_conf_t *cf, ngx_command_t *cmd,
 static char *ngx_http_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 static char *ngx_http_js_content(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
+static char *ngx_http_js_body_filter_set(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf);
 static void *ngx_http_js_create_main_conf(ngx_conf_t *cf);
 static char *ngx_http_js_init_main_conf(ngx_conf_t *cf, void *conf);
 static void *ngx_http_js_create_loc_conf(ngx_conf_t *cf);
@@ -250,6 +264,13 @@ static ngx_command_t  ngx_http_js_commands[] = {
       offsetof(ngx_http_js_loc_conf_t, header_filter),
       NULL },
 
+    { ngx_string("js_body_filter"),
+      NGX_HTTP_LOC_CONF|NGX_HTTP_LMT_CONF|NGX_CONF_TAKE12,
+      ngx_http_js_body_filter_set,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
+      NULL },
+
       ngx_null_command
 };
 
@@ -286,6 +307,7 @@ ngx_module_t  ngx_http_js_module = {
 
 
 static ngx_http_output_header_filter_pt  ngx_http_next_header_filter;
+static ngx_http_output_body_filter_pt    ngx_http_next_body_filter;
 
 
 static njs_external_t  ngx_http_js_ext_request[] = {
@@ -554,6 +576,28 @@ static njs_external_t  ngx_http_js_ext_request[] = {
 
     {
         .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("sendBuffer"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_send_buffer,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("done"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_done,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
         .name.string = njs_str("finish"),
         .writable = 1,
         .configurable = 1,
@@ -788,6 +832,138 @@ ngx_http_js_header_filter(ngx_http_request_t *r)
     }
 
     return ngx_http_next_header_filter(r);
+}
+
+
+static ngx_int_t
+ngx_http_js_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
+{
+    size_t                   len;
+    u_char                  *p;
+    ngx_int_t                rc;
+    njs_str_t                exception;
+    njs_int_t                ret, pending;
+    ngx_buf_t               *b;
+    ngx_chain_t             *out, *cl;
+    ngx_connection_t        *c;
+    ngx_http_js_ctx_t       *ctx;
+    njs_opaque_value_t       last_key, last;
+    ngx_http_js_loc_conf_t  *jlcf;
+    njs_opaque_value_t       arguments[3];
+
+    static const njs_str_t last_str = njs_str("last");
+
+    jlcf = ngx_http_get_module_loc_conf(r, ngx_http_js_module);
+
+    if (jlcf->body_filter.len == 0) {
+        return ngx_http_next_body_filter(r, in);
+    }
+
+    rc = ngx_http_js_init_vm(r);
+
+    if (rc == NGX_ERROR || rc == NGX_DECLINED) {
+        return NGX_ERROR;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (ctx->done) {
+        return ngx_http_next_body_filter(r, in);
+    }
+
+    c = r->connection;
+
+    ctx->filter = 1;
+    ctx->last_out = &out;
+
+    njs_value_assign(&arguments[0], &ctx->request);
+
+    njs_vm_value_string_set(ctx->vm, njs_value_arg(&last_key),
+                            last_str.start, last_str.length);
+
+    while (in != NULL) {
+        ctx->buf = in->buf;
+        b = ctx->buf;
+
+        if (!ctx->done) {
+            len = b->last - b->pos;
+
+            p = ngx_pnalloc(r->pool, len);
+            if (p == NULL) {
+                njs_vm_memory_error(ctx->vm);
+                return NJS_ERROR;
+            }
+
+            if (len) {
+                ngx_memcpy(p, b->pos, len);
+            }
+
+            ret = ngx_js_prop(ctx->vm, jlcf->buffer_type,
+                              njs_value_arg(&arguments[1]), p, len);
+            if (ret != NJS_OK) {
+                return ret;
+            }
+
+            njs_value_boolean_set(njs_value_arg(&last), b->last_buf);
+
+            ret = njs_vm_object_alloc(ctx->vm, njs_value_arg(&arguments[2]),
+                                       njs_value_arg(&last_key),
+                                       njs_value_arg(&last), NULL);
+            if (ret != NJS_OK) {
+                return ret;
+            }
+
+            pending = njs_vm_pending(ctx->vm);
+
+            rc = ngx_js_call(ctx->vm, &jlcf->body_filter, c->log, &arguments[0],
+                             3);
+
+            if (rc == NGX_ERROR) {
+                njs_vm_retval_string(ctx->vm, &exception);
+
+                ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %*s",
+                              exception.length, exception.start);
+
+                return NGX_ERROR;
+            }
+
+            if (!pending && rc == NGX_AGAIN) {
+                ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                              "async operation inside \"%V\" body filter",
+                              &jlcf->body_filter);
+                return NGX_ERROR;
+            }
+
+            ctx->buf->pos = ctx->buf->last;
+
+        } else {
+            cl = ngx_alloc_chain_link(c->pool);
+            if (cl == NULL) {
+                return NGX_ERROR;
+            }
+
+            cl->buf = b;
+
+            *ctx->last_out = cl;
+            ctx->last_out = &cl->next;
+        }
+
+        in = in->next;
+    }
+
+    *ctx->last_out = NULL;
+
+    if (out != NULL || c->buffered) {
+        rc = ngx_http_next_body_filter(r, out);
+
+        ngx_chain_update_chains(c->pool, &ctx->free, &ctx->busy, &out,
+                                (ngx_buf_tag_t) &ngx_http_js_module);
+
+    } else {
+        rc = NGX_OK;
+    }
+
+    return rc;
 }
 
 
@@ -1726,11 +1902,19 @@ ngx_http_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     uintptr_t            next;
     ngx_uint_t           n;
     ngx_chain_t         *out, *cl, **ll;
+    ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
-    r = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    r = njs_vm_external(vm, njs_argument(args, 0));
     if (r == NULL) {
         njs_vm_error(vm, "\"this\" is not an external");
+        return NJS_ERROR;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (ctx->filter) {
+        njs_vm_error(vm, "cannot send while in body filter");
         return NJS_ERROR;
     }
 
@@ -1786,6 +1970,114 @@ ngx_http_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     if (ngx_http_output_filter(r, out) == NGX_ERROR) {
         return NJS_ERROR;
     }
+
+    njs_value_undefined_set(njs_vm_retval(vm));
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+ngx_http_js_ext_send_buffer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    unsigned             last_buf, flush;
+    njs_str_t            buffer;
+    ngx_buf_t           *b;
+    ngx_chain_t         *cl;
+    njs_value_t         *flags, *value;
+    ngx_http_js_ctx_t   *ctx;
+    ngx_http_request_t  *r;
+    njs_opaque_value_t   lvalue;
+
+    static const njs_str_t last_key = njs_str("last");
+    static const njs_str_t flush_key = njs_str("flush");
+
+    r = njs_vm_external(vm, njs_argument(args, 0));
+    if (r == NULL) {
+        njs_vm_error(vm, "\"this\" is not an external");
+        return NJS_ERROR;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (!ctx->filter) {
+        njs_vm_error(vm, "cannot send buffer while not filtering");
+        return NJS_ERROR;
+    }
+
+    if (ngx_js_string(vm, njs_arg(args, nargs, 1), &buffer) != NGX_OK) {
+        njs_vm_error(vm, "failed to get buffer arg");
+        return NJS_ERROR;
+    }
+
+    flush = ctx->buf->flush;
+    last_buf = ctx->buf->last_buf;
+
+    flags = njs_arg(args, nargs, 2);
+
+    if (njs_value_is_object(flags)) {
+        value = njs_vm_object_prop(vm, flags, &flush_key, &lvalue);
+        if (value != NULL) {
+            flush = njs_value_bool(value);
+        }
+
+        value = njs_vm_object_prop(vm, flags, &last_key, &lvalue);
+        if (value != NULL) {
+            last_buf = njs_value_bool(value);
+        }
+    }
+
+    cl = ngx_chain_get_free_buf(r->pool, &ctx->free);
+    if (cl == NULL) {
+        njs_vm_error(vm, "memory error");
+        return NJS_ERROR;
+    }
+
+    b = cl->buf;
+
+    b->flush = flush;
+    b->last_buf = last_buf;
+
+    b->memory = (buffer.length ? 1 : 0);
+    b->sync = (buffer.length ? 0 : 1);
+    b->tag = (ngx_buf_tag_t) &ngx_http_js_module;
+
+    b->start = buffer.start;
+    b->end = buffer.start + buffer.length;
+    b->pos = b->start;
+    b->last = b->end;
+
+    *ctx->last_out = cl;
+    ctx->last_out = &cl->next;
+
+    njs_value_undefined_set(njs_vm_retval(vm));
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+ngx_http_js_ext_done(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    ngx_http_js_ctx_t   *ctx;
+    ngx_http_request_t  *r;
+
+    r = njs_vm_external(vm, njs_argument(args, 0));
+    if (r == NULL) {
+        njs_vm_error(vm, "\"this\" is not an external");
+        return NJS_ERROR;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (!ctx->filter) {
+        njs_vm_error(vm, "cannot set done while not filtering");
+        return NJS_ERROR;
+    }
+
+    ctx->done = 1;
 
     njs_value_undefined_set(njs_vm_retval(vm));
 
@@ -3281,6 +3573,9 @@ ngx_http_js_init(ngx_conf_t *cf)
     ngx_http_next_header_filter = ngx_http_top_header_filter;
     ngx_http_top_header_filter = ngx_http_js_header_filter;
 
+    ngx_http_next_body_filter = ngx_http_top_body_filter;
+    ngx_http_top_body_filter = ngx_http_js_body_filter;
+
     return NGX_OK;
 }
 
@@ -3469,6 +3764,44 @@ ngx_http_js_content(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+static char *
+ngx_http_js_body_filter_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_http_js_loc_conf_t *jlcf = conf;
+
+    ngx_str_t  *value;
+
+    if (jlcf->body_filter.data) {
+        return "is duplicate";
+    }
+
+    value = cf->args->elts;
+    jlcf->body_filter = value[1];
+
+    jlcf->buffer_type = NGX_JS_STRING;
+
+    if (cf->args->nelts == 3
+         && ngx_strncmp(value[2].data, "buffer_type=", 12) == 0)
+    {
+        if (ngx_strcmp(&value[2].data[12], "string") == 0) {
+            jlcf->buffer_type = NGX_JS_STRING;
+
+        } else if (ngx_strcmp(&value[2].data[12], "buffer") == 0) {
+            jlcf->buffer_type = NGX_JS_BUFFER;
+
+        } else {
+            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                               "invalid buffer_type value \"%V\", "
+                               "it must be \"string\" or \"buffer\"",
+                               &value[2]);
+            return NGX_CONF_ERROR;
+        }
+    }
+
+    return NGX_CONF_OK;
+}
+
+
 static void *
 ngx_http_js_create_main_conf(ngx_conf_t *cf)
 {
@@ -3510,6 +3843,8 @@ ngx_http_js_create_loc_conf(ngx_conf_t *cf)
      *
      *     conf->content = { 0, NULL };
      *     conf->header_filter = { 0, NULL };
+     *     conf->body_filter = { 0, NULL };
+     *     conf->buffer_type = NGX_JS_UNSET;
      */
 
     return conf;
@@ -3524,6 +3859,9 @@ ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 
     ngx_conf_merge_str_value(conf->content, prev->content, "");
     ngx_conf_merge_str_value(conf->header_filter, prev->header_filter, "");
+    ngx_conf_merge_str_value(conf->body_filter, prev->body_filter, "");
+    ngx_conf_merge_uint_value(conf->buffer_type, prev->buffer_type,
+                              NGX_JS_STRING);
 
     return NGX_CONF_OK;
 }
