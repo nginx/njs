@@ -13932,6 +13932,42 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Object.getOwnPropertyNames(Array.isArray)"),
       njs_str("name,length") },
 
+    /* Object.freeze() */
+
+    { njs_str("[undefined, null, false, NaN, '', Symbol()]"
+              ".every((x) => Object.is(Object.freeze(x), x))"),
+      njs_str("true")
+    },
+
+    { njs_str("var buf = new ArrayBuffer(8);"
+              NJS_TYPED_ARRAY_LIST
+              ".every((ctr) => {Object.freeze(new ctr([])); "
+              "                 Object.freeze(new ctr(buf, 8)); return true; })"),
+      njs_str("true")
+    },
+
+    { njs_str("var buf = new ArrayBuffer(8);"
+              NJS_TYPED_ARRAY_LIST
+              ".map((ctr) => { try { Object.freeze(new ctr(buf)); } catch(e) { return e; } })"
+              ".every((x) => x instanceof TypeError)"),
+      njs_str("true")
+    },
+
+    { njs_str("Object.freeze([1]).pop()"),
+      njs_str("TypeError: Cannot delete property \"0\" of array") },
+
+    { njs_str("var a = Object.freeze([1]); a[0] = 2;"),
+      njs_str("TypeError: Cannot assign to read-only property \"0\" of array") },
+
+    { njs_str("var a = Object.freeze([1]); a[1] = 2;"),
+      njs_str("TypeError: Cannot add property \"1\", object is not extensible") },
+
+    { njs_str("var a = Object.freeze([1,,3]); a[1] = 2;"),
+      njs_str("TypeError: Cannot add property \"1\", object is not extensible") },
+
+    { njs_str("var o = { a: 1 }; delete o.a; Object.freeze(o).a = 2;"),
+      njs_str("TypeError: Cannot add property \"a\", object is not extensible") },
+
     { njs_str("Object.defineProperty(Object.freeze({}), 'b', {})"),
       njs_str("TypeError: Cannot add property \"b\", object is not extensible") },
 
@@ -14032,28 +14068,40 @@ static njs_unit_test_t  njs_test[] =
               "Object.getOwnPropertyDescriptor(o, 'x').writable"),
       njs_str("undefined") },
 
-    { njs_str("Object.isFrozen({a:1})"),
-      njs_str("false") },
+    /* Object.isFrozen() */
 
-    { njs_str("Object.isFrozen([1,2])"),
-      njs_str("false") },
+    { njs_str("[undefined, null, false, NaN, '', Symbol()]"
+              ".every((x) => Object.isFrozen(x))"),
+      njs_str("true") },
 
-    { njs_str("Object.isFrozen(function() {})"),
-      njs_str("false") },
+    { njs_str("[[], {}]"
+              ".every((x) => Object.isFrozen(Object.preventExtensions(x)))"),
+      njs_str("true") },
 
-    { njs_str("Object.isFrozen(new Date(''))"),
-      njs_str("false") },
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every((ctr) => !Object.isFrozen(new ctr([])))"),
+      njs_str("true") },
 
-    { njs_str("Object.isFrozen(new RegExp(''))"),
-      njs_str("false") },
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every((ctr) => Object.isFrozen(Object.preventExtensions(new ctr([]))))"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".map((ctr) => new ctr([]))"
+              ".map((x) => { x.broken = true; return x; })"
+              ".every((x) => !Object.isFrozen(Object.preventExtensions(x)))"),
+      njs_str("true") },
+
+    { njs_str("var buf = new ArrayBuffer(8);"
+              NJS_TYPED_ARRAY_LIST
+              ".every((ctr) => !Object.isFrozen(Object.preventExtensions(new ctr(buf))))"),
+      njs_str("true") },
+
+    { njs_str("[{a:1}, [1,2], function() {}, new Date(''), new RegExp('')]"
+              ".every((x) => !Object.isFrozen(x))"),
+      njs_str("true") },
 
     { njs_str("Object.isFrozen()"),
-      njs_str("true") },
-
-    { njs_str("Object.isFrozen(1)"),
-      njs_str("true") },
-
-    { njs_str("Object.isFrozen('')"),
       njs_str("true") },
 
     { njs_str("Object.isFrozen(Object.defineProperties({}, {a:{value:1}}))"),
@@ -14086,8 +14134,29 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var o = Object.freeze({a:1}); Object.isFrozen(o)"),
       njs_str("true") },
 
-    { njs_str("Object.isFrozen(undefined)"),
+    /* Object.seal() */
+
+    { njs_str("[undefined, null, false, NaN, '', Symbol()]"
+              ".every((x) => Object.is(Object.seal(x), x))"),
       njs_str("true") },
+
+    { njs_str("Object.seal()"),
+      njs_str("undefined") },
+
+    { njs_str("Object.seal([1]).pop()"),
+      njs_str("TypeError: Cannot delete property \"0\" of array") },
+
+    { njs_str("var a = Object.seal([1]); a[0] = 2; a"),
+      njs_str("2") },
+
+    { njs_str("var a = Object.seal([1]); a[1] = 2;"),
+      njs_str("TypeError: Cannot add property \"1\", object is not extensible") },
+
+    { njs_str("var a = Object.seal([1,,3]); a[1] = 2;"),
+      njs_str("TypeError: Cannot add property \"1\", object is not extensible") },
+
+    { njs_str("var o = { a: 1 }; delete o.a; Object.seal(o).a = 2"),
+      njs_str("TypeError: Cannot add property \"a\", object is not extensible") },
 
     { njs_str("var o = Object.seal({a:1}); o.a = 2; o.a"),
       njs_str("2") },
@@ -14104,40 +14173,41 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var o = Object.seal({a:{b:1}}); o.a.b = 2; o.a.b"),
       njs_str("2") },
 
-    { njs_str("Object.seal()"),
-      njs_str("undefined") },
+    /* Object.isSealed() */
 
-    { njs_str("Object.seal(1)"),
-      njs_str("1") },
+    { njs_str("[undefined, null, false, NaN, '', Symbol()]"
+              ".every((x) => Object.isSealed(x))"),
+      njs_str("true") },
 
-    { njs_str("Object.seal('')"),
-      njs_str("") },
+    { njs_str("[[], {}]"
+              ".every((x) => Object.isSealed(Object.preventExtensions(x)))"),
+      njs_str("true") },
 
-    { njs_str("Object.seal(undefined)"),
-      njs_str("undefined") },
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every((ctr) => !Object.isSealed(new ctr([])))"),
+      njs_str("true") },
 
-    { njs_str("Object.isSealed({a:1})"),
-      njs_str("false") },
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every((ctr) => Object.isSealed(Object.preventExtensions(new ctr([]))))"),
+      njs_str("true") },
 
-    { njs_str("Object.isSealed([1,2])"),
-      njs_str("false") },
+    { njs_str("var buf = new ArrayBuffer(8);"
+              NJS_TYPED_ARRAY_LIST
+              ".every((ctr) => Object.isSealed(Object.preventExtensions(new ctr(buf))))"),
+      njs_str("true") },
 
-    { njs_str("Object.isSealed(function() {})"),
-      njs_str("false") },
+    { njs_str("var buf = new ArrayBuffer(8);"
+              NJS_TYPED_ARRAY_LIST
+              ".map((ctr) => new ctr(buf))"
+              ".map((x) => { x.broken = true; return x; })"
+              ".every((x) => !Object.isSealed(Object.preventExtensions(x)))"),
+      njs_str("true") },
 
-    { njs_str("Object.isSealed(new Date(''))"),
-      njs_str("false") },
-
-    { njs_str("Object.isSealed(new RegExp(''))"),
-      njs_str("false") },
+    { njs_str("[{a:1}, [1,2], function() {}, new Date(''), new RegExp('')]"
+              ".every((x) => !Object.isSealed(x))"),
+      njs_str("true") },
 
     { njs_str("Object.isSealed()"),
-      njs_str("true") },
-
-    { njs_str("Object.isSealed(1)"),
-      njs_str("true") },
-
-    { njs_str("Object.isSealed('')"),
       njs_str("true") },
 
     { njs_str("Object.isSealed(Object.defineProperties({}, {a:{value:1}}))"),

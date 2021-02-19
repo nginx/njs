@@ -8,6 +8,12 @@
 #include <njs_main.h>
 
 
+typedef enum {
+    NJS_OBJECT_INTEGRITY_SEALED,
+    NJS_OBJECT_INTEGRITY_FROZEN,
+} njs_object_integrity_level_t;
+
+
 static njs_int_t njs_object_hash_test(njs_lvlhsh_query_t *lhq, void *data);
 static njs_object_prop_t *njs_object_exist_in_proto(const njs_object_t *begin,
     const njs_object_t *end, njs_lvlhsh_query_t *lhq);
@@ -1507,10 +1513,13 @@ njs_object_set_prototype_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+/* 7.3.15 SetIntegrityLevel */
+
 static njs_int_t
-njs_object_freeze(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+njs_object_set_integrity_level(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t level)
 {
+    njs_int_t          ret;
     njs_value_t        *value;
     njs_lvlhsh_t       *hash;
     njs_object_t       *object;
@@ -1519,9 +1528,24 @@ njs_object_freeze(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     value = njs_arg(args, nargs, 1);
 
-    if (!njs_is_object(value)) {
-        njs_set_undefined(&vm->retval);
+    if (njs_slow_path(!njs_is_object(value))) {
+        vm->retval = *value;
         return NJS_OK;
+    }
+
+    if (njs_slow_path(level == NJS_OBJECT_INTEGRITY_FROZEN
+                      && njs_is_typed_array(value)
+                      && njs_typed_array_length(njs_typed_array(value)) != 0))
+    {
+        njs_type_error(vm, "Cannot freeze array buffer views with elements");
+        return NJS_ERROR;
+    }
+
+    if (njs_is_fast_array(value)) {
+        ret = njs_array_convert_to_slow_array(vm, njs_array(value));
+        if (ret != NJS_OK) {
+            return ret;
+        }
     }
 
     object = njs_object(value);
@@ -1538,7 +1562,9 @@ njs_object_freeze(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             break;
         }
 
-        if (!njs_is_accessor_descriptor(prop)) {
+        if (level == NJS_OBJECT_INTEGRITY_FROZEN
+            && !njs_is_accessor_descriptor(prop))
+        {
             prop->writable = 0;
         }
 
@@ -1552,8 +1578,8 @@ njs_object_freeze(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
-njs_object_is_frozen(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+njs_object_test_integrity_level(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t level)
 {
     njs_value_t        *value;
     njs_lvlhsh_t       *hash;
@@ -1564,7 +1590,7 @@ njs_object_is_frozen(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     value = njs_arg(args, nargs, 1);
 
-    if (!njs_is_object(value)) {
+    if (njs_slow_path(!njs_is_object(value))) {
         vm->retval = njs_value_true;
         return NJS_OK;
     }
@@ -1572,13 +1598,21 @@ njs_object_is_frozen(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     retval = &njs_value_false;
 
     object = njs_object(value);
-    njs_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
-
-    hash = &object->hash;
 
     if (object->extensible) {
         goto done;
     }
+
+    if (njs_slow_path(level == NJS_OBJECT_INTEGRITY_FROZEN)
+                      && njs_is_typed_array(value)
+                      && njs_typed_array_length(njs_typed_array(value)) != 0)
+    {
+        goto done;
+    }
+
+    njs_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+
+    hash = &object->hash;
 
     for ( ;; ) {
         prop = njs_lvlhsh_each(hash, &lhe);
@@ -1591,98 +1625,9 @@ njs_object_is_frozen(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             goto done;
         }
 
-        if (njs_is_data_descriptor(prop) && prop->writable) {
-            goto done;
-        }
-    }
-
-    retval = &njs_value_true;
-
-done:
-
-    vm->retval = *retval;
-
-    return NJS_OK;
-}
-
-
-static njs_int_t
-njs_object_seal(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
-{
-    njs_value_t        *value;
-    njs_lvlhsh_t       *hash;
-    njs_object_t       *object;
-    njs_object_prop_t  *prop;
-    njs_lvlhsh_each_t  lhe;
-
-    value = njs_arg(args, nargs, 1);
-
-    if (!njs_is_object(value)) {
-        vm->retval = *value;
-        return NJS_OK;
-    }
-
-    object = njs_object(value);
-    object->extensible = 0;
-
-    njs_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
-
-    hash = &object->hash;
-
-    for ( ;; ) {
-        prop = njs_lvlhsh_each(hash, &lhe);
-
-        if (prop == NULL) {
-            break;
-        }
-
-        prop->configurable = 0;
-    }
-
-    vm->retval = *value;
-
-    return NJS_OK;
-}
-
-
-static njs_int_t
-njs_object_is_sealed(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
-{
-    njs_value_t        *value;
-    njs_lvlhsh_t       *hash;
-    njs_object_t       *object;
-    njs_object_prop_t  *prop;
-    njs_lvlhsh_each_t  lhe;
-    const njs_value_t  *retval;
-
-    value = njs_arg(args, nargs, 1);
-
-    if (!njs_is_object(value)) {
-        vm->retval = njs_value_true;
-        return NJS_OK;
-    }
-
-    retval = &njs_value_false;
-
-    object = njs_object(value);
-    njs_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
-
-    hash = &object->hash;
-
-    if (object->extensible) {
-        goto done;
-    }
-
-    for ( ;; ) {
-        prop = njs_lvlhsh_each(hash, &lhe);
-
-        if (prop == NULL) {
-            break;
-        }
-
-        if (prop->configurable) {
+        if (level == NJS_OBJECT_INTEGRITY_FROZEN
+            && njs_is_data_descriptor(prop) && prop->writable)
+        {
             goto done;
         }
     }
@@ -2055,7 +2000,8 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("freeze"),
-        .value = njs_native_function(njs_object_freeze, 1),
+        .value = njs_native_function2(njs_object_set_integrity_level,
+                                      1, NJS_OBJECT_INTEGRITY_FROZEN),
         .writable = 1,
         .configurable = 1,
     },
@@ -2063,7 +2009,8 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isFrozen"),
-        .value = njs_native_function(njs_object_is_frozen, 1),
+        .value = njs_native_function2(njs_object_test_integrity_level,
+                                      1, NJS_OBJECT_INTEGRITY_FROZEN),
         .writable = 1,
         .configurable = 1,
     },
@@ -2071,7 +2018,8 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("seal"),
-        .value = njs_native_function(njs_object_seal, 1),
+        .value = njs_native_function2(njs_object_set_integrity_level,
+                                      1, NJS_OBJECT_INTEGRITY_SEALED),
         .writable = 1,
         .configurable = 1,
     },
@@ -2079,7 +2027,8 @@ static const njs_object_prop_t  njs_object_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("isSealed"),
-        .value = njs_native_function(njs_object_is_sealed, 1),
+        .value = njs_native_function2(njs_object_test_integrity_level,
+                                      1, NJS_OBJECT_INTEGRITY_SEALED),
         .writable = 1,
         .configurable = 1,
     },
