@@ -218,7 +218,6 @@ struct njs_vm_s {
     size_t                   stack_size;
 
     njs_vm_shared_t          *shared;
-    njs_parser_t             *parser;
 
     njs_regex_context_t      *regex_context;
     njs_regex_match_data_t   *single_match_data;

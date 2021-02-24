@@ -874,7 +874,7 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_str_t               str, file;
     njs_uint_t              i;
     njs_lexer_t             lexer;
-    njs_parser_t            *parser;
+    njs_parser_t            parser;
     njs_vm_code_t           *code;
     njs_function_t          *function;
     njs_generator_t         generator;
@@ -926,15 +926,6 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    vm->options.accumulative = 1;
-
-    parser = njs_mp_zalloc(vm->mem_pool, sizeof(njs_parser_t));
-    if (njs_slow_path(parser == NULL)) {
-        return NJS_ERROR;
-    }
-
-    vm->parser = parser;
-
     file = njs_str_value("runtime");
 
     ret = njs_lexer_init(vm, &lexer, &file, str.start, str.start + str.length);
@@ -942,10 +933,11 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    parser->vm = vm;
-    parser->lexer = &lexer;
+    njs_memzero(&parser, sizeof(njs_parser_t));
 
-    ret = njs_parser(parser, NULL);
+    parser.lexer = &lexer;
+
+    ret = njs_parser(vm, &parser, NULL);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -957,7 +949,7 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
          * the global object in a portable way.
          */
 
-        node = parser->node;
+        node = parser.node;
         type = &safe_ast[0];
 
         for (; *type != NJS_TOKEN_ILLEGAL; type++, node = node->right) {
@@ -971,7 +963,7 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    scope = parser->scope;
+    scope = parser.scope;
 
     ret = njs_variables_copy(vm, &scope->variables, vm->variables_hash);
     if (njs_slow_path(ret != NJS_OK)) {

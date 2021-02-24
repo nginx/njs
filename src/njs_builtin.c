@@ -613,10 +613,6 @@ njs_vm_expression_completions(njs_vm_t *vm, njs_str_t *expression)
     njs_lvlhsh_query_t   lhq;
     njs_variable_node_t  var_node;
 
-    if (njs_slow_path(vm->parser == NULL)) {
-        return NULL;
-    }
-
     p = expression->start;
     end = p + expression->length;
 
@@ -635,7 +631,7 @@ njs_vm_expression_completions(njs_vm_t *vm, njs_str_t *expression)
 
     var_node.key = (uintptr_t) lhq.value;
 
-    node = njs_rbtree_find(&vm->parser->scope->variables, &var_node.node);
+    node = njs_rbtree_find(vm->variables_hash, &var_node.node);
     if (njs_slow_path(node == NULL)) {
         return NULL;
     }

@@ -9,7 +9,7 @@
 #include <njs_main.h>
 
 
-static njs_variable_t *njs_variable_scope_add(njs_vm_t *vm,
+static njs_variable_t *njs_variable_scope_add(njs_parser_t *parser,
     njs_parser_scope_t *scope, uintptr_t unique_id, njs_variable_type_t type);
 static njs_int_t njs_variable_reference_resolve(njs_vm_t *vm,
     njs_variable_reference_t *vr, njs_parser_scope_t *node_scope);
@@ -18,12 +18,12 @@ static njs_variable_t *njs_variable_alloc(njs_vm_t *vm, uintptr_t unique_id,
 
 
 njs_variable_t *
-njs_variable_add(njs_vm_t *vm, njs_parser_scope_t *scope, uintptr_t unique_id,
-    njs_variable_type_t type)
+njs_variable_add(njs_parser_t *parser, njs_parser_scope_t *scope,
+    uintptr_t unique_id, njs_variable_type_t type)
 {
     njs_variable_t  *var;
 
-    var = njs_variable_scope_add(vm, scope, unique_id, type);
+    var = njs_variable_scope_add(parser, scope, unique_id, type);
     if (njs_slow_path(var == NULL)) {
         return NULL;
     }
@@ -33,7 +33,7 @@ njs_variable_add(njs_vm_t *vm, njs_parser_scope_t *scope, uintptr_t unique_id,
         do {
             scope = scope->parent;
 
-            var = njs_variable_scope_add(vm, scope, unique_id, type);
+            var = njs_variable_scope_add(parser, scope, unique_id, type);
             if (njs_slow_path(var == NULL)) {
                 return NULL;
             }
@@ -78,7 +78,7 @@ njs_variables_copy(njs_vm_t *vm, njs_rbtree_t *variables,
 
 
 static njs_variable_t *
-njs_variable_scope_add(njs_vm_t *vm, njs_parser_scope_t *scope,
+njs_variable_scope_add(njs_parser_t *parser, njs_parser_scope_t *scope,
     uintptr_t unique_id, njs_variable_type_t type)
 {
     njs_variable_t           *var;
@@ -104,7 +104,7 @@ njs_variable_scope_add(njs_vm_t *vm, njs_parser_scope_t *scope,
 
         if (scope->type == NJS_SCOPE_GLOBAL) {
 
-            if (vm->options.module) {
+            if (parser->vm->options.module) {
                 if (type == NJS_VARIABLE_FUNCTION
                     || var->type == NJS_VARIABLE_FUNCTION)
                 {
@@ -116,12 +116,12 @@ njs_variable_scope_add(njs_vm_t *vm, njs_parser_scope_t *scope,
         return var;
     }
 
-    var = njs_variable_alloc(vm, unique_id, type);
+    var = njs_variable_alloc(parser->vm, unique_id, type);
     if (njs_slow_path(var == NULL)) {
         goto memory_error;
     }
 
-    var_node_new = njs_variable_node_alloc(vm, var, unique_id);
+    var_node_new = njs_variable_node_alloc(parser->vm, var, unique_id);
     if (njs_slow_path(var_node_new == NULL)) {
         goto memory_error;
     }
@@ -132,7 +132,7 @@ njs_variable_scope_add(njs_vm_t *vm, njs_parser_scope_t *scope,
 
 memory_error:
 
-    njs_memory_error(vm);
+    njs_memory_error(parser->vm);
 
     return NULL;
 
@@ -140,8 +140,7 @@ fail:
 
     entry = njs_lexer_entry(unique_id);
 
-    njs_parser_syntax_error(vm->parser,
-                            "\"%V\" has already been declared",
+    njs_parser_syntax_error(parser, "\"%V\" has already been declared",
                             &entry->name);
     return NULL;
 }

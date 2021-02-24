@@ -55,8 +55,8 @@ typedef struct {
 } njs_variable_node_t;
 
 
-njs_variable_t *njs_variable_add(njs_vm_t *vm, njs_parser_scope_t *scope,
-    uintptr_t unique_id, njs_variable_type_t type);
+njs_variable_t *njs_variable_add(njs_parser_t *parser,
+    njs_parser_scope_t *scope, uintptr_t unique_id, njs_variable_type_t type);
 njs_int_t njs_variables_copy(njs_vm_t *vm, njs_rbtree_t *variables,
     njs_rbtree_t *prev_variables);
 njs_variable_t * njs_label_add(njs_vm_t *vm, njs_parser_scope_t *scope,

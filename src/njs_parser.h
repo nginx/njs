@@ -110,7 +110,8 @@ njs_int_t njs_parser_failed_state(njs_parser_t *parser,
 
 intptr_t njs_parser_scope_rbtree_compare(njs_rbtree_node_t *node1,
     njs_rbtree_node_t *node2);
-njs_int_t njs_parser(njs_parser_t *parser, njs_parser_t *prev);
+njs_int_t njs_parser(njs_vm_t *vm, njs_parser_t *parser,
+    njs_rbtree_t *prev_vars);
 
 njs_int_t njs_parser_module_lambda(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current);
@@ -121,8 +122,6 @@ njs_token_type_t njs_parser_unexpected_token(njs_vm_t *vm, njs_parser_t *parser,
     njs_str_t *name, njs_token_type_t type);
 njs_int_t njs_parser_string_create(njs_vm_t *vm, njs_lexer_token_t *token,
     njs_value_t *value);
-u_char *njs_parser_trace_handler(njs_trace_t *trace, njs_trace_data_t *td,
-    u_char *start);
 void njs_parser_lexer_error(njs_parser_t *parser,
     njs_object_type_t type, const char *fmt, ...);
 void njs_parser_node_error(njs_vm_t *vm, njs_parser_node_t *node,
@@ -201,11 +200,11 @@ njs_parser_node_string(njs_vm_t *vm, njs_lexer_token_t *token,
 
 
 njs_inline njs_parser_scope_t *
-njs_parser_global_scope(njs_vm_t *vm)
+njs_parser_global_scope(njs_parser_t *parser)
 {
     njs_parser_scope_t  *scope;
 
-    scope = vm->parser->scope;
+    scope = parser->scope;
 
     while (scope->type != NJS_SCOPE_GLOBAL) {
         scope = scope->parent;

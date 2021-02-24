@@ -40,7 +40,7 @@ static njs_int_t njs_module_read(njs_vm_t *vm, int fd, njs_str_t *body);
 static njs_module_t *njs_module_find(njs_vm_t *vm, njs_str_t *name,
     njs_bool_t local);
 static njs_module_t *njs_module_add(njs_vm_t *vm, njs_str_t *name);
-static njs_int_t njs_module_insert(njs_vm_t *vm, njs_module_t *module);
+static njs_int_t njs_module_insert(njs_parser_t *parser, njs_module_t *module);
 
 
 njs_int_t
@@ -273,7 +273,7 @@ njs_parser_module_after(njs_parser_t *parser, njs_lexer_token_t *token,
     module = (njs_module_t *) parser->target;
 
     if (module->index == 0) {
-        ret = njs_module_insert(parser->vm, module);
+        ret = njs_module_insert(parser, module);
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
@@ -564,12 +564,14 @@ njs_module_add(njs_vm_t *vm, njs_str_t *name)
 
 
 static njs_int_t
-njs_module_insert(njs_vm_t *vm, njs_module_t *module)
+njs_module_insert(njs_parser_t *parser, njs_module_t *module)
 {
+    njs_vm_t            *vm;
     njs_module_t        **value;
     njs_parser_scope_t  *scope;
 
-    scope = njs_parser_global_scope(vm);
+    scope = njs_parser_global_scope(parser);
+    vm = parser->vm;
 
     module->index = njs_scope_next_index(vm, scope, NJS_SCOPE_INDEX_LOCAL,
                                          &njs_value_undefined);

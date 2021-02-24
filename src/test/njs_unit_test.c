@@ -12696,25 +12696,26 @@ static njs_unit_test_t  njs_test[] =
       njs_str("1") },
 
     { njs_str("var sum = new Function('a', 'b', 'return a + b');"
-                 "sum(2, 4);"),
+              "sum(2, 4);"),
       njs_str("6") },
 
     { njs_str("var sum = new Function('a, b', 'return a + b');"
-                 "sum(2, 4);"),
+              "sum(2, 4);"),
       njs_str("6") },
 
     { njs_str("var sum = new Function('a, b', 'c', 'return a + b + c');"
-                 "sum(2, 4, 4);"),
+              "sum(2, 4, 4);"),
       njs_str("10") },
 
     { njs_str("(new Function({ toString() { return '...a'; }}, { toString() { return 'return a;' }}))(1,2,3)"),
       njs_str("1,2,3") },
 
     { njs_str("var x = 10; function foo() { var x = 20; return new Function('return x;'); }"
-                 "var f = foo(); f()"),
+              "var f = foo(); f()"),
       njs_str("10") },
 
-    { njs_str("var fn = (function() { return new Function('return this'); }).call({}), o = {}; fn.call(o) == o && fn.bind(o).call(this) == o"),
+    { njs_str("var fn = (function() { return new Function('return this'); }).call({}), o = {}; "
+              "fn.call(o) == o && fn.bind(o).call(this) == o"),
       njs_str("true") },
 
     { njs_str("(new Function('return this'))() === globalThis"),
@@ -12732,6 +12733,10 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var o = {}; (new Function('return this')).call(o) === o"),
       njs_str("true") },
+
+    { njs_str("(new Function('function foo(){return 1}; return foo()'))();"
+              "foo"),
+      njs_str("ReferenceError: \"foo\" is not defined") },
 
     { njs_str("this.NN = {}; var f = Function('eval = 42;'); f()"),
       njs_str("SyntaxError: Identifier \"eval\" is forbidden as left-hand in assignment in runtime:1") },
@@ -20314,6 +20319,11 @@ static njs_unit_test_t  njs_shell_test[] =
     { njs_str("Number.prototype.test = 'test'" ENTER
               "Number.prototype.test" ENTER),
       njs_str("test") },
+
+    { njs_str("try {(new Function('function foo(){return 1}; ()=>{}breakhere'))} catch (e) {}" ENTER
+              "foo()" ENTER),
+      njs_str("ReferenceError: \"foo\" is not defined\n"
+              "    at main (:1)\n") },
 
     /* Error handling */
 
