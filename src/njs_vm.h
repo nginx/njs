@@ -233,9 +233,7 @@ struct njs_vm_s {
     njs_object_t             string_object;
     njs_object_t             global_object;
 
-    njs_uint_t               main_index;
     njs_arr_t                *codes;  /* of njs_vm_code_t */
-
     njs_arr_t                *functions_name_cache;
 
     njs_trace_t              trace;

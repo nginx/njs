@@ -156,7 +156,6 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         return NJS_ERROR;
     }
 
-    vm->main_index = code - (njs_vm_code_t *) vm->codes->start;
     vm->start = generator.code_start;
     vm->global_scope = generator.local_scope;
     vm->scope_size = generator.scope_size;

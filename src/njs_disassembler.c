@@ -146,8 +146,16 @@ njs_disassembler(njs_vm_t *vm)
     njs_vm_code_t  *code;
 
     code = vm->codes->start;
-    code += vm->main_index;
-    n = vm->codes->items - vm->main_index;
+    n = vm->codes->items;
+
+    while (n != 0) {
+        if (code->start == vm->start) {
+            break;
+        }
+
+        code++;
+        n--;
+    }
 
     while (n != 0) {
         njs_printf("%V:%V\n", &code->file, &code->name);
