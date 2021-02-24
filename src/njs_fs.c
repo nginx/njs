@@ -1373,8 +1373,8 @@ njs_fs_rmtree(njs_vm_t *vm, const char *path, njs_bool_t recursive,
 
 
 static const char *
-njs_fs_path(njs_vm_t *vm, char *storage, const njs_value_t *src,
-    const char *prop_name)
+njs_fs_path(njs_vm_t *vm, char storage[NJS_MAX_PATH + 1],
+    const njs_value_t *src, const char *prop_name)
 {
     u_char              *p;
     njs_str_t           str;
