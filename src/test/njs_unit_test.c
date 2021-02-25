@@ -2834,6 +2834,9 @@ static njs_unit_test_t  njs_test[] =
                  "for (var a in o) {arr.push(a)}; arr"),
       njs_str("b") },
 
+    { njs_str("var a = []; for (var k in new Uint8Array([1,2,3])) { a.push(k); }; a"),
+      njs_str("0,1,2") },
+
     /* switch. */
 
     { njs_str("switch"),

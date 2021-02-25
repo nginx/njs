@@ -444,6 +444,12 @@ njs_object_enumerate_value(njs_vm_t *vm, const njs_object_t *object,
                                              kind);
             break;
 
+        case NJS_TYPED_ARRAY:
+            ret = njs_object_enumerate_typed_array(vm,
+                                                  (njs_typed_array_t *) object,
+                                                  items, kind);
+            break;
+
         case NJS_OBJECT_STRING:
             obj_val = (njs_object_value_t *) object;
 
