@@ -226,6 +226,16 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
 
     {
         .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("status"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_uint,
+            .magic32 = offsetof(ngx_stream_session_t, status),
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
         .name.string = njs_str("remoteAddress"),
         .enumerable = 1,
         .u.property = {

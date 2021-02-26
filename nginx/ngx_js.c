@@ -186,6 +186,27 @@ ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
 
 
 njs_int_t
+ngx_js_ext_uint(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval)
+{
+    char        *p;
+    ngx_uint_t   field;
+
+    p = njs_vm_external(vm, value);
+    if (p == NULL) {
+        njs_value_undefined_set(retval);
+        return NJS_DECLINED;
+    }
+
+    field = *(ngx_uint_t *) (p + njs_vm_prop_magic32(prop));
+
+    njs_value_number_set(retval, field);
+
+    return NJS_OK;
+}
+
+
+njs_int_t
 ngx_js_ext_constant(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
