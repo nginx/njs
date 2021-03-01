@@ -45,13 +45,11 @@ typedef struct {
 
 typedef struct {
     njs_vm_t               *vm;
-    ngx_log_t              *log;
     njs_opaque_value_t      args[3];
     ngx_buf_t              *buf;
     ngx_chain_t           **last_out;
     ngx_chain_t            *free;
     ngx_chain_t            *busy;
-    ngx_stream_session_t   *session;
     ngx_int_t               status;
 #define NGX_JS_EVENT_UPLOAD   0
 #define NGX_JS_EVENT_DOWNLOAD 1
@@ -81,7 +79,7 @@ static ngx_int_t ngx_stream_js_variable(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, uintptr_t data);
 static ngx_int_t ngx_stream_js_init_vm(ngx_stream_session_t *s);
 static void ngx_stream_js_drop_events(ngx_stream_js_ctx_t *ctx);
-static void ngx_stream_js_cleanup_ctx(void *data);
+static void ngx_stream_js_cleanup(void *data);
 static void ngx_stream_js_cleanup_vm(void *data);
 static njs_int_t ngx_stream_js_run_event(ngx_stream_session_t *s,
     ngx_stream_js_ctx_t *ctx, ngx_stream_js_ev_t *event);
@@ -698,10 +696,8 @@ ngx_stream_js_init_vm(ngx_stream_session_t *s)
         return NGX_ERROR;
     }
 
-    ctx->log = s->connection->log;
-
-    cln->handler = ngx_stream_js_cleanup_ctx;
-    cln->data = ctx;
+    cln->handler = ngx_stream_js_cleanup;
+    cln->data = s;
 
     if (njs_vm_start(ctx->vm) == NJS_ERROR) {
         njs_vm_retval_string(ctx->vm, &exception);
@@ -737,14 +733,18 @@ ngx_stream_js_drop_events(ngx_stream_js_ctx_t *ctx)
 
 
 static void
-ngx_stream_js_cleanup_ctx(void *data)
+ngx_stream_js_cleanup(void *data)
 {
-    ngx_stream_js_ctx_t *ctx = data;
+    ngx_stream_js_ctx_t  *ctx;
+
+    ngx_stream_session_t *s = data;
+
+    ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
     ngx_stream_js_drop_events(ctx);
 
     if (njs_vm_pending(ctx->vm)) {
-        ngx_log_error(NGX_LOG_ERR, ctx->log, 0, "pending events");
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "pending events");
     }
 
     njs_vm_destroy(ctx->vm);
