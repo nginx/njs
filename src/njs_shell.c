@@ -282,6 +282,7 @@ main(int argc, char **argv)
             command.start = (u_char *) opts.command;
             command.length = njs_strlen(opts.command);
             ret = njs_process_script(&opts, vm_options.external, &command);
+            njs_vm_destroy(vm);
         }
 
     } else {
@@ -498,6 +499,8 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         size = sb.st_size;
     }
 
+    vm = NULL;
+
     source.length = 0;
     source.start = realloc(NULL, size);
     if (source.start == NULL) {
@@ -576,6 +579,10 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
     ret = NJS_OK;
 
 done:
+
+    if (vm != NULL) {
+        njs_vm_destroy(vm);
+    }
 
     if (source.start != NULL) {
         free(source.start);
@@ -937,6 +944,8 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         /* editline allocs a new buffer every time. */
         free(line.start);
     }
+
+    njs_vm_destroy(vm);
 
     return NJS_OK;
 }
