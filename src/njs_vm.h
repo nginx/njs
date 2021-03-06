@@ -175,6 +175,12 @@ enum njs_object_e {
       + njs_scope_offset(index)))
 
 
+enum njs_hook_e {
+    NJS_HOOK_EXIT = 0,
+    NJS_HOOK_MAX
+};
+
+
 struct njs_vm_s {
     /* njs_vm_t must be aligned to njs_value_t due to scratch value. */
     njs_value_t              retval;
@@ -209,6 +215,8 @@ struct njs_vm_s {
      */
     njs_object_prototype_t   prototypes[NJS_OBJ_TYPE_MAX];
     njs_function_t           constructors[NJS_OBJ_TYPE_MAX];
+
+    njs_function_t           *hooks[NJS_HOOK_MAX];
 
     njs_mp_t                 *mem_pool;
 

@@ -851,7 +851,7 @@ found:
 
 
 static njs_int_t
-njs_dump_value(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+njs_ext_dump(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     uint32_t     n;
@@ -874,6 +874,62 @@ njs_dump_value(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     return njs_string_new(vm, &vm->retval, str.start, str.length, 0);
+}
+
+
+static njs_int_t
+njs_ext_on(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    njs_str_t    type;
+    njs_uint_t   i, n;
+    njs_value_t  *value;
+
+    static const struct {
+        njs_str_t   name;
+        njs_uint_t  id;
+    } hooks[] = {
+        {
+            njs_str("exit"),
+            NJS_HOOK_EXIT
+        },
+    };
+
+    value = njs_arg(args, nargs, 1);
+
+    if (njs_slow_path(!njs_is_string(value))) {
+        njs_type_error(vm, "hook type is not a string");
+        return NJS_ERROR;
+    }
+
+    njs_string_get(value, &type);
+
+    i = 0;
+    n = sizeof(hooks) / sizeof(hooks[0]);
+
+    while (i < n) {
+        if (njs_strstr_eq(&type, &hooks[i].name)) {
+            break;
+        }
+
+        i++;
+    }
+
+    if (i == n) {
+        njs_type_error(vm, "unknown hook type \"%V\"", &type);
+        return NJS_ERROR;
+    }
+
+    value = njs_arg(args, nargs, 2);
+
+    if (njs_slow_path(!njs_is_function(value) && !njs_is_null(value))) {
+        njs_type_error(vm, "callback is not a function or null");
+        return NJS_ERROR;
+    }
+
+    vm->hooks[i] = njs_is_function(value) ? njs_function(value) : NULL;
+
+    return NJS_OK;
 }
 
 
@@ -1629,7 +1685,14 @@ static const njs_object_prop_t  njs_njs_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("dump"),
-        .value = njs_native_function(njs_dump_value, 0),
+        .value = njs_native_function(njs_ext_dump, 0),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("on"),
+        .value = njs_native_function(njs_ext_on, 0),
         .configurable = 1,
     },
 };

@@ -17197,6 +17197,23 @@ static njs_unit_test_t  njs_test[] =
               "decodeURI.name = 'XXX'; njs.dump(decodeURI)"),
       njs_str("[Function: XXX]") },
 
+    /* njs.on(). */
+
+    { njs_str("njs.on(decodeURI)"),
+      njs_str("TypeError: hook type is not a string") },
+
+    { njs_str("njs.on('xxx')"),
+      njs_str("TypeError: unknown hook type \"xxx\"") },
+
+    { njs_str("njs.on('exit')"),
+      njs_str("TypeError: callback is not a function or null") },
+
+    { njs_str("njs.on('exit', null); 1"),
+      njs_str("1") },
+
+    { njs_str("njs.on('exit', ()=>{}); 1"),
+      njs_str("1") },
+
     /* Built-in methods name. */
 
     { njs_str(
