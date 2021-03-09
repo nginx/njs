@@ -1,4 +1,28 @@
 
+Changes with njs 0.5.2                                        09 Mar 2021
+
+    nginx modules:
+
+    *) Feature: added the "js_body_filter" directive.
+
+    *) Feature: introduced the "status" property for stream session
+       object.
+
+    *) Feature: added njs.on('exit') callback support.
+
+    *) Bugfix: fixed property descriptor reuse for not extensible
+       objects.
+       Thanks to Artem S. Povalyukhin.
+
+    *) Bugfix: fixed Object.freeze() and friends according to
+       the specification.
+       Thanks to Artem S. Povalyukhin.
+
+    *) Bugfix: fixed Function() in CLI mode.
+
+    *) Bugfix: fixed for-in iteration of typed array values.
+       Thanks to Artem S. Povalyukhin.
+
 Changes with njs 0.5.1                                        16 Feb 2021
 
     nginx modules:
