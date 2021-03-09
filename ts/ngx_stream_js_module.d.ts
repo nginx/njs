@@ -97,21 +97,44 @@ interface NginxStreamSendOptions {
 
 interface NginxStreamRequest {
     /**
-     * Successfully finalizes the phase handler.
+     * Successfully finalizes the phase handler. An alias to s.done(0).
+     *
+     * @since 0.2.4
+     * @see done()
      */
     allow(): void;
     /**
-     * Finalizes the phase handler and passes control to the next handler.
+     * Passing control to the next handler of the current phase (if any).
+     * An alias to s.done(-5).
+     *
+     * @since 0.2.4
+     * @see done()
      */
     decline(): void;
     /**
      * Finalizes the phase handler with the access error code.
+     * An alias to s.done(403).
+     *
+     * @since 0.2.4
+     * @see done()
      */
     deny(): void;
     /**
-     * Successfully finalizes the current phase handler
-     * or finalizes it with the specified numeric code.
-     * @param code Finalization code.
+     * Sets an exit code for the current phase handler to a code value.
+     * The actual finalization happens when the js handler is completed and
+     * all pending events, for example from ngx.fetch() or setTimeout(),
+     * are processed.
+     *
+     * @param code Finalization code, by default is 0.
+     * Possible code values:
+     *   0 - successful finalization, passing control to the next phase
+     *  -5 - undecided, passing control to the next handler of the current
+     *  phase (if any)
+     * 403 - access is forbidden
+     * @since 0.2.4
+     * @see allow()
+     * @see decline()
+     * @see deny()
      */
     done(code?: number): void;
     /**
@@ -127,6 +150,7 @@ interface NginxStreamRequest {
     /**
      * Unregisters the callback set by on() method.
      * @param event Event type to unregister.
+     * @see on()
      */
     off(event: "upload" | "download" | "upstream" | "downstream"): void;
     /**
@@ -138,6 +162,7 @@ interface NginxStreamRequest {
      *
      * **Warning:** For string data type bytes invalid in UTF-8 encoding may be
      * converted into the replacement character.
+     * @see off()
      */
     on(event: "upload" | "download",
        callback: (data: NjsByteString, flags: NginxStreamCallbackFlags) => void): void;
@@ -148,12 +173,23 @@ interface NginxStreamRequest {
      */
     readonly remoteAddress: NjsByteString;
     /**
-     * Sends the data to the client.
+     * Adds data to the chain of data chunks that will be forwarded in
+     * the forward direction: in download callback to a client; in upload
+     * to an upstream server. The actual forwarding happens later, when the all
+     * the data chunks of the current chain are processed.
+     *
+     * @since 0.2.4
      * @param data Data to send.
      * @param options Object used to override nginx buffer flags derived from
      * an incoming data chunk buffer.
+     * @see on()
      */
     send(data: NjsStringOrBuffer, options?: NginxStreamSendOptions): void;
+    /**
+     * The stream session exit status. It is an alias to the $status variable.
+     * @since 0.5.2
+     */
+    readonly status: number;
     /**
      * nginx variables as Buffers.
      *

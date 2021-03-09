@@ -591,6 +591,11 @@ type NjsStringOrBuffer = NjsStringLike | Buffer | DataView | TypedArray;
 interface NjsGlobal {
     readonly version: string;
     dump(value: any, indent?: number): string;
+    /**
+     * Registers a callback for the "exit" event. The callback is called before
+     * the VM is destroyed.
+     */
+    on(event: "exit", callback: () => void): void;
 }
 
 declare const njs: NjsGlobal;

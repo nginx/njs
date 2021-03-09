@@ -93,6 +93,11 @@ function http_module(r: NginxHTTPRequest) {
     })
     .then(body => r.return(200, body))
     .catch(e => r.return(501, e.message))
+
+    // js_body_filter
+    r.sendBuffer(Buffer.from("xxx"), {last:true});
+    r.sendBuffer("xxx", {flush: true});
+    r.done();
 }
 
 function fs_module() {
@@ -150,6 +155,7 @@ function timers() {
 function njs_object() {
     njs.dump('asdf');
     njs.version != process.argv[1];
+    njs.on('exit', ()=> {});
 }
 
 function ngx_object() {

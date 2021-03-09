@@ -262,11 +262,31 @@ interface NginxSubrequestOptions {
     detached?: boolean
 }
 
+interface NginxHTTPSendBufferOptions {
+    /**
+     * True if data is a last buffer.
+     */
+    last?: boolean
+    /**
+     * True if the buffer should have the flush flag.
+     */
+    flush?: boolean
+}
+
 interface NginxHTTPRequest {
     /**
      * Request arguments object.
      */
     readonly args: NginxHTTPArgs;
+    /**
+     * After calling this function, next data chunks will be passed to
+     * the client without calling js_body_filter.
+     *
+     * **Warning:**  May be called only from the js_body_filter function.
+     *
+     * @since 0.5.2
+     */
+    done(): void;
     /**
      * Writes a string to the error log on the error level of logging.
      * @param message Message to log.
@@ -374,9 +394,22 @@ interface NginxHTTPRequest {
      */
     return(status: number, body?: NjsStringOrBuffer): void;
     /**
-     * Sends the HTTP headers to the client.
+     * Sends a part of the response body to the client.
      */
     send(part: NjsStringOrBuffer): void;
+    /**
+     * Adds data to the chain of data chunks to be forwarded to the next body filter.
+     * The actual forwarding happens later, when the all the data chunks of the current
+     * chain are processed.
+     *
+     * **Warning:**  May be called only from the js_body_filter function.
+     *
+     * @since 0.5.2
+     * @param data Data to send.
+     * @param options Object used to override nginx buffer flags derived from
+     * an incoming data chunk buffer.
+     */
+    sendBuffer(data: NjsStringOrBuffer, options?: NginxHTTPSendBufferOptions): void;
     /**
      * Sends the HTTP headers to the client.
      */
