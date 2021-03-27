@@ -86,7 +86,9 @@ static void ngx_http_js_content_write_event_handler(ngx_http_request_t *r);
 static void ngx_http_js_content_finalize(ngx_http_request_t *r,
     ngx_http_js_ctx_t *ctx);
 static ngx_int_t ngx_http_js_header_filter(ngx_http_request_t *r);
-static ngx_int_t ngx_http_js_variable(ngx_http_request_t *r,
+static ngx_int_t ngx_http_js_variable_set(ngx_http_request_t *r,
+    ngx_http_variable_value_t *v, uintptr_t data);
+static ngx_int_t ngx_http_js_variable_var(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data);
 static ngx_int_t ngx_http_js_init_vm(ngx_http_request_t *r);
 static void ngx_http_js_cleanup_ctx(void *data);
@@ -209,6 +211,7 @@ static char *ngx_http_js_include(ngx_conf_t *cf, ngx_command_t *cmd,
 static char *ngx_http_js_import(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static char *ngx_http_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+static char *ngx_http_js_var(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 static char *ngx_http_js_content(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static char *ngx_http_js_body_filter_set(ngx_conf_t *cf, ngx_command_t *cmd,
@@ -246,6 +249,13 @@ static ngx_command_t  ngx_http_js_commands[] = {
     { ngx_string("js_set"),
       NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE2,
       ngx_http_js_set,
+      0,
+      0,
+      NULL },
+
+    { ngx_string("js_var"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE12,
+      ngx_http_js_var,
       0,
       0,
       NULL },
@@ -968,7 +978,7 @@ ngx_http_js_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
 
 static ngx_int_t
-ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
+ngx_http_js_variable_set(ngx_http_request_t *r, ngx_http_variable_value_t *v,
     uintptr_t data)
 {
     ngx_str_t *fname = (ngx_str_t *) data;
@@ -1018,6 +1028,33 @@ ngx_http_js_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
     v->no_cacheable = 0;
     v->not_found = 0;
     v->data = value.start;
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_http_js_variable_var(ngx_http_request_t *r, ngx_http_variable_value_t *v,
+    uintptr_t data)
+{
+    ngx_http_complex_value_t *cv = (ngx_http_complex_value_t *) data;
+
+    ngx_str_t  value;
+
+    if (cv != NULL) {
+        if (ngx_http_complex_value(r, cv, &value) != NGX_OK) {
+            return NGX_ERROR;
+        }
+
+    } else {
+        ngx_str_null(&value);
+    }
+
+    v->len = value.len;
+    v->valid = 1;
+    v->no_cacheable = 0;
+    v->not_found = 0;
+    v->data = value.data;
 
     return NGX_OK;
 }
@@ -3735,8 +3772,64 @@ ngx_http_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     *fname = value[2];
 
-    v->get_handler = ngx_http_js_variable;
+    v->get_handler = ngx_http_js_variable_set;
     v->data = (uintptr_t) fname;
+
+    return NGX_CONF_OK;
+}
+
+
+static char *
+ngx_http_js_var(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_str_t                         *value;
+    ngx_int_t                          index;
+    ngx_http_variable_t               *v;
+    ngx_http_complex_value_t          *cv;
+    ngx_http_compile_complex_value_t   ccv;
+
+    value = cf->args->elts;
+
+    if (value[1].data[0] != '$') {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "invalid variable name \"%V\"", &value[1]);
+        return NGX_CONF_ERROR;
+    }
+
+    value[1].len--;
+    value[1].data++;
+
+    v = ngx_http_add_variable(cf, &value[1], NGX_HTTP_VAR_CHANGEABLE);
+    if (v == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    index = ngx_http_get_variable_index(cf, &value[1]);
+    if (index == NGX_ERROR) {
+        return NGX_CONF_ERROR;
+    }
+
+    cv = NULL;
+
+    if (cf->args->nelts == 3) {
+        cv = ngx_palloc(cf->pool, sizeof(ngx_http_complex_value_t));
+        if (cv == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
+
+        ccv.cf = cf;
+        ccv.value = &value[2];
+        ccv.complex_value = cv;
+
+        if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
+            return NGX_CONF_ERROR;
+        }
+    }
+
+    v->get_handler = ngx_http_js_variable_var;
+    v->data = (uintptr_t) cv;
 
     return NGX_CONF_OK;
 }

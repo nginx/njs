@@ -75,7 +75,9 @@ static ngx_int_t ngx_stream_js_phase_handler(ngx_stream_session_t *s,
     ngx_str_t *name);
 static ngx_int_t ngx_stream_js_body_filter(ngx_stream_session_t *s,
     ngx_chain_t *in, ngx_uint_t from_upstream);
-static ngx_int_t ngx_stream_js_variable(ngx_stream_session_t *s,
+static ngx_int_t ngx_stream_js_variable_set(ngx_stream_session_t *s,
+    ngx_stream_variable_value_t *v, uintptr_t data);
+static ngx_int_t ngx_stream_js_variable_var(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, uintptr_t data);
 static ngx_int_t ngx_stream_js_init_vm(ngx_stream_session_t *s);
 static void ngx_stream_js_drop_events(ngx_stream_js_ctx_t *ctx);
@@ -123,6 +125,8 @@ static char *ngx_stream_js_import(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static char *ngx_stream_js_set(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
+static char *ngx_stream_js_var(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf);
 static void *ngx_stream_js_create_main_conf(ngx_conf_t *cf);
 static char *ngx_stream_js_init_main_conf(ngx_conf_t *cf, void *conf);
 static void *ngx_stream_js_create_srv_conf(ngx_conf_t *cf);
@@ -157,6 +161,13 @@ static ngx_command_t  ngx_stream_js_commands[] = {
     { ngx_string("js_set"),
       NGX_STREAM_MAIN_CONF|NGX_CONF_TAKE2,
       ngx_stream_js_set,
+      0,
+      0,
+      NULL },
+
+    { ngx_string("js_var"),
+      NGX_STREAM_MAIN_CONF|NGX_CONF_TAKE12,
+      ngx_stream_js_var,
       0,
       0,
       NULL },
@@ -612,8 +623,8 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
 
 
 static ngx_int_t
-ngx_stream_js_variable(ngx_stream_session_t *s, ngx_stream_variable_value_t *v,
-    uintptr_t data)
+ngx_stream_js_variable_set(ngx_stream_session_t *s,
+    ngx_stream_variable_value_t *v, uintptr_t data)
 {
     ngx_str_t *fname = (ngx_str_t *) data;
 
@@ -662,6 +673,33 @@ ngx_stream_js_variable(ngx_stream_session_t *s, ngx_stream_variable_value_t *v,
     v->no_cacheable = 0;
     v->not_found = 0;
     v->data = value.start;
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_stream_js_variable_var(ngx_stream_session_t *s,
+    ngx_stream_variable_value_t *v, uintptr_t data)
+{
+    ngx_stream_complex_value_t *cv = (ngx_stream_complex_value_t *) data;
+
+    ngx_str_t  value;
+
+    if (cv != NULL) {
+        if (ngx_stream_complex_value(s, cv, &value) != NGX_OK) {
+            return NGX_ERROR;
+        }
+
+    } else {
+        ngx_str_null(&value);
+    }
+
+    v->len = value.len;
+    v->valid = 1;
+    v->no_cacheable = 0;
+    v->not_found = 0;
+    v->data = value.data;
 
     return NGX_OK;
 }
@@ -1737,8 +1775,64 @@ ngx_stream_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     *fname = value[2];
 
-    v->get_handler = ngx_stream_js_variable;
+    v->get_handler = ngx_stream_js_variable_set;
     v->data = (uintptr_t) fname;
+
+    return NGX_CONF_OK;
+}
+
+
+static char *
+ngx_stream_js_var(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_str_t                           *value;
+    ngx_int_t                            index;
+    ngx_stream_variable_t               *v;
+    ngx_stream_complex_value_t          *cv;
+    ngx_stream_compile_complex_value_t   ccv;
+
+    value = cf->args->elts;
+
+    if (value[1].data[0] != '$') {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "invalid variable name \"%V\"", &value[1]);
+        return NGX_CONF_ERROR;
+    }
+
+    value[1].len--;
+    value[1].data++;
+
+    v = ngx_stream_add_variable(cf, &value[1], NGX_STREAM_VAR_CHANGEABLE);
+    if (v == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    index = ngx_stream_get_variable_index(cf, &value[1]);
+    if (index == NGX_ERROR) {
+        return NGX_CONF_ERROR;
+    }
+
+    cv = NULL;
+
+    if (cf->args->nelts == 3) {
+        cv = ngx_palloc(cf->pool, sizeof(ngx_stream_complex_value_t));
+        if (cv == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        ngx_memzero(&ccv, sizeof(ngx_stream_compile_complex_value_t));
+
+        ccv.cf = cf;
+        ccv.value = &value[2];
+        ccv.complex_value = cv;
+
+        if (ngx_stream_compile_complex_value(&ccv) != NGX_OK) {
+            return NGX_CONF_ERROR;
+        }
+    }
+
+    v->get_handler = ngx_stream_js_variable_var;
+    v->data = (uintptr_t) cv;
 
     return NGX_CONF_OK;
 }
