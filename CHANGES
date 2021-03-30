@@ -1,3 +1,8 @@
+Changes with njs 0.5.3                                        30 Mar 2021
+
+    nginx modules:
+
+    *) Feature: added the "js_var" directive.
 
 Changes with njs 0.5.2                                        09 Mar 2021
 
