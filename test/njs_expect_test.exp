@@ -70,7 +70,7 @@ njs_test {
 # Global completions, yes
 njs_test {
     {"\t\ty"
-     "\a\r\nDisplay all*possibilities? (y or n)*await"}
+     "\a\r\nDisplay all*possibilities? (y or n)*Array"}
 }
 
 # Global completions, single partial match
@@ -393,9 +393,9 @@ njs_test {
 # Non-ASCII characters
 njs_test {
     {"'絵文字'\r\n"
-     "絵文字"}
+     "'絵文字'"}
     {"var v = 'абвгдеёжзийкл';v[10]\r\n"
-     "й"}
+     "'й'"}
 }
 
 # Immediate events
@@ -805,7 +805,7 @@ njs_test {
     {"(new Function('return this'))() === globalThis\r\n"
      "true\r\n"}
     {"new Function('return this;')\r\n"
-     "TypeError: function constructor is disabled in \"safe\" mode\r\n"}
+     "[Function]"}
     {"new Function('return thi')\r\n"
      "TypeError: function constructor is disabled in \"safe\" mode\r\n"}
 } "-u"
