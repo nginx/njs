@@ -6,6 +6,7 @@ global_keywords = {
     "null": 1,
     "false": 1,
     "true": 1,
+    "undefined": 0,
 
     # Operators.
 

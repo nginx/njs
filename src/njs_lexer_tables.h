@@ -10,7 +10,7 @@
 #define _NJS_LEXER_TABLES_H_INCLUDED_
 
 
-static const njs_keyword_t njs_lexer_kws[53] =
+static const njs_keyword_t njs_lexer_kws[54] =
 {
     {
         .entry = { njs_str("arguments") },
@@ -301,6 +301,12 @@ static const njs_keyword_t njs_lexer_kws[53] =
     },
 
     {
+        .entry = { njs_str("undefined") },
+        .type = NJS_TOKEN_UNDEFINED,
+        .reserved = 0
+    },
+
+    {
         .entry = { njs_str("var") },
         .type = NJS_TOKEN_VAR,
         .reserved = 1
@@ -364,10 +370,10 @@ static const njs_lexer_keyword_entry_t njs_lexer_keyword_entries[99] =
     { "null", &njs_lexer_kws[32], 4, 0 },
     { NULL, NULL, 0, 0 },
     { "do", &njs_lexer_kws[12], 2, 0 },
-    { "var", &njs_lexer_kws[48], 3, 0 },
+    { "var", &njs_lexer_kws[49], 3, 0 },
     { "if", &njs_lexer_kws[23], 2, 7 },
     { "implements", &njs_lexer_kws[24], 10, 0 },
-    { "with", &njs_lexer_kws[51], 4, 0 },
+    { "with", &njs_lexer_kws[52], 4, 0 },
     { NULL, NULL, 0, 0 },
     { "eval", &njs_lexer_kws[15], 4, 9 },
     { NULL, NULL, 0, 0 },
@@ -379,14 +385,14 @@ static const njs_lexer_keyword_entry_t njs_lexer_keyword_entries[99] =
     { NULL, NULL, 0, 0 },
     { NULL, NULL, 0, 0 },
     { "default", &njs_lexer_kws[10], 7, 0 },
-    { "void", &njs_lexer_kws[49], 4, 0 },
+    { "void", &njs_lexer_kws[50], 4, 0 },
     { NULL, NULL, 0, 0 },
     { NULL, NULL, 0, 0 },
-    { NULL, NULL, 0, 0 },
+    { "undefined", &njs_lexer_kws[48], 9, 0 },
     { "from", &njs_lexer_kws[21], 4, 0 },
     { "package", &njs_lexer_kws[34], 7, 15 },
     { NULL, NULL, 0, 0 },
-    { "yield", &njs_lexer_kws[52], 5, 0 },
+    { "yield", &njs_lexer_kws[53], 5, 0 },
     { NULL, NULL, 0, 0 },
     { NULL, NULL, 0, 0 },
     { "of", &njs_lexer_kws[33], 2, 0 },
@@ -403,7 +409,7 @@ static const njs_lexer_keyword_entry_t njs_lexer_keyword_entries[99] =
     { NULL, NULL, 0, 0 },
     { NULL, NULL, 0, 0 },
     { "for", &njs_lexer_kws[20], 3, 0 },
-    { "while", &njs_lexer_kws[50], 5, 0 },
+    { "while", &njs_lexer_kws[51], 5, 0 },
     { NULL, NULL, 0, 0 },
     { NULL, NULL, 0, 0 },
     { NULL, NULL, 0, 0 },
