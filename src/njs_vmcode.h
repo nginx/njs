@@ -57,6 +57,12 @@ enum {
     NJS_VMCODE_TRY_END,
     NJS_VMCODE_CATCH,
     NJS_VMCODE_FINALLY,
+
+    NJS_VMCODE_LET,
+    NJS_VMCODE_LET_UPDATE,
+    NJS_VMCODE_INITIALIZATION_TEST,
+    NJS_VMCODE_NOT_INITIALIZED,
+
     NJS_VMCODE_ERROR,
 
     NJS_VMCODE_NORET = 127
@@ -406,6 +412,12 @@ typedef struct {
     njs_value_t                *function;
     njs_index_t                retval;
 } njs_vmcode_function_copy_t;
+
+
+typedef struct {
+    njs_vmcode_t               code;
+    njs_index_t                dst;
+} njs_vmcode_variable_t;
 
 
 njs_int_t njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc);

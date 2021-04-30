@@ -139,6 +139,17 @@ static njs_code_name_t  code_names[] = {
     { NJS_VMCODE_THROW, sizeof(njs_vmcode_throw_t),
           njs_str("THROW           ") },
 
+    { NJS_VMCODE_LET, sizeof(njs_vmcode_variable_t),
+          njs_str("LET             ") },
+
+    { NJS_VMCODE_LET_UPDATE, sizeof(njs_vmcode_variable_t),
+          njs_str("LET UPDATE      ") },
+
+    { NJS_VMCODE_INITIALIZATION_TEST, sizeof(njs_vmcode_variable_t),
+          njs_str("INIT TEST       ") },
+
+    { NJS_VMCODE_NOT_INITIALIZED, sizeof(njs_vmcode_variable_t),
+          njs_str("NOT INIT        ") },
 };
 
 

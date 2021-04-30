@@ -574,7 +574,8 @@ njs_module_insert(njs_parser_t *parser, njs_module_t *module)
     scope = njs_parser_global_scope(parser);
     vm = parser->vm;
 
-    module->index = njs_scope_index(scope->type, scope->items, NJS_LEVEL_LOCAL);
+    module->index = njs_scope_index(scope->type, scope->items, NJS_LEVEL_LOCAL,
+                                    NJS_VARIABLE_VAR);
     scope->items++;
 
     if (vm->modules == NULL) {

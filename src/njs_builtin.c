@@ -972,6 +972,10 @@ njs_global_this_prop_handler(njs_vm_t *vm, njs_object_prop_t *prop,
 
     var = node->variable;
 
+    if (var->type == NJS_VARIABLE_LET) {
+        return NJS_DECLINED;
+    }
+
     value = njs_scope_valid_value(vm, var->index);
 
     if (var->type == NJS_VARIABLE_FUNCTION && njs_is_undefined(value)) {

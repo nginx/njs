@@ -29,6 +29,7 @@ struct njs_parser_scope_s {
     njs_scope_t                     type:8;
     uint8_t                         module;
     uint8_t                         arrow_function;
+    uint8_t                         dest_disable;
 };
 
 
@@ -76,7 +77,9 @@ struct njs_parser_s {
     njs_parser_node_t               *node;
     njs_parser_node_t               *target;
     njs_parser_scope_t              *scope;
+    njs_variable_type_t             var_type;
     njs_int_t                       ret;
+    uintptr_t                       undefined_id;
     njs_bool_t                      strict_semicolon;
     uint32_t                        line;
 };
@@ -108,6 +111,8 @@ njs_int_t njs_parser(njs_vm_t *vm, njs_parser_t *parser);
 
 njs_int_t njs_parser_module_lambda(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current);
+njs_bool_t njs_variable_closure_test(njs_parser_scope_t *root,
+    njs_parser_scope_t *scope);
 njs_variable_t *njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node);
 njs_index_t njs_variable_index(njs_vm_t *vm, njs_parser_node_t *node);
 njs_bool_t njs_parser_has_side_effect(njs_parser_node_t *node);

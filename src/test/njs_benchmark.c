@@ -213,6 +213,17 @@ static njs_benchmark_test_t  njs_test[] =
       njs_str("100000000"),
       1 },
 
+    { "for let loop 100M",
+      njs_str("let i; for (i = 0; i < 100000000; i++); i"),
+      njs_str("100000000"),
+      1 },
+
+    { "for let closures 1M",
+      njs_str("let a = []; for (let i = 0; i < 1000000; i++) { a.push(() => i); }"
+              "a[5]()"),
+      njs_str("5"),
+      1 },
+
     { "while loop 100M",
       njs_str("var i = 0; while (i < 100000000) { i++ }; i"),
       njs_str("100000000"),

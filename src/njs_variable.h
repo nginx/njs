@@ -24,6 +24,8 @@ typedef struct {
     njs_bool_t            argument;
     njs_bool_t            arguments_object;
     njs_bool_t            self;
+    njs_bool_t            init;
+    njs_bool_t            closure;
     njs_bool_t            function;
 
     njs_parser_scope_t    *scope;
@@ -47,7 +49,6 @@ typedef struct {
     njs_variable_t        *variable;
     njs_parser_scope_t    *scope;
     njs_bool_t            not_defined;
-    njs_bool_t            closure;
 } njs_variable_reference_t;
 
 

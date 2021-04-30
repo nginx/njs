@@ -19772,6 +19772,243 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var buffer = require('buffer');"
               "typeof buffer.constants.MAX_STRING_LENGTH === 'number' "),
       njs_str("true") },
+
+    /* let */
+
+    { njs_str("let x"),
+      njs_str("undefined") },
+
+    { njs_str("let x = 123; x"),
+      njs_str("123") },
+
+    { njs_str("let x = [123]; x"),
+      njs_str("123") },
+
+    { njs_str("let x = () => x; x()"),
+      njs_str("[object Function]") },
+
+    { njs_str("let x = (() => x)()"),
+      njs_str("ReferenceError: cannot access to variable before initialization") },
+
+    { njs_str("x; let x"),
+      njs_str("ReferenceError: cannot access to variable before initialization") },
+
+    { njs_str("x; let x = 123"),
+      njs_str("ReferenceError: cannot access to variable before initialization") },
+
+    { njs_str("let x = x + 123"),
+      njs_str("ReferenceError: cannot access to variable before initialization") },
+
+    { njs_str("let x = (x, 1)"),
+      njs_str("ReferenceError: cannot access to variable before initialization") },
+
+    { njs_str("let x = x"),
+      njs_str("ReferenceError: cannot access to variable before initialization") },
+
+    { njs_str("let x; var x"),
+      njs_str("SyntaxError: \"x\" has already been declared in 1") },
+
+    { njs_str("var x; let x"),
+      njs_str("SyntaxError: \"x\" has already been declared in 1") },
+
+    { njs_str("let x; function x() {}"),
+      njs_str("SyntaxError: \"x\" has already been declared in 1") },
+
+    { njs_str("function x() {} let x"),
+      njs_str("SyntaxError: \"x\" has already been declared in 1") },
+
+    { njs_str("function x() {let x; var x}"),
+      njs_str("SyntaxError: \"x\" has already been declared in 1") },
+
+    { njs_str("function x() {var x; let x}"),
+      njs_str("SyntaxError: \"x\" has already been declared in 1") },
+
+    { njs_str("var x = function f() {let f}"),
+      njs_str("undefined") },
+
+    { njs_str("let a; let x = 1;"
+              "{let x = 2; a = x}"
+              "[x, a]"),
+      njs_str("1,2") },
+
+    { njs_str("let a; let x = 1;"
+              "if (true) {let x = 2; a = x}"
+              "[x, a]"),
+      njs_str("1,2") },
+
+    { njs_str("var a = 5, b = 10, arr = [];"
+              "{let a = 4; var b = 1; arr.push(a); arr.push(b)}"
+              "arr.push(a); arr.push(b); arr"),
+      njs_str("4,1,5,1") },
+
+    { njs_str("function func() {return x}"
+              "let x = 123;"
+              "func()"),
+      njs_str("123") },
+
+    { njs_str("function func() {return x}"
+              "func();"
+              "let x = 123"),
+      njs_str("ReferenceError: cannot access to variable before initialization") },
+
+    { njs_str("function func() {return () => x}"
+              "let x = 123;"
+              "func()()"),
+      njs_str("123") },
+
+    { njs_str("function func() {x = x + 1; let x}"),
+      njs_str("undefined") },
+
+    { njs_str("function func() {return () => x}"
+              "func()();"
+              "let x = 123;"),
+      njs_str("ReferenceError: cannot access to variable before initialization") },
+
+    { njs_str("var arr = [];"
+              ""
+              "for (var i = 0; i < 10; i++) {"
+              "    let x = i;"
+              ""
+              "    arr.push( (n) => {x += n; return x} );"
+              "}"
+              ""
+              "["
+              "    arr[0](2), arr[1](1), arr[2](4), arr[3](7), arr[4](0),"
+              "    arr[5](1), arr[6](2), arr[7](5), arr[8](8), arr[9](10)"
+              "]"),
+      njs_str("2,2,6,10,4,6,8,12,16,19") },
+
+    { njs_str("var arr = [];"
+              ""
+              "for (let i = 0; i < 10; i++) {"
+              "    arr.push( (n) => {i += n; return i} );"
+              "}"
+              ""
+              "["
+              "    arr[0](2), arr[1](1), arr[2](4), arr[3](7), arr[4](0),"
+              "    arr[5](1), arr[6](2), arr[7](5), arr[8](8), arr[9](10)"
+              "]"),
+      njs_str("2,2,6,10,4,6,8,12,16,19") },
+
+    { njs_str("for (let i = 0; i < 1; i++) {"
+              "    let i = i + 2;"
+              "}"),
+      njs_str("ReferenceError: cannot access to variable before initialization") },
+
+    { njs_str("let arr = [], res = [];"
+              "for (let i = 0, f = function() { return i }; i < 5; i++) {"
+              "    arr.push(f);"
+              "}"
+              "for (let i = 0; i < 5; i++) {"
+              "    res.push(arr[i]());"
+              "} res"),
+      njs_str("0,0,0,0,0") },
+
+    { njs_str("let arr = [], res = [];"
+              "for (let i = 0; arr.push(() => i), i < 10; i++) {}"
+              "for (let k = 0; k < 10; k++) {res.push(arr[k]())}"
+              "res"),
+      njs_str("0,1,2,3,4,5,6,7,8,9") },
+
+    { njs_str("let res = [];"
+              "for (let n in [1,2,3]) {res.push(n)}"
+              "res"),
+      njs_str("0,1,2") },
+
+    { njs_str("let arr = [], res = [];"
+              ""
+              "for (let n in [1,2,3]) {"
+              "    arr.push(() => n);"
+              "}"
+              ""
+              "for (let n in arr) {"
+              "    res.push(arr[n]());"
+              "}"
+              "res"),
+      njs_str("0,1,2") },
+
+    { njs_str("let arr = [];"
+              ""
+              "for (let n in [1,2,3]) {"
+              "    let n = 1;"
+              "    arr.push(n);"
+              "}"
+              "arr"),
+      njs_str("1,1,1") },
+
+    { njs_str("for (let n in [1,2,3]) {"
+              "    let n = n + 1;"
+              "}"),
+      njs_str("ReferenceError: cannot access to variable before initialization") },
+
+    { njs_str("for (let n in [1,2,3]) {}"
+              "n"),
+      njs_str("ReferenceError: \"n\" is not defined") },
+
+    { njs_str("for (let n in [1,n,3]) {}"),
+      njs_str("ReferenceError: cannot access to variable before initialization") },
+
+    { njs_str("(function() {"
+              "function f() {return x + 1}"
+              "function abc() {f()};"
+              "abc();"
+              "let x;"
+              "}())"),
+      njs_str("ReferenceError: cannot access to variable before initialization") },
+
+    { njs_str("function func() {var x = 1; {let x = x + 1} } func()"),
+      njs_str("ReferenceError: cannot access to variable before initialization") },
+
+    { njs_str("if (false) let x = 1"),
+      njs_str("SyntaxError: let declaration cannot appear in a single-statement context in 1") },
+
+    { njs_str("while (false) let x = 1"),
+      njs_str("SyntaxError: let declaration cannot appear in a single-statement context in 1") },
+
+    { njs_str("for (;;) let x = 1"),
+      njs_str("SyntaxError: let declaration cannot appear in a single-statement context in 1") },
+
+    { njs_str("try {} catch (e) {let e}"),
+      njs_str("SyntaxError: \"e\" has already been declared in 1") },
+
+    { njs_str("let arr = [], x = 2;"
+              "switch(true) {default: let x = 1; arr.push(x)}"
+              "arr.push(x); arr"),
+      njs_str("1,2") },
+
+    { njs_str("switch(true) {case false: let x = 1; default: x = 2}"),
+      njs_str("ReferenceError: cannot access to variable before initialization") },
+
+    { njs_str("let res;"
+              "switch(true) {case true: let x = 1; default: x = 2; res = x} res"),
+      njs_str("2") },
+
+    { njs_str("let null"),
+      njs_str("SyntaxError: Unexpected token \"null\" in 1") },
+
+    { njs_str("let continue"),
+      njs_str("SyntaxError: Unexpected token \"continue\" in 1") },
+
+    { njs_str("let undefined"),
+      njs_str("SyntaxError: \"undefined\" has already been declared in 1") },
+
+    { njs_str("let a = 1; globalThis.a"),
+      njs_str("undefined") },
+
+    { njs_str("if (false) {x = 2} else {x = 1} let x;"),
+      njs_str("ReferenceError: cannot access to variable before initialization") },
+
+    { njs_str("let let"),
+      njs_str("SyntaxError: Unexpected token \"let\" in 1") },
+
+    { njs_str("let null"),
+      njs_str("SyntaxError: Unexpected token \"null\" in 1") },
+
+    { njs_str("function let() {}"),
+      njs_str("SyntaxError: Unexpected token \"let\" in 1") },
+
+    { njs_str("function static() {}"),
+      njs_str("SyntaxError: Unexpected token \"static\" in 1") },
 };
 
 

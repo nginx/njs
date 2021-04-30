@@ -8,10 +8,11 @@
 #define _NJS_SCOPE_H_INCLUDED_
 
 
-#define NJS_SCOPE_TYPE_SIZE     4
-#define NJS_SCOPE_VALUE_OFFSET  (NJS_SCOPE_TYPE_SIZE + 1)
+#define NJS_SCOPE_VAR_SIZE      4
+#define NJS_SCOPE_TYPE_OFFSET   (NJS_SCOPE_VAR_SIZE + 4)
+#define NJS_SCOPE_VALUE_OFFSET  (NJS_SCOPE_TYPE_OFFSET + 1)
 #define NJS_SCOPE_VALUE_MAX     ((1 << (32 - NJS_SCOPE_VALUE_OFFSET)) - 1)
-#define NJS_SCOPE_TYPE_MASK     ((NJS_SCOPE_VALUE_MAX) << NJS_SCOPE_TYPE_SIZE)
+#define NJS_SCOPE_TYPE_MASK     ((NJS_SCOPE_VALUE_MAX) << NJS_SCOPE_VAR_SIZE)
 
 #define NJS_INDEX_NONE          ((njs_index_t) 0)
 #define NJS_INDEX_ERROR         ((njs_index_t) -1)
@@ -25,7 +26,8 @@ njs_index_t njs_scope_global_index(njs_vm_t *vm, const njs_value_t *src,
 
 
 njs_inline njs_index_t
-njs_scope_index(njs_scope_t scope, njs_index_t index, njs_level_type_t type)
+njs_scope_index(njs_scope_t scope, njs_index_t index, njs_level_type_t type,
+                njs_variable_type_t var_type)
 {
     if (index > NJS_SCOPE_VALUE_MAX || type >= NJS_LEVEL_MAX
         || (scope != NJS_SCOPE_GLOBAL && scope != NJS_SCOPE_FUNCTION))
@@ -37,14 +39,23 @@ njs_scope_index(njs_scope_t scope, njs_index_t index, njs_level_type_t type)
         type = NJS_LEVEL_GLOBAL;
     }
 
-    return (index << NJS_SCOPE_VALUE_OFFSET) | type;
+    return (index << NJS_SCOPE_VALUE_OFFSET) | (type << NJS_SCOPE_VAR_SIZE)
+            | var_type;
+}
+
+
+njs_inline njs_variable_type_t
+njs_scope_index_var(njs_index_t index)
+{
+    return (njs_variable_type_t) (index & ~NJS_SCOPE_TYPE_MASK);
 }
 
 
 njs_inline njs_level_type_t
 njs_scope_index_type(njs_index_t index)
 {
-    return (njs_level_type_t) (index & ~NJS_SCOPE_TYPE_MASK);
+    return (njs_level_type_t) ((index >> NJS_SCOPE_VAR_SIZE)
+                               & ~NJS_SCOPE_TYPE_MASK);
 }
 
 
@@ -71,6 +82,12 @@ njs_scope_valid_value(njs_vm_t *vm, njs_index_t index)
     value = njs_scope_value(vm, index);
 
     if (!njs_is_valid(value)) {
+        if (njs_scope_index_var(index) == NJS_VARIABLE_LET) {
+            njs_reference_error(vm, "cannot access to variable "
+                                    "before initialization");
+            return NULL;
+        }
+
         njs_set_undefined(value);
     }
 
@@ -115,7 +132,8 @@ njs_scope_undefined_index(njs_vm_t *vm, njs_uint_t runtime)
 njs_inline njs_index_t
 njs_scope_global_this_index()
 {
-    return njs_scope_index(NJS_SCOPE_GLOBAL, 0, NJS_LEVEL_LOCAL);
+    return njs_scope_index(NJS_SCOPE_GLOBAL, 0, NJS_LEVEL_LOCAL,
+                           NJS_VARIABLE_VAR);
 }
 
 

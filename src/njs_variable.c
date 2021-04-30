@@ -75,7 +75,8 @@ njs_variable_function_add(njs_parser_t *parser, njs_parser_scope_t *scope,
 
         *declr = &var->value;
 
-        var->index = njs_scope_index(root->type, root->items, NJS_LEVEL_LOCAL);
+        var->index = njs_scope_index(root->type, root->items, NJS_LEVEL_LOCAL,
+                                     type);
         root->items++;
     }
 
@@ -177,13 +178,40 @@ njs_variable_scope_find(njs_parser_t *parser, njs_parser_scope_t *scope,
     njs_parser_scope_t       *root;
     const njs_lexer_entry_t  *entry;
 
-    if (type != NJS_VARIABLE_VAR && type != NJS_VARIABLE_FUNCTION) {
-        return scope;
-    }
-
     root = njs_variable_scope(scope, unique_id, &var, type);
     if (njs_slow_path(root == NULL)) {
         return NULL;
+    }
+
+    switch (type) {
+    case NJS_VARIABLE_LET:
+        if (scope->type == NJS_SCOPE_GLOBAL
+            && parser->undefined_id == unique_id)
+        {
+            goto failed;
+        }
+
+        if (root != scope) {
+            return scope;
+        }
+
+        if (var != NULL && var->scope == root) {
+            if (var->self) {
+                var->function = 0;
+                return scope;
+            }
+
+            goto failed;
+        }
+
+        return scope;
+
+    case NJS_VARIABLE_VAR:
+    case NJS_VARIABLE_FUNCTION:
+        break;
+
+    default:
+        return scope;
     }
 
     if (type == NJS_VARIABLE_FUNCTION) {
@@ -192,6 +220,10 @@ njs_variable_scope_find(njs_parser_t *parser, njs_parser_scope_t *scope,
 
     if (var == NULL) {
         return root;
+    }
+
+    if (var->type == NJS_VARIABLE_LET) {
+        goto failed;
     }
 
     if (var->original->type == NJS_SCOPE_BLOCK) {
@@ -269,7 +301,8 @@ njs_variable_scope_add(njs_parser_t *parser, njs_parser_scope_t *scope,
             return NULL;
         }
 
-        var->index = njs_scope_index(root->type, root->items, NJS_LEVEL_LOCAL);
+        var->index = njs_scope_index(root->type, root->items, NJS_LEVEL_LOCAL,
+                                     type);
         root->items++;
     }
 
@@ -348,7 +381,7 @@ njs_label_remove(njs_vm_t *vm, njs_parser_scope_t *scope, uintptr_t unique_id)
 }
 
 
-static njs_bool_t
+njs_bool_t
 njs_variable_closure_test(njs_parser_scope_t *root, njs_parser_scope_t *scope)
 {
     if (root == scope) {
@@ -454,7 +487,7 @@ njs_variable_closure(njs_vm_t *vm, njs_variable_t *var,
             /* Create new closure for scope. */
 
             index = njs_scope_index(root->type, root->closures->items,
-                                    NJS_LEVEL_CLOSURE);
+                                    NJS_LEVEL_CLOSURE, var->type);
             if (njs_slow_path(index == NJS_INDEX_ERROR)) {
                 return NJS_INDEX_ERROR;
             }
@@ -493,6 +526,7 @@ njs_variable_closure(njs_vm_t *vm, njs_variable_t *var,
 njs_variable_t *
 njs_variable_reference(njs_vm_t *vm, njs_parser_node_t *node)
 {
+    njs_bool_t                closure;
     njs_rbtree_node_t         *rb_node;
     njs_parser_scope_t        *scope;
     njs_parser_rbtree_node_t  *parse_node, ref_node;
@@ -510,7 +544,7 @@ njs_variable_reference(njs_vm_t *vm, njs_parser_node_t *node)
         }
     }
 
-    ref->closure = njs_variable_closure_test(node->scope, ref->variable->scope);
+    closure = njs_variable_closure_test(node->scope, ref->variable->scope);
     ref->scope = node->scope;
 
     ref_node.key = ref->unique_id;
@@ -528,11 +562,13 @@ njs_variable_reference(njs_vm_t *vm, njs_parser_node_t *node)
         return ref->variable;
     }
 
-    if (!ref->closure) {
+    if (!closure) {
         node->index = ref->variable->index;
 
         return ref->variable;
     }
+
+    ref->variable->closure = closure;
 
     node->index = njs_variable_closure(vm, ref->variable, scope);
     if (njs_slow_path(node->index == NJS_INDEX_ERROR)) {

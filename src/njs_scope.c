@@ -20,7 +20,8 @@ njs_scope_temp_index(njs_parser_scope_t *scope)
         return NJS_INDEX_ERROR;
     }
 
-    return njs_scope_index(NJS_SCOPE_GLOBAL, scope->temp++, NJS_LEVEL_TEMP);
+    return njs_scope_index(NJS_SCOPE_GLOBAL, scope->temp++, NJS_LEVEL_TEMP,
+                           NJS_VARIABLE_VAR);
 }
 
 
@@ -103,7 +104,8 @@ njs_scope_global_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime)
 
     vm->levels[NJS_LEVEL_STATIC] = vm->scope_absolute->start;
 
-    *retval = njs_scope_index(NJS_SCOPE_GLOBAL, index, NJS_LEVEL_STATIC);
+    *retval = njs_scope_index(NJS_SCOPE_GLOBAL, index, NJS_LEVEL_STATIC,
+                              NJS_VARIABLE_VAR);
 
     return *retval;
 }
