@@ -4550,6 +4550,12 @@ njs_parser_declaration(njs_parser_t *parser, njs_lexer_token_t *token,
             break;
 
         default:
+            if (njs_lexer_token_is_reserved(token)) {
+                njs_lexer_consume_token(parser->lexer, 1);
+                njs_parser_next(parser, njs_parser_failed_state);
+                return NJS_OK;
+            }
+
             if (njs_lexer_token_is_binding_identifier(token)) {
                 njs_parser_next(parser, njs_parser_lexical_declaration);
                 break;

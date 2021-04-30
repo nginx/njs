@@ -9475,6 +9475,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("function f(){} typeof(f)"),
       njs_str("function") },
 
+    { njs_str("function let() {}"),
+      njs_str("SyntaxError: Unexpected token \"let\" in 1") },
+
+    { njs_str("function static() {}"),
+      njs_str("SyntaxError: Unexpected token \"static\" in 1") },
+
     /* Recursive factorial. */
 
     { njs_str("function f(a) {"
@@ -18101,7 +18107,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var let = 123;"
               "let"),
-      njs_str("123") },
+      njs_str("SyntaxError: Unexpected token \"let\" in 1") },
 
     { njs_str("var const = 123"),
       njs_str("SyntaxError: Unexpected token \"const\" in 1") },

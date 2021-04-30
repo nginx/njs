@@ -64,14 +64,14 @@ global_keywords = {
     "debugger": 1,
     "enum": 1,
     "extends": 1,
-    "implements": 0,
-    "interface": 0,
-    "let": 0,
-    "package": 0,
-    "private": 0,
-    "protected": 0,
-    "public": 0,
-    "static": 0,
+    "implements": 1,
+    "interface": 1,
+    "let": 1,
+    "package": 1,
+    "private": 1,
+    "protected": 1,
+    "public": 1,
+    "static": 1,
     "super": 1
 }
 

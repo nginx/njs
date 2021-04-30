@@ -159,7 +159,7 @@ static const njs_keyword_t njs_lexer_kws[54] =
     {
         .entry = { njs_str("implements") },
         .type = NJS_TOKEN_IMPLEMENTS,
-        .reserved = 0
+        .reserved = 1
     },
 
     {
@@ -183,13 +183,13 @@ static const njs_keyword_t njs_lexer_kws[54] =
     {
         .entry = { njs_str("interface") },
         .type = NJS_TOKEN_INTERFACE,
-        .reserved = 0
+        .reserved = 1
     },
 
     {
         .entry = { njs_str("let") },
         .type = NJS_TOKEN_LET,
-        .reserved = 0
+        .reserved = 1
     },
 
     {
@@ -219,25 +219,25 @@ static const njs_keyword_t njs_lexer_kws[54] =
     {
         .entry = { njs_str("package") },
         .type = NJS_TOKEN_PACKAGE,
-        .reserved = 0
+        .reserved = 1
     },
 
     {
         .entry = { njs_str("private") },
         .type = NJS_TOKEN_PRIVATE,
-        .reserved = 0
+        .reserved = 1
     },
 
     {
         .entry = { njs_str("protected") },
         .type = NJS_TOKEN_PROTECTED,
-        .reserved = 0
+        .reserved = 1
     },
 
     {
         .entry = { njs_str("public") },
         .type = NJS_TOKEN_PUBLIC,
-        .reserved = 0
+        .reserved = 1
     },
 
     {
@@ -249,7 +249,7 @@ static const njs_keyword_t njs_lexer_kws[54] =
     {
         .entry = { njs_str("static") },
         .type = NJS_TOKEN_STATIC,
-        .reserved = 0
+        .reserved = 1
     },
 
     {
