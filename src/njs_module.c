@@ -61,11 +61,12 @@ njs_module_load(njs_vm_t *vm)
         module = *item;
 
         if (module->function.native) {
-            value = njs_vmcode_operand(vm, module->index);
+            value = njs_scope_valid_value(vm, module->index);
             njs_set_object(value, &module->object);
 
         } else {
-            ret = njs_vm_invoke(vm, &module->function, NULL, 0, module->index);
+            ret = njs_vm_invoke(vm, &module->function, NULL, 0,
+                                njs_scope_valid_value(vm, module->index));
             if (ret == NJS_ERROR) {
                 return ret;
             }
@@ -573,11 +574,8 @@ njs_module_insert(njs_parser_t *parser, njs_module_t *module)
     scope = njs_parser_global_scope(parser);
     vm = parser->vm;
 
-    module->index = njs_scope_next_index(vm, scope, NJS_SCOPE_INDEX_LOCAL,
-                                         &njs_value_undefined);
-    if (njs_slow_path(module->index == NJS_INDEX_ERROR)) {
-        return NJS_ERROR;
-    }
+    module->index = njs_scope_index(scope->type, scope->items, NJS_LEVEL_LOCAL);
+    scope->items++;
 
     if (vm->modules == NULL) {
         vm->modules = njs_arr_create(vm->mem_pool, 4, sizeof(njs_module_t *));

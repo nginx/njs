@@ -258,7 +258,7 @@ main(int argc, char **argv)
     vm_options.file.length = njs_strlen(opts.file);
 
     vm_options.init = 1;
-    vm_options.accumulative = opts.interactive;
+    vm_options.interactive = opts.interactive;
     vm_options.disassemble = opts.disassemble;
     vm_options.backtrace = 1;
     vm_options.quiet = opts.quiet;
@@ -797,7 +797,7 @@ njs_output(njs_opts_t *opts, njs_vm_t *vm, njs_int_t ret)
             return;
         }
 
-        if (vm->options.accumulative) {
+        if (vm->options.interactive) {
             njs_print(out.start, out.length);
             njs_print("\n", 1);
         }

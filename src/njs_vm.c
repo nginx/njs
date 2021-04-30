@@ -81,6 +81,10 @@ njs_vm_create(njs_vm_opt_t *options)
 
     vm->symbol_generator = NJS_SYMBOL_KNOWN_MAX;
 
+    if (njs_scope_undefined_index(vm, 0) == NJS_INDEX_ERROR) {
+        return NULL;
+    }
+
     return vm;
 }
 
@@ -116,15 +120,21 @@ njs_vm_destroy(njs_vm_t *vm)
 njs_int_t
 njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 {
-    njs_int_t        ret;
-    njs_str_t        ast;
-    njs_chb_t        chain;
-    njs_lexer_t      lexer;
-    njs_parser_t     parser;
-    njs_vm_code_t    *code;
-    njs_generator_t  generator;
+    njs_int_t           ret;
+    njs_str_t           ast;
+    njs_chb_t           chain;
+    njs_value_t         **global, **new;
+    njs_lexer_t         lexer;
+    njs_parser_t        parser;
+    njs_vm_code_t       *code;
+    njs_generator_t     generator;
+    njs_parser_scope_t  *scope;
 
-    if (vm->modules != NULL && vm->options.accumulative) {
+    njs_memzero(&parser, sizeof(njs_parser_t));
+
+    parser.scope = vm->global_scope;
+
+    if (parser.scope != NULL && vm->modules != NULL) {
         njs_module_reset(vm);
     }
 
@@ -133,25 +143,19 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         return NJS_ERROR;
     }
 
-    njs_memzero(&parser, sizeof(njs_parser_t));
-
     parser.lexer = &lexer;
 
-    ret = njs_parser(vm, &parser, vm->variables_hash);
+    ret = njs_parser(vm, &parser);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
 
     *start = lexer.start;
-
-    ret = njs_variables_scope_reference(vm, parser.scope);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return NJS_ERROR;
-    }
+    scope = parser.scope;
 
     njs_memzero(&generator, sizeof(njs_generator_t));
 
-    code = njs_generate_scope(vm, &generator, parser.scope, &njs_entry_main);
+    code = njs_generate_scope(vm, &generator, scope, &njs_entry_main);
     if (njs_slow_path(code == NULL)) {
         if (!njs_is_error(&vm->retval)) {
             njs_internal_error(vm, "njs_generate_scope() failed");
@@ -160,17 +164,45 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         return NJS_ERROR;
     }
 
-    vm->start = generator.code_start;
-    vm->global_scope = generator.local_scope;
-    vm->scope_size = generator.scope_size;
+    vm->global_scope = scope;
 
-    vm->variables_hash = &parser.scope->variables;
+    if (scope->items > vm->global_items) {
+        global = vm->levels[NJS_LEVEL_GLOBAL];
 
-    if (vm->options.init && !vm->options.accumulative) {
-        ret = njs_vm_init(vm);
-        if (njs_slow_path(ret != NJS_OK)) {
+        new = njs_scope_make(vm, scope->items);
+        if (njs_slow_path(new == NULL)) {
             return ret;
         }
+
+        vm->levels[NJS_LEVEL_GLOBAL] = new;
+
+        if (global != NULL) {
+            while (vm->global_items != 0) {
+                vm->global_items--;
+
+                *new++ = *global++;
+            }
+
+            njs_mp_free(vm->mem_pool, global);
+        }
+    }
+
+    /* globalThis and this */
+    njs_scope_value_set(vm, njs_scope_global_this_index(), &vm->global_value);
+
+    vm->start = generator.code_start;
+    vm->variables_hash = &scope->variables;
+    vm->global_items = scope->items;
+
+    vm->levels[NJS_LEVEL_TEMP] = NULL;
+
+    if (scope->temp != 0) {
+        new = njs_scope_make(vm, scope->temp);
+        if (njs_slow_path(new == NULL)) {
+            return ret;
+        }
+
+        vm->levels[NJS_LEVEL_TEMP] = new;
     }
 
     if (vm->options.disassemble) {
@@ -201,13 +233,14 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 njs_vm_t *
 njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
 {
-    njs_mp_t   *nmp;
-    njs_vm_t   *nvm;
-    njs_int_t  ret;
+    njs_mp_t     *nmp;
+    njs_vm_t     *nvm;
+    njs_int_t    ret;
+    njs_value_t  **global;
 
     njs_thread_log_debug("CLONE:");
 
-    if (vm->options.accumulative) {
+    if (vm->options.interactive) {
         return NULL;
     }
 
@@ -232,6 +265,20 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
         goto fail;
     }
 
+    global = njs_scope_make(nvm, nvm->global_items);
+    if (njs_slow_path(global == NULL)) {
+        goto fail;
+    }
+
+    nvm->levels[NJS_LEVEL_GLOBAL] = global;
+
+    njs_set_object(&nvm->global_value, &nvm->global_object);
+
+    /* globalThis and this */
+    njs_scope_value_set(nvm, njs_scope_global_this_index(), &nvm->global_value);
+
+    nvm->levels[NJS_LEVEL_LOCAL] = NULL;
+
     return nvm;
 
 fail:
@@ -245,46 +292,27 @@ fail:
 static njs_int_t
 njs_vm_init(njs_vm_t *vm)
 {
-    size_t       size, scope_size;
-    u_char       *values;
     njs_int_t    ret;
-    njs_value_t  *global;
     njs_frame_t  *frame;
 
-    scope_size = vm->scope_size + NJS_INDEX_GLOBAL_OFFSET;
-
-    size = njs_frame_size(0) + scope_size + NJS_FRAME_SPARE_SIZE;
-    size = njs_align_size(size, NJS_FRAME_SPARE_SIZE);
-
-    frame = njs_mp_align(vm->mem_pool, sizeof(njs_value_t), size);
+    frame = (njs_frame_t *) njs_function_frame_alloc(vm, NJS_FRAME_SIZE);
     if (njs_slow_path(frame == NULL)) {
+        njs_memory_error(vm);
         return NJS_ERROR;
     }
 
-    njs_memzero(frame, njs_frame_size(0));
+    frame->exception.catch = NULL;
+    frame->exception.next = NULL;
+    frame->previous_active_frame = NULL;
 
-    vm->top_frame = &frame->native;
     vm->active_frame = frame;
-
-    frame->native.size = size;
-    frame->native.free_size = size - (njs_frame_size(0) + scope_size);
-
-    values = (u_char *) frame + njs_frame_size(0);
-
-    frame->native.free = values + scope_size;
-
-    vm->scopes[NJS_SCOPE_GLOBAL] = (njs_value_t *) values;
-
-    memcpy(values + NJS_INDEX_GLOBAL_OFFSET, vm->global_scope, vm->scope_size);
 
     ret = njs_regexp_init(vm);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
 
-    global = (njs_value_t *) (values + NJS_INDEX_GLOBAL_OBJECT_OFFSET);
-
-    ret = njs_builtin_objects_clone(vm, global);
+    ret = njs_builtin_objects_clone(vm, &vm->global_value);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
@@ -303,13 +331,13 @@ njs_int_t
 njs_vm_call(njs_vm_t *vm, njs_function_t *function, const njs_value_t *args,
     njs_uint_t nargs)
 {
-    return njs_vm_invoke(vm, function, args, nargs, (njs_index_t) &vm->retval);
+    return njs_vm_invoke(vm, function, args, nargs, &vm->retval);
 }
 
 
 njs_int_t
 njs_vm_invoke(njs_vm_t *vm, njs_function_t *function, const njs_value_t *args,
-    njs_uint_t nargs, njs_index_t retval)
+    njs_uint_t nargs, njs_value_t *retval)
 {
     njs_int_t  ret;
 
@@ -327,55 +355,17 @@ void
 njs_vm_scopes_restore(njs_vm_t *vm, njs_native_frame_t *native,
     njs_native_frame_t *previous)
 {
-    njs_uint_t      n, nesting;
-    njs_value_t     *args;
-    njs_frame_t     *frame;
-    njs_closure_t   **closures;
-    njs_function_t  *function;
+    njs_frame_t  *frame;
 
     vm->top_frame = previous;
 
-    args = previous->arguments;
-    function = previous->function;
-
-    if (function != NULL) {
-        args += function->args_offset;
-    }
-
-    vm->scopes[NJS_SCOPE_CALLEE_ARGUMENTS] = args;
-
-    function = native->function;
-
-    if (function->native) {
+    if (native->function->native) {
         return;
-    }
-
-    if (function->closure) {
-        /* GC: release function closures. */
     }
 
     frame = (njs_frame_t *) native;
     frame = frame->previous_active_frame;
     vm->active_frame = frame;
-
-    /* GC: arguments, local, and local block closures. */
-
-    vm->scopes[NJS_SCOPE_ARGUMENTS] = frame->native.arguments;
-    vm->scopes[NJS_SCOPE_LOCAL] = frame->local;
-
-    function = frame->native.function;
-
-    nesting = (function != NULL) ? function->u.lambda->nesting : 0;
-    closures = njs_frame_closures(frame);
-
-    for (n = 0; n <= nesting; n++) {
-        vm->scopes[NJS_SCOPE_CLOSURE + n] = &closures[n]->u.values;
-    }
-
-    while (n < NJS_MAX_NESTING) {
-        vm->scopes[NJS_SCOPE_CLOSURE + n] = NULL;
-        n++;
-    }
 }
 
 

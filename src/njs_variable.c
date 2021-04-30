@@ -9,10 +9,10 @@
 #include <njs_main.h>
 
 
-static njs_variable_t *njs_variable_scope_add(njs_parser_t *parser,
-    njs_parser_scope_t *scope, uintptr_t unique_id, njs_variable_type_t type);
-static njs_int_t njs_variable_reference_resolve(njs_vm_t *vm,
-    njs_variable_reference_t *vr, njs_parser_scope_t *node_scope);
+static njs_value_t **njs_variable_scope_function_add(njs_parser_t *parser,
+    njs_parser_scope_t *scope);
+static njs_parser_scope_t *njs_variable_scope_find(njs_parser_t *parser,
+     njs_parser_scope_t *scope, uintptr_t unique_id, njs_variable_type_t type);
 static njs_variable_t *njs_variable_alloc(njs_vm_t *vm, uintptr_t unique_id,
     njs_variable_type_t type);
 
@@ -21,32 +21,85 @@ njs_variable_t *
 njs_variable_add(njs_parser_t *parser, njs_parser_scope_t *scope,
     uintptr_t unique_id, njs_variable_type_t type)
 {
-    njs_variable_t  *var;
+    njs_parser_scope_t  *root;
 
-    var = njs_variable_scope_add(parser, scope, unique_id, type);
+    root = njs_variable_scope_find(parser, scope, unique_id, type);
+    if (njs_slow_path(root == NULL)) {
+        njs_parser_ref_error(parser, "scope not found");
+        return NULL;
+    }
+
+    return njs_variable_scope_add(parser, root, scope, unique_id, type,
+                                  NJS_INDEX_NONE);
+}
+
+
+njs_variable_t *
+njs_variable_function_add(njs_parser_t *parser, njs_parser_scope_t *scope,
+    uintptr_t unique_id, njs_variable_type_t type)
+{
+    njs_value_t            **declr;
+    njs_variable_t         *var;
+    njs_parser_scope_t     *root;
+    njs_function_lambda_t  *lambda;
+
+    root = njs_variable_scope_find(parser, scope, unique_id, type);
+    if (njs_slow_path(root == NULL)) {
+        njs_parser_ref_error(parser, "scope not found");
+        return NULL;
+    }
+
+    var = njs_variable_scope_add(parser, root, scope, unique_id, type,
+                                 NJS_INDEX_ERROR);
     if (njs_slow_path(var == NULL)) {
         return NULL;
     }
 
-    if (type == NJS_VARIABLE_VAR && scope->type == NJS_SCOPE_BLOCK) {
-        /* A "var" declaration is stored in function or global scope. */
-        do {
-            scope = scope->parent;
+    if (var->index == NJS_INDEX_ERROR || !var->function) {
+        root = njs_function_scope(scope);
+        if (njs_slow_path(scope == NULL)) {
+            return NULL;
+        }
 
-            var = njs_variable_scope_add(parser, scope, unique_id, type);
-            if (njs_slow_path(var == NULL)) {
-                return NULL;
-            }
+        lambda = njs_function_lambda_alloc(parser->vm, 1);
+        if (lambda == NULL) {
+            return NULL;
+        }
 
-        } while (scope->type == NJS_SCOPE_BLOCK);
+        var->value.data.u.lambda = lambda;
+
+        declr = njs_variable_scope_function_add(parser, root);
+        if (njs_slow_path(declr == NULL)) {
+            return NULL;
+        }
+
+        *declr = &var->value;
+
+        var->index = njs_scope_index(root->type, root->items, NJS_LEVEL_LOCAL);
+        root->items++;
     }
 
-    if (type == NJS_VARIABLE_FUNCTION) {
-        var->type = type;
-    }
+    var->type = NJS_VARIABLE_FUNCTION;
+    var->function = 1;
 
     return var;
 }
+
+
+static njs_value_t **
+njs_variable_scope_function_add(njs_parser_t *parser, njs_parser_scope_t *scope)
+{
+    if (scope->declarations == NULL) {
+        scope->declarations = njs_arr_create(parser->vm->mem_pool, 1,
+                                             sizeof(njs_value_t *));
+        if (njs_slow_path(scope->declarations == NULL)) {
+            return NULL;
+        }
+    }
+
+    return njs_arr_add(scope->declarations);
+}
+
 
 
 njs_int_t
@@ -77,48 +130,147 @@ njs_variables_copy(njs_vm_t *vm, njs_rbtree_t *variables,
 }
 
 
-static njs_variable_t *
-njs_variable_scope_add(njs_parser_t *parser, njs_parser_scope_t *scope,
-    uintptr_t unique_id, njs_variable_type_t type)
+static njs_parser_scope_t *
+njs_variable_scope(njs_parser_scope_t *scope, uintptr_t unique_id,
+    njs_variable_t **retvar, njs_variable_type_t type)
 {
+    njs_variable_t       *var;
+    njs_rbtree_node_t    *node;
+    njs_variable_node_t  var_node;
+
+    *retvar = NULL;
+
+    var_node.key = unique_id;
+
+    do {
+        node = njs_rbtree_find(&scope->variables, &var_node.node);
+
+        if (node != NULL) {
+            var = ((njs_variable_node_t *) node)->variable;
+
+            if (var->type != NJS_VARIABLE_CATCH || type != NJS_VARIABLE_VAR) {
+                *retvar = var;
+                return scope;
+            }
+        }
+
+        if (scope->type == NJS_SCOPE_GLOBAL
+            || scope->type == NJS_SCOPE_FUNCTION)
+        {
+            return scope;
+        }
+
+        scope = scope->parent;
+
+    } while (scope != NULL);
+
+    return NULL;
+}
+
+
+static njs_parser_scope_t *
+njs_variable_scope_find(njs_parser_t *parser, njs_parser_scope_t *scope,
+     uintptr_t unique_id, njs_variable_type_t type)
+{
+    njs_bool_t               module;
     njs_variable_t           *var;
-    njs_rbtree_node_t        *node;
-    njs_variable_node_t      var_node, *var_node_new;
+    njs_parser_scope_t       *root;
     const njs_lexer_entry_t  *entry;
+
+    if (type != NJS_VARIABLE_VAR && type != NJS_VARIABLE_FUNCTION) {
+        return scope;
+    }
+
+    root = njs_variable_scope(scope, unique_id, &var, type);
+    if (njs_slow_path(root == NULL)) {
+        return NULL;
+    }
+
+    if (type == NJS_VARIABLE_FUNCTION) {
+        root = scope;
+    }
+
+    if (var == NULL) {
+        return root;
+    }
+
+    if (var->original->type == NJS_SCOPE_BLOCK) {
+        if (type == NJS_VARIABLE_FUNCTION
+            || var->type == NJS_VARIABLE_FUNCTION)
+        {
+            if (var->original == root) {
+                goto failed;
+            }
+        }
+    }
+
+    if (type != NJS_VARIABLE_FUNCTION
+        && var->type != NJS_VARIABLE_FUNCTION)
+    {
+        return var->scope;
+    }
+
+    if (root != scope) {
+        return root;
+    }
+
+    module = parser->vm->options.module || scope->module;
+
+    if (module) {
+        if (type == NJS_VARIABLE_FUNCTION
+            || var->type == NJS_VARIABLE_FUNCTION)
+        {
+            goto failed;
+        }
+    }
+
+    return root;
+
+failed:
+
+    entry = njs_lexer_entry(unique_id);
+
+    njs_parser_syntax_error(parser, "\"%V\" has already been declared",
+                            &entry->name);
+    return NULL;
+}
+
+
+njs_variable_t *
+njs_variable_scope_add(njs_parser_t *parser, njs_parser_scope_t *scope,
+    njs_parser_scope_t *original, uintptr_t unique_id,
+    njs_variable_type_t type, njs_index_t index)
+{
+    njs_variable_t       *var;
+    njs_rbtree_node_t    *node;
+    njs_parser_scope_t   *root;
+    njs_variable_node_t  var_node, *var_node_new;
 
     var_node.key = unique_id;
 
     node = njs_rbtree_find(&scope->variables, &var_node.node);
 
     if (node != NULL) {
-        var = ((njs_variable_node_t *) node)->variable;
-
-        if (scope->module || scope->type == NJS_SCOPE_BLOCK) {
-
-            if (type == NJS_VARIABLE_FUNCTION
-                || var->type == NJS_VARIABLE_FUNCTION)
-            {
-                goto fail;
-            }
-        }
-
-        if (scope->type == NJS_SCOPE_GLOBAL) {
-
-            if (parser->vm->options.module) {
-                if (type == NJS_VARIABLE_FUNCTION
-                    || var->type == NJS_VARIABLE_FUNCTION)
-                {
-                    goto fail;
-                }
-            }
-        }
-
-        return var;
+        return ((njs_variable_node_t *) node)->variable;
     }
 
     var = njs_variable_alloc(parser->vm, unique_id, type);
     if (njs_slow_path(var == NULL)) {
         goto memory_error;
+    }
+
+    var->scope = scope;
+    var->index = index;
+    var->original = original;
+
+    if (index == NJS_INDEX_NONE) {
+        root = njs_function_scope(scope);
+        if (njs_slow_path(scope == NULL)) {
+            return NULL;
+        }
+
+        var->index = njs_scope_index(root->type, root->items, NJS_LEVEL_LOCAL);
+        root->items++;
     }
 
     var_node_new = njs_variable_node_alloc(parser->vm, var, unique_id);
@@ -134,14 +286,6 @@ memory_error:
 
     njs_memory_error(parser->vm);
 
-    return NULL;
-
-fail:
-
-    entry = njs_lexer_entry(unique_id);
-
-    njs_parser_syntax_error(parser, "\"%V\" has already been declared",
-                            &entry->name);
     return NULL;
 }
 
@@ -204,191 +348,198 @@ njs_label_remove(njs_vm_t *vm, njs_parser_scope_t *scope, uintptr_t unique_id)
 }
 
 
-njs_int_t
-njs_variable_reference(njs_vm_t *vm, njs_parser_scope_t *scope,
-    njs_parser_node_t *node, uintptr_t unique_id, njs_reference_type_t type)
+static njs_bool_t
+njs_variable_closure_test(njs_parser_scope_t *root, njs_parser_scope_t *scope)
 {
-    njs_variable_reference_t  *vr;
-    njs_parser_rbtree_node_t  *rb_node;
-
-    vr = &node->u.reference;
-
-    vr->unique_id = unique_id;
-    vr->type = type;
-
-    rb_node = njs_mp_alloc(vm->mem_pool, sizeof(njs_parser_rbtree_node_t));
-    if (njs_slow_path(rb_node == NULL)) {
-        return NJS_ERROR;
+    if (root == scope) {
+        return 0;
     }
 
-    rb_node->key = unique_id;
-    rb_node->parser_node = node;
-
-    njs_rbtree_insert(&scope->references, &rb_node->node);
-
-    return NJS_OK;
-}
-
-
-static njs_int_t
-njs_variables_scope_resolve(njs_vm_t *vm, njs_parser_scope_t *scope,
-    njs_bool_t closure)
-{
-    njs_int_t                 ret;
-    njs_queue_t               *nested;
-    njs_queue_link_t          *lnk;
-    njs_rbtree_node_t         *rb_node;
-    njs_parser_node_t         *node;
-    njs_parser_rbtree_node_t  *parser_rb_node;
-    njs_variable_reference_t  *vr;
-
-    nested = &scope->nested;
-
-    for (lnk = njs_queue_first(nested);
-         lnk != njs_queue_tail(nested);
-         lnk = njs_queue_next(lnk))
-    {
-        scope = njs_queue_link_data(lnk, njs_parser_scope_t, link);
-
-        ret = njs_variables_scope_resolve(vm, scope, closure);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_ERROR;
+    do {
+        if (root->type == NJS_SCOPE_FUNCTION) {
+            return 1;
         }
 
-        rb_node = njs_rbtree_min(&scope->references);
+        root = root->parent;
 
-        while (njs_rbtree_is_there_successor(&scope->references, rb_node)) {
-            parser_rb_node = (njs_parser_rbtree_node_t *) rb_node;
-            node = parser_rb_node->parser_node;
+    } while (root != scope);
 
-            if (node == NULL) {
-                break;
-            }
-
-            vr = &node->u.reference;
-
-            if (closure) {
-                ret = njs_variable_reference_resolve(vm, vr, node->scope);
-                if (njs_slow_path(ret != NJS_OK)) {
-                    goto next;
-                }
-
-                if (vr->scope_index == NJS_SCOPE_INDEX_LOCAL) {
-                    goto next;
-                }
-            }
-
-            (void) njs_variable_resolve(vm, node);
-
-        next:
-
-            rb_node = njs_rbtree_node_successor(&scope->references, rb_node);
-        }
-    }
-
-    return NJS_OK;
-}
-
-
-njs_int_t
-njs_variables_scope_reference(njs_vm_t *vm, njs_parser_scope_t *scope)
-{
-    njs_int_t  ret;
-
-    /*
-     * Calculating proper scope types for variables.
-     * A variable is considered to be local variable if it is referenced
-     * only in the local scope (reference and definition nestings are the same).
-     */
-
-    ret = njs_variables_scope_resolve(vm, scope, 1);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return NJS_ERROR;
-    }
-
-    ret = njs_variables_scope_resolve(vm, scope, 0);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return NJS_ERROR;
-    }
-
-    return NJS_OK;
-}
-
-
-njs_index_t
-njs_variable_index(njs_vm_t *vm, njs_parser_node_t *node)
-{
-    njs_variable_t  *var;
-
-    if (node->index != NJS_INDEX_NONE) {
-        return node->index;
-    }
-
-    var = njs_variable_resolve(vm, node);
-
-    if (njs_fast_path(var != NULL)) {
-        return var->index;
-    }
-
-    return NJS_INDEX_NONE;
+    return 0;
 }
 
 
 njs_variable_t *
 njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node)
 {
-    njs_int_t                 ret;
-    njs_uint_t                scope_index;
-    njs_index_t               index;
-    njs_variable_t            *var;
-    njs_variable_reference_t  *vr;
+    njs_rbtree_node_t         *rb_node;
+    njs_parser_scope_t        *scope;
+    njs_variable_node_t       var_node;
+    njs_variable_reference_t  *ref;
 
-    vr = &node->u.reference;
+    ref = &node->u.reference;
+    scope = node->scope;
 
-    ret = njs_variable_reference_resolve(vm, vr, node->scope);
+    var_node.key = ref->unique_id;
 
-    if (njs_slow_path(ret != NJS_OK)) {
-        node->u.reference.not_defined = 1;
-        return NULL;
-    }
+    do {
+        rb_node = njs_rbtree_find(&scope->variables, &var_node.node);
 
-    scope_index = vr->scope_index;
-
-    var = vr->variable;
-    index = var->index;
-
-    if (index != NJS_INDEX_NONE) {
-
-        if (scope_index == NJS_SCOPE_INDEX_LOCAL
-            || njs_scope_type(index) != NJS_SCOPE_ARGUMENTS)
-        {
-            node->index = index;
-
-            return var;
+        if (rb_node != NULL) {
+            return ((njs_variable_node_t *) rb_node)->variable;
         }
 
-        vr->scope->argument_closures++;
-        index = (index >> NJS_SCOPE_SHIFT) + 1;
+        scope = scope->parent;
 
-        if (index > 255 || vr->scope->argument_closures == 0) {
-            njs_internal_error(vm, "too many argument closures");
+    } while (scope != NULL);
+
+    return NULL;
+}
+
+
+static njs_index_t
+njs_variable_closure(njs_vm_t *vm, njs_variable_t *var,
+    njs_parser_scope_t *scope)
+{
+    njs_index_t               index, prev_index, *idx;
+    njs_level_type_t          type;
+    njs_rbtree_node_t         *rb_node;
+    njs_parser_scope_t        **p, *root;
+    njs_parser_rbtree_node_t  *parse_node, ref_node;
+#define NJS_VAR_MAX_DEPTH     32
+    njs_parser_scope_t        *list[NJS_VAR_MAX_DEPTH];
+
+    ref_node.key = var->unique_id;
+
+    p = list;
+
+    do {
+        if (njs_slow_path(p == &list[NJS_VAR_MAX_DEPTH - 1])) {
+            njs_error(vm, "maximum depth of nested functions is reached");
+            return NJS_INDEX_ERROR;
+        }
+
+        if (scope->type == NJS_SCOPE_FUNCTION) {
+            *p++ = scope;
+        }
+
+        scope = scope->parent;
+
+    } while (scope != var->scope && scope->type != NJS_SCOPE_GLOBAL);
+
+    prev_index = var->index;
+
+    while (p != list) {
+        p--;
+
+        scope = *p;
+
+        rb_node = njs_rbtree_find(&scope->references, &ref_node.node);
+
+        parse_node = ((njs_parser_rbtree_node_t *) rb_node);
+
+        type = NJS_LEVEL_LOCAL;
+
+        if (parse_node != NULL) {
+            type = njs_scope_index_type(parse_node->index);
+
+            if (p != list && parse_node->index != 0) {
+                prev_index = parse_node->index;
+                continue;
+            }
+        }
+
+        root = njs_function_scope(scope);
+
+        if (type != NJS_LEVEL_CLOSURE && root == scope) {
+            /* Create new closure for scope. */
+
+            index = njs_scope_index(root->type, root->closures->items,
+                                    NJS_LEVEL_CLOSURE);
+            if (njs_slow_path(index == NJS_INDEX_ERROR)) {
+                return NJS_INDEX_ERROR;
+            }
+
+            idx = njs_arr_add(root->closures);
+            if (njs_slow_path(idx == NULL)) {
+                return NJS_INDEX_ERROR;
+            }
+
+            *idx = prev_index;
+
+            if (parse_node == NULL) {
+                /* Create new reference for closure. */
+
+                parse_node = njs_mp_alloc(vm->mem_pool,
+                                          sizeof(njs_parser_rbtree_node_t));
+                if (njs_slow_path(parse_node == NULL)) {
+                    return NJS_INDEX_ERROR;
+                }
+
+                parse_node->key = var->unique_id;
+
+                njs_rbtree_insert(&scope->references, &parse_node->node);
+            }
+
+            parse_node->index = index;
+        }
+
+        prev_index = parse_node->index;
+    }
+
+    return prev_index;
+}
+
+
+njs_variable_t *
+njs_variable_reference(njs_vm_t *vm, njs_parser_node_t *node)
+{
+    njs_rbtree_node_t         *rb_node;
+    njs_parser_scope_t        *scope;
+    njs_parser_rbtree_node_t  *parse_node, ref_node;
+    njs_variable_reference_t  *ref;
+
+    ref = &node->u.reference;
+    scope = node->scope;
+
+    if (ref->variable == NULL) {
+        ref->variable = njs_variable_resolve(vm, node);
+        if (njs_slow_path(ref->variable == NULL)) {
+            ref->not_defined = 1;
 
             return NULL;
         }
-
-        var->argument = index;
     }
 
-    index = njs_scope_next_index(vm, vr->scope, scope_index, &var->value);
+    ref->closure = njs_variable_closure_test(node->scope, ref->variable->scope);
+    ref->scope = node->scope;
 
-    if (njs_slow_path(index == NJS_INDEX_ERROR)) {
+    ref_node.key = ref->unique_id;
+
+    rb_node = njs_rbtree_find(&scope->references, &ref_node.node);
+    if (njs_slow_path(rb_node == NULL)) {
         return NULL;
     }
 
-    var->index = index;
-    node->index = index;
+    parse_node = ((njs_parser_rbtree_node_t *) rb_node);
 
-    return var;
+    if (parse_node->index != NJS_INDEX_NONE) {
+        node->index = parse_node->index;
+
+        return ref->variable;
+    }
+
+    if (!ref->closure) {
+        node->index = ref->variable->index;
+
+        return ref->variable;
+    }
+
+    node->index = njs_variable_closure(vm, ref->variable, scope);
+    if (njs_slow_path(node->index == NJS_INDEX_ERROR)) {
+        return NULL;
+    }
+
+    return ref->variable;
 }
 
 
@@ -412,120 +563,6 @@ njs_label_find(njs_vm_t *vm, njs_parser_scope_t *scope, uintptr_t unique_id)
     } while (scope != NULL);
 
     return NULL;
-}
-
-
-static njs_int_t
-njs_variable_reference_resolve(njs_vm_t *vm, njs_variable_reference_t *vr,
-    njs_parser_scope_t *node_scope)
-{
-    njs_rbtree_node_t    *node;
-    njs_parser_scope_t   *scope, *previous;
-    njs_variable_node_t  var_node;
-
-    var_node.key = vr->unique_id;
-
-    scope = node_scope;
-    previous = NULL;
-
-    for ( ;; ) {
-        node = njs_rbtree_find(&scope->variables, &var_node.node);
-
-        if (node != NULL) {
-            vr->variable = ((njs_variable_node_t *) node)->variable;
-
-            if (scope->type == NJS_SCOPE_BLOCK
-                && vr->variable->type == NJS_VARIABLE_VAR)
-            {
-                scope = scope->parent;
-                continue;
-            }
-
-            if (scope->type == NJS_SCOPE_SHIM) {
-                scope = previous;
-
-            } else {
-                /*
-                 * Variables declared in a block with "let" or "const"
-                 * keywords are actually stored in function or global scope.
-                 */
-                while (scope->type == NJS_SCOPE_BLOCK) {
-                    scope = scope->parent;
-                }
-            }
-
-            vr->scope = scope;
-
-            vr->scope_index = NJS_SCOPE_INDEX_LOCAL;
-
-            if (vr->scope->type > NJS_SCOPE_GLOBAL
-                && node_scope->nesting != vr->scope->nesting)
-            {
-                vr->scope_index = NJS_SCOPE_INDEX_CLOSURE;
-            }
-
-            return NJS_OK;
-        }
-
-        if (scope->parent == NULL) {
-            /* A global scope. */
-            vr->scope = scope;
-
-            return NJS_DECLINED;
-        }
-
-        previous = scope;
-        scope = scope->parent;
-    }
-}
-
-
-njs_index_t
-njs_scope_next_index(njs_vm_t *vm, njs_parser_scope_t *scope,
-    njs_uint_t scope_index, const njs_value_t *default_value)
-{
-    njs_arr_t    *values;
-    njs_index_t  index;
-    njs_value_t  *value;
-
-    if (njs_scope_accumulative(vm, scope)) {
-        /*
-         * When non-clonable VM runs in accumulative mode all
-         * global variables should be allocated in absolute scope
-         * to share them among consecutive VM invocations.
-         */
-        value = njs_mp_align(vm->mem_pool, sizeof(njs_value_t),
-                             sizeof(njs_value_t));
-        if (njs_slow_path(value == NULL)) {
-            return NJS_INDEX_ERROR;
-        }
-
-        index = (njs_index_t) value;
-
-    } else {
-        values = scope->values[scope_index];
-
-        if (values == NULL) {
-            values = njs_arr_create(vm->mem_pool, 4, sizeof(njs_value_t));
-            if (njs_slow_path(values == NULL)) {
-                return NJS_INDEX_ERROR;
-            }
-
-            scope->values[scope_index] = values;
-        }
-
-        value = njs_arr_add(values);
-        if (njs_slow_path(value == NULL)) {
-            return NJS_INDEX_ERROR;
-        }
-
-        index = scope->next_index[scope_index];
-        scope->next_index[scope_index] += sizeof(njs_value_t);
-    }
-
-    *value = *default_value;
-
-    return index;
 }
 
 

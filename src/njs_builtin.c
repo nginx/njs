@@ -320,6 +320,8 @@ njs_builtin_objects_create(njs_vm_t *vm)
     vm->global_object = shared->objects[0];
     vm->global_object.shared = 0;
 
+    njs_set_object(&vm->global_value, &vm->global_object);
+
     string_object = &shared->string_object;
     njs_lvlhsh_init(&string_object->hash);
     string_object->shared_hash = shared->string_instance_hash;
@@ -637,7 +639,7 @@ njs_vm_expression_completions(njs_vm_t *vm, njs_str_t *expression)
     }
 
     var = ((njs_variable_node_t *) node)->variable;
-    value = njs_vmcode_operand(vm, var->index);
+    value = njs_scope_valid_value(vm, var->index);
 
     if (!njs_is_object(value)) {
         return NULL;
@@ -939,6 +941,8 @@ njs_global_this_prop_handler(njs_vm_t *vm, njs_object_prop_t *prop,
 {
     njs_int_t            ret;
     njs_value_t          *value;
+    njs_variable_t       *var;
+    njs_function_t       *function;
     njs_rbtree_node_t    *rb_node;
     njs_lvlhsh_query_t   lhq;
     njs_variable_node_t  *node, var_node;
@@ -965,7 +969,19 @@ njs_global_this_prop_handler(njs_vm_t *vm, njs_object_prop_t *prop,
     }
 
     node = (njs_variable_node_t *) rb_node;
-    value = njs_vmcode_operand(vm, node->variable->index);
+
+    var = node->variable;
+
+    value = njs_scope_valid_value(vm, var->index);
+
+    if (var->type == NJS_VARIABLE_FUNCTION && njs_is_undefined(value)) {
+        *value = var->value;
+
+        function = njs_function_value_copy(vm, value);
+        if (njs_slow_path(function == NULL)) {
+            return NJS_ERROR;
+        }
+    }
 
     if (setval != NULL) {
         *value = *setval;

@@ -210,7 +210,7 @@ typedef struct {
 #define NJS_VM_OPT_UNHANDLED_REJECTION_THROW    1
 
 /*
- * accumulative  - enables "accumulative" mode to support incremental compiling.
+ * interactive  - enables "interactive" mode.
  *  (REPL). Allows starting parent VM without cloning.
  * disassemble   - enables disassemble.
  * backtrace     - enables backtraces.
@@ -225,10 +225,9 @@ typedef struct {
  *   - throwing inside a Promise without a catch block.
  *   - throwing inside in a finally or catch block.
  */
-
+    uint8_t                         interactive;     /* 1 bit */
     uint8_t                         trailer;         /* 1 bit */
     uint8_t                         init;            /* 1 bit */
-    uint8_t                         accumulative;    /* 1 bit */
     uint8_t                         disassemble;     /* 1 bit */
     uint8_t                         backtrace;       /* 1 bit */
     uint8_t                         quiet;           /* 1 bit */
@@ -277,7 +276,7 @@ NJS_EXPORT njs_int_t njs_vm_posted(njs_vm_t *vm);
 NJS_EXPORT njs_int_t njs_vm_call(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *args, njs_uint_t nargs);
 NJS_EXPORT njs_int_t njs_vm_invoke(njs_vm_t *vm, njs_function_t *function,
-    const njs_value_t *args, njs_uint_t nargs, njs_index_t retval);
+    const njs_value_t *args, njs_uint_t nargs, njs_value_t *retval);
 
 /*
  * Runs posted events.

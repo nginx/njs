@@ -12,26 +12,21 @@
 struct njs_parser_scope_s {
     njs_parser_node_t               *top;
 
-    njs_queue_link_t                link;
-    njs_queue_t                     nested;
-
     njs_parser_scope_t              *parent;
     njs_rbtree_t                    variables;
     njs_rbtree_t                    labels;
     njs_rbtree_t                    references;
 
-#define NJS_SCOPE_INDEX_LOCAL       0
-#define NJS_SCOPE_INDEX_CLOSURE     1
+    njs_arr_t                       *closures;
+    njs_arr_t                       *declarations;
 
-    njs_arr_t                       *values[2];  /* Array of njs_value_t. */
-    njs_index_t                     next_index[2];
+    uint32_t                        temp;
+    uint32_t                        items;
 
     njs_str_t                       cwd;
     njs_str_t                       file;
 
     njs_scope_t                     type:8;
-    uint8_t                         nesting;     /* 4 bits */
-    uint8_t                         argument_closures;
     uint8_t                         module;
     uint8_t                         arrow_function;
 };
@@ -41,7 +36,6 @@ struct njs_parser_node_s {
     njs_token_type_t                token_type:16;
     uint8_t                         ctor:1;
     uint8_t                         temporary;    /* 1 bit  */
-    uint8_t                         hoist;        /* 1 bit  */
     uint32_t                        token_line;
 
     union {
@@ -101,7 +95,7 @@ typedef struct {
 typedef struct {
     NJS_RBTREE_NODE                 (node);
     uintptr_t                       key;
-    njs_parser_node_t               *parser_node;
+    njs_index_t                     index;
 } njs_parser_rbtree_node_t;
 
 
@@ -110,14 +104,16 @@ njs_int_t njs_parser_failed_state(njs_parser_t *parser,
 
 intptr_t njs_parser_scope_rbtree_compare(njs_rbtree_node_t *node1,
     njs_rbtree_node_t *node2);
-njs_int_t njs_parser(njs_vm_t *vm, njs_parser_t *parser,
-    njs_rbtree_t *prev_vars);
+njs_int_t njs_parser(njs_vm_t *vm, njs_parser_t *parser);
 
 njs_int_t njs_parser_module_lambda(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current);
 njs_variable_t *njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node);
 njs_index_t njs_variable_index(njs_vm_t *vm, njs_parser_node_t *node);
 njs_bool_t njs_parser_has_side_effect(njs_parser_node_t *node);
+njs_int_t njs_parser_variable_reference(njs_parser_t *parser,
+    njs_parser_scope_t *scope, njs_parser_node_t *node, uintptr_t unique_id,
+    njs_reference_type_t type);
 njs_token_type_t njs_parser_unexpected_token(njs_vm_t *vm, njs_parser_t *parser,
     njs_str_t *name, njs_token_type_t type);
 njs_int_t njs_parser_string_create(njs_vm_t *vm, njs_lexer_token_t *token,
@@ -137,10 +133,6 @@ njs_int_t njs_parser_serialize_ast(njs_parser_node_t *node, njs_chb_t *chain);
 #define njs_parser_is_lvalue(node)                                            \
     ((node)->token_type == NJS_TOKEN_NAME                                     \
      || (node)->token_type == NJS_TOKEN_PROPERTY)
-
-
-#define njs_scope_accumulative(vm, scope)                                     \
-    ((vm)->options.accumulative && (scope)->type == NJS_SCOPE_GLOBAL)
 
 
 #define njs_parser_syntax_error(parser, fmt, ...)                             \
@@ -215,17 +207,18 @@ njs_parser_global_scope(njs_parser_t *parser)
 
 
 njs_inline njs_parser_scope_t *
-njs_function_scope(njs_parser_scope_t *scope, njs_bool_t any)
+njs_function_scope(njs_parser_scope_t *scope)
 {
-    while (scope->type != NJS_SCOPE_GLOBAL) {
-        if (scope->type == NJS_SCOPE_FUNCTION
-            && (any || !scope->arrow_function))
+    do {
+        if (scope->type == NJS_SCOPE_GLOBAL
+            || scope->type == NJS_SCOPE_FUNCTION)
         {
             return scope;
         }
 
         scope = scope->parent;
-    }
+
+    } while (scope != NULL);
 
     return NULL;
 }

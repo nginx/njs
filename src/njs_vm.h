@@ -29,47 +29,10 @@ typedef struct njs_generator_s        njs_generator_t;
 
 
 typedef enum {
-    NJS_SCOPE_ABSOLUTE = 0,
-    NJS_SCOPE_GLOBAL = 1,
-    NJS_SCOPE_CALLEE_ARGUMENTS = 2,
-    /*
-     * The argument and local VM scopes should be separated because a
-     * function may be called with any number of arguments.
-     */
-    NJS_SCOPE_ARGUMENTS = 3,
-    NJS_SCOPE_LOCAL = 4,
-    NJS_SCOPE_FUNCTION = NJS_SCOPE_LOCAL,
-
-    NJS_SCOPE_CLOSURE = 5,
-    /*
-     * The block and shim scopes are not really VM scopes.
-     * They are used only on parsing phase.
-     */
-    NJS_SCOPE_BLOCK = 16,
-    NJS_SCOPE_SHIM = 17,
+    NJS_SCOPE_GLOBAL = 0,
+    NJS_SCOPE_FUNCTION,
+    NJS_SCOPE_BLOCK
 } njs_scope_t;
-
-
-/*
- * The maximum possible function nesting level is (16 - NJS_SCOPE_CLOSURE),
- * that is 11.  The 8 is reasonable limit.
- */
-#define NJS_MAX_NESTING        8
-
-#define NJS_SCOPES             (NJS_SCOPE_CLOSURE + NJS_MAX_NESTING)
-
-#define NJS_SCOPE_SHIFT        4
-#define NJS_SCOPE_MASK         ((uintptr_t) ((1 << NJS_SCOPE_SHIFT) - 1))
-
-#define NJS_INDEX_NONE         ((njs_index_t) 0)
-#define NJS_INDEX_ERROR        ((njs_index_t) -1)
-#define NJS_INDEX_THIS         ((njs_index_t) (0 | NJS_SCOPE_ARGUMENTS))
-
-#define njs_scope_type(index)                                                 \
-     ((uintptr_t) (index) & NJS_SCOPE_MASK)
-
-#define njs_is_callee_argument_index(index)                                   \
-    (((index) & NJS_SCOPE_CALLEE_ARGUMENTS) == NJS_SCOPE_CALLEE_ARGUMENTS)
 
 
 typedef enum {
@@ -149,36 +112,20 @@ enum njs_object_e {
 };
 
 
-#define njs_scope_index(value, type)                                          \
-    ((njs_index_t) (((value) << NJS_SCOPE_SHIFT) | (type)))
-
-
-#define njs_global_scope_index(value)                                         \
-    (njs_scope_index(value, NJS_SCOPE_GLOBAL))
-
-
-#define NJS_INDEX_GLOBAL_OBJECT  njs_global_scope_index(0)
-#define NJS_INDEX_GLOBAL_OBJECT_OFFSET  njs_scope_index(0, 0)
-
-
-#define NJS_INDEX_GLOBAL_RETVAL  njs_global_scope_index(1)
-#define NJS_INDEX_GLOBAL_OFFSET  njs_scope_index(1, 0)
-
-
-#define njs_scope_offset(index)                                               \
-    ((uintptr_t) (index) & ~NJS_SCOPE_MASK)
-
-
-#define njs_vmcode_operand(vm, index)                                         \
-    ((njs_value_t *)                                                          \
-     ((u_char *) vm->scopes[(uintptr_t) (index) & NJS_SCOPE_MASK]             \
-      + njs_scope_offset(index)))
-
-
 enum njs_hook_e {
     NJS_HOOK_EXIT = 0,
     NJS_HOOK_MAX
 };
+
+
+typedef enum {
+    NJS_LEVEL_LOCAL = 0,
+    NJS_LEVEL_CLOSURE,
+    NJS_LEVEL_GLOBAL,
+    NJS_LEVEL_STATIC,
+    NJS_LEVEL_TEMP,
+    NJS_LEVEL_MAX
+} njs_level_type_t;
 
 
 struct njs_vm_s {
@@ -188,7 +135,9 @@ struct njs_vm_s {
     njs_arr_t                *paths;
     njs_arr_t                *protos;
 
-    njs_value_t              *scopes[NJS_SCOPES];
+    njs_arr_t                *scope_absolute;
+    njs_value_t              **levels[NJS_LEVEL_MAX];
+    size_t                   global_items;
 
     njs_external_ptr_t       external;
 
@@ -221,8 +170,6 @@ struct njs_vm_s {
     njs_mp_t                 *mem_pool;
 
     u_char                   *start;
-    njs_value_t              *global_scope;
-    size_t                   scope_size;
     size_t                   stack_size;
 
     njs_vm_shared_t          *shared;
@@ -232,6 +179,8 @@ struct njs_vm_s {
 
     njs_array_t              *promise_reason;
 
+    njs_parser_scope_t       *global_scope;
+
     /*
      * MemoryError is statically allocated immutable Error object
      * with the InternalError prototype.
@@ -240,6 +189,7 @@ struct njs_vm_s {
 
     njs_object_t             string_object;
     njs_object_t             global_object;
+    njs_value_t              global_value;
 
     njs_arr_t                *codes;  /* of njs_vm_code_t */
     njs_arr_t                *functions_name_cache;

@@ -266,16 +266,6 @@ struct njs_typed_array_s {
 };
 
 
-typedef struct {
-    union {
-        uint32_t                      count;
-        njs_value_t                   values;
-    } u;
-
-    njs_value_t                       values[1];
-} njs_closure_t;
-
-
 struct njs_function_s {
     njs_object_t                      object;
 
@@ -283,18 +273,11 @@ struct njs_function_s {
 
     uint8_t                           args_count:4;
 
-    /*
-     * If "closure" is true njs_closure_t[] is available right after the
-     * njs_function_t and njs_function_closures() may be used to access it.
-     */
-
-#define njs_function_closures(function)                                      \
-    ((njs_closure_t **) ((u_char *) function + sizeof(njs_function_t)))
-
-    uint8_t                           closure:1;
+    uint8_t                           closure_copied:1;
     uint8_t                           native:1;
     uint8_t                           ctor:1;
     uint8_t                           global_this:1;
+    uint8_t                           global:1;
 
     uint8_t                           magic8;
 

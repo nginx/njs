@@ -261,7 +261,8 @@ ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     handler = c->log->handler;
     c->log->handler = NULL;
 
-    ngx_log_error(level, c->log, 0, "js: %*s", msg.length, msg.start);
+    ngx_log_error((ngx_uint_t) level, c->log, 0, "js: %*s",
+                  msg.length, msg.start);
 
     c->log->handler = handler;
 

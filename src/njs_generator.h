@@ -13,10 +13,9 @@ typedef struct njs_generator_block_s   njs_generator_block_t;
 struct njs_generator_s {
     njs_value_t                     *local_scope;
 
-    size_t                          scope_size;
-
     njs_generator_block_t           *block;
     njs_arr_t                       *index_cache;
+    njs_arr_t                       *closures;
 
     njs_arr_t                       *lines;
 

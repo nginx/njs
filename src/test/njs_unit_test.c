@@ -146,6 +146,47 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var f = 1; function f() {}; f"),
       njs_str("1") },
 
+    { njs_str("var f = 1; function f() {}; f"),
+      njs_str("1") },
+
+    { njs_str("function f(a) {return function (x) {return a(x)}} f(1)(0)"),
+      njs_str("TypeError: number is not a function") },
+
+    { njs_str("var x = 0;"
+              ""
+              "function f1() {"
+              "    function f2() {"
+              "        return x;"
+              "    };"
+              ""
+              "    return f2();"
+              ""
+              "    var x = 1;"
+              "}"
+              ""
+              "f1() === undefined"),
+      njs_str("true") },
+
+    { njs_str("var fn = function fn() {return fn.test}; fn.test = 'test'; fn()"),
+      njs_str("test") },
+
+    { njs_str("var body;"
+              "var n = 'outside';"
+              "var before = function() {return n};"
+              ""
+              "var func = function n() {"
+              "    var n;"
+              "    body = function() {return n};"
+              "};"
+              ""
+              "func();"
+              ""
+              "[before(), body()]"),
+      njs_str("outside,") },
+
+    { njs_str("var func = function x(x) {return x}; func()"),
+      njs_str("undefined") },
+
 #if 0 /* TODO */
     { njs_str("var a; Object.getOwnPropertyDescriptor(this, 'a').value"),
       njs_str("undefined") },
@@ -3659,6 +3700,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("delete undefined"),
       njs_str("SyntaxError: Delete of an unqualified identifier in 1") },
+
+    { njs_str("delete this !== true"),
+      njs_str("false") },
 
     /* Object shorthand methods. */
 
@@ -9305,7 +9349,7 @@ static njs_unit_test_t  njs_test[] =
               "})"
               "})"
               "})"),
-      njs_str("SyntaxError: The maximum function nesting level is \"8\" in 1") },
+      njs_str("[object Function]") },
 
     { njs_str("Function.prototype.toString = function () {return 'X'};"
                  "eval"),
@@ -9364,6 +9408,72 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("(function (Object, Array, Boolean){ return Object + Array + Boolean})('x', 'y', 'z')"),
       njs_str("xyz") },
+
+    { njs_str("var n = 11, res;"
+              "function a() {return b}"
+              "res = a()(2);"
+              "function b(k) {var x = b; return 1 + k + n} res"),
+      njs_str("14") },
+
+    { njs_str("var y = 9, res;"
+              "function a(n) {function b() {return c(n + 2)} return b()}"
+              "res = a(1);"
+              "function c(m) {var x = c; return m + 3 + y} res"),
+      njs_str("15") },
+
+    { njs_str("var res;"
+              "closure();"
+              "res = globalThis.funcall(1);"
+              "function closure() {"
+              "    var y = 9, res;"
+              "    globalThis.funcall = a;"
+              "    function a(n) { function b() {return c(2)} return b() }"
+              "    function c(m) {var x = c; return m + 3 + y}"
+              "} res"),
+      njs_str("14") },
+
+    { njs_str("function a() {"
+              "    var x = 1;"
+              "    function b() {var n = x; x = undefined; return n}"
+              "    return b;"
+              "}"
+              "[a()(), a()()];"),
+      njs_str("1,1") },
+
+    { njs_str("function a(obj, name) {!Object.prototype.hasOwnProperty.call(obj, name)}"
+              "a(this, 'b');"
+              "function b() {}"),
+      njs_str("undefined") },
+
+    { njs_str("function abc() {"
+              "function x() {var a = x.arr; x.arr = 123; return a}"
+              "return x;"
+              "} [abc()(),abc()()]"),
+      njs_str(",") },
+
+    { njs_str("function x() {var a = x.arr; x.arr = 123; return a} [x(),x()]"),
+      njs_str(",123") },
+
+    { njs_str("var obj;"
+              "function make(desc) {obj = {'a': 123}}"
+              "function a(desc) {make()}"
+              "a(); obj.a"),
+      njs_str("123") },
+
+    { njs_str("var res;"
+              "function cls() {"
+              "    var obj = {'a': 123};"
+              "    Object.defineProperty(obj, \"length\", {"
+              "        get: function() {res = obj}"
+              "    });"
+              "    return obj;"
+              "}"
+              "var obj = cls();"
+              "[].includes.call(obj); res.a"),
+      njs_str("123") },
+
+    { njs_str("function f(){} typeof(f)"),
+      njs_str("function") },
 
     /* Recursive factorial. */
 
@@ -11282,6 +11392,38 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("function f(){}; (function(){try {f(f((new RegExp('a**'))))} catch (e) { return 1}})()"),
       njs_str("1") },
+
+    { njs_str("var before, during, after;"
+              ""
+              "try {"
+              "    throw 'exception';"
+              "} catch (err) {"
+              "    before = err;"
+              ""
+              "    for (var err in { name: null }) {"
+              "        during = err;"
+              "    }"
+              ""
+              "    after = err;"
+              "}"
+              ""
+              "[before === 'exception', during === 'name', after === 'name']"),
+      njs_str("true,true,true") },
+
+    { njs_str("var arr = [];"
+              "foo = \"outside\";"
+              ""
+              "try {"
+              "    throw new Error();"
+              "}"
+              "catch (foo) {"
+              "    var foo = \"inside\";"
+              "    arr.push(foo);"
+              "}"
+              ""
+              "arr.push(foo);"
+              "arr"),
+      njs_str("inside,outside") },
 
     { njs_str("var o = { valueOf: function() { return '3' } }; --o"),
       njs_str("2") },
@@ -20330,7 +20472,7 @@ static njs_unit_test_t  njs_shell_test[] =
     { njs_str("/abc/i.test('ABC')" ENTER),
       njs_str("true") },
 
-    /* Accumulative mode. */
+    /* Interactive mode. */
 
     { njs_str("var a = 1" ENTER
               "a" ENTER),
@@ -20775,7 +20917,7 @@ njs_interactive_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
         njs_vm_opt_init(&options);
 
         options.init = 1;
-        options.accumulative = 1;
+        options.interactive = 1;
         options.backtrace = 1;
 
         vm = njs_vm_create(&options);

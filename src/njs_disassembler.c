@@ -35,6 +35,9 @@ static njs_code_name_t  code_names[] = {
     { NJS_VMCODE_OBJECT_COPY, sizeof(njs_vmcode_object_copy_t),
           njs_str("OBJECT COPY     ") },
 
+    { NJS_VMCODE_FUNCTION_COPY, sizeof(njs_vmcode_function_copy_t),
+          njs_str("FUNCTION COPY   ") },
+
     { NJS_VMCODE_PROPERTY_GET, sizeof(njs_vmcode_prop_get_t),
           njs_str("PROP GET        ") },
     { NJS_VMCODE_GLOBAL_GET, sizeof(njs_vmcode_prop_get_t),
@@ -186,6 +189,7 @@ njs_disassemble(njs_vm_code_t *code)
     njs_vmcode_catch_t           *catch;
     njs_vmcode_finally_t         *finally;
     njs_vmcode_try_end_t         *try_end;
+    njs_vmcode_move_arg_t        *move_arg;
     njs_vmcode_try_start_t       *try_start;
     njs_vmcode_operation_t       operation;
     njs_vmcode_cond_jump_t       *cond_jump;
@@ -481,6 +485,17 @@ njs_disassemble(njs_vm_code_t *code)
             njs_printf("%5uD | %05uz %s ERROR\n", line, p - start, type);
 
             p += sizeof(njs_vmcode_error_t);
+
+            continue;
+        }
+
+        if (operation == NJS_VMCODE_MOVE_ARG) {
+            move_arg = (njs_vmcode_move_arg_t *) p;
+
+            njs_printf("%5uD | %05uz MOVE ARGUMENT     %uD %04Xz\n",
+                       line, p - start, move_arg->dst, (size_t) move_arg->src);
+
+            p += sizeof(njs_vmcode_move_arg_t);
 
             continue;
         }

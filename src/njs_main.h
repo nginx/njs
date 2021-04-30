@@ -57,6 +57,7 @@
 #include <njs_lexer.h>
 #include <njs_parser.h>
 #include <njs_generator.h>
+#include <njs_scope.h>
 
 #include <njs_boolean.h>
 #include <njs_symbol.h>

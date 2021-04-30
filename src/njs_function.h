@@ -9,22 +9,20 @@
 
 
 struct njs_function_lambda_s {
+    njs_index_t                    *closures;
+    uint32_t                       nclosures;
+    uint32_t                       nlocal;
+    uint32_t                       temp;
+
+    njs_value_t                    **declarations;
+    uint32_t                       ndeclarations;
+
+    njs_index_t                    self;
+
     uint32_t                       nargs;
-    uint32_t                       local_size;
-    uint32_t                       closure_size;
-
-    /* Function nesting level. */
-    uint8_t                        nesting;           /* 4 bits */
-
-    /* Function internal block closures levels. */
-    uint8_t                        block_closures;    /* 4 bits */
 
     uint8_t                        ctor;              /* 1 bit */
     uint8_t                        rest_parameters;   /* 1 bit */
-
-    /* Initial values of local scope. */
-    njs_value_t                    *local_scope;
-    njs_value_t                    *closure_scope;
 
     u_char                         *start;
 };
@@ -35,11 +33,10 @@ struct njs_function_lambda_s {
     njs_align_size(sizeof(njs_native_frame_t), sizeof(njs_value_t))
 
 /* The frame size must be aligned to njs_value_t. */
-#define njs_frame_size(closures)                                              \
-    njs_align_size(sizeof(njs_frame_t) + closures * sizeof(njs_closure_t *),  \
-                   sizeof(njs_value_t))
+#define NJS_FRAME_SIZE                                                        \
+    njs_align_size(sizeof(njs_frame_t), sizeof(njs_value_t))
 
-#define NJS_FRAME_SPARE_SIZE       512
+#define NJS_FRAME_SPARE_SIZE       (4 * 1024)
 
 
 struct njs_native_frame_s {
@@ -51,11 +48,15 @@ struct njs_native_frame_s {
 
     njs_value_t                    *arguments;
     njs_object_t                   *arguments_object;
-
-    njs_index_t                    retval;
+    njs_value_t                    *arguments_offset;
+    njs_value_t                    **local;
+    njs_value_t                    **temp;
 
     uint32_t                       size;
     uint32_t                       free_size;
+
+    njs_value_t                    *retval;
+
     uint32_t                       nargs;
 
     uint8_t                        native;            /* 1 bit  */
@@ -81,19 +82,14 @@ struct njs_frame_s {
     njs_exception_t                exception;
 
     njs_frame_t                    *previous_active_frame;
-
-    njs_value_t                    *local;
-
-#define njs_frame_closures(frame)                                             \
-    ((njs_closure_t **) ((u_char *) frame + sizeof(njs_frame_t)))
 };
 
 
-njs_function_t *njs_function_alloc(njs_vm_t *vm, njs_function_lambda_t *lambda,
-    njs_closure_t *closures[], njs_bool_t shared);
+njs_function_t *njs_function_alloc(njs_vm_t *vm, njs_function_lambda_t *lambda);
 njs_function_t *njs_function_value_copy(njs_vm_t *vm, njs_value_t *value);
 njs_int_t njs_function_name_set(njs_vm_t *vm, njs_function_t *function,
     njs_value_t *name, const char *prefix);
+njs_function_t *njs_function_copy(njs_vm_t *vm, njs_function_t *function);
 njs_int_t njs_function_arguments_object_init(njs_vm_t *vm,
     njs_native_frame_t *frame);
 njs_int_t njs_function_rest_parameters_init(njs_vm_t *vm,
@@ -113,7 +109,12 @@ njs_int_t njs_function_call2(njs_vm_t *vm, njs_function_t *function,
     njs_uint_t nargs, njs_value_t *retval, njs_bool_t ctor);
 njs_int_t njs_function_lambda_call(njs_vm_t *vm);
 njs_int_t njs_function_native_call(njs_vm_t *vm);
+njs_native_frame_t *njs_function_frame_alloc(njs_vm_t *vm, size_t size);
 void njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame);
+njs_int_t njs_function_capture_closure(njs_vm_t *vm, njs_function_t *function,
+     njs_function_lambda_t *lambda);
+njs_int_t njs_function_capture_global_closures(njs_vm_t *vm,
+    njs_function_t *function);
 
 
 njs_inline njs_function_lambda_t *
@@ -161,7 +162,7 @@ njs_function_previous_frame(njs_native_frame_t *frame)
 
 
 njs_inline njs_int_t
-njs_function_frame_invoke(njs_vm_t *vm, njs_index_t retval)
+njs_function_frame_invoke(njs_vm_t *vm, njs_value_t *retval)
 {
     njs_native_frame_t  *frame;
 
@@ -199,6 +200,13 @@ njs_inline njs_bool_t
 njs_native_function_same(const njs_function_t *f1, const njs_function_t *f2)
 {
     return f1->u.native == f2->u.native && f1->magic8 == f2->magic8;
+}
+
+
+njs_inline njs_value_t **
+njs_function_closures(const njs_function_t *func)
+{
+    return (njs_value_t **) ((u_char *) func + sizeof(njs_function_t));
 }
 
 

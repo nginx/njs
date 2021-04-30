@@ -237,9 +237,6 @@ njs_int_t njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args,
 njs_int_t njs_string_decode_uri(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t component);
 
-njs_index_t njs_value_index(njs_vm_t *vm, const njs_value_t *src,
-    njs_uint_t runtime);
-
 njs_int_t njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 njs_int_t njs_string_get_substitution(njs_vm_t *vm, njs_value_t *matched,

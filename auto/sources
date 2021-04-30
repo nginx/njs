@@ -59,6 +59,7 @@ NJS_LIB_SRCS=" \
    src/njs_encoding.c \
    src/njs_buffer.c \
    src/njs_iterator.c \
+   src/njs_scope.c \
 "
 
 NJS_LIB_TEST_SRCS=" \
