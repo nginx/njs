@@ -35,7 +35,7 @@ njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
 {
     u_char                *start;
     njs_vm_t              *vm, *nvm;
-    uint64_t              us;
+    uint64_t              ns;
     njs_int_t             ret, proto_id;
     njs_str_t             s, *expected;
     njs_uint_t            i, n;
@@ -76,7 +76,7 @@ njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
     expected = &test->result;
 
     ret = NJS_ERROR;
-    us = njs_time() / 1000;
+    ns = njs_time();
 
     for (i = 0; i < n; i++) {
 
@@ -105,18 +105,18 @@ njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
         nvm = NULL;
     }
 
-    us = njs_time() / 1000 - us;
+    ns = njs_time() - ns;
 
     if (!opts->dump_report) {
         if (n == 1) {
             njs_printf("%s%s: %.3fs\n", opts->previous ? "    " : "",
-                       test->name, (double) us / 1000000);
+                       test->name, (double) ns / 1000000000);
 
         } else {
             njs_printf("%s%s: %.3fµs, %d times/s\n",
                        opts->previous ? "    " : "",
-                       test->name, (double) us / n,
-                       (int) ((uint64_t) n * 1000000 / us));
+                       test->name, (double) ns / n / 1000,
+                       (int) ((uint64_t) n * 1000000000 / ns));
         }
     }
 
@@ -133,7 +133,7 @@ njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
         goto done;
     }
 
-    njs_value_number_set(&usec, us);
+    njs_value_number_set(&usec, 1000 * ns);
     njs_value_number_set(&times, n);
 
     ret = njs_vm_object_alloc(parent, result, &name_key, &name,
@@ -164,6 +164,44 @@ static njs_benchmark_test_t  njs_test[] =
       njs_str("null"),
       njs_str("null"),
       1000000 },
+
+    { "func call",
+      njs_str("function test(a) { return 1 }"
+              ""
+              "test(1);"
+              "test(1);"
+              "test(1);"
+              "test(1);"),
+      njs_str("1"),
+      100000 },
+
+    { "func call (3 local functions)",
+      njs_str("function test(a) { "
+              "    function g(x) {}"
+              "    function h(x) {}"
+              "    function f(x) {}"
+              "    return 1;"
+              "}"
+              ""
+              "test(1);"
+              "test(1);"
+              "test(1);"
+              "test(1);"),
+      njs_str("1"),
+      100000 },
+
+    { "closure var global",
+      njs_str("function test(a) { sum++ }"
+              ""
+              "var sum = 0;"
+              ""
+              "test(1);"
+              "test(1);"
+              "test(1);"
+              "test(1);"
+              "sum"),
+      njs_str("4"),
+      100000 },
 
     { "JSON.parse",
       njs_str("JSON.parse('{\"a\":123, \"XXX\":[3,4,null]}').a"),
