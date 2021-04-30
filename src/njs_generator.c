@@ -287,6 +287,7 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
 
     case NJS_TOKEN_VAR:
     case NJS_TOKEN_LET:
+    case NJS_TOKEN_CONST:
         return njs_generate_var_statement(vm, generator, node);
 
     case NJS_TOKEN_IF:
@@ -640,7 +641,7 @@ njs_generate_name(njs_vm_t *vm, njs_generator_t *generator,
         return NJS_OK;
     }
 
-    if (var->type == NJS_VARIABLE_LET) {
+    if (var->type == NJS_VARIABLE_LET || var->type == NJS_VARIABLE_CONST) {
         scope = njs_function_scope(node->scope);
 
         if (scope->dest_disable) {
@@ -692,7 +693,7 @@ njs_generate_variable(njs_vm_t *vm, njs_generator_t *generator,
         return NJS_OK;
     }
 
-    if (var->type == NJS_VARIABLE_LET) {
+    if (var->type == NJS_VARIABLE_LET || var->type == NJS_VARIABLE_CONST) {
         scope = njs_function_scope(node->scope);
 
         if ((!scope->dest_disable && njs_function_scope(var->scope) == scope)) {
@@ -746,6 +747,12 @@ njs_generate_var_statement(njs_vm_t *vm, njs_generator_t *generator,
 
     if (expr == NULL) {
         /* Variable is only declared. */
+
+        if (var->type == NJS_VARIABLE_CONST) {
+            njs_syntax_error(vm, "missing initializer in const declaration");
+            return NJS_ERROR;
+        }
+
         if (var->type == NJS_VARIABLE_LET) {
             ret = njs_generate_let(vm, generator, node, var);
             if (njs_slow_path(ret != NJS_OK)) {
@@ -758,7 +765,7 @@ njs_generate_var_statement(njs_vm_t *vm, njs_generator_t *generator,
         return NJS_OK;
     }
 
-    if (var->type == NJS_VARIABLE_LET) {
+    if (var->type == NJS_VARIABLE_LET || var->type == NJS_VARIABLE_CONST) {
         ret = njs_generate_wo_dest(vm, generator, expr);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
@@ -1346,7 +1353,9 @@ njs_generate_for_let_update(njs_vm_t *vm, njs_generator_t *generator,
 
     let = node->right;
 
-    if (let->token_type != NJS_TOKEN_LET) {
+    if (let->token_type != NJS_TOKEN_LET
+        && let->token_type != NJS_TOKEN_CONST)
+    {
         return NJS_OK;
     }
 
@@ -1827,7 +1836,9 @@ njs_generate_statement(njs_vm_t *vm, njs_generator_t *generator,
             goto statement;
         }
 
-        if (!var->init && var->type == NJS_VARIABLE_LET) {
+        if (!var->init && (var->type == NJS_VARIABLE_LET
+            || var->type == NJS_VARIABLE_CONST))
+        {
             njs_generate_code(generator, njs_vmcode_variable_t, code,
                               NJS_VMCODE_INITIALIZATION_TEST, 0, right);
             code->dst = right->index;
@@ -1950,8 +1961,10 @@ njs_generate_assignment(njs_vm_t *vm, njs_generator_t *generator,
 {
     njs_int_t              ret;
     njs_index_t            index, src;
+    njs_variable_t         *var;
     njs_parser_node_t      *lvalue, *expr, *object, *property;
     njs_vmcode_move_t      *move;
+    njs_vmcode_variable_t  *var_code;
     njs_vmcode_prop_set_t  *prop_set;
 
     lvalue = node->left;
@@ -1961,9 +1974,17 @@ njs_generate_assignment(njs_vm_t *vm, njs_generator_t *generator,
     if (lvalue->token_type == NJS_TOKEN_NAME) {
 
         ret = njs_generate_variable(vm, generator, lvalue, NJS_DECLARATION,
-                                    NULL);
+                                    &var);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
+        }
+
+        if (var != NULL && var->type == NJS_VARIABLE_CONST) {
+            njs_generate_code(generator, njs_vmcode_variable_t, var_code,
+                              NJS_VMCODE_ASSIGNMENT_ERROR, 0, node);
+            var_code->dst = var->index;
+
+            return NJS_OK;
         }
 
         expr->dest = lvalue;
@@ -2075,9 +2096,11 @@ njs_generate_operation_assignment(njs_vm_t *vm, njs_generator_t *generator,
 {
     njs_int_t              ret;
     njs_index_t            index, src;
+    njs_variable_t         *var;
     njs_parser_node_t      *lvalue, *expr, *object, *property;
     njs_vmcode_move_t      *move;
     njs_vmcode_3addr_t     *code;
+    njs_vmcode_variable_t  *var_code;
     njs_vmcode_prop_get_t  *prop_get;
     njs_vmcode_prop_set_t  *prop_set;
 
@@ -2086,9 +2109,17 @@ njs_generate_operation_assignment(njs_vm_t *vm, njs_generator_t *generator,
     if (lvalue->token_type == NJS_TOKEN_NAME) {
 
         ret = njs_generate_variable(vm, generator, lvalue, NJS_DECLARATION,
-                                    NULL);
+                                    &var);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
+        }
+
+        if (var != NULL && var->type == NJS_VARIABLE_CONST) {
+            njs_generate_code(generator, njs_vmcode_variable_t, var_code,
+                              NJS_VMCODE_ASSIGNMENT_ERROR, 0, node);
+            var_code->dst = var->index;
+
+            return NJS_OK;
         }
 
         index = lvalue->index;
@@ -2616,8 +2647,10 @@ njs_generate_inc_dec_operation(njs_vm_t *vm, njs_generator_t *generator,
 {
     njs_int_t              ret;
     njs_index_t            index, dest_index;
+    njs_variable_t         *var;
     njs_parser_node_t      *lvalue;
     njs_vmcode_3addr_t     *code;
+    njs_vmcode_variable_t  *var_code;
     njs_vmcode_prop_get_t  *prop_get;
     njs_vmcode_prop_set_t  *prop_set;
 
@@ -2626,9 +2659,17 @@ njs_generate_inc_dec_operation(njs_vm_t *vm, njs_generator_t *generator,
     if (lvalue->token_type == NJS_TOKEN_NAME) {
 
         ret = njs_generate_variable(vm, generator, lvalue, NJS_DECLARATION,
-                                    NULL);
+                                    &var);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
+        }
+
+        if (var != NULL && var->type == NJS_VARIABLE_CONST) {
+            njs_generate_code(generator, njs_vmcode_variable_t, var_code,
+                              NJS_VMCODE_ASSIGNMENT_ERROR, 0, node);
+            var_code->dst = var->index;
+
+            return NJS_OK;
         }
 
         index = njs_generate_dest_index(vm, generator, node);

@@ -82,7 +82,7 @@ njs_scope_valid_value(njs_vm_t *vm, njs_index_t index)
     value = njs_scope_value(vm, index);
 
     if (!njs_is_valid(value)) {
-        if (njs_scope_index_var(index) == NJS_VARIABLE_LET) {
+        if (njs_scope_index_var(index) <= NJS_VARIABLE_LET) {
             njs_reference_error(vm, "cannot access to variable "
                                     "before initialization");
             return NULL;

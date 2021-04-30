@@ -4946,6 +4946,7 @@ static njs_int_t
 njs_parser_expression_statement(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
+    njs_token_type_t   type;
     njs_lexer_token_t  *next;
 
     switch (token->type) {
@@ -4974,15 +4975,20 @@ njs_parser_expression_statement(njs_parser_t *parser, njs_lexer_token_t *token,
 
         break;
 
+    case NJS_TOKEN_CONST:
     case NJS_TOKEN_LET:
+        type = token->type;
+
         token = njs_lexer_peek_token(parser->lexer, token, 0);
         if (token == NULL) {
             return NJS_ERROR;
         }
 
         if (token->type == NJS_TOKEN_NAME) {
-            njs_parser_syntax_error(parser, "let declaration cannot appear "
-                                            "in a single-statement context");
+            njs_parser_syntax_error(parser, "%s declaration cannot appear "
+                                    "in a single-statement context",
+                                    (type == NJS_TOKEN_CONST ? "const"
+                                                             : "let" ));
             return NJS_DONE;
         }
 
@@ -5307,6 +5313,7 @@ njs_parser_iteration_statement_for_map(njs_parser_t *parser,
 
     case NJS_TOKEN_VAR:
     case NJS_TOKEN_LET:
+    case NJS_TOKEN_CONST:
         token_type = token->type;
 
         token = njs_lexer_peek_token(parser->lexer, token, 0);
@@ -5327,9 +5334,6 @@ njs_parser_iteration_statement_for_map(njs_parser_t *parser,
         }
 
         break;
-
-    case NJS_TOKEN_CONST:
-        return njs_parser_not_supported(parser, token);
 
     default:
         njs_parser_next(parser, njs_parser_expression);
@@ -5366,6 +5370,10 @@ njs_parser_for_var_binding_or_var_list(njs_parser_t *parser,
     switch (token_type) {
     case NJS_TOKEN_LET:
         type = NJS_VARIABLE_LET;
+        break;
+
+    case NJS_TOKEN_CONST:
+        type = NJS_VARIABLE_CONST;
         break;
 
     default:

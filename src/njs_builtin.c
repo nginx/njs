@@ -972,7 +972,7 @@ njs_global_this_prop_handler(njs_vm_t *vm, njs_object_prop_t *prop,
 
     var = node->variable;
 
-    if (var->type == NJS_VARIABLE_LET) {
+    if (var->type == NJS_VARIABLE_LET || var->type == NJS_VARIABLE_CONST) {
         return NJS_DECLINED;
     }
 

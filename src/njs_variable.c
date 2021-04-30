@@ -184,6 +184,7 @@ njs_variable_scope_find(njs_parser_t *parser, njs_parser_scope_t *scope,
     }
 
     switch (type) {
+    case NJS_VARIABLE_CONST:
     case NJS_VARIABLE_LET:
         if (scope->type == NJS_SCOPE_GLOBAL
             && parser->undefined_id == unique_id)
@@ -222,7 +223,7 @@ njs_variable_scope_find(njs_parser_t *parser, njs_parser_scope_t *scope,
         return root;
     }
 
-    if (var->type == NJS_VARIABLE_LET) {
+    if (var->type == NJS_VARIABLE_LET || var->type == NJS_VARIABLE_CONST) {
         goto failed;
     }
 

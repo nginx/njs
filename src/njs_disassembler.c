@@ -150,6 +150,9 @@ static njs_code_name_t  code_names[] = {
 
     { NJS_VMCODE_NOT_INITIALIZED, sizeof(njs_vmcode_variable_t),
           njs_str("NOT INIT        ") },
+
+    { NJS_VMCODE_ASSIGNMENT_ERROR, sizeof(njs_vmcode_variable_t),
+          njs_str("ASSIGNMENT ERROR") },
 };
 
 

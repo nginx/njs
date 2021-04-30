@@ -938,6 +938,10 @@ next:
                 njs_vmcode_error(vm, pc);
                 goto error;
 
+            case NJS_VMCODE_ASSIGNMENT_ERROR:
+                njs_type_error(vm, "assignment to constant variable");
+                goto error;
+
             default:
                 njs_internal_error(vm, "%d has NO retval", op);
                 goto error;
