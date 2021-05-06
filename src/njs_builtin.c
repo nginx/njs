@@ -639,7 +639,7 @@ njs_vm_expression_completions(njs_vm_t *vm, njs_str_t *expression)
     }
 
     var = ((njs_variable_node_t *) node)->variable;
-    value = njs_scope_valid_value(vm, var->index);
+    value = njs_scope_value(vm, var->index);
 
     if (!njs_is_object(value)) {
         return NULL;
