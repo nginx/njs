@@ -7827,7 +7827,7 @@ njs_parser_reference(njs_parser_t *parser, njs_lexer_token_t *token)
             scope = njs_function_scope(scope->parent);
         }
 
-        if (scope == NULL || scope->type == NJS_SCOPE_GLOBAL) {
+        if (scope->type == NJS_SCOPE_GLOBAL) {
             njs_parser_syntax_error(parser, "\"%V\" object in global scope",
                                     &token->text);
             return NULL;
