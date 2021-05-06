@@ -930,7 +930,7 @@ next:
                 /* Fall through. */
 
             case NJS_VMCODE_NOT_INITIALIZED:
-                njs_reference_error(vm, "cannot access to variable "
+                njs_reference_error(vm, "cannot access variable "
                                         "before initialization");
                 goto error;
 
