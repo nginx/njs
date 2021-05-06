@@ -437,7 +437,7 @@ njs_variable_closure(njs_vm_t *vm, njs_variable_t *var,
     njs_index_t               index, prev_index, *idx;
     njs_level_type_t          type;
     njs_rbtree_node_t         *rb_node;
-    njs_parser_scope_t        **p, *root;
+    njs_parser_scope_t        **p;
     njs_parser_rbtree_node_t  *parse_node, ref_node;
 #define NJS_VAR_MAX_DEPTH     32
     njs_parser_scope_t        *list[NJS_VAR_MAX_DEPTH];
@@ -482,18 +482,16 @@ njs_variable_closure(njs_vm_t *vm, njs_variable_t *var,
             }
         }
 
-        root = njs_function_scope(scope);
-
-        if (type != NJS_LEVEL_CLOSURE && root == scope) {
+        if (type != NJS_LEVEL_CLOSURE) {
             /* Create new closure for scope. */
 
-            index = njs_scope_index(root->type, root->closures->items,
+            index = njs_scope_index(scope->type, scope->closures->items,
                                     NJS_LEVEL_CLOSURE, var->type);
             if (njs_slow_path(index == NJS_INDEX_ERROR)) {
                 return NJS_INDEX_ERROR;
             }
 
-            idx = njs_arr_add(root->closures);
+            idx = njs_arr_add(scope->closures);
             if (njs_slow_path(idx == NULL)) {
                 return NJS_INDEX_ERROR;
             }
