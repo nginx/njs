@@ -4713,7 +4713,10 @@ njs_parser_statement_list_next(njs_parser_t *parser, njs_lexer_token_t *token,
     if (parser->ret != NJS_OK) {
         if (token->type != NJS_TOKEN_CLOSE_BRACE) {
             parser->node = parser->target;
-            return njs_parser_stack_pop(parser);
+
+            (void) njs_parser_stack_pop(parser);
+
+            return parser->ret;
         }
 
         return njs_parser_failed(parser);
@@ -6098,6 +6101,10 @@ njs_parser_switch_case_block(njs_parser_t *parser, njs_lexer_token_t *token,
 {
     parser->target->right->right = parser->node;
 
+    if (parser->ret != NJS_OK && parser->target->scope != parser->scope) {
+        return njs_parser_failed(parser);
+    }
+
     njs_parser_next(parser, njs_parser_switch_case);
 
     return NJS_OK;
@@ -6151,6 +6158,10 @@ njs_parser_switch_case_block_wo_def(njs_parser_t *parser,
 
     } else {
         parser->target->right = parser->node;
+    }
+
+    if (parser->ret != NJS_OK && parser->target->scope != parser->scope) {
+        return njs_parser_failed(parser);
     }
 
     njs_parser_next(parser, njs_parser_switch_case_wo_def);

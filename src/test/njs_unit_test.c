@@ -2958,6 +2958,24 @@ static njs_unit_test_t  njs_test[] =
               "map((v)=>{switch(v) { case isNaN: return 1; default: return 0;}})"),
       njs_str("1,0,0") },
 
+    { njs_str("switch (1) {case 1: ii > 1; ii => default:}"),
+      njs_str("SyntaxError: Unexpected token \"default\" in 1") },
+
+    { njs_str("switch (1) {case 1: ii > 1; var a = functin () {default:}"),
+      njs_str("SyntaxError: Unexpected token \"{\" in 1") },
+
+    { njs_str("switch (1) {default: ii > 1; ii => case 2:}"),
+      njs_str("SyntaxError: Unexpected token \"case\" in 1") },
+
+    { njs_str("switch (1) {default: ii > 1; var a = functin () {case 2:}"),
+      njs_str("SyntaxError: Unexpected token \"{\" in 1") },
+
+    { njs_str("switch (1) {case 1: ii > 1; ii => case 2:}"),
+      njs_str("SyntaxError: Unexpected token \"case\" in 1") },
+
+    { njs_str("switch (1) {case 1: ii > 1; var a = functin () {case 2:}"),
+      njs_str("SyntaxError: Unexpected token \"{\" in 1") },
+
     /* continue. */
 
     { njs_str("continue"),
