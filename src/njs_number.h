@@ -56,18 +56,18 @@ njs_key_is_integer_index(double num, const njs_value_t *value)
 njs_inline int64_t
 njs_number_to_integer(double num)
 {
-    if (njs_slow_path(isinf(num))) {
-        if (num < 0) {
+    if (njs_fast_path(!isnan(num))) {
+        if (num < INT64_MIN) {
             return INT64_MIN;
+
+        } else if (num > INT64_MAX) {
+            return INT64_MAX;
         }
 
-        return INT64_MAX;
-
-    } else if (njs_slow_path(isnan(num))) {
-        return 0;
+        return num;
     }
 
-    return trunc(num) + 0.0;
+    return 0;
 }
 
 

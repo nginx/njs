@@ -8882,6 +8882,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("''.repeat(2147483648)"),
       njs_str("") },
 
+    { njs_str("'aaaaaaaa'.repeat(2**64+1)"),
+      njs_str("RangeError") },
+
     { njs_str("''.repeat(Infinity)"),
       njs_str("RangeError") },
 
