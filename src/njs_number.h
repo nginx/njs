@@ -8,7 +8,9 @@
 #define _NJS_NUMBER_H_INCLUDED_
 
 
-#define NJS_MAX_LENGTH           (0x1fffffffffffffLL)
+#define NJS_MAX_LENGTH      (0x1fffffffffffffLL)
+#define NJS_INT64_DBL_MIN   (-9.223372036854776e+18) /* closest to INT64_MIN */
+#define NJS_INT64_DBL_MAX   (9.223372036854776e+18) /* closest to INT64_MAX */
 
 
 double njs_key_to_index(const njs_value_t *value);
@@ -57,10 +59,10 @@ njs_inline int64_t
 njs_number_to_integer(double num)
 {
     if (njs_fast_path(!isnan(num))) {
-        if (num < INT64_MIN) {
+        if (num < NJS_INT64_DBL_MIN) {
             return INT64_MIN;
 
-        } else if (num > INT64_MAX) {
+        } else if (num > NJS_INT64_DBL_MAX) {
             return INT64_MAX;
         }
 
