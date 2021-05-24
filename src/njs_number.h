@@ -76,7 +76,7 @@ njs_number_to_integer(double num)
 njs_inline int32_t
 njs_number_to_int32(double num)
 {
-    int32_t           r;
+    uint32_t          r;
     uint64_t          v;
     njs_int_t         exp;
     njs_diyfp_conv_t  conv;
