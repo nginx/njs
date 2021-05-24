@@ -2924,7 +2924,6 @@ njs_string_prototype_repeat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     u_char             *p;
-    double             count;
     int64_t            n, max;
     uint64_t           size, length;
     njs_int_t          ret;
@@ -2944,17 +2943,15 @@ njs_string_prototype_repeat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    ret = njs_value_to_number(vm, njs_arg(args, nargs, 1), &count);
+    ret = njs_value_to_integer(vm, njs_arg(args, nargs, 1), &n);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
 
-    if (njs_slow_path(!isnan(count) && (count < 0 || isinf(count)))) {
+    if (njs_slow_path(n < 0 || n == INT64_MAX)) {
         njs_range_error(vm, NULL);
         return NJS_ERROR;
     }
-
-     n = njs_number_to_integer(count);
 
     (void) njs_string_prop(&string, this);
 
