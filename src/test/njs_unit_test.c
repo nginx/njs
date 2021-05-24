@@ -22304,6 +22304,69 @@ njs_string_to_index_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
 
 
 static njs_int_t
+njs_to_int32_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
+{
+    int32_t     i32, second;
+    njs_uint_t  i;
+
+    static const struct {
+        double       value;
+        int32_t      expected;
+    } tests[] = {
+        { -1.0, -1 },
+        { 0.0, 0 },
+        { 0.001, 0 },
+        { 1.0, 1 },
+        { 2147483647.0, 2147483647 },
+        { 2147483648.0, -2147483648 },
+        { 2147483649.0, -2147483647 },
+        { -1844674406941458432.0, -2147483648 },
+        { 4.835703278458518e+24 /* 2**(53+29) + 2**30 */, 1073741824 },
+        { 9.671406556917036e+24 /* 2**(53+30) + 2**31 */, -2147483648 },
+    };
+
+    for (i = 0; i < njs_nitems(tests); i++) {
+        i32 = njs_number_to_int32(tests[i].value);
+
+        if (i32 != tests[i].expected) {
+            njs_printf("njs_to_int32_test(%f):\n"
+                       "expected: %D\n     got: %D\n",
+                       tests[i].value, tests[i].expected, i32);
+
+            stat->failed++;
+            continue;
+        }
+
+        second = njs_number_to_int32(i32);
+
+        if (i32 != second) {
+            njs_printf("njs_to_int32_test(%f): not idempodent\n"
+                       "expected: %D\n     got: %D\n",
+                       tests[i].value, i32, second);
+
+            stat->failed++;
+            continue;
+        }
+
+        second = njs_number_to_int32(njs_number_to_uint32(tests[i].value));
+
+        if (i32 != second) {
+            njs_printf("ToInt32(%f) != ToInt32(ToUint32(%f))\n"
+                       "left: %D\n     right: %D\n",
+                       tests[i].value, tests[i].value, i32, second);
+
+            stat->failed++;
+            continue;
+        }
+
+        stat->passed++;
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
 njs_vm_internal_api_test(njs_unit_test_t unused[], size_t num, njs_str_t *name,
     njs_opts_t *opts, njs_stat_t *stat)
 {
@@ -22329,6 +22392,8 @@ njs_vm_internal_api_test(njs_unit_test_t unused[], size_t num, njs_str_t *name,
           njs_str("njs_sort_test") },
         { njs_string_to_index_test,
           njs_str("njs_string_to_index_test") },
+        { njs_to_int32_test,
+          njs_str("njs_to_int32_test") },
     };
 
     vm = NULL;

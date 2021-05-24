@@ -85,12 +85,12 @@ njs_number_to_int32(double num)
 
     exp = (conv.u64 & NJS_DBL_EXPONENT_MASK) >> NJS_DBL_SIGNIFICAND_SIZE;
 
-    if (njs_fast_path(exp < (NJS_DBL_EXPONENT_OFFSET + 30))) {
+    if (njs_fast_path(exp < (NJS_DBL_EXPONENT_OFFSET + 31))) {
         /* |num| < 2**31. */
         return num;
     }
 
-    if (exp < (NJS_DBL_EXPONENT_OFFSET + 30 + 53)) {
+    if (exp < (NJS_DBL_EXPONENT_OFFSET + 31 + 53)) {
         v = (conv.u64 & NJS_DBL_SIGNIFICAND_MASK) | NJS_DBL_HIDDEN_BIT;
         v <<= (exp - NJS_DBL_EXPONENT_BIAS + 32);
         r = v >> 32;
@@ -105,7 +105,7 @@ njs_number_to_int32(double num)
     /*
      * ES5.1: integer must be modulo 2^32.
      * The distance between larger doubles
-     * (exp >= NJS_DBL_EXPONENT_OFFSET + 30 + 53) is a multiple of 2**32 => 0.
+     * (exp >= NJS_DBL_EXPONENT_OFFSET + 31 + 53) is a multiple of 2**32 => 0.
      * This also handles NaN and Inf.
      */
 
