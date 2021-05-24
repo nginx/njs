@@ -1301,6 +1301,7 @@ njs_regexp_prototype_symbol_replace(njs_vm_t *vm, njs_value_t *args,
     }
 
     i = 0;
+    pos = 0;
     next_pos = 0;
 
     while (i < results.items) {
