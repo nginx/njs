@@ -8008,7 +8008,28 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'a a'.toUTF8().indexOf('a', 1)"),
       njs_str("2") },
 
-    { njs_str("'abc'.lastIndexOf('abcdef')"),
+    { njs_str("'aaa'.lastIndexOf()"),
+      njs_str("-1") },
+
+    { njs_str("'aaa'.lastIndexOf('')"),
+      njs_str("3") },
+
+    { njs_str("'aaa'.lastIndexOf('a')"),
+      njs_str("2") },
+
+    { njs_str("'aaa'.lastIndexOf('aa')"),
+      njs_str("1") },
+
+    { njs_str("'aaa'.lastIndexOf('aaa')"),
+      njs_str("0") },
+
+    { njs_str("'aaa'.lastIndexOf('aaaa')"),
+      njs_str("-1") },
+
+    { njs_str("'a'.repeat(16).lastIndexOf(String.fromCodePoint(65533).repeat(15))"),
+      njs_str("-1") },
+
+    { njs_str("('α'+'a'.repeat(15)).lastIndexOf(String.fromCodePoint(65533).repeat(15))"),
       njs_str("-1") },
 
     { njs_str("'abc abc abc abc'.lastIndexOf('abc')"),
@@ -8076,6 +8097,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("'β'.repeat(32).lastIndexOf('β')"),
       njs_str("31") },
+
+    { njs_str("'β'.repeat(32).lastIndexOf('β'.repeat(32))"),
+      njs_str("0") },
 
     { njs_str("'β'.repeat(32).lastIndexOf``"),
       njs_str("32") },

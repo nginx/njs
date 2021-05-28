@@ -2230,114 +2230,94 @@ njs_string_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
     double             pos;
-    ssize_t            index, start, length, search_length;
+    int64_t            index, start, length, search_length;
     njs_int_t          ret;
-    njs_value_t        *value, *search_string, lvalue;
+    njs_value_t        *this, *search, search_lvalue;
     const u_char       *p, *end;
-    njs_string_prop_t  string, search;
+    njs_string_prop_t  string, s;
 
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
+    this = njs_argument(args, 0);
+
+    if (njs_slow_path(njs_is_null_or_undefined(this))) {
+        njs_type_error(vm, "cannot convert \"%s\"to object",
+                       njs_type_string(this->type));
+        return NJS_ERROR;
+    }
+
+    ret = njs_value_to_string(vm, this, this);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    search = njs_lvalue_arg(&search_lvalue, args, nargs, 1);
+    ret = njs_value_to_string(vm, search, search);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
 
-    index = -1;
-
-    length = njs_string_prop(&string, njs_argument(args, 0));
-
-    search_string = njs_lvalue_arg(&lvalue, args, nargs, 1);
-
-    if (njs_slow_path(!njs_is_string(search_string))) {
-        ret = njs_value_to_string(vm, search_string, search_string);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
+    ret = njs_value_to_number(vm, njs_arg(args, nargs, 2), &pos);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
-    search_length = njs_string_prop(&search, search_string);
-
-    if (length < search_length) {
-        goto done;
-    }
-
-    value = njs_arg(args, nargs, 2);
-
-    if (njs_slow_path(!njs_is_number(value))) {
-        ret = njs_value_to_number(vm, value, &pos);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
+    if (!isnan(pos)) {
+        start = njs_number_to_integer(pos);
 
     } else {
-        pos = njs_number(value);
+        start = INT64_MAX;
     }
 
-    if (isnan(pos)) {
-        index = NJS_STRING_MAX_LENGTH;
+    length = njs_string_prop(&string, this);
 
-    } else {
-        index = njs_number_to_integer(pos);
+    start = njs_min(njs_max(start, 0), length);
 
-        if (index < 0) {
-            index = 0;
-        }
+    search_length = njs_string_prop(&s, search);
+
+    index = length - search_length;
+
+    if (index > start) {
+        index = start;
     }
 
-    if (search_length == 0) {
-        index = njs_min(index, length);
-        goto done;
-    }
-
-    if (index >= length) {
-        index = length - 1;
-    }
+    end = string.start + string.size;
 
     if (string.size == (size_t) length) {
         /* Byte or ASCII string. */
 
-        start = length - search.size;
+        p = &string.start[index];
 
-        if (index > start) {
-            index = start;
+        if (p > end - s.size) {
+            p = end - s.size;
         }
 
-        p = string.start + index;
-
-        do {
-            if (memcmp(p, search.start, search.size) == 0) {
+        for (; p >= string.start; p--) {
+            if (memcmp(p, s.start, s.size) == 0) {
+                index = p - string.start;
                 goto done;
             }
+        }
 
-            index--;
-            p--;
-
-        } while (p >= string.start);
+        index = -1;
 
     } else {
         /* UTF-8 string. */
 
-        end = string.start + string.size;
-        p = njs_string_offset(string.start, end, index);
-        end -= search.size;
-
-        while (p > end) {
-            index--;
-            p = njs_utf8_prev(p);
+        if (index < 0 || index == length) {
+            index = (search_length == 0) ? index : -1;
+            goto done;
         }
 
-        for ( ;; ) {
-            if (memcmp(p, search.start, search.size) == 0) {
+        p = njs_string_offset(string.start, end, index);
+
+        for (; p >= string.start; p = njs_utf8_prev(p)) {
+            if ((p + s.size) <= end && memcmp(p, s.start, s.size) == 0) {
                 goto done;
             }
 
             index--;
-
-            if (p <= string.start) {
-                break;
-            }
-
-            p = njs_utf8_prev(p);
         }
+
+        index = -1;
     }
 
 done:
