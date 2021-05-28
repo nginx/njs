@@ -123,9 +123,9 @@ njs_feature_path=
 njs_feature_libs=
 njs_feature_test="int n __attribute__ ((aligned(64)));
 
-				  int main(void) {
-					  return 0;
-				  }"
+                  int main(void) {
+                    return 0;
+                  }"
 . auto/feature
 
 
