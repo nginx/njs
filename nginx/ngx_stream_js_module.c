@@ -59,6 +59,7 @@ typedef struct {
     unsigned                from_upstream:1;
     unsigned                filter:1;
     unsigned                in_progress:1;
+    unsigned                preread:1;
 } ngx_stream_js_ctx_t;
 
 
@@ -440,14 +441,50 @@ ngx_stream_js_access_handler(ngx_stream_session_t *s)
 static ngx_int_t
 ngx_stream_js_preread_handler(ngx_stream_session_t *s)
 {
+    ngx_int_t                  rc;
+    ngx_chain_t               *out;
+    ngx_connection_t          *c;
+    ngx_stream_js_ctx_t       *ctx;
     ngx_stream_js_srv_conf_t  *jscf;
 
     ngx_log_debug0(NGX_LOG_DEBUG_STREAM, s->connection->log, 0,
                    "js preread handler");
 
+    rc = ngx_stream_js_init_vm(s);
+    if (rc != NGX_OK) {
+        return rc;
+    }
+
+    c    = s->connection;
+    ctx  = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
     jscf = ngx_stream_get_module_srv_conf(s, ngx_stream_js_module);
 
-    return ngx_stream_js_phase_handler(s, &jscf->preread);
+    ctx->preread = 1;
+    ctx->last_out = &out;
+
+    rc = ngx_stream_js_phase_handler(s, &jscf->preread);
+
+    *ctx->last_out = NULL;
+
+    if (rc == NGX_ERROR) {
+        return rc;
+    }
+
+    if (rc != NGX_AGAIN) {
+        ctx->preread = 0;
+    }
+
+    if (out != NULL || c->buffered) {
+        if (ngx_stream_top_filter(s, out, 1) == NGX_ERROR) {
+            return NGX_ERROR;
+        }
+
+        ngx_chain_update_chains(c->pool, &ctx->free, &ctx->downstream_busy,
+                                &out, (ngx_buf_tag_t) &ngx_stream_js_module);
+
+    }
+
+    return rc;
 }
 
 
@@ -556,6 +593,10 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
     }
 
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
+
+    if (ctx->preread) {
+        return ngx_stream_next_filter(s, in, from_upstream);
+    }
 
     if (!ctx->filter) {
         rc = ngx_js_call(ctx->vm, &jscf->filter, c->log, &ctx->args[0], 1);
@@ -1132,8 +1173,11 @@ ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
-    if (!ctx->filter) {
+    if (!ctx->filter && !ctx->preread) {
         njs_vm_error(vm, "cannot send buffer in this handler");
+        return NJS_ERROR;
+    } else if (ctx->filter && ctx->preread) {
+        njs_vm_error(vm, "invalid state, both filter and preread are set");
         return NJS_ERROR;
     }
 
@@ -1142,8 +1186,13 @@ ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    flush = ctx->buf->flush;
-    last_buf = ctx->buf->last_buf;
+    if(ctx->filter){
+        flush = ctx->buf->flush;
+        last_buf = ctx->buf->last_buf;
+    } else { // ctx->preread == 1
+        flush = 1;
+        last_buf = 0;
+    }
 
     flags = njs_arg(args, nargs, 2);
 
