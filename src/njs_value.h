@@ -105,10 +105,6 @@ typedef struct njs_property_next_s    njs_property_next_t;
 typedef struct njs_object_init_s      njs_object_init_t;
 
 
-#if (!NJS_HAVE_GCC_ATTRIBUTE_ALIGNED)
-#error "aligned attribute is required"
-#endif
-
 union njs_value_s {
     /*
      * The njs_value_t size is 16 bytes and must be aligned to 16 bytes
