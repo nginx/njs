@@ -20,6 +20,19 @@ typedef union {
 } njs_conv_f64_t;
 
 
+struct NJS_PACKED njs_packed_u16_t {
+    uint16_t v;
+};
+
+struct NJS_PACKED njs_packed_u32_t {
+    uint32_t v;
+};
+
+struct NJS_PACKED njs_packed_u64_t {
+    uint64_t v;
+};
+
+
 typedef int (*njs_sort_cmp_t)(const void *, const void *, void *ctx);
 
 void njs_qsort(void *base, size_t n, size_t size, njs_sort_cmp_t cmp,
@@ -113,6 +126,42 @@ njs_bswap_u64(uint64_t u64)
            | ((u64 & 0x0000000000ff0000ULL) << 24)
            | ((u64 & 0x000000000000ff00ULL) << 40)
            | ((u64 & 0x00000000000000ffULL) << 56);
+}
+
+njs_inline uint16_t
+njs_get_u16(const uint8_t *p)
+{
+    return ((const struct njs_packed_u16_t *) p)->v;
+}
+
+njs_inline uint32_t
+njs_get_u32(const uint8_t *p)
+{
+    return ((const struct njs_packed_u32_t *) p)->v;
+}
+
+njs_inline uint64_t
+njs_get_u64(const uint8_t *p)
+{
+    return ((const struct njs_packed_u64_t *) p)->v;
+}
+
+njs_inline void
+njs_set_u16(uint8_t *p, uint16_t val)
+{
+    ((struct njs_packed_u16_t *) p)->v = val;
+}
+
+njs_inline void
+njs_set_u32(uint8_t *p, uint32_t val)
+{
+    ((struct njs_packed_u32_t *) p)->v = val;
+}
+
+njs_inline void
+njs_set_u64(uint8_t *p, uint64_t val)
+{
+    ((struct njs_packed_u64_t *) p)->v = val;
 }
 
 

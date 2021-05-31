@@ -2736,7 +2736,7 @@ njs_data_view_prototype_get(njs_vm_t *vm, njs_value_t *args,
         break;
 
     case NJS_OBJ_TYPE_UINT16_ARRAY:
-        u32 = *((uint16_t *) u8);
+        u32 = njs_get_u16(u8);
 
         if (swap) {
             u32 = njs_bswap_u16(u32);
@@ -2746,7 +2746,7 @@ njs_data_view_prototype_get(njs_vm_t *vm, njs_value_t *args,
         break;
 
     case NJS_OBJ_TYPE_INT16_ARRAY:
-        u32 = *((uint16_t *) u8);
+        u32 = njs_get_u16(u8);
 
         if (swap) {
             u32 = njs_bswap_u16(u32);
@@ -2758,7 +2758,7 @@ njs_data_view_prototype_get(njs_vm_t *vm, njs_value_t *args,
     case NJS_OBJ_TYPE_UINT32_ARRAY:
     case NJS_OBJ_TYPE_INT32_ARRAY:
     case NJS_OBJ_TYPE_FLOAT32_ARRAY:
-        u32 = *((uint32_t *) u8);
+        u32 = njs_get_u32(u8);
 
         if (swap) {
             u32 = njs_bswap_u32(u32);
@@ -2783,7 +2783,7 @@ njs_data_view_prototype_get(njs_vm_t *vm, njs_value_t *args,
     default:
         /* NJS_OBJ_TYPE_FLOAT64_ARRAY. */
 
-        conv_f64.u = *((uint64_t *) u8);
+        conv_f64.u = njs_get_u64(u8);
 
         if (swap) {
             conv_f64.u = njs_bswap_u64(conv_f64.u);
@@ -2865,7 +2865,7 @@ njs_data_view_prototype_set(njs_vm_t *vm, njs_value_t *args,
             u32 = njs_bswap_u16(u32);
         }
 
-        *((uint16_t *) u8) = u32;
+        njs_set_u16(u8, u32);
         break;
 
     case NJS_OBJ_TYPE_UINT32_ARRAY:
@@ -2876,7 +2876,7 @@ njs_data_view_prototype_set(njs_vm_t *vm, njs_value_t *args,
             u32 = njs_bswap_u32(u32);
         }
 
-        *((uint32_t *) u8) = u32;
+        njs_set_u32(u8, u32);
         break;
 
     case NJS_OBJ_TYPE_FLOAT32_ARRAY:
@@ -2886,7 +2886,7 @@ njs_data_view_prototype_set(njs_vm_t *vm, njs_value_t *args,
             conv_f32.u = njs_bswap_u32(conv_f32.u);
         }
 
-        *((uint32_t *) u8) = conv_f32.u;
+        njs_set_u32(u8, conv_f32.u);
         break;
 
     default:
@@ -2898,7 +2898,7 @@ njs_data_view_prototype_set(njs_vm_t *vm, njs_value_t *args,
             conv_f64.u = njs_bswap_u64(conv_f64.u);
         }
 
-        *((uint64_t *) u8) = conv_f64.u;
+        njs_set_u64(u8, conv_f64.u);
     }
 
     njs_set_undefined(&vm->retval);

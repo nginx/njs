@@ -138,6 +138,14 @@ njs_leading_zeros64(uint64_t x)
 #endif
 
 
+#if (NJS_HAVE_GCC_ATTRIBUTE_PACKED)
+#define NJS_PACKED    __attribute__((packed))
+
+#else
+#define NJS_PACKED
+#endif
+
+
 #if (NJS_HAVE_GCC_ATTRIBUTE_MALLOC)
 #define NJS_MALLOC_LIKE    __attribute__((__malloc__))
 

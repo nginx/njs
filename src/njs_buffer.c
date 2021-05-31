@@ -989,7 +989,7 @@ njs_buffer_prototype_read_int(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         break;
 
     case 2:
-        u32 = *((uint16_t *) u8);
+        u32 = njs_get_u16(u8);
 
         if (swap) {
             u32 = njs_bswap_u16(u32);
@@ -1028,7 +1028,7 @@ njs_buffer_prototype_read_int(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         break;
 
     case 4:
-        u32 = *((uint32_t *) u8);
+        u32 = njs_get_u32(u8);
 
         if (swap) {
             u32 = njs_bswap_u32(u32);
@@ -1273,7 +1273,7 @@ njs_buffer_prototype_write_int(njs_vm_t *vm, njs_value_t *args,
             u32 = njs_bswap_u16(u32);
         }
 
-        *((uint16_t *) u8) = u32;
+        njs_set_u16(u8, u32);
         break;
 
     case 3:
@@ -1299,7 +1299,7 @@ njs_buffer_prototype_write_int(njs_vm_t *vm, njs_value_t *args,
             u32 = njs_bswap_u32(u32);
         }
 
-        *((uint32_t *) u8) = u32;
+        njs_set_u32(u8, u32);
         break;
 
     case 5:
@@ -2153,14 +2153,14 @@ njs_buffer_prototype_swap(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     switch (size) {
     case 2:
         for (; p < end; p += 2) {
-            *((uint16_t *) p) = njs_bswap_u16(*((uint16_t *) p));
+            njs_set_u16(p, njs_bswap_u16(njs_get_u16(p)));
         }
 
         break;
 
     case 4:
         for (; p < end; p += 4) {
-            *((uint32_t *) p) = njs_bswap_u32(*((uint32_t *) p));
+            njs_set_u32(p, njs_bswap_u32(njs_get_u32(p)));
         }
 
         break;
@@ -2168,7 +2168,7 @@ njs_buffer_prototype_swap(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     case 8:
     default:
         for (; p < end; p += 8) {
-            *((uint64_t *) p) = njs_bswap_u64(*((uint64_t *) p));
+            njs_set_u64(p, njs_bswap_u64(njs_get_u64(p)));
         }
     }
 
