@@ -124,10 +124,15 @@ njs_make_day(int64_t yr, int64_t month, int64_t date)
     double   days;
     int64_t  i, ym, mn, md;
 
+    static const int min_year = -271821;
+    static const int max_year = 275760;
     static const int month_days[] = { 31, 28, 31, 30, 31, 30,
                                       31, 31, 30, 31, 30, 31 };
 
-    if (yr < -271822 || yr > 275761) {
+    if (yr < min_year || yr > max_year
+        || month < (min_year * 12) || month > (max_year * 12)
+        || date < (min_year * 12 * 366) || date > (max_year * 12 * 366))
+    {
         return NAN;
     }
 

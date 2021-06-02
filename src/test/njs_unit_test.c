@@ -15211,6 +15211,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("new Date(NaN)"),
       njs_str("Invalid Date") },
 
+    { njs_str("new Date(0, 9e99)"),
+      njs_str("Invalid Date") },
+
 #ifndef NJS_SUNC
     { njs_str("new Date(-0).getTime()"),
       njs_str("0") },
