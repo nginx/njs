@@ -311,12 +311,47 @@ njs_destruct_date(double time, int64_t tm[], int index, njs_bool_t local)
 
 
 static njs_int_t
+njs_date_args(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    int64_t tm[])
+{
+    double      num;
+    njs_int_t   ret;
+    njs_uint_t  i, n;
+
+    njs_memzero(tm, NJS_DATE_MAX_FIELDS * sizeof(int64_t));
+
+    tm[NJS_DATE_DAY] = 1;
+
+    n = njs_min(8, nargs);
+
+    for (i = 1; i < n; i++) {
+        ret = njs_value_to_number(vm, &args[i], &num);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+        if (!isfinite(num)) {
+            tm[NJS_DATE_YR] = INT64_MIN;
+            continue;
+        }
+
+        tm[i] = njs_number_to_integer(num);
+    }
+
+    if (tm[NJS_DATE_YR] >= 0 && tm[NJS_DATE_YR] < 100) {
+        tm[NJS_DATE_YR] += 1900;
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
 njs_date_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double      num, time;
+    double      time;
     njs_int_t   ret;
-    njs_uint_t  i, n;
     njs_date_t  *date;
     int64_t     tm[NJS_DATE_MAX_FIELDS];
 
@@ -350,39 +385,13 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     } else {
 
-        time = NAN;
-
-        njs_memzero(tm, NJS_DATE_MAX_FIELDS * sizeof(int64_t));
-
-        tm[NJS_DATE_DAY] = 1;
-
-        n = njs_min(8, nargs);
-
-        for (i = 1; i < n; i++) {
-            if (!njs_is_numeric(&args[i])) {
-                ret = njs_value_to_numeric(vm, &args[i], &args[i]);
-                if (njs_slow_path(ret != NJS_OK)) {
-                    return ret;
-                }
-            }
-
-            num = njs_number(&args[i]);
-
-            if (isnan(num) || isinf(num)) {
-                goto done;
-            }
-
-            tm[i] = num;
-        }
-
-        if (tm[NJS_DATE_YR] >= 0 && tm[NJS_DATE_YR] < 100) {
-            tm[NJS_DATE_YR] += 1900;
+        ret = njs_date_args(vm, args, nargs, tm);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
 
         time = njs_make_date(tm, 1);
     }
-
-done:
 
     date = njs_mp_alloc(vm->mem_pool, sizeof(njs_date_t));
     if (njs_slow_path(date == NULL)) {
@@ -412,46 +421,20 @@ static njs_int_t
 njs_date_utc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    double      num, time;
+    double      time;
     njs_int_t   ret;
-    njs_uint_t  i, n;
     int64_t     tm[NJS_DATE_MAX_FIELDS];
 
     time = NAN;
 
     if (nargs > 1) {
-        njs_memzero(tm, NJS_DATE_MAX_FIELDS * sizeof(int64_t));
-
-        tm[NJS_DATE_DAY] = 1;
-
-        n = njs_min(8, nargs);
-
-        for (i = 1; i < n; i++) {
-            if (!njs_is_numeric(&args[i])) {
-                ret = njs_value_to_numeric(vm, &args[i], &args[i]);
-                if (ret != NJS_OK) {
-                    return ret;
-                }
-            }
-
-            num = njs_number(&args[i]);
-
-            if (isnan(num) || isinf(num)) {
-                goto done;
-            }
-
-            tm[i] = num;
-        }
-
-        /* Year. */
-        if (tm[NJS_DATE_YR] >= 0 && tm[NJS_DATE_YR] < 100) {
-            tm[NJS_DATE_YR] += 1900;
+        ret = njs_date_args(vm, args, nargs, tm);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
 
         time = njs_make_date(tm, 0);
     }
-
-done:
 
     njs_set_number(&vm->retval, time);
 
@@ -1385,21 +1368,17 @@ njs_date_prototype_set_fields(njs_vm_t *vm, njs_value_t *args,
     njs_destruct_date(time, tm, 0, magic & 0x40);
 
     do {
-        if (njs_slow_path(!njs_is_number(&args[i]))) {
-            ret = njs_value_to_numeric(vm, &args[i], &args[i]);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return ret;
-            }
+        ret = njs_value_to_number(vm, &args[i++], &num);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
 
-        num = njs_number(&args[i++]);
-
-        if (isnan(num) || isinf(num)) {
-            time = NAN;
-            goto done;
+        if (!isfinite(num)) {
+            tm[NJS_DATE_YR] = INT64_MIN;
+            continue;
         }
 
-        tm[since++] = num;
+        tm[since++] = njs_number_to_integer(num);
 
     } while (--left);
 

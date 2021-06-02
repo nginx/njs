@@ -14655,6 +14655,15 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("new Date(NaN)"),
       njs_str("Invalid Date") },
 
+    { njs_str("new Date(1,undefined)"),
+      njs_str("Invalid Date") },
+
+    { njs_str("new Date(1,Infinity)"),
+      njs_str("Invalid Date") },
+
+    { njs_str("new Date(1,NaN)"),
+      njs_str("Invalid Date") },
+
     { njs_str("new Date(8.65e15)"),
       njs_str("Invalid Date") },
 
