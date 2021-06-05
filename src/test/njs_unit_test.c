@@ -10797,6 +10797,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var re = /(?:ab|cd)\\d?/g; re.lastIndex=-1; re.test('@@'); re.lastIndex"),
       njs_str("0") },
 
+    { njs_str("var r = /a/; var gets = 0;"
+              "var counter = { valueOf: function() { gets++; return 0; } };"
+              "r.lastIndex = counter;"
+              "njs.dump([r.exec('nbc'), r.lastIndex === counter, gets])"),
+      njs_str("[null,true,1]") },
+
     /*
      * It seems that "/стоп/ig" fails on early PCRE versions.
      * It fails at least in 8.1 and works at least in 8.31.
