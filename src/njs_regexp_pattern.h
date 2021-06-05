@@ -21,8 +21,9 @@ struct njs_regexp_pattern_s {
     njs_regex_t           regex[2];
 
     /*
-     * A pattern source is used by RegExp.toString() method and
-     * RegExp.source property.  So it is is stored in form "/pattern/flags"
+     * A pattern source is used by RegExp.prototype.toString() method and
+     * RegExp.prototype.source and RegExp.prototype.flags accessor properties.
+     * So it is is stored in form "/pattern/flags"
      * and as zero-terminated C string but not as value, because retrieving
      * it is very seldom operation.  To get just a pattern string for
      * RegExp.source property a length of flags part "/flags" is stored

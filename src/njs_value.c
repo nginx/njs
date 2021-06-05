@@ -30,6 +30,8 @@ const njs_value_t  njs_value_nan =          njs_value(NJS_NUMBER, 0, NAN);
 const njs_value_t  njs_value_invalid =      njs_value(NJS_INVALID, 0, 0.0);
 
 const njs_value_t  njs_string_empty =       njs_string("");
+const njs_value_t  njs_string_empty_regexp =
+                                            njs_string("(?:)");
 const njs_value_t  njs_string_comma =       njs_string(",");
 const njs_value_t  njs_string_null =        njs_string("null");
 const njs_value_t  njs_string_undefined =   njs_string("undefined");

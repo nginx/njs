@@ -802,6 +802,7 @@ extern const njs_value_t  njs_value_nan;
 extern const njs_value_t  njs_value_invalid;
 
 extern const njs_value_t  njs_string_empty;
+extern const njs_value_t  njs_string_empty_regexp;
 extern const njs_value_t  njs_string_comma;
 extern const njs_value_t  njs_string_null;
 extern const njs_value_t  njs_string_undefined;
