@@ -38,6 +38,7 @@ struct njs_regexp_pattern_s {
     uint8_t               global;       /* 1 bit */
     uint8_t               ignore_case;  /* 1 bit */
     uint8_t               multiline;    /* 1 bit */
+    uint8_t               sticky;       /* 1 bit */
 
     njs_regexp_group_t    *groups;
 };

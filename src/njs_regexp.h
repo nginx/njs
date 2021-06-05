@@ -14,6 +14,7 @@ typedef enum {
     NJS_REGEXP_GLOBAL       =  1,
     NJS_REGEXP_IGNORE_CASE  =  2,
     NJS_REGEXP_MULTILINE    =  4,
+    NJS_REGEXP_STICKY       =  8,
 } njs_regexp_flags_t;
 
 

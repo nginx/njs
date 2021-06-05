@@ -10631,6 +10631,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("/[A-Z/]/"),
       njs_str("/[A-Z/]/") },
 
+    { njs_str("/a/gim"),
+      njs_str("/a/gim") },
+
+    { njs_str("/a/y"),
+      njs_str("/a/y") },
+
     { njs_str("/[A-Z\n]/"),
       njs_str("SyntaxError: Unterminated RegExp \"/[A-Z\" in 1") },
 
@@ -10719,6 +10725,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("/α/.test('\\u00CE\\u00B1'.toBytes())"),
       njs_str("true") },
+
+    { njs_str("var r = /abc/y; r.test('abc'); r.lastIndex"),
+      njs_str("3") },
 
     { njs_str("/\\d/.exec('123')"),
       njs_str("1") },
@@ -10849,8 +10858,21 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var r = (/^.+$/mg), s = 'ab\\nc'; [r.exec(s), r.exec(s)]"),
       njs_str("ab,c") },
 
-    { njs_str("var r = (/^.+$/mg); [r.global, r.multiline, r.ignoreCase]"),
-      njs_str("true,true,false") },
+    { njs_str("var r = (/^.+$/mg); [r.global, r.multiline, r.ignoreCase, r.sticky]"),
+      njs_str("true,true,false,false") },
+
+    { njs_str("['global', 'ignoreCase', 'multiline', 'sticky']"
+              ".map(v => Object.getOwnPropertyDescriptor(RegExp.prototype, v))"
+              ".every(desc => (typeof desc.get === 'function' && typeof desc.set === 'undefined'))"),
+      njs_str("true") },
+
+    { njs_str("var re = /./, re2 = /./y; re.lastIndex = 1; re2.lastIndex = 1;"
+              "[re.exec('abc')[0], re2.exec('abc')[0]]"),
+      njs_str("a,b") },
+
+    { njs_str("var re = /c/, re2 = /c/y;"
+              "njs.dump([re.exec('abc')[0], re2.exec('abc')])"),
+      njs_str("['c',null]") },
 
     { njs_str("['global', 'ignoreCase', 'multiline']"
               ".map(v => Object.getOwnPropertyDescriptor(RegExp.prototype, v))"
@@ -10868,6 +10890,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var r = new RegExp('.', 'igm'); r"),
       njs_str("/./gim") },
+
+    { njs_str("var r = new RegExp('.', 'y'); r"),
+      njs_str("/./y") },
 
     { njs_str("var r = new RegExp('abc'); r.test('00abc11')"),
       njs_str("true") },
@@ -17340,8 +17365,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("njs.dump({a:1, b:[1,,2,{c:new Boolean(1)}]})"),
       njs_str("{a:1,b:[1,<empty>,2,{c:[Boolean: true]}]}") },
 
-    { njs_str("njs.dump([InternalError(),TypeError('msg'), new RegExp(), /^undef$/m, new Date(0)])"),
-      njs_str("[InternalError,TypeError: msg,/(?:)/,/^undef$/m,1970-01-01T00:00:00.000Z]") },
+    { njs_str("njs.dump([InternalError(),TypeError('msg'), new RegExp(), /^undef$/my, new Date(0)])"),
+      njs_str("[InternalError,TypeError: msg,/(?:)/,/^undef$/my,1970-01-01T00:00:00.000Z]") },
 
     { njs_str("njs.dump(Array.prototype.slice.call({'1':'b', length:2}))"),
       njs_str("[<empty>,'b']") },
