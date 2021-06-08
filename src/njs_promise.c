@@ -570,7 +570,7 @@ njs_promise_host_rejection_tracker(njs_vm_t *vm, njs_promise_t *promise,
         length = vm->promise_reason->length;
 
         for (i = 0; i < length; i++) {
-            if (memcmp(&value[i], &data->result, sizeof(njs_value_t)) == 0) {
+            if (njs_values_same(&value[i], &data->result)) {
                 length--;
 
                 if (i < length) {
