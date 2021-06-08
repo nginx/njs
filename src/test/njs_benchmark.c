@@ -316,6 +316,21 @@ static njs_benchmark_test_t  njs_test[] =
       njs_str("undefined"),
       1 },
 
+    { "regexp split",
+      njs_str("'a a'.split(/ /).length"),
+      njs_str("2"),
+      100 },
+
+    { "regexp 10K split",
+      njs_str("'a '.repeat(10000).split(/ /).length"),
+      njs_str("10001"),
+      1 },
+
+    { "simple 100K split",
+      njs_str("'a '.repeat(100000).split(' ').length"),
+      njs_str("100001"),
+      1 },
+
     { "external property ($shared.uri)",
       njs_str("$shared.uri"),
       njs_str("shared"),
