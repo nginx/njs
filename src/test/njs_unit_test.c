@@ -8635,6 +8635,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("/[\\"),
       njs_str("SyntaxError: Unterminated RegExp \"/[\\\" in 1") },
 
+    { njs_str("/\\s*;\\s*/"),
+      njs_str("/\\s*;\\s*/") },
+
     { njs_str("RegExp(']')"),
       njs_str("/\\]/") },
 
@@ -8802,7 +8805,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("abc") },
 
     { njs_str("''.split('').length"),
-      njs_str("1") },
+      njs_str("0") },
 
     { njs_str("'abc'.split('')"),
       njs_str("a,b,c") },
@@ -8858,8 +8861,39 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'abc'.split(/abc/)"),
       njs_str(",") },
 
+    { njs_str("'AbcDefGhi'.split(/([A-Z][a-z]+)/)"),
+      njs_str(",Abc,,Def,,Ghi,") },
+
+    { njs_str("'myCamelCaseString'.split(/(?=[A-Z])/)"),
+      njs_str("my,Camel,Case,String") },
+
+    { njs_str("'мояВерблюжьяСтрока'.split(/(?=[А-Я])/)"),
+      njs_str("моя,Верблюжья,Строка") },
+
+    { njs_str("'Harry Trump ;Fred Barney; Helen Rigby ; Bill Abel ;Chris Hand '.split( /\\s*(?:;|$)\\s*/)"),
+      njs_str("Harry Trump,Fred Barney,Helen Rigby,Bill Abel,Chris Hand,") },
+
+    { njs_str("'Гарри Трамп ;Фрэд Барни; Хелен Ригби ; Билл Абель'.split(/\\s*;\\s*/)"),
+      njs_str("Гарри Трамп,Фрэд Барни,Хелен Ригби,Билл Абель") },
+
+    { njs_str("'Hello 1 world. Sentence number 2.'.split(/(\\d)/)"),
+      njs_str("Hello ,1, world. Sentence number ,2,.") },
+
+    { njs_str("'Привет 1 мир. Предложение номер 2.'.split(/(\\d)/)"),
+      njs_str("Привет ,1, мир. Предложение номер ,2,.") },
+
     { njs_str("'0123456789'.split('').reverse().join('')"),
       njs_str("9876543210") },
+
+    { njs_str("/-/[Symbol.split]('a-b-c')"),
+      njs_str("a,b,c") },
+
+    { njs_str("var O = RegExp.prototype[Symbol.split];"
+              "RegExp.prototype[Symbol.split] = function (s, limit) { "
+              "    return O.call(this, s, limit).map(v => `@${v}#`); "
+              "};"
+              "'2016-01-02'.split(/-/)"),
+      njs_str("@2016#,@01#,@02#") },
 
     { njs_str("'abc'.repeat(3)"),
       njs_str("abcabcabc") },
@@ -17006,11 +17040,13 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = [1]; a[2] = 'x'; JSON.stringify(a)"),
       njs_str("[1,null,\"x\"]") },
 
+#if (!NJS_HAVE_MEMORY_SANITIZER) /* very long test under MSAN */
     { njs_str(njs_declare_sparse_array("a", 32769)
               "a[32] = 'a'; a[64] = 'b';"
               "var s = JSON.stringify(a); "
               "[s.length,s.substring(162,163),s.match(/null/g).length]"),
       njs_str("163844,a,32767") },
+#endif
 
     { njs_str(njs_declare_sparse_array("a", 8)
               "a[2] = 'a'; a[4] = 'b'; a.length = 3;"

@@ -239,6 +239,8 @@ njs_int_t njs_string_decode_uri(njs_vm_t *vm, njs_value_t *args,
 
 njs_int_t njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
+njs_int_t njs_string_split_part_add(njs_vm_t *vm, njs_array_t *array,
+    njs_utf8_t utf8, const u_char *start, size_t size);
 njs_int_t njs_string_get_substitution(njs_vm_t *vm, njs_value_t *matched,
     njs_value_t *string, int64_t pos, njs_value_t *captures, int64_t ncaptures,
     njs_value_t *groups, njs_value_t *replacement, njs_value_t *retval);

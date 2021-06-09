@@ -1612,6 +1612,250 @@ exception:
 }
 
 
+static njs_int_t
+njs_regexp_prototype_symbol_split(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused)
+{
+    u_char             *dst;
+    int64_t            e, i, p, q, ncaptures, length;
+    uint32_t           limit;
+    njs_int_t          ret;
+    njs_bool_t         sticky;
+    njs_utf8_t         utf8;
+    njs_array_t        *array;
+    njs_value_t        *rx, *string, *value;
+    njs_value_t        r, z, this, s_lvalue, retval, setval, constructor;
+    njs_object_t       *object;
+    const u_char       *start, *end;
+    njs_string_prop_t  s;
+    njs_value_t        arguments[2];
+
+    static const njs_value_t  string_lindex = njs_string("lastIndex");
+    static const njs_value_t  string_flags = njs_string("flags");
+
+    rx = njs_argument(args, 0);
+
+    if (njs_slow_path(!njs_is_object(rx))) {
+        njs_type_error(vm, "\"this\" is not object");
+        return NJS_ERROR;
+    }
+
+    string = njs_lvalue_arg(&s_lvalue, args, nargs, 1);
+
+    ret = njs_value_to_string(vm, string, string);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    njs_set_function(&constructor, &vm->constructors[NJS_OBJ_TYPE_REGEXP]);
+
+    ret = njs_value_species_constructor(vm, rx, &constructor, &constructor);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    ret = njs_value_property(vm, rx, njs_value_arg(&string_flags), &retval);
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_value_to_string(vm, &retval, &retval);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    (void) njs_string_prop(&s, &retval);
+
+    sticky = memchr(s.start, 'y', s.size) != NULL;
+
+    object = njs_function_new_object(vm, &constructor);
+    if (njs_slow_path(object == NULL)) {
+        return NJS_ERROR;
+    }
+
+    njs_set_object(&this, object);
+
+    arguments[0] = *rx;
+
+    if (!sticky) {
+        length = njs_is_byte_string(&s) ? 0 : s.length + 1;
+
+        dst = njs_string_alloc(vm, &arguments[1], s.size + 1, length);
+        if (njs_slow_path(dst == NULL)) {
+            return NJS_ERROR;
+        }
+
+        dst = njs_cpymem(dst, s.start, s.size);
+        *dst++ = 'y';
+
+    } else {
+        arguments[1] = retval;
+    }
+
+    ret = njs_function_call2(vm, njs_function(&constructor), &this,
+                             njs_value_arg(&arguments), 2, &r, 1);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    rx = &r;
+
+    array = njs_array_alloc(vm, 0, 0, NJS_ARRAY_SPARE);
+    if (njs_slow_path(array == NULL)) {
+        return NJS_ERROR;
+    }
+
+    value = njs_arg(args, nargs, 2);
+    limit = UINT32_MAX;
+
+    if (njs_is_defined(value)) {
+        ret = njs_value_to_uint32(vm, value, &limit);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    if (njs_slow_path(limit == 0)) {
+        goto done;
+    }
+
+    length = njs_string_prop(&s, string);
+
+    if (njs_slow_path(s.size == 0)) {
+        ret = njs_regexp_exec(vm, rx, string, &z);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
+        if (!njs_is_null(&z)) {
+            goto done;
+        }
+
+        goto single;
+    }
+
+    utf8 = NJS_STRING_BYTE;
+
+    if (s.length != 0 && s.length != s.size) {
+        utf8 = NJS_STRING_UTF8;
+    }
+
+    p = 0;
+    q = 0;
+
+    while (q < length) {
+        njs_set_number(&setval, q);
+        ret = njs_value_property_set(vm, rx, njs_value_arg(&string_lindex),
+                                     &setval);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
+        ret = njs_regexp_exec(vm, rx, string, &z);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
+        if (njs_is_null(&z)) {
+            q = q + 1;
+            continue;
+        }
+
+        ret = njs_value_property(vm, rx, njs_value_arg(&string_lindex),
+                                 &retval);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return NJS_ERROR;
+        }
+
+        ret = njs_value_to_length(vm, &retval, &e);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
+        e = njs_min(e, length);
+
+        if (e == p) {
+            q = q + 1;
+            continue;
+        }
+
+        if (utf8 == NJS_STRING_UTF8) {
+            start = njs_string_offset(s.start, s.start + s.size, p);
+            end = njs_string_offset(s.start, s.start + s.size, q);
+
+        } else {
+            start = &s.start[p];
+            end = &s.start[q];
+        }
+
+        ret = njs_string_split_part_add(vm, array, utf8, start, end - start);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+        if (array->length == limit) {
+            goto done;
+        }
+
+        p = e;
+
+        ret = njs_object_length(vm, &z, &ncaptures);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
+        ncaptures = njs_max(ncaptures - 1, 0);
+
+        for (i = 1; i <= ncaptures; i++) {
+            value = njs_array_push(vm, array);
+            if (njs_slow_path(value == NULL)) {
+                return NJS_ERROR;
+            }
+
+            ret = njs_value_property_i64(vm, &z, i, value);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                return NJS_ERROR;
+            }
+
+            if (array->length == limit) {
+                goto done;
+            }
+        }
+
+        q = p;
+    }
+
+    end = &s.start[s.size];
+
+    if (utf8 == NJS_STRING_UTF8) {
+        start = njs_string_offset(s.start, s.start + s.size, p);
+
+    } else {
+        start = &s.start[p];
+    }
+
+    ret = njs_string_split_part_add(vm, array, utf8, start, end - start);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    goto done;
+
+single:
+
+    value = njs_array_push(vm, array);
+    if (njs_slow_path(value == NULL)) {
+        return NJS_ERROR;
+    }
+
+    *value = *string;
+
+done:
+
+    njs_set_array(&vm->retval, array);
+
+    return NJS_OK;
+}
 
 
 static const njs_object_prop_t  njs_regexp_constructor_properties[] =
@@ -1752,6 +1996,14 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_wellknown_symbol(NJS_SYMBOL_REPLACE),
         .value = njs_native_function(njs_regexp_prototype_symbol_replace, 2),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_wellknown_symbol(NJS_SYMBOL_SPLIT),
+        .value = njs_native_function(njs_regexp_prototype_symbol_split, 2),
         .writable = 1,
         .configurable = 1,
     },

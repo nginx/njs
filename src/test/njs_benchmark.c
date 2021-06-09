@@ -317,8 +317,10 @@ static njs_benchmark_test_t  njs_test[] =
       1 },
 
     { "regexp split",
-      njs_str("'a a'.split(/ /).length"),
-      njs_str("2"),
+      njs_str("var s = Array(26).fill(0).map((v,i)=> {"
+              "    var u = String.fromCodePoint(65+i), l = u.toLowerCase(); return u+l+l;}).join('');"
+              "s.split(/(?=[A-Z])/).length"),
+      njs_str("26"),
       100 },
 
     { "regexp 10K split",
