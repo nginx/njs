@@ -2036,40 +2036,15 @@ njs_dump_is_recursive(const njs_value_t *value)
 
 
 njs_inline njs_int_t
-njs_dump_visit(njs_arr_t *list, const njs_value_t *value)
+njs_dump_visited(njs_vm_t *vm, njs_json_stringify_t *stringify,
+    const njs_value_t *value)
 {
-    njs_object_t  **p;
+    njs_int_t  depth;
 
-    if (njs_is_object(value)) {
-        p = njs_arr_add(list);
-        if (njs_slow_path(p == NULL)) {
-            return NJS_ERROR;
-        }
+    depth = stringify->depth - 1;
 
-        *p = njs_object(value);
-    }
-
-    return NJS_OK;
-}
-
-
-njs_inline njs_int_t
-njs_dump_visited(njs_arr_t *list, const njs_value_t *value)
-{
-    njs_uint_t    items, n;
-    njs_object_t  **start, *obj;
-
-    if (!njs_is_object(value)) {
-        /* External. */
-        return 0;
-    }
-
-    start = list->start;
-    items = list->items;
-    obj = njs_object(value);
-
-    for (n = 0; n < items; n++) {
-        if (start[n] == obj) {
+    for (; depth >= 0; depth--) {
+        if (njs_values_same(&stringify->states[depth].value, value)) {
             return 1;
         }
     }
@@ -2125,9 +2100,7 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
     njs_int_t             ret;
     njs_chb_t             chain;
     njs_str_t             str;
-    njs_arr_t             visited;
     njs_value_t           *key, *val, tag;
-    njs_object_t          **start;
     njs_json_state_t      *state;
     njs_string_prop_t     string;
     njs_object_prop_t     *prop;
@@ -2147,9 +2120,6 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
             goto memory_error;
         }
 
-        visited.separate = 0;
-        visited.pointer = 0;
-
         goto done;
     }
 
@@ -2165,13 +2135,6 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
     if (njs_slow_path(state == NULL)) {
         goto memory_error;
     }
-
-    start = njs_arr_init(vm->mem_pool, &visited, NULL, 8, sizeof(void *));
-    if (njs_slow_path(start == NULL)) {
-        goto memory_error;
-    }
-
-    (void) njs_dump_visit(&visited, value);
 
     for ( ;; ) {
         switch (state->type) {
@@ -2276,14 +2239,9 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
             }
 
             if (njs_dump_is_recursive(val)) {
-                if (njs_slow_path(njs_dump_visited(&visited, val))) {
+                if (njs_slow_path(njs_dump_visited(vm, stringify, val))) {
                     njs_chb_append_literal(&chain, "[Circular]");
                     break;
-                }
-
-                ret = njs_dump_visit(&visited, val);
-                if (njs_slow_path(ret != NJS_OK)) {
-                    goto memory_error;
                 }
 
                 state = njs_json_push_stringify_state(vm, stringify, val);
@@ -2342,14 +2300,9 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
             val = &njs_array_start(&state->value)[state->index++];
 
             if (njs_dump_is_recursive(val)) {
-                if (njs_slow_path(njs_dump_visited(&visited, val))) {
+                if (njs_slow_path(njs_dump_visited(vm, stringify, val))) {
                     njs_chb_append_literal(&chain, "[Circular]");
                     break;
-                }
-
-                ret = njs_dump_visit(&visited, val);
-                if (njs_slow_path(ret != NJS_OK)) {
-                    goto memory_error;
                 }
 
                 state = njs_json_push_stringify_state(vm, stringify, val);
@@ -2376,8 +2329,6 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
     }
 
 done:
-
-    njs_arr_destroy(&visited);
 
     ret = njs_chb_join(&chain, &str);
     if (njs_slow_path(ret != NJS_OK)) {
