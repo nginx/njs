@@ -1828,7 +1828,8 @@ njs_regexp_prototype_symbol_split(njs_vm_t *vm, njs_value_t *args,
     end = &s.start[s.size];
 
     if (utf8 == NJS_STRING_UTF8) {
-        start = njs_string_offset(s.start, s.start + s.size, p);
+        start = (p < length) ? njs_string_offset(s.start, s.start + s.size, p)
+                             : end;
 
     } else {
         start = &s.start[p];

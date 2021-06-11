@@ -8861,6 +8861,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'abc'.split(/abc/)"),
       njs_str(",") },
 
+    { njs_str("('α'.repeat(32)).split(/./).length"),
+      njs_str("33") },
+
     { njs_str("'AbcDefGhi'.split(/([A-Z][a-z]+)/)"),
       njs_str(",Abc,,Def,,Ghi,") },
 
