@@ -2565,7 +2565,7 @@ njs_string_index(njs_string_prop_t *string, uint32_t offset)
     last = 0;
     index = 0;
 
-    if (string->length >= NJS_STRING_MAP_STRIDE) {
+    if (string->length > NJS_STRING_MAP_STRIDE) {
 
         end = string->start + string->size;
         map = njs_string_map_start(end);
