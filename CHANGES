@@ -1,3 +1,28 @@
+Changes with njs 0.6.0                                        15 Jun 2021
+
+    Core:
+
+    *) Feature: added let and const declaration support.
+
+    *) Feature: added RegExp.prototype[Symbol.split].
+
+    *) Feature: added sticky flag support for RegExp.
+
+    *) Bugfix: fixed heap-buffer-overflow in
+       String.prototype.lastIndexOf().
+
+    *) Bugfix: fixed RegExp.prototype.test() according to the
+       specification.
+
+    *) Bugfix: fixed String.prototype.split() according to the
+       specification.
+
+    *) Bugfix: fixed use-of-uninitialized-value while tracking
+       rejected promises.
+
+    *) Bugfix: fixed njs.dump() for objects with circular
+       references.
+
 Changes with njs 0.5.3                                        30 Mar 2021
 
     nginx modules:
