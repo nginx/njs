@@ -13,6 +13,8 @@ Changes with njs 0.5.2                                        09 Mar 2021
     *) Feature: introduced the "status" property for stream session
        object.
 
+    Core:
+
     *) Feature: added njs.on('exit') callback support.
 
     *) Bugfix: fixed property descriptor reuse for not extensible
