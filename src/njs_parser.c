@@ -6545,7 +6545,22 @@ static njs_int_t
 njs_parser_debugger_statement(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
-    return njs_parser_not_supported(parser, token);
+    parser->node = njs_parser_node_new(parser, NJS_TOKEN_DEBUGGER);
+    if (parser->node == NULL) {
+        return NJS_ERROR;
+    }
+
+    parser->node->token_line = parser->line;
+
+    if (token->type != NJS_TOKEN_SEMICOLON
+        && token->type != NJS_TOKEN_END)
+    {
+        return njs_parser_failed(parser);
+    }
+
+    njs_lexer_consume_token(parser->lexer, 1);
+
+    return njs_parser_stack_pop(parser);
 }
 
 
@@ -8882,6 +8897,7 @@ njs_parser_serialize_node(njs_chb_t *chain, njs_parser_node_t *node)
     njs_token_serialize(NJS_TOKEN_EVAL);
     njs_token_serialize(NJS_TOKEN_IMPORT);
     njs_token_serialize(NJS_TOKEN_EXPORT);
+    njs_token_serialize(NJS_TOKEN_DEBUGGER);
 
 #if 0
 
@@ -8889,7 +8905,6 @@ njs_parser_serialize_node(njs_chb_t *chain, njs_parser_node_t *node)
     njs_token_serialize(NJS_TOKEN_META);
     njs_token_serialize(NJS_TOKEN_ASYNC);
     njs_token_serialize(NJS_TOKEN_AWAIT);
-    njs_token_serialize(NJS_TOKEN_DEBUGGER);
     njs_token_serialize(NJS_TOKEN_ENUM);
 
     njs_token_serialize(NJS_TOKEN_CLASS);

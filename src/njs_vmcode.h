@@ -126,6 +126,7 @@ enum {
     NJS_VMCODE_TYPEOF,
     NJS_VMCODE_VOID,
     NJS_VMCODE_DELETE,
+    NJS_VMCODE_DEBUGGER,
 
     NJS_VMCODE_NOP = 255
 };
@@ -419,6 +420,12 @@ typedef struct {
     njs_vmcode_t               code;
     njs_index_t                dst;
 } njs_vmcode_variable_t;
+
+
+typedef struct {
+    njs_vmcode_t               code;
+    njs_index_t                retval;
+} njs_vmcode_debugger_t;
 
 
 njs_int_t njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc);

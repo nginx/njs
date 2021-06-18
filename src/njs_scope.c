@@ -111,6 +111,13 @@ njs_scope_global_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime)
 }
 
 
+njs_value_t *
+njs_scope_value_get(njs_vm_t *vm, njs_index_t index)
+{
+    return njs_scope_value(vm, index);
+}
+
+
 static njs_int_t
 njs_scope_values_hash_test(njs_lvlhsh_query_t *lhq, void *data)
 {

@@ -111,6 +111,8 @@ static njs_int_t njs_generate_continue_statement(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_break_statement(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
+static njs_int_t njs_generate_debugger_statement(njs_vm_t *vm,
+    njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_statement(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_block_statement(njs_vm_t *vm,
@@ -316,6 +318,9 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
 
     case NJS_TOKEN_BREAK:
         return njs_generate_break_statement(vm, generator, node);
+
+    case NJS_TOKEN_DEBUGGER:
+        return njs_generate_debugger_statement(vm, generator, node);
 
     case NJS_TOKEN_STATEMENT:
         return njs_generate_statement(vm, generator, node);
@@ -1816,6 +1821,24 @@ syntax_error:
     njs_generate_syntax_error(vm, node, "Illegal break statement");
 
     return NJS_ERROR;
+}
+
+
+static njs_int_t
+njs_generate_debugger_statement(njs_vm_t *vm, njs_generator_t *generator,
+    njs_parser_node_t *node)
+{
+    njs_vmcode_debugger_t  *debugger;
+
+    njs_generate_code(generator, njs_vmcode_debugger_t, debugger,
+                      NJS_VMCODE_DEBUGGER, 0, node);
+
+    debugger->retval = njs_generate_dest_index(vm, generator, node);
+    if (njs_slow_path(debugger->retval == NJS_INDEX_ERROR)) {
+        return debugger->retval;
+    }
+
+    return NJS_OK;
 }
 
 

@@ -23,6 +23,7 @@ njs_value_t *njs_scope_create_index_value(njs_vm_t *vm, njs_index_t index);
 njs_value_t **njs_scope_make(njs_vm_t *vm, uint32_t count);
 njs_index_t njs_scope_global_index(njs_vm_t *vm, const njs_value_t *src,
     njs_uint_t runtime);
+njs_value_t *njs_scope_value_get(njs_vm_t *vm, njs_index_t index);
 
 
 njs_inline njs_index_t

@@ -153,6 +153,9 @@ static njs_code_name_t  code_names[] = {
 
     { NJS_VMCODE_ASSIGNMENT_ERROR, sizeof(njs_vmcode_variable_t),
           njs_str("ASSIGNMENT ERROR") },
+
+    { NJS_VMCODE_DEBUGGER, sizeof(njs_vmcode_debugger_t),
+          njs_str("DEBUGGER        ") },
 };
 
 

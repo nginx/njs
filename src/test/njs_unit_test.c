@@ -16562,6 +16562,23 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("parseFloat('-5.7e+abc')"),
       njs_str("-5.7") },
 
+    /* debugger. */
+
+    { njs_str("debugger"),
+      njs_str("undefined") },
+
+    { njs_str("debugger;"),
+      njs_str("undefined") },
+
+    { njs_str("while (false) debugger;"),
+      njs_str("undefined") },
+
+    { njs_str("1 + debugger"),
+      njs_str("SyntaxError: Unexpected token \"debugger\" in 1") },
+
+    { njs_str("debugger + 1"),
+      njs_str("SyntaxError: Unexpected token \"+\" in 1") },
+
     /* Top-level objects. */
 
     { njs_str("var global = this;"
