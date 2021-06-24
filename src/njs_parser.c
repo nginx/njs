@@ -7468,7 +7468,7 @@ njs_parser_export(njs_parser_t *parser, njs_lexer_token_t *token,
     node->token_line = parser->line;
     parser->node = node;
 
-    njs_parser_next(parser, njs_parser_expression);
+    njs_parser_next(parser, njs_parser_assignment_expression);
 
     return njs_parser_after(parser, current, node, 1, njs_parser_export_after);
 }
@@ -7478,6 +7478,10 @@ static njs_int_t
 njs_parser_export_after(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
+    if (njs_parser_expect_semicolon(parser, token) != NJS_OK) {
+        return njs_parser_failed(parser);
+    }
+
     parser->target->right = parser->node;
     parser->node = parser->target;
 

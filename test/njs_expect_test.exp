@@ -749,6 +749,8 @@ njs_test {
      "Identifier \"default\" has already been declared in export.js:5\r\n"}
     {"import m from 'export_non_default.js'\r\n"
      "Non-default export is not supported in export_non_default.js:3\r\n"}
+    {"import m from 'export_non_assignment.js'\r\n"
+     "Unexpected token \",\" in export_non_assignment.js:1\r\n"}
     {"import ref from 'ref_exception.js'\r\n"
      "ReferenceError: \"undeclared\" is not defined"}
     {"var ref\r\n"
