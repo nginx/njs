@@ -10763,6 +10763,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("/α/.test('\\u00CE\\u00B1'.toBytes())"),
       njs_str("true") },
 
+    { njs_str("/[A-Za-z]/.test('S')"),
+      njs_str("true") },
+
+    { njs_str("/[A-Za-z]/.test('ø')"),
+      njs_str("false") },
+
     { njs_str("var r = /abc/y; r.test('abc'); r.lastIndex"),
       njs_str("3") },
 
@@ -21004,6 +21010,13 @@ static njs_unit_test_t  njs_regexp_test[] =
 
     { njs_str("RegExp('[\0]').test('\0')"),
       njs_str("true") },
+
+    { njs_str("/[A-Za-z\\u00F8-\\u02FF]/.test('S')"),
+      njs_str("true") },
+
+    { njs_str("/[A-Za-z\\u00F8-\\u02FF]/.test('ø')"),
+      njs_str("true") },
+
 };
 
 
