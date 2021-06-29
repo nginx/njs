@@ -9330,6 +9330,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("function f(a,...rest) { }; f.length"),
       njs_str("1") },
 
+    { njs_str("function f(...) {}"),
+      njs_str("SyntaxError: Unexpected token \")\" in 1") },
+
+    { njs_str("(function (...) {})()"),
+      njs_str("SyntaxError: Unexpected token \")\" in 1") },
+
     { njs_str("function f(a,b) { }; var ff = f.bind(f, 1); ff.length"),
       njs_str("1") },
 

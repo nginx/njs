@@ -6791,6 +6791,15 @@ njs_parser_formal_parameters(njs_parser_t *parser, njs_lexer_token_t *token,
 
         njs_lexer_consume_token(parser->lexer, 1);
 
+        token = njs_lexer_token(parser->lexer, 0);
+        if (token == NULL) {
+            return NJS_ERROR;
+        }
+
+        if (!njs_lexer_token_is_binding_identifier(token)) {
+            return njs_parser_failed(parser);
+        }
+
         lambda->rest_parameters = 1;
 
         return NJS_OK;
