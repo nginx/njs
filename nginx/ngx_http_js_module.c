@@ -320,6 +320,9 @@ static ngx_http_output_header_filter_pt  ngx_http_next_header_filter;
 static ngx_http_output_body_filter_pt    ngx_http_next_body_filter;
 
 
+static njs_int_t    ngx_http_js_request_proto_id;
+
+
 static njs_external_t  ngx_http_js_ext_request[] = {
 
     {
@@ -1114,7 +1117,7 @@ ngx_http_js_init_vm(ngx_http_request_t *r)
     }
 
     rc = njs_vm_external_create(ctx->vm, njs_value_arg(&ctx->request),
-                                NGX_JS_PROTO_MAIN, r, 0);
+                                ngx_http_js_request_proto_id, r, 0);
     if (rc != NJS_OK) {
         return NGX_ERROR;
     }
@@ -3141,7 +3144,7 @@ ngx_http_js_subrequest_done(ngx_http_request_t *r, void *data, ngx_int_t rc)
     }
 
     ret = njs_vm_external_create(ctx->vm, njs_value_arg(&reply),
-                                 NGX_JS_PROTO_MAIN, r, 0);
+                                 ngx_http_js_request_proto_id, r, 0);
     if (ret != NJS_OK) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "js subrequest reply creation failed");
@@ -3383,7 +3386,7 @@ ngx_http_js_init_main_conf(ngx_conf_t *cf, void *conf)
     ssize_t                n;
     ngx_fd_t               fd;
     ngx_str_t             *m, file;
-    njs_int_t              rc, proto_id;
+    njs_int_t              rc;
     njs_str_t              text, path;
     ngx_uint_t             i;
     njs_value_t           *value;
@@ -3542,9 +3545,10 @@ ngx_http_js_init_main_conf(ngx_conf_t *cf, void *conf)
         }
     }
 
-    proto_id = njs_vm_external_prototype(jmcf->vm, ngx_http_js_ext_request,
-                                         njs_nitems(ngx_http_js_ext_request));
-    if (proto_id < 0) {
+    ngx_http_js_request_proto_id = njs_vm_external_prototype(jmcf->vm,
+                                           ngx_http_js_ext_request,
+                                           njs_nitems(ngx_http_js_ext_request));
+    if (ngx_http_js_request_proto_id < 0) {
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
                       "failed to add js request proto");
         return NGX_CONF_ERROR;

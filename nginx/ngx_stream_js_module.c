@@ -419,6 +419,9 @@ static njs_vm_meta_t ngx_stream_js_metas = {
 static ngx_stream_filter_pt  ngx_stream_next_filter;
 
 
+static njs_int_t    ngx_stream_js_session_proto_id;
+
+
 static ngx_int_t
 ngx_stream_js_access_handler(ngx_stream_session_t *s)
 {
@@ -757,7 +760,7 @@ ngx_stream_js_init_vm(ngx_stream_session_t *s)
     }
 
     rc = njs_vm_external_create(ctx->vm, njs_value_arg(&ctx->args[0]),
-                                NGX_JS_PROTO_MAIN, s, 0);
+                                ngx_stream_js_session_proto_id, s, 0);
     if (rc != NJS_OK) {
         return NGX_ERROR;
     }
@@ -1400,7 +1403,7 @@ ngx_stream_js_init_main_conf(ngx_conf_t *cf, void *conf)
     ssize_t                  n;
     ngx_fd_t                 fd;
     ngx_str_t               *m, file;
-    njs_int_t                rc, proto_id;
+    njs_int_t                rc;
     njs_str_t                text, path;
     ngx_uint_t               i;
     njs_value_t             *value;
@@ -1559,9 +1562,10 @@ ngx_stream_js_init_main_conf(ngx_conf_t *cf, void *conf)
         }
     }
 
-    proto_id = njs_vm_external_prototype(jmcf->vm, ngx_stream_js_ext_session,
+    ngx_stream_js_session_proto_id = njs_vm_external_prototype(jmcf->vm,
+                                         ngx_stream_js_ext_session,
                                          njs_nitems(ngx_stream_js_ext_session));
-    if (proto_id < 0) {
+    if (ngx_stream_js_session_proto_id < 0) {
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
                       "failed to add js request proto");
         return NGX_CONF_ERROR;

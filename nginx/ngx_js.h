@@ -19,9 +19,6 @@
 #define NGX_JS_STRING  1
 #define NGX_JS_BUFFER  2
 
-#define NGX_JS_PROTO_MAIN      0
-#define NGX_JS_PROTO_RESPONSE  1
-
 
 typedef ngx_pool_t *(*ngx_external_pool_pt)(njs_vm_t *vm, njs_external_ptr_t e);
 typedef void (*ngx_js_event_handler_pt)(njs_external_ptr_t e,

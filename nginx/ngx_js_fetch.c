@@ -319,6 +319,9 @@ static njs_external_t  ngx_js_ext_http_response[] = {
 };
 
 
+static njs_int_t    ngx_http_js_fetch_proto_id;
+
+
 njs_int_t
 ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
@@ -1189,7 +1192,7 @@ ngx_js_http_process_body(ngx_js_http_t *http)
 
         if (size == http->http_parse.content_length_n) {
             ret = njs_vm_external_create(http->vm, njs_value_arg(&http->reply),
-                                         NGX_JS_PROTO_RESPONSE, http, 0);
+                                         ngx_http_js_fetch_proto_id, http, 0);
             if (ret != NJS_OK) {
                 ngx_js_http_error(http, 0, "fetch object creation failed");
                 return NGX_ERROR;
@@ -2212,11 +2215,10 @@ ngx_response_js_ext_type(njs_vm_t *vm, njs_object_prop_t *prop,
 ngx_int_t
 ngx_js_fetch_init(njs_vm_t *vm, ngx_log_t *log)
 {
-    njs_int_t  proto_id;
-
-    proto_id = njs_vm_external_prototype(vm, ngx_js_ext_http_response,
-                                         njs_nitems(ngx_js_ext_http_response));
-    if (proto_id != NGX_JS_PROTO_RESPONSE) {
+    ngx_http_js_fetch_proto_id = njs_vm_external_prototype(vm,
+                                        ngx_js_ext_http_response,
+                                        njs_nitems(ngx_js_ext_http_response));
+    if (ngx_http_js_fetch_proto_id < 0) {
         ngx_log_error(NGX_LOG_EMERG, log, 0,
                       "failed to add js http.response proto");
         return NGX_ERROR;
