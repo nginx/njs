@@ -299,12 +299,14 @@ NJS_EXPORT njs_int_t njs_vm_start(njs_vm_t *vm);
 
 NJS_EXPORT njs_int_t njs_vm_add_path(njs_vm_t *vm, const njs_str_t *path);
 
+#define NJS_PROTO_ID_ANY    (-1)
+
 NJS_EXPORT njs_int_t njs_vm_external_prototype(njs_vm_t *vm,
     const njs_external_t *definition, njs_uint_t n);
 NJS_EXPORT njs_int_t njs_vm_external_create(njs_vm_t *vm, njs_value_t *value,
     njs_int_t proto_id, njs_external_ptr_t external, njs_bool_t shared);
 NJS_EXPORT njs_external_ptr_t njs_vm_external(njs_vm_t *vm,
-    const njs_value_t *value);
+    njs_int_t proto_id, const njs_value_t *value);
 NJS_EXPORT uintptr_t njs_vm_meta(njs_vm_t *vm, njs_uint_t index);
 
 NJS_EXPORT njs_function_t *njs_vm_function_alloc(njs_vm_t *vm,
@@ -381,6 +383,7 @@ NJS_EXPORT void njs_value_number_set(njs_value_t *value, double num);
 NJS_EXPORT uint8_t njs_value_bool(const njs_value_t *value);
 NJS_EXPORT double njs_value_number(const njs_value_t *value);
 NJS_EXPORT njs_function_t *njs_value_function(const njs_value_t *value);
+NJS_EXPORT njs_int_t njs_value_external_tag(const njs_value_t *value);
 
 NJS_EXPORT uint16_t njs_vm_prop_magic16(njs_object_prop_t *prop);
 NJS_EXPORT uint32_t njs_vm_prop_magic32(njs_object_prop_t *prop);

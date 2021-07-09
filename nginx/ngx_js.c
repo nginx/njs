@@ -173,7 +173,7 @@ ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
     char       *p;
     ngx_str_t  *field;
 
-    p = njs_vm_external(vm, value);
+    p = njs_vm_external(vm, NJS_PROTO_ID_ANY, value);
     if (p == NULL) {
         njs_value_undefined_set(retval);
         return NJS_DECLINED;
@@ -192,7 +192,7 @@ ngx_js_ext_uint(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
     char        *p;
     ngx_uint_t   field;
 
-    p = njs_vm_external(vm, value);
+    p = njs_vm_external(vm, NJS_PROTO_ID_ANY, value);
     if (p == NULL) {
         njs_value_undefined_set(retval);
         return NJS_DECLINED;
@@ -237,7 +237,7 @@ ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ngx_connection_t    *c;
     ngx_log_handler_pt   handler;
 
-    p = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    p = njs_vm_external(vm, NJS_PROTO_ID_ANY, njs_argument(args, 0));
     if (p == NULL) {
         njs_vm_error(vm, "\"this\" is not an external");
         return NJS_ERROR;

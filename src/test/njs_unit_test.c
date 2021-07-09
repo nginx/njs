@@ -20624,6 +20624,9 @@ static njs_unit_test_t  njs_externals_test[] =
     { njs_str("$r.create('XXX').uri"),
       njs_str("XXX") },
 
+    { njs_str("$r.create.call([], 'XXX')"),
+      njs_str("TypeError: \"this\" is not an external") },
+
     { njs_str("var sr = $r.create('XXX'); sr.uri = 'YYY'; sr.uri"),
       njs_str("YYY") },
 
@@ -21198,9 +21201,9 @@ static njs_unit_test_t  njs_shell_test[] =
               "    at eval (native)\n"
               "    at main (:1)\n") },
 
-    { njs_str("$r.method({}.a.a)" ENTER),
+    { njs_str("$shared.method({}.a.a)" ENTER),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
-              "    at $r3.method (native)\n"
+              "    at $shared.method (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("new Function(\n\n@)" ENTER),
@@ -21372,7 +21375,7 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
 {
     u_char        *start, *end;
     njs_vm_t      *vm, *nvm;
-    njs_int_t     ret, proto_id;
+    njs_int_t     ret;
     njs_str_t     s;
     njs_uint_t    i, repeat;
     njs_stat_t    prev;
@@ -21381,7 +21384,6 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
 
     vm = NULL;
     nvm = NULL;
-    proto_id = -1;
 
     prev = *stat;
 
@@ -21405,8 +21407,8 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
         }
 
         if (opts->externals) {
-            proto_id = njs_externals_shared_init(vm);
-            if (proto_id < 0) {
+            ret = njs_externals_shared_init(vm);
+            if (ret != NJS_OK) {
                 goto done;
             }
         }
@@ -21435,7 +21437,7 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
                 }
 
                 if (opts->externals) {
-                    ret = njs_externals_init(nvm, proto_id);
+                    ret = njs_externals_init(nvm);
                     if (ret != NJS_OK) {
                         goto done;
                     }
@@ -21539,7 +21541,12 @@ njs_interactive_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
         }
 
         if (opts->externals) {
-            ret = njs_externals_init(vm, -1);
+            ret = njs_externals_shared_init(vm);
+            if (ret != NJS_OK) {
+                goto done;
+            }
+
+            ret = njs_externals_init(vm);
             if (ret != NJS_OK) {
                 goto done;
             }

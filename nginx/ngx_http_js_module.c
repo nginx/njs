@@ -1256,7 +1256,7 @@ ngx_http_js_ext_raw_header(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_table_elt_t     *header, *h;
     ngx_http_request_t  *r;
 
-    r = njs_vm_external(vm, value);
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {
         njs_value_undefined_set(retval);
         return NJS_DECLINED;
@@ -1349,7 +1349,7 @@ ngx_http_js_ext_header_out(njs_vm_t *vm, njs_object_prop_t *prop,
         { njs_str(""), ngx_http_js_header_generic },
     };
 
-    r = njs_vm_external(vm, value);
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {
         if (retval != NULL) {
             njs_value_undefined_set(retval);
@@ -1840,7 +1840,7 @@ ngx_http_js_ext_keys_header_out(njs_vm_t *vm, njs_value_t *value,
         return NJS_ERROR;
     }
 
-    r = njs_vm_external(vm, value);
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {
         return NJS_OK;
     }
@@ -1885,7 +1885,7 @@ ngx_http_js_ext_status(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_int_t            n;
     ngx_http_request_t  *r;
 
-    r = njs_vm_external(vm, value);
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {
         njs_value_undefined_set(retval);
         return NJS_DECLINED;
@@ -1912,7 +1912,8 @@ ngx_http_js_ext_send_header(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     ngx_http_request_t  *r;
 
-    r = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id,
+                        njs_argument(args, 0));
     if (r == NULL) {
         njs_vm_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
@@ -1945,7 +1946,8 @@ ngx_http_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
-    r = njs_vm_external(vm, njs_argument(args, 0));
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id,
+                        njs_argument(args, 0));
     if (r == NULL) {
         njs_vm_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
@@ -2033,7 +2035,8 @@ ngx_http_js_ext_send_buffer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     static const njs_str_t last_key = njs_str("last");
     static const njs_str_t flush_key = njs_str("flush");
 
-    r = njs_vm_external(vm, njs_argument(args, 0));
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id,
+                        njs_argument(args, 0));
     if (r == NULL) {
         njs_vm_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
@@ -2104,7 +2107,8 @@ ngx_http_js_ext_done(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
-    r = njs_vm_external(vm, njs_argument(args, 0));
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id,
+                        njs_argument(args, 0));
     if (r == NULL) {
         njs_vm_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
@@ -2132,7 +2136,8 @@ ngx_http_js_ext_finish(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
-    r = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id,
+                        njs_argument(args, 0));
     if (r == NULL) {
         njs_vm_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
@@ -2162,7 +2167,8 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ngx_http_request_t        *r;
     ngx_http_complex_value_t   cv;
 
-    r = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id,
+                        njs_argument(args, 0));
     if (r == NULL) {
         njs_vm_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
@@ -2215,7 +2221,8 @@ ngx_http_js_ext_internal_redirect(njs_vm_t *vm, njs_value_t *args,
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
-    r = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id,
+                        njs_argument(args, 0));
     if (r == NULL) {
         njs_vm_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
@@ -2256,7 +2263,7 @@ ngx_http_js_ext_get_http_version(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_str_t            v;
     ngx_http_request_t  *r;
 
-    r = njs_vm_external(vm, value);
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {
         njs_value_undefined_set(retval);
         return NJS_DECLINED;
@@ -2302,7 +2309,7 @@ ngx_http_js_ext_get_remote_address(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_connection_t    *c;
     ngx_http_request_t  *r;
 
-    r = njs_vm_external(vm, value);
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {
         njs_value_undefined_set(retval);
         return NJS_DECLINED;
@@ -2328,7 +2335,7 @@ ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
-    r = njs_vm_external(vm, value);
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {
         njs_value_undefined_set(retval);
         return NJS_DECLINED;
@@ -2425,7 +2432,7 @@ ngx_http_js_ext_header_in(njs_vm_t *vm, njs_object_prop_t *prop,
         { njs_str(""), ngx_http_js_header_generic },
     };
 
-    r = njs_vm_external(vm, value);
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {
         if (retval != NULL) {
             njs_value_undefined_set(retval);
@@ -2542,7 +2549,7 @@ ngx_http_js_ext_keys_header_in(njs_vm_t *vm, njs_value_t *value,
         return NJS_ERROR;
     }
 
-    r = njs_vm_external(vm, value);
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {
         return NJS_OK;
     }
@@ -2559,7 +2566,7 @@ ngx_http_js_ext_get_arg(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_str_t            arg;
     ngx_http_request_t  *r;
 
-    r = njs_vm_external(vm, value);
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {
         njs_value_undefined_set(retval);
         return NJS_DECLINED;
@@ -2595,7 +2602,7 @@ ngx_http_js_ext_keys_arg(njs_vm_t *vm, njs_value_t *value, njs_value_t *keys)
         return NJS_ERROR;
     }
 
-    r = njs_vm_external(vm, value);
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {
         return NJS_OK;
     }
@@ -2646,7 +2653,7 @@ ngx_http_js_ext_variables(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_http_core_main_conf_t  *cmcf;
     ngx_http_variable_value_t  *vv;
 
-    r = njs_vm_external(vm, value);
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {
         njs_value_undefined_set(retval);
         return NJS_DECLINED;
@@ -2739,7 +2746,8 @@ ngx_http_js_promise_trampoline(njs_vm_t *vm, njs_value_t *args,
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
-    r = njs_vm_external(vm, njs_argument(args, 1));
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id,
+                        njs_arg(args, nargs, 1));
     ctx = ngx_http_get_module_ctx(r->parent, ngx_http_js_module);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -2823,7 +2831,8 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     static const njs_str_t body_key = njs_str("body");
     static const njs_str_t detached_key = njs_str("detached");
 
-    r = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id,
+                        njs_argument(args, 0));
     if (r == NULL) {
         njs_vm_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
@@ -3165,7 +3174,7 @@ ngx_http_js_ext_get_parent(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
-    r = njs_vm_external(vm, value);
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {
         njs_value_undefined_set(retval);
         return NJS_DECLINED;
@@ -3197,7 +3206,7 @@ ngx_http_js_ext_get_response_body(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
-    r = njs_vm_external(vm, value);
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {
         njs_value_undefined_set(retval);
         return NJS_DECLINED;

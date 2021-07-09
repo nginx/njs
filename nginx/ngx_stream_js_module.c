@@ -952,7 +952,7 @@ ngx_stream_js_ext_get_remote_address(njs_vm_t *vm,
     ngx_connection_t      *c;
     ngx_stream_session_t  *s;
 
-    s = njs_vm_external(vm, value);
+    s = njs_vm_external(vm, ngx_stream_js_session_proto_id, value);
     if (s == NULL) {
         njs_value_undefined_set(retval);
         return NJS_DECLINED;
@@ -974,7 +974,8 @@ ngx_stream_js_ext_done(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ngx_stream_js_ctx_t   *ctx;
     ngx_stream_session_t  *s;
 
-    s = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    s = njs_vm_external(vm, ngx_stream_js_session_proto_id,
+                        njs_argument(args, 0));
     if (s == NULL) {
         njs_vm_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
@@ -1025,7 +1026,8 @@ ngx_stream_js_ext_on(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_vm_event_t        *event;
     ngx_stream_session_t  *s;
 
-    s = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    s = njs_vm_external(vm, ngx_stream_js_session_proto_id,
+                        njs_argument(args, 0));
     if (s == NULL) {
         njs_vm_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
@@ -1072,7 +1074,8 @@ ngx_stream_js_ext_off(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_vm_event_t        *event;
     ngx_stream_session_t  *s;
 
-    s = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    s = njs_vm_external(vm, ngx_stream_js_session_proto_id,
+                        njs_argument(args, 0));
     if (s == NULL) {
         njs_vm_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
@@ -1115,7 +1118,8 @@ ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     static const njs_str_t last_key = njs_str("last");
     static const njs_str_t flush_key = njs_str("flush");
 
-    s = njs_vm_external(vm, njs_arg(args, nargs, 0));
+    s = njs_vm_external(vm, ngx_stream_js_session_proto_id,
+                        njs_argument(args, 0));
     if (s == NULL) {
         njs_vm_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
@@ -1194,7 +1198,7 @@ ngx_stream_js_ext_variables(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_stream_core_main_conf_t  *cmcf;
     ngx_stream_variable_value_t  *vv;
 
-    s = njs_vm_external(vm, value);
+    s = njs_vm_external(vm, ngx_stream_js_session_proto_id, value);
     if (s == NULL) {
         njs_value_undefined_set(retval);
         return NJS_DECLINED;

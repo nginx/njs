@@ -179,7 +179,7 @@ njs_external_prop_handler(njs_vm_t *vm, njs_object_prop_t *self,
         *retval = *setval;
 
     } else {
-        external = njs_vm_external(vm, value);
+        external = njs_vm_external(vm, NJS_PROTO_ID_ANY, value);
         if (njs_slow_path(external == NULL)) {
             njs_value_undefined_set(retval);
             return NJS_OK;
@@ -203,7 +203,7 @@ njs_external_prop_handler(njs_vm_t *vm, njs_object_prop_t *self,
         ov->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_OBJECT].object;
         ov->object.slots = slots;
 
-        njs_set_data(&ov->value, external, NJS_DATA_TAG_EXTERNAL);
+        njs_set_data(&ov->value, external, njs_value_external_tag(value));
         njs_set_object_value(retval, ov);
     }
 
@@ -332,18 +332,18 @@ njs_vm_external_create(njs_vm_t *vm, njs_value_t *value, njs_int_t proto_id,
     ov->object.slots = slots;
 
     njs_set_object_value(value, ov);
-    njs_set_data(&ov->value, external, NJS_DATA_TAG_EXTERNAL);
+    njs_set_data(&ov->value, external, njs_make_tag(proto_id));
 
     return NJS_OK;
 }
 
 
 njs_external_ptr_t
-njs_vm_external(njs_vm_t *vm, const njs_value_t *value)
+njs_vm_external(njs_vm_t *vm, njs_int_t proto_id, const njs_value_t *value)
 {
     njs_external_ptr_t  external;
 
-    if (njs_fast_path(njs_is_object_data(value, NJS_DATA_TAG_EXTERNAL))) {
+    if (njs_fast_path(njs_is_object_data(value, njs_make_tag(proto_id)))) {
         external = njs_object_data(value);
         if (external == NULL) {
             external = vm->external;
@@ -353,4 +353,15 @@ njs_vm_external(njs_vm_t *vm, const njs_value_t *value)
     }
 
     return NULL;
+}
+
+
+njs_int_t
+njs_value_external_tag(const njs_value_t *value)
+{
+    if (njs_is_object_data(value, njs_make_tag(NJS_PROTO_ID_ANY))) {
+        return njs_object_value(value)->data.magic32;
+    }
+
+    return -1;
 }

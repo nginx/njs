@@ -594,8 +594,14 @@ typedef struct {
     ((value)->type <= NJS_STRING)
 
 
+#define njs_make_tag(proto_id)                                                \
+    (((njs_uint_t) proto_id << 8) | NJS_DATA_TAG_EXTERNAL)
+
+
 #define njs_is_data(value, tag)                                               \
-    ((value)->type == NJS_DATA && value->data.magic32 == (tag))
+    ((value)->type == NJS_DATA                                                \
+     && ((tag) == njs_make_tag(NJS_PROTO_ID_ANY)                              \
+         || value->data.magic32 == (tag)))
 
 
 #define njs_is_object(value)                                                  \
