@@ -112,6 +112,8 @@ static njs_fs_entry_t njs_flags_table[] = {
     { njs_str("w+"),  O_TRUNC  | O_CREAT  | O_RDWR },
     { njs_str("a"),   O_APPEND | O_CREAT  | O_WRONLY },
     { njs_str("a+"),  O_APPEND | O_CREAT  | O_RDWR },
+    { njs_str("as"),  O_SYNC   | O_APPEND | O_CREAT  | O_WRONLY },
+    { njs_str("as+"), O_SYNC   | O_APPEND | O_CREAT  | O_RDWR },
     { njs_str("rs"),  O_SYNC   | O_RDONLY },
     { njs_str("sr"),  O_SYNC   | O_RDONLY },
     { njs_str("wx"),  O_TRUNC  | O_CREAT  | O_EXCL | O_WRONLY },
