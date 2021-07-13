@@ -1131,7 +1131,7 @@ njs_int_t
 njs_vm_value_to_bytes(njs_vm_t *vm, njs_str_t *dst, njs_value_t *src)
 {
     u_char              *start;
-    size_t              size;
+    size_t              size, length, offset;
     njs_int_t           ret;
     njs_value_t         value;
     njs_typed_array_t   *array;
@@ -1147,15 +1147,27 @@ njs_vm_value_to_bytes(njs_vm_t *vm, njs_str_t *dst, njs_value_t *src)
     switch (value.type) {
     case NJS_TYPED_ARRAY:
     case NJS_DATA_VIEW:
-        array = njs_typed_array(&value);
-        buffer = njs_typed_array_buffer(array);
+    case NJS_ARRAY_BUFFER:
+
+        if (value.type != NJS_ARRAY_BUFFER) {
+            array = njs_typed_array(&value);
+            buffer = njs_typed_array_buffer(array);
+            offset = array->offset;
+            length = array->byte_length;
+
+        } else {
+            buffer = njs_array_buffer(&value);
+            offset = 0;
+            length = buffer->size;
+        }
+
         if (njs_slow_path(njs_is_detached_buffer(buffer))) {
             njs_type_error(vm, "detached buffer");
             return NJS_ERROR;
         }
 
-        dst->start = &buffer->u.u8[array->offset];
-        dst->length = array->byte_length;
+        dst->start = &buffer->u.u8[offset];
+        dst->length = length;
         break;
 
     default:
