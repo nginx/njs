@@ -8689,6 +8689,75 @@ njs_parser_node_error(njs_vm_t *vm, njs_parser_node_t *node,
 
 
 njs_int_t
+njs_parser_traverse(njs_vm_t *vm, njs_parser_node_t *root, void *ctx,
+    njs_parser_traverse_cb_t cb)
+{
+    njs_int_t          ret;
+    njs_arr_t          *stack;
+    njs_parser_node_t  *node, **ref;
+
+    if (root == NULL) {
+        return NJS_OK;
+    }
+
+    stack = njs_arr_create(vm->mem_pool, 8, sizeof(njs_parser_node_t *));
+    if (njs_slow_path(stack == NULL)) {
+        return NJS_ERROR;
+
+    }
+
+    ref = njs_arr_add(stack);
+    if (njs_slow_path(ref == NULL)) {
+        goto failed;
+    }
+
+    *ref = root;
+
+    while (1) {
+        if (njs_arr_is_empty(stack)) {
+            break;
+        }
+
+        ref = njs_arr_remove_last(stack);
+        node = *ref;
+
+        ret = cb(vm, node, ctx);
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto failed;
+        }
+
+        if (node->left != NULL) {
+            ref = njs_arr_add(stack);
+            if (njs_slow_path(ref == NULL)) {
+                goto failed;
+            }
+
+            *ref = node->left;
+        }
+
+        if (node->right != NULL) {
+            ref = njs_arr_add(stack);
+            if (njs_slow_path(ref == NULL)) {
+                goto failed;
+            }
+
+            *ref = node->right;
+        }
+    }
+
+    njs_arr_destroy(stack);
+
+    return NJS_OK;
+
+failed:
+
+    njs_arr_destroy(stack);
+
+    return NJS_ERROR;
+}
+
+
+njs_int_t
 njs_parser_serialize_ast(njs_parser_node_t *node, njs_chb_t *chain)
 {
     njs_int_t  ret;

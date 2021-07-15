@@ -102,6 +102,10 @@ typedef struct {
 } njs_parser_rbtree_node_t;
 
 
+typedef njs_int_t (*njs_parser_traverse_cb_t)(njs_vm_t *vm,
+    njs_parser_node_t *node, void *ctx);
+
+
 njs_int_t njs_parser_failed_state(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current);
 
@@ -128,6 +132,8 @@ void njs_parser_lexer_error(njs_parser_t *parser,
 void njs_parser_node_error(njs_vm_t *vm, njs_parser_node_t *node,
     njs_object_type_t type, const char *fmt, ...);
 
+njs_int_t njs_parser_traverse(njs_vm_t *vm, njs_parser_node_t *root,
+    void *ctx, njs_parser_traverse_cb_t cb);
 njs_int_t njs_parser_serialize_ast(njs_parser_node_t *node, njs_chb_t *chain);
 
 
