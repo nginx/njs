@@ -12957,41 +12957,48 @@ static njs_unit_test_t  njs_test[] =
       njs_str("true") },
 
 #if NJS_HAVE_LARGE_STACK
-    { njs_str("new Function(\"(\".repeat(2**13));"),
+    { njs_str("new Function('('.repeat(2**13));"),
       njs_str("SyntaxError: Unexpected token \"}\" in runtime:1") },
 
-    { njs_str("new Function(\"{\".repeat(2**13));"),
+    { njs_str("new Function('{'.repeat(2**13));"),
       njs_str("SyntaxError: Unexpected token \")\" in runtime:1") },
 
-    { njs_str("new Function(\"[\".repeat(2**13));"),
+    { njs_str("new Function('['.repeat(2**13));"),
       njs_str("SyntaxError: Unexpected token \"}\" in runtime:1") },
 
-    { njs_str("new Function(\"`\".repeat(2**13));"),
-      njs_str("RangeError: Maximum call stack size exceeded") },
+    { njs_str("new Function('`'.repeat(2**13));"),
+      njs_str("[object Function]") },
 
-    { njs_str("new Function(\"{[\".repeat(2**13));"),
+    { njs_str("new Function('{['.repeat(2**13));"),
       njs_str("SyntaxError: Unexpected token \"}\" in runtime:1") },
 
-    { njs_str("new Function(\"{;\".repeat(2**13));"),
+    { njs_str("new Function('{;'.repeat(2**13));"),
       njs_str("SyntaxError: Unexpected token \")\" in runtime:1") },
 
-    { njs_str("new Function(\"1;\".repeat(2**13));"),
-      njs_str("RangeError: Maximum call stack size exceeded") },
+    { njs_str("(new Function('1;'.repeat(2**13) + 'return 2'))()"),
+      njs_str("2") },
 
-    { njs_str("new Function(\"~\".repeat(2**13));"),
+    { njs_str("(new Function('return' + '~'.repeat(2**13) + '3'))()"),
+      njs_str("3") },
+
+    { njs_str("(new Function('return' + '~'.repeat(2**13+1) + '3'))()"),
+      njs_str("-4") },
+
+    { njs_str("new Function('new '.repeat(2**13));"),
       njs_str("SyntaxError: Unexpected token \"}\" in runtime:1") },
 
-    { njs_str("new Function(\"new \".repeat(2**13));"),
-      njs_str("SyntaxError: Unexpected token \"}\" in runtime:1") },
+    { njs_str("(new Function('return ' + 'typeof '.repeat(2**13) + 'x'))()"),
+      njs_str("string") },
 
-    { njs_str("new Function(\"typeof \".repeat(2**13));"),
-      njs_str("SyntaxError: Unexpected token \"}\" in runtime:1") },
+    { njs_str("(new Function('return 5' + '** 1'.repeat(2**13)))()"),
+      njs_str("5") },
 
-    { njs_str("new Function(\"1\" + \"** 1\".repeat(2**13));"),
-      njs_str("RangeError: Maximum call stack size exceeded") },
+    { njs_str("(new Function('var a = 7; return a' + '= a'.repeat(2**13)))()"),
+      njs_str("7") },
 
-    { njs_str("new Function(\"var a; a\" + \"= a\".repeat(2**13));"),
-      njs_str("RangeError: Maximum call stack size exceeded") },
+    { njs_str("var a = (new Function('return [' + '1,'.repeat(2**13) + ']'))();"
+              "a.push(5); [a[2**13 - 1], a[2**13]]"),
+      njs_str("1,5") },
 #endif
 
     { njs_str("var f = new Function('return 1;'); f();"),
