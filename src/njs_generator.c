@@ -162,9 +162,9 @@ static njs_int_t njs_generate_for_update(njs_vm_t *vm,
 static njs_int_t njs_generate_for_end(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node);
 static njs_int_t njs_generate_for_let_update(njs_vm_t *vm,
-    njs_generator_t *generator, njs_parser_node_t *node, size_t depth);
+    njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_for_resolve_closure(njs_vm_t *vm,
-    njs_parser_node_t *node, size_t depth);
+    njs_parser_node_t *node);
 static njs_int_t njs_generate_for_in_statement(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_for_in_object(njs_vm_t *vm,
@@ -422,9 +422,6 @@ static njs_int_t njs_generate_index_release(njs_vm_t *vm,
 #define njs_generate_syntax_error(vm, node, fmt, ...)                         \
     njs_parser_node_error(vm, node, NJS_OBJ_TYPE_SYNTAX_ERROR, fmt,           \
                           ##__VA_ARGS__)
-
-
-#define NJS_GENERATE_MAX_DEPTH  4096
 
 
 static const njs_str_t  no_label     = njs_str("");
@@ -1692,7 +1689,7 @@ njs_generate_for_init(njs_vm_t *vm, njs_generator_t *generator,
      * foreseen in order to generate optimized code for let updates.
      */
 
-    ret = njs_generate_for_resolve_closure(vm, condition, generator->count);
+    ret = njs_generate_for_resolve_closure(vm, condition);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -1736,12 +1733,12 @@ njs_generate_for_body(njs_vm_t *vm, njs_generator_t *generator,
     init = node->left;
     update = node->right->right->right;
 
-    ret = njs_generate_for_resolve_closure(vm, update, generator->count);
+    ret = njs_generate_for_resolve_closure(vm, update);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
 
-    ret = njs_generate_for_let_update(vm, generator, init, generator->count);
+    ret = njs_generate_for_let_update(vm, generator, init);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -1833,55 +1830,42 @@ njs_generate_for_end(njs_vm_t *vm, njs_generator_t *generator,
 
 static njs_int_t
 njs_generate_for_let_update(njs_vm_t *vm, njs_generator_t *generator,
-    njs_parser_node_t *node, size_t depth)
+    njs_parser_node_t *node)
 {
     njs_parser_node_t         *let;
     njs_vmcode_variable_t     *code_var;
     njs_variable_reference_t  *ref;
 
-    if (node == NULL) {
-        return NJS_OK;
+    while (node != NULL && node->token_type == NJS_TOKEN_STATEMENT) {
+        let = node->right;
+
+        if (let->token_type != NJS_TOKEN_LET
+            && let->token_type != NJS_TOKEN_CONST)
+        {
+            return NJS_OK;
+        }
+
+        ref = &let->left->u.reference;
+
+        if (ref->variable->closure) {
+            njs_generate_code(generator, njs_vmcode_variable_t, code_var,
+                              NJS_VMCODE_LET_UPDATE, 0, let);
+            code_var->dst = let->left->index;
+        }
+
+        node = node->left;
     }
 
-    if (depth >= NJS_GENERATE_MAX_DEPTH) {
-        return NJS_ERROR;
-    }
-
-    if (node->token_type != NJS_TOKEN_STATEMENT) {
-        return NJS_OK;
-    }
-
-    let = node->right;
-
-    if (let->token_type != NJS_TOKEN_LET
-        && let->token_type != NJS_TOKEN_CONST)
-    {
-        return NJS_OK;
-    }
-
-    ref = &let->left->u.reference;
-
-    if (ref->variable->closure) {
-        njs_generate_code(generator, njs_vmcode_variable_t, code_var,
-                          NJS_VMCODE_LET_UPDATE, 0, let);
-        code_var->dst = let->left->index;
-    }
-
-    return njs_generate_for_let_update(vm, generator, node->left, depth + 1);
+    return NJS_OK;
 }
 
 
 static njs_int_t
-njs_generate_for_resolve_closure(njs_vm_t *vm, njs_parser_node_t *node,
-    size_t depth)
+njs_generate_for_resolve_closure_cb(njs_vm_t *vm, njs_parser_node_t *node,
+    void *unused)
 {
-    njs_int_t       ret;
     njs_bool_t      closure;
     njs_variable_t  *var;
-
-    if (node == NULL) {
-        return NJS_OK;
-    }
 
     if (node->token_type == NJS_TOKEN_NAME) {
         var = njs_variable_resolve(vm, node);
@@ -1895,22 +1879,15 @@ njs_generate_for_resolve_closure(njs_vm_t *vm, njs_parser_node_t *node,
         }
     }
 
-    if (depth >= NJS_GENERATE_MAX_DEPTH) {
-        njs_range_error(vm, "Maximum call stack size exceeded");
-        return NJS_ERROR;
-    }
-
-    ret = njs_generate_for_resolve_closure(vm, node->left, depth + 1);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
-    }
-
-    ret = njs_generate_for_resolve_closure(vm, node->right, depth + 1);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
-    }
-
     return NJS_OK;
+}
+
+
+static njs_int_t
+njs_generate_for_resolve_closure(njs_vm_t *vm, njs_parser_node_t *node)
+{
+    return njs_parser_traverse(vm, node, NULL,
+                               njs_generate_for_resolve_closure_cb);
 }
 
 
@@ -2027,8 +2004,7 @@ njs_generate_for_in_body(njs_vm_t *vm, njs_generator_t *generator,
     /* The loop iterator. */
 
     if (name != NULL) {
-        ret = njs_generate_for_let_update(vm, generator, foreach->left,
-                                          generator->count);
+        ret = njs_generate_for_let_update(vm, generator, foreach->left);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
         }
