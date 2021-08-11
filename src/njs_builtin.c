@@ -114,6 +114,7 @@ static const njs_object_type_init_t *const
     &njs_type_error_type_init,
     &njs_uri_error_type_init,
     &njs_memory_error_type_init,
+    &njs_aggregate_error_type_init,
 };
 
 
@@ -1673,6 +1674,16 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
         .value = njs_prop_handler2(njs_top_level_constructor,
                                    NJS_OBJ_TYPE_MEMORY_ERROR,
                                    NJS_MEMORY_ERROR_HASH),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("AggregateError"),
+        .value = njs_prop_handler2(njs_top_level_constructor,
+                                   NJS_OBJ_TYPE_AGGREGATE_ERROR,
+                                   NJS_AGGREGATE_ERROR_HASH),
         .writable = 1,
         .configurable = 1,
     },

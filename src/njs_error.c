@@ -24,6 +24,7 @@ static njs_int_t njs_backtrace_to_string(njs_vm_t *vm, njs_arr_t *backtrace,
 static const njs_value_t  njs_error_message_string = njs_string("message");
 static const njs_value_t  njs_error_name_string = njs_string("name");
 static const njs_value_t  njs_error_stack_string = njs_string("stack");
+static const njs_value_t  njs_error_errors_string = njs_string("errors");
 
 
 void
@@ -45,7 +46,7 @@ njs_error_new(njs_vm_t *vm, njs_value_t *dst, njs_object_type_t type,
         return;
     }
 
-    error = njs_error_alloc(vm, type, NULL, &string);
+    error = njs_error_alloc(vm, type, NULL, &string, NULL);
     if (njs_slow_path(error == NULL)) {
         return;
     }
@@ -198,7 +199,7 @@ njs_error_stack(njs_vm_t *vm, njs_value_t *value, njs_value_t *stack)
 
 njs_object_t *
 njs_error_alloc(njs_vm_t *vm, njs_object_type_t type, const njs_value_t *name,
-    const njs_value_t *message)
+    const njs_value_t *message, const njs_value_t *errors)
 {
     njs_int_t           ret;
     njs_object_t        *error;
@@ -262,6 +263,26 @@ njs_error_alloc(njs_vm_t *vm, njs_object_type_t type, const njs_value_t *name,
         }
     }
 
+    if (errors != NULL) {
+        lhq.key = njs_str_value("errors");
+        lhq.key_hash = NJS_ERRORS_HASH;
+
+        prop = njs_object_prop_alloc(vm, &njs_error_errors_string, errors, 1);
+        if (njs_slow_path(prop == NULL)) {
+            goto memory_error;
+        }
+
+        prop->enumerable = 0;
+
+        lhq.value = prop;
+
+        ret = njs_lvlhsh_insert(&error->hash, &lhq);
+        if (njs_slow_path(ret != NJS_OK)) {
+            njs_internal_error(vm, "lvlhsh insert failed");
+            return NULL;
+        }
+    }
+
     return error;
 
 memory_error:
@@ -277,10 +298,32 @@ njs_error_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t type)
 {
     njs_int_t     ret;
-    njs_value_t   *value;
+    njs_value_t   *iterator, *value, list;
+    njs_array_t   *array;
     njs_object_t  *error;
 
-    value = njs_arg(args, nargs, 1);
+    if (type != NJS_OBJ_TYPE_AGGREGATE_ERROR) {
+        iterator = NULL;
+        value = njs_arg(args, nargs, 1);
+
+        njs_set_undefined(&list);
+
+    } else {
+        iterator = njs_arg(args, nargs, 1);
+        value = njs_arg(args, nargs, 2);
+
+        if (njs_slow_path(iterator->type < NJS_STRING)) {
+            njs_type_error(vm, "first argument is not iterable");
+            return NJS_ERROR;
+        }
+
+        array = njs_iterator_to_array(vm, iterator);
+        if (njs_slow_path(array == NULL)) {
+            return NJS_ERROR;
+        }
+
+        njs_set_array(&list, array);
+    }
 
     if (njs_slow_path(!njs_is_string(value))) {
         if (!njs_is_undefined(value)) {
@@ -292,7 +335,8 @@ njs_error_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     error = njs_error_alloc(vm, type, NULL,
-                            njs_is_defined(value) ? value : NULL);
+                            njs_is_defined(value) ? value : NULL,
+                            njs_is_defined(&list) ? &list : NULL);
     if (njs_slow_path(error == NULL)) {
         return NJS_ERROR;
     }
@@ -540,6 +584,36 @@ static const njs_object_prop_t  njs_uri_error_constructor_properties[] =
 const njs_object_init_t  njs_uri_error_constructor_init = {
     njs_uri_error_constructor_properties,
     njs_nitems(njs_uri_error_constructor_properties),
+};
+
+
+static const njs_object_prop_t  njs_aggregate_error_constructor_properties[] =
+{
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("AggregateError"),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 1, 1.0),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("prototype"),
+        .value = njs_prop_handler(njs_object_prototype_create),
+    },
+};
+
+
+const njs_object_init_t  njs_aggregate_error_constructor_init = {
+    njs_aggregate_error_constructor_properties,
+    njs_nitems(njs_aggregate_error_constructor_properties),
 };
 
 
@@ -1160,6 +1234,49 @@ const njs_object_type_init_t  njs_uri_error_type_init = {
                                    NJS_OBJ_TYPE_URI_ERROR),
     .constructor_props = &njs_uri_error_constructor_init,
     .prototype_props = &njs_uri_error_prototype_init,
+    .prototype_value = { .object = { .type = NJS_OBJECT } },
+};
+
+
+static const njs_object_prop_t  njs_aggregate_error_prototype_properties[] =
+{
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("AggregateError"),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("message"),
+        .value = njs_string(""),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("constructor"),
+        .value = njs_prop_handler(njs_object_prototype_create_constructor),
+        .writable = 1,
+        .configurable = 1,
+    },
+};
+
+
+const njs_object_init_t  njs_aggregate_error_prototype_init = {
+    njs_aggregate_error_prototype_properties,
+    njs_nitems(njs_aggregate_error_prototype_properties),
+};
+
+
+const njs_object_type_init_t  njs_aggregate_error_type_init = {
+    .constructor = njs_native_ctor(njs_error_constructor, 1,
+                                   NJS_OBJ_TYPE_AGGREGATE_ERROR),
+    .constructor_props = &njs_aggregate_error_constructor_init,
+    .prototype_props = &njs_aggregate_error_prototype_init,
     .prototype_value = { .object = { .type = NJS_OBJECT } },
 };
 

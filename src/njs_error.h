@@ -41,7 +41,8 @@ void njs_memory_error(njs_vm_t *vm);
 void njs_memory_error_set(njs_vm_t *vm, njs_value_t *value);
 
 njs_object_t *njs_error_alloc(njs_vm_t *vm, njs_object_type_t type,
-    const njs_value_t *name, const njs_value_t *message);
+    const njs_value_t *name, const njs_value_t *message,
+    const njs_value_t *errors);
 njs_int_t njs_error_to_string(njs_vm_t *vm, njs_value_t *retval,
     const njs_value_t *error);
 njs_int_t njs_error_stack(njs_vm_t *vm, njs_value_t *value, njs_value_t *stack);
@@ -57,6 +58,7 @@ extern const njs_object_type_init_t  njs_syntax_error_type_init;
 extern const njs_object_type_init_t  njs_type_error_type_init;
 extern const njs_object_type_init_t  njs_uri_error_type_init;
 extern const njs_object_type_init_t  njs_memory_error_type_init;
+extern const njs_object_type_init_t  njs_aggregate_error_type_init;
 
 
 njs_inline njs_int_t

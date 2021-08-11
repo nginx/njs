@@ -36,6 +36,8 @@ njs_int_t njs_object_iterate(njs_vm_t *vm, njs_iterator_args_t *args,
 njs_int_t njs_object_iterate_reverse(njs_vm_t *vm, njs_iterator_args_t *args,
     njs_iterator_handler_t handler);
 
+njs_array_t *njs_iterator_to_array(njs_vm_t *vm, njs_value_t *iterator);
+
 
 extern const njs_object_type_init_t  njs_iterator_type_init;
 extern const njs_object_type_init_t  njs_array_iterator_type_init;

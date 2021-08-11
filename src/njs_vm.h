@@ -86,6 +86,7 @@ typedef enum {
     NJS_OBJ_TYPE_TYPE_ERROR,
     NJS_OBJ_TYPE_URI_ERROR,
     NJS_OBJ_TYPE_MEMORY_ERROR,
+    NJS_OBJ_TYPE_AGGREGATE_ERROR,
 
     NJS_OBJ_TYPE_MAX,
 } njs_object_type_t;

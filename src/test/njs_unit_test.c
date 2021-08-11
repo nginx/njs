@@ -11134,6 +11134,26 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var e = RangeError('e'); Object.preventExtensions(e);e"),
       njs_str("RangeError: e") },
 
+    /* AggregateError. */
+
+    { njs_str("AggregateError()"),
+      njs_str("TypeError: first argument is not iterable") },
+
+    { njs_str("AggregateError([1, 2, 3])"),
+      njs_str("AggregateError") },
+
+    { njs_str("let e = AggregateError([1, 2, 3], 'm'); e.message"),
+      njs_str("m") },
+
+    { njs_str("let e = AggregateError([1, 2, 3], 'm'); e.errors"),
+      njs_str("1,2,3") },
+
+    { njs_str("let e = AggregateError('abc'); e.errors"),
+      njs_str("a,b,c") },
+
+    { njs_str("let e = AggregateError([1, 2, 3], 'm'); e"),
+      njs_str("AggregateError: m") },
+
     /* Memory object is immutable. */
 
     { njs_str("var e = MemoryError('e'); e.name = 'E'"),

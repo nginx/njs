@@ -26,6 +26,9 @@ static njs_int_t njs_iterator_object_handler(njs_vm_t *vm,
     njs_iterator_handler_t handler, njs_iterator_args_t *args,
     njs_value_t *key, int64_t i);
 
+static njs_int_t njs_iterator_to_array_handler(njs_vm_t *vm,
+    njs_iterator_args_t *args, njs_value_t *value, int64_t index);
+
 
 njs_int_t
 njs_array_iterator_create(njs_vm_t *vm, const njs_value_t *target,
@@ -675,4 +678,46 @@ njs_iterator_object_handler(njs_vm_t *vm, njs_iterator_handler_t handler,
     }
 
     return ret;
+}
+
+
+njs_array_t *
+njs_iterator_to_array(njs_vm_t *vm, njs_value_t *iterator)
+{
+    int64_t              length;
+    njs_int_t            ret;
+    njs_iterator_args_t  args;
+
+    njs_memzero(&args, sizeof(njs_iterator_args_t));
+
+    ret = njs_object_length(vm, iterator, &length);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NULL;
+    }
+
+    args.array = njs_array_alloc(vm, 1, length, 0);
+    if (njs_slow_path(args.array == NULL)) {
+        return NULL;
+    }
+
+    args.value = iterator;
+    args.to = length;
+
+    ret = njs_object_iterate(vm, &args, njs_iterator_to_array_handler);
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        njs_mp_free(vm->mem_pool, args.array);
+        return NULL;
+    }
+
+    return args.array;
+}
+
+
+static njs_int_t
+njs_iterator_to_array_handler(njs_vm_t *vm, njs_iterator_args_t *args,
+    njs_value_t *value, int64_t index)
+{
+    args->array->start[index] = *value;
+
+    return NJS_OK;
 }
