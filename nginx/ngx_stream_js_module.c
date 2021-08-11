@@ -49,7 +49,8 @@ typedef struct {
     ngx_buf_t              *buf;
     ngx_chain_t           **last_out;
     ngx_chain_t            *free;
-    ngx_chain_t            *busy;
+    ngx_chain_t            *upstream_busy;
+    ngx_chain_t            *downstream_busy;
     ngx_int_t               status;
 #define NGX_JS_EVENT_UPLOAD   0
 #define NGX_JS_EVENT_DOWNLOAD 1
@@ -528,7 +529,7 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
     njs_str_t                  exception;
     njs_int_t                  ret;
     ngx_int_t                  rc;
-    ngx_chain_t               *out, *cl;
+    ngx_chain_t               *out, *cl, **busy;
     ngx_connection_t          *c, *dst;
     ngx_stream_js_ev_t        *event;
     ngx_stream_js_ctx_t       *ctx;
@@ -606,15 +607,17 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
 
     if (from_upstream) {
         dst = c;
+        busy = &ctx->downstream_busy;
 
     } else {
         dst = s->upstream ? s->upstream->peer.connection : NULL;
+        busy = &ctx->upstream_busy;
     }
 
     if (out != NULL || dst == NULL || dst->buffered) {
         rc = ngx_stream_next_filter(s, out, from_upstream);
 
-        ngx_chain_update_chains(c->pool, &ctx->free, &ctx->busy, &out,
+        ngx_chain_update_chains(c->pool, &ctx->free, busy, &out,
                                 (ngx_buf_tag_t) &ngx_stream_js_module);
 
     } else {
