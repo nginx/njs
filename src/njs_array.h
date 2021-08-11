@@ -16,6 +16,9 @@
 #define NJS_ARRAY_LARGE_OBJECT_LENGTH  (32768)
 #define NJS_ARRAY_FLAT_MAX_LENGTH      (1048576)
 
+#define njs_fast_object(_sz)           ((_sz) <= NJS_ARRAY_FAST_OBJECT_LENGTH)
+
+
 njs_array_t *njs_array_alloc(njs_vm_t *vm, njs_bool_t flat, uint64_t length,
     uint32_t spare);
 void njs_array_destroy(njs_vm_t *vm, njs_array_t *array);
