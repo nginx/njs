@@ -1084,3 +1084,27 @@ njs_run {"./test/js/promise_reject_catch.js"} \
 
 njs_run {"./test/js/promise_reject_post_catch.js"} \
 "Error: unhandled promise rejection: undefined"
+
+njs_run {"./test/js/promise_all.js"} \
+"resolved:\\\[\\\['one','two'],\\\['three','four']]"
+
+njs_run {"./test/js/promise_all_throw.js"} \
+"rejected:foo"
+
+njs_run {"./test/js/promise_allSettled.js"} \
+"resolved:resolved:F:0,3,42,here|R:finally,finally after rejected,foo,here too,yes"
+
+njs_run {"./test/js/promise_allSettled_string.js"} \
+"resolved:F:a,b,c|R:"
+
+njs_run {"./test/js/promise_any.js"} \
+"resolved:4"
+
+njs_run {"./test/js/promise_any_all_rejected.js"} \
+"reject:AggregateError: All promises were rejected"
+
+njs_run {"./test/js/promise_race.js"} \
+"resolved:one"
+
+njs_run {"./test/js/promise_race_throw.js"} \
+"rejected:one"
