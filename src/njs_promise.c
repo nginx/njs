@@ -45,6 +45,7 @@ typedef struct {
     njs_bool_t                resolved;
     njs_bool_t                *resolved_ref;
     njs_promise_capability_t  *capability;
+    njs_function_native_t     handler;
 } njs_promise_context_t;
 
 
@@ -69,7 +70,9 @@ static njs_int_t njs_promise_perform_then(njs_vm_t *vm, njs_value_t *value,
     njs_promise_capability_t *capability);
 static njs_int_t njs_promise_then_finally_function(njs_vm_t *vm,
     njs_value_t *args, njs_uint_t nargs, njs_index_t unused);
-static njs_int_t njs_promise_catch_finally_function(njs_vm_t *vm,
+static njs_int_t njs_promise_then_finally_return(njs_vm_t *vm,
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused);
+static njs_int_t njs_promise_catch_finally_return(njs_vm_t *vm,
     njs_value_t *args, njs_uint_t nargs, njs_index_t unused);
 static njs_int_t njs_promise_reaction_job(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
@@ -207,7 +210,7 @@ njs_promise_constructor_call(njs_vm_t *vm, njs_function_t *function)
 
 
 static njs_function_t *
-njs_promise_create_function(njs_vm_t *vm)
+njs_promise_create_function(njs_vm_t *vm, size_t context_size)
 {
     njs_function_t         *function;
     njs_promise_context_t  *context;
@@ -217,10 +220,15 @@ njs_promise_create_function(njs_vm_t *vm)
         goto memory_error;
     }
 
-    context = njs_mp_zalloc(vm->mem_pool, sizeof(njs_promise_context_t));
-    if (njs_slow_path(context == NULL)) {
-        njs_mp_free(vm->mem_pool, function);
-        goto memory_error;
+    if (context_size > 0) {
+        context = njs_mp_zalloc(vm->mem_pool, context_size);
+        if (njs_slow_path(context == NULL)) {
+            njs_mp_free(vm->mem_pool, function);
+            goto memory_error;
+        }
+
+    } else {
+        context = NULL;
     }
 
     function->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_FUNCTION].object;
@@ -253,7 +261,8 @@ njs_promise_create_resolving_functions(njs_vm_t *vm, njs_promise_t *promise,
 
     /* Some compilers give at error an uninitialized context if using for. */
     do {
-        function = njs_promise_create_function(vm);
+        function = njs_promise_create_function(vm,
+                                               sizeof(njs_promise_context_t));
         if (njs_slow_path(function == NULL)) {
             return NJS_ERROR;
         }
@@ -302,7 +311,7 @@ njs_promise_new_capability(njs_vm_t *vm, njs_value_t *constructor)
         return NULL;
     }
 
-    function = njs_promise_create_function(vm);
+    function = njs_promise_create_function(vm, sizeof(njs_promise_context_t));
     if (njs_slow_path(function == NULL)) {
         return NULL;
     }
@@ -456,7 +465,8 @@ njs_promise_trigger_reactions(njs_vm_t *vm, njs_value_t *value,
     {
         reaction = njs_queue_link_data(link, njs_promise_reaction_t, link);
 
-        function = njs_promise_create_function(vm);
+        function = njs_promise_create_function(vm,
+                                               sizeof(njs_promise_context_t));
         function->u.native = njs_promise_reaction_job;
 
         njs_set_data(&arguments[0], reaction, 0);
@@ -686,7 +696,7 @@ njs_promise_resolve_function(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     arguments[1] = *resolution;
     arguments[2] = then;
 
-    function = njs_promise_create_function(vm);
+    function = njs_promise_create_function(vm, sizeof(njs_promise_context_t));
     if (njs_slow_path(function == NULL)) {
         return NJS_ERROR;
     }
@@ -861,7 +871,7 @@ njs_promise_prototype_then(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         goto failed;
     }
 
-    function = njs_promise_create_function(vm);
+    function = njs_promise_create_function(vm, sizeof(njs_promise_context_t));
     function->u.native = njs_promise_constructor;
 
     njs_set_function(&constructor, function);
@@ -941,7 +951,8 @@ njs_promise_perform_then(njs_vm_t *vm, njs_value_t *value,
         njs_queue_insert_tail(&data->reject_queue, &rejected_reaction->link);
 
     } else {
-        function = njs_promise_create_function(vm);
+        function = njs_promise_create_function(vm,
+                                               sizeof(njs_promise_context_t));
         function->u.native = njs_promise_reaction_job;
 
         if (data->state == NJS_PROMISE_REJECTED) {
@@ -1009,7 +1020,7 @@ njs_promise_prototype_finally(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     finally = njs_arg(args, nargs, 1);
 
-    function = njs_promise_create_function(vm);
+    function = njs_promise_create_function(vm, sizeof(njs_promise_context_t));
     function->u.native = njs_promise_constructor;
 
     njs_set_function(&constructor, function);
@@ -1027,7 +1038,7 @@ njs_promise_prototype_finally(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return njs_promise_invoke_then(vm, promise, arguments, 2);
     }
 
-    function = njs_promise_create_function(vm);
+    function = njs_promise_create_function(vm, sizeof(njs_promise_context_t));
     if (njs_slow_path(function == NULL)) {
         return NJS_ERROR;
     }
@@ -1038,21 +1049,23 @@ njs_promise_prototype_finally(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     context = function->context;
     context->constructor = constructor;
     context->finally = *finally;
+    context->handler = njs_promise_then_finally_return;
 
     njs_set_function(&arguments[0], function);
 
-    function = njs_promise_create_function(vm);
+    function = njs_promise_create_function(vm, sizeof(njs_promise_context_t));
     if (njs_slow_path(function == NULL)) {
         njs_mp_free(vm->mem_pool, njs_function(&arguments[0]));
         return NJS_ERROR;
     }
 
-    function->u.native = njs_promise_catch_finally_function;
+    function->u.native = njs_promise_then_finally_function;
     function->args_count = 1;
 
     context = function->context;
     context->constructor = constructor;
     context->finally = *finally;
+    context->handler = njs_promise_catch_finally_return;
 
     njs_set_function(&arguments[1], function);
 
@@ -1065,8 +1078,9 @@ njs_promise_then_finally_function(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
     njs_int_t              ret;
-    njs_value_t            value, retval;
+    njs_value_t            value, retval, argument;
     njs_promise_t          *promise;
+    njs_function_t         *function;
     njs_native_frame_t     *frame;
     njs_promise_context_t  *context;
 
@@ -1086,18 +1100,35 @@ njs_promise_then_finally_function(njs_vm_t *vm, njs_value_t *args,
 
     njs_set_promise(&value, promise);
 
-    return njs_promise_invoke_then(vm, &value, njs_arg(args, nargs, 1), 1);
+    function = njs_promise_create_function(vm, sizeof(njs_value_t));
+    if (njs_slow_path(function == NULL)) {
+        return NJS_ERROR;
+    }
+
+    function->u.native = context->handler;
+
+    *((njs_value_t *) function->context) = *njs_arg(args, nargs, 1);
+
+    njs_set_function(&argument, function);
+
+    return njs_promise_invoke_then(vm, &value, &argument, 1);
 }
 
 
 static njs_int_t
-njs_promise_catch_finally_function(njs_vm_t *vm, njs_value_t *args,
+njs_promise_then_finally_return(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
-    (void) njs_promise_then_finally_function(vm, args, nargs, unused);
+    njs_vm_retval_set(vm, vm->top_frame->function->context);
+    return NJS_OK;
+}
 
-    njs_vm_retval_set(vm, njs_arg(args, nargs, 1));
 
+static njs_int_t
+njs_promise_catch_finally_return(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused)
+{
+    njs_vm_retval_set(vm, vm->top_frame->function->context);
     return NJS_ERROR;
 }
 

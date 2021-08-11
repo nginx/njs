@@ -1062,6 +1062,11 @@ njs_run {"./test/js/promise_then_throw_catch.js"} \
 njs_run {"./test/js/promise_catch_then_throw_catch.js"} \
 "Done"
 
+njs_run {"./test/js/promise_finally.js"} \
+"here
+Thrown:
+Error: unhandled promise rejection: nope"
+
 njs_run {"./test/js/promise_finally_throw.js"} \
 "Error: unhandled promise rejection: ReferenceError: \"nonExsistingInFinally\" is not defined"
 
