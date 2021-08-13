@@ -179,12 +179,6 @@ njs_external_prop_handler(njs_vm_t *vm, njs_object_prop_t *self,
         *retval = *setval;
 
     } else {
-        external = njs_vm_external(vm, NJS_PROTO_ID_ANY, value);
-        if (njs_slow_path(external == NULL)) {
-            njs_value_undefined_set(retval);
-            return NJS_OK;
-        }
-
         ov = njs_mp_alloc(vm->mem_pool, sizeof(njs_object_value_t));
         if (njs_slow_path(ov == NULL)) {
             njs_memory_error(vm);
@@ -202,6 +196,8 @@ njs_external_prop_handler(njs_vm_t *vm, njs_object_prop_t *self,
         ov->object.fast_array = 0;
         ov->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_OBJECT].object;
         ov->object.slots = slots;
+
+        external = njs_vm_external(vm, NJS_PROTO_ID_ANY, value);
 
         njs_set_data(&ov->value, external, njs_value_external_tag(value));
         njs_set_object_value(retval, ov);

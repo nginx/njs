@@ -20862,7 +20862,8 @@ static njs_unit_test_t  njs_shared_test[] =
       njs_str("false") },
 
     { njs_str("isFin()"),
-      njs_str("ReferenceError: \"isFin\" is not defined") },
+      njs_str("ReferenceError: \"isFin\" is not defined\n"
+              "    at main (:1)\n") },
 
     { njs_str("isNaN(function(){})"),
       njs_str("true") },
@@ -20918,6 +20919,11 @@ static njs_unit_test_t  njs_shared_test[] =
 
     { njs_str("$r.bind('XXX', 37); XXX"),
       njs_str("37") },
+
+    { njs_str("var fs = require('fs'); fs.readFileSync()"),
+      njs_str("TypeError: \"path\" must be a string or Buffer\n"
+              "    at fs.readFileSync (native)\n"
+              "    at main (:1)\n") },
 };
 
 
@@ -21403,6 +21409,7 @@ typedef struct {
     njs_bool_t  module;
     njs_uint_t  repeat;
     njs_bool_t  unsafe;
+    njs_bool_t  backtrace;
 } njs_opts_t;
 
 
@@ -21456,6 +21463,7 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
 
         options.module = opts->module;
         options.unsafe = opts->unsafe;
+        options.backtrace = opts->backtrace;
 
         vm = njs_vm_create(&options);
         if (vm == NULL) {
@@ -22829,7 +22837,7 @@ static njs_test_suite_t  njs_suites[] =
       njs_unit_test },
 
     { njs_str("shared"),
-      { .externals = 1, .repeat = 128, .unsafe = 1 },
+      { .externals = 1, .repeat = 128, .unsafe = 1, .backtrace = 1 },
       njs_shared_test,
       njs_nitems(njs_shared_test),
       njs_unit_test },
