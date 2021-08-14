@@ -56,6 +56,11 @@ struct ngx_js_http_s {
     ngx_uint_t                     naddr;
     in_port_t                      port;
 
+#if (NGX_SSL)
+    ngx_ssl_t                     *ssl;
+    ngx_str_t                      tls_name;
+#endif
+
     ngx_peer_connection_t          peer;
     ngx_msec_t                     timeout;
 
@@ -142,6 +147,13 @@ static njs_int_t ngx_response_js_ext_type(njs_vm_t *vm,
 static njs_int_t ngx_response_js_ext_body(njs_vm_t *vm, njs_value_t *args,
      njs_uint_t nargs, njs_index_t unused);
 
+#if (NGX_SSL)
+static void ngx_js_http_ssl_init_connection(ngx_js_http_t *http);
+static void ngx_js_http_ssl_handshake_handler(ngx_connection_t *c);
+static void ngx_js_http_ssl_handshake(ngx_js_http_t *http);
+static njs_int_t ngx_js_http_set_ssl(ngx_js_http_t *http);
+static njs_int_t ngx_js_http_ssl_name(ngx_js_http_t *http);
+#endif
 
 static njs_external_t  ngx_js_ext_http_response_headers[] = {
 
@@ -384,6 +396,19 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         u.url.len -= 7;
         u.url.data += 7;
 
+#if (NGX_SSL)
+    } else if (u.url.len > 8
+        && ngx_strncasecmp(u.url.data, (u_char *) "https://", 7) == 0)
+    {
+        u.url.len -= 8;
+        u.url.data += 8;
+        u.default_port = 443;
+        if (ngx_js_http_set_ssl(http) != NJS_OK) {
+            ngx_js_http_error(http, 0, "js http failed to create ssl object");
+            goto fail;
+        }
+#endif
+
     } else {
         njs_vm_error(vm, "unsupported URL prefix");
         goto fail;
@@ -500,6 +525,11 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         njs_chb_append(&http->chain, u.host.data, u.host.len);
         njs_chb_append_literal(&http->chain, CRLF);
     }
+
+#if (NGX_SSL)
+    http->tls_name.data = u.host.data;
+    http->tls_name.len = u.host.len;
+#endif
 
     if (body.length != 0) {
         njs_chb_sprintf(&http->chain, 32, "Content-Length: %uz" CRLF CRLF,
@@ -870,6 +900,182 @@ ngx_js_http_connect(ngx_js_http_t *http)
     return NJS_OK;
 }
 
+#if (NGX_SSL)
+
+static void
+ngx_js_http_ssl_init_connection(ngx_js_http_t *http)
+{
+    ngx_int_t          rc;
+    ngx_connection_t  *c = http->peer.connection;
+
+    ngx_log_debug2(NGX_LOG_DEBUG_EVENT, http->log, 0,
+                   "js http secure connect %ui/%ui", http->naddr, http->naddrs);
+
+    if (ngx_ssl_create_connection(http->ssl, c, NGX_SSL_BUFFER|NGX_SSL_CLIENT)
+        != NGX_OK)
+    {
+        ngx_js_http_error(http, 0, "failed to create ssl connection");
+        ngx_js_http_next(http);
+        return;
+    }
+
+    c->sendfile = 0;
+
+    if (ngx_js_http_ssl_name(http) != NGX_OK) {
+        ngx_js_http_next(http);
+        return;
+    }
+
+    c->log->action = "SSL handshaking to fetch target";
+
+    rc = ngx_ssl_handshake(c);
+
+    if (rc == NGX_AGAIN) {
+        c->data = http;
+        c->ssl->handler = ngx_js_http_ssl_handshake_handler;
+        return;
+    }
+
+    ngx_js_http_ssl_handshake(http);
+
+}
+
+
+static void
+ngx_js_http_ssl_handshake_handler(ngx_connection_t *c)
+{
+    ngx_js_http_t        *http;
+
+    http = c->data;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                   "js http fetch ssl handshake for : \"%V\"",
+                   &http->url);
+
+    http->peer.connection->write->handler = ngx_js_http_write_handler;
+    http->peer.connection->read->handler = ngx_js_http_read_handler;
+
+    //ngx_js_http_write_handler(http->peer.connection->write);
+    ngx_js_http_ssl_handshake(http);
+}
+
+
+static njs_int_t
+ngx_js_http_set_ssl(ngx_js_http_t *http)
+{
+    ngx_pool_cleanup_t  *cln;
+
+    static ngx_str_t  ngx_js_http_default_ciphers =
+        ngx_string("HIGH:!aNULL:!MD5");
+
+    http->ssl = ngx_pcalloc(http->pool, sizeof(ngx_ssl_t));
+    if (http->ssl == NULL) {
+        return NJS_ERROR;
+    }
+
+    http->ssl->log = http->log;
+
+    if (ngx_ssl_create(http->ssl,
+                       (NGX_SSL_TLSv1|NGX_SSL_TLSv1_1|NGX_SSL_TLSv1_2), NULL)
+        != NGX_OK)
+    {
+        return NJS_ERROR;
+    }
+
+    cln = ngx_pool_cleanup_add(http->pool, 0);
+    if (cln == NULL) {
+        ngx_ssl_cleanup_ctx(http->ssl);
+        return NJS_ERROR;
+    }
+
+    cln->handler = ngx_ssl_cleanup_ctx;
+    cln->data = http->ssl;
+
+
+    if (ngx_ssl_ciphers(NULL, http->ssl, &ngx_js_http_default_ciphers, 1)
+        != NGX_OK)
+    {
+        return NJS_ERROR;
+    }
+
+    if (ngx_ssl_client_session_cache(NULL, http->ssl, 1)
+        != NGX_OK)
+    {
+        return NJS_ERROR;
+    }
+
+    return NJS_OK;
+}
+
+
+static void
+ngx_js_http_ssl_handshake(ngx_js_http_t *http)
+{
+    ngx_connection_t  *c = http->peer.connection;
+
+    if (c->ssl->handshaked) {
+
+        c->write->handler = ngx_js_http_write_handler;
+        c->read->handler = ngx_js_http_read_handler;
+
+        http->process = ngx_js_http_process_status_line;
+        ngx_js_http_write_handler(c->write);
+
+        return;
+    }
+}
+
+
+static njs_int_t
+ngx_js_http_ssl_name(ngx_js_http_t *http)
+{
+#ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
+    u_char  *p;
+
+    /* as per RFC 6066, literal IPv4 and IPv6 addresses are not permitted */
+    ngx_str_t  *name = &http->tls_name;
+
+    if (name->len == 0 || *name->data == '[') {
+        goto done;
+    }
+
+    if (ngx_inet_addr(name->data, name->len) != INADDR_NONE) {
+        goto done;
+    }
+
+    /*
+     * SSL_set_tlsext_host_name() needs a null-terminated string,
+     * hence we explicitly null-terminate name here
+     */
+
+    p = ngx_pnalloc(http->pool, name->len + 1);
+    if (p == NULL) {
+        return NGX_ERROR;
+    }
+
+    (void) ngx_cpystrn(p, name->data, name->len + 1);
+
+    name->data = p;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, http->log, 0,
+                   "js http SSL server name: \"%s\"", name->data);
+
+    if (SSL_set_tlsext_host_name(http->peer.connection->ssl->connection,
+                                 (char *) name->data)
+        == 0)
+    {
+        ngx_ssl_error(NGX_LOG_ERR, http->log, 0,
+                      "SSL_set_tlsext_host_name(\"%s\") failed", name->data);
+        return NGX_ERROR;
+    }
+
+#endif
+done:
+
+    return NJS_OK;
+}
+
+#endif
 
 static njs_int_t
 ngx_js_http_next(ngx_js_http_t *http)
@@ -910,6 +1116,13 @@ ngx_js_http_write_handler(ngx_event_t *wev)
         return;
     }
 
+#if (NGX_SSL)
+    if (http->ssl && http->peer.connection->ssl == NULL) {
+        ngx_js_http_ssl_init_connection(http);
+        return;
+    }
+#endif
+
     b = http->buffer;
 
     if (b == NULL) {
@@ -933,7 +1146,7 @@ ngx_js_http_write_handler(ngx_event_t *wev)
 
     size = b->last - b->pos;
 
-    n = ngx_send(c, b->pos, size);
+    n = c->send(c, b->pos, size);
 
     if (n == NGX_ERROR) {
         (void) ngx_js_http_next(http);
@@ -999,7 +1212,7 @@ ngx_js_http_read_handler(ngx_event_t *rev)
         b = http->buffer;
         size = b->end - b->last;
 
-        n = ngx_recv(c, b->last, size);
+        n = c->recv(c, b->last, size);
 
         if (n > 0) {
             b->last += n;
