@@ -121,10 +121,10 @@ njs_test {
 }
 
 njs_test {
-    {"Ma\t"
-     "Ma\a*th"}
+    {"JS\t"
+     "JS\a*ON"}
     {"\t\t"
-     "Math.abs*Math.atan2"}
+     "JSON.parse*JSON.stringify"}
 }
 
 # Global completions, no matches

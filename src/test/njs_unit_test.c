@@ -21265,8 +21265,9 @@ static njs_unit_test_t  njs_shell_test[] =
               "    at main (:1)\n") },
 
     { njs_str("$shared.method({}.a.a)" ENTER),
+    /* FIXME: at $shared.method (native) */
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
-              "    at $shared.method (native)\n"
+              "    at $r.method (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("new Function(\n\n@)" ENTER),

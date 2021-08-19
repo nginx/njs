@@ -470,6 +470,7 @@ njs_builtin_traverse(njs_vm_t *vm, njs_traverse_t *traverse, void *data)
             }
         }
 
+        njs_assert(njs_is_string(&key));
         njs_string_get(&key, &name);
 
         if (njs_slow_path((p + name.length + 3) > end)) {

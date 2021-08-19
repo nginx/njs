@@ -1128,87 +1128,104 @@ njs_int_t
 njs_object_traverse(njs_vm_t *vm, njs_object_t *object, void *ctx,
     njs_object_traverse_cb_t cb)
 {
-    njs_int_t          depth, ret;
-    njs_str_t          name;
-    njs_arr_t          visited;
-    njs_object_t       **start;
-    njs_value_t        value, obj;
-    njs_object_prop_t  *prop;
-    njs_traverse_t     state[NJS_TRAVERSE_MAX_DEPTH];
+    njs_int_t             ret;
+    njs_arr_t             visited;
+    njs_object_t          **start;
+    njs_value_t           value, *key;
+    njs_traverse_t        *s;
+    njs_object_prop_t     *prop;
+    njs_property_query_t  pq;
+    njs_traverse_t        state[NJS_TRAVERSE_MAX_DEPTH];
 
-    depth = 0;
-
-    state[depth].prop = NULL;
-    state[depth].parent = NULL;
-    state[depth].object = object;
-    state[depth].hash = &object->shared_hash;
-    njs_lvlhsh_each_init(&state[depth].lhe, &njs_object_hash_proto);
+    s = &state[0];
+    s->prop = NULL;
+    s->parent = NULL;
+    s->index = 0;
+    njs_set_object(&s->value, object);
+    s->keys = njs_value_own_enumerate(vm, &s->value, NJS_ENUM_KEYS,
+                                      NJS_ENUM_STRING | NJS_ENUM_SYMBOL, 1);
+    if (njs_slow_path(s->keys == NULL)) {
+        return NJS_ERROR;
+    }
 
     start = njs_arr_init(vm->mem_pool, &visited, NULL, 8, sizeof(void *));
     if (njs_slow_path(start == NULL)) {
         return NJS_ERROR;
     }
 
-    njs_set_object(&value, object);
-    (void) njs_traverse_visit(&visited, &value);
+    (void) njs_traverse_visit(&visited, &s->value);
 
     for ( ;; ) {
-        prop = njs_lvlhsh_each(state[depth].hash, &state[depth].lhe);
 
-        if (prop == NULL) {
-            if (state[depth].hash == &state[depth].object->shared_hash) {
-                state[depth].hash = &state[depth].object->hash;
-                njs_lvlhsh_each_init(&state[depth].lhe, &njs_object_hash_proto);
-                continue;
-            }
+        if (s->index >= s->keys->length) {
+            njs_array_destroy(vm, s->keys);
+            s->keys = NULL;
 
-            if (depth == 0) {
+            if (s == &state[0]) {
                 goto done;
             }
 
-            depth--;
+            s--;
             continue;
         }
 
-        state[depth].prop = prop;
+        njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 0);
+        key = &s->keys->start[s->index++];
 
-        ret = cb(vm, &state[depth], ctx);
+        ret = njs_property_query(vm, &pq, &s->value, key);
+        if (njs_slow_path(ret != NJS_OK)) {
+            if (ret == NJS_DECLINED) {
+                continue;
+            }
+
+            return NJS_ERROR;
+        }
+
+        prop = pq.lhq.value;
+        s->prop = prop;
+
+        ret = cb(vm, s, ctx);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
         }
 
-        value = prop->value;
+        njs_value_assign(&value, &prop->value);
 
         if (prop->type == NJS_PROPERTY_HANDLER) {
-            njs_set_object(&obj, state[depth].object);
-            ret = prop->value.data.u.prop_handler(vm, prop, &obj, NULL, &value);
+            ret = prop->value.data.u.prop_handler(vm, prop, &s->value, NULL,
+                                                  &value);
             if (njs_slow_path(ret == NJS_ERROR)) {
                 return ret;
 
             }
         }
 
-        njs_string_get(&prop->name, &name);
-
-        if (njs_is_object(&value) && !njs_traverse_visited(&visited, &value)) {
+        if (njs_is_object(&value)
+            && !njs_is_array(&value)
+            && !njs_traverse_visited(&visited, &value))
+        {
             ret = njs_traverse_visit(&visited, &value);
             if (njs_slow_path(ret != NJS_OK)) {
                 return NJS_ERROR;
             }
 
-            if (++depth > (NJS_TRAVERSE_MAX_DEPTH - 1)) {
+            if (s == &state[NJS_TRAVERSE_MAX_DEPTH - 1]) {
                 njs_type_error(vm, "njs_object_traverse() recursion limit:%d",
-                               depth);
+                               NJS_TRAVERSE_MAX_DEPTH);
                 return NJS_ERROR;
             }
 
-            state[depth].prop = NULL;
-            state[depth].parent = &state[depth - 1];
-            state[depth].object = njs_object(&value);
-            state[depth].hash = &njs_object(&value)->shared_hash;
-            njs_lvlhsh_each_init(&state[depth].lhe, &njs_object_hash_proto);
+            s++;
+            s->prop = NULL;
+            s->parent = &s[-1];
+            s->index = 0;
+            njs_value_assign(&s->value, &value);
+            s->keys = njs_value_own_enumerate(vm, &s->value, NJS_ENUM_KEYS,
+                                          NJS_ENUM_STRING | NJS_ENUM_SYMBOL, 1);
+            if (njs_slow_path(s->keys == NULL)) {
+                return NJS_ERROR;
+            }
         }
-
     }
 
 done:

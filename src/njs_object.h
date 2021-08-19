@@ -27,9 +27,9 @@ struct njs_traverse_s {
     struct njs_traverse_s      *parent;
     njs_object_prop_t          *prop;
 
-    njs_object_t               *object;
-    njs_lvlhsh_t               *hash;
-    njs_lvlhsh_each_t          lhe;
+    njs_value_t                value;
+    njs_array_t                *keys;
+    int64_t                    index;
 
 #define NJS_TRAVERSE_MAX_DEPTH 32
 };
