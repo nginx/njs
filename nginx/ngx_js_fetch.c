@@ -10,6 +10,7 @@
 #include <ngx_core.h>
 #include <ngx_event.h>
 #include <ngx_event_connect.h>
+#include <njs_unix.h>
 #include "ngx_js.h"
 
 
@@ -59,6 +60,7 @@ struct ngx_js_http_s {
 #if (NGX_SSL)
     ngx_ssl_t                     *ssl;
     ngx_str_t                      tls_name;
+    njs_bool_t                     ssl_verify;
 #endif
 
     ngx_peer_connection_t          peer;
@@ -151,8 +153,11 @@ static njs_int_t ngx_response_js_ext_body(njs_vm_t *vm, njs_value_t *args,
 static void ngx_js_http_ssl_init_connection(ngx_js_http_t *http);
 static void ngx_js_http_ssl_handshake_handler(ngx_connection_t *c);
 static void ngx_js_http_ssl_handshake(ngx_js_http_t *http);
-static njs_int_t ngx_js_http_set_ssl(ngx_js_http_t *http);
+static njs_int_t ngx_js_http_set_ssl(ngx_js_http_t *http,
+    const char *truststore, ngx_flag_t truststore_is_file,
+    ngx_int_t verify_depth);
 static njs_int_t ngx_js_http_ssl_name(ngx_js_http_t *http);
+static int ngx_js_http_ssl_verify_callback(int ok, X509_STORE_CTX *x509_store);
 #endif
 
 static njs_external_t  ngx_js_ext_http_response_headers[] = {
@@ -350,12 +355,26 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ngx_resolver_ctx_t  *ctx;
     njs_external_ptr_t   external;
     njs_opaque_value_t  *start, lvalue, headers_value;
+#if (NGX_SSL)
+    char                *p, *truststore;
+    ngx_int_t            depth;
+    njs_str_t            truststore_param;
+    ngx_flag_t           is_https, truststore_is_file;
+    char                 buf[NJS_MAX_PATH + 1];
+#endif
 
     static const njs_str_t body_key = njs_str("body");
     static const njs_str_t headers_key = njs_str("headers");
     static const njs_str_t buffer_size_key = njs_str("buffer_size");
     static const njs_str_t body_size_key = njs_str("max_response_body_size");
     static const njs_str_t method_key = njs_str("method");
+#if (NGX_SSL)
+    static const njs_str_t verify_key = njs_str("verify");
+    static const njs_str_t verify_depth_key = njs_str("verify_depth");
+    static const njs_str_t trusted_key = njs_str("trusted_certificate");
+
+    is_https = 0;
+#endif
 
     external = njs_vm_external(vm, NJS_PROTO_ID_ANY, njs_argument(args, 0));
     if (external == NULL) {
@@ -403,10 +422,16 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         u.url.len -= 8;
         u.url.data += 8;
         u.default_port = 443;
-        if (ngx_js_http_set_ssl(http) != NJS_OK) {
-            ngx_js_http_error(http, 0, "js http failed to create ssl object");
-            goto fail;
-        }
+        is_https = 1;
+        http->ssl_verify = 1;
+#ifdef NGX_OPENSSL_CERT_FILE
+        truststore_is_file = 1;
+        truststore = NGX_OPENSSL_CERT_FILE;
+#else
+        truststore_is_file = 0;
+        truststore = NGX_OPENSSL_CERT_DIR;
+#endif
+        depth = -1;
 #endif
 
     } else {
@@ -457,7 +482,61 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         {
             goto fail;
         }
+
+#if (NGX_SSL)
+        if (is_https) {
+
+            value = njs_vm_object_prop(vm, init, &verify_key, &lvalue);
+            if (value != NULL
+                && ngx_js_boolean(vm, value, &http->ssl_verify) != NGX_OK)
+            {
+                njs_vm_error(vm, "verify is not a boolean");
+                goto fail;
+            }
+
+            value = njs_vm_object_prop(vm, init, &trusted_key, &lvalue);
+            if (value != NULL) {
+                if (ngx_js_string(vm, value, &truststore_param) != NGX_OK) {
+                    njs_vm_error(vm, "trusted_certificate is not a string");
+                    goto fail;
+
+                } else {
+                    if (njs_slow_path(truststore_param.length
+                                      > NJS_MAX_PATH - 1))
+                    {
+                        njs_vm_error(vm, "\"%s\" is too long >= %d",
+                                     truststore_param, NJS_MAX_PATH);
+                        goto fail;
+                    }
+
+                    p = (char *) njs_cpymem(buf, truststore_param.start,
+                                            truststore_param.length);
+                    *p++ = '\0';
+                    truststore = buf;
+                    truststore_is_file = 1;
+                }
+            }
+
+            value = njs_vm_object_prop(vm, init, &verify_depth_key, &lvalue);
+            if (value != NULL
+                && ngx_js_integer(vm, value, &depth) != NGX_OK)
+            {
+                njs_vm_error(vm, "verify_depth is not an integer");
+                goto fail;
+            }
+        }
+#endif
     }
+
+#if (NGX_SSL)
+    if (is_https) {
+        if (ngx_js_http_set_ssl(http, truststore, truststore_is_file, depth)
+            != NJS_OK) {
+            ngx_js_http_error(http, 0, "js http failed to create ssl object");
+            goto fail;
+        }
+    }
+#endif
 
     njs_chb_init(&http->chain, njs_vm_memory_pool(vm));
 
@@ -955,18 +1034,24 @@ ngx_js_http_ssl_handshake_handler(ngx_connection_t *c)
     http->peer.connection->write->handler = ngx_js_http_write_handler;
     http->peer.connection->read->handler = ngx_js_http_read_handler;
 
-    //ngx_js_http_write_handler(http->peer.connection->write);
     ngx_js_http_ssl_handshake(http);
 }
 
 
 static njs_int_t
-ngx_js_http_set_ssl(ngx_js_http_t *http)
+ngx_js_http_set_ssl(ngx_js_http_t *http, const char* truststore,
+    ngx_flag_t truststore_is_file, ngx_int_t verify_depth)
 {
+    int                  rc;
     ngx_pool_cleanup_t  *cln;
 
     static ngx_str_t  ngx_js_http_default_ciphers =
         ngx_string("HIGH:!aNULL:!MD5");
+
+    ngx_log_debug3(NGX_LOG_DEBUG_EVENT, http->log, 0,
+                   "js fetch set ssl. trustore:\"%s\" (%s), depth:%d",
+                   truststore, truststore_is_file ? "file" : "directory",
+                   verify_depth);
 
     http->ssl = ngx_pcalloc(http->pool, sizeof(ngx_ssl_t));
     if (http->ssl == NULL) {
@@ -998,6 +1083,36 @@ ngx_js_http_set_ssl(ngx_js_http_t *http)
         return NJS_ERROR;
     }
 
+
+    SSL_CTX_set_verify(http->ssl->ctx, SSL_VERIFY_PEER,
+                       ngx_js_http_ssl_verify_callback);
+
+    if (verify_depth >= 0) {
+        SSL_CTX_set_verify_depth(http->ssl->ctx, verify_depth);
+    }
+
+    if (truststore_is_file) {
+        rc = SSL_CTX_load_verify_locations(http->ssl->ctx, truststore, NULL);
+
+    } else {
+        rc = SSL_CTX_load_verify_locations(http->ssl->ctx, NULL, truststore);
+    }
+
+    if (rc == 0)
+    {
+        ngx_ssl_error(NGX_LOG_EMERG, http->log, 0,
+                      "js fetch SSL_CTX_load_verify_locations(\"%s\") failed",
+                      truststore);
+        return NJS_ERROR;
+    }
+
+    /*
+     * SSL_CTX_load_verify_locations() may leave errors in the error queue
+     * while returning success
+     */
+
+    ERR_clear_error();
+
     if (ngx_ssl_client_session_cache(NULL, http->ssl, 1)
         != NGX_OK)
     {
@@ -1008,12 +1123,101 @@ ngx_js_http_set_ssl(ngx_js_http_t *http)
 }
 
 
+static int
+ngx_js_http_ssl_verify_callback(int ok, X509_STORE_CTX *x509_store)
+{
+#if (NGX_DEBUG)
+    char              *subject, *issuer;
+    int                err, depth;
+    X509              *cert;
+    X509_NAME         *sname, *iname;
+    ngx_connection_t  *c;
+    ngx_ssl_conn_t    *ssl_conn;
+
+    ssl_conn = X509_STORE_CTX_get_ex_data(x509_store,
+                                          SSL_get_ex_data_X509_STORE_CTX_idx());
+
+    c = ngx_ssl_get_connection(ssl_conn);
+
+    if (!(c->log->log_level & NGX_LOG_DEBUG_EVENT)) {
+        return 1;
+    }
+
+    cert = X509_STORE_CTX_get_current_cert(x509_store);
+    err = X509_STORE_CTX_get_error(x509_store);
+    depth = X509_STORE_CTX_get_error_depth(x509_store);
+
+    sname = X509_get_subject_name(cert);
+
+    if (sname) {
+        subject = X509_NAME_oneline(sname, NULL, 0);
+        if (subject == NULL) {
+            ngx_ssl_error(NGX_LOG_ALERT, c->log, 0,
+                          "X509_NAME_oneline() failed");
+        }
+
+    } else {
+        subject = NULL;
+    }
+
+    iname = X509_get_issuer_name(cert);
+
+    if (iname) {
+        issuer = X509_NAME_oneline(iname, NULL, 0);
+        if (issuer == NULL) {
+            ngx_ssl_error(NGX_LOG_ALERT, c->log, 0,
+                          "X509_NAME_oneline() failed");
+        }
+
+    } else {
+        issuer = NULL;
+    }
+
+    ngx_log_debug5(NGX_LOG_DEBUG_EVENT, c->log, 0,
+                   "js fetch verify:%d, error:%d, depth:%d, "
+                   "subject:\"%s\", issuer:\"%s\"",
+                   ok, err, depth,
+                   subject ? subject : "(none)",
+                   issuer ? issuer : "(none)");
+
+    if (subject) {
+        OPENSSL_free(subject);
+    }
+
+    if (issuer) {
+        OPENSSL_free(issuer);
+    }
+#endif
+
+    return 1;
+}
+
+
 static void
 ngx_js_http_ssl_handshake(ngx_js_http_t *http)
 {
+    long               rc;
     ngx_connection_t  *c = http->peer.connection;
 
     if (c->ssl->handshaked) {
+        if (http->ssl_verify) {
+            rc = SSL_get_verify_result(c->ssl->connection);
+
+            if (rc != X509_V_OK) {
+                ngx_log_error(NGX_LOG_ERR, c->log, 0,
+                              "js http fetch SSL certificate verify "
+                              "error: (%l:%s)", rc,
+                              X509_verify_cert_error_string(rc));
+                goto failed;
+            }
+
+            if (ngx_ssl_check_host(c, &http->tls_name) != NGX_OK) {
+                ngx_log_error(NGX_LOG_ERR, c->log, 0,
+                              "js http SSL certificate does not match \"%V\"",
+                              http->tls_name);
+                goto failed;
+            }
+        }
 
         c->write->handler = ngx_js_http_write_handler;
         c->read->handler = ngx_js_http_read_handler;
@@ -1023,6 +1227,10 @@ ngx_js_http_ssl_handshake(ngx_js_http_t *http)
 
         return;
     }
+
+failed:
+
+    ngx_js_http_next(http);
 }
 
 

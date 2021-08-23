@@ -19,6 +19,25 @@ if [ $HTTP != NO ]; then
     fi
 fi
 
+if [ $USE_OPENSSL != NO ]; then
+    OPENSSLDIR=`openssl version -d | cut -d '"' -f 2`
+    if [ -d "$OPENSSLDIR" ]; then
+        if [ -f "$OPENSSLDIR/cert.pem" ]; then
+            have=NGX_OPENSSL_CERT_FILE value="\"$OPENSSLDIR/cert.pem\""
+            . auto/define
+        elif [ -d "$OPENSSLDIR/certs" ]; then
+            have=NGX_OPENSSL_CERT_DIR value="\"$OPENSSLDIR/certs\""
+            . auto/define
+        else
+            echo "Cannot find openssl truststore (openssldir=$OPENSSLDIR)"
+            exit 1
+        fi
+    else
+        echo Cannot find openssldir
+        exit 1
+    fi
+fi
+
 if [ $STREAM != NO ]; then
     ngx_module_type=STREAM
     ngx_module_name=ngx_stream_js_module
