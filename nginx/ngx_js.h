@@ -65,6 +65,7 @@ ngx_int_t ngx_js_core_init(njs_vm_t *vm, ngx_log_t *log);
 
 ngx_int_t ngx_js_string(njs_vm_t *vm, njs_value_t *value, njs_str_t *str);
 ngx_int_t ngx_js_integer(njs_vm_t *vm, njs_value_t *value, ngx_int_t *n);
+ngx_int_t ngx_js_boolean(njs_vm_t *vm, njs_value_t *value, njs_bool_t *b);
 
 
 #endif /* _NGX_JS_H_INCLUDED_ */

@@ -110,6 +110,20 @@ ngx_js_integer(njs_vm_t *vm, njs_value_t *value, ngx_int_t *n)
 
 
 ngx_int_t
+ngx_js_boolean(njs_vm_t *vm, njs_value_t *value, njs_bool_t *b)
+{
+    if (!njs_value_is_boolean(value)) {
+        njs_vm_error(vm, "is not a boolean");
+        return NGX_ERROR;
+    }
+
+    *b = njs_value_bool(value);
+
+    return NGX_OK;
+}
+
+
+ngx_int_t
 ngx_js_string(njs_vm_t *vm, njs_value_t *value, njs_str_t *str)
 {
     if (value != NULL && !njs_value_is_null_or_undefined(value)) {
