@@ -57,9 +57,9 @@ struct ngx_js_http_s {
     in_port_t                      port;
 
 #if (NGX_SSL)
-    ngx_int_t                      ssl_verify;
     ngx_ssl_t                     *ssl;
     ngx_str_t                      tls_name;
+    njs_bool_t                     ssl_verify;
 #endif
 
     ngx_peer_connection_t          peer;
@@ -486,11 +486,8 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         if (is_https) {
 
             value = njs_vm_object_prop(vm, init, &verify_key, &lvalue);
-            if (value != NULL
-                && ngx_js_integer(vm, value, &http->ssl_verify) != NGX_OK)
-            {
-                njs_vm_error(vm, "verify is not an integer");
-                goto fail;
+            if (value != NULL) {
+                http->ssl_verify = njs_value_bool(value);
             }
 
             value = njs_vm_object_prop(vm, init, &trusted_key, &lvalue);
