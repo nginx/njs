@@ -773,6 +773,30 @@ failed:
 }
 
 
+void ngx_js_http_close_connection(ngx_connection_t *c)
+{
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                   "close js http connection: %d", c->fd);
+
+#if (NGX_HTTP_SSL)
+
+    if (c->ssl) {
+        c->ssl->no_wait_shutdown = 1;
+
+        if (ngx_ssl_shutdown(c) == NGX_AGAIN) {
+            c->ssl->handler = ngx_js_http_close_connection;
+            return;
+        }
+    }
+
+#endif
+
+    c->destroyed = 1;
+
+    ngx_close_connection(c);
+}
+
+
 static void
 njs_js_http_destructor(njs_external_ptr_t external, njs_host_event_t host)
 {
@@ -789,7 +813,7 @@ njs_js_http_destructor(njs_external_ptr_t external, njs_host_event_t host)
     }
 
     if (http->peer.connection != NULL) {
-        ngx_close_connection(http->peer.connection);
+        ngx_js_http_close_connection(http->peer.connection);
         http->peer.connection = NULL;
     }
 }
@@ -899,7 +923,7 @@ ngx_js_http_fetch_done(ngx_js_http_t *http, njs_opaque_value_t *retval,
                    "js fetch done http:%p rc:%i", http, (ngx_int_t) rc);
 
     if (http->peer.connection != NULL) {
-        ngx_close_connection(http->peer.connection);
+        ngx_js_http_close_connection(http->peer.connection);
         http->peer.connection = NULL;
     }
 
@@ -1295,7 +1319,7 @@ ngx_js_http_next(ngx_js_http_t *http)
     }
 
     if (http->peer.connection != NULL) {
-        ngx_close_connection(http->peer.connection);
+        ngx_js_http_close_connection(http->peer.connection);
         http->peer.connection = NULL;
     }
 
