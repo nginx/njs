@@ -10,7 +10,6 @@
 #include <ngx_core.h>
 #include <ngx_event.h>
 #include <ngx_event_connect.h>
-#include <njs_unix.h>
 #include "ngx_js.h"
 
 
@@ -360,7 +359,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ngx_int_t            depth;
     njs_str_t            truststore_param;
     ngx_flag_t           is_https, truststore_is_file;
-    char                 buf[NJS_MAX_PATH + 1];
+    char                 buf[NGX_MAX_PATH + 1];
 #endif
 
     static const njs_str_t body_key = njs_str("body");
@@ -502,10 +501,10 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
                 } else {
                     if (njs_slow_path(truststore_param.length
-                                      > NJS_MAX_PATH - 1))
+                                      > NGX_MAX_PATH - 1))
                     {
                         njs_vm_error(vm, "\"%s\" is too long >= %d",
-                                     truststore_param, NJS_MAX_PATH);
+                                     truststore_param, NGX_MAX_PATH);
                         goto fail;
                     }
 
