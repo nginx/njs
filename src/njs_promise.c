@@ -1344,8 +1344,8 @@ njs_promise_perform_all(njs_vm_t *vm, njs_value_t *iterator,
         return ret;
     }
 
-    pargs->args.array = njs_array_alloc(vm, 1, length, 0);
-    if (njs_slow_path(pargs->args.array == NULL)) {
+    pargs->args.data = njs_array_alloc(vm, 1, length, 0);
+    if (njs_slow_path(pargs->args.data == NULL)) {
         return NJS_ERROR;
     }
 
@@ -1368,7 +1368,7 @@ njs_promise_perform_all(njs_vm_t *vm, njs_value_t *iterator,
     if (--(*pargs->remaining) == 0) {
         njs_mp_free(vm->mem_pool, pargs->remaining);
 
-        njs_set_array(&argument, pargs->args.array);
+        njs_set_array(&argument, pargs->args.data);
 
         if (handler == njs_promise_perform_any_handler) {
             error = njs_error_alloc(vm, NJS_OBJ_TYPE_AGGREGATE_ERROR,
@@ -1398,6 +1398,7 @@ njs_promise_perform_all_handler(njs_vm_t *vm, njs_iterator_args_t *args,
     njs_value_t *value, int64_t index)
 {
     njs_int_t                    ret;
+    njs_array_t                  *array;
     njs_value_t                  arguments[2], next;
     njs_function_t               *on_fulfilled;
     njs_promise_capability_t     *capability;
@@ -1408,7 +1409,8 @@ njs_promise_perform_all_handler(njs_vm_t *vm, njs_iterator_args_t *args,
 
     capability = pargs->capability;
 
-    njs_set_undefined(&pargs->args.array->start[index]);
+    array = args->data;
+    njs_set_undefined(&array->start[index]);
 
     ret = njs_function_call(vm, pargs->function, pargs->constructor, value,
                             1, &next);
@@ -1429,7 +1431,7 @@ njs_promise_perform_all_handler(njs_vm_t *vm, njs_iterator_args_t *args,
 
     context->already_called = 0;
     context->index = (uint32_t) index;
-    context->values = pargs->args.array;
+    context->values = pargs->args.data;
     context->capability = capability;
     context->remaining_elements = pargs->remaining;
 
@@ -1486,6 +1488,7 @@ njs_promise_perform_all_settled_handler(njs_vm_t *vm, njs_iterator_args_t *args,
     njs_value_t *value, int64_t index)
 {
     njs_int_t                    ret;
+    njs_array_t                  *array;
     njs_value_t                  arguments[2], next;
     njs_function_t               *on_fulfilled, *on_rejected;
     njs_promise_capability_t     *capability;
@@ -1496,7 +1499,8 @@ njs_promise_perform_all_settled_handler(njs_vm_t *vm, njs_iterator_args_t *args,
 
     capability = pargs->capability;
 
-    njs_set_undefined(&pargs->args.array->start[index]);
+    array = args->data;
+    njs_set_undefined(&array->start[index]);
 
     ret = njs_function_call(vm, pargs->function, pargs->constructor, value,
                             1, &next);
@@ -1514,7 +1518,7 @@ njs_promise_perform_all_settled_handler(njs_vm_t *vm, njs_iterator_args_t *args,
 
     context->already_called = 0;
     context->index = (uint32_t) index;
-    context->values = pargs->args.array;
+    context->values = pargs->args.data;
     context->capability = capability;
     context->remaining_elements = pargs->remaining;
 
@@ -1623,6 +1627,7 @@ njs_promise_perform_any_handler(njs_vm_t *vm, njs_iterator_args_t *args,
     njs_value_t *value, int64_t index)
 {
     njs_int_t                    ret;
+    njs_array_t                  *array;
     njs_value_t                  arguments[2], next;
     njs_function_t               *on_rejected;
     njs_promise_capability_t     *capability;
@@ -1633,7 +1638,8 @@ njs_promise_perform_any_handler(njs_vm_t *vm, njs_iterator_args_t *args,
 
     capability = pargs->capability;
 
-    njs_set_undefined(&pargs->args.array->start[index]);
+    array = pargs->args.data;
+    njs_set_undefined(&array->start[index]);
 
     ret = njs_function_call(vm, pargs->function, pargs->constructor, value, 1,
                             &next);
@@ -1654,7 +1660,7 @@ njs_promise_perform_any_handler(njs_vm_t *vm, njs_iterator_args_t *args,
 
     context->already_called = 0;
     context->index = (uint32_t) index;
-    context->values = pargs->args.array;
+    context->values = pargs->args.data;
     context->capability = capability;
     context->remaining_elements = pargs->remaining;
 

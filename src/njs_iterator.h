@@ -13,7 +13,7 @@ typedef struct {
     njs_value_t     *argument;
     njs_value_t     *value;
 
-    njs_array_t     *array;
+    void            *data;
 
     int64_t         from;
     int64_t         to;

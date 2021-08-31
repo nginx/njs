@@ -2256,7 +2256,7 @@ njs_array_handler_filter(njs_vm_t *vm, njs_iterator_args_t *args,
         }
 
         if (njs_is_true(&vm->retval)) {
-            ret = njs_array_add(vm, args->array, &copy);
+            ret = njs_array_add(vm, args->data, &copy);
             if (njs_slow_path(ret != NJS_OK)) {
                 return ret;
             }
@@ -2275,7 +2275,7 @@ njs_array_handler_map(njs_vm_t *vm, njs_iterator_args_t *args,
     njs_array_t  *retval;
     njs_value_t  this;
 
-    retval = args->array;
+    retval = args->data;
 
     if (retval->object.fast_array) {
         njs_set_invalid(&retval->start[n]);
@@ -2431,7 +2431,7 @@ njs_array_prototype_iterator(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             }
         }
 
-        iargs.array = array;
+        iargs.data = array;
 
         break;
     }
@@ -2481,7 +2481,7 @@ done:
     case NJS_ARRAY_FILTER:
     case NJS_ARRAY_MAP:
     default:
-        njs_set_array(&vm->retval, iargs.array);
+        njs_set_array(&vm->retval, iargs.data);
     }
 
     return NJS_OK;
