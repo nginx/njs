@@ -21240,6 +21240,11 @@ static njs_unit_test_t  njs_shell_test[] =
               "    at f (:1)\n"
               "    at main (:1)\n") },
 
+    { njs_str("[].concat({}.a.a)" ENTER),
+      njs_str("TypeError: cannot get property \"a\" of undefined\n"
+              "    at Array.prototype.concat (native)\n"
+              "    at main (:1)\n") },
+
     { njs_str("''.repeat(-1)" ENTER),
       njs_str("RangeError\n"
               "    at String.prototype.repeat (native)\n"

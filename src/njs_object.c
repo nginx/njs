@@ -1201,7 +1201,6 @@ njs_object_traverse(njs_vm_t *vm, njs_object_t *object, void *ctx,
         }
 
         if (njs_is_object(&value)
-            && !njs_is_array(&value)
             && !njs_traverse_visited(&visited, &value))
         {
             ret = njs_traverse_visit(&visited, &value);

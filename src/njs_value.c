@@ -834,6 +834,8 @@ prop:
         prop->type = NJS_PROPERTY_REF;
     }
 
+    njs_set_number(&prop->name, index);
+
     prop->writable = 1;
     prop->enumerable = 1;
     prop->configurable = 1;
