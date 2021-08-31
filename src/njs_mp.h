@@ -9,6 +9,15 @@
 
 
 typedef struct njs_mp_s  njs_mp_t;
+typedef struct njs_mp_cleanup_s  njs_mp_cleanup_t;
+
+typedef void (*njs_mp_cleanup_pt)(void *data);
+
+struct njs_mp_cleanup_s {
+        njs_mp_cleanup_pt   handler;
+        void                *data;
+        njs_mp_cleanup_t    *next;
+};
 
 
 NJS_EXPORT njs_mp_t *njs_mp_create(size_t cluster_size, size_t page_alignment,
@@ -28,6 +37,7 @@ NJS_EXPORT void *njs_mp_align(njs_mp_t *mp, size_t alignment, size_t size)
 NJS_EXPORT void *njs_mp_zalign(njs_mp_t *mp,
     size_t alignment, size_t size)
     NJS_MALLOC_LIKE;
+NJS_EXPORT njs_mp_cleanup_t *njs_mp_cleanup_add(njs_mp_t *mp, size_t size);
 NJS_EXPORT void njs_mp_free(njs_mp_t *mp, void *p);
 
 

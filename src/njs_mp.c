@@ -106,6 +106,8 @@ struct njs_mp_s {
     uint32_t                    page_alignment;
     uint32_t                    cluster_size;
 
+    njs_mp_cleanup_t            *cleanup;
+
     njs_mp_slot_t               slots[];
 };
 
@@ -251,9 +253,17 @@ njs_mp_destroy(njs_mp_t *mp)
 {
     void               *p;
     njs_mp_block_t     *block;
+    njs_mp_cleanup_t   *c;
     njs_rbtree_node_t  *node, *next;
 
     njs_debug_alloc("mp destroy\n");
+
+    for (c = mp->cleanup; c != NULL; c = c->next) {
+        if (c->handler != NULL) {
+            njs_debug_alloc("mp run cleanup: @%p\n", c);
+            c->handler(c->data);
+        }
+    }
 
     next = njs_rbtree_root(&mp->blocks);
 
@@ -603,6 +613,37 @@ njs_mp_rbtree_compare(njs_rbtree_node_t *node1, njs_rbtree_node_t *node2)
     block2 = (njs_mp_block_t *) node2;
 
     return (uintptr_t) block1->start - (uintptr_t) block2->start;
+}
+
+
+njs_mp_cleanup_t *
+njs_mp_cleanup_add(njs_mp_t *mp, size_t size)
+{
+    njs_mp_cleanup_t  *c;
+
+    c = njs_mp_alloc(mp, sizeof(njs_mp_cleanup_t));
+    if (njs_slow_path(c == NULL)) {
+        return NULL;
+    }
+
+    if (size) {
+        c->data = njs_mp_alloc(mp, size);
+        if (njs_slow_path(c->data == NULL)) {
+            return NULL;
+        }
+
+    } else {
+        c->data = NULL;
+    }
+
+    c->handler = NULL;
+    c->next = mp->cleanup;
+
+    mp->cleanup = c;
+
+    njs_debug_alloc("mp add cleanup: @%p\n", c);
+
+    return c;
 }
 
 
