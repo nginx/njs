@@ -2166,6 +2166,11 @@ njs_typed_array_prototype_join(njs_vm_t *vm, njs_value_t *args,
         return NJS_OK;
     }
 
+    if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
     njs_chb_init(&chain, vm->mem_pool);
 
     length = njs_typed_array_to_chain(vm, &chain, array, separator);
