@@ -1,3 +1,31 @@
+Changes with njs 0.6.2                                        31 Aug 2021
+
+    nginx modules:
+
+    *) Bugfix: fixed CPU hog when js_filter is registered
+       in both directions.
+
+    Core:
+
+    *) Feature: introduced AggregateError implementation.
+
+    *) Feature: added remaining Promise constructor methods.
+       The following methods were added: Promise.all(),
+       Promise.allSettled(), Promise.any(), Promise.race().
+
+    *) Improvement: removed recursion from code generator.
+
+    *) Bugfix: fixed rest parameter parsing without binding
+       identifier.
+
+    *) Bugfix: fixed resolve/reject callback for
+       Promise.prototype.finally().
+
+    *) Bugfix: fixed %TypedArray%.prototype.join() with
+       detached buffer.
+
+    *) Bugfix: fixed memory leak in interactive shell.
+
 Changes with njs 0.6.1                                        29 Jun 2021
 
     *) Bugfix: fixed RegExpBuiltinExec() with UTF-8 only regexps.
