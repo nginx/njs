@@ -93,7 +93,8 @@ static njs_int_t njs_process_script(njs_opts_t *opts,
 
 #ifndef NJS_FUZZER_TARGET
 
-static njs_int_t njs_get_options(njs_opts_t *opts, int argc, char **argv);
+static njs_int_t njs_options_parse(njs_opts_t *opts, int argc, char **argv);
+static void njs_options_free(njs_opts_t *opts);
 static njs_int_t njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options);
 static njs_int_t njs_interactive_shell(njs_opts_t *opts,
     njs_vm_opt_t *vm_options);
@@ -223,7 +224,7 @@ main(int argc, char **argv)
     njs_memzero(&opts, sizeof(njs_opts_t));
     opts.interactive = 1;
 
-    ret = njs_get_options(&opts, argc, argv);
+    ret = njs_options_parse(&opts, argc, argv);
     if (ret != NJS_OK) {
         ret = (ret == NJS_DONE) ? NJS_OK : NJS_ERROR;
         goto done;
@@ -294,16 +295,14 @@ main(int argc, char **argv)
 
 done:
 
-    if (opts.paths != NULL) {
-        free(opts.paths);
-    }
+    njs_options_free(&opts);
 
     return (ret == NJS_OK) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 
 static njs_int_t
-njs_get_options(njs_opts_t *opts, int argc, char **argv)
+njs_options_parse(njs_opts_t *opts, int argc, char **argv)
 {
     char        *p, **paths;
     njs_int_t   i, ret;
@@ -458,6 +457,19 @@ done:
     }
 
     return NJS_OK;
+}
+
+
+static void
+njs_options_free(njs_opts_t *opts)
+{
+    if (opts->paths != NULL) {
+        free(opts->paths);
+    }
+
+    if (opts->argv != NULL) {
+        free(opts->argv);
+    }
 }
 
 
