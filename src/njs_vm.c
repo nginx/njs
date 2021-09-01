@@ -465,7 +465,9 @@ njs_vm_start(njs_vm_t *vm)
         return ret;
     }
 
-    return njs_vmcode_interpreter(vm, vm->start);
+    ret = njs_vmcode_interpreter(vm, vm->start);
+
+    return (ret == NJS_ERROR) ? NJS_ERROR : NJS_OK;
 }
 
 

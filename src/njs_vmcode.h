@@ -50,6 +50,8 @@ enum {
     NJS_VMCODE_ARGUMENTS,
     NJS_VMCODE_PROTO_INIT,
 
+    NJS_VMCODE_AWAIT,
+
     NJS_VMCODE_TRY_START,
     NJS_VMCODE_THROW,
     NJS_VMCODE_TRY_BREAK,
@@ -210,6 +212,7 @@ typedef struct {
     njs_vmcode_t               code;
     njs_index_t                retval;
     njs_function_lambda_t      *lambda;
+    njs_bool_t                 async;
 } njs_vmcode_function_t;
 
 
@@ -426,6 +429,12 @@ typedef struct {
     njs_vmcode_t               code;
     njs_index_t                retval;
 } njs_vmcode_debugger_t;
+
+
+typedef struct {
+    njs_vmcode_t               code;
+    njs_index_t                retval;
+} njs_vmcode_await_t;
 
 
 njs_int_t njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc);

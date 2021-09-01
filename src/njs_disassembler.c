@@ -156,6 +156,9 @@ static njs_code_name_t  code_names[] = {
 
     { NJS_VMCODE_DEBUGGER, sizeof(njs_vmcode_debugger_t),
           njs_str("DEBUGGER        ") },
+
+    { NJS_VMCODE_AWAIT, sizeof(njs_vmcode_await_t),
+          njs_str("AWAIT           ") },
 };
 
 

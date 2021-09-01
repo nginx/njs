@@ -1108,3 +1108,66 @@ njs_run {"./test/js/promise_race.js"} \
 
 njs_run {"./test/js/promise_race_throw.js"} \
 "rejected:one"
+
+# Async/Await
+
+njs_run {"./test/js/async_await_inline.js"} \
+"70"
+
+njs_run {"./test/js/async_await_add.js"} \
+"110"
+
+njs_run {"./test/js/async_await_stages.js"} \
+"30 1, 2, 3, 4, 5"
+
+njs_run {"./test/js/async_await_for.js"} \
+"85 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, end"
+
+njs_run {"./test/js/async_await_blank.js"} \
+"12345"
+
+njs_run {"./test/js/async_await_reject.js"} \
+"Thrown:
+Error: unhandled promise rejection: 50"
+
+njs_run {"./test/js/async_await_catch.js"} \
+"51"
+
+njs_run {"./test/js/async_await_finally.js"} \
+"51
+Thrown:
+Error: unhandled promise rejection: 50"
+
+njs_run {"./test/js/async_await_throw.js"} \
+"Thrown:
+Error: unhandled promise rejection: 50"
+
+njs_run {"./test/js/async_await_throw_catch.js"} \
+"110"
+
+njs_run {"./test/js/async_await_throw_async.js"} \
+"Thrown:
+Error: unhandled promise rejection: 51"
+
+njs_run {"./test/js/async_await_throw_catch_async.js"} \
+"51"
+
+njs_run {"./test/js/async_await_try_catch.js"} \
+"reject
+finally
+end"
+
+njs_run {"./test/js/async_await_try_finally.js"} \
+"Thrown:
+Error: unhandled promise rejection: finally reject"
+
+njs_run {"./test/js/async_await_try_throw.js"} \
+"finally
+Thrown:
+Error: unhandled promise rejection: try"
+
+njs_run {"./test/js/async_await_try_throw_catch.js"} \
+"try
+finally
+end"
+

@@ -325,6 +325,10 @@ static njs_int_t njs_generate_export_statement(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_export_statement_end(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
+static njs_int_t njs_generate_await(njs_vm_t *vm, njs_generator_t *generator,
+    njs_parser_node_t *node);
+static njs_int_t njs_generate_await_end(njs_vm_t *vm,
+    njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_wo_dest(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_wo_dest_after(njs_vm_t *vm,
@@ -658,6 +662,7 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
         return njs_generate_array(vm, generator, node);
 
     case NJS_TOKEN_FUNCTION_EXPRESSION:
+    case NJS_TOKEN_ASYNC_FUNCTION_EXPRESSION:
         return njs_generate_function_expression(vm, generator, node);
 
     case NJS_TOKEN_FUNCTION:
@@ -679,6 +684,7 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
         return njs_generate_name(vm, generator, node);
 
     case NJS_TOKEN_FUNCTION_DECLARATION:
+    case NJS_TOKEN_ASYNC_FUNCTION_DECLARATION:
         return njs_generate_function_declaration(vm, generator, node);
 
     case NJS_TOKEN_FUNCTION_CALL:
@@ -701,6 +707,9 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
 
     case NJS_TOKEN_EXPORT:
         return njs_generate_export_statement(vm, generator, node);
+
+    case NJS_TOKEN_AWAIT:
+        return njs_generate_await(vm, generator, node);
 
     default:
         njs_thread_log_debug("unknown token: %d", node->token);
@@ -3055,6 +3064,7 @@ njs_generate_function_expression(njs_vm_t *vm, njs_generator_t *generator,
     njs_generate_code(generator, njs_vmcode_function_t, function,
                       NJS_VMCODE_FUNCTION, 1, node);
     function->lambda = lambda;
+    function->async = (node->token_type == NJS_TOKEN_ASYNC_FUNCTION_EXPRESSION);
 
     node->index = njs_generate_object_dest_index(vm, generator, node);
     if (njs_slow_path(node->index == NJS_INDEX_ERROR)) {
@@ -3090,6 +3100,7 @@ njs_generate_function(njs_vm_t *vm, njs_generator_t *generator,
     njs_generate_code(generator, njs_vmcode_function_t, function,
                       NJS_VMCODE_FUNCTION, 1, node);
     function->lambda = lambda;
+    function->async = 0;
 
     node->index = njs_generate_object_dest_index(vm, generator, node);
     if (njs_slow_path(node->index == NJS_INDEX_ERROR)) {
@@ -3555,6 +3566,7 @@ njs_generate_function_declaration(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
     njs_int_t                ret;
+    njs_bool_t               async;
     njs_variable_t           *var;
     njs_function_t           *function;
     njs_function_lambda_t    *lambda;
@@ -3587,7 +3599,8 @@ njs_generate_function_declaration(njs_vm_t *vm, njs_generator_t *generator,
         return ret;
     }
 
-    function = njs_function_alloc(vm, lambda);
+    async = (node->token_type == NJS_TOKEN_ASYNC_FUNCTION_DECLARATION);
+    function = njs_function_alloc(vm, lambda, async);
     if (njs_slow_path(function == NULL)) {
         return NJS_ERROR;
     }
@@ -4650,6 +4663,40 @@ njs_generate_export_statement_end(njs_vm_t *vm, njs_generator_t *generator,
                       NJS_VMCODE_RETURN, 1, NULL);
     code->retval = obj->index;
     node->index = obj->index;
+
+    return njs_generator_stack_pop(vm, generator, NULL);
+}
+
+
+static njs_int_t
+njs_generate_await(njs_vm_t *vm, njs_generator_t *generator,
+    njs_parser_node_t *node)
+{
+    njs_generator_next(generator, njs_generate, node->right);
+
+    return njs_generator_after(vm, generator,
+                               njs_queue_first(&generator->stack), node,
+                               njs_generate_await_end, NULL, 0);
+}
+
+
+static njs_int_t
+njs_generate_await_end(njs_vm_t *vm, njs_generator_t *generator,
+    njs_parser_node_t *node)
+{
+    njs_index_t         index;
+    njs_vmcode_await_t  *code;
+
+    index = node->right->index;
+
+    if (njs_slow_path(index == NJS_INDEX_ERROR)) {
+        return NJS_ERROR;
+    }
+
+    njs_generate_code(generator, njs_vmcode_await_t, code,
+                      NJS_VMCODE_AWAIT, 1, node);
+    code->retval = index;
+    node->index = index;
 
     return njs_generator_stack_pop(vm, generator, NULL);
 }

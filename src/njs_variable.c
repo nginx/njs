@@ -38,6 +38,7 @@ njs_variable_t *
 njs_variable_function_add(njs_parser_t *parser, njs_parser_scope_t *scope,
     uintptr_t unique_id, njs_variable_type_t type)
 {
+    njs_bool_t             ctor;
     njs_value_t            **declr;
     njs_variable_t         *var;
     njs_parser_scope_t     *root;
@@ -61,7 +62,9 @@ njs_variable_function_add(njs_parser_t *parser, njs_parser_scope_t *scope,
             return NULL;
         }
 
-        lambda = njs_function_lambda_alloc(parser->vm, 1);
+        ctor = parser->node->token_type != NJS_TOKEN_ASYNC_FUNCTION_DECLARATION;
+
+        lambda = njs_function_lambda_alloc(parser->vm, ctor);
         if (lambda == NULL) {
             return NULL;
         }

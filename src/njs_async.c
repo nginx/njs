@@ -1,0 +1,245 @@
+
+/*
+ * Copyright (C) Alexander Borisov
+ * Copyright (C) Nginx, Inc.
+ */
+
+#include <njs_main.h>
+
+
+static void
+njs_async_context_free(njs_vm_t *vm, njs_native_frame_t *frame);
+
+
+njs_int_t
+njs_async_function_frame_invoke(njs_vm_t *vm, njs_value_t *retval)
+{
+    njs_int_t           ret;
+    njs_value_t         ctor;
+    njs_async_ctx_t     *ctx;
+    njs_native_frame_t  *frame;
+
+    frame = vm->top_frame;
+    frame->retval = retval;
+
+    ctx = frame->function->context;
+
+    njs_set_function(&ctor, &vm->constructors[NJS_OBJ_TYPE_PROMISE]);
+
+    ctx->capability = njs_promise_new_capability(vm, &ctor);
+    if (njs_slow_path(ctx->capability == NULL)) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_function_lambda_call(vm);
+
+    if (ret == NJS_OK) {
+        ret = njs_function_call(vm, njs_function(&ctx->capability->resolve),
+                                &njs_value_undefined, retval, 1, &vm->retval);
+
+    } else if (ret == NJS_ERROR) {
+        if (njs_is_memory_error(vm, &vm->retval)) {
+            return NJS_ERROR;
+        }
+
+        ret = njs_function_call(vm, njs_function(&ctx->capability->reject),
+                                &njs_value_undefined, &vm->retval, 1,
+                                &vm->retval);
+    }
+
+    *retval = ctx->capability->promise;
+
+    return ret;
+}
+
+
+njs_int_t
+njs_await_fulfilled(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    njs_int_t           ret;
+    njs_value_t         **cur_local, **cur_closures, **cur_temp, *value;
+    njs_frame_t         *frame;
+    njs_async_ctx_t     *ctx;
+    njs_native_frame_t  *top, *async;
+
+    ctx = vm->top_frame->function->context;
+
+    value = njs_arg(args, nargs, 1);
+    if (njs_is_error(value)) {
+        goto failed;
+    }
+
+    async = ctx->await;
+
+    cur_local = vm->levels[NJS_LEVEL_LOCAL];
+    cur_closures = vm->levels[NJS_LEVEL_CLOSURE];
+    cur_temp = vm->levels[NJS_LEVEL_TEMP];
+    top = vm->top_frame;
+    frame = vm->active_frame;
+
+    vm->levels[NJS_LEVEL_LOCAL] = async->local;
+    vm->levels[NJS_LEVEL_CLOSURE] = njs_function_closures(async->function);
+    vm->levels[NJS_LEVEL_TEMP] = async->temp;
+
+    vm->top_frame = async;
+    vm->active_frame = (njs_frame_t *) async;
+
+    *njs_scope_value(vm, ctx->index) = *value;
+    vm->retval = *value;
+
+    vm->top_frame->retval = &vm->retval;
+
+    ret = njs_vmcode_interpreter(vm, async->pc);
+
+    vm->levels[NJS_LEVEL_LOCAL] = cur_local;
+    vm->levels[NJS_LEVEL_CLOSURE] = cur_closures;
+    vm->levels[NJS_LEVEL_TEMP] = cur_temp;
+
+    vm->top_frame = top;
+    vm->active_frame = frame;
+
+    if (ret == NJS_OK) {
+        ret = njs_function_call(vm, njs_function(&ctx->capability->resolve),
+                            &njs_value_undefined, &vm->retval, 1, &vm->retval);
+
+        njs_async_context_free(vm, vm->top_frame);
+
+    } else if (ret == NJS_ERROR) {
+        if (njs_is_memory_error(vm, &vm->retval)) {
+            return NJS_ERROR;
+        }
+
+        value = &vm->retval;
+
+        goto failed;
+    }
+
+    return ret;
+
+failed:
+
+    (void) njs_function_call(vm, njs_function(&ctx->capability->reject),
+                             &njs_value_undefined, value, 1, &vm->retval);
+
+    njs_async_context_free(vm, vm->top_frame);
+
+    return NJS_ERROR;
+}
+
+
+njs_int_t
+njs_await_rejected(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    njs_value_t      *value;
+    njs_async_ctx_t  *ctx;
+
+    ctx = vm->top_frame->function->context;
+
+    value = njs_arg(args, nargs, 1);
+
+    if (ctx->await->pc == ctx->pc) {
+        (void) njs_function_call(vm, njs_function(&ctx->capability->reject),
+                                 &njs_value_undefined, value, 1, &vm->retval);
+
+        njs_async_context_free(vm, vm->top_frame);
+
+        return NJS_ERROR;
+    }
+
+    return njs_await_fulfilled(vm, args, nargs, unused);
+}
+
+
+static void
+njs_async_context_free(njs_vm_t *vm, njs_native_frame_t *frame)
+{
+    njs_async_ctx_t  *ctx;
+
+    ctx = frame->function->context;
+
+    njs_mp_free(vm->mem_pool, ctx->capability);
+    njs_mp_free(vm->mem_pool, ctx);
+
+    frame->function->context = NULL;
+}
+
+
+static const njs_object_prop_t  njs_async_constructor_properties[] =
+{
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("AsyncFunction"),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 1, 1.0),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("prototype"),
+        .value = njs_prop_handler(njs_object_prototype_create),
+    },
+};
+
+
+const njs_object_init_t  njs_async_constructor_init = {
+    njs_async_constructor_properties,
+    njs_nitems(njs_async_constructor_properties),
+};
+
+
+static const njs_object_prop_t  njs_async_prototype_properties[] =
+{
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
+        .value = njs_string("AsyncFunction"),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("constructor"),
+        .value = njs_prop_handler(njs_object_prototype_create_constructor),
+        .configurable = 1,
+    },
+};
+
+
+const njs_object_init_t  njs_async_prototype_init = {
+    njs_async_prototype_properties,
+    njs_nitems(njs_async_prototype_properties),
+};
+
+
+const njs_object_type_init_t  njs_async_function_type_init = {
+    .constructor = njs_native_ctor(njs_function_constructor, 1, 1),
+    .constructor_props = &njs_async_constructor_init,
+    .prototype_props = &njs_async_prototype_init,
+    .prototype_value = { .object = { .type = NJS_OBJECT } },
+};
+
+
+const njs_object_prop_t  njs_async_function_instance_properties[] =
+{
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("length"),
+        .value = njs_prop_handler(njs_function_instance_length),
+        .configurable = 1,
+    },
+};
+
+
+const njs_object_init_t  njs_async_function_instance_init = {
+    njs_async_function_instance_properties,
+    njs_nitems(njs_async_function_instance_properties),
+};

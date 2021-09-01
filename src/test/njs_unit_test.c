@@ -20435,6 +20435,82 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("const const"),
       njs_str("SyntaxError: Unexpected token \"const\" in 1") },
+
+    /* Async/Await */
+
+    { njs_str("async function f() {}; f.prototype"),
+      njs_str("undefined") },
+
+    { njs_str("async function f() {await 1}"),
+      njs_str("undefined") },
+
+    { njs_str("function f() {await 1}"),
+      njs_str("SyntaxError: await is only valid in async functions in 1") },
+
+    { njs_str("async function f() {function a() {await 1}}"),
+      njs_str("SyntaxError: await is only valid in async functions in 1") },
+
+    { njs_str("async function f() {() => {await 1}}"),
+      njs_str("SyntaxError: await is only valid in async functions in 1") },
+
+    { njs_str("function f() {async () => {await 1}}"),
+      njs_str("undefined") },
+
+    { njs_str("let f = async () => {await 1}"),
+      njs_str("undefined") },
+
+    { njs_str("let f = () => {await 1}"),
+      njs_str("SyntaxError: await is only valid in async functions in 1") },
+
+    { njs_str("(async function() {await 1})"),
+      njs_str("[object AsyncFunction]") },
+
+    { njs_str("(function() {await 1})"),
+      njs_str("SyntaxError: await is only valid in async functions in 1") },
+
+    { njs_str("let ctor = Object.getPrototypeOf(async function(){}).constructor;"
+              "ctor"),
+      njs_str("[object Function]") },
+
+    { njs_str("let ctor = Object.getPrototypeOf(async function(){}).constructor;"
+              "ctor()"),
+      njs_str("[object AsyncFunction]") },
+
+    { njs_str("let ctor = Object.getPrototypeOf(async function(){}).constructor;"
+              "new ctor();"),
+      njs_str("[object AsyncFunction]") },
+
+    { njs_str("let ctor = Object.getPrototypeOf(async function(){}).constructor;"
+              "let f = new ctor(); f()"),
+      njs_str("[object Promise]") },
+
+    { njs_str("let ctor = Object.getPrototypeOf(async function(){}).constructor;"
+              "let f = new ctor('x', 'await 1; return x'); f(1)"),
+      njs_str("[object Promise]") },
+
+    { njs_str("let f = new Function('x', 'await 1; return x'); f(1)"),
+      njs_str("SyntaxError: await is only valid in async functions in runtime:1") },
+
+    { njs_str("new AsyncFunction()"),
+      njs_str("ReferenceError: \"AsyncFunction\" is not defined") },
+
+    { njs_str("(async function() {console.log(await 111)})"),
+      njs_str("SyntaxError: await in arguments not supported in 1") },
+
+    { njs_str("(async function() {console.log('Number: ' + await 111)})"),
+      njs_str("SyntaxError: await in arguments not supported in 1") },
+
+    { njs_str("function f(a) {}"
+              "(async function() {f(await 111)})"),
+      njs_str("SyntaxError: await in arguments not supported in 1") },
+
+    { njs_str("function f(a, b, c) {}"
+              "(async function() {f(1, 'a', await 111)})"),
+      njs_str("SyntaxError: await in arguments not supported in 1") },
+
+    { njs_str("function f(a) {}"
+              "(async function() {f('Number: ' + await 111)})"),
+      njs_str("SyntaxError: await in arguments not supported in 1") },
 };
 
 

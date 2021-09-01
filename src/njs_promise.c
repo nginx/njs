@@ -8,12 +8,6 @@
 
 
 typedef enum {
-    NJS_PROMISE_PENDING = 0,
-    NJS_PROMISE_FULFILL,
-    NJS_PROMISE_REJECTED
-} njs_promise_type_t;
-
-typedef enum {
     NJS_PROMISE_HANDLE = 0,
     NJS_PROMISE_REJECT
 } njs_promise_rejection_type_t;
@@ -23,20 +17,6 @@ typedef enum {
     NJS_PROMISE_ALL_SETTLED,
     NJS_PROMISE_ANY
 } njs_promise_function_type_t;
-
-typedef struct {
-    njs_promise_type_t        state;
-    njs_value_t               result;
-    njs_queue_t               fulfill_queue;
-    njs_queue_t               reject_queue;
-    njs_bool_t                is_handled;
-} njs_promise_data_t;
-
-typedef struct {
-    njs_value_t               promise;
-    njs_value_t               resolve;
-    njs_value_t               reject;
-} njs_promise_capability_t;
 
 typedef struct {
     njs_promise_capability_t  *capability;
@@ -84,13 +64,8 @@ static njs_int_t njs_promise_host_rejection_tracker(njs_vm_t *vm,
     njs_promise_t *promise, njs_promise_rejection_type_t operation);
 static njs_int_t njs_promise_resolve_function(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t retval);
-static njs_promise_t *njs_promise_resolve(njs_vm_t *vm,
-    njs_value_t *constructor, njs_value_t *x);
 static njs_int_t njs_promise_reject_function(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t retval);
-static njs_int_t njs_promise_perform_then(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *fulfilled, njs_value_t *rejected,
-    njs_promise_capability_t *capability);
 static njs_int_t njs_promise_then_finally_function(njs_vm_t *vm,
     njs_value_t *args, njs_uint_t nargs, njs_index_t unused);
 static njs_int_t njs_promise_then_finally_return(njs_vm_t *vm,
@@ -254,7 +229,7 @@ njs_promise_constructor_call(njs_vm_t *vm, njs_function_t *function)
 }
 
 
-static njs_function_t *
+njs_function_t *
 njs_promise_create_function(njs_vm_t *vm, size_t context_size)
 {
     njs_function_t         *function;
@@ -332,7 +307,7 @@ njs_promise_create_resolving_functions(njs_vm_t *vm, njs_promise_t *promise,
 }
 
 
-static njs_promise_capability_t *
+njs_promise_capability_t *
 njs_promise_new_capability(njs_vm_t *vm, njs_value_t *constructor)
 {
     njs_int_t                 ret;
@@ -791,7 +766,7 @@ njs_promise_object_resolve(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_promise_t *
+njs_promise_t *
 njs_promise_resolve(njs_vm_t *vm, njs_value_t *constructor, njs_value_t *x)
 {
     njs_int_t                 ret;
@@ -946,7 +921,7 @@ failed:
 }
 
 
-static njs_int_t
+njs_int_t
 njs_promise_perform_then(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *fulfilled, njs_value_t *rejected,
     njs_promise_capability_t *capability)

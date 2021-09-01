@@ -74,6 +74,7 @@ static const njs_object_type_init_t *const
     &njs_symbol_type_init,
     &njs_string_type_init,
     &njs_function_type_init,
+    &njs_async_function_type_init,
     &njs_regexp_type_init,
     &njs_date_type_init,
     &njs_promise_type_init,
@@ -177,6 +178,12 @@ njs_builtin_objects_create(njs_vm_t *vm)
 
     ret = njs_object_hash_init(vm, &shared->function_instance_hash,
                                &njs_function_instance_init);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_object_hash_init(vm, &shared->async_function_instance_hash,
+                               &njs_async_function_instance_init);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
@@ -342,7 +349,7 @@ njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global)
     size_t        size;
     njs_uint_t    i;
     njs_object_t  *object_prototype, *function_prototype,
-                  *typed_array_prototype, *error_prototype,
+                  *typed_array_prototype, *error_prototype, *async_prototype,
                   *typed_array_ctor, *error_ctor;
 
     /*
@@ -383,6 +390,9 @@ njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global)
     }
 
     function_prototype = &vm->prototypes[NJS_OBJ_TYPE_FUNCTION].object;
+
+    async_prototype = &vm->prototypes[NJS_OBJ_TYPE_ASYNC_FUNCTION].object;
+    async_prototype->__proto__ = function_prototype;
 
     for (i = NJS_OBJ_TYPE_OBJECT; i < NJS_OBJ_TYPE_NORMAL_MAX; i++) {
         vm->constructors[i].object.__proto__ = function_prototype;
