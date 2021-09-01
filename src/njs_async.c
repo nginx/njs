@@ -90,7 +90,7 @@ njs_await_fulfilled(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     vm->top_frame->retval = &vm->retval;
 
-    ret = njs_vmcode_interpreter(vm, async->pc);
+    ret = njs_vmcode_interpreter(vm, ctx->pc);
 
     vm->levels[NJS_LEVEL_LOCAL] = cur_local;
     vm->levels[NJS_LEVEL_CLOSURE] = cur_closures;
@@ -147,6 +147,8 @@ njs_await_rejected(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         return NJS_ERROR;
     }
+
+    ctx->pc = ctx->await->pc;
 
     return njs_await_fulfilled(vm, args, nargs, unused);
 }

@@ -1171,3 +1171,5 @@ njs_run {"./test/js/async_await_try_throw_catch.js"} \
 finally
 end"
 
+njs_run {"./test/js/async_await_try_resolve.js"} \
+"key: resolve"
