@@ -27,6 +27,7 @@ typedef ngx_resolver_t *(*ngx_external_resolver_pt)(njs_vm_t *vm,
     njs_external_ptr_t e);
 typedef ngx_msec_t (*ngx_external_resolver_timeout_pt)(njs_vm_t *vm,
     njs_external_ptr_t e);
+typedef ngx_ssl_t *(*ngx_external_ssl_pt)(njs_vm_t *vm, njs_external_ptr_t e);
 
 
 #define ngx_external_connection(vm, e)                                        \
@@ -39,6 +40,8 @@ typedef ngx_msec_t (*ngx_external_resolver_timeout_pt)(njs_vm_t *vm,
 	((ngx_external_resolver_timeout_pt) njs_vm_meta(vm, 3))(vm, e)
 #define ngx_external_event_handler(vm, e)                                     \
     ((ngx_js_event_handler_pt) njs_vm_meta(vm, 4))
+#define ngx_external_ssl(vm, e)                                               \
+    ((ngx_external_ssl_pt) njs_vm_meta(vm, 5))(vm, e)
 
 
 #define ngx_js_prop(vm, type, value, start, len)                              \

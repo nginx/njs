@@ -27,6 +27,13 @@ typedef struct {
     ngx_str_t              header_filter;
     ngx_str_t              body_filter;
     ngx_uint_t             buffer_type;
+#if (NGX_HTTP_SSL)
+    ngx_ssl_t             *ssl;
+    ngx_str_t              ssl_ciphers;
+    ngx_uint_t             ssl_protocols;
+    ngx_int_t              ssl_verify_depth;
+    ngx_str_t              ssl_trusted_certificate;
+#endif
 } ngx_http_js_loc_conf_t;
 
 
@@ -222,6 +229,22 @@ static void *ngx_http_js_create_loc_conf(ngx_conf_t *cf);
 static char *ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent,
     void *child);
 
+#if (NGX_HTTP_SSL)
+static char * ngx_http_js_set_ssl(ngx_conf_t *cf, ngx_http_js_loc_conf_t *plcf);
+#endif
+static ngx_ssl_t *ngx_http_js_ssl(njs_vm_t *vm, ngx_http_request_t *r);
+
+#if (NGX_HTTP_SSL)
+
+static ngx_conf_bitmask_t  ngx_http_js_ssl_protocols[] = {
+    { ngx_string("TLSv1"), NGX_SSL_TLSv1 },
+    { ngx_string("TLSv1.1"), NGX_SSL_TLSv1_1 },
+    { ngx_string("TLSv1.2"), NGX_SSL_TLSv1_2 },
+    { ngx_string("TLSv1.3"), NGX_SSL_TLSv1_3 },
+    { ngx_null_string, 0 }
+};
+
+#endif
 
 static ngx_command_t  ngx_http_js_commands[] = {
 
@@ -280,6 +303,38 @@ static ngx_command_t  ngx_http_js_commands[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
       NULL },
+
+#if (NGX_HTTP_SSL)
+
+    { ngx_string("js_fetch_ciphers"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_js_loc_conf_t, ssl_ciphers),
+      NULL },
+
+    { ngx_string("js_fetch_protocols"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_1MORE,
+      ngx_conf_set_bitmask_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_js_loc_conf_t, ssl_protocols),
+      &ngx_http_js_ssl_protocols },
+
+    { ngx_string("js_fetch_verify_depth"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_num_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_js_loc_conf_t, ssl_verify_depth),
+      NULL },
+
+    { ngx_string("js_fetch_trusted_certificate"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_str_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_js_loc_conf_t, ssl_trusted_certificate),
+      NULL },
+
+#endif
 
       ngx_null_command
 };
@@ -657,11 +712,12 @@ static uintptr_t ngx_http_js_uptr[] = {
     (uintptr_t) ngx_http_js_resolver,
     (uintptr_t) ngx_http_js_resolver_timeout,
     (uintptr_t) ngx_http_js_handle_event,
+    (uintptr_t) ngx_http_js_ssl,
 };
 
 
 static njs_vm_meta_t ngx_http_js_metas = {
-    .size = 5,
+    .size = 6,
     .values = ngx_http_js_uptr
 };
 
@@ -3951,7 +4007,14 @@ ngx_http_js_create_loc_conf(ngx_conf_t *cf)
      *     conf->header_filter = { 0, NULL };
      *     conf->body_filter = { 0, NULL };
      *     conf->buffer_type = NGX_JS_UNSET;
+     *     conf->ssl_ciphers = { 0, NULL };
+     *     conf->ssl_protocols = 0;
+     *     conf->ssl_trusted_certificate = { 0, NULL };
      */
+
+#if (NGX_HTTP_SSL)
+    conf->ssl_verify_depth = NGX_CONF_UNSET;
+#endif
 
     return conf;
 }
@@ -3969,5 +4032,81 @@ ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_uint_value(conf->buffer_type, prev->buffer_type,
                               NGX_JS_STRING);
 
+#if (NGX_HTTP_SSL)
+    ngx_conf_merge_str_value(conf->ssl_ciphers, prev->ssl_ciphers, "DEFAULT");
+
+    ngx_conf_merge_bitmask_value(conf->ssl_protocols, prev->ssl_protocols,
+                                 (NGX_CONF_BITMASK_SET|NGX_SSL_TLSv1
+                                  |NGX_SSL_TLSv1_1|NGX_SSL_TLSv1_2));
+
+    ngx_conf_merge_value(conf->ssl_verify_depth, prev->ssl_verify_depth, 100);
+
+    ngx_conf_merge_str_value(conf->ssl_trusted_certificate,
+                             prev->ssl_trusted_certificate, "");
+
+    return ngx_http_js_set_ssl(cf, conf);
+#else
     return NGX_CONF_OK;
+#endif
+}
+
+
+#if (NGX_HTTP_SSL)
+
+static char *
+ngx_http_js_set_ssl(ngx_conf_t *cf, ngx_http_js_loc_conf_t *plcf)
+{
+    ngx_ssl_t           *ssl;
+    ngx_pool_cleanup_t  *cln;
+
+    ssl = ngx_pcalloc(cf->pool, sizeof(ngx_ssl_t));
+    if (ssl == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    plcf->ssl = ssl;
+    ssl->log = cf->log;
+
+    if (ngx_ssl_create(ssl, plcf->ssl_protocols, NULL) != NGX_OK) {
+        return NGX_CONF_ERROR;
+    }
+
+    cln = ngx_pool_cleanup_add(cf->pool, 0);
+    if (cln == NULL) {
+        ngx_ssl_cleanup_ctx(ssl);
+        return NGX_CONF_ERROR;
+    }
+
+    cln->handler = ngx_ssl_cleanup_ctx;
+    cln->data = ssl;
+
+    if (ngx_ssl_ciphers(NULL, ssl, &plcf->ssl_ciphers, 0) != NGX_OK) {
+        return NGX_CONF_ERROR;
+    }
+
+    if (ngx_ssl_trusted_certificate(cf, ssl, &plcf->ssl_trusted_certificate,
+                                    plcf->ssl_verify_depth)
+        != NGX_OK)
+    {
+        return NGX_CONF_ERROR;
+    }
+
+    return NGX_CONF_OK;
+}
+
+#endif
+
+
+static ngx_ssl_t *
+ngx_http_js_ssl(njs_vm_t *vm, ngx_http_request_t *r)
+{
+#if (NGX_HTTP_SSL)
+    ngx_http_js_loc_conf_t   *plcf;
+
+    plcf = ngx_http_get_module_loc_conf(r, ngx_http_js_module);
+
+    return plcf->ssl;
+#else
+    return NULL;
+#endif
 }
