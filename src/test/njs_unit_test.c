@@ -20520,6 +20520,12 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("async function af() {await encrypt({},}"),
       njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("let x = {async af() {await Promise.resolve(1)}}; x.af"),
+      njs_str("[object AsyncFunction]") },
+
+    { njs_str("let name = 'af', x = {async [name]() {await Promise.resolve(1)}}; x.af"),
+      njs_str("[object AsyncFunction]") },
 };
 
 

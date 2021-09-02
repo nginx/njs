@@ -666,6 +666,7 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
         return njs_generate_function_expression(vm, generator, node);
 
     case NJS_TOKEN_FUNCTION:
+    case NJS_TOKEN_ASYNC_FUNCTION:
         return njs_generate_function(vm, generator, node);
 
     case NJS_TOKEN_REGEXP:
@@ -3100,7 +3101,7 @@ njs_generate_function(njs_vm_t *vm, njs_generator_t *generator,
     njs_generate_code(generator, njs_vmcode_function_t, function,
                       NJS_VMCODE_FUNCTION, 1, node);
     function->lambda = lambda;
-    function->async = 0;
+    function->async = (node->token_type == NJS_TOKEN_ASYNC_FUNCTION);
 
     node->index = njs_generate_object_dest_index(vm, generator, node);
     if (njs_slow_path(node->index == NJS_INDEX_ERROR)) {
