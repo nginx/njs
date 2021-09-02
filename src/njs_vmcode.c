@@ -1827,7 +1827,6 @@ njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await)
     njs_native_frame_t  *active;
 
     active = &vm->active_frame->native;
-    ctx = active->function->context;
 
     value = njs_scope_valid_value(vm, await->retval);
     if (njs_slow_path(value == NULL)) {
@@ -1841,7 +1840,15 @@ njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await)
         return NJS_ERROR;
     }
 
-    if (ctx->await == NULL) {
+    ctx = active->function->await;
+
+    if (ctx == NULL) {
+        ctx = njs_mp_alloc(vm->mem_pool, sizeof(njs_async_ctx_t));
+        if (njs_slow_path(ctx == NULL)) {
+            njs_memory_error(vm);
+            return NJS_ERROR;
+        }
+
         size = njs_function_frame_size(active);
 
         fulfilled = njs_promise_create_function(vm, size);
@@ -1850,6 +1857,9 @@ njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await)
         }
 
         ctx->await = fulfilled->context;
+        ctx->capability = active->function->context;
+
+        active->function->context = NULL;
 
         ret = njs_function_frame_save(vm, ctx->await, NULL);
         if (njs_slow_path(ret != NJS_OK)) {

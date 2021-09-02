@@ -427,7 +427,6 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
     njs_value_t            *value, *bound, **new, **temp;
     njs_frame_t            *frame;
     njs_function_t         *target;
-    njs_async_ctx_t        *ctx;
     njs_native_frame_t     *native_frame;
     njs_function_lambda_t  *lambda;
 
@@ -452,17 +451,6 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
         }
 
         lambda = target->u.lambda;
-    }
-
-    if (njs_function_object_type(vm, target) == NJS_OBJ_TYPE_ASYNC_FUNCTION) {
-        ctx = njs_mp_alloc(vm->mem_pool, sizeof(njs_async_ctx_t));
-        if (njs_slow_path(ctx == NULL)) {
-            njs_memory_error(vm);
-            return NJS_ERROR;
-        }
-
-        ctx->await = NULL;
-        target->context = ctx;
     }
 
     args_count = function->args_offset + njs_max(nargs, lambda->nargs);

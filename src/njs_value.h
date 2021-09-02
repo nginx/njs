@@ -284,6 +284,7 @@ struct njs_function_s {
     } u;
 
     void                              *context;
+    void                              *await;
 
     njs_value_t                       *bound;
 };

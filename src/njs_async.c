@@ -8,33 +8,33 @@
 
 
 static void
-njs_async_context_free(njs_vm_t *vm, njs_native_frame_t *frame);
+njs_async_context_free(njs_vm_t *vm, njs_async_ctx_t *ctx);
 
 
 njs_int_t
 njs_async_function_frame_invoke(njs_vm_t *vm, njs_value_t *retval)
 {
-    njs_int_t           ret;
-    njs_value_t         ctor;
-    njs_async_ctx_t     *ctx;
-    njs_native_frame_t  *frame;
+    njs_int_t                 ret;
+    njs_value_t               ctor;
+    njs_native_frame_t        *frame;
+    njs_promise_capability_t  *capability;
 
     frame = vm->top_frame;
     frame->retval = retval;
 
-    ctx = frame->function->context;
-
     njs_set_function(&ctor, &vm->constructors[NJS_OBJ_TYPE_PROMISE]);
 
-    ctx->capability = njs_promise_new_capability(vm, &ctor);
-    if (njs_slow_path(ctx->capability == NULL)) {
+    capability = njs_promise_new_capability(vm, &ctor);
+    if (njs_slow_path(capability == NULL)) {
         return NJS_ERROR;
     }
+
+    frame->function->context = capability;
 
     ret = njs_function_lambda_call(vm);
 
     if (ret == NJS_OK) {
-        ret = njs_function_call(vm, njs_function(&ctx->capability->resolve),
+        ret = njs_function_call(vm, njs_function(&capability->resolve),
                                 &njs_value_undefined, retval, 1, &vm->retval);
 
     } else if (ret == NJS_ERROR) {
@@ -42,12 +42,12 @@ njs_async_function_frame_invoke(njs_vm_t *vm, njs_value_t *retval)
             return NJS_ERROR;
         }
 
-        ret = njs_function_call(vm, njs_function(&ctx->capability->reject),
+        ret = njs_function_call(vm, njs_function(&capability->reject),
                                 &njs_value_undefined, &vm->retval, 1,
                                 &vm->retval);
     }
 
-    *retval = ctx->capability->promise;
+    *retval = capability->promise;
 
     return ret;
 }
@@ -60,6 +60,7 @@ njs_await_fulfilled(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_int_t           ret;
     njs_value_t         **cur_local, **cur_closures, **cur_temp, *value;
     njs_frame_t         *frame;
+    njs_function_t      *function;
     njs_async_ctx_t     *ctx;
     njs_native_frame_t  *top, *async;
 
@@ -71,6 +72,7 @@ njs_await_fulfilled(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     async = ctx->await;
+    function = async->function;
 
     cur_local = vm->levels[NJS_LEVEL_LOCAL];
     cur_closures = vm->levels[NJS_LEVEL_CLOSURE];
@@ -90,7 +92,13 @@ njs_await_fulfilled(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     vm->top_frame->retval = &vm->retval;
 
+    function->context = ctx->capability;
+    function->await = ctx;
+
     ret = njs_vmcode_interpreter(vm, ctx->pc);
+
+    function->context = NULL;
+    function->await = NULL;
 
     vm->levels[NJS_LEVEL_LOCAL] = cur_local;
     vm->levels[NJS_LEVEL_CLOSURE] = cur_closures;
@@ -103,7 +111,7 @@ njs_await_fulfilled(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         ret = njs_function_call(vm, njs_function(&ctx->capability->resolve),
                             &njs_value_undefined, &vm->retval, 1, &vm->retval);
 
-        njs_async_context_free(vm, vm->top_frame);
+        njs_async_context_free(vm, ctx);
 
     } else if (ret == NJS_ERROR) {
         if (njs_is_memory_error(vm, &vm->retval)) {
@@ -122,7 +130,7 @@ failed:
     (void) njs_function_call(vm, njs_function(&ctx->capability->reject),
                              &njs_value_undefined, value, 1, &vm->retval);
 
-    njs_async_context_free(vm, vm->top_frame);
+    njs_async_context_free(vm, ctx);
 
     return NJS_ERROR;
 }
@@ -143,7 +151,7 @@ njs_await_rejected(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         (void) njs_function_call(vm, njs_function(&ctx->capability->reject),
                                  &njs_value_undefined, value, 1, &vm->retval);
 
-        njs_async_context_free(vm, vm->top_frame);
+        njs_async_context_free(vm, ctx);
 
         return NJS_ERROR;
     }
@@ -155,16 +163,10 @@ njs_await_rejected(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static void
-njs_async_context_free(njs_vm_t *vm, njs_native_frame_t *frame)
+njs_async_context_free(njs_vm_t *vm, njs_async_ctx_t *ctx)
 {
-    njs_async_ctx_t  *ctx;
-
-    ctx = frame->function->context;
-
     njs_mp_free(vm->mem_pool, ctx->capability);
     njs_mp_free(vm->mem_pool, ctx);
-
-    frame->function->context = NULL;
 }
 
 
