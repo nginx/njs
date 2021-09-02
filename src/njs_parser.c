@@ -3477,8 +3477,6 @@ njs_parser_await(njs_parser_t *parser, njs_lexer_token_t *token,
         return NJS_ERROR;
     }
 
-    node = parser->node;
-
     if (scope->in_args) {
         njs_parser_syntax_error(parser, "await in arguments not supported");
         return NJS_ERROR;
