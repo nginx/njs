@@ -2723,12 +2723,12 @@ njs_parser_arguments(njs_parser_t *parser, njs_lexer_token_t *token,
      * ArgumentList , )
      */
 
-    parser->in_args = 1;
-
     if (token->type == NJS_TOKEN_CLOSE_PARENTHESIS) {
         njs_lexer_consume_token(parser->lexer, 1);
         return njs_parser_stack_pop(parser);
     }
+
+    parser->scope->in_args = 1;
 
     njs_parser_next(parser, njs_parser_argument_list);
 
@@ -2741,7 +2741,7 @@ static njs_int_t
 njs_parser_parenthesis_or_comma(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
-    parser->in_args = 0;
+    parser->scope->in_args = 0;
 
     if (token->type == NJS_TOKEN_CLOSE_PARENTHESIS) {
         njs_lexer_consume_token(parser->lexer, 1);
@@ -3479,7 +3479,7 @@ njs_parser_await(njs_parser_t *parser, njs_lexer_token_t *token,
 
     node = parser->node;
 
-    if (parser->in_args) {
+    if (scope->in_args) {
         njs_parser_syntax_error(parser, "await in arguments not supported");
         return NJS_ERROR;
     }

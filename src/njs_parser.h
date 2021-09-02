@@ -31,6 +31,7 @@ struct njs_parser_scope_s {
     uint8_t                         arrow_function;
     uint8_t                         dest_disable;
     uint8_t                         async;
+    uint8_t                         in_args;
 };
 
 
@@ -83,7 +84,6 @@ struct njs_parser_s {
     uintptr_t                       undefined_id;
     njs_bool_t                      strict_semicolon;
     uint32_t                        line;
-    njs_bool_t                      in_args;
 };
 
 
