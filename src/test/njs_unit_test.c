@@ -20517,6 +20517,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("function f(a) {}"
               "(async function() {f('Number: ' + await 111)})"),
       njs_str("SyntaxError: await in arguments not supported in 1") },
+
+    { njs_str("async function af() {await encrypt({},}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
 };
 
 

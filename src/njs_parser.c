@@ -3504,6 +3504,10 @@ static njs_int_t
 njs_parser_await_after(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
+    if (parser->ret != NJS_OK) {
+        return njs_parser_failed(parser);
+    }
+
     parser->target->right = parser->node;
     parser->node = parser->target;
 
