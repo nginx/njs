@@ -197,13 +197,6 @@ static const njs_object_prop_t  njs_async_prototype_properties[] =
 {
     {
         .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("AsyncFunction"),
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY,
         .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
         .value = njs_string("AsyncFunction"),
         .configurable = 1,
