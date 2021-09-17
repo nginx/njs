@@ -663,12 +663,12 @@ njs_buffer_compare_array(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2,
     njs_int_t          ret;
     njs_typed_array_t  *source, *target;
 
-    source = njs_buffer_slot(vm , val1, "source");
+    source = njs_buffer_slot(vm, val1, "source");
     if (njs_slow_path(source == NULL)) {
         return NJS_ERROR;
     }
 
-    target = njs_buffer_slot(vm , val2, "target");
+    target = njs_buffer_slot(vm, val2, "target");
     if (njs_slow_path(target == NULL)) {
         return NJS_ERROR;
     }
@@ -868,7 +868,7 @@ njs_buffer_is_buffer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     is = 0;
 
-    array = njs_buffer_slot(vm , njs_arg(args, nargs, 1), "source");
+    array = njs_buffer_slot(vm, njs_arg(args, nargs, 1), "source");
 
     if (njs_fast_path(array != NULL && array->object.__proto__
                       == &vm->prototypes[NJS_OBJ_TYPE_BUFFER].object))
