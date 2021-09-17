@@ -19538,6 +19538,12 @@ static njs_unit_test_t  njs_test[] =
               "})"),
       njs_str("true") },
 
+    { njs_str("Buffer.from([1,2]).equals(new ArrayBuffer(1))"),
+      njs_str("TypeError: \"target\" argument must be an instance of Buffer or Uint8Array") },
+
+    { njs_str("Buffer.from([1,2]).equals(1)"),
+      njs_str("TypeError: \"target\" argument must be an instance of Buffer or Uint8Array") },
+
     { njs_str("var buf = Buffer.alloc(4);"
               "buf.fill('ZXZpbA==', 'base64')"),
       njs_str("evil") },

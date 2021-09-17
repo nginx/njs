@@ -572,30 +572,36 @@ njs_buffer_byte_length(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_typed_array_t *
+njs_buffer_slot_internal(njs_vm_t *vm, njs_value_t *value)
+{
+    njs_typed_array_t  *array;
+
+    if (njs_is_object(value)) {
+        array = njs_object_proto_lookup(njs_object(value), NJS_TYPED_ARRAY,
+                                        njs_typed_array_t);
+
+        if (array != NULL && array->type == NJS_OBJ_TYPE_UINT8_ARRAY) {
+            return array;
+        }
+    }
+
+    return NULL;
+}
+
+
+static njs_typed_array_t *
 njs_buffer_slot(njs_vm_t *vm, njs_value_t *value, const char *name)
 {
     njs_typed_array_t  *array;
 
-    if (njs_slow_path(!njs_is_object(value))) {
-        goto failed;
-    }
-
-    array = njs_object_proto_lookup(njs_object(value), NJS_TYPED_ARRAY,
-                                    njs_typed_array_t);
-
-    if (njs_slow_path(array != NULL
-                      && array->type != NJS_OBJ_TYPE_UINT8_ARRAY))
-    {
-        goto failed;
+    array = njs_buffer_slot_internal(vm, value);
+    if (njs_slow_path(array == NULL)) {
+        njs_type_error(vm, "\"%s\" argument must be an instance "
+                           "of Buffer or Uint8Array", name);
+        return NULL;
     }
 
     return array;
-
-failed:
-
-    njs_type_error(vm, "\"%s\" argument must be an instance "
-                       "of Buffer or Uint8Array", name);
-    return NULL;
 }
 
 
@@ -902,7 +908,7 @@ njs_buffer_prototype_length(njs_vm_t *vm, njs_object_prop_t *prop,
 {
     njs_typed_array_t  *array;
 
-    array = njs_buffer_slot(vm, value, "this");
+    array = njs_buffer_slot_internal(vm, value);
     if (njs_slow_path(array == NULL)) {
         njs_set_undefined(retval);
         return NJS_DECLINED;
