@@ -185,7 +185,7 @@ njs_parser_module(njs_parser_t *parser, njs_lexer_token_t *token,
     }
 
     ret = njs_lexer_init(parser->vm, &temp->lexer, &info.file, text.start,
-                         text.start + text.length);
+                         text.start + text.length, 0);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }

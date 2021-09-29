@@ -138,7 +138,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         njs_module_reset(vm);
     }
 
-    ret = njs_lexer_init(vm, &lexer, &vm->options.file, *start, end);
+    ret = njs_lexer_init(vm, &lexer, &vm->options.file, *start, end, 0);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
@@ -317,9 +317,11 @@ njs_vm_init(njs_vm_t *vm)
         return NJS_ERROR;
     }
 
+    njs_lvlhsh_init(&vm->values_hash);
+    njs_lvlhsh_init(&vm->keywords_hash);
     njs_lvlhsh_init(&vm->modules_hash);
-
     njs_lvlhsh_init(&vm->events_hash);
+
     njs_queue_init(&vm->posted_events);
     njs_queue_init(&vm->promise_events);
 

@@ -147,6 +147,7 @@ struct njs_vm_s {
     njs_frame_t              *active_frame;
 
     njs_rbtree_t             *variables_hash;
+    njs_lvlhsh_t             keywords_hash;
     njs_lvlhsh_t             values_hash;
 
     njs_arr_t                *modules;

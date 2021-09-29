@@ -290,7 +290,7 @@ static const njs_lexer_multi_t  njs_assignment_token[] = {
 
 njs_int_t
 njs_lexer_init(njs_vm_t *vm, njs_lexer_t *lexer, njs_str_t *file,
-    u_char *start, u_char *end)
+    u_char *start, u_char *end, njs_uint_t runtime)
 {
     njs_memzero(lexer, sizeof(njs_lexer_t));
 
@@ -298,7 +298,8 @@ njs_lexer_init(njs_vm_t *vm, njs_lexer_t *lexer, njs_str_t *file,
     lexer->start = start;
     lexer->end = end;
     lexer->line = 1;
-    lexer->keywords_hash = &vm->shared->keywords_hash;
+    lexer->keywords_hash = (runtime) ? &vm->keywords_hash
+                                     : &vm->shared->keywords_hash;
     lexer->mem_pool = vm->mem_pool;
 
     njs_queue_init(&lexer->preread);

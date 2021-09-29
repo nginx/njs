@@ -271,7 +271,7 @@ typedef struct {
 
 
 njs_int_t njs_lexer_init(njs_vm_t *vm, njs_lexer_t *lexer, njs_str_t *file,
-    u_char *start, u_char *end);
+    u_char *start, u_char *end, njs_uint_t runtime);
 
 njs_lexer_token_t *njs_lexer_token(njs_lexer_t *lexer,
     njs_bool_t with_end_line);

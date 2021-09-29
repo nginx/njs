@@ -277,8 +277,8 @@ static njs_int_t njs_generate_inc_dec_operation_prop(njs_vm_t *vm,
 static njs_int_t njs_generate_function_declaration(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_function_scope(njs_vm_t *vm,
-    njs_function_lambda_t *lambda, njs_parser_node_t *node,
-    const njs_str_t *name, njs_uint_t depth);
+    njs_generator_t *generator, njs_function_lambda_t *lambda,
+    njs_parser_node_t *node, const njs_str_t *name);
 static njs_int_t njs_generate_scope_end(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static int64_t njs_generate_lambda_variables(njs_vm_t *vm,
@@ -3056,8 +3056,8 @@ njs_generate_function_expression(njs_vm_t *vm, njs_generator_t *generator,
         return NJS_ERROR;
     }
 
-    ret = njs_generate_function_scope(vm, lambda, node, &lex_entry->name,
-                                      generator->depth);
+    ret = njs_generate_function_scope(vm, generator, lambda, node,
+                                      &lex_entry->name);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -3093,7 +3093,7 @@ njs_generate_function(njs_vm_t *vm, njs_generator_t *generator,
 
     name = module ? &njs_entry_module : &njs_entry_anonymous;
 
-    ret = njs_generate_function_scope(vm, lambda, node, name, generator->depth);
+    ret = njs_generate_function_scope(vm, generator, lambda, node, name);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -3594,8 +3594,8 @@ njs_generate_function_declaration(njs_vm_t *vm, njs_generator_t *generator,
         return NJS_ERROR;
     }
 
-    ret = njs_generate_function_scope(vm, lambda, node, &lex_entry->name,
-                                      generator->depth);
+    ret = njs_generate_function_scope(vm, generator, lambda, node,
+                                      &lex_entry->name);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -3617,23 +3617,27 @@ njs_generate_function_declaration(njs_vm_t *vm, njs_generator_t *generator,
 
 
 static njs_int_t
-njs_generate_function_scope(njs_vm_t *vm, njs_function_lambda_t *lambda,
-    njs_parser_node_t *node, const njs_str_t *name, njs_uint_t depth)
+njs_generate_function_scope(njs_vm_t *vm, njs_generator_t *prev,
+    njs_function_lambda_t *lambda, njs_parser_node_t *node,
+    const njs_str_t *name)
 {
     njs_arr_t          *arr;
     njs_bool_t         module;
+    njs_uint_t         depth;
     njs_vm_code_t      *code;
     njs_generator_t    generator;
     njs_parser_node_t  *file_node;
 
-    njs_memzero(&generator, sizeof(njs_generator_t));
+    depth = prev->depth;
 
     if (++depth >= NJS_FUNCTION_MAX_DEPTH) {
         njs_range_error(vm, "Maximum function nesting depth exceeded");
         return NJS_ERROR;
     }
 
+    njs_memzero(&generator, sizeof(njs_generator_t));
     generator.depth = depth;
+    generator.runtime = prev->runtime;
 
     node = node->right;
 

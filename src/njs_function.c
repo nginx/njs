@@ -1156,7 +1156,8 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     file = njs_str_value("runtime");
 
-    ret = njs_lexer_init(vm, &lexer, &file, str.start, str.start + str.length);
+    ret = njs_lexer_init(vm, &lexer, &file, str.start, str.start + str.length,
+                         1);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -1206,6 +1207,7 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     njs_memzero(&generator, sizeof(njs_generator_t));
+    generator.runtime = 1;
 
     code = njs_generate_scope(vm, &generator, scope, &njs_entry_anonymous);
     if (njs_slow_path(code == NULL)) {

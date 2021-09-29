@@ -21028,6 +21028,17 @@ static njs_unit_test_t  njs_shared_test[] =
       njs_str("TypeError: \"path\" must be a string or Buffer\n"
               "    at fs.readFileSync (native)\n"
               "    at main (:1)\n") },
+
+    { njs_str("var f = new Function('return 1;'); f();"),
+      njs_str("1") },
+
+    { njs_str("var sum = new Function('a', 'b', 'return a + b');"
+              "sum(2, 4);"),
+      njs_str("6") },
+
+    { njs_str("var sum = new Function('a, b', 'return a + b');"
+              "sum(2, 4);"),
+      njs_str("6") },
 };
 
 
