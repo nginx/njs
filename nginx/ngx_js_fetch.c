@@ -91,17 +91,17 @@ struct ngx_js_http_s {
 
 static ngx_js_http_t *ngx_js_http_alloc(njs_vm_t *vm, ngx_pool_t *pool,
     ngx_log_t *log);
+static void njs_js_http_destructor(njs_external_ptr_t external,
+    njs_host_event_t host);
 static void ngx_js_resolve_handler(ngx_resolver_ctx_t *ctx);
-static njs_int_t ngx_js_fetch_result(njs_vm_t *vm, ngx_js_http_t *http,
-    njs_value_t *result, njs_int_t rc);
 static njs_int_t ngx_js_fetch_promissified_result(njs_vm_t *vm,
     njs_value_t *result, njs_int_t rc);
 static void ngx_js_http_fetch_done(ngx_js_http_t *http,
     njs_opaque_value_t *retval, njs_int_t rc);
 static njs_int_t ngx_js_http_promise_trampoline(njs_vm_t *vm,
     njs_value_t *args, njs_uint_t nargs, njs_index_t unused);
-static njs_int_t ngx_js_http_connect(ngx_js_http_t *http);
-static njs_int_t ngx_js_http_next(ngx_js_http_t *http);
+static void ngx_js_http_connect(ngx_js_http_t *http);
+static void ngx_js_http_next(ngx_js_http_t *http);
 static void ngx_js_http_write_handler(ngx_event_t *wev);
 static void ngx_js_http_read_handler(ngx_event_t *rev);
 static ngx_int_t ngx_js_http_process_status_line(ngx_js_http_t *http);
@@ -537,26 +537,39 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-    } else {
-        http->naddrs = 1;
-        ngx_memcpy(&http->addr, &u.addrs[0], sizeof(ngx_addr_t));
-        http->addrs = &http->addr;
+        njs_vm_retval_set(vm, njs_value_arg(&http->promise));
 
-        ret = ngx_js_http_connect(http);
+        return NJS_OK;
     }
 
-    return ngx_js_fetch_result(vm, http, njs_value_arg(&http->reply), ret);
+    http->naddrs = 1;
+    ngx_memcpy(&http->addr, &u.addrs[0], sizeof(ngx_addr_t));
+    http->addrs = &http->addr;
+
+    ngx_js_http_connect(http);
+
+    njs_vm_retval_set(vm, njs_value_arg(&http->promise));
+
+    return NJS_OK;
 
 fail:
 
-    return ngx_js_fetch_result(vm, http, njs_vm_retval(vm), NJS_ERROR);
+    ngx_js_http_fetch_done(http, (njs_opaque_value_t *) njs_vm_retval(vm),
+                           NJS_ERROR);
+
+    njs_vm_retval_set(vm, njs_value_arg(&http->promise));
+
+    return NJS_OK;
 }
 
 
 static ngx_js_http_t *
 ngx_js_http_alloc(njs_vm_t *vm, ngx_pool_t *pool, ngx_log_t *log)
 {
-    ngx_js_http_t  *http;
+    njs_int_t        ret;
+    ngx_js_http_t   *http;
+    njs_vm_event_t   vm_event;
+    njs_function_t  *callback;
 
     http = ngx_pcalloc(pool, sizeof(ngx_js_http_t));
     if (http == NULL) {
@@ -568,6 +581,24 @@ ngx_js_http_alloc(njs_vm_t *vm, ngx_pool_t *pool, ngx_log_t *log)
     http->vm = vm;
 
     http->timeout = 10000;
+
+    ret = njs_vm_promise_create(vm, njs_value_arg(&http->promise),
+                                njs_value_arg(&http->promise_callbacks));
+    if (ret != NJS_OK) {
+        goto failed;
+    }
+
+    callback = njs_vm_function_alloc(vm, ngx_js_http_promise_trampoline);
+    if (callback == NULL) {
+        goto failed;
+    }
+
+    vm_event = njs_vm_add_event(vm, callback, 1, http, njs_js_http_destructor);
+    if (vm_event == NULL) {
+        goto failed;
+    }
+
+    http->vm_event = vm_event;
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, log, 0, "js http alloc:%p", http);
 
@@ -655,7 +686,7 @@ ngx_js_resolve_handler(ngx_resolver_ctx_t *ctx)
     ngx_resolve_name_done(ctx);
     http->ctx = NULL;
 
-    (void) ngx_js_http_connect(http);
+    ngx_js_http_connect(http);
 
     return;
 
@@ -684,55 +715,6 @@ njs_js_http_destructor(njs_external_ptr_t external, njs_host_event_t host)
         ngx_close_connection(http->peer.connection);
         http->peer.connection = NULL;
     }
-}
-
-
-static njs_int_t
-ngx_js_fetch_result(njs_vm_t *vm, ngx_js_http_t *http, njs_value_t *result,
-    njs_int_t rc)
-{
-    njs_int_t            ret;
-    njs_function_t      *callback;
-    njs_vm_event_t       vm_event;
-    njs_opaque_value_t   arguments[2];
-
-    ret = njs_vm_promise_create(vm, njs_value_arg(&http->promise),
-                                njs_value_arg(&http->promise_callbacks));
-    if (ret != NJS_OK) {
-        goto error;
-    }
-
-    callback = njs_vm_function_alloc(vm, ngx_js_http_promise_trampoline);
-    if (callback == NULL) {
-        goto error;
-    }
-
-    vm_event = njs_vm_add_event(vm, callback, 1, http, njs_js_http_destructor);
-    if (vm_event == NULL) {
-        goto error;
-    }
-
-    http->vm_event = vm_event;
-
-    if (rc == NJS_ERROR) {
-        njs_value_assign(&arguments[0], &http->promise_callbacks[1]);
-        njs_value_assign(&arguments[1], result);
-
-        ret = njs_vm_post_event(vm, vm_event, njs_value_arg(&arguments), 2);
-        if (ret == NJS_ERROR) {
-            goto error;
-        }
-    }
-
-    njs_vm_retval_set(vm, njs_value_arg(&http->promise));
-
-    return NJS_OK;
-
-error:
-
-    njs_vm_error(vm, "internal error");
-
-    return NJS_ERROR;
 }
 
 
@@ -821,7 +803,7 @@ ngx_js_http_promise_trampoline(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_int_t
+static void
 ngx_js_http_connect(ngx_js_http_t *http)
 {
     ngx_int_t    rc;
@@ -843,11 +825,12 @@ ngx_js_http_connect(ngx_js_http_t *http)
 
     if (rc == NGX_ERROR) {
         ngx_js_http_error(http, 0, "connect failed");
-        return NJS_ERROR;
+        return;
     }
 
     if (rc == NGX_BUSY || rc == NGX_DECLINED) {
-        return ngx_js_http_next(http);
+        ngx_js_http_next(http);
+        return;
     }
 
     http->peer.connection->data = http;
@@ -866,19 +849,17 @@ ngx_js_http_connect(ngx_js_http_t *http)
     if (rc == NGX_OK) {
         ngx_js_http_write_handler(http->peer.connection->write);
     }
-
-    return NJS_OK;
 }
 
 
-static njs_int_t
+static void
 ngx_js_http_next(ngx_js_http_t *http)
 {
     ngx_log_debug0(NGX_LOG_DEBUG_EVENT, http->log, 0, "js http next");
 
     if (++http->naddr >= http->naddrs) {
         ngx_js_http_error(http, 0, "connect failed");
-        return NJS_ERROR;
+        return;
     }
 
     if (http->peer.connection != NULL) {
@@ -888,7 +869,7 @@ ngx_js_http_next(ngx_js_http_t *http)
 
     http->buffer = NULL;
 
-    return ngx_js_http_connect(http);
+    ngx_js_http_connect(http);
 }
 
 
@@ -936,7 +917,7 @@ ngx_js_http_write_handler(ngx_event_t *wev)
     n = ngx_send(c, b->pos, size);
 
     if (n == NGX_ERROR) {
-        (void) ngx_js_http_next(http);
+        ngx_js_http_next(http);
         return;
     }
 
@@ -1022,7 +1003,7 @@ ngx_js_http_read_handler(ngx_event_t *rev)
         }
 
         if (n == NGX_ERROR) {
-            (void) ngx_js_http_next(http);
+            ngx_js_http_next(http);
             return;
         }
 
