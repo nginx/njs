@@ -1007,6 +1007,10 @@ ngx_js_http_ssl_handshake(ngx_js_http_t *http)
         c->write->handler = ngx_js_http_write_handler;
         c->read->handler = ngx_js_http_read_handler;
 
+        if (c->read->ready) {
+            ngx_post_event(c->read, &ngx_posted_events);
+        }
+
         http->process = ngx_js_http_process_status_line;
         ngx_js_http_write_handler(c->write);
 
