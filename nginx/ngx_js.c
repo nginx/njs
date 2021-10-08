@@ -69,7 +69,9 @@ ngx_int_t
 ngx_js_call(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
     njs_opaque_value_t *args, njs_uint_t nargs)
 {
-    njs_str_t        name, exception;
+    njs_int_t        ret;
+    njs_str_t        name;
+    ngx_str_t        exception;
     njs_function_t  *func;
 
     name.start = fname->data;
@@ -82,16 +84,51 @@ ngx_js_call(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
         return NGX_ERROR;
     }
 
-    if (njs_vm_call(vm, func, njs_value_arg(args), nargs) != NJS_OK) {
-        njs_vm_retval_string(vm, &exception);
+    ret = njs_vm_call(vm, func, njs_value_arg(args), nargs);
+    if (ret == NJS_ERROR) {
+        ngx_js_retval(vm, NULL, &exception);
 
         ngx_log_error(NGX_LOG_ERR, log, 0,
-                      "js exception: %*s", exception.length, exception.start);
+                      "js exception: %V", &exception);
 
         return NGX_ERROR;
     }
 
-    return njs_vm_run(vm);
+    ret = njs_vm_run(vm);
+    if (ret == NJS_ERROR) {
+        ngx_js_retval(vm, NULL, &exception);
+
+        ngx_log_error(NGX_LOG_ERR, log, 0,
+                      "js exception: %V", &exception);
+
+        return NGX_ERROR;
+    }
+
+    return (ret == NJS_AGAIN) ? NGX_AGAIN : NGX_OK;
+}
+
+
+ngx_int_t
+ngx_js_retval(njs_vm_t *vm, njs_opaque_value_t *retval, ngx_str_t *s)
+{
+    njs_int_t  ret;
+    njs_str_t  str;
+
+    if (retval != NULL && njs_value_is_valid(njs_value_arg(retval))) {
+        ret = njs_vm_value_string(vm, &str, njs_value_arg(retval));
+
+    } else {
+        ret = njs_vm_retval_string(vm, &str);
+    }
+
+    if (ret != NJS_OK) {
+        return NGX_ERROR;
+    }
+
+    s->data = str.start;
+    s->len = str.length;
+
+    return NGX_OK;
 }
 
 
