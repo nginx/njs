@@ -95,6 +95,12 @@ interface NgxFetchOptions {
      * Request method, by default the GET method is used.
      */
     method?: NjsStringLike;
+    /**
+     * Enables or disables verification of the HTTPS server certificate,
+     * by default is true.
+     * @since 0.7.0
+     */
+    verify?: boolean;
 }
 
 interface NgxObject {
@@ -111,7 +117,7 @@ interface NgxObject {
     /**
      * Makes a request to fetch an URL.
      * Returns a Promise that resolves with the NgxResponse object.
-     * Only the http:// scheme is supported, redirects are not handled.
+     * Since 0.7.0 HTTPS is supported, redirects are not handled.
      * @param url URL of a resource to fetch.
      * @param options An object containing additional settings.
      * @since 0.5.1
