@@ -504,24 +504,20 @@ njs_vm_handle_events(njs_vm_t *vm)
             }
         }
 
-        if (vm->options.unhandled_rejection
-            == NJS_VM_OPT_UNHANDLED_REJECTION_THROW)
-        {
-            if (vm->promise_reason != NULL && vm->promise_reason->length != 0) {
-                ret = njs_value_to_string(vm, &string,
-                                          &vm->promise_reason->start[0]);
-                if (njs_slow_path(ret != NJS_OK)) {
-                    return ret;
-                }
-
-                njs_string_get(&string, &str);
-                njs_vm_error(vm, "unhandled promise rejection: %V", &str);
-
-                njs_mp_free(vm->mem_pool, vm->promise_reason);
-                vm->promise_reason = NULL;
-
-                return NJS_ERROR;
+        if (njs_vm_unhandled_rejection(vm)) {
+            ret = njs_value_to_string(vm, &string,
+                                      &vm->promise_reason->start[0]);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
             }
+
+            njs_string_get(&string, &str);
+            njs_vm_error(vm, "unhandled promise rejection: %V", &str);
+
+            njs_mp_free(vm->mem_pool, vm->promise_reason);
+            vm->promise_reason = NULL;
+
+            return NJS_ERROR;
         }
 
         for ( ;; ) {

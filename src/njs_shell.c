@@ -868,7 +868,7 @@ njs_process_script(njs_opts_t *opts, njs_console_t *console,
     }
 
     for ( ;; ) {
-        if (!njs_vm_pending(vm)) {
+        if (!njs_vm_pending(vm) && !njs_vm_unhandled_rejection(vm)) {
             break;
         }
 

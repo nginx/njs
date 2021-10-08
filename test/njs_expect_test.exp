@@ -1085,6 +1085,10 @@ njs_run {"./test/js/promise_reject_catch.js"} \
 njs_run {"./test/js/promise_reject_post_catch.js"} \
 "Error: unhandled promise rejection: undefined"
 
+njs_run {"./test/js/promise_rejection_tracker.js"} \
+"Thrown:
+Error: unhandled promise rejection: 1"
+
 njs_run {"./test/js/promise_all.js"} \
 "resolved:\\\[\\\['one','two'],\\\['three','four']]"
 
