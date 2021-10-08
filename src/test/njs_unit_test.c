@@ -20486,14 +20486,6 @@ static njs_unit_test_t  njs_test[] =
               "new ctor();"),
       njs_str("[object AsyncFunction]") },
 
-    { njs_str("let ctor = Object.getPrototypeOf(async function(){}).constructor;"
-              "let f = new ctor(); f()"),
-      njs_str("[object Promise]") },
-
-    { njs_str("let ctor = Object.getPrototypeOf(async function(){}).constructor;"
-              "let f = new ctor('x', 'await 1; return x'); f(1)"),
-      njs_str("[object Promise]") },
-
     { njs_str("let f = new Function('x', 'await 1; return x'); f(1)"),
       njs_str("SyntaxError: await is only valid in async functions in runtime:1") },
 
@@ -20509,9 +20501,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("function f(a) {}"
               "(async function() {f(await 111)})"),
       njs_str("SyntaxError: await in arguments not supported in 1") },
-
-    { njs_str("Promise.all([async () => [await x('X')]])"),
-      njs_str("[object Promise]") },
 
     { njs_str("async () => [await x(1)(),]; async () => [await x(1)()]"),
       njs_str("[object AsyncFunction]") },
@@ -20937,7 +20926,58 @@ static njs_unit_test_t  njs_externals_test[] =
 
     { njs_str("$r.buffer instanceof Buffer"),
       njs_str("true") },
+
+    { njs_str("let ctor = Object.getPrototypeOf(async function(){}).constructor;"
+              "let f = new ctor();"
+              "$r.retval(f())"),
+      njs_str("[object Promise]") },
+
+    { njs_str("let ctor = Object.getPrototypeOf(async function(){}).constructor;"
+              "let f = new ctor('x', 'await 1; return x');"
+              "$r.retval(f(1))"),
+      njs_str("[object Promise]") },
+
+    { njs_str("let ctor = Object.getPrototypeOf(async function(){}).constructor;"
+              "let f = new ctor('x', 'await 1; return x');"
+              "f(1).then($r.retval)"),
+      njs_str("1") },
+
+    { njs_str("$r.retval(Promise.all([async () => [await x('X')]]))"),
+      njs_str("[object Promise]") },
+
+    { njs_str("let obj = { a: 1, b: 2};"
+              "function cb(r) { r.retval(obj.a); }"
+              "$r.subrequest(reply => cb(reply))"),
+      njs_str("1") },
 };
+
+
+static njs_unit_test_t  njs_async_handler_test[] =
+{
+    { njs_str("globalThis.main = (function() {"
+              "     function cb(r) { r.retval(1); }"
+              "     function handler(r) {"
+              "         r.subrequest(reply => cb(reply));"
+              "     };"
+              "     return {handler};"
+              "})();"
+              ),
+      njs_str("1") },
+
+#if 0 /* FIXME */
+    { njs_str("globalThis.main = (function() {"
+              "     let obj = { a: 1, b: 2};"
+              "     function cb(r) { r.retval(obj.a); }"
+              "     function handler(r) {"
+              "         r.subrequest(reply => cb(reply));"
+              "     };"
+              "     return {handler};"
+              "})();"
+              ),
+      njs_str("1") },
+#endif
+};
+
 
 static njs_unit_test_t  njs_shared_test[] =
 {
@@ -21531,6 +21571,9 @@ typedef struct {
     njs_uint_t  repeat;
     njs_bool_t  unsafe;
     njs_bool_t  backtrace;
+    njs_bool_t  handler;
+    njs_bool_t  async;
+    unsigned    seed;
 } njs_opts_t;
 
 
@@ -21538,6 +21581,27 @@ typedef struct {
     njs_uint_t  passed;
     njs_uint_t  failed;
 } njs_stat_t;
+
+
+typedef struct {
+    njs_vm_t            *vm;
+    njs_external_env_t  *env;
+    njs_external_env_t  env0;
+
+    enum {
+        sw_start = 0,
+        sw_handler,
+        sw_loop,
+        sw_done
+    }                   state;
+} njs_external_state_t;
+
+
+typedef struct {
+    njs_external_state_t  *states;
+    njs_uint_t            size;
+    njs_uint_t            current;
+} njs_runtime_t;
 
 
 static void
@@ -21555,20 +21619,240 @@ njs_unit_test_report(njs_str_t *name, njs_stat_t *prev, njs_stat_t *current)
 
 
 static njs_int_t
+njs_external_state_init(njs_vm_t *vm, njs_external_state_t *s, njs_opts_t *opts)
+{
+    njs_int_t  ret;
+
+    if (opts->externals) {
+        s->env = &s->env0;
+
+        ret = njs_external_env_init(s->env);
+        if (ret != NJS_OK) {
+            njs_stderror("njs_external_env_init() failed\n");
+            return NJS_ERROR;
+        }
+
+    } else {
+        s->env = NULL;
+    }
+
+    s->vm = njs_vm_clone(vm, s->env);
+    if (s->vm == NULL) {
+        njs_stderror("njs_vm_clone() failed\n");
+        return NJS_ERROR;
+    }
+
+    if (opts->externals) {
+        ret = njs_externals_init(s->vm);
+        if (ret != NJS_OK) {
+            njs_stderror("njs_externals_init() failed\n");
+            return NJS_ERROR;
+        }
+    }
+
+    s->state = sw_start;
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_external_retval(njs_external_state_t *state, njs_str_t *s)
+{
+    if (state->env != NULL && njs_value_is_valid(&state->env->retval)) {
+        return njs_vm_value_string(state->vm, s, &state->env->retval);
+    }
+
+    return njs_vm_retval_string(state->vm, s);
+}
+
+
+static njs_runtime_t *
+njs_runtime_init(njs_vm_t *vm, njs_opts_t *opts)
+{
+    njs_int_t      ret;
+    njs_uint_t     i;
+    njs_runtime_t  *rt;
+
+    rt = njs_mp_alloc(vm->mem_pool, sizeof(njs_runtime_t));
+    if (rt == NULL) {
+        return NULL;
+    }
+
+    rt->size = opts->repeat;
+    rt->states = njs_mp_alloc(vm->mem_pool,
+                              sizeof(njs_external_state_t) * rt->size);
+    if (rt->states == NULL) {
+        return NULL;
+    }
+
+    rt->current = 0;
+    srandom(opts->seed);
+
+    for (i = 0; i < rt->size; i++) {
+        ret = njs_external_state_init(vm, &rt->states[i], opts);
+        if (ret != NJS_OK) {
+            njs_stderror("njs_external_state_init() failed\n");
+            return NULL;
+        }
+    }
+
+    return rt;
+}
+
+
+static njs_external_state_t *
+njs_runtime_next_state(njs_runtime_t *rt, njs_opts_t *opts)
+{
+    unsigned  next, n;
+
+    n = 0;
+    next = ((opts->async) ? (unsigned) random() : rt->current++) % rt->size;
+
+    while (rt->states[next].state == sw_done) {
+        next++;
+        next = next % rt->size;
+
+        n++;
+
+        if (n == rt->size) {
+            return NULL;
+        }
+    }
+
+    return &rt->states[next];
+}
+
+
+static void
+njs_runtime_destroy(njs_runtime_t *rt)
+{
+    njs_uint_t  i;
+
+    for (i = 0; i < rt->size; i++) {
+        if (rt->states[i].vm != NULL) {
+            njs_vm_destroy(rt->states[i].vm);
+        }
+    }
+}
+
+
+static njs_int_t
+njs_process_test(njs_external_state_t *state, njs_opts_t *opts,
+    njs_unit_test_t *expected)
+{
+    njs_int_t    ret;
+    njs_str_t    s;
+    njs_bool_t   success;
+    njs_value_t  request;
+
+    static const njs_str_t  handler_str = njs_str("main.handler");
+    static const njs_str_t  request_str = njs_str("$r");
+
+    switch (state->state) {
+    case sw_start:
+        state->state = sw_handler;
+
+        ret = njs_vm_start(state->vm);
+        if (ret != NJS_OK) {
+            goto done;
+        }
+
+        if (opts->async) {
+            return NJS_OK;
+        }
+
+        /* Fall through. */
+    case sw_handler:
+        state->state = sw_loop;
+
+        if (opts->handler) {
+            ret = njs_vm_value(state->vm, &request_str, &request);
+            if (ret != NJS_OK) {
+                njs_stderror("njs_vm_value(\"%V\") failed\n", &request_str);
+                return NJS_ERROR;
+            }
+
+            ret = njs_external_call(state->vm, &handler_str, &request, 1);
+            if (ret == NJS_ERROR) {
+                goto done;
+            }
+
+            if (opts->async) {
+                return NJS_OK;
+            }
+        }
+
+        /* Fall through. */
+    case sw_loop:
+    default:
+        for ( ;; ) {
+            if (!njs_vm_pending(state->vm)) {
+                break;
+            }
+
+            ret = njs_external_process_events(state->vm, state->env);
+            if (ret != NJS_OK) {
+                njs_stderror("njs_external_process_events() failed\n");
+                return NJS_ERROR;
+            }
+
+            if (njs_vm_waiting(state->vm) && !njs_vm_posted(state->vm)) {
+                /*TODO: async events. */
+
+                njs_stderror("njs_process_test(): async events unsupported\n");
+                return NJS_ERROR;
+            }
+
+            (void) njs_vm_run(state->vm);
+
+            if (opts->async) {
+                return NJS_OK;
+            }
+        }
+    }
+
+done:
+
+    state->state = sw_done;
+
+    if (njs_external_retval(state, &s) != NJS_OK) {
+        njs_stderror("njs_external_retval() failed\n");
+        return NJS_ERROR;
+    }
+
+    success = njs_strstr_eq(&expected->ret, &s);
+    if (!success) {
+        njs_stderror("njs(\"%V\")\nexpected: \"%V\"\n     got: \"%V\"\n",
+                     &expected->script, &expected->ret, &s);
+
+        return NJS_DECLINED;
+    }
+
+    njs_vm_destroy(state->vm);
+    state->vm = NULL;
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
 njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
     njs_opts_t *opts, njs_stat_t *stat)
 {
-    u_char        *start, *end;
-    njs_vm_t      *vm, *nvm;
-    njs_int_t     ret;
-    njs_str_t     s;
-    njs_uint_t    i, repeat;
-    njs_stat_t    prev;
-    njs_bool_t    success;
-    njs_vm_opt_t  options;
+    u_char                *start, *end;
+    njs_vm_t              *vm;
+    njs_int_t             ret;
+    njs_str_t             s;
+    njs_bool_t            success;
+    njs_uint_t            i;
+    njs_stat_t            prev;
+    njs_vm_opt_t          options;
+    njs_runtime_t         *rt;
+    njs_external_state_t  *state;
 
     vm = NULL;
-    nvm = NULL;
+    rt = NULL;
 
     prev = *stat;
 
@@ -21609,32 +21893,34 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
                 njs_disassembler(vm);
             }
 
-            repeat = opts->repeat;
+            rt = njs_runtime_init(vm, opts);
+            if (rt == NULL) {
+                njs_stderror("njs_runtime_init() failed\n");
+                goto done;
+            }
 
-            do {
-                if (nvm != NULL) {
-                    njs_vm_destroy(nvm);
+            for ( ;; ) {
+                state = njs_runtime_next_state(rt, opts);
+                if (state == NULL) {
+                    break;
                 }
 
-                nvm = njs_vm_clone(vm, NULL);
-                if (nvm == NULL) {
-                    njs_printf("njs_vm_clone() failed\n");
+                ret = njs_process_test(state, opts, &tests[i]);
+                if (ret != NJS_OK) {
+                    if (ret == NJS_DECLINED) {
+                        break;
+                    }
+
+                    njs_stderror("njs_process_test() failed\n");
                     goto done;
                 }
+            }
 
-                if (opts->externals) {
-                    ret = njs_externals_init(nvm);
-                    if (ret != NJS_OK) {
-                        goto done;
-                    }
-                }
+            success = (ret == NJS_OK);
 
-                ret = njs_vm_start(nvm);
-            } while (--repeat != 0);
-
-            if (njs_vm_retval_string(nvm, &s) != NJS_OK) {
-                njs_printf("njs_vm_retval_string() failed\n");
-                goto done;
+            if (rt != NULL) {
+                njs_runtime_destroy(rt);
+                rt = NULL;
             }
 
         } else {
@@ -21648,23 +21934,20 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
                 s = njs_str_value("Error: "
                                   "Extra characters at the end of the script");
             }
+
+            success = njs_strstr_eq(&tests[i].ret, &s);
+            if (!success) {
+                njs_stderror("njs(\"%V\")\nexpected: \"%V\"\n"
+                             "     got: \"%V\"\n",
+                             &tests[i].script, &tests[i].ret, &s);
+            }
         }
 
-        success = njs_strstr_eq(&tests[i].ret, &s);
-
-        if (!success) {
-            njs_printf("njs(\"%V\")\nexpected: \"%V\"\n     got: \"%V\"\n",
-                       &tests[i].script, &tests[i].ret, &s);
-
-            stat->failed++;
+        if (success) {
+            stat->passed++;
 
         } else {
-            stat->passed++;
-        }
-
-        if (nvm != NULL) {
-            njs_vm_destroy(nvm);
-            nvm = NULL;
+            stat->failed++;
         }
 
         njs_vm_destroy(vm);
@@ -21675,8 +21958,8 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
 
 done:
 
-    if (nvm != NULL) {
-        njs_vm_destroy(nvm);
+    if (rt != NULL) {
+        njs_runtime_destroy(rt);
     }
 
     if (vm != NULL) {
@@ -22784,7 +23067,7 @@ done:
 
 
 static njs_int_t
-njs_get_options(njs_opts_t *opts, int argc, char **argv)
+njs_options_parse(njs_opts_t *opts, int argc, char **argv)
 {
     char       *p;
     njs_int_t  i;
@@ -22798,6 +23081,7 @@ njs_get_options(njs_opts_t *opts, int argc, char **argv)
         "  -d                           print disassembled code.\n"
         "  -f PATTERN1[|PATTERN2..]     filter test suites to run.\n"
         "  -r count                     overrides repeat count for tests.\n"
+        "  -s seed                      sets seed for async tests.\n"
         "  -v                           verbose mode.\n";
 
     for (i = 1; i < argc; i++) {
@@ -22837,6 +23121,15 @@ njs_get_options(njs_opts_t *opts, int argc, char **argv)
             }
 
             njs_stderror("option \"-r\" requires argument\n");
+            return NJS_ERROR;
+
+        case 's':
+            if (++i < argc) {
+                opts->seed = atoi(argv[i]);
+                break;
+            }
+
+            njs_stderror("option \"-s\" requires argument\n");
             return NJS_ERROR;
 
         case 'v':
@@ -22967,8 +23260,14 @@ static njs_test_suite_t  njs_suites[] =
       njs_nitems(njs_externals_test),
       njs_unit_test },
 
+    { njs_str("async handler"),
+      { .async = 1, .externals = 1, .handler = 1, .repeat = 4, .seed = 2, .unsafe = 1 },
+      njs_async_handler_test,
+      njs_nitems(njs_async_handler_test),
+      njs_unit_test },
+
     { njs_str("shared"),
-      { .externals = 1, .repeat = 128, .unsafe = 1, .backtrace = 1 },
+      { .externals = 1, .repeat = 128, .seed = 42, .unsafe = 1, .backtrace = 1 },
       njs_shared_test,
       njs_nitems(njs_shared_test),
       njs_unit_test },
@@ -23022,7 +23321,7 @@ main(int argc, char **argv)
 
     njs_memzero(&opts, sizeof(njs_opts_t));
 
-    ret = njs_get_options(&opts, argc, argv);
+    ret = njs_options_parse(&opts, argc, argv);
     if (ret != NJS_OK) {
         return (ret == NJS_DONE) ? EXIT_SUCCESS: EXIT_FAILURE;
     }
@@ -23045,6 +23344,7 @@ main(int argc, char **argv)
 
         op.disassemble = opts.disassemble;
         op.repeat = opts.repeat ? opts.repeat : op.repeat;
+        op.seed = opts.seed ? opts.seed : op.seed;
         op.verbose = opts.verbose;
 
         ret = suite->run(suite->tests, suite->n, &suite->name, &op, &stat);

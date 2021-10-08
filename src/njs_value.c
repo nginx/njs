@@ -395,6 +395,13 @@ njs_value_null_set(njs_value_t *value)
 
 
 void
+njs_value_invalid_set(njs_value_t *value)
+{
+    njs_set_invalid(value);
+}
+
+
+void
 njs_value_boolean_set(njs_value_t *value, int yn)
 {
     njs_set_boolean(value, yn);
@@ -447,6 +454,13 @@ njs_int_t
 njs_value_is_null_or_undefined(const njs_value_t *value)
 {
     return njs_is_null_or_undefined(value);
+}
+
+
+njs_int_t
+njs_value_is_valid(const njs_value_t *value)
+{
+    return njs_is_valid(value);
 }
 
 

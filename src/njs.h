@@ -380,6 +380,7 @@ NJS_EXPORT void njs_vm_memory_error(njs_vm_t *vm);
 
 NJS_EXPORT void njs_value_undefined_set(njs_value_t *value);
 NJS_EXPORT void njs_value_null_set(njs_value_t *value);
+NJS_EXPORT void njs_value_invalid_set(njs_value_t *value);
 NJS_EXPORT void njs_value_boolean_set(njs_value_t *value, int yn);
 NJS_EXPORT void njs_value_number_set(njs_value_t *value, double num);
 
@@ -396,6 +397,7 @@ NJS_EXPORT njs_int_t njs_vm_prop_name(njs_vm_t *vm, njs_object_prop_t *prop,
 NJS_EXPORT njs_int_t njs_value_is_null(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_undefined(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_null_or_undefined(const njs_value_t *value);
+NJS_EXPORT njs_int_t njs_value_is_valid(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_boolean(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_number(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_valid_number(const njs_value_t *value);

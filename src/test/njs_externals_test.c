@@ -373,6 +373,71 @@ njs_unit_test_r_method(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
+njs_unit_test_r_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    njs_vm_event_t       vm_event;
+    njs_function_t       *callback;
+    njs_external_ev_t    *ev;
+    njs_external_env_t   *env;
+    njs_unit_test_req_t  *r;
+
+    r = njs_vm_external(vm, njs_external_r_proto_id, njs_argument(args, 0));
+    if (r == NULL) {
+        njs_type_error(vm, "\"this\" is not an external");
+        return NJS_ERROR;
+    }
+
+    callback = njs_value_function(njs_arg(args, nargs, 1));
+    if (callback == NULL) {
+        njs_type_error(vm, "argument is not callable");
+        return NJS_ERROR;
+    }
+
+    vm_event = njs_vm_add_event(vm, callback, 1, NULL, NULL);
+    if (vm_event == NULL) {
+        njs_internal_error(vm, "njs_vm_add_event() failed");
+        return NJS_ERROR;
+    }
+
+    ev = njs_mp_alloc(vm->mem_pool, sizeof(njs_external_ev_t));
+    if (ev == NULL) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    ev->vm_event = vm_event;
+    ev->data = r;
+    ev->nargs = 1;
+    njs_value_assign(&ev->args[0], njs_argument(args, 0));
+
+    env = vm->external;
+
+    njs_queue_insert_tail(&env->events, &ev->link);
+
+    njs_set_undefined(&vm->retval);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_unit_test_r_retval(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    njs_external_env_t  *env;
+
+    env = vm->external;
+
+    njs_value_assign(&env->retval, njs_arg(args, nargs, 1));
+
+    njs_set_undefined(&vm->retval);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
 njs_unit_test_r_create(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
@@ -583,6 +648,28 @@ static njs_external_t  njs_unit_test_r_external[] = {
     },
 
     {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("subrequest"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_unit_test_r_subrequest,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("retval"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_unit_test_r_retval,
+        }
+    },
+
+    {
         .flags = NJS_EXTERN_OBJECT,
         .name.string = njs_str("props"),
         .enumerable = 1,
@@ -754,4 +841,67 @@ njs_int_t
 njs_externals_init(njs_vm_t *vm)
 {
     return njs_externals_init_internal(vm, &njs_test_requests[1], 3, 0);
+}
+
+
+njs_int_t
+njs_external_env_init(njs_external_env_t *env)
+{
+    if (env != NULL) {
+        njs_value_invalid_set(&env->retval);
+        njs_queue_init(&env->events);
+    }
+
+    return NJS_OK;
+}
+
+
+njs_int_t
+njs_external_process_events(njs_vm_t *vm, njs_external_env_t *env)
+{
+    njs_queue_t        *events;
+    njs_queue_link_t   *link;
+    njs_external_ev_t  *ev;
+
+    events = &env->events;
+
+    for ( ;; ) {
+        link = njs_queue_first(events);
+
+        if (link == njs_queue_tail(events)) {
+            break;
+        }
+
+        ev = njs_queue_link_data(link, njs_external_ev_t, link);
+
+        njs_queue_remove(&ev->link);
+        ev->link.prev = NULL;
+        ev->link.next = NULL;
+
+        njs_vm_post_event(vm, ev->vm_event, &ev->args[0], ev->nargs);
+    }
+
+    return NJS_OK;
+}
+
+
+njs_int_t
+njs_external_call(njs_vm_t *vm, const njs_str_t *fname, njs_value_t *args,
+    njs_uint_t nargs)
+{
+    njs_int_t       ret;
+    njs_function_t  *func;
+
+    func = njs_vm_function(vm, fname);
+    if (func == NULL) {
+        njs_stderror("njs_external_call(): function \"%V\" not found\n", fname);
+        return NJS_ERROR;
+    }
+
+    ret = njs_vm_call(vm, func, args, nargs);
+    if (ret == NJS_ERROR) {
+        return NJS_ERROR;
+    }
+
+    return njs_vm_run(vm);
 }
