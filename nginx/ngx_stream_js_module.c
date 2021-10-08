@@ -110,6 +110,8 @@ static njs_int_t ngx_stream_js_ext_off(njs_vm_t *vm, njs_value_t *args,
      njs_uint_t nargs, njs_index_t unused);
 static njs_int_t ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args,
      njs_uint_t nargs, njs_index_t unused);
+static njs_int_t ngx_stream_js_ext_set_return_value(njs_vm_t *vm,
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused);
 
 static njs_int_t ngx_stream_js_ext_variables(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
@@ -447,6 +449,17 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
         .enumerable = 1,
         .u.method = {
             .native = ngx_stream_js_ext_send,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("setReturnValue"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_stream_js_ext_set_return_value,
         }
     },
 
@@ -1242,6 +1255,29 @@ ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     *ctx->last_out = cl;
     ctx->last_out = &cl->next;
 
+    njs_value_undefined_set(njs_vm_retval(vm));
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+ngx_stream_js_ext_set_return_value(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused)
+{
+    ngx_stream_js_ctx_t   *ctx;
+    ngx_stream_session_t  *s;
+
+    s = njs_vm_external(vm, ngx_stream_js_session_proto_id,
+                        njs_argument(args, 0));
+    if (s == NULL) {
+        njs_vm_error(vm, "\"this\" is not an external");
+        return NJS_ERROR;
+    }
+
+    ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
+
+    njs_value_assign(&ctx->retval, njs_arg(args, nargs, 1));
     njs_value_undefined_set(njs_vm_retval(vm));
 
     return NJS_OK;
