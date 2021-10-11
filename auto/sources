@@ -2,6 +2,7 @@ NJS_LIB_SRCS=" \
    src/njs_diyfp.c \
    src/njs_dtoa.c \
    src/njs_dtoa_fixed.c \
+   src/njs_str.c \
    src/njs_strtod.c \
    src/njs_murmur_hash.c \
    src/njs_djb_hash.c \

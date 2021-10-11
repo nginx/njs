@@ -10,6 +10,7 @@
 #include <ngx_core.h>
 #include "ngx_js.h"
 #include "ngx_js_fetch.h"
+#include "../external/njs_webcrypto.h"
 
 
 static njs_external_t  ngx_js_ext_core[] = {
@@ -173,6 +174,12 @@ ngx_js_core_init(njs_vm_t *vm, ngx_log_t *log)
 
     rc = ngx_js_fetch_init(vm, log);
     if (rc != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    ret = njs_external_webcrypto_init(vm);
+    if (ret != NJS_OK) {
+        ngx_log_error(NGX_LOG_EMERG, log, 0, "failed to add webcrypto object");
         return NGX_ERROR;
     }
 

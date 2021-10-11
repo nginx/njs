@@ -134,4 +134,13 @@ njs_strstr_eq(s1, s2)                                                         \
      && (memcmp((s1)->start, (s2)->start, (s1)->length) == 0))
 
 
+#define                                                                       \
+njs_strstr_case_eq(s1, s2)                                                    \
+    (((s1)->length == (s2)->length)                                           \
+     && (njs_strncasecmp((s1)->start, (s2)->start, (s1)->length) == 0))
+
+
+NJS_EXPORT njs_int_t njs_strncasecmp(u_char *s1, u_char *s2, size_t n);
+
+
 #endif /* _NJS_STR_H_INCLUDED_ */

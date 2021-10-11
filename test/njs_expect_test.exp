@@ -1113,6 +1113,38 @@ njs_run {"./test/js/promise_race.js"} \
 njs_run {"./test/js/promise_race_throw.js"} \
 "rejected:one"
 
+# Webcrypto
+
+njs_run {"./test/webcrypto/rsa_decoding.js" "--match-exception-text"} \
+"RSA-OAEP decoding SUCCESS"
+
+njs_run {"./test/webcrypto/rsa.js" "--match-exception-text"} \
+"RSA-OAEP encoding/decoding SUCCESS"
+
+njs_run {"./test/webcrypto/aes_decoding.js" "--match-exception-text"} \
+"AES decoding SUCCESS"
+
+njs_run {"./test/webcrypto/aes.js" "--match-exception-text"} \
+"AES encoding/decoding SUCCESS"
+
+njs_run {"./test/webcrypto/derive.js" "--match-exception-text"} \
+"derive SUCCESS"
+
+njs_run {"./test/webcrypto/digest.js" "--match-exception-text"} \
+"SHA digest SUCCESS"
+
+njs_run {"./test/webcrypto/sign.js" "--match-exception-text"} \
+"HMAC sign SUCCESS
+RSASSA-PKCS1-v1_5 sign SUCCESS
+RSA-PSS sign SUCCESS
+ECDSA sign SUCCESS"
+
+njs_run {"./test/webcrypto/verify.js" "--match-exception-text"} \
+"HMAC verify SUCCESS
+RSASSA-PKCS1-v1_5 verify SUCCESS
+RSA-PSS verify SUCCESS
+ECDSA verify SUCCESS"
+
 # Async/Await
 
 njs_run {"./test/js/async_await_inline.js"} \

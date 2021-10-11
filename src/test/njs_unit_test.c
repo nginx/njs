@@ -20621,6 +20621,26 @@ static njs_unit_test_t  njs_disabled_denormals_test[] =
 };
 
 
+static njs_unit_test_t  njs_webcrypto_test[] =
+{
+    /* Statistic test
+     * bits1 is a random variable with Binomial distribution
+     * Expected value is N / 2
+     * Standard deviation is sqrt(N / 4)
+     */
+    { njs_str("function count1(v) {return v.toString(2).match(/1/g).length;}"
+              "let buf = new Uint32Array(32);"
+              "crypto.getRandomValues(buf);"
+              "let bits1 = buf.reduce((a, v)=> a + count1(v), 0);"
+              "let nbits = buf.length * 32;"
+              "let mean = nbits / 2;"
+              "let stddev = Math.sqrt(nbits / 4);"
+              "let condition = bits1 > (mean - 10 * stddev) && bits1 < (mean + 10 * stddev);"
+              "condition ? true : [buf, nbits, bits1, mean, stddev]"),
+      njs_str("true") },
+};
+
+
 static njs_unit_test_t  njs_module_test[] =
 {
     { njs_str("function f(){return 2}; var f; f()"),
@@ -20854,12 +20874,20 @@ static njs_unit_test_t  njs_externals_test[] =
     { njs_str("$r2.uri == 'αβγ' && $r2.uri === 'αβγ'"),
       njs_str("true") },
 
-    { njs_str("Object.keys(this).sort()"),
 #if (NJS_TEST262)
-      njs_str("$262,$r,$r2,$r3,$shared,global,njs,process") },
+#define N262 "$262,"
 #else
-      njs_str("$r,$r2,$r3,$shared,global,njs,process") },
+#define N262 ""
 #endif
+
+#if (NJS_HAVE_OPENSSL)
+#define NCRYPTO "crypto,"
+#else
+#define NCRYPTO ""
+#endif
+
+    { njs_str("Object.keys(this).sort()"),
+      njs_str(N262 "$r,$r2,$r3,$shared," NCRYPTO "global,njs,process") },
 
     { njs_str("Object.getOwnPropertySymbols($r2)[0] == Symbol.toStringTag"),
       njs_str("true") },
@@ -23245,6 +23273,17 @@ static njs_test_suite_t  njs_suites[] =
       njs_disabled_denormals_test,
       njs_nitems(njs_disabled_denormals_test),
       njs_disabled_denormals_tests },
+
+    {
+#if (NJS_HAVE_OPENSSL)
+        njs_str("webcrypto"),
+#else
+        njs_str(""),
+#endif
+      { .externals = 1, .repeat = 1, .unsafe = 1 },
+      njs_webcrypto_test,
+      njs_nitems(njs_webcrypto_test),
+      njs_unit_test },
 
     { njs_str("module"),
       { .repeat = 1, .module = 1, .unsafe = 1 },

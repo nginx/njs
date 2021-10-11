@@ -26,12 +26,13 @@ set -u
 . auto/explicit_bzero
 . auto/pcre
 . auto/readline
+. auto/openssl
 . auto/sources
 
 NJS_LIB_AUX_CFLAGS="$NJS_PCRE_CFLAGS"
 
 NJS_LIBS="$NJS_LIBRT"
-NJS_LIB_AUX_LIBS="$NJS_PCRE_LIB"
+NJS_LIB_AUX_LIBS="$NJS_PCRE_LIB $NJS_OPENSSL_LIB"
 
 . auto/make
 

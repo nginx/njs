@@ -1,0 +1,56 @@
+
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+
+
+NJS_OPENSSL_LIB=
+NJS_HAVE_OPENSSL=NO
+
+
+njs_found=no
+
+
+njs_feature="OpenSSL library"
+njs_feature_name=NJS_HAVE_OPENSSL
+njs_feature_run=yes
+njs_feature_incs=
+njs_feature_libs="-lcrypto"
+njs_feature_test="#include <openssl/evp.h>
+
+                  int main() {
+                      OpenSSL_add_all_algorithms();
+                      return 0;
+                 }"
+. auto/feature
+
+
+if [ $njs_found = yes ]; then
+    njs_feature="OpenSSL HKDF"
+    njs_feature_name=NJS_HAVE_OPENSSL_HKDF
+    njs_feature_test="#include <openssl/evp.h>
+                      #include <openssl/kdf.h>
+
+                      int main(void) {
+                          EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
+
+                          EVP_PKEY_CTX_set_hkdf_md(pctx, EVP_sha256());
+                          EVP_PKEY_CTX_free(pctx);
+
+                          return 0;
+                      }"
+    . auto/feature
+
+    njs_feature="OpenSSL EVP_MD_CTX_new()"
+    njs_feature_name=NJS_HAVE_OPENSSL_EVP_MD_CTX_NEW
+    njs_feature_test="#include <openssl/evp.h>
+
+                      int main(void) {
+                          EVP_MD_CTX *ctx = EVP_MD_CTX_new();
+                          EVP_MD_CTX_free(ctx);
+                          return 0;
+                      }"
+    . auto/feature
+
+    NJS_HAVE_OPENSSL=YES
+    NJS_OPENSSL_LIB="$njs_feature_libs"
+fi

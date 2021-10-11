@@ -23,6 +23,11 @@
 
 #endif
 
+#if (NJS_HAVE_OPENSSL)
+#include "../external/njs_webcrypto.h"
+#include "../external/njs_webcrypto.c"
+#endif
+
 
 typedef struct {
     uint8_t                 disassemble;
@@ -717,6 +722,13 @@ njs_externals_init(njs_vm_t *vm, njs_console_t *console)
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
+
+#if (NJS_HAVE_OPENSSL)
+    ret = njs_external_webcrypto_init(vm);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+#endif
 
     return NJS_OK;
 }

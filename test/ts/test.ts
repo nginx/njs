@@ -1,6 +1,6 @@
 import fs from 'fs';
 import qs from 'querystring';
-import crypto from 'crypto';
+import cr from 'crypto';
 
 function http_module(r: NginxHTTPRequest) {
     var bs: NjsByteString;
@@ -122,11 +122,30 @@ function crypto_module(str: NjsByteString) {
     var b:Buffer;
     var s:string;
 
-    h = crypto.createHash("sha1");
+    h = cr.createHash("sha1");
     h = h.update(str).update(Buffer.from([0]));
     b = h.digest();
 
-    s = crypto.createHash("sha256").digest("hex");
+    s = cr.createHash("sha256").digest("hex");
+}
+
+async function crypto_object(keyData: ArrayBuffer, data: ArrayBuffer) {
+    let iv = crypto.getRandomValues(new Uint8Array(16));
+
+    let ekey = await crypto.subtle.importKey("pkcs8", keyData,
+                                             {name: 'RSA-OAEP', hash: "SHA-256"},
+                                             false, ['decrypt']);
+
+    let skey = await crypto.subtle.importKey("raw", keyData, 'AES-CBC',
+                                             false, ['encrypt']);
+
+    data = await crypto.subtle.decrypt({name: 'RSA-OAEP'}, ekey, data);
+    data = await crypto.subtle.encrypt({name: 'AES-CBC', iv:iv}, skey, data);
+
+    let sig = await crypto.subtle.sign({name: 'RSA-PSS', saltLength:32}, skey, data);
+
+    let r:boolean;
+    r = await crypto.subtle.verify({name: 'RSA-PSS', saltLength:32}, skey, sig, data);
 }
 
 function buffer(b: Buffer) {

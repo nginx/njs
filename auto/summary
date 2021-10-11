@@ -15,6 +15,10 @@ if [ $NJS_HAVE_READLINE = YES ]; then
   echo " + using readline library: $NJS_READLINE_LIB"
 fi
 
+if [ $NJS_HAVE_OPENSSL = YES ]; then
+  echo " + using OpenSSL library: $NJS_OPENSSL_LIB"
+fi
+
 echo
 echo " njs build dir: $NJS_BUILD_DIR"
 
