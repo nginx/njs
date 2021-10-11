@@ -20964,7 +20964,6 @@ static njs_unit_test_t  njs_async_handler_test[] =
               ),
       njs_str("1") },
 
-#if 0 /* FIXME */
     { njs_str("globalThis.main = (function() {"
               "     let obj = { a: 1, b: 2};"
               "     function cb(r) { r.retval(obj.a); }"
@@ -20975,7 +20974,6 @@ static njs_unit_test_t  njs_async_handler_test[] =
               "})();"
               ),
       njs_str("1") },
-#endif
 };
 
 

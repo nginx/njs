@@ -14,7 +14,7 @@ struct njs_function_lambda_s {
     uint32_t                       nlocal;
     uint32_t                       temp;
 
-    njs_value_t                    **declarations;
+    njs_declaration_t              *declarations;
     uint32_t                       ndeclarations;
 
     njs_index_t                    self;

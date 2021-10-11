@@ -104,6 +104,12 @@ typedef struct {
 } njs_parser_rbtree_node_t;
 
 
+typedef struct {
+    njs_value_t                     *value;
+    njs_index_t                     index;
+} njs_declaration_t;
+
+
 typedef njs_int_t (*njs_parser_traverse_cb_t)(njs_vm_t *vm,
     njs_parser_node_t *node, void *ctx);
 
