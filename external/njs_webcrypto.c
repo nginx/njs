@@ -7,29 +7,7 @@
 
 #include <njs_main.h>
 #include "njs_webcrypto.h"
-
-#include <openssl/bn.h>
-#include <openssl/bio.h>
-#include <openssl/x509.h>
-#include <openssl/evp.h>
-#include <openssl/aes.h>
-#include <openssl/rsa.h>
-#include <openssl/err.h>
-#include <openssl/rand.h>
-#include <openssl/crypto.h>
-
-#if NJS_HAVE_OPENSSL_HKDF
-#include <openssl/kdf.h>
-#endif
-
-#if NJS_HAVE_OPENSSL_EVP_MD_CTX_NEW
-#define njs_evp_md_ctx_new()  EVP_MD_CTX_new();
-#define njs_evp_md_ctx_free(_ctx)  EVP_MD_CTX_free(_ctx);
-#else
-#define njs_evp_md_ctx_new()  EVP_MD_CTX_create();
-#define njs_evp_md_ctx_free(_ctx)  EVP_MD_CTX_destroy(_ctx);
-#endif
-
+#include "njs_openssl.h"
 
 typedef enum {
     NJS_KEY_FORMAT_RAW          = 1 << 1,
@@ -1449,7 +1427,7 @@ njs_ext_derive(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         break;
 
     case NJS_ALGORITHM_HKDF:
-#ifdef NJS_HAVE_OPENSSL_HKDF
+#ifdef EVP_PKEY_HKDF
         ret = njs_algorithm_hash(vm, aobject, &hash);
         if (njs_slow_path(ret == NJS_ERROR)) {
             goto fail;
@@ -2588,7 +2566,7 @@ njs_webcrypto_error(njs_vm_t *vm, const char *fmt, ...)
 
         for ( ;; ) {
 
-            n = ERR_peek_error_line_data(NULL, NULL, &data, &flags);
+            n = ERR_peek_error_data(&data, &flags);
 
             if (n == 0) {
                 break;

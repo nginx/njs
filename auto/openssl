@@ -25,31 +25,7 @@ njs_feature_test="#include <openssl/evp.h>
 
 
 if [ $njs_found = yes ]; then
-    njs_feature="OpenSSL HKDF"
-    njs_feature_name=NJS_HAVE_OPENSSL_HKDF
-    njs_feature_test="#include <openssl/evp.h>
-                      #include <openssl/kdf.h>
-
-                      int main(void) {
-                          EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
-
-                          EVP_PKEY_CTX_set_hkdf_md(pctx, EVP_sha256());
-                          EVP_PKEY_CTX_free(pctx);
-
-                          return 0;
-                      }"
-    . auto/feature
-
-    njs_feature="OpenSSL EVP_MD_CTX_new()"
-    njs_feature_name=NJS_HAVE_OPENSSL_EVP_MD_CTX_NEW
-    njs_feature_test="#include <openssl/evp.h>
-
-                      int main(void) {
-                          EVP_MD_CTX *ctx = EVP_MD_CTX_new();
-                          EVP_MD_CTX_free(ctx);
-                          return 0;
-                      }"
-    . auto/feature
+    echo " + OpenSSL version: `openssl version`"
 
     NJS_HAVE_OPENSSL=YES
     NJS_OPENSSL_LIB="$njs_feature_libs"
