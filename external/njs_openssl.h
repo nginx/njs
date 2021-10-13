@@ -45,6 +45,9 @@
 #endif
 
 
+#define njs_bio_new_mem_buf(b, len) BIO_new_mem_buf((void *) b, len)
+
+
 #if (OPENSSL_VERSION_NUMBER < 0x30000000L && !defined ERR_peek_error_data)
 #define ERR_peek_error_data(d, f)    ERR_peek_error_line_data(NULL, NULL, d, f)
 #endif

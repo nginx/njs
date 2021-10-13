@@ -598,7 +598,7 @@ njs_cipher_pkey(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
     md = njs_algorithm_hash_digest(key->hash);
 
     EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING);
-    EVP_PKEY_CTX_set_rsa_oaep_md(ctx, md);
+    EVP_PKEY_CTX_set_signature_md(ctx, md);
     EVP_PKEY_CTX_set_rsa_mgf1_md(ctx, md);
 
     ret = cipher(ctx, NULL, &outlen, data->start, data->length);
@@ -1714,7 +1714,7 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     switch (fmt) {
     case NJS_KEY_FORMAT_PKCS8:
-        bio = BIO_new_mem_buf(start, key_data.length);
+        bio = njs_bio_new_mem_buf(start, key_data.length);
         if (njs_slow_path(bio == NULL)) {
             njs_webcrypto_error(vm, "BIO_new_mem_buf() failed");
             goto fail;
