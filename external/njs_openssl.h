@@ -21,7 +21,7 @@
 #include <openssl/rand.h>
 #include <openssl/crypto.h>
 
-#if EVP_PKEY_HKDF
+#ifdef EVP_PKEY_HKDF
 #include <openssl/kdf.h>
 #endif
 
