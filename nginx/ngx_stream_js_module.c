@@ -147,7 +147,7 @@ static ngx_int_t ngx_stream_js_init(ngx_conf_t *cf);
 
 #if (NGX_SSL)
 static char * ngx_stream_js_set_ssl(ngx_conf_t *cf,
-    ngx_stream_js_srv_conf_t *pscf);
+    ngx_stream_js_srv_conf_t *jscf);
 #endif
 static ngx_ssl_t *ngx_stream_js_ssl(njs_vm_t *vm, ngx_stream_session_t *s);
 
@@ -2060,7 +2060,7 @@ ngx_stream_js_init(ngx_conf_t *cf)
 #if (NGX_SSL)
 
 static char *
-ngx_stream_js_set_ssl(ngx_conf_t *cf, ngx_stream_js_srv_conf_t *pscf)
+ngx_stream_js_set_ssl(ngx_conf_t *cf, ngx_stream_js_srv_conf_t *jscf)
 {
     ngx_ssl_t           *ssl;
     ngx_pool_cleanup_t  *cln;
@@ -2070,10 +2070,10 @@ ngx_stream_js_set_ssl(ngx_conf_t *cf, ngx_stream_js_srv_conf_t *pscf)
         return NGX_CONF_ERROR;
     }
 
-    pscf->ssl = ssl;
+    jscf->ssl = ssl;
     ssl->log = cf->log;
 
-    if (ngx_ssl_create(ssl, pscf->ssl_protocols, NULL) != NGX_OK) {
+    if (ngx_ssl_create(ssl, jscf->ssl_protocols, NULL) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
 
@@ -2086,12 +2086,12 @@ ngx_stream_js_set_ssl(ngx_conf_t *cf, ngx_stream_js_srv_conf_t *pscf)
     cln->handler = ngx_ssl_cleanup_ctx;
     cln->data = ssl;
 
-    if (ngx_ssl_ciphers(NULL, ssl, &pscf->ssl_ciphers, 0) != NGX_OK) {
+    if (ngx_ssl_ciphers(NULL, ssl, &jscf->ssl_ciphers, 0) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
 
-    if (ngx_ssl_trusted_certificate(cf, ssl, &pscf->ssl_trusted_certificate,
-                                     pscf->ssl_verify_depth)
+    if (ngx_ssl_trusted_certificate(cf, ssl, &jscf->ssl_trusted_certificate,
+                                    jscf->ssl_verify_depth)
         != NGX_OK)
     {
         return NGX_CONF_ERROR;
@@ -2107,11 +2107,11 @@ static ngx_ssl_t *
 ngx_stream_js_ssl(njs_vm_t *vm, ngx_stream_session_t *s)
 {
 #if (NGX_SSL)
-    ngx_stream_js_srv_conf_t   *pscf;
+    ngx_stream_js_srv_conf_t  *jscf;
 
-    pscf = ngx_stream_get_module_srv_conf(s, ngx_stream_js_module);
+    jscf = ngx_stream_get_module_srv_conf(s, ngx_stream_js_module);
 
-    return pscf->ssl;
+    return jscf->ssl;
 #else
     return NULL;
 #endif

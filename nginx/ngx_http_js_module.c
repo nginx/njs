@@ -233,7 +233,7 @@ static char *ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent,
     void *child);
 
 #if (NGX_HTTP_SSL)
-static char * ngx_http_js_set_ssl(ngx_conf_t *cf, ngx_http_js_loc_conf_t *plcf);
+static char * ngx_http_js_set_ssl(ngx_conf_t *cf, ngx_http_js_loc_conf_t *jlcf);
 #endif
 static ngx_ssl_t *ngx_http_js_ssl(njs_vm_t *vm, ngx_http_request_t *r);
 
@@ -4087,7 +4087,7 @@ ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 #if (NGX_HTTP_SSL)
 
 static char *
-ngx_http_js_set_ssl(ngx_conf_t *cf, ngx_http_js_loc_conf_t *plcf)
+ngx_http_js_set_ssl(ngx_conf_t *cf, ngx_http_js_loc_conf_t *jlcf)
 {
     ngx_ssl_t           *ssl;
     ngx_pool_cleanup_t  *cln;
@@ -4097,10 +4097,10 @@ ngx_http_js_set_ssl(ngx_conf_t *cf, ngx_http_js_loc_conf_t *plcf)
         return NGX_CONF_ERROR;
     }
 
-    plcf->ssl = ssl;
+    jlcf->ssl = ssl;
     ssl->log = cf->log;
 
-    if (ngx_ssl_create(ssl, plcf->ssl_protocols, NULL) != NGX_OK) {
+    if (ngx_ssl_create(ssl, jlcf->ssl_protocols, NULL) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
 
@@ -4113,12 +4113,12 @@ ngx_http_js_set_ssl(ngx_conf_t *cf, ngx_http_js_loc_conf_t *plcf)
     cln->handler = ngx_ssl_cleanup_ctx;
     cln->data = ssl;
 
-    if (ngx_ssl_ciphers(NULL, ssl, &plcf->ssl_ciphers, 0) != NGX_OK) {
+    if (ngx_ssl_ciphers(NULL, ssl, &jlcf->ssl_ciphers, 0) != NGX_OK) {
         return NGX_CONF_ERROR;
     }
 
-    if (ngx_ssl_trusted_certificate(cf, ssl, &plcf->ssl_trusted_certificate,
-                                    plcf->ssl_verify_depth)
+    if (ngx_ssl_trusted_certificate(cf, ssl, &jlcf->ssl_trusted_certificate,
+                                    jlcf->ssl_verify_depth)
         != NGX_OK)
     {
         return NGX_CONF_ERROR;
@@ -4134,11 +4134,11 @@ static ngx_ssl_t *
 ngx_http_js_ssl(njs_vm_t *vm, ngx_http_request_t *r)
 {
 #if (NGX_HTTP_SSL)
-    ngx_http_js_loc_conf_t   *plcf;
+    ngx_http_js_loc_conf_t  *jlcf;
 
-    plcf = ngx_http_get_module_loc_conf(r, ngx_http_js_module);
+    jlcf = ngx_http_get_module_loc_conf(r, ngx_http_js_module);
 
-    return plcf->ssl;
+    return jlcf->ssl;
 #else
     return NULL;
 #endif
