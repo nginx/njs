@@ -2207,8 +2207,7 @@ ngx_response_js_ext_header(njs_vm_t *vm, njs_object_prop_t *prop,
         return NJS_ERROR;
     }
 
-    return ngx_response_js_ext_header_get(vm, value, &name, njs_vm_retval(vm),
-                                          0);
+    return ngx_response_js_ext_header_get(vm, value, &name, retval, 0);
 }
 
 
