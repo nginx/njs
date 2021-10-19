@@ -1,3 +1,25 @@
+Changes with njs 0.7.0                                        19 Oct 2021
+
+    nginx modules:
+
+    *) Feature: added HTTPS support for Fetch API.
+
+    *) Feature: added setReturnValue() method.
+
+    Core:
+
+    *) Feature: introduced Async/Await implementation.
+
+    *) Feature: added WebCrypto API implementation.
+
+    *) Bugfix: fixed copying of closures for declared
+       functions. The bug was introduced in 0.6.0.
+
+    *) Bugfix: fixed unhandled promise rejection in handle
+       events.
+
+    *) Bugfix: fixed Response.headers getter in Fetch API.
+
 Changes with njs 0.6.2                                        31 Aug 2021
 
     nginx modules:
