@@ -34,7 +34,7 @@ typedef struct {
     ngx_str_t              access;
     ngx_str_t              preread;
     ngx_str_t              filter;
-#if (NGX_SSL)
+#if (NGX_STREAM_SSL)
     ngx_ssl_t             *ssl;
     ngx_str_t              ssl_ciphers;
     ngx_uint_t             ssl_protocols;
@@ -145,13 +145,13 @@ static char *ngx_stream_js_merge_srv_conf(ngx_conf_t *cf, void *parent,
     void *child);
 static ngx_int_t ngx_stream_js_init(ngx_conf_t *cf);
 
-#if (NGX_SSL)
+#if (NGX_STREAM_SSL)
 static char * ngx_stream_js_set_ssl(ngx_conf_t *cf,
     ngx_stream_js_srv_conf_t *jscf);
 #endif
 static ngx_ssl_t *ngx_stream_js_ssl(njs_vm_t *vm, ngx_stream_session_t *s);
 
-#if (NGX_HTTP_SSL)
+#if (NGX_STREAM_SSL)
 
 static ngx_conf_bitmask_t  ngx_stream_js_ssl_protocols[] = {
     { ngx_string("TLSv1"), NGX_SSL_TLSv1 },
@@ -221,7 +221,7 @@ static ngx_command_t  ngx_stream_js_commands[] = {
       offsetof(ngx_stream_js_srv_conf_t, filter),
       NULL },
 
-#if (NGX_SSL)
+#if (NGX_STREAM_SSL)
 
     { ngx_string("js_fetch_ciphers"),
       NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
@@ -1992,7 +1992,7 @@ ngx_stream_js_create_srv_conf(ngx_conf_t *cf)
      *     conf->ssl_trusted_certificate = { 0, NULL };
      */
 
-#if (NGX_SSL)
+#if (NGX_STREAM_SSL)
     conf->ssl_verify_depth = NGX_CONF_UNSET;
 #endif
     return conf;
@@ -2009,7 +2009,7 @@ ngx_stream_js_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_str_value(conf->preread, prev->preread, "");
     ngx_conf_merge_str_value(conf->filter, prev->filter, "");
 
-#if (NGX_HTTP_SSL)
+#if (NGX_STREAM_SSL)
     ngx_conf_merge_str_value(conf->ssl_ciphers, prev->ssl_ciphers, "DEFAULT");
 
     ngx_conf_merge_bitmask_value(conf->ssl_protocols, prev->ssl_protocols,
@@ -2057,7 +2057,7 @@ ngx_stream_js_init(ngx_conf_t *cf)
 }
 
 
-#if (NGX_SSL)
+#if (NGX_STREAM_SSL)
 
 static char *
 ngx_stream_js_set_ssl(ngx_conf_t *cf, ngx_stream_js_srv_conf_t *jscf)
@@ -2106,7 +2106,7 @@ ngx_stream_js_set_ssl(ngx_conf_t *cf, ngx_stream_js_srv_conf_t *jscf)
 static ngx_ssl_t *
 ngx_stream_js_ssl(njs_vm_t *vm, ngx_stream_session_t *s)
 {
-#if (NGX_SSL)
+#if (NGX_STREAM_SSL)
     ngx_stream_js_srv_conf_t  *jscf;
 
     jscf = ngx_stream_get_module_srv_conf(s, ngx_stream_js_module);
