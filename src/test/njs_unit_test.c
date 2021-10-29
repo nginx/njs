@@ -9209,6 +9209,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("decodeURI('%D0%B0%D0%B1%D0%B2').length"),
       njs_str("3")},
 
+    { njs_str("decodeURI(String.bytesFrom([0x80,0x80]))"),
+      njs_str("URIError: malformed URI")},
+
     { njs_str("["
               " '%',"
               " '%0',"

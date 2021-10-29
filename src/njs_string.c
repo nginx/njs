@@ -4496,26 +4496,27 @@ njs_string_decode_uri_cp(const int8_t *hex, const u_char **start,
 
     cp = njs_utf8_decode(&ctx, start, end);
     if (njs_fast_path(cp != '%')) {
-        return expect_percent ? 0xFFFFFFFF: cp;
+        return expect_percent ? NJS_UNICODE_ERROR : cp;
     }
 
     p = *start;
 
     if (njs_slow_path((p + 1) >= end)) {
-        return 0xFFFFFFFF;
+        return NJS_UNICODE_ERROR;
     }
 
     d0 = hex[*p++];
     if (njs_slow_path(d0 < 0)) {
-        return 0xFFFFFFFF;
+        return NJS_UNICODE_ERROR;
     }
 
     d1 = hex[*p++];
     if (njs_slow_path(d1 < 0)) {
-        return 0xFFFFFFFF;
+        return NJS_UNICODE_ERROR;
     }
 
     *start += 2;
+
     return (d0 << 4) + d1;
 }
 
@@ -4631,7 +4632,7 @@ njs_string_decode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     while (src < end) {
         percent = (src[0] == '%');
         cp = njs_string_decode_uri_cp(hex, &src, end, 0);
-        if (njs_slow_path(cp == 0xFFFFFFFF)) {
+        if (njs_slow_path(cp > NJS_UNICODE_MAX_CODEPOINT)) {
             goto uri_error;
         }
 
@@ -4677,7 +4678,7 @@ njs_string_decode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         for (i = 1; i < n; i++) {
             cp = njs_string_decode_uri_cp(hex, &src, end, 1);
-            if (njs_slow_path(cp == 0xFFFFFFFF)) {
+            if (njs_slow_path(cp > NJS_UNICODE_MAX_CODEPOINT)) {
                 goto uri_error;
             }
 
