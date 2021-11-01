@@ -72,6 +72,8 @@ njs_await_fulfilled(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     async = ctx->await;
+    async->previous = vm->top_frame;
+
     function = async->function;
 
     cur_local = vm->levels[NJS_LEVEL_LOCAL];
