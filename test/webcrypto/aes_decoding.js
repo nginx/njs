@@ -4,7 +4,7 @@ if (typeof crypto == 'undefined') {
     crypto = require('crypto').webcrypto;
 }
 
-async function run(tlist, T, prepare_args) {
+async function run(tlist) {
     function validate(t, r, i) {
         if (r.status == "fulfilled" && !t[i].exception) {
             return r.value === "SUCCESS";
@@ -24,7 +24,7 @@ async function run(tlist, T, prepare_args) {
 
     for (let k = 0; k < tlist.length; k++) {
         let ts = tlist[k];
-        let results = await Promise.allSettled(ts.tests.map(t => T(prepare_args(t, ts.opts))));
+        let results = await Promise.allSettled(ts.tests.map(t => ts.T(ts.prepare_args(t, ts.opts))));
         let r = results.map((r, i) => validate(ts.tests, r, i));
 
         console.log(`${ts.name} ${r.every(v=>v == true) ? "SUCCESS" : "FAILED"}`);
@@ -79,6 +79,8 @@ async function test(params) {
 
 let aes_tsuite = {
     name: "AES decoding",
+    T: test,
+    prepare_args: p,
     opts: {
         key: "00112233001122330011223300112233",
         iv: "44556677445566774455667744556677",
@@ -113,4 +115,4 @@ let aes_tsuite = {
           expected: "AES-CBC-256-SECRET-TEXT" },
 ]};
 
-run([aes_tsuite], test, p);
+run([aes_tsuite]);

@@ -2,7 +2,7 @@ if (typeof crypto == 'undefined') {
     crypto = require('crypto').webcrypto;
 }
 
-async function run(tlist, T, prepare_args) {
+async function run(tlist) {
     function validate(t, r, i) {
         if (r.status == "fulfilled" && !t[i].exception) {
             return r.value === "SUCCESS";
@@ -22,7 +22,7 @@ async function run(tlist, T, prepare_args) {
 
     for (let k = 0; k < tlist.length; k++) {
         let ts = tlist[k];
-        let results = await Promise.allSettled(ts.tests.map(t => T(prepare_args(t, ts.opts))));
+        let results = await Promise.allSettled(ts.tests.map(t => ts.T(ts.prepare_args(t, ts.opts))));
         let r = results.map((r, i) => validate(ts.tests, r, i));
 
         console.log(`${ts.name} ${r.every(v=>v == true) ? "SUCCESS" : "FAILED"}`);
@@ -54,6 +54,8 @@ async function test(params) {
 
 let digest_tsuite = {
     name: "SHA digest",
+    T: test,
+    prepare_args: p,
     opts: { },
 
     tests: [
@@ -85,4 +87,4 @@ let digest_tsuite = {
           expected: "cdea58919606ea9ae078f7595b192b84446f2189" },
 ]};
 
-run([digest_tsuite], test, p);
+run([digest_tsuite]);

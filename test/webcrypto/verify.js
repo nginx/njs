@@ -4,7 +4,7 @@ if (typeof crypto == 'undefined') {
     crypto = require('crypto').webcrypto;
 }
 
-async function run(tlist, T, prepare_args) {
+async function run(tlist) {
     function validate(t, r, i) {
         if (r.status == "fulfilled" && !t[i].exception) {
             return r.value === "SUCCESS";
@@ -24,7 +24,7 @@ async function run(tlist, T, prepare_args) {
 
     for (let k = 0; k < tlist.length; k++) {
         let ts = tlist[k];
-        let results = await Promise.allSettled(ts.tests.map(t => T(prepare_args(t, ts.opts))));
+        let results = await Promise.allSettled(ts.tests.map(t => ts.T(ts.prepare_args(t, ts.opts))));
         let r = results.map((r, i) => validate(ts.tests, r, i));
 
         console.log(`${ts.name} ${r.every(v=>v == true) ? "SUCCESS" : "FAILED"}`);
@@ -108,6 +108,8 @@ async function test(params) {
 
 let hmac_tsuite = {
     name: "HMAC verify",
+    T: test,
+    prepare_args: p,
     opts: {
         text: "SigneD-TExt",
         key: { fmt: "raw", file: "aabbcc" },
@@ -130,6 +132,8 @@ let hmac_tsuite = {
 
 let rsassa_pkcs1_v1_5_tsuite = {
     name: "RSASSA-PKCS1-v1_5 verify",
+    T: test,
+    prepare_args: p,
     opts: {
         text: "SigneD-TExt",
         key: { fmt: "spki", file: "rsa.spki" },
@@ -152,6 +156,8 @@ let rsassa_pkcs1_v1_5_tsuite = {
 
 let rsa_pss_tsuite = {
     name: "RSA-PSS verify",
+    T: test,
+    prepare_args: p,
     opts: {
         text: "SigneD-TExt",
         key: { fmt: "spki", file: "rsa.spki" },
@@ -179,6 +185,8 @@ let rsa_pss_tsuite = {
 
 let ecdsa_tsuite = {
     name: "ECDSA verify",
+    T: test,
+    prepare_args: p,
     opts: {
         text: "SigneD-TExt",
         key: { fmt: "spki", file: "ec.spki" },
@@ -204,4 +212,4 @@ run([
     rsassa_pkcs1_v1_5_tsuite,
     rsa_pss_tsuite,
     ecdsa_tsuite,
-], test, p);
+]);

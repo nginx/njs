@@ -4,7 +4,7 @@ if (typeof crypto == 'undefined') {
     crypto = require('crypto').webcrypto;
 }
 
-async function run(tlist, T, prepare_args) {
+async function run(tlist) {
     function validate(t, r, i) {
         if (r.status == "fulfilled" && !t[i].exception) {
             return r.value === "SUCCESS";
@@ -24,7 +24,7 @@ async function run(tlist, T, prepare_args) {
 
     for (let k = 0; k < tlist.length; k++) {
         let ts = tlist[k];
-        let results = await Promise.allSettled(ts.tests.map(t => T(prepare_args(t, ts.opts))));
+        let results = await Promise.allSettled(ts.tests.map(t => ts.T(ts.prepare_args(t, ts.opts))));
         let r = results.map((r, i) => validate(ts.tests, r, i));
 
         console.log(`${ts.name} ${r.every(v=>v == true) ? "SUCCESS" : "FAILED"}`);
@@ -79,6 +79,8 @@ async function test(params) {
 
 let rsa_tsuite = {
     name: "RSA-OAEP encoding/decoding",
+    T: test,
+    prepare_args: p,
     opts: {
         spki: "rsa.spki",
         spki_hash: "SHA-256",
@@ -103,4 +105,4 @@ let rsa_tsuite = {
         { data: "aabbcc", spki: "rsa2.spki", exception: "Error: EVP_PKEY_decrypt() failed" },
 ]};
 
-run([rsa_tsuite], test, p);
+run([rsa_tsuite]);

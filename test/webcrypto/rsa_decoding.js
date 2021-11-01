@@ -4,7 +4,7 @@ if (typeof crypto == 'undefined') {
     crypto = require('crypto').webcrypto;
 }
 
-async function run(tlist, T, prepare_args) {
+async function run(tlist) {
     function validate(t, r, i) {
         if (r.status == "fulfilled" && !t[i].exception) {
             return r.value === "SUCCESS";
@@ -24,7 +24,7 @@ async function run(tlist, T, prepare_args) {
 
     for (let k = 0; k < tlist.length; k++) {
         let ts = tlist[k];
-        let results = await Promise.allSettled(ts.tests.map(t => T(prepare_args(t, ts.opts))));
+        let results = await Promise.allSettled(ts.tests.map(t => ts.T(ts.prepare_args(t, ts.opts))));
         let r = results.map((r, i) => validate(ts.tests, r, i));
 
         console.log(`${ts.name} ${r.every(v=>v == true) ? "SUCCESS" : "FAILED"}`);
@@ -70,6 +70,8 @@ async function test(params) {
 
 let rsa_tsuite = {
     name: "RSA-OAEP decoding",
+    T: test,
+    prepare_args: (v) => v,
     opts: { },
 
     tests: [
@@ -78,4 +80,4 @@ let rsa_tsuite = {
         { pem: "rsa.pkcs8.broken", src: "text.base64.rsa-oaep.enc", exception: "Error: d2i_PKCS8_PRIV_KEY_INFO_bio() failed" },
 ]};
 
-run([rsa_tsuite], test, (v) => v);
+run([rsa_tsuite]);

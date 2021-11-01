@@ -2,7 +2,7 @@ if (typeof crypto == 'undefined') {
     crypto = require('crypto').webcrypto;
 }
 
-async function run(tlist, T, prepare_args) {
+async function run(tlist) {
     function validate(t, r, i) {
         if (r.status == "fulfilled" && !t[i].exception) {
             return r.value === "SUCCESS";
@@ -26,7 +26,7 @@ async function run(tlist, T, prepare_args) {
 
     for (let k = 0; k < tlist.length; k++) {
         let ts = tlist[k];
-        let results = await Promise.allSettled(ts.tests.map(t => T(prepare_args(t, ts.opts))));
+        let results = await Promise.allSettled(ts.tests.map(t => ts.T(ts.prepare_args(t, ts.opts))));
         let r = results.map((r, i) => validate(ts.tests, r, i));
 
         console.log(`${ts.name} ${r.every(v=>v == true) ? "SUCCESS" : "FAILED"}`);
@@ -96,6 +96,8 @@ async function test(params) {
 
 let derive_tsuite = {
     name: "derive",
+    T: test,
+    prepare_args: p,
     opts: {
         text: "secReT",
         pass: "passW0rd",
@@ -146,4 +148,4 @@ let derive_tsuite = {
           expected: "e089c7491711306c69e077aa19fae6bfd2d4a6d240b0d37317d50472d7291a3e" },
 ]};
 
-run([derive_tsuite], test, p);
+run([derive_tsuite]);
