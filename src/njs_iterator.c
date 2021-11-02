@@ -34,26 +34,14 @@ njs_int_t
 njs_array_iterator_create(njs_vm_t *vm, const njs_value_t *target,
     njs_value_t *retval, njs_object_enum_t kind)
 {
-    njs_object_value_t    *ov;
+    njs_object_value_t    *iterator;
     njs_array_iterator_t  *it;
 
-    ov = njs_mp_alloc(vm->mem_pool, sizeof(njs_object_value_t));
-    if (njs_slow_path(ov == NULL)) {
+    iterator = njs_object_value_alloc(vm, NJS_OBJ_TYPE_ARRAY_ITERATOR, 0, NULL);
+    if (njs_slow_path(iterator == NULL)) {
         njs_memory_error(vm);
         return NJS_ERROR;
     }
-
-    njs_lvlhsh_init(&ov->object.hash);
-    njs_lvlhsh_init(&ov->object.shared_hash);
-    ov->object.type = NJS_OBJECT_VALUE;
-    ov->object.shared = 0;
-    ov->object.extensible = 1;
-    ov->object.error_data = 0;
-    ov->object.fast_array = 0;
-
-    ov->object.__proto__ =
-        &vm->prototypes[NJS_OBJ_TYPE_ARRAY_ITERATOR].object;
-    ov->object.slots = NULL;
 
     it = njs_mp_alloc(vm->mem_pool, sizeof(njs_array_iterator_t));
     if (njs_slow_path(it == NULL)) {
@@ -66,8 +54,8 @@ njs_array_iterator_create(njs_vm_t *vm, const njs_value_t *target,
     it->next = 0;
     it->kind = kind;
 
-    njs_set_data(&ov->value, it, NJS_DATA_TAG_ARRAY_ITERATOR);
-    njs_set_object_value(retval, ov);
+    njs_set_data(&iterator->value, it, NJS_DATA_TAG_ARRAY_ITERATOR);
+    njs_set_object_value(retval, iterator);
 
     return NJS_OK;
 }

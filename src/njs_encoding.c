@@ -48,34 +48,20 @@ static njs_int_t
 njs_text_encoder_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_object_t        *proto;
-    njs_object_value_t  *ov;
+    njs_object_value_t  *encoder;
 
     if (!vm->top_frame->ctor) {
         njs_type_error(vm, "Constructor of TextEncoder requires 'new'");
         return NJS_ERROR;
     }
 
-    ov = njs_mp_alloc(vm->mem_pool, sizeof(njs_object_value_t));
-    if (njs_slow_path(ov == NULL)) {
-        njs_memory_error(vm);
+    encoder = njs_object_value_alloc(vm, NJS_OBJ_TYPE_TEXT_ENCODER, 0, NULL);
+    if (njs_slow_path(encoder == NULL)) {
         return NJS_ERROR;
     }
 
-    proto = &vm->prototypes[NJS_OBJ_TYPE_TEXT_ENCODER].object;
-
-    njs_lvlhsh_init(&ov->object.hash);
-    njs_lvlhsh_init(&ov->object.shared_hash);
-    ov->object.type = NJS_OBJECT_VALUE;
-    ov->object.shared = 0;
-    ov->object.extensible = 1;
-    ov->object.error_data = 0;
-    ov->object.fast_array = 0;
-    ov->object.__proto__ = proto;
-    ov->object.slots = NULL;
-
-    njs_set_data(&ov->value, NULL, NJS_DATA_TAG_TEXT_ENCODER);
-    njs_set_object_value(&vm->retval, ov);
+    njs_set_data(&encoder->value, NULL, NJS_DATA_TAG_TEXT_ENCODER);
+    njs_set_object_value(&vm->retval, encoder);
 
     return NJS_OK;
 }
@@ -330,8 +316,7 @@ njs_text_decoder_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     njs_int_t              ret;
-    njs_object_t           *proto;
-    njs_object_value_t     *ov;
+    njs_object_value_t     *decoder;
     njs_encoding_decode_t  *data;
 
     if (!vm->top_frame->ctor) {
@@ -339,26 +324,13 @@ njs_text_decoder_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    ov = njs_mp_alloc(vm->mem_pool, sizeof(njs_object_value_t)
-                                    + sizeof(njs_encoding_decode_t));
-    if (njs_slow_path(ov == NULL)) {
-        njs_memory_error(vm);
+    decoder = njs_object_value_alloc(vm, NJS_OBJ_TYPE_TEXT_DECODER,
+                                     sizeof(njs_encoding_decode_t), NULL);
+    if (njs_slow_path(decoder == NULL)) {
         return NJS_ERROR;
     }
 
-    proto = &vm->prototypes[NJS_OBJ_TYPE_TEXT_DECODER].object;
-
-    njs_lvlhsh_init(&ov->object.hash);
-    njs_lvlhsh_init(&ov->object.shared_hash);
-    ov->object.type = NJS_OBJECT_VALUE;
-    ov->object.shared = 0;
-    ov->object.extensible = 1;
-    ov->object.error_data = 0;
-    ov->object.fast_array = 0;
-    ov->object.__proto__ = proto;
-    ov->object.slots = NULL;
-
-    data = (njs_encoding_decode_t *) ((uint8_t *) ov
+    data = (njs_encoding_decode_t *) ((uint8_t *) decoder
                                       + sizeof(njs_object_value_t));
 
     ret = njs_text_decoder_arg_encoding(vm, args, nargs, data);
@@ -373,8 +345,8 @@ njs_text_decoder_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     njs_utf8_decode_init(&data->ctx);
 
-    njs_set_data(&ov->value, data, NJS_DATA_TAG_TEXT_DECODER);
-    njs_set_object_value(&vm->retval, ov);
+    njs_set_data(&decoder->value, data, NJS_DATA_TAG_TEXT_DECODER);
+    njs_set_object_value(&vm->retval, decoder);
 
     return NJS_OK;
 }

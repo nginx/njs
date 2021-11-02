@@ -179,22 +179,14 @@ njs_external_prop_handler(njs_vm_t *vm, njs_object_prop_t *self,
         *retval = *setval;
 
     } else {
-        ov = njs_mp_alloc(vm->mem_pool, sizeof(njs_object_value_t));
+        ov = njs_object_value_alloc(vm, NJS_OBJ_TYPE_OBJECT, 0, NULL);
         if (njs_slow_path(ov == NULL)) {
-            njs_memory_error(vm);
             return NJS_ERROR;
         }
 
         slots = njs_object(value)->slots + self->value.data.magic16;
 
-        njs_lvlhsh_init(&ov->object.hash);
         ov->object.shared_hash = slots->external_shared_hash;
-        ov->object.type = NJS_OBJECT;
-        ov->object.shared = 0;
-        ov->object.extensible = 1;
-        ov->object.error_data = 0;
-        ov->object.fast_array = 0;
-        ov->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_OBJECT].object;
         ov->object.slots = slots;
 
         external = njs_vm_external(vm, NJS_PROTO_ID_ANY, value);
@@ -308,23 +300,16 @@ njs_vm_external_create(njs_vm_t *vm, njs_value_t *value, njs_int_t proto_id,
 
     proto = ((uintptr_t *) vm->protos->start)[proto_id];
 
-    ov = njs_mp_alloc(vm->mem_pool, sizeof(njs_object_value_t));
+    ov = njs_object_value_alloc(vm, NJS_OBJ_TYPE_OBJECT, 0, NULL);
     if (njs_slow_path(ov == NULL)) {
-        njs_memory_error(vm);
         return NJS_ERROR;
     }
 
     protos = (njs_arr_t *) proto;
     slots = protos->start;
 
-    njs_lvlhsh_init(&ov->object.hash);
     ov->object.shared_hash = slots->external_shared_hash;
-    ov->object.type = NJS_OBJECT;
     ov->object.shared = shared;
-    ov->object.extensible = 1;
-    ov->object.error_data = 0;
-    ov->object.fast_array = 0;
-    ov->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_OBJECT].object;
     ov->object.slots = slots;
 
     njs_set_object_value(value, ov);

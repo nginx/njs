@@ -129,33 +129,6 @@ static njs_crypto_enc_t njs_encodings[] = {
 };
 
 
-static njs_object_value_t *
-njs_crypto_object_value_alloc(njs_vm_t *vm, njs_object_type_t type)
-{
-    njs_object_value_t  *ov;
-
-    ov = njs_mp_alloc(vm->mem_pool, sizeof(njs_object_value_t));
-
-    if (njs_fast_path(ov != NULL)) {
-        njs_lvlhsh_init(&ov->object.hash);
-        njs_lvlhsh_init(&ov->object.shared_hash);
-        ov->object.type = NJS_OBJECT_VALUE;
-        ov->object.shared = 0;
-        ov->object.extensible = 1;
-        ov->object.error_data = 0;
-        ov->object.fast_array = 0;
-
-        ov->object.__proto__ = &vm->prototypes[type].object;
-        ov->object.slots = NULL;
-        return ov;
-    }
-
-    njs_memory_error(vm);
-
-    return NULL;
-}
-
-
 static njs_int_t
 njs_crypto_create_hash(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
@@ -169,7 +142,7 @@ njs_crypto_create_hash(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    hash = njs_crypto_object_value_alloc(vm, NJS_OBJ_TYPE_CRYPTO_HASH);
+    hash = njs_object_value_alloc(vm, NJS_OBJ_TYPE_CRYPTO_HASH, 0, NULL);
     if (njs_slow_path(hash == NULL)) {
         return NJS_ERROR;
     }
@@ -510,7 +483,7 @@ njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     alg->init(&ctx->u);
     alg->update(&ctx->u, key_buf, 64);
 
-    hmac = njs_crypto_object_value_alloc(vm, NJS_OBJ_TYPE_CRYPTO_HMAC);
+    hmac = njs_object_value_alloc(vm, NJS_OBJ_TYPE_CRYPTO_HMAC, 0, NULL);
     if (njs_slow_path(hmac == NULL)) {
         return NJS_ERROR;
     }
