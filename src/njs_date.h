@@ -8,6 +8,7 @@
 #define _NJS_DATE_H_INCLUDED_
 
 
+njs_date_t *njs_date_alloc(njs_vm_t *vm, double time);
 njs_int_t njs_date_to_string(njs_vm_t *vm, njs_value_t *retval,
     const njs_value_t *date);
 

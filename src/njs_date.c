@@ -346,6 +346,33 @@ njs_date_args(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+njs_date_t *
+njs_date_alloc(njs_vm_t *vm, double time)
+{
+    njs_date_t  *date;
+
+    date = njs_mp_alloc(vm->mem_pool, sizeof(njs_date_t));
+    if (njs_slow_path(date == NULL)) {
+        njs_memory_error(vm);
+        return NULL;
+    }
+
+    njs_lvlhsh_init(&date->object.hash);
+    njs_lvlhsh_init(&date->object.shared_hash);
+    date->object.type = NJS_DATE;
+    date->object.shared = 0;
+    date->object.extensible = 1;
+    date->object.error_data = 0;
+    date->object.fast_array = 0;
+    date->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_DATE].object;
+    date->object.slots = NULL;
+
+    date->time = time;
+
+    return date;
+}
+
+
 static njs_int_t
 njs_date_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
@@ -393,23 +420,10 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         time = njs_make_date(tm, 1);
     }
 
-    date = njs_mp_alloc(vm->mem_pool, sizeof(njs_date_t));
+    date = njs_date_alloc(vm, time);
     if (njs_slow_path(date == NULL)) {
-        njs_memory_error(vm);
         return NJS_ERROR;
     }
-
-    njs_lvlhsh_init(&date->object.hash);
-    njs_lvlhsh_init(&date->object.shared_hash);
-    date->object.type = NJS_DATE;
-    date->object.shared = 0;
-    date->object.extensible = 1;
-    date->object.error_data = 0;
-    date->object.fast_array = 0;
-    date->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_DATE].object;
-    date->object.slots = NULL;
-
-    date->time = time;
 
     njs_set_date(&vm->retval, date);
 
