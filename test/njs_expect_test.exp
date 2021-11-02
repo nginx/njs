@@ -459,189 +459,6 @@ njs_test {
      "queue.toString()\r\n'0,1,2,3,4,5'"}
 }
 
-# require('fs').readFile()
-
-njs_run {"./test/js/fs_readFile.js" "test/fs/utf8"} "αβZγ Buffer 7"
-njs_run {"./test/js/fs_readFile.js" "test/fs/utf8" "utf8"} "αβZγ string 4"
-njs_run {"./test/js/fs_readFile.js" "test/fs/utf8" "utf8" "r+"} "αβZγ string 4"
-njs_run {"./test/js/fs_readFile.js" "test/fs/nonexistent"} \
-    "{\"errno\":2,\"code\":\"ENOENT\",\"path\":\"test/fs/nonexistent\",\"syscall\":\"open\"}"
-njs_run {"./test/js/fs_readFile.js" "test/fs/non_utf8" "utf8"} "�� string 2"
-njs_run {"./test/js/fs_readFile.js" "test/fs/non_utf8" "hex"} "8080 string 4"
-njs_run {"./test/js/fs_readFile.js" "test/fs/non_utf8" "base64"} "gIA= string 4"
-
-njs_test {
-    {"var fs = require('fs')\r\n"
-     "undefined\r\n>> "}
-    {"fs.readFile('test/fs/ascii', 'utf8', function (e, data) {console.log(data[599], data[600])})\r\n"
-     "undefined\r\nx undefined\r\n>> "}
-    {"fs.readFile('test/fs/ascii', {encoding:'utf8',flag:'r+'}, function (e, data) {console.log(data[599], data[600])})\r\n"
-     "undefined\r\nx undefined\r\n>> "}
-    {"fs.readFile(Buffer.from([0x80,0x80]), function(e) {console.log(e.path.codePointAt())})\r\n"
-     "undefined\r\n65533"}
-}
-
-njs_test {
-    {"var fs = require('fs')\r\n"
-     "undefined\r\n>> "}
-    {"fs.readFile('/proc/version', (e, data) => {console.log(e || data.slice(0,5) == 'Linux')})\r\n"
-     "undefined\r\ntrue\r\n>> "}
-    {"fs.readFile('/proc/cpuinfo', (e, data) => {console.log(e || data.slice(0,9) == 'processor')})\r\n"
-     "undefined\r\ntrue\r\n>> "}
-}
-
-# require('fs').readFileSync()
-
-njs_run {"./test/js/fs_readFileSync.js" "test/fs/utf8"} "αβZγ Buffer 7"
-njs_run {"./test/js/fs_readFileSync.js" "test/fs/utf8" "utf8"} "αβZγ string 4"
-njs_run {"./test/js/fs_readFileSync.js" "test/fs/utf8" "utf8" "r+"} "αβZγ string 4"
-njs_run {"./test/js/fs_readFileSync.js" "test/fs/nonexistent"} \
-    "{\"errno\":2,\"code\":\"ENOENT\",\"path\":\"test/fs/nonexistent\",\"syscall\":\"open\"}"
-njs_run {"./test/js/fs_readFileSync.js" "test/fs/non_utf8" "utf8"} "�� string 2"
-njs_run {"./test/js/fs_readFileSync.js" "test/fs/non_utf8" "hex"} "8080 string 4"
-njs_run {"./test/js/fs_readFileSync.js" "test/fs/non_utf8" "base64"} "gIA= string 4"
-
-njs_test {
-    {"var fs = require('fs')\r\n"
-     "undefined\r\n>> "}
-    {"fs.readFileSync('test/fs/non_utf8', 'utf8').charCodeAt(1)\r\n"
-     "65533"}
-    {"fs.readFile('x'.repeat(8192))\r\n"
-     "TypeError: \"path\" is too long >= 4096"}
-}
-
-njs_test {
-    {"var fs = require('fs'), file\r\n"
-     "undefined\r\n>> "}
-    {"try { file = fs.readFileSync('/proc/version')} catch (e) {}\r\n"
-     "undefined"}
-    {"(!file || file.slice(0,5) == 'Linux')\r\n"
-     "true"}
-    {"try { file = fs.readFileSync('/proc/cpuinfo')} catch (e) {}\r\n"
-     "undefined"}
-    {"(!file || file.slice(0,9) == 'processor')\r\n"
-     "true"}
-}
-
-# require('fs').writeFile()
-
-njs_run {"./test/js/fs_writeFile.js" "ABCD" "Buffer" "1"} "BCD"
-njs_run {"./test/js/fs_writeFile.js" "ABC" "DataView"} "ABC"
-njs_run {"./test/js/fs_writeFile.js" "414243" "Object" "hex"} "ABC"
-njs_run {"./test/js/fs_writeFile.js" "ABC" "String"} "ABC"
-njs_run {"./test/js/fs_writeFile.js" "ABC" "Symbol"} "TypeError: Cannot convert a Symbol value to a string*"
-njs_run {"./test/js/fs_writeFile.js" "ABC" "Uint8Array"} "ABC"
-
-njs_run {"./test/js/fs_writeFile.js" "ABC" "String" "utf8"} "ABC"
-njs_run {"./test/js/fs_writeFile.js" "ABC" "String" "utf8" "0o666"} "ABC"
-njs_run {"./test/js/fs_writeFile.js" "ABC" "String" "utf8" "0o222"} "Error: Permission denied*"
-njs_run {"./test/js/fs_writeFile.js" "414243" "String" "hex"} "ABC"
-njs_run {"./test/js/fs_writeFile.js" "QUJD" "String" "base64"} "ABC"
-njs_run {"./test/js/fs_writeFile.js" "QUJD" "String" "base64url"} "ABC"
-
-njs_test {
-    {"var fs = require('fs')\r\n"
-     "undefined\r\n>> "}
-    {"fs.writeFile('/invalid_path', 'ABC', function (e) { console.log(JSON.stringify(e))})\r\n"
-     "undefined\r\n{\"errno\":13,\"code\":\"EACCES\",\"path\":\"/invalid_path\",\"syscall\":\"open\"}\r\n>> "}
-    {"fs.writeFile(Buffer.from('/invalid_path'), 'ABC', function (e) { console.log(typeof e.path)})\r\n"
-     "undefined\r\nstring\r\n>> "}
-}
-
-# require('fs').writeFileSync()
-
-njs_run {"./test/js/fs_writeFileSync.js" "ABCD" "Buffer" "1"} "BCD"
-njs_run {"./test/js/fs_writeFileSync.js" "ABC" "DataView"} "ABC"
-njs_run {"./test/js/fs_writeFileSync.js" "414243" "Object" "hex"} "ABC"
-njs_run {"./test/js/fs_writeFileSync.js" "ABC" "String"} "ABC"
-njs_run {"./test/js/fs_writeFileSync.js" "ABC" "Symbol"} "TypeError: Cannot convert a Symbol value to a string*"
-njs_run {"./test/js/fs_writeFileSync.js" "ABC" "Uint8Array"} "ABC"
-
-njs_run {"./test/js/fs_writeFileSync.js" "ABC" "String" "utf8"} "ABC"
-njs_run {"./test/js/fs_writeFileSync.js" "ABC" "String" "utf8" "0o666"} "ABC"
-njs_run {"./test/js/fs_writeFileSync.js" "ABC" "String" "utf8" "0o222"} "Error: Permission denied*"
-njs_run {"./test/js/fs_writeFileSync.js" "78797a" "String" "hex"} "xyz"
-njs_run {"./test/js/fs_writeFileSync.js" "eHl6" "String" "base64"} "xyz"
-njs_run {"./test/js/fs_writeFileSync.js" "eHl6" "String" "base64url"} "xyz"
-
-njs_test {
-    {"var fs = require('fs'), fn = './build/test/file2';\r\n"
-     "undefined\r\n>> "}
-    {"fs.writeFileSync(fn, 'ABC')\r\n"
-     "undefined\r\n>> "}
-    {"fs.writeFileSync(fn, 'ABC')\r\n"
-     "undefined\r\n>> "}
-    {"fs.readFileSync(fn, 'utf8')\r\n"
-     "'ABC'\r\n>> "}
-}
-
-# require('fs').appendFile()
-
-njs_run {"./test/js/fs_appendFile.js" "ABCD" "Buffer" "1"} "BCDBCD"
-njs_run {"./test/js/fs_appendFile.js" "ABC" "DataView"} "ABCABC"
-njs_run {"./test/js/fs_appendFile.js" "414243" "Object" "hex"} "ABCABC"
-njs_run {"./test/js/fs_appendFile.js" "ABC" "String"} "ABCABC"
-njs_run {"./test/js/fs_appendFile.js" "ABC" "Symbol"} "TypeError: Cannot convert a Symbol value to a string*"
-njs_run {"./test/js/fs_appendFile.js" "ABC" "Uint8Array"} "ABCABC"
-
-njs_run {"./test/js/fs_appendFile.js" "ABC" "String" "utf8"} "ABC"
-njs_run {"./test/js/fs_appendFile.js" "ABC" "String" "utf8" "0o666"} "ABC"
-njs_run {"./test/js/fs_appendFile.js" "ABC" "String" "utf8" "0o222"} "Error: Permission denied*"
-njs_run {"./test/js/fs_appendFile.js" "414243" "String" "hex"} "ABC"
-njs_run {"./test/js/fs_appendFile.js" "QUJD" "String" "base64"} "ABC"
-njs_run {"./test/js/fs_appendFile.js" "QUJD" "String" "base64url"} "ABC"
-
-# require('fs').appendFileSync()
-
-njs_run {"./test/js/fs_appendFileSync.js" "ABCD" "Buffer" "1"} "BCDBCD"
-njs_run {"./test/js/fs_appendFileSync.js" "ABC" "DataView"} "ABCABC"
-njs_run {"./test/js/fs_appendFileSync.js" "414243" "Object" "hex"} "ABCABC"
-njs_run {"./test/js/fs_appendFileSync.js" "ABC" "String"} "ABCABC"
-njs_run {"./test/js/fs_appendFileSync.js" "ABC" "Symbol"} "TypeError: Cannot convert a Symbol value to a string*"
-njs_run {"./test/js/fs_appendFileSync.js" "ABC" "Uint8Array"} "ABCABC"
-
-njs_run {"./test/js/fs_appendFileSync.js" "ABC" "String" "utf8"} "ABC"
-njs_run {"./test/js/fs_appendFileSync.js" "ABC" "String" "utf8" "0o666"} "ABC"
-njs_run {"./test/js/fs_appendFileSync.js" "ABC" "String" "utf8" "0o222"} "Error: Permission denied*"
-njs_run {"./test/js/fs_appendFileSync.js" "414243" "String" "hex"} "ABC"
-njs_run {"./test/js/fs_appendFileSync.js" "QUJD" "String" "base64"} "ABC"
-njs_run {"./test/js/fs_appendFileSync.js" "QUJD" "String" "base64url"} "ABC"
-
-# require('fs').renameSync()
-
-njs_test {
-    {"var fs = require('fs'), mktemp = ()=> `/tmp/njs_${Math.round(Math.random() * 1000000)}`\r\n"
-     "undefined\r\n>> "}
-    {"var fn1 = mktemp(), fn2 = mktemp();\r\n"
-     "undefined\r\n>> "}
-    {"fs.writeFileSync(fn1, 'ABC')\r\n"
-     "undefined\r\n>> "}
-    {"fs.renameSync(fn1, fn2)\r\n"
-     "undefined\r\n>> "}
-    {"String(fs.readFileSync(fn2))\r\n"
-     "'ABC'\r\n>> "}
-}
-
-njs_test {
-    {"var fs = require('fs'), fn = './build/test/file2'\r\n"
-     "undefined\r\n>> "}
-    {"fs.writeFileSync(fn, 'ABC')\r\n"
-     "undefined\r\n>> "}
-    {"fs.renameSync(fn, 'test/fs/')\r\n"
-     "Error: Not a directory*"}
-}
-
-# require('fs').realpathSync()
-
-njs_test {
-    {"var fs = require('fs')\r\n"
-     "undefined\r\n>> "}
-    {"fs.realpathSync('./build/test/..').endsWith('build')\r\n"
-     "true\r\n>> "}
-    {"fs.realpathSync('./build/test/..', {encoding:'buffer'}) instanceof Buffer\r\n"
-     "true\r\n>> "}
-}
-
 njs_run {"-c" "setTimeout(() => {console.log('A'.repeat(1024))}, 0); ref"} \
 "^Thrown:
 ReferenceError: \"ref\" is not defined
@@ -832,7 +649,6 @@ njs_test {
 
 njs_run {"-v"} "\\d+\.\\d+\.\\d+"
 
-
 # Promise
 
 njs_run {"./test/js/promise_set_timeout.js"} \
@@ -1002,6 +818,22 @@ PatchedPromise.constructor
 PatchedPromise.constructor
 PatchedPromise.constructor
 PatchedPromise async done"
+
+# fs
+
+njs_run {"./test/fs/methods.js" "--match-exception-text"} \
+"fs readFile SUCCESS
+fs readFileSync SUCCESS
+fsp readFile SUCCESS
+fs writeFile SUCCESS
+fs writeFileSync SUCCESS
+fsp writeFile SUCCESS
+fs appendFile SUCCESS
+fs appendFileSync SUCCESS
+fsp appendFile SUCCESS
+fs realpath SUCCESS
+fs realpathSync SUCCESS
+fsp realpath SUCCESS"
 
 njs_run {"./test/js/fs_promises_001.js"} \
 "init ok true
