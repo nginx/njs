@@ -48,21 +48,8 @@ typedef enum {
      */
     NJS_INVALID,
 
-    /*
-     * The object types are >= NJS_OBJECT, this is used in njs_is_object().
-     * NJS_OBJECT_BOOLEAN, NJS_OBJECT_NUMBER, and NJS_OBJECT_STRING must be
-     * in the same order as NJS_BOOLEAN, NJS_NUMBER, and NJS_STRING.  It is
-     * used in njs_primitive_prototype_index().  The order of object types
-     * is used in vm->prototypes and vm->constructors arrays.
-     */
     NJS_OBJECT                = 0x10,
     NJS_ARRAY,
-#define NJS_OBJECT_WRAPPER_MIN  (NJS_OBJECT_BOOLEAN)
-    NJS_OBJECT_BOOLEAN,
-    NJS_OBJECT_NUMBER,
-    NJS_OBJECT_SYMBOL,
-    NJS_OBJECT_STRING,
-#define NJS_OBJECT_WRAPPER_MAX  (NJS_OBJECT_STRING + 1)
 #define NJS_OBJECT_SPECIAL_MIN  (NJS_FUNCTION)
     NJS_FUNCTION,
     NJS_REGEXP,
@@ -618,17 +605,34 @@ typedef struct {
     ((value)->type == NJS_OBJECT_VALUE)
 
 
+#define njs_is_object_boolean(_value)                                         \
+    (((_value)->type == NJS_OBJECT_VALUE)                                     \
+     && njs_is_boolean(njs_object_value(_value)))
+
+
+#define njs_is_object_number(_value)                                          \
+    (((_value)->type == NJS_OBJECT_VALUE)                                     \
+     && njs_is_number(njs_object_value(_value)))
+
+
+#define njs_is_object_symbol(_value)                                          \
+    (((_value)->type == NJS_OBJECT_VALUE)                                     \
+     && njs_is_symbol(njs_object_value(_value)))
+
+
+#define njs_is_object_string(_value)                                          \
+    (((_value)->type == NJS_OBJECT_VALUE)                                     \
+     && njs_is_string(njs_object_value(_value)))
+
+
+#define njs_is_object_primitive(_value)                                       \
+    (((_value)->type == NJS_OBJECT_VALUE)                                     \
+     && njs_is_primitive(njs_object_value(_value)))
+
+
 #define njs_is_object_data(_value, tag)                                       \
     (((_value)->type == NJS_OBJECT_VALUE)                                     \
      && njs_is_data(njs_object_value(_value), tag))
-
-
-#define njs_is_object_string(value)                                           \
-    ((value)->type == NJS_OBJECT_STRING)
-
-
-#define njs_object_value_type(type)                                           \
-    (type + NJS_OBJECT)
 
 
 #define njs_is_array(value)                                                   \

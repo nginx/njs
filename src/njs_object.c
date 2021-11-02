@@ -92,42 +92,41 @@ njs_object_value_copy(njs_vm_t *vm, njs_value_t *value)
 }
 
 
-njs_object_t *
-njs_object_value_alloc(njs_vm_t *vm, const njs_value_t *value, njs_uint_t type)
+njs_object_value_t *
+njs_object_value_alloc(njs_vm_t *vm, njs_uint_t prototype_index, size_t extra,
+    const njs_value_t *value)
 {
-    njs_uint_t          index;
     njs_object_value_t  *ov;
 
-    ov = njs_mp_alloc(vm->mem_pool, sizeof(njs_object_value_t));
-
-    if (njs_fast_path(ov != NULL)) {
-        njs_lvlhsh_init(&ov->object.hash);
-
-        if (type == NJS_STRING) {
-            ov->object.shared_hash = vm->shared->string_instance_hash;
-
-        } else {
-            njs_lvlhsh_init(&ov->object.shared_hash);
-        }
-
-        ov->object.type = njs_object_value_type(type);
-        ov->object.shared = 0;
-        ov->object.extensible = 1;
-        ov->object.error_data = 0;
-        ov->object.fast_array = 0;
-
-        index = njs_primitive_prototype_index(type);
-        ov->object.__proto__ = &vm->prototypes[index].object;
-        ov->object.slots = NULL;
-
-        ov->value = *value;
-
-        return &ov->object;
+    ov = njs_mp_alloc(vm->mem_pool, sizeof(njs_object_value_t) + extra);
+    if (njs_slow_path(ov == NULL)) {
+        njs_memory_error(vm);
+        return NULL;
     }
 
-    njs_memory_error(vm);
+    njs_lvlhsh_init(&ov->object.hash);
 
-    return NULL;
+    if (prototype_index == NJS_OBJ_TYPE_STRING) {
+        ov->object.shared_hash = vm->shared->string_instance_hash;
+
+    } else {
+        njs_lvlhsh_init(&ov->object.shared_hash);
+    }
+
+    ov->object.type = NJS_OBJECT_VALUE;
+    ov->object.shared = 0;
+    ov->object.extensible = 1;
+    ov->object.error_data = 0;
+    ov->object.fast_array = 0;
+
+    ov->object.__proto__ = &vm->prototypes[prototype_index].object;
+    ov->object.slots = NULL;
+
+    if (value != NULL) {
+        ov->value = *value;
+    }
+
+    return ov;
 }
 
 
@@ -219,46 +218,45 @@ static njs_int_t
 njs_object_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_uint_t    type;
-    njs_value_t   *value;
-    njs_object_t  *object;
+    njs_uint_t          type, index;
+    njs_value_t         *value;
+    njs_object_t        *object;
+    njs_object_value_t  *obj_val;
 
     value = njs_arg(args, nargs, 1);
     type = value->type;
 
     if (njs_is_null_or_undefined(value)) {
-
         object = njs_object_alloc(vm);
         if (njs_slow_path(object == NULL)) {
             return NJS_ERROR;
         }
 
-        type = NJS_OBJECT;
+        njs_set_object(&vm->retval, object);
 
-    } else {
-
-        if (njs_is_object(value)) {
-            object = njs_object(value);
-
-        } else if (njs_is_primitive(value)) {
-
-            /* value->type is the same as prototype offset. */
-            object = njs_object_value_alloc(vm, value, type);
-            if (njs_slow_path(object == NULL)) {
-                return NJS_ERROR;
-            }
-
-            type = njs_object_value_type(type);
-
-        } else {
-            njs_type_error(vm, "unexpected constructor argument:%s",
-                           njs_type_string(type));
-
-            return NJS_ERROR;
-        }
+        return NJS_OK;
     }
 
-    njs_set_type_object(&vm->retval, object, type);
+    if (njs_is_primitive(value)) {
+        index = njs_primitive_prototype_index(type);
+        obj_val = njs_object_value_alloc(vm, index, 0, value);
+        if (njs_slow_path(obj_val == NULL)) {
+            return NJS_ERROR;
+        }
+
+        njs_set_object_value(&vm->retval, obj_val);
+
+        return NJS_OK;
+    }
+
+    if (njs_slow_path(!njs_is_object(value))) {
+        njs_type_error(vm, "unexpected constructor argument:%s",
+                       njs_type_string(type));
+
+        return NJS_ERROR;
+    }
+
+    njs_value_assign(&vm->retval, value);
 
     return NJS_OK;
 }
@@ -450,11 +448,16 @@ njs_object_enumerate_value(njs_vm_t *vm, const njs_object_t *object,
                                                   items, kind);
             break;
 
-        case NJS_OBJECT_STRING:
+        case NJS_OBJECT_VALUE:
             obj_val = (njs_object_value_t *) object;
 
-            ret = njs_object_enumerate_string(vm, &obj_val->value, items, kind);
-            break;
+            if (njs_is_string(&obj_val->value)) {
+                ret = njs_object_enumerate_string(vm, &obj_val->value, items,
+                                                  kind);
+                break;
+            }
+
+        /* Fall through. */
 
         default:
             goto object;
@@ -497,11 +500,16 @@ njs_object_own_enumerate_value(njs_vm_t *vm, const njs_object_t *object,
                                                    items, kind);
             break;
 
-        case NJS_OBJECT_STRING:
+        case NJS_OBJECT_VALUE:
             obj_val = (njs_object_value_t *) object;
 
-            ret = njs_object_enumerate_string(vm, &obj_val->value, items, kind);
-            break;
+            if (njs_is_string(&obj_val->value)) {
+                ret = njs_object_enumerate_string(vm, &obj_val->value, items,
+                                                  kind);
+                break;
+            }
+
+            /* Fall through. */
 
         default:
             goto object;
@@ -1462,7 +1470,7 @@ static njs_int_t
 njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    uint32_t     index, type;
+    uint32_t     index;
     njs_value_t  *value;
 
     value = njs_arg(args, nargs, 1);
@@ -1474,10 +1482,14 @@ njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     if (!njs_is_null_or_undefined(value)) {
         index = njs_primitive_prototype_index(value->type);
-        type = njs_is_symbol(value) ? NJS_OBJECT
-                                    : njs_object_value_type(value->type);
 
-        njs_set_type_object(&vm->retval, &vm->prototypes[index].object, type);
+        if (njs_is_symbol(value)) {
+            njs_set_object(&vm->retval, &vm->prototypes[index].object);
+
+        } else {
+            njs_set_object_value(&vm->retval,
+                                 &vm->prototypes[index].object_value);
+        }
 
         return NJS_OK;
     }
@@ -2300,14 +2312,8 @@ static const njs_value_t  njs_object_boolean_string =
                                      njs_long_string("[object Boolean]");
 static const njs_value_t  njs_object_number_string =
                                      njs_long_string("[object Number]");
-static const njs_value_t  njs_object_symbol_string =
-                                     njs_long_string("[object Symbol]");
 static const njs_value_t  njs_object_string_string =
                                      njs_long_string("[object String]");
-static const njs_value_t  njs_object_data_string =
-                                     njs_string("[object Data]");
-static const njs_value_t  njs_object_exernal_string =
-                                     njs_long_string("[object External]");
 static const njs_value_t  njs_object_object_string =
                                      njs_long_string("[object Object]");
 static const njs_value_t  njs_object_array_string =
@@ -2329,67 +2335,68 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
 {
     u_char             *p;
     njs_int_t          ret;
-    njs_value_t        tag, *value;
+    njs_value_t        tag, *this;
     njs_string_prop_t  string;
     const njs_value_t  *name;
 
-    static const njs_value_t  *class_name[NJS_VALUE_TYPE_MAX] = {
-        /* Primitives. */
-        &njs_object_null_string,
-        &njs_object_undefined_string,
-        &njs_object_boolean_string,
-        &njs_object_number_string,
-        &njs_object_symbol_string,
-        &njs_object_string_string,
+    this = njs_argument(args, 0);
 
-        &njs_object_data_string,
-        &njs_object_exernal_string,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-
-        /* Objects. */
-        &njs_object_object_string,
-        &njs_object_array_string,
-        &njs_object_boolean_string,
-        &njs_object_number_string,
-        &njs_object_symbol_string,
-        &njs_object_string_string,
-        &njs_object_function_string,
-        &njs_object_regexp_string,
-        &njs_object_date_string,
-        &njs_object_object_string,
-        &njs_object_object_string,
-        &njs_object_object_string,
-        &njs_object_object_string,
-    };
-
-    value = njs_argument(args, 0);
-    name = class_name[value->type];
-
-    if (njs_is_null_or_undefined(value)) {
-        vm->retval = *name;
+    if (njs_is_null_or_undefined(this)) {
+        vm->retval = njs_is_null(this) ? njs_object_null_string
+                                       : njs_object_undefined_string;
 
         return NJS_OK;
     }
 
-    if (njs_is_error(value)) {
-        name = &njs_object_error_string;
+    ret = njs_value_to_object(vm, this);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
-    if (njs_is_object(value)
-        && njs_lvlhsh_eq(&njs_object(value)->shared_hash,
+    name = &njs_object_object_string;
+
+    if (njs_is_array(this)) {
+        name = &njs_object_array_string;
+
+    } else if (njs_is_object(this)
+        && njs_lvlhsh_eq(&njs_object(this)->shared_hash,
                          &vm->shared->arguments_object_instance_hash))
     {
         name = &njs_object_arguments_string;
+
+    } else if (njs_is_function(this)) {
+        name = &njs_object_function_string;
+
+    } else if (njs_is_error(this)) {
+        name = &njs_object_error_string;
+
+    } else if (njs_is_object_value(this)) {
+
+        switch (njs_object_value(this)->type) {
+        case NJS_BOOLEAN:
+            name = &njs_object_boolean_string;
+            break;
+
+        case NJS_NUMBER:
+            name = &njs_object_number_string;
+            break;
+
+        case NJS_STRING:
+            name = &njs_object_string_string;
+            break;
+
+        default:
+            break;
+        }
+
+    } else if (njs_is_date(this)) {
+        name = &njs_object_date_string;
+
+    } else if (njs_is_regexp(this)) {
+        name = &njs_object_regexp_string;
     }
 
-    ret = njs_object_string_tag(vm, value, &tag);
+    ret = njs_object_string_tag(vm, this, &tag);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
     }

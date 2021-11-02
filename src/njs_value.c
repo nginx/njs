@@ -350,18 +350,6 @@ njs_type_string(njs_value_type_t type)
     case NJS_TYPED_ARRAY:
         return "typed array";
 
-    case NJS_OBJECT_BOOLEAN:
-        return "object boolean";
-
-    case NJS_OBJECT_NUMBER:
-        return "object number";
-
-    case NJS_OBJECT_SYMBOL:
-        return "object symbol";
-
-    case NJS_OBJECT_STRING:
-        return "object string";
-
     case NJS_FUNCTION:
         return "function";
 
@@ -584,10 +572,6 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
     case NJS_ARRAY_BUFFER:
     case NJS_DATA_VIEW:
     case NJS_TYPED_ARRAY:
-    case NJS_OBJECT_BOOLEAN:
-    case NJS_OBJECT_NUMBER:
-    case NJS_OBJECT_SYMBOL:
-    case NJS_OBJECT_STRING:
     case NJS_REGEXP:
     case NJS_DATE:
     case NJS_PROMISE:
@@ -697,7 +681,12 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 
                 break;
 
-            case NJS_OBJECT_STRING:
+            case NJS_OBJECT_VALUE:
+                ov = (njs_object_value_t *) proto;
+                if (!njs_is_string(&ov->value)) {
+                    break;
+                }
+
                 num = njs_key_to_index(key);
                 if (njs_fast_path(njs_key_is_integer_index(num, key))) {
                     ov = (njs_object_value_t *) proto;
@@ -706,6 +695,8 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
                         return ret;
                     }
                 }
+
+                break;
 
             default:
                 break;
@@ -1497,7 +1488,8 @@ njs_primitive_value_to_chain(njs_vm_t *vm, njs_chb_t *chain,
 njs_int_t
 njs_value_to_object(njs_vm_t *vm, njs_value_t *value)
 {
-    njs_object_t  *object;
+    njs_uint_t          index;
+    njs_object_value_t  *object;
 
     if (njs_slow_path(njs_is_null_or_undefined(value))) {
         njs_type_error(vm, "cannot convert null or undefined to object");
@@ -1509,12 +1501,13 @@ njs_value_to_object(njs_vm_t *vm, njs_value_t *value)
     }
 
     if (njs_is_primitive(value)) {
-        object = njs_object_value_alloc(vm, value, value->type);
+        index = njs_primitive_prototype_index(value->type);
+        object = njs_object_value_alloc(vm, index, 0, value);
         if (njs_slow_path(object == NULL)) {
             return NJS_ERROR;
         }
 
-        njs_set_type_object(value, object, njs_object_value_type(value->type));
+        njs_set_object_value(value, object);
 
         return NJS_OK;
     }

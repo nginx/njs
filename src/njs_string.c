@@ -570,9 +570,9 @@ static njs_int_t
 njs_string_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_int_t     ret;
-    njs_value_t   *value;
-    njs_object_t  *object;
+    njs_int_t           ret;
+    njs_value_t         *value;
+    njs_object_value_t  *object;
 
     if (nargs == 1) {
         value = njs_value_arg(&njs_string_empty);
@@ -593,12 +593,12 @@ njs_string_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (vm->top_frame->ctor) {
-        object = njs_object_value_alloc(vm, value, value->type);
+        object = njs_object_value_alloc(vm, NJS_OBJ_TYPE_STRING, 0, value);
         if (njs_slow_path(object == NULL)) {
             return NJS_ERROR;
         }
 
-        njs_set_type_object(&vm->retval, object, NJS_OBJECT_STRING);
+        njs_set_object_value(&vm->retval, object);
 
     } else {
         vm->retval = *value;
@@ -681,7 +681,7 @@ njs_string_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
         proto = njs_object(value);
 
         do {
-            if (njs_fast_path(proto->type == NJS_OBJECT_STRING)) {
+            if (njs_fast_path(proto->type == NJS_OBJECT_VALUE)) {
                 break;
             }
 
@@ -816,7 +816,7 @@ njs_string_prototype_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     if (value->type != NJS_STRING) {
 
-        if (value->type == NJS_OBJECT_STRING) {
+        if (njs_is_object_string(value)) {
             value = njs_object_value(value);
 
         } else {
@@ -1623,19 +1623,18 @@ njs_string_bytes_from(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     value = njs_arg(args, nargs, 1);
 
-    switch (value->type) {
-    case NJS_OBJECT_STRING:
-        value = njs_object_value(value);
-
-        /* Fall through. */
-
-    case NJS_STRING:
+    if (njs_is_string(value)) {
         return njs_string_bytes_from_string(vm, value, njs_arg(args, nargs, 2));
 
-    default:
-        if (njs_is_object(value)) {
-            return njs_string_bytes_from_array_like(vm, value);
+    } else if (njs_is_object(value)) {
+
+        if (njs_is_object_string(value)) {
+            value = njs_object_value(value);
+            return njs_string_bytes_from_string(vm, value,
+                                                njs_arg(args, nargs, 2));
         }
+
+        return njs_string_bytes_from_array_like(vm, value);
     }
 
     njs_type_error(vm, "value must be a string or array-like object");
@@ -4736,6 +4735,6 @@ const njs_object_type_init_t  njs_string_type_init = {
     .prototype_props = &njs_string_prototype_init,
     .prototype_value = { .object_value = {
                             .value = njs_string(""),
-                            .object = { .type = NJS_OBJECT_STRING } }
+                            .object = { .type = NJS_OBJECT_VALUE } }
                        },
 };

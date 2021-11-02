@@ -312,7 +312,7 @@ njs_symbol_prototype_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     if (value->type != NJS_SYMBOL) {
 
-        if (value->type == NJS_OBJECT_SYMBOL) {
+        if (njs_is_object_symbol(value)) {
             value = njs_object_value(value);
 
         } else {

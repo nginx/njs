@@ -41,8 +41,8 @@ typedef njs_int_t (*njs_object_traverse_cb_t)(njs_vm_t *vm,
 
 njs_object_t *njs_object_alloc(njs_vm_t *vm);
 njs_object_t *njs_object_value_copy(njs_vm_t *vm, njs_value_t *value);
-njs_object_t *njs_object_value_alloc(njs_vm_t *vm, const njs_value_t *value,
-    njs_uint_t type);
+njs_object_value_t *njs_object_value_alloc(njs_vm_t *vm, njs_uint_t index,
+    size_t extra,const njs_value_t *value);
 njs_array_t *njs_object_enumerate(njs_vm_t *vm, const njs_object_t *object,
     njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all);
 njs_array_t *njs_object_own_enumerate(njs_vm_t *vm, const njs_object_t *object,
@@ -189,7 +189,7 @@ njs_value_to_key(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
     njs_value_t  primitive;
 
     if (njs_slow_path(!njs_is_primitive(value))) {
-        if (njs_slow_path(value->type == NJS_OBJECT_SYMBOL)) {
+        if (njs_slow_path(njs_is_object_symbol(value))) {
             /* should fail */
             value = njs_object_value(value);
 

@@ -12876,7 +12876,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("β") },
 
     { njs_str("var s = new String('αβ'); s[1] = 'b'"),
-      njs_str("TypeError: Cannot assign to read-only property \"1\" of object string") },
+      njs_str("TypeError: Cannot assign to read-only property \"1\" of object") },
 
     { njs_str("var o = Object.create(new String('αβ')); o[1] = 'a'"),
       njs_str("TypeError: Cannot assign to read-only property \"1\" of object") },
@@ -17151,6 +17151,11 @@ static njs_unit_test_t  njs_test[] =
               "a[2] = 'a'; a[4] = 'b'; a.length = 3;"
               "JSON.stringify(a)"),
       njs_str("[null,null,\"a\"]") },
+
+    { njs_str(njs_declare_sparse_array("a", 8)
+              "a[1] = 'a'; a[2] = 'b'; a.length = 3;"
+              "JSON.stringify({a:1,b:2,c:3}, a)"),
+      njs_str("{\"a\":1,\"b\":2}") },
 
     { njs_str("var a = [1,2,3];"
               "Object.defineProperty(a, '1', {enumerable:false});"

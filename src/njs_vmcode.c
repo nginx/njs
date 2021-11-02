@@ -1509,10 +1509,6 @@ njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
 
         &njs_string_object,
         &njs_string_object,
-        &njs_string_object,
-        &njs_string_object,
-        &njs_string_object,
-        &njs_string_object,
         &njs_string_function,
         &njs_string_object,
         &njs_string_object,

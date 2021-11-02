@@ -333,7 +333,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
     string_object = &shared->string_object;
     njs_lvlhsh_init(&string_object->hash);
     string_object->shared_hash = shared->string_instance_hash;
-    string_object->type = NJS_OBJECT_STRING;
+    string_object->type = NJS_OBJECT_VALUE;
     string_object->shared = 1;
     string_object->extensible = 0;
 

@@ -220,15 +220,22 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     space = njs_arg(args, nargs, 3);
 
-    switch (space->type) {
-    case NJS_OBJECT_STRING:
-        ret = njs_value_to_string(vm, space, space);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
+    if (njs_is_object(space)) {
+        if (njs_is_object_number(space)) {
+            ret = njs_value_to_numeric(vm, space, space);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+
+        } else if (njs_is_object_string(space)) {
+            ret = njs_value_to_string(vm, space, space);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
         }
+    }
 
-        /* Fall through. */
-
+    switch (space->type) {
     case NJS_STRING:
         length = njs_string_prop(&prop, space);
 
@@ -249,14 +256,6 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         stringify->space.length = p - prop.start;
 
         break;
-
-    case NJS_OBJECT_NUMBER:
-        ret = njs_value_to_numeric(vm, space, space);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
-
-        /* Fall through. */
 
     case NJS_NUMBER:
         i64 = njs_min(njs_number_to_integer(njs_number(space)), 10);
@@ -1138,10 +1137,27 @@ njs_json_pop_stringify_state(njs_json_stringify_t *stringify)
 njs_inline njs_bool_t
 njs_json_is_object(const njs_value_t *value)
 {
-    return (((value)->type == NJS_OBJECT)
-             || ((value)->type == NJS_ARRAY)
-             || ((value)->type == NJS_OBJECT_SYMBOL)
-             || ((value)->type >= NJS_REGEXP));
+    if (!njs_is_object(value)) {
+        return 0;
+    }
+
+    if (njs_is_function(value)) {
+        return 0;
+    }
+
+    if (njs_is_object_value(value)) {
+        switch (njs_object_value(value)->type) {
+        case NJS_BOOLEAN:
+        case NJS_NUMBER:
+        case NJS_STRING:
+            return 0;
+
+        default:
+            break;
+        }
+    }
+
+    return 1;
 }
 
 
@@ -1487,74 +1503,82 @@ static njs_int_t
 njs_json_stringify_array(njs_vm_t *vm, njs_json_stringify_t *stringify)
 {
     njs_int_t    ret;
-    uint32_t     i, n, k, properties_length, array_length;
-    njs_value_t  *value, num_value;
-    njs_array_t  *properties, *array;
+    int64_t      i, k, length;
+    njs_value_t  *value, *item;
+    njs_array_t  *properties;
 
-    properties_length = 1;
-    array = njs_array(&stringify->replacer);
-    array_length = array->length;
-
-    for (i = 0; i < array_length; i++) {
-        if (njs_is_valid(&array->start[i])) {
-            properties_length++;
-        }
+    ret = njs_object_length(vm, &stringify->replacer, &length);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
-    properties = njs_array_alloc(vm, 1, properties_length, NJS_ARRAY_SPARE);
+    properties = njs_array_alloc(vm, 1, 0, NJS_ARRAY_SPARE);
     if (njs_slow_path(properties == NULL)) {
         return NJS_ERROR;
     }
 
-    n = 0;
-    properties->start[n++] = njs_string_empty;
+    item = njs_array_push(vm, properties);
+    njs_value_assign(item, &njs_string_empty);
 
-    for (i = 0; i < array_length; i++) {
-        value = &array->start[i];
-
-        if (!njs_is_valid(&array->start[i])) {
-            continue;
+    for (i = 0; i < length; i++) {
+        ret = njs_value_property_i64(vm, &stringify->replacer, i,
+                                     &stringify->retval);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return ret;
         }
 
-        switch (value->type) {
-        case NJS_NUMBER:
-            ret = njs_number_to_string(vm, &num_value, value);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return NJS_ERROR;
-            }
+        value = &stringify->retval;
 
-            value = &num_value;
+        switch (value->type) {
+        case NJS_STRING:
             break;
 
-        case NJS_OBJECT_NUMBER:
-        case NJS_OBJECT_STRING:
-            ret = njs_value_to_string(vm, value, value);
+        case NJS_NUMBER:
+            ret = njs_number_to_string(vm, value, value);
             if (njs_slow_path(ret != NJS_OK)) {
                 return NJS_ERROR;
             }
 
-            /* Fall through. */
+            break;
 
-        case NJS_STRING:
+        case NJS_OBJECT_VALUE:
+            switch (njs_object_value(value)->type) {
+            case NJS_NUMBER:
+            case NJS_STRING:
+                ret = njs_value_to_string(vm, value, value);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    return NJS_ERROR;
+                }
+
+                break;
+
+            default:
+                continue;
+            }
+
             break;
 
         default:
             continue;
         }
 
-        for (k = 0; k < n; k ++) {
+        for (k = 0; k < properties->length; k++) {
             if (njs_values_strict_equal(value, &properties->start[k]) == 1) {
                 break;
             }
         }
 
-        if (k == n) {
-            properties->start[n++] = *value;
+        if (k == properties->length) {
+            item = njs_array_push(vm, properties);
+            if (njs_slow_path(item == NULL)) {
+                return NJS_ERROR;
+            }
+
+            njs_value_assign(item, value);
         }
     }
 
-    properties->length = n;
-    stringify->replacer.data.u.array = properties;
+    njs_set_array(&stringify->replacer, properties);
 
     return NJS_OK;
 }
@@ -1565,34 +1589,41 @@ njs_json_append_value(njs_vm_t *vm, njs_chb_t *chain, njs_value_t *value)
 {
     njs_int_t  ret;
 
+    if (njs_is_object_value(value)) {
+        switch (njs_object_value(value)->type) {
+        case NJS_NUMBER:
+            ret = njs_value_to_numeric(vm, value, value);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+
+            break;
+
+        case NJS_BOOLEAN:
+            njs_value_assign(value, njs_object_value(value));
+            break;
+
+        case NJS_STRING:
+            ret = njs_value_to_string(vm, value, value);
+             if (njs_slow_path(ret != NJS_OK)) {
+                 return ret;
+             }
+
+            break;
+
+        default:
+            break;
+        }
+    }
+
     switch (value->type) {
-    case NJS_OBJECT_STRING:
-         ret = njs_value_to_string(vm, value, value);
-         if (njs_slow_path(ret != NJS_OK)) {
-             return ret;
-         }
-
-        /* Fall through. */
-
     case NJS_STRING:
         njs_json_append_string(chain, value, '\"');
         break;
 
-    case NJS_OBJECT_NUMBER:
-         ret = njs_value_to_numeric(vm, value, value);
-         if (njs_slow_path(ret != NJS_OK)) {
-             return ret;
-         }
-
-        /* Fall through. */
-
     case NJS_NUMBER:
         njs_json_append_number(chain, value);
         break;
-
-    case NJS_OBJECT_BOOLEAN:
-        value = njs_object_value(value);
-        /* Fall through. */
 
     case NJS_BOOLEAN:
         if (njs_is_true(value)) {
@@ -1829,12 +1860,22 @@ njs_dump_terminal(njs_json_stringify_t *stringify, njs_chb_t *chain,
     njs_int_t   (*to_string)(njs_vm_t *, njs_value_t *, const njs_value_t *);
 
     switch (value->type) {
-    case NJS_OBJECT_STRING:
-        value = njs_object_value(value);
+    case NJS_NULL:
+        njs_chb_append_literal(chain, "null");
+        break;
 
-        njs_chb_append_literal(chain, "[String: ");
-        njs_json_append_string(chain, value, '\'');
-        njs_chb_append_literal(chain, "]");
+    case NJS_UNDEFINED:
+        njs_chb_append_literal(chain, "undefined");
+        break;
+
+    case NJS_BOOLEAN:
+        if (njs_is_true(value)) {
+            njs_chb_append_literal(chain, "true");
+
+        } else {
+            njs_chb_append_literal(chain, "false");
+        }
+
         break;
 
     case NJS_STRING:
@@ -1849,19 +1890,6 @@ njs_dump_terminal(njs_json_stringify_t *stringify, njs_chb_t *chain,
 
         break;
 
-    case NJS_OBJECT_SYMBOL:
-        value = njs_object_value(value);
-
-        ret = njs_symbol_descriptive_string(stringify->vm, &str_val, value);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_ERROR;
-        }
-
-        njs_string_get(&str_val, &str);
-        njs_chb_sprintf(chain, 16 + str.length, "[Symbol: %V]", &str);
-
-        break;
-
     case NJS_SYMBOL:
         ret = njs_symbol_descriptive_string(stringify->vm, &str_val, value);
         if (njs_slow_path(ret != NJS_OK)) {
@@ -1873,59 +1901,61 @@ njs_dump_terminal(njs_json_stringify_t *stringify, njs_chb_t *chain,
 
         break;
 
-    case NJS_OBJECT_NUMBER:
+    case NJS_INVALID:
+        njs_chb_append_literal(chain, "<empty>");
+        break;
+
+    case NJS_OBJECT_VALUE:
         value = njs_object_value(value);
 
-        if (njs_slow_path(njs_number(value) == 0.0
-                          && signbit(njs_number(value))))
-        {
+        switch (value->type) {
+        case NJS_BOOLEAN:
+            if (njs_is_true(value)) {
+                njs_chb_append_literal(chain, "[Boolean: true]");
 
-            njs_chb_append_literal(chain, "[Number: -0]");
+            } else {
+                njs_chb_append_literal(chain, "[Boolean: false]");
+            }
+
+            break;
+
+        case NJS_NUMBER:
+            if (njs_slow_path(njs_number(value) == 0.0
+                              && signbit(njs_number(value))))
+            {
+
+                njs_chb_append_literal(chain, "[Number: -0]");
+                break;
+            }
+
+            ret = njs_number_to_string(stringify->vm, &str_val, value);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_ERROR;
+            }
+
+            njs_string_get(&str_val, &str);
+            njs_chb_sprintf(chain, 16 + str.length, "[Number: %V]", &str);
+            break;
+
+        case NJS_SYMBOL:
+            ret = njs_symbol_descriptive_string(stringify->vm, &str_val, value);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_ERROR;
+            }
+
+            njs_string_get(&str_val, &str);
+            njs_chb_sprintf(chain, 16 + str.length, "[Symbol: %V]", &str);
+
+            break;
+
+        case NJS_STRING:
+        default:
+            njs_chb_append_literal(chain, "[String: ");
+            njs_json_append_string(chain, value, '\'');
+            njs_chb_append_literal(chain, "]");
             break;
         }
 
-        ret = njs_number_to_string(stringify->vm, &str_val, value);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_ERROR;
-        }
-
-        njs_string_get(&str_val, &str);
-        njs_chb_sprintf(chain, 16 + str.length, "[Number: %V]", &str);
-
-        break;
-
-    case NJS_OBJECT_BOOLEAN:
-        value = njs_object_value(value);
-
-        if (njs_is_true(value)) {
-            njs_chb_append_literal(chain, "[Boolean: true]");
-
-        } else {
-            njs_chb_append_literal(chain, "[Boolean: false]");
-        }
-
-        break;
-
-    case NJS_BOOLEAN:
-        if (njs_is_true(value)) {
-            njs_chb_append_literal(chain, "true");
-
-        } else {
-            njs_chb_append_literal(chain, "false");
-        }
-
-        break;
-
-    case NJS_UNDEFINED:
-        njs_chb_append_literal(chain, "undefined");
-        break;
-
-    case NJS_NULL:
-        njs_chb_append_literal(chain, "null");
-        break;
-
-    case NJS_INVALID:
-        njs_chb_append_literal(chain, "<empty>");
         break;
 
     case NJS_FUNCTION:
@@ -2031,7 +2061,8 @@ njs_dump_is_recursive(const njs_value_t *value)
 {
     return (value->type == NJS_OBJECT && !njs_object(value)->error_data)
            || (value->type == NJS_ARRAY)
-           || (value->type >= NJS_OBJECT_SPECIAL_MAX);
+           || (value->type >= NJS_OBJECT_SPECIAL_MAX
+               && !njs_is_object_primitive(value));
 }
 
 

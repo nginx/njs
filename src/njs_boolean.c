@@ -12,8 +12,8 @@ static njs_int_t
 njs_boolean_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_object_t       *object;
-    const njs_value_t  *value;
+    const njs_value_t   *value;
+    njs_object_value_t  *object;
 
     if (nargs == 1) {
         value = &njs_value_false;
@@ -23,12 +23,12 @@ njs_boolean_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (vm->top_frame->ctor) {
-        object = njs_object_value_alloc(vm, value, value->type);
+        object = njs_object_value_alloc(vm, NJS_OBJ_TYPE_BOOLEAN, 0, value);
         if (njs_slow_path(object == NULL)) {
             return NJS_ERROR;
         }
 
-        njs_set_type_object(&vm->retval, object, NJS_OBJECT_BOOLEAN);
+        njs_set_object_value(&vm->retval, object);
 
     } else {
         vm->retval = *value;
@@ -78,7 +78,7 @@ njs_boolean_prototype_value_of(njs_vm_t *vm, njs_value_t *args,
 
     if (value->type != NJS_BOOLEAN) {
 
-        if (value->type == NJS_OBJECT_BOOLEAN) {
+        if (njs_is_object_boolean(value)) {
             value = njs_object_value(value);
 
         } else {
@@ -104,7 +104,7 @@ njs_boolean_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
 
     if (value->type != NJS_BOOLEAN) {
 
-        if (value->type == NJS_OBJECT_BOOLEAN) {
+        if (njs_is_object_boolean(value)) {
             value = njs_object_value(value);
 
         } else {
@@ -168,6 +168,6 @@ const njs_object_type_init_t  njs_boolean_type_init = {
    .prototype_props = &njs_boolean_prototype_init,
    .prototype_value = { .object_value = {
                             .value = njs_value(NJS_BOOLEAN, 0, 0.0),
-                            .object = { .type = NJS_OBJECT_BOOLEAN } }
+                            .object = { .type = NJS_OBJECT_VALUE } }
                       },
 };

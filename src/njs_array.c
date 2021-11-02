@@ -775,9 +775,9 @@ njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
                 length--;
             } while (length != 0);
 
-        } else if (njs_is_string(this) || this->type == NJS_OBJECT_STRING) {
+        } else if (njs_is_string(this) || njs_is_object_string(this)) {
 
-            if (this->type == NJS_OBJECT_STRING) {
+            if (njs_is_object_string(this)) {
                 this = njs_object_value(this);
             }
 

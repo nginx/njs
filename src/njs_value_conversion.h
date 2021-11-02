@@ -181,7 +181,7 @@ njs_value_to_string(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
     njs_value_t  primitive;
 
     if (njs_slow_path(!njs_is_primitive(value))) {
-        if (njs_slow_path(value->type == NJS_OBJECT_SYMBOL)) {
+        if (njs_slow_path(njs_is_object_symbol(value))) {
             /* should fail */
             value = njs_object_value(value);
 
@@ -209,7 +209,7 @@ njs_value_to_chain(njs_vm_t *vm, njs_chb_t *chain, njs_value_t *value)
     njs_value_t  primitive;
 
     if (njs_slow_path(!njs_is_primitive(value))) {
-        if (njs_slow_path(value->type == NJS_OBJECT_SYMBOL)) {
+        if (njs_slow_path(njs_is_object_symbol(value))) {
             /* should fail */
             value = njs_object_value(value);
 
