@@ -72,6 +72,7 @@ typedef enum {
     NJS_DATA_TAG_TEXT_ENCODER,
     NJS_DATA_TAG_TEXT_DECODER,
     NJS_DATA_TAG_ARRAY_ITERATOR,
+    NJS_DATA_TAG_FS_STAT,
     NJS_DATA_TAG_MAX
 } njs_data_tag_t;
 

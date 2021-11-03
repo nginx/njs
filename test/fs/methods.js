@@ -355,6 +355,186 @@ let realpathP_tsuite = {
     tests: realpath_tests,
 };
 
+async function stat_test(params) {
+    if (params.init) {
+        params.init(params);
+    }
+
+    let stat = await method(params.method, params).catch(e => ({error:e}));
+
+    if (params.check && !params.check(stat, params)) {
+        throw Error(`${params.method} failed check`);
+    }
+
+    return 'SUCCESS';
+}
+
+function contains(arr, elts) {
+    return elts.every(el => {
+        let r = arr.some(v => el == v);
+
+        if (!r) {
+            throw Error(`${el} is not found`);
+        }
+
+        return r;
+    });
+}
+
+let stat_tests = [
+    { args: ["/invalid_path"],
+      check: (err, params) => {
+          let e = err.error;
+
+          if (e.syscall != params.method) {
+              throw Error(`${e.syscall} unexpected syscall`);
+          }
+
+          if (e.code != "ENOENT") {
+              throw Error(`${e.code} unexpected code`);
+          }
+
+          return true;
+      } },
+
+    { args: ["@_link"],
+      init: (params) => {
+        let lname = params.args[0];
+        let fname = lname.slice(0, -5);
+
+        /* making symbolic link. */
+
+        try { fs.unlinkSync(fname); fs.unlinkSync(lname); } catch (e) {}
+
+        fs.writeFileSync(fname, fname);
+
+        fname = fs.realpathSync(fname);
+        fs.symlinkSync(fname, lname);
+      },
+
+      check: (st, params) => {
+          switch (params.method) {
+          case "stat":
+              if (!st.isFile()) {
+                  throw Error(`${params.args[0]} is not a file`);
+              }
+
+              break;
+
+          case "lstat":
+              if (!st.isSymbolicLink()) {
+                  throw Error(`${params.args[0]} is not a link`);
+              }
+
+              break;
+          }
+
+          return true;
+      } },
+
+    { args: ["./build/"],
+      check: (st) => contains(Object.keys(st),
+                              [ "atime", "atimeMs", "birthtime", "birthtimeMs",
+                                "blksize", "blocks", "ctime", "ctimeMs", "dev",
+                                "gid", "ino", "mode", "mtime", "mtimeMs","nlink",
+                                "rdev", "size", "uid" ]) },
+
+    { args: ["./build/"],
+      check: (st) => Object.keys(st).every(p => {
+        let v = st[p];
+        if (p == 'atime' || p == 'ctime' || p == 'mtime' || p == 'birthtime') {
+            if (!(v instanceof Date)) {
+                throw Error(`${p} is not an instance of Date`);
+            }
+
+            return true;
+        }
+
+        if ((typeof v) != 'number') {
+            throw Error(`${p} is not an instance of Number`);
+        }
+
+        return true;
+      }) },
+
+    { args: ["./build/"],
+      check: (st) => ['atime', 'birthtime', 'ctime', 'mtime'].every(p => {
+          let date = st[p].valueOf();
+          let num = st[p + 'Ms'];
+
+          if (Math.abs(date - num) > 1) {
+            throw Error(`${p}:${date} != ${p+'Ms'}:${num}`);
+          }
+
+          return true;
+      }) },
+
+    { args: ["./build/"],
+      check: (st) => ['isBlockDevice',
+                      'isCharacterDevice',
+                      'isDirectory',
+                      'isFIFO',
+                      'isFile',
+                      'isSocket',
+                      'isSymbolicLink'].every(m => {
+
+          let r = st[m]();
+          if (!(r == (m == 'isDirectory'))) {
+            throw Error(`${m} is ${r}`);
+          }
+
+          return true;
+      }) },
+];
+
+let stat_tsuite = {
+    name: "fs stat",
+    T: stat_test,
+    prepare_args: p,
+    opts: { type: "callback", method: "stat" },
+    tests: stat_tests,
+};
+
+let statSync_tsuite = {
+    name: "fs statSync",
+    T: stat_test,
+    prepare_args: p,
+    opts: { type: "sync", method: "stat" },
+    tests: stat_tests,
+};
+
+let statP_tsuite = {
+    name: "fsp stat",
+    T: stat_test,
+    prepare_args: p,
+    opts: { type: "promise", method: "stat" },
+    tests: stat_tests,
+};
+
+let lstat_tsuite = {
+    name: "fs lstat",
+    T: stat_test,
+    prepare_args: p,
+    opts: { type: "callback", method: "lstat" },
+    tests: stat_tests,
+};
+
+let lstatSync_tsuite = {
+    name: "fs lstatSync",
+    T: stat_test,
+    prepare_args: p,
+    opts: { type: "sync", method: "lstat" },
+    tests: stat_tests,
+};
+
+let lstatP_tsuite = {
+    name: "fsp lstat",
+    T: stat_test,
+    prepare_args: p,
+    opts: { type: "promise", method: "lstat" },
+    tests: stat_tests,
+};
+
 run([
     readFile_tsuite,
     readFileSync_tsuite,
@@ -368,4 +548,10 @@ run([
     realpath_tsuite,
     realpathSync_tsuite,
     realpathP_tsuite,
+    stat_tsuite,
+    statSync_tsuite,
+    statP_tsuite,
+    lstat_tsuite,
+    lstatSync_tsuite,
+    lstatP_tsuite,
 ]);

@@ -1,0 +1,58 @@
+
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+
+
+njs_feature="stat.st_atimespec"
+njs_feature_name=NJS_HAVE_STAT_ATIMESPEC
+njs_feature_run=no
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#include <sys/stat.h>
+
+                 int main(void) {
+                     struct stat st;
+
+                     if (fstat(0, &st) != 0) {
+                        return 1;
+                     }
+
+                     return (int) st.st_atimespec.tv_sec;
+                 }"
+. auto/feature
+
+
+njs_feature="stat.st_birthtim"
+njs_feature_name=NJS_HAVE_STAT_BIRTHTIM
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#include <sys/stat.h>
+
+                  int main(void) {
+                      struct stat st;
+
+                      if (fstat(0, &st) != 0) {
+                         return 1;
+                      }
+
+                      return (int) st.st_birthtim.tv_sec;
+                  }"
+. auto/feature
+
+
+njs_feature="stat.st_atim"
+njs_feature_name=NJS_HAVE_STAT_ATIM
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#include <sys/stat.h>
+
+                  int main(void) {
+                      struct stat st;
+
+                      if (fstat(0, &st) != 0) {
+                         return 1;
+                      }
+
+                      return (int) st.st_atim.tv_sec;
+                  }"
+. auto/feature

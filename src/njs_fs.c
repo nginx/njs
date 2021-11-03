@@ -12,12 +12,12 @@
 #if (NJS_SOLARIS)
 
 #define DT_DIR         0
-#define DT_REG         0
-#define DT_CHR         0
-#define DT_LNK         0
-#define DT_BLK         0
-#define DT_FIFO        0
-#define DT_SOCK        0
+#define DT_REG         1
+#define DT_CHR         2
+#define DT_LNK         3
+#define DT_BLK         4
+#define DT_FIFO        5
+#define DT_SOCK        6
 #define NJS_DT_INVALID 0xffffffff
 
 #define njs_dentry_type(_dentry)                                             \
@@ -50,9 +50,15 @@ typedef enum {
 } njs_fs_writemode_t;
 
 
+typedef enum {
+    NJS_FS_STAT,
+    NJS_FS_LSTAT,
+} njs_fs_statmode_t;
+
+
 typedef struct {
-    njs_str_t   name;
-    int         value;
+    njs_str_t       name;
+    int             value;
 } njs_fs_entry_t;
 
 
@@ -72,6 +78,48 @@ typedef enum {
     NJS_FTW_DP,
     NJS_FTW_SLN,
 } njs_ftw_type_t;
+
+
+typedef struct {
+    long tv_sec;
+    long tv_nsec;
+} njs_timespec_t;
+
+
+typedef struct {
+    uint64_t        st_dev;
+    uint64_t        st_mode;
+    uint64_t        st_nlink;
+    uint64_t        st_uid;
+    uint64_t        st_gid;
+    uint64_t        st_rdev;
+    uint64_t        st_ino;
+    uint64_t        st_size;
+    uint64_t        st_blksize;
+    uint64_t        st_blocks;
+    njs_timespec_t  st_atim;
+    njs_timespec_t  st_mtim;
+    njs_timespec_t  st_ctim;
+    njs_timespec_t  st_birthtim;
+} njs_stat_t;
+
+
+typedef enum {
+    NJS_FS_STAT_DEV,
+    NJS_FS_STAT_INO,
+    NJS_FS_STAT_MODE,
+    NJS_FS_STAT_NLINK,
+    NJS_FS_STAT_UID,
+    NJS_FS_STAT_GID,
+    NJS_FS_STAT_RDEV,
+    NJS_FS_STAT_SIZE,
+    NJS_FS_STAT_BLKSIZE,
+    NJS_FS_STAT_BLOCKS,
+    NJS_FS_STAT_ATIME,
+    NJS_FS_STAT_BIRTHTIME,
+    NJS_FS_STAT_CTIME,
+    NJS_FS_STAT_MTIME,
+} njs_stat_prop_t;
 
 
 typedef njs_int_t (*njs_file_tree_walk_cb_t)(const char *, const struct stat *,
@@ -104,6 +152,9 @@ static njs_int_t njs_fs_add_event(njs_vm_t *vm, const njs_value_t *callback,
 
 static njs_int_t njs_fs_dirent_create(njs_vm_t *vm, njs_value_t *name,
     njs_value_t *type, njs_value_t *retval);
+
+static njs_int_t njs_fs_stats_create(njs_vm_t *vm, struct stat *st,
+    njs_value_t *retval);
 
 static njs_fs_entry_t njs_flags_table[] = {
     { njs_str("a"),   O_APPEND | O_CREAT | O_WRONLY },
@@ -1010,6 +1061,102 @@ done:
 
 
 static njs_int_t
+njs_fs_stat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t magic)
+{
+    njs_int_t          ret;
+    njs_bool_t         throw;
+    struct stat        sb;
+    const char         *path;
+    njs_value_t        retval, *callback, *options;
+    njs_fs_calltype_t  calltype;
+    char               path_buf[NJS_MAX_PATH + 1];
+
+    static const njs_value_t  string_bigint = njs_string("bigint");
+    static const njs_value_t  string_throw = njs_string("throwIfNoEntry");
+
+    path = njs_fs_path(vm, path_buf, njs_arg(args, nargs, 1), "path");
+    if (njs_slow_path(path == NULL)) {
+        return NJS_ERROR;
+    }
+
+    callback = NULL;
+    calltype = magic & 3;
+    options = njs_arg(args, nargs, 2);
+
+    if (njs_slow_path(calltype == NJS_FS_CALLBACK)) {
+        callback = njs_arg(args, nargs, njs_min(nargs - 1, 3));
+        if (!njs_is_function(callback)) {
+            njs_type_error(vm, "\"callback\" must be a function");
+            return NJS_ERROR;
+        }
+        if (options == callback) {
+            options = njs_value_arg(&njs_value_undefined);
+        }
+    }
+
+    throw = 1;
+
+    switch (options->type) {
+    case NJS_UNDEFINED:
+        break;
+
+    default:
+        if (!njs_is_object(options)) {
+            njs_type_error(vm, "Unknown options type: \"%s\" "
+                           "(an object required)",
+                           njs_type_string(options->type));
+            return NJS_ERROR;
+        }
+
+        ret = njs_value_property(vm, options, njs_value_arg(&string_bigint),
+                                 &retval);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return ret;
+        }
+
+        if (njs_bool(&retval)) {
+            njs_type_error(vm, "\"bigint\" is not supported");
+            return NJS_ERROR;
+        }
+
+        if (calltype == NJS_FS_DIRECT) {
+            ret = njs_value_property(vm, options, njs_value_arg(&string_throw),
+                                     &retval);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                return ret;
+            }
+
+            throw = njs_bool(&retval);
+        }
+    }
+
+    ret = ((magic >> 2) == NJS_FS_STAT) ? stat(path, &sb) : lstat(path, &sb);
+    if (njs_slow_path(ret != 0)) {
+        if (errno != ENOENT || throw) {
+            ret = njs_fs_error(vm,
+                               ((magic >> 2) == NJS_FS_STAT) ? "stat" : "lstat",
+                               strerror(errno), path, errno, &retval);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_ERROR;
+            }
+        } else {
+            njs_set_undefined(&retval);
+        }
+
+        return njs_fs_result(vm, &retval, calltype, callback, 2);
+    }
+
+    ret = njs_fs_stats_create(vm, &sb, &retval);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    return njs_fs_result(vm, &retval, calltype, callback, 2);
+}
+
+
+static njs_int_t
 njs_fs_fd_read(njs_vm_t *vm, int fd, njs_str_t *data)
 {
     u_char   *p, *end, *start;
@@ -1870,6 +2017,511 @@ const njs_object_type_init_t  njs_dirent_type_init = {
 };
 
 
+static void
+njs_fs_to_stat(njs_stat_t *dst, struct stat *st)
+{
+    dst->st_dev = st->st_dev;
+    dst->st_mode = st->st_mode;
+    dst->st_nlink = st->st_nlink;
+    dst->st_uid = st->st_uid;
+    dst->st_gid = st->st_gid;
+    dst->st_rdev = st->st_rdev;
+    dst->st_ino = st->st_ino;
+    dst->st_size = st->st_size;
+    dst->st_blksize = st->st_blksize;
+    dst->st_blocks = st->st_blocks;
+
+#if (NJS_HAVE_STAT_ATIMESPEC)
+
+    dst->st_atim.tv_sec = st->st_atimespec.tv_sec;
+    dst->st_atim.tv_nsec = st->st_atimespec.tv_nsec;
+    dst->st_mtim.tv_sec = st->st_mtimespec.tv_sec;
+    dst->st_mtim.tv_nsec = st->st_mtimespec.tv_nsec;
+    dst->st_ctim.tv_sec = st->st_ctimespec.tv_sec;
+    dst->st_ctim.tv_nsec = st->st_ctimespec.tv_nsec;
+    dst->st_birthtim.tv_sec = st->st_birthtimespec.tv_sec;
+    dst->st_birthtim.tv_nsec = st->st_birthtimespec.tv_nsec;
+
+#elif (NJS_HAVE_STAT_ATIM)
+
+    dst->st_atim.tv_sec = st->st_atim.tv_sec;
+    dst->st_atim.tv_nsec = st->st_atim.tv_nsec;
+    dst->st_mtim.tv_sec = st->st_mtim.tv_sec;
+    dst->st_mtim.tv_nsec = st->st_mtim.tv_nsec;
+    dst->st_ctim.tv_sec = st->st_ctim.tv_sec;
+    dst->st_ctim.tv_nsec = st->st_ctim.tv_nsec;
+
+#if (NJS_HAVE_STAT_BIRTHTIM)
+    dst->st_birthtim.tv_sec = st->st_birthtim.tv_sec;
+    dst->st_birthtim.tv_nsec = st->st_birthtim.tv_nsec;
+#else
+    dst->st_birthtim.tv_sec = st->st_ctim.tv_sec;
+    dst->st_birthtim.tv_nsec = st->st_ctim.tv_nsec;
+#endif
+
+#else
+
+  dst->st_atim.tv_sec = st->st_atime;
+  dst->st_atim.tv_nsec = 0;
+  dst->st_mtim.tv_sec = st->st_mtime;
+  dst->st_mtim.tv_nsec = 0;
+  dst->st_ctim.tv_sec = st->st_ctime;
+  dst->st_ctim.tv_nsec = 0;
+  dst->st_birthtim.tv_sec = st->st_ctime;
+  dst->st_birthtim.tv_nsec = 0;
+
+#endif
+}
+
+
+static njs_int_t
+njs_fs_stats_create(njs_vm_t *vm, struct stat *st, njs_value_t *retval)
+{
+    njs_stat_t          *copy;
+    njs_object_value_t  *stat;
+
+    stat = njs_object_value_alloc(vm, NJS_OBJ_TYPE_FS_STATS, 0, NULL);
+    if (njs_slow_path(stat == NULL)) {
+        return NJS_ERROR;
+    }
+
+    stat->object.shared_hash =
+                      vm->prototypes[NJS_OBJ_TYPE_FS_STATS].object.shared_hash;
+
+    copy = njs_mp_alloc(vm->mem_pool, sizeof(njs_stat_t));
+    if (copy == NULL) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    njs_fs_to_stat(copy, st);
+
+    njs_set_data(&stat->value, copy, NJS_DATA_TAG_FS_STAT);
+    njs_set_object_value(retval, stat);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_stats_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    njs_type_error(vm, "Stats is not a constructor");
+    return NJS_ERROR;
+}
+
+
+static njs_int_t
+njs_fs_stats_test(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t testtype)
+{
+    unsigned     mask;
+    njs_stat_t   *st;
+    njs_value_t  *this;
+
+    this = njs_argument(args, 0);
+
+    if (njs_slow_path(!njs_is_object_data(this, NJS_DATA_TAG_FS_STAT))) {
+        return NJS_DECLINED;
+    }
+
+    st = njs_object_data(this);
+
+    switch (testtype) {
+    case DT_DIR:
+        mask = S_IFDIR;
+        break;
+
+    case DT_REG:
+        mask = S_IFREG;
+        break;
+
+    case DT_CHR:
+        mask = S_IFCHR;
+        break;
+
+    case DT_LNK:
+        mask = S_IFLNK;
+        break;
+
+    case DT_BLK:
+        mask = S_IFBLK;
+        break;
+
+    case DT_FIFO:
+        mask = S_IFIFO;
+        break;
+
+    case DT_SOCK:
+    default:
+        mask = S_IFSOCK;
+    }
+
+    njs_set_boolean(&vm->retval, (st->st_mode & S_IFMT) == mask);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_fs_stats_prop(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval)
+{
+    double      v;
+    njs_date_t  *date;
+    njs_stat_t  *st;
+
+#define njs_fs_time_ms(ts) ((ts)->tv_sec * 1000.0 + (ts)->tv_nsec / 1000000.0)
+
+    if (njs_slow_path(!njs_is_object_data(value, NJS_DATA_TAG_FS_STAT))) {
+        return NJS_DECLINED;
+    }
+
+    st = njs_object_data(value);
+
+    switch (prop->value.data.magic16) {
+    case NJS_FS_STAT_DEV:
+        v = st->st_dev;
+        break;
+
+    case NJS_FS_STAT_INO:
+        v = st->st_ino;
+        break;
+
+    case NJS_FS_STAT_MODE:
+        v = st->st_mode;
+        break;
+
+    case NJS_FS_STAT_NLINK:
+        v = st->st_nlink;
+        break;
+
+    case NJS_FS_STAT_UID:
+        v = st->st_uid;
+        break;
+
+    case NJS_FS_STAT_GID:
+        v = st->st_gid;
+        break;
+
+    case NJS_FS_STAT_RDEV:
+        v = st->st_rdev;
+        break;
+
+    case NJS_FS_STAT_SIZE:
+        v = st->st_size;
+        break;
+
+    case NJS_FS_STAT_BLKSIZE:
+        v = st->st_blksize;
+        break;
+
+    case NJS_FS_STAT_BLOCKS:
+        v = st->st_blocks;
+        break;
+
+    case NJS_FS_STAT_ATIME:
+        v = njs_fs_time_ms(&st->st_atim);
+        break;
+
+    case NJS_FS_STAT_BIRTHTIME:
+        v = njs_fs_time_ms(&st->st_birthtim);
+        break;
+
+    case NJS_FS_STAT_CTIME:
+        v = njs_fs_time_ms(&st->st_ctim);
+        break;
+
+    case NJS_FS_STAT_MTIME:
+    default:
+        v = njs_fs_time_ms(&st->st_mtim);
+        break;
+    }
+
+    switch (prop->value.data.magic32) {
+    case NJS_NUMBER:
+        njs_set_number(retval, v);
+        break;
+
+    case NJS_DATE:
+    default:
+        date = njs_date_alloc(vm, v);
+        if (njs_slow_path(date == NULL)) {
+            return NJS_ERROR;
+        }
+
+        njs_set_date(retval, date);
+        break;
+    }
+
+    return NJS_OK;
+}
+
+
+static const njs_object_prop_t  njs_stats_constructor_properties[] =
+{
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("name"),
+        .value = njs_string("Stats"),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("length"),
+        .value = njs_value(NJS_NUMBER, 1, 0),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("prototype"),
+        .value = njs_prop_handler(njs_object_prototype_create),
+    },
+};
+
+
+const njs_object_init_t  njs_stats_constructor_init = {
+    njs_stats_constructor_properties,
+    njs_nitems(njs_stats_constructor_properties),
+};
+
+
+static const njs_object_prop_t  njs_stats_prototype_properties[] =
+{
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
+        .value = njs_string("Stats"),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("constructor"),
+        .value = njs_prop_handler(njs_object_prototype_create_constructor),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("isBlockDevice"),
+        .value = njs_native_function2(njs_fs_stats_test, 0, DT_BLK),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_long_string("isCharacterDevice"),
+        .value = njs_native_function2(njs_fs_stats_test, 0, DT_CHR),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("isDirectory"),
+        .value = njs_native_function2(njs_fs_stats_test, 0, DT_DIR),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("isFIFO"),
+        .value = njs_native_function2(njs_fs_stats_test, 0, DT_FIFO),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("isFile"),
+        .value = njs_native_function2(njs_fs_stats_test, 0, DT_REG),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("isSocket"),
+        .value = njs_native_function2(njs_fs_stats_test, 0, DT_SOCK),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("isSymbolicLink"),
+        .value = njs_native_function2(njs_fs_stats_test, 0, DT_LNK),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("dev"),
+        .value = njs_prop_handler2(njs_fs_stats_prop, NJS_FS_STAT_DEV,
+                                   NJS_NUMBER),
+        .enumerable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("ino"),
+        .value = njs_prop_handler2(njs_fs_stats_prop, NJS_FS_STAT_INO,
+                                   NJS_NUMBER),
+        .enumerable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("mode"),
+        .value = njs_prop_handler2(njs_fs_stats_prop, NJS_FS_STAT_MODE,
+                                   NJS_NUMBER),
+        .enumerable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("nlink"),
+        .value = njs_prop_handler2(njs_fs_stats_prop, NJS_FS_STAT_NLINK,
+                                   NJS_NUMBER),
+        .enumerable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("uid"),
+        .value = njs_prop_handler2(njs_fs_stats_prop, NJS_FS_STAT_UID,
+                                   NJS_NUMBER),
+        .enumerable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("gid"),
+        .value = njs_prop_handler2(njs_fs_stats_prop, NJS_FS_STAT_GID,
+                                   NJS_NUMBER),
+        .enumerable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("rdev"),
+        .value = njs_prop_handler2(njs_fs_stats_prop, NJS_FS_STAT_RDEV,
+                                   NJS_NUMBER),
+        .enumerable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("size"),
+        .value = njs_prop_handler2(njs_fs_stats_prop, NJS_FS_STAT_SIZE,
+                                   NJS_NUMBER),
+        .enumerable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("blksize"),
+        .value = njs_prop_handler2(njs_fs_stats_prop, NJS_FS_STAT_BLKSIZE,
+                                   NJS_NUMBER),
+        .enumerable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("blocks"),
+        .value = njs_prop_handler2(njs_fs_stats_prop, NJS_FS_STAT_BLOCKS,
+                                   NJS_NUMBER),
+        .enumerable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("atimeMs"),
+        .value = njs_prop_handler2(njs_fs_stats_prop, NJS_FS_STAT_ATIME,
+                                   NJS_NUMBER),
+        .enumerable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("birthtimeMs"),
+        .value = njs_prop_handler2(njs_fs_stats_prop, NJS_FS_STAT_BIRTHTIME,
+                                   NJS_NUMBER),
+        .enumerable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("ctimeMs"),
+        .value = njs_prop_handler2(njs_fs_stats_prop, NJS_FS_STAT_CTIME,
+                                   NJS_NUMBER),
+        .enumerable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("mtimeMs"),
+        .value = njs_prop_handler2(njs_fs_stats_prop, NJS_FS_STAT_MTIME,
+                                   NJS_NUMBER),
+        .enumerable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("atime"),
+        .value = njs_prop_handler2(njs_fs_stats_prop, NJS_FS_STAT_ATIME,
+                                   NJS_DATE),
+        .enumerable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("birthtime"),
+        .value = njs_prop_handler2(njs_fs_stats_prop, NJS_FS_STAT_BIRTHTIME,
+                                   NJS_DATE),
+        .enumerable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("ctime"),
+        .value = njs_prop_handler2(njs_fs_stats_prop, NJS_FS_STAT_CTIME,
+                                   NJS_DATE),
+        .enumerable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("mtime"),
+        .value = njs_prop_handler2(njs_fs_stats_prop, NJS_FS_STAT_MTIME,
+                                   NJS_DATE),
+        .enumerable = 1,
+    },
+};
+
+
+const njs_object_init_t  njs_stats_prototype_init = {
+    njs_stats_prototype_properties,
+    njs_nitems(njs_stats_prototype_properties),
+};
+
+
+const njs_object_type_init_t  njs_stats_type_init = {
+    .constructor = njs_native_ctor(njs_stats_constructor, 0, 0),
+    .prototype_props = &njs_stats_prototype_init,
+    .constructor_props = &njs_stats_constructor_init,
+    .prototype_value = { .object = { .type = NJS_OBJECT } },
+};
+
+
 static const njs_object_prop_t  njs_fs_promises_properties[] =
 {
     {
@@ -1934,6 +2586,24 @@ static const njs_object_prop_t  njs_fs_promises_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("readdir"),
         .value = njs_native_function2(njs_fs_readdir, 0, NJS_FS_PROMISE),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("lstat"),
+        .value = njs_native_function2(njs_fs_stat, 0,
+                                   njs_fs_magic(NJS_FS_PROMISE, NJS_FS_LSTAT)),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("stat"),
+        .value = njs_native_function2(njs_fs_stat, 0,
+                                    njs_fs_magic(NJS_FS_PROMISE, NJS_FS_STAT)),
         .writable = 1,
         .configurable = 1,
     },
@@ -2228,6 +2898,42 @@ static const njs_object_prop_t  njs_fs_object_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("readdirSync"),
         .value = njs_native_function2(njs_fs_readdir, 0, NJS_FS_DIRECT),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("lstat"),
+        .value = njs_native_function2(njs_fs_stat, 0,
+                                  njs_fs_magic(NJS_FS_CALLBACK, NJS_FS_LSTAT)),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("lstatSync"),
+        .value = njs_native_function2(njs_fs_stat, 0,
+                                    njs_fs_magic(NJS_FS_DIRECT, NJS_FS_LSTAT)),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("stat"),
+        .value = njs_native_function2(njs_fs_stat, 0,
+                                   njs_fs_magic(NJS_FS_CALLBACK, NJS_FS_STAT)),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("statSync"),
+        .value = njs_native_function2(njs_fs_stat, 0,
+                                     njs_fs_magic(NJS_FS_DIRECT, NJS_FS_STAT)),
         .writable = 1,
         .configurable = 1,
     },

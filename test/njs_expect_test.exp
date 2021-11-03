@@ -833,7 +833,13 @@ fs appendFileSync SUCCESS
 fsp appendFile SUCCESS
 fs realpath SUCCESS
 fs realpathSync SUCCESS
-fsp realpath SUCCESS"
+fsp realpath SUCCESS
+fs stat SUCCESS
+fs statSync SUCCESS
+fsp stat SUCCESS
+fs lstat SUCCESS
+fs lstatSync SUCCESS
+fsp lstat SUCCESS"
 
 njs_run {"./test/js/fs_promises_001.js"} \
 "init ok true

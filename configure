@@ -23,6 +23,7 @@ set -u
 . auto/time
 . auto/memalign
 . auto/getrandom
+. auto/stat
 . auto/explicit_bzero
 . auto/pcre
 . auto/readline
