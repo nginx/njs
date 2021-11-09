@@ -170,20 +170,6 @@ njs_regex_is_valid(njs_regex_t *regex)
 }
 
 
-njs_uint_t
-njs_regex_ncaptures(njs_regex_t *regex)
-{
-    return regex->ncaptures;
-}
-
-
-njs_uint_t
-njs_regex_backrefs(njs_regex_t *regex)
-{
-    return regex->backrefmax;
-}
-
-
 njs_int_t
 njs_regex_named_captures(njs_regex_t *regex, njs_str_t *name, int n)
 {

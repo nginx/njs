@@ -30,8 +30,6 @@ NJS_EXPORT njs_regex_context_t *
 NJS_EXPORT njs_int_t njs_regex_compile(njs_regex_t *regex, u_char *source,
     size_t len, njs_uint_t options, njs_regex_context_t *ctx);
 NJS_EXPORT njs_bool_t njs_regex_is_valid(njs_regex_t *regex);
-NJS_EXPORT njs_uint_t njs_regex_ncaptures(njs_regex_t *regex);
-NJS_EXPORT njs_uint_t njs_regex_backrefs(njs_regex_t *regex);
 NJS_EXPORT njs_int_t njs_regex_named_captures(njs_regex_t *regex,
     njs_str_t *name, int n);
 NJS_EXPORT njs_regex_match_data_t *njs_regex_match_data(njs_regex_t *regex,
