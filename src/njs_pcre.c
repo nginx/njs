@@ -10,8 +10,6 @@
 
 static void *njs_pcre_malloc(size_t size);
 static void njs_pcre_free(void *p);
-static void *njs_pcre_default_malloc(size_t size, void *memory_data);
-static void njs_pcre_default_free(void *p, void *memory_data);
 
 
 static njs_regex_context_t  *regex_context;
@@ -22,11 +20,6 @@ njs_regex_context_create(njs_pcre_malloc_t private_malloc,
     njs_pcre_free_t private_free, void *memory_data)
 {
     njs_regex_context_t  *ctx;
-
-    if (private_malloc == NULL) {
-        private_malloc = njs_pcre_default_malloc;
-        private_free = njs_pcre_default_free;
-    }
 
     ctx = private_malloc(sizeof(njs_regex_context_t), memory_data);
 
@@ -260,20 +253,6 @@ static void
 njs_pcre_free(void *p)
 {
     regex_context->private_free(p, regex_context->memory_data);
-}
-
-
-static void *
-njs_pcre_default_malloc(size_t size, void *memory_data)
-{
-    return malloc(size);
-}
-
-
-static void
-njs_pcre_default_free(void *p, void *memory_data)
-{
-    free(p);
 }
 
 
