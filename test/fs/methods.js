@@ -188,7 +188,7 @@ async function write_test(params) {
 
     try { fs.unlinkSync(fname); } catch (e) {}
 
-    let data = await method("writeFile", params);
+    let data = await method("writeFile", params).catch(e => ({error:e}));
 
     if (!data) {
         data = fs.readFileSync(fname);
@@ -196,8 +196,18 @@ async function write_test(params) {
 
     try { fs.unlinkSync(fname); } catch (e) {}
 
-    if (data.compare(params.expected) != 0) {
-        throw Error(`writeFile unexpected data`);
+    if (params.check) {
+        if (!params.check(data, params)) {
+            throw Error(`writeFile failed check`);
+        }
+
+    } else if (params.exception) {
+        throw data.error;
+
+    } else {
+        if (data.compare(params.expected) != 0) {
+            throw Error(`writeFile unexpected data`);
+        }
     }
 
     return 'SUCCESS';
@@ -219,9 +229,20 @@ let write_tests = [
     { args: ["@", "eHl6", {encoding: "base64url"}], expected: Buffer.from("xyz"),
       optional: true },
     { args: ["@", Symbol("XYZ")], exception: "TypeError: Cannot convert a Symbol value to a string"},
-    { args: ["/invalid_path", "XYZ"], stringify: true,
-      expected: Buffer.from('{"errno":13,"code":"EACCES","path":"/invalid_path","syscall":"open"}'),
-      exception: "Error: No such file or directory" },
+    { args: ["/invalid_path", "XYZ"],
+      check: (err, params) => {
+          let e = err.error;
+
+          if (e.syscall != 'open') {
+              throw Error(`${e.syscall} unexpected syscall`);
+          }
+
+          if (e.code != "EACCES" && e.code != "EROFS") {
+              throw Error(`${e.code} unexpected code`);
+          }
+
+          return true;
+      } },
 ];
 
 let writeFile_tsuite = {
@@ -253,8 +274,8 @@ async function append_test(params) {
 
     try { fs.unlinkSync(fname); } catch (e) {}
 
-    let data = await method("appendFile", params);
-    data = await method("appendFile", params);
+    let data = await method("appendFile", params).catch(e => ({error:e}));
+    data = await method("appendFile", params).catch(e => ({error:e}));
 
     if (!data) {
         data = fs.readFileSync(fname);
@@ -262,8 +283,18 @@ async function append_test(params) {
 
     try { fs.unlinkSync(fname); } catch (e) {}
 
-    if (data.compare(params.expected) != 0) {
-        throw Error(`appendFile unexpected data`);
+    if (params.check) {
+        if (!params.check(data, params)) {
+            throw Error(`appendFile failed check`);
+        }
+
+    } else if (params.exception) {
+        throw data.error;
+
+    } else {
+        if (data.compare(params.expected) != 0) {
+            throw Error(`appendFile unexpected data`);
+        }
     }
 
     return 'SUCCESS';
@@ -285,9 +316,20 @@ let append_tests = [
     { args: ["@", "eHl6", {encoding: "base64url"}], expected: Buffer.from("xyzxyz"),
       optional: true },
     { args: ["@", Symbol("XYZ")], exception: "TypeError: Cannot convert a Symbol value to a string"},
-    { args: ["/invalid_path", "XYZ"], stringify: true,
-      expected: Buffer.from('{"errno":13,"code":"EACCES","path":"/invalid_path","syscall":"open"}'),
-      exception: "Error: No such file or directory" },
+    { args: ["/invalid_path", "XYZ"],
+      check: (err, params) => {
+          let e = err.error;
+
+          if (e.syscall != 'open') {
+              throw Error(`${e.syscall} unexpected syscall`);
+          }
+
+          if (e.code != "EACCES" && e.code != "EROFS") {
+              throw Error(`${e.code} unexpected code`);
+          }
+
+          return true;
+      } },
 ];
 
 let appendFile_tsuite = {
