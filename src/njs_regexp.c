@@ -265,18 +265,13 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
     njs_regex_flags_t flags)
 {
     int                   ret;
-    u_char                *p, *end;
+    u_char                *p;
     size_t                size;
     njs_str_t             text;
     njs_uint_t            n;
     njs_regex_t           *regex;
     njs_regexp_group_t    *group;
     njs_regexp_pattern_t  *pattern;
-
-    size = 1;  /* A trailing "/". */
-    size += ((flags & NJS_REGEX_GLOBAL) != 0);
-    size += ((flags & NJS_REGEX_IGNORE_CASE) != 0);
-    size += ((flags & NJS_REGEX_MULTILINE) != 0);
 
     text.start = start;
     text.length = length;
@@ -287,45 +282,28 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
         return NULL;
     }
 
-    pattern = njs_mp_zalloc(vm->mem_pool, sizeof(njs_regexp_pattern_t) + 1
-                                          + text.length + size + 1);
+    pattern = njs_mp_alloc(vm->mem_pool, sizeof(njs_regexp_pattern_t)
+                                          + text.length + 1);
     if (njs_slow_path(pattern == NULL)) {
         njs_memory_error(vm);
         return NULL;
     }
 
-    pattern->flags = size;
+    njs_memzero(pattern, sizeof(njs_regexp_pattern_t));
 
     p = (u_char *) pattern + sizeof(njs_regexp_pattern_t);
     pattern->source = p;
 
-    *p++ = '/';
-    p = memcpy(p, text.start, text.length);
-    p += text.length;
-    end = p;
+    p = njs_cpymem(p, text.start, text.length);
     *p++ = '\0';
 
     pattern->global = ((flags & NJS_REGEX_GLOBAL) != 0);
-    if (pattern->global) {
-        *p++ = 'g';
-    }
-
     pattern->ignore_case = ((flags & NJS_REGEX_IGNORE_CASE) != 0);
-    if (pattern->ignore_case) {
-        *p++ = 'i';
-    }
-
     pattern->multiline = ((flags & NJS_REGEX_MULTILINE) != 0);
-    if (pattern->multiline) {
-        *p++ = 'm';
-    }
-
     pattern->sticky = ((flags & NJS_REGEX_STICKY) != 0);
 
-    *p++ = '\0';
-
     ret = njs_regexp_pattern_compile(vm, &pattern->regex[0],
-                                     &pattern->source[1], text.length, flags);
+                                     &pattern->source[0], text.length, flags);
 
     if (njs_fast_path(ret >= 0)) {
         pattern->ncaptures = ret;
@@ -335,7 +313,7 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
     }
 
     ret = njs_regexp_pattern_compile(vm, &pattern->regex[1],
-                                  &pattern->source[1], text.length,
+                                  &pattern->source[0], text.length,
                                   flags | NJS_REGEX_UTF8);
     if (njs_fast_path(ret >= 0)) {
 
@@ -361,8 +339,6 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
     } else {
         goto fail;
     }
-
-    *end = '/';
 
     pattern->ngroups = njs_regex_named_captures(regex, NULL, 0);
 
@@ -651,9 +627,7 @@ static njs_int_t
 njs_regexp_prototype_source(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
-    u_char                *source;
-    int32_t               length;
-    uint32_t              size;
+    njs_str_t             src;
     njs_value_t           *this;
     njs_regexp_pattern_t  *pattern;
 
@@ -674,13 +648,11 @@ njs_regexp_prototype_source(njs_vm_t *vm, njs_value_t *args,
     }
 
     pattern = njs_regexp_pattern(this);
-    /* Skip starting "/". */
-    source = pattern->source + 1;
 
-    size = njs_strlen(source) - pattern->flags;
-    length = njs_utf8_length(source, size);
+    src.start = pattern->source;
+    src.length = njs_strlen(pattern->source);
 
-    return njs_regexp_string_create(vm, &vm->retval, source, size, length);
+    return njs_string_decode_utf8(vm, &vm->retval, &src);
 }
 
 
@@ -756,25 +728,56 @@ njs_int_t
 njs_regexp_to_string(njs_vm_t *vm, njs_value_t *retval,
     const njs_value_t *value)
 {
-    u_char                *p, *source;
+    u_char                *p, *start;
+    size_t                size, extra;
     int32_t               length;
-    uint32_t              size;
+    njs_str_t             s;
     njs_regexp_pattern_t  *pattern;
+    njs_unicode_decode_t  ctx;
 
     pattern = njs_regexp_pattern(value);
-    source = pattern->source;
 
-    size = njs_strlen(source);
-    length = njs_utf8_length(source, size);
+    s.start = pattern->source;
+    s.length = njs_strlen(pattern->source);
 
-    length = (length >= 0) ? (length + (pattern->sticky != 0)): 0;
+    length = njs_decode_utf8_length(&s, &size);
 
-    p = njs_string_alloc(vm, retval, size + (pattern->sticky != 0), length);
-    if (njs_slow_path(p == NULL)) {
+    extra = njs_length("//");
+    extra += (pattern->global != 0);
+    extra += (pattern->ignore_case != 0);
+    extra += (pattern->multiline != 0);
+    extra += (pattern->sticky != 0);
+
+    size += extra;
+
+    length = (length >= 0) ? (length + extra) : 0;
+
+    start = njs_string_alloc(vm, retval, size, length);
+    if (njs_slow_path(start == NULL)) {
         return NJS_ERROR;
     }
 
-    p = njs_cpymem(p, source, size);
+    njs_utf8_decode_init(&ctx);
+
+    p = start;
+
+    *p++ = '/';
+
+    p = njs_utf8_stream_encode(&ctx, s.start, &s.start[s.length], p, 1, 0);
+
+    *p++ = '/';
+
+    if (pattern->global) {
+        *p++ = 'g';
+    }
+
+    if (pattern->ignore_case) {
+        *p++ = 'i';
+    }
+
+    if (pattern->multiline) {
+        *p++ = 'm';
+    }
 
     if (pattern->sticky) {
         *p++ = 'y';
