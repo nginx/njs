@@ -7,21 +7,23 @@
 
 #include <njs_main.h>
 
+#include <pcre.h>
+
 
 static void *njs_pcre_malloc(size_t size);
 static void njs_pcre_free(void *p);
 
 
-static njs_regex_context_t  *regex_context;
+static njs_regex_generic_ctx_t  *regex_context;
 
 
-njs_regex_context_t *
-njs_regex_context_create(njs_pcre_malloc_t private_malloc,
+njs_regex_generic_ctx_t *
+njs_regex_generic_ctx_create(njs_pcre_malloc_t private_malloc,
     njs_pcre_free_t private_free, void *memory_data)
 {
-    njs_regex_context_t  *ctx;
+    njs_regex_generic_ctx_t  *ctx;
 
-    ctx = private_malloc(sizeof(njs_regex_context_t), memory_data);
+    ctx = private_malloc(sizeof(njs_regex_generic_ctx_t), memory_data);
 
     if (njs_fast_path(ctx != NULL)) {
         ctx->private_malloc = private_malloc;
@@ -33,15 +35,138 @@ njs_regex_context_create(njs_pcre_malloc_t private_malloc,
 }
 
 
+njs_regex_compile_ctx_t *
+njs_regex_compile_ctx_create(njs_regex_generic_ctx_t *ctx)
+{
+    return ctx;
+}
+
+
+/*
+ * 1) PCRE with PCRE_JAVASCRIPT_COMPAT flag rejects regexps with
+ * lone closing square brackets as invalid.  Whereas according
+ * to ES6: 11.8.5 it is a valid regexp expression.
+ *
+ * 2) escaping zero byte characters as "\u0000".
+ *
+ * Escaping it here as a workaround.
+ */
+
+njs_int_t
+njs_regex_escape(njs_mp_t *mp, njs_str_t *text)
+{
+    size_t      brackets, zeros;
+    u_char      *p, *dst, *start, *end;
+    njs_bool_t  in;
+
+    start = text->start;
+    end = text->start + text->length;
+
+    in = 0;
+    zeros = 0;
+    brackets = 0;
+
+    for (p = start; p < end; p++) {
+
+        switch (*p) {
+        case '[':
+            in = 1;
+            break;
+
+        case ']':
+            if (!in) {
+                brackets++;
+            }
+
+            in = 0;
+            break;
+
+        case '\\':
+            p++;
+
+            if (p == end || *p != '\0') {
+                break;
+            }
+
+            /* Fall through. */
+
+        case '\0':
+            zeros++;
+            break;
+        }
+    }
+
+    if (!brackets && !zeros) {
+        return NJS_OK;
+    }
+
+    text->length = text->length + brackets + zeros * njs_length("\\u0000");
+
+    text->start = njs_mp_alloc(mp, text->length);
+    if (njs_slow_path(text->start == NULL)) {
+        return NJS_ERROR;
+    }
+
+    in = 0;
+    dst = text->start;
+
+    for (p = start; p < end; p++) {
+
+        switch (*p) {
+        case '[':
+            in = 1;
+            break;
+
+        case ']':
+            if (!in) {
+                *dst++ = '\\';
+            }
+
+            in = 0;
+            break;
+
+        case '\\':
+            *dst++ = *p++;
+
+            if (p == end) {
+                goto done;
+            }
+
+            if (*p != '\0') {
+                break;
+            }
+
+            /* Fall through. */
+
+        case '\0':
+            dst = njs_cpymem(dst, "\\u0000", 6);
+            continue;
+        }
+
+        *dst++ = *p;
+    }
+
+done:
+
+    text->length = dst - text->start;
+
+    return NJS_OK;
+}
+
+
 njs_int_t
 njs_regex_compile(njs_regex_t *regex, u_char *source, size_t len,
-    njs_uint_t options, njs_regex_context_t *ctx)
+    njs_regex_flags_t flags, njs_regex_compile_ctx_t *cctx, njs_trace_t *trace)
 {
-    int         ret, err, erroff;
-    char        *pattern, *error;
-    void        *(*saved_malloc)(size_t size);
-    void        (*saved_free)(void *p);
-    const char  *errstr;
+    int                      ret, err, erroff;
+    char                     *pattern, *error;
+    void                     *(*saved_malloc)(size_t size);
+    void                     (*saved_free)(void *p);
+    njs_uint_t               options;
+    const char               *errstr;
+    njs_regex_generic_ctx_t  *ctx;
+
+    ctx = cctx;
 
     ret = NJS_ERROR;
 
@@ -51,18 +176,30 @@ njs_regex_compile(njs_regex_t *regex, u_char *source, size_t len,
     pcre_free = njs_pcre_free;
     regex_context = ctx;
 
-    if (len == 0) {
-        pattern = (char *) source;
+#ifdef PCRE_JAVASCRIPT_COMPAT
+    /* JavaScript compatibility has been introduced in PCRE-7.7. */
+    options = PCRE_JAVASCRIPT_COMPAT;
+#else
+    options = 0;
+#endif
 
-    } else {
-        pattern = ctx->private_malloc(len + 1, ctx->memory_data);
-        if (njs_slow_path(pattern == NULL)) {
-            goto done;
-        }
-
-        memcpy(pattern, source, len);
-        pattern[len] = '\0';
+    if ((flags & NJS_REGEX_IGNORE_CASE)) {
+         options |= PCRE_CASELESS;
     }
+
+    if ((flags & NJS_REGEX_MULTILINE)) {
+         options |= PCRE_MULTILINE;
+    }
+
+    if ((flags & NJS_REGEX_STICKY)) {
+         options |= PCRE_ANCHORED;
+    }
+
+    if ((flags & NJS_REGEX_UTF8)) {
+         options |= PCRE_UTF8;
+    }
+
+    pattern = (char *) source;
 
     regex->code = pcre_compile(pattern, options, &errstr, &erroff, NULL);
 
@@ -70,12 +207,12 @@ njs_regex_compile(njs_regex_t *regex, u_char *source, size_t len,
         error = pattern + erroff;
 
         if (*error != '\0') {
-            njs_alert(ctx->trace, NJS_LEVEL_ERROR,
+            njs_alert(trace, NJS_LEVEL_ERROR,
                       "pcre_compile(\"%s\") failed: %s at \"%s\"",
                       pattern, errstr, error);
 
         } else {
-            njs_alert(ctx->trace, NJS_LEVEL_ERROR,
+            njs_alert(trace, NJS_LEVEL_ERROR,
                       "pcre_compile(\"%s\") failed: %s", pattern, errstr);
         }
 
@@ -87,7 +224,7 @@ njs_regex_compile(njs_regex_t *regex, u_char *source, size_t len,
     regex->extra = pcre_study(regex->code, 0, &errstr);
 
     if (njs_slow_path(errstr != NULL)) {
-        njs_alert(ctx->trace, NJS_LEVEL_WARN,
+        njs_alert(trace, NJS_LEVEL_WARN,
                   "pcre_study(\"%s\") failed: %s", pattern, errstr);
     }
 
@@ -95,7 +232,7 @@ njs_regex_compile(njs_regex_t *regex, u_char *source, size_t len,
                         &regex->ncaptures);
 
     if (njs_slow_path(err < 0)) {
-        njs_alert(ctx->trace, NJS_LEVEL_ERROR,
+        njs_alert(trace, NJS_LEVEL_ERROR,
                   "pcre_fullinfo(\"%s\", PCRE_INFO_CAPTURECOUNT) failed: %d",
                   pattern, err);
 
@@ -106,7 +243,7 @@ njs_regex_compile(njs_regex_t *regex, u_char *source, size_t len,
                         &regex->backrefmax);
 
     if (njs_slow_path(err < 0)) {
-        njs_alert(ctx->trace, NJS_LEVEL_ERROR,
+        njs_alert(trace, NJS_LEVEL_ERROR,
                   "pcre_fullinfo(\"%s\", PCRE_INFO_BACKREFMAX) failed: %d",
                   pattern, err);
 
@@ -121,7 +258,7 @@ njs_regex_compile(njs_regex_t *regex, u_char *source, size_t len,
                             &regex->nentries);
 
         if (njs_slow_path(err < 0)) {
-            njs_alert(ctx->trace, NJS_LEVEL_ERROR,
+            njs_alert(trace, NJS_LEVEL_ERROR,
                       "pcre_fullinfo(\"%s\", PCRE_INFO_NAMECOUNT) failed: %d",
                       pattern, err);
 
@@ -133,7 +270,7 @@ njs_regex_compile(njs_regex_t *regex, u_char *source, size_t len,
                                 &regex->entry_size);
 
             if (njs_slow_path(err < 0)) {
-                njs_alert(ctx->trace, NJS_LEVEL_ERROR, "pcre_fullinfo(\"%s\", "
+                njs_alert(trace, NJS_LEVEL_ERROR, "pcre_fullinfo(\"%s\", "
                           "PCRE_INFO_NAMEENTRYSIZE) failed: %d", pattern, err);
 
                 goto done;
@@ -143,7 +280,7 @@ njs_regex_compile(njs_regex_t *regex, u_char *source, size_t len,
                                 &regex->entries);
 
             if (njs_slow_path(err < 0)) {
-                njs_alert(ctx->trace, NJS_LEVEL_ERROR, "pcre_fullinfo(\"%s\", "
+                njs_alert(trace, NJS_LEVEL_ERROR, "pcre_fullinfo(\"%s\", "
                           "PCRE_INFO_NAMETABLE) failed: %d", pattern, err);
 
                 goto done;
@@ -193,7 +330,7 @@ njs_regex_named_captures(njs_regex_t *regex, njs_str_t *name, int n)
 
 
 njs_regex_match_data_t *
-njs_regex_match_data(njs_regex_t *regex, njs_regex_context_t *ctx)
+njs_regex_match_data(njs_regex_t *regex, njs_regex_generic_ctx_t *ctx)
 {
     size_t                  size;
     njs_uint_t              ncaptures;
@@ -222,7 +359,7 @@ njs_regex_match_data(njs_regex_t *regex, njs_regex_context_t *ctx)
 
 void
 njs_regex_match_data_free(njs_regex_match_data_t *match_data,
-    njs_regex_context_t *ctx)
+    njs_regex_generic_ctx_t *ctx)
 {
     ctx->private_free(match_data, ctx->memory_data);
 }
@@ -244,25 +381,28 @@ njs_pcre_free(void *p)
 
 njs_int_t
 njs_regex_match(njs_regex_t *regex, const u_char *subject, size_t off,
-    size_t len, njs_regex_match_data_t *match_data, njs_regex_context_t *ctx)
+    size_t len, njs_regex_match_data_t *match_data, njs_trace_t *trace)
 {
     int  ret;
 
     ret = pcre_exec(regex->code, regex->extra, (const char *) subject, len,
                     off, 0, match_data->captures, match_data->ncaptures);
 
-    /* PCRE_ERROR_NOMATCH is -1. */
+    if (ret <= PCRE_ERROR_NOMATCH) {
+        if (ret == PCRE_ERROR_NOMATCH) {
+            return NJS_DECLINED;
+        }
 
-    if (njs_slow_path(ret < PCRE_ERROR_NOMATCH)) {
-        njs_alert(ctx->trace, NJS_LEVEL_ERROR, "pcre_exec() failed: %d", ret);
+        njs_alert(trace, NJS_LEVEL_ERROR, "pcre_exec() failed: %d", ret);
+        return NJS_ERROR;
     }
 
     return ret;
 }
 
 
-int *
-njs_regex_captures(njs_regex_match_data_t *match_data)
+size_t
+njs_regex_capture(njs_regex_match_data_t *match_data, njs_uint_t n)
 {
-    return match_data->captures;
+    return match_data->captures[n];
 }

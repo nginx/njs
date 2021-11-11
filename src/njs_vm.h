@@ -178,7 +178,8 @@ struct njs_vm_s {
 
     njs_vm_shared_t          *shared;
 
-    njs_regex_context_t      *regex_context;
+    njs_regex_generic_ctx_t  *regex_generic_ctx;
+    njs_regex_compile_ctx_t  *regex_compile_ctx;
     njs_regex_match_data_t   *single_match_data;
 
     njs_array_t              *promise_reason;

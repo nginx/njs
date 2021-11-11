@@ -6,6 +6,8 @@
 
 #include <njs_main.h>
 
+#include <pcre.h>
+
 #include "njs_externals_test.h"
 
 

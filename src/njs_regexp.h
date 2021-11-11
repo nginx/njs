@@ -8,22 +8,12 @@
 #define _NJS_REGEXP_H_INCLUDED_
 
 
-typedef enum {
-    NJS_REGEXP_INVALID_FLAG = -1,
-    NJS_REGEXP_NO_FLAGS     =  0,
-    NJS_REGEXP_GLOBAL       =  1,
-    NJS_REGEXP_IGNORE_CASE  =  2,
-    NJS_REGEXP_MULTILINE    =  4,
-    NJS_REGEXP_STICKY       =  8,
-} njs_regexp_flags_t;
-
-
 njs_int_t njs_regexp_init(njs_vm_t *vm);
 njs_int_t njs_regexp_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
-    size_t length, njs_regexp_flags_t flags);
-njs_regexp_flags_t njs_regexp_flags(u_char **start, u_char *end);
+    size_t length, njs_regex_flags_t flags);
+njs_regex_flags_t njs_regexp_flags(u_char **start, u_char *end);
 njs_regexp_pattern_t *njs_regexp_pattern_create(njs_vm_t *vm,
-    u_char *string, size_t length, njs_regexp_flags_t flags);
+    u_char *string, size_t length, njs_regex_flags_t flags);
 njs_int_t njs_regexp_match(njs_vm_t *vm, njs_regex_t *regex,
     const u_char *subject, size_t off, size_t len, njs_regex_match_data_t *d);
 njs_regexp_t *njs_regexp_alloc(njs_vm_t *vm, njs_regexp_pattern_t *pattern);

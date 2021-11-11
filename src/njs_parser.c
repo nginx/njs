@@ -1198,7 +1198,7 @@ njs_parser_regexp_literal(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_int_t             ret;
     njs_lexer_t           *lexer;
     njs_value_t           *value, retval;
-    njs_regexp_flags_t    flags;
+    njs_regex_flags_t     flags;
     njs_regexp_pattern_t  *pattern;
 
     static const njs_value_t  string_message = njs_string("message");

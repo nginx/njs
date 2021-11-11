@@ -20,7 +20,7 @@ static void njs_regexp_free(void *p, void *memory_data);
 static njs_int_t njs_regexp_prototype_source(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 static int njs_regexp_pattern_compile(njs_vm_t *vm, njs_regex_t *regex,
-    u_char *source, int options);
+    u_char *source, size_t len, njs_regex_flags_t flags);
 static u_char *njs_regexp_compile_trace_handler(njs_trace_t *trace,
     njs_trace_data_t *td, u_char *start);
 static u_char *njs_regexp_match_trace_handler(njs_trace_t *trace,
@@ -37,20 +37,25 @@ const njs_value_t  njs_string_lindex = njs_string("lastIndex");
 njs_int_t
 njs_regexp_init(njs_vm_t *vm)
 {
-    vm->regex_context = njs_regex_context_create(njs_regexp_malloc,
-                                          njs_regexp_free, vm->mem_pool);
-    if (njs_slow_path(vm->regex_context == NULL)) {
+    vm->regex_generic_ctx = njs_regex_generic_ctx_create(njs_regexp_malloc,
+                                                         njs_regexp_free,
+                                                         vm->mem_pool);
+    if (njs_slow_path(vm->regex_generic_ctx == NULL)) {
         njs_memory_error(vm);
         return NJS_ERROR;
     }
 
-    vm->single_match_data = njs_regex_match_data(NULL, vm->regex_context);
+    vm->regex_compile_ctx = njs_regex_compile_ctx_create(vm->regex_generic_ctx);
+    if (njs_slow_path(vm->regex_compile_ctx == NULL)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    vm->single_match_data = njs_regex_match_data(NULL, vm->regex_generic_ctx);
     if (njs_slow_path(vm->single_match_data == NULL)) {
         njs_memory_error(vm);
         return NJS_ERROR;
     }
-
-    vm->regex_context->trace = &vm->trace;
 
     return NJS_OK;
 }
@@ -70,10 +75,10 @@ njs_regexp_free(void *p, void *memory_data)
 }
 
 
-static njs_regexp_flags_t
+static njs_regex_flags_t
 njs_regexp_value_flags(njs_vm_t *vm, const njs_value_t *regexp)
 {
-    njs_regexp_flags_t    flags;
+    njs_regex_flags_t     flags;
     njs_regexp_pattern_t  *pattern;
 
     flags = 0;
@@ -81,19 +86,19 @@ njs_regexp_value_flags(njs_vm_t *vm, const njs_value_t *regexp)
     pattern = njs_regexp_pattern(regexp);
 
     if (pattern->global) {
-        flags |= NJS_REGEXP_GLOBAL;
+        flags |= NJS_REGEX_GLOBAL;
     }
 
     if (pattern->ignore_case) {
-        flags |= NJS_REGEXP_IGNORE_CASE;
+        flags |= NJS_REGEX_IGNORE_CASE;
     }
 
     if (pattern->multiline) {
-        flags |= NJS_REGEXP_MULTILINE;
+        flags |= NJS_REGEX_MULTILINE;
     }
 
     if (pattern->sticky) {
-        flags |= NJS_REGEXP_STICKY;
+        flags |= NJS_REGEX_STICKY;
     }
 
     return flags;
@@ -108,7 +113,7 @@ njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_int_t           ret;
     njs_str_t           string;
     njs_value_t         source, *pattern, *flags;
-    njs_regexp_flags_t  re_flags;
+    njs_regex_flags_t   re_flags;
 
     pattern = njs_arg(args, nargs, 1);
 
@@ -168,7 +173,7 @@ njs_regexp_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 njs_int_t
 njs_regexp_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
-    size_t length, njs_regexp_flags_t flags)
+    size_t length, njs_regex_flags_t flags)
 {
     njs_regexp_t          *regexp;
     njs_regexp_pattern_t  *pattern;
@@ -200,143 +205,30 @@ njs_regexp_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
 }
 
 
-/*
- * 1) PCRE with PCRE_JAVASCRIPT_COMPAT flag rejects regexps with
- * lone closing square brackets as invalid.  Whereas according
- * to ES6: 11.8.5 it is a valid regexp expression.
- *
- * 2) escaping zero byte characters as "\u0000".
- *
- * Escaping it here as a workaround.
- */
-
-njs_inline njs_int_t
-njs_regexp_escape(njs_vm_t *vm, njs_str_t *text)
-{
-    size_t      brackets, zeros;
-    u_char      *p, *dst, *start, *end;
-    njs_bool_t  in;
-
-    start = text->start;
-    end = text->start + text->length;
-
-    in = 0;
-    zeros = 0;
-    brackets = 0;
-
-    for (p = start; p < end; p++) {
-
-        switch (*p) {
-        case '[':
-            in = 1;
-            break;
-
-        case ']':
-            if (!in) {
-                brackets++;
-            }
-
-            in = 0;
-            break;
-
-        case '\\':
-            p++;
-
-            if (p == end || *p != '\0') {
-                break;
-            }
-
-            /* Fall through. */
-
-        case '\0':
-            zeros++;
-            break;
-        }
-    }
-
-    if (!brackets && !zeros) {
-        return NJS_OK;
-    }
-
-    text->length = text->length + brackets + zeros * njs_length("\\u0000");
-
-    text->start = njs_mp_alloc(vm->mem_pool, text->length);
-    if (njs_slow_path(text->start == NULL)) {
-        njs_memory_error(vm);
-        return NJS_ERROR;
-    }
-
-    in = 0;
-    dst = text->start;
-
-    for (p = start; p < end; p++) {
-
-        switch (*p) {
-        case '[':
-            in = 1;
-            break;
-
-        case ']':
-            if (!in) {
-                *dst++ = '\\';
-            }
-
-            in = 0;
-            break;
-
-        case '\\':
-            *dst++ = *p++;
-
-            if (p == end) {
-                goto done;
-            }
-
-            if (*p != '\0') {
-                break;
-            }
-
-            /* Fall through. */
-
-        case '\0':
-            dst = njs_cpymem(dst, "\\u0000", 6);
-            continue;
-        }
-
-        *dst++ = *p;
-    }
-
-done:
-
-    text->length = dst - text->start;
-
-    return NJS_OK;
-}
-
-
-njs_regexp_flags_t
+njs_regex_flags_t
 njs_regexp_flags(u_char **start, u_char *end)
 {
-    u_char              *p;
-    njs_regexp_flags_t  flags, flag;
+    u_char             *p;
+    njs_regex_flags_t  flags, flag;
 
-    flags = NJS_REGEXP_NO_FLAGS;
+    flags = NJS_REGEX_NO_FLAGS;
 
     for (p = *start; p < end; p++) {
         switch (*p) {
         case 'g':
-            flag = NJS_REGEXP_GLOBAL;
+            flag = NJS_REGEX_GLOBAL;
             break;
 
         case 'i':
-            flag = NJS_REGEXP_IGNORE_CASE;
+            flag = NJS_REGEX_IGNORE_CASE;
             break;
 
         case 'm':
-            flag = NJS_REGEXP_MULTILINE;
+            flag = NJS_REGEX_MULTILINE;
             break;
 
         case 'y':
-            flag = NJS_REGEXP_STICKY;
+            flag = NJS_REGEX_STICKY;
             break;
 
         default:
@@ -364,15 +256,15 @@ invalid:
 
     *start = p + 1;
 
-    return NJS_REGEXP_INVALID_FLAG;
+    return NJS_REGEX_INVALID_FLAG;
 }
 
 
 njs_regexp_pattern_t *
 njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
-    njs_regexp_flags_t flags)
+    njs_regex_flags_t flags)
 {
-    int                   options, ret;
+    int                   ret;
     u_char                *p, *end;
     size_t                size;
     njs_str_t             text;
@@ -382,15 +274,16 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
     njs_regexp_pattern_t  *pattern;
 
     size = 1;  /* A trailing "/". */
-    size += ((flags & NJS_REGEXP_GLOBAL) != 0);
-    size += ((flags & NJS_REGEXP_IGNORE_CASE) != 0);
-    size += ((flags & NJS_REGEXP_MULTILINE) != 0);
+    size += ((flags & NJS_REGEX_GLOBAL) != 0);
+    size += ((flags & NJS_REGEX_IGNORE_CASE) != 0);
+    size += ((flags & NJS_REGEX_MULTILINE) != 0);
 
     text.start = start;
     text.length = length;
 
-    ret = njs_regexp_escape(vm, &text);
+    ret = njs_regex_escape(vm->mem_pool, &text);
     if (njs_slow_path(ret != NJS_OK)) {
+        njs_memory_error(vm);
         return NULL;
     }
 
@@ -412,39 +305,27 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
     end = p;
     *p++ = '\0';
 
-    pattern->global = ((flags & NJS_REGEXP_GLOBAL) != 0);
+    pattern->global = ((flags & NJS_REGEX_GLOBAL) != 0);
     if (pattern->global) {
         *p++ = 'g';
     }
 
-#ifdef PCRE_JAVASCRIPT_COMPAT
-    /* JavaScript compatibility has been introduced in PCRE-7.7. */
-    options = PCRE_JAVASCRIPT_COMPAT;
-#else
-    options = 0;
-#endif
-
-    pattern->ignore_case = ((flags & NJS_REGEXP_IGNORE_CASE) != 0);
+    pattern->ignore_case = ((flags & NJS_REGEX_IGNORE_CASE) != 0);
     if (pattern->ignore_case) {
         *p++ = 'i';
-         options |= PCRE_CASELESS;
     }
 
-    pattern->multiline = ((flags & NJS_REGEXP_MULTILINE) != 0);
+    pattern->multiline = ((flags & NJS_REGEX_MULTILINE) != 0);
     if (pattern->multiline) {
         *p++ = 'm';
-         options |= PCRE_MULTILINE;
     }
 
-    pattern->sticky = ((flags & NJS_REGEXP_STICKY) != 0);
-    if (pattern->sticky) {
-        options |= PCRE_ANCHORED;
-    }
+    pattern->sticky = ((flags & NJS_REGEX_STICKY) != 0);
 
     *p++ = '\0';
 
     ret = njs_regexp_pattern_compile(vm, &pattern->regex[0],
-                                     &pattern->source[1], options);
+                                     &pattern->source[1], text.length, flags);
 
     if (njs_fast_path(ret >= 0)) {
         pattern->ncaptures = ret;
@@ -454,7 +335,8 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
     }
 
     ret = njs_regexp_pattern_compile(vm, &pattern->regex[1],
-                                     &pattern->source[1], options | PCRE_UTF8);
+                                  &pattern->source[1], text.length,
+                                  flags | NJS_REGEX_UTF8);
     if (njs_fast_path(ret >= 0)) {
 
         if (njs_slow_path(njs_regex_is_valid(&pattern->regex[0])
@@ -519,7 +401,7 @@ fail:
 
 static int
 njs_regexp_pattern_compile(njs_vm_t *vm, njs_regex_t *regex, u_char *source,
-    int options)
+    size_t len, njs_regex_flags_t flags)
 {
     njs_int_t            ret;
     njs_trace_handler_t  handler;
@@ -527,8 +409,8 @@ njs_regexp_pattern_compile(njs_vm_t *vm, njs_regex_t *regex, u_char *source,
     handler = vm->trace.handler;
     vm->trace.handler = njs_regexp_compile_trace_handler;
 
-    /* Zero length means a zero-terminated string. */
-    ret = njs_regex_compile(regex, source, 0, options, vm->regex_context);
+    ret = njs_regex_compile(regex, source, len, flags, vm->regex_compile_ctx,
+                            &vm->trace);
 
     vm->trace.handler = handler;
 
@@ -568,8 +450,7 @@ njs_regexp_match(njs_vm_t *vm, njs_regex_t *regex, const u_char *subject,
     handler = vm->trace.handler;
     vm->trace.handler = njs_regexp_match_trace_handler;
 
-    ret = njs_regex_match(regex, subject, off, len, match_data,
-                          vm->regex_context);
+    ret = njs_regex_match(regex, subject, off, len, match_data, &vm->trace);
 
     vm->trace.handler = handler;
 
@@ -742,19 +623,19 @@ njs_regexp_prototype_flag(njs_vm_t *vm, njs_value_t *args,
     pattern = njs_regexp_pattern(this);
 
     switch (flag) {
-    case NJS_REGEXP_GLOBAL:
+    case NJS_REGEX_GLOBAL:
         yn = pattern->global;
         break;
 
-    case NJS_REGEXP_IGNORE_CASE:
+    case NJS_REGEX_IGNORE_CASE:
         yn = pattern->ignore_case;
         break;
 
-    case NJS_REGEXP_MULTILINE:
+    case NJS_REGEX_MULTILINE:
         yn = pattern->multiline;
         break;
 
-    case NJS_REGEXP_STICKY:
+    case NJS_REGEX_STICKY:
     default:
         yn = pattern->sticky;
         break;
@@ -996,7 +877,8 @@ njs_regexp_builtin_exec(njs_vm_t *vm, njs_value_t *r, njs_value_t *s,
         goto not_found;
     }
 
-    match_data = njs_regex_match_data(&pattern->regex[type], vm->regex_context);
+    match_data = njs_regex_match_data(&pattern->regex[type],
+                                      vm->regex_generic_ctx);
     if (njs_slow_path(match_data == NULL)) {
         njs_memory_error(vm);
         return NJS_ERROR;
@@ -1023,9 +905,8 @@ njs_regexp_builtin_exec(njs_vm_t *vm, njs_value_t *r, njs_value_t *s,
         return NJS_OK;
     }
 
-    if (njs_slow_path(ret != NJS_REGEX_NOMATCH)) {
-        njs_regex_match_data_free(match_data, vm->regex_context);
-
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        njs_regex_match_data_free(match_data, vm->regex_generic_ctx);
         return NJS_ERROR;
     }
 
@@ -1050,8 +931,8 @@ static njs_array_t *
 njs_regexp_exec_result(njs_vm_t *vm, njs_value_t *r, njs_utf8_t utf8,
     njs_string_prop_t *string, njs_regex_match_data_t *match_data)
 {
-    int                   *captures;
     u_char                *start;
+    size_t                c;
     int32_t               size, length;
     uint32_t              index;
     njs_int_t             ret;
@@ -1076,14 +957,13 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_value_t *r, njs_utf8_t utf8,
         goto fail;
     }
 
-    captures = njs_regex_captures(match_data);
-
     for (i = 0; i < pattern->ncaptures; i++) {
         n = 2 * i;
+        c = njs_regex_capture(match_data, n);
 
-        if (captures[n] != -1) {
-            start = &string->start[captures[n]];
-            size = captures[n + 1] - captures[n];
+        if (c != NJS_REGEX_UNSET) {
+            start = &string->start[c];
+            size = njs_regex_capture(match_data, n + 1) - c;
 
             if (utf8 == NJS_STRING_UTF8) {
                 length = njs_max(njs_utf8_length(start, size), 0);
@@ -1109,21 +989,25 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_value_t *r, njs_utf8_t utf8,
         goto fail;
     }
 
+    c = njs_regex_capture(match_data, 0);
+
     if (utf8 == NJS_STRING_UTF8) {
-        index = njs_string_index(string, captures[0]);
+        index = njs_string_index(string, c);
 
     } else {
-        index = captures[0];
+        index = c;
     }
 
     njs_set_number(&prop->value, index);
 
     if (pattern->global || pattern->sticky) {
+        c = njs_regex_capture(match_data, 1);
+
         if (utf8 == NJS_STRING_UTF8) {
-            index = njs_string_index(string, captures[1]);
+            index = njs_string_index(string, c);
 
         } else {
-            index = captures[1];
+            index = c;
         }
 
         njs_set_number(&value, index);
@@ -1226,7 +1110,7 @@ fail:
 
 done:
 
-    njs_regex_match_data_free(match_data, vm->regex_context);
+    njs_regex_match_data_free(match_data, vm->regex_generic_ctx);
 
     return (ret == NJS_OK) ? array : NULL;
 }
@@ -1919,7 +1803,7 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
         .name = njs_string("global"),
         .value = njs_value(NJS_INVALID, 1, NAN),
         .getter = njs_native_function2(njs_regexp_prototype_flag, 0,
-                                       NJS_REGEXP_GLOBAL),
+                                       NJS_REGEX_GLOBAL),
         .setter = njs_value(NJS_UNDEFINED, 0, NAN),
         .writable = NJS_ATTRIBUTE_UNSET,
         .configurable = 1,
@@ -1931,7 +1815,7 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
         .name = njs_string("ignoreCase"),
         .value = njs_value(NJS_INVALID, 1, NAN),
         .getter = njs_native_function2(njs_regexp_prototype_flag, 0,
-                                       NJS_REGEXP_IGNORE_CASE),
+                                       NJS_REGEX_IGNORE_CASE),
         .setter = njs_value(NJS_UNDEFINED, 0, NAN),
         .writable = NJS_ATTRIBUTE_UNSET,
         .configurable = 1,
@@ -1943,7 +1827,7 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
         .name = njs_string("multiline"),
         .value = njs_value(NJS_INVALID, 1, NAN),
         .getter = njs_native_function2(njs_regexp_prototype_flag, 0,
-                                       NJS_REGEXP_MULTILINE),
+                                       NJS_REGEX_MULTILINE),
         .setter = njs_value(NJS_UNDEFINED, 0, NAN),
         .writable = NJS_ATTRIBUTE_UNSET,
         .configurable = 1,
@@ -1966,7 +1850,7 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
         .name = njs_string("sticky"),
         .value = njs_value(NJS_INVALID, 1, NAN),
         .getter = njs_native_function2(njs_regexp_prototype_flag, 0,
-                                       NJS_REGEXP_STICKY),
+                                       NJS_REGEX_STICKY),
         .setter = njs_value(NJS_UNDEFINED, 0, NAN),
         .writable = NJS_ATTRIBUTE_UNSET,
         .configurable = 1,
