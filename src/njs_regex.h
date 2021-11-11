@@ -26,16 +26,6 @@ typedef void (*njs_pcre_free_t)(void *p, void *memory_data);
 
 
 typedef struct {
-    njs_pcre_malloc_t  private_malloc;
-    njs_pcre_free_t    private_free;
-    void               *memory_data;
-} njs_regex_generic_ctx_t;
-
-
-#define njs_regex_compile_ctx_t  void
-
-
-typedef struct {
     void        *code;
     void        *extra;
     int         ncaptures;
@@ -45,6 +35,22 @@ typedef struct {
     char        *entries;
 } njs_regex_t;
 
+
+#ifdef NJS_HAVE_PCRE2
+
+#define njs_regex_generic_ctx_t  void
+#define njs_regex_compile_ctx_t  void
+#define njs_regex_match_data_t   void
+
+#else
+
+typedef struct {
+    njs_pcre_malloc_t  private_malloc;
+    njs_pcre_free_t    private_free;
+    void               *memory_data;
+} njs_regex_generic_ctx_t;
+
+#define njs_regex_compile_ctx_t  void
 
 typedef struct {
     int         ncaptures;
@@ -56,6 +62,8 @@ typedef struct {
      */
     int         captures[3];
 } njs_regex_match_data_t;
+
+#endif
 
 
 NJS_EXPORT njs_regex_generic_ctx_t *

@@ -6,7 +6,9 @@
 
 #include <njs_main.h>
 
+#ifndef NJS_HAVE_PCRE2
 #include <pcre.h>
+#endif
 
 #include "njs_externals_test.h"
 
@@ -17,6 +19,12 @@
 #define njs_evar(little, big) little
 #else
 #define njs_evar(little, big) big
+#endif
+
+#ifdef NJS_HAVE_PCRE2
+#define njs_pcre_var(pcre2, pcre) pcre2
+#else
+#define njs_pcre_var(pcre2, pcre) pcre
 #endif
 
 
@@ -8632,9 +8640,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("String.bytesFrom([255,149,15,97,95]).replace(/_/g, 'X')[4]"),
       njs_str("X") },
 
-    { njs_str("/]/"),
-      njs_str("/\\]/") },
-
     { njs_str("/=/"),
       njs_str("/=/") },
 
@@ -8647,11 +8652,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("/\\s*;\\s*/"),
       njs_str("/\\s*;\\s*/") },
 
-    { njs_str("RegExp(']')"),
+#ifndef NJS_HAVE_PCRE2
+    { njs_str("/]/"),
       njs_str("/\\]/") },
 
-    { njs_str("RegExp('[\\\\')"),
-      njs_str("SyntaxError: pcre_compile(\"[\\\") failed: \\ at end of pattern") },
+    { njs_str("RegExp(']')"),
+      njs_str("/\\]/") },
 
     { njs_str("RegExp('[\\\\\\\\]]')"),
       njs_str("/[\\\\]\\]/") },
@@ -8673,6 +8679,12 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("/]cd/"),
       njs_str("/\\]cd/") },
+#endif
+
+    { njs_str("RegExp('[\\\\')"),
+      njs_str("SyntaxError: "
+              njs_pcre_var("pcre_compile2(\"[\\\") failed: \\ at end of pattern at \"\"",
+                           "pcre_compile(\"[\\\") failed: \\ at end of pattern")) },
 
     { njs_str("RegExp('\\\\0').source[1]"),
       njs_str("0") },
@@ -10698,8 +10710,10 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("/a\r/"),
       njs_str("SyntaxError: Unterminated RegExp \"/a\" in 1") },
 
+#ifndef NJS_HAVE_PCRE2
     { njs_str("/a\\q/"),
       njs_str("/a\\q/") },
+#endif
 
     { njs_str("/\\\\/"),
       njs_str("/\\\\/") },
@@ -10750,17 +10764,23 @@ static njs_unit_test_t  njs_test[] =
                  ".every(ch=>/[\\]\\[!\"#$%&'()*+,.\\/:;<=>?@\\^_`{|}-]/.test(ch))"),
       njs_str("true") },
 
+#ifndef NJS_HAVE_PCRE2
     { njs_str("/a\\q/.test('a\\q')"),
       njs_str("true") },
+#endif
 
     { njs_str("/(\\.(?!com|org)|\\/)/.test('ah.info')"),
       njs_str("true") },
 
     { njs_str("/(/.test('')"),
-      njs_str("SyntaxError: pcre_compile(\"(\") failed: missing ) in 1") },
+      njs_str("SyntaxError: "
+              njs_pcre_var("pcre_compile2(\"(\") failed: missing closing parenthesis at \"\" in 1",
+                           "pcre_compile(\"(\") failed: missing ) in 1")) },
 
     { njs_str("/+/.test('')"),
-      njs_str("SyntaxError: pcre_compile(\"+\") failed: nothing to repeat at \"+\" in 1") },
+      njs_str("SyntaxError: "
+              njs_pcre_var("pcre_compile2(\"+\") failed: quantifier does not follow a repeatable item at \"+\" in 1",
+                           "pcre_compile(\"+\") failed: nothing to repeat at \"+\" in 1")) },
 
     { njs_str("/^$/.test('')"),
       njs_str("true") },
@@ -11040,16 +11060,26 @@ static njs_unit_test_t  njs_test[] =
       njs_str("true") },
 
     { njs_str("new RegExp('[')"),
-      njs_str("SyntaxError: pcre_compile(\"[\") failed: missing terminating ] for character class") },
+      njs_str("SyntaxError: "
+              njs_pcre_var("pcre_compile2(\"[\") failed: missing terminating ] for character class at \"\"",
+                           "pcre_compile(\"[\") failed: missing terminating ] for character class")) },
 
     { njs_str("new RegExp('['.repeat(16))"),
-      njs_str("SyntaxError: pcre_compile(\"[[[[[[[[[[[[[[[[\") failed: missing terminating ] for character class") },
+      njs_str("SyntaxError: "
+              njs_pcre_var("pcre_compile2(\"[[[[[[[[[[[[[[[[\") failed: missing terminating ] for character class at \"\"",
+                           "pcre_compile(\"[[[[[[[[[[[[[[[[\") failed: missing terminating ] for character class")) },
 
     { njs_str("new RegExp('\\\\')"),
-      njs_str("SyntaxError: pcre_compile(\"\\\") failed: \\ at end of pattern") },
+      njs_str("SyntaxError: "
+              njs_pcre_var("pcre_compile2(\"\\\") failed: \\ at end of pattern at \"\"",
+                           "pcre_compile(\"\\\") failed: \\ at end of pattern")) },
 
     { njs_str("[0].map(RegExp().toString)"),
       njs_str("TypeError: \"this\" argument is not an object") },
+
+    { njs_str("var arr = /\\1(A)/.exec('AA');"
+              "[arr[0], arr[1]]"),
+      njs_str("A,A") },
 
     /* Non-standard ECMA-262 features. */
 
@@ -21230,7 +21260,7 @@ static njs_unit_test_t  njs_tz_test[] =
 };
 
 
-static njs_unit_test_t  njs_regexp_test[] =
+static njs_unit_test_t  njs_regexp_optional_tests[] =
 {
     { njs_str("/[\\\\u02E0-\\\\u02E4]/"),
       njs_str("/[\\\\u02E0-\\\\u02E4]/") },
@@ -21262,6 +21292,7 @@ static njs_unit_test_t  njs_regexp_test[] =
     { njs_str("RegExp('\x00').test('\0')"),
       njs_str("true") },
 
+#ifndef NJS_HAVE_PCRE2
     { njs_str("RegExp('\x00\\\\x00').source"),
       njs_str("\\u0000\\x00") },
 
@@ -21270,6 +21301,7 @@ static njs_unit_test_t  njs_regexp_test[] =
 
     { njs_str("RegExp('\\\\\\0').source"),
       njs_str("\\\\u0000") },
+#endif
 
     { njs_str("RegExp('[\0]').test('\0')"),
       njs_str("true") },
@@ -22154,9 +22186,11 @@ static njs_int_t
 njs_regexp_optional_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
     njs_opts_t *opts, njs_stat_t *stat)
 {
+    njs_bool_t  safe;
+
+#ifndef NJS_HAVE_PCRE2
     int         erroff;
     pcre        *re1, *re2;
-    njs_int_t   ret;
     const char  *errstr;
 
     /*
@@ -22169,6 +22203,10 @@ njs_regexp_optional_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
     re1 = pcre_compile("/[\\u0410]/", PCRE_JAVASCRIPT_COMPAT, &errstr, &erroff,
                       NULL);
 
+    if (re1 != NULL) {
+        pcre_free(re1);
+    }
+
     /*
      * pcre-7.8 fails to compile unicode escape codes inside square brackets
      * even when PCRE_UTF8 option is provided.
@@ -22176,23 +22214,23 @@ njs_regexp_optional_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
     re2 = pcre_compile("/[\\u0410]/", PCRE_JAVASCRIPT_COMPAT | PCRE_UTF8,
                        &errstr, &erroff, NULL);
 
-    if (re1 == NULL && re2 != NULL) {
-        ret = njs_unit_test(tests, num, name, opts, stat);
-        if (ret != NJS_OK) {
-            return ret;
-        }
-
-    } else {
-        njs_printf("njs unicode regexp tests skipped, libpcre fails\n");
-    }
-
-    if (re1 != NULL) {
-        pcre_free(re1);
-    }
-
     if (re2 != NULL) {
         pcre_free(re2);
     }
+
+    safe = (re1 == NULL && re2 != NULL);
+
+#else
+
+    safe = 1;
+
+#endif
+
+    if (safe) {
+        return njs_unit_test(tests, num, name, opts, stat);
+    }
+
+    njs_printf("regexp optional tests skipped\n");
 
     return NJS_OK;
 }
@@ -23331,10 +23369,10 @@ static njs_test_suite_t  njs_suites[] =
       njs_nitems(njs_tz_test),
       njs_timezone_optional_test },
 
-    { njs_str("regexp"),
+    { njs_str("regexp optional"),
       { .repeat = 1, .unsafe = 1 },
-      njs_regexp_test,
-      njs_nitems(njs_regexp_test),
+      njs_regexp_optional_tests,
+      njs_nitems(njs_regexp_optional_tests),
       njs_regexp_optional_test },
 
     { njs_str("vm_json"),

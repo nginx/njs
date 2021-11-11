@@ -16,7 +16,6 @@ NJS_LIB_SRCS=" \
    src/njs_md5.c \
    src/njs_sha1.c \
    src/njs_sha2.c \
-   src/njs_pcre.c \
    src/njs_time.c \
    src/njs_file.c \
    src/njs_malloc.c \
@@ -64,6 +63,14 @@ NJS_LIB_SRCS=" \
    src/njs_async.c \
 "
 
+NJS_LIB_PCRE_SRCS=" \
+   src/njs_pcre.c \
+"
+
+NJS_LIB_PCRE2_SRCS=" \
+   src/njs_pcre2.c \
+"
+
 NJS_LIB_TEST_SRCS=" \
    src/test/lvlhsh_unit_test.c \
    src/test/random_unit_test.c \
@@ -75,6 +82,12 @@ NJS_TEST_SRCS=" \
    src/test/njs_unit_test.c \
    src/test/njs_benchmark.c \
 "
+
+if [ "$NJS_HAVE_PCRE2" = "YES" ]; then
+	NJS_LIB_SRCS="$NJS_LIB_SRCS $NJS_LIB_PCRE2_SRCS"
+else
+	NJS_LIB_SRCS="$NJS_LIB_SRCS $NJS_LIB_PCRE_SRCS"
+fi
 
 NJS_TS_SRCS=$(find ts/ -name "*.d.ts" -o -name "*.json")
 

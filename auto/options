@@ -11,6 +11,8 @@ NJS_DEBUG_MEMORY=NO
 NJS_ADDRESS_SANITIZER=NO
 NJS_TEST262=YES
 
+NJS_TRY_PCRE2=YES
+
 NJS_CONFIGURE_OPTIONS=
 
 for njs_option
@@ -30,6 +32,8 @@ do
         --debug=*)                       NJS_DEBUG="$value"                  ;;
         --debug-memory=*)                NJS_DEBUG_MEMORY="$value"           ;;
         --test262=*)                     NJS_TEST262="$value"                ;;
+
+        --no-pcre2)                      NJS_TRY_PCRE2=NO                    ;;
 
         --help)
             . auto/help
