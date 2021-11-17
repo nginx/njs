@@ -1653,15 +1653,21 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     int                         nid;
     BIO                         *bio;
+#if (OPENSSL_VERSION_NUMBER < 0x30000000L)
     RSA                         *rsa;
     EC_KEY                      *ec;
+#else
+    char                        gname[80];
+#endif
     unsigned                    usage;
     EVP_PKEY                    *pkey;
     njs_int_t                   ret;
     njs_str_t                   key_data, format;
     njs_value_t                 value, *options;
     const u_char                *start;
+#if (OPENSSL_VERSION_NUMBER < 0x30000000L)
     const EC_GROUP              *group;
+#endif
     njs_mp_cleanup_t            *cln;
     njs_webcrypto_key_t         *key;
     PKCS8_PRIV_KEY_INFO         *pkcs8;
@@ -1770,6 +1776,9 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     case NJS_ALGORITHM_RSA_OAEP:
     case NJS_ALGORITHM_RSA_PSS:
     case NJS_ALGORITHM_RSASSA_PKCS1_v1_5:
+
+#if (OPENSSL_VERSION_NUMBER < 0x30000000L)
+
         rsa = EVP_PKEY_get1_RSA(pkey);
         if (njs_slow_path(rsa == NULL)) {
             njs_webcrypto_error(vm, "RSA key is not found");
@@ -1777,6 +1786,13 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
         RSA_free(rsa);
+
+#else
+        if (!EVP_PKEY_is_a(pkey, "RSA")) {
+            njs_webcrypto_error(vm, "RSA key is not found");
+            goto fail;
+        }
+#endif
 
         ret = njs_algorithm_hash(vm, options, &key->hash);
         if (njs_slow_path(ret == NJS_ERROR)) {
@@ -1789,6 +1805,9 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     case NJS_ALGORITHM_ECDSA:
     case NJS_ALGORITHM_ECDH:
+
+#if (OPENSSL_VERSION_NUMBER < 0x30000000L)
+
         ec = EVP_PKEY_get1_EC_KEY(pkey);
         if (njs_slow_path(ec == NULL)) {
             njs_webcrypto_error(vm, "EC key is not found");
@@ -1798,6 +1817,22 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         group = EC_KEY_get0_group(ec);
         nid = EC_GROUP_get_curve_name(group);
         EC_KEY_free(ec);
+
+#else
+
+        if (!EVP_PKEY_is_a(pkey, "EC")) {
+            njs_webcrypto_error(vm, "EC key is not found");
+            goto fail;
+        }
+
+        if (EVP_PKEY_get_group_name(pkey, gname, sizeof(gname), NULL) != 1) {
+            njs_webcrypto_error(vm, "EVP_PKEY_get_group_name() failed");
+            goto fail;
+        }
+
+        nid = OBJ_txt2nid(gname);
+
+#endif
 
         ret = njs_algorithm_curve(vm, options, &key->curve);
         if (njs_slow_path(ret == NJS_ERROR)) {
@@ -2624,7 +2659,9 @@ njs_external_webcrypto_init(njs_vm_t *vm)
     njs_str_t           name;
     njs_opaque_value_t  value;
 
+#if (OPENSSL_VERSION_NUMBER < 0x10100003L)
     OpenSSL_add_all_algorithms();
+#endif
 
     njs_webcrypto_crypto_key_proto_id =
         njs_vm_external_prototype(vm, njs_ext_webcrypto_crypto_key,

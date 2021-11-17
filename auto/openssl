@@ -18,7 +18,7 @@ njs_feature_libs="-lcrypto"
 njs_feature_test="#include <openssl/evp.h>
 
                   int main() {
-                      OpenSSL_add_all_algorithms();
+                      EVP_CIPHER_CTX_new();
                       return 0;
                  }"
 . auto/feature
