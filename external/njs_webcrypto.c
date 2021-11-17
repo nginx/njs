@@ -2006,22 +2006,22 @@ njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     md = njs_algorithm_hash_digest(hash);
 
-    ret = EVP_DigestSignInit(mctx, NULL, md, NULL, key->pkey);
-    if (njs_slow_path(ret <= 0)) {
-        njs_webcrypto_error(vm, "EVP_DigestSignInit() failed");
-        goto fail;
-    }
-
-    ret = EVP_DigestSignUpdate(mctx, data.start, data.length);
-    if (njs_slow_path(ret <= 0)) {
-        njs_webcrypto_error(vm, "EVP_DigestSignUpdate() failed");
-        goto fail;
-    }
-
     outlen = 0;
 
     switch (alg->type) {
     case NJS_ALGORITHM_HMAC:
+        ret = EVP_DigestSignInit(mctx, NULL, md, NULL, key->pkey);
+        if (njs_slow_path(ret <= 0)) {
+            njs_webcrypto_error(vm, "EVP_DigestSignInit() failed");
+            goto fail;
+        }
+
+        ret = EVP_DigestSignUpdate(mctx, data.start, data.length);
+        if (njs_slow_path(ret <= 0)) {
+            njs_webcrypto_error(vm, "EVP_DigestSignUpdate() failed");
+            goto fail;
+        }
+
         olen = EVP_MD_size(md);
 
         if (!verify) {
@@ -2051,6 +2051,18 @@ njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     case NJS_ALGORITHM_RSA_PSS:
     case NJS_ALGORITHM_ECDSA:
     default:
+        ret = EVP_DigestInit_ex(mctx, md, NULL);
+        if (njs_slow_path(ret <= 0)) {
+            njs_webcrypto_error(vm, "EVP_DigestInit_ex() failed");
+            goto fail;
+        }
+
+        ret = EVP_DigestUpdate(mctx, data.start, data.length);
+        if (njs_slow_path(ret <= 0)) {
+            njs_webcrypto_error(vm, "EVP_DigestUpdate() failed");
+            goto fail;
+        }
+
         ret = EVP_DigestFinal_ex(mctx, m, &m_len);
         if (njs_slow_path(ret <= 0)) {
             njs_webcrypto_error(vm, "EVP_DigestFinal_ex() failed");
