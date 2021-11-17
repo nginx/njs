@@ -25,7 +25,16 @@ njs_feature_test="#include <openssl/evp.h>
 
 
 if [ $njs_found = yes ]; then
-    echo " + OpenSSL version: `openssl version`"
+    njs_feature="OpenSSL version"
+    njs_feature_name=NJS_OPENSSL_VERSION
+    njs_feature_run=value
+    njs_feature_test="#include <openssl/ssl.h>
+
+                      int main() {
+                          printf(\"\\\"%s\\\"\", OPENSSL_VERSION_TEXT);
+                          return 0;
+                      }"
+    . auto/feature
 
     NJS_HAVE_OPENSSL=YES
     NJS_OPENSSL_LIB="$njs_feature_libs"
