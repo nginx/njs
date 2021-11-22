@@ -446,7 +446,7 @@ njs_regexp_match_trace_handler(njs_trace_t *trace, njs_trace_data_t *td,
     trace = trace->next;
     p = trace->handler(trace, td, start);
 
-    njs_internal_error(vm, (const char *) start);
+    njs_internal_error(vm, "%*s", p - start, start);
 
     return p;
 }
