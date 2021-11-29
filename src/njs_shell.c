@@ -7,7 +7,7 @@
 
 #include <njs_main.h>
 
-#ifndef NJS_FUZZER_TARGET
+#if (!defined NJS_FUZZER_TARGET && defined NJS_HAVE_READLINE)
 
 #include <locale.h>
 #if (NJS_HAVE_EDITLINE)
@@ -101,10 +101,13 @@ static njs_int_t njs_process_script(njs_opts_t *opts,
 static njs_int_t njs_options_parse(njs_opts_t *opts, int argc, char **argv);
 static void njs_options_free(njs_opts_t *opts);
 static njs_int_t njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options);
+
+#ifdef NJS_HAVE_READLINE
 static njs_int_t njs_interactive_shell(njs_opts_t *opts,
     njs_vm_opt_t *vm_options);
 static njs_int_t njs_editline_init(void);
 static char *njs_completion_generator(const char *text, int state);
+#endif
 
 #endif
 
@@ -282,10 +285,16 @@ main(int argc, char **argv)
     vm_options.ast = opts.ast;
     vm_options.unhandled_rejection = opts.unhandled_rejection;
 
+#ifdef NJS_HAVE_READLINE
+
     if (opts.interactive) {
         ret = njs_interactive_shell(&opts, &vm_options);
 
-    } else if (opts.command) {
+    } else
+
+#endif
+
+    if (opts.command) {
         vm = njs_create_vm(&opts, &vm_options);
         if (vm != NULL) {
             command.start = (u_char *) opts.command;
@@ -314,9 +323,14 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
     njs_uint_t  n;
 
     static const char  help[] =
-        "Interactive njs shell.\n"
+        "njs [options] [-c string | script.js | -] [script args]\n"
         "\n"
-        "njs [options] [-c string | script.js | -] [script args]"
+        "Interactive shell: "
+#ifdef NJS_HAVE_READLINE
+        "enabled\n"
+#else
+        "disabled\n"
+#endif
         "\n"
         "Options:\n"
         "  -a                print AST.\n"
@@ -914,7 +928,7 @@ njs_process_script(njs_opts_t *opts, njs_console_t *console,
 }
 
 
-#ifndef NJS_FUZZER_TARGET
+#if (!defined NJS_FUZZER_TARGET && defined NJS_HAVE_READLINE)
 
 static njs_int_t
 njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)

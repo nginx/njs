@@ -68,14 +68,12 @@ if [ $njs_found = no ]; then
     . auto/feature
 fi
 
-NJS_DEFAULT_TARGET=libnjs
-
 if [ $njs_found = yes ]; then
     NJS_HAVE_READLINE=YES
+    njs_define=NJS_HAVE_READLINE . auto/define
     NJS_READLINE_LIB=$njs_feature_libs
-    NJS_DEFAULT_TARGET="$NJS_DEFAULT_TARGET njs"
 
 else
     NJS_HAVE_READLINE=NO
-    echo " - building interactive shell is not possible"
+    echo " - njs CLI is built without interactive shell support"
 fi

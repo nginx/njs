@@ -26,7 +26,7 @@ NJS_TYPES_VER = \$(NJS_VER)
 
 NPM = npm
 
-default: $NJS_DEFAULT_TARGET
+default: njs
 
 NJS_LIB_INCS = -Isrc -I$NJS_BUILD_DIR
 
@@ -69,8 +69,6 @@ done
 
 # njs cli.
 
-if [ $NJS_HAVE_READLINE = YES ]; then
-
 cat << END >> $NJS_MAKEFILE
 
 $NJS_BUILD_DIR/njs: \\
@@ -83,21 +81,6 @@ $NJS_BUILD_DIR/njs: \\
 		-lm $NJS_LIBS $NJS_LIB_AUX_LIBS $NJS_READLINE_LIB
 
 END
-
-else
-
-cat << END >> $NJS_MAKEFILE
-
-$NJS_BUILD_DIR/njs:
-	@echo
-	@echo " error: to make njs CLI \"readline\" library is required."
-	@echo
-	@exit 1
-
-END
-
-fi
-
 
 # njs fuzzer.
 
@@ -209,7 +192,7 @@ $NJS_BUILD_DIR/njs_auto_config.h:
 	@exit 1
 
 all: $NJS_BUILD_DIR/njs_auto_config.h \\
-	$NJS_DEFAULT_TARGET ts test lib_test benchmark
+	njs ts test lib_test benchmark
 
 njs: $NJS_BUILD_DIR/njs_auto_config.h $NJS_BUILD_DIR/njs
 njs_fuzzer: $NJS_BUILD_DIR/njs_auto_config.h \\

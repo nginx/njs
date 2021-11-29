@@ -21,9 +21,6 @@ fi
 
 echo
 echo " njs build dir: $NJS_BUILD_DIR"
-
-if [ $NJS_HAVE_READLINE = YES ]; then
-  echo " njs CLI: $NJS_BUILD_DIR/njs"
-fi
+echo " njs CLI: $NJS_BUILD_DIR/njs"
 
 echo
