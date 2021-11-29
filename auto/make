@@ -136,7 +136,7 @@ do
 
 $NJS_BUILD_DIR/$njs_bin: $njs_src \\
 	$NJS_BUILD_DIR/libnjs.a
-	\$(NJS_CC) -o $NJS_BUILD_DIR/$njs_bin \$(NJS_CFLAGS) \\
+	\$(NJS_LINK) -o $NJS_BUILD_DIR/$njs_bin \$(NJS_CFLAGS) \\
 		\$(NJS_LIB_INCS) $njs_dep_flags \\
 		$njs_src $NJS_BUILD_DIR/libnjs.a \\
 		$njs_dep_post -lm
@@ -184,7 +184,7 @@ do
 $NJS_BUILD_DIR/$njs_bin: $njs_src \\
 	$NJS_BUILD_DIR/libnjs.a \\
 	$NJS_BUILD_DIR/$njs_externals_obj
-	\$(NJS_CC) -o $NJS_BUILD_DIR/$njs_bin \$(NJS_CFLAGS) \\
+	\$(NJS_LINK) -o $NJS_BUILD_DIR/$njs_bin \$(NJS_CFLAGS) \\
 		$NJS_LIB_AUX_CFLAGS \$(NJS_LIB_INCS) \\
 		$njs_dep_flags \\
 		$NJS_BUILD_DIR/$njs_externals_obj \\
