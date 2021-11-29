@@ -1,2 +1,0 @@
-Promise.resolve()
-.then(() => {nonExsisting()});

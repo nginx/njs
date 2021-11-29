@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+
+NJS_STATUS="PASSED"
+if [ $njs_passed -ne $njs_total ]; then
+    NJS_STATUS="FAILED"
+fi
+
+if [ -n "$njs_failed_list" ]; then
+    for t in $njs_failed_list; do
+        printf "$t FAILED\n"
+    done
+fi
+
+printf "TOTAL: $NJS_STATUS [$njs_passed/$njs_total]\n"
+exit $(($njs_passed != $njs_total))

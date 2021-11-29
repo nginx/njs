@@ -1,0 +1,64 @@
+#!/bin/sh
+
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+
+set -e
+
+. test/options
+. test/setup
+
+for njs_test in $NJS_TESTS; do
+    . test/prepare
+
+    njs_log="$NJS_TEST_DIR/${njs_test%.*}.log"
+
+    verbose "$njs_test $njs_log"
+    cat << END >> $NJS_TEST_LOG
+----------------------------------------
+running $njs_test $njs_log
+END
+
+    if /bin/sh -c "($NJS_TEST_BINARY $NJS_TEST_DIR/$njs_test)" > $njs_log 2>&1; then
+        njs_success=yes
+    else
+        njs_success=no
+    fi
+
+    cat $njs_log >> $NJS_TEST_LOG
+    njs_out=`cat $njs_log`
+
+    if [ $njs_success = yes ]; then
+        if [ -n "$njs_negative" ]; then
+            failed $njs_test
+
+        elif [ $njs_async = yes ]; then
+            if [ "$njs_out" != 'Test262:AsyncTestComplete' ]; then
+                failed $njs_test
+
+            else
+                passed $njs_test
+            fi
+
+        else
+            if [ -n "$njs_out" ]; then
+                failed $njs_test
+
+            else
+                passed $njs_test
+            fi
+        fi
+
+    else
+        if [ -n "$njs_negative" ]; then
+            passed $njs_test
+
+        else
+            failed $njs_test
+        fi
+    fi
+
+done
+
+. test/finalize
+. test/report

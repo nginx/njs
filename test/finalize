@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+
+if [ -z "$NJS_TEST_VERBOSE"  ]; then
+    verbose "Removing dir: $NJS_TEST_DIR\n"
+    verbose "\n"
+
+    rm -fr $NJS_TEST_DIR
+fi

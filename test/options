@@ -1,0 +1,61 @@
+#!/bin/sh
+
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+
+NJS_TEST_DIR=`mktemp -d /tmp/njs_test.XXX`
+NJS_TEST_LOG_DEFAULT="$NJS_TEST_DIR/log.log"
+
+NJS_TEST_VERBOSE=${NJS_TEST_VERBOSE:-}
+NJS_TEST_BINARY=${NJS_TEST_BINARY:-build/njs}
+NJS_TEST_LOG=${NJS_TEST_LOG:-${NJS_TEST_LOG_DEFAULT}}
+
+for njs_option
+do
+    case "$njs_option" in
+        -*=*) value=`echo "$njs_option" | sed -e 's/[-_a-zA-Z0-9]*=//'`      ;;
+           *) value="" ;;
+    esac
+
+    case "$njs_option" in
+        --binary=*)
+            NJS_TEST_BINARY="$value"
+            shift
+        ;;
+
+        --log=*)
+            NJS_TEST_LOG="$value"
+            shift
+        ;;
+
+        --test-dir=*)
+            NJS_TEST_DIR="$value"
+            shift
+        ;;
+
+        --verbose=*)
+            NJS_TEST_VERBOSE="$value"
+            shift
+        ;;
+
+        --help)
+            . test/help
+            exit 0
+        ;;
+
+        --*)
+            echo
+            echo $0: error: invalid option \"$njs_option\".
+            echo Run \"$0 --help\" to see available options.
+            echo
+            exit 1
+        ;;
+
+        *)
+            break
+        ;;
+    esac
+
+done
+
+NJS_TEST_PATHS=${@:-test}

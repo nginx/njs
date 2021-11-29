@@ -209,12 +209,16 @@ lib_test: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/lvlhsh_unit_test
 	$NJS_BUILD_DIR/unicode_unit_test
 
+test262: njs
+
+	test/test262
+
 unit_test: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/njs_unit_test
 
 	$NJS_BUILD_DIR/njs_unit_test
 
-test: expect_test unit_test
+test: expect_test unit_test test262
 
 benchmark: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/njs_benchmark

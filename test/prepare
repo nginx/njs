@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+
+njs_includes=`grep 'includes: \[[^]]*]' $njs_test \
+             | sed -e 's/includes: \[//' | sed -e 's/,/ /g' | sed -e 's/\]//'`
+njs_includes="assert.js sta.js $njs_includes"
+
+njs_flags=`grep 'flags: \[[^]]*]' $njs_test \
+             | sed -e 's/flags: \[//' | sed -e 's/,/ /g' | sed -e 's/\]//'`
+
+njs_negative=`grep 'negative:' $njs_test > /dev/null \
+              && grep 'phase: ' $njs_test | sed -e 's/ *phase: //' || true`
+
+njs_async=no
+for flag in $njs_flags; do
+    case $flag in
+        async)
+            njs_async=yes
+            njs_includes="compatPrint.js doneprintHandle.js $njs_includes"
+
+        ;;
+    esac
+done
+
+njs_inc=
+for file in $njs_includes; do
+    njs_inc="$njs_inc test/harness/$file"
+done
+
+mkdir -p `dirname $NJS_TEST_DIR/$njs_test`
+
+cat $njs_inc $njs_test > $NJS_TEST_DIR/$njs_test
+
+njs_total=$((njs_total+1))

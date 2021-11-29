@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+
+verbose() {
+    if [ -n "$NJS_TEST_VERBOSE" ]; then
+        printf "$1"
+    fi
+}
+
+passed() {
+    verbose " PASSED\n"
+    njs_passed=$((njs_passed+1))
+}
+
+failed() {
+    njs_failed_list="$njs_failed_list $1"
+    verbose " FAILED\n"
+}
+
+verbose "Test dir: $NJS_TEST_DIR\n"
+verbose "Log file: $NJS_TEST_LOG\n"
+verbose "\n"
+
+njs_passed=0
+njs_total=0
+njs_failed_list=""
+
+NJS_TESTS=""
+for arg in $NJS_TEST_PATHS; do
+    if [ -d $arg ]; then
+        NJS_TESTS="$NJS_TESTS $(find $arg -name '*\.t\.js')"
+    else
+        NJS_TESTS="$NJS_TESTS $arg"
+    fi
+done
+
+NJS_TESTS=`printf "%s\n" $NJS_TESTS  | sort`
