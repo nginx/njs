@@ -1875,10 +1875,10 @@ njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await)
     frame = (njs_frame_t *) active;
 
     if (frame->exception.catch != NULL) {
-        ctx->await->pc = frame->exception.catch;
+        ctx->await->native.pc = frame->exception.catch;
 
     } else {
-        ctx->await->pc = ctx->pc;
+        ctx->await->native.pc = ctx->pc;
     }
 
     fulfilled->context = ctx;

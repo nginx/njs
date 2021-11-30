@@ -800,12 +800,17 @@ njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *native)
 
 
 njs_int_t
-njs_function_frame_save(njs_vm_t *vm, njs_native_frame_t *native, u_char *pc)
+njs_function_frame_save(njs_vm_t *vm, njs_frame_t *frame, u_char *pc)
 {
     size_t              value_count, n;
     njs_value_t         *start, *end, *p, **new, *value, **local;
     njs_function_t      *function;
-    njs_native_frame_t  *active;
+    njs_native_frame_t  *active, *native;
+
+    *frame = *vm->active_frame;
+    frame->previous_active_frame = NULL;
+
+    native = &frame->native;
 
     active = &vm->active_frame->native;
     value_count = njs_function_frame_value_count(active);
@@ -816,7 +821,6 @@ njs_function_frame_save(njs_vm_t *vm, njs_native_frame_t *native, u_char *pc)
     value = (njs_value_t *) (new + value_count
                              + function->u.lambda->temp);
 
-    *native = *active;
 
     native->arguments = value;
     native->arguments_offset = value + (function->args_offset - 1);

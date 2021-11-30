@@ -116,7 +116,7 @@ njs_int_t njs_function_lambda_call(njs_vm_t *vm);
 njs_int_t njs_function_native_call(njs_vm_t *vm);
 njs_native_frame_t *njs_function_frame_alloc(njs_vm_t *vm, size_t size);
 void njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame);
-njs_int_t njs_function_frame_save(njs_vm_t *vm, njs_native_frame_t *native,
+njs_int_t njs_function_frame_save(njs_vm_t *vm, njs_frame_t *native,
     u_char *pc);
 njs_object_type_t njs_function_object_type(njs_vm_t *vm,
     njs_function_t *function);

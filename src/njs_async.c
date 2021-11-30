@@ -59,7 +59,7 @@ njs_await_fulfilled(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     njs_int_t           ret;
     njs_value_t         **cur_local, **cur_closures, **cur_temp, *value;
-    njs_frame_t         *frame;
+    njs_frame_t         *frame, *async_frame;
     njs_function_t      *function;
     njs_async_ctx_t     *ctx;
     njs_native_frame_t  *top, *async;
@@ -71,7 +71,8 @@ njs_await_fulfilled(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         goto failed;
     }
 
-    async = ctx->await;
+    async_frame = ctx->await;
+    async = &async_frame->native;
     async->previous = vm->top_frame;
 
     function = async->function;
@@ -87,7 +88,7 @@ njs_await_fulfilled(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     vm->levels[NJS_LEVEL_TEMP] = async->temp;
 
     vm->top_frame = async;
-    vm->active_frame = (njs_frame_t *) async;
+    vm->active_frame = async_frame;
 
     *njs_scope_value(vm, ctx->index) = *value;
     vm->retval = *value;
@@ -149,7 +150,7 @@ njs_await_rejected(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     value = njs_arg(args, nargs, 1);
 
-    if (ctx->await->pc == ctx->pc) {
+    if (ctx->await->native.pc == ctx->pc) {
         (void) njs_function_call(vm, njs_function(&ctx->capability->reject),
                                  &njs_value_undefined, value, 1, &vm->retval);
 
@@ -158,7 +159,7 @@ njs_await_rejected(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    ctx->pc = ctx->await->pc;
+    ctx->pc = ctx->await->native.pc;
 
     return njs_await_fulfilled(vm, args, nargs, unused);
 }

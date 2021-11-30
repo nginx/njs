@@ -10,7 +10,7 @@
 
 typedef struct {
     njs_promise_capability_t  *capability;
-    njs_native_frame_t        *await;
+    njs_frame_t               *await;
     uintptr_t                 index;
     u_char                    *pc;
 } njs_async_ctx_t;
