@@ -378,9 +378,27 @@ njs_unit_test_r_method(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
+njs_unit_test_promise_trampoline(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused)
+{
+    njs_function_t  *callback;
+
+    callback = njs_value_function(njs_argument(args, 1));
+
+    if (callback != NULL) {
+        return njs_vm_call(vm, callback, njs_argument(args, 2), 1);
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
 njs_unit_test_r_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
+    njs_int_t            ret;
+    njs_value_t          retval, *argument, *select;
     njs_vm_event_t       vm_event;
     njs_function_t       *callback;
     njs_external_ev_t    *ev;
@@ -393,9 +411,19 @@ njs_unit_test_r_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    callback = njs_value_function(njs_arg(args, nargs, 1));
+    ev = njs_mp_alloc(vm->mem_pool, sizeof(njs_external_ev_t));
+    if (ev == NULL) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    ret = njs_vm_promise_create(vm, &retval, &ev->callbacks[0]);
+    if (ret != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    callback = njs_vm_function_alloc(vm, njs_unit_test_promise_trampoline);
     if (callback == NULL) {
-        njs_type_error(vm, "argument is not callable");
         return NJS_ERROR;
     }
 
@@ -405,22 +433,20 @@ njs_unit_test_r_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    ev = njs_mp_alloc(vm->mem_pool, sizeof(njs_external_ev_t));
-    if (ev == NULL) {
-        njs_memory_error(vm);
-        return NJS_ERROR;
-    }
+    argument = njs_arg(args, nargs, 1);
+    select = njs_arg(args, nargs, 2);
 
     ev->vm_event = vm_event;
     ev->data = r;
-    ev->nargs = 1;
-    njs_value_assign(&ev->args[0], njs_argument(args, 0));
+    ev->nargs = 2;
+    njs_value_assign(&ev->args[0], &ev->callbacks[!!njs_bool(select)]);
+    njs_value_assign(&ev->args[1], argument);
 
     env = vm->external;
 
     njs_queue_insert_tail(&env->events, &ev->link);
 
-    njs_set_undefined(&vm->retval);
+    njs_vm_retval_set(vm, njs_value_arg(&retval));
 
     return NJS_OK;
 }

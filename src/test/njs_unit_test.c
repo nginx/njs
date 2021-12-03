@@ -21015,8 +21015,15 @@ static njs_unit_test_t  njs_externals_test[] =
 
     { njs_str("let obj = { a: 1, b: 2};"
               "function cb(r) { r.retval(obj.a); }"
-              "$r.subrequest(reply => cb(reply))"),
+              "$r.subrequest($r)"
+              ".then(reply => cb(reply))"),
       njs_str("1") },
+
+    { njs_str("let obj = { a: 1, b: 2};"
+              "function cb(r, select) { r.retval(obj[select]); }"
+              "$r.subrequest('b')"
+              ".then(select => cb($r, select))"),
+      njs_str("2") },
 };
 
 
@@ -21025,7 +21032,8 @@ static njs_unit_test_t  njs_async_handler_test[] =
     { njs_str("globalThis.main = (function() {"
               "     function cb(r) { r.retval(1); }"
               "     function handler(r) {"
-              "         r.subrequest(reply => cb(reply));"
+              "         r.subrequest(r)"
+              "         .then(reply => cb(reply))"
               "     };"
               "     return {handler};"
               "})();"
@@ -21036,7 +21044,8 @@ static njs_unit_test_t  njs_async_handler_test[] =
               "     let obj = { a: 1, b: 2};"
               "     function cb(r) { r.retval(obj.a); }"
               "     function handler(r) {"
-              "         r.subrequest(reply => cb(reply));"
+              "         r.subrequest(r)"
+              "         .then(reply => cb(reply))"
               "     };"
               "     return {handler};"
               "})();"

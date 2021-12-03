@@ -19,6 +19,7 @@ typedef struct {
     void                    *data;
     njs_uint_t              nargs;
     njs_value_t             args[3];
+    njs_value_t             callbacks[2];
     njs_queue_link_t        link;
 } njs_external_ev_t;
 
