@@ -21024,6 +21024,22 @@ static njs_unit_test_t  njs_externals_test[] =
               "$r.subrequest('b')"
               ".then(select => cb($r, select))"),
       njs_str("2") },
+
+    { njs_str("function pr(x) { return new Promise(resolve => {resolve(x + ':pr')}); };"
+              "Promise.all(['a', 'b', 'c'].map(async (v) => {"
+              "    return await pr(v + ':async');"
+              "}))"
+              ".then(v => $r.retval(v))"),
+      njs_str("a:async:pr,b:async:pr,c:async:pr") },
+
+    { njs_str("function pr(x) { return new Promise(resolve => {resolve(x + ':pr')}); };"
+              "Promise.all(['a', 'b', 'c'].map(async (v) => {"
+              "    let r = await pr(v + ':async');"
+              "    let r2 = await pr(r + ':async2');"
+              "    return r2 + ':r';"
+              "}))"
+              ".then(v => $r.retval(v))"),
+      njs_str("a:async:pr:async2:pr:r,b:async:pr:async2:pr:r,c:async:pr:async2:pr:r") },
 };
 
 

@@ -37,6 +37,9 @@ njs_async_function_frame_invoke(njs_vm_t *vm, njs_value_t *retval)
         ret = njs_function_call(vm, njs_function(&capability->resolve),
                                 &njs_value_undefined, retval, 1, &vm->retval);
 
+    } else if (ret == NJS_AGAIN) {
+        ret = NJS_OK;
+
     } else if (ret == NJS_ERROR) {
         if (njs_is_memory_error(vm, &vm->retval)) {
             return NJS_ERROR;
@@ -115,6 +118,9 @@ njs_await_fulfilled(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                             &njs_value_undefined, &vm->retval, 1, &vm->retval);
 
         njs_async_context_free(vm, ctx);
+
+    } else if (ret == NJS_AGAIN) {
+        ret = NJS_OK;
 
     } else if (ret == NJS_ERROR) {
         if (njs_is_memory_error(vm, &vm->retval)) {
