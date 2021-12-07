@@ -13048,7 +13048,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("(function(){}).constructor === Function"),
       njs_str("true") },
 
-#if NJS_HAVE_LARGE_STACK
     { njs_str("new Function('('.repeat(2**13));"),
       njs_str("SyntaxError: Unexpected token \"}\" in runtime:1") },
 
@@ -13091,7 +13090,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = (new Function('return [' + '1,'.repeat(2**13) + ']'))();"
               "a.push(5); [a[2**13 - 1], a[2**13]]"),
       njs_str("1,5") },
-#endif
 
     { njs_str("var f = new Function('return 1;'); f();"),
       njs_str("1") },
