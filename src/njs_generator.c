@@ -3583,11 +3583,7 @@ njs_generate_function_declaration(njs_vm_t *vm, njs_generator_t *generator,
         return njs_generator_stack_pop(vm, generator, NULL);
     }
 
-    if (njs_is_function(&var->value)) {
-        lambda = njs_function(&var->value)->u.lambda;
-    } else {
-        lambda = var->value.data.u.lambda;
-    }
+    lambda = njs_variable_lambda(var);
 
     lex_entry = njs_lexer_entry(node->u.reference.unique_id);
     if (njs_slow_path(lex_entry == NULL)) {

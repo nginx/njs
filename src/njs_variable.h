@@ -93,6 +93,17 @@ njs_variable_node_alloc(njs_vm_t *vm, njs_variable_t *var, uintptr_t key)
     return node;
 }
 
+njs_inline njs_function_lambda_t *
+njs_variable_lambda(njs_variable_t * var)
+{
+    if (njs_is_function(&var->value)) {
+        /* may be set by generator in njs_generate_function_declaration(). */
+        return njs_function(&var->value)->u.lambda;
+    }
+
+    return var->value.data.u.lambda;
+}
+
 
 njs_inline void
 njs_variable_node_free(njs_vm_t *vm, njs_variable_node_t *node)

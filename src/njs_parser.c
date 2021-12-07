@@ -6747,7 +6747,7 @@ njs_parser_function_declaration(njs_parser_t *parser, njs_lexer_token_t *token,
         return NJS_ERROR;
     }
 
-    node->u.value.data.u.lambda = var->value.data.u.lambda;
+    node->u.value.data.u.lambda = njs_variable_lambda(var);
 
     node->left = (njs_parser_node_t *) unique_id;
 

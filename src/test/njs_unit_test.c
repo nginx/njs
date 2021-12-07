@@ -21408,6 +21408,14 @@ static njs_unit_test_t  njs_shell_test[] =
               "Number.prototype.test" ENTER),
       njs_str("test") },
 
+    { njs_str("function f(a) {return a}" ENTER
+              "function f(a) {return a}; f(2)" ENTER),
+      njs_str("2") },
+
+    { njs_str("function f() {return 1}" ENTER
+              "function f(a) {return 1}; f(2)" ENTER),
+      njs_str("1") },
+
     { njs_str("try {(new Function('function foo(){return 1}; ()=>{}breakhere'))} catch (e) {}" ENTER
               "foo()" ENTER),
       njs_str("ReferenceError: \"foo\" is not defined\n"
