@@ -453,7 +453,7 @@ njs_generator_after(njs_vm_t *vm, njs_generator_t *generator,
 {
     njs_generator_stack_entry_t  *entry;
 
-    entry = njs_mp_alloc(vm->mem_pool, sizeof(njs_parser_stack_entry_t));
+    entry = njs_mp_alloc(vm->mem_pool, sizeof(njs_generator_stack_entry_t));
     if (njs_slow_path(entry == NULL)) {
         return NJS_ERROR;
     }
