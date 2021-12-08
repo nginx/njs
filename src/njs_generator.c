@@ -348,8 +348,6 @@ static njs_index_t njs_generate_temp_index_get(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_children_indexes_release(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
-static njs_int_t njs_generate_children_indexes_release_pop(njs_vm_t *vm,
-    njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_node_index_release(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_node_index_release_pop(njs_vm_t *vm,
@@ -2700,6 +2698,7 @@ static njs_int_t
 njs_generate_assignment_end(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
+    njs_int_t              ret;
     njs_parser_node_t      *lvalue, *expr, *object, *property;
     njs_vmcode_prop_set_t  *prop_set;
 
@@ -2733,7 +2732,12 @@ njs_generate_assignment_end(njs_vm_t *vm, njs_generator_t *generator,
     node->index = expr->index;
     node->temporary = expr->temporary;
 
-    return njs_generate_children_indexes_release_pop(vm, generator, lvalue);
+    ret = njs_generate_children_indexes_release(vm, generator, lvalue);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    return njs_generator_stack_pop(vm, generator, NULL);
 }
 
 
@@ -3573,7 +3577,12 @@ found:
 
     njs_mp_free(vm->mem_pool, generator->context);
 
-    return njs_generate_children_indexes_release_pop(vm, generator, lvalue);
+    ret = njs_generate_children_indexes_release(vm, generator, lvalue);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    return njs_generator_stack_pop(vm, generator, NULL);
 }
 
 
@@ -4931,22 +4940,6 @@ njs_generate_children_indexes_release(njs_vm_t *vm, njs_generator_t *generator,
 
     if (njs_fast_path(ret == NJS_OK)) {
         return njs_generate_node_index_release(vm, generator, node->right);
-    }
-
-    return ret;
-}
-
-
-static njs_int_t
-njs_generate_children_indexes_release_pop(njs_vm_t *vm,
-    njs_generator_t *generator, njs_parser_node_t *node)
-{
-    njs_int_t  ret;
-
-    ret = njs_generate_node_index_release(vm, generator, node->left);
-
-    if (njs_fast_path(ret == NJS_OK)) {
-        return njs_generate_node_index_release_pop(vm, generator, node->right);
     }
 
     return ret;
