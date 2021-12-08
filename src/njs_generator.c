@@ -437,6 +437,21 @@ static const njs_str_t  return_label = njs_str("@return");
 static const njs_str_t  undef_label  = { 0xffffffff, (u_char *) "" };
 
 
+njs_int_t
+njs_generator_init(njs_generator_t *generator, njs_int_t depth,
+    njs_bool_t runtime)
+{
+    njs_memzero(generator, sizeof(njs_generator_t));
+
+    njs_queue_init(&generator->stack);
+
+    generator->depth = depth;
+    generator->runtime = runtime;
+
+    return NJS_OK;
+}
+
+
 njs_inline void
 njs_generator_next(njs_generator_t *generator, njs_generator_state_func_t state,
     njs_parser_node_t *node)
@@ -3617,6 +3632,7 @@ njs_generate_function_scope(njs_vm_t *vm, njs_generator_t *prev,
     njs_function_lambda_t *lambda, njs_parser_node_t *node,
     const njs_str_t *name)
 {
+    njs_int_t          ret;
     njs_arr_t          *arr;
     njs_bool_t         module;
     njs_uint_t         depth;
@@ -3631,9 +3647,11 @@ njs_generate_function_scope(njs_vm_t *vm, njs_generator_t *prev,
         return NJS_ERROR;
     }
 
-    njs_memzero(&generator, sizeof(njs_generator_t));
-    generator.depth = depth;
-    generator.runtime = prev->runtime;
+    ret = njs_generator_init(&generator, depth, prev->runtime);
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_internal_error(vm, "njs_generator_init() failed");
+        return NJS_ERROR;
+    }
 
     node = node->right;
 

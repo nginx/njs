@@ -1220,8 +1220,11 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    njs_memzero(&generator, sizeof(njs_generator_t));
-    generator.runtime = 1;
+    ret = njs_generator_init(&generator, 0, 1);
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_internal_error(vm, "njs_generator_init() failed");
+        return NJS_ERROR;
+    }
 
     code = njs_generate_scope(vm, &generator, scope, &njs_entry_anonymous);
     if (njs_slow_path(code == NULL)) {
