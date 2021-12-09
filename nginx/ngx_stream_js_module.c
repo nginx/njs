@@ -14,9 +14,6 @@
 
 typedef struct {
     njs_vm_t              *vm;
-    ngx_str_t              include;
-    u_char                *file;
-    ngx_uint_t             line;
     ngx_array_t           *imports;
     ngx_array_t           *paths;
 } ngx_stream_js_main_conf_t;
@@ -130,8 +127,6 @@ static ngx_msec_t ngx_stream_js_resolver_timeout(njs_vm_t *vm,
 static void ngx_stream_js_handle_event(ngx_stream_session_t *s,
     njs_vm_event_t vm_event, njs_value_t *args, njs_uint_t nargs);
 
-static char *ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd,
-    void *conf);
 static char *ngx_stream_js_import(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static char *ngx_stream_js_set(ngx_conf_t *cf, ngx_command_t *cmd,
@@ -164,13 +159,6 @@ static ngx_conf_bitmask_t  ngx_stream_js_ssl_protocols[] = {
 #endif
 
 static ngx_command_t  ngx_stream_js_commands[] = {
-
-    { ngx_string("js_include"),
-      NGX_STREAM_MAIN_CONF|NGX_CONF_TAKE1,
-      ngx_stream_js_include,
-      NGX_STREAM_MAIN_CONF_OFFSET,
-      offsetof(ngx_stream_js_main_conf_t, include),
-      NULL },
 
     { ngx_string("js_import"),
       NGX_STREAM_MAIN_CONF|NGX_CONF_TAKE13,
@@ -1503,7 +1491,6 @@ ngx_stream_js_init_main_conf(ngx_conf_t *cf, void *conf)
 
     size_t                   size;
     u_char                  *start, *end, *p;
-    ssize_t                  n;
     ngx_fd_t                 fd;
     ngx_str_t               *m, file;
     njs_int_t                rc;
@@ -1511,7 +1498,6 @@ ngx_stream_js_init_main_conf(ngx_conf_t *cf, void *conf)
     ngx_uint_t               i;
     njs_value_t             *value;
     njs_vm_opt_t             options;
-    ngx_file_info_t          fi;
     ngx_pool_cleanup_t      *cln;
     njs_opaque_value_t       lvalue, exception;
     ngx_stream_js_import_t  *import;
@@ -1519,42 +1505,17 @@ ngx_stream_js_init_main_conf(ngx_conf_t *cf, void *conf)
     static const njs_str_t line_number_key = njs_str("lineNumber");
     static const njs_str_t file_name_key = njs_str("fileName");
 
-    if (jmcf->include.len == 0 && jmcf->imports == NGX_CONF_UNSET_PTR) {
+    if (jmcf->imports == NGX_CONF_UNSET_PTR) {
         return NGX_CONF_OK;
     }
 
     size = 0;
     fd = NGX_INVALID_FILE;
 
-    if (jmcf->include.len != 0) {
-        file = jmcf->include;
-
-        if (ngx_conf_full_name(cf->cycle, &file, 1) != NGX_OK) {
-            return NGX_CONF_ERROR;
-        }
-
-        fd = ngx_open_file(file.data, NGX_FILE_RDONLY, NGX_FILE_OPEN, 0);
-        if (fd == NGX_INVALID_FILE) {
-            ngx_log_error(NGX_LOG_EMERG, cf->log, ngx_errno,
-                          ngx_open_file_n " \"%s\" failed", file.data);
-            return NGX_CONF_ERROR;
-        }
-
-        if (ngx_fd_info(fd, &fi) == NGX_FILE_ERROR) {
-            ngx_log_error(NGX_LOG_EMERG, cf->log, ngx_errno,
-                          ngx_fd_info_n " \"%s\" failed", file.data);
-            (void) ngx_close_file(fd);
-            return NGX_CONF_ERROR;
-        }
-
-        size = ngx_file_size(&fi);
-
-    } else {
-        import = jmcf->imports->elts;
-        for (i = 0; i < jmcf->imports->nelts; i++) {
-            size += sizeof("import  from '';\n") - 1 + import[i].name.len
-                    + import[i].path.len;
-        }
+    import = jmcf->imports->elts;
+    for (i = 0; i < jmcf->imports->nelts; i++) {
+        size += sizeof("import  from '';\n") - 1 + import[i].name.len
+                + import[i].path.len;
     }
 
     start = ngx_pnalloc(cf->pool, size);
@@ -1566,41 +1527,14 @@ ngx_stream_js_init_main_conf(ngx_conf_t *cf, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    if (jmcf->include.len != 0) {
-        n = ngx_read_fd(fd, start, size);
-
-        if (n == -1) {
-            ngx_log_error(NGX_LOG_EMERG, cf->log, ngx_errno,
-                          ngx_read_fd_n " \"%s\" failed", file.data);
-
-            (void) ngx_close_file(fd);
-            return NGX_CONF_ERROR;
-        }
-
-        if ((size_t) n != size) {
-            ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                          ngx_read_fd_n " has read only %z "
-                          "of %O from \"%s\"", n, size, file.data);
-
-            (void) ngx_close_file(fd);
-            return NGX_CONF_ERROR;
-        }
-
-        if (ngx_close_file(fd) == NGX_FILE_ERROR) {
-            ngx_log_error(NGX_LOG_EMERG, cf->log, ngx_errno,
-                          ngx_close_file_n " %s failed", file.data);
-        }
-
-    } else {
-        p = start;
-        import = jmcf->imports->elts;
-        for (i = 0; i < jmcf->imports->nelts; i++) {
-            p = ngx_cpymem(p, "import ", sizeof("import ") - 1);
-            p = ngx_cpymem(p, import[i].name.data, import[i].name.len);
-            p = ngx_cpymem(p, " from '", sizeof(" from '") - 1);
-            p = ngx_cpymem(p, import[i].path.data, import[i].path.len);
-            p = ngx_cpymem(p, "';\n", sizeof("';\n") - 1);
-        }
+    p = start;
+    import = jmcf->imports->elts;
+    for (i = 0; i < jmcf->imports->nelts; i++) {
+        p = ngx_cpymem(p, "import ", sizeof("import ") - 1);
+        p = ngx_cpymem(p, import[i].name.data, import[i].name.len);
+        p = ngx_cpymem(p, " from '", sizeof(" from '") - 1);
+        p = ngx_cpymem(p, import[i].path.data, import[i].path.len);
+        p = ngx_cpymem(p, "';\n", sizeof("';\n") - 1);
     }
 
     njs_vm_opt_init(&options);
@@ -1612,12 +1546,7 @@ ngx_stream_js_init_main_conf(ngx_conf_t *cf, void *conf)
     options.argv = ngx_argv;
     options.argc = ngx_argc;
 
-    if (jmcf->include.len != 0) {
-        file = jmcf->include;
-
-    } else {
-        file = ngx_cycle->conf_prefix;
-    }
+    file = ngx_cycle->conf_prefix;
 
     options.file.start = file.data;
     options.file.length = file.len;
@@ -1687,12 +1616,6 @@ ngx_stream_js_init_main_conf(ngx_conf_t *cf, void *conf)
         njs_value_assign(&exception, njs_vm_retval(jmcf->vm));
         njs_vm_retval_string(jmcf->vm, &text);
 
-        if (jmcf->include.len != 0) {
-            ngx_log_error(NGX_LOG_EMERG, cf->log, 0, "%*s, included in %s:%ui",
-                          text.length, text.start, jmcf->file, jmcf->line);
-            return NGX_CONF_ERROR;
-        }
-
         value = njs_vm_object_prop(jmcf->vm, njs_value_arg(&exception),
                                    &file_name_key, &lvalue);
         if (value == NULL) {
@@ -1729,22 +1652,6 @@ ngx_stream_js_init_main_conf(ngx_conf_t *cf, void *conf)
 
 
 static char *
-ngx_stream_js_include(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
-{
-    ngx_stream_js_main_conf_t *jmcf = conf;
-
-    if (jmcf->imports != NGX_CONF_UNSET_PTR) {
-        return "is incompatible with \"js_import\"";
-    }
-
-    jmcf->file = cf->conf_file->file.name.data;
-    jmcf->line = cf->conf_file->line;
-
-    return ngx_conf_set_str_slot(cf, cmd, conf);
-}
-
-
-static char *
 ngx_stream_js_import(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     ngx_stream_js_main_conf_t *jmcf = conf;
@@ -1753,10 +1660,6 @@ ngx_stream_js_import(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_int_t               from;
     ngx_str_t               *value, name, path;
     ngx_stream_js_import_t  *import;
-
-    if (jmcf->include.len != 0) {
-        return "is incompatible with \"js_include\"";
-    }
 
     value = cf->args->elts;
     from = (cf->args->nelts == 4);
@@ -1959,9 +1862,6 @@ ngx_stream_js_create_main_conf(ngx_conf_t *cf)
      * set by ngx_pcalloc():
      *
      *     conf->vm = NULL;
-     *     conf->include = { 0, NULL };
-     *     conf->file = NULL;
-     *     conf->line = 0;
      */
 
     conf->paths = NGX_CONF_UNSET_PTR;
