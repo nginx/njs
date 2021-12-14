@@ -361,6 +361,10 @@ njs_module_relative_path(njs_vm_t *vm, const njs_str_t *dir,
 
     file.length = dir->length;
 
+    if (file.length == 0) {
+        return NJS_DECLINED;
+    }
+
     trail = (dir->start[dir->length - 1] != '/');
 
     if (trail) {
