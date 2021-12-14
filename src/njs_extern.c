@@ -248,9 +248,8 @@ njs_int_t
 njs_vm_external_prototype(njs_vm_t *vm, const njs_external_t *definition,
     njs_uint_t n)
 {
-    njs_arr_t   *protos;
+    njs_arr_t   *protos, **pr;
     njs_int_t   ret;
-    uintptr_t   *pr;
     njs_uint_t  size;
 
     size = njs_external_protos(definition, n) + 1;
@@ -268,7 +267,7 @@ njs_vm_external_prototype(njs_vm_t *vm, const njs_external_t *definition,
     }
 
     if (vm->protos == NULL) {
-        vm->protos = njs_arr_create(vm->mem_pool, 4, sizeof(uintptr_t));
+        vm->protos = njs_arr_create(vm->mem_pool, 4, sizeof(njs_arr_t *));
         if (njs_slow_path(vm->protos == NULL)) {
             return -1;
         }
@@ -279,7 +278,7 @@ njs_vm_external_prototype(njs_vm_t *vm, const njs_external_t *definition,
         return -1;
     }
 
-    *pr = (uintptr_t) protos;
+    *pr = protos;
 
     return vm->protos->items - 1;
 }
@@ -289,8 +288,7 @@ njs_int_t
 njs_vm_external_create(njs_vm_t *vm, njs_value_t *value, njs_int_t proto_id,
     njs_external_ptr_t external, njs_bool_t shared)
 {
-    njs_arr_t           *protos;
-    uintptr_t           proto;
+    njs_arr_t           **pprotos;
     njs_object_value_t  *ov;
     njs_exotic_slots_t  *slots;
 
@@ -298,15 +296,13 @@ njs_vm_external_create(njs_vm_t *vm, njs_value_t *value, njs_int_t proto_id,
         return NJS_ERROR;
     }
 
-    proto = ((uintptr_t *) vm->protos->start)[proto_id];
-
     ov = njs_object_value_alloc(vm, NJS_OBJ_TYPE_OBJECT, 0, NULL);
     if (njs_slow_path(ov == NULL)) {
         return NJS_ERROR;
     }
 
-    protos = (njs_arr_t *) proto;
-    slots = protos->start;
+    pprotos = njs_arr_item(vm->protos, proto_id);
+    slots = (*pprotos)->start;
 
     ov->object.shared_hash = slots->external_shared_hash;
     ov->object.shared = shared;
