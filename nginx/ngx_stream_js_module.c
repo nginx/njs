@@ -1491,7 +1491,6 @@ ngx_stream_js_init_main_conf(ngx_conf_t *cf, void *conf)
 
     size_t                   size;
     u_char                  *start, *end, *p;
-    ngx_fd_t                 fd;
     ngx_str_t               *m, file;
     njs_int_t                rc;
     njs_str_t                text, path;
@@ -1510,7 +1509,6 @@ ngx_stream_js_init_main_conf(ngx_conf_t *cf, void *conf)
     }
 
     size = 0;
-    fd = NGX_INVALID_FILE;
 
     import = jmcf->imports->elts;
     for (i = 0; i < jmcf->imports->nelts; i++) {
@@ -1520,10 +1518,6 @@ ngx_stream_js_init_main_conf(ngx_conf_t *cf, void *conf)
 
     start = ngx_pnalloc(cf->pool, size);
     if (start == NULL) {
-        if (fd != NGX_INVALID_FILE) {
-            (void) ngx_close_file(fd);
-        }
-
         return NGX_CONF_ERROR;
     }
 
