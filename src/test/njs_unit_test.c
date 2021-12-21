@@ -21454,125 +21454,135 @@ static njs_unit_test_t  njs_shell_test[] =
               "function(){}()" ENTER),
       njs_str("SyntaxError: Unexpected token \"(\" in 1") },
 
-    /* Backtraces */
+    /* Exception in njs_vm_retval_string() */
 
-    { njs_str("function ff(o) {return o.a.a}" ENTER
-              "function f(o) {return ff(o)}" ENTER
-              "f({})" ENTER),
+    { njs_str("var o = { toString: function() { return [1] } }" ENTER
+              "o" ENTER),
+      njs_str("TypeError: Cannot convert object to primitive value") },
+};
+
+
+static njs_unit_test_t  njs_backtraces_test[] =
+{
+    { njs_str("function ff(o) {return o.a.a};"
+              "function f(o) {return ff(o)};"
+              "f({})"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
               "    at ff (:1)\n"
               "    at f (:1)\n"
               "    at main (:1)\n") },
 
-    { njs_str("function ff(o) {return o.a.a}" ENTER
+    { njs_str("function ff(o) {return o.a.a};"
               "function f(o) {try {return ff(o)} "
-              "               finally {return o.a.a}}" ENTER
-              "f({})" ENTER),
+              "               finally {return o.a.a}};"
+              "f({})"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
               "    at f (:1)\n"
               "    at main (:1)\n") },
 
-    { njs_str("function f(ff, o) {return ff(o)}" ENTER
-              "f(function (o) {return o.a.a}, {})" ENTER),
+    { njs_str("function f(ff, o) {return ff(o)};"
+              "f(function (o) {return o.a.a}, {})"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
               "    at anonymous (:1)\n"
               "    at f (:1)\n"
               "    at main (:1)\n") },
 
     { njs_str("'str'.replace(/t/g,"
-              "              function(m) {return m.a.a})" ENTER),
+              "              function(m) {return m.a.a})"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
               "    at anonymous (:1)\n"
               "    at RegExp.prototype[Symbol.replace] (native)\n"
               "    at String.prototype.replace (native)\n"
               "    at main (:1)\n") },
 
-    { njs_str("function f(o) {return Object.keys(o)}" ENTER
-              "f()" ENTER),
+    { njs_str("function f(o) {return Object.keys(o)};"
+              "f()"),
       njs_str("TypeError: cannot convert undefined argument to object\n"
               "    at Object.keys (native)\n"
               "    at f (:1)\n"
               "    at main (:1)\n") },
 
-    { njs_str("[].concat({}.a.a)" ENTER),
+    { njs_str("[].concat({}.a.a)"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
               "    at Array.prototype.concat (native)\n"
               "    at main (:1)\n") },
 
-    { njs_str("''.repeat(-1)" ENTER),
+    { njs_str("''.repeat(-1)"),
       njs_str("RangeError\n"
               "    at String.prototype.repeat (native)\n"
               "    at main (:1)\n") },
 
-    { njs_str("Math.log({}.a.a)" ENTER),
+    { njs_str("Math.log({}.a.a)"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
               "    at Math.log (native)\n"
               "    at main (:1)\n") },
 
-    { njs_str("var bound = Math.max.bind(null, {toString(){return {}}}); bound(1)" ENTER),
+    { njs_str("var bound = Math.max.bind(null, {toString(){return {}}}); bound(1)"),
       njs_str("TypeError: Cannot convert object to primitive value\n"
               "    at Math.max (native)\n"
               "    at main (:1)\n") },
 
-    { njs_str("Object.prototype()" ENTER),
+    { njs_str("Object.prototype()"),
       njs_str("TypeError: (intermediate value)[\"prototype\"] is not a function\n"
                "    at main (:1)\n") },
 
-    { njs_str("eval()" ENTER),
+    { njs_str("eval()"),
       njs_str("InternalError: Not implemented\n"
               "    at eval (native)\n"
               "    at main (:1)\n") },
 
-    { njs_str("$shared.method({}.a.a)" ENTER),
+    { njs_str("$shared.method({}.a.a)"),
     /* FIXME: at $shared.method (native) */
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
               "    at $r.method (native)\n"
               "    at main (:1)\n") },
 
-    { njs_str("new Function(\n\n@)" ENTER),
+    { njs_str("new Function(\n\n@)"),
       njs_str("SyntaxError: Unexpected token \"@\" in 3") },
 
-    { njs_str("require()" ENTER),
+    { njs_str("require()"),
       njs_str("TypeError: missing path\n"
               "    at require (native)\n"
               "    at main (:1)\n") },
 
-    { njs_str("setTimeout()" ENTER),
+    { njs_str("setTimeout()"),
       njs_str("TypeError: too few arguments\n"
               "    at setTimeout (native)\n"
               "    at main (:1)\n") },
 
-    { njs_str("require('crypto').createHash('sha')" ENTER),
+    { njs_str("require('crypto').createHash('sha')"),
       njs_str("TypeError: not supported algorithm: \"sha\"\n"
               "    at crypto.createHash (native)\n"
               "    at main (:1)\n") },
 
-    { njs_str("var h = require('crypto').createHash('sha1')" ENTER
-              "h.update([])" ENTER),
+    { njs_str("var h = require('crypto').createHash('sha1');"
+              "h.update([])"),
       njs_str("TypeError: data argument \"array\" is not a string or Buffer-like object\n"
               "    at Hash.prototype.update (native)\n"
               "    at main (:1)\n") },
 
-    { njs_str("require('crypto').createHmac('sha1', [])" ENTER),
+    { njs_str("require('crypto').createHmac('sha1', [])"),
       njs_str("TypeError: key argument \"array\" is not a string or Buffer-like object\n"
               "    at crypto.createHmac (native)\n"
               "    at main (:1)\n") },
 
-    { njs_str("var h = require('crypto').createHmac('sha1', 'secret')" ENTER
-              "h.update([])" ENTER),
+    { njs_str("var h = require('crypto').createHmac('sha1', 'secret');"
+              "h.update([])"),
       njs_str("TypeError: data argument \"array\" is not a string or Buffer-like object\n"
               "    at Hmac.prototype.update (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("function f(o) {function f_in(o) {return o.a.a};"
-              "               return f_in(o)}; f({})" ENTER),
+              "               return f_in(o)};"
+              "f({})"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
               "    at f_in (:1)\n"
               "    at f (:1)\n"
               "    at main (:1)\n") },
 
     { njs_str("function f(o) {var ff = function (o) {return o.a.a};"
-              "               return ff(o)}; f({})" ENTER),
+              "               return ff(o)};"
+              "f({})"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
               "    at anonymous (:1)\n"
               "    at f (:1)\n"
@@ -21595,65 +21605,59 @@ static njs_unit_test_t  njs_shell_test[] =
               " 'realpath',"
               " 'realpathSync',"
               "]"
-              ".every(v=>{ try {fs[v]();} catch (e) { return e.stack.search(`fs.${v} `) >= 0}})" ENTER),
+              ".every(v=>{ try {fs[v]();} catch (e) { return e.stack.search(`fs.${v} `) >= 0}})"),
       njs_str("true") },
 
-    { njs_str("parseInt({ toString: function() { return [1] } })" ENTER),
+    { njs_str("parseInt({ toString: function() { return [1] } })"),
       njs_str("TypeError: Cannot convert object to primitive value\n"
               "    at parseInt (native)\n"
               "    at main (:1)\n") },
 
-    { njs_str("function f(n) { if (n == 0) { throw 'a'; } return f(n-1); }; f(2)" ENTER),
+    { njs_str("function f(n) { if (n == 0) { throw 'a'; } return f(n-1); }; f(2)"),
       njs_str("a") },
-
-    /* Exception in njs_vm_retval_string() */
-
-    { njs_str("var o = { toString: function() { return [1] } }" ENTER
-              "o" ENTER),
-      njs_str("TypeError: Cannot convert object to primitive value") },
 
     /* line numbers */
 
-    { njs_str("/**/(function(){throw Error();})()" ENTER),
+    { njs_str("/**/(function(){throw Error();})()"),
       njs_str("Error\n"
               "    at anonymous (:1)\n"
               "    at main (:1)\n") },
 
-    { njs_str("/***/(function(){throw Error();})()" ENTER),
+    { njs_str("/***/(function(){throw Error();})()"),
       njs_str("Error\n"
               "    at anonymous (:1)\n"
               "    at main (:1)\n") },
 
-    { njs_str("/*\n**/(function(){throw Error();})()" ENTER),
+    { njs_str("/*\n**/(function(){throw Error();})()"),
       njs_str("Error\n"
               "    at anonymous (:2)\n"
               "    at main (:2)\n") },
 
-    { njs_str("({})\n.a\n.a" ENTER),
+    { njs_str("({})\n.a\n.a"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
               "    at main (:3)\n") },
 
-    { njs_str("1\n+a" ENTER),
+    { njs_str("1\n+a"),
       njs_str("ReferenceError: \"a\" is not defined\n"
               "    at main (:2)\n") },
 
-    { njs_str("\n`\n${Object}\n${a}`" ENTER),
+    { njs_str("\n`\n${Object}\n${a}`"),
       njs_str("ReferenceError: \"a\" is not defined\n"
               "    at main (:4)\n") },
 
-    { njs_str("function log(v) {}\nlog({}\n.a\n.a)" ENTER),
+    { njs_str("function log(v) {}\nlog({}\n.a\n.a)"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
               "    at main (:4)\n") },
 
-    { njs_str("\nfor (var i = 0;\n i < a;\n i++) { }\n" ENTER),
+    { njs_str("\nfor (var i = 0;\n i < a;\n i++) { }\n"),
       njs_str("ReferenceError: \"a\" is not defined\n"
               "    at main (:3)\n") },
 
-    { njs_str("\nfor (var i = 0;\n i < 5;\n a) {\n }" ENTER),
+    { njs_str("\nfor (var i = 0;\n i < 5;\n a) {\n }"),
       njs_str("ReferenceError: \"a\" is not defined\n"
               "    at main (:4)\n") },
 
-    { njs_str("Math\n.min(1,\na)" ENTER),
+    { njs_str("Math\n.min(1,\na)"),
       njs_str("ReferenceError: \"a\" is not defined\n"
               "    at Math.min (native)\n"
               "    at main (:3)\n") },
@@ -23392,7 +23396,14 @@ static njs_test_suite_t  njs_suites[] =
       { .externals = 1, .repeat = 1, .unsafe = 1 },
       njs_shell_test,
       njs_nitems(njs_shell_test),
+
       njs_interactive_test },
+
+    { njs_str("backtraces"),
+      { .backtrace = 1, .externals = 1, .repeat = 1, .unsafe = 1 },
+      njs_backtraces_test,
+      njs_nitems(njs_backtraces_test),
+      njs_unit_test },
 
     { njs_str("timezone"),
       { .repeat = 1, .unsafe = 1 },
