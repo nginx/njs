@@ -137,6 +137,7 @@ struct njs_external_s {
         struct {
             njs_function_native_t   native;
             uint8_t                 magic8;
+            uint8_t                 ctor;
         } method;
 
         struct {
