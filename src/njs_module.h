@@ -13,7 +13,7 @@ typedef struct {
     njs_object_t                object;
     njs_index_t                 index;
     njs_function_t              function;
-} njs_module_t;
+} njs_mod_t;
 
 
 njs_int_t njs_module_load(njs_vm_t *vm);

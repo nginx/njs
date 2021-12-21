@@ -135,8 +135,8 @@ njs_int_t
 njs_builtin_objects_create(njs_vm_t *vm)
 {
     njs_int_t                  ret;
+    njs_mod_t                  *module;
     njs_uint_t                 i;
-    njs_module_t               *module;
     njs_object_t               *object, *string_object;
     njs_function_t             *constructor;
     njs_vm_shared_t            *shared;
@@ -237,7 +237,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
     for (p = njs_module_init; *p != NULL; p++) {
         obj = *p;
 
-        module = njs_mp_zalloc(vm->mem_pool, sizeof(njs_module_t));
+        module = njs_mp_zalloc(vm->mem_pool, sizeof(njs_mod_t));
         if (njs_slow_path(module == NULL)) {
             return NJS_ERROR;
         }
@@ -760,9 +760,9 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
 {
     uint8_t                 magic8;
     njs_int_t               ret;
+    njs_mod_t               *module;
     njs_uint_t              i, n;
     njs_value_t             value;
-    njs_module_t            *module;
     njs_lvlhsh_each_t       lhe;
     njs_function_name_t     *fn;
     njs_function_native_t   native;

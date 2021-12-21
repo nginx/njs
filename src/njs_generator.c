@@ -4649,13 +4649,13 @@ static njs_int_t
 njs_generate_import_statement_end(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
-    njs_module_t              *module;
+    njs_mod_t                 *module;
     njs_parser_node_t         *expr;
     njs_vmcode_object_copy_t  *copy;
 
     expr = node->right;
 
-    module = (njs_module_t *) expr->index;
+    module = (njs_mod_t *) expr->index;
 
     njs_generate_code(generator, njs_vmcode_object_copy_t, copy,
                       NJS_VMCODE_OBJECT_COPY, 2, node);
