@@ -1537,6 +1537,7 @@ ngx_stream_js_init_main_conf(ngx_conf_t *cf, void *conf)
     options.unhandled_rejection = NJS_VM_OPT_UNHANDLED_REJECTION_THROW;
     options.ops = &ngx_stream_js_ops;
     options.metas = &ngx_stream_js_metas;
+    options.addons = njs_js_addon_modules;
     options.argv = ngx_argv;
     options.argc = ngx_argc;
 

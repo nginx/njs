@@ -29,9 +29,11 @@ njs_vm_opt_init(njs_vm_opt_t *options)
 njs_vm_t *
 njs_vm_create(njs_vm_opt_t *options)
 {
-    njs_mp_t   *mp;
-    njs_vm_t   *vm;
-    njs_int_t  ret;
+    njs_mp_t      *mp;
+    njs_vm_t      *vm;
+    njs_int_t     ret;
+    njs_uint_t    i;
+    njs_module_t  **addons;
 
     mp = njs_mp_fast_create(2 * njs_pagesize(), 128, 512, 16);
     if (njs_slow_path(mp == NULL)) {
@@ -76,6 +78,23 @@ njs_vm_create(njs_vm_opt_t *options)
         ret = njs_vm_init(vm);
         if (njs_slow_path(ret != NJS_OK)) {
             return NULL;
+        }
+    }
+
+    for (i = 0; njs_modules[i] != NULL; i++) {
+        ret = njs_modules[i]->init(vm);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NULL;
+        }
+    }
+
+    if (options->addons != NULL) {
+        addons = options->addons;
+        for (i = 0; addons[i] != NULL; i++) {
+            ret = addons[i]->init(vm);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NULL;
+            }
         }
     }
 

@@ -72,4 +72,7 @@ ngx_int_t ngx_js_string(njs_vm_t *vm, njs_value_t *value, njs_str_t *str);
 ngx_int_t ngx_js_integer(njs_vm_t *vm, njs_value_t *value, ngx_int_t *n);
 
 
+extern njs_module_t *njs_js_addon_modules[];
+
+
 #endif /* _NGX_JS_H_INCLUDED_ */

@@ -35,7 +35,6 @@ njs_int_t njs_buffer_decode_string(njs_vm_t *vm, const njs_value_t *value,
 
 
 extern const njs_object_type_init_t  njs_buffer_type_init;
-extern const njs_object_init_t  njs_buffer_object_init;
 
 
 #endif /* _NJS_BUFFER_H_INCLUDED_ */

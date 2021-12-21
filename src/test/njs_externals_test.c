@@ -8,11 +8,6 @@
 
 #include "njs_externals_test.h"
 
-#if (NJS_HAVE_OPENSSL)
-#include "../external/njs_webcrypto.h"
-#include "../external/njs_webcrypto.c"
-#endif
-
 
 typedef struct {
     njs_lvlhsh_t          hash;
@@ -864,15 +859,6 @@ njs_externals_init_internal(njs_vm_t *vm, njs_unit_test_req_init_t *init,
 njs_int_t
 njs_externals_shared_init(njs_vm_t *vm)
 {
-#if (NJS_HAVE_OPENSSL)
-    njs_int_t  ret;
-
-    ret = njs_external_webcrypto_init(vm);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return NJS_ERROR;
-    }
-#endif
-
     return njs_externals_init_internal(vm, njs_test_requests, 1, 1);
 }
 

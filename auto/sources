@@ -42,8 +42,6 @@ NJS_LIB_SRCS=" \
    src/njs_timer.c \
    src/njs_module.c \
    src/njs_event.c \
-   src/njs_fs.c \
-   src/njs_crypto.c \
    src/njs_extern.c \
    src/njs_variable.c \
    src/njs_builtin.c \
@@ -55,9 +53,7 @@ NJS_LIB_SRCS=" \
    src/njs_array_buffer.c \
    src/njs_typed_array.c \
    src/njs_promise.c \
-   src/njs_query_string.c \
    src/njs_encoding.c \
-   src/njs_buffer.c \
    src/njs_iterator.c \
    src/njs_scope.c \
    src/njs_async.c \

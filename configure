@@ -35,6 +35,7 @@ NJS_LIB_AUX_CFLAGS="$NJS_PCRE_CFLAGS"
 NJS_LIBS="$NJS_LIBRT"
 NJS_LIB_AUX_LIBS="$NJS_PCRE_LIB $NJS_OPENSSL_LIB"
 
+. auto/modules
 . auto/make
 
 . auto/expect

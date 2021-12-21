@@ -1,0 +1,34 @@
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+
+njs_module_name=njs_buffer_module
+njs_module_incs=
+njs_module_srcs=src/njs_buffer.c
+
+. auto/module
+
+njs_module_name=njs_crypto_module
+njs_module_incs=
+njs_module_srcs=external/njs_crypto.c
+
+. auto/module
+
+if [ $NJS_WEBCRYPTO = YES -a $NJS_HAVE_OPENSSL = YES ]; then
+	njs_module_name=njs_webcrypto_module
+	njs_module_incs=
+	njs_module_srcs=external/njs_webcrypto.c
+
+	. auto/module
+fi
+
+njs_module_name=njs_fs_module
+njs_module_incs=
+njs_module_srcs=external/njs_fs.c
+
+. auto/module
+
+njs_module_name=njs_query_string_module
+njs_module_incs=
+njs_module_srcs=external/njs_query_string.c
+
+. auto/module

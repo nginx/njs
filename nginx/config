@@ -1,8 +1,7 @@
 ngx_addon_name="ngx_js_module"
 
 NJS_DEPS="$ngx_addon_dir/ngx_js.h \
-    $ngx_addon_dir/ngx_js_fetch.h \
-    $ngx_addon_dir/../external/njs_webcrypto.h"
+    $ngx_addon_dir/ngx_js_fetch.h"
 NJS_SRCS="$ngx_addon_dir/ngx_js.c \
     $ngx_addon_dir/ngx_js_fetch.c \
     $ngx_addon_dir/../external/njs_webcrypto.c"

@@ -23,11 +23,6 @@
 
 #endif
 
-#if (NJS_HAVE_OPENSSL)
-#include "../external/njs_webcrypto.h"
-#include "../external/njs_webcrypto.c"
-#endif
-
 
 typedef struct {
     uint8_t                 disassemble;
@@ -91,7 +86,7 @@ typedef struct {
 
 
 static njs_int_t njs_console_init(njs_vm_t *vm, njs_console_t *console);
-static njs_int_t njs_externals_init(njs_vm_t *vm, njs_console_t *console);
+static njs_int_t njs_externals_init(njs_vm_t *vm);
 static njs_vm_t *njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options);
 static njs_int_t njs_process_script(njs_opts_t *opts,
     njs_console_t *console, const njs_str_t *script);
@@ -211,6 +206,18 @@ static njs_vm_ops_t njs_console_ops = {
 };
 
 
+njs_module_t  njs_console_module = {
+    .name = njs_str("console"),
+    .init = njs_externals_init,
+};
+
+
+static njs_module_t *njs_console_addon_modules[] = {
+    &njs_console_module,
+    NULL,
+};
+
+
 static njs_int_t      njs_console_proto_id;
 
 
@@ -279,6 +286,7 @@ main(int argc, char **argv)
     vm_options.module = opts.module;
 
     vm_options.ops = &njs_console_ops;
+    vm_options.addons = njs_console_addon_modules;
     vm_options.external = &njs_console;
     vm_options.argv = opts.argv;
     vm_options.argc = opts.argc;
@@ -691,14 +699,17 @@ njs_console_init(njs_vm_t *vm, njs_console_t *console)
 
 
 static njs_int_t
-njs_externals_init(njs_vm_t *vm, njs_console_t *console)
+njs_externals_init(njs_vm_t *vm)
 {
-    njs_int_t    ret;
-    njs_value_t  *value, method;
+    njs_int_t      ret;
+    njs_value_t    *value, method;
+    njs_console_t  *console;
 
     static const njs_str_t  console_name = njs_str("console");
     static const njs_str_t  print_name = njs_str("print");
     static const njs_str_t  console_log = njs_str("console.log");
+
+    console = vm->options.external;
 
     njs_console_proto_id = njs_vm_external_prototype(vm, njs_ext_console,
                                          njs_nitems(njs_ext_console));
@@ -737,13 +748,6 @@ njs_externals_init(njs_vm_t *vm, njs_console_t *console)
         return NJS_ERROR;
     }
 
-#if (NJS_HAVE_OPENSSL)
-    ret = njs_external_webcrypto_init(vm);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return NJS_ERROR;
-    }
-#endif
-
     return NJS_OK;
 }
 
@@ -760,11 +764,6 @@ njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options)
     vm = njs_vm_create(vm_options);
     if (vm == NULL) {
         njs_stderror("failed to create vm\n");
-        return NULL;
-    }
-
-    if (njs_externals_init(vm, vm_options->external) != NJS_OK) {
-        njs_stderror("failed to add external protos\n");
         return NULL;
     }
 

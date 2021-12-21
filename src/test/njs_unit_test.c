@@ -19136,10 +19136,6 @@ static njs_unit_test_t  njs_crypto_module_test[] =
               "Hash('sha1').update('AB').digest('hex')"),
       njs_str("06d945942aa26a61be18c3e22bf19bbca8dd2b5d") },
 
-    { njs_str("var h = require('crypto').createHash('sha1');"
-              "h.constructor.name"),
-      njs_str("Hash") },
-
     { njs_str("var hash = require('crypto').createHash.bind(undefined, 'md5');"
               "['hex', 'base64', 'base64url'].map(e => {"
               "   var h = hash().update('AB').digest().toString(e);"
@@ -19318,10 +19314,6 @@ static njs_unit_test_t  njs_crypto_module_test[] =
               "var Hmac = h.constructor; "
               "Hmac('sha1', '').digest('hex')"),
       njs_str("fbdb1d1b18aa6c08324b7d64b71fb76370690e1d") },
-
-    { njs_str("var h = require('crypto').createHmac('sha1', '');"
-              "h.constructor.name"),
-      njs_str("Hmac") },
 
     { njs_str("require('crypto').createHmac('sha1', '').digest() instanceof Buffer"),
       njs_str("true") },
@@ -21563,7 +21555,7 @@ static njs_unit_test_t  njs_backtraces_test[] =
     { njs_str("var h = require('crypto').createHash('sha1');"
               "h.update([])"),
       njs_str("TypeError: data argument \"array\" is not a string or Buffer-like object\n"
-              "    at Hash.prototype.update (native)\n"
+              "    at Hash.update (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("require('crypto').createHmac('sha1', [])"),
@@ -21574,7 +21566,7 @@ static njs_unit_test_t  njs_backtraces_test[] =
     { njs_str("var h = require('crypto').createHmac('sha1', 'secret');"
               "h.update([])"),
       njs_str("TypeError: data argument \"array\" is not a string or Buffer-like object\n"
-              "    at Hmac.prototype.update (native)\n"
+              "    at Hmac.update (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("function f(o) {function f_in(o) {return o.a.a};"

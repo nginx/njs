@@ -82,10 +82,6 @@
 #include <njs_timer.h>
 #include <njs_module.h>
 
-#include <njs_fs.h>
-#include <njs_crypto.h>
-#include <njs_query_string.h>
-
 #include <njs_event.h>
 #include <njs_module.h>
 

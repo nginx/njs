@@ -79,6 +79,56 @@ static njs_int_t njs_buffer_fill_typed_array(njs_vm_t *vm,
 static void njs_buffer_decode_destroy(njs_vm_t *vm, const njs_value_t *source,
     njs_value_t *target);
 
+static njs_int_t njs_buffer(njs_vm_t *vm,
+    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
+static njs_int_t njs_buffer_constants(njs_vm_t *vm,
+    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
+static njs_int_t njs_buffer_constant(njs_vm_t *vm,
+    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
+
+static njs_int_t njs_buffer_init(njs_vm_t *vm);
+
+
+static njs_external_t  njs_ext_buffer[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("Buffer"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = njs_buffer,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("constants"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = njs_buffer_constants,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("kMaxLength"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = njs_buffer_constant,
+            .magic32 = INT32_MAX,
+        }
+    },
+};
+
+
+njs_module_t  njs_buffer_module = {
+    .name = njs_str("buffer"),
+    .init = njs_buffer_init,
+};
+
 
 njs_int_t
 njs_buffer_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
@@ -2935,6 +2985,15 @@ static const njs_object_init_t  njs_buffer_constants_init = {
 
 
 static njs_int_t
+njs_buffer(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
+    njs_value_t *unused, njs_value_t *retval)
+{
+    return njs_object_prop_init(vm, &njs_buffer_constructor_init, prop, value,
+                                retval);
+}
+
+
+static njs_int_t
 njs_buffer_constants(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
     njs_value_t *unused, njs_value_t *retval)
 {
@@ -2944,47 +3003,40 @@ njs_buffer_constants(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
 
 
 static njs_int_t
-njs_buffer(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
+njs_buffer_constant(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
     njs_value_t *unused, njs_value_t *retval)
 {
-    return njs_object_prop_init(vm, &njs_buffer_constructor_init, prop, value,
-                                retval);
+    njs_value_number_set(retval, njs_vm_prop_magic32(prop));
+
+    return NJS_OK;
 }
 
 
-static const njs_object_prop_t  njs_buffer_object_properties[] =
+static njs_int_t
+njs_buffer_init(njs_vm_t *vm)
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("buffer"),
-        .configurable = 1,
-    },
+    njs_int_t           ret, proto_id;
+    njs_mod_t           *module;
+    njs_opaque_value_t  value;
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constants"),
-        .value = njs_prop_handler(njs_buffer_constants),
-        .enumerable = 1,
-    },
+    proto_id = njs_vm_external_prototype(vm, njs_ext_buffer,
+                                         njs_nitems(njs_ext_buffer));
+    if (njs_slow_path(proto_id < 0)) {
+        return NJS_ERROR;
+    }
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("Buffer"),
-        .value = njs_prop_handler(njs_buffer),
-        .enumerable = 1,
-    },
+    ret = njs_vm_external_create(vm, njs_value_arg(&value), proto_id, NULL, 1);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("kMaxLength"),
-        .value = njs_value(NJS_NUMBER, 1, INT32_MAX),
-        .enumerable = 1,
-    },
-};
+    module = njs_module_add(vm, &njs_str_value("buffer"), 1);
+    if (njs_slow_path(module == NULL)) {
+        return NJS_ERROR;
+    }
 
+    njs_value_assign(&module->value, &value);
+    module->function.native = 1;
 
-const njs_object_init_t  njs_buffer_object_init = {
-    njs_buffer_object_properties,
-    njs_nitems(njs_buffer_object_properties),
-};
+    return NJS_OK;
+}

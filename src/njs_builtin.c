@@ -53,15 +53,6 @@ static const njs_object_init_t  *njs_object_init[] = {
 };
 
 
-static const njs_object_init_t  *njs_module_init[] = {
-    &njs_fs_object_init,
-    &njs_crypto_object_init,
-    &njs_query_string_object_init,
-    &njs_buffer_object_init,
-    NULL
-};
-
-
 static const njs_object_type_init_t *const
     njs_object_type_init[NJS_OBJ_TYPE_MAX] =
 {
@@ -88,10 +79,6 @@ static const njs_object_type_init_t *const
 
     &njs_iterator_type_init,
     &njs_array_iterator_type_init,
-    &njs_dirent_type_init,
-    &njs_stats_type_init,
-    &njs_hash_type_init,
-    &njs_hmac_type_init,
     &njs_typed_array_type_init,
 
     /* TypedArray types. */
@@ -135,19 +122,13 @@ njs_int_t
 njs_builtin_objects_create(njs_vm_t *vm)
 {
     njs_int_t                  ret;
-    njs_mod_t                  *module;
     njs_uint_t                 i;
     njs_object_t               *object, *string_object;
     njs_function_t             *constructor;
     njs_vm_shared_t            *shared;
-    njs_lvlhsh_query_t         lhq;
     njs_regexp_pattern_t       *pattern;
     njs_object_prototype_t     *prototype;
-    const njs_object_prop_t    *prop;
     const njs_object_init_t    *obj, **p;
-
-    static const njs_str_t  sandbox_key = njs_str("sandbox");
-    static const njs_str_t  name_key = njs_str("name");
 
     shared = njs_mp_zalloc(vm->mem_pool, sizeof(njs_vm_shared_t));
     if (njs_slow_path(shared == NULL)) {
@@ -229,62 +210,6 @@ njs_builtin_objects_create(njs_vm_t *vm)
         return NJS_ERROR;
     }
 
-    njs_lvlhsh_init(&shared->modules_hash);
-
-    lhq.replace = 0;
-    lhq.pool = vm->mem_pool;
-
-    for (p = njs_module_init; *p != NULL; p++) {
-        obj = *p;
-
-        module = njs_mp_zalloc(vm->mem_pool, sizeof(njs_mod_t));
-        if (njs_slow_path(module == NULL)) {
-            return NJS_ERROR;
-        }
-
-        module->function.native = 1;
-
-        ret = njs_object_hash_init(vm, &module->object.shared_hash, obj);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_ERROR;
-        }
-
-        if (vm->options.sandbox) {
-            lhq.key = sandbox_key;
-            lhq.key_hash = njs_djb_hash(sandbox_key.start, sandbox_key.length);
-            lhq.proto = &njs_object_hash_proto;
-
-            ret = njs_lvlhsh_find(&module->object.shared_hash, &lhq);
-            if (njs_fast_path(ret != NJS_OK)) {
-                continue;
-            }
-        }
-
-        lhq.key = name_key;
-        lhq.key_hash = njs_djb_hash(name_key.start, name_key.length);
-        lhq.proto = &njs_object_hash_proto;
-
-        ret = njs_lvlhsh_find(&module->object.shared_hash, &lhq);
-        if (njs_fast_path(ret != NJS_OK)) {
-            return NJS_ERROR;
-        }
-
-        prop = lhq.value;
-
-        njs_string_get(&prop->value, &module->name);
-        module->object.shared = 1;
-
-        lhq.key = module->name;
-        lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
-        lhq.proto = &njs_modules_hash_proto;
-        lhq.value = module;
-
-        ret = njs_lvlhsh_insert(&shared->modules_hash, &lhq);
-        if (njs_fast_path(ret != NJS_OK)) {
-            return NJS_ERROR;
-        }
-    }
-
     prototype = shared->prototypes;
 
     for (i = NJS_OBJ_TYPE_OBJECT; i < NJS_OBJ_TYPE_MAX; i++) {
@@ -337,6 +262,8 @@ njs_builtin_objects_create(njs_vm_t *vm)
     string_object->type = NJS_OBJECT_VALUE;
     string_object->shared = 1;
     string_object->extensible = 0;
+
+    njs_lvlhsh_init(&shared->modules_hash);
 
     vm->shared = shared;
 
@@ -760,10 +687,13 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
 {
     uint8_t                 magic8;
     njs_int_t               ret;
+    njs_arr_t               **pprotos;
     njs_mod_t               *module;
     njs_uint_t              i, n;
-    njs_value_t             value;
+    njs_value_t             value, tag;
+    njs_object_t            object;
     njs_lvlhsh_each_t       lhe;
+    njs_exotic_slots_t      *slots;
     njs_function_name_t     *fn;
     njs_function_native_t   native;
     njs_builtin_traverse_t  ctx;
@@ -806,10 +736,10 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
         njs_set_object(&value, &vm->constructors[i].object);
 
         ret = njs_value_property(vm, &value, njs_value_arg(&njs_string_name),
-                                 &value);
+                                 &tag);
 
-        if (ret == NJS_OK && njs_is_string(&value)) {
-            njs_string_get(&value, &ctx.match);
+        if (ret == NJS_OK && njs_is_string(&tag)) {
+            njs_string_get(&tag, &ctx.match);
         }
 
         ret = njs_object_traverse(vm, &vm->constructors[i].object, &ctx,
@@ -833,7 +763,35 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
 
         ctx.match = module->name;
 
-        ret = njs_object_traverse(vm, &module->object, &ctx,
+        ret = njs_object_traverse(vm, njs_object(&module->value), &ctx,
+                                  njs_builtin_traverse);
+
+        if (ret == NJS_DONE) {
+            goto found;
+        }
+    }
+
+    /* External prototypes (not mapped to global object). */
+
+    ctx.match = njs_str_value("");
+
+    for (i = 0; i< vm->protos->items; i++) {
+        njs_memzero(&object, sizeof(njs_object_t));
+
+        pprotos = njs_arr_item(vm->protos, i);
+        slots = (*pprotos)->start;
+
+        object.shared_hash = slots->external_shared_hash;
+        object.slots = slots;
+
+        njs_set_object(&value, &object);
+
+        ret = njs_object_string_tag(vm, &value, &tag);
+        if (ret == NJS_OK && njs_is_string(&tag)) {
+            njs_string_get(&tag, &ctx.match);
+        }
+
+        ret = njs_object_traverse(vm, njs_object(&value), &ctx,
                                   njs_builtin_traverse);
 
         if (ret == NJS_DONE) {

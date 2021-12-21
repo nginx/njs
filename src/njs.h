@@ -197,11 +197,20 @@ typedef struct {
 } njs_vm_meta_t;
 
 
+typedef njs_int_t (*njs_addon_init_pt)(njs_vm_t *vm);
+
+typedef struct {
+    njs_str_t                       name;
+    njs_addon_init_pt               init;
+} njs_module_t;
+
+
 typedef struct {
     njs_external_ptr_t              external;
     njs_vm_shared_t                 *shared;
     njs_vm_ops_t                    *ops;
     njs_vm_meta_t                   *metas;
+    njs_module_t                    **addons;
     njs_str_t                       file;
 
     char                            **argv;

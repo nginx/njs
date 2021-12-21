@@ -39,17 +39,17 @@ static njs_bool_t njs_module_realpath_equal(const njs_str_t *path1,
 static njs_int_t njs_module_read(njs_vm_t *vm, int fd, njs_str_t *body);
 static njs_mod_t *njs_module_find(njs_vm_t *vm, njs_str_t *name,
     njs_bool_t local);
-static njs_mod_t *njs_module_add(njs_vm_t *vm, njs_str_t *name);
 static njs_int_t njs_module_insert(njs_parser_t *parser, njs_mod_t *module);
 
 
 njs_int_t
 njs_module_load(njs_vm_t *vm)
 {
-    njs_int_t    ret;
-    njs_mod_t    **item, *module;
-    njs_uint_t   i;
-    njs_value_t  *value;
+    njs_int_t     ret;
+    njs_mod_t     **item, *module;
+    njs_uint_t    i;
+    njs_value_t   *value;
+    njs_object_t  *object;
 
     if (vm->modules == NULL) {
         return NJS_OK;
@@ -62,7 +62,12 @@ njs_module_load(njs_vm_t *vm)
 
         if (module->function.native) {
             value = njs_scope_valid_value(vm, module->index);
-            njs_set_object(value, &module->object);
+            njs_value_assign(value, &module->value);
+
+            object = njs_object_value_copy(vm, value);
+            if (njs_slow_path(object == NULL)) {
+                return NJS_ERROR;
+            }
 
         } else {
             ret = njs_vm_invoke(vm, &module->function, NULL, 0,
@@ -125,7 +130,7 @@ njs_parser_module(njs_parser_t *parser, njs_lexer_token_t *token,
 
     parser->node = NULL;
 
-    module = njs_module_find(parser->vm, &name, 0);
+    module = njs_module_find(parser->vm, &name, 1);
     if (module != NULL && module->function.native) {
         njs_lexer_consume_token(parser->lexer, 1);
 
@@ -153,7 +158,7 @@ njs_parser_module(njs_parser_t *parser, njs_lexer_token_t *token,
         goto fail;
     }
 
-    module = njs_module_find(parser->vm, &info.file, 0);
+    module = njs_module_find(parser->vm, &info.file, 1);
     if (module != NULL) {
         (void) close(info.fd);
         njs_lexer_consume_token(parser->lexer, 1);
@@ -233,7 +238,7 @@ njs_parser_module_lambda_after(njs_parser_t *parser, njs_lexer_token_t *token,
         return njs_parser_failed(parser);
     }
 
-    module = njs_module_add(parser->vm, &temp->info.file);
+    module = njs_module_add(parser->vm, &temp->info.file, 0);
     if (njs_slow_path(module == NULL)) {
         parser->lexer = temp->prev;
 
@@ -476,10 +481,10 @@ const njs_lvlhsh_proto_t  njs_modules_hash_proto
 
 
 static njs_mod_t *
-njs_module_find(njs_vm_t *vm, njs_str_t *name, njs_bool_t local)
+njs_module_find(njs_vm_t *vm, njs_str_t *name, njs_bool_t shared)
 {
     njs_int_t           ret;
-    njs_mod_t           *shared, *module;
+    njs_mod_t           *shrd, *module;
     njs_object_t        *object;
     njs_lvlhsh_query_t  lhq;
 
@@ -492,10 +497,10 @@ njs_module_find(njs_vm_t *vm, njs_str_t *name, njs_bool_t local)
     }
 
     if (njs_lvlhsh_find(&vm->shared->modules_hash, &lhq) == NJS_OK) {
-        shared = lhq.value;
+        shrd = lhq.value;
 
-        if (!local) {
-            return shared;
+        if (shared) {
+            return shrd;
         }
 
         module = njs_mp_alloc(vm->mem_pool, sizeof(njs_mod_t));
@@ -504,15 +509,12 @@ njs_module_find(njs_vm_t *vm, njs_str_t *name, njs_bool_t local)
             return NULL;
         }
 
-        memcpy(module, shared, sizeof(njs_mod_t));
-        object = &module->object;
+        memcpy(module, shrd, sizeof(njs_mod_t));
 
-        object->__proto__ = &vm->prototypes[NJS_OBJ_TYPE_OBJECT].object;
-        object->slots = NULL;
-        object->shared = 0;
-        object->extensible = 1;
-        object->error_data = 0;
-        object->fast_array = 0;
+        object = njs_object_value_copy(vm, &module->value);
+        if (njs_slow_path(object == NULL)) {
+            return NULL;
+        }
 
         lhq.replace = 0;
         lhq.value = module;
@@ -528,11 +530,12 @@ njs_module_find(njs_vm_t *vm, njs_str_t *name, njs_bool_t local)
 }
 
 
-static njs_mod_t *
-njs_module_add(njs_vm_t *vm, njs_str_t *name)
+njs_mod_t *
+njs_module_add(njs_vm_t *vm, njs_str_t *name, njs_bool_t shared)
 {
     njs_int_t           ret;
     njs_mod_t           *module;
+    njs_lvlhsh_t        *hash;
     njs_lvlhsh_query_t  lhq;
 
     module = njs_mp_zalloc(vm->mem_pool, sizeof(njs_mod_t));
@@ -554,7 +557,9 @@ njs_module_add(njs_vm_t *vm, njs_str_t *name)
     lhq.pool = vm->mem_pool;
     lhq.proto = &njs_modules_hash_proto;
 
-    ret = njs_lvlhsh_insert(&vm->modules_hash, &lhq);
+    hash = shared ? &vm->shared->modules_hash : &vm->modules_hash;
+
+    ret = njs_lvlhsh_insert(hash, &lhq);
     if (njs_fast_path(ret == NJS_OK)) {
         return module;
     }
@@ -622,13 +627,14 @@ njs_module_require(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     njs_string_get(path, &name);
 
-    module = njs_module_find(vm, &name, 1);
+    module = njs_module_find(vm, &name, 0);
     if (njs_slow_path(module == NULL)) {
         njs_error(vm, "Cannot find module \"%V\"", &name);
 
         return NJS_ERROR;
     }
 
-    njs_set_object(&vm->retval, &module->object);
+    njs_value_assign(&vm->retval, &module->value);
+
     return NJS_OK;
 }

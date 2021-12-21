@@ -7,10 +7,43 @@
 echo "creating $NJS_MAKEFILE"
 
 mkdir -p $NJS_BUILD_DIR/src
+mkdir -p $NJS_BUILD_DIR/build
+mkdir -p $NJS_BUILD_DIR/external
 mkdir -p $NJS_BUILD_DIR/test
 
+njs_modules_c=$NJS_BUILD_DIR/njs_modules.c
+
+NJS_LIB_SRCS="$NJS_LIB_SRCS $njs_modules_c"
+
+njs_incs=`echo $NJS_LIB_INCS \
+        | sed -e "s# *\([^ ]*\)#$njs_regex_cont-I\1#g"`
 njs_objs=`echo $NJS_LIB_SRCS \
         | sed -e "s# *\([^ ]*\.\)c#$NJS_BUILD_DIR/\1o$njs_regex_cont#g"`
+
+cat << END                                    > $njs_modules_c
+
+#include <njs_main.h>
+
+END
+
+for mod in $NJS_LIB_MODULES
+do
+    echo "extern njs_module_t  $mod;"         >> $njs_modules_c
+done
+
+echo                                          >> $njs_modules_c
+echo 'njs_module_t *njs_modules[] = {'        >> $njs_modules_c
+
+for mod in $NJS_LIB_MODULES
+do
+    echo "    &$mod,"                         >> $njs_modules_c
+done
+
+cat << END                                    >> $njs_modules_c
+    NULL
+};
+
+END
 
 cat << END > $NJS_MAKEFILE
 
@@ -28,8 +61,7 @@ NPM = npm
 
 default: njs
 
-NJS_LIB_INCS = -Isrc -I$NJS_BUILD_DIR
-
+NJS_LIB_INCS = $njs_incs
 NJS_LIB_OBJS = $njs_objs
 
 libnjs: $NJS_BUILD_DIR/libnjs.a
@@ -46,9 +78,8 @@ END
 
 for njs_src in $NJS_LIB_SRCS
 do
-    fname=$(basename $njs_src)
-    njs_obj="src/${fname%.c}.o"
-    njs_dep="src/${fname%.c}.dep"
+    njs_obj="${njs_src%.c}.o"
+    njs_dep="${njs_src%.c}.dep"
     njs_dep_flags=`njs_gen_dep_flags $njs_dep $njs_obj`
     njs_dep_post=`njs_gen_dep_post $njs_dep $njs_obj`
     cat << END >> $NJS_MAKEFILE
@@ -73,7 +104,7 @@ cat << END >> $NJS_MAKEFILE
 
 $NJS_BUILD_DIR/njs: \\
 	$NJS_BUILD_DIR/libnjs.a \\
-	src/njs_shell.c external/njs_webcrypto.h external/njs_webcrypto.c
+	src/njs_shell.c
 	\$(NJS_LINK) -o $NJS_BUILD_DIR/njs \$(NJS_CFLAGS) \\
 		$NJS_LIB_AUX_CFLAGS \$(NJS_LIB_INCS) -Injs \\
 		src/njs_shell.c \\
@@ -143,7 +174,7 @@ njs_dep_post=`njs_gen_dep_post $njs_dep $njs_externals_obj`
 cat << END >> $NJS_MAKEFILE
 
 $NJS_BUILD_DIR/$njs_externals_obj: \\
-    $njs_src external/njs_webcrypto.h external/njs_webcrypto.c
+    $njs_src external/njs_webcrypto.c
 	\$(NJS_CC) -c \$(NJS_CFLAGS) $NJS_LIB_AUX_CFLAGS \\
 		\$(NJS_LIB_INCS) -Injs \\
 		-o $NJS_BUILD_DIR/$njs_externals_obj \\

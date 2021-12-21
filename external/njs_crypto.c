@@ -61,6 +61,16 @@ static njs_crypto_enc_t *njs_crypto_encoding(njs_vm_t *vm,
     const njs_value_t *value);
 static njs_int_t njs_buffer_digest(njs_vm_t *vm, njs_value_t *value,
     const njs_str_t *src);
+static njs_int_t njs_crypto_create_hash(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused);
+static njs_int_t njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t hmac);
+static njs_int_t njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t hmac);
+static njs_int_t njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused);
+
+static njs_int_t njs_crypto_init(njs_vm_t *vm);
 
 
 static njs_hash_alg_t njs_hash_algorithms[] = {
@@ -129,21 +139,142 @@ static njs_crypto_enc_t njs_encodings[] = {
 };
 
 
+static njs_external_t  njs_ext_crypto_hash[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY | NJS_EXTERN_SYMBOL,
+        .name.symbol = NJS_SYMBOL_TO_STRING_TAG,
+        .u.property = {
+            .value = "Hash",
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("update"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_hash_prototype_update,
+            .magic8 = 0,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("digest"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_hash_prototype_digest,
+            .magic8 = 0,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("constructor"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_crypto_create_hash,
+        }
+    },
+};
+
+
+static njs_external_t  njs_ext_crypto_hmac[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY | NJS_EXTERN_SYMBOL,
+        .name.symbol = NJS_SYMBOL_TO_STRING_TAG,
+        .u.property = {
+            .value = "Hmac",
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("update"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_hash_prototype_update,
+            .magic8 = 1,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("digest"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_hash_prototype_digest,
+            .magic8 = 1,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("constructor"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_crypto_create_hmac,
+            .magic8 = 0,
+        }
+    },
+};
+
+
+static njs_external_t  njs_ext_crypto_crypto[] = {
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("createHash"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_crypto_create_hash,
+            .magic8 = 0,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("createHmac"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_crypto_create_hmac,
+            .magic8 = 0,
+        }
+    },
+};
+
+
+static njs_int_t    njs_crypto_hash_proto_id;
+static njs_int_t    njs_crypto_hmac_proto_id;
+
+
+njs_module_t  njs_crypto_module = {
+    .name = njs_str("crypto"),
+    .init = njs_crypto_init,
+};
+
+
 static njs_int_t
 njs_crypto_create_hash(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_digest_t        *dgst;
-    njs_hash_alg_t      *alg;
-    njs_object_value_t  *hash;
+    njs_digest_t    *dgst;
+    njs_hash_alg_t  *alg;
 
     alg = njs_crypto_algorithm(vm, njs_arg(args, nargs, 1));
     if (njs_slow_path(alg == NULL)) {
-        return NJS_ERROR;
-    }
-
-    hash = njs_object_value_alloc(vm, NJS_OBJ_TYPE_CRYPTO_HASH, 0, NULL);
-    if (njs_slow_path(hash == NULL)) {
         return NJS_ERROR;
     }
 
@@ -157,16 +288,14 @@ njs_crypto_create_hash(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     alg->init(&dgst->u);
 
-    njs_set_data(&hash->value, dgst, NJS_DATA_TAG_CRYPTO_HASH);
-    njs_set_object_value(&vm->retval, hash);
-
-    return NJS_OK;
+    return njs_vm_external_create(vm, &vm->retval, njs_crypto_hash_proto_id,
+                                  dgst, 0);
 }
 
 
 static njs_int_t
 njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t tag)
+    njs_index_t hmac)
 {
     njs_str_t                    data;
     njs_int_t                    ret;
@@ -179,9 +308,34 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     const njs_buffer_encoding_t  *encoding;
 
     this = njs_argument(args, 0);
-    if (njs_slow_path(!njs_is_object_data(this, tag))) {
-        njs_type_error(vm, "\"this\" is not a hash object");
-        return NJS_ERROR;
+
+    if (!hmac) {
+        dgst = njs_vm_external(vm, njs_crypto_hash_proto_id, this);
+        if (njs_slow_path(dgst == NULL)) {
+            njs_type_error(vm, "\"this\" is not a hash object");
+            return NJS_ERROR;
+        }
+
+        if (njs_slow_path(dgst->alg == NULL)) {
+            njs_error(vm, "Digest already called");
+            return NJS_ERROR;
+        }
+
+        ctx = NULL;
+
+    } else {
+        ctx = njs_vm_external(vm, njs_crypto_hmac_proto_id, this);
+        if (njs_slow_path(ctx == NULL)) {
+            njs_type_error(vm, "\"this\" is not a hmac object");
+            return NJS_ERROR;
+        }
+
+        if (njs_slow_path(ctx->alg == NULL)) {
+            njs_error(vm, "Digest already called");
+            return NJS_ERROR;
+        }
+
+        dgst = NULL;
     }
 
     value = njs_arg(args, nargs, 1);
@@ -221,22 +375,10 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (tag == NJS_DATA_TAG_CRYPTO_HASH) {
-        dgst = njs_object_data(this);
-        if (njs_slow_path(dgst->alg == NULL)) {
-            njs_error(vm, "Digest already called");
-            return NJS_ERROR;
-        }
-
+    if (!hmac) {
         dgst->alg->update(&dgst->u, data.start, data.length);
 
     } else {
-        ctx = njs_object_data(this);
-        if (njs_slow_path(ctx->alg == NULL)) {
-            njs_error(vm, "Digest already called");
-            return NJS_ERROR;
-        }
-
         ctx->alg->update(&ctx->u, data.start, data.length);
     }
 
@@ -248,7 +390,7 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t tag)
+    njs_index_t hmac)
 {
     njs_str_t         str;
     njs_hmac_t        *ctx;
@@ -259,9 +401,32 @@ njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     u_char            hash1[32], digest[32];
 
     this = njs_argument(args, 0);
-    if (njs_slow_path(!njs_is_object_data(this, tag))) {
-        njs_type_error(vm, "\"this\" is not a hash object");
-        return NJS_ERROR;
+
+    if (!hmac) {
+        dgst = njs_vm_external(vm, njs_crypto_hash_proto_id, this);
+        if (njs_slow_path(dgst == NULL)) {
+            njs_type_error(vm, "\"this\" is not a hash object");
+            return NJS_ERROR;
+        }
+
+        if (njs_slow_path(dgst->alg == NULL)) {
+            goto exception;
+        }
+
+        ctx = NULL;
+
+    } else {
+        ctx = njs_vm_external(vm, njs_crypto_hmac_proto_id, this);
+        if (njs_slow_path(ctx == NULL)) {
+            njs_type_error(vm, "\"this\" is not a hmac object");
+            return NJS_ERROR;
+        }
+
+        if (njs_slow_path(ctx->alg == NULL)) {
+            goto exception;
+        }
+
+        dgst = NULL;
     }
 
     enc = njs_crypto_encoding(vm, njs_arg(args, nargs, 1));
@@ -269,22 +434,12 @@ njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (tag == NJS_DATA_TAG_CRYPTO_HASH) {
-        dgst = njs_object_data(this);
-        if (njs_slow_path(dgst->alg == NULL)) {
-            goto exception;
-        }
-
+    if (!hmac) {
         alg = dgst->alg;
         alg->final(digest, &dgst->u);
         dgst->alg = NULL;
 
     } else {
-        ctx = njs_object_data(this);
-        if (njs_slow_path(ctx->alg == NULL)) {
-            goto exception;
-        }
-
         alg = ctx->alg;
         alg->final(hash1, &ctx->u);
 
@@ -307,103 +462,6 @@ exception:
 }
 
 
-static const njs_object_prop_t  njs_hash_prototype_properties[] =
-{
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("Hash"),
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
-        .value = njs_string("Hash"),
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("update"),
-        .value = njs_native_function2(njs_hash_prototype_update, 0,
-                                      NJS_DATA_TAG_CRYPTO_HASH),
-        .writable = 1,
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("digest"),
-        .value = njs_native_function2(njs_hash_prototype_digest, 0,
-                                      NJS_DATA_TAG_CRYPTO_HASH),
-        .writable = 1,
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
-};
-
-
-const njs_object_init_t  njs_hash_prototype_init = {
-    njs_hash_prototype_properties,
-    njs_nitems(njs_hash_prototype_properties),
-};
-
-
-static njs_int_t
-njs_hash_constructor(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
-{
-    return njs_crypto_create_hash(vm, args, nargs, unused);
-}
-
-
-static const njs_object_prop_t  njs_hash_constructor_properties[] =
-{
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("Hash"),
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 2.0),
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
-};
-
-
-const njs_object_init_t  njs_hash_constructor_init = {
-    njs_hash_constructor_properties,
-    njs_nitems(njs_hash_constructor_properties),
-};
-
-
-const njs_object_type_init_t  njs_hash_type_init = {
-    .constructor = njs_native_ctor(njs_hash_constructor, 2, 0),
-    .constructor_props = &njs_hash_constructor_init,
-    .prototype_props = &njs_hash_prototype_init,
-    .prototype_value = { .object_value = { .value = njs_value(NJS_DATA, 0, 0.0),
-                                           .object = { .type = NJS_OBJECT } } },
-};
-
-
 static njs_int_t
 njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
@@ -415,7 +473,6 @@ njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_typed_array_t   *array;
     const njs_value_t   *value;
     njs_array_buffer_t  *buffer;
-    njs_object_value_t  *hmac;
     u_char              digest[32], key_buf[64];
 
     alg = njs_crypto_algorithm(vm, njs_arg(args, nargs, 1));
@@ -483,153 +540,9 @@ njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     alg->init(&ctx->u);
     alg->update(&ctx->u, key_buf, 64);
 
-    hmac = njs_object_value_alloc(vm, NJS_OBJ_TYPE_CRYPTO_HMAC, 0, NULL);
-    if (njs_slow_path(hmac == NULL)) {
-        return NJS_ERROR;
-    }
-
-    njs_set_data(&hmac->value, ctx, NJS_DATA_TAG_CRYPTO_HMAC);
-    njs_set_object_value(&vm->retval, hmac);
-
-    return NJS_OK;
+    return njs_vm_external_create(vm, &vm->retval, njs_crypto_hmac_proto_id,
+                                  ctx, 0);
 }
-
-
-static const njs_object_prop_t  njs_hmac_prototype_properties[] =
-{
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("Hmac"),
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
-        .value = njs_string("Hmac"),
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("update"),
-        .value = njs_native_function2(njs_hash_prototype_update, 0,
-                                      NJS_DATA_TAG_CRYPTO_HMAC),
-        .writable = 1,
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("digest"),
-        .value = njs_native_function2(njs_hash_prototype_digest, 0,
-                                      NJS_DATA_TAG_CRYPTO_HMAC),
-        .writable = 1,
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
-};
-
-
-const njs_object_init_t  njs_hmac_prototype_init = {
-    njs_hmac_prototype_properties,
-    njs_nitems(njs_hmac_prototype_properties),
-};
-
-
-static njs_int_t
-njs_hmac_constructor(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
-{
-    return njs_crypto_create_hmac(vm, args, nargs, unused);
-}
-
-
-static const njs_object_prop_t  njs_hmac_constructor_properties[] =
-{
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("Hmac"),
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 3.0),
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
-};
-
-
-const njs_object_init_t  njs_hmac_constructor_init = {
-    njs_hmac_constructor_properties,
-    njs_nitems(njs_hmac_constructor_properties),
-};
-
-
-static const njs_object_prop_t  njs_crypto_object_properties[] =
-{
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("crypto"),
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("sandbox"),
-        .value = njs_value(NJS_BOOLEAN, 1, 1.0),
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("createHash"),
-        .value = njs_native_function(njs_crypto_create_hash, 0),
-        .writable = 1,
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("createHmac"),
-        .value = njs_native_function(njs_crypto_create_hmac, 0),
-        .writable = 1,
-        .configurable = 1,
-    },
-
-};
-
-
-const njs_object_init_t  njs_crypto_object_init = {
-    njs_crypto_object_properties,
-    njs_nitems(njs_crypto_object_properties),
-};
-
-
-const njs_object_type_init_t  njs_hmac_type_init = {
-    .constructor = njs_native_ctor(njs_hmac_constructor, 3, 0),
-    .constructor_props = &njs_hmac_constructor_init,
-    .prototype_props = &njs_hmac_prototype_init,
-    .prototype_value = { .object_value = { .value = njs_value(NJS_DATA, 0, 0.0),
-                                           .object = { .type = NJS_OBJECT } } },
-};
 
 
 static njs_hash_alg_t *
@@ -690,4 +603,48 @@ static njs_int_t
 njs_buffer_digest(njs_vm_t *vm, njs_value_t *value, const njs_str_t *src)
 {
     return njs_buffer_new(vm, value, src->start, src->length);
+}
+
+
+static njs_int_t
+njs_crypto_init(njs_vm_t *vm)
+{
+    njs_int_t           ret, proto_id;
+    njs_mod_t           *module;
+    njs_opaque_value_t  value;
+
+    njs_crypto_hash_proto_id =
+                     njs_vm_external_prototype(vm, njs_ext_crypto_hash,
+                                               njs_nitems(njs_ext_crypto_hash));
+    if (njs_slow_path(njs_crypto_hash_proto_id < 0)) {
+        return NJS_ERROR;
+    }
+
+    njs_crypto_hmac_proto_id =
+                     njs_vm_external_prototype(vm, njs_ext_crypto_hmac,
+                                               njs_nitems(njs_ext_crypto_hmac));
+    if (njs_slow_path(njs_crypto_hmac_proto_id < 0)) {
+        return NJS_ERROR;
+    }
+
+    proto_id = njs_vm_external_prototype(vm, njs_ext_crypto_crypto,
+                                         njs_nitems(njs_ext_crypto_crypto));
+    if (njs_slow_path(proto_id < 0)) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_vm_external_create(vm, njs_value_arg(&value), proto_id, NULL, 1);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    module = njs_module_add(vm, &njs_str_value("crypto"), 1);
+    if (njs_slow_path(module == NULL)) {
+        return NJS_ERROR;
+    }
+
+    njs_value_assign(&module->value, &value);
+    module->function.native = 1;
+
+    return NJS_OK;
 }

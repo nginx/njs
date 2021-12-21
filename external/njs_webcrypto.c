@@ -6,7 +6,6 @@
 
 
 #include <njs_main.h>
-#include "njs_webcrypto.h"
 #include "njs_openssl.h"
 
 typedef enum {
@@ -137,6 +136,8 @@ static njs_int_t njs_algorithm_curve(njs_vm_t *vm, njs_value_t *value,
 static njs_int_t njs_webcrypto_result(njs_vm_t *vm, njs_value_t *result,
     njs_int_t rc);
 static void njs_webcrypto_error(njs_vm_t *vm, const char *fmt, ...);
+
+static njs_int_t njs_webcrypto_init(njs_vm_t *vm);
 
 static njs_webcrypto_entry_t njs_webcrypto_alg[] = {
 
@@ -484,6 +485,12 @@ static njs_external_t  njs_ext_webcrypto[] = {
         }
     },
 
+};
+
+
+njs_module_t  njs_webcrypto_module = {
+    .name = njs_str("webcrypto"),
+    .init = njs_webcrypto_init,
 };
 
 
@@ -2652,8 +2659,8 @@ njs_webcrypto_error(njs_vm_t *vm, const char *fmt, ...)
 }
 
 
-njs_int_t
-njs_external_webcrypto_init(njs_vm_t *vm)
+static njs_int_t
+njs_webcrypto_init(njs_vm_t *vm)
 {
     njs_int_t           ret, proto_id;
     njs_str_t           name;
