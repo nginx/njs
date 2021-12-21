@@ -17710,546 +17710,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("require.hasOwnProperty('length')"),
       njs_str("true") },
 
-    { njs_str("var fs = require('fs'); typeof fs"),
-      njs_str("object") },
-
-    { njs_str("var fs = require('fs'); Object.isExtensible(fs)"),
-      njs_str("true") },
-
-    { njs_str("require('fs') === require('fs')"),
-      njs_str("true") },
-
-    { njs_str("require('fs').a = 1; require('fs').a"),
-      njs_str("1") },
-
-    /* require('fs').readFile() */
-
-    { njs_str("var fs = require('fs');"
-              "fs.readFile()"),
-      njs_str("TypeError: \"path\" must be a string or Buffer") },
-
-    { njs_str("var fs = require('fs');"
-              "var path = Buffer.from('/broken'); path[3] = 0;"
-              "fs.readFile(path)"),
-      njs_str("TypeError: \"path\" must be a Buffer without null bytes") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.readFile('/njs_unknown_path')"),
-      njs_str("TypeError: \"callback\" must be a function") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.readFile('/njs_unknown_path', 'utf8')"),
-      njs_str("TypeError: \"callback\" must be a function") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.readFile('/njs_unknown_path', {flag:'xx'})"),
-      njs_str("TypeError: \"callback\" must be a function") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.readFile('/njs_unknown_path', {flag:'xx'}, 1)"),
-      njs_str("TypeError: \"callback\" must be a function") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.readFile('/njs_unknown_path', {flag:'xx'}, function () {})"),
-      njs_str("TypeError: Unknown file open flags: \"xx\"") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.readFile('/njs_unknown_path', {encoding:'ascii'}, function () {})"),
-      njs_str("TypeError: \"ascii\" encoding is not supported") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.readFile('/njs_unknown_path', 'ascii', function () {})"),
-      njs_str("TypeError: \"ascii\" encoding is not supported") },
-
-    /* require('fs').readFileSync() */
-
-    { njs_str("var fs = require('fs');"
-              "fs.readFileSync()"),
-      njs_str("TypeError: \"path\" must be a string or Buffer") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.readFileSync({})"),
-      njs_str("TypeError: \"path\" must be a string or Buffer") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.readFileSync('/njs_unknown_path', {flag:'xx'})"),
-      njs_str("TypeError: Unknown file open flags: \"xx\"") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.readFileSync(Buffer.from('/njs_unknown_path'), {encoding:'ascii'})"),
-      njs_str("TypeError: \"ascii\" encoding is not supported") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.readFileSync('/njs_unknown_path', 'ascii')"),
-      njs_str("TypeError: \"ascii\" encoding is not supported") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.readFileSync('/njs_unknown_path', true)"),
-      njs_str("TypeError: Unknown options type: \"boolean\" (a string or object required)") },
-
-
-    /* require('fs').writeFile() */
-
-    { njs_str("var fs = require('fs');"
-              "fs.writeFile()"),
-      njs_str("TypeError: \"path\" must be a string or Buffer") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.writeFile({}, '', function () {})"),
-      njs_str("TypeError: \"path\" must be a string or Buffer") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.writeFile('/njs_unknown_path')"),
-      njs_str("TypeError: \"callback\" must be a function") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.writeFile('/njs_unknown_path', '')"),
-      njs_str("TypeError: \"callback\" must be a function") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.writeFile('/njs_unknown_path', '', undefined)"),
-      njs_str("TypeError: \"callback\" must be a function") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.writeFile('/njs_unknown_path', '', 'utf8')"),
-      njs_str("TypeError: \"callback\" must be a function") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.writeFile('/njs_unknown_path', '', {flag:'xx'}, function () {})"),
-      njs_str("TypeError: Unknown file open flags: \"xx\"") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.writeFile('/njs_unknown_path', '', {encoding:'ascii'}, function () {})"),
-      njs_str("TypeError: \"ascii\" encoding is not supported") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.writeFile('/njs_unknown_path', '', 'ascii', function () {})"),
-      njs_str("TypeError: \"ascii\" encoding is not supported") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.writeFile('/njs_unknown_path', '', true, function () {})"),
-      njs_str("TypeError: Unknown options type: \"boolean\" (a string or object required)") },
-
-    /* require('fs').writeFileSync() */
-
-    { njs_str("var fs = require('fs');"
-              "fs.writeFileSync()"),
-      njs_str("TypeError: \"path\" must be a string or Buffer") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.writeFileSync({}, '')"),
-      njs_str("TypeError: \"path\" must be a string or Buffer") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.writeFileSync('/njs_unknown_path', '', {flag:'xx'})"),
-      njs_str("TypeError: Unknown file open flags: \"xx\"") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.writeFileSync('/njs_unknown_path', '', {encoding:'ascii'})"),
-      njs_str("TypeError: \"ascii\" encoding is not supported") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.writeFileSync('/njs_unknown_path', '', 'ascii')"),
-      njs_str("TypeError: \"ascii\" encoding is not supported") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.writeFileSync('/njs_unknown_path', '', true)"),
-      njs_str("TypeError: Unknown options type: \"boolean\" (a string or object required)") },
-
-    /* require('fs').renameSync() */
-
-    { njs_str("var fs = require('fs');"
-              "fs.renameSync()"),
-      njs_str("TypeError: \"oldPath\" must be a string or Buffer") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.renameSync('/njs_unknown_path')"),
-      njs_str("TypeError: \"newPath\" must be a string or Buffer") },
-
-    { njs_str("var fs = require('fs');"
-              "[undefined, null, false, NaN, Symbol(), {}, Object('/njs_unknown_path')]"
-              ".map((x) => { try { fs.renameSync(x, '/njs_unknown_path'); } "
-              "              catch (e) { return (e instanceof TypeError); } })"
-              ".every((x) => x === true)"),
-      njs_str("true")},
-
-    { njs_str("var fs = require('fs');"
-              "[undefined, null, false, NaN, Symbol(), {}, Object('/njs_unknown_path')]"
-              ".map((x) => { try { fs.renameSync('/njs_unknown_path', x); } "
-              "              catch (e) { return (e instanceof TypeError); } })"
-              ".every((x) => x === true)"),
-      njs_str("true")},
-
-    /* require('fs').access() */
-
-    { njs_str("var fs = require('fs');"
-              "fs.access()"),
-      njs_str("TypeError: \"path\" must be a string or Buffer") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.access('/njs_unknown_path')"),
-      njs_str("TypeError: \"callback\" must be a function") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.access('/njs_unknown_path', fs.constants.F_OK)"),
-      njs_str("TypeError: \"callback\" must be a function") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.access('/njs_unknown_path', 'fail', function () {})"),
-      njs_str("TypeError: \"mode\" must be a number") },
-
-    /* require('fs').accessSync() */
-
-    { njs_str("var fs = require('fs');"
-              "fs.accessSync()"),
-      njs_str("TypeError: \"path\" must be a string or Buffer") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.accessSync('/njs_unknown_path', 'fail')"),
-      njs_str("TypeError: \"mode\" must be a number") },
-
-    { njs_str("var "
-              "fs = require('fs'),"
-              "func = ["
-                "'access',"
-                "'accessSync',"
-                "'readFile',"
-                "'readFileSync',"
-                "'writeFile',"
-                "'writeFileSync',"
-                "'appendFile',"
-                "'appendFileSync',"
-                "'rename',"
-                "'renameSync',"
-                "'symlink',"
-                "'symlinkSync',"
-                "'unlink',"
-                "'unlinkSync',"
-                "'realpath',"
-                "'realpathSync',"
-                "'mkdir',"
-                "'mkdirSync',"
-                "'rmdir',"
-                "'rmdirSync',"
-                "'readdir',"
-                "'readdirSync',"
-              "],"
-              "test = (fname) =>"
-                "[undefined, null, false, NaN, Symbol(), {}, Object('/njs_unknown_path')]"
-                ".map((x) => { try { fs[fname](x); } "
-                "              catch (e) { return (e instanceof TypeError); } })"
-                ".every((x) => x === true);"
-              "func.map(test).every((x) => x)"),
-      njs_str("true")},
-
-    /* require('fs').promises */
-
-    { njs_str("var fs = require('fs');"
-              "typeof fs.promises"),
-      njs_str("object") },
-
-    { njs_str("var "
-              "fs = require('fs').promises,"
-              "func = ["
-                "'access',"
-                "'readFile',"
-                "'writeFile',"
-                "'appendFile',"
-                "'rename',"
-                "'symlink',"
-                "'unlink',"
-                "'realpath',"
-                "'mkdir',"
-                "'rmdir',"
-                "'readdir',"
-              "];"
-              "func.every((x) => typeof fs[x] == 'function')"),
-      njs_str("true")},
-
-    /* require('fs').constants */
-
-    { njs_str("var fs = require('fs');"
-              "typeof fs.constants"),
-      njs_str("object") },
-
-    { njs_str("var "
-              "fsc = require('fs').constants,"
-              "items = ["
-                "'F_OK',"
-                "'R_OK',"
-                "'W_OK',"
-                "'X_OK',"
-              "];"
-              "items.every((x) => typeof fsc[x] == 'number')"),
-      njs_str("true")},
-
-    /* require('fs').Dirent */
-
-    { njs_str("var fs = require('fs');"
-              "typeof fs.Dirent"),
-      njs_str("function") },
-
-    { njs_str("var fs = require('fs');"
-              "fs.Dirent('file', 123)"),
-      njs_str("TypeError: the Dirent constructor must be called with new") },
-
-    { njs_str("var fs = require('fs');"
-              "var e = new fs.Dirent('file', 123); [e.name, e.type]"),
-      njs_str("file,123") },
-
-    { njs_str("var "
-              "fs = require('fs'),"
-              "e = new fs.Dirent('file', 0),"
-              "func = ["
-                "'isDirectory',"
-                "'isFile',"
-                "'isBlockDevice',"
-                "'isCharacterDevice',"
-                "'isSymbolicLink',"
-                "'isFIFO',"
-                "'isSocket',"
-              "];"
-              "func.every((x) => typeof e[x] == 'function')"),
-      njs_str("true")},
-
-    /* require('crypto').createHash() */
-
-    { njs_str("var h = require('crypto').createHash('sha1');"
-              "[Object.prototype.toString.call(h), njs.dump(h),h]"),
-      njs_str("[object Hash],Hash {},[object Hash]") },
-
-    { njs_str("var h = require('crypto').createHash('sha1');"
-              "var Hash = h.constructor; "
-              "Hash('sha1').update('AB').digest('hex')"),
-      njs_str("06d945942aa26a61be18c3e22bf19bbca8dd2b5d") },
-
-    { njs_str("var h = require('crypto').createHash('sha1');"
-              "h.constructor.name"),
-      njs_str("Hash") },
-
-    { njs_str("var hash = require('crypto').createHash.bind(undefined, 'md5');"
-              "['hex', 'base64', 'base64url'].map(e => {"
-              "   var h = hash().update('AB').digest().toString(e);"
-              "   var h2 = hash().update(Buffer.from('XABX').subarray(1,3)).digest(e);"
-              "   var h3 = hash().update('A').update('B').digest(e);"
-              "   if (h !== h2) {throw new Error(`digest().toString($e):$h != digest($e):$h2`)};"
-              "   if (h !== h3) {throw new Error(`digest().toString($e):$h != update('A').update('B').digest($e):$h3`)};"
-              "   return h;"
-              "})"),
-      njs_str("b86fc6b051f63d73de262d4c34e3a0a9,"
-              "uG/GsFH2PXPeJi1MNOOgqQ==,"
-              "uG_GsFH2PXPeJi1MNOOgqQ") },
-
-    { njs_str("var hash = require('crypto').createHash.bind(undefined, 'sha1');"
-              "['hex', 'base64', 'base64url'].map(e => {"
-              "   var h = hash().update('4142', 'hex').digest().toString(e);"
-              "   var h2 = hash().update(Buffer.from('XABX').subarray(1,3)).digest(e);"
-              "   var h3 = hash().update('A').update('B').digest(e);"
-              "   if (h !== h2) {throw new Error(`digest().toString($e):$h != digest($e):$h2`)};"
-              "   if (h !== h3) {throw new Error(`digest().toString($e):$h != update('A').update('B').digest($e):$h3`)};"
-              "   return h;"
-              "})"),
-      njs_str("06d945942aa26a61be18c3e22bf19bbca8dd2b5d,"
-              "BtlFlCqiamG+GMPiK/GbvKjdK10=,"
-              "BtlFlCqiamG-GMPiK_GbvKjdK10") },
-
-    { njs_str("var hash = require('crypto').createHash.bind(undefined, 'sha1');"
-              "['hex', 'base64', 'base64url'].every(e => {"
-              "   var h = hash().digest(e);"
-              "   var h2 = hash().update('').digest(e);"
-              "   if (h !== h2) {throw new Error(`digest($e):$h != update('').digest($e):$h2`)};"
-              "   return true;"
-              "})"),
-      njs_str("true") },
-
-    { njs_str("var hash = require('crypto').createHash.bind(undefined, 'sha1');"
-              "["
-              " ['AB'],"
-              " ['4142', 'hex'],"
-              " ['QUI=', 'base64'],"
-              " ['QUI', 'base64url']"
-              "].every(args => {"
-              "        return hash().update(args[0], args[1]).digest('hex') === '06d945942aa26a61be18c3e22bf19bbca8dd2b5d';"
-              "})"),
-      njs_str("true") },
-
-    { njs_str("var hash = require('crypto').createHash.bind(undefined, 'sha256');"
-              "['hex', 'base64', 'base64url'].map(e => {"
-              "   var h = hash().update('AB').digest().toString(e);"
-              "   var h2 = hash().update(Buffer.from('XABX').subarray(1,3)).digest(e);"
-              "   var h3 = hash().update('A').update('B').digest(e);"
-              "   if (h !== h2) {throw new Error(`digest().toString($e):$h != digest($e):$h2`)};"
-              "   if (h !== h3) {throw new Error(`digest().toString($e):$h != update('A').update('B').digest($e):$h3`)};"
-              "   return h;"
-              "})"),
-      njs_str("38164fbd17603d73f696b8b4d72664d735bb6a7c88577687fd2ae33fd6964153,"
-              "OBZPvRdgPXP2lri01yZk1zW7anyIV3aH/SrjP9aWQVM=,"
-              "OBZPvRdgPXP2lri01yZk1zW7anyIV3aH_SrjP9aWQVM") },
-
-    { njs_str("var hash = require('crypto').createHash;"
-              "njs.dump(['', 'abc'.repeat(100)].map(v => {"
-              "    return ['md5', 'sha1', 'sha256'].map(h => {"
-              "        return hash(h).update(v).digest('hex');"
-              "     })"
-              "}))"),
-      njs_str("[['d41d8cd98f00b204e9800998ecf8427e',"
-              "'da39a3ee5e6b4b0d3255bfef95601890afd80709',"
-              "'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'],"
-              "['f571117acbd8153c8dc3c81b8817773a',"
-              "'c95466320eaae6d19ee314ae4f135b12d45ced9a',"
-              "'d9f5aeb06abebb3be3f38adec9a2e3b94228d52193be923eb4e24c9b56ee0930']]") },
-
-    { njs_str("var h = require('crypto').createHash()"),
-      njs_str("TypeError: algorithm must be a string") },
-
-    { njs_str("var h = require('crypto').createHash([])"),
-      njs_str("TypeError: algorithm must be a string") },
-
-    { njs_str("var h = require('crypto').createHash('sha512')"),
-      njs_str("TypeError: not supported algorithm: \"sha512\"") },
-
-    { njs_str("var h = require('crypto').createHash('sha1');"
-              "h.update()"),
-      njs_str("TypeError: data argument \"undefined\" is not a string or Buffer-like object") },
-
-    { njs_str("var h = require('crypto').createHash('sha1');"
-              "h.update({})"),
-      njs_str("TypeError: data argument \"object\" is not a string or Buffer-like object") },
-
-    { njs_str("var h = require('crypto').createHash('sha1');"
-              "h.update('A').digest('latin1')"),
-      njs_str("TypeError: Unknown digest encoding: \"latin1\"") },
-
-    { njs_str("require('crypto').createHash('sha1').digest() instanceof Buffer"),
-      njs_str("true") },
-
-    { njs_str("var h = require('crypto').createHash('sha1');"
-              "h.update('A').digest('hex'); h.digest('hex')"),
-      njs_str("Error: Digest already called") },
-
-    { njs_str("var h = require('crypto').createHash('sha1');"
-              "h.update('A').digest('hex'); h.update('B')"),
-      njs_str("Error: Digest already called") },
-
-    { njs_str("typeof require('crypto').createHash('md5')"),
-      njs_str("object") },
-
-    /* require('crypto').createHmac() */
-
-    { njs_str("var h = require('crypto').createHmac('sha1', '');"
-              "[Object.prototype.toString.call(h), njs.dump(h),h]"),
-      njs_str("[object Hmac],Hmac {},[object Hmac]") },
-
-    { njs_str("var hmac = require('crypto').createHmac.bind(undefined, 'md5', '');"
-              "['hex', 'base64', 'base64url'].map(e => {"
-              "   var h = hmac().update('AB').digest().toString(e);"
-              "   var h2 = hmac().update(Buffer.from('XABX').subarray(1,3)).digest(e);"
-              "   var h3 = hmac().update('A').update('B').digest(e);"
-              "   if (h !== h2) {throw new Error(`digest().toString($e):$h != digest($e):$h2`)};"
-              "   if (h !== h3) {throw new Error(`digest().toString($e):$h != update('A').update('B').digest($e):$h3`)};"
-              "   return h;"
-              "})"),
-      njs_str("9e0e9e545ef63d41dfb653daecf8ebc7,"
-              "ng6eVF72PUHftlPa7Pjrxw==,"
-              "ng6eVF72PUHftlPa7Pjrxw") },
-
-    { njs_str("var hmac = require('crypto').createHmac.bind(undefined, 'sha1', '');"
-              "['hex', 'base64', 'base64url'].map(e => {"
-              "   var h = hmac().update('AB').digest().toString(e);"
-              "   var h2 = hmac().update(Buffer.from('XABX').subarray(1,3)).digest(e);"
-              "   var h3 = hmac().update('A').update('B').digest(e);"
-              "   if (h !== h2) {throw new Error(`digest().toString($e):$h != digest($e):$h2`)};"
-              "   if (h !== h3) {throw new Error(`digest().toString($e):$h != update('A').update('B').digest($e):$h3`)};"
-              "   return h;"
-              "})"),
-      njs_str("d32c0b6637cc2dfe4670f3fe48ef4434123c4810,"
-              "0ywLZjfMLf5GcPP+SO9ENBI8SBA=,"
-              "0ywLZjfMLf5GcPP-SO9ENBI8SBA") },
-
-    { njs_str("var hash = require('crypto').createHmac.bind(undefined, 'sha1', '');"
-              "["
-              " ['AB'],"
-              " ['4142', 'hex'],"
-              " ['QUI=', 'base64'],"
-              " ['QUI', 'base64url']"
-              "].every(args => {"
-              "        return hash().update(args[0], args[1]).digest('hex') === 'd32c0b6637cc2dfe4670f3fe48ef4434123c4810';"
-              "})"),
-      njs_str("true") },
-
-    { njs_str("var hmac = require('crypto').createHmac.bind(undefined, 'sha256', '');"
-              "['hex', 'base64', 'base64url'].map(e => {"
-              "   var h = hmac().update('AB').digest().toString(e);"
-              "   var h2 = hmac().update(Buffer.from('AB')).digest(e);"
-              "   var h3 = hmac().update('A').update('B').digest(e);"
-              "   if (h !== h2) {throw new Error(`digest().toString($e):$h != digest($e):$h2`)};"
-              "   if (h !== h3) {throw new Error(`digest().toString($e):$h != update('A').update('B').digest($e):$h3`)};"
-              "   return h;"
-              "})"),
-      njs_str("d53400095496267cf02e5dbd4b0bf9fbfb5f36f311ea7d9809af5487421743e3,"
-              "1TQACVSWJnzwLl29Swv5+/tfNvMR6n2YCa9Uh0IXQ+M=,"
-              "1TQACVSWJnzwLl29Swv5-_tfNvMR6n2YCa9Uh0IXQ-M") },
-
-    { njs_str("var hmac = require('crypto').createHmac;"
-              "njs.dump(['', 'abc'.repeat(100)].map(v => {"
-              "    return ['md5', 'sha1', 'sha256'].map(h => {"
-              "        return hmac(h, Buffer.from('secret')).update(v).digest('hex');"
-              "     })"
-              "}))"),
-      njs_str("[['5c8db03f04cec0f43bcb060023914190',"
-              "'25af6174a0fcecc4d346680a72b7ce644b9a88e8',"
-              "'f9e66e179b6747ae54108f82f8ade8b3c25d76fd30afde6c395822c530196169'],"
-              "['91eb74a225cdd3bbfccc34396c6e3ac5',"
-              "'0aac71e3a813a7acc4a809cfdedb2ecba04ffc5e',"
-              "'8660d2d51d6f20f61d5aadfb6c43df7fd05fc2fc4967d8aec1846f3d9ec03987']]") },
-
-    { njs_str("var h = require('crypto').createHmac('sha1', '');"
-              "var Hmac = h.constructor; "
-              "Hmac('sha1', '').digest('hex')"),
-      njs_str("fbdb1d1b18aa6c08324b7d64b71fb76370690e1d") },
-
-    { njs_str("var h = require('crypto').createHmac('sha1', '');"
-              "h.constructor.name"),
-      njs_str("Hmac") },
-
-    { njs_str("require('crypto').createHmac('sha1', '').digest() instanceof Buffer"),
-      njs_str("true") },
-
-    { njs_str("var h = require('crypto').createHmac('sha256', 'A'.repeat(64));"
-              "h.update('AB').digest('hex')"),
-      njs_str("ee9dce43b12eb3e865614ad9c1a8d4fad4b6eac2b64647bd24cd192888d3f367") },
-
-    { njs_str("var h = require('crypto').createHmac('sha256', 'A'.repeat(100));"
-              "h.update('AB').digest('hex')"),
-      njs_str("5647b6c429701ff512f0f18232b4507065d2376ca8899a816a0a6e721bf8ddcc") },
-
-    { njs_str("var h = require('crypto').createHmac()"),
-      njs_str("TypeError: algorithm must be a string") },
-
-    { njs_str("var h = require('crypto').createHmac([])"),
-      njs_str("TypeError: algorithm must be a string") },
-
-    { njs_str("var h = require('crypto').createHmac('sha512', '')"),
-      njs_str("TypeError: not supported algorithm: \"sha512\"") },
-
-    { njs_str("var h = require('crypto').createHmac('sha1', [])"),
-      njs_str("TypeError: key argument \"array\" is not a string or Buffer-like object") },
-
-    { njs_str("var h = require('crypto').createHmac('sha1', 'secret key');"
-              "h.update('A').digest('hex'); h.digest('hex')"),
-      njs_str("Error: Digest already called") },
-
-    { njs_str("var h = require('crypto').createHmac('sha1', 'secret key');"
-              "h.update('A').digest('hex'); h.update('B')"),
-      njs_str("Error: Digest already called") },
-
-    { njs_str("typeof require('crypto').createHmac('md5', 'a')"),
-      njs_str("object") },
-
-    { njs_str("var cr = require('crypto'); var h = cr.createHash('sha1');"
-              "h.update.call(cr.createHmac('sha1', 's'), '')"),
-      njs_str("TypeError: \"this\" is not a hash object") },
-
     /* setTimeout(). */
 
     { njs_str("setTimeout()"),
@@ -18614,8 +18074,1296 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var t = \"123\"; t = parseInt(t); t"),
       njs_str("123") },
 
-    /* Query String */
+    /* TextEncoder. */
 
+    { njs_str("var en = new TextEncoder(); typeof en.encode()"),
+      njs_str("object") },
+
+    { njs_str("var en = new TextEncoder(); en.encode()"),
+      njs_str("") },
+
+    { njs_str("var en = new TextEncoder(); var res = en.encode('α'); res"),
+      njs_str("206,177") },
+
+    { njs_str("var en = new TextEncoder(); var res = en.encode('α1α'); res[2]"),
+      njs_str("49") },
+
+    { njs_str("var en = new TextEncoder(); en.encode(String.bytesFrom([0xCE]))"),
+      njs_str("239,191,189") },
+
+    { njs_str("var en = new TextEncoder();"
+              "en.encode(String.bytesFrom([0xCE, 0xB1, 0xCE]))"),
+      njs_str("206,177,239,191,189") },
+
+    { njs_str("var en = new TextEncoder();"
+              "en.encode(String.bytesFrom([0xCE, 0xCE, 0xB1]))"),
+      njs_str("239,191,189,206,177") },
+
+    { njs_str("var en = new TextEncoder(); en.encoding"),
+      njs_str("utf-8") },
+
+    { njs_str("TextEncoder.prototype.encode.apply({}, [])"),
+      njs_str("TypeError: \"this\" is not a TextEncoder") },
+
+    { njs_str("var en = new TextEncoder();"
+              "var utf8 = new Uint8Array(5);"
+              "var res = en.encodeInto('ααααα', utf8); njs.dump(res)"),
+      njs_str("{read:2,written:4}") },
+
+    { njs_str("var en = new TextEncoder();"
+              "var utf8 = new Uint8Array(10);"
+              "var res = en.encodeInto('ααααα', utf8); njs.dump(res)"),
+      njs_str("{read:5,written:10}") },
+
+    { njs_str("var en = new TextEncoder();"
+              "var utf8 = new Uint8Array(10);"
+              "en.encodeInto('ααααα', utf8.subarray(2)); utf8[0]"),
+      njs_str("0") },
+
+    { njs_str("var str = String.bytesFrom([0xCE]);"
+              "var en = new TextEncoder();"
+              "var utf8 = new Uint8Array(3);"
+              "var res = en.encodeInto(str, utf8); "
+              "[njs.dump(res), utf8]"),
+      njs_str("{read:1,written:3},239,191,189") },
+
+    { njs_str("var str = String.bytesFrom([0xCE]);"
+              "var en = new TextEncoder();"
+              "var utf8 = new Uint8Array(5);"
+              "en.encodeInto(str, utf8); utf8"),
+      njs_str("239,191,189,0,0") },
+
+    { njs_str("var str = String.bytesFrom([0xCE, 0xB1, 0xCE]);"
+              "var en = new TextEncoder();"
+              "var utf8 = new Uint8Array(5);"
+              "var res = en.encodeInto(str, utf8);"
+              "[njs.dump(res), utf8]"),
+      njs_str("{read:2,written:5},206,177,239,191,189") },
+
+    { njs_str("var str = String.bytesFrom([0xCE, 0xCE, 0xB1]);"
+              "var en = new TextEncoder();"
+              "var utf8 = new Uint8Array(5);"
+              "var res = en.encodeInto(str, utf8);"
+              "[njs.dump(res), utf8]"),
+      njs_str("{read:2,written:5},239,191,189,206,177") },
+
+    { njs_str("TextEncoder.prototype.encodeInto.apply({}, [])"),
+      njs_str("TypeError: \"this\" is not a TextEncoder") },
+
+    { njs_str("(new TextEncoder()).encodeInto('', 0.12) "),
+      njs_str("TypeError: The \"destination\" argument must be an instance of Uint8Array") },
+
+    /* TextDecoder. */
+
+    { njs_str("var de = new TextDecoder();"
+              "var u8arr = new Uint8Array([240, 160, 174, 183]);"
+              "var u16arr = new Uint16Array(u8arr.buffer);"
+              "var u32arr = new Uint32Array(u8arr.buffer);"
+              "[u8arr, u16arr, u32arr].map(v=>de.decode(v)).join(',')"),
+      njs_str("𠮷,𠮷,𠮷") },
+
+    { njs_str("var de = new TextDecoder();"
+              "[new Uint8Array([240, 160]), "
+              " new Uint8Array([174]), "
+              " new Uint8Array([183])].map(v=>de.decode(v, {stream: 1}))[2]"),
+      njs_str("𠮷") },
+
+    { njs_str("var de = new TextDecoder();"
+              "de.decode(new Uint8Array([240, 160]), {stream: 1});"
+              "de.decode(new Uint8Array([174]), {stream: 1});"
+              "de.decode(new Uint8Array([183]))"),
+      njs_str("𠮷") },
+
+    { njs_str("var de = new TextDecoder();"
+              "de.decode(new Uint8Array([240, 160]), {stream: 1});"
+              "de.decode()"),
+      njs_str("�") },
+
+    { njs_str("var de = new TextDecoder('utf-8', {fatal: true});"
+              "de.decode(new Uint8Array([240, 160]))"),
+      njs_str("TypeError: The encoded data was not valid") },
+
+    { njs_str("var de = new TextDecoder('utf-8', {fatal: false});"
+              "de.decode(new Uint8Array([240, 160]))"),
+      njs_str("�") },
+
+    { njs_str("var en = new TextEncoder();"
+              "var de = new TextDecoder('utf-8', {ignoreBOM: true});"
+              "en.encode(de.decode(new Uint8Array([239, 187, 191, 50])))"),
+      njs_str("239,187,191,50") },
+
+    { njs_str("var en = new TextEncoder();"
+              "var de = new TextDecoder('utf-8', {ignoreBOM: false});"
+              "en.encode(de.decode(new Uint8Array([239, 187, 191, 50])))"),
+      njs_str("50") },
+
+    { njs_str("var en = new TextEncoder(); var de = new TextDecoder();"
+              "en.encode(de.decode(new Uint8Array([239, 187, 191, 50])))"),
+      njs_str("50") },
+
+    { njs_str("var de = new TextDecoder(); de.decode('')"),
+      njs_str("TypeError: The \"input\" argument must be an instance of TypedArray") },
+
+    { njs_str("var de = new TextDecoder({})"),
+      njs_str("RangeError: The \"[object Object]\" encoding is not supported") },
+
+    { njs_str("var de = new TextDecoder('foo')"),
+      njs_str("RangeError: The \"foo\" encoding is not supported") },
+
+    { njs_str("var de = new TextDecoder(); de.encoding"),
+      njs_str("utf-8") },
+
+    { njs_str("var de = new TextDecoder(); de.fatal"),
+      njs_str("false") },
+
+    { njs_str("var de = new TextDecoder(); de.ignoreBOM"),
+      njs_str("false") },
+
+    { njs_str("TextDecoder.prototype.decode.apply({}, new Uint8Array([1]))"),
+      njs_str("TypeError: \"this\" is not a TextDecoder") },
+
+    { njs_str("var de = new TextDecoder();"
+              "var buf = new Uint32Array([1,2,3]).buffer;"
+              "var en = new TextEncoder();"
+              "njs.dump(new Uint32Array(en.encode(de.decode(buf)).buffer))"),
+      njs_str("Uint32Array [1,2,3]") },
+
+    { njs_str("var de = new TextDecoder();"
+              "var buf = new Uint32Array([1,2,3]).subarray(1,2);"
+              "var en = new TextEncoder();"
+              "njs.dump(new Uint32Array(en.encode(de.decode(buf)).buffer))"),
+      njs_str("Uint32Array [2]") },
+
+    /* let */
+
+    { njs_str("let x"),
+      njs_str("undefined") },
+
+    { njs_str("let x = 123; x"),
+      njs_str("123") },
+
+    { njs_str("let x = [123]; x"),
+      njs_str("123") },
+
+    { njs_str("let x = () => x; x()"),
+      njs_str("[object Function]") },
+
+    { njs_str("let x = (() => x)()"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("x; let x"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("x; let x = 123"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("let x = x + 123"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("let x = (x, 1)"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("let x = x"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("let x; var x"),
+      njs_str("SyntaxError: \"x\" has already been declared in 1") },
+
+    { njs_str("var x; let x"),
+      njs_str("SyntaxError: \"x\" has already been declared in 1") },
+
+    { njs_str("let x; function x() {}"),
+      njs_str("SyntaxError: \"x\" has already been declared in 1") },
+
+    { njs_str("function x() {} let x"),
+      njs_str("SyntaxError: \"x\" has already been declared in 1") },
+
+    { njs_str("function x() {let x; var x}"),
+      njs_str("SyntaxError: \"x\" has already been declared in 1") },
+
+    { njs_str("function x() {var x; let x}"),
+      njs_str("SyntaxError: \"x\" has already been declared in 1") },
+
+    { njs_str("var x = function f() {let f}"),
+      njs_str("undefined") },
+
+    { njs_str("let a; let x = 1;"
+              "{let x = 2; a = x}"
+              "[x, a]"),
+      njs_str("1,2") },
+
+    { njs_str("let a; let x = 1;"
+              "if (true) {let x = 2; a = x}"
+              "[x, a]"),
+      njs_str("1,2") },
+
+    { njs_str("var a = 5, b = 10, arr = [];"
+              "{let a = 4; var b = 1; arr.push(a); arr.push(b)}"
+              "arr.push(a); arr.push(b); arr"),
+      njs_str("4,1,5,1") },
+
+    { njs_str("function func() {return x}"
+              "let x = 123;"
+              "func()"),
+      njs_str("123") },
+
+    { njs_str("function func() {return x}"
+              "func();"
+              "let x = 123"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("function func() {return () => x}"
+              "let x = 123;"
+              "func()()"),
+      njs_str("123") },
+
+    { njs_str("function func() {x = x + 1; let x}"),
+      njs_str("undefined") },
+
+    { njs_str("function func() {return () => x}"
+              "func()();"
+              "let x = 123;"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("var arr = [];"
+              ""
+              "for (var i = 0; i < 10; i++) {"
+              "    let x = i;"
+              ""
+              "    arr.push( (n) => {x += n; return x} );"
+              "}"
+              ""
+              "["
+              "    arr[0](2), arr[1](1), arr[2](4), arr[3](7), arr[4](0),"
+              "    arr[5](1), arr[6](2), arr[7](5), arr[8](8), arr[9](10)"
+              "]"),
+      njs_str("2,2,6,10,4,6,8,12,16,19") },
+
+    { njs_str("var arr = [];"
+              ""
+              "for (let i = 0; i < 10; i++) {"
+              "    arr.push( (n) => {i += n; return i} );"
+              "}"
+              ""
+              "["
+              "    arr[0](2), arr[1](1), arr[2](4), arr[3](7), arr[4](0),"
+              "    arr[5](1), arr[6](2), arr[7](5), arr[8](8), arr[9](10)"
+              "]"),
+      njs_str("2,2,6,10,4,6,8,12,16,19") },
+
+    { njs_str("for (let i = 0; i < 1; i++) {"
+              "    let i = i + 2;"
+              "}"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("let arr = [], res = [];"
+              "for (let i = 0, f = function() { return i }; i < 5; i++) {"
+              "    arr.push(f);"
+              "}"
+              "for (let i = 0; i < 5; i++) {"
+              "    res.push(arr[i]());"
+              "} res"),
+      njs_str("0,0,0,0,0") },
+
+    { njs_str("let arr = [], res = [];"
+              "for (let i = 0; arr.push(() => i), i < 10; i++) {}"
+              "for (let k = 0; k < 10; k++) {res.push(arr[k]())}"
+              "res"),
+      njs_str("0,1,2,3,4,5,6,7,8,9") },
+
+    { njs_str("let res = [];"
+              "for (let n in [1,2,3]) {res.push(n)}"
+              "res"),
+      njs_str("0,1,2") },
+
+    { njs_str("let arr = [], res = [];"
+              ""
+              "for (let n in [1,2,3]) {"
+              "    arr.push(() => n);"
+              "}"
+              ""
+              "for (let n in arr) {"
+              "    res.push(arr[n]());"
+              "}"
+              "res"),
+      njs_str("0,1,2") },
+
+    { njs_str("let arr = [];"
+              ""
+              "for (let n in [1,2,3]) {"
+              "    let n = 1;"
+              "    arr.push(n);"
+              "}"
+              "arr"),
+      njs_str("1,1,1") },
+
+    { njs_str("for (let n in [1,2,3]) {"
+              "    let n = n + 1;"
+              "}"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("for (let n in [1,2,3]) {}"
+              "n"),
+      njs_str("ReferenceError: \"n\" is not defined") },
+
+    { njs_str("for (let n in [1,n,3]) {}"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("(function() {"
+              "function f() {return x + 1}"
+              "function abc() {f()};"
+              "abc();"
+              "let x;"
+              "}())"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("function func() {var x = 1; {let x = x + 1} } func()"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("if (false) let x = 1"),
+      njs_str("SyntaxError: let declaration cannot appear in a single-statement context in 1") },
+
+    { njs_str("while (false) let x = 1"),
+      njs_str("SyntaxError: let declaration cannot appear in a single-statement context in 1") },
+
+    { njs_str("for (;;) let x = 1"),
+      njs_str("SyntaxError: let declaration cannot appear in a single-statement context in 1") },
+
+    { njs_str("try {} catch (e) {let e}"),
+      njs_str("SyntaxError: \"e\" has already been declared in 1") },
+
+    { njs_str("let arr = [], x = 2;"
+              "switch(true) {default: let x = 1; arr.push(x)}"
+              "arr.push(x); arr"),
+      njs_str("1,2") },
+
+    { njs_str("switch(true) {case false: let x = 1; default: x = 2}"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("let res;"
+              "switch(true) {case true: let x = 1; default: x = 2; res = x} res"),
+      njs_str("2") },
+
+    { njs_str("let null"),
+      njs_str("SyntaxError: Unexpected token \"null\" in 1") },
+
+    { njs_str("let continue"),
+      njs_str("SyntaxError: Unexpected token \"continue\" in 1") },
+
+    { njs_str("let undefined"),
+      njs_str("SyntaxError: \"undefined\" has already been declared in 1") },
+
+    { njs_str("let a = 1; globalThis.a"),
+      njs_str("undefined") },
+
+    { njs_str("if (false) {x = 2} else {x = 1} let x;"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("let let"),
+      njs_str("SyntaxError: Unexpected token \"let\" in 1") },
+
+    { njs_str("let null"),
+      njs_str("SyntaxError: Unexpected token \"null\" in 1") },
+
+    { njs_str("function let() {}"),
+      njs_str("SyntaxError: Unexpected token \"let\" in 1") },
+
+    { njs_str("function static() {}"),
+      njs_str("SyntaxError: Unexpected token \"static\" in 1") },
+
+    /* const */
+
+    { njs_str("const x"),
+      njs_str("SyntaxError: missing initializer in const declaration") },
+
+    { njs_str("const x = 1; x"),
+      njs_str("1") },
+
+    { njs_str("const x = 1; x = 1"),
+      njs_str("TypeError: assignment to constant variable") },
+
+    { njs_str("function abc() {const x}"),
+      njs_str("SyntaxError: missing initializer in const declaration") },
+
+    { njs_str("const x = [123]; x"),
+      njs_str("123") },
+
+    { njs_str("const x = () => x; x()"),
+      njs_str("[object Function]") },
+
+    { njs_str("const x = (() => x)()"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("x; const x = 123"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("const x = x + 123"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("const x; var x"),
+      njs_str("SyntaxError: \"x\" has already been declared in 1") },
+
+    { njs_str("const x; let x"),
+      njs_str("SyntaxError: \"x\" has already been declared in 1") },
+
+    { njs_str("let x; const x"),
+      njs_str("SyntaxError: \"x\" has already been declared in 1") },
+
+    { njs_str("const x = 1; function x() {}"),
+      njs_str("SyntaxError: \"x\" has already been declared in 1") },
+
+    { njs_str("function x() {} const x = 1"),
+      njs_str("SyntaxError: \"x\" has already been declared in 1") },
+
+    { njs_str("function x() {const x; var x}"),
+      njs_str("SyntaxError: \"x\" has already been declared in 1") },
+
+    { njs_str("function x() {var x; const x}"),
+      njs_str("SyntaxError: \"x\" has already been declared in 1") },
+
+    { njs_str("const x = function f() {const f = 1}"),
+      njs_str("undefined") },
+
+    { njs_str("let res; const x = 1;"
+              "{const x = 2; res = x}"
+              "[x, res]"),
+      njs_str("1,2") },
+
+    { njs_str("let res; const x = 1;"
+              "if (true) {const x = 2; res = x}"
+              "[x, res]"),
+      njs_str("1,2") },
+
+    { njs_str("function func() {return x}"
+              "const x = 123;"
+              "func()"),
+      njs_str("123") },
+
+    { njs_str("function func() {return x}"
+              "func();"
+              "const x = 123"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("function func() {return () => x}"
+              "const x = 123;"
+              "func()()"),
+      njs_str("123") },
+
+    { njs_str("function func() {return () => x++}"
+              "const x = 123;"
+              "func()()"),
+      njs_str("TypeError: assignment to constant variable") },
+
+    { njs_str("for (const i = 0; i < 1; i++) {}"),
+      njs_str("TypeError: assignment to constant variable") },
+
+    { njs_str("let res = [];"
+              "for (const n in [1,2,3]) {res.push(n)}"
+              "res"),
+      njs_str("0,1,2") },
+
+    { njs_str("let arr = [], res = [];"
+              ""
+              "for (const n in [1,2,3]) {"
+              "    arr.push(() => n);"
+              "}"
+              ""
+              "for (let n in arr) {"
+              "    res.push(arr[n]());"
+              "}"
+              "res"),
+      njs_str("0,1,2") },
+
+    { njs_str("let arr = [];"
+              ""
+              "for (const n in [1,2,3]) {"
+              "    let n = 1;"
+              "    arr.push(n);"
+              "}"
+              "arr"),
+      njs_str("1,1,1") },
+
+    { njs_str("for (const n in [1,2,3]) {"
+              "    let n = n + 1;"
+              "}"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("for (const n in [1,2,3]) {}"
+              "n"),
+      njs_str("ReferenceError: \"n\" is not defined") },
+
+    { njs_str("for (const n in [1,n,3]) {}"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("(function() {"
+              "function f() {return x + 1}"
+              "function abc() {f()};"
+              "abc();"
+              "const x = 1;"
+              "}())"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("if (false) const x = 1"),
+      njs_str("SyntaxError: const declaration cannot appear in a single-statement context in 1") },
+
+    { njs_str("while (false) const x = 1"),
+      njs_str("SyntaxError: const declaration cannot appear in a single-statement context in 1") },
+
+    { njs_str("for (;;) const x = 1"),
+      njs_str("SyntaxError: const declaration cannot appear in a single-statement context in 1") },
+
+    { njs_str("try {} catch (e) {const e = 1}"),
+      njs_str("SyntaxError: \"e\" has already been declared in 1") },
+
+    { njs_str("let arr = []; const x = 2;"
+              "switch(true) {default: const x = 1; arr.push(x)}"
+              "arr.push(x); arr"),
+      njs_str("1,2") },
+
+    { njs_str("let res;"
+              "switch(true) {case true: const x = 1; default: x = 2; res = x} res"),
+      njs_str("TypeError: assignment to constant variable") },
+
+    { njs_str("const null"),
+      njs_str("SyntaxError: Unexpected token \"null\" in 1") },
+
+    { njs_str("const continue"),
+      njs_str("SyntaxError: Unexpected token \"continue\" in 1") },
+
+    { njs_str("const undefined"),
+      njs_str("SyntaxError: \"undefined\" has already been declared in 1") },
+
+    { njs_str("const a = 1; globalThis.a"),
+      njs_str("undefined") },
+
+    { njs_str("if (false) {x = 2} else {x = 1} const x = 0"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("const const"),
+      njs_str("SyntaxError: Unexpected token \"const\" in 1") },
+
+    /* Async/Await */
+
+    { njs_str("async function f() {}; f.prototype"),
+      njs_str("undefined") },
+
+    { njs_str("async function f() {await 1}"),
+      njs_str("undefined") },
+
+    { njs_str("function f() {await 1}"),
+      njs_str("SyntaxError: await is only valid in async functions in 1") },
+
+    { njs_str("async function f() {function a() {await 1}}"),
+      njs_str("SyntaxError: await is only valid in async functions in 1") },
+
+    { njs_str("async function f() {() => {await 1}}"),
+      njs_str("SyntaxError: await is only valid in async functions in 1") },
+
+    { njs_str("function f() {async () => {await 1}}"),
+      njs_str("undefined") },
+
+    { njs_str("let f = async () => {await 1}"),
+      njs_str("undefined") },
+
+    { njs_str("let f = () => {await 1}"),
+      njs_str("SyntaxError: await is only valid in async functions in 1") },
+
+    { njs_str("(async function() {await 1})"),
+      njs_str("[object AsyncFunction]") },
+
+    { njs_str("(function() {await 1})"),
+      njs_str("SyntaxError: await is only valid in async functions in 1") },
+
+    { njs_str("let ctor = Object.getPrototypeOf(async function(){}).constructor;"
+              "ctor"),
+      njs_str("[object Function]") },
+
+    { njs_str("let ctor = Object.getPrototypeOf(async function(){}).constructor;"
+              "ctor()"),
+      njs_str("[object AsyncFunction]") },
+
+    { njs_str("let ctor = Object.getPrototypeOf(async function(){}).constructor;"
+              "new ctor();"),
+      njs_str("[object AsyncFunction]") },
+
+    { njs_str("let f = new Function('x', 'await 1; return x'); f(1)"),
+      njs_str("SyntaxError: await is only valid in async functions in runtime:1") },
+
+    { njs_str("new AsyncFunction()"),
+      njs_str("ReferenceError: \"AsyncFunction\" is not defined") },
+
+    { njs_str("(async function() {console.log(await 111)})"),
+      njs_str("SyntaxError: await in arguments not supported in 1") },
+
+    { njs_str("(async function() {console.log('Number: ' + await 111)})"),
+      njs_str("SyntaxError: await in arguments not supported in 1") },
+
+    { njs_str("function f(a) {}"
+              "(async function() {f(await 111)})"),
+      njs_str("SyntaxError: await in arguments not supported in 1") },
+
+    { njs_str("async () => [await x(1)(),]; async () => [await x(1)()]"),
+      njs_str("[object AsyncFunction]") },
+
+    { njs_str("function f(a, b, c) {}"
+              "(async function() {f(1, 'a', await 111)})"),
+      njs_str("SyntaxError: await in arguments not supported in 1") },
+
+    { njs_str("function f(a) {}"
+              "(async function() {f('Number: ' + await 111)})"),
+      njs_str("SyntaxError: await in arguments not supported in 1") },
+
+    { njs_str("async function af() {await encrypt({},}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("let x = {async af() {await Promise.resolve(1)}}; x.af"),
+      njs_str("[object AsyncFunction]") },
+
+    { njs_str("let name = 'af', x = {async [name]() {await Promise.resolve(1)}}; x.af"),
+      njs_str("[object AsyncFunction]") },
+};
+
+
+static njs_unit_test_t  njs_safe_test[] =
+{
+    { njs_str("(new Function('return this'))() === globalThis"),
+      njs_str("true") },
+
+    { njs_str("(new Function('return this;'))() === globalThis"),
+      njs_str("true") },
+
+    { njs_str("(new Function('return    this  '))() === globalThis"),
+      njs_str("true") },
+
+    { njs_str("(new Function('return thi'))()"),
+      njs_str("TypeError: function constructor is disabled in \"safe\" mode") },
+
+    { njs_str("(new Function('){return 1337})//', 'return this'))()"),
+      njs_str("TypeError: function constructor is disabled in \"safe\" mode") },
+};
+
+
+static njs_unit_test_t  njs_denormals_test[] =
+{
+    { njs_str("2.2250738585072014e-308"),
+      njs_str("2.2250738585072014e-308") },
+
+#ifndef NJS_SUNC
+    { njs_str("2.2250738585072014E-308.toString(2) == ('0.' + '0'.repeat(1021) + '1')"),
+      njs_str("true") },
+
+    { njs_str("Number('2.2250738585072014E-323')"),
+      njs_str("2.5e-323") },
+
+    { njs_str("Number('2.2250738585072014E-323') + 0"),
+      njs_str("2.5e-323") },
+
+    /* Smallest positive double (next_double(0)). */
+    { njs_str("5E-324.toString(36) === '0.' + '0'.repeat(207) + '3'"),
+      njs_str("true") },
+
+    /* Maximum fraction length. */
+    { njs_str("2.2250738585072014E-323.toString(2) == ('0.' + '0'.repeat(1071) + '101')"),
+      njs_str("true") },
+
+    /* Denormals. */
+    { njs_str("var zeros = count => '0'.repeat(count);"
+              "["
+              "  [1.8858070859709815e-308, `0.${zeros(1022)}1101100011110111011100000100011001111101110001010111`],"
+              // FIXME: "  [Number.MIN_VALUE, `0.${zeros(1073)}1`]"
+              "  [-5.06631661953108e-309, `-0.${zeros(1024)}11101001001010000001101111010101011111111011010111`],"
+              "  [6.22574126804e-313, `0.${zeros(1037)}11101010101101100111000110100111001`],"
+              "  [-4e-323, `-0.${zeros(1070)}1`],"
+              "].every(t=>t[0].toString(2) === t[1])"),
+      njs_str("true") },
+
+    { njs_str("4.94065645841246544176568792868e-324.toExponential()"),
+      njs_str("5e-324") },
+
+    { njs_str("4.94065645841246544176568792868e-324.toExponential(10)"),
+      njs_str("4.9406564584e-324") },
+#endif
+
+};
+
+
+static njs_unit_test_t  njs_disabled_denormals_test[] =
+{
+    { njs_str("Number('2.2250738585072014E-323')"),
+      njs_str("0") },
+
+    { njs_str("Number('2.2250738585072014E-323') + 0"),
+      njs_str("0") },
+
+    /* Smallest positive double (next_double(0)). */
+    { njs_str("5E-324.toString(36)"),
+      njs_str("0") },
+
+    { njs_str("2.2250738585072014E-323.toString(2)"),
+      njs_str("0") },
+
+    /* Smallest normal double. */
+
+    { njs_str("2.2250738585072014e-308"),
+      njs_str("2.2250738585072014e-308") },
+
+    { njs_str("2.2250738585072014e-308/2"),
+      njs_str("0") },
+
+    /* Denormals. */
+    { njs_str("["
+              "1.8858070859709815e-308,"
+              "-5.06631661953108e-309,"
+              "6.22574126804e-313,"
+              "-4e-323,"
+              "].map(v=>v.toString(2))"),
+      njs_str("0,0,0,0") },
+};
+
+
+static njs_unit_test_t  njs_fs_module_test[] =
+{
+    { njs_str("var fs = require('fs'); typeof fs"),
+      njs_str("object") },
+
+    { njs_str("var fs = require('fs'); Object.isExtensible(fs)"),
+      njs_str("true") },
+
+    { njs_str("require('fs') === require('fs')"),
+      njs_str("true") },
+
+    { njs_str("require('fs').a = 1; require('fs').a"),
+      njs_str("1") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.readFile()"),
+      njs_str("TypeError: \"path\" must be a string or Buffer") },
+
+    { njs_str("var fs = require('fs');"
+              "var path = Buffer.from('/broken'); path[3] = 0;"
+              "fs.readFile(path)"),
+      njs_str("TypeError: \"path\" must be a Buffer without null bytes") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.readFile('/njs_unknown_path')"),
+      njs_str("TypeError: \"callback\" must be a function") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.readFile('/njs_unknown_path', 'utf8')"),
+      njs_str("TypeError: \"callback\" must be a function") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.readFile('/njs_unknown_path', {flag:'xx'})"),
+      njs_str("TypeError: \"callback\" must be a function") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.readFile('/njs_unknown_path', {flag:'xx'}, 1)"),
+      njs_str("TypeError: \"callback\" must be a function") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.readFile('/njs_unknown_path', {flag:'xx'}, function () {})"),
+      njs_str("TypeError: Unknown file open flags: \"xx\"") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.readFile('/njs_unknown_path', {encoding:'ascii'}, function () {})"),
+      njs_str("TypeError: \"ascii\" encoding is not supported") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.readFile('/njs_unknown_path', 'ascii', function () {})"),
+      njs_str("TypeError: \"ascii\" encoding is not supported") },
+
+    /* require('fs').readFileSync() */
+
+    { njs_str("var fs = require('fs');"
+              "fs.readFileSync()"),
+      njs_str("TypeError: \"path\" must be a string or Buffer") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.readFileSync({})"),
+      njs_str("TypeError: \"path\" must be a string or Buffer") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.readFileSync('/njs_unknown_path', {flag:'xx'})"),
+      njs_str("TypeError: Unknown file open flags: \"xx\"") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.readFileSync(Buffer.from('/njs_unknown_path'), {encoding:'ascii'})"),
+      njs_str("TypeError: \"ascii\" encoding is not supported") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.readFileSync('/njs_unknown_path', 'ascii')"),
+      njs_str("TypeError: \"ascii\" encoding is not supported") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.readFileSync('/njs_unknown_path', true)"),
+      njs_str("TypeError: Unknown options type: \"boolean\" (a string or object required)") },
+
+
+    /* require('fs').writeFile() */
+
+    { njs_str("var fs = require('fs');"
+              "fs.writeFile()"),
+      njs_str("TypeError: \"path\" must be a string or Buffer") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.writeFile({}, '', function () {})"),
+      njs_str("TypeError: \"path\" must be a string or Buffer") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.writeFile('/njs_unknown_path')"),
+      njs_str("TypeError: \"callback\" must be a function") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.writeFile('/njs_unknown_path', '')"),
+      njs_str("TypeError: \"callback\" must be a function") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.writeFile('/njs_unknown_path', '', undefined)"),
+      njs_str("TypeError: \"callback\" must be a function") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.writeFile('/njs_unknown_path', '', 'utf8')"),
+      njs_str("TypeError: \"callback\" must be a function") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.writeFile('/njs_unknown_path', '', {flag:'xx'}, function () {})"),
+      njs_str("TypeError: Unknown file open flags: \"xx\"") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.writeFile('/njs_unknown_path', '', {encoding:'ascii'}, function () {})"),
+      njs_str("TypeError: \"ascii\" encoding is not supported") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.writeFile('/njs_unknown_path', '', 'ascii', function () {})"),
+      njs_str("TypeError: \"ascii\" encoding is not supported") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.writeFile('/njs_unknown_path', '', true, function () {})"),
+      njs_str("TypeError: Unknown options type: \"boolean\" (a string or object required)") },
+
+    /* require('fs').writeFileSync() */
+
+    { njs_str("var fs = require('fs');"
+              "fs.writeFileSync()"),
+      njs_str("TypeError: \"path\" must be a string or Buffer") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.writeFileSync({}, '')"),
+      njs_str("TypeError: \"path\" must be a string or Buffer") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.writeFileSync('/njs_unknown_path', '', {flag:'xx'})"),
+      njs_str("TypeError: Unknown file open flags: \"xx\"") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.writeFileSync('/njs_unknown_path', '', {encoding:'ascii'})"),
+      njs_str("TypeError: \"ascii\" encoding is not supported") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.writeFileSync('/njs_unknown_path', '', 'ascii')"),
+      njs_str("TypeError: \"ascii\" encoding is not supported") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.writeFileSync('/njs_unknown_path', '', true)"),
+      njs_str("TypeError: Unknown options type: \"boolean\" (a string or object required)") },
+
+    /* require('fs').renameSync() */
+
+    { njs_str("var fs = require('fs');"
+              "fs.renameSync()"),
+      njs_str("TypeError: \"oldPath\" must be a string or Buffer") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.renameSync('/njs_unknown_path')"),
+      njs_str("TypeError: \"newPath\" must be a string or Buffer") },
+
+    { njs_str("var fs = require('fs');"
+              "[undefined, null, false, NaN, Symbol(), {}, Object('/njs_unknown_path')]"
+              ".map((x) => { try { fs.renameSync(x, '/njs_unknown_path'); } "
+              "              catch (e) { return (e instanceof TypeError); } })"
+              ".every((x) => x === true)"),
+      njs_str("true")},
+
+    { njs_str("var fs = require('fs');"
+              "[undefined, null, false, NaN, Symbol(), {}, Object('/njs_unknown_path')]"
+              ".map((x) => { try { fs.renameSync('/njs_unknown_path', x); } "
+              "              catch (e) { return (e instanceof TypeError); } })"
+              ".every((x) => x === true)"),
+      njs_str("true")},
+
+    /* require('fs').access() */
+
+    { njs_str("var fs = require('fs');"
+              "fs.access()"),
+      njs_str("TypeError: \"path\" must be a string or Buffer") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.access('/njs_unknown_path')"),
+      njs_str("TypeError: \"callback\" must be a function") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.access('/njs_unknown_path', fs.constants.F_OK)"),
+      njs_str("TypeError: \"callback\" must be a function") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.access('/njs_unknown_path', 'fail', function () {})"),
+      njs_str("TypeError: \"mode\" must be a number") },
+
+    /* require('fs').accessSync() */
+
+    { njs_str("var fs = require('fs');"
+              "fs.accessSync()"),
+      njs_str("TypeError: \"path\" must be a string or Buffer") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.accessSync('/njs_unknown_path', 'fail')"),
+      njs_str("TypeError: \"mode\" must be a number") },
+
+    { njs_str("var "
+              "fs = require('fs'),"
+              "func = ["
+                "'access',"
+                "'accessSync',"
+                "'readFile',"
+                "'readFileSync',"
+                "'writeFile',"
+                "'writeFileSync',"
+                "'appendFile',"
+                "'appendFileSync',"
+                "'rename',"
+                "'renameSync',"
+                "'symlink',"
+                "'symlinkSync',"
+                "'unlink',"
+                "'unlinkSync',"
+                "'realpath',"
+                "'realpathSync',"
+                "'mkdir',"
+                "'mkdirSync',"
+                "'rmdir',"
+                "'rmdirSync',"
+                "'readdir',"
+                "'readdirSync',"
+              "],"
+              "test = (fname) =>"
+                "[undefined, null, false, NaN, Symbol(), {}, Object('/njs_unknown_path')]"
+                ".map((x) => { try { fs[fname](x); } "
+                "              catch (e) { return (e instanceof TypeError); } })"
+                ".every((x) => x === true);"
+              "func.map(test).every((x) => x)"),
+      njs_str("true")},
+
+    /* require('fs').promises */
+
+    { njs_str("var fs = require('fs');"
+              "typeof fs.promises"),
+      njs_str("object") },
+
+    { njs_str("var "
+              "fs = require('fs').promises,"
+              "func = ["
+                "'access',"
+                "'readFile',"
+                "'writeFile',"
+                "'appendFile',"
+                "'rename',"
+                "'symlink',"
+                "'unlink',"
+                "'realpath',"
+                "'mkdir',"
+                "'rmdir',"
+                "'readdir',"
+              "];"
+              "func.every((x) => typeof fs[x] == 'function')"),
+      njs_str("true")},
+
+    /* require('fs').constants */
+
+    { njs_str("var fs = require('fs');"
+              "typeof fs.constants"),
+      njs_str("object") },
+
+    { njs_str("var "
+              "fsc = require('fs').constants,"
+              "items = ["
+                "'F_OK',"
+                "'R_OK',"
+                "'W_OK',"
+                "'X_OK',"
+              "];"
+              "items.every((x) => typeof fsc[x] == 'number')"),
+      njs_str("true")},
+
+    /* require('fs').Dirent */
+
+    { njs_str("var fs = require('fs');"
+              "typeof fs.Dirent"),
+      njs_str("function") },
+
+    { njs_str("var fs = require('fs');"
+              "fs.Dirent('file', 123)"),
+      njs_str("TypeError: the Dirent constructor must be called with new") },
+
+    { njs_str("var fs = require('fs');"
+              "var e = new fs.Dirent('file', 123); [e.name, e.type]"),
+      njs_str("file,123") },
+
+    { njs_str("var "
+              "fs = require('fs'),"
+              "e = new fs.Dirent('file', 0),"
+              "func = ["
+                "'isDirectory',"
+                "'isFile',"
+                "'isBlockDevice',"
+                "'isCharacterDevice',"
+                "'isSymbolicLink',"
+                "'isFIFO',"
+                "'isSocket',"
+              "];"
+              "func.every((x) => typeof e[x] == 'function')"),
+      njs_str("true")},
+};
+
+
+static njs_unit_test_t  njs_crypto_module_test[] =
+{
+    { njs_str("var h = require('crypto').createHash('sha1');"
+              "[Object.prototype.toString.call(h), njs.dump(h),h]"),
+      njs_str("[object Hash],Hash {},[object Hash]") },
+
+    { njs_str("var h = require('crypto').createHash('sha1');"
+              "var Hash = h.constructor; "
+              "Hash('sha1').update('AB').digest('hex')"),
+      njs_str("06d945942aa26a61be18c3e22bf19bbca8dd2b5d") },
+
+    { njs_str("var h = require('crypto').createHash('sha1');"
+              "h.constructor.name"),
+      njs_str("Hash") },
+
+    { njs_str("var hash = require('crypto').createHash.bind(undefined, 'md5');"
+              "['hex', 'base64', 'base64url'].map(e => {"
+              "   var h = hash().update('AB').digest().toString(e);"
+              "   var h2 = hash().update(Buffer.from('XABX').subarray(1,3)).digest(e);"
+              "   var h3 = hash().update('A').update('B').digest(e);"
+              "   if (h !== h2) {throw new Error(`digest().toString($e):$h != digest($e):$h2`)};"
+              "   if (h !== h3) {throw new Error(`digest().toString($e):$h != update('A').update('B').digest($e):$h3`)};"
+              "   return h;"
+              "})"),
+      njs_str("b86fc6b051f63d73de262d4c34e3a0a9,"
+              "uG/GsFH2PXPeJi1MNOOgqQ==,"
+              "uG_GsFH2PXPeJi1MNOOgqQ") },
+
+    { njs_str("var hash = require('crypto').createHash.bind(undefined, 'sha1');"
+              "['hex', 'base64', 'base64url'].map(e => {"
+              "   var h = hash().update('4142', 'hex').digest().toString(e);"
+              "   var h2 = hash().update(Buffer.from('XABX').subarray(1,3)).digest(e);"
+              "   var h3 = hash().update('A').update('B').digest(e);"
+              "   if (h !== h2) {throw new Error(`digest().toString($e):$h != digest($e):$h2`)};"
+              "   if (h !== h3) {throw new Error(`digest().toString($e):$h != update('A').update('B').digest($e):$h3`)};"
+              "   return h;"
+              "})"),
+      njs_str("06d945942aa26a61be18c3e22bf19bbca8dd2b5d,"
+              "BtlFlCqiamG+GMPiK/GbvKjdK10=,"
+              "BtlFlCqiamG-GMPiK_GbvKjdK10") },
+
+    { njs_str("var hash = require('crypto').createHash.bind(undefined, 'sha1');"
+              "['hex', 'base64', 'base64url'].every(e => {"
+              "   var h = hash().digest(e);"
+              "   var h2 = hash().update('').digest(e);"
+              "   if (h !== h2) {throw new Error(`digest($e):$h != update('').digest($e):$h2`)};"
+              "   return true;"
+              "})"),
+      njs_str("true") },
+
+    { njs_str("var hash = require('crypto').createHash.bind(undefined, 'sha1');"
+              "["
+              " ['AB'],"
+              " ['4142', 'hex'],"
+              " ['QUI=', 'base64'],"
+              " ['QUI', 'base64url']"
+              "].every(args => {"
+              "        return hash().update(args[0], args[1]).digest('hex') === '06d945942aa26a61be18c3e22bf19bbca8dd2b5d';"
+              "})"),
+      njs_str("true") },
+
+    { njs_str("var hash = require('crypto').createHash.bind(undefined, 'sha256');"
+              "['hex', 'base64', 'base64url'].map(e => {"
+              "   var h = hash().update('AB').digest().toString(e);"
+              "   var h2 = hash().update(Buffer.from('XABX').subarray(1,3)).digest(e);"
+              "   var h3 = hash().update('A').update('B').digest(e);"
+              "   if (h !== h2) {throw new Error(`digest().toString($e):$h != digest($e):$h2`)};"
+              "   if (h !== h3) {throw new Error(`digest().toString($e):$h != update('A').update('B').digest($e):$h3`)};"
+              "   return h;"
+              "})"),
+      njs_str("38164fbd17603d73f696b8b4d72664d735bb6a7c88577687fd2ae33fd6964153,"
+              "OBZPvRdgPXP2lri01yZk1zW7anyIV3aH/SrjP9aWQVM=,"
+              "OBZPvRdgPXP2lri01yZk1zW7anyIV3aH_SrjP9aWQVM") },
+
+    { njs_str("var hash = require('crypto').createHash;"
+              "njs.dump(['', 'abc'.repeat(100)].map(v => {"
+              "    return ['md5', 'sha1', 'sha256'].map(h => {"
+              "        return hash(h).update(v).digest('hex');"
+              "     })"
+              "}))"),
+      njs_str("[['d41d8cd98f00b204e9800998ecf8427e',"
+              "'da39a3ee5e6b4b0d3255bfef95601890afd80709',"
+              "'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'],"
+              "['f571117acbd8153c8dc3c81b8817773a',"
+              "'c95466320eaae6d19ee314ae4f135b12d45ced9a',"
+              "'d9f5aeb06abebb3be3f38adec9a2e3b94228d52193be923eb4e24c9b56ee0930']]") },
+
+    { njs_str("var h = require('crypto').createHash()"),
+      njs_str("TypeError: algorithm must be a string") },
+
+    { njs_str("var h = require('crypto').createHash([])"),
+      njs_str("TypeError: algorithm must be a string") },
+
+    { njs_str("var h = require('crypto').createHash('sha512')"),
+      njs_str("TypeError: not supported algorithm: \"sha512\"") },
+
+    { njs_str("var h = require('crypto').createHash('sha1');"
+              "h.update()"),
+      njs_str("TypeError: data argument \"undefined\" is not a string or Buffer-like object") },
+
+    { njs_str("var h = require('crypto').createHash('sha1');"
+              "h.update({})"),
+      njs_str("TypeError: data argument \"object\" is not a string or Buffer-like object") },
+
+    { njs_str("var h = require('crypto').createHash('sha1');"
+              "h.update('A').digest('latin1')"),
+      njs_str("TypeError: Unknown digest encoding: \"latin1\"") },
+
+    { njs_str("require('crypto').createHash('sha1').digest() instanceof Buffer"),
+      njs_str("true") },
+
+    { njs_str("var h = require('crypto').createHash('sha1');"
+              "h.update('A').digest('hex'); h.digest('hex')"),
+      njs_str("Error: Digest already called") },
+
+    { njs_str("var h = require('crypto').createHash('sha1');"
+              "h.update('A').digest('hex'); h.update('B')"),
+      njs_str("Error: Digest already called") },
+
+    { njs_str("typeof require('crypto').createHash('md5')"),
+      njs_str("object") },
+
+    { njs_str("var h = require('crypto').createHmac('sha1', '');"
+              "[Object.prototype.toString.call(h), njs.dump(h),h]"),
+      njs_str("[object Hmac],Hmac {},[object Hmac]") },
+
+    { njs_str("var hmac = require('crypto').createHmac.bind(undefined, 'md5', '');"
+              "['hex', 'base64', 'base64url'].map(e => {"
+              "   var h = hmac().update('AB').digest().toString(e);"
+              "   var h2 = hmac().update(Buffer.from('XABX').subarray(1,3)).digest(e);"
+              "   var h3 = hmac().update('A').update('B').digest(e);"
+              "   if (h !== h2) {throw new Error(`digest().toString($e):$h != digest($e):$h2`)};"
+              "   if (h !== h3) {throw new Error(`digest().toString($e):$h != update('A').update('B').digest($e):$h3`)};"
+              "   return h;"
+              "})"),
+      njs_str("9e0e9e545ef63d41dfb653daecf8ebc7,"
+              "ng6eVF72PUHftlPa7Pjrxw==,"
+              "ng6eVF72PUHftlPa7Pjrxw") },
+
+    { njs_str("var hmac = require('crypto').createHmac.bind(undefined, 'sha1', '');"
+              "['hex', 'base64', 'base64url'].map(e => {"
+              "   var h = hmac().update('AB').digest().toString(e);"
+              "   var h2 = hmac().update(Buffer.from('XABX').subarray(1,3)).digest(e);"
+              "   var h3 = hmac().update('A').update('B').digest(e);"
+              "   if (h !== h2) {throw new Error(`digest().toString($e):$h != digest($e):$h2`)};"
+              "   if (h !== h3) {throw new Error(`digest().toString($e):$h != update('A').update('B').digest($e):$h3`)};"
+              "   return h;"
+              "})"),
+      njs_str("d32c0b6637cc2dfe4670f3fe48ef4434123c4810,"
+              "0ywLZjfMLf5GcPP+SO9ENBI8SBA=,"
+              "0ywLZjfMLf5GcPP-SO9ENBI8SBA") },
+
+    { njs_str("var hash = require('crypto').createHmac.bind(undefined, 'sha1', '');"
+              "["
+              " ['AB'],"
+              " ['4142', 'hex'],"
+              " ['QUI=', 'base64'],"
+              " ['QUI', 'base64url']"
+              "].every(args => {"
+              "        return hash().update(args[0], args[1]).digest('hex') === 'd32c0b6637cc2dfe4670f3fe48ef4434123c4810';"
+              "})"),
+      njs_str("true") },
+
+    { njs_str("var hmac = require('crypto').createHmac.bind(undefined, 'sha256', '');"
+              "['hex', 'base64', 'base64url'].map(e => {"
+              "   var h = hmac().update('AB').digest().toString(e);"
+              "   var h2 = hmac().update(Buffer.from('AB')).digest(e);"
+              "   var h3 = hmac().update('A').update('B').digest(e);"
+              "   if (h !== h2) {throw new Error(`digest().toString($e):$h != digest($e):$h2`)};"
+              "   if (h !== h3) {throw new Error(`digest().toString($e):$h != update('A').update('B').digest($e):$h3`)};"
+              "   return h;"
+              "})"),
+      njs_str("d53400095496267cf02e5dbd4b0bf9fbfb5f36f311ea7d9809af5487421743e3,"
+              "1TQACVSWJnzwLl29Swv5+/tfNvMR6n2YCa9Uh0IXQ+M=,"
+              "1TQACVSWJnzwLl29Swv5-_tfNvMR6n2YCa9Uh0IXQ-M") },
+
+    { njs_str("var hmac = require('crypto').createHmac;"
+              "njs.dump(['', 'abc'.repeat(100)].map(v => {"
+              "    return ['md5', 'sha1', 'sha256'].map(h => {"
+              "        return hmac(h, Buffer.from('secret')).update(v).digest('hex');"
+              "     })"
+              "}))"),
+      njs_str("[['5c8db03f04cec0f43bcb060023914190',"
+              "'25af6174a0fcecc4d346680a72b7ce644b9a88e8',"
+              "'f9e66e179b6747ae54108f82f8ade8b3c25d76fd30afde6c395822c530196169'],"
+              "['91eb74a225cdd3bbfccc34396c6e3ac5',"
+              "'0aac71e3a813a7acc4a809cfdedb2ecba04ffc5e',"
+              "'8660d2d51d6f20f61d5aadfb6c43df7fd05fc2fc4967d8aec1846f3d9ec03987']]") },
+
+    { njs_str("var h = require('crypto').createHmac('sha1', '');"
+              "var Hmac = h.constructor; "
+              "Hmac('sha1', '').digest('hex')"),
+      njs_str("fbdb1d1b18aa6c08324b7d64b71fb76370690e1d") },
+
+    { njs_str("var h = require('crypto').createHmac('sha1', '');"
+              "h.constructor.name"),
+      njs_str("Hmac") },
+
+    { njs_str("require('crypto').createHmac('sha1', '').digest() instanceof Buffer"),
+      njs_str("true") },
+
+    { njs_str("var h = require('crypto').createHmac('sha256', 'A'.repeat(64));"
+              "h.update('AB').digest('hex')"),
+      njs_str("ee9dce43b12eb3e865614ad9c1a8d4fad4b6eac2b64647bd24cd192888d3f367") },
+
+    { njs_str("var h = require('crypto').createHmac('sha256', 'A'.repeat(100));"
+              "h.update('AB').digest('hex')"),
+      njs_str("5647b6c429701ff512f0f18232b4507065d2376ca8899a816a0a6e721bf8ddcc") },
+
+    { njs_str("var h = require('crypto').createHmac()"),
+      njs_str("TypeError: algorithm must be a string") },
+
+    { njs_str("var h = require('crypto').createHmac([])"),
+      njs_str("TypeError: algorithm must be a string") },
+
+    { njs_str("var h = require('crypto').createHmac('sha512', '')"),
+      njs_str("TypeError: not supported algorithm: \"sha512\"") },
+
+    { njs_str("var h = require('crypto').createHmac('sha1', [])"),
+      njs_str("TypeError: key argument \"array\" is not a string or Buffer-like object") },
+
+    { njs_str("var h = require('crypto').createHmac('sha1', 'secret key');"
+              "h.update('A').digest('hex'); h.digest('hex')"),
+      njs_str("Error: Digest already called") },
+
+    { njs_str("var h = require('crypto').createHmac('sha1', 'secret key');"
+              "h.update('A').digest('hex'); h.update('B')"),
+      njs_str("Error: Digest already called") },
+
+    { njs_str("typeof require('crypto').createHmac('md5', 'a')"),
+      njs_str("object") },
+
+    { njs_str("var cr = require('crypto'); var h = cr.createHash('sha1');"
+              "h.update.call(cr.createHmac('sha1', 's'), '')"),
+      njs_str("TypeError: \"this\" is not a hash object") },
+};
+
+static njs_unit_test_t  njs_querystring_module_test[] =
+{
     { njs_str("var qs = require('querystring');"
               "var obj = qs.parse('baz=fuz');"
               "njs.dump(obj)"),
@@ -18974,169 +19722,11 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var qs = require('querystring');"
               "qs.unescape('abc%CE%B1%CE%B1%CE%B1%CE%B1def')"),
       njs_str("abcααααdef") },
+};
 
-    /* TextEncoder. */
 
-    { njs_str("var en = new TextEncoder(); typeof en.encode()"),
-      njs_str("object") },
-
-    { njs_str("var en = new TextEncoder(); en.encode()"),
-      njs_str("") },
-
-    { njs_str("var en = new TextEncoder(); var res = en.encode('α'); res"),
-      njs_str("206,177") },
-
-    { njs_str("var en = new TextEncoder(); var res = en.encode('α1α'); res[2]"),
-      njs_str("49") },
-
-    { njs_str("var en = new TextEncoder(); en.encode(String.bytesFrom([0xCE]))"),
-      njs_str("239,191,189") },
-
-    { njs_str("var en = new TextEncoder();"
-              "en.encode(String.bytesFrom([0xCE, 0xB1, 0xCE]))"),
-      njs_str("206,177,239,191,189") },
-
-    { njs_str("var en = new TextEncoder();"
-              "en.encode(String.bytesFrom([0xCE, 0xCE, 0xB1]))"),
-      njs_str("239,191,189,206,177") },
-
-    { njs_str("var en = new TextEncoder(); en.encoding"),
-      njs_str("utf-8") },
-
-    { njs_str("TextEncoder.prototype.encode.apply({}, [])"),
-      njs_str("TypeError: \"this\" is not a TextEncoder") },
-
-    { njs_str("var en = new TextEncoder();"
-              "var utf8 = new Uint8Array(5);"
-              "var res = en.encodeInto('ααααα', utf8); njs.dump(res)"),
-      njs_str("{read:2,written:4}") },
-
-    { njs_str("var en = new TextEncoder();"
-              "var utf8 = new Uint8Array(10);"
-              "var res = en.encodeInto('ααααα', utf8); njs.dump(res)"),
-      njs_str("{read:5,written:10}") },
-
-    { njs_str("var en = new TextEncoder();"
-              "var utf8 = new Uint8Array(10);"
-              "en.encodeInto('ααααα', utf8.subarray(2)); utf8[0]"),
-      njs_str("0") },
-
-    { njs_str("var str = String.bytesFrom([0xCE]);"
-              "var en = new TextEncoder();"
-              "var utf8 = new Uint8Array(3);"
-              "var res = en.encodeInto(str, utf8); "
-              "[njs.dump(res), utf8]"),
-      njs_str("{read:1,written:3},239,191,189") },
-
-    { njs_str("var str = String.bytesFrom([0xCE]);"
-              "var en = new TextEncoder();"
-              "var utf8 = new Uint8Array(5);"
-              "en.encodeInto(str, utf8); utf8"),
-      njs_str("239,191,189,0,0") },
-
-    { njs_str("var str = String.bytesFrom([0xCE, 0xB1, 0xCE]);"
-              "var en = new TextEncoder();"
-              "var utf8 = new Uint8Array(5);"
-              "var res = en.encodeInto(str, utf8);"
-              "[njs.dump(res), utf8]"),
-      njs_str("{read:2,written:5},206,177,239,191,189") },
-
-    { njs_str("var str = String.bytesFrom([0xCE, 0xCE, 0xB1]);"
-              "var en = new TextEncoder();"
-              "var utf8 = new Uint8Array(5);"
-              "var res = en.encodeInto(str, utf8);"
-              "[njs.dump(res), utf8]"),
-      njs_str("{read:2,written:5},239,191,189,206,177") },
-
-    { njs_str("TextEncoder.prototype.encodeInto.apply({}, [])"),
-      njs_str("TypeError: \"this\" is not a TextEncoder") },
-
-    { njs_str("(new TextEncoder()).encodeInto('', 0.12) "),
-      njs_str("TypeError: The \"destination\" argument must be an instance of Uint8Array") },
-
-    /* TextDecoder. */
-
-    { njs_str("var de = new TextDecoder();"
-              "var u8arr = new Uint8Array([240, 160, 174, 183]);"
-              "var u16arr = new Uint16Array(u8arr.buffer);"
-              "var u32arr = new Uint32Array(u8arr.buffer);"
-              "[u8arr, u16arr, u32arr].map(v=>de.decode(v)).join(',')"),
-      njs_str("𠮷,𠮷,𠮷") },
-
-    { njs_str("var de = new TextDecoder();"
-              "[new Uint8Array([240, 160]), "
-              " new Uint8Array([174]), "
-              " new Uint8Array([183])].map(v=>de.decode(v, {stream: 1}))[2]"),
-      njs_str("𠮷") },
-
-    { njs_str("var de = new TextDecoder();"
-              "de.decode(new Uint8Array([240, 160]), {stream: 1});"
-              "de.decode(new Uint8Array([174]), {stream: 1});"
-              "de.decode(new Uint8Array([183]))"),
-      njs_str("𠮷") },
-
-    { njs_str("var de = new TextDecoder();"
-              "de.decode(new Uint8Array([240, 160]), {stream: 1});"
-              "de.decode()"),
-      njs_str("�") },
-
-    { njs_str("var de = new TextDecoder('utf-8', {fatal: true});"
-              "de.decode(new Uint8Array([240, 160]))"),
-      njs_str("TypeError: The encoded data was not valid") },
-
-    { njs_str("var de = new TextDecoder('utf-8', {fatal: false});"
-              "de.decode(new Uint8Array([240, 160]))"),
-      njs_str("�") },
-
-    { njs_str("var en = new TextEncoder();"
-              "var de = new TextDecoder('utf-8', {ignoreBOM: true});"
-              "en.encode(de.decode(new Uint8Array([239, 187, 191, 50])))"),
-      njs_str("239,187,191,50") },
-
-    { njs_str("var en = new TextEncoder();"
-              "var de = new TextDecoder('utf-8', {ignoreBOM: false});"
-              "en.encode(de.decode(new Uint8Array([239, 187, 191, 50])))"),
-      njs_str("50") },
-
-    { njs_str("var en = new TextEncoder(); var de = new TextDecoder();"
-              "en.encode(de.decode(new Uint8Array([239, 187, 191, 50])))"),
-      njs_str("50") },
-
-    { njs_str("var de = new TextDecoder(); de.decode('')"),
-      njs_str("TypeError: The \"input\" argument must be an instance of TypedArray") },
-
-    { njs_str("var de = new TextDecoder({})"),
-      njs_str("RangeError: The \"[object Object]\" encoding is not supported") },
-
-    { njs_str("var de = new TextDecoder('foo')"),
-      njs_str("RangeError: The \"foo\" encoding is not supported") },
-
-    { njs_str("var de = new TextDecoder(); de.encoding"),
-      njs_str("utf-8") },
-
-    { njs_str("var de = new TextDecoder(); de.fatal"),
-      njs_str("false") },
-
-    { njs_str("var de = new TextDecoder(); de.ignoreBOM"),
-      njs_str("false") },
-
-    { njs_str("TextDecoder.prototype.decode.apply({}, new Uint8Array([1]))"),
-      njs_str("TypeError: \"this\" is not a TextDecoder") },
-
-    { njs_str("var de = new TextDecoder();"
-              "var buf = new Uint32Array([1,2,3]).buffer;"
-              "var en = new TextEncoder();"
-              "njs.dump(new Uint32Array(en.encode(de.decode(buf)).buffer))"),
-      njs_str("Uint32Array [1,2,3]") },
-
-    { njs_str("var de = new TextDecoder();"
-              "var buf = new Uint32Array([1,2,3]).subarray(1,2);"
-              "var en = new TextEncoder();"
-              "njs.dump(new Uint32Array(en.encode(de.decode(buf)).buffer))"),
-      njs_str("Uint32Array [2]") },
-
-    /* Buffer */
-
+static njs_unit_test_t  njs_buffer_module_test[] =
+{
     { njs_str("new Buffer();"),
       njs_str("TypeError: Buffer is not a constructor") },
 
@@ -20071,591 +20661,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var buffer = require('buffer');"
               "typeof buffer.constants.MAX_STRING_LENGTH === 'number' "),
       njs_str("true") },
-
-    /* let */
-
-    { njs_str("let x"),
-      njs_str("undefined") },
-
-    { njs_str("let x = 123; x"),
-      njs_str("123") },
-
-    { njs_str("let x = [123]; x"),
-      njs_str("123") },
-
-    { njs_str("let x = () => x; x()"),
-      njs_str("[object Function]") },
-
-    { njs_str("let x = (() => x)()"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("x; let x"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("x; let x = 123"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("let x = x + 123"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("let x = (x, 1)"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("let x = x"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("let x; var x"),
-      njs_str("SyntaxError: \"x\" has already been declared in 1") },
-
-    { njs_str("var x; let x"),
-      njs_str("SyntaxError: \"x\" has already been declared in 1") },
-
-    { njs_str("let x; function x() {}"),
-      njs_str("SyntaxError: \"x\" has already been declared in 1") },
-
-    { njs_str("function x() {} let x"),
-      njs_str("SyntaxError: \"x\" has already been declared in 1") },
-
-    { njs_str("function x() {let x; var x}"),
-      njs_str("SyntaxError: \"x\" has already been declared in 1") },
-
-    { njs_str("function x() {var x; let x}"),
-      njs_str("SyntaxError: \"x\" has already been declared in 1") },
-
-    { njs_str("var x = function f() {let f}"),
-      njs_str("undefined") },
-
-    { njs_str("let a; let x = 1;"
-              "{let x = 2; a = x}"
-              "[x, a]"),
-      njs_str("1,2") },
-
-    { njs_str("let a; let x = 1;"
-              "if (true) {let x = 2; a = x}"
-              "[x, a]"),
-      njs_str("1,2") },
-
-    { njs_str("var a = 5, b = 10, arr = [];"
-              "{let a = 4; var b = 1; arr.push(a); arr.push(b)}"
-              "arr.push(a); arr.push(b); arr"),
-      njs_str("4,1,5,1") },
-
-    { njs_str("function func() {return x}"
-              "let x = 123;"
-              "func()"),
-      njs_str("123") },
-
-    { njs_str("function func() {return x}"
-              "func();"
-              "let x = 123"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("function func() {return () => x}"
-              "let x = 123;"
-              "func()()"),
-      njs_str("123") },
-
-    { njs_str("function func() {x = x + 1; let x}"),
-      njs_str("undefined") },
-
-    { njs_str("function func() {return () => x}"
-              "func()();"
-              "let x = 123;"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("var arr = [];"
-              ""
-              "for (var i = 0; i < 10; i++) {"
-              "    let x = i;"
-              ""
-              "    arr.push( (n) => {x += n; return x} );"
-              "}"
-              ""
-              "["
-              "    arr[0](2), arr[1](1), arr[2](4), arr[3](7), arr[4](0),"
-              "    arr[5](1), arr[6](2), arr[7](5), arr[8](8), arr[9](10)"
-              "]"),
-      njs_str("2,2,6,10,4,6,8,12,16,19") },
-
-    { njs_str("var arr = [];"
-              ""
-              "for (let i = 0; i < 10; i++) {"
-              "    arr.push( (n) => {i += n; return i} );"
-              "}"
-              ""
-              "["
-              "    arr[0](2), arr[1](1), arr[2](4), arr[3](7), arr[4](0),"
-              "    arr[5](1), arr[6](2), arr[7](5), arr[8](8), arr[9](10)"
-              "]"),
-      njs_str("2,2,6,10,4,6,8,12,16,19") },
-
-    { njs_str("for (let i = 0; i < 1; i++) {"
-              "    let i = i + 2;"
-              "}"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("let arr = [], res = [];"
-              "for (let i = 0, f = function() { return i }; i < 5; i++) {"
-              "    arr.push(f);"
-              "}"
-              "for (let i = 0; i < 5; i++) {"
-              "    res.push(arr[i]());"
-              "} res"),
-      njs_str("0,0,0,0,0") },
-
-    { njs_str("let arr = [], res = [];"
-              "for (let i = 0; arr.push(() => i), i < 10; i++) {}"
-              "for (let k = 0; k < 10; k++) {res.push(arr[k]())}"
-              "res"),
-      njs_str("0,1,2,3,4,5,6,7,8,9") },
-
-    { njs_str("let res = [];"
-              "for (let n in [1,2,3]) {res.push(n)}"
-              "res"),
-      njs_str("0,1,2") },
-
-    { njs_str("let arr = [], res = [];"
-              ""
-              "for (let n in [1,2,3]) {"
-              "    arr.push(() => n);"
-              "}"
-              ""
-              "for (let n in arr) {"
-              "    res.push(arr[n]());"
-              "}"
-              "res"),
-      njs_str("0,1,2") },
-
-    { njs_str("let arr = [];"
-              ""
-              "for (let n in [1,2,3]) {"
-              "    let n = 1;"
-              "    arr.push(n);"
-              "}"
-              "arr"),
-      njs_str("1,1,1") },
-
-    { njs_str("for (let n in [1,2,3]) {"
-              "    let n = n + 1;"
-              "}"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("for (let n in [1,2,3]) {}"
-              "n"),
-      njs_str("ReferenceError: \"n\" is not defined") },
-
-    { njs_str("for (let n in [1,n,3]) {}"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("(function() {"
-              "function f() {return x + 1}"
-              "function abc() {f()};"
-              "abc();"
-              "let x;"
-              "}())"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("function func() {var x = 1; {let x = x + 1} } func()"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("if (false) let x = 1"),
-      njs_str("SyntaxError: let declaration cannot appear in a single-statement context in 1") },
-
-    { njs_str("while (false) let x = 1"),
-      njs_str("SyntaxError: let declaration cannot appear in a single-statement context in 1") },
-
-    { njs_str("for (;;) let x = 1"),
-      njs_str("SyntaxError: let declaration cannot appear in a single-statement context in 1") },
-
-    { njs_str("try {} catch (e) {let e}"),
-      njs_str("SyntaxError: \"e\" has already been declared in 1") },
-
-    { njs_str("let arr = [], x = 2;"
-              "switch(true) {default: let x = 1; arr.push(x)}"
-              "arr.push(x); arr"),
-      njs_str("1,2") },
-
-    { njs_str("switch(true) {case false: let x = 1; default: x = 2}"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("let res;"
-              "switch(true) {case true: let x = 1; default: x = 2; res = x} res"),
-      njs_str("2") },
-
-    { njs_str("let null"),
-      njs_str("SyntaxError: Unexpected token \"null\" in 1") },
-
-    { njs_str("let continue"),
-      njs_str("SyntaxError: Unexpected token \"continue\" in 1") },
-
-    { njs_str("let undefined"),
-      njs_str("SyntaxError: \"undefined\" has already been declared in 1") },
-
-    { njs_str("let a = 1; globalThis.a"),
-      njs_str("undefined") },
-
-    { njs_str("if (false) {x = 2} else {x = 1} let x;"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("let let"),
-      njs_str("SyntaxError: Unexpected token \"let\" in 1") },
-
-    { njs_str("let null"),
-      njs_str("SyntaxError: Unexpected token \"null\" in 1") },
-
-    { njs_str("function let() {}"),
-      njs_str("SyntaxError: Unexpected token \"let\" in 1") },
-
-    { njs_str("function static() {}"),
-      njs_str("SyntaxError: Unexpected token \"static\" in 1") },
-
-    /* const */
-
-    { njs_str("const x"),
-      njs_str("SyntaxError: missing initializer in const declaration") },
-
-    { njs_str("const x = 1; x"),
-      njs_str("1") },
-
-    { njs_str("const x = 1; x = 1"),
-      njs_str("TypeError: assignment to constant variable") },
-
-    { njs_str("function abc() {const x}"),
-      njs_str("SyntaxError: missing initializer in const declaration") },
-
-    { njs_str("const x = [123]; x"),
-      njs_str("123") },
-
-    { njs_str("const x = () => x; x()"),
-      njs_str("[object Function]") },
-
-    { njs_str("const x = (() => x)()"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("x; const x = 123"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("const x = x + 123"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("const x; var x"),
-      njs_str("SyntaxError: \"x\" has already been declared in 1") },
-
-    { njs_str("const x; let x"),
-      njs_str("SyntaxError: \"x\" has already been declared in 1") },
-
-    { njs_str("let x; const x"),
-      njs_str("SyntaxError: \"x\" has already been declared in 1") },
-
-    { njs_str("const x = 1; function x() {}"),
-      njs_str("SyntaxError: \"x\" has already been declared in 1") },
-
-    { njs_str("function x() {} const x = 1"),
-      njs_str("SyntaxError: \"x\" has already been declared in 1") },
-
-    { njs_str("function x() {const x; var x}"),
-      njs_str("SyntaxError: \"x\" has already been declared in 1") },
-
-    { njs_str("function x() {var x; const x}"),
-      njs_str("SyntaxError: \"x\" has already been declared in 1") },
-
-    { njs_str("const x = function f() {const f = 1}"),
-      njs_str("undefined") },
-
-    { njs_str("let res; const x = 1;"
-              "{const x = 2; res = x}"
-              "[x, res]"),
-      njs_str("1,2") },
-
-    { njs_str("let res; const x = 1;"
-              "if (true) {const x = 2; res = x}"
-              "[x, res]"),
-      njs_str("1,2") },
-
-    { njs_str("function func() {return x}"
-              "const x = 123;"
-              "func()"),
-      njs_str("123") },
-
-    { njs_str("function func() {return x}"
-              "func();"
-              "const x = 123"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("function func() {return () => x}"
-              "const x = 123;"
-              "func()()"),
-      njs_str("123") },
-
-    { njs_str("function func() {return () => x++}"
-              "const x = 123;"
-              "func()()"),
-      njs_str("TypeError: assignment to constant variable") },
-
-    { njs_str("for (const i = 0; i < 1; i++) {}"),
-      njs_str("TypeError: assignment to constant variable") },
-
-    { njs_str("let res = [];"
-              "for (const n in [1,2,3]) {res.push(n)}"
-              "res"),
-      njs_str("0,1,2") },
-
-    { njs_str("let arr = [], res = [];"
-              ""
-              "for (const n in [1,2,3]) {"
-              "    arr.push(() => n);"
-              "}"
-              ""
-              "for (let n in arr) {"
-              "    res.push(arr[n]());"
-              "}"
-              "res"),
-      njs_str("0,1,2") },
-
-    { njs_str("let arr = [];"
-              ""
-              "for (const n in [1,2,3]) {"
-              "    let n = 1;"
-              "    arr.push(n);"
-              "}"
-              "arr"),
-      njs_str("1,1,1") },
-
-    { njs_str("for (const n in [1,2,3]) {"
-              "    let n = n + 1;"
-              "}"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("for (const n in [1,2,3]) {}"
-              "n"),
-      njs_str("ReferenceError: \"n\" is not defined") },
-
-    { njs_str("for (const n in [1,n,3]) {}"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("(function() {"
-              "function f() {return x + 1}"
-              "function abc() {f()};"
-              "abc();"
-              "const x = 1;"
-              "}())"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("if (false) const x = 1"),
-      njs_str("SyntaxError: const declaration cannot appear in a single-statement context in 1") },
-
-    { njs_str("while (false) const x = 1"),
-      njs_str("SyntaxError: const declaration cannot appear in a single-statement context in 1") },
-
-    { njs_str("for (;;) const x = 1"),
-      njs_str("SyntaxError: const declaration cannot appear in a single-statement context in 1") },
-
-    { njs_str("try {} catch (e) {const e = 1}"),
-      njs_str("SyntaxError: \"e\" has already been declared in 1") },
-
-    { njs_str("let arr = []; const x = 2;"
-              "switch(true) {default: const x = 1; arr.push(x)}"
-              "arr.push(x); arr"),
-      njs_str("1,2") },
-
-    { njs_str("let res;"
-              "switch(true) {case true: const x = 1; default: x = 2; res = x} res"),
-      njs_str("TypeError: assignment to constant variable") },
-
-    { njs_str("const null"),
-      njs_str("SyntaxError: Unexpected token \"null\" in 1") },
-
-    { njs_str("const continue"),
-      njs_str("SyntaxError: Unexpected token \"continue\" in 1") },
-
-    { njs_str("const undefined"),
-      njs_str("SyntaxError: \"undefined\" has already been declared in 1") },
-
-    { njs_str("const a = 1; globalThis.a"),
-      njs_str("undefined") },
-
-    { njs_str("if (false) {x = 2} else {x = 1} const x = 0"),
-      njs_str("ReferenceError: cannot access variable before initialization") },
-
-    { njs_str("const const"),
-      njs_str("SyntaxError: Unexpected token \"const\" in 1") },
-
-    /* Async/Await */
-
-    { njs_str("async function f() {}; f.prototype"),
-      njs_str("undefined") },
-
-    { njs_str("async function f() {await 1}"),
-      njs_str("undefined") },
-
-    { njs_str("function f() {await 1}"),
-      njs_str("SyntaxError: await is only valid in async functions in 1") },
-
-    { njs_str("async function f() {function a() {await 1}}"),
-      njs_str("SyntaxError: await is only valid in async functions in 1") },
-
-    { njs_str("async function f() {() => {await 1}}"),
-      njs_str("SyntaxError: await is only valid in async functions in 1") },
-
-    { njs_str("function f() {async () => {await 1}}"),
-      njs_str("undefined") },
-
-    { njs_str("let f = async () => {await 1}"),
-      njs_str("undefined") },
-
-    { njs_str("let f = () => {await 1}"),
-      njs_str("SyntaxError: await is only valid in async functions in 1") },
-
-    { njs_str("(async function() {await 1})"),
-      njs_str("[object AsyncFunction]") },
-
-    { njs_str("(function() {await 1})"),
-      njs_str("SyntaxError: await is only valid in async functions in 1") },
-
-    { njs_str("let ctor = Object.getPrototypeOf(async function(){}).constructor;"
-              "ctor"),
-      njs_str("[object Function]") },
-
-    { njs_str("let ctor = Object.getPrototypeOf(async function(){}).constructor;"
-              "ctor()"),
-      njs_str("[object AsyncFunction]") },
-
-    { njs_str("let ctor = Object.getPrototypeOf(async function(){}).constructor;"
-              "new ctor();"),
-      njs_str("[object AsyncFunction]") },
-
-    { njs_str("let f = new Function('x', 'await 1; return x'); f(1)"),
-      njs_str("SyntaxError: await is only valid in async functions in runtime:1") },
-
-    { njs_str("new AsyncFunction()"),
-      njs_str("ReferenceError: \"AsyncFunction\" is not defined") },
-
-    { njs_str("(async function() {console.log(await 111)})"),
-      njs_str("SyntaxError: await in arguments not supported in 1") },
-
-    { njs_str("(async function() {console.log('Number: ' + await 111)})"),
-      njs_str("SyntaxError: await in arguments not supported in 1") },
-
-    { njs_str("function f(a) {}"
-              "(async function() {f(await 111)})"),
-      njs_str("SyntaxError: await in arguments not supported in 1") },
-
-    { njs_str("async () => [await x(1)(),]; async () => [await x(1)()]"),
-      njs_str("[object AsyncFunction]") },
-
-    { njs_str("function f(a, b, c) {}"
-              "(async function() {f(1, 'a', await 111)})"),
-      njs_str("SyntaxError: await in arguments not supported in 1") },
-
-    { njs_str("function f(a) {}"
-              "(async function() {f('Number: ' + await 111)})"),
-      njs_str("SyntaxError: await in arguments not supported in 1") },
-
-    { njs_str("async function af() {await encrypt({},}"),
-      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
-
-    { njs_str("let x = {async af() {await Promise.resolve(1)}}; x.af"),
-      njs_str("[object AsyncFunction]") },
-
-    { njs_str("let name = 'af', x = {async [name]() {await Promise.resolve(1)}}; x.af"),
-      njs_str("[object AsyncFunction]") },
-};
-
-
-static njs_unit_test_t  njs_safe_test[] =
-{
-    { njs_str("(new Function('return this'))() === globalThis"),
-      njs_str("true") },
-
-    { njs_str("(new Function('return this;'))() === globalThis"),
-      njs_str("true") },
-
-    { njs_str("(new Function('return    this  '))() === globalThis"),
-      njs_str("true") },
-
-    { njs_str("(new Function('return thi'))()"),
-      njs_str("TypeError: function constructor is disabled in \"safe\" mode") },
-
-    { njs_str("(new Function('){return 1337})//', 'return this'))()"),
-      njs_str("TypeError: function constructor is disabled in \"safe\" mode") },
-};
-
-
-static njs_unit_test_t  njs_denormals_test[] =
-{
-    { njs_str("2.2250738585072014e-308"),
-      njs_str("2.2250738585072014e-308") },
-
-#ifndef NJS_SUNC
-    { njs_str("2.2250738585072014E-308.toString(2) == ('0.' + '0'.repeat(1021) + '1')"),
-      njs_str("true") },
-
-    { njs_str("Number('2.2250738585072014E-323')"),
-      njs_str("2.5e-323") },
-
-    { njs_str("Number('2.2250738585072014E-323') + 0"),
-      njs_str("2.5e-323") },
-
-    /* Smallest positive double (next_double(0)). */
-    { njs_str("5E-324.toString(36) === '0.' + '0'.repeat(207) + '3'"),
-      njs_str("true") },
-
-    /* Maximum fraction length. */
-    { njs_str("2.2250738585072014E-323.toString(2) == ('0.' + '0'.repeat(1071) + '101')"),
-      njs_str("true") },
-
-    /* Denormals. */
-    { njs_str("var zeros = count => '0'.repeat(count);"
-              "["
-              "  [1.8858070859709815e-308, `0.${zeros(1022)}1101100011110111011100000100011001111101110001010111`],"
-              // FIXME: "  [Number.MIN_VALUE, `0.${zeros(1073)}1`]"
-              "  [-5.06631661953108e-309, `-0.${zeros(1024)}11101001001010000001101111010101011111111011010111`],"
-              "  [6.22574126804e-313, `0.${zeros(1037)}11101010101101100111000110100111001`],"
-              "  [-4e-323, `-0.${zeros(1070)}1`],"
-              "].every(t=>t[0].toString(2) === t[1])"),
-      njs_str("true") },
-
-    { njs_str("4.94065645841246544176568792868e-324.toExponential()"),
-      njs_str("5e-324") },
-
-    { njs_str("4.94065645841246544176568792868e-324.toExponential(10)"),
-      njs_str("4.9406564584e-324") },
-#endif
-
-};
-
-
-static njs_unit_test_t  njs_disabled_denormals_test[] =
-{
-    { njs_str("Number('2.2250738585072014E-323')"),
-      njs_str("0") },
-
-    { njs_str("Number('2.2250738585072014E-323') + 0"),
-      njs_str("0") },
-
-    /* Smallest positive double (next_double(0)). */
-    { njs_str("5E-324.toString(36)"),
-      njs_str("0") },
-
-    { njs_str("2.2250738585072014E-323.toString(2)"),
-      njs_str("0") },
-
-    /* Smallest normal double. */
-
-    { njs_str("2.2250738585072014e-308"),
-      njs_str("2.2250738585072014e-308") },
-
-    { njs_str("2.2250738585072014e-308/2"),
-      njs_str("0") },
-
-    /* Denormals. */
-    { njs_str("["
-              "1.8858070859709815e-308,"
-              "-5.06631661953108e-309,"
-              "6.22574126804e-313,"
-              "-4e-323,"
-              "].map(v=>v.toString(2))"),
-      njs_str("0,0,0,0") },
 };
 
 
@@ -23372,6 +23377,30 @@ static njs_test_suite_t  njs_suites[] =
       { .repeat = 1, .module = 1, .unsafe = 1 },
       njs_module_test,
       njs_nitems(njs_module_test),
+      njs_unit_test },
+
+    { njs_str("fs module"),
+      { .repeat = 1, .unsafe = 1 },
+      njs_fs_module_test,
+      njs_nitems(njs_fs_module_test),
+      njs_unit_test },
+
+    { njs_str("crypto module"),
+      { .repeat = 1, .unsafe = 1 },
+      njs_crypto_module_test,
+      njs_nitems(njs_crypto_module_test),
+      njs_unit_test },
+
+    { njs_str("querystring module"),
+      { .repeat = 1, .unsafe = 1 },
+      njs_querystring_module_test,
+      njs_nitems(njs_querystring_module_test),
+      njs_unit_test },
+
+    { njs_str("buffer module"),
+      { .repeat = 1, .unsafe = 1 },
+      njs_buffer_module_test,
+      njs_nitems(njs_buffer_module_test),
       njs_unit_test },
 
     { njs_str("externals"),
