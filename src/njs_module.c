@@ -245,6 +245,8 @@ njs_parser_module_lambda_after(njs_parser_t *parser, njs_lexer_token_t *token,
         if (temp->text.start != NULL) {
             njs_mp_free(parser->vm->mem_pool, temp->text.start);
         }
+
+        return njs_parser_failed(parser);
     }
 
     module->function.args_offset = 1;
