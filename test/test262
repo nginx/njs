@@ -34,7 +34,7 @@ END
 
         elif [ $njs_async = yes ]; then
             if [ "$njs_out" != 'Test262:AsyncTestComplete' ]; then
-                failed $njs_test
+                failed $njs_test $njs_log
 
             else
                 passed $njs_test
@@ -42,7 +42,7 @@ END
 
         else
             if [ -n "$njs_out" ]; then
-                failed $njs_test
+                failed $njs_test $njs_log
 
             else
                 passed $njs_test
@@ -54,7 +54,7 @@ END
             passed $njs_test
 
         else
-            failed $njs_test
+            failed $njs_test $njs_log
         fi
     fi
 

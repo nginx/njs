@@ -17,6 +17,9 @@ passed() {
 failed() {
     njs_failed_list="$njs_failed_list $1"
     verbose " FAILED\n"
+    printf "$1:\n"
+    cat $2
+    printf "\n"
 }
 
 verbose "Test dir: $NJS_TEST_DIR\n"

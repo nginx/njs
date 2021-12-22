@@ -9,6 +9,7 @@ if [ $njs_passed -ne $njs_total ]; then
 fi
 
 if [ -n "$njs_failed_list" ]; then
+    printf "\n"
     for t in $njs_failed_list; do
         printf "$t FAILED\n"
     done
