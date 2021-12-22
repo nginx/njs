@@ -218,7 +218,7 @@ fail:
 }
 
 
-njs_int_t
+static njs_int_t
 njs_parser_module_lambda_after(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
@@ -261,7 +261,7 @@ njs_parser_module_lambda_after(njs_parser_t *parser, njs_lexer_token_t *token,
 }
 
 
-njs_int_t
+static njs_int_t
 njs_parser_module_after(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
