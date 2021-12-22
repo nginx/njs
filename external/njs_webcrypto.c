@@ -2077,6 +2077,8 @@ njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             dst = (u_char *) &m[0];
         }
 
+        outlen = olen;
+
         ret = EVP_DigestSignFinal(mctx, dst, &outlen);
         if (njs_slow_path(ret <= 0 || olen != outlen)) {
             njs_webcrypto_error(vm, "EVP_DigestSignFinal() failed");
