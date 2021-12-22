@@ -135,7 +135,7 @@ let read_tests = () => [
 
           return data.compare(params.expected) == 0;
       } },
-    { args: ["/proc/cpuinfo"], slice:[0,9], expected: Buffer.from("processor"),
+    { args: ["/proc/cpuinfo"],
       check: (data, params) => {
 
           if (data.error) {
@@ -147,7 +147,7 @@ let read_tests = () => [
               return true;
           }
 
-          return data.compare(params.expected) == 0;
+          return /processor/.test(data);
       } },
 ];
 
