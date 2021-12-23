@@ -2153,7 +2153,7 @@ njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
             }
 
             path[base] = '/';
-            memcpy(&path[base + 1], d_name, length + sizeof("\0"));
+            memcpy(&path[base + 1], d_name, length + njs_length("\0"));
 
             if (fd_limit != 0) {
                 ret = njs_ftw(path, cb, fd_limit - 1, flags, &trace);
