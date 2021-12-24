@@ -6390,6 +6390,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("(new DataView(new ArrayBuffer(3)))"),
       njs_str("[object DataView]") },
 
+    { njs_str("var x = new ArrayBuffer(3); [typeof x, typeof new DataView(x)]"),
+      njs_str("object,object") },
+
     { njs_str("(new DataView(new ArrayBuffer(3))).buffer"),
       njs_str("[object ArrayBuffer]") },
 
