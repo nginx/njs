@@ -9,7 +9,10 @@ echo
 echo " + using CC: \"$CC\""
 echo " + using CFLAGS: \"$NJS_CFLAGS $NJS_CC_OPT $CFLAGS\""
 echo
-echo " + using PCRE library: $NJS_PCRE_LIB"
+
+if [ $NJS_HAVE_PCRE = YES ]; then
+  echo " + using PCRE library: $NJS_PCRE_LIB"
+fi
 
 if [ $NJS_HAVE_READLINE = YES ]; then
   echo " + using readline library: $NJS_READLINE_LIB"
