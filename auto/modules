@@ -13,7 +13,7 @@ njs_module_srcs=external/njs_crypto.c
 
 . auto/module
 
-if [ $NJS_WEBCRYPTO = YES -a $NJS_HAVE_OPENSSL = YES ]; then
+if [ $NJS_OPENSSL = YES -a $NJS_HAVE_OPENSSL = YES ]; then
 	njs_module_name=njs_webcrypto_module
 	njs_module_incs=
 	njs_module_srcs=external/njs_webcrypto.c

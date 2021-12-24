@@ -11,7 +11,7 @@ NJS_DEBUG_MEMORY=NO
 NJS_ADDRESS_SANITIZER=NO
 NJS_TEST262=YES
 
-NJS_WEBCRYPTO=YES
+NJS_OPENSSL=YES
 NJS_TRY_PCRE2=YES
 
 NJS_CONFIGURE_OPTIONS=
@@ -34,7 +34,7 @@ do
         --debug-memory=*)                NJS_DEBUG_MEMORY="$value"           ;;
         --test262=*)                     NJS_TEST262="$value"                ;;
 
-        --no-webcrypto)                  NJS_WEBCRYPTO=NO                    ;;
+        --no-openssl)                    NJS_OPENSSL=NO                      ;;
         --no-pcre2)                      NJS_TRY_PCRE2=NO                    ;;
 
         --help)

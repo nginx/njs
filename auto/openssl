@@ -6,38 +6,39 @@
 NJS_OPENSSL_LIB=
 NJS_HAVE_OPENSSL=NO
 
+if [ $NJS_OPENSSL = YES ]; then
+    njs_found=no
 
-njs_found=no
-
-
-njs_feature="OpenSSL library"
-njs_feature_name=NJS_HAVE_OPENSSL
-njs_feature_run=yes
-njs_feature_incs=
-njs_feature_libs="-lcrypto"
-njs_feature_test="#include <openssl/evp.h>
-
-                  int main() {
-                      EVP_CIPHER_CTX  *ctx;
-                      ctx = EVP_CIPHER_CTX_new();
-                      EVP_CIPHER_CTX_free(ctx);
-                      return 0;
-                 }"
-. auto/feature
-
-
-if [ $njs_found = yes ]; then
-    njs_feature="OpenSSL version"
-    njs_feature_name=NJS_OPENSSL_VERSION
-    njs_feature_run=value
-    njs_feature_test="#include <openssl/ssl.h>
+    njs_feature="OpenSSL library"
+    njs_feature_name=NJS_HAVE_OPENSSL
+    njs_feature_run=yes
+    njs_feature_incs=
+    njs_feature_libs="-lcrypto"
+    njs_feature_test="#include <openssl/evp.h>
 
                       int main() {
-                          printf(\"\\\"%s\\\"\", OPENSSL_VERSION_TEXT);
+                          EVP_CIPHER_CTX  *ctx;
+                          ctx = EVP_CIPHER_CTX_new();
+                          EVP_CIPHER_CTX_free(ctx);
                           return 0;
-                      }"
+                     }"
     . auto/feature
 
-    NJS_HAVE_OPENSSL=YES
-    NJS_OPENSSL_LIB="$njs_feature_libs"
+
+    if [ $njs_found = yes ]; then
+        njs_feature="OpenSSL version"
+        njs_feature_name=NJS_OPENSSL_VERSION
+        njs_feature_run=value
+        njs_feature_test="#include <openssl/ssl.h>
+
+                          int main() {
+                              printf(\"\\\"%s\\\"\", OPENSSL_VERSION_TEXT);
+                              return 0;
+                          }"
+        . auto/feature
+
+        NJS_HAVE_OPENSSL=YES
+        NJS_OPENSSL_LIB="$njs_feature_libs"
+    fi
+
 fi
