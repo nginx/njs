@@ -174,7 +174,7 @@ njs_dep_post=`njs_gen_dep_post $njs_dep $njs_externals_obj`
 cat << END >> $NJS_MAKEFILE
 
 $NJS_BUILD_DIR/$njs_externals_obj: \\
-    $njs_src external/njs_webcrypto.c
+    $njs_src
 	\$(NJS_CC) -c \$(NJS_CFLAGS) $NJS_LIB_AUX_CFLAGS \\
 		\$(NJS_LIB_INCS) -Injs \\
 		-o $NJS_BUILD_DIR/$njs_externals_obj \\

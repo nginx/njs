@@ -9,26 +9,26 @@ njs_module_srcs=src/njs_buffer.c
 
 njs_module_name=njs_crypto_module
 njs_module_incs=
-njs_module_srcs=external/njs_crypto.c
+njs_module_srcs=external/njs_crypto_module.c
 
 . auto/module
 
 if [ $NJS_OPENSSL = YES -a $NJS_HAVE_OPENSSL = YES ]; then
 	njs_module_name=njs_webcrypto_module
 	njs_module_incs=
-	njs_module_srcs=external/njs_webcrypto.c
+	njs_module_srcs=external/njs_webcrypto_module.c
 
 	. auto/module
 fi
 
 njs_module_name=njs_fs_module
 njs_module_incs=
-njs_module_srcs=external/njs_fs.c
+njs_module_srcs=external/njs_fs_module.c
 
 . auto/module
 
 njs_module_name=njs_query_string_module
 njs_module_incs=
-njs_module_srcs=external/njs_query_string.c
+njs_module_srcs=external/njs_query_string_module.c
 
 . auto/module
