@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+
+cat << END
+
+test/test262 [options] <DIR or FILE path>
+
+options:
+
+  --binary=PATH             sets path to tested binary, \
+default: "$NJS_TEST_BINARY"
+  --log=PATH                sets path to output log, \
+default: "$NJS_TEST_LOG"
+  --test-dir=PATH           sets directory for test files, \
+default: "$NJS_TEST_DIR"
+  --verbose=YES             enables verbose output, \
+default: "$NJS_TEST_VERBOSE"
+  --leave=YES               disables removing of "$NJS_TEST_DIR", \
+default: "$NJS_TEST_LEAVE"
+END
