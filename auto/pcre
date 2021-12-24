@@ -12,63 +12,117 @@ if [ $NJS_PCRE = YES ]; then
     njs_found=no
 
     if [ $NJS_TRY_PCRE2 = YES ]; then
-        if /bin/sh -c "(pcre2-config --version)" >> $NJS_AUTOCONF_ERR 2>&1; then
 
-            NJS_PCRE_CFLAGS=`pcre2-config --cflags`
-            NJS_PCRE_LIB=`pcre2-config --libs8`
+        njs_feature="PCRE2 library"
+        njs_feature_name=NJS_HAVE_PCRE2
+        njs_feature_run=no
+        njs_feature_incs=
+        njs_feature_libs=
+        njs_feature_test="#define PCRE2_CODE_UNIT_WIDTH 8
+                          #include <pcre2.h>
 
-            njs_feature="PCRE2 library"
-            njs_feature_name=NJS_HAVE_PCRE2
-            njs_feature_run=no
-            njs_feature_incs="-DPCRE2_CODE_UNIT_WIDTH=8 $NJS_PCRE_CFLAGS"
-            njs_feature_libs=$NJS_PCRE_LIB
-            njs_feature_test="#include <pcre2.h>
+                          int main(void) {
+                              pcre2_code  *re;
+
+                              re = pcre2_compile((PCRE2_SPTR)\"\",
+                                                 PCRE2_ZERO_TERMINATED, 0,
+                                                 NULL, NULL, NULL);
+                              return (re == NULL);
+                          }"
+
+        . auto/feature
+
+         if [ $njs_found = no ]; then
+
+            # pcre2-config
+
+            if /bin/sh -c "(pcre2-config --version)" >> $NJS_AUTOCONF_ERR 2>&1; then
+
+                NJS_PCRE_CFLAGS=`pcre2-config --cflags`
+                NJS_PCRE_LIB=`pcre2-config --libs8`
+
+                njs_feature="PCRE2 library in `pcre2-config --prefix 2>/dev/null`"
+                njs_feature_incs=$NJS_PCRE_CFLAGS
+                njs_feature_libs=$NJS_PCRE_LIB
+
+                . auto/feature
+            fi
+
+         fi
+
+        if [ $njs_found = yes ]; then
+            njs_feature="PCRE2 version"
+            njs_feature_name=NJS_PCRE2_VERSION
+            njs_feature_run=value
+            njs_feature_test="#define PCRE2_CODE_UNIT_WIDTH 8
+                              #include <pcre2.h>
+                              #include <stdio.h>
 
                               int main(void) {
-                                  pcre2_code  *re;
-
-                                  re = pcre2_compile((PCRE2_SPTR)\"\",
-                                                     PCRE2_ZERO_TERMINATED, 0,
-                                                     NULL, NULL, NULL);
-                                  return (re == NULL);
+                                  printf(\"%d.%d\", PCRE2_MAJOR, PCRE2_MINOR);
+                                  return 0;
                               }"
 
             . auto/feature
 
-            if [ $njs_found = yes ]; then
-                NJS_HAVE_PCRE=YES
-                echo " + PCRE2 version: `pcre2-config --version`"
-            fi
+            NJS_HAVE_PCRE=YES
         fi
     fi
 
     if [ $njs_found = no ]; then
-        if /bin/sh -c "(pcre-config --version)" >> $NJS_AUTOCONF_ERR 2>&1; then
 
-            NJS_PCRE_CFLAGS=`pcre-config --cflags`
-            NJS_PCRE_LIB=`pcre-config --libs`
+        njs_feature="PCRE library"
+        njs_feature_name=NJS_HAVE_PCRE
+        njs_feature_run=no
+        njs_feature_incs=
+        njs_feature_libs=
+        njs_feature_test="#include <pcre.h>
 
-            njs_feature="PCRE library"
-            njs_feature_name=NJS_HAVE_PCRE
-            njs_feature_run=no
-            njs_feature_incs=$NJS_PCRE_CFLAGS
-            njs_feature_libs=$NJS_PCRE_LIB
+                          int main(void) {
+                              pcre  *re;
+
+                              re = pcre_compile(NULL, 0, NULL, 0, NULL);
+                              if (re == NULL)
+                                  return 1;
+                              return 0;
+                          }"
+
+        . auto/feature
+
+         if [ $njs_found = no ]; then
+
+            # pcre-config
+
+            njs_pcre_prefix=`pcre-config --prefix 2>/dev/null`
+
+            if [ -n "$njs_pcre_prefix" ]; then
+
+                NJS_PCRE_CFLAGS=`pcre-config --cflags`
+                NJS_PCRE_LIB=`pcre-config --libs`
+
+                njs_feature="PCRE library in $njs_pcre_prefix"
+                njs_feature_incs="$NJS_PCRE_CFLAGS"
+                njs_feature_libs=$NJS_PCRE_LIB
+
+                . auto/feature
+            fi
+        fi
+
+        if [ $njs_found = yes ]; then
+            njs_feature="PCRE version"
+            njs_feature_name=NJS_PCRE_VERSION
+            njs_feature_run=value
             njs_feature_test="#include <pcre.h>
+                              #include <stdio.h>
 
-                             int main(void) {
-                                 pcre  *re;
+                              int main(void) {
+                                  printf(\"%d.%d\", PCRE_MAJOR, PCRE_MINOR);
+                                  return 0;
+                              }"
 
-                                 re = pcre_compile(NULL, 0, NULL, 0, NULL);
-                                 if (re == NULL)
-                                     return 1;
-                                 return 0;
-                             }"
             . auto/feature
 
-            if [ $njs_found = yes ]; then
-                NJS_HAVE_PCRE=YES
-                echo " + PCRE version: `pcre-config --version`"
-            fi
+            NJS_HAVE_PCRE=YES
         fi
     fi
 
