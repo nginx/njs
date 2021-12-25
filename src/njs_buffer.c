@@ -358,12 +358,12 @@ next:
         ret = njs_value_property(vm, value, njs_value_arg(&njs_string_type),
                                  &retval);
         if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_DECLINED;
+            return ret;
         }
 
         ret = njs_value_to_string(vm, &retval, &retval);
         if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_DECLINED;
+            return ret;
         }
 
         njs_string_get(&retval, &str);
@@ -375,7 +375,7 @@ next:
         ret = njs_value_property(vm, value, njs_value_arg(&njs_string_data),
                                  &retval);
         if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_DECLINED;
+            return ret;
         }
 
         if (njs_is_object(&retval)) {

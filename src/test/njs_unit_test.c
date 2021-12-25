@@ -19920,6 +19920,12 @@ static njs_unit_test_t  njs_buffer_module_test[] =
     { njs_str("njs.dump(Buffer.from(new String('test')))"),
       njs_str("Buffer [116,101,115,116]") },
 
+    { njs_str("Buffer.from({ get type() { throw new Error('test'); } })"),
+      njs_str("Error: test") },
+
+    { njs_str("Buffer.from({ type: 'Buffer', get data() { throw new Error('test'); } })"),
+      njs_str("Error: test") },
+
     { njs_str("["
              " ['6576696c', 'hex'],"
              " ['ZXZpbA==', 'base64'],"
