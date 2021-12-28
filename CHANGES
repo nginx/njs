@@ -1,3 +1,46 @@
+Changes with njs 0.7.1                                        28 Dec 2021
+
+    nginx modules:
+
+    *) Change: the "js_include" directive deprecated since 0.4.0 was
+       removed.
+
+    *) Change: PCRE/PCRE2-specific code was moved to the modules.
+       This ensures that njs uses the same RegExp library as nginx.
+
+    Core:
+
+    *) Feature: extended "fs" module. Added stat(), fstat()
+       and friends.
+
+    *) Change: default RegExp engine for CLI is switched
+       to PCRE2.
+
+    *) Bugfix: fixed decodeURI() and decodeURIComponent() with
+       invalid byte strings. The bug was introduced in 0.4.3.
+
+    *) Bugfix: fixed heap-use-after-free in await frame.
+       The bug was introduced in 0.7.0.
+
+    *) Bugfix: fixed WebCrypto sign() and verify() methods
+       with OpenSSL 3.0.
+
+    *) Bugfix: fixed exception throwing when RegExp match fails.
+       The bug was introduced in 0.1.15.
+
+    *) Bugfix: fixed catching of exception thrown in try block
+       of async function. The bug was introduced in 0.7.0.
+
+    *) Bugfix: fixed execution of async function in synchronous
+       context. The bug was introduced in 0.7.0.
+
+    *) Bugfix: fixed function redeclaration in CLI when interactive
+       mode is on. The bug was introduced in 0.6.2.
+
+    *) Bugfix: fixed typeof operator with DataView object.
+
+    *) Bugfix: eliminated information leak in Buffer.from().
+
 Changes with njs 0.7.0                                        19 Oct 2021
 
     nginx modules:
