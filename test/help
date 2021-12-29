@@ -17,6 +17,4 @@ default: "$NJS_TEST_LOG"
 default: "$NJS_TEST_DIR"
   --verbose=YES             enables verbose output, \
 default: "$NJS_TEST_VERBOSE"
-  --leave=YES               disables removing of "$NJS_TEST_DIR", \
-default: "$NJS_TEST_LEAVE"
 END

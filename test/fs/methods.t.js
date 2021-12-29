@@ -9,7 +9,7 @@ function p(args, default_opts) {
     let fname = params.args[0];
 
     if (fname[0] == '@') {
-        let gen = `build/test/fs_test_${Math.round(Math.random() * 1000000)}`;
+        let gen = `${test_dir}/fs_test_${Math.round(Math.random() * 1000000)}`;
         params.args = params.args.map(v => v);
         params.args[0] = gen + fname.slice(1);
     }
@@ -368,9 +368,9 @@ async function realpath_test(params) {
 }
 
 let realpath_tests = () => [
-    { args: ["build/test/.."],
-      check: (data) => data.endsWith("build") },
-    { args: ["build/test/", {encoding:'buffer'}],
+    { args: ["test/fs/.."],
+      check: (data) => data.endsWith("test") },
+    { args: ["test/fs/ascii", {encoding:'buffer'}],
       check: (data) => data instanceof Buffer },
 ];
 
@@ -478,14 +478,14 @@ let stat_tests = () => [
           return true;
       } },
 
-    { args: ["build/"],
+    { args: ["test/fs/ascii"],
       check: (st) => contains(Object.keys(st),
                               [ "atime", "atimeMs", "birthtime", "birthtimeMs",
                                 "blksize", "blocks", "ctime", "ctimeMs", "dev",
                                 "gid", "ino", "mode", "mtime", "mtimeMs","nlink",
                                 "rdev", "size", "uid" ]) },
 
-    { args: ["build/"],
+    { args: ["test/fs/ascii"],
       check: (st) => Object.keys(st).every(p => {
         let v = st[p];
         if (p == 'atime' || p == 'ctime' || p == 'mtime' || p == 'birthtime') {
@@ -503,7 +503,7 @@ let stat_tests = () => [
         return true;
       }) },
 
-    { args: ["build/"],
+    { args: ["test/fs/ascii"],
       check: (st) => ['atime', 'birthtime', 'ctime', 'mtime'].every(p => {
           let date = st[p].valueOf();
           let num = st[p + 'Ms'];
@@ -515,7 +515,7 @@ let stat_tests = () => [
           return true;
       }) },
 
-    { args: ["build/"],
+    { args: [test_dir],
       check: (st) => ['isBlockDevice',
                       'isCharacterDevice',
                       'isDirectory',

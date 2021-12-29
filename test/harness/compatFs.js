@@ -9,3 +9,6 @@ if (typeof require == 'function') {
 function has_fs() {
     return fs;
 }
+
+let test_dir = process.env && process.env['NJS_TEST_DIR'] || 'build';
+test_dir = `${test_dir}/test`;

@@ -3,10 +3,9 @@ includes: [compareArray.js, compatFs.js]
 flags: [async]
 ---*/
 
-var dname = 'build/test/';
-var fname = dname + 'fs_promises_04';
-var fname_utf8 = dname + 'fs_promises_αβγ_04';
-var lname = dname + 'fs_promises_04_lnk';
+var fname = `${test_dir}/fs_promises_04`;
+var fname_utf8 = `${test_dir}/fs_promises_αβγ_04`;
+var lname = `${test_dir}/fs_promises_lnk_04`;
 
 var testSync = () => new Promise((resolve, reject) => {
     try {

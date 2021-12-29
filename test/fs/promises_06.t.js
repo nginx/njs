@@ -3,7 +3,7 @@ includes: [compareArray.js, compatFs.js]
 flags: [async]
 ---*/
 
-var dname = 'build/test/';
+var dname = `${test_dir}/`;
 var fname = (d) => d + '/fs_promises_06_file';
 var fname_utf8 = (d) => d + '/fs_promises_αβγ_06';
 
@@ -72,6 +72,9 @@ Promise.resolve()
 .then(() => testSync)
 .then(() => {
     stages.push("renameSync");
+})
+.catch((e) => {
+    console.log('test fs.renameSync failed', JSON.stringify(e));
 })
 
 .then(testCallback)

@@ -3,7 +3,7 @@ includes: [compareArray.js, compatFs.js]
 flags: [async]
 ---*/
 
-var fname = 'build/test/fs_promises_01';
+var fname = `${test_dir}/fs_promises_01`;
 
 let stages = [];
 

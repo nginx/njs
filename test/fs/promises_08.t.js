@@ -3,7 +3,7 @@ includes: [compareArray.js, compatFs.js]
 flags: [async]
 ---*/
 
-var dname = 'build/test/fs_promises_αβγ_08/';
+var dname = `${test_dir}/fs_promises_αβγ_08/`;
 var path = 'one/two/three/αβγ';
 
 var wipePath = (root, path, nofail) => {

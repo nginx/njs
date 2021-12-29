@@ -19,7 +19,7 @@ for njs_test in $NJS_TESTS; do
 running $njs_test $njs_log
 END
 
-    if /bin/sh -c "($NJS_TEST_BINARY $NJS_TEST_DIR/$njs_test)" > $njs_log 2>&1; then
+    if /bin/sh -c "(NJS_TEST_DIR=$NJS_TEST_DIR $NJS_TEST_BINARY $NJS_TEST_DIR/$njs_test)" > $njs_log 2>&1; then
         njs_success=yes
     else
         njs_success=no
