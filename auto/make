@@ -7,8 +7,8 @@
 echo "creating $NJS_MAKEFILE"
 
 mkdir -p $NJS_BUILD_DIR/src
-mkdir -p $NJS_BUILD_DIR/build
 mkdir -p $NJS_BUILD_DIR/external
+mkdir -p $NJS_BUILD_DIR/$NJS_BUILD_DIR
 mkdir -p $NJS_BUILD_DIR/test
 
 njs_modules_c=$NJS_BUILD_DIR/njs_modules.c
