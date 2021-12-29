@@ -13,7 +13,7 @@ if [ $NJS_OPENSSL = YES ]; then
     njs_feature_name=NJS_HAVE_OPENSSL
     njs_feature_run=yes
     njs_feature_incs=
-    njs_feature_libs="-lcrypto"
+    njs_feature_libs=""
     njs_feature_test="#include <openssl/evp.h>
 
                       int main() {
@@ -23,6 +23,13 @@ if [ $NJS_OPENSSL = YES ]; then
                           return 0;
                      }"
     . auto/feature
+
+    if [ $njs_found = no ]; then
+        njs_feature="OpenSSL library -lcrypto"
+        njs_feature_libs="-lcrypto"
+
+        . auto/feature
+    fi
 
 
     if [ $njs_found = yes ]; then
