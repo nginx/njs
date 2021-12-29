@@ -242,7 +242,7 @@ lib_test: $NJS_BUILD_DIR/njs_auto_config.h \\
 
 test262: njs
 
-	test/test262
+	test/test262 --binary=$NJS_BUILD_DIR/njs
 
 unit_test: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/njs_unit_test

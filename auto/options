@@ -31,6 +31,8 @@ do
         --ld-opt=*)                      NJS_LD_OPT="$value"                 ;;
         --ar=*)                          AR="$value"                         ;;
 
+        --build-dir=*)                   NJS_BUILD_DIR="$value"              ;;
+
         --address-sanitizer=*)           NJS_ADDRESS_SANITIZER="$value"      ;;
         --debug=*)                       NJS_DEBUG="$value"                  ;;
         --debug-memory=*)                NJS_DEBUG_MEMORY="$value"           ;;

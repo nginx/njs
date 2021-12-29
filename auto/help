@@ -14,6 +14,8 @@ default: "$NJS_CC_OPT"
 default: "$NJS_LD_OPT"
   --ar=FILE                 set static linking program, default: "$AR"
 
+  --build-dir=DIR           set build directory, default: "$NJS_BUILD_DIR"
+
   --no-pcre                 disables PCRE/PCRE2 discovery for RegExp
                             backend. This flag allows to build PCRE/PCRE2
                             outside of libnjs.a.  When this option is enabled
