@@ -70,6 +70,136 @@ declare module "fs" {
         name: string;
     }
 
+    /**
+     * Stats object provides information about a file.
+     *
+     * The objects is returned from fs.stat(), fs.lstat() and friends.
+     */
+    export interface Stats {
+        /**
+         * @returns `true` if the object describes a block device.
+         */
+        isBlockDevice(): boolean;
+        /**
+         * @returns `true` if the object describes a character device.
+         */
+        isCharacterDevice(): boolean;
+        /**
+         * @returns `true` if the object describes a file system directory.
+         */
+        isDirectory(): boolean;
+        /**
+         * @returns `true` if the object describes a first-in-first-out (FIFO) pipe.
+         */
+        isFIFO(): boolean;
+        /**
+         * @returns `true` if the object describes a regular file.
+         */
+        isFile(): boolean;
+        /**
+         * @returns `true` if the object describes a socket.
+         */
+        isSocket(): boolean;
+        /**
+         * @returns `true` if the object describes a symbolic link.
+         */
+        isSymbolicLink(): boolean;
+
+        /**
+         * The numeric identifier of the device containing the file.
+         */
+        dev: number;
+
+        /**
+         * The file system specific "Inode" number for the file.
+         */
+        ino: number;
+
+        /**
+         * A bit-field describing the file type and mode.
+         */
+        mode: number;
+
+        /**
+         * The number of hard-links that exist for the file.
+         */
+        nlink: number;
+
+        /**
+         * The numeric user identifier of the user that owns the file (POSIX).
+         */
+        uid: number;
+
+        /**
+         * The numeric group identifier of the group that owns the file (POSIX).
+         */
+        gid: number;
+
+        /**
+         * A numeric device identifier if the file represents a device.
+         */
+        rdev: number;
+
+        /**
+         * The size of the file in bytes.
+         */
+        size: number;
+
+        /**
+         * The file system block size for i/o operations.
+         */
+        blksize: number;
+
+        /**
+         * The number of blocks allocated for this file.
+         */
+        blocks: number;
+
+        /**
+         * The timestamp indicating the last time this file was accessed expressed
+         * in milliseconds since the POSIX Epoch.
+         */
+        atimeMs: number;
+
+        /**
+         * The timestamp indicating the last time this file was modified expressed
+         * in milliseconds since the POSIX Epoch.
+         */
+        mtimeMs: number;
+
+        /**
+         * The timestamp indicating the last time this file was changed expressed
+         * in milliseconds since the POSIX Epoch.
+         */
+        ctimeMs: number;
+
+        /**
+         * The timestamp indicating the creation time of this file expressed
+         * in milliseconds since the POSIX Epoch.
+         */
+        birthtimeMs: number;
+
+        /**
+         * The timestamp indicating the last time this file was accessed.
+         */
+        atime: Date;
+
+        /**
+         * The timestamp indicating the last time this file was modified.
+         */
+        mtime: Date;
+
+        /**
+         * The timestamp indicating the last time this file was changed.
+         */
+        ctime: Date;
+
+        /**
+         * The timestamp indicating the creation time of this file.
+         */
+        birthtime: Date;
+    }
+
     type WriteFileOptions = {
         mode?: number;
         flag?: OpenMode;
@@ -125,6 +255,18 @@ declare module "fs" {
          *   If `flag` is not supplied, the default of `'a'` is used.
          */
         appendFile(path: PathLike, data: NjsStringOrBuffer, options?: WriteFileOptions): Promise<void>;
+
+        /**
+         * Asynchronously retrieves `fs.Stats` object for the symbolic link referred to by `path`.
+         * See `lstat(2)` for more details.
+         *
+         * @since 0.7.1
+         * @param path A path to a file.
+         * @param options An object with the following optional keys:
+         *   - `throwIfNoEntry` - Whether an exception will be thrown if no file system entry exists,
+         *      rather than returning undefined, defaults to `true`.
+         */
+        lstat(path: PathLike, options?: { throwIfNoEntry?: boolean; }): Promise<Stats>;
 
         /**
          * Asynchronously creates a directory at the specified `path`.
@@ -189,6 +331,17 @@ declare module "fs" {
          * @param path A path to a file.
          */
         rmdir(path: PathLike): Promise<void>;
+
+        /**
+         * Asynchronously retrieves `fs.Stats` object for the specified `path`.
+         *
+         * @since 0.7.1
+         * @param path A path to a file.
+         * @param options An object with the following optional keys:
+         *   - `throwIfNoEntry` - Whether an exception will be thrown if no file system entry exists,
+         *      rather than returning undefined, defaults to `true`.
+         */
+        stat(path: PathLike, options?: { throwIfNoEntry?: boolean; }): Promise<Stats>;
 
         /**
          * Asynchronously creates the link called `path` pointing to `target` using `symlink(2)`.
@@ -267,6 +420,18 @@ declare module "fs" {
         appendFileSync(path: PathLike, data: NjsStringOrBuffer, options?: WriteFileOptions): void;
 
         /**
+         * Synchronously retrieves `fs.Stats` object for the symbolic link referred to by path.
+         * See `lstat(2)` for more details.
+         *
+         * @since 0.7.1
+         * @param path A path to a file.
+         * @param options An object with the following optional keys:
+         *   - `throwIfNoEntry` - Whether an exception will be thrown if no file system entry exists,
+         *      rather than returning undefined, defaults to `true`.
+         */
+        lstatSync(path: PathLike, options?: { throwIfNoEntry?: boolean; }): Stats;
+
+        /**
          * Synchronously creates a directory at the specified `path`.
          *
          * @since 0.4.2
@@ -339,6 +504,17 @@ declare module "fs" {
          * @param path A path to a file.
          */
         rmdirSync(path: PathLike): void;
+
+        /**
+         * Synchronously retrieves `fs.Stats` object for the specified path.
+         *
+         * @since 0.7.1
+         * @param path A path to a file.
+         * @param options An object with the following optional keys:
+         *   - `throwIfNoEntry` - Whether an exception will be thrown if no file system entry exists,
+         *      rather than returning undefined, defaults to `true`.
+         */
+        statSync(path: PathLike, options?: { throwIfNoEntry?: boolean; }): Stats;
 
         /**
          * Synchronously creates the link called `path` pointing to `target` using `symlink(2)`.
