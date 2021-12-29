@@ -14,6 +14,21 @@ default: "$NJS_CC_OPT"
 default: "$NJS_LD_OPT"
   --ar=FILE                 set static linking program, default: "$AR"
 
+  --no-pcre                 disables PCRE/PCRE2 discovery for RegExp
+                            backend. This flag allows to build PCRE/PCRE2
+                            outside of libnjs.a.  When this option is enabled
+                            functions described in njs_regex.h are not built.
+                            Instead this functions are expected to be provided
+                            while linking.
+
+  --no-pcre2                disables PCRE2 discovery for RegExp backend.
+                            When this option is enabled only PCRE library
+                            is discovered.
+
+  --no-openssl              disables OpenSSL discovery. When this option is
+                            enabled OpenSSL dependant code is not built as a
+                            part of libnjs.a.
+
   --address-sanitizer=YES   enables build with address sanitizer, \
 default: "$NJS_ADDRESS_SANITIZER"
   --debug=YES               enables additional runtime checks, \
