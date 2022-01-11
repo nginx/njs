@@ -88,8 +88,8 @@ typedef struct {
 static njs_int_t njs_console_init(njs_vm_t *vm, njs_console_t *console);
 static njs_int_t njs_externals_init(njs_vm_t *vm);
 static njs_vm_t *njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options);
-static njs_int_t njs_process_script(njs_opts_t *opts,
-    njs_console_t *console, const njs_str_t *script);
+static njs_int_t njs_process_script(njs_vm_t *vm, njs_opts_t *opts,
+    void *runtime, const njs_str_t *script);
 
 #ifndef NJS_FUZZER_TARGET
 
@@ -307,7 +307,7 @@ main(int argc, char **argv)
         if (vm != NULL) {
             command.start = (u_char *) opts.command;
             command.length = njs_strlen(opts.command);
-            ret = njs_process_script(&opts, vm_options.external, &command);
+            ret = njs_process_script(vm, &opts, vm_options.external, &command);
             njs_vm_destroy(vm);
         }
 
@@ -612,7 +612,7 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         }
     }
 
-    ret = njs_process_script(opts, vm_options->external, &script);
+    ret = njs_process_script(vm, opts, vm_options->external, &script);
     if (ret != NJS_OK) {
         ret = NJS_ERROR;
         goto done;
@@ -662,7 +662,6 @@ LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
     vm_options.init = 1;
     vm_options.backtrace = 0;
     vm_options.ops = &njs_console_ops;
-    vm_options.external = &njs_console;
 
     vm = njs_create_vm(&opts, &vm_options);
 
@@ -670,7 +669,7 @@ LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
         script.length = size;
         script.start = (u_char *) data;
 
-        (void) njs_process_script(&opts, vm_options.external, &script);
+        (void) njs_process_script(vm, &opts, NULL, &script);
         njs_vm_destroy(vm);
     }
 
@@ -834,11 +833,19 @@ njs_output(njs_opts_t *opts, njs_vm_t *vm, njs_int_t ret)
 
 
 static njs_int_t
-njs_process_events(njs_console_t *console)
+njs_process_events(void *runtime)
 {
     njs_ev_t          *ev;
     njs_queue_t       *events;
+    njs_console_t     *console;
     njs_queue_link_t  *link;
+
+    if (runtime == NULL) {
+        njs_stderror("njs_process_events(): no runtime\n");
+        return NJS_ERROR;
+    }
+
+    console = runtime;
 
     events = &console->posted_events;
 
@@ -863,14 +870,12 @@ njs_process_events(njs_console_t *console)
 
 
 static njs_int_t
-njs_process_script(njs_opts_t *opts, njs_console_t *console,
+njs_process_script(njs_vm_t *vm, njs_opts_t *opts, void *runtime,
     const njs_str_t *script)
 {
     u_char     *start, *end;
-    njs_vm_t   *vm;
     njs_int_t  ret;
 
-    vm = console->vm;
     start = script->start;
     end = start + script->length;
 
@@ -897,7 +902,7 @@ njs_process_script(njs_opts_t *opts, njs_console_t *console,
             break;
         }
 
-        ret = njs_process_events(console);
+        ret = njs_process_events(runtime);
         if (njs_slow_path(ret != NJS_OK)) {
             njs_stderror("njs_process_events() failed\n");
             ret = NJS_ERROR;
@@ -962,7 +967,7 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         if (line.length != 0) {
             add_history((char *) line.start);
 
-            njs_process_script(opts, vm_options->external, &line);
+            njs_process_script(vm, opts, vm_options->external, &line);
         }
 
         /* editline allocs a new buffer every time. */
