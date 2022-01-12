@@ -1028,8 +1028,6 @@ njs_set_object_value(njs_value_t *value, njs_object_value_t *object_value)
         (pq)->lhq.key.length = 0;                                             \
         (pq)->lhq.key.start = NULL;                                           \
         (pq)->lhq.value = NULL;                                               \
-        /* FIXME: False-positive in MSAN?. */                                 \
-        njs_msan_unpoison(&(pq)->key, sizeof(njs_value_t));                   \
         (pq)->own_whiteout = NULL;                                            \
         (pq)->query = _query;                                                 \
         (pq)->shared = 0;                                                     \
@@ -1085,9 +1083,6 @@ njs_value_property_i64(njs_vm_t *vm, njs_value_t *value, int64_t index,
     njs_int_t    ret;
     njs_value_t  key;
 
-    /* FIXME: False-positive in MSAN?. */
-    njs_msan_unpoison(&key, sizeof(njs_value_t));
-
     ret = njs_int64_to_string(vm, &key, index);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
@@ -1104,9 +1099,6 @@ njs_value_property_i64_set(njs_vm_t *vm, njs_value_t *value, int64_t index,
     njs_int_t    ret;
     njs_value_t  key;
 
-    /* FIXME: False-positive in MSAN?. */
-    njs_msan_unpoison(&key, sizeof(njs_value_t));
-
     ret = njs_int64_to_string(vm, &key, index);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
@@ -1122,9 +1114,6 @@ njs_value_property_i64_delete(njs_vm_t *vm, njs_value_t *value, int64_t index,
 {
     njs_int_t    ret;
     njs_value_t  key;
-
-    /* FIXME: False-positive in MSAN?. */
-    njs_msan_unpoison(&key, sizeof(njs_value_t));
 
     ret = njs_int64_to_string(vm, &key, index);
     if (njs_slow_path(ret != NJS_OK)) {
