@@ -4801,6 +4801,14 @@ static njs_unit_test_t  njs_test[] =
               ".map(v=>v.join(''))"),
       njs_str(",1345,,1,13,13,13") },
 
+    { njs_str("var o = { toString: () => {"
+              "             for (var i = 0; i < 0x10; i++) {a.push(1)};"
+              "             return {};"
+              "}};"
+              "var a = [o];"
+              "a.join()"),
+      njs_str("TypeError: Cannot convert object to primitive value") },
+
     { njs_str("Array.prototype.splice.call({0:0,1:1,2:2,3:3,length:4},0,3,4,5)"),
       njs_str("0,1,2") },
 

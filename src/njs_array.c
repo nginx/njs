@@ -1573,7 +1573,6 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_int_t          ret;
     njs_chb_t          chain;
     njs_utf8_t         utf8;
-    njs_array_t        *array;
     njs_value_t        *value, *this, entry;
     njs_string_prop_t  separator, string;
 
@@ -1606,18 +1605,11 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     length = 0;
-    array = NULL;
     utf8 = njs_is_byte_string(&separator) ? NJS_STRING_BYTE : NJS_STRING_UTF8;
 
-    if (njs_is_fast_array(this)) {
-        array = njs_array(this);
-        len = array->length;
-
-    } else {
-        ret = njs_object_length(vm, this, &len);
-        if (njs_slow_path(ret == NJS_ERROR)) {
-            return ret;
-        }
+    ret = njs_object_length(vm, this, &len);
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return ret;
     }
 
     if (njs_slow_path(len == 0)) {
@@ -1625,25 +1617,17 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_OK;
     }
 
+    value = &entry;
+
     njs_chb_init(&chain, vm->mem_pool);
 
     for (i = 0; i < len; i++) {
-        if (njs_fast_path(array != NULL
-                          && array->object.fast_array
-                          && njs_is_valid(&array->start[i])))
-        {
-            value = &array->start[i];
-
-        } else {
-            ret = njs_value_property_i64(vm, this, i, &entry);
-            if (njs_slow_path(ret == NJS_ERROR)) {
-                return ret;
-            }
-
-            value = &entry;
+        ret = njs_value_property_i64(vm, this, i, value);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return ret;
         }
 
-        if (njs_is_valid(value) && !njs_is_null_or_undefined(value)) {
+        if (!njs_is_null_or_undefined(value)) {
             if (!njs_is_string(value)) {
                 last = njs_chb_current(&chain);
 
