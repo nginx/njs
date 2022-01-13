@@ -944,8 +944,7 @@ njs_array_prototype_pop(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     int64_t      length;
     njs_int_t    ret;
-    njs_array_t  *array;
-    njs_value_t  *this, *entry;
+    njs_value_t  *this;
 
     this = njs_argument(args, 0);
 
@@ -954,40 +953,20 @@ njs_array_prototype_pop(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    njs_set_undefined(&vm->retval);
-
-    if (njs_is_fast_array(this)) {
-        array = njs_array(this);
-
-        if (array->length != 0) {
-            array->length--;
-            entry = &array->start[array->length];
-
-            if (njs_is_valid(entry)) {
-                vm->retval = *entry;
-
-            } else {
-                /* src value may be in Array.prototype object. */
-
-                ret = njs_value_property_i64(vm, this, array->length,
-                                             &vm->retval);
-                if (njs_slow_path(ret == NJS_ERROR)) {
-                    return NJS_ERROR;
-                }
-            }
-        }
-
-        return NJS_OK;
-    }
-
     ret = njs_object_length(vm, this, &length);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
     }
 
     if (length == 0) {
+        ret = njs_object_length_set(vm, this, length);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return ret;
+        }
+
         njs_set_undefined(&vm->retval);
-        goto done;
+
+        return NJS_OK;
     }
 
     ret = njs_value_property_i64(vm, this, --length, &vm->retval);
@@ -995,16 +974,19 @@ njs_array_prototype_pop(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    ret = njs_value_property_i64_delete(vm, this, length, NULL);
-    if (njs_slow_path(ret == NJS_ERROR)) {
-        return ret;
-    }
+    if (njs_is_fast_array(this)) {
+        njs_array(this)->length--;
 
-done:
+    } else {
+        ret = njs_value_property_i64_delete(vm, this, length, NULL);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return ret;
+        }
 
-    ret = njs_object_length_set(vm, this, length);
-    if (njs_slow_path(ret == NJS_ERROR)) {
-        return ret;
+        ret = njs_object_length_set(vm, this, length);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return ret;
+        }
     }
 
     return NJS_OK;
