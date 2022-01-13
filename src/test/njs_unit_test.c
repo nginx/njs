@@ -12834,6 +12834,17 @@ static njs_unit_test_t  njs_test[] =
               "Object.getOwnPropertyDescriptor(o, Symbol.isConcatSpreadable).value"),
       njs_str("true") },
 
+    { njs_str("var a = [1];"
+              "var b = [2, /**/, 4, 5];"
+              "Object.defineProperty(b.__proto__, 1, {"
+              "    get: () => {"
+              "        b.length = 10**6;"
+              "        return 3;"
+              "    }"
+              "});"
+              "a.concat(b)"),
+      njs_str("1,2,3,4,5") },
+
     { njs_str("var o = {}, n = 5381 /* NJS_DJB_HASH_INIT */;"
               "while(n--) o[Symbol()] = 'test'; o[''];"),
       njs_str("undefined") },
