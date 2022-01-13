@@ -4525,6 +4525,16 @@ static njs_unit_test_t  njs_test[] =
                  "Array.prototype.slice.call(1, 0, 2)"),
       njs_str(",") },
 
+    { njs_str("var a = [1, /**/, 3, 4];"
+              "Object.defineProperty(a.__proto__, 1, {"
+              "    get: () => {"
+              "        a.length = 10**6;"
+              "        return 2;"
+              "    }"
+              "});"
+              "a.slice(1)"),
+      njs_str("2,3,4") },
+
     { njs_str("Array.prototype.pop()"),
       njs_str("undefined") },
 

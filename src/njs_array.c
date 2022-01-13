@@ -729,7 +729,7 @@ njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
     uint32_t           n;
     njs_int_t          ret;
     njs_array_t        *array, *keys;
-    njs_value_t        *value, retval, self;
+    njs_value_t        *value, *last, retval, self;
     const u_char       *src, *end;
     njs_slice_prop_t   string_slice;
     njs_string_prop_t  string;
@@ -748,34 +748,7 @@ njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
     n = 0;
 
     if (njs_fast_path(array->object.fast_array)) {
-        if (njs_fast_path(njs_is_fast_array(this))) {
-            value = njs_array_start(this);
-
-            do {
-                if (njs_fast_path(njs_is_valid(&value[start]))) {
-                    array->start[n++] = value[start++];
-
-                } else {
-
-                    /* src value may be in Array.prototype object. */
-
-                    ret = njs_value_property_i64(vm, this, start++,
-                                                 &array->start[n]);
-                    if (njs_slow_path(ret == NJS_ERROR)) {
-                        return NJS_ERROR;
-                    }
-
-                    if (ret != NJS_OK) {
-                        njs_set_invalid(&array->start[n]);
-                    }
-
-                    n++;
-                }
-
-                length--;
-            } while (length != 0);
-
-        } else if (njs_is_string(this) || njs_is_object_string(this)) {
+        if (njs_is_string(this) || njs_is_object_string(this)) {
 
             if (njs_is_object_string(this)) {
                 this = njs_object_value(this);
@@ -816,16 +789,18 @@ njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
 
         } else if (njs_is_object(this)) {
 
-            do {
-                value = &array->start[n++];
-                ret = njs_value_property_i64(vm, this, start++, value);
+            last = &array->start[length];
 
-                if (ret != NJS_OK) {
+            for (value = array->start; value < last; value++, start++) {
+                ret = njs_value_property_i64(vm, this, start, value);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    if (ret == NJS_ERROR) {
+                        return NJS_ERROR;
+                    }
+
                     njs_set_invalid(value);
                 }
-
-                length--;
-            } while (length != 0);
+            }
 
         } else {
 
