@@ -4883,6 +4883,18 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("[,,,3,2,1].reverse()"),
       njs_str("1,2,3,,,") },
 
+    { njs_str("var a = [,,2,1];"
+              "Object.defineProperty(a.__proto__, 0, {"
+              "    get: () => {"
+              "        a.length = 10**6;"
+              "        return 4;"
+              "    },"
+              "    set: (setval) => { Object.defineProperty(a, 0, { value: setval }); },"
+              "});"
+              "a.reverse();"
+              "a.slice(0, 4)"),
+      njs_str("1,2,,4") },
+
     { njs_str("var o = {1:true, 2:'', length:-2}; Array.prototype.reverse.call(o) === o"),
       njs_str("true") },
 

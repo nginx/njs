@@ -1367,7 +1367,6 @@ njs_array_prototype_reverse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     int64_t      length, l, h;
     njs_int_t    ret, lret, hret;
     njs_value_t  value, lvalue, hvalue, *this;
-    njs_array_t  *array;
 
     this = njs_argument(args, 0);
 
@@ -1383,52 +1382,6 @@ njs_array_prototype_reverse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     if (njs_slow_path(length < 2)) {
         vm->retval = *this;
-        return NJS_OK;
-    }
-
-    if (njs_is_fast_array(this)) {
-        array = njs_array(this);
-
-        for (l = 0, h = length - 1; l < h; l++, h--) {
-            if (njs_fast_path(njs_is_valid(&array->start[l]))) {
-                lvalue = array->start[l];
-                lret = NJS_OK;
-
-            } else {
-                lret = njs_value_property_i64(vm, this, l, &lvalue);
-                if (njs_slow_path(lret == NJS_ERROR)) {
-                    return NJS_ERROR;
-                }
-            }
-
-            if (njs_fast_path(njs_is_valid(&array->start[h]))) {
-                hvalue = array->start[h];
-                hret = NJS_OK;
-
-            } else {
-                hret = njs_value_property_i64(vm, this, h, &hvalue);
-                if (njs_slow_path(hret == NJS_ERROR)) {
-                    return NJS_ERROR;
-                }
-            }
-
-            if (lret == NJS_OK) {
-                array->start[h] = lvalue;
-
-                if (hret == NJS_OK) {
-                    array->start[l] = hvalue;
-
-                } else {
-                    array->start[l] = njs_value_invalid;
-                }
-
-            } else if (hret == NJS_OK) {
-                array->start[l] = hvalue;
-                array->start[h] = njs_value_invalid;
-            }
-        }
-
-        njs_set_array(&vm->retval, array);
         return NJS_OK;
     }
 
