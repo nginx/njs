@@ -12857,6 +12857,13 @@ static njs_unit_test_t  njs_test[] =
               "a.concat(b)"),
       njs_str("1,2,3,4,5") },
 
+    { njs_str("Boolean.prototype.length = 2;"
+              "Boolean.prototype[0] = 'a';"
+              "Boolean.prototype[1] = 'b';"
+              "Boolean.prototype[Symbol.isConcatSpreadable] = true;"
+              "[].concat(new Boolean(true))"),
+      njs_str("a,b") },
+
     { njs_str("var o = {}, n = 5381 /* NJS_DJB_HASH_INIT */;"
               "while(n--) o[Symbol()] = 'test'; o[''];"),
       njs_str("undefined") },

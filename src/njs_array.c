@@ -1743,7 +1743,7 @@ njs_array_prototype_concat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                 return NJS_ERROR;
             }
 
-            if (njs_is_fast_array(e)) {
+            if (njs_is_fast_array(e) || njs_fast_object(len)) {
                 for (k = 0; k < len; k++, length++) {
                     ret = njs_value_property_i64(vm, e, k, &retval);
                     if (njs_slow_path(ret != NJS_OK)) {
