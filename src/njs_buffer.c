@@ -764,7 +764,7 @@ static njs_int_t
 njs_buffer_concat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    u_char             *p;
+    u_char             *p, *src;
     size_t             n;
     int64_t            i, len, list_len;
     njs_int_t          ret;
@@ -866,8 +866,9 @@ njs_buffer_concat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         for (i = 0; len != 0 && i < list_len; i++) {
             arr = njs_typed_array(&array->start[i]);
             n = njs_min((size_t) len, arr->byte_length);
+            src = &njs_typed_array_buffer(arr)->u.u8[arr->offset];
 
-            p = njs_cpymem(p, njs_typed_array_buffer(arr)->u.u8, n);
+            p = njs_cpymem(p, src, n);
 
             len -= n;
         }
@@ -881,8 +882,9 @@ njs_buffer_concat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
             arr = njs_typed_array(&retval);
             n = njs_min((size_t) len, arr->byte_length);
+            src = &njs_typed_array_buffer(arr)->u.u8[arr->offset];
 
-            p = njs_cpymem(p, njs_typed_array_buffer(arr)->u.u8, n);
+            p = njs_cpymem(p, src, n);
 
             len -= n;
         }

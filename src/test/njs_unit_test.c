@@ -20109,6 +20109,15 @@ static njs_unit_test_t  njs_buffer_module_test[] =
     { njs_str("Buffer.concat([new Uint8Array(2), new Uint8Array(1)], 6).fill('abc')"),
       njs_str("abcabc") },
 
+    { njs_str("Buffer.concat([Buffer.from('ABCD').slice(2,4), Buffer.from('ABCD').slice(0,2)])"),
+      njs_str("CDAB") },
+
+    { njs_str(njs_declare_sparse_array("list", 2)
+              "list[0] = Buffer.from('ABCD').slice(2,4);"
+              "list[1] = Buffer.from('ABCD').slice(0,2);"
+              "Buffer.concat(list);"),
+      njs_str("CDAB") },
+
     { njs_str(njs_declare_sparse_array("list", 2)
               "list[0] = new Uint8Array(2); list[1] = new Uint8Array(3);"
               "Buffer.concat(list).fill('ab');"),
