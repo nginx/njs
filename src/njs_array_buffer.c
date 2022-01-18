@@ -195,7 +195,7 @@ njs_array_buffer_prototype_byte_length(njs_vm_t *vm, njs_value_t *args,
     njs_value_t         *value;
     njs_array_buffer_t  *array;
 
-    value = njs_arg(args, nargs, 0);
+    value = njs_argument(args, 0);
 
     if (!njs_is_array_buffer(value)) {
         njs_type_error(vm, "Method ArrayBuffer.prototype.byteLength called "
@@ -224,7 +224,7 @@ njs_array_buffer_prototype_slice(njs_vm_t *vm, njs_value_t *args,
     njs_value_t         *value;
     njs_array_buffer_t  *this, *buffer;
 
-    value = njs_arg(args, nargs, 0);
+    value = njs_argument(args, 0);
 
     if (!njs_is_array_buffer(value)) {
         njs_type_error(vm, "Method ArrayBuffer.prototype.slice called "

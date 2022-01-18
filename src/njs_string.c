@@ -986,7 +986,7 @@ njs_string_prototype_from_utf8(njs_vm_t *vm, njs_value_t *args,
     njs_slice_prop_t   slice;
     njs_string_prop_t  string;
 
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
+    ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -1029,7 +1029,7 @@ njs_string_prototype_to_utf8(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_slice_prop_t   slice;
     njs_string_prop_t  string;
 
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
+    ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -1063,7 +1063,7 @@ njs_string_prototype_from_bytes(njs_vm_t *vm, njs_value_t *args,
     njs_slice_prop_t   slice;
     njs_string_prop_t  string;
 
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
+    ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -1129,7 +1129,7 @@ njs_string_prototype_to_bytes(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_string_prop_t     string;
     njs_unicode_decode_t  ctx;
 
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
+    ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -1192,7 +1192,7 @@ njs_string_prototype_slice(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_slice_prop_t   slice;
     njs_string_prop_t  string;
 
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
+    ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -1216,7 +1216,7 @@ njs_string_prototype_substring(njs_vm_t *vm, njs_value_t *args,
     njs_slice_prop_t   slice;
     njs_string_prop_t  string;
 
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
+    ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -1294,7 +1294,7 @@ njs_string_prototype_substr(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_slice_prop_t   slice;
     njs_string_prop_t  string;
 
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
+    ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -1372,7 +1372,7 @@ njs_string_prototype_char_at(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_slice_prop_t   slice;
     njs_string_prop_t  string;
 
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
+    ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -1566,7 +1566,7 @@ njs_string_prototype_char_code_at(njs_vm_t *vm, njs_value_t *args,
     njs_string_prop_t     string;
     njs_unicode_decode_t  ctx;
 
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
+    ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -2332,7 +2332,7 @@ njs_string_prototype_includes(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     const njs_value_t  *retval;
     njs_string_prop_t  string, search;
 
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
+    ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -2425,7 +2425,7 @@ njs_string_prototype_starts_or_ends_with(njs_vm_t *vm, njs_value_t *args,
 
     retval = &njs_value_true;
 
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
+    ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -2635,7 +2635,7 @@ njs_string_prototype_to_lower_case(njs_vm_t *vm, njs_value_t *args,
     const u_char       *s, *end;
     njs_string_prop_t  string;
 
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
+    ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -2707,7 +2707,7 @@ njs_string_prototype_to_upper_case(njs_vm_t *vm, njs_value_t *args,
     const u_char       *s, *end;
     njs_string_prop_t  string;
 
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
+    ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -2973,7 +2973,7 @@ njs_string_prototype_pad(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     static const njs_value_t  string_space = njs_string(" ");
 
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
+    ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -3093,7 +3093,7 @@ njs_string_prototype_search(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_string_prop_t     string;
     njs_regexp_pattern_t  *pattern;
 
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
+    ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -3171,7 +3171,7 @@ njs_string_prototype_match(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_t           arguments[2];
     njs_regexp_pattern_t  *pattern;
 
-    ret = njs_string_object_validate(vm, njs_arg(args, nargs, 0));
+    ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }

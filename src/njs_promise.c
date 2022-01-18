@@ -749,7 +749,7 @@ njs_promise_object_resolve(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     njs_promise_t  *promise;
 
-    if (njs_slow_path(!njs_is_object(njs_arg(args, nargs, 0)))) {
+    if (njs_slow_path(!njs_is_object(njs_argument(args, 0)))) {
         njs_type_error(vm, "this value is not an object");
         return NJS_ERROR;
     }
@@ -846,7 +846,7 @@ njs_promise_object_reject(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_t               value;
     njs_promise_capability_t  *capability;
 
-    if (njs_slow_path(!njs_is_object(njs_arg(args, nargs, 0)))) {
+    if (njs_slow_path(!njs_is_object(njs_argument(args, 0)))) {
         njs_type_error(vm, "this value is not an object");
         return NJS_ERROR;
     }
@@ -879,7 +879,7 @@ njs_promise_prototype_then(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_function_t            *function;
     njs_promise_capability_t  *capability;
 
-    promise = njs_arg(args, nargs, 0);
+    promise = njs_argument(args, 0);
 
     if (njs_slow_path(!njs_is_object(promise))) {
         goto failed;
@@ -1018,7 +1018,7 @@ njs_promise_prototype_catch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     arguments[0] = njs_value_undefined;
     arguments[1] = *njs_arg(args, nargs, 1);
 
-    return njs_promise_invoke_then(vm, njs_arg(args, nargs, 0), arguments, 2);
+    return njs_promise_invoke_then(vm, njs_argument(args,  0), arguments, 2);
 }
 
 
@@ -1031,7 +1031,7 @@ njs_promise_prototype_finally(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_function_t         *function;
     njs_promise_context_t  *context;
 
-    promise = njs_arg(args, nargs, 0);
+    promise = njs_argument(args, 0);
 
     if (njs_slow_path(!njs_is_object(promise))) {
         njs_type_error(vm, "required a object");
@@ -1779,7 +1779,7 @@ static njs_int_t
 njs_promise_species(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_vm_retval_set(vm, njs_arg(args, nargs, 0));
+    njs_vm_retval_set(vm, njs_argument(args, 0));
 
     return NJS_OK;
 }

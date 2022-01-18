@@ -2437,7 +2437,7 @@ njs_object_prototype_has_own_property(njs_vm_t *vm, njs_value_t *args,
     njs_value_t           *value, *property;
     njs_property_query_t  pq;
 
-    value = njs_arg(args, nargs, 0);
+    value = njs_argument(args, 0);
 
     if (njs_is_null_or_undefined(value)) {
         njs_type_error(vm, "cannot convert %s argument to object",
@@ -2477,7 +2477,7 @@ njs_object_prototype_prop_is_enumerable(njs_vm_t *vm, njs_value_t *args,
     njs_object_prop_t     *prop;
     njs_property_query_t  pq;
 
-    value = njs_arg(args, nargs, 0);
+    value = njs_argument(args, 0);
 
     if (njs_is_null_or_undefined(value)) {
         njs_type_error(vm, "cannot convert %s argument to object",
@@ -2520,7 +2520,7 @@ njs_object_prototype_is_prototype_of(njs_vm_t *vm, njs_value_t *args,
     njs_object_t       *object, *proto;
     const njs_value_t  *retval;
 
-    if (njs_slow_path(njs_is_null_or_undefined(njs_arg(args, nargs, 0)))) {
+    if (njs_slow_path(njs_is_null_or_undefined(njs_argument(args, 0)))) {
         njs_type_error(vm, "cannot convert undefined to object");
         return NJS_ERROR;
     }

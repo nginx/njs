@@ -1374,7 +1374,7 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_array_t     *arr;
     njs_function_t  *func;
 
-    if (!njs_is_function(njs_arg(args, nargs, 0))) {
+    if (!njs_is_function(njs_argument(args, 0))) {
         njs_type_error(vm, "\"this\" argument is not a function");
         return NJS_ERROR;
     }

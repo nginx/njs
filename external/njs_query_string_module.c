@@ -391,7 +391,7 @@ njs_query_string_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     njs_set_object(&obj, object);
 
-    this = njs_arg(args, nargs, 0);
+    this = njs_argument(args, 0);
     string = njs_arg(args, nargs, 1);
 
     if (njs_slow_path(!njs_is_string(string)
@@ -703,7 +703,7 @@ njs_query_string_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     (void) njs_string_prop(&eq, &val_eq);
 
     encode = NULL;
-    this = njs_arg(args, nargs, 0);
+    this = njs_argument(args, 0);
     object = njs_arg(args, nargs, 1);
 
     if (njs_slow_path(!njs_is_object(object))) {
