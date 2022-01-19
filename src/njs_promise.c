@@ -771,25 +771,19 @@ njs_promise_resolve(njs_vm_t *vm, njs_value_t *constructor, njs_value_t *x)
 {
     njs_int_t                 ret;
     njs_value_t               value;
-    njs_object_t              *object;
     njs_promise_capability_t  *capability;
 
     static const njs_value_t  string_constructor = njs_string("constructor");
 
-    if (njs_is_object(x)) {
-        object = njs_object_proto_lookup(njs_object(x), NJS_PROMISE,
-                                         njs_object_t);
+    if (njs_is_promise(x)) {
+        ret = njs_value_property(vm, x, njs_value_arg(&string_constructor),
+                                 &value);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return NULL;
+        }
 
-        if (object != NULL) {
-            ret = njs_value_property(vm, x, njs_value_arg(&string_constructor),
-                                     &value);
-            if (njs_slow_path(ret == NJS_ERROR)) {
-                return NULL;
-            }
-
-            if (njs_values_same(&value, constructor)) {
-                return njs_promise(x);
-            }
+        if (njs_values_same(&value, constructor)) {
+            return njs_promise(x);
         }
     }
 
@@ -875,19 +869,12 @@ njs_promise_prototype_then(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     njs_int_t                 ret;
     njs_value_t               *promise, *fulfilled, *rejected, constructor;
-    njs_object_t              *object;
     njs_function_t            *function;
     njs_promise_capability_t  *capability;
 
     promise = njs_argument(args, 0);
 
-    if (njs_slow_path(!njs_is_object(promise))) {
-        goto failed;
-    }
-
-    object = njs_object_proto_lookup(njs_object(promise), NJS_PROMISE,
-                                     njs_object_t);
-    if (njs_slow_path(object == NULL)) {
+    if (njs_slow_path(!njs_is_promise(promise))) {
         goto failed;
     }
 
@@ -932,6 +919,8 @@ njs_promise_perform_then(njs_vm_t *vm, njs_value_t *value,
     njs_function_t          *function;
     njs_promise_data_t      *data;
     njs_promise_reaction_t  *fulfilled_reaction, *rejected_reaction;
+
+    njs_assert(njs_is_promise(value));
 
     if (!njs_is_function(fulfilled)) {
         fulfilled = njs_value_arg(&njs_value_undefined);

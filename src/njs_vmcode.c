@@ -1895,7 +1895,7 @@ njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await)
     rejected->args_count = 1;
     rejected->u.native = njs_await_rejected;
 
-    njs_set_object(&val, &promise->object);
+    njs_set_promise(&val, promise);
     njs_set_function(&on_fulfilled, fulfilled);
     njs_set_function(&on_rejected, rejected);
 
