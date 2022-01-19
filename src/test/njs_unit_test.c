@@ -10063,6 +10063,10 @@ static njs_unit_test_t  njs_test[] =
                  "f.apply(123, {})"),
       njs_str("123") },
 
+    { njs_str("(function(index, ...rest){ return rest[index];})"
+              ".apply({}, [1022].concat(Array(1023).fill(1).map((v,i)=>i.toString(16))))"),
+      njs_str("3fe") },
+
     { njs_str("String.prototype.concat.apply('a', "
                  "{length:2, 0:{toString:function() {return 'b'}}, 1:'c'})"),
       njs_str("abc") },

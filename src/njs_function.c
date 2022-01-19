@@ -1385,18 +1385,10 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     if (njs_is_null_or_undefined(arr_like)) {
         length = 0;
-
         goto activate;
+    }
 
-    } else if (njs_is_array(arr_like)) {
-        arr = arr_like->data.u.array;
-
-        args = arr->start;
-        length = arr->length;
-
-        goto activate;
-
-    } else if (njs_slow_path(!njs_is_object(arr_like))) {
+    if (njs_slow_path(!njs_is_object(arr_like))) {
         njs_type_error(vm, "second argument is not an array-like object");
         return NJS_ERROR;
     }
@@ -1404,6 +1396,11 @@ njs_function_prototype_apply(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ret = njs_object_length(vm, arr_like, &length);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
+    }
+
+    if (njs_slow_path(length > 1024)) {
+        njs_internal_error(vm, "argument list is too long");
+        return NJS_ERROR;
     }
 
     arr = njs_array_alloc(vm, 1, length, NJS_ARRAY_SPARE);
