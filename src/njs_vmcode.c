@@ -42,7 +42,8 @@ static njs_jump_off_t njs_vmcode_debugger(njs_vm_t *vm);
 static njs_jump_off_t njs_vmcode_return(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *retval);
 
-static njs_jump_off_t njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await);
+static njs_jump_off_t njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await,
+    njs_promise_capability_t *pcap, njs_async_ctx_t *actx);
 
 static njs_jump_off_t njs_vmcode_try_start(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *offset, u_char *pc);
@@ -77,7 +78,8 @@ static njs_jump_off_t njs_function_frame_create(njs_vm_t *vm,
 
 
 njs_int_t
-njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc)
+njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc, void *promise_cap,
+    void *async_ctx)
 {
     u_char                       *catch;
     double                       num, exponent;
@@ -826,7 +828,7 @@ next:
 
             case NJS_VMCODE_AWAIT:
                 await = (njs_vmcode_await_t *) pc;
-                return njs_vmcode_await(vm, await);
+                return njs_vmcode_await(vm, await, promise_cap, async_ctx);
 
             case NJS_VMCODE_TRY_START:
                 ret = njs_vmcode_try_start(vm, value1, value2, pc);
@@ -1812,7 +1814,8 @@ njs_vmcode_return(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
 
 
 static njs_jump_off_t
-njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await)
+njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await,
+    njs_promise_capability_t *pcap, njs_async_ctx_t *ctx)
 {
     size_t              size;
     njs_int_t           ret;
@@ -1820,7 +1823,6 @@ njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await)
     njs_value_t         ctor, val, on_fulfilled, on_rejected, *value;
     njs_promise_t       *promise;
     njs_function_t      *fulfilled, *rejected;
-    njs_async_ctx_t     *ctx;
     njs_native_frame_t  *active;
 
     active = &vm->active_frame->native;
@@ -1837,8 +1839,6 @@ njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await)
         return NJS_ERROR;
     }
 
-    ctx = active->function->await;
-
     if (ctx == NULL) {
         ctx = njs_mp_alloc(vm->mem_pool, sizeof(njs_async_ctx_t));
         if (njs_slow_path(ctx == NULL)) {
@@ -1854,9 +1854,7 @@ njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await)
         }
 
         ctx->await = fulfilled->context;
-        ctx->capability = active->function->context;
-
-        active->function->context = NULL;
+        ctx->capability = pcap;
 
         ret = njs_function_frame_save(vm, ctx->await, NULL);
         if (njs_slow_path(ret != NJS_OK)) {

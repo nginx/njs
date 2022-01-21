@@ -29,9 +29,7 @@ njs_async_function_frame_invoke(njs_vm_t *vm, njs_value_t *retval)
         return NJS_ERROR;
     }
 
-    frame->function->context = capability;
-
-    ret = njs_function_lambda_call(vm);
+    ret = njs_function_lambda_call(vm, capability, NULL);
 
     if (ret == NJS_OK) {
         ret = njs_function_call(vm, njs_function(&capability->resolve),
@@ -63,7 +61,6 @@ njs_await_fulfilled(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_int_t           ret;
     njs_value_t         **cur_local, **cur_closures, **cur_temp, *value;
     njs_frame_t         *frame, *async_frame;
-    njs_function_t      *function;
     njs_async_ctx_t     *ctx;
     njs_native_frame_t  *top, *async;
 
@@ -77,8 +74,6 @@ njs_await_fulfilled(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     async_frame = ctx->await;
     async = &async_frame->native;
     async->previous = vm->top_frame;
-
-    function = async->function;
 
     cur_local = vm->levels[NJS_LEVEL_LOCAL];
     cur_closures = vm->levels[NJS_LEVEL_CLOSURE];
@@ -98,13 +93,7 @@ njs_await_fulfilled(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     vm->top_frame->retval = &vm->retval;
 
-    function->context = ctx->capability;
-    function->await = ctx;
-
-    ret = njs_vmcode_interpreter(vm, ctx->pc);
-
-    function->context = NULL;
-    function->await = NULL;
+    ret = njs_vmcode_interpreter(vm, ctx->pc, ctx->capability, ctx);
 
     vm->levels[NJS_LEVEL_LOCAL] = cur_local;
     vm->levels[NJS_LEVEL_CLOSURE] = cur_closures;
