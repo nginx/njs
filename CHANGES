@@ -1,3 +1,32 @@
+Changes with njs 0.7.2                                        25 Jan 2022
+
+    Core:
+
+    *) Bugfix: fixed Array.prototype.join() when array is changed
+       while iterating.
+
+    *) Bugfix: fixed Array.prototype.slice() when array is changed
+       while iterating.
+
+    *) Bugfix: fixed Array.prototype.concat() when array is changed
+       while iterating.
+
+    *) Bugfix: fixed Array.prototype.reverse() when array is changed
+       while iterating.
+
+    *) Bugfix: fixed Buffer.concat() with subarrays.
+       Thanks to Sylvain Etienne.
+
+    *) Bugfix: fixed type confusion bug while resolving promises.
+
+    *) Bugfix: fixed Function.prototype.apply() with large array
+       arguments.
+
+    *) Bugfix: fixed recursive async function calls.
+
+    *) Bugfix: fixed function redeclaration. The bug was introduced
+       in 0.7.0.
+
 Changes with njs 0.7.1                                        28 Dec 2021
 
     nginx modules:
