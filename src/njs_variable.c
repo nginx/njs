@@ -56,34 +56,33 @@ njs_variable_function_add(njs_parser_t *parser, njs_parser_scope_t *scope,
         return NULL;
     }
 
-    if (var->index == NJS_INDEX_ERROR || !var->function) {
-        root = njs_function_scope(scope);
-        if (njs_slow_path(scope == NULL)) {
-            return NULL;
-        }
-
-        ctor = parser->node->token_type != NJS_TOKEN_ASYNC_FUNCTION_DECLARATION;
-
-        lambda = njs_function_lambda_alloc(parser->vm, ctor);
-        if (lambda == NULL) {
-            return NULL;
-        }
-
-        var->value.data.u.lambda = lambda;
-
-        declr = njs_variable_scope_function_add(parser, root);
-        if (njs_slow_path(declr == NULL)) {
-            return NULL;
-        }
-
-        var->index = njs_scope_index(root->type, root->items, NJS_LEVEL_LOCAL,
-                                     type);
-
-        declr->value = &var->value;
-        declr->index = var->index;
-
-        root->items++;
+    root = njs_function_scope(scope);
+    if (njs_slow_path(scope == NULL)) {
+        return NULL;
     }
+
+    ctor = parser->node->token_type != NJS_TOKEN_ASYNC_FUNCTION_DECLARATION;
+
+    lambda = njs_function_lambda_alloc(parser->vm, ctor);
+    if (lambda == NULL) {
+        return NULL;
+    }
+
+    njs_set_invalid(&var->value);
+    var->value.data.u.lambda = lambda;
+
+    declr = njs_variable_scope_function_add(parser, root);
+    if (njs_slow_path(declr == NULL)) {
+        return NULL;
+    }
+
+    var->index = njs_scope_index(root->type, root->items, NJS_LEVEL_LOCAL,
+                                 type);
+
+    declr->value = &var->value;
+    declr->index = var->index;
+
+    root->items++;
 
     var->type = NJS_VARIABLE_FUNCTION;
     var->function = 1;

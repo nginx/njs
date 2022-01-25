@@ -3684,11 +3684,9 @@ njs_generate_function_scope(njs_vm_t *vm, njs_generator_t *prev,
     lambda->nlocal = node->scope->items;
     lambda->temp = node->scope->temp;
 
-    if (node->scope->declarations != NULL) {
-        arr = node->scope->declarations;
-        lambda->declarations = arr->start;
-        lambda->ndeclarations = arr->items;
-    }
+    arr = node->scope->declarations;
+    lambda->declarations = (arr != NULL) ? arr->start : NULL;
+    lambda->ndeclarations = (arr != NULL) ? arr->items : 0;
 
     return NJS_OK;
 }

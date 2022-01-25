@@ -10568,6 +10568,16 @@ static njs_unit_test_t  njs_test[] =
                  "myFoo(1,2);" ),
       njs_str("") },
 
+    { njs_str("function f(...rest) {};"
+              "function f(a, b) {return a + b};"
+              "f(1,2)"),
+      njs_str("3") },
+
+    { njs_str("function f() { function q() {} };"
+              "function f() { };"
+              "f()"),
+      njs_str("undefined") },
+
     /* arrow functions. */
 
     { njs_str("()"),
