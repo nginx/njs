@@ -36,6 +36,7 @@ typedef struct {
     uint8_t                 version;
     uint8_t                 ast;
     uint8_t                 unhandled_rejection;
+    int                     exit_code;
 
     char                    *file;
     char                    *command;
@@ -319,7 +320,7 @@ done:
 
     njs_options_free(&opts);
 
-    return (ret == NJS_OK) ? EXIT_SUCCESS : EXIT_FAILURE;
+    return (ret == NJS_OK) ? EXIT_SUCCESS : opts.exit_code;
 }
 
 
@@ -344,6 +345,7 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
         "  -a                print AST.\n"
         "  -c                specify the command to execute.\n"
         "  -d                print disassembled code.\n"
+        "  -e                set failure exit code.\n"
         "  -f                disabled denormals mode.\n"
         "  -p                set path prefix for modules.\n"
         "  -q                disable interactive introduction prompt.\n"
@@ -357,7 +359,13 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
     ret = NJS_DONE;
 
     opts->denormals = 1;
+    opts->exit_code = EXIT_FAILURE;
     opts->unhandled_rejection = NJS_VM_OPT_UNHANDLED_REJECTION_THROW;
+
+    p = getenv("NJS_EXIT_CODE");
+    if (p != NULL) {
+        opts->exit_code = atoi(p);
+    }
 
     for (i = 1; i < argc; i++) {
 
@@ -395,6 +403,15 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
         case 'd':
             opts->disassemble = 1;
             break;
+
+        case 'e':
+            if (++i < argc) {
+                opts->exit_code = atoi(argv[i]);
+                break;
+            }
+
+            njs_stderror("option \"-e\" requires argument\n");
+            return NJS_ERROR;
 
         case 'f':
 
