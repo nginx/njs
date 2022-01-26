@@ -19,18 +19,18 @@ for njs_test in $NJS_TESTS; do
 running $njs_test $njs_log
 END
 
-    if /bin/sh -c "(NJS_TEST_DIR=$NJS_TEST_DIR $NJS_TEST_BINARY $NJS_TEST_DIR/$njs_test)" > $njs_log 2>&1; then
-        njs_success=yes
-    else
-        njs_success=no
-    fi
+    status=0
+
+    NJS_PATH=$njs_paths \
+    NJS_EXIT_CODE=$NJS_TEST_EXIT_CODE \
+    $NJS_TEST_BINARY $NJS_TEST_DIR/$njs_test > $njs_log 2>&1 || status=$?
 
     cat $njs_log >> $NJS_TEST_LOG
     njs_out=`cat $njs_log`
 
-    if [ $njs_success = yes ]; then
+    if [ "$status" -eq 0 ]; then
         if [ -n "$njs_negative" ]; then
-            failed $njs_test
+            failed $njs_test $njs_log
 
         elif [ $njs_async = yes ]; then
             if [ "$njs_out" != 'Test262:AsyncTestComplete' ]; then
@@ -51,7 +51,12 @@ END
 
     else
         if [ -n "$njs_negative" ]; then
-            passed $njs_test
+            if [ "$status" = "$NJS_TEST_EXIT_CODE" ]; then
+                passed $njs_test
+            else
+                echo "negative test exited with unexpected exit code:$status"
+                failed $njs_test $njs_log
+            fi
 
         else
             failed $njs_test $njs_log

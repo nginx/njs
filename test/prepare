@@ -7,6 +7,9 @@ njs_includes=`grep 'includes: \[[^]]*]' $njs_test \
              | sed -e 's/includes: \[//' | sed -e 's/,/ /g' | sed -e 's/\]//'`
 njs_includes="assert.js sta.js $njs_includes"
 
+njs_paths=`grep 'paths: \[[^]]*]' $njs_test \
+             | sed -e 's/paths: \[//' | sed -e 's/ *, */:/g' | sed -e 's/\]//'`
+
 njs_flags=`grep 'flags: \[[^]]*]' $njs_test \
              | sed -e 's/flags: \[//' | sed -e 's/,/ /g' | sed -e 's/\]//'`
 
