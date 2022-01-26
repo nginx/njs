@@ -2,7 +2,7 @@ import fs from 'fs';
 import qs from 'querystring';
 import cr from 'crypto';
 
-function http_module(r: NginxHTTPRequest) {
+async function http_module(r: NginxHTTPRequest) {
     var bs: NjsByteString;
     var s: string;
     var vod: void;
@@ -68,6 +68,7 @@ function http_module(r: NginxHTTPRequest) {
     // Warning: vod = r.subrequest('/p/sub9', {detached:true}, reply => r.return(reply.status));
     r.subrequest('/p/sub6', 'a=1&b=2').then(reply => r.return(reply.status,
                                         JSON.stringify(JSON.parse(reply.responseBody ?? ''))));
+    let body = await r.subrequest('/p/sub7');
 
     // r.requestText
     r.requestText == 'a';
@@ -93,6 +94,8 @@ function http_module(r: NginxHTTPRequest) {
     })
     .then(body => r.return(200, body))
     .catch(e => r.return(501, e.message))
+
+    let response = await ngx.fetch('http://nginx.org/');
 
     // js_body_filter
     r.sendBuffer(Buffer.from("xxx"), {last:true});
