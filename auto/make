@@ -249,7 +249,7 @@ unit_test: $NJS_BUILD_DIR/njs_auto_config.h \\
 
 	$NJS_BUILD_DIR/njs_unit_test
 
-test: expect_test unit_test test262
+test: shell_test unit_test test262
 
 benchmark: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/njs_benchmark

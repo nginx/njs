@@ -470,26 +470,6 @@ ReferenceError: \"ref\" is not defined
     at anonymous \\\(string:1\\\)
     at main \\\(string:1\\\)\n$"
 
-# Modules
-
-njs_run {"-p" "test/module/libs" "./test/module/normal.js"} \
-        "passed!"
-
-njs_run {"-p" "test/module/libs/" "./test/module/normal.js"} \
-        "passed!"
-
-njs_run {"-p" "test/module" "-p" "test/module/libs" "./test/module/normal.js"} \
-        "passed!"
-
-njs_run {"./test/module/normal.js"} \
-        "SyntaxError: Cannot find module \"hash.js\" in lib1.js:13"
-
-njs_run {"-p" "test/module/libs" "./test/module/exception.js"} \
-        "at error \\(sub1.js:6\\)"
-
-njs_run {"-p" "test/module" "./test/module/recursive.js"} \
-        "SyntaxError: Cannot import itself \"./test/module/recursive.js\" in recursive.js:1"
-
 # CLI OPTIONS
 
 # help
@@ -558,50 +538,18 @@ njs_test {
      "undefined\r\n"}
     {"lib1.get()\r\n"
      "1\r\n"}
-    {"import m from 'return.js'\r\n"
-     "Illegal return statement in return.js:1\r\n"}
-    {"import m from 'empty.js'\r\n"
-     "export statement is required in empty.js:1\r\n"}
-    {"import m from 'export.js'\r\n"
-     "Identifier \"default\" has already been declared in export.js:5\r\n"}
-    {"import m from 'export_non_default.js'\r\n"
-     "Non-default export is not supported in export_non_default.js:3\r\n"}
-    {"import m from 'export_non_assignment.js'\r\n"
-     "Unexpected token \",\" in export_non_assignment.js:1\r\n"}
     {"import ref from 'ref_exception.js'\r\n"
      "ReferenceError: \"undeclared\" is not defined"}
     {"var ref\r\n"
      "undefined\r\n"}
     {"import ref from 'ref_exception.js'\r\n"
      "ReferenceError: \"undeclared\" is not defined"}
-    {"import m from 'declaration_exception.js'\r\n"
-     "SyntaxError: \"f\" has already been declared in declaration_exception.js:6"}
-    {"import m from 'loading_exception.js'\r\n"
-     "Error: loading exception\r\n    at module \\(loading_exception.js:1\\)"}
-    {"import lib3 from 'lib1.js'\r\n"
-     "undefined\r\n"}
-} "-p test/module/ -p test/module/libs/"
+} "-p test/js/module/ -p test/js/module/libs/"
 
-njs_test {
-    {"import m from 'export_name.js'\r\n"
-     "undefined\r\n"}
-    {"m.prod(3,4)\r\n"
-     "12\r\n"}
-    {"import m from 'export_expression.js'\r\n"
-     "undefined\r\n"}
-    {"m.sum(3,4)\r\n"
-     "7\r\n"}
-    {"import m from 'export_expression2.js'\r\n"
-     "undefined\r\n"}
-    {"m.prod(3,4)\r\n"
-     "12\r\n"}
-} "-p test/module/"
+# quiet mode
 
-njs_run {"-q" "./test/module/normal.js"} \
-        "SyntaxError: Cannot find module \"hash.js\" in 13"
-
-njs_run {"-p" "test/module/libs/" "-d" "./test/module/normal.js"} \
-        "passed!"
+njs_run {"-q" "test/js/import_normal.t.js"} \
+        "SyntaxError: Cannot find module \"name.js\" in 7"
 
 # sandboxing
 

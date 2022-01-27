@@ -20,9 +20,9 @@ fi
 if [ $njs_found = yes -a $NJS_HAVE_READLINE = YES ]; then
     cat << END >> $NJS_MAKEFILE
 
-expect_test:	njs test/njs_expect_test.exp
+shell_test:	njs test/shell_test.exp
 	INPUTRC=test/inputrc PATH=$NJS_BUILD_DIR:\$(PATH) \
-            expect -f test/njs_expect_test.exp
+            expect -f test/shell_test.exp
 END
 
 else
@@ -30,7 +30,7 @@ else
 
     cat << END >> $NJS_MAKEFILE
 
-expect_test:
+shell_test:
 	@echo "Skipping expect tests"
 END
 
