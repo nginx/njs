@@ -761,13 +761,15 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
             break;
         }
 
-        ctx.match = module->name;
+        if (njs_is_object(&module->value)) {
+            ctx.match = module->name;
 
-        ret = njs_object_traverse(vm, njs_object(&module->value), &ctx,
-                                  njs_builtin_traverse);
+            ret = njs_object_traverse(vm, njs_object(&module->value), &ctx,
+                                      njs_builtin_traverse);
 
-        if (ret == NJS_DONE) {
-            goto found;
+            if (ret == NJS_DONE) {
+                goto found;
+            }
         }
     }
 
