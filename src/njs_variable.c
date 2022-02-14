@@ -106,35 +106,6 @@ njs_variable_scope_function_add(njs_parser_t *parser, njs_parser_scope_t *scope)
 }
 
 
-
-njs_int_t
-njs_variables_copy(njs_vm_t *vm, njs_rbtree_t *variables,
-    njs_rbtree_t *prev_variables)
-{
-    njs_rbtree_node_t    *node;
-    njs_variable_node_t  *var_node;
-
-    node = njs_rbtree_min(prev_variables);
-
-    while (njs_rbtree_is_there_successor(prev_variables, node)) {
-        var_node = (njs_variable_node_t *) node;
-
-        var_node = njs_variable_node_alloc(vm, var_node->variable,
-                                           var_node->key);
-        if (njs_slow_path(var_node == NULL)) {
-            njs_memory_error(vm);
-            return NJS_ERROR;
-        }
-
-        njs_rbtree_insert(variables, &var_node->node);
-
-        node = njs_rbtree_node_successor(prev_variables, node);
-    }
-
-    return NJS_OK;
-}
-
-
 static njs_parser_scope_t *
 njs_variable_scope(njs_parser_scope_t *scope, uintptr_t unique_id,
     njs_variable_t **retvar, njs_variable_type_t type)
