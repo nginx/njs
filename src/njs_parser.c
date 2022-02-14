@@ -519,6 +519,33 @@ njs_parser_reject(njs_parser_t *parser)
 
 
 njs_int_t
+njs_parser_init(njs_vm_t *vm, njs_parser_t *parser, njs_parser_scope_t *scope,
+    njs_str_t *file, u_char *start, u_char *end, njs_uint_t runtime)
+{
+    njs_lexer_t  *lexer;
+
+    njs_memzero(parser, sizeof(njs_parser_t));
+
+    parser->scope = scope;
+
+    lexer = &parser->lexer0;
+    parser->lexer = lexer;
+
+    lexer->file = *file;
+    lexer->start = start;
+    lexer->end = end;
+    lexer->line = 1;
+    lexer->keywords_hash = (runtime) ? &vm->keywords_hash
+                                     : &vm->shared->keywords_hash;
+    lexer->mem_pool = vm->mem_pool;
+
+    njs_queue_init(&lexer->preread);
+
+    return NJS_OK;
+}
+
+
+njs_int_t
 njs_parser(njs_vm_t *vm, njs_parser_t *parser)
 {
     njs_int_t                        ret;

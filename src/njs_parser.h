@@ -74,6 +74,7 @@ typedef njs_int_t (*njs_parser_state_func_t)(njs_parser_t *parser,
 struct njs_parser_s {
     njs_parser_state_func_t         state;
     njs_queue_t                     stack;
+    njs_lexer_t                     lexer0;
     njs_lexer_t                     *lexer;
     njs_vm_t                        *vm;
     njs_parser_node_t               *node;
@@ -119,6 +120,9 @@ njs_int_t njs_parser_failed_state(njs_parser_t *parser,
 
 intptr_t njs_parser_scope_rbtree_compare(njs_rbtree_node_t *node1,
     njs_rbtree_node_t *node2);
+njs_int_t njs_parser_init(njs_vm_t *vm, njs_parser_t *parser,
+    njs_parser_scope_t *scope, njs_str_t *file, u_char *start, u_char *end,
+    njs_uint_t runtime);
 njs_int_t njs_parser(njs_vm_t *vm, njs_parser_t *parser);
 
 njs_int_t njs_parser_module_lambda(njs_parser_t *parser,

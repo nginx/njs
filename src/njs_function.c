@@ -1103,7 +1103,6 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_int_t               ret;
     njs_str_t               str, file;
     njs_uint_t              i;
-    njs_lexer_t             lexer;
     njs_parser_t            parser;
     njs_vm_code_t           *code;
     njs_function_t          *function;
@@ -1171,15 +1170,11 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     file = njs_str_value("runtime");
 
-    ret = njs_lexer_init(vm, &lexer, &file, str.start, str.start + str.length,
-                         1);
+    ret = njs_parser_init(vm, &parser, NULL, &file, str.start,
+                          str.start + str.length, 1);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
-
-    njs_memzero(&parser, sizeof(njs_parser_t));
-
-    parser.lexer = &lexer;
 
     ret = njs_parser(vm, &parser);
     if (njs_slow_path(ret != NJS_OK)) {

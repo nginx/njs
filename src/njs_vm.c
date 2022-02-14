@@ -143,26 +143,20 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     njs_str_t           ast;
     njs_chb_t           chain;
     njs_value_t         **global, **new;
-    njs_lexer_t         lexer;
     njs_parser_t        parser;
     njs_vm_code_t       *code;
     njs_generator_t     generator;
     njs_parser_scope_t  *scope;
 
-    njs_memzero(&parser, sizeof(njs_parser_t));
-
-    parser.scope = vm->global_scope;
-
-    if (parser.scope != NULL && vm->modules != NULL) {
+    if (vm->modules != NULL) {
         njs_module_reset(vm);
     }
 
-    ret = njs_lexer_init(vm, &lexer, &vm->options.file, *start, end, 0);
+    ret = njs_parser_init(vm, &parser, vm->global_scope, &vm->options.file,
+                          *start, end, 0);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
-
-    parser.lexer = &lexer;
 
     ret = njs_parser(vm, &parser);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -186,7 +180,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         njs_mp_free(vm->mem_pool, ast.start);
     }
 
-    *start = lexer.start;
+    *start = parser.lexer->start;
     scope = parser.scope;
 
     ret = njs_generator_init(&generator, 0, 0);
