@@ -231,6 +231,14 @@ static njs_external_t  njs_ext_crypto_hmac[] = {
 static njs_external_t  njs_ext_crypto_crypto[] = {
 
     {
+        .flags = NJS_EXTERN_PROPERTY | NJS_EXTERN_SYMBOL,
+        .name.symbol = NJS_SYMBOL_TO_STRING_TAG,
+        .u.property = {
+            .value = "crypto",
+        }
+    },
+
+    {
         .flags = NJS_EXTERN_METHOD,
         .name.string = njs_str("createHash"),
         .writable = 1,

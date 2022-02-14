@@ -33,6 +33,14 @@ static njs_int_t njs_query_string_init(njs_vm_t *vm);
 static njs_external_t  njs_ext_query_string[] = {
 
     {
+        .flags = NJS_EXTERN_PROPERTY | NJS_EXTERN_SYMBOL,
+        .name.symbol = NJS_SYMBOL_TO_STRING_TAG,
+        .u.property = {
+            .value = "querystring",
+        }
+    },
+
+    {
         .flags = NJS_EXTERN_METHOD,
         .name.string = njs_str("parse"),
         .writable = 1,

@@ -21243,6 +21243,11 @@ static njs_unit_test_t  njs_shared_test[] =
               "    at fs.readFileSync (native)\n"
               "    at main (:1)\n") },
 
+    { njs_str("import fs from 'fs'; fs.readFileSync()"),
+      njs_str("TypeError: \"path\" must be a string or Buffer\n"
+              "    at fs.readFileSync (native)\n"
+              "    at main (:1)\n") },
+
     { njs_str("var f = new Function('return 1;'); f();"),
       njs_str("1") },
 
