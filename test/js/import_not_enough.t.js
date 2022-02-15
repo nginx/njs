@@ -1,10 +1,9 @@
 /*---
 includes: []
 flags: []
-paths: [test/js/module]
+paths: []
 negative:
   phase: runtime
 ---*/
 
 import name   from 'name.js';
-import lib1   from 'lib1.js';

@@ -6,6 +6,6 @@ function exception() {
     return sub.error();
 }
 
-import sub from './sub/sub1.js';
+import sub from 'sub/sub1.js';
 
 export default {hash, exception};
