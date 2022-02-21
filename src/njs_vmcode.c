@@ -1055,14 +1055,16 @@ njs_vmcode_array(njs_vm_t *vm, u_char *pc)
 
         if (code->ctor) {
             /* Array of the form [,,,], [1,,]. */
-            value = array->start;
-            length = array->length;
+            if (array->object.fast_array) {
+                value = array->start;
+                length = array->length;
 
-            do {
-                njs_set_invalid(value);
-                value++;
-                length--;
-            } while (length != 0);
+                do {
+                    njs_set_invalid(value);
+                    value++;
+                    length--;
+                } while (length != 0);
+            }
 
         } else {
             /* Array of the form [], [,,1], [1,2,3]. */

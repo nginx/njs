@@ -13154,6 +13154,10 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("(new Function('return 5' + '** 1'.repeat(2**13)))()"),
       njs_str("5") },
 
+    { njs_str("var a = (new Function('return [' + ','.repeat(2**16) + ']'))();"
+			  "njs.dump(a)"),
+      njs_str("[<65536 empty items>]") },
+
     { njs_str("(new Function('var a = 7; return a' + '= a'.repeat(2**13)))()"),
       njs_str("7") },
 
