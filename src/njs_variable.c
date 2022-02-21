@@ -222,7 +222,7 @@ njs_variable_scope_find(njs_parser_t *parser, njs_parser_scope_t *scope,
         return root;
     }
 
-    module = parser->vm->options.module || scope->module;
+    module = parser->vm->options.module || parser->module;
 
     if (module) {
         if (type == NJS_VARIABLE_FUNCTION

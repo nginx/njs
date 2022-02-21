@@ -172,15 +172,6 @@ njs_disassembler(njs_vm_t *vm)
     n = vm->codes->items;
 
     while (n != 0) {
-        if (code->start == vm->start) {
-            break;
-        }
-
-        code++;
-        n--;
-    }
-
-    while (n != 0) {
         njs_printf("%V:%V\n", &code->file, &code->name);
         njs_disassemble(code);
         code++;
@@ -207,6 +198,7 @@ njs_disassemble(njs_vm_code_t *code)
     njs_vmcode_3addr_t           *code3;
     njs_vmcode_array_t           *array;
     njs_vmcode_catch_t           *catch;
+    njs_vmcode_import_t          *import;
     njs_vmcode_finally_t         *finally;
     njs_vmcode_try_end_t         *try_end;
     njs_vmcode_move_arg_t        *move_arg;
@@ -394,6 +386,18 @@ njs_disassemble(njs_vm_code_t *code)
                        (size_t) prop_accessor->property);
 
             p += sizeof(njs_vmcode_prop_accessor_t);
+
+            continue;
+        }
+
+        if (operation == NJS_VMCODE_IMPORT) {
+            import = (njs_vmcode_import_t *) p;
+
+            njs_printf("%5uD | %05uz IMPORT            %04Xz %V\n",
+                       line, p - start, (size_t) import->retval,
+                       &import->module->name);
+
+            p += sizeof(njs_vmcode_import_t);
 
             continue;
         }

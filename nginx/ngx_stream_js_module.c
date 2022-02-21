@@ -456,7 +456,8 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
 
 static njs_vm_ops_t ngx_stream_js_ops = {
     ngx_stream_js_set_timer,
-    ngx_stream_js_clear_timer
+    ngx_stream_js_clear_timer,
+    NULL,
 };
 
 
@@ -1512,8 +1513,11 @@ ngx_stream_js_init_main_conf(ngx_conf_t *cf, void *conf)
 
     import = jmcf->imports->elts;
     for (i = 0; i < jmcf->imports->nelts; i++) {
-        size += sizeof("import  from '';\n") - 1 + import[i].name.len
-                + import[i].path.len;
+        /* import <name> from '<path>'; globalThis.<name> = <name>; */
+
+        size += sizeof("import  from '';") - 1 + import[i].name.len * 3
+                + import[i].path.len
+                + sizeof(" globalThis. = ;\n") - 1;
     }
 
     start = ngx_pnalloc(cf->pool, size);
@@ -1524,11 +1528,18 @@ ngx_stream_js_init_main_conf(ngx_conf_t *cf, void *conf)
     p = start;
     import = jmcf->imports->elts;
     for (i = 0; i < jmcf->imports->nelts; i++) {
+
+        /* import <name> from '<path>'; globalThis.<name> = <name>; */
+
         p = ngx_cpymem(p, "import ", sizeof("import ") - 1);
         p = ngx_cpymem(p, import[i].name.data, import[i].name.len);
         p = ngx_cpymem(p, " from '", sizeof(" from '") - 1);
         p = ngx_cpymem(p, import[i].path.data, import[i].path.len);
-        p = ngx_cpymem(p, "';\n", sizeof("';\n") - 1);
+        p = ngx_cpymem(p, "'; globalThis.", sizeof("'; globalThis.") - 1);
+        p = ngx_cpymem(p, import[i].name.data, import[i].name.len);
+        p = ngx_cpymem(p, " = ", sizeof(" = ") - 1);
+        p = ngx_cpymem(p, import[i].name.data, import[i].name.len);
+        p = ngx_cpymem(p, ";\n", sizeof(";\n") - 1);
     }
 
     njs_vm_opt_init(&options);

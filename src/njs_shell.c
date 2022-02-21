@@ -203,7 +203,8 @@ static const njs_lvlhsh_proto_t  njs_timelabel_hash_proto njs_aligned(64) = {
 
 static njs_vm_ops_t njs_console_ops = {
     njs_console_set_timer,
-    njs_console_clear_timer
+    njs_console_clear_timer,
+    NULL,
 };
 
 
@@ -230,7 +231,6 @@ static njs_console_t  njs_console;
 int
 main(int argc, char **argv)
 {
-    char          path[MAXPATHLEN], *p;
     njs_vm_t      *vm;
     njs_int_t     ret;
     njs_opts_t    opts;
@@ -257,21 +257,8 @@ main(int argc, char **argv)
     njs_vm_opt_init(&vm_options);
 
     if (opts.file == NULL) {
-        p = getcwd(path, sizeof(path));
-        if (p == NULL) {
-            njs_stderror("getcwd() failed:%s\n", strerror(errno));
-            ret = NJS_ERROR;
-            goto done;
-        }
-
-        if (opts.command == NULL) {
-            memcpy(path + njs_strlen(path), "/shell", sizeof("/shell"));
-
-        } else {
-            memcpy(path + njs_strlen(path), "/string", sizeof("/string"));
-        }
-
-        opts.file = path;
+        opts.file = (opts.command == NULL) ? (char *) "shell"
+                                           : (char *) "string";
     }
 
     vm_options.file.start = (u_char *) opts.file;

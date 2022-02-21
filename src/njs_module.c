@@ -12,286 +12,60 @@ typedef struct {
     int                 fd;
     njs_str_t           name;
     njs_str_t           file;
+    char                path[NJS_MAX_PATH + 1];
 } njs_module_info_t;
 
 
-typedef struct {
-    njs_str_t           text;
-    njs_module_info_t   info;
-    njs_lexer_t         *prev;
-    njs_lexer_t         lexer;
-} njs_module_temp_t;
-
-
-static njs_int_t njs_parser_module_lambda_after(njs_parser_t *parser,
-    njs_lexer_token_t *token, njs_queue_link_t *current);
-static njs_int_t njs_parser_module_after(njs_parser_t *parser,
-    njs_lexer_token_t *token, njs_queue_link_t *current);
-
 static njs_int_t njs_module_lookup(njs_vm_t *vm, const njs_str_t *cwd,
     njs_module_info_t *info);
-static njs_int_t njs_module_relative_path(njs_vm_t *vm,
-    const njs_str_t *dir, njs_module_info_t *info);
-static njs_int_t njs_module_absolute_path(njs_vm_t *vm,
+static njs_int_t njs_module_path(njs_vm_t *vm, const njs_str_t *dir,
     njs_module_info_t *info);
-static njs_bool_t njs_module_realpath_equal(const njs_str_t *path1,
-    const njs_str_t *path2);
 static njs_int_t njs_module_read(njs_vm_t *vm, int fd, njs_str_t *body);
-static njs_mod_t *njs_module_find(njs_vm_t *vm, njs_str_t *name,
-    njs_bool_t local);
-static njs_int_t njs_module_insert(njs_parser_t *parser, njs_mod_t *module);
+static njs_mod_t *njs_default_module_loader(njs_vm_t *vm,
+    njs_external_ptr_t external, njs_str_t *name);
 
 
-njs_int_t
-njs_module_load(njs_vm_t *vm)
+njs_mod_t *
+njs_parser_module(njs_parser_t *parser, njs_str_t *name)
 {
-    njs_int_t     ret;
-    njs_mod_t     **item, *module;
-    njs_uint_t    i;
-    njs_value_t   *value;
-    njs_object_t  *object;
+    njs_mod_t            *module;
+    njs_vm_t             *vm;
+    njs_external_ptr_t   external;
+    njs_module_loader_t  loader;
 
-    if (vm->modules == NULL) {
-        return NJS_OK;
+    vm = parser->vm;
+
+    if (name->length == 0) {
+        njs_parser_syntax_error(parser, "Cannot find module \"%V\"", name);
+        return NULL;
     }
 
-    item = vm->modules->start;
-
-    for (i = 0; i < vm->modules->items; i++) {
-        module = *item;
-
-        if (module->function.native) {
-            value = njs_scope_valid_value(vm, module->index);
-            njs_value_assign(value, &module->value);
-
-            object = njs_object_value_copy(vm, value);
-            if (njs_slow_path(object == NULL)) {
-                return NJS_ERROR;
-            }
-
-        } else {
-            ret = njs_vm_invoke(vm, &module->function, NULL, 0,
-                                njs_scope_valid_value(vm, module->index));
-            if (ret == NJS_ERROR) {
-                return ret;
-            }
-        }
-
-        item++;
-    }
-
-    return NJS_OK;
-}
-
-
-void
-njs_module_reset(njs_vm_t *vm)
-{
-    njs_mod_t           **item, *module;
-    njs_uint_t          i;
-    njs_lvlhsh_query_t  lhq;
-
-    if (vm->modules == NULL) {
-        return;
-    }
-
-    item = vm->modules->start;
-
-    for (i = 0; i < vm->modules->items; i++) {
-        module = *item;
-
-        if (!module->function.native) {
-            lhq.key = module->name;
-            lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
-            lhq.proto = &njs_modules_hash_proto;
-            lhq.pool = vm->mem_pool;
-
-            (void) njs_lvlhsh_delete(&vm->modules_hash, &lhq);
-        }
-
-        item++;
-    }
-
-    njs_arr_reset(vm->modules);
-}
-
-
-njs_int_t
-njs_parser_module(njs_parser_t *parser, njs_lexer_token_t *token,
-    njs_queue_link_t *current)
-{
-    njs_int_t          ret;
-    njs_str_t          name, text;
-    njs_mod_t          *module;
-    njs_module_temp_t  *temp;
-    njs_module_info_t  info;
-
-    name = token->text;
-
-    parser->node = NULL;
-
-    module = njs_module_find(parser->vm, &name, 1);
-    if (module != NULL && module->function.native) {
-        njs_lexer_consume_token(parser->lexer, 1);
-
-        parser->target = (njs_parser_node_t *) module;
-
-        return njs_parser_module_after(parser, token, current);
-    }
-
-    njs_memzero(&text, sizeof(njs_str_t));
-
-    if (parser->vm->options.sandbox || name.length == 0) {
-        njs_parser_syntax_error(parser, "Cannot find module \"%V\"", &name);
-        goto fail;
-    }
-
-    /* Non-native module. */
-
-    njs_memzero(&info, sizeof(njs_module_info_t));
-
-    info.name = name;
-
-    ret = njs_module_lookup(parser->vm, &parser->scope->cwd, &info);
-    if (njs_slow_path(ret != NJS_OK)) {
-        njs_parser_syntax_error(parser, "Cannot find module \"%V\"", &name);
-        goto fail;
-    }
-
-    module = njs_module_find(parser->vm, &info.file, 1);
+    module = njs_module_find(vm, name, 1);
     if (module != NULL) {
-        (void) close(info.fd);
-        njs_lexer_consume_token(parser->lexer, 1);
-
-        parser->target = (njs_parser_node_t *) module;
-
-        return njs_parser_module_after(parser, token, current);
+        goto done;
     }
 
-    ret = njs_module_read(parser->vm, info.fd, &text);
+    external = parser;
+    loader = njs_default_module_loader;
 
-    (void) close(info.fd);
-
-    if (njs_slow_path(ret != NJS_OK)) {
-        njs_internal_error(parser->vm, "while reading \"%V\" module",
-                           &info.file);
-        goto fail;
+    if (vm->options.ops != NULL && vm->options.ops->module_loader != NULL) {
+        loader = vm->options.ops->module_loader;
+        external = vm->external;
     }
 
-    if (njs_module_realpath_equal(&parser->lexer->file, &info.file)) {
-        njs_parser_syntax_error(parser, "Cannot import itself \"%V\"",
-                                &info.file);
-        goto fail;
+    module = loader(vm, external, name);
+    if (module == NULL) {
+        njs_parser_syntax_error(parser, "Cannot find module \"%V\"", name);
+        return NULL;
     }
 
-    temp = njs_mp_alloc(parser->vm->mem_pool, sizeof(njs_module_temp_t));
-    if (njs_slow_path(temp == NULL)) {
-        return NJS_ERROR;
-    }
-
-    ret = njs_lexer_init(parser->vm, &temp->lexer, &info.file, text.start,
-                         text.start + text.length, 0);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return NJS_ERROR;
-    }
-
-    njs_lexer_consume_token(parser->lexer, 1);
-
-    temp->prev = parser->lexer;
-    temp->info = info;
-    temp->text = text;
-
-    parser->lexer = &temp->lexer;
-
-    njs_parser_next(parser, njs_parser_module_lambda);
-
-    return njs_parser_after(parser, current, temp, 0,
-                            njs_parser_module_lambda_after);
-
-fail:
-
-    if (text.start != NULL) {
-        njs_mp_free(parser->vm->mem_pool, text.start);
-    }
-
-    return NJS_ERROR;
-}
-
-
-static njs_int_t
-njs_parser_module_lambda_after(njs_parser_t *parser, njs_lexer_token_t *token,
-    njs_queue_link_t *current)
-{
-    njs_mod_t          *module;
-    njs_module_temp_t  *temp;
-
-    temp = (njs_module_temp_t *) parser->target;
-
-    if (parser->ret != NJS_OK) {
-        njs_mp_free(parser->vm->mem_pool, temp->text.start);
-        njs_mp_free(parser->vm->mem_pool, temp);
-
-        if (token->type == NJS_TOKEN_END) {
-            return njs_parser_stack_pop(parser);
-        }
-
-        return njs_parser_failed(parser);
-    }
-
-    module = njs_module_add(parser->vm, &temp->info.file, 0);
-    if (njs_slow_path(module == NULL)) {
-        parser->lexer = temp->prev;
-
-        if (temp->text.start != NULL) {
-            njs_mp_free(parser->vm->mem_pool, temp->text.start);
-        }
-
-        return njs_parser_failed(parser);
-    }
-
-    module->function.args_offset = 1;
-    module->function.u.lambda = parser->node->u.value.data.u.lambda;
-
-    njs_mp_free(parser->vm->mem_pool, temp->text.start);
-
-    parser->lexer = temp->prev;
-    parser->target = (njs_parser_node_t *) module;
-
-    njs_mp_free(parser->vm->mem_pool, temp);
-
-    return njs_parser_module_after(parser, token, current);
-}
-
-
-static njs_int_t
-njs_parser_module_after(njs_parser_t *parser, njs_lexer_token_t *token,
-    njs_queue_link_t *current)
-{
-    njs_int_t          ret;
-    njs_mod_t          *module;
-    njs_parser_node_t  *node;
-
-    node = njs_parser_node_new(parser, 0);
-    if (njs_slow_path(node == NULL)) {
-       return NJS_ERROR;
-    }
-
-    node->left = parser->node;
-
-    module = (njs_mod_t *) parser->target;
+done:
 
     if (module->index == 0) {
-        ret = njs_module_insert(parser, module);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_ERROR;
-        }
+        module->index = vm->shared->module_items++;
     }
 
-    node->index = (njs_index_t) module;
-
-    parser->node = node;
-
-    return njs_parser_stack_pop(parser);
+    return module;
 }
 
 
@@ -303,10 +77,10 @@ njs_module_lookup(njs_vm_t *vm, const njs_str_t *cwd, njs_module_info_t *info)
     njs_uint_t  i;
 
     if (info->name.start[0] == '/') {
-        return njs_module_absolute_path(vm, info);
+        return njs_module_path(vm, NULL, info);
     }
 
-    ret = njs_module_relative_path(vm, cwd, info);
+    ret = njs_module_path(vm, cwd, info);
 
     if (ret != NJS_DECLINED) {
         return ret;
@@ -319,7 +93,7 @@ njs_module_lookup(njs_vm_t *vm, const njs_str_t *cwd, njs_module_info_t *info)
     path = vm->paths->start;
 
     for (i = 0; i < vm->paths->items; i++) {
-        ret = njs_module_relative_path(vm, path, info);
+        ret = njs_module_path(vm, path, info);
 
         if (ret != NJS_DECLINED) {
             return ret;
@@ -333,74 +107,60 @@ njs_module_lookup(njs_vm_t *vm, const njs_str_t *cwd, njs_module_info_t *info)
 
 
 static njs_int_t
-njs_module_absolute_path(njs_vm_t *vm, njs_module_info_t *info)
+njs_module_path(njs_vm_t *vm, const njs_str_t *dir, njs_module_info_t *info)
 {
-    njs_str_t  file;
-
-    file.length = info->name.length;
-    file.start = njs_mp_alloc(vm->mem_pool, file.length + 1);
-    if (njs_slow_path(file.start == NULL)) {
-        return NJS_ERROR;
-    }
-
-    memcpy(file.start, info->name.start, file.length);
-    file.start[file.length] = '\0';
-
-    info->fd = open((char *) file.start, O_RDONLY);
-    if (info->fd < 0) {
-        njs_mp_free(vm->mem_pool, file.start);
-        return NJS_DECLINED;
-    }
-
-    info->file = file;
-
-    return NJS_OK;
-}
-
-
-static njs_int_t
-njs_module_relative_path(njs_vm_t *vm, const njs_str_t *dir,
-    njs_module_info_t *info)
-{
-    u_char      *p;
-    njs_str_t   file;
+    char        *p;
+    size_t      length;
     njs_bool_t  trail;
+    char        src[NJS_MAX_PATH + 1];
 
-    file.length = dir->length;
+    trail = 0;
+    length = info->name.length;
 
-    if (file.length == 0) {
-        return NJS_DECLINED;
+    if (dir != NULL) {
+        length = dir->length;
+
+        if (length == 0) {
+            return NJS_DECLINED;
+        }
+
+        trail = (dir->start[dir->length - 1] != '/');
+
+        if (trail) {
+            length++;
+        }
     }
 
-    trail = (dir->start[dir->length - 1] != '/');
-
-    if (trail) {
-        file.length++;
-    }
-
-    file.length += info->name.length;
-
-    file.start = njs_mp_alloc(vm->mem_pool, file.length + 1);
-    if (njs_slow_path(file.start == NULL)) {
+    if (njs_slow_path(length > NJS_MAX_PATH)) {
         return NJS_ERROR;
     }
 
-    p = njs_cpymem(file.start, dir->start, dir->length);
+    p = &src[0];
 
-    if (trail) {
-        *p++ = '/';
+    if (dir != NULL) {
+        p = (char *) njs_cpymem(p, dir->start, dir->length);
+
+        if (trail) {
+            *p++ = '/';
+        }
     }
 
-    p = njs_cpymem(p, info->name.start, info->name.length);
+    p = (char *) njs_cpymem(p, info->name.start, info->name.length);
     *p = '\0';
 
-    info->fd = open((char *) file.start, O_RDONLY);
-    if (info->fd < 0) {
-        njs_mp_free(vm->mem_pool, file.start);
+    p = realpath(&src[0], &info->path[0]);
+    if (p == NULL) {
         return NJS_DECLINED;
     }
 
-    info->file = file;
+    info->fd = open(&info->path[0], O_RDONLY);
+    if (info->fd < 0) {
+        return NJS_DECLINED;
+    }
+
+
+    info->file.start = (u_char *) &info->path[0];
+    info->file.length = njs_strlen(info->file.start);
 
     return NJS_OK;
 }
@@ -411,6 +171,8 @@ njs_module_read(njs_vm_t *vm, int fd, njs_str_t *text)
 {
     ssize_t      n;
     struct stat  sb;
+
+    text->start = NULL;
 
     if (fstat(fd, &sb) == -1) {
         goto fail;
@@ -445,18 +207,6 @@ fail:
 }
 
 
-static njs_bool_t
-njs_module_realpath_equal(const njs_str_t *path1, const njs_str_t *path2)
-{
-    char  rpath1[MAXPATHLEN], rpath2[MAXPATHLEN];
-
-    realpath((char *) path1->start, rpath1);
-    realpath((char *) path2->start, rpath2);
-
-    return (strcmp(rpath1, rpath2) == 0);
-}
-
-
 static njs_int_t
 njs_module_hash_test(njs_lvlhsh_query_t *lhq, void *data)
 {
@@ -482,7 +232,7 @@ const njs_lvlhsh_proto_t  njs_modules_hash_proto
 };
 
 
-static njs_mod_t *
+njs_mod_t *
 njs_module_find(njs_vm_t *vm, njs_str_t *name, njs_bool_t shared)
 {
     njs_int_t           ret;
@@ -533,11 +283,10 @@ njs_module_find(njs_vm_t *vm, njs_str_t *name, njs_bool_t shared)
 
 
 njs_mod_t *
-njs_module_add(njs_vm_t *vm, njs_str_t *name, njs_bool_t shared)
+njs_module_add(njs_vm_t *vm, njs_str_t *name)
 {
     njs_int_t           ret;
     njs_mod_t           *module;
-    njs_lvlhsh_t        *hash;
     njs_lvlhsh_query_t  lhq;
 
     module = njs_mp_zalloc(vm->mem_pool, sizeof(njs_mod_t));
@@ -559,9 +308,7 @@ njs_module_add(njs_vm_t *vm, njs_str_t *name, njs_bool_t shared)
     lhq.pool = vm->mem_pool;
     lhq.proto = &njs_modules_hash_proto;
 
-    hash = shared ? &vm->shared->modules_hash : &vm->modules_hash;
-
-    ret = njs_lvlhsh_insert(hash, &lhq);
+    ret = njs_lvlhsh_insert(&vm->shared->modules_hash, &lhq);
     if (njs_fast_path(ret == NJS_OK)) {
         return module;
     }
@@ -572,38 +319,6 @@ njs_module_add(njs_vm_t *vm, njs_str_t *name, njs_bool_t shared)
     njs_internal_error(vm, "lvlhsh insert failed");
 
     return NULL;
-}
-
-
-static njs_int_t
-njs_module_insert(njs_parser_t *parser, njs_mod_t *module)
-{
-    njs_vm_t            *vm;
-    njs_mod_t           **value;
-    njs_parser_scope_t  *scope;
-
-    scope = njs_parser_global_scope(parser);
-    vm = parser->vm;
-
-    module->index = njs_scope_index(scope->type, scope->items, NJS_LEVEL_LOCAL,
-                                    NJS_VARIABLE_VAR);
-    scope->items++;
-
-    if (vm->modules == NULL) {
-        vm->modules = njs_arr_create(vm->mem_pool, 4, sizeof(njs_mod_t *));
-        if (njs_slow_path(vm->modules == NULL)) {
-            return NJS_ERROR;
-        }
-    }
-
-    value = njs_arr_add(vm->modules);
-    if (njs_slow_path(value == NULL)) {
-        return NJS_ERROR;
-    }
-
-    *value = module;
-
-    return NJS_OK;
 }
 
 
@@ -639,4 +354,44 @@ njs_module_require(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_assign(&vm->retval, &module->value);
 
     return NJS_OK;
+}
+
+
+static njs_mod_t *
+njs_default_module_loader(njs_vm_t *vm, njs_external_ptr_t external,
+    njs_str_t *name)
+{
+    njs_int_t          ret;
+    njs_str_t          cwd, text;
+    njs_parser_t       *prev;
+    njs_mod_t          *module;
+    njs_module_info_t  info;
+
+    prev = external;
+
+    njs_memzero(&info, sizeof(njs_module_info_t));
+
+    info.name = *name;
+    njs_file_dirname(&prev->lexer->file, &cwd);
+
+    ret = njs_module_lookup(vm, &cwd, &info);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NULL;
+    }
+
+    ret = njs_module_read(vm, info.fd, &text);
+
+    (void) close(info.fd);
+
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_internal_error(vm, "while reading \"%V\" module", &info.file);
+        return NULL;
+    }
+
+    module = njs_vm_compile_module(vm, &info.file, &text.start,
+                                   &text.start[text.length]);
+
+    njs_mp_free(vm->mem_pool, text.start);
+
+    return module;
 }

@@ -28,6 +28,7 @@
 
 typedef uintptr_t                   njs_index_t;
 typedef struct njs_vm_s             njs_vm_t;
+typedef struct njs_mod_s            njs_mod_t;
 typedef union  njs_value_s          njs_value_t;
 typedef struct njs_function_s       njs_function_t;
 typedef struct njs_vm_shared_s      njs_vm_shared_t;
@@ -183,11 +184,14 @@ typedef njs_host_event_t (*njs_set_timer_t)(njs_external_ptr_t external,
     uint64_t delay, njs_vm_event_t vm_event);
 typedef void (*njs_event_destructor_t)(njs_external_ptr_t external,
     njs_host_event_t event);
+typedef njs_mod_t *(*njs_module_loader_t)(njs_vm_t *vm,
+    njs_external_ptr_t external, njs_str_t *name);
 
 
 typedef struct {
     njs_set_timer_t                 set_timer;
     njs_event_destructor_t          clear_timer;
+    njs_module_loader_t             module_loader;
 } njs_vm_ops_t;
 
 
@@ -254,6 +258,8 @@ NJS_EXPORT njs_vm_t *njs_vm_create(njs_vm_opt_t *options);
 NJS_EXPORT void njs_vm_destroy(njs_vm_t *vm);
 
 NJS_EXPORT njs_int_t njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end);
+NJS_EXPORT njs_mod_t *njs_vm_compile_module(njs_vm_t *vm, njs_str_t *name,
+    u_char **start, u_char *end);
 NJS_EXPORT njs_vm_t *njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external);
 
 NJS_EXPORT njs_vm_event_t njs_vm_add_event(njs_vm_t *vm,

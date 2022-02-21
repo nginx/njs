@@ -967,7 +967,7 @@ njs_query_string_init(njs_vm_t *vm)
         return NJS_ERROR;
     }
 
-    module = njs_module_add(vm, &njs_str_value("querystring"), 1);
+    module = njs_module_add(vm, &njs_str_value("querystring"));
     if (njs_slow_path(module == NULL)) {
         return NJS_ERROR;
     }

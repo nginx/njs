@@ -27,6 +27,7 @@ struct njs_generator_s {
     njs_arr_t                       *index_cache;
     njs_arr_t                       *closures;
 
+    njs_str_t                       file;
     njs_arr_t                       *lines;
 
     size_t                          code_size;
@@ -40,8 +41,8 @@ struct njs_generator_s {
 };
 
 
-njs_int_t njs_generator_init(njs_generator_t *generator, njs_int_t depth,
-    njs_bool_t runtime);
+njs_int_t njs_generator_init(njs_generator_t *generator, njs_str_t *file,
+    njs_int_t depth, njs_bool_t runtime);
 njs_vm_code_t *njs_generate_scope(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_scope_t *scope, const njs_str_t *name);
 uint32_t njs_lookup_line(njs_vm_code_t *code, uint32_t offset);

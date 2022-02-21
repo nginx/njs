@@ -229,6 +229,7 @@ struct njs_vm_shared_s {
     njs_lvlhsh_t             arguments_object_instance_hash;
     njs_lvlhsh_t             regexp_instance_hash;
 
+    size_t                   module_items;
     njs_lvlhsh_t             modules_hash;
 
     njs_lvlhsh_t             env_hash;

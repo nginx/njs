@@ -761,7 +761,9 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
             break;
         }
 
-        if (njs_is_object(&module->value)) {
+        if (njs_is_object(&module->value)
+            && !njs_object(&module->value)->shared)
+        {
             ctx.match = module->name;
 
             ret = njs_object_traverse(vm, njs_object(&module->value), &ctx,

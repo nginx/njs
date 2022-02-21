@@ -41,6 +41,8 @@ static njs_jump_off_t njs_vmcode_debugger(njs_vm_t *vm);
 
 static njs_jump_off_t njs_vmcode_return(njs_vm_t *vm, njs_value_t *invld,
     njs_value_t *retval);
+static njs_jump_off_t njs_vmcode_import(njs_vm_t *vm, njs_mod_t *module,
+    njs_value_t *retval);
 
 static njs_jump_off_t njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await,
     njs_promise_capability_t *pcap, njs_async_ctx_t *actx);
@@ -97,6 +99,7 @@ njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc, void *promise_cap,
     njs_vmcode_await_t           *await;
     njs_native_frame_t           *previous, *native;
     njs_property_next_t          *next;
+    njs_vmcode_import_t          *import;
     njs_vmcode_finally_t         *finally;
     njs_vmcode_generic_t         *vmcode;
     njs_vmcode_variable_t        *var;
@@ -820,6 +823,16 @@ next:
                 set = (njs_vmcode_prop_set_t *) pc;
                 njs_vmcode_operand(vm, set->value, retval);
                 ret = njs_vmcode_proto_init(vm, value1, value2, retval);
+                if (njs_slow_path(ret == NJS_ERROR)) {
+                    goto error;
+                }
+
+                break;
+
+            case NJS_VMCODE_IMPORT:
+                import = (njs_vmcode_import_t *) pc;
+                retval = njs_scope_value(vm, import->retval);
+                ret = njs_vmcode_import(vm, import->module, retval);
                 if (njs_slow_path(ret == NJS_ERROR)) {
                     goto error;
                 }
@@ -1810,6 +1823,61 @@ njs_vmcode_return(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
     njs_function_frame_free(vm, &frame->native);
 
     return NJS_OK;
+}
+
+
+static njs_jump_off_t
+njs_vmcode_import(njs_vm_t *vm, njs_mod_t *module, njs_value_t *retval)
+{
+    njs_int_t     ret;
+    njs_arr_t     *m;
+    njs_value_t   *value;
+    njs_object_t  *object;
+
+    if (vm->modules == NULL) {
+        vm->modules = njs_arr_create(vm->mem_pool, 4, sizeof(njs_value_t));
+        if (njs_slow_path(vm->modules == NULL)) {
+            njs_memory_error(vm);
+            return NJS_ERROR;
+        }
+
+        m = vm->modules;
+
+        value = njs_arr_add_multiple(m, vm->shared->module_items);
+        if (njs_slow_path(value == NULL)) {
+            njs_memory_error(vm);
+            return NJS_ERROR;
+        }
+
+        njs_memzero(m->start, m->items * sizeof(njs_value_t));
+    }
+
+    value = njs_arr_item(vm->modules, module->index);
+
+    if (!njs_is_null(value)) {
+        njs_value_assign(retval, value);
+        return sizeof(njs_vmcode_import_t);
+    }
+
+    if (module->function.native) {
+        njs_value_assign(value, &module->value);
+
+        object = njs_object_value_copy(vm, value);
+        if (njs_slow_path(object == NULL)) {
+            return NJS_ERROR;
+        }
+
+    } else {
+        njs_set_invalid(value);
+        ret = njs_vm_invoke(vm, &module->function, NULL, 0, value);
+        if (ret == NJS_ERROR) {
+            return ret;
+        }
+    }
+
+    njs_value_assign(retval, value);
+
+    return sizeof(njs_vmcode_import_t);
 }
 
 

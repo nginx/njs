@@ -49,6 +49,7 @@ enum {
     NJS_VMCODE_THIS,
     NJS_VMCODE_ARGUMENTS,
     NJS_VMCODE_PROTO_INIT,
+    NJS_VMCODE_IMPORT,
 
     NJS_VMCODE_AWAIT,
 
@@ -417,6 +418,13 @@ typedef struct {
     njs_value_t                *function;
     njs_index_t                retval;
 } njs_vmcode_function_copy_t;
+
+
+typedef struct {
+    njs_vmcode_t               code;
+    njs_index_t                retval;
+    njs_mod_t                  *module;
+} njs_vmcode_import_t;
 
 
 typedef struct {

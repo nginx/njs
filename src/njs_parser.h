@@ -23,11 +23,7 @@ struct njs_parser_scope_s {
     uint32_t                        temp;
     uint32_t                        items;
 
-    njs_str_t                       cwd;
-    njs_str_t                       file;
-
     njs_scope_t                     type:8;
-    uint8_t                         module;
     uint8_t                         arrow_function;
     uint8_t                         dest_disable;
     uint8_t                         async;
@@ -38,6 +34,7 @@ struct njs_parser_scope_s {
 struct njs_parser_node_s {
     njs_token_type_t                token_type:16;
     uint8_t                         ctor:1;
+    uint8_t                         hoist:1;
     uint8_t                         temporary;    /* 1 bit  */
     uint32_t                        token_line;
 
@@ -47,6 +44,7 @@ struct njs_parser_node_s {
         njs_value_t                 value;
         njs_vmcode_operation_t      operation;
         njs_parser_node_t           *object;
+        njs_mod_t                   *module;
     } u;
 
     njs_str_t                       name;
@@ -83,7 +81,11 @@ struct njs_parser_s {
     njs_variable_type_t             var_type;
     njs_int_t                       ret;
     uintptr_t                       undefined_id;
+
+    uint8_t                         module;
     njs_bool_t                      strict_semicolon;
+
+    njs_str_t                       file;
     uint32_t                        line;
 };
 
@@ -125,8 +127,6 @@ njs_int_t njs_parser_init(njs_vm_t *vm, njs_parser_t *parser,
     njs_uint_t runtime);
 njs_int_t njs_parser(njs_vm_t *vm, njs_parser_t *parser);
 
-njs_int_t njs_parser_module_lambda(njs_parser_t *parser,
-    njs_lexer_token_t *token, njs_queue_link_t *current);
 njs_bool_t njs_variable_closure_test(njs_parser_scope_t *root,
     njs_parser_scope_t *scope);
 njs_variable_t *njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node);
@@ -141,8 +141,8 @@ njs_int_t njs_parser_string_create(njs_vm_t *vm, njs_lexer_token_t *token,
     njs_value_t *value);
 void njs_parser_lexer_error(njs_parser_t *parser,
     njs_object_type_t type, const char *fmt, ...);
-void njs_parser_node_error(njs_vm_t *vm, njs_parser_node_t *node,
-    njs_object_type_t type, const char *fmt, ...);
+void njs_parser_node_error(njs_vm_t *vm, njs_object_type_t type,
+    njs_parser_node_t *node, njs_str_t *file, const char *fmt, ...);
 
 njs_int_t njs_parser_traverse(njs_vm_t *vm, njs_parser_node_t *root,
     void *ctx, njs_parser_traverse_cb_t cb);
@@ -211,21 +211,6 @@ njs_parser_node_string(njs_vm_t *vm, njs_lexer_token_t *token,
     node->token_line = token->line;
 
     return node;
-}
-
-
-njs_inline njs_parser_scope_t *
-njs_parser_global_scope(njs_parser_t *parser)
-{
-    njs_parser_scope_t  *scope;
-
-    scope = parser->scope;
-
-    while (scope->type != NJS_SCOPE_GLOBAL) {
-        scope = scope->parent;
-    }
-
-    return scope;
 }
 
 

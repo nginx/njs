@@ -8,4 +8,9 @@ function get() {
     return state.count;
 }
 
+if (globalThis.lib1_is_loaded) {
+    throw Error("lib1 already loaded");
+    globalThis.lib1_is_loaded = true;
+}
+
 export default {inc, get}
