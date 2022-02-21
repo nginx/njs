@@ -811,9 +811,13 @@ njs_function_frame_save(njs_vm_t *vm, njs_frame_t *frame, u_char *pc)
     njs_native_frame_t  *active, *native;
 
     *frame = *vm->active_frame;
+
     frame->previous_active_frame = NULL;
 
     native = &frame->native;
+    native->size = 0;
+    native->free = NULL;
+    native->free_size = 0;
 
     active = &vm->active_frame->native;
     value_count = njs_function_frame_value_count(active);

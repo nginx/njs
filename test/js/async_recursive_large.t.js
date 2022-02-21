@@ -14,13 +14,13 @@ async function f(v) {
 
     await "X";
 
-    f(v + 1);
+    await f(v + 1);
 
     stages.push(`f<${v}`);
 }
 
 f(0)
 .then(v => {
-    assert.compareArray(stages, ['f>0','f>1','f<0','f>2','f<1']);
+    assert.sameValue(stages.length, 2000);
 })
 .then($DONE, $DONE);
