@@ -4253,6 +4253,11 @@ static njs_unit_test_t  njs_test[] =
               "njs.dump([a[0], a[33],a.length])"),
       njs_str("[1,1,65]") },
 
+    { njs_str("var a = [1]; a[1111111] = 2;"
+              "var a2 = [3].concat(a, [4]);"
+              "njs.dump(a2)"),
+      njs_str("[3,1,<1111110 empty items>,2,4]") },
+
     { njs_str("var re = /abc/; re[Symbol.isConcatSpreadable] = true;"
               "re[0] = 1, re[1] = 2, re[2] = 3, re.length = 3;"
               "[].concat(re)"),
