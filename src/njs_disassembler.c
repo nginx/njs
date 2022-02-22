@@ -15,9 +15,6 @@ typedef struct {
 } njs_code_name_t;
 
 
-static void njs_disassemble(njs_vm_code_t *code);
-
-
 static njs_code_name_t  code_names[] = {
 
     { NJS_VMCODE_OBJECT, sizeof(njs_vmcode_object_t),
@@ -173,7 +170,7 @@ njs_disassembler(njs_vm_t *vm)
 
     while (n != 0) {
         njs_printf("%V:%V\n", &code->file, &code->name);
-        njs_disassemble(code);
+        njs_disassemble(code->start, code->end, -1, code->lines);
         code++;
         n--;
     }
@@ -182,10 +179,10 @@ njs_disassembler(njs_vm_t *vm)
 }
 
 
-static void
-njs_disassemble(njs_vm_code_t *code)
+void
+njs_disassemble(u_char *start, u_char *end, njs_int_t count, njs_arr_t *lines)
 {
-    u_char                       *p, *start, *end;
+    u_char                       *p;
     uint32_t                     line;
     njs_str_t                    *name;
     njs_uint_t                   n;
@@ -215,9 +212,6 @@ njs_disassemble(njs_vm_code_t *code)
     njs_vmcode_try_trampoline_t  *try_tramp;
     njs_vmcode_function_frame_t  *function;
 
-    start = code->start;
-    end = code->end;
-
     /*
      * On some 32-bit platform uintptr_t is int and compilers warn
      * about %l format modifier.  size_t has the size as pointer so
@@ -226,9 +220,9 @@ njs_disassemble(njs_vm_code_t *code)
 
     p = start;
 
-    while (p < end) {
+    while (((p < end) && (count == -1)) || (count-- > 0)) {
         operation = *(njs_vmcode_operation_t *) p;
-        line = njs_lookup_line(code, p - start);
+        line = njs_lookup_line(lines, p - start);
 
         if (operation == NJS_VMCODE_ARRAY) {
             array = (njs_vmcode_array_t *) p;

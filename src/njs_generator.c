@@ -808,8 +808,26 @@ njs_generate_code_map(njs_vm_t *vm, njs_generator_t *generator,
 }
 
 
+njs_vm_code_t *
+njs_lookup_code(njs_vm_t *vm, u_char *pc)
+{
+    njs_uint_t     i;
+    njs_vm_code_t  *code;
+
+    code = vm->codes->start;
+
+    for (i = 0; i < vm->codes->items; i++, code++) {
+        if (code->start <= pc && pc < code->end) {
+            return code;
+        }
+    }
+
+    return NULL;
+}
+
+
 uint32_t
-njs_lookup_line(njs_vm_code_t *code, uint32_t offset)
+njs_lookup_line(njs_arr_t *lines, uint32_t offset)
 {
     njs_uint_t         n;
     njs_vm_line_num_t  *map;
@@ -817,9 +835,9 @@ njs_lookup_line(njs_vm_code_t *code, uint32_t offset)
     n = 0;
     map = NULL;
 
-    if (code->lines != NULL) {
-        n = code->lines->items;
-        map = (njs_vm_line_num_t *) code->lines->start;
+    if (lines != NULL) {
+        n = lines->items;
+        map = (njs_vm_line_num_t *) lines->start;
     }
 
     while (n != 0) {

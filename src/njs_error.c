@@ -1286,7 +1286,6 @@ njs_add_backtrace_entry(njs_vm_t *vm, njs_arr_t *stack,
     njs_native_frame_t *native_frame)
 {
     njs_int_t              ret;
-    njs_uint_t             i;
     njs_vm_code_t          *code;
     njs_function_t         *function;
     njs_backtrace_entry_t  *be;
@@ -1316,20 +1315,16 @@ njs_add_backtrace_entry(njs_vm_t *vm, njs_arr_t *stack,
         return NJS_OK;
     }
 
-    code = vm->codes->start;
+    code = njs_lookup_code(vm, native_frame->pc);
 
-    for (i = 0; i < vm->codes->items; i++, code++) {
-        if (code->start <= native_frame->pc
-            && native_frame->pc < code->end)
-        {
-            be->name = code->name;
-            be->line = njs_lookup_line(code, native_frame->pc - code->start);
-            if (!vm->options.quiet) {
-                be->file = code->file;
-            }
-
-            return NJS_OK;
+    if (code != NULL) {
+        be->name = code->name;
+        be->line = njs_lookup_line(code->lines, native_frame->pc - code->start);
+        if (!vm->options.quiet) {
+            be->file = code->file;
         }
+
+        return NJS_OK;
     }
 
     be->name = njs_entry_unknown;
