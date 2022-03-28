@@ -3409,6 +3409,11 @@ static njs_unit_test_t  njs_test[] =
 
     /**/
 
+    { njs_str("function f() { Object.prototype.toString = 1; };"
+              "Object.prototype.toString = f;"
+              "(function () { try { 's'[{}](); } catch (e) { throw e; } })()"),
+      njs_str("TypeError: Cannot convert object to primitive value") },
+
     { njs_str("var i; for (i = 0; i < 10; i++) { i += 1 } i"),
       njs_str("10") },
 

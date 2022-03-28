@@ -700,7 +700,7 @@ next:
                 ret = njs_object_prop_define(vm, value1, &name, function,
                                              accessor->type);
                 if (njs_slow_path(ret != NJS_OK)) {
-                    return NJS_ERROR;
+                    goto error;
                 }
 
                 ret = sizeof(njs_vmcode_prop_accessor_t);
@@ -779,12 +779,12 @@ next:
                 }
 
                 if (njs_slow_path(!njs_is_function(&dst))) {
-                    ret = njs_value_to_key(vm, value2, value2);
+                    ret = njs_value_to_key(vm, &dst, value2);
                     if (njs_slow_path(ret != NJS_OK)) {
-                        return NJS_ERROR;
+                        goto error;
                     }
 
-                    njs_key_string_get(vm, value2, &string);
+                    njs_key_string_get(vm, &dst, &string);
                     njs_type_error(vm,
                                "(intermediate value)[\"%V\"] is not a function",
                                &string);
@@ -950,7 +950,8 @@ next:
                 if (njs_is_valid(value1)) {
                     value1 = njs_mp_alloc(vm->mem_pool, sizeof(njs_value_t));
                     if (njs_slow_path(value1 == NULL)) {
-                        return NJS_ERROR;
+                        njs_memory_error(vm);
+                        goto error;
                     }
 
                     njs_scope_value_set(vm, var->dst, value1);
@@ -967,7 +968,8 @@ next:
 
                 value1 = njs_mp_alloc(vm->mem_pool, sizeof(njs_value_t));
                 if (njs_slow_path(value1 == NULL)) {
-                    return NJS_ERROR;
+                    njs_memory_error(vm);
+                    goto error;
                 }
 
                 *value1 = *value2;
