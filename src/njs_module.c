@@ -118,7 +118,7 @@ njs_module_path(njs_vm_t *vm, const njs_str_t *dir, njs_module_info_t *info)
     length = info->name.length;
 
     if (dir != NULL) {
-        length = dir->length;
+        length += dir->length;
 
         if (length == 0) {
             return NJS_DECLINED;
