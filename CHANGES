@@ -1,3 +1,23 @@
+Changes with njs 0.7.3                                        12 Apr 2022
+
+    Core:
+
+    *) Feature: added support of module resolution callback.
+       This feature allows a host environment to control
+       how imported modules are loaded.
+
+    *) Bugfix: fixed backtraces while traversing imported user
+       modules.
+
+    *) Bugfix: fixed Array.prototype.concat() when "this" is a slow
+       array.
+
+    *) Bugfix: fixed frame allocation from an awaited frame.
+
+    *) Bugfix: fixed allocation of large array literals.
+
+    *) Bugfix: fixed interpreter when "toString" conversion fails.
+
 Changes with njs 0.7.2                                        25 Jan 2022
 
     Core:
