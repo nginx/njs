@@ -2234,10 +2234,10 @@ ngx_response_js_ext_keys(njs_vm_t *vm, njs_value_t *value, njs_value_t *keys)
 
     length = 0;
     headers = http->headers.elts;
-    start = njs_vm_array_start(vm, keys);
 
     for (i = 0; i < http->headers.nelts; i++) {
         h = &headers[i];
+        start = njs_vm_array_start(vm, keys);
 
         for (k = 0; k < length; k++) {
             njs_value_string_get(njs_argument(start, k), &hdr);
