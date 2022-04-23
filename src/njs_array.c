@@ -2696,7 +2696,7 @@ slow_path:
         goto exception;
     }
 
-    if (njs_fast_path(fast_path)) {
+    if (njs_fast_path(fast_path && njs_is_fast_array(this))) {
         array = njs_array(this);
         start = array->start;
 

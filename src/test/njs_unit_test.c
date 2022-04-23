@@ -6989,6 +6989,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("[1,2].sort(1)"),
       njs_str("TypeError: comparefn must be callable or undefined") },
 
+    { njs_str("var a = [1,2]; a.sort(() => {a.length = 65535}); a.length"),
+      njs_str("65535") },
+
     /*
       Array.prototype.keys()
       Array.prototype.values()
