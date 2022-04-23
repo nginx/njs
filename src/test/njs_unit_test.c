@@ -4869,6 +4869,15 @@ static njs_unit_test_t  njs_test[] =
               "Array.prototype.splice.call(obj, 2**53-2, 0, 'C');"),
       njs_str("TypeError: Invalid length") },
 
+    { njs_str("var a = {1: 'B', length: 2};"
+              "Array.prototype.splice.call(a, 0)"),
+      njs_str(",B") },
+
+    { njs_str("var a = new Uint8Array();"
+              "a.__proto__ = [1,2,3];"
+              "a.splice(0)"),
+      njs_str(",,") },
+
     { njs_str("var a = []; a.reverse()"),
       njs_str("") },
 
