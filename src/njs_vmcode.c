@@ -819,7 +819,8 @@ next:
                 pnext = (njs_vmcode_prop_next_t *) pc;
                 retval = njs_scope_value(vm, pnext->retval);
 
-                next = value2->data.u.next;
+                njs_assert(njs_is_data(value2, NJS_DATA_TAG_FOREACH_NEXT));
+                next = njs_data(value2);
 
                 if (next->index < next->array->length) {
                     *retval = next->array->start[next->index++];
@@ -1468,7 +1469,7 @@ njs_vmcode_property_foreach(njs_vm_t *vm, njs_value_t *object,
         return NJS_ERROR;
     }
 
-    vm->retval.data.u.next = next;
+    njs_set_data(&vm->retval, next, NJS_DATA_TAG_FOREACH_NEXT);
 
     code = (njs_vmcode_prop_foreach_t *) pc;
 

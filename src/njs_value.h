@@ -70,7 +70,7 @@ typedef enum {
     NJS_DATA_TAG_TEXT_ENCODER,
     NJS_DATA_TAG_TEXT_DECODER,
     NJS_DATA_TAG_ARRAY_ITERATOR,
-    NJS_DATA_TAG_FS_STAT,
+    NJS_DATA_TAG_FOREACH_NEXT,
     NJS_DATA_TAG_MAX
 } njs_data_tag_t;
 
@@ -135,7 +135,6 @@ union njs_value_s {
             njs_promise_t             *promise;
             njs_prop_handler_t        prop_handler;
             njs_value_t               *value;
-            njs_property_next_t       *next;
             void                      *data;
         } u;
     } data;
