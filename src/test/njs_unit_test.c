@@ -21149,6 +21149,13 @@ static njs_unit_test_t  njs_externals_test[] =
               "}))"
               ".then(v => $r.retval(v))"),
       njs_str("a:async:pr:async2:pr:r,b:async:pr:async2:pr:r,c:async:pr:async2:pr:r") },
+
+    { njs_str("async function f () {"
+              "    var p = await Promise.race({length:1});"
+              "    for (const v in 'test') { }"
+              "};"
+              "f().then(v => $r.retval('done'))"),
+      njs_str("done") },
 };
 
 

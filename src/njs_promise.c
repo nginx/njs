@@ -1369,6 +1369,10 @@ njs_promise_perform_all_handler(njs_vm_t *vm, njs_iterator_args_t *args,
     njs_promise_all_context_t    *context;
     njs_promise_iterator_args_t  *pargs;
 
+    if (!njs_is_valid(value)) {
+        value = njs_value_arg(&njs_value_undefined);
+    }
+
     pargs = (njs_promise_iterator_args_t *) args;
 
     capability = pargs->capability;
@@ -1458,6 +1462,10 @@ njs_promise_perform_all_settled_handler(njs_vm_t *vm, njs_iterator_args_t *args,
     njs_promise_capability_t     *capability;
     njs_promise_all_context_t    *context;
     njs_promise_iterator_args_t  *pargs;
+
+    if (!njs_is_valid(value)) {
+        value = njs_value_arg(&njs_value_undefined);
+    }
 
     pargs = (njs_promise_iterator_args_t *) args;
 
@@ -1597,6 +1605,10 @@ njs_promise_perform_any_handler(njs_vm_t *vm, njs_iterator_args_t *args,
     njs_promise_capability_t     *capability;
     njs_promise_all_context_t    *context;
     njs_promise_iterator_args_t  *pargs;
+
+    if (!njs_is_valid(value)) {
+        value = njs_value_arg(&njs_value_undefined);
+    }
 
     pargs = (njs_promise_iterator_args_t *) args;
 
@@ -1744,6 +1756,10 @@ njs_promise_perform_race_handler(njs_vm_t *vm, njs_iterator_args_t *args,
     njs_value_t                  arguments[2], next;
     njs_promise_capability_t     *capability;
     njs_promise_iterator_args_t  *pargs;
+
+    if (!njs_is_valid(value)) {
+        value = njs_value_arg(&njs_value_undefined);
+    }
 
     pargs = (njs_promise_iterator_args_t *) args;
 
