@@ -5103,6 +5103,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Array.prototype.lastIndexOf.call({0:'undefined', length:0}, 'undefined')"),
       njs_str("-1") },
 
+    { njs_str("[1,0,-1,-2].map(v => Array.prototype.lastIndexOf.call('Ф', 'Ф', v))"),
+      njs_str("0,0,0,-1") },
+
     { njs_str("[''].lastIndexOf.call('00000000000000000000000000000а00')"),
       njs_str("-1") },
 
