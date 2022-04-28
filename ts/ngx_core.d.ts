@@ -78,8 +78,9 @@ interface NgxFetchOptions {
      */
     body?: NjsStringLike,
     /**
-     * The buffer size for reading the response, by default is 4096.
+     * The buffer size for reading the response, by default is 16384 (4096 before 0.7.4).
      * Nginx specific.
+     * @deprecated Use `js_fetch_buffer_size` directive instead.
      */
     buffer_size?: Number,
     /**
@@ -87,8 +88,9 @@ interface NgxFetchOptions {
      */
     headers?: Object,
     /**
-     * The maximum size of the response body in bytes, by default is 32768.
+     * The maximum size of the response body in bytes, by default is 1048576 (32768 before 0.7.4).
      * Nginx specific.
+     * @deprecated Use `js_fetch_max_response_buffer_size` directive instead.
      */
     max_response_body_size?: Number,
     /**

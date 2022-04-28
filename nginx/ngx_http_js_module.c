@@ -24,10 +24,16 @@ typedef struct {
     ngx_str_t              header_filter;
     ngx_str_t              body_filter;
     ngx_uint_t             buffer_type;
+
+    size_t                 buffer_size;
+    size_t                 max_response_body_size;
+    ngx_msec_t             timeout;
+
 #if (NGX_HTTP_SSL)
     ngx_ssl_t             *ssl;
     ngx_str_t              ssl_ciphers;
     ngx_uint_t             ssl_protocols;
+    ngx_flag_t             ssl_verify;
     ngx_int_t              ssl_verify_depth;
     ngx_str_t              ssl_trusted_certificate;
 #endif
@@ -207,6 +213,11 @@ static ngx_resolver_t *ngx_http_js_resolver(njs_vm_t *vm,
     ngx_http_request_t *r);
 static ngx_msec_t ngx_http_js_resolver_timeout(njs_vm_t *vm,
     ngx_http_request_t *r);
+static ngx_msec_t ngx_http_js_fetch_timeout(njs_vm_t *vm,
+    ngx_http_request_t *r);
+static size_t ngx_http_js_buffer_size(njs_vm_t *vm, ngx_http_request_t *r);
+static size_t ngx_http_js_max_response_buffer_size(njs_vm_t *vm,
+    ngx_http_request_t *r);
 static void ngx_http_js_handle_vm_event(ngx_http_request_t *r,
     njs_vm_event_t vm_event, njs_value_t *args, njs_uint_t nargs);
 static void ngx_http_js_handle_event(ngx_http_request_t *r,
@@ -231,6 +242,7 @@ static char *ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent,
 static char * ngx_http_js_set_ssl(ngx_conf_t *cf, ngx_http_js_loc_conf_t *jlcf);
 #endif
 static ngx_ssl_t *ngx_http_js_ssl(njs_vm_t *vm, ngx_http_request_t *r);
+static ngx_flag_t ngx_http_js_ssl_verify(njs_vm_t *vm, ngx_http_request_t *r);
 
 #if (NGX_HTTP_SSL)
 
@@ -295,6 +307,27 @@ static ngx_command_t  ngx_http_js_commands[] = {
       0,
       NULL },
 
+    { ngx_string("js_fetch_buffer_size"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_size_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_js_loc_conf_t, buffer_size),
+      NULL },
+
+    { ngx_string("js_fetch_max_response_buffer_size"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_size_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_js_loc_conf_t, max_response_body_size),
+      NULL },
+
+    { ngx_string("js_fetch_timeout"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_msec_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_js_loc_conf_t, timeout),
+      NULL },
+
 #if (NGX_HTTP_SSL)
 
     { ngx_string("js_fetch_ciphers"),
@@ -310,6 +343,13 @@ static ngx_command_t  ngx_http_js_commands[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_js_loc_conf_t, ssl_protocols),
       &ngx_http_js_ssl_protocols },
+
+    { ngx_string("js_fetch_verify"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_js_loc_conf_t, ssl_verify),
+      NULL },
 
     { ngx_string("js_fetch_verify_depth"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
@@ -716,11 +756,15 @@ static uintptr_t ngx_http_js_uptr[] = {
     (uintptr_t) ngx_http_js_resolver_timeout,
     (uintptr_t) ngx_http_js_handle_event,
     (uintptr_t) ngx_http_js_ssl,
+    (uintptr_t) ngx_http_js_ssl_verify,
+    (uintptr_t) ngx_http_js_fetch_timeout,
+    (uintptr_t) ngx_http_js_buffer_size,
+    (uintptr_t) ngx_http_js_max_response_buffer_size,
 };
 
 
 static njs_vm_meta_t ngx_http_js_metas = {
-    .size = 6,
+    .size = njs_nitems(ngx_http_js_uptr),
     .values = ngx_http_js_uptr
 };
 
@@ -3420,6 +3464,39 @@ ngx_http_js_resolver_timeout(njs_vm_t *vm, ngx_http_request_t *r)
 }
 
 
+static ngx_msec_t
+ngx_http_js_fetch_timeout(njs_vm_t *vm, ngx_http_request_t *r)
+{
+    ngx_http_js_loc_conf_t  *jlcf;
+
+    jlcf = ngx_http_get_module_loc_conf(r, ngx_http_js_module);
+
+    return jlcf->timeout;
+}
+
+
+static size_t
+ngx_http_js_buffer_size(njs_vm_t *vm, ngx_http_request_t *r)
+{
+    ngx_http_js_loc_conf_t  *jlcf;
+
+    jlcf = ngx_http_get_module_loc_conf(r, ngx_http_js_module);
+
+    return jlcf->buffer_size;
+}
+
+
+static size_t
+ngx_http_js_max_response_buffer_size(njs_vm_t *vm, ngx_http_request_t *r)
+{
+    ngx_http_js_loc_conf_t  *jlcf;
+
+    jlcf = ngx_http_get_module_loc_conf(r, ngx_http_js_module);
+
+    return jlcf->max_response_body_size;
+}
+
+
 static void
 ngx_http_js_handle_vm_event(ngx_http_request_t *r, njs_vm_event_t vm_event,
     njs_value_t *args, njs_uint_t nargs)
@@ -3952,7 +4029,12 @@ ngx_http_js_create_loc_conf(ngx_conf_t *cf)
      *     conf->ssl_trusted_certificate = { 0, NULL };
      */
 
+    conf->buffer_size = NGX_CONF_UNSET_SIZE;
+    conf->max_response_body_size = NGX_CONF_UNSET_SIZE;
+    conf->timeout = NGX_CONF_UNSET_MSEC;
+
 #if (NGX_HTTP_SSL)
+    conf->ssl_verify = NGX_CONF_UNSET;
     conf->ssl_verify_depth = NGX_CONF_UNSET;
 #endif
 
@@ -3972,6 +4054,11 @@ ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_uint_value(conf->buffer_type, prev->buffer_type,
                               NGX_JS_STRING);
 
+    ngx_conf_merge_msec_value(conf->timeout, prev->timeout, 60000);
+    ngx_conf_merge_size_value(conf->buffer_size, prev->buffer_size, 16384);
+    ngx_conf_merge_size_value(conf->max_response_body_size,
+                              prev->max_response_body_size, 1048576);
+
 #if (NGX_HTTP_SSL)
     ngx_conf_merge_str_value(conf->ssl_ciphers, prev->ssl_ciphers, "DEFAULT");
 
@@ -3979,6 +4066,7 @@ ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
                                  (NGX_CONF_BITMASK_SET|NGX_SSL_TLSv1
                                   |NGX_SSL_TLSv1_1|NGX_SSL_TLSv1_2));
 
+    ngx_conf_merge_value(conf->ssl_verify, prev->ssl_verify, 1);
     ngx_conf_merge_value(conf->ssl_verify_depth, prev->ssl_verify_depth, 100);
 
     ngx_conf_merge_str_value(conf->ssl_trusted_certificate,
@@ -4048,5 +4136,20 @@ ngx_http_js_ssl(njs_vm_t *vm, ngx_http_request_t *r)
     return jlcf->ssl;
 #else
     return NULL;
+#endif
+}
+
+
+static ngx_flag_t
+ngx_http_js_ssl_verify(njs_vm_t *vm, ngx_http_request_t *r)
+{
+#if (NGX_HTTP_SSL)
+    ngx_http_js_loc_conf_t  *jlcf;
+
+    jlcf = ngx_http_get_module_loc_conf(r, ngx_http_js_module);
+
+    return jlcf->ssl_verify;
+#else
+    return 0;
 #endif
 }

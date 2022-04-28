@@ -25,7 +25,11 @@ typedef void (*ngx_js_event_handler_pt)(njs_external_ptr_t e,
     njs_vm_event_t vm_event, njs_value_t *args, njs_uint_t nargs);
 typedef ngx_resolver_t *(*ngx_external_resolver_pt)(njs_vm_t *vm,
     njs_external_ptr_t e);
-typedef ngx_msec_t (*ngx_external_resolver_timeout_pt)(njs_vm_t *vm,
+typedef ngx_msec_t (*ngx_external_timeout_pt)(njs_vm_t *vm,
+    njs_external_ptr_t e);
+typedef ngx_flag_t (*ngx_external_flag_pt)(njs_vm_t *vm,
+    njs_external_ptr_t e);
+typedef ngx_flag_t (*ngx_external_size_pt)(njs_vm_t *vm,
     njs_external_ptr_t e);
 typedef ngx_ssl_t *(*ngx_external_ssl_pt)(njs_vm_t *vm, njs_external_ptr_t e);
 
@@ -37,11 +41,19 @@ typedef ngx_ssl_t *(*ngx_external_ssl_pt)(njs_vm_t *vm, njs_external_ptr_t e);
 #define ngx_external_resolver(vm, e)                                          \
     ((ngx_external_resolver_pt) njs_vm_meta(vm, 2))(vm, e)
 #define ngx_external_resolver_timeout(vm, e)                                  \
-    ((ngx_external_resolver_timeout_pt) njs_vm_meta(vm, 3))(vm, e)
+    ((ngx_external_timeout_pt) njs_vm_meta(vm, 3))(vm, e)
 #define ngx_external_event_handler(vm, e)                                     \
     ((ngx_js_event_handler_pt) njs_vm_meta(vm, 4))
 #define ngx_external_ssl(vm, e)                                               \
     ((ngx_external_ssl_pt) njs_vm_meta(vm, 5))(vm, e)
+#define ngx_external_ssl_verify(vm, e)                                        \
+    ((ngx_external_flag_pt) njs_vm_meta(vm, 6))(vm, e)
+#define ngx_external_fetch_timeout(vm, e)                                     \
+    ((ngx_external_timeout_pt) njs_vm_meta(vm, 7))(vm, e)
+#define ngx_external_buffer_size(vm, e)                                       \
+    ((ngx_external_size_pt) njs_vm_meta(vm, 8))(vm, e)
+#define ngx_external_max_response_buffer_size(vm, e)                          \
+    ((ngx_external_size_pt) njs_vm_meta(vm, 9))(vm, e)
 
 
 #define ngx_js_prop(vm, type, value, start, len)                              \
