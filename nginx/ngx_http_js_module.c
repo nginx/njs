@@ -890,7 +890,9 @@ ngx_http_js_content_write_event_handler(ngx_http_request_t *r)
 static void
 ngx_http_js_content_finalize(ngx_http_request_t *r, ngx_http_js_ctx_t *ctx)
 {
-    ngx_str_t  args;
+    ngx_str_t   args;
+    ngx_int_t   rc;
+    ngx_uint_t  flags;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http js content rc: %i", ctx->status);
@@ -900,7 +902,16 @@ ngx_http_js_content_finalize(ngx_http_request_t *r, ngx_http_js_ctx_t *ctx)
             ngx_http_named_location(r, &ctx->redirect_uri);
 
         } else {
-            ngx_http_split_args(r, &ctx->redirect_uri, &args);
+            ngx_str_null(&args);
+            flags = NGX_HTTP_LOG_UNSAFE;
+
+            rc = ngx_http_parse_unsafe_uri(r, &ctx->redirect_uri, &args,
+                                           &flags);
+            if (rc != NGX_OK) {
+                ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+                return;
+            }
+
             ngx_http_internal_redirect(r, &ctx->redirect_uri, &args);
         }
     }
