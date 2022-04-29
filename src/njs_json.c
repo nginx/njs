@@ -877,8 +877,14 @@ njs_json_push_parse_state(njs_vm_t *vm, njs_json_parse_t *parse,
 
 
 njs_inline njs_json_state_t *
-njs_json_pop_parse_state(njs_json_parse_t *parse)
+njs_json_pop_parse_state(njs_vm_t *vm, njs_json_parse_t *parse)
 {
+    njs_json_state_t  *state;
+
+    state = &parse->states[parse->depth - 1];
+    njs_array_destroy(vm, state->keys);
+    state->keys = NULL;
+
     if (parse->depth > 1) {
         parse->depth--;
         return &parse->states[parse->depth - 1];
@@ -956,7 +962,7 @@ njs_json_parse_iterator(njs_vm_t *vm, njs_json_parse_t *parse,
             }
 
         } else {
-            state = njs_json_pop_parse_state(parse);
+            state = njs_json_pop_parse_state(vm, parse);
             if (state == NULL) {
                 vm->retval = parse->retval;
                 return NJS_OK;
