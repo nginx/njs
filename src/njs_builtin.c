@@ -1693,6 +1693,14 @@ static const njs_object_prop_t  njs_njs_object_properties[] =
 
     {
         .type = NJS_PROPERTY,
+        .name = njs_string("version_number"),
+        .value = njs_value(NJS_NUMBER, 1, NJS_VERSION_NUMBER),
+        .configurable = 1,
+        .enumerable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
         .name = njs_string("dump"),
         .value = njs_native_function(njs_ext_dump, 0),
         .configurable = 1,

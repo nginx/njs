@@ -12,6 +12,7 @@
 #include <njs_auto_config.h>
 
 #define NJS_VERSION                 "0.7.4"
+#define NJS_VERSION_NUMBER          0x000704
 
 
 #include <unistd.h>                 /* STDOUT_FILENO, STDERR_FILENO */

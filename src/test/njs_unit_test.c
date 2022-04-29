@@ -13448,6 +13448,10 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Object.values(njs)[0] === njs.version"),
       njs_str("true") },
 
+    { njs_str("njs.version.split('.')"
+              ".map(v => parseInt(v)).reduce((p, c) => p * 256 + c) == njs.version_number"),
+      njs_str("true") },
+
     { njs_str("Object.values(process)"),
       njs_str("") },
 
@@ -17643,9 +17647,6 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var o = Object.defineProperty({}, 'a', { set(){}, enumerable: true }); njs.dump(o)"),
       njs_str("{a:'[Setter]'}") },
-
-    { njs_str("njs.dump(njs) == `njs {version:'${njs.version}'}`"),
-      njs_str("true") },
 
     { njs_str("var a = []; a[0] = a; njs.dump(a)"),
       njs_str("[[Circular]]") },
