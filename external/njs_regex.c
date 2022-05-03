@@ -222,6 +222,8 @@ njs_regex_compile(njs_regex_t *regex, u_char *source, size_t len,
          options |= PCRE2_UTF;
     }
 
+    pcre2_set_compile_extra_options(cctx, PCRE2_EXTRA_ALLOW_SURROGATE_ESCAPES);
+
     regex->code = pcre2_compile(source, len, options, &ret, &erroff, cctx);
 
     if (njs_slow_path(regex->code == NULL)) {
