@@ -28,19 +28,8 @@ typedef struct {
     int64_t                    length;
     njs_array_t                *keys;
     njs_value_t                *key;
-    njs_object_prop_t          *prop;
+    njs_value_t                prop;
 } njs_json_state_t;
-
-
-typedef struct {
-    njs_value_t                retval;
-
-    njs_uint_t                 depth;
-#define NJS_JSON_MAX_DEPTH     32
-    njs_json_state_t           states[NJS_JSON_MAX_DEPTH];
-
-    njs_function_t             *function;
-} njs_json_parse_t;
 
 
 typedef struct {
@@ -49,6 +38,7 @@ typedef struct {
     njs_vm_t                   *vm;
 
     njs_uint_t                 depth;
+#define NJS_JSON_MAX_DEPTH     32
     njs_json_state_t           states[NJS_JSON_MAX_DEPTH];
 
     njs_value_t                replacer;
@@ -72,10 +62,9 @@ njs_inline uint32_t njs_json_unicode(const u_char *p);
 static const u_char *njs_json_skip_space(const u_char *start,
     const u_char *end);
 
-static njs_int_t njs_json_parse_iterator(njs_vm_t *vm, njs_json_parse_t *parse,
-    njs_value_t *value);
-static njs_int_t njs_json_parse_iterator_call(njs_vm_t *vm,
-    njs_json_parse_t *parse, njs_json_state_t *state);
+static njs_int_t njs_json_internalize_property(njs_vm_t *vm,
+    njs_function_t *reviver, njs_value_t *holder, njs_value_t *name,
+    njs_int_t depth, njs_value_t *retval);
 static void njs_json_parse_exception(njs_json_parse_ctx_t *ctx,
     const char *msg, const u_char *pos);
 
@@ -108,14 +97,12 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     njs_int_t             ret;
-    njs_value_t           *text, value, lvalue;
+    njs_value_t           *text, value, lvalue, wrapper;
+    njs_object_t          *obj;
     const u_char          *p, *end;
-    njs_json_parse_t      *parse, json_parse;
     const njs_value_t     *reviver;
     njs_string_prop_t     string;
     njs_json_parse_ctx_t  ctx;
-
-    parse = &json_parse;
 
     text = njs_lvalue_arg(&lvalue, args, nargs, 1);
 
@@ -156,11 +143,16 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     reviver = njs_arg(args, nargs, 2);
 
-    if (njs_slow_path(njs_is_function(reviver) && njs_is_object(&value))) {
-        parse->function = njs_function(reviver);
-        parse->depth = 0;
+    if (njs_slow_path(njs_is_function(reviver))) {
+        obj = njs_json_wrap_value(vm, &wrapper, &value);
+        if (njs_slow_path(obj == NULL)) {
+            return NJS_ERROR;
+        }
 
-        return njs_json_parse_iterator(vm, parse, &value);
+        return njs_json_internalize_property(vm, njs_function(reviver),
+                                             &wrapper,
+                                             njs_value_arg(&njs_string_empty),
+                                             0, &vm->retval);
     }
 
     vm->retval = value;
@@ -851,195 +843,106 @@ njs_json_skip_space(const u_char *start, const u_char *end)
 }
 
 
-static njs_json_state_t *
-njs_json_push_parse_state(njs_vm_t *vm, njs_json_parse_t *parse,
-    njs_value_t *value)
-{
-    njs_json_state_t  *state;
-
-    if (njs_slow_path(parse->depth >= NJS_JSON_MAX_DEPTH)) {
-        njs_type_error(vm, "Nested too deep or a cyclic structure");
-        return NULL;
-    }
-
-    state = &parse->states[parse->depth++];
-    state->value = *value;
-    state->index = 0;
-    state->prop = NULL;
-    state->keys = njs_value_own_enumerate(vm, value, NJS_ENUM_KEYS,
-                                          NJS_ENUM_STRING, 0);
-    if (state->keys == NULL) {
-        return NULL;
-    }
-
-    return state;
-}
-
-
-njs_inline njs_json_state_t *
-njs_json_pop_parse_state(njs_vm_t *vm, njs_json_parse_t *parse)
-{
-    njs_json_state_t  *state;
-
-    state = &parse->states[parse->depth - 1];
-    njs_array_destroy(vm, state->keys);
-    state->keys = NULL;
-
-    if (parse->depth > 1) {
-        parse->depth--;
-        return &parse->states[parse->depth - 1];
-    }
-
-    return NULL;
-}
-
-
 static njs_int_t
-njs_json_parse_iterator(njs_vm_t *vm, njs_json_parse_t *parse,
-    njs_value_t *object)
+njs_json_internalize_property(njs_vm_t *vm, njs_function_t *reviver,
+    njs_value_t *holder, njs_value_t *name, njs_int_t depth,
+    njs_value_t *retval)
 {
-    njs_int_t             ret;
-    njs_value_t           *key, wrapper;
-    njs_object_t          *obj;
-    njs_json_state_t      *state;
-    njs_object_prop_t     *prop;
-    njs_property_query_t  pq;
+    int64_t       k, length;
+    njs_int_t     ret;
+    njs_value_t   val, new_elem, index;
+    njs_value_t   arguments[3];
+    njs_array_t   *keys;
 
-    obj = njs_json_wrap_value(vm, &wrapper, object);
-    if (njs_slow_path(obj == NULL)) {
+    if (njs_slow_path(depth++ >= NJS_JSON_MAX_DEPTH)) {
+        njs_type_error(vm, "Nested too deep or a cyclic structure");
         return NJS_ERROR;
     }
 
-    state = njs_json_push_parse_state(vm, parse, &wrapper);
-    if (njs_slow_path(state == NULL)) {
+    ret = njs_value_property(vm, holder, name, &val);
+    if (njs_slow_path(ret == NJS_ERROR)) {
         return NJS_ERROR;
     }
 
-    for ( ;; ) {
-        if (state->index < state->keys->length) {
-            njs_property_query_init(&pq, NJS_PROPERTY_QUERY_SET, 0);
+    keys = NULL;
 
-            key = &state->keys->start[state->index];
-
-            ret = njs_property_query(vm, &pq, &state->value, key);
-            if (njs_slow_path(ret != NJS_OK)) {
-                if (ret == NJS_DECLINED) {
-                    state->index++;
-                    continue;
-                }
-
+    if (njs_is_object(&val)) {
+        if (!njs_is_array(&val)) {
+            keys = njs_array_keys(vm, &val, 0);
+            if (njs_slow_path(keys == NULL)) {
                 return NJS_ERROR;
             }
 
-            prop = pq.lhq.value;
+            for (k = 0; k < keys->length; k++) {
+                ret = njs_json_internalize_property(vm, reviver, &val,
+                                                    &keys->start[k], depth,
+                                                    &new_elem);
 
-            if (prop->type == NJS_WHITEOUT) {
-                state->index++;
-                continue;
+                if (njs_slow_path(ret != NJS_OK)) {
+                    goto done;
+                }
+
+                if (njs_is_undefined(&new_elem)) {
+                    ret = njs_value_property_delete(vm, &val, &keys->start[k],
+                                                    NULL, 0);
+
+                } else {
+                    ret = njs_value_property_set(vm, &val, &keys->start[k],
+                                                 &new_elem);
+                }
+
+                if (njs_slow_path(ret == NJS_ERROR)) {
+                    goto done;
+                }
             }
 
-            state->prop = prop;
+        } else {
 
-            if (prop->type == NJS_PROPERTY && njs_is_object(&prop->value)) {
-                state = njs_json_push_parse_state(vm, parse, &prop->value);
-                if (state == NULL) {
+            ret = njs_object_length(vm, &val, &length);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                return NJS_ERROR;
+            }
+
+            for (k = 0; k < length; k++) {
+                ret = njs_int64_to_string(vm, &index, k);
+                if (njs_slow_path(ret != NJS_OK)) {
                     return NJS_ERROR;
                 }
 
-                continue;
-            }
+                ret = njs_json_internalize_property(vm, reviver, &val, &index,
+                                                    depth, &new_elem);
 
-            if (prop->type == NJS_PROPERTY_REF
-                && njs_is_object(prop->value.data.u.value))
-            {
-                state = njs_json_push_parse_state(vm, parse,
-                                                  prop->value.data.u.value);
-                if (state == NULL) {
+                if (njs_slow_path(ret != NJS_OK)) {
                     return NJS_ERROR;
                 }
 
-                continue;
-            }
+                if (njs_is_undefined(&new_elem)) {
+                    ret = njs_value_property_delete(vm, &val, &index, NULL, 0);
 
-        } else {
-            state = njs_json_pop_parse_state(vm, parse);
-            if (state == NULL) {
-                vm->retval = parse->retval;
-                return NJS_OK;
-            }
-        }
+                } else {
+                    ret = njs_value_property_set(vm, &val, &index, &new_elem);
+                }
 
-        ret = njs_json_parse_iterator_call(vm, parse, state);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
+                if (njs_slow_path(ret == NJS_ERROR)) {
+                    return NJS_ERROR;
+                }
+            }
         }
     }
-}
 
+    njs_value_assign(&arguments[0], holder);
+    njs_value_assign(&arguments[1], name);
+    njs_value_assign(&arguments[2], &val);
 
-static njs_int_t
-njs_json_parse_iterator_call(njs_vm_t *vm, njs_json_parse_t *parse,
-    njs_json_state_t *state)
-{
-    njs_int_t          ret;
-    njs_value_t        arguments[3], *value;
-    njs_object_prop_t  *prop;
+    ret = njs_function_apply(vm, reviver, arguments, 3, retval);
 
-    prop = state->prop;
+done:
 
-    arguments[0] = state->value;
-    arguments[1] = state->keys->start[state->index++];
-
-    switch (prop->type) {
-    case NJS_PROPERTY:
-        arguments[2] = prop->value;
-
-        ret = njs_function_apply(vm, parse->function, arguments, 3,
-                                 &parse->retval);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
-
-        if (njs_is_undefined(&parse->retval)) {
-            prop->type = NJS_WHITEOUT;
-
-        } else {
-            prop->value = parse->retval;
-        }
-
-        break;
-
-    case NJS_PROPERTY_REF:
-        value = prop->value.data.u.value;
-        arguments[2] = *value;
-
-        ret = njs_function_apply(vm, parse->function, arguments, 3,
-                                 &parse->retval);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
-
-        if (njs_is_undefined(&parse->retval)) {
-            ret = njs_value_property_i64_delete(vm, &state->value,
-                                                state->index - 1, NULL);
-
-        } else {
-            ret = njs_value_property_i64_set(vm, &state->value,
-                                             state->index - 1, &parse->retval);
-        }
-
-        if (njs_slow_path(ret == NJS_ERROR)) {
-            return NJS_ERROR;
-        }
-
-        break;
-
-    default:
-        njs_internal_error(vm, "njs_json_parse_iterator_call() unexpected "
-                         "property type:%s", njs_prop_type_string(prop->type));
+    if (keys != NULL) {
+        njs_array_destroy(vm, keys);
     }
 
-    return NJS_OK;
+    return ret;
 }
 
 

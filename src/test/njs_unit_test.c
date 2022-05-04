@@ -17203,6 +17203,31 @@ static njs_unit_test_t  njs_test[] =
               "JSON.parse('[1]', func);"),
       njs_str("") },
 
+    { njs_str("JSON.parse(JSON.stringify([Array(2**16)]), v => v)"),
+      njs_str("") },
+
+    { njs_str("var order = []; function reviver(k, v) { order.push(k); };"
+              "JSON.parse('{\"p1\":0,\"p2\":0,\"p1\":0,\"2\":0,\"1\":0}', reviver);"
+              "order"),
+      njs_str("1,2,p1,p2,") },
+
+    { njs_str("function reviver(k, v) {"
+              "    if (k == '0') Object.defineProperty(this, '1', {configurable: false});"
+              "    if (k == '1') return;"
+              "    return v;"
+              " };"
+              "JSON.parse('[1, 2]', reviver)"),
+      njs_str("1,2") },
+
+    { njs_str("JSON.parse('0', (k, v) => {throw 'Oops'})"),
+      njs_str("Oops") },
+
+    { njs_str("JSON.parse('{\"a\":1}', (k, v) => {if (k == 'a') {throw 'Oops'}; return v;})"),
+      njs_str("Oops") },
+
+    { njs_str("JSON.parse('[2,3,43]', (k, v) => {if (v == 43) {throw 'Oops'}; return v;})"),
+      njs_str("Oops") },
+
     /* JSON.stringify() */
 
     { njs_str("JSON.stringify()"),

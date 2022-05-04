@@ -208,6 +208,16 @@ static njs_benchmark_test_t  njs_test[] =
       njs_str("123"),
       1000000 },
 
+    { "JSON.parse large",
+      njs_str("JSON.parse(JSON.stringify([Array(2**16)]))[0].length"),
+      njs_str("65536"),
+      10 },
+
+    { "JSON.parse reviver large",
+      njs_str("JSON.parse(JSON.stringify([Array(2**16)]), v=>v)"),
+      njs_str(""),
+      10 },
+
     { "for loop 100M",
       njs_str("var i; for (i = 0; i < 100000000; i++); i"),
       njs_str("100000000"),
