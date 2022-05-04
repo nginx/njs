@@ -1327,7 +1327,7 @@ fail:
 
 njs_int_t
 njs_value_property_delete(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
-    njs_value_t *removed)
+    njs_value_t *removed, njs_bool_t thrw)
 {
     njs_int_t             ret;
     njs_object_prop_t     *prop;
@@ -1343,10 +1343,14 @@ njs_value_property_delete(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     prop = pq.lhq.value;
 
     if (njs_slow_path(!prop->configurable)) {
-        njs_key_string_get(vm, &pq.key,  &pq.lhq.key);
-        njs_type_error(vm, "Cannot delete property \"%V\" of %s",
-                       &pq.lhq.key, njs_type_string(value->type));
-        return NJS_ERROR;
+        if (thrw) {
+            njs_key_string_get(vm, &pq.key,  &pq.lhq.key);
+            njs_type_error(vm, "Cannot delete property \"%V\" of %s",
+                           &pq.lhq.key, njs_type_string(value->type));
+            return NJS_ERROR;
+        }
+
+        return NJS_OK;
     }
 
     switch (prop->type) {

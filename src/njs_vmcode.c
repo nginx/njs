@@ -500,7 +500,7 @@ next:
                 break;
 
             case NJS_VMCODE_PROPERTY_DELETE:
-                ret = njs_value_property_delete(vm, value1, value2, NULL);
+                ret = njs_value_property_delete(vm, value1, value2, NULL, 1);
                 if (njs_fast_path(ret != NJS_ERROR)) {
                     vm->retval = njs_value_true;
 

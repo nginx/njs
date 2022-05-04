@@ -243,7 +243,7 @@ njs_array_length_set(njs_vm_t *vm, njs_value_t *value,
                 idx = njs_string_to_index(&keys->start[i]);
                 if (idx >= length) {
                     ret = njs_value_property_delete(vm, value, &keys->start[i],
-                                                    NULL);
+                                                    NULL, 1);
                     if (njs_slow_path(ret == NJS_ERROR)) {
                         goto done;
                     }
@@ -1064,7 +1064,7 @@ njs_array_prototype_unshift(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         while (from > 0) {
             ret = njs_value_property_delete(vm, this, &keys->start[--from],
-                                            &entry);
+                                            &entry, 1);
             if (njs_slow_path(ret == NJS_ERROR)) {
                 njs_array_destroy(vm, keys);
                 return ret;
