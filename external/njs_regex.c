@@ -60,8 +60,26 @@ njs_regex_compile_ctx_t *
 njs_regex_compile_ctx_create(njs_regex_generic_ctx_t *ctx)
 {
 #ifdef NJS_HAVE_PCRE2
+    pcre2_compile_context  *cc;
 
-    return pcre2_compile_context_create(ctx);
+    cc = pcre2_compile_context_create(ctx);
+
+#ifdef PCRE2_EXTRA_ALLOW_SURROGATE_ESCAPES
+    if (njs_fast_path(cc != NULL)) {
+        /* Workaround for surrogate pairs in regular expressions
+         *
+         * This option is needed because njs, unlike the standard ECMAScript,
+         * stores and processes strings in UTF-8 encoding.
+         * PCRE2 does not support surrogate pairs by default when it
+         * is compiled for UTF-8 only strings. But many polyfills
+         * and transpilers use such surrogate pairs expressions.
+         */
+        pcre2_set_compile_extra_options(cc,
+                                        PCRE2_EXTRA_ALLOW_SURROGATE_ESCAPES);
+    }
+#endif
+
+    return cc;
 
 #else
 

@@ -10841,6 +10841,11 @@ static njs_unit_test_t  njs_test[] =
       njs_str("true") },
 #endif
 
+#ifdef PCRE2_EXTRA_ALLOW_SURROGATE_ESCAPES
+    { njs_str("/\\u200d\\ud800-/"),
+      njs_str("/\\u200d\\ud800-/") },
+#endif
+
     { njs_str("/(\\.(?!com|org)|\\/)/.test('ah.info')"),
       njs_str("true") },
 
