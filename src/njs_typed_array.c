@@ -702,8 +702,6 @@ njs_typed_array_set_value(njs_vm_t *vm, njs_typed_array_t *array,
 
     njs_typed_array_prop_set(vm, array, index, num);
 
-    njs_set_number(setval, num);
-
     return NJS_OK;
 }
 

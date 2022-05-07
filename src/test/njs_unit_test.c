@@ -5409,6 +5409,9 @@ static njs_unit_test_t  njs_test[] =
                  "Array.prototype.fill.call(o, 2).a"),
       njs_str("4") },
 
+    { njs_str("Array.prototype.fill.call(new Int32Array(1))"),
+      njs_str("0") },
+
     { njs_str("ArrayBuffer()"),
       njs_str("TypeError: Constructor ArrayBuffer requires 'new'") },
 
