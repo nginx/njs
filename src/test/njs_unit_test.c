@@ -13837,6 +13837,16 @@ static njs_unit_test_t  njs_test[] =
               "d.enumerable && d.writable && d.configurable"),
       njs_str("true") },
 
+    { njs_str("const arr = [1,2];"
+              "function f(arg) {"
+              "        const desc = {get: arg};"
+              "        Object.defineProperty(desc, 'set', desc);"
+              "        Object.defineProperty(arr, 1, desc);"
+              "}"
+              "f(f);"
+              "njs.dump(arr)"),
+      njs_str("[1,'[Getter]']") },
+
     { njs_str("Object.defineProperties()"),
       njs_str("TypeError: Object.defineProperties is called on non-object") },
 

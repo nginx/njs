@@ -142,6 +142,10 @@ njs_array_convert_to_slow_array(njs_vm_t *vm, njs_array_t *array)
     njs_value_t        index, value;
     njs_object_prop_t  *prop;
 
+    if (njs_slow_path(!array->object.fast_array)) {
+        return NJS_OK;
+    }
+
     njs_set_array(&value, array);
     array->object.fast_array = 0;
 
