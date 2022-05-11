@@ -18041,8 +18041,13 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("[(]"),
       njs_str("SyntaxError: Unexpected token \"]\" in 1") },
 
+#if 0 /* TODO spreading support. */
     { njs_str("[...]"),
       njs_str("SyntaxError: Unexpected token \"]\" in 1") },
+
+    { njs_str("var id = (x) => x, x = id(...[1,2,3]); typeof x"),
+      njs_str("number") },
+#endif
 
     { njs_str("switch () {}"),
       njs_str("SyntaxError: Unexpected token \")\" in 1") },

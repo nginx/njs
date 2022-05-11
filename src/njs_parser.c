@@ -1664,12 +1664,18 @@ njs_parser_array_element_list(njs_parser_t *parser, njs_lexer_token_t *token,
         return NJS_OK;
 
     case NJS_TOKEN_ELLIPSIS:
+#if 0
         njs_lexer_consume_token(parser->lexer, 1);
 
         njs_parser_next(parser, njs_parser_assignment_expression);
 
         return njs_parser_after(parser, current, array, 0,
                                 njs_parser_array_spread_element);
+#else
+        (void) njs_parser_array_spread_element;
+        return njs_parser_failed(parser);
+#endif
+
     default:
         break;
     }
@@ -2862,9 +2868,11 @@ njs_parser_argument_list(njs_parser_t *parser, njs_lexer_token_t *token,
      * ArgumentList , ... AssignmentExpression
      */
 
+#if 0 /* TODO. */
     if (token->type == NJS_TOKEN_ELLIPSIS) {
         njs_lexer_consume_token(parser->lexer, 1);
     }
+#endif
 
     njs_parser_next(parser, njs_parser_assignment_expression);
 
