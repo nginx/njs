@@ -6954,8 +6954,13 @@ njs_parser_function_expression_after(njs_parser_t *parser,
 
     var = (njs_variable_t *) parser->target;
 
+    if (var->self) {
+        var->init = 1;
+        var->type = NJS_VARIABLE_CONST;
+    }
+
     var->index = njs_scope_index(var->scope->type, var->scope->items,
-                                 NJS_LEVEL_LOCAL, NJS_VARIABLE_VAR);
+                                 NJS_LEVEL_LOCAL, var->type);
     var->scope->items++;
 
     if (var->self) {

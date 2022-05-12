@@ -197,6 +197,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var func = function x(x) {return x}; func()"),
       njs_str("undefined") },
 
+    { njs_str("var func = function f() {f = null; return f;}; func()"),
+      njs_str("TypeError: assignment to constant variable") },
+
+    { njs_str("var func = function f() {let f = null; return f;}; func()"),
+      njs_str("null") },
+
 #if 0 /* TODO */
     { njs_str("var a; Object.getOwnPropertyDescriptor(this, 'a').value"),
       njs_str("undefined") },
