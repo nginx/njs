@@ -30,9 +30,10 @@ njs_inline njs_index_t
 njs_scope_index(njs_scope_t scope, njs_index_t index, njs_level_type_t type,
                 njs_variable_type_t var_type)
 {
-    if (index > NJS_SCOPE_VALUE_MAX || type >= NJS_LEVEL_MAX
-        || (scope != NJS_SCOPE_GLOBAL && scope != NJS_SCOPE_FUNCTION))
-    {
+    njs_assert(type < NJS_LEVEL_MAX);
+    njs_assert(scope == NJS_SCOPE_GLOBAL || scope == NJS_SCOPE_FUNCTION);
+
+    if (index > NJS_SCOPE_VALUE_MAX) {
         return NJS_INDEX_ERROR;
     }
 
