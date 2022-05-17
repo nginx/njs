@@ -1254,14 +1254,12 @@ njs_ext_derive(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     u_char                     *k;
     size_t                     olen;
     int64_t                    iterations, length;
-    EVP_PKEY                   *pkey;
     unsigned                   usage, mask;
     njs_int_t                  ret;
     njs_str_t                  salt, info;
     njs_value_t                value, *aobject, *dobject;
     const EVP_MD               *md;
     EVP_PKEY_CTX               *pctx;
-    njs_mp_cleanup_t           *cln;
     njs_webcrypto_key_t        *key, *dkey;
     njs_webcrypto_hash_t       hash;
     njs_webcrypto_algorithm_t  *alg, *dalg;
@@ -1544,28 +1542,10 @@ free:
             if (njs_slow_path(ret == NJS_ERROR)) {
                 goto fail;
             }
-
-            pkey = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, NULL, k, length);
-            if (njs_slow_path(pkey == NULL)) {
-                njs_webcrypto_error(vm, "EVP_PKEY_new_mac_key() failed");
-                goto fail;
-            }
-
-            cln = njs_mp_cleanup_add(njs_vm_memory_pool(vm), 0);
-            if (cln == NULL) {
-                njs_memory_error(vm);
-                goto fail;
-            }
-
-            cln->handler = njs_webcrypto_cleanup_pkey;
-            cln->data = key;
-
-            dkey->pkey = pkey;
-
-        } else {
-            dkey->raw.start = k;
-            dkey->raw.length = length;
         }
+
+        dkey->raw.start = k;
+        dkey->raw.length = length;
 
         ret = njs_vm_external_create(vm, &value,
                                      njs_webcrypto_crypto_key_proto_id,
@@ -1856,21 +1836,12 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         break;
 
     case NJS_ALGORITHM_HMAC:
-        pkey = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, NULL, key_data.start,
-                                    key_data.length);
-        if (njs_slow_path(pkey == NULL)) {
-            njs_webcrypto_error(vm, "EVP_PKEY_new_mac_key() failed");
-            goto fail;
-        }
-
         ret = njs_algorithm_hash(vm, options, &key->hash);
         if (njs_slow_path(ret == NJS_ERROR)) {
             goto fail;
         }
 
-        key->pkey = pkey;
-
-        break;
+        /* Fall through. */
 
     case NJS_ALGORITHM_AES_GCM:
     case NJS_ALGORITHM_AES_CTR:
@@ -1968,7 +1939,7 @@ static njs_int_t
 njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t verify)
 {
-    u_char                     *dst;
+    u_char                     *dst, *p;
     size_t                     olen, outlen;
     unsigned                   mask, m_len;
     njs_int_t                  ret;
@@ -2030,12 +2001,6 @@ njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    mctx = njs_evp_md_ctx_new();
-    if (njs_slow_path(mctx == NULL)) {
-        njs_webcrypto_error(vm, "njs_evp_md_ctx_new() failed");
-        goto fail;
-    }
-
     if (alg->type == NJS_ALGORITHM_ECDSA) {
         ret = njs_algorithm_hash(vm, options, &hash);
         if (njs_slow_path(ret == NJS_ERROR)) {
@@ -2052,22 +2017,10 @@ njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     switch (alg->type) {
     case NJS_ALGORITHM_HMAC:
-        ret = EVP_DigestSignInit(mctx, NULL, md, NULL, key->pkey);
-        if (njs_slow_path(ret <= 0)) {
-            njs_webcrypto_error(vm, "EVP_DigestSignInit() failed");
-            goto fail;
-        }
-
-        ret = EVP_DigestSignUpdate(mctx, data.start, data.length);
-        if (njs_slow_path(ret <= 0)) {
-            njs_webcrypto_error(vm, "EVP_DigestSignUpdate() failed");
-            goto fail;
-        }
-
-        olen = EVP_MD_size(md);
+        m_len = EVP_MD_size(md);
 
         if (!verify) {
-            dst = njs_mp_zalloc(njs_vm_memory_pool(vm), olen);
+            dst = njs_mp_alloc(njs_vm_memory_pool(vm), m_len);
             if (njs_slow_path(dst == NULL)) {
                 njs_memory_error(vm);
                 goto fail;
@@ -2077,11 +2030,13 @@ njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             dst = (u_char *) &m[0];
         }
 
-        outlen = olen;
+        outlen = m_len;
 
-        ret = EVP_DigestSignFinal(mctx, dst, &outlen);
-        if (njs_slow_path(ret <= 0 || olen != outlen)) {
-            njs_webcrypto_error(vm, "EVP_DigestSignFinal() failed");
+        p = HMAC(md, key->raw.start, key->raw.length, data.start, data.length,
+                 dst, &m_len);
+
+        if (njs_slow_path(p == NULL || m_len != outlen)) {
+            njs_webcrypto_error(vm, "HMAC() failed");
             goto fail;
         }
 
@@ -2095,6 +2050,12 @@ njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     case NJS_ALGORITHM_RSA_PSS:
     case NJS_ALGORITHM_ECDSA:
     default:
+        mctx = njs_evp_md_ctx_new();
+        if (njs_slow_path(mctx == NULL)) {
+            njs_webcrypto_error(vm, "njs_evp_md_ctx_new() failed");
+            goto fail;
+        }
+
         ret = EVP_DigestInit_ex(mctx, md, NULL);
         if (njs_slow_path(ret <= 0)) {
             njs_webcrypto_error(vm, "EVP_DigestInit_ex() failed");
@@ -2168,6 +2129,8 @@ njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             }
         }
 
+        njs_evp_md_ctx_free(mctx);
+
         EVP_PKEY_CTX_free(pctx);
 
         break;
@@ -2182,8 +2145,6 @@ njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     } else {
         njs_set_boolean(&value, ret != 0);
     }
-
-    njs_evp_md_ctx_free(mctx);
 
     return njs_webcrypto_result(vm, &value, NJS_OK);
 

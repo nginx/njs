@@ -19,6 +19,7 @@
 #include <openssl/rsa.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
+#include <openssl/hmac.h>
 #include <openssl/crypto.h>
 
 #ifdef EVP_PKEY_HKDF
