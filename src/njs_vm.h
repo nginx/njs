@@ -122,7 +122,6 @@ typedef enum {
     NJS_LEVEL_CLOSURE,
     NJS_LEVEL_GLOBAL,
     NJS_LEVEL_STATIC,
-    NJS_LEVEL_TEMP,
     NJS_LEVEL_MAX
 } njs_level_type_t;
 

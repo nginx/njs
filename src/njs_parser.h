@@ -20,7 +20,6 @@ struct njs_parser_scope_s {
     njs_arr_t                       *closures;
     njs_arr_t                       *declarations;
 
-    uint32_t                        temp;
     uint32_t                        items;
 
     njs_scope_t                     type:8;

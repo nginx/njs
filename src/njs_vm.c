@@ -226,17 +226,6 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     vm->variables_hash = &scope->variables;
     vm->global_items = scope->items;
 
-    vm->levels[NJS_LEVEL_TEMP] = NULL;
-
-    if (scope->temp != 0) {
-        new = njs_scope_make(vm, scope->temp);
-        if (njs_slow_path(new == NULL)) {
-            return ret;
-        }
-
-        vm->levels[NJS_LEVEL_TEMP] = new;
-    }
-
     if (vm->options.disassemble) {
         njs_disassembler(vm);
     }
@@ -305,7 +294,6 @@ njs_vm_compile_module(njs_vm_t *vm, njs_str_t *name, u_char **start,
 
     lambda->start = generator.code_start;
     lambda->nlocal = scope->items;
-    lambda->temp = scope->temp;
 
     arr = scope->declarations;
     lambda->declarations = (arr != NULL) ? arr->start : NULL;

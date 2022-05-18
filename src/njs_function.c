@@ -424,8 +424,8 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
     njs_bool_t ctor)
 {
     size_t                 n, frame_size;
-    uint32_t               args_count, value_count, value_size, temp_size;
-    njs_value_t            *value, *bound, **new, **temp;
+    uint32_t               args_count, value_count, value_size;
+    njs_value_t            *value, *bound, **new;
     njs_frame_t            *frame;
     njs_function_t         *target;
     njs_native_frame_t     *native_frame;
@@ -458,10 +458,8 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
     value_count = args_count + njs_max(args_count, lambda->nlocal);
 
     value_size = value_count * sizeof(njs_value_t *);
-    temp_size = lambda->temp * sizeof(njs_value_t *);
 
-    frame_size = value_size + temp_size
-                        + ((value_count + lambda->temp) * sizeof(njs_value_t));
+    frame_size = value_size + (value_count * sizeof(njs_value_t));
 
     native_frame = njs_function_frame_alloc(vm, NJS_FRAME_SIZE + frame_size);
     if (njs_slow_path(native_frame == NULL)) {
@@ -471,9 +469,9 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
     /* Local */
 
     new = (njs_value_t **) ((u_char *) native_frame + NJS_FRAME_SIZE);
-    value = (njs_value_t *) ((u_char *) new + value_size + temp_size);
+    value = (njs_value_t *) ((u_char *) new + value_size);
 
-    n = value_count + lambda->temp;
+    n = value_count;
 
     while (n != 0) {
         n--;
@@ -481,15 +479,9 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
         njs_set_invalid(new[n]);
     }
 
-    /* Temp */
-
-    temp = (njs_value_t **) ((u_char *) native_frame + NJS_FRAME_SIZE
-                                                     + value_size);
-
     native_frame->arguments = value;
     native_frame->arguments_offset = value + (function->args_offset - 1);
     native_frame->local = new + args_count;
-    native_frame->temp = temp;
     native_frame->function = target;
     native_frame->nargs = nargs;
     native_frame->ctor = ctor;
@@ -614,7 +606,7 @@ njs_function_lambda_call(njs_vm_t *vm, void *promise_cap, void *async_ctx)
     njs_int_t              ret;
     njs_frame_t            *frame;
     njs_value_t            *args, **local, *value;
-    njs_value_t            **cur_local, **cur_closures, **cur_temp;
+    njs_value_t            **cur_local, **cur_closures;
     njs_function_t         *function;
     njs_declaration_t      *declr;
     njs_function_lambda_t  *lambda;
@@ -650,13 +642,11 @@ njs_function_lambda_call(njs_vm_t *vm, void *promise_cap, void *async_ctx)
 
     cur_local = vm->levels[NJS_LEVEL_LOCAL];
     cur_closures = vm->levels[NJS_LEVEL_CLOSURE];
-    cur_temp = vm->levels[NJS_LEVEL_TEMP];
 
     /* Replace current level. */
 
     vm->levels[NJS_LEVEL_LOCAL] = vm->top_frame->local;
     vm->levels[NJS_LEVEL_CLOSURE] = njs_function_closures(function);
-    vm->levels[NJS_LEVEL_TEMP] = frame->native.temp;
 
     if (lambda->rest_parameters) {
         ret = njs_function_rest_parameters_init(vm, &frame->native);
@@ -705,7 +695,6 @@ njs_function_lambda_call(njs_vm_t *vm, void *promise_cap, void *async_ctx)
     /* Restore current level. */
     vm->levels[NJS_LEVEL_LOCAL] = cur_local;
     vm->levels[NJS_LEVEL_CLOSURE] = cur_closures;
-    vm->levels[NJS_LEVEL_TEMP] = cur_temp;
 
     return ret;
 }
@@ -805,9 +794,10 @@ njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *native)
 njs_int_t
 njs_function_frame_save(njs_vm_t *vm, njs_frame_t *frame, u_char *pc)
 {
-    size_t              value_count, n;
+    size_t              args_count, value_count, n;
     njs_value_t         *start, *end, *p, **new, *value, **local;
     njs_function_t      *function;
+    njs_function_lambda_t  *lambda;
     njs_native_frame_t  *active, *native;
 
     *frame = *vm->active_frame;
@@ -820,19 +810,18 @@ njs_function_frame_save(njs_vm_t *vm, njs_frame_t *frame, u_char *pc)
     native->free_size = 0;
 
     active = &vm->active_frame->native;
-    value_count = njs_function_frame_value_count(active);
-
     function = active->function;
+    lambda = function->u.lambda;
+
+    args_count = function->args_offset + njs_max(native->nargs, lambda->nargs);
+    value_count = args_count + njs_max(args_count, lambda->nlocal);
 
     new = (njs_value_t **) ((u_char *) native + NJS_FRAME_SIZE);
-    value = (njs_value_t *) (new + value_count
-                             + function->u.lambda->temp);
-
+    value = (njs_value_t *) (new + value_count);
 
     native->arguments = value;
     native->arguments_offset = value + (function->args_offset - 1);
     native->local = new + njs_function_frame_args_count(active);
-    native->temp = new + value_count;
     native->pc = pc;
 
     start = njs_function_frame_values(active, &end);

@@ -12,7 +12,6 @@ struct njs_function_lambda_s {
     njs_index_t                    *closures;
     uint32_t                       nclosures;
     uint32_t                       nlocal;
-    uint32_t                       temp;
 
     njs_declaration_t              *declarations;
     uint32_t                       ndeclarations;
@@ -50,7 +49,6 @@ struct njs_native_frame_s {
     njs_object_t                   *arguments_object;
     njs_value_t                    *arguments_offset;
     njs_value_t                    **local;
-    njs_value_t                    **temp;
 
     uint32_t                       size;
     uint32_t                       free_size;
@@ -226,17 +224,6 @@ njs_function_frame_args_count(njs_native_frame_t *frame)
     start = (uintptr_t) ((u_char *) frame + NJS_FRAME_SIZE);
 
     return ((uintptr_t) frame->local - start) / sizeof(njs_value_t *);
-}
-
-
-njs_inline size_t
-njs_function_frame_value_count(njs_native_frame_t *frame)
-{
-    uintptr_t  start;
-
-    start = (uintptr_t) ((u_char *) frame + NJS_FRAME_SIZE);
-
-    return ((uintptr_t) frame->temp - start) / sizeof(njs_value_t *);
 }
 
 

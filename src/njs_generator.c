@@ -3698,7 +3698,6 @@ njs_generate_function_scope(njs_vm_t *vm, njs_generator_t *prev,
     lambda->closures = generator.closures->start;
     lambda->nclosures = generator.closures->items;
     lambda->nlocal = node->scope->items;
-    lambda->temp = node->scope->temp;
 
     arr = node->scope->declarations;
     lambda->declarations = (arr != NULL) ? arr->start : NULL;
@@ -4916,7 +4915,7 @@ njs_generate_temp_index_get(njs_vm_t *vm, njs_generator_t *generator,
         return NJS_ERROR;
     }
 
-    return njs_scope_index(scope->type, scope->temp++, NJS_LEVEL_TEMP,
+    return njs_scope_index(scope->type, scope->items++, NJS_LEVEL_LOCAL,
                            NJS_VARIABLE_VAR);
 }
 

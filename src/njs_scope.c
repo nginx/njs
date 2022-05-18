@@ -20,7 +20,7 @@ njs_scope_temp_index(njs_parser_scope_t *scope)
         return NJS_INDEX_ERROR;
     }
 
-    return njs_scope_index(NJS_SCOPE_GLOBAL, scope->temp++, NJS_LEVEL_TEMP,
+    return njs_scope_index(scope->type, scope->items++, NJS_LEVEL_LOCAL,
                            NJS_VARIABLE_VAR);
 }
 

@@ -562,7 +562,6 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser)
         }
 
     } else {
-        parser->scope->temp = 0;
         parser->scope->top = NULL;
         parser->node = NULL;
         parser->ret = NJS_OK;
@@ -1357,6 +1356,8 @@ njs_parser_template_literal(njs_parser_t *parser, njs_lexer_token_t *token,
             return NJS_ERROR;
         }
 
+        node->temporary = 1;
+
         template->right = node;
         temp->right = node;
 
@@ -1370,6 +1371,7 @@ njs_parser_template_literal(njs_parser_t *parser, njs_lexer_token_t *token,
         temp->right = template;
     }
 
+    temp->temporary = 1;
     temp->left = template;
     temp->index = index;
 
