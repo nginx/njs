@@ -79,11 +79,6 @@ static njs_jump_off_t njs_function_frame_create(njs_vm_t *vm,
     } while (0)
 
 
-#ifdef NJS_OPCODE_DEBUG
-void njs_vmcode_debug(njs_vm_t *vm, u_char *pc, const char *prefix);
-#endif
-
-
 njs_int_t
 njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc, void *promise_cap,
     void *async_ctx)
@@ -122,9 +117,7 @@ njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc, void *promise_cap,
     njs_vmcode_try_trampoline_t  *try_trampoline;
     njs_vmcode_function_frame_t  *function_frame;
 
-#ifdef NJS_OPCODE_DEBUG
     njs_vmcode_debug(vm, pc, "ENTER");
-#endif
 
 next:
 
@@ -663,9 +656,7 @@ next:
                 njs_vmcode_operand(vm, (njs_index_t) value2, value2);
                 vm->retval = *value2;
 
-#ifdef NJS_OPCODE_DEBUG
                 njs_vmcode_debug(vm, pc, "EXIT STOP");
-#endif
 
                 return NJS_OK;
 
@@ -741,9 +732,7 @@ next:
             case NJS_VMCODE_RETURN:
                 njs_vmcode_operand(vm, (njs_index_t) value2, value2);
 
-#ifdef NJS_OPCODE_DEBUG
                 njs_vmcode_debug(vm, pc, "EXIT RETURN");
-#endif
 
                 return njs_vmcode_return(vm, NULL, value2);
 
@@ -865,9 +854,7 @@ next:
             case NJS_VMCODE_AWAIT:
                 await = (njs_vmcode_await_t *) pc;
 
-#ifdef NJS_OPCODE_DEBUG
                 njs_vmcode_debug(vm, pc, "EXIT AWAIT");
-#endif
 
                 return njs_vmcode_await(vm, await, promise_cap, async_ctx);
 
@@ -933,9 +920,7 @@ next:
                 switch (ret) {
                 case NJS_OK:
 
-#ifdef NJS_OPCODE_DEBUG
                     njs_vmcode_debug(vm, pc, "EXIT FINALLY");
-#endif
 
                     return NJS_OK;
                 case NJS_ERROR:
@@ -1053,9 +1038,7 @@ error:
         }
     }
 
-#ifdef NJS_OPCODE_DEBUG
     njs_vmcode_debug(vm, pc, "EXIT ERROR");
-#endif
 
     return NJS_ERROR;
 }
@@ -2180,17 +2163,3 @@ njs_vmcode_error(njs_vm_t *vm, u_char *pc)
         njs_error_fmt_new(vm, &vm->retval, err->type, "%V", &err->u.message);
     }
 }
-
-
-#ifdef NJS_OPCODE_DEBUG
-void
-njs_vmcode_debug(njs_vm_t *vm, u_char *pc, const char *prefix)
-{
-    njs_vm_code_t  *code;
-
-    code = njs_lookup_code(vm, pc);
-
-    njs_printf("%s %V\n", prefix,
-               (code != NULL) ? &code->name : &njs_entry_unknown);
-}
-#endif

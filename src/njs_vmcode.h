@@ -450,5 +450,18 @@ njs_int_t njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc,
 
 njs_object_t *njs_function_new_object(njs_vm_t *vm, njs_value_t *constructor);
 
+#ifdef NJS_OPCODE_DEBUG
+#define njs_vmcode_debug(vm, pc, prefix) {                                    \
+    do {                                                                      \
+        njs_vm_code_t  *code;                                                 \
+                                                                              \
+        code = njs_lookup_code(vm, pc);                                       \
+                                                                              \
+        njs_printf("%s %V\n", prefix,                                         \
+                   (code != NULL) ? &code->name : &njs_entry_unknown);        \
+    } while (0)
+#else
+#define njs_vmcode_debug(vm, pc, prefix)
+#endif
 
 #endif /* _NJS_VMCODE_H_INCLUDED_ */
