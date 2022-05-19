@@ -364,6 +364,15 @@ set_prop:
          * the property's attributes to their default values.
          */
 
+        if (pq.temp) {
+            pq.lhq.value = NULL;
+            prop->configurable = prev->configurable;
+            prop->enumerable = prev->enumerable;
+            goto set_prop;
+        }
+
+        prev->type = prop->type;
+
         if (njs_is_data_descriptor(prev)) {
             njs_set_undefined(&prev->getter);
             njs_set_undefined(&prev->setter);
@@ -414,7 +423,7 @@ set_prop:
 
 done:
 
-    if (njs_is_valid(&prop->value) || njs_is_accessor_descriptor(prop)) {
+    if (njs_is_valid(&prop->value)) {
         if (prev->type == NJS_PROPERTY_HANDLER) {
             if (prev->writable) {
                 ret = prev->value.data.u.prop_handler(vm, prev, object,

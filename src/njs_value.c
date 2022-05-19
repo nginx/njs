@@ -942,6 +942,7 @@ njs_external_property_query(njs_vm_t *vm, njs_property_query_t *pq,
         return NJS_DECLINED;
     }
 
+    pq->temp = 1;
     prop = &pq->scratch;
 
     njs_memzero(prop, sizeof(njs_object_prop_t));

@@ -374,6 +374,7 @@ typedef struct {
     njs_object_prop_t           *own_whiteout;
     uint8_t                     query;
     uint8_t                     shared;
+    uint8_t                     temp;
     uint8_t                     own;
 } njs_property_query_t;
 
@@ -1030,6 +1031,7 @@ njs_set_object_value(njs_value_t *value, njs_object_value_t *object_value)
         (pq)->query = _query;                                                 \
         (pq)->shared = 0;                                                     \
         (pq)->own = _own;                                                     \
+        (pq)->temp = 0;                                                       \
     } while (0)
 
 

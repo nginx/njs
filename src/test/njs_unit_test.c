@@ -9681,6 +9681,12 @@ static njs_unit_test_t  njs_test[] =
               "fn(1); arr"),
       njs_str("1,2,3,4,5,6") },
 
+    { njs_str("function f(){};"
+              "Object.defineProperty(f, 'length', {set: () => {}});"
+              "Object.defineProperty(f, 'length', {value: 42});"
+              "f.length"),
+      njs_str("42") },
+
     /* Function nesting depth. */
 
     { njs_str("() => () => () => () => () => () => () => () => () => () => () =>"
