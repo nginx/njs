@@ -11,7 +11,17 @@ async function test(params) {
 
     let r = await crypto.subtle.verify(params.verify_alg,
                                        key, params.signature,
-                                       params.text);
+                                       params.text)
+                    .catch (e => {
+                        if (e.toString().startsWith("Error: EVP_PKEY_CTX_set_signature_md() failed")) {
+                            /* Red Hat Enterprise Linux: SHA-1 is disabled */
+                            return "SKIPPED";
+                        }
+                    });
+
+    if (r == "SKIPPED") {
+        return r;
+    }
 
     if (params.expected !== r) {
         throw Error(`${params.import_alg.name} failed expected: "${params.expected}" vs "${r}"`);
