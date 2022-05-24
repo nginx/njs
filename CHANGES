@@ -1,3 +1,48 @@
+Changes with njs 0.7.4                                        24 May 2022
+
+    nginx modules:
+
+    *) Feature: added extended directive to configure Fetch API.
+       The following directives were added: "js_fetch_timeout",
+       "js_fetch_verify", "js_fetch_buffer_size",
+       "js_fetch_max_response_buffer_size".
+
+    *) Change: r.internalRedirect() now accepts escaped URIs.
+
+    *) Bugfix: fixed Response parsing with more than 8 headers
+       in Fetch API.
+
+    Core:
+
+    *) Feature: added njs.version_number property.
+
+    *) Feature: added compatibility with BoringSSL for
+       WebCrypto API.
+
+    *) Bugfix: fixed Array.prototype.sort() when arr size is changed
+       in a comparator.
+
+    *) Bugfix: fixed Array.prototype.slice() with slow "this" argument.
+
+    *) Bugfix: fixed aggregation methods of Promise ctor with
+       array-like object.
+
+    *) Bugfix: fixed Array.prototype.lastIndexOf() with unicode
+       string as "this".
+
+    *) Bugfix: fixed JSON.parse() when reviver function is provided.
+
+    *) Bugfix: fixed Object.defineProperty() when a recursive descriptor
+       is provided.
+
+    *) Bugfix: fixed Array.prototype.fill() for typed-arrays.
+
+    *) Bugfix: making function expression binding immutable according
+       the specs.
+
+    *) Bugfix: fixed redefinition of special props in
+       Object.defineProperty().
+
 Changes with njs 0.7.3                                        12 Apr 2022
 
     Core:
