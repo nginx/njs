@@ -1849,7 +1849,7 @@ njs_int_t
 njs_object_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
-    int32_t            index;
+    int64_t            index;
     njs_function_t     *function;
     const njs_value_t  *proto;
 
@@ -2194,7 +2194,7 @@ njs_int_t
 njs_object_prototype_create_constructor(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
-    int32_t                 index;
+    int64_t                 index;
     njs_value_t             *cons, constructor;
     njs_object_t            *object;
     njs_object_prototype_t  *prototype;
