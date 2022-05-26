@@ -1563,6 +1563,7 @@ ngx_http_js_header_out_special(njs_vm_t *vm, ngx_http_request_t *r,
 
         p = ngx_pnalloc(r->pool, v->length);
         if (p == NULL) {
+            h->hash = 0;
             return NJS_ERROR;
         }
 
@@ -1575,6 +1576,7 @@ ngx_http_js_header_out_special(njs_vm_t *vm, ngx_http_request_t *r,
     if (h != NULL) {
         p = ngx_pnalloc(r->pool, s.length);
         if (p == NULL) {
+            h->hash = 0;
             return NJS_ERROR;
         }
 
@@ -1803,6 +1805,7 @@ ngx_http_js_header_generic(njs_vm_t *vm, ngx_http_request_t *r,
 
         p = ngx_pnalloc(r->pool, name->length);
         if (p == NULL) {
+            h->hash = 0;
             return NJS_ERROR;
         }
 
@@ -1813,6 +1816,7 @@ ngx_http_js_header_generic(njs_vm_t *vm, ngx_http_request_t *r,
 
         p = ngx_pnalloc(r->pool, s.length);
         if (p == NULL) {
+            h->hash = 0;
             return NJS_ERROR;
         }
 
@@ -2858,6 +2862,7 @@ ngx_http_js_ext_variables(njs_vm_t *vm, njs_object_prop_t *prop,
 
     vv->data = ngx_pnalloc(r->pool, s.length);
     if (vv->data == NULL) {
+        vv->valid = 0;
         njs_vm_error(vm, "internal error");
         return NJS_ERROR;
     }
