@@ -801,6 +801,8 @@ next:
                     goto error;
                 }
 
+                njs_vmcode_debug(vm, pc, "RESUME");
+
                 ret = sizeof(njs_vmcode_function_call_t);
                 break;
 
