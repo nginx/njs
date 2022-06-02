@@ -856,9 +856,15 @@ next:
             case NJS_VMCODE_AWAIT:
                 await = (njs_vmcode_await_t *) pc;
 
+                ret = njs_vmcode_await(vm, await, promise_cap, async_ctx);
+
                 njs_vmcode_debug(vm, pc, "EXIT AWAIT");
 
-                return njs_vmcode_await(vm, await, promise_cap, async_ctx);
+                if (njs_slow_path(ret == NJS_ERROR)) {
+                    goto error;
+                }
+
+                return ret;
 
             case NJS_VMCODE_TRY_START:
                 ret = njs_vmcode_try_start(vm, value1, value2, pc);
@@ -1923,6 +1929,7 @@ njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await,
 
     value = njs_scope_valid_value(vm, await->retval);
     if (njs_slow_path(value == NULL)) {
+        njs_internal_error(vm, "await->retval is invalid");
         return NJS_ERROR;
     }
 
