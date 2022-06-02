@@ -10200,10 +10200,12 @@ static njs_unit_test_t  njs_test[] =
                  "c()()()"),
       njs_str("1") },
 
-#if 0
     { njs_str("function f() {}; f += 1; f"),
       njs_str("[object Function]1") },
-#endif
+
+    { njs_str("function f() { function g() { g = undefined; }; g(); g(); };"
+              "f()"),
+      njs_str("TypeError: undefined is not a function") },
 
     { njs_str("function f() {}; function g() { return f }; g()"),
       njs_str("[object Function]") },

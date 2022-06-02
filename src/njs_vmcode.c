@@ -1259,9 +1259,9 @@ njs_vmcode_function_copy(njs_vm_t *vm, njs_value_t *value, njs_index_t retidx)
     njs_value_t     *retval;
     njs_function_t  *function;
 
-    retval = njs_scope_valid_value(vm, retidx);
+    retval = njs_scope_value(vm, retidx);
 
-    if (njs_is_undefined(retval)) {
+    if (!njs_is_valid(retval)) {
         *retval = *value;
 
         function = njs_function_value_copy(vm, retval);
