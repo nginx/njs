@@ -926,7 +926,7 @@ njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         size += string.size;
         length += string.length;
 
-        if (string.length == 0 && string.size != 0) {
+        if (njs_is_byte_string(&string)) {
             mask = 0;
         }
     }
@@ -2642,8 +2642,7 @@ njs_string_prototype_to_lower_case(njs_vm_t *vm, njs_value_t *args,
 
     (void) njs_string_prop(&string, njs_argument(args, 0));
 
-    if (string.length == 0 || string.length == string.size) {
-        /* Byte or ASCII string. */
+    if (njs_is_byte_or_ascii_string(&string)) {
 
         p = njs_string_alloc(vm, &vm->retval, string.size, string.length);
         if (njs_slow_path(p == NULL)) {
@@ -2714,8 +2713,7 @@ njs_string_prototype_to_upper_case(njs_vm_t *vm, njs_value_t *args,
 
     (void) njs_string_prop(&string, njs_argument(args, 0));
 
-    if (string.length == 0 || string.length == string.size) {
-        /* Byte or ASCII string. */
+    if (njs_is_byte_or_ascii_string(&string)) {
 
         p = njs_string_alloc(vm, &vm->retval, string.size, string.length);
         if (njs_slow_path(p == NULL)) {
@@ -2787,8 +2785,7 @@ njs_string_prototype_trim(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     start = string.start;
     end = string.start + string.size;
 
-    if (string.length == 0 || string.length == string.size) {
-        /* Byte or ASCII string. */
+    if (njs_is_byte_or_ascii_string(&string)) {
 
         if (mode & NJS_TRIM_START) {
             for ( ;; ) {
@@ -4392,8 +4389,7 @@ njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     src = string.start;
     end = src + string.size;
 
-    if (string.length == 0 || string.length == string.size) {
-        /* Byte or ASCII string. */
+    if (njs_is_byte_or_ascii_string(&string)) {
 
         while (src < end) {
             byte = *src++;
@@ -4450,8 +4446,7 @@ njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     src = string.start;
 
-    if (string.length == 0 || string.length == string.size) {
-        /* Byte or ASCII string. */
+    if (njs_is_byte_or_ascii_string(&string)) {
         (void) njs_string_encode(escape, string.size, src, dst);
         return NJS_OK;
     }

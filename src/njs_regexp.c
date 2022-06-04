@@ -1627,7 +1627,7 @@ njs_regexp_prototype_symbol_split(njs_vm_t *vm, njs_value_t *args,
 
     utf8 = NJS_STRING_BYTE;
 
-    if (s.length != 0 && s.length != s.size) {
+    if (!njs_is_byte_or_ascii_string(&s)) {
         utf8 = NJS_STRING_UTF8;
     }
 
