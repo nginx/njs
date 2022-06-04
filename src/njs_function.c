@@ -711,6 +711,17 @@ njs_function_native_call(njs_vm_t *vm)
     native = vm->top_frame;
     function = native->function;
 
+#ifdef NJS_OPCODE_DEBUG
+	njs_str_t              name;
+
+	ret = njs_builtin_match_native_function(vm, function, &name);
+	if (ret != NJS_OK) {
+		name = njs_entry_unknown;
+	}
+
+	njs_printf("CALL NATIVE %V\n", &name);
+#endif
+
     if (njs_fast_path(function->bound == NULL)) {
         call = function->u.native;
 
