@@ -34,7 +34,6 @@ njs_typed_array_alloc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     uint64_t            size, offset;
     njs_int_t           ret;
     njs_value_t         *value, prop;
-    njs_array_t         *src_array;
     njs_typed_array_t   *array, *src_tarray;
     njs_array_buffer_t  *buffer;
 
@@ -43,7 +42,6 @@ njs_typed_array_alloc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     offset = 0;
 
     buffer = NULL;
-    src_array = NULL;
     src_tarray = NULL;
 
     element_size = njs_typed_array_element_size(type);
@@ -115,15 +113,9 @@ njs_typed_array_alloc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         size = (uint64_t) njs_typed_array_length(src_tarray) * element_size;
 
     } else if (njs_is_object(value)) {
-        if (njs_is_fast_array(value)) {
-            src_array = njs_array(value);
-            length = src_array->length;
-
-        } else {
-            ret = njs_object_length(vm, value, &length);
-            if (njs_slow_path(ret == NJS_ERROR)) {
-                return NULL;
-            }
+        ret = njs_object_length(vm, value, &length);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return NULL;
         }
 
         size = length * element_size;
@@ -164,18 +156,6 @@ njs_typed_array_alloc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         } else {
             memcpy(&buffer->u.u8[0], &src_tarray->buffer->u.u8[0], size);
-        }
-
-    } else if (src_array != NULL) {
-        for (i = 0; i < length; i++) {
-            ret = njs_value_to_number(vm, &src_array->start[i], &num);
-            if (njs_slow_path(ret == NJS_ERROR)) {
-                return NULL;
-            }
-
-            if (ret == NJS_OK) {
-                njs_typed_array_prop_set(vm, array, i, num);
-            }
         }
 
     } else if (!njs_is_array_buffer(value) && njs_is_object(value)) {
