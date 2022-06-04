@@ -8438,6 +8438,11 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var r = 'αβγ'.replace('', 'X'); [r, r.length]"),
       njs_str("Xαβγ,4") },
 
+    { njs_str("var s = 'αz'.toUTF8();"
+              "var r = s.replace('z', 'β');"
+              "r.length"),
+      njs_str("4") },
+
     { njs_str("'abc'.replace('b', (m, o, s) => `|${s}|${o}|${m}|`)"),
       njs_str("a|abc|1|b|c") },
 
