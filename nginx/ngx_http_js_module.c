@@ -1900,7 +1900,7 @@ ngx_http_js_content_encoding(njs_vm_t *vm, ngx_http_request_t *r,
     ngx_table_elt_t  *h;
 
     rc = ngx_http_js_header_out_special(vm, r, v, setval, retval, &h);
-    if (rc != NJS_OK) {
+    if (rc == NJS_ERROR) {
         return NJS_ERROR;
     }
 
@@ -1940,7 +1940,7 @@ ngx_http_js_content_length(njs_vm_t *vm, ngx_http_request_t *r,
     }
 
     rc = ngx_http_js_header_out_special(vm, r, v, setval, retval, &h);
-    if (rc != NJS_OK) {
+    if (rc == NJS_ERROR) {
         return NJS_ERROR;
     }
 
@@ -3686,7 +3686,7 @@ ngx_http_js_content_encoding(njs_vm_t *vm, ngx_http_request_t *r,
     ngx_table_elt_t  *h;
 
     rc = ngx_http_js_header_out_special(vm, r, v, setval, retval, &h);
-    if (rc != NJS_OK) {
+    if (rc == NJS_ERROR) {
         return NJS_ERROR;
     }
 
@@ -3726,7 +3726,7 @@ ngx_http_js_content_length(njs_vm_t *vm, ngx_http_request_t *r,
     }
 
     rc = ngx_http_js_header_out_special(vm, r, v, setval, retval, &h);
-    if (rc != NJS_OK) {
+    if (rc == NJS_ERROR) {
         return NJS_ERROR;
     }
 
