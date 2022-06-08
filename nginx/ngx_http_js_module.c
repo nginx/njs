@@ -1978,6 +1978,12 @@ ngx_http_js_content_type(njs_vm_t *vm, ngx_http_request_t *r,
 
     if (retval != NULL && setval == NULL) {
         hdr = &r->headers_out.content_type;
+
+        if (hdr->len == 0) {
+            njs_value_undefined_set(retval);
+            return NJS_OK;
+        }
+
         return njs_vm_value_string_set(vm, retval, hdr->data, hdr->len);
     }
 
@@ -3764,6 +3770,12 @@ ngx_http_js_content_type(njs_vm_t *vm, ngx_http_request_t *r,
 
     if (retval != NULL && setval == NULL) {
         hdr = &r->headers_out.content_type;
+
+        if (hdr->len == 0) {
+            njs_value_undefined_set(retval);
+            return NJS_OK;
+        }
+
         return njs_vm_value_string_set(vm, retval, hdr->data, hdr->len);
     }
 
