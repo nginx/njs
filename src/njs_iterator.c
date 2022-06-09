@@ -686,7 +686,8 @@ njs_iterator_to_array(njs_vm_t *vm, njs_value_t *iterator)
         return NULL;
     }
 
-    args.data = njs_array_alloc(vm, 1, length, 0);
+    args.data = njs_array_alloc(vm, 0, 0,
+                                njs_min(length, NJS_ARRAY_LARGE_OBJECT_LENGTH));
     if (njs_slow_path(args.data == NULL)) {
         return NULL;
     }
@@ -708,10 +709,9 @@ static njs_int_t
 njs_iterator_to_array_handler(njs_vm_t *vm, njs_iterator_args_t *args,
     njs_value_t *value, int64_t index)
 {
-    njs_array_t  *array;
+    njs_value_t  array;
 
-    array = args->data;
-    array->start[index] = *value;
+    njs_set_array(&array, args->data);
 
-    return NJS_OK;
+    return njs_value_property_i64_set(vm, &array, index, value);
 }

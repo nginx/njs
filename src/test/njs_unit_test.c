@@ -11299,6 +11299,14 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("let e = AggregateError([1, 2, 3], 'm'); e"),
       njs_str("AggregateError: m") },
 
+    { njs_str("var v = Object.defineProperty([], 1025, {get: () => 1});"
+              "AggregateError(v).errors[23]"),
+      njs_str("undefined") },
+
+    { njs_str("var v = Object.defineProperty([], 2**20, {get: () => 1});"
+              "AggregateError(v).errors[2**19]"),
+      njs_str("undefined") },
+
     /* Memory object is immutable. */
 
     { njs_str("var e = MemoryError('e'); e.name = 'E'"),
