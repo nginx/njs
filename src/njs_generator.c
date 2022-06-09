@@ -4756,6 +4756,7 @@ static njs_int_t
 njs_generate_global_reference(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node, njs_bool_t exception)
 {
+    ssize_t                  length;
     njs_int_t                ret;
     njs_index_t              index;
     njs_value_t              property;
@@ -4783,8 +4784,13 @@ njs_generate_global_reference(njs_vm_t *vm, njs_generator_t *generator,
         return NJS_ERROR;
     }
 
-    ret = njs_string_set(vm, &property, lex_entry->name.start,
-                         lex_entry->name.length);
+    length = njs_utf8_length(lex_entry->name.start, lex_entry->name.length);
+    if (njs_slow_path(length < 0)) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_string_new(vm, &property, lex_entry->name.start,
+                         lex_entry->name.length, length);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
