@@ -600,7 +600,7 @@ njs_function_call2(njs_vm_t *vm, njs_function_t *function,
 
 
 njs_int_t
-njs_function_lambda_call(njs_vm_t *vm, void *promise_cap, void *async_ctx)
+njs_function_lambda_call(njs_vm_t *vm, void *promise_cap)
 {
     uint32_t               n;
     njs_int_t              ret;
@@ -690,7 +690,7 @@ njs_function_lambda_call(njs_vm_t *vm, void *promise_cap, void *async_ctx)
         }
     }
 
-    ret = njs_vmcode_interpreter(vm, lambda->start, promise_cap, async_ctx);
+    ret = njs_vmcode_interpreter(vm, lambda->start, promise_cap, NULL);
 
     /* Restore current level. */
     vm->levels[NJS_LEVEL_LOCAL] = cur_local;
@@ -777,7 +777,7 @@ njs_function_frame_invoke(njs_vm_t *vm, njs_value_t *retval)
         return njs_function_native_call(vm);
 
     } else {
-        return njs_function_lambda_call(vm, NULL, NULL);
+        return njs_function_lambda_call(vm, NULL);
     }
 }
 

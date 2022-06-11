@@ -29,7 +29,7 @@ njs_async_function_frame_invoke(njs_vm_t *vm, njs_value_t *retval)
         return NJS_ERROR;
     }
 
-    ret = njs_function_lambda_call(vm, capability, NULL);
+    ret = njs_function_lambda_call(vm, capability);
 
     if (ret == NJS_OK) {
         ret = njs_function_call(vm, njs_function(&capability->resolve),

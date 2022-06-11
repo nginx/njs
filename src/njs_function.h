@@ -110,8 +110,7 @@ njs_int_t njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
 njs_int_t njs_function_call2(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, const njs_value_t *args,
     njs_uint_t nargs, njs_value_t *retval, njs_bool_t ctor);
-njs_int_t njs_function_lambda_call(njs_vm_t *vm, void *promise_cap,
-    void *async_ctx);
+njs_int_t njs_function_lambda_call(njs_vm_t *vm, void *promise_cap);
 njs_int_t njs_function_native_call(njs_vm_t *vm);
 njs_native_frame_t *njs_function_frame_alloc(njs_vm_t *vm, size_t size);
 void njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame);
