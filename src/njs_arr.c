@@ -23,7 +23,7 @@ njs_arr_create(njs_mp_t *mp, njs_uint_t n, size_t size)
     arr->item_size = size;
     arr->available = n;
     arr->pointer = 1;
-    arr->separate = 1;
+    arr->separate = 0;
     arr->mem_pool = mp;
 
     return arr;
