@@ -76,8 +76,6 @@ static njs_int_t njs_buffer_fill_string(njs_vm_t *vm, const njs_value_t *value,
 static njs_int_t njs_buffer_fill_typed_array(njs_vm_t *vm,
     const njs_value_t *value, njs_typed_array_t *array, uint8_t *start,
     uint8_t *end);
-static void njs_buffer_decode_destroy(njs_vm_t *vm, const njs_value_t *source,
-    njs_value_t *target);
 
 static njs_int_t njs_buffer(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
@@ -527,8 +525,6 @@ njs_buffer_from_string(njs_vm_t *vm, njs_value_t *value,
     }
 
     memcpy(njs_typed_array_buffer(buffer)->u.u8, str.start, str.length);
-
-    njs_buffer_decode_destroy(vm, value, &dst);
 
     njs_set_typed_array(&vm->retval, buffer);
 
@@ -1589,8 +1585,6 @@ njs_buffer_write_string(njs_vm_t *vm, njs_value_t *value,
 
 done:
 
-    njs_buffer_decode_destroy(vm, value, &dst);
-
     njs_set_number(&vm->retval, length);
 
     return NJS_OK;
@@ -1745,17 +1739,13 @@ njs_buffer_fill_string(njs_vm_t *vm, const njs_value_t *value,
 
     if (str.length == 0) {
         memset(start, 0, end - start);
-        goto done;
+        return NJS_OK;
     }
 
     while (start < end) {
         n = njs_min(str.length, (size_t) (end - start));
         start = njs_cpymem(start, str.start, n);
     }
-
-done:
-
-    njs_buffer_decode_destroy(vm, value, &dst);
 
     return NJS_OK;
 }
@@ -2342,21 +2332,6 @@ njs_buffer_decode_string(njs_vm_t *vm, const njs_value_t *value,
     }
 
     return NJS_OK;
-}
-
-
-static void
-njs_buffer_decode_destroy(njs_vm_t *vm, const njs_value_t *source,
-    njs_value_t *target)
-{
-    njs_str_t  src, trg;
-
-    njs_string_get(source, &src);
-    njs_string_get(target, &trg);
-
-    if (src.start != trg.start) {
-        njs_mp_free(vm->mem_pool, trg.start);
-    }
 }
 
 
