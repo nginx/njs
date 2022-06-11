@@ -408,7 +408,9 @@ njs_array_expand(njs_vm_t *vm, njs_array_t *array, uint32_t prepend,
 
     array->start = start;
 
-    njs_mp_free(vm->mem_pool, old);
+    if (old != NULL) {
+        njs_mp_free(vm->mem_pool, old);
+    }
 
     return NJS_OK;
 
