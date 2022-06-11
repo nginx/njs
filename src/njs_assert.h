@@ -18,9 +18,19 @@
         }                                                                     \
     } while (0)
 
+#define njs_assert_msg(condition, fmt, ...)                                   \
+    do {                                                                      \
+        if (!(condition)) {                                                   \
+            njs_stderror(fmt, ##__VA_ARGS__);                                 \
+            njs_stderror(" at %s:%d\n", __FILE__, __LINE__);                  \
+            abort();                                                          \
+        }                                                                     \
+    } while (0)
+
 #else
 
 #define njs_assert(condition) (void) (condition)
+#define njs_assert_msg(condition, fmt, ...) (void) (condition)
 
 #endif
 

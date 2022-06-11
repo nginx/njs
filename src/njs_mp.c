@@ -678,14 +678,12 @@ njs_mp_free(njs_mp_t *mp, void *p)
             return;
 
         } else {
-            err = "freed pointer points to middle of block: %p\n";
+            njs_assert_msg(0, "freed pointer points to middle of blk: %p\n", p);
         }
 
     } else {
-        err = "freed pointer is out of mp: %p\n";
+        njs_assert_msg(0, "freed pointer is out of mp: %p\n", p);
     }
-
-    njs_debug_alloc(err, p);
 }
 
 

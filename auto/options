@@ -62,3 +62,7 @@ do
     NJS_CONFIGURE_OPTIONS="$NJS_CONFIGURE_OPTIONS $njs_opt"
 
 done
+
+if [ "$NJS_DEBUG_MEMORY" = "YES" ]; then
+    NJS_DEBUG=YES
+fi
