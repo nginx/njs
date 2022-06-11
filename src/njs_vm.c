@@ -214,8 +214,6 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 
                 *new++ = *global++;
             }
-
-            njs_mp_free(vm->mem_pool, global);
         }
     }
 
