@@ -4743,6 +4743,12 @@ static njs_unit_test_t  njs_test[] =
               "a.shift(); a"),
       njs_str("2,3") },
 
+    { njs_str("var arr = [1,2];"
+              "arr.shift();"
+              "arr[2**20] = 3;"
+              "arr[2**20]"),
+      njs_str("3") },
+
     { njs_str("var a = []; a.splice()"),
       njs_str("") },
 
