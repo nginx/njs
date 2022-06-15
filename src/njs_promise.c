@@ -1242,18 +1242,18 @@ njs_promise_all(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t function_type)
 {
     njs_int_t                    ret;
-    njs_value_t                  *promise, resolve;
+    njs_value_t                  *promise_ctor, resolve;
     njs_iterator_handler_t       handler;
     njs_promise_iterator_args_t  pargs;
 
-    promise = njs_argument(args, 0);
+    promise_ctor = njs_argument(args, 0);
 
-    pargs.capability = njs_promise_new_capability(vm, promise);
+    pargs.capability = njs_promise_new_capability(vm, promise_ctor);
     if (njs_slow_path(pargs.capability == NULL)) {
         return NJS_ERROR;
     }
 
-    ret = njs_value_property(vm, promise, njs_value_arg(&string_resolve),
+    ret = njs_value_property(vm, promise_ctor, njs_value_arg(&string_resolve),
                              &resolve);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
@@ -1265,7 +1265,7 @@ njs_promise_all(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     pargs.function = njs_function(&resolve);
-    pargs.constructor = promise;
+    pargs.constructor = promise_ctor;
 
     switch (function_type) {
     case NJS_PROMISE_ALL_SETTLED:
@@ -1702,18 +1702,18 @@ njs_promise_race(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     int64_t                      length;
     njs_int_t                    ret;
-    njs_value_t                  *promise, *iterator, resolve;
+    njs_value_t                  *promise_ctor, *iterator, resolve;
     njs_promise_iterator_args_t  pargs;
 
-    promise = njs_argument(args, 0);
+    promise_ctor = njs_argument(args, 0);
     iterator = njs_arg(args, nargs, 1);
 
-    pargs.capability = njs_promise_new_capability(vm, promise);
+    pargs.capability = njs_promise_new_capability(vm, promise_ctor);
     if (njs_slow_path(pargs.capability == NULL)) {
         return NJS_ERROR;
     }
 
-    ret = njs_value_property(vm, promise, njs_value_arg(&string_resolve),
+    ret = njs_value_property(vm, promise_ctor, njs_value_arg(&string_resolve),
                              &resolve);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
@@ -1732,7 +1732,7 @@ njs_promise_race(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_memzero(&pargs.args, sizeof(njs_iterator_args_t));
 
     pargs.function = njs_function(&resolve);
-    pargs.constructor = promise;
+    pargs.constructor = promise_ctor;
 
     pargs.args.value = iterator;
     pargs.args.to = length;
