@@ -21211,6 +21211,28 @@ static njs_unit_test_t  njs_externals_test[] =
     { njs_str("$r.retval(Promise.all([async () => [await x('X')]]))"),
       njs_str("[object Promise]") },
 
+    { njs_str("var r = [1].map(v => {"
+              "    function C(a) {"
+              "        a(a, parseInt);"
+              "    };"
+              ""
+              "    Promise.all.apply(C);"
+              "});"
+              "r[0]"),
+              /* TODO: RejectAbrupt() exception should not percolate */
+      njs_str("TypeError: resolve is not callable") },
+
+    { njs_str("var r = [1].map(v => {"
+              "    function C(a) {"
+              "        a(a, parseInt);"
+              "    };"
+              ""
+              "    Promise.race.apply(C);"
+              "});"
+              "r[0]"),
+              /* TODO: RejectAbrupt() exception should not percolate */
+      njs_str("TypeError: resolve is not callable") },
+
     { njs_str("let obj = { a: 1, b: 2};"
               "function cb(r) { r.retval(obj.a); }"
               "$r.subrequest($r)"

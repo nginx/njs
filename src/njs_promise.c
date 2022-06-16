@@ -389,7 +389,7 @@ njs_promise_value_constructor(njs_vm_t *vm, njs_value_t *value,
 
     ret = njs_value_property(vm, value, njs_value_arg(&string_constructor),
                              dst);
-    if (njs_slow_path(ret != NJS_OK)) {
+    if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
     }
 
@@ -1255,7 +1255,7 @@ njs_promise_all(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     ret = njs_value_property(vm, promise_ctor, njs_value_arg(&string_resolve),
                              &resolve);
-    if (njs_slow_path(ret != NJS_OK)) {
+    if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
     }
 
@@ -1715,7 +1715,7 @@ njs_promise_race(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     ret = njs_value_property(vm, promise_ctor, njs_value_arg(&string_resolve),
                              &resolve);
-    if (njs_slow_path(ret != NJS_OK)) {
+    if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
     }
 
