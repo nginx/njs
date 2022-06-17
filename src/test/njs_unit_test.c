@@ -21222,6 +21222,16 @@ static njs_unit_test_t  njs_externals_test[] =
               /* TODO: RejectAbrupt() exception should not percolate */
       njs_str("TypeError: resolve is not callable") },
 
+    { njs_str("Promise.all({length: 1025}) "
+              ".then(v => $r.retval(v[0]))"),
+              /* TODO: TypeError: object is not iterable */
+      njs_str("undefined") },
+
+    { njs_str("Promise.allSettled({length: 1025}) "
+              ".then(v => $r.retval(v[0]))"),
+              /* TODO: TypeError: object is not iterable */
+      njs_str("undefined") },
+
     { njs_str("var r = [1].map(v => {"
               "    function C(a) {"
               "        a(a, parseInt);"
