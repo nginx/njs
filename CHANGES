@@ -1,3 +1,43 @@
+Changes with njs 0.7.5                                        21 Jun 2022
+
+    nginx modules:
+
+    *) Change: adapting to changes in nginx header structures.
+
+    *) Bugfix: fixed r.headersOut special getters when value
+       is absent.
+
+    *) Change: returning undefined value instead of an empty string
+       for Content-Type when the header is absent.
+
+    Core:
+
+    *) Bugfix: fixed catching of the exception thrown from an
+       awaited function.
+
+    *) Bugfix: fixed function value initialization.
+
+    *) Bugfix: fixed interpreter when await fails.
+
+    *) Bugfix: fixed typed-array constructor when source array
+       is changed while iterating.
+
+    *) Bugfix: fixed String.prototype.replace() with byte strings.
+
+    *) Bugfix: fixed template literal from producing byte-strings.
+
+    *) Bugfix: fixed array iterator with sparse arrays.
+
+    *) Bugfix: fixed memory free while converting a flat array to
+       a slow array.
+
+    *) Bugfix: properly handling NJS_DECLINE in promise native
+       functions.
+
+    *) Bugfix: fixed working with an array-like object in Promise.all()
+       and friends.
+
+
 Changes with njs 0.7.4                                        24 May 2022
 
     nginx modules:
