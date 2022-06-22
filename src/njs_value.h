@@ -875,11 +875,12 @@ njs_set_uint32(njs_value_t *value, uint32_t num)
 
 
 njs_inline void
-njs_set_symbol(njs_value_t *value, uint32_t symbol)
+njs_set_symbol(njs_value_t *value, uint32_t symbol, njs_value_t *name)
 {
     value->data.magic32 = symbol;
     value->type = NJS_SYMBOL;
     value->data.truth = 1;
+    value->data.u.value = name;
 }
 
 

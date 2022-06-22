@@ -197,6 +197,7 @@ struct njs_vm_s {
     njs_trace_t              trace;
     njs_random_t             random;
 
+    njs_rbtree_t             global_symbols;
     uint64_t                 symbol_generator;
 };
 

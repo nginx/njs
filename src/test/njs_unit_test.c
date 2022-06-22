@@ -12866,6 +12866,43 @@ static njs_unit_test_t  njs_test[] =
               ".every((x) => 'Symbol(Symbol.' + x.k + ')' == String(x.v))"),
       njs_str("true") },
 
+    { njs_str("Symbol.for('desc').toString()"),
+      njs_str("Symbol(desc)") },
+
+    { njs_str("Symbol.for({toString: () => 'desc'}).description"),
+      njs_str("desc") },
+
+    { njs_str("Symbol.for('desc') === Symbol.for('desc')"),
+      njs_str("true") },
+
+    { njs_str("Symbol.keyFor(Symbol())"),
+      njs_str("undefined") },
+
+    { njs_str("Symbol.keyFor(Symbol('desc'))"),
+      njs_str("undefined") },
+
+    { njs_str("Symbol.keyFor(1)"),
+      njs_str("TypeError: is not a symbol") },
+
+    { njs_str("Symbol.keyFor(Symbol.for('desc'))"),
+      njs_str("desc") },
+
+    { njs_str("[ 'asyncIterator',"
+              "  'hasInstance',"
+              "  'isConcatSpreadable',"
+              "  'iterator',"
+              "  'match',"
+              "  'matchAll',"
+              "  'replace',"
+              "  'search',"
+              "  'species',"
+              "  'split',"
+              "  'toPrimitive',"
+              "  'toStringTag',"
+              "  'unscopables' ]"
+              ".every(v => Symbol.keyFor(Symbol[v]) === undefined)"),
+      njs_str("true") },
+
     { njs_str("typeof Symbol.prototype.description"),
       njs_str("TypeError: unexpected value type:object") },
 

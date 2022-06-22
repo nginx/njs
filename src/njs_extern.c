@@ -49,7 +49,7 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
         prop->enumerable = external->enumerable;
 
         if (external->flags & 4) {
-            njs_set_symbol(&prop->name, external->name.symbol);
+            njs_set_symbol(&prop->name, external->name.symbol, NULL);
 
             lhq.key_hash = external->name.symbol;
 

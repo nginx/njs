@@ -396,6 +396,8 @@ njs_vm_init(njs_vm_t *vm)
     njs_lvlhsh_init(&vm->modules_hash);
     njs_lvlhsh_init(&vm->events_hash);
 
+    njs_rbtree_init(&vm->global_symbols, njs_symbol_rbtree_cmp);
+
     njs_queue_init(&vm->posted_events);
     njs_queue_init(&vm->promise_events);
 

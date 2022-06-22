@@ -57,20 +57,16 @@ static const njs_value_t  *njs_symbol_names[NJS_SYMBOL_KNOWN_MAX] = {
 const njs_value_t *
 njs_symbol_description(const njs_value_t *value)
 {
-    const njs_value_t  *name;
+    uint32_t  key;
 
-    if (njs_symbol_key(value) < NJS_SYMBOL_KNOWN_MAX) {
-        name = njs_symbol_names[njs_symbol_key(value)];
+    key = njs_symbol_key(value);
 
-    } else {
-        name = value->data.u.value;
-
-        if (name == NULL) {
-            return  &njs_value_undefined;
-        }
+    if (key < NJS_SYMBOL_KNOWN_MAX) {
+        return njs_symbol_names[key];
     }
 
-    return name;
+    return value->data.u.value != NULL ? value->data.u.value
+                                       : &njs_value_undefined;
 }
 
 
@@ -109,9 +105,9 @@ static njs_int_t
 njs_symbol_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
+    uint64_t     key;
     njs_int_t    ret;
     njs_value_t  *value, *name;
-    uint64_t     key;
 
     if (njs_slow_path(vm->top_frame->ctor)) {
         njs_type_error(vm, "Symbol is not a constructor");
@@ -120,25 +116,13 @@ njs_symbol_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     value = njs_arg(args, nargs, 1);
 
-    if (njs_is_undefined(value)) {
-        name = NULL;
-
-    } else {
+    if (njs_is_defined(value)) {
         if (njs_slow_path(!njs_is_string(value))) {
             ret = njs_value_to_string(vm, value, value);
             if (njs_slow_path(ret != NJS_OK)) {
                 return ret;
             }
         }
-
-        name = njs_mp_alloc(vm->mem_pool, sizeof(njs_value_t));
-        if (njs_slow_path(name == NULL)) {
-            njs_memory_error(vm);
-            return NJS_ERROR;
-        }
-
-        /* GC: retain */
-        *name = *value;
     }
 
     key = ++vm->symbol_generator;
@@ -148,32 +132,100 @@ njs_symbol_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    vm->retval.type = NJS_SYMBOL;
-    vm->retval.data.truth = 1;
-    vm->retval.data.magic32 = key;
-    vm->retval.data.u.value = name;
+    name = njs_mp_alloc(vm->mem_pool, sizeof(njs_value_t));
+    if (njs_slow_path(name == NULL)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    njs_value_assign(name, value);
+    njs_set_symbol(&vm->retval, key, name);
 
     return NJS_OK;
 }
 
 
 static njs_int_t
-njs_symbol_for(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+njs_symbol_for(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
 {
-    njs_internal_error(vm, "not implemented");
+    uint64_t              key;
+    njs_int_t             ret;
+    njs_value_t           *value;
+    njs_rbtree_node_t     *rb_node;
+    njs_rb_symbol_node_t  *node;
 
-    return NJS_ERROR;
+    value = njs_arg(args, nargs, 1);
+
+    if (njs_slow_path(!njs_is_string(value))) {
+        ret = njs_value_to_string(vm, value, value);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    rb_node = njs_rbtree_min(&vm->global_symbols);
+
+    while (njs_rbtree_is_there_successor(&vm->global_symbols, rb_node)) {
+
+        node = (njs_rb_symbol_node_t *) rb_node;
+
+        if (njs_is_string(&node->name)
+            && njs_string_cmp(value, &node->name) == 0)
+        {
+            njs_set_symbol(&vm->retval, node->key, &node->name);
+            return NJS_OK;
+        }
+
+        rb_node = njs_rbtree_node_successor(&vm->global_symbols, rb_node);
+    }
+
+    key = ++vm->symbol_generator;
+
+    if (njs_slow_path(key >= UINT32_MAX)) {
+        njs_internal_error(vm, "Symbol generator overflow");
+        return NJS_ERROR;
+    }
+
+    node = njs_mp_alloc(vm->mem_pool, sizeof(njs_rb_symbol_node_t));
+    if (njs_slow_path(node == NULL)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    node->key = key;
+    njs_value_assign(&node->name, value);
+
+    njs_rbtree_insert(&vm->global_symbols, &node->node);
+
+    njs_set_symbol(&vm->retval, key, &node->name);
+
+    return NJS_OK;
 }
 
 
 static njs_int_t
-njs_symbol_key_for(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+njs_symbol_key_for(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
 {
-    njs_internal_error(vm, "not implemented");
+    njs_value_t           *value;
+    njs_rb_symbol_node_t  query, *node;
 
-    return NJS_ERROR;
+    value = njs_arg(args, nargs, 1);
+
+    if (njs_slow_path(!njs_is_symbol(value))) {
+        njs_type_error(vm, "is not a symbol");
+        return NJS_ERROR;
+    }
+
+    query.key = njs_symbol_key(value);
+    node = (njs_rb_symbol_node_t *) njs_rbtree_find(&vm->global_symbols,
+                                                    &query.node);
+
+    njs_value_assign(&vm->retval,
+                     node != NULL ? &node->name : &njs_value_undefined);
+
+    return NJS_OK;
 }
 
 
@@ -355,7 +407,7 @@ njs_symbol_prototype_description(njs_vm_t *vm, njs_value_t *args,
         return ret;
     }
 
-    vm->retval = *njs_symbol_description(&vm->retval);
+    njs_value_assign(&vm->retval, njs_symbol_description(&vm->retval));
 
     return NJS_OK;
 }
@@ -426,3 +478,23 @@ const njs_object_type_init_t  njs_symbol_type_init = {
    .prototype_props = &njs_symbol_prototype_init,
    .prototype_value = { .object = { .type = NJS_OBJECT } },
 };
+
+
+intptr_t
+njs_symbol_rbtree_cmp(njs_rbtree_node_t *node1, njs_rbtree_node_t *node2)
+{
+    njs_rb_symbol_node_t  *item1, *item2;
+
+    item1 = (njs_rb_symbol_node_t *) node1;
+    item2 = (njs_rb_symbol_node_t *) node2;
+
+    if (item1->key < item2->key) {
+        return -1;
+    }
+
+    if (item1->key == item2->key) {
+        return 0;
+    }
+
+    return 1;
+}
