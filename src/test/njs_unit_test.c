@@ -16744,6 +16744,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("parseInt(' 123')"),
       njs_str("123") },
 
+    { njs_str("parseInt('\\u0009123')"),
+      njs_str("123") },
+
+    { njs_str("parseInt('\\u200A123')"),
+      njs_str("123") },
+
     { njs_str("parseInt('1010', 2)"),
       njs_str("10") },
 

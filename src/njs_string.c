@@ -8,10 +8,6 @@
 #include <njs_main.h>
 
 
-#define NJS_TRIM_START  1
-#define NJS_TRIM_END    2
-
-
 static u_char   njs_basis64[] = {
     77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
     77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77,
@@ -2761,36 +2757,27 @@ njs_string_prototype_to_upper_case(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_int_t
-njs_string_prototype_trim(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t mode)
+uint32_t
+njs_string_trim(const njs_value_t *value, njs_string_prop_t *string,
+    unsigned mode)
 {
-    uint32_t              u, trim, length;
-    njs_int_t             ret;
-    njs_value_t           *value;
+    uint32_t              cp, trim;
     const u_char          *p, *prev, *start, *end;
-    njs_string_prop_t     string;
     njs_unicode_decode_t  ctx;
-
-    value = njs_argument(args, 0);
-    ret = njs_string_object_validate(vm, value);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
-    }
 
     trim = 0;
 
-    njs_string_prop(&string, value);
+    njs_string_prop(string, value);
 
-    start = string.start;
-    end = string.start + string.size;
+    start = string->start;
+    end = string->start + string->size;
 
-    if (njs_is_byte_or_ascii_string(&string)) {
+    if (njs_is_byte_or_ascii_string(string)) {
 
         if (mode & NJS_TRIM_START) {
             for ( ;; ) {
                 if (start == end) {
-                    goto empty;
+                    break;
                 }
 
                 if (njs_is_whitespace(*start)) {
@@ -2806,7 +2793,7 @@ njs_string_prototype_trim(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         if (mode & NJS_TRIM_END) {
             for ( ;; ) {
                 if (start == end) {
-                    goto empty;
+                    break;
                 }
 
                 end--;
@@ -2829,13 +2816,13 @@ njs_string_prototype_trim(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
             for ( ;; ) {
                 if (start == end) {
-                    goto empty;
+                    break;
                 }
 
                 p = start;
-                u = njs_utf8_decode(&ctx, &start, end);
+                cp = njs_utf8_decode(&ctx, &start, end);
 
-                if (njs_utf8_is_whitespace(u)) {
+                if (njs_utf8_is_whitespace(cp)) {
                     trim++;
                     continue;
                 }
@@ -2852,14 +2839,14 @@ njs_string_prototype_trim(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
             for ( ;; ) {
                 if (start == prev) {
-                    goto empty;
+                    break;
                 }
 
                 prev = njs_utf8_prev(prev);
                 p = prev;
-                u = njs_utf8_decode(&ctx, &p, end);
+                cp = njs_utf8_decode(&ctx, &p, end);
 
-                if (njs_utf8_is_whitespace(u)) {
+                if (njs_utf8_is_whitespace(cp)) {
                     trim++;
                     continue;
                 }
@@ -2870,22 +2857,52 @@ njs_string_prototype_trim(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    if (trim == 0) {
-        /* GC: retain. */
-        vm->retval = *value;
+    if (start == end) {
+        string->length = 0;
+        string->size = 0;
+        return trim;
+    }
 
+    string->start = (u_char *) start;
+    string->size = end - start;
+
+    if (string->length != 0) {
+        string->length -= trim;
+    }
+
+    return trim;
+}
+
+
+static njs_int_t
+njs_string_prototype_trim(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t mode)
+{
+    uint32_t           trim;
+    njs_int_t          ret;
+    njs_value_t        *value;
+    njs_string_prop_t  string;
+
+    value = njs_argument(args, 0);
+    ret = njs_string_object_validate(vm, value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    trim = njs_string_trim(value, &string, mode);
+
+    if (trim == 0) {
+        njs_value_assign(&vm->retval, value);
         return NJS_OK;
     }
 
-    length = (string.length != 0) ? string.length - trim : 0;
+    if (string.size == 0) {
+        njs_value_assign(&vm->retval, &njs_string_empty);
+        return NJS_OK;
+    }
 
-    return njs_string_new(vm, &vm->retval, start, end - start, length);
-
-empty:
-
-    vm->retval = njs_string_empty;
-
-    return NJS_OK;
+    return njs_string_new(vm, &vm->retval, string.start, string.size,
+                          string.length);
 }
 
 
@@ -3811,38 +3828,17 @@ njs_string_prototype_iterator_obj(njs_vm_t *vm, njs_value_t *args,
 double
 njs_string_to_number(const njs_value_t *value, njs_bool_t parse_float)
 {
-    double                num;
-    size_t                size;
-    uint32_t              u;
-    njs_bool_t            minus;
-    const u_char          *p, *start, *end;
-    njs_unicode_decode_t  ctx;
+    double             num;
+    njs_bool_t         minus;
+    const u_char       *p, *start, *end;
+    njs_string_prop_t  string;
 
     const size_t  infinity = njs_length("Infinity");
 
-    size = value->short_string.size;
+    (void) njs_string_trim(value, &string, NJS_TRIM_START);
 
-    if (size != NJS_STRING_LONG) {
-        p = value->short_string.start;
-
-    } else {
-        size = value->long_string.size;
-        p = value->long_string.data->start;
-    }
-
-    end = p + size;
-
-    njs_utf8_decode_init(&ctx);
-
-    while (p < end) {
-        start = p;
-        u = njs_utf8_decode(&ctx, &p, end);
-
-        if (!njs_utf8_is_whitespace(u)) {
-            p = start;
-            break;
-        }
-    }
+    p = string.start;
+    end = p + string.size;
 
     if (p == end) {
         return parse_float ? NAN : 0.0;
