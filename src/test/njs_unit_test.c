@@ -338,6 +338,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("-0O7_7_7"),
       njs_str("-511") },
 
+    { njs_str("0o7777777777777777777777777777777777700000000000000000000000000000000"),
+      njs_str("3.2138760885179806e+60") },
+
     { njs_str("0o"),
       njs_str("SyntaxError: Unexpected token \"0o\" in 1") },
 
@@ -390,6 +393,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("-0B1111_1111"),
       njs_str("-255") },
 
+    { njs_str("0b111111111111111111111111111111111111111111111111111111111111111111111111111110000000000000"),
+      njs_str("1.2379400392853803e+27") },
+
     { njs_str("0b"),
       njs_str("SyntaxError: Unexpected token \"0b\" in 1") },
 
@@ -418,6 +424,12 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("0X00_00_BE_EF"),
       njs_str("48879") },
+
+    { njs_str("0x21bc2b266d3a3600000000000000000000000000000000000000000000000000000"),
+      njs_str("6.25e+79") },
+
+    { njs_str("0x21bc2b266d3a36000000000000000000000000000000000000000000000000000000"),
+      njs_str("1e+81") },
 
     { njs_str("0x"),
       njs_str("SyntaxError: Unexpected token \"0x\" in 1") },
@@ -16734,6 +16746,15 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("parseInt('1010', 2)"),
       njs_str("10") },
+
+    { njs_str("parseInt('111111111111111111111111111111111111111111111111111111111111111111111111111110000000000000', 2)"),
+      njs_str("1.2379400392853803e+27") },
+
+    { njs_str("parseInt('7777777777777777777777777777777777700000000000000000000000000000000', 8)"),
+      njs_str("3.2138760885179806e+60") },
+
+    { njs_str("parseInt('0x21bc2b266d3a3600000000000000000000000000000000000000000000000000000')"),
+      njs_str("6.25e+79") },
 
     { njs_str("parseInt('aBc', 16)"),
       njs_str("2748") },

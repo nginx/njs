@@ -16,12 +16,10 @@
 double njs_key_to_index(const njs_value_t *value);
 double njs_number_dec_parse(const u_char **start, const u_char *end,
     njs_bool_t literal);
-uint64_t njs_number_oct_parse(const u_char **start, const u_char *end);
-uint64_t njs_number_bin_parse(const u_char **start, const u_char *end);
-uint64_t njs_number_hex_parse(const u_char **start, const u_char *end,
+double njs_number_oct_parse(const u_char **start, const u_char *end);
+double njs_number_bin_parse(const u_char **start, const u_char *end);
+double njs_number_hex_parse(const u_char **start, const u_char *end,
     njs_bool_t literal);
-int64_t njs_number_radix_parse(const u_char **start, const u_char *end,
-    uint8_t radix);
 njs_int_t njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
     const njs_value_t *number);
 njs_int_t njs_number_to_chain(njs_vm_t *vm, njs_chb_t *chain,
