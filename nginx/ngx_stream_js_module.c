@@ -1114,6 +1114,11 @@ ngx_stream_js_ext_done(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
+    if (ctx->filter) {
+        njs_vm_error(vm, "should not be called while filtering");
+        return NJS_ERROR;
+    }
+
     ngx_log_debug1(NGX_LOG_DEBUG_STREAM, s->connection->log, 0,
                    "stream js set status: %i", status);
 
