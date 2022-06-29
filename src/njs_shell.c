@@ -37,6 +37,7 @@ typedef struct {
     uint8_t                 ast;
     uint8_t                 unhandled_rejection;
     uint8_t                 opcode_debug;
+    uint8_t                 generator_debug;
     int                     exit_code;
 
     char                    *file;
@@ -273,6 +274,9 @@ main(int argc, char **argv)
     vm_options.sandbox = opts.sandbox;
     vm_options.unsafe = !opts.safe;
     vm_options.module = opts.module;
+#ifdef NJS_DEBUG_GENERATOR
+    vm_options.generator_debug = opts.generator_debug;
+#endif
 #ifdef NJS_DEBUG_OPCODE
     vm_options.opcode_debug = opts.opcode_debug;
 #endif
@@ -338,6 +342,9 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
         "  -d                print disassembled code.\n"
         "  -e                set failure exit code.\n"
         "  -f                disabled denormals mode.\n"
+#ifdef NJS_DEBUG_GENERATOR
+        "  -g                enable generator debug.\n"
+#endif
 #ifdef NJS_DEBUG_OPCODE
         "  -o                enable opcode debug.\n"
 #endif
@@ -416,6 +423,12 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
 
             opts->denormals = 0;
             break;
+
+#ifdef NJS_DEBUG_GENERATOR
+        case 'g':
+            opts->generator_debug = 1;
+            break;
+#endif
 
 #ifdef NJS_DEBUG_OPCODE
         case 'o':

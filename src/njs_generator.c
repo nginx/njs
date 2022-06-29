@@ -24,6 +24,12 @@ typedef enum {
 } njs_generator_block_type_t;
 
 
+typedef enum {
+    NJS_GENERATOR_CONTINUATION = 1,
+    NJS_GENERATOR_EXIT = 2,
+} njs_generator_patch_type_t;
+
+
 struct njs_generator_patch_s {
     /*
      * The jump_offset field points to jump offset field which contains a small
@@ -179,10 +185,10 @@ static njs_int_t njs_generate_start_block(njs_vm_t *vm,
     const njs_str_t *label);
 static njs_generator_block_t *njs_generate_lookup_block(
     njs_generator_block_t *block, uint32_t mask, const njs_str_t *label);
-static njs_generator_block_t *njs_generate_find_block(
+static njs_generator_block_t *njs_generate_find_block(njs_vm_t *vm,
     njs_generator_block_t *block, uint32_t mask, const njs_str_t *label);
 static void njs_generate_patch_block(njs_vm_t *vm, njs_generator_t *generator,
-    njs_generator_patch_t *list);
+    njs_generator_block_t *block, unsigned type);
 static njs_generator_patch_t *njs_generate_make_continuation_patch(njs_vm_t *vm,
     njs_generator_block_t *block, const njs_str_t *label,
     njs_jump_off_t offset);
@@ -427,13 +433,16 @@ static njs_int_t njs_generate_index_release(njs_vm_t *vm,
                           ##__VA_ARGS__)
 
 
-#ifdef NJS_GENERATOR_DEBUG
-#define njs_generator_debug(msg, ...) njs_printf(msg "\n", ##__VA_ARGS__)
-#define njs_generator_debug_code(code)                                        \
-        njs_disassemble((u_char *) code, NULL, 1, NULL)
+#ifdef NJS_DEBUG_GENERATOR
+#define njs_debug_generator(vm, msg, ...)                                     \
+        if (vm->options.generator_debug)                                      \
+            njs_printf("GENERATOR " msg "\n", ##__VA_ARGS__)
+#define njs_debug_generator_code(code)                                        \
+        if (vm->options.generator_debug)                                      \
+            njs_disassemble((u_char *) code, NULL, 1, NULL)
 #else
-#define njs_generator_debug(msg, ...)
-#define njs_generator_debug_code(code)
+#define njs_debug_generator(vm, msg, ...)
+#define njs_debug_generator_code(code)
 #endif
 
 
@@ -1590,7 +1599,8 @@ njs_generate_while_condition(njs_vm_t *vm, njs_generator_t *generator,
 
     ctx = generator->context;
 
-    njs_generate_patch_block(vm, generator, generator->block->continuation);
+    njs_generate_patch_block(vm, generator, generator->block,
+                             NJS_GENERATOR_CONTINUATION);
 
     njs_code_set_jump_offset(generator, njs_vmcode_jump_t, ctx->jump_offset);
 
@@ -1657,7 +1667,8 @@ static njs_int_t
 njs_generate_do_while_condition(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
-    njs_generate_patch_block(vm, generator, generator->block->continuation);
+    njs_generate_patch_block(vm, generator, generator->block,
+                             NJS_GENERATOR_CONTINUATION);
 
     njs_generator_next(generator, njs_generate, node->right);
 
@@ -1795,7 +1806,8 @@ njs_generate_for_body(njs_vm_t *vm, njs_generator_t *generator,
         return ret;
     }
 
-    njs_generate_patch_block(vm, generator, generator->block->continuation);
+    njs_generate_patch_block(vm, generator, generator->block,
+                             NJS_GENERATOR_CONTINUATION);
 
     njs_generator_next(generator, njs_generate, update);
 
@@ -2062,7 +2074,8 @@ njs_generate_for_in_body(njs_vm_t *vm, njs_generator_t *generator,
         }
     }
 
-    njs_generate_patch_block(vm, generator, generator->block->continuation);
+    njs_generate_patch_block(vm, generator, generator->block,
+                             NJS_GENERATOR_CONTINUATION);
 
     njs_code_set_jump_offset(generator, njs_vmcode_prop_foreach_t,
                              ctx->jump_offset);
@@ -2095,6 +2108,24 @@ njs_generate_for_in_body(njs_vm_t *vm, njs_generator_t *generator,
 }
 
 
+#ifdef NJS_DEBUG_GENERATOR
+njs_inline const char*
+njs_block_type(njs_generator_block_type_t type)
+{
+    switch (type) {
+    case NJS_GENERATOR_LOOP:
+        return "LOOP  ";
+    case NJS_GENERATOR_SWITCH:
+        return "SWITCH";
+    case NJS_GENERATOR_BLOCK:
+        return "BLOCK ";
+    default:
+        return "TRY   ";
+    }
+}
+#endif
+
+
 static njs_int_t
 njs_generate_start_block(njs_vm_t *vm, njs_generator_t *generator,
     njs_generator_block_type_t type, const njs_str_t *label)
@@ -2113,6 +2144,8 @@ njs_generate_start_block(njs_vm_t *vm, njs_generator_t *generator,
         block->exit = NULL;
 
         block->index = 0;
+
+        njs_debug_generator(vm, "START %s %p", njs_block_type(type), block);
 
         return NJS_OK;
     }
@@ -2145,8 +2178,8 @@ njs_generate_lookup_block(njs_generator_block_t *block, uint32_t mask,
 
 
 static njs_generator_block_t *
-njs_generate_find_block(njs_generator_block_t *block, uint32_t mask,
-    const njs_str_t *label)
+njs_generate_find_block(njs_vm_t *vm, njs_generator_block_t *block,
+    uint32_t mask, const njs_str_t *label)
 {
     njs_generator_block_t  *dest_block;
 
@@ -2172,16 +2205,23 @@ njs_generate_find_block(njs_generator_block_t *block, uint32_t mask,
 
         while (block != NULL) {
             if (block->type & NJS_GENERATOR_TRY) {
+                njs_debug_generator(vm, "FIND  %s %p",
+                                    njs_block_type(block->type), block);
                 return block;
             }
 
             if (block == dest_block) {
-                return block;
+                break;
             }
 
             block = block->next;
         }
     }
+
+    njs_debug_generator(vm, "FIND  %s %p",
+                        dest_block != NULL ? njs_block_type(dest_block->type)
+                                           : "NONE   ",
+                        dest_block);
 
     return dest_block;
 }
@@ -2206,21 +2246,45 @@ njs_generate_make_continuation_patch(njs_vm_t *vm, njs_generator_block_t *block,
 
     patch->label = *label;
 
+
+    njs_debug_generator(vm, "MAKE  CONT   %p %L %V", patch, patch->jump_offset,
+                        &patch->label);
+
     return patch;
 }
 
 
 static void
-njs_generate_patch_block(njs_vm_t *vm, njs_generator_t *generator,
+njs_generate_patch(njs_vm_t *vm, njs_generator_t *generator,
     njs_generator_patch_t *list)
 {
     njs_generator_patch_t  *patch, *next;
 
     for (patch = list; patch != NULL; patch = next) {
         njs_code_update_offset(generator, patch);
+        njs_debug_generator(vm, "PATCH        %p at %L to %L %V", patch,
+                            patch->jump_offset,
+                            *(njs_code_jump_ptr(generator, patch->jump_offset)),
+                            &patch->label);
         next = patch->next;
 
         njs_mp_free(vm->mem_pool, patch);
+    }
+}
+
+
+static void
+njs_generate_patch_block(njs_vm_t *vm, njs_generator_t *generator,
+    njs_generator_block_t *block, unsigned type)
+{
+    if (type & NJS_GENERATOR_CONTINUATION) {
+        njs_debug_generator(vm, "PATCH CONT   %p", block);
+        njs_generate_patch(vm, generator, block->continuation);
+    }
+
+    if (type & NJS_GENERATOR_EXIT) {
+        njs_debug_generator(vm, "PATCH EXIT   %p", block);
+        njs_generate_patch(vm, generator, block->exit);
     }
 }
 
@@ -2244,6 +2308,9 @@ njs_generate_make_exit_patch(njs_vm_t *vm, njs_generator_block_t *block,
 
     patch->label = *label;
 
+    njs_debug_generator(vm, "MAKE  EXIT   %p %L %V", patch, patch->jump_offset,
+                        &patch->label);
+
     return patch;
 }
 
@@ -2256,7 +2323,9 @@ njs_generate_patch_block_exit(njs_vm_t *vm, njs_generator_t *generator)
     block = generator->block;
     generator->block = block->next;
 
-    njs_generate_patch_block(vm, generator, block->exit);
+    njs_generate_patch_block(vm, generator, block, NJS_GENERATOR_EXIT);
+
+    njs_debug_generator(vm, "EXIT  %s %p", njs_block_type(block->type), block);
 
     njs_mp_free(vm->mem_pool, block);
 }
@@ -2307,7 +2376,7 @@ njs_generate_continue_statement(njs_vm_t *vm, njs_generator_t *generator,
 
     label = &node->name;
 
-    block = njs_generate_find_block(generator->block, NJS_GENERATOR_LOOP,
+    block = njs_generate_find_block(vm, generator->block, NJS_GENERATOR_LOOP,
                                     label);
 
     if (njs_slow_path(block == NULL)) {
@@ -2356,7 +2425,8 @@ njs_generate_break_statement(njs_vm_t *vm, njs_generator_t *generator,
 
     label = &node->name;
 
-    block = njs_generate_find_block(generator->block, NJS_GENERATOR_ALL, label);
+    block = njs_generate_find_block(vm, generator->block, NJS_GENERATOR_ALL,
+                                    label);
     if (njs_slow_path(block == NULL)) {
         goto syntax_error;
      }
@@ -3377,7 +3447,7 @@ njs_generate_3addr_operation_end(njs_vm_t *vm, njs_generator_t *generator,
 
     code->dst = node->index;
 
-    njs_generator_debug_code(code);
+    njs_debug_generator_code(code);
 
     return njs_generator_stack_pop(vm, generator, generator->context);
 }
@@ -3412,7 +3482,7 @@ njs_generate_2addr_operation_end(njs_vm_t *vm, njs_generator_t *generator,
 
     code->dst = node->index;
 
-    njs_generator_debug_code(code);
+    njs_debug_generator_code(code);
 
     return njs_generator_stack_pop(vm, generator, NULL);
 }
@@ -3461,7 +3531,7 @@ njs_generate_typeof_operation_end(njs_vm_t *vm, njs_generator_t *generator,
 
     code->dst = node->index;
 
-    njs_generator_debug_code(code);
+    njs_debug_generator_code(code);
 
     return njs_generator_stack_pop(vm, generator, NULL);
 }
@@ -3884,6 +3954,8 @@ njs_generate_return_statement_end(njs_vm_t *vm, njs_generator_t *generator,
     immediate = njs_generate_lookup_block(generator->block, NJS_GENERATOR_TRY,
                                           &no_label);
 
+    njs_debug_generator(vm, "LOOKUP TRY   %p", immediate);
+
     if (njs_fast_path(immediate == NULL)) {
         njs_generate_code(generator, njs_vmcode_return_t, code,
                           NJS_VMCODE_RETURN, 1, node);
@@ -4267,7 +4339,11 @@ njs_generate_try_left(njs_vm_t *vm, njs_generator_t *generator,
     if (try_block->exit != NULL) {
         ctx->try_exit_label = try_block->exit->label;
 
-        njs_generate_patch_block(vm, generator, try_block->exit);
+        njs_debug_generator(vm, "TRY   CTX    %p EXIT LABEL %V", ctx,
+                            &ctx->try_exit_label);
+
+        njs_generate_patch_block(vm, generator, try_block,
+                                 NJS_GENERATOR_EXIT);
 
         njs_generate_code(generator, njs_vmcode_try_trampoline_t, try_break,
                           NJS_VMCODE_TRY_BREAK, 1, NULL);
@@ -4282,7 +4358,8 @@ njs_generate_try_left(njs_vm_t *vm, njs_generator_t *generator,
     if (try_block->continuation != NULL) {
         ctx->try_cont_label = try_block->continuation->label;
 
-        njs_generate_patch_block(vm, generator, try_block->continuation);
+        njs_generate_patch_block(vm, generator, try_block,
+                                 NJS_GENERATOR_CONTINUATION);
 
         njs_generate_code(generator, njs_vmcode_try_trampoline_t, try_continue,
                           NJS_VMCODE_TRY_CONTINUE, 1, NULL);
@@ -4294,6 +4371,10 @@ njs_generate_try_left(njs_vm_t *vm, njs_generator_t *generator,
             try_continue->offset -= sizeof(njs_vmcode_try_trampoline_t);
         }
     }
+
+    njs_debug_generator(vm, "EXIT  %s %p",
+                        njs_block_type(generator->block->type),
+                        generator->block);
 
     generator->block = try_block->next;
 
@@ -4396,7 +4477,7 @@ njs_generate_try_catch(njs_vm_t *vm, njs_generator_t *generator,
              * block != NULL is checked
              * by njs_generate_continue_statement()
              */
-            block = njs_generate_find_block(generator->block,
+            block = njs_generate_find_block(vm, generator->block,
                                             NJS_GENERATOR_LOOP,
                                             &ctx->try_cont_label);
 
@@ -4410,7 +4491,7 @@ njs_generate_try_catch(njs_vm_t *vm, njs_generator_t *generator,
         }
 
         if (try_block->exit != NULL) {
-            block = njs_generate_find_block(generator->block,
+            block = njs_generate_find_block(vm, generator->block,
                                             NJS_GENERATOR_ALL,
                                             &ctx->try_exit_label);
 
@@ -4462,7 +4543,8 @@ njs_generate_try_finally(njs_vm_t *vm, njs_generator_t *generator,
     if (catch_block->exit != NULL) {
         ctx->catch_exit_label = catch_block->exit->label;
 
-        njs_generate_patch_block(vm, generator, catch_block->exit);
+        njs_generate_patch_block(vm, generator, catch_block,
+                                 NJS_GENERATOR_EXIT);
 
         njs_generate_code(generator, njs_vmcode_try_trampoline_t,
                           try_break, NJS_VMCODE_TRY_BREAK, 1, NULL);
@@ -4478,8 +4560,8 @@ njs_generate_try_finally(njs_vm_t *vm, njs_generator_t *generator,
     if (catch_block->continuation != NULL) {
         ctx->catch_cont_label = catch_block->continuation->label;
 
-        njs_generate_patch_block(vm, generator,
-                                 catch_block->continuation);
+        njs_generate_patch_block(vm, generator, catch_block,
+                                 NJS_GENERATOR_CONTINUATION);
 
         njs_generate_code(generator, njs_vmcode_try_trampoline_t,
                           try_continue, NJS_VMCODE_TRY_CONTINUE, 1,
@@ -4493,6 +4575,10 @@ njs_generate_try_finally(njs_vm_t *vm, njs_generator_t *generator,
             try_continue->offset -= sizeof(njs_vmcode_try_trampoline_t);
         }
     }
+
+    njs_debug_generator(vm, "EXIT  %s %p",
+                        njs_block_type(generator->block->type),
+                        generator->block);
 
     generator->block = catch_block->next;
 
@@ -4554,7 +4640,7 @@ njs_generate_try_end(njs_vm_t *vm, njs_generator_t *generator,
          * block != NULL is checked
          * by njs_generate_continue_statement()
          */
-        block = njs_generate_find_block(generator->block,
+        block = njs_generate_find_block(vm, generator->block,
                                         NJS_GENERATOR_LOOP, dest_label);
 
         patch = njs_generate_make_continuation_patch(vm, block, dest_label,
@@ -4582,7 +4668,7 @@ njs_generate_try_end(njs_vm_t *vm, njs_generator_t *generator,
          * block can be NULL for "return" instruction in
          * outermost try-catch block.
          */
-        block = njs_generate_find_block(generator->block,
+        block = njs_generate_find_block(vm, generator->block,
                                         NJS_GENERATOR_ALL
                                         | NJS_GENERATOR_TRY, dest_label);
         if (block != NULL) {
@@ -4911,7 +4997,7 @@ njs_generate_temp_index_get(njs_vm_t *vm, njs_generator_t *generator,
     if (cache != NULL && cache->items != 0) {
         last = njs_arr_remove_last(cache);
 
-        njs_generator_debug("INDEX REUSE  %04Xz", (size_t) *last);
+        njs_debug_generator(vm, "INDEX REUSE  %04Xz", (size_t) *last);
 
         return *last;
     }
@@ -4977,7 +5063,7 @@ njs_generate_index_release(njs_vm_t *vm, njs_generator_t *generator,
     njs_arr_t    *cache;
     njs_index_t  *last;
 
-    njs_generator_debug("INDEX RELEASE %04Xz", (size_t) index);
+    njs_debug_generator(vm, "INDEX RELEASE %04Xz", (size_t) index);
 
     cache = generator->index_cache;
 

@@ -253,6 +253,9 @@ typedef struct {
 #ifdef NJS_DEBUG_OPCODE
     uint8_t                         opcode_debug;    /* 1 bit */
 #endif
+#ifdef NJS_DEBUG_GENERATOR
+    uint8_t                         generator_debug; /* 1 bit */
+#endif
     uint8_t                         unhandled_rejection;
 } njs_vm_opt_t;
 
