@@ -450,9 +450,9 @@ njs_int_t njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc,
 
 njs_object_t *njs_function_new_object(njs_vm_t *vm, njs_value_t *constructor);
 
-#ifdef NJS_OPCODE_DEBUG
+#ifdef NJS_DEBUG_OPCODE
 #define njs_vmcode_debug(vm, pc, prefix) {                                    \
-        do {                                                                  \
+        if (vm->options.opcode_debug) do {                                    \
             njs_vm_code_t  *code;                                             \
                                                                               \
             code = njs_lookup_code(vm, pc);                                   \

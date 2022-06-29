@@ -33,6 +33,10 @@ cat << END > $NJS_AUTO_CONFIG_H
 
 END
 
+NJS_LIBS="$NJS_LIBRT"
+NJS_LIB_AUX_CFLAGS=
+NJS_LIB_AUX_LIBS=
+
 . auto/os
 . auto/cc
 . auto/types
@@ -46,16 +50,11 @@ END
 . auto/pcre
 . auto/readline
 . auto/openssl
+. auto/libbfd
+. auto/link
+
 . auto/sources
-
-NJS_LIB_AUX_CFLAGS="$NJS_PCRE_CFLAGS"
-
-NJS_LIBS="$NJS_LIBRT"
-NJS_LIB_AUX_LIBS="$NJS_PCRE_LIB $NJS_OPENSSL_LIB"
-
 . auto/modules
 . auto/make
-
 . auto/expect
-
 . auto/summary

@@ -165,8 +165,10 @@ next:
          * as a single unsigned comparision.
          */
 
-#ifdef NJS_OPCODE_DEBUG
-        njs_disassemble(pc, NULL, 1, NULL);
+#ifdef NJS_DEBUG_OPCODE
+        if (vm->options.opcode_debug) {
+            njs_disassemble(pc, NULL, 1, NULL);
+        }
 #endif
 
         if (op > NJS_VMCODE_NORET) {

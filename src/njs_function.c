@@ -711,15 +711,18 @@ njs_function_native_call(njs_vm_t *vm)
     native = vm->top_frame;
     function = native->function;
 
-#ifdef NJS_OPCODE_DEBUG
-	njs_str_t              name;
+#ifdef NJS_DEBUG_OPCODE
+    njs_str_t              name;
 
-	ret = njs_builtin_match_native_function(vm, function, &name);
-	if (ret != NJS_OK) {
-		name = njs_entry_unknown;
-	}
+    if (vm->options.opcode_debug) {
 
-	njs_printf("CALL NATIVE %V\n", &name);
+        ret = njs_builtin_match_native_function(vm, function, &name);
+        if (ret != NJS_OK) {
+           name = njs_str_value("unmapped");
+        }
+
+        njs_printf("CALL NATIVE %V %P\n", &name, function->u.native);
+    }
 #endif
 
     if (njs_fast_path(function->bound == NULL)) {
@@ -737,6 +740,14 @@ njs_function_native_call(njs_vm_t *vm)
     }
 
     ret = call(vm, native->arguments, native->nargs, function->magic8);
+
+#ifdef NJS_DEBUG_OPCODE
+    if (vm->options.opcode_debug) {
+        njs_printf("CALL NATIVE RETCODE: %i %V %P\n", ret, &name,
+                   function->u.native);
+    }
+#endif
+
     if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
     }

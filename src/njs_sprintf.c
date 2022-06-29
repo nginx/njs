@@ -27,6 +27,7 @@
  *    %*s                       length and string
  *
  *    %p                        void *
+ *    %P                        symbolized function address
  *    %b                        njs_bool_t
  *    %V                        njs_str_t *
  *    %Z                        '\0'
@@ -371,6 +372,11 @@ njs_vsprintf(u_char *buf, u_char *end, const char *fmt, va_list args)
              * spf.padding = '0';
              */
             goto number;
+
+        case 'P':
+            buf = njs_addr2line(buf, end, va_arg(args, void *));
+            fmt++;
+            continue;
 
         case 'c':
             d = va_arg(args, int);

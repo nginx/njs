@@ -75,6 +75,10 @@ if [ "$NJS_PCRE" = "YES" ]; then
 	NJS_LIB_SRCS="$NJS_LIB_SRCS external/njs_regex.c"
 fi
 
+if [ "$NJS_HAVE_LIBBFD" = "YES" -a "$NJS_HAVE_DL_ITERATE_PHDR" = "YES" ]; then
+	NJS_LIB_SRCS="$NJS_LIB_SRCS src/njs_addr2line.c"
+fi
+
 NJS_TS_SRCS=$(find ts/ -name "*.d.ts" -o -name "*.json")
 
 NJS_TEST_TS_SRCS=$(find test/ts/ -name "*.ts" -o -name "*.json")

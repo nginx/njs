@@ -1,0 +1,31 @@
+
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+
+
+NJS_HAVE_DL_ITERATE_PHDR=NO
+
+if [ $NJS_ADDR2LINE = YES ]; then
+    njs_feature="dl_iterate_phdr()"
+    njs_feature_name=NJS_HAVE_DL_ITERATE_PHDR
+    njs_feature_run=yes
+    njs_feature_incs=
+    njs_feature_libs=
+    njs_feature_test="#define _GNU_SOURCE
+                      #include <link.h>
+
+                      static int
+                      cb(struct dl_phdr_info *info, size_t size, void *data) {
+                          return 0;
+                      }
+
+                      int main() {
+                          dl_iterate_phdr(cb, 0);
+                          return 0;
+                      }"
+    . auto/feature
+
+    if [ $njs_found = yes ]; then
+        NJS_HAVE_DL_ITERATE_PHDR=YES
+    fi
+fi

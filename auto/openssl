@@ -46,6 +46,7 @@ if [ $NJS_OPENSSL = YES ]; then
 
         NJS_HAVE_OPENSSL=YES
         NJS_OPENSSL_LIB="$njs_feature_libs"
+        NJS_LIB_AUX_LIBS="$NJS_LIB_AUX_LIBS $njs_feature_libs"
     fi
 
 fi

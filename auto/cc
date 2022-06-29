@@ -177,6 +177,10 @@ if [ "$NJS_DEBUG_MEMORY" = "YES" ]; then
         njs_define=NJS_DEBUG_MEMORY . auto/define
 fi
 
+if [ "$NJS_DEBUG_OPCODE" = "YES" ]; then
+        njs_define=NJS_DEBUG_OPCODE . auto/define
+fi
+
 if [ "$NJS_TEST262" = "YES" ]; then
         njs_define=NJS_TEST262 . auto/define
 fi

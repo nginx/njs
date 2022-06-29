@@ -13269,7 +13269,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("5") },
 
     { njs_str("var a = (new Function('return [' + ','.repeat(2**16) + ']'))();"
-			  "njs.dump(a)"),
+              "njs.dump(a)"),
       njs_str("[<65536 empty items>]") },
 
     { njs_str("(new Function('var a = 7; return a' + '= a'.repeat(2**13)))()"),
@@ -23415,6 +23415,43 @@ njs_to_int32_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
 }
 
 
+#ifdef NJS_HAVE_ADDR2LINE
+static njs_int_t
+njs_addr2line_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
+{
+    njs_str_t   v;
+    njs_uint_t  i;
+    u_char      buf[512];
+
+    static const struct {
+        void         *fp;
+        const char   *name;
+    } tests[] = {
+        { njs_addr2line_test, njs_stringify(njs_addr2line_test) },
+        { njs_to_int32_test, njs_stringify(njs_to_int32_test) },
+    };
+
+    for (i = 0; i < njs_nitems(tests); i++) {
+        v.start = buf;
+        v.length = njs_sprintf(buf, &buf[512], "%P", tests[i].fp) - buf;
+
+        if (memcmp(buf, tests[i].name, njs_strlen(tests[i].name))) {
+            njs_printf("njs_addr2line_test(%p):\n"
+                       "expected: %s\n     got: %V\n",
+                       tests[i].fp, tests[i].name, &v);
+
+            stat->failed++;
+            continue;
+        }
+
+        stat->passed++;
+    }
+
+    return NJS_OK;
+}
+#endif
+
+
 static njs_int_t
 njs_vm_internal_api_test(njs_unit_test_t unused[], size_t num, njs_str_t *name,
     njs_opts_t *opts, njs_stat_t *stat)
@@ -23443,6 +23480,10 @@ njs_vm_internal_api_test(njs_unit_test_t unused[], size_t num, njs_str_t *name,
           njs_str("njs_string_to_index_test") },
         { njs_to_int32_test,
           njs_str("njs_to_int32_test") },
+#ifdef NJS_HAVE_ADDR2LINE
+        { njs_addr2line_test,
+          njs_str("njs_addr2line_test") },
+#endif
     };
 
     vm = NULL;

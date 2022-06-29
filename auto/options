@@ -8,7 +8,10 @@ NJS_LD_OPT=${NJS_CC_OPT:--O}
 
 NJS_DEBUG=NO
 NJS_DEBUG_MEMORY=NO
+NJS_DEBUG_OPCODE=NO
+
 NJS_ADDRESS_SANITIZER=NO
+NJS_ADDR2LINE=NO
 NJS_TEST262=YES
 
 NJS_OPENSSL=YES
@@ -34,8 +37,10 @@ do
         --build-dir=*)                   NJS_BUILD_DIR="$value"              ;;
 
         --address-sanitizer=*)           NJS_ADDRESS_SANITIZER="$value"      ;;
+        --addr2line=*)                   NJS_ADDR2LINE="$value"              ;;
         --debug=*)                       NJS_DEBUG="$value"                  ;;
         --debug-memory=*)                NJS_DEBUG_MEMORY="$value"           ;;
+        --debug-opcode=*)                NJS_DEBUG_OPCODE="$value"           ;;
         --test262=*)                     NJS_TEST262="$value"                ;;
 
         --no-openssl)                    NJS_OPENSSL=NO                      ;;
@@ -65,4 +70,8 @@ done
 
 if [ "$NJS_DEBUG_MEMORY" = "YES" ]; then
     NJS_DEBUG=YES
+fi
+
+if [ "$NJS_DEBUG_OPCODE" = "YES" ]; then
+    NJS_ADDR2LINE=YES
 fi

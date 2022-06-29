@@ -37,6 +37,7 @@
 #include <njs_utils.h>
 #include <njs_sprintf.h>
 #include <njs_assert.h>
+#include <njs_addr2line.h>
 
 #include <njs_regex.h>
 

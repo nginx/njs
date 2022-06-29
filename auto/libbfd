@@ -1,0 +1,35 @@
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+
+
+NJS_HAVE_LIBBFD=NO
+
+if [ $NJS_ADDR2LINE = YES ]; then
+    njs_found=no
+
+    njs_feature="BFD library"
+    njs_feature_name=NJS_HAVE_LIBBFD
+    njs_feature_run=yes
+    njs_feature_incs=
+    njs_feature_libs="-lbfd"
+    njs_feature_test="#include <bfd.h>
+
+                      int main() {
+                          bfd_init();
+                          return 0;
+                     }"
+    . auto/feature
+
+    if [ $njs_found = no ]; then
+        njs_feature="OpenSSL library -lcrypto"
+        njs_feature_libs="-lcrypto"
+
+        . auto/feature
+    fi
+
+
+    if [ $njs_found = yes ]; then
+        NJS_HAVE_LIBBFD=YES
+        NJS_LIB_AUX_LIBS="$NJS_LIB_AUX_LIBS $njs_feature_libs"
+    fi
+fi

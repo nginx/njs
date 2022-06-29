@@ -36,6 +36,7 @@ typedef struct {
     uint8_t                 version;
     uint8_t                 ast;
     uint8_t                 unhandled_rejection;
+    uint8_t                 opcode_debug;
     int                     exit_code;
 
     char                    *file;
@@ -272,6 +273,9 @@ main(int argc, char **argv)
     vm_options.sandbox = opts.sandbox;
     vm_options.unsafe = !opts.safe;
     vm_options.module = opts.module;
+#ifdef NJS_DEBUG_OPCODE
+    vm_options.opcode_debug = opts.opcode_debug;
+#endif
 
     vm_options.ops = &njs_console_ops;
     vm_options.addons = njs_console_addon_modules;
@@ -334,6 +338,9 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
         "  -d                print disassembled code.\n"
         "  -e                set failure exit code.\n"
         "  -f                disabled denormals mode.\n"
+#ifdef NJS_DEBUG_OPCODE
+        "  -o                enable opcode debug.\n"
+#endif
         "  -p                set path prefix for modules.\n"
         "  -q                disable interactive introduction prompt.\n"
         "  -r                ignore unhandled promise rejection.\n"
@@ -409,6 +416,12 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
 
             opts->denormals = 0;
             break;
+
+#ifdef NJS_DEBUG_OPCODE
+        case 'o':
+            opts->opcode_debug = 1;
+            break;
+#endif
 
         case 'p':
             if (++i < argc) {
