@@ -4495,6 +4495,11 @@ njs_generate_try_catch(njs_vm_t *vm, njs_generator_t *generator,
                                             NJS_GENERATOR_ALL,
                                             &ctx->try_exit_label);
 
+            /*
+             * block can be NULL when &ctx->try_exit_label is "@return"
+             * for outermost try-catch block.
+             */
+
             if (block != NULL) {
                 patch = njs_generate_make_exit_patch(vm, block,
                                                      &ctx->try_exit_label,
@@ -4502,6 +4507,26 @@ njs_generate_try_catch(njs_vm_t *vm, njs_generator_t *generator,
                             + offsetof(njs_vmcode_finally_t, break_offset));
                 if (njs_slow_path(patch == NULL)) {
                     return NJS_ERROR;
+                }
+
+            } else {
+
+                /*
+                 * when block == NULL, we still want to patch the "finally"
+                 * instruction break_offset.
+                 */
+
+                block = njs_generate_find_block(vm, generator->block,
+                                                NJS_GENERATOR_ALL,
+                                                &no_label);
+
+                if (block != NULL) {
+                    patch = njs_generate_make_exit_patch(vm, block, &no_label,
+                                njs_code_offset(generator, finally)
+                                + offsetof(njs_vmcode_finally_t, break_offset));
+                    if (njs_slow_path(patch == NULL)) {
+                        return NJS_ERROR;
+                    }
                 }
             }
         }
@@ -4669,14 +4694,26 @@ njs_generate_try_end(njs_vm_t *vm, njs_generator_t *generator,
          * outermost try-catch block.
          */
         block = njs_generate_find_block(vm, generator->block,
-                                        NJS_GENERATOR_ALL
-                                        | NJS_GENERATOR_TRY, dest_label);
+                                        NJS_GENERATOR_ALL, dest_label);
         if (block != NULL) {
             patch = njs_generate_make_exit_patch(vm, block, dest_label,
                             njs_code_offset(generator, finally)
                             + offsetof(njs_vmcode_finally_t, break_offset));
             if (njs_slow_path(patch == NULL)) {
                 return NJS_ERROR;
+            }
+
+        } else {
+
+            block = njs_generate_find_block(vm, generator->block,
+                                            NJS_GENERATOR_ALL, &no_label);
+            if (block != NULL) {
+                patch = njs_generate_make_exit_patch(vm, block, &no_label,
+                                njs_code_offset(generator, finally)
+                                + offsetof(njs_vmcode_finally_t, break_offset));
+                if (njs_slow_path(patch == NULL)) {
+                    return NJS_ERROR;
+                }
             }
         }
     }

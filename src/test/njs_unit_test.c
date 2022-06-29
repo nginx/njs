@@ -3411,19 +3411,51 @@ static njs_unit_test_t  njs_test[] =
       njs_str("a,2") },
 
     { njs_str("function f(n) { "
-                 "  var r1 = 0, r2 = 0, r3 = 0;"
-                 "  a:{ try { try { "
-                 "              if (n == 0) { break a; } "
-                 "              if (n == 1) { throw 'a'; } "
-                 "            } "
-                 "            catch (e) { break a; } finally { r1++; } } "
-                 "      catch (e) {} "
-                 "      finally { r2++; } "
-                 "      r3++;  "
-                 "  }; "
-                 "return [r1, r2, r3]"
-                 "}; njs.dump([f(0), f(1), f(3)])"),
+              "  var r1 = 0, r2 = 0, r3 = 0;"
+              "  a:{ try { try { "
+              "              if (n == 0) { break a; } "
+              "              if (n == 1) { throw 'a'; } "
+              "            } "
+              "            catch (e) { break a; } finally { r1++; } } "
+              "      catch (e) {} "
+              "      finally { r2++; } "
+              "      r3++;  "
+              "  }; "
+              "return [r1, r2, r3]"
+              "}; njs.dump([f(0), f(1), f(3)])"),
       njs_str("[[1,1,0],[1,1,0],[1,1,1]]") },
+
+
+    { njs_str("function f(n) {"
+              "    while (1)"
+              "           try {"
+              "              if (n == 0) { break; }"
+              "              if (n == 1) { throw 'a'; }"
+              ""
+              "              try { return 42; }"
+              "              catch (a) {}"
+              ""
+              "            } catch (b) { return b; }"
+              "};"
+              "njs.dump([f(0), f(1), f(2)])"),
+      njs_str("[undefined,'a',42]") },
+
+    { njs_str("function f(n, r) {"
+              "    while (1)"
+              "           try {"
+              "              if (n == 0) { break; }"
+              "              if (n == 1) { throw 'a'; }"
+              ""
+              "              try { return 42; }"
+              "              catch (a) {}"
+              "              finally { r.push('in');}"
+              ""
+              "            } catch (b) { return b; }"
+              "            finally { r.push('out'); }"
+              "};"
+              "function g(n) { var r = []; return [f(n, r), r]}"
+              "njs.dump([g(0), g(1), g(2)])"),
+      njs_str("[[undefined,['out']],['a',['out']],[42,['in','out']]]") },
 
     /**/
 
