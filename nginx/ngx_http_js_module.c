@@ -3836,7 +3836,6 @@ ngx_http_js_header_out_special(njs_vm_t *vm, ngx_http_request_t *r,
         return NJS_ERROR;
     }
 
-    h = NULL;
     part = &headers->part;
     header = part->elts;
 
@@ -3861,9 +3860,13 @@ ngx_http_js_header_out_special(njs_vm_t *vm, ngx_http_request_t *r,
         if (h->key.len == v->length
             && ngx_strncasecmp(h->key.data, v->start, v->length) == 0)
         {
-            break;
+            goto done;
         }
     }
+
+    h = NULL;
+
+done:
 
     if (h != NULL && s.length == 0) {
         h->hash = 0;
