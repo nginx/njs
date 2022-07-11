@@ -8402,6 +8402,59 @@ njs_parser_escape_string_create(njs_parser_t *parser, njs_lexer_token_t *token,
                 c = '\0';
                 break;
 
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+                if (parser->node != NULL) {
+                    switch (parser->node->token_type) {
+                    case NJS_TOKEN_METHOD_CALL:
+                    case NJS_TOKEN_FUNCTION_CALL:
+                    case NJS_TOKEN_FUNCTION_EXPRESSION:
+                    case NJS_TOKEN_EVAL:
+                        goto next_char;
+
+                    default:
+                        break;
+                    }
+                }
+
+                njs_parser_syntax_error(parser,
+                                        "Octal escape sequences can't be used "
+                                        "in untagged template literals "
+                                        "or in strict mode code");
+
+                return NJS_TOKEN_ILLEGAL;
+
+            case '8':
+            case '9':
+                if (parser->node != NULL) {
+                    switch (parser->node->token_type) {
+                    case NJS_TOKEN_METHOD_CALL:
+                    case NJS_TOKEN_FUNCTION_CALL:
+                    case NJS_TOKEN_FUNCTION_EXPRESSION:
+                    case NJS_TOKEN_EVAL:
+                        goto next_char;
+
+                    default:
+                        break;
+                    }
+                }
+
+                njs_parser_syntax_error(parser,
+                                        "The escapes \\8 and \\9 can't be used "
+                                        "in untagged template literals "
+                                        "or in strict mode code");
+
+                return NJS_TOKEN_ILLEGAL;
+
+next_char:
+
+                break;
+
             case 'b':
                 c = '\b';
                 break;

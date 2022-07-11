@@ -7457,6 +7457,66 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'r' !== '\\r'"),
       njs_str("true") },
 
+    /* Octal escape sequences are not allowed in strict mode.*/
+
+    { njs_str("'\\0a'"),
+      njs_str("\0a") },
+
+    { njs_str("'\\1a'"),
+      njs_str("SyntaxError: Octal escape sequences can't be used in untagged template literals or in strict mode code in 1") },
+
+    { njs_str("'a\\2a'"),
+      njs_str("SyntaxError: Octal escape sequences can't be used in untagged template literals or in strict mode code in 1") },
+
+    { njs_str("'\\3a'"),
+      njs_str("SyntaxError: Octal escape sequences can't be used in untagged template literals or in strict mode code in 1") },
+
+    { njs_str("'a\\4a'"),
+      njs_str("SyntaxError: Octal escape sequences can't be used in untagged template literals or in strict mode code in 1") },
+
+    { njs_str("'\\5a'"),
+      njs_str("SyntaxError: Octal escape sequences can't be used in untagged template literals or in strict mode code in 1") },
+
+    { njs_str("'a\\6a'"),
+      njs_str("SyntaxError: Octal escape sequences can't be used in untagged template literals or in strict mode code in 1") },
+
+    { njs_str("'\\7a'"),
+      njs_str("SyntaxError: Octal escape sequences can't be used in untagged template literals or in strict mode code in 1") },
+
+    { njs_str("'\\8a'"),
+      njs_str("SyntaxError: The escapes \\8 and \\9 can't be used in untagged template literals or in strict mode code in 1") },
+
+    { njs_str("'\\9a'"),
+      njs_str("SyntaxError: The escapes \\8 and \\9 can't be used in untagged template literals or in strict mode code in 1") },
+
+    { njs_str("'\\aa'"),
+      njs_str("aa") },
+
+    { njs_str("'\\*a'"),
+      njs_str("*a") },
+
+    { njs_str("`\\7`"),
+      njs_str("SyntaxError: Octal escape sequences can't be used in untagged template literals or in strict mode code in 1") },
+
+    { njs_str("`\\9`"),
+      njs_str("SyntaxError: The escapes \\8 and \\9 can't be used in untagged template literals or in strict mode code in 1") },
+
+    /* Octal escape sequences are allowed in tagged template literals in strict mode.*/
+
+#if 0  /* FIXME: tag function runtime semantics */
+    { njs_str("function x (s) {return s[0]}; x`\\7`"),
+      njs_str("undefined") },
+
+    { njs_str("function x (s) {return s[0]}; x`\\9`"),
+      njs_str("undefined") },
+
+    { njs_str("function x (s) {return s.raw[0]}; x`\\9`"),
+      njs_str("\\9") },
+
+    { njs_str("function x (s) {return s.raw[0]}; x`\\7`"),
+      njs_str("\\7") },
+#endif
+
     /* Broken UTF-8 literals.*/
 
     { njs_str("'\\a\x96\xE5\x9C\xE3\x81\xB6'"),
