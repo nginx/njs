@@ -9439,6 +9439,70 @@ static njs_unit_test_t  njs_test[] =
               ".every(v=>{var r = v(); return (typeof r === 'string') && r === 'undefined';})"),
       njs_str("true")},
 
+    /* btoa() */
+
+    { njs_str("["
+              " undefined,"
+              " '',"
+              " '\\x00',"
+              " '\\x00\\x01',"
+              " '\\x00\\x01\\x02',"
+              " '\\x00\\xfe\\xff',"
+              " String.fromCodePoint(0x100),"
+              " String.fromCodePoint(0x00, 0x100),"
+              " String.fromCodePoint(0x00, 0x01, 0x100),"
+              " String.bytesFrom([0x80]),"
+              " String.bytesFrom([0x60, 0x80]),"
+              " String.bytesFrom([0x60, 0x60, 0x80]),"
+              "].map(v => { try { return btoa(v); } catch (e) { return '#'} })"),
+      njs_str("dW5kZWZpbmVk,,AA==,AAE=,AAEC,AP7/,#,#,#,#,#,#")},
+
+    /* atob() */
+
+    { njs_str("function c(s) {"
+              "    let cp = [];"
+              "    for (var i = 0; i < s.length; i++) {"
+              "        cp.push(s.codePointAt(i));"
+              "    }"
+              "    return cp;"
+              "};"
+              ""
+              "["
+              " undefined,"
+              " '',"
+              " '=',"
+              " '==',"
+              " '===',"
+              " '====',"
+              " 'AA@',"
+              " '@',"
+              " 'A==A',"
+              " btoa(String.fromCharCode.apply(null, [1])),"
+              " btoa(String.fromCharCode.apply(null, [1, 2])),"
+              " btoa(String.fromCharCode.apply(null, [1, 2, 255])),"
+              " btoa(String.fromCharCode.apply(null, [255, 1, 2, 3])),"
+              "].map(v => { try { return njs.dump(c(atob(v))); } catch (e) { return '#'} })"),
+      njs_str("#,[],#,#,#,#,#,#,#,[1],[1,2],[1,2,255],[255,1,2,3]")},
+
+    { njs_str("function c(s) {"
+              "    let cp = [];"
+              "    for (var i = 0; i < s.length; i++) {"
+              "        cp.push(s.codePointAt(i));"
+              "    }"
+              "    return cp;"
+              "};"
+              ""
+              "["
+              " 'CDRW',"
+              " ' CDRW',"
+              " 'C DRW',"
+              " 'CD RW',"
+              " 'CDR W',"
+              " 'CDRW    ',"
+              " ' C D R W ',"
+              "].every(v => c(atob(v)).toString() == '8,52,86')"),
+      njs_str("true")},
+
     /* Functions. */
 
     { njs_str("return"),

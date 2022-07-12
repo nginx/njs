@@ -1247,6 +1247,22 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
 
     {
         .type = NJS_PROPERTY,
+        .name = njs_long_string("atob"),
+        .value = njs_native_function(njs_string_atob, 1),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_long_string("btoa"),
+        .value = njs_native_function(njs_string_btoa, 1),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
         .name = njs_string("eval"),
         .value = njs_native_function(njs_eval_function, 1),
         .writable = 1,

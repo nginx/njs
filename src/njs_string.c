@@ -50,6 +50,12 @@ static u_char   njs_basis64url[] = {
 };
 
 
+static u_char   njs_basis64_enc[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static u_char   njs_basis64url_enc[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+
 static void njs_encode_base64_core(njs_str_t *dst, const njs_str_t *src,
     const u_char *basis, njs_uint_t padding);
 static njs_int_t njs_string_decode_base64_core(njs_vm_t *vm,
@@ -310,10 +316,8 @@ njs_encode_hex_length(const njs_str_t *src, size_t *out_size)
 void
 njs_encode_base64(njs_str_t *dst, const njs_str_t *src)
 {
-    static u_char   basis64[] =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-    njs_encode_base64_core(dst, src, basis64, 1);
+    njs_encode_base64_core(dst, src, njs_basis64_enc, 1);
 }
 
 
@@ -335,10 +339,7 @@ njs_encode_base64_length(const njs_str_t *src, size_t *out_size)
 static void
 njs_encode_base64url(njs_str_t *dst, const njs_str_t *src)
 {
-    static u_char   basis64[] =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-
-    njs_encode_base64_core(dst, src, basis64, 0);
+    njs_encode_base64_core(dst, src, njs_basis64url_enc, 0);
 }
 
 
@@ -4723,6 +4724,228 @@ njs_string_decode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 uri_error:
 
     njs_uri_error(vm, "malformed URI");
+
+    return NJS_ERROR;
+}
+
+
+njs_int_t
+njs_string_btoa(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    u_char                *dst;
+    size_t                len, length;
+    uint32_t              cp0, cp1, cp2;
+    njs_int_t             ret;
+    njs_value_t           *value, lvalue;
+    const u_char          *p, *end;
+    njs_string_prop_t     string;
+    njs_unicode_decode_t  ctx;
+
+    value = njs_lvalue_arg(&lvalue, args, nargs, 1);
+
+    ret = njs_value_to_string(vm, value, value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    len = njs_string_prop(&string, value);
+
+    p = string.start;
+    end = string.start + string.size;
+
+    njs_utf8_decode_init(&ctx);
+
+    length = njs_base64_encoded_length(len);
+
+    dst = njs_string_alloc(vm, &vm->retval, length, length);
+    if (njs_slow_path(dst == NULL)) {
+        return NJS_ERROR;
+    }
+
+    while (len > 2 && p < end) {
+        cp0 = njs_utf8_decode(&ctx, &p, end);
+        cp1 = njs_utf8_decode(&ctx, &p, end);
+        cp2 = njs_utf8_decode(&ctx, &p, end);
+
+        if (njs_slow_path(cp0 > 0xff || cp1 > 0xff || cp2 > 0xff)) {
+            goto error;
+        }
+
+        *dst++ = njs_basis64_enc[cp0 >> 2];
+        *dst++ = njs_basis64_enc[((cp0 & 0x03) << 4) | (cp1 >> 4)];
+        *dst++ = njs_basis64_enc[((cp1 & 0x0f) << 2) | (cp2 >> 6)];
+        *dst++ = njs_basis64_enc[cp2 & 0x3f];
+
+        len -= 3;
+    }
+
+    if (len > 0) {
+        cp0 = njs_utf8_decode(&ctx, &p, end);
+        if (njs_slow_path(cp0 > 0xff)) {
+            goto error;
+        }
+
+        *dst++ = njs_basis64_enc[cp0 >> 2];
+
+        if (len == 1) {
+            *dst++ = njs_basis64_enc[(cp0 & 0x03) << 4];
+            *dst++ = '=';
+            *dst++ = '=';
+
+        } else {
+            cp1 = njs_utf8_decode(&ctx, &p, end);
+            if (njs_slow_path(cp1 > 0xff)) {
+                goto error;
+            }
+
+            *dst++ = njs_basis64_enc[((cp0 & 0x03) << 4) | (cp1 >> 4)];
+            *dst++ = njs_basis64_enc[(cp1 & 0x0f) << 2];
+            *dst++ = '=';
+        }
+
+    }
+
+    return NJS_OK;
+
+error:
+
+    njs_type_error(vm, "invalid character (>= U+00FF)");
+
+    return NJS_ERROR;
+}
+
+
+njs_inline void
+njs_chb_write_byte_as_utf8(njs_chb_t *chain, u_char byte)
+{
+    njs_utf8_encode(njs_chb_current(chain), byte);
+    njs_chb_written(chain, njs_utf8_size(byte));
+}
+
+
+njs_int_t
+njs_string_atob(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    size_t        i, n, len, pad;
+    u_char        *dst, *tmp, *p;
+    ssize_t       size;
+    njs_str_t     str;
+    njs_int_t     ret;
+    njs_chb_t     chain;
+    njs_value_t   *value, lvalue;
+    const u_char  *b64, *s;
+
+    value = njs_lvalue_arg(&lvalue, args, nargs, 1);
+
+    ret = njs_value_to_string(vm, value, value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    /* Forgiving-base64 decode. */
+
+    b64 = njs_basis64;
+    njs_string_get(value, &str);
+
+    tmp = njs_mp_alloc(vm->mem_pool, str.length);
+    if (tmp == NULL) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    p = tmp;
+
+    for (i = 0; i < str.length; i++) {
+        if (njs_slow_path(str.start[i] == ' ')) {
+            continue;
+        }
+
+        *p++ = str.start[i];
+    }
+
+    pad = 0;
+    str.start = tmp;
+    str.length = p - tmp;
+
+    if (str.length % 4 == 0) {
+        if (str.length > 0) {
+            if (str.start[str.length - 1] == '=') {
+                pad += 1;
+            }
+
+            if (str.start[str.length - 2] == '=') {
+                pad += 1;
+            }
+        }
+
+    } else if (str.length % 4 == 1) {
+        goto error;
+    }
+
+    for (i = 0; i < str.length - pad; i++) {
+        if (njs_slow_path(b64[str.start[i]] == 77)) {
+            goto error;
+        }
+    }
+
+    len = njs_base64_decoded_length(str.length, pad);
+
+    njs_chb_init(&chain, vm->mem_pool);
+
+    dst = njs_chb_reserve(&chain, len * 2);
+    if (njs_slow_path(dst == NULL)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    n = len;
+    s = str.start;
+
+    while (n >= 3) {
+        njs_chb_write_byte_as_utf8(&chain, b64[s[0]] << 2 | b64[s[1]] >> 4);
+        njs_chb_write_byte_as_utf8(&chain, b64[s[1]] << 4 | b64[s[2]] >> 2);
+        njs_chb_write_byte_as_utf8(&chain, b64[s[2]] << 6 | b64[s[3]]);
+
+        s += 4;
+        n -= 3;
+    }
+
+    if (n >= 1) {
+        njs_chb_write_byte_as_utf8(&chain, b64[s[0]] << 2 | b64[s[1]] >> 4);
+    }
+
+    if (n >= 2) {
+        njs_chb_write_byte_as_utf8(&chain, b64[s[1]] << 4 | b64[s[2]] >> 2);
+    }
+
+    size = njs_chb_size(&chain);
+    if (njs_slow_path(size < 0)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    if (size == 0) {
+        njs_value_assign(&vm->retval, &njs_string_empty);
+        return NJS_OK;
+    }
+
+    dst = njs_string_alloc(vm, &vm->retval, size, len);
+    if (njs_slow_path(dst == NULL)) {
+        return NJS_ERROR;
+    }
+
+    njs_chb_join_to(&chain, dst);
+    njs_chb_destroy(&chain);
+
+    njs_mp_free(vm->mem_pool, tmp);
+
+    return NJS_OK;
+
+error:
+
+    njs_type_error(vm, "the string to be decoded is not correctly encoded");
 
     return NJS_ERROR;
 }

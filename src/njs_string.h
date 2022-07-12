@@ -251,6 +251,10 @@ njs_int_t njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t component);
 njs_int_t njs_string_decode_uri(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t component);
+njs_int_t njs_string_btoa(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused);
+njs_int_t njs_string_atob(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused);
 
 njs_int_t njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
