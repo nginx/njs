@@ -2615,7 +2615,8 @@ njs_generate_stop_statement_end(njs_vm_t *vm, njs_generator_t *generator,
 
     if (node != NULL) {
         if ((node->index != NJS_INDEX_NONE
-             && node->token_type != NJS_TOKEN_FUNCTION_DECLARATION)
+             && node->token_type != NJS_TOKEN_FUNCTION_DECLARATION
+             && node->token_type != NJS_TOKEN_ASYNC_FUNCTION_DECLARATION)
             || node->token_type == NJS_TOKEN_THIS)
         {
             index = node->index;
