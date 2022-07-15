@@ -9,15 +9,9 @@
 #include <njs_main.h>
 
 
-static const njs_value_t  njs_escape_str = njs_string("escape");
-static const njs_value_t  njs_unescape_str = njs_string("unescape");
-static const njs_value_t  njs_encode_uri_str =
-                                         njs_long_string("encodeURIComponent");
-static const njs_value_t  njs_decode_uri_str =
-                                         njs_long_string("decodeURIComponent");
-static const njs_value_t  njs_max_keys_str = njs_string("maxKeys");
-
-
+static njs_int_t njs_query_string_parser(njs_vm_t *vm, u_char *query,
+    u_char *end, const njs_str_t *sep, const njs_str_t *eq,
+    njs_function_t *decode, njs_uint_t max_keys, njs_value_t *retval);
 static njs_int_t njs_query_string_parse(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 static njs_int_t njs_query_string_stringify(njs_vm_t *vm, njs_value_t *args,
@@ -112,6 +106,21 @@ njs_module_t  njs_query_string_module = {
     .name = njs_str("querystring"),
     .init = njs_query_string_init,
 };
+
+
+static const njs_value_t  njs_escape_str = njs_string("escape");
+static const njs_value_t  njs_unescape_str = njs_string("unescape");
+static const njs_value_t  njs_encode_uri_str =
+                                         njs_long_string("encodeURIComponent");
+static const njs_value_t  njs_decode_uri_str =
+                                         njs_long_string("decodeURIComponent");
+static const njs_value_t  njs_max_keys_str = njs_string("maxKeys");
+
+static const njs_str_t njs_sep_default = njs_str("&");
+static const njs_str_t njs_eq_default = njs_str("=");
+
+static const njs_value_t  njs_unescape_default =
+    njs_native_function(njs_query_string_unescape, 1);
 
 
 static njs_object_t *
@@ -343,7 +352,7 @@ njs_query_string_append(njs_vm_t *vm, njs_value_t *object, const u_char *key,
 
 
 static u_char *
-njs_query_string_match(u_char *p, u_char *end, njs_str_t *v)
+njs_query_string_match(u_char *p, u_char *end, const njs_str_t *v)
 {
     size_t  length;
 
@@ -375,40 +384,28 @@ static njs_int_t
 njs_query_string_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    size_t          size;
-    u_char          *end, *part, *key, *val;
-    int64_t         max_keys, count;
+    int64_t         max_keys;
     njs_int_t       ret;
-    njs_str_t       str;
-    njs_value_t     obj, value, *this, *string, *options, *arg;
+    njs_str_t       str, sep, eq;
+    njs_value_t     value, *this, *string, *options, *arg;
     njs_value_t     val_sep, val_eq;
-    njs_object_t    *object;
     njs_function_t  *decode;
 
-    njs_str_t  sep = njs_str("&");
-    njs_str_t  eq = njs_str("=");
-
-    count = 0;
     decode = NULL;
     max_keys = 1000;
-
-    object = njs_query_string_object_alloc(vm);
-    if (njs_slow_path(object == NULL)) {
-        return NJS_ERROR;
-    }
-
-    njs_set_object(&obj, object);
 
     this = njs_argument(args, 0);
     string = njs_arg(args, nargs, 1);
 
-    if (njs_slow_path(!njs_is_string(string)
-                      || njs_string_length(string) == 0))
-    {
-        goto done;
+    if (njs_is_string(string)) {
+        njs_string_get(string, &str);
+
+    } else {
+        str = njs_str_value("");
     }
 
-    njs_string_get(string, &str);
+    sep = njs_sep_default;
+    eq = njs_eq_default;
 
     arg = njs_arg(args, nargs, 2);
     if (!njs_is_null_or_undefined(arg)) {
@@ -478,26 +475,62 @@ njs_query_string_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         decode = njs_function(&value);
     }
 
-    key = str.start;
-    end = str.start + str.length;
+    return njs_query_string_parser(vm, str.start, str.start + str.length,
+                                   &sep, &eq, decode, max_keys, &vm->retval);
+}
+
+
+njs_int_t
+njs_vm_query_string_parse(njs_vm_t *vm, u_char *start, u_char *end,
+    njs_value_t *retval)
+{
+    return njs_query_string_parser(vm, start, end, &njs_sep_default,
+                                   &njs_eq_default,
+                                   njs_function(&njs_unescape_default),
+                                   1000, retval);
+}
+
+
+static njs_int_t
+njs_query_string_parser(njs_vm_t *vm, u_char *query, u_char *end,
+    const njs_str_t *sep, const njs_str_t *eq, njs_function_t *decode,
+    njs_uint_t max_keys, njs_value_t *retval)
+{
+    size_t        size;
+    u_char        *part, *key, *val;
+    njs_int_t     ret;
+    njs_uint_t    count;
+    njs_value_t   obj;
+    njs_object_t  *object;
+
+    object = njs_query_string_object_alloc(vm);
+    if (njs_slow_path(object == NULL)) {
+        return NJS_ERROR;
+    }
+
+    njs_set_object(&obj, object);
+
+    count = 0;
+
+    key = query;
 
     do {
         if (count++ == max_keys) {
             break;
         }
 
-        part = njs_query_string_match(key, end, &sep);
+        part = njs_query_string_match(key, end, sep);
 
         if (part == key) {
             goto next;
         }
 
-        val = njs_query_string_match(key, part, &eq);
+        val = njs_query_string_match(key, part, eq);
 
         size = val - key;
 
         if (val != end) {
-            val += eq.length;
+            val += eq->length;
         }
 
         ret = njs_query_string_append(vm, &obj, key, size, val, part - val,
@@ -508,13 +541,11 @@ njs_query_string_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     next:
 
-        key = part + sep.length;
+        key = part + sep->length;
 
     } while (key < end);
 
-done:
-
-    njs_set_object(&vm->retval, object);
+    njs_set_object(retval, object);
 
     return NJS_OK;
 }
