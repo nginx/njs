@@ -60,6 +60,7 @@ typedef struct {
     ngx_int_t              status;
     njs_opaque_value_t     retval;
     njs_opaque_value_t     request;
+    njs_opaque_value_t     args;
     njs_opaque_value_t     request_body;
     njs_opaque_value_t     response_body;
     ngx_str_t              redirect_uri;
@@ -179,6 +180,9 @@ static njs_int_t ngx_http_js_ext_get_http_version(njs_vm_t *vm,
 static njs_int_t ngx_http_js_ext_get_remote_address(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
+static njs_int_t ngx_http_js_ext_get_args(njs_vm_t *vm,
+    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 static njs_int_t ngx_http_js_ext_get_request_body(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
@@ -199,11 +203,6 @@ static njs_int_t ngx_http_js_header_in_array(njs_vm_t *vm,
 #endif
 static njs_int_t ngx_http_js_ext_keys_header_in(njs_vm_t *vm,
     njs_value_t *value, njs_value_t *keys);
-static njs_int_t ngx_http_js_ext_get_arg(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
-static njs_int_t ngx_http_js_ext_keys_arg(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *keys);
 static njs_int_t ngx_http_js_ext_variables(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
@@ -582,13 +581,11 @@ static njs_external_t  ngx_http_js_ext_request[] = {
     },
 
     {
-        .flags = NJS_EXTERN_OBJECT,
+        .flags = NJS_EXTERN_PROPERTY,
         .name.string = njs_str("args"),
         .enumerable = 1,
-        .u.object = {
-            .enumerable = 1,
-            .prop_handler = ngx_http_js_ext_get_arg,
-            .keys = ngx_http_js_ext_keys_arg,
+        .u.property = {
+            .handler = ngx_http_js_ext_get_args,
         }
     },
 
@@ -2528,6 +2525,40 @@ ngx_http_js_ext_get_remote_address(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 static njs_int_t
+ngx_http_js_ext_get_args(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    njs_int_t           ret;
+    njs_value_t         *args;
+    ngx_http_js_ctx_t   *ctx;
+    ngx_http_request_t  *r;
+
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
+    if (r == NULL) {
+        njs_value_undefined_set(retval);
+        return NJS_DECLINED;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    args = njs_value_arg(&ctx->args);
+
+    if (njs_value_is_null(args)) {
+        ret = njs_vm_query_string_parse(vm, r->args.data,
+                                        r->args.data + r->args.len, args);
+
+        if (ret == NJS_ERROR) {
+            return NJS_ERROR;
+        }
+    }
+
+    njs_value_assign(retval, args);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
 ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
@@ -2814,88 +2845,6 @@ ngx_http_js_ext_keys_header_in(njs_vm_t *vm, njs_value_t *value,
     }
 
     return ngx_http_js_ext_keys_header(vm, value, keys, &r->headers_in.headers);
-}
-
-static njs_int_t
-ngx_http_js_ext_get_arg(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
-{
-    njs_int_t            rc;
-    njs_str_t           *v, key;
-    ngx_str_t            arg;
-    ngx_http_request_t  *r;
-
-    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
-    if (r == NULL) {
-        njs_value_undefined_set(retval);
-        return NJS_DECLINED;
-    }
-
-    rc = njs_vm_prop_name(vm, prop, &key);
-    if (rc != NJS_OK) {
-        njs_value_undefined_set(retval);
-        return NJS_DECLINED;
-    }
-
-    v = &key;
-
-    if (ngx_http_arg(r, v->start, v->length, &arg) == NGX_OK) {
-        return njs_vm_value_string_set(vm, retval, arg.data, arg.len);
-    }
-
-    njs_value_undefined_set(retval);
-
-    return NJS_DECLINED;
-}
-
-
-static njs_int_t
-ngx_http_js_ext_keys_arg(njs_vm_t *vm, njs_value_t *value, njs_value_t *keys)
-{
-    u_char              *v, *p, *start, *end;
-    njs_int_t            rc;
-    ngx_http_request_t  *r;
-
-    rc = njs_vm_array_alloc(vm, keys, 8);
-    if (rc != NJS_OK) {
-        return NJS_ERROR;
-    }
-
-    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
-    if (r == NULL) {
-        return NJS_OK;
-    }
-
-    start = r->args.data;
-    end = start + r->args.len;
-
-    while (start < end) {
-        p = ngx_strlchr(start, end, '&');
-        if (p == NULL) {
-            p = end;
-        }
-
-        v = ngx_strlchr(start, p, '=');
-        if (v == NULL) {
-            v = p;
-        }
-
-        if (v != start) {
-            value = njs_vm_array_push(vm, keys);
-            if (value == NULL) {
-                return NJS_ERROR;
-            }
-
-            rc = njs_vm_value_string_set(vm, value, start, v - start);
-            if (rc != NJS_OK) {
-                return NJS_ERROR;
-            }
-        }
-
-        start = p + 1;
-    }
-
-    return NJS_OK;
 }
 
 
