@@ -9145,8 +9145,11 @@ njs_parser_serialize_node(njs_chb_t *chain, njs_parser_node_t *node)
     njs_token_serialize(NJS_TOKEN_PROTO_INIT);
 
     njs_token_serialize(NJS_TOKEN_FUNCTION);
+    njs_token_serialize(NJS_TOKEN_ASYNC_FUNCTION);
     njs_token_serialize(NJS_TOKEN_FUNCTION_DECLARATION);
+    njs_token_serialize(NJS_TOKEN_ASYNC_FUNCTION_DECLARATION);
     njs_token_serialize(NJS_TOKEN_FUNCTION_EXPRESSION);
+    njs_token_serialize(NJS_TOKEN_ASYNC_FUNCTION_EXPRESSION);
     njs_token_serialize(NJS_TOKEN_FUNCTION_CALL);
     njs_token_serialize(NJS_TOKEN_METHOD_CALL);
 
