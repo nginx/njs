@@ -1,3 +1,27 @@
+Changes with njs 0.7.6                                        19 Jul 2022
+
+    nginx modules:
+
+    *) Feature: improved r.args object. Added support for multiple
+       arguments with the same key. Added case sensitivity for
+       keys. Keys and values are percent-decoded now.
+
+    *) Bugfix: fixed r.headersOut setter for special headers.
+
+    Core:
+
+    *) Feature: added Symbol.for() and Symbol.keyfor().
+
+    *) Feature: added btoa() and atob() from WHATWG spec.
+
+    *) Bugfix: fixed large non-decimal literals.
+
+    *) Bugfix: fixed unicode argument trimming in parseInt().
+
+    *) Bugfix: fixed break instruction in a try-catch block.
+
+    *) Bugfix: fixed async function declaration in CLI.
+
 Changes with njs 0.7.5                                        21 Jun 2022
 
     nginx modules:
