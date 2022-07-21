@@ -623,6 +623,8 @@ ngx_js_http_alloc(njs_vm_t *vm, ngx_pool_t *pool, ngx_log_t *log)
 
     http->timeout = 10000;
 
+    http->http_parse.content_length_n = -1;
+
     ret = njs_vm_promise_create(vm, njs_value_arg(&http->promise),
                                 njs_value_arg(&http->promise_callbacks));
     if (ret != NJS_OK) {
@@ -1388,7 +1390,7 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
 static ngx_int_t
 ngx_js_http_process_body(ngx_js_http_t *http)
 {
-    ssize_t     size, need;
+    ssize_t     size, chsize, need;
     ngx_int_t   rc;
     njs_int_t   ret;
     ngx_buf_t  *b;
@@ -1403,7 +1405,16 @@ ngx_js_http_process_body(ngx_js_http_t *http)
             return NGX_ERROR;
         }
 
-        if (size == http->http_parse.content_length_n) {
+        if (http->http_parse.chunked
+            && http->http_parse.content_length_n == -1)
+        {
+            ngx_js_http_error(http, 0, "invalid fetch chunked response");
+            return NGX_ERROR;
+        }
+
+        if (http->http_parse.content_length_n == -1
+            || size == http->http_parse.content_length_n)
+        {
             ret = njs_vm_external_create(http->vm, njs_value_arg(&http->reply),
                                          ngx_http_js_fetch_proto_id, http, 0);
             if (ret != NJS_OK) {
@@ -1413,13 +1424,6 @@ ngx_js_http_process_body(ngx_js_http_t *http)
 
             ngx_js_http_fetch_done(http, &http->reply, NJS_OK);
             return NGX_DONE;
-        }
-
-        if (http->http_parse.chunked
-            && http->http_parse.content_length_n == 0)
-        {
-            ngx_js_http_error(http, 0, "invalid fetch chunked response");
-            return NGX_ERROR;
         }
 
         if (size < http->http_parse.content_length_n) {
@@ -1454,17 +1458,28 @@ ngx_js_http_process_body(ngx_js_http_t *http)
         b->pos = http->http_chunk_parse.pos;
 
     } else {
-        need = http->http_parse.content_length_n - njs_chb_size(&http->chain);
-        size = ngx_min(need, b->last - b->pos);
+        size = njs_chb_size(&http->chain);
 
-        if (size > 0) {
-            njs_chb_append(&http->chain, b->pos, size);
-            b->pos += size;
-            rc = NGX_AGAIN;
+        if (http->http_parse.content_length_n == -1) {
+            need = http->max_response_body_size - size;
 
         } else {
-            rc = NGX_DONE;
+            need = http->http_parse.content_length_n - size;
         }
+
+        chsize = ngx_min(need, b->last - b->pos);
+
+        if (size + chsize > http->max_response_body_size) {
+            ngx_js_http_error(http, 0, "fetch response body is too large");
+            return NGX_ERROR;
+        }
+
+        if (chsize > 0) {
+            njs_chb_append(&http->chain, b->pos, chsize);
+            b->pos += chsize;
+        }
+
+        rc = (need > chsize) ? NGX_AGAIN : NGX_DONE;
     }
 
     if (b->pos == b->end) {
