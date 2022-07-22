@@ -12077,6 +12077,28 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("this.a = 1; a"),
       njs_str("1") },
 
+    { njs_str("this.a = 1; a = 3; this.a"),
+      njs_str("3") },
+
+    { njs_str("this.a = 1; ++a; this.a"),
+      njs_str("2") },
+
+    { njs_str("this.a = 1; a += 3; this.a"),
+      njs_str("4") },
+
+    { njs_str("var b=11;"
+              "var t = function () {b += 5; return b};"
+              "t() === 16 && b === 16 && this.b === 16" ),
+      njs_str("true") },
+
+    { njs_str("this.c=15;"
+              "var t = function () {c += 5; return c};"
+              "t() === 20 && c === 20 && this.c === 20" ),
+      njs_str("true") },
+
+    { njs_str("--undefined"),
+      njs_str("TypeError: Cannot assign to read-only property \"undefined\" of object") },
+
     { njs_str("this.a = 2; this.b = 3; a * b - a"),
       njs_str("4") },
 
