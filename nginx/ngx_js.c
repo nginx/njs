@@ -318,3 +318,18 @@ ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+void
+ngx_js_logger(njs_vm_t *vm, njs_external_ptr_t external, njs_log_level_t level,
+    const u_char *start, size_t length)
+{
+    ngx_connection_t    *c;
+    ngx_log_handler_pt   handler;
+
+    c = ngx_external_connection(vm, external);
+    handler = c->log->handler;
+    c->log->handler = NULL;
+
+    ngx_log_error((ngx_uint_t) level, c->log, 0, "js: %*s", length, start);
+
+    c->log->handler = handler;
+}

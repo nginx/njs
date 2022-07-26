@@ -68,6 +68,8 @@ ngx_int_t ngx_js_retval(njs_vm_t *vm, njs_opaque_value_t *retval,
 
 njs_int_t ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t level);
+void ngx_js_logger(njs_vm_t *vm, njs_external_ptr_t external,
+    njs_log_level_t level, const u_char *start, size_t length);
 
 njs_int_t ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);

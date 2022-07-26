@@ -121,6 +121,8 @@ static njs_host_event_t njs_console_set_timer(njs_external_ptr_t external,
 
 static void njs_console_clear_timer(njs_external_ptr_t external,
     njs_host_event_t event);
+static void njs_console_log(njs_vm_t *vm, njs_external_ptr_t external,
+    njs_log_level_t level, const u_char *start, size_t length);
 
 static njs_int_t njs_timelabel_hash_test(njs_lvlhsh_query_t *lhq, void *data);
 
@@ -207,6 +209,7 @@ static njs_vm_ops_t njs_console_ops = {
     njs_console_set_timer,
     njs_console_clear_timer,
     NULL,
+    njs_console_log,
 };
 
 
@@ -1204,14 +1207,14 @@ njs_ext_console_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-        njs_printf("%s", (n != 1) ? " " : "");
-        njs_print(msg.start, msg.length);
+        njs_vm_log(vm, "%s", (n != 1) ? " " : "");
+        njs_vm_log(vm, "%*s", msg.length, msg.start);
 
         n++;
     }
 
     if (nargs > 1) {
-        njs_printf("\n");
+        njs_vm_log(vm, "\n");
     }
 
     njs_set_undefined(&vm->retval);
@@ -1284,7 +1287,7 @@ njs_ext_console_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-        njs_printf("Timer \"%V\" already exists.\n", &name);
+        njs_vm_log(vm, "Timer \"%V\" already exists.\n", &name);
 
         label = lhq.value;
     }
@@ -1349,7 +1352,7 @@ njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         ms = ns / 1000000;
         ns = ns % 1000000;
 
-        njs_printf("%V: %uL.%06uLms\n", &name, ms, ns);
+        njs_vm_log(vm, "%V: %uL.%06uLms\n", &name, ms, ns);
 
         /* GC: release. */
         njs_mp_free(vm->mem_pool, label);
@@ -1361,7 +1364,7 @@ njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-        njs_printf("Timer \"%V\" doesn’t exist.\n", &name);
+        njs_vm_log(vm, "Timer \"%V\" doesn’t exist.\n", &name);
     }
 
     njs_set_undefined(&vm->retval);
@@ -1380,13 +1383,13 @@ njs_console_set_timer(njs_external_ptr_t external, uint64_t delay,
     njs_console_t       *console;
     njs_lvlhsh_query_t  lhq;
 
-    if (delay != 0) {
-        njs_stderror("njs_console_set_timer(): async timers unsupported\n");
-        return NULL;
-    }
-
     console = external;
     vm = console->vm;
+
+    if (delay != 0) {
+        njs_vm_err(vm, "njs_console_set_timer(): async timers unsupported\n");
+        return NULL;
+    }
 
     ev = njs_mp_alloc(vm->mem_pool, sizeof(njs_ev_t));
     if (njs_slow_path(ev == NULL)) {
@@ -1441,10 +1444,23 @@ njs_console_clear_timer(njs_external_ptr_t external, njs_host_event_t event)
 
     ret = njs_lvlhsh_delete(&console->events, &lhq);
     if (ret != NJS_OK) {
-        njs_stderror("njs_lvlhsh_delete() failed\n");
+        njs_vm_err(vm, "njs_lvlhsh_delete() failed\n");
     }
 
     njs_mp_free(vm->mem_pool, ev);
+}
+
+
+static void
+njs_console_log(njs_vm_t *vm, njs_external_ptr_t external,
+    njs_log_level_t level, const u_char *start, size_t length)
+{
+    if (level == NJS_LOG_LEVEL_ERROR) {
+        njs_stderror("%*s", length, start);
+
+    } else {
+        njs_printf("%*s", length, start);
+    }
 }
 
 

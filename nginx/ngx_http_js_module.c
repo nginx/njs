@@ -783,6 +783,7 @@ static njs_vm_ops_t ngx_http_js_ops = {
     ngx_http_js_set_timer,
     ngx_http_js_clear_timer,
     NULL,
+    ngx_js_logger,
 };
 
 

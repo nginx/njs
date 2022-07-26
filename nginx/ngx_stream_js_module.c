@@ -499,6 +499,7 @@ static njs_vm_ops_t ngx_stream_js_ops = {
     ngx_stream_js_set_timer,
     ngx_stream_js_clear_timer,
     NULL,
+    ngx_js_logger,
 };
 
 

@@ -45,6 +45,11 @@ typedef struct {
     uint64_t                        filler[2];
 } njs_opaque_value_t;
 
+typedef enum {
+    NJS_LOG_LEVEL_ERROR = 4,
+    NJS_LOG_LEVEL_WARN = 5,
+    NJS_LOG_LEVEL_INFO = 7,
+} njs_log_level_t;
 
 /* sizeof(njs_value_t) is 16 bytes. */
 #define njs_argument(args, n)                                                 \
@@ -69,6 +74,12 @@ extern const njs_value_t            njs_value_undefined;
 #define njs_vm_error(vm, fmt, ...)                                            \
     njs_vm_value_error_set(vm, njs_vm_retval(vm), fmt, ##__VA_ARGS__)
 
+#define njs_vm_log(vm, fmt, ...)  njs_vm_logger(vm, NJS_LOG_LEVEL_INFO, fmt,  \
+                                                ##__VA_ARGS__)
+#define njs_vm_warn(vm, fmt, ...)  njs_vm_logger(vm, NJS_LOG_LEVEL_WARN, fmt, \
+                                                ##__VA_ARGS__)
+#define njs_vm_err(vm, fmt, ...)  njs_vm_logger(vm, NJS_LOG_LEVEL_ERROR, fmt, \
+                                                ##__VA_ARGS__)
 
 /*
  * njs_prop_handler_t operates as a property getter/setter or delete handler.
@@ -187,12 +198,15 @@ typedef void (*njs_event_destructor_t)(njs_external_ptr_t external,
     njs_host_event_t event);
 typedef njs_mod_t *(*njs_module_loader_t)(njs_vm_t *vm,
     njs_external_ptr_t external, njs_str_t *name);
+typedef void (*njs_logger_t)(njs_vm_t *vm, njs_external_ptr_t external,
+    njs_log_level_t level, const u_char *start, size_t length);
 
 
 typedef struct {
     njs_set_timer_t                 set_timer;
     njs_event_destructor_t          clear_timer;
     njs_module_loader_t             module_loader;
+    njs_logger_t                    logger;
 } njs_vm_ops_t;
 
 
@@ -220,6 +234,8 @@ typedef struct {
 
     char                            **argv;
     njs_uint_t                      argc;
+
+    njs_log_level_t                 log_level;
 
 #define NJS_VM_OPT_UNHANDLED_REJECTION_IGNORE   0
 #define NJS_VM_OPT_UNHANDLED_REJECTION_THROW    1
@@ -400,6 +416,9 @@ NJS_EXPORT njs_int_t njs_vm_retval_dump(njs_vm_t *vm, njs_str_t *dst,
 NJS_EXPORT void njs_vm_value_error_set(njs_vm_t *vm, njs_value_t *value,
     const char *fmt, ...);
 NJS_EXPORT void njs_vm_memory_error(njs_vm_t *vm);
+
+NJS_EXPORT void njs_vm_logger(njs_vm_t *vm, njs_log_level_t level,
+    const char *fmt, ...);
 
 NJS_EXPORT void njs_value_undefined_set(njs_value_t *value);
 NJS_EXPORT void njs_value_null_set(njs_value_t *value);

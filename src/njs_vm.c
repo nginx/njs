@@ -23,6 +23,8 @@ void
 njs_vm_opt_init(njs_vm_opt_t *options)
 {
     njs_memzero(options, sizeof(njs_vm_opt_t));
+
+    options->log_level = NJS_LOG_LEVEL_INFO;
 }
 
 
@@ -878,6 +880,30 @@ njs_noinline void
 njs_vm_memory_error(njs_vm_t *vm)
 {
     njs_memory_error_set(vm, &vm->retval);
+}
+
+
+njs_noinline void
+njs_vm_logger(njs_vm_t *vm, njs_log_level_t level, const char *fmt, ...)
+{
+    u_char        *p;
+    va_list       args;
+    njs_logger_t  logger;
+    u_char        buf[NJS_MAX_ERROR_STR];
+
+    if (vm->options.ops == NULL) {
+        return;
+    }
+
+    logger = vm->options.ops->logger;
+
+    if (logger != NULL && vm->options.log_level >= level) {
+        va_start(args, fmt);
+        p = njs_vsprintf(buf, buf + sizeof(buf), fmt, args);
+        va_end(args);
+
+        logger(vm, vm->external, level, buf, p - buf);
+    }
 }
 
 
