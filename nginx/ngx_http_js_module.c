@@ -2572,6 +2572,8 @@ ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
+    njs_deprecated(vm, "r.requestBody");
+
     r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {
         njs_value_undefined_set(retval);
@@ -3415,6 +3417,8 @@ ngx_http_js_ext_get_response_body(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t         *response_body;
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
+
+    njs_deprecated(vm, "r.responseBody");
 
     r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {

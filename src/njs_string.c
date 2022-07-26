@@ -982,6 +982,8 @@ njs_string_prototype_from_utf8(njs_vm_t *vm, njs_value_t *args,
     njs_slice_prop_t   slice;
     njs_string_prop_t  string;
 
+    njs_deprecated(vm, "String.prototype.fromUTF8()");
+
     ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
@@ -1025,6 +1027,8 @@ njs_string_prototype_to_utf8(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_slice_prop_t   slice;
     njs_string_prop_t  string;
 
+    njs_deprecated(vm, "String.prototype.toUTF8()");
+
     ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
@@ -1058,6 +1062,8 @@ njs_string_prototype_from_bytes(njs_vm_t *vm, njs_value_t *args,
     njs_int_t          ret;
     njs_slice_prop_t   slice;
     njs_string_prop_t  string;
+
+    njs_deprecated(vm, "String.prototype.fromBytes()");
 
     ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
@@ -1124,6 +1130,8 @@ njs_string_prototype_to_bytes(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_slice_prop_t      slice;
     njs_string_prop_t     string;
     njs_unicode_decode_t  ctx;
+
+    njs_deprecated(vm, "String.prototype.toBytes()");
 
     ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
@@ -1616,6 +1624,8 @@ njs_string_bytes_from(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     njs_value_t  *value;
+
+    njs_deprecated(vm, "String.bytesFrom()");
 
     value = njs_arg(args, nargs, 1);
 

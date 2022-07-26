@@ -81,6 +81,17 @@ extern const njs_value_t            njs_value_undefined;
 #define njs_vm_err(vm, fmt, ...)  njs_vm_logger(vm, NJS_LOG_LEVEL_ERROR, fmt, \
                                                 ##__VA_ARGS__)
 
+#define njs_deprecated(vm, text)                                             \
+    do {                                                                     \
+        static njs_bool_t  reported;                                         \
+                                                                             \
+        if (!reported) {                                                     \
+            njs_vm_warn(vm, text " is deprecated "                           \
+                        "and will be removed in the future");                \
+            reported = 1;                                                    \
+        }                                                                    \
+    } while(0)
+
 /*
  * njs_prop_handler_t operates as a property getter/setter or delete handler.
  * - retval != NULL && setval == NULL - GET context.
