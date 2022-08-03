@@ -501,7 +501,7 @@ static njs_external_t  ngx_http_js_ext_request[] = {
         .name.string = njs_str("requestBody"),
         .u.property = {
             .handler = ngx_http_js_ext_get_request_body,
-            .magic32 = NGX_JS_STRING,
+            .magic32 = NGX_JS_STRING | NGX_JS_DEPRECATED,
         }
     },
 
@@ -537,7 +537,7 @@ static njs_external_t  ngx_http_js_ext_request[] = {
         .name.string = njs_str("responseBody"),
         .u.property = {
             .handler = ngx_http_js_ext_get_response_body,
-            .magic32 = NGX_JS_STRING,
+            .magic32 = NGX_JS_STRING | NGX_JS_DEPRECATED,
         }
     },
 
@@ -2565,6 +2565,7 @@ ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_object_prop_t *prop,
 {
     u_char              *p, *body;
     size_t               len;
+    uint32_t             buffer_type;
     ngx_buf_t           *buf;
     njs_int_t            ret;
     njs_value_t         *request_body;
@@ -2572,7 +2573,9 @@ ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
-    njs_deprecated(vm, "r.requestBody");
+    if (njs_vm_prop_magic32(prop) & NGX_JS_DEPRECATED) {
+        njs_deprecated(vm, "r.requestBody");
+    }
 
     r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {
@@ -2582,9 +2585,10 @@ ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_object_prop_t *prop,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
     request_body = (njs_value_t *) &ctx->request_body;
+    buffer_type = ngx_js_buffer_type(njs_vm_prop_magic32(prop));
 
     if (!njs_value_is_null(request_body)) {
-        if ((njs_vm_prop_magic32(prop) == NGX_JS_BUFFER)
+        if ((buffer_type == NGX_JS_BUFFER)
             == (uint32_t) njs_value_is_buffer(request_body))
         {
             njs_value_assign(retval, request_body);
@@ -2636,7 +2640,7 @@ ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_object_prop_t *prop,
 
 done:
 
-    ret = ngx_js_prop(vm, njs_vm_prop_magic32(prop), request_body, body, len);
+    ret = ngx_js_prop(vm, buffer_type, request_body, body, len);
     if (ret != NJS_OK) {
         return NJS_ERROR;
     }
@@ -3412,13 +3416,16 @@ ngx_http_js_ext_get_response_body(njs_vm_t *vm, njs_object_prop_t *prop,
 {
     size_t               len;
     u_char              *p;
+    uint32_t             buffer_type;
     njs_int_t            ret;
     ngx_buf_t           *b;
     njs_value_t         *response_body;
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
-    njs_deprecated(vm, "r.responseBody");
+    if (njs_vm_prop_magic32(prop) & NGX_JS_DEPRECATED) {
+        njs_deprecated(vm, "r.responseBody");
+    }
 
     r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {
@@ -3428,9 +3435,10 @@ ngx_http_js_ext_get_response_body(njs_vm_t *vm, njs_object_prop_t *prop,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
     response_body = (njs_value_t *) &ctx->response_body;
+    buffer_type = ngx_js_buffer_type(njs_vm_prop_magic32(prop));
 
     if (!njs_value_is_null(response_body)) {
-        if ((njs_vm_prop_magic32(prop) == NGX_JS_BUFFER)
+        if ((buffer_type == NGX_JS_BUFFER)
             == (uint32_t) njs_value_is_buffer(response_body))
         {
             njs_value_assign(retval, response_body);
@@ -3457,7 +3465,7 @@ ngx_http_js_ext_get_response_body(njs_vm_t *vm, njs_object_prop_t *prop,
         ngx_memcpy(p, b->pos, len);
     }
 
-    ret = ngx_js_prop(vm, njs_vm_prop_magic32(prop), response_body, p, len);
+    ret = ngx_js_prop(vm, buffer_type, response_body, p, len);
     if (ret != NJS_OK) {
         return NJS_ERROR;
     }

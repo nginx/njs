@@ -15,9 +15,12 @@
 #include <njs.h>
 
 
-#define NGX_JS_UNSET   0
-#define NGX_JS_STRING  1
-#define NGX_JS_BUFFER  2
+#define NGX_JS_UNSET        0
+#define NGX_JS_DEPRECATED   1
+#define NGX_JS_STRING       2
+#define NGX_JS_BUFFER       4
+
+#define ngx_js_buffer_type(btype) ((btype) & ~NGX_JS_DEPRECATED)
 
 
 typedef ngx_pool_t *(*ngx_external_pool_pt)(njs_vm_t *vm, njs_external_ptr_t e);
