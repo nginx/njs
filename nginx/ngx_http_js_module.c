@@ -21,10 +21,7 @@ typedef struct {
     njs_vm_t              *vm;
     ngx_array_t           *imports;
     ngx_array_t           *paths;
-} ngx_http_js_main_conf_t;
 
-
-typedef struct {
     ngx_str_t              content;
     ngx_str_t              header_filter;
     ngx_str_t              body_filter;
@@ -271,8 +268,10 @@ static char *ngx_http_js_content(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static char *ngx_http_js_body_filter_set(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
-static void *ngx_http_js_create_main_conf(ngx_conf_t *cf);
-static char *ngx_http_js_init_main_conf(ngx_conf_t *cf, void *conf);
+static ngx_int_t ngx_http_js_merge_vm(ngx_conf_t *cf,
+    ngx_http_js_loc_conf_t *conf, ngx_http_js_loc_conf_t *prev);
+static ngx_int_t ngx_http_js_init_conf_vm(ngx_conf_t *cf,
+    ngx_http_js_loc_conf_t *conf);
 static void *ngx_http_js_create_loc_conf(ngx_conf_t *cf);
 static char *ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent,
     void *child);
@@ -298,49 +297,49 @@ static ngx_conf_bitmask_t  ngx_http_js_ssl_protocols[] = {
 static ngx_command_t  ngx_http_js_commands[] = {
 
     { ngx_string("js_import"),
-      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE13,
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE13,
       ngx_http_js_import,
-      NGX_HTTP_MAIN_CONF_OFFSET,
+      NGX_HTTP_LOC_CONF_OFFSET,
       0,
       NULL },
 
     { ngx_string("js_path"),
-      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE1,
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_str_array_slot,
-      NGX_HTTP_MAIN_CONF_OFFSET,
-      offsetof(ngx_http_js_main_conf_t, paths),
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_js_loc_conf_t, paths),
       NULL },
 
     { ngx_string("js_set"),
-      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE2,
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE2,
       ngx_http_js_set,
       0,
       0,
       NULL },
 
     { ngx_string("js_var"),
-      NGX_HTTP_MAIN_CONF|NGX_CONF_TAKE12,
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE12,
       ngx_http_js_var,
       0,
       0,
       NULL },
 
     { ngx_string("js_content"),
-      NGX_HTTP_LOC_CONF|NGX_HTTP_LMT_CONF|NGX_CONF_TAKE1,
+      NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_HTTP_LMT_CONF|NGX_CONF_TAKE1,
       ngx_http_js_content,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
       NULL },
 
     { ngx_string("js_header_filter"),
-      NGX_HTTP_LOC_CONF|NGX_HTTP_LMT_CONF|NGX_CONF_TAKE1,
+      NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_HTTP_LMT_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_str_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_js_loc_conf_t, header_filter),
       NULL },
 
     { ngx_string("js_body_filter"),
-      NGX_HTTP_LOC_CONF|NGX_HTTP_LMT_CONF|NGX_CONF_TAKE12,
+      NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_HTTP_LMT_CONF|NGX_CONF_TAKE12,
       ngx_http_js_body_filter_set,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
@@ -414,8 +413,8 @@ static ngx_http_module_t  ngx_http_js_module_ctx = {
     NULL,                          /* preconfiguration */
     ngx_http_js_init,              /* postconfiguration */
 
-    ngx_http_js_create_main_conf,  /* create main configuration */
-    ngx_http_js_init_main_conf,    /* init main configuration */
+    NULL,                          /* create main configuration */
+    NULL,                          /* init main configuration */
 
     NULL,                          /* create server configuration */
     NULL,                          /* merge server configuration */
@@ -1212,14 +1211,14 @@ ngx_http_js_variable_var(ngx_http_request_t *r, ngx_http_variable_value_t *v,
 static ngx_int_t
 ngx_http_js_init_vm(ngx_http_request_t *r)
 {
-    njs_int_t                 rc;
-    ngx_str_t                 exception;
-    ngx_http_js_ctx_t        *ctx;
-    ngx_pool_cleanup_t       *cln;
-    ngx_http_js_main_conf_t  *jmcf;
+    njs_int_t                rc;
+    ngx_str_t                exception;
+    ngx_http_js_ctx_t       *ctx;
+    ngx_pool_cleanup_t      *cln;
+    ngx_http_js_loc_conf_t  *jlcf;
 
-    jmcf = ngx_http_get_module_main_conf(r, ngx_http_js_module);
-    if (jmcf->vm == NULL) {
+    jlcf = ngx_http_get_module_loc_conf(r, ngx_http_js_module);
+    if (jlcf->vm == NULL) {
         return NGX_DECLINED;
     }
 
@@ -1240,7 +1239,7 @@ ngx_http_js_init_vm(ngx_http_request_t *r)
         return NGX_OK;
     }
 
-    ctx->vm = njs_vm_clone(jmcf->vm, r);
+    ctx->vm = njs_vm_clone(jlcf->vm, r);
     if (ctx->vm == NULL) {
         return NGX_ERROR;
     }
@@ -4150,11 +4149,116 @@ ngx_http_js_handle_event(ngx_http_request_t *r, njs_vm_event_t vm_event,
 }
 
 
-static char *
-ngx_http_js_init_main_conf(ngx_conf_t *cf, void *conf)
+static ngx_int_t
+ngx_http_js_merge_vm(ngx_conf_t *cf, ngx_http_js_loc_conf_t *conf,
+    ngx_http_js_loc_conf_t *prev)
 {
-    ngx_http_js_main_conf_t *jmcf = conf;
+    ngx_str_t             *path, *s;
+    ngx_uint_t             i;
+    ngx_array_t           *imports, *paths;
+    ngx_http_js_import_t  *import, *pi;
 
+    if (prev->imports != NGX_CONF_UNSET_PTR && prev->vm == NULL) {
+        if (ngx_http_js_init_conf_vm(cf, prev) != NGX_OK) {
+            return NGX_ERROR;
+        }
+    }
+
+    if (conf->imports == NGX_CONF_UNSET_PTR
+        && conf->paths == NGX_CONF_UNSET_PTR)
+    {
+        if (prev->vm != NULL) {
+            conf->imports = prev->imports;
+            conf->paths = prev->paths;
+            conf->vm = prev->vm;
+            return NGX_OK;
+        }
+    }
+
+    if (prev->imports != NGX_CONF_UNSET_PTR) {
+        if (conf->imports == NGX_CONF_UNSET_PTR) {
+            conf->imports = prev->imports;
+
+        } else {
+            imports = ngx_array_create(cf->pool, 4,
+                                       sizeof(ngx_http_js_import_t));
+            if (imports == NULL) {
+                return NGX_ERROR;
+            }
+
+            pi = prev->imports->elts;
+
+            for (i = 0; i < prev->imports->nelts; i++) {
+                import = ngx_array_push(imports);
+                if (import == NULL) {
+                    return NGX_ERROR;
+                }
+
+                *import = pi[i];
+            }
+
+            pi = conf->imports->elts;
+
+            for (i = 0; i < conf->imports->nelts; i++) {
+                import = ngx_array_push(imports);
+                if (import == NULL) {
+                    return NGX_ERROR;
+                }
+
+                *import = pi[i];
+            }
+
+            conf->imports = imports;
+        }
+    }
+
+    if (prev->paths != NGX_CONF_UNSET_PTR) {
+        if (conf->paths == NGX_CONF_UNSET_PTR) {
+            conf->paths = prev->paths;
+
+        } else {
+            paths = ngx_array_create(cf->pool, 4, sizeof(ngx_str_t));
+            if (paths == NULL) {
+                return NGX_ERROR;
+            }
+
+            s = prev->imports->elts;
+
+            for (i = 0; i < prev->paths->nelts; i++) {
+                path = ngx_array_push(paths);
+                if (path == NULL) {
+                    return NGX_ERROR;
+                }
+
+                *path = s[i];
+            }
+
+            s = conf->imports->elts;
+
+            for (i = 0; i < conf->paths->nelts; i++) {
+                path = ngx_array_push(paths);
+                if (path == NULL) {
+                    return NGX_ERROR;
+                }
+
+                *path = s[i];
+            }
+
+            conf->paths = paths;
+        }
+    }
+
+    if (conf->imports == NGX_CONF_UNSET_PTR) {
+        return NGX_OK;
+    }
+
+    return ngx_http_js_init_conf_vm(cf, conf);
+}
+
+
+static ngx_int_t
+ngx_http_js_init_conf_vm(ngx_conf_t *cf, ngx_http_js_loc_conf_t *conf)
+{
     size_t                 size;
     u_char                *start, *end, *p;
     ngx_str_t             *m, file;
@@ -4170,14 +4274,10 @@ ngx_http_js_init_main_conf(ngx_conf_t *cf, void *conf)
     static const njs_str_t line_number_key = njs_str("lineNumber");
     static const njs_str_t file_name_key = njs_str("fileName");
 
-    if (jmcf->imports == NGX_CONF_UNSET_PTR) {
-        return NGX_CONF_OK;
-    }
-
     size = 0;
 
-    import = jmcf->imports->elts;
-    for (i = 0; i < jmcf->imports->nelts; i++) {
+    import = conf->imports->elts;
+    for (i = 0; i < conf->imports->nelts; i++) {
 
         /* import <name> from '<path>'; globalThis.<name> = <name>; */
 
@@ -4188,12 +4288,12 @@ ngx_http_js_init_main_conf(ngx_conf_t *cf, void *conf)
 
     start = ngx_pnalloc(cf->pool, size);
     if (start == NULL) {
-        return NGX_CONF_ERROR;
+        return NGX_ERROR;
     }
 
     p = start;
-    import = jmcf->imports->elts;
-    for (i = 0; i < jmcf->imports->nelts; i++) {
+    import = conf->imports->elts;
+    for (i = 0; i < conf->imports->nelts; i++) {
 
         /* import <name> from '<path>'; globalThis.<name> = <name>; */
 
@@ -4223,103 +4323,103 @@ ngx_http_js_init_main_conf(ngx_conf_t *cf, void *conf)
     options.file.start = file.data;
     options.file.length = file.len;
 
-    jmcf->vm = njs_vm_create(&options);
-    if (jmcf->vm == NULL) {
+    conf->vm = njs_vm_create(&options);
+    if (conf->vm == NULL) {
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0, "failed to create js VM");
-        return NGX_CONF_ERROR;
+        return NGX_ERROR;
     }
 
     cln = ngx_pool_cleanup_add(cf->pool, 0);
     if (cln == NULL) {
-        return NGX_CONF_ERROR;
+        return NGX_ERROR;
     }
 
     cln->handler = ngx_http_js_cleanup_vm;
-    cln->data = jmcf->vm;
+    cln->data = conf->vm;
 
     path.start = ngx_cycle->conf_prefix.data;
     path.length = ngx_cycle->conf_prefix.len;
 
-    rc = njs_vm_add_path(jmcf->vm, &path);
+    rc = njs_vm_add_path(conf->vm, &path);
     if (rc != NJS_OK) {
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0, "failed to add \"js_path\"");
-        return NGX_CONF_ERROR;
+        return NGX_ERROR;
     }
 
-    if (jmcf->paths != NGX_CONF_UNSET_PTR) {
-        m = jmcf->paths->elts;
+    if (conf->paths != NGX_CONF_UNSET_PTR) {
+        m = conf->paths->elts;
 
-        for (i = 0; i < jmcf->paths->nelts; i++) {
+        for (i = 0; i < conf->paths->nelts; i++) {
             if (ngx_conf_full_name(cf->cycle, &m[i], 1) != NGX_OK) {
-                return NGX_CONF_ERROR;
+                return NGX_ERROR;
             }
 
             path.start = m[i].data;
             path.length = m[i].len;
 
-            rc = njs_vm_add_path(jmcf->vm, &path);
+            rc = njs_vm_add_path(conf->vm, &path);
             if (rc != NJS_OK) {
                 ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
                               "failed to add \"js_path\"");
-                return NGX_CONF_ERROR;
+                return NGX_ERROR;
             }
         }
     }
 
-    ngx_http_js_request_proto_id = njs_vm_external_prototype(jmcf->vm,
+    ngx_http_js_request_proto_id = njs_vm_external_prototype(conf->vm,
                                            ngx_http_js_ext_request,
                                            njs_nitems(ngx_http_js_ext_request));
     if (ngx_http_js_request_proto_id < 0) {
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
                       "failed to add js request proto");
-        return NGX_CONF_ERROR;
+        return NGX_ERROR;
     }
 
-    rc = ngx_js_core_init(jmcf->vm, cf->log);
+    rc = ngx_js_core_init(conf->vm, cf->log);
     if (njs_slow_path(rc != NJS_OK)) {
-        return NGX_CONF_ERROR;
+        return NGX_ERROR;
     }
 
     end = start + size;
 
-    rc = njs_vm_compile(jmcf->vm, &start, end);
+    rc = njs_vm_compile(conf->vm, &start, end);
 
     if (rc != NJS_OK) {
-        njs_value_assign(&exception, njs_vm_retval(jmcf->vm));
-        njs_vm_retval_string(jmcf->vm, &text);
+        njs_value_assign(&exception, njs_vm_retval(conf->vm));
+        njs_vm_retval_string(conf->vm, &text);
 
-        value = njs_vm_object_prop(jmcf->vm, njs_value_arg(&exception),
+        value = njs_vm_object_prop(conf->vm, njs_value_arg(&exception),
                                    &file_name_key, &lvalue);
         if (value == NULL) {
-            value = njs_vm_object_prop(jmcf->vm, njs_value_arg(&exception),
+            value = njs_vm_object_prop(conf->vm, njs_value_arg(&exception),
                                        &line_number_key, &lvalue);
 
             if (value != NULL) {
                 i = njs_value_number(value) - 1;
 
-                if (i < jmcf->imports->nelts) {
-                    import = jmcf->imports->elts;
+                if (i < conf->imports->nelts) {
+                    import = conf->imports->elts;
                     ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
                                   "%*s, included in %s:%ui", text.length,
                                   text.start, import[i].file, import[i].line);
-                    return NGX_CONF_ERROR;
+                    return NGX_ERROR;
                 }
             }
         }
 
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0, "%*s", text.length,
                       text.start);
-        return NGX_CONF_ERROR;
+        return NGX_ERROR;
     }
 
     if (start != end) {
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
                       "extra characters in js script: \"%*s\"",
                       end - start, start);
-        return NGX_CONF_ERROR;
+        return NGX_ERROR;
     }
 
-    return NGX_CONF_OK;
+    return NGX_OK;
 }
 
 
@@ -4339,7 +4439,7 @@ ngx_http_js_init(ngx_conf_t *cf)
 static char *
 ngx_http_js_import(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_http_js_main_conf_t *jmcf = conf;
+    ngx_http_js_loc_conf_t *jlcf = conf;
 
     u_char                *p, *end, c;
     ngx_int_t              from;
@@ -4420,15 +4520,15 @@ ngx_http_js_import(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    if (jmcf->imports == NGX_CONF_UNSET_PTR) {
-        jmcf->imports = ngx_array_create(cf->pool, 4,
+    if (jlcf->imports == NGX_CONF_UNSET_PTR) {
+        jlcf->imports = ngx_array_create(cf->pool, 4,
                                          sizeof(ngx_http_js_import_t));
-        if (jmcf->imports == NULL) {
+        if (jlcf->imports == NULL) {
             return NGX_CONF_ERROR;
         }
     }
 
-    import = ngx_array_push(jmcf->imports);
+    import = ngx_array_push(jlcf->imports);
     if (import == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -4595,29 +4695,6 @@ ngx_http_js_body_filter_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 
 static void *
-ngx_http_js_create_main_conf(ngx_conf_t *cf)
-{
-    ngx_http_js_main_conf_t  *conf;
-
-    conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_js_main_conf_t));
-    if (conf == NULL) {
-        return NULL;
-    }
-
-    /*
-     * set by ngx_pcalloc():
-     *
-     *     conf->vm = NULL;
-     */
-
-    conf->paths = NGX_CONF_UNSET_PTR;
-    conf->imports = NGX_CONF_UNSET_PTR;
-
-    return conf;
-}
-
-
-static void *
 ngx_http_js_create_loc_conf(ngx_conf_t *cf)
 {
     ngx_http_js_loc_conf_t  *conf;
@@ -4630,6 +4707,7 @@ ngx_http_js_create_loc_conf(ngx_conf_t *cf)
     /*
      * set by ngx_pcalloc():
      *
+     *     conf->vm = NULL;
      *     conf->content = { 0, NULL };
      *     conf->header_filter = { 0, NULL };
      *     conf->body_filter = { 0, NULL };
@@ -4638,6 +4716,9 @@ ngx_http_js_create_loc_conf(ngx_conf_t *cf)
      *     conf->ssl_protocols = 0;
      *     conf->ssl_trusted_certificate = { 0, NULL };
      */
+
+    conf->paths = NGX_CONF_UNSET_PTR;
+    conf->imports = NGX_CONF_UNSET_PTR;
 
     conf->buffer_size = NGX_CONF_UNSET_SIZE;
     conf->max_response_body_size = NGX_CONF_UNSET_SIZE;
@@ -4668,6 +4749,10 @@ ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_size_value(conf->buffer_size, prev->buffer_size, 16384);
     ngx_conf_merge_size_value(conf->max_response_body_size,
                               prev->max_response_body_size, 1048576);
+
+    if (ngx_http_js_merge_vm(cf, conf, prev) != NGX_OK) {
+        return NGX_CONF_ERROR;
+    }
 
 #if (NGX_HTTP_SSL)
     ngx_conf_merge_str_value(conf->ssl_ciphers, prev->ssl_ciphers, "DEFAULT");
