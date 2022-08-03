@@ -1510,11 +1510,11 @@ ngx_stream_js_resolver_timeout(njs_vm_t *vm, ngx_stream_session_t *s)
 static ngx_msec_t
 ngx_stream_js_fetch_timeout(njs_vm_t *vm, ngx_stream_session_t *s)
 {
-    ngx_stream_core_srv_conf_t  *cscf;
+    ngx_stream_js_srv_conf_t  *jscf;
 
-    cscf = ngx_stream_get_module_srv_conf(s, ngx_stream_js_module);
+    jscf = ngx_stream_get_module_srv_conf(s, ngx_stream_js_module);
 
-    return cscf->resolver_timeout;
+    return jscf->timeout;
 }
 
 
