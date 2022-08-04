@@ -601,7 +601,7 @@ int
 njs_dprintf(int fd, const char *fmt, ...)
 {
     size_t   size;
-    u_char   text[2048], *p;
+    u_char   text[16384], *p;
     va_list  args;
 
     va_start(args, fmt);
