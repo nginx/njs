@@ -276,6 +276,15 @@ interface NginxHTTPSendBufferOptions {
 interface NginxHTTPRequest {
     /**
      * Request arguments object.
+     *
+     * Since 0.7.6, duplicate keys are returned as an array, keys are
+     * case-sensitive, both keys and values are percent-decoded.
+     * For example, the query string
+     *
+     * 'a=1&b=%32&A=3&b=4&B=two%20words'
+     * is converted to r.args as:
+     *
+     *   {a: "1", b: ["2", "4"], A: "3", B: "two words"}
      */
     readonly args: NginxHTTPArgs;
     /**
@@ -312,6 +321,7 @@ interface NginxHTTPRequest {
      * Performs an internal redirect to the specified uri.
      * If the uri starts with the “@” prefix, it is considered a named location.
      * The actual redirect happens after the handler execution is completed.
+     * Since 0.7.4, the method accepts escaped URIs.
      * @param uri Location to redirect to.
      */
     internalRedirect(uri: NjsStringOrBuffer): void;

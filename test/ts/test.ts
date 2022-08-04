@@ -174,9 +174,15 @@ function timers() {
     // Warning: clearTimeout(123);
 }
 
+function global_functions() {
+    const encodedData = btoa("text to encode");
+    const decodedData = atob(encodedData);
+}
+
 function njs_object() {
     njs.dump('asdf');
     njs.version != process.argv[1];
+    typeof njs.version_number == 'number';
     njs.on('exit', ()=> {});
 }
 

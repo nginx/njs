@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "target": "es5",
-        "module": "ES2017",
+        "module": "ES2015",
         "lib": [
             "ES2015",
             "ES2016.Array.Include",

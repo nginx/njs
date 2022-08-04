@@ -19,10 +19,14 @@ interface String {
     /**
      * Serializes a Unicode string with code points up to 255
      * into a byte string, otherwise, null is returned.
+     *
+     * @deprecated will be removed in the future.
      */
     toBytes(start?: number, end?: number): NjsByteString | null;
     /**
      * Serializes a Unicode string to a byte string using UTF8 encoding.
+     *
+     * @deprecated will be removed in the future.
      */
     toUTF8(start?: number, end?: number): NjsByteString;
 }
@@ -31,15 +35,21 @@ type NjsByteString = string & {
     /**
      * Returns a new Unicode string from a byte string where each byte is replaced
      * with a corresponding Unicode code point.
+     *
+     * @deprecated will be removed in the future.
      */
     fromBytes(start?: number, end?: number): string;
     /**
      * Converts a byte string containing a valid UTF8 string into a Unicode string,
      * otherwise null is returned.
+     *
+     * @deprecated will be removed in the future.
      */
     fromUTF8(start?: number, end?: number): string | null;
     /**
      * Encodes a byte string to hex, base64, or base64url.
+     *
+     * @deprecated will be removed in the future.
      */
     toString(encoding: Exclude<BufferEncoding, "utf8">): string;
 };
@@ -589,7 +599,17 @@ type NjsStringOrBuffer = NjsStringLike | Buffer | DataView | TypedArray | ArrayB
 // Global objects
 
 interface NjsGlobal {
+    /**
+     * Returns current njs version as a string.
+     * For example, '0.7.4'.
+     */
     readonly version: string;
+    /**
+     * Returns a number with the current version of njs.
+     * For example, “0.7.4” is returned as 0x000704.
+     * @since 0.7.4
+     */
+    readonly version_number: number;
     dump(value: any, indent?: number): string;
     /**
      * Registers a callback for the "exit" event. The callback is called before
@@ -654,3 +674,19 @@ declare function setTimeout<TArgs extends any[]>(callback: (...args: TArgs) => v
  * @param handle A value returned by `setTimeout()`.
  */
 declare function clearTimeout(handle?: TimerHandle): void;
+
+/**
+ * Decodes a string of data which has been encoded using Base64 encoding.
+ *
+ * @param encodedData is a binary string that contains Base64-encoded data.
+ * @returns A string that contains decoded data from encodedData.
+ */
+declare function atob(encodedData: string): string;
+
+/**
+ * Creates a Base64-encoded ASCII string from a binary string.
+ *
+ * @param stringToEncode is a binary string to encode.
+ * @returns A string containing the Base64 representation of stringToEncode.
+ */
+declare function btoa(stringToEncode: string): string;
