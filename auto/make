@@ -275,7 +275,7 @@ cat << END >> $NJS_MAKEFILE
 $NJS_BUILD_DIR/ts/package.json: $njs_ts_deps
 	cp -fr ts $NJS_BUILD_DIR/
 	cp LICENSE $NJS_BUILD_DIR/ts/
-	sed 's/\("version":\s*\)"\([^"]\+\)"/\1"\$(NJS_TYPES_VER)"/' \\
+	sed 's/__VERSION__/"\$(NJS_TYPES_VER)"/' \\
 		ts/package.json > $NJS_BUILD_DIR/ts/package.json
 
 $NJS_BUILD_DIR/ts/node_modules: $NJS_BUILD_DIR/ts/package.json

@@ -1,6 +1,6 @@
 {
   "name": "njs-types",
-  "version": "0.0.0-dev",
+  "version": __VERSION__,
   "description": "TypeScript definitions for njs scripting language and nginx js modules.",
   "scripts": {
     "lint": "tsc"
