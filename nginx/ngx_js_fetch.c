@@ -907,10 +907,8 @@ ngx_js_http_connect(ngx_js_http_t *http)
 
     http->process = ngx_js_http_process_status_line;
 
-    if (http->timeout) {
-        ngx_add_timer(http->peer.connection->read, http->timeout);
-        ngx_add_timer(http->peer.connection->write, http->timeout);
-    }
+    ngx_add_timer(http->peer.connection->read, http->timeout);
+    ngx_add_timer(http->peer.connection->write, http->timeout);
 
 #if (NGX_SSL)
     if (http->ssl != NULL && http->peer.connection->ssl == NULL) {
@@ -1175,7 +1173,7 @@ ngx_js_http_write_handler(ngx_event_t *wev)
         }
     }
 
-    if (!wev->timer_set && http->timeout) {
+    if (!wev->timer_set) {
         ngx_add_timer(wev, http->timeout);
     }
 }
