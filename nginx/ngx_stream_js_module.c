@@ -64,7 +64,6 @@ typedef struct {
 #define NGX_JS_EVENT_DOWNLOAD 1
 #define NGX_JS_EVENT_MAX      2
     ngx_stream_js_ev_t      events[2];
-    unsigned                from_upstream:1;
     unsigned                filter:1;
     unsigned                in_progress:1;
 } ngx_stream_js_ctx_t;
@@ -671,7 +670,6 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
     }
 
     ctx->filter = 1;
-    ctx->from_upstream = from_upstream;
 
     ctx->last_out = &out;
 
