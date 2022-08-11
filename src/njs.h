@@ -155,6 +155,7 @@ struct njs_external_s {
         struct {
             const char              value[15]; /* NJS_STRING_SHORT + 1. */
             njs_prop_handler_t      handler;
+            uint16_t                magic16;
             uint32_t                magic32;
         } property;
 

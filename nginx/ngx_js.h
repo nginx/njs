@@ -19,6 +19,8 @@
 #define NGX_JS_DEPRECATED   1
 #define NGX_JS_STRING       2
 #define NGX_JS_BUFFER       4
+#define NGX_JS_BOOLEAN      8
+#define NGX_JS_NUMBER       16
 
 #define ngx_js_buffer_type(btype) ((btype) & ~NGX_JS_DEPRECATED)
 
@@ -79,6 +81,8 @@ njs_int_t ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop,
 njs_int_t ngx_js_ext_uint(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 njs_int_t ngx_js_ext_constant(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+njs_int_t ngx_js_ext_flags(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 njs_int_t ngx_js_ext_boolean(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);

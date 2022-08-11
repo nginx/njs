@@ -263,6 +263,31 @@ ngx_js_ext_constant(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 njs_int_t
+ngx_js_ext_flags(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    uintptr_t  data;
+
+    data = (uintptr_t) njs_vm_external(vm, NJS_PROTO_ID_ANY, value);
+    if (data == 0) {
+        njs_value_undefined_set(retval);
+        return NJS_DECLINED;
+    }
+
+    data = data & (uintptr_t) njs_vm_prop_magic32(prop);
+
+    switch (njs_vm_prop_magic16(prop)) {
+    case NGX_JS_BOOLEAN:
+    default:
+        njs_value_boolean_set(retval, data);
+        break;
+    }
+
+    return NJS_OK;
+}
+
+
+njs_int_t
 ngx_js_ext_boolean(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {

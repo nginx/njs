@@ -92,7 +92,7 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
                 prop->type = NJS_PROPERTY_HANDLER;
                 prop->value.type = NJS_INVALID;
                 prop->value.data.truth = 1;
-                prop->value.data.magic16 = 0;
+                prop->value.data.magic16 = external->u.property.magic16;
                 prop->value.data.magic32 = external->u.property.magic32;
                 prop->value.data.u.prop_handler = external->u.property.handler;
 

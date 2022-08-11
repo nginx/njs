@@ -493,6 +493,30 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
 };
 
 
+static njs_external_t  ngx_stream_js_ext_session_flags[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY | NJS_EXTERN_SYMBOL,
+        .name.symbol = NJS_SYMBOL_TO_STRING_TAG,
+        .u.property = {
+            .value = "Stream Flags",
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("last"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_flags,
+            .magic16 = NGX_JS_BOOLEAN,
+            .magic32 = 0x00000001,
+        }
+    },
+
+};
+
+
 static njs_vm_ops_t ngx_stream_js_ops = {
     ngx_stream_js_set_timer,
     ngx_stream_js_clear_timer,
@@ -525,6 +549,7 @@ static ngx_stream_filter_pt  ngx_stream_next_filter;
 
 
 static njs_int_t    ngx_stream_js_session_proto_id;
+static njs_int_t    ngx_stream_js_session_flags_proto_id;
 
 
 static ngx_int_t
@@ -923,14 +948,12 @@ static njs_int_t
 ngx_stream_js_run_event(ngx_stream_session_t *s, ngx_stream_js_ctx_t *ctx,
     ngx_stream_js_ev_t *event)
 {
-    size_t               len;
-    u_char              *p;
-    njs_int_t            ret;
-    ngx_buf_t           *b;
-    ngx_connection_t    *c;
-    njs_opaque_value_t   last_key, last;
-
-    static const njs_str_t last_str = njs_str("last");
+    size_t             len;
+    u_char            *p;
+    njs_int_t          ret;
+    ngx_buf_t         *b;
+    uintptr_t          flags;
+    ngx_connection_t  *c;
 
     if (event->ev == NULL) {
         return NJS_OK;
@@ -957,16 +980,12 @@ ngx_stream_js_run_event(ngx_stream_session_t *s, ngx_stream_js_ctx_t *ctx,
         return ret;
     }
 
-    njs_vm_value_string_set(ctx->vm, njs_value_arg(&last_key), last_str.start,
-                            last_str.length);
+    flags = b && b->last_buf;
 
-    njs_value_boolean_set(njs_value_arg(&last), b && b->last_buf);
-
-    ret = njs_vm_object_alloc(ctx->vm, njs_value_arg(&ctx->args[2]),
-                               njs_value_arg(&last_key),
-                               njs_value_arg(&last), NULL);
+    ret = njs_vm_external_create(ctx->vm, njs_value_arg(&ctx->args[2]),
+                       ngx_stream_js_session_flags_proto_id, (void *) flags, 0);
     if (ret != NJS_OK) {
-        return ret;
+        return NGX_ERROR;
     }
 
     njs_vm_post_event(ctx->vm, event->ev, njs_value_arg(&ctx->args[1]), 2);
@@ -1787,7 +1806,16 @@ ngx_stream_js_init_conf_vm(ngx_conf_t *cf, ngx_stream_js_srv_conf_t *conf)
                                          njs_nitems(ngx_stream_js_ext_session));
     if (ngx_stream_js_session_proto_id < 0) {
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                      "failed to add js request proto");
+                      "failed to add js session proto");
+        return NGX_ERROR;
+    }
+
+    ngx_stream_js_session_flags_proto_id = njs_vm_external_prototype(conf->vm,
+                                   ngx_stream_js_ext_session_flags,
+                                   njs_nitems(ngx_stream_js_ext_session_flags));
+    if (ngx_stream_js_session_flags_proto_id < 0) {
+        ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                      "failed to add js session flags proto");
         return NGX_ERROR;
     }
 
