@@ -34,6 +34,7 @@ static njs_external_t  ngx_js_ext_core[] = {
         .u.property = {
             .handler = ngx_js_ext_constant,
             .magic32 = NGX_LOG_INFO,
+            .magic16 = NGX_JS_NUMBER,
         }
     },
 
@@ -43,6 +44,7 @@ static njs_external_t  ngx_js_ext_core[] = {
         .u.property = {
             .handler = ngx_js_ext_constant,
             .magic32 = NGX_LOG_WARN,
+            .magic16 = NGX_JS_NUMBER,
         }
     },
 
@@ -52,6 +54,7 @@ static njs_external_t  ngx_js_ext_core[] = {
         .u.property = {
             .handler = ngx_js_ext_constant,
             .magic32 = NGX_LOG_ERR,
+            .magic16 = NGX_JS_NUMBER,
         }
     },
 
@@ -256,7 +259,20 @@ njs_int_t
 ngx_js_ext_constant(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
-    njs_value_number_set(retval, njs_vm_prop_magic32(prop));
+    uint32_t  magic32;
+
+    magic32 = njs_vm_prop_magic32(prop);
+
+    switch (njs_vm_prop_magic16(prop)) {
+    case NGX_JS_NUMBER:
+        njs_value_number_set(retval, magic32);
+        break;
+
+    case NGX_JS_BOOLEAN:
+    default:
+        njs_value_boolean_set(retval, magic32);
+        break;
+    }
 
     return NJS_OK;
 }
@@ -282,16 +298,6 @@ ngx_js_ext_flags(njs_vm_t *vm, njs_object_prop_t *prop,
         njs_value_boolean_set(retval, data);
         break;
     }
-
-    return NJS_OK;
-}
-
-
-njs_int_t
-ngx_js_ext_boolean(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
-{
-    njs_value_boolean_set(retval, njs_vm_prop_magic32(prop));
 
     return NJS_OK;
 }

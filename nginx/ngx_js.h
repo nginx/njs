@@ -84,8 +84,6 @@ njs_int_t ngx_js_ext_constant(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 njs_int_t ngx_js_ext_flags(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
-njs_int_t ngx_js_ext_boolean(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 
 ngx_int_t ngx_js_core_init(njs_vm_t *vm, ngx_log_t *log);
 

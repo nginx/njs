@@ -276,8 +276,9 @@ static njs_external_t  ngx_js_ext_http_response[] = {
         .name.string = njs_str("redirected"),
         .enumerable = 1,
         .u.property = {
-            .handler = ngx_js_ext_boolean,
+            .handler = ngx_js_ext_constant,
             .magic32 = 0,
+            .magic16 = NGX_JS_BOOLEAN,
         }
     },
 
