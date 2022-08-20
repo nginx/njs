@@ -139,6 +139,13 @@ typedef enum {
 } njs_extern_flag_t;
 
 
+typedef enum {
+    NJS_EXTERN_TYPE_INT = 0,
+    NJS_EXTERN_TYPE_UINT = 1,
+    NJS_EXTERN_TYPE_VALUE = 2,
+} njs_extern_type_t;
+
+
 struct njs_external_s {
     njs_extern_flag_t               flags;
 
@@ -361,6 +368,9 @@ NJS_EXPORT njs_int_t njs_vm_external_create(njs_vm_t *vm, njs_value_t *value,
     njs_int_t proto_id, njs_external_ptr_t external, njs_bool_t shared);
 NJS_EXPORT njs_external_ptr_t njs_vm_external(njs_vm_t *vm,
     njs_int_t proto_id, const njs_value_t *value);
+NJS_EXPORT njs_int_t njs_external_property(njs_vm_t *vm,
+    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 NJS_EXPORT uintptr_t njs_vm_meta(njs_vm_t *vm, njs_uint_t index);
 
 NJS_EXPORT njs_function_t *njs_vm_function_alloc(njs_vm_t *vm,

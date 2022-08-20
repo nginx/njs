@@ -343,3 +343,39 @@ njs_value_external_tag(const njs_value_t *value)
 
     return -1;
 }
+
+
+njs_int_t
+njs_external_property(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval)
+{
+    char        *p;
+    njs_int_t   i;
+    njs_uint_t  ui;
+
+    p = njs_vm_external(vm, NJS_PROTO_ID_ANY, value);
+    if (p == NULL) {
+        njs_value_undefined_set(retval);
+        return NJS_DECLINED;
+    }
+
+    switch (njs_vm_prop_magic16(prop)) {
+    case NJS_EXTERN_TYPE_INT:
+        i = *(njs_int_t *) (p + njs_vm_prop_magic32(prop));
+        njs_value_number_set(retval, i);
+        break;
+
+    case NJS_EXTERN_TYPE_UINT:
+        ui = *(njs_uint_t *) (p + njs_vm_prop_magic32(prop));
+        njs_value_number_set(retval, ui);
+        break;
+
+    case NJS_EXTERN_TYPE_VALUE:
+    default:
+        njs_value_assign(retval,
+                         (njs_value_t *) (p + njs_vm_prop_magic32(prop)));
+
+    }
+
+    return NJS_OK;
+}
