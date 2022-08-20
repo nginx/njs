@@ -7,6 +7,8 @@ var dname = `${test_dir}/fs_promises_05`;
 var dname_utf8 = `${test_dir}/fs_promises_αβγ_05`;
 var fname = (d) => d + '/fs_promises_05_file';
 
+let stages = [];
+
 var testSync = () => new Promise((resolve, reject) => {
     try {
         try { fs.unlinkSync(fname(dname)); } catch (e) {}
@@ -47,6 +49,8 @@ var testSync = () => new Promise((resolve, reject) => {
         try {
             fs.writeFileSync(fname(dname_utf8), fname(dname_utf8));
 
+            throw new Error('fs.mkdirSync error 1');
+
         } catch (e) {
             if (e.syscall != 'open' || e.code != 'EACCES') {
                 throw e;
@@ -63,6 +67,8 @@ var testSync = () => new Promise((resolve, reject) => {
         }
 
         fs.rmdirSync(dname_utf8);
+
+        stages.push("mkdirSync");
 
         resolve();
 
@@ -94,6 +100,8 @@ var testCallback = () => new Promise((resolve, reject) => {
                         reject(err);
                     }
 
+                    stages.push("mkdir");
+
                     resolve();
                 });
             });
@@ -104,21 +112,7 @@ var testCallback = () => new Promise((resolve, reject) => {
     }
 });
 
-
-let stages = [];
-
-Promise.resolve()
-.then(testSync)
-.then(() => {
-    stages.push("mkdirSync");
-})
-
-
-.then(testCallback)
-.then(() => {
-    stages.push("mkdir");
-})
-
+let testFsp = () => Promise.resolve()
 .then(() => {
     try { fs.unlinkSync(fname(dname)); } catch (e) {}
     try { fs.unlinkSync(fname(dname_utf8)); } catch (e) {}
@@ -136,5 +130,14 @@ Promise.resolve()
 .then(() => {
     stages.push("fsp.mkdir");
 })
-.then(() => assert.compareArray(stages, ['mkdirSync', 'mkdir', 'fsp.mkdir']))
-.then($DONE, $DONE);
+
+let p = Promise.resolve()
+if (has_fs()) {
+    p = p
+        .then(testSync)
+        .then(testCallback)
+        .then(testFsp)
+        .then(() => assert.compareArray(stages, ['mkdirSync', 'mkdir', 'fsp.mkdir']))
+}
+
+p.then($DONE, $DONE);

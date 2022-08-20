@@ -7,7 +7,7 @@ var fname = `${test_dir}/fs_promises_01`;
 
 let stages = [];
 
-Promise.resolve()
+let test = () => Promise.resolve()
 .then(() => {
     return fsp.writeFile(fname, fname);
 })
@@ -39,4 +39,12 @@ Promise.resolve()
 .then(() => {
     assert.compareArray(stages, ["init", "short circut", "chain", "errors ok"]);
 })
-.then($DONE, $DONE);
+
+let p = Promise.resolve()
+if (has_fs()) {
+    p = p
+        .then(test)
+        .then(() => assert.compareArray(stages, ["init", "short circut", "chain", "errors ok"]))
+}
+
+p.then($DONE, $DONE);

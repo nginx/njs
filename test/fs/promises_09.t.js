@@ -23,6 +23,7 @@ var setContent = (root, path) => {
 
 var isNode = () => process.argv[0].includes('node');
 
+let stages = [];
 
 var testSync = () => new Promise((resolve, reject) => {
     try {
@@ -90,6 +91,8 @@ var testSync = () => new Promise((resolve, reject) => {
             }
         }
 
+        stages.push("rmdirSync");
+
         resolve();
 
     } catch (e) {
@@ -97,13 +100,11 @@ var testSync = () => new Promise((resolve, reject) => {
     }
 });
 
+let p = Promise.resolve()
+if (has_fs() && has_fs_symbolic_link()) {
+    p = p
+        .then(testSync)
+        .then(() => assert.compareArray(stages, ['rmdirSync']))
+}
 
-let stages = [];
-
-Promise.resolve()
-.then(testSync)
-.then(() => {
-    stages.push("rmdirSync");
-})
-.then(() => assert.compareArray(stages, ["rmdirSync"]))
-.then($DONE, $DONE);
+p.then($DONE, $DONE);

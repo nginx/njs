@@ -5,6 +5,8 @@ flags: [async]
 
 var fname = `${test_dir}/fs_promises_03`;
 
+let stages = [];
+
 var testSync = () => new Promise((resolve, reject) => {
     try {
         try {
@@ -32,12 +34,13 @@ var testSync = () => new Promise((resolve, reject) => {
             void e;
         }
 
+        stages.push("unlinkSync");
+
         resolve();
     } catch (e) {
         reject(e);
     }
 });
-
 
 var testCallback = () => new Promise((resolve, reject) => {
     fs.unlink(fname, () => {
@@ -64,31 +67,21 @@ var testCallback = () => new Promise((resolve, reject) => {
                 } catch (e) {
                     void e;
                 }
+
+                stages.push("unlink");
+
                 resolve();
             });
         });
     });
 });
 
-let stages = [];
-
-Promise.resolve()
-.then(testSync)
-.then(() => {
-    stages.push("unlinkSync");
-})
-
-.then(testCallback)
-.then(() => {
-    stages.push("unlink");
-})
-
+let testFsp = () => Promise.resolve()
 .then(() => fsp.unlink(fname)
             .catch(() => {}))
 .then(() => fsp.unlink(fname))
             .then(() => { throw new Error('fsp.unlink error 1'); })
 .catch((e) => { if (e.syscall != 'unlink') { throw e; } })
-
 .then(() => {
     fs.writeFileSync(fname, fname);
     return fsp.unlink(fname);
@@ -96,9 +89,17 @@ Promise.resolve()
 .then(() => fsp.access(fname))
             .then(() => { throw new Error('fsp.unlink error 2'); })
 .catch((e) => { if (e.syscall != 'access') { throw e; } })
-
 .then(() => {
     stages.push("fsp.unlink");
 })
-.then(() => assert.compareArray(stages, ['unlinkSync', 'unlink', 'fsp.unlink']))
-.then($DONE, $DONE);
+
+let p = Promise.resolve()
+if (has_fs()) {
+    p = p
+        .then(testSync)
+        .then(testCallback)
+        .then(testFsp)
+        .then(() => assert.compareArray(stages, ['unlinkSync', 'unlink', 'fsp.unlink']))
+}
+
+p.then($DONE, $DONE);

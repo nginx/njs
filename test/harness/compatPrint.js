@@ -1,3 +1,3 @@
 if (typeof print !== 'function') {
-    print = console.log;
+    globalThis.print = console.log;
 }

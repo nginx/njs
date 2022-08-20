@@ -15,7 +15,7 @@ var match = (entry) => {
     var idx = dir_test.indexOf(entry.name);
 
     try {
-        switch(idx) {
+        switch (idx) {
         case 0:
             return entry.isDirectory();
         case 1:
@@ -34,6 +34,7 @@ var match = (entry) => {
     }
 };
 
+let stages = [];
 
 var testSync = () => new Promise((resolve, reject) => {
     try {
@@ -109,6 +110,8 @@ var testSync = () => new Promise((resolve, reject) => {
             throw new Error('fs.readdirSync - error 8');
         }
 
+        stages.push("readdirSync");
+
         resolve();
 
     } catch (e) {
@@ -167,6 +170,8 @@ var testCallback = () => new Promise((resolve, reject) => {
                         reject(new Error('fs.readdir - error 5'));
                     }
 
+                    stages.push("readdir");
+
                     resolve();
                 });
             });
@@ -177,20 +182,7 @@ var testCallback = () => new Promise((resolve, reject) => {
     }
 });
 
-
-let stages = [];
-
-Promise.resolve()
-.then(testSync)
-.then(() => {
-    stages.push("readdirSync");
-})
-
-.then(testCallback)
-.then(() => {
-    stages.push("readdir");
-})
-
+let testFsp = () => Promise.resolve()
 .then(() => {
     try { fs.rmdirSync(cname(dname)); } catch (e) {}
     try { fs.unlinkSync(lname(dname)); } catch (e) {}
@@ -235,5 +227,14 @@ Promise.resolve()
 .then(() => {
     stages.push("fsp.readdir");
 })
-.then(() => assert.compareArray(stages, ["readdirSync", "readdir", "fsp.readdir"]))
-.then($DONE, $DONE);
+
+let p = Promise.resolve()
+if (has_fs() && has_fs_symbolic_link()) {
+    p = p
+        .then(testSync)
+        .then(testCallback)
+        .then(testFsp)
+        .then(() => assert.compareArray(stages, ['readdirSync', 'readdir', 'fsp.readdir']))
+}
+
+p.then($DONE, $DONE);

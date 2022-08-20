@@ -7,7 +7,9 @@ var dname = `${test_dir}/`;
 var fname = (d) => d + '/fs_promises_06_file';
 var fname_utf8 = (d) => d + '/fs_promises_αβγ_06';
 
-var testSync = new Promise((resolve, reject) => {
+let stages = [];
+
+var testSync = () => new Promise((resolve, reject) => {
     try {
         try { fs.unlinkSync(fname(dname)); } catch (e) {}
         try { fs.unlinkSync(fname_utf8(dname)); } catch (e) {}
@@ -25,9 +27,11 @@ var testSync = new Promise((resolve, reject) => {
             if (e.syscall != 'rename'
                 || (e.code != 'ENOTDIR' && e.code != 'EISDIR'))
             {
-                throw e;
+                reject(new Error('fs.unlinkSync error 1'));
             }
         }
+
+        stages.push("renameSync");
 
         resolve();
 
@@ -36,7 +40,7 @@ var testSync = new Promise((resolve, reject) => {
     }
 });
 
-var testCallback = new Promise((resolve, reject) => {
+var testCallback = () => new Promise((resolve, reject) => {
     try {
         try { fs.unlinkSync(fname(dname)); } catch (e) {}
         try { fs.unlinkSync(fname_utf8(dname)); } catch (e) {}
@@ -45,46 +49,30 @@ var testCallback = new Promise((resolve, reject) => {
 
         fs.rename(fname(dname), fname_utf8(dname), err => {
             if (err) {
-                throw err;
+                reject(new Error('fs.unlink error 1'));
             }
+
+            fs.accessSync(fname_utf8(dname));
+
+            fs.rename(fname_utf8(dname), dname, err => {
+                if (err.syscall != 'rename'
+                    || (err.code != 'ENOTDIR' && err.code != 'EISDIR'))
+                {
+                    reject(new Error('fs.unlink error 2'));
+                }
+            });
+
+            stages.push("rename");
+
+            resolve();
         });
-
-        fs.accessSync(fname_utf8(dname));
-
-        fs.rename(fname_utf8(dname), dname, err => {
-            if (err.syscall != 'rename'
-                || (err.code != 'ENOTDIR' && err.code != 'EISDIR'))
-            {
-                throw err;
-            }
-        });
-
-        resolve();
 
     } catch (e) {
         reject(e);
     }
 });
 
-let stages = [];
-
-Promise.resolve()
-.then(() => testSync)
-.then(() => {
-    stages.push("renameSync");
-})
-.catch((e) => {
-    console.log('test fs.renameSync failed', JSON.stringify(e));
-})
-
-.then(testCallback)
-.then(() => {
-    stages.push("rename");
-})
-.catch((e) => {
-    console.log('test fs.rename failed', JSON.stringify(e));
-})
-
+let testFsp = () => Promise.resolve()
 .then(() => {
     try { fs.unlinkSync(fname(dname)); } catch (e) {}
     try { fs.unlinkSync(fname_utf8(dname)); } catch (e) {}
@@ -98,11 +86,20 @@ Promise.resolve()
     if (e.syscall != 'rename'
         || (e.code != 'ENOTDIR' && e.code != 'EISDIR'))
     {
-        throw e;
+        throw new Error('fsp.rename error 1');
     }
 })
 .then(() => {
     stages.push("fsp.rename");
 })
-.then(() => assert.compareArray(stages, ["renameSync", "rename", "fsp.rename"]))
-.then($DONE, $DONE);
+
+let p = Promise.resolve()
+if (has_fs()) {
+    p = p
+        .then(testSync)
+        .then(testCallback)
+        .then(testFsp)
+        .then(() => assert.compareArray(stages, ["renameSync", "rename", "fsp.rename"]))
+}
+
+p.then($DONE, $DONE);

@@ -1,5 +1,5 @@
 if (typeof crypto == 'undefined' && typeof require == 'function') {
-    crypto = require('crypto').webcrypto;
+    globalThis.crypto = require('crypto').webcrypto;
 }
 
 function has_webcrypto() {

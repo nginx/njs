@@ -24,6 +24,8 @@ var wipePath = (root, path, nofail) => {
         });
 };
 
+let stages = [];
+
 var testSync = () => new Promise((resolve, reject) => {
     try {
         wipePath(dname, path + '/' + path, true);
@@ -66,21 +68,20 @@ var testSync = () => new Promise((resolve, reject) => {
         wipePath(dname, path);
 
         fs.rmdirSync(dname);
+
+        stages.push("mkdirSync")
+
         resolve();
     } catch (e) {
         reject(e);
     }
 });
 
-let stages = [];
+let p = Promise.resolve()
+if (has_fs()) {
+    p = p
+        .then(testSync)
+        .then(() => assert.compareArray(stages, ["mkdirSync"]))
+}
 
-Promise.resolve()
-.then(testSync)
-.then(() => {
-    stages.push("mkdirSync");
-})
-.catch((e) => {
-    $DONOTEVALUATE();
-})
-.then(() => assert.compareArray(stages, ["mkdirSync"]))
-.then($DONE, $DONE);
+p.then($DONE, $DONE);

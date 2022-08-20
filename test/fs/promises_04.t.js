@@ -7,25 +7,21 @@ var fname = `${test_dir}/fs_promises_04`;
 var fname_utf8 = `${test_dir}/fs_promises_αβγ_04`;
 var lname = `${test_dir}/fs_promises_lnk_04`;
 
+let stages = [];
+
 var testSync = () => new Promise((resolve, reject) => {
     try {
-        try {
-            fs.unlinkSync(fname);
-        } catch (e) {
-            void e;
-        }
-        try {
-            fs.unlinkSync(lname);
-        } catch (e) {
-            void e;
-        }
+        try { fs.unlinkSync(fname); } catch (e) {}
+        try { fs.unlinkSync(lname); } catch (e) {}
 
         try {
             fs.realpathSync(fname);
+
             throw new Error('fs.realpathSync error 1');
+
         } catch (e) {
-            if (e.syscall != 'realpath' || e.code != 'ENOENT') {
-                throw e;
+            if (e.code != 'ENOENT') {
+                throw new Error('fs.realpathSync error 2');
             }
         }
 
@@ -46,13 +42,15 @@ var testSync = () => new Promise((resolve, reject) => {
 
         var rname_utf8 = fs.realpathSync(fname_utf8);
         if (rname_utf8.slice(-6,-3) != 'αβγ') {
-            throw new Error('fs.realpathSync error 2');
+            throw new Error('fs.realpathSync error 3');
         }
 
         fs.unlinkSync(lname);
         fs.accessSync(fname);
         fs.unlinkSync(fname);
         fs.unlinkSync(fname_utf8);
+
+        stages.push("symlinkSync");
 
         resolve();
 
@@ -80,7 +78,8 @@ var testCallback = () => new Promise((resolve, reject) => {
                 reject(new Error('fs.realpath error 1'));
                 return;
             }
-            if (err.syscall != 'realpath' || err.code != 'ENOENT') {
+
+            if (err.code != 'ENOENT') {
                 reject(err);
                 return;
             }
@@ -130,6 +129,8 @@ var testCallback = () => new Promise((resolve, reject) => {
                             return;
                         }
 
+                        stages.push("symlink");
+
                         resolve();
                     });
                 });
@@ -141,19 +142,7 @@ var testCallback = () => new Promise((resolve, reject) => {
     }
 });
 
-let stages = [];
-
-Promise.resolve()
-.then(testSync)
-.then(() => {
-    stages.push("symlinkSync");
-})
-
-.then(testCallback)
-.then(() => {
-    stages.push("symlink");
-})
-
+let testFsp = () => Promise.resolve()
 .then(() => fsp.unlink(fname)
             .catch(() => {}))
 .then(() => fsp.unlink(lname)
@@ -186,10 +175,17 @@ Promise.resolve()
     fs.unlinkSync(lname);
     fs.accessSync(fname);
     fs.unlinkSync(fname);
-})
 
-.then(() => {
     stages.push("fsp.symlink");
 })
-.then(() => assert.compareArray(stages, ['symlinkSync', 'symlink', 'fsp.symlink']))
-.then($DONE, $DONE);
+
+let p = Promise.resolve()
+if (has_fs() && has_fs_symbolic_link()) {
+    p = p
+        .then(testSync)
+        .then(testCallback)
+        .then(testFsp)
+        .then(() => assert.compareArray(stages, ['symlinkSync', 'symlink', 'fsp.symlink']))
+}
+
+p.then($DONE, $DONE);

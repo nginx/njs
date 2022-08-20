@@ -535,7 +535,7 @@ let stat_tests = () => [
 
 let stat_tsuite = {
     name: "fs stat",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_fs() || !has_fs_symbolic_link() || !has_buffer()),
     T: stat_test,
     prepare_args: p,
     opts: { type: "callback", method: "stat" },
@@ -544,7 +544,7 @@ let stat_tsuite = {
 
 let statSync_tsuite = {
     name: "fs statSync",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_fs() || !has_fs_symbolic_link() || !has_buffer()),
     T: stat_test,
     prepare_args: p,
     opts: { type: "sync", method: "stat" },
@@ -553,7 +553,7 @@ let statSync_tsuite = {
 
 let statP_tsuite = {
     name: "fsp stat",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_fs() || !has_fs_symbolic_link() || !has_buffer()),
     T: stat_test,
     prepare_args: p,
     opts: { type: "promise", method: "stat" },
@@ -562,7 +562,7 @@ let statP_tsuite = {
 
 let lstat_tsuite = {
     name: "fs lstat",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_fs() || !has_fs_symbolic_link() || !has_buffer()),
     T: stat_test,
     prepare_args: p,
     opts: { type: "callback", method: "lstat" },
@@ -571,7 +571,7 @@ let lstat_tsuite = {
 
 let lstatSync_tsuite = {
     name: "fs lstatSync",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_fs() || !has_fs_symbolic_link() || !has_buffer()),
     T: stat_test,
     prepare_args: p,
     opts: { type: "sync", method: "lstat" },
@@ -580,7 +580,7 @@ let lstatSync_tsuite = {
 
 let lstatP_tsuite = {
     name: "fsp lstat",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_fs() || !has_fs_symbolic_link() || !has_buffer()),
     T: stat_test,
     prepare_args: p,
     opts: { type: "promise", method: "lstat" },

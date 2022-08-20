@@ -5,8 +5,9 @@ flags: [async]
 
 var fname = `${test_dir}/fs_promises_02`;
 
-var testSync = new Promise((resolve, reject) => {
-    var failed = false;
+let stages = [];
+
+var testSync = () => new Promise((resolve, reject) => {
     try {
         fs.writeFileSync(fname, fname);
 
@@ -15,47 +16,52 @@ var testSync = new Promise((resolve, reject) => {
 
         try {
             fs.accessSync(fname + '___');
-            failed = true;
-        } catch(e) {
-            failed = (e.syscall != 'access') || e.code != 'ENOENT';
+            reject(new Error('fs.accessSync error 1'));
+        } catch (e) {
+            if (e.syscall != 'access' || e.code != 'ENOENT') {
+                reject(new Error('fs.accessSync error 2'));
+            }
         }
-        resolve(Boolean(failed));
+
+        stages.push('testSync');
+
+        resolve();
+
     } catch (e) {
         reject(e);
     }
 });
 
-var testCallback = new Promise((resolve, reject) => {
-    var failed = false;
-
+var testCallback = () => new Promise((resolve, reject) => {
     fs.writeFileSync(fname, fname);
 
     fs.access(fname, (err) => {
-        failed = (err !== undefined);
+        if (err) {
+            reject(new Error('fs.access error 1'));
+        }
+
         fs.access(fname, fs.constants.R_OK | fs.constants.W_OK, (err) => {
-            failed |= (err !== undefined);
+            if (err) {
+                reject(err);
+            }
+
             fs.access(fname + '___', (err) => {
-                failed |= ((err === undefined) || (err.syscall != 'access')
-                                               || err.code != 'ENOENT');
-                resolve(Boolean(failed));
+                if (!err
+                    || err.syscall != 'access'
+                    || err.code != 'ENOENT')
+                    {
+                        reject(new Error('fs.access error 2'));
+                    }
+
+                stages.push('testCallback');
+
+                resolve();
             });
         });
     });
 });
 
-let stages = [];
-
-Promise.resolve()
-.then(() => testSync)
-.then(failed => {
-    stages.push('testSync');
-    assert.sameValue(failed, false, 'testSync');
-})
-.then(() => testCallback)
-.then(failed => {
-    stages.push('testCallback');
-    assert.sameValue(failed, false, 'testCallback');
-})
+let testFsp = () => Promise.resolve()
 .then(() => {
     fs.writeFileSync(fname, fname);
 
@@ -72,7 +78,14 @@ Promise.resolve()
     assert.sameValue(e.path, fname + '___', 'testPromise');
     assert.sameValue(e.code, 'ENOENT', 'testPromise');
 })
-.then(() => {
-    assert.compareArray(stages, ["testSync", "testCallback", "testPromise"]);
-})
-.then($DONE, $DONE);
+
+let p = Promise.resolve()
+if (has_fs()) {
+    p = p
+        .then(testSync)
+        .then(testCallback)
+        .then(testFsp)
+        .then(() => assert.compareArray(stages, ["testSync", "testCallback", "testPromise"]))
+}
+
+p.then($DONE, $DONE);
