@@ -618,7 +618,7 @@ njs_buffer_slot_internal(njs_vm_t *vm, njs_value_t *value)
 }
 
 
-static njs_typed_array_t *
+njs_typed_array_t *
 njs_buffer_slot(njs_vm_t *vm, njs_value_t *value, const char *name)
 {
     njs_typed_array_t  *array;

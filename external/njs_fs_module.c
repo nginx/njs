@@ -56,6 +56,7 @@ typedef enum {
 typedef enum {
     NJS_FS_STAT,
     NJS_FS_LSTAT,
+    NJS_FS_FSTAT,
 } njs_fs_statmode_t;
 
 
@@ -125,6 +126,18 @@ typedef enum {
 } njs_stat_prop_t;
 
 
+typedef struct {
+    njs_int_t       fd;
+    njs_vm_t        *vm;
+} njs_filehandle_t;
+
+
+typedef struct {
+    njs_int_t       bytes;
+    njs_value_t     buffer;
+} njs_bytes_struct_t;
+
+
 typedef njs_int_t (*njs_file_tree_walk_cb_t)(const char *, const struct stat *,
      njs_ftw_type_t);
 
@@ -133,7 +146,13 @@ static njs_int_t njs_fs_access(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t calltype);
 static njs_int_t njs_fs_mkdir(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t calltype);
-static njs_int_t njs_fs_read(njs_vm_t *vm, njs_value_t *args,
+static njs_int_t njs_fs_open(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t calltype);
+static njs_int_t njs_fs_close(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t calltype);
+static njs_int_t njs_fs_read(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t calltype);
+static njs_int_t njs_fs_read_file(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t calltype);
 static njs_int_t njs_fs_readdir(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t calltype);
@@ -149,7 +168,9 @@ static njs_int_t njs_fs_symlink(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t calltype);
 static njs_int_t njs_fs_unlink(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t calltype);
-static njs_int_t njs_fs_write(njs_vm_t *vm, njs_value_t *args,
+static njs_int_t njs_fs_write(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t calltype);
+static njs_int_t njs_fs_write_file(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t calltype);
 
 static njs_int_t njs_fs_constants(njs_vm_t *vm, njs_object_prop_t *prop,
@@ -168,6 +189,18 @@ static njs_int_t njs_fs_stats_prop(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 static njs_int_t njs_fs_stats_create(njs_vm_t *vm, struct stat *st,
     njs_value_t *retval);
+
+static njs_int_t njs_fs_filehandle_close(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused);
+static njs_int_t njs_fs_filehandle_value_of(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused);
+static njs_int_t njs_fs_filehandle_create(njs_vm_t *vm, int fd,
+    njs_bool_t shadow, njs_value_t *retval);
+
+static njs_int_t njs_fs_bytes_read_create(njs_vm_t *vm, int bytes,
+    njs_value_t *buffer, njs_value_t *retval);
+static njs_int_t njs_fs_bytes_written_create(njs_vm_t *vm, int bytes,
+    njs_value_t *buffer, njs_value_t *retval);
 
 static njs_int_t njs_fs_fd_read(njs_vm_t *vm, int fd, njs_str_t *data);
 
@@ -263,7 +296,7 @@ static njs_external_t  njs_ext_fs[] = {
         .writable = 1,
         .configurable = 1,
         .u.method = {
-            .native = njs_fs_write,
+            .native = njs_fs_write_file,
             .magic8 = njs_fs_magic(NJS_FS_CALLBACK, NJS_FS_APPEND),
         }
     },
@@ -274,8 +307,19 @@ static njs_external_t  njs_ext_fs[] = {
         .writable = 1,
         .configurable = 1,
         .u.method = {
-            .native = njs_fs_write,
+            .native = njs_fs_write_file,
             .magic8 = njs_fs_magic(NJS_FS_DIRECT, NJS_FS_APPEND),
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("closeSync"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_fs_close,
+            .magic8 = NJS_FS_DIRECT,
         }
     },
 
@@ -296,6 +340,17 @@ static njs_external_t  njs_ext_fs[] = {
         .u.method = {
             .native = njs_fs_dirent_constructor,
             .ctor = 1,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("fstatSync"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_fs_stat,
+            .magic8 = njs_fs_magic(NJS_FS_DIRECT, NJS_FS_FSTAT),
         }
     },
 
@@ -344,6 +399,17 @@ static njs_external_t  njs_ext_fs[] = {
     },
 
     {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("openSync"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_fs_open,
+            .magic8 = NJS_FS_DIRECT,
+        }
+    },
+
+    {
         .flags = NJS_EXTERN_PROPERTY,
         .name.string = njs_str("promises"),
         .enumerable = 1,
@@ -380,7 +446,7 @@ static njs_external_t  njs_ext_fs[] = {
         .writable = 1,
         .configurable = 1,
         .u.method = {
-            .native = njs_fs_read,
+            .native = njs_fs_read_file,
             .magic8 = NJS_FS_CALLBACK,
         }
     },
@@ -388,6 +454,17 @@ static njs_external_t  njs_ext_fs[] = {
     {
         .flags = NJS_EXTERN_METHOD,
         .name.string = njs_str("readFileSync"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_fs_read_file,
+            .magic8 = NJS_FS_DIRECT,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("readSync"),
         .writable = 1,
         .configurable = 1,
         .u.method = {
@@ -534,7 +611,7 @@ static njs_external_t  njs_ext_fs[] = {
         .writable = 1,
         .configurable = 1,
         .u.method = {
-            .native = njs_fs_write,
+            .native = njs_fs_write_file,
             .magic8 = njs_fs_magic(NJS_FS_CALLBACK, NJS_FS_TRUNC),
         }
     },
@@ -545,8 +622,19 @@ static njs_external_t  njs_ext_fs[] = {
         .writable = 1,
         .configurable = 1,
         .u.method = {
-            .native = njs_fs_write,
+            .native = njs_fs_write_file,
             .magic8 = njs_fs_magic(NJS_FS_DIRECT, NJS_FS_TRUNC),
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("writeSync"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_fs_write,
+            .magic8 = NJS_FS_DIRECT,
         }
     },
 
@@ -922,8 +1010,158 @@ static njs_external_t  njs_ext_stats[] = {
 };
 
 
+static njs_external_t  njs_ext_filehandle[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY | NJS_EXTERN_SYMBOL,
+        .name.symbol = NJS_SYMBOL_TO_STRING_TAG,
+        .u.property = {
+            .value = "FileHandle",
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("close"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_fs_filehandle_close,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("fd"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = njs_external_property,
+            .magic32 = offsetof(njs_filehandle_t, fd),
+            .magic16 = NJS_EXTERN_TYPE_INT,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("read"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_fs_read,
+            .magic8 = NJS_FS_PROMISE,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("stat"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_fs_stat,
+            .magic8 = njs_fs_magic(NJS_FS_PROMISE, NJS_FS_FSTAT),
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("valueOf"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_fs_filehandle_value_of,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("write"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_fs_write,
+            .magic8 = NJS_FS_PROMISE,
+        }
+    },
+
+};
+
+
+static njs_external_t  njs_ext_bytes_read[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY | NJS_EXTERN_SYMBOL,
+        .name.symbol = NJS_SYMBOL_TO_STRING_TAG,
+        .u.property = {
+            .value = "BytesRead",
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("buffer"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = njs_external_property,
+            .magic32 = offsetof(njs_bytes_struct_t, buffer),
+            .magic16 = NJS_EXTERN_TYPE_VALUE,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("bytesRead"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = njs_external_property,
+            .magic32 = offsetof(njs_bytes_struct_t, bytes),
+            .magic16 = NJS_EXTERN_TYPE_INT,
+        }
+    },
+
+};
+
+
+static njs_external_t  njs_ext_bytes_written[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY | NJS_EXTERN_SYMBOL,
+        .name.symbol = NJS_SYMBOL_TO_STRING_TAG,
+        .u.property = {
+            .value = "BytesWritten",
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("buffer"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = njs_external_property,
+            .magic32 = offsetof(njs_bytes_struct_t, buffer),
+            .magic16 = NJS_EXTERN_TYPE_VALUE,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("bytesWritten"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = njs_external_property,
+            .magic32 = offsetof(njs_bytes_struct_t, bytes),
+            .magic16 = NJS_EXTERN_TYPE_INT,
+        }
+    },
+
+};
+
+
 static njs_int_t    njs_fs_stats_proto_id;
 static njs_int_t    njs_fs_dirent_proto_id;
+static njs_int_t    njs_fs_filehandle_proto_id;
+static njs_int_t    njs_fs_bytes_read_proto_id;
+static njs_int_t    njs_fs_bytes_written_proto_id;
 
 
 njs_module_t  njs_fs_module = {
@@ -985,6 +1223,101 @@ njs_fs_access(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     if (ret == NJS_OK) {
         return njs_fs_result(vm, &retval, calltype, callback, 1);
+    }
+
+    return NJS_ERROR;
+}
+
+
+static njs_int_t
+njs_fs_open(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t calltype)
+{
+    int          fd, flags;
+    mode_t       md;
+    njs_int_t    ret;
+    const char   *path;
+    njs_value_t  retval, *value;
+    char         path_buf[NJS_MAX_PATH + 1];
+
+    path = njs_fs_path(vm, path_buf, njs_arg(args, nargs, 1), "path");
+    if (njs_slow_path(path == NULL)) {
+        return NJS_ERROR;
+    }
+
+    value = njs_arg(args, nargs, 2);
+    if (njs_is_function(value)) {
+        value = njs_value_arg(&njs_value_undefined);
+    }
+
+    flags = njs_fs_flags(vm, value, O_RDONLY);
+    if (njs_slow_path(flags == -1)) {
+        return NJS_ERROR;
+    }
+
+    value = njs_arg(args, nargs, 3);
+    if (njs_is_function(value)) {
+        value = njs_value_arg(&njs_value_undefined);
+    }
+
+    md = njs_fs_mode(vm, value, 0666);
+    if (njs_slow_path(md == (mode_t) -1)) {
+        return NJS_ERROR;
+    }
+
+    fd = open(path, flags, md);
+    if (njs_slow_path(fd < 0)) {
+        ret = njs_fs_error(vm, "open", strerror(errno), path, errno, &retval);
+        goto done;
+    }
+
+    ret = njs_fs_filehandle_create(vm, fd, calltype == NJS_FS_DIRECT, &retval);
+    if (njs_slow_path(ret != NJS_OK)) {
+        goto done;
+    }
+
+    if (calltype == NJS_FS_DIRECT) {
+        njs_value_number_set(&retval, fd);
+    }
+
+done:
+
+    if (ret == NJS_OK) {
+        return njs_fs_result(vm, &retval, calltype, NULL, 2);
+    }
+
+    if (fd != -1) {
+        (void) close(fd);
+    }
+
+    return NJS_ERROR;
+}
+
+
+static njs_int_t
+njs_fs_close(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t calltype)
+{
+    int64_t      fd;
+    njs_int_t    ret;
+    njs_value_t  retval, *fh;
+
+    fh = njs_arg(args, nargs, 1);
+
+    ret = njs_value_to_integer(vm, fh, &fd);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    njs_set_undefined(&retval);
+
+    ret = close((int) fd);
+    if (njs_slow_path(ret != 0)) {
+        ret = njs_fs_error(vm, "close", strerror(errno), NULL, errno, &retval);
+    }
+
+    if (ret == NJS_OK) {
+        return njs_fs_result(vm, &retval, calltype, NULL, 1);
     }
 
     return NJS_ERROR;
@@ -1069,6 +1402,117 @@ njs_fs_mkdir(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_fs_read(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t calltype)
+{
+    int64_t             fd, length, pos, offset;
+    ssize_t             n;
+    njs_int_t           ret;
+    njs_str_t           data;
+    njs_uint_t          fd_offset;
+    njs_value_t         retval, *buffer, *value;
+    njs_typed_array_t   *array;
+    njs_array_buffer_t  *array_buffer;
+
+    fd_offset = !!(calltype == NJS_FS_DIRECT);
+
+    ret = njs_value_to_integer(vm, njs_arg(args, nargs, fd_offset), &fd);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    pos = -1;
+
+    /*
+     * fh.read(buffer, offset[, length[, position]])
+     * fs.readSync(fd, buffer, offset[, length[, position]])
+     */
+
+    buffer = njs_arg(args, nargs, fd_offset + 1);
+    array = njs_buffer_slot(vm, buffer, "buffer");
+    if (njs_slow_path(array == NULL)) {
+        return NJS_ERROR;
+    }
+
+    array_buffer = njs_typed_array_writable(vm, array);
+    if (njs_slow_path(array_buffer == NULL)) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_value_to_integer(vm, njs_arg(args, nargs, fd_offset + 2),
+                               &offset);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    if (njs_slow_path(offset < 0 || (size_t) offset > array->byte_length)) {
+        njs_range_error(vm, "offset is out of range (must be <= %z)",
+                        array->byte_length);
+        return NJS_ERROR;
+    }
+
+    data.length = array->byte_length - offset;
+    data.start = &array_buffer->u.u8[array->offset + offset];
+
+    value = njs_arg(args, nargs, fd_offset + 3);
+
+    if (njs_is_defined(value)) {
+        ret = njs_value_to_integer(vm, value, &length);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+        if (njs_slow_path(length < 0 || (size_t) length > data.length)) {
+            njs_range_error(vm, "length is out of range (must be <= %z)",
+                            data.length);
+            return NJS_ERROR;
+        }
+
+        data.length = length;
+    }
+
+    value = njs_arg(args, nargs, fd_offset + 4);
+
+    if (!njs_is_null_or_undefined(value)) {
+        ret = njs_value_to_integer(vm, value, &pos);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    if (pos == -1) {
+        n = read(fd, data.start, data.length);
+
+    } else {
+        n = pread(fd, data.start, data.length, pos);
+    }
+
+    if (njs_slow_path(n == -1)) {
+        ret = njs_fs_error(vm, "read", strerror(errno), NULL, errno, &retval);
+        goto done;
+    }
+
+    if (calltype == NJS_FS_PROMISE) {
+        ret = njs_fs_bytes_read_create(vm, n, buffer, &retval);
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto done;
+        }
+
+    } else {
+        njs_value_number_set(&retval, n);
+    }
+
+done:
+
+    if (ret == NJS_OK) {
+        return njs_fs_result(vm, &retval, calltype, NULL, 1);
+    }
+
+    return NJS_ERROR;
+}
+
+
+static njs_int_t
+njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t calltype)
 {
     int                          fd, flags;
@@ -1552,7 +1996,9 @@ static njs_int_t
 njs_fs_stat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t magic)
 {
+    int64_t            fd;
     njs_int_t          ret;
+    njs_uint_t         fd_offset;
     njs_bool_t         throw;
     struct stat        sb;
     const char         *path;
@@ -1563,14 +2009,29 @@ njs_fs_stat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     static const njs_value_t  string_bigint = njs_string("bigint");
     static const njs_value_t  string_throw = njs_string("throwIfNoEntry");
 
-    path = njs_fs_path(vm, path_buf, njs_arg(args, nargs, 1), "path");
-    if (njs_slow_path(path == NULL)) {
-        return NJS_ERROR;
+    fd = -1;
+    path = NULL;
+    calltype = magic & 3;
+
+    if ((magic >> 2) != NJS_FS_FSTAT) {
+        path = njs_fs_path(vm, path_buf, njs_arg(args, nargs, 1), "path");
+        if (njs_slow_path(path == NULL)) {
+            return NJS_ERROR;
+        }
+
+        options = njs_arg(args, nargs, 2);
+
+    } else {
+        fd_offset = !!(calltype == NJS_FS_DIRECT);
+        ret = njs_value_to_integer(vm, njs_argument(args, fd_offset), &fd);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+        options = njs_arg(args, nargs, fd_offset + 1);
     }
 
     callback = NULL;
-    calltype = magic & 3;
-    options = njs_arg(args, nargs, 2);
 
     if (njs_slow_path(calltype == NJS_FS_CALLBACK)) {
         callback = njs_arg(args, nargs, njs_min(nargs - 1, 3));
@@ -1619,7 +2080,21 @@ njs_fs_stat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    ret = ((magic >> 2) == NJS_FS_STAT) ? stat(path, &sb) : lstat(path, &sb);
+    switch (magic >> 2) {
+    case NJS_FS_STAT:
+        ret = stat(path, &sb);
+        break;
+
+    case NJS_FS_LSTAT:
+        ret = lstat(path, &sb);
+        break;
+
+    case NJS_FS_FSTAT:
+    default:
+        ret = fstat(fd, &sb);
+        break;
+    }
+
     if (njs_slow_path(ret != 0)) {
         if (errno != ENOENT || throw) {
             ret = njs_fs_error(vm,
@@ -1740,6 +2215,151 @@ njs_fs_unlink(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_fs_write(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t calltype)
+{
+    int64_t                      fd, length, pos, offset;
+    ssize_t                      n;
+    njs_int_t                    ret;
+    njs_str_t                    data;
+    njs_uint_t                   fd_offset;
+    njs_value_t                  retval, *buffer, *value;
+    const njs_buffer_encoding_t  *encoding;
+
+    fd_offset = !!(calltype == NJS_FS_DIRECT);
+
+    ret = njs_value_to_integer(vm, njs_arg(args, nargs, fd_offset), &fd);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    buffer = njs_arg(args, nargs, fd_offset + 1);
+
+    pos = -1;
+    encoding = NULL;
+
+    /*
+     * fs.writeSync(fd, string[, position[, encoding]])
+     * fh.write(string[, position[, encoding]])
+     */
+
+    if (njs_is_string(buffer)) {
+        value = njs_arg(args, nargs, fd_offset + 2);
+
+        if (!njs_is_null_or_undefined(value)) {
+            ret = njs_value_to_integer(vm, value, &pos);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+        }
+
+        encoding = njs_buffer_encoding(vm, njs_arg(args, nargs, fd_offset + 3));
+        if (njs_slow_path(encoding == NULL)) {
+            return NJS_ERROR;
+        }
+
+        ret = njs_buffer_decode_string(vm, buffer, &retval, encoding);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
+        njs_string_get(&retval, &data);
+
+        goto process;
+    }
+
+    /*
+     * fh.write(buffer, offset[, length[, position]])
+     * fs.writeSync(fd, buffer, offset[, length[, position]])
+     */
+
+    ret = njs_vm_value_to_bytes(vm, &data, buffer);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_value_to_integer(vm, njs_arg(args, nargs, fd_offset + 2),
+                               &offset);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    if (njs_slow_path(offset < 0 || (size_t) offset > data.length)) {
+        njs_range_error(vm, "offset is out of range (must be <= %z)",
+                        data.length);
+        return NJS_ERROR;
+    }
+
+    data.length -= offset;
+    data.start += offset;
+
+    value = njs_arg(args, nargs, fd_offset + 3);
+
+    if (njs_is_defined(value)) {
+        ret = njs_value_to_integer(vm, value, &length);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+        if (njs_slow_path(length < 0 || (size_t) length > data.length)) {
+            njs_range_error(vm, "length is out of range (must be <= %z)",
+                            data.length);
+            return NJS_ERROR;
+        }
+
+        data.length = length;
+    }
+
+    value = njs_arg(args, nargs, fd_offset + 4);
+
+    if (!njs_is_null_or_undefined(value)) {
+        ret = njs_value_to_integer(vm, value, &pos);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+process:
+
+    if (pos == -1) {
+        n = write(fd, data.start, data.length);
+
+    } else {
+        n = pwrite(fd, data.start, data.length, pos);
+    }
+
+    if (njs_slow_path(n == -1)) {
+        ret = njs_fs_error(vm, "write", strerror(errno), NULL, errno, &retval);
+        goto done;
+    }
+
+    if (njs_slow_path((size_t) n != data.length)) {
+        ret = njs_fs_error(vm, "write", "failed to write all the data", NULL,
+                           0, &retval);
+        goto done;
+    }
+
+    if (calltype == NJS_FS_PROMISE) {
+        ret = njs_fs_bytes_written_create(vm, n, buffer, &retval);
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto done;
+        }
+
+    } else {
+        njs_value_number_set(&retval, n);
+    }
+
+done:
+
+    if (ret == NJS_OK) {
+        return njs_fs_result(vm, &retval, calltype, NULL, 1);
+    }
+
+    return NJS_ERROR;
+}
+
+
+static njs_int_t
+njs_fs_write_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t magic)
 {
     int                          fd, flags;
@@ -2886,11 +3506,146 @@ njs_fs_stats_prop(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
 }
 
 
+static njs_int_t
+njs_fs_filehandle_close(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    njs_value_t       retval;
+    njs_filehandle_t  *fh;
+
+    fh = njs_vm_external(vm, njs_fs_filehandle_proto_id, njs_argument(args, 0));
+    if (njs_slow_path(fh == NULL)) {
+        njs_type_error(vm, "\"this\" is not a filehandle object");
+        return NJS_ERROR;
+    }
+
+    if (njs_slow_path(fh->fd == -1)) {
+        njs_type_error(vm, "file was already closed");
+        return NJS_ERROR;
+    }
+
+    (void) close(fh->fd);
+    fh->fd = -1;
+
+    njs_set_undefined(&retval);
+
+    return njs_fs_result(vm, &retval, NJS_FS_PROMISE, NULL, 1);
+}
+
+
+static njs_int_t
+njs_fs_filehandle_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    njs_filehandle_t  *fh;
+
+    fh = njs_vm_external(vm, njs_fs_filehandle_proto_id, njs_argument(args, 0));
+    if (njs_slow_path(fh == NULL)) {
+        njs_type_error(vm, "\"this\" is not a filehandle object");
+        return NJS_ERROR;
+    }
+
+    njs_set_number(njs_vm_retval(vm), fh->fd);
+
+    return NJS_OK;
+}
+
+
+static void
+njs_fs_filehandle_cleanup(void *data)
+{
+    njs_filehandle_t  *fh = data;
+
+    if (fh->vm != NULL && fh->fd != -1) {
+        njs_vm_warn(fh->vm, "closing file description %d on cleanup\n", fh->fd);
+        (void) close(fh->fd);
+    }
+}
+
+
+static njs_int_t
+njs_fs_filehandle_create(njs_vm_t *vm, int fd, njs_bool_t shadow,
+    njs_value_t *retval)
+{
+    njs_filehandle_t  *fh;
+    njs_mp_cleanup_t  *cln;
+
+    fh = njs_mp_alloc(vm->mem_pool, sizeof(njs_filehandle_t));
+    if (njs_slow_path(fh == NULL)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    fh->fd = fd;
+    fh->vm = !shadow ? vm : NULL;
+
+    cln = njs_mp_cleanup_add(njs_vm_memory_pool(vm), 0);
+    if (cln == NULL) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    cln->handler = njs_fs_filehandle_cleanup;
+    cln->data = fh;
+
+    return njs_vm_external_create(vm, retval, njs_fs_filehandle_proto_id,
+                                  fh, 0);
+}
+
+
+static njs_int_t
+njs_fs_bytes_read_create(njs_vm_t *vm, int bytes, njs_value_t *buffer,
+    njs_value_t *retval)
+{
+    njs_bytes_struct_t  *bs;
+
+    bs = njs_mp_alloc(vm->mem_pool, sizeof(njs_bytes_struct_t));
+    if (njs_slow_path(bs == NULL)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    bs->bytes = bytes;
+    njs_value_assign(&bs->buffer, buffer);
+
+    return njs_vm_external_create(vm, retval, njs_fs_bytes_read_proto_id,
+                                  bs, 0);
+}
+
+
+static njs_int_t
+njs_fs_bytes_written_create(njs_vm_t *vm, int bytes, njs_value_t *buffer,
+    njs_value_t *retval)
+{
+    njs_bytes_struct_t  *bs;
+
+    bs = njs_mp_alloc(vm->mem_pool, sizeof(njs_bytes_struct_t));
+    if (njs_slow_path(bs == NULL)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    bs->bytes = bytes;
+    njs_value_assign(&bs->buffer, buffer);
+
+    return njs_vm_external_create(vm, retval, njs_fs_bytes_written_proto_id,
+                                  bs, 0);
+}
+
+
 static const njs_object_prop_t  njs_fs_promises_properties[] =
 {
     {
         .type = NJS_PROPERTY,
         .name = njs_string("readFile"),
+        .value = njs_native_function2(njs_fs_read_file, 0, NJS_FS_PROMISE),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("readSync"),
         .value = njs_native_function2(njs_fs_read, 0, NJS_FS_PROMISE),
         .writable = 1,
         .configurable = 1,
@@ -2899,7 +3654,7 @@ static const njs_object_prop_t  njs_fs_promises_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("appendFile"),
-        .value = njs_native_function2(njs_fs_write, 0,
+        .value = njs_native_function2(njs_fs_write_file, 0,
                                   njs_fs_magic(NJS_FS_PROMISE, NJS_FS_APPEND)),
         .writable = 1,
         .configurable = 1,
@@ -2908,7 +3663,7 @@ static const njs_object_prop_t  njs_fs_promises_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("writeFile"),
-        .value = njs_native_function2(njs_fs_write, 0,
+        .value = njs_native_function2(njs_fs_write_file, 0,
                                    njs_fs_magic(NJS_FS_PROMISE, NJS_FS_TRUNC)),
         .writable = 1,
         .configurable = 1,
@@ -2926,6 +3681,22 @@ static const njs_object_prop_t  njs_fs_promises_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("mkdir"),
         .value = njs_native_function2(njs_fs_mkdir, 0, NJS_FS_PROMISE),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("open"),
+        .value = njs_native_function2(njs_fs_open, 0, NJS_FS_PROMISE),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("close"),
+        .value = njs_native_function2(njs_fs_close, 0, NJS_FS_PROMISE),
         .writable = 1,
         .configurable = 1,
     },
@@ -2950,6 +3721,15 @@ static const njs_object_prop_t  njs_fs_promises_properties[] =
         .type = NJS_PROPERTY,
         .name = njs_string("readdir"),
         .value = njs_native_function2(njs_fs_readdir, 0, NJS_FS_PROMISE),
+        .writable = 1,
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY,
+        .name = njs_string("fstat"),
+        .value = njs_native_function2(njs_fs_stat, 0,
+                                   njs_fs_magic(NJS_FS_PROMISE, NJS_FS_FSTAT)),
         .writable = 1,
         .configurable = 1,
     },
@@ -3076,6 +3856,27 @@ njs_fs_init(njs_vm_t *vm)
     njs_fs_dirent_proto_id = njs_vm_external_prototype(vm, njs_ext_dirent,
                                                    njs_nitems(njs_ext_dirent));
     if (njs_slow_path(njs_fs_dirent_proto_id < 0)) {
+        return NJS_ERROR;
+    }
+
+    njs_fs_filehandle_proto_id = njs_vm_external_prototype(vm,
+                                               njs_ext_filehandle,
+                                               njs_nitems(njs_ext_filehandle));
+    if (njs_slow_path(njs_fs_filehandle_proto_id < 0)) {
+        return NJS_ERROR;
+    }
+
+    njs_fs_bytes_read_proto_id = njs_vm_external_prototype(vm,
+                                               njs_ext_bytes_read,
+                                               njs_nitems(njs_ext_bytes_read));
+    if (njs_slow_path(njs_fs_bytes_written_proto_id < 0)) {
+        return NJS_ERROR;
+    }
+
+    njs_fs_bytes_written_proto_id = njs_vm_external_prototype(vm,
+                                             njs_ext_bytes_written,
+                                             njs_nitems(njs_ext_bytes_written));
+    if (njs_slow_path(njs_fs_bytes_written_proto_id < 0)) {
         return NJS_ERROR;
     }
 

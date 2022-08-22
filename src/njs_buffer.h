@@ -21,6 +21,8 @@ typedef struct {
 } njs_buffer_encoding_t;
 
 
+njs_typed_array_t *njs_buffer_slot(njs_vm_t *vm, njs_value_t *value,
+    const char *name);
 njs_int_t njs_buffer_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     uint32_t size);
 njs_int_t njs_buffer_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,

@@ -6,12 +6,14 @@ flags: [async]
 function p(args, default_opts) {
     let params = Object.assign({}, default_opts, args);
 
-    let fname = params.args[0];
+    if (params.args) {
+        let fname = params.args[0];
 
-    if (fname[0] == '@') {
-        let gen = `${test_dir}/fs_test_${Math.round(Math.random() * 1000000)}`;
-        params.args = params.args.map(v => v);
-        params.args[0] = gen + fname.slice(1);
+        if (fname[0] == '@') {
+            let gen = `${test_dir}/fs_test_${Math.round(Math.random() * 1000000)}`;
+            params.args = params.args.map(v => v);
+            params.args[0] = gen + fname.slice(1);
+        }
     }
 
     return params;
@@ -54,7 +56,7 @@ async function method(name, params) {
     return data;
 }
 
-async function read_test(params) {
+async function readfile_test(params) {
     let data = await method("readFile", params).catch(e => ({error:e}));
 
     if (params.slice && !data.error) {
@@ -88,7 +90,7 @@ async function read_test(params) {
     return 'SUCCESS';
 }
 
-let read_tests = () => [
+let readfile_tests = () => [
     { args: ["test/fs/utf8"], expected: Buffer.from("αβZγ") },
     { args: [Buffer.from("@test/fs/utf8").slice(1)], expected: Buffer.from("αβZγ") },
     { args: ["test/fs/utf8", "utf8"], expected: "αβZγ" },
@@ -154,31 +156,31 @@ let read_tests = () => [
 let readFile_tsuite = {
     name: "fs readFile",
     skip: () => (!has_fs() || !has_buffer()),
-    T: read_test,
+    T: readfile_test,
     prepare_args: p,
     opts: { type: "callback" },
-    get tests() { return read_tests() },
+    get tests() { return readfile_tests() },
 };
 
 let readFileSync_tsuite = {
     name: "fs readFileSync",
     skip: () => (!has_fs() || !has_buffer()),
-    T: read_test,
+    T: readfile_test,
     prepare_args: p,
     opts: { type: "sync" },
-    get tests() { return read_tests() },
+    get tests() { return readfile_tests() },
 };
 
 let readFileP_tsuite = {
     name: "fsp readFile",
     skip: () => (!has_fs() || !has_buffer()),
-    T: read_test,
+    T: readfile_test,
     prepare_args: p,
     opts: { type: "promise" },
-    get tests() { return read_tests() },
+    get tests() { return readfile_tests() },
 };
 
-async function write_test(params) {
+async function writefile_test(params) {
     let fname = params.args[0];
 
     try { fs.unlinkSync(fname); } catch (e) {}
@@ -208,7 +210,7 @@ async function write_test(params) {
     return 'SUCCESS';
 }
 
-let write_tests = () => [
+let writefile_tests = () => [
     { args: ["@", Buffer.from(Buffer.alloc(4).fill(65).buffer, 1)],
       expected: Buffer.from("AAA") },
     { args: ["@", Buffer.from("XYZ"), "utf8"], expected: Buffer.from("XYZ") },
@@ -243,28 +245,28 @@ let write_tests = () => [
 let writeFile_tsuite = {
     name: "fs writeFile",
     skip: () => (!has_fs() || !has_buffer()),
-    T: write_test,
+    T: writefile_test,
     prepare_args: p,
     opts: { type: "callback" },
-    get tests() { return write_tests() },
+    get tests() { return writefile_tests() },
 };
 
 let writeFileSync_tsuite = {
     name: "fs writeFileSync",
     skip: () => (!has_fs() || !has_buffer()),
-    T: write_test,
+    T: writefile_test,
     prepare_args: p,
     opts: { type: "sync" },
-    get tests() { return write_tests() },
+    get tests() { return writefile_tests() },
 };
 
 let writeFileP_tsuite = {
     name: "fsp writeFile",
     skip: () => (!has_fs() || !has_buffer()),
-    T: write_test,
+    T: writefile_test,
     prepare_args: p,
     opts: { type: "promise" },
-    get tests() { return write_tests() },
+    get tests() { return writefile_tests() },
 };
 
 async function append_test(params) {
@@ -401,14 +403,14 @@ let realpathP_tsuite = {
     get tests() { return realpath_tests() },
 };
 
-async function stat_test(params) {
+async function method_test(params) {
     if (params.init) {
         params.init(params);
     }
 
-    let stat = await method(params.method, params).catch(e => ({error:e}));
+    let ret = await method(params.method, params).catch(e => ({error:e}));
 
-    if (params.check && !params.check(stat, params)) {
+    if (params.check && !params.check(ret, params)) {
         throw Error(`${params.method} failed check`);
     }
 
@@ -536,7 +538,7 @@ let stat_tests = () => [
 let stat_tsuite = {
     name: "fs stat",
     skip: () => (!has_fs() || !has_fs_symbolic_link() || !has_buffer()),
-    T: stat_test,
+    T: method_test,
     prepare_args: p,
     opts: { type: "callback", method: "stat" },
     get tests() { return stat_tests() },
@@ -545,7 +547,7 @@ let stat_tsuite = {
 let statSync_tsuite = {
     name: "fs statSync",
     skip: () => (!has_fs() || !has_fs_symbolic_link() || !has_buffer()),
-    T: stat_test,
+    T: method_test,
     prepare_args: p,
     opts: { type: "sync", method: "stat" },
     get tests() { return stat_tests() },
@@ -554,7 +556,7 @@ let statSync_tsuite = {
 let statP_tsuite = {
     name: "fsp stat",
     skip: () => (!has_fs() || !has_fs_symbolic_link() || !has_buffer()),
-    T: stat_test,
+    T: method_test,
     prepare_args: p,
     opts: { type: "promise", method: "stat" },
     get tests() { return stat_tests() },
@@ -563,7 +565,7 @@ let statP_tsuite = {
 let lstat_tsuite = {
     name: "fs lstat",
     skip: () => (!has_fs() || !has_fs_symbolic_link() || !has_buffer()),
-    T: stat_test,
+    T: method_test,
     prepare_args: p,
     opts: { type: "callback", method: "lstat" },
     get tests() { return stat_tests() },
@@ -572,7 +574,7 @@ let lstat_tsuite = {
 let lstatSync_tsuite = {
     name: "fs lstatSync",
     skip: () => (!has_fs() || !has_fs_symbolic_link() || !has_buffer()),
-    T: stat_test,
+    T: method_test,
     prepare_args: p,
     opts: { type: "sync", method: "lstat" },
     get tests() { return stat_tests() },
@@ -581,10 +583,564 @@ let lstatSync_tsuite = {
 let lstatP_tsuite = {
     name: "fsp lstat",
     skip: () => (!has_fs() || !has_fs_symbolic_link() || !has_buffer()),
-    T: stat_test,
+    T: method_test,
     prepare_args: p,
     opts: { type: "promise", method: "lstat" },
     get tests() { return stat_tests() },
+};
+
+let open_check = (fh, params) => {
+    if (params.type == 'promise') {
+
+        try {
+            if (typeof fh.fd != 'number') {
+                throw Error(`filehandle.fd:${fh.fd} is not an instance of Number`);
+            }
+
+            ['read', 'write', 'close', 'valueof'].every(v => {
+                if (typeof fh[v] != 'function') {
+                    throw Error(`filehandle.close:${fh[v]} is not an instance of function`);
+                }
+            });
+
+            let mode = fs.fstatSync(fh.fd).mode & 0o777;
+            if (params.mode && params.mode != mode) {
+                throw Error(`opened mode ${mode} != ${params.mode}`);
+            }
+
+        } finally {
+            fh.close();
+        }
+
+    } else {
+
+        try {
+            if (typeof fh != 'number') {
+                throw Error(`fd:${fh} is not an instance of Number`);
+            }
+
+            let mode = fs.fstatSync(fh).mode & 0o777;
+            if (params.mode && params.mode != mode) {
+                throw Error(`opened mode ${mode} != ${params.mode}`);
+            }
+
+        } finally {
+            fs.closeSync(fh);
+        }
+    }
+
+    return true;
+};
+
+let open_tests = () => [
+    {
+      args: ["test/fs/ascii"],
+      check: open_check,
+    },
+
+    {
+      args: ["@", 'w', 0o600],
+      mode: 0o600,
+      check: open_check,
+    },
+
+    {
+      args: ["@", 'a', 0o700],
+      mode: 0o700,
+      check: open_check,
+    },
+
+    {
+      args: ["@", 'r'],
+      check: (err, params) => {
+          let e = err.error;
+
+          if (e.syscall != params.method) {
+              throw Error(`${e.syscall} unexpected syscall`);
+          }
+
+          if (e.code != "ENOENT") {
+              throw Error(`${e.code} unexpected code`);
+          }
+
+          return true;
+      },
+    },
+
+    {
+      args: ["/invalid_path"],
+      check: (err, params) => {
+          let e = err.error;
+
+          if (e.syscall != params.method) {
+              throw Error(`${e.syscall} unexpected syscall`);
+          }
+
+          if (e.code != "ENOENT") {
+              throw Error(`${e.code} unexpected code`);
+          }
+
+          return true;
+      },
+    },
+];
+
+let openSync_tsuite = {
+    name: "fs openSync",
+    skip: () => (!has_fs() || !has_buffer()),
+    T: method_test,
+    prepare_args: p,
+    opts: { type: "sync", method: "open" },
+    get tests() { return open_tests() },
+};
+
+let openP_tsuite = {
+    name: "fsp open",
+    skip: () => (!has_fs() || !has_buffer()),
+    T: method_test,
+    prepare_args: p,
+    opts:  { type: "promise", method: "open" },
+    get tests() { return open_tests() },
+};
+
+let close_tests = () => [
+
+    {
+      args: [ fs.openSync("test/fs/ascii") ],
+      check: (undef, params) => undef === undefined,
+    },
+
+    {
+      args: [ (() => { let fd = fs.openSync("test/fs/ascii"); fs.closeSync(fd); return fd})() ],
+      check: (err, params) => {
+          let e = err.error;
+
+          if (e.syscall != params.method) {
+              throw Error(`${e.syscall} unexpected syscall`);
+          }
+
+          if (e.code != "EBADF") {
+              throw Error(`${e.code} unexpected code`);
+          }
+
+          return true;
+      },
+    },
+];
+
+let closeSync_tsuite = {
+    name: "fs closeSync",
+    skip: () => (!has_fs() || !has_buffer()),
+    T: method_test,
+    prepare_args: p,
+    opts: { type: "sync", method: "close" },
+    get tests() { return close_tests() },
+};
+
+function read_test(params) {
+    let fd, err;
+
+    let fn = `${test_dir}/fs_read_test_${Math.round(Math.random() * 1000000)}`;
+    let out = [];
+
+    fs.writeFileSync(fn, params.content);
+
+    try {
+        fd = fs.openSync(fn);
+
+        let buffer = Buffer.alloc(4);
+        buffer.fill('#');
+
+        for (var i = 0; i < params.read.length; i++) {
+            let args = params.read[i].map(v => v);
+            args.unshift(buffer);
+            args.unshift(fd);
+
+            let bytesRead = fs.readSync.apply(null, args);
+
+            out.push([bytesRead, Buffer.from(buffer)]);
+        }
+
+    } catch (e) {
+        if (!e.syscall && !params.check) {
+            throw e;
+        }
+
+        err = e;
+
+    } finally {
+        fs.closeSync(fd);
+    }
+
+    if (!err && params.expected) {
+        let expected = params.expected;
+
+        if (out.length != expected.length) {
+            throw Error(`unexpected readSync number of outputs ${out.length} != ${expected.length}`);
+        }
+
+        for (var i = 0; i < expected.length; i++) {
+            if (expected[i][0] != out[i][0]) {
+                throw Error(`unexpected readSync bytesRead:${out[i][0]} != ${expected[i][0]}`);
+            }
+
+            if (expected[i][1].compare(out[i][1]) != 0) {
+                throw Error(`unexpected readSync buffer:${out[i][1]} != ${expected[i][1]}`);
+            }
+        }
+
+    }
+
+    if (params.check && !params.check(err, params)) {
+        throw Error(`${params.method} failed check`);
+    }
+
+    return 'SUCCESS';
+}
+
+async function readFh_test(params) {
+    let fh, err;
+
+    let fn = `${test_dir}/fs_read_test_${Math.round(Math.random() * 1000000)}`;
+    let out = [];
+
+    fs.writeFileSync(fn, params.content);
+
+    try {
+        fh = await fs.promises.open(fn);
+
+        let buffer = Buffer.alloc(4);
+        buffer.fill('#');
+
+        for (var i = 0; i < params.read.length; i++) {
+            let args = params.read[i].map(v => v);
+            args.unshift(buffer);
+
+            let bs = await fh.read.apply(fh, args);
+
+            out.push([bs.bytesRead, Buffer.from(bs.buffer)]);
+        }
+
+    } catch (e) {
+        if (!e.syscall && !params.check) {
+            throw e;
+        }
+
+        err = e;
+
+    } finally {
+        await fh.close();
+    }
+
+    if (!err && params.expected) {
+        let expected = params.expected;
+
+        if (out.length != expected.length) {
+            throw Error(`unexpected read number of outputs ${out.length} != ${expected.length}`);
+        }
+
+        for (var i = 0; i < expected.length; i++) {
+            if (expected[i][0] != out[i][0]) {
+                throw Error(`unexpected read bytesRead:${out[i][0]} != ${expected[i][0]}`);
+            }
+
+            if (expected[i][1].compare(out[i][1]) != 0) {
+                throw Error(`unexpected read buffer:${out[i][1]} != ${expected[i][1]}`);
+            }
+        }
+
+    }
+
+    if (params.check && !params.check(err, params)) {
+        throw Error(`${params.method} failed check`);
+    }
+
+    return 'SUCCESS';
+}
+
+let read_tests = () => [
+
+    {
+        content: "ABC",
+        read: [ [0, 3], ],
+        expected: [ [3, Buffer.from("ABC#")], ],
+    },
+
+    {
+        content: "ABC",
+        read: [ [1, 2], ],
+        expected: [ [2, Buffer.from("#AB#")], ],
+    },
+
+    {
+        content: "ABC",
+        read: [ [1, 2, 1], ],
+        expected: [ [2, Buffer.from("#BC#")], ],
+    },
+
+    {
+        content: "__ABCDE",
+        read: [
+                [0, 4],
+                [0, 4],
+                [2, 2, 0],
+                [0, 4, null],
+              ],
+        expected: [
+                    [4, Buffer.from("__AB")],
+                    [3, Buffer.from("CDEB")],
+                    [2, Buffer.from("CD__")],
+                    [0, Buffer.from("CD__")],
+                  ],
+    },
+
+    {
+        content: "ABC",
+        read: [ [0, 5], ],
+        check: (err, params) => {
+            if (err.name != "RangeError") {
+                throw Error(`${err.code} unexpected exception`);
+            }
+
+            return true;
+        },
+    },
+
+    {
+        content: "ABC",
+        read: [ [2, 3], ],
+        check: (err, params) => {
+            if (err.name != "RangeError") {
+                throw Error(`${err.code} unexpected exception`);
+            }
+
+            return true;
+        },
+    },
+
+];
+
+let readSync_tsuite = {
+    name: "fs readSync",
+    skip: () => (!has_fs() || !has_buffer()),
+    T: read_test,
+    prepare_args: p,
+    opts: {},
+    get tests() { return read_tests() },
+};
+
+let readFh_tsuite = {
+    name: "fh read",
+    skip: () => (!has_fs() || !has_buffer()),
+    T: readFh_test,
+    prepare_args: p,
+    opts: {},
+    get tests() { return read_tests() },
+};
+
+function write_test(params) {
+    let fd, err;
+
+    try {
+        fd = fs.openSync.apply(null, params.args);
+
+        for (var i = 0; i < params.write.length; i++) {
+            let args = params.write[i].map(v => v);
+            args.unshift(fd);
+
+            let bytesWritten = fs.writeSync.apply(null, args);
+
+            if (params.written && bytesWritten != params.written) {
+                throw Error(`bw.bytesWritten unexpected value:${bw.bytesWritten}`);
+            }
+        }
+
+    } catch (e) {
+        if (!e.syscall && !params.check) {
+            throw e;
+        }
+
+        err = e;
+
+    } finally {
+        fs.closeSync(fd);
+    }
+
+    if (!err && params.expected) {
+        let data = fs.readFileSync(params.args[0]);
+
+        if (data.compare(params.expected) != 0) {
+            throw Error(`fh.write unexpected data:${data}`);
+        }
+    }
+
+    if (params.check && !params.check(err, params)) {
+        throw Error(`${params.method} failed check`);
+    }
+
+    return 'SUCCESS';
+}
+
+async function writeFh_test(params) {
+    let fh, err;
+
+    try {
+        fh = await fs.promises.open.apply(null, params.args);
+
+        for (var i = 0; i < params.write.length; i++) {
+            let bw = await fh.write.apply(fh, params.write[i]);
+
+            if (params.written && bw.bytesWritten != params.written) {
+                throw Error(`bw.bytesWritten unexpected value:${bw.bytesWritten}`);
+            }
+
+            if (params.buffer
+                && (typeof params.buffer == 'string'
+                    && params.buffer != bw.buffer
+                    || typeof params.buffer == 'object'
+                       && params.buffer.compare(bw.buffer) != 0))
+            {
+                throw Error(`bw.buffer unexpected value:${bw.buffer}`);
+            }
+        }
+
+    } catch (e) {
+        if (!e.syscall && !params.check) {
+            throw e;
+        }
+
+        err = e;
+
+    } finally {
+        await fh.close();
+    }
+
+    if (!err && params.expected) {
+        let data = fs.readFileSync(params.args[0]);
+
+        if (data.compare(params.expected) != 0) {
+            throw Error(`fh.write unexpected data:${data}`);
+        }
+    }
+
+    if (params.check && !params.check(err, params)) {
+        throw Error(`${params.method} failed check`);
+    }
+
+    return 'SUCCESS';
+}
+
+let write_tests = () => [
+
+    {
+        args: ["@", 'w'],
+        write: [ ["ABC", undefined], ["DE", null], ["F"], ],
+        expected: Buffer.from("ABCDEF"),
+    },
+
+    {
+        args: ["@", 'w'],
+        write: [ ["XXXXXX"], ["YYYY", 1], ["ZZ", 2], ],
+        expected: Buffer.from("XYZZYX"),
+    },
+
+    {
+        args: ["@", 'w'],
+        write: [ ["ABC", null, 'utf8'] ],
+        written: 3,
+        buffer: 'ABC',
+        expected: Buffer.from("ABC"),
+    },
+
+    {
+        args: ["test/fs/ascii"],
+        write: [ ["ABC"] ],
+        check: (err, params) => {
+            let e = err;
+
+            if (e.syscall != 'write') {
+                throw Error(`${e.syscall} unexpected syscall`);
+            }
+
+            if (e.code != "EBADF") {
+                throw Error(`${e.code} unexpected code`);
+            }
+
+            return true;
+        },
+    },
+
+    {
+        args: ["@", 'w'],
+        write: [ [Buffer.from("ABC"), 0, 3],
+                 [Buffer.from("DE"), 0, 2, null],
+                 [Buffer.from("F"), 0, 1], ],
+        expected: Buffer.from("ABCDEF"),
+    },
+
+    {
+        args: ["@", 'w'],
+        write: [ [Buffer.from("__XXXXXX"), 2],
+                 [Buffer.from("__YYYY__"), 2, 4, 1],
+                 [Buffer.from("ZZ"), 0, 2, 2], ],
+        expected: Buffer.from("XYZZYX"),
+    },
+
+    {
+        args: ["@", 'w'],
+        write: [ [Buffer.from("__ABC__"), 2, 3] ],
+        written: 3,
+        buffer: Buffer.from('__ABC__'),
+        expected: Buffer.from("ABC"),
+    },
+
+    {
+        args: ["@", 'w'],
+        write: [ [Buffer.from("__ABC__"), 7] ],
+        written: 0,
+    },
+
+    {
+        args: ["@", 'w'],
+        write: [ [Buffer.from("__ABC__"), 8] ],
+        check: (err, params) => {
+            if (err.name != "RangeError") {
+                throw Error(`${err.code} unexpected exception`);
+            }
+
+            return true;
+        },
+    },
+
+    {
+        args: ["@", 'w'],
+        write: [ [Buffer.from("__ABC__"), 7, 1] ],
+        check: (err, params) => {
+            if (err.name != "RangeError") {
+                throw Error(`${err.code} unexpected exception`);
+            }
+
+            return true;
+        },
+    },
+];
+
+let writeSync_tsuite = {
+    name: "fs writeSync",
+    skip: () => (!has_fs() || !has_buffer()),
+    T: write_test,
+    prepare_args: p,
+    opts: {},
+    get tests() { return write_tests() },
+};
+
+let writeFh_tsuite = {
+    name: "fh write",
+    skip: () => (!has_fs() || !has_buffer()),
+    T: writeFh_test,
+    prepare_args: p,
+    opts: {},
+    get tests() { return write_tests() },
 };
 
 run([
@@ -606,5 +1162,12 @@ run([
     lstat_tsuite,
     lstatSync_tsuite,
     lstatP_tsuite,
+    openSync_tsuite,
+    openP_tsuite,
+    readSync_tsuite,
+    readFh_tsuite,
+    writeSync_tsuite,
+    writeFh_tsuite,
+    closeSync_tsuite,
 ])
 .then($DONE, $DONE);
