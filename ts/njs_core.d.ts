@@ -595,6 +595,7 @@ declare class Buffer extends Uint8Array {
 }
 
 type NjsStringOrBuffer = NjsStringLike | Buffer | DataView | TypedArray | ArrayBuffer;
+type NjsBuffer = Buffer | DataView | TypedArray;
 
 // Global objects
 

@@ -34,7 +34,7 @@ declare module "fs" {
      * When `readdirSync()` is called with the `withFileTypes` option, the resulting array contains
      * `fs.Dirent` objects.
      */
-    export interface Dirent {
+    export interface NjsDirent {
         /**
          * @returns `true` if the object describes a block device.
          */
@@ -75,7 +75,7 @@ declare module "fs" {
      *
      * The objects is returned from fs.stat(), fs.lstat() and friends.
      */
-    export interface Stats {
+    export interface NjsStats {
         /**
          * @returns `true` if the object describes a block device.
          */
@@ -205,7 +205,7 @@ declare module "fs" {
         flag?: OpenMode;
     };
 
-    type Constants = {
+    type NjsFsConstants = {
         /**
          * Indicates that the file is visible to the calling process, used by default if no mode
          * is specified.
@@ -225,7 +225,7 @@ declare module "fs" {
         X_OK: 1;
     };
 
-    interface Promises {
+    interface NjsFsPromises {
         /**
          * Asynchronously tests permissions for a file or directory specified in the `path`.
          * If the check fails, an error will be returned, otherwise, the method will return undefined.
@@ -242,6 +242,21 @@ declare module "fs" {
          *   Defaults to `fs.constants.F_OK`.
          */
         access(path: PathLike, mode?: number): Promise<void>;
+
+        /**
+         * Asynchronously opens a file specified in the `path`.
+         *
+         * @example
+         *   import fs from 'fs'
+         *   let fh = await fs.promises.open('/file/path', 'w');
+         *   let bw = await fh.write("data to write", 10);
+         *
+         * @since 0.7.7
+         * @param path A path to a file.
+         * @param flags File system flags, defaults to `r`.
+         * @param mode The file mode, defaults to 0o666.
+         */
+        open(path: PathLike, flags?: OpenMode, mode?: number): Promise<NjsFsFileHandle>;
 
         /**
          * Asynchronously appends specified `data` to a file with provided `filename`.
@@ -266,7 +281,7 @@ declare module "fs" {
          *   - `throwIfNoEntry` - Whether an exception will be thrown if no file system entry exists,
          *      rather than returning undefined, defaults to `true`.
          */
-        lstat(path: PathLike, options?: { throwIfNoEntry?: boolean; }): Promise<Stats>;
+        lstat(path: PathLike, options?: { throwIfNoEntry?: boolean; }): Promise<NjsStats>;
 
         /**
          * Asynchronously creates a directory at the specified `path`.
@@ -289,7 +304,7 @@ declare module "fs" {
          */
         readdir(path: PathLike, options?: { encoding?: "utf8"; withFileTypes?: false; } | "utf8"): Promise<string[]>;
         readdir(path: PathLike, options: { encoding: "buffer"; withFileTypes?: false; } | "buffer"): Promise<Buffer[]>;
-        readdir(path: PathLike, options: { encoding?: "utf8" | "buffer"; withFileTypes: true; }): Promise<Dirent[]>;
+        readdir(path: PathLike, options: { encoding?: "utf8" | "buffer"; withFileTypes: true; }): Promise<NjsDirent[]>;
 
         /**
          * Asynchronously returns the contents of the file with provided `filename`.
@@ -341,7 +356,7 @@ declare module "fs" {
          *   - `throwIfNoEntry` - Whether an exception will be thrown if no file system entry exists,
          *      rather than returning undefined, defaults to `true`.
          */
-        stat(path: PathLike, options?: { throwIfNoEntry?: boolean; }): Promise<Stats>;
+        stat(path: PathLike, options?: { throwIfNoEntry?: boolean; }): Promise<NjsStats>;
 
         /**
          * Asynchronously creates the link called `path` pointing to `target` using `symlink(2)`.
@@ -375,17 +390,95 @@ declare module "fs" {
         writeFile(path: PathLike, data: NjsStringOrBuffer, options?: WriteFileOptions): Promise<void>;
     }
 
+    interface NjsFsBytesRead {
+        /**
+         * The number of bytes read.
+         */
+        bytesRead: number;
+
+        /**
+         * A reference to the passed in buffer argument.
+         */
+        buffer: NjsBuffer;
+    }
+
+    interface NjsFsBytesWritten {
+        /**
+         * The number of bytes written.
+         */
+        bytesWritten: number;
+
+        /**
+         * A reference to the buffer written.
+         */
+        buffer: NjsBuffer;
+    }
+
+    interface NjsFsFileHandle {
+        /**
+         * Asynchronously closes the file handle after waiting for any pending operation
+         * on the handle to complete.
+         */
+        close(): Promise<void>;
+
+        /**
+         * The file descriptor number.
+         */
+        fd: number;
+
+        /**
+         * Asynchronously reads data from the file and stores that in the given buffer.
+         *
+         * @param buffer A buffer that will be filled with the file data read.
+         * @param offset The location in the buffer at which to start filling.
+         * @param length The number of bytes to read.
+         * @param position The location where to begin reading data from the file.
+         *    If null, data will be read from the current file position, and the position will be updated.
+         *    If position is an integer, the current file position will remain unchanged.
+         */
+        read(buffer: NjsBuffer, offset: number, length: number, position: number | null): Promise<NjsFsBytesRead>;
+
+        /**
+         * Asynchronously retrieves `fs.Stats` for the underlying descriptor.
+         */
+        stat(): Promise<NjsStats>;
+
+        /**
+         * Asynchronously writes buffer to the file.
+         *
+         * @param buffer A buffer to write.
+         * @param offset The start position from within buffer where the data to write begins.
+         * @param The number of bytes from buffer to write.
+         *    Defaults to buffer.byteLength - offset
+         * @param position The offset from the beginning of the file where the data from buffer
+         *    should be written. If position is not a number, the data will be written at the current position.
+         * @param encoding  One of the `'utf8'`, `'hex'`, `'base64'`, or `'base64url'`.
+         *    Defaults to 'utf8'.
+         */
+        write(buffer: NjsBuffer, offset: number, length?: number, position?: number | null): Promise<NjsFsBytesWritten>;
+        write(buffer: NjsStringLike, position?: number | null, encoding?: FileEncoding): Promise<NjsFsBytesWritten>;
+    }
+
     interface NjsFS {
         /**
          * Promissified versions of file system methods.
          *
          * @since 0.3.9
          */
-        promises: Promises
+        promises: NjsFsPromises
+
+        /**
+         * Synchronously closes specified file descriptor.
+         *
+         * @since 0.7.7
+         * @param fd A file descriptor.
+         */
+        closeSync(fd: number): undefined;
+
         /**
          * File Access Constants
          */
-        constants: Constants
+        constants: NjsFsConstants
 
         /**
          * Synchronously tests permissions for a file or directory specified in the `path`.
@@ -420,6 +513,14 @@ declare module "fs" {
         appendFileSync(path: PathLike, data: NjsStringOrBuffer, options?: WriteFileOptions): void;
 
         /**
+         * Synchronously retrieves `fs.Stats` object for specified file descriptor.
+         *
+         * @since 0.7.7
+         * @param fd A file descriptor.
+         */
+        fstatSync(fd: number): NjsStats;
+
+        /**
          * Synchronously retrieves `fs.Stats` object for the symbolic link referred to by path.
          * See `lstat(2)` for more details.
          *
@@ -429,7 +530,7 @@ declare module "fs" {
          *   - `throwIfNoEntry` - Whether an exception will be thrown if no file system entry exists,
          *      rather than returning undefined, defaults to `true`.
          */
-        lstatSync(path: PathLike, options?: { throwIfNoEntry?: boolean; }): Stats;
+        lstatSync(path: PathLike, options?: { throwIfNoEntry?: boolean; }): NjsStats;
 
         /**
          * Synchronously creates a directory at the specified `path`.
@@ -439,6 +540,21 @@ declare module "fs" {
          * @param options The file mode (or an object specifying the file mode). Defaults to `0o777`.
          */
         mkdirSync(path: PathLike, options?: { mode?: number } | number): void;
+
+        /**
+         * Synchronously opens a file specified in the `path`.
+         *
+         * @example
+         *   import fs from 'fs'
+         *   let fd = fs.openSync('/file/path', 'w');
+         *   let bytesWritten = fs.writeSync("data to write", 10);
+         *
+         * @since 0.7.7
+         * @param path A path to a file.
+         * @param flags file system flags, defaults to `r`.
+         * @param mode Thre file mode, defaults to 0o666.
+         */
+        openSync(path: PathLike, flags?: OpenMode, mode?: number): number;
 
         /**
          * Synchronously reads the contents of a directory at the specified `path`.
@@ -453,7 +569,7 @@ declare module "fs" {
          */
         readdirSync(path: PathLike, options?: { encoding?: "utf8"; withFileTypes?: false; } | "utf8"): string[];
         readdirSync(path: PathLike, options: { encoding: "buffer"; withFileTypes?: false; } | "buffer"): Buffer[];
-        readdirSync(path: PathLike, options: { encoding?: "utf8" | "buffer"; withFileTypes: true; }): Dirent[];
+        readdirSync(path: PathLike, options: { encoding?: "utf8" | "buffer"; withFileTypes: true; }): NjsDirent[];
 
         /**
          * Synchronously returns the contents of the file with provided `filename`.
@@ -472,6 +588,23 @@ declare module "fs" {
         readFileSync(path: PathLike): Buffer;
         readFileSync(path: PathLike, options?: { flag?: OpenMode; }): Buffer;
         readFileSync(path: PathLike, options: { encoding?: FileEncoding; flag?: OpenMode; } | FileEncoding): string;
+
+        /**
+         * Synchronously reads data from the file and stores that in the given buffer.
+         *
+         * @since 0.7.7
+         * @param fd A file descriptor.
+         * @param buffer A buffer that will be filled with the file data read.
+         * @param offset The location in the buffer at which to start filling.
+         * @param length The number of bytes to read.
+         * @param position The location where to begin reading data from the file.
+         *    If null, data will be read from the current file position, and the position will be updated.
+         *    If position is an integer, the current file position will remain unchanged.
+         * @param encoding  One of the `'utf8'`, `'hex'`, `'base64'`, or `'base64url'`.
+         *    Defaults to 'utf8'.
+         */
+        readSync(fd: number, buffer: NjsBuffer, offset: number, length?: number, position?: number | null): number;
+        readSync(fd: number, string: NjsStringLike, position?: number | null, encoding?: FileEncoding): number;
 
         /**
          * Synchronously computes the canonical pathname by resolving `.`, `..` and symbolic links using
@@ -514,7 +647,7 @@ declare module "fs" {
          *   - `throwIfNoEntry` - Whether an exception will be thrown if no file system entry exists,
          *      rather than returning undefined, defaults to `true`.
          */
-        statSync(path: PathLike, options?: { throwIfNoEntry?: boolean; }): Stats;
+        statSync(path: PathLike, options?: { throwIfNoEntry?: boolean; }): NjsStats;
 
         /**
          * Synchronously creates the link called `path` pointing to `target` using `symlink(2)`.
@@ -550,6 +683,23 @@ declare module "fs" {
          *   If `flag` is not supplied, the default of `'w'` is used.
          */
         writeFileSync(path: PathLike, data: NjsStringOrBuffer, options?: WriteFileOptions): void;
+
+        /**
+         * Synchronously writes `buffer` data to a file.
+         *
+         * @since 0.7.7
+         * @param fd A file descriptor.
+         * @param buffer A buffer that will be filled with the file data read.
+         * @param offset The location in the buffer at which to start filling.
+         * @param length The number of bytes to read.
+         * @param position The location where to begin reading data from the file.
+         *    If null, data will be read from the current file position, and the position will be updated.
+         *    If position is an integer, the current file position will remain unchanged.
+         * @param encoding  One of the `'utf8'`, `'hex'`, `'base64'`, or `'base64url'`.
+         *    Defaults to 'utf8'.
+         */
+        writeSync(fd: number, buffer: NjsBuffer, offset: number, length?: number, position?: number | null): number;
+        writeSync(fd: number, string: NjsStringLike, position?: number | null, encoding?: FileEncoding): number;
     }
 
     const fs: NjsFS;

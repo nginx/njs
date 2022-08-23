@@ -103,13 +103,34 @@ async function http_module(r: NginxHTTPRequest) {
     r.done();
 }
 
-function fs_module() {
+async function fs_module() {
     var s:string;
 
     s = fs.readFileSync('/path', 'utf8');
     s = fs.readFileSync(Buffer.from('/path'), {encoding:'hex'});
 
     fs.writeFileSync('/path', Buffer.from('abc'));
+
+    let fh = await fs.promises.open('/path', 'r+');
+
+    let bw = await fh.write(Buffer.from('abc'), 0, 1, 3);
+    let bytes = bw.bytesWritten;
+    bw = await fh.write(Buffer.from('abc'), 2, 2, null);
+    let stat = fh.stat();
+
+    let buffer = Buffer.alloc(16);
+    let br = await fh.read(buffer, 0, 16, null);
+    bytes = br.bytesRead;
+
+    await fh.close();
+
+    let fd = fs.openSync('/path', 'r+');
+    let stat2 = fs.fstatSync(fd);
+
+    fs.readSync(fd, buffer, 0, 16, 4);
+    buffer[1] += 2;
+    fs.writeSync(fd, buffer, 0, 16, 4);
+    fs.closeSync(fd);
 }
 
 function qs_module(str: NjsByteString) {
