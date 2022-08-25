@@ -459,11 +459,100 @@ static njs_external_t  ngx_http_js_ext_request[] = {
 
     {
         .flags = NJS_EXTERN_PROPERTY,
-        .name.string = njs_str("uri"),
+        .name.string = njs_str("args"),
         .enumerable = 1,
         .u.property = {
-            .handler = ngx_js_ext_string,
-            .magic32 = offsetof(ngx_http_request_t, uri),
+            .handler = ngx_http_js_ext_get_args,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("done"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_done,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("error"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_js_ext_log,
+            .magic8 = NGX_LOG_ERR,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("finish"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_finish,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("headersIn"),
+        .enumerable = 1,
+        .u.object = {
+            .enumerable = 1,
+            .prop_handler = ngx_http_js_ext_header_in,
+            .keys = ngx_http_js_ext_keys_header_in,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("headersOut"),
+        .enumerable = 1,
+        .u.object = {
+            .writable = 1,
+            .configurable = 1,
+            .enumerable = 1,
+            .prop_handler = ngx_http_js_ext_header_out,
+            .keys = ngx_http_js_ext_keys_header_out,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("httpVersion"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_http_js_ext_get_http_version,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("internalRedirect"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_internal_redirect,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("log"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_js_ext_log,
+            .magic8 = NGX_LOG_INFO,
         }
     },
 
@@ -479,10 +568,37 @@ static njs_external_t  ngx_http_js_ext_request[] = {
 
     {
         .flags = NJS_EXTERN_PROPERTY,
-        .name.string = njs_str("httpVersion"),
-        .enumerable = 1,
+        .name.string = njs_str("parent"),
         .u.property = {
-            .handler = ngx_http_js_ext_get_http_version,
+            .handler = ngx_http_js_ext_get_parent,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("rawHeadersIn"),
+        .u.property = {
+            .handler = ngx_http_js_ext_raw_header,
+            .magic32 = 0,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("rawHeadersOut"),
+        .u.property = {
+            .handler = ngx_http_js_ext_raw_header,
+            .magic32 = 1,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("rawVariables"),
+        .u.object = {
+            .writable = 1,
+            .prop_handler = ngx_http_js_ext_variables,
+            .magic32 = NGX_JS_BUFFER,
         }
     },
 
@@ -506,16 +622,6 @@ static njs_external_t  ngx_http_js_ext_request[] = {
 
     {
         .flags = NJS_EXTERN_PROPERTY,
-        .name.string = njs_str("requestText"),
-        .enumerable = 1,
-        .u.property = {
-            .handler = ngx_http_js_ext_get_request_body,
-            .magic32 = NGX_JS_STRING,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_PROPERTY,
         .name.string = njs_str("requestBuffer"),
         .u.property = {
             .handler = ngx_http_js_ext_get_request_body,
@@ -525,9 +631,11 @@ static njs_external_t  ngx_http_js_ext_request[] = {
 
     {
         .flags = NJS_EXTERN_PROPERTY,
-        .name.string = njs_str("parent"),
+        .name.string = njs_str("requestText"),
+        .enumerable = 1,
         .u.property = {
-            .handler = ngx_http_js_ext_get_parent,
+            .handler = ngx_http_js_ext_get_request_body,
+            .magic32 = NGX_JS_STRING,
         }
     },
 
@@ -542,6 +650,15 @@ static njs_external_t  ngx_http_js_ext_request[] = {
 
     {
         .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("responseBuffer"),
+        .u.property = {
+            .handler = ngx_http_js_ext_get_response_body,
+            .magic32 = NGX_JS_BUFFER,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
         .name.string = njs_str("responseText"),
         .enumerable = 1,
         .u.property = {
@@ -551,150 +668,13 @@ static njs_external_t  ngx_http_js_ext_request[] = {
     },
 
     {
-        .flags = NJS_EXTERN_PROPERTY,
-        .name.string = njs_str("responseBuffer"),
-        .u.property = {
-            .handler = ngx_http_js_ext_get_response_body,
-            .magic32 = NGX_JS_BUFFER,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_OBJECT,
-        .name.string = njs_str("headersIn"),
-        .enumerable = 1,
-        .u.object = {
-            .enumerable = 1,
-            .prop_handler = ngx_http_js_ext_header_in,
-            .keys = ngx_http_js_ext_keys_header_in,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_PROPERTY,
-        .name.string = njs_str("rawHeadersIn"),
-        .u.property = {
-            .handler = ngx_http_js_ext_raw_header,
-            .magic32 = 0,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_PROPERTY,
-        .name.string = njs_str("args"),
-        .enumerable = 1,
-        .u.property = {
-            .handler = ngx_http_js_ext_get_args,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_OBJECT,
-        .name.string = njs_str("variables"),
-        .u.object = {
-            .writable = 1,
-            .prop_handler = ngx_http_js_ext_variables,
-            .magic32 = NGX_JS_STRING,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_OBJECT,
-        .name.string = njs_str("rawVariables"),
-        .u.object = {
-            .writable = 1,
-            .prop_handler = ngx_http_js_ext_variables,
-            .magic32 = NGX_JS_BUFFER,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_PROPERTY,
-        .name.string = njs_str("status"),
-        .writable = 1,
-        .enumerable = 1,
-        .u.property = {
-            .handler = ngx_http_js_ext_status,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_OBJECT,
-        .name.string = njs_str("headersOut"),
-        .enumerable = 1,
-        .u.object = {
-            .writable = 1,
-            .configurable = 1,
-            .enumerable = 1,
-            .prop_handler = ngx_http_js_ext_header_out,
-            .keys = ngx_http_js_ext_keys_header_out,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_PROPERTY,
-        .name.string = njs_str("rawHeadersOut"),
-        .u.property = {
-            .handler = ngx_http_js_ext_raw_header,
-            .magic32 = 1,
-        }
-    },
-
-    {
         .flags = NJS_EXTERN_METHOD,
-        .name.string = njs_str("subrequest"),
+        .name.string = njs_str("return"),
         .writable = 1,
         .configurable = 1,
         .enumerable = 1,
         .u.method = {
-            .native = ngx_http_js_ext_subrequest,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_METHOD,
-        .name.string = njs_str("log"),
-        .writable = 1,
-        .configurable = 1,
-        .enumerable = 1,
-        .u.method = {
-            .native = ngx_js_ext_log,
-            .magic8 = NGX_LOG_INFO,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_METHOD,
-        .name.string = njs_str("warn"),
-        .writable = 1,
-        .configurable = 1,
-        .enumerable = 1,
-        .u.method = {
-            .native = ngx_js_ext_log,
-            .magic8 = NGX_LOG_WARN,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_METHOD,
-        .name.string = njs_str("error"),
-        .writable = 1,
-        .configurable = 1,
-        .enumerable = 1,
-        .u.method = {
-            .native = ngx_js_ext_log,
-            .magic8 = NGX_LOG_ERR,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_METHOD,
-        .name.string = njs_str("sendHeader"),
-        .writable = 1,
-        .configurable = 1,
-        .enumerable = 1,
-        .u.method = {
-            .native = ngx_http_js_ext_send_header,
+            .native = ngx_http_js_ext_return,
         }
     },
 
@@ -722,6 +702,17 @@ static njs_external_t  ngx_http_js_ext_request[] = {
 
     {
         .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("sendHeader"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_send_header,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
         .name.string = njs_str("setReturnValue"),
         .writable = 1,
         .configurable = 1,
@@ -732,49 +723,57 @@ static njs_external_t  ngx_http_js_ext_request[] = {
     },
 
     {
-        .flags = NJS_EXTERN_METHOD,
-        .name.string = njs_str("done"),
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("status"),
         .writable = 1,
-        .configurable = 1,
         .enumerable = 1,
-        .u.method = {
-            .native = ngx_http_js_ext_done,
+        .u.property = {
+            .handler = ngx_http_js_ext_status,
         }
     },
 
     {
         .flags = NJS_EXTERN_METHOD,
-        .name.string = njs_str("finish"),
+        .name.string = njs_str("subrequest"),
         .writable = 1,
         .configurable = 1,
         .enumerable = 1,
         .u.method = {
-            .native = ngx_http_js_ext_finish,
+            .native = ngx_http_js_ext_subrequest,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("uri"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_string,
+            .magic32 = offsetof(ngx_http_request_t, uri),
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("variables"),
+        .u.object = {
+            .writable = 1,
+            .prop_handler = ngx_http_js_ext_variables,
+            .magic32 = NGX_JS_STRING,
         }
     },
 
     {
         .flags = NJS_EXTERN_METHOD,
-        .name.string = njs_str("return"),
+        .name.string = njs_str("warn"),
         .writable = 1,
         .configurable = 1,
         .enumerable = 1,
         .u.method = {
-            .native = ngx_http_js_ext_return,
+            .native = ngx_js_ext_log,
+            .magic8 = NGX_LOG_WARN,
         }
     },
-
-    {
-        .flags = NJS_EXTERN_METHOD,
-        .name.string = njs_str("internalRedirect"),
-        .writable = 1,
-        .configurable = 1,
-        .enumerable = 1,
-        .u.method = {
-            .native = ngx_http_js_ext_internal_redirect,
-        }
-    },
-
 };
 
 

@@ -326,45 +326,6 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
     },
 
     {
-        .flags = NJS_EXTERN_PROPERTY,
-        .name.string = njs_str("status"),
-        .enumerable = 1,
-        .u.property = {
-            .handler = ngx_js_ext_uint,
-            .magic32 = offsetof(ngx_stream_session_t, status),
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_PROPERTY,
-        .name.string = njs_str("remoteAddress"),
-        .enumerable = 1,
-        .u.property = {
-            .handler = ngx_stream_js_ext_get_remote_address,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_OBJECT,
-        .name.string = njs_str("variables"),
-        .u.object = {
-            .writable = 1,
-            .prop_handler = ngx_stream_js_ext_variables,
-            .magic32 = NGX_JS_STRING,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_OBJECT,
-        .name.string = njs_str("rawVariables"),
-        .u.object = {
-            .writable = 1,
-            .prop_handler = ngx_stream_js_ext_variables,
-            .magic32 = NGX_JS_BUFFER,
-        }
-    },
-
-    {
         .flags = NJS_EXTERN_METHOD,
         .name.string = njs_str("allow"),
         .writable = 1,
@@ -378,18 +339,6 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
 
     {
         .flags = NJS_EXTERN_METHOD,
-        .name.string = njs_str("deny"),
-        .writable = 1,
-        .configurable = 1,
-        .enumerable = 1,
-        .u.method = {
-            .native = ngx_stream_js_ext_done,
-            .magic8 = -NGX_DONE,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_METHOD,
         .name.string = njs_str("decline"),
         .writable = 1,
         .configurable = 1,
@@ -397,6 +346,18 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
         .u.method = {
             .native = ngx_stream_js_ext_done,
             .magic8 = -NGX_DECLINED,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("deny"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_stream_js_ext_done,
+            .magic8 = -NGX_DONE,
         }
     },
 
@@ -415,6 +376,18 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
 
     {
         .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("error"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_js_ext_log,
+            .magic8 = NGX_LOG_ERR,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
         .name.string = njs_str("log"),
         .writable = 1,
         .configurable = 1,
@@ -427,25 +400,12 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
 
     {
         .flags = NJS_EXTERN_METHOD,
-        .name.string = njs_str("warn"),
+        .name.string = njs_str("off"),
         .writable = 1,
         .configurable = 1,
         .enumerable = 1,
         .u.method = {
-            .native = ngx_js_ext_log,
-            .magic8 = NGX_LOG_WARN,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_METHOD,
-        .name.string = njs_str("error"),
-        .writable = 1,
-        .configurable = 1,
-        .enumerable = 1,
-        .u.method = {
-            .native = ngx_js_ext_log,
-            .magic8 = NGX_LOG_ERR,
+            .native = ngx_stream_js_ext_off,
         }
     },
 
@@ -461,13 +421,21 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
     },
 
     {
-        .flags = NJS_EXTERN_METHOD,
-        .name.string = njs_str("off"),
-        .writable = 1,
-        .configurable = 1,
+        .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("rawVariables"),
+        .u.object = {
+            .writable = 1,
+            .prop_handler = ngx_stream_js_ext_variables,
+            .magic32 = NGX_JS_BUFFER,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("remoteAddress"),
         .enumerable = 1,
-        .u.method = {
-            .native = ngx_stream_js_ext_off,
+        .u.property = {
+            .handler = ngx_stream_js_ext_get_remote_address,
         }
     },
 
@@ -493,6 +461,37 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
         }
     },
 
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("status"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_uint,
+            .magic32 = offsetof(ngx_stream_session_t, status),
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("variables"),
+        .u.object = {
+            .writable = 1,
+            .prop_handler = ngx_stream_js_ext_variables,
+            .magic32 = NGX_JS_STRING,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("warn"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_js_ext_log,
+            .magic8 = NGX_LOG_WARN,
+        }
+    },
 };
 
 
@@ -508,17 +507,6 @@ static njs_external_t  ngx_stream_js_ext_session_flags[] = {
 
     {
         .flags = NJS_EXTERN_PROPERTY,
-        .name.string = njs_str("last"),
-        .enumerable = 1,
-        .u.property = {
-            .handler = ngx_js_ext_flags,
-            .magic16 = NGX_JS_BOOLEAN,
-            .magic32 = 0x00000001,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_PROPERTY,
         .name.string = njs_str("from_upstream"),
         .enumerable = 1,
         .u.property = {
@@ -528,6 +516,16 @@ static njs_external_t  ngx_stream_js_ext_session_flags[] = {
         }
     },
 
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("last"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_flags,
+            .magic16 = NGX_JS_BOOLEAN,
+            .magic32 = 0x00000001,
+        }
+    },
 };
 
 

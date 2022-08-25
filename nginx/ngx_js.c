@@ -18,37 +18,6 @@ extern njs_module_t  njs_webcrypto_module;
 static njs_external_t  ngx_js_ext_core[] = {
 
     {
-        .flags = NJS_EXTERN_METHOD,
-        .name.string = njs_str("log"),
-        .writable = 1,
-        .configurable = 1,
-        .enumerable = 1,
-        .u.method = {
-            .native = ngx_js_ext_log,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_PROPERTY,
-        .name.string = njs_str("INFO"),
-        .u.property = {
-            .handler = ngx_js_ext_constant,
-            .magic32 = NGX_LOG_INFO,
-            .magic16 = NGX_JS_NUMBER,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_PROPERTY,
-        .name.string = njs_str("WARN"),
-        .u.property = {
-            .handler = ngx_js_ext_constant,
-            .magic32 = NGX_LOG_WARN,
-            .magic16 = NGX_JS_NUMBER,
-        }
-    },
-
-    {
         .flags = NJS_EXTERN_PROPERTY,
         .name.string = njs_str("ERR"),
         .u.property = {
@@ -68,6 +37,38 @@ static njs_external_t  ngx_js_ext_core[] = {
             .native = ngx_js_ext_fetch,
         }
     },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("INFO"),
+        .u.property = {
+            .handler = ngx_js_ext_constant,
+            .magic32 = NGX_LOG_INFO,
+            .magic16 = NGX_JS_NUMBER,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("log"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_js_ext_log,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("WARN"),
+        .u.property = {
+            .handler = ngx_js_ext_constant,
+            .magic32 = NGX_LOG_WARN,
+            .magic16 = NGX_JS_NUMBER,
+        }
+    },
+
 };
 
 
