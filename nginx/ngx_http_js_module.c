@@ -174,6 +174,9 @@ static njs_int_t ngx_http_js_ext_internal_redirect(njs_vm_t *vm,
 static njs_int_t ngx_http_js_ext_get_http_version(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
+static njs_int_t ngx_http_js_ext_internal(njs_vm_t *vm,
+    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 static njs_int_t ngx_http_js_ext_get_remote_address(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
@@ -530,6 +533,15 @@ static njs_external_t  ngx_http_js_ext_request[] = {
         .enumerable = 1,
         .u.property = {
             .handler = ngx_http_js_ext_get_http_version,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("internal"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_http_js_ext_internal,
         }
     },
 
@@ -2500,6 +2512,24 @@ ngx_http_js_ext_get_http_version(njs_vm_t *vm, njs_object_prop_t *prop,
     }
 
     return njs_vm_value_string_set(vm, retval, v.data, v.len);
+}
+
+
+static njs_int_t
+ngx_http_js_ext_internal(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    ngx_http_request_t  *r;
+
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
+    if (r == NULL) {
+        njs_value_undefined_set(retval);
+        return NJS_DECLINED;
+    }
+
+    njs_value_boolean_set(retval, r->internal);
+
+    return NJS_OK;
 }
 
 
