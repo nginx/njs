@@ -43,6 +43,8 @@
 #else
 #define njs_evp_md_ctx_new()  EVP_MD_CTX_create()
 #define njs_evp_md_ctx_free(_ctx)  EVP_MD_CTX_destroy(_ctx)
+#define ECDSA_SIG_get0_s(sig) (sig)->s
+#define ECDSA_SIG_get0_r(sig) (sig)->r
 #endif
 
 

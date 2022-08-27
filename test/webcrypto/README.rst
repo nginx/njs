@@ -124,13 +124,21 @@ Signing data using RSA-PSS
 Signing data using ECDSA
 ------------------------
 
+Note: there are two types of ECDSA signatures: ASN.1 and IEEE P1363
+Webcrypto requires IEEE P1363, but OpenSSL outputs only ASN.1 variety.
+To create P1363, we build an auxilary program asn12IEEEP1336
+
 .. code-block:: shell
 
     echo -n "SigneD-TExt" > text.txt
     openssl dgst -sha256 -binary text.txt > text.sha256
     openssl pkeyutl -sign -in text.sha256 -inkey test/webcrypto/ec.pkcs8 | \
-        base64 > test/webcrypto/text.base64.sha256.ecdsa.sig
-    base64 -d test/webcrypto/text.base64.sha256.ecdsa.sig > text.sha256.ecdsa.sig
+        base64 > test/webcrypto/text.base64.sha256.ecdsa.asn1.sig
+    base64 -d test/webcrypto/text.base64.sha256.ecdsa.asn1.sig > text.sha256.ecdsa.sig
     openssl pkeyutl -verify -in text.sha256 -pubin -inkey test/webcrypto/ec.spki  -sigfile text.sha256.ecdsa.sig
     Signature Verified Successfully
 
+    # convert to IEEE P1363
+    gcc test/webcrypto/asn12ieeep1336.c  -lcrypto -o test/webcrypto/asn12ieeep1336
+    base64 -d test/webcrypto/text.base64.sha256.ecdsa.asn1.sig | ./test/webcrypto/asn12IEEEP1336 | \
+        base64 > test/webcrypto/text.base64.sha256.ecdsa.sig

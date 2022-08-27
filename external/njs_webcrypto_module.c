@@ -1935,6 +1935,266 @@ njs_set_rsa_padding(njs_vm_t *vm, njs_value_t *options, EVP_PKEY *pkey,
 }
 
 
+static const EC_KEY *
+njs_pkey_get_ec_key(EVP_PKEY *pkey)
+{
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+    return EVP_PKEY_get0_EC_KEY(pkey);
+#else
+    if (pkey->type != EVP_PKEY_EC) {
+        return NULL;
+    }
+
+    return pkey->pkey.ec;
+#endif
+}
+
+
+static int
+njs_ec_group_order_bits(const EC_GROUP *group)
+{
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+    return EC_GROUP_order_bits(group);
+#else
+    int     bits;
+    BIGNUM  *order;
+
+    order = BN_new();
+    if (order == NULL) {
+        return 0;
+    }
+
+    if (EC_GROUP_get_order(group, order, NULL) == 0) {
+        return 0;
+    }
+
+    bits = BN_num_bits(order);
+
+    BN_free(order);
+
+    return bits;
+#endif
+}
+
+
+static unsigned int
+njs_ec_rs_size(EVP_PKEY *pkey)
+{
+    int             bits;
+    const EC_KEY    *ec_key;
+    const EC_GROUP  *ec_group;
+
+    ec_key = njs_pkey_get_ec_key(pkey);
+    if (ec_key == NULL) {
+        return 0;
+    }
+
+    ec_group = EC_KEY_get0_group(ec_key);
+    if (ec_group == NULL) {
+        return 0;
+    }
+
+    bits = njs_ec_group_order_bits(ec_group);
+    if (bits == 0) {
+        return 0;
+    }
+
+    return (bits + 7) / 8;
+}
+
+
+static int
+njs_bn_bn2binpad(const BIGNUM *bn, unsigned char *to, int tolen)
+{
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+    return BN_bn2binpad(bn, to, tolen);
+#else
+    return BN_bn2bin(bn, &to[tolen - BN_num_bytes(bn)]);
+#endif
+}
+
+
+static njs_int_t
+njs_convert_der_to_p1363(njs_vm_t *vm, EVP_PKEY *pkey, const u_char *der,
+    size_t der_len, u_char **pout, size_t *out_len)
+{
+    u_char     *data;
+    unsigned   n;
+    njs_int_t  ret;
+    ECDSA_SIG  *ec_sig;
+
+    ret = NJS_OK;
+    ec_sig = NULL;
+
+    n = njs_ec_rs_size(pkey);
+    if (n == 0) {
+        goto fail;
+    }
+
+    data = njs_mp_alloc(njs_vm_memory_pool(vm), 2 * n);
+    if (njs_slow_path(data == NULL)) {
+        goto memory_error;
+    }
+
+    ec_sig = d2i_ECDSA_SIG(NULL, &der, der_len);
+    if (ec_sig == NULL) {
+        goto fail;
+    }
+
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
+    memset(data, 0, 2 * n);
+#endif
+
+    if (njs_bn_bn2binpad(ECDSA_SIG_get0_r(ec_sig), data, n) <= 0) {
+        goto fail;
+    }
+
+    if (njs_bn_bn2binpad(ECDSA_SIG_get0_s(ec_sig), &data[n], n) <= 0) {
+        goto fail;
+    }
+
+    *pout = data;
+    *out_len = 2 * n;
+
+    goto done;
+
+fail:
+
+    *out_len = 0;
+
+done:
+
+    if (ec_sig != NULL) {
+        ECDSA_SIG_free(ec_sig);
+    }
+
+    return ret;
+
+memory_error:
+
+    njs_vm_memory_pool(vm);
+
+    return NJS_ERROR;
+}
+
+
+static int
+njs_ecdsa_sig_set0(ECDSA_SIG *sig, BIGNUM *r, BIGNUM *s)
+{
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+    return ECDSA_SIG_set0(sig, r, s);
+#else
+    if (r == NULL || s == NULL) {
+        return 0;
+    }
+
+    BN_clear_free(sig->r);
+    BN_clear_free(sig->s);
+
+    sig->r = r;
+    sig->s = s;
+
+    return 1;
+#endif
+}
+
+
+static njs_int_t
+njs_convert_p1363_to_der(njs_vm_t *vm, EVP_PKEY *pkey, u_char *p1363,
+    size_t p1363_len, u_char **pout, size_t *out_len)
+{
+    int        len;
+    BIGNUM     *r, *s;
+    u_char     *data;
+    unsigned   n;
+    njs_int_t  ret;
+    ECDSA_SIG  *ec_sig;
+
+    ret = NJS_OK;
+    ec_sig = NULL;
+    r = NULL;
+    s = NULL;
+
+    n = njs_ec_rs_size(pkey);
+
+    if (njs_slow_path(n == 0 || p1363_len != 2 * n)) {
+        goto fail;
+    }
+
+    ec_sig = ECDSA_SIG_new();
+    if (njs_slow_path(ec_sig == NULL)) {
+        goto memory_error;
+    }
+
+    r = BN_new();
+    if (njs_slow_path(r == NULL)) {
+        goto memory_error;
+    }
+
+    s = BN_new();
+    if (njs_slow_path(s == NULL)) {
+        goto memory_error;
+    }
+
+    if (r != BN_bin2bn(p1363, n, r)) {
+        goto fail;
+    }
+
+    if (s != BN_bin2bn(&p1363[n], n, s)) {
+        goto fail;
+    }
+
+    if (njs_ecdsa_sig_set0(ec_sig, r, s) != 1) {
+        njs_webcrypto_error(vm, "njs_ecdsa_sig_set0() failed");
+        ret = NJS_ERROR;
+        goto fail;
+    }
+
+    data = njs_mp_alloc(njs_vm_memory_pool(vm), 2 * n + 16);
+    if (njs_slow_path(data == NULL)) {
+        goto memory_error;
+    }
+
+    *pout = data;
+    len = i2d_ECDSA_SIG(ec_sig, &data);
+
+    if (len < 0) {
+        goto fail;
+    }
+
+    *out_len = len;
+
+    goto done;
+
+fail:
+
+    *out_len = 0;
+
+done:
+
+    if (ec_sig != NULL) {
+        ECDSA_SIG_free(ec_sig);
+
+    } else {
+        if (s != NULL) {
+            BN_free(s);
+        }
+
+        if (r != NULL) {
+            BN_free(r);
+        }
+    }
+
+    return ret;
+
+memory_error:
+
+    njs_vm_memory_pool(vm);
+
+    return NJS_ERROR;
+}
+
+
 static njs_int_t
 njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t verify)
@@ -2121,7 +2381,24 @@ njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                 goto fail;
             }
 
+            if (alg->type == NJS_ALGORITHM_ECDSA) {
+                ret = njs_convert_der_to_p1363(vm, key->pkey, dst, outlen,
+                                               &dst, &outlen);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    goto fail;
+                }
+            }
+
         } else {
+            if (alg->type == NJS_ALGORITHM_ECDSA) {
+                ret = njs_convert_p1363_to_der(vm, key->pkey, sig.start,
+                                               sig.length, &sig.start,
+                                               &sig.length);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    goto fail;
+                }
+            }
+
             ret = EVP_PKEY_verify(pctx, sig.start, sig.length, m, m_len);
             if (njs_slow_path(ret < 0)) {
                 njs_webcrypto_error(vm, "EVP_PKEY_verify() failed");
