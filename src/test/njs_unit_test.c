@@ -13062,6 +13062,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Symbol.for({toString: () => 'desc'}).description"),
       njs_str("desc") },
 
+    { njs_str("Symbol.for().toString()"),
+      njs_str("Symbol(undefined)") },
+
     { njs_str("Symbol.for('desc') === Symbol.for('desc')"),
       njs_str("true") },
 
@@ -16910,6 +16913,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("parseInt.length"),
       njs_str("2") },
 
+    { njs_str("parseInt()"),
+      njs_str("NaN") },
+
     { njs_str("parseInt('12345abc')"),
       njs_str("12345") },
 
@@ -16993,6 +16999,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("parseFloat('12345abc')"),
       njs_str("12345") },
+
+    { njs_str("parseFloat()"),
+      njs_str("NaN") },
 
     { njs_str("parseFloat('')"),
       njs_str("NaN") },

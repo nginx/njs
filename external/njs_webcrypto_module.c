@@ -2486,8 +2486,9 @@ njs_webcrypto_cleanup_pkey(void *data)
 static njs_webcrypto_key_format_t
 njs_key_format(njs_vm_t *vm, njs_value_t *value, njs_str_t *format)
 {
-    njs_int_t   ret;
-    njs_uint_t  fmt;
+    njs_int_t    ret;
+    njs_uint_t   fmt;
+    njs_value_t  string;
 
     static const struct {
         njs_str_t   name;
@@ -2499,12 +2500,12 @@ njs_key_format(njs_vm_t *vm, njs_value_t *value, njs_str_t *format)
         { njs_str("jwk"), NJS_KEY_FORMAT_JWK },
     };
 
-    ret = njs_value_to_string(vm, value, value);
+    ret = njs_value_to_string(vm, &string, value);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
 
-    njs_string_get(value, format);
+    njs_string_get(&string, format);
 
     fmt = 0;
 

@@ -151,11 +151,11 @@ njs_symbol_for(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     uint64_t              key;
     njs_int_t             ret;
-    njs_value_t           *value;
+    njs_value_t           *value, lvalue;
     njs_rbtree_node_t     *rb_node;
     njs_rb_symbol_node_t  *node;
 
-    value = njs_arg(args, nargs, 1);
+    value = njs_lvalue_arg(&lvalue, args, nargs, 1);
 
     if (njs_slow_path(!njs_is_string(value))) {
         ret = njs_value_to_string(vm, value, value);

@@ -1068,13 +1068,13 @@ njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     int32_t            radix;
     njs_int_t          ret;
     njs_bool_t         minus, test_prefix;
-    njs_value_t        *value;
+    njs_value_t        *value, lvalue;
     const u_char       *p, *end;
     njs_string_prop_t  string;
 
     num = NAN;
 
-    value = njs_arg(args, nargs, 1);
+    value = njs_lvalue_arg(&lvalue, args, nargs, 1);
 
     ret = njs_value_to_string(vm, value, value);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -1146,9 +1146,9 @@ njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     njs_int_t    ret;
-    njs_value_t  *value;
+    njs_value_t  *value, lvalue;
 
-    value = njs_arg(args, nargs, 1);
+    value = njs_lvalue_arg(&lvalue, args, nargs, 1);
 
     ret = njs_value_to_string(vm, value, value);
     if (njs_slow_path(ret != NJS_OK)) {
