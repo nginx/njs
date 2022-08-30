@@ -2072,7 +2072,7 @@ done:
 
 memory_error:
 
-    njs_vm_memory_pool(vm);
+    njs_vm_memory_error(vm);
 
     return NJS_ERROR;
 }
@@ -2189,7 +2189,7 @@ done:
 
 memory_error:
 
-    njs_vm_memory_pool(vm);
+    njs_vm_memory_error(vm);
 
     return NJS_ERROR;
 }
