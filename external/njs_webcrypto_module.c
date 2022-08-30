@@ -2112,8 +2112,6 @@ njs_convert_p1363_to_der(njs_vm_t *vm, EVP_PKEY *pkey, u_char *p1363,
 
     ret = NJS_OK;
     ec_sig = NULL;
-    r = NULL;
-    s = NULL;
 
     n = njs_ec_rs_size(pkey);
 
@@ -2174,15 +2172,6 @@ done:
 
     if (ec_sig != NULL) {
         ECDSA_SIG_free(ec_sig);
-
-    } else {
-        if (s != NULL) {
-            BN_free(s);
-        }
-
-        if (r != NULL) {
-            BN_free(r);
-        }
     }
 
     return ret;
