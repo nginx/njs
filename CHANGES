@@ -1,3 +1,37 @@
+Changes with njs 0.7.7                                        30 Aug 2022
+
+    nginx modules:
+
+    *) Feature: the number of nginx configuration contexts where
+       js directives can be specified is extended.
+
+       HTTP: js_import, js_path, js_set and js_var are allowed
+       in server and location contexts. js_content, js_body_filter
+       and js_header_filter are allowed in 'if' context.
+
+       Stream: js_import, js_path, js_set and js_var are allowed
+       in server context.
+
+    *) Feature: added r.internal property.
+
+    *) Bugfix: fixed reading response body in fetch API.
+
+    *) Bugfix: fixed "js_fetch_timeout" in stream module.
+
+    *) Bugfix: fixed socket leak with 0 fetch timeout.
+
+    Core:
+
+    *) Feature: extended "fs" module.  Added fs.openSync(),
+       fs.promises.open(), fs.fstatSync(), fs.readSync(),
+       fs.writeSync().
+
+       The following properties of FileHandle are implemented:
+       fd, read(), stat(), write(), close().
+
+    *) Bugfix: fixed parseInt(), parseFloat(), Symbol.for()
+       with no arguments.
+
 Changes with njs 0.7.6                                        19 Jul 2022
 
     nginx modules:
