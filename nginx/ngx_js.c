@@ -12,10 +12,22 @@
 #include "ngx_js_fetch.h"
 
 
+njs_int_t ngx_js_ext_conf_prefix(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+
+
 extern njs_module_t  njs_webcrypto_module;
 
 
 static njs_external_t  ngx_js_ext_core[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("conf_prefix"),
+        .u.property = {
+            .handler = ngx_js_ext_conf_prefix,
+        }
+    },
 
     {
         .flags = NJS_EXTERN_PROPERTY,
@@ -301,6 +313,15 @@ ngx_js_ext_flags(njs_vm_t *vm, njs_object_prop_t *prop,
     }
 
     return NJS_OK;
+}
+
+
+njs_int_t
+ngx_js_ext_conf_prefix(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    return njs_vm_value_string_set(vm, retval, ngx_cycle->conf_prefix.data,
+                                   ngx_cycle->conf_prefix.len);
 }
 
 
