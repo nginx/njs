@@ -2849,6 +2849,7 @@ njs_string_trim(const njs_value_t *value, njs_string_prop_t *string,
 
             for ( ;; ) {
                 if (start == prev) {
+                    end = prev;
                     break;
                 }
 

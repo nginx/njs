@@ -8450,6 +8450,14 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'   абв  '.trimStart().trimEnd()"),
       njs_str("абв") },
 
+    { njs_str("["
+              " String.fromCodePoint(0x2028),"
+              " String.fromCodePoint(0x20, 0x2028),"
+              " String.fromCodePoint(0x0009, 0x20, 0x2028),"
+              " String.fromCodePoint(0xFEFF),"
+              "].every(v => v.trimEnd() == '')"),
+      njs_str("true") },
+
     { njs_str("'\\u2029abc\\uFEFF\\u2028'.trim()"),
       njs_str("abc") },
 
