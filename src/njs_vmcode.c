@@ -742,6 +742,10 @@ next:
                 fcopy = (njs_vmcode_function_copy_t *) pc;
                 ret = njs_vmcode_function_copy(vm, fcopy->function,
                                                fcopy->retval);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    goto error;
+                }
+
                 break;
 
             case NJS_VMCODE_FUNCTION_FRAME:
