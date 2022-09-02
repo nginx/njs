@@ -742,7 +742,7 @@ next:
                 fcopy = (njs_vmcode_function_copy_t *) pc;
                 ret = njs_vmcode_function_copy(vm, fcopy->function,
                                                fcopy->retval);
-                if (njs_slow_path(ret != NJS_OK)) {
+                if (njs_slow_path(ret == NJS_ERROR)) {
                     goto error;
                 }
 
