@@ -4615,6 +4615,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Object.prototype[1] = 1; Object.prototype.length = 2; Array.prototype.pop.call({0:0})"),
       njs_str("1") },
 
+    { njs_str("var a = []; Object.freeze(a); Object.getOwnPropertyDescriptor(a, 'length').writable"),
+      njs_str("false") },
+
+    { njs_str("var o = Object.freeze([0,1,2]); o.length=3"),
+      njs_str("TypeError: Cannot assign to read-only property \"length\" of array") },
+
     { njs_str("var o = Object.freeze({0: 0, 1: 1, length: 2}); Array.prototype.pop.call(o)"),
       njs_str("TypeError: Cannot delete property \"1\" of object") },
 

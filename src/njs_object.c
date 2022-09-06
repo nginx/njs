@@ -1553,7 +1553,9 @@ static njs_int_t
 njs_object_set_integrity_level(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t level)
 {
+    uint32_t           length;
     njs_int_t          ret;
+    njs_array_t        *array;
     njs_value_t        *value;
     njs_lvlhsh_t       *hash;
     njs_object_t       *object;
@@ -1576,10 +1578,19 @@ njs_object_set_integrity_level(njs_vm_t *vm, njs_value_t *args,
     }
 
     if (njs_is_fast_array(value)) {
-        ret = njs_array_convert_to_slow_array(vm, njs_array(value));
+        array = njs_array(value);
+        length = array->length;
+
+        ret = njs_array_convert_to_slow_array(vm, array);
         if (ret != NJS_OK) {
             return ret;
         }
+
+        ret = njs_array_length_redefine(vm, value, length);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
     }
 
     object = njs_object(value);
