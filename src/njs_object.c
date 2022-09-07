@@ -1586,11 +1586,10 @@ njs_object_set_integrity_level(njs_vm_t *vm, njs_value_t *args,
             return ret;
         }
 
-        ret = njs_array_length_redefine(vm, value, length);
+        ret = njs_array_length_redefine(vm, value, length, 1);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
         }
-
     }
 
     object = njs_object(value);

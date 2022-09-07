@@ -100,7 +100,7 @@ njs_array_alloc(njs_vm_t *vm, njs_bool_t flat, uint64_t length, uint32_t spare)
         array->length = 0;
 
         njs_set_array(&value, array);
-        ret = njs_array_length_redefine(vm, &value, length);
+        ret = njs_array_length_redefine(vm, &value, length, 1);
         if (njs_slow_path(ret != NJS_OK)) {
             return NULL;
         }
@@ -173,7 +173,7 @@ njs_array_convert_to_slow_array(njs_vm_t *vm, njs_array_t *array)
 
 
 njs_int_t
-njs_array_length_redefine(njs_vm_t *vm, njs_value_t *value, uint32_t length)
+njs_array_length_redefine(njs_vm_t *vm, njs_value_t *value, uint32_t length, int writable)
 {
     njs_object_prop_t  *prop;
 
@@ -192,6 +192,7 @@ njs_array_length_redefine(njs_vm_t *vm, njs_value_t *value, uint32_t length)
         return NJS_ERROR;
     }
 
+    prop->writable = writable;
     prop->enumerable = 0;
     prop->configurable = 0;
 
@@ -209,12 +210,7 @@ njs_array_length_set(njs_vm_t *vm, njs_value_t *value,
     int64_t       prev_length;
     uint32_t      i, length;
     njs_int_t     ret;
-    njs_array_t   *array, *keys;
-
-    array = njs_object_proto_lookup(njs_object(value), NJS_ARRAY, njs_array_t);
-    if (njs_slow_path(array == NULL)) {
-        return NJS_DECLINED;
-    }
+    njs_array_t   *keys;
 
     ret = njs_value_to_number(vm, setval, &num);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -256,7 +252,7 @@ njs_array_length_set(njs_vm_t *vm, njs_value_t *value,
         }
     }
 
-    ret = njs_array_length_redefine(vm, value, length);
+    ret = njs_array_length_redefine(vm, value, length, prev->writable);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -1604,7 +1600,7 @@ static int
 njs_array_indices_handler(const void *first, const void *second, void *ctx)
 {
     double             num1, num2;
-    int64_t            diff;
+    int64_t            diff, cmp_res;
     njs_str_t          str1, str2;
     const njs_value_t  *val1, *val2;
 
@@ -1635,8 +1631,19 @@ njs_array_indices_handler(const void *first, const void *second, void *ctx)
     njs_string_get(val1, &str1);
     njs_string_get(val2, &str2);
 
-    return strncmp((const char *) str1.start, (const char *) str2.start,
+    cmp_res =  strncmp((const char *) str1.start, (const char *) str2.start,
                    njs_min(str1.length, str2.length));
+    if (cmp_res == 0) {
+        if (str1.length < str2.length) {
+            return -1;
+        } else if (str1.length > str2.length) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
+    return cmp_res;
 }
 
 

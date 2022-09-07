@@ -25,7 +25,7 @@ void njs_array_destroy(njs_vm_t *vm, njs_array_t *array);
 njs_int_t njs_array_add(njs_vm_t *vm, njs_array_t *array, njs_value_t *value);
 njs_int_t njs_array_convert_to_slow_array(njs_vm_t *vm, njs_array_t *array);
 njs_int_t njs_array_length_redefine(njs_vm_t *vm, njs_value_t *value,
-    uint32_t length);
+    uint32_t length, int writable);
 njs_int_t njs_array_length_set(njs_vm_t *vm, njs_value_t *value,
     njs_object_prop_t *prev, njs_value_t *setval);
 njs_array_t *njs_array_keys(njs_vm_t *vm, njs_value_t *array, njs_bool_t all);

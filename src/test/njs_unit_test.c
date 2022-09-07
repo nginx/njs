@@ -4455,6 +4455,18 @@ static njs_unit_test_t  njs_test[] =
               "Object.defineProperty(a, 'length', {writable:true})"),
       njs_str("TypeError: Cannot redefine property: \"length\"") },
 
+    { njs_str ("var a =[0,1,2]; Object.defineProperty(a, 100, {value:100});"
+              "njs.dump(a);"),
+      njs_str("[0,1,2,<97 empty items>,100]") },
+
+    { njs_str("var a =[0,1,2]; Object.defineProperty(a, 3, {value:30});"
+              "njs.dump(Object.getOwnPropertyDescriptor(a,3));"),
+      njs_str("{value:30,writable:false,enumerable:false,configurable:false}") },
+
+    { njs_str("var a =[0,1,2]; Object.defineProperty(a, 3, {value:30});"
+              "a[3]=33;"),
+      njs_str("TypeError: Cannot assign to read-only property \"3\" of array") },
+
     { njs_str("[1, 2, 3, 4, 5].copyWithin(0, 3)"),
       njs_str("4,5,3,4,5") },
 
@@ -7032,11 +7044,11 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var a = [,,undefined,undefined,,undefined];"
               "a.sort(function(x, y) { return x - y }); njs.dump(a)"),
-      njs_str("[undefined,undefined,undefined,<empty>,<empty>,<empty>]") },
+      njs_str("[undefined,undefined,undefined,<3 empty items>]") },
 
     { njs_str("var a = [1,,undefined,8,undefined,,undefined,,2];"
               "a.sort(function(x, y) { return x - y }); njs.dump(a)"),
-      njs_str("[1,2,8,undefined,undefined,undefined,<empty>,<empty>,<empty>]") },
+      njs_str("[1,2,8,undefined,undefined,undefined,<3 empty items>]") },
 
     { njs_str("var a = [1,,];"
               "a.sort(function(x, y) { return x - y })"),
@@ -12473,8 +12485,8 @@ static njs_unit_test_t  njs_test[] =
       njs_str("0") },
 
     { njs_str("var x = [0, 1, 2]; x[4294967294] = 4294967294; x.length = 2;"
-              "njs.dump([x,x.length,Array.prototype,Array.prototype.length])"),
-      njs_str("[[0,1],2,[],0]") },
+              "njs.dump([x,x.length,Array.prototype.length])"),
+      njs_str("[[0,1],2,0]") },
 
 #if 0 /* TODO: length 2**53-1. */
     { njs_str("var x = Array(2**20), y = Array(2**12).fill(x);"
@@ -14713,7 +14725,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("a,b") },
 
     { njs_str("Object.getOwnPropertyNames(Object.defineProperty([], 'b', {}))"),
-      njs_str("b,length") },
+      njs_str("length,b") },
 
     { njs_str("Object.getOwnPropertyNames(Object.defineProperty(new String(), 'b', {}))"),
       njs_str("b,length") },
@@ -18014,11 +18026,11 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var a = ['a',,'c']; a.length = 2**31;"
               "njs.dump(a)"),
-      njs_str("['a',<1 empty items>,'c',<2147483645 empty items>]") },
+      njs_str("['a',<empty>,'c',<2147483645 empty items>]") },
 
     { njs_str("var a = [,'b','c']; a.length = 2**31;"
               "njs.dump(a)"),
-      njs_str("[<1 empty items>,'b','c',<2147483645 empty items>]") },
+      njs_str("[<empty>,'b','c',<2147483645 empty items>]") },
 
 #if (!NJS_HAVE_MEMORY_SANITIZER) /* False-positive in MSAN? */
     { njs_str("var a = []; a[2**31] = 'Z'; a[0] = 'A'; njs.dump(a)"),
@@ -18035,7 +18047,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("[1,'[Getter]',3]") },
 
     { njs_str("var a = [1,2,3];Object.defineProperty(a, '1', {enumerable:false});njs.dump(a)"),
-      njs_str("[1,<1 empty items>,3]") },
+      njs_str("[1,2,3]") },
 
     { njs_str("njs.dump(-0)"),
       njs_str("-0") },

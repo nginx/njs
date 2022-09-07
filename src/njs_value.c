@@ -790,7 +790,7 @@ njs_array_property_query(njs_vm_t *vm, njs_property_query_t *pq,
         }
 
         if ((index + 1) > length) {
-            ret = njs_array_length_redefine(vm, &value, index + 1);
+            ret = njs_array_length_redefine(vm, &value, index + 1, 1);
             if (njs_slow_path(ret != NJS_OK)) {
                 return ret;
             }
@@ -1223,11 +1223,10 @@ slow_path:
         if (pq.own) {
             switch (prop->type) {
             case NJS_PROPERTY:
-                if (njs_slow_path(pq.lhq.key_hash == NJS_LENGTH_HASH)) {
-                    if (njs_strstr_eq(&pq.lhq.key, &length_key)) {
-                        ret = njs_array_length_set(vm, value, prop, setval);
-                        if (ret != NJS_DECLINED) {
-                            return ret;
+                if (njs_is_array(value)) {
+                    if (njs_slow_path(pq.lhq.key_hash == NJS_LENGTH_HASH)) {
+                        if (njs_strstr_eq(&pq.lhq.key, &length_key)) {
+                            return njs_array_length_set(vm, value, prop, setval);
                         }
                     }
                 }

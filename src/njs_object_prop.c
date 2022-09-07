@@ -153,6 +153,21 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
         }
     }
 
+    if (njs_slow_path(njs_is_fast_array(object))) {
+        array = njs_array(object);
+        length = array->length;
+
+        ret = njs_array_convert_to_slow_array(vm, array);
+        if (ret != NJS_OK) {
+            return NJS_ERROR;
+        }
+
+        ret = njs_array_length_redefine(vm, object, length, 1);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
 again:
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_SET, 1);
@@ -290,7 +305,7 @@ set_prop:
                 return ret;
             }
 
-            ret = njs_array_length_redefine(vm, object, length);
+            ret = njs_array_length_redefine(vm, object, length, 1);
             if (njs_slow_path(ret != NJS_OK)) {
                 return ret;
             }
@@ -440,11 +455,24 @@ done:
             }
 
         } else {
-            if (njs_slow_path(pq.lhq.key_hash == NJS_LENGTH_HASH)) {
-                if (njs_strstr_eq(&pq.lhq.key, &length_key)) {
-                    ret = njs_array_length_set(vm, object, prev, &prop->value);
-                    if (ret != NJS_DECLINED) {
-                        return ret;
+            if (njs_is_array(object)) {
+                if (njs_slow_path(pq.lhq.key_hash == NJS_LENGTH_HASH)) {
+
+                    if (njs_strstr_eq(&pq.lhq.key, &length_key)) {
+
+                        if (prev->configurable != 1 &&
+                            prev->writable != 1 &&
+                            !njs_values_strict_equal(&prev->value, &prop->value))
+                        {
+                            njs_type_error(vm, "Cannot redefine property: \"length\"");
+                            return NJS_ERROR;
+                        }
+
+                        if (prop->writable != NJS_ATTRIBUTE_UNSET) {
+                            prev->writable = prop->writable;
+                        }
+
+                        return njs_array_length_set(vm, object, prev, &prop->value);
                     }
                 }
             }
