@@ -682,7 +682,7 @@ njs_mp_free(njs_mp_t *mp, void *p)
         }
 
     } else {
-        njs_assert_msg(0, "freed pointer is out of mp: %p\n", p);
+        njs_assert_msg(p == NULL, "freed pointer is out of mp: %p\n", p);
     }
 }
 
