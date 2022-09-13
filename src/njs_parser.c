@@ -1983,6 +1983,10 @@ njs_parser_property_definition(njs_parser_t *parser, njs_lexer_token_t *token,
                                     njs_parser_computed_property_async_after);
         }
 
+        if (token->type == NJS_TOKEN_COLON) {
+            return njs_parser_property_name(parser, current, 2);
+        }
+
         if (!njs_lexer_token_is_identifier_name(token)) {
             return njs_parser_failed(parser);
         }

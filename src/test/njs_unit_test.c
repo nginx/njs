@@ -3883,8 +3883,8 @@ static njs_unit_test_t  njs_test[] =
                  "[f.length, delete f.length, f.length, delete f.length]"),
       njs_str("2,true,0,true") },
 
-    { njs_str("njs.dump({break:1,3:2,'a':4,\"b\":2,true:1,null:0})"),
-      njs_str("{break:1,3:2,a:4,b:2,true:1,null:0}") },
+    { njs_str("njs.dump({break:1,3:2,'a':4,\"b\":2,true:1,null:0,async:2})"),
+      njs_str("{break:1,3:2,a:4,b:2,true:1,null:0,async:2}") },
 
     { njs_str("var o1 = {a:1,b:2}, o2 = {c:3}; o1.a + o2.c"),
       njs_str("4") },
