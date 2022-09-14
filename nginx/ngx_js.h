@@ -38,6 +38,23 @@ typedef ngx_flag_t (*ngx_external_size_pt)(njs_vm_t *vm,
     njs_external_ptr_t e);
 typedef ngx_ssl_t *(*ngx_external_ssl_pt)(njs_vm_t *vm, njs_external_ptr_t e);
 
+typedef struct {
+    ngx_str_t              name;
+    ngx_str_t              path;
+    u_char                *file;
+    ngx_uint_t             line;
+} ngx_js_named_path_t;
+
+
+#define NGX_JS_COMMON_CONF                                                    \
+    njs_vm_t              *vm;                                                \
+    ngx_array_t           *imports;                                           \
+    ngx_array_t           *paths                                              \
+
+typedef struct {
+    NGX_JS_COMMON_CONF;
+} ngx_js_conf_t;
+
 
 #define ngx_external_connection(vm, e)                                        \
     (*((ngx_connection_t **) ((u_char *) (e) + njs_vm_meta(vm, 0))))
@@ -75,6 +92,7 @@ njs_int_t ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t level);
 void ngx_js_logger(njs_vm_t *vm, njs_external_ptr_t external,
     njs_log_level_t level, const u_char *start, size_t length);
+char * ngx_js_import(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 
 njs_int_t ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);

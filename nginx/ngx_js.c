@@ -386,3 +386,110 @@ ngx_js_logger(njs_vm_t *vm, njs_external_ptr_t external, njs_log_level_t level,
 
     c->log->handler = handler;
 }
+
+
+char *
+ngx_js_import(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_js_conf_t *jscf = conf;
+
+    u_char               *p, *end, c;
+    ngx_int_t             from;
+    ngx_str_t            *value, name, path;
+    ngx_js_named_path_t  *import;
+
+    value = cf->args->elts;
+    from = (cf->args->nelts == 4);
+
+    if (from) {
+        if (ngx_strcmp(value[2].data, "from") != 0) {
+            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                               "invalid parameter \"%V\"", &value[2]);
+            return NGX_CONF_ERROR;
+        }
+    }
+
+    name = value[1];
+    path = (from ? value[3] : value[1]);
+
+    if (!from) {
+        end = name.data + name.len;
+
+        for (p = end - 1; p >= name.data; p--) {
+            if (*p == '/') {
+                break;
+            }
+        }
+
+        name.data = p + 1;
+        name.len = end - p - 1;
+
+        if (name.len < 3
+            || ngx_memcmp(&name.data[name.len - 3], ".js", 3) != 0)
+        {
+            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                               "cannot extract export name from file path "
+                               "\"%V\", use extended \"from\" syntax", &path);
+            return NGX_CONF_ERROR;
+        }
+
+        name.len -= 3;
+    }
+
+    if (name.len == 0) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "empty export name");
+        return NGX_CONF_ERROR;
+    }
+
+    p = name.data;
+    end = name.data + name.len;
+
+    while (p < end) {
+        c = ngx_tolower(*p);
+
+        if (*p != '_' && (c < 'a' || c > 'z')) {
+            if (p == name.data) {
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "cannot start "
+                                   "with \"%c\" in export name \"%V\"", *p,
+                                   &name);
+                return NGX_CONF_ERROR;
+            }
+
+            if (*p < '0' || *p > '9') {
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "invalid character "
+                                   "\"%c\" in export name \"%V\"", *p,
+                                   &name);
+                return NGX_CONF_ERROR;
+            }
+        }
+
+        p++;
+    }
+
+    if (ngx_strchr(path.data, '\'') != NULL) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "invalid character \"'\" "
+                           "in file path \"%V\"", &path);
+        return NGX_CONF_ERROR;
+    }
+
+    if (jscf->imports == NGX_CONF_UNSET_PTR) {
+        jscf->imports = ngx_array_create(cf->pool, 4,
+                                         sizeof(ngx_js_named_path_t));
+        if (jscf->imports == NULL) {
+            return NGX_CONF_ERROR;
+        }
+    }
+
+    import = ngx_array_push(jscf->imports);
+    if (import == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    import->name = name;
+    import->path = path;
+    import->file = cf->conf_file->file.name.data;
+    import->line = cf->conf_file->line;
+
+    return NGX_CONF_OK;
+}
+
