@@ -51,7 +51,6 @@ njs_is_whitespace(u_char c)
     case 0x0C:  /* <FF>   */
     case 0x0D:  /* <CR>   */
     case 0x20:  /* <SP>   */
-    case 0xA0:  /* <NBSP> */
         return 1;
 
     default:

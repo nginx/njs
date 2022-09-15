@@ -7341,6 +7341,11 @@ static njs_unit_test_t  njs_test[] =
                  "[a.length, a[33], a[34]]"),
       njs_str("35,a,�") },
 
+    /* Spaces: U+0009U+000BU+000CU+0020U+00A0U+000AU+000DU+2028U+2029 */
+
+    { njs_str("\x09\x0a\x0b\x0c\x0d \xc2\xa0'a'\xe2\x80\xa8+\xe2\x80\xa9'b'"),
+      njs_str("ab") },
+
     /* Escape strings. */
 
     { njs_str("'\\a \\' \\\" \\\\ \\0 \\b \\f \\n \\r \\t \\v'"),

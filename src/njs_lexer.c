@@ -45,8 +45,8 @@ static const uint8_t  njs_tokens[256]  njs_aligned(64) = {
                 NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
                 NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
     /* \t */    NJS_TOKEN_ILLEGAL,           NJS_TOKEN_SPACE,
-    /* \n */    NJS_TOKEN_LINE_END,          NJS_TOKEN_ILLEGAL,
-    /* \r */    NJS_TOKEN_ILLEGAL,           NJS_TOKEN_SPACE,
+    /* \n */    NJS_TOKEN_LINE_END,          NJS_TOKEN_SPACE,
+    /* \r */    NJS_TOKEN_SPACE,             NJS_TOKEN_SPACE,
                 NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
 
     /* 0x10 */  NJS_TOKEN_ILLEGAL,           NJS_TOKEN_ILLEGAL,
@@ -437,15 +437,38 @@ njs_lexer_consume_token(njs_lexer_t *lexer, unsigned length)
 njs_int_t
 njs_lexer_make_token(njs_lexer_t *lexer, njs_lexer_token_t *token)
 {
-    u_char  c, *p;
+    u_char                c, *p;
+    uint32_t              cp;
+    njs_unicode_decode_t  ctx;
 
     c = ' ';
 
-    while (lexer->start < lexer->end) {
-        c = *lexer->start++;
+    njs_utf8_decode_init(&ctx);
 
-        if (njs_tokens[c] != NJS_TOKEN_SPACE) {
-            break;
+    while (lexer->start < lexer->end) {
+        c = *lexer->start;
+
+        if (njs_fast_path(!(c & 0x80))) {
+            lexer->start++;
+
+            if (njs_tokens[c] != NJS_TOKEN_SPACE) {
+                break;
+            }
+
+        } else {
+
+            /* Unicode. */
+
+            cp = njs_utf8_decode(&ctx, (const u_char **) &lexer->start,
+                                 lexer->end);
+            if (njs_slow_path(cp > NJS_UNICODE_MAX_CODEPOINT)) {
+                c = '\0';
+                break;
+            }
+
+            if (!njs_utf8_is_whitespace(cp)) {
+                break;
+            }
         }
     }
 
