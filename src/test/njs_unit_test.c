@@ -3651,7 +3651,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("TypeError: cannot get property \"b\" of undefined") },
 
     { njs_str("var a = null; a.b++; a.b"),
-      njs_str("TypeError: cannot get property \"b\" of undefined") },
+      njs_str("TypeError: cannot get property \"b\" of null") },
 
     { njs_str("var a = true; a.b++; a.b"),
       njs_str("TypeError: property set on primitive boolean type") },
@@ -4422,6 +4422,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var o = null; o[{toString:()=>{throw 'OOps'}}] = 1"),
       njs_str("TypeError: cannot set property \"[object Object]\" of null") },
+
+    { njs_str("var o = null; o[{toString:()=>{throw 'OOps'}}] += 1"),
+      njs_str("TypeError: cannot get property \"[object Object]\" of null") },
 
     /**/
 
@@ -12281,7 +12284,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("TypeError: Cyclic __proto__ value") },
 
     { njs_str("Object.prototype.__proto__.f()"),
-      njs_str("TypeError: cannot get property \"f\" of undefined") },
+      njs_str("TypeError: cannot get property \"f\" of null") },
 
     { njs_str("var obj = Object.create(null); obj.one = 1;"
                  "var res = [];"
