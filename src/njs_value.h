@@ -532,6 +532,10 @@ typedef struct {
     (njs_is_string(value) || njs_is_symbol(value))
 
 
+#define njs_is_index_or_key(value)                                            \
+    (njs_is_number(value) || njs_is_key(value))
+
+
 /*
  * The truth field coincides with short_string.size and short_string.length
  * so when string size and length are zero the string's value is false and

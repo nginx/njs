@@ -2450,7 +2450,7 @@ njs_object_prototype_has_own_property(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
     njs_int_t             ret;
-    njs_value_t           *value, *property;
+    njs_value_t           *value, *property, lvalue;
     njs_property_query_t  pq;
 
     value = njs_argument(args, 0);
@@ -2461,7 +2461,14 @@ njs_object_prototype_has_own_property(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
-    property = njs_arg(args, nargs, 1);
+    property = njs_lvalue_arg(&lvalue, args, nargs, 1);
+
+    if (njs_slow_path(!njs_is_key(property))) {
+        ret = njs_value_to_key(vm, property, property);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+    }
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 1);
 
@@ -2488,7 +2495,7 @@ njs_object_prototype_prop_is_enumerable(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
     njs_int_t             ret;
-    njs_value_t           *value, *property;
+    njs_value_t           *value, *property, lvalue;
     const njs_value_t     *retval;
     njs_object_prop_t     *prop;
     njs_property_query_t  pq;
@@ -2501,7 +2508,14 @@ njs_object_prototype_prop_is_enumerable(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
-    property = njs_arg(args, nargs, 1);
+    property = njs_lvalue_arg(&lvalue, args, nargs, 1);
+
+    if (njs_slow_path(!njs_is_key(property))) {
+        ret = njs_value_to_key(vm, property, property);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+    }
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 1);
 

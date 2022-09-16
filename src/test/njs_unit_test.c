@@ -3462,7 +3462,7 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("function f() { Object.prototype.toString = 1; };"
               "Object.prototype.toString = f;"
               "(function () { try { 's'[{}](); } catch (e) { throw e; } })()"),
-      njs_str("TypeError: Cannot convert object to primitive value") },
+      njs_str("TypeError: (intermediate value)[\"undefined\"] is not a function") },
 
     { njs_str("var i; for (i = 0; i < 10; i++) { i += 1 } i"),
       njs_str("10") },
@@ -4408,6 +4408,20 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var n = { toString: function() { return '1.5' } };"
                  "var a = [1,2]; a[1.5] = 5; '' + (n in a) + (delete a[n])"),
       njs_str("truetrue") },
+
+    { njs_str("var o = {},  v = o;"
+              "v[{toString: () => { v = 'V'; return 'a';}}] = 1;"
+              "[v, o.a]"),
+      njs_str("V,1") },
+
+    { njs_str("var o = null; o[{toString:()=>{throw 'OOps'}}]"),
+      njs_str("TypeError: cannot get property \"[object Object]\" of null") },
+
+    { njs_str("var o = null; o[{toString:()=>{throw 'OOps'}}]()"),
+      njs_str("TypeError: cannot get property \"[object Object]\" of null") },
+
+    { njs_str("var o = null; o[{toString:()=>{throw 'OOps'}}] = 1"),
+      njs_str("TypeError: cannot set property \"[object Object]\" of null") },
 
     /**/
 
