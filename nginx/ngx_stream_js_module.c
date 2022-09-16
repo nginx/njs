@@ -169,6 +169,13 @@ static ngx_command_t  ngx_stream_js_commands[] = {
       0,
       NULL },
 
+    { ngx_string("js_preload_object"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE13,
+      ngx_js_preload_object,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      0,
+      NULL },
+
     { ngx_string("js_path"),
       NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_str_array_slot,
@@ -858,8 +865,12 @@ static ngx_int_t
 ngx_stream_js_init_vm(ngx_stream_session_t *s)
 {
     njs_int_t                  rc;
+    njs_str_t                  key;
     ngx_str_t                  exception;
+    ngx_uint_t                 i;
+    njs_opaque_value_t         retval;
     ngx_pool_cleanup_t        *cln;
+    ngx_js_named_path_t       *preload;
     ngx_stream_js_ctx_t       *ctx;
     ngx_stream_js_srv_conf_t  *jscf;
 
@@ -897,6 +908,27 @@ ngx_stream_js_init_vm(ngx_stream_session_t *s)
 
     cln->handler = ngx_stream_js_cleanup;
     cln->data = s;
+
+    /* bind objects from preload vm */
+
+    if (jscf->preload_objects != NGX_CONF_UNSET_PTR) {
+        preload = jscf->preload_objects->elts;
+
+        for (i = 0; i < jscf->preload_objects->nelts; i++) {
+            key.start = preload[i].name.data;
+            key.length = preload[i].name.len;
+
+            rc = njs_vm_value(jscf->preload_vm, &key, njs_value_arg(&retval));
+            if (rc != NJS_OK) {
+                return NGX_ERROR;
+            }
+
+            rc = njs_vm_bind(ctx->vm, &key, njs_value_arg(&retval), 0);
+            if (rc != NJS_OK) {
+                return NGX_ERROR;
+            }
+        }
+    }
 
     if (njs_vm_start(ctx->vm) == NJS_ERROR) {
         ngx_js_retval(ctx->vm, NULL, &exception);
@@ -953,9 +985,13 @@ ngx_stream_js_cleanup(void *data)
 static void
 ngx_stream_js_cleanup_vm(void *data)
 {
-    njs_vm_t *vm = data;
+    ngx_stream_js_srv_conf_t *jscf = data;
 
-    njs_vm_destroy(vm);
+    njs_vm_destroy(jscf->vm);
+
+    if (jscf->preload_objects != NGX_CONF_UNSET_PTR) {
+        njs_vm_destroy(jscf->preload_vm);
+    }
 }
 
 
@@ -1644,8 +1680,8 @@ ngx_stream_js_merge_vm(ngx_conf_t *cf, ngx_stream_js_srv_conf_t *conf,
 {
     ngx_str_t            *path, *s;
     ngx_uint_t            i;
-    ngx_array_t          *imports, *paths;
-    ngx_js_named_path_t  *import, *pi;
+    ngx_array_t          *imports, *preload_objects, *paths;
+    ngx_js_named_path_t  *import, *pi, *pij, *preload;
 
     if (prev->imports != NGX_CONF_UNSET_PTR && prev->vm == NULL) {
         if (ngx_stream_js_init_conf_vm(cf, prev) != NGX_OK) {
@@ -1654,13 +1690,55 @@ ngx_stream_js_merge_vm(ngx_conf_t *cf, ngx_stream_js_srv_conf_t *conf,
     }
 
     if (conf->imports == NGX_CONF_UNSET_PTR
-        && conf->paths == NGX_CONF_UNSET_PTR)
+        && conf->paths == NGX_CONF_UNSET_PTR
+        && conf->preload_objects == NGX_CONF_UNSET_PTR)
     {
         if (prev->vm != NULL) {
+            conf->preload_objects = prev->preload_objects;
             conf->imports = prev->imports;
             conf->paths = prev->paths;
             conf->vm = prev->vm;
+
+            conf->preload_vm = prev->preload_vm;
+
             return NGX_OK;
+        }
+    }
+
+    if (prev->preload_objects != NGX_CONF_UNSET_PTR) {
+        if (conf->preload_objects == NGX_CONF_UNSET_PTR) {
+            conf->preload_objects = prev->preload_objects;
+
+        } else {
+            preload_objects = ngx_array_create(cf->pool, 4,
+                                       sizeof(ngx_js_named_path_t));
+            if (preload_objects == NULL) {
+                return NGX_ERROR;
+            }
+
+            pij = prev->preload_objects->elts;
+
+            for (i = 0; i < prev->preload_objects->nelts; i++) {
+                preload = ngx_array_push(preload_objects);
+                if (preload == NULL) {
+                    return NGX_ERROR;
+                }
+
+                *preload = pij[i];
+            }
+
+            pij = conf->preload_objects->elts;
+
+            for (i = 0; i < conf->preload_objects->nelts; i++) {
+                preload = ngx_array_push(preload_objects);
+                if (preload == NULL) {
+                    return NGX_ERROR;
+                }
+
+                *preload = pij[i];
+            }
+
+            conf->preload_objects = preload_objects;
         }
     }
 
@@ -1763,6 +1841,12 @@ ngx_stream_js_init_conf_vm(ngx_conf_t *cf, ngx_stream_js_srv_conf_t *conf)
     static const njs_str_t line_number_key = njs_str("lineNumber");
     static const njs_str_t file_name_key = njs_str("fileName");
 
+    if (conf->preload_objects != NGX_CONF_UNSET_PTR) {
+       if (ngx_js_init_preload_vm(cf, (ngx_js_conf_t *)conf) != NGX_OK) {
+           return NGX_ERROR;
+       }
+    }
+
     size = 0;
 
     import = conf->imports->elts;
@@ -1823,7 +1907,7 @@ ngx_stream_js_init_conf_vm(ngx_conf_t *cf, ngx_stream_js_srv_conf_t *conf)
     }
 
     cln->handler = ngx_stream_js_cleanup_vm;
-    cln->data = conf->vm;
+    cln->data = conf;
 
     path.start = ngx_cycle->conf_prefix.data;
     path.length = ngx_cycle->conf_prefix.len;
@@ -2026,6 +2110,7 @@ ngx_stream_js_create_srv_conf(ngx_conf_t *cf)
      * set by ngx_pcalloc():
      *
      *     conf->vm = NULL;
+     *     conf->preload_vm = NULL;
      *     conf->access = { 0, NULL };
      *     conf->preread = { 0, NULL };
      *     conf->filter = { 0, NULL };
@@ -2040,6 +2125,7 @@ ngx_stream_js_create_srv_conf(ngx_conf_t *cf)
     conf->buffer_size = NGX_CONF_UNSET_SIZE;
     conf->max_response_body_size = NGX_CONF_UNSET_SIZE;
     conf->timeout = NGX_CONF_UNSET_MSEC;
+    conf->preload_objects = NGX_CONF_UNSET_PTR;
 
 #if (NGX_STREAM_SSL)
     conf->ssl_verify = NGX_CONF_UNSET;

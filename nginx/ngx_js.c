@@ -493,3 +493,203 @@ ngx_js_import(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
+
+char *
+ngx_js_preload_object(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_js_conf_t    *jscf = conf;
+
+    u_char               *p, *end, c;
+    ngx_int_t             from;
+    ngx_str_t            *value, name, path;
+    ngx_js_named_path_t  *preload;
+
+    value = cf->args->elts;
+    from = (cf->args->nelts == 4);
+
+    if (from) {
+        if (ngx_strcmp(value[2].data, "from") != 0) {
+            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                               "invalid parameter \"%V\"", &value[2]);
+            return NGX_CONF_ERROR;
+        }
+    }
+
+    name = value[1];
+    path = (from ? value[3] : value[1]);
+
+    if (!from) {
+        end = name.data + name.len;
+
+        for (p = end - 1; p >= name.data; p--) {
+            if (*p == '/') {
+                break;
+            }
+        }
+
+        name.data = p + 1;
+        name.len = end - p - 1;
+
+        if (name.len < 5
+            || ngx_memcmp(&name.data[name.len - 5], ".json", 5) != 0)
+        {
+            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                               "cannot extract export name from file path "
+                               "\"%V\", use extended \"from\" syntax", &path);
+            return NGX_CONF_ERROR;
+        }
+
+        name.len -= 5;
+    }
+
+    if (name.len == 0) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "empty global name");
+        return NGX_CONF_ERROR;
+    }
+
+    p = name.data;
+    end = name.data + name.len;
+
+    while (p < end) {
+        c = ngx_tolower(*p);
+
+        if (*p != '_' && (c < 'a' || c > 'z')) {
+            if (p == name.data) {
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "cannot start "
+                                   "with \"%c\" in global name \"%V\"", *p,
+                                   &name);
+                return NGX_CONF_ERROR;
+            }
+
+            if (*p < '0' || *p > '9' || *p == '.') {
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "invalid character "
+                                   "\"%c\" in global name \"%V\"", *p,
+                                   &name);
+                return NGX_CONF_ERROR;
+            }
+        }
+
+        p++;
+    }
+
+    if (ngx_strchr(path.data, '\'') != NULL) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "invalid character \"'\" "
+                           "in file path \"%V\"", &path);
+        return NGX_CONF_ERROR;
+    }
+
+    if (jscf->preload_objects == NGX_CONF_UNSET_PTR) {
+        jscf->preload_objects = ngx_array_create(cf->pool, 4,
+                                         sizeof(ngx_js_named_path_t));
+        if (jscf->preload_objects == NULL) {
+            return NGX_CONF_ERROR;
+        }
+    }
+
+    preload = ngx_array_push(jscf->preload_objects);
+    if (preload == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    preload->name = name;
+    preload->path = path;
+    preload->file = cf->conf_file->file.name.data;
+    preload->line = cf->conf_file->line;
+
+    return NGX_CONF_OK;
+}
+
+
+ngx_int_t
+ngx_js_init_preload_vm(ngx_conf_t *cf, ngx_js_conf_t *conf)
+{
+    u_char               *p, *start;
+    size_t                size;
+    njs_vm_t             *vm;
+    njs_int_t             ret;
+    ngx_uint_t            i;
+    njs_vm_opt_t          options;
+    ngx_js_named_path_t  *preload;
+
+    njs_vm_opt_init(&options);
+
+    options.init = 1;
+
+    vm = njs_vm_create(&options);
+    if (vm == NULL) {
+        goto error;
+    }
+
+    ret = ngx_js_core_init(vm, cf->log);
+    if (njs_slow_path(ret != NJS_OK)) {
+        goto error;
+    }
+
+    njs_str_t str = njs_str(
+        "import fs from 'fs';"
+
+        "let g = (function (np, no, nf, nsp, r) {"
+            "return function (n, p) {"
+                "p = (p[0] == '/') ? p : ngx.conf_prefix + p;"
+                "let o = r(p);"
+                "globalThis[n] = np("
+                    "o,"
+                    "function (k, v)  {"
+                        "if (v instanceof no) {"
+                            "nf(nsp(v, null));"
+                        "}"
+                        "return v;"
+                    "}"
+                ");"
+                "return;"
+            "}"
+        "})(JSON.parse,Object,Object.freeze,"
+           "Object.setPrototypeOf,fs.readFileSync);\n"
+    );
+
+    size = str.length;
+
+    preload = conf->preload_objects->elts;
+    for (i = 0; i < conf->preload_objects->nelts; i++) {
+        size += sizeof("g('','');\n") - 1 + preload[i].name.len
+                + preload[i].path.len;
+    }
+
+    start = ngx_pnalloc(cf->pool, size);
+    if (start == NULL) {
+        return NGX_ERROR;
+    }
+
+    p = ngx_cpymem(start, str.start, str.length);
+
+    preload = conf->preload_objects->elts;
+    for (i = 0; i < conf->preload_objects->nelts; i++) {
+       p = ngx_cpymem(p, "g('", sizeof("g('") - 1);
+       p = ngx_cpymem(p, preload[i].name.data, preload[i].name.len);
+       p = ngx_cpymem(p, "','", sizeof("','") - 1);
+       p = ngx_cpymem(p, preload[i].path.data, preload[i].path.len);
+       p = ngx_cpymem(p, "');\n", sizeof("');\n") - 1);
+    }
+
+    ret = njs_vm_compile(vm, &start,  start + size);
+    if (ret != NJS_OK) {
+        goto error;
+    }
+
+    ret = njs_vm_start(vm);
+    if (ret != NJS_OK) {
+        goto error;
+    }
+
+    conf->preload_vm = vm;
+
+    return NGX_OK;
+
+error:
+
+    if (vm != NULL) {
+        njs_vm_destroy(vm);
+    }
+
+    return NGX_ERROR;
+}

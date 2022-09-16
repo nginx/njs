@@ -49,7 +49,10 @@ typedef struct {
 #define NGX_JS_COMMON_CONF                                                    \
     njs_vm_t              *vm;                                                \
     ngx_array_t           *imports;                                           \
-    ngx_array_t           *paths                                              \
+    ngx_array_t           *paths;                                             \
+                                                                              \
+    njs_vm_t              *preload_vm;                                        \
+    ngx_array_t           *preload_objects                                    \
 
 typedef struct {
     NGX_JS_COMMON_CONF;
@@ -93,6 +96,8 @@ njs_int_t ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 void ngx_js_logger(njs_vm_t *vm, njs_external_ptr_t external,
     njs_log_level_t level, const u_char *start, size_t length);
 char * ngx_js_import(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+char * ngx_js_preload_object(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+ngx_int_t ngx_js_init_preload_vm(ngx_conf_t *cf, ngx_js_conf_t *conf);
 
 njs_int_t ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
