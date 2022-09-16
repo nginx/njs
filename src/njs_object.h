@@ -65,6 +65,8 @@ njs_int_t njs_object_prototype_create_constructor(njs_vm_t *vm,
     njs_value_t *retval);
 njs_value_t *njs_property_constructor_set(njs_vm_t *vm, njs_lvlhsh_t *hash,
     njs_value_t *constructor);
+njs_int_t njs_object_to_string(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *retval);
 njs_int_t njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 njs_int_t njs_object_length(njs_vm_t *vm, njs_value_t *value, int64_t *dst);
@@ -186,7 +188,8 @@ njs_primitive_value_to_key(njs_vm_t *vm, njs_value_t *dst,
 
 
 njs_inline njs_int_t
-njs_value_to_key(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
+njs_value_to_key2(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
+    njs_bool_t convert)
 {
     njs_int_t    ret;
     njs_value_t  primitive;
@@ -197,7 +200,13 @@ njs_value_to_key(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
             value = njs_object_value(value);
 
         } else {
-            ret = njs_value_to_primitive(vm, &primitive, value, 1);
+            if (convert) {
+                ret = njs_value_to_primitive(vm, &primitive, value, 1);
+
+            } else {
+                ret = njs_object_to_string(vm, value, &primitive);
+            }
+
             if (njs_slow_path(ret != NJS_OK)) {
                 return ret;
             }
@@ -207,6 +216,13 @@ njs_value_to_key(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
     }
 
     return njs_primitive_value_to_key(vm, dst, value);
+}
+
+
+njs_inline njs_int_t
+njs_value_to_key(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
+{
+    return njs_value_to_key2(vm, dst, value, 1);
 }
 
 

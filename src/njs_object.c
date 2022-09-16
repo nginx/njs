@@ -2343,17 +2343,23 @@ njs_int_t
 njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
+    return njs_object_to_string(vm, &args[0], &vm->retval);
+}
+
+
+njs_int_t
+njs_object_to_string(njs_vm_t *vm, njs_value_t *this, njs_value_t *retval)
+{
     u_char             *p;
     njs_int_t          ret;
-    njs_value_t        tag, *this;
+    njs_value_t        tag;
     njs_string_prop_t  string;
     const njs_value_t  *name;
 
-    this = njs_argument(args, 0);
-
     if (njs_is_null_or_undefined(this)) {
-        vm->retval = njs_is_null(this) ? njs_object_null_string
-                                       : njs_object_undefined_string;
+        njs_value_assign(retval,
+                         njs_is_null(this) ? &njs_object_null_string
+                                           : &njs_object_undefined_string);
 
         return NJS_OK;
     }
@@ -2418,14 +2424,14 @@ njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
             return NJS_ERROR;
         }
 
-        vm->retval = *name;
+        njs_value_assign(retval, name);
 
         return NJS_OK;
     }
 
     (void) njs_string_prop(&string, &tag);
 
-    p = njs_string_alloc(vm, &vm->retval, string.size + njs_length("[object ]"),
+    p = njs_string_alloc(vm, retval, string.size + njs_length("[object ]"),
                          string.length + njs_length("[object ]"));
     if (njs_slow_path(p == NULL)) {
         return NJS_ERROR;
