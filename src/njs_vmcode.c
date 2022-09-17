@@ -883,6 +883,7 @@ next:
             case NJS_VMCODE_ARGUMENTS:
                 ret = njs_vmcode_arguments(vm, pc);
                 if (njs_slow_path(ret == NJS_ERROR)) {
+                    goto error;
                 }
 
                 break;
