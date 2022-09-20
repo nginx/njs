@@ -3647,6 +3647,36 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = 1; var b = { x:2 }; a = b.x += (a = 1)"),
       njs_str("3") },
 
+    { njs_str("var o = {true:1}; o[true] += 1; o.true"),
+      njs_str("2") },
+
+    { njs_str("var o = {false:1}; o[false] += 1; o.false"),
+      njs_str("2") },
+
+    { njs_str("var o = {undefined:1}; o[undefined] += 1; o.undefined"),
+      njs_str("2") },
+
+    { njs_str("var o = {'5':1}; o[5] += 1; o[5]"),
+      njs_str("2") },
+
+    { njs_str("var o = {a:1}; o[{toString:()=>'a'}] += 1; o.a"),
+      njs_str("2") },
+
+    { njs_str("var o = {true:1}; o[true]++; o.true"),
+      njs_str("2") },
+
+    { njs_str("var o = {false:1}; o[false]++; o.false"),
+      njs_str("2") },
+
+    { njs_str("var o = {undefined:1}; o[undefined]++; o.undefined"),
+      njs_str("2") },
+
+    { njs_str("var o = {'5':1}; o[5]++; o[5]"),
+      njs_str("2") },
+
+    { njs_str("var o = {a:1}; o[{toString:()=>'a'}]++; o.a"),
+      njs_str("2") },
+
     { njs_str("var a = undefined; a.b++; a.b"),
       njs_str("TypeError: cannot get property \"b\" of undefined") },
 

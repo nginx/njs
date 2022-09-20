@@ -157,6 +157,11 @@ njs_int_t njs_parser_serialize_ast(njs_parser_node_t *node, njs_chb_t *chain);
      || (node)->token_type == NJS_TOKEN_PROPERTY)
 
 
+#define njs_parser_is_primitive(node)                                         \
+    ((node)->token_type >= NJS_TOKEN_NULL                                     \
+     && (node)->token_type <= NJS_TOKEN_STRING)
+
+
 #define njs_parser_syntax_error(parser, fmt, ...)                             \
     njs_parser_lexer_error(parser, NJS_OBJ_TYPE_SYNTAX_ERROR, fmt,            \
                            ##__VA_ARGS__)
