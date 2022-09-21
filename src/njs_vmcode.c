@@ -889,21 +889,41 @@ next:
                 break;
 
             case NJS_VMCODE_TO_PROPERTY_KEY:
+            case NJS_VMCODE_TO_PROPERTY_KEY_CHK:
                 njs_vmcode_operand(vm, (njs_index_t) value2, retval);
-                njs_vmcode_operand(vm, vmcode->operand3, value2);
 
-                if (njs_slow_path(njs_is_null_or_undefined(value2))) {
-                    (void) njs_throw_cannot_property(vm, value2, value1,
-                                                     "get");
-                    goto error;
+                if (op == NJS_VMCODE_TO_PROPERTY_KEY_CHK) {
+                    njs_vmcode_operand(vm, vmcode->operand3, value2);
+
+                    if (njs_slow_path(njs_is_null_or_undefined(value2))) {
+                        (void) njs_throw_cannot_property(vm, value2, value1,
+                                                         "get");
+                        goto error;
+                    }
                 }
 
-                ret = njs_value_to_string(vm, retval, value1);
+                ret = njs_value_to_key(vm, retval, value1);
                 if (njs_fast_path(ret == NJS_ERROR)) {
                     goto error;
                 }
 
-                ret = sizeof(njs_vmcode_3addr_t);
+                ret = (op == NJS_VMCODE_TO_PROPERTY_KEY)
+                       ? sizeof(njs_vmcode_2addr_t)
+                       : sizeof(njs_vmcode_3addr_t);
+                break;
+
+            case NJS_VMCODE_SET_FUNCTION_NAME:
+                njs_vmcode_operand(vm, (njs_index_t) value2, value2);
+
+                njs_assert(njs_is_function(value2));
+
+                ret = njs_function_name_set(vm, njs_function(value2), value1,
+                                            NULL);
+                if (njs_slow_path(ret == NJS_ERROR)) {
+                    return ret;
+                }
+
+                ret = sizeof(njs_vmcode_2addr_t);
                 break;
 
             case NJS_VMCODE_PROTO_INIT:

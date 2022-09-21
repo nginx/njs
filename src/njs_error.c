@@ -1319,6 +1319,11 @@ njs_add_backtrace_entry(njs_vm_t *vm, njs_arr_t *stack,
 
     if (code != NULL) {
         be->name = code->name;
+
+        if (be->name.length == 0) {
+            be->name = njs_entry_anonymous;
+        }
+
         be->line = njs_lookup_line(code->lines, native_frame->pc - code->start);
         if (!vm->options.quiet) {
             be->file = code->file;

@@ -12,6 +12,7 @@ static njs_int_t njs_vm_init(njs_vm_t *vm);
 static njs_int_t njs_vm_handle_events(njs_vm_t *vm);
 
 
+const njs_str_t  njs_entry_empty =          njs_str("");
 const njs_str_t  njs_entry_main =           njs_str("main");
 const njs_str_t  njs_entry_module =         njs_str("module");
 const njs_str_t  njs_entry_native =         njs_str("native");

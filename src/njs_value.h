@@ -836,6 +836,7 @@ extern const njs_value_t  njs_string_external;
 extern const njs_value_t  njs_string_invalid;
 extern const njs_value_t  njs_string_object;
 extern const njs_value_t  njs_string_function;
+extern const njs_value_t  njs_string_anonymous;
 extern const njs_value_t  njs_string_memory_error;
 
 

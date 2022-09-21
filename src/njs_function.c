@@ -145,29 +145,34 @@ njs_function_name_set(njs_vm_t *vm, njs_function_t *function,
     }
 
     if (prefix != NULL || symbol != 0) {
-        value = prop->value;
-        (void) njs_string_prop(&string, &value);
+        if (njs_is_defined(&prop->value)) {
+            value = prop->value;
+            (void) njs_string_prop(&string, &value);
 
-        len = (prefix != NULL) ? njs_strlen(prefix) + 1: 0;
-        p = njs_string_alloc(vm, &prop->value, string.size + len + symbol,
-                             string.length + len + symbol);
-        if (njs_slow_path(p == NULL)) {
-            return NJS_ERROR;
-        }
+            len = (prefix != NULL) ? njs_strlen(prefix) + 1: 0;
+            p = njs_string_alloc(vm, &prop->value, string.size + len + symbol,
+                                 string.length + len + symbol);
+            if (njs_slow_path(p == NULL)) {
+                return NJS_ERROR;
+            }
 
-        if (len != 0) {
-            p = njs_cpymem(p, prefix, len - 1);
-            *p++ = ' ';
-        }
+            if (len != 0) {
+                p = njs_cpymem(p, prefix, len - 1);
+                *p++ = ' ';
+            }
 
-        if (symbol != 0) {
-            *p++ = '[';
-        }
+            if (symbol != 0) {
+                *p++ = '[';
+            }
 
-        p = njs_cpymem(p, string.start, string.size);
+            p = njs_cpymem(p, string.start, string.size);
 
-        if (symbol != 0) {
-            *p++ = ']';
+            if (symbol != 0) {
+                *p++ = ']';
+            }
+
+        } else {
+            njs_value_assign(&prop->value, &njs_string_empty);
         }
     }
 
@@ -1253,6 +1258,12 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     function->global_this = 1;
     function->args_count = lambda->nargs - lambda->rest_parameters;
 
+    ret = njs_function_name_set(vm, function,
+                                njs_value_arg(&njs_string_anonymous), NULL);
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return ret;
+    }
+
     njs_set_function(&vm->retval, function);
 
     return NJS_OK;
@@ -1319,6 +1330,30 @@ njs_function_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
     function = (njs_function_t *) proto;
 
     njs_set_number(retval, function->args_count);
+
+    return NJS_OK;
+}
+
+
+njs_int_t
+njs_function_instance_name(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    njs_function_t  *function;
+
+    function = njs_object_proto_lookup(njs_object(value), NJS_FUNCTION,
+                                     njs_function_t);
+    if (njs_slow_path(function == NULL)) {
+        njs_set_undefined(retval);
+        return NJS_DECLINED;
+    }
+
+    if (!function->native) {
+        njs_value_assign(retval, &function->u.lambda->name);
+        return NJS_OK;
+    }
+
+    njs_value_assign(retval, &njs_string_empty);
 
     return NJS_OK;
 }
@@ -1447,11 +1482,10 @@ static njs_int_t
 njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    size_t              size;
-    njs_int_t           ret;
-    njs_value_t         *values, name;
-    njs_function_t      *function;
-    njs_lvlhsh_query_t  lhq;
+    size_t          size;
+    njs_int_t       ret;
+    njs_value_t     *values, name;
+    njs_function_t  *function;
 
     if (!njs_is_function(&args[0])) {
         njs_type_error(vm, "\"this\" argument is not a function");
@@ -1476,9 +1510,8 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     function->u.bound_target = njs_function(&args[0]);
 
-    njs_object_property_init(&lhq, &njs_string_name, NJS_NAME_HASH);
-
-    ret = njs_object_property(vm, &args[0], &lhq, &name);
+    ret = njs_value_property(vm, &args[0], njs_value_arg(&njs_string_name),
+                             &name);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
     }
@@ -1616,6 +1649,13 @@ const njs_object_prop_t  njs_function_instance_properties[] =
 
     {
         .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("name"),
+        .value = njs_prop_handler(njs_function_instance_name),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("prototype"),
         .value = njs_prop_handler(njs_function_prototype_create),
         .writable = 1
@@ -1635,6 +1675,13 @@ const njs_object_prop_t  njs_arrow_instance_properties[] =
         .type = NJS_PROPERTY_HANDLER,
         .name = njs_string("length"),
         .value = njs_prop_handler(njs_function_instance_length),
+        .configurable = 1,
+    },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("name"),
+        .value = njs_prop_handler(njs_function_instance_name),
         .configurable = 1,
     },
 };

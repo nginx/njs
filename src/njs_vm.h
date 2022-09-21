@@ -267,6 +267,7 @@ void *njs_lvlhsh_alloc(void *data, size_t size);
 void njs_lvlhsh_free(void *data, void *p, size_t size);
 
 
+extern const njs_str_t    njs_entry_empty;
 extern const njs_str_t    njs_entry_main;
 extern const njs_str_t    njs_entry_module;
 extern const njs_str_t    njs_entry_native;

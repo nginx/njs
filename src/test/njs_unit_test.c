@@ -3846,6 +3846,24 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("({[{toString(){return {}}}]:1})"),
       njs_str("TypeError: Cannot convert object to primitive value") },
 
+    { njs_str("({['a' + 'v'](){}}).av.name"),
+      njs_str("av") },
+
+    { njs_str("({[Symbol.toStringTag](){}})[Symbol.toStringTag].name"),
+      njs_str("[Symbol.toStringTag]") },
+
+    { njs_str("var anonSym = Symbol(); ({[anonSym]: () => {}})[anonSym].name"),
+      njs_str("") },
+
+    { njs_str("var named = Symbol('xxx'); ({[named]: () => {}})[named].name"),
+      njs_str("[xxx]") },
+
+    { njs_str("var called = false;"
+             "({"
+             "   [{toString(){ if (called) throw 'OOps'; called = true; return 'a'}}](){}"
+             "}).a.name"),
+      njs_str("a") },
+
     { njs_str("var o = { [new Number(12345)]: 1000 }; o[12345]"),
       njs_str("1000") },
 
@@ -7740,6 +7758,10 @@ static njs_unit_test_t  njs_test[] =
                  "var o = { toString: f }; o"),
       njs_str("0,1,2") },
 
+    { njs_str("var f = function F() {};"
+              "[f.name, f.bind().name, f.bind().bind().name]"),
+      njs_str("F,bound F,bound bound F") },
+
     { njs_str("var f = Object.defineProperty(function() {}, 'name', {value: 'F'});"
               "[f.name, f.bind().name, f.bind().bind().name]"),
       njs_str("F,bound F,bound bound F") },
@@ -9947,6 +9969,53 @@ static njs_unit_test_t  njs_test[] =
               "Object.defineProperty(f, 'length', {value: 42});"
               "f.length"),
       njs_str("42") },
+
+    { njs_str("function f(){}; f.name"),
+      njs_str("f") },
+
+    { njs_str("function f(){}; njs.dump(Object.getOwnPropertyDescriptor(f, 'name'))"),
+      njs_str("{value:'f',writable:false,enumerable:false,configurable:true}") },
+
+    { njs_str("function f(){}; Object.defineProperty(f, 'name', {value: 'F'}); f.name"),
+      njs_str("F") },
+
+    { njs_str("function f(){}; Object.defineProperty(f, 'name', {value: 'F'});"
+              "njs.dump(Object.getOwnPropertyDescriptor(f, 'name'))"),
+      njs_str("{value:'F',writable:false,enumerable:false,configurable:true}") },
+
+    { njs_str("function f() {}; f.name = 'a'"),
+      njs_str("TypeError: Cannot assign to read-only property \"name\" of function") },
+
+    { njs_str("(function f () { return f.name})()"),
+      njs_str("f") },
+
+    { njs_str("var a = function () {}; a.name"),
+      njs_str("a") },
+
+    { njs_str("(function () {}).name"),
+      njs_str("") },
+
+    { njs_str("var a = (null, function () {}); a.name"),
+      njs_str("") },
+
+    { njs_str("var a = async function () {}; a.name"),
+      njs_str("a") },
+
+    { njs_str("let a = () => {}; a.name"),
+      njs_str("a") },
+
+    { njs_str("let a = async () => {}; a.name"),
+      njs_str("a") },
+
+    { njs_str("Function().name"),
+      njs_str("anonymous") },
+
+    { njs_str("var o = {f: function (){}, g: () => {}, h: async function(){}};"
+              "[o.f.name, o.g.name, o.h.name]"),
+      njs_str("f,g,h") },
+
+    { njs_str("({t(){}}).t.name"),
+      njs_str("t") },
 
     /* Function nesting depth. */
 
@@ -14789,7 +14858,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("0,1,2,length") },
 
     { njs_str("Object.getOwnPropertyNames(function() {})"),
-      njs_str("length,prototype") },
+      njs_str("length,name,prototype") },
 
     { njs_str("Object.getOwnPropertyNames(Array)"),
       njs_str("name,length,prototype,isArray,of") },

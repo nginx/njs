@@ -54,6 +54,7 @@ const njs_value_t  njs_string_external =    njs_string("external");
 const njs_value_t  njs_string_invalid =     njs_string("invalid");
 const njs_value_t  njs_string_object =      njs_string("object");
 const njs_value_t  njs_string_function =    njs_string("function");
+const njs_value_t  njs_string_anonymous =   njs_string("anonymous");
 const njs_value_t  njs_string_memory_error = njs_string("MemoryError");
 
 

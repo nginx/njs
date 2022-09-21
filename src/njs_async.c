@@ -228,6 +228,13 @@ const njs_object_prop_t  njs_async_function_instance_properties[] =
         .value = njs_prop_handler(njs_function_instance_length),
         .configurable = 1,
     },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("name"),
+        .value = njs_prop_handler(njs_function_instance_name),
+        .configurable = 1,
+    },
 };
 
 

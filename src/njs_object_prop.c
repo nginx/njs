@@ -452,6 +452,11 @@ done:
                     pq.lhq.value = NULL;
                     goto set_prop;
                 }
+
+            } else {
+
+                prev->type = prop->type;
+                njs_value_assign(&prev->value, &prop->value);
             }
 
         } else {

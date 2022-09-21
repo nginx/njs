@@ -6872,9 +6872,9 @@ njs_parser_function_parse(njs_parser_t *parser, njs_lexer_token_t *token,
 }
 
 
-static const njs_lexer_entry_t njs_parser_anonymous_entry =
+static const njs_lexer_entry_t njs_parser_empty_entry =
 {
-    .name = njs_str("anonymous")
+    .name = njs_str("")
 };
 
 
@@ -6909,7 +6909,7 @@ njs_parser_function_expression(njs_parser_t *parser, njs_lexer_token_t *token,
         }
 
     } else {
-        unique_id = (uintptr_t) &njs_parser_anonymous_entry;
+        unique_id = (uintptr_t) &njs_parser_empty_entry;
     }
 
     if (token->type != NJS_TOKEN_OPEN_PARENTHESIS) {
@@ -7155,7 +7155,7 @@ njs_parser_arrow_function(njs_parser_t *parser, njs_lexer_token_t *token,
 
     node->left = name;
 
-    unique_id = (uintptr_t) &njs_parser_anonymous_entry;
+    unique_id = (uintptr_t) &njs_parser_empty_entry;
 
     var = njs_variable_scope_add(parser, parser->scope, parser->scope,
                                  unique_id, NJS_VARIABLE_FUNCTION, 1);

@@ -23,6 +23,8 @@ struct njs_function_lambda_s {
     uint8_t                        ctor;              /* 1 bit */
     uint8_t                        rest_parameters;   /* 1 bit */
 
+    njs_value_t                    name;
+
     u_char                         *start;
 };
 
@@ -98,6 +100,8 @@ njs_int_t njs_function_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
 njs_int_t njs_function_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 njs_int_t njs_function_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+njs_int_t njs_function_instance_name(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 njs_int_t njs_eval_function(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused);
