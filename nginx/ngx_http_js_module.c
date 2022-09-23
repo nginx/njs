@@ -1565,6 +1565,11 @@ ngx_http_js_ext_header_out(njs_vm_t *vm, njs_object_prop_t *prop,
         return NJS_DECLINED;
     }
 
+    if (r->header_sent && setval != NULL) {
+        njs_vm_warn(vm, "ignored setting of response header \"%V\" because"
+                        " headers were already sent", &name);
+    }
+
     for (h = headers_out; h->name.length > 0; h++) {
         if (h->name.length == name.length
             && ngx_strncasecmp(h->name.start, name.start, name.length) == 0)
