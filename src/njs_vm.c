@@ -579,8 +579,8 @@ njs_vm_handle_events(njs_vm_t *vm)
         }
 
         if (njs_vm_unhandled_rejection(vm)) {
-            ret = njs_value_to_string(vm, &string,
-                                      &vm->promise_reason->start[0]);
+            njs_value_assign(&string, &vm->promise_reason->start[0]);
+            ret = njs_value_to_string(vm, &string, &string);
             if (njs_slow_path(ret != NJS_OK)) {
                 return ret;
             }
