@@ -22,6 +22,10 @@
 #define NGX_JS_BOOLEAN      8
 #define NGX_JS_NUMBER       16
 
+#define NGX_JS_BOOL_FALSE   0
+#define NGX_JS_BOOL_TRUE    1
+#define NGX_JS_BOOL_UNSET   2
+
 #define ngx_js_buffer_type(btype) ((btype) & ~NGX_JS_DEPRECATED)
 
 

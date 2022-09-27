@@ -101,7 +101,7 @@ static njs_int_t ngx_stream_js_ext_on(njs_vm_t *vm, njs_value_t *args,
 static njs_int_t ngx_stream_js_ext_off(njs_vm_t *vm, njs_value_t *args,
      njs_uint_t nargs, njs_index_t unused);
 static njs_int_t ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args,
-     njs_uint_t nargs, njs_index_t unused);
+     njs_uint_t nargs, njs_index_t from_upstream);
 static njs_int_t ngx_stream_js_ext_set_return_value(njs_vm_t *vm,
     njs_value_t *args, njs_uint_t nargs, njs_index_t unused);
 
@@ -442,6 +442,7 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
         .enumerable = 1,
         .u.method = {
             .native = ngx_stream_js_ext_send,
+            .magic8 = NGX_JS_BOOL_UNSET,
         }
     },
 
@@ -1286,7 +1287,7 @@ ngx_stream_js_ext_off(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t from_upstream)
 {
     unsigned               last_buf, flush;
     njs_str_t              buffer;
@@ -1349,6 +1350,17 @@ ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         if (value != NULL) {
             last_buf = njs_value_bool(value);
         }
+
+        if (from_upstream == NGX_JS_BOOL_UNSET) {
+            value = njs_vm_object_prop(vm, flags, &from_key, &lvalue);
+            if (value != NULL) {
+                from_upstream = njs_value_bool(value);
+            }
+
+            if (value == NULL && ctx->buf == NULL) {
+                goto exception;
+            }
+        }
     }
 
     cl = ngx_chain_get_free_buf(c->pool, &ctx->free);
@@ -1371,23 +1383,13 @@ ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     b->pos = b->start;
     b->last = b->end;
 
-    if (ctx->buf != NULL) {
+    if (from_upstream == NGX_JS_BOOL_UNSET) {
         *ctx->last_out = cl;
         ctx->last_out = &cl->next;
 
     } else {
-        if (!njs_value_is_object(flags)) {
-            goto exception;
-        }
 
-        value = njs_vm_object_prop(vm, flags, &from_key, &lvalue);
-        if (value == NULL) {
-            goto exception;
-        }
-
-        if (ngx_stream_js_next_filter(s, ctx, cl, njs_value_bool(value))
-            == NGX_ERROR)
-        {
+        if (ngx_stream_js_next_filter(s, ctx, cl, from_upstream) == NGX_ERROR) {
             njs_vm_error(vm, "ngx_stream_js_next_filter() failed");
             return NJS_ERROR;
         }
