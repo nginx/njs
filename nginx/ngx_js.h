@@ -56,7 +56,11 @@ typedef struct {
     ngx_array_t           *paths;                                             \
                                                                               \
     njs_vm_t              *preload_vm;                                        \
-    ngx_array_t           *preload_objects                                    \
+    ngx_array_t           *preload_objects;                                   \
+                                                                              \
+    size_t                 buffer_size;                                       \
+    size_t                 max_response_body_size;                            \
+    ngx_msec_t             timeout
 
 typedef struct {
     NGX_JS_COMMON_CONF;
@@ -102,6 +106,13 @@ void ngx_js_logger(njs_vm_t *vm, njs_external_ptr_t external,
 char * ngx_js_import(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 char * ngx_js_preload_object(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 ngx_int_t ngx_js_init_preload_vm(ngx_conf_t *cf, ngx_js_conf_t *conf);
+ngx_int_t ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_conf_t *conf,
+    ngx_js_conf_t *prev,
+    ngx_int_t (*init_vm)(ngx_conf_t *cf, ngx_js_conf_t *conf));
+ngx_int_t ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_conf_t *conf,
+    njs_vm_opt_t *options,
+    ngx_int_t (*externals_init)(ngx_conf_t *cf, ngx_js_conf_t *conf));
+ngx_js_conf_t *ngx_js_create_conf(ngx_conf_t *cf, size_t size);
 
 njs_int_t ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);

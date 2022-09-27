@@ -12,8 +12,9 @@
 #include "ngx_js_fetch.h"
 
 
-njs_int_t ngx_js_ext_conf_prefix(njs_vm_t *vm, njs_object_prop_t *prop,
+static njs_int_t ngx_js_ext_conf_prefix(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+static void ngx_js_cleanup_vm(void *data);
 
 
 extern njs_module_t  njs_webcrypto_module;
@@ -692,4 +693,349 @@ error:
     }
 
     return NGX_ERROR;
+}
+
+
+ngx_int_t
+ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_conf_t *conf,
+    ngx_js_conf_t *prev,
+    ngx_int_t (*init_vm) (ngx_conf_t *cf, ngx_js_conf_t *conf))
+{
+    ngx_str_t            *path, *s;
+    ngx_uint_t            i;
+    ngx_array_t          *imports, *preload_objects, *paths;
+    ngx_js_named_path_t  *import, *pi, *pij, *preload;
+
+    if (prev->imports != NGX_CONF_UNSET_PTR && prev->vm == NULL) {
+        if (init_vm(cf, (ngx_js_conf_t *) prev) != NGX_OK) {
+            return NGX_ERROR;
+        }
+    }
+
+    if (conf->imports == NGX_CONF_UNSET_PTR
+        && conf->paths == NGX_CONF_UNSET_PTR
+        && conf->preload_objects == NGX_CONF_UNSET_PTR)
+    {
+        if (prev->vm != NULL) {
+            conf->preload_objects = prev->preload_objects;
+            conf->imports = prev->imports;
+            conf->paths = prev->paths;
+            conf->vm = prev->vm;
+
+            conf->preload_vm = prev->preload_vm;
+
+            return NGX_OK;
+        }
+    }
+
+    if (prev->preload_objects != NGX_CONF_UNSET_PTR) {
+        if (conf->preload_objects == NGX_CONF_UNSET_PTR) {
+            conf->preload_objects = prev->preload_objects;
+
+        } else {
+            preload_objects = ngx_array_create(cf->pool, 4,
+                                       sizeof(ngx_js_named_path_t));
+            if (preload_objects == NULL) {
+                return NGX_ERROR;
+            }
+
+            pij = prev->preload_objects->elts;
+
+            for (i = 0; i < prev->preload_objects->nelts; i++) {
+                preload = ngx_array_push(preload_objects);
+                if (preload == NULL) {
+                    return NGX_ERROR;
+                }
+
+                *preload = pij[i];
+            }
+
+            pij = conf->preload_objects->elts;
+
+            for (i = 0; i < conf->preload_objects->nelts; i++) {
+                preload = ngx_array_push(preload_objects);
+                if (preload == NULL) {
+                    return NGX_ERROR;
+                }
+
+                *preload = pij[i];
+            }
+
+            conf->preload_objects = preload_objects;
+        }
+    }
+
+    if (prev->imports != NGX_CONF_UNSET_PTR) {
+        if (conf->imports == NGX_CONF_UNSET_PTR) {
+            conf->imports = prev->imports;
+
+        } else {
+            imports = ngx_array_create(cf->pool, 4,
+                                       sizeof(ngx_js_named_path_t));
+            if (imports == NULL) {
+                return NGX_ERROR;
+            }
+
+            pi = prev->imports->elts;
+
+            for (i = 0; i < prev->imports->nelts; i++) {
+                import = ngx_array_push(imports);
+                if (import == NULL) {
+                    return NGX_ERROR;
+                }
+
+                *import = pi[i];
+            }
+
+            pi = conf->imports->elts;
+
+            for (i = 0; i < conf->imports->nelts; i++) {
+                import = ngx_array_push(imports);
+                if (import == NULL) {
+                    return NGX_ERROR;
+                }
+
+                *import = pi[i];
+            }
+
+            conf->imports = imports;
+        }
+    }
+
+    if (prev->paths != NGX_CONF_UNSET_PTR) {
+        if (conf->paths == NGX_CONF_UNSET_PTR) {
+            conf->paths = prev->paths;
+
+        } else {
+            paths = ngx_array_create(cf->pool, 4, sizeof(ngx_str_t));
+            if (paths == NULL) {
+                return NGX_ERROR;
+            }
+
+            s = prev->imports->elts;
+
+            for (i = 0; i < prev->paths->nelts; i++) {
+                path = ngx_array_push(paths);
+                if (path == NULL) {
+                    return NGX_ERROR;
+                }
+
+                *path = s[i];
+            }
+
+            s = conf->imports->elts;
+
+            for (i = 0; i < conf->paths->nelts; i++) {
+                path = ngx_array_push(paths);
+                if (path == NULL) {
+                    return NGX_ERROR;
+                }
+
+                *path = s[i];
+            }
+
+            conf->paths = paths;
+        }
+    }
+
+    if (conf->imports == NGX_CONF_UNSET_PTR) {
+        return NGX_OK;
+    }
+
+    return init_vm(cf, (ngx_js_conf_t *) conf);
+}
+
+
+ngx_int_t
+ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_conf_t *conf,
+    njs_vm_opt_t *options,
+    ngx_int_t (*externals_init)(ngx_conf_t *cf, ngx_js_conf_t *conf))
+{
+    size_t                size;
+    u_char               *start, *end, *p;
+    ngx_str_t            *m, file;
+    njs_int_t             rc;
+    njs_str_t             text, path;
+    ngx_uint_t            i;
+    njs_value_t          *value;
+    ngx_pool_cleanup_t   *cln;
+    njs_opaque_value_t    lvalue, exception;
+    ngx_js_named_path_t  *import;
+
+    static const njs_str_t line_number_key = njs_str("lineNumber");
+    static const njs_str_t file_name_key = njs_str("fileName");
+
+    if (conf->preload_objects != NGX_CONF_UNSET_PTR) {
+       if (ngx_js_init_preload_vm(cf, (ngx_js_conf_t *)conf) != NGX_OK) {
+           return NGX_ERROR;
+       }
+    }
+
+    size = 0;
+
+    import = conf->imports->elts;
+    for (i = 0; i < conf->imports->nelts; i++) {
+
+        /* import <name> from '<path>'; globalThis.<name> = <name>; */
+
+        size += sizeof("import  from '';") - 1 + import[i].name.len * 3
+                + import[i].path.len
+                + sizeof(" globalThis. = ;\n") - 1;
+    }
+
+    start = ngx_pnalloc(cf->pool, size);
+    if (start == NULL) {
+        return NGX_ERROR;
+    }
+
+    p = start;
+    import = conf->imports->elts;
+    for (i = 0; i < conf->imports->nelts; i++) {
+
+        /* import <name> from '<path>'; globalThis.<name> = <name>; */
+
+        p = ngx_cpymem(p, "import ", sizeof("import ") - 1);
+        p = ngx_cpymem(p, import[i].name.data, import[i].name.len);
+        p = ngx_cpymem(p, " from '", sizeof(" from '") - 1);
+        p = ngx_cpymem(p, import[i].path.data, import[i].path.len);
+        p = ngx_cpymem(p, "'; globalThis.", sizeof("'; globalThis.") - 1);
+        p = ngx_cpymem(p, import[i].name.data, import[i].name.len);
+        p = ngx_cpymem(p, " = ", sizeof(" = ") - 1);
+        p = ngx_cpymem(p, import[i].name.data, import[i].name.len);
+        p = ngx_cpymem(p, ";\n", sizeof(";\n") - 1);
+    }
+
+    file = ngx_cycle->conf_prefix;
+
+    options->file.start = file.data;
+    options->file.length = file.len;
+
+    conf->vm = njs_vm_create(options);
+    if (conf->vm == NULL) {
+        ngx_log_error(NGX_LOG_EMERG, cf->log, 0, "failed to create js VM");
+        return NGX_ERROR;
+    }
+
+    cln = ngx_pool_cleanup_add(cf->pool, 0);
+    if (cln == NULL) {
+        return NGX_ERROR;
+    }
+
+    cln->handler = ngx_js_cleanup_vm;
+    cln->data = conf;
+
+    path.start = ngx_cycle->conf_prefix.data;
+    path.length = ngx_cycle->conf_prefix.len;
+
+    rc = njs_vm_add_path(conf->vm, &path);
+    if (rc != NJS_OK) {
+        ngx_log_error(NGX_LOG_EMERG, cf->log, 0, "failed to add \"js_path\"");
+        return NGX_ERROR;
+    }
+
+    if (conf->paths != NGX_CONF_UNSET_PTR) {
+        m = conf->paths->elts;
+
+        for (i = 0; i < conf->paths->nelts; i++) {
+            if (ngx_conf_full_name(cf->cycle, &m[i], 1) != NGX_OK) {
+                return NGX_ERROR;
+            }
+
+            path.start = m[i].data;
+            path.length = m[i].len;
+
+            rc = njs_vm_add_path(conf->vm, &path);
+            if (rc != NJS_OK) {
+                ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                              "failed to add \"js_path\"");
+                return NGX_ERROR;
+            }
+        }
+    }
+
+    rc = externals_init(cf, conf);
+    if (rc != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    rc = ngx_js_core_init(conf->vm, cf->log);
+    if (njs_slow_path(rc != NJS_OK)) {
+        return NGX_ERROR;
+    }
+
+    end = start + size;
+
+    rc = njs_vm_compile(conf->vm, &start, end);
+
+    if (rc != NJS_OK) {
+        njs_value_assign(&exception, njs_vm_retval(conf->vm));
+        njs_vm_retval_string(conf->vm, &text);
+
+        value = njs_vm_object_prop(conf->vm, njs_value_arg(&exception),
+                                   &file_name_key, &lvalue);
+        if (value == NULL) {
+            value = njs_vm_object_prop(conf->vm, njs_value_arg(&exception),
+                                       &line_number_key, &lvalue);
+
+            if (value != NULL) {
+                i = njs_value_number(value) - 1;
+
+                if (i < conf->imports->nelts) {
+                    import = conf->imports->elts;
+                    ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                                  "%*s, included in %s:%ui", text.length,
+                                  text.start, import[i].file, import[i].line);
+                    return NGX_ERROR;
+                }
+            }
+        }
+
+        ngx_log_error(NGX_LOG_EMERG, cf->log, 0, "%*s", text.length,
+                      text.start);
+        return NGX_ERROR;
+    }
+
+    if (start != end) {
+        ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                      "extra characters in js script: \"%*s\"",
+                      end - start, start);
+        return NGX_ERROR;
+    }
+
+    return NGX_OK;
+}
+
+
+static void
+ngx_js_cleanup_vm(void *data)
+{
+    ngx_js_conf_t  *jscf = data;
+
+    njs_vm_destroy(jscf->vm);
+
+    if (jscf->preload_objects != NGX_CONF_UNSET_PTR) {
+        njs_vm_destroy(jscf->preload_vm);
+    }
+}
+
+
+ngx_js_conf_t *
+ngx_js_create_conf(ngx_conf_t *cf, size_t size)
+{
+    ngx_js_conf_t  *conf;
+
+    conf = ngx_pcalloc(cf->pool, size);
+    if (conf == NULL) {
+        return NULL;
+    }
+
+    conf->paths = NGX_CONF_UNSET_PTR;
+    conf->imports = NGX_CONF_UNSET_PTR;
+    conf->preload_objects = NGX_CONF_UNSET_PTR;
+
+    conf->buffer_size = NGX_CONF_UNSET_SIZE;
+    conf->max_response_body_size = NGX_CONF_UNSET_SIZE;
+    conf->timeout = NGX_CONF_UNSET_MSEC;
+
+    return conf;
 }
