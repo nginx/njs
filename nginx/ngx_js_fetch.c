@@ -66,6 +66,8 @@ struct ngx_js_http_s {
     njs_str_t                      url;
     ngx_array_t                    headers;
 
+    unsigned                       header_only;
+
 #if (NGX_SSL)
     ngx_str_t                      tls_name;
     ngx_ssl_t                     *ssl;
@@ -472,6 +474,8 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     njs_chb_init(&http->chain, njs_vm_memory_pool(vm));
+
+    http->header_only = njs_strstr_case_eq(&method, &njs_str_value("HEAD"));
 
     njs_chb_append(&http->chain, method.start, method.length);
     njs_chb_append_literal(&http->chain, " ");
@@ -1404,14 +1408,16 @@ ngx_js_http_process_body(ngx_js_http_t *http)
             return NGX_ERROR;
         }
 
-        if (http->http_parse.chunked
+        if (!http->header_only
+            && http->http_parse.chunked
             && http->http_parse.content_length_n == -1)
         {
             ngx_js_http_error(http, 0, "invalid fetch chunked response");
             return NGX_ERROR;
         }
 
-        if (http->http_parse.content_length_n == -1
+        if (http->header_only
+            || http->http_parse.content_length_n == -1
             || size == http->http_parse.content_length_n)
         {
             ret = njs_vm_external_create(http->vm, njs_value_arg(&http->reply),
@@ -1459,7 +1465,10 @@ ngx_js_http_process_body(ngx_js_http_t *http)
     } else {
         size = njs_chb_size(&http->chain);
 
-        if (http->http_parse.content_length_n == -1) {
+        if (http->header_only) {
+            need = 0;
+
+        } else  if (http->http_parse.content_length_n == -1) {
             need = http->max_response_body_size - size;
 
         } else {
