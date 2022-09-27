@@ -448,6 +448,30 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
 
     {
         .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("sendDownstream"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_stream_js_ext_send,
+            .magic8 = NGX_JS_BOOL_TRUE,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("sendUpstream"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_stream_js_ext_send,
+            .magic8 = NGX_JS_BOOL_FALSE,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
         .name.string = njs_str("setReturnValue"),
         .writable = 1,
         .configurable = 1,
