@@ -18,15 +18,6 @@ typedef struct {
     ngx_str_t              access;
     ngx_str_t              preread;
     ngx_str_t              filter;
-
-#if (NGX_STREAM_SSL)
-    ngx_ssl_t             *ssl;
-    ngx_str_t              ssl_ciphers;
-    ngx_flag_t             ssl_verify;
-    ngx_uint_t             ssl_protocols;
-    ngx_int_t              ssl_verify_depth;
-    ngx_str_t              ssl_trusted_certificate;
-#endif
 } ngx_stream_js_srv_conf_t;
 
 
@@ -133,10 +124,6 @@ static char *ngx_stream_js_merge_srv_conf(ngx_conf_t *cf, void *parent,
     void *child);
 static ngx_int_t ngx_stream_js_init(ngx_conf_t *cf);
 
-#if (NGX_STREAM_SSL)
-static char * ngx_stream_js_set_ssl(ngx_conf_t *cf,
-    ngx_stream_js_srv_conf_t *jscf);
-#endif
 static ngx_ssl_t *ngx_stream_js_ssl(njs_vm_t *vm, ngx_stream_session_t *s);
 static ngx_flag_t ngx_stream_js_ssl_verify(njs_vm_t *vm,
     ngx_stream_session_t *s);
@@ -1847,35 +1834,7 @@ ngx_stream_js_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_str_value(conf->preread, prev->preread, "");
     ngx_conf_merge_str_value(conf->filter, prev->filter, "");
 
-    ngx_conf_merge_msec_value(conf->timeout, prev->timeout, 60000);
-    ngx_conf_merge_size_value(conf->buffer_size, prev->buffer_size, 16384);
-    ngx_conf_merge_size_value(conf->max_response_body_size,
-                              prev->max_response_body_size, 1048576);
-
-    if (ngx_js_merge_vm(cf, (ngx_js_conf_t *) conf, (ngx_js_conf_t *) prev,
-                        ngx_stream_js_init_conf_vm)
-        != NGX_OK)
-    {
-        return NGX_CONF_ERROR;
-    }
-
-#if (NGX_STREAM_SSL)
-    ngx_conf_merge_str_value(conf->ssl_ciphers, prev->ssl_ciphers, "DEFAULT");
-
-    ngx_conf_merge_bitmask_value(conf->ssl_protocols, prev->ssl_protocols,
-                                 (NGX_CONF_BITMASK_SET|NGX_SSL_TLSv1
-                                  |NGX_SSL_TLSv1_1|NGX_SSL_TLSv1_2));
-
-    ngx_conf_merge_value(conf->ssl_verify, prev->ssl_verify, 1);
-    ngx_conf_merge_value(conf->ssl_verify_depth, prev->ssl_verify_depth, 100);
-
-    ngx_conf_merge_str_value(conf->ssl_trusted_certificate,
-                             prev->ssl_trusted_certificate, "");
-
-    return ngx_stream_js_set_ssl(cf, conf);
-#else
-    return NGX_CONF_OK;
-#endif
+    return ngx_js_merge_conf(cf, parent, child, ngx_stream_js_init_conf_vm);
 }
 
 
@@ -1906,52 +1865,6 @@ ngx_stream_js_init(ngx_conf_t *cf)
 
     return NGX_OK;
 }
-
-
-#if (NGX_STREAM_SSL)
-
-static char *
-ngx_stream_js_set_ssl(ngx_conf_t *cf, ngx_stream_js_srv_conf_t *jscf)
-{
-    ngx_ssl_t           *ssl;
-    ngx_pool_cleanup_t  *cln;
-
-    ssl = ngx_pcalloc(cf->pool, sizeof(ngx_ssl_t));
-    if (ssl == NULL) {
-        return NGX_CONF_ERROR;
-    }
-
-    jscf->ssl = ssl;
-    ssl->log = cf->log;
-
-    if (ngx_ssl_create(ssl, jscf->ssl_protocols, NULL) != NGX_OK) {
-        return NGX_CONF_ERROR;
-    }
-
-    cln = ngx_pool_cleanup_add(cf->pool, 0);
-    if (cln == NULL) {
-        ngx_ssl_cleanup_ctx(ssl);
-        return NGX_CONF_ERROR;
-    }
-
-    cln->handler = ngx_ssl_cleanup_ctx;
-    cln->data = ssl;
-
-    if (ngx_ssl_ciphers(NULL, ssl, &jscf->ssl_ciphers, 0) != NGX_OK) {
-        return NGX_CONF_ERROR;
-    }
-
-    if (ngx_ssl_trusted_certificate(cf, ssl, &jscf->ssl_trusted_certificate,
-                                    jscf->ssl_verify_depth)
-        != NGX_OK)
-    {
-        return NGX_CONF_ERROR;
-    }
-
-    return NGX_CONF_OK;
-}
-
-#endif
 
 
 static ngx_ssl_t *

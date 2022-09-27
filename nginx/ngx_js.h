@@ -50,7 +50,7 @@ typedef struct {
 } ngx_js_named_path_t;
 
 
-#define NGX_JS_COMMON_CONF                                                    \
+#define _NGX_JS_COMMON_CONF                                                   \
     njs_vm_t              *vm;                                                \
     ngx_array_t           *imports;                                           \
     ngx_array_t           *paths;                                             \
@@ -61,6 +61,23 @@ typedef struct {
     size_t                 buffer_size;                                       \
     size_t                 max_response_body_size;                            \
     ngx_msec_t             timeout
+
+
+#if defined(NGX_HTTP_SSL) || defined(NGX_STREAM_SSL)
+#define NGX_JS_COMMON_CONF                                                    \
+    _NGX_JS_COMMON_CONF;                                                      \
+                                                                              \
+    ngx_ssl_t             *ssl;                                               \
+    ngx_str_t              ssl_ciphers;                                       \
+    ngx_uint_t             ssl_protocols;                                     \
+    ngx_flag_t             ssl_verify;                                        \
+    ngx_int_t              ssl_verify_depth;                                  \
+    ngx_str_t              ssl_trusted_certificate
+
+#else
+#define NGX_JS_COMMON_CONF _NGX_JS_COMMON_CONF
+#endif
+
 
 typedef struct {
     NGX_JS_COMMON_CONF;
@@ -113,6 +130,8 @@ ngx_int_t ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_conf_t *conf,
     njs_vm_opt_t *options,
     ngx_int_t (*externals_init)(ngx_conf_t *cf, ngx_js_conf_t *conf));
 ngx_js_conf_t *ngx_js_create_conf(ngx_conf_t *cf, size_t size);
+char * ngx_js_merge_conf(ngx_conf_t *cf, void *parent, void *child,
+   ngx_int_t (*init_vm)(ngx_conf_t *cf, ngx_js_conf_t *conf));
 
 njs_int_t ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);

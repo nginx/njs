@@ -1039,3 +1039,90 @@ ngx_js_create_conf(ngx_conf_t *cf, size_t size)
 
     return conf;
 }
+
+
+#if defined(NGX_HTTP_SSL) || defined(NGX_STREAM_SSL)
+
+static char *
+ngx_js_set_ssl(ngx_conf_t *cf, ngx_js_conf_t *conf)
+{
+    ngx_ssl_t           *ssl;
+    ngx_pool_cleanup_t  *cln;
+
+    ssl = ngx_pcalloc(cf->pool, sizeof(ngx_ssl_t));
+    if (ssl == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    conf->ssl = ssl;
+    ssl->log = cf->log;
+
+    if (ngx_ssl_create(ssl, conf->ssl_protocols, NULL) != NGX_OK) {
+        return NGX_CONF_ERROR;
+    }
+
+    cln = ngx_pool_cleanup_add(cf->pool, 0);
+    if (cln == NULL) {
+        ngx_ssl_cleanup_ctx(ssl);
+        return NGX_CONF_ERROR;
+    }
+
+    cln->handler = ngx_ssl_cleanup_ctx;
+    cln->data = ssl;
+
+    if (ngx_ssl_ciphers(NULL, ssl, &conf->ssl_ciphers, 0) != NGX_OK) {
+        return NGX_CONF_ERROR;
+    }
+
+    if (ngx_ssl_trusted_certificate(cf, ssl, &conf->ssl_trusted_certificate,
+                                    conf->ssl_verify_depth)
+        != NGX_OK)
+    {
+        return NGX_CONF_ERROR;
+    }
+
+    return NGX_CONF_OK;
+}
+
+#endif
+
+
+char *
+ngx_js_merge_conf(ngx_conf_t *cf, void *parent, void *child,
+  ngx_int_t (*init_vm)(ngx_conf_t *cf, ngx_js_conf_t *conf))
+{
+    ngx_js_conf_t *prev = parent;
+    ngx_js_conf_t *conf = child;
+
+    ngx_conf_merge_msec_value(conf->timeout, prev->timeout, 60000);
+    ngx_conf_merge_size_value(conf->buffer_size, prev->buffer_size, 16384);
+    ngx_conf_merge_size_value(conf->max_response_body_size,
+                              prev->max_response_body_size, 1048576);
+
+    if (ngx_js_merge_vm(cf, (ngx_js_conf_t *) conf, (ngx_js_conf_t *) prev,
+                        init_vm)
+        != NGX_OK)
+    {
+        return NGX_CONF_ERROR;
+    }
+
+#if defined(NGX_HTTP_SSL) || defined(NGX_STREAM_SSL)
+    ngx_conf_merge_str_value(conf->ssl_ciphers, prev->ssl_ciphers,
+                             "DEFAULT");
+
+    ngx_conf_merge_bitmask_value(conf->ssl_protocols, prev->ssl_protocols,
+                             (NGX_CONF_BITMASK_SET|NGX_SSL_TLSv1
+                              |NGX_SSL_TLSv1_1|NGX_SSL_TLSv1_2));
+
+    ngx_conf_merge_value(conf->ssl_verify, prev->ssl_verify, 1);
+    ngx_conf_merge_value(conf->ssl_verify_depth, prev->ssl_verify_depth,
+                         100);
+
+    ngx_conf_merge_str_value(conf->ssl_trusted_certificate,
+                         prev->ssl_trusted_certificate, "");
+
+    return ngx_js_set_ssl(cf, conf);
+#else
+    return NGX_CONF_OK;
+#endif
+}
