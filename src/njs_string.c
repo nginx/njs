@@ -664,7 +664,6 @@ njs_string_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
 {
     size_t              size;
     uintptr_t           length;
-    njs_object_t        *proto;
     njs_object_value_t  *ov;
 
     /*
@@ -674,18 +673,9 @@ njs_string_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
     length = 0;
 
     if (njs_slow_path(njs_is_object(value))) {
-        proto = njs_object(value);
-
-        do {
-            if (njs_fast_path(proto->type == NJS_OBJECT_VALUE)) {
-                break;
-            }
-
-            proto = proto->__proto__;
-        } while (proto != NULL);
-
-        if (proto != NULL) {
-            ov = (njs_object_value_t *) proto;
+        ov = njs_object_proto_lookup(njs_object(value), NJS_OBJECT_VALUE,
+                                     njs_object_value_t);
+        if (ov != NULL) {
             value = &ov->value;
         }
     }
