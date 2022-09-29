@@ -29,8 +29,8 @@
 
 #else
 
-#define njs_assert(condition) (void) (condition)
-#define njs_assert_msg(condition, fmt, ...) (void) (condition)
+#define njs_assert(condition)
+#define njs_assert_msg(condition, fmt, ...)
 
 #endif
 
