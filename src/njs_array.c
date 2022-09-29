@@ -173,7 +173,8 @@ njs_array_convert_to_slow_array(njs_vm_t *vm, njs_array_t *array)
 
 
 njs_int_t
-njs_array_length_redefine(njs_vm_t *vm, njs_value_t *value, uint32_t length, int writable)
+njs_array_length_redefine(njs_vm_t *vm, njs_value_t *value, uint32_t length,
+    int writable)
 {
     njs_object_prop_t  *prop;
 
@@ -1631,14 +1632,18 @@ njs_array_indices_handler(const void *first, const void *second, void *ctx)
     njs_string_get(val1, &str1);
     njs_string_get(val2, &str2);
 
-    cmp_res =  strncmp((const char *) str1.start, (const char *) str2.start,
-                   njs_min(str1.length, str2.length));
+    cmp_res = strncmp((const char *) str1.start, (const char *) str2.start,
+                      njs_min(str1.length, str2.length));
+
     if (cmp_res == 0) {
         if (str1.length < str2.length) {
             return -1;
+
         } else if (str1.length > str2.length) {
             return 1;
+
         } else {
+
             return 0;
         }
     }

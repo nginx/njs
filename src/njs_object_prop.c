@@ -467,9 +467,11 @@ done:
 
                         if (prev->configurable != 1 &&
                             prev->writable != 1 &&
-                            !njs_values_strict_equal(&prev->value, &prop->value))
+                            !njs_values_strict_equal(&prev->value,
+                                                     &prop->value))
                         {
-                            njs_type_error(vm, "Cannot redefine property: \"length\"");
+                            njs_type_error(vm, "Cannot redefine "
+                                           "property: \"length\"");
                             return NJS_ERROR;
                         }
 
@@ -477,7 +479,8 @@ done:
                             prev->writable = prop->writable;
                         }
 
-                        return njs_array_length_set(vm, object, prev, &prop->value);
+                        return njs_array_length_set(vm, object, prev,
+                                                    &prop->value);
                     }
                 }
             }
