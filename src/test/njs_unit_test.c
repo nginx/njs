@@ -13877,6 +13877,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Object.values(process)"),
       njs_str("") },
 
+    { njs_str("Object.keys(process.env).sort()"),
+      njs_str("DUP,TZ") },
+
     { njs_str("Object.values()"),
       njs_str("TypeError: cannot convert undefined argument to object") },
 
@@ -24160,8 +24163,13 @@ main(int argc, char **argv)
         return (ret == NJS_DONE) ? EXIT_SUCCESS: EXIT_FAILURE;
     }
 
+    environ = NULL;
+
     (void) putenv((char *) "TZ=UTC");
     tzset();
+
+    (void) putenv((char *) "DUP=bar");
+    (void) putenv((char *) "dup=foo");
 
     njs_mm_denormals(1);
 

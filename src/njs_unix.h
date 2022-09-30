@@ -47,6 +47,8 @@
 
 #include <unistd.h>
 
+extern char  **environ;
+
 #if defined(PATH_MAX)
 #define NJS_MAX_PATH             PATH_MAX
 #else
