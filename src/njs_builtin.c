@@ -1795,7 +1795,7 @@ njs_env_hash_init(njs_vm_t *vm, njs_lvlhsh_t *hash, char **environment)
     char                **ep;
     u_char              *val, *entry;
     njs_int_t           ret;
-    njs_object_prop_t   *prop;
+    njs_object_prop_t   *prop, *prev;
     njs_lvlhsh_query_t  lhq;
 
     lhq.replace = 0;
@@ -1836,8 +1836,24 @@ njs_env_hash_init(njs_vm_t *vm, njs_lvlhsh_t *hash, char **environment)
 
         ret = njs_lvlhsh_insert(hash, &lhq);
         if (njs_slow_path(ret != NJS_OK)) {
-            njs_internal_error(vm, "lvlhsh insert failed");
-            return NJS_ERROR;
+            if (ret == NJS_ERROR) {
+                njs_internal_error(vm, "lvlhsh insert failed");
+                return NJS_ERROR;
+            }
+
+            /* ret == NJS_DECLINED: entry already exists */
+
+            /*
+             * Always using the first element among the duplicates
+             * and ignoring the rest.
+             */
+
+            prev = lhq.value;
+
+            if (!njs_values_same(&prop->value, &prev->value)) {
+                njs_vm_warn(vm, "environment variable \"%V\" has more than one"
+                            " value\n", &lhq.key);
+            }
         }
     }
 
