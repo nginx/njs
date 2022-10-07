@@ -21296,6 +21296,10 @@ static njs_unit_test_t  njs_module_test[] =
 
     { njs_str("{ var f = 1; } function f() {};"),
       njs_str("SyntaxError: \"f\" has already been declared in 1") },
+
+    { njs_str("function f(v) {var f = v;}; f(1); f"),
+      njs_str("[object Function]") },
+
 };
 
 

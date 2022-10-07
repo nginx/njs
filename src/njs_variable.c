@@ -222,14 +222,17 @@ njs_variable_scope_find(njs_parser_t *parser, njs_parser_scope_t *scope,
         return root;
     }
 
-    module = parser->vm->options.module || parser->module;
+    if (scope->parent == NULL) {
+        module = parser->vm->options.module || parser->module;
 
-    if (module) {
-        if (type == NJS_VARIABLE_FUNCTION
-            || var->type == NJS_VARIABLE_FUNCTION)
-        {
-            goto failed;
+        if (module) {
+            if (type == NJS_VARIABLE_FUNCTION
+                || var->type == NJS_VARIABLE_FUNCTION)
+            {
+                goto failed;
+            }
         }
+
     }
 
     return root;
