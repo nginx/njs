@@ -250,7 +250,8 @@ struct njs_typed_array_s {
 struct njs_function_s {
     njs_object_t                      object;
 
-    uint8_t                           args_offset;
+    /* Number of bound args excluding 'this'. */
+    uint8_t                           bound_args;
 
     uint8_t                           args_count:4;
 
@@ -265,11 +266,11 @@ struct njs_function_s {
     union {
         njs_function_lambda_t         *lambda;
         njs_function_native_t         native;
-        njs_function_t                *bound_target;
     } u;
 
     void                              *context;
 
+    /* Bound args including 'this'. */
     njs_value_t                       *bound;
 };
 
@@ -428,7 +429,6 @@ typedef struct {
     .magic8 = _magic,                                                         \
     .args_count = _args_count,                                                \
     .ctor = _ctor,                                                            \
-    .args_offset = 1,                                                         \
     .u.native = _function,                                                    \
     .object = { .type = NJS_FUNCTION,                                         \
                 .shared = 1,                                                  \

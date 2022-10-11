@@ -7818,12 +7818,22 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var bArray = Array.bind(null, 10); new bArray(16)"),
       njs_str("10,16") },
 
-#if 0 /* FIXME: refactor Bound calls (9.4.1.1[[Call]]). */
     { njs_str("function f(x,y) {return {args:arguments,length:arguments.length}};"
-              "var bf = f.bind({}, 'a'); var bbf = bf.bind({},'b'); var o = bbf('c');"),
-              "[o.args[0], o.args[2], o.length]"
+              "var bf = f.bind({}, 'a'); var bbf = bf.bind({},'b'); var o = bbf('c');"
+              "[o.args[0], o.args[2], o.length]"),
       njs_str("a,c,3") },
-#endif
+
+    { njs_str("var f = function (a, b) {return [this, a, b]};"
+              "var b1 = f.bind('THIS', 'x');"
+              "var b2 = b1.bind('WAKA', 'y');"
+              "njs.dump([f(2,3), b1(3), b2()])"),
+      njs_str("[[undefined,2,3],['THIS','x',3],['THIS','x','y']]") },
+
+    { njs_str("var f = Math.max;"
+              "var b1 = f.bind('THIS', 4);"
+              "var b2 = b1.bind('WAKA', 5);"
+              "njs.dump([f(2,3), b1(3), b2()])"),
+      njs_str("[3,4,5]") },
 
     { njs_str("var s = { toString: function() { return '123' } };"
                  "var a = 'abc'; a.concat('абв', s)"),

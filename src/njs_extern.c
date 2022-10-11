@@ -77,7 +77,6 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
             function->object.type = NJS_FUNCTION;
             function->object.shared = 1;
             function->object.extensible = 1;
-            function->args_offset = 1;
             function->native = 1;
             function->u.native = external->u.method.native;
             function->magic8 = external->u.method.magic8;

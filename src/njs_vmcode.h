@@ -31,7 +31,7 @@ typedef uint8_t                         njs_vmcode_operation_t;
 
 
 enum {
-    NJS_VMCODE_MOVE_ARG = 0,
+    NJS_VMCODE_PUT_ARG = 0,
     NJS_VMCODE_STOP,
     NJS_VMCODE_JUMP,
     NJS_VMCODE_PROPERTY_SET,
@@ -407,13 +407,6 @@ typedef struct {
         njs_str_t              message;
     } u;
 } njs_vmcode_error_t;
-
-
-typedef struct {
-    njs_vmcode_t               code;
-    njs_index_t                src;
-    njs_uint_t                 dst;
-} njs_vmcode_move_arg_t;
 
 
 typedef struct {

@@ -30,7 +30,6 @@ njs_function_alloc(njs_vm_t *vm, njs_function_lambda_t *lambda,
      */
 
     function->ctor = lambda->ctor;
-    function->args_offset = 1;
     function->u.lambda = lambda;
 
     if (function->ctor) {
@@ -77,7 +76,6 @@ njs_vm_function_alloc(njs_vm_t *vm, njs_function_native_t native)
     }
 
     function->native = 1;
-    function->args_offset = 1;
     function->u.native = native;
 
     return function;
@@ -376,12 +374,10 @@ njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     njs_bool_t ctor)
 {
     size_t              size;
-    njs_uint_t          n;
-    njs_value_t         *value, *bound;
+    njs_value_t         *value;
     njs_native_frame_t  *frame;
 
-    size = NJS_NATIVE_FRAME_SIZE
-           + (function->args_offset + nargs) * sizeof(njs_value_t);
+    size = NJS_NATIVE_FRAME_SIZE + (1 /* this */ + nargs) * sizeof(njs_value_t);
 
     frame = njs_function_frame_alloc(vm, size);
     if (njs_slow_path(frame == NULL)) {
@@ -389,31 +385,16 @@ njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     }
 
     frame->function = function;
-    frame->nargs = function->args_offset + nargs;
+    frame->nargs = nargs;
     frame->ctor = ctor;
     frame->native = 1;
     frame->pc = NULL;
 
     value = (njs_value_t *) ((u_char *) frame + NJS_NATIVE_FRAME_SIZE);
 
+    njs_value_assign(value++, this++);
+
     frame->arguments = value;
-    frame->arguments_offset = value + function->args_offset;
-
-    bound = function->bound;
-
-    if (bound == NULL) {
-        /* GC: njs_retain(this); */
-        *value++ = *this;
-
-    } else {
-        n = function->args_offset;
-
-        do {
-            /* GC: njs_retain(bound); */
-            *value++ = *bound++;
-            n--;
-        } while (n != 0);
-    }
 
     if (args != NULL) {
         memcpy(value, args, nargs * sizeof(njs_value_t));
@@ -430,37 +411,15 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
 {
     size_t                 n, frame_size;
     uint32_t               args_count, value_count, value_size;
-    njs_value_t            *value, *bound, **new;
+    njs_value_t            *value, **new;
     njs_frame_t            *frame;
-    njs_function_t         *target;
     njs_native_frame_t     *native_frame;
     njs_function_lambda_t  *lambda;
 
-    bound = function->bound;
+    lambda = function->u.lambda;
 
-    if (njs_fast_path(bound == NULL)) {
-        lambda = function->u.lambda;
-        target = function;
-
-    } else {
-        target = function->u.bound_target;
-
-        if (njs_slow_path(target->bound != NULL)) {
-
-            /*
-             * FIXME: bound functions should call target function with
-             * bound "this" and bound args.
-             */
-
-            njs_internal_error(vm, "chain of bound function are not supported");
-            return NJS_ERROR;
-        }
-
-        lambda = target->u.lambda;
-    }
-
-    args_count = function->args_offset + njs_max(nargs, lambda->nargs);
-    value_count = args_count + njs_max(args_count, lambda->nlocal);
+    args_count = njs_max(nargs, lambda->nargs);
+    value_count = args_count + lambda->nlocal;
 
     value_size = value_count * sizeof(njs_value_t *);
 
@@ -485,9 +444,8 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
     }
 
     native_frame->arguments = value;
-    native_frame->arguments_offset = value + (function->args_offset - 1);
     native_frame->local = new + args_count;
-    native_frame->function = target;
+    native_frame->function = function;
     native_frame->nargs = nargs;
     native_frame->ctor = ctor;
     native_frame->native = 0;
@@ -502,28 +460,11 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
         njs_set_object(native_frame->local[0], &vm->global_object);
     }
 
-    if (bound != NULL) {
-        n = function->args_offset;
-        native_frame->nargs += n - 1;
-
-        if (!ctor) {
-            *native_frame->local[0] = *bound;
-        }
-
-        bound++;
-        n--;
-
-        while (n != 0) {
-            *value++ = *bound++;
-            n--;
-        };
-    }
-
     /* Copy arguments. */
 
     if (args != NULL) {
         while (nargs != 0) {
-            *value++ = *args++;
+            njs_value_assign(value++, args++);
             nargs--;
         }
     }
@@ -624,7 +565,7 @@ njs_function_lambda_call(njs_vm_t *vm, void *promise_cap)
     lambda = function->u.lambda;
 
     args = vm->top_frame->arguments;
-    local = vm->top_frame->local + function->args_offset;
+    local = vm->top_frame->local + 1 /* this */;
 
     /* Move all arguments. */
 
@@ -702,7 +643,7 @@ njs_int_t
 njs_function_native_call(njs_vm_t *vm)
 {
     njs_int_t              ret;
-    njs_function_t         *function, *target;
+    njs_function_t         *function;
     njs_native_frame_t     *native, *previous;
     njs_function_native_t  call;
 
@@ -723,21 +664,10 @@ njs_function_native_call(njs_vm_t *vm)
     }
 #endif
 
-    if (njs_fast_path(function->bound == NULL)) {
-        call = function->u.native;
+    call = function->u.native;
 
-    } else {
-        target = function->u.bound_target;
-
-        if (njs_slow_path(target->bound != NULL)) {
-            njs_internal_error(vm, "chain of bound function are not supported");
-            return NJS_ERROR;
-        }
-
-        call = target->u.native;
-    }
-
-    ret = call(vm, native->arguments, native->nargs, function->magic8);
+    ret = call(vm, &native->arguments[-1], 1 /* this */ + native->nargs,
+               function->magic8);
 
 #ifdef NJS_DEBUG_OPCODE
     if (vm->options.opcode_debug) {
@@ -833,14 +763,13 @@ njs_function_frame_save(njs_vm_t *vm, njs_frame_t *frame, u_char *pc)
     function = active->function;
     lambda = function->u.lambda;
 
-    args_count = function->args_offset + njs_max(native->nargs, lambda->nargs);
-    value_count = args_count + njs_max(args_count, lambda->nlocal);
+    args_count = njs_max(native->nargs, lambda->nargs);
+    value_count = args_count + lambda->nlocal;
 
     new = (njs_value_t **) ((u_char *) native + NJS_FRAME_SIZE);
     value = (njs_value_t *) (new + value_count);
 
     native->arguments = value;
-    native->arguments_offset = value + (function->args_offset - 1);
     native->local = new + njs_function_frame_args_count(active);
     native->pc = pc;
 
@@ -848,14 +777,14 @@ njs_function_frame_save(njs_vm_t *vm, njs_frame_t *frame, u_char *pc)
     p = native->arguments;
 
     while (start < end) {
-        *p = *start++;
+        njs_value_assign(p, start++);
         *new++ = p++;
     }
 
     /* Move all arguments. */
 
     p = native->arguments;
-    local = native->local + function->args_offset;
+    local = native->local + 1 /* this */;
 
     for (n = 0; n < function->args_count; n++) {
         if (!njs_is_valid(p)) {
@@ -1461,11 +1390,54 @@ activate:
 
 
 static njs_int_t
+njs_function_bound_call(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    u_char          *p;
+    njs_int_t       ret;
+    size_t          args_count;
+    njs_value_t     *arguments;
+    njs_function_t  *function, *bound;
+
+    function = vm->top_frame->function;
+    bound = function->context;
+
+    njs_assert(bound != NULL);
+
+    args_count = 1 /* this */ + function->bound_args;
+
+    if (nargs == 1) {
+        return njs_function_apply(vm, bound, function->bound, args_count,
+                                 &vm->retval);
+    }
+
+    arguments = njs_mp_alloc(vm->mem_pool,
+                             (args_count + nargs - 1) * sizeof(njs_value_t));
+    if (njs_slow_path(arguments == NULL)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    p = njs_cpymem(arguments, function->bound,
+                   args_count * sizeof(njs_value_t));
+    memcpy(p, &args[1], (nargs - 1) * sizeof(njs_value_t));
+
+    ret = njs_function_apply(vm, bound, arguments, args_count + nargs - 1,
+                             &vm->retval);
+
+    njs_mp_free(vm->mem_pool, arguments);
+
+    return ret;
+}
+
+
+static njs_int_t
 njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
     size_t          size;
     njs_int_t       ret;
+    njs_uint_t      bound_args;
     njs_value_t     *values, name;
     njs_function_t  *function;
 
@@ -1481,6 +1453,8 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     *function = *njs_function(&args[0]);
+    function->native = 1;
+    function->u.native = njs_function_bound_call;
 
     njs_lvlhsh_init(&function->object.hash);
 
@@ -1490,7 +1464,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     function->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_FUNCTION].object;
     function->object.shared = 0;
 
-    function->u.bound_target = njs_function(&args[0]);
+    function->context = njs_function(&args[0]);
 
     ret = njs_value_property(vm, &args[0], njs_value_arg(&njs_string_name),
                              &name);
@@ -1509,21 +1483,23 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     if (nargs == 1) {
         args = njs_value_arg(&njs_value_undefined);
+        bound_args = 0;
 
     } else {
-        nargs--;
         args++;
+        bound_args = nargs - 2;
     }
 
-    if (nargs > function->args_count) {
+    if (bound_args > function->args_count) {
         function->args_count = 0;
 
     } else {
-        function->args_count -= nargs - 1;
+        function->args_count -= bound_args;
     }
 
-    function->args_offset = nargs;
-    size = nargs * sizeof(njs_value_t);
+    function->bound_args = bound_args;
+
+    size = (1 /* this */ + bound_args) * sizeof(njs_value_t);
 
     values = njs_mp_alloc(vm->mem_pool, size);
     if (njs_slow_path(values == NULL)) {
@@ -1700,7 +1676,6 @@ const njs_object_type_init_t  njs_function_type_init = {
    .constructor_props = &njs_function_constructor_init,
    .prototype_props = &njs_function_prototype_init,
    .prototype_value = { .function = { .native = 1,
-                                      .args_offset = 1,
                                       .u.native = njs_prototype_function,
                                       .object = { .type = NJS_FUNCTION } } },
 };

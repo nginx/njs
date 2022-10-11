@@ -255,7 +255,6 @@ njs_promise_create_function(njs_vm_t *vm, size_t context_size)
     function->object.shared_hash = vm->shared->arrow_instance_hash;
     function->object.type = NJS_FUNCTION;
     function->object.extensible = 1;
-    function->args_offset = 1;
     function->native = 1;
     function->context = context;
 

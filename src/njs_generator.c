@@ -4382,21 +4382,19 @@ njs_generate_move_arguments(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
     njs_jump_off_t               func_offset;
-    njs_vmcode_move_arg_t        *move_arg;
+    njs_vmcode_1addr_t           *put_arg;
     njs_vmcode_function_frame_t  *func;
 
     if (node == NULL) {
         return njs_generator_stack_pop(vm, generator, generator->context);
     }
 
-    njs_generate_code(generator, njs_vmcode_move_arg_t, move_arg,
-                      NJS_VMCODE_MOVE_ARG, 0, node);
-    move_arg->src = node->left->index;
+    njs_generate_code(generator, njs_vmcode_1addr_t, put_arg,
+                      NJS_VMCODE_PUT_ARG, 0, node);
+    put_arg->index = node->left->index;
 
     func_offset = *((njs_jump_off_t *) generator->context);
     func = njs_code_ptr(generator, njs_vmcode_function_frame_t, func_offset);
-
-    move_arg->dst = (njs_uint_t) func->nargs;
 
     func->nargs++;
 

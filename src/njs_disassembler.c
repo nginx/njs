@@ -17,6 +17,8 @@ typedef struct {
 
 static njs_code_name_t  code_names[] = {
 
+    { NJS_VMCODE_PUT_ARG, sizeof(njs_vmcode_1addr_t),
+          njs_str("PUT ARG         ") },
     { NJS_VMCODE_OBJECT, sizeof(njs_vmcode_object_t),
           njs_str("OBJECT          ") },
     { NJS_VMCODE_FUNCTION, sizeof(njs_vmcode_function_t),
@@ -204,7 +206,6 @@ njs_disassemble(u_char *start, u_char *end, njs_int_t count, njs_arr_t *lines)
     njs_vmcode_import_t          *import;
     njs_vmcode_finally_t         *finally;
     njs_vmcode_try_end_t         *try_end;
-    njs_vmcode_move_arg_t        *move_arg;
     njs_vmcode_try_start_t       *try_start;
     njs_vmcode_operation_t       operation;
     njs_vmcode_cond_jump_t       *cond_jump;
@@ -509,17 +510,6 @@ njs_disassemble(u_char *start, u_char *end, njs_int_t count, njs_arr_t *lines)
             njs_printf("%5uD | %05uz %s ERROR\n", line, p - start, type);
 
             p += sizeof(njs_vmcode_error_t);
-
-            continue;
-        }
-
-        if (operation == NJS_VMCODE_MOVE_ARG) {
-            move_arg = (njs_vmcode_move_arg_t *) p;
-
-            njs_printf("%5uD | %05uz MOVE ARGUMENT     %uD %04Xz\n",
-                       line, p - start, move_arg->dst, (size_t) move_arg->src);
-
-            p += sizeof(njs_vmcode_move_arg_t);
 
             continue;
         }

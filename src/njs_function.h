@@ -47,9 +47,9 @@ struct njs_native_frame_s {
     njs_function_t                 *function;
     njs_native_frame_t             *previous;
 
+    /* Points to the first arg after 'this'. */
     njs_value_t                    *arguments;
     njs_object_t                   *arguments_object;
-    njs_value_t                    *arguments_offset;
     njs_value_t                    **local;
 
     uint32_t                       size;
@@ -57,7 +57,10 @@ struct njs_native_frame_s {
 
     njs_value_t                    *retval;
 
+    /* Number of allocated args on the frame. */
     uint32_t                       nargs;
+    /* Number of already put args. */
+    uint32_t                       put_args;
 
     uint8_t                        native;            /* 1 bit  */
     /* Function is called as constructor with "new" keyword. */

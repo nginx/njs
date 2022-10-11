@@ -300,7 +300,6 @@ njs_vm_compile_module(njs_vm_t *vm, njs_str_t *name, u_char **start,
     lambda->declarations = (arr != NULL) ? arr->start : NULL;
     lambda->ndeclarations = (arr != NULL) ? arr->items : 0;
 
-    module->function.args_offset = 1;
     module->function.u.lambda = lambda;
 
     return module;

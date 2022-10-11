@@ -98,6 +98,7 @@ njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc, void *promise_cap,
     njs_value_t                  numeric1, numeric2, primitive1, primitive2;
     njs_frame_t                  *frame;
     njs_jump_off_t               ret;
+    njs_vmcode_1addr_t           *put_arg;
     njs_vmcode_await_t           *await;
     njs_native_frame_t           *previous, *native;
     njs_property_next_t          *next;
@@ -105,7 +106,6 @@ njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc, void *promise_cap,
     njs_vmcode_finally_t         *finally;
     njs_vmcode_generic_t         *vmcode;
     njs_vmcode_variable_t        *var;
-    njs_vmcode_move_arg_t        *move_arg;
     njs_vmcode_prop_get_t        *get;
     njs_vmcode_prop_set_t        *set;
     njs_vmcode_operation_t       op;
@@ -657,18 +657,16 @@ next:
         } else {
 
             switch (op) {
-            case NJS_VMCODE_MOVE_ARG:
-                move_arg = (njs_vmcode_move_arg_t *) pc;
+            case NJS_VMCODE_PUT_ARG:
+                put_arg = (njs_vmcode_1addr_t *) pc;
                 native = vm->top_frame;
 
-                hint = move_arg->dst;
+                value1 = &native->arguments[native->put_args++];
+                njs_vmcode_operand(vm, put_arg->index, value2);
 
-                value1 = &native->arguments_offset[hint];
-                njs_vmcode_operand(vm, move_arg->src, value2);
+                njs_value_assign(value1, value2);
 
-                *value1 = *value2;
-
-                ret = sizeof(njs_vmcode_move_arg_t);
+                ret = sizeof(njs_vmcode_1addr_t);
                 break;
 
             case NJS_VMCODE_STOP:
@@ -1290,7 +1288,6 @@ njs_vmcode_template_literal(njs_vm_t *vm, njs_value_t *invld1,
 
     static const njs_function_t  concat = {
           .native = 1,
-          .args_offset = 1,
           .u.native = njs_string_prototype_concat
     };
 
@@ -1584,7 +1581,7 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     function = njs_function(constructor);
 
     if (function->bound != NULL) {
-        function = function->u.bound_target;
+        function = function->context;
         njs_set_function(&bound, function);
         constructor = &bound;
     }
@@ -1849,33 +1846,57 @@ static njs_jump_off_t
 njs_function_frame_create(njs_vm_t *vm, njs_value_t *value,
     const njs_value_t *this, uintptr_t nargs, njs_bool_t ctor)
 {
-    njs_value_t     val;
+    njs_int_t       ret;
+    njs_value_t     new_target, *args;
     njs_object_t    *object;
-    njs_function_t  *function;
+    njs_function_t  *function, *target;
 
     if (njs_fast_path(njs_is_function(value))) {
 
         function = njs_function(value);
+        target = function;
+        args = NULL;
 
         if (ctor) {
-            if (!function->ctor) {
+            if (function->bound != NULL) {
+                target = function->context;
+                nargs += function->bound_args;
+
+                args = njs_mp_alloc(vm->mem_pool, nargs * sizeof(njs_value_t));
+                if (njs_slow_path(args == NULL)) {
+                    njs_memory_error(vm);
+                    return NJS_ERROR;
+                }
+
+                memcpy(args, &function->bound[1],
+                       function->bound_args * sizeof(njs_value_t));
+            }
+
+            if (!target->ctor) {
                 njs_type_error(vm, "%s is not a constructor",
                                njs_type_string(value->type));
                 return NJS_ERROR;
             }
 
-            if (!function->native) {
+            if (!target->native) {
                 object = njs_function_new_object(vm, value);
                 if (njs_slow_path(object == NULL)) {
                     return NJS_ERROR;
                 }
 
-                njs_set_object(&val, object);
-                this = &val;
+                njs_set_object(&new_target, object);
+                this = &new_target;
             }
         }
 
-        return njs_function_frame(vm, function, this, NULL, nargs, ctor);
+        ret = njs_function_frame(vm, target, this, args, nargs, ctor);
+
+        if (args != NULL) {
+            vm->top_frame->put_args = function->bound_args;
+            njs_mp_free(vm->mem_pool, args);
+        }
+
+        return ret;
     }
 
     njs_type_error(vm, "%s is not a function", njs_type_string(value->type));
@@ -1902,7 +1923,7 @@ njs_function_new_object(njs_vm_t *vm, njs_value_t *constructor)
     function = njs_function(constructor);
 
     if (function->bound != NULL) {
-        function = function->u.bound_target;
+        function = function->context;
         njs_set_function(&bound, function);
         constructor = &bound;
     }
