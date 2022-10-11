@@ -203,10 +203,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var func = function f() {let f = null; return f;}; func()"),
       njs_str("null") },
 
-#if 0 /* TODO */
     { njs_str("var a; Object.getOwnPropertyDescriptor(this, 'a').value"),
       njs_str("undefined") },
-#endif
 
     { njs_str("f() = 1"),
       njs_str("ReferenceError: Invalid left-hand side in assignment in 1") },
@@ -1928,10 +1926,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var Infinity"),
       njs_str("undefined") },
 
-#if 0 /* ES5FIX */
     { njs_str("Infinity = 1"),
-      njs_str("TypeError: Cannot assign to read-only property "Infinity" of object") },
-#endif
+      njs_str("TypeError: Cannot assign to read-only property \"Infinity\" of object") },
 
     /**/
 
@@ -1962,10 +1958,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var NaN"),
       njs_str("undefined") },
 
-#if 0 /* ES5FIX */
     { njs_str("NaN = 1"),
-      njs_str("TypeError: Cannot assign to read-only property "NaN" of object") },
-#endif
+      njs_str("TypeError: Cannot assign to read-only property \"NaN\" of object") },
 
     /**/
 
@@ -3567,10 +3561,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("null = 1"),
       njs_str("ReferenceError: Invalid left-hand side in assignment in 1") },
 
-#if 0 /* ES5FIX */
     { njs_str("undefined = 1"),
-      njs_str("TypeError: Cannot assign to read-only property "undefined" of object") },
-#endif
+      njs_str("TypeError: Cannot assign to read-only property \"undefined\" of object") },
 
     { njs_str("null++"),
       njs_str("ReferenceError: Invalid left-hand side in postfix operation in 1") },
