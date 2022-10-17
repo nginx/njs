@@ -64,7 +64,7 @@ default: njs
 NJS_LIB_INCS = $njs_incs
 NJS_LIB_OBJS = $njs_objs
 
-libnjs: $NJS_BUILD_DIR/libnjs.a
+libnjs: $NJS_BUILD_DIR/libnjs.a pc
 
 $NJS_BUILD_DIR/libnjs.a:   \\
 	$NJS_BUILD_DIR/njs_auto_config.h \\
@@ -314,6 +314,19 @@ ts_clean:
 	rm -rf $NJS_BUILD_DIR/ts
 END
 
+# pkg-config file
+cat << END >> $NJS_MAKEFILE
+
+pc: $NJS_BUILD_DIR/njs.pc
+
+$NJS_BUILD_DIR/njs.pc: $NJS_BUILD_DIR/njs_auto_config.h
+	sed -e "s,@PREFIX@,$(pwd)/$NJS_BUILD_DIR," \\
+		-e "s,@LIBDIR@,$(pwd)/$NJS_BUILD_DIR," \\
+		-e "s,@CFLAGS@,-I$(pwd)/$NJS_BUILD_DIR -I$(pwd)/src," \\
+		-e "s,@VERSION@,\$(NJS_VER)," \\
+		-e "s,@EXTRA_LIBS@,-lm $NJS_LIBS $NJS_LIB_AUX_LIBS," \\
+		src/njs.pc.in > \$@
+END
 
 # Makefile.
 

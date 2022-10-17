@@ -1,0 +1,8 @@
+prefix=@PREFIX@
+libdir=@LIBDIR@
+
+Name: njs
+Description: library to embed njs scripting language
+Version: @VERSION@
+Libs: -L${libdir} -lnjs @EXTRA_LIBS@
+Cflags: @CFLAGS@
