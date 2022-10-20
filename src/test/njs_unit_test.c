@@ -3188,6 +3188,12 @@ static njs_unit_test_t  njs_test[] =
       njs_str("1") },
 #endif
 
+    { njs_str("var r='ok'; a:if(1){break a; r='!ok'}; r"),
+      njs_str("ok") },
+
+    { njs_str("var r='ok'; a:if(0){break a; r='!ok1'} else {break a; r='!ok2'}; r"),
+      njs_str("ok") },
+
     { njs_str("var a = 0; a:{a++}; a"),
       njs_str("1") },
 

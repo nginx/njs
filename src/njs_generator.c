@@ -1127,6 +1127,14 @@ static njs_int_t
 njs_generate_if_statement(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
+    njs_int_t  ret;
+
+    ret = njs_generate_start_block(vm, generator, NJS_GENERATOR_BLOCK,
+                                    &node->name);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
     /* The condition expression. */
 
     njs_generator_next(generator, njs_generate, node->left);
@@ -1230,6 +1238,8 @@ njs_generate_if_statement_else(njs_vm_t *vm, njs_generator_t *generator,
     }
 
     njs_code_set_offset(generator, label_offset, *jump_offset);
+
+    njs_generate_patch_block_exit(vm, generator);
 
     return njs_generator_stack_pop(vm, generator, generator->context);
 }
