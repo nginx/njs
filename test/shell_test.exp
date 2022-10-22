@@ -313,9 +313,9 @@ njs_test {
     {"var print = console.dump.bind(console); print(1, 'a', [1, 2])\r\n"
      "1 a \\\[\r\n 1,\r\n 2\r\n]\r\nundefined\r\n>> "}
     {"var print = console.log.bind(console); print(console.a.a)\r\n"
-     "TypeError: cannot get property \"a\" of undefined*at console.log"}
+     "TypeError: cannot get property \"a\" of undefined"}
     {"print(console.a.a)\r\n"
-     "TypeError: cannot get property \"a\" of undefined*at console.log"}
+     "TypeError: cannot get property \"a\" of undefined"}
 }
 
 # Backtraces for external objects
@@ -329,7 +329,7 @@ njs_test {
     {"var o = {toString: function(){}, log: console.log}\r\n"
      "undefined\r\n>> "}
     {"o\r\n"
-     "o\r\n{\r\n toString: \\\[Function],\r\n log: \\\[Function: log]\r\n}"}
+     "o\r\n{\r\n toString: \\\[Function: toString],\r\n log: \\\[Function: log]\r\n}"}
 }
 
 njs_test {
@@ -387,7 +387,7 @@ njs_test {
     {"Object.keys(null)\r\n"
      "Thrown:\r\nTypeError: cannot convert null argument to object"}
     {"e\r\n"
-     "TypeError: cannot get property \"a\" of undefined*at f (shell:1)"}
+     "TypeError: cannot get property \"a\" of undefined"}
 }
 
 # Non-ASCII characters
@@ -541,9 +541,9 @@ njs_test {
     {"import ref from 'ref_exception.js'\r\n"
      "ReferenceError: \"undeclared\" is not defined"}
     {"var ref\r\n"
-     "undefined\r\n"}
+     "SyntaxError: \"ref\" has already been declared"}
     {"import ref from 'ref_exception.js'\r\n"
-     "ReferenceError: \"undeclared\" is not defined"}
+     "SyntaxError: \"ref\" has already been declared"}
 } "-p test/js/module/ -p test/js/module/libs/"
 
 # quiet mode
