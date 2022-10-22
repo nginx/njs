@@ -912,6 +912,69 @@ njs_ext_on(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
+njs_ext_memory_stats(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *unused, njs_value_t *unused2, njs_value_t *retval)
+{
+    njs_int_t      ret;
+    njs_value_t    object, value;
+    njs_object_t   *stat;
+    njs_mp_stat_t  mp_stat;
+
+    static const njs_value_t  size_string = njs_string("size");
+    static const njs_value_t  nblocks_string = njs_string("nblocks");
+    static const njs_value_t  page_string = njs_string("page_size");
+    static const njs_value_t  cluster_string = njs_string("cluster_size");
+
+    stat = njs_object_alloc(vm);
+    if (njs_slow_path(stat == NULL)) {
+        return NJS_ERROR;
+    }
+
+    njs_set_object(&object, stat);
+
+    njs_mp_stat(vm->mem_pool, &mp_stat);
+
+    njs_set_number(&value, mp_stat.size);
+
+    ret = njs_value_property_set(vm, &object, njs_value_arg(&size_string),
+                                 &value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    njs_set_number(&value, mp_stat.nblocks);
+
+    ret = njs_value_property_set(vm, &object, njs_value_arg(&nblocks_string),
+                                 &value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    njs_set_number(&value, mp_stat.cluster_size);
+
+    ret = njs_value_property_set(vm, &object, njs_value_arg(&cluster_string),
+                                 &value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    njs_set_number(&value, mp_stat.page_size);
+
+    ret = njs_value_property_set(vm, &object, njs_value_arg(&page_string),
+                                 &value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    njs_set_object(retval, stat);
+
+    return NJS_OK;
+}
+
+
+
+
+static njs_int_t
 njs_global_this_prop_handler(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *global, njs_value_t *setval, njs_value_t *retval)
 {
@@ -1725,6 +1788,13 @@ static const njs_object_prop_t  njs_njs_object_properties[] =
         .value = njs_native_function(njs_ext_on, 0),
         .configurable = 1,
     },
+
+    {
+        .type = NJS_PROPERTY_HANDLER,
+        .name = njs_string("memoryStats"),
+        .value = njs_prop_handler(njs_ext_memory_stats),
+    },
+
 };
 
 

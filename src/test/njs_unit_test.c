@@ -18239,6 +18239,22 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("njs.on('exit', ()=>{}); 1"),
       njs_str("1") },
 
+    /* njs.memoryStats. */
+
+    { njs_str("Object.keys(njs.memoryStats).sort()"),
+      njs_str("cluster_size,nblocks,page_size,size") },
+
+    { njs_str("typeof njs.memoryStats.size"),
+      njs_str("number") },
+
+    { njs_str("njs.memoryStats.size > 4096"),
+      njs_str("true") },
+
+    { njs_str("var size = njs.memoryStats.size;"
+              "new Array(2**15);"
+              "njs.memoryStats.size > size"),
+      njs_str("true") },
+
     /* Built-in methods name. */
 
     { njs_str(

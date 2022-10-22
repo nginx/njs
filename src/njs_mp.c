@@ -285,6 +285,30 @@ njs_mp_destroy(njs_mp_t *mp)
 }
 
 
+void
+njs_mp_stat(njs_mp_t *mp, njs_mp_stat_t *stat)
+{
+    njs_mp_block_t     *block;
+    njs_rbtree_node_t  *node;
+
+    stat->size = 0;
+    stat->nblocks = 0;
+    stat->cluster_size = mp->cluster_size;
+    stat->page_size = mp->page_size;
+
+    node = njs_rbtree_min(&mp->blocks);
+
+    while (njs_rbtree_is_there_successor(&mp->blocks, node)) {
+        block = (njs_mp_block_t *) node;
+
+        stat->nblocks++;
+        stat->size += block->size;
+
+        node = njs_rbtree_node_successor(&mp->blocks, node);
+    }
+}
+
+
 void *
 njs_mp_alloc(njs_mp_t *mp, size_t size)
 {

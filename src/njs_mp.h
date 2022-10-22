@@ -20,6 +20,14 @@ struct njs_mp_cleanup_s {
 };
 
 
+typedef struct {
+    size_t                  size;
+    size_t                  nblocks;
+    size_t                  page_size;
+    size_t                  cluster_size;
+} njs_mp_stat_t;
+
+
 NJS_EXPORT njs_mp_t *njs_mp_create(size_t cluster_size, size_t page_alignment,
     size_t page_size, size_t min_chunk_size) NJS_MALLOC_LIKE;
 NJS_EXPORT njs_mp_t * njs_mp_fast_create(size_t cluster_size,
@@ -27,6 +35,7 @@ NJS_EXPORT njs_mp_t * njs_mp_fast_create(size_t cluster_size,
     NJS_MALLOC_LIKE;
 NJS_EXPORT njs_bool_t njs_mp_is_empty(njs_mp_t *mp);
 NJS_EXPORT void njs_mp_destroy(njs_mp_t *mp);
+NJS_EXPORT void njs_mp_stat(njs_mp_t *mp, njs_mp_stat_t *stat);
 
 NJS_EXPORT void *njs_mp_alloc(njs_mp_t *mp, size_t size)
     NJS_MALLOC_LIKE;
