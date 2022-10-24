@@ -4701,39 +4701,41 @@ njs_parser_statement_after(njs_parser_t *parser, njs_lexer_token_t *token,
 
     new_node = parser->node;
 
-    if (new_node->hoist) {
-        child = &njs_parser_chain_top(parser);
+    if (new_node != NULL) {
+        if (new_node->hoist) {
+            child = &njs_parser_chain_top(parser);
 
-        while (*child != NULL) {
-            node = *child;
+            while (*child != NULL) {
+                node = *child;
 
-            if (node->hoist) {
-                break;
+                if (node->hoist) {
+                    break;
+                }
+
+                child = &node->left;
             }
 
-            child = &node->left;
+            last = *child;
         }
 
-        last = *child;
+        stmt = njs_parser_node_new(parser, NJS_TOKEN_STATEMENT);
+        if (njs_slow_path(stmt == NULL)) {
+            return NJS_ERROR;
+        }
+
+        stmt->hoist = new_node->hoist;
+        stmt->left = last;
+        stmt->right = new_node;
+
+        *child = stmt;
+
+        top = (child != &parser->target) ? njs_parser_chain_top(parser)
+                                         : stmt;
+
+        parser->node = top;
+
+       njs_parser_chain_top_set(parser, top);
     }
-
-    stmt = njs_parser_node_new(parser, NJS_TOKEN_STATEMENT);
-    if (njs_slow_path(stmt == NULL)) {
-        return NJS_ERROR;
-    }
-
-    stmt->hoist = new_node->hoist;
-    stmt->left = last;
-    stmt->right = new_node;
-
-    *child = stmt;
-
-    top = (child != &parser->target) ? njs_parser_chain_top(parser)
-                                     : stmt;
-
-    parser->node = top;
-
-    njs_parser_chain_top_set(parser, top);
 
     return njs_parser_stack_pop(parser);
 }

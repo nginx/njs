@@ -3159,6 +3159,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("a:\n\n1"),
       njs_str("1") },
 
+    { njs_str("a:;"),
+      njs_str("undefined") },
+
     { njs_str("a:\n\n"),
       njs_str("SyntaxError: Unexpected end of input in 3") },
 
