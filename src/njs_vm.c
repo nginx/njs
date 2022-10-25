@@ -833,14 +833,14 @@ njs_vm_function(njs_vm_t *vm, const njs_str_t *path)
 uint16_t
 njs_vm_prop_magic16(njs_object_prop_t *prop)
 {
-    return prop->value.data.magic16;
+    return njs_prop_magic16(prop);
 }
 
 
 uint32_t
 njs_vm_prop_magic32(njs_object_prop_t *prop)
 {
-    return prop->value.data.magic32;
+    return njs_prop_magic32(prop);
 }
 
 

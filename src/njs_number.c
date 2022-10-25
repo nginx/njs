@@ -437,121 +437,43 @@ njs_number_is_finite(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static const njs_object_prop_t  njs_number_constructor_properties[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("Number"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NAME("Number"),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 1.0),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_LENGTH(1),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("EPSILON"),
-        .value = njs_value(NJS_NUMBER, 1, DBL_EPSILON),
-    },
+    NJS_DECLARE_PROP_VALUE("EPSILON", njs_value(NJS_NUMBER, 1, DBL_EPSILON), 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("MAX_SAFE_INTEGER"),
-        .value = njs_value(NJS_NUMBER, 1, NJS_MAX_SAFE_INTEGER),
-    },
+    NJS_DECLARE_PROP_LVALUE("MAX_SAFE_INTEGER",
+                            njs_value(NJS_NUMBER, 1, NJS_MAX_SAFE_INTEGER), 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("MIN_SAFE_INTEGER"),
-        .value = njs_value(NJS_NUMBER, 1, -NJS_MAX_SAFE_INTEGER),
-    },
+    NJS_DECLARE_PROP_LVALUE("MIN_SAFE_INTEGER",
+                            njs_value(NJS_NUMBER, 1, -NJS_MAX_SAFE_INTEGER), 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("MAX_VALUE"),
-        .value = njs_value(NJS_NUMBER, 1, DBL_MAX),
-    },
+    NJS_DECLARE_PROP_VALUE("MAX_VALUE", njs_value(NJS_NUMBER, 1, DBL_MAX), 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("MIN_VALUE"),
-        .value = njs_value(NJS_NUMBER, 1, DBL_MIN),
-    },
+    NJS_DECLARE_PROP_VALUE("MIN_VALUE", njs_value(NJS_NUMBER, 1, DBL_MIN), 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("NaN"),
-        .value = njs_value(NJS_NUMBER, 0, NAN),
-    },
+    NJS_DECLARE_PROP_VALUE("NaN", njs_value(NJS_NUMBER, 0, NAN), 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("POSITIVE_INFINITY"),
-        .value = njs_value(NJS_NUMBER, 1, INFINITY),
-    },
+    NJS_DECLARE_PROP_LVALUE("POSITIVE_INFINITY",
+                            njs_value(NJS_NUMBER, 1, INFINITY), 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("NEGATIVE_INFINITY"),
-        .value = njs_value(NJS_NUMBER, 1, -INFINITY),
-    },
+    NJS_DECLARE_PROP_LVALUE("NEGATIVE_INFINITY",
+                            njs_value(NJS_NUMBER, 1, -INFINITY), 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("isFinite"),
-        .value = njs_native_function(njs_number_is_finite, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("isFinite", njs_number_is_finite, 1, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("isInteger"),
-        .value = njs_native_function(njs_number_is_integer, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("isInteger", njs_number_is_integer, 1, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("isSafeInteger"),
-        .value = njs_native_function(njs_number_is_safe_integer, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("isSafeInteger", njs_number_is_safe_integer, 1, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("isNaN"),
-        .value = njs_native_function(njs_number_is_nan, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("isNaN", njs_number_is_nan, 1, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("parseFloat"),
-        .value = njs_native_function(njs_number_parse_float, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("parseFloat", njs_number_parse_float, 1, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("parseInt"),
-        .value = njs_native_function(njs_number_parse_int, 2),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("parseInt", njs_number_parse_int, 2, 0),
 };
 
 
@@ -960,61 +882,24 @@ njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
 
 static const njs_object_prop_t  njs_number_prototype_properties[] =
 {
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("__proto__"),
-        .value = njs_prop_handler(njs_primitive_prototype_get_proto),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("__proto__", njs_primitive_prototype_get_proto,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("constructor",
+                             njs_object_prototype_create_constructor,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("valueOf"),
-        .value = njs_native_function(njs_number_prototype_value_of, 0),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("valueOf", njs_number_prototype_value_of, 0, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("toString"),
-        .value = njs_native_function(njs_number_prototype_to_string, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("toString", njs_number_prototype_to_string, 1, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("toFixed"),
-        .value = njs_native_function(njs_number_prototype_to_fixed, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("toFixed", njs_number_prototype_to_fixed, 1, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("toPrecision"),
-        .value = njs_native_function(njs_number_prototype_to_precision, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("toPrecision", njs_number_prototype_to_precision,
+                            1, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("toExponential"),
-        .value = njs_native_function(njs_number_prototype_to_exponential, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("toExponential",
+                            njs_number_prototype_to_exponential, 1, 0),
 };
 
 

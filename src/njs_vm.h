@@ -11,15 +11,6 @@
 #define NJS_MAX_STACK_SIZE       (256 * 1024)
 
 
-/*
- * NJS_PROPERTY_QUERY_GET must be less to NJS_PROPERTY_QUERY_SET
- * and NJS_PROPERTY_QUERY_DELETE.
- */
-#define NJS_PROPERTY_QUERY_GET     0
-#define NJS_PROPERTY_QUERY_SET     1
-#define NJS_PROPERTY_QUERY_DELETE  2
-
-
 typedef struct njs_frame_s            njs_frame_t;
 typedef struct njs_native_frame_s     njs_native_frame_t;
 typedef struct njs_parser_s           njs_parser_t;

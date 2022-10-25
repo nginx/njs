@@ -1001,7 +1001,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_value_t *r, njs_utf8_t utf8,
         index = c;
     }
 
-    njs_set_number(&prop->value, index);
+    njs_set_number(&prop->u.value, index);
 
     if (pattern->global || pattern->sticky) {
         c = njs_regex_capture(match_data, 1);
@@ -1067,7 +1067,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_value_t *r, njs_utf8_t utf8,
             goto fail;
         }
 
-        njs_set_object(&prop->value, groups);
+        njs_set_object(&prop->u.value, groups);
 
         i = 0;
 
@@ -1752,25 +1752,11 @@ done:
 
 static const njs_object_prop_t  njs_regexp_constructor_properties[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("RegExp"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NAME("RegExp"),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 2.0),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_LENGTH(2),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 };
 
 
@@ -1782,112 +1768,36 @@ const njs_object_init_t  njs_regexp_constructor_init = {
 
 static const njs_object_prop_t  njs_regexp_prototype_properties[] =
 {
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("constructor",
+                             njs_object_prototype_create_constructor,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("flags"),
-        .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function(njs_regexp_prototype_flags, 0),
-        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
-        .writable = NJS_ATTRIBUTE_UNSET,
-        .configurable = 1,
-        .enumerable = 0,
-    },
+    NJS_DECLARE_PROP_GETTER("flags", njs_regexp_prototype_flags, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("global"),
-        .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function2(njs_regexp_prototype_flag, 0,
-                                       NJS_REGEX_GLOBAL),
-        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
-        .writable = NJS_ATTRIBUTE_UNSET,
-        .configurable = 1,
-        .enumerable = 0,
-    },
+    NJS_DECLARE_PROP_GETTER("global", njs_regexp_prototype_flag,
+                            NJS_REGEX_GLOBAL),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("ignoreCase"),
-        .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function2(njs_regexp_prototype_flag, 0,
-                                       NJS_REGEX_IGNORE_CASE),
-        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
-        .writable = NJS_ATTRIBUTE_UNSET,
-        .configurable = 1,
-        .enumerable = 0,
-    },
+    NJS_DECLARE_PROP_GETTER("ignoreCase", njs_regexp_prototype_flag,
+                            NJS_REGEX_IGNORE_CASE),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("multiline"),
-        .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function2(njs_regexp_prototype_flag, 0,
-                                       NJS_REGEX_MULTILINE),
-        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
-        .writable = NJS_ATTRIBUTE_UNSET,
-        .configurable = 1,
-        .enumerable = 0,
-    },
+    NJS_DECLARE_PROP_GETTER("multiline", njs_regexp_prototype_flag,
+                            NJS_REGEX_MULTILINE),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("source"),
-        .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function(njs_regexp_prototype_source, 0),
-        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
-        .writable = NJS_ATTRIBUTE_UNSET,
-        .configurable = 1,
-        .enumerable = 0,
-    },
+    NJS_DECLARE_PROP_GETTER("source", njs_regexp_prototype_source, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("sticky"),
-        .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function2(njs_regexp_prototype_flag, 0,
-                                       NJS_REGEX_STICKY),
-        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
-        .writable = NJS_ATTRIBUTE_UNSET,
-        .configurable = 1,
-        .enumerable = 0,
-    },
+    NJS_DECLARE_PROP_GETTER("sticky", njs_regexp_prototype_flag,
+                            NJS_REGEX_STICKY),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("toString"),
-        .value = njs_native_function(njs_regexp_prototype_to_string, 0),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("toString", njs_regexp_prototype_to_string, 0, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("test"),
-        .value = njs_native_function(njs_regexp_prototype_test, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("test", njs_regexp_prototype_test, 1, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("exec"),
-        .value = njs_native_function(njs_regexp_prototype_exec, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("exec", njs_regexp_prototype_exec, 1, 0),
 
     {
         .type = NJS_PROPERTY,
         .name = njs_wellknown_symbol(NJS_SYMBOL_REPLACE),
-        .value = njs_native_function(njs_regexp_prototype_symbol_replace, 2),
+        .u.value = njs_native_function(njs_regexp_prototype_symbol_replace, 2),
         .writable = 1,
         .configurable = 1,
     },
@@ -1895,7 +1805,7 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_wellknown_symbol(NJS_SYMBOL_SPLIT),
-        .value = njs_native_function(njs_regexp_prototype_symbol_split, 2),
+        .u.value = njs_native_function(njs_regexp_prototype_symbol_split, 2),
         .writable = 1,
         .configurable = 1,
     },
@@ -1904,12 +1814,8 @@ static const njs_object_prop_t  njs_regexp_prototype_properties[] =
 
 const njs_object_prop_t  njs_regexp_instance_properties[] =
 {
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("lastIndex"),
-        .value = njs_prop_handler(njs_regexp_prototype_last_index),
-        .writable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("lastIndex", njs_regexp_prototype_last_index,
+                             0, 0, NJS_OBJECT_PROP_VALUE_W),
 };
 
 

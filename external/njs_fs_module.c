@@ -3231,25 +3231,11 @@ njs_fs_dirent_constructor(njs_vm_t *vm, njs_value_t *args,
 
 static const njs_object_prop_t  njs_dirent_constructor_properties[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("Dirent"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NAME("Dirent"),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 2.0),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_LENGTH(2),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 };
 
 
@@ -3427,7 +3413,7 @@ njs_fs_stats_prop(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
         return NJS_DECLINED;
     }
 
-    switch (prop->value.data.magic32 & 0xf) {
+    switch (njs_prop_magic32(prop) & 0xf) {
     case NJS_FS_STAT_DEV:
         v = st->st_dev;
         break;
@@ -3486,7 +3472,7 @@ njs_fs_stats_prop(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
         break;
     }
 
-    switch (prop->value.data.magic32 >> 4) {
+    switch (njs_prop_magic32(prop) >> 4) {
     case NJS_NUMBER:
         njs_set_number(retval, v);
         break;
@@ -3635,146 +3621,44 @@ njs_fs_bytes_written_create(njs_vm_t *vm, int bytes, njs_value_t *buffer,
 
 static const njs_object_prop_t  njs_fs_promises_properties[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("readFile"),
-        .value = njs_native_function2(njs_fs_read_file, 0, NJS_FS_PROMISE),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("readFile", njs_fs_read_file, 0, NJS_FS_PROMISE),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("readSync"),
-        .value = njs_native_function2(njs_fs_read, 0, NJS_FS_PROMISE),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("readSync", njs_fs_read, 0, NJS_FS_PROMISE),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("appendFile"),
-        .value = njs_native_function2(njs_fs_write_file, 0,
-                                  njs_fs_magic(NJS_FS_PROMISE, NJS_FS_APPEND)),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("appendFile", njs_fs_write_file, 0,
+                            njs_fs_magic(NJS_FS_PROMISE, NJS_FS_APPEND)),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("writeFile"),
-        .value = njs_native_function2(njs_fs_write_file, 0,
-                                   njs_fs_magic(NJS_FS_PROMISE, NJS_FS_TRUNC)),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("writeFile", njs_fs_write_file, 0,
+                            njs_fs_magic(NJS_FS_PROMISE, NJS_FS_TRUNC)),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("access"),
-        .value = njs_native_function2(njs_fs_access, 0, NJS_FS_PROMISE),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("access", njs_fs_access, 0, NJS_FS_PROMISE),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("mkdir"),
-        .value = njs_native_function2(njs_fs_mkdir, 0, NJS_FS_PROMISE),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("mkdir", njs_fs_mkdir, 0, NJS_FS_PROMISE),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("open"),
-        .value = njs_native_function2(njs_fs_open, 0, NJS_FS_PROMISE),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("open", njs_fs_open, 0, NJS_FS_PROMISE),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("close"),
-        .value = njs_native_function2(njs_fs_close, 0, NJS_FS_PROMISE),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("close", njs_fs_close, 0, NJS_FS_PROMISE),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("rename"),
-        .value = njs_native_function2(njs_fs_rename, 0, NJS_FS_PROMISE),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("rename", njs_fs_rename, 0, NJS_FS_PROMISE),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("rmdir"),
-        .value = njs_native_function2(njs_fs_rmdir, 0, NJS_FS_PROMISE),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("rmdir", njs_fs_rmdir, 0, NJS_FS_PROMISE),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("readdir"),
-        .value = njs_native_function2(njs_fs_readdir, 0, NJS_FS_PROMISE),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("readdir", njs_fs_readdir, 0, NJS_FS_PROMISE),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("fstat"),
-        .value = njs_native_function2(njs_fs_stat, 0,
-                                   njs_fs_magic(NJS_FS_PROMISE, NJS_FS_FSTAT)),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("fstat", njs_fs_stat, 0,
+                            njs_fs_magic(NJS_FS_PROMISE, NJS_FS_FSTAT)),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("lstat"),
-        .value = njs_native_function2(njs_fs_stat, 0,
-                                   njs_fs_magic(NJS_FS_PROMISE, NJS_FS_LSTAT)),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("lstat", njs_fs_stat, 0,
+                            njs_fs_magic(NJS_FS_PROMISE, NJS_FS_LSTAT)),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("stat"),
-        .value = njs_native_function2(njs_fs_stat, 0,
-                                    njs_fs_magic(NJS_FS_PROMISE, NJS_FS_STAT)),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("stat", njs_fs_stat, 0,
+                            njs_fs_magic(NJS_FS_PROMISE, NJS_FS_STAT)),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("symlink"),
-        .value = njs_native_function2(njs_fs_symlink, 0, NJS_FS_PROMISE),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("symlink", njs_fs_symlink, 0, NJS_FS_PROMISE),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("unlink"),
-        .value = njs_native_function2(njs_fs_unlink, 0, NJS_FS_PROMISE),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("unlink", njs_fs_unlink, 0, NJS_FS_PROMISE),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("realpath"),
-        .value = njs_native_function2(njs_fs_realpath, 0, NJS_FS_PROMISE),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("realpath", njs_fs_realpath, 0, NJS_FS_PROMISE),
 };
 
 
@@ -3794,30 +3678,17 @@ njs_fs_promises(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
 
 static const njs_object_prop_t  njs_fs_constants_properties[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("F_OK"),
-        .value = njs_value(NJS_NUMBER, 0, F_OK),
-        .enumerable = 1,
-    },
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("R_OK"),
-        .value = njs_value(NJS_NUMBER, 1, R_OK),
-        .enumerable = 1,
-    },
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("W_OK"),
-        .value = njs_value(NJS_NUMBER, 1, W_OK),
-        .enumerable = 1,
-    },
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("X_OK"),
-        .value = njs_value(NJS_NUMBER, 1, X_OK),
-        .enumerable = 1,
-    },
+    NJS_DECLARE_PROP_VALUE("F_OK", njs_value(NJS_NUMBER, 0, F_OK),
+                           NJS_OBJECT_PROP_VALUE_E),
+
+    NJS_DECLARE_PROP_VALUE("R_OK", njs_value(NJS_NUMBER, 0, R_OK),
+                           NJS_OBJECT_PROP_VALUE_E),
+
+    NJS_DECLARE_PROP_VALUE("W_OK", njs_value(NJS_NUMBER, 0, W_OK),
+                           NJS_OBJECT_PROP_VALUE_E),
+
+    NJS_DECLARE_PROP_VALUE("X_OK", njs_value(NJS_NUMBER, 0, X_OK),
+                           NJS_OBJECT_PROP_VALUE_E),
 };
 
 

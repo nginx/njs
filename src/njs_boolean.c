@@ -43,22 +43,18 @@ static const njs_object_prop_t  njs_boolean_constructor_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
-        .value = njs_string("Boolean"),
+        .u.value = njs_string("Boolean"),
         .configurable = 1,
     },
 
     {
         .type = NJS_PROPERTY,
         .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 1.0),
+        .u.value = njs_value(NJS_NUMBER, 1, 1.0),
         .configurable = 1,
     },
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 };
 
 
@@ -122,37 +118,16 @@ njs_boolean_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
 
 static const njs_object_prop_t  njs_boolean_prototype_properties[] =
 {
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("__proto__"),
-        .value = njs_prop_handler(njs_primitive_prototype_get_proto),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("__proto__", njs_primitive_prototype_get_proto,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("constructor",
+                             njs_object_prototype_create_constructor,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("valueOf"),
-        .value = njs_native_function(njs_boolean_prototype_value_of, 0),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("valueOf", njs_boolean_prototype_value_of, 0, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("toString"),
-        .value = njs_native_function(njs_boolean_prototype_to_string, 0),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("toString", njs_boolean_prototype_to_string, 0, 0),
 };
 
 

@@ -235,35 +235,15 @@ njs_text_encoder_encode_into(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static const njs_object_prop_t  njs_text_encoder_properties[] =
 {
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("constructor",
+                             njs_object_prototype_create_constructor,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("encoding"),
-        .value = njs_string("utf-8"),
-    },
+    NJS_DECLARE_PROP_VALUE("encoding", njs_string("utf-8"), 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("encode"),
-        .value = njs_native_function(njs_text_encoder_encode, 0),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("encode", njs_text_encoder_encode, 0, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("encodeInto"),
-        .value = njs_native_function(njs_text_encoder_encode_into, 2),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("encodeInto", njs_text_encoder_encode_into, 2, 0),
 };
 
 
@@ -275,25 +255,11 @@ const njs_object_init_t  njs_text_encoder_init = {
 
 static const njs_object_prop_t  njs_text_encoder_constructor_properties[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("TextEncoder"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NAME("TextEncoder"),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 0, 0.0),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_LENGTH(0),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 };
 
 
@@ -604,39 +570,17 @@ njs_text_decoder_decode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static const njs_object_prop_t  njs_text_decoder_properties[] =
 {
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("constructor",
+                             njs_object_prototype_create_constructor,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("encoding"),
-        .value = njs_prop_handler(njs_text_decoder_encoding),
-    },
+    NJS_DECLARE_PROP_HANDLER("encoding", njs_text_decoder_encoding, 0, 0, 0),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("fatal"),
-        .value = njs_prop_handler(njs_text_decoder_fatal),
-    },
+    NJS_DECLARE_PROP_HANDLER("fatal", njs_text_decoder_fatal, 0, 0, 0),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("ignoreBOM"),
-        .value = njs_prop_handler(njs_text_decoder_ignore_bom),
-    },
+    NJS_DECLARE_PROP_HANDLER("ignoreBOM", njs_text_decoder_ignore_bom, 0, 0, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("decode"),
-        .value = njs_native_function(njs_text_decoder_decode, 0),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("decode", njs_text_decoder_decode, 0, 0),
 };
 
 
@@ -648,25 +592,11 @@ const njs_object_init_t  njs_text_decoder_init = {
 
 static const njs_object_prop_t  njs_text_decoder_constructor_properties[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("TextDecoder"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NAME("TextDecoder"),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 0, 0.0),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_LENGTH(0),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 };
 
 

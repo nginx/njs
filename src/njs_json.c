@@ -166,7 +166,7 @@ njs_vm_json_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs)
 {
     njs_function_t  *parse;
 
-    parse = njs_function(&njs_json_object_properties[1].value);
+    parse = njs_function(&njs_json_object_properties[1].u.value);
 
     return njs_vm_call(vm, parse, args, nargs);
 }
@@ -282,7 +282,7 @@ njs_vm_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs)
 {
     njs_function_t  *stringify;
 
-    stringify = njs_function(&njs_json_object_properties[2].value);
+    stringify = njs_function(&njs_json_object_properties[2].u.value);
 
     return njs_vm_call(vm, stringify, args, nargs);
 }
@@ -1642,25 +1642,13 @@ static const njs_object_prop_t  njs_json_object_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
-        .value = njs_string("JSON"),
+        .u.value = njs_string("JSON"),
         .configurable = 1,
     },
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("parse"),
-        .value = njs_native_function(njs_json_parse, 2),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("parse", njs_json_parse, 2, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("stringify"),
-        .value = njs_native_function(njs_json_stringify, 3),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("stringify", njs_json_stringify, 3, 0),
 };
 
 
@@ -2046,7 +2034,7 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
             continue;
         }
 
-        njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 0);
+        njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 0, 0);
 
         key = &state->keys->start[state->index++];
 
@@ -2096,25 +2084,25 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
             }
         }
 
-        val = &prop->value;
+        val = njs_prop_value(prop);
 
         if (!state->fast_array) {
             if (prop->type == NJS_PROPERTY_HANDLER) {
                 pq.scratch = *prop;
                 prop = &pq.scratch;
-                ret = prop->value.data.u.prop_handler(vm, prop, &state->value,
-                                                      NULL, &prop->value);
+                ret = njs_prop_handler(prop)(vm, prop, &state->value, NULL,
+                                             njs_prop_value(prop));
 
                 if (njs_slow_path(ret == NJS_ERROR)) {
                     return ret;
                 }
 
-                val = &prop->value;
+                val = njs_prop_value(prop);
             }
 
             if (njs_is_accessor_descriptor(prop)) {
-                if (njs_is_defined(&prop->getter)) {
-                    if (njs_is_defined(&prop->setter)) {
+                if (njs_prop_getter(prop) != NULL) {
+                    if (njs_prop_setter(prop) != NULL) {
                         val = njs_value_arg(&string_get_set);
 
                     } else {

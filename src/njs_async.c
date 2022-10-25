@@ -167,18 +167,9 @@ njs_async_context_free(njs_vm_t *vm, njs_async_ctx_t *ctx)
 
 static const njs_object_prop_t  njs_async_constructor_properties[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 1.0),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_LENGTH(1),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 };
 
 
@@ -193,16 +184,13 @@ static const njs_object_prop_t  njs_async_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
-        .value = njs_string("AsyncFunction"),
+        .u.value = njs_string("AsyncFunction"),
         .configurable = 1,
     },
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("constructor",
+                             njs_object_prototype_create_constructor,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 };
 
 
@@ -222,19 +210,11 @@ const njs_object_type_init_t  njs_async_function_type_init = {
 
 const njs_object_prop_t  njs_async_function_instance_properties[] =
 {
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("length"),
-        .value = njs_prop_handler(njs_function_instance_length),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("length", njs_function_instance_length, 0, 0,
+                             NJS_OBJECT_PROP_VALUE_C),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("name"),
-        .value = njs_prop_handler(njs_function_instance_name),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("name", njs_function_instance_name, 0, 0,
+                             NJS_OBJECT_PROP_VALUE_C),
 };
 
 

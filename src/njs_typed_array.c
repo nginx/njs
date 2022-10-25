@@ -2201,52 +2201,24 @@ njs_typed_array_constructor_intrinsic(njs_vm_t *vm, njs_value_t *args,
 
 static const njs_object_prop_t  njs_typed_array_constructor_props[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("TypedArray"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NAME("TypedArray"),
+
+    NJS_DECLARE_PROP_LENGTH(0),
+
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
     {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 0, 0),
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
-
-    {
-        .type = NJS_PROPERTY,
+        .type = NJS_ACCESSOR,
         .name = njs_wellknown_symbol(NJS_SYMBOL_SPECIES),
-        .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function(njs_typed_array_get_this, 0),
-        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
+        .u.accessor = njs_getter(njs_typed_array_get_this, 0),
         .writable = NJS_ATTRIBUTE_UNSET,
         .configurable = 1,
         .enumerable = 0,
     },
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("of"),
-        .value = njs_native_function(njs_typed_array_of, 0),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("of", njs_typed_array_of, 0, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("from"),
-        .value = njs_native_function(njs_typed_array_from, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("from", njs_typed_array_from, 1, 0),
 };
 
 
@@ -2259,276 +2231,104 @@ static const njs_object_init_t  njs_typed_array_constructor_init = {
 static const njs_object_prop_t  njs_typed_array_prototype_properties[] =
 {
     {
-        .type = NJS_PROPERTY,
+        .type = NJS_ACCESSOR,
         .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
-        .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function(njs_typed_array_get_string_tag,
-                                      0),
-        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
+        .u.accessor = njs_getter(njs_typed_array_get_string_tag, 0),
         .writable = NJS_ATTRIBUTE_UNSET,
         .configurable = 1,
         .enumerable = 0,
     },
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("constructor",
+                             njs_object_prototype_create_constructor,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("buffer"),
-        .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function(njs_typed_array_prototype_buffer, 0),
-        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
-        .writable = NJS_ATTRIBUTE_UNSET,
-        .configurable = 1,
-        .enumerable = 0,
-    },
+    NJS_DECLARE_PROP_GETTER("buffer", njs_typed_array_prototype_buffer, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("byteLength"),
-        .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function(njs_typed_array_prototype_byte_length, 0),
-        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
-        .writable = NJS_ATTRIBUTE_UNSET,
-        .configurable = 1,
-        .enumerable = 0,
-    },
+    NJS_DECLARE_PROP_GETTER("byteLength",
+                            njs_typed_array_prototype_byte_length, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("byteOffset"),
-        .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function(njs_typed_array_prototype_byte_offset, 0),
-        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
-        .writable = NJS_ATTRIBUTE_UNSET,
-        .configurable = 1,
-        .enumerable = 0,
-    },
+    NJS_DECLARE_PROP_GETTER("byteOffset",
+                            njs_typed_array_prototype_byte_offset, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function(njs_typed_array_prototype_length, 0),
-        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
-        .writable = NJS_ATTRIBUTE_UNSET,
-        .configurable = 1,
-        .enumerable = 0,
-    },
+    NJS_DECLARE_PROP_GETTER("length", njs_typed_array_prototype_length, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("copyWithin"),
-        .value = njs_native_function(njs_typed_array_prototype_copy_within, 2),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("copyWithin",
+                            njs_typed_array_prototype_copy_within, 2, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("entries"),
-        .value = njs_native_function2(njs_typed_array_prototype_iterator_obj, 0,
-                                      NJS_ENUM_BOTH),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("entries",
+                            njs_typed_array_prototype_iterator_obj, 0,
+                            NJS_ENUM_BOTH),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("every"),
-        .value = njs_native_function2(njs_typed_array_prototype_iterator, 1,
-                                      NJS_ARRAY_EVERY),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("every",
+                            njs_typed_array_prototype_iterator, 1,
+                            NJS_ARRAY_EVERY),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("filter"),
-        .value = njs_native_function2(njs_typed_array_prototype_iterator, 1,
-                                      NJS_ARRAY_FILTER),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("filter",
+                            njs_typed_array_prototype_iterator, 1,
+                            NJS_ARRAY_FILTER),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("find"),
-        .value = njs_native_function2(njs_typed_array_prototype_iterator, 1,
-                                      NJS_ARRAY_FIND),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("find",
+                            njs_typed_array_prototype_iterator, 1,
+                            NJS_ARRAY_FIND),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("findIndex"),
-        .value = njs_native_function2(njs_typed_array_prototype_iterator, 1,
-                                      NJS_ARRAY_FIND_INDEX),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("findIndex",
+                            njs_typed_array_prototype_iterator, 1,
+                            NJS_ARRAY_FIND_INDEX),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("forEach"),
-        .value = njs_native_function2(njs_typed_array_prototype_iterator, 1,
-                                      NJS_ARRAY_FOR_EACH),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("forEach",
+                            njs_typed_array_prototype_iterator, 1,
+                            NJS_ARRAY_FOR_EACH),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("includes"),
-        .value = njs_native_function2(njs_typed_array_prototype_index_of, 1, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("includes",
+                             njs_typed_array_prototype_index_of, 1, 1),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("indexOf"),
-        .value = njs_native_function2(njs_typed_array_prototype_index_of, 1, 0),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("indexOf",
+                             njs_typed_array_prototype_index_of, 1, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("join"),
-        .value = njs_native_function(njs_typed_array_prototype_join, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("join", njs_typed_array_prototype_join, 1, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("fill"),
-        .value = njs_native_function(njs_typed_array_prototype_fill, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("fill", njs_typed_array_prototype_fill, 1, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("keys"),
-        .value = njs_native_function2(njs_typed_array_prototype_iterator_obj, 0,
-                                      NJS_ENUM_KEYS),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("keys", njs_typed_array_prototype_iterator_obj, 0,
+                            NJS_ENUM_KEYS),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("lastIndexOf"),
-        .value = njs_native_function2(njs_typed_array_prototype_index_of, 1, 2),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("lastIndexOf",
+                            njs_typed_array_prototype_index_of, 1, 2),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("map"),
-        .value = njs_native_function2(njs_typed_array_prototype_iterator, 1,
-                                      NJS_ARRAY_MAP),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("map",
+                            njs_typed_array_prototype_iterator, 1,
+                            NJS_ARRAY_MAP),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("reduce"),
-        .value = njs_native_function2(njs_typed_array_prototype_reduce, 1, 0),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("reduce", njs_typed_array_prototype_reduce, 1, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("reduceRight"),
-        .value = njs_native_function2(njs_typed_array_prototype_reduce, 1, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("reduceRight", njs_typed_array_prototype_reduce,
+                            1, 1),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("reverse"),
-        .value = njs_native_function(njs_typed_array_prototype_reverse, 0),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("reverse", njs_typed_array_prototype_reverse, 0, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("set"),
-        .value = njs_native_function(njs_typed_array_prototype_set, 2),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("set", njs_typed_array_prototype_set, 2, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("slice"),
-        .value = njs_native_function2(njs_typed_array_prototype_slice, 2, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("slice", njs_typed_array_prototype_slice, 2, 1),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("some"),
-        .value = njs_native_function2(njs_typed_array_prototype_iterator, 1,
-                                      NJS_ARRAY_SOME),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("some",
+                            njs_typed_array_prototype_iterator, 1,
+                            NJS_ARRAY_SOME),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("sort"),
-        .value = njs_native_function(njs_typed_array_prototype_sort, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("sort", njs_typed_array_prototype_sort, 1, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("subarray"),
-        .value = njs_native_function2(njs_typed_array_prototype_slice, 2, 0),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("subarray", njs_typed_array_prototype_slice, 2, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("toString"),
-        .value = njs_native_function(njs_array_prototype_to_string, 0),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("toString", njs_array_prototype_to_string, 0, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("values"),
-        .value = njs_native_function2(njs_typed_array_prototype_iterator_obj, 0,
-                                      NJS_ENUM_VALUES),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("values", njs_typed_array_prototype_iterator_obj,
+                            0, NJS_ENUM_VALUES),
 
     {
         .type = NJS_PROPERTY,
         .name = njs_wellknown_symbol(NJS_SYMBOL_ITERATOR),
-        .value = njs_native_function2(njs_typed_array_prototype_iterator_obj, 0,
-                                      NJS_ENUM_VALUES),
+        .u.value = njs_native_function2(njs_typed_array_prototype_iterator_obj,
+                                        0, NJS_ENUM_VALUES),
         .writable = 1,
         .configurable = 1,
     },
@@ -2633,25 +2433,11 @@ memory_error:
 
 static const njs_object_prop_t  njs_data_view_constructor_props[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("DataView"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NAME("DataView"),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 1.0),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_LENGTH(1),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 };
 
 
@@ -2895,194 +2681,69 @@ static const njs_object_prop_t  njs_data_view_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
-        .value = njs_string("DataView"),
+        .u.value = njs_string("DataView"),
         .configurable = 1,
     },
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("constructor",
+                             njs_object_prototype_create_constructor,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("buffer"),
-        .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function(njs_typed_array_prototype_buffer, 0),
-        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
-        .writable = NJS_ATTRIBUTE_UNSET,
-        .configurable = 1,
-        .enumerable = 0,
-    },
+    NJS_DECLARE_PROP_GETTER("buffer", njs_typed_array_prototype_buffer, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("byteLength"),
-        .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function(njs_typed_array_prototype_byte_length, 0),
-        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
-        .writable = NJS_ATTRIBUTE_UNSET,
-        .configurable = 1,
-        .enumerable = 0,
-    },
+    NJS_DECLARE_PROP_GETTER("byteLength",
+                            njs_typed_array_prototype_byte_length, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("byteOffset"),
-        .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function(njs_typed_array_prototype_byte_offset, 0),
-        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
-        .writable = NJS_ATTRIBUTE_UNSET,
-        .configurable = 1,
-        .enumerable = 0,
-    },
+    NJS_DECLARE_PROP_GETTER("byteOffset",
+                            njs_typed_array_prototype_byte_offset, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("getUint8"),
-        .value = njs_native_function2(njs_data_view_prototype_get, 1,
-                                      NJS_OBJ_TYPE_UINT8_ARRAY),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("getUint8", njs_data_view_prototype_get, 1,
+                            NJS_OBJ_TYPE_UINT8_ARRAY),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("getInt8"),
-        .value = njs_native_function2(njs_data_view_prototype_get, 1,
-                                      NJS_OBJ_TYPE_INT8_ARRAY),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("getInt8", njs_data_view_prototype_get, 1,
+                            NJS_OBJ_TYPE_INT8_ARRAY),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("getUint16"),
-        .value = njs_native_function2(njs_data_view_prototype_get, 1,
-                                      NJS_OBJ_TYPE_UINT16_ARRAY),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("getUint16", njs_data_view_prototype_get, 1,
+                            NJS_OBJ_TYPE_UINT16_ARRAY),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("getInt16"),
-        .value = njs_native_function2(njs_data_view_prototype_get, 1,
-                                      NJS_OBJ_TYPE_INT16_ARRAY),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("getInt16", njs_data_view_prototype_get, 1,
+                            NJS_OBJ_TYPE_INT16_ARRAY),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("getUint32"),
-        .value = njs_native_function2(njs_data_view_prototype_get, 1,
-                                      NJS_OBJ_TYPE_UINT32_ARRAY),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("getUint32", njs_data_view_prototype_get, 1,
+                            NJS_OBJ_TYPE_UINT32_ARRAY),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("getInt32"),
-        .value = njs_native_function2(njs_data_view_prototype_get, 1,
-                                      NJS_OBJ_TYPE_INT32_ARRAY),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("getInt32", njs_data_view_prototype_get, 1,
+                            NJS_OBJ_TYPE_INT32_ARRAY),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("getFloat32"),
-        .value = njs_native_function2(njs_data_view_prototype_get, 1,
-                                      NJS_OBJ_TYPE_FLOAT32_ARRAY),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("getFloat32", njs_data_view_prototype_get, 1,
+                            NJS_OBJ_TYPE_FLOAT32_ARRAY),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("getFloat64"),
-        .value = njs_native_function2(njs_data_view_prototype_get, 1,
-                                      NJS_OBJ_TYPE_FLOAT64_ARRAY),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("getFloat64", njs_data_view_prototype_get, 1,
+                            NJS_OBJ_TYPE_FLOAT64_ARRAY),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("setUint8"),
-        .value = njs_native_function2(njs_data_view_prototype_set, 2,
-                                      NJS_OBJ_TYPE_UINT8_ARRAY),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("setUint8", njs_data_view_prototype_set, 2,
+                            NJS_OBJ_TYPE_UINT8_ARRAY),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("setInt8"),
-        .value = njs_native_function2(njs_data_view_prototype_set, 2,
-                                      NJS_OBJ_TYPE_INT8_ARRAY),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("setInt8", njs_data_view_prototype_set, 2,
+                            NJS_OBJ_TYPE_INT8_ARRAY),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("setUint16"),
-        .value = njs_native_function2(njs_data_view_prototype_set, 2,
-                                      NJS_OBJ_TYPE_UINT16_ARRAY),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("setUint16", njs_data_view_prototype_set, 2,
+                            NJS_OBJ_TYPE_UINT16_ARRAY),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("setInt16"),
-        .value = njs_native_function2(njs_data_view_prototype_set, 2,
-                                      NJS_OBJ_TYPE_INT16_ARRAY),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("setInt16", njs_data_view_prototype_set, 2,
+                            NJS_OBJ_TYPE_INT16_ARRAY),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("setUint32"),
-        .value = njs_native_function2(njs_data_view_prototype_set, 2,
-                                      NJS_OBJ_TYPE_UINT32_ARRAY),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("setUint32", njs_data_view_prototype_set, 2,
+                            NJS_OBJ_TYPE_UINT32_ARRAY),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("setInt32"),
-        .value = njs_native_function2(njs_data_view_prototype_set, 2,
-                                      NJS_OBJ_TYPE_INT32_ARRAY),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("setInt32", njs_data_view_prototype_set, 2,
+                            NJS_OBJ_TYPE_INT32_ARRAY),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("setFloat32"),
-        .value = njs_native_function2(njs_data_view_prototype_set, 2,
-                                      NJS_OBJ_TYPE_FLOAT32_ARRAY),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("setFloat32", njs_data_view_prototype_set, 2,
+                            NJS_OBJ_TYPE_FLOAT32_ARRAY),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("setFloat64"),
-        .value = njs_native_function2(njs_data_view_prototype_set, 2,
-                                      NJS_OBJ_TYPE_FLOAT64_ARRAY),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("setFloat64", njs_data_view_prototype_set, 2,
+                            NJS_OBJ_TYPE_FLOAT64_ARRAY),
 };
 
 
@@ -3102,34 +2763,14 @@ const njs_object_type_init_t  njs_data_view_type_init = {
 
 static const njs_object_prop_t  njs_typed_array_u8_constructor_props[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("Uint8Array"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NAME("Uint8Array"),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 3.0),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_LENGTH(3),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("BYTES_PER_ELEMENT"),
-        .value = njs_value(NJS_NUMBER, 1, 1),
-        .configurable = 0,
-        .enumerable = 0,
-        .writable = 0,
-    },
+    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 1),
+                            0),
 };
 
 
@@ -3141,22 +2782,12 @@ static const njs_object_init_t  njs_typed_array_u8_constructor_init = {
 
 static const njs_object_prop_t  njs_typed_array_u8_prototype_properties[] =
 {
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("constructor",
+                             njs_object_prototype_create_constructor,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("BYTES_PER_ELEMENT"),
-        .value = njs_value(NJS_NUMBER, 1, 1),
-        .configurable = 0,
-        .enumerable = 0,
-        .writable = 0,
-    },
+    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 1),
+                            0),
 };
 
 
@@ -3180,31 +2811,16 @@ static const njs_object_prop_t  njs_typed_array_u8c_constructor_props[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
-        .value = njs_long_string("Uint8ClampedArray"),
+        .u.value = njs_long_string("Uint8ClampedArray"),
         .configurable = 1,
     },
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 3.0),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_LENGTH(3),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("BYTES_PER_ELEMENT"),
-        .value = njs_value(NJS_NUMBER, 1, 1),
-        .configurable = 0,
-        .enumerable = 0,
-        .writable = 0,
-    },
+    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 1),
+                            0),
 };
 
 
@@ -3216,22 +2832,12 @@ static const njs_object_init_t  njs_typed_array_u8c_constructor_init = {
 
 static const njs_object_prop_t  njs_typed_array_u8c_prototype_properties[] =
 {
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("constructor",
+                             njs_object_prototype_create_constructor,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("BYTES_PER_ELEMENT"),
-        .value = njs_value(NJS_NUMBER, 1, 1),
-        .configurable = 0,
-        .enumerable = 0,
-        .writable = 0,
-    },
+    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 1),
+                            0),
 };
 
 
@@ -3252,34 +2858,14 @@ const njs_object_type_init_t  njs_typed_array_u8clamped_type_init = {
 
 static const njs_object_prop_t  njs_typed_array_i8_constructor_props[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("Int8Array"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NAME("Int8Array"),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 3.0),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_LENGTH(3),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("BYTES_PER_ELEMENT"),
-        .value = njs_value(NJS_NUMBER, 1, 1),
-        .configurable = 0,
-        .enumerable = 0,
-        .writable = 0,
-    },
+    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 1),
+                            0),
 };
 
 
@@ -3291,22 +2877,12 @@ static const njs_object_init_t  njs_typed_array_i8_constructor_init = {
 
 static const njs_object_prop_t  njs_typed_array_i8_prototype_properties[] =
 {
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("constructor",
+                             njs_object_prototype_create_constructor,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("BYTES_PER_ELEMENT"),
-        .value = njs_value(NJS_NUMBER, 1, 1),
-        .configurable = 0,
-        .enumerable = 0,
-        .writable = 0,
-    },
+    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 1),
+                            0),
 };
 
 
@@ -3327,34 +2903,14 @@ const njs_object_type_init_t  njs_typed_array_i8_type_init = {
 
 static const njs_object_prop_t  njs_typed_array_u16_constructor_props[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("Uint16Array"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NAME("Uint16Array"),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 3.0),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_LENGTH(3),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("BYTES_PER_ELEMENT"),
-        .value = njs_value(NJS_NUMBER, 1, 2),
-        .configurable = 0,
-        .enumerable = 0,
-        .writable = 0,
-    },
+    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 2),
+                            0),
 };
 
 
@@ -3366,22 +2922,12 @@ static const njs_object_init_t  njs_typed_array_u16_constructor_init = {
 
 static const njs_object_prop_t  njs_typed_array_u16_prototype_properties[] =
 {
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("constructor",
+                             njs_object_prototype_create_constructor,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("BYTES_PER_ELEMENT"),
-        .value = njs_value(NJS_NUMBER, 1, 2),
-        .configurable = 0,
-        .enumerable = 0,
-        .writable = 0,
-    },
+    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 2),
+                            0),
 };
 
 
@@ -3402,34 +2948,14 @@ const njs_object_type_init_t  njs_typed_array_u16_type_init = {
 
 static const njs_object_prop_t  njs_typed_array_i16_constructor_props[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("Int16Array"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NAME("Int16Array"),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 3.0),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_LENGTH(3),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("BYTES_PER_ELEMENT"),
-        .value = njs_value(NJS_NUMBER, 1, 2),
-        .configurable = 0,
-        .enumerable = 0,
-        .writable = 0,
-    },
+    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 2),
+                            0),
 };
 
 
@@ -3441,22 +2967,12 @@ static const njs_object_init_t  njs_typed_array_i16_constructor_init = {
 
 static const njs_object_prop_t  njs_typed_array_i16_prototype_properties[] =
 {
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("constructor",
+                             njs_object_prototype_create_constructor,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("BYTES_PER_ELEMENT"),
-        .value = njs_value(NJS_NUMBER, 1, 2),
-        .configurable = 0,
-        .enumerable = 0,
-        .writable = 0,
-    },
+    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 2),
+                            0),
 };
 
 
@@ -3477,34 +2993,14 @@ const njs_object_type_init_t  njs_typed_array_i16_type_init = {
 
 static const njs_object_prop_t  njs_typed_array_u32_constructor_props[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("Uint32Array"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NAME("Uint32Array"),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 3.0),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_LENGTH(3),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("BYTES_PER_ELEMENT"),
-        .value = njs_value(NJS_NUMBER, 1, 4),
-        .configurable = 0,
-        .enumerable = 0,
-        .writable = 0,
-    },
+    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 4),
+                            0),
 };
 
 
@@ -3516,22 +3012,12 @@ static const njs_object_init_t  njs_typed_array_u32_constructor_init = {
 
 static const njs_object_prop_t  njs_typed_array_u32_prototype_properties[] =
 {
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("constructor",
+                             njs_object_prototype_create_constructor,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("BYTES_PER_ELEMENT"),
-        .value = njs_value(NJS_NUMBER, 1, 4),
-        .configurable = 0,
-        .enumerable = 0,
-        .writable = 0,
-    },
+    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 4),
+                            0),
 };
 
 
@@ -3552,34 +3038,14 @@ const njs_object_type_init_t  njs_typed_array_u32_type_init = {
 
 static const njs_object_prop_t  njs_typed_array_i32_constructor_props[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("Int32Array"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NAME("Int32Array"),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 3.0),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_LENGTH(3),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("BYTES_PER_ELEMENT"),
-        .value = njs_value(NJS_NUMBER, 1, 4),
-        .configurable = 0,
-        .enumerable = 0,
-        .writable = 0,
-    },
+    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 4),
+                            0),
 };
 
 
@@ -3591,22 +3057,12 @@ static const njs_object_init_t  njs_typed_array_i32_constructor_init = {
 
 static const njs_object_prop_t  njs_typed_array_i32_prototype_properties[] =
 {
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("constructor",
+                             njs_object_prototype_create_constructor,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("BYTES_PER_ELEMENT"),
-        .value = njs_value(NJS_NUMBER, 1, 4),
-        .configurable = 0,
-        .enumerable = 0,
-        .writable = 0,
-    },
+    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 4),
+                            0),
 };
 
 
@@ -3627,34 +3083,14 @@ const njs_object_type_init_t  njs_typed_array_i32_type_init = {
 
 static const njs_object_prop_t  njs_typed_array_f32_constructor_props[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("Float32Array"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NAME("Float32Array"),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 3.0),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_LENGTH(3),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("BYTES_PER_ELEMENT"),
-        .value = njs_value(NJS_NUMBER, 1, 4),
-        .configurable = 0,
-        .enumerable = 0,
-        .writable = 0,
-    },
+    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 4),
+                            0),
 };
 
 
@@ -3666,22 +3102,12 @@ static const njs_object_init_t  njs_typed_array_f32_constructor_init = {
 
 static const njs_object_prop_t  njs_typed_array_f32_prototype_properties[] =
 {
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("constructor",
+                             njs_object_prototype_create_constructor,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("BYTES_PER_ELEMENT"),
-        .value = njs_value(NJS_NUMBER, 1, 4),
-        .configurable = 0,
-        .enumerable = 0,
-        .writable = 0,
-    },
+    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 4),
+                            0),
 };
 
 
@@ -3702,34 +3128,14 @@ const njs_object_type_init_t  njs_typed_array_f32_type_init = {
 
 static const njs_object_prop_t  njs_typed_array_f64_constructor_props[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("Float64Array"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NAME("Float64Array"),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 3.0),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_LENGTH(3),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("BYTES_PER_ELEMENT"),
-        .value = njs_value(NJS_NUMBER, 1, 8),
-        .configurable = 0,
-        .enumerable = 0,
-        .writable = 0,
-    },
+    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 8),
+                            0),
 };
 
 
@@ -3741,22 +3147,12 @@ static const njs_object_init_t  njs_typed_array_f64_constructor_init = {
 
 static const njs_object_prop_t  njs_typed_array_f64_prototype_properties[] =
 {
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("constructor",
+                             njs_object_prototype_create_constructor,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_long_string("BYTES_PER_ELEMENT"),
-        .value = njs_value(NJS_NUMBER, 1, 8),
-        .configurable = 0,
-        .enumerable = 0,
-        .writable = 0,
-    },
+    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 8),
+                            0),
 };
 
 

@@ -49,6 +49,7 @@
 #include <njs_value.h>
 
 #include <njs_vm.h>
+#include <njs_object_prop_declare.h>
 #include <njs_error.h>
 #include <njs_number.h>
 #include <njs_value_conversion.h>

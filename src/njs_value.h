@@ -198,6 +198,7 @@ struct njs_object_s {
 
     uint8_t                           extensible:1;
     uint8_t                           error_data:1;
+    uint8_t                           stack_attached:1;
     uint8_t                           fast_array:1;
 };
 
@@ -327,11 +328,19 @@ typedef enum {
 
 typedef enum {
     NJS_PROPERTY = 0,
+    NJS_ACCESSOR,
     NJS_PROPERTY_REF,
     NJS_PROPERTY_TYPED_ARRAY_REF,
     NJS_PROPERTY_HANDLER,
     NJS_WHITEOUT,
 } njs_object_prop_type_t;
+
+
+typedef enum {
+    NJS_PROPERTY_QUERY_GET = 0,
+    NJS_PROPERTY_QUERY_SET,
+    NJS_PROPERTY_QUERY_DELETE,
+} njs_prop_query_t;
 
 
 /*
@@ -349,13 +358,26 @@ typedef enum {
 
 
 struct njs_object_prop_s {
-    /* Must be aligned to njs_value_t. */
-    njs_value_t                 value;
     njs_value_t                 name;
-    njs_value_t                 getter;
-    njs_value_t                 setter;
 
-    /* TODO: get rid of types */
+    union {
+        njs_value_t             value;
+        struct {
+            njs_function_t      *getter;
+            njs_function_t      *setter;
+        } accessor;
+    } u;
+
+#define njs_prop_value(_p)      (&(_p)->u.value)
+#define njs_prop_handler(_p)    (_p)->u.value.data.u.prop_handler
+#define njs_prop_ref(_p)        (_p)->u.value.data.u.value
+#define njs_prop_typed_ref(_p)  (_p)->u.value.data.u.typed_array
+#define njs_prop_magic16(_p)    (_p)->u.value.data.magic16
+#define njs_prop_magic32(_p)    (_p)->u.value.data.magic32
+#define NJS_PROP_PTR_UNSET      ((void *) (uintptr_t) -1)
+#define njs_prop_getter(_p)     (_p)->u.accessor.getter
+#define njs_prop_setter(_p)     (_p)->u.accessor.setter
+
     njs_object_prop_type_t      type:8;          /* 3 bits */
 
     njs_object_attribute_t      writable:8;      /* 2 bits */
@@ -367,14 +389,14 @@ struct njs_object_prop_s {
 typedef struct {
     njs_lvlhsh_query_t          lhq;
 
+    uint8_t                     query;
+
     /* scratch is used to get the value of an NJS_PROPERTY_HANDLER property. */
     njs_object_prop_t           scratch;
 
     njs_value_t                 key;
-    njs_object_t                *prototype;
+
     njs_object_prop_t           *own_whiteout;
-    uint8_t                     query;
-    uint8_t                     shared;
     uint8_t                     temp;
     uint8_t                     own;
 } njs_property_query_t;
@@ -454,17 +476,22 @@ typedef struct {
     _njs_native_function(_function, _args_count, 0, _magic)
 
 
+#define njs_getter(_function, _magic)                                         \
+    {                                                                         \
+        .getter = & (njs_function_t) _njs_function(_function, 0, 0, _magic),  \
+        .setter = NULL,                                                       \
+    }
+
+
+#define njs_accessor(_getter, _m1, _setter, _m2)                              \
+    {                                                                         \
+        .getter = & (njs_function_t) _njs_function(_getter, 0, 0, _m1),       \
+        .setter = & (njs_function_t) _njs_function(_setter, 0, 0, _m2),       \
+    }
+
+
 #define njs_native_ctor(_function, _args_count, _magic)                       \
     _njs_function(_function, _args_count, 1, _magic)
-
-
-#define njs_prop_handler(_handler) {                                          \
-    .data = {                                                                 \
-        .type = NJS_INVALID,                                                  \
-        .truth = 1,                                                           \
-        .u = { .prop_handler = _handler }                                     \
-    }                                                                         \
-}
 
 
 #define njs_prop_handler2(_handler, _magic16, _magic32) {                     \
@@ -1028,18 +1055,6 @@ njs_set_object_value(njs_value_t *value, njs_object_value_t *object_value)
 #endif
 
 
-#define njs_property_query_init(pq, _query, _own)                             \
-    do {                                                                      \
-        (pq)->lhq.key.length = 0;                                             \
-        (pq)->lhq.key.start = NULL;                                           \
-        (pq)->lhq.value = NULL;                                               \
-        (pq)->own_whiteout = NULL;                                            \
-        (pq)->query = _query;                                                 \
-        (pq)->shared = 0;                                                     \
-        (pq)->own = _own;                                                     \
-        (pq)->temp = 0;                                                       \
-    } while (0)
-
 
 void njs_value_retain(njs_value_t *value);
 void njs_value_release(njs_vm_t *vm, njs_value_t *value);
@@ -1080,6 +1095,22 @@ njs_int_t njs_value_species_constructor(njs_vm_t *vm, njs_value_t *object,
 
 njs_int_t njs_value_method(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     njs_value_t *retval);
+
+
+njs_inline void
+njs_property_query_init(njs_property_query_t *pq, njs_prop_query_t query,
+    uint32_t hash, uint8_t own)
+{
+        pq->query = query;
+        pq->lhq.key_hash = hash;
+        pq->own = own;
+
+        if (query == NJS_PROPERTY_QUERY_SET) {
+            pq->lhq.value = NULL;
+            pq->own_whiteout = NULL;
+            pq->temp = 0;
+        }
+}
 
 
 njs_inline njs_int_t

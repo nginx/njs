@@ -1825,84 +1825,31 @@ njs_promise_species(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static const njs_object_prop_t  njs_promise_constructor_properties[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("Promise"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NAME("Promise"),
+
+    NJS_DECLARE_PROP_LENGTH(1),
+
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
+
+    NJS_DECLARE_PROP_NATIVE("resolve", njs_promise_object_resolve, 1, 0),
+
+    NJS_DECLARE_PROP_NATIVE("reject", njs_promise_object_reject, 1, 0),
+
+    NJS_DECLARE_PROP_NATIVE("all", njs_promise_all, 1, NJS_PROMISE_ALL),
+
+    NJS_DECLARE_PROP_NATIVE("allSettled", njs_promise_all, 1,
+                             NJS_PROMISE_ALL_SETTLED),
+
+    NJS_DECLARE_PROP_NATIVE("any", njs_promise_all, 1, NJS_PROMISE_ANY),
+
+    NJS_DECLARE_PROP_NATIVE("race", njs_promise_race, 1, 0),
 
     {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 1.0),
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("resolve"),
-        .value = njs_native_function(njs_promise_object_resolve, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("reject"),
-        .value = njs_native_function(njs_promise_object_reject, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("all"),
-        .value = njs_native_function2(njs_promise_all, 1, NJS_PROMISE_ALL),
-        .writable = 1,
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("allSettled"),
-        .value = njs_native_function2(njs_promise_all, 1,
-                                      NJS_PROMISE_ALL_SETTLED),
-        .writable = 1,
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("any"),
-        .value = njs_native_function2(njs_promise_all, 1, NJS_PROMISE_ANY),
-        .writable = 1,
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("race"),
-        .value = njs_native_function(njs_promise_race, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY,
+        .type = NJS_ACCESSOR,
         .name = njs_wellknown_symbol(NJS_SYMBOL_SPECIES),
-        .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function(njs_promise_species, 0),
-        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
+        .u.accessor = njs_getter(njs_promise_species, 0),
         .writable = NJS_ATTRIBUTE_UNSET,
         .configurable = 1,
-        .enumerable = 0,
     },
 };
 
@@ -1915,44 +1862,22 @@ const njs_object_init_t  njs_promise_constructor_init = {
 
 static const njs_object_prop_t  njs_promise_prototype_properties[] =
 {
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("constructor",
+                             njs_object_prototype_create_constructor,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
     {
         .type = NJS_PROPERTY,
         .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
-        .value = njs_string("Promise"),
+        .u.value = njs_string("Promise"),
         .configurable = 1,
     },
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("then"),
-        .value = njs_native_function(njs_promise_prototype_then, 2),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("then", njs_promise_prototype_then, 2, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("catch"),
-        .value = njs_native_function(njs_promise_prototype_catch, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("catch", njs_promise_prototype_catch, 1, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("finally"),
-        .value = njs_native_function(njs_promise_prototype_finally, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("finally", njs_promise_prototype_finally, 1, 0),
 };
 
 

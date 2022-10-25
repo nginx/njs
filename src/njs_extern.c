@@ -82,18 +82,18 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
             function->magic8 = external->u.method.magic8;
             function->ctor = external->u.method.ctor;
 
-            njs_set_function(&prop->value, function);
+            njs_set_function(njs_prop_value(prop), function);
 
             break;
 
         case NJS_EXTERN_PROPERTY:
             if (external->u.property.handler != NULL) {
                 prop->type = NJS_PROPERTY_HANDLER;
-                prop->value.type = NJS_INVALID;
-                prop->value.data.truth = 1;
-                prop->value.data.magic16 = external->u.property.magic16;
-                prop->value.data.magic32 = external->u.property.magic32;
-                prop->value.data.u.prop_handler = external->u.property.handler;
+                prop->u.value.type = NJS_INVALID;
+                prop->u.value.data.truth = 1;
+                njs_prop_magic16(prop) = external->u.property.magic16;
+                njs_prop_magic32(prop) = external->u.property.magic32;
+                njs_prop_handler(prop) = external->u.property.handler;
 
             } else {
                 start = (u_char *) external->u.property.value;
@@ -103,7 +103,7 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
                     length = 0;
                 }
 
-                ret = njs_string_new(vm, &prop->value, start, size, length);
+                ret = njs_string_new(vm, &prop->u.value, start, size, length);
                 if (njs_slow_path(ret != NJS_OK)) {
                     return NJS_ERROR;
                 }
@@ -122,11 +122,11 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
             }
 
             prop->type = NJS_PROPERTY_HANDLER;
-            prop->value.type = NJS_INVALID;
-            prop->value.data.truth = 1;
-            prop->value.data.magic16 = next - slot;
-            prop->value.data.magic32 = lhq.key_hash;
-            prop->value.data.u.prop_handler = njs_external_prop_handler;
+            prop->u.value.type = NJS_INVALID;
+            prop->u.value.data.truth = 1;
+            njs_prop_magic16(prop) = next - slot;
+            njs_prop_magic32(prop) = lhq.key_hash;
+            njs_prop_handler(prop) = njs_external_prop_handler;
 
             next->writable = external->u.object.writable;
             next->configurable = external->u.object.configurable;
@@ -184,7 +184,7 @@ njs_external_prop_handler(njs_vm_t *vm, njs_object_prop_t *self,
             return NJS_ERROR;
         }
 
-        slots = njs_object(value)->slots + self->value.data.magic16;
+        slots = njs_object(value)->slots + njs_prop_magic16(self);
 
         ov->object.shared_hash = slots->external_shared_hash;
         ov->object.slots = slots;
@@ -208,7 +208,7 @@ njs_external_prop_handler(njs_vm_t *vm, njs_object_prop_t *self,
 
     lhq.value = prop;
     njs_string_get(&self->name, &lhq.key);
-    lhq.key_hash = self->value.data.magic32;
+    lhq.key_hash = njs_prop_magic32(self);
     lhq.replace = 1;
     lhq.pool = vm->mem_pool;
     lhq.proto = &njs_object_hash_proto;

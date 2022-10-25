@@ -185,7 +185,7 @@ static const njs_object_prop_t  njs_iterator_prototype_properties[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_wellknown_symbol(NJS_SYMBOL_ITERATOR),
-        .value = njs_native_function(njs_iterator_prototype_get_this, 0),
+        .u.value = njs_native_function(njs_iterator_prototype_get_this, 0),
         .configurable = 1,
         .writable = 1,
     },
@@ -245,19 +245,19 @@ njs_array_iterator_prototype_next(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
-    ret = njs_array_iterator_next(vm, this, &prop_value->value);
+    ret = njs_array_iterator_next(vm, this, njs_prop_value(prop_value));
     if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
     }
 
     if (njs_slow_path(ret == NJS_DECLINED)) {
-        njs_set_undefined(&prop_value->value);
-        njs_set_boolean(&prop_done->value, 1);
+        njs_set_undefined(njs_prop_value(prop_value));
+        njs_set_boolean(njs_prop_value(prop_done), 1);
 
         return NJS_OK;
     }
 
-    njs_set_boolean(&prop_done->value, 0);
+    njs_set_boolean(njs_prop_value(prop_done), 0);
 
     return NJS_OK;
 }
@@ -265,19 +265,13 @@ njs_array_iterator_prototype_next(njs_vm_t *vm, njs_value_t *args,
 
 static const njs_object_prop_t  njs_array_iterator_prototype_properties[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("next"),
-        .value = njs_native_function2(njs_array_iterator_prototype_next, 0,
-                                      NJS_DATA_TAG_ARRAY_ITERATOR),
-        .configurable = 1,
-        .writable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("next", njs_array_iterator_prototype_next, 0,
+                            NJS_DATA_TAG_ARRAY_ITERATOR),
 
     {
         .type = NJS_PROPERTY,
         .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
-        .value = njs_string("Array Iterator"),
+        .u.value = njs_string("Array Iterator"),
         .configurable = 1,
     },
 };

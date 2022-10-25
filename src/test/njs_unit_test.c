@@ -13965,6 +13965,10 @@ static njs_unit_test_t  njs_test[] =
                  "Object.values(o)"),
       njs_str("1,3,2") },
 
+    { njs_str("var o = { a: 'A', get b() { this.c = 'C'; return 'B'; } };"
+              "Object.values(o).length"),
+      njs_str("2") },
+
     { njs_str("var o = {a:1, c:2}; Object.defineProperty(o, 'b', {});"
                  "Object.entries(o)"),
       njs_str("a,1,c,2") },
@@ -13978,6 +13982,10 @@ static njs_unit_test_t  njs_test[] =
                  "Object.defineProperty(o, 'b', {enumerable:true, value:2});"
                  "Object.entries(o)"),
       njs_str("a,1,c,3,b,2") },
+
+    { njs_str("var o = { a: 'A', get b() { this.c = 'C'; return 'B'; } };"
+              "Object.entries(o).length"),
+      njs_str("2") },
 
     { njs_str("var o = {}; Object.defineProperty(o, 'a', {}); o.a = 1"),
       njs_str("TypeError: Cannot assign to read-only property \"a\" of object") },
@@ -14571,6 +14579,10 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var o = { get get() { return 'bar'; } }; o.get"),
       njs_str("bar") },
+
+    { njs_str("var d = Object.getOwnPropertyDescriptor({ get a() { return 'bar'; } }, 'a');"
+              "d.hasOwnProperty('set')"),
+      njs_str("true") },
 
     { njs_str("var o = { get() { return 'bar'; } }; o.get()"),
       njs_str("bar") },
@@ -18381,15 +18393,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("import x from ''"),
       njs_str("SyntaxError: Cannot find module \"\" in 1") },
 
-    { njs_str("import x from 'crypto'"),
-      njs_str("undefined") },
-
-    { njs_str("import x from 'crypto' 1"),
-      njs_str("SyntaxError: Unexpected token \"1\" in 1") },
-
-    { njs_str("if (1) {import x from 'crypto'}"),
-      njs_str("SyntaxError: Illegal import statement in 1") },
-
     { njs_str("export"),
       njs_str("SyntaxError: Illegal export statement in 1") },
 
@@ -19735,6 +19738,15 @@ static njs_unit_test_t  njs_fs_module_test[] =
 
 static njs_unit_test_t  njs_crypto_module_test[] =
 {
+    { njs_str("import x from 'crypto'"),
+      njs_str("undefined") },
+
+    { njs_str("import x from 'crypto' 1"),
+      njs_str("SyntaxError: Unexpected token \"1\" in 1") },
+
+    { njs_str("if (1) {import x from 'crypto'}"),
+      njs_str("SyntaxError: Illegal import statement in 1") },
+
     { njs_str("var h = require('crypto').createHash('sha1');"
               "[Object.prototype.toString.call(h), njs.dump(h),h]"),
       njs_str("[object Hash],Hash {},[object Hash]") },
@@ -22197,6 +22209,15 @@ static njs_unit_test_t  njs_backtraces_test[] =
       njs_str("TypeError: Cannot convert object to primitive value\n"
               "    at Math.max (native)\n"
               "    at main (:1)\n") },
+
+#ifdef NJS_TEST262
+    { njs_str("var ab = new ArrayBuffer(1);"
+              "$262.detachArrayBuffer(ab);"
+              "ab.byteLength"),
+      njs_str("TypeError: detached buffer\n"
+              "    at ArrayBuffer.prototype.byteLength (native)\n"
+              "    at main (:1)\n") },
+#endif
 
     { njs_str("Object.prototype()"),
       njs_str("TypeError: (intermediate value)[\"prototype\"] is not a function\n"

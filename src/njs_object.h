@@ -9,10 +9,32 @@
 
 
 typedef enum {
-    NJS_OBJECT_PROP_DESCRIPTOR,
-    NJS_OBJECT_PROP_GETTER,
-    NJS_OBJECT_PROP_SETTER,
-} njs_object_prop_define_t;
+    NJS_OBJECT_PROP_DESCRIPTOR = 0,
+    NJS_OBJECT_PROP_VALUE = 1,
+    NJS_OBJECT_PROP_GETTER = 2,
+    NJS_OBJECT_PROP_SETTER = 3,
+#define njs_prop_type(flags)  (flags & 3)
+    NJS_OBJECT_PROP_CREATE = 4,
+    NJS_OBJECT_PROP_ENUMERABLE = 8,
+    NJS_OBJECT_PROP_CONFIGURABLE = 16,
+    NJS_OBJECT_PROP_WRITABLE = 32,
+#define NJS_OBJECT_PROP_VALUE_ECW (NJS_OBJECT_PROP_VALUE                     \
+                                   | NJS_OBJECT_PROP_ENUMERABLE              \
+                                   | NJS_OBJECT_PROP_CONFIGURABLE            \
+                                   | NJS_OBJECT_PROP_WRITABLE)
+#define NJS_OBJECT_PROP_VALUE_EC  (NJS_OBJECT_PROP_VALUE                     \
+                                   | NJS_OBJECT_PROP_ENUMERABLE              \
+                                   | NJS_OBJECT_PROP_CONFIGURABLE)
+#define NJS_OBJECT_PROP_VALUE_CW  (NJS_OBJECT_PROP_VALUE                     \
+                                   | NJS_OBJECT_PROP_CONFIGURABLE            \
+                                   | NJS_OBJECT_PROP_WRITABLE)
+#define NJS_OBJECT_PROP_VALUE_E   (NJS_OBJECT_PROP_VALUE                     \
+                                   | NJS_OBJECT_PROP_ENUMERABLE)
+#define NJS_OBJECT_PROP_VALUE_C   (NJS_OBJECT_PROP_VALUE                     \
+                                   | NJS_OBJECT_PROP_CONFIGURABLE)
+#define NJS_OBJECT_PROP_VALUE_W   (NJS_OBJECT_PROP_VALUE                     \
+                                   | NJS_OBJECT_PROP_WRITABLE)
+} njs_object_prop_flags_t;
 
 
 struct njs_object_init_s {
@@ -71,7 +93,8 @@ njs_int_t njs_object_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
 njs_int_t njs_object_length(njs_vm_t *vm, njs_value_t *value, int64_t *dst);
 
-njs_int_t njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq);
+njs_int_t njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq,
+    njs_object_t *proto);
 njs_object_prop_t *njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
     const njs_value_t *value, uint8_t attributes);
 njs_int_t njs_object_property(njs_vm_t *vm, const njs_value_t *value,
@@ -79,7 +102,7 @@ njs_int_t njs_object_property(njs_vm_t *vm, const njs_value_t *value,
 njs_object_prop_t *njs_object_property_add(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *key, njs_bool_t replace);
 njs_int_t njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
-    njs_value_t *name, njs_value_t *value, njs_object_prop_define_t type);
+    njs_value_t *name, njs_value_t *value, unsigned flags, uint32_t hash);
 njs_int_t njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
     njs_value_t *value, njs_value_t *setval);
 const char *njs_prop_type_string(njs_object_prop_type_t type);
@@ -91,7 +114,7 @@ njs_inline njs_bool_t
 njs_is_data_descriptor(njs_object_prop_t *prop)
 {
     return prop->writable != NJS_ATTRIBUTE_UNSET
-           || njs_is_valid(&prop->value)
+           || (prop->type != NJS_ACCESSOR && njs_is_valid(njs_prop_value(prop)))
            || prop->type == NJS_PROPERTY_HANDLER;
 
 }
@@ -100,8 +123,7 @@ njs_is_data_descriptor(njs_object_prop_t *prop)
 njs_inline njs_bool_t
 njs_is_accessor_descriptor(njs_object_prop_t *prop)
 {
-    return njs_is_function_or_undefined(&prop->getter)
-           || njs_is_function_or_undefined(&prop->setter);
+    return prop->type == NJS_ACCESSOR;
 }
 
 
@@ -241,6 +263,32 @@ njs_key_string_get(njs_vm_t *vm, njs_value_t *key, njs_str_t *str)
     njs_string_get(key, str);
 
     return NJS_OK;
+}
+
+
+njs_inline njs_int_t
+njs_value_create_data_prop(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *name, njs_value_t *setval, uint32_t hash)
+{
+    return njs_object_prop_define(vm, value, name, setval,
+                                  NJS_OBJECT_PROP_CREATE
+                                  | NJS_OBJECT_PROP_VALUE_ECW, hash);
+}
+
+
+njs_inline njs_int_t
+njs_value_create_data_prop_i64(njs_vm_t *vm, njs_value_t *value, int64_t index,
+    njs_value_t *setval, uint32_t hash)
+{
+    njs_int_t    ret;
+    njs_value_t  key;
+
+    ret = njs_int64_to_string(vm, &key, index);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    return njs_value_create_data_prop(vm, value, &key, setval, hash);
 }
 
 

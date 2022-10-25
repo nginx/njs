@@ -1331,7 +1331,7 @@ NEXT_LBL;
         }
 
         ret = njs_object_prop_define(vm, value1, &name, function,
-                                     accessor->type);
+                                     accessor->type, 0);
         if (njs_slow_path(ret != NJS_OK)) {
             goto error;
         }
@@ -2196,7 +2196,7 @@ njs_vmcode_proto_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *unused,
         goto fail;
     }
 
-    ret = prop->value.data.u.prop_handler(vm, prop, value, init, &vm->retval);
+    ret = njs_prop_handler(prop)(vm, prop, value, init, &vm->retval);
     if (njs_slow_path(ret != NJS_OK)) {
         goto fail;
     }
@@ -2232,7 +2232,7 @@ njs_vmcode_property_in(njs_vm_t *vm, njs_value_t *value, njs_value_t *key)
         key = &primitive;
     }
 
-    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 0);
+    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 0, 0);
 
     ret = njs_property_query(vm, &pq, value, key);
     if (njs_slow_path(ret == NJS_ERROR)) {

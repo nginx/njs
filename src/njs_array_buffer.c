@@ -141,44 +141,21 @@ njs_array_buffer_writable(njs_vm_t *vm, njs_array_buffer_t *buffer)
 
 static const njs_object_prop_t  njs_array_buffer_constructor_properties[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("name"),
-        .value = njs_string("ArrayBuffer"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NAME("ArrayBuffer"),
+
+    NJS_DECLARE_PROP_LENGTH(1),
+
+    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
     {
-        .type = NJS_PROPERTY,
-        .name = njs_string("length"),
-        .value = njs_value(NJS_NUMBER, 1, 1.0),
-        .configurable = 1,
-    },
-
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("prototype"),
-        .value = njs_prop_handler(njs_object_prototype_create),
-    },
-
-    {
-        .type = NJS_PROPERTY,
+        .type = NJS_ACCESSOR,
         .name = njs_wellknown_symbol(NJS_SYMBOL_SPECIES),
-        .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function(njs_array_buffer_get_this, 0),
-        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
+        .u.accessor = njs_getter(njs_array_buffer_get_this, 0),
         .writable = NJS_ATTRIBUTE_UNSET,
         .configurable = 1,
-        .enumerable = 0,
     },
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("isView"),
-        .value = njs_native_function(njs_array_buffer_is_view, 1),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE("isView", njs_array_buffer_is_view, 1, 0),
 };
 
 
@@ -265,39 +242,19 @@ njs_array_buffer_prototype_slice(njs_vm_t *vm, njs_value_t *args,
 
 static const njs_object_prop_t  njs_array_buffer_prototype_properties[] =
 {
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_string("constructor"),
-        .value = njs_prop_handler(njs_object_prototype_create_constructor),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("constructor",
+                             njs_object_prototype_create_constructor,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("byteLength"),
-        .value = njs_value(NJS_INVALID, 1, NAN),
-        .getter = njs_native_function(njs_array_buffer_prototype_byte_length,
-                                      0),
-        .setter = njs_value(NJS_UNDEFINED, 0, NAN),
-        .writable = NJS_ATTRIBUTE_UNSET,
-        .configurable = 1,
-        .enumerable = 0,
-    },
+    NJS_DECLARE_PROP_GETTER("byteLength",
+                            njs_array_buffer_prototype_byte_length, 0),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_string("slice"),
-        .value = njs_native_function(njs_array_buffer_prototype_slice, 2),
-        .writable = 1,
-        .configurable = 1,
-        .enumerable = 0,
-    },
+    NJS_DECLARE_PROP_NATIVE("slice", njs_array_buffer_prototype_slice, 2, 0),
 
     {
         .type = NJS_PROPERTY,
         .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
-        .value = njs_string("ArrayBuffer"),
+        .u.value = njs_string("ArrayBuffer"),
         .configurable = 1,
     },
 };
