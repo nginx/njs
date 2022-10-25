@@ -46,16 +46,13 @@ enum {
     NJS_VMCODE_METHOD_FRAME,
     NJS_VMCODE_FUNCTION_CALL,
     NJS_VMCODE_PROPERTY_NEXT,
-    NJS_VMCODE_THIS,
     NJS_VMCODE_ARGUMENTS,
     NJS_VMCODE_PROTO_INIT,
     NJS_VMCODE_TO_PROPERTY_KEY,
     NJS_VMCODE_TO_PROPERTY_KEY_CHK,
     NJS_VMCODE_SET_FUNCTION_NAME,
     NJS_VMCODE_IMPORT,
-
     NJS_VMCODE_AWAIT,
-
     NJS_VMCODE_TRY_START,
     NJS_VMCODE_THROW,
     NJS_VMCODE_TRY_BREAK,
@@ -63,21 +60,13 @@ enum {
     NJS_VMCODE_TRY_END,
     NJS_VMCODE_CATCH,
     NJS_VMCODE_FINALLY,
-
     NJS_VMCODE_LET,
     NJS_VMCODE_LET_UPDATE,
     NJS_VMCODE_INITIALIZATION_TEST,
     NJS_VMCODE_NOT_INITIALIZED,
     NJS_VMCODE_ASSIGNMENT_ERROR,
-
     NJS_VMCODE_ERROR,
-
-    NJS_VMCODE_NORET = 127
-};
-
-
-enum {
-    NJS_VMCODE_MOVE = NJS_VMCODE_NORET + 1,
+    NJS_VMCODE_MOVE,
     NJS_VMCODE_PROPERTY_GET,
     NJS_VMCODE_INCREMENT,
     NJS_VMCODE_POST_INCREMENT,
@@ -85,7 +74,6 @@ enum {
     NJS_VMCODE_POST_DECREMENT,
     NJS_VMCODE_TRY_RETURN,
     NJS_VMCODE_GLOBAL_GET,
-
     NJS_VMCODE_LESS,
     NJS_VMCODE_GREATER,
     NJS_VMCODE_LESS_OR_EQUAL,
@@ -93,7 +81,6 @@ enum {
     NJS_VMCODE_ADDITION,
     NJS_VMCODE_EQUAL,
     NJS_VMCODE_NOT_EQUAL,
-
     NJS_VMCODE_SUBSTRACTION,
     NJS_VMCODE_MULTIPLICATION,
     NJS_VMCODE_EXPONENTIATION,
@@ -110,15 +97,11 @@ enum {
     NJS_VMCODE_PROPERTY_IN,
     NJS_VMCODE_PROPERTY_DELETE,
     NJS_VMCODE_PROPERTY_FOREACH,
-
     NJS_VMCODE_STRICT_EQUAL,
     NJS_VMCODE_STRICT_NOT_EQUAL,
-
     NJS_VMCODE_TEST_IF_TRUE,
     NJS_VMCODE_TEST_IF_FALSE,
-
     NJS_VMCODE_COALESCE,
-
     NJS_VMCODE_UNARY_PLUS,
     NJS_VMCODE_UNARY_NEGATION,
     NJS_VMCODE_BITWISE_NOT,
@@ -127,14 +110,12 @@ enum {
     NJS_VMCODE_ARRAY,
     NJS_VMCODE_FUNCTION,
     NJS_VMCODE_REGEXP,
-
     NJS_VMCODE_INSTANCE_OF,
     NJS_VMCODE_TYPEOF,
     NJS_VMCODE_VOID,
     NJS_VMCODE_DELETE,
     NJS_VMCODE_DEBUGGER,
-
-    NJS_VMCODE_NOP = 255
+    NJS_VMCODES
 };
 
 
@@ -457,8 +438,14 @@ njs_object_t *njs_function_new_object(njs_vm_t *vm, njs_value_t *constructor);
                        (code != NULL) ? &code->name : &njs_entry_unknown);    \
         } while (0);                                                          \
     }
+
+#define njs_vmcode_debug_opcode()                                             \
+    if (vm->options.opcode_debug) {                                           \
+        njs_disassemble(pc, NULL, 1, NULL);                                   \
+    }
 #else
 #define njs_vmcode_debug(vm, pc, prefix)
+#define njs_vmcode_debug_opcode()
 #endif
 
 #endif /* _NJS_VMCODE_H_INCLUDED_ */

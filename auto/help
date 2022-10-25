@@ -27,6 +27,10 @@ default: "$NJS_LD_OPT"
                             When this option is enabled only PCRE library
                             is discovered.
 
+  --no-goto                 disables computed goto discovery.
+                            When this option is enabled 'switch' statement
+                            will be always used in instead of computed goto.
+
   --no-openssl              disables OpenSSL discovery. When this option is
                             enabled OpenSSL dependant code is not built as a
                             part of libnjs.a.

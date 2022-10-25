@@ -20,6 +20,8 @@ NJS_OPENSSL=YES
 NJS_PCRE=YES
 NJS_TRY_PCRE2=YES
 
+NJS_TRY_GOTO=YES
+
 NJS_CONFIGURE_OPTIONS=
 
 for njs_option
@@ -49,6 +51,8 @@ do
 
         --no-pcre)                       NJS_PCRE=NO                         ;;
         --no-pcre2)                      NJS_TRY_PCRE2=NO                    ;;
+
+        --no-goto)                       NJS_TRY_GOTO=NO                     ;;
 
         --help)
             . auto/help

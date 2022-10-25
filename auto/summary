@@ -22,6 +22,11 @@ if [ $NJS_HAVE_OPENSSL = YES ]; then
   echo " + using OpenSSL library: $NJS_OPENSSL_LIB"
 fi
 
+if [ $NJS_HAVE_COMPUTED_GOTO = YES ]; then
+  echo " + using computed goto"
+fi
+
+
 echo
 echo " njs build dir: $NJS_BUILD_DIR"
 echo " njs CLI: $NJS_BUILD_DIR/njs"

@@ -4527,7 +4527,7 @@ njs_parser_expression_comma(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_parser_next(parser, njs_parser_assignment_expression);
 
     return njs_parser_expression_node(parser, token, current, NJS_TOKEN_COMMA,
-                                       NJS_VMCODE_NOP,
+                                       0,
                                        njs_parser_expression_comma);
 }
 

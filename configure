@@ -46,6 +46,7 @@ NJS_LIB_AUX_LIBS=
 . auto/memalign
 . auto/getrandom
 . auto/stat
+. auto/computed_goto
 . auto/explicit_bzero
 . auto/pcre
 . auto/readline

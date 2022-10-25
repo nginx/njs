@@ -146,6 +146,14 @@ njs_leading_zeros64(uint64_t x)
 #endif
 
 
+#if (NJS_HAVE_GCC_ATTRIBUTE_FALLTHROUGH)
+#define NJS_FALLTHROUGH    __attribute__((fallthrough))
+
+#else
+#define NJS_FALLTHROUGH
+#endif
+
+
 #if (NJS_HAVE_GCC_ATTRIBUTE_MALLOC)
 #define NJS_MALLOC_LIKE    __attribute__((__malloc__))
 

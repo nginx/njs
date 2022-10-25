@@ -1,0 +1,25 @@
+
+# Copyright (C) Vadim Zhestikov
+# Copyright (C) NGINX, Inc.
+
+
+NJS_HAVE_COMPUTED_GOTO=NO
+
+
+if [ $NJS_TRY_GOTO = YES ]; then
+
+    njs_feature="Computed goto"
+    njs_feature_name=NJS_HAVE_COMPUTED_GOTO
+    njs_feature_run=no
+    njs_feature_incs=
+    njs_feature_libs=
+    njs_feature_test="int main(void) {
+                        void  *ptr;
+                        ptr = &&label;
+                        goto *ptr;
+                      label:
+                        return 0;
+                      }"
+    . auto/feature
+
+fi
