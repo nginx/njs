@@ -842,7 +842,7 @@ njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
 
     case NJS_ERROR:
     default:
-        return ret;
+        return NJS_ERROR;
     }
 
     desc = njs_object_alloc(vm);

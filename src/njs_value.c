@@ -1108,7 +1108,7 @@ slow_path:
     case NJS_ERROR:
     default:
 
-        return ret;
+        return NJS_ERROR;
     }
 
     return NJS_OK;
@@ -1282,7 +1282,7 @@ slow_path:
     case NJS_ERROR:
     default:
 
-        return ret;
+        return NJS_ERROR;
     }
 
     if (njs_slow_path(!njs_object(value)->extensible)) {

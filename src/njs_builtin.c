@@ -390,6 +390,11 @@ njs_builtin_traverse(njs_vm_t *vm, njs_traverse_t *traverse, void *data)
         }
     }
 
+    if (traverse == NULL) {
+        njs_type_error(vm, "njs_builtin_traverse() traverse arg is NULL");
+        return NJS_ERROR;
+    }
+
     n = 0;
 
     while (traverse != NULL) {

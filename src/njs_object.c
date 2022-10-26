@@ -2372,7 +2372,7 @@ njs_object_prototype_has_own_property(njs_vm_t *vm, njs_value_t *args,
 
     case NJS_ERROR:
     default:
-        return ret;
+        return NJS_ERROR;
     }
 }
 
@@ -2420,7 +2420,7 @@ njs_object_prototype_prop_is_enumerable(njs_vm_t *vm, njs_value_t *args,
 
     case NJS_ERROR:
     default:
-        return ret;
+        return NJS_ERROR;
     }
 
     vm->retval = *retval;

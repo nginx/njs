@@ -103,7 +103,6 @@ njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc, void *promise_cap,
     njs_native_frame_t           *previous, *native;
     njs_property_next_t          *next;
     njs_vmcode_import_t          *import;
-    njs_vmcode_finally_t         *finally;
     njs_vmcode_generic_t         *vmcode;
     njs_vmcode_variable_t        *var;
     njs_vmcode_prop_get_t        *get;
@@ -1721,9 +1720,6 @@ NEXT_LBL;
         njs_vmcode_debug_opcode();
 
         value2 = (njs_value_t *) vmcode->operand1;
-
-        finally = (njs_vmcode_finally_t *) pc;
-        value1 = njs_scope_value(vm, finally->exit_value);
 
         ret = njs_vmcode_finally(vm, NULL, value2, pc);
 
