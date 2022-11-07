@@ -361,10 +361,11 @@ static njs_mod_t *
 njs_default_module_loader(njs_vm_t *vm, njs_external_ptr_t external,
     njs_str_t *name)
 {
+    u_char             *start;
     njs_int_t          ret;
     njs_str_t          cwd, text;
-    njs_parser_t       *prev;
     njs_mod_t          *module;
+    njs_parser_t       *prev;
     njs_module_info_t  info;
 
     prev = external;
@@ -388,7 +389,9 @@ njs_default_module_loader(njs_vm_t *vm, njs_external_ptr_t external,
         return NULL;
     }
 
-    module = njs_vm_compile_module(vm, &info.file, &text.start,
+    start = text.start;
+
+    module = njs_vm_compile_module(vm, &info.file, &start,
                                    &text.start[text.length]);
 
     njs_mp_free(vm->mem_pool, text.start);
