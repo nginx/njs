@@ -288,9 +288,12 @@ declare module "fs" {
          *
          * @since 0.4.2
          * @param path A path to a file.
-         * @param options The file mode (or an object specifying the file mode). Defaults to `0o777`.
+         * @param options A number specifying file mode, defaults to `0o777`.
+         * @param options An object with the following optional keys:
+         *   - `mode` - A number specifying file mode, defaults to `0o777`.
+         *   - `recursive` -  If true, perform a recursive directory creation, defaults to `false`.
          */
-        mkdir(path: PathLike, options?: { mode?: number } | number): Promise<void>;
+        mkdir(path: PathLike, options?: { mode?: number; recursive?: boolean; } | number): Promise<void>;
 
         /**
          * Asynchronously reads the contents of a directory at the specified `path`.
@@ -344,8 +347,10 @@ declare module "fs" {
          *
          * @since 0.4.2
          * @param path A path to a file.
+         * @param options An object with the following optional keys:
+         *   - `recursive` -  If true, perform a recursive directory removal, defaults to `false`.
          */
-        rmdir(path: PathLike): Promise<void>;
+        rmdir(path: PathLike, options?: { recursive?: boolean; }): Promise<void>;
 
         /**
          * Asynchronously retrieves `fs.Stats` object for the specified `path`.
@@ -537,9 +542,12 @@ declare module "fs" {
          *
          * @since 0.4.2
          * @param path A path to a file.
-         * @param options The file mode (or an object specifying the file mode). Defaults to `0o777`.
+         * @param options A number specifying file mode. defaults to `0o777`.
+         * @param options An object with the following optional keys:
+         *   - `mode` - A number specifying file mode, defaults to `0o777`.
+         *   - `recursive` -  If true, perform a recursive directory creation, defaults to `false`.
          */
-        mkdirSync(path: PathLike, options?: { mode?: number } | number): void;
+        mkdirSync(path: PathLike, options?: { mode?: number; recursive?: boolean; } | number): void;
 
         /**
          * Synchronously opens a file specified in the `path`.
@@ -635,8 +643,10 @@ declare module "fs" {
          *
          * @since 0.4.2
          * @param path A path to a file.
+         * @param options An object with the following optional keys:
+         *   - `recursive` -  If true, perform a recursive directory removal, defaults to `false`.
          */
-        rmdirSync(path: PathLike): void;
+        rmdirSync(path: PathLike, options?: { recursive?: boolean; }): void;
 
         /**
          * Synchronously retrieves `fs.Stats` object for the specified path.

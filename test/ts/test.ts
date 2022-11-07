@@ -131,6 +131,12 @@ async function fs_module() {
     buffer[1] += 2;
     fs.writeSync(fd, buffer, 0, 16, 4);
     fs.closeSync(fd);
+
+    fs.mkdirSync('a/b/c', {recursive: true});
+    await fs.promises.mkdir('d/e/f', {recursive: false});
+
+    fs.rmdirSync('a/b/c', {recursive: true});
+    await fs.promises.rmdir('d/e/f', {recursive: false});
 }
 
 function qs_module(str: NjsByteString) {
