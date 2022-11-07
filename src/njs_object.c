@@ -2505,6 +2505,11 @@ njs_object_length(njs_vm_t *vm, njs_value_t *value, int64_t *length)
 
     const njs_value_t  string_length = njs_string("length");
 
+    if (njs_is_fast_array(value)) {
+        *length = njs_array(value)->length;
+        return NJS_OK;
+    }
+
     ret = njs_value_property(vm, value, njs_value_arg(&string_length),
                              &value_length);
     if (njs_slow_path(ret == NJS_ERROR)) {

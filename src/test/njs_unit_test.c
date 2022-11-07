@@ -5549,6 +5549,15 @@ static njs_unit_test_t  njs_test[] =
                  "Array.prototype.fill.call(o, 2).a"),
       njs_str("4") },
 
+    { njs_str("var a = (new Array(2**10)).fill(0);"
+              "var start = {valueOf() {"
+              "                 var len = a.length - 2;"
+              "                 for (var i = 0; i < len; i++) { a.shift(); }; "
+              "                 return 0;"
+              "            }};"
+              "a.fill('xxx', start)"),
+      njs_str("xxx,xxx") },
+
     { njs_str("Array.prototype.fill.call(new Int32Array(1))"),
       njs_str("0") },
 

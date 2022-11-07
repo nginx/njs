@@ -1832,17 +1832,9 @@ njs_array_prototype_fill(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    array = NULL;
-
-    if (njs_is_fast_array(this)) {
-        array = njs_array(this);
-        length = array->length;
-
-    } else {
-        ret = njs_object_length(vm, this, &length);
-        if (njs_slow_path(ret == NJS_ERROR)) {
-            return ret;
-        }
+    ret = njs_object_length(vm, this, &length);
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return ret;
     }
 
     ret = njs_value_to_integer(vm, njs_arg(args, nargs, 2), &start);
@@ -1866,17 +1858,18 @@ njs_array_prototype_fill(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     value = njs_arg(args, nargs, 1);
 
-    if (array != NULL) {
+    if (njs_is_fast_array(this)) {
+        array = njs_array(this);
+        end = njs_min(end, array->length);
+
         for (i = start; i < end; i++) {
-            array->start[i] = *value;
+            njs_value_assign(&array->start[i], value);
         }
 
-        vm->retval = *this;
+        njs_value_assign(&vm->retval, this);
 
         return NJS_OK;
     }
-
-    value = njs_arg(args, nargs, 1);
 
     while (start < end) {
         ret = njs_value_property_i64_set(vm, this, start++, value);
@@ -1885,7 +1878,7 @@ njs_array_prototype_fill(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    vm->retval = *this;
+    njs_value_assign(&vm->retval, this);
 
     return NJS_OK;
 }
