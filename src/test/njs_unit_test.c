@@ -8937,6 +8937,35 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("String.bytesFrom([255,149,15,97,95]).replace(/_/g, 'X')[4]"),
       njs_str("X") },
 
+    { njs_str("var a = [];"
+              "a[2] = '';"
+              "var re = /any_regexp/;"
+              "re.exec = function () {"
+              "    return a;"
+              "};"
+              "var r = 'any_string'.replace(re);"),
+      njs_str("undefined") },
+
+    { njs_str("var a = [];"
+              "a[2] = {toString() {a[2**20] = 1; return 'X';}}; "
+              "a[4] = 'Y';"
+              "a[99] = 'Z';"
+              "a[100] = '*';"
+              "a[200] = '!';"
+              "var re = /b/;"
+              "re.exec = () => a;"
+              "'abc'.replace(re, '@$1|$2|$3|$4|$99|$100|@')"),
+      njs_str("@|X||Y|Z|0|@") },
+
+    { njs_str("var a = [];"
+              "Object.defineProperty(a, 32768, {});"
+              "var re = /any_regexp/;"
+              "re.exec = function () {"
+              "    return a;"
+              "};"
+              "var r = 'any_string'.replace(re);"),
+      njs_str("undefined") },
+
     { njs_str("/=/"),
       njs_str("/=/") },
 

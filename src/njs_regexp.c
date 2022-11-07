@@ -1362,54 +1362,34 @@ njs_regexp_prototype_symbol_replace(njs_vm_t *vm, njs_value_t *args,
 
         pos = njs_max(njs_min(pos, (int64_t) s.size), 0);
 
-        if (njs_fast_path(njs_is_fast_array(r) && njs_array_len(r) != 0)) {
-            array = njs_array(r);
+        ret = njs_object_length(vm, r, &ncaptures);
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto exception;
+        }
 
-            arguments = array->start;
-            arguments[0] = matched;
-            ncaptures = njs_max((int64_t) array->length - 1, 0);
+        ncaptures = njs_min(njs_max(ncaptures - 1, 0), 99);
 
-            for (n = 1; n <= ncaptures; n++) {
-                if (njs_is_undefined(&arguments[n])) {
-                    continue;
-                }
+        array = njs_array_alloc(vm, 1, ncaptures + 1, 0);
+        if (njs_slow_path(array == NULL)) {
+            goto exception;
+        }
 
-                ret = njs_value_to_string(vm, &arguments[n], &arguments[n]);
-                if (njs_slow_path(ret == NJS_ERROR)) {
-                    goto exception;
-                }
-            }
+        arguments = array->start;
+        arguments[0] = matched;
 
-        } else {
-            ret = njs_object_length(vm, r, &ncaptures);
-            if (njs_slow_path(ret != NJS_OK)) {
+        for (n = 1; n <= ncaptures; n++) {
+            ret = njs_value_property_i64(vm, r, n, &arguments[n]);
+            if (njs_slow_path(ret == NJS_ERROR)) {
                 goto exception;
             }
 
-            ncaptures = njs_max(ncaptures - 1, 0);
-
-            array = njs_array_alloc(vm, 0, ncaptures + 1, 0);
-            if (njs_slow_path(array == NULL)) {
-                goto exception;
+            if (njs_is_undefined(&arguments[n])) {
+                continue;
             }
 
-            arguments = array->start;
-            arguments[0] = matched;
-
-            for (n = 1; n <= ncaptures; n++) {
-                ret = njs_value_property_i64(vm, r, n, &arguments[n]);
-                if (njs_slow_path(ret == NJS_ERROR)) {
-                    goto exception;
-                }
-
-                if (njs_is_undefined(&arguments[n])) {
-                    continue;
-                }
-
-                ret = njs_value_to_string(vm, &arguments[n], &arguments[n]);
-                if (njs_slow_path(ret == NJS_ERROR)) {
-                    goto exception;
-                }
+            ret = njs_value_to_string(vm, &arguments[n], &arguments[n]);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                goto exception;
             }
         }
 
