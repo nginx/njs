@@ -694,7 +694,6 @@ njs_typed_array_prototype_set(njs_vm_t *vm, njs_value_t *args,
     int64_t             i, length, src_length, offset;
     njs_int_t           ret;
     njs_value_t         *this, *src, *value, prop;
-    njs_array_t         *array;
     njs_typed_array_t   *self, *src_tarray;
     njs_array_buffer_t  *buffer;
 
@@ -749,29 +748,6 @@ njs_typed_array_prototype_set(njs_vm_t *vm, njs_value_t *args,
         }
 
     } else {
-        if (njs_is_fast_array(src)) {
-            array = njs_array(src);
-            src_length = array->length;
-
-            if (njs_slow_path((src_length > length)
-                              || (offset > length - src_length)))
-            {
-                njs_range_error(vm, "source is too large");
-                return NJS_ERROR;
-            }
-
-            length = njs_min(array->length, length - offset);
-
-            for (i = 0; i < length; i++) {
-                ret = njs_value_to_number(vm, &array->start[i], &num);
-                if (ret == NJS_OK) {
-                    njs_typed_array_prop_set(vm, self, offset + i, num);
-                }
-            }
-
-            goto done;
-        }
-
         ret = njs_value_to_object(vm, src);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
@@ -814,8 +790,6 @@ njs_typed_array_prototype_set(njs_vm_t *vm, njs_value_t *args,
             njs_typed_array_prop_set(vm, self, offset + i, num);
         }
     }
-
-done:
 
     njs_set_undefined(&vm->retval);
 

@@ -6585,6 +6585,15 @@ static njs_unit_test_t  njs_test[] =
               "           return a.toString() === '1,2,3,3'})"),
       njs_str("true") },
 
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{ var a = [];"
+              "            var b = {toString() {a.length = 65535; return 99;}};"
+              "            for (var c = 0; c < 3; c++) { a[c] = b; }"
+              "            var ta = new v(6); ta.set(a);"
+              "            return ta.toString() == '99,99,99,0,0,0';"
+              "          })"),
+      njs_str("true") },
+
     { njs_str("(new Float32Array([255,255,NaN,3,NaN,Infinity,3,-Infinity,0,-0,2,1,-5])).slice(2).sort()"),
       njs_str("-Infinity,-5,0,0,1,2,3,3,Infinity,NaN,NaN") },
 
