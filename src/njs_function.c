@@ -464,7 +464,7 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
         spare_size = size + NJS_FRAME_SPARE_SIZE;
         spare_size = njs_align_size(spare_size, NJS_FRAME_SPARE_SIZE);
 
-        if (vm->stack_size + spare_size > NJS_MAX_STACK_SIZE) {
+        if (spare_size > vm->spare_stack_size) {
             njs_range_error(vm, "Maximum call stack size exceeded");
             return NULL;
         }
@@ -476,7 +476,7 @@ njs_function_frame_alloc(njs_vm_t *vm, size_t size)
         }
 
         chunk_size = spare_size;
-        vm->stack_size += spare_size;
+        vm->spare_stack_size -= spare_size;
     }
 
     njs_memzero(frame, sizeof(njs_native_frame_t));
@@ -702,7 +702,7 @@ njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *native)
         /* GC: free frame->local, etc. */
 
         if (native->size != 0) {
-            vm->stack_size -= native->size;
+            vm->spare_stack_size += native->size;
             njs_mp_free(vm->mem_pool, native);
         }
 

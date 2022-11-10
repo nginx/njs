@@ -8,7 +8,7 @@
 #define _NJS_VM_H_INCLUDED_
 
 
-#define NJS_MAX_STACK_SIZE       (256 * 1024)
+#define NJS_MAX_STACK_SIZE       (64 * 1024)
 
 
 typedef struct njs_frame_s            njs_frame_t;
@@ -160,7 +160,7 @@ struct njs_vm_s {
     njs_mp_t                 *mem_pool;
 
     u_char                   *start;
-    size_t                   stack_size;
+    size_t                   spare_stack_size;
 
     njs_vm_shared_t          *shared;
 

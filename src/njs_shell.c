@@ -39,6 +39,7 @@ typedef struct {
     uint8_t                 opcode_debug;
     uint8_t                 generator_debug;
     int                     exit_code;
+    int                     stack_size;
 
     char                    *file;
     char                    *command;
@@ -292,6 +293,10 @@ main(int argc, char **argv)
     vm_options.ast = opts.ast;
     vm_options.unhandled_rejection = opts.unhandled_rejection;
 
+    if (opts.stack_size != 0) {
+        vm_options.max_stack_size = opts.stack_size;
+    }
+
 #ifdef NJS_HAVE_READLINE
 
     if (opts.interactive) {
@@ -343,15 +348,16 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
         "  -a                print AST.\n"
         "  -c                specify the command to execute.\n"
         "  -d                print disassembled code.\n"
-        "  -e                set failure exit code.\n"
+        "  -e <code>         set failure exit code.\n"
         "  -f                disabled denormals mode.\n"
 #ifdef NJS_DEBUG_GENERATOR
         "  -g                enable generator debug.\n"
 #endif
+        "  -j <size>         set the maximum stack size in bytes.\n"
 #ifdef NJS_DEBUG_OPCODE
         "  -o                enable opcode debug.\n"
 #endif
-        "  -p                set path prefix for modules.\n"
+        "  -p <path>         set path prefix for modules.\n"
         "  -q                disable interactive introduction prompt.\n"
         "  -r                ignore unhandled promise rejection.\n"
         "  -s                sandbox mode.\n"
@@ -432,6 +438,14 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
             opts->generator_debug = 1;
             break;
 #endif
+        case 'j':
+            if (++i < argc) {
+                opts->stack_size = atoi(argv[i]);
+                break;
+            }
+
+            njs_stderror("option \"-j\" requires argument\n");
+            return NJS_ERROR;
 
 #ifdef NJS_DEBUG_OPCODE
         case 'o':

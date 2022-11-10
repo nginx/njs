@@ -26,6 +26,7 @@ njs_vm_opt_init(njs_vm_opt_t *options)
     njs_memzero(options, sizeof(njs_vm_opt_t));
 
     options->log_level = NJS_LOG_LEVEL_INFO;
+    options->max_stack_size = NJS_MAX_STACK_SIZE;
 }
 
 
@@ -70,6 +71,8 @@ njs_vm_create(njs_vm_opt_t *options)
     }
 
     vm->external = options->external;
+
+    vm->spare_stack_size = options->max_stack_size;
 
     vm->trace.level = NJS_LEVEL_TRACE;
     vm->trace.size = 2048;

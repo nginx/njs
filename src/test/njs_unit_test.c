@@ -23218,7 +23218,7 @@ njs_vm_value_test(njs_unit_test_t unused[], size_t num, njs_str_t *name,
 
     for (i = 0; i < njs_nitems(tests); i++) {
 
-        memset(&options, 0, sizeof(njs_vm_opt_t));
+        njs_vm_opt_init(&options);
         options.init = 1;
 
         vm = njs_vm_create(&options);

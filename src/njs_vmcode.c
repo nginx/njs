@@ -1837,7 +1837,7 @@ error:
         njs_vm_scopes_restore(vm, native, previous);
 
         if (native->size != 0) {
-            vm->stack_size -= native->size;
+            vm->spare_stack_size += native->size;
             njs_mp_free(vm->mem_pool, native);
         }
 

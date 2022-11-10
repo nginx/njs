@@ -254,6 +254,8 @@ typedef struct {
     char                            **argv;
     njs_uint_t                      argc;
 
+    njs_uint_t                      max_stack_size;
+
     njs_log_level_t                 log_level;
 
 #define NJS_VM_OPT_UNHANDLED_REJECTION_IGNORE   0
