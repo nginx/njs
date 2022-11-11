@@ -4980,6 +4980,27 @@ static njs_unit_test_t  njs_test[] =
               ".map(v=>v.join(''))"),
       njs_str(",1345,,1,13,13,13") },
 
+    { njs_str("var a = ['x'];"
+              "var d = a.splice(0, { valueOf() {  a.length = 0; return 10; } });"
+              "njs.dump(d)"),
+      njs_str("[<empty>]") },
+
+    { njs_str("var a = ['a', 'b', 'c'];"
+              "var d = a.splice(0, { valueOf() {  a.length = 2; return 3; } });"
+              "njs.dump(d)"),
+      njs_str("['a','b',<empty>]") },
+
+#if NJS_HAVE_LARGE_STACK
+    { njs_str("let arr = [ 'x' ];"
+              "let a = { toString() {"
+               "          new Float64Array(100).set(["
+               "            {toString() {Array.prototype.splice.call(arr, a)}}"
+               "          ])"
+               "        }};"
+               "a.toString()"),
+      njs_str("RangeError: Maximum call stack size exceeded") },
+#endif
+
     { njs_str("var o = { toString: () => {"
               "             for (var i = 0; i < 0x10; i++) {a.push(1)};"
               "             return {};"
