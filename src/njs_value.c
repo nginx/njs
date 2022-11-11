@@ -1329,19 +1329,40 @@ njs_int_t
 njs_value_property_delete(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     njs_value_t *removed, njs_bool_t thrw)
 {
+    double                num;
+    uint32_t              index;
     njs_int_t             ret;
-    njs_value_t           primitive;
+    njs_array_t           *array;
     njs_object_prop_t     *prop;
     njs_property_query_t  pq;
 
-    if (njs_slow_path(!njs_is_key(key))) {
-        ret = njs_value_to_key(vm, &primitive, key);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_ERROR;
+    njs_assert(njs_is_index_or_key(key));
+
+    if (njs_fast_path(njs_is_number(key))) {
+        if (njs_slow_path(!(njs_is_fast_array(value)))) {
+            goto slow_path;
         }
 
-        key = &primitive;
+        num = njs_number(key);
+
+        if (njs_slow_path(!njs_number_is_integer_index(num))) {
+            goto slow_path;
+        }
+
+        index = (uint32_t) num;
+
+        array = njs_array(value);
+
+        if (njs_slow_path(index >= array->length)) {
+            goto slow_path;
+        }
+
+        njs_value_assign(&array->start[index], &njs_value_invalid);
+
+        return NJS_OK;
     }
+
+slow_path:
 
     njs_property_query_init(&pq, NJS_PROPERTY_QUERY_DELETE, 0, 1);
 

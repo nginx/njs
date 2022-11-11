@@ -1142,13 +1142,9 @@ njs_inline njs_int_t
 njs_value_property_i64_delete(njs_vm_t *vm, njs_value_t *value, int64_t index,
     njs_value_t *removed)
 {
-    njs_int_t    ret;
     njs_value_t  key;
 
-    ret = njs_int64_to_string(vm, &key, index);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
-    }
+    njs_set_number(&key, index);
 
     return njs_value_property_delete(vm, value, &key, removed, 1);
 }

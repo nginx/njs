@@ -932,6 +932,20 @@ NEXT_LBL;
         njs_vmcode_operand(vm, vmcode->operand3, value2);
         njs_vmcode_operand(vm, vmcode->operand2, value1);
 
+        if (njs_slow_path(!njs_is_index_or_key(value2))) {
+            if (njs_slow_path(njs_is_null_or_undefined(value1))) {
+                (void) njs_throw_cannot_property(vm, value1, value2, "delete");
+                goto error;
+            }
+
+            ret = njs_value_to_key(vm, &primitive1, value2);
+            if (njs_slow_path(ret != NJS_OK)) {
+                goto error;
+            }
+
+            value2 = &primitive1;
+        }
+
         ret = njs_value_property_delete(vm, value1, value2, NULL, 1);
         if (njs_fast_path(ret != NJS_ERROR)) {
             vm->retval = njs_value_true;
