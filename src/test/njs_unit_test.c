@@ -4521,6 +4521,14 @@ static njs_unit_test_t  njs_test[] =
               "Object.defineProperty(a, 'length', {writable:true})"),
       njs_str("TypeError: Cannot redefine property: \"length\"") },
 
+    { njs_str("var a = [0,1]; Object.defineProperty(a, 'length', {writable: false}); "
+              "Object.defineProperty(a, 'length', {value:12})"),
+      njs_str("TypeError: Cannot redefine property: \"length\"") },
+
+    { njs_str("var a = [0,1]; Object.defineProperty(a, 'length', {writable: false}); "
+              "Object.defineProperty(a, 'length', {value:2}); a.length"),
+      njs_str("2") },
+
     { njs_str ("var a =[0,1,2]; Object.defineProperty(a, 100, {value:100});"
               "njs.dump(a);"),
       njs_str("[0,1,2,<97 empty items>,100]") },
@@ -4717,6 +4725,17 @@ static njs_unit_test_t  njs_test[] =
               "a[a.length - 1] = 'z'; a[a.length -2] = 'y';"
               "Array.prototype.pop.call(a); [a.length, a[a.length - 1]]"),
       njs_str("15,y") },
+
+    { njs_str("var a = new Array(1), arrayPrototypeGet0Calls = 0;"
+              "Object.defineProperty(Array.prototype, '0', {"
+              "    get() { Object.defineProperty(a, 'length', {writable: false});"
+              "            arrayPrototypeGet0Calls++;"
+              "    },"
+              "});"
+              "var e = null;"
+              "try { a.pop(); } catch (ee) { e = ee.name };"
+              "[e, a.length, arrayPrototypeGet0Calls]"),
+      njs_str("TypeError,1,1") },
 
     { njs_str("[0,1].slice()"),
       njs_str("0,1") },
@@ -14919,7 +14938,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("a,b") },
 
     { njs_str("Object.getOwnPropertyNames(Object.defineProperty([], 'b', {}))"),
-      njs_str("length,b") },
+      njs_str("b,length") },
 
     { njs_str("Object.getOwnPropertyNames(Object.defineProperty(new String(), 'b', {}))"),
       njs_str("b,length") },
@@ -15001,6 +15020,10 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("Object.defineProperty([1,2], 'a', {value:1}).a"),
       njs_str("1") },
+
+    { njs_str("var a = []; a[0] = 101; Object.defineProperty(a, 0, {});"
+              "a[0]"),
+      njs_str("101") },
 
     { njs_str("var a = Object.freeze([1,2]);"
                  "Object.defineProperty(a, 'a', {value:1}).a"),

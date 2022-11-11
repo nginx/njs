@@ -8,34 +8,85 @@
 #include <njs_main.h>
 
 
-static njs_int_t njs_descriptor_prop(njs_vm_t *vm,
-    njs_object_prop_t *prop, const njs_value_t *desc);
+static njs_object_prop_t *njs_object_prop_alloc2(njs_vm_t *vm,
+    const njs_value_t *name, njs_object_prop_type_t type, unsigned flags);
+static njs_object_prop_t *njs_descriptor_prop(njs_vm_t *vm,
+    const njs_value_t *name, const njs_value_t *desc);
 
 
 njs_object_prop_t *
 njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
     const njs_value_t *value, uint8_t attributes)
 {
+    unsigned           flags;
+    njs_object_prop_t  *prop;
+
+    switch (attributes) {
+    case NJS_ATTRIBUTE_FALSE:
+    case NJS_ATTRIBUTE_TRUE:
+        flags = attributes ? NJS_OBJECT_PROP_VALUE_ECW : 0;
+        break;
+
+    case NJS_ATTRIBUTE_UNSET:
+    default:
+        flags = NJS_OBJECT_PROP_UNSET;
+        break;
+    }
+
+    prop = njs_object_prop_alloc2(vm, name, NJS_PROPERTY, flags);
+    if (njs_slow_path(prop == NULL)) {
+        return NULL;
+    }
+
+    njs_value_assign(njs_prop_value(prop), value);
+
+    return prop;
+}
+
+
+static njs_object_prop_t *
+njs_object_prop_alloc2(njs_vm_t *vm, const njs_value_t *name,
+    njs_object_prop_type_t type, unsigned flags)
+{
+    njs_int_t          ret;
     njs_object_prop_t  *prop;
 
     prop = njs_mp_align(vm->mem_pool, sizeof(njs_value_t),
                         sizeof(njs_object_prop_t));
-
-    if (njs_fast_path(prop != NULL)) {
-        njs_value_assign(&prop->name, name);
-        njs_value_assign(njs_prop_value(prop), value);
-
-        prop->type = NJS_PROPERTY;
-        prop->writable = attributes;
-        prop->enumerable = attributes;
-        prop->configurable = attributes;
-
-        return prop;
+    if (njs_slow_path(prop == NULL)) {
+        njs_memory_error(vm);
+        return NULL;
     }
 
-    njs_memory_error(vm);
+    njs_value_assign(&prop->name, name);
 
-    return NULL;
+    if (njs_slow_path(!njs_is_key(&prop->name))) {
+        ret = njs_value_to_key(vm, &prop->name, &prop->name);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NULL;
+        }
+    }
+
+    prop->type = type;
+
+    if (flags != NJS_OBJECT_PROP_UNSET) {
+        prop->enumerable = !!(flags & NJS_OBJECT_PROP_ENUMERABLE);
+        prop->configurable = !!(flags & NJS_OBJECT_PROP_CONFIGURABLE);
+
+        if (type == NJS_PROPERTY) {
+            prop->writable = !!(flags & NJS_OBJECT_PROP_WRITABLE);
+
+        } else {
+            prop->writable = NJS_ATTRIBUTE_UNSET;
+        }
+
+    } else {
+        prop->enumerable = NJS_ATTRIBUTE_UNSET;
+        prop->configurable = NJS_ATTRIBUTE_UNSET;
+        prop->writable = NJS_ATTRIBUTE_UNSET;
+    }
+
+    return prop;
 }
 
 
@@ -131,7 +182,7 @@ njs_int_t
 njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *name, njs_value_t *value, unsigned flags, uint32_t hash)
 {
-    uint32_t              length;
+    uint32_t              length, index;
     njs_int_t             ret;
     njs_array_t           *array;
     njs_object_prop_t     *prop, *prev;
@@ -139,23 +190,8 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
 
     static const njs_str_t  length_key = njs_str("length");
 
-    if (njs_slow_path(!njs_is_key(name))) {
+    if (njs_slow_path(!njs_is_index_or_key(name))) {
         ret = njs_value_to_key(vm, name, name);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
-    }
-
-    if (njs_slow_path(njs_is_fast_array(object))) {
-        array = njs_array(object);
-        length = array->length;
-
-        ret = njs_array_convert_to_slow_array(vm, array);
-        if (ret != NJS_OK) {
-            return NJS_ERROR;
-        }
-
-        ret = njs_array_length_redefine(vm, object, length, 1);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
         }
@@ -173,53 +209,59 @@ again:
         return ret;
     }
 
-    prop = njs_object_prop_alloc(vm, name, &njs_value_invalid,
-                                 NJS_ATTRIBUTE_UNSET);
-    if (njs_slow_path(prop == NULL)) {
-        return NJS_ERROR;
-    }
-
     switch (njs_prop_type(flags)) {
     case NJS_OBJECT_PROP_DESCRIPTOR:
-        if (njs_descriptor_prop(vm, prop, value) != NJS_OK) {
+        prop = njs_descriptor_prop(vm, name, value);
+        if (njs_slow_path(prop == NULL)) {
             return NJS_ERROR;
         }
 
         break;
 
     case NJS_OBJECT_PROP_VALUE:
-        njs_value_assign(njs_prop_value(prop), value);
-        prop->enumerable = !!(flags & NJS_OBJECT_PROP_ENUMERABLE);
-        prop->configurable = !!(flags & NJS_OBJECT_PROP_CONFIGURABLE);
-        prop->writable = !!(flags & NJS_OBJECT_PROP_WRITABLE);
+        if (((flags & NJS_OBJECT_PROP_VALUE_ECW) == NJS_OBJECT_PROP_VALUE_ECW)
+            && njs_is_fast_array(object)
+            && njs_is_number(name))
+        {
+            if (njs_number_is_integer_index(njs_number(name))) {
+                array = njs_array(object);
+                index = (uint32_t) njs_number(name);
 
+                if (index < array->length) {
+                    njs_value_assign(&array->start[index], value);
+                    return NJS_OK;
+                }
+            }
+        }
+
+        prop = njs_object_prop_alloc2(vm, name, NJS_PROPERTY,
+                                      flags & NJS_OBJECT_PROP_VALUE_ECW);
+        if (njs_slow_path(prop == NULL)) {
+            return NJS_ERROR;
+        }
+
+        njs_value_assign(njs_prop_value(prop), value);
         break;
 
     case NJS_OBJECT_PROP_GETTER:
-        if (!njs_is_function(value)) {
-            njs_type_error(vm, "Getter must be a function");
-            return NJS_ERROR;
-        }
-
-        prop->type = NJS_ACCESSOR;
-        njs_prop_getter(prop) = njs_function(value);
-        njs_prop_setter(prop) = NJS_PROP_PTR_UNSET;
-        prop->enumerable = NJS_ATTRIBUTE_TRUE;
-        prop->configurable = NJS_ATTRIBUTE_TRUE;
-
-        break;
-
     case NJS_OBJECT_PROP_SETTER:
-        if (!njs_is_function(value)) {
-            njs_type_error(vm, "Setter must be a function");
+    default:
+        njs_assert(njs_is_function(value));
+
+        prop = njs_object_prop_alloc2(vm, name, NJS_ACCESSOR,
+                                      NJS_OBJECT_PROP_VALUE_EC);
+        if (njs_slow_path(prop == NULL)) {
             return NJS_ERROR;
         }
 
-        prop->type = NJS_ACCESSOR;
-        njs_prop_getter(prop) = NJS_PROP_PTR_UNSET;
-        njs_prop_setter(prop) = njs_function(value);
-        prop->enumerable = NJS_ATTRIBUTE_TRUE;
-        prop->configurable = NJS_ATTRIBUTE_TRUE;
+        if (njs_prop_type(flags) == NJS_OBJECT_PROP_GETTER) {
+            njs_prop_getter(prop) = njs_function(value);
+            njs_prop_setter(prop) = NJS_PROP_PTR_UNSET;
+
+        } else {
+            njs_prop_getter(prop) = NJS_PROP_PTR_UNSET;
+            njs_prop_setter(prop) = njs_function(value);
+        }
 
         break;
     }
@@ -330,35 +372,36 @@ set_prop:
         break;
 
     case NJS_PROPERTY_REF:
-        if (njs_is_accessor_descriptor(prop)
-            || prop->configurable == NJS_ATTRIBUTE_FALSE
-            || prop->enumerable == NJS_ATTRIBUTE_FALSE
-            || prop->writable == NJS_ATTRIBUTE_FALSE)
+    case NJS_PROPERTY_PLACE_REF:
+        if (prev->type == NJS_PROPERTY_REF
+            && !njs_is_accessor_descriptor(prop)
+            && prop->configurable != NJS_ATTRIBUTE_FALSE
+            && prop->enumerable != NJS_ATTRIBUTE_FALSE
+            && prop->writable != NJS_ATTRIBUTE_FALSE)
         {
-            array = njs_array(object);
-            length = array->length;
-
-            ret = njs_array_convert_to_slow_array(vm, array);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return ret;
+            if (njs_is_valid(njs_prop_value(prop))) {
+                njs_value_assign(njs_prop_ref(prev), njs_prop_value(prop));
             }
 
-            ret = njs_array_length_redefine(vm, object, length, 1);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return ret;
-            }
-
-            goto again;
+            return NJS_OK;
         }
 
-        if (njs_is_valid(njs_prop_value(prop))) {
-            njs_value_assign(njs_prop_ref(prop), njs_prop_value(prop));
+        array = njs_array(object);
+        length = array->length;
 
-        } else {
-            njs_set_undefined(njs_prop_ref(prop));
+        ret = njs_array_convert_to_slow_array(vm, array);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
 
-        return NJS_OK;
+        ret = njs_array_length_redefine(vm, object, length, 1);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+        flags &= ~NJS_OBJECT_PROP_CREATE;
+
+        goto again;
 
     case NJS_PROPERTY_TYPED_ARRAY_REF:
         if (njs_is_accessor_descriptor(prop)) {
@@ -473,6 +516,27 @@ set_prop:
 
 done:
 
+    if (njs_slow_path(njs_is_fast_array(object)
+                      && pq.lhq.key_hash == NJS_LENGTH_HASH)
+                      && njs_strstr_eq(&pq.lhq.key, &length_key)
+                      && prop->writable == NJS_ATTRIBUTE_FALSE)
+    {
+        array = njs_array(object);
+        length = array->length;
+
+        ret = njs_array_convert_to_slow_array(vm, array);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+        ret = njs_array_length_redefine(vm, object, length, 1);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+        goto again;
+    }
+
     if (njs_is_accessor_descriptor(prop)) {
         prev->type = prop->type;
 
@@ -506,29 +570,26 @@ done:
             }
 
         } else {
-            if (njs_is_array(object)) {
-                if (njs_slow_path(pq.lhq.key_hash == NJS_LENGTH_HASH)) {
 
-                    if (njs_strstr_eq(&pq.lhq.key, &length_key)) {
-
-                        if (prev->configurable != 1 &&
-                            prev->writable != 1 &&
-                            !njs_values_strict_equal(njs_prop_value(prev),
-                                                     njs_prop_value(prop)))
-                        {
-                            njs_type_error(vm, "Cannot redefine "
-                                           "property: \"length\"");
-                            return NJS_ERROR;
-                        }
-
-                        if (prop->writable != NJS_ATTRIBUTE_UNSET) {
-                            prev->writable = prop->writable;
-                        }
-
-                        return njs_array_length_set(vm, object, prev,
-                                                    njs_prop_value(prop));
-                    }
+            if (njs_slow_path(njs_is_array(object)
+                              && pq.lhq.key_hash == NJS_LENGTH_HASH)
+                              && njs_strstr_eq(&pq.lhq.key, &length_key))
+            {
+                if (prev->configurable != NJS_ATTRIBUTE_TRUE
+                    && prev->writable != NJS_ATTRIBUTE_TRUE
+                    && !njs_values_strict_equal(njs_prop_value(prev),
+                                                 njs_prop_value(prop)))
+                {
+                    njs_type_error(vm, "Cannot redefine property: \"length\"");
+                    return NJS_ERROR;
                 }
+
+                if (prop->writable != NJS_ATTRIBUTE_UNSET) {
+                    prev->writable = prop->writable;
+                }
+
+                return njs_array_length_set(vm, object, prev,
+                                            njs_prop_value(prop));
             }
 
             njs_value_assign(njs_prop_value(prev), njs_prop_value(prop));
@@ -652,21 +713,28 @@ njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq,
 }
 
 
-static njs_int_t
-njs_descriptor_prop(njs_vm_t *vm, njs_object_prop_t *prop,
+static njs_object_prop_t *
+njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
     const njs_value_t *desc)
 {
     njs_int_t           ret;
     njs_bool_t          data, accessor;
     njs_value_t         value;
     njs_function_t      *getter, *setter;
+    njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
 
     static const njs_value_t  get_string = njs_string("get");
 
     if (!njs_is_object(desc)) {
         njs_type_error(vm, "property descriptor must be an object");
-        return NJS_ERROR;
+        return NULL;
+    }
+
+    prop = njs_object_prop_alloc(vm, name, &njs_value_invalid,
+                                 NJS_ATTRIBUTE_UNSET);
+    if (njs_slow_path(prop == NULL)) {
+        return NULL;
     }
 
     data = 0;
@@ -678,13 +746,13 @@ njs_descriptor_prop(njs_vm_t *vm, njs_object_prop_t *prop,
 
     ret = njs_object_property(vm, desc, &lhq, &value);
     if (njs_slow_path(ret == NJS_ERROR)) {
-        return NJS_ERROR;
+        return NULL;
     }
 
     if (ret == NJS_OK) {
         if (njs_is_defined(&value) && !njs_is_function(&value)) {
             njs_type_error(vm, "Getter must be a function");
-            return NJS_ERROR;
+            return NULL;
         }
 
         accessor = 1;
@@ -696,13 +764,13 @@ njs_descriptor_prop(njs_vm_t *vm, njs_object_prop_t *prop,
 
     ret = njs_object_property(vm, desc, &lhq, &value);
     if (njs_slow_path(ret == NJS_ERROR)) {
-        return ret;
+        return NULL;
     }
 
     if (ret == NJS_OK) {
         if (njs_is_defined(&value) && !njs_is_function(&value)) {
             njs_type_error(vm, "Setter must be a function");
-            return NJS_ERROR;
+            return NULL;
         }
 
         accessor = 1;
@@ -714,7 +782,7 @@ njs_descriptor_prop(njs_vm_t *vm, njs_object_prop_t *prop,
 
     ret = njs_object_property(vm, desc, &lhq, &value);
     if (njs_slow_path(ret == NJS_ERROR)) {
-        return ret;
+        return NULL;
     }
 
     if (ret == NJS_OK) {
@@ -727,7 +795,7 @@ njs_descriptor_prop(njs_vm_t *vm, njs_object_prop_t *prop,
 
     ret = njs_object_property(vm, desc, &lhq, &value);
     if (njs_slow_path(ret == NJS_ERROR)) {
-        return ret;
+        return NULL;
     }
 
     if (ret == NJS_OK) {
@@ -738,7 +806,7 @@ njs_descriptor_prop(njs_vm_t *vm, njs_object_prop_t *prop,
     if (accessor && data) {
         njs_type_error(vm, "Cannot both specify accessors "
                            "and a value or writable attribute");
-        return NJS_ERROR;
+        return NULL;
     }
 
     lhq.key = njs_str_value("enumerable");
@@ -746,7 +814,7 @@ njs_descriptor_prop(njs_vm_t *vm, njs_object_prop_t *prop,
 
     ret = njs_object_property(vm, desc, &lhq, &value);
     if (njs_slow_path(ret == NJS_ERROR)) {
-        return ret;
+        return NULL;
     }
 
     if (ret == NJS_OK) {
@@ -758,7 +826,7 @@ njs_descriptor_prop(njs_vm_t *vm, njs_object_prop_t *prop,
 
     ret = njs_object_property(vm, desc, &lhq, &value);
     if (njs_slow_path(ret == NJS_ERROR)) {
-        return ret;
+        return NULL;
     }
 
     if (ret == NJS_OK) {
@@ -771,7 +839,7 @@ njs_descriptor_prop(njs_vm_t *vm, njs_object_prop_t *prop,
         njs_prop_setter(prop) = setter;
     }
 
-    return NJS_OK;
+    return prop;
 }
 
 
@@ -983,6 +1051,7 @@ njs_prop_type_string(njs_object_prop_type_t type)
 {
     switch (type) {
     case NJS_PROPERTY_REF:
+    case NJS_PROPERTY_PLACE_REF:
         return "property_ref";
 
     case NJS_PROPERTY_HANDLER:

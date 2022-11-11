@@ -18,6 +18,7 @@ typedef enum {
     NJS_OBJECT_PROP_ENUMERABLE = 8,
     NJS_OBJECT_PROP_CONFIGURABLE = 16,
     NJS_OBJECT_PROP_WRITABLE = 32,
+    NJS_OBJECT_PROP_UNSET = 64,
 #define NJS_OBJECT_PROP_VALUE_ECW (NJS_OBJECT_PROP_VALUE                     \
                                    | NJS_OBJECT_PROP_ENUMERABLE              \
                                    | NJS_OBJECT_PROP_CONFIGURABLE            \
@@ -280,13 +281,9 @@ njs_inline njs_int_t
 njs_value_create_data_prop_i64(njs_vm_t *vm, njs_value_t *value, int64_t index,
     njs_value_t *setval, uint32_t hash)
 {
-    njs_int_t    ret;
     njs_value_t  key;
 
-    ret = njs_int64_to_string(vm, &key, index);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
-    }
+    njs_set_number(&key, index);
 
     return njs_value_create_data_prop(vm, value, &key, setval, hash);
 }
