@@ -290,9 +290,13 @@ static const njs_lexer_multi_t  njs_assignment_token[] = {
 
 njs_int_t
 njs_lexer_init(njs_vm_t *vm, njs_lexer_t *lexer, njs_str_t *file,
-    u_char *start, u_char *end, njs_uint_t runtime)
+    u_char *start, u_char *end, njs_uint_t runtime,
+    njs_int_t init_lexer_memory)
 {
-    njs_memzero(lexer, sizeof(njs_lexer_t));
+    if (init_lexer_memory) {
+        njs_memzero(lexer, sizeof(njs_lexer_t));
+
+    }
 
     lexer->file = *file;
     lexer->start = start;
@@ -303,6 +307,105 @@ njs_lexer_init(njs_vm_t *vm, njs_lexer_t *lexer, njs_str_t *file,
     lexer->mem_pool = vm->mem_pool;
 
     njs_queue_init(&lexer->preread);
+
+    return njs_lexer_in_stack_init(lexer);
+}
+
+
+njs_int_t
+njs_lexer_in_stack_init(njs_lexer_t *lexer)
+{
+    lexer->in_stack_size = 128;
+    lexer->in_stack = njs_mp_zalloc(lexer->mem_pool, lexer->in_stack_size);
+    if (lexer->in_stack == NULL) {
+        return NJS_ERROR;
+    }
+
+    lexer->in_stack_ptr = 0;
+
+    return NJS_OK;
+}
+
+
+njs_int_t
+njs_lexer_in_stack_push(njs_lexer_t *lexer)
+{
+    u_char  *tmp;
+    size_t  size;
+
+    lexer->in_stack_ptr++;
+
+    if (lexer->in_stack_ptr < lexer->in_stack_size) {
+        lexer->in_stack[lexer->in_stack_ptr] = 0;
+        return NJS_OK;
+    }
+
+    /* Realloc in_stack, it is up to higher layer generate error if any. */
+
+    size = lexer->in_stack_size;
+    lexer->in_stack_size = size * 2;
+
+    tmp = njs_mp_alloc(lexer->mem_pool, size * 2);
+    if (tmp == NULL) {
+        return NJS_ERROR;
+    }
+
+    memcpy(tmp, lexer->in_stack, size);
+    memset(&tmp[size], 0, size);
+
+    njs_mp_free(lexer->mem_pool, lexer->in_stack);
+    lexer->in_stack = tmp;
+
+    return NJS_OK;
+}
+
+
+void
+njs_lexer_in_stack_pop(njs_lexer_t *lexer)
+{
+    /**
+     * if in_stack_ptr <= 0 do nothing, it is up to higher layer
+     * generate error.
+     */
+
+    if (lexer->in_stack_ptr > 0) {
+        lexer->in_stack_ptr--;
+    }
+}
+
+
+njs_int_t
+njs_lexer_in_fail_get(njs_lexer_t *lexer)
+{
+    return lexer->in_stack[lexer->in_stack_ptr];
+}
+
+
+void
+njs_lexer_in_fail_set(njs_lexer_t *lexer, njs_int_t flag)
+{
+    lexer->in_stack[lexer->in_stack_ptr] = flag;
+}
+
+
+njs_inline njs_int_t
+njs_lexer_in_stack(njs_lexer_t *lexer, njs_lexer_token_t  *token)
+{
+    switch (token->type) {
+    case NJS_TOKEN_OPEN_PARENTHESIS:
+    case NJS_TOKEN_OPEN_BRACKET:
+    case NJS_TOKEN_OPEN_BRACE:
+        return njs_lexer_in_stack_push(lexer);
+
+    case NJS_TOKEN_CLOSE_PARENTHESIS:
+    case NJS_TOKEN_CLOSE_BRACKET:
+    case NJS_TOKEN_CLOSE_BRACE:
+        njs_lexer_in_stack_pop(lexer);
+        break;
+
+    default:
+        break;
+    }
 
     return NJS_OK;
 }
@@ -328,6 +431,11 @@ njs_lexer_next_token(njs_lexer_t *lexer)
     } while (token->type == NJS_TOKEN_COMMENT);
 
     njs_queue_insert_tail(&lexer->preread, &token->link);
+
+    ret = njs_lexer_in_stack(lexer, token);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NULL;
+    }
 
     return token;
 }

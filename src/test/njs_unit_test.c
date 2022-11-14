@@ -2900,6 +2900,68 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = []; for (var k in new Uint8Array([1,2,3])) { a.push(k); }; a"),
       njs_str("0,1,2") },
 
+    { njs_str("var i=0, a=[], r=[], d=[3,5];"
+              "function ret_a() {r.push('ret_a'); return a};"
+              "function ret_d() {r.push('ret_d'); return d};"
+              "for (ret_a()[i++] in 0 || ret_d()) {d[2]=22; r.push(a)}; r"),
+      njs_str("ret_d,ret_a,0,1,ret_a,0,1") },
+
+    { njs_str("this.a = 0; for (a in {b:1}) {}; a;"),
+      njs_str("b") },
+
+    { njs_str("for (var x = x in [1,2]; ; ) {break};"),
+      njs_str("SyntaxError: Invalid left-hand side in for-loop in 1") },
+
+    { njs_str("for (x = x in [1,2]; ; ) {break};"),
+      njs_str("SyntaxError: Invalid left-hand side in for-loop in 1") },
+
+    { njs_str("for (var x = (x in [1,2]); ; ) {break}; x;"),
+      njs_str("false") },
+
+    { njs_str("var x; for (x = (x in [1,2]); ; ) {break}; x;"),
+      njs_str("false") },
+
+    { njs_str("for (++a in {}; ; ) {break}"),
+      njs_str("SyntaxError: Invalid left-hand side in for-loop in 1") },
+
+    { njs_str("var a, b, c, d = 1; for (a + b, c = d; ; ){break}; c"),
+      njs_str("1") },
+
+    { njs_str("var x = 1, y, z = 'a', u = {a:1};"
+              "for (var a = x, y = z in u; ; ) {break}; y"),
+      njs_str("SyntaxError: Invalid left-hand side in for-loop in 1") },
+
+    { njs_str("var x = 1, y, z = 'a', u = {a:1};"
+              "for (var a = x, y= (z in u) ; ; ) {break}; y"),
+      njs_str("true") },
+
+    { njs_str("var a = 0; for (++a; ; ) {break}; a"),
+      njs_str("1") },
+
+    { njs_str("var a = 0; for (a++; ; ) {break}; a"),
+      njs_str("1") },
+
+    { njs_str("var a = 0; for (+a; ; ) {break}; a"),
+      njs_str("0") },
+
+    { njs_str("for (in + j;;) {}"),
+      njs_str("SyntaxError: Unexpected token \"in\" in 1") },
+
+    { njs_str("for (true ? 0 in {}: 0; false; ) ;"),
+      njs_str("undefined") },
+
+    { njs_str("for (true ? 0 : 0 in {}; false; ) ;"),
+      njs_str("SyntaxError: Invalid left-hand side in for-loop in 1") },
+
+    { njs_str("for ((a in b)) {}"),
+      njs_str("SyntaxError: Unexpected token \")\" in 1") },
+
+    { njs_str("var a='a', b={b:1}; for ((a in b); ; ) {break}; a"),
+      njs_str("a") },
+
+    { njs_str("for ((a,b,c) => {};;) {break}"),
+      njs_str("undefined") },
+
     /* switch. */
 
     { njs_str("switch"),

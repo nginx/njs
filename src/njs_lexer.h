@@ -267,11 +267,17 @@ typedef struct {
 
     u_char                          *start;
     u_char                          *end;
+
+#define NJS_INITIAL_IN_STACK_SIZE 128
+    uint8_t                        *in_stack;
+    njs_int_t                       in_stack_ptr;
+    njs_int_t                       in_stack_size;
 } njs_lexer_t;
 
 
 njs_int_t njs_lexer_init(njs_vm_t *vm, njs_lexer_t *lexer, njs_str_t *file,
-    u_char *start, u_char *end, njs_uint_t runtime);
+    u_char *start, u_char *end, njs_uint_t runtime,
+    njs_int_t init_lexer_memory);
 
 njs_lexer_token_t *njs_lexer_token(njs_lexer_t *lexer,
     njs_bool_t with_end_line);
@@ -279,6 +285,12 @@ njs_lexer_token_t *njs_lexer_peek_token(njs_lexer_t *lexer,
     njs_lexer_token_t *current, njs_bool_t with_end_line);
 void njs_lexer_consume_token(njs_lexer_t *lexer, unsigned length);
 njs_int_t njs_lexer_make_token(njs_lexer_t *lexer, njs_lexer_token_t *token);
+njs_int_t njs_lexer_in_stack_init(njs_lexer_t *lexer);
+njs_int_t njs_lexer_in_stack_push(njs_lexer_t *lexer);
+void njs_lexer_in_stack_pop(njs_lexer_t *lexer);
+void njs_lexer_in_fail_set(njs_lexer_t *lexer, njs_int_t flag);
+njs_int_t njs_lexer_in_fail_get(njs_lexer_t *lexer);
+
 
 const njs_lexer_keyword_entry_t *njs_lexer_keyword(const u_char *key,
     size_t length);
