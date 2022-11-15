@@ -7,12 +7,20 @@
 #ifndef _NJS_SCOPE_H_INCLUDED_
 #define _NJS_SCOPE_H_INCLUDED_
 
-
+#define NJS_SCOPE_VAR_OFFSET    0
 #define NJS_SCOPE_VAR_SIZE      4
-#define NJS_SCOPE_TYPE_OFFSET   (NJS_SCOPE_VAR_SIZE + 4)
-#define NJS_SCOPE_VALUE_OFFSET  (NJS_SCOPE_TYPE_OFFSET + 1)
-#define NJS_SCOPE_VALUE_MAX     ((1 << (32 - NJS_SCOPE_VALUE_OFFSET)) - 1)
-#define NJS_SCOPE_TYPE_MASK     ((NJS_SCOPE_VALUE_MAX) << NJS_SCOPE_VAR_SIZE)
+
+#define NJS_SCOPE_TYPE_OFFSET   (NJS_SCOPE_VAR_OFFSET + NJS_SCOPE_VAR_SIZE)
+#define NJS_SCOPE_TYPE_SIZE     4
+
+#define NJS_SCOPE_VALUE_OFFSET  (NJS_SCOPE_TYPE_OFFSET + NJS_SCOPE_TYPE_SIZE)
+#define NJS_SCOPE_VALUE_SIZE    24
+
+#define NJS_SCOPE_VALUE_MASK    ((1 << NJS_SCOPE_VALUE_SIZE) - 1)
+#define NJS_SCOPE_VAR_MASK      ((1 << NJS_SCOPE_VAR_SIZE) - 1)
+#define NJS_SCOPE_TYPE_MASK     ((1 << NJS_SCOPE_TYPE_SIZE) - 1)
+
+#define NJS_SCOPE_VALUE_MAX     NJS_SCOPE_VALUE_MASK
 
 #define NJS_INDEX_NONE          ((njs_index_t) 0)
 #define NJS_INDEX_ERROR         ((njs_index_t) -1)
@@ -41,7 +49,7 @@ njs_scope_index(njs_scope_t scope, njs_index_t index, njs_level_type_t type,
         type = NJS_LEVEL_GLOBAL;
     }
 
-    return (index << NJS_SCOPE_VALUE_OFFSET) | (type << NJS_SCOPE_VAR_SIZE)
+    return (index << NJS_SCOPE_VALUE_OFFSET) | (type << NJS_SCOPE_TYPE_OFFSET)
             | var_type;
 }
 
@@ -49,15 +57,15 @@ njs_scope_index(njs_scope_t scope, njs_index_t index, njs_level_type_t type,
 njs_inline njs_variable_type_t
 njs_scope_index_var(njs_index_t index)
 {
-    return (njs_variable_type_t) (index & ~NJS_SCOPE_TYPE_MASK);
+    return (njs_variable_type_t) (index & NJS_SCOPE_VAR_MASK);
 }
 
 
 njs_inline njs_level_type_t
 njs_scope_index_type(njs_index_t index)
 {
-    return (njs_level_type_t) ((index >> NJS_SCOPE_VAR_SIZE)
-                               & ~NJS_SCOPE_TYPE_MASK);
+    return (njs_level_type_t) ((index >> NJS_SCOPE_TYPE_OFFSET)
+                               & NJS_SCOPE_TYPE_MASK);
 }
 
 
