@@ -6054,7 +6054,7 @@ njs_parser_for_in_statement_statement(njs_parser_t *parser,
 {
     njs_parser_node_t  *forin;
 
-    if (token->type != NJS_TOKEN_CLOSE_PARENTHESIS) {
+    if (parser->ret != NJS_OK || token->type != NJS_TOKEN_CLOSE_PARENTHESIS) {
         return njs_parser_failed(parser);
     }
 
