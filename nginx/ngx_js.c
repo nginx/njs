@@ -953,13 +953,18 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_conf_t *conf,
         }
     }
 
-    rc = externals_init(cf, conf);
-    if (rc != NGX_OK) {
-        return NGX_ERROR;
-    }
+    /*
+     * Core prototypes must be inited before externals_init() because
+     * the core prototype ids have to be identical in all the modules.
+     */
 
     rc = ngx_js_core_init(conf->vm, cf->log);
     if (njs_slow_path(rc != NJS_OK)) {
+        return NGX_ERROR;
+    }
+
+    rc = externals_init(cf, conf);
+    if (rc != NGX_OK) {
         return NGX_ERROR;
     }
 
