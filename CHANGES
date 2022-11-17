@@ -1,3 +1,30 @@
+Changes with njs 0.7.9                                        17 Nov 2022
+    nginx modules:
+
+    *) Bugfix: fixed Fetch Response prototype reinitialization.
+       When at least one js_import directive was declared in both HTTP
+       and Stream, ngx.fetch() returned inapproriate response in Stream.
+       The bug was introduced in 0.7.7.
+
+    Core:
+
+    *) Bugfix: fixed String.prototype.replace(re) if re.exec() returns
+       non-flat array.
+
+    *) Bugfix: fixed Array.prototype.fill() when start object changes
+       "this".
+
+    *) Bugfix: fixed description for fs.mkdir() and fs.rmdir() methods.
+
+    *) Bugfix: fixed %TypedArray%.prototype.set(s) when s element changes
+       "this".
+
+    *) Bugfix: fixed Array.prototype.splice(s, d) when d resizes "this"
+       during evaluation.
+
+    *) Bugfix: fixed for-in loop with left and right hand side
+       expressions.
+
 Changes with njs 0.7.8                                        25 Oct 2022
 
     nginx modules:
