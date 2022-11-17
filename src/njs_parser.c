@@ -4291,14 +4291,16 @@ njs_parser_assignment_expression(njs_parser_t *parser,
 {
     njs_int_t  ret;
 
-    ret = njs_parser_match_arrow_expression(parser, token);
-    if (ret == NJS_OK) {
-        njs_parser_next(parser, njs_parser_arrow_function);
+    if (!parser->use_lhs) {
+        ret = njs_parser_match_arrow_expression(parser, token);
+        if (ret == NJS_OK) {
+            njs_parser_next(parser, njs_parser_arrow_function);
 
-        return NJS_OK;
+            return NJS_OK;
 
-    } else if (ret == NJS_ERROR) {
-        return NJS_ERROR;
+        } else if (ret == NJS_ERROR) {
+            return NJS_ERROR;
+        }
     }
 
     njs_parser_next(parser, njs_parser_conditional_expression);

@@ -2965,6 +2965,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("for(I in``[)8"),
       njs_str("SyntaxError: Unexpected token \")\" in 1") },
 
+    { njs_str("for(9A=>>"),
+      njs_str("SyntaxError: Unexpected token \"A\" in 1") },
+
     /* switch. */
 
     { njs_str("switch"),
