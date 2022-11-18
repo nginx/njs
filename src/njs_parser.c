@@ -5652,6 +5652,10 @@ static njs_int_t
 njs_parser_expression_continue_assign_comma(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current)
 {
+    if (parser->ret != NJS_OK) {
+        return njs_parser_failed(parser);
+    }
+
     njs_parser_next(parser, njs_parser_assignment_expression_after);
 
     return njs_parser_after(parser, current, NULL, 1,
