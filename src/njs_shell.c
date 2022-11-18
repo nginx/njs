@@ -10,6 +10,8 @@
 #if (!defined NJS_FUZZER_TARGET && defined NJS_HAVE_READLINE)
 
 #include <locale.h>
+#include <signal.h>
+#include <sys/select.h>
 #if (NJS_HAVE_EDITLINE)
 #include <editline/readline.h>
 #elif (NJS_HAVE_EDIT_READLINE)
@@ -24,13 +26,15 @@
 #endif
 
 
+typedef void (*njs_console_output_pt)(njs_vm_t *vm, njs_int_t ret);
+
+
 typedef struct {
     uint8_t                 disassemble;
     uint8_t                 denormals;
     uint8_t                 interactive;
     uint8_t                 module;
     uint8_t                 quiet;
-    uint8_t                 silent;
     uint8_t                 sandbox;
     uint8_t                 safe;
     uint8_t                 version;
@@ -90,10 +94,12 @@ typedef struct {
 
 
 static njs_int_t njs_console_init(njs_vm_t *vm, njs_console_t *console);
+static void njs_console_output(njs_vm_t *vm, njs_int_t ret);
 static njs_int_t njs_externals_init(njs_vm_t *vm);
 static njs_vm_t *njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options);
-static njs_int_t njs_process_script(njs_vm_t *vm, njs_opts_t *opts,
-    void *runtime, const njs_str_t *script);
+static void njs_process_output(njs_vm_t *vm, njs_int_t ret);
+static njs_int_t njs_process_script(njs_vm_t *vm, void *runtime,
+    const njs_str_t *script);
 
 #ifndef NJS_FUZZER_TARGET
 
@@ -243,6 +249,15 @@ main(int argc, char **argv)
     njs_str_t     command;
     njs_vm_opt_t  vm_options;
 
+    static uintptr_t uptr[] = {
+        (uintptr_t) njs_console_output,
+    };
+
+    static njs_vm_meta_t metas = {
+        .size = njs_nitems(uptr),
+        .values = uptr
+    };
+
     njs_memzero(&opts, sizeof(njs_opts_t));
     opts.interactive = 1;
 
@@ -287,6 +302,7 @@ main(int argc, char **argv)
 
     vm_options.ops = &njs_console_ops;
     vm_options.addons = njs_console_addon_modules;
+    vm_options.metas = &metas;
     vm_options.external = &njs_console;
     vm_options.argv = opts.argv;
     vm_options.argc = opts.argc;
@@ -311,7 +327,7 @@ main(int argc, char **argv)
         if (vm != NULL) {
             command.start = (u_char *) opts.command;
             command.length = njs_strlen(opts.command);
-            ret = njs_process_script(vm, &opts, vm_options.external, &command);
+            ret = njs_process_script(vm, vm->external, &command);
             njs_vm_destroy(vm);
         }
 
@@ -659,7 +675,7 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         }
     }
 
-    ret = njs_process_script(vm, opts, vm_options->external, &script);
+    ret = njs_process_script(vm, vm_options->external, &script);
     if (ret != NJS_OK) {
         ret = NJS_ERROR;
         goto done;
@@ -696,18 +712,26 @@ LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
     njs_str_t     script;
     njs_vm_opt_t  vm_options;
 
+    static uintptr_t uptr[] = {
+        (uintptr_t) NULL,
+    };
+
+    static njs_vm_meta_t metas = {
+        .size = njs_nitems(uptr),
+        .values = uptr
+    };
+
     if (size == 0) {
         return 0;
     }
 
     njs_memzero(&opts, sizeof(njs_opts_t));
 
-    opts.silent = 1;
-
     njs_vm_opt_init(&vm_options);
 
     vm_options.init = 1;
     vm_options.backtrace = 0;
+    vm_options.metas = &metas;
     vm_options.ops = &njs_console_ops;
 
     vm = njs_create_vm(&opts, &vm_options);
@@ -716,7 +740,7 @@ LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
         script.length = size;
         script.start = (u_char *) data;
 
-        (void) njs_process_script(vm, &opts, NULL, &script);
+        (void) njs_process_script(vm, NULL, &script);
         njs_vm_destroy(vm);
     }
 
@@ -853,13 +877,9 @@ njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
 
 static void
-njs_output(njs_opts_t *opts, njs_vm_t *vm, njs_int_t ret)
+njs_console_output(njs_vm_t *vm, njs_int_t ret)
 {
     njs_str_t  out;
-
-    if (opts->silent) {
-        return;
-    }
 
     if (ret == NJS_OK) {
         if (njs_vm_retval_dump(vm, &out, 1) != NJS_OK) {
@@ -917,8 +937,7 @@ njs_process_events(void *runtime)
 
 
 static njs_int_t
-njs_process_script(njs_vm_t *vm, njs_opts_t *opts, void *runtime,
-    const njs_str_t *script)
+njs_process_script(njs_vm_t *vm, void *runtime, const njs_str_t *script)
 {
     u_char     *start, *end;
     njs_int_t  ret;
@@ -938,14 +957,15 @@ njs_process_script(njs_vm_t *vm, njs_opts_t *opts, void *runtime,
         }
     }
 
-    njs_output(opts, vm, ret);
+    njs_process_output(vm, ret);
 
-    if (!opts->interactive && ret == NJS_ERROR) {
+    if (!vm->options.interactive && ret == NJS_ERROR) {
         return NJS_ERROR;
     }
 
     for ( ;; ) {
         if (!njs_vm_pending(vm) && !njs_vm_unhandled_rejection(vm)) {
+            ret = NJS_OK;
             break;
         }
 
@@ -967,9 +987,9 @@ njs_process_script(njs_vm_t *vm, njs_opts_t *opts, void *runtime,
         ret = njs_vm_run(vm);
 
         if (ret == NJS_ERROR) {
-            njs_output(opts, vm, ret);
+            njs_process_output(vm, ret);
 
-            if (!opts->interactive) {
+            if (!vm->options.interactive) {
                 return NJS_ERROR;
             }
         }
@@ -979,13 +999,64 @@ njs_process_script(njs_vm_t *vm, njs_opts_t *opts, void *runtime,
 }
 
 
+static void
+njs_process_output(njs_vm_t *vm, njs_int_t ret)
+{
+    njs_console_output_pt  pt;
+
+    pt = (njs_console_output_pt) njs_vm_meta(vm, 0);
+
+    if (pt != NULL) {
+        pt(vm, ret);
+    }
+}
+
+
 #if (!defined NJS_FUZZER_TARGET && defined NJS_HAVE_READLINE)
+
+
+volatile sig_atomic_t njs_running;
+volatile sig_atomic_t njs_sigint_count;
+volatile sig_atomic_t njs_sigint_received;
+
+
+static void
+njs_cb_line_handler(char *line_in)
+{
+    njs_int_t  ret;
+    njs_str_t  line;
+
+    if (line_in == NULL || strcmp(line_in, ".exit") == 0) {
+        njs_running = NJS_DONE;
+        return;
+    }
+
+    njs_sigint_count = 0;
+
+    line.start = (u_char *) line_in;
+    line.length = njs_strlen(line.start);
+
+    if (line.length == 0) {
+        return;
+    }
+
+    add_history((char *) line.start);
+
+    ret = njs_process_script(njs_console.vm, &njs_console, &line);
+    if (ret == NJS_ERROR) {
+        njs_running = NJS_ERROR;
+    }
+
+    free(line.start);
+}
+
 
 static njs_int_t
 njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 {
+    fd_set     fds;
     njs_vm_t   *vm;
-    njs_str_t  line;
+    njs_int_t  ret;
 
     if (njs_editline_init() != NJS_OK) {
         njs_stderror("failed to init completions\n");
@@ -1003,27 +1074,64 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         njs_printf("v.<Tab> -> the properties and prototype methods of v.\n\n");
     }
 
-    for ( ;; ) {
-        line.start = (u_char *) readline(">> ");
-        if (line.start == NULL) {
+    rl_callback_handler_install(">> ", njs_cb_line_handler);
+
+    njs_running = NJS_OK;
+
+    while (njs_running == NJS_OK) {
+        FD_ZERO(&fds);
+        FD_SET(fileno(rl_instream), &fds);
+
+        ret = select(FD_SETSIZE, &fds, NULL, NULL, NULL);
+        if (ret < 0 && errno != EINTR) {
+            njs_stderror("select() failed\n");
+            njs_running = NJS_ERROR;
             break;
         }
 
-        line.length = njs_strlen(line.start);
+        if (njs_sigint_received) {
+            if (njs_sigint_count > 1) {
+                njs_running = NJS_DONE;
+                break;
+            }
 
-        if (line.length != 0) {
-            add_history((char *) line.start);
+            if (rl_end != 0) {
+                njs_printf("\n");
 
-            njs_process_script(vm, opts, vm_options->external, &line);
+                njs_sigint_count = 0;
+
+            } else {
+                njs_printf("(To exit, press Ctrl+C again or Ctrl+D "
+                           "or type .exit)\n");
+
+                njs_sigint_count = 1;
+            }
+
+            rl_point = rl_end = 0;
+            rl_on_new_line();
+            rl_redisplay();
+
+            njs_sigint_received = 0;
         }
 
-        /* editline allocs a new buffer every time. */
-        free(line.start);
+        if (ret < 0) {
+            continue;
+        }
+
+        if (FD_ISSET(fileno(rl_instream), &fds)) {
+            rl_callback_read_char();
+        }
+    }
+
+    rl_callback_handler_remove();
+
+    if (njs_running == NJS_DONE) {
+        njs_printf("exiting\n");
     }
 
     njs_vm_destroy(vm);
 
-    return NJS_OK;
+    return njs_running == NJS_DONE ? NJS_OK : njs_running;
 }
 
 
@@ -1036,6 +1144,20 @@ njs_completion_handler(const char *text, int start, int end)
 }
 
 
+static void
+njs_signal_handler(int signal)
+{
+    switch (signal) {
+    case SIGINT:
+        njs_sigint_received = 1;
+        njs_sigint_count += 1;
+        break;
+    default:
+        break;
+    }
+}
+
+
 static njs_int_t
 njs_editline_init(void)
 {
@@ -1044,6 +1166,8 @@ njs_editline_init(void)
     rl_basic_word_break_characters = (char *) " \t\n\"\\'`@$><=;,|&{(";
 
     setlocale(LC_ALL, "");
+
+    signal(SIGINT, njs_signal_handler);
 
     return NJS_OK;
 }

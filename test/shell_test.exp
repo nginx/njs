@@ -36,8 +36,8 @@ proc njs_test {body {opts ""}} {
         expect [lindex $pair 1]
     }
 
-    # Ctrl-C
-    send \x03
+    send "\n"
+    send ".exit\r\n"
     expect eof
 }
 
@@ -62,10 +62,11 @@ njs_test {
 }
 
 # Global completions, no
-njs_test {
-    {"\t\tn"
-     "\a\r\nDisplay all*possibilities? (y or n)*>> "}
-}
+# Disabled: readline does not support it in callback mode
+# njs_test {
+#    {"\t\tn"
+#     "\a\r\nDisplay all*possibilities? (y or n)*>> "}
+# }
 
 # Global completions, yes
 njs_test {
@@ -87,13 +88,10 @@ njs_test {
      "Ma\a*th"}
 }
 
-# FIXME: completions for external objects
-# are not supported
-
-# njs_test {
-#     {"conso\t"
-#     "conso\a*le"}
-# }
+ njs_test {
+     {"conso\t"
+     "conso\a*le"}
+ }
 
 # Global completions, multiple partial match
 njs_test {
@@ -145,10 +143,10 @@ njs_test {
 
 # Global completions, global vars
 njs_test {
-    {"var a = 1; var aa = 2\r\n"
-     "var a = 1; var aa = 2\r\nundefined\r\n>> "}
-    {"a\t\t"
-     "a*aa*arguments*await"}
+    {"var AA = 1; var AAA = 2\r\n"
+     "var AA = 1; var AAA = 2\r\nundefined\r\n>> "}
+    {"AA\t\t"
+     "AA*AAA*"}
 }
 
 # z*z is WORKAROUND for libedit-20170329.3.1-r3
