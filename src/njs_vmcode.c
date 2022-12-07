@@ -1355,8 +1355,8 @@ NEXT_LBL;
     CASE (NJS_VMCODE_IF_TRUE_JUMP):
         njs_vmcode_debug_opcode();
 
-        value2 = (njs_value_t *) vmcode->operand1;
         njs_vmcode_operand(vm, vmcode->operand2, value1);
+        value2 = (njs_value_t *) vmcode->operand1;
 
         ret = njs_is_true(value1);
 
@@ -1368,8 +1368,8 @@ NEXT_LBL;
     CASE (NJS_VMCODE_IF_FALSE_JUMP):
         njs_vmcode_debug_opcode();
 
-        value2 = (njs_value_t *) vmcode->operand1;
         njs_vmcode_operand(vm, vmcode->operand2, value1);
+        value2 = (njs_value_t *) vmcode->operand1;
 
         ret = njs_is_true(value1);
 
