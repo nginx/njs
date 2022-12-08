@@ -21712,6 +21712,9 @@ static njs_unit_test_t  njs_externals_test[] =
     { njs_str("njs.dump($r.header)"),
       njs_str("Header {01:'01|АБВ',02:'02|АБВ',03:'03|АБВ'}") },
 
+    { njs_str("njs.dump($r.header2)"),
+      njs_str("Header2 {01:'01|АБВ',02:'02|АБВ',03:'03|АБВ'}") },
+
     { njs_str("var o = {b:$r.props.b}; o.b"),
       njs_str("42") },
 

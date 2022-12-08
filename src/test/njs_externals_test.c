@@ -585,6 +585,28 @@ static njs_external_t  njs_unit_test_r_header_props[] = {
 };
 
 
+static njs_external_t  njs_unit_test_r_header_props2[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY | NJS_EXTERN_SYMBOL,
+        .name.symbol = NJS_SYMBOL_TO_STRING_TAG,
+        .u.property = {
+            .value = "Header2",
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_SELF,
+        .u.object = {
+            .enumerable = 1,
+            .prop_handler = njs_unit_test_r_header,
+            .keys = njs_unit_test_r_header_keys,
+        }
+    },
+
+};
+
+
 static njs_external_t  njs_unit_test_r_external[] = {
 
     {
@@ -641,6 +663,17 @@ static njs_external_t  njs_unit_test_r_external[] = {
             .enumerable = 1,
             .prop_handler = njs_unit_test_r_header,
             .keys = njs_unit_test_r_header_keys,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("header2"),
+        .writable = 1,
+        .configurable = 1,
+        .u.object = {
+            .properties = njs_unit_test_r_header_props2,
+            .nproperties = njs_nitems(njs_unit_test_r_header_props2),
         }
     },
 

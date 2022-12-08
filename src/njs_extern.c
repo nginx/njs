@@ -17,15 +17,16 @@ static njs_int_t
 njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
     const njs_external_t *external, njs_uint_t n)
 {
-    size_t              size;
-    ssize_t             length;
-    njs_int_t           ret;
-    njs_lvlhsh_t        *hash;
-    const u_char        *start;
-    njs_function_t      *function;
-    njs_object_prop_t   *prop;
-    njs_lvlhsh_query_t  lhq;
-    njs_exotic_slots_t  *slot, *next;
+    size_t                size;
+    ssize_t               length;
+    njs_int_t             ret;
+    njs_lvlhsh_t          *hash;
+    const u_char          *start;
+    njs_function_t        *function;
+    njs_object_prop_t     *prop;
+    njs_lvlhsh_query_t    lhq;
+    njs_exotic_slots_t    *slot, *next;
+    const njs_external_t  *end;
 
     slot = njs_arr_add(protos);
     njs_memzero(slot, sizeof(njs_exotic_slots_t));
@@ -37,7 +38,22 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
     lhq.proto = &njs_object_hash_proto;
     lhq.pool = vm->mem_pool;
 
-    while (n != 0) {
+    end = external + n;
+
+    while (external < end) {
+
+        if ((external->flags & NJS_EXTERN_TYPE_MASK) == NJS_EXTERN_SELF) {
+            slot->writable = external->u.object.writable;
+            slot->configurable = external->u.object.configurable;
+            slot->enumerable = external->u.object.enumerable;
+            slot->prop_handler = external->u.object.prop_handler;
+            slot->magic32 = external->u.object.magic32;
+            slot->keys = external->u.object.keys;
+
+            external++;
+            continue;
+        }
+
         prop = njs_object_prop_alloc(vm, &njs_string_empty,
                                      &njs_value_invalid, 1);
         if (njs_slow_path(prop == NULL)) {
@@ -48,7 +64,7 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
         prop->configurable = external->configurable;
         prop->enumerable = external->enumerable;
 
-        if (external->flags & 4) {
+        if (external->flags & NJS_EXTERN_SYMBOL) {
             njs_set_symbol(&prop->name, external->name.symbol, NULL);
 
             lhq.key_hash = external->name.symbol;
@@ -66,7 +82,7 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
 
         lhq.value = prop;
 
-        switch (external->flags & 3) {
+        switch (external->flags & NJS_EXTERN_TYPE_MASK) {
         case NJS_EXTERN_METHOD:
             function = njs_mp_zalloc(vm->mem_pool, sizeof(njs_function_t));
             if (njs_slow_path(function == NULL)) {
@@ -128,12 +144,28 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
             njs_prop_magic32(prop) = lhq.key_hash;
             njs_prop_handler(prop) = njs_external_prop_handler;
 
-            next->writable = external->u.object.writable;
-            next->configurable = external->u.object.configurable;
-            next->enumerable = external->u.object.enumerable;
-            next->prop_handler = external->u.object.prop_handler;
-            next->magic32 = external->u.object.magic32;
-            next->keys = external->u.object.keys;
+            if (external->u.object.prop_handler) {
+                if (next->prop_handler) {
+                    njs_internal_error(vm, "overwritten self prop_handler");
+                    return NJS_ERROR;
+                }
+
+                next->writable = external->u.object.writable;
+                next->configurable = external->u.object.configurable;
+                next->enumerable = external->u.object.enumerable;
+
+                next->prop_handler = external->u.object.prop_handler;
+                next->magic32 = external->u.object.magic32;
+            }
+
+            if (external->u.object.keys) {
+                if (next->keys) {
+                    njs_internal_error(vm, "overwritten self keys");
+                    return NJS_ERROR;
+                }
+
+                next->keys = external->u.object.keys;
+            }
 
             break;
         }
@@ -144,7 +176,6 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
             return NJS_ERROR;
         }
 
-        n--;
         external++;
     }
 

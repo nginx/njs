@@ -132,9 +132,17 @@ typedef enum {
 
 
 typedef enum {
+    /*
+     * Extern property type.
+     */
     NJS_EXTERN_PROPERTY = 0,
     NJS_EXTERN_METHOD = 1,
     NJS_EXTERN_OBJECT = 2,
+    NJS_EXTERN_SELF = 3,
+#define NJS_EXTERN_TYPE_MASK    3
+    /*
+     * Extern property flags.
+     */
     NJS_EXTERN_SYMBOL = 4,
 } njs_extern_flag_t;
 
