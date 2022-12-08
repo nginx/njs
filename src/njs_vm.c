@@ -1308,6 +1308,13 @@ njs_vm_value_to_bytes(njs_vm_t *vm, njs_str_t *dst, njs_value_t *src)
 
 
 njs_int_t
+njs_vm_string_compare(const njs_value_t *v1, const njs_value_t *v2)
+{
+    return njs_string_cmp(v1, v2);
+}
+
+
+njs_int_t
 njs_vm_value_string_copy(njs_vm_t *vm, njs_str_t *retval,
     njs_value_t *value, uintptr_t *next)
 {

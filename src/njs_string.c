@@ -728,6 +728,9 @@ njs_string_cmp(const njs_value_t *v1, const njs_value_t *v2)
     njs_int_t     ret;
     const u_char  *start1, *start2;
 
+    njs_assert(njs_is_string(v1));
+    njs_assert(njs_is_string(v2));
+
     size1 = v1->short_string.size;
 
     if (size1 != NJS_STRING_LONG) {
