@@ -663,6 +663,13 @@ njs_vm_memory_pool(njs_vm_t *vm)
 }
 
 
+njs_external_ptr_t
+njs_vm_external_ptr(njs_vm_t *vm)
+{
+    return vm->external;
+}
+
+
 uintptr_t
 njs_vm_meta(njs_vm_t *vm, njs_uint_t index)
 {
