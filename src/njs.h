@@ -457,6 +457,8 @@ NJS_EXPORT void njs_value_null_set(njs_value_t *value);
 NJS_EXPORT void njs_value_invalid_set(njs_value_t *value);
 NJS_EXPORT void njs_value_boolean_set(njs_value_t *value, int yn);
 NJS_EXPORT void njs_value_number_set(njs_value_t *value, double num);
+NJS_EXPORT void njs_value_function_set(njs_value_t *value,
+    njs_function_t *function);
 
 NJS_EXPORT uint8_t njs_value_bool(const njs_value_t *value);
 NJS_EXPORT double njs_value_number(const njs_value_t *value);

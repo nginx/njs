@@ -404,6 +404,13 @@ njs_value_number_set(njs_value_t *value, double num)
 }
 
 
+void
+njs_value_function_set(njs_value_t *value, njs_function_t *function)
+{
+    njs_set_function(value, function);
+}
+
+
 uint8_t
 njs_value_bool(const njs_value_t *value)
 {
