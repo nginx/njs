@@ -636,7 +636,7 @@ ngx_js_http_alloc(njs_vm_t *vm, ngx_pool_t *pool, ngx_log_t *log)
         goto failed;
     }
 
-    callback = njs_vm_function_alloc(vm, ngx_js_http_promise_trampoline);
+    callback = njs_vm_function_alloc(vm, ngx_js_http_promise_trampoline, 0, 0);
     if (callback == NULL) {
         goto failed;
     }
@@ -804,7 +804,7 @@ ngx_js_fetch_promissified_result(njs_vm_t *vm, njs_value_t *result,
         goto error;
     }
 
-    callback = njs_vm_function_alloc(vm, ngx_js_http_promise_trampoline);
+    callback = njs_vm_function_alloc(vm, ngx_js_http_promise_trampoline, 0, 0);
     if (callback == NULL) {
         goto error;
     }

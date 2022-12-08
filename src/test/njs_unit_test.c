@@ -21652,6 +21652,9 @@ static njs_unit_test_t  njs_externals_test[] =
     { njs_str("var sr = $r.create('XXX'); sr.vars.p = 'a'; sr.vars.p"),
       njs_str("a") },
 
+    { njs_str("var r = new ExternalConstructor('XXX'); r.uri"),
+      njs_str("XXX") },
+
     { njs_str("var p; for (p in $r.method);"),
       njs_str("undefined") },
 
@@ -21734,7 +21737,7 @@ static njs_unit_test_t  njs_externals_test[] =
 #endif
 
     { njs_str("Object.keys(this).sort()"),
-      njs_str(N262 "$r,$r2,$r3,$shared," NCRYPTO "global,njs,process") },
+      njs_str(N262 "$r,$r2,$r3,$shared,ExternalConstructor," NCRYPTO "global,njs,process") },
 
     { njs_str("Object.getOwnPropertySymbols($r2)[0] == Symbol.toStringTag"),
       njs_str("true") },

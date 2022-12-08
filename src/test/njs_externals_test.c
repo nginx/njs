@@ -417,7 +417,8 @@ njs_unit_test_r_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    callback = njs_vm_function_alloc(vm, njs_unit_test_promise_trampoline);
+    callback = njs_vm_function_alloc(vm, njs_unit_test_promise_trampoline, 0,
+                                     0);
     if (callback == NULL) {
         return NJS_ERROR;
     }
@@ -521,6 +522,29 @@ njs_unit_test_r_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     return njs_vm_bind(vm, &name, njs_arg(args, nargs, 2), 0);
+}
+
+
+static njs_int_t
+njs_unit_test_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused)
+{
+    njs_unit_test_req_t  *sr;
+
+    sr = njs_mp_zalloc(vm->mem_pool, sizeof(njs_unit_test_req_t));
+    if (sr == NULL) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    if (njs_vm_value_to_bytes(vm, &sr->uri, njs_arg(args, nargs, 1))
+        != NJS_OK)
+    {
+        return NJS_ERROR;
+    }
+
+    return njs_vm_external_create(vm, &vm->retval, njs_external_r_proto_id,
+                                  sr, 0);
 }
 
 
@@ -831,8 +855,12 @@ njs_externals_init_internal(njs_vm_t *vm, njs_unit_test_req_init_t *init,
 {
     njs_int_t             ret;
     njs_uint_t            i, j;
+    njs_function_t        *f;
+    njs_opaque_value_t    value;
     njs_unit_test_req_t   *requests;
     njs_unit_test_prop_t  *prop;
+
+    static const njs_str_t  external_ctor = njs_str("ExternalConstructor");
 
     if (shared) {
         njs_external_r_proto_id = njs_vm_external_prototype(vm,
@@ -840,6 +868,20 @@ njs_externals_init_internal(njs_vm_t *vm, njs_unit_test_req_init_t *init,
                                          njs_nitems(njs_unit_test_r_external));
         if (njs_slow_path(njs_external_r_proto_id < 0)) {
             njs_printf("njs_vm_external_prototype() failed\n");
+            return NJS_ERROR;
+        }
+
+        f = njs_vm_function_alloc(vm, njs_unit_test_constructor, 1, 1);
+        if (f == NULL) {
+            njs_printf("njs_vm_function_alloc() failed\n");
+            return NJS_ERROR;
+        }
+
+        njs_value_function_set(njs_value_arg(&value), f);
+
+        ret = njs_vm_bind(vm, &external_ctor, njs_value_arg(&value), 1);
+        if (njs_slow_path(ret != NJS_OK)) {
+            njs_printf("njs_vm_bind() failed\n");
             return NJS_ERROR;
         }
     }

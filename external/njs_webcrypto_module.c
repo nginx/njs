@@ -2779,7 +2779,7 @@ njs_webcrypto_result(njs_vm_t *vm, njs_value_t *result, njs_int_t rc)
         goto error;
     }
 
-    callback = njs_vm_function_alloc(vm, njs_promise_trampoline);
+    callback = njs_vm_function_alloc(vm, njs_promise_trampoline, 0, 0);
     if (callback == NULL) {
         goto error;
     }

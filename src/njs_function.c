@@ -65,7 +65,8 @@ fail:
 
 
 njs_function_t *
-njs_vm_function_alloc(njs_vm_t *vm, njs_function_native_t native)
+njs_vm_function_alloc(njs_vm_t *vm, njs_function_native_t native,
+    njs_bool_t shared, njs_bool_t ctor)
 {
     njs_function_t  *function;
 
@@ -76,7 +77,12 @@ njs_vm_function_alloc(njs_vm_t *vm, njs_function_native_t native)
     }
 
     function->native = 1;
+    function->ctor = ctor;
+    function->object.shared = shared;
     function->u.native = native;
+    function->object.shared_hash = vm->shared->function_instance_hash;
+    function->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_FUNCTION].object;
+    function->object.type = NJS_FUNCTION;
 
     return function;
 }

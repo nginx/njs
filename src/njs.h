@@ -384,7 +384,7 @@ NJS_EXPORT njs_int_t njs_external_property(njs_vm_t *vm,
 NJS_EXPORT uintptr_t njs_vm_meta(njs_vm_t *vm, njs_uint_t index);
 
 NJS_EXPORT njs_function_t *njs_vm_function_alloc(njs_vm_t *vm,
-    njs_function_native_t native);
+    njs_function_native_t native, njs_bool_t shared, njs_bool_t ctor);
 
 NJS_EXPORT void njs_disassembler(njs_vm_t *vm);
 

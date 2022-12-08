@@ -3191,7 +3191,8 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (!detached && callback == NULL) {
-        callback = njs_vm_function_alloc(vm, ngx_http_js_promise_trampoline);
+        callback = njs_vm_function_alloc(vm, ngx_http_js_promise_trampoline, 0,
+                                         0);
         if (callback == NULL) {
             goto memory_error;
         }
