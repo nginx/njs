@@ -376,16 +376,30 @@ void
 ngx_js_logger(njs_vm_t *vm, njs_external_ptr_t external, njs_log_level_t level,
     const u_char *start, size_t length)
 {
+    ngx_log_t           *log;
     ngx_connection_t    *c;
     ngx_log_handler_pt   handler;
 
-    c = ngx_external_connection(vm, external);
-    handler = c->log->handler;
-    c->log->handler = NULL;
+    handler = NULL;
 
-    ngx_log_error((ngx_uint_t) level, c->log, 0, "js: %*s", length, start);
+    if (external != NULL) {
+        c = ngx_external_connection(vm, external);
+        log =  c->log;
+        handler = log->handler;
+        log->handler = NULL;
 
-    c->log->handler = handler;
+    } else {
+
+        /* Logger was called during init phase. */
+
+        log = ngx_cycle->log;
+    }
+
+    ngx_log_error((ngx_uint_t) level, log, 0, "js: %*s", length, start);
+
+    if (external != NULL) {
+        log->handler = handler;
+    }
 }
 
 
