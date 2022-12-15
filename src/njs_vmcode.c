@@ -195,7 +195,7 @@ njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc, void *promise_cap,
         NJS_GOTO_ROW(NJS_VMCODE_ADDITION),
         NJS_GOTO_ROW(NJS_VMCODE_EQUAL),
         NJS_GOTO_ROW(NJS_VMCODE_NOT_EQUAL),
-        NJS_GOTO_ROW(NJS_VMCODE_SUBSTRACTION),
+        NJS_GOTO_ROW(NJS_VMCODE_SUBTRACTION),
         NJS_GOTO_ROW(NJS_VMCODE_MULTIPLICATION),
         NJS_GOTO_ROW(NJS_VMCODE_EXPONENTIATION),
         NJS_GOTO_ROW(NJS_VMCODE_DIVISION),
@@ -712,7 +712,7 @@ NEXT_LBL;
         njs_vmcode_operand(vm, vmcode->operand1, retval);                     \
         pc += sizeof(njs_vmcode_3addr_t)
 
-    CASE (NJS_VMCODE_SUBSTRACTION):
+    CASE (NJS_VMCODE_SUBTRACTION):
         njs_vmcode_debug_opcode();
 
         njs_vmcode_operand(vm, vmcode->operand3, value2);

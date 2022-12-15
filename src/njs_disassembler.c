@@ -88,8 +88,8 @@ static njs_code_name_t  code_names[] = {
 
     { NJS_VMCODE_ADDITION, sizeof(njs_vmcode_3addr_t),
           njs_str("ADD             ") },
-    { NJS_VMCODE_SUBSTRACTION, sizeof(njs_vmcode_3addr_t),
-          njs_str("SUBSTRACT       ") },
+    { NJS_VMCODE_SUBTRACTION, sizeof(njs_vmcode_3addr_t),
+          njs_str("SUBTRACT        ") },
     { NJS_VMCODE_MULTIPLICATION, sizeof(njs_vmcode_3addr_t),
           njs_str("MULTIPLY        ") },
     { NJS_VMCODE_EXPONENTIATION, sizeof(njs_vmcode_3addr_t),

@@ -616,7 +616,7 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
     case NJS_TOKEN_RIGHT_SHIFT_ASSIGNMENT:
     case NJS_TOKEN_UNSIGNED_RIGHT_SHIFT_ASSIGNMENT:
     case NJS_TOKEN_ADDITION_ASSIGNMENT:
-    case NJS_TOKEN_SUBSTRACTION_ASSIGNMENT:
+    case NJS_TOKEN_SUBTRACTION_ASSIGNMENT:
     case NJS_TOKEN_MULTIPLICATION_ASSIGNMENT:
     case NJS_TOKEN_EXPONENTIATION_ASSIGNMENT:
     case NJS_TOKEN_DIVISION_ASSIGNMENT:
@@ -639,7 +639,7 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
     case NJS_TOKEN_RIGHT_SHIFT:
     case NJS_TOKEN_UNSIGNED_RIGHT_SHIFT:
     case NJS_TOKEN_ADDITION:
-    case NJS_TOKEN_SUBSTRACTION:
+    case NJS_TOKEN_SUBTRACTION:
     case NJS_TOKEN_MULTIPLICATION:
     case NJS_TOKEN_EXPONENTIATION:
     case NJS_TOKEN_DIVISION:

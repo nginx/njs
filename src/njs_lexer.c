@@ -64,7 +64,7 @@ static const uint8_t  njs_tokens[256]  njs_aligned(64) = {
     /* & ' */   NJS_TOKEN_BITWISE_AND,       NJS_TOKEN_SINGLE_QUOTE,
     /* ( ) */   NJS_TOKEN_OPEN_PARENTHESIS,  NJS_TOKEN_CLOSE_PARENTHESIS,
     /* * + */   NJS_TOKEN_MULTIPLICATION,    NJS_TOKEN_ADDITION,
-    /* , - */   NJS_TOKEN_COMMA,             NJS_TOKEN_SUBSTRACTION,
+    /* , - */   NJS_TOKEN_COMMA,             NJS_TOKEN_SUBTRACTION,
     /* . / */   NJS_TOKEN_DOT,               NJS_TOKEN_DIVISION,
 
     /* 0 1 */   NJS_TOKEN_DIGIT,             NJS_TOKEN_DIGIT,
@@ -196,7 +196,7 @@ static const njs_lexer_multi_t  njs_addition_token[] = {
 
 static const njs_lexer_multi_t  njs_substraction_token[] = {
     { '-', NJS_TOKEN_DECREMENT, 0, NULL },
-    { '=', NJS_TOKEN_SUBSTRACTION_ASSIGNMENT, 0, NULL },
+    { '=', NJS_TOKEN_SUBTRACTION_ASSIGNMENT, 0, NULL },
 };
 
 
@@ -639,7 +639,7 @@ njs_lexer_make_token(njs_lexer_t *lexer, njs_lexer_token_t *token)
                         njs_nitems(njs_addition_token));
         break;
 
-    case NJS_TOKEN_SUBSTRACTION:
+    case NJS_TOKEN_SUBTRACTION:
         njs_lexer_multi(lexer, token, njs_substraction_token,
                         njs_nitems(njs_substraction_token));
         break;

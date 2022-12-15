@@ -3438,7 +3438,7 @@ njs_parser_unary_expression(njs_parser_t *parser, njs_lexer_token_t *token,
         operation = NJS_VMCODE_UNARY_PLUS;
         break;
 
-    case NJS_TOKEN_SUBSTRACTION:
+    case NJS_TOKEN_SUBTRACTION:
         type = NJS_TOKEN_UNARY_NEGATION;
         operation = NJS_VMCODE_UNARY_NEGATION;
         break;
@@ -3768,8 +3768,8 @@ njs_parser_additive_expression_match(njs_parser_t *parser,
         operation = NJS_VMCODE_ADDITION;
         break;
 
-    case NJS_TOKEN_SUBSTRACTION:
-        operation = NJS_VMCODE_SUBSTRACTION;
+    case NJS_TOKEN_SUBTRACTION:
+        operation = NJS_VMCODE_SUBTRACTION;
         break;
 
     default:
@@ -4438,9 +4438,9 @@ njs_parser_assignment_operator(njs_parser_t *parser, njs_lexer_token_t *token,
         operation = NJS_VMCODE_ADDITION;
         break;
 
-    case NJS_TOKEN_SUBSTRACTION_ASSIGNMENT:
+    case NJS_TOKEN_SUBTRACTION_ASSIGNMENT:
         njs_thread_log_debug("JS: -=");
-        operation = NJS_VMCODE_SUBSTRACTION;
+        operation = NJS_VMCODE_SUBTRACTION;
         break;
 
     case NJS_TOKEN_LEFT_SHIFT_ASSIGNMENT:
@@ -9337,7 +9337,7 @@ njs_parser_serialize_node(njs_chb_t *chain, njs_parser_node_t *node)
     njs_token_serialize(NJS_TOKEN_CONDITIONAL);
     njs_token_serialize(NJS_TOKEN_ASSIGNMENT);
     njs_token_serialize(NJS_TOKEN_ADDITION_ASSIGNMENT);
-    njs_token_serialize(NJS_TOKEN_SUBSTRACTION_ASSIGNMENT);
+    njs_token_serialize(NJS_TOKEN_SUBTRACTION_ASSIGNMENT);
     njs_token_serialize(NJS_TOKEN_MULTIPLICATION_ASSIGNMENT);
     njs_token_serialize(NJS_TOKEN_EXPONENTIATION_ASSIGNMENT);
     njs_token_serialize(NJS_TOKEN_DIVISION_ASSIGNMENT);
@@ -9356,7 +9356,7 @@ njs_parser_serialize_node(njs_chb_t *chain, njs_parser_node_t *node)
     njs_token_serialize(NJS_TOKEN_UNARY_PLUS);
     njs_token_serialize(NJS_TOKEN_INCREMENT);
     njs_token_serialize(NJS_TOKEN_POST_INCREMENT);
-    njs_token_serialize(NJS_TOKEN_SUBSTRACTION);
+    njs_token_serialize(NJS_TOKEN_SUBTRACTION);
     njs_token_serialize(NJS_TOKEN_UNARY_NEGATION);
     njs_token_serialize(NJS_TOKEN_DECREMENT);
     njs_token_serialize(NJS_TOKEN_POST_DECREMENT);
