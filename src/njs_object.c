@@ -2098,7 +2098,7 @@ njs_object_prototype_create_constructor(njs_vm_t *vm, njs_object_prop_t *prop,
 
     if (setval != NULL) {
         if (!njs_is_object(value)) {
-            njs_type_error(vm, "Cannot create propery \"constructor\" on %s",
+            njs_type_error(vm, "Cannot create property \"constructor\" on %s",
                            njs_type_string(value->type));
             return NJS_ERROR;
         }
