@@ -663,6 +663,10 @@ njs_cipher_aes_gcm(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
         cipher = EVP_aes_128_gcm();
         break;
 
+    case 24:
+        cipher = EVP_aes_192_gcm();
+        break;
+
     case 32:
         cipher = EVP_aes_256_gcm();
         break;
@@ -961,6 +965,10 @@ njs_cipher_aes_ctr(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
         cipher = EVP_aes_128_ctr();
         break;
 
+    case 24:
+        cipher = EVP_aes_192_ctr();
+        break;
+
     case 32:
         cipher = EVP_aes_256_ctr();
         break;
@@ -1160,6 +1168,10 @@ njs_cipher_aes_cbc(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
     switch (key->raw.length) {
     case 16:
         cipher = EVP_aes_128_cbc();
+        break;
+
+    case 24:
+        cipher = EVP_aes_192_cbc();
         break;
 
     case 32:
