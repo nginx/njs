@@ -1840,11 +1840,25 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             goto fail;
         }
 
-        /* Fall through. */
+        key->raw = key_data;
+        break;
 
     case NJS_ALGORITHM_AES_GCM:
     case NJS_ALGORITHM_AES_CTR:
     case NJS_ALGORITHM_AES_CBC:
+        switch (key_data.length) {
+        case 16:
+        case 24:
+        case 32:
+            break;
+
+        default:
+            njs_type_error(vm, "Invalid key length");
+            goto fail;
+        }
+
+        /* Fall through. */
+
     case NJS_ALGORITHM_PBKDF2:
     case NJS_ALGORITHM_HKDF:
         key->raw = key_data;
