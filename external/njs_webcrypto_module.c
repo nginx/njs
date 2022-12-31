@@ -122,6 +122,7 @@ static njs_int_t njs_ext_get_random_values(njs_vm_t *vm, njs_value_t *args,
 static void njs_webcrypto_cleanup_pkey(void *data);
 static njs_webcrypto_key_format_t njs_key_format(njs_vm_t *vm,
     njs_value_t *value);
+static njs_str_t *njs_format_string(njs_webcrypto_key_format_t fmt);
 static njs_int_t njs_key_usage(njs_vm_t *vm, njs_value_t *value,
     unsigned *mask);
 static njs_webcrypto_algorithm_t *njs_key_algorithm(njs_vm_t *vm,
@@ -275,6 +276,15 @@ static njs_webcrypto_entry_t njs_webcrypto_curve[] = {
     { njs_str("P-384"), NJS_CURVE_P384 },
     { njs_str("P-521"), NJS_CURVE_P521 },
     { njs_null_str, 0 }
+};
+
+
+static njs_webcrypto_entry_t njs_webcrypto_format[] = {
+    { njs_str("raw"), NJS_KEY_FORMAT_RAW },
+    { njs_str("pkcs8"), NJS_KEY_FORMAT_PKCS8 },
+    { njs_str("spki"), NJS_KEY_FORMAT_SPKI },
+    { njs_str("jwk"), NJS_KEY_FORMAT_JWK },
+    { njs_null_str, NJS_KEY_FORMAT_UNKNOWN }
 };
 
 
@@ -1693,7 +1703,8 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (njs_slow_path(!(fmt & alg->fmt))) {
-        njs_type_error(vm, "unsupported key fmt for \"%V\" key",
+        njs_type_error(vm, "unsupported key fmt \"%V\" for \"%V\" key",
+                       njs_format_string(fmt),
                        njs_algorithm_string(alg));
         goto fail;
     }
@@ -2511,43 +2522,42 @@ njs_webcrypto_cleanup_pkey(void *data)
 static njs_webcrypto_key_format_t
 njs_key_format(njs_vm_t *vm, njs_value_t *value)
 {
-    njs_int_t    ret;
-    njs_str_t    format;
-    njs_uint_t   fmt;
-    njs_value_t  string;
-
-    static const struct {
-        njs_str_t   name;
-        njs_uint_t  value;
-    } formats[] = {
-        { njs_str("raw"), NJS_KEY_FORMAT_RAW },
-        { njs_str("pkcs8"), NJS_KEY_FORMAT_PKCS8 },
-        { njs_str("spki"), NJS_KEY_FORMAT_SPKI },
-        { njs_str("jwk"), NJS_KEY_FORMAT_JWK },
-    };
+    njs_int_t              ret;
+    njs_str_t              format;
+    njs_value_t            string;
+    njs_webcrypto_entry_t  *e;
 
     ret = njs_value_to_string(vm, &string, value);
     if (njs_slow_path(ret != NJS_OK)) {
-        goto fail;
+        return NJS_KEY_FORMAT_UNKNOWN;
     }
 
     njs_string_get(&string, &format);
 
-    fmt = 0;
-
-    while (fmt < sizeof(formats) / sizeof(formats[0])) {
-        if (njs_strstr_eq(&format, &formats[fmt].name)) {
-            return formats[fmt].value;
+    for (e = &njs_webcrypto_format[0]; e->name.length != 0; e++) {
+        if (njs_strstr_eq(&format, &e->name)) {
+            return e->value;
         }
-
-        fmt++;
     }
-
-fail:
 
     njs_type_error(vm, "unknown key format: \"%V\"", &format);
 
     return NJS_KEY_FORMAT_UNKNOWN;
+}
+
+
+static njs_str_t *
+njs_format_string(njs_webcrypto_key_format_t fmt)
+{
+    njs_webcrypto_entry_t  *e;
+
+    for (e = &njs_webcrypto_format[0]; e->name.length != 0; e++) {
+        if (fmt == e->value) {
+            break;
+        }
+    }
+
+    return &e->name;
 }
 
 
