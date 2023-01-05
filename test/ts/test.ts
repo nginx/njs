@@ -188,6 +188,14 @@ async function crypto_object(keyData: ArrayBuffer, data: ArrayBuffer) {
                                                 modulusLength: 2048,
                                                 publicExponent: new Uint8Array([1, 0, 1])},
                                                 true, ['sign', 'verify']);
+
+    let hkey = await crypto.subtle.generateKey({name: "HMAC",
+                                                hash: "SHA-384"},
+                                                true, ['sign', 'verify']);
+
+    let akey = await crypto.subtle.generateKey({name: "AES-GCM",
+                                                length: 256},
+                                                true, ['encrypt', 'decrypt']);
 }
 
 function buffer(b: Buffer) {

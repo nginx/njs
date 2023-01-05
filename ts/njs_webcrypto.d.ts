@@ -72,11 +72,14 @@ type ImportAlgorithm =
 
 type GenerateAlgorithm =
     | RsaHashedKeyGenParams
-    | EcKeyGenParams;
+    | EcKeyGenParams
+    | HmacKeyGenParams
+    | AesKeyGenParams;
 
 type JWK =
     | { kty: "RSA"; }
-    | { kty: "EC"; };
+    | { kty: "EC"; }
+    | { kty: "oct"; };
 
 type KeyData =
     | NjsStringOrBuffer
@@ -230,7 +233,8 @@ interface SubtleCrypto {
               key: CryptoKey): Promise<ArrayBuffer|Object>;
 
     /**
-     * Generates a keypair for asymmetric algorithms.
+     * Generates a key for symmetric algorithms or a keypair
+     *  for asymmetric algorithms.
      *
      * @since 0.7.10
      * @param algorithm Dictionary object defining the type of key to generate
@@ -242,7 +246,7 @@ interface SubtleCrypto {
      */
     generateKey(algorithm: GenerateAlgorithm,
                 extractable: boolean,
-                usage: Array<string>): Promise<CryptoKeyPair>;
+                usage: Array<string>): Promise<CryptoKey|CryptoKeyPair>;
 
     /**
      * Generates a digital signature.

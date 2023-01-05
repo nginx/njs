@@ -17,6 +17,12 @@ async function load_key(params) {
         return params.generate_keys.keys[type];
     }
 
+    if (params.generate_key) {
+        return await crypto.subtle.generateKey(params.generate_key.alg,
+                                               params.generate_key.extractable,
+                                               params.generate_key.usage);
+    }
+
     return await crypto.subtle.importKey(params.key.fmt,
                                          params.key.key,
                                          params.key.alg,
@@ -43,6 +49,7 @@ async function test(params) {
     }
 
     if (!params.generate_keys
+        && !params.generate_key
         && (exp.startsWith && !exp.startsWith("ArrayBuffer:")))
     {
         /* Check that exported key can be imported back. */
@@ -72,6 +79,9 @@ function p(args, default_opts) {
         break;
     case "jwk":
         key = load_jwk(params.key.key);
+        break;
+    case "raw":
+        key = Buffer.from(params.key.key, "base64url");
         break;
     default:
         throw Error("Unknown encoding key format");
@@ -291,8 +301,178 @@ let ec_tsuite = {
         expected: { kty: "EC", ext: true, key_ops: [ "sign" ], crv: "P-384" } },
 ]};
 
+function validate_hmac_jwk(exp, params) {
+    let hash = params.generate_key.alg.hash;
+    let expected_len = Number(hash.slice(2)) / 8 * (4 / 3);
+    expected_len = Math.round(expected_len);
+
+    validate_property(exp, 'k', expected_len);
+
+    return true;
+}
+
+let hmac_tsuite = {
+    name: "HMAC exporting",
+    skip: () => (!has_fs() || !has_webcrypto()),
+    T: test,
+    prepare_args: p,
+    opts: {
+        key: { fmt: "raw",
+               key: "c2VjcmV0LUtleTE",
+               alg: { name: "HMAC", hash: "SHA-256" },
+               extractable: true,
+               usage: [ "sign", "verify" ] },
+        export: { fmt: "jwk" },
+        expected: { kty: "oct", ext: true },
+    },
+
+    tests: [
+      { expected: { key_ops: [ "sign", "verify" ],
+                    alg: "HS256",
+                    k: "c2VjcmV0LUtleTE" } },
+      { export: { fmt: "raw" },
+        expected: "ArrayBuffer:c2VjcmV0LUtleTE" },
+      { export: { fmt: "spki" },
+        exception: "TypeError: unsupported key fmt \"spki\" for \"HMAC\"" },
+      { export: { fmt: "pksc8" },
+        exception: "TypeError: unsupported key fmt \"pksc8\" for \"HMAC\"" },
+      { key: { key: "cDBzc3dE",
+               alg: { hash: "SHA-384" } },
+        expected: { key_ops: [ "sign", "verify" ],
+                    alg: "HS384",
+                    k: "cDBzc3dE" } },
+      { key: { extractable: false },
+        exception: "TypeError: provided key cannot be extracted" },
+
+      { key: { fmt: "jwk",
+               key: { kty: "oct", ext: true, k: "c2VjcmV0LUtleTE", alg: "HS256" } },
+        expected: { key_ops: [ "sign", "verify" ],
+                    alg: "HS256",
+                    k: "c2VjcmV0LUtleTE" } },
+      { key: { fmt: "jwk",
+               alg: { hash: "SHA-512" },
+               key: { kty: "oct", ext: true, k: "c2VjcmV0LUtleTE", alg: "HS512" } },
+        expected: { key_ops: [ "sign", "verify" ],
+                    alg: "HS512",
+                    k: "c2VjcmV0LUtleTE" } },
+      { key: { fmt: "jwk",
+               key: { kty: "oct", ext: true, k: "c2VjcmV0LUtleTE", alg: "HS256" },
+               alg: { hash: "SHA-384" } },
+        exception: "TypeError: HMAC JWK hash mismatch" },
+
+      { generate_key: { alg: { name: "HMAC",
+                               hash: "SHA-256" },
+                        extractable: true,
+                        usage: [ "sign", "verify" ] },
+        check: validate_hmac_jwk,
+        expected: { key_ops: [ "sign", "verify" ], alg: "HS256" } },
+      { generate_key: { alg: { name: "HMAC",
+                               hash: "SHA-1" },
+                        extractable: true,
+                        usage: [ "verify" ] },
+        check: validate_hmac_jwk,
+        expected: { key_ops: [ "verify" ], alg: "HS1" } },
+      { generate_key: { alg: { name: "HMAC",
+                               hash: "SHA-384" },
+                        extractable: true,
+                        usage: [ "sign" ] },
+        check: validate_hmac_jwk,
+        expected: { key_ops: [ "sign" ], alg: "HS384" } },
+      { generate_key: { alg: { name: "HMAC",
+                               hash: "SHA-512" },
+                        extractable: true,
+                        usage: [ "sign" ] },
+        check: validate_hmac_jwk,
+        expected: { key_ops: [ "sign" ], alg: "HS512" } },
+]};
+
+function validate_aes_jwk(exp, params) {
+    let expected_len = params.generate_key.alg.length;
+    expected_len = expected_len / 8 * (4 / 3);
+    expected_len = Math.round(expected_len);
+
+    validate_property(exp, 'k', expected_len);
+
+    return true;
+}
+
+let aes_tsuite = {
+    name: "AES exporting",
+    skip: () => (!has_fs() || !has_webcrypto()),
+    T: test,
+    prepare_args: p,
+    opts: {
+        key: { fmt: "raw",
+               key: "ABEiMwARIjMAESIzABEiMw",
+               alg: { name: "AES-GCM" },
+               extractable: true,
+               usage: [ "encrypt" ] },
+        export: { fmt: "jwk" },
+        expected: { kty: "oct", ext: true },
+    },
+
+    tests: [
+      { expected: { key_ops: [ "encrypt" ],
+                    alg: "A128GCM",
+                    k: "ABEiMwARIjMAESIzABEiMw" } },
+      { export: { fmt: "raw" },
+        expected: "ArrayBuffer:ABEiMwARIjMAESIzABEiMw" },
+      { key: { key: "ABEiMwARIjMAESIzABEiMwARIjMAESIz",
+               alg: { name: "AES-CBC" },
+               usage: [ "decrypt" ] },
+        expected: { key_ops: [ "decrypt" ],
+                    alg: "A192CBC",
+                    k: "ABEiMwARIjMAESIzABEiMwARIjMAESIz" } },
+      { key: { key: "ABEiMwARIjMAESIzABEiMwARIjMAESIz",
+               alg: { name: "AES-CBC" },
+               usage: [ "decrypt" ] },
+        export: { fmt: "raw" },
+        expected: "ArrayBuffer:ABEiMwARIjMAESIzABEiMwARIjMAESIz" },
+      { key: { key: "ABEiMwARIjMAESIzABEiMwARIjMAESIzABEiMwARIjM",
+               alg: { name: "AES-CTR" },
+               usage: [ "decrypt" ] },
+        expected: { key_ops: [ "decrypt" ],
+                    alg: "A256CTR",
+                    k: "ABEiMwARIjMAESIzABEiMwARIjMAESIzABEiMwARIjM" } },
+      { key: { key: "ABEiMwARIjMAESIzABEiMwARIjMAESIzABEiMwARIjM",
+               alg: { name: "AES-CTR" },
+               usage: [ "decrypt" ] },
+        export: { fmt: "raw" },
+        expected: "ArrayBuffer:ABEiMwARIjMAESIzABEiMwARIjMAESIzABEiMwARIjM" },
+
+      { generate_key: { alg: { name: "AES-GCM", length: 128 },
+                        extractable: true,
+                        usage: [ "encrypt" ] },
+        check: validate_aes_jwk,
+        expected: { key_ops: [ "encrypt" ], alg: "A128GCM" } },
+      { generate_key: { alg: { name: "AES-CTR", length: 192 },
+                        extractable: true,
+                        usage: [ "decrypt" ] },
+        check: validate_aes_jwk,
+        expected: { key_ops: [ "decrypt" ], alg: "A192CTR" } },
+      { generate_key: { alg: { name: "AES-CBC", length: 256 },
+                        extractable: true,
+                        usage: [ "decrypt" ] },
+        check: validate_aes_jwk,
+        expected: { key_ops: [ "decrypt" ], alg: "A256CBC" } },
+      { generate_key: { alg: { name: "AES-GCM", length: 128 },
+                        extractable: false,
+                        usage: [ "decrypt" ] },
+        exception: "TypeError: provided key cannot be extracted" },
+      { generate_key: { alg: { name: "AES-GCM" },
+                        extractable: false,
+                        usage: [ "decrypt" ] },
+        exception: "TypeError: length for \"AES-GCM\" key should be one of 128, 192, 256" },
+      { generate_key: { alg: { name: "AES-GCM", length: 25 },
+                        extractable: false,
+                        usage: [ "decrypt" ] },
+        exception: "TypeError: length for \"AES-GCM\" key should be one of 128, 192, 256" },
+]};
+
 run([
     rsa_tsuite,
     ec_tsuite,
+    hmac_tsuite,
+    aes_tsuite,
 ])
 .then($DONE, $DONE);
