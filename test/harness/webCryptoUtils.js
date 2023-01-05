@@ -11,3 +11,11 @@ function base64decode(b64) {
     return Buffer.from(joined, 'base64');
 }
 
+function load_jwk(data) {
+    if (typeof data == 'string') {
+        let json = fs.readFileSync(`test/webcrypto/${data}`);
+        return JSON.parse(json);
+    }
+
+    return data;
+}

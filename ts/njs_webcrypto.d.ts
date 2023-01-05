@@ -33,7 +33,19 @@ interface  RsaHashedImportParams {
     hash: HashVariants;
 }
 
+interface  RsaHashedKeyGenParams {
+    name: "RSASSA-PKCS1-v1_5" | "RSA-PSS" | "RSA-OAEP";
+    hash: HashVariants;
+    modulusLength: number;
+    publicExponent: Uint8Array;
+}
+
 interface  EcKeyImportParams {
+    name: "ECDSA";
+    namedCurve: "P-256" | "P-384" | "P-521";
+}
+
+interface EcKeyGenParams {
     name: "ECDSA";
     namedCurve: "P-256" | "P-384" | "P-521";
 }
@@ -57,6 +69,18 @@ type ImportAlgorithm =
     | AesVariants
     | "PBKDF2"
     | "HKDF";
+
+type GenerateAlgorithm =
+    | RsaHashedKeyGenParams
+    | EcKeyGenParams;
+
+type JWK =
+    | { kty: "RSA"; }
+    | { kty: "EC"; };
+
+type KeyData =
+    | NjsStringOrBuffer
+    | JWK;
 
 interface   HkdfParams {
     name: "HKDF";
@@ -110,6 +134,8 @@ type SignOrVerifyAlgorithm =
 
 interface CryptoKey {
 }
+
+type CryptoKeyPair = { privateKey: CryptoKey, publicKey: CryptoKey };
 
 interface SubtleCrypto {
     /**
@@ -177,19 +203,46 @@ interface SubtleCrypto {
      * Imports a key.
      *
      * @param format String describing the data format of the key to import.
+     * Possible values: "raw", "pkcs8", "spki", "jwk" (since 0.7.10).
      * @param keyData Object containing the key in the given format.
      * @param algorithm Dictionary object defining the type of key to import
      *  and providing extra algorithm-specific parameters.
-     * @param extractable Unsupported.
+     * @param extractable Boolean indicating whether a key can be exported.
      * @param usage Array indicating what can be done with the key.
      *  Possible array values: "encrypt", "decrypt", "sign", "verify",
      *  "deriveKey", "deriveBits", "wrapKey", "unwrapKey".
      */
-    importKey(format: "raw" | "pkcs8" | "spki",
-              keyData: NjsStringOrBuffer,
+    importKey(format: "raw" | "pkcs8" | "spki" | "jwk",
+              keyData: KeyData,
               algorithm: ImportAlgorithm,
               extractable: boolean,
               usage: Array<string>): Promise<CryptoKey>;
+
+    /**
+     * Exports a key.
+     *
+     * @since 0.7.10
+     * @param format String describing the data format of the key to export.
+     * Possible values: "raw", "pkcs8", "spki", "jwk".
+     * @param key CryptoKey containing the key to be exported.
+     */
+    exportKey(format: "raw" | "pkcs8" | "spki" | "jwk",
+              key: CryptoKey): Promise<ArrayBuffer|Object>;
+
+    /**
+     * Generates a keypair for asymmetric algorithms.
+     *
+     * @since 0.7.10
+     * @param algorithm Dictionary object defining the type of key to generate
+     *  and providing extra algorithm-specific parameters.
+     * @param extractable Boolean indicating whether a key can be exported.
+     * @param usage Array indicating what can be done with the key.
+     *  Possible array values: "encrypt", "decrypt", "sign", "verify",
+     *  "deriveKey", "deriveBits", "wrapKey", "unwrapKey".
+     */
+    generateKey(algorithm: GenerateAlgorithm,
+                extractable: boolean,
+                usage: Array<string>): Promise<CryptoKeyPair>;
 
     /**
      * Generates a digital signature.

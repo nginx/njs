@@ -36,13 +36,13 @@ async function run(tlist) {
 }
 
 function merge(to, from) {
-    let r = Object.assign({}, to);
+    let r = Object.assign(Array.isArray(to) ? [] : {}, to);
     Object.keys(from).forEach(v => {
         if (typeof r[v] == 'object' && typeof from[v] == 'object') {
             r[v] = merge(r[v], from[v]);
 
         } else if (typeof from[v] == 'object') {
-            r[v] = Object.assign({}, from[v]);
+            r[v] = Object.assign(Array.isArray(from[v]) ? [] : {}, from[v]);
 
         } else {
             r[v] = from[v];

@@ -3,20 +3,52 @@ includes: [compatFs.js, compatBuffer.js, compatWebcrypto.js, runTsuite.js, webCr
 flags: [async]
 ---*/
 
+async function encrypt_key(params) {
+    if (params.generate_keys) {
+        if (params.generate_keys.publicKey) {
+            return params.generate_keys.publicKey;
+        }
+
+        params.generate_keys = await crypto.subtle.generateKey(params.generate_keys.alg,
+                                                               params.generate_keys.extractable,
+                                                               params.generate_keys.usage);
+
+        return params.generate_keys.publicKey;
+    }
+
+    return await crypto.subtle.importKey(params.enc.fmt,
+                                         params.enc.key,
+                                         { name: "RSA-OAEP", hash:params.enc.hash },
+                                         false, ["encrypt"]);
+
+}
+
+async function decrypt_key(params) {
+    if (params.generate_keys) {
+        if (params.generate_keys.privateKey) {
+            return params.generate_keys.privateKey;
+        }
+
+        params.generate_keys = await crypto.subtle.generateKey(params.generate_keys.alg,
+                                                               params.generate_keys.extractable,
+                                                               params.generate_keys.usage);
+
+        return params.generate_keys.privateKey;
+    }
+
+    return await crypto.subtle.importKey(params.dec.fmt,
+                                         params.dec.key,
+                                         { name: "RSA-OAEP", hash:params.dec.hash },
+                                         false, ["decrypt"]);
+}
+
 async function test(params) {
-    let spki = await crypto.subtle.importKey("spki",
-                            pem_to_der(fs.readFileSync(`test/webcrypto/${params.spki}`), "PUBLIC"),
-                            {name:"RSA-OAEP", hash:params.spki_hash},
-                            false, ["encrypt"]);
+    let enc_key = await encrypt_key(params);
+    let dec_key = await decrypt_key(params);
 
-    let pkcs8 = await crypto.subtle.importKey("pkcs8",
-                            pem_to_der(fs.readFileSync(`test/webcrypto/${params.pkcs8}`), "PRIVATE"),
-                            {name:"RSA-OAEP", hash:params.pkcs8_hash},
-                            false, ["decrypt"]);
+    let enc = await crypto.subtle.encrypt({name: "RSA-OAEP"}, enc_key, params.data);
 
-    let enc = await crypto.subtle.encrypt({name: "RSA-OAEP"}, spki, params.data);
-
-    let plaintext = await crypto.subtle.decrypt({name: "RSA-OAEP"}, pkcs8, enc);
+    let plaintext = await crypto.subtle.decrypt({name: "RSA-OAEP"}, dec_key, enc);
 
     plaintext = Buffer.from(plaintext);
 
@@ -28,7 +60,37 @@ async function test(params) {
 }
 
 function p(args, default_opts) {
-    let params = Object.assign({}, default_opts, args);
+    let key;
+    let params = merge({}, default_opts);
+    params = merge(params, args);
+
+    switch (params.enc.fmt) {
+    case "spki":
+        let pem = fs.readFileSync(`test/webcrypto/${params.enc.key}`);
+        key = pem_to_der(pem, "PUBLIC");
+        break;
+    case "jwk":
+        key = load_jwk(params.enc.key);
+        break;
+    default:
+        throw Error("Unknown encoding key format");
+    }
+
+    params.enc.key = key;
+
+    switch (params.dec.fmt) {
+    case "pkcs8":
+        let pem = fs.readFileSync(`test/webcrypto/${params.dec.key}`);
+        key = pem_to_der(pem, "PRIVATE");
+        break;
+    case "jwk":
+        key = load_jwk(params.dec.key);
+        break;
+    default:
+        throw Error("Unknown decoding key format");
+    }
+
+    params.dec.key = key;
 
     params.data = Buffer.from(params.data, "hex");
 
@@ -41,27 +103,35 @@ let rsa_tsuite = {
     T: test,
     prepare_args: p,
     opts: {
-        spki: "rsa.spki",
-        spki_hash: "SHA-256",
-        pkcs8: "rsa.pkcs8",
-        pkcs8_hash: "SHA-256",
+        enc: { fmt: "spki", key: "rsa.spki", hash: "SHA-256" },
+        dec: { fmt: "pkcs8", key: "rsa.pkcs8", hash: "SHA-256" },
     },
 
     tests: [
         { data: "aabbcc" },
         { data: "aabbccdd".repeat(4) },
         { data: "aabbccdd".repeat(7) },
-        { data: "aabbcc", spki_hash: "SHA-1", pkcs8_hash: "SHA-1" },
-        { data: "aabbccdd".repeat(4), spki_hash: "SHA-1", pkcs8_hash: "SHA-1" },
-        { data: "aabbccdd".repeat(7), spki_hash: "SHA-1", pkcs8_hash: "SHA-1" },
-        { data: "aabbcc", spki_hash: "SHA-384", pkcs8_hash: "SHA-384" },
-        { data: "aabbccdd".repeat(4), spki_hash: "SHA-384", pkcs8_hash: "SHA-384" },
-        { data: "aabbccdd".repeat(7), spki_hash: "SHA-384", pkcs8_hash: "SHA-384" },
+        { data: "aabbcc",
+          generate_keys: { alg: { name: "RSA-OAEP",
+                                  modulusLength: 2048,
+                                  publicExponent: new Uint8Array([1, 0, 1]),
+                                  hash: "SHA-256" },
+                           extractable: true,
+                           usage: [ "encrypt", "decrypt" ] },
+          expected: true },
+        { data: "aabbcc", enc: { hash: "SHA-1" }, dec: { hash: "SHA-1" } },
+        { data: "aabbccdd".repeat(4), enc: { hash: "SHA-1" }, dec: { hash: "SHA-1" } },
+        { data: "aabbccdd".repeat(7), enc: { hash: "SHA-1" }, dec: { hash: "SHA-1" } },
+        { data: "aabbcc", enc: { hash: "SHA-384" }, dec: { hash: "SHA-384" } },
+        { data: "aabbccdd".repeat(4), enc: { hash: "SHA-384" }, dec: { hash: "SHA-384" } },
+        { data: "aabbccdd".repeat(7), enc: { hash: "SHA-384" }, dec: { hash: "SHA-384" } },
 
-        { data: "aabbcc", spki_hash: "SHA-256", pkcs8_hash: "SHA-384", exception: "Error: EVP_PKEY_decrypt() failed" },
-        { data: "aabbcc", spki_hash: "XXX", exception: "TypeError: unknown hash name: \"XXX\"" },
-        { data: "aabbcc", spki: "rsa.spki.broken", exception: "Error: d2i_PUBKEY() failed" },
-        { data: "aabbcc", spki: "rsa2.spki", exception: "Error: EVP_PKEY_decrypt() failed" },
+        { data: "aabbcc", enc: { hash: "SHA-256" }, dec: { hash: "SHA-384" }, exception: "Error: EVP_PKEY_decrypt() failed" },
+        { data: "aabbcc", enc: { hash: "XXX" }, exception: "TypeError: unknown hash name: \"XXX\"" },
+        { data: "aabbcc", dec: { key: "rsa.spki.broken" }, exception: "Error: d2i_PUBKEY() failed" },
+        { data: "aabbcc", dec: { key: "rsa2.spki" }, exception: "Error: EVP_PKEY_decrypt() failed" },
+
+        { data: "aabbcc", enc: { fmt: "jwk", key: "rsa.enc.pub.jwk" }, dec: { fmt: "jwk", key: "rsa.dec.jwk" } },
 ]};
 
 run([rsa_tsuite])

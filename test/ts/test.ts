@@ -166,6 +166,10 @@ async function crypto_object(keyData: ArrayBuffer, data: ArrayBuffer) {
                                              {name: 'RSA-OAEP', hash: "SHA-256"},
                                              false, ['decrypt']);
 
+    let jkey = await crypto.subtle.importKey("jwk", { kty: "RSA" },
+                                             {name: 'RSA-OAEP', hash: "SHA-256"},
+                                             true, ['decrypt']);
+
     let skey = await crypto.subtle.importKey("raw", keyData, 'AES-CBC',
                                              false, ['encrypt']);
 
@@ -176,6 +180,14 @@ async function crypto_object(keyData: ArrayBuffer, data: ArrayBuffer) {
 
     let r:boolean;
     r = await crypto.subtle.verify({name: 'RSA-PSS', saltLength:32}, skey, sig, data);
+
+    let jwk = await crypto.subtle.exportKey('jwk', ekey);
+
+    let pair = await crypto.subtle.generateKey({name: "RSASSA-PKCS1-v1_5",
+                                                hash: "SHA-512",
+                                                modulusLength: 2048,
+                                                publicExponent: new Uint8Array([1, 0, 1])},
+                                                true, ['sign', 'verify']);
 }
 
 function buffer(b: Buffer) {

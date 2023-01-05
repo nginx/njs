@@ -3,15 +3,53 @@ includes: [compatFs.js, compatBuffer.js, compatWebcrypto.js, runTsuite.js, webCr
 flags: [async]
 ---*/
 
+async function sign_key(params) {
+    if (params.generate_keys) {
+        if (params.generate_keys.privateKey) {
+            return params.generate_keys.privateKey;
+        }
+
+        params.generate_keys = await crypto.subtle.generateKey(params.generate_keys.alg,
+                                                               params.generate_keys.extractable,
+                                                               params.generate_keys.usage);
+
+        return params.generate_keys.privateKey;
+    }
+
+    return await crypto.subtle.importKey(params.sign_key.fmt,
+                                  params.sign_key.key,
+                                  params.import_alg,
+                                  params.sign_key.extractable,
+                                  params.sign_key.key_ops);
+
+}
+
+async function verify_key(params) {
+    if (params.generate_keys) {
+        if (params.generate_keys.publicKey) {
+            return params.generate_keys.publicKey;
+        }
+
+        params.generate_keys = await crypto.subtle.generateKey(params.generate_keys.alg,
+                                                               params.generate_keys.extractable,
+                                                               params.generate_keys.usage);
+
+        return params.generate_keys.publicKey;
+    }
+
+    return await crypto.subtle.importKey(params.verify_key.fmt,
+                                         params.verify_key.key,
+                                         params.import_alg,
+                                         false, [ "verify" ]);
+
+}
+
 async function test(params) {
     let encoder = new TextEncoder();
-    let sign_key = await crypto.subtle.importKey(params.sign_key.fmt,
-                                                 params.sign_key.key,
-                                                 params.import_alg,
-                                                 false, [ "sign" ]);
+    let skey = await sign_key(params);
 
-    let sig = await crypto.subtle.sign(params.sign_alg, sign_key,
-                                     encoder.encode(params.text))
+    let sig = await crypto.subtle.sign(params.sign_alg, skey,
+                                       encoder.encode(params.text))
                     .catch (e => {
                         if (e.toString().startsWith("Error: EVP_PKEY_CTX_set_signature_md() failed")) {
                             /* Red Hat Enterprise Linux: SHA-1 is disabled */
@@ -24,12 +62,9 @@ async function test(params) {
     }
 
     if (params.verify) {
-        let verify_key = await crypto.subtle.importKey(params.verify_key.fmt,
-                                                       params.verify_key.key,
-                                                       params.import_alg,
-                                                       false, [ "verify" ]);
+        let vkey = await verify_key(params);
 
-        let r = await crypto.subtle.verify(params.sign_alg, verify_key, sig,
+        let r = await crypto.subtle.verify(params.sign_alg, vkey, sig,
                                            encoder.encode(params.text));
 
         if (params.expected !== r) {
@@ -40,7 +75,7 @@ async function test(params) {
             let broken_sig = Buffer.concat([Buffer.from(sig)]);
             broken_sig[8] = 255 - broken_sig[8];
 
-            r = await crypto.subtle.verify(params.sign_alg, verify_key, broken_sig,
+            r = await crypto.subtle.verify(params.sign_alg, vkey, broken_sig,
                                            encoder.encode(params.text));
             if (r !== false) {
                 throw Error(`${params.sign_alg.name} BROKEN SIG failed expected: "false" vs "${r}"`);
@@ -49,7 +84,7 @@ async function test(params) {
             let broken_text = encoder.encode(params.text);
             broken_text[0] = 255 - broken_text[0];
 
-            r = await crypto.subtle.verify(params.sign_alg, verify_key, sig,
+            r = await crypto.subtle.verify(params.sign_alg, vkey, sig,
                                            broken_text);
             if (r !== false) {
                 throw Error(`${params.sign_alg.name} BROKEN TEXT failed expected: "false" vs "${r}"`);
@@ -79,22 +114,33 @@ function p(args, default_opts) {
         let pem = fs.readFileSync(`test/webcrypto/${params.sign_key.key}`);
         key = pem_to_der(pem, "PRIVATE");
         break;
+    case "jwk":
+        key = load_jwk(params.sign_key.key);
+        break;
     case "raw":
-        key = encoder.encode(params.sign_key.key);
+        key = Buffer.from(params.sign_key.key, "base64url");
         break;
     default:
         throw Error("Unknown sign key format");
     }
 
     params.sign_key.key = key;
+    params.sign_key.extractable = Boolean(params.sign_key.extractable);
+
+    if (!params.sign_key.key_ops) {
+        params.sign_key.key_ops = [ "sign" ];
+    }
 
     switch (params.verify_key.fmt) {
     case "spki":
         let pem = fs.readFileSync(`test/webcrypto/${params.verify_key.key}`);
         key = pem_to_der(pem, "PUBLIC");
         break;
+    case "jwk":
+        key = load_jwk(params.verify_key.key);
+        break;
     case "raw":
-        key = encoder.encode(params.verify_key.key);
+        key = Buffer.from(params.verify_key.key, "base64url");
         break;
     default:
         throw Error("Unknown verify key format");
@@ -112,8 +158,8 @@ let hmac_tsuite = {
     prepare_args: p,
     opts: {
         text: "TExt-T0-SiGN",
-        sign_key: { key: "secretKEY", fmt: "raw" },
-        verify_key: { key: "secretKEY", fmt: "raw" },
+        sign_key: { key: "c2VjcmV0S0VZ", fmt: "raw" },
+        verify_key: { key: "c2VjcmV0S0VZ", fmt: "raw" },
         verify: false,
         import_alg: {
             name: "HMAC",
@@ -138,7 +184,7 @@ let hmac_tsuite = {
         { verify: true, import_alg: { hash: "SHA-384" }, expected: true },
         { verify: true, import_alg: { hash: "SHA-512" }, expected: true },
         { verify: true, import_alg: { hash: "SHA-1" }, expected: true },
-        { verify: true, verify_key: { key: "secretKEY2" }, expected: false },
+        { verify: true, verify_key: { key: "c2VjcmV0S0VZMg" }, expected: false },
 ]};
 
 let rsassa_pkcs1_v1_5_tsuite = {
@@ -170,6 +216,121 @@ let rsassa_pkcs1_v1_5_tsuite = {
         { verify: true, import_alg: { hash: "SHA-512" }, expected: true },
         { verify: true, import_alg: { hash: "SHA-1" }, expected: true },
         { verify: true, verify_key: { key: "rsa2.spki" }, expected: false },
+        { verify: true, sign_key: { key: "rsa.jwk", fmt: "jwk" }, expected: true },
+        { sign_key: { key: "rsa.jwk", fmt: "jwk" },
+          expected: "b126c528abd305dc2b7234de44ffa2190bd55f57087f75620196e8bdb05ba205e52ceca03e4799f30a6d61a6610878b1038a5dd869ab8c04ffe80d49d14407b2c2fe52ca78c9c409fcf7fee26188941f5072179c2bf2de43e637b089c32cf04f14ca01e7b9c33bbbec603b2815de0180b12a3269b0453aba158642e00303890d" },
+        { verify: true, sign_key: { key: "rsa.jwk", fmt: "jwk" },
+          verify_key: { key: "rsa.pub.jwk", fmt: "jwk" }, expected: true },
+        { verify: true,
+          generate_keys: { alg: { name: "RSASSA-PKCS1-v1_5",
+                                  modulusLength: 2048,
+                                  publicExponent: new Uint8Array([1, 0, 1]),
+                                  hash: "SHA-256" },
+                           extractable: true,
+                           usage: [ "sign", "verify" ] },
+          expected: true },
+
+        { sign_key: { key: 1, fmt: "jwk" }, exception: "TypeError: invalid JWK key data" },
+        { sign_key: { key: { kty: "RSA" }, fmt: "jwk" },
+          exception: "TypeError: Invalid JWK RSA key" },
+        { sign_key: { key: { kty: "RSA",
+                             n: "yUmxoJC8VAM5hyYZa-XUBZg1N1ywFMPUpWsF1kaSGed98P3XUgPzgX80wpyzd5qdGuALqnf2lMc7O8PrGBtO5YrvQlI96NX0jUo5bc5wz220ob3AUCeQnTfx-UFqM4pCwjoDSo2PlphJdWgFYymGBaBCJgnENQL9H1N_8_yNiN8" },
+                      fmt: "jwk" },
+          exception: "TypeError: Invalid JWK RSA key" },
+        { sign_key: { key: { kty: "RSA",
+                             n: "yUmxoJC8VAM5hyYZa-XUBZg1N1ywFMPUpWsF1kaSGed98P3XUgPzgX80wpyzd5qdGuALqnf2lMc7O8PrGBtO5YrvQlI96NX0jUo5bc5wz220ob3AUCeQnTfx-UFqM4pCwjoDSo2PlphJdWgFYymGBaBCJgnENQL9H1N_8_yNiN8",
+                             e: "AQAB" },
+                      fmt: "jwk" },
+          exception: "TypeError: key usage mismatch for a RSASSA-PKCS1-v1_5" },
+        { sign_key: { key: { kty: "RSA",
+                             n: "yUmxoJC8VAM5hyYZa-XUBZg1N1ywFMPUpWsF1kaSGed98P3XUgPzgX80wpyzd5qdGuALqnf2lMc7O8PrGBtO5YrvQlI96NX0jUo5bc5wz220ob3AUCeQnTfx-UFqM4pCwjoDSo2PlphJdWgFYymGBaBCJgnENQL9H1N_8_yNiN8",
+                             e: "AQAB",
+                             d: "j06DQyCopFujYoASi0oWmGEUSjUYO8BsrdSzVCnsLLsuZBwlZ4Peouyw4Hl2IIoYniCyzYwZJzVtC5Dh2MjgcrJTG5nX3FfheuabGl4in0583C51ZYWlVpDvBWw8kJTfXjiKH4z6ZA9dWdT5Y3aH_kOf-znUc7eTvuzISs61x_k" },
+                      fmt: "jwk" },
+          exception: "TypeError: Invalid JWK RSA key" },
+        { sign_key: { key: { kty: "RSA",
+                             n: "yUmxoJC8VAM5hyYZa-XUBZg1N1ywFMPUpWsF1kaSGed98P3XUgPzgX80wpyzd5qdGuALqnf2lMc7O8PrGBtO5YrvQlI96NX0jUo5bc5wz220ob3AUCeQnTfx-UFqM4pCwjoDSo2PlphJdWgFYymGBaBCJgnENQL9H1N_8_yNiN8",
+                             e: "AQAB",
+                             d: "j06DQyCopFujYoASi0oWmGEUSjUYO8BsrdSzVCnsLLsuZBwlZ4Peouyw4Hl2IIoYniCyzYwZJzVtC5Dh2MjgcrJTG5nX3FfheuabGl4in0583C51ZYWlVpDvBWw8kJTfXjiKH4z6ZA9dWdT5Y3aH_kOf-znUc7eTvuzISs61x_k",
+                             p: "9ASb2yw5b8d7unrFuOyy4EDcPbnzEpbuVGASeHPqkORwHsqeGbfwGlhDYSYrY0HCwUsSBSFcO3SDeu0Z0zSvFQ" },
+                      fmt: "jwk" },
+          exception: "TypeError: Invalid JWK RSA key" },
+        { sign_key: { key: { kty: "RSA",
+                             n: "yUmxoJC8VAM5hyYZa-XUBZg1N1ywFMPUpWsF1kaSGed98P3XUgPzgX80wpyzd5qdGuALqnf2lMc7O8PrGBtO5YrvQlI96NX0jUo5bc5wz220ob3AUCeQnTfx-UFqM4pCwjoDSo2PlphJdWgFYymGBaBCJgnENQL9H1N_8_yNiN8",
+                             e: "AQAB",
+                             d: "j06DQyCopFujYoASi0oWmGEUSjUYO8BsrdSzVCnsLLsuZBwlZ4Peouyw4Hl2IIoYniCyzYwZJzVtC5Dh2MjgcrJTG5nX3FfheuabGl4in0583C51ZYWlVpDvBWw8kJTfXjiKH4z6ZA9dWdT5Y3aH_kOf-znUc7eTvuzISs61x_k",
+                             p: "9ASb2yw5b8d7unrFuOyy4EDcPbnzEpbuVGASeHPqkORwHsqeGbfwGlhDYSYrY0HCwUsSBSFcO3SDeu0Z0zSvFQ",
+                             q: "0yvzzgHo_PGYSlVj-M3965AwQF2wTXz82MZHv6EfcCHKuBfCSecr-igqLHhzfynAQjjf39VrXuPuRL23REF1Iw" },
+                      fmt: "jwk" },
+          exception: "TypeError: Invalid JWK RSA key" },
+        { sign_key: { key: { kty: "RSA",
+                             n: "yUmxoJC8VAM5hyYZa-XUBZg1N1ywFMPUpWsF1kaSGed98P3XUgPzgX80wpyzd5qdGuALqnf2lMc7O8PrGBtO5YrvQlI96NX0jUo5bc5wz220ob3AUCeQnTfx-UFqM4pCwjoDSo2PlphJdWgFYymGBaBCJgnENQL9H1N_8_yNiN8",
+                             e: "AQAB",
+                             d: "j06DQyCopFujYoASi0oWmGEUSjUYO8BsrdSzVCnsLLsuZBwlZ4Peouyw4Hl2IIoYniCyzYwZJzVtC5Dh2MjgcrJTG5nX3FfheuabGl4in0583C51ZYWlVpDvBWw8kJTfXjiKH4z6ZA9dWdT5Y3aH_kOf-znUc7eTvuzISs61x_k",
+                             p: "9ASb2yw5b8d7unrFuOyy4EDcPbnzEpbuVGASeHPqkORwHsqeGbfwGlhDYSYrY0HCwUsSBSFcO3SDeu0Z0zSvFQ",
+                             q: "0yvzzgHo_PGYSlVj-M3965AwQF2wTXz82MZHv6EfcCHKuBfCSecr-igqLHhzfynAQjjf39VrXuPuRL23REF1Iw",
+                             dp: "pUXJ2jSl4lOWNcOZz5phvQmxIg2j2N9pJLS9TeAU63YNio1pb7npYa6OVGpp0JxlsE2MMvVZZtuPgd69MxPn0Q" },
+                      fmt: "jwk" },
+          exception: "TypeError: Invalid JWK RSA key" },
+        { sign_key: { key: { kty: "RSA",
+                             n: "yUmxoJC8VAM5hyYZa-XUBZg1N1ywFMPUpWsF1kaSGed98P3XUgPzgX80wpyzd5qdGuALqnf2lMc7O8PrGBtO5YrvQlI96NX0jUo5bc5wz220ob3AUCeQnTfx-UFqM4pCwjoDSo2PlphJdWgFYymGBaBCJgnENQL9H1N_8_yNiN8",
+                             e: "AQAB",
+                             d: "j06DQyCopFujYoASi0oWmGEUSjUYO8BsrdSzVCnsLLsuZBwlZ4Peouyw4Hl2IIoYniCyzYwZJzVtC5Dh2MjgcrJTG5nX3FfheuabGl4in0583C51ZYWlVpDvBWw8kJTfXjiKH4z6ZA9dWdT5Y3aH_kOf-znUc7eTvuzISs61x_k",
+                             p: "9ASb2yw5b8d7unrFuOyy4EDcPbnzEpbuVGASeHPqkORwHsqeGbfwGlhDYSYrY0HCwUsSBSFcO3SDeu0Z0zSvFQ",
+                             q: "0yvzzgHo_PGYSlVj-M3965AwQF2wTXz82MZHv6EfcCHKuBfCSecr-igqLHhzfynAQjjf39VrXuPuRL23REF1Iw",
+                             dp: "pUXJ2jSl4lOWNcOZz5phvQmxIg2j2N9pJLS9TeAU63YNio1pb7npYa6OVGpp0JxlsE2MMvVZZtuPgd69MxPn0Q",
+                             dq: "RZoqDM-iXKTA3ldQ0TQMKnVnAgAfWRsGN-j6wxW3R_1LVOw31KYGX7iXVfsJjnNTdEBMwfkVH7yezzd8zVmJ4w" },
+                      fmt: "jwk" },
+          exception: "TypeError: Invalid JWK RSA key" },
+        { verify: true,
+          sign_key: { key: { kty: "RSA",
+                             n: "yUmxoJC8VAM5hyYZa-XUBZg1N1ywFMPUpWsF1kaSGed98P3XUgPzgX80wpyzd5qdGuALqnf2lMc7O8PrGBtO5YrvQlI96NX0jUo5bc5wz220ob3AUCeQnTfx-UFqM4pCwjoDSo2PlphJdWgFYymGBaBCJgnENQL9H1N_8_yNiN8",
+                             e: "AQAB",
+                             d: "j06DQyCopFujYoASi0oWmGEUSjUYO8BsrdSzVCnsLLsuZBwlZ4Peouyw4Hl2IIoYniCyzYwZJzVtC5Dh2MjgcrJTG5nX3FfheuabGl4in0583C51ZYWlVpDvBWw8kJTfXjiKH4z6ZA9dWdT5Y3aH_kOf-znUc7eTvuzISs61x_k",
+                             p: "9ASb2yw5b8d7unrFuOyy4EDcPbnzEpbuVGASeHPqkORwHsqeGbfwGlhDYSYrY0HCwUsSBSFcO3SDeu0Z0zSvFQ",
+                             q: "0yvzzgHo_PGYSlVj-M3965AwQF2wTXz82MZHv6EfcCHKuBfCSecr-igqLHhzfynAQjjf39VrXuPuRL23REF1Iw",
+                             dp: "pUXJ2jSl4lOWNcOZz5phvQmxIg2j2N9pJLS9TeAU63YNio1pb7npYa6OVGpp0JxlsE2MMvVZZtuPgd69MxPn0Q",
+                             dq: "RZoqDM-iXKTA3ldQ0TQMKnVnAgAfWRsGN-j6wxW3R_1LVOw31KYGX7iXVfsJjnNTdEBMwfkVH7yezzd8zVmJ4w",
+                             qi: "2REPnRQIaLsya5wlwFw0whwPaAbTZp2jfguhtg5gou_Yru7Cxz_b83YFPgoI6xuGE1OXsWkRTToS8FuIWCrNBQ" },
+                      fmt: "jwk" },
+          expected: true },
+        { sign_key: { key: { kty: "RSA",
+                             n: "yUmxoJC8VAM5hyYZa-XUBZg1N1ywFMPUpWsF1kaSGed98P3XUgPzgX80wpyzd5qdGuALqnf2lMc7O8PrGBtO5YrvQlI96NX0jUo5bc5wz220ob3AUCeQnTfx-UFqM4pCwjoDSo2PlphJdWgFYymGBaBCJgnENQL9H1N_8_yNiN8",
+                             e: "AQAB",
+                             d: "j06DQyCopFujYoASi0oWmGEUSjUYO8BsrdSzVCnsLLsuZBwlZ4Peouyw4Hl2IIoYniCyzYwZJzVtC5Dh2MjgcrJTG5nX3FfheuabGl4in0583C51ZYWlVpDvBWw8kJTfXjiKH4z6ZA9dWdT5Y3aH_kOf-znUc7eTvuzISs61x_k",
+                             p: "9ASb2yw5b8d7unrFuOyy4EDcPbnzEpbuVGASeHPqkORwHsqeGbfwGlhDYSYrY0HCwUsSBSFcO3SDeu0Z0zSvFQ",
+                             q: "0yvzzgHo_PGYSlVj-M3965AwQF2wTXz82MZHv6EfcCHKuBfCSecr-igqLHhzfynAQjjf39VrXuPuRL23REF1Iw",
+                             dp: "pUXJ2jSl4lOWNcOZz5phvQmxIg2j2N9pJLS9TeAU63YNio1pb7npYa6OVGpp0JxlsE2MMvVZZtuPgd69MxPn0Q",
+                             dq: "RZoqDM-iXKTA3ldQ0TQMKnVnAgAfWRsGN-j6wxW3R_1LVOw31KYGX7iXVfsJjnNTdEBMwfkVH7yezzd8zVmJ4w",
+                             qi: "2REPnRQIaLsya5wlwFw0whwPaAbTZp2jfguhtg5gou_Yru7Cxz_b83YFPgoI6xuGE1OXsWkRTToS8FuIWCrNBQ",
+                             key_ops: [ "verify" ] },
+                      fmt: "jwk" },
+          exception: "TypeError: Key operations and usage mismatch" },
+        { sign_key: { key: { kty: "RSA",
+                             n: "yUmxoJC8VAM5hyYZa-XUBZg1N1ywFMPUpWsF1kaSGed98P3XUgPzgX80wpyzd5qdGuALqnf2lMc7O8PrGBtO5YrvQlI96NX0jUo5bc5wz220ob3AUCeQnTfx-UFqM4pCwjoDSo2PlphJdWgFYymGBaBCJgnENQL9H1N_8_yNiN8",
+                             e: "AQAB",
+                             d: "j06DQyCopFujYoASi0oWmGEUSjUYO8BsrdSzVCnsLLsuZBwlZ4Peouyw4Hl2IIoYniCyzYwZJzVtC5Dh2MjgcrJTG5nX3FfheuabGl4in0583C51ZYWlVpDvBWw8kJTfXjiKH4z6ZA9dWdT5Y3aH_kOf-znUc7eTvuzISs61x_k",
+                             p: "9ASb2yw5b8d7unrFuOyy4EDcPbnzEpbuVGASeHPqkORwHsqeGbfwGlhDYSYrY0HCwUsSBSFcO3SDeu0Z0zSvFQ",
+                             q: "0yvzzgHo_PGYSlVj-M3965AwQF2wTXz82MZHv6EfcCHKuBfCSecr-igqLHhzfynAQjjf39VrXuPuRL23REF1Iw",
+                             dp: "pUXJ2jSl4lOWNcOZz5phvQmxIg2j2N9pJLS9TeAU63YNio1pb7npYa6OVGpp0JxlsE2MMvVZZtuPgd69MxPn0Q",
+                             dq: "RZoqDM-iXKTA3ldQ0TQMKnVnAgAfWRsGN-j6wxW3R_1LVOw31KYGX7iXVfsJjnNTdEBMwfkVH7yezzd8zVmJ4w",
+                             qi: "2REPnRQIaLsya5wlwFw0whwPaAbTZp2jfguhtg5gou_Yru7Cxz_b83YFPgoI6xuGE1OXsWkRTToS8FuIWCrNBQ",
+                             ext: false },
+                      fmt: "jwk",
+                      extractable: true },
+          exception: "TypeError: JWK RSA is not extractable" },
+        { sign_key: { key: { kty: "RSA",
+                             alg: "RS384",
+                             n: "yUmxoJC8VAM5hyYZa-XUBZg1N1ywFMPUpWsF1kaSGed98P3XUgPzgX80wpyzd5qdGuALqnf2lMc7O8PrGBtO5YrvQlI96NX0jUo5bc5wz220ob3AUCeQnTfx-UFqM4pCwjoDSo2PlphJdWgFYymGBaBCJgnENQL9H1N_8_yNiN8",
+                             e: "AQAB",
+                             d: "j06DQyCopFujYoASi0oWmGEUSjUYO8BsrdSzVCnsLLsuZBwlZ4Peouyw4Hl2IIoYniCyzYwZJzVtC5Dh2MjgcrJTG5nX3FfheuabGl4in0583C51ZYWlVpDvBWw8kJTfXjiKH4z6ZA9dWdT5Y3aH_kOf-znUc7eTvuzISs61x_k",
+                             p: "9ASb2yw5b8d7unrFuOyy4EDcPbnzEpbuVGASeHPqkORwHsqeGbfwGlhDYSYrY0HCwUsSBSFcO3SDeu0Z0zSvFQ",
+                             q: "0yvzzgHo_PGYSlVj-M3965AwQF2wTXz82MZHv6EfcCHKuBfCSecr-igqLHhzfynAQjjf39VrXuPuRL23REF1Iw",
+                             dp: "pUXJ2jSl4lOWNcOZz5phvQmxIg2j2N9pJLS9TeAU63YNio1pb7npYa6OVGpp0JxlsE2MMvVZZtuPgd69MxPn0Q",
+                             dq: "RZoqDM-iXKTA3ldQ0TQMKnVnAgAfWRsGN-j6wxW3R_1LVOw31KYGX7iXVfsJjnNTdEBMwfkVH7yezzd8zVmJ4w",
+                             qi: "2REPnRQIaLsya5wlwFw0whwPaAbTZp2jfguhtg5gou_Yru7Cxz_b83YFPgoI6xuGE1OXsWkRTToS8FuIWCrNBQ" },
+                      fmt: "jwk" },
+          exception: "TypeError: JWK hash mismatch" },
 ]};
 
 let rsa_pss_tsuite = {
@@ -202,6 +363,17 @@ let rsa_pss_tsuite = {
         { verify: true, import_alg: { hash: "SHA-512" }, sign_alg: { saltLength: 32 },
           expected: true },
         { verify: true, verify_key: { key: "rsa2.spki" }, expected: false },
+
+        { verify: true, sign_key: { key: "rsa.jwk", fmt: "jwk" },
+          verify_key: { key: "rsa.pub.jwk", fmt: "jwk" }, expected: true },
+        { verify: true,
+          generate_keys: { alg: { name: "RSA-PSS",
+                                  modulusLength: 2048,
+                                  publicExponent: new Uint8Array([1, 0, 1]),
+                                  hash: "SHA-256" },
+                           extractable: true,
+                           usage: [ "sign", "verify" ] },
+          expected: true },
 ]};
 
 let ecdsa_tsuite = {
@@ -231,6 +403,64 @@ let ecdsa_tsuite = {
         { verify: true, verify_key: { key: "ec2.spki" }, expected: false },
         { verify: true, verify_key: { key: "rsa.spki" }, exception: "Error: EC key is not found" },
         { verify: true, import_alg: { namedCurve: "P-384" }, exception: "Error: name curve mismatch" },
+
+        { verify: true,
+          verify_key: { key: "BHFFLGURrlWEXhok0JfTKke4q-nWSIMPvKTPhdKYSVnc4Nzn_7uNz0AA3U4fhpfVxSD4U5QciGyEoM4r3jC7bjI",
+                        fmt: "raw"},
+         expected: true },
+
+        { verify: true, sign_key: { key: "ec.jwk", fmt: "jwk" }, expected: true },
+        { verify: true, sign_key: { key: "ec.jwk", fmt: "jwk" },
+          verify_key: { key: "ec.pub.jwk", fmt: "jwk" }, expected: true },
+        { verify: true, sign_key: { key: "ec.jwk", fmt: "jwk" },
+          import_alg: { namedCurve: "P-384" }, exception: "Error: JWK EC curve mismatch" },
+        { sign_key: { key: 1, fmt: "jwk" }, exception: "TypeError: Invalid JWK EC key" },
+        { sign_key: { key: { kty: "EC" }, fmt: "jwk" }, exception: "TypeError: Invalid JWK EC key" },
+        { sign_key: { key: { kty: "EC", x: "cUUsZRGuVYReGiTQl9MqR7ir6dZIgw-8pM-F0phJWdw"}, fmt: "jwk" },
+          exception: "TypeError: Invalid JWK EC key" },
+        { sign_key: { key: { kty: "EC", x: "cUUsZRGuVYReGiTQl9MqR7ir6dZIgw-8pM-F0phJWdw",
+                             y: "4Nzn_7uNz0AA3U4fhpfVxSD4U5QciGyEoM4r3jC7bjI" },
+                      fmt: "jwk" },
+          exception: "TypeError: Invalid JWK EC key" },
+        { sign_key: { key: { kty: "EC", x: "cUUsZRGuVYReGiTQl9MqR7ir6dZIgw-8pM-F0phJWdw",
+                              y: "4Nzn_7uNz0AA3U4fhpfVxSD4U5QciGyEoM4r3jC7bjI",
+                              d: "E2sW0_4a3QXaSTJ0JKbSUbieKTD1UFtr7i_2CuetP6A" },
+                      fmt: "jwk" },
+          exception: "TypeError: JWK EC curve mismatch" },
+        { sign_key: { key: { kty: "EC", x: "cUUsZRGuVYReGiTQl9MqR7ir6dZIgw-8pM-F0phJWdw",
+                             y: "4Nzn_7uNz0AA3U4fhpfVxSD4U5QciGyEoM4r3jC7bjI",
+                             d: "E2sW0_4a3QXaSTJ0JKbSUbieKTD1UFtr7i_2CuetP6A", crv: "P-384" },
+                      fmt: "jwk" },
+          exception: "TypeError: JWK EC curve mismatch" },
+        { verify: true,
+          sign_key: { key: { kty: "EC", x: "cUUsZRGuVYReGiTQl9MqR7ir6dZIgw-8pM-F0phJWdw",
+                             y: "4Nzn_7uNz0AA3U4fhpfVxSD4U5QciGyEoM4r3jC7bjI",
+                             d: "E2sW0_4a3QXaSTJ0JKbSUbieKTD1UFtr7i_2CuetP6A", crv: "P-256" },
+                      fmt: "jwk" },
+          expected: true },
+        { sign_key: { key: { kty: "EC", x: "_BROKEN_",
+                             y: "4Nzn_7uNz0AA3U4fhpfVxSD4U5QciGyEoM4r3jC7bjI",
+                             d: "E2sW0_4a3QXaSTJ0JKbSUbieKTD1UFtr7i_2CuetP6A", crv: "P-256" },
+                      fmt: "jwk" },
+          exception: "Error: EC_KEY_set_public_key_affine_coordinates() failed" },
+        { sign_key: { key: { kty: "EC", x: "cUUsZRGuVYReGiTQl9MqR7ir6dZIgw-8pM-F0phJWdw",
+                             y: "4Nzn_7uNz0AA3U4fhpfVxSD4U5QciGyEoM4r3jC7bjI",
+                             d: "E2sW0_4a3QXaSTJ0JKbSUbieKTD1UFtr7i_2CuetP6A", crv: "P-256",
+                             key_ops: [ "verify" ]},
+                      fmt: "jwk" },
+          exception: "TypeError: Key operations and usage mismatch" },
+        { sign_key: { key: { kty: "EC", x: "cUUsZRGuVYReGiTQl9MqR7ir6dZIgw-8pM-F0phJWdw",
+                             y: "4Nzn_7uNz0AA3U4fhpfVxSD4U5QciGyEoM4r3jC7bjI", ext: false,
+                             d: "E2sW0_4a3QXaSTJ0JKbSUbieKTD1UFtr7i_2CuetP6A", crv: "P-256" },
+                      extractable: true,
+                      fmt: "jwk" },
+          exception: "TypeError: JWK is not extractable" },
+        { sign_key: { key: { kty: "EC", x: "cUUsZRGuVYReGiTQl9MqR7ir6dZIgw-8pM-F0phJWdw",
+                             y: "4Nzn_7uNz0AA3U4fhpfVxSD4U5QciGyEoM4r3jC7bjI",
+                             d: "E2sW0_4a3QXaSTJ0JKbSUbieKTD1UFtr7i_2CuetP6A", crv: "P-256" },
+                      key_ops: [ 'verify', 'sign' ],
+                      fmt: "jwk" },
+          exception: "TypeError: Unsupported key usage for a ECDSA key" },
 ]};
 
 run([
