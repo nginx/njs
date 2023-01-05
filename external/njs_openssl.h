@@ -62,7 +62,18 @@ njs_bn_bn2binpad(const BIGNUM *bn, unsigned char *to, int tolen)
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
     return BN_bn2binpad(bn, to, tolen);
 #else
-    return BN_bn2bin(bn, &to[tolen - BN_num_bytes(bn)]);
+    int  len;
+
+    len = BN_num_bytes(bn);
+
+    if (tolen > len) {
+        memset(to, 0, tolen - len);
+
+    } else if (tolen < len) {
+        return -1;
+    }
+
+    return BN_bn2bin(bn, &to[tolen - len]);
 #endif
 }
 

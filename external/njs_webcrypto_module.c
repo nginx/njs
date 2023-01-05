@@ -3646,10 +3646,6 @@ njs_convert_der_to_p1363(njs_vm_t *vm, EVP_PKEY *pkey, const u_char *der,
         goto fail;
     }
 
-#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
-    memset(data, 0, 2 * n);
-#endif
-
     if (njs_bn_bn2binpad(ECDSA_SIG_get0_r(ec_sig), data, n) <= 0) {
         goto fail;
     }
