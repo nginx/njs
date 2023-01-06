@@ -3212,6 +3212,8 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_webcrypto_key_format_t  fmt;
 
     pkey = NULL;
+    key_data.start = NULL;
+    key_data.length = 0;
 
     fmt = njs_key_format(vm, njs_arg(args, nargs, 1));
     if (njs_slow_path(fmt == NJS_KEY_FORMAT_UNKNOWN)) {
@@ -3266,11 +3268,9 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
      *  key->hash = NJS_HASH_UNSET;
      */
 
-    start = key_data.start;
-
     switch (fmt) {
     case NJS_KEY_FORMAT_PKCS8:
-        bio = njs_bio_new_mem_buf(start, key_data.length);
+        bio = njs_bio_new_mem_buf(key_data.start, key_data.length);
         if (njs_slow_path(bio == NULL)) {
             njs_webcrypto_error(vm, "BIO_new_mem_buf() failed");
             goto fail;
@@ -3299,6 +3299,7 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         break;
 
     case NJS_KEY_FORMAT_SPKI:
+        start = key_data.start;
         pkey = d2i_PUBKEY(NULL, &start, key_data.length);
         if (njs_slow_path(pkey == NULL)) {
             njs_webcrypto_error(vm, "d2i_PUBKEY() failed");
