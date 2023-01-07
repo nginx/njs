@@ -2602,13 +2602,11 @@ njs_buffer_init(njs_vm_t *vm)
         return NJS_ERROR;
     }
 
-    module = njs_module_add(vm, &njs_str_value("buffer"));
+    module = njs_vm_add_module(vm, &njs_str_value("buffer"),
+                               njs_value_arg(&value));
     if (njs_slow_path(module == NULL)) {
         return NJS_ERROR;
     }
-
-    njs_value_assign(&module->value, &value);
-    module->function.native = 1;
 
     return NJS_OK;
 }

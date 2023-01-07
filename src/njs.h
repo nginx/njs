@@ -310,6 +310,8 @@ NJS_EXPORT njs_vm_t *njs_vm_create(njs_vm_opt_t *options);
 NJS_EXPORT void njs_vm_destroy(njs_vm_t *vm);
 
 NJS_EXPORT njs_int_t njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end);
+NJS_EXPORT njs_mod_t *njs_vm_add_module(njs_vm_t *vm, njs_str_t *name,
+    njs_value_t *value);
 NJS_EXPORT njs_mod_t *njs_vm_compile_module(njs_vm_t *vm, njs_str_t *name,
     u_char **start, u_char *end);
 NJS_EXPORT njs_vm_t *njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external);

@@ -283,7 +283,7 @@ njs_module_find(njs_vm_t *vm, njs_str_t *name, njs_bool_t shared)
 
 
 njs_mod_t *
-njs_module_add(njs_vm_t *vm, njs_str_t *name)
+njs_module_add(njs_vm_t *vm, njs_str_t *name, njs_value_t *value)
 {
     njs_int_t           ret;
     njs_mod_t           *module;
@@ -309,16 +309,17 @@ njs_module_add(njs_vm_t *vm, njs_str_t *name)
     lhq.proto = &njs_modules_hash_proto;
 
     ret = njs_lvlhsh_insert(&vm->shared->modules_hash, &lhq);
-    if (njs_fast_path(ret == NJS_OK)) {
-        return module;
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_internal_error(vm, "lvlhsh insert failed");
+        return NULL;
     }
 
-    njs_mp_free(vm->mem_pool, module->name.start);
-    njs_mp_free(vm->mem_pool, module);
+    if (value != NULL) {
+        njs_value_assign(&module->value, value);
+        module->function.native = 1;
+    }
 
-    njs_internal_error(vm, "lvlhsh insert failed");
-
-    return NULL;
+    return module;
 }
 
 
