@@ -21712,6 +21712,15 @@ static njs_unit_test_t  njs_externals_test[] =
     { njs_str("njs.dump($r).startsWith('External')"),
       njs_str("true") },
 
+    { njs_str("Object.keys($r.header)"),
+      njs_str("01,02,03") },
+
+    { njs_str("Object.values($r.header)"),
+      njs_str("01|АБВ,02|АБВ,03|АБВ") },
+
+    { njs_str("njs.dump(Object.entries($r.header))"),
+      njs_str("[['01','01|АБВ'],['02','02|АБВ'],['03','03|АБВ']]") },
+
     { njs_str("njs.dump($r.header)"),
       njs_str("Header {01:'01|АБВ',02:'02|АБВ',03:'03|АБВ'}") },
 
