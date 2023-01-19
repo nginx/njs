@@ -906,7 +906,7 @@ njs_vm_logger(njs_vm_t *vm, njs_log_level_t level, const char *fmt, ...)
     u_char        *p;
     va_list       args;
     njs_logger_t  logger;
-    u_char        buf[NJS_MAX_ERROR_STR];
+    u_char        buf[32768];
 
     if (vm->options.ops == NULL) {
         return;
