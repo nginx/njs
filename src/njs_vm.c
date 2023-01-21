@@ -832,6 +832,22 @@ njs_vm_value_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size)
 }
 
 
+njs_int_t
+njs_vm_value_string_create(njs_vm_t *vm, njs_value_t *value,
+    const u_char *start, uint32_t size)
+{
+    return njs_string_create(vm, value, (const char *) start, size);
+}
+
+
+njs_int_t
+njs_vm_value_string_create_chb(njs_vm_t *vm, njs_value_t *value,
+    njs_chb_t *chain)
+{
+    return njs_string_create_chb(vm, value, chain);
+}
+
+
 njs_function_t *
 njs_vm_function(njs_vm_t *vm, const njs_str_t *path)
 {

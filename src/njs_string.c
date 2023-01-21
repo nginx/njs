@@ -147,6 +147,35 @@ njs_string_create(njs_vm_t *vm, njs_value_t *value, const char *src,
 
 
 njs_int_t
+njs_string_create_chb(njs_vm_t *vm, njs_value_t *value, njs_chb_t *chain)
+{
+    u_char   *p;
+    ssize_t  size, length;
+
+    size = njs_chb_size(chain);
+    if (njs_slow_path(size < 0)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    length = njs_chb_utf8_length(chain);
+    if (njs_slow_path(length < 0)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    p = njs_string_alloc(vm, value, size, length);
+    if (njs_slow_path(p == NULL)) {
+        return NJS_ERROR;
+    }
+
+    njs_chb_join_to(chain, p);
+
+    return NJS_OK;
+}
+
+
+njs_int_t
 njs_string_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     uint32_t size, uint32_t length)
 {
@@ -3489,7 +3518,7 @@ njs_string_get_substitution(njs_vm_t *vm, njs_value_t *matched,
     njs_value_t *string, int64_t pos, njs_value_t *captures, int64_t ncaptures,
     njs_value_t *groups, njs_value_t *replacement, njs_value_t *retval)
 {
-    int64_t      tail, size, length, n;
+    int64_t      tail, n;
     u_char       c, c2, *p, *r, *end;
     njs_str_t    rep, m, str, cap;
     njs_int_t    ret;
@@ -3620,22 +3649,11 @@ njs_string_get_substitution(njs_vm_t *vm, njs_value_t *matched,
 
 done:
 
-    size = njs_chb_size(&chain);
-    if (njs_slow_path(size < 0)) {
-        njs_memory_error(vm);
+    ret = njs_string_create_chb(vm, retval, &chain);
+    if (njs_slow_path(ret != NJS_OK)) {
         ret = NJS_ERROR;
         goto exception;
     }
-
-    length = njs_chb_utf8_length(&chain);
-
-    p = njs_string_alloc(vm, retval, size, length);
-    if (njs_slow_path(p == NULL)) {
-        ret = NJS_ERROR;
-        goto exception;
-    }
-
-    njs_chb_join_to(&chain, p);
 
     ret = NJS_OK;
 

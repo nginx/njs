@@ -8984,9 +8984,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'abc'.replace(/b/g, '$0')"),
       njs_str("a$0c") },
 
-    { njs_str("typeof String.bytesFrom(Array(15).fill(0xE3)).replace(/^/g, 1)"),
-      njs_str("string") },
-
     { njs_str("'abc'.replace(/^/g, '|$&|')"),
       njs_str("||abc") },
 
@@ -9059,12 +9056,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var m; var r = /./; r.exec = function() { return []; };"
               "r[Symbol.replace]('foo', function() {m = arguments[0]}); [m, typeof m]"),
       njs_str("undefined,string") },
-
-    { njs_str("String.bytesFrom([253,242,141,10]).replace(/\\s/g, 'X')[3]"),
-      njs_str("X") },
-
-    { njs_str("String.bytesFrom([255,149,15,97,95]).replace(/_/g, 'X')[4]"),
-      njs_str("X") },
 
     { njs_str("var a = [];"
               "a[2] = '';"
@@ -9270,9 +9261,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = '\\u00CE\\u00B1'.toBytes().match(/α/g)[0] + 'α';"
                  "a +' '+ a.length"),
       njs_str("αα 4") },
-
-    { njs_str("typeof String.bytesFrom(Array(15).fill(0xE3)).match(/^/g)"),
-      njs_str("object") },
 
     { njs_str("'abc'.split()"),
       njs_str("abc") },
@@ -18081,9 +18069,6 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("JSON.stringify('\\u00CE\\u00B1\\u00C2\\u00B6'.toBytes())"),
       njs_str("\"α¶\"") },
-
-    { njs_str("JSON.stringify('µ§±®'.toBytes())"),
-      njs_str("\"\xB5\xA7\xB1\xAE\"") },
 
     /* Optional arguments. */
 

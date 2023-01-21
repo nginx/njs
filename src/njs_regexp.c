@@ -1197,8 +1197,7 @@ static njs_int_t
 njs_regexp_prototype_symbol_replace(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
-    u_char             *p;
-    int64_t            n, last_index, ncaptures, pos, next_pos, size, length;
+    int64_t            n, last_index, ncaptures, pos, next_pos, length;
     njs_str_t          rep, m;
     njs_int_t          ret;
     njs_arr_t          results;
@@ -1455,22 +1454,11 @@ njs_regexp_prototype_symbol_replace(njs_vm_t *vm, njs_value_t *args,
         njs_chb_append(&chain, &s.start[next_pos], s.size - next_pos);
     }
 
-    size = njs_chb_size(&chain);
-    if (njs_slow_path(size < 0)) {
-        njs_memory_error(vm);
+    ret = njs_string_create_chb(vm, &vm->retval, &chain);
+    if (njs_slow_path(ret != NJS_OK)) {
         ret = NJS_ERROR;
         goto exception;
     }
-
-    length = njs_chb_utf8_length(&chain);
-
-    p = njs_string_alloc(vm, &vm->retval, size, length);
-    if (njs_slow_path(p == NULL)) {
-        ret = NJS_ERROR;
-        goto exception;
-    }
-
-    njs_chb_join_to(&chain, p);
 
     ret = NJS_OK;
 

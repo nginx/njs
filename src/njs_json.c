@@ -1090,8 +1090,7 @@ static njs_int_t
 njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify,
     njs_value_t *object)
 {
-    u_char            *p;
-    int64_t           size, length;
+    int64_t           size;
     njs_int_t         ret;
     njs_chb_t         chain;
     njs_value_t       *key, *value, index, wrapper;
@@ -1224,15 +1223,11 @@ done:
         goto release;
     }
 
-    length = njs_chb_utf8_length(&chain);
-
-    p = njs_string_alloc(vm, &vm->retval, size, length);
-    if (njs_slow_path(p == NULL)) {
+    ret = njs_string_create_chb(vm, &vm->retval, &chain);
+    if (njs_slow_path(ret != NJS_OK)) {
         njs_chb_destroy(&chain);
         goto memory_error;
     }
-
-    njs_chb_join_to(&chain, p);
 
 release:
 

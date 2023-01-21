@@ -105,7 +105,7 @@ njs_chb_utf8_length(njs_chb_t *chain)
     while (n != NULL) {
         len = njs_utf8_length(n->start, njs_chb_node_size(n));
         if (njs_slow_path(len < 0)) {
-            return 0;
+            return -1;
         }
 
         length += len;
