@@ -5,7 +5,8 @@ NJS_DEPS="$ngx_addon_dir/ngx_js.h \
 NJS_SRCS="$ngx_addon_dir/ngx_js.c \
     $ngx_addon_dir/ngx_js_fetch.c \
     $ngx_addon_dir/ngx_js_regex.c \
-    $ngx_addon_dir/../external/njs_webcrypto_module.c"
+    $ngx_addon_dir/../external/njs_webcrypto_module.c
+    $ngx_addon_dir/../external/njs_xml_module.c"
 
 if [ $HTTP != NO ]; then
     ngx_module_type=HTTP_AUX_FILTER
@@ -13,7 +14,7 @@ if [ $HTTP != NO ]; then
     ngx_module_incs="$ngx_addon_dir/../src $ngx_addon_dir/../build"
     ngx_module_deps="$ngx_addon_dir/../build/libnjs.a $NJS_DEPS"
     ngx_module_srcs="$ngx_addon_dir/ngx_http_js_module.c $NJS_SRCS"
-    ngx_module_libs="PCRE OPENSSL $ngx_addon_dir/../build/libnjs.a -lm"
+    ngx_module_libs="PCRE OPENSSL LIBXSLT $ngx_addon_dir/../build/libnjs.a -lm"
 
     . auto/module
 

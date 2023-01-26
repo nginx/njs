@@ -21,6 +21,14 @@ if [ $NJS_OPENSSL = YES -a $NJS_HAVE_OPENSSL = YES ]; then
 	. auto/module
 fi
 
+if [ $NJS_LIBXML2 = YES -a $NJS_HAVE_LIBXML2 = YES ]; then
+	njs_module_name=njs_xml_module
+	njs_module_incs=
+	njs_module_srcs=external/njs_xml_module.c
+
+	. auto/module
+fi
+
 njs_module_name=njs_fs_module
 njs_module_incs=
 njs_module_srcs=external/njs_fs_module.c

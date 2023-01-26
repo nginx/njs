@@ -1,0 +1,77 @@
+
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+
+NJS_HAVE_LIBXML2=NO
+
+if [ $NJS_LIBXML2 = YES ]; then
+    njs_found=no
+
+    njs_feature="libxml2"
+    njs_feature_name=NJS_HAVE_LIBXML2
+    njs_feature_run=no
+    njs_feature_incs="/usr/include/libxml2"
+    njs_feature_libs="-lxml2"
+    njs_feature_test="#include <libxml/parser.h>
+                      #include <libxml/tree.h>
+
+                      int main() {
+                          xmlDocPtr  tree;
+                          tree = xmlReadMemory(NULL, 0, NULL, NULL, 0);
+                          xmlFreeDoc(tree);
+                          xmlCleanupParser();
+                          return 0;
+                      }"
+    . auto/feature
+
+    if [ $njs_found = no ]; then
+
+        # FreeBSD port
+
+        njs_feature="libxml2 in /usr/local/"
+        njs_feature_incs="/usr/local/include/libxml2 /usr/local/include"
+        njs_feature_libs="-L/usr/local/lib -lxml2"
+
+        . auto/feature
+    fi
+
+    if [ $njs_found = no ]; then
+
+        # NetBSD port
+
+        njs_feature="libxml2 in /usr/pkg/"
+        njs_feature_incs="/usr/pkg/include/libxml2 /usr/pkg/include"
+        njs_feature_libs="-L/usr/pkg/lib -lxml2"
+
+        . auto/feature
+    fi
+
+    if [ $njs_found = no ]; then
+
+        # MacPorts
+
+        njs_feature="libxml2 in /opt/local/"
+        njs_feature_incs="/opt/local/include/libxml2 /opt/local/include"
+        njs_feature_libs="-L/opt/local/lib -lxml2 -lxslt"
+
+        . auto/feature
+    fi
+
+    if [ $njs_found = yes ]; then
+        njs_feature="libxml2 version"
+        njs_feature_name=NJS_LIBXML2_VERSION
+        njs_feature_run=value
+        njs_feature_test="#include <libxml/xmlversion.h>
+                          #include <stdio.h>
+
+                          int main() {
+                              printf(\"\\\"%s\\\"\", LIBXML_DOTTED_VERSION);
+                              return 0;
+                          }"
+        . auto/feature
+
+        NJS_HAVE_LIBXML2=YES
+        NJS_LIB_INCS="$NJS_LIB_INCS $njs_feature_incs"
+        NJS_LIB_AUX_LIBS="$NJS_LIB_AUX_LIBS $njs_feature_libs"
+    fi
+fi

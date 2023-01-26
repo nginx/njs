@@ -51,6 +51,7 @@ NJS_LIB_AUX_LIBS=
 . auto/pcre
 . auto/readline
 . auto/openssl
+. auto/libxml2
 . auto/libbfd
 . auto/link
 

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" Destination="https://example.com/cas/login" ForceAuthn="false" xml:ID="UUID" IsPassive="false" IssueInstant="2023-01-14T06:36:15.026Z" Version="2.0">
+    <saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">FOO</saml:Issuer>
+    <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:SignedInfo>
+            <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+            <ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+            <ds:Reference URI="#UUID">
+                <ds:Transforms>
+                    <ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+                    <ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#">
+                    <ec:InclusiveNamespaces xmlns:ec="http://www.w3.org/2001/10/xml-exc-c14n#" PrefixList="ds saml samlp"/>
+                    </ds:Transform>
+                </ds:Transforms>
+                <ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+                <ds:DigestValue>G+mga6rnvpus96slB6HmEEuYyaMjQYLDrK8P3Kq/nd4=</ds:DigestValue>
+            </ds:Reference>
+        </ds:SignedInfo>
+        <ds:SignatureValue>k7QVaQcoQ9kKgNcNjgaVWPDiWKIAWisOgFOBh/wwNh02m9qNRChTQL9hg3U82XGt
+KpjIv3VN+ebxdnkltrU1c/QTOj1RP4H9nqtHla3yVnR/+iUnOFmYGnPgzSRv5DeG
+p6S+/1X84vO+6/IgtM4RRJP0XVoQQqB4tlVQAx0YFSM=</ds:SignatureValue>
+    </ds:Signature>
+</samlp:AuthnRequest>

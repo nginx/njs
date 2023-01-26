@@ -16,6 +16,7 @@ NJS_ADDR2LINE=NO
 NJS_TEST262=YES
 
 NJS_OPENSSL=YES
+NJS_LIBXML2=YES
 
 NJS_PCRE=YES
 NJS_TRY_PCRE2=YES
@@ -48,6 +49,7 @@ do
         --test262=*)                     NJS_TEST262="$value"                ;;
 
         --no-openssl)                    NJS_OPENSSL=NO                      ;;
+        --no-libxml2)                    NJS_LIBXML2=NO                      ;;
 
         --no-pcre)                       NJS_PCRE=NO                         ;;
         --no-pcre2)                      NJS_TRY_PCRE2=NO                    ;;
