@@ -2,6 +2,7 @@
 # Copyright (C) Dmitry Volyntsev
 # Copyright (C) NGINX, Inc.
 
+NJS_LIBXML2_LIB=
 NJS_HAVE_LIBXML2=NO
 
 if [ $NJS_LIBXML2 = YES ]; then
@@ -87,6 +88,7 @@ if [ $NJS_LIBXML2 = YES ]; then
         . auto/feature
 
         NJS_HAVE_LIBXML2=YES
+        NJS_LIBXML2_LIB="$njs_feature_libs"
         NJS_LIB_INCS="$NJS_LIB_INCS $njs_feature_incs"
         NJS_LIB_AUX_LIBS="$NJS_LIB_AUX_LIBS $njs_feature_libs"
     fi
