@@ -6,12 +6,8 @@ NJS_HAVE_LIBXML2=NO
 
 if [ $NJS_LIBXML2 = YES ]; then
     njs_found=no
-
-    njs_feature="libxml2"
     njs_feature_name=NJS_HAVE_LIBXML2
     njs_feature_run=no
-    njs_feature_incs="/usr/include/libxml2"
-    njs_feature_libs="-lxml2"
     njs_feature_test="#include <libxml/parser.h>
                       #include <libxml/tree.h>
 
@@ -22,7 +18,27 @@ if [ $NJS_LIBXML2 = YES ]; then
                           xmlCleanupParser();
                           return 0;
                       }"
-    . auto/feature
+
+
+    if /bin/sh -c "(pkg-config libxml-2.0 --exists)" >> $NJS_AUTOCONF_ERR 2>&1; then
+
+        # pkg-config
+
+        njs_feature="libxml2 via pkg-config"
+        njs_feature_incs=`pkg-config libxml-2.0 --cflags | sed -n -e 's/.*-I *\([^ ][^ ]*\).*/\1/p'`
+        njs_feature_libs=`pkg-config libxml-2.0 --libs`
+
+        . auto/feature
+    fi
+
+    if [ $njs_found = no ]; then
+
+        njs_feature="libxml2"
+        njs_feature_incs="/usr/include/libxml2"
+        njs_feature_libs="-lxml2"
+
+        . auto/feature
+    fi
 
     if [ $njs_found = no ]; then
 
