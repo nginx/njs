@@ -35,6 +35,10 @@ default: "$NJS_LD_OPT"
                             enabled OpenSSL dependant code is not built as a
                             part of libnjs.a.
 
+  --no-libxml2              disabled libxml2 discovery. When this option is
+                            enabled libxml2 dependant code is not built as a
+                            part of libnjs.a.
+
   --address-sanitizer=YES   enables build with address sanitizer, \
 default: "$NJS_ADDRESS_SANITIZER"
   --addr2line=YES           enables native function symbolization, \
