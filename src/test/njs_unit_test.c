@@ -21545,6 +21545,10 @@ static njs_unit_test_t  njs_xml_test[] =
       njs_str("{\"note\":{\"$name\":\"note\",\"$tags\":"
               "[{\"$name\":\"to\",\"$attrs\":{\"b\":\"bar\",\"a\":\"foo\"},"
               "\"$text\":\"Tove\"},{\"$name\":\"from\",\"$text\":\"Jani\"}]}}") },
+
+    { njs_str("var xml = require('xml');"
+              "var doc = xml.parse(`<r></r>`); xml.exclusiveC14n(doc, 1)"),
+      njs_str("Error: \"excluding\" argument is not a XMLNode object") },
 };
 
 

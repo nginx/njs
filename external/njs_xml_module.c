@@ -69,8 +69,7 @@ static njs_int_t njs_xml_node_ext_text(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 
 static njs_xml_nset_t *njs_xml_nset_create(njs_vm_t *vm, xmlDoc *doc,
-    xmlNodeSet *nodes, njs_xml_nset_type_t type);
-static njs_xml_nset_t *njs_xml_nset_children(njs_vm_t *vm, xmlNode *parent);
+    xmlNode *current, njs_xml_nset_type_t type);
 static njs_xml_nset_t *njs_xml_nset_add(njs_xml_nset_t *nset,
     njs_xml_nset_t *add);
 static void njs_xml_nset_cleanup(void *data);
@@ -971,7 +970,6 @@ njs_xml_ext_canonicalization(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_str_t        data, string;
     njs_chb_t        chain;
     njs_bool_t       comments;
-    xmlNodeSet       *nodes;
     njs_value_t      *excluding, *prefixes;
     njs_xml_doc_t    *tree;
     njs_xml_nset_t   *nset, *children;
@@ -997,16 +995,10 @@ njs_xml_ext_canonicalization(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     buf = xmlOutputBufferCreateIO(njs_xml_buf_write_cb, NULL, &chain, NULL);
     if (njs_slow_path(buf == NULL)) {
         njs_vm_error(vm, "xmlOutputBufferCreateIO() failed");
-        goto error;
+        return NJS_ERROR;
     }
 
     comments = njs_value_bool(njs_arg(args, nargs, 3));
-
-    nodes = xmlXPathNodeSetCreate(current);
-    if (njs_slow_path(nodes == NULL)) {
-        njs_vm_memory_error(vm);
-        goto error;
-    }
 
     excluding = njs_arg(args, nargs, 2);
 
@@ -1017,13 +1009,14 @@ njs_xml_ext_canonicalization(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             goto error;
         }
 
-        nset = njs_xml_nset_create(vm, current->doc, nodes,
+        nset = njs_xml_nset_create(vm, current->doc, current,
                                    XML_NSET_TREE_NO_COMMENTS);
         if (njs_slow_path(nset == NULL)) {
             goto error;
         }
 
-        children = njs_xml_nset_children(vm, node);
+        children = njs_xml_nset_create(vm, node->doc, node,
+                                       XML_NSET_TREE_INVERT);
         if (njs_slow_path(children == NULL)) {
             goto error;
         }
@@ -1031,7 +1024,7 @@ njs_xml_ext_canonicalization(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         nset = njs_xml_nset_add(nset, children);
 
     } else {
-        nset = njs_xml_nset_create(vm, current->doc, nodes,
+        nset = njs_xml_nset_create(vm, current->doc, current,
                                    comments ? XML_NSET_TREE
                                             : XML_NSET_TREE_NO_COMMENTS);
         if (njs_slow_path(nset == NULL)) {
@@ -1087,6 +1080,8 @@ njs_xml_ext_canonicalization(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                                    data.length);
 
 error:
+
+    (void) xmlOutputBufferClose(buf);
 
     njs_chb_destroy(&chain);
 
@@ -1176,9 +1171,10 @@ njs_xml_attr_ext_prop_handler(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 static njs_xml_nset_t *
-njs_xml_nset_create(njs_vm_t *vm, xmlDoc *doc, xmlNodeSet *nodes,
+njs_xml_nset_create(njs_vm_t *vm, xmlDoc *doc, xmlNode *current,
     njs_xml_nset_type_t type)
 {
+    xmlNodeSet        *nodes;
     njs_xml_nset_t    *nset;
     njs_mp_cleanup_t  *cln;
 
@@ -1194,6 +1190,12 @@ njs_xml_nset_create(njs_vm_t *vm, xmlDoc *doc, xmlNodeSet *nodes,
         return NULL;
     }
 
+    nodes = xmlXPathNodeSetCreate(current);
+    if (njs_slow_path(nodes == NULL)) {
+        njs_vm_memory_error(vm);
+        return NULL;
+    }
+
     cln->handler = njs_xml_nset_cleanup;
     cln->data = nset;
 
@@ -1203,21 +1205,6 @@ njs_xml_nset_create(njs_vm_t *vm, xmlDoc *doc, xmlNodeSet *nodes,
     nset->next = nset->prev = nset;
 
     return nset;
-}
-
-
-static njs_xml_nset_t *
-njs_xml_nset_children(njs_vm_t *vm, xmlNode *parent)
-{
-    xmlNodeSet  *nodes;
-
-    nodes = xmlXPathNodeSetCreate(parent);
-    if (njs_slow_path(nodes == NULL)) {
-        njs_vm_memory_error(vm);
-        return NULL;
-    }
-
-    return njs_xml_nset_create(vm, parent->doc, nodes, XML_NSET_TREE_INVERT);
 }
 
 
