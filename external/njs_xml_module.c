@@ -1004,7 +1004,7 @@ njs_xml_ext_canonicalization(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     nodes = xmlXPathNodeSetCreate(current);
     if (njs_slow_path(nodes == NULL)) {
-        njs_vm_memory_pool(vm);
+        njs_vm_memory_error(vm);
         goto error;
     }
 
@@ -1184,7 +1184,7 @@ njs_xml_nset_create(njs_vm_t *vm, xmlDoc *doc, xmlNodeSet *nodes,
 
     nset = njs_mp_zalloc(njs_vm_memory_pool(vm), sizeof(njs_xml_nset_t));
     if (njs_slow_path(nset == NULL)) {
-        njs_vm_memory_pool(vm);
+        njs_vm_memory_error(vm);
         return NULL;
     }
 
@@ -1213,7 +1213,7 @@ njs_xml_nset_children(njs_vm_t *vm, xmlNode *parent)
 
     nodes = xmlXPathNodeSetCreate(parent);
     if (njs_slow_path(nodes == NULL)) {
-        njs_vm_memory_pool(vm);
+        njs_vm_memory_error(vm);
         return NULL;
     }
 
