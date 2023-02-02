@@ -9063,8 +9063,19 @@ static njs_unit_test_t  njs_test[] =
               "re.exec = function () {"
               "    return a;"
               "};"
-              "var r = 'any_string'.replace(re);"),
-      njs_str("undefined") },
+              "'any_string'.replace(re)"),
+      njs_str("undefinedg") },
+
+    { njs_str("var cnt = 0;"
+              "var a = [];"
+              "a[2] = '';"
+              "var re = /any_regexp/g;"
+              "re.exec = function () {"
+              "    if (cnt++ > 1) return null;"
+              "    return a;"
+              "};"
+              "'any_string'.replace(re)"),
+      njs_str("undefinedg") },
 
     { njs_str("var a = [];"
               "a[2] = {toString() {a[2**20] = 1; return 'X';}}; "
@@ -9077,14 +9088,37 @@ static njs_unit_test_t  njs_test[] =
               "'abc'.replace(re, '@$1|$2|$3|$4|$99|$100|@')"),
       njs_str("@|X||Y|Z|0|@") },
 
+    { njs_str("var cnt = 0;"
+              "var a = [];"
+              "a[2] = {toString() {a[2**20] = 1; return 'X';}}; "
+              "a[4] = 'Y';"
+              "a[99] = 'Z';"
+              "a[100] = '*';"
+              "a[200] = '!';"
+              "var re = /b/g;"
+              "re.exec = () => {if (cnt++ > 1) return null; return a};"
+              "'abc'.replace(re, '@$1|$2|$3|$4|$99|$100|@')"),
+      njs_str("@|X||Y|Z|0|@") },
+
     { njs_str("var a = [];"
               "Object.defineProperty(a, 32768, {});"
               "var re = /any_regexp/;"
               "re.exec = function () {"
               "    return a;"
               "};"
-              "var r = 'any_string'.replace(re);"),
-      njs_str("undefined") },
+              "'any_string'.replace(re)"),
+      njs_str("undefinedg") },
+
+    { njs_str("var cnt = 0;"
+              "var a = [];"
+              "Object.defineProperty(a, 32768, {});"
+              "var re = /any_regexp/g;"
+              "re.exec = function () {"
+              "    if (cnt++ > 1) return null;"
+              "    return a;"
+              "};"
+              "'any_string'.replace(re)"),
+      njs_str("undefinedg") },
 
     { njs_str("/=/"),
       njs_str("/=/") },

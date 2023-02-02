@@ -1288,6 +1288,10 @@ njs_regexp_prototype_symbol_replace(njs_vm_t *vm, njs_value_t *args,
         if (njs_fast_path(njs_is_fast_array(r) && njs_array_len(r) != 0)) {
             value = njs_array_start(r)[0];
 
+            if (!njs_is_valid(&value)) {
+                njs_set_undefined(&value);
+            }
+
         } else {
             ret = njs_value_property_i64(vm, r, 0, &value);
             if (njs_slow_path(ret == NJS_ERROR)) {
