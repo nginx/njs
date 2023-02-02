@@ -990,14 +990,6 @@ njs_xml_ext_canonicalization(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    njs_chb_init(&chain, njs_vm_memory_pool(vm));
-
-    buf = xmlOutputBufferCreateIO(njs_xml_buf_write_cb, NULL, &chain, NULL);
-    if (njs_slow_path(buf == NULL)) {
-        njs_vm_error(vm, "xmlOutputBufferCreateIO() failed");
-        return NJS_ERROR;
-    }
-
     comments = njs_value_bool(njs_arg(args, nargs, 3));
 
     excluding = njs_arg(args, nargs, 2);
@@ -1006,19 +998,19 @@ njs_xml_ext_canonicalization(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         node = njs_vm_external(vm, njs_xml_node_proto_id, excluding);
         if (njs_slow_path(node == NULL)) {
             njs_vm_error(vm, "\"excluding\" argument is not a XMLNode object");
-            goto error;
+            return NJS_ERROR;
         }
 
         nset = njs_xml_nset_create(vm, current->doc, current,
                                    XML_NSET_TREE_NO_COMMENTS);
         if (njs_slow_path(nset == NULL)) {
-            goto error;
+            return NJS_ERROR;
         }
 
         children = njs_xml_nset_create(vm, node->doc, node,
                                        XML_NSET_TREE_INVERT);
         if (njs_slow_path(children == NULL)) {
-            goto error;
+            return NJS_ERROR;
         }
 
         nset = njs_xml_nset_add(nset, children);
@@ -1028,7 +1020,7 @@ njs_xml_ext_canonicalization(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                                    comments ? XML_NSET_TREE
                                             : XML_NSET_TREE_NO_COMMENTS);
         if (njs_slow_path(nset == NULL)) {
-            goto error;
+            return NJS_ERROR;
         }
     }
 
@@ -1038,46 +1030,53 @@ njs_xml_ext_canonicalization(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     if (!njs_value_is_null_or_undefined(prefixes)) {
         if (!njs_value_is_string(prefixes)) {
             njs_vm_error(vm, "\"prefixes\" argument is not a string");
-            goto error;
+            return NJS_ERROR;
         }
 
         ret = njs_vm_value_string(vm, &string, prefixes);
         if (njs_slow_path(ret != NJS_OK)) {
-            goto error;
+            return NJS_ERROR;
         }
 
         prefix_list = njs_xml_parse_ns_list(vm, &string);
         if (njs_slow_path(prefix_list == NULL)) {
-            goto error;
+            return NJS_ERROR;
         }
+    }
+
+    njs_chb_init(&chain, njs_vm_memory_pool(vm));
+
+    buf = xmlOutputBufferCreateIO(njs_xml_buf_write_cb, NULL, &chain, NULL);
+    if (njs_slow_path(buf == NULL)) {
+        njs_vm_error(vm, "xmlOutputBufferCreateIO() failed");
+        return NJS_ERROR;
     }
 
     ret = xmlC14NExecute(current->doc, njs_xml_c14n_visibility_cb, nset,
                          exclusive ? XML_C14N_EXCLUSIVE_1_0 : XML_C14N_1_0,
                          prefix_list, comments, buf);
 
-    (void) xmlOutputBufferClose(buf);
-
     if (njs_slow_path(ret < 0)) {
         njs_vm_error(vm, "xmlC14NExecute() failed");
+        ret = NJS_ERROR;
         goto error;
     }
 
     size = njs_chb_size(&chain);
     if (njs_slow_path(size < 0)) {
         njs_vm_memory_error(vm);
+        ret = NJS_ERROR;
         goto error;
     }
 
     ret = njs_chb_join(&chain, &data);
     if (njs_slow_path(ret != NJS_OK)) {
+        ret = NJS_ERROR;
         goto error;
     }
 
-    njs_chb_destroy(&chain);
-
-    return njs_vm_value_buffer_set(vm, njs_vm_retval(vm), data.start,
-                                   data.length);
+    ret = njs_vm_value_buffer_set(vm, njs_vm_retval(vm), data.start,
+                                  data.length);
 
 error:
 
@@ -1085,7 +1084,7 @@ error:
 
     njs_chb_destroy(&chain);
 
-    return NJS_ERROR;
+    return ret;
 }
 
 
