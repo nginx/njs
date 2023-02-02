@@ -1,6 +1,7 @@
 import fs from 'fs';
 import qs from 'querystring';
 import cr from 'crypto';
+import xml from 'xml';
 
 async function http_module(r: NginxHTTPRequest) {
     var bs: NjsByteString;
@@ -145,6 +146,25 @@ function qs_module(str: NjsByteString) {
 
     o = qs.parse(str);
     s = qs.stringify(o);
+}
+
+function xml_module(str: NjsByteString) {
+    let doc;
+    let node;
+    let children, selectedChildren;
+
+    doc = xml.parse(str);
+    node = doc.$root;
+
+    node.$ns;
+    children = node.$tags;
+    selectedChildren = node.$tags$xxx;
+
+    node?.xxx?.yyy?.$attr$zzz;
+
+    let buf:Buffer = xml.exclusiveC14n(node);
+    buf = xml.exclusiveC14n(doc, node.xxx, false);
+    buf = xml.exclusiveC14n(node, null, true, "aa bb");
 }
 
 function crypto_module(str: NjsByteString) {

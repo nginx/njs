@@ -26,6 +26,6 @@
   },
   "homepage": "https://nginx.org/en/docs/njs/",
   "devDependencies": {
-    "typescript": "^4.0.3"
+    "typescript": "^4.9.5"
   }
 }
