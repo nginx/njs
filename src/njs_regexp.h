@@ -21,6 +21,8 @@ njs_int_t njs_regexp_exec(njs_vm_t *vm, njs_value_t *r, njs_value_t *s,
     njs_value_t *retval);
 njs_int_t njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused);
+njs_int_t njs_regexp_prototype_symbol_replace(njs_vm_t *vm,
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused);
 
 njs_int_t njs_regexp_to_string(njs_vm_t *vm, njs_value_t *retval,
     const njs_value_t *regexp);

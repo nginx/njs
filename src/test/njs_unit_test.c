@@ -8750,196 +8750,395 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'abc'.replace()"),
       njs_str("abc") },
 
+    { njs_str("'abc'.replaceAll()"),
+      njs_str("abc") },
+
     { njs_str("'ABC'.replace('B')"),
       njs_str("AundefinedC") },
+
+    { njs_str("'ABCB'.replaceAll('B')"),
+      njs_str("AundefinedCundefined") },
 
     { njs_str("'ABC'.replace('B', undefined)"),
       njs_str("AundefinedC") },
 
+    { njs_str("'ABBC'.replaceAll('B', undefined)"),
+      njs_str("AundefinedundefinedC") },
+
     { njs_str("'a'.repeat(16).replace('a'.repeat(17)) === 'a'.repeat(16)"),
+      njs_str("true") },
+
+    { njs_str("'a'.repeat(16).replaceAll('a'.repeat(17)) === 'a'.repeat(16)"),
       njs_str("true") },
 
     { njs_str("'α'.repeat(16).replace('α'.repeat(17)) === 'α'.repeat(16)"),
       njs_str("true") },
 
+    { njs_str("'α'.repeat(16).replaceAll('α'.repeat(17)) === 'α'.repeat(16)"),
+      njs_str("true") },
+
     { njs_str("'ABC'.replace('B', null)"),
       njs_str("AnullC") },
+
+    { njs_str("'BABCB'.replaceAll('B', null)"),
+      njs_str("nullAnullCnull") },
 
     { njs_str("'abc'.replace('c', 1)"),
       njs_str("ab1") },
 
+    { njs_str("'cacbc'.replaceAll('c', 1)"),
+      njs_str("1a1b1") },
+
     { njs_str("'abc'.replace('a', 'X')"),
       njs_str("Xbc") },
 
+    { njs_str("'cabac'.replaceAll('a', 'X')"),
+      njs_str("cXbXc") },
+
     { njs_str("'abc'.replace('b', 'X')"),
+      njs_str("aXc") },
+
+    { njs_str("'abc'.replaceAll('b', 'X')"),
       njs_str("aXc") },
 
     { njs_str("('a'.repeat(33) + 'bb').replace('bb', 'CC').slice(31)"),
       njs_str("aaCC") },
 
+    { njs_str("('a'.repeat(33) + 'bb').replaceAll('b', 'C').slice(31)"),
+      njs_str("aaCC") },
+
     { njs_str("var r = 'abc'.replace('c', 'X'); [r, r.length]"),
       njs_str("abX,3") },
+
+    { njs_str("var r = 'acbc'.replaceAll('c', 'X'); [r, r.length]"),
+      njs_str("aXbX,4") },
 
     { njs_str("var r = 'αβγ'.replace('α', 'X'); [r, r.length]"),
       njs_str("Xβγ,3") },
 
+    { njs_str("var r = 'αβαγα'.replaceAll('α', 'X'); [r, r.length]"),
+      njs_str("XβXγX,5") },
+
     { njs_str("var r = 'αβγ'.replace('β', 'X'); [r, r.length]"),
+      njs_str("αXγ,3") },
+
+    { njs_str("var r = 'αβγ'.replaceAll('β', 'X'); [r, r.length]"),
       njs_str("αXγ,3") },
 
     { njs_str("var r = 'αβγ'.replace('γ', 'X'); [r, r.length]"),
       njs_str("αβX,3") },
 
+    { njs_str("var r = 'αβγγ'.replaceAll('γ', 'X'); [r, r.length]"),
+      njs_str("αβXX,4") },
+
     { njs_str("var r = 'αβγ'.replace('', 'X'); [r, r.length]"),
       njs_str("Xαβγ,4") },
+
+    { njs_str("var r = 'αβγ'.replaceAll('', 'X'); [r, r.length]"),
+      njs_str("XαXβXγX,7") },
 
     { njs_str("var s = 'αz'.toUTF8();"
               "var r = s.replace('z', 'β');"
               "r.length"),
       njs_str("4") },
 
+    { njs_str("var s = 'αzz'.toUTF8();"
+              "var r = s.replaceAll('z', 'β');"
+              "r.length"),
+      njs_str("3") },
+
     { njs_str("'abc'.replace('b', (m, o, s) => `|${s}|${o}|${m}|`)"),
       njs_str("a|abc|1|b|c") },
+
+    { njs_str("'abcb'.replaceAll('b', (m, o, s) => `|${s}|${o}|${m}|`)"),
+      njs_str("a|abcb|1|b|c|abcb|3|b|") },
 
     { njs_str("'abcdbe'.replace('b', '|$`X$\\'|')"),
       njs_str("a|aXcdbe|cdbe") },
 
+    { njs_str("'abcdbe'.replaceAll('b', '|$`X$\\'|')"),
+      njs_str("a|aXcdbe|cd|abcdXe|e") },
+
+
     { njs_str("'ABC'.replace('B', '$<g>')"),
       njs_str("A$<g>C") },
+
+    { njs_str("'ABCB'.replaceAll('B', '$<g>')"),
+      njs_str("A$<g>C$<g>") },
 
     { njs_str("'ABC'.replace('B', '$23')"),
       njs_str("A$23C") },
 
+    { njs_str("'ABBC'.replaceAll('B', '$23')"),
+      njs_str("A$23$23C") },
+
     { njs_str("'undefined'.replace(void 0, 'x')"),
       njs_str("x") },
+
+    { njs_str("'undefinedundefined'.replaceAll(void 0, 'x')"),
+      njs_str("xx") },
 
     { njs_str("'12345'.replace(3, () => 0)"),
       njs_str("12045") },
 
+    { njs_str("'123435'.replaceAll(3, () => 0)"),
+      njs_str("120405") },
+
     { njs_str("var r = new String('undefined').replace(x, Function('return arguments[1]+42;')); var x; r"),
       njs_str("42") },
 
+    { njs_str("var r = new String('undefined undefined').replaceAll(x, Function('return arguments[1]+42;')); var x; r"),
+      njs_str("42 52") },
+
     { njs_str("'123'.replace(3, function() { return {toString: ()=>({})}; })"),
+      njs_str("TypeError: Cannot convert object to primitive value") },
+
+    { njs_str("'123'.replaceAll(3, function() { return {toString: ()=>({})}; })"),
       njs_str("TypeError: Cannot convert object to primitive value") },
 
     { njs_str("'12345'.replace(3, () => ({toString: () => 'aaaa'}))"),
       njs_str("12aaaa45") },
 
+    { njs_str("'123435'.replaceAll(3, () => ({toString: () => 'aaaa'}))"),
+      njs_str("12aaaa4aaaa5") },
+
     { njs_str("'ABC'.replace('B', () => {throw 'OOps'})"),
+      njs_str("OOps") },
+
+    { njs_str("'ABCB'.replaceAll('B', () => {throw 'OOps'})"),
       njs_str("OOps") },
 
     { njs_str("'abc'.replace(/a/, 'X')"),
       njs_str("Xbc") },
 
+    { njs_str("'abc'.replaceAll(/a/, 'X')"),
+      njs_str("TypeError: String.prototype.replaceAll called with a non-global RegExp argument") },
+
+    { njs_str("'abac'.replaceAll(/a/g, 'X')"),
+      njs_str("XbXc") },
+
     { njs_str("'abccd'.replace(/c/, 'X')"),
       njs_str("abXcd") },
 
+    { njs_str("'abccd'.replaceAll(/c/g, 'X')"),
+      njs_str("abXXd") },
+
     { njs_str("'abc'.replace(/c/, 'X')"),
+      njs_str("abX") },
+
+    { njs_str("'abc'.replaceAll(/c/g, 'X')"),
       njs_str("abX") },
 
     { njs_str("'abccd'.replace(/c+/, 'X')"),
       njs_str("abXd") },
 
+    { njs_str("'acccbccd'.replaceAll(/c+/g, 'X')"),
+      njs_str("aXbXd") },
+
     { njs_str("'abc'.replace(/f/, 'X')"),
+      njs_str("abc") },
+
+    { njs_str("'abc'.replaceAll(/f/g, 'X')"),
       njs_str("abc") },
 
     { njs_str("'AB=C==='.replace(/=*$/, '')"),
       njs_str("AB=C") },
 
+    { njs_str("'AB=C==='.replaceAll(/=*$/g, '')"),
+      njs_str("AB=C") },
+
     { njs_str("('a'.repeat(33) + 'bb').replace(/bb/, 'CC').slice(31)"),
+      njs_str("aaCC") },
+
+    { njs_str("('a'.repeat(33) + 'bb').replaceAll(/b/g, 'C').slice(31)"),
       njs_str("aaCC") },
 
     { njs_str("'abccd'.replace(/c/g, 'X')"),
       njs_str("abXXd") },
 
+    { njs_str("'abccd'.replaceAll(/c/g, 'X')"),
+      njs_str("abXXd") },
+
     { njs_str("('a'.repeat(33) + 'bb').replace(/bb/g, 'CC').slice(31)"),
+      njs_str("aaCC") },
+
+    { njs_str("('a'.repeat(33) + 'bb').replaceAll(/bb/g, 'CC').slice(31)"),
       njs_str("aaCC") },
 
     { njs_str("'abccd'.replace(/[ac]/g, 'X')"),
       njs_str("XbXXd") },
 
+    { njs_str("'abccd'.replaceAll(/[ac]/g, 'X')"),
+      njs_str("XbXXd") },
+
     { njs_str("'ab'.replace(/q*/g, 'X')"),
+      njs_str("XaXbX") },
+
+    { njs_str("'ab'.replaceAll(/q*/g, 'X')"),
       njs_str("XaXbX") },
 
     { njs_str("'αβ'.replace(/q*/g, 'X')"),
       njs_str("XαXβX") },
 
+    { njs_str("'αβ'.replaceAll(/q*/g, 'X')"),
+      njs_str("XαXβX") },
+
     { njs_str("'αβ'.replace(/(q)*/g, 'X')"),
+      njs_str("XαXβX") },
+
+    { njs_str("'αβ'.replaceAll(/(q)*/g, 'X')"),
       njs_str("XαXβX") },
 
     { njs_str("'αβ'.replace(/q*/g, 'γ')"),
       njs_str("γαγβγ") },
 
+    { njs_str("'αβ'.replaceAll(/q*/g, 'γ')"),
+      njs_str("γαγβγ") },
+
     { njs_str("':α:β:γ:'.replace(/:/g, '')"),
+      njs_str("αβγ") },
+
+    { njs_str("':α:β:γ:'.replaceAll(/:/g, '')"),
       njs_str("αβγ") },
 
     { njs_str("':α:β:γ:'.replace(/[αβγ]/g, '')"),
       njs_str("::::") },
 
+    { njs_str("':α:β:γ:'.replaceAll(/[αβγ]/g, '')"),
+      njs_str("::::") },
+
     { njs_str("'aabbccaa'.replace(/a*/g, '')"),
+      njs_str("bbcc") },
+
+    { njs_str("'aabbccaa'.replaceAll(/a*/g, '')"),
       njs_str("bbcc") },
 
     { njs_str("'aabbccaab'.replace(/z*/g, '')"),
       njs_str("aabbccaab") },
 
+    { njs_str("'aabbccaab'.replaceAll(/z*/g, '')"),
+      njs_str("aabbccaab") },
+
     { njs_str("''.replace(/a*/g, '')"),
+      njs_str("") },
+
+    { njs_str("''.replaceAll(/a*/g, '')"),
       njs_str("") },
 
     { njs_str("'abcde'.replace(/d/, (m, o, s) => `|${s}|${o}|${m}|`)"),
       njs_str("abc|abcde|3|d|e") },
 
+    { njs_str("'abcdde'.replaceAll(/d/g, (m, o, s) => `|${s}|${o}|${m}|`)"),
+      njs_str("abc|abcdde|3|d||abcdde|4|d|e") },
+
     { njs_str("'abcde'.replace(/(d)/, (m, p, o, s) => `|${s}|${o}|${m}|${p}|`)"),
       njs_str("abc|abcde|3|d|d|e") },
+
+    { njs_str("'abcded'.replaceAll(/(d)/g, (m, p, o, s) => `|${s}|${o}|${m}|${p}|`)"),
+      njs_str("abc|abcded|3|d|d|e|abcded|5|d|d|") },
 
     { njs_str("'abc'.replace(/b/, () => 1)"),
       njs_str("a1c") },
 
+    { njs_str("'abcb'.replaceAll(/b/g, () => 1)"),
+      njs_str("a1c1") },
+
     { njs_str("var n = 0; 'abbbc'.replace(/b/g, () => ++n)"),
       njs_str("a123c") },
 
+    { njs_str("var n = 0; 'abbbc'.replaceAll(/b/g, () => ++n)"),
+      njs_str("a123c") },
+
     { njs_str("'abc'.replace(/x/, (m, o, s) => `|${s}|${o}|${m}|`)"),
+      njs_str("abc") },
+
+    { njs_str("'abc'.replaceAll(/x/g, (m, o, s) => `|${s}|${o}|${m}|`)"),
       njs_str("abc") },
 
     { njs_str("'abc12345#$*%'.replace(/([^\\d]*)(\\d*)([^\\w]*)/,"
               "                       (_, p1, p2, p3) => [p1, p2, p3].join('-'))"),
       njs_str("abc-12345-#$*%") },
 
+    { njs_str("'abc12345#$*%'.replaceAll(/([^\\d]*)(\\d*)([^\\w]*)/g,"
+              "                       (_, p1, p2, p3) => [p1, p2, p3].join('-'))"),
+      njs_str("abc-12345-#$*%--") },
+
     { njs_str("'abc'.replace(/(?<named>b)/, (m, p, o, s, gr) => `|${gr.named}|`)"),
       njs_str("a|b|c") },
 
+    { njs_str("'abcb'.replaceAll(/(?<named>b)/g, (m, p, o, s, gr) => `|${gr.named}|`)"),
+      njs_str("a|b|c|b|") },
+
     { njs_str("'ABC'.replace(/[A-Z]/g, m => '-' + m.toLowerCase())"),
+      njs_str("-a-b-c") },
+
+    { njs_str("'ABC'.replaceAll(/[A-Z]/g, m => '-' + m.toLowerCase())"),
       njs_str("-a-b-c") },
 
     { njs_str("'abc'.replace(/(b)c/g, '|$01|')"),
       njs_str("a|b|") },
 
+    { njs_str("'abc'.replaceAll(/(b)c/g, '|$01|')"),
+      njs_str("a|b|") },
+
     { njs_str("'abc'.replace(/(b)c/g, '@$0|$01|$00@')"),
+      njs_str("a@$0|b|$00@") },
+
+    { njs_str("'abc'.replaceAll(/(b)c/g, '@$0|$01|$00@')"),
       njs_str("a@$0|b|$00@") },
 
     { njs_str("'abcdeFGHIJ'.replace(/(a)(b)(c)(d)(e)(F)(G)(H)(I)(J)/, '$9|$10|$11|$01')"),
       njs_str("I|J|a1|a") },
 
+    { njs_str("'abcdeFGHIJ abcdeFGHIJ'.replaceAll(/(a)(b)(c)(d)(e)(F)(G)(H)(I)(J)/g, '$9|$10|$11|$01')"),
+      njs_str("I|J|a1|a I|J|a1|a") },
+
     { njs_str("'abcdbe'.replace(/(b)/g, '$2$23')"),
+      njs_str("a$2$23cd$2$23e") },
+
+    { njs_str("'abcdbe'.replaceAll(/(b)/g, '$2$23')"),
       njs_str("a$2$23cd$2$23e") },
 
     { njs_str("'abcdbe'.replace(/(b)/g, '$2$23X$$Y')"),
       njs_str("a$2$23X$Ycd$2$23X$Ye") },
 
+    { njs_str("'abcdbe'.replaceAll(/(b)/g, '$2$23X$$Y')"),
+      njs_str("a$2$23X$Ycd$2$23X$Ye") },
+
     { njs_str("'abcdbe'.replace(/b/, '|$`X$\\'|')"),
       njs_str("a|aXcdbe|cdbe") },
 
+    { njs_str("'abcdbe'.replaceAll(/b/g, '|$`X$\\'|')"),
+      njs_str("a|aXcdbe|cd|abcdXe|e") },
+
     { njs_str("'abcdbefbgh'.replace(/b/g, '|$`X$\\'|')"),
+      njs_str("a|aXcdbefbgh|cd|abcdXefbgh|ef|abcdbefXgh|gh") },
+
+    { njs_str("'abcdbefbgh'.replaceAll(/b/g, '|$`X$\\'|')"),
       njs_str("a|aXcdbefbgh|cd|abcdXefbgh|ef|abcdbefXgh|gh") },
 
     { njs_str("'abc12345#$*%'.replace(/([^\\d]*)(\\d*)([^\\w]*)/, '$1-$2-$3')"),
       njs_str("abc-12345-#$*%") },
 
+    { njs_str("'abc12345#$*%'.replaceAll(/([^\\d]*)(\\d*)([^\\w]*)/g, '$1-$2-$3')"),
+      njs_str("abc-12345-#$*%--") },
+
     { njs_str("'$1,$2'.replace(/(\\$(\\d))/g, '$$1-$1$2')"),
+      njs_str("$1-$11,$1-$22") },
+
+    { njs_str("'$1,$2'.replaceAll(/(\\$(\\d))/g, '$$1-$1$2')"),
       njs_str("$1-$11,$1-$22") },
 
     { njs_str("'ABC'.replace(/(h*)(z*)(g*)/g, '$1@$2α$3')"),
       njs_str("@αA@αB@αC@α") },
 
+    { njs_str("'ABC'.replaceAll(/(h*)(z*)(g*)/g, '$1@$2α$3')"),
+      njs_str("@αA@αB@αC@α") },
+
     { njs_str("'abc'.replace(/(h*)(z*)/g, '$1@$2#$3:')"),
+      njs_str("@#$3:a@#$3:b@#$3:c@#$3:") },
+
+    { njs_str("'abc'.replaceAll(/(h*)(z*)/g, '$1@$2#$3:')"),
       njs_str("@#$3:a@#$3:b@#$3:c@#$3:") },
 
     { njs_str("/b(c)(z)?(.)/[Symbol.replace]('abcde', '[$1$2$3]')"),
@@ -8963,58 +9162,115 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'α'.replace(/(h*)/g, '$1βγ')"),
       njs_str("βγαβγ") },
 
+    { njs_str("'α'.replaceAll(/(h*)/g, '$1βγ')"),
+      njs_str("βγαβγ") },
+
     { njs_str("'αg'.replace(/(h*)/g, '$1βγ')"),
+      njs_str("βγαβγgβγ") },
+
+    { njs_str("'αg'.replaceAll(/(h*)/g, '$1βγ')"),
       njs_str("βγαβγgβγ") },
 
     { njs_str("'αg'.replace(/(α*)/g, '$1βγ')"),
       njs_str("αβγβγgβγ") },
 
+    { njs_str("'αg'.replaceAll(/(α*)/g, '$1βγ')"),
+      njs_str("αβγβγgβγ") },
+
     { njs_str("'αg'.replace(/(h*)/g, 'fg$1βγ')"),
+      njs_str("fgβγαfgβγgfgβγ") },
+
+    { njs_str("'αg'.replaceAll(/(h*)/g, 'fg$1βγ')"),
       njs_str("fgβγαfgβγgfgβγ") },
 
     { njs_str("'αgβfγ'.replace(/(gβ)/g, 'n$1i')"),
       njs_str("αngβifγ") },
 
+    { njs_str("'αgβfγ'.replaceAll(/(gβ)/g, 'n$1i')"),
+      njs_str("αngβifγ") },
+
     { njs_str("'abc'.replace(/b/g, '|$&|')"),
+      njs_str("a|b|c") },
+
+    { njs_str("'abc'.replaceAll(/b/g, '|$&|')"),
       njs_str("a|b|c") },
 
     { njs_str("'ABC'.replace(/((A)B)/g, '($1|$&|$2)')"),
       njs_str("(AB|AB|A)C") },
 
+    { njs_str("'ABC'.replaceAll(/((A)B)/g, '($1|$&|$2)')"),
+      njs_str("(AB|AB|A)C") },
+
     { njs_str("'abc'.replace(/b/g, '$0')"),
       njs_str("a$0c") },
 
+    { njs_str("'abc'.replaceAll(/b/g, '$0')"),
+      njs_str("a$0c") },
+
     { njs_str("'abc'.replace(/^/g, '|$&|')"),
+      njs_str("||abc") },
+
+    { njs_str("'abc'.replaceAll(/^/g, '|$&|')"),
       njs_str("||abc") },
 
     { njs_str("var uri ='/u/v1/Aa/bB?type=m3u8&mt=42';"
               "uri.replace(/^\\/u\\/v1\\/[^/]*\\/([^\?]*)\\?.*(mt=[^&]*).*$/, '$1|$2')"),
       njs_str("bB|mt=42") },
 
+    { njs_str("var uri ='/u/v1/Aa/bB?type=m3u8&mt=42 /u/v1/Aa/bB?type=m3u8&mt=43';"
+              "uri.replaceAll(/^\\/u\\/v1\\/[^/]*\\/([^\?]*)\\?.*(mt=[^&]*).*$/g, '$1|$2')"),
+      njs_str("bB|mt=43") },
+
     { njs_str("'ABC'.replace(/B/, '$<g>')"),
       njs_str("A$<g>C") },
+
+    { njs_str("'ABBC'.replaceAll(/B/g, '$<g>')"),
+      njs_str("A$<g>$<g>C") },
 
     { njs_str("'ABC'.replace(/(?<b>B)/, '|$<b>|@$<a>@')"),
       njs_str("A|B|@@C") },
 
+    { njs_str("'ABBC'.replaceAll(/(?<b>B)/g, '|$<b>|@$<a>@')"),
+      njs_str("A|B|@@|B|@@C") },
+
     { njs_str("'ABC'.replace(/(?<b>B)/, '|$<BB|')"),
       njs_str("A|$<BB|C") },
+
+    { njs_str("'ABCB'.replaceAll(/(?<b>B)/g, '|$<BB|')"),
+      njs_str("A|$<BB|C|$<BB|") },
 
     { njs_str("'ABC'.replace(/(?<b>B)/, '|$<BB$$|>@')"),
       njs_str("A|@C") },
 
+    { njs_str("'ABCB'.replaceAll(/(?<b>B)/g, '|$<BB$$|>@')"),
+      njs_str("A|@C|@") },
+
     { njs_str("('β' + 'α'.repeat(33)+'β').replace(/(α+)(β+)/, (m, p1) => p1[32])"),
+      njs_str("βα") },
+
+    { njs_str("('β' + 'α'.repeat(33)+'β').replaceAll(/(α+)(β+)/g, (m, p1) => p1[32])"),
       njs_str("βα") },
 
     { njs_str("'abc'.replace(/(z*)/g, () => '@')"),
       njs_str("@a@b@c@") },
 
+    { njs_str("'abc'.replaceAll(/(z*)/g, () => '@')"),
+      njs_str("@a@b@c@") },
+
     { njs_str("'abc'.replace(/(a*)/g, () => '@')"),
+      njs_str("@@b@c@") },
+
+    { njs_str("'abc'.replaceAll(/(a*)/g, () => '@')"),
       njs_str("@@b@c@") },
 
     { njs_str("var O = RegExp.prototype[Symbol.replace];"
               "RegExp.prototype[Symbol.replace] = function (s, rep) { return O.call(this, s, `|${rep}|`); };"
               "'ABC'.replace(/B/, '+')"),
+      njs_str("A|+|C") },
+
+    { njs_str("var O = RegExp.prototype[Symbol.replace];"
+              "RegExp.prototype[Symbol.replace] = function (s, rep) { return O.call(this, s, `|${rep}|`); };"
+              "'ABC'.replaceAll(/B/g, '+')"),
       njs_str("A|+|C") },
 
     { njs_str("var O = RegExp.prototype.exec;"
@@ -9027,6 +9283,14 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var O = RegExp.prototype.exec;"
               "function mangled(s) { var r = O.call(this, s);"
+              "                      Object.defineProperty(r, '0', {enumerable:false}); "
+              "                      return r; };"
+              "RegExp.prototype.exec = mangled;"
+              "'ABC'.replaceAll(/(B)/g, (m, p1, off, s) => `@${m}|${p1}|${off}|${s}@`)"),
+      njs_str("TypeError: Object.defineProperty is called on non-object") },
+
+    { njs_str("var O = RegExp.prototype.exec;"
+              "function mangled(s) { var r = O.call(this, s);"
               "                      Object.defineProperty(r, 'groups', {value: {g:1}}); "
               "                      return r; };"
               "RegExp.prototype.exec = mangled;"
@@ -9035,11 +9299,27 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var O = RegExp.prototype.exec;"
               "function mangled(s) { var r = O.call(this, s);"
+              "                      Object.defineProperty(r, 'groups', {value: {g:1}}); "
+              "                      return r; };"
+              "RegExp.prototype.exec = mangled;"
+              "'ABC'.replaceAll(/(B)/g, '$<g>')"),
+      njs_str("TypeError: Object.defineProperty is called on non-object") },
+
+    { njs_str("var O = RegExp.prototype.exec;"
+              "function mangled(s) { var r = O.call(this, s);"
               "                      Object.defineProperty(r, 'groups', {value: {get g() {throw 'OOps'}}}); "
               "                      return r; };"
               "RegExp.prototype.exec = mangled;"
               "'ABC'.replace(/(B)/, '$<g>')"),
       njs_str("OOps") },
+
+    { njs_str("var O = RegExp.prototype.exec;"
+              "function mangled(s) { var r = O.call(this, s);"
+              "                      Object.defineProperty(r, 'groups', {value: {get g() {throw 'OOps'}}}); "
+              "                      return r; };"
+              "RegExp.prototype.exec = mangled;"
+              "'ABC'.replaceAll(/(B)/g, '$<g>')"),
+      njs_str("TypeError: Object.defineProperty is called on non-object") },
 
     { njs_str("var name = /a/g[Symbol.replace].name; [name, typeof name]"),
       njs_str("[Symbol.replace],string") },
@@ -9077,6 +9357,17 @@ static njs_unit_test_t  njs_test[] =
               "'any_string'.replace(re)"),
       njs_str("undefinedg") },
 
+    { njs_str("var cnt = 0;"
+              "var a = [];"
+              "a[2] = '';"
+              "var re = /any_regexp/g;"
+              "re.exec = function () {"
+              "    if (cnt++ > 1) return null;"
+              "    return a;"
+              "};"
+              "'any_string'.replaceAll(re)"),
+      njs_str("undefinedg") },
+
     { njs_str("var a = [];"
               "a[2] = {toString() {a[2**20] = 1; return 'X';}}; "
               "a[4] = 'Y';"
@@ -9100,6 +9391,18 @@ static njs_unit_test_t  njs_test[] =
               "'abc'.replace(re, '@$1|$2|$3|$4|$99|$100|@')"),
       njs_str("@|X||Y|Z|0|@") },
 
+    { njs_str("var cnt = 0;"
+              "var a = [];"
+              "a[2] = {toString() {a[2**20] = 1; return 'X';}}; "
+              "a[4] = 'Y';"
+              "a[99] = 'Z';"
+              "a[100] = '*';"
+              "a[200] = '!';"
+              "var re = /b/g;"
+              "re.exec = () => {if (cnt++ > 1) return null; return a};"
+              "'abc'.replaceAll(re, '@$1|$2|$3|$4|$99|$100|@')"),
+      njs_str("@|X||Y|Z|0|@") },
+
     { njs_str("var a = [];"
               "Object.defineProperty(a, 32768, {});"
               "var re = /any_regexp/;"
@@ -9119,6 +9422,22 @@ static njs_unit_test_t  njs_test[] =
               "};"
               "'any_string'.replace(re)"),
       njs_str("undefinedg") },
+
+    { njs_str("var cnt = 0;"
+              "var a = [];"
+              "Object.defineProperty(a, 32768, {});"
+              "var re = /any_regexp/g;"
+              "re.exec = function () {"
+              "    if (cnt++ > 1) return null;"
+              "    return a;"
+              "};"
+              "'any_string'.replace(re)"),
+      njs_str("undefinedg") },
+
+    { njs_str("var r = /h/g;"
+              "Object.defineProperty(r,'flags',{value: ''});"
+              "''.replaceAll(r,'');"),
+      njs_str("TypeError: String.prototype.replaceAll called with a non-global RegExp argument") },
 
     { njs_str("/=/"),
       njs_str("/=/") },

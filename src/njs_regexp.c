@@ -1193,7 +1193,7 @@ njs_regexp_string_create(njs_vm_t *vm, njs_value_t *value, u_char *start,
 }
 
 
-static njs_int_t
+njs_int_t
 njs_regexp_prototype_symbol_replace(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
