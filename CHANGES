@@ -1,3 +1,32 @@
+Changes with njs 0.7.10                                        7 Feb 2023
+    nginx modules:
+
+    *) Feature: added Request, Response and Headers ctors in Fetch API.
+
+    *) Bugfix: fixed nginx logger callback for calls in master process.
+
+    Core:
+
+    *) Feature: added signal support in CLI.
+
+    *) Feature: added "xml" module for working with XML documents.
+
+    *) Feature: extended support for symmetric and asymmetric keys
+       in WebCrypto. Most notably JWK format for importKey() was added.
+
+    *) Feature: extended support for symmetric and asymmetric keys
+       in WebCrypto. Most notably JWK format for importKey() was added.
+       generateKey() and exportKey() were also implemented.
+
+    *) Feature: added String.prototype.replaceAll().
+
+    *) Bugfix: fixed for(expr1; conditional syntax error handling.
+
+    *) Bugfix: fixed Object.values() and Object.entries() with external
+       objects.
+
+    *) Bugfix: fixed RegExp.prototype[@@replace]().
+
 Changes with njs 0.7.9                                        17 Nov 2022
     nginx modules:
 
