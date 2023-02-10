@@ -10,13 +10,13 @@ interface NgxResponseHeaders {
      * with the specified name.
      * @param name A name of the header.
      */
-    getAll(name:NjsStringLike): NjsByteString;
+    getAll(name:NjsStringLike): Array<NjsByteString>;
     /**
      * Returns a boolean value indicating whether a header with
      * the specified name exists.
      * @param name A name of the header.
      */
-    has(name:NjsStringLike): NjsByteString;
+    has(name:NjsStringLike): boolean;
 }
 
 interface NgxResponse {

@@ -91,6 +91,9 @@ async function http_module(r: NginxHTTPRequest) {
             throw 'oops'
         };
 
+        let out: Array<string> = reply.headers.getAll("foo");
+        let has: boolean = reply.headers.has("foo");
+
         return reply.text()
     })
     .then(body => r.return(200, body))
