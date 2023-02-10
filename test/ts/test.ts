@@ -96,12 +96,21 @@ async function http_module(r: NginxHTTPRequest) {
         let out: Array<string> = reply.headers.getAll("foo");
         let has: boolean = reply.headers.has("foo");
 
+        reply.headers.append("foo", "xxx");
+        reply.headers.delete("xxx");
+        reply.headers.forEach((name, value) => { /* do something. */ });
+
         return reply.text()
     })
     .then(body => r.return(200, body))
     .catch(e => r.return(501, e.message))
 
+
     let response = await ngx.fetch('http://nginx.org/');
+    let response2 = new Response("xxx", {headers: {"Content-Type": "text/plain"}, status: 404});
+
+    let req = new Request("http://nginx.org", {method: "POST", headers: new Headers(["Foo", "bar"])});
+    let response3 = await ngx.fetch(req);
 
     // js_body_filter
     r.sendBuffer(Buffer.from("xxx"), {last:true});
