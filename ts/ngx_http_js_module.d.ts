@@ -339,6 +339,17 @@ interface NginxHTTPRequest {
      */
     readonly parent?: NginxHTTPRequest;
     /**
+     * An array of key-value pairs exactly as they were received from the client.
+     * @since 0.4.1
+     */
+    readonly rawHeadersIn: [NjsFixedSizeArray<2, NjsStringLike>];
+    /**
+     * An array of key-value pairs of response headers.
+     * Header field names are not converted to lower case, duplicate field values are not merged.
+     * @since 0.4.1
+     */
+    readonly rawHeadersOut: [NjsFixedSizeArray<2, NjsStringLike>];
+    /**
      * Client address.
      */
     readonly remoteAddress: NjsByteString;

@@ -1,5 +1,11 @@
 type BufferEncoding = "utf8" | "hex" | "base64" | "base64url";
 
+type NjsFixedSizeArray<N extends number, T> = N extends 0 ? never[] : {
+    0: T;
+    length: N;
+} & ReadonlyArray<T>;
+
+
 interface StringConstructor {
     /**
      * Creates a byte string from an encoded string.

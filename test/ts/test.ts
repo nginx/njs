@@ -45,6 +45,8 @@ async function http_module(r: NginxHTTPRequest) {
     r.headersOut['Set-Cookie'] = ['aaa', 'bbb'];
     r.headersOut['Foo'] = ['aaa', 'bbb'];
 
+    let values: Array<string> = r.rawHeadersIn.filter(v=>v[0].toLowerCase() == 'foo').map(v=>v[1]);
+
     // r.log
 
     r.log(bs);
