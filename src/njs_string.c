@@ -4075,44 +4075,6 @@ njs_string_to_index(const njs_value_t *value)
 }
 
 
-/*
- * If string value is null-terminated the corresponding C string
- * is returned as is, otherwise the new copy is allocated with
- * the terminating zero byte.
- */
-const char *
-njs_string_to_c_string(njs_vm_t *vm, njs_value_t *value)
-{
-    u_char  *p, *data, *start;
-    size_t  size;
-
-    if (value->short_string.size != NJS_STRING_LONG) {
-        start = value->short_string.start;
-        size = value->short_string.size;
-
-        if (size < NJS_STRING_SHORT) {
-            start[size] = '\0';
-            return (const char *) start;
-        }
-
-    } else {
-        start = value->long_string.data->start;
-        size = value->long_string.size;
-    }
-
-    data = njs_mp_alloc(vm->mem_pool, size + 1);
-    if (njs_slow_path(data == NULL)) {
-        njs_memory_error(vm);
-        return NULL;
-    }
-
-    p = njs_cpymem(data, start, size);
-    *p++ = '\0';
-
-    return (const char *) data;
-}
-
-
 static const njs_object_prop_t  njs_string_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER("__proto__", njs_primitive_prototype_get_proto,

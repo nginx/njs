@@ -447,6 +447,13 @@ NJS_EXPORT njs_int_t njs_vm_value_to_string(njs_vm_t *vm, njs_str_t *dst,
  */
 NJS_EXPORT njs_int_t njs_vm_value_string(njs_vm_t *vm, njs_str_t *dst,
     njs_value_t *src);
+/*
+ * If string value is null-terminated the corresponding C string
+ * is returned as is, otherwise the new copy is allocated with
+ * the terminating zero byte.
+ */
+NJS_EXPORT const char *njs_vm_value_to_c_string(njs_vm_t *vm,
+	njs_value_t *value);
 NJS_EXPORT njs_int_t njs_vm_retval_string(njs_vm_t *vm, njs_str_t *dst);
 
 NJS_EXPORT njs_int_t njs_vm_value_dump(njs_vm_t *vm, njs_str_t *dst,

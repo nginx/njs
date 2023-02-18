@@ -248,7 +248,6 @@ const u_char *njs_string_offset(const u_char *start, const u_char *end,
 uint32_t njs_string_index(njs_string_prop_t *string, uint32_t offset);
 void njs_string_offset_map_init(const u_char *start, size_t size);
 double njs_string_to_index(const njs_value_t *value);
-const char *njs_string_to_c_string(njs_vm_t *vm, njs_value_t *value);
 njs_int_t njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t component);
 njs_int_t njs_string_decode_uri(njs_vm_t *vm, njs_value_t *args,
