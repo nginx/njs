@@ -72,8 +72,9 @@ declare module "xml" {
     export interface XMLNode {
         /**
          * node.$attr$xxx - the node's attribute value of "xxx".
+         * @since 0.7.11 the property is writable.
          */
-        readonly [key: `$attr$${string}`]: string | undefined;
+        [key: `$attr$${string}`]: string | undefined;
 
         /**
          * node.$attrs - an XMLAttr wrapper object for all the attributes
@@ -83,13 +84,15 @@ declare module "xml" {
 
         /**
          * node.$tag$xxx - the node's first child tag named "xxx".
+         * @since 0.7.11 the property is writable.
          */
-        readonly [key: `$tag$${string}`]: XMLNode | undefined;
+        [key: `$tag$${string}`]: XMLNode | undefined;
 
         /**
          * node.$tags$xxx - all children tags named "xxx" of the node.
+         * @since 0.7.11 the property is writable.
          */
-        readonly [key: `$tags$${string}`]: XMLNode[] | undefined;
+        [key: `$tags$${string}`]: XMLNode[] | undefined;
 
         /**
          * node.$name - the name of the node.
@@ -108,8 +111,9 @@ declare module "xml" {
 
         /**
          * node.$text - the content of the node.
+         * @since 0.7.11 the property is writable.
          */
-        readonly $text: string;
+        $text: string;
 
         /**
          * node.$tags - all the node's children tags.
@@ -118,8 +122,9 @@ declare module "xml" {
 
         /**
          * node.xxx is the same as node.$tag$xxx.
+         * @since 0.7.11 the property is writable.
          */
-        readonly [key: XMLTagName]: XMLNode | undefined;
+        [key: XMLTagName]: XMLNode | undefined;
     }
 
     export interface XMLAttr {
@@ -131,6 +136,15 @@ declare module "xml" {
 
     interface Xml {
         /**
+         * Canonicalizes root_node and its children according to
+         * https://www.w3.org/TR/xml-c14n/.
+         *
+         * @param root - XMLDoc or XMLNode.
+         * @return Buffer object containing canonicalized output.
+         */
+        c14n(root: XMLDoc | XMLNode): Buffer;
+
+        /**
          * Parses src buffer for an XML document and returns a wrapper object.
          *
          * @param src a string or a buffer with an XML document.
@@ -140,20 +154,32 @@ declare module "xml" {
 
         /**
          * Canonicalizes root_node and its children according to
-         * https://www.w3.org/TR/xml-exc-c14n/.
+         * https://www.w3.org/tr/xml-exc-c14n/.
          *
          * @param root - XMLDoc or XMLNode.
          * @param excluding_node - allows to omit from the output a part of the
          * document corresponding to the excluding_node and its children.
-         * @param withComments - a boolean (false by default). When withComments
+         * @param withComments - a boolean (false by default). when withComments
          * is true canonicalization corresponds to
          * http://www.w3.org/2001/10/xml-exc-c14n#WithComments.
          * @param prefix_list - an optional string with a space separated namespace
          * prefixes for namespaces that should also be included into the output.
-         * @return Buffer object containing canonicalized output.
+         * @return buffer object containing canonicalized output.
          */
         exclusiveC14n(root: XMLDoc | XMLNode, excluding_node?: XMLNode | null | undefined,
                       withComments?: boolean, prefix_list?: string): Buffer;
+
+        /**
+         * The alias to xml.x14n()
+         * @since 0.7.11
+         */
+        serialize(root: XMLDoc | XMLNode): Buffer;
+
+        /**
+         * The same as xml.x14n() but returns the retval as a string.
+         * @since 0.7.11
+         */
+        serializeToString(root: XMLDoc | XMLNode): string;
     }
 
     const xml: Xml;

@@ -21819,10 +21819,14 @@ static njs_unit_test_t  njs_webcrypto_test[] =
 };
 
 
+#define NJS_XML_DOC "const xml = require('xml');" \
+                    "let data = `<note><to b=\"bar\" a= \"foo\" >Tove</to><from>Jani</from></note>`;" \
+                    "let doc = xml.parse(data);"
+
+
 static njs_unit_test_t  njs_xml_test[] =
 {
-    { njs_str("const xml = require('xml');"
-              "let doc = xml.parse(`<note><to b=\"bar\" a= \"foo\" >Tove</to><from>Jani</from></note>`);"
+    { njs_str(NJS_XML_DOC
               "[doc.note.$name,"
               " doc.note.to.$text,"
               " doc.note.$parent,"
@@ -21871,20 +21875,26 @@ static njs_unit_test_t  njs_xml_test[] =
               "<n1:elem1 xmlns:n1=\"http://b\"><!-- comment -->foo</n1:elem1>,"
               "<n1:elem1 xmlns:n0=\"http://a\" xmlns:n1=\"http://b\">foo</n1:elem1>") },
 
-    { njs_str("const xml = require('xml');"
-              "let doc = xml.parse(`<note><to b=\"bar\" a= \"foo\" >Tove</to><from>Jani</from></note>`);"
+    { njs_str(NJS_XML_DOC
               "let dec = new TextDecoder();"
               "dec.decode(xml.exclusiveC14n(doc.note))"),
       njs_str("<note><to a=\"foo\" b=\"bar\">Tove</to><from>Jani</from></note>") },
 
-    { njs_str("const xml = require('xml');"
-              "let doc = xml.parse(`<note><to b=\"bar\" a= \"foo\" >Tove</to><from>Jani</from></note>`);"
+    { njs_str(NJS_XML_DOC
+              "let dec = new TextDecoder();"
+              "dec.decode(xml.serialize(doc.note))"),
+      njs_str("<note><to a=\"foo\" b=\"bar\">Tove</to><from>Jani</from></note>") },
+
+    { njs_str(NJS_XML_DOC
+              "xml.serializeToString(doc.note)"),
+      njs_str("<note><to a=\"foo\" b=\"bar\">Tove</to><from>Jani</from></note>") },
+
+    { njs_str(NJS_XML_DOC
               "let dec = new TextDecoder();"
               "dec.decode(xml.exclusiveC14n(doc.note, doc.note.to))"),
       njs_str("<note><from>Jani</from></note>") },
 
-    { njs_str("const xml = require('xml');"
-              "let doc = xml.parse(`<note><to b=\"bar\" a= \"foo\" >Tove</to><from>Jani</from></note>`);"
+    { njs_str(NJS_XML_DOC
               "njs.dump(doc)"),
       njs_str("XMLDoc {note:XMLNode {$name:'note',"
               "$tags:[XMLNode {$name:'to',"
@@ -21892,8 +21902,7 @@ static njs_unit_test_t  njs_xml_test[] =
               "$text:'Tove'},"
               "XMLNode {$name:'from',$text:'Jani'}]}}") },
 
-    { njs_str("const xml = require('xml');"
-              "let doc = xml.parse(`<note><to b=\"bar\" a= \"foo\" >Tove</to><from>Jani</from></note>`);"
+    { njs_str(NJS_XML_DOC
               "JSON.stringify(doc)"),
       njs_str("{\"note\":{\"$name\":\"note\",\"$tags\":"
               "[{\"$name\":\"to\",\"$attrs\":{\"b\":\"bar\",\"a\":\"foo\"},"
@@ -21902,6 +21911,180 @@ static njs_unit_test_t  njs_xml_test[] =
     { njs_str("var xml = require('xml');"
               "var doc = xml.parse(`<r></r>`); xml.exclusiveC14n(doc, 1)"),
       njs_str("Error: \"excluding\" argument is not a XMLNode object") },
+
+    { njs_str(NJS_XML_DOC
+              "doc.$root.$text"),
+      njs_str("ToveJani") },
+
+    { njs_str(NJS_XML_DOC
+              "doc.$root.$text = 'WAKA';"
+              "[doc.$root.$text, (new TextDecoder).decode(xml.c14n(doc))]"),
+      njs_str("WAKA,<note>WAKA</note>") },
+
+    { njs_str(NJS_XML_DOC
+              "doc.$root.setText('WAKA');"
+              "[doc.$root.$text, (new TextDecoder).decode(xml.c14n(doc))]"),
+      njs_str("WAKA,<note>WAKA</note>") },
+
+    { njs_str(NJS_XML_DOC
+              "doc.$root.$text = '<WA&KA>';"
+              "[doc.$root.$text, (new TextDecoder).decode(xml.c14n(doc))]"),
+      njs_str("<WA&KA>,<note>&lt;WA&amp;KA&gt;</note>") },
+
+    { njs_str(NJS_XML_DOC
+              "doc.$root.setText('<WA&KA>');"
+              "[doc.$root.$text, (new TextDecoder).decode(xml.c14n(doc))]"),
+      njs_str("<WA&KA>,<note>&lt;WA&amp;KA&gt;</note>") },
+
+    { njs_str(NJS_XML_DOC
+              "doc.$root.$text = '\"WAKA\"';"
+              "[doc.$root.$text, (new TextDecoder).decode(xml.c14n(doc))]"),
+      njs_str("\"WAKA\",<note>\"WAKA\"</note>") },
+
+    { njs_str(NJS_XML_DOC
+              "doc.$root.$text = '';"
+              "[doc.$root.$text, (new TextDecoder).decode(xml.c14n(doc))]"),
+      njs_str(",<note></note>") },
+
+    { njs_str(NJS_XML_DOC
+              "doc.$root.setText();"
+              "[doc.$root.$text, (new TextDecoder).decode(xml.c14n(doc))]"),
+      njs_str(",<note></note>") },
+
+    { njs_str(NJS_XML_DOC
+              "doc.$root.setText(null);"
+              "[doc.$root.$text, (new TextDecoder).decode(xml.c14n(doc))]"),
+      njs_str(",<note></note>") },
+
+    { njs_str(NJS_XML_DOC
+              "doc.$root.removeText();"
+              "[doc.$root.$text, (new TextDecoder).decode(xml.c14n(doc))]"),
+      njs_str(",<note></note>") },
+
+    { njs_str(NJS_XML_DOC
+              "let to = doc.note.to;"
+              "doc.$root.$text = '';"
+              "[to.$name, to.$text, to.$attr$b, to.$parent.$name]"),
+      njs_str("to,Tove,bar,note") },
+
+    { njs_str(NJS_XML_DOC
+              "doc.$root.$text = 'WAKA';"
+              "doc.$root.$attr$aaa = 'foo';"
+              "doc.$root.$attr$bbb = 'bar';"
+              "[doc.$root.$attr$aaa, (new TextDecoder).decode(xml.c14n(doc))]"),
+      njs_str("foo,<note aaa=\"foo\" bbb=\"bar\">WAKA</note>") },
+
+    { njs_str(NJS_XML_DOC
+              "doc.$root.$text = 'WAKA';"
+              "doc.$root.setAttribute('aaa', 'foo');"
+              "doc.$root.setAttribute('bbb', '<bar\"');"
+              "doc.$root.setAttribute('aaa', 'foo2');"
+              "[doc.$root.$attr$aaa, (new TextDecoder).decode(xml.c14n(doc))]"),
+      njs_str("foo2,<note aaa=\"foo2\" bbb=\"&lt;bar&quot;\">WAKA</note>") },
+
+    { njs_str(NJS_XML_DOC
+              "doc.note.to.setAttribute('a', null);"
+              "(new TextDecoder).decode(xml.c14n(doc.note.to))"),
+      njs_str("<to b=\"bar\">Tove</to>") },
+
+    { njs_str(NJS_XML_DOC
+              "doc.$root.setAttribute('<', 'xxx')"),
+      njs_str("Error: attribute name \"<\" is not valid") },
+
+    { njs_str(NJS_XML_DOC
+              "doc.$root.$text = 'WAKA';"
+              "doc.$root['$attr$' + 'x'.repeat(1024)] = 1;"),
+      njs_str("Error: njs_xml_str_to_c_string() very long string, length >= 511") },
+
+    { njs_str(NJS_XML_DOC
+              "delete doc.note.to.$attr$a;"
+              "(new TextDecoder).decode(xml.c14n(doc.note.to))"),
+      njs_str("<to b=\"bar\">Tove</to>") },
+
+    { njs_str(NJS_XML_DOC
+              "doc.note.to.removeAttribute('a');"
+              "(new TextDecoder).decode(xml.c14n(doc.note.to))"),
+      njs_str("<to b=\"bar\">Tove</to>") },
+
+    { njs_str(NJS_XML_DOC
+              "delete doc.note.to.removeAttribute('c');"
+              "(new TextDecoder).decode(xml.c14n(doc.note.to))"),
+      njs_str("<to a=\"foo\" b=\"bar\">Tove</to>") },
+
+    { njs_str(NJS_XML_DOC
+              "delete doc.note.to.removeAllAttributes();"
+              "(new TextDecoder).decode(xml.c14n(doc.note.to))"),
+      njs_str("<to>Tove</to>") },
+
+    { njs_str(NJS_XML_DOC
+              "delete doc.note.$tag$to;"
+              "(new TextDecoder).decode(xml.c14n(doc))"),
+      njs_str("<note><from>Jani</from></note>") },
+
+    { njs_str(NJS_XML_DOC
+              "delete doc.note.to;"
+              "(new TextDecoder).decode(xml.c14n(doc))"),
+      njs_str("<note><from>Jani</from></note>") },
+
+    { njs_str("var xml = require('xml');"
+              "var doc = xml.parse(`<r><a/><b/><a/></r>`);"
+              "delete doc.$root.a;"
+              "(new TextDecoder).decode(xml.c14n(doc))"),
+      njs_str("<r><b></b></r>") },
+
+    { njs_str("var xml = require('xml');"
+              "var doc = xml.parse(`<r><a/><b/><a/></r>`);"
+              "doc.$root.removeChildren('c');"
+              "(new TextDecoder).decode(xml.c14n(doc))"),
+      njs_str("<r><a></a><b></b><a></a></r>") },
+
+    { njs_str("var xml = require('xml');"
+              "var doc = xml.parse(`<r><a/><b/><a/></r>`);"
+              "doc.$root.removeChildren('a');"
+              "(new TextDecoder).decode(xml.c14n(doc))"),
+      njs_str("<r><b></b></r>") },
+
+    { njs_str("var xml = require('xml');"
+              "var doc = xml.parse(`<r><a/><b/><a/></r>`);"
+              "doc.$root.removeChildren();"
+              "(new TextDecoder).decode(xml.c14n(doc))"),
+      njs_str("<r></r>") },
+
+    { njs_str(NJS_XML_DOC
+              "doc.note.$tags = [];"
+              "(new TextDecoder).decode(xml.c14n(doc))"),
+      njs_str("<note></note>") },
+
+    { njs_str(NJS_XML_DOC
+              "var doc2 = xml.parse(`<n0:pdu xmlns:n0=\"http://a\"></n0:pdu>`);"
+              "doc.note.addChild(doc2);"
+              "(new TextDecoder).decode(xml.c14n(doc))"),
+      njs_str("<note xmlns:n0=\"http://a\"><to a=\"foo\" b=\"bar\">Tove</to><from>Jani</from><n0:pdu></n0:pdu></note>") },
+
+    { njs_str(NJS_XML_DOC
+              "var doc2 = xml.parse(`<n0:pdu xmlns:n0=\"http://a\"></n0:pdu>`);"
+              "doc.note.addChild(doc2);"
+              "doc.note.addChild(doc2);"
+              "(new TextDecoder).decode(xml.c14n(doc))"),
+      njs_str("<note xmlns:n0=\"http://a\"><to a=\"foo\" b=\"bar\">Tove</to><from>Jani</from>"
+              "<n0:pdu></n0:pdu><n0:pdu></n0:pdu></note>") },
+
+    { njs_str(NJS_XML_DOC
+              "delete doc.note.$tags$;"
+              "(new TextDecoder).decode(xml.c14n(doc))"),
+      njs_str("<note></note>") },
+
+    { njs_str(NJS_XML_DOC
+              "var doc2 = xml.parse(`<n0:pdu xmlns:n0=\"http://a\"></n0:pdu>`);"
+              "doc.note.$tags = [doc.note.to, doc2];"
+              "(new TextDecoder).decode(xml.c14n(doc))"),
+      njs_str("<note xmlns:n0=\"http://a\"><to a=\"foo\" b=\"bar\">Tove</to><n0:pdu></n0:pdu></note>") },
+
+    { njs_str(NJS_XML_DOC
+              "var doc2 = xml.parse(`<n0:pdu xmlns:n0=\"http://a\"></n0:pdu>`);"
+              "doc.note.$tags = [doc2, doc.note.to];"
+              "(new TextDecoder).decode(xml.c14n(doc))"),
+      njs_str("<note xmlns:n0=\"http://a\"><n0:pdu></n0:pdu><to a=\"foo\" b=\"bar\">Tove</to></note>") },
 };
 
 

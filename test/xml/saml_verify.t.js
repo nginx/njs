@@ -6,6 +6,14 @@ flags: [async]
 async function verify(params) {
     let file_data = fs.readFileSync(`test/xml/${params.saml}`);
     let key_data = fs.readFileSync(`test/webcrypto/${params.key.file}`);
+
+    if (params.sign) {
+        let sign_key_data = fs.readFileSync(`test/webcrypto/${params.key.sign_file}`);
+        let signed = await signSAML(xml.parse(file_data), sign_key_data);
+        file_data = xml.c14n(signed);
+        //console.log((new TextDecoder()).decode(file_data));
+    }
+
     let saml = xml.parse(file_data);
 
     let r = await verifySAMLSignature(saml, key_data)
@@ -25,6 +33,62 @@ async function verify(params) {
     }
 
     return 'SUCCESS';
+}
+
+/*
+ * signSAML() signs a SAML message template
+ *
+ *  The message to sign should already contain a full Signature element
+ *  with SignedInfo and Reference elements below.
+ *  The only parts that are missing are DigestValue and SignatureValue.
+ *   <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+ *       <ds:SignedInfo>
+ *           <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" />
+ *           <ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" />
+ *           <ds:Reference URI="#_0x14956c887e664bdb71d7685b89b70619">
+ *               <ds:Transforms>
+ *                   <ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />
+ *                   <ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" />
+ *               </ds:Transforms>
+ *               <ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256" />
+ *               <ds:DigestValue></ds:DigestValue>
+ *           </ds:Reference>
+ *       </ds:SignedInfo>
+ *       <ds:SignatureValue></ds:SignatureValue>
+ *   </ds:Signature>
+ *
+ * The following signature algorithms are supported:
+ * - http://www.w3.org/2001/04/xmldsig-more#rsa-sha256
+ * - http://www.w3.org/2000/09/xmldsig#rsa-sha1
+ *
+ * The following digest algorithms are supported:
+ * - http://www.w3.org/2000/09/xmldsig#sha1
+ * - http://www.w3.org/2001/04/xmlenc#sha256
+ *
+ * As a part of the signing process, the following attributes are set:
+ * - xml:ID
+ *   The value is a random 16 bytes hex string.
+ * - IssueInstant
+ *   The value is the current time in ISO 8601 format.
+ *
+ * @param doc an XMLDoc object returned by xml.parse().
+ * @param key_data is PKCS #8 in PEM format.
+ */
+async function signSAML(saml, key_data) {
+    const root = saml.$root;
+    const rootSignature = root.Signature;
+
+    const rnd = Buffer.alloc(16);
+    crypto.getRandomValues(rnd);
+    const id = rnd.toString('hex');
+
+    root.setAttribute('xml:ID', id);
+    rootSignature.SignedInfo.Reference.setAttribute('URI', `#${id}`);
+    root.setAttribute('IssueInstant', (new Date()).toISOString());
+
+    await digestSAML(rootSignature, true);
+    await signatureSAML(rootSignature, key_data, true);
+    return saml;
 }
 
 /*
@@ -61,21 +125,21 @@ async function verifySAMLSignature(saml, key_data) {
     const assertionSignature = assertion ? assertion.Signature : null;
 
     if (assertionSignature) {
-        if (!await verifyDigest(assertionSignature)) {
+        if (!await digestSAML(assertionSignature)) {
             return false;
         }
 
-        if (!await verifySignature(assertionSignature, key_data)) {
+        if (!await signatureSAML(assertionSignature, key_data)) {
             return false;
         }
     }
 
     if (rootSignature) {
-        if (!await verifyDigest(rootSignature)) {
+        if (!await digestSAML(rootSignature)) {
             return false;
         }
 
-        if (!await verifySignature(rootSignature, key_data)) {
+        if (!await signatureSAML(rootSignature, key_data)) {
             return false;
         }
     }
@@ -83,7 +147,7 @@ async function verifySAMLSignature(saml, key_data) {
     return true;
 }
 
-async function verifyDigest(signature) {
+async function digestSAML(signature, produce) {
     const parent = signature.$parent;
     const signedInfo = signature.SignedInfo;
     const reference = signedInfo.Reference;
@@ -137,11 +201,16 @@ async function verifyDigest(signature) {
         throw Error(`unexpected digest Algorithm ${alg}`);
     }
 
-    const expectedDigest = signedInfo.Reference.DigestValue.$text;
-
     const c14n = xml.exclusiveC14n(parent, signature, withComments, prefixList);
     const dgst = await crypto.subtle.digest(hash, c14n);
     const b64dgst = Buffer.from(dgst).toString('base64');
+
+    if (produce) {
+        signedInfo.Reference.DigestValue.$text = b64dgst;
+        return b64dgst;
+    }
+
+    const expectedDigest = signedInfo.Reference.DigestValue.$text;
 
     return expectedDigest === b64dgst;
 }
@@ -159,9 +228,7 @@ function base64decode(b64) {
     return Buffer.from(joined, 'base64');
 }
 
-async function verifySignature(signature, key_data) {
-    const der = keyPem2Der(key_data, "PUBLIC");
-
+async function signatureSAML(signature, key_data, produce) {
     let method, hash;
     const signedInfo = signature.SignedInfo;
     const alg = signedInfo.SignatureMethod.$attr$Algorithm;
@@ -179,15 +246,27 @@ async function verifySignature(signature, key_data) {
         throw Error(`unexpected signature Algorithm ${alg}`);
     }
 
-    const expectedValue = base64decode(signature.SignatureValue.$text);
     const withComments = signedInfo.CanonicalizationMethod
                          .$attr$Algorithm.slice(39) == 'WithComments';
 
     const signedInfoC14n = xml.exclusiveC14n(signedInfo, null, withComments);
 
-    const key = await crypto.subtle.importKey("spki", der, { name: method, hash },
-                                            false, [ "verify" ]);
+    if (produce) {
+        const der = keyPem2Der(key_data, "PRIVATE");
+        const key = await crypto.subtle.importKey("pkcs8", der, { name: method, hash },
+                                                  false, [ "sign" ]);
 
+        let sig =  await crypto.subtle.sign({ name: method }, key, signedInfoC14n);
+
+        signature.SignatureValue.$text = Buffer.from(sig).toString('base64');
+        return signature;
+    }
+
+    const der = keyPem2Der(key_data, "PUBLIC");
+    const key = await crypto.subtle.importKey("spki", der, { name: method, hash },
+                                              false, [ "verify" ]);
+
+    const expectedValue = base64decode(signature.SignatureValue.$text);
     return await crypto.subtle.verify({ name: method }, key, expectedValue,
                                       signedInfoC14n);
 }
@@ -220,6 +299,8 @@ let saml_verify_tsuite = {
         { saml: "response_signed_broken2.xml", expected: false },
         { saml: "response_signed.xml", key: { file: "rsa2.spki"}, expected: false },
         { saml: "response_assertion_and_message_signed.xml", expected: true },
+
+        { saml: "auth_r.xml", sign: true, key: { sign_file: "rsa.pkcs8" }, expected: true },
 ]};
 
 run([
