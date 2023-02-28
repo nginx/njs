@@ -2085,32 +2085,30 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
 
         val = njs_prop_value(prop);
 
-        if (!state->fast_array) {
-            if (prop->type == NJS_PROPERTY_HANDLER) {
-                pq.scratch = *prop;
-                prop = &pq.scratch;
-                ret = njs_prop_handler(prop)(vm, prop, &state->value, NULL,
-                                             njs_prop_value(prop));
+        if (prop->type == NJS_PROPERTY_HANDLER) {
+            pq.scratch = *prop;
+            prop = &pq.scratch;
+            ret = njs_prop_handler(prop)(vm, prop, &state->value, NULL,
+                                         njs_prop_value(prop));
 
-                if (njs_slow_path(ret == NJS_ERROR)) {
-                    return ret;
-                }
-
-                val = njs_prop_value(prop);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                return ret;
             }
 
-            if (njs_is_accessor_descriptor(prop)) {
-                if (njs_prop_getter(prop) != NULL) {
-                    if (njs_prop_setter(prop) != NULL) {
-                        val = njs_value_arg(&string_get_set);
+            val = njs_prop_value(prop);
+        }
 
-                    } else {
-                        val = njs_value_arg(&string_get);
-                    }
+        if (njs_is_accessor_descriptor(prop)) {
+            if (njs_prop_getter(prop) != NULL) {
+                if (njs_prop_setter(prop) != NULL) {
+                    val = njs_value_arg(&string_get_set);
 
                 } else {
-                    val = njs_value_arg(&string_set);
+                    val = njs_value_arg(&string_get);
                 }
+
+            } else {
+                val = njs_value_arg(&string_set);
             }
         }
 

@@ -22852,6 +22852,9 @@ static njs_unit_test_t  njs_shell_test[] =
     { njs_str("var e = Error(); e.name = {}; e" ENTER),
       njs_str("[object Object]") },
 
+    { njs_str("var a = []; Object.defineProperty(a, 'b', {enumerable: true, get: Object}); a" ENTER),
+      njs_str("[\n b: '[Getter]'\n]") },
+
     /* Temporary indexes */
 
     { njs_str("var a = [1,2,3], i; for (i in a) {Object.seal({});}" ENTER),
