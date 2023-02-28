@@ -22823,12 +22823,12 @@ static njs_unit_test_t  njs_shell_test[] =
 
     { njs_str("var a = \"aa\\naa\"" ENTER
               "a" ENTER),
-      njs_str("aa\naa") },
+      njs_str("'aa\\naa'") },
 
     { njs_str("var a = 3" ENTER
               "var a = 'str'" ENTER
               "a" ENTER),
-      njs_str("str") },
+      njs_str("'str'") },
 
     { njs_str("var a = 2" ENTER
               "a *= 2" ENTER
@@ -22862,7 +22862,7 @@ static njs_unit_test_t  njs_shell_test[] =
               "case 0: a += '0';"
               "case 1: a += '1';"
               "}; a" ENTER),
-      njs_str("A") },
+      njs_str("'A'") },
 
     { njs_str("var a = 0; try { a = 5 }"
               "catch (e) { a = 9 } finally { a++ } a" ENTER),
@@ -22879,7 +22879,7 @@ static njs_unit_test_t  njs_shell_test[] =
 
     { njs_str("Number.prototype.test = 'test'" ENTER
               "Number.prototype.test" ENTER),
-      njs_str("test") },
+      njs_str("'test'") },
 
     { njs_str("function f(a) {return a}" ENTER
               "function f(a) {return a}; f(2)" ENTER),
@@ -22929,11 +22929,12 @@ static njs_unit_test_t  njs_shell_test[] =
               "function(){}()" ENTER),
       njs_str("SyntaxError: Unexpected token \"(\" in 1") },
 
-    /* Exception in njs_vm_retval_string() */
+    { njs_str("var o = { toString: function() { return [1] } }; o" ENTER),
+      njs_str("{\n toString: [Function: toString]\n}") },
 
     { njs_str("var o = { toString: function() { return [1] } }" ENTER
-              "o" ENTER),
-      njs_str("TypeError: Cannot convert object to primitive value") },
+              "o.toString()" ENTER),
+      njs_str("[\n 1\n]") },
 };
 
 
@@ -23630,8 +23631,8 @@ njs_interactive_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
             }
         }
 
-        if (njs_vm_retval_string(vm, &s) != NJS_OK) {
-            njs_printf("njs_vm_retval_string() failed\n");
+        if (njs_vm_retval_dump(vm, &s, 0) != NJS_OK) {
+            njs_printf("njs_vm_retval_dump() failed\n");
             goto done;
         }
 
@@ -24956,7 +24957,6 @@ static njs_test_suite_t  njs_suites[] =
       { .externals = 1, .repeat = 1, .unsafe = 1 },
       njs_shell_test,
       njs_nitems(njs_shell_test),
-
       njs_interactive_test },
 
     { njs_str("backtraces"),
