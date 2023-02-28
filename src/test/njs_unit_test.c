@@ -22865,6 +22865,11 @@ static njs_unit_test_t  njs_shell_test[] =
               "e" ENTER),
       njs_str("Error: foo") },
 
+    { njs_str("function f() {};" ENTER
+              "Object.defineProperty(f, 'name', { get() {void(0)} })" ENTER
+              "f" ENTER),
+      njs_str("[Function]") },
+
     /* Temporary indexes */
 
     { njs_str("var a = [1,2,3], i; for (i in a) {Object.seal({});}" ENTER),
