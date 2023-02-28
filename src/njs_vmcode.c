@@ -1824,7 +1824,12 @@ error:
 
     if (njs_is_error(&vm->retval)) {
         vm->active_frame->native.pc = pc;
-        (void) njs_error_stack_attach(vm, &vm->retval);
+
+        /* TODO: get rid of copying. */
+
+        njs_value_assign(&dst, &vm->retval);
+        (void) njs_error_stack_attach(vm, &dst);
+        njs_value_assign(&vm->retval, &dst);
     }
 
     for ( ;; ) {

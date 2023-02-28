@@ -23122,6 +23122,12 @@ static njs_unit_test_t  njs_backtraces_test[] =
     { njs_str("function f(n) { if (n == 0) { throw 'a'; } return f(n-1); }; f(2)"),
       njs_str("a") },
 
+    { njs_str("Object.defineProperty(Function.__proto__, 'name', {get() { typeof 1;}});"
+              "(new Uint8Array()).every()"),
+      njs_str("TypeError: callback argument is not callable\n"
+              "    at TypedArray.prototype.every (native)\n"
+              "    at main (:1)\n") },
+
     /* line numbers */
 
     { njs_str("/**/(function(){throw Error();})()"),
