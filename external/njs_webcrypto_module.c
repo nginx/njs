@@ -2076,7 +2076,7 @@ njs_export_jwk_oct(njs_vm_t *vm, njs_webcrypto_key_t *key, njs_value_t *retval)
 
     static const njs_value_t  oct_str = njs_string("oct");
 
-    njs_assert(key->raw.start != NULL)
+    njs_assert(key->raw.start != NULL);
 
     ret = njs_string_base64url(vm, &k, &key->raw);
     if (njs_slow_path(ret != NJS_OK)) {
