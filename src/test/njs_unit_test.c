@@ -22855,6 +22855,16 @@ static njs_unit_test_t  njs_shell_test[] =
     { njs_str("var a = []; Object.defineProperty(a, 'b', {enumerable: true, get: Object}); a" ENTER),
       njs_str("[\n b: '[Getter]'\n]") },
 
+    { njs_str("var e = Error()" ENTER
+              "Object.defineProperty(e, 'message', { configurable: true, set: Object })" ENTER
+              "delete e.message; e" ENTER),
+      njs_str("Error") },
+
+    { njs_str("var e = Error()" ENTER
+              "Object.defineProperty(e, 'message', { configurable: true, get(){ return 'foo'} })" ENTER
+              "e" ENTER),
+      njs_str("Error: foo") },
+
     /* Temporary indexes */
 
     { njs_str("var a = [1,2,3], i; for (i in a) {Object.seal({});}" ENTER),

@@ -102,7 +102,11 @@ njs_object_property(njs_vm_t *vm, njs_object_t *object, njs_lvlhsh_query_t *lhq,
         ret = njs_lvlhsh_find(&object->hash, lhq);
 
         if (njs_fast_path(ret == NJS_OK)) {
-            goto found;
+            prop = lhq->value;
+
+            if (prop->type != NJS_WHITEOUT) {
+                goto found;
+            }
         }
 
         ret = njs_lvlhsh_find(&object->shared_hash, lhq);
