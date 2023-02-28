@@ -3565,17 +3565,14 @@ njs_parser_await(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
     njs_parser_node_t   *node;
-    njs_parser_scope_t  *scope;
 
-    scope = njs_function_scope(parser->scope);
-
-    if (!scope->async) {
+    if (!njs_function_scope(parser->scope)->async) {
         njs_parser_syntax_error(parser,
                                 "await is only valid in async functions");
         return NJS_ERROR;
     }
 
-    if (scope->in_args) {
+    if (parser->scope->in_args) {
         njs_parser_syntax_error(parser, "await in arguments not supported");
         return NJS_ERROR;
     }
