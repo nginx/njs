@@ -22849,6 +22849,9 @@ static njs_unit_test_t  njs_shell_test[] =
                "sq(function () { return 3 })" ENTER),
       njs_str("9") },
 
+    { njs_str("var e = Error(); e.name = {}; e" ENTER),
+      njs_str("[object Object]") },
+
     /* Temporary indexes */
 
     { njs_str("var a = [1,2,3], i; for (i in a) {Object.seal({});}" ENTER),

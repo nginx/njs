@@ -91,14 +91,12 @@ njs_object_prop_alloc2(njs_vm_t *vm, const njs_value_t *name,
 
 
 njs_int_t
-njs_object_property(njs_vm_t *vm, const njs_value_t *value,
-    njs_lvlhsh_query_t *lhq, njs_value_t *retval)
+njs_object_property(njs_vm_t *vm, njs_object_t *object, njs_lvlhsh_query_t *lhq,
+    njs_value_t *retval)
 {
     njs_int_t          ret;
-    njs_object_t       *object;
+    njs_value_t        value;
     njs_object_prop_t  *prop;
-
-    object = njs_object(value);
 
     do {
         ret = njs_lvlhsh_find(&object->hash, lhq);
@@ -135,7 +133,9 @@ found:
         return NJS_OK;
     }
 
-    return njs_function_apply(vm, njs_prop_getter(prop), value, 1, retval);
+    njs_set_object(&value, object);
+
+    return njs_function_apply(vm, njs_prop_getter(prop), &value, 1, retval);
 }
 
 
@@ -720,6 +720,7 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
     njs_int_t           ret;
     njs_bool_t          data, accessor;
     njs_value_t         value;
+    njs_object_t        *desc_object;
     njs_function_t      *getter, *setter;
     njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
@@ -741,10 +742,11 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
     accessor = 0;
     getter = NJS_PROP_PTR_UNSET;
     setter = NJS_PROP_PTR_UNSET;
+    desc_object = njs_object(desc);
 
     njs_object_property_init(&lhq, &get_string, NJS_GET_HASH);
 
-    ret = njs_object_property(vm, desc, &lhq, &value);
+    ret = njs_object_property(vm, desc_object, &lhq, &value);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return NULL;
     }
@@ -762,7 +764,7 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
     lhq.key = njs_str_value("set");
     lhq.key_hash = NJS_SET_HASH;
 
-    ret = njs_object_property(vm, desc, &lhq, &value);
+    ret = njs_object_property(vm, desc_object, &lhq, &value);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return NULL;
     }
@@ -780,7 +782,7 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
     lhq.key = njs_str_value("value");
     lhq.key_hash = NJS_VALUE_HASH;
 
-    ret = njs_object_property(vm, desc, &lhq, &value);
+    ret = njs_object_property(vm, desc_object, &lhq, &value);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return NULL;
     }
@@ -793,7 +795,7 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
     lhq.key = njs_str_value("writable");
     lhq.key_hash = NJS_WRITABABLE_HASH;
 
-    ret = njs_object_property(vm, desc, &lhq, &value);
+    ret = njs_object_property(vm, desc_object, &lhq, &value);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return NULL;
     }
@@ -812,7 +814,7 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
     lhq.key = njs_str_value("enumerable");
     lhq.key_hash = NJS_ENUMERABLE_HASH;
 
-    ret = njs_object_property(vm, desc, &lhq, &value);
+    ret = njs_object_property(vm, desc_object, &lhq, &value);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return NULL;
     }
@@ -824,7 +826,7 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
     lhq.key = njs_str_value("configurable");
     lhq.key_hash = NJS_CONFIGURABLE_HASH;
 
-    ret = njs_object_property(vm, desc, &lhq, &value);
+    ret = njs_object_property(vm, desc_object, &lhq, &value);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return NULL;
     }

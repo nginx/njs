@@ -1252,15 +1252,19 @@ njs_object_to_json_function(njs_vm_t *vm, njs_value_t *value)
 
     static const njs_value_t  to_json_string = njs_string("toJSON");
 
-    njs_object_property_init(&lhq, &to_json_string, NJS_TO_JSON_HASH);
+    if (njs_is_object(value)) {
+        njs_object_property_init(&lhq, &to_json_string, NJS_TO_JSON_HASH);
 
-    ret = njs_object_property(vm, value, &lhq, &retval);
+        ret = njs_object_property(vm, njs_object(value), &lhq, &retval);
 
-    if (njs_slow_path(ret == NJS_ERROR)) {
-        return NULL;
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return NULL;
+        }
+
+        return njs_is_function(&retval) ? njs_function(&retval) : NULL;
     }
 
-    return njs_is_function(&retval) ? njs_function(&retval) : NULL;
+    return NULL;
 }
 
 

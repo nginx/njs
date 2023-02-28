@@ -1404,10 +1404,11 @@ njs_array_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     static const njs_value_t  join_string = njs_string("join");
 
-    if (njs_is_object(&args[0])) {
+    if (njs_is_object(njs_argument(args, 0))) {
         njs_object_property_init(&lhq, &join_string, NJS_JOIN_HASH);
 
-        ret = njs_object_property(vm, &args[0], &lhq, &value);
+        ret = njs_object_property(vm, njs_object(njs_argument(args, 0)), &lhq,
+                                  &value);
 
         if (njs_slow_path(ret == NJS_ERROR)) {
             return ret;

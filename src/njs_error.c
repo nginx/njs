@@ -574,12 +574,15 @@ njs_error_to_string2(njs_vm_t *vm, njs_value_t *retval,
     size_t              length;
     u_char              *p;
     njs_int_t           ret;
+    njs_object_t        *error_object;
     njs_value_t         value1, value2;
     njs_value_t         *name_value, *message_value;
     njs_string_prop_t   name, message;
     njs_lvlhsh_query_t  lhq;
 
     static const njs_value_t  default_name = njs_string("Error");
+
+    njs_assert(njs_is_object(error));
 
     if (want_stack) {
         ret = njs_error_stack(vm, njs_value_arg(error), retval);
@@ -592,9 +595,11 @@ njs_error_to_string2(njs_vm_t *vm, njs_value_t *retval,
         }
     }
 
+    error_object = njs_object(error);
+
     njs_object_property_init(&lhq, &njs_string_name, NJS_NAME_HASH);
 
-    ret = njs_object_property(vm, error, &lhq, &value1);
+    ret = njs_object_property(vm, error_object, &lhq, &value1);
 
     if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
@@ -616,7 +621,7 @@ njs_error_to_string2(njs_vm_t *vm, njs_value_t *retval,
     lhq.key_hash = NJS_MESSAGE_HASH;
     lhq.key = njs_str_value("message");
 
-    ret = njs_object_property(vm, error, &lhq, &value2);
+    ret = njs_object_property(vm, error_object, &lhq, &value2);
 
     if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
@@ -686,6 +691,11 @@ njs_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 njs_int_t
 njs_error_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *error)
 {
+    if (njs_slow_path(!njs_is_object(error))) {
+        njs_type_error(vm, "\"error\" is not an object");
+        return NJS_ERROR;
+    }
+
     return njs_error_to_string2(vm, retval, error, 1);
 }
 

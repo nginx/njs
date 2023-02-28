@@ -157,7 +157,7 @@ njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
             lhq.key_hash = hashes[hint];
             lhq.key = names[hint];
 
-            ret = njs_object_property(vm, value, &lhq, &method);
+            ret = njs_object_property(vm, njs_object(value), &lhq, &method);
 
             if (njs_slow_path(ret == NJS_ERROR)) {
                 return ret;
