@@ -1211,7 +1211,7 @@ njs_xml_node_tags_handler(njs_vm_t *vm, xmlNode *current, njs_str_t *name,
 {
     size_t       size;
     int64_t      i, length;
-    xmlNode      *node, *copy;
+    xmlNode      *node, *rnode, *copy;
     njs_int_t    ret;
     njs_value_t  *push;
     njs_opaque_value_t  *start;
@@ -1303,8 +1303,8 @@ njs_xml_node_tags_handler(njs_vm_t *vm, xmlNode *current, njs_str_t *name,
             goto error;
         }
 
-        node = xmlAddChild(copy, node);
-        if (njs_slow_path(node == NULL)) {
+        rnode = xmlAddChild(copy, node);
+        if (njs_slow_path(rnode == NULL)) {
             njs_vm_error(vm, "xmlAddChild() failed");
             xmlFreeNode(node);
             goto error;
@@ -1313,7 +1313,7 @@ njs_xml_node_tags_handler(njs_vm_t *vm, xmlNode *current, njs_str_t *name,
         ret = xmlReconciliateNs(current->doc, copy);
         if (njs_slow_path(ret == -1)) {
             njs_vm_error(vm, "xmlReconciliateNs() failed");
-            return NJS_ERROR;
+            goto error;
         }
     }
 
