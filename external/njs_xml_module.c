@@ -708,12 +708,18 @@ static njs_int_t
 njs_xml_node_ext_add_child(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused)
 {
-    xmlNode    *current, *node, *copy;
+    xmlNode    *current, *node, *copy, *rnode;
     njs_int_t  ret;
 
     current = njs_vm_external(vm, njs_xml_node_proto_id, njs_argument(args, 0));
     if (njs_slow_path(current == NULL)) {
         njs_vm_error(vm, "\"this\" is not a XMLNode object");
+        return NJS_ERROR;
+    }
+
+    node = njs_xml_external_node(vm, njs_arg(args, nargs, 1));
+    if (njs_slow_path(node == NULL)) {
+        njs_vm_error(vm, "node is not a XMLNode object");
         return NJS_ERROR;
     }
 
@@ -723,20 +729,15 @@ njs_xml_node_ext_add_child(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
-    node = njs_xml_external_node(vm, njs_arg(args, nargs, 1));
-    if (njs_slow_path(node == NULL)) {
-        njs_vm_error(vm, "node is not a XMLNode object");
-        goto error;
-    }
-
     node = xmlDocCopyNode(node, current->doc, 1);
     if (njs_slow_path(node == NULL)) {
         njs_vm_error(vm, "xmlDocCopyNode() failed");
         goto error;
     }
 
-    node = xmlAddChild(copy, node);
-    if (njs_slow_path(node == NULL)) {
+    rnode = xmlAddChild(copy, node);
+    if (njs_slow_path(rnode == NULL)) {
+        xmlFreeNode(node);
         njs_vm_error(vm, "xmlAddChild() failed");
         goto error;
     }
@@ -744,7 +745,7 @@ njs_xml_node_ext_add_child(njs_vm_t *vm, njs_value_t *args,
     ret = xmlReconciliateNs(current->doc, copy);
     if (njs_slow_path(ret == -1)) {
         njs_vm_error(vm, "xmlReconciliateNs() failed");
-        return NJS_ERROR;
+        goto error;
     }
 
     njs_value_undefined_set(njs_vm_retval(vm));
@@ -752,10 +753,6 @@ njs_xml_node_ext_add_child(njs_vm_t *vm, njs_value_t *args,
     return njs_xml_replace_node(vm, current, copy);
 
 error:
-
-    if (node != NULL) {
-        xmlFreeNode(node);
-    }
 
     xmlFreeNode(copy);
 
