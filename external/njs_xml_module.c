@@ -432,8 +432,7 @@ njs_xml_ext_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     tree->doc = xmlCtxtReadMemory(tree->ctx, (char *) data.start, data.length,
-                                  NULL, NULL, XML_PARSE_DTDVALID
-                                              | XML_PARSE_NOWARNING
+                                  NULL, NULL, XML_PARSE_NOWARNING
                                               | XML_PARSE_NOERROR);
     if (njs_slow_path(tree->doc == NULL)) {
         njs_xml_error(vm, tree, "failed to parse XML");
