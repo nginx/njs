@@ -3974,7 +3974,7 @@ njs_string_to_number(const njs_value_t *value, njs_bool_t parse_float)
 
     if (!parse_float) {
         while (p < end) {
-            if (*p != ' ' && *p != '\t') {
+            if (!njs_is_whitespace(*p)) {
                 return NAN;
             }
 

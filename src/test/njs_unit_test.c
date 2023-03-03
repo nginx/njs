@@ -13339,6 +13339,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Number('123')"),
       njs_str("123") },
 
+    { njs_str("['1', ' 1 ', '1\\t', '1\\n', '1\\r\\n'].reduce((a, x) => a + Number(x), 0)"),
+      njs_str("5") },
+
     { njs_str("Number('0.'+'1'.repeat(128))"),
       njs_str("0.1111111111111111") },
 
