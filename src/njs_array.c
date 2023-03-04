@@ -2663,7 +2663,10 @@ slow_path:
         goto exception;
     }
 
-    if (njs_fast_path(fast_path && njs_is_fast_array(this))) {
+    if (njs_fast_path(fast_path
+                      && njs_is_fast_array(this)
+                      && (njs_array(this)->length == length)))
+    {
         array = njs_array(this);
         start = array->start;
 
@@ -2677,11 +2680,9 @@ slow_path:
 
     } else {
         for (i = 0; i < len; i++) {
-            if (slots[i].pos != i) {
-                ret = njs_value_property_i64_set(vm, this, i, &slots[i].value);
-                if (njs_slow_path(ret == NJS_ERROR)) {
-                    goto exception;
-                }
+            ret = njs_value_property_i64_set(vm, this, i, &slots[i].value);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                goto exception;
             }
         }
 
