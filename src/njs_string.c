@@ -160,7 +160,7 @@ njs_string_create_chb(njs_vm_t *vm, njs_value_t *value, njs_chb_t *chain)
 
     length = njs_chb_utf8_length(chain);
     if (njs_slow_path(length < 0)) {
-        njs_memory_error(vm);
+        njs_internal_error(vm, "invalid UTF-8 string");
         return NJS_ERROR;
     }
 
