@@ -1351,7 +1351,7 @@ failed:
 static void
 ngx_js_http_close_connection(ngx_connection_t *c)
 {
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+    ngx_log_debug1(NGX_LOG_DEBUG_EVENT, c->log, 0,
                    "close js http connection: %d", c->fd);
 
 #if (NGX_SSL)
@@ -1665,7 +1665,7 @@ ngx_js_http_ssl_name(ngx_js_http_t *http)
 
     name->data = p;
 
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, http->log, 0,
+    ngx_log_debug1(NGX_LOG_DEBUG_EVENT, http->log, 0,
                    "js http SSL server name: \"%s\"", name->data);
 
     if (SSL_set_tlsext_host_name(http->peer.connection->ssl->connection,
