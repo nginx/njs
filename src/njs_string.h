@@ -237,7 +237,6 @@ uint32_t njs_string_trim(const njs_value_t *value, njs_string_prop_t *string,
 void njs_string_copy(njs_value_t *dst, njs_value_t *src);
 njs_int_t njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string,
     njs_value_t *value);
-size_t njs_string_prop(njs_string_prop_t *string, const njs_value_t *value);
 njs_int_t njs_string_cmp(const njs_value_t *val1, const njs_value_t *val2);
 void njs_string_slice_string_prop(njs_string_prop_t *dst,
     const njs_string_prop_t *string, const njs_slice_prop_t *slice);
@@ -277,6 +276,31 @@ njs_string_offset(njs_string_prop_t *string, int64_t index)
 
     return njs_string_utf8_offset(string->start, string->start + string->size,
                                   index);
+}
+
+
+njs_inline size_t
+njs_string_prop(njs_string_prop_t *string, const njs_value_t *value)
+{
+    size_t     size;
+    uintptr_t  length;
+
+    size = value->short_string.size;
+
+    if (size != NJS_STRING_LONG) {
+        string->start = (u_char *) value->short_string.start;
+        length = value->short_string.length;
+
+    } else {
+        string->start = (u_char *) value->long_string.data->start;
+        size = value->long_string.size;
+        length = value->long_string.data->length;
+    }
+
+    string->size = size;
+    string->length = length;
+
+    return (length == 0) ? size : length;
 }
 
 
