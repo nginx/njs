@@ -558,7 +558,7 @@ njs_object_iterate_reverse(njs_vm_t *vm, njs_iterator_args_t *args,
             i = from + 1;
 
             if (i > to) {
-                p = njs_string_offset(string_prop.start, end, from);
+                p = njs_string_utf8_offset(string_prop.start, end, from);
                 p = njs_utf8_next(p, end);
             }
 

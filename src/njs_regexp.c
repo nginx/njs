@@ -891,9 +891,9 @@ njs_regexp_builtin_exec(njs_vm_t *vm, njs_value_t *r, njs_value_t *s,
         offset = last_index;
 
     } else {
-        /* UTF-8 string. */
-        offset = njs_string_offset(string.start, string.start + string.size,
-                                   last_index) - string.start;
+        offset = njs_string_utf8_offset(string.start,
+                                        string.start + string.size, last_index)
+                 - string.start;
     }
 
     ret = njs_regexp_match(vm, &pattern->regex[type], string.start, offset,
@@ -1360,7 +1360,8 @@ njs_regexp_prototype_symbol_replace(njs_vm_t *vm, njs_value_t *args,
 
         if ((size_t) length != s.size) {
             /* UTF-8 string. */
-            pos = njs_string_offset(s.start, s.start + s.size, pos) - s.start;
+            pos = njs_string_utf8_offset(s.start, s.start + s.size, pos)
+                  - s.start;
         }
 
         pos = njs_max(njs_min(pos, (int64_t) s.size), 0);
@@ -1643,8 +1644,8 @@ njs_regexp_prototype_symbol_split(njs_vm_t *vm, njs_value_t *args,
         }
 
         if (utf8 == NJS_STRING_UTF8) {
-            start = njs_string_offset(s.start, s.start + s.size, p);
-            end = njs_string_offset(s.start, s.start + s.size, q);
+            start = njs_string_utf8_offset(s.start, s.start + s.size, p);
+            end = njs_string_utf8_offset(s.start, s.start + s.size, q);
 
         } else {
             start = &s.start[p];
@@ -1691,7 +1692,8 @@ njs_regexp_prototype_symbol_split(njs_vm_t *vm, njs_value_t *args,
     end = &s.start[s.size];
 
     if (utf8 == NJS_STRING_UTF8) {
-        start = (p < length) ? njs_string_offset(s.start, s.start + s.size, p)
+        start = (p < length) ? njs_string_utf8_offset(s.start, s.start + s.size,
+                                                      p)
                              : end;
 
     } else {

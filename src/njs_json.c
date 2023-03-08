@@ -233,12 +233,7 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-        if (length > 10) {
-            p = njs_string_offset(prop.start, prop.start + prop.size, 10);
-
-        } else {
-            p = prop.start + prop.size;
-        }
+        p = njs_string_offset(&prop, njs_min(length, 10));
 
         stringify->space.start = prop.start;
         stringify->space.length = p - prop.start;

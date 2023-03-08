@@ -8589,7 +8589,8 @@ njs_parser_string_create(njs_vm_t *vm, njs_lexer_token_t *token,
     njs_decode_utf8(&dst, &token->text);
 
     if (length > NJS_STRING_MAP_STRIDE && dst.length != length) {
-        njs_string_offset_map_init(value->long_string.data->start, dst.length);
+        njs_string_utf8_offset_map_init(value->long_string.data->start,
+                                        dst.length);
     }
 
     return NJS_OK;
@@ -8833,7 +8834,7 @@ next_char:
     }
 
     if (length > NJS_STRING_MAP_STRIDE && length != size) {
-        njs_string_offset_map_init(start, size);
+        njs_string_utf8_offset_map_init(start, size);
     }
 
     return NJS_TOKEN_STRING;
