@@ -8887,6 +8887,17 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'abcdbe'.replaceAll('b', '|$`X$\\'|')"),
       njs_str("a|aXcdbe|cd|abcdXe|e") },
 
+    { njs_str("var r = 'αβγ'.replace('β', \"$'\"); [r, r.length]"),
+      njs_str("αγγ,3") },
+
+    { njs_str("var r = 'αβγαβγ'.replaceAll('β', \"$'\"); [r, r.length]"),
+      njs_str("αγαβγγαγγ,9") },
+
+    { njs_str("var r = 'αβγ'.replace('β', \"$`\"); [r, r.length]"),
+      njs_str("ααγ,3") },
+
+    { njs_str("var r = 'αβγαβγ'.replaceAll('β', \"$`\"); [r, r.length]"),
+      njs_str("ααγααβγαγ,9") },
 
     { njs_str("'ABC'.replace('B', '$<g>')"),
       njs_str("A$<g>C") },

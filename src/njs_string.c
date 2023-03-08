@@ -3476,12 +3476,14 @@ njs_string_get_substitution(njs_vm_t *vm, njs_value_t *matched,
     njs_value_t *string, int64_t pos, njs_value_t *captures, int64_t ncaptures,
     njs_value_t *groups, njs_value_t *replacement, njs_value_t *retval)
 {
-    int64_t      tail, n;
-    u_char       c, c2, *p, *r, *end;
-    njs_str_t    rep, m, str, cap;
-    njs_int_t    ret;
-    njs_chb_t    chain;
-    njs_value_t  name, value;
+    u_char             c, c2, *p, *r, *end;
+    size_t             length;
+    int64_t            tail, n;
+    njs_str_t          rep, str, cap;
+    njs_int_t          ret;
+    njs_chb_t          chain;
+    njs_value_t        name, value;
+    njs_string_prop_t  s, m;
 
     njs_string_get(replacement, &rep);
     p = rep.start;
@@ -3513,24 +3515,26 @@ njs_string_get_substitution(njs_vm_t *vm, njs_value_t *matched,
             break;
 
         case '&':
-            njs_string_get(matched, &m);
-            njs_chb_append_str(&chain, &m);
+            (void) njs_string_prop(&m, matched);
+            njs_chb_append(&chain, m.start, m.size);
             p += 2;
             break;
 
         case '`':
-            njs_string_get(string, &str);
-            njs_chb_append(&chain, str.start, pos);
+            (void) njs_string_prop(&s, string);
+            n = njs_string_offset(&s, pos) - s.start;
+            njs_chb_append(&chain, s.start, n);
             p += 2;
             break;
 
         case '\'':
-            njs_string_get(matched, &m);
-            tail = pos + m.length;
+            length = njs_string_prop(&m, matched);
+            (void) njs_string_prop(&s, string);
 
-            njs_string_get(string, &str);
-            njs_chb_append(&chain, &str.start[tail],
-                           njs_max((int64_t) str.length - tail, 0));
+            tail = njs_string_offset(&s, pos + length) - s.start;
+
+            njs_chb_append(&chain, &s.start[tail],
+                           njs_max((int64_t) s.size - tail, 0));
             p += 2;
             break;
 
