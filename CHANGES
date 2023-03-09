@@ -1,3 +1,34 @@
+Changes with njs 0.7.11                                        9 Mar 2023
+    nginx modules:
+
+    *) Bugfix: added missed linking with libxml2 for the dynamic module.
+       The bug was introduced in 0.7.10.
+
+    Core:
+
+    *) Feature: added XMLNode API to modify XML documents.
+
+    *) Change: removed XML_PARSE_DTDVALID during parsing of XML document
+       due to security implications. The issue was introduced
+       in 0.7.10. When XML_PARSE_DTDVALID is enabled, libxml2 parses and
+       executes external entities present inside an XML document.
+
+    *) Bugfix: fixed the detection of await in arguments.
+
+    *) Bugfix: fixed Error() instance dumping when "name" prop is not
+       primitive.
+
+    *) Bugfix: fixed array instance with a getter property dumping.
+
+    *) Bugfix: fixed njs_object_property() with NJS_WHITEOUT properties.
+
+    *) Bugfix: fixed func instance dumping with "name" as getter.
+
+    *) Bugfix: fixed attaching of a stack to an error object.
+
+    *) Bugfix: fixed String.prototype.replace() with replacement containing
+       "$'", "$`".
+
 Changes with njs 0.7.10                                        7 Feb 2023
     nginx modules:
 
