@@ -860,6 +860,8 @@ ngx_js_ext_headers_constructor(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
+    headers->guard = GUARD_NONE;
+
     rc = ngx_list_init(&headers->header_list, pool, 4, sizeof(ngx_js_tb_elt_t));
     if (rc != NGX_OK) {
         njs_vm_memory_error(vm);
