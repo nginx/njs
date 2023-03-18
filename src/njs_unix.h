@@ -8,7 +8,13 @@
 #ifndef _NJS_UNIX_H_INCLUDED_
 #define _NJS_UNIX_H_INCLUDED_
 
+#ifdef _WIN32
+#include <stdlib.h>
+#define njs_pagesize()      4096
+#define realpath(path, resolved) _fullpath(resolved, path, PATH_MAX)
+#else
 #define njs_pagesize()      getpagesize()
+#endif
 
 #if (NJS_LINUX)
 

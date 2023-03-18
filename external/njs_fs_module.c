@@ -8,8 +8,19 @@
 #include <njs_main.h>
 
 #include <dirent.h>
+#ifdef _WIN32
+#define mkdir(path, mode) mkdir(path)
+#define O_SYNC 0
+#ifndef S_IFLNK
+#define S_IFLNK 0
+#endif
+#ifndef S_IFSOCK
+#define S_IFSOCK 0
+#endif
+#define S_ISLNK(mode) 0
+#endif
 
-#if (NJS_SOLARIS)
+#if (NJS_SOLARIS || _WIN32)
 
 #define DT_DIR         0
 #define DT_REG         1
@@ -1483,7 +1494,8 @@ njs_fs_read(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         n = read(fd, data.start, data.length);
 
     } else {
-        n = pread(fd, data.start, data.length, pos);
+        lseek(fd, pos, SEEK_SET);
+        n = read(fd, data.start, data.length);
     }
 
     if (njs_slow_path(n == -1)) {
@@ -2086,7 +2098,11 @@ njs_fs_stat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         break;
 
     case NJS_FS_LSTAT:
+#ifdef _WIN32
+        ret = -1;
+#else
         ret = lstat(path, &sb);
+#endif
         break;
 
     case NJS_FS_FSTAT:
@@ -2123,6 +2139,7 @@ static njs_int_t
 njs_fs_symlink(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t calltype)
 {
+#ifndef _WIN32
     njs_int_t    ret;
     const char  *target, *path;
     njs_value_t  retval, *callback, *type;
@@ -2169,6 +2186,7 @@ njs_fs_symlink(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     if (ret == NJS_OK) {
         return njs_fs_result(vm, &retval, calltype, callback, 1);
     }
+#endif
 
     return NJS_ERROR;
 }
@@ -2324,7 +2342,8 @@ process:
         n = write(fd, data.start, data.length);
 
     } else {
-        n = pwrite(fd, data.start, data.length, pos);
+        lseek(fd, pos, SEEK_SET);
+        n = write(fd, data.start, data.length);
     }
 
     if (njs_slow_path(n == -1)) {
@@ -2690,13 +2709,20 @@ njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
     struct dirent    *entry;
     njs_ftw_trace_t  trace, *h;
 
-    ret = (flags & NJS_FTW_PHYS) ? lstat(path, &st) : stat(path, &st);
+    ret =
+#ifndef _WIN32
+        (flags & NJS_FTW_PHYS) ? lstat(path, &st) :
+#endif
+            stat(path, &st);
 
     if (ret < 0) {
+#ifndef _WIN32
         if (!(flags & NJS_FTW_PHYS) && errno == ENOENT && !lstat(path, &st)) {
             type = NJS_FTW_SLN;
 
-        } else if (errno != EACCES) {
+        } else
+#endif
+        if (errno != EACCES) {
             return NJS_ERROR;
 
         } else {
@@ -2752,7 +2778,11 @@ njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
     }
 
     if (type == NJS_FTW_D || type == NJS_FTW_DP) {
+#ifdef _WIN32
+        d = opendir(path);
+#else
         d = fdopendir(dfd);
+#endif
         if (njs_slow_path(d == NULL)) {
             ret = NJS_ERROR;
             goto done;
@@ -3286,8 +3316,13 @@ njs_fs_to_stat(njs_stat_t *dst, struct stat *st)
     dst->st_rdev = st->st_rdev;
     dst->st_ino = st->st_ino;
     dst->st_size = st->st_size;
+#ifdef _WIN32
+    dst->st_blksize = 0;
+    dst->st_blocks = 0;
+#else
     dst->st_blksize = st->st_blksize;
     dst->st_blocks = st->st_blocks;
+#endif
 
 #if (NJS_HAVE_STAT_ATIMESPEC)
 

@@ -7,6 +7,10 @@
 #ifndef _NJS_STR_H_INCLUDED_
 #define _NJS_STR_H_INCLUDED_
 
+#include <stdint.h>
+#ifdef __MINGW32__
+#include <_bsd_types.h>
+#endif
 
 typedef struct {
     size_t  length;

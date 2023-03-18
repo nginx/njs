@@ -1656,6 +1656,9 @@ njs_process_object_pid(njs_vm_t *vm, njs_object_prop_t *prop,
     return NJS_OK;
 }
 
+#ifdef _WIN32
+static int getppid() { return 0; }
+#endif
 
 static njs_int_t
 njs_process_object_ppid(njs_vm_t *vm, njs_object_prop_t *prop,

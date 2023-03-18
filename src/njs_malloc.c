@@ -55,6 +55,18 @@ njs_memalign(size_t alignment, size_t size)
     return memalign(alignment, size);
 }
 
+#elif NJS_HAVE_ALIGNED_MALLOC
+
+/* _aligned_malloc presents in Windows */
+
+#include <malloc.h>
+
+void *
+njs_memalign(size_t alignment, size_t size)
+{
+    return _aligned_malloc(size, alignment);
+}
+
 #else
 
 #error no memalign() implementation.

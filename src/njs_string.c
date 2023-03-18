@@ -1850,7 +1850,7 @@ static size_t
 njs_decode_base64_length_core(const njs_str_t *src, const u_char *basis,
     size_t *out_size)
 {
-    uint    pad;
+    u_int   pad;
     size_t  len;
 
     for (len = 0; len < src->length; len++) {

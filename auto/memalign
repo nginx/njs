@@ -48,3 +48,27 @@ if [ $njs_found = no ]; then
                      }"
     . auto/feature
 fi
+
+
+if [ $njs_found = no ]; then
+
+    # Windows
+
+    njs_feature="_aligned_malloc()"
+    njs_feature_name=NJS_HAVE_ALIGNED_MALLOC
+    njs_feature_run=yes
+    njs_feature_incs=
+    njs_feature_libs=
+    njs_feature_test="#include <malloc.h>
+
+                     int main(void) {
+                         void  *p = _aligned_malloc(4096, 4096);
+
+                         if (p == NULL)
+                             return 1;
+
+                         free(p);
+                         return 0;
+                     }"
+    . auto/feature
+fi

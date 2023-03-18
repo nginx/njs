@@ -4,6 +4,9 @@
  * Copyright (C) NGINX, Inc.
  */
 
+#ifdef __MINGW32__
+#define _POSIX_THREAD_SAFE_FUNCTIONS 1
+#endif
 
 #include <njs_main.h>
 
@@ -199,7 +202,11 @@ njs_tz_offset(int64_t time)
      * which is expected by test262.
      */
 
+#ifdef _WIN32
+    return 0;
+#else
     return -njs_timezone(&tm) / 60;
+#endif
 }
 
 
