@@ -8030,8 +8030,8 @@ njs_parser_export(njs_parser_t *parser, njs_lexer_token_t *token,
             return NJS_DONE;
         }
 
-        peek = njs_lexer_peek_token(parser->lexer, peek, 1);
-        if (njs_slow_path(token == NULL)) {
+        peek = njs_lexer_peek_token(parser->lexer, peek, 0);
+        if (njs_slow_path(peek == NULL)) {
             return NJS_ERROR;
         }
 
