@@ -25,6 +25,7 @@ if [ $NJS_LIBXML2 = YES -a $NJS_HAVE_LIBXML2 = YES ]; then
 	njs_module_name=njs_xml_module
 	njs_module_incs=
 	njs_module_srcs=external/njs_xml_module.c
+	njs_define=NJS_HAVE_XML . auto/define
 
 	. auto/module
 fi
