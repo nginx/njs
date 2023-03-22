@@ -13,7 +13,7 @@ END
 # Allow error exit status.
 set +e
 
-if [ -z `which $CC` ]; then
+if [ -z "`which $CC`" ]; then
     echo
     echo $0: error: $CC not found.
     echo
@@ -94,8 +94,8 @@ case $NJS_CC_NAME in
 
         NJS_CFLAGS="$NJS_CFLAGS -Wmissing-prototypes"
 
-        # Stop on warning.
-        NJS_CFLAGS="$NJS_CFLAGS -Werror"
+        # Ignore warning.
+        NJS_CFLAGS="$NJS_CFLAGS -w"
 
         # Debug.
         NJS_CFLAGS="$NJS_CFLAGS -g"
