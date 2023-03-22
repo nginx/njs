@@ -334,7 +334,7 @@ static njs_int_t
 njs_object_math_min_max(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t max)
 {
-    double      num, value;
+    double      num = 0.0, value;
     njs_int_t   ret;
     njs_uint_t  i;
 
