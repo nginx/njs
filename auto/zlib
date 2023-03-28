@@ -1,0 +1,61 @@
+
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+
+NJS_ZLIB_LIB=
+NJS_HAVE_ZLIB=NO
+
+if [ $NJS_ZLIB = YES ]; then
+    njs_found=no
+    njs_feature_name=NJS_HAVE_ZLIB
+    njs_feature_run=no
+    njs_feature_test="#include <zlib.h>
+
+                      int main() {
+                          int       rc;
+                          z_stream  z;
+
+                          rc = deflate(&z, Z_NO_FLUSH);
+
+                          return (rc == Z_OK) ? 0 : 1;
+                      }"
+
+
+    if /bin/sh -c "(pkg-config zlib --exists)" >> $NJS_AUTOCONF_ERR 2>&1; then
+
+        # pkg-config
+
+        njs_feature="zlib via pkg-config"
+        njs_feature_incs=`pkg-config zlib --cflags | sed -n -e 's/.*-I *\([^ ][^ ]*\).*/\1/p'`
+        njs_feature_libs=`pkg-config zlib --libs`
+
+        . auto/feature
+    fi
+
+    if [ $njs_found = no ]; then
+
+        njs_feature="zlib"
+        njs_feature_libs="-lz"
+
+        . auto/feature
+    fi
+
+    if [ $njs_found = yes ]; then
+        njs_feature="zlib version"
+        njs_feature_name=NJS_ZLIB_VERSION
+        njs_feature_run=value
+        njs_feature_test="#include <stdio.h>
+                          #include <zlib.h>
+
+                          int main() {
+                              printf(\"\\\"%s\\\"\", zlibVersion());
+                              return 0;
+                          }"
+        . auto/feature
+
+        NJS_HAVE_ZLIB=YES
+        NJS_ZLIB_LIB="$njs_feature_libs"
+        NJS_LIB_INCS="$NJS_LIB_INCS $njs_feature_incs"
+        NJS_LIB_AUX_LIBS="$NJS_LIB_AUX_LIBS $njs_feature_libs"
+    fi
+fi

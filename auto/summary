@@ -26,6 +26,10 @@ if [ $NJS_HAVE_LIBXML2 = YES ]; then
   echo " + using libxml2 library: $NJS_LIBXML2_LIB"
 fi
 
+if [ $NJS_HAVE_ZLIB = YES ]; then
+  echo " + using zlib library: $NJS_ZLIB_LIB"
+fi
+
 if [ $NJS_HAVE_COMPUTED_GOTO = YES ]; then
   echo " + using computed goto"
 fi

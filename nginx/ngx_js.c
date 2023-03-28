@@ -19,6 +19,7 @@ static void ngx_js_cleanup_vm(void *data);
 
 extern njs_module_t  njs_webcrypto_module;
 extern njs_module_t  njs_xml_module;
+extern njs_module_t  njs_zlib_module;
 
 
 static njs_external_t  ngx_js_ext_core[] = {
@@ -89,6 +90,7 @@ static njs_external_t  ngx_js_ext_core[] = {
 njs_module_t *njs_js_addon_modules[] = {
     &njs_webcrypto_module,
     &njs_xml_module,
+    &njs_zlib_module,
     NULL,
 };
 

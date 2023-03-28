@@ -22153,6 +22153,74 @@ static njs_unit_test_t  njs_xml_test[] =
 };
 
 
+static njs_unit_test_t  njs_zlib_test[] =
+{
+    { njs_str("const zlib = require('zlib');"
+              "['C3f0dgQA', 'O7fx3KZzmwE=']"
+              ".map(v => zlib.inflateRawSync(Buffer.from(v, 'base64')).toString())"),
+      njs_str("WAKA,αβγ") },
+
+    { njs_str("const zlib = require('zlib');"
+              "['eJwLd/R2BAAC+gEl', 'eJw7t/HcpnObAQ/sBIE=']"
+              ".map(v => zlib.inflateSync(Buffer.from(v, 'base64')).toString())"),
+      njs_str("WAKA,αβγ") },
+
+    { njs_str("const zlib = require('zlib');"
+              "['WAKA', 'αβγ']"
+              ".map(v => zlib.deflateRawSync(v).toString('base64'))"),
+      njs_str("C3f0dgQA,O7fx3KZzmwE=") },
+
+    { njs_str("const zlib = require('zlib');"
+              "['WAKA', 'αβγ']"
+              ".map(v => zlib.deflateRawSync(v, {dictionary: Buffer.from('WAKA')}).toString('base64'))"),
+      njs_str("CwdiAA==,O7fx3KZzmwE=") },
+
+    { njs_str("const zlib = require('zlib');"
+              "['WAKA', 'αβγ']"
+              ".map(v => zlib.deflateRawSync(v, {level: zlib.constants.Z_NO_COMPRESSION}).toString('base64'))"),
+      njs_str("AQQA+/9XQUtB,AQYA+f/Osc6yzrM=") },
+
+    { njs_str("const zlib = require('zlib');"
+              "[zlib.constants.Z_FIXED,  zlib.constants.Z_RLE]"
+              ".map(v => zlib.deflateRawSync('WAKA'.repeat(10), {strategy: v}).toString('base64'))"),
+      njs_str("C3f0dgwnAgMA,BcExAQAAAMKgbNwLYP8mwmQymUwmk8lkcg==") },
+
+    { njs_str("const zlib = require('zlib');"
+              "[1, 8]"
+              ".map(v => zlib.deflateRawSync('WAKA'.repeat(35),"
+              "                              {strategy: zlib.constants.Z_RLE, memLevel: v})"
+              "          .toString('base64'))"),
+      njs_str("BMExAQAAAMKgbNwLYP8mwmQymUwmk8lkMplMJpPJZDKZTCaTyWQymUwmk+lzDHf0dgx39HYMd/R2BAA=,"
+              "BcExAQAAAMKgbNwLYP8mwmQymUwmk8lkMplMJpPJZDKZTCaTyWQymUwmk8lkMjk=") },
+
+    { njs_str("const zlib = require('zlib');"
+              "['WAKA', 'αβγ']"
+              ".map(v => zlib.deflateSync(v).toString('base64'))"),
+      njs_str("eJwLd/R2BAAC+gEl,eJw7t/HcpnObAQ/sBIE=") },
+
+    { njs_str("const zlib = require('zlib');"
+              "['WAKA'.repeat(1024), 'αβγ'.repeat(1024)]"
+              ".map(v => [v, zlib.deflateRawSync(v).toString('base64')])"
+              ".every(pair => pair[0] == zlib.inflateRawSync(Buffer.from(pair[1], 'base64')).toString())"),
+      njs_str("true") },
+
+    { njs_str("const zlib = require('zlib');"
+              "['WAKA'.repeat(1024), 'αβγ'.repeat(1024)]"
+              ".map(v => [v, zlib.deflateRawSync(v, {chunkSize:64}).toString('base64')])"
+              ".every(pair => pair[0] == zlib.inflateRawSync(Buffer.from(pair[1], 'base64'),"
+              "                                              {chunkSize:64}).toString())"),
+      njs_str("true") },
+
+    { njs_str("const zlib = require('zlib');"
+              "['WAKA', 'αβγ']"
+              ".map(v => [v, zlib.deflateRawSync(v, {dictionary: Buffer.from('WAKA')}).toString('base64')])"
+              ".every(pair => pair[0] == zlib.inflateRawSync(Buffer.from(pair[1], 'base64'),"
+              "                                              {dictionary: Buffer.from('WAKA')}).toString())"),
+      njs_str("true") },
+
+};
+
+
 static njs_unit_test_t  njs_module_test[] =
 {
     { njs_str("function f(){return 2}; var f; f()"),
@@ -24992,6 +25060,17 @@ static njs_test_suite_t  njs_suites[] =
       { .externals = 1, .repeat = 1, .unsafe = 1 },
       njs_xml_test,
       njs_nitems(njs_xml_test),
+      njs_unit_test },
+
+    {
+#if (NJS_HAVE_ZLIB && !NJS_HAVE_MEMORY_SANITIZER)
+        njs_str("zlib"),
+#else
+        njs_str(""),
+#endif
+      { .externals = 1, .repeat = 1, .unsafe = 1 },
+      njs_zlib_test,
+      njs_nitems(njs_zlib_test),
       njs_unit_test },
 
     { njs_str("module"),
