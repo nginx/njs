@@ -3874,7 +3874,7 @@ njs_string_prototype_iterator_obj(njs_vm_t *vm, njs_value_t *args,
 
 
 double
-njs_string_to_number(const njs_value_t *value, njs_bool_t parse_float)
+njs_string_to_number(const njs_value_t *value)
 {
     double             num;
     njs_bool_t         minus;
@@ -3889,30 +3889,38 @@ njs_string_to_number(const njs_value_t *value, njs_bool_t parse_float)
     end = p + string.size;
 
     if (p == end) {
-        return parse_float ? NAN : 0.0;
+        return 0.0;
     }
 
     minus = 0;
 
-    if (*p == '+') {
-        p++;
-
-    } else if (*p == '-') {
-        p++;
-        minus = 1;
-    }
-
-    if (p == end) {
-        return NAN;
-    }
-
-    if (!parse_float
-        && p + 2 < end && p[0] == '0' && (p[1] == 'x' || p[1] == 'X'))
+    if (p + 2 < end && p[0] == '0'
+        && (p[1] == 'x' || p[1] == 'X'
+            || p[1] == 'b' || p[1] == 'B'
+            || p[1] == 'o' || p[1] == 'O'))
     {
         p += 2;
-        num = njs_number_hex_parse(&p, end, 0);
+
+        if (p[-1] == 'x' || p[-1] == 'X') {
+            num = njs_number_hex_parse(&p, end, 0);
+
+        } else if (p[-1] == 'b' || p[-1] == 'B') {
+            num = njs_number_bin_parse(&p, end, 0);
+
+        } else {
+            num = njs_number_oct_parse(&p, end, 0);
+        }
 
     } else {
+
+        if (*p == '+') {
+            p++;
+
+        } else if (*p == '-') {
+            p++;
+            minus = 1;
+        }
+
         start = p;
         num = njs_number_dec_parse(&p, end, 0);
 
@@ -3926,14 +3934,12 @@ njs_string_to_number(const njs_value_t *value, njs_bool_t parse_float)
         }
     }
 
-    if (!parse_float) {
-        while (p < end) {
-            if (!njs_is_whitespace(*p)) {
-                return NAN;
-            }
-
-            p++;
+    while (p < end) {
+        if (!njs_is_whitespace(*p)) {
+            return NAN;
         }
+
+        p++;
     }
 
     return minus ? -num : num;

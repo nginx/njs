@@ -933,7 +933,7 @@ njs_lexer_number(njs_lexer_t *lexer, njs_lexer_token_t *token)
                 goto illegal_token;
             }
 
-            token->number = njs_number_oct_parse(&p, lexer->end);
+            token->number = njs_number_oct_parse(&p, lexer->end, 1);
 
             if (p < lexer->end && (*p == '8' || *p == '9')) {
                 goto illegal_trailer;
@@ -951,7 +951,7 @@ njs_lexer_number(njs_lexer_t *lexer, njs_lexer_token_t *token)
                 goto illegal_token;
             }
 
-            token->number = njs_number_bin_parse(&p, lexer->end);
+            token->number = njs_number_bin_parse(&p, lexer->end, 1);
 
             if (p < lexer->end && (*p >= '2' && *p <= '9')) {
                 goto illegal_trailer;

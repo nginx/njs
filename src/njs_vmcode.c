@@ -2512,7 +2512,7 @@ again:
     /* If "hv" is a string then "lv" can be a numeric or symbol. */
     if (njs_is_string(hv)) {
         return !njs_is_symbol(lv)
-            && (njs_number(lv) == njs_string_to_number(hv, 0));
+            && (njs_number(lv) == njs_string_to_number(hv));
     }
 
     /* "hv" is an object and "lv" is either a string or a symbol or a numeric. */
@@ -2549,11 +2549,11 @@ njs_primitive_values_compare(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2)
             num2 = njs_number(val2);
 
         } else {
-            num2 = njs_string_to_number(val2, 0);
+            num2 = njs_string_to_number(val2);
         }
 
     } else if (njs_is_numeric(val2)) {
-        num1 = njs_string_to_number(val1, 0);
+        num1 = njs_string_to_number(val1);
         num2 = njs_number(val2);
 
     } else {

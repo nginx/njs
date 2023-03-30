@@ -62,7 +62,8 @@ njs_number_dec_parse(const u_char **start, const u_char *end,
 
 
 double
-njs_number_oct_parse(const u_char **start, const u_char *end)
+njs_number_oct_parse(const u_char **start, const u_char *end,
+    njs_bool_t literal)
 {
     u_char        c;
     double        num;
@@ -78,7 +79,7 @@ njs_number_oct_parse(const u_char **start, const u_char *end)
         c = *p - '0';
 
         if (njs_slow_path(c > 7)) {
-            if (*p == '_' && (p - _) > 1) {
+            if (literal && *p == '_' && (p - _) > 1) {
                 _ = p;
                 continue;
             }
@@ -96,7 +97,8 @@ njs_number_oct_parse(const u_char **start, const u_char *end)
 
 
 double
-njs_number_bin_parse(const u_char **start, const u_char *end)
+njs_number_bin_parse(const u_char **start, const u_char *end,
+    njs_bool_t literal)
 {
     u_char        c;
     double        num;
@@ -112,7 +114,7 @@ njs_number_bin_parse(const u_char **start, const u_char *end)
         c = *p - '0';
 
         if (njs_slow_path(c > 1)) {
-            if (*p == '_' && (p - _) > 1) {
+            if (literal && *p == '_' && (p - _) > 1) {
                 _ = p;
                 continue;
             }
@@ -1030,8 +1032,12 @@ njs_int_t
 njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused)
 {
-    njs_int_t    ret;
-    njs_value_t  *value, lvalue;
+    double             num;
+    njs_int_t          ret;
+    njs_value_t        *value, lvalue;
+    njs_bool_t         minus;
+    const u_char       *p, *start, *end;
+    njs_string_prop_t  string;
 
     value = njs_lvalue_arg(&lvalue, args, nargs, 1);
 
@@ -1040,7 +1046,44 @@ njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    njs_set_number(&vm->retval, njs_string_to_number(value, 1));
+    (void) njs_string_trim(value, &string, NJS_TRIM_START);
+
+    p = string.start;
+    end = p + string.size;
+
+    minus = 0;
+
+    if (p == end) {
+        num = NAN;
+        goto done;
+    }
+
+    if (*p == '+') {
+        p++;
+
+    } else if (*p == '-') {
+        p++;
+        minus = 1;
+    }
+
+    start = p;
+    num = njs_number_dec_parse(&p, end, 0);
+
+    if (p == start) {
+        if (p + njs_length("Infinity") > end
+            || memcmp(p, "Infinity", njs_length("Infinity")) != 0)
+        {
+            num = NAN;
+            goto done;
+        }
+
+        num = INFINITY;
+        p += njs_length("Infinity");
+    }
+
+done:
+
+    njs_set_number(&vm->retval, minus ? -num : num);
 
     return NJS_OK;
 }

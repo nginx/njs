@@ -994,7 +994,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("3") },
 
     { njs_str("5 - '-0x2'"),
-      njs_str("7") },
+      njs_str("NaN") },
 
     { njs_str("5 - '\t 0x2 \t'"),
       njs_str("3") },
@@ -13344,11 +13344,47 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Number(false)"),
       njs_str("0") },
 
+    { njs_str("Number('0b111')"),
+      njs_str("7") },
+
+    { njs_str("Number('0B111')"),
+      njs_str("7") },
+
+    { njs_str("Number('0b1_11')"),
+      njs_str("NaN") },
+
+    { njs_str("Number('-0b111')"),
+      njs_str("NaN") },
+
     { njs_str("Number(123)"),
       njs_str("123") },
 
     { njs_str("Number('123')"),
       njs_str("123") },
+
+    { njs_str("Number('0o123')"),
+      njs_str("83") },
+
+    { njs_str("Number('0O123')"),
+      njs_str("83") },
+
+    { njs_str("Number('0o1_23')"),
+      njs_str("NaN") },
+
+    { njs_str("Number('-0o123')"),
+      njs_str("NaN") },
+
+    { njs_str("Number('0x123')"),
+      njs_str("291") },
+
+    { njs_str("Number('0X123')"),
+      njs_str("291") },
+
+    { njs_str("Number('0x1_23')"),
+      njs_str("NaN") },
+
+    { njs_str("Number('-0x123')"),
+      njs_str("NaN") },
 
     { njs_str("['1', ' 1 ', '1\\t', '1\\n', '1\\r\\n'].reduce((a, x) => a + Number(x), 0)"),
       njs_str("5") },

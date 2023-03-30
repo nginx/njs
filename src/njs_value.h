@@ -1073,7 +1073,7 @@ njs_int_t njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
     const njs_value_t *src);
 njs_int_t njs_primitive_value_to_chain(njs_vm_t *vm, njs_chb_t *chain,
     const njs_value_t *src);
-double njs_string_to_number(const njs_value_t *value, njs_bool_t parse_float);
+double njs_string_to_number(const njs_value_t *value);
 njs_int_t njs_int64_to_string(njs_vm_t *vm, njs_value_t *value, int64_t i64);
 
 njs_bool_t njs_string_eq(const njs_value_t *v1, const njs_value_t *v2);
