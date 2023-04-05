@@ -228,7 +228,6 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     njs_scope_value_set(vm, njs_scope_global_this_index(), &vm->global_value);
 
     vm->start = generator.code_start;
-    vm->variables_hash = &scope->variables;
     vm->global_scope = scope;
 
     if (vm->options.disassemble) {

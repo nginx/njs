@@ -588,7 +588,7 @@ njs_vm_expression_completions(njs_vm_t *vm, njs_str_t *expression)
 
     var_node.key = (uintptr_t) lhq.value;
 
-    node = njs_rbtree_find(vm->variables_hash, &var_node.node);
+    node = njs_rbtree_find(&vm->global_scope->variables, &var_node.node);
     if (njs_slow_path(node == NULL)) {
         return NULL;
     }
@@ -1018,7 +1018,7 @@ njs_global_this_prop_handler(njs_vm_t *vm, njs_object_prop_t *prop,
 
     var_node.key = (uintptr_t) lhq.value;
 
-    rb_node = njs_rbtree_find(vm->variables_hash, &var_node.node);
+    rb_node = njs_rbtree_find(&vm->global_scope->variables, &var_node.node);
     if (rb_node == NULL) {
         return NJS_DECLINED;
     }

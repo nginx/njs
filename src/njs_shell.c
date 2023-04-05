@@ -1205,8 +1205,8 @@ njs_completion_generator(const char *text, int state)
         cmpl->length = njs_strlen(text);
         cmpl->suffix_completions = NULL;
 
-        if (vm->variables_hash != NULL) {
-            cmpl->node = njs_rbtree_min(vm->variables_hash);
+        if (vm->global_scope != NULL) {
+            cmpl->node = njs_rbtree_min(&vm->global_scope->variables);
         }
     }
 
@@ -1214,7 +1214,8 @@ next:
 
     switch (cmpl->phase) {
     case NJS_COMPLETION_VAR:
-        variables = vm->variables_hash;
+        variables = (vm->global_scope != NULL) ? &vm->global_scope->variables
+                                               : NULL;
 
         if (variables == NULL) {
             njs_next_phase(cmpl);
