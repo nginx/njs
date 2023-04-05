@@ -145,6 +145,7 @@ njs_vm_destroy(njs_vm_t *vm)
 njs_int_t
 njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 {
+    size_t              global_items;
     njs_int_t           ret;
     njs_str_t           ast;
     njs_chb_t           chain;
@@ -155,6 +156,8 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     njs_parser_scope_t  *scope;
 
     vm->codes = NULL;
+
+    global_items = (vm->global_scope != NULL) ? vm->global_scope->items : 0;
 
     ret = njs_parser_init(vm, &parser, vm->global_scope, &vm->options.file,
                           *start, end, 0);
@@ -202,9 +205,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         return NJS_ERROR;
     }
 
-    vm->global_scope = scope;
-
-    if (scope->items > vm->global_items) {
+    if (scope->items > global_items) {
         global = vm->levels[NJS_LEVEL_GLOBAL];
 
         new = njs_scope_make(vm, scope->items);
@@ -215,8 +216,8 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
         vm->levels[NJS_LEVEL_GLOBAL] = new;
 
         if (global != NULL) {
-            while (vm->global_items != 0) {
-                vm->global_items--;
+            while (global_items != 0) {
+                global_items--;
 
                 *new++ = *global++;
             }
@@ -228,7 +229,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 
     vm->start = generator.code_start;
     vm->variables_hash = &scope->variables;
-    vm->global_items = scope->items;
+    vm->global_scope = scope;
 
     if (vm->options.disassemble) {
         njs_disassembler(vm);
@@ -351,7 +352,7 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
         goto fail;
     }
 
-    global = njs_scope_make(nvm, nvm->global_items);
+    global = njs_scope_make(nvm, nvm->global_scope->items);
     if (njs_slow_path(global == NULL)) {
         goto fail;
     }

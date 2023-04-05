@@ -126,7 +126,6 @@ struct njs_vm_s {
 
     njs_arr_t                *scope_absolute;
     njs_value_t              **levels[NJS_LEVEL_MAX];
-    size_t                   global_items;
 
     njs_external_ptr_t       external;
 
