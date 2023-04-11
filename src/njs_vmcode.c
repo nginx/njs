@@ -1853,7 +1853,7 @@ error:
 
         lambda_call = (native == &vm->active_frame->native);
 
-        njs_vm_scopes_restore(vm, native, previous);
+        njs_vm_scopes_restore(vm, native);
 
         if (native->size != 0) {
             vm->spare_stack_size += native->size;
@@ -2674,8 +2674,7 @@ njs_function_new_object(njs_vm_t *vm, njs_value_t *constructor)
 static njs_jump_off_t
 njs_vmcode_return(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
 {
-    njs_frame_t         *frame;
-    njs_native_frame_t  *previous;
+    njs_frame_t  *frame;
 
     frame = (njs_frame_t *) vm->top_frame;
 
@@ -2688,9 +2687,7 @@ njs_vmcode_return(njs_vm_t *vm, njs_value_t *invld, njs_value_t *retval)
         }
     }
 
-    previous = njs_function_previous_frame(&frame->native);
-
-    njs_vm_scopes_restore(vm, &frame->native, previous);
+    njs_vm_scopes_restore(vm, &frame->native);
 
     *frame->native.retval = *retval;
 

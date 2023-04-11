@@ -239,8 +239,7 @@ struct njs_vm_shared_s {
 };
 
 
-void njs_vm_scopes_restore(njs_vm_t *vm, njs_native_frame_t *frame,
-    njs_native_frame_t *previous);
+void njs_vm_scopes_restore(njs_vm_t *vm, njs_native_frame_t *frame);
 
 njs_int_t njs_builtin_objects_create(njs_vm_t *vm);
 njs_int_t njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global);

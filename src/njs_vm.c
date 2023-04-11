@@ -442,12 +442,11 @@ njs_vm_invoke(njs_vm_t *vm, njs_function_t *function, const njs_value_t *args,
 
 
 void
-njs_vm_scopes_restore(njs_vm_t *vm, njs_native_frame_t *native,
-    njs_native_frame_t *previous)
+njs_vm_scopes_restore(njs_vm_t *vm, njs_native_frame_t *native)
 {
     njs_frame_t  *frame;
 
-    vm->top_frame = previous;
+    vm->top_frame = native->previous;
 
     if (native->function->native) {
         return;

@@ -65,9 +65,6 @@ struct njs_native_frame_s {
     uint8_t                        native;            /* 1 bit  */
     /* Function is called as constructor with "new" keyword. */
     uint8_t                        ctor;              /* 1 bit  */
-
-    /* Skip the Function.call() and Function.apply() methods frames. */
-    uint8_t                        skip;              /* 1 bit  */
 };
 
 
@@ -158,21 +155,6 @@ njs_function_frame(njs_vm_t *vm, njs_function_t *function,
     } else {
         return njs_function_lambda_frame(vm, function, this, args, nargs, ctor);
     }
-}
-
-
-njs_inline njs_native_frame_t *
-njs_function_previous_frame(njs_native_frame_t *frame)
-{
-    njs_native_frame_t  *previous;
-
-    do {
-        previous = frame->previous;
-        frame = previous;
-
-    } while (frame->skip);
-
-    return frame;
 }
 
 
