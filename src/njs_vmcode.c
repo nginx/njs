@@ -19,7 +19,7 @@ static njs_jump_off_t njs_vmcode_function(njs_vm_t *vm, u_char *pc);
 static njs_jump_off_t njs_vmcode_arguments(njs_vm_t *vm, u_char *pc);
 static njs_jump_off_t njs_vmcode_regexp(njs_vm_t *vm, u_char *pc);
 static njs_jump_off_t njs_vmcode_template_literal(njs_vm_t *vm,
-    njs_value_t *inlvd1, njs_value_t *inlvd2);
+    njs_value_t *retval);
 static njs_jump_off_t njs_vmcode_function_copy(njs_vm_t *vm, njs_value_t *value,
     njs_index_t retval);
 
@@ -874,17 +874,13 @@ NEXT_LBL;
     CASE (NJS_VMCODE_TEMPLATE_LITERAL):
         njs_vmcode_debug_opcode();
 
-        value2 = (njs_value_t *) vmcode->operand1;
+        njs_vmcode_operand(vm, vmcode->operand1, retval);
 
-        ret = njs_vmcode_template_literal(vm, NULL, value2);
+        ret = njs_vmcode_template_literal(vm, retval);
 
         if (njs_slow_path(ret < 0 && ret >= NJS_PREEMPT)) {
             goto error;
         }
-
-        njs_vmcode_operand(vm, vmcode->operand1, retval);
-        njs_release(vm, retval);
-        *retval = vm->retval;
 
         BREAK;
 
@@ -1987,11 +1983,9 @@ njs_vmcode_regexp(njs_vm_t *vm, u_char *pc)
 
 
 static njs_jump_off_t
-njs_vmcode_template_literal(njs_vm_t *vm, njs_value_t *invld1,
-    njs_value_t *retval)
+njs_vmcode_template_literal(njs_vm_t *vm, njs_value_t *retval)
 {
     njs_array_t     *array;
-    njs_value_t     *value;
     njs_jump_off_t  ret;
 
     static const njs_function_t  concat = {
@@ -1999,22 +1993,14 @@ njs_vmcode_template_literal(njs_vm_t *vm, njs_value_t *invld1,
           .u.native = njs_string_prototype_concat
     };
 
-    value = njs_scope_valid_value(vm, (njs_index_t) retval);
+    njs_assert(njs_is_array(retval));
 
-    if (!njs_is_primitive(value)) {
-        array = njs_array(value);
+    array = njs_array(retval);
 
-        ret = njs_function_frame(vm, (njs_function_t *) &concat,
-                                 &njs_string_empty, array->start,
-                                 array->length, 0);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
-
-        ret = njs_function_frame_invoke(vm, value);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
+    ret = njs_function_call(vm, (njs_function_t *) &concat, &njs_string_empty,
+                            array->start, array->length, retval);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
     return sizeof(njs_vmcode_template_literal_t);
