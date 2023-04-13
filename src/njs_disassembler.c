@@ -29,8 +29,6 @@ static njs_code_name_t  code_names[] = {
           njs_str("REGEXP          ") },
     { NJS_VMCODE_TEMPLATE_LITERAL, sizeof(njs_vmcode_template_literal_t),
           njs_str("TEMPLATE LITERAL") },
-    { NJS_VMCODE_OBJECT_COPY, sizeof(njs_vmcode_object_copy_t),
-          njs_str("OBJECT COPY     ") },
 
     { NJS_VMCODE_FUNCTION_COPY, sizeof(njs_vmcode_function_copy_t),
           njs_str("FUNCTION COPY   ") },

@@ -20,8 +20,6 @@ static njs_jump_off_t njs_vmcode_arguments(njs_vm_t *vm, u_char *pc);
 static njs_jump_off_t njs_vmcode_regexp(njs_vm_t *vm, u_char *pc);
 static njs_jump_off_t njs_vmcode_template_literal(njs_vm_t *vm,
     njs_value_t *inlvd1, njs_value_t *inlvd2);
-static njs_jump_off_t njs_vmcode_object_copy(njs_vm_t *vm, njs_value_t *value,
-    njs_value_t *invld);
 static njs_jump_off_t njs_vmcode_function_copy(njs_vm_t *vm, njs_value_t *value,
     njs_index_t retval);
 
@@ -206,7 +204,6 @@ njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc, void *promise_cap,
         NJS_GOTO_ROW(NJS_VMCODE_LEFT_SHIFT),
         NJS_GOTO_ROW(NJS_VMCODE_RIGHT_SHIFT),
         NJS_GOTO_ROW(NJS_VMCODE_UNSIGNED_RIGHT_SHIFT),
-        NJS_GOTO_ROW(NJS_VMCODE_OBJECT_COPY),
         NJS_GOTO_ROW(NJS_VMCODE_TEMPLATE_LITERAL),
         NJS_GOTO_ROW(NJS_VMCODE_PROPERTY_IN),
         NJS_GOTO_ROW(NJS_VMCODE_PROPERTY_DELETE),
@@ -873,23 +870,6 @@ NEXT_LBL;
         u32 = njs_number_to_uint32(njs_number(value2)) & 0x1f;
         njs_set_uint32(retval, njs_number_to_uint32(num) >> u32);
         NEXT;
-
-    CASE (NJS_VMCODE_OBJECT_COPY):
-        njs_vmcode_debug_opcode();
-
-        njs_vmcode_operand(vm, vmcode->operand2, value1);
-
-        ret = njs_vmcode_object_copy(vm, value1, NULL);
-
-        if (njs_slow_path(ret < 0 && ret >= NJS_PREEMPT)) {
-            goto error;
-        }
-
-        njs_vmcode_operand(vm, vmcode->operand1, retval);
-        njs_release(vm, retval);
-        *retval = vm->retval;
-
-        BREAK;
 
     CASE (NJS_VMCODE_TEMPLATE_LITERAL):
         njs_vmcode_debug_opcode();
@@ -2038,42 +2018,6 @@ njs_vmcode_template_literal(njs_vm_t *vm, njs_value_t *invld1,
     }
 
     return sizeof(njs_vmcode_template_literal_t);
-}
-
-
-static njs_jump_off_t
-njs_vmcode_object_copy(njs_vm_t *vm, njs_value_t *value, njs_value_t *invld)
-{
-    njs_object_t    *object;
-    njs_function_t  *function;
-
-    switch (value->type) {
-
-    case NJS_OBJECT:
-        object = njs_object_value_copy(vm, value);
-        if (njs_slow_path(object == NULL)) {
-            return NJS_ERROR;
-        }
-
-        break;
-
-    case NJS_FUNCTION:
-        function = njs_function_value_copy(vm, value);
-        if (njs_slow_path(function == NULL)) {
-            return NJS_ERROR;
-        }
-
-        break;
-
-    default:
-        break;
-    }
-
-    vm->retval = *value;
-
-    njs_retain(value);
-
-    return sizeof(njs_vmcode_object_copy_t);
 }
 
 
