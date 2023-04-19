@@ -10,7 +10,7 @@
 
 static njs_int_t
 njs_set_timer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused, njs_bool_t immediate)
+    njs_index_t unused, njs_bool_t immediate, njs_value_t *retval)
 {
     njs_uint_t     n;
     uint64_t       delay;
@@ -69,7 +69,7 @@ njs_set_timer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (njs_add_event(vm, event) == NJS_OK) {
-        njs_set_number(&vm->retval, vm->event_id - 1);
+        njs_set_number(retval, vm->event_id - 1);
     }
 
     return NJS_OK;
@@ -84,23 +84,23 @@ memory_error:
 
 njs_int_t
 njs_set_timeout(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
-    return njs_set_timer(vm, args, nargs, unused, 0);
+    return njs_set_timer(vm, args, nargs, unused, 0, retval);
 }
 
 
 njs_int_t
 njs_set_immediate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
-    return njs_set_timer(vm, args, nargs, unused, 1);
+    return njs_set_timer(vm, args, nargs, unused, 1, retval);
 }
 
 
 njs_int_t
 njs_clear_timeout(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     u_char              buf[16], *p;
     njs_int_t           ret;
@@ -108,7 +108,7 @@ njs_clear_timeout(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_lvlhsh_query_t  lhq;
 
     if (njs_fast_path(nargs < 2) || !njs_is_number(&args[1])) {
-        njs_set_undefined(&vm->retval);
+        njs_set_undefined(retval);
         return NJS_OK;
     }
 
@@ -127,7 +127,7 @@ njs_clear_timeout(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         njs_del_event(vm, event, NJS_EVENT_RELEASE | NJS_EVENT_DELETE);
     }
 
-    njs_set_undefined(&vm->retval);
+    njs_set_undefined(retval);
 
     return NJS_OK;
 }

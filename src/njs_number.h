@@ -27,13 +27,13 @@ njs_int_t njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
 njs_int_t njs_number_to_chain(njs_vm_t *vm, njs_chb_t *chain,
     double number);
 njs_int_t njs_number_global_is_nan(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 njs_int_t njs_number_global_is_finite(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 njs_int_t njs_number_parse_int(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 njs_int_t njs_number_parse_float(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 
 
 njs_inline njs_bool_t

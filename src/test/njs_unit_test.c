@@ -13311,6 +13311,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var b = new Boolean(1); b.__proto__ === Boolean.prototype"),
       njs_str("true") },
 
+    { njs_str("Boolean(1).toString() === 'true'"),
+      njs_str("true") },
+
+    { njs_str("Boolean(0).toString() === 'false'"),
+      njs_str("true") },
+
     { njs_str("Number()"),
       njs_str("0") },
 
@@ -23366,6 +23372,8 @@ typedef struct {
 
 typedef struct {
     njs_vm_t            *vm;
+    njs_value_t         retval;
+
     njs_external_env_t  *env;
     njs_external_env_t  env0;
 
@@ -23438,13 +23446,16 @@ njs_external_state_init(njs_vm_t *vm, njs_external_state_t *s, njs_opts_t *opts)
 
 
 static njs_int_t
-njs_external_retval(njs_external_state_t *state, njs_str_t *s)
+njs_external_retval(njs_external_state_t *state, njs_int_t ret, njs_str_t *s)
 {
-    if (state->env != NULL && njs_value_is_valid(&state->env->retval)) {
+    if (state->env != NULL
+        && ret == NJS_OK
+        && njs_value_is_valid(&state->env->retval))
+    {
         return njs_vm_value_string(state->vm, s, &state->env->retval);
     }
 
-    return njs_vm_retval_string(state->vm, s);
+    return njs_vm_value_string(state->vm, s, &state->retval);
 }
 
 
@@ -23530,11 +23541,13 @@ njs_process_test(njs_external_state_t *state, njs_opts_t *opts,
     static const njs_str_t  handler_str = njs_str("main.handler");
     static const njs_str_t  request_str = njs_str("$r");
 
+    ret = NJS_OK;
+
     switch (state->state) {
     case sw_start:
         state->state = sw_handler;
 
-        ret = njs_vm_start(state->vm);
+        ret = njs_vm_start(state->vm, &state->retval);
         if (ret != NJS_OK) {
             goto done;
         }
@@ -23597,7 +23610,7 @@ done:
 
     state->state = sw_done;
 
-    if (njs_external_retval(state, &s) != NJS_OK) {
+    if (njs_external_retval(state, ret, &s) != NJS_OK) {
         njs_stderror("njs_external_retval() failed\n");
         return NJS_ERROR;
     }
@@ -23706,8 +23719,8 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
 
         } else {
             if (ret != NJS_OK) {
-                if (njs_vm_retval_string(vm, &s) != NJS_OK) {
-                    njs_printf("njs_vm_retval_string() failed\n");
+                if (njs_vm_exception_string(vm, &s) != NJS_OK) {
+                    njs_printf("njs_vm_exception_string() failed\n");
                     goto done;
                 }
 
@@ -23764,6 +23777,7 @@ njs_interactive_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
     njs_uint_t    i;
     njs_stat_t    prev;
     njs_bool_t    success;
+    njs_value_t   retval;
     njs_vm_opt_t  options;
 
     vm = NULL;
@@ -23820,12 +23834,12 @@ njs_interactive_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
                     njs_disassembler(vm);
                 }
 
-                ret = njs_vm_start(vm);
+                ret = njs_vm_start(vm, &retval);
             }
         }
 
-        if (njs_vm_retval_dump(vm, &s, 0) != NJS_OK) {
-            njs_printf("njs_vm_retval_dump() failed\n");
+        if (njs_vm_value_dump(vm, &s, &retval, 0, 1) != NJS_OK) {
+            njs_printf("njs_vm_value_dump() failed\n");
             goto done;
         }
 
@@ -23959,7 +23973,7 @@ njs_vm_json_test(njs_unit_test_t unused[], size_t num, njs_str_t *name,
     njs_uint_t    i;
     njs_bool_t    success;
     njs_stat_t    prev;
-    njs_value_t   args[3];
+    njs_value_t   args[3], retval;
     njs_vm_opt_t  options;
 
     static const njs_str_t fname = njs_str("replacer");
@@ -24009,32 +24023,30 @@ njs_vm_json_test(njs_unit_test_t unused[], size_t num, njs_str_t *name,
             goto done;
         }
 
-        ret = njs_vm_start(vm);
+        ret = njs_vm_start(vm, &args[0]);
         if (ret != NJS_OK) {
-            njs_printf("njs_vm_run() failed\n");
+            njs_printf("njs_vm_start() failed\n");
             goto done;
         }
 
-        args[0] = *njs_vm_retval(vm);
-
-        ret = njs_vm_json_parse(vm, args, 1);
+        ret = njs_vm_json_parse(vm, args, 1, &retval);
         if (ret != NJS_OK) {
             njs_printf("njs_vm_json_parse() failed\n");
             goto done;
         }
 
-        args[0] = vm->retval;
+        njs_value_assign(&args[0], &retval);
         njs_vm_value(vm, &fname, &args[1]);
         njs_vm_value(vm, &iname, &args[2]);
 
-        ret = njs_vm_json_stringify(vm, args, 3);
+        ret = njs_vm_json_stringify(vm, args, 3, &retval);
         if (ret != NJS_OK) {
             njs_printf("njs_vm_json_stringify() failed\n");
             goto done;
         }
 
-        if (njs_vm_retval_string(vm, &s) != NJS_OK) {
-            njs_printf("njs_vm_retval_string() failed\n");
+        if (njs_vm_value_string(vm, &s, &retval) != NJS_OK) {
+            njs_printf("njs_vm_value_string() failed\n");
             goto done;
         }
 
@@ -24061,8 +24073,8 @@ njs_vm_json_test(njs_unit_test_t unused[], size_t num, njs_str_t *name,
 done:
 
     if (ret != NJS_OK) {
-        if (njs_vm_retval_string(vm, &s) != NJS_OK) {
-            njs_printf("njs_vm_retval_string() failed\n");
+        if (njs_vm_exception_string(vm, &s) != NJS_OK) {
+            njs_printf("njs_vm_exception_string() failed\n");
 
         } else {
             njs_printf("%V\n", &s);
@@ -24089,6 +24101,7 @@ njs_vm_value_test(njs_unit_test_t unused[], size_t num, njs_str_t *name,
     njs_uint_t    i;
     njs_bool_t    success;
     njs_stat_t    prev;
+    njs_value_t   retval;
     njs_vm_opt_t  options;
 
     static struct {
@@ -24171,7 +24184,7 @@ njs_vm_value_test(njs_unit_test_t unused[], size_t num, njs_str_t *name,
             goto done;
         }
 
-        ret = njs_vm_start(vm);
+        ret = njs_vm_start(vm, &retval);
         if (ret != NJS_OK) {
             njs_printf("njs_vm_run() failed\n");
             goto done;
@@ -24187,11 +24200,19 @@ njs_vm_value_test(njs_unit_test_t unused[], size_t num, njs_str_t *name,
 
         memcpy(path.start, tests[i].path.start, path.length);
 
-        ret = njs_vm_value(vm, &path, &vm->retval);
+        ret = njs_vm_value(vm, &path, &retval);
 
-        if (njs_vm_retval_string(vm, &s) != NJS_OK) {
-            njs_printf("njs_vm_retval_string() failed\n");
-            goto done;
+        if (ret == NJS_OK) {
+            if (njs_vm_value_string(vm, &s, &retval) != NJS_OK) {
+                njs_printf("njs_vm_value_string() failed\n");
+                goto done;
+            }
+
+        } else {
+            if (njs_vm_exception_string(vm, &s) != NJS_OK) {
+                njs_printf("njs_vm_exception_string() failed\n");
+                goto done;
+            }
         }
 
         success = njs_strstr_eq(&tests[i].ret, &s);
@@ -24217,8 +24238,8 @@ njs_vm_value_test(njs_unit_test_t unused[], size_t num, njs_str_t *name,
 done:
 
     if (ret != NJS_OK) {
-        if (njs_vm_retval_string(vm, &s) != NJS_OK) {
-            njs_printf("njs_vm_retval_string() failed\n");
+        if (njs_vm_exception_string(vm, &s) != NJS_OK) {
+            njs_printf("njs_vm_exception_string() failed\n");
 
         } else {
             njs_printf("%V\n", &s);
@@ -24643,10 +24664,11 @@ failed:
 static njs_int_t
 njs_string_to_index_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
 {
-    njs_str_t   s, string;
-    njs_int_t   ret;
-    njs_bool_t  success, is_integer_index;
-    njs_uint_t  i;
+    njs_str_t    s, string;
+    njs_int_t    ret;
+    njs_bool_t   success, is_integer_index;
+    njs_uint_t   i;
+    njs_value_t  value;
 
     static const struct {
         njs_value_t  value;
@@ -24680,12 +24702,12 @@ njs_string_to_index_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
 
     for (i = 0; i < njs_nitems(tests); i++) {
         if (njs_is_string(&tests[i].value)) {
-            njs_set_number(&vm->retval, njs_string_to_index(&tests[i].value));
+            njs_set_number(&value, njs_string_to_index(&tests[i].value));
 
-            ret = njs_vm_retval_dump(vm, &s, 0);
+            ret = njs_vm_value_dump(vm, &s, &value, 0, 0);
             if (ret != NJS_OK) {
                 njs_printf("njs_string_to_index_test: "
-                           "njs_vm_retval_dump() failed\n");
+                           "njs_vm_value_dump() failed\n");
                 return NJS_ERROR;
             }
 
@@ -24702,7 +24724,7 @@ njs_string_to_index_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
             }
         }
 
-        is_integer_index = njs_key_is_integer_index(njs_number(&vm->retval),
+        is_integer_index = njs_key_is_integer_index(njs_number(&value),
                                                     &tests[i].value);
 
         if (tests[i].is_integer_index != is_integer_index) {

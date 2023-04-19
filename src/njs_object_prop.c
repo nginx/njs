@@ -189,6 +189,7 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
     uint32_t              length, index;
     njs_int_t             ret;
     njs_array_t           *array;
+    njs_value_t           retval;
     njs_object_prop_t     *prop, *prev;
     njs_property_query_t  pq;
 
@@ -557,7 +558,7 @@ done:
         if (prev->type == NJS_PROPERTY_HANDLER) {
             if (prev->writable) {
                 ret = njs_prop_handler(prev)(vm, prev, object,
-                                             njs_prop_value(prop), &vm->retval);
+                                             njs_prop_value(prop), &retval);
                 if (njs_slow_path(ret == NJS_ERROR)) {
                     return ret;
                 }

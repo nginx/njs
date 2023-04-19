@@ -348,7 +348,7 @@ njs_unit_test_r_header_keys(njs_vm_t *vm, njs_value_t *value, njs_value_t *keys)
 
 static njs_int_t
 njs_unit_test_r_method(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_int_t            ret;
     njs_str_t            s;
@@ -362,11 +362,10 @@ njs_unit_test_r_method(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     ret = njs_vm_value_to_bytes(vm, &s, njs_arg(args, nargs, 1));
     if (ret == NJS_OK && s.length == 3 && memcmp(s.start, "YES", 3) == 0) {
-        return njs_vm_value_string_set(vm, njs_vm_retval(vm), r->uri.start,
-                                       r->uri.length);
+        return njs_vm_value_string_set(vm, retval, r->uri.start, r->uri.length);
     }
 
-    njs_set_undefined(&vm->retval);
+    njs_set_undefined(retval);
 
     return NJS_OK;
 }
@@ -374,14 +373,14 @@ njs_unit_test_r_method(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_unit_test_promise_trampoline(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
     njs_function_t  *callback;
 
     callback = njs_value_function(njs_argument(args, 1));
 
     if (callback != NULL) {
-        return njs_vm_call(vm, callback, njs_argument(args, 2), 1);
+        return njs_vm_invoke(vm, callback, njs_argument(args, 2), 1, retval);
     }
 
     return NJS_OK;
@@ -390,10 +389,10 @@ njs_unit_test_promise_trampoline(njs_vm_t *vm, njs_value_t *args,
 
 static njs_int_t
 njs_unit_test_r_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_int_t            ret;
-    njs_value_t          retval, *argument, *select;
+    njs_value_t          value, *argument, *select;
     njs_vm_event_t       vm_event;
     njs_function_t       *callback;
     njs_external_ev_t    *ev;
@@ -412,7 +411,7 @@ njs_unit_test_r_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    ret = njs_vm_promise_create(vm, &retval, &ev->callbacks[0]);
+    ret = njs_vm_promise_create(vm, &value, &ev->callbacks[0]);
     if (ret != NJS_OK) {
         return NJS_ERROR;
     }
@@ -442,7 +441,7 @@ njs_unit_test_r_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     njs_queue_insert_tail(&env->events, &ev->link);
 
-    njs_vm_retval_set(vm, njs_value_arg(&retval));
+    njs_value_assign(retval, &value);
 
     return NJS_OK;
 }
@@ -450,7 +449,7 @@ njs_unit_test_r_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_unit_test_r_retval(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_external_env_t  *env;
 
@@ -458,7 +457,7 @@ njs_unit_test_r_retval(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     njs_value_assign(&env->retval, njs_arg(args, nargs, 1));
 
-    njs_set_undefined(&vm->retval);
+    njs_set_undefined(retval);
 
     return NJS_OK;
 }
@@ -466,7 +465,7 @@ njs_unit_test_r_retval(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_unit_test_r_create(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_int_t            ret;
     njs_unit_test_req_t  *r, *sr;
@@ -488,7 +487,7 @@ njs_unit_test_r_create(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    ret = njs_vm_external_create(vm, &vm->retval, njs_external_r_proto_id,
+    ret = njs_vm_external_create(vm, retval, njs_external_r_proto_id,
                                  sr, 0);
     if (ret != NJS_OK) {
         return NJS_ERROR;
@@ -506,7 +505,7 @@ memory_error:
 
 static njs_int_t
 njs_unit_test_r_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_str_t            name;
     njs_unit_test_req_t  *r;
@@ -527,7 +526,7 @@ njs_unit_test_r_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_unit_test_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_unit_test_req_t  *sr;
 
@@ -543,7 +542,7 @@ njs_unit_test_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    return njs_vm_external_create(vm, &vm->retval, njs_external_r_proto_id,
+    return njs_vm_external_create(vm, retval, njs_external_r_proto_id,
                                   sr, 0);
 }
 

@@ -33,15 +33,15 @@ static njs_int_t
 njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
     njs_benchmark_test_t *test)
 {
-    u_char                *start;
-    njs_vm_t              *vm, *nvm;
-    uint64_t              ns;
-    njs_int_t             ret, proto_id;
-    njs_str_t             s, *expected;
-    njs_uint_t            i, n;
-    njs_bool_t            success;
-    njs_value_t           *result, name, usec, times;
-    njs_vm_opt_t          options;
+    u_char        *start;
+    njs_vm_t      *vm, *nvm;
+    uint64_t      ns;
+    njs_int_t     ret, proto_id;
+    njs_str_t     s, *expected;
+    njs_uint_t    i, n;
+    njs_bool_t    success;
+    njs_value_t   *result, retval, name, usec, times;
+    njs_vm_opt_t  options;
 
     static const njs_value_t  name_key = njs_string("name");
     static const njs_value_t  usec_key = njs_string("usec");
@@ -86,10 +86,10 @@ njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
             goto done;
         }
 
-        (void) njs_vm_start(nvm);
+        (void) njs_vm_start(nvm, &retval);
 
-        if (njs_vm_retval_string(nvm, &s) != NJS_OK) {
-            njs_printf("njs_vm_retval_string() failed\n");
+        if (njs_vm_value_string(nvm, &s, &retval) != NJS_OK) {
+            njs_printf("njs_vm_value_string() failed\n");
             goto done;
         }
 
@@ -397,7 +397,7 @@ main(int argc, char **argv)
     njs_str_t             out;
     njs_uint_t            i;
     njs_opts_t            opts;
-    njs_value_t           args[2], report;
+    njs_value_t           args[2], report, retval;
     njs_vm_opt_t          options;
     njs_benchmark_test_t  *test;
 
@@ -477,7 +477,7 @@ main(int argc, char **argv)
         goto done;
     }
 
-    njs_vm_start(vm);
+    njs_vm_start(vm, &retval);
 
     ret = njs_vm_array_alloc(vm, &report, 8);
     if (ret != NJS_OK) {
@@ -513,11 +513,12 @@ main(int argc, char **argv)
 
         args[1] = report;
 
-        njs_vm_call(vm, njs_vm_function(vm, &compare), njs_value_arg(&args), 2);
+        njs_vm_invoke(vm, njs_vm_function(vm, &compare), njs_value_arg(&args),
+                      2, &retval);
 
-        ret = njs_vm_value_dump(vm, &out, njs_vm_retval(vm), 1, 1);
+        ret = njs_vm_value_dump(vm, &out, &retval, 1, 1);
         if (ret != NJS_OK) {
-            njs_printf("njs_vm_retval_dump() failed\n");
+            njs_printf("njs_vm_value_dump() failed\n");
             goto done;
         }
 
@@ -527,15 +528,15 @@ main(int argc, char **argv)
     }
 
     if (opts.dump_report) {
-        ret = njs_vm_json_stringify(vm, &report, 1);
+        ret = njs_vm_json_stringify(vm, &report, 1, &retval);
         if (ret != NJS_OK) {
             njs_printf("njs_vm_json_stringify() failed\n");
             goto done;
         }
 
-        ret = njs_vm_value_dump(vm, &out, njs_vm_retval(vm), 1, 1);
+        ret = njs_vm_value_dump(vm, &out, &retval, 1, 1);
         if (ret != NJS_OK) {
-            njs_printf("njs_vm_retval_dump() failed\n");
+            njs_printf("njs_vm_value_dump() failed\n");
             goto done;
         }
 

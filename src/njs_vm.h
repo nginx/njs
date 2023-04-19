@@ -118,8 +118,7 @@ typedef enum {
 
 
 struct njs_vm_s {
-    /* njs_vm_t must be aligned to njs_value_t due to scratch value. */
-    njs_value_t              retval;
+    njs_value_t              exception;
 
     njs_arr_t                *paths;
     njs_arr_t                *protos;
@@ -239,6 +238,8 @@ struct njs_vm_shared_s {
 };
 
 
+njs_int_t njs_vm_init(njs_vm_t *vm);
+njs_value_t njs_vm_exception(njs_vm_t *vm);
 void njs_vm_scopes_restore(njs_vm_t *vm, njs_native_frame_t *frame);
 
 njs_int_t njs_builtin_objects_create(njs_vm_t *vm);

@@ -375,7 +375,7 @@ njs_date_alloc(njs_vm_t *vm, double time)
 
 static njs_int_t
 njs_date_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     double      time;
     njs_int_t   ret;
@@ -383,7 +383,7 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     int64_t     tm[NJS_DATE_MAX_FIELDS];
 
     if (!vm->top_frame->ctor) {
-        return njs_date_string(vm, &vm->retval, NJS_DATE_FMT_TO_STRING,
+        return njs_date_string(vm, retval, NJS_DATE_FMT_TO_STRING,
                                njs_gettime());
     }
 
@@ -425,7 +425,7 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    njs_set_date(&vm->retval, date);
+    njs_set_date(retval, date);
 
     return NJS_OK;
 }
@@ -433,7 +433,7 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_date_utc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     double      time;
     njs_int_t   ret;
@@ -450,7 +450,7 @@ njs_date_utc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         time = njs_make_date(tm, 0);
     }
 
-    njs_set_number(&vm->retval, time);
+    njs_set_number(retval, time);
 
     return NJS_OK;
 }
@@ -458,9 +458,9 @@ njs_date_utc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_date_now(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
-    njs_set_number(&vm->retval, njs_gettime());
+    njs_set_number(retval, njs_gettime());
 
     return NJS_OK;
 }
@@ -468,7 +468,7 @@ njs_date_now(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_date_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     double     time;
     njs_int_t  ret;
@@ -487,7 +487,7 @@ njs_date_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         time = NAN;
     }
 
-    njs_set_number(&vm->retval, time);
+    njs_set_number(retval, time);
 
     return NJS_OK;
 }
@@ -1087,7 +1087,7 @@ const njs_object_init_t  njs_date_constructor_init = {
 
 static njs_int_t
 njs_date_prototype_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     if (njs_slow_path(!njs_is_date(&args[0]))) {
         njs_type_error(vm, "cannot convert %s to date",
@@ -1096,7 +1096,7 @@ njs_date_prototype_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    njs_set_number(&vm->retval, njs_date(&args[0])->time);
+    njs_set_number(retval, njs_date(&args[0])->time);
 
     return NJS_OK;
 }
@@ -1104,7 +1104,7 @@ njs_date_prototype_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_date_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t fmt)
+    njs_index_t fmt, njs_value_t *retval)
 {
     double  time;
 
@@ -1122,7 +1122,7 @@ njs_date_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    return njs_date_string(vm, &vm->retval, fmt, time);
+    return njs_date_string(vm, retval, fmt, time);
 }
 
 
@@ -1235,7 +1235,7 @@ njs_date_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *date)
 
 static njs_int_t
 njs_date_prototype_get_field(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t magic)
+    njs_uint_t nargs, njs_index_t magic, njs_value_t *retval)
 {
     double   value;
     int64_t  tm[NJS_DATE_MAX_FIELDS];
@@ -1253,7 +1253,7 @@ njs_date_prototype_get_field(njs_vm_t *vm, njs_value_t *args,
         value = njs_destruct_date(value, tm, magic & 0xf, magic & 0x40);
     }
 
-    njs_set_number(&vm->retval, value);
+    njs_set_number(retval, value);
 
     return NJS_OK;
 }
@@ -1261,7 +1261,7 @@ njs_date_prototype_get_field(njs_vm_t *vm, njs_value_t *args,
 
 static njs_int_t
 njs_date_prototype_get_timezone_offset(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
     double  value;
 
@@ -1278,7 +1278,7 @@ njs_date_prototype_get_timezone_offset(njs_vm_t *vm, njs_value_t *args,
         value = njs_tz_offset(value);
     }
 
-    njs_set_number(&vm->retval, value);
+    njs_set_number(retval, value);
 
     return NJS_OK;
 }
@@ -1286,7 +1286,7 @@ njs_date_prototype_get_timezone_offset(njs_vm_t *vm, njs_value_t *args,
 
 static njs_int_t
 njs_date_prototype_set_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     double     time;
     njs_int_t  ret;
@@ -1313,7 +1313,7 @@ njs_date_prototype_set_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     njs_date(&args[0])->time = time;
-    njs_set_number(&vm->retval, time);
+    njs_set_number(retval, time);
 
     return NJS_OK;
 }
@@ -1321,7 +1321,7 @@ njs_date_prototype_set_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_date_prototype_set_fields(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t magic)
+    njs_uint_t nargs, njs_index_t magic, njs_value_t *retval)
 {
     double      time, num;
     njs_int_t   ret;
@@ -1369,7 +1369,7 @@ njs_date_prototype_set_fields(njs_vm_t *vm, njs_value_t *args,
 done:
 
     njs_date(&args[0])->time = time;
-    njs_set_number(&vm->retval, time);
+    njs_set_number(retval, time);
 
     return NJS_OK;
 }
@@ -1377,7 +1377,7 @@ done:
 
 static njs_int_t
 njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t retval)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_int_t           ret;
     njs_value_t         value;
@@ -1397,7 +1397,7 @@ njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         if (njs_is_function(&value)) {
             return njs_function_apply(vm, njs_function(&value), args, nargs,
-                                      &vm->retval);
+                                      retval);
         }
     }
 

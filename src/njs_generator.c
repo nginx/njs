@@ -4278,7 +4278,7 @@ njs_generate_function_scope(njs_vm_t *vm, njs_generator_t *prev,
 
     code = njs_generate_scope(vm, &generator, node->scope, name);
     if (njs_slow_path(code == NULL)) {
-        if (!njs_is_error(&vm->retval)) {
+        if (!njs_is_error(&vm->exception)) {
             njs_internal_error(vm, "njs_generate_scope() failed");
         }
 

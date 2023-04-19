@@ -421,7 +421,7 @@ typedef struct {
 } njs_vmcode_await_t;
 
 
-njs_int_t njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc,
+njs_int_t njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc, njs_value_t *retval,
     void *promise_cap, void *async_ctx);
 
 njs_object_t *njs_function_new_object(njs_vm_t *vm, njs_value_t *constructor);

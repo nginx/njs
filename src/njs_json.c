@@ -69,7 +69,7 @@ static void njs_json_parse_exception(njs_json_parse_ctx_t *ctx,
     const char *msg, const u_char *pos);
 
 static njs_int_t njs_json_stringify_iterator(njs_vm_t *vm,
-    njs_json_stringify_t *stringify, njs_value_t *value);
+    njs_json_stringify_t *stringify, njs_value_t *value, njs_value_t *retval);
 static njs_function_t *njs_object_to_json_function(njs_vm_t *vm,
     njs_value_t *value);
 static njs_int_t njs_json_stringify_to_json(njs_json_stringify_t* stringify,
@@ -94,7 +94,7 @@ static const njs_object_prop_t  njs_json_object_properties[];
 
 static njs_int_t
 njs_json_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_int_t             ret;
     njs_value_t           *text, value, lvalue, wrapper;
@@ -152,29 +152,30 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return njs_json_internalize_property(vm, njs_function(reviver),
                                              &wrapper,
                                              njs_value_arg(&njs_string_empty),
-                                             0, &vm->retval);
+                                             0, retval);
     }
 
-    vm->retval = value;
+    njs_value_assign(retval, &value);
 
     return NJS_OK;
 }
 
 
 njs_int_t
-njs_vm_json_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs)
+njs_vm_json_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_value_t *retval)
 {
     njs_function_t  *parse;
 
     parse = njs_function(&njs_json_object_properties[1].u.value);
 
-    return njs_vm_call(vm, parse, args, nargs);
+    return njs_vm_invoke(vm, parse, args, nargs, retval);
 }
 
 
 static njs_int_t
 njs_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     size_t                length;
     int64_t               i64;
@@ -262,7 +263,8 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         break;
      }
 
-    return njs_json_stringify_iterator(vm, stringify, njs_arg(args, nargs, 1));
+    return njs_json_stringify_iterator(vm, stringify, njs_arg(args, nargs, 1),
+                                       retval);
 
 memory_error:
 
@@ -273,13 +275,14 @@ memory_error:
 
 
 njs_int_t
-njs_vm_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs)
+njs_vm_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_value_t *retval)
 {
     njs_function_t  *stringify;
 
     stringify = njs_function(&njs_json_object_properties[2].u.value);
 
-    return njs_vm_call(vm, stringify, args, nargs);
+    return njs_vm_invoke(vm, stringify, args, nargs, retval);
 }
 
 
@@ -1083,7 +1086,7 @@ njs_json_stringify_done(njs_json_state_t *state, njs_bool_t array)
 
 static njs_int_t
 njs_json_stringify_iterator(njs_vm_t *vm, njs_json_stringify_t *stringify,
-    njs_value_t *object)
+    njs_value_t *object, njs_value_t *retval)
 {
     int64_t           size;
     njs_int_t         ret;
@@ -1214,11 +1217,11 @@ done:
     }
 
     if (size == 0) {
-        njs_set_undefined(&vm->retval);
+        njs_set_undefined(retval);
         goto release;
     }
 
-    ret = njs_string_create_chb(vm, &vm->retval, &chain);
+    ret = njs_string_create_chb(vm, retval, &chain);
     if (njs_slow_path(ret != NJS_OK)) {
         njs_chb_destroy(&chain);
         goto memory_error;
@@ -1962,7 +1965,7 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
     njs_int_t             ret;
     njs_chb_t             chain;
     njs_str_t             str;
-    njs_value_t           *key, *val, tag;
+    njs_value_t           *key, *val, tag, exception;
     njs_json_state_t      *state;
     njs_string_prop_t     string;
     njs_object_prop_t     *prop;
@@ -1973,6 +1976,16 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
 
     stringify->vm = vm;
     stringify->depth = 0;
+
+    if (njs_slow_path(vm->top_frame == NULL)) {
+        /* An exception was thrown during compilation. */
+        njs_vm_init(vm);
+    }
+
+    if (njs_is_valid(&vm->exception)) {
+        exception = njs_vm_exception(vm);
+        value = &exception;
+    }
 
     njs_chb_init(&chain, vm->mem_pool);
 
@@ -2151,7 +2164,7 @@ memory_error:
 
 exception:
 
-    njs_vm_value_string(vm, retval, &vm->retval);
+    njs_vm_value_string(vm, retval, &vm->exception);
 
     return NJS_OK;
 }

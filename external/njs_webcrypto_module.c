@@ -88,33 +88,36 @@ typedef int (*EVP_PKEY_cipher_t)(EVP_PKEY_CTX *ctx, unsigned char *out,
 
 
 static njs_int_t njs_ext_cipher(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_cipher_pkey(njs_vm_t *vm, njs_str_t *data,
-    njs_webcrypto_key_t *key, njs_index_t encrypt);
+    njs_webcrypto_key_t *key, njs_index_t encrypt, njs_value_t *retval);
 static njs_int_t njs_cipher_aes_gcm(njs_vm_t *vm, njs_str_t *data,
-    njs_webcrypto_key_t *key, njs_value_t *options, njs_bool_t encrypt);
+    njs_webcrypto_key_t *key, njs_value_t *options, njs_bool_t encrypt,
+    njs_value_t *retval);
 static njs_int_t njs_cipher_aes_ctr(njs_vm_t *vm, njs_str_t *data,
-    njs_webcrypto_key_t *key, njs_value_t *options, njs_bool_t encrypt);
+    njs_webcrypto_key_t *key, njs_value_t *options, njs_bool_t encrypt,
+    njs_value_t *retval);
 static njs_int_t njs_cipher_aes_cbc(njs_vm_t *vm, njs_str_t *data,
-    njs_webcrypto_key_t *key, njs_value_t *options, njs_bool_t encrypt);
+    njs_webcrypto_key_t *key, njs_value_t *options, njs_bool_t encrypt,
+    njs_value_t *retval);
 static njs_int_t njs_ext_derive(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t derive_key);
+    njs_uint_t nargs, njs_index_t derive_key, njs_value_t *retval);
 static njs_int_t njs_ext_digest(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_ext_export_key(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_ext_generate_key(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_ext_import_key(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_ext_sign(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t verify);
+    njs_uint_t nargs, njs_index_t verify, njs_value_t *retval);
 static njs_int_t njs_ext_unwrap_key(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_ext_wrap_key(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_ext_get_random_values(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 
 static njs_webcrypto_key_t *njs_webcrypto_key_alloc(njs_vm_t *vm,
     njs_webcrypto_algorithm_t *alg, unsigned usage, njs_bool_t extractable);
@@ -134,7 +137,7 @@ static njs_int_t njs_algorithm_curve(njs_vm_t *vm, njs_value_t *value,
     int *curve);
 
 static njs_int_t njs_webcrypto_result(njs_vm_t *vm, njs_value_t *result,
-    njs_int_t rc);
+    njs_int_t rc, njs_value_t *retval);
 static njs_int_t njs_webcrypto_array_buffer(njs_vm_t *vm, njs_value_t *retval,
     u_char *start, size_t length);
 static void njs_webcrypto_error(njs_vm_t *vm, const char *fmt, ...);
@@ -614,12 +617,12 @@ static njs_int_t    njs_webcrypto_crypto_key_proto_id;
 
 static njs_int_t
 njs_ext_cipher(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t encrypt)
+    njs_index_t encrypt, njs_value_t *retval)
 {
     unsigned                   mask;
     njs_int_t                  ret;
     njs_str_t                  data;
-    njs_value_t                *options;
+    njs_value_t                *options, value;
     njs_webcrypto_key_t        *key;
     njs_webcrypto_algorithm_t  *alg;
 
@@ -658,33 +661,33 @@ njs_ext_cipher(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     switch (alg->type) {
     case NJS_ALGORITHM_RSA_OAEP:
-        ret = njs_cipher_pkey(vm, &data, key, encrypt);
+        ret = njs_cipher_pkey(vm, &data, key, encrypt, &value);
         break;
 
     case NJS_ALGORITHM_AES_GCM:
-        ret = njs_cipher_aes_gcm(vm, &data, key, options, encrypt);
+        ret = njs_cipher_aes_gcm(vm, &data, key, options, encrypt, &value);
         break;
 
     case NJS_ALGORITHM_AES_CTR:
-        ret = njs_cipher_aes_ctr(vm, &data, key, options, encrypt);
+        ret = njs_cipher_aes_ctr(vm, &data, key, options, encrypt, &value);
         break;
 
     case NJS_ALGORITHM_AES_CBC:
     default:
-        ret = njs_cipher_aes_cbc(vm, &data, key, options, encrypt);
+        ret = njs_cipher_aes_cbc(vm, &data, key, options, encrypt, &value);
     }
 
-    return njs_webcrypto_result(vm, njs_vm_retval(vm), ret);
+    return njs_webcrypto_result(vm, &value, ret, retval);
 
 fail:
 
-    return njs_webcrypto_result(vm, njs_vm_retval(vm), NJS_ERROR);
+    return njs_webcrypto_result(vm, NULL, NJS_ERROR, retval);
 }
 
 
 static njs_int_t
 njs_cipher_pkey(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
-    njs_index_t encrypt)
+    njs_index_t encrypt, njs_value_t *retval)
 {
     u_char                  *dst;
     size_t                  outlen;
@@ -746,7 +749,7 @@ njs_cipher_pkey(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
         goto fail;
     }
 
-    ret = njs_vm_value_array_buffer_set(vm, njs_vm_retval(vm), dst, outlen);
+    ret = njs_vm_value_array_buffer_set(vm, retval, dst, outlen);
 
 fail:
 
@@ -758,7 +761,7 @@ fail:
 
 static njs_int_t
 njs_cipher_aes_gcm(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
-    njs_value_t *options, njs_bool_t encrypt)
+    njs_value_t *options, njs_bool_t encrypt, njs_value_t *retval)
 {
     int               len, outlen, dstlen;
     u_char            *dst, *p;
@@ -943,7 +946,7 @@ njs_cipher_aes_gcm(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
         outlen += taglen;
     }
 
-    ret = njs_vm_value_array_buffer_set(vm, njs_vm_retval(vm), dst, outlen);
+    ret = njs_vm_value_array_buffer_set(vm, retval, dst, outlen);
 
 fail:
 
@@ -1059,7 +1062,7 @@ njs_counter128_reset(u_char *src, u_char *dst, njs_uint_t bits)
 
 static njs_int_t
 njs_cipher_aes_ctr(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
-    njs_value_t *options, njs_bool_t encrypt)
+    njs_value_t *options, njs_bool_t encrypt, njs_value_t *retval)
 {
     int               len, len2;
     u_char            *dst;
@@ -1242,7 +1245,7 @@ njs_cipher_aes_ctr(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
 
 done:
 
-    ret = njs_vm_value_array_buffer_set(vm, njs_vm_retval(vm), dst, len);
+    ret = njs_vm_value_array_buffer_set(vm, retval, dst, len);
 
 fail:
 
@@ -1266,7 +1269,7 @@ fail:
 
 static njs_int_t
 njs_cipher_aes_cbc(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
-    njs_value_t *options, njs_bool_t encrypt)
+    njs_value_t *options, njs_bool_t encrypt, njs_value_t *retval)
 {
     int               olen_max, olen, olen2;
     u_char            *dst;
@@ -1363,7 +1366,7 @@ njs_cipher_aes_cbc(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
 
     olen += olen2;
 
-    ret = njs_vm_value_array_buffer_set(vm, njs_vm_retval(vm), dst, olen);
+    ret = njs_vm_value_array_buffer_set(vm, retval, dst, olen);
 
 fail:
 
@@ -1375,7 +1378,7 @@ fail:
 
 static njs_int_t
 njs_ext_derive(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t derive_key)
+    njs_index_t derive_key, njs_value_t *retval)
 {
     u_char                     *k;
     size_t                     olen;
@@ -1683,17 +1686,17 @@ free:
         goto fail;
     }
 
-    return njs_webcrypto_result(vm, &value, NJS_OK);
+    return njs_webcrypto_result(vm, &value, NJS_OK, retval);
 
 fail:
 
-    return njs_webcrypto_result(vm, njs_vm_retval(vm), NJS_ERROR);
+    return njs_webcrypto_result(vm, NULL, NJS_ERROR, retval);
 }
 
 
 static njs_int_t
 njs_ext_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     unsigned              olen;
     u_char                *dst;
@@ -1733,11 +1736,11 @@ njs_ext_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         goto fail;
     }
 
-    return njs_webcrypto_result(vm, &value, NJS_OK);
+    return njs_webcrypto_result(vm, &value, NJS_OK, retval);
 
 fail:
 
-    return njs_webcrypto_result(vm, njs_vm_retval(vm), NJS_ERROR);
+    return njs_webcrypto_result(vm, NULL, NJS_ERROR, retval);
 }
 
 
@@ -2133,7 +2136,7 @@ njs_export_jwk_oct(njs_vm_t *vm, njs_webcrypto_key_t *key, njs_value_t *retval)
 
 static njs_int_t
 njs_ext_export_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     BIO                         *bio;
     BUF_MEM                     *mem;
@@ -2295,17 +2298,17 @@ njs_ext_export_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         break;
     }
 
-    return njs_webcrypto_result(vm, &value, NJS_OK);
+    return njs_webcrypto_result(vm, &value, NJS_OK, retval);
 
 fail:
 
-    return njs_webcrypto_result(vm, njs_vm_retval(vm), NJS_ERROR);
+    return njs_webcrypto_result(vm, NULL, NJS_ERROR, retval);
 }
 
 
 static njs_int_t
 njs_ext_generate_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     int                        nid;
     unsigned                   usage;
@@ -2558,7 +2561,7 @@ njs_ext_generate_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    return njs_webcrypto_result(vm, &value, NJS_OK);
+    return njs_webcrypto_result(vm, &value, NJS_OK, retval);
 
 fail:
 
@@ -2566,7 +2569,7 @@ fail:
         EVP_PKEY_CTX_free(ctx);
     }
 
-    return njs_webcrypto_result(vm, njs_vm_retval(vm), NJS_ERROR);
+    return njs_webcrypto_result(vm, NULL, NJS_ERROR, retval);
 }
 
 
@@ -3186,7 +3189,7 @@ done:
 
 static njs_int_t
 njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     int                         nid;
     BIO                         *bio;
@@ -3530,7 +3533,7 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         goto fail;
     }
 
-    return njs_webcrypto_result(vm, &value, NJS_OK);
+    return njs_webcrypto_result(vm, &value, NJS_OK, retval);
 
 fail:
 
@@ -3538,7 +3541,7 @@ fail:
         EVP_PKEY_free(pkey);
     }
 
-    return njs_webcrypto_result(vm, njs_vm_retval(vm), NJS_ERROR);
+    return njs_webcrypto_result(vm, NULL, NJS_ERROR, retval);
 }
 
 
@@ -3767,7 +3770,7 @@ memory_error:
 
 static njs_int_t
 njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t verify)
+    njs_index_t verify, njs_value_t *retval)
 {
     u_char                     *dst, *p;
     size_t                     olen, outlen;
@@ -3993,7 +3996,7 @@ njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         njs_set_boolean(&value, ret != 0);
     }
 
-    return njs_webcrypto_result(vm, &value, NJS_OK);
+    return njs_webcrypto_result(vm, &value, NJS_OK, retval);
 
 fail:
 
@@ -4005,13 +4008,13 @@ fail:
         EVP_PKEY_CTX_free(pctx);
     }
 
-    return njs_webcrypto_result(vm, njs_vm_retval(vm), NJS_ERROR);
+    return njs_webcrypto_result(vm, NULL, NJS_ERROR, retval);
 }
 
 
 static njs_int_t
 njs_ext_unwrap_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_internal_error(vm, "\"unwrapKey\" not implemented");
     return NJS_ERROR;
@@ -4020,7 +4023,7 @@ njs_ext_unwrap_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_ext_wrap_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_internal_error(vm, "\"wrapKey\" not implemented");
     return NJS_ERROR;
@@ -4029,7 +4032,7 @@ njs_ext_wrap_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_ext_get_random_values(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_int_t  ret;
     njs_str_t  fill;
@@ -4138,7 +4141,7 @@ njs_format_string(njs_webcrypto_key_format_t fmt)
 
 static njs_int_t
 njs_key_usage_array_handler(njs_vm_t *vm, njs_iterator_args_t *args,
-    njs_value_t *value, int64_t index)
+    njs_value_t *value, int64_t index, njs_value_t *retval)
 {
     unsigned               *mask;
     njs_str_t              u;
@@ -4174,6 +4177,7 @@ njs_key_usage(njs_vm_t *vm, njs_value_t *value, unsigned *mask)
 {
     int64_t              length;
     njs_int_t            ret;
+    njs_value_t          retval;
     njs_iterator_args_t  args;
 
     if (!njs_value_is_object(value)) {
@@ -4193,7 +4197,8 @@ njs_key_usage(njs_vm_t *vm, njs_value_t *value, unsigned *mask)
     args.to = length;
     args.data = mask;
 
-    return njs_object_iterate(vm, &args, njs_key_usage_array_handler);
+    return njs_object_iterate(vm, &args, njs_key_usage_array_handler,
+                              &retval);
 }
 
 
@@ -4402,14 +4407,14 @@ njs_algorithm_curve(njs_vm_t *vm, njs_value_t *options, int *curve)
 
 static njs_int_t
 njs_promise_trampoline(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
     njs_function_t  *callback;
 
     callback = njs_value_function(njs_argument(args, 1));
 
     if (callback != NULL) {
-        return njs_vm_call(vm, callback, njs_argument(args, 2), 1);
+        return njs_vm_invoke(vm, callback, njs_argument(args, 2), 1, retval);
     }
 
     return NJS_OK;
@@ -4417,14 +4422,15 @@ njs_promise_trampoline(njs_vm_t *vm, njs_value_t *args,
 
 
 static njs_int_t
-njs_webcrypto_result(njs_vm_t *vm, njs_value_t *result, njs_int_t rc)
+njs_webcrypto_result(njs_vm_t *vm, njs_value_t *result, njs_int_t rc,
+    njs_value_t *retval)
 {
     njs_int_t       ret;
-    njs_value_t     retval, arguments[2];
+    njs_value_t     promise, arguments[2];
     njs_function_t  *callback;
     njs_vm_event_t  vm_event;
 
-    ret = njs_vm_promise_create(vm, &retval, njs_value_arg(&arguments));
+    ret = njs_vm_promise_create(vm, &promise, njs_value_arg(&arguments));
     if (ret != NJS_OK) {
         goto error;
     }
@@ -4440,14 +4446,20 @@ njs_webcrypto_result(njs_vm_t *vm, njs_value_t *result, njs_int_t rc)
     }
 
     njs_value_assign(&arguments[0], &arguments[(rc != NJS_OK)]);
-    njs_value_assign(&arguments[1], result);
+
+    if (rc != NJS_OK) {
+        njs_vm_exception_get(vm, njs_value_arg(&arguments[1]));
+
+    } else {
+        njs_value_assign(&arguments[1], result);
+    }
 
     ret = njs_vm_post_event(vm, vm_event, njs_value_arg(&arguments), 2);
     if (ret == NJS_ERROR) {
         goto error;
     }
 
-    njs_vm_retval_set(vm, njs_value_arg(&retval));
+    njs_value_assign(retval, &promise);
 
     return NJS_OK;
 
@@ -4557,7 +4569,7 @@ njs_webcrypto_error(njs_vm_t *vm, const char *fmt, ...)
         }
     }
 
-    njs_vm_value_error_set(vm, njs_vm_retval(vm), "%*s", p - errstr, errstr);
+    njs_vm_error(vm, "%*s", p - errstr, errstr);
 }
 
 

@@ -9,33 +9,30 @@
 
 
 #define njs_error(vm, fmt, ...)                                               \
-    njs_error_fmt_new(vm, &vm->retval, NJS_OBJ_TYPE_ERROR, fmt, ##__VA_ARGS__)
+    njs_throw_error(vm, NJS_OBJ_TYPE_ERROR, fmt, ##__VA_ARGS__)
 #define njs_eval_error(vm, fmt, ...)                                          \
-    njs_error_fmt_new(vm, &vm->retval, NJS_OBJ_TYPE_EVAL_ERROR, fmt,          \
-                      ##__VA_ARGS__)
+    njs_throw_error(vm, NJS_OBJ_TYPE_EVAL_ERROR, fmt, ##__VA_ARGS__)
 #define njs_internal_error(vm, fmt, ...)                                      \
-    njs_error_fmt_new(vm, &vm->retval, NJS_OBJ_TYPE_INTERNAL_ERROR, fmt,      \
-                      ##__VA_ARGS__)
+    njs_throw_error(vm, NJS_OBJ_TYPE_INTERNAL_ERROR, fmt, ##__VA_ARGS__)
 #define njs_range_error(vm, fmt, ...)                                         \
-    njs_error_fmt_new(vm, &vm->retval, NJS_OBJ_TYPE_RANGE_ERROR, fmt,         \
-                      ##__VA_ARGS__)
+    njs_throw_error(vm, NJS_OBJ_TYPE_RANGE_ERROR, fmt, ##__VA_ARGS__)
 #define njs_reference_error(vm, fmt, ...)                                     \
-    njs_error_fmt_new(vm, &vm->retval, NJS_OBJ_TYPE_REF_ERROR, fmt,           \
-                      ##__VA_ARGS__)
+    njs_throw_error(vm, NJS_OBJ_TYPE_REF_ERROR, fmt, ##__VA_ARGS__)
 #define njs_syntax_error(vm, fmt, ...)                                        \
-    njs_error_fmt_new(vm, &vm->retval, NJS_OBJ_TYPE_SYNTAX_ERROR, fmt,        \
-                      ##__VA_ARGS__)
+    njs_throw_error(vm, NJS_OBJ_TYPE_SYNTAX_ERROR, fmt, ##__VA_ARGS__)
 #define njs_type_error(vm, fmt, ...)                                          \
-    njs_error_fmt_new(vm, &vm->retval, NJS_OBJ_TYPE_TYPE_ERROR, fmt,          \
-                      ##__VA_ARGS__)
+    njs_throw_error(vm, NJS_OBJ_TYPE_TYPE_ERROR, fmt, ##__VA_ARGS__)
 #define njs_uri_error(vm, fmt, ...)                                           \
-    njs_error_fmt_new(vm, &vm->retval, NJS_OBJ_TYPE_URI_ERROR, fmt,           \
-                      ##__VA_ARGS__)
+    njs_throw_error(vm, NJS_OBJ_TYPE_URI_ERROR, fmt, ##__VA_ARGS__)
 
 void njs_error_new(njs_vm_t *vm, njs_value_t *dst, njs_object_type_t type,
     u_char *start, size_t size);
 void njs_noinline njs_error_fmt_new(njs_vm_t *vm, njs_value_t *dst,
     njs_object_type_t type, const char *fmt, ...);
+void njs_throw_error(njs_vm_t *vm, njs_object_type_t type, const char *fmt,
+    ...);
+void njs_throw_error_va(njs_vm_t *vm, njs_object_type_t type, const char *fmt,
+    va_list args);
 
 void njs_memory_error(njs_vm_t *vm);
 void njs_memory_error_set(njs_vm_t *vm, njs_value_t *value);
@@ -46,7 +43,7 @@ njs_object_t *njs_error_alloc(njs_vm_t *vm, njs_object_type_t type,
 njs_int_t njs_error_to_string(njs_vm_t *vm, njs_value_t *retval,
     const njs_value_t *error);
 njs_int_t njs_error_stack(njs_vm_t *vm, njs_value_t *value, njs_value_t *stack);
-njs_int_t njs_error_stack_attach(njs_vm_t *vm, njs_value_t *value);
+njs_int_t njs_error_stack_attach(njs_vm_t *vm, njs_value_t value);
 
 
 extern const njs_object_type_init_t  njs_error_type_init;

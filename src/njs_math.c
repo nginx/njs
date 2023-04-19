@@ -45,7 +45,7 @@ typedef enum {
 
 static njs_int_t
 njs_object_math_func(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t magic)
+    njs_index_t magic, njs_value_t *retval)
 {
     double            num, num2;
     uint8_t           sign;
@@ -268,7 +268,7 @@ njs_object_math_func(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    njs_set_number(&vm->retval, num);
+    njs_set_number(retval, num);
 
     return NJS_OK;
 }
@@ -276,7 +276,7 @@ njs_object_math_func(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_object_math_hypot(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     double      num;
     njs_int_t   ret;
@@ -302,7 +302,7 @@ njs_object_math_hypot(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    njs_set_number(&vm->retval, num);
+    njs_set_number(retval, num);
 
     return NJS_OK;
 }
@@ -332,7 +332,7 @@ njs_fmin(double x, double y)
 
 static njs_int_t
 njs_object_math_min_max(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t max)
+    njs_index_t max, njs_value_t *retval)
 {
     double      num, value;
     njs_int_t   ret;
@@ -354,7 +354,7 @@ njs_object_math_min_max(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         value = max ? njs_fmax(value, num) : njs_fmin(value, num);
     }
 
-    njs_set_number(&vm->retval, value);
+    njs_set_number(retval, value);
 
     return NJS_OK;
 }
@@ -362,13 +362,13 @@ njs_object_math_min_max(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_object_math_random(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     double  num;
 
     num = njs_random(&vm->random) / 4294967296.0;
 
-    njs_set_number(&vm->retval, num);
+    njs_set_number(retval, num);
 
     return NJS_OK;
 }

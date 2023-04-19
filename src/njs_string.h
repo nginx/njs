@@ -248,16 +248,16 @@ uint32_t njs_string_index(njs_string_prop_t *string, uint32_t offset);
 void njs_string_utf8_offset_map_init(const u_char *start, size_t size);
 double njs_string_to_index(const njs_value_t *value);
 njs_int_t njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t component);
+    njs_uint_t nargs, njs_index_t component, njs_value_t *retval);
 njs_int_t njs_string_decode_uri(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t component);
+    njs_uint_t nargs, njs_index_t component, njs_value_t *retval);
 njs_int_t njs_string_btoa(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused);
+    njs_index_t unused, njs_value_t *retval);
 njs_int_t njs_string_atob(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused);
+    njs_index_t unused, njs_value_t *retval);
 
 njs_int_t njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 njs_int_t njs_string_split_part_add(njs_vm_t *vm, njs_array_t *array,
     njs_utf8_t utf8, const u_char *start, size_t size);
 njs_int_t njs_string_get_substitution(njs_vm_t *vm, njs_value_t *matched,

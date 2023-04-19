@@ -1189,6 +1189,7 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     uint32_t              index;
     njs_int_t             ret;
     njs_array_t           *array;
+    njs_value_t           retval;
     njs_object_prop_t     *prop;
     njs_typed_array_t     *tarray;
     njs_property_query_t  pq;
@@ -1264,7 +1265,7 @@ slow_path:
         } else {
             if (njs_prop_setter(prop) != NULL) {
                 return njs_function_call(vm, njs_prop_setter(prop),
-                                         value, setval, 1, &vm->retval);
+                                         value, setval, 1, &retval);
             }
 
             njs_key_string_get(vm, &pq.key,  &pq.lhq.key);
@@ -1275,7 +1276,7 @@ slow_path:
         }
 
         if (prop->type == NJS_PROPERTY_HANDLER) {
-            ret = njs_prop_handler(prop)(vm, prop, value, setval, &vm->retval);
+            ret = njs_prop_handler(prop)(vm, prop, value, setval, &retval);
             if (njs_slow_path(ret != NJS_DECLINED)) {
                 return ret;
             }

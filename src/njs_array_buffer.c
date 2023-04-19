@@ -64,7 +64,7 @@ overflow:
 
 static njs_int_t
 njs_array_buffer_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     uint64_t            size;
     njs_int_t           ret;
@@ -89,7 +89,7 @@ njs_array_buffer_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    njs_set_array_buffer(&vm->retval, array);
+    njs_set_array_buffer(retval, array);
 
     return NJS_OK;
 }
@@ -97,9 +97,9 @@ njs_array_buffer_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_array_buffer_get_this(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
-    vm->retval = args[0];
+    njs_value_assign(retval, njs_argument(args, 0));
 
     return NJS_OK;
 }
@@ -107,9 +107,9 @@ njs_array_buffer_get_this(njs_vm_t *vm, njs_value_t *args,
 
 static njs_int_t
 njs_array_buffer_is_view(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
-    njs_set_boolean(&vm->retval, njs_is_typed_array(njs_arg(args, nargs, 1)));
+    njs_set_boolean(retval, njs_is_typed_array(njs_arg(args, nargs, 1)));
 
     return NJS_OK;
 }
@@ -167,7 +167,7 @@ const njs_object_init_t  njs_array_buffer_constructor_init = {
 
 static njs_int_t
 njs_array_buffer_prototype_byte_length(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
     njs_value_t         *value;
     njs_array_buffer_t  *array;
@@ -186,7 +186,7 @@ njs_array_buffer_prototype_byte_length(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
-    njs_set_number(&vm->retval, array->size);
+    njs_set_number(retval, array->size);
 
     return NJS_OK;
 }
@@ -194,7 +194,7 @@ njs_array_buffer_prototype_byte_length(njs_vm_t *vm, njs_value_t *args,
 
 static njs_int_t
 njs_array_buffer_prototype_slice(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
     int64_t             len, start, end;
     njs_int_t           ret;
@@ -234,7 +234,7 @@ njs_array_buffer_prototype_slice(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
-    njs_set_array_buffer(&vm->retval, buffer);
+    njs_set_array_buffer(retval, buffer);
 
     return NJS_OK;
 }

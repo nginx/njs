@@ -8,7 +8,6 @@
 #include <njs_main.h>
 
 
-static njs_int_t njs_vm_init(njs_vm_t *vm);
 static njs_int_t njs_vm_handle_events(njs_vm_t *vm);
 
 
@@ -77,8 +76,6 @@ njs_vm_create(njs_vm_opt_t *options)
     vm->trace.level = NJS_LEVEL_TRACE;
     vm->trace.size = 2048;
     vm->trace.data = vm;
-
-    njs_set_undefined(&vm->retval);
 
     if (options->init) {
         ret = njs_vm_init(vm);
@@ -198,7 +195,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 
     code = njs_generate_scope(vm, &generator, scope, &njs_entry_main);
     if (njs_slow_path(code == NULL)) {
-        if (!njs_is_error(&vm->retval)) {
+        if (!njs_is_error(&vm->exception)) {
             njs_internal_error(vm, "njs_generate_scope() failed");
         }
 
@@ -375,7 +372,7 @@ fail:
 }
 
 
-static njs_int_t
+njs_int_t
 njs_vm_init(njs_vm_t *vm)
 {
     njs_int_t    ret;
@@ -421,7 +418,9 @@ njs_int_t
 njs_vm_call(njs_vm_t *vm, njs_function_t *function, const njs_value_t *args,
     njs_uint_t nargs)
 {
-    return njs_vm_invoke(vm, function, args, nargs, &vm->retval);
+    njs_value_t  unused;
+
+    return njs_vm_invoke(vm, function, args, nargs, &unused);
 }
 
 
@@ -545,11 +544,11 @@ njs_vm_run(njs_vm_t *vm)
 
 
 njs_int_t
-njs_vm_start(njs_vm_t *vm)
+njs_vm_start(njs_vm_t *vm, njs_value_t *retval)
 {
     njs_int_t  ret;
 
-    ret = njs_vmcode_interpreter(vm, vm->start, NULL, NULL);
+    ret = njs_vmcode_interpreter(vm, vm->start, retval, NULL, NULL);
 
     return (ret == NJS_ERROR) ? NJS_ERROR : NJS_OK;
 }
@@ -655,10 +654,22 @@ njs_vm_add_path(njs_vm_t *vm, const njs_str_t *path)
 }
 
 
-njs_value_t *
-njs_vm_retval(njs_vm_t *vm)
+njs_value_t
+njs_vm_exception(njs_vm_t *vm)
 {
-    return &vm->retval;
+    njs_value_t  value;
+
+    value = vm->exception;
+    njs_set_invalid(&vm->exception);
+
+    return value;
+}
+
+
+void
+njs_vm_exception_get(njs_vm_t *vm, njs_value_t *retval)
+{
+    *retval = njs_vm_exception(vm);
 }
 
 
@@ -691,9 +702,20 @@ njs_vm_meta(njs_vm_t *vm, njs_uint_t index)
 
 
 void
-njs_vm_retval_set(njs_vm_t *vm, const njs_value_t *value)
+njs_vm_throw(njs_vm_t *vm, const njs_value_t *value)
 {
-    vm->retval = *value;
+    vm->exception = *value;
+}
+
+
+void
+njs_vm_error(njs_vm_t *vm, const char *fmt, ...)
+{
+    va_list  args;
+
+    va_start(args, fmt);
+    njs_throw_error_va(vm, NJS_OBJ_TYPE_ERROR, fmt, args);
+    va_end(args);
 }
 
 
@@ -725,7 +747,7 @@ njs_vm_value(njs_vm_t *vm, const njs_str_t *path, njs_value_t *retval)
         }
 
         ret = njs_value_property(vm, &value, &key, njs_value_arg(retval));
-        if (njs_slow_path(ret != NJS_OK)) {
+        if (njs_slow_path(ret == NJS_ERROR)) {
             return ret;
         }
 
@@ -880,7 +902,6 @@ njs_int_t
 njs_vm_prop_name(njs_vm_t *vm, njs_object_prop_t *prop, njs_str_t *dst)
 {
     if (njs_slow_path(!njs_is_string(&prop->name))) {
-        njs_type_error(vm, "property name is not a string");
         return NJS_ERROR;
     }
 
@@ -891,27 +912,9 @@ njs_vm_prop_name(njs_vm_t *vm, njs_object_prop_t *prop, njs_str_t *dst)
 
 
 njs_noinline void
-njs_vm_value_error_set(njs_vm_t *vm, njs_value_t *value, const char *fmt, ...)
-{
-    va_list  args;
-    u_char   buf[NJS_MAX_ERROR_STR], *p;
-
-    p = buf;
-
-    if (fmt != NULL) {
-        va_start(args, fmt);
-        p = njs_vsprintf(buf, buf + sizeof(buf), fmt, args);
-        va_end(args);
-    }
-
-    njs_error_new(vm, value, NJS_OBJ_TYPE_ERROR, buf, p - buf);
-}
-
-
-njs_noinline void
 njs_vm_memory_error(njs_vm_t *vm)
 {
-    njs_memory_error_set(vm, &vm->retval);
+    njs_memory_error_set(vm, &vm->exception);
 }
 
 
@@ -944,6 +947,17 @@ njs_vm_value_string(njs_vm_t *vm, njs_str_t *dst, njs_value_t *src)
 {
     njs_int_t    ret;
     njs_uint_t   exception;
+    njs_value_t  value;
+
+    if (njs_slow_path(vm->top_frame == NULL)) {
+        /* An exception was thrown during compilation. */
+        njs_vm_init(vm);
+    }
+
+    if (njs_is_valid(&vm->exception)) {
+        value = njs_vm_exception(vm);
+        src = &value;
+    }
 
     if (njs_slow_path(src->type == NJS_NUMBER
                       && njs_number(src) == 0
@@ -967,7 +981,7 @@ again:
 
         /* value evaluation threw an exception. */
 
-        src = &vm->retval;
+        *src = njs_vm_exception(vm);
         goto again;
     }
 
@@ -979,28 +993,13 @@ again:
 
 
 njs_int_t
-njs_vm_retval_string(njs_vm_t *vm, njs_str_t *dst)
+njs_vm_exception_string(njs_vm_t *vm, njs_str_t *dst)
 {
-    if (vm->top_frame == NULL) {
-        /* An exception was thrown during compilation. */
+    njs_value_t  exception;
 
-        njs_vm_init(vm);
-    }
+    exception = njs_vm_exception(vm);
 
-    return njs_vm_value_string(vm, dst, &vm->retval);
-}
-
-
-njs_int_t
-njs_vm_retval_dump(njs_vm_t *vm, njs_str_t *dst, njs_uint_t indent)
-{
-    if (vm->top_frame == NULL) {
-        /* An exception was thrown during compilation. */
-
-        njs_vm_init(vm);
-    }
-
-    return njs_vm_value_dump(vm, dst, &vm->retval, 0, 1);
+    return njs_vm_value_string(vm, dst, &exception);
 }
 
 

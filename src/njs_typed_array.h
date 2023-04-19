@@ -17,7 +17,7 @@ njs_int_t njs_typed_array_set_value(njs_vm_t *vm, njs_typed_array_t *array,
 njs_int_t njs_typed_array_to_chain(njs_vm_t *vm, njs_chb_t *chain,
     njs_typed_array_t *array, njs_value_t *sep);
 njs_int_t njs_typed_array_prototype_slice(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t copy);
+    njs_uint_t nargs, njs_index_t copy, njs_value_t *retval);
 
 njs_inline unsigned
 njs_typed_array_element_size(njs_object_type_t type)

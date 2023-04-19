@@ -55,8 +55,6 @@ struct njs_native_frame_s {
     uint32_t                       size;
     uint32_t                       free_size;
 
-    njs_value_t                    *retval;
-
     /* Number of allocated args on the frame. */
     uint32_t                       nargs;
     /* Number of already put args. */
@@ -98,13 +96,13 @@ njs_int_t njs_function_rest_parameters_init(njs_vm_t *vm,
 njs_int_t njs_function_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 njs_int_t njs_function_constructor(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 njs_int_t njs_function_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 njs_int_t njs_function_instance_name(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 njs_int_t njs_eval_function(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused);
+    njs_index_t unused, njs_value_t *retval);
 njs_int_t njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, const njs_value_t *args, njs_uint_t nargs,
     njs_bool_t ctor);
@@ -114,8 +112,8 @@ njs_int_t njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
 njs_int_t njs_function_call2(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *this, const njs_value_t *args,
     njs_uint_t nargs, njs_value_t *retval, njs_bool_t ctor);
-njs_int_t njs_function_lambda_call(njs_vm_t *vm, void *promise_cap);
-njs_int_t njs_function_native_call(njs_vm_t *vm);
+njs_int_t njs_function_lambda_call(njs_vm_t *vm, njs_value_t *retval,
+    void *promise_cap);
 njs_native_frame_t *njs_function_frame_alloc(njs_vm_t *vm, size_t size);
 void njs_function_frame_free(njs_vm_t *vm, njs_native_frame_t *frame);
 njs_int_t njs_function_frame_save(njs_vm_t *vm, njs_frame_t *native,

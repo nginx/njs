@@ -846,7 +846,7 @@ found:
 
 static njs_int_t
 njs_ext_dump(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     uint32_t     n;
     njs_int_t    ret;
@@ -867,13 +867,13 @@ njs_ext_dump(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    return njs_string_new(vm, &vm->retval, str.start, str.length, 0);
+    return njs_string_new(vm, retval, str.start, str.length, 0);
 }
 
 
 static njs_int_t
 njs_ext_on(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_str_t    type;
     njs_uint_t   i, n;
@@ -1696,7 +1696,7 @@ static const njs_object_init_t  njs_process_object_init = {
 
 static njs_int_t
 njs_262_detach_array_buffer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_value_t         *value;
     njs_array_buffer_t  *buffer;
@@ -1711,7 +1711,7 @@ njs_262_detach_array_buffer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     buffer->u.data = NULL;
     buffer->size = 0;
 
-    njs_set_null(&vm->retval);
+    njs_set_null(retval);
 
     return NJS_OK;
 }

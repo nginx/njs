@@ -310,7 +310,7 @@ njs_number_to_chain(njs_vm_t *vm, njs_chb_t *chain, double num)
 
 static njs_int_t
 njs_number_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_int_t           ret;
     njs_value_t         *value;
@@ -336,10 +336,10 @@ njs_number_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-        njs_set_object_value(&vm->retval, object);
+        njs_set_object_value(retval, object);
 
     } else {
-        njs_set_number(&vm->retval, njs_number(value));
+        njs_set_number(retval, njs_number(value));
     }
 
     return NJS_OK;
@@ -348,22 +348,22 @@ njs_number_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_number_is_integer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
-    double             num;
-    const njs_value_t  *value;
+    double      num;
+    njs_bool_t  integer;
 
-    value = &njs_value_false;
+    integer = 0;
 
     if (nargs > 1 && njs_is_number(&args[1])) {
         num = njs_number(&args[1]);
 
         if (num == trunc(num) && !isinf(num)) {
-            value = &njs_value_true;
+            integer = 1;
         }
     }
 
-    vm->retval = *value;
+    njs_set_boolean(retval, integer);
 
     return NJS_OK;
 }
@@ -372,22 +372,22 @@ njs_number_is_integer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_number_is_safe_integer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
-    double             num;
-    const njs_value_t  *value;
+    double      num;
+    njs_bool_t  integer;
 
-    value = &njs_value_false;
+    integer = 0;
 
     if (nargs > 1 && njs_is_number(&args[1])) {
         num = njs_number(&args[1]);
 
         if (num == (int64_t) num && fabs(num) <= NJS_MAX_SAFE_INTEGER) {
-            value = &njs_value_true;
+            integer = 1;
         }
     }
 
-    vm->retval = *value;
+    njs_set_boolean(retval, integer);
 
     return NJS_OK;
 }
@@ -395,20 +395,20 @@ njs_number_is_safe_integer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_number_is_nan(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
-    const njs_value_t  *value;
+    njs_bool_t  nan;
 
-    value = &njs_value_false;
+    nan = 0;
 
     if (nargs > 1
         && njs_is_number(&args[1])
         && isnan(njs_number(&args[1])))
     {
-        value = &njs_value_true;
+        nan = 1;
     }
 
-    vm->retval = *value;
+    njs_set_boolean(retval, nan);
 
     return NJS_OK;
 }
@@ -416,22 +416,22 @@ njs_number_is_nan(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_number_is_finite(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
-    double             num;
-    const njs_value_t  *value;
+    double      num;
+    njs_bool_t  finite;
 
-    value = &njs_value_false;
+    finite = 0;
 
     if (nargs > 1 && njs_is_number(&args[1])) {
         num = njs_number(&args[1]);
 
         if (!isnan(num) && !isinf(num)) {
-            value = &njs_value_true;
+            finite = 1;
         }
     }
 
-    vm->retval = *value;
+    njs_set_boolean(retval, finite);
 
     return NJS_OK;
 }
@@ -487,11 +487,11 @@ const njs_object_init_t  njs_number_constructor_init = {
 
 static njs_int_t
 njs_number_prototype_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_value_t  *value;
 
-    value = &args[0];
+    value = njs_argument(args, 0);
 
     if (value->type != NJS_NUMBER) {
 
@@ -505,7 +505,7 @@ njs_number_prototype_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    vm->retval = *value;
+    njs_value_assign(retval, value);
 
     return NJS_OK;
 }
@@ -513,7 +513,7 @@ njs_number_prototype_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
     double       number;
     int32_t      radix;
@@ -548,17 +548,17 @@ njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         number = njs_number(value);
 
         if (radix != 10 && !isnan(number) && !isinf(number) && number != 0) {
-            return njs_number_to_string_radix(vm, &vm->retval, number, radix);
+            return njs_number_to_string_radix(vm, retval, number, radix);
         }
     }
 
-    return njs_number_to_string(vm, &vm->retval, value);
+    return njs_number_to_string(vm, retval, value);
 }
 
 
 static njs_int_t
 njs_number_prototype_to_fixed(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
     u_char       *p;
     int64_t      frac;
@@ -596,7 +596,7 @@ njs_number_prototype_to_fixed(njs_vm_t *vm, njs_value_t *args,
     number = njs_number(value);
 
     if (njs_slow_path(isnan(number) || fabs(number) >= 1e21)) {
-        return njs_number_to_string(vm, &vm->retval, value);
+        return njs_number_to_string(vm, retval, value);
     }
 
     point = 0;
@@ -634,7 +634,7 @@ njs_number_prototype_to_fixed(njs_vm_t *vm, njs_value_t *args,
         *p++ = '0';
     }
 
-    p = njs_string_alloc(vm, &vm->retval, size, size);
+    p = njs_string_alloc(vm, retval, size, size);
     if (njs_slow_path(p == NULL)) {
         return NJS_ERROR;
     }
@@ -657,7 +657,7 @@ njs_number_prototype_to_fixed(njs_vm_t *vm, njs_value_t *args,
 
 static njs_int_t
 njs_number_prototype_to_precision(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
     double       number;
     size_t       size;
@@ -682,7 +682,7 @@ njs_number_prototype_to_precision(njs_vm_t *vm, njs_value_t *args,
     }
 
     if (njs_is_undefined(njs_arg(args, nargs, 1))) {
-        return njs_number_to_string(vm, &vm->retval, value);
+        return njs_number_to_string(vm, retval, value);
     }
 
     ret = njs_value_to_integer(vm, njs_argument(args, 1), &precision);
@@ -693,7 +693,7 @@ njs_number_prototype_to_precision(njs_vm_t *vm, njs_value_t *args,
     number = njs_number(value);
 
     if (njs_slow_path(isnan(number) || isinf(number))) {
-        return njs_number_to_string(vm, &vm->retval, value);
+        return njs_number_to_string(vm, retval, value);
     }
 
     if (njs_slow_path(precision < 1 || precision > 100)) {
@@ -703,13 +703,13 @@ njs_number_prototype_to_precision(njs_vm_t *vm, njs_value_t *args,
 
     size = njs_dtoa_precision(number, (char *) buf, (size_t) precision);
 
-    return njs_string_new(vm, &vm->retval, buf, size, size);
+    return njs_string_new(vm, retval, buf, size, size);
 }
 
 
 static njs_int_t
 njs_number_prototype_to_exponential(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
     double       number;
     size_t       size;
@@ -741,7 +741,7 @@ njs_number_prototype_to_exponential(njs_vm_t *vm, njs_value_t *args,
     number = njs_number(value);
 
     if (njs_slow_path(isnan(number) || isinf(number))) {
-        return njs_number_to_string(vm, &vm->retval, value);
+        return njs_number_to_string(vm, retval, value);
     }
 
     if (njs_is_defined(value_frac)) {
@@ -756,7 +756,7 @@ njs_number_prototype_to_exponential(njs_vm_t *vm, njs_value_t *args,
 
     size = njs_dtoa_exponential(number, (char *) buf, (njs_int_t) frac);
 
-    return njs_string_new(vm, &vm->retval, buf, size, size);
+    return njs_string_new(vm, retval, buf, size, size);
 }
 
 
@@ -913,7 +913,7 @@ const njs_object_init_t  njs_number_prototype_init = {
 
 njs_int_t
 njs_number_global_is_nan(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     double     num;
     njs_int_t  ret;
@@ -923,7 +923,7 @@ njs_number_global_is_nan(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    njs_set_boolean(&vm->retval, isnan(num));
+    njs_set_boolean(retval, isnan(num));
 
     return NJS_OK;
 }
@@ -931,7 +931,7 @@ njs_number_global_is_nan(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 njs_int_t
 njs_number_global_is_finite(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     double     num;
     njs_int_t  ret;
@@ -941,7 +941,7 @@ njs_number_global_is_finite(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    njs_set_boolean(&vm->retval, !(isnan(num) || isinf(num)));
+    njs_set_boolean(retval, !(isnan(num) || isinf(num)));
 
     return NJS_OK;
 }
@@ -949,7 +949,7 @@ njs_number_global_is_finite(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 njs_int_t
 njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     double             num;
     int32_t            radix;
@@ -1022,7 +1022,7 @@ njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 done:
 
-    njs_set_number(&vm->retval, num);
+    njs_set_number(retval, num);
 
     return NJS_OK;
 }
@@ -1030,7 +1030,7 @@ done:
 
 njs_int_t
 njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     double             num;
     njs_int_t          ret;
@@ -1083,7 +1083,7 @@ njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 done:
 
-    njs_set_number(&vm->retval, minus ? -num : num);
+    njs_set_number(retval, minus ? -num : num);
 
     return NJS_OK;
 }

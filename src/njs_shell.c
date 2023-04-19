@@ -26,7 +26,8 @@
 #endif
 
 
-typedef void (*njs_console_output_pt)(njs_vm_t *vm, njs_int_t ret);
+typedef void (*njs_console_output_pt)(njs_vm_t *vm, njs_value_t *value,
+    njs_int_t ret);
 
 
 typedef struct {
@@ -94,10 +95,11 @@ typedef struct {
 
 
 static njs_int_t njs_console_init(njs_vm_t *vm, njs_console_t *console);
-static void njs_console_output(njs_vm_t *vm, njs_int_t ret);
+static void njs_console_output(njs_vm_t *vm, njs_value_t *value,
+    njs_int_t ret);
 static njs_int_t njs_externals_init(njs_vm_t *vm);
 static njs_vm_t *njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options);
-static void njs_process_output(njs_vm_t *vm, njs_int_t ret);
+static void njs_process_output(njs_vm_t *vm, njs_value_t *value, njs_int_t ret);
 static njs_int_t njs_process_script(njs_vm_t *vm, void *runtime,
     const njs_str_t *script);
 
@@ -117,11 +119,11 @@ static char *njs_completion_generator(const char *text, int state);
 #endif
 
 static njs_int_t njs_ext_console_log(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t indent);
+    njs_uint_t nargs, njs_index_t indent, njs_value_t *retval);
 static njs_int_t njs_ext_console_time(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 
 static njs_host_event_t njs_console_set_timer(njs_external_ptr_t external,
     uint64_t delay, njs_vm_event_t vm_event);
@@ -877,12 +879,12 @@ njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
 
 static void
-njs_console_output(njs_vm_t *vm, njs_int_t ret)
+njs_console_output(njs_vm_t *vm, njs_value_t *value, njs_int_t ret)
 {
     njs_str_t  out;
 
     if (ret == NJS_OK) {
-        if (njs_vm_retval_dump(vm, &out, 1) != NJS_OK) {
+        if (njs_vm_value_dump(vm, &out, value, 0, 1) != NJS_OK) {
             njs_stderror("Shell:failed to get retval from VM\n");
             return;
         }
@@ -893,7 +895,7 @@ njs_console_output(njs_vm_t *vm, njs_int_t ret)
         }
 
     } else {
-        njs_vm_retval_string(vm, &out);
+        njs_vm_exception_string(vm, &out);
         njs_stderror("Thrown:\n%V\n", &out);
     }
 }
@@ -939,8 +941,9 @@ njs_process_events(void *runtime)
 static njs_int_t
 njs_process_script(njs_vm_t *vm, void *runtime, const njs_str_t *script)
 {
-    u_char     *start, *end;
-    njs_int_t  ret;
+    u_char       *start, *end;
+    njs_int_t    ret;
+    njs_value_t  retval;
 
     start = script->start;
     end = start + script->length;
@@ -949,7 +952,7 @@ njs_process_script(njs_vm_t *vm, void *runtime, const njs_str_t *script)
 
     if (ret == NJS_OK) {
         if (start == end) {
-            ret = njs_vm_start(vm);
+            ret = njs_vm_start(vm, &retval);
 
         } else {
             njs_vm_error(vm, "Extra characters at the end of the script");
@@ -957,7 +960,7 @@ njs_process_script(njs_vm_t *vm, void *runtime, const njs_str_t *script)
         }
     }
 
-    njs_process_output(vm, ret);
+    njs_process_output(vm, &retval, ret);
 
     if (!vm->options.interactive && ret == NJS_ERROR) {
         return NJS_ERROR;
@@ -987,7 +990,7 @@ njs_process_script(njs_vm_t *vm, void *runtime, const njs_str_t *script)
         ret = njs_vm_run(vm);
 
         if (ret == NJS_ERROR) {
-            njs_process_output(vm, ret);
+            njs_process_output(vm, &retval, ret);
 
             if (!vm->options.interactive) {
                 return NJS_ERROR;
@@ -1000,14 +1003,14 @@ njs_process_script(njs_vm_t *vm, void *runtime, const njs_str_t *script)
 
 
 static void
-njs_process_output(njs_vm_t *vm, njs_int_t ret)
+njs_process_output(njs_vm_t *vm, njs_value_t *value, njs_int_t ret)
 {
     njs_console_output_pt  pt;
 
     pt = (njs_console_output_pt) njs_vm_meta(vm, 0);
 
     if (pt != NULL) {
-        pt(vm, ret);
+        pt(vm, value, ret);
     }
 }
 
@@ -1332,7 +1335,7 @@ next:
 
 static njs_int_t
 njs_ext_console_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t indent)
+    njs_index_t indent, njs_value_t *retval)
 {
     njs_str_t   msg;
     njs_uint_t  n;
@@ -1356,7 +1359,7 @@ njs_ext_console_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         njs_vm_log(vm, "\n");
     }
 
-    njs_set_undefined(&vm->retval);
+    njs_set_undefined(retval);
 
     return NJS_OK;
 }
@@ -1367,7 +1370,7 @@ static const njs_value_t  njs_default_label = njs_string("default");
 
 static njs_int_t
 njs_ext_console_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_int_t           ret;
     njs_str_t           name;
@@ -1433,7 +1436,7 @@ njs_ext_console_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     label->time = njs_time();
 
-    njs_set_undefined(&vm->retval);
+    njs_set_undefined(retval);
 
     return NJS_OK;
 }
@@ -1441,7 +1444,7 @@ njs_ext_console_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     uint64_t            ns, ms;
     njs_int_t           ret;
@@ -1506,7 +1509,7 @@ njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         njs_vm_log(vm, "Timer \"%V\" doesn’t exist.\n", &name);
     }
 
-    njs_set_undefined(&vm->retval);
+    njs_set_undefined(retval);
 
     return NJS_OK;
 }

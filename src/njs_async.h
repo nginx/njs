@@ -18,9 +18,9 @@ typedef struct {
 
 njs_int_t njs_async_function_frame_invoke(njs_vm_t *vm, njs_value_t *retval);
 njs_int_t njs_await_fulfilled(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused);
+    njs_index_t unused, njs_value_t *retval);
 njs_int_t njs_await_rejected(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused);
+    njs_index_t unused, njs_value_t *retval);
 
 
 extern const njs_object_type_init_t  njs_async_function_type_init;

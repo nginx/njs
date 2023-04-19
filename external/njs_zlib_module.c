@@ -11,9 +11,9 @@
 #define NJS_ZLIB_CHUNK_SIZE  1024
 
 static njs_int_t njs_zlib_ext_deflate(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_zlib_ext_inflate(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 njs_int_t njs_zlib_contant(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 static njs_int_t njs_zlib_init(njs_vm_t *vm);
@@ -182,7 +182,7 @@ njs_module_t  njs_zlib_module = {
 
 static njs_int_t
 njs_zlib_ext_deflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t raw)
+    njs_index_t raw, njs_value_t *retval)
 {
     int                 rc, level, mem_level, strategy, window_bits;
     u_char              *buffer;
@@ -355,7 +355,7 @@ njs_zlib_ext_deflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     njs_chb_destroy(&chain);
 
-    return njs_vm_value_buffer_set(vm, njs_vm_retval(vm), buffer, size);
+    return njs_vm_value_buffer_set(vm, retval, buffer, size);
 
 fail:
 
@@ -368,7 +368,7 @@ fail:
 
 static njs_int_t
 njs_zlib_ext_inflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t raw)
+    njs_index_t raw, njs_value_t *retval)
 {
     int                 rc, window_bits;
     u_char              *buffer;
@@ -502,7 +502,7 @@ njs_zlib_ext_inflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     njs_chb_destroy(&chain);
 
-    return njs_vm_value_buffer_set(vm, njs_vm_retval(vm), buffer, size);
+    return njs_vm_value_buffer_set(vm, retval, buffer, size);
 
 fail:
 

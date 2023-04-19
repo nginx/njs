@@ -24,10 +24,11 @@ static const njs_value_t  string_value = njs_string("value");
 
 static njs_int_t njs_iterator_object_handler(njs_vm_t *vm,
     njs_iterator_handler_t handler, njs_iterator_args_t *args,
-    njs_value_t *key, int64_t i);
+    njs_value_t *key, int64_t i, njs_value_t *retval);
 
 static njs_int_t njs_iterator_to_array_handler(njs_vm_t *vm,
-    njs_iterator_args_t *args, njs_value_t *value, int64_t index);
+    njs_iterator_args_t *args, njs_value_t *value, int64_t index,
+    njs_value_t *retval);
 
 
 njs_int_t
@@ -172,9 +173,9 @@ release:
 
 static njs_int_t
 njs_iterator_prototype_get_this(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
-    vm->retval = args[0];
+    njs_value_assign(retval, njs_argument(args, 0));
 
     return NJS_OK;
 }
@@ -206,7 +207,7 @@ const njs_object_type_init_t  njs_iterator_type_init = {
 
 static njs_int_t
 njs_array_iterator_prototype_next(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t tag)
+    njs_uint_t nargs, njs_index_t tag, njs_value_t *retval)
 {
     njs_int_t          ret;
     njs_bool_t         check;
@@ -231,15 +232,15 @@ njs_array_iterator_prototype_next(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
-    njs_set_object(&vm->retval, object);
+    njs_set_object(retval, object);
 
-    prop_value = njs_object_property_add(vm, &vm->retval,
+    prop_value = njs_object_property_add(vm, retval,
                                          njs_value_arg(&string_value), 0);
     if (njs_slow_path(prop_value == NULL)) {
         return NJS_ERROR;
     }
 
-    prop_done = njs_object_property_add(vm, &vm->retval,
+    prop_done = njs_object_property_add(vm, retval,
                                         njs_value_arg(&string_done), 0);
     if (njs_slow_path(prop_done == NULL)) {
         return NJS_ERROR;
@@ -291,7 +292,7 @@ const njs_object_type_init_t  njs_array_iterator_type_init = {
 
 njs_int_t
 njs_object_iterate(njs_vm_t *vm, njs_iterator_args_t *args,
-    njs_iterator_handler_t handler)
+    njs_iterator_handler_t handler, njs_value_t *retval)
 {
     double              idx;
     int64_t             length, i, from, to;
@@ -317,7 +318,7 @@ njs_object_iterate(njs_vm_t *vm, njs_iterator_args_t *args,
             if (njs_fast_path(from < array->length
                               && njs_is_valid(&array->start[from])))
             {
-                ret = handler(vm, args, &array->start[from], from);
+                ret = handler(vm, args, &array->start[from], from, retval);
 
             } else {
                 entry = njs_value_arg(&njs_value_invalid);
@@ -330,7 +331,7 @@ njs_object_iterate(njs_vm_t *vm, njs_iterator_args_t *args,
                     entry = &prop;
                 }
 
-                ret = handler(vm, args, entry, from);
+                ret = handler(vm, args, entry, from, retval);
             }
 
             if (njs_slow_path(ret != NJS_OK)) {
@@ -373,7 +374,7 @@ njs_object_iterate(njs_vm_t *vm, njs_iterator_args_t *args,
                 /* This cannot fail. */
                 (void) njs_string_new(vm, &character, p + i, 1, 1);
 
-                ret = handler(vm, args, &character, i);
+                ret = handler(vm, args, &character, i, retval);
                 if (njs_slow_path(ret != NJS_OK)) {
                     if (ret == NJS_DONE) {
                         return NJS_DONE;
@@ -392,7 +393,7 @@ njs_object_iterate(njs_vm_t *vm, njs_iterator_args_t *args,
                 /* This cannot fail. */
                 (void) njs_string_new(vm, &character, p, pos - p, 1);
 
-                ret = handler(vm, args, &character, i);
+                ret = handler(vm, args, &character, i, retval);
                 if (njs_slow_path(ret != NJS_OK)) {
                     if (ret == NJS_DONE) {
                         return NJS_DONE;
@@ -427,8 +428,8 @@ process_object:
                 continue;
             }
 
-            ret = njs_iterator_object_handler(vm, handler, args, &keys->start[i],
-                                           idx);
+            ret = njs_iterator_object_handler(vm, handler, args,
+                                              &keys->start[i], idx, retval);
             if (njs_slow_path(ret != NJS_OK)) {
                 njs_array_destroy(vm, keys);
                 return ret;
@@ -441,7 +442,7 @@ process_object:
     }
 
     for (i = from; i < to; i++) {
-        ret = njs_iterator_object_handler(vm, handler, args, NULL, i);
+        ret = njs_iterator_object_handler(vm, handler, args, NULL, i, retval);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
         }
@@ -453,7 +454,7 @@ process_object:
 
 njs_int_t
 njs_object_iterate_reverse(njs_vm_t *vm, njs_iterator_args_t *args,
-    njs_iterator_handler_t handler)
+    njs_iterator_handler_t handler, njs_value_t *retval)
 {
     double              idx;
     int64_t             i, from, to, length;
@@ -481,7 +482,7 @@ njs_object_iterate_reverse(njs_vm_t *vm, njs_iterator_args_t *args,
             if (njs_fast_path(from < array->length
                               && njs_is_valid(&array->start[from])))
             {
-                ret = handler(vm, args, &array->start[from], from);
+                ret = handler(vm, args, &array->start[from], from, retval);
 
             } else {
                 entry = njs_value_arg(&njs_value_invalid);
@@ -494,7 +495,7 @@ njs_object_iterate_reverse(njs_vm_t *vm, njs_iterator_args_t *args,
                     entry = &prop;
                 }
 
-                ret = handler(vm, args, entry, from);
+                ret = handler(vm, args, entry, from, retval);
             }
 
             if (njs_slow_path(ret != NJS_OK)) {
@@ -539,7 +540,7 @@ njs_object_iterate_reverse(njs_vm_t *vm, njs_iterator_args_t *args,
                 /* This cannot fail. */
                 (void) njs_string_new(vm, &character, p, 1, 1);
 
-                ret = handler(vm, args, &character, i);
+                ret = handler(vm, args, &character, i, retval);
                 if (njs_slow_path(ret != NJS_OK)) {
                     if (ret == NJS_DONE) {
                         return NJS_DONE;
@@ -568,7 +569,7 @@ njs_object_iterate_reverse(njs_vm_t *vm, njs_iterator_args_t *args,
                 /* This cannot fail. */
                 (void) njs_string_new(vm, &character, pos, p - pos , 1);
 
-                ret = handler(vm, args, &character, i);
+                ret = handler(vm, args, &character, i, retval);
                 if (njs_slow_path(ret != NJS_OK)) {
                     if (ret == NJS_DONE) {
                         return NJS_DONE;
@@ -606,7 +607,7 @@ process_object:
             }
 
             ret = njs_iterator_object_handler(vm, handler, args,
-                                              &keys->start[i], idx);
+                                              &keys->start[i], idx, retval);
             if (njs_slow_path(ret != NJS_OK)) {
                 njs_array_destroy(vm, keys);
                 return ret;
@@ -621,7 +622,7 @@ process_object:
     i = from + 1;
 
     while (i-- > to) {
-        ret = njs_iterator_object_handler(vm, handler, args, NULL, i);
+        ret = njs_iterator_object_handler(vm, handler, args, NULL, i, retval);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
         }
@@ -633,7 +634,7 @@ process_object:
 
 static njs_int_t
 njs_iterator_object_handler(njs_vm_t *vm, njs_iterator_handler_t handler,
-    njs_iterator_args_t *args, njs_value_t *key, int64_t i)
+    njs_iterator_args_t *args, njs_value_t *key, int64_t i, njs_value_t *retval)
 {
     njs_int_t    ret;
     njs_value_t  prop, *entry;
@@ -653,7 +654,7 @@ njs_iterator_object_handler(njs_vm_t *vm, njs_iterator_handler_t handler,
 
     entry = (ret == NJS_OK) ? &prop : njs_value_arg(&njs_value_invalid);
 
-    ret = handler(vm, args, entry, i);
+    ret = handler(vm, args, entry, i, retval);
     if (njs_slow_path(ret != NJS_OK)) {
         if (ret == NJS_DONE) {
             return NJS_DONE;
@@ -667,7 +668,7 @@ njs_iterator_object_handler(njs_vm_t *vm, njs_iterator_handler_t handler,
 
 
 njs_array_t *
-njs_iterator_to_array(njs_vm_t *vm, njs_value_t *iterator)
+njs_iterator_to_array(njs_vm_t *vm, njs_value_t *iterator, njs_value_t *retval)
 {
     int64_t              length;
     njs_int_t            ret;
@@ -689,7 +690,7 @@ njs_iterator_to_array(njs_vm_t *vm, njs_value_t *iterator)
     args.value = iterator;
     args.to = length;
 
-    ret = njs_object_iterate(vm, &args, njs_iterator_to_array_handler);
+    ret = njs_object_iterate(vm, &args, njs_iterator_to_array_handler, retval);
     if (njs_slow_path(ret == NJS_ERROR)) {
         njs_mp_free(vm->mem_pool, args.data);
         return NULL;
@@ -701,7 +702,7 @@ njs_iterator_to_array(njs_vm_t *vm, njs_value_t *iterator)
 
 static njs_int_t
 njs_iterator_to_array_handler(njs_vm_t *vm, njs_iterator_args_t *args,
-    njs_value_t *value, int64_t index)
+    njs_value_t *value, int64_t index, njs_value_t *retval)
 {
     njs_value_t  array;
 

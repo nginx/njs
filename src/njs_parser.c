@@ -553,7 +553,7 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser)
 
     parser->vm = vm;
 
-    njs_set_undefined(&vm->retval);
+    njs_set_invalid(&vm->exception);
 
     if (parser->scope == NULL) {
         ret = njs_parser_scope_begin(parser,
@@ -605,7 +605,7 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser)
         return NJS_ERROR;
     }
 
-    if (njs_is_error(&vm->retval)) {
+    if (njs_is_error(&vm->exception)) {
         return NJS_ERROR;
     }
 
@@ -1297,7 +1297,8 @@ njs_parser_regexp_literal(njs_parser_t *parser, njs_lexer_token_t *token,
                                                 text.length, flags);
 
             if (njs_slow_path(pattern == NULL)) {
-                ret = njs_value_property(parser->vm, &parser->vm->retval,
+                retval = njs_vm_exception(parser->vm);
+                ret = njs_value_property(parser->vm, &retval,
                                          njs_value_arg(&string_message),
                                          &retval);
                 if (njs_slow_path(ret != NJS_OK)) {
@@ -1305,7 +1306,6 @@ njs_parser_regexp_literal(njs_parser_t *parser, njs_lexer_token_t *token,
                 }
 
                 njs_string_get(&retval, &text);
-                njs_value_undefined_set(&parser->vm->retval);
 
                 njs_parser_syntax_error(parser, "%V", &text);
 
@@ -2387,7 +2387,7 @@ njs_parser_member_expression(njs_parser_t *parser, njs_lexer_token_t *token,
                 return NJS_OK;
             }
 
-            if (njs_is_error(&parser->vm->retval)) {
+            if (njs_is_error(&parser->vm->exception)) {
                 return NJS_DONE;
             }
 
@@ -9156,7 +9156,7 @@ njs_parser_error(njs_vm_t *vm, njs_object_type_t type, njs_str_t *file,
     u_char       msg[NJS_MAX_ERROR_STR];
     u_char       *p, *end;
     njs_int_t    ret;
-    njs_value_t  value;
+    njs_value_t  value, error;
 
     static const njs_value_t  file_name = njs_string("fileName");
     static const njs_value_t  line_number = njs_string("lineNumber");
@@ -9179,19 +9179,20 @@ njs_parser_error(njs_vm_t *vm, njs_object_type_t type, njs_str_t *file,
         p = njs_sprintf(p, end, " in %uD", line);
     }
 
-    njs_error_new(vm, &vm->retval, type, msg, p - msg);
+    njs_error_new(vm, &error, type, msg, p - msg);
 
     njs_set_number(&value, line);
-    njs_value_property_set(vm, &vm->retval, njs_value_arg(&line_number),
-                           &value);
+    njs_value_property_set(vm, &error, njs_value_arg(&line_number), &value);
 
     if (file->length != 0) {
         ret = njs_string_set(vm, &value, file->start, file->length);
         if (ret == NJS_OK) {
-            njs_value_property_set(vm, &vm->retval, njs_value_arg(&file_name),
+            njs_value_property_set(vm, &error, njs_value_arg(&file_name),
                                    &value);
         }
     }
+
+    njs_vm_throw(vm, &error);
 }
 
 
@@ -9201,7 +9202,7 @@ njs_parser_lexer_error(njs_parser_t *parser, njs_object_type_t type,
 {
     va_list  args;
 
-    if (njs_is_error(&parser->vm->retval)) {
+    if (njs_is_error(&parser->vm->exception)) {
         return;
     }
 

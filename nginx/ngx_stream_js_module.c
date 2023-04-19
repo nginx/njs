@@ -80,16 +80,17 @@ static njs_int_t ngx_stream_js_ext_get_remote_address(njs_vm_t *vm,
     njs_value_t *retval);
 
 static njs_int_t ngx_stream_js_ext_done(njs_vm_t *vm, njs_value_t *args,
-     njs_uint_t nargs, njs_index_t unused);
+     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 
 static njs_int_t ngx_stream_js_ext_on(njs_vm_t *vm, njs_value_t *args,
-     njs_uint_t nargs, njs_index_t unused);
+     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t ngx_stream_js_ext_off(njs_vm_t *vm, njs_value_t *args,
-     njs_uint_t nargs, njs_index_t unused);
+     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args,
-     njs_uint_t nargs, njs_index_t from_upstream);
+     njs_uint_t nargs, njs_index_t from_upstream, njs_value_t *retval);
 static njs_int_t ngx_stream_js_ext_set_return_value(njs_vm_t *vm,
-    njs_value_t *args, njs_uint_t nargs, njs_index_t unused);
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
+    njs_value_t *retval);
 
 static njs_int_t ngx_stream_js_ext_variables(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
@@ -812,7 +813,8 @@ ngx_stream_js_variable_set(ngx_stream_session_t *s,
 
     pending = njs_vm_pending(ctx->vm);
 
-    rc = ngx_js_call(ctx->vm, fname, s->connection->log, &ctx->args[0], 1);
+    rc = ngx_js_invoke(ctx->vm, fname, s->connection->log, &ctx->args[0], 1,
+                       &ctx->retval);
 
     if (rc == NGX_ERROR) {
         v->not_found = 1;
@@ -935,7 +937,7 @@ ngx_stream_js_init_vm(ngx_stream_session_t *s)
         }
     }
 
-    if (njs_vm_start(ctx->vm) == NJS_ERROR) {
+    if (njs_vm_start(ctx->vm, njs_value_arg(&retval)) == NJS_ERROR) {
         ngx_js_retval(ctx->vm, NULL, &exception);
 
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
@@ -1137,7 +1139,7 @@ ngx_stream_js_ext_get_remote_address(njs_vm_t *vm,
 
 static njs_int_t
 ngx_stream_js_ext_done(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t magic)
+    njs_index_t magic, njs_value_t *retval)
 {
     ngx_int_t              status;
     njs_value_t           *code;
@@ -1186,7 +1188,7 @@ ngx_stream_js_ext_done(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     ngx_stream_js_drop_events(ctx);
 
-    njs_value_undefined_set(njs_vm_retval(vm));
+    njs_value_undefined_set(retval);
 
     return NJS_OK;
 }
@@ -1194,7 +1196,7 @@ ngx_stream_js_ext_done(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 ngx_stream_js_ext_on(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_str_t              name;
     njs_value_t           *callback;
@@ -1235,7 +1237,7 @@ ngx_stream_js_ext_on(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    njs_value_undefined_set(njs_vm_retval(vm));
+    njs_value_undefined_set(retval);
 
     return NJS_OK;
 }
@@ -1243,7 +1245,7 @@ ngx_stream_js_ext_on(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 ngx_stream_js_ext_off(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_str_t              name;
     njs_vm_event_t        *event;
@@ -1270,7 +1272,7 @@ ngx_stream_js_ext_off(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     *event = NULL;
 
-    njs_value_undefined_set(njs_vm_retval(vm));
+    njs_value_undefined_set(retval);
 
     return NJS_OK;
 }
@@ -1278,7 +1280,7 @@ ngx_stream_js_ext_off(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t from_upstream)
+    njs_index_t from_upstream, njs_value_t *retval)
 {
     unsigned               last_buf, flush;
     njs_str_t              buffer;
@@ -1386,7 +1388,7 @@ ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    njs_value_undefined_set(njs_vm_retval(vm));
+    njs_value_undefined_set(retval);
 
     return NJS_OK;
 
@@ -1401,7 +1403,7 @@ exception:
 
 static njs_int_t
 ngx_stream_js_ext_set_return_value(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
     ngx_stream_js_ctx_t   *ctx;
     ngx_stream_session_t  *s;
@@ -1416,7 +1418,7 @@ ngx_stream_js_ext_set_return_value(njs_vm_t *vm, njs_value_t *args,
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
     njs_value_assign(&ctx->retval, njs_arg(args, nargs, 1));
-    njs_value_undefined_set(njs_vm_retval(vm));
+    njs_value_undefined_set(retval);
 
     return NJS_OK;
 }

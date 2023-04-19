@@ -62,15 +62,15 @@ static njs_crypto_enc_t *njs_crypto_encoding(njs_vm_t *vm,
 static njs_int_t njs_buffer_digest(njs_vm_t *vm, njs_value_t *value,
     const njs_str_t *src);
 static njs_int_t njs_crypto_create_hash(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t hmac);
+    njs_uint_t nargs, njs_index_t hmac, njs_value_t *retval);
 static njs_int_t njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t hmac);
+    njs_uint_t nargs, njs_index_t hmac, njs_value_t *retval);
 static njs_int_t njs_hash_prototype_copy(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t hmac);
+    njs_uint_t nargs, njs_index_t hmac, njs_value_t *retval);
 static njs_int_t njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 
 static njs_int_t njs_crypto_init(njs_vm_t *vm);
 
@@ -288,7 +288,7 @@ njs_module_t  njs_crypto_module = {
 
 static njs_int_t
 njs_crypto_create_hash(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_digest_t    *dgst;
     njs_hash_alg_t  *alg;
@@ -308,14 +308,14 @@ njs_crypto_create_hash(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     alg->init(&dgst->u);
 
-    return njs_vm_external_create(vm, &vm->retval, njs_crypto_hash_proto_id,
+    return njs_vm_external_create(vm, retval, njs_crypto_hash_proto_id,
                                   dgst, 0);
 }
 
 
 static njs_int_t
 njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t hmac)
+    njs_index_t hmac, njs_value_t *retval)
 {
     njs_str_t                    data;
     njs_int_t                    ret;
@@ -362,7 +362,7 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     switch (value->type) {
     case NJS_STRING:
-        encoding = njs_buffer_encoding(vm, njs_arg(args, nargs, 2));
+        encoding = njs_buffer_encoding(vm, njs_arg(args, nargs, 2), 1);
         if (njs_slow_path(encoding == NULL)) {
             return NJS_ERROR;
         }
@@ -402,7 +402,7 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         ctx->alg->update(&ctx->u, data.start, data.length);
     }
 
-    vm->retval = *this;
+    njs_value_assign(retval, this);
 
     return NJS_OK;
 }
@@ -410,7 +410,7 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t hmac)
+    njs_index_t hmac, njs_value_t *retval)
 {
     njs_str_t         str;
     njs_hmac_t        *ctx;
@@ -473,7 +473,7 @@ njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     str.start = digest;
     str.length = alg->size;
 
-    return enc->encode(vm, &vm->retval, &str);
+    return enc->encode(vm, retval, &str);
 
 exception:
 
@@ -484,7 +484,7 @@ exception:
 
 static njs_int_t
 njs_hash_prototype_copy(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_digest_t  *dgst, *copy;
 
@@ -507,14 +507,14 @@ njs_hash_prototype_copy(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     memcpy(copy, dgst, sizeof(njs_digest_t));
 
-    return njs_vm_external_create(vm, njs_vm_retval(vm),
+    return njs_vm_external_create(vm, retval,
                                   njs_crypto_hash_proto_id, copy, 0);
 }
 
 
 static njs_int_t
 njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_str_t           key;
     njs_uint_t          i;
@@ -590,7 +590,7 @@ njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     alg->init(&ctx->u);
     alg->update(&ctx->u, key_buf, 64);
 
-    return njs_vm_external_create(vm, &vm->retval, njs_crypto_hmac_proto_id,
+    return njs_vm_external_create(vm, retval, njs_crypto_hmac_proto_id,
                                   ctx, 0);
 }
 

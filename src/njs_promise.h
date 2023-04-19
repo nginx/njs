@@ -29,13 +29,13 @@ typedef struct {
 
 
 njs_int_t njs_promise_constructor(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 njs_promise_capability_t *njs_promise_new_capability(njs_vm_t *vm,
     njs_value_t *constructor);
 njs_function_t *njs_promise_create_function(njs_vm_t *vm, size_t context_size);
 njs_int_t njs_promise_perform_then(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *fulfilled, njs_value_t *rejected,
-    njs_promise_capability_t *capability);
+    njs_promise_capability_t *capability, njs_value_t *retval);
 njs_promise_t *njs_promise_resolve(njs_vm_t *vm, njs_value_t *constructor,
     njs_value_t *x);
 

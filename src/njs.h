@@ -71,9 +71,6 @@ extern const njs_value_t            njs_value_undefined;
     ((n < nargs) ? njs_argument(args, n)                                      \
                  : (njs_value_assign(lvalue, &njs_value_undefined), lvalue))
 
-#define njs_vm_error(vm, fmt, ...)                                            \
-    njs_vm_value_error_set(vm, njs_vm_retval(vm), fmt, ##__VA_ARGS__)
-
 #define njs_vm_log(vm, fmt, ...)  njs_vm_logger(vm, NJS_LOG_LEVEL_INFO, fmt,  \
                                                 ##__VA_ARGS__)
 #define njs_vm_warn(vm, fmt, ...)  njs_vm_logger(vm, NJS_LOG_LEVEL_WARN, fmt, \
@@ -102,14 +99,15 @@ extern const njs_value_t            njs_value_undefined;
  *   NJS_OK - handler executed successfully;
  *   NJS_DECLINED - handler was applied to inappropriate object, retval
  *   contains undefined value;
- *   NJS_ERROR - some error, vm->retval contains appropriate exception.
+ *   NJS_ERROR - some error, njs_vm_exception_get(vm) can be used to get
+ *   the exception value.
  */
 typedef njs_int_t (*njs_prop_handler_t) (njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 typedef njs_int_t (*njs_exotic_keys_t)(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *retval);
 typedef njs_int_t (*njs_function_native_t) (njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t magic8);
+    njs_uint_t nargs, njs_index_t magic8, njs_value_t *retval);
 
 
 typedef enum {
@@ -344,7 +342,7 @@ NJS_EXPORT njs_int_t njs_vm_posted(njs_vm_t *vm);
  *  NJS_OK successful run.
  *  NJS_ERROR some exception or internal error happens.
  *
- *  njs_vm_retval(vm) can be used to get the retval or exception value.
+ *  njs_vm_exception_get(vm) can be used to get the exception value.
  */
 NJS_EXPORT njs_int_t njs_vm_call(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *args, njs_uint_t nargs);
@@ -357,7 +355,7 @@ NJS_EXPORT njs_int_t njs_vm_invoke(njs_vm_t *vm, njs_function_t *function,
  *  NJS_AGAIN successfully processed all events, some posted events are
  *    still pending.
  *  NJS_ERROR some exception or internal error happens.
- *    njs_vm_retval(vm) can be used to get the retval or exception value.
+ *    njs_vm_exception_get(vm) can be used to get the exception value.
  */
 NJS_EXPORT njs_int_t njs_vm_run(njs_vm_t *vm);
 
@@ -366,9 +364,9 @@ NJS_EXPORT njs_int_t njs_vm_run(njs_vm_t *vm);
  *   NJS_OK successful run.
  *   NJS_ERROR some exception or internal error happens.
  *
- *   njs_vm_retval(vm) can be used to get the retval or exception value.
+ *   njs_vm_exception_get(vm) can be used to get the exception value.
  */
-NJS_EXPORT njs_int_t njs_vm_start(njs_vm_t *vm);
+NJS_EXPORT njs_int_t njs_vm_start(njs_vm_t *vm, njs_value_t *retval);
 
 NJS_EXPORT njs_int_t njs_vm_add_path(njs_vm_t *vm, const njs_str_t *path);
 
@@ -397,7 +395,9 @@ NJS_EXPORT njs_int_t njs_vm_value(njs_vm_t *vm, const njs_str_t *path,
 NJS_EXPORT njs_function_t *njs_vm_function(njs_vm_t *vm, const njs_str_t *name);
 
 NJS_EXPORT njs_value_t *njs_vm_retval(njs_vm_t *vm);
-NJS_EXPORT void njs_vm_retval_set(njs_vm_t *vm, const njs_value_t *value);
+NJS_EXPORT void njs_vm_throw(njs_vm_t *vm, const njs_value_t *value);
+NJS_EXPORT void njs_vm_error(njs_vm_t *vm, const char *fmt, ...);
+NJS_EXPORT void njs_vm_exception_get(njs_vm_t *vm, njs_value_t *retval);
 NJS_EXPORT njs_mp_t *njs_vm_memory_pool(njs_vm_t *vm);
 NJS_EXPORT njs_external_ptr_t njs_vm_external_ptr(njs_vm_t *vm);
 
@@ -453,16 +453,12 @@ NJS_EXPORT njs_int_t njs_vm_value_string(njs_vm_t *vm, njs_str_t *dst,
  * the terminating zero byte.
  */
 NJS_EXPORT const char *njs_vm_value_to_c_string(njs_vm_t *vm,
-	njs_value_t *value);
-NJS_EXPORT njs_int_t njs_vm_retval_string(njs_vm_t *vm, njs_str_t *dst);
+    njs_value_t *value);
+NJS_EXPORT njs_int_t njs_vm_exception_string(njs_vm_t *vm, njs_str_t *dst);
 
 NJS_EXPORT njs_int_t njs_vm_value_dump(njs_vm_t *vm, njs_str_t *dst,
     njs_value_t *value, njs_uint_t console, njs_uint_t indent);
-NJS_EXPORT njs_int_t njs_vm_retval_dump(njs_vm_t *vm, njs_str_t *dst,
-    njs_uint_t indent);
 
-NJS_EXPORT void njs_vm_value_error_set(njs_vm_t *vm, njs_value_t *value,
-    const char *fmt, ...);
 NJS_EXPORT void njs_vm_memory_error(njs_vm_t *vm);
 
 NJS_EXPORT void njs_vm_logger(njs_vm_t *vm, njs_log_level_t level,
@@ -516,9 +512,9 @@ NJS_EXPORT njs_value_t *njs_vm_array_prop(njs_vm_t *vm,
 NJS_EXPORT njs_value_t *njs_vm_array_push(njs_vm_t *vm, njs_value_t *value);
 
 NJS_EXPORT njs_int_t njs_vm_json_parse(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs);
+    njs_uint_t nargs, njs_value_t *retval);
 NJS_EXPORT njs_int_t njs_vm_json_stringify(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs);
+    njs_uint_t nargs, njs_value_t *retval);
 
 NJS_EXPORT njs_int_t njs_vm_query_string_parse(njs_vm_t *vm, u_char *start,
     u_char *end, njs_value_t *retval);

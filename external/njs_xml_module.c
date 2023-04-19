@@ -37,9 +37,9 @@ struct njs_xml_nset_s {
 };
 
 static njs_int_t njs_xml_ext_parse(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_xml_ext_canonicalization(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t magic);
+    njs_uint_t nargs, njs_index_t magic, njs_value_t *retval);
 static njs_int_t njs_xml_doc_ext_prop_keys(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *keys);
 static njs_int_t njs_xml_doc_ext_root(njs_vm_t *vm, njs_object_prop_t *prop,
@@ -55,7 +55,7 @@ static njs_int_t njs_xml_attr_ext_prop_handler(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *unused,
     njs_value_t *retval);
 static njs_int_t njs_xml_node_ext_add_child(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused);
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_xml_node_ext_attrs(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 static njs_int_t njs_xml_node_ext_name(njs_vm_t *vm, njs_object_prop_t *prop,
@@ -65,17 +65,23 @@ static njs_int_t njs_xml_node_ext_ns(njs_vm_t *vm, njs_object_prop_t *prop,
 static njs_int_t njs_xml_node_ext_parent(njs_vm_t *vm, njs_object_prop_t *prop,
      njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 static njs_int_t njs_xml_node_ext_remove_all_attributes(njs_vm_t *vm,
-    njs_value_t *args, njs_uint_t nargs, njs_index_t unused);
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
+    njs_value_t *retval);
 static njs_int_t njs_xml_node_ext_remove_attribute(njs_vm_t *vm,
-    njs_value_t *args, njs_uint_t nargs, njs_index_t unused);
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
+    njs_value_t *retval);
 static njs_int_t njs_xml_node_ext_remove_children(njs_vm_t *vm,
-    njs_value_t *args, njs_uint_t nargs, njs_index_t unused);
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
+    njs_value_t *retval);
 static njs_int_t njs_xml_node_ext_remove_text(njs_vm_t *vm,
-    njs_value_t *args, njs_uint_t nargs, njs_index_t unused);
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
+    njs_value_t *retval);
 static njs_int_t njs_xml_node_ext_set_attribute(njs_vm_t *vm,
-    njs_value_t *args, njs_uint_t nargs, njs_index_t unused);
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
+    njs_value_t *retval);
 static njs_int_t njs_xml_node_ext_set_text(njs_vm_t *vm,
-    njs_value_t *args, njs_uint_t nargs, njs_index_t unused);
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
+    njs_value_t *retval);
 static njs_int_t njs_xml_node_ext_tags(njs_vm_t *vm, njs_object_prop_t *prop,
      njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 static njs_int_t njs_xml_node_ext_text(njs_vm_t *vm, njs_object_prop_t *prop,
@@ -407,7 +413,7 @@ static njs_int_t    njs_xml_attr_proto_id;
 
 static njs_int_t
 njs_xml_ext_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     njs_int_t         ret;
     njs_str_t         data;
@@ -448,7 +454,7 @@ njs_xml_ext_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     cln->handler = njs_xml_doc_cleanup;
     cln->data = tree;
 
-    return njs_vm_external_create(vm, njs_vm_retval(vm), njs_xml_doc_proto_id,
+    return njs_vm_external_create(vm, retval, njs_xml_doc_proto_id,
                                   tree, 0);
 }
 
@@ -705,7 +711,7 @@ njs_xml_node_ext_prop_handler(njs_vm_t *vm, njs_object_prop_t *prop,
 
 static njs_int_t
 njs_xml_node_ext_add_child(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
     xmlNode    *current, *node, *copy, *rnode;
     njs_int_t  ret;
@@ -747,7 +753,7 @@ njs_xml_node_ext_add_child(njs_vm_t *vm, njs_value_t *args,
         goto error;
     }
 
-    njs_value_undefined_set(njs_vm_retval(vm));
+    njs_value_undefined_set(retval);
 
     return njs_xml_replace_node(vm, current, copy);
 
@@ -832,15 +838,15 @@ njs_xml_node_ext_parent(njs_vm_t *vm, njs_object_prop_t *prop,
 
 static njs_int_t
 njs_xml_node_ext_remove_attribute(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
-    return njs_xml_node_ext_set_attribute(vm, args, nargs, 1);
+    return njs_xml_node_ext_set_attribute(vm, args, nargs, 1, retval);
 }
 
 
 static njs_int_t
 njs_xml_node_ext_remove_all_attributes(njs_vm_t *vm,
-    njs_value_t *args, njs_uint_t nargs, njs_index_t unused)
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
     xmlNode  *current;
 
@@ -855,7 +861,7 @@ njs_xml_node_ext_remove_all_attributes(njs_vm_t *vm,
         current->properties = NULL;
     }
 
-    njs_value_undefined_set(njs_vm_retval(vm));
+    njs_value_undefined_set(retval);
 
     return NJS_OK;
 }
@@ -863,7 +869,7 @@ njs_xml_node_ext_remove_all_attributes(njs_vm_t *vm,
 
 static njs_int_t
 njs_xml_node_ext_remove_children(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
     xmlNode      *current, *copy;
     njs_str_t    name;
@@ -877,7 +883,7 @@ njs_xml_node_ext_remove_children(njs_vm_t *vm, njs_value_t *args,
 
     selector = njs_arg(args, nargs, 1);
 
-    njs_value_undefined_set(njs_vm_retval(vm));
+    njs_value_undefined_set(retval);
 
     if (!njs_value_is_null_or_undefined(selector)) {
         if (njs_slow_path(!njs_value_is_string(selector))) {
@@ -909,7 +915,7 @@ njs_xml_node_ext_remove_children(njs_vm_t *vm, njs_value_t *args,
 
 static njs_int_t
 njs_xml_node_ext_remove_text(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
     return njs_xml_node_ext_text(vm, NULL, njs_argument(args, 0), NULL, NULL);
 }
@@ -917,7 +923,7 @@ njs_xml_node_ext_remove_text(njs_vm_t *vm, njs_value_t *args,
 
 static njs_int_t
 njs_xml_node_ext_set_attribute(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t remove)
+    njs_uint_t nargs, njs_index_t remove, njs_value_t *retval)
 {
     xmlNode      *current;
     njs_str_t    str;
@@ -939,16 +945,16 @@ njs_xml_node_ext_set_attribute(njs_vm_t *vm, njs_value_t *args,
     njs_value_string_get(name, &str);
 
     return njs_xml_node_attr_handler(vm, current, &str, njs_arg(args, nargs, 2),
-                                     !remove ? njs_vm_retval(vm) : NULL);
+                                     !remove ? retval : NULL);
 }
 
 
 static njs_int_t
 njs_xml_node_ext_set_text(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     return njs_xml_node_ext_text(vm, NULL, njs_argument(args, 0),
-                                 njs_arg(args, nargs, 1), njs_vm_retval(vm));
+                                 njs_arg(args, nargs, 1), retval);
 }
 
 
@@ -1701,7 +1707,7 @@ njs_xml_parse_ns_list(njs_vm_t *vm, njs_str_t *src)
 
 static njs_int_t
 njs_xml_ext_canonicalization(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t magic)
+    njs_index_t magic, njs_value_t *retval)
 {
     u_char           **prefix_list;
     ssize_t          size;
@@ -1792,7 +1798,7 @@ njs_xml_ext_canonicalization(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (magic & 0x2) {
-        ret = njs_vm_value_string_create_chb(vm, njs_vm_retval(vm), &chain);
+        ret = njs_vm_value_string_create_chb(vm, retval, &chain);
 
     } else {
         size = njs_chb_size(&chain);
@@ -1808,7 +1814,7 @@ njs_xml_ext_canonicalization(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             goto error;
         }
 
-        ret = njs_vm_value_buffer_set(vm, njs_vm_retval(vm), data.start,
+        ret = njs_vm_value_buffer_set(vm, retval, data.start,
                                       data.length);
     }
 
@@ -1990,7 +1996,7 @@ njs_xml_error(njs_vm_t *vm, njs_xml_doc_t *current, const char *fmt, ...)
                         err->int2);
     }
 
-    njs_vm_value_error_set(vm, njs_vm_retval(vm), "%*s", p - errstr, errstr);
+    njs_vm_error(vm, "%s", p - errstr, errstr);
 }
 
 

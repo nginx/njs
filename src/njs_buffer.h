@@ -31,7 +31,7 @@ njs_typed_array_t *njs_buffer_alloc(njs_vm_t *vm, size_t size,
     njs_bool_t zeroing);
 
 const njs_buffer_encoding_t *njs_buffer_encoding(njs_vm_t *vm,
-    const njs_value_t *value);
+    const njs_value_t *value, njs_bool_t thrw);
 njs_int_t njs_buffer_decode_string(njs_vm_t *vm, const njs_value_t *value,
     njs_value_t *dst, const njs_buffer_encoding_t *encoding);
 

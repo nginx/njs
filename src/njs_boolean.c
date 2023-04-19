@@ -10,7 +10,7 @@
 
 static njs_int_t
 njs_boolean_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused)
+    njs_index_t unused, njs_value_t *retval)
 {
     const njs_value_t   *value;
     njs_object_value_t  *object;
@@ -28,10 +28,10 @@ njs_boolean_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-        njs_set_object_value(&vm->retval, object);
+        njs_set_object_value(retval, object);
 
     } else {
-        vm->retval = *value;
+        njs_value_assign(retval, value);
     }
 
     return NJS_OK;
@@ -66,7 +66,7 @@ const njs_object_init_t  njs_boolean_constructor_init = {
 
 static njs_int_t
 njs_boolean_prototype_value_of(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
     njs_value_t  *value;
 
@@ -84,7 +84,7 @@ njs_boolean_prototype_value_of(njs_vm_t *vm, njs_value_t *args,
         }
     }
 
-    vm->retval = *value;
+    njs_value_assign(retval, value);
 
     return NJS_OK;
 }
@@ -92,7 +92,7 @@ njs_boolean_prototype_value_of(njs_vm_t *vm, njs_value_t *args,
 
 static njs_int_t
 njs_boolean_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t unused)
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
     njs_value_t  *value;
 
@@ -110,7 +110,8 @@ njs_boolean_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         }
     }
 
-    vm->retval = njs_is_true(value) ? njs_string_true : njs_string_false;
+    njs_value_assign(retval, njs_is_true(value) ? &njs_string_true
+                                                : &njs_string_false);
 
     return NJS_OK;
 }
