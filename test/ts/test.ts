@@ -174,11 +174,24 @@ function xml_module(str: NjsByteString) {
     children = node.$tags;
     selectedChildren = node.$tags$xxx;
 
-    node?.xxx?.yyy?.$attr$zzz;
+    node?.$tag$xxx?.$tag$yyy?.$attr$zzz;
 
     let buf:Buffer = xml.exclusiveC14n(node);
-    buf = xml.exclusiveC14n(doc, node.xxx, false);
+    buf = xml.exclusiveC14n(doc, node.$tag$xxx, false);
     buf = xml.exclusiveC14n(node, null, true, "aa bb");
+
+    node.setText("xxx");
+    node.removeText();
+    node.setText(null);
+
+    node.addChild(node);
+    node.removeChildren('xx');
+
+    node.removeAttribute('xx');
+    node.removeAllAttributes();
+    node.setAttribute('xx', 'yy');
+    node.setAttribute('xx', null);
+    node.$tags = [node, node];
 }
 
 function crypto_module(str: NjsByteString) {

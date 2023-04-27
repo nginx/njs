@@ -2,61 +2,6 @@
 
 declare module "xml" {
 
-    type XMLTagName =
-        | `_${string}`
-        | `a${string}`
-        | `b${string}`
-        | `c${string}`
-        | `d${string}`
-        | `e${string}`
-        | `f${string}`
-        | `g${string}`
-        | `h${string}`
-        | `i${string}`
-        | `j${string}`
-        | `k${string}`
-        | `l${string}`
-        | `m${string}`
-        | `n${string}`
-        | `o${string}`
-        | `p${string}`
-        | `q${string}`
-        | `r${string}`
-        | `s${string}`
-        | `t${string}`
-        | `u${string}`
-        | `v${string}`
-        | `w${string}`
-        | `x${string}`
-        | `y${string}`
-        | `z${string}`
-        | `A${string}`
-        | `B${string}`
-        | `C${string}`
-        | `D${string}`
-        | `E${string}`
-        | `F${string}`
-        | `G${string}`
-        | `H${string}`
-        | `I${string}`
-        | `J${string}`
-        | `K${string}`
-        | `L${string}`
-        | `M${string}`
-        | `N${string}`
-        | `O${string}`
-        | `P${string}`
-        | `Q${string}`
-        | `R${string}`
-        | `S${string}`
-        | `T${string}`
-        | `U${string}`
-        | `V${string}`
-        | `W${string}`
-        | `X${string}`
-        | `Y${string}`
-        | `Z${string}`;
-
     export interface XMLDoc {
         /**
          * The doc's root node.
@@ -66,15 +11,66 @@ declare module "xml" {
         /**
          * The doc's root by its name or undefined.
          */
-        readonly [rootTagName: XMLTagName]: XMLNode | undefined;
+        readonly [rootTagName: string]: XMLNode | undefined;
     }
 
     export interface XMLNode {
         /**
-         * node.$attr$xxx - the node's attribute value of "xxx".
+         * Adds a child node. Node is recursively copied before adding.
+         * @param node - XMLNode to be added.
+         * @since 0.7.11.
+         */
+        addChild(node: XMLNode): void;
+
+        /**
+         * node.$attr$xxx - value of the node's attribute "xxx".
          * @since 0.7.11 the property is writable.
          */
         [key: `$attr$${string}`]: string | undefined;
+
+        /**
+         * Removes attribute by name.
+         * @param name - name of the attribute to remove.
+         * @since 0.7.11.
+         */
+        removeAttribute(name: string): void;
+
+        /**
+         * Removes all the attribute of the node.
+         * @since 0.7.11.
+         */
+        removeAllAttributes(): void;
+
+        /**
+         * Removes all the children tags named tag_name.
+         * @param tag_name - name of the children's tags to remove.
+         * If tag_name is absent all children tags are removed.
+         * @since 0.7.11.
+         */
+        removeChildren(tag_name?:string): void;
+
+        /**
+         * Removes the text value of the node.
+         * @since 0.7.11.
+         */
+        removeText(): void;
+
+        /**
+         * Sets a value for the attribute.
+         * @param attr_name - name of the attribute to set.
+         * @param value - value of the attribute to set. When value is null
+         * the attribute is removed.
+         * @since 0.7.11.
+         */
+        setAttribute(attr_name: string, value: string | null): void;
+
+        /**
+         * Sets a text value for the node.
+         * @param text - a value to set as a text. If value is null the
+         * node's text is deleted.
+         * @since 0.7.11.
+         */
+        setText(text:string | null): void;
 
         /**
          * node.$attrs - an XMLAttr wrapper object for all the attributes
@@ -118,13 +114,7 @@ declare module "xml" {
         /**
          * node.$tags - all the node's children tags.
          */
-        readonly $tags: XMLNode[] | undefined;
-
-        /**
-         * node.xxx is the same as node.$tag$xxx.
-         * @since 0.7.11 the property is writable.
-         */
-        [key: XMLTagName]: XMLNode | undefined;
+        $tags: XMLNode[] | undefined;
     }
 
     export interface XMLAttr {
