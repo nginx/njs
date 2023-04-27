@@ -25223,6 +25223,14 @@ static njs_test_suite_t  njs_suites[] =
 };
 
 
+static const char  *restricted_environ[] = {
+    "TZ=UTC",
+    "DUP=bar",
+    "dup=foo",
+    NULL,
+};
+
+
 int njs_cdecl
 main(int argc, char **argv)
 {
@@ -25239,13 +25247,9 @@ main(int argc, char **argv)
         return (ret == NJS_DONE) ? EXIT_SUCCESS: EXIT_FAILURE;
     }
 
-    environ = NULL;
+    environ = (char **) restricted_environ;
 
-    (void) putenv((char *) "TZ=UTC");
     tzset();
-
-    (void) putenv((char *) "DUP=bar");
-    (void) putenv((char *) "dup=foo");
 
     njs_mm_denormals(1);
 
