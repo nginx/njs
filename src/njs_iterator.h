@@ -9,14 +9,14 @@
 
 
 typedef struct {
-    njs_function_t  *function;
-    njs_value_t     *argument;
-    njs_value_t     *value;
+    njs_function_t      *function;
+    njs_opaque_value_t  argument;
+    njs_opaque_value_t  value;
 
-    void            *data;
+    void                *data;
 
-    int64_t         from;
-    int64_t         to;
+    int64_t             from;
+    int64_t             to;
 } njs_iterator_args_t;
 
 

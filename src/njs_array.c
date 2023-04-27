@@ -1862,10 +1862,10 @@ njs_array_iterator_call(njs_vm_t *vm, njs_iterator_args_t *args,
 
     arguments[0] = *entry;
     njs_set_number(&arguments[1], n);
-    arguments[2] = *args->value;
+    njs_value_assign(&arguments[2], &args->value);
 
-    return njs_function_call(vm, args->function, args->argument, arguments, 3,
-                             retval);
+    return njs_function_call(vm, args->function, njs_value_arg(&args->argument),
+                             arguments, 3, retval);
 }
 
 
@@ -1921,7 +1921,7 @@ njs_array_handler_includes(njs_vm_t *vm, njs_iterator_args_t *args,
         entry = njs_value_arg(&njs_value_undefined);
     }
 
-    if (njs_values_same_zero(args->argument, entry)) {
+    if (njs_values_same_zero(njs_value_arg(&args->argument), entry)) {
         njs_set_true(retval);
 
         return NJS_DONE;
@@ -1935,7 +1935,7 @@ static njs_int_t
 njs_array_handler_index_of(njs_vm_t *vm, njs_iterator_args_t *args,
     njs_value_t *entry, int64_t n, njs_value_t *retval)
 {
-    if (njs_values_strict_equal(args->argument, entry)) {
+    if (njs_values_strict_equal(njs_value_arg(&args->argument), entry)) {
         njs_set_number(retval, n);
 
         return NJS_DONE;
@@ -2023,21 +2023,21 @@ njs_array_handler_reduce(njs_vm_t *vm, njs_iterator_args_t *args,
     njs_value_t  arguments[5];
 
     if (njs_is_valid(entry)) {
-        if (!njs_is_valid(args->argument)) {
-            *(args->argument) = *entry;
+        if (!njs_value_is_valid(njs_value_arg(&args->argument))) {
+            njs_value_assign(&args->argument, entry);
             return NJS_OK;
         }
 
         /* GC: array elt, array */
 
         njs_set_undefined(&arguments[0]);
-        arguments[1] = *args->argument;
+        njs_value_assign(&arguments[1], &args->argument);
         arguments[2] = *entry;
         njs_set_number(&arguments[3], n);
-        arguments[4] = *args->value;
+        njs_value_assign(&arguments[4], &args->value);
 
         ret =  njs_function_apply(vm, args->function, arguments, 5,
-                                  args->argument);
+                                  njs_value_arg(&args->argument));
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
         }
@@ -2120,18 +2120,17 @@ njs_array_prototype_iterator(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     int64_t                 i, length;
     njs_int_t               ret;
     njs_array_t             *array;
-    njs_value_t             accumulator;
     njs_iterator_args_t     iargs;
     njs_iterator_handler_t  handler;
 
-    iargs.value = njs_argument(args, 0);
+    njs_value_assign(&iargs.value, njs_argument(args, 0));
 
-    ret = njs_value_to_object(vm, iargs.value);
+    ret = njs_value_to_object(vm, njs_value_arg(&iargs.value));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
 
-    ret = njs_value_length(vm, iargs.value, &iargs.to);
+    ret = njs_value_length(vm, njs_value_arg(&iargs.value), &iargs.to);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -2145,10 +2144,10 @@ njs_array_prototype_iterator(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
         iargs.function = njs_function(njs_argument(args, 1));
-        iargs.argument = njs_arg(args, nargs, 2);
+        njs_value_assign(&iargs.argument, njs_arg(args, nargs, 2));
 
     } else {
-        iargs.argument = njs_arg(args, nargs, 1);
+        njs_value_assign(&iargs.argument, njs_arg(args, nargs, 1));
     }
 
     switch (njs_array_type(magic)) {
@@ -2206,13 +2205,10 @@ njs_array_prototype_iterator(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     case NJS_ARRAY_REDUCE:
         handler = njs_array_handler_reduce;
 
-        njs_set_invalid(&accumulator);
-
-        if (nargs > 2) {
-            accumulator = *iargs.argument;
+        if (nargs <= 2) {
+            njs_value_invalid_set(njs_value_arg(&iargs.argument));
         }
 
-        iargs.argument = &accumulator;
         break;
 
     case NJS_ARRAY_FILTER:
@@ -2277,12 +2273,12 @@ done:
         break;
 
     case NJS_ARRAY_REDUCE:
-        if (!njs_is_valid(&accumulator)) {
+        if (!njs_value_is_valid(njs_value_arg(&iargs.argument))) {
             njs_type_error(vm, "Reduce of empty object with no initial value");
             return NJS_ERROR;
         }
 
-        njs_value_assign(retval, &accumulator);
+        njs_value_assign(retval, njs_value_arg(&iargs.argument));
         break;
 
     case NJS_ARRAY_FILTER:
@@ -2301,20 +2297,19 @@ njs_array_prototype_reverse_iterator(njs_vm_t *vm, njs_value_t *args,
 {
     int64_t                 from, length;
     njs_int_t               ret;
-    njs_value_t             accumulator;
     njs_iterator_args_t     iargs;
     njs_iterator_handler_t  handler;
 
-    iargs.value = njs_argument(args, 0);
+    njs_value_assign(&iargs.value, njs_argument(args, 0));
 
-    ret = njs_value_to_object(vm, iargs.value);
+    ret = njs_value_to_object(vm, njs_value_arg(&iargs.value));
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
 
-    iargs.argument = njs_arg(args, nargs, 1);
+    njs_value_assign(&iargs.argument, njs_arg(args, nargs, 1));
 
-    ret = njs_value_length(vm, iargs.value, &length);
+    ret = njs_value_length(vm, njs_value_arg(&iargs.value), &length);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -2355,13 +2350,12 @@ njs_array_prototype_reverse_iterator(njs_vm_t *vm, njs_value_t *args,
             return NJS_ERROR;
         }
 
-        njs_set_invalid(&accumulator);
 
         iargs.function = njs_function(njs_argument(args, 1));
-        iargs.argument = &accumulator;
+        njs_value_invalid_set(njs_value_arg(&iargs.argument));
 
         if (nargs > 2) {
-            accumulator = *njs_argument(args, 2);
+            njs_value_assign(&iargs.argument, njs_argument(args, 2));
 
         } else if (length == 0) {
             goto done;
@@ -2392,12 +2386,12 @@ done:
 
     case NJS_ARRAY_REDUCE_RIGHT:
     default:
-        if (!njs_is_valid(&accumulator)) {
+        if (!njs_value_is_valid(njs_value_arg(&iargs.argument))) {
             njs_type_error(vm, "Reduce of empty object with no initial value");
             return NJS_ERROR;
         }
 
-        njs_value_assign(retval, &accumulator);
+        njs_value_assign(retval, njs_value_arg(&iargs.argument));
         break;
     }
 

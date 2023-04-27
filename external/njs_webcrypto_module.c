@@ -4192,7 +4192,7 @@ njs_key_usage(njs_vm_t *vm, njs_value_t *value, unsigned *mask)
 
     *mask = 0;
 
-    args.value = value;
+    njs_value_assign(&args.value, value);
     args.from = 0;
     args.to = length;
     args.data = mask;

@@ -1337,7 +1337,7 @@ njs_promise_perform_all(njs_vm_t *vm, njs_value_t *iterator,
 
     (*pargs->remaining) = 1;
 
-    pargs->args.value = iterator;
+    njs_value_assign(&pargs->args.value, iterator);
     pargs->args.to = length;
 
     ret = njs_object_iterate(vm, &pargs->args, handler, retval);
@@ -1785,7 +1785,7 @@ njs_promise_race(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     pargs.function = njs_function(&resolve);
     pargs.constructor = promise_ctor;
 
-    pargs.args.value = iterator;
+    njs_value_assign(&pargs.args.value, iterator);
     pargs.args.to = length;
 
     ret = njs_object_iterate(vm, &pargs.args, njs_promise_perform_race_handler,
