@@ -8,6 +8,12 @@ declare module "crypto" {
 
     export interface Hash {
         /**
+         * Returns a new Hash object that contains a deep copy of
+         * the internal state of the current Hash object.
+         */
+        copy(): Hash;
+
+        /**
          * Updates the hash content with the given `data` and returns self.
          */
         update(data: NjsStringOrBuffer): Hash;

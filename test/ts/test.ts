@@ -188,6 +188,7 @@ function crypto_module(str: NjsByteString) {
 
     h = cr.createHash("sha1");
     h = h.update(str).update(Buffer.from([0]));
+    h = h.copy();
     b = h.digest();
 
     s = cr.createHash("sha256").digest("hex");
