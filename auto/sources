@@ -26,6 +26,17 @@ NJS_LIB_SRCS=" \
    src/njs_value.c \
    src/njs_vm.c \
    src/njs_vmcode.c \
+   src/njs_lexer.c \
+   src/njs_lexer_keyword.c \
+   src/njs_parser.c \
+   src/njs_variable.c \
+   src/njs_scope.c \
+   src/njs_generator.c \
+   src/njs_disassembler.c \
+   src/njs_timer.c \
+   src/njs_module.c \
+   src/njs_event.c \
+   src/njs_extern.c \
    src/njs_boolean.c \
    src/njs_number.c \
    src/njs_symbol.c \
@@ -39,24 +50,13 @@ NJS_LIB_SRCS=" \
    src/njs_date.c \
    src/njs_error.c \
    src/njs_math.c \
-   src/njs_timer.c \
-   src/njs_module.c \
-   src/njs_event.c \
-   src/njs_extern.c \
-   src/njs_variable.c \
-   src/njs_builtin.c \
-   src/njs_lexer.c \
-   src/njs_lexer_keyword.c \
-   src/njs_parser.c \
-   src/njs_generator.c \
-   src/njs_disassembler.c \
    src/njs_array_buffer.c \
    src/njs_typed_array.c \
    src/njs_promise.c \
    src/njs_encoding.c \
    src/njs_iterator.c \
-   src/njs_scope.c \
    src/njs_async.c \
+   src/njs_builtin.c \
 "
 
 NJS_LIB_TEST_SRCS=" \
