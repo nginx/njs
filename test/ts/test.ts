@@ -2,6 +2,7 @@ import fs from 'fs';
 import qs from 'querystring';
 import cr from 'crypto';
 import xml from 'xml';
+import zlib from 'zlib';
 
 async function http_module(r: NginxHTTPRequest) {
     var bs: NjsByteString;
@@ -192,6 +193,14 @@ function xml_module(str: NjsByteString) {
     node.setAttribute('xx', 'yy');
     node.setAttribute('xx', null);
     node.$tags = [node, node];
+}
+
+function zlib_module(str: NjsByteString) {
+    zlib.deflateRawSync(str, {level: zlib.constants.Z_BEST_COMPRESSION, memLevel: 9});
+    zlib.deflateSync(str, {strategy: zlib.constants.Z_RLE});
+
+    zlib.inflateRawSync(str, {windowBits: 14});
+    zlib.inflateSync(str, {chunkSize: 2048});
 }
 
 function crypto_module(str: NjsByteString) {
