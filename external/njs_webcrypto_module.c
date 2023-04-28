@@ -4034,10 +4034,13 @@ static njs_int_t
 njs_ext_get_random_values(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
-    njs_int_t  ret;
-    njs_str_t  fill;
+    njs_int_t    ret;
+    njs_str_t    fill;
+    njs_value_t  *buffer;
 
-    ret = njs_vm_value_to_bytes(vm, &fill, njs_arg(args, nargs, 1));
+    buffer = njs_arg(args, nargs, 1);
+
+    ret = njs_vm_value_to_bytes(vm, &fill, buffer);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
@@ -4051,6 +4054,8 @@ njs_ext_get_random_values(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         njs_webcrypto_error(vm, "RAND_bytes() failed");
         return NJS_ERROR;
     }
+
+    njs_value_assign(retval, buffer);
 
     return NJS_OK;
 }

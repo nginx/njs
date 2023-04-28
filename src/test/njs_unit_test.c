@@ -21923,6 +21923,10 @@ static njs_unit_test_t  njs_webcrypto_test[] =
               "let condition = bits1 > (mean - 10 * stddev) && bits1 < (mean + 10 * stddev);"
               "condition ? true : [buf, nbits, bits1, mean, stddev]"),
       njs_str("true") },
+
+    { njs_str("let buf = new Uint32Array(4);"
+              "buf === crypto.getRandomValues(buf)"),
+      njs_str("true") },
 };
 
 
