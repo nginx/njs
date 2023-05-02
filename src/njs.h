@@ -27,14 +27,16 @@
 #include <njs_sprintf.h>
 
 
-typedef uintptr_t                   njs_index_t;
-typedef struct njs_vm_s             njs_vm_t;
-typedef struct njs_mod_s            njs_mod_t;
-typedef union  njs_value_s          njs_value_t;
-typedef struct njs_function_s       njs_function_t;
-typedef struct njs_vm_shared_s      njs_vm_shared_t;
-typedef struct njs_object_prop_s    njs_object_prop_t;
-typedef struct njs_external_s       njs_external_t;
+typedef uintptr_t                     njs_index_t;
+typedef struct njs_vm_s               njs_vm_t;
+typedef struct njs_mod_s              njs_mod_t;
+typedef union  njs_value_s            njs_value_t;
+typedef struct njs_function_s         njs_function_t;
+typedef struct njs_vm_shared_s        njs_vm_shared_t;
+typedef struct njs_object_init_s      njs_object_init_t;
+typedef struct njs_object_prop_s      njs_object_prop_t;
+typedef struct njs_object_type_init_s njs_object_type_init_t;
+typedef struct njs_external_s         njs_external_t;
 
 /*
  * njs_opaque_value_t is the external storage type for native njs_value_t type.

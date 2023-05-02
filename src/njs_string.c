@@ -256,6 +256,49 @@ njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint64_t size,
 }
 
 
+uint32_t
+njs_string_length(njs_value_t *string)
+{
+    uint32_t  length, size;
+
+    if (string->short_string.size != NJS_STRING_LONG) {
+        size = string->short_string.size;
+        length = string->short_string.length;
+
+    } else {
+        size = string->long_string.size;
+        length = string->long_string.data->length;
+    }
+
+    return (length == 0) ? size : length;
+}
+
+
+size_t
+njs_string_prop(njs_string_prop_t *string, const njs_value_t *value)
+{
+    size_t     size;
+    uintptr_t  length;
+
+    size = value->short_string.size;
+
+    if (size != NJS_STRING_LONG) {
+        string->start = (u_char *) value->short_string.start;
+        length = value->short_string.length;
+
+    } else {
+        string->start = (u_char *) value->long_string.data->start;
+        size = value->long_string.size;
+        length = value->long_string.data->length;
+    }
+
+    string->size = size;
+    string->length = length;
+
+    return (length == 0) ? size : length;
+}
+
+
 void
 njs_string_truncate(njs_value_t *value, uint32_t size, uint32_t length)
 {
@@ -3305,6 +3348,7 @@ njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
     size_t             size;
+    ssize_t            len;
     uint32_t           limit;
     njs_int_t          ret;
     njs_utf8_t         utf8;
@@ -3429,7 +3473,9 @@ found:
 
         size = p - start;
 
-        ret = njs_string_split_part_add(vm, array, utf8, start, size);
+        len = njs_string_calc_length(utf8, start, size);
+
+        ret = njs_array_string_add(vm, array, start, size, len);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
         }
@@ -3455,18 +3501,6 @@ done:
     njs_set_array(retval, array);
 
     return NJS_OK;
-}
-
-
-njs_int_t
-njs_string_split_part_add(njs_vm_t *vm, njs_array_t *array, njs_utf8_t utf8,
-    const u_char *start, size_t size)
-{
-    ssize_t  length;
-
-    length = njs_string_calc_length(utf8, start, size);
-
-    return njs_array_string_add(vm, array, start, size, length);
 }
 
 

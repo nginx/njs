@@ -88,7 +88,6 @@ typedef struct njs_regexp_s           njs_regexp_t;
 typedef struct njs_date_s             njs_date_t;
 typedef struct njs_object_value_s     njs_promise_t;
 typedef struct njs_property_next_s    njs_property_next_t;
-typedef struct njs_object_init_s      njs_object_init_t;
 
 
 union njs_value_s {
@@ -305,12 +304,12 @@ typedef union {
 } njs_object_prototype_t;
 
 
-typedef struct {
+struct njs_object_type_init_s {
     njs_function_t            constructor;
     const njs_object_init_t   *constructor_props;
     const njs_object_init_t   *prototype_props;
     njs_object_prototype_t    prototype_value;
-} njs_object_type_init_t;
+};
 
 
 typedef enum {
