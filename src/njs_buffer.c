@@ -183,7 +183,7 @@ njs_buffer_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
 }
 
 
-njs_typed_array_t *
+static njs_typed_array_t *
 njs_buffer_alloc(njs_vm_t *vm, size_t size, njs_bool_t zeroing)
 {
     njs_value_t        value;
@@ -621,7 +621,7 @@ njs_buffer_slot_internal(njs_vm_t *vm, njs_value_t *value)
 }
 
 
-njs_typed_array_t *
+static njs_typed_array_t *
 njs_buffer_slot(njs_vm_t *vm, njs_value_t *value, const char *name)
 {
     njs_typed_array_t  *array;
@@ -634,6 +634,36 @@ njs_buffer_slot(njs_vm_t *vm, njs_value_t *value, const char *name)
     }
 
     return array;
+}
+
+
+njs_int_t
+njs_value_buffer_get(njs_vm_t *vm, njs_value_t *value, njs_str_t *dst)
+{
+    njs_typed_array_t   *array;
+    njs_array_buffer_t  *array_buffer;
+
+    if (njs_slow_path(!(njs_is_typed_array(value)
+                        || njs_is_data_view(value))))
+    {
+        njs_type_error(vm, "first argument must be a Buffer or DataView");
+        return NJS_ERROR;
+    }
+
+    array = njs_typed_array(value);
+    if (njs_slow_path(array == NULL)) {
+        return NJS_ERROR;
+    }
+
+    array_buffer = njs_typed_array_writable(vm, array);
+    if (njs_slow_path(array_buffer == NULL)) {
+        return NJS_ERROR;
+    }
+
+    dst->length = array->byte_length;
+    dst->start = &array_buffer->u.u8[array->offset];
+
+    return NJS_OK;
 }
 
 

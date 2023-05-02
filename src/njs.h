@@ -423,6 +423,8 @@ NJS_EXPORT njs_int_t njs_vm_string_compare(const njs_value_t *v1,
 NJS_EXPORT njs_int_t njs_vm_value_array_buffer_set(njs_vm_t *vm,
     njs_value_t *value, const u_char *start, uint32_t size);
 
+NJS_EXPORT njs_int_t njs_value_buffer_get(njs_vm_t *vm, njs_value_t *value,
+    njs_str_t *dst);
 /*
  * Sets a Buffer value.
  *   start data is not copied and should not be freed.

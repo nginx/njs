@@ -1405,14 +1405,12 @@ static njs_int_t
 njs_fs_read(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t calltype, njs_value_t *retval)
 {
-    int64_t             fd, length, pos, offset;
-    ssize_t             n;
-    njs_int_t           ret;
-    njs_str_t           data;
-    njs_uint_t          fd_offset;
-    njs_value_t         result, *buffer, *value;
-    njs_typed_array_t   *array;
-    njs_array_buffer_t  *array_buffer;
+    int64_t      fd, length, pos, offset;
+    ssize_t      n;
+    njs_int_t    ret;
+    njs_str_t    data;
+    njs_uint_t   fd_offset;
+    njs_value_t  result, *buffer, *value;
 
     fd_offset = !!(calltype == NJS_FS_DIRECT);
 
@@ -1429,13 +1427,8 @@ njs_fs_read(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
      */
 
     buffer = njs_arg(args, nargs, fd_offset + 1);
-    array = njs_buffer_slot(vm, buffer, "buffer");
-    if (njs_slow_path(array == NULL)) {
-        return NJS_ERROR;
-    }
-
-    array_buffer = njs_typed_array_writable(vm, array);
-    if (njs_slow_path(array_buffer == NULL)) {
+    ret = njs_value_buffer_get(vm, buffer, &data);
+    if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
 
@@ -1445,14 +1438,14 @@ njs_fs_read(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    if (njs_slow_path(offset < 0 || (size_t) offset > array->byte_length)) {
+    if (njs_slow_path(offset < 0 || (size_t) offset > data.length)) {
         njs_range_error(vm, "offset is out of range (must be <= %z)",
-                        array->byte_length);
+                        data.length);
         return NJS_ERROR;
     }
 
-    data.length = array->byte_length - offset;
-    data.start = &array_buffer->u.u8[array->offset + offset];
+    data.length -= offset;
+    data.start += offset;
 
     value = njs_arg(args, nargs, fd_offset + 3);
 
