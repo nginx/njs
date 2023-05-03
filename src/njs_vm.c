@@ -687,6 +687,13 @@ njs_vm_external_ptr(njs_vm_t *vm)
 }
 
 
+njs_bool_t
+njs_vm_constructor(njs_vm_t *vm)
+{
+    return vm->top_frame->ctor;
+}
+
+
 uintptr_t
 njs_vm_meta(njs_vm_t *vm, njs_uint_t index)
 {
@@ -698,6 +705,13 @@ njs_vm_meta(njs_vm_t *vm, njs_uint_t index)
     }
 
     return metas->values[index];
+}
+
+
+njs_vm_opt_t *
+njs_vm_options(njs_vm_t *vm)
+{
+    return &vm->options;
 }
 
 
@@ -1144,6 +1158,32 @@ njs_vm_object_prop(njs_vm_t *vm, njs_value_t *value, const njs_str_t *prop,
 }
 
 
+njs_int_t
+njs_vm_object_prop_set(njs_vm_t *vm, njs_value_t *value, const njs_str_t *prop,
+    njs_opaque_value_t *setval)
+{
+    njs_int_t    ret;
+    njs_value_t  key;
+
+    if (njs_slow_path(!njs_is_object(value))) {
+        njs_type_error(vm, "njs_vm_object_prop_set() argument is not object");
+        return NJS_ERROR;
+    }
+
+    ret = njs_vm_value_string_set(vm, &key, prop->start, prop->length);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_value_property_set(vm, value, &key, njs_value_arg(setval));
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    return NJS_OK;
+}
+
+
 njs_value_t *
 njs_vm_array_prop(njs_vm_t *vm, njs_value_t *value, int64_t index,
     njs_opaque_value_t *retval)
@@ -1195,6 +1235,22 @@ njs_vm_array_length(njs_vm_t *vm, njs_value_t *value, int64_t *length)
     }
 
     return njs_object_length(vm, value, length);
+}
+
+
+njs_int_t
+njs_vm_date_alloc(njs_vm_t *vm, njs_value_t *retval, double time)
+{
+    njs_date_t  *date;
+
+    date = njs_date_alloc(vm, time);
+    if (njs_slow_path(date == NULL)) {
+        return NJS_ERROR;
+    }
+
+    njs_set_date(retval, date);
+
+    return NJS_OK;
 }
 
 

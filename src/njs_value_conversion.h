@@ -63,23 +63,6 @@ njs_value_to_numeric(njs_vm_t *vm, njs_value_t *value, njs_value_t *dst)
 
 
 njs_inline njs_int_t
-njs_value_to_integer(njs_vm_t *vm, njs_value_t *value, int64_t *dst)
-{
-    double     num;
-    njs_int_t  ret;
-
-    ret = njs_value_to_number(vm, value, &num);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
-    }
-
-    *dst = njs_number_to_integer(num);
-
-    return NJS_OK;
-}
-
-
-njs_inline njs_int_t
 njs_value_to_length(njs_vm_t *vm, njs_value_t *value, int64_t *dst)
 {
     double     num;

@@ -20035,32 +20035,32 @@ static njs_unit_test_t  njs_fs_module_test[] =
 
     { njs_str("var fs = require('fs');"
               "fs.readFile()"),
-      njs_str("TypeError: \"path\" must be a string or Buffer") },
+      njs_str("Error: \"path\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
               "var path = Buffer.from('/broken'); path[3] = 0;"
               "fs.readFile(path)"),
-      njs_str("TypeError: \"path\" must be a Buffer without null bytes") },
+      njs_str("Error: \"path\" must be a Buffer without null bytes") },
 
     { njs_str("var fs = require('fs');"
               "fs.readFile('/njs_unknown_path')"),
-      njs_str("TypeError: \"callback\" must be a function") },
+      njs_str("Error: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
               "fs.readFile('/njs_unknown_path', 'utf8')"),
-      njs_str("TypeError: \"callback\" must be a function") },
+      njs_str("Error: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
               "fs.readFile('/njs_unknown_path', {flag:'xx'})"),
-      njs_str("TypeError: \"callback\" must be a function") },
+      njs_str("Error: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
               "fs.readFile('/njs_unknown_path', {flag:'xx'}, 1)"),
-      njs_str("TypeError: \"callback\" must be a function") },
+      njs_str("Error: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
               "fs.readFile('/njs_unknown_path', {flag:'xx'}, function () {})"),
-      njs_str("TypeError: Unknown file open flags: \"xx\"") },
+      njs_str("Error: Unknown file open flags: \"xx\"") },
 
     { njs_str("var fs = require('fs');"
               "fs.readFile('/njs_unknown_path', {encoding:'ascii'}, function () {})"),
@@ -20074,15 +20074,15 @@ static njs_unit_test_t  njs_fs_module_test[] =
 
     { njs_str("var fs = require('fs');"
               "fs.readFileSync()"),
-      njs_str("TypeError: \"path\" must be a string or Buffer") },
+      njs_str("Error: \"path\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
               "fs.readFileSync({})"),
-      njs_str("TypeError: \"path\" must be a string or Buffer") },
+      njs_str("Error: \"path\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
               "fs.readFileSync('/njs_unknown_path', {flag:'xx'})"),
-      njs_str("TypeError: Unknown file open flags: \"xx\"") },
+      njs_str("Error: Unknown file open flags: \"xx\"") },
 
     { njs_str("var fs = require('fs');"
               "fs.readFileSync(Buffer.from('/njs_unknown_path'), {encoding:'ascii'})"),
@@ -20094,38 +20094,38 @@ static njs_unit_test_t  njs_fs_module_test[] =
 
     { njs_str("var fs = require('fs');"
               "fs.readFileSync('/njs_unknown_path', true)"),
-      njs_str("TypeError: Unknown options type: \"boolean\" (a string or object required)") },
+      njs_str("Error: Unknown options type (a string or object required)") },
 
 
     /* require('fs').writeFile() */
 
     { njs_str("var fs = require('fs');"
               "fs.writeFile()"),
-      njs_str("TypeError: \"path\" must be a string or Buffer") },
+      njs_str("Error: \"path\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
               "fs.writeFile({}, '', function () {})"),
-      njs_str("TypeError: \"path\" must be a string or Buffer") },
+      njs_str("Error: \"path\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
               "fs.writeFile('/njs_unknown_path')"),
-      njs_str("TypeError: \"callback\" must be a function") },
+      njs_str("Error: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
               "fs.writeFile('/njs_unknown_path', '')"),
-      njs_str("TypeError: \"callback\" must be a function") },
+      njs_str("Error: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
               "fs.writeFile('/njs_unknown_path', '', undefined)"),
-      njs_str("TypeError: \"callback\" must be a function") },
+      njs_str("Error: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
               "fs.writeFile('/njs_unknown_path', '', 'utf8')"),
-      njs_str("TypeError: \"callback\" must be a function") },
+      njs_str("Error: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
               "fs.writeFile('/njs_unknown_path', '', {flag:'xx'}, function () {})"),
-      njs_str("TypeError: Unknown file open flags: \"xx\"") },
+      njs_str("Error: Unknown file open flags: \"xx\"") },
 
     { njs_str("var fs = require('fs');"
               "fs.writeFile('/njs_unknown_path', '', {encoding:'ascii'}, function () {})"),
@@ -20137,21 +20137,21 @@ static njs_unit_test_t  njs_fs_module_test[] =
 
     { njs_str("var fs = require('fs');"
               "fs.writeFile('/njs_unknown_path', '', true, function () {})"),
-      njs_str("TypeError: Unknown options type: \"boolean\" (a string or object required)") },
+      njs_str("Error: Unknown options type (a string or object required)") },
 
     /* require('fs').writeFileSync() */
 
     { njs_str("var fs = require('fs');"
               "fs.writeFileSync()"),
-      njs_str("TypeError: \"path\" must be a string or Buffer") },
+      njs_str("Error: \"path\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
               "fs.writeFileSync({}, '')"),
-      njs_str("TypeError: \"path\" must be a string or Buffer") },
+      njs_str("Error: \"path\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
               "fs.writeFileSync('/njs_unknown_path', '', {flag:'xx'})"),
-      njs_str("TypeError: Unknown file open flags: \"xx\"") },
+      njs_str("Error: Unknown file open flags: \"xx\"") },
 
     { njs_str("var fs = require('fs');"
               "fs.writeFileSync('/njs_unknown_path', '', {encoding:'ascii'})"),
@@ -20163,29 +20163,29 @@ static njs_unit_test_t  njs_fs_module_test[] =
 
     { njs_str("var fs = require('fs');"
               "fs.writeFileSync('/njs_unknown_path', '', true)"),
-      njs_str("TypeError: Unknown options type: \"boolean\" (a string or object required)") },
+      njs_str("Error: Unknown options type (a string or object required)") },
 
     /* require('fs').renameSync() */
 
     { njs_str("var fs = require('fs');"
               "fs.renameSync()"),
-      njs_str("TypeError: \"oldPath\" must be a string or Buffer") },
+      njs_str("Error: \"oldPath\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
               "fs.renameSync('/njs_unknown_path')"),
-      njs_str("TypeError: \"newPath\" must be a string or Buffer") },
+      njs_str("Error: \"newPath\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
               "[undefined, null, false, NaN, Symbol(), {}, Object('/njs_unknown_path')]"
               ".map((x) => { try { fs.renameSync(x, '/njs_unknown_path'); } "
-              "              catch (e) { return (e instanceof TypeError); } })"
+              "              catch (e) { return (e instanceof Error); } })"
               ".every((x) => x === true)"),
       njs_str("true")},
 
     { njs_str("var fs = require('fs');"
               "[undefined, null, false, NaN, Symbol(), {}, Object('/njs_unknown_path')]"
               ".map((x) => { try { fs.renameSync('/njs_unknown_path', x); } "
-              "              catch (e) { return (e instanceof TypeError); } })"
+              "              catch (e) { return (e instanceof Error); } })"
               ".every((x) => x === true)"),
       njs_str("true")},
 
@@ -20193,29 +20193,29 @@ static njs_unit_test_t  njs_fs_module_test[] =
 
     { njs_str("var fs = require('fs');"
               "fs.access()"),
-      njs_str("TypeError: \"path\" must be a string or Buffer") },
+      njs_str("Error: \"path\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
               "fs.access('/njs_unknown_path')"),
-      njs_str("TypeError: \"callback\" must be a function") },
+      njs_str("Error: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
               "fs.access('/njs_unknown_path', fs.constants.F_OK)"),
-      njs_str("TypeError: \"callback\" must be a function") },
+      njs_str("Error: \"callback\" must be a function") },
 
     { njs_str("var fs = require('fs');"
               "fs.access('/njs_unknown_path', 'fail', function () {})"),
-      njs_str("TypeError: \"mode\" must be a number") },
+      njs_str("Error: \"mode\" must be a number") },
 
     /* require('fs').accessSync() */
 
     { njs_str("var fs = require('fs');"
               "fs.accessSync()"),
-      njs_str("TypeError: \"path\" must be a string or Buffer") },
+      njs_str("Error: \"path\" must be a string or Buffer") },
 
     { njs_str("var fs = require('fs');"
               "fs.accessSync('/njs_unknown_path', 'fail')"),
-      njs_str("TypeError: \"mode\" must be a number") },
+      njs_str("Error: \"mode\" must be a number") },
 
     { njs_str("var "
               "fs = require('fs'),"
@@ -20246,7 +20246,7 @@ static njs_unit_test_t  njs_fs_module_test[] =
               "test = (fname) =>"
                 "[undefined, null, false, NaN, Symbol(), {}, Object('/njs_unknown_path')]"
                 ".map((x) => { try { fs[fname](x); } "
-                "              catch (e) { return (e instanceof TypeError); } })"
+                "              catch (e) { return (e instanceof Error); } })"
                 ".every((x) => x === true);"
               "func.map(test).every((x) => x)"),
       njs_str("true")},
@@ -20300,7 +20300,7 @@ static njs_unit_test_t  njs_fs_module_test[] =
 
     { njs_str("var fs = require('fs');"
               "fs.Dirent('file', 123)"),
-      njs_str("TypeError: the Dirent constructor must be called with new") },
+      njs_str("Error: the Dirent constructor must be called with new") },
 
     { njs_str("var fs = require('fs');"
               "var e = new fs.Dirent('file', 123); [e.name, e.type]"),
@@ -22800,12 +22800,12 @@ static njs_unit_test_t  njs_shared_test[] =
       njs_str("37") },
 
     { njs_str("var fs = require('fs'); fs.readFileSync()"),
-      njs_str("TypeError: \"path\" must be a string or Buffer\n"
+      njs_str("Error: \"path\" must be a string or Buffer\n"
               "    at fs.readFileSync (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("import fs from 'fs'; fs.readFileSync()"),
-      njs_str("TypeError: \"path\" must be a string or Buffer\n"
+      njs_str("Error: \"path\" must be a string or Buffer\n"
               "    at fs.readFileSync (native)\n"
               "    at main (:1)\n") },
 

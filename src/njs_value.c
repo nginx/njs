@@ -570,6 +570,13 @@ njs_value_is_object(const njs_value_t *value)
 
 
 njs_int_t
+njs_value_is_error(const njs_value_t *value)
+{
+    return njs_is_error(value);
+}
+
+
+njs_int_t
 njs_value_is_array(const njs_value_t *value)
 {
     return njs_is_array(value);
@@ -587,6 +594,13 @@ njs_int_t
 njs_value_is_buffer(const njs_value_t *value)
 {
     return njs_is_typed_array(value);
+}
+
+
+njs_int_t
+njs_value_is_data_view(const njs_value_t *value)
+{
+    return njs_is_data_view(value);
 }
 
 
@@ -1603,6 +1617,23 @@ njs_primitive_value_to_chain(njs_vm_t *vm, njs_chb_t *chain,
     default:
         return NJS_ERROR;
     }
+}
+
+
+njs_int_t
+njs_value_to_integer(njs_vm_t *vm, njs_value_t *value, int64_t *dst)
+{
+    double     num;
+    njs_int_t  ret;
+
+    ret = njs_value_to_number(vm, value, &num);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    *dst = njs_number_to_integer(num);
+
+    return NJS_OK;
 }
 
 
