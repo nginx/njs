@@ -16,12 +16,12 @@ NJS_EXPORT int njs_dprint(int fd, u_char *buf, size_t size);
 NJS_EXPORT int njs_dprintf(int fd, const char *fmt, ...);
 
 #define njs_print(buf, size)                                                 \
-    njs_dprint(STDOUT_FILENO, (u_char *) buf, size)
+    njs_dprint(1 /* STDOUT_FILENO */, (u_char *) buf, size)
 
 #define njs_printf(fmt, ...)                                                 \
-    njs_dprintf(STDOUT_FILENO, fmt, ##__VA_ARGS__)
+    njs_dprintf(1 /* STDOUT_FILENO */, fmt, ##__VA_ARGS__)
 
 #define njs_stderror(fmt, ...)                                               \
-    njs_dprintf(STDERR_FILENO, fmt, ##__VA_ARGS__)
+    njs_dprintf(2 /* STDERR_FILENO */, fmt, ##__VA_ARGS__)
 
 #endif /* _NJS_SPRINTF_H_INCLUDED_ */

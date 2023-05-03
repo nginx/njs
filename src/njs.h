@@ -15,7 +15,7 @@
 #define NJS_VERSION_NUMBER          0x000800
 
 
-#include <unistd.h>                 /* STDOUT_FILENO, STDERR_FILENO */
+#include <string.h>
 #include <njs_types.h>
 #include <njs_clang.h>
 #include <njs_str.h>
@@ -23,7 +23,6 @@
 #include <njs_utf8.h>
 #include <njs_mp.h>
 #include <njs_chb.h>
-#include <njs_lvlhsh.h>
 #include <njs_sprintf.h>
 
 
@@ -396,7 +395,6 @@ NJS_EXPORT njs_int_t njs_vm_value(njs_vm_t *vm, const njs_str_t *path,
     njs_value_t *retval);
 NJS_EXPORT njs_function_t *njs_vm_function(njs_vm_t *vm, const njs_str_t *name);
 
-NJS_EXPORT njs_value_t *njs_vm_retval(njs_vm_t *vm);
 NJS_EXPORT void njs_vm_throw(njs_vm_t *vm, const njs_value_t *value);
 NJS_EXPORT void njs_vm_error(njs_vm_t *vm, const char *fmt, ...);
 NJS_EXPORT void njs_vm_exception_get(njs_vm_t *vm, njs_value_t *retval);
