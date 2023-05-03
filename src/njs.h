@@ -304,6 +304,23 @@ typedef struct {
 } njs_vm_opt_t;
 
 
+typedef struct {
+    njs_function_t      *function;
+    njs_opaque_value_t  argument;
+    njs_opaque_value_t  value;
+
+    void                *data;
+
+    int64_t             from;
+    int64_t             to;
+} njs_iterator_args_t;
+
+
+typedef njs_int_t (*njs_iterator_handler_t)(njs_vm_t *vm,
+    njs_iterator_args_t *args, njs_value_t *entry, int64_t n,
+    njs_value_t *retval);
+
+
 NJS_EXPORT void njs_vm_opt_init(njs_vm_opt_t *options);
 NJS_EXPORT njs_vm_t *njs_vm_create(njs_vm_opt_t *options);
 NJS_EXPORT void njs_vm_destroy(njs_vm_t *vm);
@@ -520,6 +537,9 @@ NJS_EXPORT njs_value_t *njs_vm_object_prop(njs_vm_t *vm,
     njs_value_t *value, const njs_str_t *key, njs_opaque_value_t *retval);
 NJS_EXPORT njs_int_t njs_vm_object_prop_set(njs_vm_t *vm, njs_value_t *value,
     const njs_str_t *prop, njs_opaque_value_t *setval);
+NJS_EXPORT njs_int_t njs_vm_object_iterate(njs_vm_t *vm,
+    njs_iterator_args_t *args, njs_iterator_handler_t handler,
+    njs_value_t *retval);
 
 NJS_EXPORT njs_int_t njs_vm_array_alloc(njs_vm_t *vm, njs_value_t *retval,
     uint32_t spare);

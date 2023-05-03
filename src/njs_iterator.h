@@ -8,23 +8,6 @@
 #define _NJS_ITERATOR_H_INCLUDED_
 
 
-typedef struct {
-    njs_function_t      *function;
-    njs_opaque_value_t  argument;
-    njs_opaque_value_t  value;
-
-    void                *data;
-
-    int64_t             from;
-    int64_t             to;
-} njs_iterator_args_t;
-
-
-typedef njs_int_t (*njs_iterator_handler_t)(njs_vm_t *vm,
-    njs_iterator_args_t *args, njs_value_t *entry, int64_t n,
-    njs_value_t *retval);
-
-
 njs_int_t njs_array_iterator_create(njs_vm_t *vm, const njs_value_t *src,
     njs_value_t *dst, njs_object_enum_t kind);
 

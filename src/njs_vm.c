@@ -1215,6 +1215,14 @@ njs_vm_array_prop(njs_vm_t *vm, njs_value_t *value, int64_t index,
 }
 
 
+njs_int_t
+njs_vm_object_iterate(njs_vm_t *vm, njs_iterator_args_t *args,
+    njs_iterator_handler_t handler, njs_value_t *retval)
+{
+    return njs_object_iterate(vm, args, handler, retval);
+}
+
+
 njs_value_t *
 njs_vm_array_start(njs_vm_t *vm, njs_value_t *value)
 {
