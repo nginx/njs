@@ -20436,25 +20436,25 @@ static njs_unit_test_t  njs_crypto_module_test[] =
               "'d9f5aeb06abebb3be3f38adec9a2e3b94228d52193be923eb4e24c9b56ee0930']]") },
 
     { njs_str("var h = require('crypto').createHash()"),
-      njs_str("TypeError: algorithm must be a string") },
+      njs_str("Error: algorithm must be a string") },
 
     { njs_str("var h = require('crypto').createHash([])"),
-      njs_str("TypeError: algorithm must be a string") },
+      njs_str("Error: algorithm must be a string") },
 
     { njs_str("var h = require('crypto').createHash('sha512')"),
-      njs_str("TypeError: not supported algorithm: \"sha512\"") },
+      njs_str("Error: not supported algorithm: \"sha512\"") },
 
     { njs_str("var h = require('crypto').createHash('sha1');"
               "h.update()"),
-      njs_str("TypeError: data argument \"undefined\" is not a string or Buffer-like object") },
+      njs_str("Error: data is not a string or Buffer-like object") },
 
     { njs_str("var h = require('crypto').createHash('sha1');"
               "h.update({})"),
-      njs_str("TypeError: data argument \"object\" is not a string or Buffer-like object") },
+      njs_str("Error: data is not a string or Buffer-like object") },
 
     { njs_str("var h = require('crypto').createHash('sha1');"
               "h.update('A').digest('latin1')"),
-      njs_str("TypeError: Unknown digest encoding: \"latin1\"") },
+      njs_str("Error: Unknown digest encoding: \"latin1\"") },
 
     { njs_str("require('crypto').createHash('sha1').digest() instanceof Buffer"),
       njs_str("true") },
@@ -20554,16 +20554,16 @@ static njs_unit_test_t  njs_crypto_module_test[] =
       njs_str("5647b6c429701ff512f0f18232b4507065d2376ca8899a816a0a6e721bf8ddcc") },
 
     { njs_str("var h = require('crypto').createHmac()"),
-      njs_str("TypeError: algorithm must be a string") },
+      njs_str("Error: algorithm must be a string") },
 
     { njs_str("var h = require('crypto').createHmac([])"),
-      njs_str("TypeError: algorithm must be a string") },
+      njs_str("Error: algorithm must be a string") },
 
     { njs_str("var h = require('crypto').createHmac('sha512', '')"),
-      njs_str("TypeError: not supported algorithm: \"sha512\"") },
+      njs_str("Error: not supported algorithm: \"sha512\"") },
 
     { njs_str("var h = require('crypto').createHmac('sha1', [])"),
-      njs_str("TypeError: key argument \"array\" is not a string or Buffer-like object") },
+      njs_str("Error: key is not a string or Buffer-like object") },
 
     { njs_str("var h = require('crypto').createHmac('sha1', 'secret key');"
               "h.update('A').digest('hex'); h.digest('hex')"),
@@ -20578,7 +20578,7 @@ static njs_unit_test_t  njs_crypto_module_test[] =
 
     { njs_str("var cr = require('crypto'); var h = cr.createHash('sha1');"
               "h.update.call(cr.createHmac('sha1', 's'), '')"),
-      njs_str("TypeError: \"this\" is not a hash object") },
+      njs_str("Error: \"this\" is not a hash object") },
 };
 
 static njs_unit_test_t  njs_querystring_module_test[] =
@@ -23233,24 +23233,24 @@ static njs_unit_test_t  njs_backtraces_test[] =
               "    at main (:1)\n") },
 
     { njs_str("require('crypto').createHash('sha')"),
-      njs_str("TypeError: not supported algorithm: \"sha\"\n"
+      njs_str("Error: not supported algorithm: \"sha\"\n"
               "    at crypto.createHash (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("var h = require('crypto').createHash('sha1');"
               "h.update([])"),
-      njs_str("TypeError: data argument \"array\" is not a string or Buffer-like object\n"
+      njs_str("Error: data is not a string or Buffer-like object\n"
               "    at Hash.update (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("require('crypto').createHmac('sha1', [])"),
-      njs_str("TypeError: key argument \"array\" is not a string or Buffer-like object\n"
+      njs_str("Error: key is not a string or Buffer-like object\n"
               "    at crypto.createHmac (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("var h = require('crypto').createHmac('sha1', 'secret');"
               "h.update([])"),
-      njs_str("TypeError: data argument \"array\" is not a string or Buffer-like object\n"
+      njs_str("Error: data is not a string or Buffer-like object\n"
               "    at Hmac.update (native)\n"
               "    at main (:1)\n") },
 
