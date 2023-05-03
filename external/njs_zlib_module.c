@@ -14,7 +14,7 @@ static njs_int_t njs_zlib_ext_deflate(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_zlib_ext_inflate(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
-njs_int_t njs_zlib_contant(njs_vm_t *vm, njs_object_prop_t *prop,
+njs_int_t njs_zlib_constant(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 static njs_int_t njs_zlib_init(njs_vm_t *vm);
 static void *njs_zlib_alloc(void *opaque, u_int items, u_int size);
@@ -28,7 +28,7 @@ static njs_external_t  njs_ext_zlib_constants[] = {
         .name.string = njs_str("Z_NO_COMPRESSION"),
         .enumerable = 1,
         .u.property = {
-            .handler = njs_zlib_contant,
+            .handler = njs_zlib_constant,
             .magic32 = Z_NO_COMPRESSION,
         }
     },
@@ -38,7 +38,7 @@ static njs_external_t  njs_ext_zlib_constants[] = {
         .name.string = njs_str("Z_BEST_SPEED"),
         .enumerable = 1,
         .u.property = {
-            .handler = njs_zlib_contant,
+            .handler = njs_zlib_constant,
             .magic32 = Z_BEST_SPEED,
         }
     },
@@ -48,7 +48,7 @@ static njs_external_t  njs_ext_zlib_constants[] = {
         .name.string = njs_str("Z_BEST_COMPRESSION"),
         .enumerable = 1,
         .u.property = {
-            .handler = njs_zlib_contant,
+            .handler = njs_zlib_constant,
             .magic32 = Z_BEST_COMPRESSION,
         }
     },
@@ -58,7 +58,7 @@ static njs_external_t  njs_ext_zlib_constants[] = {
         .name.string = njs_str("Z_FILTERED"),
         .enumerable = 1,
         .u.property = {
-            .handler = njs_zlib_contant,
+            .handler = njs_zlib_constant,
             .magic32 = Z_FILTERED,
         }
     },
@@ -68,7 +68,7 @@ static njs_external_t  njs_ext_zlib_constants[] = {
         .name.string = njs_str("Z_HUFFMAN_ONLY"),
         .enumerable = 1,
         .u.property = {
-            .handler = njs_zlib_contant,
+            .handler = njs_zlib_constant,
             .magic32 = Z_HUFFMAN_ONLY,
         }
     },
@@ -78,7 +78,7 @@ static njs_external_t  njs_ext_zlib_constants[] = {
         .name.string = njs_str("Z_RLE"),
         .enumerable = 1,
         .u.property = {
-            .handler = njs_zlib_contant,
+            .handler = njs_zlib_constant,
             .magic32 = Z_RLE,
         }
     },
@@ -88,7 +88,7 @@ static njs_external_t  njs_ext_zlib_constants[] = {
         .name.string = njs_str("Z_FIXED"),
         .enumerable = 1,
         .u.property = {
-            .handler = njs_zlib_contant,
+            .handler = njs_zlib_constant,
             .magic32 = Z_FIXED,
         }
     },
@@ -98,7 +98,7 @@ static njs_external_t  njs_ext_zlib_constants[] = {
         .name.string = njs_str("Z_DEFAULT_STRATEGY"),
         .enumerable = 1,
         .u.property = {
-            .handler = njs_zlib_contant,
+            .handler = njs_zlib_constant,
             .magic32 = Z_DEFAULT_STRATEGY,
         }
     },
@@ -514,7 +514,7 @@ fail:
 
 
 njs_int_t
-njs_zlib_contant(njs_vm_t *vm, njs_object_prop_t *prop,
+njs_zlib_constant(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_value_number_set(retval,  njs_vm_prop_magic32(prop));
