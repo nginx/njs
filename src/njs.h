@@ -382,6 +382,10 @@ NJS_EXPORT njs_external_ptr_t njs_vm_external(njs_vm_t *vm,
 NJS_EXPORT njs_int_t njs_external_property(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
+NJS_EXPORT njs_int_t njs_value_property(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *key, njs_value_t *retval);
+NJS_EXPORT njs_int_t njs_value_property_set(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *key, njs_value_t *setval);
 NJS_EXPORT uintptr_t njs_vm_meta(njs_vm_t *vm, njs_uint_t index);
 
 NJS_EXPORT njs_function_t *njs_vm_function_alloc(njs_vm_t *vm,
@@ -432,6 +436,8 @@ NJS_EXPORT njs_int_t njs_value_buffer_get(njs_vm_t *vm, njs_value_t *value,
 NJS_EXPORT njs_int_t njs_vm_value_buffer_set(njs_vm_t *vm, njs_value_t *value,
     const u_char *start, uint32_t size);
 
+NJS_EXPORT njs_int_t njs_value_to_string(njs_vm_t *vm, njs_value_t *dst,
+    njs_value_t *value);
 /*
  * Converts a value to bytes.
  */
@@ -477,6 +483,8 @@ NJS_EXPORT void njs_value_function_set(njs_value_t *value,
 NJS_EXPORT uint8_t njs_value_bool(const njs_value_t *value);
 NJS_EXPORT double njs_value_number(const njs_value_t *value);
 NJS_EXPORT njs_function_t *njs_value_function(const njs_value_t *value);
+NJS_EXPORT njs_function_native_t njs_value_native_function(
+    const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_external_tag(const njs_value_t *value);
 
 NJS_EXPORT uint16_t njs_vm_prop_magic16(njs_object_prop_t *prop);

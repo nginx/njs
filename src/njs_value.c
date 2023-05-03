@@ -487,6 +487,23 @@ njs_value_function(const njs_value_t *value)
 }
 
 
+njs_function_native_t
+njs_value_native_function(const njs_value_t *value)
+{
+    njs_function_t  *function;
+
+    if (njs_is_function(value)) {
+        function = njs_function(value);
+
+        if (function->native) {
+            return function->u.native;
+        }
+    }
+
+    return NULL;
+}
+
+
 njs_int_t
 njs_value_is_null(const njs_value_t *value)
 {
