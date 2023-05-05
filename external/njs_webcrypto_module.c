@@ -1863,7 +1863,7 @@ njs_export_jwk_ec(njs_vm_t *vm, njs_webcrypto_key_t *key, njs_value_t *retval)
     group = EC_KEY_get0_group(ec);
 
     group_bits = EC_GROUP_get_degree(group);
-    group_bytes = (group_bits / CHAR_BIT) + (7 + (group_bits % CHAR_BIT)) / 8;
+    group_bytes = (group_bits / 8) + (7 + (group_bits % 8)) / 8;
 
     x_bn = BN_new();
     if (x_bn == NULL) {
@@ -2024,7 +2024,7 @@ njs_export_jwk_asymmetric(njs_vm_t *vm, njs_webcrypto_key_t *key,
 
     switch (EVP_PKEY_id(key->pkey)) {
     case EVP_PKEY_RSA:
-#if (OPENSSL_VERSION_NUMBER >= 0x10100001L)
+#if (OPENSSL_VERSION_NUMBER >= 0x10101001L)
     case EVP_PKEY_RSA_PSS:
 #endif
         ret = njs_export_jwk_rsa(vm, key, retval);
@@ -3636,10 +3636,11 @@ static njs_int_t
 njs_convert_der_to_p1363(njs_vm_t *vm, EVP_PKEY *pkey, const u_char *der,
     size_t der_len, u_char **pout, size_t *out_len)
 {
-    u_char     *data;
-    unsigned   n;
-    njs_int_t  ret;
-    ECDSA_SIG  *ec_sig;
+    u_char        *data;
+    unsigned      n;
+    njs_int_t     ret;
+    ECDSA_SIG     *ec_sig;
+    const BIGNUM  *r, *s;
 
     ret = NJS_OK;
     ec_sig = NULL;
@@ -3659,11 +3660,18 @@ njs_convert_der_to_p1363(njs_vm_t *vm, EVP_PKEY *pkey, const u_char *der,
         goto fail;
     }
 
-    if (njs_bn_bn2binpad(ECDSA_SIG_get0_r(ec_sig), data, n) <= 0) {
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+    ECDSA_SIG_get0(ec_sig, &r, &s);
+#else
+    r = ec_sig->r;
+    s = ec_sig->s;
+#endif
+
+    if (njs_bn_bn2binpad(r, data, n) <= 0) {
         goto fail;
     }
 
-    if (njs_bn_bn2binpad(ECDSA_SIG_get0_s(ec_sig), &data[n], n) <= 0) {
+    if (njs_bn_bn2binpad(s, &data[n], n) <= 0) {
         goto fail;
     }
 

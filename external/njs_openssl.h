@@ -43,8 +43,6 @@
 #else
 #define njs_evp_md_ctx_new()  EVP_MD_CTX_create()
 #define njs_evp_md_ctx_free(_ctx)  EVP_MD_CTX_destroy(_ctx)
-#define ECDSA_SIG_get0_s(sig) (sig)->s
-#define ECDSA_SIG_get0_r(sig) (sig)->r
 #endif
 
 
@@ -303,7 +301,7 @@ njs_inline int
 njs_ec_point_get_affine_coordinates(const EC_GROUP *group, const EC_POINT *p,
     BIGNUM *x, BIGNUM *y)
 {
-#if (OPENSSL_VERSION_NUMBER >= 0x10100001L)
+#if (OPENSSL_VERSION_NUMBER >= 0x10101001L)
     return EC_POINT_get_affine_coordinates(group, p, x, y, NULL);
 #else
     return EC_POINT_get_affine_coordinates_GFp(group, p, x, y, NULL);
