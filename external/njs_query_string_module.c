@@ -157,7 +157,6 @@ njs_query_string_decode(njs_vm_t *vm, njs_value_t *value, const u_char *start,
 
     cp = 0;
     length = 0;
-    ret = NJS_ERROR;
 
     p = start;
     end = p + size;
