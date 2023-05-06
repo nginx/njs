@@ -405,13 +405,13 @@ njs_unit_test_r_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    ev = njs_mp_alloc(vm->mem_pool, sizeof(njs_external_ev_t));
+    ev = njs_mp_alloc(njs_vm_memory_pool(vm), sizeof(njs_external_ev_t));
     if (ev == NULL) {
         njs_memory_error(vm);
         return NJS_ERROR;
     }
 
-    ret = njs_vm_promise_create(vm, &value, &ev->callbacks[0]);
+    ret = njs_vm_promise_create(vm, &value, njs_value_arg(&ev->callbacks[0]));
     if (ret != NJS_OK) {
         return NJS_ERROR;
     }
@@ -1199,7 +1199,7 @@ njs_int_t
 njs_external_env_init(njs_external_env_t *env)
 {
     if (env != NULL) {
-        njs_value_invalid_set(&env->retval);
+        njs_value_invalid_set(njs_value_arg(&env->retval));
         njs_queue_init(&env->events);
     }
 
@@ -1229,7 +1229,8 @@ njs_external_process_events(njs_vm_t *vm, njs_external_env_t *env)
         ev->link.prev = NULL;
         ev->link.next = NULL;
 
-        njs_vm_post_event(vm, ev->vm_event, &ev->args[0], ev->nargs);
+        njs_vm_post_event(vm, ev->vm_event, njs_value_arg(&ev->args[0]),
+                          ev->nargs);
     }
 
     return NJS_OK;

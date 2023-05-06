@@ -9,7 +9,7 @@
 
 
 typedef struct {
-    njs_value_t             retval;
+    njs_opaque_value_t      retval;
     njs_queue_t             events;  /* of njs_external_ev_t */
 } njs_external_env_t;
 
@@ -18,8 +18,8 @@ typedef struct {
     njs_vm_event_t          vm_event;
     void                    *data;
     njs_uint_t              nargs;
-    njs_value_t             args[3];
-    njs_value_t             callbacks[2];
+    njs_opaque_value_t      args[3];
+    njs_opaque_value_t      callbacks[2];
     njs_queue_link_t        link;
 } njs_external_ev_t;
 
