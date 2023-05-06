@@ -95,9 +95,6 @@ enum njs_object_e {
     NJS_OBJECT_PROCESS,
     NJS_OBJECT_MATH,
     NJS_OBJECT_JSON,
-#ifdef NJS_TEST262
-    NJS_OBJECT_262,
-#endif
     NJS_OBJECT_MAX
 };
 

@@ -55,6 +55,4 @@ default: "$NJS_DEBUG_MEMORY"
 default: "$NJS_DEBUG_OPCODE"
   --debug-generator=YES     enables generator debug, \
 default: "$NJS_DEBUG_GENERATOR"
-  --test262=YES             enables test262 extentions, \
-default: "$NJS_TEST262"
 END

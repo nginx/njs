@@ -25,6 +25,7 @@ typedef struct {
 
 
 njs_int_t njs_externals_shared_init(njs_vm_t *vm);
+njs_int_t njs_externals_262_init(njs_vm_t *vm);
 njs_int_t njs_externals_init(njs_vm_t *vm);
 njs_int_t njs_external_env_init(njs_external_env_t *env);
 njs_int_t njs_external_call(njs_vm_t *vm, const njs_str_t *fname,

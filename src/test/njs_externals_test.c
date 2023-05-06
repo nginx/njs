@@ -547,6 +547,53 @@ njs_unit_test_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+static njs_int_t
+njs_262_detach_array_buffer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_value_t *retval)
+{
+    njs_value_t         *value;
+    njs_array_buffer_t  *buffer;
+
+    value = njs_arg(args, nargs, 1);
+    if (njs_slow_path(!njs_is_array_buffer(value))) {
+        njs_type_error(vm, "\"this\" is not an ArrayBuffer");
+        return NJS_ERROR;
+    }
+
+    buffer = njs_array_buffer(value);
+    buffer->u.data = NULL;
+    buffer->size = 0;
+
+    njs_set_null(retval);
+
+    return NJS_OK;
+}
+
+
+static njs_external_t  njs_unit_test_262_external[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY | NJS_EXTERN_SYMBOL,
+        .name.symbol = NJS_SYMBOL_TO_STRING_TAG,
+        .u.property = {
+            .value = "$262",
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("detachArrayBuffer"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_262_detach_array_buffer,
+        }
+    },
+
+};
+
+
 static njs_external_t  njs_unit_test_r_c[] = {
 
     {
@@ -924,6 +971,37 @@ njs_externals_init_internal(njs_vm_t *vm, njs_unit_test_req_init_t *init,
                 return NJS_ERROR;
             }
         }
+    }
+
+    return NJS_OK;
+}
+
+
+njs_int_t
+njs_externals_262_init(njs_vm_t *vm)
+{
+    njs_int_t           ret, proto_id;
+    njs_opaque_value_t  value;
+
+    static const njs_str_t  dollar_262 = njs_str("$262");
+
+    proto_id = njs_vm_external_prototype(vm, njs_unit_test_262_external,
+                                       njs_nitems(njs_unit_test_262_external));
+    if (njs_slow_path(proto_id < 0)) {
+        njs_printf("njs_vm_external_prototype() failed\n");
+        return NJS_ERROR;
+    }
+
+    ret = njs_vm_external_create(vm, njs_value_arg(&value), proto_id, NULL, 1);
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_printf("njs_vm_external_create() failed\n");
+        return NJS_ERROR;
+    }
+
+    ret = njs_vm_bind(vm, &dollar_262, njs_value_arg(&value), 1);
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_printf("njs_vm_bind() failed\n");
+        return NJS_ERROR;
     }
 
     return NJS_OK;

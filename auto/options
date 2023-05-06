@@ -13,7 +13,6 @@ NJS_DEBUG_GENERATOR=NO
 
 NJS_ADDRESS_SANITIZER=NO
 NJS_ADDR2LINE=NO
-NJS_TEST262=YES
 
 NJS_OPENSSL=YES
 NJS_LIBXML2=YES
@@ -47,7 +46,6 @@ do
         --debug-memory=*)                NJS_DEBUG_MEMORY="$value"           ;;
         --debug-opcode=*)                NJS_DEBUG_OPCODE="$value"           ;;
         --debug-generator=*)             NJS_DEBUG_GENERATOR="$value"        ;;
-        --test262=*)                     NJS_TEST262="$value"                ;;
 
         --no-openssl)                    NJS_OPENSSL=NO                      ;;
         --no-libxml2)                    NJS_LIBXML2=NO                      ;;

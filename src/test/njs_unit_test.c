@@ -6559,12 +6559,10 @@ static njs_unit_test_t  njs_test[] =
               "           return a.map(q=>q/2).join('|') === '3|2|1'})"),
       njs_str("true") },
 
-#ifdef NJS_TEST262
     { njs_str("const arr = new Uint8Array([1,2,3]);"
               "const sep = {toString(){$262.detachArrayBuffer(arr.buffer); return ','}};"
               "arr.join(sep)"),
       njs_str("TypeError: detached buffer") },
-#endif
 
     { njs_str("Uint8Array.prototype.reduce.call(1)"),
       njs_str("TypeError: this is not a typed array") },
@@ -22519,12 +22517,6 @@ static njs_unit_test_t  njs_externals_test[] =
     { njs_str("$r2.uri == 'αβγ' && $r2.uri === 'αβγ'"),
       njs_str("true") },
 
-#if (NJS_TEST262)
-#define N262 "$262,"
-#else
-#define N262 ""
-#endif
-
 #if (NJS_HAVE_OPENSSL)
 #define NCRYPTO "crypto,"
 #else
@@ -22532,7 +22524,7 @@ static njs_unit_test_t  njs_externals_test[] =
 #endif
 
     { njs_str("Object.keys(this).sort()"),
-      njs_str(N262 "$r,$r2,$r3,$shared,ExternalConstructor," NCRYPTO "global,njs,process") },
+      njs_str("$262,$r,$r2,$r3,$shared,ExternalConstructor," NCRYPTO "global,njs,process") },
 
     { njs_str("Object.getOwnPropertySymbols($r2)[0] == Symbol.toStringTag"),
       njs_str("true") },
@@ -23195,14 +23187,12 @@ static njs_unit_test_t  njs_backtraces_test[] =
               "    at Math.max (native)\n"
               "    at main (:1)\n") },
 
-#ifdef NJS_TEST262
     { njs_str("var ab = new ArrayBuffer(1);"
               "$262.detachArrayBuffer(ab);"
               "ab.byteLength"),
       njs_str("TypeError: detached buffer\n"
               "    at ArrayBuffer.prototype.byteLength (native)\n"
               "    at main (:1)\n") },
-#endif
 
     { njs_str("Object.prototype()"),
       njs_str("TypeError: (intermediate value)[\"prototype\"] is not a function\n"
@@ -23674,6 +23664,11 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
             goto done;
         }
 
+        ret = njs_externals_262_init(vm);
+        if (ret != NJS_OK) {
+            goto done;
+        }
+
         if (opts->externals) {
             ret = njs_externals_shared_init(vm);
             if (ret != NJS_OK) {
@@ -23805,6 +23800,11 @@ njs_interactive_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
         vm = njs_vm_create(&options);
         if (vm == NULL) {
             njs_printf("njs_vm_create() failed\n");
+            goto done;
+        }
+
+        ret = njs_externals_262_init(vm);
+        if (ret != NJS_OK) {
             goto done;
         }
 
