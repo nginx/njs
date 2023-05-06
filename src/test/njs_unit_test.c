@@ -1047,55 +1047,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("undefined - undefined"),
       njs_str("NaN") },
 
-    /* String.toString() method. */
-
     { njs_str("'A'.toString()"),
       njs_str("A") },
-
-    { njs_str("'A'.toBytes().toString('latin1')"),
-      njs_str("TypeError: Unknown encoding: \"latin1\"") },
-
-    { njs_str("'ABCD'.toBytes().toString('hex')"),
-      njs_str("41424344") },
-
-    { njs_str("'\\x00\\xAA\\xBB\\xFF'.toBytes().toString('hex')"),
-      njs_str("00aabbff") },
-
-    { njs_str("'\\x00\\xAA\\xBB\\xFF'.toBytes().toString('base64')"),
-      njs_str("AKq7/w==") },
-
-    { njs_str("'ABCD'.toBytes().toString('base64')"),
-      njs_str("QUJDRA==") },
-
-    { njs_str("'ABC'.toBytes().toString('base64')"),
-      njs_str("QUJD") },
-
-    { njs_str("'AB'.toBytes().toString('base64')"),
-      njs_str("QUI=") },
-
-    { njs_str("'A'.toBytes().toString('base64')"),
-      njs_str("QQ==") },
-
-    { njs_str("''.toBytes().toString('base64')"),
-      njs_str("") },
-
-    { njs_str("'\\x00\\xAA\\xBB\\xFF'.toBytes().toString('base64url')"),
-      njs_str("AKq7_w") },
-
-    { njs_str("'ABCD'.toBytes().toString('base64url')"),
-      njs_str("QUJDRA") },
-
-    { njs_str("'ABC'.toBytes().toString('base64url')"),
-      njs_str("QUJD") },
-
-    { njs_str("'AB'.toBytes().toString('base64url')"),
-      njs_str("QUI") },
-
-    { njs_str("'A'.toBytes().toString('base64url')"),
-      njs_str("QQ") },
-
-    { njs_str("''.toBytes().toString('base64url')"),
-      njs_str("") },
 
     /* Assignment. */
 
@@ -4348,7 +4301,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("["
               "  'α'.repeat(33),"
-              "  String.bytesFrom(Array(16).fill(0x9d)),"
+              "  $262.byteString(Array(16).fill(0x9d)),"
               "]"
               ".map(v=>{var out = ['β', 'γ'].join(v); return out.length})"),
       njs_str("35,20") },
@@ -4369,7 +4322,7 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = ['β','γ']; a.join('').length"),
       njs_str("2") },
 
-    { njs_str("var a = ['β', String.bytesFrom([0x9d]),'γ']; a.join('').length"),
+    { njs_str("var a = ['β', $262.byteString([0x9d]),'γ']; a.join('').length"),
       njs_str("5") },
 
     { njs_str("var a = []; a[5] = 5; a.join()"),
@@ -4708,7 +4661,7 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Array.prototype.slice.call('αβZγ')"),
       njs_str("α,β,Z,γ") },
 
-    { njs_str("Array.prototype.slice.call(String.bytesFrom(Array(16).fill(0x9d)))[0].charCodeAt(0)"),
+    { njs_str("Array.prototype.slice.call($262.byteString(Array(16).fill(0x9d)))[0].charCodeAt(0)"),
       njs_str("157") },
 
     { njs_str("Array.prototype.slice.call('αβZγ', 1)"),
@@ -7809,37 +7762,34 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("(new String('abc')).hasOwnProperty('length')"),
       njs_str("true") },
 
-    { njs_str("'abc'.toUTF8().length"),
-      njs_str("3") },
-
     { njs_str("'абв'.length"),
       njs_str("3") },
 
-    { njs_str("'абв'.toUTF8().length"),
+    { njs_str("(new TextEncoder()).encode('абв').length"),
       njs_str("6") },
 
     { njs_str("'αβγ'.length"),
       njs_str("3") },
 
-    { njs_str("'αβγ'.toUTF8().length"),
+    { njs_str("(new TextEncoder()).encode('αβγ').length"),
       njs_str("6") },
 
     { njs_str("'絵文字'.length"),
       njs_str("3") },
 
-    { njs_str("'絵文字'.toUTF8().length"),
+    { njs_str("(new TextEncoder()).encode('絵文字').length"),
       njs_str("9") },
 
     { njs_str("'えもじ'.length"),
       njs_str("3") },
 
-    { njs_str("'えもじ'.toUTF8().length"),
+    { njs_str("(new TextEncoder()).encode('えもじ').length"),
       njs_str("9") },
 
     { njs_str("'囲碁織'.length"),
       njs_str("3") },
 
-    { njs_str("'囲碁織'.toUTF8().length"),
+    { njs_str("(new TextEncoder()).encode('囲碁織').length"),
       njs_str("9") },
 
     { njs_str("var a = 'abc'; a.length"),
@@ -7995,75 +7945,11 @@ static njs_unit_test_t  njs_test[] =
                  "var a = 'abc'; a.concat('абв', s)"),
       njs_str("abcабв123") },
 
-    { njs_str("'\\u00CE\\u00B1'.toBytes() == 'α'"),
-      njs_str("true") },
-
-    { njs_str("'\\u00CE\\u00B1'.toBytes() === 'α'"),
-      njs_str("true") },
-
-    { njs_str("var b = '\\u00C2\\u00B6'.toBytes(), u = b.fromUTF8();"
-                 "b.length +' '+ b +' '+ u.length +' '+ u"),
-      njs_str("2 ¶ 1 ¶") },
-
-    { njs_str("'α'.toBytes()"),
-      njs_str("null") },
-
-    { njs_str("'α'.toUTF8()[0]"),
-      njs_str("\xCE") },
-
     { njs_str("var r = /^\\x80$/; r.source + r.source.length"),
       njs_str("^\\x80$6") },
 
     { njs_str("var r = /^\\\\x80$/; r.source + r.source.length"),
       njs_str("^\\\\x80$7") },
-
-    { njs_str("/^\\x80$/.test('\\x80'.toBytes())"),
-      njs_str("true") },
-
-    { njs_str("/^\\xC2\\x80$/.test('\\x80'.toUTF8())"),
-      njs_str("true") },
-
-    { njs_str("'α'.toUTF8().toBytes()"),
-      njs_str("α") },
-
-    { njs_str("var a = 'a'.toBytes() + 'α'; a + a.length"),
-      njs_str("aα3") },
-
-    { njs_str("var a = 'µ§±®'.toBytes(); a"),
-      njs_str("\xB5\xA7\xB1\xAE") },
-
-    { njs_str("var a = 'µ§±®'.toBytes(2); a"),
-      njs_str("\xB1\xAE") },
-
-    { njs_str("var a = 'µ§±®'.toBytes(1,3); a"),
-      njs_str("\xA7\xB1") },
-
-    { njs_str("var a = '\\xB5\\xA7\\xB1\\xAE'.toBytes(); a.fromBytes()"),
-      njs_str("µ§±®") },
-
-    { njs_str("var a = '\\xB5\\xA7\\xB1\\xAE'.toBytes(); a.fromBytes(2)"),
-      njs_str("±®") },
-
-    { njs_str("var a = '\\xB5\\xA7\\xB1\\xAE'.toBytes(); a.fromBytes(1, 3)"),
-      njs_str("§±") },
-
-    { njs_str("'A'.repeat(8).toBytes() === 'A'.repeat(8)"),
-      njs_str("true") },
-
-    { njs_str("'A'.repeat(16).toBytes() === 'A'.repeat(16)"),
-      njs_str("true") },
-
-    { njs_str("'A'.repeat(38).toBytes(-5) === 'AAAAA'"),
-      njs_str("true") },
-
-    { njs_str("('α' + 'A'.repeat(32)).toBytes()"),
-      njs_str("null") },
-
-    { njs_str("('α' + 'A'.repeat(32)).toBytes(1) === 'A'.repeat(32)"),
-      njs_str("true") },
-
-    { njs_str("('α' + 'A'.repeat(40)).toBytes(-3,-1)"),
-      njs_str("AA") },
 
     { njs_str("var s = 'x'.repeat(2**10).repeat(2**14);"
                  "var a = Array(200).fill(s);"
@@ -8158,9 +8044,6 @@ static njs_unit_test_t  njs_test[] =
       njs_str("Error: Oops") },
 
     { njs_str("String.prototype.slice(1, 5)"),
-      njs_str("") },
-
-    { njs_str("String.prototype.toBytes(1, 5)"),
       njs_str("") },
 
     { njs_str("'abc'.charAt(1 + 1)"),
@@ -8461,9 +8344,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var r = new String('undefined').indexOf(x); var x; r"),
       njs_str("0") },
 
-    { njs_str("'a a'.toUTF8().indexOf('a', 1)"),
-      njs_str("2") },
-
     { njs_str("'aaa'.lastIndexOf()"),
       njs_str("-1") },
 
@@ -8657,9 +8537,6 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("'\x00абвгдеёжз'.toUpperCase().length"),
       njs_str("10") },
-
-    { njs_str("['ȿ', 'Ȿ', 'ȿ'.toUpperCase(), 'Ȿ'.toLowerCase()].map((v)=>v.toUTF8().length)"),
-      njs_str("2,3,3,2") },
 
 #if (!NJS_HAVE_MEMORY_SANITIZER) /* very long tests under MSAN */
     { njs_str("var a = [], code;"
@@ -8862,16 +8739,6 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var r = 'αβγ'.replaceAll('', 'X'); [r, r.length]"),
       njs_str("XαXβXγX,7") },
-
-    { njs_str("var s = 'αz'.toUTF8();"
-              "var r = s.replace('z', 'β');"
-              "r.length"),
-      njs_str("4") },
-
-    { njs_str("var s = 'αzz'.toUTF8();"
-              "var r = s.replaceAll('z', 'β');"
-              "r.length"),
-      njs_str("3") },
 
     { njs_str("'abc'.replace('b', (m, o, s) => `|${s}|${o}|${m}|`)"),
       njs_str("a|abc|1|b|c") },
@@ -9648,10 +9515,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("('β' + 'α'.repeat(33) +'β').match(/α+/g)[0][32]"),
       njs_str("α") },
 
-    { njs_str("var a = '\\u00CE\\u00B1'.toBytes().match(/α/g)[0] + 'α';"
-                 "a +' '+ a.length"),
-      njs_str("αα 4") },
-
     { njs_str("'abc'.split()"),
       njs_str("abc") },
 
@@ -9915,92 +9778,8 @@ static njs_unit_test_t  njs_test[] =
       njs_str("TypeError: Cannot convert a Symbol value to a string") },
 
     { njs_str("[undefined, null, Symbol()]"
-              ".every(v=> { try {String.bytesFrom(v);} catch(e) {return e.name == 'TypeError'} })"),
+              ".every(v=> { try {$262.byteString(v);} catch(e) {return e.name == 'TypeError'} })"),
       njs_str("true") },
-
-    { njs_str("String.bytesFrom({}).length"),
-      njs_str("0") },
-
-    { njs_str("String.bytesFrom({length:5, 0:'A'.charCodeAt(0), 2:'X', 3:NaN,4:0xfd}).toString('hex')"),
-      njs_str("41000000fd") },
-
-    { njs_str("String.bytesFrom([1, 2, 0.23, '5', 'A']).toString('hex')"),
-      njs_str("0102000500") },
-
-    { njs_str("String.bytesFrom([NaN, Infinity]).toString('hex')"),
-      njs_str("0000") },
-
-    { njs_str("String.bytesFrom(new Uint8Array([0xff,0xde,0xba])).toString('hex')"),
-      njs_str("ffdeba") },
-
-    { njs_str("String.bytesFrom((new Uint8Array([0xff,0xde,0xba])).buffer).toString('hex')"),
-      njs_str("ffdeba") },
-
-    { njs_str("String.bytesFrom('', 'hex')"),
-      njs_str("") },
-
-    { njs_str("String.bytesFrom('00aabbcc', 'hex').toString('hex')"),
-      njs_str("00aabbcc") },
-
-    { njs_str("String.bytesFrom(new String('00aabbcc'), 'hex').toString('hex')"),
-      njs_str("00aabbcc") },
-
-    { njs_str("String.bytesFrom('deadBEEF##', 'hex').toString('hex')"),
-      njs_str("deadbeef") },
-
-    { njs_str("String.bytesFrom('aa0', 'hex').toString('hex')"),
-      njs_str("aa") },
-
-    { njs_str("String.bytesFrom('', 'base64')"),
-      njs_str("") },
-
-    { njs_str("String.bytesFrom('#', 'base64')"),
-      njs_str("") },
-
-    { njs_str("String.bytesFrom('QQ==', 'base64')"),
-      njs_str("A") },
-
-    { njs_str("String.bytesFrom('QQ=', 'base64')"),
-      njs_str("A") },
-
-    { njs_str("String.bytesFrom('QQ', 'base64')"),
-      njs_str("A") },
-
-    { njs_str("String.bytesFrom('Q', 'base64')"),
-      njs_str("") },
-
-    { njs_str("String.bytesFrom('QUI=', 'base64')"),
-      njs_str("AB") },
-
-    { njs_str("String.bytesFrom('QUI', 'base64')"),
-      njs_str("AB") },
-
-    { njs_str("String.bytesFrom('QUJD', 'base64')"),
-      njs_str("ABC") },
-
-    { njs_str("String.bytesFrom('QUJDRA==', 'base64')"),
-      njs_str("ABCD") },
-
-    { njs_str("String.bytesFrom('', 'base64url')"),
-      njs_str("") },
-
-    { njs_str("String.bytesFrom('QQ', 'base64url')"),
-      njs_str("A") },
-
-    { njs_str("String.bytesFrom('QUI', 'base64url')"),
-      njs_str("AB") },
-
-    { njs_str("String.bytesFrom('QUJD', 'base64url')"),
-      njs_str("ABC") },
-
-    { njs_str("String.bytesFrom('QUJDRA', 'base64url')"),
-      njs_str("ABCD") },
-
-    { njs_str("String.bytesFrom('QUJDRA#', 'base64url')"),
-      njs_str("ABCD") },
-
-    { njs_str("String.bytesFrom('QUJDRA#', 'base64lol')"),
-      njs_str("TypeError: Unknown encoding: \"base64lol\"") },
 
     { njs_str("encodeURI.name"),
       njs_str("encodeURI")},
@@ -10056,7 +9835,7 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("decodeURI('%D0%B0%D0%B1%D0%B2').length"),
       njs_str("3")},
 
-    { njs_str("decodeURI(String.bytesFrom([0x80,0x80]))"),
+    { njs_str("decodeURI($262.byteString([0x80,0x80]))"),
       njs_str("URIError: malformed URI")},
 
     { njs_str("["
@@ -10098,9 +9877,9 @@ static njs_unit_test_t  njs_test[] =
               " String.fromCodePoint(0x100),"
               " String.fromCodePoint(0x00, 0x100),"
               " String.fromCodePoint(0x00, 0x01, 0x100),"
-              " String.bytesFrom([0x80]),"
-              " String.bytesFrom([0x60, 0x80]),"
-              " String.bytesFrom([0x60, 0x60, 0x80]),"
+              " $262.byteString([0x80]),"
+              " $262.byteString([0x60, 0x80]),"
+              " $262.byteString([0x60, 0x60, 0x80]),"
               "].map(v => { try { return btoa(v); } catch (e) { return '#'} })"),
       njs_str("dW5kZWZpbmVk,,AA==,AAE=,AAEC,AP7/,#,#,#,#,#,#")},
 
@@ -11793,13 +11572,7 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("/\\x80/.test('\\u0080')"),
       njs_str("true") },
 
-    { njs_str("/\\x80/.test('\\u0080'.toBytes())"),
-      njs_str("true") },
-
     { njs_str("/α/.test('\\u03B1')"),
-      njs_str("true") },
-
-    { njs_str("/α/.test('\\u00CE\\u00B1'.toBytes())"),
       njs_str("true") },
 
     { njs_str("/[A-Za-z]/.test('S')"),
@@ -11838,11 +11611,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("3 БВ бв 2 /бв/gi") },
 #endif
 
-    { njs_str("var r = /\\x80/g; r.exec('\\u0081\\u0080'.toBytes());"
-              "r.lastIndex +' '+ r.source +' '+ r.source.length +' '+ r"),
-      njs_str("2 \\x80 4 /\\x80/g") },
-
-    { njs_str("var r = /_/g; var index = r.exec(String.bytesFrom([255,149,15,97,95])).index;"
+    { njs_str("var r = /_/g; var index = r.exec($262.byteString([255,149,15,97,95])).index;"
               "[index, r.lastIndex]"),
       njs_str("4,5") },
 
@@ -12108,10 +11877,10 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Error('e').name + ': ' + Error('e').message"),
       njs_str("Error: e") },
 
-    { njs_str("Error(String.bytesFrom(Array(1).fill(0x9d))).toString().length"),
+    { njs_str("Error($262.byteString(Array(1).fill(0x9d))).toString().length"),
       njs_str("8") },
 
-    { njs_str("var e = Error('α'); e.name = String.bytesFrom(Array(1).fill(0x9d)); "
+    { njs_str("var e = Error('α'); e.name = $262.byteString(Array(1).fill(0x9d)); "
               "e.toString().length"),
       njs_str("5") },
 
@@ -18500,9 +18269,7 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("JSON.stringify('абв'.repeat(100)).length"),
       njs_str("302") },
 
-    /* Byte strings. */
-
-    { njs_str("JSON.stringify('\\u00CE\\u00B1\\u00C2\\u00B6'.toBytes())"),
+    { njs_str("JSON.stringify($262.byteString([0xCE, 0xB1, 0xC2, 0xB6]))"),
       njs_str("\"α¶\"") },
 
     /* Optional arguments. */
@@ -18538,7 +18305,7 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("JSON.stringify([1], null, '!!βββββββββββββββββ').length"),
       njs_str("15") },
 
-    { njs_str("JSON.stringify([1], null, String.bytesFrom([0x9d])).length"),
+    { njs_str("JSON.stringify([1], null, $262.byteString([0x9d])).length"),
       njs_str("InternalError: space argument cannot be a byte string") },
 
     { njs_str("JSON.stringify([1], null, 11)"),
@@ -19281,15 +19048,15 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var en = new TextEncoder(); var res = en.encode('α1α'); res[2]"),
       njs_str("49") },
 
-    { njs_str("var en = new TextEncoder(); en.encode(String.bytesFrom([0xCE]))"),
+    { njs_str("var en = new TextEncoder(); en.encode($262.byteString([0xCE]))"),
       njs_str("239,191,189") },
 
     { njs_str("var en = new TextEncoder();"
-              "en.encode(String.bytesFrom([0xCE, 0xB1, 0xCE]))"),
+              "en.encode($262.byteString([0xCE, 0xB1, 0xCE]))"),
       njs_str("206,177,239,191,189") },
 
     { njs_str("var en = new TextEncoder();"
-              "en.encode(String.bytesFrom([0xCE, 0xCE, 0xB1]))"),
+              "en.encode($262.byteString([0xCE, 0xCE, 0xB1]))"),
       njs_str("239,191,189,206,177") },
 
     { njs_str("var en = new TextEncoder(); en.encoding"),
@@ -19313,27 +19080,27 @@ static njs_unit_test_t  njs_test[] =
               "en.encodeInto('ααααα', utf8.subarray(2)); utf8[0]"),
       njs_str("0") },
 
-    { njs_str("var str = String.bytesFrom([0xCE]);"
+    { njs_str("var str = $262.byteString([0xCE]);"
               "var en = new TextEncoder();"
               "var utf8 = new Uint8Array(3);"
               "var res = en.encodeInto(str, utf8); "
               "[njs.dump(res), utf8]"),
       njs_str("{read:1,written:3},239,191,189") },
 
-    { njs_str("var str = String.bytesFrom([0xCE]);"
+    { njs_str("var str = $262.byteString([0xCE]);"
               "var en = new TextEncoder();"
               "var utf8 = new Uint8Array(5);"
               "en.encodeInto(str, utf8); utf8"),
       njs_str("239,191,189,0,0") },
 
-    { njs_str("var str = String.bytesFrom([0xCE, 0xB1, 0xCE]);"
+    { njs_str("var str = $262.byteString([0xCE, 0xB1, 0xCE]);"
               "var en = new TextEncoder();"
               "var utf8 = new Uint8Array(5);"
               "var res = en.encodeInto(str, utf8);"
               "[njs.dump(res), utf8]"),
       njs_str("{read:2,written:5},206,177,239,191,189") },
 
-    { njs_str("var str = String.bytesFrom([0xCE, 0xCE, 0xB1]);"
+    { njs_str("var str = $262.byteString([0xCE, 0xCE, 0xB1]);"
               "var en = new TextEncoder();"
               "var utf8 = new Uint8Array(5);"
               "var res = en.encodeInto(str, utf8);"
@@ -20797,11 +20564,6 @@ static njs_unit_test_t  njs_querystring_module_test[] =
       njs_str("66,1,α") },
 
     { njs_str("var qs = require('querystring');"
-              "var s = qs.parse('X='+String.bytesFrom(Array(16).fill(0x9d))).X;"
-              "[s.length, s.toUTF8().length, s[15]]"),
-      njs_str("16,48,�") },
-
-    { njs_str("var qs = require('querystring');"
               "qs.stringify({'baz': 'fuz'})"),
       njs_str("baz=fuz") },
 
@@ -20830,7 +20592,7 @@ static njs_unit_test_t  njs_querystring_module_test[] =
 
     { njs_str("var qs = require('querystring'); "
               "qs.stringify({a: 'b'}, null, null, "
-              "             {encodeURIComponent: () => String.bytesFrom([0x9d])})"),
+              "             {encodeURIComponent: () => $262.byteString([0x9d])})"),
       njs_str("InternalError: invalid UTF-8 string") },
 
     { njs_str("var qs = require('querystring');"
@@ -20883,7 +20645,7 @@ static njs_unit_test_t  njs_querystring_module_test[] =
       njs_str("") },
 
     { njs_str("var qs = require('querystring');"
-              "qs.stringify({X: String.bytesFrom(Array(4).fill(0x9d))})"),
+              "qs.stringify({X: $262.byteString(Array(4).fill(0x9d))})"),
       njs_str("X=%9D%9D%9D%9D") },
 
     { njs_str("var qs = require('querystring');"
@@ -21024,8 +20786,68 @@ static njs_unit_test_t  njs_buffer_module_test[] =
              "].every(args => Buffer.byteLength(args[0], args[1])  == args[2])"),
       njs_str("true") },
 
-    { njs_str("Buffer.from([])"),
-      njs_str("") },
+    { njs_str("Buffer.from({length:5, 0:'A'.charCodeAt(0), 2:'X', 3:NaN,4:0xfd}).toString('hex')"),
+      njs_str("41000000fd") },
+
+    { njs_str("Buffer.from([1, 2, 0.23, '5', 'A']).toString('hex')"),
+      njs_str("0102000500") },
+
+    { njs_str("Buffer.from([NaN, Infinity]).toString('hex')"),
+      njs_str("0000") },
+
+    { njs_str("Buffer.from(new Uint8Array([0xff,0xde,0xba])).toString('hex')"),
+      njs_str("ffdeba") },
+
+    { njs_str("Buffer.from((new Uint8Array([0xff,0xde,0xba])).buffer).toString('hex')"),
+      njs_str("ffdeba") },
+
+    { njs_str("["
+             " ['', ''],"
+             " ['aa0', 'aa'],"
+             " ['00aabbcc', '00aabbcc'],"
+             " [new String('00aabbcc'), '00aabbcc'],"
+             " ['deadBEEF##', 'deadbeef'],"
+             "].every(args => { "
+             "    if (Buffer.from(args[0], 'hex').toString('hex') != args[1]) {"
+             "        throw `Buffer.from(\"${args[0]}\", 'hex').toString('hex') != \"${args[1]}\"`;"
+             "    }"
+             "    return true;"
+             "})"),
+      njs_str("true") },
+
+    { njs_str("["
+             " ['', ''],"
+             " ['#', ''],"
+             " ['Q', ''],"
+             " ['QQ', 'A'],"
+             " ['QQ=', 'A'],"
+             " ['QQ==', 'A'],"
+             " ['QUI=', 'AB'],"
+             " ['QUI', 'AB'],"
+             " ['QUJD', 'ABC'],"
+             " ['QUJDRA==', 'ABCD'],"
+             "].every(args => { "
+             "    if (Buffer.from(args[0], 'base64') != args[1]) {"
+             "        throw `Buffer.from(\"${args[0]}\", 'base64') != \"${args[1]}\"`;"
+             "    }"
+             "    return true;"
+             "})"),
+      njs_str("true") },
+
+    { njs_str("["
+             " ['', ''],"
+             " ['QQ', 'A'],"
+             " ['QUI', 'AB'],"
+             " ['QUJD', 'ABC'],"
+             " ['QUJDRA', 'ABCD'],"
+             " ['QUJDRA#', 'ABCD'],"
+             "].every(args => { "
+             "    if (Buffer.from(args[0], 'base64url') != args[1]) {"
+             "        throw `Buffer.from(\"${args[0]}\", 'base64url') != \"${args[1]}\"`;"
+             "    }"
+             "    return true;"
+             "})"),
+      njs_str("true") },
 
     { njs_str("Buffer.from([0x62, 0x75, 0x66, 0x66, 0x65, 0x72])"),
       njs_str("buffer") },
@@ -21165,7 +20987,7 @@ static njs_unit_test_t  njs_buffer_module_test[] =
              "].every(args => Buffer.from(args[0], args[1]) == 'evil')"),
       njs_str("true") },
 
-    { njs_str("var buf = Buffer.from(String.bytesFrom([0xF3])); buf"),
+    { njs_str("var buf = Buffer.from($262.byteString([0xF3])); buf"),
       njs_str("�") },
 
     { njs_str("Buffer.from('', 'utf-128')"),
@@ -22293,20 +22115,11 @@ static njs_unit_test_t  njs_externals_test[] =
     { njs_str("typeof $r"),
       njs_str("object") },
 
-    { njs_str("var a = $r.uri, s = a.fromUTF8(); s.length +' '+ s"),
-      njs_str("3 АБВ") },
-
     { njs_str("var a = $r.uri, b = $r2.uri, c = $r3.uri; a+b+c"),
       njs_str("АБВαβγabc") },
 
     { njs_str("var a = $r.uri; $r.uri = $r2.uri; $r2.uri = a; $r2.uri+$r.uri"),
       njs_str("АБВαβγ") },
-
-    { njs_str("var a = $r.uri, s = a.fromUTF8(2); s.length +' '+ s"),
-      njs_str("2 БВ") },
-
-    { njs_str("var a = $r.uri, s = a.fromUTF8(2, 4); s.length +' '+ s"),
-      njs_str("1 Б") },
 
     { njs_str("var a = $r.uri; a +' '+ a.length +' '+ a"),
       njs_str("АБВ 6 АБВ") },
