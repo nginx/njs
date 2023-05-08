@@ -2091,6 +2091,7 @@ ngx_http_js_ext_status(njs_vm_t *vm, njs_object_prop_t *prop,
     }
 
     r->headers_out.status = n;
+    r->headers_out.status_line.len = 0;
 
     njs_value_undefined_set(retval);
 
