@@ -63,8 +63,7 @@ typedef struct {
     njs_rbtree_node_t       *node;
 
     enum {
-       NJS_COMPLETION_VAR = 0,
-       NJS_COMPLETION_SUFFIX,
+       NJS_COMPLETION_SUFFIX = 0,
        NJS_COMPLETION_GLOBAL
     }                       phase;
 } njs_completion_t;
@@ -1189,96 +1188,37 @@ njs_editline_init(void)
 static char *
 njs_completion_generator(const char *text, int state)
 {
-    char                     *completion;
-    size_t                   len;
-    njs_str_t                expression, *suffix;
-    njs_vm_t                 *vm;
-    const char               *p;
-    njs_rbtree_t             *variables;
-    njs_completion_t         *cmpl;
-    njs_variable_node_t      *var_node;
-    const njs_lexer_entry_t  *lex_entry;
+    njs_str_t         expression, *suffix;
+    njs_vm_t          *vm;
+    njs_completion_t  *cmpl;
 
     vm = njs_console.vm;
     cmpl = &njs_console.completion;
 
     if (state == 0) {
-        cmpl->phase = 0;
+        cmpl->phase = NJS_COMPLETION_SUFFIX;
         cmpl->index = 0;
         cmpl->length = njs_strlen(text);
         cmpl->suffix_completions = NULL;
-
-        if (vm->global_scope != NULL) {
-            cmpl->node = njs_rbtree_min(&vm->global_scope->variables);
-        }
     }
 
 next:
 
     switch (cmpl->phase) {
-    case NJS_COMPLETION_VAR:
-        variables = (vm->global_scope != NULL) ? &vm->global_scope->variables
-                                               : NULL;
-
-        if (variables == NULL) {
-            njs_next_phase(cmpl);
-        }
-
-        while (njs_rbtree_is_there_successor(variables, cmpl->node)) {
-            var_node = (njs_variable_node_t *) cmpl->node;
-
-            lex_entry = njs_lexer_entry(var_node->key);
-            if (lex_entry == NULL) {
-                break;
-            }
-
-            cmpl->node = njs_rbtree_node_successor(variables, cmpl->node);
-
-            if (lex_entry->name.length >= cmpl->length
-                && njs_strncmp(text, lex_entry->name.start, cmpl->length) == 0)
-            {
-                return njs_editline(&lex_entry->name);
-            }
-
-        }
-
-        njs_next_phase(cmpl);
-
     case NJS_COMPLETION_SUFFIX:
         if (cmpl->length == 0) {
             njs_next_phase(cmpl);
         }
 
         if (cmpl->suffix_completions == NULL) {
-            /* Getting the longest prefix before a '.' */
-
-            p = &text[cmpl->length - 1];
-            while (p > text && *p != '.') { p--; }
-
-            if (*p != '.') {
-                njs_next_phase(cmpl);
-            }
-
             expression.start = (u_char *) text;
-            expression.length = p - text;
+            expression.length = cmpl->length;
 
             cmpl->suffix_completions = njs_vm_completions(vm, &expression);
             if (cmpl->suffix_completions == NULL) {
                 njs_next_phase(cmpl);
             }
         }
-
-        /* Getting the right-most suffix after a '.' */
-
-        len = 0;
-        p = &text[cmpl->length - 1];
-
-        while (p > text && *p != '.') {
-            p--;
-            len++;
-        }
-
-        p++;
 
         for ( ;; ) {
             if (cmpl->index >= cmpl->suffix_completions->items) {
@@ -1287,21 +1227,7 @@ next:
 
             suffix = njs_completion(cmpl->suffix_completions, cmpl->index++);
 
-            if (len != 0 && njs_strncmp(suffix->start, p,
-                                        njs_min(len, suffix->length)) != 0)
-            {
-                continue;
-            }
-
-            len = suffix->length + (p - text) + 1;
-            completion = malloc(len);
-            if (completion == NULL) {
-                return NULL;
-            }
-
-            njs_sprintf((u_char *) completion, (u_char *) completion + len,
-                        "%*s%V%Z", p - text, text, suffix);
-            return completion;
+            return njs_editline(suffix);
         }
 
     case NJS_COMPLETION_GLOBAL:
