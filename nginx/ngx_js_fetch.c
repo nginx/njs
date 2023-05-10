@@ -2184,43 +2184,6 @@ ngx_js_headers_append(njs_vm_t *vm, ngx_js_headers_t *headers,
     ngx_uint_t        i;
     ngx_js_tb_elt_t  *h, **ph;
     ngx_list_part_t  *part;
-    const njs_str_t  *f;
-
-    static const njs_str_t forbidded_request[] = {
-        njs_str("Accept-Charset"),
-        njs_str("Accept-Encoding"),
-        njs_str("Access-Control-Request-Headers"),
-        njs_str("Access-Control-Request-Method"),
-        njs_str("Connection"),
-        njs_str("Content-Length"),
-        njs_str("Cookie"),
-        njs_str("Date"),
-        njs_str("DNT"),
-        njs_str("Expect"),
-        njs_str("Host"),
-        njs_str("Keep-Alive"),
-        njs_str("Origin"),
-        njs_str("Referer"),
-        njs_str("Set-Cookie"),
-        njs_str("TE"),
-        njs_str("Trailer"),
-        njs_str("Transfer-Encoding"),
-        njs_str("Upgrade"),
-        njs_str("Via"),
-        njs_null_str,
-    };
-
-    static const njs_str_t forbidded_response[] = {
-        njs_str("Set-Cookie"),
-        njs_str("Set-Cookie2"),
-        njs_null_str,
-    };
-
-    static const njs_str_t forbidded_request_prefix[] = {
-        njs_str("proxy-"),
-        njs_str("sec-"),
-        njs_null_str,
-    };
 
     ngx_js_http_trim(&value, &vlen, 0);
 
@@ -2251,34 +2214,6 @@ ngx_js_headers_append(njs_vm_t *vm, ngx_js_headers_t *headers,
     if (headers->guard == GUARD_IMMUTABLE) {
         njs_vm_error(vm, "cannot append to immutable object");
         return NJS_ERROR;
-    }
-
-    if (headers->guard == GUARD_REQUEST) {
-        for (f = &forbidded_request[0]; f->length != 0; f++) {
-            if (len == f->length
-                && (njs_strncasecmp(name, f->start, len) == 0))
-            {
-                return NJS_OK;
-            }
-        }
-
-        for (f = &forbidded_request_prefix[0]; f->length != 0; f++) {
-            if (len >= f->length
-                && (njs_strncasecmp(name, f->start, f->length) == 0))
-            {
-                return NJS_OK;
-            }
-        }
-    }
-
-    if (headers->guard == GUARD_RESPONSE) {
-        for (f = &forbidded_response[0]; f->length != 0; f++) {
-            if (len == f->length
-                && (njs_strncasecmp(name, f->start, len) == 0))
-            {
-                return NJS_OK;
-            }
-        }
     }
 
     ph = NULL;
