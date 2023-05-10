@@ -240,6 +240,31 @@ njs_array_buffer_prototype_slice(njs_vm_t *vm, njs_value_t *args,
 }
 
 
+njs_int_t
+njs_array_buffer_detach(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_value_t *retval)
+{
+    njs_value_t         *value;
+    njs_array_buffer_t  *buffer;
+
+    value = njs_arg(args, nargs, 1);
+    if (njs_slow_path(!njs_is_array_buffer(value))) {
+        njs_type_error(vm, "\"this\" is not an ArrayBuffer");
+        return NJS_ERROR;
+    }
+
+    buffer = njs_array_buffer(value);
+    buffer->u.data = NULL;
+    buffer->size = 0;
+
+    njs_set_null(retval);
+
+    return NJS_OK;
+}
+
+
+
+
 static const njs_object_prop_t  njs_array_buffer_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER("constructor",

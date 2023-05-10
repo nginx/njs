@@ -15,6 +15,8 @@
 njs_array_buffer_t *njs_array_buffer_alloc(njs_vm_t *vm, uint64_t size,
     njs_bool_t zeroing);
 njs_int_t njs_array_buffer_writable(njs_vm_t *vm, njs_array_buffer_t *buffer);
+NJS_EXPORT njs_int_t njs_array_buffer_detach(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 
 njs_inline njs_array_buffer_t *
 njs_array_buffer_slice(njs_vm_t *vm, njs_array_buffer_t *this, int64_t start,

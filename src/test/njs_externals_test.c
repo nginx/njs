@@ -26,6 +26,10 @@ typedef struct {
 } njs_unit_test_prop_t;
 
 
+njs_int_t njs_array_buffer_detach(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
+
+
 static njs_int_t    njs_external_r_proto_id;
 
 
@@ -548,29 +552,6 @@ njs_unit_test_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
-njs_262_detach_array_buffer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused, njs_value_t *retval)
-{
-    njs_value_t         *value;
-    njs_array_buffer_t  *buffer;
-
-    value = njs_arg(args, nargs, 1);
-    if (njs_slow_path(!njs_is_array_buffer(value))) {
-        njs_type_error(vm, "\"this\" is not an ArrayBuffer");
-        return NJS_ERROR;
-    }
-
-    buffer = njs_array_buffer(value);
-    buffer->u.data = NULL;
-    buffer->size = 0;
-
-    njs_set_null(retval);
-
-    return NJS_OK;
-}
-
-
-static njs_int_t
 njs_262_bytes_from_array_like(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *retval)
 {
@@ -749,7 +730,7 @@ static njs_external_t  njs_unit_test_262_external[] = {
         .configurable = 1,
         .enumerable = 1,
         .u.method = {
-            .native = njs_262_detach_array_buffer,
+            .native = njs_array_buffer_detach,
         }
     },
 

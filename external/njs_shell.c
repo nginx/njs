@@ -145,6 +145,9 @@ static njs_int_t lvlhsh_key_test(njs_lvlhsh_query_t *lhq, void *data);
 static void *lvlhsh_pool_alloc(void *pool, size_t size);
 static void lvlhsh_pool_free(void *pool, void *p, size_t size);
 
+njs_int_t njs_array_buffer_detach(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
+
 
 static njs_external_t  njs_ext_console[] = {
 
@@ -198,6 +201,30 @@ static njs_external_t  njs_ext_console[] = {
         .enumerable = 1,
         .u.method = {
             .native = njs_ext_console_time_end,
+        }
+    },
+
+};
+
+
+static njs_external_t  njs_ext_262[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY | NJS_EXTERN_SYMBOL,
+        .name.symbol = NJS_SYMBOL_TO_STRING_TAG,
+        .u.property = {
+            .value = "$262",
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("detachArrayBuffer"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_array_buffer_detach,
         }
     },
 
@@ -779,12 +806,12 @@ njs_console_init(njs_vm_t *vm, njs_console_t *console)
 static njs_int_t
 njs_externals_init(njs_vm_t *vm)
 {
-    njs_int_t           ret;
-    njs_value_t         *value;
+    njs_int_t           ret, proto_id;
     njs_console_t       *console;
-    njs_opaque_value_t  method;
+    njs_opaque_value_t  value, method;
 
     static const njs_str_t  console_name = njs_str("console");
+    static const njs_str_t  dollar_262 = njs_str("$262");
     static const njs_str_t  print_name = njs_str("print");
     static const njs_str_t  console_log = njs_str("console.log");
 
@@ -797,17 +824,13 @@ njs_externals_init(njs_vm_t *vm)
         return NJS_ERROR;
     }
 
-    value = njs_mp_zalloc(njs_vm_memory_pool(vm), sizeof(njs_opaque_value_t));
-    if (njs_slow_path(value == NULL)) {
-        return NJS_ERROR;
-    }
-
-    ret = njs_vm_external_create(vm, value, njs_console_proto_id, console, 0);
+    ret = njs_vm_external_create(vm, njs_value_arg(&value),
+                                 njs_console_proto_id, console, 0);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
 
-    ret = njs_vm_bind(vm, &console_name, value, 0);
+    ret = njs_vm_bind(vm, &console_name, njs_value_arg(&value), 0);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
@@ -823,6 +846,23 @@ njs_externals_init(njs_vm_t *vm)
     }
 
     ret = njs_console_init(vm, console);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    proto_id = njs_vm_external_prototype(vm, njs_ext_262,
+                                         njs_nitems(njs_ext_262));
+    if (njs_slow_path(proto_id < 0)) {
+        njs_stderror("failed to add \"$262\" proto\n");
+        return NJS_ERROR;
+    }
+
+    ret = njs_vm_external_create(vm,  njs_value_arg(&value), proto_id, NULL, 1);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_vm_bind(vm, &dollar_262, njs_value_arg(&value), 1);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
