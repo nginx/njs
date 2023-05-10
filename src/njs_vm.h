@@ -247,8 +247,6 @@ njs_int_t njs_builtin_match_native_function(njs_vm_t *vm,
 void njs_disassemble(u_char *start, u_char *end, njs_int_t count,
     njs_arr_t *lines);
 
-njs_arr_t *njs_vm_completions(njs_vm_t *vm, njs_str_t *expression);
-
 void *njs_lvlhsh_alloc(void *data, size_t size);
 void njs_lvlhsh_free(void *data, void *p, size_t size);
 

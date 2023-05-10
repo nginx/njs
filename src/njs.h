@@ -351,9 +351,9 @@ NJS_EXPORT njs_int_t njs_vm_posted(njs_vm_t *vm);
 
 #define njs_vm_pending(vm)  (njs_vm_waiting(vm) || njs_vm_posted(vm))
 
-#define njs_vm_unhandled_rejection(vm)                                         \
-    ((vm)->options.unhandled_rejection == NJS_VM_OPT_UNHANDLED_REJECTION_THROW \
-    && (vm)->promise_reason != NULL && (vm)->promise_reason->length != 0)
+NJS_EXPORT njs_int_t njs_vm_unhandled_rejection(njs_vm_t *vm);
+
+NJS_EXPORT void *njs_vm_completions(njs_vm_t *vm, njs_str_t *expression);
 
 /*
  * Runs the specified function with provided arguments.

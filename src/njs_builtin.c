@@ -544,7 +544,7 @@ njs_builtin_completions(njs_vm_t *vm)
 }
 
 
-njs_arr_t *
+void *
 njs_vm_completions(njs_vm_t *vm, njs_str_t *expression)
 {
     u_char  *p, *end;

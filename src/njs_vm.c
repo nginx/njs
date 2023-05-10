@@ -510,6 +510,16 @@ njs_vm_posted(njs_vm_t *vm)
 
 
 njs_int_t
+njs_vm_unhandled_rejection(njs_vm_t *vm)
+{
+    return vm->options.unhandled_rejection
+             == NJS_VM_OPT_UNHANDLED_REJECTION_THROW
+           && vm->promise_reason != NULL
+           && vm->promise_reason->length != 0;
+}
+
+
+njs_int_t
 njs_vm_post_event(njs_vm_t *vm, njs_vm_event_t vm_event,
     const njs_value_t *args, njs_uint_t nargs)
 {

@@ -104,10 +104,10 @@ cat << END >> $NJS_MAKEFILE
 
 $NJS_BUILD_DIR/njs: \\
 	$NJS_BUILD_DIR/libnjs.a \\
-	src/njs_shell.c
+	external/njs_shell.c
 	\$(NJS_LINK) -o $NJS_BUILD_DIR/njs \$(NJS_CFLAGS) \\
 		$NJS_LIB_AUX_CFLAGS \$(NJS_LIB_INCS) -Injs \\
-		src/njs_shell.c \\
+		external/njs_shell.c \\
 		$NJS_BUILD_DIR/libnjs.a \\
 		$NJS_LD_OPT -lm $NJS_LIBS $NJS_LIB_AUX_LIBS $NJS_READLINE_LIB
 
@@ -118,12 +118,12 @@ END
 cat << END >> $NJS_MAKEFILE
 
 $NJS_BUILD_DIR/njs_process_script_fuzzer.o: \\
-	src/njs_shell.c
+	external/njs_shell.c
 	\$(NJS_CC) -c \$(CFLAGS) $NJS_LIB_AUX_CFLAGS \\
 		\$(NJS_LIB_INCS) -Injs \\
 		-DNJS_FUZZER_TARGET \\
 		-o $NJS_BUILD_DIR/njs_process_script_fuzzer.o \\
-		src/njs_shell.c
+		external/njs_shell.c
 
 $NJS_BUILD_DIR/njs_process_script_fuzzer: \\
 	$NJS_BUILD_DIR/libnjs.a \\
