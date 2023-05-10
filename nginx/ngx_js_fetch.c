@@ -658,6 +658,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_int_t            ret;
     ngx_url_t            u;
     ngx_uint_t           i;
+    njs_bool_t           has_host;
     ngx_pool_t          *pool;
     njs_value_t         *init, *value;
     ngx_js_http_t       *http;
@@ -746,10 +747,42 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_chb_append(&http->chain, u.uri.data, u.uri.len);
     njs_chb_append_literal(&http->chain, " HTTP/1.1" CRLF);
 
-    njs_chb_append_literal(&http->chain, "Host: ");
-    njs_chb_append(&http->chain, u.host.data, u.host.len);
-    njs_chb_append_literal(&http->chain, CRLF);
-    njs_chb_append_literal(&http->chain, "Connection: close" CRLF);
+    has_host = 0;
+    part = &request.headers.header_list.part;
+    h = part->elts;
+
+    for (i = 0; /* void */; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            h = part->elts;
+            i = 0;
+        }
+
+        if (h[i].hash == 0) {
+            continue;
+        }
+
+        if (h[i].key.len == 4
+            && ngx_strncasecmp(h[i].key.data, (u_char *) "Host", 4) == 0)
+        {
+            has_host = 1;
+            njs_chb_append_literal(&http->chain, "Host: ");
+            njs_chb_append(&http->chain, h[i].value.data, h[i].value.len);
+            njs_chb_append_literal(&http->chain, CRLF);
+            break;
+        }
+    }
+
+    if (!has_host) {
+        njs_chb_append_literal(&http->chain, "Host: ");
+        njs_chb_append(&http->chain, u.host.data, u.host.len);
+        njs_chb_append_literal(&http->chain, CRLF);
+    }
 
     part = &request.headers.header_list.part;
     h = part->elts;
@@ -770,11 +803,19 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             continue;
         }
 
+        if (h[i].key.len == 4
+            && ngx_strncasecmp(h[i].key.data, (u_char *) "Host", 4) == 0)
+        {
+            continue;
+        }
+
         njs_chb_append(&http->chain, h[i].key.data, h[i].key.len);
         njs_chb_append_literal(&http->chain, ": ");
         njs_chb_append(&http->chain, h[i].value.data, h[i].value.len);
         njs_chb_append_literal(&http->chain, CRLF);
     }
+
+    njs_chb_append_literal(&http->chain, "Connection: close" CRLF);
 
 #if (NGX_SSL)
     http->tls_name.data = u.host.data;
