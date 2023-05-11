@@ -88,9 +88,15 @@ static njs_external_t  ngx_js_ext_core[] = {
 
 
 njs_module_t *njs_js_addon_modules[] = {
+#ifdef NJS_HAVE_OPENSSL
     &njs_webcrypto_module,
+#endif
+#ifdef NJS_HAVE_XML
     &njs_xml_module,
+#endif
+#ifdef NJS_HAVE_ZLIB
     &njs_zlib_module,
+#endif
     NULL,
 };
 
