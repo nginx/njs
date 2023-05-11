@@ -756,7 +756,7 @@ njs_object_completions(njs_vm_t *vm, njs_value_t *object, njs_str_t *expression)
 
             completion->length = (prefix - expression->start) + key.length + 1;
             completion->start = njs_mp_alloc(vm->mem_pool, completion->length);
-            if (completion == NULL) {
+            if (njs_slow_path(completion->start == NULL)) {
                 njs_arr_destroy(array);
                 array = NULL;
                 goto done;
