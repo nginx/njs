@@ -28,7 +28,7 @@ NJS_CONFIGURE_OPTIONS=
 for njs_option
 do
     case "$njs_option" in
-        -*=*) value=`echo "$njs_option" | sed -e 's/[-_a-zA-Z0-9]*=//'`      ;;
+        -*=*) value=`echo "$njs_option" | sed -e 's#[-_a-zA-Z0-9]*=##'`      ;;
            *) value="" ;;
     esac
 
@@ -70,7 +70,7 @@ do
         ;;
     esac
 
-    njs_opt=`echo $njs_option | sed -e "s/\(--[^=]*=\)\(.* .*\)/\1'\2'/"`
+    njs_opt=`echo $njs_option | sed -e "s#\(--[^=]*=\)\(.* .*\)#\1'\2'#"`
 
     NJS_CONFIGURE_OPTIONS="$NJS_CONFIGURE_OPTIONS $njs_opt"
 

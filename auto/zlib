@@ -26,7 +26,7 @@ if [ $NJS_ZLIB = YES ]; then
         # pkg-config
 
         njs_feature="zlib via pkg-config"
-        njs_feature_incs=`pkg-config zlib --cflags | sed -n -e 's/.*-I *\([^ ][^ ]*\).*/\1/p'`
+        njs_feature_incs=`pkg-config zlib --cflags | sed -n -e 's#.*-I *\([^ ][^ ]*\).*#\1#p'`
         njs_feature_libs=`pkg-config zlib --libs`
 
         . auto/feature

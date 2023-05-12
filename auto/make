@@ -54,7 +54,7 @@ NJS_STATIC_LINK = ${AR} -r -c
 NJS_LINK = ${CC} ${NJS_LD_OPT}
 NJS_CFLAGS = ${NJS_CFLAGS} ${NJS_CC_OPT} ${CFLAGS}
 
-NJS_VER = $(grep NJS_VERSION src/njs.h | sed -e 's/.*"\(.*\)".*/\1/')
+NJS_VER = $(grep NJS_VERSION src/njs.h | sed -e 's#.*"\(.*\)".*#\1#')
 NJS_TYPES_VER = \$(NJS_VER)
 
 NPM = npm
@@ -275,7 +275,7 @@ cat << END >> $NJS_MAKEFILE
 $NJS_BUILD_DIR/ts/package.json: $njs_ts_deps
 	cp -fr ts $NJS_BUILD_DIR/
 	cp LICENSE $NJS_BUILD_DIR/ts/
-	sed 's/__VERSION__/"\$(NJS_TYPES_VER)"/' \\
+	sed 's#__VERSION__#"\$(NJS_TYPES_VER)"#' \\
 		ts/package.json > $NJS_BUILD_DIR/ts/package.json
 
 $NJS_BUILD_DIR/ts/node_modules: $NJS_BUILD_DIR/ts/package.json
@@ -320,11 +320,11 @@ cat << END >> $NJS_MAKEFILE
 pc: $NJS_BUILD_DIR/njs.pc
 
 $NJS_BUILD_DIR/njs.pc: $NJS_BUILD_DIR/njs_auto_config.h
-	sed -e "s,@PREFIX@,$(pwd)/$NJS_BUILD_DIR," \\
-		-e "s,@LIBDIR@,$(pwd)/$NJS_BUILD_DIR," \\
-		-e "s,@CFLAGS@,-I$(pwd)/$NJS_BUILD_DIR -I$(pwd)/src," \\
-		-e "s,@VERSION@,\$(NJS_VER)," \\
-		-e "s,@EXTRA_LIBS@,-lm $NJS_LIBS $NJS_LIB_AUX_LIBS," \\
+	sed -e "s#@PREFIX@#$(pwd)/$NJS_BUILD_DIR#" \\
+		-e "s#@LIBDIR@#$(pwd)/$NJS_BUILD_DIR#" \\
+		-e "s#@CFLAGS@#-I$(pwd)/$NJS_BUILD_DIR -I$(pwd)/src#" \\
+		-e "s#@VERSION@#\$(NJS_VER)#" \\
+		-e "s#@EXTRA_LIBS@#-lm $NJS_LIBS $NJS_LIB_AUX_LIBS#" \\
 		src/njs.pc.in > \$@
 END
 
