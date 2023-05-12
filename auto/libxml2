@@ -26,7 +26,7 @@ if [ $NJS_LIBXML2 = YES ]; then
         # pkg-config
 
         njs_feature="libxml2 via pkg-config"
-        njs_feature_incs=`pkg-config libxml-2.0 --cflags | sed -n -e 's/.*-I *\([^ ][^ ]*\).*/\1/p'`
+        njs_feature_incs=`pkg-config libxml-2.0 --cflags | sed -n -e 's#.*-I *\([^ ][^ ]*\).*#\1#p'`
         njs_feature_libs=`pkg-config libxml-2.0 --libs`
 
         . auto/feature
