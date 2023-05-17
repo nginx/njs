@@ -3925,6 +3925,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var obj = {}; ({[obj](){}}); typeof obj"),
       njs_str("object") },
 
+    { njs_str("[function(){}][0].name"),
+      njs_str("") },
+
     { njs_str("var called = false;"
              "({"
              "   [{toString(){ if (called) throw 'OOps'; called = true; return 'a'}}](){}"
