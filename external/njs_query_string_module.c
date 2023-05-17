@@ -124,7 +124,6 @@ njs_query_string_decode(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     size_t size)
 {
     u_char                *dst;
-    size_t                length;
     uint32_t              cp;
     njs_int_t             ret;
     njs_chb_t             chain;
@@ -156,7 +155,6 @@ njs_query_string_decode(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     njs_utf8_decode_init(&ctx);
 
     cp = 0;
-    length = 0;
 
     p = start;
     end = p + size;
@@ -190,8 +188,6 @@ njs_query_string_decode(njs_vm_t *vm, njs_value_t *value, const u_char *start,
         }
 
         njs_chb_written(&chain, njs_utf8_encode(dst, cp) - dst);
-
-        length++;
     }
 
     if (njs_slow_path(cp == NJS_UNICODE_CONTINUE)) {
@@ -202,8 +198,6 @@ njs_query_string_decode(njs_vm_t *vm, njs_value_t *value, const u_char *start,
 
         njs_chb_written(&chain,
                         njs_utf8_encode(dst, NJS_UNICODE_REPLACEMENT) - dst);
-
-        length++;
     }
 
     ret = njs_vm_value_string_create_chb(vm, value, &chain);
