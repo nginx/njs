@@ -12,7 +12,19 @@
 #include "ngx_js_fetch.h"
 
 
+static njs_int_t ngx_js_ext_build(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+static njs_int_t ngx_js_ext_conf_file_path(njs_vm_t *vm,
+    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 static njs_int_t ngx_js_ext_conf_prefix(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+static njs_int_t ngx_js_ext_error_log_path(njs_vm_t *vm,
+    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
+static njs_int_t ngx_js_ext_prefix(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+static njs_int_t ngx_js_ext_version(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 static void ngx_js_cleanup_vm(void *data);
 
@@ -26,7 +38,26 @@ static njs_external_t  ngx_js_ext_core[] = {
 
     {
         .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("build"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_build,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("conf_file_path"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_conf_file_path,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
         .name.string = njs_str("conf_prefix"),
+        .enumerable = 1,
         .u.property = {
             .handler = ngx_js_ext_conf_prefix,
         }
@@ -39,6 +70,15 @@ static njs_external_t  ngx_js_ext_core[] = {
             .handler = ngx_js_ext_constant,
             .magic32 = NGX_LOG_ERR,
             .magic16 = NGX_JS_NUMBER,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("error_log_path"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_error_log_path,
         }
     },
 
@@ -71,6 +111,35 @@ static njs_external_t  ngx_js_ext_core[] = {
         .enumerable = 1,
         .u.method = {
             .native = ngx_js_ext_log,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("prefix"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_prefix,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("version"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_version,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("version_number"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_constant,
+            .magic32 = nginx_version,
+            .magic16 = NGX_JS_NUMBER,
         }
     },
 
@@ -339,11 +408,63 @@ ngx_js_ext_flags(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 njs_int_t
+ngx_js_ext_build(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval)
+{
+    return njs_vm_value_string_set(vm, retval,
+#ifdef NGX_BUILD
+                                   (u_char *) NGX_BUILD,
+                                   njs_strlen(NGX_BUILD)
+#else
+                                   (u_char *) "",
+                                   0
+#endif
+                                   );
+}
+
+
+njs_int_t
+ngx_js_ext_conf_file_path(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    return njs_vm_value_string_set(vm, retval, ngx_cycle->conf_file.data,
+                                   ngx_cycle->conf_file.len);
+}
+
+
+njs_int_t
 ngx_js_ext_conf_prefix(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     return njs_vm_value_string_set(vm, retval, ngx_cycle->conf_prefix.data,
                                    ngx_cycle->conf_prefix.len);
+}
+
+
+njs_int_t
+ngx_js_ext_error_log_path(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    return njs_vm_value_string_set(vm, retval, ngx_cycle->error_log.data,
+                                   ngx_cycle->error_log.len);
+}
+
+
+njs_int_t
+ngx_js_ext_prefix(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval)
+{
+    return njs_vm_value_string_set(vm, retval, ngx_cycle->prefix.data,
+                                   ngx_cycle->prefix.len);
+}
+
+
+njs_int_t
+ngx_js_ext_version(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval)
+{
+    return njs_vm_value_string_set(vm, retval, (u_char *) NGINX_VERSION,
+                                   njs_strlen(NGINX_VERSION));
 }
 
 
