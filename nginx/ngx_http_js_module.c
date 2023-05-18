@@ -603,15 +603,6 @@ static njs_external_t  ngx_http_js_ext_request[] = {
 
     {
         .flags = NJS_EXTERN_PROPERTY,
-        .name.string = njs_str("requestBody"),
-        .u.property = {
-            .handler = ngx_http_js_ext_get_request_body,
-            .magic32 = NGX_JS_STRING | NGX_JS_DEPRECATED,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_PROPERTY,
         .name.string = njs_str("requestBuffer"),
         .u.property = {
             .handler = ngx_http_js_ext_get_request_body,
@@ -626,15 +617,6 @@ static njs_external_t  ngx_http_js_ext_request[] = {
         .u.property = {
             .handler = ngx_http_js_ext_get_request_body,
             .magic32 = NGX_JS_STRING,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_PROPERTY,
-        .name.string = njs_str("responseBody"),
-        .u.property = {
-            .handler = ngx_http_js_ext_get_response_body,
-            .magic32 = NGX_JS_STRING | NGX_JS_DEPRECATED,
         }
     },
 
@@ -2604,10 +2586,6 @@ ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
-    if (njs_vm_prop_magic32(prop) & NGX_JS_DEPRECATED) {
-        njs_deprecated(vm, "r.requestBody");
-    }
-
     r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {
         njs_value_undefined_set(retval);
@@ -3454,10 +3432,6 @@ ngx_http_js_ext_get_response_body(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t         *response_body;
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
-
-    if (njs_vm_prop_magic32(prop) & NGX_JS_DEPRECATED) {
-        njs_deprecated(vm, "r.responseBody");
-    }
 
     r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
     if (r == NULL) {
