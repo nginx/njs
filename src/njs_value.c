@@ -1681,6 +1681,25 @@ njs_symbol_conversion_failed(njs_vm_t *vm, njs_bool_t to_string)
 
 
 njs_int_t
+njs_value_construct(njs_vm_t *vm, njs_value_t *constructor, njs_value_t *args,
+    njs_uint_t nargs, njs_value_t *retval)
+{
+    njs_value_t   this;
+    njs_object_t  *object;
+
+    object = njs_function_new_object(vm, constructor);
+    if (njs_slow_path(object == NULL)) {
+        return NJS_ERROR;
+    }
+
+    njs_set_object(&this, object);
+
+    return njs_function_call2(vm, njs_function(constructor), &this, args,
+                              nargs, retval, 1);
+}
+
+
+njs_int_t
 njs_value_species_constructor(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *default_constructor, njs_value_t *dst)
 {

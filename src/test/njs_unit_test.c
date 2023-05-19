@@ -4561,6 +4561,38 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Array.isArray([]) ? 'true' : 'false'"),
       njs_str("true") },
 
+    { njs_str("["
+              "  [undefined],"
+              "  [null],"
+              "  ['foo'],"
+              "  ['foo', c => c.toUpperCase()],"
+              "  [{length: 3, 1:'a', 2:'b'}],"
+              "  [[7,,9], v => v*2],"
+              "].map(args => { try { return Array.from.apply(Array,args) }"
+              "                catch (e) {return e.toString()}})"),
+      njs_str("TypeError: cannot convert null or undefined to object,"
+              "TypeError: cannot convert null or undefined to object,"
+              "f,o,o,"
+              "F,O,O,"
+              ",a,b,"
+              "14,NaN,18"
+              ) },
+
+    { njs_str("function f() {return Array.from(arguments);}; f(1,2,3)"),
+      njs_str("1,2,3") },
+
+    { njs_str("Array.from({ length: 5 }, (v, i) => i)"),
+      njs_str("0,1,2,3,4") },
+
+    { njs_str("const range = (start, stop, step) =>"
+              "Array.from({ length: (stop - start) / step + 1 }, (_, i) => start + i * step);"
+              "range(1, 10, 2)"),
+      njs_str("1,3,5,7,9") },
+
+    { njs_str("var a = Array.from.call(Object, { length: 2, 0:7, 1:9 });"
+              "[a[0], a[1], Array.isArray(a)]"),
+      njs_str("7,9,false") },
+
     { njs_str("Array.of()"),
       njs_str("") },
 
@@ -15282,7 +15314,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("length,name,prototype") },
 
     { njs_str("Object.getOwnPropertyNames(Array)"),
-      njs_str("name,length,prototype,isArray,of") },
+      njs_str("name,length,prototype,from,isArray,of") },
 
     { njs_str("Object.getOwnPropertyNames(Array.isArray)"),
       njs_str("name,length") },

@@ -2536,6 +2536,8 @@ njs_function_new_object(njs_vm_t *vm, njs_value_t *constructor)
         return NULL;
     }
 
+    njs_assert(njs_is_function(constructor));
+
     function = njs_function(constructor);
 
     if (function->bound != NULL) {

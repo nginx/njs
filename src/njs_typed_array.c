@@ -222,19 +222,9 @@ njs_typed_array_create(njs_vm_t *vm, njs_value_t *constructor,
     njs_value_t *args, njs_uint_t nargs, njs_value_t *retval)
 {
     njs_int_t          ret;
-    njs_value_t        this;
-    njs_object_t       *object;
     njs_typed_array_t  *array;
 
-    object = njs_function_new_object(vm, constructor);
-    if (njs_slow_path(object == NULL)) {
-        return NJS_ERROR;
-    }
-
-    njs_set_object(&this, object);
-
-    ret = njs_function_call2(vm, njs_function(constructor), &this, args,
-                             nargs, retval, 1);
+    ret = njs_value_construct(vm, constructor, args, nargs, retval);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
