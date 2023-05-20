@@ -94,6 +94,73 @@ njs_int_t
 njs_regex_escape(njs_mp_t *mp, njs_str_t *text)
 {
 #ifdef NJS_HAVE_PCRE2
+    size_t  anychars, nomatches;
+    u_char  *p, *dst, *start, *end;
+
+    /*
+     * 1) [^] is a valid regexp expression in JavaScript, but PCRE2
+     * rejects it as invalid, replacing it with equivalent PCRE2 [\s\S]
+     * expression.
+     * 2) [] is a valid regexp expression in JavaScript, but PCRE2
+     * rejects it as invalid, replacing it with equivalent PCRE2 (?!)
+     * expression which matches nothing.
+     */
+
+    start = text->start;
+    end = text->start + text->length;
+
+    anychars = 0;
+    nomatches = 0;
+
+    for (p = start; p < end; p++) {
+        switch (*p) {
+        case '[':
+            if (p + 1 < end && p[1] == ']') {
+                p += 1;
+                nomatches += 1;
+
+            } else if (p + 2 < end && p[1] == '^' && p[2] == ']') {
+                p += 2;
+                anychars += 1;
+            }
+
+            break;
+        }
+    }
+
+    if (!anychars && !nomatches) {
+        return NJS_OK;
+    }
+
+    text->length = text->length
+                   + anychars * (njs_length("\\s\\S") - njs_length("^"))
+                   + nomatches * (njs_length("?!"));
+
+    text->start = njs_mp_alloc(mp, text->length);
+    if (njs_slow_path(text->start == NULL)) {
+        return NJS_ERROR;
+    }
+
+    dst = text->start;
+
+    for (p = start; p < end; p++) {
+
+        switch (*p) {
+        case '[':
+            if (p + 1 < end && p[1] == ']') {
+                p += 1;
+                dst = njs_cpymem(dst, "(?!)", 4);
+                continue;
+
+            } else if (p + 2 < end && p[1] == '^' && p[2] == ']') {
+                p += 2;
+                dst = njs_cpymem(dst, "[\\s\\S]", 6);
+                continue;
+            }
+        }
+
+        *dst++ = *p;
+    }
 
     return NJS_OK;
 

@@ -263,9 +263,10 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
     njs_regex_flags_t flags)
 {
     int                   ret;
-    u_char                *p;
+    u_char                *p, *end;
     size_t                size;
     njs_str_t             text;
+    njs_bool_t            in;
     njs_uint_t            n;
     njs_regex_t           *regex;
     njs_regexp_group_t    *group;
@@ -273,6 +274,42 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
 
     text.start = start;
     text.length = length;
+
+    in = 0;
+    end = start + length;
+
+    for (p = start; p < end; p++) {
+
+        switch (*p) {
+        case '[':
+            in = 1;
+            break;
+
+        case ']':
+            in = 0;
+            break;
+
+        case '\\':
+            p++;
+            break;
+
+        case '+':
+            if (njs_slow_path(!in
+                              && (p - 1 > start)
+                              && (p[-1] == '+'|| p[-1] == '*' || p[-1] == '?'))
+                              && (p - 2 >= start && p[-2] != '\\'))
+            {
+                /**
+                 * PCRE possessive quantifiers `++`, `*+`, `?+`
+                 * are not allowed in JavaScript. Whereas `[++]` or `\?+` are
+                 * allowed.
+                 */
+                goto nothing_to_repeat;
+            }
+
+            break;
+        }
+    }
 
     ret = njs_regex_escape(vm->mem_pool, &text);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -369,6 +406,12 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
 fail:
 
     njs_mp_free(vm->mem_pool, pattern);
+    return NULL;
+
+nothing_to_repeat:
+
+    njs_syntax_error(vm, "Invalid regular expression \"%V\" nothing to repeat",
+                     &text);
     return NULL;
 }
 

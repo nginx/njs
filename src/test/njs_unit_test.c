@@ -11810,6 +11810,38 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var r = /./; r"),
       njs_str("/./") },
 
+    { njs_str("/[^]+|[^]+/.test('\\n| ')"),
+      njs_str("true") },
+
+    { njs_str("/[^]+|[^][^]/.test('|aa')"),
+      njs_str("true") },
+
+    { njs_str("/a[]/.test('a')"),
+      njs_str("false") },
+
+    { njs_str("/[]a/.test('a')"),
+      njs_str("false") },
+
+#ifdef NJS_HAVE_PCRE2
+    { njs_str("/[]*a/.test('a')"),
+      njs_str("true") },
+#endif
+
+    { njs_str("/Ca++BB/"),
+      njs_str("SyntaxError: Invalid regular expression \"Ca++BB\" nothing to repeat in 1") },
+
+    { njs_str("/a*+/"),
+      njs_str("SyntaxError: Invalid regular expression \"a*+\" nothing to repeat in 1") },
+
+    { njs_str("/a?+/"),
+      njs_str("SyntaxError: Invalid regular expression \"a?+\" nothing to repeat in 1") },
+
+    { njs_str(" /\\[[]++\\]/"),
+      njs_str("SyntaxError: Invalid regular expression \"\\[[]++\\]\" nothing to repeat in 1") },
+
+    { njs_str("/\\?+/"),
+      njs_str("/\\?+/") },
+
     { njs_str("var r = new RegExp(); r"),
       njs_str("/(?:)/") },
 
@@ -11869,6 +11901,15 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("RegExp(new RegExp('expr'))"),
       njs_str("/expr/") },
+
+    { njs_str("RegExp(RegExp('[^]+|[^][^]')).test('| \\na')"),
+      njs_str("true") },
+
+    { njs_str("RegExp('a++')"),
+      njs_str("SyntaxError: Invalid regular expression \"a++\" nothing to repeat") },
+
+    { njs_str("RegExp('[a++]')"),
+      njs_str("/[a++]/") },
 
     { njs_str("RegExp(new RegExp('expr')).multiline"),
       njs_str("false") },
