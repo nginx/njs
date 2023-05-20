@@ -100,15 +100,15 @@ njs_test {
 }
 
 njs_test {
-    {"O\t"
-     "O\a*bject"}
+    {"Type\t"
+     "Type\a*Error"}
     {"\t\t"
-     "Object.create*Object.isSealed"}
+     "TypeError.length"}
 }
 
 njs_test {
-    {"Object.\t\t"
-     "Object.create*Object.isSealed"}
+    {"TypeError.\t\t"
+     "TypeError.length*TypeError.prototype"}
 }
 
 njs_test {

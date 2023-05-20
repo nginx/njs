@@ -1087,6 +1087,7 @@ njs_cb_line_handler(char *line_in)
     line.length = njs_strlen(line.start);
 
     if (line.length == 0) {
+        rl_callback_handler_install(">> ", njs_cb_line_handler);
         return;
     }
 
@@ -1097,6 +1098,10 @@ njs_cb_line_handler(char *line_in)
         njs_running = NJS_ERROR;
     }
 
+    if (ret == NJS_OK) {
+        rl_callback_handler_install(">> ", njs_cb_line_handler);
+    }
+
     free(line.start);
 }
 
@@ -1104,9 +1109,11 @@ njs_cb_line_handler(char *line_in)
 static njs_int_t
 njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 {
-    fd_set     fds;
-    njs_vm_t   *vm;
-    njs_int_t  ret;
+    int             flags;
+    fd_set          fds;
+    njs_vm_t        *vm;
+    njs_int_t       ret;
+    struct timeval  timeout;
 
     if (njs_editline_init() != NJS_OK) {
         njs_stderror("failed to init completions\n");
@@ -1126,13 +1133,17 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
 
     rl_callback_handler_install(">> ", njs_cb_line_handler);
 
+    flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
+
     njs_running = NJS_OK;
 
     while (njs_running == NJS_OK) {
         FD_ZERO(&fds);
-        FD_SET(fileno(rl_instream), &fds);
+        FD_SET(STDIN_FILENO, &fds);
+        timeout = (struct timeval) {1, 0};
 
-        ret = select(FD_SETSIZE, &fds, NULL, NULL, NULL);
+        ret = select(FD_SETSIZE, &fds, NULL, NULL, &timeout);
         if (ret < 0 && errno != EINTR) {
             njs_stderror("select() failed\n");
             njs_running = NJS_ERROR;
