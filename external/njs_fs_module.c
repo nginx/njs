@@ -3399,8 +3399,6 @@ njs_fs_to_stat(njs_stat_t *dst, struct stat *st)
     dst->st_mtim.tv_nsec = st->st_mtimespec.tv_nsec;
     dst->st_ctim.tv_sec = st->st_ctimespec.tv_sec;
     dst->st_ctim.tv_nsec = st->st_ctimespec.tv_nsec;
-    dst->st_birthtim.tv_sec = st->st_birthtimespec.tv_sec;
-    dst->st_birthtim.tv_nsec = st->st_birthtimespec.tv_nsec;
 
 #elif (NJS_HAVE_STAT_ATIM)
 
@@ -3414,6 +3412,9 @@ njs_fs_to_stat(njs_stat_t *dst, struct stat *st)
 #if (NJS_HAVE_STAT_BIRTHTIM)
     dst->st_birthtim.tv_sec = st->st_birthtim.tv_sec;
     dst->st_birthtim.tv_nsec = st->st_birthtim.tv_nsec;
+#elif (NJS_HAVE__STAT_BIRTHTIM)
+    dst->st_birthtim.tv_sec = st->__st_birthtim.tv_sec;
+    dst->st_birthtim.tv_nsec = st->__st_birthtim.tv_nsec;
 #else
     dst->st_birthtim.tv_sec = st->st_ctim.tv_sec;
     dst->st_birthtim.tv_nsec = st->st_ctim.tv_nsec;

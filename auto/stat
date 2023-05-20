@@ -40,6 +40,24 @@ njs_feature_test="#include <sys/stat.h>
 . auto/feature
 
 
+njs_feature="stat.__st_birthtim"
+njs_feature_name=NJS_HAVE__STAT_BIRTHTIM
+njs_feature_incs=
+njs_feature_libs=
+njs_feature_test="#include <sys/stat.h>
+
+                  int main(void) {
+                      struct stat st;
+
+                      if (fstat(0, &st) != 0) {
+                         return 1;
+                      }
+
+                      return (int) st.__st_birthtim.tv_sec;
+                  }"
+. auto/feature
+
+
 njs_feature="stat.st_atim"
 njs_feature_name=NJS_HAVE_STAT_ATIM
 njs_feature_incs=
