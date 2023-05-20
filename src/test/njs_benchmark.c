@@ -259,17 +259,6 @@ static njs_benchmark_test_t  njs_test[] =
       njs_str("3524578"),
       1 },
 
-    { "fibobench byte strings",
-      njs_str("var a = '\\x80'.toBytes();"
-              "function fibo(n) {"
-              "    if (n > 1)"
-              "        return fibo(n - 1) + fibo(n - 2);"
-              "    return 'a'"
-              "}"
-              "fibo(32).length"),
-      njs_str("3524578"),
-      1 },
-
     { "fibobench utf8 strings",
       njs_str("function fibo(n) {"
               "    if (n > 1)"
