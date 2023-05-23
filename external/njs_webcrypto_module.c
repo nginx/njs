@@ -45,6 +45,7 @@ typedef enum {
     NJS_ALGORITHM_ECDH,
     NJS_ALGORITHM_PBKDF2,
     NJS_ALGORITHM_HKDF,
+    NJS_ALGORITHM_MAX,
 } njs_webcrypto_alg_t;
 
 
@@ -54,6 +55,7 @@ typedef enum {
     NJS_HASH_SHA256,
     NJS_HASH_SHA384,
     NJS_HASH_SHA512,
+    NJS_HASH_MAX,
 } njs_webcrypto_hash_t;
 
 
@@ -153,6 +155,28 @@ static njs_webcrypto_entry_t njs_webcrypto_alg[] = {
     (uintptr_t) & (njs_webcrypto_algorithm_t) { type, usage_mask, fmt_mask }
 
     {
+      njs_str("RSASSA-PKCS1-v1_5"),
+      njs_webcrypto_algorithm(NJS_ALGORITHM_RSASSA_PKCS1_v1_5,
+                              NJS_KEY_USAGE_SIGN |
+                              NJS_KEY_USAGE_VERIFY |
+                              NJS_KEY_USAGE_GENERATE_KEY,
+                              NJS_KEY_FORMAT_PKCS8 |
+                              NJS_KEY_FORMAT_SPKI |
+                              NJS_KEY_FORMAT_JWK)
+    },
+
+    {
+      njs_str("RSA-PSS"),
+      njs_webcrypto_algorithm(NJS_ALGORITHM_RSA_PSS,
+                              NJS_KEY_USAGE_SIGN |
+                              NJS_KEY_USAGE_VERIFY |
+                              NJS_KEY_USAGE_GENERATE_KEY,
+                              NJS_KEY_FORMAT_PKCS8 |
+                              NJS_KEY_FORMAT_SPKI |
+                              NJS_KEY_FORMAT_JWK)
+    },
+
+    {
       njs_str("RSA-OAEP"),
       njs_webcrypto_algorithm(NJS_ALGORITHM_RSA_OAEP,
                               NJS_KEY_USAGE_ENCRYPT |
@@ -162,6 +186,16 @@ static njs_webcrypto_entry_t njs_webcrypto_alg[] = {
                               NJS_KEY_USAGE_GENERATE_KEY,
                               NJS_KEY_FORMAT_PKCS8 |
                               NJS_KEY_FORMAT_SPKI |
+                              NJS_KEY_FORMAT_JWK)
+    },
+
+    {
+      njs_str("HMAC"),
+      njs_webcrypto_algorithm(NJS_ALGORITHM_HMAC,
+                              NJS_KEY_USAGE_GENERATE_KEY |
+                              NJS_KEY_USAGE_SIGN |
+                              NJS_KEY_USAGE_VERIFY,
+                              NJS_KEY_FORMAT_RAW |
                               NJS_KEY_FORMAT_JWK)
     },
 
@@ -202,28 +236,6 @@ static njs_webcrypto_entry_t njs_webcrypto_alg[] = {
     },
 
     {
-      njs_str("RSASSA-PKCS1-v1_5"),
-      njs_webcrypto_algorithm(NJS_ALGORITHM_RSASSA_PKCS1_v1_5,
-                              NJS_KEY_USAGE_SIGN |
-                              NJS_KEY_USAGE_VERIFY |
-                              NJS_KEY_USAGE_GENERATE_KEY,
-                              NJS_KEY_FORMAT_PKCS8 |
-                              NJS_KEY_FORMAT_SPKI |
-                              NJS_KEY_FORMAT_JWK)
-    },
-
-    {
-      njs_str("RSA-PSS"),
-      njs_webcrypto_algorithm(NJS_ALGORITHM_RSA_PSS,
-                              NJS_KEY_USAGE_SIGN |
-                              NJS_KEY_USAGE_VERIFY |
-                              NJS_KEY_USAGE_GENERATE_KEY,
-                              NJS_KEY_FORMAT_PKCS8 |
-                              NJS_KEY_FORMAT_SPKI |
-                              NJS_KEY_FORMAT_JWK)
-    },
-
-    {
       njs_str("ECDSA"),
       njs_webcrypto_algorithm(NJS_ALGORITHM_ECDSA,
                               NJS_KEY_USAGE_SIGN |
@@ -259,16 +271,6 @@ static njs_webcrypto_entry_t njs_webcrypto_alg[] = {
                               NJS_KEY_USAGE_DERIVE_KEY |
                               NJS_KEY_USAGE_DERIVE_BITS,
                               NJS_KEY_FORMAT_RAW)
-    },
-
-    {
-      njs_str("HMAC"),
-      njs_webcrypto_algorithm(NJS_ALGORITHM_HMAC,
-                              NJS_KEY_USAGE_GENERATE_KEY |
-                              NJS_KEY_USAGE_SIGN |
-                              NJS_KEY_USAGE_VERIFY,
-                              NJS_KEY_FORMAT_RAW |
-                              NJS_KEY_FORMAT_JWK)
     },
 
     {
@@ -335,7 +337,7 @@ static njs_webcrypto_entry_t njs_webcrypto_alg_hash[] = {
 
 
 static njs_str_t
-    njs_webcrypto_alg_name[NJS_ALGORITHM_HMAC + 1][NJS_HASH_SHA512 + 1] = {
+    njs_webcrypto_alg_name[NJS_ALGORITHM_HMAC + 1][NJS_HASH_MAX] = {
     {
         njs_null_str,
         njs_str("RS1"),
