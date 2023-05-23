@@ -1,0 +1,12 @@
+Test suite for nginx JavaScript module.
+
+This test suite relies on nginx-tests repository for the test library.
+
+Use prove to run tests as one usually do for perl tests.  Individual tests
+may be run as well.
+
+Usage:
+
+    $ TEST_NGINX_BINARY=/path/to/nginx prove -r -I /path/to/nginx-tests/lib/ nginx/t
+
+Refer to nginx-tests documentation for more details.
