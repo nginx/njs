@@ -246,13 +246,19 @@ async function crypto_object(keyData: ArrayBuffer, data: ArrayBuffer) {
                                                 publicExponent: new Uint8Array([1, 0, 1])},
                                                 true, ['sign', 'verify']);
 
+    pair.privateKey.extractable;
+    pair.publicKey.algorithm.name;
+
     let hkey = await crypto.subtle.generateKey({name: "HMAC",
                                                 hash: "SHA-384"},
                                                 true, ['sign', 'verify']);
+    hkey.algorithm.name;
 
     let akey = await crypto.subtle.generateKey({name: "AES-GCM",
                                                 length: 256},
                                                 true, ['encrypt', 'decrypt']);
+
+    akey.type;
 }
 
 function buffer(b: Buffer) {

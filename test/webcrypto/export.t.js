@@ -35,6 +35,8 @@ async function test(params) {
     let key = await load_key(params);
     let exp = await crypto.subtle.exportKey(params.export.fmt, key);
 
+    validate_key(key, params);
+
     if (params.check && !params.check(exp, params)) {
         throw Error(`failed check`);
     }
@@ -90,6 +92,121 @@ function p(args, default_opts) {
     params.key.key = key;
 
     return params;
+}
+
+function validate_key(key, params) {
+    let opts;
+
+    if (params.generate_keys) {
+        opts = params.generate_keys;
+
+    } else if (params.generate_key) {
+        opts = params.generate_key;
+
+    } else {
+        opts = params.key;
+    }
+
+    if (opts.extractable != key.extractable) {
+        throw Error(`unexpected generated key.extractable: ${key.extractable}`);
+    }
+
+    switch (key.type) {
+    case "secret":
+        /* AesKeyGenParams */
+
+        switch (key.algorithm.name) {
+        case "AES-CBC":
+        case "AES-CTR":
+        case "AES-GCM":
+            let length = key.algorithm.length;
+
+            switch (length) {
+            case 128:
+            case 192:
+            case 256:
+                break;
+            default:
+                throw Error(`unexpected symmetric generated key.algorithm.length: ${length}`);
+            }
+
+            /* FALLTHROUGH */
+
+        case "HMAC":
+            if (!compareObjects(opts.usage, key.usages)) {
+                throw Error(`unexpected symmetric generated key.usages: ${key.usages}`);
+            }
+
+            break;
+
+        default:
+            throw Error(`unexpected symmetric generated key.algorithm.name: ${key.algorithm.name}`);
+        }
+
+        break;
+    case "private":
+    case "public":
+        if (opts.expected && !compareObjects(opts.expected.key_ops, key.usages)) {
+            throw Error(`unexpected asymmetric generated key.usages: ${key.usages}`);
+        }
+
+        switch (key.algorithm.name) {
+        case "RSA-OAEP":
+        case "RSA-PSS":
+        case "RSASSA-PKCS1-v1_5":
+            /* RsaHashedKeyGenParams */
+
+            let mlength = key.algorithm.modulusLength;
+            let pexp = key.algorithm.publicExponent;
+            let hash = key.algorithm.hash.name;
+
+            switch (mlength) {
+            case 1024:
+            case 2048:
+            case 4096:
+                break;
+            default:
+                throw Error(`unexpected asymmetric generated key.algorithm.modulusLength: ${mlength}`);
+            }
+
+            if (!compareObjects(new Uint8Array([1, 0, 1]), pexp)) {
+                throw Error(`unexpected asymmetric generated key.algorithm.publicExponent: ${pexp}`);
+            }
+
+            switch (hash) {
+            case "SHA-1":
+            case "SHA-256":
+            case "SHA-384":
+            case "SHA-512":
+                break;
+            default:
+                throw Error(`unexpected asymmetric generated key.algorithm.hash.name: ${hash}`);
+            }
+
+            break;
+        case "ECDSA":
+        case "ECDH":
+            /* EcKeyGenParams */
+
+            let crv = key.algorithm.namedCurve;
+            switch (crv) {
+            case "P-256":
+            case "P-384":
+            case "P-521":
+                break;
+            default:
+                throw Error(`unexpected asymmetric generated key.algorithm.namedCurve: ${crv}`);
+            }
+
+            break;
+        default:
+            throw Error(`unexpected asymmetric generated key.algorithm.name: ${key.algorithm.name}`);
+        }
+
+        break;
+    default:
+        throw Error(`unexpected generated key.type: ${key.type}`);
+    }
 }
 
 function validate_property(exp, p, exp_len) {
