@@ -243,16 +243,38 @@ interface NgxFetchOptions {
 }
 
 interface NgxObject {
-    readonly INFO: number;
-    readonly WARN: number;
+    /**
+     * A string containing an optional nginx build name, corresponds to the
+     * --build=name argument of the configure script, by default is ""
+     *  @since 0.8.0
+     */
+    readonly build: string;
+    /**
+     * A string containing the file path to current nginx configuration file
+     * @since 0.8.0
+     */
+    readonly conf_file_path: string;
+    /**
+     * A string containing the file path to directory where nginx is currently
+     * looking for configuration
+     * @since 0.7.8
+     */
+    readonly conf_prefix: string;
+    /**
+     * The error level constant for ngx.log() function.
+     * @since 0.5.1
+     */
     readonly ERR: number;
     /**
-     * Writes a string to the error log with the specified level
-     * of logging.
-     * @param level Log level (ngx.INFO, ngx.WARN, ngx.ERR).
-     * @param message Message to log.
+     * A string containing the file path to the current error log file
+     * @since 0.8.0
      */
-    log(level: number, message: NjsStringOrBuffer): void;
+    readonly error_log_path: string;
+    /**
+     * The info level constant for ngx.log() function.
+     * @since 0.5.1
+     */
+    readonly INFO: number;
     /**
      * Makes a request to fetch an URL.
      * Returns a Promise that resolves with the Response object.
@@ -262,6 +284,34 @@ interface NgxObject {
      * @since 0.5.1
      */
     fetch(init: NjsStringOrBuffer | Request, options?: NgxFetchOptions): Promise<Response>;
+    /**
+     * Writes a string to the error log with the specified level
+     * of logging.
+     * @param level Log level (ngx.INFO, ngx.WARN, ngx.ERR).
+     * @param message Message to log.
+     */
+    log(level: number, message: NjsStringOrBuffer): void;
+    /**
+     * A string containing the file path to a directory that keeps server files
+     * @since 0.8.0
+     */
+    readonly prefix: string;
+    /**
+     * A string containing nginx version, for example: "1.25.0"
+     * @since 0.8.0
+     */
+    readonly version: string;
+    /**
+     * A number containing nginx version, for example: 1025000
+     * @since 0.8.0
+     */
+    readonly version_number: number;
+    /**
+     * The warn level constant for ngx.log() function.
+     * @since 0.5.1
+     */
+    readonly WARN: number;
+
 }
 
 declare const ngx: NgxObject;

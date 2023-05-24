@@ -297,7 +297,7 @@ function njs_object() {
 }
 
 function ngx_object() {
-    ngx.log(ngx.INFO, 'asdf');
-    ngx.log(ngx.WARN, Buffer.from('asdf'));
-    ngx.log(ngx.ERR, 'asdf');
+    ngx.log(ngx.INFO, ngx.conf_prefix);
+    ngx.log(ngx.WARN, Buffer.from(ngx.error_log_path));
+    ngx.log(ngx.ERR, ngx.version);
 }
