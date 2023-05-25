@@ -7332,6 +7332,36 @@ static njs_unit_test_t  njs_test[] =
               "[a.length, a[0].toString(), a[63].toString()]"),
       njs_str("64,00,63") },
 
+    { njs_str("Object.prototype[2] = 4;"
+              "njs.dump([undefined, 3, /*hole*/, 2, undefined, /*hole*/, 1].sort())"),
+      njs_str("[1,2,3,4,undefined,undefined,<empty>]") },
+
+    { njs_str("var a = [3,2,1]; [a.toSorted(), a]"),
+      njs_str("1,2,3,3,2,1") },
+
+    { njs_str("var a = [3,,1]; njs.dump([a.toSorted(), a.sort()])"),
+      njs_str("[[1,3,undefined],[1,3,<empty>]]") },
+
+    { njs_str("var a = {length:3, 0:'Z', 2:'A'};"
+              "njs.dump([Array.prototype.toSorted.call(a), Array.prototype.sort.call(a)])"),
+      njs_str("[['A','Z',undefined],{length:3,0:'A',1:'Z'}]") },
+
+    { njs_str("var a = {length: 1}; a.__proto__ = {0:'A'};"
+              "njs.dump([Array.prototype.toSorted.call(a), Array.prototype.sort.call(a)])"),
+      njs_str("[['A'],{length:1}]") },
+
+    { njs_str("Array.prototype.toSorted.call(true)"),
+      njs_str("") },
+
+    { njs_str("Array.prototype.toSorted.call({length: -2})"),
+      njs_str("") },
+
+    { njs_str("Array.prototype.toSorted.call({length: NaN})"),
+      njs_str("") },
+
+    { njs_str("Array.prototype.toSorted.call({length: 2**32})"),
+      njs_str("RangeError: Invalid array length") },
+
     /*
       Array.prototype.keys()
       Array.prototype.values()
