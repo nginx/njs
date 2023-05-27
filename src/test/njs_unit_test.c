@@ -18903,11 +18903,17 @@ static njs_unit_test_t  njs_test[] =
 
     /* Module. */
 
-    { njs_str("import;"),
+    { njs_str("import * from y"),
+      njs_str("SyntaxError: Non-default import is not supported in 1") },
+
+    { njs_str("import 'x' from y"),
       njs_str("SyntaxError: Non-default import is not supported in 1") },
 
     { njs_str("import {x} from y"),
       njs_str("SyntaxError: Non-default import is not supported in 1") },
+
+    { njs_str("import switch from y"),
+      njs_str("SyntaxError: Unexpected token \"switch\" in 1") },
 
     { njs_str("import x from y"),
       njs_str("SyntaxError: Unexpected token \"y\" in 1") },

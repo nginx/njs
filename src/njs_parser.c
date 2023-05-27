@@ -8118,10 +8118,17 @@ njs_parser_import(njs_parser_t *parser, njs_lexer_token_t *token,
         return NJS_DONE;
     }
 
-    if (token->type != NJS_TOKEN_NAME) {
+    if (token->type == NJS_TOKEN_MULTIPLICATION
+        || token->type == NJS_TOKEN_OPEN_BRACE
+        || token->type == NJS_TOKEN_STRING)
+    {
         njs_parser_syntax_error(parser, "Non-default import is not supported");
         return NJS_DONE;
     }
+
+    if (token->type != NJS_TOKEN_NAME) {
+        return njs_parser_failed(parser);
+     }
 
     name = njs_parser_variable_node(parser, token->unique_id, NJS_VARIABLE_LET,
                                     &var);
