@@ -950,6 +950,7 @@ ngx_http_js_header_filter(ngx_http_request_t *r)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
+    ctx->filter = 1;
     pending = njs_vm_pending(ctx->vm);
 
     rc = ngx_js_call(ctx->vm, &jlcf->header_filter, r->connection->log,
@@ -2432,6 +2433,11 @@ ngx_http_js_ext_internal_redirect(njs_vm_t *vm, njs_value_t *args,
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (ctx->filter) {
+        njs_vm_error(vm, "internalRedirect cannot be called while filtering");
+        return NJS_ERROR;
+    }
 
     if (ngx_js_string(vm, njs_arg(args, nargs, 1), &uri) != NGX_OK) {
         njs_vm_error(vm, "failed to convert uri arg");
