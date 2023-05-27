@@ -2860,14 +2860,9 @@ njs_sort_indexed_properties(njs_vm_t *vm, njs_value_t *obj, int64_t length,
                         goto exception;
                     }
 
-                    if (slots != NULL) {
-                        p = (void *) njs_cpymem(newslots, slots,
-                                   sizeof(njs_array_sort_slot_t) * (p - slots));
-                        njs_mp_free(vm->mem_pool, slots);
-
-                    } else {
-                        p = newslots;
-                    }
+                    p = (void *) njs_cpymem(newslots, slots,
+                               sizeof(njs_array_sort_slot_t) * (p - slots));
+                    njs_mp_free(vm->mem_pool, slots);
 
                     slots = newslots;
                     end = slots + nlen;
