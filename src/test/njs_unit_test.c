@@ -5159,6 +5159,9 @@ static njs_unit_test_t  njs_test[] =
               "a.splice(0)"),
       njs_str(",,") },
 
+    { njs_str("'/A/B/C/D/'.split('/').toSpliced(1,1).join('/')"),
+      njs_str("/B/C/D/") },
+
     { njs_str("var a = []; a.reverse()"),
       njs_str("") },
 
