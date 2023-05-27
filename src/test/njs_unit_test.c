@@ -6751,6 +6751,17 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("(new Float64Array([255,255,NaN,3,NaN,Infinity,3,-Infinity,0,-0,2,1,-5])).slice(2).sort()"),
       njs_str("-Infinity,-5,0,0,1,2,3,3,Infinity,NaN,NaN") },
 
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([3,2,1]);"
+              "           return [a.toSorted(),a].toString() === '1,2,3,3,2,1'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = (new v([3,2,1]));"
+              "           a.constructor = (v == Uint8Array) ? Uint32Array : Uint8Array;"
+              "           return Object.getPrototypeOf(a.toSorted()) === v.prototype})"),
+      njs_str("true") },
+
     { njs_str("(new DataView(new ArrayBuffer(3)))"),
       njs_str("[object DataView]") },
 
