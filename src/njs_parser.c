@@ -294,7 +294,10 @@ static njs_int_t njs_parser_while_after(njs_parser_t *parser,
 
 static njs_int_t njs_parser_iteration_statement_for(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current);
-static njs_int_t njs_parser_for_left_hand_side_expression_map(
+static njs_int_t njs_parser_for_expression_map_continue(
+    njs_parser_t *parser, njs_lexer_token_t *token,
+    njs_queue_link_t *current);
+static njs_int_t njs_parser_for_expression_map_reparse(
     njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current);
 static njs_int_t njs_parser_expression_continue_op(njs_parser_t *parser,
@@ -5488,12 +5491,10 @@ njs_parser_iteration_statement_for(njs_parser_t *parser,
 
 
 static njs_int_t
-njs_parser_for_left_hand_side_expression_map(njs_parser_t *parser,
+njs_parser_for_expression_map_reparse(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current)
 {
-    njs_int_t          operation;
-    njs_str_t          *text;
-    njs_parser_node_t  *node;
+    njs_str_t  *text;
 
     if (parser->node == NULL) {
         njs_lexer_in_fail_set(parser->lexer, 1);
@@ -5514,8 +5515,19 @@ njs_parser_for_left_hand_side_expression_map(njs_parser_t *parser,
 
         return njs_parser_after(parser, current, text, 1,
                                 njs_parser_for_var_in_of_expression);
-
     }
+
+    return njs_parser_stack_pop(parser);
+}
+
+
+static njs_int_t
+njs_parser_for_expression_map_continue(njs_parser_t *parser,
+    njs_lexer_token_t *token, njs_queue_link_t *current)
+{
+    njs_int_t          operation;
+    njs_str_t          *text;
+    njs_parser_node_t  *node;
 
     if (token->type != NJS_TOKEN_IN) {
         njs_lexer_in_fail_set(parser->lexer, 1);
@@ -5575,7 +5587,6 @@ njs_parser_for_left_hand_side_expression_map(njs_parser_t *parser,
         return njs_parser_after(parser, current, node, 0,
                                 njs_parser_for_in_statement_statement);
     }
-
 }
 
 
@@ -5766,8 +5777,14 @@ njs_parser_iteration_statement_for_map(njs_parser_t *parser,
 
         *text = token->text;
 
+        ret = njs_parser_after(parser, current, text, 1,
+                               njs_parser_for_expression_map_continue);
+        if (ret != NJS_OK) {
+            return NJS_ERROR;
+        }
+
         return njs_parser_after(parser, current, text, 0,
-                                njs_parser_for_left_hand_side_expression_map);
+                                njs_parser_for_expression_map_reparse);
     }
 
 expression_after:
