@@ -6708,6 +6708,11 @@ static njs_unit_test_t  njs_test[] =
               ".every(v=>{ return (new v([1,2,3,4])).reverse().join('|') == '4|3|2|1'})"),
       njs_str("true") },
 
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = new v([3,2,1]);"
+              "           return [a.toReversed(), a].toString() === '1,2,3,3,2,1'})"),
+      njs_str("true") },
+
     { njs_str("Uint8Array.prototype.sort.call(1)"),
       njs_str("TypeError: this is not a typed array") },
 
