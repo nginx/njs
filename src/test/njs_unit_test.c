@@ -5218,6 +5218,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Array.prototype[0] = 0; var x = [,1]; x.reverse(); x"),
       njs_str("1,0") },
 
+    { njs_str("var a = [,3,2,1]; njs.dump([a.toReversed(),a])"),
+      njs_str("[[1,2,3,undefined],[<empty>,3,2,1]]") },
+
     { njs_str("var a = [1,2,3,4]; a.indexOf()"),
       njs_str("-1") },
 
