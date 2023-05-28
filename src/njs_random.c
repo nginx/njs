@@ -8,6 +8,9 @@
 #include <njs_main.h>
 #if (NJS_HAVE_GETRANDOM)
 #include <sys/random.h>
+#elif (NJS_HAVE_CCRANDOMGENERATEBYTES)
+#include <CommonCrypto/CommonCryptoError.h>
+#include <CommonCrypto/CommonRandom.h>
 #elif (NJS_HAVE_LINUX_SYS_GETRANDOM)
 #include <sys/syscall.h>
 #include <linux/random.h>
@@ -71,6 +74,16 @@ njs_random_stir(njs_random_t *r, njs_pid_t pid)
     /* Linux 3.17 SYS_getrandom, not available in Glibc prior to 2.25. */
 
     n = syscall(SYS_getrandom, &key, NJS_RANDOM_KEY_SIZE, 0);
+
+#elif (NJS_HAVE_CCRANDOMGENERATEBYTES)
+
+    /* Apple discourages the use of getentropy. */
+
+    n = 0;
+
+    if (CCRandomGenerateBytes(&key, NJS_RANDOM_KEY_SIZE) == kCCSuccess) {
+        n = NJS_RANDOM_KEY_SIZE;
+    }
 
 #elif (NJS_HAVE_GETENTROPY || NJS_HAVE_GETENTROPY_SYS_RANDOM)
 

@@ -50,6 +50,28 @@ fi
 
 if [ $njs_found = no ]; then
 
+    # macOS 10.10.
+
+    njs_feature="CCRandomGenerateBytes() in CommonCrypto/CommonRandom.h"
+    njs_feature_name=NJS_HAVE_CCRANDOMGENERATEBYTES
+    njs_feature_test="#include <CommonCrypto/CommonCryptoError.h>
+                      #include <CommonCrypto/CommonRandom.h>
+
+                      int main(void) {
+                          char  buf[4];
+
+                          if (CCRandomGenerateBytes(buf, 4) != kCCSuccess) {
+                              return 1;
+                          }
+
+                          return 0;
+                      }"
+    . auto/feature
+fi
+
+
+if [ $njs_found = no ]; then
+
     # OpenBSD 5.6 lacks <sys/random.h>.
 
     njs_feature="getentropy()"
@@ -71,7 +93,7 @@ fi
 
 if [ $njs_found = no ]; then
 
-    # macOS 10.12.
+    # Solaris based systems.
 
     njs_feature="getentropy() in sys/random.h"
     njs_feature_name=NJS_HAVE_GETENTROPY_SYS_RANDOM
