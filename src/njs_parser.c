@@ -5908,12 +5908,10 @@ njs_parser_for_var_binding_or_var_list(njs_parser_t *parser,
             njs_lexer_consume_token(parser->lexer, 2);
 
             return NJS_DONE;
+
+        } else {
+            return njs_parser_failed(parser);
         }
-
-        parser->node = NULL;
-
-        njs_parser_next(parser, njs_parser_expression);
-        return NJS_OK;
     }
 }
 
