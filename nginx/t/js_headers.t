@@ -84,6 +84,18 @@ http {
             js_content test.content_encoding_arr;
         }
 
+        location /location {
+            js_content test.location;
+        }
+
+        location /location_sr {
+            js_content test.location_sr;
+        }
+
+        location /_redirect {
+            return 307 $request_uri;
+        }
+
         location /headers_list {
             js_content test.headers_list;
         }
@@ -231,6 +243,29 @@ $t->write_file('test.js', <<EOF);
         delete r.headersOut['Content-Encoding'];
         r.headersOut['Content-Encoding'] = 'gzip';
         r.return(200);
+    }
+
+    function location(r) {
+        if (njs.version_number >= 0x000705) {
+            var lc = r.headersOut['Location'];
+            if (lc !== undefined) {
+                r.return(500, `Location "\${lc}" is not empty`);
+                return;
+            }
+        }
+
+        delete r.headersOut['Location'];
+        r.headersOut['Location'] = '';
+        r.headersOut['Location'] = 'test';
+        delete r.headersOut['Location'];
+        r.headersOut['Location'] = 'loc';
+        r.return(200);
+    }
+
+    async function location_sr(r) {
+        let resp = await r.subrequest('/_redirect');
+        r.headersOut['Location'] = resp.headersOut['Location'];
+        r.return(resp.status, 'loc');
     }
 
     function content_encoding_arr(r) {
@@ -402,12 +437,12 @@ $t->write_file('test.js', <<EOF);
                     hdr_in, raw_hdr_in, hdr_sorted_keys, foo_in, ifoo_in,
                     hdr_out, raw_hdr_out, hdr_out_array, hdr_out_single,
                     hdr_out_set_cookie, ihdr_out, hdr_out_special_set,
-                    copy_subrequest_hdrs, subrequest};
+                    copy_subrequest_hdrs, subrequest, location, location_sr};
 
 
 EOF
 
-$t->try_run('no njs')->plan(42);
+$t->try_run('no njs')->plan(44);
 
 ###############################################################################
 
@@ -543,6 +578,15 @@ like(http_get('/copy_subrequest_hdrs'),
 like(http_get('/copy_subrequest_hdrs'),
 	qr/Content-Type: ct.*Content-Encoding: ce.*Content-Length: 3/s,
 	'subrequest copy special');
+
+}
+
+TODO: {
+local $TODO = 'not yet' unless has_version('0.8.0');
+
+like(http_get('/location'), qr/Location: loc/, 'set location');
+unlike(http_get('/location_sr'), qr/Location: \/location_sr/,
+	'location redirect');
 
 }
 
