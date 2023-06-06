@@ -102,7 +102,7 @@ declare class Request {
      * Request constructors.
      *
      * @param init is an optional initialization object.
-     * @returns returns Headers object.
+     * @returns returns Request object.
      * @since 0.7.10
      */
     constructor(input: NjsStringLike | Request, options?: NgxRequestOptions);
@@ -162,7 +162,7 @@ declare class Response {
      * Response constructors.
      *
      * @param init is an optional initialization object.
-     * @returns returns Headers object.
+     * @returns returns Response object.
      * @since 0.7.10
      */
     constructor(body?: NjsStringLike, options?: NgxResponseOptions);
