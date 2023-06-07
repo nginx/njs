@@ -13,7 +13,7 @@
 
 
 typedef struct {
-    NGX_JS_COMMON_CONF;
+    NGX_JS_COMMON_LOC_CONF;
 
     ngx_str_t              content;
     ngx_str_t              header_filter;
@@ -254,7 +254,7 @@ static char *ngx_http_js_content(ngx_conf_t *cf, ngx_command_t *cmd,
 static char *ngx_http_js_body_filter_set(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static ngx_int_t ngx_http_js_init_conf_vm(ngx_conf_t *cf,
-    ngx_js_conf_t *conf);
+    ngx_js_loc_conf_t *conf);
 static void *ngx_http_js_create_loc_conf(ngx_conf_t *cf);
 static char *ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent,
     void *child);
@@ -4104,7 +4104,7 @@ ngx_http_js_handle_event(ngx_http_request_t *r, njs_vm_event_t vm_event,
 
 
 static ngx_int_t
-ngx_http_js_externals_init(ngx_conf_t *cf, ngx_js_conf_t *conf_in)
+ngx_http_js_externals_init(ngx_conf_t *cf, ngx_js_loc_conf_t *conf_in)
 {
     ngx_http_js_loc_conf_t        *conf = (ngx_http_js_loc_conf_t *) conf_in;
 
@@ -4122,7 +4122,7 @@ ngx_http_js_externals_init(ngx_conf_t *cf, ngx_js_conf_t *conf_in)
 
 
 static ngx_int_t
-ngx_http_js_init_conf_vm(ngx_conf_t *cf, ngx_js_conf_t *conf)
+ngx_http_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
 {
     njs_vm_opt_t  options;
 

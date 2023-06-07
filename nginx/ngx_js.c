@@ -548,7 +548,7 @@ ngx_js_logger(njs_vm_t *vm, njs_external_ptr_t external, njs_log_level_t level,
 char *
 ngx_js_import(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_js_conf_t *jscf = conf;
+    ngx_js_loc_conf_t *jscf = conf;
 
     u_char               *p, *end, c;
     ngx_int_t             from;
@@ -654,7 +654,7 @@ ngx_js_import(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 char *
 ngx_js_preload_object(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_js_conf_t    *jscf = conf;
+    ngx_js_loc_conf_t    *jscf = conf;
 
     u_char               *p, *end, c;
     ngx_int_t             from;
@@ -758,7 +758,7 @@ ngx_js_preload_object(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 
 ngx_int_t
-ngx_js_init_preload_vm(ngx_conf_t *cf, ngx_js_conf_t *conf)
+ngx_js_init_preload_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
 {
     u_char               *p, *start;
     size_t                size;
@@ -854,9 +854,9 @@ error:
 
 
 ngx_int_t
-ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_conf_t *conf,
-    ngx_js_conf_t *prev,
-    ngx_int_t (*init_vm) (ngx_conf_t *cf, ngx_js_conf_t *conf))
+ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
+    ngx_js_loc_conf_t *prev,
+    ngx_int_t (*init_vm) (ngx_conf_t *cf, ngx_js_loc_conf_t *conf))
 {
     ngx_str_t            *path, *s;
     ngx_uint_t            i;
@@ -864,7 +864,7 @@ ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_conf_t *conf,
     ngx_js_named_path_t  *import, *pi, *pij, *preload;
 
     if (prev->imports != NGX_CONF_UNSET_PTR && prev->vm == NULL) {
-        if (init_vm(cf, (ngx_js_conf_t *) prev) != NGX_OK) {
+        if (init_vm(cf, (ngx_js_loc_conf_t *) prev) != NGX_OK) {
             return NGX_ERROR;
         }
     }
@@ -999,14 +999,14 @@ ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_conf_t *conf,
         return NGX_OK;
     }
 
-    return init_vm(cf, (ngx_js_conf_t *) conf);
+    return init_vm(cf, (ngx_js_loc_conf_t *) conf);
 }
 
 
 ngx_int_t
-ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_conf_t *conf,
+ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     njs_vm_opt_t *options,
-    ngx_int_t (*externals_init)(ngx_conf_t *cf, ngx_js_conf_t *conf))
+    ngx_int_t (*externals_init)(ngx_conf_t *cf, ngx_js_loc_conf_t *conf))
 {
     size_t                size;
     u_char               *start, *end, *p;
@@ -1023,7 +1023,7 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_conf_t *conf,
     static const njs_str_t file_name_key = njs_str("fileName");
 
     if (conf->preload_objects != NGX_CONF_UNSET_PTR) {
-       if (ngx_js_init_preload_vm(cf, (ngx_js_conf_t *)conf) != NGX_OK) {
+       if (ngx_js_init_preload_vm(cf, (ngx_js_loc_conf_t *)conf) != NGX_OK) {
            return NGX_ERROR;
        }
     }
@@ -1171,7 +1171,7 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_conf_t *conf,
 static void
 ngx_js_cleanup_vm(void *data)
 {
-    ngx_js_conf_t  *jscf = data;
+    ngx_js_loc_conf_t  *jscf = data;
 
     njs_vm_destroy(jscf->vm);
 
@@ -1181,10 +1181,10 @@ ngx_js_cleanup_vm(void *data)
 }
 
 
-ngx_js_conf_t *
+ngx_js_loc_conf_t *
 ngx_js_create_conf(ngx_conf_t *cf, size_t size)
 {
-    ngx_js_conf_t  *conf;
+    ngx_js_loc_conf_t  *conf;
 
     conf = ngx_pcalloc(cf->pool, size);
     if (conf == NULL) {
@@ -1206,7 +1206,7 @@ ngx_js_create_conf(ngx_conf_t *cf, size_t size)
 #if defined(NGX_HTTP_SSL) || defined(NGX_STREAM_SSL)
 
 static char *
-ngx_js_set_ssl(ngx_conf_t *cf, ngx_js_conf_t *conf)
+ngx_js_set_ssl(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
 {
     ngx_ssl_t           *ssl;
     ngx_pool_cleanup_t  *cln;
@@ -1251,17 +1251,18 @@ ngx_js_set_ssl(ngx_conf_t *cf, ngx_js_conf_t *conf)
 
 char *
 ngx_js_merge_conf(ngx_conf_t *cf, void *parent, void *child,
-  ngx_int_t (*init_vm)(ngx_conf_t *cf, ngx_js_conf_t *conf))
+  ngx_int_t (*init_vm)(ngx_conf_t *cf, ngx_js_loc_conf_t *conf))
 {
-    ngx_js_conf_t *prev = parent;
-    ngx_js_conf_t *conf = child;
+    ngx_js_loc_conf_t *prev = parent;
+    ngx_js_loc_conf_t *conf = child;
 
     ngx_conf_merge_msec_value(conf->timeout, prev->timeout, 60000);
     ngx_conf_merge_size_value(conf->buffer_size, prev->buffer_size, 16384);
     ngx_conf_merge_size_value(conf->max_response_body_size,
                               prev->max_response_body_size, 1048576);
 
-    if (ngx_js_merge_vm(cf, (ngx_js_conf_t *) conf, (ngx_js_conf_t *) prev,
+    if (ngx_js_merge_vm(cf, (ngx_js_loc_conf_t *) conf,
+                        (ngx_js_loc_conf_t *) prev,
                         init_vm)
         != NGX_OK)
     {

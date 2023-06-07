@@ -13,7 +13,7 @@
 
 
 typedef struct {
-    NGX_JS_COMMON_CONF;
+    NGX_JS_COMMON_LOC_CONF;
 
     ngx_str_t              access;
     ngx_str_t              preread;
@@ -119,7 +119,7 @@ static char *ngx_stream_js_set(ngx_conf_t *cf, ngx_command_t *cmd,
 static char *ngx_stream_js_var(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static ngx_int_t ngx_stream_js_init_conf_vm(ngx_conf_t *cf,
-    ngx_js_conf_t *conf);
+    ngx_js_loc_conf_t *conf);
 static void *ngx_stream_js_create_srv_conf(ngx_conf_t *cf);
 static char *ngx_stream_js_merge_srv_conf(ngx_conf_t *cf, void *parent,
     void *child);
@@ -1670,7 +1670,7 @@ ngx_stream_js_handle_event(ngx_stream_session_t *s, njs_vm_event_t vm_event,
 
 
 static ngx_int_t
-ngx_stream_js_externals_init(ngx_conf_t *cf, ngx_js_conf_t *conf_in)
+ngx_stream_js_externals_init(ngx_conf_t *cf, ngx_js_loc_conf_t *conf_in)
 {
     ngx_stream_js_srv_conf_t  *conf = (ngx_stream_js_srv_conf_t *) conf_in;
 
@@ -1697,7 +1697,7 @@ ngx_stream_js_externals_init(ngx_conf_t *cf, ngx_js_conf_t *conf_in)
 
 
 static ngx_int_t
-ngx_stream_js_init_conf_vm(ngx_conf_t *cf, ngx_js_conf_t *conf)
+ngx_stream_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
 {
     njs_vm_opt_t  options;
 

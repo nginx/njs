@@ -50,7 +50,7 @@ typedef struct {
 } ngx_js_named_path_t;
 
 
-#define _NGX_JS_COMMON_CONF                                                   \
+#define _NGX_JS_COMMON_LOC_CONF                                               \
     njs_vm_t              *vm;                                                \
     ngx_array_t           *imports;                                           \
     ngx_array_t           *paths;                                             \
@@ -64,8 +64,8 @@ typedef struct {
 
 
 #if defined(NGX_HTTP_SSL) || defined(NGX_STREAM_SSL)
-#define NGX_JS_COMMON_CONF                                                    \
-    _NGX_JS_COMMON_CONF;                                                      \
+#define NGX_JS_COMMON_LOC_CONF                                                \
+    _NGX_JS_COMMON_LOC_CONF;                                                  \
                                                                               \
     ngx_ssl_t             *ssl;                                               \
     ngx_str_t              ssl_ciphers;                                       \
@@ -75,13 +75,13 @@ typedef struct {
     ngx_str_t              ssl_trusted_certificate
 
 #else
-#define NGX_JS_COMMON_CONF _NGX_JS_COMMON_CONF
+#define NGX_JS_COMMON_LOC_CONF _NGX_JS_COMMON_LOC_CONF
 #endif
 
 
 typedef struct {
-    NGX_JS_COMMON_CONF;
-} ngx_js_conf_t;
+    NGX_JS_COMMON_LOC_CONF;
+} ngx_js_loc_conf_t;
 
 
 #define ngx_external_connection(vm, e)                                        \
@@ -124,16 +124,16 @@ void ngx_js_logger(njs_vm_t *vm, njs_external_ptr_t external,
     njs_log_level_t level, const u_char *start, size_t length);
 char * ngx_js_import(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 char * ngx_js_preload_object(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
-ngx_int_t ngx_js_init_preload_vm(ngx_conf_t *cf, ngx_js_conf_t *conf);
-ngx_int_t ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_conf_t *conf,
-    ngx_js_conf_t *prev,
-    ngx_int_t (*init_vm)(ngx_conf_t *cf, ngx_js_conf_t *conf));
-ngx_int_t ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_conf_t *conf,
+ngx_int_t ngx_js_init_preload_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf);
+ngx_int_t ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
+    ngx_js_loc_conf_t *prev,
+    ngx_int_t (*init_vm)(ngx_conf_t *cf, ngx_js_loc_conf_t *conf));
+ngx_int_t ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     njs_vm_opt_t *options,
-    ngx_int_t (*externals_init)(ngx_conf_t *cf, ngx_js_conf_t *conf));
-ngx_js_conf_t *ngx_js_create_conf(ngx_conf_t *cf, size_t size);
+    ngx_int_t (*externals_init)(ngx_conf_t *cf, ngx_js_loc_conf_t *conf));
+ngx_js_loc_conf_t *ngx_js_create_conf(ngx_conf_t *cf, size_t size);
 char * ngx_js_merge_conf(ngx_conf_t *cf, void *parent, void *child,
-   ngx_int_t (*init_vm)(ngx_conf_t *cf, ngx_js_conf_t *conf));
+   ngx_int_t (*init_vm)(ngx_conf_t *cf, ngx_js_loc_conf_t *conf));
 
 njs_int_t ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
