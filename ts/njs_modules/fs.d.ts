@@ -461,7 +461,7 @@ declare module "fs" {
          *    Defaults to 'utf8'.
          */
         write(buffer: NjsBuffer, offset: number, length?: number, position?: number | null): Promise<NjsFsBytesWritten>;
-        write(buffer: NjsStringLike, position?: number | null, encoding?: FileEncoding): Promise<NjsFsBytesWritten>;
+        write(buffer: string, position?: number | null, encoding?: FileEncoding): Promise<NjsFsBytesWritten>;
     }
 
     interface NjsFS {
@@ -612,7 +612,7 @@ declare module "fs" {
          *    Defaults to 'utf8'.
          */
         readSync(fd: number, buffer: NjsBuffer, offset: number, length?: number, position?: number | null): number;
-        readSync(fd: number, string: NjsStringLike, position?: number | null, encoding?: FileEncoding): number;
+        readSync(fd: number, string: string, position?: number | null, encoding?: FileEncoding): number;
 
         /**
          * Synchronously computes the canonical pathname by resolving `.`, `..` and symbolic links using
@@ -709,7 +709,7 @@ declare module "fs" {
          *    Defaults to 'utf8'.
          */
         writeSync(fd: number, buffer: NjsBuffer, offset: number, length?: number, position?: number | null): number;
-        writeSync(fd: number, string: NjsStringLike, position?: number | null, encoding?: FileEncoding): number;
+        writeSync(fd: number, string: string, position?: number | null, encoding?: FileEncoding): number;
     }
 
     const fs: NjsFS;

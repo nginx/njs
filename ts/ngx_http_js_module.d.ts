@@ -2,235 +2,235 @@
 /// <reference path="ngx_core.d.ts" />
 
 interface NginxHTTPArgs {
-    readonly [prop: string]: NjsByteString;
+    readonly [prop: string]: string;
 }
 
 interface NginxHeadersIn {
     // common request headers
-    readonly 'Accept'?: NjsByteString;
-    readonly 'Accept-Charset'?: NjsByteString;
-    readonly 'Accept-Encoding'?: NjsByteString;
-    readonly 'Accept-Language'?: NjsByteString;
-    readonly 'Authorization'?: NjsByteString;
-    readonly 'Cache-Control'?: NjsByteString;
-    readonly 'Connection'?: NjsByteString;
-    readonly 'Content-Length'?: NjsByteString;
-    readonly 'Content-Type'?: NjsByteString;
-    readonly 'Cookie'?: NjsByteString;
-    readonly 'Date'?: NjsByteString;
-    readonly 'Expect'?: NjsByteString;
-    readonly 'Forwarded'?: NjsByteString;
-    readonly 'From'?: NjsByteString;
-    readonly 'Host'?: NjsByteString;
-    readonly 'If-Match'?: NjsByteString;
-    readonly 'If-Modified-Since'?: NjsByteString;
-    readonly 'If-None-Match'?: NjsByteString;
-    readonly 'If-Range'?: NjsByteString;
-    readonly 'If-Unmodified-Since'?: NjsByteString;
-    readonly 'Max-Forwards'?: NjsByteString;
-    readonly 'Origin'?: NjsByteString;
-    readonly 'Pragma'?: NjsByteString;
-    readonly 'Proxy-Authorization'?: NjsByteString;
-    readonly 'Range'?: NjsByteString;
-    readonly 'Referer'?: NjsByteString;
-    readonly 'TE'?: NjsByteString;
-    readonly 'User-Agent'?: NjsByteString;
-    readonly 'Upgrade'?: NjsByteString;
-    readonly 'Via'?: NjsByteString;
-    readonly 'Warning'?: NjsByteString;
-    readonly 'X-Forwarded-For'?: NjsByteString;
+    readonly 'Accept'?: string;
+    readonly 'Accept-Charset'?: string;
+    readonly 'Accept-Encoding'?: string;
+    readonly 'Accept-Language'?: string;
+    readonly 'Authorization'?: string;
+    readonly 'Cache-Control'?: string;
+    readonly 'Connection'?: string;
+    readonly 'Content-Length'?: string;
+    readonly 'Content-Type'?: string;
+    readonly 'Cookie'?: string;
+    readonly 'Date'?: string;
+    readonly 'Expect'?: string;
+    readonly 'Forwarded'?: string;
+    readonly 'From'?: string;
+    readonly 'Host'?: string;
+    readonly 'If-Match'?: string;
+    readonly 'If-Modified-Since'?: string;
+    readonly 'If-None-Match'?: string;
+    readonly 'If-Range'?: string;
+    readonly 'If-Unmodified-Since'?: string;
+    readonly 'Max-Forwards'?: string;
+    readonly 'Origin'?: string;
+    readonly 'Pragma'?: string;
+    readonly 'Proxy-Authorization'?: string;
+    readonly 'Range'?: string;
+    readonly 'Referer'?: string;
+    readonly 'TE'?: string;
+    readonly 'User-Agent'?: string;
+    readonly 'Upgrade'?: string;
+    readonly 'Via'?: string;
+    readonly 'Warning'?: string;
+    readonly 'X-Forwarded-For'?: string;
 
-    readonly [prop: string]: NjsByteString | undefined;
+    readonly [prop: string]: string | undefined;
 }
 
 interface NginxHeadersOut {
     // common response headers
-    'Age'?: NjsStringLike;
-    'Allow'?: NjsStringLike;
-    'Alt-Svc'?: NjsStringLike;
-    'Cache-Control'?: NjsStringLike;
-    'Connection'?: NjsStringLike;
-    'Content-Disposition'?: NjsStringLike;
-    'Content-Encoding'?: NjsStringLike;
-    'Content-Language'?: NjsStringLike;
-    'Content-Length'?: NjsStringLike;
-    'Content-Location'?: NjsStringLike;
-    'Content-Range'?: NjsStringLike;
-    'Content-Type'?: NjsStringLike;
-    'Date'?: NjsStringLike;
-    'ETag'?: NjsStringLike;
-    'Expires'?: NjsStringLike;
-    'Last-Modified'?: NjsStringLike;
-    'Link'?: NjsStringLike;
-    'Location'?: NjsStringLike;
-    'Pragma'?: NjsStringLike;
-    'Proxy-Authenticate'?: NjsStringLike;
-    'Retry-After'?: NjsStringLike;
-    'Server'?: NjsStringLike;
-    'Trailer'?: NjsStringLike;
-    'Transfer-Encoding'?: NjsStringLike;
-    'Upgrade'?: NjsStringLike;
-    'Vary'?: NjsStringLike;
-    'Via'?: NjsStringLike;
-    'Warning'?: NjsStringLike;
-    'WWW-Authenticate'?: NjsStringLike;
+    'Age'?: string;
+    'Allow'?: string;
+    'Alt-Svc'?: string;
+    'Cache-Control'?: string;
+    'Connection'?: string;
+    'Content-Disposition'?: string;
+    'Content-Encoding'?: string;
+    'Content-Language'?: string;
+    'Content-Length'?: string;
+    'Content-Location'?: string;
+    'Content-Range'?: string;
+    'Content-Type'?: string;
+    'Date'?: string;
+    'ETag'?: string;
+    'Expires'?: string;
+    'Last-Modified'?: string;
+    'Link'?: string;
+    'Location'?: string;
+    'Pragma'?: string;
+    'Proxy-Authenticate'?: string;
+    'Retry-After'?: string;
+    'Server'?: string;
+    'Trailer'?: string;
+    'Transfer-Encoding'?: string;
+    'Upgrade'?: string;
+    'Vary'?: string;
+    'Via'?: string;
+    'Warning'?: string;
+    'WWW-Authenticate'?: string;
 
-    'Set-Cookie'?: NjsStringLike[];
+    'Set-Cookie'?: string[];
 
-    [prop: string]: NjsStringLike | NjsStringLike[] | undefined;
+    [prop: string]: string | string[] | undefined;
 }
 
 interface NginxVariables {
-    readonly 'ancient_browser'?: NjsByteString;
-    readonly 'arg_'?: NjsByteString;
-    readonly 'args'?: NjsByteString;
-    readonly 'binary_remote_addr'?: NjsByteString;
-    readonly 'body_bytes_sent'?: NjsByteString;
-    readonly 'bytes_received'?: NjsByteString;
-    readonly 'bytes_sent'?: NjsByteString;
-    readonly 'connection'?: NjsByteString;
-    readonly 'connection_requests'?: NjsByteString;
-    readonly 'connections_active'?: NjsByteString;
-    readonly 'connections_reading'?: NjsByteString;
-    readonly 'connections_waiting'?: NjsByteString;
-    readonly 'connections_writing'?: NjsByteString;
-    readonly 'content_length'?: NjsByteString;
-    readonly 'content_type'?: NjsByteString;
-    readonly 'cookie_'?: NjsByteString;
-    readonly 'date_gmt'?: NjsByteString;
-    readonly 'date_local'?: NjsByteString;
-    readonly 'document_root'?: NjsByteString;
-    readonly 'document_uri'?: NjsByteString;
-    readonly 'fastcgi_path_info'?: NjsByteString;
-    readonly 'fastcgi_script_name'?: NjsByteString;
-    readonly 'geoip_area_code'?: NjsByteString;
-    readonly 'geoip_city'?: NjsByteString;
-    readonly 'geoip_city_continent_code'?: NjsByteString;
-    readonly 'geoip_city_country_code'?: NjsByteString;
-    readonly 'geoip_city_country_code3'?: NjsByteString;
-    readonly 'geoip_city_country_name'?: NjsByteString;
-    readonly 'geoip_country_code'?: NjsByteString;
-    readonly 'geoip_country_code3'?: NjsByteString;
-    readonly 'geoip_country_name'?: NjsByteString;
-    readonly 'geoip_dma_code'?: NjsByteString;
-    readonly 'geoip_latitude'?: NjsByteString;
-    readonly 'geoip_longitude'?: NjsByteString;
-    readonly 'geoip_org'?: NjsByteString;
-    readonly 'geoip_postal_code'?: NjsByteString;
-    readonly 'geoip_region'?: NjsByteString;
-    readonly 'geoip_region_name'?: NjsByteString;
-    readonly 'gzip_ratio'?: NjsByteString;
-    readonly 'host'?: NjsByteString;
-    readonly 'hostname'?: NjsByteString;
-    readonly 'http2'?: NjsByteString;
-    readonly 'http_'?: NjsByteString;
-    readonly 'https'?: NjsByteString;
-    readonly 'invalid_referer'?: NjsByteString;
-    readonly 'is_args'?: NjsByteString;
-    readonly 'jwt_claim_'?: NjsByteString;
-    readonly 'jwt_header_'?: NjsByteString;
-    readonly 'limit_conn_status'?: NjsByteString;
-    readonly 'limit_rate'?: NjsByteString;
-    readonly 'limit_req_status'?: NjsByteString;
-    readonly 'memcached_key'?: NjsByteString;
-    readonly 'modern_browser'?: NjsByteString;
-    readonly 'msec'?: NjsByteString;
-    readonly 'msie'?: NjsByteString;
-    readonly 'nginx_version'?: NjsByteString;
-    readonly 'pid'?: NjsByteString;
-    readonly 'pipe'?: NjsByteString;
-    readonly 'protocol'?: NjsByteString;
-    readonly 'proxy_add_x_forwarded_for'?: NjsByteString;
-    readonly 'proxy_host'?: NjsByteString;
-    readonly 'proxy_port'?: NjsByteString;
-    readonly 'proxy_protocol_addr'?: NjsByteString;
-    readonly 'proxy_protocol_port'?: NjsByteString;
-    readonly 'proxy_protocol_server_addr'?: NjsByteString;
-    readonly 'proxy_protocol_server_port'?: NjsByteString;
-    readonly 'query_string'?: NjsByteString;
-    readonly 'realip_remote_addr'?: NjsByteString;
-    readonly 'realip_remote_port'?: NjsByteString;
-    readonly 'realpath_root'?: NjsByteString;
-    readonly 'remote_addr'?: NjsByteString;
-    readonly 'remote_port'?: NjsByteString;
-    readonly 'remote_user'?: NjsByteString;
-    readonly 'request'?: NjsByteString;
-    readonly 'request_body'?: NjsByteString;
-    readonly 'request_body_file'?: NjsByteString;
-    readonly 'request_completion'?: NjsByteString;
-    readonly 'request_filename'?: NjsByteString;
-    readonly 'request_id'?: NjsByteString;
-    readonly 'request_length'?: NjsByteString;
-    readonly 'request_method'?: NjsByteString;
-    readonly 'request_time'?: NjsByteString;
-    readonly 'request_uri'?: NjsByteString;
-    readonly 'scheme'?: NjsByteString;
-    readonly 'secure_link'?: NjsByteString;
-    readonly 'secure_link_expires'?: NjsByteString;
-    readonly 'sent_http_'?: NjsByteString;
-    readonly 'sent_trailer_'?: NjsByteString;
-    readonly 'server_addr'?: NjsByteString;
-    readonly 'server_name'?: NjsByteString;
-    readonly 'server_port'?: NjsByteString;
-    readonly 'server_protocol'?: NjsByteString;
-    readonly 'session_log_binary_id'?: NjsByteString;
-    readonly 'session_log_id'?: NjsByteString;
-    readonly 'session_time'?: NjsByteString;
-    readonly 'slice_range'?: NjsByteString;
-    readonly 'spdy'?: NjsByteString;
-    readonly 'spdy_request_priority'?: NjsByteString;
-    readonly 'ssl_cipher'?: NjsByteString;
-    readonly 'ssl_ciphers'?: NjsByteString;
-    readonly 'ssl_client_cert'?: NjsByteString;
-    readonly 'ssl_client_escaped_cert'?: NjsByteString;
-    readonly 'ssl_client_fingerprint'?: NjsByteString;
-    readonly 'ssl_client_i_dn'?: NjsByteString;
-    readonly 'ssl_client_i_dn_legacy'?: NjsByteString;
-    readonly 'ssl_client_raw_cert'?: NjsByteString;
-    readonly 'ssl_client_s_dn'?: NjsByteString;
-    readonly 'ssl_client_s_dn_legacy'?: NjsByteString;
-    readonly 'ssl_client_serial'?: NjsByteString;
-    readonly 'ssl_client_v_end'?: NjsByteString;
-    readonly 'ssl_client_v_remain'?: NjsByteString;
-    readonly 'ssl_client_v_start'?: NjsByteString;
-    readonly 'ssl_client_verify'?: NjsByteString;
-    readonly 'ssl_curves'?: NjsByteString;
-    readonly 'ssl_early_data'?: NjsByteString;
-    readonly 'ssl_preread_alpn_protocols'?: NjsByteString;
-    readonly 'ssl_preread_protocol'?: NjsByteString;
-    readonly 'ssl_preread_server_name'?: NjsByteString;
-    readonly 'ssl_protocol'?: NjsByteString;
-    readonly 'ssl_server_name'?: NjsByteString;
-    readonly 'ssl_session_id'?: NjsByteString;
-    readonly 'ssl_session_reused'?: NjsByteString;
-    readonly 'status'?: NjsByteString;
-    readonly 'tcpinfo_rtt'?: NjsByteString;
-    readonly 'tcpinfo_rttvar'?: NjsByteString;
-    readonly 'tcpinfo_snd_cwnd'?: NjsByteString;
-    readonly 'tcpinfo_rcv_space'?: NjsByteString;
-    readonly 'time_iso8601'?: NjsByteString;
-    readonly 'time_local'?: NjsByteString;
-    readonly 'uid_got'?: NjsByteString;
-    readonly 'uid_reset'?: NjsByteString;
-    readonly 'uid_set'?: NjsByteString;
-    readonly 'upstream_addr'?: NjsByteString;
-    readonly 'upstream_bytes_received'?: NjsByteString;
-    readonly 'upstream_bytes_sent'?: NjsByteString;
-    readonly 'upstream_cache_status'?: NjsByteString;
-    readonly 'upstream_connect_time'?: NjsByteString;
-    readonly 'upstream_cookie_'?: NjsByteString;
-    readonly 'upstream_first_byte_time'?: NjsByteString;
-    readonly 'upstream_header_time'?: NjsByteString;
-    readonly 'upstream_http_'?: NjsByteString;
-    readonly 'upstream_queue_time'?: NjsByteString;
-    readonly 'upstream_response_length'?: NjsByteString;
-    readonly 'upstream_response_time'?: NjsByteString;
-    readonly 'upstream_session_time'?: NjsByteString;
-    readonly 'upstream_status'?: NjsByteString;
-    readonly 'upstream_trailer_'?: NjsByteString;
-    readonly 'uri'?: NjsByteString;
+    readonly 'ancient_browser'?: string;
+    readonly 'arg_'?: string;
+    readonly 'args'?: string;
+    readonly 'binary_remote_addr'?: string;
+    readonly 'body_bytes_sent'?: string;
+    readonly 'bytes_received'?: string;
+    readonly 'bytes_sent'?: string;
+    readonly 'connection'?: string;
+    readonly 'connection_requests'?: string;
+    readonly 'connections_active'?: string;
+    readonly 'connections_reading'?: string;
+    readonly 'connections_waiting'?: string;
+    readonly 'connections_writing'?: string;
+    readonly 'content_length'?: string;
+    readonly 'content_type'?: string;
+    readonly 'cookie_'?: string;
+    readonly 'date_gmt'?: string;
+    readonly 'date_local'?: string;
+    readonly 'document_root'?: string;
+    readonly 'document_uri'?: string;
+    readonly 'fastcgi_path_info'?: string;
+    readonly 'fastcgi_script_name'?: string;
+    readonly 'geoip_area_code'?: string;
+    readonly 'geoip_city'?: string;
+    readonly 'geoip_city_continent_code'?: string;
+    readonly 'geoip_city_country_code'?: string;
+    readonly 'geoip_city_country_code3'?: string;
+    readonly 'geoip_city_country_name'?: string;
+    readonly 'geoip_country_code'?: string;
+    readonly 'geoip_country_code3'?: string;
+    readonly 'geoip_country_name'?: string;
+    readonly 'geoip_dma_code'?: string;
+    readonly 'geoip_latitude'?: string;
+    readonly 'geoip_longitude'?: string;
+    readonly 'geoip_org'?: string;
+    readonly 'geoip_postal_code'?: string;
+    readonly 'geoip_region'?: string;
+    readonly 'geoip_region_name'?: string;
+    readonly 'gzip_ratio'?: string;
+    readonly 'host'?: string;
+    readonly 'hostname'?: string;
+    readonly 'http2'?: string;
+    readonly 'http_'?: string;
+    readonly 'https'?: string;
+    readonly 'invalid_referer'?: string;
+    readonly 'is_args'?: string;
+    readonly 'jwt_claim_'?: string;
+    readonly 'jwt_header_'?: string;
+    readonly 'limit_conn_status'?: string;
+    readonly 'limit_rate'?: string;
+    readonly 'limit_req_status'?: string;
+    readonly 'memcached_key'?: string;
+    readonly 'modern_browser'?: string;
+    readonly 'msec'?: string;
+    readonly 'msie'?: string;
+    readonly 'nginx_version'?: string;
+    readonly 'pid'?: string;
+    readonly 'pipe'?: string;
+    readonly 'protocol'?: string;
+    readonly 'proxy_add_x_forwarded_for'?: string;
+    readonly 'proxy_host'?: string;
+    readonly 'proxy_port'?: string;
+    readonly 'proxy_protocol_addr'?: string;
+    readonly 'proxy_protocol_port'?: string;
+    readonly 'proxy_protocol_server_addr'?: string;
+    readonly 'proxy_protocol_server_port'?: string;
+    readonly 'query_string'?: string;
+    readonly 'realip_remote_addr'?: string;
+    readonly 'realip_remote_port'?: string;
+    readonly 'realpath_root'?: string;
+    readonly 'remote_addr'?: string;
+    readonly 'remote_port'?: string;
+    readonly 'remote_user'?: string;
+    readonly 'request'?: string;
+    readonly 'request_body'?: string;
+    readonly 'request_body_file'?: string;
+    readonly 'request_completion'?: string;
+    readonly 'request_filename'?: string;
+    readonly 'request_id'?: string;
+    readonly 'request_length'?: string;
+    readonly 'request_method'?: string;
+    readonly 'request_time'?: string;
+    readonly 'request_uri'?: string;
+    readonly 'scheme'?: string;
+    readonly 'secure_link'?: string;
+    readonly 'secure_link_expires'?: string;
+    readonly 'sent_http_'?: string;
+    readonly 'sent_trailer_'?: string;
+    readonly 'server_addr'?: string;
+    readonly 'server_name'?: string;
+    readonly 'server_port'?: string;
+    readonly 'server_protocol'?: string;
+    readonly 'session_log_binary_id'?: string;
+    readonly 'session_log_id'?: string;
+    readonly 'session_time'?: string;
+    readonly 'slice_range'?: string;
+    readonly 'spdy'?: string;
+    readonly 'spdy_request_priority'?: string;
+    readonly 'ssl_cipher'?: string;
+    readonly 'ssl_ciphers'?: string;
+    readonly 'ssl_client_cert'?: string;
+    readonly 'ssl_client_escaped_cert'?: string;
+    readonly 'ssl_client_fingerprint'?: string;
+    readonly 'ssl_client_i_dn'?: string;
+    readonly 'ssl_client_i_dn_legacy'?: string;
+    readonly 'ssl_client_raw_cert'?: string;
+    readonly 'ssl_client_s_dn'?: string;
+    readonly 'ssl_client_s_dn_legacy'?: string;
+    readonly 'ssl_client_serial'?: string;
+    readonly 'ssl_client_v_end'?: string;
+    readonly 'ssl_client_v_remain'?: string;
+    readonly 'ssl_client_v_start'?: string;
+    readonly 'ssl_client_verify'?: string;
+    readonly 'ssl_curves'?: string;
+    readonly 'ssl_early_data'?: string;
+    readonly 'ssl_preread_alpn_protocols'?: string;
+    readonly 'ssl_preread_protocol'?: string;
+    readonly 'ssl_preread_server_name'?: string;
+    readonly 'ssl_protocol'?: string;
+    readonly 'ssl_server_name'?: string;
+    readonly 'ssl_session_id'?: string;
+    readonly 'ssl_session_reused'?: string;
+    readonly 'status'?: string;
+    readonly 'tcpinfo_rtt'?: string;
+    readonly 'tcpinfo_rttvar'?: string;
+    readonly 'tcpinfo_snd_cwnd'?: string;
+    readonly 'tcpinfo_rcv_space'?: string;
+    readonly 'time_iso8601'?: string;
+    readonly 'time_local'?: string;
+    readonly 'uid_got'?: string;
+    readonly 'uid_reset'?: string;
+    readonly 'uid_set'?: string;
+    readonly 'upstream_addr'?: string;
+    readonly 'upstream_bytes_received'?: string;
+    readonly 'upstream_bytes_sent'?: string;
+    readonly 'upstream_cache_status'?: string;
+    readonly 'upstream_connect_time'?: string;
+    readonly 'upstream_cookie_'?: string;
+    readonly 'upstream_first_byte_time'?: string;
+    readonly 'upstream_header_time'?: string;
+    readonly 'upstream_http_'?: string;
+    readonly 'upstream_queue_time'?: string;
+    readonly 'upstream_response_length'?: string;
+    readonly 'upstream_response_time'?: string;
+    readonly 'upstream_session_time'?: string;
+    readonly 'upstream_status'?: string;
+    readonly 'upstream_trailer_'?: string;
+    readonly 'uri'?: string;
 
-    [prop: string]: NjsStringLike | undefined;
+    [prop: string]: string | undefined;
 }
 
 /**
@@ -244,11 +244,11 @@ interface NginxSubrequestOptions {
     /**
      * Arguments string, by default an empty string is used.
      */
-    args?: NjsStringLike,
+    args?: string,
     /**
      * Request body, by default the request body of the parent request object is used.
      */
-    body?: NjsStringLike,
+    body?: string,
     /**
      * HTTP method, by default the GET method is used.
      */
@@ -316,7 +316,7 @@ interface NginxHTTPRequest {
     /**
      * HTTP protocol version.
      */
-    readonly httpVersion: NjsByteString;
+    readonly httpVersion: string;
     /**
      * Performs an internal redirect to the specified uri.
      * If the uri starts with the “@” prefix, it is considered a named location.
@@ -333,7 +333,7 @@ interface NginxHTTPRequest {
     /**
      * HTTP method.
      */
-    readonly method: NjsByteString;
+    readonly method: string;
     /**
      * Parent for subrequest object.
      */
@@ -342,17 +342,17 @@ interface NginxHTTPRequest {
      * An array of key-value pairs exactly as they were received from the client.
      * @since 0.4.1
      */
-    readonly rawHeadersIn: [NjsFixedSizeArray<2, NjsStringLike>];
+    readonly rawHeadersIn: [NjsFixedSizeArray<2, string>];
     /**
      * An array of key-value pairs of response headers.
      * Header field names are not converted to lower case, duplicate field values are not merged.
      * @since 0.4.1
      */
-    readonly rawHeadersOut: [NjsFixedSizeArray<2, NjsStringLike>];
+    readonly rawHeadersOut: [NjsFixedSizeArray<2, string>];
     /**
      * Client address.
      */
-    readonly remoteAddress: NjsByteString;
+    readonly remoteAddress: string;
     /**
      * Client request body if it has not been written to a temporary file.
      * To ensure that the client request body is in memory, its size should be
@@ -370,7 +370,7 @@ interface NginxHTTPRequest {
      * @see requestBuffer
      * @since 0.5.0
      */
-    readonly requestText?: NjsByteString;
+    readonly requestText?: string;
     /**
      * The same as `requestBuffer`, but returns a string.
      *
@@ -380,7 +380,7 @@ interface NginxHTTPRequest {
      * @see requestText
      * @deprecated Use `requestText` or `requestBuffer` instead.
      */
-    readonly requestBody?: NjsByteString;
+    readonly requestBody?: string;
     /**
      * Subrequest response body. The size of response body is limited by
      * the subrequest_output_buffer_size directive.
@@ -395,7 +395,7 @@ interface NginxHTTPRequest {
      *
      * @see responseBuffer
      */
-    readonly responseText?: NjsByteString;
+    readonly responseText?: string;
     /**
      * The same as `responseBuffer`, but returns a string.
      *
@@ -405,7 +405,7 @@ interface NginxHTTPRequest {
      * @see responseText
      * @deprecated Use `responseText` or `responseBuffer` instead.
      */
-    readonly responseBody?: NjsByteString;
+    readonly responseBody?: string;
     /**
      * Sends the entire response with the specified status to the client.
      * It is possible to specify either a redirect URL (for codes 301, 302, 303, 307, and 308)
@@ -457,7 +457,7 @@ interface NginxHTTPRequest {
     /**
      * Current URI in request, normalized.
      */
-    readonly uri: NjsByteString;
+    readonly uri: string;
     /**
      * nginx variables as Buffers.
      *

@@ -5,19 +5,8 @@ import xml from 'xml';
 import zlib from 'zlib';
 
 async function http_module(r: NginxHTTPRequest) {
-    var bs: NjsByteString;
     var s: string;
     var vod: void;
-
-    // builtin string vs NjsByteString
-
-    s = 'ordinary string';
-    bs = String.bytesFrom('000000', 'hex');
-    var bs2: NjsByteString | null = s.toBytes();
-    bs = s.toUTF8();
-    bs.fromBytes(undefined, undefined);
-
-    s = bs + '';
 
     // r.uri
 
@@ -26,14 +15,13 @@ async function http_module(r: NginxHTTPRequest) {
 
     // r.args
 
-    bs = r.args.x;
-    bs = r.args[1];
-    var s2: string | null = r.args.x.fromUTF8();
+    s = r.args.x;
+    s = r.args[1];
     s = r.args.x + '';
 
     // r.headersIn
 
-    r.headersIn['Accept']?.fromBytes() == 'dddd';
+    r.headersIn['Accept'] == 'dddd';
 
     // r.headersOut
 
@@ -50,7 +38,7 @@ async function http_module(r: NginxHTTPRequest) {
 
     // r.log
 
-    r.log(bs);
+    r.log(s);
     r.log(Buffer.from("abc"));
     r.log(r.headersOut['Connection'] ?? '');
 
@@ -155,7 +143,7 @@ async function fs_module() {
     await fs.promises.rmdir('d/e/f', {recursive: false});
 }
 
-function qs_module(str: NjsByteString) {
+function qs_module(str: string) {
     var o;
     var s:string;
 
@@ -163,7 +151,7 @@ function qs_module(str: NjsByteString) {
     s = qs.stringify(o);
 }
 
-function xml_module(str: NjsByteString) {
+function xml_module(str: string) {
     let doc;
     let node;
     let children, selectedChildren;
@@ -195,7 +183,7 @@ function xml_module(str: NjsByteString) {
     node.$tags = [node, node];
 }
 
-function zlib_module(str: NjsByteString) {
+function zlib_module(str: string) {
     zlib.deflateRawSync(str, {level: zlib.constants.Z_BEST_COMPRESSION, memLevel: 9});
     zlib.deflateSync(str, {strategy: zlib.constants.Z_RLE});
 
@@ -203,7 +191,7 @@ function zlib_module(str: NjsByteString) {
     zlib.inflateSync(str, {chunkSize: 2048});
 }
 
-function crypto_module(str: NjsByteString) {
+function crypto_module(str: string) {
     var h;
     var b:Buffer;
     var s:string;

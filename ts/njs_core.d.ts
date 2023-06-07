@@ -5,63 +5,6 @@ type NjsFixedSizeArray<N extends number, T> = N extends 0 ? never[] : {
     length: N;
 } & ReadonlyArray<T>;
 
-
-interface StringConstructor {
-    /**
-     * Creates a byte string from an encoded string.
-     *
-     * @deprecated will be removed in the future.
-     */
-    bytesFrom(bytes: string, encoding: Exclude<BufferEncoding, "utf8">): NjsByteString;
-    /**
-     * Creates a byte string from an array that contains octets.
-     *
-     * @deprecated will be removed in the future.
-     */
-    bytesFrom(bytes: Array<number>): NjsByteString;
-}
-
-interface String {
-    /**
-     * Serializes a Unicode string with code points up to 255
-     * into a byte string, otherwise, null is returned.
-     *
-     * @deprecated will be removed in the future.
-     */
-    toBytes(start?: number, end?: number): NjsByteString | null;
-    /**
-     * Serializes a Unicode string to a byte string using UTF8 encoding.
-     *
-     * @deprecated will be removed in the future.
-     */
-    toUTF8(start?: number, end?: number): NjsByteString;
-}
-
-type NjsByteString = string & {
-    /**
-     * Returns a new Unicode string from a byte string where each byte is replaced
-     * with a corresponding Unicode code point.
-     *
-     * @deprecated will be removed in the future.
-     */
-    fromBytes(start?: number, end?: number): string;
-    /**
-     * Converts a byte string containing a valid UTF8 string into a Unicode string,
-     * otherwise null is returned.
-     *
-     * @deprecated will be removed in the future.
-     */
-    fromUTF8(start?: number, end?: number): string | null;
-    /**
-     * Encodes a byte string to hex, base64, or base64url.
-     *
-     * @deprecated will be removed in the future.
-     */
-    toString(encoding: Exclude<BufferEncoding, "utf8">): string;
-};
-
-type NjsStringLike = string | NjsByteString;
-
 type TypedArray =
     | Uint8Array
     | Uint8ClampedArray
@@ -86,7 +29,7 @@ declare class Buffer extends Uint8Array {
      * @param encoding The character encoding used for call to `buf.fill(fill, encoding)` while
      *   initalizing. Defaults to`'utf8'`.
      */
-    static alloc(size: number, fill?: NjsStringLike | Uint8Array | number, encoding?: BufferEncoding): Buffer;
+    static alloc(size: number, fill?: string | Uint8Array | number, encoding?: BufferEncoding): Buffer;
     /**
      * The same as `Buffer.alloc()`, with the difference that the memory allocated for the buffer
      * is not initialized, the contents of the new buffer is unknown and may contain sensitive data.
@@ -102,7 +45,7 @@ declare class Buffer extends Uint8Array {
      * @param encoding The character encoding used to evaluate `value` if `value` is a `string`.
      *   Defaults to `'utf8'`.
      */
-    static byteLength(value: NjsStringLike | Buffer | TypedArray | DataView | ArrayBuffer, encoding?: BufferEncoding): number;
+    static byteLength(value: string | Buffer | TypedArray | DataView | ArrayBuffer, encoding?: BufferEncoding): number;
 
     /**
      * Compares `buffer1` with `buffer2` when sorting arrays of buffer instances.
@@ -153,7 +96,7 @@ declare class Buffer extends Uint8Array {
      *
      * @param obj An object supporting `valueOf()`.
      */
-    static from(obj: { valueOf(): NjsStringLike | object }, byteOffset?: number, length?: number): Buffer;
+    static from(obj: { valueOf(): string | object }, byteOffset?: number, length?: number): Buffer;
     /**
      * Creates a new `Buffer` with a string `str`.
      *
@@ -161,7 +104,7 @@ declare class Buffer extends Uint8Array {
      * @param encoding The character encoding to be used when converting a string into bytes.
      *   Defaults to `'utf8'`.
      */
-    static from(str: NjsStringLike, encoding?: BufferEncoding): Buffer;
+    static from(str: string, encoding?: BufferEncoding): Buffer;
 
     /**
      * Returns true if the `obj` is a `Buffer`.
@@ -175,7 +118,7 @@ declare class Buffer extends Uint8Array {
      *
      * @param encoding The string to test.
      */
-    static isEncoding(encoding: NjsStringLike): encoding is BufferEncoding;
+    static isEncoding(encoding: string): encoding is BufferEncoding;
 
     /**
      * The underlying `ArrayBuffer` object based on which this `Buffer` object is created.
@@ -255,7 +198,7 @@ declare class Buffer extends Uint8Array {
      * @param end Where to stop filling this buffer (not inclusive). Defaults to `buf.length`.
      * @param encoding The encoding for `value` if `value` is a `string`. Defaults to `'utf8'`.
      */
-    fill(value: NjsStringLike | Uint8Array | number, offset?: number, end?: number, encoding?: BufferEncoding): this;
+    fill(value: string | Uint8Array | number, offset?: number, end?: number, encoding?: BufferEncoding): this;
 
     /**
      * Equivalent to `buf.indexOf() !== -1`, returns `true` if the `value` was found in this buffer.
@@ -264,7 +207,7 @@ declare class Buffer extends Uint8Array {
      * @param byteOffset Where to begin search in this buffer. Defaults to `0`.
      * @param encoding The encoding for `value` if `value` is a `string`. Defaults to `'utf8'`.
      */
-    includes(value: NjsStringLike | number | Uint8Array, byteOffset?: number, encoding?: BufferEncoding): boolean;
+    includes(value: string | number | Uint8Array, byteOffset?: number, encoding?: BufferEncoding): boolean;
 
     /**
      * Returns an integer which is the index of the first occurrence of `value` in this buffer,
@@ -274,7 +217,7 @@ declare class Buffer extends Uint8Array {
      * @param byteOffset Where to begin search in this buffer. Defaults to `0`.
      * @param encoding The encoding for `value` if `value` is a `string`. Defaults to `'utf8'`.
      */
-    indexOf(value: NjsStringLike | number | Uint8Array, byteOffset?: number, encoding?: BufferEncoding): number;
+    indexOf(value: string | number | Uint8Array, byteOffset?: number, encoding?: BufferEncoding): number;
     /**
      * The same as `buf.indexOf()`, except the last occurrence of the `value` is found instead of
      * the first occurrence. If the `value` is an empty `string` or empty `Buffer`, `byteOffset`
@@ -284,7 +227,7 @@ declare class Buffer extends Uint8Array {
      * @param byteOffset Where to begin search in this buffer. Defaults to `0`.
      * @param encoding The encoding for `value` if `value` is a `string`. Defaults to `'utf8'`.
      */
-    lastIndexOf(value: NjsStringLike | number | Uint8Array, byteOffset?: number, encoding?: BufferEncoding): number;
+    lastIndexOf(value: string | number | Uint8Array, byteOffset?: number, encoding?: BufferEncoding): number;
 
     /**
      * Reads the `byteLength` from this buffer at the specified `offset` and interprets the result
@@ -467,9 +410,9 @@ declare class Buffer extends Uint8Array {
      * @param encoding The character encoding of `str`. Defaults to `'utf8'`.
      * @return Offset plus the number of bytes written.
      */
-    write(str: NjsStringLike, encoding?: BufferEncoding): number;
-    write(str: NjsStringLike, offset: number, encoding?: BufferEncoding): number;
-    write(str: NjsStringLike, offset: number, length: number, encoding?: BufferEncoding): number;
+    write(str: string, encoding?: BufferEncoding): number;
+    write(str: string, offset: number, encoding?: BufferEncoding): number;
+    write(str: string, offset: number, length: number, encoding?: BufferEncoding): number;
 
     /**
      * Writes `byteLength` bytes of `value` to this buffer at the specified `offset` as big-endian.
@@ -600,7 +543,7 @@ declare class Buffer extends Uint8Array {
     writeFloatLE(value: number, offset?: number): number;
 }
 
-type NjsStringOrBuffer = NjsStringLike | Buffer | DataView | TypedArray | ArrayBuffer;
+type NjsStringOrBuffer = string | Buffer | DataView | TypedArray | ArrayBuffer;
 type NjsBuffer = Buffer | DataView | TypedArray;
 
 // Global objects
@@ -628,7 +571,7 @@ interface NjsGlobal {
 declare const njs: NjsGlobal;
 
 interface NjsEnv {
-    readonly [prop: string]: NjsByteString;
+    readonly [prop: string]: string;
 }
 
 interface NjsProcess {

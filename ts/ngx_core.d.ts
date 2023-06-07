@@ -1,4 +1,4 @@
-type NgxHeaders = Headers | Object | [NjsFixedSizeArray<2, NjsStringLike>];
+type NgxHeaders = Headers | Object | [NjsFixedSizeArray<2, string>];
 
 declare class Headers {
     /**
@@ -8,7 +8,7 @@ declare class Headers {
      * @param value A value of the header.
      * @since 0.7.10
      */
-    append(name:NjsStringLike, value: NjsStringLike): void;
+    append(name:string, value: string): void;
     /**
      * Headers constructors.
      *
@@ -16,38 +16,38 @@ declare class Headers {
      * @returns returns Headers object.
      * @since 0.7.10
      */
-    constructor(init?: Object | [NjsFixedSizeArray<2, NjsStringLike>]);
+    constructor(init?: Object | [NjsFixedSizeArray<2, string>]);
     /**
      * Deletes a header from the Headers object.
      * @param name A name of the header to be deleted.
      * @since 0.7.10
      */
-    delete(name:NjsStringLike): void;
+    delete(name:string): void;
     /**
      * Returns a string containing the values of all headers
      * with the specified name separated by a comma and a space.
      * @param name A name of the header.
      */
-    get(name:NjsStringLike): NjsByteString;
+    get(name:string): string;
     /**
      * Returns an array containing the values of all headers
      * with the specified name.
      * @param name A name of the header.
      */
-    getAll(name:NjsStringLike): Array<NjsByteString>;
+    getAll(name:string): Array<string>;
     /**
      * Executes a provided function once for each key/value
      * pair in the Headers object.
      * @param fn the function to be envoked.
      * @since 0.7.10
      */
-    forEach(fn:(name: NjsStringLike, value: NjsStringLike) => void): void;
+    forEach(fn:(name: string, value: string) => void): void;
     /**
      * Returns a boolean value indicating whether a header with
      * the specified name exists.
      * @param name A name of the header.
      */
-    has(name:NjsStringLike): boolean;
+    has(name:string): boolean;
     /**
      * Sets a new value for an existing header inside the Headers object,
      * or adds the header if it does not already exist.
@@ -55,14 +55,14 @@ declare class Headers {
      * @param value A value of the header.
      * @since 0.7.10
      */
-    set(name:NjsStringLike, value: NjsStringLike): void;
+    set(name:string, value: string): void;
 }
 
 interface NgxRequestOptions {
     /**
      * Request body, by default is empty.
      */
-    body?: NjsStringLike;
+    body?: string;
     /**
      * Cache mode, by default is "default".
      */
@@ -78,7 +78,7 @@ interface NgxRequestOptions {
     /**
      * Request method, by default the GET method is used.
      */
-    method?: NjsStringLike;
+    method?: string;
     /**
      * Mode, by default is "no-cors".
      */
@@ -97,7 +97,7 @@ declare class Request {
     /**
      * Cache mode.
      */
-    readonly cache: NjsByteString;
+    readonly cache: string;
     /**
      * Request constructors.
      *
@@ -105,11 +105,11 @@ declare class Request {
      * @returns returns Request object.
      * @since 0.7.10
      */
-    constructor(input: NjsStringLike | Request, options?: NgxRequestOptions);
+    constructor(input: string | Request, options?: NgxRequestOptions);
     /**
      * Credentials.
      */
-    readonly credentials: NjsByteString;
+    readonly credentials: string;
     /**
      * Returns a Promise that resolves with an result of applying of
      * JSON.parse() to a body.
@@ -122,15 +122,15 @@ declare class Request {
     /**
      * Request mode.
      */
-    readonly mode: NjsByteString;
+    readonly mode: string;
     /**
      * Returns a Promise that resolves with an body as String.
      */
-    text(): Promise<NjsByteString>;
+    text(): Promise<string>;
     /**
      * Request url.
      */
-    readonly url: NjsByteString;
+    readonly url: string;
 }
 
 interface NgxResponseOptions {
@@ -145,7 +145,7 @@ interface NgxResponseOptions {
     /**
      * Response status test, '' by default.
      */
-    statusText?: NjsStringLike;
+    statusText?: string;
 }
 
 declare class Response {
@@ -165,7 +165,7 @@ declare class Response {
      * @returns returns Response object.
      * @since 0.7.10
      */
-    constructor(body?: NjsStringLike, options?: NgxResponseOptions);
+    constructor(body?: string, options?: NgxResponseOptions);
     /**
      * Takes a Response stream and reads it to completion.
      * Returns a Promise that resolves with the result of
@@ -193,27 +193,27 @@ declare class Response {
     /**
      * The status message corresponding to the status code.
      */
-    readonly statusText: NjsByteString;
+    readonly statusText: string;
     /**
      * Takes a Response stream and reads it to completion.
      * Returns a Promise that resolves with a string.
      */
-    text(): Promise<NjsByteString>;
+    text(): Promise<string>;
     /**
      * The type of the response.
      */
-    readonly type: NjsByteString;
+    readonly type: string;
     /**
      * Response url.
      */
-    readonly url: NjsByteString;
+    readonly url: string;
 }
 
 interface NgxFetchOptions {
     /**
      * Request body, by default is empty.
      */
-    body?: NjsStringLike,
+    body?: string,
     /**
      * The buffer size for reading the response, by default is 16384 (4096 before 0.7.4).
      * Nginx specific.
@@ -233,7 +233,7 @@ interface NgxFetchOptions {
     /**
      * Request method, by default the GET method is used.
      */
-    method?: NjsStringLike;
+    method?: string;
     /**
      * Enables or disables verification of the HTTPS server certificate,
      * by default is true.

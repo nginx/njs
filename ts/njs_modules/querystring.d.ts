@@ -7,7 +7,7 @@ declare module "querystring" {
     }
 
     export interface ParsedUrlQueryInput {
-        [key: string]: NjsStringLike | number | boolean | NjsStringLike[] | number[] | boolean[] | null | undefined;
+        [key: string]: string | number | boolean | string[] | number[] | boolean[] | null | undefined;
     }
 
     interface ParseOptions {
@@ -15,7 +15,7 @@ declare module "querystring" {
          * Function used to decode percent-encoded characters in the query string.
          * Defaults to `querystring.unescape()`.
          */
-        decodeURIComponent?: (str: NjsStringLike) => string;
+        decodeURIComponent?: (str: string) => string;
 
         /**
          * The maximum number of keys to parse; defaults to `1000`.
@@ -29,7 +29,7 @@ declare module "querystring" {
          * The function to use when converting URL-unsafe characters to percent-encoding in the
          * query string; defaults to `querystring.escape()`.
          */
-        encodeURIComponent?: (str: NjsStringLike) => string;
+        encodeURIComponent?: (str: string) => string;
     }
 
     interface QueryString {
@@ -40,7 +40,7 @@ declare module "querystring" {
          * @param str The query string to escape.
          * @return The escaped query string.
          */
-        escape(str: NjsStringLike): string;
+        escape(str: string): string;
 
         /**
          * Parses the query string URL and returns an object.
@@ -55,12 +55,12 @@ declare module "querystring" {
          * @param options An object optionally specifying `decodeURIComponent` function and `maxKeys` number.
          * @return An object containing the components of the query string.
          */
-        parse(query: NjsStringLike, separator?: NjsStringLike, equal?: NjsStringLike, options?: ParseOptions): ParsedUrlQuery;
+        parse(query: string, separator?: string, equal?: string, options?: ParseOptions): ParsedUrlQuery;
 
         /**
          * An alias for `querystring.parse()`.
          */
-        decode(query: NjsStringLike, separator?: NjsStringLike, equal?: NjsStringLike, options?: ParseOptions): ParsedUrlQuery;
+        decode(query: string, separator?: string, equal?: string, options?: ParseOptions): ParsedUrlQuery;
 
         /**
          * Serializes an object and returns a URL query string.
@@ -75,12 +75,12 @@ declare module "querystring" {
          * @param options An object optionally specifying `encodeURIComponent` function.
          * @return A query string.
          */
-        stringify(obj: ParsedUrlQueryInput, separator?: NjsStringLike, equal?: NjsStringLike, options?: StringifyOptions): string;
+        stringify(obj: ParsedUrlQueryInput, separator?: string, equal?: string, options?: StringifyOptions): string;
 
         /**
          * An alias for `querystring.stringify()`.
          */
-        encode(obj: ParsedUrlQueryInput, separator?: NjsStringLike, equal?: NjsStringLike, options?: StringifyOptions): string;
+        encode(obj: ParsedUrlQueryInput, separator?: string, equal?: string, options?: StringifyOptions): string;
 
         /**
          * Performs decoding of URL percent-encoded characters of the string `str`, returns an
@@ -90,7 +90,7 @@ declare module "querystring" {
          * @param str An escaped query string.
          * @return An unescaped string.
          */
-        unescape(str: NjsStringLike): string;
+        unescape(str: string): string;
     }
 
     const querystring: QueryString;

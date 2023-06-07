@@ -140,7 +140,7 @@ declare module "xml" {
          * @param src a string or a buffer with an XML document.
          * @return A XMLDoc wrapper object representing the parsed XML document.
          */
-        parse(src: NjsStringLike): XMLDoc;
+        parse(src: string): XMLDoc;
 
         /**
          * Canonicalizes root_node and its children according to
