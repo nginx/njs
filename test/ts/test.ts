@@ -272,6 +272,38 @@ function timers() {
     // Warning: clearTimeout(123);
 }
 
+function text_decoder() {
+    let b:boolean;
+    let s:string;
+
+    const d = new TextDecoder("utf-8", {fatal: true});
+
+    s = d.encoding;
+    b = d.fatal;
+    b = d.ignoreBOM;
+
+    s += d.decode(new Uint8Array([1, 2, 3]), {stream: true});
+    s += d.decode(new Uint8Array([4, 5, 6]), {stream: true});
+    s += d.decode();
+
+    s = new TextDecoder().decode(new Uint8Array([206,177,206,178]));
+}
+
+function text_encoder() {
+    let n:number;
+    let s:string;
+    let uint8a:Uint8Array;
+
+    const e = new TextEncoder();
+
+    s = e.encoding;
+    uint8a = e.encode("text to encode");
+
+    const res = e.encodeInto("text to encode", uint8a);
+    n = res.read;
+    n = res.written;
+}
+
 function global_functions() {
     const encodedData = btoa("text to encode");
     const decodedData = atob(encodedData);
