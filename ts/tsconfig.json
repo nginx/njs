@@ -3,10 +3,44 @@
         "target": "es5",
         "module": "ES2015",
         "lib": [
-            "ES2015",
+            "ES5",
+            // "ES2015.Collection",
+            "ES2015.Core",
+            // "ES2015.Generator",
+            "ES2015.Iterable", // since 0.5.0
+            "ES2015.Promise", // since 0.6.2
+            // "ES2015.Proxy",
+            // "ES2015.Reflect",
+            "ES2015.Symbol", // since 0.7.6
+            "ES2015.Symbol.WellKnown",
             "ES2016.Array.Include",
-            "ES2017.Object",
-            "ES2017.String"
+            // "ES2017.Intl",
+            "ES2017.Object", // since 0.2.7
+            // "ES2017.SharedMemory",
+            "ES2017.String",
+            "ES2017.TypedArrays", // since 0.3.8
+            // "ES2018.AsyncGenerator",
+            // "ES2018.AsyncIterable",
+            // "ES2018.Intl",
+            "ES2018.Promise", // since 0.3.8
+            "ES2018.Regexp", // since 0.3.2
+            // "ES2019.Array",
+            // "ES2019.Intl",
+            // "ES2019.Object",
+            "ES2019.String", // since 0.3.4
+            "ES2019.Symbol",
+            // "ES2020.BigInt",
+            "ES2020.Date",
+            // "ES2020.Intl",
+            // "ES2020.Number",
+            "ES2020.Promise", // since 0.6.2
+            // "ES2020.SharedMemory",
+            // "ES2020.String",
+            // "ES2020.Symbol.WellKnown",
+            // "ES2021.Intl",
+            "ES2021.Promise", // since 0.6.2
+            "ES2021.String" // since 0.7.10
+            // "ES2021.WeakRef",
         ],
         "noEmit": true,
         "strict": true,
