@@ -493,11 +493,44 @@ njs_date_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+static int64_t
+njs_date_utc_offset_parse(const u_char *start, const u_char *end)
+{
+    int64_t       utc_off, hour, min;
+    const u_char  *p;
+
+    if (njs_fast_path(start + 2 < end && (*start == '+' || *start == '-'))) {
+        p = njs_date_number_parse(&hour, start + 1, end, 2);
+        if (njs_slow_path(p == NULL || hour > 23)) {
+            return -1;
+        }
+
+        if (p < end && *p == ':') {
+            p++;
+        }
+
+        p = njs_date_number_parse(&min, p, end, 2);
+        if (njs_slow_path(p == NULL || min > 59)) {
+            return -1;
+        }
+
+        utc_off = hour * 60 + min;
+
+        if (*start == '-') {
+            utc_off = -utc_off;
+        }
+
+        return utc_off;
+    }
+
+    return -1;
+}
+
 static double
 njs_date_string_parse(njs_value_t *date)
 {
     size_t         ms_length;
-    int64_t        ext, skipped;
+    int64_t        ext, utc_off;
     njs_str_t      string;
     njs_bool_t     sign, week, utc;
     const u_char   *p, *next, *end;
@@ -616,18 +649,15 @@ njs_date_string_parse(njs_value_t *date)
 
         p++;
 
-        ms_length = (end - p < 3) ? end - p : 3;
+        for (ms_length = 0; p + ms_length < end; ms_length++) {
+            if (p[ms_length] < '0' || p[ms_length] > '9') {
+                break;
+            }
+        }
 
         p = njs_date_number_parse(&tm[NJS_DATE_MSEC], p, end, ms_length);
         if (njs_slow_path(p == NULL)) {
             return NAN;
-        }
-
-        if (end > p) {
-            p = njs_date_number_parse(&skipped, p, end, end - p);
-            if (njs_slow_path(p == NULL)) {
-                return NAN;
-            }
         }
 
         if (ms_length == 1) {
@@ -635,6 +665,21 @@ njs_date_string_parse(njs_value_t *date)
 
         } else if (ms_length == 2) {
             tm[NJS_DATE_MSEC] *= 10;
+
+        } else if (ms_length >= 4) {
+            for (ms_length -= 3; ms_length > 0; ms_length--) {
+                tm[NJS_DATE_MSEC] /= 10;
+            }
+        }
+
+        if (p < end) {
+            utc_off = njs_date_utc_offset_parse(p, end);
+            if (njs_slow_path(utc_off == -1)) {
+                return NAN;
+            }
+
+            utc = 1;
+            tm[NJS_DATE_MSEC] += -utc_off * 60000;
         }
 
 done:
@@ -685,8 +730,6 @@ done:
 
         week = 0;
     }
-
-    return njs_make_date(tm, 0);
 }
 
 

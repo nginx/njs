@@ -16172,6 +16172,54 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Date.parse('2011-06-24T06:01:02.625Z')"),
       njs_str("1308895262625") },
 
+    { njs_str("Date.parse('2011-06-24T06:01:02.625+00:00')"),
+      njs_str("1308895262625") },
+
+    { njs_str("Date.parse('2011-06-24T06:01:02.625+0000')"),
+      njs_str("1308895262625") },
+
+    { njs_str("Date.parse('2011-06-24T06:01:02.625+00:0')"),
+      njs_str("NaN") },
+
+    { njs_str("Date.parse('2011-06-24T06:01:02.625+00:')"),
+      njs_str("NaN") },
+
+    { njs_str("Date.parse('2011-06-24T06:01:02.625+00')"),
+      njs_str("NaN") },
+
+    { njs_str("Date.parse('2011-06-24T06:01:02.625+0')"),
+      njs_str("NaN") },
+
+    { njs_str("Date.parse('2011-06-24T06:01:02.625+')"),
+      njs_str("NaN") },
+
+    { njs_str("Date.parse('2011-06-24T06:01:02.625-01:15')"),
+      njs_str("1308899762625") },
+
+    { njs_str("Date.parse('2011-06-24T06:01:02.625-01:60')"),
+      njs_str("NaN") },
+
+    { njs_str("Date.parse('2011-06-24T06:01:02.625-25:59')"),
+      njs_str("NaN") },
+
+    { njs_str("Date.parse('2011-06-24T06:01:02.625+01:15')"),
+      njs_str("1308890762625") },
+
+    { njs_str("Date.parse('2011-06-24T06:01:02.625-23:59')"),
+      njs_str("1308981602625") },
+
+    { njs_str("Date.parse('2011-06-24T06:01:02.625+23:59')"),
+      njs_str("1308808922625") },
+
+    { njs_str("Date.parse('2011-06-24T06:01:02.6255Z')"),
+      njs_str("1308895262625") },
+
+    { njs_str("Date.parse('2011-06-24T06:01:02.62555Z')"),
+      njs_str("1308895262625") },
+
+    { njs_str("Date.parse('2011-06-24T06:01:02.625555Z')"),
+      njs_str("1308895262625") },
+
     { njs_str("Date.parse('2011-06-24T06:01:02.6255555Z')"),
       njs_str("1308895262625") },
 
