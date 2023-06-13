@@ -530,6 +530,8 @@ njs_date_string_parse(njs_value_t *date)
     next = njs_date_number_parse(&tm[NJS_DATE_YR], p, end, 4);
 
     if (next != NULL) {
+        utc = 1;
+
         /* ISO-8601 format: "1970-09-28T06:00:00.000Z" */
 
         if (next == end) {
@@ -592,7 +594,6 @@ njs_date_string_parse(njs_value_t *date)
             return NAN;
         }
 
-        utc = 1;
         end--;
 
         if (*end != 'Z') {
@@ -635,6 +636,8 @@ njs_date_string_parse(njs_value_t *date)
         } else if (ms_length == 2) {
             tm[NJS_DATE_MSEC] *= 10;
         }
+
+done:
 
         return njs_make_date(tm, !utc);
     }
@@ -682,8 +685,6 @@ njs_date_string_parse(njs_value_t *date)
 
         week = 0;
     }
-
-done:
 
     return njs_make_date(tm, 0);
 }

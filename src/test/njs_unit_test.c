@@ -16178,6 +16178,13 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Date.parse('2011-06-24T06:01:02.625555Z5')"),
       njs_str("NaN") },
 
+    { njs_str("var tzoffzet = new Date(0).getTimezoneOffset() * 60000;"
+              "Date.parse('1970-01-01T00:00:00') == tzoffzet"),
+      njs_str("true") },
+
+    { njs_str("Date.parse('1970-01-01')"),
+      njs_str("0") },
+
     { njs_str("var d = new Date(); var str = d.toISOString();"
                  "var diff = Date.parse(str) - Date.parse(str.substring(0, str.length - 1));"
                  "d.getTimezoneOffset() == -diff/1000/60"),
