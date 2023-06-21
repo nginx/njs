@@ -222,7 +222,7 @@ njs_zlib_ext_deflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             chunk_size = njs_value_number(value);
 
             if (njs_slow_path(chunk_size < 64)) {
-                njs_vm_error(vm, "chunkSize must be >= 64");
+                njs_vm_range_error(vm, "chunkSize must be >= 64");
                 return NJS_ERROR;
             }
         }
@@ -234,8 +234,8 @@ njs_zlib_ext_deflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             if (njs_slow_path(level < Z_DEFAULT_COMPRESSION
                               || level > Z_BEST_COMPRESSION))
             {
-                njs_vm_error(vm, "level must be in the range %d..%d",
-                             Z_DEFAULT_COMPRESSION, Z_BEST_COMPRESSION);
+                njs_vm_range_error(vm, "level must be in the range %d..%d",
+                                   Z_DEFAULT_COMPRESSION, Z_BEST_COMPRESSION);
                 return NJS_ERROR;
             }
         }
@@ -246,13 +246,15 @@ njs_zlib_ext_deflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
             if (raw) {
                 if (njs_slow_path(window_bits < -15 || window_bits > -9)) {
-                    njs_vm_error(vm, "windowBits must be in the range -15..-9");
+                    njs_vm_range_error(vm, "windowBits must be in the range "
+                                       "-15..-9");
                     return NJS_ERROR;
                 }
 
             } else {
                 if (njs_slow_path(window_bits < 9 || window_bits > 15)) {
-                    njs_vm_error(vm, "windowBits must be in the range 9..15");
+                    njs_vm_range_error(vm, "windowBits must be in the range "
+                                       "9..15");
                     return NJS_ERROR;
                 }
             }
@@ -263,7 +265,7 @@ njs_zlib_ext_deflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             mem_level = njs_value_number(value);
 
             if (njs_slow_path(mem_level < 1 || mem_level > 9)) {
-                njs_vm_error(vm, "memLevel must be in the range 0..9");
+                njs_vm_range_error(vm, "memLevel must be in the range 0..9");
                 return NJS_ERROR;
             }
         }
@@ -281,7 +283,7 @@ njs_zlib_ext_deflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                 break;
 
             default:
-                njs_vm_error(vm, "unknown strategy: %d", strategy);
+                njs_vm_type_error(vm, "unknown strategy: %d", strategy);
                 return NJS_ERROR;
             }
         }
@@ -305,14 +307,14 @@ njs_zlib_ext_deflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     rc = deflateInit2(&stream, level, Z_DEFLATED, window_bits, mem_level,
                       strategy);
     if (njs_slow_path(rc != Z_OK)) {
-        njs_vm_error(vm, "deflateInit2() failed");
+        njs_vm_internal_error(vm, "deflateInit2() failed");
         return NJS_ERROR;
     }
 
     if (dictionary.start != NULL) {
         rc = deflateSetDictionary(&stream, dictionary.start, dictionary.length);
         if (njs_slow_path(rc != Z_OK)) {
-            njs_vm_error(vm, "deflateSetDictionary() failed");
+            njs_vm_internal_error(vm, "deflateSetDictionary() failed");
             return NJS_ERROR;
         }
     }
@@ -330,7 +332,8 @@ njs_zlib_ext_deflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         rc = deflate(&stream, Z_FINISH);
         if (njs_slow_path(rc < 0)) {
-            njs_vm_error(vm, "failed to deflate the data: %s", stream.msg);
+            njs_vm_internal_error(vm, "failed to deflate the data: %s",
+                                  stream.msg);
             goto fail;
         }
 
@@ -402,7 +405,7 @@ njs_zlib_ext_inflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             chunk_size = njs_value_number(value);
 
             if (njs_slow_path(chunk_size < 64)) {
-                njs_vm_error(vm, "chunkSize must be >= 64");
+                njs_vm_range_error(vm, "chunkSize must be >= 64");
                 return NJS_ERROR;
             }
         }
@@ -413,13 +416,15 @@ njs_zlib_ext_inflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
             if (raw) {
                 if (njs_slow_path(window_bits < -15 || window_bits > -8)) {
-                    njs_vm_error(vm, "windowBits must be in the range -15..-8");
+                    njs_vm_range_error(vm, "windowBits must be in the range "
+                                       "-15..-8");
                     return NJS_ERROR;
                 }
 
             } else {
                 if (njs_slow_path(window_bits < 8 || window_bits > 15)) {
-                    njs_vm_error(vm, "windowBits must be in the range 8..15");
+                    njs_vm_range_error(vm, "windowBits must be in the range "
+                                       "8..15");
                     return NJS_ERROR;
                 }
             }
@@ -443,14 +448,14 @@ njs_zlib_ext_inflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     rc = inflateInit2(&stream, window_bits);
     if (njs_slow_path(rc != Z_OK)) {
-        njs_vm_error(vm, "inflateInit2() failed");
+        njs_vm_internal_error(vm, "inflateInit2() failed");
         return NJS_ERROR;
     }
 
     if (dictionary.start != NULL) {
         rc = inflateSetDictionary(&stream, dictionary.start, dictionary.length);
         if (njs_slow_path(rc != Z_OK)) {
-            njs_vm_error(vm, "deflateSetDictionary() failed");
+            njs_vm_internal_error(vm, "deflateSetDictionary() failed");
             return NJS_ERROR;
         }
     }
@@ -468,13 +473,13 @@ njs_zlib_ext_inflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         rc = inflate(&stream, Z_NO_FLUSH);
         if (njs_slow_path(rc < 0)) {
-            njs_vm_error(vm, "failed to inflate the compressed data: %s",
-                         stream.msg);
+            njs_vm_internal_error(vm, "failed to inflate the compressed "
+                                  "data: %s", stream.msg);
             goto fail;
         }
 
         if (rc == Z_NEED_DICT) {
-            njs_vm_error(vm, "failed to inflate, dictionary is required");
+            njs_vm_type_error(vm, "failed to inflate, dictionary is required");
             goto fail;
         }
 
