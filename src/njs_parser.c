@@ -9205,7 +9205,7 @@ njs_parser_error(njs_vm_t *vm, njs_object_type_t type, njs_str_t *file,
         p = njs_sprintf(p, end, " in %uD", line);
     }
 
-    njs_error_new(vm, &error, type, msg, p - msg);
+    njs_error_new(vm, &error, &vm->prototypes[type].object, msg, p - msg);
 
     njs_set_number(&value, line);
     njs_value_property_set(vm, &error, njs_value_arg(&line_number), &value);

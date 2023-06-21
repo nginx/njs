@@ -25,19 +25,19 @@
 #define njs_uri_error(vm, fmt, ...)                                           \
     njs_throw_error(vm, NJS_OBJ_TYPE_URI_ERROR, fmt, ##__VA_ARGS__)
 
-void njs_error_new(njs_vm_t *vm, njs_value_t *dst, njs_object_type_t type,
+void njs_error_new(njs_vm_t *vm, njs_value_t *dst, njs_object_t *proto,
     u_char *start, size_t size);
 void njs_noinline njs_error_fmt_new(njs_vm_t *vm, njs_value_t *dst,
     njs_object_type_t type, const char *fmt, ...);
 void njs_throw_error(njs_vm_t *vm, njs_object_type_t type, const char *fmt,
     ...);
-void njs_throw_error_va(njs_vm_t *vm, njs_object_type_t type, const char *fmt,
+void njs_throw_error_va(njs_vm_t *vm, njs_object_t *proto, const char *fmt,
     va_list args);
 
 void njs_memory_error(njs_vm_t *vm);
 void njs_memory_error_set(njs_vm_t *vm, njs_value_t *value);
 
-njs_object_t *njs_error_alloc(njs_vm_t *vm, njs_object_type_t type,
+njs_object_t *njs_error_alloc(njs_vm_t *vm, njs_object_t *proto,
     const njs_value_t *name, const njs_value_t *message,
     const njs_value_t *errors);
 njs_int_t njs_error_to_string(njs_vm_t *vm, njs_value_t *retval,

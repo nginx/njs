@@ -1351,8 +1351,9 @@ njs_promise_perform_all(njs_vm_t *vm, njs_value_t *iterator,
         njs_set_array(&argument, pargs->args.data);
 
         if (handler == njs_promise_perform_any_handler) {
-            error = njs_error_alloc(vm, NJS_OBJ_TYPE_AGGREGATE_ERROR,
-                                    NULL, &string_any_rejected, &argument);
+            error = njs_error_alloc(vm,
+                           &vm->prototypes[NJS_OBJ_TYPE_AGGREGATE_ERROR].object,
+                           NULL, &string_any_rejected, &argument);
             if (njs_slow_path(error == NULL)) {
                 return NJS_ERROR;
             }
@@ -1728,8 +1729,9 @@ njs_promise_any_reject_element_functions(njs_vm_t *vm, njs_value_t *args,
     if (--(*context->remaining_elements) == 0) {
         njs_mp_free(vm->mem_pool, context->remaining_elements);
 
-        error = njs_error_alloc(vm, NJS_OBJ_TYPE_AGGREGATE_ERROR,
-                                NULL, &string_any_rejected, &arr_value);
+        error = njs_error_alloc(vm,
+                          &vm->prototypes[NJS_OBJ_TYPE_AGGREGATE_ERROR].object,
+                          NULL, &string_any_rejected, &arr_value);
         if (njs_slow_path(error == NULL)) {
             return NJS_ERROR;
         }

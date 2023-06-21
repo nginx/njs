@@ -733,12 +733,17 @@ njs_vm_throw(njs_vm_t *vm, const njs_value_t *value)
 
 
 void
-njs_vm_error(njs_vm_t *vm, const char *fmt, ...)
+njs_vm_error2(njs_vm_t *vm, unsigned type, const char *fmt, ...)
 {
     va_list  args;
 
+    if (type > (NJS_OBJ_TYPE_ERROR_MAX - NJS_OBJ_TYPE_ERROR)) {
+        return;
+    }
+
     va_start(args, fmt);
-    njs_throw_error_va(vm, NJS_OBJ_TYPE_ERROR, fmt, args);
+    type += NJS_OBJ_TYPE_ERROR;
+    njs_throw_error_va(vm, &vm->prototypes[type].object, fmt, args);
     va_end(args);
 }
 

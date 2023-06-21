@@ -28,7 +28,7 @@ static const njs_value_t  njs_error_errors_string = njs_string("errors");
 
 
 void
-njs_error_new(njs_vm_t *vm, njs_value_t *dst, njs_object_type_t type,
+njs_error_new(njs_vm_t *vm, njs_value_t *dst, njs_object_t *proto,
     u_char *start, size_t size)
 {
     ssize_t        length;
@@ -46,7 +46,7 @@ njs_error_new(njs_vm_t *vm, njs_value_t *dst, njs_object_type_t type,
         return;
     }
 
-    error = njs_error_alloc(vm, type, NULL, &string, NULL);
+    error = njs_error_alloc(vm, proto, NULL, &string, NULL);
     if (njs_slow_path(error == NULL)) {
         return;
     }
@@ -55,7 +55,7 @@ njs_error_new(njs_vm_t *vm, njs_value_t *dst, njs_object_type_t type,
 }
 
 void
-njs_throw_error_va(njs_vm_t *vm, njs_object_type_t type, const char *fmt,
+njs_throw_error_va(njs_vm_t *vm, njs_object_t *proto, const char *fmt,
     va_list args)
 {
     u_char   buf[NJS_MAX_ERROR_STR], *p;
@@ -66,7 +66,7 @@ njs_throw_error_va(njs_vm_t *vm, njs_object_type_t type, const char *fmt,
         p = njs_vsprintf(buf, buf + sizeof(buf), fmt, args);
     }
 
-    njs_error_new(vm, &vm->exception, type, buf, p - buf);
+    njs_error_new(vm, &vm->exception, proto, buf, p - buf);
 }
 
 
@@ -76,7 +76,7 @@ njs_throw_error(njs_vm_t *vm, njs_object_type_t type, const char *fmt, ...)
     va_list  args;
 
     va_start(args, fmt);
-    njs_throw_error_va(vm, type, fmt, args);
+    njs_throw_error_va(vm, &vm->prototypes[type].object, fmt, args);
     va_end(args);
 }
 
@@ -96,7 +96,7 @@ njs_error_fmt_new(njs_vm_t *vm, njs_value_t *dst, njs_object_type_t type,
         va_end(args);
     }
 
-    njs_error_new(vm, dst, type, buf, p - buf);
+    njs_error_new(vm, dst, &vm->prototypes[type].object, buf, p - buf);
 }
 
 
@@ -202,7 +202,7 @@ njs_error_stack(njs_vm_t *vm, njs_value_t *value, njs_value_t *stack)
 
 
 njs_object_t *
-njs_error_alloc(njs_vm_t *vm, njs_object_type_t type, const njs_value_t *name,
+njs_error_alloc(njs_vm_t *vm, njs_object_t *proto, const njs_value_t *name,
     const njs_value_t *message, const njs_value_t *errors)
 {
     njs_int_t           ret;
@@ -223,7 +223,7 @@ njs_error_alloc(njs_vm_t *vm, njs_object_type_t type, const njs_value_t *name,
     error->fast_array = 0;
     error->error_data = 1;
     error->stack_attached = 0;
-    error->__proto__ = &vm->prototypes[type].object;
+    error->__proto__ = proto;
     error->slots = NULL;
 
     lhq.replace = 0;
@@ -339,7 +339,7 @@ njs_error_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    error = njs_error_alloc(vm, type, NULL,
+    error = njs_error_alloc(vm, &vm->prototypes[type].object, NULL,
                             njs_is_defined(value) ? value : NULL,
                             njs_is_defined(&list) ? &list : NULL);
     if (njs_slow_path(error == NULL)) {
