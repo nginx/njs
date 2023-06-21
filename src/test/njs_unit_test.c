@@ -20723,12 +20723,12 @@ static njs_unit_test_t  njs_querystring_module_test[] =
 
     { njs_str("var qs = require('querystring');"
               "qs.parse('baz=fuz&muz=tax', null, null, {decodeURIComponent: 123});"),
-      njs_str("Error: option decodeURIComponent is not a function") },
+      njs_str("TypeError: option decodeURIComponent is not a function") },
 
     { njs_str("var qs = require('querystring');"
               "qs.unescape = 123;"
               "qs.parse('baz=fuz&muz=tax');"),
-    njs_str("Error: QueryString.unescape is not a function") },
+    njs_str("TypeError: QueryString.unescape is not a function") },
 
     { njs_str("var qs = require('querystring'); var out = [];"
               "qs.unescape = (key) => {out.push(key)};"
@@ -20841,12 +20841,12 @@ static njs_unit_test_t  njs_querystring_module_test[] =
     { njs_str("var qs = require('querystring');"
               "qs.stringify({'baz': 'fuz', 'muz': 'tax'}, null, null, {encodeURIComponent: 123});"
               "out.join('; ')"),
-      njs_str("Error: option encodeURIComponent is not a function") },
+      njs_str("TypeError: option encodeURIComponent is not a function") },
 
     { njs_str("var qs = require('querystring');"
               "qs.escape = 123;"
               "qs.stringify({'baz': 'fuz', 'muz': 'tax'})"),
-      njs_str("Error: QueryString.escape is not a function") },
+      njs_str("TypeError: QueryString.escape is not a function") },
 
     { njs_str("var qs = require('querystring'); var out = [];"
               "qs.escape = (key) => {out.push(key)};"
