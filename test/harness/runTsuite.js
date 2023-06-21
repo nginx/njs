@@ -13,7 +13,7 @@ async function run(tlist) {
         }
 
         if (r.status == "rejected" && t[i].optional) {
-            return r.reason.toString().startsWith("Error: not implemented");
+            return r.reason.toString().startsWith("InternalError: not implemented");
         }
 
         return false;
