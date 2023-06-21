@@ -26,7 +26,7 @@ var match = (entry) => {
             return false;
         }
     } catch (e) {
-        if (e.message == 'dentry type is not supported on this platform') {
+        if (e instanceof InternalError) {
             return true;
         }
 

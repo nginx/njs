@@ -898,7 +898,7 @@ let read_tests = () => [
         content: "ABC",
         read: [ [0, 5], ],
         check: (err, params) => {
-            if (err.message.indexOf('is out of range') == -1) {
+            if (!(err instanceof RangeError)) {
                 throw Error(`${err.message} unexpected exception`);
             }
 
@@ -910,7 +910,7 @@ let read_tests = () => [
         content: "ABC",
         read: [ [2, 3], ],
         check: (err, params) => {
-            if (err.message.indexOf('is out of range') == -1) {
+            if (!(err instanceof RangeError)) {
                 throw Error(`${err.message} unexpected exception`);
             }
 
@@ -1104,7 +1104,7 @@ let write_tests = () => [
         args: ["@", 'w'],
         write: [ [Buffer.from("__ABC__"), 8] ],
         check: (err, params) => {
-            if (err.message.indexOf('is out of range') == -1) {
+            if (!(err instanceof RangeError)) {
                 throw Error(`${err.message} unexpected exception`);
             }
 
@@ -1116,7 +1116,7 @@ let write_tests = () => [
         args: ["@", 'w'],
         write: [ [Buffer.from("__ABC__"), 7, 1] ],
         check: (err, params) => {
-            if (err.message.indexOf('is out of range') == -1) {
+            if (!(err instanceof RangeError)) {
                 throw Error(`${err.message} unexpected exception`);
             }
 
