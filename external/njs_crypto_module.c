@@ -335,7 +335,7 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     if (!hmac) {
         dgst = njs_vm_external(vm, njs_crypto_hash_proto_id, this);
         if (njs_slow_path(dgst == NULL)) {
-            njs_vm_error(vm, "\"this\" is not a hash object");
+            njs_vm_type_error(vm, "\"this\" is not a hash object");
             return NJS_ERROR;
         }
 
@@ -349,7 +349,7 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     } else {
         ctx = njs_vm_external(vm, njs_crypto_hmac_proto_id, this);
         if (njs_slow_path(ctx == NULL)) {
-            njs_vm_error(vm, "\"this\" is not a hmac object");
+            njs_vm_type_error(vm, "\"this\" is not a hmac object");
             return NJS_ERROR;
         }
 
@@ -383,7 +383,7 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
     } else {
-        njs_vm_error(vm, "data is not a string or Buffer-like object");
+        njs_vm_type_error(vm, "data is not a string or Buffer-like object");
 
         return NJS_ERROR;
     }
@@ -418,7 +418,7 @@ njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     if (!hmac) {
         dgst = njs_vm_external(vm, njs_crypto_hash_proto_id, this);
         if (njs_slow_path(dgst == NULL)) {
-            njs_vm_error(vm, "\"this\" is not a hash object");
+            njs_vm_type_error(vm, "\"this\" is not a hash object");
             return NJS_ERROR;
         }
 
@@ -431,7 +431,7 @@ njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     } else {
         ctx = njs_vm_external(vm, njs_crypto_hmac_proto_id, this);
         if (njs_slow_path(ctx == NULL)) {
-            njs_vm_error(vm, "\"this\" is not a hmac object");
+            njs_vm_type_error(vm, "\"this\" is not a hmac object");
             return NJS_ERROR;
         }
 
@@ -484,7 +484,7 @@ njs_hash_prototype_copy(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     dgst = njs_vm_external(vm, njs_crypto_hash_proto_id, njs_argument(args, 0));
     if (njs_slow_path(dgst == NULL)) {
-        njs_vm_error(vm, "\"this\" is not a hash object");
+        njs_vm_type_error(vm, "\"this\" is not a hash object");
         return NJS_ERROR;
     }
 
@@ -547,7 +547,7 @@ njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
     } else {
-        njs_vm_error(vm, "key is not a string or Buffer-like object");
+        njs_vm_type_error(vm, "key is not a string or Buffer-like object");
 
         return NJS_ERROR;
     }
@@ -597,7 +597,7 @@ njs_crypto_algorithm(njs_vm_t *vm, njs_value_t *value)
     njs_hash_alg_t  *e;
 
     if (njs_slow_path(!njs_value_is_string(value))) {
-        njs_vm_error(vm, "algorithm must be a string");
+        njs_vm_type_error(vm, "algorithm must be a string");
         return NULL;
     }
 
@@ -609,7 +609,7 @@ njs_crypto_algorithm(njs_vm_t *vm, njs_value_t *value)
         }
     }
 
-    njs_vm_error(vm, "not supported algorithm: \"%V\"", &name);
+    njs_vm_type_error(vm, "not supported algorithm: \"%V\"", &name);
 
     return NULL;
 }
@@ -623,7 +623,7 @@ njs_crypto_encoding(njs_vm_t *vm, njs_value_t *value)
 
     if (njs_slow_path(!njs_value_is_string(value))) {
         if (!njs_value_is_undefined(value)) {
-            njs_vm_error(vm, "encoding must be a string");
+            njs_vm_type_error(vm, "encoding must be a string");
             return NULL;
         }
 
@@ -638,7 +638,7 @@ njs_crypto_encoding(njs_vm_t *vm, njs_value_t *value)
         }
     }
 
-    njs_vm_error(vm, "Unknown digest encoding: \"%V\"", &name);
+    njs_vm_type_error(vm, "Unknown digest encoding: \"%V\"", &name);
 
     return NULL;
 }
