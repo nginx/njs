@@ -373,6 +373,27 @@ $t->write_file('test.js', <<EOF);
                 var body = await r.text();
                 return `\${body}: \${r.headers.get('Content-Type')}`;
              }, 'ABC: text/plain;charset=UTF-8'],
+            ['user content type', async () => {
+                var r = new Request("http://nginx.org",
+                                    {body: 'ABC',
+                                     headers: {'Content-Type': 'text/html'}});
+                return r.headers.get('Content-Type');
+             }, 'text/html'],
+            ['user content type from Headers()', async () => {
+                var h = new Headers();
+                h.append('Content-Type', 'text/html');
+                var r = new Request("http://nginx.org",
+                                    {body: 'ABC', headers: h});
+                return r.headers.get('Content-Type');
+             }, 'text/html'],
+            ['user content type deleted', async () => {
+                var h = new Headers();
+                h.append('Content-Type', 'text/html');
+                h.delete('Content-Type');
+                var r = new Request("http://nginx.org",
+                                    {body: 'ABC', headers: h});
+                return r.headers.get('Content-Type');
+             }, 'text/plain;charset=UTF-8'],
             ['GET body', () => {
                 try {
                     var r = new Request("http://nginx.org", {body: 'ABC'});

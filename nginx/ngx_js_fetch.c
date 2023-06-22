@@ -65,6 +65,7 @@ typedef struct {
         GUARD_RESPONSE,
     }                              guard;
     ngx_list_t                     header_list;
+    ngx_js_tb_elt_t               *content_type;
 } ngx_js_headers_t;
 
 
@@ -1951,6 +1952,7 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
      *  request->cache_mode = CACHE_MODE_DEFAULT;
      *  request->credentials = CREDENTIALS_SAME_ORIGIN;
      *  request->mode = MODE_NO_CORS;
+     *  request->headers.content_type = NULL;
      */
 
     ngx_memzero(request, sizeof(ngx_js_request_t));
@@ -2092,6 +2094,9 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
              * just allocating a new one.
              */
 
+            ngx_memset(&request->headers, 0, sizeof(ngx_js_headers_t));
+            request->headers.guard = GUARD_REQUEST;
+
             rc = ngx_list_init(&request->headers.header_list, pool, 4,
                                sizeof(ngx_js_tb_elt_t));
             if (rc != NGX_OK) {
@@ -2112,7 +2117,9 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
                 return NJS_ERROR;
             }
 
-            if (njs_value_is_string(value)) {
+            if (request->headers.content_type == NULL
+                && njs_value_is_string(value))
+            {
                 ret = ngx_js_headers_append(vm, &request->headers,
                                         (u_char *) "Content-Type",
                                         njs_length("Content-Type"),
@@ -2302,6 +2309,12 @@ ngx_js_headers_append(njs_vm_t *vm, ngx_js_headers_t *headers,
     h->value.data = value;
     h->value.len = vlen;
     h->next = NULL;
+
+    if (len == njs_strlen("Content-Type")
+        && ngx_strncasecmp(name, (u_char *) "Content-Type", len) == 0)
+    {
+        headers->content_type = h;
+    }
 
     return NJS_OK;
 }
@@ -3332,6 +3345,13 @@ ngx_headers_js_ext_delete(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         {
             h[i].hash = 0;
         }
+    }
+
+    if (name.length == njs_strlen("Content-Type")
+        && ngx_strncasecmp(name.start, (u_char *) "Content-Type", name.length)
+           == 0)
+    {
+        headers->content_type = NULL;
     }
 
     njs_value_undefined_set(retval);
