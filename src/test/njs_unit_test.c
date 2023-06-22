@@ -22084,7 +22084,7 @@ static njs_unit_test_t  njs_xml_test[] =
 
     { njs_str("var xml = require('xml');"
               "var doc = xml.parse(`<r></r>`); xml.exclusiveC14n(doc, 1)"),
-      njs_str("Error: \"excluding\" argument is not a XMLNode object") },
+      njs_str("TypeError: \"excluding\" argument is not a XMLNode object") },
 
     { njs_str(NJS_XML_DOC
               "doc.$root.$text"),
@@ -22163,12 +22163,12 @@ static njs_unit_test_t  njs_xml_test[] =
 
     { njs_str(NJS_XML_DOC
               "doc.$root.setAttribute('<', 'xxx')"),
-      njs_str("Error: attribute name \"<\" is not valid") },
+      njs_str("TypeError: attribute name \"<\" is not valid") },
 
     { njs_str(NJS_XML_DOC
               "doc.$root.$text = 'WAKA';"
               "doc.$root['$attr$' + 'x'.repeat(1024)] = 1;"),
-      njs_str("Error: njs_xml_str_to_c_string() very long string, length >= 511") },
+      njs_str("InternalError: njs_xml_str_to_c_string() very long string, length >= 511") },
 
     { njs_str(NJS_XML_DOC
               "delete doc.note.to.$attr$a;"
