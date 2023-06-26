@@ -383,8 +383,6 @@ static const njs_object_prop_t  njs_math_object_properties[] =
         .configurable = 1,
     },
 
-    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
-
     NJS_DECLARE_PROP_VALUE("E", njs_value(NJS_NUMBER, 1, M_E), 0),
 
     NJS_DECLARE_PROP_VALUE("LN10", njs_value(NJS_NUMBER, 1, M_LN10), 0),
