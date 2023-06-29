@@ -597,15 +597,14 @@ static njs_int_t
 njs_error_to_string2(njs_vm_t *vm, njs_value_t *retval,
     const njs_value_t *error, njs_bool_t want_stack)
 {
-    size_t              length;
-    u_char              *p;
-    njs_int_t           ret;
-    njs_object_t        *error_object;
-    njs_value_t         value1, value2;
-    njs_value_t         *name_value, *message_value;
-    njs_string_prop_t   name, message;
-    njs_lvlhsh_query_t  lhq;
+    size_t             length;
+    u_char             *p;
+    njs_int_t          ret;
+    njs_value_t        value1, value2;
+    njs_value_t        *name_value, *message_value;
+    njs_string_prop_t  name, message;
 
+    static const njs_value_t  string_message = njs_string("message");
     static const njs_value_t  default_name = njs_string("Error");
 
     njs_assert(njs_is_object(error));
@@ -621,12 +620,9 @@ njs_error_to_string2(njs_vm_t *vm, njs_value_t *retval,
         }
     }
 
-    error_object = njs_object(error);
-
-    njs_object_property_init(&lhq, &njs_string_name, NJS_NAME_HASH);
-
-    ret = njs_object_property(vm, error_object, &lhq, &value1);
-
+    ret = njs_value_property(vm, (njs_value_t *) error,
+                             njs_value_arg(&njs_string_name),
+                             &value1);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
     }
@@ -644,11 +640,8 @@ njs_error_to_string2(njs_vm_t *vm, njs_value_t *retval,
 
     (void) njs_string_prop(&name, name_value);
 
-    lhq.key_hash = NJS_MESSAGE_HASH;
-    lhq.key = njs_str_value("message");
-
-    ret = njs_object_property(vm, error_object, &lhq, &value2);
-
+    ret = njs_value_property(vm,  (njs_value_t *) error,
+                             njs_value_arg(&string_message), &value2);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
     }
