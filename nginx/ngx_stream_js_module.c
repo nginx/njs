@@ -114,6 +114,8 @@ static size_t ngx_stream_js_max_response_buffer_size(njs_vm_t *vm,
 static void ngx_stream_js_handle_event(ngx_stream_session_t *s,
     njs_vm_event_t vm_event, njs_value_t *args, njs_uint_t nargs);
 
+static njs_int_t ngx_js_stream_init(njs_vm_t *vm);
+static ngx_int_t ngx_stream_js_init(ngx_conf_t *cf);
 static char *ngx_stream_js_set(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static char *ngx_stream_js_var(ngx_conf_t *cf, ngx_command_t *cmd,
@@ -123,7 +125,6 @@ static ngx_int_t ngx_stream_js_init_conf_vm(ngx_conf_t *cf,
 static void *ngx_stream_js_create_srv_conf(ngx_conf_t *cf);
 static char *ngx_stream_js_merge_srv_conf(ngx_conf_t *cf, void *parent,
     void *child);
-static ngx_int_t ngx_stream_js_init(ngx_conf_t *cf);
 
 static ngx_ssl_t *ngx_stream_js_ssl(njs_vm_t *vm, ngx_stream_session_t *s);
 static ngx_flag_t ngx_stream_js_ssl_verify(njs_vm_t *vm,
@@ -563,6 +564,33 @@ static ngx_stream_filter_pt  ngx_stream_next_filter;
 
 static njs_int_t    ngx_stream_js_session_proto_id;
 static njs_int_t    ngx_stream_js_session_flags_proto_id;
+
+
+njs_module_t  ngx_js_stream_module = {
+    .name = njs_str("stream"),
+    .init = ngx_js_stream_init,
+};
+
+
+njs_module_t *njs_stream_js_addon_modules[] = {
+    /*
+     * Shared addons should be in the same order and the same positions
+     * in all nginx modules.
+     */
+    &ngx_js_ngx_module,
+    &ngx_js_fetch_module,
+#ifdef NJS_HAVE_OPENSSL
+    &njs_webcrypto_module,
+#endif
+#ifdef NJS_HAVE_XML
+    &njs_xml_module,
+#endif
+#ifdef NJS_HAVE_ZLIB
+    &njs_zlib_module,
+#endif
+    &ngx_js_stream_module,
+    NULL,
+};
 
 
 static ngx_int_t
@@ -1669,30 +1697,24 @@ ngx_stream_js_handle_event(ngx_stream_session_t *s, njs_vm_event_t vm_event,
 }
 
 
-static ngx_int_t
-ngx_stream_js_externals_init(ngx_conf_t *cf, ngx_js_loc_conf_t *conf_in)
+static njs_int_t
+ngx_js_stream_init(njs_vm_t *vm)
 {
-    ngx_stream_js_srv_conf_t  *conf = (ngx_stream_js_srv_conf_t *) conf_in;
-
-    ngx_stream_js_session_proto_id = njs_vm_external_prototype(conf->vm,
+    ngx_stream_js_session_proto_id = njs_vm_external_prototype(vm,
                                          ngx_stream_js_ext_session,
                                          njs_nitems(ngx_stream_js_ext_session));
     if (ngx_stream_js_session_proto_id < 0) {
-        ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                      "failed to add js session proto");
-        return NGX_ERROR;
+        return NJS_ERROR;
     }
 
-    ngx_stream_js_session_flags_proto_id = njs_vm_external_prototype(conf->vm,
+    ngx_stream_js_session_flags_proto_id = njs_vm_external_prototype(vm,
                                    ngx_stream_js_ext_session_flags,
                                    njs_nitems(ngx_stream_js_ext_session_flags));
     if (ngx_stream_js_session_flags_proto_id < 0) {
-        ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                      "failed to add js session flags proto");
-        return NGX_ERROR;
+        return NJS_ERROR;
     }
 
-    return NGX_OK;
+    return NJS_OK;
 }
 
 
@@ -1707,12 +1729,11 @@ ngx_stream_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
     options.unhandled_rejection = NJS_VM_OPT_UNHANDLED_REJECTION_THROW;
     options.ops = &ngx_stream_js_ops;
     options.metas = &ngx_stream_js_metas;
-    options.addons = njs_js_addon_modules;
+    options.addons = njs_stream_js_addon_modules;
     options.argv = ngx_argv;
     options.argc = ngx_argc;
 
-    return ngx_js_init_conf_vm(cf, conf, &options,
-                               ngx_stream_js_externals_init);
+    return ngx_js_init_conf_vm(cf, conf, &options);
 }
 
 

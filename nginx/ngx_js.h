@@ -13,6 +13,7 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <njs.h>
+#include "ngx_js_fetch.h"
 
 
 #define NGX_JS_UNSET        0
@@ -129,8 +130,7 @@ ngx_int_t ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     ngx_js_loc_conf_t *prev,
     ngx_int_t (*init_vm)(ngx_conf_t *cf, ngx_js_loc_conf_t *conf));
 ngx_int_t ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
-    njs_vm_opt_t *options,
-    ngx_int_t (*externals_init)(ngx_conf_t *cf, ngx_js_loc_conf_t *conf));
+    njs_vm_opt_t *options);
 ngx_js_loc_conf_t *ngx_js_create_conf(ngx_conf_t *cf, size_t size);
 char * ngx_js_merge_conf(ngx_conf_t *cf, void *parent, void *child,
    ngx_int_t (*init_vm)(ngx_conf_t *cf, ngx_js_loc_conf_t *conf));
@@ -144,13 +144,14 @@ njs_int_t ngx_js_ext_constant(njs_vm_t *vm, njs_object_prop_t *prop,
 njs_int_t ngx_js_ext_flags(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 
-ngx_int_t ngx_js_core_init(njs_vm_t *vm, ngx_log_t *log);
-
 ngx_int_t ngx_js_string(njs_vm_t *vm, njs_value_t *value, njs_str_t *str);
 ngx_int_t ngx_js_integer(njs_vm_t *vm, njs_value_t *value, ngx_int_t *n);
 
 
-extern njs_module_t *njs_js_addon_modules[];
+extern njs_module_t  ngx_js_ngx_module;
+extern njs_module_t  njs_webcrypto_module;
+extern njs_module_t  njs_xml_module;
+extern njs_module_t  njs_zlib_module;
 
 
 #endif /* _NGX_JS_H_INCLUDED_ */

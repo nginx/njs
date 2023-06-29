@@ -277,6 +277,8 @@ static njs_int_t ngx_fetch_flag(njs_vm_t *vm, const ngx_js_entry_t *entries,
 static njs_int_t ngx_fetch_flag_set(njs_vm_t *vm, const ngx_js_entry_t *entries,
      njs_value_t *value, const char *type);
 
+static njs_int_t ngx_js_fetch_init(njs_vm_t *vm);
+
 
 static const ngx_js_entry_t ngx_js_fetch_credentials[] = {
     { njs_str("same-origin"), CREDENTIALS_SAME_ORIGIN },
@@ -650,6 +652,12 @@ static njs_external_t  ngx_js_ext_http_response[] = {
 static njs_int_t    ngx_http_js_fetch_request_proto_id;
 static njs_int_t    ngx_http_js_fetch_response_proto_id;
 static njs_int_t    ngx_http_js_fetch_headers_proto_id;
+
+
+njs_module_t  ngx_js_fetch_module = {
+    .name = njs_str("fetch"),
+    .init = ngx_js_fetch_init,
+};
 
 
 njs_int_t
@@ -4033,8 +4041,8 @@ ngx_js_fetch_function_bind(njs_vm_t *vm, const njs_str_t *name,
 }
 
 
-ngx_int_t
-ngx_js_fetch_init(njs_vm_t *vm, ngx_log_t *log)
+static njs_int_t
+ngx_js_fetch_init(njs_vm_t *vm)
 {
     njs_int_t  ret;
 
@@ -4046,52 +4054,40 @@ ngx_js_fetch_init(njs_vm_t *vm, ngx_log_t *log)
                                           ngx_js_ext_http_headers,
                                           njs_nitems(ngx_js_ext_http_headers));
     if (ngx_http_js_fetch_headers_proto_id < 0) {
-        ngx_log_error(NGX_LOG_EMERG, log, 0,
-                      "failed to add js fetch Headers proto");
-        return NGX_ERROR;
+        return NJS_ERROR;
     }
 
     ngx_http_js_fetch_request_proto_id = njs_vm_external_prototype(vm,
                                           ngx_js_ext_http_request,
                                           njs_nitems(ngx_js_ext_http_request));
     if (ngx_http_js_fetch_request_proto_id < 0) {
-        ngx_log_error(NGX_LOG_EMERG, log, 0,
-                      "failed to add js fetch Request proto");
-        return NGX_ERROR;
+        return NJS_ERROR;
     }
 
     ngx_http_js_fetch_response_proto_id = njs_vm_external_prototype(vm,
                                           ngx_js_ext_http_response,
                                           njs_nitems(ngx_js_ext_http_response));
     if (ngx_http_js_fetch_response_proto_id < 0) {
-        ngx_log_error(NGX_LOG_EMERG, log, 0,
-                      "failed to add js fetch Response proto");
-        return NGX_ERROR;
+        return NJS_ERROR;
     }
 
     ret = ngx_js_fetch_function_bind(vm, &headers,
                                      ngx_js_ext_headers_constructor, 1);
     if (ret != NJS_OK) {
-        ngx_log_error(NGX_LOG_EMERG, log, 0,
-                      "failed to bind Headers ctor");
-        return NGX_ERROR;
+        return NJS_ERROR;
     }
 
     ret = ngx_js_fetch_function_bind(vm, &request,
                                      ngx_js_ext_request_constructor, 1);
     if (ret != NJS_OK) {
-        ngx_log_error(NGX_LOG_EMERG, log, 0,
-                      "failed to bind Request ctor");
-        return NGX_ERROR;
+        return NJS_ERROR;
     }
 
     ret = ngx_js_fetch_function_bind(vm, &response,
                                      ngx_js_ext_response_constructor, 1);
     if (ret != NJS_OK) {
-        ngx_log_error(NGX_LOG_EMERG, log, 0,
-                      "failed to bind Response ctor");
-        return NGX_ERROR;
+        return NJS_ERROR;
     }
 
-    return NGX_OK;
+    return NJS_OK;
 }

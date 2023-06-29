@@ -9,7 +9,6 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include "ngx_js.h"
-#include "ngx_js_fetch.h"
 
 
 static njs_int_t ngx_js_ext_build(njs_vm_t *vm, njs_object_prop_t *prop,
@@ -28,10 +27,7 @@ static njs_int_t ngx_js_ext_version(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 static void ngx_js_cleanup_vm(void *data);
 
-
-extern njs_module_t  njs_webcrypto_module;
-extern njs_module_t  njs_xml_module;
-extern njs_module_t  njs_zlib_module;
+static njs_int_t ngx_js_core_init(njs_vm_t *vm);
 
 
 static njs_external_t  ngx_js_ext_core[] = {
@@ -156,16 +152,14 @@ static njs_external_t  ngx_js_ext_core[] = {
 };
 
 
-njs_module_t *njs_js_addon_modules[] = {
-#ifdef NJS_HAVE_OPENSSL
-    &njs_webcrypto_module,
-#endif
-#ifdef NJS_HAVE_XML
-    &njs_xml_module,
-#endif
-#ifdef NJS_HAVE_ZLIB
-    &njs_zlib_module,
-#endif
+njs_module_t  ngx_js_ngx_module = {
+    .name = njs_str("ngx"),
+    .init = ngx_js_core_init,
+};
+
+
+njs_module_t *njs_js_addon_modules_shared[] = {
+    &ngx_js_ngx_module,
     NULL,
 };
 
@@ -279,31 +273,22 @@ ngx_js_string(njs_vm_t *vm, njs_value_t *value, njs_str_t *str)
 }
 
 
-ngx_int_t
-ngx_js_core_init(njs_vm_t *vm, ngx_log_t *log)
+static njs_int_t
+ngx_js_core_init(njs_vm_t *vm)
 {
-    ngx_int_t           rc;
     njs_int_t           ret, proto_id;
     njs_str_t           name;
     njs_opaque_value_t  value;
 
-    rc = ngx_js_fetch_init(vm, log);
-    if (rc != NGX_OK) {
-        return NGX_ERROR;
-    }
-
     proto_id = njs_vm_external_prototype(vm, ngx_js_ext_core,
                                          njs_nitems(ngx_js_ext_core));
     if (proto_id < 0) {
-        ngx_log_error(NGX_LOG_EMERG, log, 0, "failed to add js core proto");
-        return NGX_ERROR;
+        return NJS_ERROR;
     }
 
     ret = njs_vm_external_create(vm, njs_value_arg(&value), proto_id, NULL, 1);
     if (njs_slow_path(ret != NJS_OK)) {
-        ngx_log_error(NGX_LOG_EMERG, log, 0,
-                      "njs_vm_external_create() failed\n");
-        return NGX_ERROR;
+        return NJS_ERROR;
     }
 
     name.length = 3;
@@ -311,11 +296,10 @@ ngx_js_core_init(njs_vm_t *vm, ngx_log_t *log)
 
     ret = njs_vm_bind(vm, &name, njs_value_arg(&value), 1);
     if (njs_slow_path(ret != NJS_OK)) {
-        ngx_log_error(NGX_LOG_EMERG, log, 0, "njs_vm_bind() failed\n");
-        return NGX_ERROR;
+        return NJS_ERROR;
     }
 
-    return NGX_OK;
+    return NJS_OK;
 }
 
 
@@ -772,14 +756,10 @@ ngx_js_init_preload_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
     njs_vm_opt_init(&options);
 
     options.init = 1;
+    options.addons = njs_js_addon_modules_shared;
 
     vm = njs_vm_create(&options);
     if (vm == NULL) {
-        goto error;
-    }
-
-    ret = ngx_js_core_init(vm, cf->log);
-    if (njs_slow_path(ret != NJS_OK)) {
         goto error;
     }
 
@@ -1005,8 +985,7 @@ ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
 
 ngx_int_t
 ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
-    njs_vm_opt_t *options,
-    ngx_int_t (*externals_init)(ngx_conf_t *cf, ngx_js_loc_conf_t *conf))
+    njs_vm_opt_t *options)
 {
     size_t                size;
     u_char               *start, *end, *p;
@@ -1108,21 +1087,6 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
                 return NGX_ERROR;
             }
         }
-    }
-
-    /*
-     * Core prototypes must be inited before externals_init() because
-     * the core prototype ids have to be identical in all the modules.
-     */
-
-    rc = ngx_js_core_init(conf->vm, cf->log);
-    if (njs_slow_path(rc != NJS_OK)) {
-        return NGX_ERROR;
-    }
-
-    rc = externals_init(cf, conf);
-    if (rc != NGX_OK) {
-        return NGX_ERROR;
     }
 
     end = start + size;

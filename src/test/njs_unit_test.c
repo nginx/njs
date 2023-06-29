@@ -23683,6 +23683,19 @@ done:
 }
 
 
+njs_module_t *njs_unit_test_addon_modules[] = {
+    &njs_unit_test_262_module,
+    NULL,
+};
+
+
+njs_module_t *njs_unit_test_addon_external_modules[] = {
+    &njs_unit_test_262_module,
+    &njs_unit_test_external_module,
+    NULL,
+};
+
+
 static njs_int_t
 njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
     njs_opts_t *opts, njs_stat_t *stat)
@@ -23716,23 +23729,13 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
         options.module = opts->module;
         options.unsafe = opts->unsafe;
         options.backtrace = opts->backtrace;
+        options.addons = opts->externals ? njs_unit_test_addon_external_modules
+                                         : njs_unit_test_addon_modules;
 
         vm = njs_vm_create(&options);
         if (vm == NULL) {
             njs_printf("njs_vm_create() failed\n");
             goto done;
-        }
-
-        ret = njs_externals_262_init(vm);
-        if (ret != NJS_OK) {
-            goto done;
-        }
-
-        if (opts->externals) {
-            ret = njs_externals_shared_init(vm);
-            if (ret != NJS_OK) {
-                goto done;
-            }
         }
 
         start = tests[i].script.start;
@@ -23855,6 +23858,8 @@ njs_interactive_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
         options.init = 1;
         options.interactive = 1;
         options.backtrace = 1;
+        options.addons = opts->externals ? njs_unit_test_addon_external_modules
+                                         : njs_unit_test_addon_modules;
 
         vm = njs_vm_create(&options);
         if (vm == NULL) {
@@ -23862,17 +23867,7 @@ njs_interactive_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
             goto done;
         }
 
-        ret = njs_externals_262_init(vm);
-        if (ret != NJS_OK) {
-            goto done;
-        }
-
         if (opts->externals) {
-            ret = njs_externals_shared_init(vm);
-            if (ret != NJS_OK) {
-                goto done;
-            }
-
             ret = njs_externals_init(vm);
             if (ret != NJS_OK) {
                 goto done;

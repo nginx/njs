@@ -26,11 +26,25 @@ typedef struct {
 } njs_unit_test_prop_t;
 
 
+static njs_int_t njs_externals_262_init(njs_vm_t *vm);
+static njs_int_t njs_externals_shared_init(njs_vm_t *vm);
 njs_int_t njs_array_buffer_detach(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 
 
 static njs_int_t    njs_external_r_proto_id;
+
+
+njs_module_t  njs_unit_test_262_module = {
+    .name = njs_str("$262"),
+    .init = njs_externals_262_init,
+};
+
+
+njs_module_t  njs_unit_test_external_module = {
+    .name = njs_str("external"),
+    .init = njs_externals_shared_init,
+};
 
 
 static njs_int_t
@@ -1131,7 +1145,7 @@ njs_externals_init_internal(njs_vm_t *vm, njs_unit_test_req_init_t *init,
 }
 
 
-njs_int_t
+static njs_int_t
 njs_externals_262_init(njs_vm_t *vm)
 {
     njs_int_t           ret, proto_id;
@@ -1162,7 +1176,7 @@ njs_externals_262_init(njs_vm_t *vm)
 }
 
 
-njs_int_t
+static njs_int_t
 njs_externals_shared_init(njs_vm_t *vm)
 {
     return njs_externals_init_internal(vm, njs_test_requests, 1, 1);

@@ -246,6 +246,7 @@ static void ngx_http_js_handle_vm_event(ngx_http_request_t *r,
 static void ngx_http_js_handle_event(ngx_http_request_t *r,
     njs_vm_event_t vm_event, njs_value_t *args, njs_uint_t nargs);
 
+static njs_int_t ngx_js_http_init(njs_vm_t *vm);
 static ngx_int_t ngx_http_js_init(ngx_conf_t *cf);
 static char *ngx_http_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 static char *ngx_http_js_var(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
@@ -780,6 +781,33 @@ static uintptr_t ngx_http_js_uptr[] = {
 static njs_vm_meta_t ngx_http_js_metas = {
     .size = njs_nitems(ngx_http_js_uptr),
     .values = ngx_http_js_uptr
+};
+
+
+njs_module_t  ngx_js_http_module = {
+    .name = njs_str("http"),
+    .init = ngx_js_http_init,
+};
+
+
+njs_module_t *njs_http_js_addon_modules[] = {
+    /*
+     * Shared addons should be in the same order and the same positions
+     * in all nginx modules.
+     */
+    &ngx_js_ngx_module,
+    &ngx_js_fetch_module,
+#ifdef NJS_HAVE_OPENSSL
+    &njs_webcrypto_module,
+#endif
+#ifdef NJS_HAVE_XML
+    &njs_xml_module,
+#endif
+#ifdef NJS_HAVE_ZLIB
+    &njs_zlib_module,
+#endif
+    &ngx_js_http_module,
+    NULL,
 };
 
 
@@ -4103,21 +4131,17 @@ ngx_http_js_handle_event(ngx_http_request_t *r, njs_vm_event_t vm_event,
 }
 
 
-static ngx_int_t
-ngx_http_js_externals_init(ngx_conf_t *cf, ngx_js_loc_conf_t *conf_in)
+static njs_int_t
+ngx_js_http_init(njs_vm_t *vm)
 {
-    ngx_http_js_loc_conf_t        *conf = (ngx_http_js_loc_conf_t *) conf_in;
-
-    ngx_http_js_request_proto_id = njs_vm_external_prototype(conf->vm,
+    ngx_http_js_request_proto_id = njs_vm_external_prototype(vm,
                                            ngx_http_js_ext_request,
                                            njs_nitems(ngx_http_js_ext_request));
     if (ngx_http_js_request_proto_id < 0) {
-        ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                      "failed to add js request proto");
-        return NGX_ERROR;
+        return NJS_ERROR;
     }
 
-    return NGX_OK;
+    return NJS_OK;
 }
 
 
@@ -4132,11 +4156,11 @@ ngx_http_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
     options.unhandled_rejection = NJS_VM_OPT_UNHANDLED_REJECTION_THROW;
     options.ops = &ngx_http_js_ops;
     options.metas = &ngx_http_js_metas;
-    options.addons = njs_js_addon_modules;
+    options.addons = njs_http_js_addon_modules;
     options.argv = ngx_argv;
     options.argc = ngx_argc;
 
-    return ngx_js_init_conf_vm(cf, conf, &options, ngx_http_js_externals_init);
+    return ngx_js_init_conf_vm(cf, conf, &options);
 }
 
 
