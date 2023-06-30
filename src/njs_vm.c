@@ -792,20 +792,14 @@ njs_vm_value(njs_vm_t *vm, const njs_str_t *path, njs_value_t *retval)
 }
 
 
-njs_int_t
-njs_vm_bind(njs_vm_t *vm, const njs_str_t *var_name, const njs_value_t *value,
+static njs_int_t
+njs_vm_bind2(njs_vm_t *vm, const njs_str_t *var_name, njs_object_prop_t *prop,
     njs_bool_t shared)
 {
     njs_int_t           ret;
     njs_object_t        *global;
     njs_lvlhsh_t        *hash;
-    njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
-
-    prop = njs_object_prop_alloc(vm, &njs_value_undefined, value, 1);
-    if (njs_slow_path(prop == NULL)) {
-        return NJS_ERROR;
-    }
 
     ret = njs_string_new(vm, &prop->name, var_name->start, var_name->length, 0);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -829,6 +823,45 @@ njs_vm_bind(njs_vm_t *vm, const njs_str_t *var_name, const njs_value_t *value,
     }
 
     return NJS_OK;
+}
+
+
+njs_int_t
+njs_vm_bind(njs_vm_t *vm, const njs_str_t *var_name, const njs_value_t *value,
+    njs_bool_t shared)
+{
+    njs_object_prop_t   *prop;
+
+    prop = njs_object_prop_alloc(vm, &njs_value_undefined, value, 1);
+    if (njs_slow_path(prop == NULL)) {
+        return NJS_ERROR;
+    }
+
+    return njs_vm_bind2(vm, var_name, prop, shared);
+}
+
+
+njs_int_t
+njs_vm_bind_handler(njs_vm_t *vm, const njs_str_t *var_name,
+    njs_prop_handler_t handler, uint16_t magic16, uint32_t magic32,
+    njs_bool_t shared)
+{
+    njs_object_prop_t  *prop;
+
+    prop = njs_object_prop_alloc(vm, &njs_string_empty,
+                                 &njs_value_invalid, 1);
+    if (njs_slow_path(prop == NULL)) {
+        return NJS_ERROR;
+    }
+
+    prop->type = NJS_PROPERTY_HANDLER;
+    prop->u.value.type = NJS_INVALID;
+    prop->u.value.data.truth = 1;
+    njs_prop_magic16(prop) = magic16;
+    njs_prop_magic32(prop) = magic32;
+    njs_prop_handler(prop) = handler;
+
+    return njs_vm_bind2(vm, var_name, prop, shared);
 }
 
 

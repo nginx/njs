@@ -424,6 +424,9 @@ NJS_EXPORT void njs_disassembler(njs_vm_t *vm);
 
 NJS_EXPORT njs_int_t njs_vm_bind(njs_vm_t *vm, const njs_str_t *var_name,
     const njs_value_t *value, njs_bool_t shared);
+njs_int_t njs_vm_bind_handler(njs_vm_t *vm, const njs_str_t *var_name,
+    njs_prop_handler_t handler, uint16_t magic16, uint32_t magic32,
+    njs_bool_t shared);
 NJS_EXPORT njs_int_t njs_vm_value(njs_vm_t *vm, const njs_str_t *path,
     njs_value_t *retval);
 NJS_EXPORT njs_function_t *njs_vm_function(njs_vm_t *vm, const njs_str_t *name);
