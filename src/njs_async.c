@@ -163,6 +163,8 @@ njs_async_context_free(njs_vm_t *vm, njs_async_ctx_t *ctx)
 
 static const njs_object_prop_t  njs_async_constructor_properties[] =
 {
+    NJS_DECLARE_PROP_NAME("AsyncFunction"),
+
     NJS_DECLARE_PROP_LENGTH(1),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
