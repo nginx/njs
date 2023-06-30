@@ -311,6 +311,12 @@ interface NgxObject {
      * @since 0.5.1
      */
     readonly WARN: number;
+    /**
+     * A number corresponding to the current worker process id.
+     * Can have values from 0 to worker_processes - 1.
+     * @since 0.8.0
+     */
+    readonly worker_id: number;
 
 }
 

@@ -25,6 +25,8 @@ static njs_int_t ngx_js_ext_prefix(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_js_ext_version(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+static njs_int_t ngx_js_ext_worker_id(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 static void ngx_js_cleanup_vm(void *data);
 
 static njs_int_t ngx_js_core_init(njs_vm_t *vm);
@@ -146,6 +148,15 @@ static njs_external_t  ngx_js_ext_core[] = {
             .handler = ngx_js_ext_constant,
             .magic32 = NGX_LOG_WARN,
             .magic16 = NGX_JS_NUMBER,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("worker_id"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_worker_id,
         }
     },
 
@@ -449,6 +460,15 @@ ngx_js_ext_version(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
 {
     return njs_vm_value_string_set(vm, retval, (u_char *) NGINX_VERSION,
                                    njs_strlen(NGINX_VERSION));
+}
+
+
+njs_int_t
+ngx_js_ext_worker_id(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval)
+{
+    njs_value_number_set(retval, ngx_worker);
+    return NJS_OK;
 }
 
 
