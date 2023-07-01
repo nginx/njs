@@ -29,6 +29,12 @@ typedef struct {
 } njs_opts_t;
 
 
+njs_module_t *njs_benchmark_addon_external_modules[] = {
+    &njs_unit_test_external_module,
+    NULL,
+};
+
+
 static njs_int_t
 njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
     njs_benchmark_test_t *test)
@@ -36,7 +42,7 @@ njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
     u_char        *start;
     njs_vm_t      *vm, *nvm;
     uint64_t      ns;
-    njs_int_t     ret, proto_id;
+    njs_int_t     ret;
     njs_str_t     s, *expected;
     njs_uint_t    i, n;
     njs_bool_t    success;
@@ -48,6 +54,8 @@ njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
     static const njs_value_t  times_key = njs_string("times");
 
     njs_vm_opt_init(&options);
+
+    options.addons = njs_benchmark_addon_external_modules;
 
     vm = NULL;
     nvm = NULL;
@@ -64,11 +72,6 @@ njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
     ret = njs_vm_compile(vm, &start, start + test->script.length);
     if (ret != NJS_OK) {
         njs_printf("njs_vm_compile() failed\n");
-        goto done;
-    }
-
-    proto_id = njs_externals_shared_init(vm);
-    if (proto_id < 0) {
         goto done;
     }
 
