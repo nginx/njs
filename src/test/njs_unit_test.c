@@ -25090,7 +25090,7 @@ static njs_test_suite_t  njs_suites[] =
       njs_disabled_denormals_tests },
 
     {
-#if (NJS_HAVE_OPENSSL)
+#if (NJS_HAVE_OPENSSL && !NJS_HAVE_MEMORY_SANITIZER)
         njs_str("webcrypto"),
 #else
         njs_str(""),
