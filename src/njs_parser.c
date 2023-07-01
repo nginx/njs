@@ -5491,6 +5491,18 @@ njs_parser_iteration_statement_for(njs_parser_t *parser,
 
 
 static njs_int_t
+njs_parser_for_var_in_of_expression_chk_fail(njs_parser_t *parser,
+    njs_lexer_token_t *token, njs_queue_link_t *current)
+{
+    if (parser->ret != NJS_OK) {
+        return njs_parser_failed(parser);
+    }
+
+    return njs_parser_for_var_in_of_expression(parser, token, current);
+}
+
+
+static njs_int_t
 njs_parser_for_expression_map_reparse(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current)
 {
@@ -5517,8 +5529,8 @@ njs_parser_for_expression_map_reparse(njs_parser_t *parser,
 
         *text = token->text;
 
-        return njs_parser_after(parser, current, text, 1,
-                                njs_parser_for_var_in_of_expression);
+        return njs_parser_after(parser, current, text, 0,
+                                njs_parser_for_var_in_of_expression_chk_fail);
     }
 
     return njs_parser_stack_pop(parser);
