@@ -1979,7 +1979,7 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
 
     if (njs_slow_path(vm->top_frame == NULL)) {
         /* An exception was thrown during compilation. */
-        njs_vm_init(vm);
+        njs_vm_runtime_init(vm);
     }
 
     if (njs_is_valid(&vm->exception)) {

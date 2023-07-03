@@ -1407,6 +1407,7 @@ static njs_int_t    njs_fs_bytes_written_proto_id;
 
 njs_module_t  njs_fs_module = {
     .name = njs_str("fs"),
+    .preinit = NULL,
     .init = njs_fs_init,
 };
 

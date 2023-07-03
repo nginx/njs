@@ -46,10 +46,10 @@ njs_function_alloc(njs_vm_t *vm, njs_function_lambda_t *lambda,
     }
 
     if (async) {
-        proto = &vm->prototypes[NJS_OBJ_TYPE_ASYNC_FUNCTION].object;
+        proto = njs_vm_proto(vm, NJS_OBJ_TYPE_ASYNC_FUNCTION);
 
     } else {
-        proto = &vm->prototypes[NJS_OBJ_TYPE_FUNCTION].object;
+        proto = njs_vm_proto(vm, NJS_OBJ_TYPE_FUNCTION);
     }
 
     function->object.__proto__ = proto;
@@ -84,7 +84,7 @@ njs_vm_function_alloc(njs_vm_t *vm, njs_function_native_t native,
     function->object.shared = shared;
     function->u.native = native;
     function->object.shared_hash = vm->shared->function_instance_hash;
-    function->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_FUNCTION].object;
+    function->object.__proto__ = njs_vm_proto(vm, NJS_OBJ_TYPE_FUNCTION);
     function->object.type = NJS_FUNCTION;
 
     return function;
@@ -212,7 +212,7 @@ njs_function_copy(njs_vm_t *vm, njs_function_t *function)
 
     type = njs_function_object_type(vm, function);
 
-    copy->object.__proto__ = &vm->prototypes[type].object;
+    copy->object.__proto__ = njs_vm_proto(vm, type);
     copy->object.shared = 0;
 
     if (copy->ctor) {
@@ -1370,7 +1370,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     /* Bound functions have no "prototype" property. */
     function->object.shared_hash = vm->shared->arrow_instance_hash;
 
-    function->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_FUNCTION].object;
+    function->object.__proto__ = njs_vm_proto(vm, NJS_OBJ_TYPE_FUNCTION);
     function->object.shared = 0;
 
     function->context = njs_function(&args[0]);

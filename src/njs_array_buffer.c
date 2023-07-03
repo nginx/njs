@@ -33,7 +33,7 @@ njs_array_buffer_alloc(njs_vm_t *vm, uint64_t size, njs_bool_t zeroing)
         goto memory_error;
     }
 
-    proto = &vm->prototypes[NJS_OBJ_TYPE_ARRAY_BUFFER].object;
+    proto = njs_vm_proto(vm, NJS_OBJ_TYPE_ARRAY_BUFFER);
 
     njs_lvlhsh_init(&array->object.hash);
     njs_lvlhsh_init(&array->object.shared_hash);

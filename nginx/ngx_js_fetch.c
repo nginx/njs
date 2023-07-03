@@ -656,6 +656,7 @@ static njs_int_t    ngx_http_js_fetch_headers_proto_id;
 
 njs_module_t  ngx_js_fetch_module = {
     .name = njs_str("fetch"),
+    .preinit = NULL,
     .init = ngx_js_fetch_init,
 };
 

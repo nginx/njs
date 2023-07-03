@@ -105,6 +105,7 @@ static njs_external_t  njs_ext_query_string[] = {
 
 njs_module_t  njs_query_string_module = {
     .name = njs_str("querystring"),
+    .preinit = NULL,
     .init = njs_query_string_init,
 };
 

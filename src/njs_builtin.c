@@ -115,7 +115,7 @@ njs_object_hash_init(njs_vm_t *vm, njs_lvlhsh_t *hash,
 njs_int_t
 njs_builtin_objects_create(njs_vm_t *vm)
 {
-    njs_int_t                  ret;
+    njs_int_t                  ret, index;
     njs_uint_t                 i;
     njs_object_t               *object, *string_object;
     njs_function_t             *constructor;
@@ -128,6 +128,8 @@ njs_builtin_objects_create(njs_vm_t *vm)
     if (njs_slow_path(shared == NULL)) {
         return NJS_ERROR;
     }
+
+    vm->shared = shared;
 
     njs_lvlhsh_init(&shared->keywords_hash);
     njs_lvlhsh_init(&shared->values_hash);
@@ -204,34 +206,42 @@ njs_builtin_objects_create(njs_vm_t *vm)
         return NJS_ERROR;
     }
 
-    prototype = shared->prototypes;
-
     for (i = NJS_OBJ_TYPE_OBJECT; i < NJS_OBJ_TYPE_MAX; i++) {
-        prototype[i] = njs_object_type_init[i]->prototype_value;
+        index = njs_vm_ctor_push(vm);
+        if (njs_slow_path(index < 0)) {
+            return NJS_ERROR;
+        }
 
-        ret = njs_object_hash_init(vm, &prototype[i].object.shared_hash,
+        njs_assert_msg((njs_uint_t) index == i,
+                       "ctor index should match object type");
+
+        prototype = njs_shared_prototype(shared, i);
+        *prototype = njs_object_type_init[i]->prototype_value;
+
+        ret = njs_object_hash_init(vm, &prototype->object.shared_hash,
                                    njs_object_type_init[i]->prototype_props);
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
 
-        prototype[i].object.extensible = 1;
+        prototype->object.extensible = 1;
     }
 
-    shared->prototypes[NJS_OBJ_TYPE_REGEXP].regexp.pattern =
-                                              shared->empty_regexp_pattern;
-
-    constructor = shared->constructors;
+    prototype = njs_shared_prototype(shared, NJS_OBJ_TYPE_REGEXP);
+    prototype->regexp.pattern = shared->empty_regexp_pattern;
 
     for (i = NJS_OBJ_TYPE_OBJECT; i < NJS_OBJ_TYPE_MAX; i++) {
+        constructor = njs_shared_ctor(shared, i);
+
         if (njs_object_type_init[i]->constructor_props == NULL) {
+            njs_memzero(constructor, sizeof(njs_function_t));
             continue;
         }
 
-        constructor[i] = njs_object_type_init[i]->constructor;
-        constructor[i].object.shared = 0;
+        *constructor = njs_object_type_init[i]->constructor;
+        constructor->object.shared = 0;
 
-        ret = njs_object_hash_init(vm, &constructor[i].object.shared_hash,
+        ret = njs_object_hash_init(vm, &constructor->object.shared_hash,
                                    njs_object_type_init[i]->constructor_props);
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
@@ -258,91 +268,6 @@ njs_builtin_objects_create(njs_vm_t *vm)
     string_object->extensible = 0;
 
     njs_lvlhsh_init(&shared->modules_hash);
-
-    vm->shared = shared;
-
-    return NJS_OK;
-}
-
-
-njs_int_t
-njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global)
-{
-    size_t        size;
-    njs_uint_t    i;
-    njs_object_t  *object_prototype, *function_prototype,
-                  *typed_array_prototype, *error_prototype, *async_prototype,
-                  *typed_array_ctor, *error_ctor;
-
-    /*
-     * Copy both prototypes and constructors arrays by one memcpy()
-     * because they are stored together.
-     */
-    size = (sizeof(njs_object_prototype_t) + sizeof(njs_function_t))
-           * NJS_OBJ_TYPE_MAX;
-
-    memcpy(vm->prototypes, vm->shared->prototypes, size);
-
-    object_prototype = &vm->prototypes[NJS_OBJ_TYPE_OBJECT].object;
-
-    for (i = NJS_OBJ_TYPE_ARRAY; i < NJS_OBJ_TYPE_NORMAL_MAX; i++) {
-        vm->prototypes[i].object.__proto__ = object_prototype;
-    }
-
-    typed_array_prototype = &vm->prototypes[NJS_OBJ_TYPE_TYPED_ARRAY].object;
-
-    for (i = NJS_OBJ_TYPE_TYPED_ARRAY_MIN;
-         i < NJS_OBJ_TYPE_TYPED_ARRAY_MAX;
-         i++)
-    {
-        vm->prototypes[i].object.__proto__ = typed_array_prototype;
-    }
-
-    vm->prototypes[NJS_OBJ_TYPE_ARRAY_ITERATOR].object.__proto__ =
-                              &vm->prototypes[NJS_OBJ_TYPE_ITERATOR].object;
-
-    vm->prototypes[NJS_OBJ_TYPE_BUFFER].object.__proto__ =
-                              &vm->prototypes[NJS_OBJ_TYPE_UINT8_ARRAY].object;
-
-    error_prototype = &vm->prototypes[NJS_OBJ_TYPE_ERROR].object;
-    error_prototype->__proto__ = object_prototype;
-
-    for (i = NJS_OBJ_TYPE_EVAL_ERROR; i < NJS_OBJ_TYPE_MAX; i++) {
-        vm->prototypes[i].object.__proto__ = error_prototype;
-    }
-
-    function_prototype = &vm->prototypes[NJS_OBJ_TYPE_FUNCTION].object;
-
-    async_prototype = &vm->prototypes[NJS_OBJ_TYPE_ASYNC_FUNCTION].object;
-    async_prototype->__proto__ = function_prototype;
-
-    for (i = NJS_OBJ_TYPE_OBJECT; i < NJS_OBJ_TYPE_NORMAL_MAX; i++) {
-        vm->constructors[i].object.__proto__ = function_prototype;
-    }
-
-    typed_array_ctor = &vm->constructors[NJS_OBJ_TYPE_TYPED_ARRAY].object;
-
-    for (i = NJS_OBJ_TYPE_TYPED_ARRAY_MIN;
-         i < NJS_OBJ_TYPE_TYPED_ARRAY_MAX;
-         i++)
-    {
-        vm->constructors[i].object.__proto__ = typed_array_ctor;
-    }
-
-    error_ctor = &vm->constructors[NJS_OBJ_TYPE_ERROR].object;
-    error_ctor->__proto__ = function_prototype;
-
-    for (i = NJS_OBJ_TYPE_EVAL_ERROR; i < NJS_OBJ_TYPE_MAX; i++) {
-        vm->constructors[i].object.__proto__ = error_ctor;
-    }
-
-    vm->global_object.__proto__ = object_prototype;
-
-    njs_set_undefined(global);
-    njs_set_object(global, &vm->global_object);
-
-    vm->string_object = vm->shared->string_object;
-    vm->string_object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_STRING].object;
 
     return NJS_OK;
 }
@@ -838,7 +763,7 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
     /* Constructor from built-in modules (not-mapped to global object). */
 
     for (i = NJS_OBJ_TYPE_HIDDEN_MIN; i < NJS_OBJ_TYPE_HIDDEN_MAX; i++) {
-        njs_set_object(&value, &vm->constructors[i].object);
+        njs_set_object(&value, &njs_vm_ctor(vm, i).object);
 
         ret = njs_value_property(vm, &value, njs_value_arg(&njs_string_name),
                                  &tag);
@@ -847,7 +772,7 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
             njs_string_get(&tag, &ctx.match);
         }
 
-        ret = njs_object_traverse(vm, &vm->constructors[i].object, &ctx,
+        ret = njs_object_traverse(vm, njs_object(&value), &ctx,
                                   njs_builtin_traverse);
 
         if (ret == NJS_DONE) {
@@ -1253,7 +1178,7 @@ njs_top_level_constructor(njs_vm_t *vm, njs_object_prop_t *self,
             return NJS_DECLINED;
         }
 
-        ctor = &vm->constructors[njs_prop_magic16(self)];
+        ctor = &njs_vm_ctor(vm, njs_prop_magic16(self));
 
         njs_set_function(retval, ctor);
     }

@@ -76,7 +76,7 @@ njs_throw_error(njs_vm_t *vm, njs_object_type_t type, const char *fmt, ...)
     va_list  args;
 
     va_start(args, fmt);
-    njs_throw_error_va(vm, &vm->prototypes[type].object, fmt, args);
+    njs_throw_error_va(vm, njs_vm_proto(vm, type), fmt, args);
     va_end(args);
 }
 
@@ -96,7 +96,7 @@ njs_error_fmt_new(njs_vm_t *vm, njs_value_t *dst, njs_object_type_t type,
         va_end(args);
     }
 
-    njs_error_new(vm, dst, &vm->prototypes[type].object, buf, p - buf);
+    njs_error_new(vm, dst, njs_vm_proto(vm, type), buf, p - buf);
 }
 
 
@@ -298,7 +298,7 @@ memory_error:
 }
 
 
-static njs_int_t
+njs_int_t
 njs_error_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t type, njs_value_t *retval)
 {
@@ -339,7 +339,7 @@ njs_error_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    error = njs_error_alloc(vm, &vm->prototypes[type].object, NULL,
+    error = njs_error_alloc(vm, njs_vm_proto(vm, type), NULL,
                             njs_is_defined(value) ? value : NULL,
                             njs_is_defined(&list) ? &list : NULL);
     if (njs_slow_path(error == NULL)) {
@@ -499,15 +499,13 @@ const njs_object_init_t  njs_aggregate_error_constructor_init = {
 void
 njs_memory_error_set(njs_vm_t *vm, njs_value_t *value)
 {
-    njs_object_t            *object;
-    njs_object_prototype_t  *prototypes;
+    njs_object_t  *object;
 
-    prototypes = vm->prototypes;
     object = &vm->memory_error_object;
 
     njs_lvlhsh_init(&object->hash);
     njs_lvlhsh_init(&object->shared_hash);
-    object->__proto__ = &prototypes[NJS_OBJ_TYPE_INTERNAL_ERROR].object;
+    object->__proto__ = njs_vm_proto(vm, NJS_OBJ_TYPE_INTERNAL_ERROR);
     object->slots = NULL;
     object->type = NJS_OBJECT;
     object->shared = 1;
@@ -555,7 +553,7 @@ njs_memory_error_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
 
     function = njs_function(value);
     proto = njs_property_prototype_create(vm, &function->object.hash,
-                                          &vm->prototypes[index].object);
+                                          njs_vm_proto(vm, index));
     if (proto == NULL) {
         proto = &njs_value_undefined;
     }

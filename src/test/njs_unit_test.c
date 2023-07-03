@@ -22358,6 +22358,48 @@ static njs_unit_test_t  njs_module_test[] =
 
 static njs_unit_test_t  njs_externals_test[] =
 {
+    { njs_str("(new ExternalError('XXX')) instanceof ExternalError"),
+      njs_str("true") },
+
+    { njs_str("(new ExternalError('XXX')) instanceof Error"),
+      njs_str("true") },
+
+    { njs_str("(new ExternalError()).message"),
+      njs_str("") },
+
+    { njs_str("(new ExternalError('XXX')).message"),
+      njs_str("XXX") },
+
+    { njs_str("(new ExternalError('XXX')).constructor == ExternalError"),
+      njs_str("true") },
+
+    { njs_str("(new ExternalError('XXX')).name"),
+      njs_str("ExternalError") },
+
+    { njs_str("(new ExternalError('XXX')).__proto__.name"),
+      njs_str("ExternalError") },
+
+    { njs_str("(new ExternalError('XXX')).__proto__.__proto__.name"),
+      njs_str("Error") },
+
+    { njs_str("(new ExternalError('XXX'))"),
+      njs_str("ExternalError: XXX") },
+
+    { njs_str("(new ExternalError('XXX')).toString()"),
+      njs_str("ExternalError: XXX") },
+
+    { njs_str("njs.dump(new ExternalError('XXX'))"),
+      njs_str("ExternalError: XXX") },
+
+    { njs_str("JSON.stringify(new ExternalError('XXX'))"),
+      njs_str("{}") },
+
+    { njs_str("Object.getOwnPropertyNames(new ExternalError('XXX'))"),
+      njs_str("message") },
+
+    { njs_str("var ee; try{ $r.customException() } catch (e) { if (!(e instanceof ExternalError)) { throw 'Oops'} ee = e;}; ee.toString()"),
+      njs_str("ExternalError: Oops") },
+
     { njs_str("typeof $r"),
       njs_str("object") },
 
@@ -22583,7 +22625,7 @@ static njs_unit_test_t  njs_externals_test[] =
 #endif
 
     { njs_str("Object.keys(this).sort()"),
-      njs_str("$262,$r,$r2,$r3,$shared,ExternalConstructor," NCRYPTO "global,njs,process") },
+      njs_str("$262,$r,$r2,$r3,$shared,ExternalConstructor,ExternalError," NCRYPTO "global,njs,process") },
 
     { njs_str("Object.getOwnPropertySymbols($r2)[0] == Symbol.toStringTag"),
       njs_str("true") },

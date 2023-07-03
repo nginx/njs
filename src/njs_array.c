@@ -83,7 +83,7 @@ njs_array_alloc(njs_vm_t *vm, njs_bool_t flat, uint64_t length, uint32_t spare)
     array->start = array->data;
     njs_lvlhsh_init(&array->object.hash);
     array->object.shared_hash = vm->shared->array_instance_hash;
-    array->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_ARRAY].object;
+    array->object.__proto__ = njs_vm_proto(vm, NJS_OBJ_TYPE_ARRAY);
     array->object.slots = NULL;
     array->object.type = NJS_ARRAY;
     array->object.shared = 0;

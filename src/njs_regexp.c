@@ -503,7 +503,7 @@ njs_regexp_alloc(njs_vm_t *vm, njs_regexp_pattern_t *pattern)
     if (njs_fast_path(regexp != NULL)) {
         njs_lvlhsh_init(&regexp->object.hash);
         regexp->object.shared_hash = vm->shared->regexp_instance_hash;
-        regexp->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_REGEXP].object;
+        regexp->object.__proto__ = njs_vm_proto(vm, NJS_OBJ_TYPE_REGEXP);
         regexp->object.slots = NULL;
         regexp->object.type = NJS_REGEXP;
         regexp->object.shared = 0;
@@ -628,7 +628,7 @@ njs_regexp_prototype_flag(njs_vm_t *vm, njs_value_t *args,
     }
 
     if (njs_slow_path(!njs_is_regexp(this))) {
-        if (njs_object(this) == &vm->prototypes[NJS_OBJ_TYPE_REGEXP].object) {
+        if (njs_object(this) == njs_vm_proto(vm, NJS_OBJ_TYPE_REGEXP)) {
             njs_set_undefined(retval);
             return NJS_OK;
         }
@@ -679,7 +679,7 @@ njs_regexp_prototype_source(njs_vm_t *vm, njs_value_t *args,
     }
 
     if (njs_slow_path(!njs_is_regexp(this))) {
-        if (njs_object(this) == &vm->prototypes[NJS_OBJ_TYPE_REGEXP].object) {
+        if (njs_object(this) == njs_vm_proto(vm, NJS_OBJ_TYPE_REGEXP)) {
             njs_value_assign(retval, &njs_string_empty_regexp);
             return NJS_OK;
         }
@@ -1553,7 +1553,7 @@ njs_regexp_prototype_symbol_split(njs_vm_t *vm, njs_value_t *args,
         return ret;
     }
 
-    njs_set_function(&constructor, &vm->constructors[NJS_OBJ_TYPE_REGEXP]);
+    njs_set_function(&constructor, &njs_vm_ctor(vm, NJS_OBJ_TYPE_REGEXP));
 
     ret = njs_value_species_constructor(vm, rx, &constructor, &constructor);
     if (njs_slow_path(ret != NJS_OK)) {

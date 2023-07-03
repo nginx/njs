@@ -18,7 +18,7 @@ njs_async_function_frame_invoke(njs_vm_t *vm, njs_value_t *retval)
     njs_value_t               ctor;
     njs_promise_capability_t  *capability;
 
-    njs_set_function(&ctor, &vm->constructors[NJS_OBJ_TYPE_PROMISE]);
+    njs_set_function(&ctor, &njs_vm_ctor(vm, NJS_OBJ_TYPE_PROMISE));
 
     capability = njs_promise_new_capability(vm, &ctor);
     if (njs_slow_path(capability == NULL)) {

@@ -315,6 +315,77 @@ njs_vm_external_prototype(njs_vm_t *vm, const njs_external_t *definition,
 }
 
 
+static njs_int_t
+njs_vm_external_constructor_handler(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    njs_set_function(retval, &njs_vm_ctor(vm, njs_prop_magic32(prop)));
+
+    return NJS_OK;
+}
+
+
+njs_int_t
+njs_vm_external_constructor(njs_vm_t *vm, const njs_str_t *name,
+    njs_function_native_t native, const njs_external_t *ctor_props,
+    njs_uint_t ctor_nprops, const njs_external_t *proto_props,
+    njs_uint_t proto_nprops)
+{
+    njs_int_t               ret, index, proto_id;
+    njs_arr_t               **pprotos;
+    njs_function_t          *constructor;
+    njs_exotic_slots_t      *slots;
+    njs_object_prototype_t  *prototype;
+
+    index = njs_vm_ctor_push(vm);
+    if (njs_slow_path(index < 0)) {
+        njs_internal_error(vm, "njs_vm_ctor_push() failed");
+        return -1;
+    }
+
+    proto_id = njs_vm_external_prototype(vm, proto_props, proto_nprops);
+    if (njs_slow_path(proto_id < 0)) {
+        njs_internal_error(vm, "njs_vm_external_prototype(proto_props) failed");
+        return -1;
+    }
+
+    prototype = njs_shared_prototype(vm->shared, index);
+    njs_memzero(prototype, sizeof(njs_object_prototype_t));
+    prototype->object.type = NJS_OBJECT;
+    prototype->object.extensible = 1;
+
+    pprotos = njs_arr_item(vm->protos, proto_id);
+    slots = (*pprotos)->start;
+    prototype->object.shared_hash = slots->external_shared_hash;
+
+    proto_id = njs_vm_external_prototype(vm, ctor_props, ctor_nprops);
+    if (njs_slow_path(proto_id < 0)) {
+        njs_internal_error(vm, "njs_vm_external_prototype(ctor_props) failed");
+        return -1;
+    }
+
+    constructor = njs_shared_ctor(vm->shared, index);
+    njs_memzero(constructor, sizeof(njs_function_t));
+    constructor->object.type = NJS_FUNCTION;
+    constructor->u.native = native;
+    constructor->magic8 = index;
+    constructor->native = 1;
+    constructor->ctor = 1;
+
+    pprotos = njs_arr_item(vm->protos, proto_id);
+    slots = (*pprotos)->start;
+    constructor->object.shared_hash = slots->external_shared_hash;
+
+    ret = njs_vm_bind_handler(vm, name, njs_vm_external_constructor_handler, 0,
+                              index, 1);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    return index;
+}
+
+
 njs_int_t
 njs_vm_external_create(njs_vm_t *vm, njs_value_t *value, njs_int_t proto_id,
     njs_external_ptr_t external, njs_bool_t shared)

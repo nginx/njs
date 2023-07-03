@@ -638,7 +638,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
     case NJS_NUMBER:
     case NJS_SYMBOL:
         index = njs_primitive_prototype_index(value->type);
-        obj = &vm->prototypes[index].object;
+        obj = njs_vm_proto(vm, index);
         break;
 
     case NJS_STRING:

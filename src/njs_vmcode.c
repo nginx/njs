@@ -2660,7 +2660,7 @@ njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await,
         return NJS_ERROR;
     }
 
-    njs_set_function(&ctor, &vm->constructors[NJS_OBJ_TYPE_PROMISE]);
+    njs_set_function(&ctor, &njs_vm_ctor(vm, NJS_OBJ_TYPE_PROMISE));
 
     promise = njs_promise_resolve(vm, &ctor, value);
     if (njs_slow_path(promise == NULL)) {

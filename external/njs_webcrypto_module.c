@@ -659,6 +659,7 @@ static njs_external_t  njs_ext_webcrypto[] = {
 
 njs_module_t  njs_webcrypto_module = {
     .name = njs_str("webcrypto"),
+    .preinit = NULL,
     .init = njs_webcrypto_init,
 };
 

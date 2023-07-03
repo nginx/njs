@@ -402,6 +402,7 @@ static njs_external_t  njs_ext_xml_attr[] = {
 
 njs_module_t  njs_xml_module = {
     .name = njs_str("xml"),
+    .preinit = NULL,
     .init = njs_xml_init,
 };
 

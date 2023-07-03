@@ -176,6 +176,7 @@ static njs_external_t  njs_ext_zlib[] = {
 
 njs_module_t  njs_zlib_module = {
     .name = njs_str("zlib"),
+    .preinit = NULL,
     .init = njs_zlib_init,
 };
 

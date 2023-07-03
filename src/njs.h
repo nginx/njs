@@ -257,6 +257,7 @@ typedef njs_int_t (*njs_addon_init_pt)(njs_vm_t *vm);
 
 typedef struct {
     njs_str_t                       name;
+    njs_addon_init_pt               preinit;
     njs_addon_init_pt               init;
 } njs_module_t;
 
@@ -403,6 +404,10 @@ NJS_EXPORT njs_int_t njs_vm_add_path(njs_vm_t *vm, const njs_str_t *path);
 
 NJS_EXPORT njs_int_t njs_vm_external_prototype(njs_vm_t *vm,
     const njs_external_t *definition, njs_uint_t n);
+NJS_EXPORT njs_int_t njs_vm_external_constructor(njs_vm_t *vm,
+    const njs_str_t *name, njs_function_native_t native,
+    const njs_external_t *ctor_props, njs_uint_t ctor_nprops,
+    const njs_external_t *proto_props, njs_uint_t proto_nprops);
 NJS_EXPORT njs_int_t njs_vm_external_create(njs_vm_t *vm, njs_value_t *value,
     njs_int_t proto_id, njs_external_ptr_t external, njs_bool_t shared);
 NJS_EXPORT njs_external_ptr_t njs_vm_external(njs_vm_t *vm,
@@ -416,6 +421,15 @@ NJS_EXPORT njs_int_t njs_value_property_set(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *key, njs_value_t *setval);
 NJS_EXPORT uintptr_t njs_vm_meta(njs_vm_t *vm, njs_uint_t index);
 NJS_EXPORT njs_vm_opt_t *njs_vm_options(njs_vm_t *vm);
+
+NJS_EXPORT njs_int_t njs_error_constructor(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t type, njs_value_t *retval);
+NJS_EXPORT njs_int_t njs_object_prototype_create_constructor(njs_vm_t *vm,
+    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
+NJS_EXPORT njs_int_t njs_object_prototype_create(njs_vm_t *vm,
+    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 
 NJS_EXPORT njs_function_t *njs_vm_function_alloc(njs_vm_t *vm,
     njs_function_native_t native, njs_bool_t shared, njs_bool_t ctor);
@@ -433,7 +447,9 @@ NJS_EXPORT njs_function_t *njs_vm_function(njs_vm_t *vm, const njs_str_t *name);
 NJS_EXPORT njs_bool_t njs_vm_constructor(njs_vm_t *vm);
 
 NJS_EXPORT void njs_vm_throw(njs_vm_t *vm, const njs_value_t *value);
-NJS_EXPORT void njs_vm_error2(njs_vm_t *vm, unsigned type, const char *fmt,
+NJS_EXPORT void njs_vm_error2(njs_vm_t *vm, unsigned error_type,
+    const char *fmt, ...);
+NJS_EXPORT void njs_vm_error3(njs_vm_t *vm, unsigned type, const char *fmt,
     ...);
 NJS_EXPORT void njs_vm_exception_get(njs_vm_t *vm, njs_value_t *retval);
 NJS_EXPORT njs_mp_t *njs_vm_memory_pool(njs_vm_t *vm);

@@ -9199,6 +9199,10 @@ njs_parser_error(njs_vm_t *vm, njs_object_type_t type, njs_str_t *file,
     static const njs_value_t  file_name = njs_string("fileName");
     static const njs_value_t  line_number = njs_string("lineNumber");
 
+    if (njs_slow_path(vm->top_frame == NULL)) {
+        njs_vm_runtime_init(vm);
+    }
+
     p = msg;
     end = msg + NJS_MAX_ERROR_STR;
 
@@ -9217,7 +9221,7 @@ njs_parser_error(njs_vm_t *vm, njs_object_type_t type, njs_str_t *file,
         p = njs_sprintf(p, end, " in %uD", line);
     }
 
-    njs_error_new(vm, &error, &vm->prototypes[type].object, msg, p - msg);
+    njs_error_new(vm, &error, njs_vm_proto(vm, type), msg, p - msg);
 
     njs_set_number(&value, line);
     njs_value_property_set(vm, &error, njs_value_arg(&line_number), &value);

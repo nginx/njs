@@ -287,6 +287,7 @@ static njs_int_t    njs_crypto_hmac_proto_id;
 
 njs_module_t  njs_crypto_module = {
     .name = njs_str("crypto"),
+    .preinit = NULL,
     .init = njs_crypto_init,
 };
 

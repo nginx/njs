@@ -364,7 +364,7 @@ njs_date_alloc(njs_vm_t *vm, double time)
     date->object.extensible = 1;
     date->object.error_data = 0;
     date->object.fast_array = 0;
-    date->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_DATE].object;
+    date->object.__proto__ = njs_vm_proto(vm, NJS_OBJ_TYPE_DATE);
     date->object.slots = NULL;
 
     date->time = time;

@@ -126,6 +126,7 @@ static njs_external_t  njs_ext_buffer[] = {
 
 njs_module_t  njs_buffer_module = {
     .name = njs_str("buffer"),
+    .preinit = NULL,
     .init = njs_buffer_init,
 };
 
@@ -147,7 +148,7 @@ njs_buffer_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
 
     buffer = (njs_array_buffer_t *) &array[1];
 
-    proto = &vm->prototypes[NJS_OBJ_TYPE_ARRAY_BUFFER].object;
+    proto = njs_vm_proto(vm, NJS_OBJ_TYPE_ARRAY_BUFFER);
 
     njs_lvlhsh_init(&buffer->object.hash);
     njs_lvlhsh_init(&buffer->object.shared_hash);
@@ -161,7 +162,7 @@ njs_buffer_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     buffer->u.data = (void *) start;
     buffer->size = size;
 
-    proto = &vm->prototypes[NJS_OBJ_TYPE_BUFFER].object;
+    proto = njs_vm_proto(vm, NJS_OBJ_TYPE_BUFFER);
 
     array->type = NJS_OBJ_TYPE_UINT8_ARRAY;
     njs_lvlhsh_init(&array->object.hash);
@@ -197,7 +198,7 @@ njs_buffer_alloc(njs_vm_t *vm, size_t size, njs_bool_t zeroing)
         return NULL;
     }
 
-    array->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_BUFFER].object;
+    array->object.__proto__ = njs_vm_proto(vm, NJS_OBJ_TYPE_BUFFER);
 
     return array;
 }
@@ -462,7 +463,7 @@ njs_buffer_from_array_buffer(njs_vm_t *vm, njs_value_t *value,
         return NJS_ERROR;
     }
 
-    buffer->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_BUFFER].object;
+    buffer->object.__proto__ = njs_vm_proto(vm, NJS_OBJ_TYPE_BUFFER);
 
     buffer->offset = off;
     buffer->byte_length = len;
@@ -943,7 +944,7 @@ njs_buffer_is_buffer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     array = njs_buffer_slot_internal(vm, njs_arg(args, nargs, 1));
 
     if (njs_fast_path(array != NULL && array->object.__proto__
-                      == &vm->prototypes[NJS_OBJ_TYPE_BUFFER].object))
+                      == njs_vm_proto(vm, NJS_OBJ_TYPE_BUFFER)))
     {
         is = 1;
     }
@@ -2184,7 +2185,7 @@ njs_buffer_prototype_slice(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     array = njs_typed_array(retval);
-    array->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_BUFFER].object;
+    array->object.__proto__ = njs_vm_proto(vm, NJS_OBJ_TYPE_BUFFER);
 
     return NJS_OK;
 }

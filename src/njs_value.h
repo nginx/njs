@@ -625,9 +625,8 @@ typedef struct {
     ((value)->type >= NJS_OBJECT)
 
 
-#define njs_has_prototype(vm, value, proto)                                   \
-    (((njs_object_prototype_t *)                                              \
-        njs_object(value)->__proto__ - (vm)->prototypes) == proto)
+#define njs_has_prototype(vm, value, proto_id)                                \
+    (njs_object(value)->__proto__ == njs_vm_proto(vm, proto_id))
 
 
 #define njs_is_object_value(value)                                            \

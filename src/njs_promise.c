@@ -131,7 +131,7 @@ njs_promise_alloc(njs_vm_t *vm)
     promise->object.extensible = 1;
     promise->object.error_data = 0;
     promise->object.fast_array = 0;
-    promise->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_PROMISE].object;
+    promise->object.__proto__ = njs_vm_proto(vm, NJS_OBJ_TYPE_PROMISE);
     promise->object.slots = NULL;
 
     data = (njs_promise_data_t *) ((uint8_t *) promise + sizeof(njs_promise_t));
@@ -265,7 +265,7 @@ njs_promise_create_function(njs_vm_t *vm, size_t context_size)
         context = NULL;
     }
 
-    function->object.__proto__ = &vm->prototypes[NJS_OBJ_TYPE_FUNCTION].object;
+    function->object.__proto__ = njs_vm_proto(vm, NJS_OBJ_TYPE_FUNCTION);
     function->object.shared_hash = vm->shared->arrow_instance_hash;
     function->object.type = NJS_FUNCTION;
     function->object.extensible = 1;
@@ -1352,8 +1352,8 @@ njs_promise_perform_all(njs_vm_t *vm, njs_value_t *iterator,
 
         if (handler == njs_promise_perform_any_handler) {
             error = njs_error_alloc(vm,
-                           &vm->prototypes[NJS_OBJ_TYPE_AGGREGATE_ERROR].object,
-                           NULL, &string_any_rejected, &argument);
+                                njs_vm_proto(vm, NJS_OBJ_TYPE_AGGREGATE_ERROR),
+                                NULL, &string_any_rejected, &argument);
             if (njs_slow_path(error == NULL)) {
                 return NJS_ERROR;
             }
@@ -1730,8 +1730,8 @@ njs_promise_any_reject_element_functions(njs_vm_t *vm, njs_value_t *args,
         njs_mp_free(vm->mem_pool, context->remaining_elements);
 
         error = njs_error_alloc(vm,
-                          &vm->prototypes[NJS_OBJ_TYPE_AGGREGATE_ERROR].object,
-                          NULL, &string_any_rejected, &arr_value);
+                                njs_vm_proto(vm, NJS_OBJ_TYPE_AGGREGATE_ERROR),
+                                NULL, &string_any_rejected, &arr_value);
         if (njs_slow_path(error == NULL)) {
             return NJS_ERROR;
         }

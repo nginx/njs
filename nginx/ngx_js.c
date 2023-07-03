@@ -165,6 +165,7 @@ static njs_external_t  ngx_js_ext_core[] = {
 
 njs_module_t  ngx_js_ngx_module = {
     .name = njs_str("ngx"),
+    .preinit = NULL,
     .init = ngx_js_core_init,
 };
 

@@ -27,23 +27,26 @@ typedef struct {
 
 
 static njs_int_t njs_externals_262_init(njs_vm_t *vm);
-static njs_int_t njs_externals_shared_init(njs_vm_t *vm);
+static njs_int_t njs_externals_shared_preinit(njs_vm_t *vm);
 njs_int_t njs_array_buffer_detach(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 
 
 static njs_int_t    njs_external_r_proto_id;
+static njs_int_t    njs_external_error_ctor_id;
 
 
 njs_module_t  njs_unit_test_262_module = {
     .name = njs_str("$262"),
+    .preinit = NULL,
     .init = njs_externals_262_init,
 };
 
 
 njs_module_t  njs_unit_test_external_module = {
     .name = njs_str("external"),
-    .init = njs_externals_shared_init,
+    .preinit = njs_externals_shared_preinit,
+    .init = NULL,
 };
 
 
@@ -482,6 +485,16 @@ njs_unit_test_r_retval(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
+njs_unit_test_r_custom_exception(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
+{
+    njs_vm_error3(vm, njs_external_error_ctor_id, "Oops", NULL);
+
+    return NJS_ERROR;
+}
+
+
+static njs_int_t
 njs_unit_test_r_create(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
@@ -562,6 +575,22 @@ njs_unit_test_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     return njs_vm_external_create(vm, retval, njs_external_r_proto_id,
                                   sr, 0);
+}
+
+
+static njs_int_t
+njs_unit_test_error_name(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    return njs_vm_value_string_set(vm, retval, (u_char *) "ExternalError", 13);
+}
+
+
+static njs_int_t
+njs_unit_test_error_message(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    return njs_vm_value_string_set(vm, retval, (u_char *) "", 0);
 }
 
 
@@ -967,6 +996,17 @@ static njs_external_t  njs_unit_test_r_external[] = {
     },
 
     {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("customException"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_unit_test_r_custom_exception,
+        }
+    },
+
+    {
         .flags = NJS_EXTERN_OBJECT,
         .name.string = njs_str("props"),
         .enumerable = 1,
@@ -998,6 +1038,61 @@ static njs_external_t  njs_unit_test_r_external[] = {
             .configurable = 1,
             .enumerable = 1,
             .prop_handler = njs_unit_test_r_vars,
+        }
+    },
+
+};
+
+
+static njs_external_t  njs_unit_test_ctor_props[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("name"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = njs_unit_test_error_name,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("prototype"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = njs_object_prototype_create,
+        }
+    },
+
+};
+
+
+static njs_external_t  njs_unit_test_proto_props[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("name"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = njs_unit_test_error_name,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("message"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = njs_unit_test_error_message,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("constructor"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = njs_object_prototype_create_constructor,
         }
     },
 
@@ -1075,6 +1170,7 @@ njs_externals_init_internal(njs_vm_t *vm, njs_unit_test_req_init_t *init,
     njs_unit_test_prop_t  *prop;
 
     static const njs_str_t  external_ctor = njs_str("ExternalConstructor");
+    static const njs_str_t  external_error = njs_str("ExternalError");
 
     if (shared) {
         njs_external_r_proto_id = njs_vm_external_prototype(vm,
@@ -1096,6 +1192,17 @@ njs_externals_init_internal(njs_vm_t *vm, njs_unit_test_req_init_t *init,
         ret = njs_vm_bind(vm, &external_ctor, njs_value_arg(&value), 1);
         if (njs_slow_path(ret != NJS_OK)) {
             njs_printf("njs_vm_bind() failed\n");
+            return NJS_ERROR;
+        }
+
+        njs_external_error_ctor_id =
+            njs_vm_external_constructor(vm, &external_error,
+                              njs_error_constructor, njs_unit_test_ctor_props,
+                              njs_nitems(njs_unit_test_ctor_props),
+                              njs_unit_test_proto_props,
+                              njs_nitems(njs_unit_test_proto_props));
+        if (njs_slow_path(njs_external_error_ctor_id < 0)) {
+            njs_printf("njs_vm_external_constructor() failed\n");
             return NJS_ERROR;
         }
     }
@@ -1177,7 +1284,7 @@ njs_externals_262_init(njs_vm_t *vm)
 
 
 static njs_int_t
-njs_externals_shared_init(njs_vm_t *vm)
+njs_externals_shared_preinit(njs_vm_t *vm)
 {
     return njs_externals_init_internal(vm, njs_test_requests, 1, 1);
 }

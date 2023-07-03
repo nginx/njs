@@ -142,13 +142,12 @@ struct njs_vm_s {
 
     njs_vm_opt_t             options;
 
-    /*
-     * The prototypes and constructors arrays must be together because
-     * they are copied from njs_vm_shared_t by single memcpy()
-     * in njs_builtin_objects_clone().
-     */
-    njs_object_prototype_t   prototypes[NJS_OBJ_TYPE_MAX];
-    njs_function_t           constructors[NJS_OBJ_TYPE_MAX];
+#define njs_vm_proto(vm, index) (&(vm)->prototypes[index].object)
+#define njs_vm_ctor(vm, index) ((vm)->constructors[index])
+
+    njs_object_prototype_t   *prototypes;
+    njs_function_t           *constructors;
+    size_t                   constructors_size;
 
     njs_function_t           *hooks[NJS_HOOK_MAX];
 
@@ -223,25 +222,28 @@ struct njs_vm_shared_s {
     njs_object_t             string_object;
     njs_object_t             objects[NJS_OBJECT_MAX];
 
-    njs_exotic_slots_t       global_slots;
+#define njs_shared_ctor(shared, index)                                       \
+    ((njs_function_t *) njs_arr_item((shared)->constructors, index))
 
-    /*
-     * The prototypes and constructors arrays must be togther because they are
-     * copied to njs_vm_t by single memcpy() in njs_builtin_objects_clone().
-     */
-    njs_object_prototype_t   prototypes[NJS_OBJ_TYPE_MAX];
-    njs_function_t           constructors[NJS_OBJ_TYPE_MAX];
+#define njs_shared_prototype(shared, index)                                  \
+    ((njs_object_prototype_t *) njs_arr_item((shared)->prototypes, index))
+
+    njs_arr_t                *constructors; /* of njs_function_t */
+    njs_arr_t                *prototypes; /* of njs_object_prototype_t */
+
+    njs_exotic_slots_t       global_slots;
 
     njs_regexp_pattern_t     *empty_regexp_pattern;
 };
 
 
-njs_int_t njs_vm_init(njs_vm_t *vm);
+njs_int_t njs_vm_runtime_init(njs_vm_t *vm);
+njs_int_t njs_vm_ctor_push(njs_vm_t *vm);
+void njs_vm_constructors_init(njs_vm_t *vm);
 njs_value_t njs_vm_exception(njs_vm_t *vm);
 void njs_vm_scopes_restore(njs_vm_t *vm, njs_native_frame_t *frame);
 
 njs_int_t njs_builtin_objects_create(njs_vm_t *vm);
-njs_int_t njs_builtin_objects_clone(njs_vm_t *vm, njs_value_t *global);
 njs_int_t njs_builtin_match_native_function(njs_vm_t *vm,
     njs_function_t *function, njs_str_t *name);
 

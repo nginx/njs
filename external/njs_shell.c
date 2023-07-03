@@ -254,6 +254,7 @@ static njs_vm_ops_t njs_console_ops = {
 
 njs_module_t  njs_console_module = {
     .name = njs_str("console"),
+    .preinit = NULL,
     .init = njs_externals_init,
 };
 

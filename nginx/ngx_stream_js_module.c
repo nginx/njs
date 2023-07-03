@@ -568,6 +568,7 @@ static njs_int_t    ngx_stream_js_session_flags_proto_id;
 
 njs_module_t  ngx_js_stream_module = {
     .name = njs_str("stream"),
+    .preinit = NULL,
     .init = ngx_js_stream_init,
 };
 

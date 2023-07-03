@@ -786,6 +786,7 @@ static njs_vm_meta_t ngx_http_js_metas = {
 
 njs_module_t  ngx_js_http_module = {
     .name = njs_str("http"),
+    .preinit = NULL,
     .init = ngx_js_http_init,
 };
 
