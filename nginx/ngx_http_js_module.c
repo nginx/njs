@@ -252,10 +252,13 @@ static char *ngx_http_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 static char *ngx_http_js_var(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 static char *ngx_http_js_content(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
+static char *ngx_http_js_shared_dict_zone(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf);
 static char *ngx_http_js_body_filter_set(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static ngx_int_t ngx_http_js_init_conf_vm(ngx_conf_t *cf,
     ngx_js_loc_conf_t *conf);
+static void *ngx_http_js_create_main_conf(ngx_conf_t *cf);
 static void *ngx_http_js_create_loc_conf(ngx_conf_t *cf);
 static char *ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent,
     void *child);
@@ -393,6 +396,13 @@ static ngx_command_t  ngx_http_js_commands[] = {
 
 #endif
 
+    { ngx_string("js_shared_dict_zone"),
+      NGX_HTTP_MAIN_CONF|NGX_CONF_1MORE,
+      ngx_http_js_shared_dict_zone,
+      0,
+      0,
+      NULL },
+
       ngx_null_command
 };
 
@@ -401,7 +411,7 @@ static ngx_http_module_t  ngx_http_js_module_ctx = {
     NULL,                          /* preconfiguration */
     ngx_http_js_init,              /* postconfiguration */
 
-    NULL,                          /* create main configuration */
+    ngx_http_js_create_main_conf,  /* create main configuration */
     NULL,                          /* init main configuration */
 
     NULL,                          /* create server configuration */
@@ -775,6 +785,7 @@ static uintptr_t ngx_http_js_uptr[] = {
     (uintptr_t) ngx_http_js_fetch_timeout,
     (uintptr_t) ngx_http_js_buffer_size,
     (uintptr_t) ngx_http_js_max_response_buffer_size,
+    (uintptr_t) 0 /* main_conf ptr */,
 };
 
 
@@ -798,6 +809,7 @@ njs_module_t *njs_http_js_addon_modules[] = {
      */
     &ngx_js_ngx_module,
     &ngx_js_fetch_module,
+    &ngx_js_shared_dict_module,
 #ifdef NJS_HAVE_OPENSSL
     &njs_webcrypto_module,
 #endif
@@ -4149,9 +4161,13 @@ ngx_js_http_init(njs_vm_t *vm)
 static ngx_int_t
 ngx_http_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
 {
-    njs_vm_opt_t  options;
+    njs_vm_opt_t         options;
+    ngx_js_main_conf_t  *jmcf;
 
     njs_vm_opt_init(&options);
+
+    jmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_js_module);
+    ngx_http_js_uptr[NGX_JS_MAIN_CONF_INDEX] = (uintptr_t) jmcf;
 
     options.backtrace = 1;
     options.unhandled_rejection = NJS_VM_OPT_UNHANDLED_REJECTION_THROW;
@@ -4293,6 +4309,14 @@ ngx_http_js_content(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 
 static char *
+ngx_http_js_shared_dict_zone(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+    return ngx_js_shared_dict_zone(cf, cmd, conf, &ngx_http_js_module);
+}
+
+
+static char *
 ngx_http_js_body_filter_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     ngx_http_js_loc_conf_t *jlcf = conf;
@@ -4327,6 +4351,26 @@ ngx_http_js_body_filter_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     return NGX_CONF_OK;
+}
+
+
+static void *
+ngx_http_js_create_main_conf(ngx_conf_t *cf)
+{
+    ngx_js_main_conf_t  *jmcf;
+
+    jmcf = ngx_pcalloc(cf->pool, sizeof(ngx_js_main_conf_t));
+    if (jmcf == NULL) {
+        return NULL;
+    }
+
+    /*
+     * set by ngx_pcalloc():
+     *
+     *     jmcf->dicts = NULL;
+     */
+
+    return jmcf;
 }
 
 

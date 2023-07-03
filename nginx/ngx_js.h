@@ -14,6 +14,7 @@
 #include <ngx_core.h>
 #include <njs.h>
 #include "ngx_js_fetch.h"
+#include "ngx_js_shared_dict.h"
 
 
 #define NGX_JS_UNSET        0
@@ -43,12 +44,19 @@ typedef ngx_flag_t (*ngx_external_size_pt)(njs_vm_t *vm,
     njs_external_ptr_t e);
 typedef ngx_ssl_t *(*ngx_external_ssl_pt)(njs_vm_t *vm, njs_external_ptr_t e);
 
+
+typedef struct ngx_js_dict_s  ngx_js_dict_t;
+
 typedef struct {
     ngx_str_t              name;
     ngx_str_t              path;
     u_char                *file;
     ngx_uint_t             line;
 } ngx_js_named_path_t;
+
+
+#define NGX_JS_COMMON_MAIN_CONF                                               \
+    ngx_js_dict_t         *dicts                                              \
 
 
 #define _NGX_JS_COMMON_LOC_CONF                                               \
@@ -81,6 +89,11 @@ typedef struct {
 
 
 typedef struct {
+    NGX_JS_COMMON_MAIN_CONF;
+} ngx_js_main_conf_t;
+
+
+typedef struct {
     NGX_JS_COMMON_LOC_CONF;
 } ngx_js_loc_conf_t;
 
@@ -105,6 +118,9 @@ typedef struct {
     ((ngx_external_size_pt) njs_vm_meta(vm, 8))(vm, e)
 #define ngx_external_max_response_buffer_size(vm, e)                          \
     ((ngx_external_size_pt) njs_vm_meta(vm, 9))(vm, e)
+#define NGX_JS_MAIN_CONF_INDEX  10
+#define ngx_main_conf(vm)                                                     \
+	((ngx_js_main_conf_t *) njs_vm_meta(vm, NGX_JS_MAIN_CONF_INDEX))
 
 
 #define ngx_js_prop(vm, type, value, start, len)                              \
@@ -134,6 +150,8 @@ ngx_int_t ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
 ngx_js_loc_conf_t *ngx_js_create_conf(ngx_conf_t *cf, size_t size);
 char * ngx_js_merge_conf(ngx_conf_t *cf, void *parent, void *child,
    ngx_int_t (*init_vm)(ngx_conf_t *cf, ngx_js_loc_conf_t *conf));
+char *ngx_js_shared_dict_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *conf,
+    void *tag);
 
 njs_int_t ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);

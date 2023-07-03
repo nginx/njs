@@ -242,6 +242,150 @@ interface NgxFetchOptions {
     verify?: boolean;
 }
 
+/**
+ * This Error object is thrown when adding an item to a shared dictionary
+ * that does not have enough free space.
+ * @since 0.8.0
+ */
+declare class SharedMemoryError extends Error {}
+
+type NgxSharedDictValue = string | number;
+
+/**
+ * Interface of a dictionary shared among the working processes.
+ * It can store either `string` or `number` values which is specified when
+ * declaring the zone.
+ *
+ * @template {V} The type of stored values.
+ * @since 0.8.0
+ */
+interface NgxSharedDict<V extends string | number = string | number> {
+    /**
+     * The capacity of this shared dictionary in bytes.
+     */
+    readonly capacity: number;
+    /**
+     * The name of this shared dictionary.
+     */
+    readonly name: string;
+
+    /**
+     * Sets the `value` for the specified `key` in the dictionary only if the
+     * `key` does not exist yet.
+     *
+     * @param key The key of the item to add.
+     * @param value The value of the item to add.
+     * @returns `true` if the value has been added successfully, `false`
+     *   if the `key` already exists in this dictionary.
+     * @throws {SharedMemoryError} if there's not enough free space in this
+     *   dictionary.
+     * @throws {TypeError} if the `value` is of a different type than expected
+     *   by this dictionary.
+     */
+    add(key: string, value: V): boolean;
+    /**
+     * Removes all items from this dictionary.
+     */
+    clear(): void;
+    /**
+     * Removes the item associated with the specified `key` from the dictionary.
+     *
+     * @param key The key of the item to remove.
+     * @returns `true` if the item in the dictionary existed and has been
+     *   removed, `false` otherwise.
+     */
+    delete(key: string): boolean;
+    /**
+     * Increments the value associated with the `key` by the given `delta`.
+     * If the `key` doesn't exist, the item will be initialized to `init`.
+     *
+     * **Important:** This method can be used only if the dictionary was
+     * declared with `type=number`!
+     *
+     * @param key is a string key.
+     * @param delta The number to increment/decrement the value by.
+     * @param init The number to initialize the item with if it didn't exist
+     *   (default is `0`).
+     * @returns The new value.
+     * @throws {SharedMemoryError} if there's not enough free space in this
+     *   dictionary.
+     * @throws {TypeError} if this dictionary does not expect numbers.
+     */
+    incr: V extends number
+      ? (key: string, delta: V, init?: number) => number
+      : never;
+    /**
+     * @returns The free page size in bytes.
+     *   Note that even if the free page is zero the dictionary may still accept
+     *   new values if there is enough space in the occupied pages.
+     */
+    freeSpace(): number;
+    /**
+     * @param key The key of the item to retrieve.
+     * @returns The value associated with the `key`, or `undefined` if there
+     *   is none.
+     */
+    get(key: string): V | undefined;
+    /**
+     * @param key The key to search for.
+     * @returns `true` if an item with the specified `key` exists, `false`
+     *   otherwise.
+     */
+    has(key: string): boolean;
+    /**
+     * @param maxCount The maximum number of keys to retrieve (default is 1024).
+     * @returns An array of the dictionary keys.
+     */
+    keys(maxCount?: number): string[];
+    /**
+     * Removes the item associated with the specified `key` from the dictionary
+     * and returns its value.
+     *
+     * @param key The key of the item to remove.
+     * @returns The value associated with the `key`, or `undefined` if there
+     *   is none.
+     */
+    pop(key: string): V | undefined;
+     /**
+     * Sets the `value` for the specified `key` in the dictionary only if the
+     * `key` already exists.
+     *
+     * @param key The key of the item to replace.
+     * @param value The new value of the item.
+     * @returns `true` if the value has been replaced successfully, `false`
+     *   if the key doesn't exist in this dictionary.
+     * @throws {SharedMemoryError} if there's not enough free space in this
+     *   dictionary.
+     * @throws {TypeError} if the `value` is of a different type than expected
+     *   by this dictionary.
+     */
+    replace(key: string, value: V): boolean;
+    /**
+     * Sets the `value` for the specified `key` in the dictionary.
+     *
+     * @param key The key of the item to set.
+     * @param value The value of the item to set.
+     * @returns This dictionary (for method chaining).
+     * @throws {SharedMemoryError} if there's not enough free space in this
+     *   dictionary.
+     * @throws {TypeError} if the `value` is of a different type than expected
+     *   by this dictionary.
+     */
+    set(key: string, value: V): this;
+    /**
+     * @returns The number of items in this shared dictionary.
+     */
+    size(): number;
+}
+
+interface NgxGlobalShared {
+    /**
+     * Shared dictionaries.
+     * @since 0.8.0
+     */
+    readonly [prop: string]: NgxSharedDict;
+}
+
 interface NgxObject {
     /**
      * A string containing an optional nginx build name, corresponds to the
@@ -296,6 +440,12 @@ interface NgxObject {
      * @since 0.8.0
      */
     readonly prefix: string;
+
+    /**
+     * An object containing shared data between all worker processes.
+     * @since 0.8.0
+     */
+    readonly shared: NgxGlobalShared;
     /**
      * A string containing nginx version, for example: "1.25.0"
      * @since 0.8.0

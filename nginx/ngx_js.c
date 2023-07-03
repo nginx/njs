@@ -32,6 +32,28 @@ static void ngx_js_cleanup_vm(void *data);
 static njs_int_t ngx_js_core_init(njs_vm_t *vm);
 
 
+static njs_external_t  ngx_js_ext_global_shared[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY | NJS_EXTERN_SYMBOL,
+        .name.symbol = NJS_SYMBOL_TO_STRING_TAG,
+        .u.property = {
+            .value = "GlobalShared",
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_SELF,
+        .u.object = {
+            .enumerable = 1,
+            .prop_handler = njs_js_ext_global_shared_prop,
+            .keys = njs_js_ext_global_shared_keys,
+        }
+    },
+
+};
+
+
 static njs_external_t  ngx_js_ext_core[] = {
 
     {
@@ -109,6 +131,18 @@ static njs_external_t  ngx_js_ext_core[] = {
         .enumerable = 1,
         .u.method = {
             .native = ngx_js_ext_log,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("shared"),
+        .enumerable = 1,
+        .writable = 1,
+        .u.object = {
+            .enumerable = 1,
+            .properties = ngx_js_ext_global_shared,
+            .nproperties = njs_nitems(ngx_js_ext_global_shared),
         }
     },
 
