@@ -1,3 +1,79 @@
+Changes with njs 0.8.0                                        6 Jul 2023
+
+    nginx modules:
+
+    *) Change: removed special treatment of forbidden headers in Fetch API
+       introduced in 0.7.10.
+
+    *) Change: removed deprecated since 0.5.0 r.requestBody and
+       r.responseBody in HTTP module.
+
+    *) Change: throwing an exception in r.internalRedirect() while
+       filtering in HTTP module.
+
+    *) Feature: introduced global nginx properties.
+        ngx.build - an optional nginx build name, corresponds to
+        --build=name argument of configure script, by default is "".
+        ngx.conf_file_path - the file path to current nginx configuration
+            file.
+        ngx.error_log_path - the file path to current error log file.
+        ngx.prefix - the directory that keeps server files.
+        ngx.version - the nginx version as a string, for example: "1.25.0".
+        ngx.version_number - the nginx version as a number, for example:
+            1025000.
+        ngx.worker_id - corresponds to an nginx internal worker id.
+           The value is between 0 and worker_processes - 1.
+
+    *) Feature: introduced js_shared_dict_zone directive.
+        The directive allows to declare a dictionary that is shared among the
+        working processes.
+
+    *) Improvement: added compile-time options to disable njs modules.
+        For example to disable libxslt related code:
+        NJS_LIBXSLT=NO ./configure  .. --add-module=/path/to/njs/module
+
+    *) Bugfix: fixed r.status setter when filtering in HTTP module.
+
+    *) Bugfix: fixed setting of Location header in HTTP module.
+
+    Core:
+
+    *) Change: native methods are provided with retval argument.
+       This change breaks compatibility with C extension for njs
+       requiring to modify the code.
+
+    *) Change: non-compliant deprecated String methods were removed.
+        The following methods were removed: String.bytesFrom(),
+        String.prototype.fromBytes(), String.prototype.fromUTF8(),
+        String.prototype.toBytes(), String.prototype.toUTF8(),
+        String.prototype.toString(encoding).
+
+    *) Change: removed support for building with GNU readline.
+
+    *) Feature: added Array.from(), Array.prototype.toSorted(),
+        Array.prototype.toSpliced(), Array.prototype.toReversed().
+
+    *) Feature: added %TypedArray%.prototype.toSorted(),
+        %TypedArray%.prototype.toSpliced(),
+        %TypedArray%.prototype.toReversed().
+
+    *) Feature: added CryptoKey properties in WebCrypto.
+        The following properties for CryptoKey were added:
+        algorithm, extractable, type, usages.
+
+    *) Bugfix: fixed retval of crypto.getRandomValues().
+
+    *) Bugfix: fixed evaluation of computed property names with function
+       expressions.
+
+    *) Bugfix: fixed implicit name for a function expression declared in
+       arrays.
+
+    *) Bugfix: fixed parsing of for-in loops.
+
+    *) Bugfix: fixed Date.parse() with ISO-8601 format and UTC time
+       offset.
+
 Changes with njs 0.7.12                                       10 Apr 2023
 
     nginx modules:
