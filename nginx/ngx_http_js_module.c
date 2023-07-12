@@ -128,6 +128,9 @@ static njs_int_t ngx_http_js_content_type122(njs_vm_t *vm,
 static njs_int_t ngx_http_js_date122(njs_vm_t *vm, ngx_http_request_t *r,
     ngx_list_t *headers, njs_str_t *name, njs_value_t *setval,
     njs_value_t *retval);
+static njs_int_t ngx_http_js_last_modified122(njs_vm_t *vm,
+    ngx_http_request_t *r, ngx_list_t *headers, njs_str_t *name,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_http_js_location122(njs_vm_t *vm, ngx_http_request_t *r,
     ngx_list_t *headers, njs_str_t *name, njs_value_t *setval,
     njs_value_t *retval);
@@ -226,6 +229,9 @@ static njs_int_t ngx_http_js_content_type(njs_vm_t *vm, ngx_http_request_t *r,
     unsigned flags, njs_str_t *name, njs_value_t *setval,
     njs_value_t *retval);
 static njs_int_t ngx_http_js_date(njs_vm_t *vm, ngx_http_request_t *r,
+    unsigned flags, njs_str_t *name, njs_value_t *setval,
+    njs_value_t *retval);
+static njs_int_t ngx_http_js_last_modified(njs_vm_t *vm, ngx_http_request_t *r,
     unsigned flags, njs_str_t *name, njs_value_t *setval,
     njs_value_t *retval);
 static njs_int_t ngx_http_js_location(njs_vm_t *vm, ngx_http_request_t *r,
@@ -1535,7 +1541,7 @@ ngx_http_js_ext_header_out(njs_vm_t *vm, njs_object_prop_t *prop,
         { njs_str("Date"), ngx_http_js_date122 },
         { njs_str("Etag"), ngx_http_js_header_single },
         { njs_str("Expires"), ngx_http_js_header_single },
-        { njs_str("Last-Modified"), ngx_http_js_header_single },
+        { njs_str("Last-Modified"), ngx_http_js_last_modified122 },
         { njs_str("Location"), ngx_http_js_location122 },
         { njs_str("Set-Cookie"), ngx_http_js_header_array },
         { njs_str("Retry-After"), ngx_http_js_header_single },
@@ -1548,7 +1554,7 @@ ngx_http_js_ext_header_out(njs_vm_t *vm, njs_object_prop_t *prop,
         { njs_str("Date"), 0, ngx_http_js_date },
         { njs_str("Etag"), NJS_HEADER_SINGLE, ngx_http_js_header_out },
         { njs_str("Expires"), NJS_HEADER_SINGLE, ngx_http_js_header_out },
-        { njs_str("Last-Modified"), NJS_HEADER_SINGLE, ngx_http_js_header_out },
+        { njs_str("Last-Modified"), 0, ngx_http_js_last_modified },
         { njs_str("Location"), 0, ngx_http_js_location },
         { njs_str("Set-Cookie"), NJS_HEADER_ARRAY, ngx_http_js_header_out },
         { njs_str("Retry-After"), NJS_HEADER_SINGLE, ngx_http_js_header_out },
@@ -1967,6 +1973,14 @@ ngx_http_js_date122(njs_vm_t *vm, ngx_http_request_t *r,
     ngx_list_t *headers, njs_str_t *v, njs_value_t *setval, njs_value_t *retval)
 {
     return ngx_http_js_date(vm, r, 0, v, setval, retval);
+}
+
+
+static njs_int_t
+ngx_http_js_last_modified122(njs_vm_t *vm, ngx_http_request_t *r,
+    ngx_list_t *headers, njs_str_t *v, njs_value_t *setval, njs_value_t *retval)
+{
+    return ngx_http_js_last_modified(vm, r, 0, v, setval, retval);
 }
 
 
@@ -3990,6 +4004,26 @@ ngx_http_js_date(njs_vm_t *vm, ngx_http_request_t *r, unsigned flags,
 
     if (setval != NULL || retval == NULL) {
         r->headers_out.date = h;
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+ngx_http_js_last_modified(njs_vm_t *vm, ngx_http_request_t *r, unsigned flags,
+    njs_str_t *v, njs_value_t *setval, njs_value_t *retval)
+{
+    njs_int_t         rc;
+    ngx_table_elt_t  *h;
+
+    rc = ngx_http_js_header_out_special(vm, r, v, setval, retval, &h);
+    if (rc == NJS_ERROR) {
+        return NJS_ERROR;
+    }
+
+    if (setval != NULL || retval == NULL) {
+        r->headers_out.last_modified = h;
     }
 
     return NJS_OK;
