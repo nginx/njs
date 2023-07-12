@@ -84,6 +84,10 @@ http {
             js_content test.content_encoding_arr;
         }
 
+        location /date {
+            js_content test.date;
+        }
+
         location /location {
             js_content test.location;
         }
@@ -242,6 +246,11 @@ $t->write_file('test.js', <<EOF);
         r.headersOut['Content-Encoding'] = 'test';
         delete r.headersOut['Content-Encoding'];
         r.headersOut['Content-Encoding'] = 'gzip';
+        r.return(200);
+    }
+
+    function date(r) {
+        r.headersOut['Date'] = 'Sun, 09 Sep 2001 01:46:40 GMT';
         r.return(200);
     }
 
@@ -437,12 +446,13 @@ $t->write_file('test.js', <<EOF);
                     hdr_in, raw_hdr_in, hdr_sorted_keys, foo_in, ifoo_in,
                     hdr_out, raw_hdr_out, hdr_out_array, hdr_out_single,
                     hdr_out_set_cookie, ihdr_out, hdr_out_special_set,
-                    copy_subrequest_hdrs, subrequest, location, location_sr};
+                    copy_subrequest_hdrs, subrequest, date, location,
+                    location_sr};
 
 
 EOF
 
-$t->try_run('no njs')->plan(44);
+$t->try_run('no njs')->plan(45);
 
 ###############################################################################
 
@@ -587,6 +597,14 @@ local $TODO = 'not yet' unless has_version('0.8.0');
 like(http_get('/location'), qr/Location: loc/, 'set location');
 unlike(http_get('/location_sr'), qr/Location: \/location_sr/,
 	'location redirect');
+
+}
+
+TODO: {
+local $TODO = 'not yet' unless has_version('0.8.1');
+
+like(http_get('/date'), qr/Date: Sun, 09 Sep 2001 01:46:40 GMT/,
+	'set date');
 
 }
 
