@@ -37,7 +37,7 @@ njs_int_t njs_number_parse_float(njs_vm_t *vm, njs_value_t *args,
 
 
 njs_inline njs_bool_t
-njs_number_is_integer_index(double num)
+njs_number_is_integer_index(double num) NJS_NOUBSAN
 {
     uint32_t  u32;
 

@@ -183,6 +183,12 @@ njs_leading_zeros64(uint64_t x)
 #define njs_msan_unpoison(ptr, size)
 #endif
 
+#if (NJS_HAVE_UNDEFINED_BEHAVIOR_SANITIZER)
+#define NJS_NOUBSAN __attribute__((no_sanitize("undefined")))
+#else
+#define NJS_NOUBSAN
+#endif
+
 
 #if (NJS_HAVE_DENORMALS_CONTROL)
 #include <xmmintrin.h>

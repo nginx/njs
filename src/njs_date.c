@@ -157,7 +157,7 @@ njs_make_day(int64_t yr, int64_t month, int64_t date)
 
 
 njs_inline int64_t
-njs_tz_offset(int64_t time)
+njs_tz_offset(int64_t time) NJS_NOUBSAN
 {
     time_t     ti;
     struct tm  tm;
@@ -236,7 +236,7 @@ njs_year_from_days(int64_t *days)
 
 
 njs_inline double
-njs_make_date(int64_t tm[], njs_bool_t local)
+njs_make_date(int64_t tm[], njs_bool_t local) NJS_NOUBSAN
 {
     double  time, days;
 

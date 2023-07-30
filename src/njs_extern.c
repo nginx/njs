@@ -38,6 +38,10 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
     lhq.proto = &njs_object_hash_proto;
     lhq.pool = vm->mem_pool;
 
+    if (!external || !n) {
+        return NJS_OK;
+    }
+
     end = external + n;
 
     while (external < end) {
