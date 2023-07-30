@@ -382,7 +382,9 @@ njs_number_is_safe_integer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     if (nargs > 1 && njs_is_number(&args[1])) {
         num = njs_number(&args[1]);
 
-        if (num == (int64_t) num && fabs(num) <= NJS_MAX_SAFE_INTEGER) {
+        if (num == njs_unsafe_cast_double_to_int64(num)
+            && fabs(num) <= NJS_MAX_SAFE_INTEGER)
+        {
             integer = 1;
         }
     }

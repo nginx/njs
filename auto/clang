@@ -161,6 +161,17 @@ njs_feature_test="int main(int argc, char *argv[]) {
 . auto/feature
 
 
+njs_feature="GCC __attribute__ no_sanitize"
+njs_feature_name=NJS_HAVE_GCC_ATTRIBUTE_NO_SANITIZE
+njs_feature_run=no
+njs_feature_path=
+njs_feature_libs=
+njs_feature_test="__attribute__((no_sanitize(\"undefined\"))) int main(void) {
+                    return 0;
+                  }"
+. auto/feature
+
+
 njs_feature="Address sanitizer"
 njs_feature_name=NJS_HAVE_ADDRESS_SANITIZER
 njs_feature_run=no

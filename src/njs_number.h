@@ -36,7 +36,7 @@ njs_int_t njs_number_parse_float(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 
 
-njs_inline njs_bool_t
+njs_inline NJS_NOSANITIZE("float-cast-overflow") njs_bool_t
 njs_number_is_integer_index(double num)
 {
     uint32_t  u32;

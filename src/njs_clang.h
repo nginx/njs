@@ -183,6 +183,31 @@ njs_leading_zeros64(uint64_t x)
 #define njs_msan_unpoison(ptr, size)
 #endif
 
+#if (NJS_HAVE_GCC_ATTRIBUTE_NO_SANITIZE)
+#define NJS_NOSANITIZE(options) __attribute__((no_sanitize(options)))
+#else
+#define NJS_NOSANITIZE(options)
+#endif
+
+
+njs_inline NJS_NOSANITIZE("float-cast-overflow") int64_t
+njs_unsafe_cast_double_to_int64(double num)
+{
+	/*
+	 * Casting NaN to integer is undefined behavior,
+	 * but it is fine in some cases where we do additional checks later.
+	 * For example:
+	 *  int64_t i64 = njs_unsafe_cast_double_to_int64(num);
+	 *  if (i64 == num) {
+	 *    // num is integer
+	 *  }
+	 *
+	 * We do this as inline function to avoid UndefinedBehaviorSanitizer
+	 * warnings.
+	 */
+	return (int64_t) num;
+}
+
 
 #if (NJS_HAVE_DENORMALS_CONTROL)
 #include <xmmintrin.h>

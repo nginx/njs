@@ -1388,7 +1388,7 @@ njs_typed_array_prototype_index_of(njs_vm_t *vm, njs_value_t *args,
 
     v = njs_number(njs_argument(args, 1));
 
-    i64 = v;
+    i64 = njs_unsafe_cast_double_to_int64(v);
     integer = (v == i64);
 
     buffer = array->buffer;
