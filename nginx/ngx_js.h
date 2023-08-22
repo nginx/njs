@@ -56,7 +56,8 @@ typedef struct {
 
 
 #define NGX_JS_COMMON_MAIN_CONF                                               \
-    ngx_js_dict_t         *dicts                                              \
+    ngx_js_dict_t         *dicts;                                             \
+    ngx_array_t           *periodics                                          \
 
 
 #define _NGX_JS_COMMON_LOC_CONF                                               \
