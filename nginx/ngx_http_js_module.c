@@ -255,8 +255,6 @@ static size_t ngx_http_js_max_response_buffer_size(njs_vm_t *vm,
     ngx_http_request_t *r);
 static void ngx_http_js_handle_vm_event(ngx_http_request_t *r,
     njs_vm_event_t vm_event, njs_value_t *args, njs_uint_t nargs);
-static void ngx_http_js_handle_event(ngx_http_request_t *r,
-    njs_vm_event_t vm_event, njs_value_t *args, njs_uint_t nargs);
 
 static njs_int_t ngx_js_http_init(njs_vm_t *vm);
 static ngx_int_t ngx_http_js_init(ngx_conf_t *cf);
@@ -791,7 +789,7 @@ static uintptr_t ngx_http_js_uptr[] = {
     (uintptr_t) ngx_http_js_pool,
     (uintptr_t) ngx_http_js_resolver,
     (uintptr_t) ngx_http_js_resolver_timeout,
-    (uintptr_t) ngx_http_js_handle_event,
+    (uintptr_t) ngx_http_js_handle_vm_event,
     (uintptr_t) ngx_http_js_ssl,
     (uintptr_t) ngx_http_js_ssl_verify,
     (uintptr_t) ngx_http_js_fetch_timeout,
@@ -4105,7 +4103,7 @@ ngx_http_js_timer_handler(ngx_event_t *ev)
 
     r = js_event->request;
 
-    ngx_http_js_handle_event(r, js_event->vm_event, NULL, 0);
+    ngx_http_js_handle_vm_event(r, js_event->vm_event, NULL, 0);
 }
 
 
@@ -4196,19 +4194,12 @@ ngx_http_js_handle_vm_event(ngx_http_request_t *r, njs_vm_event_t vm_event,
                       "js exception: %V", &exception);
 
         ngx_http_finalize_request(r, NGX_ERROR);
+        return;
     }
 
     if (rc == NJS_OK) {
         ngx_http_post_request(r, NULL);
     }
-}
-
-
-static void
-ngx_http_js_handle_event(ngx_http_request_t *r, njs_vm_event_t vm_event,
-    njs_value_t *args, njs_uint_t nargs)
-{
-    ngx_http_js_handle_vm_event(r, vm_event, args, nargs);
 
     ngx_http_run_posted_requests(r->connection);
 }
