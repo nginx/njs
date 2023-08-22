@@ -16,4 +16,4 @@ njs_int_t njs_js_ext_global_shared_keys(njs_vm_t *vm, njs_value_t *value,
 extern njs_module_t  ngx_js_shared_dict_module;
 
 
-#endif /* _NGX_JS_FETCH_H_INCLUDED_ */
+#endif /* _NGX_JS_SHARED_DICT_H_INCLUDED_ */
