@@ -2952,6 +2952,9 @@ njs_array_prototype_sort(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
+    /* Satisfy gcc -O3 */
+    nslots = 0;
+
     slots = njs_sort_indexed_properties(vm, this, length, compare, 1, &nslots,
                                         &nunds);
     if (njs_slow_path(slots == NULL)) {
