@@ -141,9 +141,9 @@ njs_array_buffer_writable(njs_vm_t *vm, njs_array_buffer_t *buffer)
 
 static const njs_object_prop_t  njs_array_buffer_constructor_properties[] =
 {
-    NJS_DECLARE_PROP_NAME("ArrayBuffer"),
-
     NJS_DECLARE_PROP_LENGTH(1),
+
+    NJS_DECLARE_PROP_NAME("ArrayBuffer"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 

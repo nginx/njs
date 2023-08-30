@@ -22,7 +22,7 @@ lvlhsh_unit_test_key_test(njs_lvlhsh_query_t *lhq, void *data)
 static void *
 lvlhsh_unit_test_pool_alloc(void *pool, size_t size)
 {
-    return njs_mp_align(pool, size, size);
+    return njs_mp_align(pool, NJS_MAX_ALIGNMENT, size);
 }
 
 

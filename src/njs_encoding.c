@@ -256,9 +256,9 @@ const njs_object_init_t  njs_text_encoder_init = {
 
 static const njs_object_prop_t  njs_text_encoder_constructor_properties[] =
 {
-    NJS_DECLARE_PROP_NAME("TextEncoder"),
-
     NJS_DECLARE_PROP_LENGTH(0),
+
+    NJS_DECLARE_PROP_NAME("TextEncoder"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 };
@@ -593,9 +593,9 @@ const njs_object_init_t  njs_text_decoder_init = {
 
 static const njs_object_prop_t  njs_text_decoder_constructor_properties[] =
 {
-    NJS_DECLARE_PROP_NAME("TextDecoder"),
-
     NJS_DECLARE_PROP_LENGTH(0),
+
+    NJS_DECLARE_PROP_NAME("TextDecoder"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 };

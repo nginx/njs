@@ -11,7 +11,7 @@
 #include <njs_arr.h>
 #include <njs_queue.h>
 #include <njs_rbtree.h>
-#include <njs_lvlhsh.h>
+#include <njs_flathsh.h>
 #include <njs_djb_hash.h>
 
 #if (!defined NJS_FUZZER_TARGET && defined NJS_HAVE_READLINE)
@@ -1636,7 +1636,7 @@ lvlhsh_key_test(njs_lvlhsh_query_t *lhq, void *data)
 static void *
 lvlhsh_pool_alloc(void *pool, size_t size)
 {
-    return njs_mp_align(pool, size, size);
+    return njs_mp_align(pool, NJS_MAX_ALIGNMENT, size);
 }
 
 

@@ -4017,7 +4017,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("2,true,0,true") },
 
     { njs_str("njs.dump({break:1,3:2,'a':4,\"b\":2,true:1,null:0,async:2})"),
-      njs_str("{break:1,3:2,a:4,b:2,true:1,null:0,async:2}") },
+      njs_str("{3:2,break:1,a:4,b:2,true:1,null:0,async:2}") },
 
     { njs_str("var o1 = {a:1,b:2}, o2 = {c:3}; o1.a + o2.c"),
       njs_str("4") },
@@ -4425,7 +4425,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("[[1,2,3,<empty>,4,5],6]") },
 
     { njs_str("njs.dump([].concat([1,2,3], {length:3, 1:4, 2:5}))"),
-      njs_str("[1,2,3,{length:3,1:4,2:5}]") },
+      njs_str("[1,2,3,{1:4,2:5,length:3}]") },
 
     { njs_str("Array.prototype[1] = 1; var x = [0]; x.length = 2; "
               "x.concat().hasOwnProperty('1') === true"),
@@ -4687,12 +4687,12 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var obj = {length: 5, 3: 1}; [].copyWithin.call(obj, 0, 3);"
               "Object.keys(obj)"),
-      njs_str("length,3,0") },
+      njs_str("0,3,length") },
 
     { njs_str("var obj = {length: 5, 1: 'a', 2: 'b', 3: 'c', 4: 'd', 5: 'e'};"
               "[].copyWithin.call(obj, 0, -2, -1);"
               "Object.keys(obj) + '|' + Object.values(obj)"),
-      njs_str("length,1,2,3,4,5,0|5,a,b,c,d,e,c") },
+      njs_str("0,1,2,3,4,5,length|c,a,b,c,d,e,5") },
 
     { njs_str("var o = {length:1}; Object.defineProperty(o, '0', {get:()=>{throw Error('Oops')}});"
               "Array.prototype.copyWithin.call(o, 0, 0)"),
@@ -5665,12 +5665,12 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var a = Array.prototype.fill.apply("
                  "Object({length: 40}), [\"a\", 1, 20]); Object.values(a)"),
-      njs_str("a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,40,a,a,a,a") },
+      njs_str("a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,40") },
 
     { njs_str("var a = Array.prototype.fill.apply({length: "
                  "{ valueOf: function() { return 40 }}}, [\"a\", 1, 20]);"
                  "Object.values(a)"),
-      njs_str("a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,[object Object],a,a,a,a") },
+      njs_str("a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,[object Object]") },
 
     { njs_str("[NaN, false, ''].map("
                  "(x) => Array.prototype.fill.call(x)"
@@ -7381,7 +7381,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var a = {length:3, 0:'Z', 2:'A'};"
               "njs.dump([Array.prototype.toSorted.call(a), Array.prototype.sort.call(a)])"),
-      njs_str("[['A','Z',undefined],{length:3,0:'A',1:'Z'}]") },
+      njs_str("[['A','Z',undefined],{0:'A',1:'Z',length:3}]") },
 
     { njs_str("var a = {length: 1}; a.__proto__ = {0:'A'};"
               "njs.dump([Array.prototype.toSorted.call(a), Array.prototype.sort.call(a)])"),
@@ -14444,7 +14444,7 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var s = new String('αβ'); s.two = null; s[3] = true;"
                  "Object.entries(s)"),
-      njs_str("0,α,1,β,two,,3,true") },
+      njs_str("0,α,1,β,3,true,two,") },
 
     { njs_str("Object.entries(true)"),
       njs_str("") },
@@ -15407,10 +15407,10 @@ static njs_unit_test_t  njs_test[] =
       njs_str("a,b") },
 
     { njs_str("Object.getOwnPropertyNames(Object.defineProperty([], 'b', {}))"),
-      njs_str("b,length") },
+      njs_str("length,b") },
 
     { njs_str("Object.getOwnPropertyNames(Object.defineProperty(new String(), 'b', {}))"),
-      njs_str("b,length") },
+      njs_str("length,b") },
 
     { njs_str("Object.getOwnPropertyNames([1,2,3])"),
       njs_str("0,1,2,length") },
@@ -15422,10 +15422,22 @@ static njs_unit_test_t  njs_test[] =
       njs_str("length,name,prototype") },
 
     { njs_str("Object.getOwnPropertyNames(Array)"),
-      njs_str("name,length,prototype,from,isArray,of") },
+      njs_str("length,name,prototype,from,isArray,of") },
 
     { njs_str("Object.getOwnPropertyNames(Array.isArray)"),
-      njs_str("name,length") },
+      njs_str("length,name") },
+
+    { njs_str("var not_arr_ind_1st = 0xFFFFFFFF, not_arr_ind_2nd = not_arr_ind_1st + 1,"
+              "arr_ind_last =  not_arr_ind_1st - 1, arr_ind_pre_last = not_arr_ind_1st - 2;"
+              "var o = {};"
+              "o[not_arr_ind_2nd] = 'not_arr_ind_2nd';"
+              "o[not_arr_ind_1st] = 'not_arr_ind_1st';"
+              "o[arr_ind_pre_last] = 'arr_ind_pre_last';"
+              "o[arr_ind_last] = 'arr_ind_last';"
+              "Object.entries(o)"),
+      njs_str("4294967293,arr_ind_pre_last,4294967294,arr_ind_last,"
+              "4294967296,not_arr_ind_2nd,4294967295,not_arr_ind_1st")
+    },
 
     /* Object.freeze() */
 
@@ -23305,9 +23317,8 @@ static njs_unit_test_t  njs_backtraces_test[] =
               "    at main (:1)\n") },
 
     { njs_str("$shared.method({}.a.a)"),
-    /* FIXME: at $shared.method (native) */
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
-              "    at $r.method (native)\n"
+              "    at $shared.method (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("new Function(\n\n@)"),

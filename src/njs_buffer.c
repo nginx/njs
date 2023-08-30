@@ -2538,9 +2538,9 @@ const njs_object_init_t  njs_buffer_prototype_init = {
 
 static const njs_object_prop_t  njs_buffer_constructor_properties[] =
 {
-    NJS_DECLARE_PROP_NAME("Buffer"),
-
     NJS_DECLARE_PROP_LENGTH(0),
+
+    NJS_DECLARE_PROP_NAME("Buffer"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 

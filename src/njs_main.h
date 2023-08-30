@@ -25,7 +25,7 @@
 #include <njs_murmur_hash.h>
 #include <njs_trace.h>
 #include <njs_queue.h>
-#include <njs_lvlhsh.h>
+#include <njs_flathsh.h>
 #include <njs_random.h>
 #include <njs_time.h>
 #include <njs_file.h>

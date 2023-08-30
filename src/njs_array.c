@@ -609,9 +609,9 @@ njs_array_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static const njs_object_prop_t  njs_array_constructor_properties[] =
 {
-    NJS_DECLARE_PROP_NAME("Array"),
-
     NJS_DECLARE_PROP_LENGTH(1),
+
+    NJS_DECLARE_PROP_NAME("Array"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
@@ -1825,6 +1825,47 @@ njs_array_indices_handler(const void *first, const void *second, void *ctx)
     }
 
     return cmp_res;
+}
+
+
+int
+njs_array_indices_handler_nums(const void *first, const void *second, void *ctx)
+{
+    double             num1, num2;
+    int64_t            diff;
+    const njs_value_t  *val1, *val2;
+
+    val1 = first;
+    val2 = second;
+
+    num1 = njs_string_to_index(val1);
+    num2 = njs_string_to_index(val2);
+
+    if (!isnan(num1) || !isnan(num2)) {
+        if (isnan(num1)) {
+            if (!isnan(num2)) {
+                return 1;
+
+            } else {
+
+                return 0;
+            }
+        }
+
+        if (isnan(num2)) {
+            return -1;
+        }
+
+        diff = (int64_t) (num1 - num2);
+
+        if (diff < 0) {
+            return -1;
+        }
+
+        return diff != 0;
+    }
+
+    return 0;
 }
 
 

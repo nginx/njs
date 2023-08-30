@@ -2194,9 +2194,9 @@ njs_typed_array_constructor_intrinsic(njs_vm_t *vm, njs_value_t *args,
 
 static const njs_object_prop_t  njs_typed_array_constructor_props[] =
 {
-    NJS_DECLARE_PROP_NAME("TypedArray"),
-
     NJS_DECLARE_PROP_LENGTH(0),
+
+    NJS_DECLARE_PROP_NAME("TypedArray"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
@@ -2431,9 +2431,9 @@ memory_error:
 
 static const njs_object_prop_t  njs_data_view_constructor_props[] =
 {
-    NJS_DECLARE_PROP_NAME("DataView"),
-
     NJS_DECLARE_PROP_LENGTH(1),
+
+    NJS_DECLARE_PROP_NAME("DataView"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 };
@@ -2761,9 +2761,9 @@ const njs_object_type_init_t  njs_data_view_type_init = {
 
 static const njs_object_prop_t  njs_typed_array_u8_constructor_props[] =
 {
-    NJS_DECLARE_PROP_NAME("Uint8Array"),
-
     NJS_DECLARE_PROP_LENGTH(3),
+
+    NJS_DECLARE_PROP_NAME("Uint8Array"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
@@ -2856,9 +2856,9 @@ const njs_object_type_init_t  njs_typed_array_u8clamped_type_init = {
 
 static const njs_object_prop_t  njs_typed_array_i8_constructor_props[] =
 {
-    NJS_DECLARE_PROP_NAME("Int8Array"),
-
     NJS_DECLARE_PROP_LENGTH(3),
+
+    NJS_DECLARE_PROP_NAME("Int8Array"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
@@ -2901,9 +2901,9 @@ const njs_object_type_init_t  njs_typed_array_i8_type_init = {
 
 static const njs_object_prop_t  njs_typed_array_u16_constructor_props[] =
 {
-    NJS_DECLARE_PROP_NAME("Uint16Array"),
-
     NJS_DECLARE_PROP_LENGTH(3),
+
+    NJS_DECLARE_PROP_NAME("Uint16Array"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
@@ -2946,9 +2946,9 @@ const njs_object_type_init_t  njs_typed_array_u16_type_init = {
 
 static const njs_object_prop_t  njs_typed_array_i16_constructor_props[] =
 {
-    NJS_DECLARE_PROP_NAME("Int16Array"),
-
     NJS_DECLARE_PROP_LENGTH(3),
+
+    NJS_DECLARE_PROP_NAME("Int16Array"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
@@ -2991,9 +2991,9 @@ const njs_object_type_init_t  njs_typed_array_i16_type_init = {
 
 static const njs_object_prop_t  njs_typed_array_u32_constructor_props[] =
 {
-    NJS_DECLARE_PROP_NAME("Uint32Array"),
-
     NJS_DECLARE_PROP_LENGTH(3),
+
+    NJS_DECLARE_PROP_NAME("Uint32Array"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
@@ -3036,9 +3036,9 @@ const njs_object_type_init_t  njs_typed_array_u32_type_init = {
 
 static const njs_object_prop_t  njs_typed_array_i32_constructor_props[] =
 {
-    NJS_DECLARE_PROP_NAME("Int32Array"),
-
     NJS_DECLARE_PROP_LENGTH(3),
+
+    NJS_DECLARE_PROP_NAME("Int32Array"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
@@ -3081,9 +3081,9 @@ const njs_object_type_init_t  njs_typed_array_i32_type_init = {
 
 static const njs_object_prop_t  njs_typed_array_f32_constructor_props[] =
 {
-    NJS_DECLARE_PROP_NAME("Float32Array"),
-
     NJS_DECLARE_PROP_LENGTH(3),
+
+    NJS_DECLARE_PROP_NAME("Float32Array"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
@@ -3126,9 +3126,9 @@ const njs_object_type_init_t  njs_typed_array_f32_type_init = {
 
 static const njs_object_prop_t  njs_typed_array_f64_constructor_props[] =
 {
-    NJS_DECLARE_PROP_NAME("Float64Array"),
-
     NJS_DECLARE_PROP_LENGTH(3),
+
+    NJS_DECLARE_PROP_NAME("Float64Array"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 

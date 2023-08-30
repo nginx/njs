@@ -1754,7 +1754,7 @@ njs_vm_value_string_copy(njs_vm_t *vm, njs_str_t *retval,
 void *
 njs_lvlhsh_alloc(void *data, size_t size)
 {
-    return njs_mp_align(data, size, size);
+    return njs_mp_align(data, NJS_MAX_ALIGNMENT, size);
 }
 
 

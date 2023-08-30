@@ -379,6 +379,7 @@ struct njs_object_prop_s {
 #define njs_prop_setter(_p)     (_p)->u.accessor.setter
 
     njs_object_prop_type_t      type:8;          /* 3 bits */
+    njs_object_prop_type_t      enum_in_object_hash:8; /* 3 bits */
 
     njs_object_attribute_t      writable:8;      /* 2 bits */
     njs_object_attribute_t      enumerable:8;    /* 2 bits */
@@ -395,8 +396,8 @@ typedef struct {
     njs_object_prop_t           scratch;
 
     njs_value_t                 key;
+    njs_lvlhsh_t                *own_whiteout;
 
-    njs_object_prop_t           *own_whiteout;
     uint8_t                     temp;
     uint8_t                     own;
 } njs_property_query_t;

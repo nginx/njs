@@ -354,9 +354,9 @@ njs_error_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static const njs_object_prop_t  njs_error_constructor_properties[] =
 {
-    NJS_DECLARE_PROP_NAME("Error"),
-
     NJS_DECLARE_PROP_LENGTH(1),
+
+    NJS_DECLARE_PROP_NAME("Error"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 };
@@ -370,9 +370,9 @@ const njs_object_init_t  njs_error_constructor_init = {
 
 static const njs_object_prop_t  njs_eval_error_constructor_properties[] =
 {
-    NJS_DECLARE_PROP_NAME("EvalError"),
-
     NJS_DECLARE_PROP_LENGTH(1),
+
+    NJS_DECLARE_PROP_NAME("EvalError"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 };
@@ -386,9 +386,9 @@ const njs_object_init_t  njs_eval_error_constructor_init = {
 
 static const njs_object_prop_t  njs_internal_error_constructor_properties[] =
 {
-    NJS_DECLARE_PROP_NAME("InternalError"),
-
     NJS_DECLARE_PROP_LENGTH(1),
+
+    NJS_DECLARE_PROP_NAME("InternalError"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 };
@@ -402,9 +402,9 @@ const njs_object_init_t  njs_internal_error_constructor_init = {
 
 static const njs_object_prop_t  njs_range_error_constructor_properties[] =
 {
-    NJS_DECLARE_PROP_NAME("RangeError"),
-
     NJS_DECLARE_PROP_LENGTH(1),
+
+    NJS_DECLARE_PROP_NAME("RangeError"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 };
@@ -418,9 +418,9 @@ const njs_object_init_t  njs_range_error_constructor_init = {
 
 static const njs_object_prop_t  njs_reference_error_constructor_properties[] =
 {
-    NJS_DECLARE_PROP_NAME("ReferenceError"),
-
     NJS_DECLARE_PROP_LENGTH(1),
+
+    NJS_DECLARE_PROP_NAME("ReferenceError"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 };
@@ -434,9 +434,9 @@ const njs_object_init_t  njs_reference_error_constructor_init = {
 
 static const njs_object_prop_t  njs_syntax_error_constructor_properties[] =
 {
-    NJS_DECLARE_PROP_NAME("SyntaxError"),
-
     NJS_DECLARE_PROP_LENGTH(1),
+
+    NJS_DECLARE_PROP_NAME("SyntaxError"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 };
@@ -450,9 +450,9 @@ const njs_object_init_t  njs_syntax_error_constructor_init = {
 
 static const njs_object_prop_t  njs_type_error_constructor_properties[] =
 {
-    NJS_DECLARE_PROP_NAME("TypeError"),
-
     NJS_DECLARE_PROP_LENGTH(1),
+
+    NJS_DECLARE_PROP_NAME("TypeError"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 };
@@ -466,9 +466,9 @@ const njs_object_init_t  njs_type_error_constructor_init = {
 
 static const njs_object_prop_t  njs_uri_error_constructor_properties[] =
 {
-    NJS_DECLARE_PROP_NAME("URIError"),
-
     NJS_DECLARE_PROP_LENGTH(1),
+
+    NJS_DECLARE_PROP_NAME("URIError"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 };
@@ -482,9 +482,9 @@ const njs_object_init_t  njs_uri_error_constructor_init = {
 
 static const njs_object_prop_t  njs_aggregate_error_constructor_properties[] =
 {
-    NJS_DECLARE_PROP_NAME("AggregateError"),
-
     NJS_DECLARE_PROP_LENGTH(1),
+
+    NJS_DECLARE_PROP_NAME("AggregateError"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 };
@@ -566,9 +566,9 @@ njs_memory_error_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
 
 static const njs_object_prop_t  njs_memory_error_constructor_properties[] =
 {
-    NJS_DECLARE_PROP_NAME("MemoryError"),
-
     NJS_DECLARE_PROP_LENGTH(1),
+
+    NJS_DECLARE_PROP_NAME("MemoryError"),
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_memory_error_prototype_create,
                              0, 0, 0),
