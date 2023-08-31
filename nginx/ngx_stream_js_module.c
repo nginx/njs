@@ -1815,6 +1815,10 @@ ngx_stream_js_periodic_handler(ngx_event_t *ev)
     ngx_stream_session_t         *s;
     ngx_stream_core_main_conf_t  *cmcf;
 
+    if (ngx_terminate || ngx_exiting) {
+        return;
+    }
+
     periodic = ev->data;
 
     timer = periodic->interval;

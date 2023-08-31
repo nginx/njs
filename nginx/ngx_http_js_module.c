@@ -4102,6 +4102,10 @@ ngx_http_js_periodic_handler(ngx_event_t *ev)
     ngx_http_request_t     *r;
     ngx_http_connection_t   hc;
 
+    if (ngx_terminate || ngx_exiting) {
+        return;
+    }
+
     periodic = ev->data;
 
     timer = periodic->interval;
