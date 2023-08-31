@@ -599,6 +599,8 @@ njs_js_ext_shared_dict_keys(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     njs_int_t            rc;
     ngx_int_t            max_count;
+    ngx_msec_t           now;
+    ngx_time_t          *tp;
     njs_value_t         *value;
     ngx_rbtree_t        *rbtree;
     ngx_js_dict_t       *dict;
@@ -629,6 +631,12 @@ njs_js_ext_shared_dict_keys(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     ngx_rwlock_rlock(&dict->sh->rwlock);
+
+    if (dict->timeout) {
+        tp = ngx_timeofday();
+        now = tp->sec * 1000 + tp->msec;
+        ngx_js_dict_expire(dict, now);
+    }
 
     rbtree = &dict->sh->rbtree;
 
@@ -835,6 +843,8 @@ njs_js_ext_shared_dict_size(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
     njs_int_t           items;
+    ngx_msec_t          now;
+    ngx_time_t         *tp;
     ngx_rbtree_t       *rbtree;
     ngx_js_dict_t      *dict;
     ngx_shm_zone_t     *shm_zone;
@@ -850,6 +860,12 @@ njs_js_ext_shared_dict_size(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     dict = shm_zone->data;
 
     ngx_rwlock_rlock(&dict->sh->rwlock);
+
+    if (dict->timeout) {
+        tp = ngx_timeofday();
+        now = tp->sec * 1000 + tp->msec;
+        ngx_js_dict_expire(dict, now);
+    }
 
     rbtree = &dict->sh->rbtree;
 
