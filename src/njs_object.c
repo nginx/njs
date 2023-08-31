@@ -1175,7 +1175,7 @@ njs_object_own_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
     case NJS_ENUM_VALUES:
     case NJS_ENUM_BOTH:
         items_sorted = njs_array_alloc(vm, 1, 0, NJS_ARRAY_SPARE);
-        if (njs_slow_path(items == NULL)) {
+        if (njs_slow_path(items_sorted == NULL)) {
             return NJS_ERROR;
         }
 
