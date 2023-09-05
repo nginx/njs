@@ -25,7 +25,7 @@ typedef struct {
 typedef struct {
     ngx_http_conf_ctx_t   *conf_ctx;
     ngx_connection_t      *connection;
-    void                  *padding;
+    uint8_t               *worker_affinity;
 
     /**
      * fd is used for event debug and should be at the same position
@@ -4544,6 +4544,16 @@ ngx_http_js_init_worker(ngx_cycle_t *cycle)
     periodics = jmcf->periodics->elts;
 
     for (i = 0; i < jmcf->periodics->nelts; i++) {
+        if (periodics[i].worker_affinity != NULL
+            && !periodics[i].worker_affinity[ngx_worker])
+        {
+            continue;
+        }
+
+        if (periodics[i].worker_affinity == NULL && ngx_worker != 0) {
+            continue;
+        }
+
         periodics[i].fd = 1000000 + i;
 
         if (ngx_http_js_periodic_init(&periodics[i]) != NGX_OK) {
@@ -4558,9 +4568,11 @@ ngx_http_js_init_worker(ngx_cycle_t *cycle)
 static char *
 ngx_http_js_periodic(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
+    uint8_t             *mask;
     ngx_str_t           *value, s;
     ngx_msec_t           interval, jitter;
     ngx_uint_t           i;
+    ngx_core_conf_t     *ccf;
     ngx_js_periodic_t   *periodic;
     ngx_js_main_conf_t  *jmcf;
 
@@ -4586,6 +4598,7 @@ ngx_http_js_periodic(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     ngx_memzero(periodic, sizeof(ngx_js_periodic_t));
 
+    mask = NULL;
     jitter = 0;
     interval = 5000;
 
@@ -4619,6 +4632,58 @@ ngx_http_js_periodic(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             continue;
         }
 
+        if (ngx_strncmp(value[i].data, "worker_affinity=", 16) == 0) {
+            s.len = value[i].len - 16;
+            s.data = value[i].data + 16;
+
+            ccf = (ngx_core_conf_t *) ngx_get_conf(cf->cycle->conf_ctx,
+                                                   ngx_core_module);
+
+            if (ccf->worker_processes == NGX_CONF_UNSET) {
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                   "\"worker_affinity\" is not supported "
+                                   "with unset \"worker_processes\" directive");
+                return NGX_CONF_ERROR;
+            }
+
+            mask = ngx_palloc(cf->pool, ccf->worker_processes);
+            if (mask == NULL) {
+                return NGX_CONF_ERROR;
+            }
+
+            if (ngx_strncmp(s.data, "all", 3) == 0) {
+                memset(mask, 1, ccf->worker_processes);
+                continue;
+            }
+
+            if ((size_t) ccf->worker_processes != s.len) {
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "the number of "
+                                   "\"worker_processes\" is not equal to the "
+                                   "size of \"worker_affinity\" mask");
+                return NGX_CONF_ERROR;
+            }
+
+            for (i = 0; i < s.len; i++) {
+                if (s.data[i] == '0') {
+                    mask[i] = 0;
+                    continue;
+                }
+
+                if (s.data[i] == '1') {
+                    mask[i] = 1;
+                    continue;
+                }
+
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                          "invalid character \"%c\" in \"worker_affinity=\"",
+                          s.data[i]);
+
+                return NGX_CONF_ERROR;
+            }
+
+            continue;
+        }
+
 invalid:
 
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
@@ -4629,6 +4694,7 @@ invalid:
     periodic->method = value[1];
     periodic->interval = interval;
     periodic->jitter = jitter;
+    periodic->worker_affinity = mask;
     periodic->conf_ctx = cf->ctx;
 
     return NGX_CONF_OK;
