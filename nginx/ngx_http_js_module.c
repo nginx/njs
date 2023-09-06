@@ -111,8 +111,7 @@ static ngx_int_t ngx_http_js_variable_set(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data);
 static ngx_int_t ngx_http_js_variable_var(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data);
-static ngx_int_t ngx_http_js_init_vm(ngx_http_request_t *r,
-    unsigned inject_request);
+static ngx_int_t ngx_http_js_init_vm(ngx_http_request_t *r, njs_int_t proto_id);
 static void ngx_http_js_cleanup_ctx(void *data);
 
 static njs_int_t ngx_http_js_ext_keys_header(njs_vm_t *vm, njs_value_t *value,
@@ -215,6 +214,9 @@ static njs_int_t ngx_http_js_header_in_array(njs_vm_t *vm,
 static njs_int_t ngx_http_js_ext_keys_header_in(njs_vm_t *vm,
     njs_value_t *value, njs_value_t *keys);
 static njs_int_t ngx_http_js_ext_variables(njs_vm_t *vm,
+    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
+static njs_int_t ngx_http_js_periodic_session_variables(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
 static njs_int_t ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args,
@@ -494,6 +496,7 @@ static ngx_http_output_body_filter_pt    ngx_http_next_body_filter;
 
 
 static njs_int_t    ngx_http_js_request_proto_id;
+static njs_int_t    ngx_http_js_periodic_session_proto_id;
 
 
 static njs_external_t  ngx_http_js_ext_request[] = {
@@ -817,6 +820,38 @@ static njs_external_t  ngx_http_js_ext_request[] = {
 };
 
 
+static njs_external_t  ngx_http_js_ext_periodic_session[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY | NJS_EXTERN_SYMBOL,
+        .name.symbol = NJS_SYMBOL_TO_STRING_TAG,
+        .u.property = {
+            .value = "PeriodicSession",
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("rawVariables"),
+        .u.object = {
+            .writable = 1,
+            .prop_handler = ngx_http_js_periodic_session_variables,
+            .magic32 = NGX_JS_BUFFER,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("variables"),
+        .u.object = {
+            .writable = 1,
+            .prop_handler = ngx_http_js_periodic_session_variables,
+            .magic32 = NGX_JS_STRING,
+        }
+    },
+};
+
+
 static njs_vm_ops_t ngx_http_js_ops = {
     ngx_http_js_set_timer,
     ngx_http_js_clear_timer,
@@ -904,7 +939,7 @@ ngx_http_js_content_event_handler(ngx_http_request_t *r)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http js content event handler");
 
-    rc = ngx_http_js_init_vm(r, 1);
+    rc = ngx_http_js_init_vm(r, ngx_http_js_request_proto_id);
 
     if (rc == NGX_ERROR || rc == NGX_DECLINED) {
         ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -1040,7 +1075,7 @@ ngx_http_js_header_filter(ngx_http_request_t *r)
         return ngx_http_next_header_filter(r);
     }
 
-    rc = ngx_http_js_init_vm(r, 1);
+    rc = ngx_http_js_init_vm(r, ngx_http_js_request_proto_id);
 
     if (rc == NGX_ERROR || rc == NGX_DECLINED) {
         return NGX_ERROR;
@@ -1092,7 +1127,7 @@ ngx_http_js_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
         return ngx_http_next_body_filter(r, in);
     }
 
-    rc = ngx_http_js_init_vm(r, 1);
+    rc = ngx_http_js_init_vm(r, ngx_http_js_request_proto_id);
 
     if (rc == NGX_ERROR || rc == NGX_DECLINED) {
         return NGX_ERROR;
@@ -1206,7 +1241,7 @@ ngx_http_js_variable_set(ngx_http_request_t *r, ngx_http_variable_value_t *v,
     ngx_str_t           value;
     ngx_http_js_ctx_t  *ctx;
 
-    rc = ngx_http_js_init_vm(r, 1);
+    rc = ngx_http_js_init_vm(r, ngx_http_js_request_proto_id);
 
     if (rc == NGX_ERROR) {
         return NGX_ERROR;
@@ -1280,7 +1315,7 @@ ngx_http_js_variable_var(ngx_http_request_t *r, ngx_http_variable_value_t *v,
 
 
 static ngx_int_t
-ngx_http_js_init_vm(ngx_http_request_t *r, unsigned inject_request)
+ngx_http_js_init_vm(ngx_http_request_t *r, njs_int_t proto_id)
 {
     njs_int_t                rc;
     ngx_str_t                exception;
@@ -1359,12 +1394,10 @@ ngx_http_js_init_vm(ngx_http_request_t *r, unsigned inject_request)
         return NGX_ERROR;
     }
 
-    if (inject_request) {
-        rc = njs_vm_external_create(ctx->vm, njs_value_arg(&ctx->request),
-                                    ngx_http_js_request_proto_id, r, 0);
-        if (rc != NJS_OK) {
-            return NGX_ERROR;
-        }
+    rc = njs_vm_external_create(ctx->vm, njs_value_arg(&ctx->request),
+                                proto_id, r, 0);
+    if (rc != NJS_OK) {
+        return NGX_ERROR;
     }
 
     return NGX_OK;
@@ -2904,23 +2937,16 @@ ngx_http_js_ext_keys_header_in(njs_vm_t *vm, njs_value_t *value,
 
 
 static njs_int_t
-ngx_http_js_ext_variables(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+ngx_http_js_request_variables(njs_vm_t *vm, njs_object_prop_t *prop,
+    ngx_http_request_t *r, njs_value_t *setval, njs_value_t *retval)
 {
     njs_int_t                   rc;
     njs_str_t                   val, s;
     ngx_str_t                   name;
     ngx_uint_t                  key;
-    ngx_http_request_t         *r;
     ngx_http_variable_t        *v;
     ngx_http_core_main_conf_t  *cmcf;
     ngx_http_variable_value_t  *vv;
-
-    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
-    if (r == NULL) {
-        njs_value_undefined_set(retval);
-        return NJS_DECLINED;
-    }
 
     rc = njs_vm_prop_name(vm, prop, &val);
     if (rc != NJS_OK) {
@@ -2997,6 +3023,38 @@ ngx_http_js_ext_variables(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_memcpy(vv->data, s.start, vv->len);
 
     return NJS_OK;
+}
+
+
+static njs_int_t
+ngx_http_js_ext_variables(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    ngx_http_request_t  *r;
+
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
+    if (r == NULL) {
+        njs_value_undefined_set(retval);
+        return NJS_DECLINED;
+    }
+
+    return ngx_http_js_request_variables(vm, prop, r, setval, retval);
+}
+
+
+static njs_int_t
+ngx_http_js_periodic_session_variables(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    ngx_http_request_t  *r;
+
+    r = njs_vm_external(vm, ngx_http_js_periodic_session_proto_id, value);
+    if (r == NULL) {
+        njs_value_undefined_set(retval);
+        return NJS_DECLINED;
+    }
+
+    return ngx_http_js_request_variables(vm, prop, r, setval, retval);
 }
 
 
@@ -4168,7 +4226,7 @@ ngx_http_js_periodic_handler(ngx_event_t *ev)
     r->health_check = 1;
     r->write_event_handler = ngx_http_js_periodic_write_event_handler;
 
-    rc = ngx_http_js_init_vm(r, 0);
+    rc = ngx_http_js_init_vm(r, ngx_http_js_periodic_session_proto_id);
 
     if (rc != NGX_OK) {
         ngx_http_js_periodic_destroy(r, periodic);
@@ -4181,8 +4239,8 @@ ngx_http_js_periodic_handler(ngx_event_t *ev)
 
     r->count++;
 
-    rc = ngx_js_invoke(ctx->vm, &periodic->method, &periodic->log, NULL, 0,
-                       &ctx->retval);
+    rc = ngx_js_invoke(ctx->vm, &periodic->method, &periodic->log,
+                       &ctx->request, 1, &ctx->retval);
 
     if (rc == NGX_AGAIN) {
         rc = NGX_OK;
@@ -4479,6 +4537,13 @@ ngx_js_http_init(njs_vm_t *vm)
                                            ngx_http_js_ext_request,
                                            njs_nitems(ngx_http_js_ext_request));
     if (ngx_http_js_request_proto_id < 0) {
+        return NJS_ERROR;
+    }
+
+    ngx_http_js_periodic_session_proto_id = njs_vm_external_prototype(vm,
+                                  ngx_http_js_ext_periodic_session,
+                                  njs_nitems(ngx_http_js_ext_periodic_session));
+    if (ngx_http_js_periodic_session_proto_id < 0) {
         return NJS_ERROR;
     }
 

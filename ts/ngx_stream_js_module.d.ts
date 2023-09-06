@@ -211,3 +211,25 @@ interface NginxStreamRequest {
      */
     warn(message: NjsStringOrBuffer): void;
 }
+
+
+/**
+ * NginxPeriodicSession object is available as the first argument in the js_periodic handler.
+ * @since 0.8.1
+ */
+interface NginxPeriodicSession {
+    /**
+     * nginx variables as Buffers.
+     *
+     * @see variables
+     */
+    readonly rawVariables: NginxRawVariables;
+    /**
+     * nginx variables as strings.
+     *
+     * **Warning:** Bytes invalid in UTF-8 encoding may be converted into the replacement character.
+     *
+     * @see rawVariables
+     */
+    readonly variables: NginxVariables;
+}

@@ -46,6 +46,12 @@ stream {
     js_shared_dict_zone zone=strings:32k;
     js_shared_dict_zone zone=workers:32k type=number;
 
+    js_set $js_set  test.js_set;
+    js_var $js_var  JS-VAR;
+    map _ $map_var {
+        default "MAP-VAR";
+    }
+
     server {
         listen       127.0.0.1:8080;
 
@@ -56,6 +62,7 @@ stream {
         js_periodic test.fetch interval=40ms;
         js_periodic test.multiple_fetches interval=1s;
         js_periodic test.affinity interval=50ms worker_affinity=0101;
+        js_periodic test.vars interval=10s;
 
         js_periodic test.fetch_exception interval=1s;
         js_periodic test.tick_exception interval=1s;
@@ -107,6 +114,10 @@ $t->write_file('test.js', <<EOF);
     async function fetch_exception() {
         let reply = await ngx.fetch('garbage');
      }
+
+    function js_set() {
+        return 'JS-SET';
+    }
 
     async function multiple_fetches() {
         let reply = await ngx.fetch('http://127.0.0.1:$p1/fetch_ok');
@@ -161,6 +172,12 @@ $t->write_file('test.js', <<EOF);
 
             ngx.shared.nums.incr('timeout_exception', 1);
         }, 1);
+    }
+
+    function vars(s) {
+        var v = s.variables;
+        ngx.shared.strings.set('vars',
+                               `\${v.js_var}|\${v.js_set}|\${v.map_var}`);
     }
 
     function test(s) {
@@ -229,6 +246,15 @@ $t->write_file('test.js', <<EOF);
 
                     break;
 
+                case 'vars':
+                    var vars = ngx.shared.strings.get('vars');
+                    if (vars === 'JS-VAR|JS-SET|MAP-VAR') {
+                        s.done();
+                        return;
+                    }
+
+                    break;
+
                 default:
                     throw new Error(`Unknown test "\${data}"`);
                 }
@@ -238,13 +264,13 @@ $t->write_file('test.js', <<EOF);
         });
     }
 
-    export default { affinity, fetch, fetch_exception, multiple_fetches, file,
-                     overrun, test, tick, tick_exception, timer,
-                     timer_exception, timeout_exception };
+    export default { affinity, fetch, fetch_exception, js_set, multiple_fetches,
+                     file, overrun, test, tick, tick_exception, timer,
+                     timer_exception, timeout_exception, vars };
 EOF
 
 $t->run_daemon(\&stream_daemon, port(8090));
-$t->try_run('no js_periodic')->plan(8);
+$t->try_run('no js_periodic')->plan(9);
 $t->waitforsocket('127.0.0.1:' . port(8090));
 
 ###############################################################################
@@ -261,6 +287,7 @@ is(stream('127.0.0.1:' . port(8080))->io('multiple_fetches'),
 	'multiple_fetches', 'muliple fetches test');
 is(stream('127.0.0.1:' . port(8080))->io('timeout_exception'),
 	'timeout_exception', 'timeout exception test');
+is(stream('127.0.0.1:' . port(8080))->io('vars'), 'vars', 'vars test');
 
 $t->stop();
 

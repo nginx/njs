@@ -45,6 +45,12 @@ http {
     js_shared_dict_zone zone=strings:32k;
     js_shared_dict_zone zone=workers:32k type=number;
 
+    js_set $js_set  test.js_set;
+    js_var $js_var  JS-VAR;
+    map _ $map_var {
+        default "MAP-VAR";
+    }
+
     server {
         listen       127.0.0.1:8080;
         server_name  localhost;
@@ -57,6 +63,7 @@ http {
             js_periodic test.fetch interval=40ms;
             js_periodic test.multiple_fetches interval=1s;
             js_periodic test.affinity interval=50ms worker_affinity=0101;
+            js_periodic test.vars interval=10s;
 
             js_periodic test.fetch_exception interval=1s;
             js_periodic test.tick_exception interval=1s;
@@ -99,6 +106,10 @@ http {
         location /test_timeout_exception {
             js_content test.test_timeout_exception;
         }
+
+        location /test_vars {
+            js_content test.test_vars;
+        }
     }
 }
 
@@ -119,6 +130,10 @@ $t->write_file('test.js', <<EOF);
 
         let v = ngx.shared.strings.get('fetch') || '';
         ngx.shared.strings.set('fetch', v + body);
+    }
+
+    function js_set() {
+        return 'JS-SET';
     }
 
     async function multiple_fetches() {
@@ -181,6 +196,12 @@ $t->write_file('test.js', <<EOF);
         }, 1);
     }
 
+    function vars(s) {
+        var v = s.variables;
+        ngx.shared.strings.set('vars',
+                               `\${v.js_var}|\${v.js_set}|\${v.map_var}`);
+    }
+
     function test_affinity(r) {
         r.return(200, `[\${ngx.shared.workers.keys().toSorted()}]`);
     }
@@ -211,14 +232,19 @@ $t->write_file('test.js', <<EOF);
         r.return(200, ngx.shared.nums.get('timeout_exception') >= 2);
     }
 
-    export default { affinity, fetch, fetch_exception, file, multiple_fetches,
-                     overrun, test_affinity, test_fetch, test_file,
-                     test_multiple_fetches, test_tick, test_timeout_exception,
-                     test_timer, tick, tick_exception, timer, timer_exception,
+    function test_vars(r) {
+        r.return(200, ngx.shared.strings.get('vars'));
+    }
+
+    export default { affinity, fetch, fetch_exception, file, js_set,
+                     multiple_fetches, overrun, vars, test_affinity, test_fetch,
+                     test_file, test_multiple_fetches, test_tick,
+                     test_timeout_exception, test_timer, test_vars, tick,
+                     tick_exception, timer, timer_exception,
                      timeout_exception };
 EOF
 
-$t->try_run('no js_periodic')->plan(8);
+$t->try_run('no js_periodic')->plan(9);
 
 ###############################################################################
 
@@ -232,6 +258,7 @@ like(http_get('/test_fetch'), qr/true/, 'periodic fetch test');
 like(http_get('/test_multiple_fetches'), qr/true/, 'multiple fetch test');
 
 like(http_get('/test_timeout_exception'), qr/true/, 'timeout exception test');
+like(http_get('/test_vars'), qr/JS-VAR\|JS-SET\|MAP-VAR/, 'vars test');
 
 $t->stop();
 

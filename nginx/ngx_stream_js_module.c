@@ -88,7 +88,7 @@ static ngx_int_t ngx_stream_js_variable_set(ngx_stream_session_t *s,
 static ngx_int_t ngx_stream_js_variable_var(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, uintptr_t data);
 static ngx_int_t ngx_stream_js_init_vm(ngx_stream_session_t *s,
-    unsigned inject_session);
+    njs_int_t proto_id);
 static void ngx_stream_js_drop_events(ngx_stream_js_ctx_t *ctx);
 static void ngx_stream_js_cleanup(void *data);
 static njs_int_t ngx_stream_js_run_event(ngx_stream_session_t *s,
@@ -115,6 +115,9 @@ static njs_int_t ngx_stream_js_ext_set_return_value(njs_vm_t *vm,
     njs_value_t *retval);
 
 static njs_int_t ngx_stream_js_ext_variables(njs_vm_t *vm,
+    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
+static njs_int_t ngx_stream_js_periodic_variables(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
 
@@ -546,6 +549,38 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
 };
 
 
+static njs_external_t  ngx_stream_js_ext_periodic_session[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY | NJS_EXTERN_SYMBOL,
+        .name.symbol = NJS_SYMBOL_TO_STRING_TAG,
+        .u.property = {
+            .value = "PeriodicSession",
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("rawVariables"),
+        .u.object = {
+            .writable = 1,
+            .prop_handler = ngx_stream_js_periodic_variables,
+            .magic32 = NGX_JS_BUFFER,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("variables"),
+        .u.object = {
+            .writable = 1,
+            .prop_handler = ngx_stream_js_periodic_variables,
+            .magic32 = NGX_JS_STRING,
+        }
+    },
+};
+
+
 static njs_external_t  ngx_stream_js_ext_session_flags[] = {
 
     {
@@ -613,6 +648,7 @@ static ngx_stream_filter_pt  ngx_stream_next_filter;
 
 
 static njs_int_t    ngx_stream_js_session_proto_id;
+static njs_int_t    ngx_stream_js_periodic_session_proto_id;
 static njs_int_t    ngx_stream_js_session_flags_proto_id;
 
 
@@ -686,7 +722,7 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
         return NGX_DECLINED;
     }
 
-    rc = ngx_stream_js_init_vm(s, 1);
+    rc = ngx_stream_js_init_vm(s, ngx_stream_js_session_proto_id);
     if (rc != NGX_OK) {
         return rc;
     }
@@ -767,7 +803,7 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
     ngx_log_debug1(NGX_LOG_DEBUG_STREAM, c->log, 0, "stream js filter u:%ui",
                    from_upstream);
 
-    rc = ngx_stream_js_init_vm(s, 1);
+    rc = ngx_stream_js_init_vm(s, ngx_stream_js_session_proto_id);
 
     if (rc == NGX_ERROR) {
         return NGX_ERROR;
@@ -875,7 +911,7 @@ ngx_stream_js_variable_set(ngx_stream_session_t *s,
     ngx_str_t             value;
     ngx_stream_js_ctx_t  *ctx;
 
-    rc = ngx_stream_js_init_vm(s, 1);
+    rc = ngx_stream_js_init_vm(s, ngx_stream_js_session_proto_id);
 
     if (rc == NGX_ERROR) {
         return NGX_ERROR;
@@ -949,7 +985,7 @@ ngx_stream_js_variable_var(ngx_stream_session_t *s,
 
 
 static ngx_int_t
-ngx_stream_js_init_vm(ngx_stream_session_t *s, unsigned inject_session)
+ngx_stream_js_init_vm(ngx_stream_session_t *s, njs_int_t proto_id)
 {
     njs_int_t                  rc;
     njs_str_t                  key;
@@ -1026,12 +1062,10 @@ ngx_stream_js_init_vm(ngx_stream_session_t *s, unsigned inject_session)
         return NGX_ERROR;
     }
 
-    if (inject_session) {
-        rc = njs_vm_external_create(ctx->vm, njs_value_arg(&ctx->args[0]),
-                                    ngx_stream_js_session_proto_id, s, 0);
-        if (rc != NJS_OK) {
-            return NGX_ERROR;
-        }
+    rc = njs_vm_external_create(ctx->vm, njs_value_arg(&ctx->args[0]),
+                                proto_id, s, 0);
+    if (rc != NJS_OK) {
+        return NGX_ERROR;
     }
 
     return NGX_OK;
@@ -1507,23 +1541,16 @@ ngx_stream_js_ext_set_return_value(njs_vm_t *vm, njs_value_t *args,
 
 
 static njs_int_t
-ngx_stream_js_ext_variables(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+ngx_stream_js_session_variables(njs_vm_t *vm, njs_object_prop_t *prop,
+    ngx_stream_session_t *s, njs_value_t *setval, njs_value_t *retval)
 {
     njs_int_t                     rc;
     njs_str_t                     val;
     ngx_str_t                     name;
     ngx_uint_t                    key;
     ngx_stream_variable_t        *v;
-    ngx_stream_session_t         *s;
     ngx_stream_core_main_conf_t  *cmcf;
     ngx_stream_variable_value_t  *vv;
-
-    s = njs_vm_external(vm, ngx_stream_js_session_proto_id, value);
-    if (s == NULL) {
-        njs_value_undefined_set(retval);
-        return NJS_DECLINED;
-    }
 
     rc = njs_vm_prop_name(vm, prop, &val);
     if (rc != NJS_OK) {
@@ -1598,6 +1625,38 @@ ngx_stream_js_ext_variables(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_memcpy(vv->data, val.start, vv->len);
 
     return NJS_OK;
+}
+
+
+static njs_int_t
+ngx_stream_js_ext_variables(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    ngx_stream_session_t  *s;
+
+    s = njs_vm_external(vm, ngx_stream_js_session_proto_id, value);
+    if (s == NULL) {
+        njs_value_undefined_set(retval);
+        return NJS_DECLINED;
+    }
+
+    return ngx_stream_js_session_variables(vm, prop, s, setval, retval);
+}
+
+
+static njs_int_t
+ngx_stream_js_periodic_variables(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    ngx_stream_session_t  *s;
+
+    s = njs_vm_external(vm, ngx_stream_js_periodic_session_proto_id, value);
+    if (s == NULL) {
+        njs_value_undefined_set(retval);
+        return NJS_DECLINED;
+    }
+
+    return ngx_stream_js_session_variables(vm, prop, s, setval, retval);
 }
 
 
@@ -1770,6 +1829,13 @@ ngx_js_stream_init(njs_vm_t *vm)
         return NJS_ERROR;
     }
 
+    ngx_stream_js_periodic_session_proto_id = njs_vm_external_prototype(vm,
+                                ngx_stream_js_ext_periodic_session,
+                                njs_nitems(ngx_stream_js_ext_periodic_session));
+    if (ngx_stream_js_periodic_session_proto_id < 0) {
+        return NJS_ERROR;
+    }
+
     ngx_stream_js_session_flags_proto_id = njs_vm_external_prototype(vm,
                                    ngx_stream_js_ext_session_flags,
                                    njs_nitems(ngx_stream_js_ext_session_flags));
@@ -1885,7 +1951,7 @@ ngx_stream_js_periodic_handler(ngx_event_t *ev)
 
     s->health_check = 1;
 
-    rc = ngx_stream_js_init_vm(s, 0);
+    rc = ngx_stream_js_init_vm(s, ngx_stream_js_periodic_session_proto_id);
 
     if (rc != NGX_OK) {
         ngx_stream_js_periodic_destroy(s, periodic);
@@ -1900,8 +1966,8 @@ ngx_stream_js_periodic_handler(ngx_event_t *ev)
 
     s->received++;
 
-    rc = ngx_js_invoke(ctx->vm, &periodic->method, &periodic->log, NULL, 0,
-                       &ctx->retval);
+    rc = ngx_js_invoke(ctx->vm, &periodic->method, &periodic->log,
+                       &ctx->args[0], 1, &ctx->retval);
 
     if (rc == NGX_AGAIN) {
         rc = NGX_OK;
