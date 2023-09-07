@@ -311,8 +311,20 @@ main(int argc, char **argv)
     njs_vm_opt_init(&vm_options);
 
     if (opts.file == NULL) {
-        opts.file = (opts.command == NULL) ? (char *) "shell"
-                                           : (char *) "string";
+        if (opts.command != NULL) {
+            opts.file = (char *) "string";
+        }
+
+#ifdef NJS_HAVE_READLINE
+        else if (opts.interactive) {
+            opts.file = (char *) "shell";
+        }
+#endif
+
+        if (opts.file == NULL) {
+            njs_stderror("file name is required in non-interactive mode\n");
+            goto done;
+        }
     }
 
     vm_options.file.start = (u_char *) opts.file;
