@@ -86,6 +86,10 @@ http {
             js_content test.incr;
         }
 
+        location /items {
+            js_content test.items;
+        }
+
         location /keys {
             js_content test.keys;
         }
@@ -208,6 +212,19 @@ $t->write_file('test.js', <<'EOF');
         r.return(200, `[${ks.toSorted()}]`);
     }
 
+    function items(r) {
+        var kvs;
+
+        if (r.args.max) {
+            kvs = ngx.shared[r.args.dict].items(parseInt(r.args.max));
+
+        } else {
+            kvs = ngx.shared[r.args.dict].items();
+        }
+
+        r.return(200, njs.dump(kvs.toSorted()));
+    }
+
     function name(r) {
         r.return(200, ngx.shared[r.args.dict].name);
     }
@@ -247,11 +264,11 @@ $t->write_file('test.js', <<'EOF');
     }
 
     export default { add, capacity, chain, clear, del, free_space, get, has,
-                     incr, keys, name, njs: test_njs, pop, replace, set, size,
-                     zones };
+                     incr, items, keys, name, njs: test_njs, pop, replace, set,
+                     size, zones };
 EOF
 
-$t->try_run('no js_shared_dict_zone')->plan(41);
+$t->try_run('no js_shared_dict_zone')->plan(43);
 
 ###############################################################################
 
@@ -311,6 +328,10 @@ like(http_get('/keys?dict=foo'), qr/\[]/, 'foo keys after expire');
 like(http_get('/keys?dict=bar'), qr/\[FOO\,FOO2]/, 'bar keys after a delay');
 like(http_get('/size?dict=foo'), qr/size: 0/,
 	'no of items in foo after expire');
+like(http_get('/items?dict=bar'), qr/\[\['FOO','zzz'],\['FOO2','aaa']]/,
+	'bar items');
+like(http_get('/items?dict=waka'),
+	qr/\[\['FOO',47],\['FOO2',7779],\['FOO3',3338]]/, 'waka items');
 
 }
 

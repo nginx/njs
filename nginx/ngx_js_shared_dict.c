@@ -64,6 +64,8 @@ static njs_int_t njs_js_ext_shared_dict_keys(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_js_ext_shared_dict_incr(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
+static njs_int_t njs_js_ext_shared_dict_items(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_js_ext_shared_dict_name(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
@@ -181,6 +183,17 @@ static njs_external_t  ngx_js_ext_shared_dict[] = {
         .enumerable = 1,
         .u.method = {
             .native = njs_js_ext_shared_dict_incr,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("items"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_js_ext_shared_dict_items,
         }
     },
 
@@ -735,6 +748,113 @@ njs_js_ext_shared_dict_incr(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_number_set(retval, value);
 
     return NJS_OK;
+}
+
+
+static njs_int_t
+njs_js_ext_shared_dict_items(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_value_t *retval)
+{
+    njs_int_t            rc;
+    ngx_int_t            max_count;
+    ngx_msec_t           now;
+    ngx_time_t          *tp;
+    njs_value_t         *value, *kv;
+    ngx_rbtree_t        *rbtree;
+    ngx_js_dict_t       *dict;
+    ngx_shm_zone_t      *shm_zone;
+    ngx_rbtree_node_t   *rn;
+    ngx_js_dict_node_t  *node;
+
+    shm_zone = njs_vm_external(vm, ngx_js_shared_dict_proto_id,
+                               njs_argument(args, 0));
+    if (shm_zone == NULL) {
+        njs_vm_type_error(vm, "\"this\" is not a shared dict");
+        return NJS_ERROR;
+    }
+
+    dict = shm_zone->data;
+
+    max_count = 1024;
+
+    if (nargs > 1) {
+        if (ngx_js_integer(vm, njs_arg(args, nargs, 1), &max_count) != NGX_OK) {
+            return NJS_ERROR;
+        }
+    }
+
+    rc = njs_vm_array_alloc(vm, retval, 8);
+    if (rc != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    ngx_rwlock_rlock(&dict->sh->rwlock);
+
+    if (dict->timeout) {
+        tp = ngx_timeofday();
+        now = tp->sec * 1000 + tp->msec;
+        ngx_js_dict_expire(dict, now);
+    }
+
+    rbtree = &dict->sh->rbtree;
+
+    if (rbtree->root == rbtree->sentinel) {
+        goto done;
+    }
+
+    for (rn = ngx_rbtree_min(rbtree->root, rbtree->sentinel);
+         rn != NULL;
+         rn = ngx_rbtree_next(rbtree, rn))
+    {
+        if (max_count-- == 0) {
+            break;
+        }
+
+        node = (ngx_js_dict_node_t *) rn;
+
+        kv = njs_vm_array_push(vm, retval);
+        if (kv == NULL) {
+            goto fail;
+        }
+
+        rc = njs_vm_array_alloc(vm, kv, 2);
+        if (rc != NJS_OK) {
+            return NJS_ERROR;
+        }
+
+        value = njs_vm_array_push(vm, kv);
+        if (value == NULL) {
+            goto fail;
+        }
+
+        rc = njs_vm_value_string_set(vm, value, node->sn.str.data,
+                                     node->sn.str.len);
+        if (rc != NJS_OK) {
+            goto fail;
+        }
+
+        value = njs_vm_array_push(vm, kv);
+        if (value == NULL) {
+            goto fail;
+        }
+
+        rc = ngx_js_dict_copy_value_locked(vm, dict, node, value);
+        if (rc != NJS_OK) {
+            goto fail;
+        }
+    }
+
+done:
+
+    ngx_rwlock_unlock(&dict->sh->rwlock);
+
+    return NJS_OK;
+
+fail:
+
+    ngx_rwlock_unlock(&dict->sh->rwlock);
+
+    return NJS_ERROR;
 }
 
 
