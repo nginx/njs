@@ -190,8 +190,8 @@ $t->write_file('test.js', <<'EOF');
 
     function incr(r) {
         var dict = ngx.shared[r.args.dict];
-        var val = dict.incr(r.args.key, parseInt(r.args.by),
-                            parseInt(r.args.def));
+        var def = r.args.def ? parseInt(r.args.def) : 0;
+        var val = dict.incr(r.args.key, parseInt(r.args.by), def);
         r.return(200, val);
     }
 
@@ -272,9 +272,10 @@ like(http_get('/set?dict=waka&key=FOO&value=42'), qr/true/, 'set waka.FOO');
 like(http_get('/chain?dict=bar&key=FOO2&value=aaa'), qr/aaa/, 'chain bar.FOO2');
 
 like(http_get('/incr?dict=waka&key=FOO&by=5'), qr/47/, 'incr waka.FOO');
-like(http_get('/incr?dict=waka&key=FOO2&by=1'), qr/1/, 'incr waka.FOO2');
-like(http_get('/incr?dict=waka&key=FOO2&by=2'), qr/3/, 'incr waka.FOO2');
-like(http_get('/incr?dict=waka&key=FOO3&by=3&def=5'), qr/8/, 'incr waka.FOO3');
+like(http_get('/incr?dict=waka&key=FOO2&by=7777'), qr/7777/, 'incr waka.FOO2');
+like(http_get('/incr?dict=waka&key=FOO2&by=2'), qr/7779/, 'incr waka.FOO2');
+like(http_get('/incr?dict=waka&key=FOO3&by=3333&def=5'), qr/3338/,
+	'incr waka.FOO3');
 
 like(http_get('/has?dict=foo&key=FOO'), qr/true/, 'has foo.FOO');
 like(http_get('/has?dict=foo&key=NOT_EXISTING'), qr/false/,
