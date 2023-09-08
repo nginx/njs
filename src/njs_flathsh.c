@@ -87,7 +87,7 @@ struct njs_flathsh_descr_s {
 static njs_flathsh_descr_t *njs_flathsh_alloc(njs_flathsh_query_t *fhq,
     size_t hash_size, size_t elts_size);
 static njs_flathsh_descr_t *njs_expand_elts(njs_flathsh_query_t *fhq,
-    njs_flathsh_descr_t *h, uint32_t count);
+    njs_flathsh_descr_t *h);
 
 
 njs_inline size_t
@@ -204,8 +204,8 @@ njs_flathsh_add_elt(njs_flathsh_t *fh, njs_flathsh_query_t *fhq)
         return NULL;
     }
 
-    if (njs_slow_path(h->elts_count >= h->elts_size)) {
-        h = njs_expand_elts(fhq, fh->slot, h->elts_count + 1);
+    if (njs_slow_path(h->elts_count == h->elts_size)) {
+        h = njs_expand_elts(fhq, h);
         if (njs_slow_path(h == NULL)) {
             return NULL;
         }
@@ -228,24 +228,30 @@ njs_flathsh_add_elt(njs_flathsh_t *fh, njs_flathsh_query_t *fhq)
 
 
 static njs_flathsh_descr_t *
-njs_expand_elts(njs_flathsh_query_t *fhq, njs_flathsh_descr_t *h,
-    uint32_t count)
+njs_expand_elts(njs_flathsh_query_t *fhq, njs_flathsh_descr_t *h)
 {
     void                 *chunk;
-    size_t               size;
-    uint32_t             new_elts_size, new_hash_size, new_hash_mask, i;
+    size_t               size, new_elts_size, new_hash_size;
+    uint32_t             new_hash_mask, i;
     njs_int_t            cell_num;
     njs_flathsh_elt_t    *elt;
     njs_flathsh_descr_t  *h_src;
 
-    new_elts_size = h->elts_size * NJS_FLATHSH_ELTS_EXPAND_FACTOR_NUM /
+    new_elts_size = h->elts_size * (size_t) NJS_FLATHSH_ELTS_EXPAND_FACTOR_NUM /
                                           NJS_FLATHSH_ELTS_EXPAND_FACTOR_DENOM;
-    new_elts_size = njs_max(count, new_elts_size);
 
-    new_hash_size = h->hash_mask + 1;
+    new_elts_size = njs_max(h->elts_count + 1ul, new_elts_size);
+
+    new_hash_size = h->hash_mask + 1ul;
 
     while (new_hash_size < new_elts_size) {
         new_hash_size = 2 * new_hash_size;
+    }
+
+    /* Overflow check. */
+
+    if (njs_slow_path(new_hash_size > UINT32_MAX)) {
+        return NULL;
     }
 
     if (new_hash_size != (h->hash_mask + 1)) {
